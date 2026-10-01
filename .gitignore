@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.vite/
+*.log
+.DS_Store
+# Local asset packs (never committed; may contain copyrighted material)
+user-packs/*
+!user-packs/README.md

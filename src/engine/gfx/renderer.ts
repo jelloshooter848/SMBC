@@ -1,0 +1,77 @@
+import type { SpriteSheet } from './spritesheet';
+
+/**
+ * Everything the game draws goes through this interface so the headless sim can use a
+ * NullRenderer and the game logic never touches the DOM.
+ * Coordinates are screen pixels (0..256, 0..240); callers subtract the camera.
+ */
+export interface Renderer {
+  clear(color: string): void;
+  rect(x: number, y: number, w: number, h: number, color: string): void;
+  /** Draw a named frame from a sprite sheet with its top-left at (x, y). */
+  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX?: boolean): void;
+  /** Draw text with the bitmap font; `font` is a sheet whose frames are single characters. */
+  text(font: SpriteSheet, str: string, x: number, y: number): void;
+  /** Debug-only text using the canvas font (not pixel-perfect). */
+  debugText(str: string, x: number, y: number, color?: string): void;
+  line(x1: number, y1: number, x2: number, y2: number, color: string): void;
+}
+
+export class NullRenderer implements Renderer {
+  clear(): void {}
+  rect(): void {}
+  sprite(): void {}
+  text(): void {}
+  debugText(): void {}
+  line(): void {}
+}
+
+type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
+export class CanvasRenderer implements Renderer {
+  constructor(private readonly ctx: Ctx) {
+    ctx.imageSmoothingEnabled = false;
+  }
+  clear(color: string): void {
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+  }
+  rect(x: number, y: number, w: number, h: number, color: string): void {
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(x | 0, y | 0, w | 0, h | 0);
+  }
+  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX = false): void {
+    const f = sheet.frames.get(frame);
+    if (!f) return;
+    const ctx = this.ctx;
+    if (flipX) {
+      ctx.save();
+      ctx.translate((x | 0) + f.w, y | 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(sheet.image as CanvasImageSource, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
+      ctx.restore();
+    } else {
+      ctx.drawImage(sheet.image as CanvasImageSource, f.x, f.y, f.w, f.h, x | 0, y | 0, f.w, f.h);
+    }
+  }
+  text(font: SpriteSheet, str: string, x: number, y: number): void {
+    let cx = x | 0;
+    for (const ch of str) {
+      if (ch !== ' ') this.sprite(font, ch, cx, y);
+      cx += 8;
+    }
+  }
+  debugText(str: string, x: number, y: number, color = '#fff'): void {
+    this.ctx.font = '8px monospace';
+    this.ctx.fillStyle = color;
+    this.ctx.fillText(str, x, y);
+  }
+  line(x1: number, y1: number, x2: number, y2: number, color: string): void {
+    this.ctx.strokeStyle = color;
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x1 + 0.5, y1 + 0.5);
+    this.ctx.lineTo(x2 + 0.5, y2 + 0.5);
+    this.ctx.stroke();
+  }
+}

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#000000" />
+    <title>Super Mario Bros. Crossover (fan rebuild)</title>
+    <meta
+      name="description"
+      content="An unaffiliated browser reimplementation of the fan game Super Mario Bros. Crossover with original art and music."
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      #screen {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+      #overlay {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        font-family: system-ui, sans-serif;
+      }
+      #overlay > * {
+        pointer-events: auto;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="screen" width="256" height="240" aria-label="Game screen"></canvas>
+    <div id="overlay"></div>
+    <div id="announcer" class="sr-only" aria-live="polite"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+// Headless smoke test: serves the production build, drives the game with keyboard input
+// and writes screenshots. Usage: node tools/smoke/screenshot.mjs [outDir] [level]
+import { spawn } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { createRequire } from 'node:module';
+
+// Playwright may live in a global install (e.g. the cloud dev container); ESM ignores NODE_PATH.
+const require = createRequire(import.meta.url);
+const { chromium } = (() => {
+  for (const p of [
+    'playwright',
+    '/opt/node-tools/node_modules/playwright',
+    '/usr/local/lib/node_modules_global/playwright',
+  ]) {
+    try {
+      return require(p);
+    } catch {
+      /* try next */
+    }
+  }
+  throw new Error('playwright not found; pnpm add -D playwright');
+})();
+
+const outDir = process.argv[2] ?? 'smoke-out';
+const level = process.argv[3] ?? '1-1';
+mkdirSync(outDir, { recursive: true });
+
+const server = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], {
+  stdio: 'pipe',
+  detached: true,
+});
+await new Promise((resolve, reject) => {
+  server.stdout.on('data', (d) => d.toString().includes('4173') && resolve());
+  server.stderr.on('data', (d) => process.stderr.write(d));
+  server.on('exit', (code) => reject(new Error(`preview exited ${code}`)));
+  setTimeout(() => reject(new Error('preview timeout')), 20000);
+});
+
+const browser = await chromium.launch({
+  executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
+});
+try {
+  const page = await browser.newPage({ viewport: { width: 768, height: 720 } });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await page.goto(`http://localhost:4173/?level=${level}`);
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(outDir, '01-start.png') });
+  await page.keyboard.press('F1');
+  await page.keyboard.down('ArrowRight');
+  await page.keyboard.down('KeyX');
+  await page.waitForTimeout(1500);
+  await page.keyboard.down('KeyZ');
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: join(outDir, '02-jump.png') });
+  await page.keyboard.up('KeyZ');
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: join(outDir, '03-later.png') });
+  await page.keyboard.up('ArrowRight');
+  await page.keyboard.up('KeyX');
+  if (errors.length) {
+    console.error('page errors:\n' + errors.join('\n'));
+    process.exitCode = 1;
+  } else console.log(`ok: screenshots in ${outDir}`);
+} finally {
+  await browser.close();
+  server.kill();
+}
