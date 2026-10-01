@@ -1,5 +1,5 @@
 // Headless smoke test: serves the production build, drives the game with keyboard input
-// and writes screenshots. Usage: node tools/smoke/screenshot.mjs [outDir] [level]
+// and writes screenshots. Usage: node tools/smoke/screenshot.mjs [outDir] [level] [character]
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,7 +24,14 @@ const { chromium } = (() => {
 
 const outDir = process.argv[2] ?? 'smoke-out';
 const level = process.argv[3] ?? '1-1';
+const character = process.argv[4] ?? 'mario';
 mkdirSync(outDir, { recursive: true });
+
+// Hard stop so a hung page never wedges CI.
+const watchdog = setTimeout(() => {
+  console.error('smoke test timed out');
+  process.exit(2);
+}, 90000);
 
 const server = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], {
   stdio: 'pipe',
@@ -39,6 +46,7 @@ await new Promise((resolve, reject) => {
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
+  args: ['--no-proxy-server'], // localhost must not go through any configured proxy
 });
 try {
   const page = await browser.newPage({ viewport: { width: 768, height: 720 } });
@@ -51,7 +59,7 @@ try {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(400);
   await page.screenshot({ path: join(outDir, '00-select.png') });
-  await page.goto(`http://localhost:4173/?level=${level}`);
+  await page.goto(`http://localhost:4173/?level=${level}&char=${character}`);
   await page.waitForTimeout(800);
   await page.screenshot({ path: join(outDir, '01-intro.png') });
   await page.waitForTimeout(1800);
@@ -79,6 +87,13 @@ try {
     process.exitCode = 1;
   } else console.log(`ok: screenshots in ${outDir}`);
 } finally {
-  await browser.close();
-  server.kill();
+  // Closing can hang in sandboxed containers; never let cleanup block the exit.
+  await Promise.race([browser.close().catch(() => undefined), new Promise((r) => setTimeout(r, 3000))]);
+  try {
+    process.kill(-server.pid, 'SIGKILL'); // the whole preview process group
+  } catch {
+    server.kill('SIGKILL');
+  }
+  clearTimeout(watchdog);
+  process.exit(process.exitCode ?? 0);
 }

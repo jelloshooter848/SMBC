@@ -76,6 +76,7 @@ export const MARIO: CharacterDef = {
   movement: MARIO_PROFILE,
   damage: { kind: 'powerup', states: STATES },
   stomps: true,
+  crouches: true,
   canBreakBricks: (p) => p.powerState !== 'small',
   hitbox: (p) => (p.powerState === 'small' || p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
   sprite,

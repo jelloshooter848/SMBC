@@ -30,7 +30,7 @@ export function drawHud(
     if (dmg.hudStyle === 'hearts') {
       const full = Math.floor(player.hp / 2);
       const half = player.hp % 2;
-      const total = Math.ceil(dmg.max / 2);
+      const total = Math.ceil((player.scratch.maxHp ?? dmg.max) / 2);
       let s = '';
       for (let i = 0; i < total; i++) s += i < full ? 'h' : i === full && half ? 'f' : 'e';
       r.text(font, s, 24, 24);

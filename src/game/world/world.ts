@@ -417,6 +417,22 @@ export class World {
       }
     }
 
+    // Melee hitbox vs enemies (before contact so a sword hit beats a body hit).
+    if (p.activeMelee) {
+      for (const e of this.enemies) {
+        if (overlaps(p.activeMelee, e.body) && !p.scratch[`hit${e.id}`]) {
+          p.scratch[`hit${e.id}`] = 1;
+          const src: DamageSource = { kind: 'sword', amount: 1, owner: null, dirX: p.facing };
+          const r = e.hit(src, this);
+          if (r === 'kill' || r === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
+          else if (r === 'hp') this.audio.sfx('hurt-enemy');
+          if (r !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
+        }
+      }
+    } else {
+      for (const k of Object.keys(p.scratch)) if (k.startsWith('hit')) delete p.scratch[k];
+    }
+
     for (const e of this.entities) {
       if (!e.alive) continue;
       if (e instanceof Enemy) this.playerVsEnemy(e, input);
@@ -428,21 +444,6 @@ export class World {
       } else if (e instanceof Projectile) this.projectile(e);
       else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e);
       else if (e instanceof Axe && overlaps(pb, e.body)) this.startBossClear(e);
-    }
-
-    // Melee hitbox vs enemies.
-    if (p.activeMelee) {
-      for (const e of this.enemies) {
-        if (overlaps(p.activeMelee, e.body) && !p.scratch[`hit${e.id}`]) {
-          p.scratch[`hit${e.id}`] = 1;
-          const src: DamageSource = { kind: 'sword', amount: 1, owner: null, dirX: p.facing };
-          const r = e.hit(src, this);
-          if (r === 'kill' || r === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
-          else if (r === 'hp') this.audio.sfx('hurt-enemy');
-        }
-      }
-    } else {
-      for (const k of Object.keys(p.scratch)) if (k.startsWith('hit')) delete p.scratch[k];
     }
 
     // Enemy vs enemy: shells kill, walkers turn around.
@@ -478,14 +479,18 @@ export class World {
     const p = this.player;
     const pb = p.body;
     if (!overlaps(pb, e.body)) return;
+    // A sword/thrust that is touching this enemy handles it; no body contact damage.
+    if (p.activeMelee && overlaps(p.activeMelee, e.body)) return;
     if (p.star > 0) {
       const r = e.hit({ kind: 'star', amount: 1, owner: null, dirX: pb.x < e.body.x ? 1 : -1 }, this);
       if (r !== 'immune') this.addScore(e.scoreValue, e.body.x, e.body.y);
       return;
     }
+    // SMB1-style stomp test: the player was moving down this frame and came in near the enemy's top.
     const feet = pb.y + pb.h;
-    const falling = pb.vy >= 0;
-    const fromAbove = falling && feet - e.body.y <= px(10) && pb.prevBottom <= e.body.y + px(4);
+    const falling = p.fallSpeed > 0;
+    const eh = e.body.h;
+    const fromAbove = falling && feet - e.body.y <= eh * 0.8 && pb.prevBottom <= e.body.y + eh * 0.6;
     if (fromAbove && e.stompable) {
       if (p.def.stomps) {
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
@@ -550,9 +555,12 @@ export class World {
     const result = p.def.behaviour.onHurt(p, this);
     if (result === 'dead') this.kill();
     else if (result === 'hurt' && p.def.damage.kind === 'hp' && p.def.damage.knockback) {
-      p.body.vx = -fromDir * p.def.damage.knockback.vx;
+      p.body.vx = fromDir * p.def.damage.knockback.vx;
       p.body.vy = -p.def.damage.knockback.vy;
       p.body.onGround = false;
+      p.stun = 16;
+      p.sliding = 0;
+      p.activeMelee = null;
     }
   }
 

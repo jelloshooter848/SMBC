@@ -37,6 +37,8 @@ export interface CharacterBehaviour {
   contactDamage(p: Player, enemy: Enemy, world: World): DamageSource | null;
   /** Apply a hit to the player (already past invulnerability/star checks). */
   onHurt(p: Player, world: World): HurtResult;
+  /** The published melee hitbox connected with an enemy. */
+  onMeleeHit?(p: Player, enemy: Enemy, world: World): void;
 }
 
 export interface CharacterDef {
@@ -48,6 +50,8 @@ export interface CharacterDef {
   damage: DamageModel;
   /** Landing on an enemy kills it (Mario) or hurts the player (Link, Mega Man). */
   stomps: boolean;
+  /** Can duck with down (Mario when big, Link). */
+  crouches: boolean;
   canBreakBricks(p: Player): boolean;
   hitbox(p: Player): { w: number; h: number };
   sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec;

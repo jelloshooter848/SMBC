@@ -52,6 +52,10 @@ export class Player {
   sliding = 0;
   /** Not drawn (walked into the castle). */
   hidden = false;
+  /** Frames of knockback during which movement input is ignored. */
+  stun = 0;
+  /** Vertical speed before this frame's move (survives the landing reset; used for stomp checks). */
+  fallSpeed = 0;
   private runTimer = 0;
   private tier: JumpTier;
   private airCap: number;
@@ -119,8 +123,8 @@ export class Player {
     const running = wantRun || this.runTimer > 0;
     this.skidding = false;
 
-    // Crouching: only when big (taller than 16) and on the ground; can't walk while crouched.
-    const canCrouch = this.def.hitbox(this).h > 16 || this.crouching;
+    // Crouching: only when tall enough and on the ground; can't walk while crouched.
+    const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
     const wantCrouch = input.held('down') && canCrouch && b.onGround && this.sliding === 0;
     if (wantCrouch !== this.crouching) {
       this.crouching = wantCrouch;
@@ -128,7 +132,10 @@ export class Player {
     }
     if (this.crouching) dir = 0;
 
-    if (this.sliding > 0) {
+    if (this.stun > 0) {
+      this.stun--;
+      if (b.onGround) this.sinceGround = 0;
+    } else if (this.sliding > 0) {
       this.sliding--;
       b.vx = this.facing * (p.slide?.speed ?? 0);
       if (this.sliding === 0 || b.hitWall !== 0) this.endSlide();
@@ -169,10 +176,13 @@ export class Player {
       b.vy = 0;
     }
 
-    if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
-    else if (dir !== 0) this.facing = dir;
+    if (this.stun === 0) {
+      if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
+      else if (dir !== 0) this.facing = dir;
+    }
 
     moveX(b, map, velToSub(b.vx));
+    this.fallSpeed = b.onGround ? 0 : b.vy;
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
     moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
     if (b.onGround) {
@@ -244,7 +254,8 @@ export class Player {
 
   private updateAnim(dir: number): void {
     const b = this.body;
-    if (this.sliding > 0) this.anim = 'slide';
+    if (this.stun > 0) this.anim = 'hurt';
+    else if (this.sliding > 0) this.anim = 'slide';
     else if (this.attackTimer > 0) this.anim = 'attack';
     else if (!b.onGround) this.anim = 'jump';
     else if (this.crouching) this.anim = 'crouch';
