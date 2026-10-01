@@ -7,3 +7,7 @@ export const JUMP_BUFFER_FRAMES = 4;
 /** Entities spawn when their column is this many px past the right edge of the camera. */
 export const SPAWN_MARGIN_PX = 16;
 export const DESPAWN_MARGIN_PX = 64;
+/** Star invincibility length in frames (~10 s). */
+export const STAR_FRAMES = 600;
+/** Frames the "hurry up" warning triggers at. */
+export const HURRY_TIME = 100;

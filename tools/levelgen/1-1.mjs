@@ -49,6 +49,8 @@ b.row(121, 5, '===');
 b.row(128, 5, '=??=');
 b.row(129, 9, '==');
 b.stairUp(134, 4);
+b.column(138, 4);
+b.column(139, 4);
 b.stairDown(140, 4);
 // Screen 9: stairs around the last pit
 b.stairUp(148, 4);
@@ -71,7 +73,7 @@ b.set(129, 12, 'g');
 b.entity('decor-castle', 202, 12);
 b.zone('pipe 57 9 down -> 1-1-bonus 1,1 exit=none');
 b.zone('checkpoint 86');
-b.zone('exit 198 next=1-2');
+b.zone('exit 198 next=1-2-intro');
 b.zone('scrollStop 208');
 overworldDecor(b, W);
 

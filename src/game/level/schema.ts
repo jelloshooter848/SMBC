@@ -51,9 +51,11 @@ export interface LevelData {
   /** Player start, tile coords (feet on the tile below `y`). */
   start: { x: number; y: number };
   /** When set, the level starts with the "walk in from a pipe" animation. */
-  startMode: 'stand' | 'pipe-exit' | 'fall';
+  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk';
   /** Camera behaviour: 'scroll' (default) or 'locked' (bonus rooms). */
   camera: 'scroll' | 'locked';
+  /** Level to respawn in after dying here (sub-areas point at their main level). */
+  parent: string | null;
 }
 
 export function tileAtTiles(level: LevelData, tx: number, ty: number): number {

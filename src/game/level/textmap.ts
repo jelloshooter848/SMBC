@@ -166,6 +166,7 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     start: { x: start[0], y: start[1] },
     startMode: (header.startMode as LevelData['startMode']) ?? 'stand',
     camera: (header.camera as LevelData['camera']) ?? 'scroll',
+    parent: header.parent ?? null,
   };
   return level;
 }

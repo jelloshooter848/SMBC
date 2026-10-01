@@ -90,19 +90,19 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
     const row = tileAt(b.y);
     const center = tileAt(b.x + (b.w >> 1));
     let bumpCol = -1;
-    if (map.isSolid(center, row)) bumpCol = center;
-    else if (map.isSolid(left, row)) {
+    if (map.blocksFromBelow(center, row)) bumpCol = center;
+    else if (map.blocksFromBelow(left, row)) {
       const overlap = tileToSub(left + 1) - b.x;
       if (
         overlap <= CORNER_NUDGE &&
-        !map.isSolid(right, row) &&
+        !map.blocksFromBelow(right, row) &&
         !map.isSolid(left + 1, tileAt(b.y + b.h - 1))
       ) {
         b.x += overlap; // slip past the corner
         return;
       }
       bumpCol = left;
-    } else if (map.isSolid(right, row)) {
+    } else if (map.blocksFromBelow(right, row)) {
       const overlap = b.x + b.w - tileToSub(right);
       if (overlap <= CORNER_NUDGE && !map.isSolid(right - 1, tileAt(b.y + b.h - 1))) {
         b.x -= overlap;

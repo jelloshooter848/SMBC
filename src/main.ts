@@ -1,12 +1,18 @@
 import { FixedLoop } from '@engine/loop';
-import { SceneStack } from '@engine/scene';
 import { Viewport } from '@engine/viewport';
 import { CanvasRenderer } from '@engine/gfx/renderer';
 import { InputManager } from '@engine/input/input-manager';
 import { KeyboardSource } from '@engine/input/keyboard';
 import { GamepadSource } from '@engine/input/gamepad';
-import { LevelScene } from '@game/scenes/level';
+import { AssetRegistry } from '@engine/assets/registry';
+import { AudioManager } from '@engine/audio/audio-manager';
 import { getLevel } from '@content/levels';
+import { PALETTES, SPRITES } from '@content/sprites';
+import { songs } from '@content/music/songs';
+import { sfx } from '@content/sfx/sfx';
+import { Game } from '@game/scenes/game';
+import { CHARACTERS } from '@game/characters/registry';
+import { DEFAULT_ASSIST } from '@game/context';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
@@ -18,21 +24,42 @@ function boot(): void {
   input.addSource('keyboard', keyboard);
   if (GamepadSource.available()) input.addSource('gamepad', new GamepadSource());
 
-  const scenes = new SceneStack();
+  const assets = new AssetRegistry(PALETTES);
+  assets.defineAll(SPRITES);
+  const audio = new AudioManager();
+  audio.registerSongs(songs);
+  audio.registerSfx(sfx);
+  const unlock = () => audio.unlock();
+  window.addEventListener('keydown', unlock);
+  window.addEventListener('pointerdown', unlock);
+  window.addEventListener('gamepadconnected', unlock);
+
   let fps = 0;
   let frames = 0;
   let fpsAt = performance.now();
+  const game = new Game({
+    ctx: { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: false },
+    getLevel,
+    characters: CHARACTERS,
+    debugKeys: keyboard.down,
+    fps: () => fps,
+  });
   const params = new URLSearchParams(location.search);
-  const levelId = params.get('level') ?? '1-1';
-  scenes.push(new LevelScene(getLevel(levelId), { debugKeys: keyboard.down, fps: () => fps }));
+  const level = params.get('level');
+  if (level)
+    game.newGame(
+      CHARACTERS.find((c) => c.id === params.get('char')) ?? (CHARACTERS[0] as (typeof CHARACTERS)[0]),
+      level,
+    );
+  else game.showTitle();
 
   const loop = new FixedLoop({
     step() {
       input.beginFrame();
-      scenes.update(input.player(0));
+      game.scenes.update(input.player(0));
     },
     render() {
-      scenes.render(renderer);
+      game.scenes.render(renderer);
       viewport.present();
       frames++;
       const now = performance.now();

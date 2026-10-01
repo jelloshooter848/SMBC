@@ -1,0 +1,139 @@
+import type { Renderer } from '@engine/gfx/renderer';
+import { px, toPx, velToSub } from '@engine/math/units';
+import { Entity, type View } from '../entity';
+import { moveX } from '../body';
+import type { World } from '../../world/world';
+import {
+  BASIC_VULNERABILITY,
+  type DamageSource,
+  type Reaction,
+  type Vulnerability,
+} from '../../rules/damage';
+import { Corpse } from '../effects/effects';
+import type { Theme } from '../../level/schema';
+
+export function enemyPalette(theme: Theme): string {
+  switch (theme) {
+    case 'underground':
+      return 'enemies-underground';
+    case 'castle':
+      return 'enemies-castle';
+    case 'water':
+      return 'enemies-water';
+    default:
+      return 'enemies-overworld';
+  }
+}
+
+export abstract class Enemy extends Entity {
+  hp = 1;
+  vulnerability: Vulnerability = { ...BASIC_VULNERABILITY };
+  /** Touching this enemy (other than a stomp) hurts the player. */
+  contactHurts = true;
+  /** Can the player stomp this (false for things that are "not standing on anything" like fire bars). */
+  stompable = true;
+  /** Score for a non-combo kill (fireball, sword, buster). */
+  scoreValue = 100;
+  walkSpeed = 0x00800; // 0.5 px/f
+  fallsOffLedges = true;
+  /** Sprite frame drawn this frame (also used for the corpse). */
+  currentFrame = '';
+  sheet = 'enemies';
+  /** Set once the enemy has been on screen (SMB1 enemies don't activate until seen). */
+  activated = false;
+  /** Frames of being dead-but-visible (squash). */
+  protected dying = 0;
+
+  constructor(x: number, y: number, wPx: number, hPx: number) {
+    super(x, y, wPx, hPx);
+    this.body.vx = -this.walkSpeed;
+  }
+
+  palette(view: View): string {
+    return enemyPalette(view.theme);
+  }
+
+  /** Apply a damage source. Returns the reaction so the world can score it / hurt the attacker. */
+  hit(src: DamageSource, world: World): Reaction {
+    const reaction = this.vulnerability[src.kind] ?? 'immune';
+    switch (reaction) {
+      case 'kill':
+        if (src.kind === 'stomp') this.squash(world);
+        else this.flipOut(src, world);
+        break;
+      case 'flip':
+        this.flipOut(src, world);
+        break;
+      case 'hp':
+        this.hp -= src.amount;
+        if (this.hp <= 0) this.flipOut(src, world);
+        else this.onHpHit(src, world);
+        break;
+      case 'shell':
+        this.onShell(src, world);
+        break;
+      case 'immune':
+      case 'hurtAttacker':
+        break;
+    }
+    return reaction;
+  }
+
+  protected onHpHit(_src: DamageSource, _world: World): void {}
+  protected onShell(_src: DamageSource, _world: World): void {}
+
+  /** Stomped: default is to vanish immediately; walkers override to show a squash frame. */
+  protected squash(_world: World): void {
+    this.destroy();
+  }
+
+  /** Knocked off the screen upside down. */
+  protected flipOut(src: DamageSource, world: World): void {
+    const dir = src.dirX;
+    world.spawn(
+      new Corpse(
+        this.body.x,
+        this.body.y,
+        toPx(this.body.w),
+        toPx(this.body.h),
+        this.sheet,
+        enemyPalette(world.level.theme),
+        this.currentFrame,
+        dir,
+        true,
+        this.spriteOffsetX,
+        this.spriteOffsetY,
+      ),
+    );
+    this.destroy();
+  }
+
+  /** Walk, reverse at walls, optionally turn at ledges, and fall. */
+  protected patrol(world: World): void {
+    const b = this.body;
+    if (!this.fallsOffLedges && b.onGround) {
+      const aheadX = b.vx < 0 ? b.x - px(1) : b.x + b.w + px(1);
+      const tx = aheadX >> 12;
+      const ty = (b.y + b.h + px(1)) >> 12;
+      if (!world.map.isSolid(tx, ty) && world.map.collisionAt(tx, ty) !== 'top') b.vx = -b.vx;
+    }
+    moveX(b, world.map, velToSub(b.vx));
+    if (b.hitWall !== 0) b.vx = -b.hitWall * this.walkSpeed;
+    this.fall(world);
+    this.facing = b.vx > 0 ? 1 : -1;
+  }
+
+  /** Enemies turn around when they bump into each other. */
+  bounceOff(other: Enemy): void {
+    const a = this.body;
+    const b = other.body;
+    const aLeft = a.x + a.w / 2 < b.x + b.w / 2;
+    a.vx = (aLeft ? -1 : 1) * Math.abs(a.vx || this.walkSpeed);
+  }
+
+  render(r: Renderer, view: View): void {
+    if (!this.currentFrame) return;
+    const sheet = view.assets.sheet(this.sheet, this.palette(view));
+    r.sprite(sheet, this.currentFrame, this.screenX(view), this.screenY(), this.facing > 0);
+  }
+}

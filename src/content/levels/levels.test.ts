@@ -54,7 +54,7 @@ describe('World 1-1 landmarks', () => {
     expect(tile(l, 198, 12)).toBe(T.HARD);
     expect(tile(l, 198, 11)).toBe(T.FLAG_SHAFT);
     expect(tile(l, 198, 1)).toBe(T.FLAG_BALL);
-    expect(l.zones).toContainEqual({ kind: 'exit', x: 198, next: '1-2' });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 198, next: '1-2-intro' });
   });
   it('has 16 goombas and 1 koopa', () => {
     expect(l.entities.filter((e) => e.type === 'goomba')).toHaveLength(16);

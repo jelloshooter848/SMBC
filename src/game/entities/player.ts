@@ -1,44 +1,80 @@
 import type { InputFrame } from '@engine/input/input-manager';
+import type { AABB } from '@engine/math/aabb';
 import { px, sign, velToSub } from '@engine/math/units';
 import { JUMP_BUFFER_FRAMES } from '../constants';
 import { pickJumpTier, type JumpTier, type MovementProfile } from '../characters/profile';
+import type { CharacterDef } from '../characters/character';
 import { makeBody, moveX, moveY, type Body } from './body';
 import type { TileMap } from '../world/tilemap';
+import type { AudioSink } from '@engine/audio/audio-manager';
 
-export interface PlayerHitbox {
-  w: number;
-  h: number;
+export type PlayerAnim =
+  'idle' | 'walk' | 'skid' | 'jump' | 'crouch' | 'climb' | 'attack' | 'swim' | 'slide' | 'hurt';
+export type Transition = { kind: 'grow' | 'shrink'; t: number };
+
+export interface PlayerAudio {
+  audio: AudioSink;
 }
 
 /**
- * Shared player movement. Character-specific behaviour (attacks, damage) hangs off this in
- * later phases through CharacterBehaviour; the movement itself is data-driven by the profile.
+ * The shared player: movement is driven by the character's MovementProfile, everything else
+ * (power states, attacks, damage) by its CharacterDef/behaviour. Positions are subpixels.
  */
 export class Player {
   readonly body: Body;
   facing: -1 | 1 = 1;
   profile: MovementProfile;
+  def: CharacterDef;
+  /** 'small' | 'big' | 'fire' for power-up characters; 'full' for hp characters. */
+  powerState: string;
+  hp: number;
+  /** Frames of post-hit invulnerability (blinking). */
+  invuln = 0;
+  /** Frames of star power. */
+  star = 0;
+  dead = false;
+  /** While set, the game is paused for the grow/shrink flicker. */
+  transition: Transition | null = null;
+  /** When true, input is ignored and physics skipped (pipes, flagpole, death). */
+  frozen = false;
+  anim: PlayerAnim = 'idle';
+  walkFrame = 0;
+  private walkTick = 0;
+  attackTimer = 0;
+  /** Melee hitbox published for the frames an attack is active. */
+  activeMelee: AABB | null = null;
+  /** Consecutive stomps without landing. */
+  combo = 0;
+  crouching = false;
+  skidding = false;
+  jumping = false;
+  /** Sliding (Mega Man). */
+  sliding = 0;
+  /** Not drawn (walked into the castle). */
+  hidden = false;
   private runTimer = 0;
   private tier: JumpTier;
-  /** Air speed cap chosen at takeoff (SMB1 rule). */
   private airCap: number;
   private sinceGround = 0;
-  jumping = false;
-  skidding = false;
-  crouching = false;
-  /** Frames since the player became airborne via a jump (used by sprites). */
+  /** Frames since spawn, for sprite timing. */
   frame = 0;
-  /** When true the player is frozen (pipes, death, level clear animations). */
-  frozen = false;
+  /** Extra per-character scratch state (charge timers, etc.). */
+  scratch: Record<string, number> = {};
 
-  constructor(x: number, y: number, hitbox: PlayerHitbox, profile: MovementProfile) {
-    this.body = makeBody(x, y, hitbox.w, hitbox.h);
-    this.profile = profile;
-    this.tier = profile.jump[0] as JumpTier;
-    this.airCap = profile.maxWalk;
+  constructor(x: number, y: number, def: CharacterDef, powerState: string, hp: number) {
+    this.def = def;
+    this.profile = def.movement;
+    this.powerState = powerState;
+    this.hp = hp;
+    const hb = def.hitbox(this);
+    this.body = makeBody(x, y, hb.w, hb.h);
+    this.tier = this.profile.jump[0] as JumpTier;
+    this.airCap = this.profile.maxWalk;
   }
 
-  setHitbox(hb: PlayerHitbox): void {
+  /** Re-fit the hitbox to the current state, keeping the feet in place. */
+  refitHitbox(): void {
+    const hb = this.def.hitbox(this);
     const b = this.body;
     const bottom = b.y + b.h;
     b.w = px(hb.w);
@@ -46,19 +82,57 @@ export class Player {
     b.y = bottom - b.h;
   }
 
-  update(input: InputFrame, map: TileMap, onHeadBump?: (tx: number, ty: number) => void): void {
+  startTransition(kind: 'grow' | 'shrink'): void {
+    this.transition = { kind, t: 0 };
+    this.refitHitbox();
+  }
+
+  /** Advance a grow/shrink flicker. Returns true while it is still running. */
+  tickTransition(): boolean {
+    if (!this.transition) return false;
+    this.transition.t++;
+    if (this.transition.t >= 48) {
+      this.transition = null;
+      this.refitHitbox();
+      return false;
+    }
+    return true;
+  }
+
+  update(
+    input: InputFrame,
+    map: TileMap,
+    audio: AudioSink,
+    onHeadBump?: (tx: number, ty: number) => void,
+  ): void {
     this.frame++;
-    if (this.frozen) return;
+    if (this.invuln > 0) this.invuln--;
+    if (this.star > 0) this.star--;
+    if (this.attackTimer > 0) this.attackTimer--;
+    if (this.frozen || this.dead) return;
     const p = this.profile;
     const b = this.body;
-    const dir = input.dirX;
+    let dir = input.dirX;
     const wantRun = p.canRun && input.held('attack');
     if (wantRun) this.runTimer = p.runTimerFrames;
     else if (this.runTimer > 0) this.runTimer--;
     const running = wantRun || this.runTimer > 0;
     this.skidding = false;
 
-    if (b.onGround) {
+    // Crouching: only when big (taller than 16) and on the ground; can't walk while crouched.
+    const canCrouch = this.def.hitbox(this).h > 16 || this.crouching;
+    const wantCrouch = input.held('down') && canCrouch && b.onGround && this.sliding === 0;
+    if (wantCrouch !== this.crouching) {
+      this.crouching = wantCrouch;
+      this.refitHitbox();
+    }
+    if (this.crouching) dir = 0;
+
+    if (this.sliding > 0) {
+      this.sliding--;
+      b.vx = this.facing * (p.slide?.speed ?? 0);
+      if (this.sliding === 0 || b.hitWall !== 0) this.endSlide();
+    } else if (b.onGround) {
       this.sinceGround = 0;
       this.groundMove(dir, running);
     } else {
@@ -66,39 +140,63 @@ export class Player {
       this.airMove(dir);
     }
 
-    // Jump: from the ground, or within the coyote window (assist), using the jump buffer.
-    const canJump = b.onGround || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0);
+    const canJump =
+      this.sliding === 0 &&
+      (b.onGround || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
     if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
-      input.consumeJumpBuffer();
-      this.tier = pickJumpTier(p, b.vx);
-      b.vy = -this.tier.initial;
-      b.onGround = false;
-      this.jumping = true;
-      this.airCap = Math.abs(b.vx) >= p.maxWalk ? p.maxRun : p.maxWalk;
+      if (p.slide && input.held('down') && b.onGround) {
+        input.consumeJumpBuffer();
+        this.startSlide();
+      } else {
+        input.consumeJumpBuffer();
+        this.tier = pickJumpTier(p, b.vx);
+        b.vy = -this.tier.initial;
+        b.onGround = false;
+        this.jumping = true;
+        this.airCap = Math.abs(b.vx) >= p.maxWalk ? p.maxRun : p.maxWalk;
+        audio.sfx(this.def.jumpSfx(this));
+      }
     }
 
-    // Gravity. Hold-to-rise uses the tier's hold gravity; 'cut' kills upward speed on release.
     if (!b.onGround) {
       if (p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
       const holding = p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0;
       b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
       if (b.vy > p.maxFall) b.vy = p.fallReset;
     } else {
-      // Walking off a ledge: pick a tier for the fall gravity from the current speed.
       this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
       b.vy = 0;
     }
 
-    if (b.vx !== 0) this.facing = sign(b.vx) as -1 | 1;
+    if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
     else if (dir !== 0) this.facing = dir;
 
     moveX(b, map, velToSub(b.vx));
-    // Probe downward at least one subpixel so standing on ground keeps onGround true.
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
-    const opts = onHeadBump ? { onHeadBump } : {};
-    moveY(b, map, dy, opts);
-    if (b.onGround) this.jumping = false;
+    moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
+    if (b.onGround) {
+      this.jumping = false;
+      this.combo = 0;
+    }
+    this.updateAnim(dir);
+  }
+
+  private startSlide(): void {
+    const s = this.profile.slide;
+    if (!s) return;
+    this.sliding = s.frames;
+    this.crouching = false;
+    this.refitHitbox();
+    const b = this.body;
+    const bottom = b.y + b.h;
+    b.h = px(s.hitboxH);
+    b.y = bottom - b.h;
+  }
+
+  private endSlide(): void {
+    this.sliding = 0;
+    this.refitHitbox();
   }
 
   private groundMove(dir: -1 | 0 | 1, running: boolean): void {
@@ -110,7 +208,6 @@ export class Player {
       return;
     }
     if (dir === 0) {
-      // Release: decelerate to a stop.
       const s = sign(b.vx);
       const a = Math.abs(b.vx) - p.releaseDecel;
       b.vx = a < p.minWalk ? 0 : s * a;
@@ -118,7 +215,6 @@ export class Player {
     }
     if (b.vx === 0) b.vx = dir * p.minWalk;
     else if (sign(b.vx) !== dir) {
-      // Skid against the current motion.
       this.skidding = true;
       const s = sign(b.vx);
       const a = Math.abs(b.vx) - p.skidDecel;
@@ -127,7 +223,7 @@ export class Player {
     }
     const accel = running ? p.runAccel : p.walkAccel;
     let a = Math.abs(b.vx) + accel;
-    if (a > cap) a = Math.max(cap, Math.abs(b.vx) - p.releaseDecel); // ease down to the cap
+    if (a > cap) a = Math.max(cap, Math.abs(b.vx) - p.releaseDecel);
     b.vx = dir * a;
   }
 
@@ -142,12 +238,52 @@ export class Player {
     const cap = p.airControl === 'smb1' ? this.airCap : p.maxRun;
     const accel = Math.abs(b.vx) >= p.maxWalk ? p.runAccel : p.walkAccel;
     if (b.vx === 0) b.vx = dir * p.minWalk;
-    else if (sign(b.vx) !== dir) {
-      // Turning in the air: no skid, just accelerate against the motion.
-      b.vx += dir * accel;
+    else if (sign(b.vx) !== dir) b.vx += dir * accel;
+    else b.vx = dir * Math.min(Math.abs(b.vx) + accel, Math.max(cap, Math.abs(b.vx)));
+  }
+
+  private updateAnim(dir: number): void {
+    const b = this.body;
+    if (this.sliding > 0) this.anim = 'slide';
+    else if (this.attackTimer > 0) this.anim = 'attack';
+    else if (!b.onGround) this.anim = 'jump';
+    else if (this.crouching) this.anim = 'crouch';
+    else if (this.skidding) this.anim = 'skid';
+    else if (b.vx !== 0 || dir !== 0) {
+      this.anim = 'walk';
+      // Walk cycle speed scales with velocity like SMB1 (faster at run speed).
+      const speed = Math.abs(b.vx);
+      const rate = speed >= this.profile.maxRun - 0x100 ? 2 : speed >= this.profile.maxWalk ? 3 : 5;
+      if (++this.walkTick >= rate) {
+        this.walkTick = 0;
+        this.walkFrame = (this.walkFrame + 1) % 3;
+      }
     } else {
-      const a = Math.min(Math.abs(b.vx) + accel, Math.max(cap, Math.abs(b.vx)));
-      b.vx = dir * a;
+      this.anim = 'idle';
+      this.walkFrame = 0;
     }
+  }
+
+  /** Bounce after a stomp. Holding jump bounces higher (uses the hold-gravity mechanic). */
+  stompBounce(): void {
+    const b = this.body;
+    b.vy = -0x04000;
+    this.tier = pickJumpTier(this.profile, b.vx);
+    this.jumping = true;
+    b.onGround = false;
+  }
+
+  get feetY(): number {
+    return this.body.y + this.body.h;
+  }
+  get centerX(): number {
+    return this.body.x + (this.body.w >> 1);
+  }
+  get invulnerable(): boolean {
+    return this.invuln > 0 || this.star > 0 || this.transition !== null || this.dead;
+  }
+  /** Blink while invulnerable after a hit. */
+  visible(frame: number): boolean {
+    return this.invuln === 0 || (frame & 2) === 0;
   }
 }

@@ -36,4 +36,11 @@ export class TileMap {
   isSolid(tx: number, ty: number): boolean {
     return this.collisionAt(tx, ty) === 'solid';
   }
+
+  /** Solid when moving upward: hidden blocks only exist for heads. */
+  blocksFromBelow(tx: number, ty: number): boolean {
+    if (this.isSolid(tx, ty)) return true;
+    if (!this.inBounds(tx, ty)) return false;
+    return tileDef(this.tiles[ty * this.width + tx] as number).block?.kind === 'hidden';
+  }
 }

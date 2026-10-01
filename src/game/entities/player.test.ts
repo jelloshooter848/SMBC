@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { px, toPx, velToPxf } from '@engine/math/units';
 import { Player } from './player';
-import { MARIO_PROFILE } from '../characters/mario/profile';
+import { MARIO } from '../characters/mario';
+import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { TileMap } from '../world/tilemap';
 import { parseTextMap } from '../level/textmap';
 import type { Action } from '@engine/input/actions';
@@ -32,7 +33,7 @@ function fakeInput(held: Set<Action>, pressedJump = false): InputFrame {
 }
 
 function standingPlayer(x = 2): Player {
-  const p = new Player(px(x * 16), px(13 * 16 - 16), { w: 12, h: 16 }, MARIO_PROFILE);
+  const p = new Player(px(x * 16), px(13 * 16 - 16), MARIO, 'small', 0);
   p.body.onGround = true;
   return p;
 }
@@ -41,7 +42,7 @@ describe('Mario physics', () => {
   it('stands on the ground and does not sink', () => {
     const map = flatMap();
     const p = standingPlayer();
-    for (let i = 0; i < 10; i++) p.update(fakeInput(new Set()), map);
+    for (let i = 0; i < 10; i++) p.update(fakeInput(new Set()), map, NULL_AUDIO);
     expect(p.body.onGround).toBe(true);
     expect(toPx(p.body.y)).toBe(13 * 16 - 16);
   });
@@ -49,9 +50,9 @@ describe('Mario physics', () => {
   it('reaches max walk speed (1.5625 px/f) and max run speed (2.5625 px/f)', () => {
     const map = flatMap();
     const p = standingPlayer();
-    for (let i = 0; i < 120; i++) p.update(fakeInput(new Set(['right'])), map);
+    for (let i = 0; i < 120; i++) p.update(fakeInput(new Set(['right'])), map, NULL_AUDIO);
     expect(velToPxf(p.body.vx)).toBeCloseTo(1.5625, 3);
-    for (let i = 0; i < 120; i++) p.update(fakeInput(new Set(['right', 'attack'])), map);
+    for (let i = 0; i < 120; i++) p.update(fakeInput(new Set(['right', 'attack'])), map, NULL_AUDIO);
     expect(velToPxf(p.body.vx)).toBeCloseTo(2.5625, 3);
   });
 
@@ -62,7 +63,7 @@ describe('Mario physics', () => {
     let minY = startY;
     let first = true;
     for (let i = 0; i < 80; i++) {
-      p.update(fakeInput(new Set(['jump']), first), map);
+      p.update(fakeInput(new Set(['jump']), first), map, NULL_AUDIO);
       first = false;
       minY = Math.min(minY, toPx(p.body.y));
     }
@@ -78,7 +79,7 @@ describe('Mario physics', () => {
     const startY = toPx(p.body.y);
     let minY = startY;
     for (let i = 0; i < 80; i++) {
-      p.update(fakeInput(new Set(i < 3 ? ['jump'] : []), i === 0), map);
+      p.update(fakeInput(new Set(i < 3 ? ['jump'] : []), i === 0), map, NULL_AUDIO);
       minY = Math.min(minY, toPx(p.body.y));
     }
     expect(startY - minY).toBeLessThan(40);
@@ -87,12 +88,12 @@ describe('Mario physics', () => {
   it('running jump apex is about 5 tiles (80 px)', () => {
     const map = flatMap();
     const p = standingPlayer(0);
-    for (let i = 0; i < 90; i++) p.update(fakeInput(new Set(['right', 'attack'])), map);
+    for (let i = 0; i < 90; i++) p.update(fakeInput(new Set(['right', 'attack'])), map, NULL_AUDIO);
     const startY = toPx(p.body.y);
     let minY = startY;
     let first = true;
     for (let i = 0; i < 90; i++) {
-      p.update(fakeInput(new Set(['right', 'attack', 'jump']), first), map);
+      p.update(fakeInput(new Set(['right', 'attack', 'jump']), first), map, NULL_AUDIO);
       first = false;
       minY = Math.min(minY, toPx(p.body.y));
     }
@@ -104,7 +105,7 @@ describe('Mario physics', () => {
   it('stops at walls', () => {
     const map = flatMap();
     const p = standingPlayer(36);
-    for (let i = 0; i < 120; i++) p.update(fakeInput(new Set(['right', 'attack'])), map);
+    for (let i = 0; i < 120; i++) p.update(fakeInput(new Set(['right', 'attack'])), map, NULL_AUDIO);
     expect(toPx(p.body.x) + toPx(p.body.w)).toBe(40 * 16);
     expect(p.body.vx).toBe(0);
   });
@@ -116,7 +117,7 @@ describe('Mario physics', () => {
     let bumped: [number, number] | null = null;
     let first = true;
     for (let i = 0; i < 40; i++) {
-      p.update(fakeInput(new Set(['jump']), first), map, (tx, ty) => (bumped = [tx, ty]));
+      p.update(fakeInput(new Set(['jump']), first), map, NULL_AUDIO, (tx, ty) => (bumped = [tx, ty]));
       first = false;
     }
     expect(bumped).toEqual([10, 8]);
@@ -125,8 +126,8 @@ describe('Mario physics', () => {
   it('skids when reversing at speed', () => {
     const map = flatMap();
     const p = standingPlayer();
-    for (let i = 0; i < 60; i++) p.update(fakeInput(new Set(['right'])), map);
-    p.update(fakeInput(new Set(['left'])), map);
+    for (let i = 0; i < 60; i++) p.update(fakeInput(new Set(['right'])), map, NULL_AUDIO);
+    p.update(fakeInput(new Set(['left'])), map, NULL_AUDIO);
     expect(p.skidding).toBe(true);
     expect(p.body.vx).toBeGreaterThan(0);
   });

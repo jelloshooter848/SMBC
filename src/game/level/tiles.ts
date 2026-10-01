@@ -68,6 +68,8 @@ export const T = {
   CASTLE_BRICK: def('castle-brick', 'solid'),
   WATER: def('water', 'none'),
   CLOUD_BLOCK: def('cloud-block', 'solid'),
+  /** Invisible solid placeholder while a block-bump effect animates the real tile. */
+  BUMPING: def('bumping', 'solid'),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
