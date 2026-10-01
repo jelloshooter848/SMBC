@@ -9,7 +9,15 @@ export default tseslint.config(
   prettier,
   {
     files: ['tools/**/*.mjs', 'tools/**/*.ts'],
-    languageOptions: { globals: { console: 'readonly', process: 'readonly', URL: 'readonly' } },
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+      },
+    },
   },
   {
     rules: {
