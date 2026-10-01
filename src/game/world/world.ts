@@ -1,4 +1,5 @@
 import type { InputFrame } from '@engine/input/input-manager';
+import { NO_INPUT } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
 import { px, TILE, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
@@ -27,6 +28,7 @@ import { Lift } from '../entities/objects/lift';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser } from '../entities/enemies/bowser';
 import { Axe } from '../entities/objects/axe';
+import type { CharacterDef } from '../characters/character';
 
 export type WorldEvent =
   | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: PipeDir | 'none' } }
@@ -42,13 +44,34 @@ export interface WorldStart {
 }
 
 type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done';
-type PipeAnim = { dir: PipeDir; t: number; frames: number; target: WorldEvent & { type: 'pipe' } };
+type PipeAnim = {
+  player: Player;
+  dir: PipeDir;
+  t: number;
+  frames: number;
+  target: WorldEvent & { type: 'pipe' };
+};
 
-/** One loaded level: tiles, camera, player, entities and the rules that tie them together. */
+/** Synthetic input for auto-walk intros: hold right; the pipe check triggers on touch. */
+const AUTO_WALK_INPUT: InputFrame = {
+  held: (a) => a === 'right',
+  pressed: () => false,
+  released: () => false,
+  bufferedJump: () => false,
+  consumeJumpBuffer: () => undefined,
+  dirX: 1,
+};
+
+const COOP_RESPAWN_FRAMES = 120;
+
+/**
+ * One loaded level: tiles, camera, players, entities and the rules that tie them together.
+ * Supports one or two players; with two, deaths respawn from a shared life pool.
+ */
 export class World {
   readonly map: TileMap;
   readonly camera: Camera;
-  readonly player: Player;
+  readonly players: Player[] = [];
   readonly rng: Rng;
   readonly entities: Entity[] = [];
   readonly events: WorldEvent[] = [];
@@ -62,10 +85,12 @@ export class World {
   private spawnIndex = 0;
   private readonly spawns: EntitySpawn[];
   private readonly coinBlocks = new Map<string, { left: number; until: number }>();
-  private clear: { phase: ClearPhase; t: number; pole: Flagpole; walkTo: number } | null = null;
+  private clear: { phase: ClearPhase; t: number; pole: Flagpole; walkTo: number; player: Player } | null =
+    null;
   private pipeAnim: PipeAnim | null = null;
-  private pipeExit: { dir: PipeDir; t: number; frames: number } | null = null;
-  private deathTimer = 0;
+  private pipeExit: { t: number; frames: number } | null = null;
+  private readonly deathTimers = new Map<Player, number>();
+  private readonly respawnTimers = new Map<Player, number>();
   private checkpointSent = false;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
   bossClear: { t: number } | null = null;
@@ -92,29 +117,32 @@ export class World {
     const sx = start.x ?? level.start.x;
     const sy = start.y ?? level.start.y;
     const mode = start.mode ?? level.startMode;
-    const def = state.character;
-    const tmp = new Player(0, 0, def, state.powerState, state.hp);
-    const hb = def.hitbox(tmp);
-    const feet = tileToSub(sy + 1);
-    this.player = new Player(
-      tileToSub(sx) + px((16 - hb.w) >> 1),
-      feet - px(hb.h),
-      def,
-      state.powerState,
-      state.hp,
-    );
-    this.player.profile = { ...def.movement, coyoteFrames: ctx.assist.coyoteFrames };
-    if (mode === 'fall') {
-      this.player.body.y = px(-32);
-    } else if (mode === 'pipe-exit') {
-      // Start inside the pipe below (centred on the 2-wide pipe) and rise out.
-      this.player.body.x += px(8);
-      this.player.body.y = feet + px(8);
-      this.player.frozen = true;
-      this.pipeExit = { dir: 'up', t: 0, frames: hb.h + 8 };
-    } else if (mode === 'autowalk') {
-      this.autoWalk = true;
-    }
+    const defs: [CharacterDef, string, number][] = [[state.character, state.powerState, state.hp]];
+    if (state.character2) defs.push([state.character2, state.powerState2, state.hp2]);
+    defs.forEach(([def, power, hp], i) => {
+      const tmp = new Player(0, 0, def, power, hp);
+      const hb = def.hitbox(tmp);
+      const feet = tileToSub(sy + 1);
+      const p = new Player(
+        tileToSub(sx) + px((16 - hb.w) >> 1) + px(i * 20),
+        feet - px(hb.h),
+        def,
+        power,
+        hp,
+      );
+      p.profile = { ...def.movement, coyoteFrames: ctx.assist.coyoteFrames };
+      p.index = i;
+      if (mode === 'fall') p.body.y = px(-32) - px(i * 24);
+      else if (mode === 'pipe-exit') {
+        // Start inside the pipe below (centred on the 2-wide pipe) and rise out; P2 arrives a moment later.
+        p.body.x += px(8) - px(i * 20);
+        p.body.y = feet + px(8);
+        p.frozen = true;
+        if (i > 0) p.hidden = true;
+        this.pipeExit = { t: 0, frames: hb.h + 8 };
+      } else if (mode === 'autowalk') this.autoWalk = true;
+      this.players.push(p);
+    });
     this.camera.snapTo(this.player.body.x);
 
     // Static objects from the tile grid.
@@ -124,7 +152,6 @@ export class World {
         const id = this.map.get(tx, ty);
         if (id === T.FLAG_BALL) ballRow = ty;
         if (id === T.FLAG_SHAFT && ballRow >= 0) {
-          // find the base: first non-shaft tile below
           let base = ty;
           while (this.map.get(tx, base) === T.FLAG_SHAFT) base++;
           const pole = new Flagpole(tx, ballRow, base);
@@ -135,6 +162,35 @@ export class World {
       }
     }
     for (const d of level.decor) this.entities.push(new Decoration(d.kind, d.x, d.y));
+  }
+
+  /** Player 1 (also what enemies and the camera use as the primary target in solo play). */
+  get player(): Player {
+    return this.players[0] as Player;
+  }
+
+  get coop(): boolean {
+    return this.players.length > 1;
+  }
+
+  /** Players still in the level (not dead, not eliminated). */
+  activePlayers(): Player[] {
+    return this.players.filter((p) => !p.dead && !p.out);
+  }
+
+  /** Closest live player to an x position (enemies use this to aim and hide). */
+  nearestPlayer(x: number): Player {
+    let best = this.player;
+    let bd = Infinity;
+    for (const p of this.players) {
+      if (p.dead || p.out) continue;
+      const d = Math.abs(p.centerX - x);
+      if (d < bd) {
+        bd = d;
+        best = p;
+      }
+    }
+    return best;
   }
 
   /* ---------- Spawning ---------- */
@@ -149,7 +205,6 @@ export class World {
       const s = this.spawns[this.spawnIndex] as EntitySpawn;
       if (tileToSub(s.x) > limit) break;
       this.spawnIndex++;
-      // Things spawning behind the camera at level start are skipped like SMB1 unless they're static.
       const e = this.makeEntity(s);
       if (e) this.entities.push(e);
     }
@@ -198,7 +253,7 @@ export class World {
   countProjectiles(owner: Entity | Player, kind: string): number {
     let n = 0;
     for (const e of this.entities)
-      if (e instanceof Projectile && e.owner === (owner as Entity) && e.kind === kind && e.alive) n++;
+      if (e instanceof Projectile && e.owner === owner && e.kind === kind && e.alive) n++;
     return n;
   }
 
@@ -228,7 +283,6 @@ export class World {
     this.spawn(new ScorePopup(x, y, '1UP'));
   }
 
-  /** Score a stomp/shell hit using the running combo; returns the text for the popup. */
   private comboHit(combo: number, x: number, y: number): void {
     const s = comboScore(combo);
     if (s === '1up') this.addLife(x, y);
@@ -237,46 +291,74 @@ export class World {
 
   /* ---------- Update ---------- */
 
-  update(input: InputFrame): void {
+  update(inputs: InputFrame[]): void {
     this.frame++;
-    const p = this.player;
 
-    if (p.transition) {
-      // Growth/shrink pauses the world (SMB1 does too).
-      p.tickTransition();
-      return;
-    }
-    if (p.dead) return this.updateDeath();
+    // Growth/shrink pauses the world (SMB1 does too).
+    let transitioning = false;
+    for (const p of this.players) if (p.transition) transitioning = p.tickTransition() || transitioning;
+    if (transitioning) return;
     if (this.clear) return this.updateClear();
     if (this.bossClear) return this.updateBossClear();
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
 
+    for (const p of this.players) if (p.dead) this.updateDeath(p);
+    if (this.activePlayers().length === 0) return;
+
     this.tickTimer();
     this.spawnPending();
 
-    if (this.autoWalk) input = AUTO_WALK_INPUT;
-    p.update(input, this.map, this.audio, (tx, ty) => this.hitBlock(tx, ty));
-    p.def.behaviour.update(p, input, this);
-
-    if (p.body.x < this.camera.x) {
-      p.body.x = this.camera.x;
-      if (p.body.vx < 0) p.body.vx = 0;
-    }
-    if (p.body.x + p.body.w > tileToSub(this.level.width)) {
-      p.body.x = tileToSub(this.level.width) - p.body.w;
-    }
+    this.players.forEach((p, i) => {
+      if (p.dead || p.out) return;
+      const respawn = this.respawnTimers.get(p);
+      if (respawn !== undefined) {
+        // Dropping back in: fall from the top with brief invulnerability.
+        if (respawn > 0) {
+          this.respawnTimers.set(p, respawn - 1);
+          return;
+        }
+        this.respawnTimers.delete(p);
+      }
+      let input = inputs[i] ?? NO_INPUT;
+      if (this.autoWalk) input = AUTO_WALK_INPUT;
+      p.update(input, this.map, this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
+      p.def.behaviour.update(p, input, this);
+      if (p.body.x < this.camera.x) {
+        p.body.x = this.camera.x;
+        if (p.body.vx < 0) p.body.vx = 0;
+      }
+      const rightEdge = Math.min(tileToSub(this.level.width), this.camera.x + px(SCREEN_W));
+      if (p.body.x + p.body.w > rightEdge && this.coop && p !== this.rightmost())
+        p.body.x = rightEdge - p.body.w;
+      if (p.body.x + p.body.w > tileToSub(this.level.width))
+        p.body.x = tileToSub(this.level.width) - p.body.w;
+    });
 
     for (const e of this.entities) if (e.alive) e.update(this);
     this.resolveLifts();
-    this.collisions(input);
-    this.checkPipes(input);
+    for (const p of this.activePlayers()) this.collisions(p);
+    this.enemyVsEnemy();
+    for (const [i, p] of this.players.entries()) {
+      if (p.dead || p.out) continue;
+      this.checkPipes(p, this.autoWalk ? AUTO_WALK_INPUT : (inputs[i] ?? NO_INPUT));
+      if (this.pipeAnim) break;
+    }
     this.checkZones();
 
-    this.camera.follow(p.body.x);
-    if (p.star === 1) this.audio.playMusic(this.level.music);
-    if (toPx(p.body.y) > SCREEN_H + 8 && !p.dead) this.kill();
+    const lead = this.rightmost();
+    if (lead) this.camera.follow(lead.body.x);
+    for (const p of this.players) {
+      if (p.star === 1) this.audio.playMusic(this.level.music);
+      if (toPx(p.body.y) > SCREEN_H + 8 && !p.dead && !p.out) this.kill(p);
+    }
     this.cull();
+  }
+
+  private rightmost(): Player | null {
+    let best: Player | null = null;
+    for (const p of this.activePlayers()) if (!best || p.body.x > best.body.x) best = p;
+    return best;
   }
 
   private tickTimer(): void {
@@ -293,7 +375,7 @@ export class World {
       }
       if (this.time <= 0) {
         this.time = 0;
-        this.kill();
+        for (const p of this.activePlayers()) this.kill(p);
       }
     }
   }
@@ -306,23 +388,20 @@ export class World {
         this.entities.splice(i, 1);
         continue;
       }
-      if (e.despawnMargin !== null && e.body.x + e.body.w < left - px(e.despawnMargin)) {
+      if (e.despawnMargin !== null && e.body.x + e.body.w < left - px(e.despawnMargin))
         this.entities.splice(i, 1);
-      }
     }
   }
 
   /* ---------- Blocks & tiles ---------- */
 
-  private hitBlock(tx: number, ty: number): void {
+  private hitBlock(tx: number, ty: number, p: Player): void {
     const id = this.map.get(tx, ty);
     const def = tileDef(id);
     if (!def.block) {
       this.audio.sfx('bump');
       return;
     }
-    const p = this.player;
-    // Anything standing on the block gets knocked.
     const top = tileToSub(ty);
     for (const e of this.entities) {
       if (!e.alive || !(e instanceof Enemy || e instanceof PowerUp)) continue;
@@ -398,8 +477,7 @@ export class World {
 
   /* ---------- Collisions ---------- */
 
-  private collisions(input: InputFrame): void {
-    const p = this.player;
+  private collisions(p: Player): void {
     const pb = p.body;
     // Coins and hazards in the tile grid.
     const l = tileAt(pb.x);
@@ -413,7 +491,7 @@ export class World {
           this.map.set(tx, ty, T.AIR);
           this.addCoin();
           this.addScore(200);
-        } else if (def.hazard && !this.assist.invulnerable) this.kill();
+        } else if (def.hazard && !this.assist.invulnerable) this.kill(p);
       }
     }
 
@@ -423,10 +501,10 @@ export class World {
         if (overlaps(p.activeMelee, e.body) && !p.scratch[`hit${e.id}`]) {
           p.scratch[`hit${e.id}`] = 1;
           const src: DamageSource = { kind: 'sword', amount: 1, owner: null, dirX: p.facing };
-          const r = e.hit(src, this);
-          if (r === 'kill' || r === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
-          else if (r === 'hp') this.audio.sfx('hurt-enemy');
-          if (r !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
+          const res = e.hit(src, this);
+          if (res === 'kill' || res === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
+          else if (res === 'hp') this.audio.sfx('hurt-enemy');
+          if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
         }
       }
     } else {
@@ -435,18 +513,20 @@ export class World {
 
     for (const e of this.entities) {
       if (!e.alive) continue;
-      if (e instanceof Enemy) this.playerVsEnemy(e, input);
+      if (e instanceof Enemy) this.playerVsEnemy(p, e);
       else if (e instanceof PowerUp) {
         if (overlaps(pb, e.body)) {
           e.destroy();
           p.def.behaviour.onPowerUp(p, e.item, this);
         }
-      } else if (e instanceof Projectile) this.projectile(e);
-      else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e);
-      else if (e instanceof Axe && overlaps(pb, e.body)) this.startBossClear(e);
+      } else if (e instanceof Projectile) this.projectile(p, e);
+      else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e, p);
+      else if (e instanceof Axe && overlaps(pb, e.body)) this.startBossClear(e, p);
+      if (p.dead || this.clear || this.bossClear) return;
     }
+  }
 
-    // Enemy vs enemy: shells kill, walkers turn around.
+  private enemyVsEnemy(): void {
     const enemies = this.enemies;
     for (let i = 0; i < enemies.length; i++) {
       const a = enemies[i] as Enemy;
@@ -464,9 +544,8 @@ export class World {
           const shell = (aShell ? a : c) as Koopa;
           const victim = aShell ? c : a;
           const res = victim.hit(shell.shellDamage(), this);
-          if (res === 'kill' || res === 'flip' || res === 'shell') {
+          if (res === 'kill' || res === 'flip' || res === 'shell')
             this.comboHit(shell.shellCombo++, victim.body.x, victim.body.y);
-          }
         } else if (a.body.onGround && c.body.onGround && !(a instanceof Piranha) && !(c instanceof Piranha)) {
           a.bounceOff(c);
           c.bounceOff(a);
@@ -475,8 +554,7 @@ export class World {
     }
   }
 
-  private playerVsEnemy(e: Enemy, _input: InputFrame): void {
-    const p = this.player;
+  private playerVsEnemy(p: Player, e: Enemy): void {
     const pb = p.body;
     if (!overlaps(pb, e.body)) return;
     // A sword/thrust that is touching this enemy handles it; no body contact damage.
@@ -494,14 +572,13 @@ export class World {
     if (fromAbove && e.stompable) {
       if (p.def.stomps) {
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
-        if (r === 'hurtAttacker') return this.hurtPlayer();
+        if (r === 'hurtAttacker') return this.hurtPlayer(p);
         if (r !== 'immune') {
           this.comboHit(p.combo++, e.body.x, e.body.y - px(8));
           p.stompBounce();
         }
         return;
       }
-      // Non-stompers still bounce off resting shells by kicking them; otherwise they get hurt.
     }
     if (e instanceof Koopa && e.state === 'shell') {
       const dir: -1 | 1 = p.centerX < e.body.x + e.body.w / 2 ? 1 : -1;
@@ -516,17 +593,16 @@ export class World {
       if (r === 'kill' || r === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
       return;
     }
-    this.hurtPlayer(e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
+    this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
   }
 
-  private projectile(pr: Projectile): void {
-    const p = this.player;
+  private projectile(p: Player, pr: Projectile): void {
     if (pr.spec.hitsPlayer && overlaps(pr.body, p.body)) {
-      this.hurtPlayer(pr.body.vx > 0 ? 1 : -1);
+      this.hurtPlayer(p, pr.body.vx > 0 ? 1 : -1);
       if (!pr.spec.pierce) pr.destroy();
       return;
     }
-    if (!pr.spec.hitsEnemies) return;
+    if (!pr.spec.hitsEnemies || pr.owner !== p) return;
     for (const e of this.enemies) {
       if (!overlaps(pr.body, e.body)) continue;
       const src: DamageSource = {
@@ -549,11 +625,10 @@ export class World {
     }
   }
 
-  hurtPlayer(fromDir: -1 | 1 = 1): void {
-    const p = this.player;
+  hurtPlayer(p: Player, fromDir: -1 | 1 = 1): void {
     if (p.invulnerable || this.assist.invulnerable) return;
     const result = p.def.behaviour.onHurt(p, this);
-    if (result === 'dead') this.kill();
+    if (result === 'dead') this.kill(p);
     else if (result === 'hurt' && p.def.damage.kind === 'hp' && p.def.damage.knockback) {
       p.body.vx = fromDir * p.def.damage.knockback.vx;
       p.body.vy = -p.def.damage.knockback.vy;
@@ -567,58 +642,88 @@ export class World {
   /* ---------- Lifts ---------- */
 
   private resolveLifts(): void {
-    const p = this.player;
     for (const e of this.entities) {
       if (!(e instanceof Lift) || !e.alive) continue;
-      e.carry(p.body, this);
+      for (const p of this.activePlayers()) e.carry(p.body, this);
     }
   }
 
   /* ---------- Death ---------- */
 
-  kill(): void {
-    const p = this.player;
-    if (p.dead) return;
+  kill(p: Player): void {
+    if (p.dead || p.out) return;
     p.dead = true;
     p.frozen = true;
     p.star = 0;
-    this.deathTimer = 0;
-    this.audio.setTempoScale(1);
-    this.audio.playJingle('death');
+    p.activeMelee = null;
+    this.deathTimers.set(p, 0);
+    if (this.activePlayers().length === 0) {
+      this.audio.setTempoScale(1);
+      this.audio.playJingle('death');
+    } else this.audio.sfx('hit');
   }
 
-  private updateDeath(): void {
-    const p = this.player;
-    this.deathTimer++;
-    if (this.deathTimer === 30) p.body.vy = -0x04000;
-    if (this.deathTimer > 30) {
+  private updateDeath(p: Player): void {
+    const t = (this.deathTimers.get(p) ?? 0) + 1;
+    this.deathTimers.set(p, t);
+    if (t === 30) p.body.vy = -0x04000;
+    if (t > 30) {
       p.body.vy += 0x00280;
       p.body.y += velToSub(p.body.vy);
     }
-    if (this.deathTimer >= 200) {
-      this.events.push({ type: 'died' });
-      this.deathTimer = -100000;
+    if (t === 200) {
+      if (!this.coop) {
+        this.events.push({ type: 'died' });
+        return;
+      }
+      const others = this.activePlayers();
+      if (others.length && (this.state.lives > 0 || this.assist.infiniteLives)) {
+        if (!this.assist.infiniteLives) this.state.lives--;
+        this.respawn(p, others[0] as Player);
+      } else {
+        p.out = true;
+        p.hidden = true;
+        if (!others.length) this.events.push({ type: 'died' });
+      }
     }
+  }
+
+  /** Co-op: drop a dead player back in beside a living one. */
+  private respawn(p: Player, beside: Player): void {
+    p.dead = false;
+    p.frozen = false;
+    p.hidden = false;
+    p.invuln = 150;
+    p.stun = 0;
+    p.sliding = 0;
+    p.crouching = false;
+    p.powerState = p.def.damage.kind === 'powerup' ? 'small' : 'full';
+    p.hp = p.def.damage.kind === 'hp' ? (p.scratch.maxHp ?? p.def.damage.max) : 0;
+    p.refitHitbox();
+    p.body.x = Math.max(this.camera.x + px(8), beside.body.x - px(16));
+    p.body.y = px(-32);
+    p.body.vx = 0;
+    p.body.vy = 0;
+    this.deathTimers.delete(p);
+    this.respawnTimers.set(p, COOP_RESPAWN_FRAMES);
   }
 
   /* ---------- Pipes & zones ---------- */
 
-  private checkPipes(input: InputFrame): void {
-    const p = this.player;
+  private checkPipes(p: Player, input: InputFrame): void {
     const b = p.body;
     if (!b.onGround) return;
     for (const z of this.level.zones) {
       if (z.kind !== 'pipe') continue;
       if (z.dir === 'down') {
         if (this.autoWalk) {
-          // Intro walk: slide into the pipe as soon as the player touches it.
-          if (b.x + b.w >= tileToSub(z.x) - px(1)) return this.enterPipe(z, 'down');
+          if (b.x + b.w >= tileToSub(z.x) - px(1)) return this.enterPipe(p, z, 'down');
           continue;
         }
         if (!input.held('down')) continue;
         const top = tileToSub(z.y);
         const inside = b.x >= tileToSub(z.x) && b.x + b.w <= tileToSub(z.x + 2);
-        if (inside && Math.abs(b.y + b.h - top) <= px(1)) return this.enterPipe(z, 'down');
+        if (inside && Math.abs(b.y + b.h - top) <= px(1)) return this.enterPipe(p, z, 'down');
       } else if (z.dir === 'right') {
         if (!input.held('right')) continue;
         const mouthX = tileToSub(z.x);
@@ -628,21 +733,24 @@ export class World {
           b.x + b.w <= mouthX + px(2) &&
           (standingRow === z.y || standingRow === z.y + 1)
         ) {
-          return this.enterPipe(z, 'right');
+          return this.enterPipe(p, z, 'right');
         }
       }
     }
   }
 
-  private enterPipe(z: Zone & { kind: 'pipe' }, dir: PipeDir): void {
-    const p = this.player;
-    p.frozen = true;
-    p.anim = 'idle';
-    p.body.vx = 0;
-    p.body.vy = 0;
+  private enterPipe(p: Player, z: Zone & { kind: 'pipe' }, dir: PipeDir): void {
+    for (const o of this.players) {
+      o.frozen = true;
+      o.body.vx = 0;
+      o.body.vy = 0;
+      o.anim = 'idle';
+      if (o !== p) o.hidden = true;
+    }
     if (dir === 'down') p.body.x = tileToSub(z.x) + px(16) - (p.body.w >> 1);
     this.audio.sfx('pipe');
     this.pipeAnim = {
+      player: p,
       dir,
       t: 0,
       frames: dir === 'down' ? toPx(p.body.h) + 8 : 24,
@@ -652,13 +760,14 @@ export class World {
 
   private updatePipeAnim(): void {
     const a = this.pipeAnim as PipeAnim;
+    const p = a.player;
     a.t++;
-    const b = this.player.body;
+    const b = p.body;
     if (a.dir === 'down') b.y += px(1);
     else if (a.dir === 'right') {
       b.x += px(1);
-      this.player.anim = 'walk';
-      if (a.t % 4 === 0) this.player.walkFrame = (this.player.walkFrame + 1) % 3;
+      p.anim = 'walk';
+      if (a.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
     }
     if (a.t >= a.frames) {
       this.events.push(a.target);
@@ -669,10 +778,15 @@ export class World {
   private updatePipeExit(): void {
     const e = this.pipeExit as NonNullable<typeof this.pipeExit>;
     e.t++;
-    this.player.body.y -= px(1);
-    if (e.t >= e.frames) {
+    for (const p of this.players) {
+      if (p.index === 0 || e.t > 20) {
+        p.hidden = false;
+        p.body.y -= px(1);
+      }
+    }
+    if (e.t >= e.frames + 20) {
       this.pipeExit = null;
-      this.player.frozen = false;
+      for (const p of this.players) p.frozen = false;
     }
   }
 
@@ -681,9 +795,12 @@ export class World {
   }
 
   private checkZones(): void {
-    const p = this.player;
     for (const z of this.level.zones) {
-      if (z.kind === 'checkpoint' && !this.checkpointSent && p.body.x >= tileToSub(z.x)) {
+      if (
+        z.kind === 'checkpoint' &&
+        !this.checkpointSent &&
+        this.players.some((p) => p.body.x >= tileToSub(z.x))
+      ) {
         this.checkpointSent = true;
         this.events.push({ type: 'checkpoint', x: z.x });
       }
@@ -692,11 +809,13 @@ export class World {
 
   /* ---------- Level clear ---------- */
 
-  private startClear(pole: Flagpole): void {
-    const p = this.player;
-    p.frozen = true;
-    p.body.vx = 0;
-    p.body.vy = 0;
+  private startClear(pole: Flagpole, p: Player): void {
+    for (const o of this.players) {
+      o.frozen = true;
+      o.body.vx = 0;
+      o.body.vy = 0;
+      if (o !== p) o.hidden = true;
+    }
     p.body.x = tileToSub(pole.tx) - p.body.w + px(2);
     p.facing = 1;
     p.anim = 'climb';
@@ -706,13 +825,13 @@ export class World {
     this.addScore(score, tileToSub(pole.tx) + px(8), p.body.y);
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
     const walkTo = tileToSub((exit?.x ?? pole.tx) + 6) + px(8);
-    this.clear = { phase: 'slide', t: 0, pole, walkTo };
+    this.clear = { phase: 'slide', t: 0, pole, walkTo, player: p };
     this.time ??= 0;
   }
 
   private updateClear(): void {
     const c = this.clear as NonNullable<typeof this.clear>;
-    const p = this.player;
+    const p = c.player;
     const b = p.body;
     c.t++;
     switch (c.phase) {
@@ -745,7 +864,6 @@ export class World {
         b.vy += 0x00400;
         if (b.vy > 0x04000) b.vy = 0x04000;
         const before = b.y;
-        // simple ground snap using the map
         const feetRow = tileAt(b.y + b.h + velToSub(b.vy));
         if (this.map.isSolid(tileAt(b.x + (b.w >> 1)), feetRow)) {
           b.y = tileToSub(feetRow) - b.h;
@@ -783,21 +901,25 @@ export class World {
     }
   }
 
-  private startBossClear(axe: Axe): void {
+  private startBossClear(axe: Axe, p: Player): void {
     axe.destroy();
-    const p = this.player;
-    p.frozen = true;
-    p.body.vx = 0;
-    p.body.vy = 0;
-    p.anim = 'idle';
+    for (const o of this.players) {
+      o.frozen = true;
+      o.body.vx = 0;
+      o.body.vy = 0;
+      o.anim = 'idle';
+      if (o !== p) o.hidden = true;
+    }
     this.audio.stopMusic();
     this.bossClear = { t: 0 };
+    this.bossPlayer = p;
   }
+  private bossPlayer: Player | null = null;
 
   private updateBossClear(): void {
     const c = this.bossClear as { t: number };
+    const p = this.bossPlayer ?? this.player;
     c.t++;
-    // Collapse the bridge tile by tile from the right.
     if (c.t % 4 === 0) {
       let cut = false;
       for (let tx = this.level.width - 1; tx >= 0 && !cut; tx--) {
@@ -819,17 +941,11 @@ export class World {
       this.addScore(5000, bowser.body.x, bowser.body.y);
     }
     if (c.t === 120) this.audio.playJingle('castle-clear');
-    if (c.t === 150) {
-      const p = this.player;
-      p.frozen = false;
-    }
     if (c.t > 150) {
-      const p = this.player;
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;
       p.body.x += px(1);
-      p.frozen = true;
     }
     if (c.t >= 330) {
       const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
@@ -851,10 +967,10 @@ export class World {
       reduceFlashing: this.ctx.reduceFlashing,
     };
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
-    if (this.inPipe) this.renderPlayer(r, view);
+    if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     this.renderTiles(r, view);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);
-    if (!this.inPipe) this.renderPlayer(r, view);
+    if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);
     for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
     this.renderWarpText(r, view);
   }
@@ -866,7 +982,6 @@ export class World {
       if (x0 > SCREEN_W || x0 + z.w * 16 < 0) continue;
       const font = view.assets.sheet('font');
       if (z.text) r.text(font, z.text, Math.max(8, x0 + 8), 72);
-      // Label each pipe in the zone with its destination world.
       const pipes = this.level.zones.filter(
         (p): p is Zone & { kind: 'pipe' } => p.kind === 'pipe' && p.x >= z.x && p.x < z.x + z.w,
       );
@@ -901,9 +1016,8 @@ export class World {
     }
   }
 
-  private renderPlayer(r: Renderer, view: View): void {
-    const p = this.player;
-    if (p.hidden) return;
+  private renderPlayer(r: Renderer, view: View, p: Player): void {
+    if (p.hidden || p.out) return;
     if (!p.visible(view.frame)) return;
     const s = p.def.sprite(p, view.frame, view.reduceFlashing);
     const sheet = view.assets.sheet(s.sheet, s.palette);
@@ -911,18 +1025,12 @@ export class World {
     const w = f?.w ?? 16;
     const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
     r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+    if (this.coop && p.index > 0 && !p.dead) {
+      // Small "2" tag above player two so both players can tell who is who.
+      r.text(view.assets.sheet('font'), '2', toPx(p.body.x) - view.camX + 2, toPx(p.body.y) - s.offsetY - 10);
+    }
   }
 }
-
-/** Synthetic input for auto-walk intros: hold right; the pipe check triggers on touch. */
-const AUTO_WALK_INPUT: InputFrame = {
-  held: (a) => a === 'right',
-  pressed: () => false,
-  released: () => false,
-  bufferedJump: () => false,
-  consumeJumpBuffer: () => undefined,
-  dirX: 1,
-};
 
 const SKY: Partial<Record<LevelData['theme'], string>> = {
   overworld: '#5c94fc',

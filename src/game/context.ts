@@ -34,6 +34,8 @@ export interface GameContext {
 /** Progress carried between levels. */
 export interface GameState {
   character: CharacterDef;
+  /** Second player's character when playing co-op. */
+  character2: CharacterDef | null;
   score: number;
   coins: number;
   lives: number;
@@ -46,14 +48,24 @@ export interface GameState {
   time: number | null;
   /** Checkpoint reached in the current level (x tile), if any. */
   checkpoint: { level: string; x: number } | null;
+  /** Player 2's carried power state / hp. */
+  powerState2: string;
+  hp2: number;
 }
 
-export function newGameState(character: CharacterDef): GameState {
+export function playerCount(s: GameState): number {
+  return s.character2 ? 2 : 1;
+}
+
+export function newGameState(character: CharacterDef, character2: CharacterDef | null = null): GameState {
   return {
     character,
+    character2,
+    powerState2: character2?.damage.kind === 'powerup' ? 'small' : 'full',
+    hp2: character2?.damage.kind === 'hp' ? character2.damage.max : 0,
     score: 0,
     coins: 0,
-    lives: 3,
+    lives: character2 ? 5 : 3,
     world: 1,
     stage: 1,
     powerState: character.damage.kind === 'powerup' ? 'small' : 'full',

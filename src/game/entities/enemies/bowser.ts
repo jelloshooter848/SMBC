@@ -56,7 +56,7 @@ export class Bowser extends Enemy {
       return;
     }
     if (world.bossClear) return;
-    const p = world.player.body;
+    const p = world.nearestPlayer(b.x).body;
     // Pace within 3 tiles left of home, facing the player.
     moveX(b, world.map, velToSub(b.vx));
     if (b.x < this.homeX - px(48) || b.hitWall < 0) b.vx = this.walkSpeed;

@@ -48,7 +48,7 @@ export class Piranha extends Enemy {
   }
 
   update(world: World): void {
-    const pl = world.player.body;
+    const pl = world.nearestPlayer(this.centerX).body;
     const playerNear = Math.abs(pl.x + pl.w / 2 - this.centerX) < px(28);
     this.t--;
     switch (this.phase) {

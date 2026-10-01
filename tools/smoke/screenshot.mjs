@@ -25,6 +25,7 @@ const { chromium } = (() => {
 const outDir = process.argv[2] ?? 'smoke-out';
 const level = process.argv[3] ?? '1-1';
 const character = process.argv[4] ?? 'mario';
+const character2 = process.argv[5] ?? '';
 mkdirSync(outDir, { recursive: true });
 
 // Hard stop so a hung page never wedges CI.
@@ -68,7 +69,9 @@ try {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(400);
   await page.screenshot({ path: join(outDir, '00-select.png') });
-  await page.goto(`http://localhost:4173/?level=${level}&char=${character}`);
+  await page.goto(
+    `http://localhost:4173/?level=${level}&char=${character}${character2 ? `&char2=${character2}` : ''}`,
+  );
   await page.waitForTimeout(800);
   await page.screenshot({ path: join(outDir, '01-intro.png') });
   await page.waitForTimeout(1800);

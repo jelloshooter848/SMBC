@@ -98,7 +98,7 @@ export function runSim(opts: SimOptions): SimResult {
   for (; frames < opts.maxFrames; frames++) {
     if (opts.controller) input.setHeld(opts.controller(world, frames));
     input.next();
-    world.update(input);
+    world.update([input]);
     events.push(...world.events.splice(0));
     const last = events[events.length - 1];
     if (last?.type === 'exit') {

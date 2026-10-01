@@ -52,6 +52,10 @@ export class Player {
   sliding = 0;
   /** Not drawn (walked into the castle). */
   hidden = false;
+  /** Player slot (0 = player one). */
+  index = 0;
+  /** Eliminated for the rest of the level (co-op, no lives left). */
+  out = false;
   /** Frames of knockback during which movement input is ignored. */
   stun = 0;
   /** Vertical speed before this frame's move (survives the landing reset; used for stomp checks). */

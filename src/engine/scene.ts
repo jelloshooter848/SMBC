@@ -4,7 +4,8 @@ import type { Renderer } from './gfx/renderer';
 export interface Scene {
   enter?(): void;
   exit?(): void;
-  update(input: InputFrame): void;
+  /** `input` is player 1; `inputs` carries every player's frame for scenes that need them. */
+  update(input: InputFrame, inputs: InputFrame[]): void;
   render(r: Renderer): void;
   /** When true the scene below keeps rendering (pause menu over the level). */
   readonly translucent?: boolean;
@@ -37,8 +38,9 @@ export class SceneStack {
     while (this.stack.length) this.pop();
   }
 
-  update(input: InputFrame): void {
-    this.top?.update(input);
+  update(inputs: InputFrame[]): void {
+    const first = inputs[0];
+    if (first) this.top?.update(first, inputs);
   }
 
   render(r: Renderer): void {

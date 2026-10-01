@@ -35,7 +35,7 @@ export class LevelScene implements Scene {
     this.started = true;
   }
 
-  update(input: InputFrame): void {
+  update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     this.handleDebugKeys();
     if (this.debug.freeCamera) {
       const keys = this.game.deps.debugKeys;
@@ -45,11 +45,11 @@ export class LevelScene implements Scene {
         this.world.camera.x = Math.min(this.world.camera.maxX, this.world.camera.x + step);
       return;
     }
-    if (input.pressed('start') && !this.world.player.dead && this.started) {
+    if (inputs.some((f) => f.pressed('start')) && this.world.activePlayers().length > 0 && this.started) {
       this.game.scenes.push(new PauseScene(this.game));
       return;
     }
-    this.world.update(input);
+    this.world.update(inputs);
     this.syncState();
     for (const ev of this.world.events.splice(0)) this.handle(ev);
   }
@@ -60,6 +60,11 @@ export class LevelScene implements Scene {
     const p = this.world.player;
     s.powerState = p.powerState;
     s.hp = p.hp;
+    const p2 = this.world.players[1];
+    if (p2) {
+      s.powerState2 = p2.powerState;
+      s.hp2 = p2.hp;
+    }
     s.time = this.world.time;
   }
 
@@ -91,6 +96,10 @@ export class LevelScene implements Scene {
         const s = game.state;
         s.powerState = s.character.damage.kind === 'powerup' ? 'small' : 'full';
         s.hp = s.character.damage.kind === 'hp' ? s.character.damage.max : 0;
+        if (s.character2) {
+          s.powerState2 = s.character2.damage.kind === 'powerup' ? 'small' : 'full';
+          s.hp2 = s.character2.damage.kind === 'hp' ? s.character2.damage.max : 0;
+        }
         s.time = null;
         if (!game.ctx.assist.infiniteLives) s.lives--;
         if (s.lives <= 0) {
@@ -123,7 +132,7 @@ export class LevelScene implements Scene {
 
   render(r: Renderer): void {
     this.world.render(r);
-    drawHud(r, this.game.ctx.assets, this.game.state, this.world.time, this.world.frame, this.world.player);
+    drawHud(r, this.game.ctx.assets, this.game.state, this.world.time, this.world.frame, this.world.players);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
   }
 }

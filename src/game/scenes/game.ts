@@ -49,8 +49,8 @@ export class Game {
     this.scenes.replace(new CharacterSelectScene(this));
   }
 
-  newGame(character: CharacterDef, levelId = '1-1'): void {
-    this.state = newGameState(character);
+  newGame(character: CharacterDef, levelId = '1-1', character2: CharacterDef | null = null): void {
+    this.state = newGameState(character, character2);
     this.goToLevel(levelId, { mode: 'stand' });
   }
 

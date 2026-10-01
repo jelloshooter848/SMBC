@@ -63,7 +63,7 @@ function boot(): void {
   const loop = new FixedLoop({
     step() {
       input.beginFrame();
-      game.scenes.update(input.player(0));
+      game.scenes.update([input.player(0), input.player(1)]);
     },
     render() {
       game.scenes.render(renderer);
@@ -123,12 +123,12 @@ function boot(): void {
 
   const params = new URLSearchParams(location.search);
   const level = params.get('level');
-  if (level)
-    game.newGame(
-      CHARACTERS.find((c) => c.id === params.get('char')) ?? (CHARACTERS[0] as (typeof CHARACTERS)[0]),
-      level,
-    );
-  else game.showTitle();
+  if (level) {
+    const c1 =
+      CHARACTERS.find((c) => c.id === params.get('char')) ?? (CHARACTERS[0] as (typeof CHARACTERS)[0]);
+    const c2 = CHARACTERS.find((c) => c.id === params.get('char2')) ?? null;
+    game.newGame(c1, level, c2);
+  } else game.showTitle();
   loop.start();
 }
 

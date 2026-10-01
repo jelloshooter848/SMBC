@@ -90,7 +90,7 @@ export class Koopa extends Enemy {
       world.audio.sfx('stomp');
     } else {
       // Stomping a resting shell kicks it in the direction the player faces away from.
-      const pl = world.player.body;
+      const pl = world.nearestPlayer(this.body.x).body;
       const dir: -1 | 1 = pl.x + pl.w / 2 < this.body.x + this.body.w / 2 ? 1 : -1;
       this.kick(dir, world);
     }

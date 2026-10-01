@@ -33,12 +33,14 @@ export class Firebar extends Enemy {
   update(world: World): void {
     this.angle = (this.angle + this.dir * 1 + 256) % 256;
     // Collision is done here against every ball (the base body is just the anchor ball).
-    const p = world.player.body;
-    for (let i = 1; i < this.len; i++) {
-      const b = this.ballPos(i);
-      if (overlaps(p, { x: px(b.x + 1), y: px(b.y + 1), w: px(6), h: px(6) })) {
-        world.hurtPlayer(b.x < toPx(p.x) ? 1 : -1);
-        break;
+    for (const pl of world.activePlayers()) {
+      const p = pl.body;
+      for (let i = 1; i < this.len; i++) {
+        const b = this.ballPos(i);
+        if (overlaps(p, { x: px(b.x + 1), y: px(b.y + 1), w: px(6), h: px(6) })) {
+          world.hurtPlayer(pl, b.x < toPx(p.x) ? 1 : -1);
+          break;
+        }
       }
     }
   }

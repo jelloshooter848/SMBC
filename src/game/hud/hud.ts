@@ -14,8 +14,9 @@ export function drawHud(
   state: GameState,
   time: number | null,
   frame: number,
-  player: Player | null,
+  players: Player[],
 ): void {
+  const player = players[0] ?? null;
   const font = assets.sheet('font');
   const name = state.character.hudName.slice(0, 6).padEnd(6);
   r.text(font, name, 24, 8);
@@ -45,6 +46,30 @@ export function drawHud(
         r.rect(x, y0 + (dmg.max - 1 - i) * 2 + 1, 6, 1, filled ? '#f8d878' : '#202020');
       }
     }
+  }
+  // Player two: name under WORLD, hearts or a short bar at the right edge.
+  const p2 = players[1];
+  if (p2 && state.character2) {
+    const d2 = state.character2.damage;
+    r.text(font, state.character2.hudName.slice(0, 6), 144, 24);
+    if (d2.kind === 'hp' && d2.hudStyle === 'hearts') {
+      const full = Math.floor(p2.hp / 2);
+      const half = p2.hp % 2;
+      const total = Math.ceil((p2.scratch.maxHp ?? d2.max) / 2);
+      let s = '';
+      for (let i = 0; i < total; i++) s += i < full ? 'h' : i === full && half ? 'f' : 'e';
+      r.text(font, s, 144, 32);
+    } else if (d2.kind === 'hp') {
+      const x = 242;
+      const y0 = 40;
+      r.rect(x - 1, y0 - 1, 8, d2.max * 2 + 2, '#000');
+      for (let i = 0; i < d2.max; i++) {
+        const filled = i < p2.hp;
+        r.rect(x, y0 + (d2.max - 1 - i) * 2, 6, 1, filled ? '#fcfcfc' : '#404040');
+        r.rect(x, y0 + (d2.max - 1 - i) * 2 + 1, 6, 1, filled ? '#f8d878' : '#202020');
+      }
+    }
+    if (p2.out) r.text(font, 'OUT', 200, 24);
   }
   // Blink the timer label when low.
   if (time !== null && time <= 100 && (frame >> 4) % 2 === 0) r.text(font, 'TIME', 200, 8);
