@@ -8,6 +8,9 @@ import { LevelScene, type LevelStart } from './level';
 import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
+import type { Settings } from '@engine/save/settings';
+import type { InputManager } from '@engine/input/input-manager';
+import type { Announcer } from '@engine/a11y/announcer';
 import { MessageScene } from './message';
 
 export interface GameDeps {
@@ -16,6 +19,11 @@ export interface GameDeps {
   characters: CharacterDef[];
   debugKeys?: ReadonlySet<string>;
   fps?: () => number;
+  /** Live settings object and a callback that applies + persists it (wired by main). */
+  settings?: Settings;
+  applySettings?: () => void;
+  input?: InputManager;
+  announcer?: Announcer;
 }
 
 /** Orchestrates scenes and carries GameState between levels. */
@@ -76,6 +84,7 @@ export class Game {
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
     this.scenes.clear();
+    this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
     this.scenes.push(new IntroScene(this, () => this.startLevel(level, start)));
   }
 

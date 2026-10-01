@@ -5,6 +5,8 @@ import { defaultBindings } from './bindings';
 export interface InputSource {
   /** Set of raw codes currently held. Called once per fixed step. */
   poll(): ReadonlySet<Code>;
+  /** Raw codes that went down since the last call (for remap capture). */
+  takeJustPressed?(): Code[];
 }
 
 /** Per-player, per-frame view of input. The headless sim provides its own implementation. */
@@ -81,6 +83,9 @@ export class InputManager {
     touch: [],
   };
 
+  /** While set, raw presses are routed here instead of to players (remap UI). */
+  private capture: ((code: Code, kind: 'keyboard' | 'gamepad') => void) | null = null;
+
   constructor(playerCount = 2, bindings?: PlayerBindings[]) {
     this.bindings = bindings ?? Array.from({ length: playerCount }, (_, i) => defaultBindings(i));
     for (let i = 0; i < playerCount; i++) this.players.push(new ActionState());
@@ -90,11 +95,51 @@ export class InputManager {
     this.sources[kind].push(src);
   }
 
+  /** Capture the next raw key or button press; resolves with the code. */
+  captureNext(): Promise<{ code: Code; kind: 'keyboard' | 'gamepad' }> {
+    return new Promise((resolve) => {
+      this.capture = (code, kind) => {
+        this.capture = null;
+        resolve({ code, kind });
+      };
+    });
+  }
+
+  cancelCapture(): void {
+    this.capture = null;
+  }
+
+  get capturing(): boolean {
+    return this.capture !== null;
+  }
+
   /** Sample all sources once and compute every player's action set. Call at the start of each fixed step. */
   beginFrame(): void {
     const kb = union(this.sources.keyboard.map((s) => s.poll()));
     const touch = union(this.sources.touch.map((s) => s.poll()));
     const padsByIndex = this.sources.gamepad.map((s) => s.poll());
+    if (this.capture) {
+      for (const s of this.sources.keyboard) {
+        const code = s.takeJustPressed?.()[0];
+        if (code) {
+          if (code === 'Escape') this.capture = null;
+          else this.capture(code, 'keyboard');
+          break;
+        }
+      }
+      if (this.capture) {
+        for (const s of this.sources.gamepad) {
+          const code = s.takeJustPressed?.()[0];
+          if (code) {
+            this.capture(code, 'gamepad');
+            break;
+          }
+        }
+      }
+      for (const p of this.players) p.beginFrame(new Set());
+      return;
+    }
+    for (const s of [...this.sources.keyboard, ...this.sources.gamepad]) s.takeJustPressed?.();
     for (let p = 0; p < this.players.length; p++) {
       const b = this.bindings[p] ?? defaultBindings(p);
       const pad = padsByIndex[b.gamepadIndex ?? p] ?? padsByIndex[0] ?? EMPTY;

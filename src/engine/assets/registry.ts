@@ -47,8 +47,19 @@ export class AssetRegistry {
     this.overrides.set(key, sheet);
   }
 
+  /** Replace a named palette (packs can recolour built-in art without repainting it). */
+  overridePalette(name: string, colors: readonly string[]): void {
+    this.palettes.default[name] = colors;
+    this.sheets.clear();
+  }
+
   clearOverrides(): void {
     this.overrides.clear();
+  }
+
+  /** Keys of sheets rasterized so far (id or id@palette). */
+  sheetKeys(): string[] {
+    return [...this.sheets.keys()];
   }
 
   /** Re-rasterize everything (palette mode changed). */

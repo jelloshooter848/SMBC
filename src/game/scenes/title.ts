@@ -1,25 +1,23 @@
-import type { Scene } from '@engine/scene';
-import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
+import { MenuScene } from './menu';
+import { OptionsScene } from './options';
 import type { Game } from './game';
 
-export class TitleScene implements Scene {
-  private t = 0;
-  constructor(private readonly game: Game) {}
+export class TitleScene extends MenuScene {
+  constructor(game: Game) {
+    super(game, '', [], null);
+    this.setItems([
+      { label: 'Start game', select: () => game.showCharacterSelect() },
+      { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop())) },
+    ]);
+  }
 
-  enter(): void {
+  override enter(): void {
     this.game.ctx.audio.playMusic('title');
+    super.enter();
   }
 
-  update(input: InputFrame): void {
-    this.t++;
-    if (this.t > 20 && (input.pressed('start') || input.pressed('jump') || input.pressed('attack'))) {
-      this.game.ctx.audio.sfx('select');
-      this.game.showCharacterSelect();
-    }
-  }
-
-  render(r: Renderer): void {
+  override render(r: Renderer): void {
     r.clear('#5c94fc');
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
@@ -29,9 +27,13 @@ export class TitleScene implements Scene {
     r.text(font, 'SMB', 48, 52);
     r.text(font, 'CROSSOVER', 48, 68);
     r.text(font, 'FAN REBUILD', 48, 88);
-    const mario = assets.sheet('mario', 'mario');
-    r.sprite(mario, 'big-idle', 176, 60);
-    if ((this.t >> 5) % 2 === 0) r.text(font, 'PRESS START', 84, 150);
+    r.sprite(assets.sheet('mario', 'mario'), 'big-idle', 176, 60);
+    r.sprite(assets.sheet('link', 'link'), 'idle', 196, 60);
+    this.items.forEach((it, i) => {
+      const y = 136 + i * 14;
+      if (i === this.index && (this.t >> 4) % 2 === 0) r.text(font, '>', 84, y);
+      r.text(font, it.label.toUpperCase(), 96, y);
+    });
     r.text(font, 'ORIGINAL ART AND MUSIC', 40, 184);
     r.text(font, 'NOT AFFILIATED WITH NINTENDO', 16, 196);
   }

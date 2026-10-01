@@ -57,6 +57,10 @@ export class AudioManager implements AudioSink {
   private currentMusic: string | null = null;
   private volumes: Volumes = { master: 0.8, music: 1, sfx: 1, muted: false };
   private tempoScale = 1;
+  /** Audio files from asset packs that replace synthesized songs/sfx by id. */
+  private readonly overrides = new Map<string, Blob>();
+  private readonly decoded = new Map<string, AudioBuffer>();
+  private fileMusic: AudioBufferSourceNode | null = null;
 
   get unlocked(): boolean {
     return this.ctx !== null;
@@ -68,6 +72,66 @@ export class AudioManager implements AudioSink {
   registerSfx(list: Sfx[]): void {
     for (const s of list) this.sfxLib.set(s.id, s);
   }
+
+  /** Replace the set of file overrides (from enabled asset packs). */
+  setOverrides(files: Map<string, Blob>): void {
+    this.overrides.clear();
+    this.decoded.clear();
+    for (const [k, v] of files) this.overrides.set(k, v);
+  }
+
+  private async buffer(id: string): Promise<AudioBuffer | null> {
+    if (!this.ctx) return null;
+    const hit = this.decoded.get(id);
+    if (hit) return hit;
+    const blob = this.overrides.get(id);
+    if (!blob) return null;
+    try {
+      const buf = await this.ctx.decodeAudioData(await blob.arrayBuffer());
+      this.decoded.set(id, buf);
+      return buf;
+    } catch {
+      console.warn(`asset pack audio "${id}" could not be decoded`);
+      this.overrides.delete(id);
+      return null;
+    }
+  }
+
+  private stopFileMusic(): void {
+    if (this.fileMusic) {
+      try {
+        this.fileMusic.stop();
+      } catch {
+        /* already stopped */
+      }
+      this.fileMusic = null;
+    }
+  }
+
+  /** Start a file-backed song; returns false when there is no override for it. */
+  private playFile(id: string, loop: boolean, onEnd?: () => void): boolean {
+    if (!this.ctx || !this.apu || !this.overrides.has(id)) return false;
+    const ctx = this.ctx;
+    const apu = this.apu;
+    const token = (this.fileToken = (this.fileToken ?? 0) + 1);
+    void this.buffer(id).then((buf) => {
+      if (!buf || token !== this.fileToken) return;
+      this.stopFileMusic();
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = loop;
+      src.playbackRate.value = this.tempoScale;
+      src.connect(apu.musicGain);
+      src.onended = () => {
+        if (this.fileMusic === src) this.fileMusic = null;
+        if (!loop) onEnd?.();
+      };
+      src.start();
+      this.fileMusic = src;
+    });
+    return true;
+  }
+  private fileToken = 0;
 
   /** Call from a user gesture handler. Safe to call repeatedly. */
   unlock(): void {
@@ -122,10 +186,13 @@ export class AudioManager implements AudioSink {
       this.pendingMusic = id;
       return;
     }
-    if (this.currentMusic === id && this.seq.playing) return;
+    if (this.currentMusic === id && (this.seq.playing || this.fileMusic)) return;
+    this.seq.stop();
+    this.stopFileMusic();
+    this.currentMusic = id;
+    if (this.playFile(id, true)) return;
     const s = this.song(id);
     if (!s) return;
-    this.currentMusic = id;
     this.seq.onEnd = null;
     this.seq.tempoScale = this.tempoScale;
     this.seq.play(s);
@@ -134,7 +201,9 @@ export class AudioManager implements AudioSink {
   stopMusic(): void {
     this.pendingMusic = null;
     this.currentMusic = null;
+    this.fileToken++;
     this.seq?.stop();
+    this.stopFileMusic();
   }
 
   playJingle(id: string, onEnd?: () => void): void {
@@ -142,12 +211,15 @@ export class AudioManager implements AudioSink {
       onEnd?.();
       return;
     }
+    this.currentMusic = null;
+    this.seq.stop();
+    this.stopFileMusic();
+    if (this.playFile(id, false, onEnd)) return;
     const s = this.song(id);
     if (!s) {
       onEnd?.();
       return;
     }
-    this.currentMusic = null;
     this.seq.tempoScale = 1;
     this.seq.onEnd = onEnd ?? null;
     this.seq.play({ ...s, loop: false });
@@ -156,10 +228,23 @@ export class AudioManager implements AudioSink {
   setTempoScale(scale: number): void {
     this.tempoScale = scale;
     this.seq?.setTempoScale(scale);
+    if (this.fileMusic) this.fileMusic.playbackRate.value = scale;
   }
 
   sfx(id: string): void {
     if (!this.ctx || !this.apu) return;
+    if (this.overrides.has(id)) {
+      const ctx = this.ctx;
+      const apu = this.apu;
+      void this.buffer(id).then((buf) => {
+        if (!buf) return;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(apu.sfxGain);
+        src.start();
+      });
+      return;
+    }
     let c = this.sfxCompiled.get(id);
     if (!c) {
       const def = this.sfxLib.get(id);

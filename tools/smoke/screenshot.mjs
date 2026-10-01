@@ -56,6 +56,15 @@ try {
   await page.goto('http://localhost:4173/');
   await page.waitForTimeout(600);
   await page.screenshot({ path: join(outDir, '00-title.png') });
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(150);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: join(outDir, '00-options.png') });
+  await page.keyboard.press('KeyX');
+  await page.waitForTimeout(200);
+  await page.keyboard.press('ArrowUp');
+  await page.waitForTimeout(150);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(400);
   await page.screenshot({ path: join(outDir, '00-select.png') });
