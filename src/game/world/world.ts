@@ -2,12 +2,13 @@ import type { InputFrame } from '@engine/input/input-manager';
 import { NO_INPUT } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
-import { px, TILE, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
+import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, Zone } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera } from './camera';
+import { renderTiles, SKY } from './tile-render';
 import { TileMap } from './tilemap';
 import { Player } from '../entities/player';
 import type { Entity } from '../entities/entity';
@@ -968,7 +969,7 @@ export class World {
     };
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
-    this.renderTiles(r, view);
+    renderTiles(r, view, this.map);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);
     if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);
     for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
@@ -992,30 +993,6 @@ export class World {
     }
   }
 
-  private renderTiles(r: Renderer, view: View): void {
-    const sheet = view.assets.sheet('tiles', `tiles-${view.theme}`);
-    const camPx = view.camX;
-    const first = Math.max(0, camPx >> 4);
-    const last = Math.min(this.map.width - 1, (camPx + SCREEN_W) >> 4);
-    const anim = (view.frame >> 3) % 3;
-    for (let ty = 0; ty < this.map.height; ty++) {
-      for (let tx = first; tx <= last; tx++) {
-        const id = this.map.get(tx, ty);
-        if (id === T.AIR || id === T.BUMPING) continue;
-        const def = tileDef(id);
-        if (def.block?.kind === 'hidden') continue;
-        let name = def.name;
-        if (def.block?.kind === 'question') name = `question-${anim === 2 ? 1 : anim}`;
-        else if (def.block?.kind === 'brick') name = 'brick';
-        else if (def.pickup === 'coin') name = `coin-${(view.frame >> 3) & 3}`;
-        else if (id === T.LAVA) name = `lava-${(view.frame >> 4) & 1}`;
-        else if (id === T.WATER) name = `water-${(view.frame >> 4) & 1}`;
-        const themed = `${name}@${view.theme}`;
-        r.sprite(sheet, sheet.frames.has(themed) ? themed : name, tx * TILE - camPx, ty * TILE);
-      }
-    }
-  }
-
   private renderPlayer(r: Renderer, view: View, p: Player): void {
     if (p.hidden || p.out) return;
     if (!p.visible(view.frame)) return;
@@ -1031,13 +1008,3 @@ export class World {
     }
   }
 }
-
-const SKY: Partial<Record<LevelData['theme'], string>> = {
-  overworld: '#5c94fc',
-  underground: '#000000',
-  castle: '#000000',
-  water: '#2038ec',
-  night: '#000000',
-  treetop: '#5c94fc',
-  snow: '#5c94fc',
-};

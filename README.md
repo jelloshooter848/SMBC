@@ -42,6 +42,22 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
 
 Settings persist in the browser.
 
+### Two players
+
+On the character select, player two presses **Start** (numpad 0/Enter, or a second gamepad's
+start button) to join and picks their own hero. Both play on one screen with a shared pool
+of lives; a fallen player drops back in beside the survivor. Player two's default keys are on
+the numpad (4/6 move, 8 up, 5 down, 0 jump, . attack, Enter special, + start) and can be
+remapped in Options → Controls.
+
+### Level editor and sharing
+
+**Level editor** on the title screen opens a tile editor: paint tiles, place enemies, items and
+scenery, set exits, checkpoints and pipe links, then **Play test**, **Save** (levels are stored
+in the browser and appear under **Custom levels**), **Export .map** / **Import .map**, or
+**Copy share link**. A share link carries the whole level compressed in the URL, so anyone
+who opens it plays it immediately; nothing is uploaded anywhere.
+
 ## Develop
 
 ```sh

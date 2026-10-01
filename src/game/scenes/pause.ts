@@ -11,7 +11,7 @@ export class PauseScene extends MenuScene {
         label: 'Options',
         select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
       },
-      { label: 'Quit', select: () => game.showTitle() },
+      { label: 'Quit', select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()) },
     ]);
   }
 

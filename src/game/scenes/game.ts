@@ -11,6 +11,10 @@ import type { LevelData } from '../level/schema';
 import type { Settings } from '@engine/save/settings';
 import type { InputManager } from '@engine/input/input-manager';
 import type { Announcer } from '@engine/a11y/announcer';
+import type { Viewport } from '@engine/viewport';
+import { EditorScene } from './editor';
+import { MenuScene } from './menu';
+import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
 
 export interface GameDeps {
@@ -24,12 +28,20 @@ export interface GameDeps {
   applySettings?: () => void;
   input?: InputManager;
   announcer?: Announcer;
+  /** DOM hooks for the editor (canvas for pointer mapping, overlay for panels). */
+  canvas?: HTMLCanvasElement;
+  overlay?: HTMLElement;
+  viewport?: Viewport;
 }
 
 /** Orchestrates scenes and carries GameState between levels. */
 export class Game {
   readonly scenes = new SceneStack();
   state: GameState;
+  /** Level to start after character select (custom levels / shared links). */
+  pendingLevel: string | null = null;
+  /** When set, the current level is an editor play-test; called when it ends. */
+  playtestDone: (() => void) | null = null;
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -41,6 +53,8 @@ export class Game {
 
   showTitle(): void {
     this.deps.ctx.audio.stopMusic();
+    this.pendingLevel = null;
+    this.playtestDone = null;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -49,9 +63,49 @@ export class Game {
     this.scenes.replace(new CharacterSelectScene(this));
   }
 
+  openEditor(initial?: { level: LevelData; name: string }): void {
+    this.playtestDone = null;
+    this.deps.ctx.audio.stopMusic();
+    this.scenes.clear();
+    this.scenes.push(new EditorScene(this, initial));
+  }
+
+  /** Menu of saved custom levels; picking one goes to character select then the level. */
+  showCustomLevels(): void {
+    const names = Object.keys(loadLibrary().levels).sort();
+    const items = names.map((n) => ({
+      label: n.slice(0, 14),
+      select: () => {
+        this.pendingLevel = customLevelId(n);
+        this.showCharacterSelect();
+      },
+    }));
+    if (!items.length) items.push({ label: 'No levels yet', select: () => this.openEditor() });
+    items.push({ label: 'Back', select: () => this.showTitle() });
+    this.scenes.replace(new MenuScene(this, 'CUSTOM LEVELS', items, () => this.showTitle()));
+  }
+
+  /** Run a level from the editor; returns to it when the level ends or the player quits. */
+  playtest(level: LevelData, done: () => void): void {
+    this.state = newGameState(this.state.character);
+    this.state.lives = 99;
+    this.playtestDone = done;
+    this.startLevel(level, { mode: 'stand' });
+  }
+
+  /** Play a level decoded from a share link with the default character. */
+  playShared(level: LevelData): void {
+    this.state = newGameState(this.deps.characters[0] as CharacterDef);
+    this.playtestDone = null;
+    this.startLevel(level, { mode: 'stand' });
+  }
+
   newGame(character: CharacterDef, levelId = '1-1', character2: CharacterDef | null = null): void {
     this.state = newGameState(character, character2);
-    this.goToLevel(levelId, { mode: 'stand' });
+    this.playtestDone = null;
+    const id = this.pendingLevel ?? levelId;
+    this.pendingLevel = null;
+    this.goToLevel(id, { mode: 'stand' });
   }
 
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */

@@ -10,7 +10,10 @@ import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
 import { loadSettings, saveSettings, type Settings } from '@engine/save/settings';
 import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
-import { getLevel } from '@content/levels';
+import { getLevel as getBuiltinLevel } from '@content/levels';
+import { getCustomLevel, loadLibrary } from '@game/level/library';
+import { decodeShare } from '@engine/share';
+import { parseTextMap } from '@game/level/textmap';
 import { PALETTES, SPRITES } from '@content/sprites';
 import { songs } from '@content/music/songs';
 import { sfx } from '@content/sfx/sfx';
@@ -48,9 +51,14 @@ function boot(): void {
   let frames = 0;
   let fpsAt = performance.now();
   const ctx = { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: false };
+  const getLevel = (id: string) =>
+    (id.startsWith('custom-') ? getCustomLevel(loadLibrary(), id) : null) ?? getBuiltinLevel(id);
   const game = new Game({
     ctx,
     getLevel,
+    canvas,
+    overlay,
+    viewport,
     characters: CHARACTERS,
     debugKeys: keyboard.down,
     fps: () => fps,
@@ -122,12 +130,18 @@ function boot(): void {
   }
 
   const params = new URLSearchParams(location.search);
+  const shared = /^#level=([A-Za-z0-9_-]+)/.exec(location.hash)?.[1];
   const level = params.get('level');
   if (level) {
     const c1 =
       CHARACTERS.find((c) => c.id === params.get('char')) ?? (CHARACTERS[0] as (typeof CHARACTERS)[0]);
     const c2 = CHARACTERS.find((c) => c.id === params.get('char2')) ?? null;
     game.newGame(c1, level, c2);
+  } else if (shared) {
+    game.showTitle();
+    void decodeShare(shared)
+      .then((text) => game.playShared(parseTextMap(text, 'custom-shared')))
+      .catch((e: Error) => console.warn(`shared level could not be loaded: ${e.message}`));
   } else game.showTitle();
   loop.start();
 }

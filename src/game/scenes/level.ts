@@ -89,10 +89,15 @@ export class LevelScene implements Scene {
       case 'exit':
         game.state.checkpoint = null;
         game.state.time = null;
-        if (ev.next === 'end') game.showTitle();
+        if (game.playtestDone) game.playtestDone();
+        else if (ev.next === 'end') game.showTitle();
         else game.goToLevel(ev.next, { mode: 'stand' });
         break;
       case 'died': {
+        if (game.playtestDone) {
+          game.playtestDone();
+          return;
+        }
         const s = game.state;
         s.powerState = s.character.damage.kind === 'powerup' ? 'small' : 'full';
         s.hp = s.character.damage.kind === 'hp' ? s.character.damage.max : 0;

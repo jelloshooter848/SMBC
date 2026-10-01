@@ -8,6 +8,8 @@ export class TitleScene extends MenuScene {
     super(game, '', [], null);
     this.setItems([
       { label: 'Start game', select: () => game.showCharacterSelect() },
+      { label: 'Custom levels', select: () => game.showCustomLevels() },
+      { label: 'Level editor', select: () => game.openEditor() },
       { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop())) },
     ]);
   }
@@ -30,9 +32,9 @@ export class TitleScene extends MenuScene {
     r.sprite(assets.sheet('mario', 'mario'), 'big-idle', 176, 60);
     r.sprite(assets.sheet('link', 'link'), 'idle', 196, 60);
     this.items.forEach((it, i) => {
-      const y = 136 + i * 14;
-      if (i === this.index && (this.t >> 4) % 2 === 0) r.text(font, '>', 84, y);
-      r.text(font, it.label.toUpperCase(), 96, y);
+      const y = 124 + i * 12;
+      if (i === this.index && (this.t >> 4) % 2 === 0) r.text(font, '>', 76, y);
+      r.text(font, it.label.toUpperCase(), 88, y);
     });
     r.text(font, 'ORIGINAL ART AND MUSIC', 40, 184);
     r.text(font, 'NOT AFFILIATED WITH NINTENDO', 16, 196);
