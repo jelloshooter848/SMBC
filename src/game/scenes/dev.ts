@@ -1,15 +1,25 @@
 import { MenuScene } from './menu';
 import { DevLevelSelectScene } from './dev-level-select';
+import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 
-/** Developer tools menu. More test tools go here as rows. */
+/**
+ * Developer tools menu, reachable from the title and (translucently) from the pause menu.
+ * More test tools go here as rows.
+ */
 export class DevMenuScene extends MenuScene {
-  constructor(game: Game) {
-    super(game, 'DEV MODE', [], () => game.scenes.pop());
+  constructor(game: Game, fromPause = false) {
+    super(game, 'DEV MODE', [], () => game.scenes.pop(), fromPause);
+    const push = (s: MenuScene) => {
+      s.translucent = this.translucent;
+      game.scenes.push(s);
+    };
     this.setItems([
+      { label: 'Level select', select: () => push(new DevLevelSelectScene(game, () => game.scenes.pop())) },
       {
-        label: 'Level select',
-        select: () => game.scenes.push(new DevLevelSelectScene(game, () => game.scenes.pop())),
+        label: 'Assists',
+        select: () => push(new AssistOptionsScene(game, () => game.scenes.pop())),
+        hint: 'Only active while dev mode is on',
       },
       {
         label: 'Dev mode off',
@@ -19,7 +29,9 @@ export class DevMenuScene extends MenuScene {
             s.dev = false;
             game.deps.applySettings?.();
           }
-          game.showTitle();
+          if (fromPause)
+            game.scenes.pop(); // back to the pause menu, which rebuilds without the entry
+          else game.showTitle();
         },
         hint: 'Hides developer mode until the code is entered again',
       },

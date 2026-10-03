@@ -36,9 +36,17 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
   tritanopia) and high contrast, reduced flashing, FPS counter, screen-reader announcements.
 - **Audio**: master, music and sound volumes, mute.
 - **Controls**: full keyboard and gamepad remapping, touch pad on/off and size.
-- **Assists**: scroll back, infinite lives, infinite time, no damage, keep big when losing
-  fire, coyote time, half-speed slow motion.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
+
+### Developer mode
+
+Enter up, up, down, down, left, right, left, right, B, A on the title screen (or open the game
+with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
+
+- **Level select**: any built-in or custom level, any character, starting power, 99 lives.
+- **Assists** (active only while dev mode is on): scroll back, infinite lives, infinite time, no
+  damage, keep big when losing fire, coyote time, half-speed slow motion.
+- **Dev mode off** hides it again.
 
 Settings persist in the browser.
 

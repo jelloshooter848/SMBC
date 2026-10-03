@@ -109,9 +109,10 @@ function boot(): void {
       settings.input.touch === 'on' || (settings.input.touch === 'auto' && TouchSource.likelyTouchDevice());
     touch.show(touchOn);
     touch.setScale(settings.input.touchScale);
+    // Assists are developer tools: they only take effect while dev mode is on (values are kept).
     const { slowMotion, ...assist } = settings.assist;
-    Object.assign(ctx.assist, assist);
-    loop.stepDivider = slowMotion;
+    Object.assign(ctx.assist, settings.dev ? assist : DEFAULT_ASSIST);
+    loop.stepDivider = settings.dev ? slowMotion : 1;
     announcer.enabled = settings.announce;
     const token = ++packToken;
     void loadEnabledPacks(settings.packs, assets).then((packs) => {
