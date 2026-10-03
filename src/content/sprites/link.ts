@@ -24,6 +24,19 @@ export const linkPalettes: Record<string, string[]> = {
     NES.yellow,
     NES.blueMid,
   ],
+  'link-white': [
+    NES.black,
+    NES.white,
+    NES.lightGray,
+    NES.skin,
+    NES.brown,
+    NES.brownDark,
+    NES.white,
+    NES.lightGray,
+    NES.gray,
+    NES.yellow,
+    NES.blueMid,
+  ],
   'link-red': [
     NES.black,
     NES.red,
@@ -452,6 +465,107 @@ const climb0 = [
 
 const climb1 = flipH(climb0);
 
+// Mid-air upward stab: body shifted a pixel left to make room for the sword arm, which is raised straight
+// up beside the head to hold the hilt at cap height; the blade runs out through the top of the frame.
+const upThrust = compose(
+  W,
+  H,
+  [head, -1, 4],
+  [
+    [
+      '...02111110.3330',
+      '00002111111330..',
+      'aaa02111110.....',
+      'a9a02111110.....',
+      '99902111110.....',
+      'a9a02111110.....',
+      'aaa05555550.....',
+      '0aa02111110.....',
+      '.0002111110.....',
+      '...02111110.....',
+      '...0000000......',
+    ],
+    0,
+    14,
+  ],
+  [legsJump, -1, 25],
+  [Array.from({ length: 6 }, () => '33'), 14, 8],
+  [['.6.', ...Array.from({ length: 6 }, () => '.7.'), '999'], 13, 0],
+);
+
+// Guarding: the shield comes off the back and is held out in front, chest to knees, while the sword
+// hangs point-down in the back hand.
+const block = compose(
+  W,
+  H,
+  [head, 0, 4],
+  [
+    [
+      '....02111110....',
+      '...0021111110...',
+      '..03321111110...',
+      '..03321111110...',
+      '..03321111110...',
+      '..03321111110...',
+      '.000055555550...',
+      '....02111110....',
+      '....02111110....',
+      '....02111110....',
+      '....0000000.....',
+    ],
+    0,
+    14,
+  ],
+  [legsStand, 0, 25],
+  [swordDown, 1, 18],
+  [
+    [
+      '.0000.',
+      '099990',
+      '09aa90',
+      '09aa90',
+      '09aa90',
+      '09aa90',
+      '09aa90',
+      '09aa90',
+      '09aa90',
+      '09aa90',
+      '099990',
+      '.0990.',
+      '..00..',
+    ],
+    10,
+    15,
+  ],
+);
+
+// Throwing: the sword arm is empty and stretched out level at the shoulder, palm open, with the sword
+// hanging unheld at the hip.
+const throwFrame = compose(
+  W,
+  H,
+  [head, 0, 4],
+  [
+    [
+      '....02111110..33',
+      '.000021111133333',
+      '0aaa021111133333',
+      '0a9a021111100033',
+      '099902111110....',
+      '0a9a02111110....',
+      '0aaa05555550....',
+      '.0aa02111110....',
+      '..0002111110....',
+      '....02111110....',
+      '....0000000.....',
+    ],
+    0,
+    14,
+  ],
+  [legsStand, 0, 25],
+  [swordDown, 12, 18],
+);
+
 export const linkDef: SpriteDef = {
   palette: 'link',
   frames: {
@@ -466,6 +580,9 @@ export const linkDef: SpriteDef = {
     'attack-2': attack2,
     'crouch-attack': crouchAttack,
     'down-thrust': downThrust,
+    'up-thrust': upThrust,
+    block,
+    throw: throwFrame,
     hurt,
     die,
     'climb-0': climb0,

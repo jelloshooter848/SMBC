@@ -19,6 +19,9 @@ const linkFrames: Record<string, Size> = {
   'attack-2': [24, 32],
   'crouch-attack': [24, 32],
   'down-thrust': [16, 32],
+  'up-thrust': [16, 32],
+  block: [16, 32],
+  throw: [16, 32],
   hurt: [16, 32],
   die: [16, 32],
   'climb-0': [16, 32],
@@ -102,12 +105,41 @@ describe.each([
 });
 
 describe('link extras', () => {
-  it('has a red tunic variant', () => {
+  it('has red and white tunic variants that only recolour the tunic', () => {
     expect(linkPalettes['link-red']).toBeDefined();
+    const base = linkPalettes.link as string[];
+    const white = linkPalettes['link-white'] as string[];
+    expect(white).toBeDefined();
+    expect(white[1]).toBe('#fcfcfc');
+    expect(white[2]).toBe('#bcbcbc');
+    base.forEach((c, i) => {
+      if (i !== 1 && i !== 2) expect(white[i], `index ${i}`).toBe(c);
+    });
+  });
+
+  it('draws the up-thrust blade above the head and keeps block and throw on the ground', () => {
+    const up = linkDef.frames['up-thrust'] as readonly string[];
+    expect(up[0]).toMatch(/[0-9a-z]/);
+    for (const f of ['block', 'throw'])
+      expect(bottomRowIsOpaque(linkDef.frames[f] as readonly string[]), f).toBe(true);
+    // the raised shield sits in the right-hand half of the block frame, chest to knees
+    const block = linkDef.frames.block as readonly string[];
+    for (let y = 17; y <= 24; y++) expect(block[y]?.slice(10), `row ${y}`).toMatch(/a/);
   });
 
   it('stands on the bottom row in grounded poses', () => {
-    for (const f of ['idle', 'walk-0', 'walk-1', 'walk-2', 'crouch', 'attack-0', 'attack-1', 'attack-2'])
+    for (const f of [
+      'idle',
+      'walk-0',
+      'walk-1',
+      'walk-2',
+      'crouch',
+      'attack-0',
+      'attack-1',
+      'attack-2',
+      'block',
+      'throw',
+    ])
       expect(bottomRowIsOpaque(linkDef.frames[f] as readonly string[]), f).toBe(true);
   });
 

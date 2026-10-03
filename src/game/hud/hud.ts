@@ -55,15 +55,15 @@ export function drawHud(
       const i = (((player.scratch.tool ?? 0) % n) + n) % n;
       const t = tools[i];
       if (t) {
-        r.sprite(assets.sheet('items'), t.icon, 88, 24);
-        if (t.count !== null) r.text(font, `×${pad(t.count, 2)}`, 97, 24);
+        r.sprite(assets.sheet('items'), t.icon, 96, 24);
+        if (t.count !== null) r.text(font, `×${pad(t.count, 2)}`, 105, 24);
       }
     }
     const m = state.character.meter?.(player);
     if (m) {
       r.text(font, m.label, 24, 33);
-      r.rect(32, 34, 34, 5, '#000');
-      r.rect(33, 35, 32, 3, '#404040');
+      r.rect(32, 34, 34, 5, '#fcfcfc'); // white frame so the bar reads against the sky
+      r.rect(33, 35, 32, 3, '#202020');
       const w = Math.round((Math.max(0, Math.min(m.value, m.max)) / m.max) * 32);
       if (w > 0) r.rect(33, 35, w, 3, m.colour);
     }
