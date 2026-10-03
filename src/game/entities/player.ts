@@ -164,21 +164,18 @@ export class Player {
         b.vy = -this.tier.initial;
         b.onGround = false;
         this.jumping = true;
-        this.airCap = Math.abs(b.vx) >= p.maxWalk ? p.maxRun : p.maxWalk;
+        // Only a genuine run (faster than the walk cap) keeps the run cap in the air; a jump at
+        // exactly walking speed must not suddenly accelerate like a sprint.
+        this.airCap = Math.abs(b.vx) > p.maxWalk ? p.maxRun : p.maxWalk;
         audio.sfx(this.def.jumpSfx(this));
       }
     }
 
-    if (!b.onGround) {
-      if (p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
-      const holding = p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0;
-      b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
-      if (b.vy > p.maxFall) b.vy = p.fallReset;
-    } else {
-      this.tier = pickJumpTier(p, b.vx);
-      this.jumping = false;
-      b.vy = 0;
-    }
+    // Like the NES: the jump's full initial speed moves the body on the takeoff frame and gravity
+    // is applied after the move. Applying gravity first shaved a frame off every jump (standing
+    // apex 62 px instead of the 4 tiles SMB1 clears).
+    if (!b.onGround && p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
+    const holding = p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0;
 
     if (this.stun === 0) {
       if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
@@ -190,8 +187,13 @@ export class Player {
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
     moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
     if (b.onGround) {
+      this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
       this.combo = 0;
+      b.vy = 0;
+    } else {
+      b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
+      if (b.vy > p.maxFall) b.vy = p.fallReset;
     }
     this.updateAnim(dir);
   }
@@ -250,7 +252,7 @@ export class Player {
       return;
     }
     const cap = p.airControl === 'smb1' ? this.airCap : p.maxRun;
-    const accel = Math.abs(b.vx) >= p.maxWalk ? p.runAccel : p.walkAccel;
+    const accel = Math.abs(b.vx) > p.maxWalk ? p.runAccel : p.walkAccel;
     if (b.vx === 0) b.vx = dir * p.minWalk;
     else if (sign(b.vx) !== dir) b.vx += dir * accel;
     else b.vx = dir * Math.min(Math.abs(b.vx) + accel, Math.max(cap, Math.abs(b.vx)));
