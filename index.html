@@ -40,6 +40,28 @@
       #overlay > * {
         pointer-events: auto;
       }
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font: 16px/1.4 monospace;
+        text-align: center;
+        padding: 16px;
+        pointer-events: none;
+      }
+      #boot.error {
+        align-items: flex-start;
+        color: #ffb0b0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: rgba(0, 0, 0, 0.85);
+        pointer-events: auto;
+        user-select: text;
+        -webkit-user-select: text;
+      }
       .sr-only {
         position: absolute;
         width: 1px;
@@ -52,6 +74,38 @@
   </head>
   <body>
     <canvas id="screen" width="256" height="240" aria-label="Game screen"></canvas>
+    <div id="boot">LOADING...</div>
+    <script>
+      // Make failures visible on devices without a developer console (phones).
+      (function () {
+        var boot = document.getElementById('boot');
+        function show(msg) {
+          if (!boot) return;
+          boot.className = 'error';
+          boot.textContent =
+            'The game could not start.\n\n' + msg + '\n\nPlease screenshot this and report it.';
+        }
+        window.addEventListener('error', function (e) {
+          show((e.message || 'Script error') + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          show(
+            'Unhandled promise rejection: ' +
+              (e.reason && e.reason.message ? e.reason.message : String(e.reason)),
+          );
+        });
+        window.__bootDone = function () {
+          if (boot && boot.className !== 'error') boot.remove();
+        };
+        setTimeout(function () {
+          if (boot && boot.parentNode && boot.className !== 'error') {
+            show(
+              'The game script did not load within 10 seconds. Your browser may be too old (ES2022 modules are required), or the script file was not found.',
+            );
+          }
+        }, 10000);
+      })();
+    </script>
     <div id="overlay"></div>
     <div id="announcer" class="sr-only" aria-live="polite"></div>
     <script type="module" src="/src/main.ts"></script>

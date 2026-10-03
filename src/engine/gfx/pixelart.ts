@@ -74,8 +74,11 @@ export function rasterizeToBuffer(def: SpriteDef, palette: Palette): Rasterized 
 export function rasterize(id: string, def: SpriteDef, palette: Palette): SpriteSheet {
   const r = rasterizeToBuffer(def, palette);
   let image: CanvasImageSource | null = null;
-  if (typeof OffscreenCanvas !== 'undefined') {
-    const canvas = new OffscreenCanvas(r.width, r.height);
+  // Prefer a DOM canvas: universally supported as a drawImage source (OffscreenCanvas is not on older Safari).
+  if (typeof document !== 'undefined') {
+    const canvas = document.createElement('canvas');
+    canvas.width = r.width;
+    canvas.height = r.height;
     const ctx = canvas.getContext('2d');
     if (ctx) {
       const img = ctx.createImageData(r.width, r.height);
@@ -83,10 +86,8 @@ export function rasterize(id: string, def: SpriteDef, palette: Palette): SpriteS
       ctx.putImageData(img, 0, 0);
       image = canvas;
     }
-  } else if (typeof document !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    canvas.width = r.width;
-    canvas.height = r.height;
+  } else if (typeof OffscreenCanvas !== 'undefined') {
+    const canvas = new OffscreenCanvas(r.width, r.height);
     const ctx = canvas.getContext('2d');
     if (ctx) {
       const img = ctx.createImageData(r.width, r.height);

@@ -144,6 +144,7 @@ function boot(): void {
       .catch((e: Error) => console.warn(`shared level could not be loaded: ${e.message}`));
   } else game.showTitle();
   loop.start();
+  (window as unknown as { __bootDone?: () => void }).__bootDone?.();
 }
 
-boot();
+boot(); // a throw here reaches the inline error reporter in index.html
