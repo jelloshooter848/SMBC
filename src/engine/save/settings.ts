@@ -26,6 +26,8 @@ export interface Settings {
   packs: string[];
   /** Screen-reader announcements of menu and game events through the aria-live region. */
   announce: boolean;
+  /** Developer mode (level select and test tools), unlocked with the title-screen code or ?dev=1. */
+  dev: boolean;
 }
 
 export const SETTINGS_KEY = 'smbc.settings';
@@ -47,6 +49,7 @@ export function defaultSettings(): Settings {
     },
     packs: [],
     announce: true,
+    dev: false,
   };
 }
 
