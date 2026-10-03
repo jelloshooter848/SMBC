@@ -10,8 +10,8 @@ import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
 import { loadSettings, saveSettings, type Settings } from '@engine/save/settings';
 import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
-import { getLevel as getBuiltinLevel } from '@content/levels';
-import { getCustomLevel, loadLibrary } from '@game/level/library';
+import { getLevel as getBuiltinLevel, levelIds } from '@content/levels';
+import { customLevelId, getCustomLevel, loadLibrary } from '@game/level/library';
 import { decodeShare } from '@engine/share';
 import { parseTextMap } from '@game/level/textmap';
 import { PALETTES, SPRITES } from '@content/sprites';
@@ -59,6 +59,12 @@ function boot(): void {
   const game = new Game({
     ctx,
     getLevel,
+    listLevels: () => [
+      ...levelIds(),
+      ...Object.keys(loadLibrary().levels)
+        .sort()
+        .map((n) => customLevelId(n)),
+    ],
     canvas,
     overlay,
     viewport,
@@ -133,6 +139,11 @@ function boot(): void {
   }
 
   const params = new URLSearchParams(location.search);
+  const dev = params.get('dev');
+  if (dev !== null) {
+    settings.dev = dev !== '0' && dev !== 'false';
+    applySettings();
+  }
   const shared = /^#level=([A-Za-z0-9_-]+)/.exec(location.hash)?.[1];
   const level = params.get('level');
   if (level) {

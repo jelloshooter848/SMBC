@@ -13,6 +13,7 @@ import type { InputManager } from '@engine/input/input-manager';
 import type { Announcer } from '@engine/a11y/announcer';
 import type { Viewport } from '@engine/viewport';
 import { EditorScene } from './editor';
+import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
@@ -28,6 +29,8 @@ export interface GameDeps {
   applySettings?: () => void;
   input?: InputManager;
   announcer?: Announcer;
+  /** Every playable level id (built-in and custom), for the developer level select. */
+  listLevels?: () => string[];
   /** DOM hooks for the editor (canvas for pointer mapping, overlay for panels). */
   canvas?: HTMLCanvasElement;
   overlay?: HTMLElement;
@@ -61,6 +64,28 @@ export class Game {
 
   showCharacterSelect(): void {
     this.scenes.replace(new CharacterSelectScene(this));
+  }
+
+  get devMode(): boolean {
+    return this.deps.settings?.dev ?? false;
+  }
+
+  showDevMenu(): void {
+    this.scenes.push(new DevMenuScene(this));
+  }
+
+  /** Developer level select: any level, character and power state, with 99 lives. */
+  devStart(levelId: string, character: CharacterDef, power: string): void {
+    this.state = newGameState(character);
+    this.state.lives = 99;
+    if (character.damage.kind === 'powerup') this.state.powerState = power;
+    else {
+      const max = character.damage.max;
+      this.state.hp = power === 'full' ? max : power === 'half' ? Math.max(1, Math.ceil(max / 2)) : 1;
+    }
+    this.playtestDone = null;
+    this.pendingLevel = null;
+    this.goToLevel(levelId, { mode: 'stand' });
   }
 
   openEditor(initial?: { level: LevelData; name: string }): void {

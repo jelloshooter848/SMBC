@@ -20,8 +20,14 @@ export function getLevel(id: string): LevelData {
   return level;
 }
 
+/** Level ids in natural order (1-1, 1-1-bonus, 1-2, ..., 1-10). */
 export function levelIds(): string[] {
+  const key = (id: string) =>
+    id
+      .split('-')
+      .map((part) => (/^\d+$/.test(part) ? part.padStart(4, '0') : part))
+      .join('-');
   return Object.keys(sources)
     .map((p) => p.replace(/^.*\//, '').replace(/\.map$/, ''))
-    .sort();
+    .sort((a, b) => key(a).localeCompare(key(b)));
 }
