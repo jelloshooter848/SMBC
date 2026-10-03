@@ -38,5 +38,7 @@ export class TitleScene extends MenuScene {
     });
     r.text(font, 'ORIGINAL ART AND MUSIC', 40, 184);
     r.text(font, 'NOT AFFILIATED WITH NINTENDO', 16, 196);
+    const version = `V${__APP_VERSION__}`.toUpperCase();
+    r.text(font, version, 252 - version.length * 8, 226);
   }
 }

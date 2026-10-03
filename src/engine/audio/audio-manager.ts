@@ -4,6 +4,8 @@ import { Sequencer, scheduleOnce } from './sequencer';
 
 /** The game talks to audio through this so the headless sim can pass a no-op. */
 export interface AudioSink {
+  /** 'off' until unlocked, then the AudioContext state ('running', 'suspended', 'interrupted'...). */
+  readonly state?: string;
   playMusic(id: string): void;
   stopMusic(): void;
   /** Play a non-looping jingle; the previous music is not resumed automatically. */
@@ -64,6 +66,49 @@ export class AudioManager implements AudioSink {
 
   get unlocked(): boolean {
     return this.ctx !== null;
+  }
+
+  get state(): string {
+    return this.ctx ? this.ctx.state : 'off';
+  }
+
+  private silentElement: HTMLAudioElement | null = null;
+
+  /**
+   * iOS mutes Web Audio while the ring/silent switch is on unless the page has played an HTML5
+   * audio element inside a user gesture, which switches the audio session to "playback".
+   * Plays a tiny silent WAV once; harmless everywhere else.
+   */
+  private kickMediaSession(): void {
+    if (this.silentElement || typeof document === 'undefined') return;
+    try {
+      const el = document.createElement('audio');
+      el.setAttribute('playsinline', '');
+      el.setAttribute('x-webkit-airplay', 'deny');
+      el.preload = 'auto';
+      el.loop = false;
+      el.src = silentWavDataUri();
+      el.volume = 0.01;
+      this.silentElement = el;
+      const p = el.play();
+      if (p && typeof p.catch === 'function') p.catch(() => undefined);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** The classic iOS unlock: start an empty buffer inside the gesture. */
+  private playSilentBuffer(): void {
+    if (!this.ctx) return;
+    try {
+      const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(this.ctx.destination);
+      src.start(0);
+    } catch {
+      /* ignore */
+    }
   }
 
   registerSongs(songs: Song[]): void {
@@ -133,27 +178,45 @@ export class AudioManager implements AudioSink {
   }
   private fileToken = 0;
 
-  /** Call from a user gesture handler. Safe to call repeatedly. */
+  /** Call from a user gesture handler. Safe to call repeatedly (also recovers from iOS interruptions). */
   unlock(): void {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      if (this.ctx.state !== 'running') {
+        void this.ctx.resume().catch(() => undefined);
+        this.playSilentBuffer();
+      }
       return;
     }
     const Ctor =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return;
+    this.kickMediaSession();
     this.ctx = new Ctor();
     this.apu = new Apu(this.ctx);
     this.seq = new Sequencer(this.ctx, this.apu.voices);
     this.applyVolumes();
-    if (this.ctx.state === 'suspended') void this.ctx.resume();
+    this.playSilentBuffer();
+    if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (
+          document.visibilityState === 'visible' &&
+          this.ctx &&
+          this.ctx.state !== 'running' &&
+          !this.paused
+        ) {
+          void this.ctx.resume().catch(() => undefined);
+        }
+      });
+    }
     if (this.pendingMusic) {
       const id = this.pendingMusic;
       this.pendingMusic = null;
       this.playMusic(id);
     }
   }
+  private paused = false;
 
   setVolumes(v: Partial<Volumes>): void {
     this.volumes = { ...this.volumes, ...v };
@@ -269,9 +332,47 @@ export class AudioManager implements AudioSink {
   }
 
   pause(): void {
+    this.paused = true;
     void this.ctx?.suspend();
   }
   resume(): void {
-    void this.ctx?.resume();
+    this.paused = false;
+    void this.ctx?.resume().catch(() => undefined);
   }
+}
+
+/** A 50 ms, 8 kHz, 8-bit mono silent WAV as a data URI (built at runtime, so no binary in the repo). */
+function silentWavDataUri(): string {
+  const samples = 400;
+  const bytes = new Uint8Array(44 + samples);
+  const str = (o: number, t: string) => {
+    for (let i = 0; i < t.length; i++) bytes[o + i] = t.charCodeAt(i);
+  };
+  const u32 = (o: number, v: number) => {
+    bytes[o] = v & 255;
+    bytes[o + 1] = (v >> 8) & 255;
+    bytes[o + 2] = (v >> 16) & 255;
+    bytes[o + 3] = (v >>> 24) & 255;
+  };
+  const u16 = (o: number, v: number) => {
+    bytes[o] = v & 255;
+    bytes[o + 1] = (v >> 8) & 255;
+  };
+  str(0, 'RIFF');
+  u32(4, 36 + samples);
+  str(8, 'WAVE');
+  str(12, 'fmt ');
+  u32(16, 16);
+  u16(20, 1); // PCM
+  u16(22, 1); // mono
+  u32(24, 8000);
+  u32(28, 8000);
+  u16(32, 1);
+  u16(34, 8);
+  str(36, 'data');
+  u32(40, samples);
+  bytes.fill(128, 44);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return 'data:audio/wav;base64,' + btoa(bin);
 }
