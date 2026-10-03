@@ -51,6 +51,9 @@ export interface GameState {
   /** Player 2's carried power state / hp. */
   powerState2: string;
   hp2: number;
+  /** Character-specific carried state (heart containers, ammo, magic, selected tool...). */
+  kit: Record<string, number>;
+  kit2: Record<string, number>;
 }
 
 export function playerCount(s: GameState): number {
@@ -72,5 +75,7 @@ export function newGameState(character: CharacterDef, character2: CharacterDef |
     hp: character.damage.kind === 'hp' ? character.damage.max : 0,
     time: null,
     checkpoint: null,
+    kit: {},
+    kit2: {},
   };
 }

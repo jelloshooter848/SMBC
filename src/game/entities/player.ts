@@ -8,6 +8,13 @@ import { makeBody, moveX, moveY, type Body } from './body';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
 
+/** The part of a player's scratch state that follows them to the next level (not per-swing hit marks). */
+export function carriedKit(p: Player): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(p.scratch)) if (!k.startsWith('hit')) out[k] = v;
+  return out;
+}
+
 export type PlayerAnim =
   'idle' | 'walk' | 'skid' | 'jump' | 'crouch' | 'climb' | 'attack' | 'swim' | 'slide' | 'hurt';
 export type Transition = { kind: 'grow' | 'shrink'; t: number };

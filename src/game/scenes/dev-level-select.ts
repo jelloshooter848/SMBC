@@ -11,6 +11,7 @@ export class DevLevelSelectScene extends MenuScene {
   private levelIndex = 0;
   private charIndex = 0;
   private powerIndex = 0;
+  private fullKit = false;
 
   constructor(game: Game, onBack: () => void) {
     super(game, 'LEVEL SELECT', [], onBack);
@@ -38,8 +39,15 @@ export class DevLevelSelectScene extends MenuScene {
         adjust: (d) => (this.powerIndex = cycle(this.powerIndex, d, this.powerStates.length)),
       },
       {
+        label: 'Kit',
+        value: () => (this.character.devKit ? (this.fullKit ? 'full' : 'basic') : '-'),
+        adjust: () => (this.fullKit = !this.fullKit),
+        hint: 'Full: all tools, ammo and magic',
+      },
+      {
         label: 'Start',
-        select: () => game.devStart(this.levels[this.levelIndex] ?? '1-1', this.character, this.power),
+        select: () =>
+          game.devStart(this.levels[this.levelIndex] ?? '1-1', this.character, this.power, this.fullKit),
         hint: 'Starts with 99 lives',
       },
       { label: 'Back', select: onBack },

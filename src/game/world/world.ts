@@ -18,9 +18,10 @@ import { Goomba } from '../entities/enemies/goomba';
 import { Koopa } from '../entities/enemies/koopa';
 import { Piranha } from '../entities/enemies/piranha';
 import { PowerUp } from '../entities/objects/powerup';
+import { Pickup } from '../entities/objects/pickup';
 import { Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
-import { BlockBump, BrickPiece, CoinPop, ScorePopup } from '../entities/effects/effects';
+import { BlockBump, BrickPiece, CoinPop, Explosion, ScorePopup } from '../entities/effects/effects';
 import { comboScore, type DamageSource } from '../rules/damage';
 import type { GameContext, GameState } from '../context';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
@@ -133,6 +134,7 @@ export class World {
       );
       p.profile = { ...def.movement, coyoteFrames: ctx.assist.coyoteFrames };
       p.index = i;
+      Object.assign(p.scratch, i === 0 ? state.kit : state.kit2);
       if (mode === 'fall') p.body.y = px(-32) - px(i * 24);
       else if (mode === 'pipe-exit') {
         // Start inside the pipe below (centred on the 2-wide pipe) and rise out; P2 arrives a moment later.
@@ -262,6 +264,65 @@ export class World {
     return this.entities.filter((e): e is Enemy => e instanceof Enemy && e.alive);
   }
 
+  /** Closest live, on-screen enemy to a point (homing shots). */
+  nearestEnemy(x: number, y: number): Enemy | null {
+    let best: Enemy | null = null;
+    let bestD = Infinity;
+    for (const e of this.enemies) {
+      if (e.body.x + e.body.w < this.camera.x || e.body.x > this.camera.right) continue;
+      const d = Math.abs(e.body.x - x) + Math.abs(e.body.y - y);
+      if (d < bestD) {
+        bestD = d;
+        best = e;
+      }
+    }
+    return best;
+  }
+
+  /** An enemy just died: the character that killed it may get a drop. */
+  enemyKilled(e: Enemy, src: DamageSource): void {
+    let killer: Player | null = null;
+    const o = src.owner;
+    if (o instanceof Player) killer = o;
+    else if (o instanceof Projectile && o.owner instanceof Player) killer = o.owner;
+    if (!killer) killer = this.nearestPlayer(e.body.x);
+    const kind = killer.def.drop?.(this.rng, e);
+    if (kind) this.spawn(new Pickup(e.body.x + (e.body.w >> 1), e.body.y + e.body.h, kind));
+  }
+
+  /** A bomb blast centred at (cx, cy) in subpixels: hurts everything in the square, opens blocks. */
+  explode(cx: number, cy: number, radiusPx: number, owner: Player | null): void {
+    const r = px(radiusPx);
+    const box = { x: cx - r, y: cy - r, w: r * 2, h: r * 2 };
+    this.spawn(new Explosion(cx, cy));
+    this.audio.sfx('explosion');
+    for (const e of this.enemies) {
+      if (!overlaps(box, e.body)) continue;
+      const res = e.hit({ kind: 'bomb', amount: 2, owner, dirX: e.body.x < cx ? -1 : 1 }, this);
+      if (res === 'kill' || res === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
+      else if (res === 'hp') this.audio.sfx('hurt-enemy');
+    }
+    for (const p of this.activePlayers()) {
+      if (overlaps(box, p.body)) this.hurtPlayer(p, p.centerX < cx ? -1 : 1);
+    }
+    const breaker = owner ?? this.nearestPlayer(cx);
+    for (let ty = tileAt(box.y); ty <= tileAt(box.y + box.h - 1); ty++)
+      for (let tx = tileAt(box.x); tx <= tileAt(box.x + box.w - 1); tx++) {
+        const def = tileDef(this.map.get(tx, ty));
+        if (def.block && def.block.kind !== 'hidden') this.hitBlock(tx, ty, breaker);
+      }
+  }
+
+  /** A projectile struck the tile at a point: bricks and item blocks react as to a head bump. */
+  breakAt(x: number, y: number, owner: Entity | Player | null): void {
+    const tx = tileAt(x);
+    const ty = tileAt(y);
+    const def = tileDef(this.map.get(tx, ty));
+    if (!def.block || def.block.kind === 'hidden') return;
+    const p = owner instanceof Player ? owner : this.nearestPlayer(x);
+    this.hitBlock(tx, ty, p);
+  }
+
   /* ---------- Scoring ---------- */
 
   addScore(n: number, x?: number, y?: number): void {
@@ -336,7 +397,14 @@ export class World {
         p.body.x = tileToSub(this.level.width) - p.body.w;
     });
 
-    for (const e of this.entities) if (e.alive) e.update(this);
+    for (const e of this.entities) {
+      if (!e.alive) continue;
+      if (e instanceof Enemy && e.stunned > 0) {
+        e.stunned--;
+        continue;
+      }
+      e.update(this);
+    }
     this.resolveLifts();
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
@@ -520,6 +588,8 @@ export class World {
           e.destroy();
           p.def.behaviour.onPowerUp(p, e.item, this);
         }
+      } else if (e instanceof Pickup) {
+        if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();
       } else if (e instanceof Projectile) this.projectile(p, e);
       else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e, p);
       else if (e instanceof Axe && overlaps(pb, e.body)) this.startBossClear(e, p);
@@ -581,6 +651,7 @@ export class World {
         return;
       }
     }
+    if (e.stunned > 0) return;
     if (e instanceof Koopa && e.state === 'shell') {
       const dir: -1 | 1 = p.centerX < e.body.x + e.body.w / 2 ? 1 : -1;
       e.kick(dir, this);
@@ -598,14 +669,34 @@ export class World {
   }
 
   private projectile(p: Player, pr: Projectile): void {
-    if (pr.spec.hitsPlayer && overlaps(pr.body, p.body)) {
+    if (pr.spec.hitsPlayer) {
+      // Shields and guard projectiles owned by this player swat it away first.
+      for (const q of this.entities) {
+        if (
+          q instanceof Projectile &&
+          q.alive &&
+          q.spec.blocks &&
+          q.owner === p &&
+          overlaps(q.body, pr.body)
+        ) {
+          pr.destroy();
+          this.audio.sfx('bump');
+          return;
+        }
+      }
+      if (!overlaps(pr.body, p.body)) return;
+      if (p.def.behaviour.blocks?.(p, pr)) {
+        pr.destroy();
+        this.audio.sfx('bump');
+        return;
+      }
       this.hurtPlayer(p, pr.body.vx > 0 ? 1 : -1);
       if (!pr.spec.pierce) pr.destroy();
       return;
     }
     if (!pr.spec.hitsEnemies || pr.owner !== p) return;
     for (const e of this.enemies) {
-      if (!overlaps(pr.body, e.body)) continue;
+      if (pr.hitIds.has(e.id) || !overlaps(pr.body, e.body)) continue;
       const src: DamageSource = {
         kind: pr.spec.damage,
         amount: pr.spec.amount,
@@ -614,11 +705,13 @@ export class World {
       };
       const r = e.hit(src, this);
       if (r === 'immune') {
-        if (pr.spec.hitsTiles) pr.burst(this);
+        if (pr.spec.hitsTiles && !pr.spec.pierce) pr.burst(this);
         return;
       }
+      pr.hitIds.add(e.id);
       if (r === 'kill' || r === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
       else if (r === 'hp') this.audio.sfx('hurt-enemy');
+      else if (r === 'stun') this.audio.sfx('hurt-enemy');
       if (!pr.spec.pierce) {
         pr.burst(this);
         return;
