@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { px, toPx, velToPxf } from '@engine/math/units';
 import { Player } from './player';
 import { MARIO } from '../characters/mario';
+import { LUIGI } from '../characters/luigi';
+import type { CharacterDef } from '../characters/character';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { TileMap } from '../world/tilemap';
 import { parseTextMap } from '../level/textmap';
@@ -32,10 +34,33 @@ function fakeInput(held: Set<Action>, pressedJump = false): InputFrame {
   };
 }
 
-function standingPlayer(x = 2): Player {
-  const p = new Player(px(x * 16), px(13 * 16 - 16), MARIO, 'small', 0);
+/** Flat floor with a 4-tile-high plateau from column 40 to the right edge (a tall pipe's top). */
+function plateauMap(): TileMap {
+  const rows = Array.from({ length: 13 }, () => '.'.repeat(64));
+  for (let y = 9; y < 13; y++) rows[y] = '.'.repeat(40) + '#'.repeat(24);
+  const src = ['id: t', '', '[tiles]', ...rows, '#'.repeat(64), '#'.repeat(64)].join('\n');
+  return new TileMap(parseTextMap(src));
+}
+
+function standingPlayer(x = 2, def: CharacterDef = MARIO): Player {
+  const p = new Player(px(x * 16), px(13 * 16 - 16), def, 'small', 0);
   p.body.onGround = true;
   return p;
+}
+
+/** Jump from a standstill holding the button; returns the apex height in px. */
+function standingApex(def: CharacterDef): number {
+  const map = flatMap();
+  const p = standingPlayer(2, def);
+  const startY = toPx(p.body.y);
+  let minY = startY;
+  let first = true;
+  for (let i = 0; i < 100; i++) {
+    p.update(fakeInput(new Set(['jump']), first), map, NULL_AUDIO);
+    first = false;
+    minY = Math.min(minY, toPx(p.body.y));
+  }
+  return startY - minY;
 }
 
 describe('Mario physics', () => {
@@ -56,7 +81,7 @@ describe('Mario physics', () => {
     expect(velToPxf(p.body.vx)).toBeCloseTo(2.5625, 3);
   });
 
-  it('standing jump apex is about 4 tiles (64 px)', () => {
+  it('standing jump clears 4 tiles (64 px) like SMB1', () => {
     const map = flatMap();
     const p = standingPlayer();
     const startY = toPx(p.body.y);
@@ -68,9 +93,41 @@ describe('Mario physics', () => {
       minY = Math.min(minY, toPx(p.body.y));
     }
     const apex = startY - minY;
-    expect(apex).toBeGreaterThanOrEqual(60);
-    expect(apex).toBeLessThanOrEqual(68);
+    expect(apex).toBeGreaterThanOrEqual(64);
+    expect(apex).toBeLessThanOrEqual(70);
     expect(p.body.onGround).toBe(true); // landed again
+  });
+
+  it('walking jump keeps walking speed in the air (no run-speed burst)', () => {
+    const map = flatMap();
+    const p = standingPlayer(0);
+    for (let i = 0; i < 120; i++) p.update(fakeInput(new Set(['right'])), map, NULL_AUDIO);
+    expect(p.body.vx).toBe(MARIO.movement.maxWalk);
+    let first = true;
+    let maxVx = 0;
+    for (let i = 0; i < 90; i++) {
+      p.update(fakeInput(new Set(['right', 'jump']), first), map, NULL_AUDIO);
+      first = false;
+      maxVx = Math.max(maxVx, p.body.vx);
+    }
+    expect(maxVx).toBe(MARIO.movement.maxWalk);
+  });
+
+  it('walking jump lands on top of a 4-tile pipe without running', () => {
+    const map = plateauMap();
+    const p = standingPlayer(20);
+    let pressed = false;
+    for (let i = 0; i < 400 && !(p.body.onGround && toPx(p.body.y) === 9 * 16 - 16); i++) {
+      const ahead = 40 * 16 - toPx(p.body.x + p.body.w);
+      const jump = pressed || (p.body.onGround && ahead <= 56);
+      const held = new Set<Action>(['right']);
+      if (jump) held.add('jump');
+      p.update(fakeInput(held, jump && !pressed), map, NULL_AUDIO);
+      if (jump) pressed = true;
+    }
+    expect(p.body.onGround).toBe(true);
+    expect(toPx(p.body.y)).toBe(9 * 16 - 16);
+    expect(toPx(p.body.x + p.body.w)).toBeGreaterThan(40 * 16); // standing on the plateau's edge
   });
 
   it('short hop when jump is released early', () => {
@@ -98,8 +155,8 @@ describe('Mario physics', () => {
       minY = Math.min(minY, toPx(p.body.y));
     }
     const apex = startY - minY;
-    expect(apex).toBeGreaterThanOrEqual(76);
-    expect(apex).toBeLessThanOrEqual(84);
+    expect(apex).toBeGreaterThanOrEqual(80);
+    expect(apex).toBeLessThanOrEqual(88);
   });
 
   it('stops at walls', () => {
@@ -130,5 +187,32 @@ describe('Mario physics', () => {
     p.update(fakeInput(new Set(['left'])), map, NULL_AUDIO);
     expect(p.skidding).toBe(true);
     expect(p.body.vx).toBeGreaterThan(0);
+  });
+});
+
+describe('Luigi physics', () => {
+  it('jumps about a tile higher than Mario from a standstill', () => {
+    const mario = standingApex(MARIO);
+    const luigi = standingApex(LUIGI);
+    expect(luigi).toBeGreaterThanOrEqual(mario + 10);
+    expect(luigi).toBeLessThanOrEqual(mario + 18);
+  });
+
+  it('slides further than Mario after letting go', () => {
+    const slide = (def: CharacterDef) => {
+      const map = flatMap();
+      const p = standingPlayer(2, def);
+      for (let i = 0; i < 120; i++) p.update(fakeInput(new Set(['right'])), map, NULL_AUDIO);
+      const x0 = toPx(p.body.x);
+      for (let i = 0; i < 120; i++) p.update(fakeInput(new Set()), map, NULL_AUDIO);
+      expect(p.body.vx).toBe(0);
+      return toPx(p.body.x) - x0;
+    };
+    expect(slide(LUIGI)).toBeGreaterThan(slide(MARIO) * 1.5);
+  });
+
+  it('shares the plumber power-up rules', () => {
+    expect(LUIGI.damage).toEqual(MARIO.damage);
+    expect(LUIGI.behaviour).toBe(MARIO.behaviour);
   });
 });
