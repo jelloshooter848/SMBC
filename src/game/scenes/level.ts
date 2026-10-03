@@ -6,6 +6,7 @@ import type { LevelData } from '../level/schema';
 import { World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
 import { drawHud } from '../hud/hud';
+import { carriedKit } from '../entities/player';
 import type { Game } from './game';
 import { PauseScene } from './pause';
 
@@ -61,10 +62,12 @@ export class LevelScene implements Scene {
     const p = this.world.player;
     s.powerState = p.powerState;
     s.hp = p.hp;
+    s.kit = carriedKit(p);
     const p2 = this.world.players[1];
     if (p2) {
       s.powerState2 = p2.powerState;
       s.hp2 = p2.hp;
+      s.kit2 = carriedKit(p2);
     }
     s.time = this.world.time;
   }
@@ -102,6 +105,8 @@ export class LevelScene implements Scene {
         const s = game.state;
         s.powerState = s.character.damage.kind === 'powerup' ? 'small' : 'full';
         s.hp = s.character.damage.kind === 'hp' ? s.character.damage.max : 0;
+        s.kit = {};
+        s.kit2 = {};
         if (s.character2) {
           s.powerState2 = s.character2.damage.kind === 'powerup' ? 'small' : 'full';
           s.hp2 = s.character2.damage.kind === 'hp' ? s.character2.damage.max : 0;

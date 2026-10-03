@@ -132,6 +132,23 @@ export class Flash extends Entity {
   }
 }
 
+/** Bomb blast: three growing frames drawn centred on the blast point. */
+export class Explosion extends Entity {
+  readonly kind = 'explosion';
+  private age = 0;
+  constructor(cx: number, cy: number) {
+    super(cx - px(16), cy - px(16), 32, 32);
+    this.layer = 'front';
+  }
+  update(): void {
+    if (++this.age >= 24) this.destroy();
+  }
+  render(r: Renderer, view: View): void {
+    const f = Math.min(2, this.age >> 3);
+    r.sprite(view.assets.sheet('items'), `explosion-${f}`, this.screenX(view), this.screenY());
+  }
+}
+
 /** A dead enemy flipped upside down, falling off the screen. */
 export class Corpse extends Entity {
   readonly kind = 'corpse';

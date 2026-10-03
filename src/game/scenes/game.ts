@@ -75,12 +75,13 @@ export class Game {
   }
 
   /** Developer level select: any level, character and power state, with 99 lives. */
-  devStart(levelId: string, character: CharacterDef, power: string): void {
+  devStart(levelId: string, character: CharacterDef, power: string, fullKit = false): void {
     this.state = newGameState(character);
     this.state.lives = 99;
+    if (fullKit && character.devKit) this.state.kit = character.devKit();
     if (character.damage.kind === 'powerup') this.state.powerState = power;
     else {
-      const max = character.damage.max;
+      const max = this.state.kit.maxHp ?? character.damage.max;
       this.state.hp = power === 'full' ? max : power === 'half' ? Math.max(1, Math.ceil(max / 2)) : 1;
     }
     this.playtestDone = null;

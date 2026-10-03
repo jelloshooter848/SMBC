@@ -1,7 +1,7 @@
 import { px, toPx, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
 import type { World } from '../../world/world';
-import type { DamageSource } from '../../rules/damage';
+import type { DamageSource, Reaction } from '../../rules/damage';
 import { moveX } from '../body';
 
 export const SHELL_SPEED = 0x03000; // 3 px/f
@@ -35,6 +35,12 @@ export class Koopa extends Enemy {
 
   get isMovingShell(): boolean {
     return this.state === 'shell-moving';
+  }
+
+  /** A boomerang only stuns a walking koopa; shells just deflect it. */
+  override hit(src: DamageSource, world: World): Reaction {
+    if (src.kind === 'boomerang' && this.state !== 'walk') return 'immune';
+    return super.hit(src, world);
   }
 
   private becomeShell(): void {

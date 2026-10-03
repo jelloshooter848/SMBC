@@ -31,6 +31,9 @@ export class Bowser extends Enemy {
       shell: 'immune',
       bump: 'immune',
       axe: 'kill',
+      bomb: 'hp',
+      weapon: 'hp',
+      boomerang: 'immune',
     };
     this.body.vx = -this.walkSpeed;
     this.currentFrame = 'bowser-0';

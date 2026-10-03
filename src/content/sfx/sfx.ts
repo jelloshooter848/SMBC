@@ -66,4 +66,16 @@ export const sfx: Sfx[] = [
   { id: 'timer-tick', pulse: '@2 v8 q8 x1 o7 c64' },
   // Short stepped rising sweep.
   { id: 'vine', pulse: '@1 v10 q8 x1 l64 o4 g a b o5 c d e f+ g' },
+  // Bomb blast: a thump and a long noise tail.
+  { id: 'explosion', pulse: '@0 v12 q8 x1 p-12 o2 c8', noise: 'v14 x1 l16 n3 n6 l8 n10 n13 n14' },
+  // Boomerang whoosh: a quick down-up wobble.
+  { id: 'boomerang', pulse: '@1 v8 q8 x1 p-6 o5 g32 p6 o5 d32 p-6 o5 g32' },
+  // Spell cast: a bright sparkle.
+  {
+    id: 'magic',
+    pulse: '@2 v11 q8 x0 l64 o6 c e g o7 c e x1 g16',
+    pulse2: '@2 v6 q8 x1 l64 o7 e g b o8 e16',
+  },
+  // Picked up a drop.
+  { id: 'pickup', pulse: '@2 v10 q8 x1 o6 g32 o7 c32' },
 ];

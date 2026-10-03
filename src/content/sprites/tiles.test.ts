@@ -99,6 +99,23 @@ const itemFrames: Record<string, Size> = {
   'spring-2': T16,
   flag: T16,
   'castle-flag': T16,
+  'bomb-0': T16,
+  'bomb-1': T16,
+  'explosion-0': [32, 32],
+  'explosion-1': [32, 32],
+  'explosion-2': [32, 32],
+  'boomerang-0': S8,
+  'boomerang-1': S8,
+  'boomerang-2': S8,
+  'boomerang-3': S8,
+  'magic-jar-small': S8,
+  'magic-jar-large': T16,
+  'heart-small': S8,
+  'icon-boomerang': S8,
+  'icon-bomb': S8,
+  'icon-jump': S8,
+  'icon-shield': S8,
+  'icon-fire': S8,
 };
 
 const decorFrames: Record<string, Size> = {

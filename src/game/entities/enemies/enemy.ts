@@ -5,6 +5,7 @@ import { moveX } from '../body';
 import type { World } from '../../world/world';
 import {
   BASIC_VULNERABILITY,
+  STUN_FRAMES,
   type DamageSource,
   type Reaction,
   type Vulnerability,
@@ -43,6 +44,8 @@ export abstract class Enemy extends Entity {
   activated = false;
   /** Frames of being dead-but-visible (squash). */
   protected dying = 0;
+  /** Frames left frozen by a stun (boomerang); the world skips update() while > 0. */
+  stunned = 0;
 
   constructor(x: number, y: number, wPx: number, hPx: number) {
     super(x, y, wPx, hPx);
@@ -60,23 +63,36 @@ export abstract class Enemy extends Entity {
       case 'kill':
         if (src.kind === 'stomp') this.squash(world);
         else this.flipOut(src, world);
+        this.onKilled(src, world);
         break;
       case 'flip':
         this.flipOut(src, world);
+        this.onKilled(src, world);
         break;
       case 'hp':
         this.hp -= src.amount;
-        if (this.hp <= 0) this.flipOut(src, world);
-        else this.onHpHit(src, world);
+        if (this.hp <= 0) {
+          this.flipOut(src, world);
+          this.onKilled(src, world);
+        } else this.onHpHit(src, world);
         break;
       case 'shell':
         this.onShell(src, world);
+        break;
+      case 'stun':
+        this.stunned = STUN_FRAMES;
         break;
       case 'immune':
       case 'hurtAttacker':
         break;
     }
     return reaction;
+  }
+
+  /** Called once when a hit kills this enemy (drops, character hooks). */
+  protected onKilled(src: DamageSource, world: World): void {
+    this.stunned = 0;
+    world.enemyKilled(this, src);
   }
 
   protected onHpHit(_src: DamageSource, _world: World): void {}
@@ -133,6 +149,8 @@ export abstract class Enemy extends Entity {
 
   render(r: Renderer, view: View): void {
     if (!this.currentFrame) return;
+    // A stunned enemy flickers (skipped every fourth frame) unless reduced flashing is on.
+    if (this.stunned > 0 && !view.reduceFlashing && (view.frame & 3) === 0) return;
     const sheet = view.assets.sheet(this.sheet, this.palette(view));
     r.sprite(sheet, this.currentFrame, this.screenX(view), this.screenY(), this.facing > 0);
   }

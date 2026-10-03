@@ -17,8 +17,8 @@ pnpm install
 pnpm dev          # http://localhost:5173
 ```
 
-Keyboard: arrows move, **Z** jump, **X** run / attack (and _back_ in menus), **C** special,
-**Enter** start/pause. Gamepads use the standard mapping. Phones and tablets get on-screen
+Keyboard: arrows move, **Z** jump, **X** run / attack (and _back_ in menus), **C** special
+(use the selected tool), **Right Shift** select (cycle tools), **Enter** start/pause. Gamepads use the standard mapping. Phones and tablets get on-screen
 controls automatically. Press **F1** for the debug overlay and **F2** for a free camera
 (arrows scroll) when checking level layouts.
 
@@ -27,8 +27,13 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
 - **Mario**: SMB1 physics, mushrooms, fire flowers, stars, stomps.
 - **Luigi**: the same kit with a higher jump, slower acceleration and a longer slide (Lost
   Levels style).
-- **Link**: fixed-height jump, hearts, sword (down-thrust in the air bounces), heart
-  containers from mushrooms, a sword beam at full health from flowers. Can't stomp.
+- **Link**: Zelda II style. Fixed-height jump, hearts, sword with down-thrust (bounces) and
+  up-thrust (up + attack in the air), a shield that stops projectiles from the front while
+  standing. Mushrooms add a heart container and the white tunic (every other hit glances off);
+  flowers give the red tunic and a sword beam at full health. **Select** cycles the tool belt
+  and **C** uses it: boomerang (stuns), bombs (ammo dropped by enemies; break bricks, hurt
+  Link too), and the Jump, Shield and Fire spells, which spend the magic meter that enemy
+  drops refill. Can't stomp.
 - **Mega Man**: instant acceleration, cut-able jump, slide (down + jump), arm cannon with
   three shots on screen, charge shot from flowers, 28-point health bar. Can't stomp.
 
@@ -45,7 +50,8 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
 Enter up, up, down, down, left, right, left, right, B, A on the title screen (or open the game
 with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
 
-- **Level select**: any built-in or custom level, any character, starting power, 99 lives.
+- **Level select**: any built-in or custom level, any character, starting power, a full kit
+  (all tools, ammo and magic) and 99 lives.
 - **Assists** (active only while dev mode is on): scroll back, infinite lives, infinite time, no
   damage, keep big when losing fire, coyote time, half-speed slow motion.
 - **Dev mode off** hides it again.
