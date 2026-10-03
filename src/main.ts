@@ -41,10 +41,13 @@ function boot(): void {
   const audio = new AudioManager();
   audio.registerSongs(songs);
   audio.registerSfx(sfx);
+  // Browsers only start audio inside a user gesture; iOS Safari is strict about which events count,
+  // so listen to several and keep listening so an interrupted context (phone call) recovers.
   const unlock = () => audio.unlock();
-  window.addEventListener('keydown', unlock);
-  window.addEventListener('pointerdown', unlock);
-  window.addEventListener('gamepadconnected', unlock);
+  for (const ev of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click', 'gamepadconnected']) {
+    window.addEventListener(ev, unlock, { passive: true });
+  }
+  console.info(`SMB Crossover ${__APP_VERSION__}`);
   const announcer = new Announcer(document.getElementById('announcer'));
 
   let fps = 0;
