@@ -43,9 +43,12 @@ export class SceneStack {
     if (first) this.top?.update(first, inputs);
   }
 
+  /** Draws the nearest opaque scene, then only the topmost overlay (stacked menus don't bleed through). */
   render(r: Renderer): void {
-    let start = this.stack.length - 1;
-    while (start > 0 && this.stack[start]?.translucent) start--;
-    for (let i = start; i < this.stack.length; i++) this.stack[i]?.render(r);
+    const top = this.stack.length - 1;
+    let base = top;
+    while (base > 0 && this.stack[base]?.translucent) base--;
+    this.stack[base]?.render(r);
+    if (top !== base) this.stack[top]?.render(r);
   }
 }

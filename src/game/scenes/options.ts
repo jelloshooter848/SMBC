@@ -22,7 +22,6 @@ export class OptionsScene extends MenuScene {
       { label: 'Video', select: () => this.push(new VideoOptions(game, () => this.pop())) },
       { label: 'Audio', select: () => this.push(new AudioOptions(game, () => this.pop())) },
       { label: 'Controls', select: () => this.push(new ControlsOptions(game, () => this.pop())) },
-      { label: 'Assists', select: () => this.push(new AssistOptionsScene(game, () => this.pop())) },
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
       { label: 'Back', select: onBack },
     ]);
@@ -210,7 +209,7 @@ function defaultBindingsFor(i: number) {
 }
 import { defaultBindings } from '@engine/input/bindings';
 
-class AssistOptionsScene extends MenuScene {
+export class AssistOptionsScene extends MenuScene {
   constructor(game: Game, onBack: () => void) {
     super(game, 'ASSISTS', [], onBack);
     const s = settings(game);
