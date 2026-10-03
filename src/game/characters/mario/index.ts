@@ -5,18 +5,35 @@ import type { Player } from '../../entities/player';
 import { Projectile, FIREBALL } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
 
-const STATES = ['small', 'big', 'fire'] as const;
+export const PLUMBER_STATES = ['small', 'big', 'fire'] as const;
+const STATES = PLUMBER_STATES;
 
 function prefix(p: Player): 'small' | 'big' {
   return p.powerState === 'small' ? 'small' : 'big';
 }
 
-function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
+/** Palette names a plumber uses for each power state (Luigi reuses Mario's art recoloured). */
+export interface PlumberPalettes {
+  normal: string;
+  fire: string;
+  /** Prefix for the four star-flash palettes (`${star}-0` .. `${star}-3`). */
+  star: string;
+}
+
+export const MARIO_PALETTES: PlumberPalettes = { normal: 'mario', fire: 'mario-fire', star: 'mario-star' };
+
+/** Pick the sprite frame for a Mario-style hero drawn from the `mario` sheet. */
+export function plumberSprite(
+  p: Player,
+  frame: number,
+  reduceFlashing: boolean,
+  pal: PlumberPalettes,
+): SpriteSpec {
   const big = prefix(p) === 'big';
-  let palette = p.powerState === 'fire' ? 'mario-fire' : 'mario';
+  let palette = p.powerState === 'fire' ? pal.fire : pal.normal;
   if (p.star > 0) {
     const flash = reduceFlashing ? 0 : (frame >> 1) & 3;
-    palette = `mario-star-${flash}`;
+    palette = `${pal.star}-${flash}`;
   }
   let name: string;
   const pre = prefix(p);
@@ -69,6 +86,62 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   return { sheet: 'mario', palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
 }
 
+/** SMB1 power-up rules shared by Mario and Luigi. */
+export const PLUMBER_BEHAVIOUR: CharacterDef['behaviour'] = {
+  update(p, input, world) {
+    if (p.powerState !== 'fire' || p.crouching || p.transition) return;
+    if (input.pressed('attack') && world.countProjectiles(p, 'fireball') < 2) {
+      const b = p.body;
+      const x = p.facing > 0 ? b.x + b.w : b.x - px(8);
+      world.spawn(new Projectile(x, b.y + px(8), p.facing, FIREBALL, p));
+      world.audio.sfx('fireball');
+      p.attackTimer = 8;
+    }
+  },
+  onPowerUp(p, kind, world) {
+    switch (kind) {
+      case 'mushroom':
+        if (p.powerState === 'small') {
+          p.powerState = 'big';
+          p.startTransition('grow');
+        }
+        world.addScore(1000, p.body.x, p.body.y - px(16));
+        world.audio.sfx('powerup');
+        break;
+      case 'flower':
+        if (p.powerState === 'small') {
+          p.powerState = 'big';
+          p.startTransition('grow');
+        } else if (p.powerState === 'big') {
+          p.powerState = 'fire';
+          p.startTransition('grow');
+        }
+        world.addScore(1000, p.body.x, p.body.y - px(16));
+        world.audio.sfx('powerup');
+        break;
+      case 'star':
+        p.star = STAR_FRAMES;
+        world.addScore(1000, p.body.x, p.body.y - px(16));
+        world.audio.playMusic('star');
+        break;
+      case '1up':
+        world.addLife(p.body.x, p.body.y - px(16));
+        break;
+    }
+  },
+  contactDamage() {
+    return null;
+  },
+  onHurt(p, world) {
+    if (p.powerState === 'small') return 'dead';
+    p.powerState = p.powerState === 'fire' && world.assist.fireRevertsToBig ? 'big' : 'small';
+    p.startTransition('shrink');
+    p.invuln = 150;
+    world.audio.sfx('pipe');
+    return 'hurt';
+  },
+};
+
 export const MARIO: CharacterDef = {
   id: 'mario',
   name: 'Mario',
@@ -79,62 +152,9 @@ export const MARIO: CharacterDef = {
   crouches: true,
   canBreakBricks: (p) => p.powerState !== 'small',
   hitbox: (p) => (p.powerState === 'small' || p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
-  sprite,
+  sprite: (p, frame, reduceFlashing) => plumberSprite(p, frame, reduceFlashing, MARIO_PALETTES),
   blockPowerUp: (p) => (p.powerState === 'small' ? 'mushroom' : 'flower'),
   jumpSfx: (p) => (p.powerState === 'small' ? 'jump-small' : 'jump-big'),
   portrait: { sheet: 'mario', palette: 'mario', frame: 'small-idle' },
-  behaviour: {
-    update(p, input, world) {
-      if (p.powerState !== 'fire' || p.crouching || p.transition) return;
-      if (input.pressed('attack') && world.countProjectiles(p, 'fireball') < 2) {
-        const b = p.body;
-        const x = p.facing > 0 ? b.x + b.w : b.x - px(8);
-        world.spawn(new Projectile(x, b.y + px(8), p.facing, FIREBALL, p));
-        world.audio.sfx('fireball');
-        p.attackTimer = 8;
-      }
-    },
-    onPowerUp(p, kind, world) {
-      switch (kind) {
-        case 'mushroom':
-          if (p.powerState === 'small') {
-            p.powerState = 'big';
-            p.startTransition('grow');
-          }
-          world.addScore(1000, p.body.x, p.body.y - px(16));
-          world.audio.sfx('powerup');
-          break;
-        case 'flower':
-          if (p.powerState === 'small') {
-            p.powerState = 'big';
-            p.startTransition('grow');
-          } else if (p.powerState === 'big') {
-            p.powerState = 'fire';
-            p.startTransition('grow');
-          }
-          world.addScore(1000, p.body.x, p.body.y - px(16));
-          world.audio.sfx('powerup');
-          break;
-        case 'star':
-          p.star = STAR_FRAMES;
-          world.addScore(1000, p.body.x, p.body.y - px(16));
-          world.audio.playMusic('star');
-          break;
-        case '1up':
-          world.addLife(p.body.x, p.body.y - px(16));
-          break;
-      }
-    },
-    contactDamage() {
-      return null;
-    },
-    onHurt(p, world) {
-      if (p.powerState === 'small') return 'dead';
-      p.powerState = p.powerState === 'fire' && world.assist.fireRevertsToBig ? 'big' : 'small';
-      p.startTransition('shrink');
-      p.invuln = 150;
-      world.audio.sfx('pipe');
-      return 'hurt';
-    },
-  },
+  behaviour: PLUMBER_BEHAVIOUR,
 };

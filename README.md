@@ -25,6 +25,8 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
 ### Characters
 
 - **Mario**: SMB1 physics, mushrooms, fire flowers, stars, stomps.
+- **Luigi**: the same kit with a higher jump, slower acceleration and a longer slide (Lost
+  Levels style).
 - **Link**: fixed-height jump, hearts, sword (down-thrust in the air bounces), heart
   containers from mushrooms, a sword beam at full health from flowers. Can't stomp.
 - **Mega Man**: instant acceleration, cut-able jump, slide (down + jump), arm cannon with

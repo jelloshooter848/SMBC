@@ -57,17 +57,24 @@ try {
   await page.goto('http://localhost:4173/');
   await page.waitForTimeout(600);
   await page.screenshot({ path: join(outDir, '00-title.png') });
-  await page.keyboard.press('ArrowDown');
-  await page.waitForTimeout(150);
+  // Title menu: Start game, Custom levels, Level editor, Options (then Dev mode when unlocked).
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(100);
+  }
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(outDir, '00-options.png') });
   await page.keyboard.press('KeyX');
   await page.waitForTimeout(200);
-  await page.keyboard.press('ArrowUp');
-  await page.waitForTimeout(150);
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(100);
+  }
   await page.keyboard.press('Enter');
   await page.waitForTimeout(400);
+  await page.keyboard.press('ArrowRight'); // highlight the second hero
+  await page.waitForTimeout(200);
   await page.screenshot({ path: join(outDir, '00-select.png') });
   await page.goto(
     `http://localhost:4173/?level=${level}&char=${character}${character2 ? `&char2=${character2}` : ''}`,
