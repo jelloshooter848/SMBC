@@ -50,6 +50,8 @@ export interface ProjectileSpec {
   piercesTiles?: boolean;
   /** Snakes up and down around its launch height (px amplitude, frames per cycle). */
   wave?: { amplitude: number; period: number };
+  /** An arcing projectile leaves this behind where it lands (holy water's flame). */
+  spawnOnLand?: ProjectileSpec;
 }
 
 export interface ProjectileOptions {
@@ -216,7 +218,14 @@ export class Projectile extends Entity {
         b.vy += this.spec.gravity || 0x00400;
         if (b.vy > 0x04000) b.vy = 0x04000;
         moveY(b, world.map, velToSub(b.vy));
-        if (b.onGround && this.spec.arc) return this.burst(world);
+        if (b.onGround && this.spec.arc) {
+          const s = this.spec.spawnOnLand;
+          if (s) {
+            const x = b.x + (b.w >> 1) - px(s.w >> 1);
+            world.spawn(new Projectile(x, b.y + b.h - px(s.h), this.facing, s, this.owner, { vx: 0 }));
+          }
+          return this.burst(world);
+        }
         if (b.onGround && this.spec.bounceVy !== null) b.vy = this.spec.bounceVy;
         else if (b.onGround) b.vy = 0;
         if (b.hitHead) b.vy = 0;
@@ -225,6 +234,11 @@ export class Projectile extends Entity {
         if (b.onGround || b.hitHead) return this.burst(world);
       }
     } else {
+      // Free flight: tiles are ignored, but gravity still applies when the spec asks for it.
+      if (this.spec.gravity) {
+        b.vy += this.spec.gravity;
+        if (b.vy > 0x04000) b.vy = 0x04000;
+      }
       b.x += velToSub(b.vx);
       b.y += velToSub(b.vy);
       if (this.spec.wave && b.vx !== 0) {

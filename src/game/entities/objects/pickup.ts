@@ -9,6 +9,7 @@ export type PickupKind =
   | 'magic-small'
   | 'magic-large'
   | 'heart-small'
+  | 'heart-large'
   | 'health-small'
   | 'health-large'
   | 'weapon-small'
@@ -23,6 +24,7 @@ const FRAMES: Record<PickupKind, { frame: string; size: number }> = {
   'magic-small': { frame: 'magic-jar-small', size: 8 },
   'magic-large': { frame: 'magic-jar-large', size: 16 },
   'heart-small': { frame: 'heart-small', size: 8 },
+  'heart-large': { frame: 'heart-large', size: 16 },
   'health-small': { frame: 'pellet-small', size: 8 },
   'health-large': { frame: 'pellet-large', size: 16 },
   'weapon-small': { frame: 'weapon-pellet-small', size: 8 },

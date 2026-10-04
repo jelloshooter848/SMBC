@@ -50,6 +50,13 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
   Wave (snakes through walls), then add missiles. **Select** picks beam or **missiles**
   (3 damage, open bricks; **C** always fires one); enemies drop energy orbs and missile packs.
   Can't stomp.
+- **Simon**: stiff committed jump (no steering in the air), heavy knockback when hit, 16-point
+  health bar, crouch. The **whip** (X) winds up then strikes; flowers lengthen it (leather →
+  chain → morning star) and then add double and triple shot. Mushrooms unlock the
+  **sub-weapons** in order: dagger, axe (arcs over walls), holy water (burns on the floor),
+  cross (comes back) and the stopwatch (freezes everything on screen). **Select** picks one,
+  **C** or up + X throws it, and each throw costs **hearts** (the watch costs five), which
+  enemies drop. Can't stomp.
 
 ### Options (title screen or pause)
 
