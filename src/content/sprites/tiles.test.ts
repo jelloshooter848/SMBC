@@ -171,6 +171,20 @@ const itemFrames: Record<string, Size> = {
   'icon-holy-water': S8,
   'icon-cross': S8,
   'icon-watch': S8,
+  'throwing-star-0': S8,
+  'throwing-star-1': S8,
+  'windmill-0': T16,
+  'windmill-1': T16,
+  'windmill-2': T16,
+  'windmill-3': T16,
+  'fire-wheel-0': T16,
+  'fire-wheel-1': T16,
+  'ninpo-small': S8,
+  'ninpo-large': T16,
+  'icon-star': S8,
+  'icon-windmill': S8,
+  'icon-fire-wheel': S8,
+  'icon-slash': S8,
 };
 
 const decorFrames: Record<string, Size> = {

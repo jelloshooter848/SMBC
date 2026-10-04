@@ -1191,6 +1191,202 @@ const iconWatch = [
   '..1111..',
 ];
 
+/* ---------- ninja throwing weapons, ninpo and HUD icons ---------- */
+
+const blank16 = Array.from({ length: 16 }, () => blank);
+
+/** Merge equally sized layers: later layers paint over earlier ones wherever they are not '.'. */
+const overlay = (...layers: readonly (readonly string[])[]): string[] =>
+  (layers[0] ?? []).map((row, y) =>
+    row
+      .split('')
+      .map((_, x) =>
+        layers.reduce(
+          (ch, layer) => ((layer[y]?.[x] ?? '.') === '.' ? ch : ((layer[y] as string)[x] as string)),
+          '.',
+        ),
+      )
+      .join(''),
+  );
+
+/* Throwing star, 8x8: four short blades around a dark hub, white along the upper-left edges.
+ * Frame 1 is the same star turned 45 degrees so the two alternate as it spins. */
+const throwingStar0 = [
+  '...1b...',
+  '...1b...',
+  '...1b...',
+  '11100bbb',
+  'bbb00bbb',
+  '...bb...',
+  '...bb...',
+  '...bb...',
+];
+const throwingStar1 = [
+  '1......b',
+  '11....bb',
+  '.11..bb.',
+  '..100b..',
+  '..b00b..',
+  '.bb..bb.',
+  'bb....bb',
+  'b......b',
+];
+
+/* Windmill shuriken, 16x16: four hooked blades sweeping clockwise off a grey hub with a dark
+ * hole, white along each blade's straight leading edge and a glint on one blade so every quarter
+ * turn reads as a new frame. Frame 0 has the blades on the axes, frame 1 on the diagonals; frames
+ * 2 and 3 turn those a quarter, so cycling all four spins the wheel an eighth of a turn per frame. */
+const windmillHub = [
+  ...blank16.slice(0, 6),
+  '......bbbb......',
+  '......b00b......',
+  '......b00b......',
+  '......bbbb......',
+  ...blank16.slice(10),
+];
+const windmillBladeUp = [
+  '......1b........',
+  '......1bb.......',
+  '......1bbb......',
+  '......1bbbb.....',
+  '......1bbbbb....',
+  '......1bbbbbb...',
+  ...blank16.slice(6),
+];
+const windmillBladeDiag = [
+  '..............1.',
+  '.............1b.',
+  '............1bb.',
+  '...........1bbb.',
+  '..........1bbbb.',
+  '.........1bbbb..',
+  '........1bbbb...',
+  '........bbbb....',
+  ...blank16.slice(8),
+];
+/** Four copies of one blade a quarter turn apart around the hub. */
+const wheel = (blade: readonly string[], glint: readonly string[]): string[] => {
+  const b1 = rotateCW(blade);
+  const b2 = rotateCW(b1);
+  return overlay(blade, b1, b2, rotateCW(b2), windmillHub, glint);
+};
+const windmill0 = wheel(windmillBladeUp, [...blank16.slice(0, 3), '.........1......', ...blank16.slice(4)]);
+const windmill1 = wheel(windmillBladeDiag, [...blank16.slice(0, 4), '.............1..', ...blank16.slice(5)]);
+const windmill2 = rotateCW(windmill0);
+const windmill3 = rotateCW(windmill1);
+
+/* Fire wheel, 16x16: a rolling orb of flame, orange outside, yellow inside and a white-hot core,
+ * with tongues licking off the rim. Frame 1 moves the tongues and the core so the two flicker. */
+const fireWheel0 = [
+  '......7....7....',
+  '...7..77..77....',
+  '...77777777777..',
+  '..7777555557777.',
+  '.77755666665577.',
+  '.775566116655777',
+  '7755661111665577',
+  '7755611111165577',
+  '7755611111165577',
+  '7755661111665577',
+  '.775566116655777',
+  '..775566665577..',
+  '..7775555577.7..',
+  '...77777777777..',
+  '....77..77..7...',
+  '.....7....7.....',
+];
+const fireWheel1 = [
+  '....7....7......',
+  '....77..77..7...',
+  '..77777777777...',
+  '.7777555557777..',
+  '.77556666655777.',
+  '7775566111665577',
+  '7755661111165577',
+  '7755611111165577',
+  '7755611111165577',
+  '7755661111665577',
+  '7775566111665577',
+  '..775566665577..',
+  '..7.7755555777..',
+  '...77777777777..',
+  '....7..77..77...',
+  '......7....7....',
+];
+
+/* Ninpo spirit flame: a teardrop of light-blue fire with a white core and a blue edge so it
+ * stays visible over the sky, in a small 8x8 and a large 16x16 size. */
+const ninpoSmall = [
+  '....e...',
+  '...eae..',
+  '..eaaae.',
+  '.eaa1aae',
+  '.ea111ae',
+  '.ea11aae',
+  '..eaaae.',
+  '...eee..',
+];
+const ninpoLarge = [
+  '.........e......',
+  '........eae.....',
+  '.......eaae..e..',
+  '......eaaae.eae.',
+  '......eaaaaeaae.',
+  '.....eaaaaaaaae.',
+  '....eaaa1aaaaaae',
+  '....eaa111aaaaae',
+  '...eaaa1111aaaae',
+  '...eaa111111aaae',
+  '...eaa111111aaae',
+  '...eaaa1111aaaae',
+  '....eaaa11aaaae.',
+  '....eaaaaaaaaae.',
+  '.....eaaaaaaae..',
+  '......eeeeeee...',
+];
+
+/* Ninja HUD icons, drawn without black so they read on the status bar. */
+const iconStar = [
+  '...1b...',
+  '...1b...',
+  '...1b...',
+  '111bbbbb',
+  'bbbbbbbb',
+  '...bb...',
+  '...bb...',
+  '...bb...',
+];
+const iconWindmill = [
+  '...1....',
+  '...1b...',
+  '..b1bb..',
+  '.bbbb111',
+  '111bbbb.',
+  '..bb1b..',
+  '...b1...',
+  '....1...',
+];
+const iconFireWheel = [
+  '7..77..7',
+  '.777777.',
+  '.775577.',
+  '77511577',
+  '77511577',
+  '.775577.',
+  '.777777.',
+  '7..77..7',
+];
+const iconSlash = [
+  '......1b',
+  '.....1bb',
+  '....1bb.',
+  '..51bb..',
+  '...bb5..',
+  '..9.....',
+  '.9......',
+  '5.......',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -1298,5 +1494,19 @@ export const itemsDef: SpriteDef = {
     'icon-holy-water': iconHolyWater,
     'icon-cross': iconCross,
     'icon-watch': iconWatch,
+    'throwing-star-0': throwingStar0,
+    'throwing-star-1': throwingStar1,
+    'windmill-0': windmill0,
+    'windmill-1': windmill1,
+    'windmill-2': windmill2,
+    'windmill-3': windmill3,
+    'fire-wheel-0': fireWheel0,
+    'fire-wheel-1': fireWheel1,
+    'ninpo-small': ninpoSmall,
+    'ninpo-large': ninpoLarge,
+    'icon-star': iconStar,
+    'icon-windmill': iconWindmill,
+    'icon-fire-wheel': iconFireWheel,
+    'icon-slash': iconSlash,
   },
 };

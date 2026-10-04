@@ -10,6 +10,7 @@ import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
 import { samusPalettes, samusDef } from './samus';
 import { simonPalettes, simonDef } from './simon';
+import { ryuPalettes, ryuDef } from './ryu';
 import { colorblindPalettes } from './colorblind';
 
 /** All built-in sprite definitions keyed by sheet id. */
@@ -24,6 +25,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   megaman: megamanDef,
   samus: samusDef,
   simon: simonDef,
+  ryu: ryuDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -37,6 +39,7 @@ const defaults: Record<string, readonly string[]> = {
   ...megamanPalettes,
   ...samusPalettes,
   ...simonPalettes,
+  ...ryuPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
@@ -56,6 +59,7 @@ for (let i = 0; i < 4; i++) {
   fallback(`megaman-star-${i}`, 'megaman');
   fallback(`samus-star-${i}`, 'samus');
   fallback(`simon-star-${i}`, 'simon');
+  fallback(`ryu-star-${i}`, 'ryu');
 }
 for (let i = 0; i < 3; i++) fallback(`megaman-charge-${i}`, 'megaman');
 fallback('mario-fire', 'mario');
