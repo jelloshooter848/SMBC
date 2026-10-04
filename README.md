@@ -125,12 +125,15 @@ pnpm check:assets # refuse binary art/audio in the repo
 node tools/smoke/screenshot.mjs out/   # headless Playwright smoke run with screenshots
 ```
 
-Levels are text files (`src/content/levels/world1/*.map`); see `src/game/level/textmap.ts`
-for the format. The World 1 maps are converted from the level data of the original game's
+Levels are text files (`src/content/levels/world*/*.map`); see `src/game/level/textmap.ts`
+for the format. Worlds 1 and 2 are playable so far (World 2 brings the water levels with
+swimming, Cheep Cheeps and Bloopers, the treetop bridges with leaping fish, springboards,
+beanstalks up to the coin heaven, and Podoboos in the castle). The maps are converted from the level data of the original game's
 [source release](https://github.com/JayPavlina/super-mario-bros-crossover) (MIT, no art or
 sound) by `tools/levelgen/convert-smbc.mjs`; download its `assets/documents/levelDataSmb.xml`
 into `tools/levelgen/source/` (gitignored) and run
-`node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world1 1-1 1-2 1-3 1-4`.
+`node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4`
+(one world per output folder).
 Only the normal-difficulty layer is used; the generated `.map` files are committed.
 
 ## Asset packs

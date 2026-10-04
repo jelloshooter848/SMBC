@@ -9,6 +9,8 @@ import type { Sfx } from '@engine/audio/mml';
 export const sfx: Sfx[] = [
   // Quick rising pulse sweep (about 150 ms).
   { id: 'jump-small', pulse: '@1 v12 q8 x1 p14 o5 c16.' },
+  // Short bubbly blip for a swim stroke.
+  { id: 'swim', pulse: '@2 v9 q8 x1 l32 o5 e g' },
   // Lower and longer sweep (200 ms).
   { id: 'jump-big', pulse: '@1 v12 q8 x1 p16 o4 g8' },
   // Two-note high ding: b7 then a long decaying e8.

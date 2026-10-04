@@ -146,3 +146,69 @@ describe('World 1 sub-areas and later stages follow the original layouts', () =>
     expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '2-1' });
   });
 });
+
+describe('World 2 follows the original layouts', () => {
+  it('2-1: forest level with a springboard, a vine to the sky and a bonus pipe', () => {
+    const l = load('2-1');
+    expect(l.width).toBe(224);
+    expect(l.entities).toContainEqual({ type: 'spring', x: 188, y: 12 });
+    expect(tile(l, 83, 5)).toBe(T.BRICK_VINE);
+    expect(l.zones).toContainEqual({ kind: 'vine', x: 83, y: 5, target: { level: '2-1-sky', x: 4, y: 14 } });
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 103, y: 9, dir: 'down' }));
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 200, next: '2-2-intro' });
+    expect(l.entities.filter((e) => e.type === 'koopa-para-green')).toHaveLength(3);
+    expect(l.entities.filter((e) => e.type === 'piranha')).toHaveLength(7);
+    expect(l.decor.filter((d) => d.kind.startsWith('tree-'))).toHaveLength(29);
+    expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: -2, y: 12 });
+  });
+  it('2-1 sky: starts climbing the vine, and the clouds end in a drop back to 2-1', () => {
+    const l = load('2-1-sky');
+    expect(l.startMode).toBe('climb');
+    expect(l.start).toEqual({ x: 4, y: 14 });
+    expect(l.entities).toContainEqual({ type: 'vine', x: 4, y: 14, props: { len: 8 } });
+    expect(l.zones).toContainEqual({ kind: 'pit', x: 0, target: { level: '2-1', x: 162, y: 0 } });
+    expect(tile(l, 20, 6)).toBe(T.COIN);
+    expect(tile(l, 62, 13)).toBe(T.AIR);
+  });
+  it('2-2: a water level entered from the intro pipe, with cheep cheeps, bloopers and a side exit', () => {
+    const intro = load('2-2-intro');
+    expect(intro.startMode).toBe('autowalk');
+    expect(intro.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 10, y: 12, dir: 'right' }));
+    const l = load('2-2');
+    expect(l.theme).toBe('water');
+    expect(l.startMode).toBe('fall');
+    expect(tile(l, 0, 2)).toBe(T.WATER);
+    expect(tile(l, 150, 2)).toBe(T.WATER);
+    expect(l.entities.filter((e) => e.type === 'cheep-red')).toHaveLength(6);
+    expect(l.entities.filter((e) => e.type === 'cheep-grey')).toHaveLength(11);
+    expect(l.entities.filter((e) => e.type === 'blooper')).toHaveLength(6);
+    expect(l.zones).toContainEqual({
+      kind: 'pipe',
+      x: 189,
+      y: 8,
+      dir: 'right',
+      target: { level: '2-2-exit', x: 3, y: 10, exitDir: 'up' },
+    });
+    expect(load('2-2-exit').zones).toContainEqual({ kind: 'exit', x: 22, next: '2-3' });
+  });
+  it('2-3: treetop bridges with leaping cheep cheeps', () => {
+    const l = load('2-3');
+    expect(l.width).toBe(240);
+    expect(l.zones).toContainEqual({ kind: 'cheeps', x: 9, w: 173 });
+    expect(tile(l, 16, 10)).toBe(T.BRIDGE);
+    expect(tile(l, 8, 13)).toBe(T.TREE_TOP);
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 226, next: '2-4' });
+    expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 228, y: 12 });
+  });
+  it('2-4: castle with podoboos, fire bars, elevators and Bowser', () => {
+    const l = load('2-4');
+    expect(l.theme).toBe('castle');
+    expect(l.entities.filter((e) => e.type === 'podoboo').map((e) => e.x)).toEqual([16, 30]);
+    expect(l.entities.filter((e) => e.type.startsWith('firebar'))).toHaveLength(6);
+    expect(l.entities.filter((e) => e.type === 'lift-up')).toHaveLength(2);
+    expect(l.entities.filter((e) => e.type === 'lift-down')).toHaveLength(2);
+    expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9 });
+    expect(l.entities).toContainEqual({ type: 'axe', x: 141, y: 8 });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '3-1' });
+  });
+});

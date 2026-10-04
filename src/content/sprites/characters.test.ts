@@ -52,6 +52,8 @@ const ENEMY_FRAMES: Record<string, [number, number]> = {
   'cheep-1': [16, 16],
   'blooper-0': [16, 24],
   'blooper-1': [16, 24],
+  'podoboo-0': [16, 16],
+  'podoboo-1': [16, 16],
   'hammer-0': [16, 16],
   'hammer-1': [16, 16],
   'koopa-0': [16, 24],

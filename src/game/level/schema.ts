@@ -10,6 +10,9 @@ export interface EntitySpawn {
 
 export type PipeDir = 'down' | 'up' | 'left' | 'right';
 
+/** How the player arrives in a linked area: rising from a pipe, dropping in, climbing a vine, or placed. */
+export type TransferMode = PipeDir | 'none' | 'climb' | 'fall';
+
 export type Zone =
   | {
       kind: 'pipe';
@@ -17,8 +20,14 @@ export type Zone =
       x: number;
       y: number;
       dir: PipeDir;
-      target: { level: string; x: number; y: number; exitDir?: PipeDir | 'none' };
+      target: { level: string; x: number; y: number; exitDir?: TransferMode };
     }
+  /** A vine brick at (x, y): climbing its vine off the top of the screen leads to `target` (climb mode). */
+  | { kind: 'vine'; x: number; y: number; target: { level: string; x: number; y: number } }
+  /** Falling out of the level at column >= x drops the player into `target` instead of killing them. */
+  | { kind: 'pit'; x: number; target: { level: string; x: number; y: number } }
+  /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
+  | { kind: 'cheeps'; x: number; w: number }
   | { kind: 'warp'; x: number; w: number; worlds: number[]; text?: string }
   | { kind: 'checkpoint'; x: number }
   | { kind: 'exit'; x: number; next: string }
@@ -51,7 +60,7 @@ export interface LevelData {
   /** Player start, tile coords (feet on the tile below `y`). */
   start: { x: number; y: number };
   /** When set, the level starts with the "walk in from a pipe" animation. */
-  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk';
+  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb';
   /** Camera behaviour: 'scroll' (default) or 'locked' (bonus rooms). */
   camera: 'scroll' | 'locked';
   /** Level to respawn in after dying here (sub-areas point at their main level). */

@@ -46,6 +46,8 @@ export const enemyPalettes: Record<string, string[]> = {
   'enemies-underground': base(NES.black, NES.blueUnderground, NES.lavender, NES.blueLight),
   'enemies-castle': base(NES.black, NES.gray, NES.tan, NES.redBright),
   'enemies-water': base(NES.black, NES.blueUnderground, NES.lavender, NES.redBright),
+  // Slow Cheep Cheeps: the red accent becomes grey.
+  'cheep-grey': base(NES.black, NES.blueUnderground, NES.lavender, NES.gray),
   'koopa-green': [...overworld],
   'koopa-red': koopaRed,
 };
@@ -416,6 +418,44 @@ const CHEEP_1 = [
   '................',
 ];
 
+/* Podoboo: a teardrop fireball, flame tip up (flipped vertically when falling), 16x16. */
+const PODOBOO_0 = [
+  '.......1........',
+  '......191.......',
+  '......191.......',
+  '.....19791......',
+  '.....19791......',
+  '....1977791.....',
+  '....1977791.....',
+  '...197777791....',
+  '...197779791....',
+  '..19777779791...',
+  '..19777777791...',
+  '..19777777791...',
+  '..17977777771...',
+  '...177777771....',
+  '....1777771.....',
+  '.....11111......',
+];
+const PODOBOO_1 = [
+  '........1.......',
+  '.......191......',
+  '......1991......',
+  '.....197791.....',
+  '.....197791.....',
+  '....19777791....',
+  '....19777791....',
+  '...1977797791...',
+  '...1977777791...',
+  '..197777779791..',
+  '..197777777791..',
+  '..197977777791..',
+  '..179777777971..',
+  '...1777777771...',
+  '....17777771....',
+  '.....111111.....',
+];
+
 const BLOOPER_HEAD = [
   '.....111111.....',
   '....14444441....',
@@ -679,6 +719,8 @@ export const enemiesDef: SpriteDef = {
     'cheep-1': CHEEP_1,
     'blooper-0': BLOOPER_0,
     'blooper-1': BLOOPER_1,
+    'podoboo-0': PODOBOO_0,
+    'podoboo-1': PODOBOO_1,
     'hammer-0': HAMMER_0,
     'hammer-1': HAMMER_1,
     'koopa-0': KOOPA_0,
