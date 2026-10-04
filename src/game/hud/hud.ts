@@ -28,7 +28,9 @@ export function drawHud(
   if (time !== null) r.text(font, pad(time, 3), 208, 16);
   const dmg = state.character.damage;
   if (dmg.kind === 'hp' && player) {
-    if (dmg.hudStyle === 'hearts') {
+    if (dmg.hudStyle === 'number') {
+      r.text(font, `EN${pad(player.hp, 2)}`, 24, 24);
+    } else if (dmg.hudStyle === 'hearts') {
       const full = Math.floor(player.hp / 2);
       const half = player.hp % 2;
       const total = Math.ceil((player.scratch.maxHp ?? dmg.max) / 2);
@@ -60,7 +62,7 @@ export function drawHud(
       }
     }
     const extra = state.character.hudExtra?.(player);
-    if (extra) r.text(font, extra, 24, 24);
+    if (extra) r.text(font, extra, dmg.kind === 'hp' && dmg.hudStyle === 'number' ? 64 : 24, 24);
     const m = state.character.meter?.(player);
     if (m && dmg.kind === 'hp' && dmg.hudStyle === 'bar') {
       // Weapon energy: a second vertical bar beside the health bar.
@@ -94,6 +96,8 @@ export function drawHud(
       let s = '';
       for (let i = 0; i < total; i++) s += i < full ? 'h' : i === full && half ? 'f' : 'e';
       r.text(font, s, 144, 32);
+    } else if (d2.kind === 'hp' && d2.hudStyle === 'number') {
+      r.text(font, `EN${pad(p2.hp, 2)}`, 144, 32);
     } else if (d2.kind === 'hp') {
       const x = 242;
       const y0 = 40;

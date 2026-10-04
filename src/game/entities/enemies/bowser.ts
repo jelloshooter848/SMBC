@@ -34,6 +34,7 @@ export class Bowser extends Enemy {
       bomb: 'hp',
       weapon: 'hp',
       boomerang: 'immune',
+      ice: 'immune',
     };
     this.body.vx = -this.walkSpeed;
     this.currentFrame = 'bowser-0';

@@ -8,6 +8,7 @@ import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
+import { samusPalettes, samusDef } from './samus';
 import { colorblindPalettes } from './colorblind';
 
 /** All built-in sprite definitions keyed by sheet id. */
@@ -20,6 +21,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   enemies: enemiesDef,
   link: linkDef,
   megaman: megamanDef,
+  samus: samusDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -31,6 +33,7 @@ const defaults: Record<string, readonly string[]> = {
   ...enemyPalettes,
   ...linkPalettes,
   ...megamanPalettes,
+  ...samusPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
@@ -48,6 +51,7 @@ for (let i = 0; i < 4; i++) {
   fallback(`mario-star-${i}`, 'mario');
   fallback(`link-star-${i}`, 'link');
   fallback(`megaman-star-${i}`, 'megaman');
+  fallback(`samus-star-${i}`, 'samus');
 }
 for (let i = 0; i < 3; i++) fallback(`megaman-charge-${i}`, 'megaman');
 fallback('mario-fire', 'mario');
@@ -55,6 +59,7 @@ fallback('luigi', 'mario');
 fallback('luigi-fire', 'mario-fire');
 fallback('link-red', 'link');
 fallback('link-white', 'link');
+fallback('samus-varia', 'samus');
 for (const w of ['plain', 'saw', 'leaf', 'flame', 'knuckle', 'bolt', 'rush'])
   fallback(`megaman-${w}`, 'megaman');
 

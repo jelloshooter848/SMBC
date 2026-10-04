@@ -39,7 +39,7 @@ export class Koopa extends Enemy {
 
   /** A boomerang only stuns a walking koopa; shells just deflect it. */
   override hit(src: DamageSource, world: World): Reaction {
-    if (src.kind === 'boomerang' && this.state !== 'walk') return 'immune';
+    if ((src.kind === 'boomerang' || src.kind === 'ice') && this.state !== 'walk') return 'immune';
     return super.hit(src, world);
   }
 

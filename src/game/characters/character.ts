@@ -15,7 +15,7 @@ export type DamageModel =
   | {
       kind: 'hp';
       max: number;
-      hudStyle: 'hearts' | 'bar';
+      hudStyle: 'hearts' | 'bar' | 'number';
       invulnFrames: number;
       knockback: { vx: number; vy: number } | null;
     };
@@ -47,6 +47,8 @@ export interface CharacterBehaviour {
   onPickup?(p: Player, kind: PickupKind, world: World): boolean;
   /** An enemy projectile is about to hit the player; return true to block it (shields). */
   blocks?(p: Player, projectile: Projectile): boolean;
+  /** False while the character cannot jump at all (morph ball). */
+  canJump?(p: Player): boolean;
 }
 
 export interface MeterInfo {
@@ -92,4 +94,11 @@ export interface CharacterDef {
   hudExtra?(p: Player): string | null;
   /** A stored item usable from the pause menu (E-tanks). `label` is null when there is none. */
   reserve?: { label(p: Player): string | null; use(p: Player, world: World): boolean };
+  /** Starting hit points when lower than `damage.max` (Samus's energy grows with tanks). */
+  startHp?: number;
+}
+
+/** Hit points a fresh run of this character starts with (0 for power-up characters). */
+export function startHp(def: CharacterDef): number {
+  return def.damage.kind === 'hp' ? (def.startHp ?? def.damage.max) : 0;
 }

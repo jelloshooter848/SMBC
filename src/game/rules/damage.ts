@@ -15,7 +15,8 @@ export type DamageKind =
   | 'axe'
   | 'bomb' // explosions
   | 'boomerang' // stuns rather than kills
-  | 'weapon'; // special weapons (Mega Man's arsenal)
+  | 'weapon' // special weapons (Mega Man's arsenal)
+  | 'ice'; // freezes (stuns) like the boomerang
 
 /** How an enemy reacts to a damage kind. */
 export type Reaction =
@@ -50,6 +51,7 @@ export const BASIC_VULNERABILITY: Vulnerability = {
   bomb: 'kill',
   weapon: 'kill',
   boomerang: 'stun',
+  ice: 'stun',
 };
 
 /** How long a boomerang stun lasts. */

@@ -80,6 +80,12 @@ export abstract class Enemy extends Entity {
         this.onShell(src, world);
         break;
       case 'stun':
+        if (this.stunned > 0) {
+          // Already frozen: a second freezing hit shatters it.
+          this.flipOut(src, world);
+          this.onKilled(src, world);
+          return 'kill';
+        }
         this.stunned = STUN_FRAMES;
         break;
       case 'immune':

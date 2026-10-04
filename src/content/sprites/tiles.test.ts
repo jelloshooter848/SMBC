@@ -138,6 +138,20 @@ const itemFrames: Record<string, Size> = {
   'icon-knuckle': S8,
   'icon-bolt': S8,
   'icon-rush': S8,
+  'beam-0': S8,
+  'beam-1': S8,
+  'ice-beam-0': S8,
+  'ice-beam-1': S8,
+  'wave-beam-0': S8,
+  'wave-beam-1': S8,
+  missile: [16, 8],
+  'morph-bomb-0': S8,
+  'morph-bomb-1': S8,
+  'energy-orb-small': S8,
+  'energy-orb-large': T16,
+  'missile-pack': T16,
+  'icon-beam': S8,
+  'icon-missile': S8,
 };
 
 const decorFrames: Record<string, Size> = {

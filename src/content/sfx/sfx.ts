@@ -78,4 +78,8 @@ export const sfx: Sfx[] = [
   },
   // Picked up a drop.
   { id: 'pickup', pulse: '@2 v10 q8 x1 o6 g32 o7 c32' },
+  // Whip crack: a snap of noise with a quick pulse tick.
+  { id: 'whip', pulse: '@0 v9 q8 x1 p-14 o6 c64', noise: 'v13 x1 l64 n1 n0 l32 n3' },
+  // Missile launch: a low thump with a noise tail.
+  { id: 'missile', pulse: '@0 v11 q8 x1 p-10 o4 c16', noise: 'v10 x1 l32 n6 n8 n10' },
 ];
