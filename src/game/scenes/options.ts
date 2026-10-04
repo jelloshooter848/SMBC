@@ -8,6 +8,7 @@ import { exportTemplate, importPackFiles } from '@engine/assets/pack-loader';
 import type { Settings } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
+import { GuideIndexScene } from './guide';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const onOff = (b: boolean) => (b ? 'On' : 'Off');
@@ -22,7 +23,14 @@ export class OptionsScene extends MenuScene {
       { label: 'Video', select: () => this.push(new VideoOptions(game, () => this.pop())) },
       { label: 'Audio', select: () => this.push(new AudioOptions(game, () => this.pop())) },
       { label: 'Controls', select: () => this.push(new ControlsOptions(game, () => this.pop())) },
+      {
+        label: 'How to play',
+        select: () => this.push(new GuideIndexScene(game, () => this.pop())),
+        hint: 'Controls and power-ups for every hero',
+      },
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
+      // The editor leaves the current game, so it is only offered from the title.
+      ...(translucent ? [] : [{ label: 'Level editor', select: () => game.openEditor() }]),
       { label: 'Back', select: onBack },
     ]);
   }

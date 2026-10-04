@@ -145,6 +145,19 @@ describe("Link's kit", () => {
     expect(r.world.player.hp).toBe(6);
   });
 
+  it('only the up-thrust opens bricks and item blocks overhead', () => {
+    // A brick two tiles above the head; jump under it with or without holding up.
+    const under = (held: Action[], row: string) =>
+      run(field({ 9: at(2, row) }), (_w, f) => (f >= 2 && f < 20 ? ['jump', ...held] : held), 60);
+    const bumped = under([], '=');
+    expect(bumped.world.map.get(2, 9)).not.toBe(T.AIR); // head bump leaves the brick
+    const cut = under(['up'], '=');
+    expect(cut.world.map.get(2, 9)).toBe(T.AIR); // the sword shatters it
+    expect(cut.score).toBeGreaterThanOrEqual(50);
+    const coin = under(['up'], '?');
+    expect(coin.coins).toBe(1);
+  });
+
   it('the Jump spell costs 8 magic and raises the jump', () => {
     const apex = (kit: Record<string, number>) => {
       let min = Infinity;

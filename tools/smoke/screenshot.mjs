@@ -57,8 +57,8 @@ try {
   await page.goto('http://localhost:4173/');
   await page.waitForTimeout(600);
   await page.screenshot({ path: join(outDir, '00-title.png') });
-  // Title menu: Start game, Custom levels, Level editor, Options (then Dev mode when unlocked).
-  for (let i = 0; i < 3; i++) {
+  // Title menu: Start game, Custom levels, Options (then Dev mode when unlocked).
+  for (let i = 0; i < 2; i++) {
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(100);
   }
@@ -67,7 +67,7 @@ try {
   await page.screenshot({ path: join(outDir, '00-options.png') });
   await page.keyboard.press('KeyX');
   await page.waitForTimeout(200);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 2; i++) {
     await page.keyboard.press('ArrowUp');
     await page.waitForTimeout(100);
   }

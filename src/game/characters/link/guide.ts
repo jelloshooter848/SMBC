@@ -10,7 +10,10 @@ export const LINK_GUIDE: CharacterGuide = {
       action: 'down',
       does: 'On the ground: crouch. In the air: hold for a down-thrust that bounces off enemies.',
     },
-    { action: 'up+attack', does: 'In the air: up-thrust at things overhead.' },
+    {
+      action: 'up',
+      does: 'In the air: hold for an up-thrust. It hits enemies overhead and opens blocks; your head only bumps them.',
+    },
     { action: 'select', does: 'Cycle the tool belt.' },
     { action: 'special', does: 'Use the selected tool.' },
   ],
