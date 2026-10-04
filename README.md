@@ -126,8 +126,12 @@ node tools/smoke/screenshot.mjs out/   # headless Playwright smoke run with scre
 ```
 
 Levels are text files (`src/content/levels/world1/*.map`); see `src/game/level/textmap.ts`
-for the format. World 1-1 is generated from coordinates by `tools/levelgen/1-1.mjs` and the
-resulting `.map` is committed.
+for the format. The World 1 maps are converted from the level data of the original game's
+[source release](https://github.com/JayPavlina/super-mario-bros-crossover) (MIT, no art or
+sound) by `tools/levelgen/convert-smbc.mjs`; download its `assets/documents/levelDataSmb.xml`
+into `tools/levelgen/source/` (gitignored) and run
+`node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world1 1-1 1-2 1-3 1-4`.
+Only the normal-difficulty layer is used; the generated `.map` files are committed.
 
 ## Asset packs
 

@@ -87,6 +87,7 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   '*': T.Q_STAR,
   S: T.BRICK_STAR,
   C: T.BRICK_COINS10,
+  E: T.BRICK_COIN,
   P: T.BRICK_POWERUP,
   L: T.BRICK_1UP,
   V: T.BRICK_VINE,

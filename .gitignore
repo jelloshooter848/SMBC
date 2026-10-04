@@ -7,3 +7,6 @@ coverage/
 # Local asset packs (never committed; may contain copyrighted material)
 user-packs/*
 !user-packs/README.md
+
+# Original Crossover level data used by tools/levelgen/convert-smbc.mjs (fetch it yourself; not ours to commit)
+tools/levelgen/source/
