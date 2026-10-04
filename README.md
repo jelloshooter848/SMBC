@@ -35,7 +35,13 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
   Link too), and the Jump, Shield and Fire spells, which spend the magic meter that enemy
   drops refill. Can't stomp.
 - **Mega Man**: instant acceleration, cut-able jump, slide (down + jump), arm cannon with
-  three shots on screen, charge shot from flowers, 28-point health bar. Can't stomp.
+  three shots on screen, 28-point health bar. A mushroom fits the helmet: charge shot, brick
+  breaking and the Rush Coil spring. Each flower unlocks the next weapon: Saw Disc (eight-way
+  aim, cuts bricks), Leaf Guard (orbits and blocks shots, press again to throw), Flame Wave
+  (runs along the floor, burns shells), Homing Knuckle and Bolt. **Select** cycles the belt,
+  **C** fires the selection and **X** always fires the buster; each weapon has its own energy
+  bar beside the health bar. Enemies drop health and weapon pellets and the odd E-tank, used
+  from the pause menu. Can't stomp.
 
 ### Options (title screen or pause)
 

@@ -288,6 +288,19 @@ export class Player {
     }
   }
 
+  /** Fired upward by a spring: a jump at `boost` times the normal takeoff speed. */
+  launch(boost: number): void {
+    const b = this.body;
+    this.tier = pickJumpTier(this.profile, b.vx);
+    b.vy = -Math.round(this.tier.initial * boost);
+    b.onGround = false;
+    // A spring launch cannot be cut short; hold-gravity characters still get their float.
+    this.jumping = this.profile.variableJump !== 'cut';
+    this.sliding = 0;
+    this.crouching = false;
+    this.refitHitbox();
+  }
+
   /** Bounce after a stomp. Holding jump bounces higher (uses the hold-gravity mechanic). */
   stompBounce(): void {
     const b = this.body;

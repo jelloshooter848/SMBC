@@ -47,7 +47,7 @@ export class LevelScene implements Scene {
       return;
     }
     if (inputs.some((f) => f.pressed('start')) && this.world.activePlayers().length > 0 && this.started) {
-      this.game.scenes.push(new PauseScene(this.game));
+      this.game.scenes.push(new PauseScene(this.game, this.world));
       return;
     }
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
