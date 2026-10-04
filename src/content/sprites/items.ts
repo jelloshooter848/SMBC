@@ -850,6 +850,144 @@ const iconRush = [
   '2.2..2.2',
 ];
 
+/* ---------- bounty-hunter beams, missiles and pickups ---------- */
+
+/* Power beam: a short gold bolt with a pale head, travelling right. Frame 1 stretches the tail a
+ * pixel so the two flicker. */
+const beam0 = [
+  '........',
+  '........',
+  '...5556.',
+  '..556661',
+  '..556661',
+  '...5556.',
+  '........',
+  '........',
+];
+const beam1 = [
+  '........',
+  '........',
+  '....556.',
+  '.5556661',
+  '.5556661',
+  '....556.',
+  '........',
+  '........',
+];
+/* Ice beam: the same bolt in light blue with a white head. */
+const iceBeam = (rows: readonly string[]): string[] => swapColors(rows, { '5': 'a', '6': '1' });
+/* Wave beam: two purple strands twisting round each other with pink crests. Frame 1 is the
+ * mirror image so alternating the two makes the wave undulate. */
+const waveBeam0 = [
+  '........',
+  '.cd.....',
+  'c.cd..cc',
+  '...cd.dc',
+  '....cdc.',
+  '.....c..',
+  '........',
+  '........',
+];
+const waveBeam1 = vflip(waveBeam0);
+
+/* Missile, 16x8: grey tube with a light stripe, a red nose cone, tail fins and an orange flame. */
+const missile = [
+  '................',
+  '....0b0.........',
+  '....0b00000000..',
+  '.7.0bbb1bbbbb20.',
+  '7550bbbbbbbbb220',
+  '.7.0bbbbbbbbb20.',
+  '....0b00000000..',
+  '....0b0.........',
+];
+
+/* Morph bomb: a small grey sphere whose gold core blinks white. */
+const morphBomb0 = [
+  '........',
+  '..0000..',
+  '.0bbbb0.',
+  '0bb55bb0',
+  '0bb55bb0',
+  '.0bbbb0.',
+  '..0000..',
+  '........',
+];
+const morphBomb1 = swapColors(morphBomb0, { '5': '1' });
+
+/* Energy orbs: a gold ball with a pale rim and a white-hot centre. */
+const energyOrbSmall = [
+  '..0000..',
+  '.056650.',
+  '05611650',
+  '06111160',
+  '06111160',
+  '05611650',
+  '.056650.',
+  '..0000..',
+];
+const energyOrbLarge = [
+  '.....000000.....',
+  '...0055555500...',
+  '..055666666550..',
+  '.05566111166550.',
+  '.05661111116650.',
+  '0556611111166550',
+  '0556111111116550',
+  '0561111111111650',
+  '0561111111111650',
+  '0556111111116550',
+  '0556611111166550',
+  '.05661111116650.',
+  '.05566111166550.',
+  '..055666666550..',
+  '...0055555500...',
+  '.....000000.....',
+];
+
+/* Missile pack: a grey capsule with red end caps and a white missile with a red nose painted across
+ * the front. */
+const missilePack = [
+  '....00000000....',
+  '..002222222200..',
+  '.02222222222220.',
+  '.0bbbbbbbbbbbb0.',
+  '0b1bbbbbbbbbbbb0',
+  '0b1bb000000000b0',
+  '0b1b701111111220',
+  '0b1b701111111220',
+  '0b1bb000000000b0',
+  '0b1bbbbbbbbbbbb0',
+  '0b1bbbbbbbbbbbb0',
+  '0bbbbbbbbbbbbbb0',
+  '.02222222222220.',
+  '.02222222222220.',
+  '..002222222200..',
+  '....00000000....',
+];
+
+/* HUD icons for the bounty-hunter weapons, drawn without black so they read on the status bar. */
+const iconBeam = [
+  '........',
+  '........',
+  '5..5556.',
+  '.5556661',
+  '.5556661',
+  '5..5556.',
+  '........',
+  '........',
+];
+const iconMissile = [
+  '...22...',
+  '..2222..',
+  '..bbbb..',
+  '..b1bb..',
+  '..b1bb..',
+  '.bbbbbb.',
+  '.b7777b.',
+  '..7..7..',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -924,5 +1062,19 @@ export const itemsDef: SpriteDef = {
     'icon-knuckle': iconKnuckle,
     'icon-bolt': iconBolt,
     'icon-rush': iconRush,
+    'beam-0': beam0,
+    'beam-1': beam1,
+    'ice-beam-0': iceBeam(beam0),
+    'ice-beam-1': iceBeam(beam1),
+    'wave-beam-0': waveBeam0,
+    'wave-beam-1': waveBeam1,
+    missile,
+    'morph-bomb-0': morphBomb0,
+    'morph-bomb-1': morphBomb1,
+    'energy-orb-small': energyOrbSmall,
+    'energy-orb-large': energyOrbLarge,
+    'missile-pack': missilePack,
+    'icon-beam': iconBeam,
+    'icon-missile': iconMissile,
   },
 };
