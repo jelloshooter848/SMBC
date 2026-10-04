@@ -5,6 +5,7 @@ import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import { Projectile } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
+import { SIMON_GUIDE } from './guide';
 import { STUN_FRAMES } from '../../rules/damage';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { SUB_WEAPONS, WHIP_FRAMES, WHIP_REACH, type SubWeapon } from './weapons';
@@ -163,6 +164,7 @@ export const SIMON: CharacterDef = {
     if (r === 3) return 'heart-large';
     return null;
   },
+  guide: SIMON_GUIDE,
   behaviour: {
     update(p, input, world) {
       const b = p.body;

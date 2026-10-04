@@ -24,6 +24,10 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
 
 ### Characters
 
+**How to play** on the title screen opens a guide for every hero: its controls with the keys
+you have bound, what the mushroom, flower and star do for it, and its tool belt. The pause menu
+has the same guide for the hero you are playing.
+
 - **Mario**: SMB1 physics, mushrooms, fire flowers, stars, stomps.
 - **Luigi**: the same kit with a higher jump, slower acceleration and a longer slide (Lost
   Levels style).

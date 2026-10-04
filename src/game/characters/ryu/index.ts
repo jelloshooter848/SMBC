@@ -5,6 +5,7 @@ import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import { Projectile } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
+import { RYU_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { NINPO_ARTS, type NinpoArt } from './weapons';
 
@@ -170,6 +171,7 @@ export const RYU: CharacterDef = {
     if (r === 4) return 'health-small';
     return null;
   },
+  guide: RYU_GUIDE,
   behaviour: {
     update(p, input, world) {
       const b = p.body;

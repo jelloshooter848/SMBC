@@ -6,6 +6,7 @@ import type { World } from '../../world/world';
 import { Projectile, SWORD_BEAM, type ProjectileSpec } from '../../entities/projectiles/projectile';
 import { Bomb } from '../../entities/objects/bomb';
 import { STAR_FRAMES } from '../../constants';
+import { LINK_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 
 /** Sword-and-shield adventurer: fixed-height jump, no run, hearts, sword melee and a down-thrust. */
@@ -229,6 +230,7 @@ export const LINK: CharacterDef = {
     if (r === 8) return 'heart-small';
     return null;
   },
+  guide: LINK_GUIDE,
   behaviour: {
     update(p, input, world) {
       const b = p.body;

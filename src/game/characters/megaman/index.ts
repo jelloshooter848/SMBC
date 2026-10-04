@@ -7,6 +7,7 @@ import type { World } from '../../world/world';
 import { Projectile, BUSTER, CHARGED_BUSTER } from '../../entities/projectiles/projectile';
 import { RushCoil } from '../../entities/objects/rush-coil';
 import { STAR_FRAMES } from '../../constants';
+import { MEGAMAN_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { RUSH, WEAPON_ENERGY, WEAPONS, type WeaponDef } from './weapons';
 
@@ -246,6 +247,7 @@ export const MEGAMAN: CharacterDef = {
     if (r < 34) return 'e-tank';
     return null;
   },
+  guide: MEGAMAN_GUIDE,
   behaviour: {
     update(p, input, world) {
       cycleTool(p, input, tools(p), world);

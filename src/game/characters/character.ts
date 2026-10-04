@@ -51,6 +51,33 @@ export interface CharacterBehaviour {
   canJump?(p: Player): boolean;
 }
 
+/** How a hero plays, shown on the "How to play" pages. Text is wrapped and upper-cased. */
+export interface CharacterGuide {
+  /** One line under the name. */
+  tagline: string;
+  /** Actions in the order to list them; combined inputs are written as 'up+attack'. */
+  controls: { action: GuideAction; does: string }[];
+  powerups: { item: 'mushroom' | 'flower' | 'star' | 'drops'; does: string }[];
+  /** Tool belt entries (Select cycles, C uses). */
+  belt?: { name: string; icon: string; cost?: string; does: string }[];
+  tips?: string[];
+  /** Poses the live demo cycles through on the page. */
+  demo: DemoPose[];
+}
+export type GuideAction =
+  | 'left/right'
+  | 'jump'
+  | 'attack'
+  | 'special'
+  | 'select'
+  | 'up'
+  | 'down'
+  | 'up+attack'
+  | 'down+attack'
+  | 'down+jump'
+  | 'attack (hold)';
+export type DemoPose = 'idle' | 'walk' | 'jump' | 'attack' | 'crouch' | 'special';
+
 export interface MeterInfo {
   value: number;
   max: number;
@@ -96,6 +123,8 @@ export interface CharacterDef {
   reserve?: { label(p: Player): string | null; use(p: Player, world: World): boolean };
   /** Starting hit points when lower than `damage.max` (Samus's energy grows with tanks). */
   startHp?: number;
+  /** "How to play" page content. */
+  guide: CharacterGuide;
 }
 
 /** Hit points a fresh run of this character starts with (0 for power-up characters). */
