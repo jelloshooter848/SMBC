@@ -1387,6 +1387,181 @@ const iconSlash = [
   '5.......',
 ];
 
+/* ---------- commando gun shots, weapon capsule and HUD icons ---------- */
+
+/* Rifle shot, 8x8: a small round bullet, gold rim around a white core, centred. */
+const rifleShot = [
+  '........',
+  '........',
+  '...55...',
+  '..5115..',
+  '..5115..',
+  '...55...',
+  '........',
+  '........',
+];
+
+/* Machine-gun shot, 8x8: a longer orange slug tapering to a gold and white tip on the right. */
+const mgShot = [
+  '........',
+  '........',
+  '..7777..',
+  '.7776661',
+  '.7776661',
+  '..7777..',
+  '........',
+  '........',
+];
+
+/* Spread shot, 8x8: a round fireball with a red rim, orange body and gold core. Frame 1 throws
+ * out four red sparks and whitens the core so the two flicker. */
+const spreadShot0 = [
+  '........',
+  '..2222..',
+  '.277772.',
+  '.276672.',
+  '.276672.',
+  '.277772.',
+  '..2222..',
+  '........',
+];
+const spreadShot1 = [
+  '.2....2.',
+  '..2772..',
+  '.277772.',
+  '.276172.',
+  '.271672.',
+  '.277772.',
+  '..2772..',
+  '.2....2.',
+];
+
+/* Laser beam, 24x8: a thin blue beam, light blue inside, with a white-hot core running the full
+ * length and tapered ends. */
+const laserBeam = [
+  '........................',
+  '........................',
+  '.eaaaaaaaaaaaaaaaaaaaae.',
+  'eaa111111111111111111aae',
+  '.eaaaaaaaaaaaaaaaaaaaae.',
+  '........................',
+  '........................',
+  '........................',
+];
+
+/* Flame shot, 16x16: a rolling fireball flying right, orange outside, gold inside and a white-hot
+ * heart, with a tail of flame streaming back on the left. Frame 1 rolls the tongues and the tail
+ * so the two flicker. */
+const flameShot0 = [
+  '................',
+  '................',
+  '..........777...',
+  '........7755577.',
+  '.......77566657.',
+  '...7..7756611657',
+  '.777775561111657',
+  '7775556611116657',
+  '.777556661116657',
+  '...775566666577.',
+  '......775555577.',
+  '.....7..7777777.',
+  '..........7.7...',
+  '................',
+  '................',
+  '................',
+];
+const flameShot1 = [
+  '................',
+  '................',
+  '..........7.7...',
+  '.........777777.',
+  '.......77555557.',
+  '......7756666657',
+  '.....77566111657',
+  '.777755661111657',
+  '7775555661111657',
+  '..7.77556666657.',
+  '......775555577.',
+  '........777777..',
+  '..........7.....',
+  '................',
+  '................',
+  '................',
+];
+
+/* Weapon capsule, 16x16: a rounded grey pod with a white glint, a red letter-like mark on the
+ * front and a pair of small white wings spread from its shoulders. */
+const capsule = [
+  '................',
+  '................',
+  '................',
+  '11....0000....11',
+  '.11..0bbbb0..11.',
+  '.1110bbbbbb0111.',
+  '1110bb2222bb0111',
+  '.1101b2bbbbb011.',
+  '..101b222bbb01..',
+  '...0bb2bbbbb0...',
+  '...0bbbbbbbb0...',
+  '....0bbbbbb0....',
+  '.....0bbbb0.....',
+  '......0000......',
+  '................',
+  '................',
+];
+
+/* Commando HUD icons, drawn without black so they read on the status bar. */
+const iconRifle = [
+  '........',
+  '........',
+  '.....bb.',
+  'bbbbbbbb',
+  '99bb....',
+  '99.b....',
+  '........',
+  '........',
+];
+const iconMg = [
+  '........',
+  '........',
+  'bbbbbbb7',
+  '9bbbbbb.',
+  '99.bb...',
+  '...bb...',
+  '...bb...',
+  '........',
+];
+const iconSpread = [
+  '.....77.',
+  '.....77.',
+  '........',
+  '22....77',
+  '22....77',
+  '........',
+  '.....77.',
+  '.....77.',
+];
+const iconLaser = [
+  '........',
+  '........',
+  '........',
+  'ea111111',
+  '.eaaaaaa',
+  '........',
+  '........',
+  '........',
+];
+const iconFlameGun = [
+  '....7...',
+  '.....77.',
+  '...77677',
+  'bbb76617',
+  'bbb76617',
+  '...77677',
+  '.....77.',
+  '....7...',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -1508,5 +1683,18 @@ export const itemsDef: SpriteDef = {
     'icon-windmill': iconWindmill,
     'icon-fire-wheel': iconFireWheel,
     'icon-slash': iconSlash,
+    'rifle-shot': rifleShot,
+    'mg-shot': mgShot,
+    'spread-shot-0': spreadShot0,
+    'spread-shot-1': spreadShot1,
+    'laser-beam': laserBeam,
+    'flame-shot-0': flameShot0,
+    'flame-shot-1': flameShot1,
+    capsule,
+    'icon-rifle': iconRifle,
+    'icon-mg': iconMg,
+    'icon-spread': iconSpread,
+    'icon-laser': iconLaser,
+    'icon-flame-gun': iconFlameGun,
   },
 };

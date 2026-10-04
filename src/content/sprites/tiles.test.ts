@@ -185,6 +185,19 @@ const itemFrames: Record<string, Size> = {
   'icon-windmill': S8,
   'icon-fire-wheel': S8,
   'icon-slash': S8,
+  'rifle-shot': S8,
+  'mg-shot': S8,
+  'spread-shot-0': S8,
+  'spread-shot-1': S8,
+  'laser-beam': [24, 8],
+  'flame-shot-0': T16,
+  'flame-shot-1': T16,
+  capsule: T16,
+  'icon-rifle': S8,
+  'icon-mg': S8,
+  'icon-spread': S8,
+  'icon-laser': S8,
+  'icon-flame-gun': S8,
 };
 
 const decorFrames: Record<string, Size> = {
