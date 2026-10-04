@@ -62,7 +62,7 @@ const enemyAhead = (w: World) => {
 describe("Ryu's kit", () => {
   it('clings to a wall while holding toward it', () => {
     let clingFrames = 0;
-    let yWhileClinging = new Set<number>();
+    const yWhileClinging = new Set<number>();
     run(
       tallWall(),
       (w, f) => {
