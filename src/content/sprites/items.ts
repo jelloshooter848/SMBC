@@ -988,6 +988,209 @@ const iconMissile = [
   '..7..7..',
 ];
 
+/* ---------- vampire-hunter sub-weapons, pickups and HUD icons ---------- */
+
+/** Rotate a square block a quarter turn clockwise. */
+const rotateCW = (rows: readonly string[]): string[] => flipH(transpose(rows));
+
+/* Thrown dagger, 16x8, flying right: brown grip with a dark pommel, a black cross-guard and a long
+ * grey blade with a light highlight near the guard, tapering to the point. */
+const dagger = [
+  '................',
+  '................',
+  '....0000000000..',
+  '0999011bbbbbbbb0',
+  '09990bbbbbbbbb0.',
+  '....0000000000..',
+  '................',
+  '................',
+];
+
+/* Hand axe, 16x16, upright: a straight brown haft with a grey hatchet head on the right whose
+ * convex edge carries a light bevel. The other three frames turn it a quarter each. */
+const handAxe0 = [
+  '................',
+  '....000000000...',
+  '....099bbbbb0...',
+  '....099bbbbb10..',
+  '....099bbbbbb10.',
+  '....099bbbbbb10.',
+  '....099bbbbbb10.',
+  '....099bbbbb10..',
+  '....0990bbbb10..',
+  '....09900bb10...',
+  '....0990.0000...',
+  '....0990........',
+  '....0990........',
+  '....0990........',
+  '....0990........',
+  '....000.........',
+];
+const handAxe1 = rotateCW(handAxe0);
+const handAxe2 = rotateCW(handAxe1);
+const handAxe3 = rotateCW(handAxe2);
+
+/* Holy water, 8x8: a stubby round-shouldered flask of blue liquid with a grey cork and a white
+ * glint high on the left. */
+const holyWater = [
+  '...00...',
+  '..0bb0..',
+  '..0ee0..',
+  '.0e11e0.',
+  '0ee1eee0',
+  '0eeeeee0',
+  '0eeeeee0',
+  '.000000.',
+];
+
+/* Holy fire, 16x16, bottom-aligned: a low pool of blue flame with lighter tongues and white-hot
+ * spots; frame 1 moves the tongues and the spots so the two flicker. */
+const holyFire0 = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.....e.....e....',
+  '..e..ee...ee..e.',
+  '..ee.eae..eae.e.',
+  '.eae.eae.eeaeee.',
+  '.eaeeeaaeeeaaaee',
+  'eeaa1aaaaeaa1aee',
+  'eea111aaaaa11aee',
+  'eeaaaaaaaaaaaaee',
+];
+const holyFire1 = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '..e......e......',
+  '..ee..e..ee...e.',
+  '.eae..ee.eae..ee',
+  '.eae.eaeeeaae.ee',
+  'eeaaeeaaeeeaaeee',
+  'eea1aaa1aaaa1aae',
+  'eea11aa11aaa11ae',
+  'eeaaaaaaaaaaaaee',
+];
+
+/* Thrown cross, 16x16: a thick white cross with grey shading along the right and underside, gold
+ * caps on all four arms and a gold stud at the crossing. The other frames turn it a quarter each. */
+const cross0 = [
+  '.....000000.....',
+  '.....055550.....',
+  '.....0111b0.....',
+  '.....0111b0.....',
+  '000000111b000000',
+  '0511111111111b50',
+  '0511111551111b50',
+  '05bbbbb55bbbbb50',
+  '05bbbbbbbbbbbb50',
+  '000000111b000000',
+  '.....0111b0.....',
+  '.....0111b0.....',
+  '.....0111b0.....',
+  '.....0bbbb0.....',
+  '.....055550.....',
+  '.....000000.....',
+];
+const cross1 = rotateCW(cross0);
+const cross2 = rotateCW(cross1);
+const cross3 = rotateCW(cross2);
+
+/* Stopwatch, 8x8: a grey pocket watch with a gold crown, white face and black hands at three o'clock. */
+const stopwatch = [
+  '...55...',
+  '..0000..',
+  '.0b11b0.',
+  '0b1101b0',
+  '0b1100b0',
+  '0b1111b0',
+  '.0b11b0.',
+  '..0000..',
+];
+
+/* Large heart, 16x16: the small heart grown up, with a white glint on the left lobe and a dark red
+ * shade down the right side. */
+const heartLarge = [
+  '................',
+  '...0000..0000...',
+  '..022220022220..',
+  '.02112220222220.',
+  '.02112222222220.',
+  '.02122222222220.',
+  '.02222222222220.',
+  '.02222222222280.',
+  '..022222222280..',
+  '..022222222280..',
+  '...0222222280...',
+  '....02222280....',
+  '.....022280.....',
+  '......0280......',
+  '.......00.......',
+  '................',
+];
+
+/* Sub-weapon HUD icons, drawn without black so they read on the status bar. */
+const iconDagger = [
+  '........',
+  '........',
+  '...5....',
+  '9951bbbb',
+  '995bbbb.',
+  '...5....',
+  '........',
+  '........',
+];
+const iconHandAxe = [
+  '...bbbb.',
+  '.99bbbbb',
+  '.99bbbb1',
+  '.99bbb1.',
+  '.99.....',
+  '.99.....',
+  '.99.....',
+  '.99.....',
+];
+const iconHolyWater = [
+  '...bb...',
+  '...ee...',
+  '..e11e..',
+  '.ee1eee.',
+  '.eeeeee.',
+  '.eeeeee.',
+  '.eeeeee.',
+  '..eeee..',
+];
+const iconCross = [
+  '...55...',
+  '...11...',
+  '...11...',
+  '51111115',
+  '51111115',
+  '...11...',
+  '...11...',
+  '...55...',
+];
+const iconWatch = [
+  '...55...',
+  '..1111..',
+  '.1bbbb1.',
+  '1bbb1bb1',
+  '1bbb11b1',
+  '1bbbbbb1',
+  '.1bbbb1.',
+  '..1111..',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -1076,5 +1279,24 @@ export const itemsDef: SpriteDef = {
     'missile-pack': missilePack,
     'icon-beam': iconBeam,
     'icon-missile': iconMissile,
+    dagger,
+    'hand-axe-0': handAxe0,
+    'hand-axe-1': handAxe1,
+    'hand-axe-2': handAxe2,
+    'hand-axe-3': handAxe3,
+    'holy-water': holyWater,
+    'holy-fire-0': holyFire0,
+    'holy-fire-1': holyFire1,
+    'cross-0': cross0,
+    'cross-1': cross1,
+    'cross-2': cross2,
+    'cross-3': cross3,
+    stopwatch,
+    'heart-large': heartLarge,
+    'icon-dagger': iconDagger,
+    'icon-axe': iconHandAxe,
+    'icon-holy-water': iconHolyWater,
+    'icon-cross': iconCross,
+    'icon-watch': iconWatch,
   },
 };
