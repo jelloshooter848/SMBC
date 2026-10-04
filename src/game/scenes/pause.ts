@@ -2,22 +2,37 @@ import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { DevMenuScene } from './dev';
 import type { Game } from './game';
+import type { World } from '../world/world';
 
 export class PauseScene extends MenuScene {
-  constructor(game: Game) {
+  constructor(
+    game: Game,
+    private readonly world: World | null = null,
+  ) {
     super(game, 'PAUSE', [], null, true);
     this.rebuild();
   }
 
   private rebuild(): void {
     const game = this.game;
-    const items: MenuItem[] = [
-      { label: 'Continue', select: () => game.scenes.pop() },
-      {
-        label: 'Options',
-        select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
-      },
-    ];
+    const items: MenuItem[] = [{ label: 'Continue', select: () => game.scenes.pop() }];
+    // Stored items (E-tanks) are used from here, like the original weapon menu.
+    const world = this.world;
+    const p = world?.player;
+    const reserve = p?.def.reserve;
+    const label = p && reserve ? reserve.label(p) : null;
+    if (world && p && reserve && label) {
+      items.push({
+        label,
+        select: () => {
+          if (reserve.use(p, world)) game.scenes.pop();
+        },
+      });
+    }
+    items.push({
+      label: 'Options',
+      select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
+    });
     if (game.devMode)
       items.push({ label: 'Dev mode', select: () => game.scenes.push(new DevMenuScene(game, true)) });
     items.push({ label: 'Quit', select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()) });

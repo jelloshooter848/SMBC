@@ -4,13 +4,27 @@ import { Entity, type View } from '../entity';
 import type { World } from '../../world/world';
 
 /** Things enemies drop for specific characters. */
-export type PickupKind = 'bomb' | 'magic-small' | 'magic-large' | 'heart-small';
+export type PickupKind =
+  | 'bomb'
+  | 'magic-small'
+  | 'magic-large'
+  | 'heart-small'
+  | 'health-small'
+  | 'health-large'
+  | 'weapon-small'
+  | 'weapon-large'
+  | 'e-tank';
 
 const FRAMES: Record<PickupKind, { frame: string; size: number }> = {
   bomb: { frame: 'bomb-0', size: 16 },
   'magic-small': { frame: 'magic-jar-small', size: 8 },
   'magic-large': { frame: 'magic-jar-large', size: 16 },
   'heart-small': { frame: 'heart-small', size: 8 },
+  'health-small': { frame: 'pellet-small', size: 8 },
+  'health-large': { frame: 'pellet-large', size: 16 },
+  'weapon-small': { frame: 'weapon-pellet-small', size: 8 },
+  'weapon-large': { frame: 'weapon-pellet-large', size: 16 },
+  'e-tank': { frame: 'e-tank', size: 16 },
 };
 
 export const PICKUP_LIFETIME = 480;

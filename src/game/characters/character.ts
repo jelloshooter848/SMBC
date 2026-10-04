@@ -88,4 +88,8 @@ export interface CharacterDef {
   meter?(p: Player): MeterInfo | null;
   /** Fully stocked kit for the developer level select. */
   devKit?(): Record<string, number>;
+  /** Short extra HUD text under the name (stored E-tanks...). */
+  hudExtra?(p: Player): string | null;
+  /** A stored item usable from the pause menu (E-tanks). `label` is null when there is none. */
+  reserve?: { label(p: Player): string | null; use(p: Player, world: World): boolean };
 }

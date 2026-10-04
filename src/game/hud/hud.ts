@@ -59,8 +59,22 @@ export function drawHud(
         if (t.count !== null) r.text(font, `×${pad(t.count, 2)}`, 105, 24);
       }
     }
+    const extra = state.character.hudExtra?.(player);
+    if (extra) r.text(font, extra, 24, 24);
     const m = state.character.meter?.(player);
-    if (m) {
+    if (m && dmg.kind === 'hp' && dmg.hudStyle === 'bar') {
+      // Weapon energy: a second vertical bar beside the health bar.
+      const x = 16;
+      const y0 = 40;
+      const segs = dmg.max;
+      r.rect(x - 1, y0 - 1, 8, segs * 2 + 2, '#000');
+      const filled = Math.round((Math.max(0, Math.min(m.value, m.max)) / m.max) * segs);
+      for (let i = 0; i < segs; i++) {
+        const on = i < filled;
+        r.rect(x, y0 + (segs - 1 - i) * 2, 6, 1, on ? '#fcfcfc' : '#404040');
+        r.rect(x, y0 + (segs - 1 - i) * 2 + 1, 6, 1, on ? m.colour : '#202020');
+      }
+    } else if (m) {
       r.text(font, m.label, 24, 33);
       r.rect(32, 34, 34, 5, '#fcfcfc'); // white frame so the bar reads against the sky
       r.rect(33, 35, 32, 3, '#202020');

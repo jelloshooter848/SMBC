@@ -54,5 +54,8 @@ fallback('mario-fire', 'mario');
 fallback('luigi', 'mario');
 fallback('luigi-fire', 'mario-fire');
 fallback('link-red', 'link');
+fallback('link-white', 'link');
+for (const w of ['plain', 'saw', 'leaf', 'flame', 'knuckle', 'bolt', 'rush'])
+  fallback(`megaman-${w}`, 'megaman');
 
 export const PALETTES: PaletteBook = { default: defaults, ...colorblindPalettes(defaults) };

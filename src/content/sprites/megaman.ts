@@ -21,6 +21,14 @@ export const megamanPalettes: Record<string, string[]> = {
   'megaman-star-1': [NES.black, NES.pink, NES.magenta, NES.skin, NES.white, NES.cyan],
   'megaman-star-2': [NES.black, NES.greenLight, NES.green, NES.yellowLight, NES.white, NES.white],
   'megaman-star-3': [NES.black, NES.white, NES.lightGray, NES.skin, NES.white, NES.yellow],
+  // Weapon suits: armour recoloured per equipped weapon. 'plain' is the dull un-upgraded suit.
+  'megaman-plain': [NES.black, NES.lavender, NES.gray, NES.skin, NES.white, NES.yellow],
+  'megaman-saw': [NES.black, NES.lightGray, NES.darkGray, NES.skin, NES.white, NES.yellow],
+  'megaman-leaf': [NES.black, NES.greenLight, NES.green, NES.skin, NES.white, NES.yellowLight],
+  'megaman-flame': [NES.black, NES.orange, NES.redDark, NES.skin, NES.white, NES.yellow],
+  'megaman-knuckle': [NES.black, NES.pink, NES.magenta, NES.skin, NES.white, NES.lavender],
+  'megaman-bolt': [NES.black, NES.yellowLight, NES.peach, NES.skin, NES.white, NES.white],
+  'megaman-rush': [NES.black, NES.redBright, NES.redDark, NES.skin, NES.white, NES.yellow],
 };
 
 /* ---------- composition helpers ---------- */

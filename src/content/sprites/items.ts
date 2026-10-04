@@ -9,6 +9,8 @@ import { flipH, swapColors } from '@engine/gfx/pixelart';
  *   5 gold (coin, star, buster)             6 gold light (shine)
  *   7 orange (fire)      8 dark red (shade) 9 brown (brick shards, axe handle)
  *   a light blue (sword beam)               b grey (axe blade, spring plates)
+ *   c purple (knuckle)                      d pink (knuckle thumb, knuckle glints)
+ *   e blue (weapon pellets, e-tank body)
  */
 export const itemPalettes: Record<string, string[]> = {
   items: [
@@ -24,6 +26,9 @@ export const itemPalettes: Record<string, string[]> = {
     NES.orangeBrown,
     NES.blueLight,
     NES.lightGray,
+    NES.purple,
+    NES.pink,
+    NES.blueMid,
   ],
 };
 
@@ -571,6 +576,280 @@ const iconFire = [
   '..75557.',
 ];
 
+/* ---------- arm-cannon weapon pickups and projectiles ---------- */
+
+/* Spinning blade: a grey disc with a dark hub, a highlight arc and eight teeth. Frame 1 turns the
+ * teeth half a step so cycling the two frames spins it. */
+const sawDisc0 = [
+  '.......00.......',
+  '.00...0bb0...00.',
+  '.0b0..0bb0..0b0.',
+  '..0b00bbbb00b0..',
+  '...0b11bbbbb0...',
+  '...01bbbbbbb0...',
+  '.001bbbbbbbbb00.',
+  '0bbbbbb00bbbbbb0',
+  '0bbbbbb00bbbbbb0',
+  '.00bbbbbbbbbb00.',
+  '...0bbbbbbbb0...',
+  '...0bbbbbbbb0...',
+  '..0b00bbbb00b0..',
+  '.0b0..0bb0..0b0.',
+  '.00...0bb0...00.',
+  '.......00.......',
+];
+const sawDisc1 = [
+  '................',
+  '....00....00....',
+  '....0b0000b0....',
+  '....0bbbbbb0....',
+  '.000b11bbbbb000.',
+  '.0bb1bbbbbbbbb0.',
+  '..01bbbbbbbbb0..',
+  '..0bbbb00bbbb0..',
+  '..0bbbb00bbbb0..',
+  '..0bbbbbbbbbb0..',
+  '.0bbbbbbbbbbbb0.',
+  '.000bbbbbbbb000.',
+  '....0bbbbbb0....',
+  '....0b0000b0....',
+  '....00....00....',
+  '................',
+];
+
+/* Leaf tilted up to the right: green blade, pale midrib along the diagonal, short stem. */
+const leaf = [
+  '..............0.',
+  '.............040',
+  '...........04640',
+  '.........0446440',
+  '........0446440.',
+  '......044464440.',
+  '.....044464440..',
+  '....044464440...',
+  '...044464440....',
+  '..044464440.....',
+  '.044464440......',
+  '.0446440........',
+  '0446440.........',
+  '04640...........',
+  '090.............',
+  '00..............',
+];
+
+/* Low, wide tongue of fire hugging the floor: dark red base, orange body, yellow flames and two
+ * white-hot cores. Frame 1 flickers the tips and moves the cores. */
+const flameWave0 = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '......7.........',
+  '..7..77....7....',
+  '..77.775..77..7.',
+  '.7757755..775.7.',
+  '.775575577775577',
+  '7755556557755577',
+  '7755661655566577',
+  '7756611165566577',
+  '8755661165566578',
+  '8877555555555788',
+];
+const flameWave1 = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '...........7....',
+  '....7.....77..7.',
+  '.7.77....775..7.',
+  '.7.775..7775.77.',
+  '7757755777557577',
+  '7755557755565577',
+  '7756655555661577',
+  '7756115565611677',
+  '8756116555611678',
+  '8877555555555788',
+];
+
+/* Clenched metal fist punching right: purple hand and cuff, pink thumb curled over the top with a
+ * white glint, three pink knuckle bumps on the leading edge. */
+const knuckle = [
+  '................',
+  '................',
+  '......00000.....',
+  '.....0ddddd0....',
+  '....0d1dddcd0...',
+  '.0000dddddccc0..',
+  '0ccc0cccccccc00.',
+  '0ccc0ccccccccdd0',
+  '0ccc0cccccc000d0',
+  '0ccc0ccccccccdd0',
+  '0ccc0cccccc000d0',
+  '0ccc0ccccccccdd0',
+  '.00000cccccc0d0.',
+  '......0cccccc0..',
+  '.......000000...',
+  '................',
+];
+
+/* Horizontal lightning beam: a two-pixel zigzag, yellow core over a pale edge, white at the
+ * peaks. Frame 1 is the mirror image so the two alternate. */
+const bolt0 = [
+  '........................',
+  '...1.........1..........',
+  '..565.......565.....1...',
+  '556.65.....56.65...565..',
+  '66...65...56...65.56.655',
+  '......65.56.....616...66',
+  '.......616.......6......',
+  '........6...............',
+];
+
+/* Robot-dog launcher pad: a red box with two eyes, a nose and four stubby feet, carrying a grey
+ * spring with a plate on top. Frame 1 is the spring fully extended after a launch. */
+const rushBody = [
+  '..000000000000..',
+  '..022222222220..',
+  '..021022220120..',
+  '..022228822220..',
+  '..022222222220..',
+  '..088888888880..',
+  '..00.00..00.00..',
+];
+const rushPlate = ['...0000000000...', '...0bbbbbbbb0...', '...0000000000...'];
+const rushCoil = ['....0b0..0b0....', '.....0b00b0.....'];
+const rushCoil0 = [blank, blank, blank, blank, ...rushPlate, ...rushCoil, ...rushBody];
+const rushCoil1 = [...rushPlate, ...rushCoil, ...rushCoil, ...rushCoil, ...rushBody];
+
+/* Health capsule: pale yellow with a white glint top-left and a gold shade below. The weapon
+ * energy capsules are the same shapes in blue. */
+const pelletSmall = [
+  '..0000..',
+  '.066660.',
+  '01166650',
+  '01666650',
+  '06666550',
+  '06655550',
+  '.055550.',
+  '..0000..',
+];
+const pelletLarge = [
+  '.....000000.....',
+  '...0066666600...',
+  '..016666666660..',
+  '.01116666666660.',
+  '.01166666666660.',
+  '0116666666666650',
+  '0116666666666550',
+  '0166666666665550',
+  '0666666666655550',
+  '0666666666555550',
+  '0666666665555550',
+  '.06666655555550.',
+  '.06665555555550.',
+  '..055555555550..',
+  '...0055555500...',
+  '.....000000.....',
+];
+const weaponPellet = (rows: readonly string[]): string[] => swapColors(rows, { '6': 'a', '5': 'e' });
+
+/* Energy tank: a blue canister with a grey cap, light rims and a bold white E on the front. */
+const eTank = [
+  '.....000000.....',
+  '.....0bbbb0.....',
+  '....00000000....',
+  '..000aaaaaa000..',
+  '.0aaeeeeeeeeaa0.',
+  '.0aeeeeeeeeeee0.',
+  '.0aee111111eee0.',
+  '.0aee11eeeeeee0.',
+  '.0aee11111eeee0.',
+  '.0aee11eeeeeee0.',
+  '.0aee111111eee0.',
+  '.0aeeeeeeeeeee0.',
+  '.0aeeeeeeeeeee0.',
+  '.0aaeeeeeeeeaa0.',
+  '..00aaaaaaaa00..',
+  '....00000000....',
+];
+
+/* Weapon HUD icons, again without black. */
+const iconBuster = [
+  '........',
+  '...eeeee',
+  '.aaeaaae',
+  'aaaeaaa1',
+  'aaaeaaa1',
+  '.aaeaaae',
+  '...eeeee',
+  '........',
+];
+const iconSaw = [
+  '...bb...',
+  '.b.bb.b.',
+  '.bbbbbb.',
+  'bbb11bbb',
+  'bbb11bbb',
+  '.bbbbbb.',
+  '.b.bb.b.',
+  '...bb...',
+];
+const iconLeaf = [
+  '......4.',
+  '....4464',
+  '...44644',
+  '..446444',
+  '.446444.',
+  '.46444..',
+  '4644....',
+  '94......',
+];
+const iconFlame = [
+  '....7...',
+  '.7..77..',
+  '.77.775.',
+  '.775757.',
+  '77555577',
+  '75566557',
+  '75611657',
+  '.756657.',
+];
+const iconKnuckle = [
+  '........',
+  '..dddd..',
+  '.d1ddddc',
+  'cccccccd',
+  'ccccccc.',
+  'cccccccd',
+  '.cccccc.',
+  '........',
+];
+const iconBolt = [
+  '....55..',
+  '...515..',
+  '..515...',
+  '.5155555',
+  '..555155',
+  '....515.',
+  '...515..',
+  '..55....',
+];
+const iconRush = [
+  'bbbbbbbb',
+  '.bb..bb.',
+  '...bb...',
+  '.bb..bb.',
+  '...bb...',
+  '.bb..bb.',
+  '22222222',
+  '2.2..2.2',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -623,5 +902,27 @@ export const itemsDef: SpriteDef = {
     'icon-jump': iconJump,
     'icon-shield': iconShield,
     'icon-fire': iconFire,
+    'saw-disc-0': sawDisc0,
+    'saw-disc-1': sawDisc1,
+    leaf,
+    'flame-wave-0': flameWave0,
+    'flame-wave-1': flameWave1,
+    knuckle,
+    'bolt-0': bolt0,
+    'bolt-1': vflip(bolt0),
+    'rush-coil-0': rushCoil0,
+    'rush-coil-1': rushCoil1,
+    'pellet-small': pelletSmall,
+    'pellet-large': pelletLarge,
+    'weapon-pellet-small': weaponPellet(pelletSmall),
+    'weapon-pellet-large': weaponPellet(pelletLarge),
+    'e-tank': eTank,
+    'icon-buster': iconBuster,
+    'icon-saw': iconSaw,
+    'icon-leaf': iconLeaf,
+    'icon-flame': iconFlame,
+    'icon-knuckle': iconKnuckle,
+    'icon-bolt': iconBolt,
+    'icon-rush': iconRush,
   },
 };
