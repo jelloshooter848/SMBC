@@ -1,7 +1,7 @@
 import { SceneStack } from '@engine/scene';
 import type { GameContext, GameState } from '../context';
 import { newGameState } from '../context';
-import type { CharacterDef } from '../characters/character';
+import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
 import { LevelScene, type LevelStart } from './level';
@@ -81,7 +81,7 @@ export class Game {
     if (fullKit && character.devKit) this.state.kit = character.devKit();
     if (character.damage.kind === 'powerup') this.state.powerState = power;
     else {
-      const max = this.state.kit.maxHp ?? character.damage.max;
+      const max = this.state.kit.maxHp ?? startHp(character);
       this.state.hp = power === 'full' ? max : power === 'half' ? Math.max(1, Math.ceil(max / 2)) : 1;
     }
     this.playtestDone = null;

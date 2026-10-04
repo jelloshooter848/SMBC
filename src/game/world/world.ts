@@ -30,7 +30,7 @@ import { Lift } from '../entities/objects/lift';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser } from '../entities/enemies/bowser';
 import { Axe } from '../entities/objects/axe';
-import type { CharacterDef } from '../characters/character';
+import { startHp, type CharacterDef } from '../characters/character';
 
 export type WorldEvent =
   | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: PipeDir | 'none' } }
@@ -291,19 +291,30 @@ export class World {
   }
 
   /** A bomb blast centred at (cx, cy) in subpixels: hurts everything in the square, opens blocks. */
-  explode(cx: number, cy: number, radiusPx: number, owner: Player | null): void {
+  explode(
+    cx: number,
+    cy: number,
+    radiusPx: number,
+    owner: Player | null,
+    opts: { hurtsPlayers?: boolean; amount?: number; small?: boolean } = {},
+  ): void {
     const r = px(radiusPx);
     const box = { x: cx - r, y: cy - r, w: r * 2, h: r * 2 };
-    this.spawn(new Explosion(cx, cy));
-    this.audio.sfx('explosion');
+    this.spawn(new Explosion(cx, cy, opts.small ?? false));
+    this.audio.sfx(opts.small ? 'bump' : 'explosion');
     for (const e of this.enemies) {
       if (!overlaps(box, e.body)) continue;
-      const res = e.hit({ kind: 'bomb', amount: 2, owner, dirX: e.body.x < cx ? -1 : 1 }, this);
+      const res = e.hit(
+        { kind: 'bomb', amount: opts.amount ?? 2, owner, dirX: e.body.x < cx ? -1 : 1 },
+        this,
+      );
       if (res === 'kill' || res === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
       else if (res === 'hp') this.audio.sfx('hurt-enemy');
     }
-    for (const p of this.activePlayers()) {
-      if (overlaps(box, p.body)) this.hurtPlayer(p, p.centerX < cx ? -1 : 1);
+    if (opts.hurtsPlayers ?? true) {
+      for (const p of this.activePlayers()) {
+        if (overlaps(box, p.body)) this.hurtPlayer(p, p.centerX < cx ? -1 : 1);
+      }
     }
     const breaker = owner ?? this.nearestPlayer(cx);
     for (let ty = tileAt(box.y); ty <= tileAt(box.y + box.h - 1); ty++)
@@ -792,7 +803,7 @@ export class World {
     p.sliding = 0;
     p.crouching = false;
     p.powerState = p.def.damage.kind === 'powerup' ? 'small' : 'full';
-    p.hp = p.def.damage.kind === 'hp' ? (p.scratch.maxHp ?? p.def.damage.max) : 0;
+    p.hp = p.def.damage.kind === 'hp' ? (p.scratch.maxHp ?? startHp(p.def)) : 0;
     p.refitHitbox();
     p.body.x = Math.max(this.camera.x + px(8), beside.body.x - px(16));
     p.body.y = px(-32);

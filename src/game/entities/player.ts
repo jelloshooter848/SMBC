@@ -160,6 +160,7 @@ export class Player {
 
     const canJump =
       this.sliding === 0 &&
+      (this.def.behaviour.canJump?.(this) ?? true) &&
       (b.onGround || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
     if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
       if (p.slide && input.held('down') && b.onGround) {

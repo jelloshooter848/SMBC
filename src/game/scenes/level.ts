@@ -7,6 +7,7 @@ import { World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
 import { drawHud } from '../hud/hud';
 import { carriedKit } from '../entities/player';
+import { startHp } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
 
@@ -104,12 +105,12 @@ export class LevelScene implements Scene {
         }
         const s = game.state;
         s.powerState = s.character.damage.kind === 'powerup' ? 'small' : 'full';
-        s.hp = s.character.damage.kind === 'hp' ? s.character.damage.max : 0;
+        s.hp = startHp(s.character);
         s.kit = {};
         s.kit2 = {};
         if (s.character2) {
           s.powerState2 = s.character2.damage.kind === 'powerup' ? 'small' : 'full';
-          s.hp2 = s.character2.damage.kind === 'hp' ? s.character2.damage.max : 0;
+          s.hp2 = startHp(s.character2);
         }
         s.time = null;
         if (!game.ctx.assist.infiniteLives) s.lives--;

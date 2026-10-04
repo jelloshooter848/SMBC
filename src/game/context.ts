@@ -1,6 +1,6 @@
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { AudioSink } from '@engine/audio/audio-manager';
-import type { CharacterDef } from './characters/character';
+import { startHp, type CharacterDef } from './characters/character';
 
 /** Per-game assist/accessibility options that affect simulation. */
 export interface AssistOptions {
@@ -65,14 +65,14 @@ export function newGameState(character: CharacterDef, character2: CharacterDef |
     character,
     character2,
     powerState2: character2?.damage.kind === 'powerup' ? 'small' : 'full',
-    hp2: character2?.damage.kind === 'hp' ? character2.damage.max : 0,
+    hp2: character2 ? startHp(character2) : 0,
     score: 0,
     coins: 0,
     lives: character2 ? 5 : 3,
     world: 1,
     stage: 1,
     powerState: character.damage.kind === 'powerup' ? 'small' : 'full',
-    hp: character.damage.kind === 'hp' ? character.damage.max : 0,
+    hp: startHp(character),
     time: null,
     checkpoint: null,
     kit: {},

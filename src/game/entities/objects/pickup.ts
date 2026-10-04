@@ -13,7 +13,10 @@ export type PickupKind =
   | 'health-large'
   | 'weapon-small'
   | 'weapon-large'
-  | 'e-tank';
+  | 'e-tank'
+  | 'energy-small'
+  | 'energy-large'
+  | 'missile-pack';
 
 const FRAMES: Record<PickupKind, { frame: string; size: number }> = {
   bomb: { frame: 'bomb-0', size: 16 },
@@ -25,6 +28,9 @@ const FRAMES: Record<PickupKind, { frame: string; size: number }> = {
   'weapon-small': { frame: 'weapon-pellet-small', size: 8 },
   'weapon-large': { frame: 'weapon-pellet-large', size: 16 },
   'e-tank': { frame: 'e-tank', size: 16 },
+  'energy-small': { frame: 'energy-orb-small', size: 8 },
+  'energy-large': { frame: 'energy-orb-large', size: 16 },
+  'missile-pack': { frame: 'missile-pack', size: 16 },
 };
 
 export const PICKUP_LIFETIME = 480;

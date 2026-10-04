@@ -136,15 +136,20 @@ export class Flash extends Entity {
 export class Explosion extends Entity {
   readonly kind = 'explosion';
   private age = 0;
-  constructor(cx: number, cy: number) {
+  constructor(
+    cx: number,
+    cy: number,
+    readonly small = false,
+  ) {
     super(cx - px(16), cy - px(16), 32, 32);
     this.layer = 'front';
   }
   update(): void {
-    if (++this.age >= 24) this.destroy();
+    if (++this.age >= (this.small ? 12 : 24)) this.destroy();
   }
   render(r: Renderer, view: View): void {
-    const f = Math.min(2, this.age >> 3);
+    // A small blast only shows the first two stages.
+    const f = this.small ? Math.min(1, this.age >> 3) : Math.min(2, this.age >> 3);
     r.sprite(view.assets.sheet('items'), `explosion-${f}`, this.screenX(view), this.screenY());
   }
 }

@@ -42,6 +42,14 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
   **C** fires the selection and **X** always fires the buster; each weapon has its own energy
   bar beside the health bar. Enemies drop health and weapon pellets and the odd E-tank, used
   from the pause menu. Can't stomp.
+- **Samus**: floaty somersault jump, energy counter (starts at 30), arm cannon that aims
+  straight up while holding up. Down curls into the **morph ball** (fits through one-tile gaps,
+  can't jump) where fire drops small bombs that open blocks and bomb-jump her; up stands back
+  up. The first mushroom is the **Varia suit** (half damage), later ones are energy tanks
+  (+30, up to 90). Flowers upgrade the beam: Long → Ice (freezes; a second shot shatters) →
+  Wave (snakes through walls), then add missiles. **Select** picks beam or **missiles**
+  (3 damage, open bricks; **C** always fires one); enemies drop energy orbs and missile packs.
+  Can't stomp.
 
 ### Options (title screen or pause)
 

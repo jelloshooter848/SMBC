@@ -32,6 +32,7 @@ export class Piranha extends Enemy {
       bomb: 'kill',
       weapon: 'kill',
       boomerang: 'immune',
+      ice: 'immune',
       stomp: 'hurtAttacker',
     };
     this.scoreValue = 200;

@@ -48,6 +48,8 @@ export interface ProjectileSpec {
   blocks?: boolean;
   /** Ignores tiles while still being a player shot that stops on enemies. */
   piercesTiles?: boolean;
+  /** Snakes up and down around its launch height (px amplitude, frames per cycle). */
+  wave?: { amplitude: number; period: number };
 }
 
 export interface ProjectileOptions {
@@ -140,6 +142,7 @@ export class Projectile extends Entity {
   /** Boomerang on its way back. */
   returning = false;
   private angle = 0;
+  private readonly originY: number;
   constructor(
     x: number,
     y: number,
@@ -156,6 +159,7 @@ export class Projectile extends Entity {
     this.layer = 'front';
     this.despawnMargin = 16;
     if (spec.orbit) this.angle = dirX > 0 ? 0 : 180;
+    this.originY = y;
   }
 
   private get ownerGone(): boolean {
@@ -223,6 +227,10 @@ export class Projectile extends Entity {
     } else {
       b.x += velToSub(b.vx);
       b.y += velToSub(b.vy);
+      if (this.spec.wave && b.vx !== 0) {
+        const w = this.spec.wave;
+        b.y = this.originY + Math.round(Math.sin((this.age * 2 * Math.PI) / w.period) * px(w.amplitude));
+      }
       if (this.spec.breaksBricks && this.spec.piercesTiles && (this.age & 3) === 0)
         world.breakAt(b.x + (b.w >> 1), b.y + (b.h >> 1), this.owner);
     }

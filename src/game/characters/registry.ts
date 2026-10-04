@@ -3,9 +3,10 @@ import { MARIO } from './mario';
 import { LUIGI } from './luigi';
 import { LINK } from './link';
 import { MEGAMAN } from './megaman';
+import { SAMUS } from './samus';
 
 /** Playable characters in select-screen order. */
-export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN];
+export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN, SAMUS];
 
 export function characterById(id: string): CharacterDef {
   return CHARACTERS.find((c) => c.id === id) ?? MARIO;
