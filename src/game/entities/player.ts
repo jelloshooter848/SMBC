@@ -65,6 +65,10 @@ export class Player {
   out = false;
   /** Frames of knockback during which movement input is ignored. */
   stun = 0;
+  /** Stuck to a wall (ninja): no gravity, and a jump pushes off it. Set by the character each frame. */
+  clinging = false;
+  /** Frames after a wall jump during which the wall cannot be grabbed again. */
+  clingLock = 0;
   /** Vertical speed before this frame's move (survives the landing reset; used for stomp checks). */
   fallSpeed = 0;
   private runTimer = 0;
@@ -124,6 +128,7 @@ export class Player {
     if (this.invuln > 0) this.invuln--;
     if (this.star > 0) this.star--;
     if (this.attackTimer > 0) this.attackTimer--;
+    if (this.clingLock > 0) this.clingLock--;
     if (this.frozen || this.dead) return;
     const p = this.profile;
     const b = this.body;
@@ -161,17 +166,26 @@ export class Player {
     const canJump =
       this.sliding === 0 &&
       (this.def.behaviour.canJump?.(this) ?? true) &&
-      (b.onGround || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
+      (b.onGround || this.clinging || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
     if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
       if (p.slide && input.held('down') && b.onGround) {
         input.consumeJumpBuffer();
         this.startSlide();
       } else {
         input.consumeJumpBuffer();
+        const wallJump = this.clinging;
+        if (wallJump) {
+          // Kick off the wall: away from it at walking speed.
+          b.vx = -this.facing * p.maxWalk;
+          this.facing = -this.facing as -1 | 1;
+          this.clinging = false;
+          this.clingLock = 12;
+        }
         this.tier = pickJumpTier(p, b.vx);
         b.vy = -this.tier.initial;
         b.onGround = false;
-        this.jumping = true;
+        // A wall kick is a full jump even for characters whose jumps cut short on release.
+        this.jumping = !(wallJump && p.variableJump === 'cut');
         // Only a genuine run (faster than the walk cap) keeps the run cap in the air; a jump at
         // exactly walking speed must not suddenly accelerate like a sprint.
         this.airCap = Math.abs(b.vx) > p.maxWalk ? p.maxRun : p.maxWalk;
@@ -184,6 +198,10 @@ export class Player {
     // apex 62 px instead of the 4 tiles SMB1 clears).
     if (!b.onGround && p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
     const holding = p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0;
+    if (this.clinging) {
+      b.vy = 0;
+      b.vx = this.facing * 0x00100; // keep leaning into the wall so hitWall stays set
+    }
 
     if (this.stun === 0) {
       if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
@@ -199,7 +217,7 @@ export class Player {
       this.jumping = false;
       this.combo = 0;
       b.vy = 0;
-    } else {
+    } else if (!this.clinging) {
       b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
       if (b.vy > p.maxFall) b.vy = p.fallReset;
     }

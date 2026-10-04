@@ -57,6 +57,12 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
   cross (comes back) and the stopwatch (freezes everything on screen). **Select** picks one,
   **C** or up + X throws it, and each throw costs **hearts** (the watch costs five), which
   enemies drop. Can't stomp.
+- **Ryu**: fast run, a quick sword (X) and **wall climbing**: hold toward a wall in the air to
+  cling, jump to kick off it (chain wall jumps to scale anything). Mushrooms unlock the
+  **ninpo arts** in order: throwing star, windmill shuriken (comes back), fire wheel (three
+  orbiting flames) and the jump-and-slash somersault; **Select** picks one and **C** casts it
+  from the ninpo meter (the second bar), which flowers enlarge and enemy drops refill. 16-point
+  health bar. Can't stomp.
 
 ### Options (title screen or pause)
 

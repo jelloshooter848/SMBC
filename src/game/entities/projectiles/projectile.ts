@@ -57,6 +57,8 @@ export interface ProjectileSpec {
 export interface ProjectileOptions {
   vx?: number;
   vy?: number;
+  /** Starting angle in degrees for orbiting projectiles. */
+  angle?: number;
 }
 
 export const FIREBALL: ProjectileSpec = {
@@ -160,7 +162,7 @@ export class Projectile extends Entity {
     this.facing = dirX;
     this.layer = 'front';
     this.despawnMargin = 16;
-    if (spec.orbit) this.angle = dirX > 0 ? 0 : 180;
+    if (spec.orbit) this.angle = opts.angle ?? (dirX > 0 ? 0 : 180);
     this.originY = y;
   }
 
