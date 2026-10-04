@@ -7,21 +7,35 @@ import { moveX } from '../body';
 export const SHELL_SPEED = 0x03000; // 3 px/f
 const SHELL_IDLE_FRAMES = 300;
 const SHELL_WIGGLE_FRAMES = 90;
+/** Red paratroopas bob this far above and below their spawn height, once per period. */
+const PARA_AMPLITUDE = 48; // px
+const PARA_PERIOD = 192; // frames
+const PARA_HOP = 0x03800; // 3.5 px/f take-off for hopping green paratroopas
 
 export type KoopaState = 'walk' | 'shell' | 'shell-moving' | 'wiggle';
 
-/** Green koopa: walks off ledges; stomping makes a kickable shell. */
+/**
+ * Koopa Troopa: green ones walk off ledges, red ones turn at them; stomping makes a kickable
+ * shell. With wings it is a Paratroopa: red ones fly up and down around their spawn point,
+ * green ones hop forward, and a stomp only clips the wings.
+ */
 export class Koopa extends Enemy {
   readonly kind = 'koopa';
   state: KoopaState = 'walk';
+  wings: boolean;
+  private readonly homeY: number;
+  private flyT = 0;
   private shellTimer = 0;
   /** Kills by a moving shell chain for combo scoring. */
   shellCombo = 0;
   readonly color: 'green' | 'red';
 
-  constructor(x: number, y: number, color: 'green' | 'red' = 'green') {
+  constructor(x: number, y: number, color: 'green' | 'red' = 'green', wings = false) {
     super(x, y, 12, 22);
     this.color = color;
+    this.wings = wings;
+    this.homeY = y;
+    if (wings && color === 'red') this.body.vx = 0;
     this.fallsOffLedges = color === 'green';
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
@@ -88,6 +102,13 @@ export class Koopa extends Enemy {
   }
 
   protected override onShell(_src: DamageSource, world: World): void {
+    if (this.wings) {
+      this.wings = false;
+      this.body.vy = 0;
+      this.body.vx = -this.walkSpeed;
+      world.audio.sfx('stomp');
+      return;
+    }
     if (this.state === 'walk' || this.state === 'wiggle') {
       this.becomeShell();
       world.audio.sfx('stomp');
@@ -105,8 +126,9 @@ export class Koopa extends Enemy {
   update(world: World): void {
     switch (this.state) {
       case 'walk':
-        this.patrol(world);
-        this.currentFrame = `koopa-${(world.frame >> 3) & 1}`;
+        if (this.wings) this.fly(world);
+        else this.patrol(world);
+        this.currentFrame = `${this.wings ? 'koopa-fly' : 'koopa'}-${(world.frame >> 3) & 1}`;
         break;
       case 'shell':
         this.fall(world);
@@ -135,6 +157,25 @@ export class Koopa extends Enemy {
       }
     }
     if (this.isBelowLevel()) this.destroy();
+  }
+
+  private fly(world: World): void {
+    const b = this.body;
+    if (this.color === 'red') {
+      // Bob vertically through the air, ignoring tiles, facing the nearest player.
+      this.flyT++;
+      b.y = this.homeY + px(Math.round(Math.sin((this.flyT * Math.PI * 2) / PARA_PERIOD) * PARA_AMPLITUDE));
+      b.vy = 0;
+      const pl = world.nearestPlayer(b.x).body;
+      this.facing = pl.x + pl.w / 2 < b.x + b.w / 2 ? -1 : 1;
+      return;
+    }
+    // Green: patrol, and hop again as soon as it lands.
+    this.patrol(world);
+    if (b.onGround) {
+      b.vy = -PARA_HOP;
+      b.onGround = false;
+    }
   }
 
   /** A moving shell hitting another enemy. */

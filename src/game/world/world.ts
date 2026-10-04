@@ -223,6 +223,10 @@ export class World {
         return new Koopa(x + px(2), y - px(6), 'green');
       case 'koopa-red':
         return new Koopa(x + px(2), y - px(6), 'red');
+      case 'koopa-para-green':
+        return new Koopa(x + px(2), y - px(6), 'green', true);
+      case 'koopa-para-red':
+        return new Koopa(x + px(2), y - px(6), 'red', true);
       case 'piranha':
         return new Piranha(s.x, s.y);
       case 'firebar':
@@ -835,7 +839,7 @@ export class World {
         const inside = b.x >= tileToSub(z.x) && b.x + b.w <= tileToSub(z.x + 2);
         if (inside && Math.abs(b.y + b.h - top) <= px(1)) return this.enterPipe(p, z, 'down');
       } else if (z.dir === 'right') {
-        if (!input.held('right')) continue;
+        if (!input.held('right') && !this.autoWalk) continue;
         const mouthX = tileToSub(z.x);
         const standingRow = tileAt(b.y + b.h - 1);
         if (

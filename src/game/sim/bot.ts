@@ -67,6 +67,11 @@ export function autoPlayer(world: World, bot: BotState): Action[] {
     const dx = e.body.x - (b.x + b.w);
     if (dx > -8 * 256 && dx < 40 * 256 && Math.abs(e.body.y - b.y) < 32 * 256) wantJump = true;
   }
+  // A side pipe's mouth just ahead at this height is an exit, not a wall: walk into it.
+  for (const z of world.level.zones) {
+    if (z.kind !== 'pipe' || z.dir !== 'right') continue;
+    if (z.x >= col && z.x <= col + 3 && (feetRow === z.y || feetRow === z.y + 1)) wantJump = false;
+  }
   if (wantJump && b.onGround) bot.jumpHold = 22;
   if (bot.jumpHold > 0) {
     bot.jumpHold--;
