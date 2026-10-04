@@ -162,6 +162,18 @@ describe('megaman extras', () => {
     for (let i = 0; i < 3; i++) expect(megamanPalettes[`megaman-charge-${i}`]).toBeDefined();
   });
 
+  it('has a suit palette per weapon that keeps the outline black and the skin unchanged', () => {
+    const base = megamanPalettes.megaman as string[];
+    for (const w of ['plain', 'saw', 'leaf', 'flame', 'knuckle', 'bolt', 'rush']) {
+      const suit = megamanPalettes[`megaman-${w}`];
+      expect(suit, `megaman-${w}`).toBeDefined();
+      const colours = suit as string[];
+      expect(colours.length, `megaman-${w} length`).toBe(base.length);
+      expect(colours[0], `megaman-${w} outline`).toBe('#000000');
+      expect(colours[3], `megaman-${w} skin`).toBe(base[3]);
+    }
+  });
+
   it('keeps the slide in the lower 16 rows', () => {
     const rows = megamanDef.frames.slide as readonly string[];
     for (let y = 0; y < 16; y++) expect(rows[y], `row ${y}`).toBe('.'.repeat(16));
