@@ -227,7 +227,7 @@ export const MEGAMAN: CharacterDef = {
   meter,
   hudExtra: (p) => (etanks(p) > 0 ? `E×${etanks(p)}` : null),
   reserve: {
-    label: (p) => (etanks(p) > 0 ? `Use E-tank (${etanks(p)})` : null),
+    label: (p) => (etanks(p) > 0 ? `Use E-tank ×${etanks(p)}` : null),
     use(p, world) {
       if (etanks(p) <= 0 || p.hp >= MAX_HP) return false;
       p.scratch.etanks = etanks(p) - 1;

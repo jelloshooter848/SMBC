@@ -169,7 +169,7 @@ describe("Mega Man's arsenal", () => {
     expect(p.hp).toBe(14);
     expect(p.scratch.wsaw).toBe(14);
     expect(p.scratch.etanks).toBe(1);
-    expect(MEGAMAN.reserve?.label(p)).toBe('Use E-tank (1)');
+    expect(MEGAMAN.reserve?.label(p)).toBe('Use E-tank ×1');
     expect(MEGAMAN.reserve?.use(p, r.world)).toBe(true);
     expect(p.hp).toBe(MAX_HP);
     expect(p.scratch.etanks).toBe(0);
