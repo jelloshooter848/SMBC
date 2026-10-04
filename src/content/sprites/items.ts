@@ -283,6 +283,44 @@ const coilRows = [
 ];
 const blank = '................';
 const spring0 = [...springPlate, ...coilRows, ...springBase];
+
+/* Beanstalk: a twisting green stem with leaf pairs; the top frame ends in a curl. */
+const vineMid = [
+  '.......04.......',
+  '......044.......',
+  '......044.......',
+  '...00.0440..00..',
+  '..0440044400440.',
+  '.04444044404444.',
+  '..0440044400440.',
+  '...00.0440..00..',
+  '.......044......',
+  '.......044......',
+  '......0440......',
+  '......044.......',
+  '...00.044.......',
+  '..04400440......',
+  '.0444404440.....',
+  '..0440.044......',
+];
+const vineTop = [
+  '................',
+  '......000.......',
+  '.....04440......',
+  '....0440440.....',
+  '....044.044.....',
+  '....0440044.....',
+  '.....04444......',
+  '......0440......',
+  '......044.......',
+  '......044.......',
+  '......0440......',
+  '......044.......',
+  '...00.044.......',
+  '..04400440......',
+  '.0444404440.....',
+  '..0440.044......',
+];
 const spring1 = [blank, blank, blank, blank, ...springPlate, ...coilRows.slice(2, 8), ...springBase];
 const spring2 = [
   ...Array.from({ length: 8 }, () => blank),
@@ -1595,6 +1633,8 @@ export const itemsDef: SpriteDef = {
     'spring-0': spring0,
     'spring-1': spring1,
     'spring-2': spring2,
+    'vine-top': vineTop,
+    'vine-mid': vineMid,
     flag,
     'castle-flag': castleFlag,
     'bomb-0': bomb0,

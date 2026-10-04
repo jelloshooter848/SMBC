@@ -1,5 +1,5 @@
 import { LEVEL_ROWS } from '../constants';
-import type { Decor, EntitySpawn, LevelData, PipeDir, Theme, Zone } from './schema';
+import type { Decor, EntitySpawn, LevelData, PipeDir, Theme, TransferMode, Zone } from './schema';
 import { DEFAULT_LEGEND, T } from './tiles';
 
 export class MapParseError extends Error {
@@ -182,14 +182,30 @@ function parseZone(line: string): Zone {
         throw new Error('expected "pipe x y dir -> level x y [exit=dir]"');
       }
       const props = parseProps(rest);
-      const target: { level: string; x: number; y: number; exitDir?: PipeDir | 'none' } = {
+      const target: { level: string; x: number; y: number; exitDir?: TransferMode } = {
         level,
         x: Number(tx),
         y: Number(ty),
       };
-      if (props.exit !== undefined) target.exitDir = String(props.exit) as PipeDir | 'none';
+      if (props.exit !== undefined) target.exitDir = String(props.exit) as TransferMode;
       return { kind: 'pipe', x: Number(xs), y: Number(ys), dir, target };
     }
+    case 'vine': {
+      // vine x y -> level x y
+      const [, xs, ys, arrow, level, tx, ty] = parts;
+      if (arrow !== '->' || !level || tx === undefined || ty === undefined)
+        throw new Error('expected "vine x y -> level x y"');
+      return { kind: 'vine', x: Number(xs), y: Number(ys), target: { level, x: Number(tx), y: Number(ty) } };
+    }
+    case 'pit': {
+      // pit x -> level x y
+      const [, xs, arrow, level, tx, ty] = parts;
+      if (arrow !== '->' || !level || tx === undefined || ty === undefined)
+        throw new Error('expected "pit x -> level x y"');
+      return { kind: 'pit', x: Number(xs), target: { level, x: Number(tx), y: Number(ty) } };
+    }
+    case 'cheeps':
+      return { kind: 'cheeps', x: Number(parts[1]), w: Number(parts[2]) };
     case 'exit': {
       const [, xs, ...rest] = parts;
       const props = parseProps(rest);
@@ -293,6 +309,12 @@ function serializeZone(z: Zone): string {
       return `pipe ${z.x} ${z.y} ${z.dir} -> ${z.target.level} ${z.target.x} ${z.target.y}${z.target.exitDir ? ` exit=${z.target.exitDir}` : ''}`;
     case 'exit':
       return `exit ${z.x} next=${z.next}`;
+    case 'vine':
+      return `vine ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
+    case 'pit':
+      return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
+    case 'cheeps':
+      return `cheeps ${z.x} ${z.w}`;
     case 'checkpoint':
       return `checkpoint ${z.x}`;
     case 'scrollStop':

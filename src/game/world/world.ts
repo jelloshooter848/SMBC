@@ -5,7 +5,7 @@ import { overlaps } from '@engine/math/aabb';
 import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
-import type { EntitySpawn, LevelData, PipeDir, Zone } from '../level/schema';
+import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera } from './camera';
 import { renderTiles, SKY } from './tile-render';
@@ -17,6 +17,11 @@ import { Enemy } from '../entities/enemies/enemy';
 import { Goomba } from '../entities/enemies/goomba';
 import { Koopa } from '../entities/enemies/koopa';
 import { Piranha } from '../entities/enemies/piranha';
+import { Cheep } from '../entities/enemies/cheep';
+import { Blooper } from '../entities/enemies/blooper';
+import { Podoboo } from '../entities/enemies/podoboo';
+import { Spring } from '../entities/objects/spring';
+import { Vine } from '../entities/objects/vine';
 import { PowerUp } from '../entities/objects/powerup';
 import { Pickup } from '../entities/objects/pickup';
 import { Flagpole } from '../entities/objects/flagpole';
@@ -33,7 +38,7 @@ import { Axe } from '../entities/objects/axe';
 import { startHp, type CharacterDef } from '../characters/character';
 
 export type WorldEvent =
-  | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: PipeDir | 'none' } }
+  | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode } }
   | { type: 'exit'; next: string }
   | { type: 'died' }
   | { type: 'checkpoint'; x: number };
@@ -86,6 +91,11 @@ export class World {
   hurryPlayed = false;
   private spawnIndex = 0;
   private readonly spawns: EntitySpawn[];
+  /** Subpixel y of the water line in water levels; Infinity elsewhere. */
+  waterTop = Infinity;
+  /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
+  private leaving = false;
+  private cheepTimer = 0;
   private readonly coinBlocks = new Map<string, { left: number; until: number }>();
   private clear: { phase: ClearPhase; t: number; pole: Flagpole; walkTo: number; player: Player } | null =
     null;
@@ -136,7 +146,15 @@ export class World {
       p.index = i;
       Object.assign(p.scratch, i === 0 ? state.kit : state.kit2);
       if (mode === 'fall') p.body.y = px(-32) - px(i * 24);
-      else if (mode === 'pipe-exit') {
+      else if (mode === 'climb') {
+        // Hanging on the vine entity at the start column, feet on the start tile.
+        const spec = level.entities.find((e) => e.type === 'vine' && e.x === sx);
+        const len = Number(spec?.props?.len ?? 8);
+        const vine = new Vine(sx, spec?.y ?? sy, len);
+        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx };
+        p.body.y = feet - px(hb.h) - px(i * 24);
+        p.anim = 'climb';
+      } else if (mode === 'pipe-exit') {
         // Start inside the pipe below (centred on the 2-wide pipe) and rise out; P2 arrives a moment later.
         p.body.x += px(8) - px(i * 20);
         p.body.y = feet + px(8);
@@ -147,6 +165,19 @@ export class World {
       this.players.push(p);
     });
     this.camera.snapTo(this.player.body.x);
+    // Water levels: everything from the first row of wave tiles down is swimmable.
+    if (level.theme === 'water') {
+      let row = 0;
+      for (let ty = 0; ty < level.height && row === 0; ty++) {
+        for (let tx = 0; tx < level.width; tx++) {
+          if (this.map.get(tx, ty) === T.WATER) {
+            row = ty;
+            break;
+          }
+        }
+      }
+      this.waterTop = tileToSub(row) + px(8);
+    }
 
     // Static objects from the tile grid.
     for (let tx = 0; tx < level.width; tx++) {
@@ -229,6 +260,17 @@ export class World {
         return new Koopa(x + px(2), y - px(6), 'red', true);
       case 'piranha':
         return new Piranha(s.x, s.y);
+      case 'cheep-red':
+      case 'cheep-grey':
+        return new Cheep(x + px(2), y + px(2), s.type === 'cheep-red' ? 'red' : 'grey');
+      case 'blooper':
+        return new Blooper(x + px(2), y + px(2));
+      case 'podoboo':
+        return new Podoboo(s.x, s.y, s.x * 31 + s.y * 7);
+      case 'spring':
+        return new Spring(s.x, s.y);
+      case 'vine':
+        return new Vine(s.x, s.y, Number(s.props?.len ?? 8));
       case 'firebar':
       case 'firebar-ccw':
         return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
@@ -379,6 +421,7 @@ export class World {
     if (this.bossClear) return this.updateBossClear();
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
+    if (this.leaving) return;
 
     for (const p of this.players) if (p.dead) this.updateDeath(p);
     if (this.activePlayers().length === 0) return;
@@ -399,6 +442,14 @@ export class World {
       }
       let input = inputs[i] ?? NO_INPUT;
       if (this.autoWalk) input = AUTO_WALK_INPUT;
+      p.inWater = p.body.y + (p.body.h >> 1) >= this.waterTop;
+      this.grabVines(p, input);
+      const spring = this.springUnder(p);
+      if (spring) {
+        spring.ride(input.held('jump'));
+        p.anim = 'jump';
+        return;
+      }
       p.update(input, this.map, this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
       p.def.behaviour.update(p, input, this);
       if (p.body.x < this.camera.x) {
@@ -429,14 +480,110 @@ export class World {
       if (this.pipeAnim) break;
     }
     this.checkZones();
+    this.flyingCheeps();
 
     const lead = this.rightmost();
     if (lead) this.camera.follow(lead.body.x);
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
-      if (toPx(p.body.y) > SCREEN_H + 8 && !p.dead && !p.out) this.kill(p);
+      if (toPx(p.body.y) > SCREEN_H + 8 && !p.dead && !p.out && !this.leaving) {
+        const pit = this.level.zones.find(
+          (z): z is Zone & { kind: 'pit' } => z.kind === 'pit' && p.body.x >= tileToSub(z.x),
+        );
+        if (pit) this.transfer(pit.target, 'fall');
+        else this.kill(p);
+      }
     }
     this.cull();
+  }
+
+  /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
+  private transfer(target: { level: string; x: number; y: number }, mode: 'climb' | 'fall'): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    for (const o of this.players) {
+      o.frozen = true;
+      o.body.vx = 0;
+      o.body.vy = 0;
+    }
+    this.events.push({ type: 'pipe', target: { ...target, exitDir: mode } });
+  }
+
+  /** Touching a vine while airborne (or pressing up beside it) grabs it; off the top is the sky link. */
+  private grabVines(p: Player, input: InputFrame): void {
+    const b = p.body;
+    if (p.vine) {
+      if (b.y + b.h <= 0) {
+        const z = this.level.zones.find(
+          (v): v is Zone & { kind: 'vine' } =>
+            v.kind === 'vine' && this.vineBlockAt(v.x, v.y)?.centerX === p.vine?.x,
+        );
+        if (z) this.transfer(z.target, 'climb');
+        else b.y = -b.h; // nowhere to go: hang at the top
+      }
+      return;
+    }
+    if (p.vineLock > 0 || p.dead || p.frozen || p.sliding > 0) return;
+    for (const e of this.entities) {
+      if (!(e instanceof Vine) || !e.alive) continue;
+      const v = e.body;
+      // Generous sideways reach (the original lets you grab from beside the block it grew from).
+      const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);
+      const overlapY = b.y + px(8) <= v.y + v.h && b.y + b.h > v.y;
+      if (!overlapX || !overlapY) continue;
+      if (!b.onGround || input.held('up')) {
+        p.vine = { x: e.centerX, top: e.topPx, bottom: e.basePx };
+        p.body.vx = 0;
+        p.body.vy = 0;
+        p.jumping = false;
+        p.anim = 'climb';
+        return;
+      }
+    }
+  }
+
+  private vineBlockAt(tx: number, ty: number): Vine | undefined {
+    return this.entities.find(
+      (e): e is Vine => e instanceof Vine && e.alive && e.fromBlock?.tx === tx && e.fromBlock.ty === ty,
+    );
+  }
+
+  /** The springboard this player is standing on (feet on its plate, coming down onto it). */
+  private springUnder(p: Player): Spring | null {
+    const b = p.body;
+    for (const e of this.entities) {
+      if (!(e instanceof Spring) || !e.alive) continue;
+      const s = e.body;
+      const feet = b.y + b.h;
+      const overlapX = b.x < s.x + s.w && b.x + b.w > s.x;
+      if (!overlapX) continue;
+      if (e.busy) return e;
+      if (b.vy > 0 && feet >= s.y && feet <= s.y + px(10) && b.prevBottom <= s.y + px(4)) {
+        e.press(p);
+        return e;
+      }
+    }
+    return null;
+  }
+
+  /** Bridge levels: red Cheep Cheeps leap from below while the lead player is inside a `cheeps` zone. */
+  private flyingCheeps(): void {
+    const lead = this.rightmost();
+    if (!lead || this.leaving) return;
+    const inZone = this.level.zones.some(
+      (z) => z.kind === 'cheeps' && lead.body.x >= tileToSub(z.x) && lead.body.x < tileToSub(z.x + z.w),
+    );
+    if (!inZone) return;
+    if (--this.cheepTimer > 0) return;
+    this.cheepTimer = 24 + this.rng.int(40);
+    let flying = 0;
+    for (const e of this.entities) if (e instanceof Cheep && e.alive && e.flying) flying++;
+    if (flying >= 3) return;
+    const x = this.camera.x + px(32 + this.rng.int(SCREEN_W - 64));
+    const c = new Cheep(x, px(SCREEN_H + 8), 'red', true);
+    c.body.vx = ((x < lead.body.x ? 1 : -1) * (0x00400 + this.rng.int(0x00800))) | 0;
+    c.body.vy = -(0x04800 + this.rng.int(0x01000));
+    this.spawn(c);
   }
 
   private rightmost(): Player | null {
@@ -553,6 +700,9 @@ export class World {
         this.audio.sfx('powerup-appear');
         break;
       case 'vine':
+        this.spawn(new Vine(tx, ty, 0, { tx, ty }));
+        this.audio.sfx('vine');
+        break;
       case 'none':
         break;
     }

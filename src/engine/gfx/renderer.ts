@@ -9,7 +9,7 @@ export interface Renderer {
   clear(color: string): void;
   rect(x: number, y: number, w: number, h: number, color: string): void;
   /** Draw a named frame from a sprite sheet with its top-left at (x, y). */
-  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX?: boolean): void;
+  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX?: boolean, flipY?: boolean): void;
   /** Draw text with the bitmap font; `font` is a sheet whose frames are single characters. */
   text(font: SpriteSheet, str: string, x: number, y: number): void;
   /** Debug-only text using the canvas font (not pixel-perfect). */
@@ -40,14 +40,14 @@ export class CanvasRenderer implements Renderer {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(x | 0, y | 0, w | 0, h | 0);
   }
-  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX = false): void {
+  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX = false, flipY = false): void {
     const f = sheet.frames.get(frame);
     if (!f) return;
     const ctx = this.ctx;
-    if (flipX) {
+    if (flipX || flipY) {
       ctx.save();
-      ctx.translate((x | 0) + f.w, y | 0);
-      ctx.scale(-1, 1);
+      ctx.translate((x | 0) + (flipX ? f.w : 0), (y | 0) + (flipY ? f.h : 0));
+      ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
       ctx.drawImage(sheet.image as CanvasImageSource, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
       ctx.restore();
     } else {

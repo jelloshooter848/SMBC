@@ -2,7 +2,7 @@
 // (assets/documents/levelDataSmb.xml, MIT licensed, not committed here) into this project's
 // .map format. Only the "normal" difficulty layer is converted.
 //
-//   node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world1 1-1 1-2 1-3 1-4
+//   node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4
 //
 // The XML is a <LEVELDATA> of <LEVEL ID TIME MAIN_AREA> holding <AREA ID TYPE><MAP> cells:
 // a flat comma list of 15 rows × W columns. A cell is `0` or tokens joined by `()`, each
@@ -59,22 +59,30 @@ function parseCell(cell) {
 
 const tokensAt = (area, x, y) => area.grid[y]?.[x] ?? [];
 const find = (area, pred) => {
-  for (let y = 0; y < 15; y++)
+  for (let y = 0; y < 15; y++) {
     for (let x = 0; x < area.width; x++)
       for (const t of area.grid[y][x]) if (pred(t)) return { x, y, tok: t };
+  }
   return null;
 };
 
 /* ---------- mapping tables ---------- */
 
-/** Sub-area ids that other files already refer to. */
-const AREA_IDS = {
-  '1-1': { b: '1-1-bonus' },
-  '1-2': { a: '1-2-intro', c: '1-2-bonus', d: '1-2-exit' },
+/** Sub-area id suffixes by area type (a second area of the same type gets a 2 appended). */
+const AREA_SUFFIX = {
+  intro: 'intro',
+  pipeBonus: 'bonus',
+  coinHeaven: 'sky',
+  water: 'water',
+  normal: 'exit',
+  platform: 'warp',
+  castle: 'end',
 };
-const NEXT = { '1-1': '1-2-intro', '1-2-exit': '1-3' };
+/** Levels drawn with the night or snow palettes. */
+const NIGHT = new Set(['3-1', '3-2', '3-3', '6-1']);
+const SNOW = new Set(['6-3']);
 
-const ITEM_BRICK = { Coin: 'E', MultiCoin: 'C', Star: 'S', Mushroom: 'P', OneUpMushroom: 'L' };
+const ITEM_BRICK = { Coin: 'E', MultiCoin: 'C', Star: 'S', Mushroom: 'P', OneUpMushroom: 'L', Vine: 'V' };
 const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*' };
 const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3' };
 const MARKERS = {
@@ -83,6 +91,18 @@ const MARKERS = {
   enemyKoopaRed: 'K',
   springRed: 's',
   enemyHamBro: 'h',
+};
+const ENTITIES = {
+  enemyCheepFast: 'cheep-red',
+  enemyCheepSlow: 'cheep-grey',
+  enemyBlooper: 'blooper',
+  podoboo: 'podoboo',
+  enemyWingedKoopaRed: 'koopa-para-red',
+  enemyWingedKoopaGreen: 'koopa-para-green',
+  enemyBowser: 'bowser',
+  bowserAxe: 'axe',
+  fireBarLeft: 'firebar',
+  fireBarRight: 'firebar-ccw',
 };
 const LIFTS = {
   WaveHorizontal: 'lift-h',
@@ -94,36 +114,44 @@ const LIFTS = {
 const IGNORED = new Set([
   'flag',
   'colorRed',
+  'colorLightBlue',
   'railing',
-  'groundRail',
   'fence',
   'toad',
   'gameStateWatch',
   'bowserFireBallStart',
   'lakituEnd',
+  'pullyRopeVertical',
+  'treeSmallTrunk',
+  'treeBigTrunk',
   'sceneryText_2',
   'sceneryText_3',
   'sceneryText_4',
 ]);
 
-function themeFor(type) {
+function themeFor(levelId, type) {
   if (type === 'castle') return 'castle';
   if (type === 'underGround' || type === 'pipeBonus') return 'underground';
+  if (type === 'water') return 'water';
+  if (SNOW.has(levelId)) return 'snow';
+  if (NIGHT.has(levelId)) return 'night';
   return 'overworld';
 }
 
-function nextLevel(id) {
-  if (NEXT[id]) return NEXT[id];
-  const [w, s] = id.split('-').map(Number);
-  return s < 4 ? `${w}-${s + 1}` : `${w + 1}-1`;
+/** The level after `levelId` (8-4 ends the game); levels with an intro scene start there. */
+function nextLevel(levelId, levels) {
+  const [w, s] = levelId.split('-').map(Number);
+  if (w === 8 && s === 4) return 'end';
+  const next = s < 4 ? `${w}-${s + 1}` : `${w + 1}-1`;
+  return levels.get(next)?.areas.some((a) => a.type === 'intro') ? `${next}-intro` : next;
 }
 
 /** Legend char for a tile token, or null when it is not a tile. */
 function tileChar(tok, area, world) {
   const { name, params } = tok;
   const castle = area.type === 'castle';
-  // Worlds 1 and 5 draw their "platform" levels as treetops; the others as mushrooms.
-  const trees = area.type === 'platform' && (world === 1 || world === 5);
+  // Platform and bridge levels are treetops, except World 4's giant mushrooms.
+  const trees = (area.type === 'platform' || area.type === 'cheepCheep') && world !== 4;
   switch (name) {
     case 'groundNormal':
     case 'groundWideNormal':
@@ -167,10 +195,15 @@ function tileChar(tok, area, world) {
     case 'groundMushroom':
       return trees ? 'T' : 'm';
     case 'standardPlatformStem':
+    case 'standardPlatformStemSin':
       return trees ? 't' : 'i';
     case 'wavesLava':
       return '~';
+    case 'wavesDay':
+    case 'wavesNight':
+      return 'w';
     case 'bowserBridge':
+    case 'groundRail':
       return '-';
     case 'bridgeChain':
       return ':';
@@ -181,21 +214,19 @@ function tileChar(tok, area, world) {
 
 /* ---------- one area ---------- */
 
-function convertArea(level, area) {
+function convertArea(level, area, id, levels) {
   const levelId = level.id;
   const [world, stage] = levelId.split('-').map(Number);
   const isMain = area.id === level.attrs.MAIN_AREA;
-  const id = isMain
-    ? levelId
-    : (AREA_IDS[levelId]?.[area.id] ?? `${levelId}-${area.type === 'pipeBonus' ? 'bonus' : area.id}`);
-  const theme = themeFor(area.type);
+  const theme = themeFor(levelId, area.type);
+  const music = theme === 'night' || theme === 'snow' ? 'overworld' : theme;
   const header = {
     id,
     name: `WORLD ${levelId}`,
     world,
     stage,
     theme,
-    music: theme,
+    music,
     time: isMain ? Number(level.attrs.TIME) : 'inherit',
   };
   const b = new MapBuilder(area.width, header);
@@ -205,6 +236,11 @@ function convertArea(level, area) {
   let start = null;
   let levelExit = null;
   let warpText = null;
+  let vineStart = null;
+  let pitEnd = null;
+  let pitStart = null;
+  const cheepZone = { start: null, end: null };
+  const vines = []; // vine bricks: { x, y, dest }
   const vertEnds = new Map(); // transporter number -> pipe top-left tile
   const pipes = []; // outgoing transporters
   const castles = []; // { big, x, y }
@@ -222,34 +258,21 @@ function convertArea(level, area) {
         const ch = tileChar(tok, area, world);
         if (ch) {
           b.set(x, y, ch);
+          if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
           continue;
         }
         if (MARKERS[name]) {
           b.set(x, y, MARKERS[name]);
           continue;
         }
+        if (ENTITIES[name]) {
+          b.entity(ENTITIES[name], x, y);
+          continue;
+        }
         switch (name) {
           case 'enemyPiranhaGreen':
           case 'enemyPiranhaRed':
             b.entity('piranha', x, y + 1); // the token sits above the pipe's top-left tile
-            break;
-          case 'enemyWingedKoopaRed':
-            b.entity('koopa-para-red', x, y);
-            break;
-          case 'enemyWingedKoopaGreen':
-            b.entity('koopa-para-green', x, y);
-            break;
-          case 'fireBarLeft':
-            b.entity('firebar', x, y);
-            break;
-          case 'fireBarRight':
-            b.entity('firebar-ccw', x, y);
-            break;
-          case 'enemyBowser':
-            b.entity('bowser', x, y);
-            break;
-          case 'bowserAxe':
-            b.entity('axe', x, y);
             break;
           case 'movingPlatform': {
             // `width` is in half tiles; our `len` counts 8 px segments too.
@@ -279,6 +302,12 @@ function convertArea(level, area) {
           case 'cloudTriple':
             b.dec(`cloud-${{ cloudSingle: 1, cloudDouble: 2, cloudTriple: 3 }[name]}`, x - 1, y - 1);
             break;
+          case 'treeSmallTop':
+            b.dec('tree-small', x, y + 1); // ours anchor on the trunk tile
+            break;
+          case 'treeBigTop':
+            b.dec('tree-big', x, y + 1);
+            break;
           case 'bushGreen': {
             const runs = bushRuns.get(y) ?? [];
             const last = runs[runs.length - 1];
@@ -295,6 +324,21 @@ function convertArea(level, area) {
             break;
           case 'levelExit':
             levelExit = { x, y };
+            break;
+          case 'vineStart':
+            vineStart = { x, y };
+            break;
+          case 'pitTransferStart':
+            pitStart = { x, y, dest: params.pTransDest };
+            break;
+          case 'pitTransferEnd':
+            pitEnd = { x, y };
+            break;
+          case 'flyingCheepStart':
+            cheepZone.start = x;
+            break;
+          case 'flyingCheepEnd':
+            cheepZone.end = x;
             break;
           case 'pipeTransporterGlobalVertEnd':
             vertEnds.set(String(params.number ?? '1'), { x, y });
@@ -333,8 +377,12 @@ function convertArea(level, area) {
   if (levelExit) {
     // The flag walk ends 6 tiles right of the exit marker, in the castle door.
     const exitX = door !== null && area.type !== 'castle' ? door - 6 : levelExit.x;
-    b.zone(`exit ${exitX} next=${nextLevel(id)}`);
+    b.zone(`exit ${exitX} next=${nextLevel(levelId, levels)}`);
   }
+  if (cheepZone.start !== null) {
+    b.zone(`cheeps ${cheepZone.start} ${(cheepZone.end ?? area.width) - cheepZone.start}`);
+  }
+  if (vineStart) b.entity('vine', vineStart.x, vineStart.y, { len: 8 });
 
   // How the player arrives decides the start mode.
   const pipeExit = [...vertEnds.values()][0];
@@ -346,6 +394,10 @@ function convertArea(level, area) {
     header.start = `${start?.x ?? 2},${start?.y ?? 12}`;
     header.startMode = 'autowalk';
     header.camera = 'locked';
+  } else if (vineStart) {
+    header.start = `${vineStart.x},${vineStart.y}`;
+    header.startMode = 'climb';
+    header.camera = 'scroll';
   } else if (!isMain && pipeExit) {
     header.start = `${pipeExit.x},${pipeExit.y - 1}`;
     header.startMode = 'pipe-exit';
@@ -353,9 +405,10 @@ function convertArea(level, area) {
   } else {
     const sx = start?.x ?? 2;
     const sy = start?.y ?? 12;
-    const below = tokensAt(area, sx, sy + 1).some(
-      (t) => tileChar(t, area, world) && tileChar(t, area, world) !== '$',
-    );
+    const below = tokensAt(area, sx, sy + 1).some((t) => {
+      const c = tileChar(t, area, world);
+      return c && c !== '$' && c !== 'w';
+    });
     header.start = `${sx},${sy}`;
     header.startMode = below ? 'stand' : 'fall';
     header.camera = area.width <= 16 ? 'locked' : 'scroll';
@@ -363,15 +416,50 @@ function convertArea(level, area) {
   if (!isMain) header.parent = levelId;
   if (area.width > 16) b.zone(`scrollStop ${area.width - 16}`);
 
-  return { id, builder: b, pipes, vertEnds, warpText, skipped, start, area };
+  return {
+    id,
+    builder: b,
+    pipes,
+    vertEnds,
+    warpText,
+    skipped,
+    start,
+    area,
+    vineStart,
+    pitEnd,
+    pitStart,
+    vines,
+  };
 }
 
-/* ---------- pipe links between areas ---------- */
+/* ---------- links between areas ---------- */
 
 function convertLevel(level, levels) {
-  const converted = level.areas.map((a) => convertArea(level, a));
+  const used = new Map();
+  const ids = level.areas.map((a) => {
+    if (a.id === level.attrs.MAIN_AREA) return level.id;
+    const suffix = AREA_SUFFIX[a.type] ?? a.id;
+    const n = (used.get(suffix) ?? 0) + 1;
+    used.set(suffix, n);
+    return `${level.id}-${suffix}${n > 1 ? n : ''}`;
+  });
+  const converted = level.areas.map((a, i) => convertArea(level, a, ids[i], levels));
   const byAreaId = new Map(level.areas.map((a, i) => [a.id, converted[i]]));
   for (const c of converted) {
+    for (const v of c.vines) {
+      const t = byAreaId.get(v.dest);
+      if (!t?.vineStart) {
+        console.warn(`${c.id}: vine at ${v.x},${v.y} to area ${v.dest} without a vineStart`);
+        continue;
+      }
+      c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${t.vineStart.x} ${t.vineStart.y}`);
+    }
+    if (c.pitStart) {
+      const t = byAreaId.get(c.pitStart.dest);
+      if (!t?.pitEnd)
+        console.warn(`${c.id}: pit transfer to area ${c.pitStart.dest} without a pitTransferEnd`);
+      else c.builder.zone(`pit 0 -> ${t.id} ${t.pitEnd.x} ${t.pitEnd.y}`);
+    }
     const warpPipes = [];
     for (const p of c.pipes.sort((a, b) => a.x - b.x)) {
       const dest = p.dest;

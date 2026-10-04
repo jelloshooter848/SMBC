@@ -10,6 +10,7 @@ import { carriedKit } from '../entities/player';
 import { startHp } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
+import { MessageScene } from './message';
 
 export type LevelStart = WorldStart;
 
@@ -85,7 +86,12 @@ export class LevelScene implements Scene {
         const start: LevelStart = {
           x: ev.target.x,
           y: ev.target.y,
-          mode: exitDir === 'up' ? 'pipe-exit' : target.startMode,
+          mode:
+            exitDir === 'up'
+              ? 'pipe-exit'
+              : exitDir === 'climb' || exitDir === 'fall'
+                ? exitDir
+                : target.startMode,
         };
         if (target.time === null) game.state.time = this.world.time;
         game.startLevel(target, start);
@@ -96,7 +102,18 @@ export class LevelScene implements Scene {
         game.state.time = null;
         if (game.playtestDone) game.playtestDone();
         else if (ev.next === 'end') game.showTitle();
-        else game.goToLevel(ev.next, { mode: 'stand' });
+        else if (this.level.theme === 'castle') {
+          // Toad's news after every castle but the last.
+          const hero = game.state.character.hudName;
+          game.scenes.push(
+            new MessageScene(
+              game,
+              [`THANK YOU ${hero}!`, '', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'],
+              () => game.goToLevel(ev.next, { mode: 'stand' }),
+              360,
+            ),
+          );
+        } else game.goToLevel(ev.next, { mode: 'stand' });
         break;
       case 'died': {
         if (game.playtestDone) {

@@ -49,18 +49,30 @@ export function autoPlayer(world: World, bot: BotState): Action[] {
   for (let d = 1; d <= reach; d++) {
     if (map.isSolid(col + d, feetRow) || map.isSolid(col + d, feetRow - 1)) wantJump = true;
   }
-  // Gap ahead: no ground under the next few columns.
-  let ground = false;
-  for (let d = 1; d <= 2 && !ground; d++) {
+  // Gap ahead: the next column (or the one after, at speed) has no ground within reach.
+  const groundAt = (c: number): boolean => {
     for (let r = feetRow + 1; r <= feetRow + 3; r++) {
-      const c = map.collisionAt(col + d, r);
-      if (c === 'solid' || c === 'top') {
-        ground = true;
-        break;
-      }
+      const k = map.collisionAt(c, r);
+      if (k === 'solid' || k === 'top') return true;
     }
+    return false;
+  };
+  const ground = groundAt(col + 1) && (reach < 2 || groundAt(col + 2));
+  const gapAhead = !ground && b.onGround;
+  if (gapAhead) {
+    // A bottomless pit (no ground anywhere below the next column) needs speed: back up for a
+    // running start instead of hopping in. A mere drop is jumped as usual.
+    let pit = true;
+    for (let r = feetRow + 1; r < map.height && pit; r++) {
+      const k = map.collisionAt(col + 1, r);
+      if (k === 'solid' || k === 'top') pit = false;
+    }
+    if (pit && Math.abs(b.vx) < p.profile.maxWalk * 0.6) {
+      bot.retreat = 48;
+      return out;
+    }
+    wantJump = true;
   }
-  if (!ground && b.onGround) wantJump = true;
   // Enemy close ahead.
   for (const e of world.entities) {
     if (!(e instanceof Enemy) || !e.alive || !e.contactHurts) continue;
@@ -72,7 +84,9 @@ export function autoPlayer(world: World, bot: BotState): Action[] {
     if (z.kind !== 'pipe' || z.dir !== 'right') continue;
     if (z.x >= col && z.x <= col + 3 && (feetRow === z.y || feetRow === z.y + 1)) wantJump = false;
   }
-  if (wantJump && b.onGround) bot.jumpHold = 22;
+  // Landed while still holding jump: release it this frame so the next press registers.
+  if (b.onGround && bot.jumpHold > 0) bot.jumpHold = 0;
+  else if (wantJump && b.onGround) bot.jumpHold = 22;
   if (bot.jumpHold > 0) {
     bot.jumpHold--;
     out.push('jump');

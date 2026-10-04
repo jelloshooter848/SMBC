@@ -8,6 +8,11 @@ import { makeBody, moveX, moveY, type Body } from './body';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
 
+const SWIM_STROKE = 0x01800; // 1.5 px/f upward per tap
+const SWIM_GRAVITY = 0x00100; // 0.0625 px/f²
+const SWIM_SINK_MAX = 0x01000; // 1 px/f
+const CLIMB_SPEED = 0x00100; // 1 px/f in subpixels
+
 /** The part of a player's scratch state that follows them to the next level (not per-swing hit marks). */
 export function carriedKit(p: Player): Record<string, number> {
   const out: Record<string, number> = {};
@@ -71,6 +76,14 @@ export class Player {
   clingLock = 0;
   /** Vertical speed before this frame's move (survives the landing reset; used for stomp checks). */
   fallSpeed = 0;
+  /** Set by the world each frame: the body's centre is under the water line (swim physics). */
+  inWater = false;
+  /** Holding a vine: its centre line (subpixels) and the px span that can be climbed. */
+  vine: { x: number; top: number; bottom: number } | null = null;
+  /** Frames after letting go of a vine during which it cannot be grabbed again. */
+  vineLock = 0;
+  /** Thrown by a spring: floats with hold-gravity to the apex whether or not jump is held. */
+  launched = false;
   private runTimer = 0;
   private tier: JumpTier;
   private airCap: number;
@@ -129,11 +142,13 @@ export class Player {
     if (this.star > 0) this.star--;
     if (this.attackTimer > 0) this.attackTimer--;
     if (this.clingLock > 0) this.clingLock--;
+    if (this.vineLock > 0) this.vineLock--;
     if (this.frozen || this.dead) return;
+    if (this.vine) return this.climb(input, map, audio);
     const p = this.profile;
     const b = this.body;
     let dir = input.dirX;
-    const wantRun = p.canRun && input.held('attack');
+    const wantRun = p.canRun && input.held('attack') && !this.inWater;
     if (wantRun) this.runTimer = p.runTimerFrames;
     else if (this.runTimer > 0) this.runTimer--;
     const running = wantRun || this.runTimer > 0;
@@ -162,6 +177,8 @@ export class Player {
       this.sinceGround++;
       this.airMove(dir);
     }
+
+    if (this.inWater) return this.swim(input, map, audio, dir, onHeadBump);
 
     const canJump =
       this.sliding === 0 &&
@@ -197,7 +214,9 @@ export class Player {
     // is applied after the move. Applying gravity first shaved a frame off every jump (standing
     // apex 62 px instead of the 4 tiles SMB1 clears).
     if (!b.onGround && p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
-    const holding = p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0;
+    if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
+    const holding =
+      (p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0) || this.launched;
     if (this.clinging) {
       b.vy = 0;
       b.vx = this.facing * 0x00100; // keep leaning into the wall so hitWall stays set
@@ -222,6 +241,107 @@ export class Player {
       if (b.vy > p.maxFall) b.vy = p.fallReset;
     }
     this.updateAnim(dir);
+  }
+
+  /**
+   * Underwater: no running, a tap of jump is a stroke upward, and everything sinks slowly.
+   * Walking on the floor still works, so pipes and springs behave.
+   */
+  private swim(
+    input: InputFrame,
+    map: TileMap,
+    audio: AudioSink,
+    dir: -1 | 0 | 1,
+    onHeadBump?: (tx: number, ty: number) => void,
+  ): void {
+    const p = this.profile;
+    const b = this.body;
+    this.airCap = p.maxWalk;
+    if (b.vx > p.maxWalk) b.vx = p.maxWalk;
+    if (b.vx < -p.maxWalk) b.vx = -p.maxWalk;
+    if (
+      input.bufferedJump(JUMP_BUFFER_FRAMES) &&
+      this.sliding === 0 &&
+      (this.def.behaviour.canJump?.(this) ?? true)
+    ) {
+      input.consumeJumpBuffer();
+      b.vy = -SWIM_STROKE;
+      b.onGround = false;
+      this.jumping = false;
+      audio.sfx('swim');
+    }
+    if (this.stun === 0) {
+      if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
+      else if (dir !== 0) this.facing = dir;
+    }
+    moveX(b, map, velToSub(b.vx));
+    this.fallSpeed = b.onGround ? 0 : b.vy;
+    moveY(
+      b,
+      map,
+      b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy),
+      onHeadBump ? { onHeadBump } : {},
+    );
+    if (b.onGround) {
+      this.jumping = false;
+      this.combo = 0;
+      b.vy = 0;
+    } else {
+      b.vy += SWIM_GRAVITY;
+      if (b.vy > SWIM_SINK_MAX) b.vy = SWIM_SINK_MAX;
+    }
+    this.tier = pickJumpTier(p, b.vx);
+    this.updateAnim(dir);
+    if (!b.onGround) this.anim = 'swim';
+  }
+
+  /** On a vine: up/down climb, left/right turn, jump lets go. The world handles grabbing. */
+  private climb(input: InputFrame, map: TileMap, audio: AudioSink): void {
+    const v = this.vine as NonNullable<typeof this.vine>;
+    const b = this.body;
+    b.vx = 0;
+    b.x = v.x - (b.w >> 1);
+    if (input.dirX !== 0) this.facing = input.dirX;
+    if (input.bufferedJump(JUMP_BUFFER_FRAMES)) {
+      input.consumeJumpBuffer();
+      this.letGo();
+      this.tier = pickJumpTier(this.profile, 0);
+      b.vy = -this.tier.initial;
+      b.onGround = false;
+      this.jumping = this.profile.variableJump !== 'cut';
+      this.airCap = this.profile.maxWalk;
+      // Pushing a direction leaps clear of the vine at walking speed; otherwise a small hop.
+      b.vx = this.facing * (input.dirX !== 0 ? this.profile.maxWalk : this.profile.minWalk << 2);
+      audio.sfx(this.def.jumpSfx(this));
+      return;
+    }
+    let dy = 0;
+    if (input.held('up')) dy = -CLIMB_SPEED;
+    else if (input.held('down')) dy = CLIMB_SPEED;
+    this.anim = 'climb';
+    if (dy !== 0 && ++this.walkTick >= 8) {
+      this.walkTick = 0;
+      this.walkFrame = (this.walkFrame + 1) & 1;
+    }
+    // Can't climb above the vine's top (unless it reaches past the screen top: the sky link).
+    if (dy < 0 && b.y + dy < px(v.top) && v.top > -16) dy = Math.min(0, px(v.top) - b.y);
+    b.vy = 0;
+    this.fallSpeed = 0;
+    moveY(b, map, dy);
+    if (b.onGround) {
+      // Climbed down onto the ground.
+      this.letGo();
+      return;
+    }
+    // Hands (near the top of the body) slipping below the vine's base: drop off.
+    if (b.y + px(8) > px(v.bottom)) this.letGo();
+  }
+
+  /** Release the vine (jump off, climb down to the floor, or the vine ended). */
+  letGo(): void {
+    this.vine = null;
+    this.vineLock = 20;
+    this.anim = 'idle';
   }
 
   private startSlide(): void {
@@ -313,8 +433,9 @@ export class Player {
     this.tier = pickJumpTier(this.profile, b.vx);
     b.vy = -Math.round(this.tier.initial * boost);
     b.onGround = false;
-    // A spring launch cannot be cut short; hold-gravity characters still get their float.
+    // A spring launch cannot be cut short, and it floats to its apex like a held jump.
     this.jumping = this.profile.variableJump !== 'cut';
+    this.launched = true;
     this.sliding = 0;
     this.crouching = false;
     this.refitHitbox();
