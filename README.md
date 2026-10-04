@@ -63,6 +63,12 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
   orbiting flames) and the jump-and-slash somersault; **Select** picks one and **C** casts it
   from the ninpo meter (the second bar), which flowers enlarge and enemy drops refill. 16-point
   health bar. Can't stomp.
+- **Bill**: a commando with a somersault jump and a rifle (X) that aims in **eight directions**
+  from the d-pad (up, diagonals, straight down in the air); down on the ground goes **prone**.
+  Flowers and dropped capsules unlock guns in order: machine gun (hold to fire), spread (five
+  shots), laser (pierces everything in a line) and the flame thrower; **Select** switches
+  between the guns you have. Starts with three hits; mushrooms add one (up to five). Can't
+  stomp.
 
 ### Options (title screen or pause)
 

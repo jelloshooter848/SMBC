@@ -19,7 +19,8 @@ export type PickupKind =
   | 'energy-large'
   | 'missile-pack'
   | 'ninpo-small'
-  | 'ninpo-large';
+  | 'ninpo-large'
+  | 'capsule';
 
 const FRAMES: Record<PickupKind, { frame: string; size: number }> = {
   bomb: { frame: 'bomb-0', size: 16 },
@@ -37,6 +38,7 @@ const FRAMES: Record<PickupKind, { frame: string; size: number }> = {
   'missile-pack': { frame: 'missile-pack', size: 16 },
   'ninpo-small': { frame: 'ninpo-small', size: 8 },
   'ninpo-large': { frame: 'ninpo-large', size: 16 },
+  capsule: { frame: 'capsule', size: 16 },
 };
 
 export const PICKUP_LIFETIME = 480;
