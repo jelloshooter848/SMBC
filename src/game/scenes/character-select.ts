@@ -69,11 +69,15 @@ export class CharacterSelectScene implements Scene {
       const f = sheet.frames.get(c.portrait.frame);
       const h = f?.h ?? 32;
       r.sprite(sheet, c.portrait.frame, x - 8, 120 - h);
+      // With a full roster the heroes stand close together, so the cursor becomes an underline.
+      const tight = spacing < 40;
       if (i === this.index) {
-        r.text(font, '>', x - 20, 112 - h / 2);
+        if (tight) r.rect(x - 8, 122, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
+        else r.text(font, '>', x - 20, 112 - h / 2);
         r.text(font, c.name.toUpperCase(), 128 - (c.name.length * 8) / 2, 144);
       }
-      if (this.p2 && i === this.index2) r.text(font, '2', x + 12, 112 - h / 2);
+      if (this.p2 && i === this.index2)
+        r.text(font, '2', tight ? x - 4 : x + 12, tight ? 120 - h - 10 : 112 - h / 2);
     });
     if (this.p2) {
       const c2 = chars[this.index2];

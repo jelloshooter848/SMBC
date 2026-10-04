@@ -988,6 +988,580 @@ const iconMissile = [
   '..7..7..',
 ];
 
+/* ---------- vampire-hunter sub-weapons, pickups and HUD icons ---------- */
+
+/** Rotate a square block a quarter turn clockwise. */
+const rotateCW = (rows: readonly string[]): string[] => flipH(transpose(rows));
+
+/* Thrown dagger, 16x8, flying right: brown grip with a dark pommel, a black cross-guard and a long
+ * grey blade with a light highlight near the guard, tapering to the point. */
+const dagger = [
+  '................',
+  '................',
+  '....0000000000..',
+  '0999011bbbbbbbb0',
+  '09990bbbbbbbbb0.',
+  '....0000000000..',
+  '................',
+  '................',
+];
+
+/* Hand axe, 16x16, upright: a straight brown haft with a grey hatchet head on the right whose
+ * convex edge carries a light bevel. The other three frames turn it a quarter each. */
+const handAxe0 = [
+  '................',
+  '....000000000...',
+  '....099bbbbb0...',
+  '....099bbbbb10..',
+  '....099bbbbbb10.',
+  '....099bbbbbb10.',
+  '....099bbbbbb10.',
+  '....099bbbbb10..',
+  '....0990bbbb10..',
+  '....09900bb10...',
+  '....0990.0000...',
+  '....0990........',
+  '....0990........',
+  '....0990........',
+  '....0990........',
+  '....000.........',
+];
+const handAxe1 = rotateCW(handAxe0);
+const handAxe2 = rotateCW(handAxe1);
+const handAxe3 = rotateCW(handAxe2);
+
+/* Holy water, 8x8: a stubby round-shouldered flask of blue liquid with a grey cork and a white
+ * glint high on the left. */
+const holyWater = [
+  '...00...',
+  '..0bb0..',
+  '..0ee0..',
+  '.0e11e0.',
+  '0ee1eee0',
+  '0eeeeee0',
+  '0eeeeee0',
+  '.000000.',
+];
+
+/* Holy fire, 16x16, bottom-aligned: a low pool of blue flame with lighter tongues and white-hot
+ * spots; frame 1 moves the tongues and the spots so the two flicker. */
+const holyFire0 = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.....e.....e....',
+  '..e..ee...ee..e.',
+  '..ee.eae..eae.e.',
+  '.eae.eae.eeaeee.',
+  '.eaeeeaaeeeaaaee',
+  'eeaa1aaaaeaa1aee',
+  'eea111aaaaa11aee',
+  'eeaaaaaaaaaaaaee',
+];
+const holyFire1 = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '..e......e......',
+  '..ee..e..ee...e.',
+  '.eae..ee.eae..ee',
+  '.eae.eaeeeaae.ee',
+  'eeaaeeaaeeeaaeee',
+  'eea1aaa1aaaa1aae',
+  'eea11aa11aaa11ae',
+  'eeaaaaaaaaaaaaee',
+];
+
+/* Thrown cross, 16x16: a thick white cross with grey shading along the right and underside, gold
+ * caps on all four arms and a gold stud at the crossing. The other frames turn it a quarter each. */
+const cross0 = [
+  '.....000000.....',
+  '.....055550.....',
+  '.....0111b0.....',
+  '.....0111b0.....',
+  '000000111b000000',
+  '0511111111111b50',
+  '0511111551111b50',
+  '05bbbbb55bbbbb50',
+  '05bbbbbbbbbbbb50',
+  '000000111b000000',
+  '.....0111b0.....',
+  '.....0111b0.....',
+  '.....0111b0.....',
+  '.....0bbbb0.....',
+  '.....055550.....',
+  '.....000000.....',
+];
+const cross1 = rotateCW(cross0);
+const cross2 = rotateCW(cross1);
+const cross3 = rotateCW(cross2);
+
+/* Stopwatch, 8x8: a grey pocket watch with a gold crown, white face and black hands at three o'clock. */
+const stopwatch = [
+  '...55...',
+  '..0000..',
+  '.0b11b0.',
+  '0b1101b0',
+  '0b1100b0',
+  '0b1111b0',
+  '.0b11b0.',
+  '..0000..',
+];
+
+/* Large heart, 16x16: the small heart grown up, with a white glint on the left lobe and a dark red
+ * shade down the right side. */
+const heartLarge = [
+  '................',
+  '...0000..0000...',
+  '..022220022220..',
+  '.02112220222220.',
+  '.02112222222220.',
+  '.02122222222220.',
+  '.02222222222220.',
+  '.02222222222280.',
+  '..022222222280..',
+  '..022222222280..',
+  '...0222222280...',
+  '....02222280....',
+  '.....022280.....',
+  '......0280......',
+  '.......00.......',
+  '................',
+];
+
+/* Sub-weapon HUD icons, drawn without black so they read on the status bar. */
+const iconDagger = [
+  '........',
+  '........',
+  '...5....',
+  '9951bbbb',
+  '995bbbb.',
+  '...5....',
+  '........',
+  '........',
+];
+const iconHandAxe = [
+  '...bbbb.',
+  '.99bbbbb',
+  '.99bbbb1',
+  '.99bbb1.',
+  '.99.....',
+  '.99.....',
+  '.99.....',
+  '.99.....',
+];
+const iconHolyWater = [
+  '...bb...',
+  '...ee...',
+  '..e11e..',
+  '.ee1eee.',
+  '.eeeeee.',
+  '.eeeeee.',
+  '.eeeeee.',
+  '..eeee..',
+];
+const iconCross = [
+  '...55...',
+  '...11...',
+  '...11...',
+  '51111115',
+  '51111115',
+  '...11...',
+  '...11...',
+  '...55...',
+];
+const iconWatch = [
+  '...55...',
+  '..1111..',
+  '.1bbbb1.',
+  '1bbb1bb1',
+  '1bbb11b1',
+  '1bbbbbb1',
+  '.1bbbb1.',
+  '..1111..',
+];
+
+/* ---------- ninja throwing weapons, ninpo and HUD icons ---------- */
+
+const blank16 = Array.from({ length: 16 }, () => blank);
+
+/** Merge equally sized layers: later layers paint over earlier ones wherever they are not '.'. */
+const overlay = (...layers: readonly (readonly string[])[]): string[] =>
+  (layers[0] ?? []).map((row, y) =>
+    row
+      .split('')
+      .map((_, x) =>
+        layers.reduce(
+          (ch, layer) => ((layer[y]?.[x] ?? '.') === '.' ? ch : ((layer[y] as string)[x] as string)),
+          '.',
+        ),
+      )
+      .join(''),
+  );
+
+/* Throwing star, 8x8: four short blades around a dark hub, white along the upper-left edges.
+ * Frame 1 is the same star turned 45 degrees so the two alternate as it spins. */
+const throwingStar0 = [
+  '...1b...',
+  '...1b...',
+  '...1b...',
+  '11100bbb',
+  'bbb00bbb',
+  '...bb...',
+  '...bb...',
+  '...bb...',
+];
+const throwingStar1 = [
+  '1......b',
+  '11....bb',
+  '.11..bb.',
+  '..100b..',
+  '..b00b..',
+  '.bb..bb.',
+  'bb....bb',
+  'b......b',
+];
+
+/* Windmill shuriken, 16x16: four hooked blades sweeping clockwise off a grey hub with a dark
+ * hole, white along each blade's straight leading edge and a glint on one blade so every quarter
+ * turn reads as a new frame. Frame 0 has the blades on the axes, frame 1 on the diagonals; frames
+ * 2 and 3 turn those a quarter, so cycling all four spins the wheel an eighth of a turn per frame. */
+const windmillHub = [
+  ...blank16.slice(0, 6),
+  '......bbbb......',
+  '......b00b......',
+  '......b00b......',
+  '......bbbb......',
+  ...blank16.slice(10),
+];
+const windmillBladeUp = [
+  '......1b........',
+  '......1bb.......',
+  '......1bbb......',
+  '......1bbbb.....',
+  '......1bbbbb....',
+  '......1bbbbbb...',
+  ...blank16.slice(6),
+];
+const windmillBladeDiag = [
+  '..............1.',
+  '.............1b.',
+  '............1bb.',
+  '...........1bbb.',
+  '..........1bbbb.',
+  '.........1bbbb..',
+  '........1bbbb...',
+  '........bbbb....',
+  ...blank16.slice(8),
+];
+/** Four copies of one blade a quarter turn apart around the hub. */
+const wheel = (blade: readonly string[], glint: readonly string[]): string[] => {
+  const b1 = rotateCW(blade);
+  const b2 = rotateCW(b1);
+  return overlay(blade, b1, b2, rotateCW(b2), windmillHub, glint);
+};
+const windmill0 = wheel(windmillBladeUp, [...blank16.slice(0, 3), '.........1......', ...blank16.slice(4)]);
+const windmill1 = wheel(windmillBladeDiag, [...blank16.slice(0, 4), '.............1..', ...blank16.slice(5)]);
+const windmill2 = rotateCW(windmill0);
+const windmill3 = rotateCW(windmill1);
+
+/* Fire wheel, 16x16: a rolling orb of flame, orange outside, yellow inside and a white-hot core,
+ * with tongues licking off the rim. Frame 1 moves the tongues and the core so the two flicker. */
+const fireWheel0 = [
+  '......7....7....',
+  '...7..77..77....',
+  '...77777777777..',
+  '..7777555557777.',
+  '.77755666665577.',
+  '.775566116655777',
+  '7755661111665577',
+  '7755611111165577',
+  '7755611111165577',
+  '7755661111665577',
+  '.775566116655777',
+  '..775566665577..',
+  '..7775555577.7..',
+  '...77777777777..',
+  '....77..77..7...',
+  '.....7....7.....',
+];
+const fireWheel1 = [
+  '....7....7......',
+  '....77..77..7...',
+  '..77777777777...',
+  '.7777555557777..',
+  '.77556666655777.',
+  '7775566111665577',
+  '7755661111165577',
+  '7755611111165577',
+  '7755611111165577',
+  '7755661111665577',
+  '7775566111665577',
+  '..775566665577..',
+  '..7.7755555777..',
+  '...77777777777..',
+  '....7..77..77...',
+  '......7....7....',
+];
+
+/* Ninpo spirit flame: a teardrop of light-blue fire with a white core and a blue edge so it
+ * stays visible over the sky, in a small 8x8 and a large 16x16 size. */
+const ninpoSmall = [
+  '....e...',
+  '...eae..',
+  '..eaaae.',
+  '.eaa1aae',
+  '.ea111ae',
+  '.ea11aae',
+  '..eaaae.',
+  '...eee..',
+];
+const ninpoLarge = [
+  '.........e......',
+  '........eae.....',
+  '.......eaae..e..',
+  '......eaaae.eae.',
+  '......eaaaaeaae.',
+  '.....eaaaaaaaae.',
+  '....eaaa1aaaaaae',
+  '....eaa111aaaaae',
+  '...eaaa1111aaaae',
+  '...eaa111111aaae',
+  '...eaa111111aaae',
+  '...eaaa1111aaaae',
+  '....eaaa11aaaae.',
+  '....eaaaaaaaaae.',
+  '.....eaaaaaaae..',
+  '......eeeeeee...',
+];
+
+/* Ninja HUD icons, drawn without black so they read on the status bar. */
+const iconStar = [
+  '...1b...',
+  '...1b...',
+  '...1b...',
+  '111bbbbb',
+  'bbbbbbbb',
+  '...bb...',
+  '...bb...',
+  '...bb...',
+];
+const iconWindmill = [
+  '...1....',
+  '...1b...',
+  '..b1bb..',
+  '.bbbb111',
+  '111bbbb.',
+  '..bb1b..',
+  '...b1...',
+  '....1...',
+];
+const iconFireWheel = [
+  '7..77..7',
+  '.777777.',
+  '.775577.',
+  '77511577',
+  '77511577',
+  '.775577.',
+  '.777777.',
+  '7..77..7',
+];
+const iconSlash = [
+  '......1b',
+  '.....1bb',
+  '....1bb.',
+  '..51bb..',
+  '...bb5..',
+  '..9.....',
+  '.9......',
+  '5.......',
+];
+
+/* ---------- commando gun shots, weapon capsule and HUD icons ---------- */
+
+/* Rifle shot, 8x8: a small round bullet, gold rim around a white core, centred. */
+const rifleShot = [
+  '........',
+  '........',
+  '...55...',
+  '..5115..',
+  '..5115..',
+  '...55...',
+  '........',
+  '........',
+];
+
+/* Machine-gun shot, 8x8: a longer orange slug tapering to a gold and white tip on the right. */
+const mgShot = [
+  '........',
+  '........',
+  '..7777..',
+  '.7776661',
+  '.7776661',
+  '..7777..',
+  '........',
+  '........',
+];
+
+/* Spread shot, 8x8: a round fireball with a red rim, orange body and gold core. Frame 1 throws
+ * out four red sparks and whitens the core so the two flicker. */
+const spreadShot0 = [
+  '........',
+  '..2222..',
+  '.277772.',
+  '.276672.',
+  '.276672.',
+  '.277772.',
+  '..2222..',
+  '........',
+];
+const spreadShot1 = [
+  '.2....2.',
+  '..2772..',
+  '.277772.',
+  '.276172.',
+  '.271672.',
+  '.277772.',
+  '..2772..',
+  '.2....2.',
+];
+
+/* Laser beam, 24x8: a thin blue beam, light blue inside, with a white-hot core running the full
+ * length and tapered ends. */
+const laserBeam = [
+  '........................',
+  '........................',
+  '.eaaaaaaaaaaaaaaaaaaaae.',
+  'eaa111111111111111111aae',
+  '.eaaaaaaaaaaaaaaaaaaaae.',
+  '........................',
+  '........................',
+  '........................',
+];
+
+/* Flame shot, 16x16: a rolling fireball flying right, orange outside, gold inside and a white-hot
+ * heart, with a tail of flame streaming back on the left. Frame 1 rolls the tongues and the tail
+ * so the two flicker. */
+const flameShot0 = [
+  '................',
+  '................',
+  '..........777...',
+  '........7755577.',
+  '.......77566657.',
+  '...7..7756611657',
+  '.777775561111657',
+  '7775556611116657',
+  '.777556661116657',
+  '...775566666577.',
+  '......775555577.',
+  '.....7..7777777.',
+  '..........7.7...',
+  '................',
+  '................',
+  '................',
+];
+const flameShot1 = [
+  '................',
+  '................',
+  '..........7.7...',
+  '.........777777.',
+  '.......77555557.',
+  '......7756666657',
+  '.....77566111657',
+  '.777755661111657',
+  '7775555661111657',
+  '..7.77556666657.',
+  '......775555577.',
+  '........777777..',
+  '..........7.....',
+  '................',
+  '................',
+  '................',
+];
+
+/* Weapon capsule, 16x16: a rounded grey pod with a white glint, a red letter-like mark on the
+ * front and a pair of small white wings spread from its shoulders. */
+const capsule = [
+  '................',
+  '................',
+  '................',
+  '11....0000....11',
+  '.11..0bbbb0..11.',
+  '.1110bbbbbb0111.',
+  '1110bb2222bb0111',
+  '.1101b2bbbbb011.',
+  '..101b222bbb01..',
+  '...0bb2bbbbb0...',
+  '...0bbbbbbbb0...',
+  '....0bbbbbb0....',
+  '.....0bbbb0.....',
+  '......0000......',
+  '................',
+  '................',
+];
+
+/* Commando HUD icons, drawn without black so they read on the status bar. */
+const iconRifle = [
+  '........',
+  '........',
+  '.....bb.',
+  'bbbbbbbb',
+  '99bb....',
+  '99.b....',
+  '........',
+  '........',
+];
+const iconMg = [
+  '........',
+  '........',
+  'bbbbbbb7',
+  '9bbbbbb.',
+  '99.bb...',
+  '...bb...',
+  '...bb...',
+  '........',
+];
+const iconSpread = [
+  '.....77.',
+  '.....77.',
+  '........',
+  '22....77',
+  '22....77',
+  '........',
+  '.....77.',
+  '.....77.',
+];
+const iconLaser = [
+  '........',
+  '........',
+  '........',
+  'ea111111',
+  '.eaaaaaa',
+  '........',
+  '........',
+  '........',
+];
+const iconFlameGun = [
+  '....7...',
+  '.....77.',
+  '...77677',
+  'bbb76617',
+  'bbb76617',
+  '...77677',
+  '.....77.',
+  '....7...',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -1076,5 +1650,51 @@ export const itemsDef: SpriteDef = {
     'missile-pack': missilePack,
     'icon-beam': iconBeam,
     'icon-missile': iconMissile,
+    dagger,
+    'hand-axe-0': handAxe0,
+    'hand-axe-1': handAxe1,
+    'hand-axe-2': handAxe2,
+    'hand-axe-3': handAxe3,
+    'holy-water': holyWater,
+    'holy-fire-0': holyFire0,
+    'holy-fire-1': holyFire1,
+    'cross-0': cross0,
+    'cross-1': cross1,
+    'cross-2': cross2,
+    'cross-3': cross3,
+    stopwatch,
+    'heart-large': heartLarge,
+    'icon-dagger': iconDagger,
+    'icon-axe': iconHandAxe,
+    'icon-holy-water': iconHolyWater,
+    'icon-cross': iconCross,
+    'icon-watch': iconWatch,
+    'throwing-star-0': throwingStar0,
+    'throwing-star-1': throwingStar1,
+    'windmill-0': windmill0,
+    'windmill-1': windmill1,
+    'windmill-2': windmill2,
+    'windmill-3': windmill3,
+    'fire-wheel-0': fireWheel0,
+    'fire-wheel-1': fireWheel1,
+    'ninpo-small': ninpoSmall,
+    'ninpo-large': ninpoLarge,
+    'icon-star': iconStar,
+    'icon-windmill': iconWindmill,
+    'icon-fire-wheel': iconFireWheel,
+    'icon-slash': iconSlash,
+    'rifle-shot': rifleShot,
+    'mg-shot': mgShot,
+    'spread-shot-0': spreadShot0,
+    'spread-shot-1': spreadShot1,
+    'laser-beam': laserBeam,
+    'flame-shot-0': flameShot0,
+    'flame-shot-1': flameShot1,
+    capsule,
+    'icon-rifle': iconRifle,
+    'icon-mg': iconMg,
+    'icon-spread': iconSpread,
+    'icon-laser': iconLaser,
+    'icon-flame-gun': iconFlameGun,
   },
 };
