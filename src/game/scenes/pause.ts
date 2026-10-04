@@ -1,6 +1,7 @@
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { DevMenuScene } from './dev';
+import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
 
@@ -16,6 +17,13 @@ export class PauseScene extends MenuScene {
   private rebuild(): void {
     const game = this.game;
     const items: MenuItem[] = [{ label: 'Continue', select: () => game.scenes.pop() }];
+    // The hero's own guide (and player two's in co-op).
+    const heroes = [game.state.character, ...(game.state.character2 ? [game.state.character2] : [])];
+    for (const c of heroes)
+      items.push({
+        label: heroes.length > 1 ? `Guide: ${c.name}` : 'Guide',
+        select: () => game.scenes.push(new GuideScene(game, c, () => game.scenes.pop())),
+      });
     // Stored items (E-tanks) are used from here, like the original weapon menu.
     const world = this.world;
     const p = world?.player;

@@ -62,6 +62,7 @@ export function describeCode(code: Code): string {
   if (code.startsWith('pad:')) return `Button ${code.slice(4)}`;
   if (code.startsWith('touch:')) return `Touch ${code.slice(6)}`;
   return code
+    .replace(/^(Shift|Control|Alt|Meta)(Left|Right)$/, '$2 $1')
     .replace(/^Key/, '')
     .replace(/^Digit/, '')
     .replace(/^Arrow/, '')

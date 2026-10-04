@@ -2,6 +2,7 @@ import type { CharacterDef } from '../character';
 import { MARIO } from '../mario';
 import { plumberSprite, PLUMBER_BEHAVIOUR, PLUMBER_STATES, type PlumberPalettes } from '../mario';
 import { LUIGI_PROFILE } from './profile';
+import { plumberGuide } from '../mario/guide';
 
 /** Luigi recolours Mario's sheet; the star flash cycles through the same loud palettes. */
 const LUIGI_PALETTES: PlumberPalettes = { normal: 'luigi', fire: 'luigi-fire', star: 'mario-star' };
@@ -21,4 +22,5 @@ export const LUIGI: CharacterDef = {
   jumpSfx: MARIO.jumpSfx,
   portrait: { sheet: 'mario', palette: 'luigi', frame: 'small-idle' },
   behaviour: PLUMBER_BEHAVIOUR,
+  guide: plumberGuide('Luigi', 'higher, floatier jumps'),
 };

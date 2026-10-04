@@ -6,6 +6,7 @@ import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import { Projectile } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
+import { BILL_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { GUNS, type Gun } from './weapons';
 
@@ -133,6 +134,7 @@ export const BILL: CharacterDef = {
     if (r < 3) return 'health-small';
     return null;
   },
+  guide: BILL_GUIDE,
   behaviour: {
     update(p, input, world) {
       cycleTool(p, input, tools(p), world);

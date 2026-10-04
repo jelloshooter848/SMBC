@@ -2,6 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
+import { GuideIndexScene } from './guide';
 import { CheatCode, DEV_CODE } from './cheat';
 import type { Game } from './game';
 
@@ -18,6 +19,11 @@ export class TitleScene extends MenuScene {
     const game = this.game;
     const items: MenuItem[] = [
       { label: 'Start game', select: () => game.showCharacterSelect() },
+      {
+        label: 'How to play',
+        select: () => game.scenes.push(new GuideIndexScene(game, () => game.scenes.pop())),
+        hint: 'Controls and power-ups for every hero',
+      },
       { label: 'Custom levels', select: () => game.showCustomLevels() },
       { label: 'Level editor', select: () => game.openEditor() },
       { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop())) },

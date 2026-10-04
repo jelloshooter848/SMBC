@@ -4,6 +4,7 @@ import { MARIO_PROFILE } from './profile';
 import type { Player } from '../../entities/player';
 import { Projectile, FIREBALL } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
+import { plumberGuide } from './guide';
 
 export const PLUMBER_STATES = ['small', 'big', 'fire'] as const;
 const STATES = PLUMBER_STATES;
@@ -157,4 +158,5 @@ export const MARIO: CharacterDef = {
   jumpSfx: (p) => (p.powerState === 'small' ? 'jump-small' : 'jump-big'),
   portrait: { sheet: 'mario', palette: 'mario', frame: 'small-idle' },
   behaviour: PLUMBER_BEHAVIOUR,
+  guide: plumberGuide('Mario', 'the all-rounder'),
 };

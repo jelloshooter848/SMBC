@@ -6,6 +6,7 @@ import type { World } from '../../world/world';
 import { Projectile, type ProjectileSpec } from '../../entities/projectiles/projectile';
 import { Bomb } from '../../entities/objects/bomb';
 import { STAR_FRAMES } from '../../constants';
+import { SAMUS_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { BEAMS, MISSILE } from './weapons';
 
@@ -200,6 +201,7 @@ export const SAMUS: CharacterDef = {
     if (r < 7) return 'missile-pack';
     return null;
   },
+  guide: SAMUS_GUIDE,
   behaviour: {
     canJump: (p) => !inBall(p),
     update(p, input, world) {
