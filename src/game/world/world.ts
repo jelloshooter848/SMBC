@@ -320,7 +320,7 @@ export class World {
     for (let ty = tileAt(box.y); ty <= tileAt(box.y + box.h - 1); ty++)
       for (let tx = tileAt(box.x); tx <= tileAt(box.x + box.w - 1); tx++) {
         const def = tileDef(this.map.get(tx, ty));
-        if (def.block && def.block.kind !== 'hidden') this.hitBlock(tx, ty, breaker);
+        if (def.block && def.block.kind !== 'hidden') this.strikeBlock(tx, ty, breaker, true); // blasts always break
       }
   }
 
@@ -331,7 +331,7 @@ export class World {
     const def = tileDef(this.map.get(tx, ty));
     if (!def.block || def.block.kind === 'hidden') return;
     const p = owner instanceof Player ? owner : this.nearestPlayer(x);
-    this.hitBlock(tx, ty, p);
+    this.strikeBlock(tx, ty, p, true); // only brick-breaking shots call this
   }
 
   /* ---------- Scoring ---------- */
@@ -476,6 +476,11 @@ export class World {
   /* ---------- Blocks & tiles ---------- */
 
   private hitBlock(tx: number, ty: number, p: Player): void {
+    this.strikeBlock(tx, ty, p, p.def.canBreakBricks(p));
+  }
+
+  /** Hit a block from below on a player's behalf; `breakBricks` decides whether plain bricks shatter. */
+  strikeBlock(tx: number, ty: number, p: Player, breakBricks: boolean): void {
     const id = this.map.get(tx, ty);
     const def = tileDef(id);
     if (!def.block) {
@@ -496,7 +501,7 @@ export class World {
     const { kind, content } = def.block;
     const frame = kind === 'brick' ? 'brick' : 'used';
     if (kind === 'brick' && content === 'none') {
-      if (p.def.canBreakBricks(p)) {
+      if (breakBricks) {
         this.map.set(tx, ty, T.AIR);
         const cx = tileToSub(tx) + px(4);
         const cy = tileToSub(ty) + px(4);

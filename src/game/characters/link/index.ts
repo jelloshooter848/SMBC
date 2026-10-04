@@ -1,10 +1,11 @@
-import { px } from '@engine/math/units';
+import { px, tileAt } from '@engine/math/units';
 import type { CharacterDef, SpriteSpec } from '../character';
 import type { MovementProfile } from '../profile';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import { Projectile, SWORD_BEAM, type ProjectileSpec } from '../../entities/projectiles/projectile';
 import { Bomb } from '../../entities/objects/bomb';
+import { tileDef } from '../../level/tiles';
 import { STAR_FRAMES } from '../../constants';
 import { LINK_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
@@ -213,7 +214,7 @@ export const LINK: CharacterDef = {
   },
   stomps: false,
   crouches: true,
-  canBreakBricks: () => true,
+  canBreakBricks: () => false, // the sword opens bricks, not the head
   hitbox: (p) => (p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
   sprite,
   blockPowerUp: (p) =>
@@ -247,36 +248,48 @@ export const LINK: CharacterDef = {
       }
       if (input.pressed('special') && p.attackTimer === 0) useTool(p, world);
       // Down-thrust: hold down in the air; the sword box sits under the feet.
-      const thrusting = !b.onGround && input.held('down') && p.attackTimer === 0;
+      const airborne = !b.onGround && p.attackTimer === 0;
+      const thrusting = airborne && input.held('down');
       p.scratch.downThrust = thrusting ? 1 : 0;
       if (thrusting) {
+        p.scratch.upThrust = 0;
         p.activeMelee = { x: b.x + px(2), y: b.y + b.h, w: px(8), h: px(8) };
         return;
       }
+      // Up-thrust: hold up in the air; the sword box sits over the head and opens blocks.
+      const thrustingUp = airborne && input.held('up');
+      p.scratch.upThrust = thrustingUp ? 1 : 0;
+      if (thrustingUp) {
+        const box = { x: b.x + px(2), y: b.y - px(10), w: px(8), h: px(10) };
+        p.activeMelee = box;
+        const tx = tileAt(box.x + (box.w >> 1));
+        const ty = tileAt(box.y);
+        const key = ty * 4096 + tx;
+        if (tileDef(world.map.get(tx, ty)).block) {
+          if (p.scratch.thrustTile !== key) {
+            p.scratch.thrustTile = key;
+            world.strikeBlock(tx, ty, p, true);
+          }
+        } else p.scratch.thrustTile = -1;
+        return;
+      }
+      p.scratch.thrustTile = -1;
       if (input.pressed('attack') && p.attackTimer === 0 && !p.scratch.throwT) {
         p.attackTimer = ATTACK_FRAMES;
         world.audio.sfx('sword');
-        if (!b.onGround && input.held('up')) p.scratch.upThrust = 1;
-        else {
-          const beam = (p.scratch.beam && p.hp >= maxHp(p)) || p.scratch.fireSpell;
-          if (beam && world.countProjectiles(p, 'sword-beam') < 1) {
-            const x = p.facing > 0 ? b.x + b.w : b.x - px(16);
-            world.spawn(new Projectile(x, b.y + px(8), p.facing, SWORD_BEAM, p));
-            p.scratch.fireSpell = 0;
-          }
+        const beam = (p.scratch.beam && p.hp >= maxHp(p)) || p.scratch.fireSpell;
+        if (beam && world.countProjectiles(p, 'sword-beam') < 1) {
+          const x = p.facing > 0 ? b.x + b.w : b.x - px(16);
+          world.spawn(new Projectile(x, b.y + px(8), p.facing, SWORD_BEAM, p));
+          p.scratch.fireSpell = 0;
         }
       }
-      if (p.attackTimer === 0) p.scratch.upThrust = 0;
       if (p.attackTimer >= 3 && p.attackTimer <= 8) {
-        if (p.scratch.upThrust) {
-          p.activeMelee = { x: b.x + px(2), y: b.y - px(10), w: px(8), h: px(10) };
-        } else {
-          const y = b.y + (p.crouching ? px(8) : px(10));
-          p.activeMelee =
-            p.facing > 0
-              ? { x: b.x + b.w, y, w: px(14), h: px(6) }
-              : { x: b.x - px(14), y, w: px(14), h: px(6) };
-        }
+        const y = b.y + (p.crouching ? px(8) : px(10));
+        p.activeMelee =
+          p.facing > 0
+            ? { x: b.x + b.w, y, w: px(14), h: px(6) }
+            : { x: b.x - px(14), y, w: px(14), h: px(6) };
       } else p.activeMelee = null;
     },
     onMeleeHit(p) {
