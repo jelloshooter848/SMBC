@@ -206,6 +206,22 @@ function parseZone(line: string): Zone {
     }
     case 'cheeps':
       return { kind: 'cheeps', x: Number(parts[1]), w: Number(parts[2]) };
+    case 'loop': {
+      // loop x y0 y1 -> to [check=x:y0:y1]
+      const [, xs, y0, y1, arrow, to, ...rest] = parts;
+      if (arrow !== '->' || xs === undefined || y0 === undefined || y1 === undefined || to === undefined)
+        throw new Error('expected "loop x y0 y1 -> to [check=x:y0:y1]"');
+      const check = rest.find((r) => r.startsWith('check='));
+      const c = check ? check.slice(6).split(':').map(Number) : null;
+      return {
+        kind: 'loop',
+        x: Number(xs),
+        y0: Number(y0),
+        y1: Number(y1),
+        to: Number(to),
+        check: c ? { x: c[0] as number, y0: c[1] as number, y1: c[2] as number } : null,
+      };
+    }
     case 'exit': {
       const [, xs, ...rest] = parts;
       const props = parseProps(rest);
@@ -315,6 +331,8 @@ function serializeZone(z: Zone): string {
       return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
     case 'cheeps':
       return `cheeps ${z.x} ${z.w}`;
+    case 'loop':
+      return `loop ${z.x} ${z.y0} ${z.y1} -> ${z.to}${z.check ? ` check=${z.check.x}:${z.check.y0}:${z.check.y1}` : ''}`;
     case 'checkpoint':
       return `checkpoint ${z.x}`;
     case 'scrollStop':

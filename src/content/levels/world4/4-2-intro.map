@@ -1,0 +1,39 @@
+id: 4-2-intro
+name: WORLD 4-2
+world: 4
+stage: 2
+theme: overworld
+music: overworld
+time: inherit
+start: 2,12
+startMode: autowalk
+camera: locked
+parent: 4-2
+
+[tiles]
+;; 0
+................
+................
+................
+................
+................
+................
+................
+................
+................
+............[]..
+............{}..
+..........())}..
+..........<>>}..
+################
+################
+
+[entities]
+decor-castle 0 12
+
+[zones]
+pipe 10 12 right -> 4-2 1 3 exit=none
+
+[decor]
+cloud-2 3 3
+cloud-1 9 7

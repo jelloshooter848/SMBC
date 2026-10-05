@@ -91,6 +91,7 @@ const MARKERS = {
   enemyKoopaRed: 'K',
   springRed: 's',
   enemyHamBro: 'h',
+  enemyBeetle: 'z',
 };
 const ENTITIES = {
   enemyCheepFast: 'cheep-red',
@@ -247,6 +248,9 @@ function convertArea(level, area, id, levels) {
   const castles = []; // { big, x, y }
   const bushRuns = new Map(); // row -> [[x0, len]]
   const pulleys = []; // { x, y, side }
+  const lakitus = []; // lakituStart tokens
+  let lakituEnd = null;
+  const teleports = new Map(); // number -> { start, end, check }: { x, ys }
   const balances = []; // Pully platforms: { x, y, len }
 
   for (let y = 0; y < 15; y++) {
@@ -277,6 +281,27 @@ function convertArea(level, area, id, levels) {
           case 'enemyPiranhaRed':
             b.entity('piranha', x, y + 1); // the token sits above the pipe's top-left tile
             break;
+          case 'lakituStart':
+            lakitus.push({ x, y });
+            break;
+          case 'lakituEnd':
+            lakituEnd = x;
+            break;
+          case 'teleporterStart':
+          case 'teleporterStartOne':
+          case 'teleporterEnd':
+          case 'teleporterCheckPoint': {
+            const n = String(params.number ?? '0');
+            const t = teleports.get(n) ?? {};
+            const key =
+              name === 'teleporterEnd' ? 'end' : name === 'teleporterCheckPoint' ? 'check' : 'start';
+            const e = t[key] ?? { x, ys: [] };
+            if (e.x !== x) console.warn(`${id}: teleporter ${n} ${key} spans columns ${e.x} and ${x}`);
+            e.ys.push(y);
+            t[key] = e;
+            teleports.set(n, t);
+            break;
+          }
           case 'pullyCornerLeft':
           case 'pullyCornerRight':
             pulleys.push({ x, y, side: name === 'pullyCornerLeft' ? 'left' : 'right' });
@@ -394,6 +419,18 @@ function convertArea(level, area, id, levels) {
   }
   for (const q of balances)
     if (!q.used) console.warn(`${id}: balance platform without a rope at ${q.x},${q.y}`);
+  for (const l of lakitus) b.entity('lakitu', l.x, l.y, { end: lakituEnd ?? area.width });
+  // Castle mazes: each numbered teleporter moves the player from its start column to its end
+  // column, but only after passing its checkpoint column on the same path.
+  for (const [n, t] of [...teleports].sort((a, c) => Number(a[0]) - Number(c[0]))) {
+    if (!t.start || !t.end) {
+      console.warn(`${id}: teleporter ${n} needs a start and an end`);
+      continue;
+    }
+    const span = (e) => [Math.min(...e.ys), Math.max(...e.ys)];
+    const check = t.check ? ` check=${t.check.x}:${span(t.check).join(':')}` : '';
+    b.zone(`loop ${t.start.x} ${span(t.start).join(' ')} -> ${t.end.x}${check}`);
+  }
   // Castles: a big castle is drawn as a small one on top of a big base; keep one entity.
   let door = null;
   for (const c of castles) {

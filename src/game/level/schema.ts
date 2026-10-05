@@ -28,6 +28,19 @@ export type Zone =
   | { kind: 'pit'; x: number; target: { level: string; x: number; y: number } }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
   | { kind: 'cheeps'; x: number; w: number }
+  /**
+   * Castle maze: walking right past column x with the body inside rows y0..y1 moves the player
+   * to column `to` (same height). With `check`, only after passing that column inside its rows
+   * since the last move: the wrong path loops back, the right path skips the repeated part.
+   */
+  | {
+      kind: 'loop';
+      x: number;
+      y0: number;
+      y1: number;
+      to: number;
+      check: { x: number; y0: number; y1: number } | null;
+    }
   | { kind: 'warp'; x: number; w: number; worlds: number[]; text?: string }
   | { kind: 'checkpoint'; x: number }
   | { kind: 'exit'; x: number; next: string }

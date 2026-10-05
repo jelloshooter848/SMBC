@@ -1,5 +1,6 @@
 import { px, toPx, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
+import type { View } from '../entity';
 import type { World } from '../../world/world';
 import type { DamageSource, Reaction } from '../../rules/damage';
 import { moveX } from '../body';
@@ -17,7 +18,8 @@ export type KoopaState = 'walk' | 'shell' | 'shell-moving' | 'wiggle';
 /**
  * Koopa Troopa: green ones walk off ledges, red ones turn at them; stomping makes a kickable
  * shell. With wings it is a Paratroopa: red ones fly up and down around their spawn point,
- * green ones hop forward, and a stomp only clips the wings.
+ * green ones hop forward, and a stomp only clips the wings. A Buzzy Beetle is the same shell
+ * enemy, short and fireproof.
  */
 export class Koopa extends Enemy {
   readonly kind = 'koopa';
@@ -28,22 +30,37 @@ export class Koopa extends Enemy {
   private shellTimer = 0;
   /** Kills by a moving shell chain for combo scoring. */
   shellCombo = 0;
-  readonly color: 'green' | 'red';
+  readonly color: 'green' | 'red' | 'buzzy';
+  /** Standing height in px (koopas 22, buzzy beetles 14). */
+  private readonly walkH: number;
 
-  constructor(x: number, y: number, color: 'green' | 'red' = 'green', wings = false) {
-    super(x, y, 12, 22);
+  constructor(x: number, y: number, color: 'green' | 'red' | 'buzzy' = 'green', wings = false) {
+    super(x, y, 12, color === 'buzzy' ? 14 : 22);
     this.color = color;
+    this.walkH = color === 'buzzy' ? 14 : 22;
     this.wings = wings;
     this.homeY = y;
     if (wings && color === 'red') this.body.vx = 0;
-    this.fallsOffLedges = color === 'green';
+    this.fallsOffLedges = color !== 'red';
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
-    this.currentFrame = 'koopa-0';
+    this.currentFrame = `${this.prefix}-0`;
     this.vulnerability = { ...this.vulnerability, stomp: 'shell' };
+    // Buzzy Beetles shrug off fireballs.
+    if (color === 'buzzy') this.vulnerability.fireball = 'immune';
   }
 
-  override palette(): string {
+  /** Frame name prefix for walking frames. */
+  private get prefix(): string {
+    return this.color === 'buzzy' ? 'buzzy' : 'koopa';
+  }
+
+  private get shellFrame(): string {
+    return this.color === 'buzzy' ? 'buzzy-shell' : 'shell';
+  }
+
+  override palette(view: View): string {
+    if (this.color === 'buzzy') return super.palette(view);
     return this.color === 'red' ? 'koopa-red' : 'koopa-green';
   }
 
@@ -67,17 +84,17 @@ export class Koopa extends Enemy {
     this.shellTimer = SHELL_IDLE_FRAMES;
     this.contactHurts = false;
     this.spriteOffsetY = 2;
-    this.currentFrame = 'shell';
+    this.currentFrame = this.shellFrame;
   }
 
   private standUp(): void {
     const b = this.body;
     const bottom = b.y + b.h;
-    b.h = px(22);
+    b.h = px(this.walkH);
     b.y = bottom - b.h;
     this.state = 'walk';
     this.contactHurts = true;
-    this.fallsOffLedges = this.color === 'green';
+    this.fallsOffLedges = this.color !== 'red';
     b.vx = -this.walkSpeed;
     this.spriteOffsetY = 2;
   }
@@ -128,7 +145,7 @@ export class Koopa extends Enemy {
       case 'walk':
         if (this.wings) this.fly(world);
         else this.patrol(world);
-        this.currentFrame = `${this.wings ? 'koopa-fly' : 'koopa'}-${(world.frame >> 3) & 1}`;
+        this.currentFrame = `${this.wings ? 'koopa-fly' : this.prefix}-${(world.frame >> 3) & 1}`;
         break;
       case 'shell':
         this.fall(world);
@@ -136,11 +153,12 @@ export class Koopa extends Enemy {
           this.state = 'wiggle';
           this.shellTimer = SHELL_WIGGLE_FRAMES;
         }
-        this.currentFrame = 'shell';
+        this.currentFrame = this.shellFrame;
         break;
       case 'wiggle':
         this.fall(world);
-        this.currentFrame = (world.frame >> 2) & 1 ? 'shell-wiggle' : 'shell';
+        this.currentFrame =
+          (world.frame >> 2) & 1 && this.color !== 'buzzy' ? 'shell-wiggle' : this.shellFrame;
         if (--this.shellTimer <= 0) this.standUp();
         break;
       case 'shell-moving': {
@@ -151,7 +169,7 @@ export class Koopa extends Enemy {
           world.audio.sfx('bump');
         }
         this.fall(world);
-        this.currentFrame = 'shell';
+        this.currentFrame = this.shellFrame;
         this.facing = b.vx > 0 ? 1 : -1;
         break;
       }
