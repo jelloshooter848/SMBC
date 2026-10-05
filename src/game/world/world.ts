@@ -38,7 +38,7 @@ import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
 import { Lift } from '../entities/objects/lift';
 import { Firebar } from '../entities/enemies/firebar';
-import { Bowser } from '../entities/enemies/bowser';
+import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { Axe } from '../entities/objects/axe';
 import { startHp, type CharacterDef } from '../characters/character';
 
@@ -301,7 +301,7 @@ export class World {
       case 'firebar-ccw':
         return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
       case 'bowser':
-        return new Bowser(s.x, s.y);
+        return new Bowser(s.x, s.y, String(s.props?.attack ?? 'fire') as BowserAttack);
       case 'axe':
         return new Axe(s.x, s.y);
       case 'lift-h':

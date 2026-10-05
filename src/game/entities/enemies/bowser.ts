@@ -2,10 +2,18 @@ import { px, toPx, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
 import type { World } from '../../world/world';
 import type { DamageSource } from '../../rules/damage';
-import { Projectile, BOWSER_FLAME } from '../projectiles/projectile';
+import { Projectile, BOWSER_FLAME, HAMMER } from '../projectiles/projectile';
 import { moveX } from '../body';
 
-/** The castle boss: paces, hops and breathes fire. Five hits from fire/buster/sword, or the axe. */
+export type BowserAttack = 'fire' | 'hammer' | 'both';
+
+const HAMMER_VOLLEY = 5;
+const HAMMER_GAP = 8;
+
+/**
+ * The castle boss: paces, hops and breathes fire; later castles' Bowsers throw volleys of
+ * hammers instead of (or as well as) fire. Five hits from fire/buster/sword, or the axe.
+ */
 export class Bowser extends Enemy {
   readonly kind = 'bowser';
   private readonly homeX: number;
@@ -13,8 +21,15 @@ export class Bowser extends Enemy {
   private flameTimer = 120;
   private mouthOpen = 0;
   private dead = false;
+  private hammerTimer = 90;
+  private volley = 0;
+  private volleyTimer = 0;
 
-  constructor(tx: number, ty: number) {
+  constructor(
+    tx: number,
+    ty: number,
+    readonly attack: BowserAttack = 'fire',
+  ) {
     super(px(tx * 16 + 2), px((ty + 1) * 16 - 30), 28, 30);
     this.homeX = this.body.x;
     this.hp = 5;
@@ -71,7 +86,8 @@ export class Bowser extends Enemy {
       if (world.rng.chance(0.5)) b.vy = -0x03000;
     }
     this.fall(world, 0x00200);
-    if (--this.flameTimer <= 0) {
+    if (this.attack !== 'fire') this.throwHammers(world);
+    if (this.attack !== 'hammer' && --this.flameTimer <= 0) {
       this.flameTimer = 90 + world.rng.int(90);
       this.mouthOpen = 40;
       // Flame aims at the player's height.
@@ -84,6 +100,27 @@ export class Bowser extends Enemy {
     if (this.mouthOpen > 0) this.mouthOpen--;
     const walk = (world.frame >> 4) & 1;
     this.currentFrame = this.mouthOpen > 0 ? `bowser-${2 + walk}` : `bowser-${walk}`;
+  }
+
+  /** Volleys of hammers lobbed from above the head toward the player. */
+  private throwHammers(world: World): void {
+    const b = this.body;
+    if (this.volley > 0) {
+      if (--this.volleyTimer > 0) return;
+      this.volley--;
+      this.volleyTimer = HAMMER_GAP;
+      this.mouthOpen = Math.max(this.mouthOpen, 6);
+      const vx = this.facing * (0x00a00 + world.rng.int(0x00c00));
+      const vy = -(0x03800 + world.rng.int(0x01000));
+      const x = this.facing < 0 ? b.x + px(2) : b.x + b.w - px(12);
+      world.spawn(new Projectile(x, b.y - px(10), this.facing, HAMMER, this, { vx, vy }));
+      return;
+    }
+    if (--this.hammerTimer <= 0) {
+      this.hammerTimer = 80 + world.rng.int(60);
+      this.volley = HAMMER_VOLLEY;
+      this.volleyTimer = 1;
+    }
   }
 
   get hpPx(): number {
