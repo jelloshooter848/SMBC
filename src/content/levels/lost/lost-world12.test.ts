@@ -31,8 +31,8 @@ describe('Lost Levels World C (12): every area', () => {
     expect(worldLabel(12)).toBe('C');
   });
 
-  it('uses the original theme table: night for the normal, bridge and treetop stages', () => {
-    // GameSuperMarioBros.as (Lost Levels pack): world 12 normal/platform/cheepCheep -> night;
+  it('uses the original theme table: night for the normal and bridge stages, gray (snow) for C-3', () => {
+    // GameSuperMarioBros.as (Lost Levels pack): world 12 normal/platform/cheepCheep -> night, 12-3a -> gray (our snow);
     // coin heaven, pipe bonus and castle keep their general themes. Music stays overworld.
     const themes = Object.fromEntries(ids.map((id) => [id, load(id).theme]));
     expect(themes).toEqual({
@@ -40,7 +40,7 @@ describe('Lost Levels World C (12): every area', () => {
       'll-12-1-bonus': 'underground',
       'll-12-1-sky': 'overworld',
       'll-12-2': 'night',
-      'll-12-3': 'night',
+      'll-12-3': 'snow',
       'll-12-4': 'castle',
     });
     for (const id of ['ll-12-1', 'll-12-2', 'll-12-3']) expect(load(id).music).toBe('overworld');
@@ -199,7 +199,7 @@ describe('C-3 (ll-12-3): green springboards, Lakitu and fire bars on treetops', 
   const l = load('ll-12-3');
   it('is 336 wide', () => {
     expect(l.width).toBe(336);
-    expect(l.theme).toBe('night');
+    expect(l.theme).toBe('snow');
     expect(l.time).toBe(400);
   });
   it('has seven green springboards, each standing on a treetop', () => {
