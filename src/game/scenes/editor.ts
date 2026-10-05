@@ -40,6 +40,7 @@ const ENTITY_FRAMES: Record<string, { sheet: string; frame: string; palette?: (t
   spiny: { sheet: 'enemies', frame: 'spiny-0', palette: enemyPalette },
   lakitu: { sheet: 'enemies', frame: 'lakitu-0', palette: enemyPalette },
   'bullet-bill': { sheet: 'enemies', frame: 'bullet', palette: enemyPalette },
+  princess: { sheet: 'items', frame: 'princess' },
   'lift-right': { sheet: 'items', frame: 'platform' },
   balance: { sheet: 'items', frame: 'pulley' },
   vine: { sheet: 'items', frame: 'vine-top' },

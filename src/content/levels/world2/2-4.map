@@ -47,4 +47,3 @@ axe 141 8
 [zones]
 checkpoint 100
 exit 152 next=3-1
-scrollStop 144

@@ -32,7 +32,6 @@ parent: 4-2
 vine 4 14 len=8
 
 [zones]
-scrollStop 48
 pipe 50 10 down -> 8-1 2 12
 pipe 54 10 down -> 7-1 2 12
 pipe 58 10 down -> 6-1 2 12

@@ -51,4 +51,3 @@ loop 127 10 12 -> 63 check=99:10:12
 loop 191 11 12 -> 255 check=161:11:12
 loop 255 3 9 -> 191 check=239:3:9
 exit 312 next=5-1
-scrollStop 304

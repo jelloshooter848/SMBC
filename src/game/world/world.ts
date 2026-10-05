@@ -25,6 +25,7 @@ import { LakituZone } from '../entities/enemies/lakitu';
 import { Spiny } from '../entities/enemies/spiny';
 import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bullet-bill';
 import { BalanceLift } from '../entities/objects/balance-lift';
+import { Princess } from '../entities/objects/princess';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
 import { PowerUp } from '../entities/objects/powerup';
@@ -55,6 +56,8 @@ export interface WorldStart {
   x?: number;
   y?: number;
   mode?: LevelData['startMode'];
+  /** Timer to continue with (transfers within one stage). */
+  time?: number;
 }
 
 type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done';
@@ -134,7 +137,8 @@ export class World {
     this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked');
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
     this.rng = new Rng(level.id.length * 7919 + 1);
-    this.time = level.time === null ? (state.time ?? 400) : level.time;
+    // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
+    this.time = start.time ?? (level.time === null ? (state.time ?? 400) : level.time);
     this.spawns = [...level.entities].sort((a, b) => a.x - b.x);
 
     const sx = start.x ?? level.start.x;
@@ -295,6 +299,8 @@ export class World {
         return new LakituZone(s.x, s.y, Number(s.props?.end ?? this.level.width));
       case 'balance':
         return new BalanceLift(s.x, s.y, s.props ?? {});
+      case 'princess':
+        return new Princess(s.x, s.y);
       case 'spring':
         return new Spring(s.x, s.y);
       case 'vine':

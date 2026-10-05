@@ -43,7 +43,6 @@ decor-castle 183 12
 [zones]
 checkpoint 98
 exit 179 next=7-2-intro
-scrollStop 192
 pipe 93 10 down -> 7-1-bonus 1 0 exit=none
 
 [decor]

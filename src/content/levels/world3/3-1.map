@@ -44,7 +44,6 @@ decor-castle 204 12
 [zones]
 checkpoint 98
 exit 200 next=3-2
-scrollStop 208
 vine 131 5 -> 3-1-sky 4 14
 pipe 38 9 down -> 3-1-bonus 1 0 exit=none
 

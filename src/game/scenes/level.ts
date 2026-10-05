@@ -14,6 +14,12 @@ import { MessageScene } from './message';
 
 export type LevelStart = WorldStart;
 
+/** The clock to keep when moving between two areas: only within the same world and stage. */
+export function carryTime(from: LevelData, to: LevelData, time: number | null): number | undefined {
+  if (time === null) return undefined;
+  return from.world === to.world && from.stage === to.stage ? time : undefined;
+}
+
 export class LevelScene implements Scene {
   world: World;
   readonly debug = new DebugOverlay();
@@ -94,6 +100,8 @@ export class LevelScene implements Scene {
                 : target.startMode,
         };
         if (target.time === null) game.state.time = this.world.time;
+        const time = carryTime(this.level, target, this.world.time);
+        if (time !== undefined) start.time = time;
         game.startLevel(target, start);
         break;
       }
@@ -101,7 +109,7 @@ export class LevelScene implements Scene {
         game.state.checkpoint = null;
         game.state.time = null;
         if (game.playtestDone) game.playtestDone();
-        else if (ev.next === 'end') game.showTitle();
+        else if (ev.next === 'end') game.showEnding();
         else if (this.level.theme === 'castle') {
           // Toad's news after every castle but the last.
           const hero = game.state.character.hudName;

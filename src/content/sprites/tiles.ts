@@ -282,6 +282,15 @@ const blasterBase = [
   '0000000000000000',
 ];
 
+/* Background castle wall: the brick pattern, and a crenellated top course. */
+const wallTop = [
+  '0000....0000....',
+  '0220....0220....',
+  '0220....0220....',
+  '0110....0110....',
+  ...brick.slice(4),
+];
+
 const hard = [
   '3333333333333330',
   '3333333333333310',
@@ -726,6 +735,8 @@ export const tilesDef: SpriteDef = {
     'cloud-block': cloudBlock,
     'blaster-top': blasterTop,
     'blaster-base': blasterBase,
+    wall: brick,
+    'wall-top': wallTop,
     'ground@underground': groundUnderground,
     'ground@castle': groundCastle,
     'brick@underground': brickUnderground,

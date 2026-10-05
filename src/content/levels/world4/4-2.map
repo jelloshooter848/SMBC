@@ -46,7 +46,6 @@ piranha 180 6
 
 [zones]
 checkpoint 98
-scrollStop 208
 vine 64 5 -> 4-2-warp 4 14
 pipe 84 10 down -> 4-2-bonus 1 0 exit=none
 pipe 187 9 right -> 4-2-exit 3 10 exit=up

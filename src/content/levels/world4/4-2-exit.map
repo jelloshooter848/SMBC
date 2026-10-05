@@ -34,7 +34,6 @@ decor-castle 26 12
 
 [zones]
 exit 22 next=4-3
-scrollStop 26
 
 [decor]
 cloud-2 4 2

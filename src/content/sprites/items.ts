@@ -284,6 +284,34 @@ const coilRows = [
 const blank = '................';
 const spring0 = [...springPlate, ...coilRows, ...springBase];
 
+/* The rescued princess (original design): gold crown, brown hair, pink gown, 16x24. */
+const princess = [
+  '.....0.0.0......',
+  '.....05050......',
+  '....0555550.....',
+  '....0999990.....',
+  '...099333990....',
+  '...093030390....',
+  '...093333390....',
+  '...099333990....',
+  '....0933390.....',
+  '.....00300......',
+  '....0dd1dd0.....',
+  '...0dddddd0.....',
+  '..03ddddddd30...',
+  '..03ddd1ddd30...',
+  '...0dddddddd0...',
+  '...0ddd1dddd0...',
+  '..0ddddddddd0...',
+  '..0dddd1ddddd0..',
+  '.0dddddddddddd0.',
+  '.0ddd1dddd1ddd0.',
+  '.0dddddddddddd0.',
+  '.0d1ddddddd1dd0.',
+  '.0dddddddddddd0.',
+  '..000000000000..',
+];
+
 /* Pulley wheel for balance lifts: a grey wheel with a dark rim on a cream bracket, 16x16. */
 const pulley = [
   '................',
@@ -1658,6 +1686,7 @@ export const itemsDef: SpriteDef = {
     'vine-mid': vineMid,
     flag,
     'castle-flag': castleFlag,
+    princess,
     'bomb-0': bomb0,
     'bomb-1': bomb1,
     'explosion-0': explosion0,

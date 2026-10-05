@@ -33,5 +33,4 @@ vine 4 14 len=8
 lift-right 17 10 len=6
 
 [zones]
-scrollStop 64
 pit 0 -> 5-2 130 0

@@ -38,7 +38,6 @@ lift-up 156 13 len=6
 
 [zones]
 checkpoint 97
-scrollStop 176
 pipe 103 10 down -> 1-2-bonus 1 0 exit=none
 pipe 166 9 right -> 1-2-exit 3 10 exit=up
 pipe 178 10 down -> 4-1 2 12
