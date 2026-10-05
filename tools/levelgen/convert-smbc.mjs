@@ -66,6 +66,19 @@ function parseCell(cell) {
   return toks;
 }
 
+/**
+ * Pieces the original shows only to heroes who need help (it builds each level per character in
+ * `Level.as`): `charHorz` / `charVert` = Show for heroes with limited horizontal or vertical
+ * reach, `BadSwimmer` = Show for poor swimmers, `WideCharacter` = Show for wide heroes, and
+ * anything marked `poorBowserFighter`. A `Hide` value means "present for everyone else", so a
+ * classic hero keeps those. Our maps are built for the classic hero.
+ */
+function helperOnly(params) {
+  for (const k of ['charHorz', 'charVert', 'BadSwimmer', 'WideCharacter'])
+    if (params[k] === 'Show') return true;
+  return params.poorBowserFighter !== undefined;
+}
+
 const tokensAt = (area, x, y) => area.grid[y]?.[x] ?? [];
 const find = (area, pred) => {
   for (let y = 0; y < 15; y++) {
@@ -286,9 +299,9 @@ function convertArea(level, area, id, levels) {
     for (let x = 0; x < area.width; x++) {
       for (const tok of tokensAt(area, x, y)) {
         const { name, params } = tok;
-        if (params.charHorz) {
-          // Crossover-only helper platforms shown for characters that cannot reach the flag top.
-          skip(`${name}(charHorz)`);
+        if (helperOnly(params)) {
+          // Crossover pieces only shown for heroes with special needs (see helperOnly).
+          skip(`${name}(helper)`);
           continue;
         }
         const ch = tileChar(tok, area, world);
