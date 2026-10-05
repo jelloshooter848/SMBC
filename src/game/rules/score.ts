@@ -21,8 +21,8 @@ export const ENEMY_SCORES = {
   KOOPA: { stomp: 100, attack: 200, star: 200, below: 100 },
   /** KoopaGreen.overwriteInitialStats: a koopa spawned with wings keeps these for life. */
   KOOPA_FLYING: { stomp: 400, attack: 200, star: 200, below: 100 },
-  /** Buzzy Beetle (Beetle.as). */
-  BEETLE: { stomp: 100, attack: 100, star: 200, below: 100 },
+  // No BEETLE_* entry: Beetle.overwriteInitialStats calls KoopaGreen's after setting them, which
+  // replaces them with KOOPA_*, so Buzzy Beetles score as Koopas.
   PIRANHA: { stomp: 100, attack: 200, star: 200, below: 100 },
   CHEEP: { stomp: 200, attack: 200, star: 200, below: 100 },
   BLOOPA: { stomp: 1000, attack: 200, star: 200, below: 100 },

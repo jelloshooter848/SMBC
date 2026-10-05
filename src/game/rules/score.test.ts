@@ -22,7 +22,8 @@ const TABLE: [string, () => Enemy, [number, number, number, number]][] = [
   ['red Koopa (KOOPA_*)', () => new Koopa(0, 0, 'red'), [100, 200, 200, 100]],
   ['Paratroopa (KOOPA_FLYING_*)', () => new Koopa(0, 0, 'green', true), [400, 200, 200, 100]],
   ['red Paratroopa (KOOPA_FLYING_*)', () => new Koopa(0, 0, 'red', true), [400, 200, 200, 100]],
-  ['Buzzy Beetle (BEETLE_*)', () => new Koopa(0, 0, 'buzzy'), [100, 100, 200, 100]],
+  // Beetle.overwriteInitialStats sets BEETLE_* then calls KoopaGreen's, which sets KOOPA_*.
+  ['Buzzy Beetle (KOOPA_*, overriding BEETLE_*)', () => new Koopa(0, 0, 'buzzy'), [100, 200, 200, 100]],
   ['Piranha (PIRANHA_*)', () => new Piranha(0, 0), [100, 200, 200, 100]],
   ['Cheep (CHEEP_*)', () => new Cheep(0, 0, 'red'), [200, 200, 200, 100]],
   ['flying Cheep (CHEEP_*)', () => new Cheep(0, 0, 'red', true), [200, 200, 200, 100]],

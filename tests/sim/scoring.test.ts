@@ -290,12 +290,12 @@ describe('flagpole (FlagPole.as)', () => {
     return rows;
   };
 
-  /** Hang the player beside the pole with its middle at `midY` px and let it touch. */
-  function grab(midY: number, powerState = 'small') {
+  /** Hang the player beside the pole with its middle (or, with `byHead`, its top) at `y` px. */
+  function grab(y: number, powerState = 'small', byHead = false) {
     const { world, state } = setup({ powerState }, poleRows());
     const b = world.player.body;
     b.x = px(20 * 16 + 8) - b.w;
-    b.y = px(midY) - (b.h >> 1);
+    b.y = byHead ? px(y) : px(y) - (b.h >> 1);
     b.vy = 0;
     b.onGround = false;
     run(world, 1);
@@ -308,8 +308,10 @@ describe('flagpole (FlagPole.as)', () => {
     expect(grab(150).state.score).toBe(400);
     expect(grab(170).state.score).toBe(100);
     expect(grab(90).state.score).toBe(2000);
-    // Big Mario with his head just under the ball (y = 41): middle at 57 (was 2000).
-    expect(grab(57, 'big').state.score).toBe(5000);
+    // Head at y = 48, the top of the shaft just under the ball: small Mario's middle is at 56,
+    // inside the 90% band (5000); big Mario's is at 64, so with the 9.3-tile pole he gets 2000.
+    expect(grab(48, 'small', true).state.score).toBe(5000);
+    expect(grab(48, 'big', true).state.score).toBe(2000);
   });
 
   it('the grab score text rises as the flag drops and stays by the top of the pole', () => {

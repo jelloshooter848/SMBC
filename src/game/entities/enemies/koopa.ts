@@ -67,10 +67,10 @@ export class Koopa extends Enemy {
     this.vulnerability = { ...this.vulnerability, stomp: 'shell' };
     // Buzzy Beetles shrug off fireballs.
     if (color === 'buzzy') this.vulnerability.fireball = 'immune';
-    // KoopaGreen/Beetle.overwriteInitialStats run once at spawn, so a paratroopa keeps the flying
-    // values after losing its wings.
-    this.scores =
-      color === 'buzzy' ? ENEMY_SCORES.BEETLE : wings ? ENEMY_SCORES.KOOPA_FLYING : ENEMY_SCORES.KOOPA;
+    // KoopaGreen.overwriteInitialStats runs once at spawn, so a paratroopa keeps the flying values
+    // after losing its wings. Buzzy Beetles score as Koopas: Beetle.overwriteInitialStats sets the
+    // BEETLE_* values and then calls super, which overwrites them with KOOPA_* unconditionally.
+    this.scores = wings ? ENEMY_SCORES.KOOPA_FLYING : ENEMY_SCORES.KOOPA;
   }
 
   /** Frame name prefix for walking frames. */

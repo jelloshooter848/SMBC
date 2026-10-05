@@ -31,4 +31,4 @@ Ours: `scoreForFeet` in `src/game/entities/objects/flagpole.ts` uses foot height
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
 
-Status: fixed — the grab is scored by the player's vertical middle against the pole height (TILE_SIZE*9.3 from the base) with the FlagPole.as bands 90/65/40/20% for 5000/2000/800/400, else 100.
+Status: fixed — the grab is scored by the player's vertical middle against the pole height (TILE_SIZE*9.3 from the base) with the FlagPole.as bands 90/65/40/20% for 5000/2000/800/400, else 100. The pole height TILE_SIZE*9.3 is an unverified reading from commented-out lines in FlagPole.initiate(); the live hit box came from the SWF graphic, which isn't in the source. With it, small Mario with his head at the top of the shaft (y 48) scores 5000 and big Mario 2000.
