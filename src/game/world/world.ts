@@ -907,6 +907,7 @@ export class World {
     // Melee hitbox vs enemies (before contact so a sword hit beats a body hit).
     if (p.activeMelee) {
       for (const e of this.enemies) {
+        if (this.thrustIgnoresShell(p, e)) continue;
         if (overlaps(p.activeMelee, e.body) && !p.scratch[`hit${e.id}`]) {
           p.scratch[`hit${e.id}`] = 1;
           const src: DamageSource = { kind: 'sword', amount: 1, owner: null, dirX: p.facing };
@@ -969,11 +970,24 @@ export class World {
     }
   }
 
+  /**
+   * Link's down/up-thrust does nothing to a still shell or one in its post-kick no-hit window:
+   * Link.hitEnemy checks that (KoopaGreen cState "shell" or NO_HIT_SHELL_TMR running) before its
+   * dThrust/uThrust landAttack. Body contact then applies as usual (a still shell is kicked).
+   */
+  private thrustIgnoresShell(p: Player, e: Enemy): boolean {
+    return (
+      !!(p.scratch.downThrust || p.scratch.upThrust) &&
+      e instanceof Koopa &&
+      (e.isStillShell || e.noHitTimer > 0)
+    );
+  }
+
   private playerVsEnemy(p: Player, e: Enemy): void {
     const pb = p.body;
     if (!overlaps(pb, e.body)) return;
     // A sword/thrust that is touching this enemy handles it; no body contact damage.
-    if (p.activeMelee && overlaps(p.activeMelee, e.body)) return;
+    if (p.activeMelee && overlaps(p.activeMelee, e.body) && !this.thrustIgnoresShell(p, e)) return;
     if (p.star > 0) {
       const r = e.hit({ kind: 'star', amount: 1, owner: null, dirX: pb.x < e.body.x ? 1 : -1 }, this);
       if (r !== 'immune') this.addScore(e.scoreFor('star'), e.body.x, e.body.y);

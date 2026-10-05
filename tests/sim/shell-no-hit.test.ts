@@ -8,6 +8,8 @@ import { World } from '@game/world/world';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
+import { LINK } from '@game/characters/link';
+import type { CharacterDef } from '@game/characters/character';
 import { ScriptedInput } from '@game/sim/headless';
 import { Koopa, SHELL_NO_HIT_FRAMES } from '@game/entities/enemies/koopa';
 import type { Player } from '@game/entities/player';
@@ -18,12 +20,12 @@ import type { Player } from '@game/entities/player';
 
 const GROUND = 208; // px: top of the floor (row 13)
 
-function setup(coop = false) {
+function setup(coop = false, character: CharacterDef = MARIO) {
   const rows = Array.from({ length: 13 }, () => '.'.repeat(48));
   const level = parseTextMap(
     ['id: t', 'time: 300', 'start: 2,12', '', '[tiles]', ...rows, '#'.repeat(48), '#'.repeat(48)].join('\n'),
   );
-  const state = newGameState(MARIO, coop ? LUIGI : null);
+  const state = newGameState(character, coop ? LUIGI : null);
   const world = new World(
     level,
     {
@@ -167,5 +169,51 @@ describe('shell no-hit window after a kick (KoopaGreen.NO_HIT_SHELL_TMR)', () =>
     run(world, 60);
     expect(hurt).toContain(p2);
     expect(hurt).not.toContain(p1);
+  });
+
+  // Link.hitEnemy checks the still-shell / NO_HIT_SHELL_TMR condition before its dThrust/uThrust
+  // landAttack branch, so a thrust does nothing to such a shell; touching a still shell kicks it
+  // (KoopaGreen.hitCharacter -> kickShell) and the following stomp() returns early.
+  it("Link's down-thrust onto a still shell kicks it, without killing it or bouncing", () => {
+    const { world, state, hurt } = setup(false, LINK);
+    const k = stillShell(world, 120);
+    const p = world.player;
+    dropOnto(p, k);
+    let rose = false;
+    run(
+      world,
+      40,
+      () => ['down'],
+      () => {
+        if (p.body.vy < 0) rose = true;
+      },
+    );
+    expect(k.alive).toBe(true);
+    expect(k.isMovingShell).toBe(true);
+    expect(state.score).toBe(400); // KICK_SHELL_NORMAL
+    expect(rose).toBe(false);
+    expect(hurt).toEqual([]);
+  });
+
+  it("Link's down-thrust can't hit a shell during its no-hit window", () => {
+    const { world, state, hurt } = setup(false, LINK);
+    const k = stillShell(world, 120);
+    k.kick(1, world); // the window starts
+    const p = world.player;
+    dropOnto(p, k);
+    let rose = false;
+    run(
+      world,
+      40,
+      () => ['down'],
+      () => {
+        if (p.body.vy < 0) rose = true;
+      },
+    );
+    expect(k.alive).toBe(true);
+    expect(k.isMovingShell).toBe(true);
+    expect(state.score).toBe(0);
+    expect(rose).toBe(false);
+    expect(hurt).toEqual([]);
   });
 });
