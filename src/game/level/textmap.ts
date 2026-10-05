@@ -206,6 +206,8 @@ function parseZone(line: string): Zone {
     }
     case 'cheeps':
       return { kind: 'cheeps', x: Number(parts[1]), w: Number(parts[2]) };
+    case 'bullets':
+      return { kind: 'bullets', x: Number(parts[1]), w: Number(parts[2]) };
     case 'loop': {
       // loop x y0 y1 -> to [check=x:y0:y1]
       const [, xs, y0, y1, arrow, to, ...rest] = parts;
@@ -331,6 +333,8 @@ function serializeZone(z: Zone): string {
       return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
     case 'cheeps':
       return `cheeps ${z.x} ${z.w}`;
+    case 'bullets':
+      return `bullets ${z.x} ${z.w}`;
     case 'loop':
       return `loop ${z.x} ${z.y0} ${z.y1} -> ${z.to}${z.check ? ` check=${z.check.x}:${z.check.y0}:${z.check.y1}` : ''}`;
     case 'checkpoint':

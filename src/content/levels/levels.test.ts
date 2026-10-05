@@ -334,3 +334,62 @@ describe('World 4 follows the original layouts', () => {
     expect(l.zones).toContainEqual({ kind: 'exit', x: 312, next: '5-1' });
   });
 });
+
+describe('World 5 follows the original layouts', () => {
+  it('5-1: three Bullet Bill blasters, paratroopas and a bonus pipe', () => {
+    const l = load('5-1');
+    for (const x of [111, 159, 170]) {
+      expect(tile(l, x, 11)).toBe(T.BLASTER_TOP);
+      expect(tile(l, x, 12)).toBe(T.BLASTER_BASE);
+    }
+    expect(l.entities.filter((e) => e.type === 'koopa-para-green')).toHaveLength(4);
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 156, y: 7, dir: 'down' }));
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 199, next: '5-2' });
+  });
+  it('5-2: Hammer Bros, beetles, blasters, a springboard, an underwater detour and a coin heaven', () => {
+    const l = load('5-2');
+    expect(l.entities.filter((e) => e.type === 'hammer-bro').map((e) => [e.x, e.y])).toEqual([
+      [124, 4],
+      [81, 8],
+      [120, 8],
+      [45, 9],
+    ]);
+    expect(l.entities.filter((e) => e.type === 'buzzy').map((e) => e.x)).toEqual([136, 137, 138]);
+    expect(l.entities).toContainEqual({ type: 'spring', x: 25, y: 12 });
+    expect(tile(l, 17, 7)).toBe(T.BLASTER_TOP);
+    expect(tile(l, 107, 11)).toBe(T.BLASTER_TOP);
+    expect(l.zones).toContainEqual({
+      kind: 'pipe',
+      x: 55,
+      y: 10,
+      dir: 'down',
+      target: { level: '5-2-water', x: 1, y: 1, exitDir: 'none' },
+    });
+    expect(l.zones).toContainEqual({ kind: 'vine', x: 85, y: 5, target: { level: '5-2-sky', x: 4, y: 14 } });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 200, next: '5-3' });
+    const water = load('5-2-water');
+    expect(water.theme).toBe('water');
+    expect(water.zones).toContainEqual({
+      kind: 'pipe',
+      x: 62,
+      y: 8,
+      dir: 'right',
+      target: { level: '5-2', x: 115, y: 10, exitDir: 'up' },
+    });
+    expect(load('5-2-sky').entities).toContainEqual({ type: 'lift-right', x: 17, y: 10, props: { len: 6 } });
+  });
+  it('5-3: treetops under a stretch of Bullet Bills', () => {
+    const l = load('5-3');
+    expect(l.zones).toContainEqual({ kind: 'bullets', x: 0, w: 126 });
+    expect(l.entities.filter((e) => e.type === 'koopa-para-red').map((e) => e.x)).toEqual([74, 114]);
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 153, next: '5-4' });
+  });
+  it('5-4: castle with a long fire bar, Podoboos and Bowser', () => {
+    const l = load('5-4');
+    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 23, y: 7, props: { len: 12 } });
+    expect(l.entities.filter((e) => e.type === 'podoboo')).toHaveLength(6);
+    expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9 });
+    expect(l.entities).toContainEqual({ type: 'axe', x: 141, y: 8 });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '6-1' });
+  });
+});

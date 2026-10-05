@@ -111,6 +111,7 @@ const LIFTS = {
   StepFall: 'lift-fall',
   ConstantFall: 'lift-down',
   ConstantRise: 'lift-up',
+  StepConstantRight: 'lift-right',
 };
 const IGNORED = new Set([
   'flag',
@@ -201,6 +202,11 @@ function tileChar(tok, area, world) {
       return trees ? 't' : 'i';
     case 'wavesLava':
       return '~';
+    case 'groundBillBlasterTop':
+      return '^';
+    case 'groundBillBlasterMiddle':
+    case 'groundBillBlasterBottom':
+      return '|';
     case 'wavesDay':
     case 'wavesNight':
       return 'w';
@@ -242,6 +248,7 @@ function convertArea(level, area, id, levels) {
   let pitEnd = null;
   let pitStart = null;
   const cheepZone = { start: null, end: null };
+  const bulletZone = { start: null, end: null };
   const vines = []; // vine bricks: { x, y, dest }
   const vertEnds = new Map(); // transporter number -> pipe top-left tile
   const pipes = []; // outgoing transporters
@@ -376,6 +383,16 @@ function convertArea(level, area, id, levels) {
           case 'flyingCheepEnd':
             cheepZone.end = x;
             break;
+          case 'bulletBillStart':
+            bulletZone.start = x;
+            break;
+          case 'bulletBillEnd':
+            bulletZone.end = x;
+            break;
+          case 'fireBarLongLeft':
+          case 'fireBarLongRight':
+            b.entity(name === 'fireBarLongLeft' ? 'firebar' : 'firebar-ccw', x, y, { len: 12 });
+            break;
           case 'pipeTransporterGlobalVertEnd':
             vertEnds.set(String(params.number ?? '1'), { x, y });
             break;
@@ -445,6 +462,9 @@ function convertArea(level, area, id, levels) {
   }
   if (cheepZone.start !== null) {
     b.zone(`cheeps ${cheepZone.start} ${(cheepZone.end ?? area.width) - cheepZone.start}`);
+  }
+  if (bulletZone.start !== null) {
+    b.zone(`bullets ${bulletZone.start} ${(bulletZone.end ?? area.width) - bulletZone.start}`);
   }
   if (vineStart) b.entity('vine', vineStart.x, vineStart.y, { len: 8 });
 

@@ -38,6 +38,8 @@ const ENTITY_FRAMES: Record<string, { sheet: string; frame: string; palette?: (t
   buzzy: { sheet: 'enemies', frame: 'buzzy-0', palette: enemyPalette },
   spiny: { sheet: 'enemies', frame: 'spiny-0', palette: enemyPalette },
   lakitu: { sheet: 'enemies', frame: 'lakitu-0', palette: enemyPalette },
+  'bullet-bill': { sheet: 'enemies', frame: 'bullet', palette: enemyPalette },
+  'lift-right': { sheet: 'items', frame: 'platform' },
   balance: { sheet: 'items', frame: 'pulley' },
   vine: { sheet: 'items', frame: 'vine-top' },
   bowser: { sheet: 'enemies', frame: 'bowser-0', palette: enemyPalette },
@@ -409,6 +411,7 @@ export class EditorScene implements Scene {
       'buzzy',
       'spiny',
       'lakitu',
+      'bullet-bill',
       'balance',
       'spring',
       'vine',
@@ -422,7 +425,7 @@ export class EditorScene implements Scene {
       '1up',
     ];
     for (const t of entityTypes) ents.appendChild(this.brushButton({ kind: 'entity', type: t, label: t }, t));
-    for (const t of ['lift-h', 'lift-v', 'lift-fall', 'lift-up', 'lift-down']) {
+    for (const t of ['lift-h', 'lift-v', 'lift-fall', 'lift-up', 'lift-down', 'lift-right']) {
       ents.appendChild(
         this.brushButton({ kind: 'entity', type: t, label: t, props: { len: 3, range: 4 } }, t),
       );
