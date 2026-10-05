@@ -4,8 +4,8 @@ import { actor, autoShore, poly, worldNodes } from './build';
 /** World 3, NIGHT HILLS: snow-capped hills under the moon and stars, a dark lake to the south. */
 export const SKETCH_3 = [
   '................',
-  '..s...x...sD..x.',
-  '.x...s...x....s.',
+  '................',
+  '..s..x...s.D..x.',
   'hjjhjhhjjhjhhjjh',
   '#####SS,S#T#SS#S',
   'ST,##,###,#S#T,#',
@@ -53,6 +53,6 @@ export const WORLD_3: WorldMapPage = {
     actor('star', 236, 28, { phase: 30 }),
     actor('bubble', 214, 170, { height: 14 }),
     actor('goomba', 224, 80, { range: 14, speed: 0.2 }),
-    actor('cloud', 90, 14, { size: 1, speed: 0.06 }),
+    actor('cloud', 90, 24, { size: 1, speed: 0.06 }),
   ],
 };

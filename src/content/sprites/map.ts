@@ -98,7 +98,7 @@ export const mapPalettes: Record<string, string[]> = {
   }),
   /* Dark green hills under a night sky; snow caps and a pale moon. */
   'map-night': theme({
-    ground: ['#003800', NES.greenDark, NES.green],
+    ground: [NES.black, NES.greenDark, NES.green],
     sand: [NES.tanDark, NES.brownLight],
     water: [NES.black, NES.blueDark, NES.blueMid, NES.lavender],
     rock: [NES.black, NES.darkGray, NES.gray],
@@ -122,11 +122,11 @@ export const mapPalettes: Record<string, string[]> = {
     wall: stone,
     white: [NES.white, NES.tan],
   }),
-  /* Treetop canopies floating on a sea of clouds. */
+  /* Treetop canopies on tall trunks above a white sea of clouds. */
   'map-sky': theme({
     ground: [NES.greenDark, NES.greenMid, NES.greenLight],
     sand: [NES.tan, NES.tanDark],
-    water: [NES.blueLight, NES.sky, NES.skyLight, NES.white],
+    water: [NES.lavender, NES.white, NES.skyLight, NES.skyLight],
     rock: [NES.brownDark, NES.brown, NES.brownLight],
     leaf: [NES.greenDark, NES.green, NES.greenPipe],
     wood: [NES.brownLight, NES.orangeBrown],
@@ -299,6 +299,16 @@ const sides = {
   e: (x: number, y: number) => x >= 16 - DW - wob(y),
 };
 type Mask = (x: number, y: number) => boolean;
+/** Rounds the water's tip in an inner corner: (dx, dy) measured inward from the tip's centre. */
+const round = (dx: number, dy: number): boolean => dx <= 0 || dy <= 0 || dx * dx + dy * dy <= 4;
+
+/** A round pond four tiles wide and three tall, cut into tiles `pond-0`..`pond-11` (row-major). */
+export const POND_W = 4;
+export const POND_H = 3;
+const pondMask =
+  (i: number): Mask =>
+  (x, y) =>
+    ((x + (i % POND_W) * 16 - 32) / 28) ** 2 + ((y + Math.floor(i / POND_W) * 16 - 24) / 19.5) ** 2 < 1;
 
 /** Shore kinds: which side(s) of the land tile hold water. */
 export const SHORES: Record<string, Mask> = {
@@ -310,10 +320,10 @@ export const SHORES: Record<string, Mask> = {
   ne: (x, y) => sides.n(x, y) || sides.e(x, y) || (x > 8 && y < 7 && (x - 8) ** 2 + (y - 7) ** 2 > 9),
   sw: (x, y) => sides.s(x, y) || sides.w(x, y) || (x < 7 && y > 7 && (x - 7) ** 2 + (y - 7) ** 2 > 9),
   se: (x, y) => sides.s(x, y) || sides.e(x, y) || (x > 8 && y > 7 && (x - 8) ** 2 + (y - 7) ** 2 > 9),
-  'in-nw': (x, y) => sides.n(x, y) && sides.w(x, y),
-  'in-ne': (x, y) => sides.n(x, y) && sides.e(x, y),
-  'in-sw': (x, y) => sides.s(x, y) && sides.w(x, y),
-  'in-se': (x, y) => sides.s(x, y) && sides.e(x, y),
+  'in-nw': (x, y) => sides.n(x, y) && sides.w(x, y) && round(x - DW + 2, y - DN + 2),
+  'in-ne': (x, y) => sides.n(x, y) && sides.e(x, y) && round(17 - DW - x, y - DN + 2),
+  'in-sw': (x, y) => sides.s(x, y) && sides.w(x, y) && round(x - DW + 2, 17 - DS - y),
+  'in-se': (x, y) => sides.s(x, y) && sides.e(x, y) && round(17 - DW - x, 17 - DS - y),
 };
 
 /**
@@ -889,10 +899,6 @@ const frames: Record<string, readonly string[]> = {
   'cap-mid': capPart(1),
   'cap-right': capPart(2),
   stem: STEM,
-  'treetop-left': TREETOP_LEFT,
-  'treetop-mid': TREETOP_MID,
-  'treetop-right': TREETOP_RIGHT,
-  trunk: TRUNK,
   wall: WALL,
   battlement: BATTLEMENT,
   gate: GATE,
@@ -923,6 +929,12 @@ for (let f = 0; f < WATER_FRAMES; f++) {
   frames[`cliff-sea-${f}`] = cliffSea(f);
   frames[`bridge-h-${f}`] = bridgeH(f);
   frames[`bridge-v-${f}`] = bridgeV(f);
+  // Sky-tree parts stand in the sea of clouds, so the sea shows around them.
+  frames[`treetop-left-${f}`] = stamp(water(f), TREETOP_LEFT);
+  frames[`treetop-mid-${f}`] = stamp(water(f), TREETOP_MID);
+  frames[`treetop-right-${f}`] = stamp(water(f), TREETOP_RIGHT);
+  frames[`trunk-${f}`] = stamp(water(f), TRUNK);
+  for (let i = 0; i < POND_W * POND_H; i++) frames[`pond-${i}-${f}`] = shore(pondMask(i), f);
 }
 
 export const mapDef: SpriteDef = { palette: 'map-grass', frames };

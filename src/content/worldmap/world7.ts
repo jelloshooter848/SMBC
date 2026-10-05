@@ -4,9 +4,9 @@ import { actor, autoShore, poly, worldNodes } from './build';
 /** World 7, CANNON COAST: rocky headlands bristling with cannons above steep sea cliffs. */
 export const SKETCH_7 = [
   '................',
-  '#^^#R#X#^^#X##~~',
-  '#^#X#,#R#,####~~',
-  'R#####,#X#R#,#~~',
+  '................',
+  '~~~~~~~~~~~~~~~~',
+  '##############~~',
   '#X#R,##X######~~',
   ',##^^#R,#^^,##~~',
   '###X##,X#R#X##~~',
@@ -46,12 +46,12 @@ export const WORLD_7: WorldMapPage = {
   ],
   exits: [{ from: '7-4', toWorld: 8, side: 'right', points: poly([12, 10], [15, 10]) }],
   actors: [
-    actor('hammer-bro', 208, 176, { range: 10 }),
-    actor('bullet', 180, 56, { speed: -0.8 }),
-    actor('bullet', 60, 130, { speed: -0.55 }),
-    actor('cheep', 40, 214, { range: 32, height: 34, period: 180 }),
-    actor('cheep', 150, 214, { range: -28, height: 30, period: 150, phase: 75 }),
-    actor('cheep', 232, 60, { range: -12, height: 26, period: 210, phase: 40 }),
-    actor('cloud', 100, 24, { size: 2, speed: 0.1 }),
+    actor('hammer-bro', 208, 144, { range: 6 }),
+    actor('bullet', 180, 26, { speed: -0.8 }),
+    actor('bullet', 60, 216, { speed: -0.55 }),
+    actor('cheep', 40, 214, { range: 32, height: 22, period: 180 }),
+    actor('cheep', 150, 214, { range: -28, height: 20, period: 150, phase: 75 }),
+    actor('cheep', 236, 96, { range: -8, height: 26, period: 210, phase: 40 }),
+    actor('cloud', 100, 18, { size: 2, speed: 0.1 }),
   ],
 };

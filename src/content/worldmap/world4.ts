@@ -1,17 +1,17 @@
 import type { WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
-/** World 4, MUSHROOM WOODS: giant red mushrooms among orange trees, a pond, Lakitu overhead. */
+/** World 4, MUSHROOM WOODS: giant red mushrooms among orange trees, a round pond, Lakitu overhead. */
 export const SKETCH_4 = [
   '................',
-  '#T,##T#,#T#,#T,#',
-  ',#T#,#######,#T#',
-  '###(O)##~~~##T,#',
-  'T#,#!###~~~###T#',
-  '##T,#*##~~~#####',
-  '###T*,#######,T#',
-  'T,######(O)###*,',
-  '#T,*#,T##!#,###T',
+  '................',
+  'hhhhhhhhhhhhhhhh',
+  '###(O)#######T,#',
+  'T#,#!###abdf##T#',
+  '##T,#*##gilm####',
+  '###T*,##prtv#,T#',
+  'T,############*,',
+  '#T,*#,T##T#,###T',
   '#(O)##,#####T#,#',
   ',#!##T*#,T#,##T#',
   '#,#T#####(O)###,',
@@ -47,11 +47,11 @@ export const WORLD_4: WorldMapPage = {
   exits: [{ from: '4-4', toWorld: 5, side: 'right', points: poly([13, 5], [15, 5]) }],
   actors: [
     actor('lakitu', 120, 32, { range: 80 }),
-    actor('cloud', 10, 24, { size: 2, speed: 0.1 }),
-    actor('cloud', 200, 70, { size: 1, speed: 0.07 }),
-    actor('goomba', 128, 96, { range: 16 }),
-    actor('goomba', 160, 192, { range: 24, phase: 60 }),
+    actor('cloud', 10, 20, { size: 2, speed: 0.1 }),
+    actor('cloud', 200, 18, { size: 1, speed: 0.07 }),
+    actor('goomba', 176, 224, { range: 16 }),
+    actor('goomba', 32, 224, { range: 12, phase: 60 }),
     actor('koopa', 32, 128, { range: 12, color: 'red' }),
-    actor('bubble', 144, 72, { height: 14 }),
+    actor('bubble', 156, 90, { height: 14 }),
   ],
 };

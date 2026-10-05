@@ -69,7 +69,7 @@ describe('map rendering', () => {
 
   it('walkable tiles are ground-like, never water, walls or scenery', () => {
     for (const ch of '#,*:o=I(O){-}G87923146qezc[]nu') expect(MAP_WALKABLE.has(ch), ch).toBe(true);
-    for (const ch of '.~L%TYHS^RCKhj!|WVPXsxDk') expect(MAP_WALKABLE.has(ch), ch).toBe(false);
+    for (const ch of '.~L%TYHS^RCKhj!|WVPXsxDkabdfgilmprtv') expect(MAP_WALKABLE.has(ch), ch).toBe(false);
   });
 
   it('gives each theme its own sky colour', () => {
