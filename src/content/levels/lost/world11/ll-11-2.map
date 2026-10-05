@@ -62,5 +62,4 @@ koopa-para-red 171 6
 cheep-grey 173 10
 
 [zones]
-checkpoint 81
 pipe 173 8 right -> ll-11-2-exit 3 10 exit=up

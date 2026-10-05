@@ -13,7 +13,7 @@ camera: scroll
 ;; 0                16               32               48               64               80               96               112              128              144              160              176
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ........
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ........
-wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwww######## ########wwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwww
+wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwww######## ########wwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwowwwwwwwww wwwwwwww
 ................ ................ ........{}...... ......{}........ ................ ................ ................ ................ ................ ................ ......!......... ........
 ................ ................ ........{}...... ......{}........ ................ ................ ................ ................ ................ ................ ......!......... ........
 ................ ................ ........{}...... ......{}....#### ####............ ................ ................ ........######## ................ ............BB.. ......!......... ........
@@ -39,7 +39,7 @@ piranha-down 54 9
 piranha 68 9
 koopa-para-green-h 78 9
 koopa-para-green-h 83 9
-lakitu 86 0 end=150
+lakitu 86 0 end=150 mid=1
 blooper 130 10
 blooper 137 6
 koopa-para-green 153 7
@@ -47,7 +47,6 @@ koopa-para-green 156 4
 decor-castle 170 12
 
 [zones]
-checkpoint 84
 exit 166 next=ll-9-2
 
 [decor]

@@ -2,7 +2,7 @@ id: ll-12-2
 name: WORLD 12-2
 world: 12
 stage: 2
-theme: overworld
+theme: night
 music: overworld
 time: 400
 start: 2,12
@@ -41,7 +41,6 @@ balance 166 5 x2=171 y2=9 len=4 top=2
 decor-castle 196 12
 
 [zones]
-checkpoint 81
 exit 192 next=ll-12-3
 cheeps 16 63
 bullets 132 43

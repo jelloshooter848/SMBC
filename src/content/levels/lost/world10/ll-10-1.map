@@ -45,7 +45,6 @@ lift-fall 203 5 len=4
 decor-castle 213 12
 
 [zones]
-checkpoint 89
 exit 209 next=ll-10-2-intro
 vine 37 4 -> ll-10-1-sky 4 14
 pipe 130 3 down -> ll-10-1-bonus 1 0 exit=none

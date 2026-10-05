@@ -2,7 +2,7 @@ id: ll-13-2
 name: WORLD 13-2
 world: 13
 stage: 2
-theme: overworld
+theme: snow
 music: overworld
 time: 400
 start: 2,12
@@ -49,7 +49,6 @@ koopa-para-red 150 8
 decor-castle 181 12
 
 [zones]
-checkpoint 99
 exit 177 next=ll-13-3
 vine 147 5 -> ll-13-2-sky 4 14
 pipe 118 3 down -> ll-13-2-bonus 1 0 exit=none

@@ -2,7 +2,7 @@ id: ll-7-1-exit
 name: WORLD 7-1
 world: 7
 stage: 1
-theme: overworld
+theme: night
 music: overworld
 time: inherit
 start: 3,10

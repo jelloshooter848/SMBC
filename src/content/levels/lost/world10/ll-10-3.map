@@ -37,7 +37,6 @@ decor-castle-big 164 12
 piranha 227 11
 
 [zones]
-checkpoint 84
 exit 162 next=ll-10-4
 cheeps 17 118
 pipe 246 10 down -> ll-12-1 2 12

@@ -30,7 +30,7 @@ parent: ll-13-4
 
 [entities]
 piranha 3 11
-bowser 20 9 attack=hammer
+bowser 20 9 attack=hammer fake=1
 blooper 36 7
 piranha 38 11
 blooper 39 10
@@ -43,6 +43,5 @@ axe 109 8
 princess 121 12
 
 [zones]
-checkpoint 7
 exit 120 next=end
 pipe 38 11 down -> ll-13-4 3 10 exit=up

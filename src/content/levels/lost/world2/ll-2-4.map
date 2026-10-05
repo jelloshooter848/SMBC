@@ -44,5 +44,4 @@ lift-h 138 5 len=4 range=3
 axe 141 8
 
 [zones]
-checkpoint 88
 exit 152 next=ll-3-1

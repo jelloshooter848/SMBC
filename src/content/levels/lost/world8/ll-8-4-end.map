@@ -33,5 +33,4 @@ piranha 3 11
 piranha 10 11
 
 [zones]
-checkpoint 9
 pipe 10 11 down -> ll-8-4-end2 3 10 exit=up

@@ -69,7 +69,6 @@ bowser 327 9 attack=hammer
 axe 333 8
 
 [zones]
-checkpoint 149
 loop 80 3 4 -> 144 check=32:10:12
 loop 144 3 12 -> 80 check=96:3:8,140:6:12 any
 loop 208 10 12 -> 272 check=160:11:12

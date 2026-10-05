@@ -2,7 +2,7 @@ id: ll-2-2
 name: WORLD 2-2
 world: 2
 stage: 2
-theme: overworld
+theme: night
 music: overworld
 time: 400
 start: 2,12

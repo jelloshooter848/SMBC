@@ -30,7 +30,7 @@ ttttttttttttttt. ......t..t....tt t....t.......... .tttt.......tttt tttttttttt..
 [entities]
 decor-castle 0 12
 lift-fall 16 9 len=4
-lakitu 24 0 end=55
+lakitu 24 0 end=55 mid=1
 koopa-para-green-h 29 6
 koopa-para-red 42 9
 lift-fall 45 5 len=4
@@ -47,7 +47,6 @@ koopa-para-red 209 7
 decor-castle-big 216 12
 
 [zones]
-checkpoint 96
 exit 214 next=ll-8-4
 vine 98 8 -> ll-8-3-sky 4 14
 

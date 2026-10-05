@@ -2,7 +2,7 @@ id: ll-8-1-exit
 name: WORLD 8-1
 world: 8
 stage: 1
-theme: overworld
+theme: snow
 music: overworld
 time: inherit
 start: 3,10

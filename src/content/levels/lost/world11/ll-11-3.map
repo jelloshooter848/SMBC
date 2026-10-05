@@ -48,7 +48,6 @@ koopa-para-green-h 166 3
 decor-castle-big 203 12
 
 [zones]
-checkpoint 84
 exit 201 next=ll-11-4
 bullets 137 44
 

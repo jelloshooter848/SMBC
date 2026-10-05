@@ -40,7 +40,6 @@ hammer-bro-chase 159 12
 piranha 170 9
 
 [zones]
-checkpoint 118
 vine 127 5 -> ll-8-2-warp 4 14
 pipe 170 9 down -> ll-8-2-bonus 1 0 exit=none
 

@@ -2,7 +2,7 @@ id: ll-8-1
 name: WORLD 8-1
 world: 8
 stage: 1
-theme: overworld
+theme: snow
 music: overworld
 time: 400
 start: 2,12
@@ -50,7 +50,6 @@ piranha 201 8
 decor-castle 219 12
 
 [zones]
-checkpoint 110
 exit 215 next=ll-8-2
 pipe 176 9 down -> ll-8-1-water 2 1 exit=none
 

@@ -45,7 +45,6 @@ bowser 231 9 attack=hammer
 axe 237 8
 
 [zones]
-checkpoint 90
 exit 248 next=ll-12-1
 pipe 97 10 down -> ll-11-4 19 10 exit=up
 pipe 129 10 down -> ll-11-4 19 10 exit=up

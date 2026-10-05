@@ -2,7 +2,7 @@ id: ll-12-1
 name: WORLD 12-1
 world: 12
 stage: 1
-theme: overworld
+theme: night
 music: overworld
 time: 400
 start: 2,12
@@ -58,7 +58,6 @@ piranha 219 5
 decor-castle 232 12
 
 [zones]
-checkpoint 135
 exit 228 next=ll-12-2
 vine 197 5 -> ll-12-1-sky 4 14
 pipe 96 10 down -> ll-12-1-bonus 1 0 exit=none

@@ -2,7 +2,7 @@ id: ll-12-3
 name: WORLD 12-3
 world: 12
 stage: 3
-theme: overworld
+theme: night
 music: overworld
 time: 400
 start: 2,12
@@ -33,7 +33,7 @@ koopa-para-green-h 74 4
 piranha 117 9
 piranha 122 13
 piranha 127 9
-lakitu 138 7 end=175
+lakitu 138 7 end=175 mid=1
 lift-fall 158 3 len=4
 piranha 188 9
 balance 214 5 x2=219 y2=9 len=4 top=2
@@ -44,7 +44,6 @@ firebar-ccw 305 5
 decor-castle-big 318 12
 
 [zones]
-checkpoint 178
 exit 316 next=ll-12-4
 
 [decor]

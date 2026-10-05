@@ -44,5 +44,4 @@ bowser 167 9 attack=hammer
 axe 173 8
 
 [zones]
-checkpoint 74
 exit 184 next=ll-11-1

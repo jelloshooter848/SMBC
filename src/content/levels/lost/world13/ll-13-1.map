@@ -2,7 +2,7 @@ id: ll-13-1
 name: WORLD 13-1
 world: 13
 stage: 1
-theme: overworld
+theme: snow
 music: overworld
 time: 400
 start: 2,12
@@ -44,7 +44,6 @@ piranha 183 9
 decor-castle 203 12
 
 [zones]
-checkpoint 120
 exit 199 next=ll-13-2
 pipe 73 7 down -> ll-13-1-bonus 1 0 exit=none
 
