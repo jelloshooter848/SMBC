@@ -42,6 +42,7 @@ podoboo 102 12
 podoboo 107 12
 bowser 167 9 attack=hammer
 axe 173 8
+toad 185 12
 
 [zones]
 exit 184 next=ll-11-1

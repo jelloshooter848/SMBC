@@ -333,6 +333,34 @@ const princess = [
   '..000000000000..',
 ];
 
+/* The castle's mushroom retainer (original design): white cap with red spots, blue vest, 16x24. */
+const toad = [
+  '.....000000.....',
+  '...0012222100...',
+  '..011222222110..',
+  '.01111222211110.',
+  '.02211111111220.',
+  '0222111111112220',
+  '0222111111112220',
+  '0221111111111220',
+  '0111111111111110',
+  '.00000000000000.',
+  '...0333333330...',
+  '...0303333030...',
+  '...0303333030...',
+  '...0333333330...',
+  '....03333330....',
+  '...0ee1111ee0...',
+  '..03ee1111ee30..',
+  '..03ee1111ee30..',
+  '...0ee1111ee0...',
+  '...0eeeeeeee0...',
+  '...0111111110...',
+  '...0111001110...',
+  '..09990..09990..',
+  '..00000..00000..',
+];
+
 /* Pulley wheel for balance lifts: a grey wheel with a dark rim on a cream bracket, 16x16. */
 const pulley = [
   '................',
@@ -1712,6 +1740,7 @@ export const itemsDef: SpriteDef = {
     flag,
     'castle-flag': castleFlag,
     princess,
+    toad,
     'bomb-0': bomb0,
     'bomb-1': bomb1,
     'explosion-0': explosion0,

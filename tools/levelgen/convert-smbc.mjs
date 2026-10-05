@@ -192,7 +192,6 @@ const IGNORED = new Set([
   'colorLightBlue',
   'railing',
   'fence',
-  'toad',
   'gameStateWatch',
   'bowserFireBallStart',
   'pullyRopeVertical',
@@ -432,6 +431,12 @@ function convertArea(level, area, id, levels) {
             break;
           case 'peach':
             b.entity('princess', x, y);
+            break;
+          case 'toad':
+            // Toad waits past the axe of every castle but the last. The Crossover's Lost Levels
+            // data keeps Toad in 8-4 too, but the NES game ends 8-4 with the princess: a castle
+            // whose level ends the game (next=end) gets her instead.
+            b.entity(nextLevel(levelId, levels) === 'end' ? 'princess' : 'toad', x, y);
             break;
           case 'lakituStart':
             lakitus.push({ x, y });

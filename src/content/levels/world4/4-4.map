@@ -42,6 +42,7 @@ firebar-ccw 290 10
 podoboo 293 12
 bowser 296 9
 axe 301 8
+toad 313 12
 
 [zones]
 loop 63 3 5 -> 127 check=35:3:5

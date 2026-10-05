@@ -38,6 +38,7 @@ firebar 88 4
 lift-h 136 6 len=4 range=3
 bowser 136 9
 axe 141 8
+toad 153 12
 
 [zones]
 exit 152 next=2-1
