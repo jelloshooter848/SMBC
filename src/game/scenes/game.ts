@@ -23,6 +23,14 @@ import { MessageScene } from './message';
 import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress } from '../map/types';
 import { entryLevel, newMapProgress } from '../map/rules';
+import {
+  loadSave,
+  saveFromState,
+  stateFromSave,
+  writeSave,
+  type SaveFile,
+  type SaveSlot,
+} from '@game/save/save-files';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -57,6 +65,10 @@ export class Game {
   private sharedLevel: LevelData | null = null;
   /** World map progress (cleared levels, open worlds, secrets, the hero's place on the map). */
   mapProgress: MapProgress = newMapProgress();
+  /** The save file being played from the world map; null for every non-campaign start. */
+  campaign: { slot: SaveSlot } | null = null;
+  /** The campaign's file as last written (the base `autosave` updates). */
+  private campaignSave: SaveFile | null = null;
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -109,6 +121,7 @@ export class Game {
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;
+    this.campaign = null;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -123,27 +136,60 @@ export class Game {
   }
 
   /**
-   * A level node picked on the map: character select with the current hero preselected (a new
-   * pick starts from its default power), then the level (its intro scene when it has one).
+   * A level node picked on the map: character select with the current hero preselected (keeping
+   * it keeps its power; a different hero starts from its default), then player two's own pick in
+   * co-op, then the level (its intro scene when it has one). Back returns to the map.
    */
   enterLevelFromMap(levelId: string): void {
     const s = this.state;
-    this.scenes.push(
+    const back = () => this.scenes.pop();
+    const go = () => {
+      s.checkpoint = null;
+      this.deps.ctx.audio.stopMusic();
+      this.goToLevel(entryLevel(levelId, this.deps.getLevel), { mode: 'stand' });
+    };
+    const pick = (player: 0 | 1, then: () => void) =>
       new CharacterSelectScene(this, {
-        player: 0,
-        current: s.character,
+        player,
+        current: player === 1 ? (s.character2 as CharacterDef) : s.character,
         onPick: (c) => {
-          if (c !== s.character) {
-            s.character = c;
-            s.powerState = c.damage.kind === 'powerup' ? 'small' : 'full';
-            s.hp = startHp(c);
-            s.kit = {};
-          }
-          s.checkpoint = null;
-          this.goToLevel(entryLevel(levelId, this.deps.getLevel), { mode: 'stand' });
+          if (c !== (player === 1 ? s.character2 : s.character)) this.setHero(player, c);
+          then();
         },
+        onCancel: back,
+      });
+    this.scenes.push(
+      pick(0, () => {
+        if (!s.character2) return go();
+        this.scenes.pop();
+        this.scenes.push(pick(1, go));
       }),
     );
+  }
+
+  /**
+   * Writes the campaign's save file: the run (lives, score, coins, heroes, power) and the map
+   * progress. Does nothing outside campaign mode (dev, ?level=, custom, shared, playtests).
+   */
+  autosave(): void {
+    const base = this.campaign ? this.campaignSave : null;
+    if (!base) return;
+    const p = this.mapProgress;
+    const save: SaveFile = {
+      ...saveFromState(base, this.state),
+      cleared: p.cleared.slice(),
+      worlds: p.worlds.slice(),
+      secrets: p.secrets.slice(),
+      position: { world: p.position.world, node: p.position.node },
+    };
+    this.campaignSave = save;
+    writeSave(save);
+  }
+
+  /** Map menu "Save and quit": save the file, then the title. */
+  saveAndQuit(): void {
+    this.autosave();
+    this.showTitle();
   }
 
   showCharacterSelect(): void {
@@ -171,6 +217,7 @@ export class Game {
     this.playtestDone = null;
     this.pendingLevel = null;
     this.quickRespawn = true;
+    this.campaign = null;
     this.goToLevel(levelId, { mode: 'stand' });
   }
 
@@ -202,6 +249,7 @@ export class Game {
     this.state.lives = 99;
     this.playtestDone = done;
     this.quickRespawn = true;
+    this.campaign = null;
     this.startLevel(level, { mode: 'stand' });
   }
 
@@ -211,6 +259,7 @@ export class Game {
     this.state = newGameState(this.deps.characters[0] as CharacterDef);
     this.playtestDone = null;
     this.quickRespawn = false;
+    this.campaign = null;
     this.startLevel(level, { mode: 'stand' });
   }
 
@@ -218,9 +267,34 @@ export class Game {
     this.state = newGameState(character, character2);
     this.playtestDone = null;
     this.quickRespawn = false;
+    this.campaign = null;
     const id = this.pendingLevel ?? levelId;
     this.pendingLevel = null;
     this.goToLevel(id, { mode: 'stand' });
+  }
+
+  /**
+   * Play save file `slot` (file select): load it into the game state, save it, show the map.
+   * `save` is passed when just created (so play goes on even if storage is unavailable).
+   */
+  openFile(slot: SaveSlot, save = loadSave(slot)): void {
+    if (!save) {
+      this.showTitle();
+      return;
+    }
+    this.state = stateFromSave(save, this.deps.characters);
+    this.playtestDone = null;
+    this.pendingLevel = null;
+    this.quickRespawn = false;
+    this.campaign = { slot };
+    this.campaignSave = save;
+    this.mapProgress = {
+      cleared: save.cleared.slice(),
+      worlds: save.worlds.slice(),
+      secrets: save.secrets.slice(),
+      position: { world: save.position.world, node: save.position.node },
+    };
+    this.showMap(); // the map saves the file as it opens
   }
 
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */
@@ -292,22 +366,28 @@ export class Game {
         onPick: (c) => {
           // StatManager.playerDie resets the fallen hero to PS_NORMAL; a newly picked hero
           // starts from its default state too.
-          const power = c.damage.kind === 'powerup' ? 'small' : 'full';
-          if (p2) {
-            s.character2 = c;
-            s.powerState2 = power;
-            s.hp2 = startHp(c);
-            s.kit2 = {};
-          } else {
-            s.character = c;
-            s.powerState = power;
-            s.hp = startHp(c);
-            s.kit = {};
-          }
+          this.setHero(p2 ? 1 : 0, c);
           then();
         },
       }),
     );
+  }
+
+  /** Give player `player` hero `c`, starting from its default power (small, or full hp). */
+  private setHero(player: 0 | 1, c: CharacterDef): void {
+    const s = this.state;
+    const power = c.damage.kind === 'powerup' ? 'small' : 'full';
+    if (player === 1) {
+      s.character2 = c;
+      s.powerState2 = power;
+      s.hp2 = startHp(c);
+      s.kit2 = {};
+    } else {
+      s.character = c;
+      s.powerState = power;
+      s.hp = startHp(c);
+      s.kit = {};
+    }
   }
 
   /**

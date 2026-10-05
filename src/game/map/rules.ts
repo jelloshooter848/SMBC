@@ -95,12 +95,27 @@ function openIds(progress: MapProgress, page: WorldMapPage): string[] {
   return ids;
 }
 
+/** A reveal id qualified by its page: '2:start', '1:1-1>1-2'. */
+export function revealId(world: number, id: string): string {
+  return `${world}:${id}`;
+}
+
+/** Splits a reveal id back into its world and page-local id (null when malformed). */
+export function parseRevealId(rid: string): { world: number; id: string } | null {
+  const i = rid.indexOf(':');
+  const world = Number(rid.slice(0, i));
+  return i > 0 && Number.isInteger(world) ? { world, id: rid.slice(i + 1) } : null;
+}
+
 function openedBy(pages: readonly WorldMapPage[], progress: MapProgress, change: () => void): string[] {
-  const before = new Set(pages.flatMap((p) => openIds(progress, p).map((id) => `${p.world}:${id}`)));
+  const before = new Set(pages.flatMap((p) => openIds(progress, p).map((id) => revealId(p.world, id))));
   change();
   const out: string[] = [];
   for (const p of pages)
-    for (const id of openIds(progress, p)) if (!before.has(`${p.world}:${id}`)) out.push(id);
+    for (const id of openIds(progress, p)) {
+      const rid = revealId(p.world, id);
+      if (!before.has(rid)) out.push(rid);
+    }
   return out;
 }
 
@@ -134,8 +149,9 @@ export function findLevelNode(
 
 /**
  * Records a clear of `levelId` (a sub-area counts for its main level) in `progress`, puts the
- * hero on its node, and on a castle clear opens the next world. Returns the ids (nodes, `pathId`s,
- * `exitId`s) that were not open before, for the reveal animation; levels not on any page change
+ * hero on its node, and on a castle clear opens the worlds its exits lead to. Returns the
+ * world-qualified `revealId`s of the nodes, `pathId`s and `exitId`s that were not open before
+ * (on every page), for the reveal animation; levels not on any page change
  * nothing but the cleared list.
  */
 export function clearLevel(
@@ -151,17 +167,13 @@ export function clearLevel(
     if (!at) return;
     progress.position = { world: at.page.world, node: at.node.id };
     if (at.node.kind !== 'castle') return;
-    const exits = at.page.exits.filter((e) => e.from === at.node.id).map((e) => e.toWorld);
-    const next = exits.length
-      ? exits
-      : pages.some((p) => p.world === at.page.world + 1)
-        ? [at.page.world + 1]
-        : [];
+    // The castle's world exits lead on (World 8's castle has none: the ending follows).
+    const next = at.page.exits.filter((e) => e.from === at.node.id).map((e) => e.toWorld);
     for (const w of next) if (!progress.worlds.includes(w)) progress.worlds.push(w);
   });
 }
 
-/** A warp pipe opens only its target world (its start and first level). Returns the opened ids. */
+/** A warp pipe opens only its target world (its start and first level). Returns the opened `revealId`s. */
 export function warpTo(
   progress: MapProgress,
   world: number,

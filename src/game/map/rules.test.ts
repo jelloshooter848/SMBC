@@ -11,7 +11,9 @@ import {
   newMapProgress,
   nextStep,
   openPaths,
+  parseRevealId,
   pathId,
+  revealId,
   warpTo,
 } from './rules';
 
@@ -90,6 +92,9 @@ function getLevel(id: string): LevelData {
   return { id, parent: known[id] } as LevelData;
 }
 
+/** World 3's main levels, for the last-page test. */
+const getLevel3 = (id: string) => ({ id, parent: null }) as LevelData;
+
 const open = (p: ReturnType<typeof newMapProgress>, page: WorldMapPage) =>
   page.nodes.filter((n) => isOpen(p, page, n.id)).map((n) => n.id);
 
@@ -98,7 +103,7 @@ describe('map rules', () => {
     const p = newMapProgress();
     expect(open(p, P1)).toEqual(['start', '1-1']);
     expect(open(p, P2)).toEqual([]);
-    expect(clearLevel(p, '1-1', getLevel, PAGES)).toEqual(['1-1>1-2', '1-2']);
+    expect(clearLevel(p, '1-1', getLevel, PAGES)).toEqual(['1:1-1>1-2', '1:1-2']);
     expect(open(p, P1)).toEqual(['start', '1-1', '1-2']);
     expect(isCleared(p, P1, '1-1')).toBe(true);
     expect(isCleared(p, P1, '1-2')).toBe(false);
@@ -120,7 +125,9 @@ describe('map rules', () => {
     const p = newMapProgress();
     for (const id of ['1-1', '1-2', '1-3']) clearLevel(p, id, getLevel, PAGES);
     const opened = clearLevel(p, '1-4', getLevel, PAGES);
-    expect(opened).toEqual([exitId(P1.exits[0]!), 'start', 'start>2-1', '2-1']);
+    // Ids are world-qualified: World 1's exit, then World 2's start, path and first level.
+    expect(opened).toEqual([`1:${exitId(P1.exits[0]!)}`, '2:start', '2:start>2-1', '2:2-1']);
+    expect(opened.map(parseRevealId)).toContainEqual({ world: 2, id: 'start' });
     expect(p.worlds).toEqual([1, 2]);
     expect(open(p, P2)).toEqual(['start', '2-1']);
     expect(openPaths(p, P1).exits.map((e) => e.toWorld)).toEqual([2]);
@@ -129,11 +136,25 @@ describe('map rules', () => {
   it('a warp opens only its target world', () => {
     const p = newMapProgress();
     clearLevel(p, '1-1', getLevel, PAGES);
-    expect(warpTo(p, 3, PAGES)).toEqual(['start', 'start>3-1', '3-1']);
+    expect(warpTo(p, 3, PAGES)).toEqual(['3:start', '3:start>3-1', '3:3-1']);
     expect(p.worlds).toEqual([1, 3]);
     expect(open(p, P2)).toEqual([]);
     expect(open(p, PAGES[2]!)).toEqual(['start', '3-1']);
     expect(warpTo(p, 3, PAGES)).toEqual([]);
+  });
+
+  it('a castle without a world exit (World 8) opens no new world', () => {
+    const p = newMapProgress();
+    p.worlds.push(3);
+    for (const id of ['3-1', '3-2', '3-3', '3-4']) clearLevel(p, id, getLevel3, PAGES);
+    expect(p.worlds).toEqual([1, 3]);
+    expect(p.cleared).toContain('3-4');
+  });
+
+  it('reveal ids round-trip', () => {
+    expect(revealId(2, 'start')).toBe('2:start');
+    expect(parseRevealId('1:1-1>1-2')).toEqual({ world: 1, id: '1-1>1-2' });
+    expect(parseRevealId('start')).toBeNull();
   });
 
   it('a sub-area clear counts for its main level', () => {
