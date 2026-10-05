@@ -38,8 +38,40 @@ describe('Lost Levels World 1: files', () => {
       expect(l.id).toBe(id);
       expect(l.height).toBe(15);
       expect(l.world).toBe(1);
-      expect(['night', 'snow']).not.toContain(l.theme);
     }
+  });
+
+  it('themes follow the original Lost Levels table: World 1 has no night or snow', () => {
+    const themes: Record<string, string> = {
+      'll-1-1': 'overworld',
+      'll-1-1-bonus': 'underground',
+      'll-1-2-intro': 'overworld',
+      'll-1-2': 'underground',
+      'll-1-2-warp': 'overworld',
+      'll-1-2-exit': 'overworld',
+      'll-1-2-under': 'underground',
+      'll-1-2-bonus': 'underground',
+      'll-1-3': 'overworld',
+      'll-1-4': 'castle',
+    };
+    for (const id of AREAS) {
+      const l = load(id);
+      expect([id, l.theme]).toEqual([id, themes[id]]);
+      // Night and snow keep the overworld music.
+      if (l.theme === 'night' || l.theme === 'snow') expect(l.music).toBe('overworld');
+    }
+  });
+
+  it('bonus rooms wider than one screen scroll; the 16-wide ones stay locked', () => {
+    for (const id of AREAS.filter((a) => a.includes('-bonus'))) {
+      const l = load(id);
+      expect([id, l.camera]).toEqual([id, l.width > 16 ? 'scroll' : 'locked']);
+    }
+    expect(load('ll-1-2-bonus').camera).toBe('scroll');
+  });
+
+  it('has no checkpoint in its castle (LOCKED_CP)', () => {
+    expect(load('ll-1-4').zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
   });
 
   it('sub-areas inherit the clock and name their parent; main areas carry the XML TIME', () => {
@@ -373,7 +405,7 @@ describe('Lost Levels 1-4', () => {
     expect(tile(l, 140, 9)).toBe(T.CHAIN);
     expect(l.entities).toContainEqual({ type: 'koopa-green', x: 82, y: 7 });
     expect(tile(l, 30, 5)).toBe(T.Q_POWERUP);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 64 });
+    expect(l.zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 152, next: 'll-2-1' });
   });
 });
