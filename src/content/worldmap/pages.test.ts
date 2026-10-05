@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { songs } from '@content/music/songs';
 import { MAP_PAGES, mapPage } from './index';
-import { MAP_ACTOR_TYPES, MAP_LEGEND, MAP_WALKABLE } from './render';
+import { MAP_ACTOR_TYPES, MAP_LEGEND, MAP_WALKABLE, mapActorBounds } from './render';
 import { autoShore, poly, sketchProblems } from './build';
 import { SKETCH_1 } from './world1';
 import { SKETCH_2 } from './world2';
@@ -192,6 +192,35 @@ describe('world map pages', () => {
         expect(a.props, 'actors carry a props object').toBeDefined();
       }
     });
+
+    it('keeps rows 0-1, under the header, as plain sky', () => {
+      expect(page.tiles[0]).toBe('.'.repeat(16));
+      expect(page.tiles[1]).toBe('.'.repeat(16));
+    });
+
+    it('keeps every actor, wherever it moves, off roads, exits and nodes', () => {
+      const busy = new Set<string>();
+      for (const n of page.nodes) busy.add(key([n.x, n.y]));
+      for (const p of [...page.paths, ...page.exits]) for (const pt of p.points) busy.add(key(pt));
+      for (const a of page.actors) {
+        const [x0, y0, x1, y1] = mapActorBounds(a);
+        for (let ty = Math.floor(y0 / 16); ty <= Math.floor((y1 - 1) / 16); ty++)
+          for (let tx = Math.floor(x0 / 16); tx <= Math.floor((x1 - 1) / 16); tx++)
+            expect(busy.has(key([tx, ty])), `${a.type} at ${a.x},${a.y} covers road tile ${tx},${ty}`).toBe(
+              false,
+            );
+      }
+    });
+
+    it('drifts clouds only in the sky band or over open water', () => {
+      const open = new Set(['.', '~', 'L', '|', '{', '-', '}', 's', 'x', 'D', 'k']);
+      for (const a of page.actors.filter((b) => b.type === 'cloud')) {
+        if (a.y + 24 <= 48) continue; // the sky band just under the header
+        for (let ty = Math.floor(a.y / 16); ty <= Math.floor((a.y + 23) / 16); ty++)
+          for (const ch of page.tiles[ty] ?? '')
+            expect(open.has(ch), `cloud at y ${a.y} over '${ch}'`).toBe(true);
+      }
+    });
   });
 });
 
@@ -219,5 +248,7 @@ describe('page building helpers', () => {
     expect(sketchProblems(['~#~', '~#~'])).toContain('land at 1,0 is one tile thin');
     expect(sketchProblems(['T~', '##'])).toContain("'T' at 0,0 touches water");
     expect(sketchProblems(['##', '##'])).toEqual([]);
+    expect(sketchProblems(['abdf', 'gilm', 'prtv'])).toEqual([]);
+    expect(sketchProblems(['abdf', 'gilm', 'prt#'])).toContain('pond at 0,2 is not a whole block');
   });
 });

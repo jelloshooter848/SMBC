@@ -11,6 +11,10 @@ const WATER = new Set(['~', 'L']);
 /** Ground decorations that would leave a hard edge if placed right beside water. */
 const INLAND = new Set([',', '*', ':', 'o', 'T', 'Y', 'H', 'S', '^', 'R', 'P', 'X', '(', 'O', ')', '!']);
 
+/** The round pond's tiles, row by row (4 wide, 3 tall); a sketch writes the whole block. */
+export const POND_CHARS = 'abdfgilmprtv';
+const POND_W = 4;
+
 const at = (rows: readonly string[], x: number, y: number): string => {
   if (y < 0 || y >= rows.length || x < 0 || x >= 16) return '#'; // off the page: land goes on
   return (rows[y] as string)[x] as string;
@@ -59,6 +63,13 @@ export function sketchProblems(sketch: readonly string[]): string[] {
       const open = (dx: number, dy: number) => SHORE_OPEN.has(at(sketch, x + dx, y + dy));
       if (ch === '#' && ((open(0, -1) && open(0, 1)) || (open(-1, 0) && open(1, 0))))
         out.push(`land at ${x},${y} is one tile thin`);
+      const pi = POND_CHARS.indexOf(ch);
+      if (pi >= 0)
+        for (let k = 0; k < POND_CHARS.length; k++) {
+          const px = x - (pi % POND_W) + (k % POND_W);
+          const py = y - Math.floor(pi / POND_W) + Math.floor(k / POND_W);
+          if (sketch[py]?.[px] !== POND_CHARS[k]) out.push(`pond at ${x},${y} is not a whole block`);
+        }
       if (INLAND.has(ch))
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)

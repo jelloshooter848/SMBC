@@ -4,9 +4,9 @@ import { actor, autoShore, poly, worldNodes } from './build';
 /** World 1, GRASS LAND: green hills and flowers, a river crossed by a bridge, the sea below. */
 export const SKETCH_1 = [
   '................',
+  '................',
   '~~~~~~~~~~~~~~~~',
   '########~~######',
-  '#HH#H#,#~~#,#TT#',
   '#,HH#*##==###,T#',
   '#,#**###~~##*T,#',
   '#T,#*,##~~##,#T#',
@@ -46,12 +46,12 @@ export const WORLD_1: WorldMapPage = {
   ],
   exits: [{ from: '1-4', toWorld: 2, side: 'right', points: poly([13, 10], [15, 10]) }],
   actors: [
-    actor('cloud', 30, 40, { size: 2, speed: 0.12 }),
-    actor('cloud', 170, 96, { size: 1, speed: 0.08 }),
+    actor('cloud', 30, 18, { size: 2, speed: 0.12 }),
+    actor('cloud', 170, 212, { size: 1, speed: 0.08 }),
     actor('goomba', 0, 176, { range: 20 }),
-    actor('koopa', 224, 176, { range: 14, speed: 0.2 }),
+    actor('koopa', 224, 192, { range: 14, speed: 0.2 }),
     actor('bubble', 134, 150, { height: 20 }),
-    actor('cheep', 40, 216, { range: 36, height: 30, period: 170 }),
-    actor('cheep', 180, 216, { range: -30, height: 26, period: 200, phase: 90 }),
+    actor('cheep', 40, 216, { range: 36, height: 22, period: 170 }),
+    actor('cheep', 180, 216, { range: -30, height: 20, period: 200, phase: 90 }),
   ],
 };
