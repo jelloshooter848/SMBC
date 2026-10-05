@@ -65,7 +65,7 @@ describe('Lost Levels World B rules', () => {
       if (l.id.endsWith('-bonus')) expect([l.width, l.camera]).toEqual([16, 'locked']);
       themes[l.id] = l.theme;
     }
-    // World B has no night/snow entry in the Lost Levels theme table.
+    // World B has no world entry in the Lost Levels theme table; 11-4b is drawn in clouds.
     expect(themes).toEqual({
       'll-11-1': 'overworld',
       'll-11-1-sky': 'overworld',
@@ -74,8 +74,9 @@ describe('Lost Levels World B rules', () => {
       'll-11-2-intro': 'overworld',
       'll-11-3': 'overworld',
       'll-11-4': 'castle',
-      'll-11-4-exit': 'overworld',
+      'll-11-4-exit': 'clouds',
     });
+    expect(load('ll-11-4-exit').music).toBe('overworld');
   });
 });
 

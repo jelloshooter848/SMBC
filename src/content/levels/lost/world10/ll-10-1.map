@@ -2,7 +2,7 @@ id: ll-10-1
 name: WORLD 10-1
 world: 10
 stage: 1
-theme: overworld
+theme: mushroom
 music: overworld
 time: 400
 start: 2,12

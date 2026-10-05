@@ -2,7 +2,7 @@ id: ll-10-3
 name: WORLD 10-3
 world: 10
 stage: 3
-theme: overworld
+theme: clouds
 music: overworld
 time: 400
 start: 2,12

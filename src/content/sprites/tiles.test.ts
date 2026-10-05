@@ -52,6 +52,13 @@ const tileFrames = [
   'ground@underground',
   'ground@castle',
   'brick@underground',
+  'tree-top@mushroom',
+  'tree-trunk@mushroom',
+  'tree-top@clouds',
+  'tree-trunk@clouds',
+  'ground@clouds',
+  'tree-top@clouds-overworld',
+  'tree-trunk@clouds-overworld',
 ];
 
 const fontGlyphs = [
@@ -262,6 +269,10 @@ describe('tile sprites', () => {
         'tiles-snow',
         'tiles-underground',
         'tiles-water',
+        'tiles-mushroom',
+        'tiles-clouds',
+        'tiles-overworld-water',
+        'tiles-water-gray',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -308,7 +319,9 @@ describe('decor sprites', () => {
     for (const [name, size] of Object.entries(decorFrames)) expectFrame(decorDef, name, size);
     const lengths = new Set(Object.values(decorPalettes).map((p) => p.length));
     expect(lengths.size).toBe(1);
-    expect(Object.keys(decorPalettes).sort()).toEqual(['decor-night', 'decor-overworld', 'decor-snow']);
+    expect(Object.keys(decorPalettes).sort()).toEqual(
+      ['decor-night', 'decor-overworld', 'decor-snow', 'decor-mushroom', 'decor-gray'].sort(),
+    );
     expectRenders(decorDef, decorPalettes);
   });
 });

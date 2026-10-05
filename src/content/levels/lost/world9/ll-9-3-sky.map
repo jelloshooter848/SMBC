@@ -2,7 +2,7 @@ id: ll-9-3-sky
 name: WORLD 9-3
 world: 9
 stage: 3
-theme: overworld
+theme: snow
 music: overworld
 time: inherit
 start: 4,14

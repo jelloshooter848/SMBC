@@ -150,7 +150,10 @@ into `tools/levelgen/source/` (gitignored) and run
 `node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4`
 (one world per output folder).
 The Lost Levels come from `levelDataLostLevels.xml` with `--prefix=ll-` into
-`src/content/levels/lost/worldN/` (worlds A–D are 10–13).
+`src/content/levels/lost/worldN/` (worlds A–D are 10–13). They bring their own looks: orange
+giant-mushroom land (`mushroom`), sky levels on cloud ledges (`clouds`, `clouds-overworld`),
+World 9's flooded overworld (`overworld-water`, `water-gray`, still swum through) and a castle
+under the daylight sky (`castle-overworld`).
 Only the normal-difficulty layer is used; the generated `.map` files are committed.
 
 ## Asset packs

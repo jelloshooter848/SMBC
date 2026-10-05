@@ -50,6 +50,34 @@ export const decorPalettes: Record<string, string[]> = {
     NES.brown,
     NES.brownLight,
   ],
+  /* Giant-mushroom land: orange hills, bushes and tree crowns. */
+  'decor-mushroom': [
+    NES.black,
+    NES.brownDark,
+    NES.orange,
+    NES.peach,
+    NES.white,
+    NES.skyLight,
+    NES.brownDark,
+    NES.orangeBrown,
+    NES.tanDark,
+    NES.brown,
+    NES.brownLight,
+  ],
+  /* Gray stone scenery (the gray flooded overworld). */
+  'decor-gray': [
+    NES.black,
+    NES.darkGray,
+    NES.gray,
+    NES.lightGray,
+    NES.white,
+    NES.lightGray,
+    NES.darkGray,
+    NES.gray,
+    NES.lightGray,
+    NES.darkGray,
+    NES.gray,
+  ],
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
