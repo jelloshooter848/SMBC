@@ -20,6 +20,9 @@ import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
+import { WorldMapScene, type WorldMapOptions } from './world-map';
+import type { MapProgress } from '../map/types';
+import { entryLevel, newMapProgress } from '../map/rules';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -52,6 +55,8 @@ export class Game {
   quickRespawn = false;
   /** A level opened from a share link: not in any library, so kept here for respawn/continue. */
   private sharedLevel: LevelData | null = null;
+  /** World map progress (cleared levels, open worlds, secrets, the hero's place on the map). */
+  mapProgress: MapProgress = newMapProgress();
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -106,6 +111,39 @@ export class Game {
     this.quickRespawn = false;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
+  }
+
+  /** The world map page of `world` (default: where the hero stands), replacing every scene. */
+  showMap(world?: number, opts: WorldMapOptions = {}): void {
+    this.pendingLevel = null;
+    this.playtestDone = null;
+    this.quickRespawn = false;
+    this.scenes.clear();
+    this.scenes.push(new WorldMapScene(this, world ?? this.mapProgress.position.world, opts));
+  }
+
+  /**
+   * A level node picked on the map: character select with the current hero preselected (a new
+   * pick starts from its default power), then the level (its intro scene when it has one).
+   */
+  enterLevelFromMap(levelId: string): void {
+    const s = this.state;
+    this.scenes.push(
+      new CharacterSelectScene(this, {
+        player: 0,
+        current: s.character,
+        onPick: (c) => {
+          if (c !== s.character) {
+            s.character = c;
+            s.powerState = c.damage.kind === 'powerup' ? 'small' : 'full';
+            s.hp = startHp(c);
+            s.kit = {};
+          }
+          s.checkpoint = null;
+          this.goToLevel(entryLevel(levelId, this.deps.getLevel), { mode: 'stand' });
+        },
+      }),
+    );
   }
 
   showCharacterSelect(): void {
