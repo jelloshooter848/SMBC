@@ -64,7 +64,7 @@ export class Koopa extends Enemy {
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.currentFrame = `${this.prefix}-0`;
-    this.vulnerability = { ...this.vulnerability, stomp: 'shell' };
+    this.vulnerability = { ...this.vulnerability, stomp: 'shell', bump: 'bounce' };
     // Buzzy Beetles shrug off fireballs.
     if (color === 'buzzy') this.vulnerability.fireball = 'immune';
     // KoopaGreen.overwriteInitialStats runs once at spawn, so a paratroopa keeps the flying values
@@ -179,6 +179,36 @@ export class Koopa extends Enemy {
     }
   }
 
+  /**
+   * A block bumped under it (KoopaGreen.gBounceHit; KoopaRed and Beetle extend KoopaGreen): it pops
+   * up into its shell, unhurt and unscored (Enemy.gBounceHit's BELOW score is not called), heading
+   * away from the block's middle at walking speed (`vx = defaultWalkSpeed`, negated when
+   * `nx < g.hMidX`). `bounced` makes enterShell keep that speed and start the shell timers; from
+   * ST_FLY it also loses its wings. Red and gliding paratroopas fly (defyGrav) and never stand on a
+   * block, so the bump doesn't reach them (Brick.BOUNCE_HIT_DCT only holds things standing on it).
+   */
+  protected override onBounce(src: DamageSource, _world: World): void {
+    if (this.wings && (this.color === 'red' || this.glide)) return;
+    this.wings = false;
+    this.becomeShell();
+    const mid = this.body.x + this.body.w / 2;
+    this.body.vx = (mid < (src.fromX ?? mid) ? -1 : 1) * this.walkSpeed;
+    this.bumpPop();
+  }
+
+  /**
+   * A still shell only moves while popped into the air by a bump: KoopaGreen.updateStats sets
+   * `vx = 0` for ST_SHELL on the ground, and Enemy.groundOnSide turns it at walls.
+   */
+  private shellDrift(world: World): void {
+    const b = this.body;
+    if (b.onGround) b.vx = 0;
+    else if (b.vx !== 0) {
+      moveX(b, world.map, velToSub(b.vx));
+      if (b.hitWall !== 0) b.vx = -b.hitWall * this.walkSpeed;
+    }
+  }
+
   update(world: World): void {
     switch (this.state) {
       case 'walk':
@@ -187,6 +217,7 @@ export class Koopa extends Enemy {
         this.currentFrame = `${this.wings ? 'koopa-fly' : this.prefix}-${(world.frame >> 3) & 1}`;
         break;
       case 'shell':
+        this.shellDrift(world);
         this.fall(world);
         if (--this.shellTimer <= 0) {
           this.state = 'wiggle';
@@ -195,6 +226,7 @@ export class Koopa extends Enemy {
         this.currentFrame = this.shellFrame;
         break;
       case 'wiggle':
+        this.shellDrift(world);
         this.fall(world);
         this.currentFrame =
           (world.frame >> 2) & 1 && this.color !== 'buzzy' ? 'shell-wiggle' : this.shellFrame;

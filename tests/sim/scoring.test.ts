@@ -136,9 +136,10 @@ describe('kill scores by kill kind (ScoreValue.as)', () => {
     }
   });
 
-  it('a block bumped under an enemy scores the BELOW value (Koopa 100, Bullet Bill 200)', () => {
+  it('a block bumped under an enemy scores the BELOW value (Bullet Bill 200), not under a Koopa (0)', () => {
+    // KoopaGreen.gBounceHit pops the Koopa into its shell without calling Enemy.gBounceHit's score.
     for (const [make, points] of [
-      [() => new Koopa(0, 0, 'green'), 100],
+      [() => new Koopa(0, 0, 'green'), 0],
       [() => new BulletBill(0, 0, -1), 200],
     ] as const) {
       const { world, state } = setup({}, { 9: at(10, '=') });
@@ -148,6 +149,10 @@ describe('kill scores by kill kind (ScoreValue.as)', () => {
       world.spawn(e);
       world.strikeBlock(10, 9, world.player, false);
       expect(state.score).toBe(points);
+      if (e instanceof Koopa) {
+        expect(e.alive).toBe(true);
+        expect(e.state).toBe('shell');
+      }
     }
   });
 

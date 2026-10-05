@@ -33,3 +33,5 @@ every time
 
 Addendum to `2026-10-05-bump-koopa-spiny-dies.md` (not edited, per this folder's rules). Fix them together.
 The speed this report describes is what the code sets. Whether the shell later slows down was not checked in play.
+
+Status: fixed — the bumped shell pops up at walking speed away from the block's middle and stays kickable with its shell timers running; it stops once it lands, as the original's KoopaGreen.updateStats sets vx = 0 for ST_SHELL on the ground, so it does not keep sliding.
