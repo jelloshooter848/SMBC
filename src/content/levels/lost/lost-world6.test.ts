@@ -171,6 +171,7 @@ describe('Lost Levels 6-3', () => {
     expect(l.width).toBe(232);
     expect(l.theme).toBe('overworld');
     expect(l.zones).toContainEqual({ kind: 'cheeps', x: 16, w: 176 });
+    expect(tile(l, 128, 13)).toBe(T.TREE_TOP); // World 6 bridge areas keep the plain overworld
     expect(tile(l, 42, 10)).toBe(T.BRIDGE);
   });
   it('has red koopas and paratroopas but no lifts', () => {
@@ -205,10 +206,11 @@ describe('Lost Levels 6-3', () => {
 
 describe('Lost Levels 6-4', () => {
   const l = load('ll-6-4');
-  it('is a 352-wide castle maze with four loops', () => {
+  it('is a 352-wide castle maze with four loops and no checkpoint (LOCKED_CP)', () => {
     expect(l.width).toBe(352);
     expect(l.theme).toBe('castle');
     expect(l.time).toBe(400);
+    expect(l.zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
     expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([
       { kind: 'loop', x: 80, y0: 3, y1: 4, to: 144, checks: [{ x: 32, y0: 10, y1: 12 }], need: 'all' },
       {
@@ -288,6 +290,5 @@ describe('Lost Levels 6-4', () => {
     for (let x = 320; x <= 332; x++) expect(tile(l, x, 10)).toBe(T.BRIDGE);
     expect(tile(l, 324, 4)).toBe(T.BRICK_COINS10);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 344, next: 'll-7-1' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 149 });
   });
 });

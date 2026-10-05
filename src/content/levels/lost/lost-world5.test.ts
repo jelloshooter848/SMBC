@@ -23,9 +23,10 @@ const pipes = (l: LevelData) => l.zones.filter((z): z is Zone & { kind: 'pipe' }
 
 describe('Lost Levels 5-1', () => {
   const l = load('ll-5-1');
-  it('is a 416-wide overworld with a 400 timer', () => {
+  it('is a 416-wide snowy overworld (World 5 normal areas) with a 400 timer', () => {
     expect(l.width).toBe(416);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('snow');
+    expect(l.music).toBe('overworld');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
   });
@@ -117,6 +118,7 @@ describe('Lost Levels 5-1', () => {
     });
     const s = load('ll-5-1-sky');
     expect(s.width).toBe(120);
+    expect(s.theme).toBe('overworld'); // coin heaven: not a normal area
     expect(s.entities).toContainEqual({ type: 'lift-right', x: 16, y: 10, props: { len: 4 } });
     expect(s.zones).toContainEqual({ kind: 'pit', x: 0, target: { level: 'll-5-1', x: 386, y: 0 } });
   });
@@ -154,6 +156,7 @@ describe('Lost Levels 5-2', () => {
     expect(pipes(intro)).toEqual([
       { kind: 'pipe', x: 10, y: 12, dir: 'right', target: { level: 'll-5-2', x: 2, y: 3, exitDir: 'none' } },
     ]);
+    expect(intro.theme).toBe('overworld'); // 5-2a override
     expect(l.width).toBe(224);
     expect(l.theme).toBe('underground');
     expect(l.time).toBe(400);
@@ -219,6 +222,7 @@ describe('Lost Levels 5-2', () => {
       target: { level: 'll-5-2-exit', x: 3, y: 10, exitDir: 'up' },
     });
     const e = load('ll-5-2-exit');
+    expect(e.theme).toBe('overworld'); // 5-2d override of the World 5 snow
     expect(e.startMode).toBe('pipe-exit');
     expect(tile(e, 3, 11)).toBe(T.PIPE_TL);
     expect(at(e, 'piranha')).toEqual([[3, 11]]);
@@ -247,6 +251,8 @@ describe('Lost Levels 5-2', () => {
     });
     const w = load('ll-5-2-warp');
     expect(w.width).toBe(64);
+    expect(w.theme).toBe('overworld'); // 5-2c override
+    expect(tile(w, 0, 13)).toBe(T.TREE_TOP);
     expect(w.startMode).toBe('climb');
     expect(pipes(w)).toEqual([
       { kind: 'pipe', x: 54, y: 10, dir: 'down', target: { level: 'll-8-1', x: 2, y: 12 } },
@@ -267,7 +273,8 @@ describe('Lost Levels 5-3', () => {
   const l = load('ll-5-3');
   it('is a 272-wide treetop level whose first stretch repeats until a pipe is taken', () => {
     expect(l.width).toBe(272);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('overworld'); // a platform area: only World 5 normal areas are snowy
+    expect(tile(l, 126, 13)).toBe(T.TREE_TOP);
     // Walking past 128 always moves the player back to 64 (no checkpoints).
     expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([
       { kind: 'loop', x: 128, y0: 0, y1: 14, to: 64, checks: [], need: 'all' },
@@ -283,6 +290,9 @@ describe('Lost Levels 5-3', () => {
       });
     const b = load('ll-5-3-bonus');
     expect(b.width).toBe(32);
+    expect(b.theme).toBe('underground');
+    expect(b.camera).toBe('scroll'); // wider than one screen
+    expect(b.startMode).toBe('fall');
     expect(pipes(b)).toEqual([
       { kind: 'pipe', x: 29, y: 12, dir: 'right', target: { level: 'll-5-3', x: 147, y: 10, exitDir: 'up' } },
     ]);
@@ -324,10 +334,11 @@ describe('Lost Levels 5-3', () => {
 
 describe('Lost Levels 5-4', () => {
   const l = load('ll-5-4');
-  it('is a 224-wide castle with a 300 timer and no maze', () => {
+  it('is a 224-wide castle with a 300 timer, no maze and no checkpoint (LOCKED_CP)', () => {
     expect(l.width).toBe(224);
     expect(l.theme).toBe('castle');
     expect(l.time).toBe(300);
+    expect(l.zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
     expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([]);
   });
   it('has thirteen fire bars (one long), eight Podoboos and four lifts', () => {
@@ -355,6 +366,5 @@ describe('Lost Levels 5-4', () => {
     expect(l.entities).toContainEqual({ type: 'bowser', x: 199, y: 9 });
     expect(l.entities).toContainEqual({ type: 'axe', x: 205, y: 8 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 216, next: 'll-6-1' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 106 });
   });
 });
