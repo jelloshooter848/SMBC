@@ -539,3 +539,72 @@ describe('World 7 follows the original layouts', () => {
     expect(l.zones).toContainEqual({ kind: 'exit', x: 344, next: '8-1' });
   });
 });
+
+describe('World 8 follows the original layouts', () => {
+  it('8-1: a 400-wide forest with four Buzzy Beetles and a bonus pipe', () => {
+    const l = load('8-1');
+    expect(l.width).toBe(400);
+    expect(l.entities.filter((e) => e.type === 'buzzy').map((e) => e.x)).toEqual([18, 81, 254, 283]);
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 104, y: 9, dir: 'down' }));
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 376, next: '8-2' });
+  });
+  it('8-2: Lakitu over the start, blasters, beetles and a springboard', () => {
+    const l = load('8-2');
+    expect(l.entities).toContainEqual({ type: 'lakitu', x: 8, y: 0, props: { end: 40 } });
+    expect(Array.from(l.tiles).filter((t) => t === T.BLASTER_TOP)).toHaveLength(10);
+    expect(l.entities.filter((e) => e.type === 'buzzy')).toHaveLength(4);
+    expect(l.entities.filter((e) => e.type === 'spring')).toHaveLength(1);
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 216, next: '8-3' });
+  });
+  it('8-3: castle walls in the background, Hammer Bros and blasters', () => {
+    const l = load('8-3');
+    expect(Array.from(l.tiles).filter((t) => t === T.WALL_TOP)).toHaveLength(98);
+    expect(Array.from(l.tiles).filter((t) => t === T.WALL)).toHaveLength(487);
+    expect(l.entities.filter((e) => e.type === 'hammer-bro')).toHaveLength(5);
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 218, next: '8-4' });
+  });
+  it('8-4: pipes back into the castle, edge loops, two cheep zones and the water detour', () => {
+    const l = load('8-4');
+    expect(l.width).toBe(331);
+    expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([
+      { kind: 'loop', x: 110, y0: 3, y1: 12, to: 37, checks: [], need: 'all' },
+      { kind: 'loop', x: 180, y0: 3, y1: 12, to: 112, checks: [], need: 'all' },
+      { kind: 'loop', x: 317, y0: 3, y1: 9, to: 253, checks: [], need: 'all' },
+    ]);
+    expect(l.zones.filter((z) => z.kind === 'cheeps')).toEqual([
+      { kind: 'cheeps', x: 216, w: 15 },
+      { kind: 'cheeps', x: 280, w: 15 },
+    ]);
+    const target = (x: number) =>
+      (l.zones.find((z) => z.kind === 'pipe' && z.x === x) as { target: object } | undefined)?.target;
+    for (const x of [51, 143, 223, 287])
+      expect(target(x)).toEqual({ level: '8-4', x: 19, y: 10, exitDir: 'up' });
+    expect(target(81)).toEqual({ level: '8-4', x: 126, y: 10, exitDir: 'up' });
+    expect(target(163)).toEqual({ level: '8-4', x: 206, y: 10, exitDir: 'up' });
+    for (const x of [239, 303]) expect(target(x)).toEqual({ level: '8-4-water', x: 3, y: 10, exitDir: 'up' });
+    expect(load('8-4-water').zones).toContainEqual(
+      expect.objectContaining({
+        kind: 'pipe',
+        x: 68,
+        y: 8,
+        dir: 'right',
+        target: { level: '8-4-end', x: 3, y: 10, exitDir: 'up' },
+      }),
+    );
+  });
+  it('8-4 end: Bowser with hammers and fire, the axe, the princess and the end of the game', () => {
+    const l = load('8-4-end');
+    expect(l.entities).toContainEqual({ type: 'bowser', x: 40, y: 9, props: { attack: 'both' } });
+    expect(l.entities).toContainEqual({ type: 'axe', x: 45, y: 8 });
+    expect(l.entities).toContainEqual({ type: 'princess', x: 57, y: 12 });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 56, next: 'end' });
+    expect(l.zones).toContainEqual(
+      expect.objectContaining({
+        kind: 'pipe',
+        x: 10,
+        y: 11,
+        target: { level: '8-4', x: 19, y: 10, exitDir: 'up' },
+      }),
+    );
+  });
+});

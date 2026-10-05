@@ -61,5 +61,4 @@ cheep-red 185 7
 
 [zones]
 checkpoint 82
-scrollStop 176
 pipe 189 8 right -> 7-2-exit 3 10 exit=up

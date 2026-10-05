@@ -204,6 +204,14 @@ function tileChar(tok, area, world) {
       return '~';
     case 'groundBillBlasterTop':
       return '^';
+    case 'castleWallTopLft':
+    case 'castleWallTopMid':
+    case 'castleWallTopRht':
+      return 'A';
+    case 'castleWallLft':
+    case 'castleWallMid':
+    case 'castleWallRht':
+      return 'H';
     case 'groundBillBlasterMiddle':
     case 'groundBillBlasterBottom':
       return '|';
@@ -247,7 +255,8 @@ function convertArea(level, area, id, levels) {
   let vineStart = null;
   let pitEnd = null;
   let pitStart = null;
-  const cheepZone = { start: null, end: null };
+  const cheepStarts = []; // leaping Cheep Cheep stretches (an area may have several)
+  const cheepEnds = [];
   const bulletZone = { start: null, end: null };
   const vines = []; // vine bricks: { x, y, dest }
   const vertEnds = new Map(); // transporter number -> pipe top-left tile
@@ -293,6 +302,9 @@ function convertArea(level, area, id, levels) {
           case 'enemyPiranhaGreen':
           case 'enemyPiranhaRed':
             b.entity('piranha', x, y + 1); // the token sits above the pipe's top-left tile
+            break;
+          case 'peach':
+            b.entity('princess', x, y);
             break;
           case 'lakituStart':
             lakitus.push({ x, y });
@@ -392,10 +404,10 @@ function convertArea(level, area, id, levels) {
             pitEnd = { x, y };
             break;
           case 'flyingCheepStart':
-            cheepZone.start = x;
+            cheepStarts.push(x);
             break;
           case 'flyingCheepEnd':
-            cheepZone.end = x;
+            cheepEnds.push(x);
             break;
           case 'bulletBillStart':
             bulletZone.start = x;
@@ -475,8 +487,11 @@ function convertArea(level, area, id, levels) {
     const exitX = door !== null && area.type !== 'castle' ? door - 6 : levelExit.x;
     b.zone(`exit ${exitX} next=${nextLevel(levelId, levels)}`);
   }
-  if (cheepZone.start !== null) {
-    b.zone(`cheeps ${cheepZone.start} ${(cheepZone.end ?? area.width) - cheepZone.start}`);
+  cheepStarts.sort((a, c) => a - c);
+  cheepEnds.sort((a, c) => a - c);
+  for (const s of cheepStarts) {
+    const end = cheepEnds.find((e) => e > s) ?? area.width;
+    b.zone(`cheeps ${s} ${end - s}`);
   }
   if (bulletZone.start !== null) {
     b.zone(`bullets ${bulletZone.start} ${(bulletZone.end ?? area.width) - bulletZone.start}`);
@@ -513,7 +528,7 @@ function convertArea(level, area, id, levels) {
     header.camera = area.width <= 16 ? 'locked' : 'scroll';
   }
   if (!isMain) header.parent = levelId;
-  if (area.width > 16) b.zone(`scrollStop ${area.width - 16}`);
+  // No scrollStop: the camera may reach the level's real end (scrollStop is its right edge).
 
   return {
     id,

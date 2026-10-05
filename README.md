@@ -126,13 +126,14 @@ node tools/smoke/screenshot.mjs out/   # headless Playwright smoke run with scre
 ```
 
 Levels are text files (`src/content/levels/world*/*.map`); see `src/game/level/textmap.ts`
-for the format. Worlds 1 to 7 are playable so far (World 2 brings the water levels with
+for the format. All eight worlds are playable, from 1-1 to the princess at the end of 8-4 (World 2 brings the water levels with
 swimming, Cheep Cheeps and Bloopers, the treetop bridges with leaping fish, springboards,
 beanstalks up to the coin heaven, and Podoboos in the castle; World 3 adds the night
 palette, Hammer Bros and the balance lifts; World 4 adds Lakitu and his Spinies, Buzzy
 Beetles, the vine to the warp zone and the 4-4 castle maze; World 5 adds Bullet Bill
 blasters, the 5-3 Bullet Bill stretch and the long fire bar; World 6 adds the
-hammer-throwing Bowser; World 7 adds gliding paratroopas and the 7-4 maze). The maps are converted from the level data of the original game's
+hammer-throwing Bowser; World 7 adds gliding paratroopas and the 7-4 maze; World 8 adds the castle walls of 8-3, the
+last castle with its pipes, loops and water detour, and the ending). The maps are converted from the level data of the original game's
 [source release](https://github.com/JayPavlina/super-mario-bros-crossover) (MIT, no art or
 sound) by `tools/levelgen/convert-smbc.mjs`; download its `assets/documents/levelDataSmb.xml`
 into `tools/levelgen/source/` (gitignored) and run

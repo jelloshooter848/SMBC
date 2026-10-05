@@ -54,6 +54,33 @@ export class Game {
     return this.deps.ctx;
   }
 
+  /** After the last castle: the princess's thanks, the final score, then the title. */
+  showEnding(): void {
+    const s = this.state;
+    const audio = this.deps.ctx.audio;
+    audio.stopMusic();
+    audio.playJingle('world-clear');
+    this.deps.announcer?.say(`Thank you ${s.character.name}! The princess is safe. Final score ${s.score}.`);
+    this.scenes.clear();
+    this.scenes.push(
+      new MessageScene(
+        this,
+        [
+          `THANK YOU ${s.character.hudName}!`,
+          '',
+          'THE PRINCESS IS SAFE',
+          'AND THE KINGDOM IS FREE.',
+          '',
+          `FINAL SCORE ${String(s.score).padStart(6, '0')}`,
+          '',
+          'PRESS START',
+        ],
+        () => this.showTitle(),
+        1800,
+      ),
+    );
+  }
+
   showTitle(): void {
     this.deps.ctx.audio.stopMusic();
     this.pendingLevel = null;

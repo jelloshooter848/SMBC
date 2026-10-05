@@ -44,7 +44,6 @@ decor-castle-big 154 12
 [zones]
 checkpoint 66
 exit 152 next=3-4
-scrollStop 160
 
 [decor]
 cloud-2 3 3

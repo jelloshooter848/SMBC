@@ -36,7 +36,6 @@ decor-castle 213 12
 [zones]
 checkpoint 98
 exit 209 next=3-3
-scrollStop 208
 
 [decor]
 cloud-2 0 3

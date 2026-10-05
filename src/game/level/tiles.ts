@@ -71,6 +71,9 @@ export const T = {
   /** Bullet Bill blaster: the barrel (fires; the world builds a launcher on each) and its stand. */
   BLASTER_TOP: def('blaster-top', 'solid'),
   BLASTER_BASE: def('blaster-base', 'solid'),
+  /** Background castle walls (8-3): scenery only. */
+  WALL_TOP: def('wall-top', 'none'),
+  WALL: def('wall', 'none'),
   /** Invisible solid placeholder while a block-bump effect animates the real tile. */
   BUMPING: def('bumping', 'solid'),
 } as const;
@@ -121,6 +124,8 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   w: T.WATER,
   '^': T.BLASTER_TOP,
   '|': T.BLASTER_BASE,
+  A: T.WALL_TOP,
+  H: T.WALL,
   // entity markers
   g: '@goomba',
   k: '@koopa-green',

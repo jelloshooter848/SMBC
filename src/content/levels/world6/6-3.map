@@ -48,7 +48,6 @@ decor-castle-big 170 12
 checkpoint 98
 exit 168 next=6-4
 bullets 89 33
-scrollStop 176
 
 [decor]
 cloud-2 3 3

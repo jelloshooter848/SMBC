@@ -4,7 +4,7 @@ import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { toPx } from '@engine/math/units';
 import type { LevelData } from '../level/schema';
-import { World, type WorldEvent } from '../world/world';
+import { World, type WorldEvent, type WorldStart } from '../world/world';
 import { DEFAULT_ASSIST, newGameState, type AssistOptions, type GameState } from '../context';
 import type { CharacterDef } from '../characters/character';
 
@@ -68,6 +68,8 @@ export interface SimOptions {
   until?: (world: World, frame: number) => boolean;
   /** Reactive input: when given, replaces the script each frame. */
   controller?: (world: World, frame: number) => Action[];
+  /** Start overrides (position, mode, carried timer), as a pipe transfer would pass them. */
+  start?: WorldStart;
 }
 
 export interface SimResult {
@@ -90,6 +92,7 @@ export function runSim(opts: SimOptions): SimResult {
     opts.level,
     { assets, audio: NULL_AUDIO, assist: { ...DEFAULT_ASSIST, ...opts.assist }, reduceFlashing: true },
     state,
+    opts.start,
   );
   const input = new ScriptedInput(opts.script);
   const events: WorldEvent[] = [];
