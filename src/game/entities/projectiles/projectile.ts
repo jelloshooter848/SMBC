@@ -136,6 +136,25 @@ export const BOWSER_FLAME: ProjectileSpec = {
   frameRate: 4,
 };
 
+/** A Hammer Bro's hammer: spins along an arc through everything, only the player minds it. */
+export const HAMMER: ProjectileSpec = {
+  kind: 'hammer',
+  damage: 'contact',
+  amount: 1,
+  speed: 0x01000,
+  gravity: 0x00200,
+  bounceVy: null,
+  hitsTiles: false,
+  hitsEnemies: false,
+  hitsPlayer: true,
+  lifetime: 300,
+  w: 10,
+  h: 10,
+  sheet: 'enemies',
+  frames: ['hammer-0', 'hammer-1'],
+  frameRate: 4,
+};
+
 export class Projectile extends Entity {
   readonly kind: string;
   age = 0;

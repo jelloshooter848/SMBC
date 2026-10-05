@@ -212,3 +212,66 @@ describe('World 2 follows the original layouts', () => {
     expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '3-1' });
   });
 });
+
+describe('World 3 follows the original layouts', () => {
+  it('3-1: a night level with two Hammer Bros, a springboard, a vine and a bonus pipe', () => {
+    const l = load('3-1');
+    expect(l.theme).toBe('night');
+    expect(l.width).toBe(224);
+    expect(l.entities.filter((e) => e.type === 'hammer-bro').map((e) => [e.x, e.y])).toEqual([
+      [113, 8],
+      [116, 12],
+    ]);
+    expect(l.entities).toContainEqual({ type: 'spring', x: 126, y: 12 });
+    expect(tile(l, 131, 5)).toBe(T.BRICK_VINE);
+    expect(l.zones).toContainEqual({ kind: 'vine', x: 131, y: 5, target: { level: '3-1-sky', x: 4, y: 14 } });
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 38, y: 9, dir: 'down' }));
+    expect(tile(l, 78, 12)).toBe(T.WATER); // water at the bottom of the pit
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 200, next: '3-2' });
+    expect(l.entities.filter((e) => e.type === 'koopa-para-green')).toHaveLength(5);
+  });
+  it('3-1 sky: a 96-wide coin heaven that drops back into 3-1', () => {
+    const l = load('3-1-sky');
+    expect(l.width).toBe(96);
+    expect(l.startMode).toBe('climb');
+    expect(l.zones).toContainEqual({ kind: 'pit', x: 0, target: { level: '3-1', x: 162, y: 0 } });
+  });
+  it('3-2: night with trees, ending at the small castle', () => {
+    const l = load('3-2');
+    expect(l.theme).toBe('night');
+    expect(l.decor.some((d) => d.kind === 'tree-big')).toBe(true);
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 209, next: '3-3' });
+  });
+  it('3-3: night treetops with two balance lifts and the big castle', () => {
+    const l = load('3-3');
+    expect(l.theme).toBe('night');
+    expect(l.entities).toContainEqual({
+      type: 'balance',
+      x: 82,
+      y: 6,
+      props: { x2: 89, y2: 8, len: 6, top: 2 },
+    });
+    expect(l.entities).toContainEqual({
+      type: 'balance',
+      x: 137,
+      y: 5,
+      props: { x2: 141, y2: 8, len: 6, top: 2 },
+    });
+    expect(l.entities.filter((e) => e.type === 'lift-h')).toHaveLength(6);
+    expect(l.entities).toContainEqual({ type: 'lift-fall', x: 61, y: 6, props: { len: 6 } });
+    expect(tile(l, 84, 11)).toBe(T.TREE_TOP);
+    expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 154, y: 12 });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '3-4' });
+  });
+  it('3-4: castle with six Podoboos, nine fire bars and Bowser', () => {
+    const l = load('3-4');
+    expect(l.theme).toBe('castle');
+    expect(l.entities.filter((e) => e.type === 'podoboo').map((e) => e.x)).toEqual([
+      16, 26, 88, 97, 103, 109,
+    ]);
+    expect(l.entities.filter((e) => e.type.startsWith('firebar'))).toHaveLength(9);
+    expect(l.entities).toContainEqual({ type: 'lift-h', x: 136, y: 6, props: { len: 4, range: 3 } });
+    expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9 });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '4-1' });
+  });
+});

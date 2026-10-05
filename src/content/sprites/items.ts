@@ -284,6 +284,26 @@ const coilRows = [
 const blank = '................';
 const spring0 = [...springPlate, ...coilRows, ...springBase];
 
+/* Pulley wheel for balance lifts: a grey wheel with a dark rim on a cream bracket, 16x16. */
+const pulley = [
+  '................',
+  '......0000......',
+  '.....0bbbb0.....',
+  '....0b1bb1b0....',
+  '...0bb1bb1bb0...',
+  '...0b111111b0...',
+  '...0bb1001bb0...',
+  '...0bb1001bb0...',
+  '...0b111111b0...',
+  '...0bb1bb1bb0...',
+  '....0b1bb1b0....',
+  '.....0bbbb0.....',
+  '......0000......',
+  '.......03.......',
+  '......0330......',
+  '......0000......',
+];
+
 /* Beanstalk: a twisting green stem with leaf pairs; the top frame ends in a curl. */
 const vineMid = [
   '.......04.......',
@@ -1634,6 +1654,7 @@ export const itemsDef: SpriteDef = {
     'spring-1': spring1,
     'spring-2': spring2,
     'vine-top': vineTop,
+    pulley,
     'vine-mid': vineMid,
     flag,
     'castle-flag': castleFlag,

@@ -122,6 +122,7 @@ const IGNORED = new Set([
   'bowserFireBallStart',
   'lakituEnd',
   'pullyRopeVertical',
+  'pullyRope',
   'treeSmallTrunk',
   'treeBigTrunk',
   'sceneryText_2',
@@ -245,6 +246,8 @@ function convertArea(level, area, id, levels) {
   const pipes = []; // outgoing transporters
   const castles = []; // { big, x, y }
   const bushRuns = new Map(); // row -> [[x0, len]]
+  const pulleys = []; // { x, y, side }
+  const balances = []; // Pully platforms: { x, y, len }
 
   for (let y = 0; y < 15; y++) {
     for (let x = 0; x < area.width; x++) {
@@ -274,9 +277,17 @@ function convertArea(level, area, id, levels) {
           case 'enemyPiranhaRed':
             b.entity('piranha', x, y + 1); // the token sits above the pipe's top-left tile
             break;
+          case 'pullyCornerLeft':
+          case 'pullyCornerRight':
+            pulleys.push({ x, y, side: name === 'pullyCornerLeft' ? 'left' : 'right' });
+            break;
           case 'movingPlatform': {
             // `width` is in half tiles; our `len` counts 8 px segments too.
             const len = Math.max(1, Number(params.width ?? 6));
+            if (params.type === 'Pully') {
+              balances.push({ x, y, len });
+              break;
+            }
             const kind = LIFTS[params.type] ?? 'lift-h';
             const props = { len };
             if (kind === 'lift-h') props.range = 3;
@@ -367,6 +378,22 @@ function convertArea(level, area, id, levels) {
   for (const [y, runs] of bushRuns) {
     for (const [x, len] of runs) b.dec(`bush-${Math.min(3, Math.max(1, len - 1))}`, x, y);
   }
+  // Balance lifts: a left pulley and the next right pulley on the same row share a rope; the
+  // two platforms hang under them (their left columns match the pulley columns).
+  for (const left of pulleys.filter((q) => q.side === 'left')) {
+    const right = pulleys.find((q) => q.side === 'right' && q.y === left.y && q.x > left.x);
+    const a = balances.find((q) => q.x === left.x);
+    const c = right && balances.find((q) => q.x === right.x);
+    if (!right || !a || !c) {
+      console.warn(`${id}: unpaired balance lift at ${left.x},${left.y}`);
+      continue;
+    }
+    b.entity('balance', a.x, a.y, { x2: c.x, y2: c.y, len: a.len, top: left.y });
+    a.used = true;
+    c.used = true;
+  }
+  for (const q of balances)
+    if (!q.used) console.warn(`${id}: balance platform without a rope at ${q.x},${q.y}`);
   // Castles: a big castle is drawn as a small one on top of a big base; keep one entity.
   let door = null;
   for (const c of castles) {

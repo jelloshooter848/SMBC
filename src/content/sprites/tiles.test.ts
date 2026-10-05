@@ -99,6 +99,7 @@ const itemFrames: Record<string, Size> = {
   'spring-2': T16,
   'vine-top': T16,
   'vine-mid': T16,
+  pulley: T16,
   flag: T16,
   'castle-flag': T16,
   'bomb-0': T16,
