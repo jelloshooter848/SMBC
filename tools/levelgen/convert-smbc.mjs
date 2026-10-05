@@ -129,6 +129,17 @@ const MARKERS = {
   enemyHamBroChase: 'n',
   enemyBeetle: 'z',
 };
+/** Entity types behind the grid markers (src/game/level/tiles.ts DEFAULT_LEGEND). */
+const MARKER_TYPES = {
+  g: 'goomba',
+  k: 'koopa-green',
+  K: 'koopa-red',
+  s: 'spring',
+  h: 'hammer-bro',
+  z: 'buzzy',
+  y: 'spring-green',
+  n: 'hammer-bro-chase',
+};
 const ENTITIES = {
   enemyCheepFast: 'cheep-red',
   enemyCheepSlow: 'cheep-grey',
@@ -318,9 +329,9 @@ function convertArea(level, area, id, levels) {
 
   for (let y = 0; y < 15; y++) {
     for (let x = 0; x < area.width; x++) {
-      // Lost Levels runs: an entity marker wins over a tile listed after it in the same cell
-      // (13-3: a Hammer Bro on a castle wall). SMB1 output keeps the old last-token-wins rule.
-      let marked = false;
+      // An enemy sharing its cell with a tile (a Hammer Bro in front of a castle wall, a Koopa
+      // over a coin) keeps both: it becomes an entity line instead of a grid marker.
+      const cellMarkers = [];
       for (const tok of tokensAt(area, x, y)) {
         const { name, params } = tok;
         if (helperOnly(params)) {
@@ -330,14 +341,12 @@ function convertArea(level, area, id, levels) {
         }
         const ch = tileChar(tok, area, world);
         if (ch) {
-          if (marked) continue;
           b.set(x, y, ch);
           if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
           continue;
         }
         if (MARKERS[name]) {
-          b.set(x, y, MARKERS[name]);
-          marked = LOST;
+          cellMarkers.push(MARKERS[name]);
           continue;
         }
         if (ENTITIES[name]) {
@@ -492,6 +501,10 @@ function convertArea(level, area, id, levels) {
           default:
             if (!IGNORED.has(name)) skip(name);
         }
+      }
+      for (const m of cellMarkers) {
+        if (b.rows[y][x] === '.' && m === cellMarkers[0]) b.set(x, y, m);
+        else b.entity(MARKER_TYPES[m], x, y);
       }
     }
   }

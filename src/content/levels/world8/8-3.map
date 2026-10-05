@@ -23,7 +23,7 @@ camera: scroll
 ................ ........HHHHHHHH .....HHHHHHHHHHH HHH..[].....==== ====...B.......H HHHHH...HHHHHH.. .HHHHHHHHHH..BB. ...========...[] ....HHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHH......HHHH HHHHHHHHHHHHHHCH ........B....... ......!......... ................
 ................ ........HHHHHHHH ..^..HHHHHHHHHHH HHH..{}......... .......BB......H HHHHH...HHHHHH.B .HHHHHHHHHH..BB. ..............{} ....HHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHH..[]..HHHH HHHHHHHHHHHHHHHH ................ ......!......... ................
 ................ ..^.....HHHHHHHH ..|..HHHHHHHHHHH HHH..{}......... .......BBB.....H HHHHH.^.HHHHHH.B .HHHHHHHHHH..BB. ..............{} ....HHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHH..{}..HHHH HHHHHHHHHHHHHHHH ...B..B......... ......!......... ................
-................ ..|.....HHHHHHHH ..|..HHHHHHHHHHH HHH..{}........h .......BBBB....H HHHHH.|.HHHHHH.B .HHHHHHHHHH..BB. .......h......{} ....HHHHHkHHHHHH HHHHHHHHHHHHHHHH HHHHHH..{}..HHHH HHHHHHHHHhHHHHHH ...B............ ......B......... ................
+................ ..|.....HHHHHHHH ..|..HHHHHHHHHHH HHH..{}........h .......BBBB....H HHHHH.|.HHHHHH.B .HHHHHHHHHH..BB. .......h......{} ....HHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHH..{}..HHHH HHHHHHHHHHHHHHHH ...B............ ......B......... ................
 ################ ################ ################ ################ #####..####..### ################ ################ ############..## ..############## ################ ################ ################ #####........... ################ ################
 ################ ################ ################ ################ #####..####..### ################ ################ ############..## ..############## ################ ################ ################ #####........... ################ ################
 
@@ -33,7 +33,12 @@ koopa-para-green 30 10
 piranha 53 9
 koopa-para-green 93 11
 piranha 126 9
+koopa-green 137 12
+hammer-bro 146 12
+hammer-bro 159 12
 piranha 168 10
+hammer-bro 177 12
+hammer-bro 185 12
 decor-castle-big 220 12
 
 [zones]

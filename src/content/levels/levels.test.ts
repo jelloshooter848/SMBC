@@ -559,8 +559,8 @@ describe('World 8 follows the original layouts', () => {
   it('8-3: castle walls in the background, Hammer Bros and blasters', () => {
     const l = load('8-3');
     expect(Array.from(l.tiles).filter((t) => t === T.WALL_TOP)).toHaveLength(98);
-    expect(Array.from(l.tiles).filter((t) => t === T.WALL)).toHaveLength(487);
-    expect(l.entities.filter((e) => e.type === 'hammer-bro')).toHaveLength(5);
+    expect(Array.from(l.tiles).filter((t) => t === T.WALL)).toHaveLength(489);
+    expect(l.entities.filter((e) => e.type === 'hammer-bro')).toHaveLength(8);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 218, next: '8-4' });
   });
   it('8-4: pipes back into the castle, edge loops, two cheep zones and the water detour', () => {
