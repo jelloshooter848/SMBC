@@ -220,9 +220,10 @@ describe('Lost Levels 7-2: the repeating stretch', () => {
     expect(pipeTarget(r.events)).toEqual({ level: 'll-7-2-bonus', x: 1, y: 0, exitDir: 'none' });
   });
 
-  it('Lakitu flies in after 170 and leaves at the end of its stretch (218)', () => {
+  it('Lakitu flies in after 170 at mid height and leaves at the end of its stretch (218)', () => {
     let lakitu: Lakitu | undefined;
     let left = false;
+    const ys = new Set<number>();
     runSim({
       level: level('ll-7-2'),
       character: MARIO,
@@ -232,6 +233,7 @@ describe('Lost Levels 7-2: the repeating stretch', () => {
       controller: (w, f) => {
         lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
         if (lakitu?.leaving) left = true;
+        if (lakitu && !left) ys.add(toPx(lakitu.body.y));
         if (f === 0) place(w, 160, 13);
         if (f === 200 && lakitu) place(w, 222, 13); // past the end column
         return [];
@@ -240,6 +242,8 @@ describe('Lost Levels 7-2: the repeating stretch', () => {
     });
     expect(lakitu).toBeDefined();
     expect(left).toBe(true);
+    // A lakituEndMiddle stretch: it flies at mid-screen (y 112) instead of just under the HUD.
+    expect([...ys]).toEqual([112]);
   });
 });
 

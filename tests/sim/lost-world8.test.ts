@@ -10,6 +10,7 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import type { Game } from '@game/scenes/game';
 import { MARIO } from '@game/characters/mario';
 import { Bowser } from '@game/entities/enemies/bowser';
+import { Lakitu } from '@game/entities/enemies/lakitu';
 import { Vine } from '@game/entities/objects/vine';
 import { PowerUp } from '@game/entities/objects/powerup';
 import { Projectile } from '@game/entities/projectiles/projectile';
@@ -221,6 +222,33 @@ describe('Lost Levels 8-2 and 8-3: vines', () => {
   });
 });
 
+describe('Lost Levels 8-3: Lakitu', () => {
+  it('flies at mid height over the start and leaves at column 55', () => {
+    let lakitu: Lakitu | undefined;
+    let left = false;
+    const ys = new Set<number>();
+    runSim({
+      level: level('ll-8-3'),
+      character: MARIO,
+      script: none,
+      maxFrames: 900,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
+        if (lakitu?.leaving) left = true;
+        if (lakitu && !left) ys.add(toPx(lakitu.body.y));
+        if (f === 0) place(w, 14, 13); // end of the starting ledge: its start column comes on screen
+        if (f === 200 && lakitu) place(w, 60, 13); // past the end column
+        return [];
+      },
+      until: () => left && !(lakitu as Lakitu).alive,
+    });
+    expect(lakitu).toBeDefined();
+    expect([...ys]).toEqual([112]);
+    expect(left).toBe(true);
+  });
+});
+
 describe('Lost Levels 8-4: the last castle', () => {
   it('the first hall loops from 88 back to 24 on the floor', () => {
     const r = runSim({
@@ -360,11 +388,37 @@ describe('Lost Levels 8-4: the last castle', () => {
     expect(flames).toBeGreaterThan(0);
   });
 
-  it('walking past the false Bowser leaves it behind: the axe drops the real one', () => {
-    const bowsers = new Set<Bowser>();
-    let left = -1; // the frame the player moved on past the false Bowser
-    let behind = -1; // Bowsers still around once it was left behind
-    let bridge = -1;
+  it('the first Bowser is marked fake, the bridge one is not', () => {
+    const bowsers: Bowser[] = [];
+    const cols: [number, boolean][] = []; // spawn column and fake flag, in order of appearance
+    runSim({
+      level: level('ll-8-4-end3'),
+      character: MARIO,
+      script: none,
+      maxFrames: 400,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        if (f === 0) place(w, 12, 10);
+        if (f === 200) place(w, 111, 10);
+        for (const e of w.entities) {
+          if (!(e instanceof Bowser) || bowsers.includes(e)) continue;
+          bowsers.push(e);
+          cols.push([Math.floor(toPx(e.body.x) / 16), e.fake]);
+        }
+        return [];
+      },
+    });
+    expect(cols).toEqual([
+      [23, true],
+      [119, false],
+    ]);
+  });
+
+  it('the axe drops the real Bowser and leaves the fake one alone, even while it is still around', () => {
+    let fake: Bowser | undefined;
+    let real: Bowser | undefined;
+    let fakeY = 0;
+    let onAxe = false;
     const r = runSim({
       level: level('ll-8-4-end3'),
       character: MARIO,
@@ -373,26 +427,30 @@ describe('Lost Levels 8-4: the last castle', () => {
       assist: { invulnerable: true },
       controller: (w, f) => {
         if (f === 0) place(w, 12, 10);
-        for (const e of w.entities) if (e instanceof Bowser) bowsers.add(e);
-        if (left < 0 && bowsers.size === 1) {
-          left = f;
-          place(w, 60, 10); // past the false Bowser
+        for (const e of w.entities) {
+          if (!(e instanceof Bowser)) continue;
+          if (e.fake && !fake) {
+            fake = e;
+            e.despawnMargin = null; // keep it in the world (normally it is culled off screen)
+          }
+          if (!e.fake) real ??= e;
         }
-        if (left >= 0 && f === left + 30) {
-          behind = w.entities.filter((e) => e instanceof Bowser).length;
-          place(w, 111, 10); // the bridge comes into view
+        if (fake && !real && f % 60 === 0) place(w, 111, 10); // bring the bridge into view
+        if (real && !onAxe) {
+          onAxe = true;
+          fakeY = toPx((fake as Bowser).body.y);
+          place(w, 125, 9, 0);
         }
-        if (bridge < 0 && bowsers.size === 2) bridge = f;
-        if (bridge >= 0 && f === bridge + 30) place(w, 125, 9, 0); // onto the axe
         return [];
       },
     });
-    expect(bowsers.size).toBe(2);
-    expect(behind).toBe(0); // the false one was left behind off screen; the real one is not out yet
+    expect(fake?.alive).toBe(true);
+    expect(r.world.entities.includes(fake as Bowser)).toBe(true);
+    expect(toPx((fake as Bowser).body.y)).toBeLessThanOrEqual(fakeY + 1);
     expect(r.outcome).toBe('cleared');
     expect(r.events.find((e) => e.type === 'exit')).toEqual({ type: 'exit', next: 'end' });
-    const real = [...bowsers].find((b) => b.body.x > px(100 * 16)) as Bowser;
-    expect(toPx(real.body.y)).toBeGreaterThan(15 * 16 - 64);
+    // The real one fell through the cut bridge.
+    expect(toPx((real as Bowser).body.y)).toBeGreaterThan(15 * 16 - 64);
   });
 });
 

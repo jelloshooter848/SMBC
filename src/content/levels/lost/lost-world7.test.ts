@@ -38,11 +38,11 @@ describe('Lost Levels World 7: files and headers', () => {
   });
 
   it.each([
-    ['ll-7-1', 216, 'overworld', 400, null],
+    ['ll-7-1', 216, 'night', 400, null],
     ['ll-7-1-bonus', 32, 'underground', null, 'll-7-1'],
-    ['ll-7-1-exit', 112, 'overworld', null, 'll-7-1'],
+    ['ll-7-1-exit', 112, 'night', null, 'll-7-1'],
     ['ll-7-1-bonus2', 32, 'underground', null, 'll-7-1'],
-    ['ll-7-2', 272, 'overworld', 400, null],
+    ['ll-7-2', 272, 'night', 400, null],
     ['ll-7-2-bonus', 16, 'underground', null, 'll-7-2'],
     ['ll-7-3', 336, 'overworld', 400, null],
     ['ll-7-4', 256, 'castle', 400, null],
@@ -52,7 +52,8 @@ describe('Lost Levels World 7: files and headers', () => {
     expect(l.world).toBe(7);
     expect(l.width).toBe(width);
     expect(l.theme).toBe(theme);
-    expect(l.music).toBe(theme);
+    // Night and snow levels play the overworld tune.
+    expect(l.music).toBe(['night', 'snow'].includes(theme) ? 'overworld' : theme);
     expect(l.time).toBe(time);
     expect(l.parent).toBe(parent);
   });
@@ -177,11 +178,13 @@ describe('Lost Levels 7-1', () => {
 });
 
 describe('Lost Levels 7-1 sub-areas', () => {
-  it('bonus room: falls in at 1, four hanging piranhas, side pipe to the second overworld area', () => {
+  it('bonus room: falls in at 1 (scrolling: it is 32 wide), four hanging piranhas, side pipe onward', () => {
     const l = load('ll-7-1-bonus');
     expect(l.start).toEqual({ x: 1, y: 0 });
     expect(l.startMode).toBe('fall');
-    expect(l.camera).toBe('locked');
+    expect(l.camera).toBe('scroll');
+    expect(load('ll-7-1-bonus2').camera).toBe('scroll');
+    expect(load('ll-7-2-bonus').camera).toBe('locked'); // one screen wide
     expect(at(l, 'piranha-down')).toEqual([
       [12, 8],
       [16, 8],
@@ -261,7 +264,8 @@ describe('Lost Levels 7-2', () => {
     expect(zones(l, 'checkpoint')).toEqual([{ kind: 'checkpoint', x: 151 }]);
   });
   it('has a Lakitu from 170 to 218, fire bars, a gliding paratroopa and falling lifts', () => {
-    expect(l.entities).toContainEqual({ type: 'lakitu', x: 170, y: 7, props: { end: 218 } });
+    // Its end marker is lakituEndMiddle: it flies at mid height (mid=1).
+    expect(l.entities).toContainEqual({ type: 'lakitu', x: 170, y: 7, props: { end: 218, mid: 1 } });
     expect(at(l, 'firebar')).toEqual([
       [179, 9],
       [219, 9],
@@ -297,6 +301,12 @@ describe('Lost Levels 7-2', () => {
     });
     expect(tile(l, 32, 5)).toBe(T.Q_POWERUP);
     expect(tile(l, 96, 5)).toBe(T.Q_POWERUP);
+  });
+  it('keeps the mushroom stems that stand in the water line (water never covers a tile)', () => {
+    for (let x = 35; x <= 38; x++) for (const y of [12, 13, 14]) expect(tile(l, x, y)).toBe(T.MUSHROOM_STEM);
+    expect(tile(l, 34, 11)).toBe(T.MUSHROOM_TOP);
+    expect(tile(l, 34, 12)).toBe(T.WATER);
+    expect(tile(l, 39, 12)).toBe(T.WATER);
   });
 });
 
@@ -352,10 +362,11 @@ describe('Lost Levels 7-3', () => {
 
 describe('Lost Levels 7-4', () => {
   const l = load('ll-7-4');
-  it('is a plain castle (no maze loops) entered at 1,6', () => {
+  it('is a plain castle (no maze loops, no checkpoint) entered at 1,6', () => {
     expect(l.start).toEqual({ x: 1, y: 6 });
     expect(zones(l, 'loop')).toEqual([]);
-    expect(zones(l, 'checkpoint')).toEqual([{ kind: 'checkpoint', x: 86 }]);
+    // LOCKED_CP="True": the halfway point at 86 is never used on normal.
+    expect(zones(l, 'checkpoint')).toEqual([]);
   });
   it('has the hammer-throwing Bowser on the bridge, the axe and the chain', () => {
     expect(l.entities.filter((e) => e.type === 'bowser')).toEqual([

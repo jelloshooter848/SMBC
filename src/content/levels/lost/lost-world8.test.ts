@@ -65,9 +65,9 @@ describe('Lost Levels World 8: files and headers', () => {
   });
 
   it.each([
-    ['ll-8-1', 232, 'overworld', 400, null],
+    ['ll-8-1', 232, 'snow', 400, null],
     ['ll-8-1-water', 80, 'water', null, 'll-8-1'],
-    ['ll-8-1-exit', 32, 'overworld', null, 'll-8-1'],
+    ['ll-8-1-exit', 32, 'snow', null, 'll-8-1'],
     ['ll-8-2', 176, 'overworld', 400, null],
     ['ll-8-2-warp', 40, 'overworld', null, 'll-8-2'],
     ['ll-8-2-bonus', 32, 'underground', null, 'll-8-2'],
@@ -84,7 +84,8 @@ describe('Lost Levels World 8: files and headers', () => {
     expect(l.world).toBe(8);
     expect(l.width).toBe(width);
     expect(l.theme).toBe(theme);
-    expect(l.music).toBe(theme);
+    // Night and snow levels play the overworld tune.
+    expect(l.music).toBe(['night', 'snow'].includes(theme) ? 'overworld' : theme);
     expect(l.time).toBe(time);
     expect(l.parent).toBe(parent);
   });
@@ -185,9 +186,9 @@ describe('Lost Levels 8-1', () => {
       'koopa-red': 2,
     });
   });
-  it('has a pipe at 176 down into the water detour, the checkpoint at 110 and the flagpole at 215', () => {
+  it('has a pipe at 176 down into the water detour, no checkpoint and the flagpole at 215', () => {
     expect(zones(l, 'pipe')).toEqual([pipe(176, 9, 'down', 'll-8-1-water', 2, 1, 'none')]);
-    expect(zones(l, 'checkpoint')).toEqual([{ kind: 'checkpoint', x: 110 }]);
+    expect(zones(l, 'checkpoint')).toEqual([]); // LOCKED_CP="True"
     expect(tile(l, 215, 2)).toBe(T.FLAG_BALL);
   });
   it('water detour: drops in at 2,1 and leaves by the side pipe at 77', () => {
@@ -264,14 +265,16 @@ describe('Lost Levels 8-2', () => {
     expect(zones(b, 'pipe')).toEqual([pipe(29, 12, 'right', 'll-8-2', 83, 10, 'up')]);
     expect(at(b, 'piranha-down').map((p) => p[0])).toEqual([12, 16, 20, 24]);
     expect(tile(l, 83, 11)).toBe(T.PIPE_TL);
-    expect(zones(l, 'checkpoint')).toEqual([{ kind: 'checkpoint', x: 118 }]);
+    expect(zones(l, 'checkpoint')).toEqual([]); // LOCKED_CP="True"
+    expect(b.camera).toBe('scroll'); // 32 wide
   });
 });
 
 describe('Lost Levels 8-3', () => {
   const l = load('ll-8-3');
   it('has Lakitu over the start, Hammer Bros among the walls and a balance lift', () => {
-    expect(l.entities).toContainEqual({ type: 'lakitu', x: 24, y: 0, props: { end: 55 } });
+    // Its end marker is lakituEndMiddle: it flies at mid height (mid=1).
+    expect(l.entities).toContainEqual({ type: 'lakitu', x: 24, y: 0, props: { end: 55, mid: 1 } });
     expect(at(l, 'hammer-bro')).toEqual([
       [166, 12],
       [173, 12],
@@ -313,8 +316,8 @@ describe('Lost Levels 8-3', () => {
     expect(at(s, 'lift-right')).toEqual([[16, 10]]);
     expect(zones(s, 'pit')).toEqual([{ kind: 'pit', x: 0, target: { level: 'll-8-3', x: 114, y: 0 } }]);
   });
-  it('has its checkpoint at 96 and the flagpole at 214', () => {
-    expect(zones(l, 'checkpoint')).toEqual([{ kind: 'checkpoint', x: 96 }]);
+  it('has no checkpoint and the flagpole at 214', () => {
+    expect(zones(l, 'checkpoint')).toEqual([]); // LOCKED_CP="True"
     expect(tile(l, 214, 2)).toBe(T.FLAG_BALL);
   });
 });
@@ -353,9 +356,10 @@ describe('Lost Levels 8-4', () => {
     ]);
     expect(zones(l, 'pipe')).toEqual([pipe(46, 9, 'right', 'll-8-4-end', 3, 10, 'up')]);
   });
-  it('small room: the checkpoint (the original halfway area) and a pipe into the maze', () => {
+  it('small room: the halfway area, but no checkpoint on normal, and a pipe into the maze', () => {
     const l = load('ll-8-4-end');
-    expect(zones(l, 'checkpoint')).toEqual([{ kind: 'checkpoint', x: 9 }]);
+    // HW_AREA="c" with LOCKED_CP="True": the original only restarts here on easy and hard.
+    expect(zones(l, 'checkpoint')).toEqual([]);
     expect(tile(l, 1, 9)).toBe(T.HIDDEN_POWERUP);
     expect(zones(l, 'pipe')).toEqual([pipe(10, 11, 'down', 'll-8-4-end2', 3, 10, 'up')]);
   });
@@ -391,7 +395,7 @@ describe('Lost Levels 8-4', () => {
   it('Bowser hall: a hammer-throwing false Bowser, then the real one on the bridge, and the axe', () => {
     const l = load('ll-8-4-end3');
     expect(l.entities.filter((e) => e.type === 'bowser')).toEqual([
-      { type: 'bowser', x: 23, y: 9, props: { attack: 'hammer' } },
+      { type: 'bowser', x: 23, y: 9, props: { attack: 'hammer', fake: 1 } },
       { type: 'bowser', x: 119, y: 9, props: { attack: 'both' } },
     ]);
     expect(at(l, 'axe')).toEqual([[125, 8]]);
