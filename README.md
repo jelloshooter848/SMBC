@@ -28,14 +28,14 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
 reached, levels cleared (out of 32), lives and score (a star once the game is beaten); pick a
 file to continue it, start a new one (character select, player two can join) or erase one.
 A file plays on a Super Mario World-style map with one page per world (1-8). Walk the d-pad
-along open paths and press jump or start on a level to play it (character select first; the
+along open paths and press jump on a level to play it (character select first; the
 current hero is preselected). Clearing a level, at the flagpole or by Toad in a castle, returns
 to the map and draws in the road to the next one; a castle opens the next world's page. A warp
 pipe opens only the world it leads to; the map menu's **Worlds** list travels between open
 worlds (back to the spot you left in each). **Pause → Quit to map** leaves any level without
 clearing it. Game over offers CONTINUE: yes returns to the map with fresh lives (score and coins
 reset, cleared levels kept), no goes to the title. The file saves itself whenever the map is
-shown, after each death and on a warp; the map menu (select) has **Save and quit**, and the
+shown, after each death and on a warp; the map menu (start or select) has **Save and quit**, and the
 level pause menu **Quit to title** saves too.
 Beating 8-4 marks the file with a star and returns to the World 8 map. Developer mode,
 `?level=`, custom and shared levels and editor play-tests skip the map and never write a save.

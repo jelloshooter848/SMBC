@@ -135,6 +135,22 @@ describe('world map scene', () => {
     expect([h.game.state.world, h.game.state.stage]).toEqual([1, 1]);
   });
 
+  it('start on a level node opens the map menu; only jump enters', () => {
+    const h = makeGame();
+    h.game.showMap(1);
+    h.idle(8);
+    walkTo(h, '1-1');
+    const enter = vi.spyOn(h.game, 'enterLevelFromMap');
+    h.tap('start');
+    expect(enter).not.toHaveBeenCalled();
+    expect((h.game.scenes.top as MenuScene).title).toBe('MAP');
+    h.idle(8);
+    h.tap('jump'); // Continue
+    expect(h.game.scenes.top).toBeInstanceOf(WorldMapScene);
+    h.tap('jump');
+    expect(enter).toHaveBeenCalledWith('1-1');
+  });
+
   it('enterLevelFromMap starts at the intro scene when the level has one', () => {
     const h = makeGame();
     const go = vi.spyOn(h.game, 'goToLevel');

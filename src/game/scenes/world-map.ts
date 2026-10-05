@@ -318,18 +318,14 @@ export class WorldMapScene implements Scene {
   private updateIdle(input: InputFrame): void {
     if (this.t < 6) return;
     const here = this.nodeById(this.node);
-    if (input.pressed('select')) {
+    // Start and select open the map menu (as start pauses a level); only jump enters a level.
+    if (input.pressed('start') || input.pressed('select')) {
       this.openPause();
       return;
     }
-    const enter = input.pressed('jump') || input.pressed('start');
-    if (enter && here?.level && isOpen(this.progress, this.page, here.id)) {
+    if (input.pressed('jump') && here?.level && isOpen(this.progress, this.page, here.id)) {
       this.game.ctx.audio.sfx('coin');
       this.game.enterLevelFromMap(here.level);
-      return;
-    }
-    if (input.pressed('start')) {
-      this.openPause();
       return;
     }
     for (const d of DIRS) {
