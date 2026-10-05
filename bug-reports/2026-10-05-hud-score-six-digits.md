@@ -29,3 +29,5 @@ every time
 Ours: `pad(state.score, 6)` in `src/game/hud/hud.ts`. Check that the wider number still fits beside the coin counter.
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: fixed — the HUD score is 7 digits capped at 9999999 (StatManager.SCORE_MAX) and the coin counter moved to x=96 so it keeps a 16 px gap; checked for every hero and pair in a unit test and in the browser.

@@ -29,3 +29,5 @@ every time
 Ours: `src/game/scenes/intro.ts`.
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: fixed — the lives card draws the HUD row with drawHud, TIME showing the time the level will start with (blank with infinite time), per InformativeBlackScreen and TopScreenText.initiateBlackScreen.

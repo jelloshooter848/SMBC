@@ -6,6 +6,8 @@ import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
 import { LevelScene, type LevelStart } from './level';
+import { startTime } from '../world/world';
+import { pad, SCORE_MAX } from '../hud/hud';
 import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
@@ -87,7 +89,7 @@ export class Game {
           'THE PRINCESS IS SAFE',
           'AND THE KINGDOM IS FREE.',
           '',
-          `FINAL SCORE ${String(s.score).padStart(6, '0')}`,
+          `FINAL SCORE ${pad(Math.min(s.score, SCORE_MAX), 7)}`,
           '',
           'PRESS START',
         ],
@@ -214,7 +216,8 @@ export class Game {
     this.deps.ctx.audio.setTempoScale(1);
     this.scenes.clear();
     this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
-    this.scenes.push(new IntroScene(this, () => this.startLevel(level, start)));
+    const time = startTime(level, this.state, start);
+    this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
   }
 
   /** Straight into a level (pipes, bonus rooms). */
