@@ -32,3 +32,5 @@ every time
 ## Notes
 
 Addendum to `2026-10-05-still-shell-landing-bounces.md` (not edited, per this folder's rules). Fix them together.
+
+Status: fixed — the 15-frame no-hit window lives on the shell (Koopa.noHitTimer, set by every kick) and blocks contact damage and stomps from all players, not just the kicker.

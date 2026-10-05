@@ -979,6 +979,9 @@ export class World {
       if (r !== 'immune') this.addScore(e.scoreFor('star'), e.body.x, e.body.y);
       return;
     }
+    // Just after any kick the shell neither hurts nor can be stomped by any player
+    // (KoopaGreen.NO_HIT_SHELL_TMR: Character.hitEnemy skips it, KoopaGreen.stomp returns early).
+    if (e instanceof Koopa && e.noHitTimer > 0) return;
     // SMB1-style stomp test: the player was moving down this frame and came in near the enemy's top.
     const feet = pb.y + pb.h;
     const falling = p.fallSpeed > 0;
@@ -988,11 +991,9 @@ export class World {
       if (p.def.stomps) {
         // Landing on a still shell kicks it; it is not a stomp, so it neither scores nor advances
         // the stomp sequence (KoopaGreen.stomp returns early for a shell, hitCharacter kicks it).
-        if (e instanceof Koopa && e.isStillShell) {
-          this.kickShell(p, e);
-          p.stompBounce();
-          return;
-        }
+        // Nor does it bounce: Character.hitEnemy does nothing for a shell, leaving the player's
+        // vertical speed alone, and the kick's no-hit window lets the player fall on through it.
+        if (e instanceof Koopa && e.isStillShell) return this.kickShell(p, e);
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
         if (r === 'hurtAttacker') return this.hurtPlayer(p);
         if (r !== 'immune') {

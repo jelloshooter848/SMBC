@@ -13,6 +13,12 @@ export const SHELL_SPEED = 0x03000; // 3 px/f
 const SHELL_IDLE_FRAMES = 228;
 const SHELL_LAST_FRAMES = 15;
 const SHELL_WIGGLE_FRAMES = 54 + SHELL_LAST_FRAMES;
+/**
+ * KoopaGreen.NO_HIT_SHELL_TMR (250 ms = 15 frames), started by every kickShell: while it runs no
+ * player is hurt by the shell or bounces off it (Character.hitEnemy skips it) and nobody can stomp
+ * it (KoopaGreen.stomp returns early).
+ */
+export const SHELL_NO_HIT_FRAMES = 15;
 /** Red paratroopas bob this far above and below their spawn height, once per period. */
 const PARA_AMPLITUDE = 48; // px
 const PARA_PERIOD = 192; // frames
@@ -39,6 +45,8 @@ export class Koopa extends Enemy {
   private readonly homeY: number;
   private flyT = 0;
   private shellTimer = 0;
+  /** Frames left of the post-kick no-hit window (KoopaGreen.NO_HIT_SHELL_TMR). */
+  noHitTimer = 0;
   /** Kills by a moving shell chain for combo scoring. */
   shellCombo = 0;
   readonly color: 'green' | 'red' | 'buzzy';
@@ -145,6 +153,7 @@ export class Koopa extends Enemy {
     this.contactHurts = true;
     this.shellCombo = 0;
     this.fallsOffLedges = true;
+    this.noHitTimer = SHELL_NO_HIT_FRAMES; // KoopaGreen.kickShell: NO_HIT_SHELL_TMR.start()
     // Nudge out of the kicker so the first frame doesn't re-collide.
     this.body.x += dirX * px(4);
     world.audio.sfx('kick');
@@ -180,6 +189,7 @@ export class Koopa extends Enemy {
   }
 
   update(world: World): void {
+    if (this.noHitTimer > 0) this.noHitTimer--;
     switch (this.state) {
       case 'walk':
         if (this.wings) this.fly(world);
