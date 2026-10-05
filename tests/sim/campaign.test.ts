@@ -27,6 +27,7 @@ import type { WorldMapPage } from '@game/map/types';
 import type { WorldEvent } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import type { Settings } from '@engine/save/settings';
 
 // Campaign mode: levels picked on the world map return to it when cleared, warps open their
 // target world, game over continues on the map, and the save file follows along. Every other
@@ -355,6 +356,64 @@ describe('campaign: clears return to the map', () => {
   });
 });
 
+describe('campaign: other worlds draw in on arrival', () => {
+  function clearCastle(h: H) {
+    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3'], position: { world: 1, node: '1-4' } }));
+    enter(h, '1-4');
+    h.fire({ type: 'exit', next: '2-1' });
+    h.until(() => h.map().mode === 'idle');
+    // World 1's share is drawn; World 2's waits (and is saved) for the hero to get there.
+    expect(h.game.pendingReveal).toContain('2:start');
+    expect(h.game.pendingReveal.every((id) => id.startsWith('2:'))).toBe(true);
+    expect(loadSave(1)?.pendingReveal).toContain('2:start');
+  }
+
+  it('after a castle clear, walking on to World 2 draws in its start and first path', () => {
+    const h = makeGame();
+    clearCastle(h);
+    const exit = page(1).exits.find((e) => e.toWorld === 2)!;
+    h.tap(dirOf(exit.points));
+    h.until(() => h.map().page.world === 2 && h.map().mode !== 'walk' && h.map().mode !== 'slide');
+    expect(h.map().mode).toBe('reveal');
+    h.until(() => h.map().mode === 'idle', 600);
+    expect(h.said.at(-1)).toContain('World 2-1, open');
+    expect(h.game.pendingReveal).toEqual([]);
+    expect(loadSave(1)?.pendingReveal).toEqual([]);
+  });
+
+  it('travelling to World 2 through the Worlds menu draws it in too', () => {
+    const h = makeGame();
+    clearCastle(h);
+    h.game.travelToWorld(2);
+    expect(h.map().page.world).toBe(2);
+    expect(h.map().revealing).toBe(true);
+    h.idle(2);
+    h.tap('jump'); // skips
+    expect(h.map().revealing).toBe(false);
+    expect(h.game.pendingReveal).toEqual([]);
+  });
+
+  it("a warp's draw-in survives quitting: the reopened file shows it on the target page", () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
+    enter(h, '1-2');
+    play(h, '1-2');
+    h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
+    // Saved right away (closing the tab now keeps it).
+    expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['4:start', '4:4-1']));
+    h.idle(4);
+    h.tap('start');
+    choose(h.top(), 'Quit to title');
+    expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['4:start', '4:4-1']));
+    const h2 = makeGame();
+    h2.game.openFile(1);
+    expect(h2.map().page.world).toBe(4);
+    expect(h2.map().revealing).toBe(true);
+    h2.until(() => h2.map().mode === 'idle', 600);
+    expect(loadSave(1)?.pendingReveal).toEqual([]);
+  });
+});
+
 describe('campaign: deaths, game over and quitting', () => {
   function die(h: H) {
     const w = h.level().world;
@@ -473,6 +532,24 @@ describe('campaign: deaths, game over and quitting', () => {
     expect(h.top()).toBeInstanceOf(TitleScene);
     const saved = loadSave(1) as SaveFile;
     expect([saved.cleared, saved.coins, saved.position]).toEqual([['1-1'], 9, { world: 1, node: '1-2' }]);
+  });
+
+  it('the level pause hides Dev mode during campaign play (shown elsewhere)', () => {
+    const h = makeGame();
+    h.game.deps.settings = { dev: true } as Settings;
+    h.game.openFile(1, file());
+    enter(h, '1-1');
+    h.idle(4);
+    h.tap('start');
+    expect(h.top()).toBeInstanceOf(PauseScene);
+    h.idle(4);
+    expect(menuItem(h.top(), 'Dev mode')).toBeUndefined();
+    h.tap('jump'); // Continue
+    h.game.devStart('1-1', MARIO, 'big');
+    h.until(() => h.top() instanceof LevelScene);
+    h.idle(4);
+    h.tap('start');
+    expect(menuItem(h.top(), 'Dev mode')).toBeDefined();
   });
 
   it('reopening the file restores position, lives, score, coins and heroes', () => {

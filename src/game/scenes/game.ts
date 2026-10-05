@@ -72,8 +72,11 @@ export class Game {
   private campaignSave: SaveFile | null = null;
   /** The node the hero last stood on in each world (SaveFile.lastNode), for map travel. */
   mapLastNode: Record<number, string> = {};
-  /** Campaign: map ids a warp opened, drawn in the next time the map is shown. */
-  private warpReveal: string[] = [];
+  /**
+   * World-qualified map ids (rules.revealId) opened but not yet drawn in: each page draws in its
+   * own when the hero first arrives there (SaveFile.pendingReveal).
+   */
+  pendingReveal: string[] = [];
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -144,7 +147,7 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
-    this.warpReveal = [];
+    this.pendingReveal = [];
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -206,6 +209,7 @@ export class Game {
       secrets: p.secrets.slice(),
       position: { world: p.position.world, node: p.position.node },
       lastNode: { ...this.mapLastNode },
+      pendingReveal: this.pendingReveal.slice(),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -213,18 +217,22 @@ export class Game {
 
   /**
    * Campaign: back to the map from a level (a clear, "Quit to map", or a continue). Saves the
-   * file first, then shows the page the hero stands on, drawing in `reveal` and whatever a warp
-   * opened since the map was last shown.
+   * file first (with `reveal` pending), then shows the page the hero stands on, which draws in
+   * its share of what is pending (another world's share waits until the hero gets there).
    */
   returnToMap(reveal: string[] = []): void {
-    const all = [...this.warpReveal, ...reveal.filter((id) => !this.warpReveal.includes(id))];
-    this.warpReveal = [];
+    this.addReveal(reveal);
     this.state.checkpoint = null;
     this.state.time = null;
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
     this.autosave();
-    this.showMap(this.mapProgress.position.world, all.length ? { reveal: all } : {});
+    this.showMap(this.mapProgress.position.world);
+  }
+
+  /** Queue map ids to draw in (each page takes its own when shown). */
+  addReveal(ids: readonly string[]): void {
+    for (const id of ids) if (!this.pendingReveal.includes(id)) this.pendingReveal.push(id);
   }
 
   /**
@@ -246,8 +254,7 @@ export class Game {
     if (!this.campaign) return;
     const pos = this.mapProgress.position;
     this.mapLastNode[pos.world] = pos.node; // map travel back returns here
-    const opened = warpTo(this.mapProgress, world);
-    this.warpReveal.push(...opened.filter((id) => !this.warpReveal.includes(id)));
+    this.addReveal(warpTo(this.mapProgress, world));
     const start = mapPage(world)?.nodes.find((n) => n.kind === 'start');
     if (start) this.mapProgress.position = { world, node: start.id };
     this.autosave();
@@ -375,7 +382,7 @@ export class Game {
     this.quickRespawn = false;
     this.campaign = { slot };
     this.campaignSave = save;
-    this.warpReveal = [];
+    this.pendingReveal = save.pendingReveal.slice();
     this.mapLastNode = { ...save.lastNode };
     this.mapProgress = {
       cleared: save.cleared.slice(),

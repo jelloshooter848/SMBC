@@ -117,6 +117,8 @@ export class WorldMapScene implements Scene {
   private revealQueue: string[] = [];
   private readonly revealShown = new Map<string, number>();
   private revealNodes: string[] = [];
+  /** The world-qualified ids being drawn in, removed from the pending list when done. */
+  private revealTaken: string[] = [];
   private revealT = 0;
   /** Render caches. */
   private readonly views = new Map<WorldMapPage, PageView>();
@@ -157,17 +159,31 @@ export class WorldMapScene implements Scene {
     this.game.ctx.audio.playMusic(this.page.music);
     this.views.clear();
     this.announceHere();
-    const ids = new Set(this.pageIds(this.page));
-    for (const rid of this.opts.reveal ?? []) {
-      const r = parseRevealId(rid);
-      if (r && r.world === this.page.world && ids.has(r.id) && !this.revealShown.has(r.id)) {
-        this.revealQueue.push(r.id);
-        this.revealShown.set(r.id, 0);
-        if (this.nodeById(r.id)) this.revealNodes.push(r.id);
-      }
-    }
+    this.game.addReveal(this.opts.reveal ?? []);
+    this.takeReveal();
     if (this.revealQueue.length) this.mode = 'reveal';
     else this.game.autosave();
+  }
+
+  /**
+   * Queues this page's share of the game's pending reveal ids (the rest wait for their own
+   * page); they leave the pending list once drawn in (finishReveal).
+   */
+  private takeReveal(): void {
+    const ids = new Set(this.pageIds(this.page));
+    const world = this.page.world;
+    this.game.pendingReveal = this.game.pendingReveal.filter((rid) => {
+      const r = parseRevealId(rid);
+      if (!r || r.world !== world) return true;
+      if (ids.has(r.id) && !this.revealShown.has(r.id)) {
+        this.revealQueue.push(r.id);
+        this.revealShown.set(r.id, 0);
+        this.revealTaken.push(rid);
+        if (this.nodeById(r.id)) this.revealNodes.push(r.id);
+        return true; // until drawn in
+      }
+      return false; // not on this page: stale
+    });
   }
 
   private nodeById(id: string): MapNode | undefined {
@@ -282,10 +298,14 @@ export class WorldMapScene implements Scene {
     this.revealQueue = [];
     this.revealShown.clear();
     this.mode = 'idle';
+    const taken = this.revealTaken;
+    this.game.pendingReveal = this.game.pendingReveal.filter((id) => !taken.includes(id));
+    this.revealTaken = [];
     const opened = this.revealNodes
       .map((id) => this.nodeById(id))
       .filter((n): n is MapNode => !!n)
       .map((n) => this.nodeLabel(n));
+    this.revealNodes = [];
     if (opened.length) this.say(opened.join('. '));
     this.game.autosave();
   }
@@ -371,6 +391,7 @@ export class WorldMapScene implements Scene {
     this.page = next;
     this.views.clear();
     this.mode = 'slide';
+    this.takeReveal(); // hidden while sliding in, drawn in on arrival
   }
 
   private updateSlide(): void {
@@ -386,7 +407,8 @@ export class WorldMapScene implements Scene {
     this.node = this.nodeById(s.node) ? s.node : (startNode(this.page)?.id ?? '');
     this.placeHero();
     if (this.page.music !== s.from.music) this.game.ctx.audio.playMusic(this.page.music);
-    this.mode = 'idle';
+    this.mode = this.revealQueue.length ? 'reveal' : 'idle';
+    this.revealT = 0;
     this.announceHere();
   }
 

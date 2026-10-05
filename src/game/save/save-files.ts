@@ -34,6 +34,8 @@ export interface SaveFile extends MapProgress {
   gameCleared: boolean;
   /** The node the hero last stood on in each world visited (where map travel returns to). */
   lastNode: Record<number, string>;
+  /** Map ids opened but not drawn in yet ('4:start', '2:start>2-1'), see Game.pendingReveal. */
+  pendingReveal: string[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -90,6 +92,7 @@ export function newSave(
     position: { world: 1, node: 'start' },
     gameCleared: false,
     lastNode: {},
+    pendingReveal: [],
   };
 }
 
@@ -110,6 +113,15 @@ function lastNodes(x: unknown, worlds: readonly number[]): Record<number, string
       if (worlds.includes(w) && typeof v === 'string' && v) out[w] = v;
     }
   return out;
+}
+
+/** Pending reveal ids ('<world>:<id>') of open worlds, each once, at most 64. */
+function revealIds(x: unknown, worlds: readonly number[]): string[] {
+  const ids = strs(x, []).filter((id) => {
+    const m = /^(\d+):./.exec(id);
+    return !!m && worlds.includes(Number(m[1]));
+  });
+  return [...new Set(ids)].slice(0, 64);
 }
 
 function kit(x: unknown): Record<string, number> {
@@ -174,6 +186,7 @@ export function migrateSave(
     position,
     gameCleared: stored.gameCleared === true,
     lastNode: lastNodes(stored.lastNode, worlds),
+    pendingReveal: revealIds(stored.pendingReveal, worlds),
   };
 }
 

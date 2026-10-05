@@ -222,6 +222,19 @@ describe('save files', () => {
     expect(put({ lastNode: { 1: '' } }).lastNode).toEqual({});
   });
 
+  it('keeps pending reveal ids of open worlds only, each once', () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1)!;
+    };
+    expect(newSave(1, 'mario').pendingReveal).toEqual([]);
+    expect(
+      put({ worlds: [1, 4], pendingReveal: ['4:start', '4:start', '2:start', 'start', 7, '1:1-1>1-2', ':x'] })
+        .pendingReveal,
+    ).toEqual(['4:start', '1:1-1>1-2']);
+    expect(put({ pendingReveal: 'x' }).pendingReveal).toEqual([]);
+  });
+
   it('counts main levels cleared and the highest world', () => {
     const s = newSave(1, 'mario');
     s.cleared = ['1-1', '1-2', '1-2', '8-4', 'll-1-1', 'custom-x', '9-1'];
