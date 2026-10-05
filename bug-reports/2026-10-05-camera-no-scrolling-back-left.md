@@ -30,3 +30,5 @@ every time
 Ours: `src/game/world/camera.ts` (`pushX = px(80)`, left scrolling only when `allowLeftScroll` is on). That assist is off by default in `src/engine/save/settings.ts` and `src/game/context.ts`. Suggest making centred two-way following the default and keeping the NES-style lock as an option. This is a design choice, so confirm the intended default first.
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: not a bug — the NES-style right-only camera is the intended default (owner's decision); Dev mode → Assists → scroll back enables two-way scrolling.

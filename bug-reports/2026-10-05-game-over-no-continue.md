@@ -29,3 +29,5 @@ every time
 Ours: `src/game/scenes/game-over.ts`.
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: fixed — GAME OVER (4.5 s, InformativeBlackScreen.END_DUR_GAME_OVER_MARIO) is followed by CONTINUE? YES / NO (up/down, jump/start; keyboard, gamepad, touch, announcer); YES resets lives to 3 and score/coins to 0 and, like the original's continueAfterDying (resetAllStats(false) + changeToFirstWorldLevel), goes through character select to the first level of the current world from its start; NO goes to the title.

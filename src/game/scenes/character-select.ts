@@ -1,16 +1,45 @@
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
+import type { CharacterDef } from '../characters/character';
 import type { Game } from './game';
+
+/**
+ * One player picks a hero mid-run: after a death with lives left, or after a continue. The
+ * original goes through CharacterSelect every time a level is (re)loaded with newLev set
+ * (ScreenManager.createLevel), with no way back to the title.
+ */
+export interface HeroPick {
+  /** Which player picks (0 = player 1); the other player's hero is kept. */
+  player: number;
+  /** Hero highlighted on entry (the one that just died). */
+  current: CharacterDef;
+  onPick: (c: CharacterDef) => void;
+}
 
 export class CharacterSelectScene implements Scene {
   private index = 0;
   private index2 = 1;
   private p2 = false;
   private t = 0;
-  constructor(private readonly game: Game) {}
+  constructor(
+    private readonly game: Game,
+    private readonly pick: HeroPick | null = null,
+  ) {}
 
   enter(): void {
+    const pick = this.pick;
+    if (pick) {
+      this.index = Math.max(
+        0,
+        this.game.deps.characters.findIndex((c) => c.id === pick.current.id),
+      );
+      const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
+      this.game.deps.announcer?.say(
+        `${who} your hero. ${pick.current.name}. Left and right to choose, start to confirm.`,
+      );
+      return;
+    }
     this.game.deps.announcer?.say(
       'Select your hero. Left and right to choose, start to begin. Player two: press start to join.',
     );
@@ -35,6 +64,16 @@ export class CharacterSelectScene implements Scene {
       }
       return idx;
     };
+    if (this.pick) {
+      const f = inputs[this.pick.player] ?? input;
+      this.index = move(this.index, f);
+      const c = chars[this.index];
+      if (this.t > 10 && c && (f.pressed('start') || f.pressed('jump'))) {
+        this.game.ctx.audio.sfx('coin');
+        this.pick.onPick(c);
+      }
+      return;
+    }
     this.index = move(this.index, input);
     const f2 = inputs[1];
     if (f2) {
@@ -59,7 +98,11 @@ export class CharacterSelectScene implements Scene {
     r.clear('#000');
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
-    r.text(font, 'SELECT YOUR HERO', 64, 32);
+    const heading =
+      this.pick && this.game.state.character2
+        ? `P${this.pick.player + 1} SELECT YOUR HERO`
+        : 'SELECT YOUR HERO';
+    r.text(font, heading, 128 - heading.length * 4, 32);
     const chars = this.game.deps.characters;
     const spacing = Math.min(64, 224 / Math.max(1, chars.length));
     const x0 = 128 - ((chars.length - 1) * spacing) / 2;
@@ -79,7 +122,10 @@ export class CharacterSelectScene implements Scene {
       if (this.p2 && i === this.index2)
         r.text(font, '2', tight ? x - 4 : x + 12, tight ? 120 - h - 10 : 112 - h / 2);
     });
-    if (this.p2) {
+    if (this.pick) {
+      // The original's CharacterSelect shows the lives left (numLives / livesTxt).
+      r.text(font, `×  ${this.game.state.lives}`, 108, 158);
+    } else if (this.p2) {
       const c2 = chars[this.index2];
       if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, 158);
     } else if ((this.t >> 6) % 2 === 1) r.text(font, 'P2 PRESS START TO JOIN', 40, 158);

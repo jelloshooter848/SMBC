@@ -50,7 +50,8 @@ import { startHp, type CharacterDef } from '../characters/character';
 export type WorldEvent =
   | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode } }
   | { type: 'exit'; next: string }
-  | { type: 'died' }
+  /** `player`: index of the player whose death ended the attempt (they pick the next hero). */
+  | { type: 'died'; player?: number }
   | { type: 'checkpoint'; x: number }
   /** The castle maze moved the players from column `from` to `to` (informational). */
   | { type: 'loop'; from: number; to: number };
@@ -1062,7 +1063,7 @@ export class World {
     }
     if (t === 200) {
       if (!this.coop) {
-        this.events.push({ type: 'died' });
+        this.events.push({ type: 'died', player: 0 });
         return;
       }
       const others = this.activePlayers();
@@ -1072,7 +1073,7 @@ export class World {
       } else {
         p.out = true;
         p.hidden = true;
-        if (!others.length) this.events.push({ type: 'died' });
+        if (!others.length) this.events.push({ type: 'died', player: this.players.indexOf(p) });
       }
     }
   }
