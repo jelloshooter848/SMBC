@@ -375,7 +375,7 @@ export class EditorScene implements Scene {
       <h3>Enemies & items</h3><div class="row" data-entities></div>
       <h3>Scenery</h3><div class="row" data-decor></div>
       <h3>Zones</h3>
-      <div class="row"><button data-zone="exit">Exit at cursor</button><button data-zone="checkpoint">Checkpoint</button><button data-zone="scrollStop">Scroll stop</button></div>
+      <div class="row"><button data-zone="exit">Exit at cursor</button><button data-zone="checkpoint">Checkpoint</button><button data-zone="scrollStop">Scroll stop</button><button data-zone="bowser-fire">Bowser fire</button></div>
       <div class="row">Pipe to <input type="text" data-pipe-level value="${this.pipeTarget.level}" style="width:80px"> x <input type="number" data-pipe-x value="${this.pipeTarget.x}"> y <input type="number" data-pipe-y value="${this.pipeTarget.y}">
         <select data-pipe-dir><option>down</option><option>right</option></select> <button data-zone="pipe">Add pipe at cursor</button></div>
       <ul class="zones" data-zones></ul>
@@ -502,6 +502,11 @@ export class EditorScene implements Scene {
           case 'scrollStop':
             this.level.zones = this.level.zones.filter((z) => z.kind !== 'scrollStop');
             this.addZone({ kind: 'scrollStop', x: tx });
+            break;
+          case 'bowser-fire':
+            // Bowser's long-range flames start at this column (one per level).
+            this.level.zones = this.level.zones.filter((z) => z.kind !== 'bowser-fire');
+            this.addZone({ kind: 'bowser-fire', x: tx });
             break;
           case 'pipe': {
             const level = q<HTMLInputElement>('[data-pipe-level]').value.trim();

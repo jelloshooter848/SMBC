@@ -74,3 +74,4 @@ loop 144 3 12 -> 80 check=96:3:8,140:6:12 any
 loop 208 10 12 -> 272 check=160:11:12
 loop 272 3 12 -> 208 check=224:3:4,268:3:8 any
 exit 344 next=ll-7-1
+bowser-fire 276

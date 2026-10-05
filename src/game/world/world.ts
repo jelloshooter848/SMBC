@@ -41,6 +41,7 @@ import { Decoration } from '../entities/objects/decoration';
 import { Lift } from '../entities/objects/lift';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
+import { BowserFire } from './bowser-fire';
 import { Axe } from '../entities/objects/axe';
 import { startHp, type CharacterDef } from '../characters/character';
 
@@ -108,6 +109,8 @@ export class World {
   private leaving = false;
   private cheepTimer = 0;
   private bulletTimer = 60;
+  /** Bowser's long-range flames (`bowser-fire` zone), or null. */
+  private readonly bowserFire: BowserFire | null;
   /** Castle maze: lead player's centre x last frame (px) and the loop checkpoints passed. */
   private loopPrevX: number | null = null;
   private readonly loopChecks = new Set<string>();
@@ -141,6 +144,7 @@ export class World {
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     this.time = start.time ?? (level.time === null ? (state.time ?? 400) : level.time);
     this.spawns = [...level.entities].sort((a, b) => a.x - b.x);
+    this.bowserFire = BowserFire.forLevel(level);
 
     const sx = start.x ?? level.start.x;
     const sy = start.y ?? level.start.y;
@@ -528,6 +532,10 @@ export class World {
     this.checkLoops();
     this.flyingCheeps();
     this.flyingBullets();
+    if (this.bowserFire && !this.leaving) {
+      const lead = this.rightmost();
+      if (lead) this.bowserFire.update(this, lead);
+    }
 
     const lead = this.rightmost();
     if (lead) this.camera.follow(lead.body.x);

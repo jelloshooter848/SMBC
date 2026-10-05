@@ -194,7 +194,6 @@ const IGNORED = new Set([
   'fence',
   'toad',
   'gameStateWatch',
-  'bowserFireBallStart',
   'pullyRopeVertical',
   'pullyRope',
   'treeSmallTrunk',
@@ -368,6 +367,7 @@ function convertArea(level, area, id, levels) {
   const cheepStarts = []; // leaping Cheep Cheep stretches (an area may have several)
   const cheepEnds = [];
   const bulletZone = { start: null, end: null };
+  let bowserFire = null; // bowserFireBallStart: Bowser's flames fly in from this column on
   const vines = []; // vine bricks: { x, y, dest }
   const vertEnds = new Map(); // transporter number -> pipe top-left tile
   const pipes = []; // outgoing transporters
@@ -545,6 +545,10 @@ function convertArea(level, area, id, levels) {
           case 'bulletBillEnd':
             bulletZone.end = x;
             break;
+          case 'bowserFireBallStart':
+            // Level.as bfbX: once the player reaches it, an off-screen Bowser's flames fly in.
+            bowserFire = Math.min(bowserFire ?? x, x);
+            break;
           case 'fireBarLongLeft':
           case 'fireBarLongRight':
             b.entity(name === 'fireBarLongLeft' ? 'firebar' : 'firebar-ccw', x, y, { len: 12 });
@@ -636,6 +640,7 @@ function convertArea(level, area, id, levels) {
   if (bulletZone.start !== null) {
     b.zone(`bullets ${bulletZone.start} ${(bulletZone.end ?? area.width) - bulletZone.start}`);
   }
+  if (bowserFire !== null) b.zone(`bowser-fire ${bowserFire}`);
   if (vineStart) b.entity('vine', vineStart.x, vineStart.y, { len: 8 });
 
   // How the player arrives decides the start mode.

@@ -39,7 +39,8 @@ function parseProps(parts: string[]): Props {
  *                         written as space-separated 16-column screens
  *   [entities]            `type x y key=val ...`
  *   [zones]               `pipe x y dir -> level x y [exit=dir]`, `exit x next=id`,
- *                         `checkpoint x`, `scrollStop x`, `warp x w worlds=4,3,2`, `text x y triggerX "..."`
+ *                         `checkpoint x`, `scrollStop x`, `warp x w worlds=4,3,2`, `text x y triggerX "..."`,
+ *                         `bowser-fire x`
  *   [decor]               `kind x y`
  */
 export function parseTextMap(src: string, idHint = 'level'): LevelData {
@@ -208,6 +209,9 @@ function parseZone(line: string): Zone {
       return { kind: 'cheeps', x: Number(parts[1]), w: Number(parts[2]) };
     case 'bullets':
       return { kind: 'bullets', x: Number(parts[1]), w: Number(parts[2]) };
+    case 'bowser-fire':
+      if (parts[1] === undefined) throw new Error('expected "bowser-fire x"');
+      return { kind: 'bowser-fire', x: Number(parts[1]) };
     case 'loop': {
       // loop x y0 y1 -> to [check=x:y0:y1[,x:y0:y1...]] [any]
       const [, xs, y0, y1, arrow, to, ...rest] = parts;
@@ -344,6 +348,8 @@ function serializeZone(z: Zone): string {
       return `cheeps ${z.x} ${z.w}`;
     case 'bullets':
       return `bullets ${z.x} ${z.w}`;
+    case 'bowser-fire':
+      return `bowser-fire ${z.x}`;
     case 'loop':
       return `loop ${z.x} ${z.y0} ${z.y1} -> ${z.to}${
         z.checks.length ? ` check=${z.checks.map((c) => `${c.x}:${c.y0}:${c.y1}`).join(',')}` : ''

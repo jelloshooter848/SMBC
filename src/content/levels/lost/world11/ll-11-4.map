@@ -46,6 +46,7 @@ axe 237 8
 
 [zones]
 exit 248 next=ll-12-1
+bowser-fire 171
 pipe 97 10 down -> ll-11-4 19 10 exit=up
 pipe 129 10 down -> ll-11-4 19 10 exit=up
 pipe 161 10 down -> ll-11-4 19 10 exit=up

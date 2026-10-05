@@ -31,6 +31,11 @@ export type Zone =
   /** Bullet Bills fly in from the screen edges while the player is within [x, x + w). */
   | { kind: 'bullets'; x: number; w: number }
   /**
+   * Once the lead player reaches column x, Bowser's flames fly in from the right edge of the
+   * screen while he is still off screen (the original's `bowserFireBallStart`).
+   */
+  | { kind: 'bowser-fire'; x: number }
+  /**
    * Castle maze: walking right past column x with the body inside rows y0..y1 moves the player
    * to column `to` (same height), but only after passing its checkpoint columns (inside their
    * rows) since the last move: the wrong path loops back, the right path skips the repeat.
