@@ -1,4 +1,5 @@
 import { SceneStack } from '@engine/scene';
+import { loadProgress, saveProgress } from '@engine/save/progress';
 import type { GameContext, GameState } from '../context';
 import { newGameState } from '../context';
 import { startHp, type CharacterDef } from '../characters/character';
@@ -55,8 +56,19 @@ export class Game {
   }
 
   /** After the last castle: the princess's thanks, the final score, then the title. */
-  showEnding(): void {
+  showEnding(from = ''): void {
     const s = this.state;
+    // The Lost Levels: clearing 8-4 opens worlds A-D; a run without warps goes on to World 9.
+    let next: string | null = null;
+    if (from === 'll-8-4') {
+      const progress = loadProgress();
+      progress.lost.letters = true;
+      if (!s.warped) {
+        progress.lost.world9 = true;
+        next = 'll-9-1';
+      }
+      saveProgress(progress);
+    }
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
@@ -75,7 +87,7 @@ export class Game {
           '',
           'PRESS START',
         ],
-        () => this.showTitle(),
+        () => (next ? this.goToLevel(next, { mode: 'stand' }) : this.showTitle()),
         1800,
       ),
     );

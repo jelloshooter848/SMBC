@@ -1,7 +1,7 @@
 import { parseTextMap } from '@game/level/textmap';
 import type { LevelData } from '@game/level/schema';
 
-const sources = import.meta.glob('./world*/*.map', {
+const sources = import.meta.glob(['./world*/*.map', './lost/world*/*.map'], {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -9,7 +9,7 @@ const sources = import.meta.glob('./world*/*.map', {
 
 const cache = new Map<string, LevelData>();
 
-/** All bundled levels keyed by id (e.g. "1-1", "1-1-bonus"). Parsed lazily. */
+/** All bundled levels keyed by id (e.g. "1-1", "1-1-bonus", Lost Levels "ll-1-1"). Parsed lazily. */
 export function getLevel(id: string): LevelData {
   const hit = cache.get(id);
   if (hit) return hit;

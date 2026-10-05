@@ -1,4 +1,5 @@
 import type { InputFrame } from '@engine/input/input-manager';
+import { worldLabel } from '../hud/world-label';
 import { NO_INPUT } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
@@ -1344,7 +1345,7 @@ export class World {
       );
       pipes.forEach((p, i) => {
         const w = z.worlds[i];
-        if (w !== undefined) r.text(font, String(w), p.x * 16 + 12 - view.camX, p.y * 16 - 16);
+        if (w !== undefined) r.text(font, worldLabel(w), p.x * 16 + 12 - view.camX, p.y * 16 - 16);
       });
     }
   }

@@ -54,6 +54,8 @@ export interface GameState {
   /** Character-specific carried state (heart containers, ammo, magic, selected tool...). */
   kit: Record<string, number>;
   kit2: Record<string, number>;
+  /** A warp pipe was used this run (The Lost Levels only opens World 9 to warpless runs). */
+  warped: boolean;
 }
 
 export function playerCount(s: GameState): number {
@@ -77,5 +79,6 @@ export function newGameState(character: CharacterDef, character2: CharacterDef |
     checkpoint: null,
     kit: {},
     kit2: {},
+    warped: false,
   };
 }

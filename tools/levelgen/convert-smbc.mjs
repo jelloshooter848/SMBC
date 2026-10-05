@@ -3,6 +3,10 @@
 // .map format. Only the "normal" difficulty layer is converted.
 //
 //   node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4
+//   node tools/levelgen/convert-smbc.mjs --prefix=ll- tools/levelgen/source/levelDataLostLevels.xml src/content/levels/lost/world1 1-1 1-2 1-3 1-4
+//
+// `--prefix` namespaces every generated id (areas, parents, pipe/vine/pit/warp targets, exits) so
+// another game's levels (The Lost Levels: `ll-1-1` ...) can live next to SMB1's.
 //
 // The XML is a <LEVELDATA> of <LEVEL ID TIME MAIN_AREA> holding <AREA ID TYPE><MAP> cells:
 // a flat comma list of 15 rows × W columns. A cell is `0` or tokens joined by `()`, each
@@ -12,11 +16,16 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { MapBuilder } from './lib.mjs';
 
-const [, , xmlPath, outDir, ...ids] = process.argv;
+const args = process.argv.slice(2);
+const PREFIX = (args.find((a) => a.startsWith('--prefix='))?.slice(9) ?? '').trim();
+const [xmlPath, outDir, ...ids] = args.filter((a) => !a.startsWith('--'));
 if (!xmlPath || !outDir || !ids.length) {
-  console.error('usage: convert-smbc.mjs <levelDataSmb.xml> <outDir> <levelId>...');
+  console.error('usage: convert-smbc.mjs [--prefix=ll-] <levelData.xml> <outDir> <levelId>...');
   process.exit(2);
 }
+/** Lost Levels (prefixed) runs: 8-4 ends the game, World 9 and each of A-D (10-13) stand alone. */
+const LOST = PREFIX !== '';
+const pid = (id) => (id === 'end' ? id : `${PREFIX}${id}`);
 
 /* ---------- parsing ---------- */
 
@@ -77,6 +86,7 @@ const AREA_SUFFIX = {
   normal: 'exit',
   platform: 'warp',
   castle: 'end',
+  underGround: 'under',
 };
 /** Levels drawn with the night or snow palettes. */
 const NIGHT = new Set(['3-1', '3-2', '3-3', '6-1']);
@@ -136,8 +146,8 @@ function themeFor(levelId, type) {
   if (type === 'castle') return 'castle';
   if (type === 'underGround' || type === 'pipeBonus') return 'underground';
   if (type === 'water') return 'water';
-  if (SNOW.has(levelId)) return 'snow';
-  if (NIGHT.has(levelId)) return 'night';
+  if (!LOST && SNOW.has(levelId)) return 'snow';
+  if (!LOST && NIGHT.has(levelId)) return 'night';
   return 'overworld';
 }
 
@@ -145,8 +155,11 @@ function themeFor(levelId, type) {
 function nextLevel(levelId, levels) {
   const [w, s] = levelId.split('-').map(Number);
   if (w === 8 && s === 4) return 'end';
+  // The Lost Levels: World 9 is a bonus world (its 9-4 ends), and A-D (10-13) run as one quest.
+  if (LOST && s === 4 && (w === 9 || w === 13)) return 'end';
   const next = s < 4 ? `${w}-${s + 1}` : `${w + 1}-1`;
-  return levels.get(next)?.areas.some((a) => a.type === 'intro') ? `${next}-intro` : next;
+  if (!levels.has(next)) return 'end';
+  return pid(levels.get(next).areas.some((a) => a.type === 'intro') ? `${next}-intro` : next);
 }
 
 /** Legend char for a tile token, or null when it is not a tile. */
@@ -527,7 +540,7 @@ function convertArea(level, area, id, levels) {
     header.startMode = below ? 'stand' : 'fall';
     header.camera = area.width <= 16 ? 'locked' : 'scroll';
   }
-  if (!isMain) header.parent = levelId;
+  if (!isMain) header.parent = pid(levelId);
   // No scrollStop: the camera may reach the level's real end (scrollStop is its right edge).
 
   return {
@@ -551,11 +564,11 @@ function convertArea(level, area, id, levels) {
 function convertLevel(level, levels) {
   const used = new Map();
   const ids = level.areas.map((a) => {
-    if (a.id === level.attrs.MAIN_AREA) return level.id;
+    if (a.id === level.attrs.MAIN_AREA) return pid(level.id);
     const suffix = AREA_SUFFIX[a.type] ?? a.id;
     const n = (used.get(suffix) ?? 0) + 1;
     used.set(suffix, n);
-    return `${level.id}-${suffix}${n > 1 ? n : ''}`;
+    return pid(`${level.id}-${suffix}${n > 1 ? n : ''}`);
   });
   const converted = level.areas.map((a, i) => convertArea(level, a, ids[i], levels));
   const byAreaId = new Map(level.areas.map((a, i) => [a.id, converted[i]]));
@@ -582,7 +595,7 @@ function convertLevel(level, levels) {
         const target = levels.get(dest);
         const main = target.areas.find((a) => a.id === target.attrs.MAIN_AREA);
         const ps = find(main, (t) => t.name === 'playerStart') ?? { x: 2, y: 12 };
-        c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${dest} ${ps.x} ${ps.y}`);
+        c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${pid(dest)} ${ps.x} ${ps.y}`);
         warpPipes.push({ x: p.x, world: Number(dest.split('-')[0]) });
         continue;
       }
