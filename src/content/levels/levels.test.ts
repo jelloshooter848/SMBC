@@ -324,10 +324,10 @@ describe('World 4 follows the original layouts', () => {
     const l = load('4-4');
     expect(l.width).toBe(320);
     expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([
-      { kind: 'loop', x: 63, y0: 3, y1: 5, to: 127, check: { x: 35, y0: 3, y1: 5 } },
-      { kind: 'loop', x: 127, y0: 10, y1: 12, to: 63, check: { x: 99, y0: 10, y1: 12 } },
-      { kind: 'loop', x: 191, y0: 11, y1: 12, to: 255, check: { x: 161, y0: 11, y1: 12 } },
-      { kind: 'loop', x: 255, y0: 3, y1: 9, to: 191, check: { x: 239, y0: 3, y1: 9 } },
+      { kind: 'loop', x: 63, y0: 3, y1: 5, to: 127, checks: [{ x: 35, y0: 3, y1: 5 }], need: 'all' },
+      { kind: 'loop', x: 127, y0: 10, y1: 12, to: 63, checks: [{ x: 99, y0: 10, y1: 12 }], need: 'all' },
+      { kind: 'loop', x: 191, y0: 11, y1: 12, to: 255, checks: [{ x: 161, y0: 11, y1: 12 }], need: 'all' },
+      { kind: 'loop', x: 255, y0: 3, y1: 9, to: 191, checks: [{ x: 239, y0: 3, y1: 9 }], need: 'all' },
     ]);
     expect(l.entities).toContainEqual({ type: 'bowser', x: 296, y: 9 });
     expect(l.entities).toContainEqual({ type: 'axe', x: 301, y: 8 });
@@ -449,5 +449,93 @@ describe('World 6 follows the original layouts', () => {
     expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9, props: { attack: 'hammer' } });
     expect(l.entities.filter((e) => e.type === 'podoboo').map((e) => e.x)).toEqual([27, 33, 131]);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '7-1' });
+  });
+});
+
+describe('World 7 follows the original layouts', () => {
+  it('7-1: thirteen blaster barrels, four Hammer Bros, a beetle, a springboard and a bonus room', () => {
+    const l = load('7-1');
+    expect(Array.from(l.tiles).filter((t) => t === T.BLASTER_TOP)).toHaveLength(13);
+    expect(l.entities.filter((e) => e.type === 'hammer-bro')).toHaveLength(4);
+    expect(l.entities).toContainEqual({ type: 'buzzy', x: 169, y: 4 });
+    expect(l.entities).toContainEqual({ type: 'spring', x: 151, y: 12 });
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 93, y: 10, dir: 'down' }));
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 179, next: '7-2-intro' });
+  });
+  it('7-2: a water level with thirteen Bloopers and a side exit', () => {
+    const l = load('7-2');
+    expect(l.theme).toBe('water');
+    expect(l.entities.filter((e) => e.type === 'blooper')).toHaveLength(13);
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 189, y: 8, dir: 'right' }));
+    expect(load('7-2-exit').zones).toContainEqual({ kind: 'exit', x: 22, next: '7-3' });
+  });
+  it('7-3: bridges with leaping Cheep Cheeps and two gliding paratroopas', () => {
+    const l = load('7-3');
+    expect(l.zones).toContainEqual({ kind: 'cheeps', x: 9, w: 173 });
+    expect(l.entities.filter((e) => e.type === 'koopa-para-green-h').map((e) => [e.x, e.y])).toEqual([
+      [137, 7],
+      [153, 9],
+    ]);
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 226, next: '7-4' });
+  });
+  it('7-4: a 352-wide maze with all/any checkpoint loops and a hammer Bowser', () => {
+    const l = load('7-4');
+    expect(l.width).toBe(352);
+    expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([
+      {
+        kind: 'loop',
+        x: 79,
+        y0: 3,
+        y1: 5,
+        to: 143,
+        checks: [
+          { x: 43, y0: 10, y1: 12 },
+          { x: 60, y0: 7, y1: 9 },
+        ],
+        need: 'all',
+      },
+      {
+        kind: 'loop',
+        x: 143,
+        y0: 3,
+        y1: 12,
+        to: 79,
+        checks: [
+          { x: 107, y0: 3, y1: 5 },
+          { x: 123, y0: 3, y1: 5 },
+          { x: 124, y0: 11, y1: 12 },
+          { x: 135, y0: 10, y1: 12 },
+        ],
+        need: 'any',
+      },
+      {
+        kind: 'loop',
+        x: 208,
+        y0: 3,
+        y1: 5,
+        to: 272,
+        checks: [
+          { x: 173, y0: 3, y1: 5 },
+          { x: 191, y0: 7, y1: 9 },
+        ],
+        need: 'all',
+      },
+      {
+        kind: 'loop',
+        x: 272,
+        y0: 3,
+        y1: 9,
+        to: 208,
+        checks: [
+          { x: 240, y0: 10, y1: 12 },
+          { x: 254, y0: 3, y1: 5 },
+          { x: 255, y0: 11, y1: 12 },
+          { x: 269, y0: 7, y1: 9 },
+        ],
+        need: 'any',
+      },
+    ]);
+    expect(l.entities).toContainEqual({ type: 'bowser', x: 328, y: 9, props: { attack: 'hammer' } });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 344, next: '8-1' });
   });
 });

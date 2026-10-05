@@ -100,6 +100,7 @@ const ENTITIES = {
   podoboo: 'podoboo',
   enemyWingedKoopaRed: 'koopa-para-red',
   enemyWingedKoopaGreen: 'koopa-para-green',
+  enemyWingedKoopaHorizontalGreen: 'koopa-para-green-h',
   bowserAxe: 'axe',
   fireBarLeft: 'firebar',
   fireBarRight: 'firebar-ccw',
@@ -305,12 +306,20 @@ function convertArea(level, area, id, levels) {
           case 'teleporterCheckPoint': {
             const n = String(params.number ?? '0');
             const t = teleports.get(n) ?? {};
-            const key =
-              name === 'teleporterEnd' ? 'end' : name === 'teleporterCheckPoint' ? 'check' : 'start';
-            const e = t[key] ?? { x, ys: [] };
-            if (e.x !== x) console.warn(`${id}: teleporter ${n} ${key} spans columns ${e.x} and ${x}`);
-            e.ys.push(y);
-            t[key] = e;
+            if (name === 'teleporterCheckPoint') {
+              // Every column is its own checkpoint (with the rows it covers).
+              const checks = (t.checks ??= new Map());
+              const c = checks.get(x) ?? { x, ys: [] };
+              c.ys.push(y);
+              checks.set(x, c);
+            } else {
+              const key = name === 'teleporterEnd' ? 'end' : 'start';
+              const e = t[key] ?? { x, ys: [] };
+              if (e.x !== x) console.warn(`${id}: teleporter ${n} ${key} spans columns ${e.x} and ${x}`);
+              e.ys.push(y);
+              t[key] = e;
+              if (name === 'teleporterStartOne') t.any = true;
+            }
             teleports.set(n, t);
             break;
           }
@@ -443,15 +452,16 @@ function convertArea(level, area, id, levels) {
     if (!q.used) console.warn(`${id}: balance platform without a rope at ${q.x},${q.y}`);
   for (const l of lakitus) b.entity('lakitu', l.x, l.y, { end: lakituEnd ?? area.width });
   // Castle mazes: each numbered teleporter moves the player from its start column to its end
-  // column, but only after passing its checkpoint column on the same path.
+  // column once its checkpoints were passed: all of them (Start) or any one (StartOne).
   for (const [n, t] of [...teleports].sort((a, c) => Number(a[0]) - Number(c[0]))) {
     if (!t.start || !t.end) {
       console.warn(`${id}: teleporter ${n} needs a start and an end`);
       continue;
     }
     const span = (e) => [Math.min(...e.ys), Math.max(...e.ys)];
-    const check = t.check ? ` check=${t.check.x}:${span(t.check).join(':')}` : '';
-    b.zone(`loop ${t.start.x} ${span(t.start).join(' ')} -> ${t.end.x}${check}`);
+    const checks = t.checks ? [...t.checks.values()].sort((a, c) => a.x - c.x) : [];
+    const check = checks.length ? ` check=${checks.map((c) => `${c.x}:${span(c).join(':')}`).join(',')}` : '';
+    b.zone(`loop ${t.start.x} ${span(t.start).join(' ')} -> ${t.end.x}${check}${t.any ? ' any' : ''}`);
   }
   // Castles: a big castle is drawn as a small one on top of a big base; keep one entity.
   let door = null;

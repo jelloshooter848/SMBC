@@ -12,6 +12,9 @@ const SHELL_WIGGLE_FRAMES = 90;
 const PARA_AMPLITUDE = 48; // px
 const PARA_PERIOD = 192; // frames
 const PARA_HOP = 0x03800; // 3.5 px/f take-off for hopping green paratroopas
+/** Gliding paratroopas sway this far either side of their spawn column, once per period. */
+const GLIDE_AMPLITUDE = 56; // px
+const GLIDE_PERIOD = 256; // frames
 
 export type KoopaState = 'walk' | 'shell' | 'shell-moving' | 'wiggle';
 
@@ -25,6 +28,9 @@ export class Koopa extends Enemy {
   readonly kind = 'koopa';
   state: KoopaState = 'walk';
   wings: boolean;
+  /** Gliding paratroopa: sways side to side at a fixed height instead of hopping. */
+  readonly glide: boolean;
+  private readonly homeX: number;
   private readonly homeY: number;
   private flyT = 0;
   private shellTimer = 0;
@@ -34,13 +40,21 @@ export class Koopa extends Enemy {
   /** Standing height in px (koopas 22, buzzy beetles 14). */
   private readonly walkH: number;
 
-  constructor(x: number, y: number, color: 'green' | 'red' | 'buzzy' = 'green', wings = false) {
+  constructor(
+    x: number,
+    y: number,
+    color: 'green' | 'red' | 'buzzy' = 'green',
+    wings = false,
+    glide = false,
+  ) {
     super(x, y, 12, color === 'buzzy' ? 14 : 22);
     this.color = color;
     this.walkH = color === 'buzzy' ? 14 : 22;
     this.wings = wings;
+    this.glide = wings && glide;
+    this.homeX = x;
     this.homeY = y;
-    if (wings && color === 'red') this.body.vx = 0;
+    if (wings && (color === 'red' || this.glide)) this.body.vx = 0;
     this.fallsOffLedges = color !== 'red';
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
@@ -179,6 +193,15 @@ export class Koopa extends Enemy {
 
   private fly(world: World): void {
     const b = this.body;
+    if (this.glide) {
+      // Sway side to side through the air, ignoring tiles, facing the way it is going.
+      this.flyT++;
+      const prevX = b.x;
+      b.x = this.homeX + px(Math.round(Math.sin((this.flyT * Math.PI * 2) / GLIDE_PERIOD) * GLIDE_AMPLITUDE));
+      b.vy = 0;
+      if (b.x !== prevX) this.facing = b.x > prevX ? 1 : -1;
+      return;
+    }
     if (this.color === 'red') {
       // Bob vertically through the air, ignoring tiles, facing the nearest player.
       this.flyT++;
