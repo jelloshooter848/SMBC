@@ -22,7 +22,10 @@ type Brush =
 
 const THEMES: Theme[] = ['overworld', 'underground', 'castle', 'water', 'night', 'treetop', 'snow'];
 const MUSIC = ['overworld', 'underground', 'castle', 'water', 'star', 'title'];
-const ENTITY_FRAMES: Record<string, { sheet: string; frame: string; palette?: (theme: Theme) => string }> = {
+const ENTITY_FRAMES: Record<
+  string,
+  { sheet: string; frame: string; palette?: (theme: Theme) => string; flipY?: boolean }
+> = {
   goomba: { sheet: 'enemies', frame: 'goomba-0', palette: enemyPalette },
   'koopa-green': { sheet: 'enemies', frame: 'koopa-0', palette: () => 'koopa-green' },
   'koopa-red': { sheet: 'enemies', frame: 'koopa-0', palette: () => 'koopa-red' },
@@ -30,6 +33,7 @@ const ENTITY_FRAMES: Record<string, { sheet: string; frame: string; palette?: (t
   'koopa-para-red': { sheet: 'enemies', frame: 'koopa-fly-0', palette: () => 'koopa-red' },
   'koopa-para-green-h': { sheet: 'enemies', frame: 'koopa-fly-0', palette: () => 'koopa-green' },
   piranha: { sheet: 'enemies', frame: 'piranha-0', palette: enemyPalette },
+  'piranha-down': { sheet: 'enemies', frame: 'piranha-0', palette: enemyPalette, flipY: true },
   'cheep-red': { sheet: 'enemies', frame: 'cheep-0', palette: enemyPalette },
   'cheep-grey': { sheet: 'enemies', frame: 'cheep-0', palette: () => 'cheep-grey' },
   blooper: { sheet: 'enemies', frame: 'blooper-0', palette: enemyPalette },
@@ -406,6 +410,7 @@ export class EditorScene implements Scene {
       'koopa-para-red',
       'koopa-para-green-h',
       'piranha',
+      'piranha-down',
       'cheep-red',
       'cheep-grey',
       'blooper',
@@ -627,7 +632,9 @@ export class EditorScene implements Scene {
       if (spec) {
         const sheet = assets.sheet(spec.sheet, spec.palette?.(theme));
         const f = sheet.frames.get(spec.frame);
-        r.sprite(sheet, spec.frame, x, (e.y + 1) * 16 - (f?.h ?? 16));
+        // Hanging things (flipY) dangle below their anchor tile; the rest stand on its bottom.
+        if (spec.flipY) r.sprite(sheet, spec.frame, x + 8, (e.y + 1) * 16, false, true);
+        else r.sprite(sheet, spec.frame, x, (e.y + 1) * 16 - (f?.h ?? 16));
       } else r.rect(x + 2, e.y * 16 + 2, 12, 12, '#f0f');
     }
     for (const z of this.level.zones) {

@@ -19,6 +19,8 @@ const tileFrames = [
   'hard',
   'pipe-top-left',
   'pipe-top-right',
+  'pipe-bottom-left',
+  'pipe-bottom-right',
   'pipe-body-left',
   'pipe-body-right',
   'pipe-h-top-left',
@@ -271,6 +273,10 @@ describe('tile sprites', () => {
     expect(edge('pipe-body-left', 2)).toMatch(/^0+$/);
     expect(edge('pipe-body-right', 13)).toMatch(/^0+$/);
     expect(edge('pipe-body-left', 0) + edge('pipe-body-right', 15)).toMatch(/^\.+$/);
+    // a pipe hanging from the ceiling ends in the same rim upside down
+    const rows = (name: string): readonly string[] => tilesDef.frames[name] as readonly string[];
+    expect(rows('pipe-bottom-left')).toEqual([...rows('pipe-top-left')].reverse());
+    expect(rows('pipe-bottom-right')).toEqual([...rows('pipe-top-right')].reverse());
   });
 });
 

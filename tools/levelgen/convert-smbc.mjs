@@ -194,6 +194,11 @@ function tileChar(tok, area, world) {
       return '{';
     case 'groundPipeMidRight':
       return '}';
+    // A pipe hanging from the ceiling (The Lost Levels): its rim is at the bottom.
+    case 'groundPipeBottomLeft':
+      return 'D';
+    case 'groundPipeBottomRight':
+      return 'G';
     case 'groundPipeEndLeftTop':
       return '(';
     case 'groundPipeEndLeftBottom':
@@ -315,6 +320,12 @@ function convertArea(level, area, id, levels) {
           case 'enemyPiranhaGreen':
           case 'enemyPiranhaRed':
             b.entity('piranha', x, y + 1); // the token sits above the pipe's top-left tile
+            break;
+          case 'enemyPiranhaRedUpsideDown':
+          case 'enemyPiranhaGreenUpsideDown':
+            // The Lost Levels' hanging piranha: the token shares the cell of the pipe's
+            // bottom-left rim tile (groundPipeBottomLeft), so it is placed there unchanged.
+            b.entity('piranha-down', x, y);
             break;
           case 'peach':
             b.entity('princess', x, y);

@@ -347,6 +347,9 @@ const pipeTopRight = [
   '5555665555550050',
   '0000000000000000',
 ];
+/* A pipe hanging from the ceiling opens downward: the same rim upside down. */
+const pipeBottomLeft = [...pipeTopLeft].reverse();
+const pipeBottomRight = [...pipeTopRight].reverse();
 const pipeBodyLeft = Array.from({ length: 16 }, () => '..06655555665555');
 const pipeBodyRight = Array.from({ length: 16 }, () => '55556655550050..');
 
@@ -709,6 +712,8 @@ export const tilesDef: SpriteDef = {
     hard,
     'pipe-top-left': pipeTopLeft,
     'pipe-top-right': pipeTopRight,
+    'pipe-bottom-left': pipeBottomLeft,
+    'pipe-bottom-right': pipeBottomRight,
     'pipe-body-left': pipeBodyLeft,
     'pipe-body-right': pipeBodyRight,
     'pipe-h-top-left': pipeHTopLeft,

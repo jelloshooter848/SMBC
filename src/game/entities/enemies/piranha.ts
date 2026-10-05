@@ -9,17 +9,28 @@ const RISE_FRAMES = 32;
 const HOLD_FRAMES = 60;
 const HIDDEN_FRAMES = 60;
 
-/** Lives in a pipe at (tx, ty) = the pipe's top-left tile. Won't come out while the player is close. */
+/**
+ * Lives in a pipe at (tx, ty) = the pipe's top-left tile. Won't come out while the player is close.
+ * With `hanging` (The Lost Levels' upside-down piranha) the pipe hangs from the ceiling and
+ * (tx, ty) is its bottom-left rim tile: the plant comes out of the rim's bottom edge, head down,
+ * on the same timings. It hangs above the player, so it can't be stomped; touching it hurts.
+ */
 export class Piranha extends Enemy {
   readonly kind = 'piranha';
   private phase: 'hidden' | 'rising' | 'up' | 'sinking' = 'hidden';
   private t = HIDDEN_FRAMES;
-  private readonly pipeTopY: number; // subpixels: y of the pipe's top edge
+  /** Subpixels: y of the pipe opening (the top edge, or the bottom edge when hanging). */
+  private readonly mouthY: number;
   private readonly centerX: number; // subpixels
 
-  constructor(tx: number, ty: number) {
-    super(px(tx * 16 + 2), px(ty * 16), 12, 0);
-    this.pipeTopY = px(ty * 16);
+  constructor(
+    tx: number,
+    ty: number,
+    readonly hanging = false,
+  ) {
+    // The upright plant keeps its long-standing placement; the hanging one is centred on the pipe.
+    super(px(tx * 16 + (hanging ? 8 : 0) + 2), px(ty * 16), 12, 0);
+    this.mouthY = px((hanging ? ty + 1 : ty) * 16);
     this.centerX = px(tx * 16 + 16);
     this.layer = 'back';
     this.spriteOffsetX = 2;
@@ -35,15 +46,17 @@ export class Piranha extends Enemy {
       ice: 'immune',
       stomp: 'hurtAttacker',
     };
+    if (hanging) this.stompable = false;
     this.scoreValue = 200;
     this.body.vx = 0;
+    this.body.y = this.mouthY;
     this.currentFrame = 'piranha-0';
   }
 
   private set visible(pxVisible: number) {
     const v = Math.max(0, Math.min(HEIGHT, pxVisible));
     this.body.h = px(v);
-    this.body.y = this.pipeTopY - this.body.h;
+    this.body.y = this.hanging ? this.mouthY : this.mouthY - this.body.h;
     this.contactHurts = v > 4;
   }
 
@@ -90,13 +103,12 @@ export class Piranha extends Enemy {
 
   override render(r: Renderer, view: View): void {
     if (this.visiblePx <= 0) return;
-    // Draw the whole 24-tall sprite anchored to the pipe top; the pipe tiles (drawn later) cover the rest.
+    // Draw the whole 24-tall sprite anchored to the pipe mouth; the pipe tiles (drawn later) cover
+    // the rest. Hanging, it is flipped head-down and grows below the rim.
     const sheet = view.assets.sheet(this.sheet, this.palette(view));
-    r.sprite(
-      sheet,
-      this.currentFrame,
-      toPx(this.body.x) - view.camX - 2,
-      toPx(this.pipeTopY) - this.visiblePx,
-    );
+    const x = toPx(this.body.x) - view.camX - 2;
+    const mouth = toPx(this.mouthY);
+    if (this.hanging) r.sprite(sheet, this.currentFrame, x, mouth + this.visiblePx - HEIGHT, false, true);
+    else r.sprite(sheet, this.currentFrame, x, mouth - this.visiblePx);
   }
 }
