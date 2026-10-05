@@ -150,6 +150,7 @@ pnpm typecheck
 pnpm build        # static site in dist/
 pnpm check:levels # parse every bundled .map and check level landmarks
 pnpm check:assets # refuse binary art/audio in the repo
+pnpm release:check # package.json version and CHANGELOG.md format (docs/RELEASING.md)
 node tools/smoke/screenshot.mjs out/   # headless Playwright smoke run with screenshots
 ```
 
@@ -174,6 +175,15 @@ and red giant-mushroom land (`mushroom`, `mushroom-red`), sky levels on cloud le
 through), a castle under the daylight sky (`castle-overworld`) and the swim through 8-4's
 castle (`castle-water`).
 Only the normal-difficulty layer is used; the generated `.map` files are committed.
+
+## Releases and versions
+
+The live site updates only when a version is released. Versions follow SemVer (pre-1.0: a minor
+bump for new content or a save-format change, a patch for fixes), every pull request notes its
+user-facing changes in [CHANGELOG.md](CHANGELOG.md), and pushing a tag `vX.Y.Z` builds, deploys
+and publishes the GitHub Release. The title screen shows `V0.2.0` on a release and
+`V0.2.0-DEV.<commit>` on any other build. See [docs/RELEASING.md](docs/RELEASING.md) for the
+rules and the release steps.
 
 ## Asset packs
 

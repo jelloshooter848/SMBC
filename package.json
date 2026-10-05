@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "check:levels": "vitest run src/content/levels",
-    "check:assets": "node tools/check-no-binaries.mjs"
+    "check:assets": "node tools/check-no-binaries.mjs",
+    "release:check": "node tools/release/check.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

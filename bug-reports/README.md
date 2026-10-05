@@ -19,8 +19,10 @@ and mention the other one.
   and assists). Otherwise the menu path.
 - **Where in the level.** Press **F1** for the debug overlay: it shows tile columns. "Column 137,
   standing on the pipe" beats "near the end".
-- **Build.** The version string at the bottom right of the title screen (for example
-  `V0.1.0-3A09872`), or the commit you tested.
+- **Build.** Quote the version string at the bottom right of the title screen exactly: `V0.2.0`
+  on a released build (the live site), or something like `V0.2.0-DEV.3A09872` on any other build
+  (a local `pnpm dev`, a branch). If you can't see the title screen, give the commit you tested.
+  Versions are explained in [docs/RELEASING.md](../docs/RELEASING.md).
 - **Steps, expected, actual, how often** (every time / sometimes / once).
 
 Level ids: SMB1 levels are `1-1` … `8-4` (sub-areas add `-bonus`, `-sky`, `-water`, …); The Lost
