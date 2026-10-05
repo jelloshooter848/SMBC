@@ -5,12 +5,12 @@ import { flipH, swapColors } from '@engine/gfx/pixelart';
 /**
  * Item palette roles:
  *   0 outline (black)    1 white            2 red (mushroom cap, spring coil)
- *   3 cream (stem, spots, lift planks)      4 green (1up cap, flower leaves, flag)
+ *   3 cream (stem, spots, lift planks)      4 green (1up cap, flower leaves, flag, super spring coil)
  *   5 gold (coin, star, buster)             6 gold light (shine)
  *   7 orange (fire)      8 dark red (shade) 9 brown (brick shards, axe handle)
  *   a light blue (sword beam)               b grey (axe blade, spring plates)
- *   c purple (knuckle)                      d pink (knuckle thumb, knuckle glints)
- *   e blue (weapon pellets, e-tank body)
+ *   c purple (knuckle, poison cap rim)      d pink (knuckle thumb, knuckle glints)
+ *   e blue (weapon pellets, e-tank body, poison cap)
  */
 export const itemPalettes: Record<string, string[]> = {
   items: [
@@ -51,6 +51,27 @@ const mushroom = [
   '....03333380....',
   '....03333380....',
   '....00000000....',
+];
+
+/* Lost Levels poison mushroom (original art): a dark blue cap with a purple rim and sheen, pale
+ * spots, and a frowning face on the stem so it reads as a threat next to the red mushroom. */
+const poisonMushroom = [
+  '.....000000.....',
+  '...00eeeeee00...',
+  '..0ece3333eee0..',
+  '.0ecee3333eeee0.',
+  '.0eeeee33eeeee0.',
+  '033eeeeeeeeee330',
+  '0333eeeeeeee3330',
+  '033eeeeeeeeee330',
+  '0ceeeeeeeeeeeec0',
+  '.0cccccccccccc0.',
+  '..000333333000..',
+  '...0330330330...',
+  '...0333333330...',
+  '...0333003330...',
+  '...0330330330...',
+  '...0000000000...',
 ];
 
 const flower0 = [
@@ -310,6 +331,34 @@ const princess = [
   '.0d1ddddddd1dd0.',
   '.0dddddddddddd0.',
   '..000000000000..',
+];
+
+/* The castle's mushroom retainer (original design): white cap with red spots, blue vest, 16x24. */
+const toad = [
+  '.....000000.....',
+  '...0012222100...',
+  '..011222222110..',
+  '.01111222211110.',
+  '.02211111111220.',
+  '0222111111112220',
+  '0222111111112220',
+  '0221111111111220',
+  '0111111111111110',
+  '.00000000000000.',
+  '...0333333330...',
+  '...0303333030...',
+  '...0303333030...',
+  '...0333333330...',
+  '....03333330....',
+  '...0ee1111ee0...',
+  '..03ee1111ee30..',
+  '..03ee1111ee30..',
+  '...0ee1111ee0...',
+  '...0eeeeeeee0...',
+  '...0111111110...',
+  '...0111001110...',
+  '..09990..09990..',
+  '..00000..00000..',
 ];
 
 /* Pulley wheel for balance lifts: a grey wheel with a dark rim on a cream bracket, 16x16. */
@@ -1653,6 +1702,7 @@ export const itemsDef: SpriteDef = {
   frames: {
     mushroom,
     '1up': swapColors(mushroom, { '2': '4' }),
+    'poison-mushroom': poisonMushroom,
     'flower-0': flower0,
     'flower-1': swapColors(flower0, { '7': '2', '5': '6', '6': '5' }),
     'star-0': star0,
@@ -1681,12 +1731,16 @@ export const itemsDef: SpriteDef = {
     'spring-0': spring0,
     'spring-1': spring1,
     'spring-2': spring2,
+    'spring-green-0': swapColors(spring0, { '2': '4' }),
+    'spring-green-1': swapColors(spring1, { '2': '4' }),
+    'spring-green-2': swapColors(spring2, { '2': '4' }),
     'vine-top': vineTop,
     pulley,
     'vine-mid': vineMid,
     flag,
     'castle-flag': castleFlag,
     princess,
+    toad,
     'bomb-0': bomb0,
     'bomb-1': bomb1,
     'explosion-0': explosion0,

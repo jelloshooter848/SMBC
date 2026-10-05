@@ -52,7 +52,8 @@ podoboo 131 12
 lift-h 136 6 len=4 range=3
 bowser 136 9
 axe 141 8
+toad 153 12
 
 [zones]
-checkpoint 76
 exit 152 next=6-1
+bowser-fire 87

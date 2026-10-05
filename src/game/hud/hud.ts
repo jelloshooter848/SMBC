@@ -1,4 +1,5 @@
 import type { Renderer } from '@engine/gfx/renderer';
+import { worldLabel } from './world-label';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { GameState } from '../context';
 import type { Player } from '../entities/player';
@@ -23,7 +24,7 @@ export function drawHud(
   r.text(font, pad(state.score, 6), 24, 16);
   r.text(font, `$×${pad(state.coins, 2)}`, 88, 16);
   r.text(font, 'WORLD', 144, 8);
-  r.text(font, `${state.world}-${state.stage}`, 152, 16);
+  r.text(font, `${worldLabel(state.world)}-${state.stage}`, 152, 16);
   r.text(font, 'TIME', 200, 8);
   if (time !== null) r.text(font, pad(time, 3), 208, 16);
   const dmg = state.character.damage;

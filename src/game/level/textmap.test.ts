@@ -82,6 +82,14 @@ describe('textmap parser', () => {
     expect(lvl.decor).toEqual([{ kind: 'hill-big', x: 0, y: 12 }]);
   });
 
+  it('parses and round-trips the bowser-fire zone', () => {
+    const lvl = parseTextMap(small(rows15(), '\n[zones]\nbowser-fire 9'));
+    expect(lvl.zones).toEqual([{ kind: 'bowser-fire', x: 9 }]);
+    expect(serializeTextMap(lvl)).toContain('\nbowser-fire 9\n');
+    expect(parseTextMap(serializeTextMap(lvl)).zones).toEqual(lvl.zones);
+    expect(() => parseTextMap(small(rows15(), '\n[zones]\nbowser-fire'))).toThrow(/bowser-fire x/);
+  });
+
   it('rejects ragged rows with a line number', () => {
     const rows = rows15();
     rows[3] = '...............'; // 15 wide

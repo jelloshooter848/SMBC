@@ -94,10 +94,11 @@ export class LakituZone extends Entity {
     tx: number,
     ty: number,
     private readonly endCol: number,
+    mid = false,
   ) {
     super(px(tx * 16), px(ty * 16), 16, 16);
-    // Fly just under the HUD (it covers the top 32 px).
-    this.flyY = Math.max(40, ty * 16 + 24);
+    // Fly just under the HUD (it covers the top 32 px), or at mid-screen (Lost Levels "Middle" ends).
+    this.flyY = mid ? 112 : Math.max(40, ty * 16 + 24);
     this.despawnMargin = null;
     this.body.vx = 0;
   }

@@ -1,4 +1,5 @@
 import type { Scene } from '@engine/scene';
+import { worldLabel } from '../hud/world-label';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { Game } from './game';
 
@@ -19,7 +20,7 @@ export class IntroScene implements Scene {
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
     const s = this.game.state;
-    r.text(font, `WORLD ${s.world}-${s.stage}`, 88, 80);
+    r.text(font, `WORLD ${worldLabel(s.world)}-${s.stage}`, 88, 80);
     const c = s.character;
     const sheet = assets.sheet(c.portrait.sheet, c.portrait.palette);
     const f = sheet.frames.get(c.portrait.frame);

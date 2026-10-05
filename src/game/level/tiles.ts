@@ -4,7 +4,8 @@
  */
 export type Collision = 'none' | 'solid' | 'top';
 
-export type BlockContent = 'coin' | 'powerup' | '1up' | 'star' | 'coins10' | 'vine' | 'none';
+/** `poison`: a Lost Levels poison mushroom, which hurts the player like an enemy. */
+export type BlockContent = 'coin' | 'powerup' | '1up' | 'star' | 'coins10' | 'vine' | 'poison' | 'none';
 
 export interface TileDef {
   readonly id: number;
@@ -35,21 +36,27 @@ export const T = {
   BRICK_COINS10: def('brick-coins10', 'solid', { block: { kind: 'brick', content: 'coins10' } }),
   BRICK_STAR: def('brick-star', 'solid', { block: { kind: 'brick', content: 'star' } }),
   BRICK_POWERUP: def('brick-powerup', 'solid', { block: { kind: 'brick', content: 'powerup' } }),
+  BRICK_POISON: def('brick-poison', 'solid', { block: { kind: 'brick', content: 'poison' } }),
   BRICK_1UP: def('brick-1up', 'solid', { block: { kind: 'brick', content: '1up' } }),
   BRICK_VINE: def('brick-vine', 'solid', { block: { kind: 'brick', content: 'vine' } }),
   Q_COIN: def('question-coin', 'solid', { block: { kind: 'question', content: 'coin' } }),
   Q_POWERUP: def('question-powerup', 'solid', { block: { kind: 'question', content: 'powerup' } }),
+  Q_POISON: def('question-poison', 'solid', { block: { kind: 'question', content: 'poison' } }),
   Q_1UP: def('question-1up', 'solid', { block: { kind: 'question', content: '1up' } }),
   Q_STAR: def('question-star', 'solid', { block: { kind: 'question', content: 'star' } }),
   HIDDEN_COIN: def('hidden-coin', 'none', { block: { kind: 'hidden', content: 'coin' } }),
   HIDDEN_1UP: def('hidden-1up', 'none', { block: { kind: 'hidden', content: '1up' } }),
   HIDDEN_POWERUP: def('hidden-powerup', 'none', { block: { kind: 'hidden', content: 'powerup' } }),
+  HIDDEN_POISON: def('hidden-poison', 'none', { block: { kind: 'hidden', content: 'poison' } }),
   USED: def('used', 'solid'),
   HARD: def('hard', 'solid'),
   PIPE_TL: def('pipe-top-left', 'solid'),
   PIPE_TR: def('pipe-top-right', 'solid'),
   PIPE_BL: def('pipe-body-left', 'solid'),
   PIPE_BR: def('pipe-body-right', 'solid'),
+  /** Rim of a pipe hanging from the ceiling (The Lost Levels): the opening faces down. */
+  PIPE_BOTTOM_L: def('pipe-bottom-left', 'solid'),
+  PIPE_BOTTOM_R: def('pipe-bottom-right', 'solid'),
   /** Horizontal pipe (1-2 exit, 1-1 bonus exit). */
   PIPE_H_TL: def('pipe-h-top-left', 'solid'),
   PIPE_H_TR: def('pipe-h-top-right', 'solid'),
@@ -100,12 +107,17 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   '1': T.HIDDEN_1UP,
   '2': T.HIDDEN_COIN,
   '3': T.HIDDEN_POWERUP,
+  '4': T.Q_POISON,
+  '5': T.BRICK_POISON,
+  '6': T.HIDDEN_POISON,
   B: T.HARD,
   u: T.USED,
   '[': T.PIPE_TL,
   ']': T.PIPE_TR,
   '{': T.PIPE_BL,
   '}': T.PIPE_BR,
+  D: T.PIPE_BOTTOM_L,
+  G: T.PIPE_BOTTOM_R,
   '(': T.PIPE_H_TL,
   ')': T.PIPE_H_TR,
   '<': T.PIPE_H_BL,
@@ -141,6 +153,8 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   c: '@cheep-red',
   q: '@blooper',
   s: '@spring',
+  y: '@spring-green',
+  n: '@hammer-bro-chase',
   x: '@bullet-launcher',
   Z: '@decor-castle', // small castle anchor (bottom-left)
   X: '@decor-castle-big',

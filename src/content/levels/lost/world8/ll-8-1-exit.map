@@ -1,0 +1,43 @@
+id: ll-8-1-exit
+name: WORLD 8-1
+world: 8
+stage: 1
+theme: snow
+music: overworld
+time: inherit
+start: 3,10
+startMode: pipe-exit
+camera: scroll
+parent: ll-8-1
+
+[tiles]
+;; 0                16
+................ ................
+................ ................
+................ ..............BB
+................ BBBBBBBBBBB...BB
+...............B B.............BB
+..............BB B.............BB
+.............BBB B.............BB
+............BBBB B.............BB
+...........BBBBB B.............BB
+..........BBBBBB B.............BB
+.........BBBBBBB B.....[]......BB
+...[]...BBBBBBBB B.....{}......BB
+...{}..BBBBBBBBB B.....{}......BB
+################ ################
+################ ################
+
+[entities]
+piranha 3 11 red=1
+
+[zones]
+pipe 22 10 down -> ll-5-1 2 12
+warp 16 16 worlds=5 text=WELCOME_TO_WARP_ZONE!
+
+[decor]
+cloud-2 0 3
+cloud-1 18 3
+tree-big 21 12
+tree-small 24 12
+cloud-1 27 2

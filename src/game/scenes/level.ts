@@ -10,7 +10,6 @@ import { carriedKit } from '../entities/player';
 import { startHp } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
-import { MessageScene } from './message';
 
 export type LevelStart = WorldStart;
 
@@ -100,6 +99,8 @@ export class LevelScene implements Scene {
                 : target.startMode,
         };
         if (target.time === null) game.state.time = this.world.time;
+        // A pipe into another world or stage is a warp.
+        if (target.world !== this.level.world || target.stage !== this.level.stage) game.state.warped = true;
         const time = carryTime(this.level, target, this.world.time);
         if (time !== undefined) start.time = time;
         game.startLevel(target, start);
@@ -109,19 +110,9 @@ export class LevelScene implements Scene {
         game.state.checkpoint = null;
         game.state.time = null;
         if (game.playtestDone) game.playtestDone();
-        else if (ev.next === 'end') game.showEnding();
-        else if (this.level.theme === 'castle') {
-          // Toad's news after every castle but the last.
-          const hero = game.state.character.hudName;
-          game.scenes.push(
-            new MessageScene(
-              game,
-              [`THANK YOU ${hero}!`, '', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'],
-              () => game.goToLevel(ev.next, { mode: 'stand' }),
-              360,
-            ),
-          );
-        } else game.goToLevel(ev.next, { mode: 'stand' });
+        else if (ev.next === 'end') game.showEnding(this.level.parent ?? this.level.id);
+        // A castle's "another castle" news is shown in the level, next to Toad (World.castleText).
+        else game.goToLevel(ev.next, { mode: 'stand' });
         break;
       case 'died': {
         if (game.playtestDone) {

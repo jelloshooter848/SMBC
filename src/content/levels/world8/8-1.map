@@ -47,7 +47,6 @@ piranha 355 11
 decor-castle 380 12
 
 [zones]
-checkpoint 183
 exit 376 next=8-2
 pipe 104 9 down -> 8-1-bonus 1 0 exit=none
 

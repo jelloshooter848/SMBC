@@ -10,3 +10,6 @@ user-packs/*
 
 # Original Crossover level data used by tools/levelgen/convert-smbc.mjs (fetch it yourself; not ours to commit)
 tools/levelgen/source/
+
+# Agent worktrees and local Claude Code state
+.claude/

@@ -104,6 +104,66 @@ export const tilePalettes: Record<string, string[]> = {
     NES.blueLight,
     NES.lava,
   ],
+  /* Lost Levels giant-mushroom land: warmer ground, orange mushroom caps (the lava role). */
+  'tiles-mushroom': [
+    NES.black,
+    NES.brownDark,
+    NES.orangeBrown,
+    NES.peach,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.blueMid,
+    NES.blueLight,
+    NES.orange,
+  ],
+  /* Lost Levels sky levels: cloud banks and cloud ledges in white and pale blue. */
+  'tiles-clouds': [
+    NES.black,
+    NES.blueLight,
+    NES.skyLight,
+    NES.white,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.blueMid,
+    NES.blueLight,
+    NES.lava,
+  ],
+  /* Flooded overworld (Lost Levels World 9): overworld blocks, pale waves on the daylight sky. */
+  'tiles-overworld-water': [
+    NES.black,
+    NES.brownDark,
+    NES.orangeBrown,
+    NES.tanDark,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.sky,
+    NES.skyLight,
+    NES.lava,
+  ],
+  /* The same flooded overworld in gray stone (9-4). */
+  'tiles-water-gray': [
+    NES.black,
+    NES.darkGray,
+    NES.gray,
+    NES.lightGray,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.sky,
+    NES.skyLight,
+    NES.lava,
+  ],
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -347,6 +407,9 @@ const pipeTopRight = [
   '5555665555550050',
   '0000000000000000',
 ];
+/* A pipe hanging from the ceiling opens downward: the same rim upside down. */
+const pipeBottomLeft = [...pipeTopLeft].reverse();
+const pipeBottomRight = [...pipeTopRight].reverse();
 const pipeBodyLeft = Array.from({ length: 16 }, () => '..06655555665555');
 const pipeBodyRight = Array.from({ length: 16 }, () => '55556655550050..');
 
@@ -697,6 +760,46 @@ const cloudBlock = [
   '....aaaaaaaa....',
 ];
 
+/*
+ * Cloud ledge: the sky levels' platform top in place of a tree canopy (tiles horizontally,
+ * two puffs per tile), and the wisp of vapour that replaces its trunk.
+ */
+const cloudLedge = [
+  '..aaaa....aaaa..',
+  '.a8888a..a8888a.',
+  'a888888aa888888a',
+  '8888888888888888',
+  '8888888888888888',
+  '88a8888888a88888',
+  '8888888888888888',
+  '8888888888888888',
+  '8888888888888888',
+  '88888a8888888a88',
+  '8888888888888888',
+  '8888888888888888',
+  'a888888aa888888a',
+  '.a8888a..a8888a.',
+  '..aaaa....aaaa..',
+  '................',
+];
+const cloudWisp = Array.from({ length: 16 }, (_, i) => (i % 8 < 4 ? '......a88a......' : '.....a88a.......'));
+
+/* Cloud bank: the sky levels' ground, quilted puffs in two half-offset courses. */
+const cloudPuff = [
+  '22a88a22',
+  '2a8888a2',
+  'a888888a',
+  '88888888',
+  '88888888',
+  'a888888a',
+  '1a8888a1',
+  '11aaaa11',
+];
+const groundClouds = [
+  ...cloudPuff.map((r) => r + r),
+  ...cloudPuff.map((r) => r.slice(4) + r + r.slice(0, 4)),
+];
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -709,6 +812,8 @@ export const tilesDef: SpriteDef = {
     hard,
     'pipe-top-left': pipeTopLeft,
     'pipe-top-right': pipeTopRight,
+    'pipe-bottom-left': pipeBottomLeft,
+    'pipe-bottom-right': pipeBottomRight,
     'pipe-body-left': pipeBodyLeft,
     'pipe-body-right': pipeBodyRight,
     'pipe-h-top-left': pipeHTopLeft,
@@ -740,5 +845,17 @@ export const tilesDef: SpriteDef = {
     'ground@underground': groundUnderground,
     'ground@castle': groundCastle,
     'brick@underground': brickUnderground,
+    // The Lost Levels' extra skins: the same platform tiles drawn as mushrooms or clouds.
+    'tree-top@mushroom': mushroomTop,
+    'tree-trunk@mushroom': mushroomStem,
+    'tree-top@clouds': cloudLedge,
+    'tree-trunk@clouds': cloudWisp,
+    'ground@clouds': groundClouds,
+    'tree-top@clouds-overworld': cloudLedge,
+    'tree-trunk@clouds-overworld': cloudWisp,
+    // Red giant mushrooms (the overworld palette's red caps) and the castle's flagstones underwater.
+    'tree-top@mushroom-red': mushroomTop,
+    'tree-trunk@mushroom-red': mushroomStem,
+    'ground@castle-water': groundCastle,
   },
 };

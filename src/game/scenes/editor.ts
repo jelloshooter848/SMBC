@@ -4,12 +4,14 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_W } from '@engine/viewport';
 import { encodeShare } from '@engine/share';
 import type { LevelData, Theme, Zone } from '../level/schema';
+import { THEMES } from '../level/schema';
 import { parseTextMap, serializeTextMap } from '../level/textmap';
 import { DEFAULT_LEGEND, T, TILES, tileDef } from '../level/tiles';
 import { TileMap } from '../world/tilemap';
 import { renderTiles, SKY } from '../world/tile-render';
 import { customLevelId, loadLibrary, saveLibrary } from '../level/library';
 import { enemyPalette } from '../entities/enemies/enemy';
+import { decorPalette } from '../entities/objects/decoration';
 import type { View } from '../entities/entity';
 import type { Game } from './game';
 
@@ -20,27 +22,36 @@ type Brush =
   | { kind: 'erase'; label: string }
   | { kind: 'start'; label: string };
 
-const THEMES: Theme[] = ['overworld', 'underground', 'castle', 'water', 'night', 'treetop', 'snow'];
 const MUSIC = ['overworld', 'underground', 'castle', 'water', 'star', 'title'];
-const ENTITY_FRAMES: Record<string, { sheet: string; frame: string; palette?: (theme: Theme) => string }> = {
+const ENTITY_FRAMES: Record<
+  string,
+  { sheet: string; frame: string; palette?: (theme: Theme) => string; flipY?: boolean }
+> = {
   goomba: { sheet: 'enemies', frame: 'goomba-0', palette: enemyPalette },
   'koopa-green': { sheet: 'enemies', frame: 'koopa-0', palette: () => 'koopa-green' },
   'koopa-red': { sheet: 'enemies', frame: 'koopa-0', palette: () => 'koopa-red' },
   'koopa-para-green': { sheet: 'enemies', frame: 'koopa-fly-0', palette: () => 'koopa-green' },
   'koopa-para-red': { sheet: 'enemies', frame: 'koopa-fly-0', palette: () => 'koopa-red' },
   'koopa-para-green-h': { sheet: 'enemies', frame: 'koopa-fly-0', palette: () => 'koopa-green' },
-  piranha: { sheet: 'enemies', frame: 'piranha-0', palette: enemyPalette },
+  piranha: { sheet: 'enemies', frame: 'piranha-0', palette: () => 'piranha-green' },
+  'piranha-down': { sheet: 'enemies', frame: 'piranha-0', palette: () => 'piranha-green', flipY: true },
+  // Red plants are `piranha`/`piranha-down` with `red=1` (see redPiranhaKey).
+  'piranha-red': { sheet: 'enemies', frame: 'piranha-0', palette: () => 'piranha-red' },
+  'piranha-down-red': { sheet: 'enemies', frame: 'piranha-0', palette: () => 'piranha-red', flipY: true },
   'cheep-red': { sheet: 'enemies', frame: 'cheep-0', palette: enemyPalette },
   'cheep-grey': { sheet: 'enemies', frame: 'cheep-0', palette: () => 'cheep-grey' },
   blooper: { sheet: 'enemies', frame: 'blooper-0', palette: enemyPalette },
   podoboo: { sheet: 'enemies', frame: 'podoboo-0', palette: enemyPalette },
   spring: { sheet: 'items', frame: 'spring-0' },
+  'spring-green': { sheet: 'items', frame: 'spring-green-0' },
   'hammer-bro': { sheet: 'enemies', frame: 'hammer-bro-1', palette: enemyPalette },
+  'hammer-bro-chase': { sheet: 'enemies', frame: 'hammer-bro-1', palette: enemyPalette },
   buzzy: { sheet: 'enemies', frame: 'buzzy-0', palette: enemyPalette },
   spiny: { sheet: 'enemies', frame: 'spiny-0', palette: enemyPalette },
   lakitu: { sheet: 'enemies', frame: 'lakitu-0', palette: enemyPalette },
   'bullet-bill': { sheet: 'enemies', frame: 'bullet', palette: enemyPalette },
   princess: { sheet: 'items', frame: 'princess' },
+  toad: { sheet: 'items', frame: 'toad' },
   'lift-right': { sheet: 'items', frame: 'platform' },
   balance: { sheet: 'items', frame: 'pulley' },
   vine: { sheet: 'items', frame: 'vine-top' },
@@ -59,6 +70,11 @@ const ENTITY_FRAMES: Record<string, { sheet: string; frame: string; palette?: (t
   '1up': { sheet: 'items', frame: '1up' },
   'decor-castle': { sheet: 'decor', frame: 'castle-small' },
 };
+
+/** A red piranha plant is a `piranha`/`piranha-down` with `red=1`: its brush and frame key. */
+function redPiranhaKey(e: { type: string; props?: Record<string, unknown> }): string | undefined {
+  return (e.type === 'piranha' || e.type === 'piranha-down') && e.props?.red ? `${e.type}-red` : undefined;
+}
 
 function blankLevel(name: string): LevelData {
   const rows = Array.from({ length: 13 }, () => '.'.repeat(64));
@@ -145,7 +161,12 @@ export class EditorScene implements Scene {
         this.map.set(tx, ty, b.id);
         break;
       case 'entity':
-        if (this.level.entities.some((e) => e.x === tx && e.y === ty && e.type === b.type)) return;
+        {
+          const same = this.level.entities.find((e) => e.x === tx && e.y === ty && e.type === b.type);
+          if (same && redPiranhaKey(same) === redPiranhaKey(b)) return;
+          // Painting a red plant over a green one (or back) swaps its colour.
+          if (same) this.level.entities = this.level.entities.filter((e) => e !== same);
+        }
         this.level.entities.push(
           b.props ? { type: b.type, x: tx, y: ty, props: { ...b.props } } : { type: b.type, x: tx, y: ty },
         );
@@ -164,7 +185,10 @@ export class EditorScene implements Scene {
   private pick(tx: number, ty: number): void {
     const e = this.level.entities.find((en) => en.x === tx && en.y === ty);
     if (e) {
-      this.brush = { kind: 'entity', type: e.type, label: e.type };
+      const red = redPiranhaKey(e);
+      this.brush = red
+        ? { kind: 'entity', type: e.type, label: red, props: { red: 1 } }
+        : { kind: 'entity', type: e.type, label: e.type };
     } else {
       const id = this.map.get(tx, ty);
       this.brush =
@@ -369,7 +393,7 @@ export class EditorScene implements Scene {
       <h3>Enemies & items</h3><div class="row" data-entities></div>
       <h3>Scenery</h3><div class="row" data-decor></div>
       <h3>Zones</h3>
-      <div class="row"><button data-zone="exit">Exit at cursor</button><button data-zone="checkpoint">Checkpoint</button><button data-zone="scrollStop">Scroll stop</button></div>
+      <div class="row"><button data-zone="exit">Exit at cursor</button><button data-zone="checkpoint">Checkpoint</button><button data-zone="scrollStop">Scroll stop</button><button data-zone="bowser-fire">Bowser fire</button></div>
       <div class="row">Pipe to <input type="text" data-pipe-level value="${this.pipeTarget.level}" style="width:80px"> x <input type="number" data-pipe-x value="${this.pipeTarget.x}"> y <input type="number" data-pipe-y value="${this.pipeTarget.y}">
         <select data-pipe-dir><option>down</option><option>right</option></select> <button data-zone="pipe">Add pipe at cursor</button></div>
       <ul class="zones" data-zones></ul>
@@ -406,28 +430,37 @@ export class EditorScene implements Scene {
       'koopa-para-red',
       'koopa-para-green-h',
       'piranha',
+      'piranha-down',
       'cheep-red',
       'cheep-grey',
       'blooper',
       'podoboo',
       'hammer-bro',
+      'hammer-bro-chase',
       'buzzy',
       'spiny',
       'lakitu',
       'bullet-bill',
       'balance',
       'spring',
+      'spring-green',
       'vine',
       'firebar',
       'firebar-ccw',
       'bowser',
       'axe',
+      'toad',
+      'princess',
       'mushroom',
       'flower',
       'star',
       '1up',
     ];
     for (const t of entityTypes) ents.appendChild(this.brushButton({ kind: 'entity', type: t, label: t }, t));
+    for (const t of ['piranha', 'piranha-down']) {
+      const label = `${t}-red`;
+      ents.appendChild(this.brushButton({ kind: 'entity', type: t, label, props: { red: 1 } }, label));
+    }
     for (const t of ['lift-h', 'lift-v', 'lift-fall', 'lift-up', 'lift-down', 'lift-right']) {
       ents.appendChild(
         this.brushButton({ kind: 'entity', type: t, label: t, props: { len: 3, range: 4 } }, t),
@@ -493,6 +526,11 @@ export class EditorScene implements Scene {
           case 'scrollStop':
             this.level.zones = this.level.zones.filter((z) => z.kind !== 'scrollStop');
             this.addZone({ kind: 'scrollStop', x: tx });
+            break;
+          case 'bowser-fire':
+            // Bowser's long-range flames start at this column (one per level).
+            this.level.zones = this.level.zones.filter((z) => z.kind !== 'bowser-fire');
+            this.addZone({ kind: 'bowser-fire', x: tx });
             break;
           case 'pipe': {
             const level = q<HTMLInputElement>('[data-pipe-level]').value.trim();
@@ -607,27 +645,22 @@ export class EditorScene implements Scene {
     const theme = this.level.theme;
     r.clear(SKY[theme] ?? '#5c94fc');
     const view: View = { camX: this.camX, frame: this.frame, assets, theme, reduceFlashing: true };
-    const decorSheet = assets.sheet(
-      'decor',
-      theme === 'night' || theme === 'underground' || theme === 'castle'
-        ? 'decor-night'
-        : theme === 'snow'
-          ? 'decor-snow'
-          : 'decor-overworld',
-    );
+    const decorSheet = assets.sheet('decor', decorPalette(theme));
     for (const d of this.level.decor) {
       const f = decorSheet.frames.get(d.kind);
       if (f) r.sprite(decorSheet, d.kind, d.x * 16 - this.camX, (d.y + 1) * 16 - f.h);
     }
     renderTiles(r, view, this.map, true);
     for (const e of this.level.entities) {
-      const spec = ENTITY_FRAMES[e.type];
+      const spec = ENTITY_FRAMES[redPiranhaKey(e) ?? e.type];
       const x = e.x * 16 - this.camX;
       if (x < -32 || x > SCREEN_W + 32) continue;
       if (spec) {
         const sheet = assets.sheet(spec.sheet, spec.palette?.(theme));
         const f = sheet.frames.get(spec.frame);
-        r.sprite(sheet, spec.frame, x, (e.y + 1) * 16 - (f?.h ?? 16));
+        // Hanging things (flipY) dangle below their anchor tile; the rest stand on its bottom.
+        if (spec.flipY) r.sprite(sheet, spec.frame, x + 8, (e.y + 1) * 16, false, true);
+        else r.sprite(sheet, spec.frame, x, (e.y + 1) * 16 - (f?.h ?? 16));
       } else r.rect(x + 2, e.y * 16 + 2, 12, 12, '#f0f');
     }
     for (const z of this.level.zones) {

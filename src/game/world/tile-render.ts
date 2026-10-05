@@ -41,4 +41,14 @@ export const SKY: Record<string, string> = {
   night: '#000000',
   treetop: '#5c94fc',
   snow: '#5c94fc',
+  mushroom: '#5c94fc',
+  clouds: '#5c94fc',
+  'clouds-overworld': '#5c94fc',
+  // Flooded overworld areas keep the daylight sky above and below the waves.
+  'overworld-water': '#5c94fc',
+  'water-gray': '#5c94fc',
+  'castle-overworld': '#5c94fc',
+  'mushroom-red': '#5c94fc',
+  // A swim through a castle keeps the castle's darkness.
+  'castle-water': '#000000',
 };

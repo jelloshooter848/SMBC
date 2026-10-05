@@ -1,4 +1,5 @@
 import type { InputFrame } from '@engine/input/input-manager';
+import { worldLabel } from '../hud/world-label';
 import { NO_INPUT } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
@@ -6,6 +7,7 @@ import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
+import { isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera } from './camera';
 import { renderTiles, SKY } from './tile-render';
@@ -26,6 +28,7 @@ import { Spiny } from '../entities/enemies/spiny';
 import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bullet-bill';
 import { BalanceLift } from '../entities/objects/balance-lift';
 import { Princess } from '../entities/objects/princess';
+import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
 import { PowerUp } from '../entities/objects/powerup';
@@ -40,6 +43,7 @@ import { Decoration } from '../entities/objects/decoration';
 import { Lift } from '../entities/objects/lift';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
+import { BowserFire } from './bowser-fire';
 import { Axe } from '../entities/objects/axe';
 import { startHp, type CharacterDef } from '../characters/character';
 
@@ -107,6 +111,8 @@ export class World {
   private leaving = false;
   private cheepTimer = 0;
   private bulletTimer = 60;
+  /** Bowser's long-range flames (`bowser-fire` zone), or null. */
+  private readonly bowserFire: BowserFire | null;
   /** Castle maze: lead player's centre x last frame (px) and the loop checkpoints passed. */
   private loopPrevX: number | null = null;
   private readonly loopChecks = new Set<string>();
@@ -119,7 +125,9 @@ export class World {
   private readonly respawnTimers = new Map<Player, number>();
   private checkpointSent = false;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
-  bossClear: { t: number } | null = null;
+  bossClear: { t: number; stop?: number } | null = null;
+  /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
+  castleText: string[] = [];
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
   autoWalk = false;
   readonly flagpole: Flagpole | null = null;
@@ -140,6 +148,7 @@ export class World {
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     this.time = start.time ?? (level.time === null ? (state.time ?? 400) : level.time);
     this.spawns = [...level.entities].sort((a, b) => a.x - b.x);
+    this.bowserFire = BowserFire.forLevel(level);
 
     const sx = start.x ?? level.start.x;
     const sy = start.y ?? level.start.y;
@@ -180,8 +189,8 @@ export class World {
       this.players.push(p);
     });
     this.camera.snapTo(this.player.body.x);
-    // Water levels: everything from the first row of wave tiles down is swimmable.
-    if (level.theme === 'water') {
+    // Water levels (any swimming theme): everything from the first row of wave tiles down is swimmable.
+    if (isWaterTheme(level.theme)) {
       let row = 0;
       for (let ty = 0; ty < level.height && row === 0; ty++) {
         for (let tx = 0; tx < level.width; tx++) {
@@ -279,7 +288,9 @@ export class World {
       case 'koopa-para-green-h':
         return new Koopa(x + px(2), y - px(6), 'green', true, true);
       case 'piranha':
-        return new Piranha(s.x, s.y);
+        return new Piranha(s.x, s.y, false, !!s.props?.red);
+      case 'piranha-down':
+        return new Piranha(s.x, s.y, true, !!s.props?.red);
       case 'cheep-red':
       case 'cheep-grey':
         return new Cheep(x + px(2), y + px(2), s.type === 'cheep-red' ? 'red' : 'grey');
@@ -288,7 +299,8 @@ export class World {
       case 'podoboo':
         return new Podoboo(s.x, s.y, s.x * 31 + s.y * 7);
       case 'hammer-bro':
-        return new HammerBro(x + px(2), y - px(6));
+      case 'hammer-bro-chase':
+        return new HammerBro(x + px(2), y - px(6), s.type === 'hammer-bro-chase');
       case 'buzzy':
         return new Koopa(x + px(2), y + px(2), 'buzzy');
       case 'spiny':
@@ -296,20 +308,28 @@ export class World {
       case 'bullet-bill':
         return new BulletBill(x + px(1), y + px(2), -1);
       case 'lakitu':
-        return new LakituZone(s.x, s.y, Number(s.props?.end ?? this.level.width));
+        return new LakituZone(s.x, s.y, Number(s.props?.end ?? this.level.width), Boolean(s.props?.mid));
       case 'balance':
         return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'princess':
         return new Princess(s.x, s.y);
+      case 'toad':
+        return new Toad(s.x, s.y);
       case 'spring':
-        return new Spring(s.x, s.y);
+      case 'spring-green':
+        return new Spring(s.x, s.y, s.type === 'spring-green');
       case 'vine':
         return new Vine(s.x, s.y, Number(s.props?.len ?? 8));
       case 'firebar':
       case 'firebar-ccw':
         return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
       case 'bowser':
-        return new Bowser(s.x, s.y, String(s.props?.attack ?? 'fire') as BowserAttack);
+        return new Bowser(
+          s.x,
+          s.y,
+          String(s.props?.attack ?? 'fire') as BowserAttack,
+          Boolean(s.props?.fake),
+        );
       case 'axe':
         return new Axe(s.x, s.y);
       case 'lift-h':
@@ -518,6 +538,10 @@ export class World {
     this.checkLoops();
     this.flyingCheeps();
     this.flyingBullets();
+    if (this.bowserFire && !this.leaving) {
+      const lead = this.rightmost();
+      if (lead) this.bowserFire.update(this, lead);
+    }
 
     const lead = this.rightmost();
     if (lead) this.camera.follow(lead.body.x);
@@ -791,6 +815,10 @@ export class World {
         this.spawn(new PowerUp(tx, ty, 'star'));
         this.audio.sfx('powerup-appear');
         break;
+      case 'poison':
+        this.spawn(new PowerUp(tx, ty, 'poison'));
+        this.audio.sfx('powerup-appear');
+        break;
       case 'vine':
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
         this.audio.sfx('vine');
@@ -848,7 +876,11 @@ export class World {
       else if (e instanceof PowerUp) {
         if (overlaps(pb, e.body)) {
           e.destroy();
-          p.def.behaviour.onPowerUp(p, e.item, this);
+          // A poison mushroom hurts every hero alike (star power shrugs it off); it never reaches
+          // the character's onPowerUp.
+          if (e.item === 'poison') {
+            if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
+          } else p.def.behaviour.onPowerUp(p, e.item, this);
         }
       } else if (e instanceof Pickup) {
         if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();
@@ -1274,7 +1306,7 @@ export class World {
   private bossPlayer: Player | null = null;
 
   private updateBossClear(): void {
-    const c = this.bossClear as { t: number };
+    const c = this.bossClear as NonNullable<typeof this.bossClear>;
     const p = this.bossPlayer ?? this.player;
     c.t++;
     if (c.t % 4 === 0) {
@@ -1291,24 +1323,65 @@ export class World {
       if (cut) this.audio.sfx('break');
     }
     for (const e of this.entities) if (e instanceof Bowser) e.update(this);
-    const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive);
+    // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
+    const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);
     if (bowser && c.t === 60) {
       bowser.fallDead();
       this.audio.sfx('bowser-fall');
       this.addScore(5000, bowser.body.x, bowser.body.y);
     }
     if (c.t === 120) this.audio.playJingle('castle-clear');
-    if (c.t > 150) {
+    const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
+    if (c.t > 150 && c.stop === undefined) {
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;
       p.body.x += px(1);
+      this.bossWalkFall(p);
+      // The screen follows the walk, so Toad (or the princess) comes into view.
+      this.camera.follow(p.body.x);
+      this.spawnPending();
+      // The walk ends on touching the exit marker, the tile before Toad (the original's
+      // Level.as stops the player on touchedExit); without one it lasts three seconds.
+      const reached = exit ? p.body.x + p.body.w >= tileToSub(exit.x) : c.t >= 330;
+      if (reached || c.t >= 750) {
+        c.stop = c.t;
+        p.anim = 'idle';
+      }
     }
-    if (c.t >= 330) {
-      const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-      this.events.push({ type: 'exit', next: exit?.next ?? 'end' });
+    if (c.stop === undefined) return;
+    // Then Toad's thanks; 1.5 s later the news, and 3.5 s after it the next level (the
+    // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle hands the thanks
+    // over to the ending.
+    const next = exit?.next ?? 'end';
+    const s = c.t - c.stop;
+    if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
+    if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
+    if (s >= (next === 'end' ? 120 : 330)) {
+      this.events.push({ type: 'exit', next });
       c.t = -100000;
     }
+  }
+
+  /**
+   * Gravity for the walk to Toad: the player drops off the axe's ledge onto the floor below, but
+   * never into a pit (over the cut bridge's lava the walk stays level).
+   */
+  private bossWalkFall(p: Player): void {
+    const b = p.body;
+    const col = tileAt(b.x + (b.w >> 1));
+    let ground = tileAt(b.y + b.h);
+    while (ground < this.level.height && !this.map.isSolid(col, ground)) ground++;
+    if (ground >= this.level.height) return;
+    const top = tileToSub(ground) - b.h;
+    b.vy = Math.min(b.vy + 0x00400, 0x04000);
+    b.y = Math.min(b.y + velToSub(b.vy), top);
+    if (b.y === top) b.vy = 0;
+  }
+
+  private renderCastleText(r: Renderer, view: View): void {
+    const font = view.assets.sheet('font');
+    this.castleText.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, 80 + i * 16));
   }
 
   /* ---------- Rendering ---------- */
@@ -1330,6 +1403,7 @@ export class World {
     if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);
     for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
     this.renderWarpText(r, view);
+    this.renderCastleText(r, view);
   }
 
   private renderWarpText(r: Renderer, view: View): void {
@@ -1344,7 +1418,7 @@ export class World {
       );
       pipes.forEach((p, i) => {
         const w = z.worlds[i];
-        if (w !== undefined) r.text(font, String(w), p.x * 16 + 12 - view.camX, p.y * 16 - 16);
+        if (w !== undefined) r.text(font, worldLabel(w), p.x * 16 + 12 - view.camX, p.y * 16 - 16);
       });
     }
   }

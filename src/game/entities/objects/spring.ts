@@ -7,15 +7,25 @@ const PRESS_FRAMES = 9;
 /** Launch speed as a multiple of the character's standing jump. */
 export const SPRING_BOOST = 1.15;
 export const SPRING_BOOST_HELD = 1.65;
+/** The Lost Levels' green super springboard: about twice the red one, far off the top of the screen. */
+export const SPRING_GREEN_BOOST = 2.3;
+export const SPRING_GREEN_BOOST_HELD = 3.3;
 
-/** A springboard: land on it, it compresses, then it throws you up (higher with jump held). */
+/**
+ * A springboard: land on it, it compresses, then it throws you up (higher with jump held).
+ * The green one (The Lost Levels) is a super springboard that launches about twice as fast.
+ */
 export class Spring extends Entity {
   readonly kind = 'spring';
   private rider: Player | null = null;
   private t = 0;
   private held = false;
 
-  constructor(tx: number, ty: number) {
+  constructor(
+    tx: number,
+    ty: number,
+    readonly green = false,
+  ) {
     super(px(tx * 16), px(ty * 16), 16, 16);
     this.body.vx = 0;
     this.despawnMargin = 64;
@@ -49,7 +59,8 @@ export class Spring extends Entity {
     b.onGround = true;
     b.y = this.body.y + px(this.compression) - b.h;
     if (this.t >= PRESS_FRAMES) {
-      p.launch(this.held ? SPRING_BOOST_HELD : SPRING_BOOST);
+      if (this.green) p.launch(this.held ? SPRING_GREEN_BOOST_HELD : SPRING_GREEN_BOOST);
+      else p.launch(this.held ? SPRING_BOOST_HELD : SPRING_BOOST);
       this.rider = null;
       return true;
     }
@@ -64,7 +75,7 @@ export class Spring extends Entity {
 
   render(r: Renderer, view: View): void {
     const c = this.compression;
-    const frame = c >= 8 ? 'spring-2' : c >= 4 ? 'spring-1' : 'spring-0';
+    const frame = `${this.green ? 'spring-green' : 'spring'}-${c >= 8 ? 2 : c >= 4 ? 1 : 0}`;
     r.sprite(view.assets.sheet('items'), frame, toPx(this.body.x) - view.camX, toPx(this.body.y));
   }
 }

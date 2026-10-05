@@ -49,8 +49,20 @@ const defaults: Record<string, readonly string[]> = {
 const fallback = (name: string, from: string) => {
   if (!defaults[name] && defaults[from]) defaults[name] = defaults[from] as readonly string[];
 };
-for (const t of ['underground', 'castle', 'night', 'water', 'snow', 'treetop'])
+for (const t of [
+  'underground',
+  'castle',
+  'night',
+  'water',
+  'snow',
+  'treetop',
+  'clouds-overworld',
+  'castle-overworld',
+  'mushroom-red',
+])
   fallback(`tiles-${t}`, 'tiles-overworld');
+// A swim through a castle: the castle's stone and its water colours.
+fallback('tiles-castle-water', 'tiles-castle');
 for (const t of ['underground', 'castle', 'water']) fallback(`enemies-${t}`, 'enemies-overworld');
 fallback('koopa-green', 'enemies-overworld');
 fallback('koopa-red', 'enemies-overworld');

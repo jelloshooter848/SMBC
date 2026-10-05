@@ -19,6 +19,8 @@ const tileFrames = [
   'hard',
   'pipe-top-left',
   'pipe-top-right',
+  'pipe-bottom-left',
+  'pipe-bottom-right',
   'pipe-body-left',
   'pipe-body-right',
   'pipe-h-top-left',
@@ -50,6 +52,16 @@ const tileFrames = [
   'ground@underground',
   'ground@castle',
   'brick@underground',
+  'tree-top@mushroom',
+  'tree-trunk@mushroom',
+  'tree-top@clouds',
+  'tree-trunk@clouds',
+  'ground@clouds',
+  'tree-top@clouds-overworld',
+  'tree-trunk@clouds-overworld',
+  'tree-top@mushroom-red',
+  'tree-trunk@mushroom-red',
+  'ground@castle-water',
 ];
 
 const fontGlyphs = [
@@ -73,6 +85,7 @@ const fontGlyphs = [
 const itemFrames: Record<string, Size> = {
   mushroom: T16,
   '1up': T16,
+  'poison-mushroom': T16,
   'flower-0': T16,
   'flower-1': T16,
   'star-0': T16,
@@ -100,8 +113,12 @@ const itemFrames: Record<string, Size> = {
   platform: [16, 8],
   'spring-0': T16,
   princess: [16, 24],
+  toad: [16, 24],
   'spring-1': T16,
   'spring-2': T16,
+  'spring-green-0': T16,
+  'spring-green-1': T16,
+  'spring-green-2': T16,
   'vine-top': T16,
   'vine-mid': T16,
   pulley: T16,
@@ -256,6 +273,10 @@ describe('tile sprites', () => {
         'tiles-snow',
         'tiles-underground',
         'tiles-water',
+        'tiles-mushroom',
+        'tiles-clouds',
+        'tiles-overworld-water',
+        'tiles-water-gray',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -271,6 +292,10 @@ describe('tile sprites', () => {
     expect(edge('pipe-body-left', 2)).toMatch(/^0+$/);
     expect(edge('pipe-body-right', 13)).toMatch(/^0+$/);
     expect(edge('pipe-body-left', 0) + edge('pipe-body-right', 15)).toMatch(/^\.+$/);
+    // a pipe hanging from the ceiling ends in the same rim upside down
+    const rows = (name: string): readonly string[] => tilesDef.frames[name] as readonly string[];
+    expect(rows('pipe-bottom-left')).toEqual([...rows('pipe-top-left')].reverse());
+    expect(rows('pipe-bottom-right')).toEqual([...rows('pipe-top-right')].reverse());
   });
 });
 
@@ -298,7 +323,16 @@ describe('decor sprites', () => {
     for (const [name, size] of Object.entries(decorFrames)) expectFrame(decorDef, name, size);
     const lengths = new Set(Object.values(decorPalettes).map((p) => p.length));
     expect(lengths.size).toBe(1);
-    expect(Object.keys(decorPalettes).sort()).toEqual(['decor-night', 'decor-overworld', 'decor-snow']);
+    expect(Object.keys(decorPalettes).sort()).toEqual(
+      [
+        'decor-night',
+        'decor-overworld',
+        'decor-snow',
+        'decor-mushroom',
+        'decor-mushroom-red',
+        'decor-gray',
+      ].sort(),
+    );
     expectRenders(decorDef, decorPalettes);
   });
 });

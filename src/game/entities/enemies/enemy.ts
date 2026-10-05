@@ -18,6 +18,7 @@ export function enemyPalette(theme: Theme): string {
     case 'underground':
       return 'enemies-underground';
     case 'castle':
+    case 'castle-water':
       return 'enemies-castle';
     case 'water':
       return 'enemies-water';
@@ -46,6 +47,8 @@ export abstract class Enemy extends Entity {
   protected dying = 0;
   /** Frames left frozen by a stun (boomerang); the world skips update() while > 0. */
   stunned = 0;
+  /** Draw the knocked-out corpse flipped vertically (things that hang upside down). */
+  protected corpseFlipY = false;
 
   constructor(x: number, y: number, wPx: number, hPx: number) {
     super(x, y, wPx, hPx);
@@ -54,6 +57,11 @@ export abstract class Enemy extends Entity {
 
   palette(view: View): string {
     return enemyPalette(view.theme);
+  }
+
+  /** Palette the knocked-out corpse is drawn with. */
+  protected corpsePalette(theme: Theme): string {
+    return enemyPalette(theme);
   }
 
   /** Apply a damage source. Returns the reaction so the world can score it / hurt the attacker. */
@@ -119,12 +127,13 @@ export abstract class Enemy extends Entity {
         toPx(this.body.w),
         toPx(this.body.h),
         this.sheet,
-        enemyPalette(world.level.theme),
+        this.corpsePalette(world.level.theme),
         this.currentFrame,
         dir,
         true,
         this.spriteOffsetX,
         this.spriteOffsetY,
+        this.corpseFlipY,
       ),
     );
     this.destroy();

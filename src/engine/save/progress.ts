@@ -8,19 +8,23 @@ export interface Progress {
   reached: Record<string, string>;
   /** Levels cleared at least once. */
   cleared: string[];
+  /** The Lost Levels: World 9 (cleared 8-4 without warping) and worlds A-D (cleared 8-4). */
+  lost: { world9: boolean; letters: boolean };
 }
 
 export const PROGRESS_KEY = 'smbc.progress';
 
 export function loadProgress(): Progress {
   const p = loadJson<Progress>(PROGRESS_KEY);
-  if (!p || p.v !== 1) return { v: 1, bestScore: 0, lastCharacter: 'mario', reached: {}, cleared: [] };
+  const lost = { world9: false, letters: false };
+  if (!p || p.v !== 1) return { v: 1, bestScore: 0, lastCharacter: 'mario', reached: {}, cleared: [], lost };
   return {
     v: 1,
     bestScore: p.bestScore ?? 0,
     lastCharacter: p.lastCharacter ?? 'mario',
     reached: p.reached ?? {},
     cleared: p.cleared ?? [],
+    lost: { world9: p.lost?.world9 === true, letters: p.lost?.letters === true },
   };
 }
 

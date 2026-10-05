@@ -169,6 +169,8 @@ export class Corpse extends Entity {
     readonly flipV = true,
     readonly spriteOffX = 0,
     readonly spriteOffY = 0,
+    /** Draw the frame mirrored vertically (an enemy that was hanging upside down). */
+    readonly mirrorY = false,
   ) {
     super(x, y, wPx, hPx);
     this.body.vx = dirX * 0x01000;
@@ -193,6 +195,7 @@ export class Corpse extends Entity {
       toPx(this.body.x) - view.camX - this.spriteOffX,
       toPx(this.body.y) - this.spriteOffY,
       this.body.vx > 0,
+      this.mirrorY,
     );
   }
 }
