@@ -17,19 +17,37 @@ const of = (l: LevelData, type: string) =>
 const at = (l: LevelData, type: string) => of(l, type).map((e) => [e.x, e.y]);
 
 describe('Lost Levels World C (12): every area', () => {
+  const ids = readdirSync(dir)
+    .filter((f) => f.endsWith('.map'))
+    .map((f) => f.slice(0, -4))
+    .sort();
   it('has the expected areas, each parsing to 15 rows', () => {
-    const ids = readdirSync(dir)
-      .filter((f) => f.endsWith('.map'))
-      .map((f) => f.slice(0, -4))
-      .sort();
     expect(ids).toEqual(['ll-12-1', 'll-12-1-bonus', 'll-12-1-sky', 'll-12-2', 'll-12-3', 'll-12-4']);
     for (const id of ids) {
       const l = load(id);
       expect(l.height).toBe(15);
       expect(l.world).toBe(12);
-      expect(['overworld', 'underground', 'castle']).toContain(l.theme);
     }
     expect(worldLabel(12)).toBe('C');
+  });
+
+  it('uses the original theme table: night for the normal, bridge and treetop stages', () => {
+    // GameSuperMarioBros.as (Lost Levels pack): world 12 normal/platform/cheepCheep -> night;
+    // coin heaven, pipe bonus and castle keep their general themes. Music stays overworld.
+    const themes = Object.fromEntries(ids.map((id) => [id, load(id).theme]));
+    expect(themes).toEqual({
+      'll-12-1': 'night',
+      'll-12-1-bonus': 'underground',
+      'll-12-1-sky': 'overworld',
+      'll-12-2': 'night',
+      'll-12-3': 'night',
+      'll-12-4': 'castle',
+    });
+    for (const id of ['ll-12-1', 'll-12-2', 'll-12-3']) expect(load(id).music).toBe('overworld');
+  });
+
+  it('has no checkpoints: every World C level is LOCKED_CP', () => {
+    for (const id of ids) expect(load(id).zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
   });
 
   it('chains C-1 to C-4 and on to D-1', () => {
@@ -44,7 +62,7 @@ describe('C-1 (ll-12-1): pipes, hanging piranhas, poison and a chasing Hammer Br
   const l = load('ll-12-1');
   it('is a 240-wide overworld stage with 400 seconds', () => {
     expect(l.width).toBe(240);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('night');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
     expect(l.startMode).toBe('stand');
@@ -98,7 +116,6 @@ describe('C-1 (ll-12-1): pipes, hanging piranhas, poison and a chasing Hammer Br
       y: 5,
       target: { level: 'll-12-1-sky', x: 4, y: 14 },
     });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 135 });
     expect(tile(l, 229, 2)).toBe(T.FLAG_BALL);
     expect(tile(l, 229, 12)).toBe(T.HARD);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 228, next: 'll-12-2' });
@@ -109,6 +126,7 @@ describe('C-1 (ll-12-1): pipes, hanging piranhas, poison and a chasing Hammer Br
     expect(b.width).toBe(32);
     expect(b.theme).toBe('underground');
     expect(b.startMode).toBe('fall');
+    expect(b.camera).toBe('scroll'); // 32 wide: it scrolls
     expect(b.parent).toBe('ll-12-1');
     expect(b.time).toBeNull();
     expect(tile(b, 20, 9)).toBe(T.BRICK_COINS10);
@@ -136,7 +154,7 @@ describe('C-2 (ll-12-2): treetop bridges with flying Bloopers, cheeps and bullet
   const l = load('ll-12-2');
   it('is 208 wide with railed bridges and treetops', () => {
     expect(l.width).toBe(208);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('night');
     for (let x = 31; x <= 44; x++) expect(tile(l, x, 12)).toBe(T.BRIDGE);
     expect(tile(l, 30, 12)).toBe(T.HARD);
     expect(tile(l, 45, 12)).toBe(T.HARD);
@@ -171,7 +189,6 @@ describe('C-2 (ll-12-2): treetop bridges with flying Bloopers, cheeps and bullet
   it('has leaping cheeps from 16 to 79, Bullet Bills from 132 to 175, and the exit at 192', () => {
     expect(l.zones).toContainEqual({ kind: 'cheeps', x: 16, w: 63 });
     expect(l.zones).toContainEqual({ kind: 'bullets', x: 132, w: 43 });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 81 });
     expect(tile(l, 138, 9)).toBe(T.Q_POWERUP);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 192, next: 'll-12-3' });
     expect(tile(l, 193, 2)).toBe(T.FLAG_BALL);
@@ -182,7 +199,7 @@ describe('C-3 (ll-12-3): green springboards, Lakitu and fire bars on treetops', 
   const l = load('ll-12-3');
   it('is 336 wide', () => {
     expect(l.width).toBe(336);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('night');
     expect(l.time).toBe(400);
   });
   it('has seven green springboards, each standing on a treetop', () => {
@@ -199,8 +216,8 @@ describe('C-3 (ll-12-3): green springboards, Lakitu and fire bars on treetops', 
     for (const [x, y] of springs) expect(tile(l, x as number, (y as number) + 1)).toBe(T.TREE_TOP);
     expect(of(l, 'spring')).toHaveLength(0);
   });
-  it('has a Lakitu from 138 to 175 and four red piranhas', () => {
-    expect(l.entities).toContainEqual({ type: 'lakitu', x: 138, y: 7, props: { end: 175 } });
+  it('has a mid-screen Lakitu from 138 to 175 (lakituEndMiddle) and four red piranhas', () => {
+    expect(l.entities).toContainEqual({ type: 'lakitu', x: 138, y: 7, props: { end: 175, mid: 1 } });
     expect(of(l, 'piranha').map((e) => e.x)).toEqual([117, 122, 127, 188]);
   });
   it('has fire bars on blocks near the end, a falling lift and a balance lift', () => {
@@ -225,7 +242,6 @@ describe('C-3 (ll-12-3): green springboards, Lakitu and fire bars on treetops', 
     expect(at(l, 'koopa-para-red')).toEqual([[290, 4]]);
   });
   it('ends at the big castle', () => {
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 178 });
     expect(tile(l, 315, 2)).toBe(T.FLAG_BALL);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 316, next: 'll-12-4' });
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 318, y: 12 });
@@ -287,7 +303,6 @@ describe('C-4 (ll-12-4): the castle with elevator shafts, Buzzy Beetles and a ha
     for (let x = 224; x <= 236; x++) expect(tile(l, x, 10)).toBe(T.BRIDGE);
     expect(tile(l, 236, 9)).toBe(T.CHAIN);
     expect(l.entities).toContainEqual({ type: 'axe', x: 237, y: 8 });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 86 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 248, next: 'll-13-1' });
   });
 });
