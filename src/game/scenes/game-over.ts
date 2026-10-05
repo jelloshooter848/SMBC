@@ -38,22 +38,20 @@ export class GameOverScene implements Scene {
     this.game.deps.announcer?.say('Game over.');
   }
 
-  update(input: InputFrame): void {
+  update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     this.t++;
     if (!this._prompting) {
-      // The card can be cut short after a second, as before.
-      if (
-        this.t >= GAME_OVER_CARD_FRAMES ||
-        (this.t > 60 && (input.pressed('start') || input.pressed('jump')))
-      )
-        this.showPrompt();
+      // No input until the card's timer ends (the original only reads buttons in CONTINUE_SELECT).
+      if (this.t >= GAME_OVER_CARD_FRAMES) this.showPrompt();
       return;
     }
-    if (input.pressed('up') || input.pressed('down')) {
+    // Any player may answer (co-op shares the run).
+    const pressed = (a: 'up' | 'down' | 'jump' | 'start') => inputs.some((f) => f.pressed(a));
+    if (pressed('up') || pressed('down')) {
       this._yes = !this._yes;
       this.game.ctx.audio.sfx('select');
       this.game.deps.announcer?.say(this._yes ? 'Yes' : 'No');
-    } else if (input.pressed('jump') || input.pressed('start')) {
+    } else if (pressed('jump') || pressed('start')) {
       if (this._yes && this.onContinue) {
         this.game.ctx.audio.sfx('coin');
         this.onContinue();

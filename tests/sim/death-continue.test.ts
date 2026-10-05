@@ -27,6 +27,13 @@ import { toPx } from '@engine/math/units';
 //   (StatManager.resetAllStats(false) + changeToFirstWorldLevel) → character select again;
 //   NO → EventManager.restartGame (title).
 
+/** Custom levels resolve to a copy of a built-in level under their own id (any "-1" mapping shows). */
+function testGetLevel(id: string) {
+  if (id === 'custom-shared') throw new Error('not in the library');
+  const m = /^custom-.*?(\d+-\d+)$/.exec(id);
+  return m ? { ...getLevel(m[1] as string), id } : getLevel(id);
+}
+
 function makeGame() {
   const said: string[] = [];
   const game = new Game({
@@ -36,7 +43,7 @@ function makeGame() {
       assist: { ...DEFAULT_ASSIST },
       reduceFlashing: true,
     },
-    getLevel,
+    getLevel: testGetLevel,
     characters: CHARACTERS,
     announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
   });
@@ -193,15 +200,78 @@ describe('game over offers CONTINUE? YES / NO', () => {
     expect(top(h.game)).toBeInstanceOf(TitleScene);
   });
 
-  it('START also confirms, and the card can be skipped to the prompt', () => {
+  it('the card takes no input (mashing cannot skip it); START also confirms', () => {
     const h = toGameOver();
     const go = top(h.game) as GameOverScene;
-    h.idle(61);
-    h.tap('start');
+    for (let i = 0; i < GAME_OVER_CARD_FRAMES / 2 - 1; i++) h.tap(i % 2 ? 'start' : 'jump');
+    expect(go.prompting).toBe(false);
+    expect(top(h.game)).toBe(go);
+    h.idle(4);
     expect(go.prompting).toBe(true);
-    h.idle(2);
     h.tap('start');
     expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
+  });
+
+  it('co-op: either player answers; YES gives 5 lives and the player who fell last picks', () => {
+    const h = makeGame();
+    h.game.newGame(MARIO, '1-1', LUIGI);
+    h.game.state.lives = 1;
+    h.until(() => inLevel(h.game));
+    const w = (top(h.game) as LevelScene).world;
+    w.players[0]!.out = true;
+    w.players[0]!.hidden = true;
+    w.kill(w.players[1]!);
+    h.until(() => !inLevel(h.game), 400);
+    const go = top(h.game) as GameOverScene;
+    expect(go).toBeInstanceOf(GameOverScene);
+    h.idle(GAME_OVER_CARD_FRAMES);
+    h.tap('down', 1);
+    expect(go.yes).toBe(false);
+    h.tap('up', 1);
+    h.tap('jump', 1);
+    expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
+    expect(h.game.state.lives).toBe(5);
+    h.idle(12);
+    h.tap('jump', 0); // player 1 does not pick
+    expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
+    h.tap('right', 1);
+    h.tap('jump', 1);
+    expect(top(h.game)).toBeInstanceOf(IntroScene);
+    expect(h.game.state.character).toBe(MARIO);
+    expect(h.game.state.character2).toBe(LINK);
+  });
+
+  /** Game over in `level`, YES, keep the hero; returns the level the run continues in. */
+  function continueFrom(level: string): LevelScene {
+    const h = makeGame();
+    h.game.newGame(MARIO, level);
+    h.game.gameOver(level);
+    h.idle(GAME_OVER_CARD_FRAMES);
+    h.tap('jump');
+    h.idle(12);
+    h.tap('jump');
+    h.until(() => inLevel(h.game));
+    return top(h.game) as LevelScene;
+  }
+
+  it('Lost Levels: ll-10-2 continues in ll-10-1', () => {
+    expect(continueFrom('ll-10-2').level.id).toBe('ll-10-1');
+  });
+
+  it('a custom level continues in itself, never in a "-1" level', () => {
+    expect(continueFrom('custom-my-1-2').level.id).toBe('custom-my-1-2');
+  });
+
+  it('a shared-link level stays playable after a death', () => {
+    const h = makeGame();
+    h.game.playShared({ ...getLevel('1-1'), id: 'custom-shared' });
+    const w = (top(h.game) as LevelScene).world;
+    w.kill(w.player);
+    h.until(() => !inLevel(h.game), 400);
+    h.idle(12);
+    h.tap('jump');
+    h.until(() => inLevel(h.game));
+    expect((top(h.game) as LevelScene).level.id).toBe('custom-shared');
   });
 
   it('YES: character select, then the level from its start with 3 lives and no score or coins', () => {
@@ -222,7 +292,7 @@ describe('game over offers CONTINUE? YES / NO', () => {
     h.until(() => inLevel(h.game));
     const scene = top(h.game) as LevelScene;
     expect(scene.level.id).toBe('1-1');
-    expect(toPx(scene.world.player.body.x)).toBeLessThan(80);
+    expect(Math.floor(toPx(scene.world.player.body.x) / 16)).toBe(scene.level.start.x);
   });
 
   it("YES later in a world goes back to the world's first level (StatManager.changeToFirstWorldLevel)", () => {

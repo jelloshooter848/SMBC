@@ -48,6 +48,8 @@ export class Game {
   playtestDone: (() => void) | null = null;
   /** Dev-mode starts respawn straight away after a death, skipping character select. */
   quickRespawn = false;
+  /** A level opened from a share link: not in any library, so kept here for respawn/continue. */
+  private sharedLevel: LevelData | null = null;
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -165,6 +167,7 @@ export class Game {
 
   /** Play a level decoded from a share link with the default character. */
   playShared(level: LevelData): void {
+    this.sharedLevel = level;
     this.state = newGameState(this.deps.characters[0] as CharacterDef);
     this.playtestDone = null;
     this.quickRespawn = false;
@@ -184,7 +187,7 @@ export class Game {
   goToLevel(levelId: string, start: LevelStart): void {
     let level: LevelData;
     try {
-      level = this.deps.getLevel(levelId);
+      level = this.sharedLevel?.id === levelId ? this.sharedLevel : this.deps.getLevel(levelId);
     } catch {
       this.deps.ctx.audio.stopMusic();
       this.deps.ctx.audio.playJingle('world-clear');
@@ -293,8 +296,9 @@ export class Game {
     this.respawn(id, { mode: 'stand' }, player);
   }
 
-  /** "1-3" → "1-1", "ll-5-2" → "ll-5-1"; a level outside a numbered world restarts itself. */
+  /** "1-3" → "1-1", "ll-5-2" → "ll-5-1"; custom levels and others outside a numbered world restart themselves. */
   private firstLevelOfWorld(levelId: string): string {
+    if (levelId.startsWith('custom-')) return levelId;
     const m = /^(.*?)(\d+)-\d+$/.exec(levelId);
     if (!m) return levelId;
     const first = `${m[1]}${m[2]}-1`;
