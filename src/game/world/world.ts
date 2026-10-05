@@ -792,6 +792,10 @@ export class World {
         this.spawn(new PowerUp(tx, ty, 'star'));
         this.audio.sfx('powerup-appear');
         break;
+      case 'poison':
+        this.spawn(new PowerUp(tx, ty, 'poison'));
+        this.audio.sfx('powerup-appear');
+        break;
       case 'vine':
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
         this.audio.sfx('vine');
@@ -849,7 +853,11 @@ export class World {
       else if (e instanceof PowerUp) {
         if (overlaps(pb, e.body)) {
           e.destroy();
-          p.def.behaviour.onPowerUp(p, e.item, this);
+          // A poison mushroom hurts every hero alike (star power shrugs it off); it never reaches
+          // the character's onPowerUp.
+          if (e.item === 'poison') {
+            if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
+          } else p.def.behaviour.onPowerUp(p, e.item, this);
         }
       } else if (e instanceof Pickup) {
         if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();
