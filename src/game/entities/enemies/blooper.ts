@@ -6,10 +6,13 @@ const RISE_FRAMES = 20;
 const RISE_SPEED = 0x01800; // 1.5 px/f diagonal
 const SINK_SPEED = 0x00800; // 0.5 px/f
 const SINK_MAX = 60;
+/** Out of water (The Lost Levels) it swims through the air, never above the HUD line. */
+const AIR_TOP = px(32);
 
 /**
  * Blooper: squirts diagonally up toward the player, then drifts down until it is below them
  * and squirts again. Never surfaces above the water line and ignores tiles. Not stompable.
+ * Outside water levels it swims through the air the same way, below the HUD.
  */
 export class Blooper extends Enemy {
   readonly kind = 'blooper';
@@ -49,8 +52,8 @@ export class Blooper extends Enemy {
       }
       this.currentFrame = 'blooper-1';
     }
-    // Stay under the surface and above the floor.
-    const top = world.waterTop + px(8);
+    // Stay under the surface (or the HUD out of water) and above the floor.
+    const top = Number.isFinite(world.waterTop) ? world.waterTop + px(8) : AIR_TOP;
     if (b.y < top) b.y = top;
     if (b.y + b.h > px(13 * 16)) b.y = px(13 * 16) - b.h;
     this.facing = b.vx > 0 ? 1 : -1;

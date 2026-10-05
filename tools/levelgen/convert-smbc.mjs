@@ -124,7 +124,9 @@ const MARKERS = {
   enemyKoopaGreen: 'k',
   enemyKoopaRed: 'K',
   springRed: 's',
+  springGreen: 'y',
   enemyHamBro: 'h',
+  enemyHamBroChase: 'n',
   enemyBeetle: 'z',
 };
 const ENTITIES = {
@@ -156,7 +158,6 @@ const IGNORED = new Set([
   'toad',
   'gameStateWatch',
   'bowserFireBallStart',
-  'lakituEnd',
   'pullyRopeVertical',
   'pullyRope',
   'treeSmallTrunk',
@@ -164,6 +165,11 @@ const IGNORED = new Set([
   'sceneryText_2',
   'sceneryText_3',
   'sceneryText_4',
+  // Warp-zone digit labels of The Lost Levels (the warp zone draws its own).
+  'sceneryText_1',
+  'sceneryText_B',
+  'sceneryText_C',
+  'sceneryText_D',
 ]);
 
 function themeFor(levelId, type) {
@@ -233,9 +239,13 @@ function tileChar(tok, area, world) {
     case 'flagPoleTop':
       return 'o';
     case 'groundMushroom':
+    case 'groundMushroomSinLft':
+    case 'groundMushroomSinRht':
       return trees ? 'T' : 'm';
     case 'standardPlatformStem':
     case 'standardPlatformStemSin':
+    case 'standardPlatformStemMidTop':
+    case 'standardPlatformStemRhtTop':
       return trees ? 't' : 'i';
     case 'wavesLava':
       return '~';
@@ -302,12 +312,15 @@ function convertArea(level, area, id, levels) {
   const bushRuns = new Map(); // row -> [[x0, len]]
   const pulleys = []; // { x, y, side }
   const lakitus = []; // lakituStart tokens
-  let lakituEnd = null;
+  const lakituEnds = []; // lakituEnd / lakituEndMiddle columns
   const teleports = new Map(); // number -> { start, end, check }: { x, ys }
   const balances = []; // Pully platforms: { x, y, len }
 
   for (let y = 0; y < 15; y++) {
     for (let x = 0; x < area.width; x++) {
+      // Lost Levels runs: an entity marker wins over a tile listed after it in the same cell
+      // (13-3: a Hammer Bro on a castle wall). SMB1 output keeps the old last-token-wins rule.
+      let marked = false;
       for (const tok of tokensAt(area, x, y)) {
         const { name, params } = tok;
         if (helperOnly(params)) {
@@ -317,12 +330,14 @@ function convertArea(level, area, id, levels) {
         }
         const ch = tileChar(tok, area, world);
         if (ch) {
+          if (marked) continue;
           b.set(x, y, ch);
           if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
           continue;
         }
         if (MARKERS[name]) {
           b.set(x, y, MARKERS[name]);
+          marked = LOST;
           continue;
         }
         if (ENTITIES[name]) {
@@ -330,7 +345,8 @@ function convertArea(level, area, id, levels) {
           continue;
         }
         switch (name) {
-          case 'enemyBowser': {
+          case 'enemyBowser':
+          case 'enemyBowserFake': {
             // Later castles' Bowsers throw hammers (Hammer) or hammers and fire (FireballHammer).
             const attack = { Hammer: 'hammer', FireballHammer: 'both' }[params.BowserType];
             b.entity('bowser', x, y, attack ? { attack } : undefined);
@@ -347,7 +363,8 @@ function convertArea(level, area, id, levels) {
             lakitus.push({ x, y });
             break;
           case 'lakituEnd':
-            lakituEnd = x;
+          case 'lakituEndMiddle':
+            lakituEnds.push(x);
             break;
           case 'teleporterStart':
           case 'teleporterStartOne':
@@ -499,7 +516,10 @@ function convertArea(level, area, id, levels) {
   }
   for (const q of balances)
     if (!q.used) console.warn(`${id}: balance platform without a rope at ${q.x},${q.y}`);
-  for (const l of lakitus) b.entity('lakitu', l.x, l.y, { end: lakituEnd ?? area.width });
+  // Each Lakitu leaves at the first end marker after its start.
+  lakituEnds.sort((a, c) => a - c);
+  for (const l of lakitus)
+    b.entity('lakitu', l.x, l.y, { end: lakituEnds.find((e) => e > l.x) ?? area.width });
   // Castle mazes: each numbered teleporter moves the player from its start column to its end
   // column once its checkpoints were passed: all of them (Start) or any one (StartOne).
   for (const [n, t] of [...teleports].sort((a, c) => Number(a[0]) - Number(c[0]))) {

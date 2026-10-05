@@ -5,7 +5,7 @@ import { flipH, swapColors } from '@engine/gfx/pixelart';
 /**
  * Item palette roles:
  *   0 outline (black)    1 white            2 red (mushroom cap, spring coil)
- *   3 cream (stem, spots, lift planks)      4 green (1up cap, flower leaves, flag)
+ *   3 cream (stem, spots, lift planks)      4 green (1up cap, flower leaves, flag, super spring coil)
  *   5 gold (coin, star, buster)             6 gold light (shine)
  *   7 orange (fire)      8 dark red (shade) 9 brown (brick shards, axe handle)
  *   a light blue (sword beam)               b grey (axe blade, spring plates)
@@ -1703,6 +1703,9 @@ export const itemsDef: SpriteDef = {
     'spring-0': spring0,
     'spring-1': spring1,
     'spring-2': spring2,
+    'spring-green-0': swapColors(spring0, { '2': '4' }),
+    'spring-green-1': swapColors(spring1, { '2': '4' }),
+    'spring-green-2': swapColors(spring2, { '2': '4' }),
     'vine-top': vineTop,
     pulley,
     'vine-mid': vineMid,
