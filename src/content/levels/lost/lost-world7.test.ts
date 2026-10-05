@@ -44,7 +44,7 @@ describe('Lost Levels World 7: files and headers', () => {
     ['ll-7-1-bonus2', 32, 'underground', null, 'll-7-1'],
     ['ll-7-2', 272, 'night', 400, null],
     ['ll-7-2-bonus', 16, 'underground', null, 'll-7-2'],
-    ['ll-7-3', 336, 'overworld', 400, null],
+    ['ll-7-3', 336, 'snow', 400, null], // the original's gray platform skin
     ['ll-7-4', 256, 'castle', 400, null],
   ] as const)('%s: width %i, %s, time %s, parent %s', (id, width, theme, time, parent) => {
     const l = load(id);
