@@ -51,8 +51,6 @@ describe('HUD', () => {
   it('shows a 7-digit score, as the original Crossover does', () => {
     const texts = hud(CHARACTERS[0] as CharacterDef, null, 1234).map((b) => b.what);
     expect(texts).toContain('0001234');
-    // StatManager.SCORE_MAX = 9999999.
-    expect(hud(CHARACTERS[0] as CharacterDef, null, 123456789).map((b) => b.what)).toContain('9999999');
   });
 
   const pairs: [CharacterDef, CharacterDef | null][] = [];

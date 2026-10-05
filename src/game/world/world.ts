@@ -1,5 +1,6 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
+import { SCORE_MAX } from '../hud/hud';
 import { NO_INPUT } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
@@ -443,7 +444,8 @@ export class World {
   /* ---------- Scoring ---------- */
 
   addScore(n: number, x?: number, y?: number): void {
-    this.state.score += n;
+    // Capped like the original's StatManager.addPoints (SCORE_MAX = 9999999).
+    this.state.score = Math.min(this.state.score + n, SCORE_MAX);
     if (x !== undefined && y !== undefined) this.spawn(new ScorePopup(x, y, String(n)));
   }
 
@@ -1282,7 +1284,7 @@ export class World {
         if (this.time && this.time > 0) {
           if (c.t % 2 === 1) {
             this.time--;
-            this.state.score += 50;
+            this.addScore(50);
           }
           if (c.t % 4 === 1) this.audio.sfx('timer-tick');
         } else {

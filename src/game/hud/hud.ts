@@ -24,9 +24,9 @@ export function drawHud(
   const font = assets.sheet('font');
   const name = state.character.hudName.slice(0, 6).padEnd(6);
   r.text(font, name, 24, 8);
-  // A 7-digit score, capped like the original's StatManager.SCORE_MAX (9999999). The coin counter
-  // sits 16 px after it, as in the original's TopScreenText (SCORE_TXT_PNT, COIN_SYMBOL_PNT).
-  r.text(font, pad(Math.min(state.score, SCORE_MAX), 7), 24, 16);
+  // A 7-digit score (World.addScore caps it at SCORE_MAX). The coin counter sits 16 px after it,
+  // as in the original's TopScreenText (SCORE_TXT_PNT, COIN_SYMBOL_PNT).
+  r.text(font, pad(state.score, 7), 24, 16);
   r.text(font, `$×${pad(state.coins, 2)}`, 96, 16);
   r.text(font, 'WORLD', 144, 8);
   r.text(font, `${worldLabel(state.world)}-${state.stage}`, 152, 16);

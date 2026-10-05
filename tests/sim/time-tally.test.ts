@@ -46,4 +46,23 @@ describe('level clear time tally', () => {
     expect(Math.abs(frames - startTime * 2)).toBeLessThanOrEqual(2);
     expect(endScore - startScore).toBe(startTime * 50);
   });
+
+  it('never lets the score pass 9999999 (StatManager.SCORE_MAX)', () => {
+    let max = 0;
+    const r = runSim({
+      level,
+      character: MARIO,
+      state: { score: 9_990_000 },
+      script: { steps: [{ frame: 0, hold: ['right', 'jump'] }] },
+      maxFrames: 3000,
+      start: { x: 194, y: 12, mode: 'stand' },
+      until: (w) => {
+        max = Math.max(max, w.state.score);
+        return false;
+      },
+    });
+    expect(r.outcome).toBe('cleared');
+    expect(max).toBe(9_999_999);
+    expect(r.score).toBe(9_999_999);
+  });
 });

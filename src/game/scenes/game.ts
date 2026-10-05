@@ -7,6 +7,7 @@ import { TitleScene } from './title';
 import { IntroScene } from './intro';
 import { LevelScene, type LevelStart } from './level';
 import { startTime } from '../world/world';
+import { pad, SCORE_MAX } from '../hud/hud';
 import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
@@ -84,7 +85,7 @@ export class Game {
           'THE PRINCESS IS SAFE',
           'AND THE KINGDOM IS FREE.',
           '',
-          `FINAL SCORE ${String(s.score).padStart(6, '0')}`,
+          `FINAL SCORE ${pad(Math.min(s.score, SCORE_MAX), 7)}`,
           '',
           'PRESS START',
         ],
