@@ -43,6 +43,7 @@ piranha 193 10 red=1
 firebar 203 9
 bowser 231 9 attack=hammer
 axe 237 8
+toad 249 12
 
 [zones]
 exit 248 next=ll-12-1

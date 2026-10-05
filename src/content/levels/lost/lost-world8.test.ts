@@ -408,7 +408,9 @@ describe('Lost Levels 8-4', () => {
     expect(tile(l, 71, 9)).toBe(T.PIPE_BOTTOM_L);
     expect(at(l, 'firebar')).toEqual([[117, 5]]);
     expect(at(l, 'lift-fall')).toEqual([[67, 11]]);
-    // The original ends 8-4 with Toad (its only princess is in D-4), so there is none here.
-    expect(at(l, 'princess')).toEqual([]);
+    // The Crossover data ends 8-4 with Toad, but the NES game ends it with the princess: the
+    // converter turns the Toad of a level that ends the game into her.
+    expect(at(l, 'princess')).toEqual([[137, 12]]);
+    expect(at(l, 'toad')).toEqual([]);
   });
 });

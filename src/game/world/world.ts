@@ -27,6 +27,7 @@ import { Spiny } from '../entities/enemies/spiny';
 import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bullet-bill';
 import { BalanceLift } from '../entities/objects/balance-lift';
 import { Princess } from '../entities/objects/princess';
+import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
 import { PowerUp } from '../entities/objects/powerup';
@@ -123,7 +124,9 @@ export class World {
   private readonly respawnTimers = new Map<Player, number>();
   private checkpointSent = false;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
-  bossClear: { t: number } | null = null;
+  bossClear: { t: number; stop?: number } | null = null;
+  /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
+  castleText: string[] = [];
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
   autoWalk = false;
   readonly flagpole: Flagpole | null = null;
@@ -309,6 +312,8 @@ export class World {
         return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'princess':
         return new Princess(s.x, s.y);
+      case 'toad':
+        return new Toad(s.x, s.y);
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
@@ -1300,7 +1305,7 @@ export class World {
   private bossPlayer: Player | null = null;
 
   private updateBossClear(): void {
-    const c = this.bossClear as { t: number };
+    const c = this.bossClear as NonNullable<typeof this.bossClear>;
     const p = this.bossPlayer ?? this.player;
     c.t++;
     if (c.t % 4 === 0) {
@@ -1325,17 +1330,57 @@ export class World {
       this.addScore(5000, bowser.body.x, bowser.body.y);
     }
     if (c.t === 120) this.audio.playJingle('castle-clear');
-    if (c.t > 150) {
+    const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
+    if (c.t > 150 && c.stop === undefined) {
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;
       p.body.x += px(1);
+      this.bossWalkFall(p);
+      // The screen follows the walk, so Toad (or the princess) comes into view.
+      this.camera.follow(p.body.x);
+      this.spawnPending();
+      // The walk ends on touching the exit marker, the tile before Toad (the original's
+      // Level.as stops the player on touchedExit); without one it lasts three seconds.
+      const reached = exit ? p.body.x + p.body.w >= tileToSub(exit.x) : c.t >= 330;
+      if (reached || c.t >= 750) {
+        c.stop = c.t;
+        p.anim = 'idle';
+      }
     }
-    if (c.t >= 330) {
-      const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-      this.events.push({ type: 'exit', next: exit?.next ?? 'end' });
+    if (c.stop === undefined) return;
+    // Then Toad's thanks; 1.5 s later the news, and 3.5 s after it the next level (the
+    // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle hands the thanks
+    // over to the ending.
+    const next = exit?.next ?? 'end';
+    const s = c.t - c.stop;
+    if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
+    if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
+    if (s >= (next === 'end' ? 120 : 330)) {
+      this.events.push({ type: 'exit', next });
       c.t = -100000;
     }
+  }
+
+  /**
+   * Gravity for the walk to Toad: the player drops off the axe's ledge onto the floor below, but
+   * never into a pit (over the cut bridge's lava the walk stays level).
+   */
+  private bossWalkFall(p: Player): void {
+    const b = p.body;
+    const col = tileAt(b.x + (b.w >> 1));
+    let ground = tileAt(b.y + b.h);
+    while (ground < this.level.height && !this.map.isSolid(col, ground)) ground++;
+    if (ground >= this.level.height) return;
+    const top = tileToSub(ground) - b.h;
+    b.vy = Math.min(b.vy + 0x00400, 0x04000);
+    b.y = Math.min(b.y + velToSub(b.vy), top);
+    if (b.y === top) b.vy = 0;
+  }
+
+  private renderCastleText(r: Renderer, view: View): void {
+    const font = view.assets.sheet('font');
+    this.castleText.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, 80 + i * 16));
   }
 
   /* ---------- Rendering ---------- */
@@ -1357,6 +1402,7 @@ export class World {
     if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);
     for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
     this.renderWarpText(r, view);
+    this.renderCastleText(r, view);
   }
 
   private renderWarpText(r: Renderer, view: View): void {

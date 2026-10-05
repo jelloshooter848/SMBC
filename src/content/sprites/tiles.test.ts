@@ -103,6 +103,7 @@ const itemFrames: Record<string, Size> = {
   platform: [16, 8],
   'spring-0': T16,
   princess: [16, 24],
+  toad: [16, 24],
   'spring-1': T16,
   'spring-2': T16,
   'spring-green-0': T16,

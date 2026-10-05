@@ -49,6 +49,7 @@ firebar-ccw 201 13
 bowser 231 9 attack=hammer
 firebar 231 10
 axe 237 8
+toad 249 12
 
 [zones]
 exit 248 next=ll-13-1

@@ -45,6 +45,7 @@ podoboo 188 12
 firebar-ccw 196 10
 bowser 199 9
 axe 205 8
+toad 217 12
 
 [zones]
 exit 216 next=ll-5-1

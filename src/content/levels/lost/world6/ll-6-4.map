@@ -67,6 +67,7 @@ lift-h 297 13 len=4 range=3
 podoboo 322 12
 bowser 327 9 attack=hammer
 axe 333 8
+toad 345 12
 
 [zones]
 loop 80 3 4 -> 144 check=32:10:12

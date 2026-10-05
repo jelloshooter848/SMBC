@@ -55,6 +55,7 @@ podoboo 195 12
 bowser 199 9
 lift-h 202 6 len=4 range=3
 axe 205 8
+toad 217 12
 
 [zones]
 exit 216 next=ll-6-1
