@@ -211,16 +211,19 @@ describe('Lost Levels 5-3', () => {
       type: 'pipe',
       target: { level: 'll-5-3-bonus', x: 1, y: 0, exitDir: 'none' },
     });
+    // The 32-wide room scrolls: drop in at column 1 and walk the whole floor to the side pipe.
+    let camMax = 0;
     const r = runSim({
       level: level('ll-5-3-bonus'),
       character: MARIO,
       script: none,
-      maxFrames: 200,
-      controller: (w, f) => {
-        if (f === 0) place(w, 26, 13);
+      maxFrames: 900,
+      controller: (w) => {
+        camMax = Math.max(camMax, toPx(w.camera.x));
         return ['right'];
       },
     });
+    expect(camMax).toBeGreaterThan(0);
     expect(r.outcome).toBe('pipe');
     expect(r.events.find((e) => e.type === 'pipe')).toEqual({
       type: 'pipe',

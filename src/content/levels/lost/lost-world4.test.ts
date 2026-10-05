@@ -118,6 +118,7 @@ describe('Lost Levels 4-2', () => {
     expect(l.width).toBe(224);
     expect(l.theme).toBe('overworld');
     expect(l.time).toBe(400);
+    // Its end marker is a plain lakituEnd, so it flies high (no mid=1).
     expect(l.entities).toContainEqual({ type: 'lakitu', x: 62, y: 0, props: { end: 111 } });
   });
   it('has two Hammer Bros, beetles, koopas, a gliding paratroopa and a springboard', () => {
@@ -191,11 +192,12 @@ describe('Lost Levels 4-2', () => {
 
 describe('Lost Levels 4-3', () => {
   const l = load('ll-4-3');
-  it('is a 200-wide giant mushroom level', () => {
+  it('is a 200-wide treetop level (Lost Levels platform areas are always treetops)', () => {
     expect(l.width).toBe(200);
     expect(l.theme).toBe('overworld');
-    expect(tile(l, 61, 9)).toBe(T.MUSHROOM_TOP);
-    expect(tile(l, 62, 10)).toBe(T.MUSHROOM_STEM);
+    expect(tile(l, 61, 9)).toBe(T.TREE_TOP);
+    expect(tile(l, 62, 10)).toBe(T.TREE_TRUNK);
+    expect(Array.from(l.tiles).filter((t) => t === T.MUSHROOM_TOP)).toHaveLength(0);
   });
   it('has two balance lifts, three falling and three swaying lifts', () => {
     expect(l.entities.filter((e) => e.type === 'balance')).toEqual([
@@ -238,10 +240,11 @@ describe('Lost Levels 4-3', () => {
 
 describe('Lost Levels 4-4', () => {
   const l = load('ll-4-4');
-  it('is a 224-wide castle with a 300 timer and no maze', () => {
+  it('is a 224-wide castle with a 300 timer, no maze and no checkpoint (LOCKED_CP)', () => {
     expect(l.width).toBe(224);
     expect(l.theme).toBe('castle');
     expect(l.time).toBe(300);
+    expect(l.zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
     expect(l.start).toEqual({ x: 1, y: 6 });
     expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([]);
   });
