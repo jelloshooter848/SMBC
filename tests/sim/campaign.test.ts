@@ -16,7 +16,7 @@ import { PauseScene } from '@game/scenes/pause';
 import { MessageScene } from '@game/scenes/message';
 import { GameOverScene, GAME_OVER_CARD_FRAMES } from '@game/scenes/game-over';
 import { TitleScene } from '@game/scenes/title';
-import type { MenuItem } from '@game/scenes/menu';
+import type { MenuScene, MenuItem } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
@@ -247,6 +247,73 @@ describe('campaign: clears return to the map', () => {
     expect(loadSave(1)?.position).toEqual({ world: 4, node: '4-1' });
     // 1-2 itself was not cleared by the warp.
     expect(isOpen(h.game.mapProgress, page(1), '1-3')).toBe(false);
+  });
+
+  it('after a warp, the map menu WORLDS travels back to an open world, at the node left there', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
+    enter(h, '1-2');
+    play(h, '1-2');
+    h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
+    h.fire({ type: 'exit', next: '4-2-intro' });
+    h.until(() => h.map().mode === 'idle');
+    expect(h.map().page.world).toBe(4);
+    const openWorlds = () => {
+      h.tap('select');
+      expect((h.top() as MenuScene).title).toBe('MAP');
+      choose(h.top(), 'Worlds');
+      const menu = h.top() as MenuScene;
+      expect(menu.title).toBe('WORLDS');
+      return menu;
+    };
+    // Only open worlds are listed; the current one is marked.
+    let menu = openWorlds();
+    const items = (menu as unknown as { items: MenuItem[] }).items;
+    expect(items.map((i) => i.label)).toEqual(['World 1', 'World 4']);
+    expect(items.map((i) => i.value?.())).toEqual([undefined, 'here']);
+    choose(menu, 'World 1');
+    const m = h.map();
+    expect(m).toBeInstanceOf(WorldMapScene);
+    expect(m.page.world).toBe(1);
+    expect(m.node).toBe('1-2'); // where the hero warped from
+    expect(h.said.some((t) => t.startsWith('World 1,') && t.includes('World 1-2'))).toBe(true);
+    expect(loadSave(1)?.position).toEqual({ world: 1, node: '1-2' });
+    // Clearing 1-2 still works from here.
+    enter(h, '1-2');
+    play(h, '1-2-exit');
+    h.fire({ type: 'exit', next: '1-3' });
+    expect(h.map().page.world).toBe(1);
+    expect(h.game.mapProgress.cleared).toEqual(['1-1', '4-1', '1-2']);
+    expect(isOpen(h.game.mapProgress, page(1), '1-3')).toBe(true);
+    h.until(() => h.map().mode === 'idle');
+    // And back to World 4, at 4-1; the current world just closes the menus.
+    menu = openWorlds();
+    choose(menu, 'World 4');
+    expect(h.map().page.world).toBe(4);
+    expect(h.map().node).toBe('4-1');
+    h.idle(8);
+    choose(openWorlds(), 'World 4');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().page.world).toBe(4);
+    // The last nodes are saved with the file.
+    expect(loadSave(1)?.lastNode).toEqual({ 1: '1-2', 4: '4-1' });
+    const h2 = makeGame();
+    h2.game.openFile(1);
+    h2.idle(8);
+    h2.tap('select');
+    choose(h2.top(), 'Worlds');
+    choose(h2.top(), 'World 1');
+    expect(h2.map().node).toBe('1-2');
+  });
+
+  it('a world never visited is entered at its start', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3', '1-4'], worlds: [1, 2] }));
+    h.game.travelToWorld(2);
+    expect(h.map().page.world).toBe(2);
+    expect(h.map().node).toBe('start');
+    h.game.travelToWorld(5); // closed: nothing happens
+    expect(h.map().page.world).toBe(2);
   });
 
   it('a pipe within the world (1-2 into its exit area) is no warp', () => {

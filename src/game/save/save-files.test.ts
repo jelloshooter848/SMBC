@@ -206,6 +206,22 @@ describe('save files', () => {
     });
   });
 
+  it('keeps the last node of open worlds only (missing in older files: none)', () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1)!;
+    };
+    expect(newSave(1, 'mario').lastNode).toEqual({});
+    const { lastNode: _, ...old } = newSave(1, 'mario');
+    store.set('smbc.save.1', JSON.stringify(old));
+    expect(loadSave(1)!.lastNode).toEqual({});
+    expect(
+      put({ worlds: [1, 4], lastNode: { 1: '1-2', 4: '4-1', 3: '3-1', x: 'a', 2: 7, 9: '9-1' } }).lastNode,
+    ).toEqual({ 1: '1-2', 4: '4-1' });
+    expect(put({ lastNode: ['1-1'] }).lastNode).toEqual({});
+    expect(put({ lastNode: { 1: '' } }).lastNode).toEqual({});
+  });
+
   it('counts main levels cleared and the highest world', () => {
     const s = newSave(1, 'mario');
     s.cleared = ['1-1', '1-2', '1-2', '8-4', 'll-1-1', 'custom-x', '9-1'];

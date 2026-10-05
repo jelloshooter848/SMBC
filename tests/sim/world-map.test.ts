@@ -216,6 +216,7 @@ describe('world map scene', () => {
     expect(h.game.scenes.top).toBeInstanceOf(WorldMapScene);
     h.tap('start'); // start on the start node opens the menu too
     h.idle(8);
+    h.tap('down'); // Worlds
     h.tap('down');
     h.tap('jump'); // Save and quit
     expect(h.game.scenes.top).toBeInstanceOf(TitleScene);
@@ -226,6 +227,7 @@ describe('world map scene', () => {
     k.idle(8);
     k.tap('select');
     k.idle(8);
+    k.tap('down');
     k.tap('down');
     k.tap('jump');
     expect(quit).toHaveBeenCalled();
@@ -378,6 +380,7 @@ describe('campaign saves from the map', () => {
     h.game.state.lives = 7;
     h.tap('select');
     h.idle(8);
+    h.tap('down'); // Worlds
     h.tap('down');
     h.tap('jump'); // Save and quit
     expect(h.game.scenes.top).toBeInstanceOf(TitleScene);

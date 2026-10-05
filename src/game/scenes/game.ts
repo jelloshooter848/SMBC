@@ -22,7 +22,7 @@ import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
 import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress } from '../map/types';
-import { clearLevel, entryLevel, newMapProgress, warpTo } from '../map/rules';
+import { clearLevel, entryLevel, isOpen, isWorldOpen, newMapProgress, warpTo } from '../map/rules';
 import { mapPage } from '@content/worldmap';
 import {
   loadSave,
@@ -70,6 +70,8 @@ export class Game {
   campaign: { slot: SaveSlot } | null = null;
   /** The campaign's file as last written (the base `autosave` updates). */
   private campaignSave: SaveFile | null = null;
+  /** The node the hero last stood on in each world (SaveFile.lastNode), for map travel. */
+  mapLastNode: Record<number, string> = {};
   /** Campaign: map ids a warp opened, drawn in the next time the map is shown. */
   private warpReveal: string[] = [];
 
@@ -196,12 +198,14 @@ export class Game {
     const base = this.campaign ? this.campaignSave : null;
     if (!base) return;
     const p = this.mapProgress;
+    this.mapLastNode[p.position.world] = p.position.node;
     const save: SaveFile = {
       ...saveFromState(base, this.state),
       cleared: p.cleared.slice(),
       worlds: p.worlds.slice(),
       secrets: p.secrets.slice(),
       position: { world: p.position.world, node: p.position.node },
+      lastNode: { ...this.mapLastNode },
     };
     this.campaignSave = save;
     writeSave(save);
@@ -240,11 +244,33 @@ export class Game {
    */
   campaignWarp(world: number): void {
     if (!this.campaign) return;
+    const pos = this.mapProgress.position;
+    this.mapLastNode[pos.world] = pos.node; // map travel back returns here
     const opened = warpTo(this.mapProgress, world);
     this.warpReveal.push(...opened.filter((id) => !this.warpReveal.includes(id)));
     const start = mapPage(world)?.nodes.find((n) => n.kind === 'start');
     if (start) this.mapProgress.position = { world, node: start.id };
     this.autosave();
+  }
+
+  /**
+   * Map menu "Worlds": show the page of open world `world` with the hero on the node it last
+   * stood on there (its start when never visited). Lets a player who warped ahead go back to
+   * worlds left unfinished.
+   */
+  travelToWorld(world: number): void {
+    const p = this.mapProgress;
+    const page = mapPage(world);
+    if (!page || !isWorldOpen(p, world)) return;
+    const last = this.mapLastNode[world];
+    const node =
+      last && page.nodes.some((n) => n.id === last) && isOpen(p, page, last)
+        ? last
+        : (page.nodes.find((n) => n.kind === 'start')?.id ?? 'start');
+    this.mapLastNode[p.position.world] = p.position.node;
+    p.position = { world, node };
+    this.deps.ctx.audio.stopMusic();
+    this.showMap(world); // the map announces the page and node, and saves
   }
 
   /** Map menu "Save and quit": save the file, then the title. */
@@ -350,6 +376,7 @@ export class Game {
     this.campaign = { slot };
     this.campaignSave = save;
     this.warpReveal = [];
+    this.mapLastNode = { ...save.lastNode };
     this.mapProgress = {
       cleared: save.cleared.slice(),
       worlds: save.worlds.slice(),

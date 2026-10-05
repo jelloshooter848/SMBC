@@ -31,7 +31,8 @@ A file plays on a Super Mario World-style map with one page per world (1-8). Wal
 along open paths and press jump or start on a level to play it (character select first; the
 current hero is preselected). Clearing a level, at the flagpole or by Toad in a castle, returns
 to the map and draws in the road to the next one; a castle opens the next world's page. A warp
-pipe opens only the world it leads to. **Pause → Quit to map** leaves any level without
+pipe opens only the world it leads to; the map menu's **Worlds** list travels between open
+worlds (back to the spot you left in each). **Pause → Quit to map** leaves any level without
 clearing it. Game over offers CONTINUE: yes returns to the map with fresh lives (score and coins
 reset, cleared levels kept), no goes to the title. The file saves itself whenever the map is
 shown, after each death and on a warp; the map menu (select) has **Save and quit**, and the
