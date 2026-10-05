@@ -1,4 +1,54 @@
-export type Theme = 'overworld' | 'underground' | 'castle' | 'water' | 'night' | 'treetop' | 'snow';
+export type Theme =
+  | 'overworld'
+  | 'underground'
+  | 'castle'
+  | 'water'
+  | 'night'
+  | 'treetop'
+  | 'snow'
+  // The Lost Levels' extra skins (World 8-11): orange giant-mushroom land, sky-high cloud
+  // ledges (over cloud banks, or over plain ground), overworld areas flooded with water (also
+  // in gray) and a castle drawn under the daylight sky.
+  | 'mushroom'
+  | 'clouds'
+  | 'clouds-overworld'
+  | 'overworld-water'
+  | 'water-gray'
+  | 'castle-overworld';
+
+/** Every theme, in the order the editor lists them. */
+export const THEMES: readonly Theme[] = [
+  'overworld',
+  'underground',
+  'castle',
+  'water',
+  'night',
+  'treetop',
+  'snow',
+  'mushroom',
+  'clouds',
+  'clouds-overworld',
+  'overworld-water',
+  'water-gray',
+  'castle-overworld',
+];
+
+export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
+
+/**
+ * Swimming areas: from the first row of wave tiles down the player swims. Besides the water
+ * theme itself these are the Lost Levels' flooded overworld areas, which only look different.
+ */
+export const isWaterTheme = (theme: Theme): boolean =>
+  theme === 'water' || theme === 'overworld-water' || theme === 'water-gray';
+
+/** The music an area of this theme plays when its map names none. */
+export function themeMusic(theme: Theme): string {
+  if (isWaterTheme(theme)) return 'water';
+  if (theme === 'castle' || theme === 'castle-overworld') return 'castle';
+  if (theme === 'underground') return 'underground';
+  return 'overworld';
+}
 
 export interface EntitySpawn {
   type: string;

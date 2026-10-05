@@ -68,10 +68,11 @@ describe('Lost Levels World 8: files and headers', () => {
     ['ll-8-1', 232, 'snow', 400, null],
     ['ll-8-1-water', 80, 'water', null, 'll-8-1'],
     ['ll-8-1-exit', 32, 'snow', null, 'll-8-1'],
-    ['ll-8-2', 176, 'overworld', 400, null],
-    ['ll-8-2-warp', 40, 'overworld', null, 'll-8-2'],
+    // World 8's skins: orange giant-mushroom land for normal areas, clouds for platform areas.
+    ['ll-8-2', 176, 'mushroom', 400, null],
+    ['ll-8-2-warp', 40, 'clouds', null, 'll-8-2'],
     ['ll-8-2-bonus', 32, 'underground', null, 'll-8-2'],
-    ['ll-8-3', 232, 'overworld', 400, null],
+    ['ll-8-3', 232, 'clouds', 400, null],
     ['ll-8-3-sky', 120, 'overworld', null, 'll-8-3'],
     ['ll-8-4', 96, 'castle', 400, null],
     ['ll-8-4-water', 48, 'water', null, 'll-8-4'],
@@ -84,8 +85,8 @@ describe('Lost Levels World 8: files and headers', () => {
     expect(l.world).toBe(8);
     expect(l.width).toBe(width);
     expect(l.theme).toBe(theme);
-    // Night and snow levels play the overworld tune.
-    expect(l.music).toBe(['night', 'snow'].includes(theme) ? 'overworld' : theme);
+    // Night, snow, mushroom and cloud levels play the overworld tune.
+    expect(l.music).toBe(['night', 'snow', 'mushroom', 'clouds'].includes(theme) ? 'overworld' : theme);
     expect(l.time).toBe(time);
     expect(l.parent).toBe(parent);
   });

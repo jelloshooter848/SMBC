@@ -4,12 +4,14 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_W } from '@engine/viewport';
 import { encodeShare } from '@engine/share';
 import type { LevelData, Theme, Zone } from '../level/schema';
+import { THEMES } from '../level/schema';
 import { parseTextMap, serializeTextMap } from '../level/textmap';
 import { DEFAULT_LEGEND, T, TILES, tileDef } from '../level/tiles';
 import { TileMap } from '../world/tilemap';
 import { renderTiles, SKY } from '../world/tile-render';
 import { customLevelId, loadLibrary, saveLibrary } from '../level/library';
 import { enemyPalette } from '../entities/enemies/enemy';
+import { decorPalette } from '../entities/objects/decoration';
 import type { View } from '../entities/entity';
 import type { Game } from './game';
 
@@ -20,7 +22,6 @@ type Brush =
   | { kind: 'erase'; label: string }
   | { kind: 'start'; label: string };
 
-const THEMES: Theme[] = ['overworld', 'underground', 'castle', 'water', 'night', 'treetop', 'snow'];
 const MUSIC = ['overworld', 'underground', 'castle', 'water', 'star', 'title'];
 const ENTITY_FRAMES: Record<
   string,
@@ -644,14 +645,7 @@ export class EditorScene implements Scene {
     const theme = this.level.theme;
     r.clear(SKY[theme] ?? '#5c94fc');
     const view: View = { camX: this.camX, frame: this.frame, assets, theme, reduceFlashing: true };
-    const decorSheet = assets.sheet(
-      'decor',
-      theme === 'night' || theme === 'underground' || theme === 'castle'
-        ? 'decor-night'
-        : theme === 'snow'
-          ? 'decor-snow'
-          : 'decor-overworld',
-    );
+    const decorSheet = assets.sheet('decor', decorPalette(theme));
     for (const d of this.level.decor) {
       const f = decorSheet.frames.get(d.kind);
       if (f) r.sprite(decorSheet, d.kind, d.x * 16 - this.camX, (d.y + 1) * 16 - f.h);

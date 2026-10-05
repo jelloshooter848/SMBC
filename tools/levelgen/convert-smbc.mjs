@@ -107,14 +107,20 @@ const SNOW = new Set(['6-3']);
 /**
  * The Lost Levels' palettes, from the original's theme table for that map pack
  * (GameSuperMarioBros.as): world + area type, then single areas that override it. Snowy nights
- * use the night palette, as SMB1's World 3 does; gray ones the snow palette, as SMB1's 6-3 does;
- * skins we don't have stay overworld.
+ * use the night palette, as SMB1's World 3 does; gray ones the snow palette, as SMB1's 6-3 does
+ * (World 9's gray coin heaven too). The orange giant-mushroom skin (TG_MUSHROOM_PLATFORM_ORANGE)
+ * is our 'mushroom', TG_CLOUDS 'clouds', TG_CLOUDS_OVERWORLD 'clouds-overworld',
+ * TG_OVERWORLD_WATER 'overworld-water', TG_WATER_GRAY 'water-gray' and TG_CASTLE_OVERWORLD
+ * 'castle-overworld'.
  */
 const LOST_THEMES = {
   2: { normal: 'night', cheepCheep: 'night' },
   3: { normal: 'snow', platform: 'snow' },
   5: { normal: 'snow' },
   7: { normal: 'night', platform: 'snow' },
+  8: { normal: 'mushroom', platform: 'clouds' },
+  9: { water: 'overworld-water', coinHeaven: 'snow' },
+  10: { normal: 'mushroom', platform: 'clouds' },
   12: { normal: 'night', platform: 'night', cheepCheep: 'night' },
   13: { normal: 'snow' },
 };
@@ -129,6 +135,21 @@ const LOST_AREA_THEMES = {
   '8-1a': 'snow',
   '8-1c': 'snow',
   '12-3a': 'snow',
+  '9-3a': 'castle-overworld',
+  '9-4a': 'water-gray',
+  '10-2c': 'clouds-overworld',
+  '11-4b': 'clouds',
+};
+/** Music for the themes that are not named after a song (by the area type they skin). */
+const THEME_MUSIC = {
+  night: 'overworld',
+  snow: 'overworld',
+  mushroom: 'overworld',
+  clouds: 'overworld',
+  'clouds-overworld': 'overworld',
+  'overworld-water': 'water',
+  'water-gray': 'water',
+  'castle-overworld': 'castle',
 };
 
 // Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6); the Clock item (time bonus)
@@ -212,13 +233,16 @@ const IGNORED = new Set([
 ]);
 
 function themeFor(levelId, type, areaId) {
+  // The Lost Levels' table also skins castle and water areas (9-3a, World 9's flooded overworld).
+  if (LOST) {
+    const world = Number(levelId.split('-')[0]);
+    const skin = LOST_AREA_THEMES[`${levelId}${areaId}`] ?? LOST_THEMES[world]?.[type];
+    if (skin) return skin;
+  }
   if (type === 'castle') return 'castle';
   if (type === 'underGround' || type === 'pipeBonus') return 'underground';
   if (type === 'water') return 'water';
-  if (LOST) {
-    const world = Number(levelId.split('-')[0]);
-    return LOST_AREA_THEMES[`${levelId}${areaId}`] ?? LOST_THEMES[world]?.[type] ?? 'overworld';
-  }
+  if (LOST) return 'overworld';
   if (!LOST && SNOW.has(levelId)) return 'snow';
   if (!LOST && NIGHT.has(levelId)) return 'night';
   return 'overworld';
@@ -343,7 +367,7 @@ function convertArea(level, area, id, levels) {
   const [world, stage] = levelId.split('-').map(Number);
   const isMain = area.id === level.attrs.MAIN_AREA;
   const theme = themeFor(levelId, area.type, area.id);
-  const music = theme === 'night' || theme === 'snow' ? 'overworld' : theme;
+  const music = THEME_MUSIC[theme] ?? theme;
   const header = {
     id,
     name: `WORLD ${levelId}`,

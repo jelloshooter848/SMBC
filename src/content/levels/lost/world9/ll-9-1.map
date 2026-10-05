@@ -2,7 +2,7 @@ id: ll-9-1
 name: WORLD 9-1
 world: 9
 stage: 1
-theme: water
+theme: overworld-water
 music: water
 time: 400
 start: 1,3

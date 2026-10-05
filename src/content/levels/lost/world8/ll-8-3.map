@@ -2,7 +2,7 @@ id: ll-8-3
 name: WORLD 8-3
 world: 8
 stage: 3
-theme: overworld
+theme: clouds
 music: overworld
 time: 400
 start: 2,12

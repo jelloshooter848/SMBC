@@ -2,7 +2,7 @@ id: ll-9-3
 name: WORLD 9-3
 world: 9
 stage: 3
-theme: castle
+theme: castle-overworld
 music: castle
 time: 400
 start: 2,12

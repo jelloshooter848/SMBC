@@ -66,17 +66,20 @@ describe('Lost Levels World A rules', () => {
       if (l.id.endsWith('-bonus')) expect([l.width, l.camera]).toEqual([16, 'locked']);
       themes[l.id] = l.theme;
     }
-    // World A has no night/snow entry in the Lost Levels theme table (10-2a is overworld anyway).
+    // The Lost Levels theme table: World A's normal areas are orange giant-mushroom land, its
+    // platform areas clouds, 10-2c clouds over overworld ground (10-2a is plain overworld).
     expect(themes).toEqual({
-      'll-10-1': 'overworld',
+      'll-10-1': 'mushroom',
       'll-10-1-bonus': 'underground',
       'll-10-1-sky': 'overworld',
       'll-10-2': 'underground',
-      'll-10-2-exit': 'overworld',
+      'll-10-2-exit': 'clouds-overworld',
       'll-10-2-intro': 'overworld',
-      'll-10-3': 'overworld',
+      'll-10-3': 'clouds',
       'll-10-4': 'castle',
     });
+    // The skins keep the overworld tune.
+    for (const id of ['ll-10-1', 'll-10-2-exit', 'll-10-3']) expect(load(id).music).toBe('overworld');
   });
 });
 
@@ -84,7 +87,7 @@ describe('Lost Levels A-1', () => {
   it('is 224 wide with four chasing Hammer Bros and lots of Koopas', () => {
     const l = load('ll-10-1');
     expect(l.width).toBe(224);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('mushroom');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
     expect(where(l, 'hammer-bro-chase')).toEqual(['58,8', '61,4', '129,8', '133,4']);
@@ -223,7 +226,7 @@ describe('Lost Levels A-3', () => {
   it('is 256 wide with leaping cheeps from 17 to 135, a Blooper in the air and red paratroopas', () => {
     const l = load('ll-10-3');
     expect(l.width).toBe(256);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('clouds');
     expect(l.time).toBe(400);
     expect(l.zones).toContainEqual({ kind: 'cheeps', x: 17, w: 118 });
     expect(where(l, 'blooper')).toEqual(['70,7']);

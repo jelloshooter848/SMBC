@@ -7,6 +7,7 @@ import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
+import { isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera } from './camera';
 import { renderTiles, SKY } from './tile-render';
@@ -188,8 +189,8 @@ export class World {
       this.players.push(p);
     });
     this.camera.snapTo(this.player.body.x);
-    // Water levels: everything from the first row of wave tiles down is swimmable.
-    if (level.theme === 'water') {
+    // Water levels (any swimming theme): everything from the first row of wave tiles down is swimmable.
+    if (isWaterTheme(level.theme)) {
       let row = 0;
       for (let ty = 0; ty < level.height && row === 0; ty++) {
         for (let tx = 0; tx < level.width; tx++) {

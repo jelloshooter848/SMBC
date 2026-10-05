@@ -1,5 +1,6 @@
 import { LEVEL_ROWS } from '../constants';
 import type { Decor, EntitySpawn, LevelData, PipeDir, Theme, TransferMode, Zone } from './schema';
+import { isTheme, themeMusic } from './schema';
 import { DEFAULT_LEGEND, T } from './tiles';
 
 export class MapParseError extends Error {
@@ -149,14 +150,15 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
   const [ws, ss] = id.split('-');
   const start = (header.start ?? '2,12').split(',').map(Number) as [number, number];
   const timeRaw = header.time ?? '400';
+  const theme: Theme = isTheme(header.theme ?? '') ? (header.theme as Theme) : 'overworld';
   const level: LevelData = {
     schema: 1,
     id,
     name: header.name ?? `WORLD ${id}`,
     world: Number(header.world ?? ws ?? 1) || 1,
     stage: Number(header.stage ?? ss ?? 1) || 1,
-    theme: (header.theme ?? 'overworld') as Theme,
-    music: header.music ?? header.theme ?? 'overworld',
+    theme,
+    music: header.music ?? themeMusic(theme),
     time: timeRaw === 'inherit' || timeRaw === 'null' ? null : Number(timeRaw),
     width,
     height: 15,

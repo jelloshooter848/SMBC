@@ -2,7 +2,7 @@ id: ll-8-2
 name: WORLD 8-2
 world: 8
 stage: 2
-theme: overworld
+theme: mushroom
 music: overworld
 time: 400
 start: 2,12

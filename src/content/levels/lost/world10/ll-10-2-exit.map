@@ -2,7 +2,7 @@ id: ll-10-2-exit
 name: WORLD 10-2
 world: 10
 stage: 2
-theme: overworld
+theme: clouds-overworld
 music: overworld
 time: inherit
 start: 3,10

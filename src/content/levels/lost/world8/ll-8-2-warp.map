@@ -2,7 +2,7 @@ id: ll-8-2-warp
 name: WORLD 8-2
 world: 8
 stage: 2
-theme: overworld
+theme: clouds
 music: overworld
 time: inherit
 start: 4,14

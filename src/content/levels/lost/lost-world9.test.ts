@@ -58,15 +58,22 @@ describe('Lost Levels World 9 rules', () => {
       expect(zones(l, 'checkpoint')).toEqual([]);
       themes[l.id] = l.theme;
     }
-    // World 9 has no night/snow entry in the Lost Levels theme table.
+    // The Lost Levels theme table: World 9's water areas are flooded overworld (9-4 in gray),
+    // 9-3 a castle under the daylight sky, its coin heaven gray (our snow palette).
     expect(themes).toEqual({
       'll-9-1-start': 'overworld',
-      'll-9-1': 'water',
-      'll-9-2': 'water',
-      'll-9-3': 'castle',
-      'll-9-3-sky': 'overworld',
-      'll-9-4': 'water',
+      'll-9-1': 'overworld-water',
+      'll-9-2': 'overworld-water',
+      'll-9-3': 'castle-overworld',
+      'll-9-3-sky': 'snow',
+      'll-9-4': 'water-gray',
     });
+    // Each keeps its area type's music: water, castle, and the overworld tune in the sky.
+    expect(load('ll-9-1').music).toBe('water');
+    expect(load('ll-9-2').music).toBe('water');
+    expect(load('ll-9-3').music).toBe('castle');
+    expect(load('ll-9-3-sky').music).toBe('overworld');
+    expect(load('ll-9-4').music).toBe('water');
   });
 });
 
@@ -90,7 +97,7 @@ describe('Lost Levels 9-1', () => {
   it('is a 184-wide water level with Lakitu, paratroopas, a chasing Hammer Bro and Buzzy Beetles', () => {
     const l = load('ll-9-1');
     expect(l.width).toBe(184);
-    expect(l.theme).toBe('water');
+    expect(l.theme).toBe('overworld-water');
     expect(l.music).toBe('water');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 1, y: 3 });
@@ -137,7 +144,7 @@ describe('Lost Levels 9-2', () => {
   it('is a 168-wide water level of pipes: six upright and six hanging piranhas, Lakitu to 78', () => {
     const l = load('ll-9-2');
     expect(l.width).toBe(168);
-    expect(l.theme).toBe('water');
+    expect(l.theme).toBe('overworld-water');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
     expect(where(l, 'piranha')).toEqual(['13,9', '65,7', '74,10', '86,11', '92,7', '109,3']);
@@ -157,7 +164,7 @@ describe('Lost Levels 9-3', () => {
   it('is a 232-wide castle-tiled stage with a spring, a hammer-throwing Bowser and no axe', () => {
     const l = load('ll-9-3');
     expect(l.width).toBe(232);
-    expect(l.theme).toBe('castle');
+    expect(l.theme).toBe('castle-overworld');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
     // enemyBowserFake: a plain fight, not a bridge boss.
@@ -212,7 +219,7 @@ describe('Lost Levels 9-4', () => {
   it('is a short 128-wide water stage that ends the game at the flagpole at 113', () => {
     const l = load('ll-9-4');
     expect(l.width).toBe(128);
-    expect(l.theme).toBe('water');
+    expect(l.theme).toBe('water-gray');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
     expect(where(l, 'goomba')).toEqual(['19,12']);
