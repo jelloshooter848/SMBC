@@ -23,7 +23,7 @@ const exitOf = (l: LevelData) => zones(l, 'exit')[0];
 describe('Lost Levels World 9 files', () => {
   it('has exactly the six areas of 9-1 to 9-4', () => {
     expect(readdirSync(dir).sort()).toEqual([
-      'll-9-1-exit.map',
+      'll-9-1-start.map',
       'll-9-1.map',
       'll-9-2.map',
       'll-9-3-sky.map',
@@ -50,9 +50,29 @@ describe('Lost Levels World 9 files', () => {
   });
 });
 
+describe('Lost Levels World 9 rules', () => {
+  it('has no checkpoints (every level is LOCKED_CP) and keeps the area-type themes', () => {
+    const themes: Record<string, string> = {};
+    for (const f of readdirSync(dir)) {
+      const l = load(f.replace(/\.map$/, ''));
+      expect(zones(l, 'checkpoint')).toEqual([]);
+      themes[l.id] = l.theme;
+    }
+    // World 9 has no night/snow entry in the Lost Levels theme table.
+    expect(themes).toEqual({
+      'll-9-1-start': 'overworld',
+      'll-9-1': 'water',
+      'll-9-2': 'water',
+      'll-9-3': 'castle',
+      'll-9-3-sky': 'overworld',
+      'll-9-4': 'water',
+    });
+  });
+});
+
 describe('Lost Levels 9-1', () => {
   it('starts in a short overworld room whose pipe at 23 drops into the flooded main area', () => {
-    const l = load('ll-9-1-exit');
+    const l = load('ll-9-1-start');
     expect(l.width).toBe(32);
     expect(l.theme).toBe('overworld');
     expect(l.start).toEqual({ x: 2, y: 12 });
@@ -75,7 +95,8 @@ describe('Lost Levels 9-1', () => {
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 1, y: 3 });
     expect(l.startMode).toBe('fall');
-    expect(l.entities).toContainEqual({ type: 'lakitu', x: 86, y: 0, props: { end: 150 } });
+    // lakituEndMiddle at 150: this Lakitu flies at mid-screen.
+    expect(l.entities).toContainEqual({ type: 'lakitu', x: 86, y: 0, props: { end: 150, mid: 1 } });
     expect(where(l, 'koopa-para-red')).toEqual(['18,7', '36,7']);
     expect(where(l, 'koopa-para-green')).toEqual(['153,7', '156,4']);
     expect(where(l, 'koopa-para-green-h')).toEqual(['78,9', '83,9']);
@@ -88,7 +109,7 @@ describe('Lost Levels 9-1', () => {
     expect(where(l, 'lift-down')).toEqual(['33,5', '33,13']);
   });
 
-  it('has two hanging pipes with upside-down piranhas, a checkpoint at 84 and the flagpole at 166', () => {
+  it('has two hanging pipes with upside-down piranhas, the flagpole at 166', () => {
     const l = load('ll-9-1');
     for (const [x, y] of [
       [40, 8],
@@ -99,17 +120,14 @@ describe('Lost Levels 9-1', () => {
       expect(tile(l, x, y - 1)).toBe(T.PIPE_BL);
     }
     expect(where(l, 'piranha-down')).toEqual(['40,8', '54,9']);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 84 });
     for (let y = 3; y <= 11; y++) expect(tile(l, 166, y)).toBe(T.FLAG_SHAFT);
     expect(tile(l, 166, 12)).toBe(T.HARD);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 166, next: 'll-9-2' });
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 170, y: 12 });
   });
 
-  // XML 9-1 area b cell 166,2 and 9-2 area a cell 152,2 are "flagPoleTop()wavesDay": the converter
-  // writes the water after the ball, so the pole has no ball and the engine builds no flagpole.
-  // Enable after regenerating.
-  it.skip('keeps the flagpole balls of 9-1 (166,2) and 9-2 (152,2) above the water line', () => {
+  // XML 9-1 area b cell 166,2 and 9-2 area a cell 152,2 are "flagPoleTop()wavesDay": the ball wins.
+  it('keeps the flagpole balls of 9-1 (166,2) and 9-2 (152,2) above the water line', () => {
     expect(tile(load('ll-9-1'), 166, 2)).toBe(T.FLAG_BALL);
     expect(tile(load('ll-9-2'), 152, 2)).toBe(T.FLAG_BALL);
   });
@@ -129,8 +147,7 @@ describe('Lost Levels 9-2', () => {
       expect(tile(l, e.x + 1, e.y)).toBe(T.PIPE_BOTTOM_R);
     }
     for (const e of l.entities.filter((e) => e.type === 'piranha')) expect(tile(l, e.x, e.y)).toBe(T.PIPE_TL);
-    expect(l.entities).toContainEqual({ type: 'lakitu', x: 16, y: 0, props: { end: 78 } });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 80 });
+    expect(l.entities).toContainEqual({ type: 'lakitu', x: 16, y: 0, props: { end: 78, mid: 1 } });
     for (let y = 3; y <= 11; y++) expect(tile(l, 152, y)).toBe(T.FLAG_SHAFT);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 152, next: 'll-9-3' });
   });
@@ -143,13 +160,13 @@ describe('Lost Levels 9-3', () => {
     expect(l.theme).toBe('castle');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
-    expect(l.entities).toContainEqual({ type: 'bowser', x: 183, y: 8, props: { attack: 'hammer' } });
+    // enemyBowserFake: a plain fight, not a bridge boss.
+    expect(l.entities).toContainEqual({ type: 'bowser', x: 183, y: 8, props: { attack: 'hammer', fake: 1 } });
     expect(where(l, 'axe')).toEqual([]);
     expect(where(l, 'spring')).toEqual(['66,12']);
     expect(where(l, 'firebar')).toEqual([]);
     expect(where(l, 'podoboo')).toEqual([]);
     expect(tile(l, 120, 12)).toBe(T.LAVA);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 74 });
   });
 
   it('has a vine brick at 82 and a pipe at 148, both leading to the coin heaven', () => {
@@ -175,7 +192,8 @@ describe('Lost Levels 9-3', () => {
     const l = load('ll-9-3');
     expect(tile(l, 214, 2)).toBe(T.FLAG_BALL);
     for (let y = 3; y <= 11; y++) expect(tile(l, 214, y)).toBe(T.FLAG_SHAFT);
-    expect(exitOf(l)?.next).toBe('ll-9-4');
+    // Castle-type area with a flagpole: the clear walk ends at the castle door (219 - 6).
+    expect(exitOf(l)).toEqual({ kind: 'exit', x: 213, next: 'll-9-4' });
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 217, y: 12 });
   });
 

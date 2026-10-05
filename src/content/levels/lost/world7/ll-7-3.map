@@ -2,7 +2,7 @@ id: ll-7-3
 name: WORLD 7-3
 world: 7
 stage: 3
-theme: overworld
+theme: snow
 music: overworld
 time: 400
 start: 2,12

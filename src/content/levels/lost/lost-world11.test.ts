@@ -56,6 +56,29 @@ describe('Lost Levels World B files', () => {
   });
 });
 
+describe('Lost Levels World B rules', () => {
+  it('has no checkpoints (every level is LOCKED_CP), locked 16-wide bonus rooms and area-type themes', () => {
+    const themes: Record<string, string> = {};
+    for (const f of readdirSync(dir)) {
+      const l = load(f.replace(/\.map$/, ''));
+      expect(zones(l, 'checkpoint')).toEqual([]);
+      if (l.id.endsWith('-bonus')) expect([l.width, l.camera]).toEqual([16, 'locked']);
+      themes[l.id] = l.theme;
+    }
+    // World B has no night/snow entry in the Lost Levels theme table.
+    expect(themes).toEqual({
+      'll-11-1': 'overworld',
+      'll-11-1-sky': 'overworld',
+      'll-11-2': 'water',
+      'll-11-2-exit': 'overworld',
+      'll-11-2-intro': 'overworld',
+      'll-11-3': 'overworld',
+      'll-11-4': 'castle',
+      'll-11-4-exit': 'overworld',
+    });
+  });
+});
+
 describe('Lost Levels B-1', () => {
   it('is 216 wide with a green springboard at 129 and a poison ? block at 151', () => {
     const l = load('ll-11-1');
@@ -103,7 +126,7 @@ describe('Lost Levels B-1', () => {
     expect(tile(l, 175, 9)).toBe(T.AIR);
   });
 
-  it('has a vine to the coin heaven, the checkpoint at 110 and the flagpole at 199', () => {
+  it('has a vine to the coin heaven and the flagpole at 199', () => {
     const l = load('ll-11-1');
     expect(tile(l, 89, 5)).toBe(T.BRICK_VINE);
     expect(l.zones).toContainEqual({
@@ -115,7 +138,6 @@ describe('Lost Levels B-1', () => {
     const sky = load('ll-11-1-sky');
     expect(sky.startMode).toBe('climb');
     expect(sky.zones).toContainEqual({ kind: 'pit', x: 0, target: { level: 'll-11-1', x: 114, y: 0 } });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 110 });
     expect(tile(l, 199, 2)).toBe(T.FLAG_BALL);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 199, next: 'll-11-2-intro' });
   });
@@ -145,7 +167,6 @@ describe('Lost Levels B-2', () => {
     expect(where(l, 'koopa-green')).toEqual(['60,12', '108,12']);
     expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 151, y: 7, props: { len: 12 } });
     expect(where(l, 'lift-up')).toEqual(['126,3', '126,9']);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 81 });
   });
 
   it('leaves the water through the side pipe at 173 to the flagpole area', () => {
@@ -202,9 +223,8 @@ describe('Lost Levels B-3', () => {
     expect(tile(l, 17, 10)).toBe(T.TREE_TRUNK);
   });
 
-  it('has the checkpoint at 84 and the flagpole at 200', () => {
+  it('has the flagpole at 200', () => {
     const l = load('ll-11-3');
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 84 });
     expect(tile(l, 200, 2)).toBe(T.FLAG_BALL);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 201, next: 'll-11-4' });
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 203, y: 12 });
@@ -224,7 +244,6 @@ describe('Lost Levels B-4', () => {
     expect(tile(l, 34, 10)).toBe(T.BRICK_POWERUP);
     expect(l.entities).toContainEqual({ type: 'bowser', x: 231, y: 9, props: { attack: 'hammer' } });
     expect(where(l, 'axe')).toEqual(['237,8']);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 90 });
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 248, next: 'll-12-1' });
   });
 

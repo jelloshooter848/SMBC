@@ -57,6 +57,29 @@ describe('Lost Levels World A files', () => {
   });
 });
 
+describe('Lost Levels World A rules', () => {
+  it('has no checkpoints (every level is LOCKED_CP), locked 16-wide bonus rooms and area-type themes', () => {
+    const themes: Record<string, string> = {};
+    for (const f of readdirSync(dir)) {
+      const l = load(f.replace(/\.map$/, ''));
+      expect(zones(l, 'checkpoint')).toEqual([]);
+      if (l.id.endsWith('-bonus')) expect([l.width, l.camera]).toEqual([16, 'locked']);
+      themes[l.id] = l.theme;
+    }
+    // World A has no night/snow entry in the Lost Levels theme table (10-2a is overworld anyway).
+    expect(themes).toEqual({
+      'll-10-1': 'overworld',
+      'll-10-1-bonus': 'underground',
+      'll-10-1-sky': 'overworld',
+      'll-10-2': 'underground',
+      'll-10-2-exit': 'overworld',
+      'll-10-2-intro': 'overworld',
+      'll-10-3': 'overworld',
+      'll-10-4': 'castle',
+    });
+  });
+});
+
 describe('Lost Levels A-1', () => {
   it('is 224 wide with four chasing Hammer Bros and lots of Koopas', () => {
     const l = load('ll-10-1');
@@ -123,9 +146,8 @@ describe('Lost Levels A-1', () => {
     expect(sky.zones).toContainEqual({ kind: 'pit', x: 0, target: { level: 'll-10-1', x: 50, y: 0 } });
   });
 
-  it('has the checkpoint at 89 and the flagpole at 209', () => {
+  it('has the flagpole at 209', () => {
     const l = load('ll-10-1');
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 89 });
     expect(tile(l, 209, 2)).toBe(T.FLAG_BALL);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 209, next: 'll-10-2-intro' });
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 213, y: 12 });
@@ -162,7 +184,6 @@ describe('Lost Levels A-2', () => {
     expect(where(l, 'spring')).toEqual(['16,12']);
     expect(tile(l, 126, 9)).toBe(T.BRICK_STAR);
     expect(tile(l, 16, 2)).toBe(T.BRICK_1UP);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 99 });
   });
 
   it('leaves through the side pipe at 171 to the flagpole area, or warps from 214 to B-1', () => {
@@ -210,7 +231,6 @@ describe('Lost Levels A-3', () => {
     expect(where(l, 'koopa-para-green-h')).toEqual(['104,7']);
     expect(where(l, 'spring')).toEqual(['156,12']);
     expect(tile(l, 76, 3)).toBe(T.HIDDEN_POWERUP);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 84 });
     expect(tile(l, 161, 2)).toBe(T.FLAG_BALL);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 162, next: 'll-10-4' });
   });
@@ -250,7 +270,6 @@ describe('Lost Levels A-4', () => {
     ] as const)
       expect(tile(l, x, y)).toBe(T.BLASTER_TOP);
     expect(tile(l, 25, 9)).toBe(T.Q_POWERUP);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 74 });
   });
 
   it('ends with a hammer-throwing Bowser at 167, the axe at 173 and leads on to B-1', () => {

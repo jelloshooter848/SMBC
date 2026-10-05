@@ -274,33 +274,51 @@ describe('D-4: the route through the last castle', () => {
       },
     });
     expect(Math.floor(toPx((bowser as Bowser).body.x) / 16)).toBeLessThanOrEqual(21);
+    expect(bowser?.fake).toBe(true);
     expect(bowser?.attack).toBe('hammer');
     expect(hammers).toBeGreaterThanOrEqual(3);
   });
 
   it('the axe drops the real Bowser off the bridge and ends the game, with the princess waiting', () => {
     let real: Bowser | undefined;
+    let fake: Bowser | undefined;
     let princess: Princess | undefined;
     let lowest = -Infinity;
+    let fakeY = NaN;
+    let fakeAliveAtAxe = false;
     const r = runSim({
       level: level('ll-13-4-end'),
       character: MARIO,
       script: none,
       maxFrames: 1500,
       assist: { invulnerable: true },
-      start: { x: 109, y: 8, mode: 'stand' },
+      start: { x: 8, y: 12, mode: 'stand' },
       controller: (w, f) => {
-        if (f === 0) place(w, 109, 9, 0);
-        real ??= w.entities.find((e): e is Bowser => e instanceof Bowser && toPx(e.body.x) > 90 * 16);
+        // Meet the fake Bowser first and keep it in play (no off-screen culling), so both
+        // Bowsers are alive when the axe is touched; the fake one comes first in the list.
+        fake ??= w.entities.find((e): e is Bowser => e instanceof Bowser && e.fake);
+        if (fake) fake.despawnMargin = null;
+        if (f === 5) place(w, 109, 9, 0);
+        real ??= w.entities.find((e): e is Bowser => e instanceof Bowser && !e.fake);
         if (real) lowest = Math.max(lowest, toPx(real.body.y));
+        if (w.bossClear && !fakeAliveAtAxe && fake?.alive && real?.alive) {
+          fakeAliveAtAxe = true;
+          fakeY = toPx(fake.body.y);
+        }
         princess ??= w.entities.find((e): e is Princess => e instanceof Princess);
         return [];
       },
     });
     expect(r.outcome).toBe('cleared');
     expect(r.events.find((e) => e.type === 'exit')).toEqual({ type: 'exit', next: 'end' });
+    expect(fake?.fake).toBe(true);
+    expect(Math.floor(toPx((fake as Bowser).body.x) / 16)).toBeLessThanOrEqual(21);
+    expect(real?.fake).toBe(false);
     expect(real?.attack).toBe('hammer');
-    expect(lowest).toBeGreaterThan(12 * 16); // it fell through where the bridge was
+    expect(fakeAliveAtAxe).toBe(true);
+    expect(lowest).toBeGreaterThan(12 * 16); // the real one fell through where the bridge was
+    expect((fake as Bowser).alive).toBe(true); // the fake one is left standing
+    expect(toPx((fake as Bowser).body.y)).toBeLessThanOrEqual(fakeY);
     expect(princess).toBeDefined();
   });
 });

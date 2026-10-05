@@ -30,15 +30,47 @@ const AREAS = [
 ];
 
 describe('Lost Levels World 3: files', () => {
-  it('has exactly the expected areas, none of them night or snow', () => {
+  it('has exactly the expected areas', () => {
     const files = readdirSync(dir).filter((f) => f.endsWith('.map'));
     expect(files.map((f) => f.replace(/\.map$/, '')).sort()).toEqual([...AREAS].sort());
     for (const id of AREAS) {
       const l = load(id);
       expect(l.id).toBe(id);
       expect(l.world).toBe(3);
-      expect(['night', 'snow']).not.toContain(l.theme);
     }
+  });
+
+  it('themes follow the original Lost Levels table: normal and platform areas are snow, except 3-2a/3-2c', () => {
+    const themes: Record<string, string> = {
+      'll-3-1': 'snow',
+      'll-3-1-bonus': 'underground',
+      'll-3-1-sky': 'overworld',
+      'll-3-1-bonus2': 'underground',
+      'll-3-1-exit': 'snow',
+      'll-3-2-intro': 'overworld',
+      'll-3-2': 'water',
+      'll-3-2-exit': 'overworld',
+      'll-3-3': 'snow',
+      'll-3-4': 'castle',
+    };
+    for (const id of AREAS) {
+      const l = load(id);
+      expect([id, l.theme]).toEqual([id, themes[id]]);
+      // Night and snow keep the overworld music.
+      if (l.theme === 'night' || l.theme === 'snow') expect(l.music).toBe('overworld');
+    }
+  });
+
+  it('bonus rooms wider than one screen scroll; the 16-wide ones stay locked', () => {
+    for (const id of AREAS.filter((a) => a.includes('-bonus'))) {
+      const l = load(id);
+      expect([id, l.camera]).toEqual([id, l.width > 16 ? 'scroll' : 'locked']);
+    }
+    expect(load('ll-3-1-bonus').camera).toBe('scroll');
+  });
+
+  it('has no checkpoint in its castle (LOCKED_CP)', () => {
+    expect(load('ll-3-4').zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
   });
 
   it('sub-areas inherit the clock; main areas carry the XML TIME (400 even in the castle)', () => {
@@ -80,9 +112,9 @@ describe('Lost Levels World 3: files', () => {
 
 describe('Lost Levels 3-1', () => {
   const l = load('ll-3-1');
-  it('is a 256-wide overworld level starting at 2,12', () => {
+  it('is a 256-wide snow level starting at 2,12', () => {
     expect(l.width).toBe(256);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('snow');
     expect(l.start).toEqual({ x: 2, y: 12 });
   });
   it('has two ordinary (not chasing) Hammer Bros and a crowd of Koopas', () => {

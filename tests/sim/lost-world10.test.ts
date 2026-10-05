@@ -59,7 +59,13 @@ describe('Lost Levels World A areas', () => {
     'll-10-3',
     'll-10-4',
   ])('%s loads and runs 600 frames as Mario', (id) => {
-    const r = runSim({ level: level(id), character: MARIO, script: none, maxFrames: 600 });
+    const r = runSim({
+      level: level(id),
+      character: MARIO,
+      script: none,
+      maxFrames: 600,
+      assist: { invulnerable: true },
+    });
     // The intro walks Mario into its pipe on its own; everything else just runs.
     if (id.endsWith('-intro')) expect(r.outcome).toBe('pipe');
     else expect(r.frames).toBe(600);

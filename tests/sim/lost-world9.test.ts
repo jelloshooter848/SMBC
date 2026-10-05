@@ -6,6 +6,7 @@ import { runSim } from '@game/sim/headless';
 import { MARIO } from '@game/characters/mario';
 import { Bowser } from '@game/entities/enemies/bowser';
 import { HammerBro } from '@game/entities/enemies/hammer-bro';
+import { Lakitu } from '@game/entities/enemies/lakitu';
 import { Piranha } from '@game/entities/enemies/piranha';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import { T } from '@game/level/tiles';
@@ -31,10 +32,16 @@ function place(w: World, col: number, floor: number, dx = 2): void {
 }
 
 describe('Lost Levels World 9 areas', () => {
-  it.each(['ll-9-1-exit', 'll-9-1', 'll-9-2', 'll-9-3', 'll-9-3-sky', 'll-9-4'])(
+  it.each(['ll-9-1-start', 'll-9-1', 'll-9-2', 'll-9-3', 'll-9-3-sky', 'll-9-4'])(
     '%s loads and runs 600 frames as Mario',
     (id) => {
-      const r = runSim({ level: level(id), character: MARIO, script: none, maxFrames: 600 });
+      const r = runSim({
+        level: level(id),
+        character: MARIO,
+        script: none,
+        maxFrames: 600,
+        assist: { invulnerable: true },
+      });
       expect(r.outcome).toBe('timeout');
       expect(r.frames).toBe(600);
     },
@@ -44,7 +51,7 @@ describe('Lost Levels World 9 areas', () => {
 describe('Lost Levels 9-1', () => {
   it('the pipe in the starting room drops into the flooded main area at 1,3', () => {
     const r = runSim({
-      level: level('ll-9-1-exit'),
+      level: level('ll-9-1-start'),
       character: MARIO,
       script: none,
       maxFrames: 120,
@@ -84,8 +91,7 @@ describe('Lost Levels 9-1', () => {
     expect(startX - toPx((bro as HammerBro).body.x)).toBeGreaterThanOrEqual(20);
   });
 
-  // Blocked by the converter: the flag ball at 166,2 is overwritten by water (see lost-world9.test.ts).
-  it.skip('touching the flagpole at 166 clears 9-1 and leads to 9-2', () => {
+  it('touching the flagpole at 166 clears 9-1 and leads to 9-2', () => {
     const r = runSim({
       level: level('ll-9-1'),
       character: MARIO,
@@ -102,7 +108,47 @@ describe('Lost Levels 9-1', () => {
   });
 });
 
+describe('Lost Levels 9-1 and 9-2: mid-screen Lakitu', () => {
+  it.each([
+    ['ll-9-1', 95],
+    ['ll-9-2', 25],
+  ] as const)('the %s Lakitu (lakituEndMiddle) flies at mid-screen, not under the HUD', (id, col) => {
+    let lakitu: Lakitu | undefined;
+    runSim({
+      level: level(id),
+      character: MARIO,
+      script: none,
+      maxFrames: 300,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        if (f === 0) place(w, col, 13);
+        lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
+        return [];
+      },
+      until: () => lakitu !== undefined,
+    });
+    expect(lakitu).toBeDefined();
+    expect(toPx((lakitu as Lakitu).body.y)).toBe(112);
+  });
+});
+
 describe('Lost Levels 9-2', () => {
+  it('touching the flagpole at 152 clears 9-2 and leads to 9-3', () => {
+    const r = runSim({
+      level: level('ll-9-2'),
+      character: MARIO,
+      script: none,
+      maxFrames: 1500,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        if (f === 0) place(w, 149, 8);
+        return ['right'];
+      },
+    });
+    expect(r.outcome).toBe('cleared');
+    expect(r.events.find((e) => e.type === 'exit')).toEqual({ type: 'exit', next: 'll-9-3' });
+  });
+
   it('the hanging piranha at 22 comes down out of its rim and goes back in', () => {
     const l = level('ll-9-2');
     expect(l.tiles[5 * l.width + 22]).toBe(T.PIPE_BOTTOM_L);
@@ -159,6 +205,7 @@ describe('Lost Levels 9-3', () => {
       },
     });
     expect(bowser?.attack).toBe('hammer');
+    expect(bowser?.fake).toBe(true);
     expect(hammers).toBeGreaterThanOrEqual(3);
     expect(flames).toBe(0);
   });

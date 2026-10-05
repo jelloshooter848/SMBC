@@ -38,9 +38,36 @@ describe('Lost Levels World D (13): every area', () => {
       const l = load(id);
       expect(l.height).toBe(15);
       expect(l.world).toBe(13);
-      expect(['overworld', 'underground', 'castle']).toContain(l.theme);
     }
     expect(worldLabel(13)).toBe('D');
+  });
+
+  it('uses the original theme table: snow for the normal stages, but D-4 outdoors is plain overworld', () => {
+    // GameSuperMarioBros.as (Lost Levels pack): world 13 normal -> snow, "13-4b" -> overworld.
+    const themes = Object.fromEntries(ids.map((id) => [id, load(id).theme]));
+    expect(themes).toEqual({
+      'll-13-1': 'snow',
+      'll-13-1-bonus': 'underground',
+      'll-13-2': 'snow',
+      'll-13-2-bonus': 'underground',
+      'll-13-2-sky': 'overworld',
+      'll-13-3': 'snow',
+      'll-13-4': 'castle',
+      'll-13-4-bonus': 'underground',
+      'll-13-4-end': 'castle',
+      'll-13-4-exit': 'overworld',
+    });
+    for (const id of ['ll-13-1', 'll-13-2', 'll-13-3']) expect(load(id).music).toBe('overworld');
+  });
+
+  it('has no checkpoints: every World D level is LOCKED_CP', () => {
+    for (const id of ids) expect(load(id).zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
+  });
+
+  it('only bonus rooms wider than one screen scroll', () => {
+    expect(load('ll-13-1-bonus').camera).toBe('locked');
+    expect(load('ll-13-2-bonus').camera).toBe('locked');
+    expect(load('ll-13-4-bonus').camera).toBe('scroll');
   });
 
   it('chains D-1 to D-3 by flagpoles; D-4 runs through four areas and ends the game', () => {
@@ -66,7 +93,7 @@ describe('D-1 (ll-13-1): chasing Hammer Bros, Buzzy Beetles and poison bricks', 
   const l = load('ll-13-1');
   it('is a 216-wide overworld stage', () => {
     expect(l.width).toBe(216);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('snow');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
   });
@@ -133,7 +160,6 @@ describe('D-1 (ll-13-1): chasing Hammer Bros, Buzzy Beetles and poison bricks', 
     expect(tile(l, 115, 11)).toBe(T.PIPE_TL);
   });
   it('ends at the flagpole at 199', () => {
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 120 });
     expect(tile(l, 199, 2)).toBe(T.FLAG_BALL);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 199, next: 'll-13-2' });
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 203, y: 12 });
@@ -144,7 +170,7 @@ describe('D-2 (ll-13-2): hanging piranhas, a high pipe and a vine', () => {
   const l = load('ll-13-2');
   it('is 192 wide', () => {
     expect(l.width).toBe(192);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('snow');
   });
   it('has six hanging and four upright piranhas', () => {
     expect(at(l, 'piranha-down')).toEqual([
@@ -208,7 +234,6 @@ describe('D-2 (ll-13-2): hanging piranhas, a high pipe and a vine', () => {
     expect(at(l, 'spring')).toEqual([[164, 11]]);
     expect(tile(l, 106, 10)).toBe(T.BLASTER_TOP);
     expect(tile(l, 106, 12)).toBe(T.BLASTER_TOP);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 99 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 177, next: 'll-13-3' });
   });
 });
@@ -217,7 +242,7 @@ describe('D-3 (ll-13-3): chasing Hammer Bros in front of castle walls', () => {
   const l = load('ll-13-3');
   it('is 232 wide', () => {
     expect(l.width).toBe(232);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('snow');
   });
   it('keeps the Hammer Bros that stand in front of the walls, with the wall tiles behind them', () => {
     expect(at(l, 'hammer-bro-chase')).toEqual([
@@ -248,7 +273,6 @@ describe('D-3 (ll-13-3): chasing Hammer Bros in front of castle walls', () => {
     expect(at(l, 'koopa-para-green')).toEqual([[195, 11]]);
   });
   it('ends at the big castle', () => {
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 119 });
     expect(tile(l, 217, 2)).toBe(T.FLAG_BALL);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 219, next: 'll-13-4' });
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 221, y: 12 });
@@ -326,10 +350,10 @@ describe('D-4 (ll-13-4 ... ll-13-4-end): the last castle', () => {
     expect(l.parent).toBe('ll-13-4');
     expect(l.startMode).toBe('pipe-exit');
     expect(l.start).toEqual({ x: 3, y: 10 });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 7 });
-    // Both Bowsers throw hammers on normal difficulty; the real one stands on the bridge.
+    // Both Bowsers throw hammers on normal difficulty. The one at 20 is the XML's enemyBowserFake;
+    // the real one stands on the bridge.
     expect(of(l, 'bowser')).toEqual([
-      { type: 'bowser', x: 20, y: 9, props: { attack: 'hammer' } },
+      { type: 'bowser', x: 20, y: 9, props: { attack: 'hammer', fake: 1 } },
       { type: 'bowser', x: 103, y: 9, props: { attack: 'hammer' } },
     ]);
     for (let x = 96; x <= 108; x++) expect(tile(l, x, 10)).toBe(T.BRIDGE);

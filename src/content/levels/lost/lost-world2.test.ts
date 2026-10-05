@@ -24,15 +24,43 @@ const poisonTiles = (l: LevelData) =>
 const AREAS = ['ll-2-1', 'll-2-1-bonus', 'll-2-1-sky', 'll-2-2', 'll-2-2-bonus', 'll-2-3', 'll-2-4'];
 
 describe('Lost Levels World 2: files', () => {
-  it('has exactly the expected areas, none of them night or snow', () => {
+  it('has exactly the expected areas', () => {
     const files = readdirSync(dir).filter((f) => f.endsWith('.map'));
     expect(files.map((f) => f.replace(/\.map$/, '')).sort()).toEqual([...AREAS].sort());
     for (const id of AREAS) {
       const l = load(id);
       expect(l.id).toBe(id);
       expect(l.world).toBe(2);
-      expect(['night', 'snow']).not.toContain(l.theme);
     }
+  });
+
+  it('themes follow the original Lost Levels table: normal and cheep-cheep areas are night', () => {
+    const themes: Record<string, string> = {
+      'll-2-1': 'night',
+      'll-2-1-bonus': 'underground',
+      'll-2-1-sky': 'overworld',
+      'll-2-2': 'night',
+      'll-2-2-bonus': 'underground',
+      'll-2-3': 'night',
+      'll-2-4': 'castle',
+    };
+    for (const id of AREAS) {
+      const l = load(id);
+      expect([id, l.theme]).toEqual([id, themes[id]]);
+      // Night and snow keep the overworld music.
+      if (l.theme === 'night' || l.theme === 'snow') expect(l.music).toBe('overworld');
+    }
+  });
+
+  it('bonus rooms wider than one screen scroll; the 16-wide ones stay locked', () => {
+    for (const id of AREAS.filter((a) => a.includes('-bonus'))) {
+      const l = load(id);
+      expect([id, l.camera]).toEqual([id, l.width > 16 ? 'scroll' : 'locked']);
+    }
+  });
+
+  it('has no checkpoint in its castle (LOCKED_CP)', () => {
+    expect(load('ll-2-4').zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
   });
 
   it('sub-areas inherit the clock; main areas carry the XML TIME', () => {
@@ -64,9 +92,9 @@ describe('Lost Levels World 2: files', () => {
 
 describe('Lost Levels 2-1', () => {
   const l = load('ll-2-1');
-  it('is a 248-wide overworld level starting at 2,12', () => {
+  it('is a 248-wide night level starting at 2,12', () => {
     expect(l.width).toBe(248);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('night');
     expect(l.start).toEqual({ x: 2, y: 12 });
     expect(l.startMode).toBe('stand');
   });
@@ -161,9 +189,9 @@ describe('Lost Levels 2-1', () => {
 
 describe('Lost Levels 2-2', () => {
   const l = load('ll-2-2');
-  it('is a 272-wide overworld level full of Koopas and piranhas', () => {
+  it('is a 272-wide night level full of Koopas and piranhas', () => {
     expect(l.width).toBe(272);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('night');
     expect(ofType(l, 'goomba')).toHaveLength(10);
     expect(ofType(l, 'koopa-green')).toHaveLength(17);
     expect(at(l, 'koopa-red')).toEqual([[225, 12]]);
@@ -278,7 +306,7 @@ describe('Lost Levels 2-4', () => {
     expect(l.entities).toContainEqual({ type: 'axe', x: 141, y: 8 });
     expect(l.entities).toContainEqual({ type: 'lift-h', x: 138, y: 5, props: { len: 4, range: 3 } });
     for (let x = 128; x <= 140; x++) expect(tile(l, x, 10)).toBe(T.BRIDGE);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 88 });
+    expect(l.zones.filter((z) => z.kind === 'checkpoint')).toEqual([]);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 152, next: 'll-3-1' });
   });
 });

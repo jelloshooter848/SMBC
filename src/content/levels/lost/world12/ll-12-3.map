@@ -2,7 +2,7 @@ id: ll-12-3
 name: WORLD 12-3
 world: 12
 stage: 3
-theme: night
+theme: snow
 music: overworld
 time: 400
 start: 2,12

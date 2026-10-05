@@ -217,7 +217,8 @@ describe('Lost Levels 1-2: the warp zone in three places', () => {
     expect(exit.events.find((e) => e.type === 'exit')).toEqual({ type: 'exit', next: 'll-1-3' });
   });
 
-  it('the 32-wide bonus room is crossed on foot to its side pipe back to 131', () => {
+  it('the 32-wide bonus room scrolls as Mario crosses it on foot to its side pipe back to 131', () => {
+    let pipeOnScreen = false;
     const r = runSim({
       level: level('ll-1-2-bonus'),
       character: MARIO,
@@ -225,6 +226,8 @@ describe('Lost Levels 1-2: the warp zone in three places', () => {
       maxFrames: 1200,
       assist: { invulnerable: true },
       controller: (w) => {
+        // The exit pipe's mouth (column 29) comes into view.
+        if (w.camera.right >= px(31 * 16)) pipeOnScreen = true;
         const b = w.player.body;
         // Hop the blaster at column 16.
         const near = toPx(b.x) > 12 * 16 && toPx(b.x) < 16 * 16;
@@ -235,6 +238,7 @@ describe('Lost Levels 1-2: the warp zone in three places', () => {
     expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({
       target: { level: 'll-1-2', x: 131, y: 10, exitDir: 'up' },
     });
+    expect(pipeOnScreen).toBe(true);
   });
 });
 

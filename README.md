@@ -95,6 +95,16 @@ with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
   damage, keep big when losing fire, coyote time, half-speed slow motion.
 - **Dev mode off** hides it again.
 
+### The Lost Levels
+
+All 13 worlds of _The Lost Levels_ (1–8, 9 and A–D, 52 levels) are in the game, for now
+reachable only from **Dev mode → Level select** (their ids start with `ll-`; the HUD shows worlds
+10–13 as A–D). They bring upside-down pipes with hanging Piranha Plants, poison mushrooms (they
+hurt like an enemy), green springboards that launch far higher, Hammer Bros that charge
+straight at you, fake Bowsers, Bloopers in the air, mid-screen Lakitus and warp pipes that send
+you backwards. As in the original, 8-4 ends the game: a run that used no warp pipe continues
+into World 9, and clearing 8-4 saves the unlock of Worlds A–D.
+
 Settings persist in the browser.
 
 ### Two players
@@ -139,6 +149,8 @@ sound) by `tools/levelgen/convert-smbc.mjs`; download its `assets/documents/leve
 into `tools/levelgen/source/` (gitignored) and run
 `node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4`
 (one world per output folder).
+The Lost Levels come from `levelDataLostLevels.xml` with `--prefix=ll-` into
+`src/content/levels/lost/worldN/` (worlds A–D are 10–13).
 Only the normal-difficulty layer is used; the generated `.map` files are committed.
 
 ## Asset packs

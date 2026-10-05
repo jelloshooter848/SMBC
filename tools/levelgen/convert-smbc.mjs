@@ -107,13 +107,14 @@ const SNOW = new Set(['6-3']);
 /**
  * The Lost Levels' palettes, from the original's theme table for that map pack
  * (GameSuperMarioBros.as): world + area type, then single areas that override it. Snowy nights
- * use the night palette, as SMB1's World 3 does; skins we don't have stay overworld.
+ * use the night palette, as SMB1's World 3 does; gray ones the snow palette, as SMB1's 6-3 does;
+ * skins we don't have stay overworld.
  */
 const LOST_THEMES = {
   2: { normal: 'night', cheepCheep: 'night' },
   3: { normal: 'snow', platform: 'snow' },
   5: { normal: 'snow' },
-  7: { normal: 'night' },
+  7: { normal: 'night', platform: 'snow' },
   12: { normal: 'night', platform: 'night', cheepCheep: 'night' },
   13: { normal: 'snow' },
 };
@@ -127,6 +128,7 @@ const LOST_AREA_THEMES = {
   '13-4b': 'overworld',
   '8-1a': 'snow',
   '8-1c': 'snow',
+  '12-3a': 'snow',
 };
 
 // Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6); the Clock item (time bonus)

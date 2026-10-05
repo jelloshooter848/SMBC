@@ -230,7 +230,7 @@ describe('C-2: green springboard and Bloopers in the air', () => {
 });
 
 describe('C-3: Lakitu over the treetops', () => {
-  // The stretch ends at a lakituEndMiddle marker: this Lakitu flies at mid-screen height.
+  // The stretch ends at a lakituEndMiddle marker (mid=1): this Lakitu flies at mid-screen height.
   it('a Lakitu shows up once the player is past column 138, flying mid-screen', () => {
     let lakitu: Lakitu | undefined;
     const r = runSim({
@@ -247,9 +247,7 @@ describe('C-3: Lakitu over the treetops', () => {
       until: () => lakitu !== undefined,
     });
     expect(r.outcome).toBe('stopped');
-    const y = toPx((lakitu as Lakitu).body.y);
-    expect(y).toBeGreaterThan(96);
-    expect(y).toBeLessThan(160);
+    expect(toPx((lakitu as Lakitu).body.y)).toBe(112);
   });
 });
 
@@ -276,6 +274,7 @@ describe('C-4: Bowser and the axe', () => {
       },
     });
     expect(bowser?.attack).toBe('hammer');
+    expect(bowser?.fake).toBe(false); // the bridge Bowser the axe drops
     expect(hammers).toBeGreaterThanOrEqual(3);
   });
 
