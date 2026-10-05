@@ -466,4 +466,117 @@ export const songs: Song[] = [
       v10 s4. v6 h8 v11 k2                                              ; bar 3
     `,
   },
+
+  {
+    id: 'map',
+    bpm: 132,
+    loop: true,
+    // F major, 16 bars (A 8 + B 8). A skipping, dotted strut for strolling the world map:
+    // off-beat chord stabs on pulse2, a walking root-fifth bass and light brushes.
+    pulse1: `
+      @2 v11 q6 x0
+      o5 c8. f16 f8 a8 o6 c4 o5 a8 f8    ; bar 1  F
+      o5 d8. f16 a8 f8 d4 r8 c8          ; bar 2  Dm
+      o5 d8. f16 b-8 o6 d8 c4 o5 b-8 a8  ; bar 3  Bb
+      o5 g8 a8 b-8 a8 g4 r4              ; bar 4  C
+      o5 c8. f16 f8 a8 o6 c4 o5 a8 o6 c8 ; bar 5  F
+      o6 e8. d16 c8 o5 a8 e4 r8 e8       ; bar 6  Am
+      o5 f8 g8 a8 b-8 o6 c8 d8 e8 g8     ; bar 7  Bb C
+      o6 f4 c8 o5 a8 f4 r4               ; bar 8  F
+      o5 f4 b-8 o6 c8 d4 c8 o5 b-8       ; bar 9  Bb
+      o5 a4 f8 a8 o6 c4 r4               ; bar 10 F
+      o5 g8 a8 b-8 o6 d8 c8 o5 b-8 a8 g8 ; bar 11 Gm
+      o5 e4 g8 o6 c8 o5 b-4 r4           ; bar 12 C7
+      o5 f4 b-8 o6 c8 d4 f8 d8           ; bar 13 Bb
+      o6 c4 o5 a8 f8 a4 r8 o6 c8         ; bar 14 F
+      o5 b-8 a8 g8 b-8 o6 c8 o5 b-8 a8 g8 ; bar 15 Gm C
+      o5 f4 r8 c8 f4 r4                  ; bar 16 F
+    `,
+    pulse2: `
+      @1 v7 q4 x0
+      r8 o4 a8 r8 o5 c8 r8 o4 a8 r8 o5 c8 ; bar 1  F
+      r8 o4 f8 r8 a8 r8 f8 r8 a8          ; bar 2  Dm
+      r8 o4 f8 r8 b-8 r8 f8 r8 b-8        ; bar 3  Bb
+      r8 o4 e8 r8 g8 r8 e8 r8 g8          ; bar 4  C
+      r8 o4 a8 r8 o5 c8 r8 o4 a8 r8 o5 c8 ; bar 5  F
+      r8 o4 e8 r8 a8 r8 e8 r8 a8          ; bar 6  Am
+      r8 o4 f8 r8 b-8 r8 g8 r8 o5 c8      ; bar 7  Bb C
+      r8 o4 a8 r8 o5 c8 r8 o4 a8 r4       ; bar 8  F
+      r8 o4 f8 r8 b-8 r8 f8 r8 b-8        ; bar 9  Bb
+      r8 o4 a8 r8 o5 c8 r8 o4 a8 r8 o5 c8 ; bar 10 F
+      r8 o4 g8 r8 b-8 r8 g8 r8 b-8        ; bar 11 Gm
+      r8 o4 g8 r8 b-8 r8 e8 r8 g8         ; bar 12 C7
+      r8 o4 f8 r8 b-8 r8 f8 r8 b-8        ; bar 13 Bb
+      r8 o4 a8 r8 o5 c8 r8 o4 a8 r8 o5 c8 ; bar 14 F
+      r8 o4 g8 r8 b-8 r8 e8 r8 g8         ; bar 15 Gm C
+      r8 o4 a8 r8 o5 c8 r8 o4 a8 r4       ; bar 16 F
+    `,
+    triangle: `
+      q6
+      o2 f4 o3 c4 o2 a4 o3 c4            ; bar 1
+      o2 d4 a4 f4 a4                     ; bar 2
+      o2 b-4 o3 f4 o2 b-4 o3 d4          ; bar 3
+      o2 c4 g4 e4 g4                     ; bar 4
+      o2 f4 o3 c4 o2 a4 o3 c4            ; bar 5
+      o2 a4 o3 e4 o2 a4 g4               ; bar 6
+      o2 b-4 o3 d4 o2 c4 e4              ; bar 7
+      o2 f4 o3 c4 o2 f4 r4               ; bar 8
+      o2 b-4 o3 f4 d4 f4                 ; bar 9
+      o2 a4 o3 c4 o2 f4 o3 c4            ; bar 10
+      o2 g4 o3 d4 o2 b-4 o3 d4           ; bar 11
+      o2 c4 g4 b-4 g4                    ; bar 12
+      o2 b-4 o3 f4 d4 f4                 ; bar 13
+      o2 a4 o3 c4 o2 f4 a4               ; bar 14
+      o2 g4 b-4 c4 e4                    ; bar 15
+      o2 f4 o3 c4 o2 f4 r4               ; bar 16
+    `,
+    noise: `
+      [[v9 k8 v5 h8 v8 s8 v5 h8]2]7 v9 k8 v5 h8 v8 s8 v5 h8 v9 k8 v5 h8 v8 s16 s16 v5 h8   ; bars 1-8
+      [[v9 k8 v5 h8 v8 s8 v5 h8]2]7 v9 k8 v5 h8 v8 s8 v5 h8 v9 k8 v8 s16 s16 s16 s16 r8   ; bars 9-16
+    `,
+  },
+
+  {
+    id: 'map-bowser',
+    bpm: 112,
+    loop: true,
+    // D minor, 8 bars. The World 8 map: a low, pacing eighth-note ostinato, a brooding melody
+    // with a raised-fourth sting, and a heartbeat on the drums.
+    pulse1: `
+      @1 v10 q7 x0
+      o5 d4. e8 f4 e4                    ; bar 1  Dm
+      o5 d4 a4 g+4 a4                    ; bar 2  Dm
+      o5 b-4. a8 g4 f4                   ; bar 3  Bb
+      o5 e2 c+4 r4                       ; bar 4  A
+      o5 d4. e8 f4 g4                    ; bar 5  Dm
+      o5 a4 b-4 a4 g4                    ; bar 6  Gm
+      o5 f4 d4 e4 c+4                    ; bar 7  Bb A
+      o5 d2 r2                           ; bar 8  Dm
+    `,
+    pulse2: `
+      @0 v7 q5 x0
+      [o3 d8 a8 o4 d8 o3 a8]2            ; bar 1
+      [o3 d8 a8 o4 d8 o3 a8]2            ; bar 2
+      [o3 b-8 o4 f8 b-8 f8]2             ; bar 3
+      [o3 a8 o4 e8 a8 e8]2               ; bar 4
+      [o3 d8 a8 o4 d8 o3 a8]2            ; bar 5
+      [o3 g8 o4 d8 g8 d8]2               ; bar 6
+      [o3 b-8 o4 f8]2 [o3 a8 o4 e8]2     ; bar 7
+      [o3 d8 a8 o4 d8 o3 a8]2            ; bar 8
+    `,
+    triangle: `
+      q8
+      o2 d2 d2                           ; bar 1
+      o2 d2 c+2                          ; bar 2
+      o2 b-2 b-2                         ; bar 3
+      o2 a2 a2                           ; bar 4
+      o2 d2 d2                           ; bar 5
+      o2 g2 g2                           ; bar 6
+      o2 b-2 a2                          ; bar 7
+      o2 d2 a2                           ; bar 8
+    `,
+    noise: `
+      [v10 k4 r4 v8 k8 k8 v5 h4]8        ; heartbeat
+    `,
+  },
 ];

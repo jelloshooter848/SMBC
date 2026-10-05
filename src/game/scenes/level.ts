@@ -101,6 +101,8 @@ export class LevelScene implements Scene {
         if (target.time === null) game.state.time = this.world.time;
         // A pipe into another world or stage is a warp.
         if (target.world !== this.level.world || target.stage !== this.level.stage) game.state.warped = true;
+        // Campaign: a warp into another world opens that world on the map (only that one).
+        if (game.campaign && target.world !== this.level.world) game.campaignWarp(target.world);
         const time = carryTime(this.level, target, this.world.time);
         if (time !== undefined) start.time = time;
         game.startLevel(target, start);
@@ -111,7 +113,10 @@ export class LevelScene implements Scene {
         game.state.time = null;
         if (game.playtestDone) game.playtestDone();
         else if (ev.next === 'end') game.showEnding(this.level.parent ?? this.level.id);
-        // A castle's "another castle" news is shown in the level, next to Toad (World.castleText).
+        // Campaign: the clear is recorded and the map shows what it opened (flagpole or castle).
+        // Otherwise on to the next level; a castle's "another castle" news is shown in the
+        // level, next to Toad (World.castleText).
+        else if (game.campaign) game.levelCleared(this.level.id);
         else game.goToLevel(ev.next, { mode: 'stand' });
         break;
       case 'died': {
@@ -130,6 +135,8 @@ export class LevelScene implements Scene {
         }
         s.time = null;
         if (!game.ctx.assist.infiniteLives) s.lives--;
+        // Campaign: the lost life is saved at once, so quitting now keeps the count.
+        if (game.campaign && s.lives > 0) game.autosave();
         // Respawn at the checkpoint if one was reached, else at the start of the main level.
         const cp = s.checkpoint;
         const mainLevel = cp?.level ?? this.level.parent ?? this.level.id;

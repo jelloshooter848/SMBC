@@ -2,6 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
+import { FileSelectScene } from './file-select';
 import { CheatCode, DEV_CODE } from './cheat';
 import type { Game } from './game';
 
@@ -17,7 +18,7 @@ export class TitleScene extends MenuScene {
   private rebuild(): void {
     const game = this.game;
     const items: MenuItem[] = [
-      { label: 'Start game', select: () => game.showCharacterSelect() },
+      { label: 'Start game', select: () => game.scenes.replace(new FileSelectScene(game)) },
       { label: 'Custom levels', select: () => game.showCustomLevels() },
       {
         label: 'Options',

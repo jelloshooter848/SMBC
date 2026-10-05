@@ -12,6 +12,7 @@ import { samusPalettes, samusDef } from './samus';
 import { simonPalettes, simonDef } from './simon';
 import { ryuPalettes, ryuDef } from './ryu';
 import { billPalettes, billDef } from './bill';
+import { mapPalettes, mapDef } from './map';
 import { colorblindPalettes } from './colorblind';
 
 /** All built-in sprite definitions keyed by sheet id. */
@@ -28,6 +29,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   simon: simonDef,
   ryu: ryuDef,
   bill: billDef,
+  map: mapDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -43,6 +45,7 @@ const defaults: Record<string, readonly string[]> = {
   ...simonPalettes,
   ...ryuPalettes,
   ...billPalettes,
+  ...mapPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
