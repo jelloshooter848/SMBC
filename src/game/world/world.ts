@@ -106,7 +106,7 @@ export class World {
   private bulletTimer = 60;
   /** Castle maze: lead player's centre x last frame (px) and the loop checkpoints passed. */
   private loopPrevX: number | null = null;
-  private readonly loopChecks = new Set<number>();
+  private readonly loopChecks = new Set<string>();
   private readonly coinBlocks = new Map<string, { left: number; until: number }>();
   private clear: { phase: ClearPhase; t: number; pole: Flagpole; walkTo: number; player: Player } | null =
     null;
@@ -272,6 +272,8 @@ export class World {
         return new Koopa(x + px(2), y - px(6), 'green', true);
       case 'koopa-para-red':
         return new Koopa(x + px(2), y - px(6), 'red', true);
+      case 'koopa-para-green-h':
+        return new Koopa(x + px(2), y - px(6), 'green', true, true);
       case 'piranha':
         return new Piranha(s.x, s.y);
       case 'cheep-red':
@@ -541,12 +543,15 @@ export class World {
     const crossed = (col: number) => prev < col * 16 && cur >= col * 16;
     this.level.zones.forEach((z, i) => {
       if (z.kind !== 'loop') return;
-      if (z.check && crossed(z.check.x) && inside(z.check.y0, z.check.y1)) this.loopChecks.add(i);
+      z.checks.forEach((c, j) => {
+        if (crossed(c.x) && inside(c.y0, c.y1)) this.loopChecks.add(`${i}:${j}`);
+      });
     });
     for (const [i, z] of this.level.zones.entries()) {
       if (z.kind !== 'loop') continue;
       if (!crossed(z.x) || !inside(z.y0, z.y1)) continue;
-      if (z.check && !this.loopChecks.has(i)) continue;
+      const passed = z.checks.map((_, j) => this.loopChecks.has(`${i}:${j}`));
+      if (z.checks.length && !(z.need === 'any' ? passed.some(Boolean) : passed.every(Boolean))) continue;
       const dx = tileToSub(z.to - z.x);
       for (const p of this.players) p.body.x += dx;
       this.camera.x = Math.max(0, Math.min(this.camera.maxX, this.camera.x + dx));

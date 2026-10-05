@@ -209,19 +209,28 @@ function parseZone(line: string): Zone {
     case 'bullets':
       return { kind: 'bullets', x: Number(parts[1]), w: Number(parts[2]) };
     case 'loop': {
-      // loop x y0 y1 -> to [check=x:y0:y1]
+      // loop x y0 y1 -> to [check=x:y0:y1[,x:y0:y1...]] [any]
       const [, xs, y0, y1, arrow, to, ...rest] = parts;
       if (arrow !== '->' || xs === undefined || y0 === undefined || y1 === undefined || to === undefined)
-        throw new Error('expected "loop x y0 y1 -> to [check=x:y0:y1]"');
+        throw new Error('expected "loop x y0 y1 -> to [check=x:y0:y1,...] [any]"');
       const check = rest.find((r) => r.startsWith('check='));
-      const c = check ? check.slice(6).split(':').map(Number) : null;
+      const checks = check
+        ? check
+            .slice(6)
+            .split(',')
+            .map((c) => {
+              const [cx, cy0, cy1] = c.split(':').map(Number);
+              return { x: cx as number, y0: cy0 as number, y1: cy1 as number };
+            })
+        : [];
       return {
         kind: 'loop',
         x: Number(xs),
         y0: Number(y0),
         y1: Number(y1),
         to: Number(to),
-        check: c ? { x: c[0] as number, y0: c[1] as number, y1: c[2] as number } : null,
+        checks,
+        need: rest.includes('any') ? 'any' : 'all',
       };
     }
     case 'exit': {
@@ -336,7 +345,9 @@ function serializeZone(z: Zone): string {
     case 'bullets':
       return `bullets ${z.x} ${z.w}`;
     case 'loop':
-      return `loop ${z.x} ${z.y0} ${z.y1} -> ${z.to}${z.check ? ` check=${z.check.x}:${z.check.y0}:${z.check.y1}` : ''}`;
+      return `loop ${z.x} ${z.y0} ${z.y1} -> ${z.to}${
+        z.checks.length ? ` check=${z.checks.map((c) => `${c.x}:${c.y0}:${c.y1}`).join(',')}` : ''
+      }${z.need === 'any' ? ' any' : ''}`;
     case 'checkpoint':
       return `checkpoint ${z.x}`;
     case 'scrollStop':

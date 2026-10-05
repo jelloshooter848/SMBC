@@ -32,8 +32,8 @@ export type Zone =
   | { kind: 'bullets'; x: number; w: number }
   /**
    * Castle maze: walking right past column x with the body inside rows y0..y1 moves the player
-   * to column `to` (same height). With `check`, only after passing that column inside its rows
-   * since the last move: the wrong path loops back, the right path skips the repeated part.
+   * to column `to` (same height), but only after passing its checkpoint columns (inside their
+   * rows) since the last move: the wrong path loops back, the right path skips the repeat.
    */
   | {
       kind: 'loop';
@@ -41,7 +41,10 @@ export type Zone =
       y0: number;
       y1: number;
       to: number;
-      check: { x: number; y0: number; y1: number } | null;
+      /** Checkpoint columns (each with its rows) that arm the move since the last one. */
+      checks: { x: number; y0: number; y1: number }[];
+      /** 'all' checkpoints must be passed, or 'any' one of them. */
+      need: 'all' | 'any';
     }
   | { kind: 'warp'; x: number; w: number; worlds: number[]; text?: string }
   | { kind: 'checkpoint'; x: number }
