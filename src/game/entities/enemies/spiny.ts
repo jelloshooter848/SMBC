@@ -1,5 +1,6 @@
 import { px } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 import { moveX } from '../body';
 
@@ -16,7 +17,7 @@ export class Spiny extends Enemy {
     this.egg = egg;
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
-    this.scoreValue = 200;
+    this.scores = ENEMY_SCORES.SPINEY;
     this.vulnerability = { ...this.vulnerability, stomp: 'hurtAttacker' };
     this.currentFrame = egg ? 'spiny-egg' : 'spiny-0';
     this.activated = true;

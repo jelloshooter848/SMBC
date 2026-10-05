@@ -1,6 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { px, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import { Spiny } from './spiny';
 import { Entity, type View } from '../entity';
 import type { World } from '../../world/world';
@@ -25,7 +26,7 @@ export class Lakitu extends Enemy {
     super(x, y, 12, 20);
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
-    this.scoreValue = 800;
+    this.scores = ENEMY_SCORES.LAKITU;
     this.currentFrame = 'lakitu-0';
     this.layer = 'front';
     this.despawnMargin = null;

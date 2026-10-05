@@ -1,5 +1,6 @@
 import { px, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 
 const RISE_FRAMES = 20;
@@ -24,7 +25,7 @@ export class Blooper extends Enemy {
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.currentFrame = 'blooper-0';
-    this.scoreValue = 200;
+    this.scores = ENEMY_SCORES.BLOOPA;
     this.stompable = false;
     this.vulnerability = { ...this.vulnerability, stomp: 'hurtAttacker' };
     this.body.vx = 0;

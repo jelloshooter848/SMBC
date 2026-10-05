@@ -56,11 +56,3 @@ export const BASIC_VULNERABILITY: Vulnerability = {
 
 /** How long a boomerang stun lasts. */
 export const STUN_FRAMES = 180;
-
-/** SMB1 stomp / shell combo scores: each consecutive hit before landing is worth more. */
-export const COMBO_SCORES = [100, 200, 400, 500, 800, 1000, 2000, 4000, 5000, 8000] as const;
-
-export function comboScore(combo: number): number | '1up' {
-  if (combo >= COMBO_SCORES.length) return '1up';
-  return COMBO_SCORES[combo] as number;
-}

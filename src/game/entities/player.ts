@@ -57,6 +57,8 @@ export class Player {
   activeMelee: AABB | null = null;
   /** Consecutive stomps without landing. */
   combo = 0;
+  /** World frame of the last stomp that counted towards `combo` (double stomps). */
+  stompFrame = -1;
   crouching = false;
   skidding = false;
   jumping = false;

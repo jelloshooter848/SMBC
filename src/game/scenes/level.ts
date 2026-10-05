@@ -130,16 +130,17 @@ export class LevelScene implements Scene {
         }
         s.time = null;
         if (!game.ctx.assist.infiniteLives) s.lives--;
-        if (s.lives <= 0) {
-          s.lives = 0;
-          game.gameOver();
-          return;
-        }
         // Respawn at the checkpoint if one was reached, else at the start of the main level.
         const cp = s.checkpoint;
         const mainLevel = cp?.level ?? this.level.parent ?? this.level.id;
+        if (s.lives <= 0) {
+          s.lives = 0;
+          game.gameOver(mainLevel, ev.player ?? 0);
+          return;
+        }
         const start: LevelStart = cp ? { x: cp.x, y: 12, mode: 'stand' } : { mode: 'stand' };
-        game.goToLevel(mainLevel, start);
+        // Through character select first (Game.respawn), as in the original.
+        game.respawn(mainLevel, start, ev.player ?? 0);
         break;
       }
     }
