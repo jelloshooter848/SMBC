@@ -43,7 +43,16 @@ export class PauseScene extends MenuScene {
     });
     if (game.devMode)
       items.push({ label: 'Dev mode', select: () => game.scenes.push(new DevMenuScene(game, true)) });
-    items.push({ label: 'Quit', select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()) });
+    if (game.campaign && !game.playtestDone) {
+      // Leave the level for the map (any level, cleared or not; no clear is recorded, the run's
+      // lives, score, coins and power are kept and saved), or save and go to the title.
+      items.push({ label: 'Quit to map', select: () => game.returnToMap() });
+      items.push({ label: 'Quit to title', select: () => game.saveAndQuit() });
+    } else
+      items.push({
+        label: 'Quit',
+        select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()),
+      });
     this.setItems(items);
   }
 
