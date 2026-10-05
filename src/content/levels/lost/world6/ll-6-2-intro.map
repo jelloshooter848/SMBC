@@ -1,0 +1,39 @@
+id: ll-6-2-intro
+name: WORLD 6-2
+world: 6
+stage: 2
+theme: overworld
+music: overworld
+time: inherit
+start: 2,12
+startMode: autowalk
+camera: locked
+parent: ll-6-2
+
+[tiles]
+;; 0
+................
+................
+................
+................
+................
+................
+................
+................
+................
+............[]..
+............{}..
+..........())}..
+..........<>>}..
+################
+################
+
+[entities]
+decor-castle 0 12
+
+[zones]
+pipe 10 12 right -> ll-6-2 2 1 exit=none
+
+[decor]
+cloud-2 3 3
+cloud-1 9 7

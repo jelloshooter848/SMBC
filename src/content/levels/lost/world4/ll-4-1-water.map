@@ -1,0 +1,38 @@
+id: ll-4-1-water
+name: WORLD 4-1
+world: 4
+stage: 1
+theme: water
+music: water
+time: inherit
+start: 1,1
+startMode: fall
+camera: scroll
+parent: ll-4-1
+
+[tiles]
+;; 0                16               32               48               64
+................ ................ ................ ................ ................
+................ ................ ................ ................ ................
+wwwwwwwwwwwwwwww BBBBBBBBBBBBBBBB wwwwwwwwwwwwwwww BBBBBBBBBBBBBBBB wwwwwwwwwwwwwBBB
+................ BBBBBBBBBBBBBBBB ................ BBBBBBBBBBBBBBBB .............BBB
+................ BBBBBBBBBBBBBBBB ......$$$$...... BBBBBBBBBBBBBBBB .............BBB
+................ BBBBBBBBBBBBBBBB ................ ................ .............BBB
+................ ................ ................ ................ .............BBB
+...........#.... ................ ................ ................ ......#......(BB
+...........#.... ................ ...$$$$$$$$$$... ...$$$$$$$$$$... ......#......<BB
+...........#.... BBBBBBBBBBBBBBBB ..............z. ................ ......#..#..BBBB
+.......#...#...B BBBBBBBBBBBBBBBB ................ BBBBBBBBBBBBBBBB ......#..#.BBBBB
+.......#...#..BB BBBBBBBBBBBBBBBB ................ BBBBBBBBBBBBBBBB ......#..#BBBBBB
+.......#...#.BBB BBBBBBBBBBBBBBBB $$$$$$$$$$$$$$$$ BBBBBBBBBBBBBBBB ......#..BBBBBBB
+################ ################ ################ ################ .....###########
+################ ################ ################ ################ .....###########
+
+[entities]
+buzzy 37 12
+blooper 39 5
+blooper 45 9
+blooper 66 7
+
+[zones]
+pipe 77 8 right -> ll-4-1 163 10 exit=up
