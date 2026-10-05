@@ -30,3 +30,5 @@ every time
 ## Notes
 
 Ours: `BASIC_VULNERABILITY.bump` is `'kill'` for both, and `World.strikeBlock` scores `scoreFor('bump')`. Buzzy Beetles extend `KoopaGreen` in the original, so the same applies to them. Follow-up from the review of the kill-scoring fix (`2026-10-05-scoring-fireball-koopa-100.md`).
+
+Status: fixed — a bumped Koopa, Red Koopa or Buzzy Beetle now pops into its shell unscored and hops away from the block (KoopaGreen.gBounceHit), a bumped Spiny only bounces (Spiney.gBounceHit), and Goombas and the rest still die for their BELOW score.

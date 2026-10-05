@@ -807,8 +807,10 @@ export class World {
       const b = e.body;
       if (Math.abs(b.y + b.h - top) <= px(2) && b.x < tileToSub(tx + 1) && b.x + b.w > tileToSub(tx)) {
         if (e instanceof Enemy) {
-          const r = e.hit({ kind: 'bump', amount: 1, owner: null, dirX: b.x > p.body.x ? 1 : -1 }, this);
-          if (r !== 'immune') this.addScore(e.scoreFor('bump'), b.x, b.y);
+          const dirX = b.x > p.body.x ? 1 : -1;
+          const r = e.hit({ kind: 'bump', amount: 1, owner: null, dirX, fromX: tileToSub(tx) + px(8) }, this);
+          // A bounce (KoopaGreen/Spiney.gBounceHit) skips Enemy.gBounceHit's BELOW score.
+          if (r !== 'immune' && r !== 'bounce') this.addScore(e.scoreFor('bump'), b.x, b.y);
         } else b.vy = -0x03000;
       }
     }

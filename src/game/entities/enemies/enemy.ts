@@ -1,6 +1,6 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { px, toPx, velToSub } from '@engine/math/units';
-import { Entity, type View } from '../entity';
+import { ENTITY_GRAVITY, ENTITY_MAX_FALL, Entity, type View } from '../entity';
 import { moveX } from '../body';
 import type { World } from '../../world/world';
 import {
@@ -14,6 +14,14 @@ import {
 import { ENEMY_SCORES, killScore, type KillScores } from '../../rules/score';
 import { Corpse } from '../effects/effects';
 import type { Theme } from '../../level/schema';
+
+/**
+ * A block bumped under a koopa or spiny pops it up (KoopaGreen.gBounceHit / Spiney.gBounceHit):
+ * `vy = -BOUNCE_AMT` (350 px/s) and `gravity = BOUNCE_GRAVITY` (1500 px/s²), at the original's
+ * SCALE 2 and 60 frames a second: 2.92 px/f and 0.208 px/f².
+ */
+export const BUMP_POP_VY = 0x02eab;
+export const BUMP_POP_GRAVITY = 0x00355;
 
 export function enemyPalette(theme: Theme): string {
   switch (theme) {
@@ -51,6 +59,8 @@ export abstract class Enemy extends Entity {
   stunned = 0;
   /** Draw the knocked-out corpse flipped vertically (things that hang upside down). */
   protected corpseFlipY = false;
+  /** Popped up by a bumped block: falls with BUMP_POP_GRAVITY until it lands. */
+  protected bumpPopped = false;
 
   constructor(x: number, y: number, wPx: number, hPx: number) {
     super(x, y, wPx, hPx);
@@ -89,6 +99,9 @@ export abstract class Enemy extends Entity {
       case 'shell':
         this.onShell(src, world);
         break;
+      case 'bounce':
+        this.onBounce(src, world);
+        break;
       case 'stun':
         if (this.stunned > 0) {
           // Already frozen: a second freezing hit shatters it.
@@ -118,6 +131,19 @@ export abstract class Enemy extends Entity {
 
   protected onHpHit(_src: DamageSource, _world: World): void {}
   protected onShell(_src: DamageSource, _world: World): void {}
+  protected onBounce(_src: DamageSource, _world: World): void {}
+
+  /** Pop up off a bumped block (the shared start of KoopaGreen/Spiney.gBounceHit). */
+  protected bumpPop(): void {
+    this.body.vy = -BUMP_POP_VY;
+    this.body.onGround = false;
+    this.bumpPopped = true;
+  }
+
+  protected override fall(world: World, gravity = ENTITY_GRAVITY, maxFall = ENTITY_MAX_FALL): void {
+    super.fall(world, this.bumpPopped ? BUMP_POP_GRAVITY : gravity, maxFall);
+    if (this.body.onGround) this.bumpPopped = false;
+  }
 
   /** Stomped: default is to vanish immediately; walkers override to show a squash frame. */
   protected squash(_world: World): void {
