@@ -807,8 +807,10 @@ export class World {
       const b = e.body;
       if (Math.abs(b.y + b.h - top) <= px(2) && b.x < tileToSub(tx + 1) && b.x + b.w > tileToSub(tx)) {
         if (e instanceof Enemy) {
-          const r = e.hit({ kind: 'bump', amount: 1, owner: null, dirX: b.x > p.body.x ? 1 : -1 }, this);
-          if (r !== 'immune') this.addScore(e.scoreFor('bump'), b.x, b.y);
+          const dirX = b.x > p.body.x ? 1 : -1;
+          const r = e.hit({ kind: 'bump', amount: 1, owner: null, dirX, fromX: tileToSub(tx) + px(8) }, this);
+          // A bounce (KoopaGreen/Spiney.gBounceHit) skips Enemy.gBounceHit's BELOW score.
+          if (r !== 'immune' && r !== 'bounce') this.addScore(e.scoreFor('bump'), b.x, b.y);
         } else b.vy = -0x03000;
       }
     }
@@ -907,6 +909,7 @@ export class World {
     // Melee hitbox vs enemies (before contact so a sword hit beats a body hit).
     if (p.activeMelee) {
       for (const e of this.enemies) {
+        if (this.thrustIgnoresShell(p, e)) continue;
         if (overlaps(p.activeMelee, e.body) && !p.scratch[`hit${e.id}`]) {
           p.scratch[`hit${e.id}`] = 1;
           const src: DamageSource = { kind: 'sword', amount: 1, owner: null, dirX: p.facing };
@@ -969,16 +972,32 @@ export class World {
     }
   }
 
+  /**
+   * Link's down/up-thrust does nothing to a still shell or one in its post-kick no-hit window:
+   * Link.hitEnemy checks that (KoopaGreen cState "shell" or NO_HIT_SHELL_TMR running) before its
+   * dThrust/uThrust landAttack. Body contact then applies as usual (a still shell is kicked).
+   */
+  private thrustIgnoresShell(p: Player, e: Enemy): boolean {
+    return (
+      !!(p.scratch.downThrust || p.scratch.upThrust) &&
+      e instanceof Koopa &&
+      (e.isStillShell || e.noHitTimer > 0)
+    );
+  }
+
   private playerVsEnemy(p: Player, e: Enemy): void {
     const pb = p.body;
     if (!overlaps(pb, e.body)) return;
     // A sword/thrust that is touching this enemy handles it; no body contact damage.
-    if (p.activeMelee && overlaps(p.activeMelee, e.body)) return;
+    if (p.activeMelee && overlaps(p.activeMelee, e.body) && !this.thrustIgnoresShell(p, e)) return;
     if (p.star > 0) {
       const r = e.hit({ kind: 'star', amount: 1, owner: null, dirX: pb.x < e.body.x ? 1 : -1 }, this);
       if (r !== 'immune') this.addScore(e.scoreFor('star'), e.body.x, e.body.y);
       return;
     }
+    // Just after any kick the shell neither hurts nor can be stomped by any player
+    // (KoopaGreen.NO_HIT_SHELL_TMR: Character.hitEnemy skips it, KoopaGreen.stomp returns early).
+    if (e instanceof Koopa && e.noHitTimer > 0) return;
     // SMB1-style stomp test: the player was moving down this frame and came in near the enemy's top.
     const feet = pb.y + pb.h;
     const falling = p.fallSpeed > 0;
@@ -988,11 +1007,9 @@ export class World {
       if (p.def.stomps) {
         // Landing on a still shell kicks it; it is not a stomp, so it neither scores nor advances
         // the stomp sequence (KoopaGreen.stomp returns early for a shell, hitCharacter kicks it).
-        if (e instanceof Koopa && e.isStillShell) {
-          this.kickShell(p, e);
-          p.stompBounce();
-          return;
-        }
+        // Nor does it bounce: Character.hitEnemy does nothing for a shell, leaving the player's
+        // vertical speed alone, and the kick's no-hit window lets the player fall on through it.
+        if (e instanceof Koopa && e.isStillShell) return this.kickShell(p, e);
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
         if (r === 'hurtAttacker') return this.hurtPlayer(p);
         if (r !== 'immune') {

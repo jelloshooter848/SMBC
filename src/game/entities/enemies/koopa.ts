@@ -13,6 +13,12 @@ export const SHELL_SPEED = 0x03000; // 3 px/f
 const SHELL_IDLE_FRAMES = 228;
 const SHELL_LAST_FRAMES = 15;
 const SHELL_WIGGLE_FRAMES = 54 + SHELL_LAST_FRAMES;
+/**
+ * KoopaGreen.NO_HIT_SHELL_TMR (250 ms = 15 frames), started by every kickShell: while it runs no
+ * player is hurt by the shell or bounces off it (Character.hitEnemy skips it) and nobody can stomp
+ * it (KoopaGreen.stomp returns early).
+ */
+export const SHELL_NO_HIT_FRAMES = 15;
 /** Red paratroopas bob this far above and below their spawn height, once per period. */
 const PARA_AMPLITUDE = 48; // px
 const PARA_PERIOD = 192; // frames
@@ -39,6 +45,8 @@ export class Koopa extends Enemy {
   private readonly homeY: number;
   private flyT = 0;
   private shellTimer = 0;
+  /** Frames left of the post-kick no-hit window (KoopaGreen.NO_HIT_SHELL_TMR). */
+  noHitTimer = 0;
   /** Kills by a moving shell chain for combo scoring. */
   shellCombo = 0;
   readonly color: 'green' | 'red' | 'buzzy';
@@ -64,7 +72,7 @@ export class Koopa extends Enemy {
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.currentFrame = `${this.prefix}-0`;
-    this.vulnerability = { ...this.vulnerability, stomp: 'shell' };
+    this.vulnerability = { ...this.vulnerability, stomp: 'shell', bump: 'bounce' };
     // Buzzy Beetles shrug off fireballs.
     if (color === 'buzzy') this.vulnerability.fireball = 'immune';
     // KoopaGreen.overwriteInitialStats runs once at spawn, so a paratroopa keeps the flying values
@@ -145,6 +153,7 @@ export class Koopa extends Enemy {
     this.contactHurts = true;
     this.shellCombo = 0;
     this.fallsOffLedges = true;
+    this.noHitTimer = SHELL_NO_HIT_FRAMES; // KoopaGreen.kickShell: NO_HIT_SHELL_TMR.start()
     // Nudge out of the kicker so the first frame doesn't re-collide.
     this.body.x += dirX * px(4);
     world.audio.sfx('kick');
@@ -179,7 +188,38 @@ export class Koopa extends Enemy {
     }
   }
 
+  /**
+   * A block bumped under it (KoopaGreen.gBounceHit; KoopaRed and Beetle extend KoopaGreen): it pops
+   * up into its shell, unhurt and unscored (Enemy.gBounceHit's BELOW score is not called), heading
+   * away from the block's middle at walking speed (`vx = defaultWalkSpeed`, negated when
+   * `nx < g.hMidX`). `bounced` makes enterShell keep that speed and start the shell timers; from
+   * ST_FLY it also loses its wings. Red and gliding paratroopas fly (defyGrav) and never stand on a
+   * block, so the bump doesn't reach them (Brick.BOUNCE_HIT_DCT only holds things standing on it).
+   */
+  protected override onBounce(src: DamageSource, _world: World): void {
+    if (this.wings && (this.color === 'red' || this.glide)) return;
+    this.wings = false;
+    this.becomeShell();
+    const mid = this.body.x + this.body.w / 2;
+    this.body.vx = (mid < (src.fromX ?? mid) ? -1 : 1) * this.walkSpeed;
+    this.bumpPop();
+  }
+
+  /**
+   * A still shell only moves while popped into the air by a bump: KoopaGreen.updateStats sets
+   * `vx = 0` for ST_SHELL on the ground, and Enemy.groundOnSide turns it at walls.
+   */
+  private shellDrift(world: World): void {
+    const b = this.body;
+    if (b.onGround) b.vx = 0;
+    else if (b.vx !== 0) {
+      moveX(b, world.map, velToSub(b.vx));
+      if (b.hitWall !== 0) b.vx = -b.hitWall * this.walkSpeed;
+    }
+  }
+
   update(world: World): void {
+    if (this.noHitTimer > 0) this.noHitTimer--;
     switch (this.state) {
       case 'walk':
         if (this.wings) this.fly(world);
@@ -187,6 +227,7 @@ export class Koopa extends Enemy {
         this.currentFrame = `${this.wings ? 'koopa-fly' : this.prefix}-${(world.frame >> 3) & 1}`;
         break;
       case 'shell':
+        this.shellDrift(world);
         this.fall(world);
         if (--this.shellTimer <= 0) {
           this.state = 'wiggle';
@@ -195,6 +236,7 @@ export class Koopa extends Enemy {
         this.currentFrame = this.shellFrame;
         break;
       case 'wiggle':
+        this.shellDrift(world);
         this.fall(world);
         this.currentFrame =
           (world.frame >> 2) & 1 && this.color !== 'buzzy' ? 'shell-wiggle' : this.shellFrame;

@@ -26,6 +26,7 @@ export type Reaction =
   | 'hp' // loses hit points
   | 'immune' // nothing happens
   | 'stun' // frozen in place for a while; any later hit kills
+  | 'bounce' // popped up by a block bumped under it, unhurt and unscored (koopa shells, spinies)
   | 'hurtAttacker'; // the attacker takes damage instead (spiny stomp, piranha stomp)
 
 export type Vulnerability = Partial<Record<DamageKind, Reaction>>;
@@ -36,6 +37,8 @@ export interface DamageSource {
   owner: Entity | Player | null;
   /** Direction the hit came from (+1 = attacker is to the left, hits travel right). */
   dirX: -1 | 1;
+  /** Bumps only: the struck block's centre x in subpixels (the original's `g.hMidX`). */
+  fromX?: number;
 }
 
 /** Default table for a plain walking enemy: anything kills it, stomps squash it. */
