@@ -20,7 +20,7 @@ import {
 import type { CharacterDef } from '../characters/character';
 import { pad } from '../hud/hud';
 import { worldLabel } from '../hud/world-label';
-import { MenuScene } from './menu';
+import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import type { Game } from './game';
 
@@ -180,6 +180,7 @@ export class WorldMapScene implements Scene {
     this.hx = n ? n.x * 16 : 0;
     this.hy = n ? n.y * 16 : 0;
     this.progress.position = { world: this.page.world, node: this.node };
+    if (this.node) this.game.mapLastNode[this.page.world] = this.node;
   }
 
   /** Every id a reveal may name on a page. */
@@ -408,6 +409,7 @@ export class WorldMapScene implements Scene {
         'MAP',
         [
           { label: 'Continue', select: pop },
+          { label: 'Worlds', select: () => this.openWorlds() },
           { label: 'Save and quit', select: () => game.saveAndQuit() },
           { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, pop, true)) },
         ],
@@ -415,6 +417,25 @@ export class WorldMapScene implements Scene {
         true,
       ),
     );
+  }
+
+  /** Map menu "Worlds": every open world with a page; the current one is marked HERE. */
+  private openWorlds(): void {
+    const game = this.game;
+    const here = this.page.world;
+    const worlds = MAP_PAGES.map((p) => p.world)
+      .filter((w) => isWorldOpen(this.progress, w))
+      .sort((a, b) => a - b);
+    const items = worlds.map((w): MenuItem => ({
+      label: `World ${w}`,
+      ...(w === here ? { value: () => 'here', hint: 'You are here' } : {}),
+      select: () => {
+        if (w !== here) return game.travelToWorld(w);
+        game.scenes.pop(); // the current world: just close both menus
+        game.scenes.pop();
+      },
+    }));
+    game.scenes.push(new MenuScene(game, 'WORLDS', items, () => game.scenes.pop(), true));
   }
 
   // ---------------------------------------------------------------- drawing

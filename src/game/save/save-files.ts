@@ -32,6 +32,8 @@ export interface SaveFile extends MapProgress {
   kit2: Record<string, number>;
   /** 8-4 was beaten on this file. */
   gameCleared: boolean;
+  /** The node the hero last stood on in each world visited (where map travel returns to). */
+  lastNode: Record<number, string>;
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -87,6 +89,7 @@ export function newSave(
     secrets: [],
     position: { world: 1, node: 'start' },
     gameCleared: false,
+    lastNode: {},
   };
 }
 
@@ -98,6 +101,17 @@ const whole = (x: unknown, d: number, min: number, max = Number.MAX_SAFE_INTEGER
 const str = (x: unknown, d: string): string => (typeof x === 'string' ? x : d);
 const strs = (x: unknown, d: string[]): string[] =>
   Array.isArray(x) ? x.filter((e): e is string => typeof e === 'string') : d;
+/** World number → node id, for open worlds only. */
+function lastNodes(x: unknown, worlds: readonly number[]): Record<number, string> {
+  const out: Record<number, string> = {};
+  if (isObj(x))
+    for (const [k, v] of Object.entries(x)) {
+      const w = Number(k);
+      if (worlds.includes(w) && typeof v === 'string' && v) out[w] = v;
+    }
+  return out;
+}
+
 function kit(x: unknown): Record<string, number> {
   const out: Record<string, number> = {};
   if (isObj(x))
@@ -159,6 +173,7 @@ export function migrateSave(
     secrets: strs(stored.secrets, d.secrets),
     position,
     gameCleared: stored.gameCleared === true,
+    lastNode: lastNodes(stored.lastNode, worlds),
   };
 }
 

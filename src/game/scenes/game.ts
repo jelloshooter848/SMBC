@@ -22,7 +22,8 @@ import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
 import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress } from '../map/types';
-import { entryLevel, newMapProgress } from '../map/rules';
+import { clearLevel, entryLevel, isOpen, isWorldOpen, newMapProgress, warpTo } from '../map/rules';
+import { mapPage } from '@content/worldmap';
 import {
   loadSave,
   saveFromState,
@@ -69,6 +70,10 @@ export class Game {
   campaign: { slot: SaveSlot } | null = null;
   /** The campaign's file as last written (the base `autosave` updates). */
   private campaignSave: SaveFile | null = null;
+  /** The node the hero last stood on in each world (SaveFile.lastNode), for map travel. */
+  mapLastNode: Record<number, string> = {};
+  /** Campaign: map ids a warp opened, drawn in the next time the map is shown. */
+  private warpReveal: string[] = [];
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -78,9 +83,21 @@ export class Game {
     return this.deps.ctx;
   }
 
-  /** After the last castle: the princess's thanks, the final score, then the title. */
+  /**
+   * After the last castle: the princess's thanks, the final score, then the title. In campaign
+   * mode the clear is recorded, the file marked as cleared and saved, and the ending leads back
+   * to the map (World 8).
+   */
   showEnding(from = ''): void {
     const s = this.state;
+    let reveal: string[] | null = null;
+    if (this.campaign) {
+      s.checkpoint = null;
+      s.time = null;
+      reveal = clearLevel(this.mapProgress, from, this.deps.getLevel);
+      if (this.campaignSave) this.campaignSave = { ...this.campaignSave, gameCleared: true };
+      this.autosave();
+    }
     // The Lost Levels: clearing 8-4 opens worlds A-D; a run without warps goes on to World 9.
     let next: string | null = null;
     if (from === 'll-8-4') {
@@ -110,7 +127,12 @@ export class Game {
           '',
           'PRESS START',
         ],
-        () => (next ? this.goToLevel(next, { mode: 'stand' }) : this.showTitle()),
+        () =>
+          reveal
+            ? this.returnToMap(reveal)
+            : next
+              ? this.goToLevel(next, { mode: 'stand' })
+              : this.showTitle(),
         1800,
       ),
     );
@@ -122,6 +144,7 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
+    this.warpReveal = [];
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -175,15 +198,79 @@ export class Game {
     const base = this.campaign ? this.campaignSave : null;
     if (!base) return;
     const p = this.mapProgress;
+    this.mapLastNode[p.position.world] = p.position.node;
     const save: SaveFile = {
       ...saveFromState(base, this.state),
       cleared: p.cleared.slice(),
       worlds: p.worlds.slice(),
       secrets: p.secrets.slice(),
       position: { world: p.position.world, node: p.position.node },
+      lastNode: { ...this.mapLastNode },
     };
     this.campaignSave = save;
     writeSave(save);
+  }
+
+  /**
+   * Campaign: back to the map from a level (a clear, "Quit to map", or a continue). Saves the
+   * file first, then shows the page the hero stands on, drawing in `reveal` and whatever a warp
+   * opened since the map was last shown.
+   */
+  returnToMap(reveal: string[] = []): void {
+    const all = [...this.warpReveal, ...reveal.filter((id) => !this.warpReveal.includes(id))];
+    this.warpReveal = [];
+    this.state.checkpoint = null;
+    this.state.time = null;
+    this.deps.ctx.audio.stopMusic();
+    this.deps.ctx.audio.setTempoScale(1);
+    this.autosave();
+    this.showMap(this.mapProgress.position.world, all.length ? { reveal: all } : {});
+  }
+
+  /**
+   * A level's exit (flagpole or castle) reached: in campaign mode the clear is recorded (a
+   * sub-area counts for its main level), what it opens is drawn in on the map, and the run
+   * (lives, score, coins, power) carries on. Does nothing outside campaign mode.
+   */
+  levelCleared(levelId: string): void {
+    if (!this.campaign) return;
+    this.returnToMap(clearLevel(this.mapProgress, levelId, this.deps.getLevel));
+  }
+
+  /**
+   * A warp pipe into `world`: in campaign mode it opens that world only (skipped ones stay
+   * closed) and the hero's map place moves to its start, so a quit or game over before the
+   * target level is cleared comes back to that page. Play goes on into the level as before.
+   */
+  campaignWarp(world: number): void {
+    if (!this.campaign) return;
+    const pos = this.mapProgress.position;
+    this.mapLastNode[pos.world] = pos.node; // map travel back returns here
+    const opened = warpTo(this.mapProgress, world);
+    this.warpReveal.push(...opened.filter((id) => !this.warpReveal.includes(id)));
+    const start = mapPage(world)?.nodes.find((n) => n.kind === 'start');
+    if (start) this.mapProgress.position = { world, node: start.id };
+    this.autosave();
+  }
+
+  /**
+   * Map menu "Worlds": show the page of open world `world` with the hero on the node it last
+   * stood on there (its start when never visited). Lets a player who warped ahead go back to
+   * worlds left unfinished.
+   */
+  travelToWorld(world: number): void {
+    const p = this.mapProgress;
+    const page = mapPage(world);
+    if (!page || !isWorldOpen(p, world)) return;
+    const last = this.mapLastNode[world];
+    const node =
+      last && page.nodes.some((n) => n.id === last) && isOpen(p, page, last)
+        ? last
+        : (page.nodes.find((n) => n.kind === 'start')?.id ?? 'start');
+    this.mapLastNode[p.position.world] = p.position.node;
+    p.position = { world, node };
+    this.deps.ctx.audio.stopMusic();
+    this.showMap(world); // the map announces the page and node, and saves
   }
 
   /** Map menu "Save and quit": save the file, then the title. */
@@ -288,6 +375,8 @@ export class Game {
     this.quickRespawn = false;
     this.campaign = { slot };
     this.campaignSave = save;
+    this.warpReveal = [];
+    this.mapLastNode = { ...save.lastNode };
     this.mapProgress = {
       cleared: save.cleared.slice(),
       worlds: save.worlds.slice(),
@@ -392,10 +481,20 @@ export class Game {
 
   /**
    * No lives left: GAME OVER, then CONTINUE? YES / NO. `levelId` is the level the run ended in;
-   * `player` picks the hero if the run continues.
+   * `player` picks the hero if the run continues. In campaign mode YES goes back to the map
+   * (progress kept) and NO to the title.
    */
   gameOver(levelId: string | null = null, player = 0): void {
     this.scenes.clear();
+    if (this.campaign) {
+      // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives
+      // (3, or 5 with two players), score and coins 0, the same heroes, map progress kept.
+      const old = this.state;
+      this.state = newGameState(old.character, old.character2);
+      this.autosave();
+      this.scenes.push(new GameOverScene(this, () => this.returnToMap()));
+      return;
+    }
     this.scenes.push(new GameOverScene(this, () => this.continueGame(levelId, player)));
   }
 
