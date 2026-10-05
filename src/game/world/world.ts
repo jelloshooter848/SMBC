@@ -289,7 +289,8 @@ export class World {
       case 'podoboo':
         return new Podoboo(s.x, s.y, s.x * 31 + s.y * 7);
       case 'hammer-bro':
-        return new HammerBro(x + px(2), y - px(6));
+      case 'hammer-bro-chase':
+        return new HammerBro(x + px(2), y - px(6), s.type === 'hammer-bro-chase');
       case 'buzzy':
         return new Koopa(x + px(2), y + px(2), 'buzzy');
       case 'spiny':
@@ -303,7 +304,8 @@ export class World {
       case 'princess':
         return new Princess(s.x, s.y);
       case 'spring':
-        return new Spring(s.x, s.y);
+      case 'spring-green':
+        return new Spring(s.x, s.y, s.type === 'spring-green');
       case 'vine':
         return new Vine(s.x, s.y, Number(s.props?.len ?? 8));
       case 'firebar':

@@ -141,6 +141,8 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   c: '@cheep-red',
   q: '@blooper',
   s: '@spring',
+  y: '@spring-green',
+  n: '@hammer-bro-chase',
   x: '@bullet-launcher',
   Z: '@decor-castle', // small castle anchor (bottom-left)
   X: '@decor-castle-big',

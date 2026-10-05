@@ -13,7 +13,8 @@ const VOLLEY_GAP = 16;
 
 /**
  * Hammer Bro: shuffles on its row facing the player, throws hammers in volleys of three, and
- * hops between the brick rows it lives on. After a while (or once passed) it walks at you.
+ * hops between the brick rows it lives on. After a while (or once passed) it walks at you; a
+ * chasing one (The Lost Levels) walks at you from the start.
  */
 export class HammerBro extends Enemy {
   readonly kind = 'hammer-bro';
@@ -29,7 +30,11 @@ export class HammerBro extends Enemy {
   /** Frames left of tile-free falling (dropping through the floor). */
   private dropping = 0;
 
-  constructor(x: number, y: number) {
+  constructor(
+    x: number,
+    y: number,
+    readonly chase = false,
+  ) {
     super(x, y, 12, 22);
     this.homeX = x;
     this.spriteOffsetX = 2;
@@ -48,7 +53,7 @@ export class HammerBro extends Enemy {
     this.facing = pl.x + pl.w / 2 < b.x + b.w / 2 ? -1 : 1;
 
     // Horizontal: shuffle around home, or advance on the player.
-    if (this.age > ADVANCE_AFTER || passed) {
+    if (this.chase || this.age > ADVANCE_AFTER || passed) {
       b.vx = this.facing * ADVANCE_SPEED;
       this.fallsOffLedges = true;
     } else {
