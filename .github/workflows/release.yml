@@ -1,0 +1,107 @@
+# Builds, deploys and publishes a release (docs/RELEASING.md). Runs when a version tag is pushed,
+# or by hand (Actions → Release → Run workflow) with an existing tag to publish or redeploy it.
+# Pushes to main do not deploy.
+name: Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build, deploy and publish (for example v0.2.0)
+        required: true
+        type: string
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+      - name: Make sure the ref is a tag
+        run: git rev-parse --verify --quiet "refs/tags/$TAG" > /dev/null || { echo "::error::$TAG is not a tag"; exit 1; }
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check the tag, package.json and CHANGELOG.md
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          if [ -f tools/release/check.mjs ] && [ -f CHANGELOG.md ]; then
+            pnpm release:check --tag "$TAG"
+            pnpm -s release:check --tag "$TAG" --notes > "$RUNNER_TEMP/release/notes.md"
+          else
+            # A tag made before the release tooling existed (v0.1.0): use the checker and the
+            # changelog from the commit this workflow runs from, with the tag's package.json.
+            git show "$GITHUB_SHA:tools/release/check.mjs" > "$RUNNER_TEMP/check.mjs"
+            git show "$GITHUB_SHA:CHANGELOG.md" > "$RUNNER_TEMP/CHANGELOG.md"
+            node "$RUNNER_TEMP/check.mjs" --changelog "$RUNNER_TEMP/CHANGELOG.md" --tag "$TAG"
+            node "$RUNNER_TEMP/check.mjs" --changelog "$RUNNER_TEMP/CHANGELOG.md" --tag "$TAG" --notes > "$RUNNER_TEMP/release/notes.md"
+          fi
+          cat "$RUNNER_TEMP/release/notes.md"
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          RELEASE_TAG: ${{ env.TAG }}
+      - run: cp dist/index.html dist/404.html
+      - name: Zip the site
+        run: cd dist && zip -qr "$RUNNER_TEMP/release/smbc-$TAG.zip" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+          if-no-files-found: error
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+  github-release:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+      - name: Create or update the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          prerelease=false
+          case "$TAG" in *-*) prerelease=true ;; esac
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes-file release/notes.md --prerelease="$prerelease"
+            gh release upload "$TAG" "release/smbc-$TAG.zip" --clobber
+          else
+            flags=()
+            if [ "$prerelease" = true ]; then flags+=(--prerelease); fi
+            gh release create "$TAG" "release/smbc-$TAG.zip" --verify-tag --title "$TAG" \
+              --notes-file release/notes.md "${flags[@]}"
+          fi
