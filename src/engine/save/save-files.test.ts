@@ -1,0 +1,216 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  clearedMainLevels,
+  eraseSave,
+  highestWorld,
+  listSaves,
+  loadSave,
+  migrateSave,
+  newSave,
+  saveFromState,
+  saveKey,
+  stateFromSave,
+  writeSave,
+} from './save-files';
+import { CHARACTERS } from '@game/characters/registry';
+import { MARIO } from '@game/characters/mario';
+import { LUIGI } from '@game/characters/luigi';
+import { LINK } from '@game/characters/link';
+import { SAMUS } from '@game/characters/samus';
+
+const store = new Map<string, string>();
+beforeEach(() => {
+  store.clear();
+  (globalThis as { localStorage?: unknown }).localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+  };
+});
+
+describe('save files', () => {
+  it('a new file starts on World 1 with 3 lives, 5 for two players', () => {
+    const s = newSave(2, 'mario', null);
+    expect(s).toMatchObject({
+      v: 1,
+      slot: 2,
+      character: 'mario',
+      character2: null,
+      lives: 3,
+      score: 0,
+      coins: 0,
+      cleared: [],
+      worlds: [1],
+      secrets: [],
+      position: { world: 1, node: 'start' },
+      gameCleared: false,
+    });
+    expect(newSave(1, 'mario', 'luigi').lives).toBe(5);
+  });
+
+  it('keys are smbc.save.1..3', () => {
+    expect([1, 2, 3].map((n) => saveKey(n as 1 | 2 | 3))).toEqual([
+      'smbc.save.1',
+      'smbc.save.2',
+      'smbc.save.3',
+    ]);
+  });
+
+  it('round-trips and stamps updated', () => {
+    const s = newSave(1, 'link', 'samus');
+    s.created = 1000;
+    s.updated = 1000;
+    s.cleared = ['1-1', '1-2'];
+    s.worlds = [1, 4];
+    s.secrets = ['bonus-1'];
+    s.position = { world: 4, node: 'start' };
+    s.score = 12345;
+    s.kit = { hearts: 5, bombs: 3 };
+    s.gameCleared = true;
+    expect(writeSave(s)).toBe(true);
+    expect(s.updated).toBeGreaterThan(1000);
+    expect(loadSave(1)).toEqual(s);
+  });
+
+  it('the three slots are independent; erase empties one', () => {
+    writeSave(newSave(1, 'mario'));
+    writeSave(newSave(3, 'link'));
+    expect(listSaves().map((s) => s?.character ?? null)).toEqual(['mario', null, 'link']);
+    const s3 = loadSave(3)!;
+    s3.score = 900;
+    writeSave(s3);
+    expect(loadSave(1)!.score).toBe(0);
+    eraseSave(1);
+    expect(listSaves().map((s) => s?.score ?? null)).toEqual([null, null, 900]);
+  });
+
+  it('corrupt data is an empty slot', () => {
+    store.set('smbc.save.1', '{not json');
+    store.set('smbc.save.2', '[1,2]');
+    store.set('smbc.save.3', JSON.stringify({ v: 1, character: 7 }));
+    expect(listSaves()).toEqual([null, null, null]);
+  });
+
+  it('an unknown version (newer or invalid) is an empty slot', () => {
+    for (const v of [2, 0, 'x', undefined]) {
+      store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), v }));
+      expect(loadSave(1)).toBeNull();
+    }
+  });
+
+  it('missing or wrong-typed fields fall back to defaults; the slot comes from the key', () => {
+    store.set(
+      'smbc.save.2',
+      JSON.stringify({
+        v: 1,
+        slot: 3,
+        character: 'luigi',
+        lives: 'many',
+        cleared: ['1-1', 4, null],
+        worlds: [3, 'two'],
+        kit: { hearts: 4, bad: 'x' },
+        position: { world: 3 },
+        bogus: true,
+      }),
+    );
+    const s = loadSave(2)!;
+    expect(s.slot).toBe(2);
+    expect(s.character).toBe('luigi');
+    expect(s.lives).toBe(3);
+    expect(s.cleared).toEqual(['1-1']);
+    expect(s.worlds).toEqual([1, 3]);
+    expect(s.kit).toEqual({ hearts: 4 });
+    expect(s.position).toEqual({ world: 3, node: 'start' });
+    expect((s as unknown as { bogus?: boolean }).bogus).toBeUndefined();
+  });
+
+  it('runs migrations from older versions in order', () => {
+    // A hypothetical v1 → v2 step (v1 stored `hero`, v2 calls it `character`).
+    const migrations = [(old: Record<string, unknown>) => ({ ...old, v: 2, character: old.hero })];
+    const s = migrateSave({ v: 1, hero: 'simon', score: 50 }, 1, migrations);
+    expect(s?.character).toBe('simon');
+    expect(s?.score).toBe(50);
+    // Data already at the newest version is not migrated again; a missing step is unreadable.
+    expect(migrateSave({ v: 2, character: 'ryu' }, 1, migrations)?.character).toBe('ryu');
+    expect(migrateSave({ v: 1, hero: 'ryu' }, 1, [undefined as never, migrations[0]!])).toBeNull();
+  });
+
+  it('counts main levels cleared and the highest world', () => {
+    const s = newSave(1, 'mario');
+    s.cleared = ['1-1', '1-2', '1-2', '8-4', 'll-1-1', 'custom-x', '9-1'];
+    s.worlds = [1, 2, 5];
+    expect(clearedMainLevels(s)).toBe(3);
+    expect(highestWorld(s)).toBe(5);
+  });
+
+  it('never throws when storage is unavailable', () => {
+    (globalThis as { localStorage?: unknown }).localStorage = undefined;
+    expect(loadSave(1)).toBeNull();
+    expect(writeSave(newSave(1, 'mario'))).toBe(false);
+    expect(() => eraseSave(1)).not.toThrow();
+  });
+});
+
+describe('save file ↔ game state', () => {
+  it('round-trips heroes, lives, score, coins and power', () => {
+    const save = newSave(1, 'mario', 'link');
+    const state = stateFromSave(save, CHARACTERS);
+    expect(state.character).toBe(MARIO);
+    expect(state.character2).toBe(LINK);
+    expect(state.lives).toBe(5);
+    state.lives = 7;
+    state.score = 4200;
+    state.coins = 33;
+    state.powerState = 'fire';
+    state.hp2 = 2;
+    state.kit2 = { hearts: 4, bombs: 2 };
+    const out = saveFromState(save, state);
+    expect(save.lives).toBe(5); // the input is not changed
+    expect(out).toMatchObject({
+      character: 'mario',
+      character2: 'link',
+      lives: 7,
+      score: 4200,
+      coins: 33,
+      powerState: 'fire',
+      hp2: 2,
+      kit2: { hearts: 4, bombs: 2 },
+    });
+    const again = stateFromSave(out, CHARACTERS);
+    expect(again).toEqual({ ...state, world: 1, stage: 1 });
+    expect(again.kit2).not.toBe(state.kit2);
+  });
+
+  it('keeps the map progress when copying the run in', () => {
+    const save = newSave(2, 'luigi');
+    save.cleared = ['1-1'];
+    save.position = { world: 1, node: '1-1' };
+    const out = saveFromState(save, stateFromSave(save, CHARACTERS));
+    expect(out.cleared).toEqual(['1-1']);
+    expect(out.position).toEqual({ world: 1, node: '1-1' });
+    expect(out.slot).toBe(2);
+  });
+
+  it('a hp hero carries its hp; a power state that does not suit the hero is reset', () => {
+    const save = newSave(1, 'samus');
+    save.powerState = 'full';
+    save.hp = 42;
+    expect(stateFromSave(save, CHARACTERS).hp).toBe(42);
+    save.powerState = 'fire';
+    const s = stateFromSave(save, CHARACTERS);
+    expect(s.character).toBe(SAMUS);
+    expect(s.powerState).toBe('full');
+  });
+
+  it('an unknown hero id falls back to the first character, starting fresh', () => {
+    const save = newSave(1, 'wario', 'waluigi');
+    save.powerState = 'fire';
+    save.kit = { x: 1 };
+    const s = stateFromSave(save, CHARACTERS);
+    expect(s.character).toBe(CHARACTERS[0]);
+    expect(s.character2).toBe(CHARACTERS[0]);
+    expect(s.powerState).toBe('small');
+    expect(s.kit).toEqual({});
+    expect(stateFromSave(newSave(1, 'luigi'), CHARACTERS).character).toBe(LUIGI);
+  });
+});

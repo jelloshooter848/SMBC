@@ -20,6 +20,7 @@ import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
+import { loadSave, saveFromState, stateFromSave, writeSave, type SaveSlot } from '@engine/save/save-files';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -52,6 +53,8 @@ export class Game {
   quickRespawn = false;
   /** A level opened from a share link: not in any library, so kept here for respawn/continue. */
   private sharedLevel: LevelData | null = null;
+  /** The save file being played from the world map; null for every non-campaign start. */
+  campaign: { slot: SaveSlot } | null = null;
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -104,6 +107,7 @@ export class Game {
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;
+    this.campaign = null;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -133,6 +137,7 @@ export class Game {
     this.playtestDone = null;
     this.pendingLevel = null;
     this.quickRespawn = true;
+    this.campaign = null;
     this.goToLevel(levelId, { mode: 'stand' });
   }
 
@@ -164,6 +169,7 @@ export class Game {
     this.state.lives = 99;
     this.playtestDone = done;
     this.quickRespawn = true;
+    this.campaign = null;
     this.startLevel(level, { mode: 'stand' });
   }
 
@@ -173,6 +179,7 @@ export class Game {
     this.state = newGameState(this.deps.characters[0] as CharacterDef);
     this.playtestDone = null;
     this.quickRespawn = false;
+    this.campaign = null;
     this.startLevel(level, { mode: 'stand' });
   }
 
@@ -180,9 +187,37 @@ export class Game {
     this.state = newGameState(character, character2);
     this.playtestDone = null;
     this.quickRespawn = false;
+    this.campaign = null;
     const id = this.pendingLevel ?? levelId;
     this.pendingLevel = null;
     this.goToLevel(id, { mode: 'stand' });
+  }
+
+  /**
+   * Play save file `slot` (file select): load it into the game state, save it, show the map.
+   * `save` is passed when just created (so play goes on even if storage is unavailable).
+   */
+  openFile(slot: SaveSlot, save = loadSave(slot)): void {
+    if (!save) {
+      this.showTitle();
+      return;
+    }
+    this.state = stateFromSave(save, this.deps.characters);
+    this.playtestDone = null;
+    this.pendingLevel = null;
+    this.quickRespawn = false;
+    this.campaign = { slot };
+    writeSave(saveFromState(save, this.state));
+    this.showMap();
+  }
+
+  /** The current file's world map. */
+  showMap(): void {
+    // replaced by WorldMapScene (M2/M4): for now, straight into the file's next open level.
+    const save = this.campaign ? loadSave(this.campaign.slot) : null;
+    const world = save ? Math.max(...save.worlds) : 1;
+    const stage = [1, 2, 3, 4].find((n) => !save?.cleared.includes(`${world}-${n}`)) ?? 1;
+    this.goToLevel(`${world}-${stage}`, { mode: 'stand' });
   }
 
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */
