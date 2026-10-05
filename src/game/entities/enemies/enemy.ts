@@ -46,6 +46,8 @@ export abstract class Enemy extends Entity {
   protected dying = 0;
   /** Frames left frozen by a stun (boomerang); the world skips update() while > 0. */
   stunned = 0;
+  /** Draw the knocked-out corpse flipped vertically (things that hang upside down). */
+  protected corpseFlipY = false;
 
   constructor(x: number, y: number, wPx: number, hPx: number) {
     super(x, y, wPx, hPx);
@@ -125,6 +127,7 @@ export abstract class Enemy extends Entity {
         true,
         this.spriteOffsetX,
         this.spriteOffsetY,
+        this.corpseFlipY,
       ),
     );
     this.destroy();

@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseTextMap } from '@game/level/textmap';
 import { runSim } from '@game/sim/headless';
 import { MARIO } from '@game/characters/mario';
 import { Piranha } from '@game/entities/enemies/piranha';
-import { T } from '@game/level/tiles';
+import { Corpse } from '@game/entities/effects/effects';
+import { T, isSolid } from '@game/level/tiles';
 import { px, toPx } from '@engine/math/units';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import type { View } from '@game/entities/entity';
 import type { LevelData } from '@game/level/schema';
 import type { Action } from '@engine/input/actions';
 import type { World } from '@game/world/world';
@@ -36,6 +42,25 @@ const hangingPipe = (): LevelData => {
   );
 };
 const RIM_BOTTOM = 11 * 16; // px: the pipe's mouth faces down here
+
+/** Where render() puts a sprite (world px), via a renderer that records its calls. */
+function drawn(e: Piranha | Corpse, w: World): { x: number; y: number; flipY: boolean } {
+  const calls: { x: number; y: number; flipY: boolean }[] = [];
+  const r: Renderer = Object.assign(new NullRenderer(), {
+    sprite(_s: SpriteSheet, _f: string, x: number, y: number, _fx = false, flipY = false): void {
+      calls.push({ x, y, flipY });
+    },
+  });
+  const view = {
+    camX: 0,
+    frame: w.frame,
+    assets: { sheet: () => ({}) },
+    theme: 'overworld',
+  } as unknown as View;
+  e.render(r, view);
+  expect(calls).toHaveLength(1);
+  return calls[0] as { x: number; y: number; flipY: boolean };
+}
 
 const plant = (w: World): Piranha | undefined => w.entities.find((e): e is Piranha => e instanceof Piranha);
 
@@ -144,5 +169,73 @@ describe('upside-down piranha plant (The Lost Levels)', () => {
       },
     });
     expect(p?.alive).toBe(false);
+  });
+
+  it('is knocked out head-down, as it hung', () => {
+    let corpse: Corpse | undefined;
+    runSim({
+      level: hangingPipe(),
+      character: MARIO,
+      script: none,
+      maxFrames: 200,
+      controller: (w) => {
+        const p = plant(w);
+        if (p && toPx(p.body.h) >= 24) {
+          expect(drawn(p, w)).toEqual({ x: 12 * 16 + 8, y: RIM_BOTTOM, flipY: true });
+          p.hit({ kind: 'fireball', amount: 1, owner: null, dirX: 1 }, w);
+        }
+        corpse ??= w.entities.find((e): e is Corpse => e instanceof Corpse);
+        return [];
+      },
+    });
+    expect(corpse?.mirrorY).toBe(true);
+  });
+});
+
+describe('upright piranha plants sit centred on their pipes (SMB1)', () => {
+  const level = (world: number, id: string): LevelData =>
+    parseTextMap(
+      readFileSync(join(import.meta.dirname, `../../src/content/levels/world${world}`, `${id}.map`), 'utf8'),
+      id,
+    );
+
+  it.each([
+    ['1-2', 103],
+    ['1-2', 109],
+    ['4-1', 21],
+    ['4-1', 116],
+  ])('%s: the plant in the pipe at column %i', (id, tx) => {
+    const l = level(Number(id[0]), id);
+    const spawn = l.entities.find((e) => e.type === 'piranha' && e.x === tx);
+    expect(spawn).toBeDefined();
+    const ty = (spawn as { y: number }).y;
+    expect(l.tiles[ty * l.width + tx]).toBe(T.PIPE_TL);
+    // Start on the ground six columns left of the pipe (far enough that the plant comes out).
+    const sx = tx - 6;
+    let sy = 1;
+    while (sy < 14 && !isSolid(l.tiles[(sy + 1) * l.width + sx] as number)) sy++;
+    let seen: { x: number; y: number; flipY: boolean } | undefined;
+    let hitbox = -1;
+    runSim({
+      level: l,
+      character: MARIO,
+      script: none,
+      start: { x: sx, y: sy, mode: 'stand' },
+      maxFrames: 300,
+      until: () => seen !== undefined,
+      controller: (w) => {
+        const p = w.entities.find(
+          (e): e is Piranha =>
+            e instanceof Piranha && toPx(e.body.x) < tx * 16 + 32 && toPx(e.body.x) >= tx * 16,
+        );
+        if (p && toPx(p.body.h) >= 24) {
+          seen = drawn(p, w);
+          hitbox = toPx(p.body.x) + toPx(p.body.w) / 2;
+        }
+        return [];
+      },
+    });
+    expect(seen).toEqual({ x: tx * 16 + 8, y: ty * 16 - 24, flipY: false });
+    expect(hitbox).toBe(tx * 16 + 16);
   });
 });

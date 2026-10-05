@@ -28,8 +28,8 @@ export class Piranha extends Enemy {
     ty: number,
     readonly hanging = false,
   ) {
-    // The upright plant keeps its long-standing placement; the hanging one is centred on the pipe.
-    super(px(tx * 16 + (hanging ? 8 : 0) + 2), px(ty * 16), 12, 0);
+    // Centred on the 32px pipe (the original's shiftRight): sprite at +8, 12px hitbox at +10.
+    super(px(tx * 16 + 10), px(ty * 16), 12, 0);
     this.mouthY = px((hanging ? ty + 1 : ty) * 16);
     this.centerX = px(tx * 16 + 16);
     this.layer = 'back';
@@ -46,7 +46,10 @@ export class Piranha extends Enemy {
       ice: 'immune',
       stomp: 'hurtAttacker',
     };
-    if (hanging) this.stompable = false;
+    if (hanging) {
+      this.stompable = false;
+      this.corpseFlipY = true; // knocked out head-down, as it hung
+    }
     this.scoreValue = 200;
     this.body.vx = 0;
     this.body.y = this.mouthY;
