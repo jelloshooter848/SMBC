@@ -6,6 +6,7 @@ import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
 import { LevelScene, type LevelStart } from './level';
+import { startTime } from '../world/world';
 import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
@@ -204,7 +205,8 @@ export class Game {
     this.deps.ctx.audio.setTempoScale(1);
     this.scenes.clear();
     this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
-    this.scenes.push(new IntroScene(this, () => this.startLevel(level, start)));
+    const time = startTime(level, this.state, start);
+    this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
   }
 
   /** Straight into a level (pipes, bonus rooms). */

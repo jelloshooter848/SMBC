@@ -30,3 +30,5 @@ every time
 Ours: the `coins10` case in `src/game/world/world.ts` (`{ left: 10, until: this.frame + 300 }`).
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: fixed — the coins10 brick now gives up to 15 coins with a 360-frame (6000 ms) timer from the first hit, then one last coin, per ground/Brick.as COIN_BRICK_MAX_COINS and coinBrickTmrDur.

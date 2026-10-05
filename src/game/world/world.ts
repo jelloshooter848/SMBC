@@ -64,6 +64,11 @@ export interface WorldStart {
   time?: number;
 }
 
+/** The clock a level starts with: a carried timer, else the level's, else the stage's (or 400). */
+export function startTime(level: LevelData, state: GameState, start: WorldStart = {}): number {
+  return start.time ?? (level.time === null ? (state.time ?? 400) : level.time);
+}
+
 type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done';
 type PipeAnim = {
   player: Player;
@@ -146,7 +151,7 @@ export class World {
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
     this.rng = new Rng(level.id.length * 7919 + 1);
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
-    this.time = start.time ?? (level.time === null ? (state.time ?? 400) : level.time);
+    this.time = startTime(level, state, start);
     this.spawns = [...level.entities].sort((a, b) => a.x - b.x);
     this.bowserFire = BowserFire.forLevel(level);
 
@@ -794,7 +799,10 @@ export class World {
         const key = `${tx},${ty}`;
         let c = this.coinBlocks.get(key);
         if (!c) {
-          c = { left: 10, until: this.frame + 300 };
+          // The original's ground/Brick.as: COIN_BRICK_MAX_COINS = 15 and a coinBrickTmrDur =
+          // 6000 ms timer started on the first hit (360 frames); after it runs out, the next hit
+          // gives one last coin and the brick is used.
+          c = { left: 15, until: this.frame + 360 };
           this.coinBlocks.set(key, c);
         }
         c.left--;
@@ -1267,11 +1275,16 @@ export class World {
         break;
       }
       case 'countdown':
+        // The original's StatManager.convertTimeToScore: a 10 ms timer takes one TIME unit per
+        // tick for TIME_PT_VAL (ScoreValue.TIME_REMAINING = 50) points. The timer is held back by
+        // the locked 30 fps (GameSettings.FRAME_RATE_LOCKED); 3.1.21 measures about 30 units a
+        // second, so one unit every two of our frames.
         if (this.time && this.time > 0) {
-          const step = Math.min(this.time, 2);
-          this.time -= step;
-          this.state.score += step * 50;
-          if (c.t % 4 === 0) this.audio.sfx('timer-tick');
+          if (c.t % 2 === 1) {
+            this.time--;
+            this.state.score += 50;
+          }
+          if (c.t % 4 === 1) this.audio.sfx('timer-tick');
         } else {
           c.phase = 'flag';
           c.t = 0;

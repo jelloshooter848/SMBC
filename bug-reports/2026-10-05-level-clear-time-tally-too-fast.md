@@ -29,3 +29,5 @@ every time
 Ours: the `countdown` phase in `src/game/world/world.ts` (`Math.min(this.time, 2)` per frame). The original's rate was measured by wall clock. Confirm the exact rate in the original's source before changing ours, starting with `managers/StatManager.as` and the level-clear code.
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: fixed — the tally now takes one TIME unit every two frames (~30/s) for 50 points each, per StatManager.convertTimeToScore (TIME_PT_VAL = ScoreValue.TIME_REMAINING); castle clears do not tally in the original (EventManager.enterLevelExit only converts on flagpole levels), as ours already did.
