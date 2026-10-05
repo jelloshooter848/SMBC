@@ -318,7 +318,7 @@ describe('D-4 (ll-13-4 ... ll-13-4-end): the last castle', () => {
     expect(l.start).toEqual({ x: 3, y: 10 });
     expect(tile(l, 3, 11)).toBe(T.PIPE_TL);
     expect(at(l, 'hammer-bro-chase')).toEqual([[16, 10]]);
-    expect(l.entities).toContainEqual({ type: 'piranha', x: 16, y: 11 });
+    expect(l.entities).toContainEqual({ type: 'piranha', x: 16, y: 11, props: { red: 1 } });
     expect(at(l, 'blooper')).toEqual([
       [44, 11],
       [51, 5],

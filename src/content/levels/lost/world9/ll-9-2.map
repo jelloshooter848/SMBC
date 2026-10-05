@@ -28,19 +28,19 @@ camera: scroll
 ################ ................ ................ ................ ................ ................ ...........iii.. ..iiii..iii..iii ################ ################ ########
 
 [entities]
-piranha 13 9
+piranha 13 9 red=1
 lakitu 16 0 end=78 mid=1
-piranha-down 22 5
-piranha-down 33 8
-piranha-down 43 6
-piranha-down 61 4
-piranha 65 7
-piranha-down 71 5
-piranha 74 10
-piranha 86 11
-piranha 92 7
-piranha-down 101 7
-piranha 109 3
+piranha-down 22 5 red=1
+piranha-down 33 8 red=1
+piranha-down 43 6 red=1
+piranha-down 61 4 red=1
+piranha 65 7 red=1
+piranha-down 71 5 red=1
+piranha 74 10 red=1
+piranha 86 11 red=1
+piranha 92 7 red=1
+piranha-down 101 7 red=1
+piranha 109 3 red=1
 decor-castle 156 12
 
 [zones]

@@ -29,9 +29,9 @@ parent: ll-7-1
 ################ ################ ################ ################ ################ ################ #....###########
 
 [entities]
-piranha 3 11
+piranha 3 11 red=1
 koopa-para-green 32 12
-piranha 109 9
+piranha 109 9 red=1
 
 [zones]
 pipe 109 9 down -> ll-7-1-bonus2 1 0 exit=none

@@ -30,17 +30,17 @@ camera: scroll
 [entities]
 decor-castle-big -2 12
 koopa-para-green 22 12
-piranha 45 13
-piranha-down 48 7
-piranha 110 10
-piranha 130 3
-piranha 132 13
+piranha 45 13 red=1
+piranha-down 48 7 red=1
+piranha 110 10 red=1
+piranha 130 3 red=1
+piranha 132 13 red=1
 koopa-para-green 147 7
-piranha 147 11
+piranha 147 11 red=1
 koopa-para-green 151 7
 koopa-para-green 155 7
-piranha-down 163 10
-piranha 163 13
+piranha-down 163 10 red=1
+piranha 163 13 red=1
 lift-fall 203 5 len=4
 decor-castle 213 12
 

@@ -38,8 +38,8 @@ lift-fall 52 5 len=4
 lift-v 56 8 len=4 range=6
 koopa-para-red 75 9
 koopa-para-green-h 80 10
-piranha 92 9
-piranha 97 5
+piranha 92 9 red=1
+piranha 97 5 red=1
 lift-h 107 5 len=4 range=3
 lift-h 124 13 len=4 range=3
 balance 140 5 x2=145 y2=9 len=4 top=2

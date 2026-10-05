@@ -58,6 +58,11 @@ export abstract class Enemy extends Entity {
     return enemyPalette(view.theme);
   }
 
+  /** Palette the knocked-out corpse is drawn with. */
+  protected corpsePalette(theme: Theme): string {
+    return enemyPalette(theme);
+  }
+
   /** Apply a damage source. Returns the reaction so the world can score it / hurt the attacker. */
   hit(src: DamageSource, world: World): Reaction {
     const reaction = this.vulnerability[src.kind] ?? 'immune';
@@ -121,7 +126,7 @@ export abstract class Enemy extends Entity {
         toPx(this.body.w),
         toPx(this.body.h),
         this.sheet,
-        enemyPalette(world.level.theme),
+        this.corpsePalette(world.level.theme),
         this.currentFrame,
         dir,
         true,

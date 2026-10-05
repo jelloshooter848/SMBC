@@ -28,15 +28,15 @@ wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwww######## ########wwwwwwww wwwwwwwwwwww
 ################ ################ ......########## ######....###### ##########...... ################ ################ ################ ################ ################ ################ ########
 
 [entities]
-piranha 3 11
+piranha 3 11 red=1
 koopa-para-red 18 7
 lift-down 33 5 len=3
 lift-down 33 13 len=3
 koopa-para-red 36 7
-piranha-down 40 8
-piranha 45 8
-piranha-down 54 9
-piranha 68 9
+piranha-down 40 8 red=1
+piranha 45 8 red=1
+piranha-down 54 9 red=1
+piranha 68 9 red=1
 koopa-para-green-h 78 9
 koopa-para-green-h 83 9
 lakitu 86 0 end=150 mid=1

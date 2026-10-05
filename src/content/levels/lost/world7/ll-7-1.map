@@ -29,18 +29,18 @@ camera: scroll
 
 [entities]
 decor-castle-big -2 12
-piranha-down 16 7
-piranha 16 11
-piranha 48 10
-piranha-down 51 8
-piranha 55 9
-piranha-down 59 9
-piranha 89 8
+piranha-down 16 7 red=1
+piranha 16 11 red=1
+piranha 48 10 red=1
+piranha-down 51 8 red=1
+piranha 55 9 red=1
+piranha-down 59 9 red=1
+piranha 89 8 red=1
 koopa-para-red 110 7
 koopa-para-red 113 8
-piranha 117 3
-piranha 140 13
-piranha 163 11
+piranha 117 3 red=1
+piranha 140 13 red=1
+piranha 163 11 red=1
 koopa-para-green 177 4
 decor-castle 206 12
 

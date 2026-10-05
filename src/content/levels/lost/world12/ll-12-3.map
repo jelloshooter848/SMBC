@@ -30,12 +30,12 @@ camera: scroll
 [entities]
 decor-castle 0 12
 koopa-para-green-h 74 4
-piranha 117 9
-piranha 122 13
-piranha 127 9
+piranha 117 9 red=1
+piranha 122 13 red=1
+piranha 127 9 red=1
 lakitu 138 7 end=175 mid=1
 lift-fall 158 3 len=4
-piranha 188 9
+piranha 188 9 red=1
 balance 214 5 x2=219 y2=9 len=4 top=2
 firebar 277 9
 firebar-ccw 282 9

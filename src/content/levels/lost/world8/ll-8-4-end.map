@@ -29,8 +29,8 @@ parent: ll-8-4
 %%%{}...%%{}....
 
 [entities]
-piranha 3 11
-piranha 10 11
+piranha 3 11 red=1
+piranha 10 11 red=1
 
 [zones]
 pipe 10 11 down -> ll-8-4-end2 3 10 exit=up

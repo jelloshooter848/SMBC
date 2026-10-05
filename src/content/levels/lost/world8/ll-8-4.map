@@ -33,10 +33,10 @@ firebar-ccw 25 9
 podoboo 34 12
 firebar-ccw 37 9
 koopa-para-red 44 8
-piranha 47 11
-piranha 51 11
-piranha 59 7
-piranha 67 11
+piranha 47 11 red=1
+piranha 51 11 red=1
+piranha 59 7 red=1
+piranha 67 11 red=1
 firebar-ccw 81 9
 firebar-ccw 89 9
 

@@ -30,17 +30,17 @@ camera: scroll
 [entities]
 decor-castle-big -2 12
 lakitu 19 0 end=50
-piranha 26 11
-piranha 31 13
-piranha 53 9
+piranha 26 11 red=1
+piranha 31 13 red=1
+piranha 53 9 red=1
 lakitu 92 0 end=180
-piranha 126 8
-piranha 152 6
-piranha 154 6
-piranha 156 6
-piranha 163 11
-piranha 171 10
-piranha 176 9
+piranha 126 8 red=1
+piranha 152 6 red=1
+piranha 154 6 red=1
+piranha 156 6 red=1
+piranha 163 11 red=1
+piranha 171 10 red=1
+piranha 176 9 red=1
 decor-castle 204 12
 
 [zones]

@@ -33,18 +33,18 @@ koopa-para-green 49 11
 koopa-para-green 52 12
 koopa-para-green 55 11
 koopa-para-green 58 12
-piranha-down 59 10
-piranha-down 73 10
-piranha-down 78 8
-piranha-down 82 8
-piranha-down 86 8
+piranha-down 59 10 red=1
+piranha-down 73 10 red=1
+piranha-down 78 8 red=1
+piranha-down 82 8 red=1
+piranha-down 86 8 red=1
 koopa-para-green 95 10
-piranha 118 3
-piranha-down 118 10
-piranha 131 11
+piranha 118 3 red=1
+piranha-down 118 10 red=1
+piranha 131 11 red=1
 koopa-para-red 141 8
-piranha 141 13
-piranha 149 13
+piranha 141 13 red=1
+piranha 149 13 red=1
 koopa-para-red 150 8
 decor-castle 181 12
 
