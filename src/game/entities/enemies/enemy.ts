@@ -6,10 +6,12 @@ import type { World } from '../../world/world';
 import {
   BASIC_VULNERABILITY,
   STUN_FRAMES,
+  type DamageKind,
   type DamageSource,
   type Reaction,
   type Vulnerability,
 } from '../../rules/damage';
+import { ENEMY_SCORES, killScore, type KillScores } from '../../rules/score';
 import { Corpse } from '../effects/effects';
 import type { Theme } from '../../level/schema';
 
@@ -34,8 +36,8 @@ export abstract class Enemy extends Entity {
   contactHurts = true;
   /** Can the player stomp this (false for things that are "not standing on anything" like fire bars). */
   stompable = true;
-  /** Score for a non-combo kill (fireball, sword, buster). */
-  scoreValue = 100;
+  /** Points by how it dies (the original's ScoreValue.as `<NAME>_STOMP/_ATTACK/_STAR/_BELOW`). */
+  scores: KillScores = ENEMY_SCORES.DEFAULT;
   walkSpeed = 0x00800; // 0.5 px/f
   fallsOffLedges = true;
   /** Sprite frame drawn this frame (also used for the corpse). */
@@ -101,6 +103,11 @@ export abstract class Enemy extends Entity {
         break;
     }
     return reaction;
+  }
+
+  /** Points for a kill by `kind` (a stomp's value is the floor under the stomp sequence). */
+  scoreFor(kind: DamageKind): number {
+    return killScore(this.scores, kind);
   }
 
   /** Called once when a hit kills this enemy (drops, character hooks). */

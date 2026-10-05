@@ -4,10 +4,15 @@ import type { View } from '../entity';
 import type { World } from '../../world/world';
 import type { DamageSource, Reaction } from '../../rules/damage';
 import { moveX } from '../body';
+import { ENEMY_SCORES, KICK_SHELL } from '../../rules/score';
 
 export const SHELL_SPEED = 0x03000; // 3 px/f
-const SHELL_IDLE_FRAMES = 300;
-const SHELL_WIGGLE_FRAMES = 90;
+// Shell timers from the original's KoopaGreen.as, at 60 frames a second: SHELL_TMR_1 (3800 ms)
+// until the legs start to show, SHELL_TMR_2 (900 ms) with the legs out, then SHELL_TMR_3 (250 ms)
+// right before it walks again.
+const SHELL_IDLE_FRAMES = 228;
+const SHELL_LAST_FRAMES = 15;
+const SHELL_WIGGLE_FRAMES = 54 + SHELL_LAST_FRAMES;
 /** Red paratroopas bob this far above and below their spawn height, once per period. */
 const PARA_AMPLITUDE = 48; // px
 const PARA_PERIOD = 192; // frames
@@ -62,6 +67,10 @@ export class Koopa extends Enemy {
     this.vulnerability = { ...this.vulnerability, stomp: 'shell' };
     // Buzzy Beetles shrug off fireballs.
     if (color === 'buzzy') this.vulnerability.fireball = 'immune';
+    // KoopaGreen/Beetle.overwriteInitialStats run once at spawn, so a paratroopa keeps the flying
+    // values after losing its wings.
+    this.scores =
+      color === 'buzzy' ? ENEMY_SCORES.BEETLE : wings ? ENEMY_SCORES.KOOPA_FLYING : ENEMY_SCORES.KOOPA;
   }
 
   /** Frame name prefix for walking frames. */
@@ -80,6 +89,22 @@ export class Koopa extends Enemy {
 
   get isMovingShell(): boolean {
     return this.state === 'shell-moving';
+  }
+
+  /** A shell lying still (legs out or not): touching or landing on it kicks it. */
+  get isStillShell(): boolean {
+    return this.state === 'shell' || this.state === 'wiggle';
+  }
+
+  /**
+   * Points for kicking this still shell, as KoopaGreen.kickShell picks them: 1000 in the last
+   * moments before it walks (SHELL_TMR_3), 500 while the legs are out (SHELL_TMR_2), 500 when the
+   * kicker hasn't landed since a stomp (numContStomps > 0), otherwise 400.
+   */
+  kickScore(afterStomp: boolean): number {
+    if (this.state === 'wiggle' && this.shellTimer <= SHELL_LAST_FRAMES) return KICK_SHELL.RIGHT_BEFORE_WALK;
+    if (this.state === 'wiggle') return KICK_SHELL.WHILE_LEGS_ARE_OUT;
+    return afterStomp ? KICK_SHELL.AFTER_STOMP : KICK_SHELL.NORMAL;
   }
 
   /** A boomerang only stuns a walking koopa; shells just deflect it. */
@@ -140,14 +165,14 @@ export class Koopa extends Enemy {
       world.audio.sfx('stomp');
       return;
     }
-    if (this.state === 'walk' || this.state === 'wiggle') {
+    if (this.state === 'walk') {
       this.becomeShell();
       world.audio.sfx('stomp');
     } else if (this.state === 'shell-moving') {
       this.stopShell();
       world.audio.sfx('stomp');
     } else {
-      // Stomping a resting shell kicks it in the direction the player faces away from.
+      // A still shell is kicked, not stomped (the world does that before stomping); kept for safety.
       const pl = world.nearestPlayer(this.body.x).body;
       const dir: -1 | 1 = pl.x + pl.w / 2 < this.body.x + this.body.w / 2 ? 1 : -1;
       this.kick(dir, world);

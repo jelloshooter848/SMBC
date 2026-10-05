@@ -29,3 +29,5 @@ every time
 Our `ScorePopup` in `src/game/entities/effects/effects.ts` rises and expires after 40 frames, so its update probably does not run during the level-clear sequence. Not confirmed in code.
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: fixed — the grab score is drawn by a FlagScore that mirrors the flag (FlagPole.updateStats), rising from the flag's stop to the top of the pole and staying there; other score popups keep updating during the clear sequences.

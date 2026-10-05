@@ -30,3 +30,5 @@ every time
 Ours: the stomp branch and the shell-kick branch next to each other in `src/game/world/world.ts`. Check the original's kick code for when each value applies.
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: fixed — still shells (resting or legs out) are kicked, never stomped, and score as KoopaGreen.kickShell does: 1000 in the last 250 ms, 500 with legs out, 500 before landing after a stomp, else 400; shell timers now 3800/900/250 ms.

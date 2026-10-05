@@ -1,5 +1,6 @@
 import { px, toPx, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 import type { DamageSource } from '../../rules/damage';
 import { Projectile, BOWSER_FLAME, HAMMER } from '../projectiles/projectile';
@@ -35,7 +36,7 @@ export class Bowser extends Enemy {
     super(px(tx * 16 + 2), px((ty + 1) * 16 - 30), 28, 30);
     this.homeX = this.body.x;
     this.hp = 5;
-    this.scoreValue = 5000;
+    this.scores = ENEMY_SCORES.BOWSER;
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.walkSpeed = 0x00800;

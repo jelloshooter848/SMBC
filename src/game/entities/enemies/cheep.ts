@@ -1,6 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { px, toPx, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import type { View } from '../entity';
 import type { World } from '../../world/world';
 
@@ -30,7 +31,7 @@ export class Cheep extends Enemy {
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.currentFrame = 'cheep-0';
-    this.scoreValue = 200;
+    this.scores = ENEMY_SCORES.CHEEP;
     this.despawnMargin = flying ? null : 64;
     if (flying) {
       this.activated = true;

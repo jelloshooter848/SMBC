@@ -1,5 +1,6 @@
 import { px, toPx, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 import { moveX } from '../body';
 import { Projectile, HAMMER } from '../projectiles/projectile';
@@ -39,7 +40,7 @@ export class HammerBro extends Enemy {
     this.homeX = x;
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
-    this.scoreValue = 1000;
+    this.scores = ENEMY_SCORES.HAMMER_BRO;
     this.fallsOffLedges = false;
     this.currentFrame = 'hammer-bro-1';
     this.body.vx = 0;
