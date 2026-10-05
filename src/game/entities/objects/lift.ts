@@ -5,7 +5,7 @@ import type { Body } from '../body';
 import type { World } from '../../world/world';
 import { SCREEN_H } from '@engine/viewport';
 
-export type LiftKind = 'lift-h' | 'lift-v' | 'lift-fall' | 'lift-up' | 'lift-down';
+export type LiftKind = 'lift-h' | 'lift-v' | 'lift-fall' | 'lift-up' | 'lift-down' | 'lift-balance';
 
 /** Moving platforms. The surface is one-way: you land on it from above and it carries you. */
 export class Lift extends Entity {
@@ -19,6 +19,8 @@ export class Lift extends Entity {
   private dx = 0;
   private dy = 0;
   readonly len: number;
+  /** Set by carry() while a player stands on it this frame (balance lifts read it). */
+  ridden = false;
 
   constructor(kind: LiftKind, tx: number, ty: number, props: Record<string, string | number | boolean>) {
     const len = Number(props.len ?? 3);
@@ -33,10 +35,26 @@ export class Lift extends Entity {
     this.t = Number(props.phase ?? 0);
   }
 
+  /** Move the platform by a controller (balance lifts); the rider follows through dx/dy. */
+  shift(dySub: number): void {
+    this.body.y += dySub;
+    this.dy += dySub;
+  }
+
+  /** Let go: fall off the screen like a step-fall platform. */
+  drop(): void {
+    this.falling = true;
+  }
+
+  get isFalling(): boolean {
+    return this.falling;
+  }
+
   update(): void {
     const b = this.body;
     const prevX = b.x;
     const prevY = b.y;
+    this.ridden = false;
     this.t++;
     switch (this.kind) {
       case 'lift-h': {
@@ -65,6 +83,7 @@ export class Lift extends Entity {
         if (b.y > px(SCREEN_H)) b.y = px(-8);
         break;
       case 'lift-fall':
+      case 'lift-balance':
         if (this.falling) {
           b.vy += 0x00200;
           if (b.vy > 0x04000) b.vy = 0x04000;
@@ -96,6 +115,7 @@ export class Lift extends Entity {
       rider.onGround = true;
       rider.x += this.dx;
       rider.y += this.dy;
+      this.ridden = true;
       if (this.kind === 'lift-fall') this.falling = true;
     }
   }

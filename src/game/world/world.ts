@@ -20,6 +20,8 @@ import { Piranha } from '../entities/enemies/piranha';
 import { Cheep } from '../entities/enemies/cheep';
 import { Blooper } from '../entities/enemies/blooper';
 import { Podoboo } from '../entities/enemies/podoboo';
+import { HammerBro } from '../entities/enemies/hammer-bro';
+import { BalanceLift } from '../entities/objects/balance-lift';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
 import { PowerUp } from '../entities/objects/powerup';
@@ -267,6 +269,10 @@ export class World {
         return new Blooper(x + px(2), y + px(2));
       case 'podoboo':
         return new Podoboo(s.x, s.y, s.x * 31 + s.y * 7);
+      case 'hammer-bro':
+        return new HammerBro(x + px(2), y - px(6));
+      case 'balance':
+        return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'spring':
         return new Spring(s.x, s.y);
       case 'vine':
@@ -402,10 +408,10 @@ export class World {
     this.spawn(new ScorePopup(x, y, '1UP'));
   }
 
-  private comboHit(combo: number, x: number, y: number): void {
+  private comboHit(combo: number, x: number, y: number, minScore = 0): void {
     const s = comboScore(combo);
     if (s === '1up') this.addLife(x, y);
-    else this.addScore(s, x, y);
+    else this.addScore(Math.max(s, minScore), x, y);
   }
 
   /* ---------- Update ---------- */
@@ -815,7 +821,8 @@ export class World {
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
         if (r === 'hurtAttacker') return this.hurtPlayer(p);
         if (r !== 'immune') {
-          this.comboHit(p.combo++, e.body.x, e.body.y - px(8));
+          // A stomp scores the combo table, but never less than the enemy is worth (Hammer Bro: 1000).
+          this.comboHit(p.combo++, e.body.x, e.body.y - px(8), e.scoreValue);
           p.stompBounce();
         }
         return;
