@@ -23,6 +23,7 @@ import { Podoboo } from '../entities/enemies/podoboo';
 import { HammerBro } from '../entities/enemies/hammer-bro';
 import { LakituZone } from '../entities/enemies/lakitu';
 import { Spiny } from '../entities/enemies/spiny';
+import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bullet-bill';
 import { BalanceLift } from '../entities/objects/balance-lift';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
@@ -102,6 +103,7 @@ export class World {
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
   private leaving = false;
   private cheepTimer = 0;
+  private bulletTimer = 60;
   /** Castle maze: lead player's centre x last frame (px) and the loop checkpoints passed. */
   private loopPrevX: number | null = null;
   private readonly loopChecks = new Set<number>();
@@ -203,6 +205,9 @@ export class World {
           break;
         }
       }
+      for (let ty = 0; ty < level.height; ty++) {
+        if (this.map.get(tx, ty) === T.BLASTER_TOP) this.entities.push(new BulletLauncher(tx, ty));
+      }
     }
     for (const d of level.decor) this.entities.push(new Decoration(d.kind, d.x, d.y));
   }
@@ -282,6 +287,8 @@ export class World {
         return new Koopa(x + px(2), y + px(2), 'buzzy');
       case 'spiny':
         return new Spiny(x + px(2), y + px(2), false);
+      case 'bullet-bill':
+        return new BulletBill(x + px(1), y + px(2), -1);
       case 'lakitu':
         return new LakituZone(s.x, s.y, Number(s.props?.end ?? this.level.width));
       case 'balance':
@@ -302,6 +309,7 @@ export class World {
       case 'lift-fall':
       case 'lift-up':
       case 'lift-down':
+      case 'lift-right':
         return new Lift(s.type, s.x, s.y, s.props ?? {});
       case 'decor-castle':
         return new Decoration('castle-small', s.x, s.y);
@@ -501,6 +509,7 @@ export class World {
     this.checkZones();
     this.checkLoops();
     this.flyingCheeps();
+    this.flyingBullets();
 
     const lead = this.rightmost();
     if (lead) this.camera.follow(lead.body.x);
@@ -635,6 +644,27 @@ export class World {
     c.body.vx = ((x < lead.body.x ? 1 : -1) * (0x00400 + this.rng.int(0x00800))) | 0;
     c.body.vy = -(0x04800 + this.rng.int(0x01000));
     this.spawn(c);
+  }
+
+  /** 5-3 style: Bullet Bills fly in from the screen edges while the lead is in a `bullets` zone. */
+  private flyingBullets(): void {
+    const lead = this.rightmost();
+    if (!lead || this.leaving) return;
+    const inZone = this.level.zones.some(
+      (z) => z.kind === 'bullets' && lead.body.x >= tileToSub(z.x) && lead.body.x < tileToSub(z.x + z.w),
+    );
+    if (!inZone) return;
+    if (--this.bulletTimer > 0) return;
+    this.bulletTimer = 90 + this.rng.int(90);
+    let flying = 0;
+    for (const e of this.entities) if (e instanceof BulletBill && e.alive) flying++;
+    if (flying >= 2) return;
+    const fromLeft = this.rng.int(4) === 0;
+    const y = px((3 + this.rng.int(9)) * 16 + 2);
+    const x = fromLeft ? this.camera.x - px(14) : this.camera.right;
+    const bill = new BulletBill(x, y, fromLeft ? 1 : -1);
+    bill.body.vx = (fromLeft ? 1 : -1) * BULLET_SPEED;
+    this.spawn(bill);
   }
 
   private rightmost(): Player | null {

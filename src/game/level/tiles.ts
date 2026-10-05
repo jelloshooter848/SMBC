@@ -68,6 +68,9 @@ export const T = {
   CASTLE_BRICK: def('castle-brick', 'solid'),
   WATER: def('water', 'none'),
   CLOUD_BLOCK: def('cloud-block', 'solid'),
+  /** Bullet Bill blaster: the barrel (fires; the world builds a launcher on each) and its stand. */
+  BLASTER_TOP: def('blaster-top', 'solid'),
+  BLASTER_BASE: def('blaster-base', 'solid'),
   /** Invisible solid placeholder while a block-bump effect animates the real tile. */
   BUMPING: def('bumping', 'solid'),
 } as const;
@@ -116,6 +119,8 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   ':': T.CHAIN,
   '%': T.CASTLE_BRICK,
   w: T.WATER,
+  '^': T.BLASTER_TOP,
+  '|': T.BLASTER_BASE,
   // entity markers
   g: '@goomba',
   k: '@koopa-green',

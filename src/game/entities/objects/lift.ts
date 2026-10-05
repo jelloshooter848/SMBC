@@ -5,7 +5,8 @@ import type { Body } from '../body';
 import type { World } from '../../world/world';
 import { SCREEN_H } from '@engine/viewport';
 
-export type LiftKind = 'lift-h' | 'lift-v' | 'lift-fall' | 'lift-up' | 'lift-down' | 'lift-balance';
+export type LiftKind =
+  'lift-h' | 'lift-v' | 'lift-fall' | 'lift-up' | 'lift-down' | 'lift-balance' | 'lift-right';
 
 /** Moving platforms. The surface is one-way: you land on it from above and it carries you. */
 export class Lift extends Entity {
@@ -21,6 +22,8 @@ export class Lift extends Entity {
   readonly len: number;
   /** Set by carry() while a player stands on it this frame (balance lifts read it). */
   ridden = false;
+  /** A `lift-right` cloud has been stepped on and is drifting. */
+  moving = false;
 
   constructor(kind: LiftKind, tx: number, ty: number, props: Record<string, string | number | boolean>) {
     const len = Number(props.len ?? 3);
@@ -82,6 +85,10 @@ export class Lift extends Entity {
         b.y += velToSub(this.speed);
         if (b.y > px(SCREEN_H)) b.y = px(-8);
         break;
+      case 'lift-right':
+        // Waits for a rider, then drifts right for good (the coin-heaven cloud).
+        if (this.moving) b.x += velToSub(this.speed);
+        break;
       case 'lift-fall':
       case 'lift-balance':
         if (this.falling) {
@@ -117,6 +124,7 @@ export class Lift extends Entity {
       rider.y += this.dy;
       this.ridden = true;
       if (this.kind === 'lift-fall') this.falling = true;
+      if (this.kind === 'lift-right') this.moving = true;
     }
   }
 

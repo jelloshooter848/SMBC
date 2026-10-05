@@ -28,6 +28,8 @@ export type Zone =
   | { kind: 'pit'; x: number; target: { level: string; x: number; y: number } }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
   | { kind: 'cheeps'; x: number; w: number }
+  /** Bullet Bills fly in from the screen edges while the player is within [x, x + w). */
+  | { kind: 'bullets'; x: number; w: number }
   /**
    * Castle maze: walking right past column x with the body inside rows y0..y1 moves the player
    * to column `to` (same height). With `check`, only after passing that column inside its rows

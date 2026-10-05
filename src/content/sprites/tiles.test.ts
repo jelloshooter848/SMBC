@@ -43,6 +43,8 @@ const tileFrames = [
   'water-0',
   'water-1',
   'cloud-block',
+  'blaster-top',
+  'blaster-base',
   'ground@underground',
   'ground@castle',
   'brick@underground',
