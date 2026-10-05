@@ -8,10 +8,11 @@ import {
   listSaves,
   newSave,
   SAVE_SLOTS,
+  UNREADABLE,
   writeSave,
-  type SaveFile,
   type SaveSlot,
-} from '@engine/save/save-files';
+  type SlotContents,
+} from '@game/save/save-files';
 import type { CharacterDef } from '../characters/character';
 import { pad, SCORE_MAX } from '../hud/hud';
 import { CharacterSelectScene } from './character-select';
@@ -31,6 +32,7 @@ const BOTTOM_Y = 176;
  * cleared, lives and score (and a star once the game was beaten); an empty one says NEW GAME.
  * Picking an empty file goes through character select (player 2 may join) and creates it; a used
  * file opens its map. The bottom row erases a file (pick it, then confirm YES / NO).
+ * A slot whose data can't be read shows UNREADABLE and must be erased before it is reused.
  * Up/down move, A/Start choose, B/Select back.
  */
 export class FileSelectScene implements Scene {
@@ -39,7 +41,7 @@ export class FileSelectScene implements Scene {
   mode: Mode = 'choose';
   /** Confirm prompt: YES highlighted (NO by default). */
   yes = false;
-  saves: (SaveFile | null)[] = [];
+  saves: SlotContents[] = [];
   private t = 0;
 
   constructor(
@@ -71,6 +73,7 @@ export class FileSelectScene implements Scene {
     const slot = this.index + 1;
     const s = this.saves[this.index];
     if (!s) return `File ${slot}. New game.`;
+    if (s === UNREADABLE) return `File ${slot}: unreadable. Erase it to use this file.`;
     const c1 = this.character(s.character);
     const c2 = this.character(s.character2);
     const heroes = c2 ? `${c1?.name} and ${c2.name}` : `${c1?.name}`;
@@ -122,7 +125,10 @@ export class FileSelectScene implements Scene {
     if (this.index === 3) {
       audio.sfx('select');
       if (this.mode === 'erase') this.cancelErase();
-      else {
+      else if (this.saves.every((s) => s === null)) {
+        audio.sfx('bump');
+        this.say('No files to erase.');
+      } else {
         this.mode = 'erase';
         this.index = Math.max(
           0,
@@ -144,6 +150,11 @@ export class FileSelectScene implements Scene {
       this.yes = false;
       audio.sfx('select');
       this.say(`Erase file ${slot}? No. Left and right to choose.`);
+      return;
+    }
+    if (save === UNREADABLE) {
+      audio.sfx('bump');
+      this.say(`File ${slot} is unreadable. Erase it first.`);
       return;
     }
     audio.sfx('coin');
@@ -188,8 +199,8 @@ export class FileSelectScene implements Scene {
       if (sel && (blink || this.mode === 'confirm')) r.text(font, '>', 8, y + 16);
       r.text(font, `FILE ${slot}`, 84, y + 8);
       const s = this.saves[i];
-      if (!s) {
-        r.text(font, 'NEW GAME', 84, y + 24);
+      if (!s || s === UNREADABLE) {
+        r.text(font, s ? 'UNREADABLE' : 'NEW GAME', 84, y + 24);
         return;
       }
       // Portraits stand on the row's floor; player 2 beside player 1.

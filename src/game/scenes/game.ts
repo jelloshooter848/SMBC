@@ -20,7 +20,7 @@ import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
-import { loadSave, saveFromState, stateFromSave, writeSave, type SaveSlot } from '@engine/save/save-files';
+import { loadSave, saveFromState, stateFromSave, writeSave, type SaveSlot } from '@game/save/save-files';
 
 export interface GameDeps {
   ctx: GameContext;

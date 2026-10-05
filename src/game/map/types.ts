@@ -1,7 +1,7 @@
 /**
  * World map (Super Mario World style): one page per world, nodes joined by paths. This file is
  * the shared contract between the map engine (src/game/map), the pages and their art
- * (src/content/worldmap) and the save files (src/engine/save/save-files.ts).
+ * (src/content/worldmap) and the save files (src/game/save/save-files.ts).
  */
 
 /** Look of a map page; each has its own palette and scenery. */

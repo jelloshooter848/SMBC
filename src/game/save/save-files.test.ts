@@ -6,6 +6,10 @@ import {
   listSaves,
   loadSave,
   migrateSave,
+  SAVE_VERSION,
+  UNREADABLE,
+  type SaveFile,
+  type SlotContents,
   newSave,
   saveFromState,
   saveKey,
@@ -17,6 +21,10 @@ import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
 import { SAMUS } from '@game/characters/samus';
+
+/** listSaves with each file reduced to one field. */
+const slots = <K extends keyof SaveFile>(k: K) =>
+  listSaves().map((s: SlotContents) => (s && s !== UNREADABLE ? s[k] : s));
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -32,7 +40,7 @@ describe('save files', () => {
   it('a new file starts on World 1 with 3 lives, 5 for two players', () => {
     const s = newSave(2, 'mario', null);
     expect(s).toMatchObject({
-      v: 1,
+      v: SAVE_VERSION,
       slot: 2,
       character: 'mario',
       character2: null,
@@ -46,6 +54,17 @@ describe('save files', () => {
       gameCleared: false,
     });
     expect(newSave(1, 'mario', 'luigi').lives).toBe(5);
+  });
+
+  it('a new file starts each hero at its real default power', () => {
+    expect(newSave(1, 'mario', 'link')).toMatchObject({
+      powerState: 'small',
+      hp: 0,
+      powerState2: 'full',
+      hp2: 6,
+    });
+    expect(newSave(1, 'samus')).toMatchObject({ powerState: 'full', hp: SAMUS.startHp });
+    expect(newSave(1, 'wario')).toMatchObject({ powerState: 'small', hp: 0 });
   });
 
   it('keys are smbc.save.1..3', () => {
@@ -75,26 +94,30 @@ describe('save files', () => {
   it('the three slots are independent; erase empties one', () => {
     writeSave(newSave(1, 'mario'));
     writeSave(newSave(3, 'link'));
-    expect(listSaves().map((s) => s?.character ?? null)).toEqual(['mario', null, 'link']);
+    expect(slots('character')).toEqual(['mario', null, 'link']);
     const s3 = loadSave(3)!;
     s3.score = 900;
     writeSave(s3);
     expect(loadSave(1)!.score).toBe(0);
     eraseSave(1);
-    expect(listSaves().map((s) => s?.score ?? null)).toEqual([null, null, 900]);
+    expect(slots('score')).toEqual([null, null, 900]);
   });
 
-  it('corrupt data is an empty slot', () => {
+  it('corrupt data does not load; listSaves marks it unreadable until erased', () => {
     store.set('smbc.save.1', '{not json');
     store.set('smbc.save.2', '[1,2]');
     store.set('smbc.save.3', JSON.stringify({ v: 1, character: 7 }));
-    expect(listSaves()).toEqual([null, null, null]);
+    expect([1, 2, 3].map((n) => loadSave(n as 1 | 2 | 3))).toEqual([null, null, null]);
+    expect(listSaves()).toEqual([UNREADABLE, UNREADABLE, UNREADABLE]);
+    eraseSave(2);
+    expect(listSaves()).toEqual([UNREADABLE, null, UNREADABLE]);
   });
 
-  it('an unknown version (newer or invalid) is an empty slot', () => {
-    for (const v of [2, 0, 'x', undefined]) {
+  it('an unknown version (newer or invalid) does not load and is unreadable', () => {
+    for (const v of [SAVE_VERSION + 1, 0, 'x', undefined]) {
       store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), v }));
       expect(loadSave(1)).toBeNull();
+      expect(listSaves()[0]).toBe(UNREADABLE);
     }
   });
 
@@ -130,9 +153,57 @@ describe('save files', () => {
     const s = migrateSave({ v: 1, hero: 'simon', score: 50 }, 1, migrations);
     expect(s?.character).toBe('simon');
     expect(s?.score).toBe(50);
+    expect(s?.v).toBe(2); // stamped with the version it was migrated to
     // Data already at the newest version is not migrated again; a missing step is unreadable.
     expect(migrateSave({ v: 2, character: 'ryu' }, 1, migrations)?.character).toBe('ryu');
     expect(migrateSave({ v: 1, hero: 'ryu' }, 1, [undefined as never, migrations[0]!])).toBeNull();
+  });
+
+  it('write → migrate → save → load runs each migration once', () => {
+    let calls = 0;
+    const migrations = [
+      (old: Record<string, unknown>) => {
+        calls++;
+        return { ...old, v: 2, score: Number(old.score) * 10 };
+      },
+    ];
+    const v1 = { ...newSave(1, 'mario'), v: 1, score: 7 };
+    store.set('smbc.save.1', JSON.stringify(v1));
+    const migrated = migrateSave(JSON.parse(store.get('smbc.save.1')!), 1, migrations)!;
+    expect(migrated.score).toBe(70);
+    writeSave(migrated);
+    const again = migrateSave(JSON.parse(store.get('smbc.save.1')!), 1, migrations)!;
+    expect(calls).toBe(1);
+    expect(again.v).toBe(2);
+    expect(again.score).toBe(70);
+  });
+
+  it('sanitises numbers, worlds and the position on load', () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1)!;
+    };
+    expect(put({ lives: 0 }).lives).toBe(1);
+    expect(put({ lives: -5 }).lives).toBe(1);
+    expect(put({ lives: 250 }).lives).toBe(99);
+    expect(put({ lives: 4.7 }).lives).toBe(4);
+    expect(put({ score: -100, coins: 12.5 })).toMatchObject({ score: 0, coins: 12 });
+    expect(put({ score: 1234.9, coins: -1 })).toMatchObject({ score: 1234, coins: 0 });
+    expect(put({ worlds: [3, 3, 9, 0, 2.5, 8, 'x', 1] }).worlds).toEqual([1, 3, 8]);
+    expect(put({ worlds: [] }).worlds).toEqual([1]);
+    expect(put({ worlds: [1, 4], position: { world: 4, node: '4-2' } }).position).toEqual({
+      world: 4,
+      node: '4-2',
+    });
+    // A world not reached: the hero goes to the start of the highest world reached.
+    expect(put({ worlds: [1, 4], position: { world: 6, node: '6-2' } }).position).toEqual({
+      world: 4,
+      node: 'start',
+    });
+    expect(put({ worlds: [1, 2], position: { world: 2, node: 5 } }).position).toEqual({
+      world: 2,
+      node: 'start',
+    });
   });
 
   it('counts main levels cleared and the highest world', () => {
@@ -191,11 +262,29 @@ describe('save file ↔ game state', () => {
     expect(out.slot).toBe(2);
   });
 
+  it('hp is capped at the hero maximum (kit.maxHp, else its starting hp)', () => {
+    const save = newSave(1, 'samus', 'link');
+    save.hp = 500;
+    save.hp2 = 40;
+    let s = stateFromSave(save, CHARACTERS);
+    expect(s.hp).toBe(SAMUS.startHp);
+    expect(s.hp2).toBe(6);
+    save.kit = { maxHp: 199 };
+    save.hp = 150;
+    s = stateFromSave(save, CHARACTERS);
+    expect(s.hp).toBe(150);
+    s.hp = 900;
+    s.hp2 = 900;
+    const out = saveFromState(save, s);
+    expect(out.hp).toBe(199);
+    expect(out.hp2).toBe(6);
+  });
+
   it('a hp hero carries its hp; a power state that does not suit the hero is reset', () => {
     const save = newSave(1, 'samus');
     save.powerState = 'full';
-    save.hp = 42;
-    expect(stateFromSave(save, CHARACTERS).hp).toBe(42);
+    save.hp = 22;
+    expect(stateFromSave(save, CHARACTERS).hp).toBe(22);
     save.powerState = 'fire';
     const s = stateFromSave(save, CHARACTERS);
     expect(s.character).toBe(SAMUS);

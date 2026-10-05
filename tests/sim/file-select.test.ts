@@ -15,7 +15,7 @@ import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
-import { listSaves, loadSave, newSave, writeSave } from '@engine/save/save-files';
+import { listSaves, loadSave, newSave, writeSave } from '@game/save/save-files';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 
@@ -225,6 +225,41 @@ describe('file select', () => {
     expect(fs.mode).toBe('choose');
     expect(h.said.at(-1)).toMatch(/^File 2 erased\. File 2\. New game\./);
     expect(top(h.game)).toBe(fs);
+  });
+
+  it('ERASE FILE with no files bumps, says so and stays in choose mode', () => {
+    const h = makeGame();
+    const fs = toFileSelect(h);
+    h.tap('up');
+    h.tap('jump');
+    expect(fs.mode).toBe('choose');
+    expect(fs.index).toBe(3);
+    expect(h.said.at(-1)).toBe('No files to erase.');
+    expect(top(h.game)).toBe(fs);
+  });
+
+  it('an unreadable file shows UNREADABLE, cannot be played and must be erased first', () => {
+    store.set('smbc.save.1', '{broken');
+    const h = makeGame();
+    const fs = toFileSelect(h);
+    expect(h.said.at(-1)).toMatch(/File 1: unreadable\. Erase it/);
+    expect(draw(fs).texts).toContain('UNREADABLE');
+    h.tap('jump');
+    expect(top(h.game)).toBe(fs);
+    expect(h.said.at(-1)).toBe('File 1 is unreadable. Erase it first.');
+    expect(store.get('smbc.save.1')).toBe('{broken');
+    // It counts as a file to erase.
+    h.tap('up');
+    h.tap('jump');
+    expect(fs.mode).toBe('erase');
+    expect(fs.index).toBe(0);
+    h.tap('jump');
+    h.tap('right');
+    h.tap('jump');
+    expect(store.has('smbc.save.1')).toBe(false);
+    expect(h.said.at(-1)).toMatch(/File 1 erased\. File 1\. New game\./);
+    h.tap('jump');
+    expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
   });
 
   it('back leaves erase mode, then goes to the title', () => {
