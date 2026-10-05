@@ -59,7 +59,7 @@ function highestFeet(level: LevelData): { top: number; swam: boolean } {
 }
 
 describe('Lost Levels skins keep physics apart from the look', () => {
-  it.each(['water', 'overworld-water', 'water-gray'] as const)(
+  it.each(['water', 'overworld-water', 'water-gray', 'castle-water'] as const)(
     '%s: tapping jump swims up past the height of any jump',
     (theme) => {
       const { top, swam } = highestFeet(flooded(theme));
@@ -68,14 +68,18 @@ describe('Lost Levels skins keep physics apart from the look', () => {
     },
   );
 
-  it.each(['overworld', 'mushroom', 'clouds', 'clouds-overworld', 'castle-overworld'] as const)(
-    '%s: the same waves are scenery, Mario only jumps',
-    (theme) => {
-      const { top, swam } = highestFeet(flooded(theme));
-      expect(swam).toBe(false);
-      expect(top).toBeGreaterThan(6 * 16);
-    },
-  );
+  it.each([
+    'overworld',
+    'mushroom',
+    'mushroom-red',
+    'clouds',
+    'clouds-overworld',
+    'castle-overworld',
+  ] as const)('%s: the same waves are scenery, Mario only jumps', (theme) => {
+    const { top, swam } = highestFeet(flooded(theme));
+    expect(swam).toBe(false);
+    expect(top).toBeGreaterThan(6 * 16);
+  });
 
   it('the overworld-look water of 9-2 still swims: Mario floats down slowly and strokes up', () => {
     const level = lost(9, 'll-9-2');
@@ -118,5 +122,14 @@ describe('Lost Levels skins keep physics apart from the look', () => {
     const castle = runSim({ level: lost(9, 'll-9-3'), character: MARIO, script: none, maxFrames: 2 });
     expect(castle.world.waterTop).toBe(Infinity);
     expect(castle.world.level.music).toBe('castle');
+  });
+
+  it('8-4b, drawn as the castle, is still swum through', () => {
+    const level = lost(8, 'll-8-4-water');
+    expect(level.theme).toBe('castle-water');
+    const r = runSim({ level, character: MARIO, script: none, maxFrames: 150 });
+    expect(r.world.waterTop).toBeLessThan(Infinity);
+    expect(r.world.player.inWater).toBe(true);
+    expect(r.world.level.music).toBe('water');
   });
 });

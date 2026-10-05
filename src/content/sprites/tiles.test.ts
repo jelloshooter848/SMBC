@@ -59,6 +59,9 @@ const tileFrames = [
   'ground@clouds',
   'tree-top@clouds-overworld',
   'tree-trunk@clouds-overworld',
+  'tree-top@mushroom-red',
+  'tree-trunk@mushroom-red',
+  'ground@castle-water',
 ];
 
 const fontGlyphs = [
@@ -321,7 +324,14 @@ describe('decor sprites', () => {
     const lengths = new Set(Object.values(decorPalettes).map((p) => p.length));
     expect(lengths.size).toBe(1);
     expect(Object.keys(decorPalettes).sort()).toEqual(
-      ['decor-night', 'decor-overworld', 'decor-snow', 'decor-mushroom', 'decor-gray'].sort(),
+      [
+        'decor-night',
+        'decor-overworld',
+        'decor-snow',
+        'decor-mushroom',
+        'decor-mushroom-red',
+        'decor-gray',
+      ].sort(),
     );
     expectRenders(decorDef, decorPalettes);
   });

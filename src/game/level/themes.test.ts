@@ -5,6 +5,7 @@ import { parseTextMap, serializeTextMap } from './textmap';
 import { THEMES, isTheme, isWaterTheme, themeMusic, type Theme } from './schema';
 import { SKY } from '../world/tile-render';
 import { decorPalette } from '../entities/objects/decoration';
+import { enemyPalette } from '../entities/enemies/enemy';
 
 const map = (header: string[]) =>
   parseTextMap(
@@ -27,6 +28,8 @@ const LOST_SKINS: Theme[] = [
   'overworld-water',
   'water-gray',
   'castle-overworld',
+  'mushroom-red',
+  'castle-water',
 ];
 
 describe('themes', () => {
@@ -75,6 +78,8 @@ describe('themes', () => {
       'overworld-water': 'water',
       'water-gray': 'water',
       'castle-overworld': 'castle',
+      'mushroom-red': 'overworld',
+      'castle-water': 'water',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -82,7 +87,7 @@ describe('themes', () => {
   });
 
   it('swims in the water theme and in the flooded overworld skins only', () => {
-    expect(THEMES.filter(isWaterTheme)).toEqual(['water', 'overworld-water', 'water-gray']);
+    expect(THEMES.filter(isWaterTheme)).toEqual(['water', 'overworld-water', 'water-gray', 'castle-water']);
   });
 
   it.each(THEMES)('%s has a sky, a tile palette and a decor palette', (theme) => {
@@ -94,8 +99,10 @@ describe('themes', () => {
 
   it('draws platforms as mushrooms or cloud ledges in the Lost Levels skins', () => {
     const frames = tilesDef.frames;
-    expect(frames['tree-top@mushroom']).toBe(frames['mushroom-top']);
-    expect(frames['tree-trunk@mushroom']).toBe(frames['mushroom-stem']);
+    for (const t of ['mushroom', 'mushroom-red']) {
+      expect(frames[`tree-top@${t}`]).toBe(frames['mushroom-top']);
+      expect(frames[`tree-trunk@${t}`]).toBe(frames['mushroom-stem']);
+    }
     for (const t of ['clouds', 'clouds-overworld']) {
       expect(frames[`tree-top@${t}`]).toBeDefined();
       expect(frames[`tree-top@${t}`]).not.toEqual(frames['tree-top']);
@@ -115,6 +122,17 @@ describe('themes', () => {
       expect(look(t)).not.toBe(look('water'));
     }
     expect(look('water-gray')).not.toBe(look('overworld-water'));
+    // The red giant mushrooms are the orange ones' art in other colours.
+    expect(look('mushroom-red')).not.toBe(look('overworld'));
+    expect(look('mushroom-red')).not.toBe(look('mushroom'));
+    const cap = (t: Theme) => PALETTES.default[`tiles-${t}`]?.[0xb];
+    expect(cap('mushroom-red')).not.toBe(cap('mushroom'));
+    // A swim through a castle: the castle's darkness, stone, scenery and enemies.
+    expect(SKY['castle-water']).toBe(SKY.castle);
+    expect(PALETTES.default['tiles-castle-water']).toEqual(PALETTES.default['tiles-castle']);
+    expect(decorPalette('castle-water')).toBe(decorPalette('castle'));
+    expect(enemyPalette('castle-water')).toBe(enemyPalette('castle'));
+    expect(tilesDef.frames['ground@castle-water']).toBe(tilesDef.frames['ground@castle']);
     // A castle under the daylight sky: castle bricks in the overworld palette.
     expect(SKY['castle-overworld']).toBe(SKY.overworld);
     expect(SKY['castle-overworld']).not.toBe(SKY.castle);

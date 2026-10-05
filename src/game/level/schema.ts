@@ -6,15 +6,17 @@ export type Theme =
   | 'night'
   | 'treetop'
   | 'snow'
-  // The Lost Levels' extra skins (World 8-11): orange giant-mushroom land, sky-high cloud
-  // ledges (over cloud banks, or over plain ground), overworld areas flooded with water (also
-  // in gray) and a castle drawn under the daylight sky.
+  // The Lost Levels' extra skins: orange and red giant-mushroom land, sky-high cloud ledges
+  // (over cloud banks, or over plain ground), overworld areas flooded with water (also in gray),
+  // a castle drawn under the daylight sky and a swim through a castle.
   | 'mushroom'
   | 'clouds'
   | 'clouds-overworld'
   | 'overworld-water'
   | 'water-gray'
-  | 'castle-overworld';
+  | 'castle-overworld'
+  | 'mushroom-red'
+  | 'castle-water';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -31,6 +33,8 @@ export const THEMES: readonly Theme[] = [
   'overworld-water',
   'water-gray',
   'castle-overworld',
+  'mushroom-red',
+  'castle-water',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -40,7 +44,7 @@ export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).
  * theme itself these are the Lost Levels' flooded overworld areas, which only look different.
  */
 export const isWaterTheme = (theme: Theme): boolean =>
-  theme === 'water' || theme === 'overworld-water' || theme === 'water-gray';
+  theme === 'water' || theme === 'overworld-water' || theme === 'water-gray' || theme === 'castle-water';
 
 /** The music an area of this theme plays when its map names none. */
 export function themeMusic(theme: Theme): string {

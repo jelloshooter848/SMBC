@@ -151,9 +151,10 @@ into `tools/levelgen/source/` (gitignored) and run
 (one world per output folder).
 The Lost Levels come from `levelDataLostLevels.xml` with `--prefix=ll-` into
 `src/content/levels/lost/worldN/` (worlds A–D are 10–13). They bring their own looks: orange
-giant-mushroom land (`mushroom`), sky levels on cloud ledges (`clouds`, `clouds-overworld`),
-World 9's flooded overworld (`overworld-water`, `water-gray`, still swum through) and a castle
-under the daylight sky (`castle-overworld`).
+and red giant-mushroom land (`mushroom`, `mushroom-red`), sky levels on cloud ledges (`clouds`,
+`clouds-overworld`), World 9's flooded overworld (`overworld-water`, `water-gray`, still swum
+through), a castle under the daylight sky (`castle-overworld`) and the swim through 8-4's
+castle (`castle-water`).
 Only the normal-difficulty layer is used; the generated `.map` files are committed.
 
 ## Asset packs

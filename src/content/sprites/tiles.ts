@@ -853,5 +853,9 @@ export const tilesDef: SpriteDef = {
     'ground@clouds': groundClouds,
     'tree-top@clouds-overworld': cloudLedge,
     'tree-trunk@clouds-overworld': cloudWisp,
+    // Red giant mushrooms (the overworld palette's red caps) and the castle's flagstones underwater.
+    'tree-top@mushroom-red': mushroomTop,
+    'tree-trunk@mushroom-red': mushroomStem,
+    'ground@castle-water': groundCastle,
   },
 };

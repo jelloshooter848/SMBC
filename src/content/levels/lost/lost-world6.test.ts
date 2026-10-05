@@ -23,6 +23,7 @@ const pipes = (l: LevelData) => l.zones.filter((z): z is Zone & { kind: 'pipe' }
 
 describe('Lost Levels 6-1', () => {
   const l = load('ll-6-1');
+  // The Lost Levels table's World 6 normal entry (TG_OVERWORLD) stops the fall back to SMB1's night.
   it('is a 256-wide overworld (no night palette in The Lost Levels) starting at 2,12', () => {
     expect(l.width).toBe(256);
     expect(l.theme).toBe('overworld');

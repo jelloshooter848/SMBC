@@ -106,7 +106,8 @@ const NIGHT = new Set(['3-1', '3-2', '3-3', '6-1']);
 const SNOW = new Set(['6-3']);
 /**
  * The Lost Levels' palettes, from the original's theme table for that map pack
- * (GameSuperMarioBros.as): world + area type, then single areas that override it. Snowy nights
+ * (GameSuperMarioBros.as): world + area type, then single areas that override it (TG_OVERWORLD
+ * entries are listed too: they stop the fall back to the general table below). Snowy nights
  * use the night palette, as SMB1's World 3 does; gray ones the snow palette, as SMB1's 6-3 does
  * (World 9's gray coin heaven too). The orange giant-mushroom skin (TG_MUSHROOM_PLATFORM_ORANGE)
  * is our 'mushroom', TG_CLOUDS 'clouds', TG_CLOUDS_OVERWORLD 'clouds-overworld',
@@ -115,8 +116,10 @@ const SNOW = new Set(['6-3']);
  */
 const LOST_THEMES = {
   2: { normal: 'night', cheepCheep: 'night' },
-  3: { normal: 'snow', platform: 'snow' },
+  3: { normal: 'snow', platform: 'snow', coinHeaven: 'overworld' },
+  4: { platform: 'overworld' },
   5: { normal: 'snow' },
+  6: { normal: 'overworld' },
   7: { normal: 'night', platform: 'snow' },
   8: { normal: 'mushroom', platform: 'clouds' },
   9: { water: 'overworld-water', coinHeaven: 'snow' },
@@ -135,21 +138,42 @@ const LOST_AREA_THEMES = {
   '8-1a': 'snow',
   '8-1c': 'snow',
   '12-3a': 'snow',
+  '8-1b': 'water',
+  // TG_CASTLE on a water area: a swim through the castle.
+  '8-4b': 'castle-water',
   '9-3a': 'castle-overworld',
   '9-4a': 'water-gray',
   '10-2c': 'clouds-overworld',
   '11-4b': 'clouds',
 };
+/**
+ * The original's general theme table (no map pack: SMB1's world entries). The Lost Levels fall
+ * back to it after their own table, as the original's lookup does (Themes.determineTheme: area,
+ * world + type, type in the map pack's table, then the same in the general one), so e.g. their
+ * World 4 normal areas get SMB1 World 4's red giant mushrooms (TG_MUSHROOM_PLATFORM) and a World 8
+ * water area the castle water (TG_CASTLE_WATER). Our SMB1 maps keep NIGHT/SNOW above.
+ */
+const GENERAL_THEMES = {
+  3: { normal: 'night', platform: 'night', coinHeaven: 'night' },
+  4: { normal: 'mushroom-red', platform: 'mushroom' },
+  5: { normal: 'snow' },
+  6: { normal: 'night', coinHeaven: 'night', platform: 'snow' },
+  7: { normal: 'snow' },
+  8: { water: 'castle-water' },
+};
+const GENERAL_AREA_THEMES = { '7-2c': 'overworld' };
 /** Music for the themes that are not named after a song (by the area type they skin). */
 const THEME_MUSIC = {
   night: 'overworld',
   snow: 'overworld',
   mushroom: 'overworld',
+  'mushroom-red': 'overworld',
   clouds: 'overworld',
   'clouds-overworld': 'overworld',
   'overworld-water': 'water',
   'water-gray': 'water',
   'castle-overworld': 'castle',
+  'castle-water': 'water',
 };
 
 // Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6); the Clock item (time bonus)
@@ -236,7 +260,12 @@ function themeFor(levelId, type, areaId) {
   // The Lost Levels' table also skins castle and water areas (9-3a, World 9's flooded overworld).
   if (LOST) {
     const world = Number(levelId.split('-')[0]);
-    const skin = LOST_AREA_THEMES[`${levelId}${areaId}`] ?? LOST_THEMES[world]?.[type];
+    const key = `${levelId}${areaId}`;
+    const skin =
+      LOST_AREA_THEMES[key] ??
+      LOST_THEMES[world]?.[type] ??
+      GENERAL_AREA_THEMES[key] ??
+      GENERAL_THEMES[world]?.[type];
     if (skin) return skin;
   }
   if (type === 'castle') return 'castle';

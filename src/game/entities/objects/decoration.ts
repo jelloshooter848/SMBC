@@ -38,9 +38,11 @@ export class Decoration extends Entity {
 
 /** Decor palette for a theme (shared with the editor). */
 export function decorPalette(theme: string): string {
-  if (theme === 'night' || theme === 'underground' || theme === 'castle') return 'decor-night';
+  if (theme === 'night' || theme === 'underground' || theme === 'castle' || theme === 'castle-water')
+    return 'decor-night';
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'mushroom') return 'decor-mushroom';
+  if (theme === 'mushroom-red') return 'decor-mushroom-red';
   if (theme === 'water-gray') return 'decor-gray';
   return 'decor-overworld';
 }

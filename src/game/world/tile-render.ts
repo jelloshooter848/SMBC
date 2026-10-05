@@ -48,4 +48,7 @@ export const SKY: Record<string, string> = {
   'overworld-water': '#5c94fc',
   'water-gray': '#5c94fc',
   'castle-overworld': '#5c94fc',
+  'mushroom-red': '#5c94fc',
+  // A swim through a castle keeps the castle's darkness.
+  'castle-water': '#000000',
 };

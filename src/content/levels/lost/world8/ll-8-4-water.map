@@ -2,7 +2,7 @@ id: ll-8-4-water
 name: WORLD 8-4
 world: 8
 stage: 4
-theme: water
+theme: castle-water
 music: water
 time: inherit
 start: 3,10

@@ -64,6 +64,20 @@ export const decorPalettes: Record<string, string[]> = {
     NES.brown,
     NES.brownLight,
   ],
+  /* SMB1 World 4's giant-mushroom land: red hills, bushes and tree crowns. */
+  'decor-mushroom-red': [
+    NES.black,
+    NES.brownDark,
+    NES.redDark,
+    NES.redBright,
+    NES.white,
+    NES.skyLight,
+    NES.brownDark,
+    NES.orangeBrown,
+    NES.tanDark,
+    NES.brown,
+    NES.brownLight,
+  ],
   /* Gray stone scenery (the gray flooded overworld). */
   'decor-gray': [
     NES.black,

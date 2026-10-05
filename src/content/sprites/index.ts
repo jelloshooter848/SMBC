@@ -58,8 +58,11 @@ for (const t of [
   'treetop',
   'clouds-overworld',
   'castle-overworld',
+  'mushroom-red',
 ])
   fallback(`tiles-${t}`, 'tiles-overworld');
+// A swim through a castle: the castle's stone and its water colours.
+fallback('tiles-castle-water', 'tiles-castle');
 for (const t of ['underground', 'castle', 'water']) fallback(`enemies-${t}`, 'enemies-overworld');
 fallback('koopa-green', 'enemies-overworld');
 fallback('koopa-red', 'enemies-overworld');

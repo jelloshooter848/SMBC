@@ -75,7 +75,8 @@ describe('Lost Levels World 8: files and headers', () => {
     ['ll-8-3', 232, 'clouds', 400, null],
     ['ll-8-3-sky', 120, 'overworld', null, 'll-8-3'],
     ['ll-8-4', 96, 'castle', 400, null],
-    ['ll-8-4-water', 48, 'water', null, 'll-8-4'],
+    // 8-4b is drawn as the castle (TG_CASTLE) but swum through.
+    ['ll-8-4-water', 48, 'castle-water', null, 'll-8-4'],
     ['ll-8-4-end', 16, 'castle', null, 'll-8-4'],
     ['ll-8-4-end2', 208, 'castle', null, 'll-8-4'],
     ['ll-8-4-end3', 144, 'castle', null, 'll-8-4'],
@@ -86,7 +87,14 @@ describe('Lost Levels World 8: files and headers', () => {
     expect(l.width).toBe(width);
     expect(l.theme).toBe(theme);
     // Night, snow, mushroom and cloud levels play the overworld tune.
-    expect(l.music).toBe(['night', 'snow', 'mushroom', 'clouds'].includes(theme) ? 'overworld' : theme);
+    const music: Record<string, string> = {
+      night: 'overworld',
+      snow: 'overworld',
+      mushroom: 'overworld',
+      clouds: 'overworld',
+      'castle-water': 'water',
+    };
+    expect(l.music).toBe(music[theme] ?? theme);
     expect(l.time).toBe(time);
     expect(l.parent).toBe(parent);
   });

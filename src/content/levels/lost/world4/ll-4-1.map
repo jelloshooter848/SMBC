@@ -2,7 +2,7 @@ id: ll-4-1
 name: WORLD 4-1
 world: 4
 stage: 1
-theme: overworld
+theme: mushroom-red
 music: overworld
 time: 400
 start: 2,12

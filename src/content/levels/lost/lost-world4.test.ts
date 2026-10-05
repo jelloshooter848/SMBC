@@ -23,9 +23,11 @@ const pipes = (l: LevelData) => l.zones.filter((z): z is Zone & { kind: 'pipe' }
 
 describe('Lost Levels 4-1', () => {
   const l = load('ll-4-1');
-  it('is a 216-wide overworld with a 400 timer, starting on the ground at 2,12', () => {
+  it("is 216 wide in SMB1 World 4's red giant-mushroom land, with a 400 timer, starting at 2,12", () => {
     expect(l.width).toBe(216);
-    expect(l.theme).toBe('overworld');
+    // The Lost Levels table has no World 4 normal entry, so the original falls back to the
+    // general table's TG_MUSHROOM_PLATFORM.
+    expect(l.theme).toBe('mushroom-red');
     expect(l.music).toBe('overworld');
     expect(l.time).toBe(400);
     expect(l.start).toEqual({ x: 2, y: 12 });
@@ -114,9 +116,10 @@ describe('Lost Levels 4-1', () => {
 
 describe('Lost Levels 4-2', () => {
   const l = load('ll-4-2');
-  it('is a 224-wide overworld with Lakitu from 62 to 111', () => {
+  it('is 224 wide in red giant-mushroom land, with Lakitu from 62 to 111', () => {
     expect(l.width).toBe(224);
-    expect(l.theme).toBe('overworld');
+    expect(l.theme).toBe('mushroom-red');
+    expect(l.music).toBe('overworld');
     expect(l.time).toBe(400);
     // Its end marker is a plain lakituEnd, so it flies high (no mid=1).
     expect(l.entities).toContainEqual({ type: 'lakitu', x: 62, y: 0, props: { end: 111 } });
@@ -194,6 +197,7 @@ describe('Lost Levels 4-3', () => {
   const l = load('ll-4-3');
   it('is a 200-wide treetop level (Lost Levels platform areas are always treetops)', () => {
     expect(l.width).toBe(200);
+    // The Lost Levels table's own World 4 platform entry (TG_OVERWORLD) stops the fall back.
     expect(l.theme).toBe('overworld');
     expect(tile(l, 61, 9)).toBe(T.TREE_TOP);
     expect(tile(l, 62, 10)).toBe(T.TREE_TRUNK);
