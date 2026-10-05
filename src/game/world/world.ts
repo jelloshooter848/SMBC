@@ -21,6 +21,8 @@ import { Cheep } from '../entities/enemies/cheep';
 import { Blooper } from '../entities/enemies/blooper';
 import { Podoboo } from '../entities/enemies/podoboo';
 import { HammerBro } from '../entities/enemies/hammer-bro';
+import { LakituZone } from '../entities/enemies/lakitu';
+import { Spiny } from '../entities/enemies/spiny';
 import { BalanceLift } from '../entities/objects/balance-lift';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
@@ -43,7 +45,9 @@ export type WorldEvent =
   | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode } }
   | { type: 'exit'; next: string }
   | { type: 'died' }
-  | { type: 'checkpoint'; x: number };
+  | { type: 'checkpoint'; x: number }
+  /** The castle maze moved the players from column `from` to `to` (informational). */
+  | { type: 'loop'; from: number; to: number };
 
 export interface WorldStart {
   /** Override the level's start tile. */
@@ -98,6 +102,9 @@ export class World {
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
   private leaving = false;
   private cheepTimer = 0;
+  /** Castle maze: lead player's centre x last frame (px) and the loop checkpoints passed. */
+  private loopPrevX: number | null = null;
+  private readonly loopChecks = new Set<number>();
   private readonly coinBlocks = new Map<string, { left: number; until: number }>();
   private clear: { phase: ClearPhase; t: number; pole: Flagpole; walkTo: number; player: Player } | null =
     null;
@@ -271,6 +278,12 @@ export class World {
         return new Podoboo(s.x, s.y, s.x * 31 + s.y * 7);
       case 'hammer-bro':
         return new HammerBro(x + px(2), y - px(6));
+      case 'buzzy':
+        return new Koopa(x + px(2), y + px(2), 'buzzy');
+      case 'spiny':
+        return new Spiny(x + px(2), y + px(2), false);
+      case 'lakitu':
+        return new LakituZone(s.x, s.y, Number(s.props?.end ?? this.level.width));
       case 'balance':
         return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'spring':
@@ -486,6 +499,7 @@ export class World {
       if (this.pipeAnim) break;
     }
     this.checkZones();
+    this.checkLoops();
     this.flyingCheeps();
 
     const lead = this.rightmost();
@@ -501,6 +515,37 @@ export class World {
       }
     }
     this.cull();
+  }
+
+  /** Castle maze teleports (see the `loop` zone). Follows the lead player; everyone moves. */
+  private checkLoops(): void {
+    const lead = this.rightmost();
+    if (!lead) return;
+    const b = lead.body;
+    const cur = toPx(lead.centerX);
+    const prev = this.loopPrevX ?? cur;
+    this.loopPrevX = cur;
+    if (cur <= prev) return;
+    const top = tileAt(b.y);
+    const bottom = tileAt(b.y + b.h - 1);
+    const inside = (y0: number, y1: number) => bottom >= y0 && top <= y1;
+    const crossed = (col: number) => prev < col * 16 && cur >= col * 16;
+    this.level.zones.forEach((z, i) => {
+      if (z.kind !== 'loop') return;
+      if (z.check && crossed(z.check.x) && inside(z.check.y0, z.check.y1)) this.loopChecks.add(i);
+    });
+    for (const [i, z] of this.level.zones.entries()) {
+      if (z.kind !== 'loop') continue;
+      if (!crossed(z.x) || !inside(z.y0, z.y1)) continue;
+      if (z.check && !this.loopChecks.has(i)) continue;
+      const dx = tileToSub(z.to - z.x);
+      for (const p of this.players) p.body.x += dx;
+      this.camera.x = Math.max(0, Math.min(this.camera.maxX, this.camera.x + dx));
+      this.loopPrevX = cur + toPx(dx);
+      this.loopChecks.clear();
+      this.events.push({ type: 'loop', from: z.x, to: z.to });
+      return;
+    }
   }
 
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */

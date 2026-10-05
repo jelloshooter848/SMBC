@@ -275,3 +275,62 @@ describe('World 3 follows the original layouts', () => {
     expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '4-1' });
   });
 });
+
+describe('World 4 follows the original layouts', () => {
+  it('4-1: Lakitu over most of the level and a bonus pipe', () => {
+    const l = load('4-1');
+    expect(l.width).toBe(240);
+    expect(l.entities).toContainEqual({ type: 'lakitu', x: 19, y: 0, props: { end: 208 } });
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 132, y: 9, dir: 'down' }));
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 225, next: '4-2-intro' });
+  });
+  it('4-2: Buzzy Beetles, a vine to the warp zone, a bonus pipe, the side exit and a warp to 5-1', () => {
+    const l = load('4-2');
+    expect(l.entities.filter((e) => e.type === 'buzzy').map((e) => [e.x, e.y])).toEqual([
+      [154, 9],
+      [83, 12],
+      [88, 12],
+      [179, 12],
+    ]);
+    expect(tile(l, 64, 5)).toBe(T.BRICK_VINE);
+    expect(l.zones).toContainEqual({ kind: 'vine', x: 64, y: 5, target: { level: '4-2-warp', x: 4, y: 14 } });
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 84, y: 10, dir: 'down' }));
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'pipe', x: 187, y: 9, dir: 'right' }));
+    expect(l.zones).toContainEqual({
+      kind: 'pipe',
+      x: 214,
+      y: 10,
+      dir: 'down',
+      target: { level: '5-1', x: 2, y: 12 },
+    });
+    expect(load('4-2-exit').zones).toContainEqual({ kind: 'exit', x: 22, next: '4-3' });
+  });
+  it('4-2 warp: climb up from the vine to pipes for worlds 8, 7 and 6', () => {
+    const l = load('4-2-warp');
+    expect(l.startMode).toBe('climb');
+    expect(
+      l.zones.filter((z) => z.kind === 'pipe').map((z) => (z.kind === 'pipe' ? z.target.level : '')),
+    ).toEqual(['8-1', '7-1', '6-1']);
+    expect(l.zones).toContainEqual(expect.objectContaining({ kind: 'warp', worlds: [8, 7, 6] }));
+    expect(tile(l, 30, 4)).toBe(T.MUSHROOM_TOP);
+  });
+  it('4-3: giant mushrooms with four balance lifts', () => {
+    const l = load('4-3');
+    expect(l.entities.filter((e) => e.type === 'balance')).toHaveLength(4);
+    expect(l.entities).toContainEqual({ type: 'koopa-para-red', x: 36, y: 6 });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 148, next: '4-4' });
+  });
+  it('4-4: a 320-wide castle maze with four loops and Bowser at the end', () => {
+    const l = load('4-4');
+    expect(l.width).toBe(320);
+    expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([
+      { kind: 'loop', x: 63, y0: 3, y1: 5, to: 127, check: { x: 35, y0: 3, y1: 5 } },
+      { kind: 'loop', x: 127, y0: 10, y1: 12, to: 63, check: { x: 99, y0: 10, y1: 12 } },
+      { kind: 'loop', x: 191, y0: 11, y1: 12, to: 255, check: { x: 161, y0: 11, y1: 12 } },
+      { kind: 'loop', x: 255, y0: 3, y1: 9, to: 191, check: { x: 239, y0: 3, y1: 9 } },
+    ]);
+    expect(l.entities).toContainEqual({ type: 'bowser', x: 296, y: 9 });
+    expect(l.entities).toContainEqual({ type: 'axe', x: 301, y: 8 });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 312, next: '5-1' });
+  });
+});
