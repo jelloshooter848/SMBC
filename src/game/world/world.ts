@@ -34,10 +34,11 @@ import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
 import { PowerUp } from '../entities/objects/powerup';
 import { Pickup } from '../entities/objects/pickup';
-import { Flagpole } from '../entities/objects/flagpole';
+import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
 import { BlockBump, BrickPiece, CoinPop, Explosion, ScorePopup } from '../entities/effects/effects';
-import { comboScore, type DamageSource } from '../rules/damage';
+import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
+import { shellKickSeqScore, stompScore } from '../rules/score';
 import type { GameContext, GameState } from '../context';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
@@ -416,8 +417,8 @@ export class World {
         { kind: 'bomb', amount: opts.amount ?? 2, owner, dirX: e.body.x < cx ? -1 : 1 },
         this,
       );
-      if (res === 'kill' || res === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
-      else if (res === 'hp') this.audio.sfx('hurt-enemy');
+      this.scoreKill(e, 'bomb', res);
+      if (res === 'hp') this.audio.sfx('hurt-enemy');
     }
     if (opts.hurtsPlayers ?? true) {
       for (const p of this.activePlayers()) {
@@ -465,10 +466,42 @@ export class World {
     this.spawn(new ScorePopup(x, y, '1UP'));
   }
 
-  private comboHit(combo: number, x: number, y: number, minScore = 0): void {
-    const s = comboScore(combo);
+  /** Score a sequence step (stomps, shell kills): points, or an extra life at the end of it. */
+  private seqHit(s: number | '1up', x: number, y: number): void {
     if (s === '1up') this.addLife(x, y);
-    else this.addScore(Math.max(s, minScore), x, y);
+    else this.addScore(s, x, y);
+  }
+
+  /**
+   * Score a hit if it killed the enemy, by how it died (Enemy.as: takeDamage scores ATTACK,
+   * hitCharacter with a star STAR, gBounceHit BELOW). Hit-point kills count once the last point goes.
+   */
+  private scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
+    if (r === 'kill' || r === 'flip' || (r === 'hp' && !e.alive))
+      this.addScore(e.scoreFor(kind), e.body.x, e.body.y);
+  }
+
+  /**
+   * Enemy.stomp(): the player's stomps since landing (numContStomps) pick a STOMP_SEQ value,
+   * floored at the enemy's STOMP value. Bullet Bills don't count towards the sequence, and a Goomba
+   * or Buzzy Beetle stomped in the same frame as another enemy is a double stomp (at least 400).
+   */
+  private scoreStomp(p: Player, e: Enemy): void {
+    const double =
+      p.stompFrame === this.frame && (e instanceof Goomba || (e instanceof Koopa && e.color === 'buzzy'));
+    if (!(e instanceof BulletBill)) {
+      p.combo++;
+      p.stompFrame = this.frame;
+    }
+    this.seqHit(stompScore(p.combo, e.scores.stomp, double), e.body.x, e.body.y - px(8));
+  }
+
+  /** Kick a still shell (KoopaGreen.kickShell), scored by when in the shell's rest it happens. */
+  private kickShell(p: Player, e: Koopa): void {
+    const dir: -1 | 1 = p.centerX < e.body.x + e.body.w / 2 ? 1 : -1;
+    const points = e.kickScore(p.combo > 0);
+    e.kick(dir, this);
+    this.addScore(points, e.body.x, e.body.y);
   }
 
   /* ---------- Update ---------- */
@@ -480,8 +513,14 @@ export class World {
     let transitioning = false;
     for (const p of this.players) if (p.transition) transitioning = p.tickTransition() || transitioning;
     if (transitioning) return;
-    if (this.clear) return this.updateClear();
-    if (this.bossClear) return this.updateBossClear();
+    if (this.clear) {
+      this.tickScorePopups();
+      return this.updateClear();
+    }
+    if (this.bossClear) {
+      this.tickScorePopups();
+      return this.updateBossClear();
+    }
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
     if (this.leaving) return;
@@ -769,7 +808,7 @@ export class World {
       if (Math.abs(b.y + b.h - top) <= px(2) && b.x < tileToSub(tx + 1) && b.x + b.w > tileToSub(tx)) {
         if (e instanceof Enemy) {
           const r = e.hit({ kind: 'bump', amount: 1, owner: null, dirX: b.x > p.body.x ? 1 : -1 }, this);
-          if (r !== 'immune') this.addScore(e.scoreValue, b.x, b.y);
+          if (r !== 'immune') this.addScore(e.scoreFor('bump'), b.x, b.y);
         } else b.vy = -0x03000;
       }
     }
@@ -872,8 +911,8 @@ export class World {
           p.scratch[`hit${e.id}`] = 1;
           const src: DamageSource = { kind: 'sword', amount: 1, owner: null, dirX: p.facing };
           const res = e.hit(src, this);
-          if (res === 'kill' || res === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
-          else if (res === 'hp') this.audio.sfx('hurt-enemy');
+          this.scoreKill(e, src.kind, res);
+          if (res === 'hp') this.audio.sfx('hurt-enemy');
           if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
         }
       }
@@ -921,7 +960,7 @@ export class World {
           const victim = aShell ? c : a;
           const res = victim.hit(shell.shellDamage(), this);
           if (res === 'kill' || res === 'flip' || res === 'shell')
-            this.comboHit(shell.shellCombo++, victim.body.x, victim.body.y);
+            this.seqHit(shellKickSeqScore(++shell.shellCombo), victim.body.x, victim.body.y);
         } else if (a.body.onGround && c.body.onGround && !(a instanceof Piranha) && !(c instanceof Piranha)) {
           a.bounceOff(c);
           c.bounceOff(a);
@@ -937,7 +976,7 @@ export class World {
     if (p.activeMelee && overlaps(p.activeMelee, e.body)) return;
     if (p.star > 0) {
       const r = e.hit({ kind: 'star', amount: 1, owner: null, dirX: pb.x < e.body.x ? 1 : -1 }, this);
-      if (r !== 'immune') this.addScore(e.scoreValue, e.body.x, e.body.y);
+      if (r !== 'immune') this.addScore(e.scoreFor('star'), e.body.x, e.body.y);
       return;
     }
     // SMB1-style stomp test: the player was moving down this frame and came in near the enemy's top.
@@ -947,28 +986,29 @@ export class World {
     const fromAbove = falling && feet - e.body.y <= eh * 0.8 && pb.prevBottom <= e.body.y + eh * 0.6;
     if (fromAbove && e.stompable) {
       if (p.def.stomps) {
+        // Landing on a still shell kicks it; it is not a stomp, so it neither scores nor advances
+        // the stomp sequence (KoopaGreen.stomp returns early for a shell, hitCharacter kicks it).
+        if (e instanceof Koopa && e.isStillShell) {
+          this.kickShell(p, e);
+          p.stompBounce();
+          return;
+        }
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
         if (r === 'hurtAttacker') return this.hurtPlayer(p);
         if (r !== 'immune') {
-          // A stomp scores the combo table, but never less than the enemy is worth (Hammer Bro: 1000).
-          this.comboHit(p.combo++, e.body.x, e.body.y - px(8), e.scoreValue);
+          this.scoreStomp(p, e);
           p.stompBounce();
         }
         return;
       }
     }
     if (e.stunned > 0) return;
-    if (e instanceof Koopa && e.state === 'shell') {
-      const dir: -1 | 1 = p.centerX < e.body.x + e.body.w / 2 ? 1 : -1;
-      e.kick(dir, this);
-      this.addScore(400, e.body.x, e.body.y);
-      return;
-    }
+    if (e instanceof Koopa && e.isStillShell) return this.kickShell(p, e);
     if (!e.contactHurts) return;
     const custom = p.def.behaviour.contactDamage(p, e, this);
     if (custom) {
       const r = e.hit(custom, this);
-      if (r === 'kill' || r === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
+      this.scoreKill(e, custom.kind, r);
       return;
     }
     this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
@@ -1015,8 +1055,8 @@ export class World {
         return;
       }
       pr.hitIds.add(e.id);
-      if (r === 'kill' || r === 'flip') this.addScore(e.scoreValue, e.body.x, e.body.y);
-      else if (r === 'hp') this.audio.sfx('hurt-enemy');
+      this.scoreKill(e, src.kind, r);
+      if (r === 'hp') this.audio.sfx('hurt-enemy');
       else if (r === 'stun') this.audio.sfx('hurt-enemy');
       if (!pr.spec.pierce) {
         pr.burst(this);
@@ -1221,12 +1261,19 @@ export class World {
     p.anim = 'climb';
     this.audio.stopMusic();
     this.audio.sfx('flagpole');
-    const score = pole.scoreForFeet(toPx(p.feetY));
-    this.addScore(score, tileToSub(pole.tx) + px(8), p.body.y);
+    // FlagPole.touchPlayer: scored by the player's vertical middle; the text follows the flag.
+    const score = pole.scoreForGrab((p.body.y + p.body.h / 2) / px(1));
+    this.addScore(score);
+    this.spawn(new FlagScore(pole, String(score)));
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
     const walkTo = tileToSub((exit?.x ?? pole.tx) + 6) + px(8);
     this.clear = { phase: 'slide', t: 0, pole, walkTo, player: p };
     this.time ??= 0;
+  }
+
+  /** Score popups keep floating up and expiring through the clear sequences, while all else holds still. */
+  private tickScorePopups(): void {
+    for (const e of this.entities) if (e.alive && e instanceof ScorePopup) e.update();
   }
 
   private updateClear(): void {

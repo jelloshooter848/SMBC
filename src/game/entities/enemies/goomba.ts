@@ -1,4 +1,5 @@
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 
 export class Goomba extends Enemy {
@@ -8,6 +9,7 @@ export class Goomba extends Enemy {
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.currentFrame = 'goomba-0';
+    this.scores = ENEMY_SCORES.GOOMBA;
   }
 
   update(world: World): void {

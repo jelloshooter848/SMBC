@@ -1,6 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { px, toPx } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import type { View } from '../entity';
 import type { World } from '../../world/world';
 import type { Theme } from '../../level/schema';
@@ -66,7 +67,7 @@ export class Piranha extends Enemy {
       this.stompable = false;
       this.corpseFlipY = true; // knocked out head-down, as it hung
     }
-    this.scoreValue = 200;
+    this.scores = ENEMY_SCORES.PIRANHA;
     this.body.vx = 0;
     this.body.y = this.mouthY;
     this.currentFrame = 'piranha-0';

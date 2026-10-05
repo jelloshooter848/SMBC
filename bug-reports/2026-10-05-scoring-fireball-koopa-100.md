@@ -29,3 +29,5 @@ every time
 Ours: Koopas fall back to the default `scoreValue = 100` in `src/game/entities/enemies/enemy.ts`. Worth checking the other `*_ATTACK` and `*_STAR` values in the original's `ScoreValue.as` against ours at the same time.
 
 Reference: the original's source at https://github.com/JayPavlina/super-mario-bros-crossover (paths under `src/`), compared with a playthrough of the original 3.1.21 in the Ruffle emulator.
+
+Status: fixed — enemies now score per kill kind from ScoreValue.as (Koopa fireball/star 200, paratroopa stomp 400, Bowser hit-point kill 5000, etc.) via Enemy.scores/scoreFor and src/game/rules/score.ts.

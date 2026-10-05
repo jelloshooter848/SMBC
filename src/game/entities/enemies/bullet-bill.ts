@@ -1,6 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { px, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { ENEMY_SCORES } from '../../rules/score';
 import { Entity, type View } from '../entity';
 import type { World } from '../../world/world';
 
@@ -17,7 +18,7 @@ export class BulletBill extends Enemy {
     this.spriteOffsetX = 1;
     this.spriteOffsetY = 2;
     this.currentFrame = 'bullet';
-    this.scoreValue = 200;
+    this.scores = ENEMY_SCORES.BULLET_BILL;
     this.layer = 'front';
     this.activated = true;
     this.despawnMargin = 32;
