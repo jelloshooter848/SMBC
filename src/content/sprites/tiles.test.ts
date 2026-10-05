@@ -73,6 +73,7 @@ const fontGlyphs = [
 const itemFrames: Record<string, Size> = {
   mushroom: T16,
   '1up': T16,
+  'poison-mushroom': T16,
   'flower-0': T16,
   'flower-1': T16,
   'star-0': T16,

@@ -105,9 +105,20 @@ const AREA_SUFFIX = {
 const NIGHT = new Set(['3-1', '3-2', '3-3', '6-1']);
 const SNOW = new Set(['6-3']);
 
-const ITEM_BRICK = { Coin: 'E', MultiCoin: 'C', Star: 'S', Mushroom: 'P', OneUpMushroom: 'L', Vine: 'V' };
-const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*' };
-const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3' };
+// Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6); the Clock item (time bonus)
+// is not modelled and becomes a plain coin block.
+const ITEM_BRICK = {
+  Coin: 'E',
+  MultiCoin: 'C',
+  Star: 'S',
+  Mushroom: 'P',
+  OneUpMushroom: 'L',
+  Vine: 'V',
+  PoisonMushroom: '5',
+  Clock: 'E',
+};
+const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*', PoisonMushroom: '4', Clock: '?' };
+const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Clock: '2' };
 const MARKERS = {
   enemyGoomba: 'g',
   enemyKoopaGreen: 'k',

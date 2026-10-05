@@ -4,7 +4,8 @@ import { Entity, type View } from '../entity';
 import { moveX } from '../body';
 import type { World } from '../../world/world';
 
-export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star';
+/** `poison` (Lost Levels) slides like a mushroom but hurts on touch (see World.collisions). */
+export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star' | 'poison';
 
 /** An item rising out of a block, then behaving per kind. */
 export class PowerUp extends Entity {
@@ -50,6 +51,7 @@ export class PowerUp extends Entity {
     let frame: string = this.item;
     if (this.item === 'flower') frame = `flower-${(view.frame >> 3) & 1}`;
     if (this.item === 'star') frame = `star-${(view.frame >> 2) & 3}`;
+    if (this.item === 'poison') frame = 'poison-mushroom';
     r.sprite(sheet, frame, this.screenX(view), this.screenY());
   }
 }

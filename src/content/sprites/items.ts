@@ -9,8 +9,8 @@ import { flipH, swapColors } from '@engine/gfx/pixelart';
  *   5 gold (coin, star, buster)             6 gold light (shine)
  *   7 orange (fire)      8 dark red (shade) 9 brown (brick shards, axe handle)
  *   a light blue (sword beam)               b grey (axe blade, spring plates)
- *   c purple (knuckle)                      d pink (knuckle thumb, knuckle glints)
- *   e blue (weapon pellets, e-tank body)
+ *   c purple (knuckle, poison cap rim)      d pink (knuckle thumb, knuckle glints)
+ *   e blue (weapon pellets, e-tank body, poison cap)
  */
 export const itemPalettes: Record<string, string[]> = {
   items: [
@@ -51,6 +51,27 @@ const mushroom = [
   '....03333380....',
   '....03333380....',
   '....00000000....',
+];
+
+/* Lost Levels poison mushroom (original art): a dark blue cap with a purple rim and sheen, pale
+ * spots, and a frowning face on the stem so it reads as a threat next to the red mushroom. */
+const poisonMushroom = [
+  '.....000000.....',
+  '...00eeeeee00...',
+  '..0ece3333eee0..',
+  '.0ecee3333eeee0.',
+  '.0eeeee33eeeee0.',
+  '033eeeeeeeeee330',
+  '0333eeeeeeee3330',
+  '033eeeeeeeeee330',
+  '0ceeeeeeeeeeeec0',
+  '.0cccccccccccc0.',
+  '..000333333000..',
+  '...0330330330...',
+  '...0333333330...',
+  '...0333003330...',
+  '...0330330330...',
+  '...0000000000...',
 ];
 
 const flower0 = [
@@ -1653,6 +1674,7 @@ export const itemsDef: SpriteDef = {
   frames: {
     mushroom,
     '1up': swapColors(mushroom, { '2': '4' }),
+    'poison-mushroom': poisonMushroom,
     'flower-0': flower0,
     'flower-1': swapColors(flower0, { '7': '2', '5': '6', '6': '5' }),
     'star-0': star0,
