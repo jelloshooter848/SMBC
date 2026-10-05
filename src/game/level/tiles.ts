@@ -54,6 +54,9 @@ export const T = {
   PIPE_TR: def('pipe-top-right', 'solid'),
   PIPE_BL: def('pipe-body-left', 'solid'),
   PIPE_BR: def('pipe-body-right', 'solid'),
+  /** Rim of a pipe hanging from the ceiling (The Lost Levels): the opening faces down. */
+  PIPE_BOTTOM_L: def('pipe-bottom-left', 'solid'),
+  PIPE_BOTTOM_R: def('pipe-bottom-right', 'solid'),
   /** Horizontal pipe (1-2 exit, 1-1 bonus exit). */
   PIPE_H_TL: def('pipe-h-top-left', 'solid'),
   PIPE_H_TR: def('pipe-h-top-right', 'solid'),
@@ -113,6 +116,8 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   ']': T.PIPE_TR,
   '{': T.PIPE_BL,
   '}': T.PIPE_BR,
+  D: T.PIPE_BOTTOM_L,
+  G: T.PIPE_BOTTOM_R,
   '(': T.PIPE_H_TL,
   ')': T.PIPE_H_TR,
   '<': T.PIPE_H_BL,
