@@ -100,7 +100,6 @@ const ENTITIES = {
   podoboo: 'podoboo',
   enemyWingedKoopaRed: 'koopa-para-red',
   enemyWingedKoopaGreen: 'koopa-para-green',
-  enemyBowser: 'bowser',
   bowserAxe: 'axe',
   fireBarLeft: 'firebar',
   fireBarRight: 'firebar-ccw',
@@ -284,6 +283,12 @@ function convertArea(level, area, id, levels) {
           continue;
         }
         switch (name) {
+          case 'enemyBowser': {
+            // Later castles' Bowsers throw hammers (Hammer) or hammers and fire (FireballHammer).
+            const attack = { Hammer: 'hammer', FireballHammer: 'both' }[params.BowserType];
+            b.entity('bowser', x, y, attack ? { attack } : undefined);
+            break;
+          }
           case 'enemyPiranhaGreen':
           case 'enemyPiranhaRed':
             b.entity('piranha', x, y + 1); // the token sits above the pipe's top-left tile

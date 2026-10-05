@@ -393,3 +393,61 @@ describe('World 5 follows the original layouts', () => {
     expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '6-1' });
   });
 });
+
+describe('World 6 follows the original layouts', () => {
+  it('6-1: a night level under Lakitu', () => {
+    const l = load('6-1');
+    expect(l.theme).toBe('night');
+    expect(l.entities).toContainEqual({ type: 'lakitu', x: 21, y: 0, props: { end: 170 } });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 188, next: '6-2' });
+  });
+  it('6-2: beetles, two bonus rooms, an underwater detour and a coin heaven', () => {
+    const l = load('6-2');
+    expect(l.entities.filter((e) => e.type === 'buzzy').map((e) => [e.x, e.y])).toEqual([
+      [120, 4],
+      [54, 12],
+      [92, 12],
+      [163, 12],
+    ]);
+    const pipeTo = (x: number) =>
+      l.zones.find((z) => z.kind === 'pipe' && z.x === x && z.dir === 'down') as
+        { target: { level: string } } | undefined;
+    expect(pipeTo(19)?.target.level).toBe('6-2-bonus');
+    expect(pipeTo(56)?.target.level).toBe('6-2-water');
+    expect(pipeTo(153)?.target.level).toBe('6-2-bonus2');
+    expect(load('6-2-bonus').zones).toContainEqual(
+      expect.objectContaining({ kind: 'pipe', target: { level: '6-2', x: 35, y: 10, exitDir: 'up' } }),
+    );
+    expect(load('6-2-water').zones).toContainEqual(
+      expect.objectContaining({ kind: 'pipe', target: { level: '6-2', x: 115, y: 10, exitDir: 'up' } }),
+    );
+    expect(load('6-2-bonus2').zones).toContainEqual(
+      expect.objectContaining({ kind: 'pipe', target: { level: '6-2', x: 179, y: 10, exitDir: 'up' } }),
+    );
+    expect(l.zones).toContainEqual({ kind: 'vine', x: 81, y: 5, target: { level: '6-2-sky', x: 4, y: 14 } });
+    expect(load('6-2-sky').zones).toContainEqual({
+      kind: 'pit',
+      x: 0,
+      target: { level: '6-2', x: 162, y: 0 },
+    });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 216, next: '6-3' });
+  });
+  it('6-3: snowy treetops with three balance lifts, springboards and Bullet Bills', () => {
+    const l = load('6-3');
+    expect(l.theme).toBe('snow');
+    expect(l.entities.filter((e) => e.type === 'balance').map((e) => [e.x, e.props?.x2])).toEqual([
+      [71, 75],
+      [79, 82],
+      [127, 130],
+    ]);
+    expect(l.entities.filter((e) => e.type === 'spring').map((e) => e.x)).toEqual([38, 116]);
+    expect(l.zones).toContainEqual({ kind: 'bullets', x: 89, w: 33 });
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 168, next: '6-4' });
+  });
+  it('6-4: a castle whose Bowser throws hammers', () => {
+    const l = load('6-4');
+    expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9, props: { attack: 'hammer' } });
+    expect(l.entities.filter((e) => e.type === 'podoboo').map((e) => e.x)).toEqual([27, 33, 131]);
+    expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '7-1' });
+  });
+});
