@@ -1,6 +1,7 @@
 import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { flipH, swapColors } from '@engine/gfx/pixelart';
+import { mapIconFrames } from './map-icons';
 
 /**
  * Item palette roles:
@@ -1840,5 +1841,6 @@ export const itemsDef: SpriteDef = {
     'icon-spread': iconSpread,
     'icon-laser': iconLaser,
     'icon-flame-gun': iconFlameGun,
+    ...mapIconFrames,
   },
 };

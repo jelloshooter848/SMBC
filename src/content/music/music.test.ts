@@ -16,6 +16,8 @@ const SONG_IDS = [
   'castle-clear',
   'game-over',
   'world-clear',
+  'map',
+  'map-bowser',
 ];
 
 const SFX_IDS = [

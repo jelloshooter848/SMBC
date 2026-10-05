@@ -41,10 +41,24 @@ export class PauseScene extends MenuScene {
       label: 'Options',
       select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
     });
-    if (game.devMode)
+    if (this.showDev)
       items.push({ label: 'Dev mode', select: () => game.scenes.push(new DevMenuScene(game, true)) });
-    items.push({ label: 'Quit', select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()) });
+    if (game.campaign && !game.playtestDone) {
+      // Leave the level for the map (any level, cleared or not; no clear is recorded, the run's
+      // lives, score, coins and power are kept and saved), or save and go to the title.
+      items.push({ label: 'Quit to map', select: () => game.returnToMap() });
+      items.push({ label: 'Quit to title', select: () => game.saveAndQuit() });
+    } else
+      items.push({
+        label: 'Quit',
+        select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()),
+      });
     this.setItems(items);
+  }
+
+  /** Dev mode's menu (assists, level select) stays out of campaign play, so no file saves them. */
+  private get showDev(): boolean {
+    return this.game.devMode && !this.game.campaign;
   }
 
   override enter(): void {
@@ -59,7 +73,7 @@ export class PauseScene extends MenuScene {
 
   override update(input: Parameters<MenuScene['update']>[0]): void {
     // Returning from a sub-menu (dev mode off) must refresh the entries.
-    if (this.items.some((i) => i.label === 'Dev mode') !== this.game.devMode) this.rebuild();
+    if (this.items.some((i) => i.label === 'Dev mode') !== this.showDev) this.rebuild();
     // Start selects the highlighted entry (Continue by default), so a double tap of Start still resumes.
     super.update(input);
   }

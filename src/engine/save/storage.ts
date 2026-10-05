@@ -24,3 +24,12 @@ export function removeKey(key: string): void {
     /* ignore */
   }
 }
+
+/** Whether anything is stored under `key` (false when storage is unavailable). */
+export function hasKey(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}

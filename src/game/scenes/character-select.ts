@@ -15,6 +15,15 @@ export interface HeroPick {
   /** Hero highlighted on entry (the one that just died). */
   current: CharacterDef;
   onPick: (c: CharacterDef) => void;
+  /** Back (B/Select), e.g. to the world map; without it there is no way back. */
+  onCancel?: () => void;
+}
+
+/** New-game mode hooks (file select): the chosen heroes go back to the caller instead of `newGame`. */
+export interface NewGameHooks {
+  onStart: (c: CharacterDef, c2: CharacterDef | null) => void;
+  /** Back (B/Select); defaults to the title. */
+  onBack?: () => void;
 }
 
 export class CharacterSelectScene implements Scene {
@@ -25,6 +34,7 @@ export class CharacterSelectScene implements Scene {
   constructor(
     private readonly game: Game,
     private readonly pick: HeroPick | null = null,
+    private readonly hooks: NewGameHooks | null = null,
   ) {}
 
   enter(): void {
@@ -71,6 +81,9 @@ export class CharacterSelectScene implements Scene {
       if (this.t > 10 && c && (f.pressed('start') || f.pressed('jump'))) {
         this.game.ctx.audio.sfx('coin');
         this.pick.onPick(c);
+      } else if (this.pick.onCancel && (f.pressed('select') || f.pressed('attack'))) {
+        this.game.ctx.audio.sfx('select');
+        this.pick.onCancel();
       }
       return;
     }
@@ -89,9 +102,14 @@ export class CharacterSelectScene implements Scene {
     if (this.t > 10 && (input.pressed('start') || input.pressed('jump'))) {
       const c = chars[this.index];
       const c2 = this.p2 ? chars[this.index2] : null;
-      if (c) this.game.newGame(c, '1-1', c2 ?? null);
+      if (c && this.hooks) this.hooks.onStart(c, c2 ?? null);
+      else if (c) this.game.newGame(c, '1-1', c2 ?? null);
+      return;
     }
-    if (input.pressed('select') || input.pressed('attack')) this.game.showTitle();
+    if (input.pressed('select') || input.pressed('attack')) {
+      if (this.hooks?.onBack) this.hooks.onBack();
+      else this.game.showTitle();
+    }
   }
 
   render(r: Renderer): void {
