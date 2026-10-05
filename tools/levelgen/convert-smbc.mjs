@@ -178,6 +178,10 @@ const IGNORED = new Set([
   'sceneryText_4',
   // Warp-zone digit labels of The Lost Levels (the warp zone draws its own).
   'sceneryText_1',
+  'sceneryText_5',
+  'sceneryText_6',
+  'sceneryText_7',
+  'sceneryText_8',
   'sceneryText_B',
   'sceneryText_C',
   'sceneryText_D',
