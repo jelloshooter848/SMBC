@@ -104,6 +104,30 @@ const AREA_SUFFIX = {
 /** Levels drawn with the night or snow palettes. */
 const NIGHT = new Set(['3-1', '3-2', '3-3', '6-1']);
 const SNOW = new Set(['6-3']);
+/**
+ * The Lost Levels' palettes, from the original's theme table for that map pack
+ * (GameSuperMarioBros.as): world + area type, then single areas that override it. Snowy nights
+ * use the night palette, as SMB1's World 3 does; skins we don't have stay overworld.
+ */
+const LOST_THEMES = {
+  2: { normal: 'night', cheepCheep: 'night' },
+  3: { normal: 'snow', platform: 'snow' },
+  5: { normal: 'snow' },
+  7: { normal: 'night' },
+  12: { normal: 'night', platform: 'night', cheepCheep: 'night' },
+  13: { normal: 'snow' },
+};
+const LOST_AREA_THEMES = {
+  '3-2a': 'overworld',
+  '3-2c': 'overworld',
+  '5-2a': 'overworld',
+  '5-2c': 'overworld',
+  '5-2d': 'overworld',
+  '10-2a': 'overworld',
+  '13-4b': 'overworld',
+  '8-1a': 'snow',
+  '8-1c': 'snow',
+};
 
 // Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6); the Clock item (time bonus)
 // is not modelled and becomes a plain coin block.
@@ -187,10 +211,14 @@ const IGNORED = new Set([
   'sceneryText_D',
 ]);
 
-function themeFor(levelId, type) {
+function themeFor(levelId, type, areaId) {
   if (type === 'castle') return 'castle';
   if (type === 'underGround' || type === 'pipeBonus') return 'underground';
   if (type === 'water') return 'water';
+  if (LOST) {
+    const world = Number(levelId.split('-')[0]);
+    return LOST_AREA_THEMES[`${levelId}${areaId}`] ?? LOST_THEMES[world]?.[type] ?? 'overworld';
+  }
   if (!LOST && SNOW.has(levelId)) return 'snow';
   if (!LOST && NIGHT.has(levelId)) return 'night';
   return 'overworld';
@@ -204,7 +232,19 @@ function nextLevel(levelId, levels) {
   if (LOST && s === 4 && (w === 9 || w === 13)) return 'end';
   const next = s < 4 ? `${w}-${s + 1}` : `${w + 1}-1`;
   if (!levels.has(next)) return 'end';
-  return pid(levels.get(next).areas.some((a) => a.type === 'intro') ? `${next}-intro` : next);
+  return entryId(levels.get(next));
+}
+
+/**
+ * Where a level is entered: its intro scene, or area "a" when the main area is another one (the
+ * original always starts in "a"; Lost Levels 9-1 opens in a small room before the water).
+ */
+function entryId(level) {
+  if (level.areas.some((a) => a.type === 'intro')) return pid(`${level.id}-intro`);
+  if (level.attrs.MAIN_AREA !== 'a' && level.areas.some((a) => a.id === 'a')) {
+    return pid(`${level.id}-start`);
+  }
+  return pid(level.id);
 }
 
 /** Legend char for a tile token, or null when it is not a tile. */
@@ -212,7 +252,8 @@ function tileChar(tok, area, world) {
   const { name, params } = tok;
   const castle = area.type === 'castle';
   // Platform and bridge levels are treetops, except World 4's giant mushrooms.
-  const trees = (area.type === 'platform' || area.type === 'cheepCheep') && world !== 4;
+  // (The Lost Levels draw every platform level as treetops.)
+  const trees = (area.type === 'platform' || area.type === 'cheepCheep') && (LOST || world !== 4);
   switch (name) {
     case 'groundNormal':
     case 'groundWideNormal':
@@ -301,7 +342,7 @@ function convertArea(level, area, id, levels) {
   const levelId = level.id;
   const [world, stage] = levelId.split('-').map(Number);
   const isMain = area.id === level.attrs.MAIN_AREA;
-  const theme = themeFor(levelId, area.type);
+  const theme = themeFor(levelId, area.type, area.id);
   const music = theme === 'night' || theme === 'snow' ? 'overworld' : theme;
   const header = {
     id,
@@ -350,6 +391,8 @@ function convertArea(level, area, id, levels) {
         }
         const ch = tileChar(tok, area, world);
         if (ch) {
+          // Water and lava are a background layer: they never cover a tile (9-1's flag ball).
+          if ((ch === 'w' || ch === '~') && b.rows[y][x] !== '.') continue;
           b.set(x, y, ch);
           if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
           continue;
@@ -367,7 +410,12 @@ function convertArea(level, area, id, levels) {
           case 'enemyBowserFake': {
             // Later castles' Bowsers throw hammers (Hammer) or hammers and fire (FireballHammer).
             const attack = { Hammer: 'hammer', FireballHammer: 'both' }[params.BowserType];
-            b.entity('bowser', x, y, attack ? { attack } : undefined);
+            // A fake Bowser (The Lost Levels) fights like one but isn't the bridge's boss.
+            const props = {
+              ...(attack ? { attack } : {}),
+              ...(name === 'enemyBowserFake' ? { fake: 1 } : {}),
+            };
+            b.entity('bowser', x, y, Object.keys(props).length ? props : undefined);
             break;
           }
           case 'enemyPiranhaGreen':
@@ -388,7 +436,7 @@ function convertArea(level, area, id, levels) {
             break;
           case 'lakituEnd':
           case 'lakituEndMiddle':
-            lakituEnds.push(x);
+            lakituEnds.push({ x, middle: name === 'lakituEndMiddle' });
             break;
           case 'teleporterStart':
           case 'teleporterStartOne':
@@ -467,7 +515,9 @@ function convertArea(level, area, id, levels) {
             start = { x, y };
             break;
           case 'halfwayPoint':
-            b.zone(`checkpoint ${x}`);
+            // LOCKED_CP levels (castles, SMB1 World 8, Lost Levels 7-4 to 8-4) have no halfway
+            // start on normal difficulty in the original (Level.as shouldStartAtCheckPoint).
+            if (level.attrs.LOCKED_CP !== 'True') b.zone(`checkpoint ${x}`);
             break;
           case 'levelExit':
             levelExit = { x, y };
@@ -545,9 +595,12 @@ function convertArea(level, area, id, levels) {
   for (const q of balances)
     if (!q.used) console.warn(`${id}: balance platform without a rope at ${q.x},${q.y}`);
   // Each Lakitu leaves at the first end marker after its start.
-  lakituEnds.sort((a, c) => a - c);
-  for (const l of lakitus)
-    b.entity('lakitu', l.x, l.y, { end: lakituEnds.find((e) => e > l.x) ?? area.width });
+  // An end marker named "Middle" makes that Lakitu fly at mid-screen height.
+  lakituEnds.sort((a, c) => a.x - c.x);
+  for (const l of lakitus) {
+    const end = lakituEnds.find((e) => e.x > l.x);
+    b.entity('lakitu', l.x, l.y, { end: end?.x ?? area.width, ...(end?.middle ? { mid: 1 } : {}) });
+  }
   // Castle mazes: each numbered teleporter moves the player from its start column to its end
   // column once its checkpoints were passed: all of them (Start) or any one (StartOne).
   for (const [n, t] of [...teleports].sort((a, c) => Number(a[0]) - Number(c[0]))) {
@@ -569,7 +622,7 @@ function convertArea(level, area, id, levels) {
   }
   if (levelExit) {
     // The flag walk ends 6 tiles right of the exit marker, in the castle door.
-    const exitX = door !== null && area.type !== 'castle' ? door - 6 : levelExit.x;
+    const exitX = door !== null ? door - 6 : levelExit.x;
     b.zone(`exit ${exitX} next=${nextLevel(levelId, levels)}`);
   }
   cheepStarts.sort((a, c) => a - c);
@@ -588,7 +641,7 @@ function convertArea(level, area, id, levels) {
   if (area.type === 'pipeBonus') {
     header.start = `${start?.x ?? 1},0`;
     header.startMode = 'fall';
-    header.camera = 'locked';
+    header.camera = area.width <= 16 ? 'locked' : 'scroll';
   } else if (area.type === 'intro') {
     header.start = `${start?.x ?? 2},${start?.y ?? 12}`;
     header.startMode = 'autowalk';
@@ -637,6 +690,7 @@ function convertLevel(level, levels) {
   const used = new Map();
   const ids = level.areas.map((a) => {
     if (a.id === level.attrs.MAIN_AREA) return pid(level.id);
+    if (a.id === 'a' && a.type !== 'intro') return pid(`${level.id}-start`);
     const suffix = AREA_SUFFIX[a.type] ?? a.id;
     const n = (used.get(suffix) ?? 0) + 1;
     used.set(suffix, n);

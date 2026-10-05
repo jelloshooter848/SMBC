@@ -54,5 +54,4 @@ bowser 136 9
 axe 141 8
 
 [zones]
-checkpoint 76
 exit 152 next=6-1

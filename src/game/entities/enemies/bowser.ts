@@ -29,6 +29,8 @@ export class Bowser extends Enemy {
     tx: number,
     ty: number,
     readonly attack: BowserAttack = 'fire',
+    /** The Lost Levels' fake Bowser: a plain fight, not the bridge boss the axe drops. */
+    readonly fake = false,
   ) {
     super(px(tx * 16 + 2), px((ty + 1) * 16 - 30), 28, 30);
     this.homeX = this.body.x;

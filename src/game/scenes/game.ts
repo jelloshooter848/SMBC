@@ -65,7 +65,7 @@ export class Game {
       progress.lost.letters = true;
       if (!s.warped) {
         progress.lost.world9 = true;
-        next = 'll-9-1';
+        next = 'll-9-1-start';
       }
       saveProgress(progress);
     }

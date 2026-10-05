@@ -42,7 +42,6 @@ hammer-bro 185 12
 decor-castle-big 220 12
 
 [zones]
-checkpoint 132
 exit 218 next=8-4
 
 [decor]

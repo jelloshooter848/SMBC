@@ -44,7 +44,6 @@ bowser 296 9
 axe 301 8
 
 [zones]
-checkpoint 146
 loop 63 3 5 -> 127 check=35:3:5
 loop 127 10 12 -> 63 check=99:10:12
 loop 191 11 12 -> 255 check=161:11:12

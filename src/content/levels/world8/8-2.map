@@ -49,7 +49,6 @@ koopa-para-green 203 5
 decor-castle 220 12
 
 [zones]
-checkpoint 134
 exit 216 next=8-3
 pipe 156 9 down -> 8-2-bonus 1 0 exit=none
 

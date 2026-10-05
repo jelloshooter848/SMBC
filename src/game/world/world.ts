@@ -300,7 +300,7 @@ export class World {
       case 'bullet-bill':
         return new BulletBill(x + px(1), y + px(2), -1);
       case 'lakitu':
-        return new LakituZone(s.x, s.y, Number(s.props?.end ?? this.level.width));
+        return new LakituZone(s.x, s.y, Number(s.props?.end ?? this.level.width), Boolean(s.props?.mid));
       case 'balance':
         return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'princess':
@@ -314,7 +314,12 @@ export class World {
       case 'firebar-ccw':
         return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
       case 'bowser':
-        return new Bowser(s.x, s.y, String(s.props?.attack ?? 'fire') as BowserAttack);
+        return new Bowser(
+          s.x,
+          s.y,
+          String(s.props?.attack ?? 'fire') as BowserAttack,
+          Boolean(s.props?.fake),
+        );
       case 'axe':
         return new Axe(s.x, s.y);
       case 'lift-h':
@@ -1304,7 +1309,8 @@ export class World {
       if (cut) this.audio.sfx('break');
     }
     for (const e of this.entities) if (e instanceof Bowser) e.update(this);
-    const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive);
+    // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
+    const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);
     if (bowser && c.t === 60) {
       bowser.fallDead();
       this.audio.sfx('bowser-fall');
