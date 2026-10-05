@@ -30,10 +30,10 @@ camera: scroll
 [entities]
 decor-castle 0 12
 lakitu 62 0 end=111
-piranha 117 8
-piranha 172 13
-piranha 174 13
-piranha 179 11
+piranha 117 8 red=1
+piranha 172 13 red=1
+piranha 174 13 red=1
+piranha 179 11 red=1
 koopa-para-green-h 194 3
 decor-castle 210 12
 

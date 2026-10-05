@@ -420,15 +420,18 @@ function convertArea(level, area, id, levels) {
             b.entity('bowser', x, y, Object.keys(props).length ? props : undefined);
             break;
           }
+          // A red plant (PiranhaRed) gets `red=1`: it comes out with the player closer to its
+          // pipe. Green ones carry no prop, so their lines stay as they were.
           case 'enemyPiranhaGreen':
           case 'enemyPiranhaRed':
-            b.entity('piranha', x, y + 1); // the token sits above the pipe's top-left tile
+            // the token sits above the pipe's top-left tile
+            b.entity('piranha', x, y + 1, name === 'enemyPiranhaRed' ? { red: 1 } : undefined);
             break;
           case 'enemyPiranhaRedUpsideDown':
           case 'enemyPiranhaGreenUpsideDown':
             // The Lost Levels' hanging piranha: the token shares the cell of the pipe's
             // bottom-left rim tile (groundPipeBottomLeft), so it is placed there unchanged.
-            b.entity('piranha-down', x, y);
+            b.entity('piranha-down', x, y, name === 'enemyPiranhaRedUpsideDown' ? { red: 1 } : undefined);
             break;
           case 'peach':
             b.entity('princess', x, y);

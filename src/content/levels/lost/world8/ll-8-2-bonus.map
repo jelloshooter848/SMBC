@@ -29,10 +29,10 @@ parent: ll-8-2
 ################ ################
 
 [entities]
-piranha-down 12 8
-piranha-down 16 8
-piranha-down 20 8
-piranha-down 24 8
+piranha-down 12 8 red=1
+piranha-down 16 8 red=1
+piranha-down 20 8 red=1
+piranha-down 24 8 red=1
 
 [zones]
 pipe 29 12 right -> ll-8-2 83 10 exit=up

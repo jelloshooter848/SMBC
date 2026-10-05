@@ -29,7 +29,7 @@ H..{}..BBBBBBBBB B.....{}......BB
 ################ ################
 
 [entities]
-piranha 3 11
+piranha 3 11 red=1
 
 [zones]
 pipe 22 10 down -> ll-13-1 2 12

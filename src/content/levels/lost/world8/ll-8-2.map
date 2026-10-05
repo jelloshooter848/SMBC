@@ -29,15 +29,15 @@ camera: scroll
 
 [entities]
 decor-castle 0 12
-piranha 27 13
+piranha 27 13 red=1
 lift-fall 32 10 len=4
-piranha 43 7
+piranha 43 7 red=1
 koopa-para-green 83 10
-piranha 83 11
+piranha 83 11 red=1
 koopa-para-red 127 11
 hammer-bro-chase 143 12
 hammer-bro-chase 159 12
-piranha 170 9
+piranha 170 9 red=1
 
 [zones]
 vine 127 5 -> ll-8-2-warp 4 14

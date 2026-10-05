@@ -28,21 +28,21 @@ camera: scroll
 ########..###### #..############# ################ #####.##.####### ################ ################ .##########.#### ##########....## #######......... .....########... {}....=.=.=##### ################ ################ ################
 
 [entities]
-piranha-down 8 6
-piranha-down 14 10
-piranha 41 11
-piranha 78 11
-piranha 92 8
-piranha 108 9
-piranha 110 9
-piranha-down 119 10
+piranha-down 8 6 red=1
+piranha-down 14 10 red=1
+piranha 41 11 red=1
+piranha 78 11 red=1
+piranha 92 8 red=1
+piranha 108 9 red=1
+piranha 110 9 red=1
+piranha-down 119 10 red=1
 lift-up 137 6 len=3
 lift-up 137 14 len=3
 lift-down 141 9 len=3
 lift-down 146 6 len=3
 lift-down 146 14 len=3
-piranha 160 9
-piranha-down 167 7
+piranha 160 9 red=1
+piranha-down 167 7 red=1
 
 [zones]
 checkpoint 98

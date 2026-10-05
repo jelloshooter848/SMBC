@@ -32,8 +32,11 @@ const ENTITY_FRAMES: Record<
   'koopa-para-green': { sheet: 'enemies', frame: 'koopa-fly-0', palette: () => 'koopa-green' },
   'koopa-para-red': { sheet: 'enemies', frame: 'koopa-fly-0', palette: () => 'koopa-red' },
   'koopa-para-green-h': { sheet: 'enemies', frame: 'koopa-fly-0', palette: () => 'koopa-green' },
-  piranha: { sheet: 'enemies', frame: 'piranha-0', palette: enemyPalette },
-  'piranha-down': { sheet: 'enemies', frame: 'piranha-0', palette: enemyPalette, flipY: true },
+  piranha: { sheet: 'enemies', frame: 'piranha-0', palette: () => 'piranha-green' },
+  'piranha-down': { sheet: 'enemies', frame: 'piranha-0', palette: () => 'piranha-green', flipY: true },
+  // Red plants are `piranha`/`piranha-down` with `red=1` (see redPiranhaKey).
+  'piranha-red': { sheet: 'enemies', frame: 'piranha-0', palette: () => 'piranha-red' },
+  'piranha-down-red': { sheet: 'enemies', frame: 'piranha-0', palette: () => 'piranha-red', flipY: true },
   'cheep-red': { sheet: 'enemies', frame: 'cheep-0', palette: enemyPalette },
   'cheep-grey': { sheet: 'enemies', frame: 'cheep-0', palette: () => 'cheep-grey' },
   blooper: { sheet: 'enemies', frame: 'blooper-0', palette: enemyPalette },
@@ -65,6 +68,11 @@ const ENTITY_FRAMES: Record<
   '1up': { sheet: 'items', frame: '1up' },
   'decor-castle': { sheet: 'decor', frame: 'castle-small' },
 };
+
+/** A red piranha plant is a `piranha`/`piranha-down` with `red=1`: its brush and frame key. */
+function redPiranhaKey(e: { type: string; props?: Record<string, unknown> }): string | undefined {
+  return (e.type === 'piranha' || e.type === 'piranha-down') && e.props?.red ? `${e.type}-red` : undefined;
+}
 
 function blankLevel(name: string): LevelData {
   const rows = Array.from({ length: 13 }, () => '.'.repeat(64));
@@ -151,7 +159,12 @@ export class EditorScene implements Scene {
         this.map.set(tx, ty, b.id);
         break;
       case 'entity':
-        if (this.level.entities.some((e) => e.x === tx && e.y === ty && e.type === b.type)) return;
+        {
+          const same = this.level.entities.find((e) => e.x === tx && e.y === ty && e.type === b.type);
+          if (same && redPiranhaKey(same) === redPiranhaKey(b)) return;
+          // Painting a red plant over a green one (or back) swaps its colour.
+          if (same) this.level.entities = this.level.entities.filter((e) => e !== same);
+        }
         this.level.entities.push(
           b.props ? { type: b.type, x: tx, y: ty, props: { ...b.props } } : { type: b.type, x: tx, y: ty },
         );
@@ -170,7 +183,10 @@ export class EditorScene implements Scene {
   private pick(tx: number, ty: number): void {
     const e = this.level.entities.find((en) => en.x === tx && en.y === ty);
     if (e) {
-      this.brush = { kind: 'entity', type: e.type, label: e.type };
+      const red = redPiranhaKey(e);
+      this.brush = red
+        ? { kind: 'entity', type: e.type, label: red, props: { red: 1 } }
+        : { kind: 'entity', type: e.type, label: e.type };
     } else {
       const id = this.map.get(tx, ty);
       this.brush =
@@ -437,6 +453,10 @@ export class EditorScene implements Scene {
       '1up',
     ];
     for (const t of entityTypes) ents.appendChild(this.brushButton({ kind: 'entity', type: t, label: t }, t));
+    for (const t of ['piranha', 'piranha-down']) {
+      const label = `${t}-red`;
+      ents.appendChild(this.brushButton({ kind: 'entity', type: t, label, props: { red: 1 } }, label));
+    }
     for (const t of ['lift-h', 'lift-v', 'lift-fall', 'lift-up', 'lift-down', 'lift-right']) {
       ents.appendChild(
         this.brushButton({ kind: 'entity', type: t, label: t, props: { len: 3, range: 4 } }, t),
@@ -630,7 +650,7 @@ export class EditorScene implements Scene {
     }
     renderTiles(r, view, this.map, true);
     for (const e of this.level.entities) {
-      const spec = ENTITY_FRAMES[e.type];
+      const spec = ENTITY_FRAMES[redPiranhaKey(e) ?? e.type];
       const x = e.x * 16 - this.camX;
       if (x < -32 || x > SCREEN_W + 32) continue;
       if (spec) {

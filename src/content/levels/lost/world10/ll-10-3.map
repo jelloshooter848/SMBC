@@ -34,7 +34,7 @@ koopa-para-green-h 104 7
 koopa-para-red 133 6
 koopa-para-red 158 6
 decor-castle-big 164 12
-piranha 227 11
+piranha 227 11 red=1
 
 [zones]
 exit 162 next=ll-10-4

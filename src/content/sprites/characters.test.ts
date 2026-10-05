@@ -87,6 +87,8 @@ const ENEMY_PALETTES = [
   'enemies-water',
   'koopa-green',
   'koopa-red',
+  'piranha-green',
+  'piranha-red',
 ];
 
 /** The bottom row of a standing frame must carry pixels (feet on the ground). */

@@ -19,6 +19,10 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * same frames drawn with the `koopa-red` palette (shell indices swapped to red); `koopa-green`
  * is an alias of the overworld palette so callers can always pass a koopa palette name.
  *
+ * Plant colour: the pod-plant's head uses only 7 (with 1 outline and 4 teeth/spots; the stem is
+ * 8), so `piranha-green` and `piranha-red` differ only in index 7. Like the turtles they are the
+ * same in every area theme, so a red plant reads red underground and in castles too.
+ *
  * All frames face LEFT (enemies walk left by default); the renderer flips for right.
  */
 const base = (outline: string, main: string, light: string, red: string): string[] => [
@@ -40,6 +44,10 @@ const overworld = base(NES.brownDark, NES.orangeBrown, NES.tan, NES.redBright);
 const koopaRed = [...overworld];
 koopaRed[5] = NES.redBright;
 koopaRed[6] = NES.peach;
+const piranhaGreen = [...overworld];
+piranhaGreen[7] = NES.green;
+const piranhaRed = [...overworld];
+piranhaRed[7] = NES.redBright;
 
 export const enemyPalettes: Record<string, string[]> = {
   'enemies-overworld': overworld,
@@ -50,6 +58,8 @@ export const enemyPalettes: Record<string, string[]> = {
   'cheep-grey': base(NES.black, NES.blueUnderground, NES.lavender, NES.gray),
   'koopa-green': [...overworld],
   'koopa-red': koopaRed,
+  'piranha-green': piranhaGreen,
+  'piranha-red': piranhaRed,
 };
 
 /** Paint `top` over `bottom`; '.' in `top` keeps the pixel underneath. */

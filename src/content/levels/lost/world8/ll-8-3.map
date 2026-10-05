@@ -37,7 +37,7 @@ lift-fall 45 5 len=4
 koopa-red 66 12
 koopa-red 69 9
 hammer-bro-chase 94 12
-piranha 112 9
+piranha 112 9 red=1
 koopa-para-red 148 9
 koopa-para-red 151 10
 hammer-bro 166 12

@@ -29,11 +29,11 @@ camera: scroll
 
 [entities]
 decor-castle 0 12
-piranha 39 10
+piranha 39 10 red=1
 hammer-bro-chase 58 12
 hammer-bro-chase 65 12
 hammer-bro-chase 144 12
-piranha 147 10
+piranha 147 10 red=1
 hammer-bro-chase 184 12
 koopa-para-green 195 11
 decor-castle-big 221 12

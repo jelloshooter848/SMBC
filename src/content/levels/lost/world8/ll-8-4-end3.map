@@ -29,11 +29,11 @@ parent: ll-8-4
 %%%{}%%%%%%%%%{} %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% ......%%%%.....% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
-piranha 3 11
-piranha 14 13
+piranha 3 11 red=1
+piranha 14 13 red=1
 bowser 23 9 attack=hammer fake=1
 lift-fall 67 11 len=4
-piranha-down 71 9
+piranha-down 71 9 red=1
 firebar 117 5
 bowser 119 9 attack=both
 axe 125 8

@@ -280,9 +280,9 @@ export class World {
       case 'koopa-para-green-h':
         return new Koopa(x + px(2), y - px(6), 'green', true, true);
       case 'piranha':
-        return new Piranha(s.x, s.y);
+        return new Piranha(s.x, s.y, false, !!s.props?.red);
       case 'piranha-down':
-        return new Piranha(s.x, s.y, true);
+        return new Piranha(s.x, s.y, true, !!s.props?.red);
       case 'cheep-red':
       case 'cheep-grey':
         return new Cheep(x + px(2), y + px(2), s.type === 'cheep-red' ? 'red' : 'grey');

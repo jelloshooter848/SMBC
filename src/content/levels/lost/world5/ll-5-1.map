@@ -29,32 +29,32 @@ camera: scroll
 
 [entities]
 decor-castle-big -2 12
-piranha-down 27 10
-piranha-down 41 10
-piranha-down 46 7
-piranha-down 50 7
-piranha-down 54 7
+piranha-down 27 10 red=1
+piranha-down 41 10 red=1
+piranha-down 46 7 red=1
+piranha-down 50 7 red=1
+piranha-down 54 7 red=1
 koopa-para-green 63 10
-piranha 87 9
+piranha 87 9 red=1
 koopa-para-green 95 9
-piranha 101 8
-piranha 115 11
-piranha-down 189 8
-piranha 189 11
-piranha 197 13
-piranha 201 13
+piranha 101 8 red=1
+piranha 115 11 red=1
+piranha-down 189 8 red=1
+piranha 189 11 red=1
+piranha 197 13 red=1
+piranha 201 13 red=1
 koopa-para-green 211 11
-piranha 211 13
-piranha 237 13
-piranha 265 13
+piranha 211 13 red=1
+piranha 237 13 red=1
+piranha 265 13 red=1
 koopa-para-red 290 7
 koopa-para-red 293 7
 koopa-para-red 301 8
 koopa-para-green 316 12
 koopa-para-green 319 10
-piranha 352 5
+piranha 352 5 red=1
 decor-castle 365 12
-piranha 387 11
+piranha 387 11 red=1
 
 [zones]
 checkpoint 210

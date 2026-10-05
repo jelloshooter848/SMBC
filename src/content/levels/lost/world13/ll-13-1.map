@@ -31,16 +31,16 @@ camera: scroll
 decor-castle-big -2 12
 koopa-para-green-h 33 9
 koopa-para-red 58 8
-piranha 73 7
-piranha-down 88 10
+piranha 73 7 red=1
+piranha-down 88 10 red=1
 koopa-para-green 96 4
-piranha 105 9
-piranha 115 11
+piranha 105 9 red=1
+piranha 115 11 red=1
 koopa-para-green-h 128 4
-piranha 130 6
-piranha-down 164 10
-piranha-down 173 10
-piranha 183 9
+piranha 130 6 red=1
+piranha-down 164 10 red=1
+piranha-down 173 10 red=1
+piranha 183 9 red=1
 decor-castle 203 12
 
 [zones]
