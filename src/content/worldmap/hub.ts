@@ -8,7 +8,7 @@ import { actor, autoShore, poly } from './build';
  * which is also the warp back (RETURN TO WORLD 1: a start node carrying `to`, so arriving never
  * warps and JUMP does); four pads sit one in each direction:
  *
- *   east   LOST LEVELS (after SMB 8-4 is beaten)
+ *   east   LOST LEVELS (after SMB 8-4 is beaten), paired 1:1 with Lost 1's warp back here
  *   north, south, west   ??? (future secrets; `requires: 'never'`)
  *
  * Room for more pads: the centre offers all four directions already, so new pads hang off the
@@ -56,6 +56,7 @@ export const HUB_PAGE: WorldMapPage = {
       x: 13,
       y: 8,
       to: 'll-1',
+      toNode: 'hub', // Lost 1's warp back here (HUB_WARP), which lands on this pad
       requires: 'gameCleared',
       label: 'LOST LEVELS',
       hint: 'LOST LEVELS - BEAT 8-4 TO UNLOCK',

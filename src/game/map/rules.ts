@@ -9,8 +9,9 @@ import type { MapCondition, MapNode, MapPath, MapProgress, PageId, WorldExit, Wo
  *
  * The open checks take an optional `unlockAll` (developer mode's "Unlock all"): every page,
  * level and castle node, path and world exit counts as open, and every condition holds except
- * 'never', without anything counting as cleared. Bonus and hidden warp nodes still need their
- * secret key. docs/WORLD_MAP.md describes the page contract.
+ * 'never', without anything counting as cleared. A warp node hidden only by its secret key
+ * (World 1's warp spot) shows too, with its road; one that never works and bonus nodes still need
+ * their key. Nothing is written to the file. docs/WORLD_MAP.md describes the page contract.
  */
 
 export type GetLevel = (id: string) => LevelData;
@@ -101,9 +102,13 @@ export function isCleared(progress: MapProgress, page: WorldMapPage, nodeId: str
   return !!n?.level && progress.cleared.includes(n.level);
 }
 
-/** A node's secret key: bonus nodes always need one, any node with `unlock` needs its key. */
-function keyFound(progress: MapProgress, n: MapNode): boolean {
-  if (n.unlock) return progress.secrets.includes(n.unlock);
+/**
+ * A node's secret key: bonus nodes always need one, any node with `unlock` needs its key. Unlock
+ * all stands in for the key of a warp node that can work ('never' stays hidden).
+ */
+function keyFound(progress: MapProgress, n: MapNode, unlockAll = false): boolean {
+  if (n.unlock)
+    return progress.secrets.includes(n.unlock) || (unlockAll && n.kind === 'warp' && n.requires !== 'never');
   return n.kind !== 'bonus';
 }
 
@@ -126,6 +131,19 @@ export function isWarpOpen(
   pages: readonly WorldMapPage[] = MAP_PAGES,
 ): boolean {
   return isWarpNode(n) && !!n.to && registered(n.to, pages) && conditionMet(progress, n.requires, unlockAll);
+}
+
+/**
+ * Jumping on warp node `n` of `page` records the trip (warpTo opens its target page): it is shown
+ * and works in the file alone. One that works only through Unlock all travels without recording.
+ */
+export function warpRecords(
+  progress: MapProgress,
+  page: WorldMapPage,
+  n: MapNode,
+  pages: readonly WorldMapPage[] = MAP_PAGES,
+): boolean {
+  return isOpen(progress, page, n.id) && isWarpOpen(progress, n, false, pages);
 }
 
 /**
@@ -167,12 +185,12 @@ export function isOpen(
   unlockAll = false,
 ): boolean {
   const n = node(page, nodeId);
-  if (!n || !isPageOpen(progress, page.id, unlockAll) || !keyFound(progress, n)) return false;
+  if (!n || !isPageOpen(progress, page.id, unlockAll) || !keyFound(progress, n, unlockAll)) return false;
   if (n.kind === 'start' || unlockAll) return true;
   return page.paths.some((p) => p.to === nodeId && pathFromDone(progress, page, p));
 }
 
-/** Unlock all: a path is open when both its ends are (a hidden node keeps its path hidden). */
+/** Unlock all: a path is open when both its ends are (a node still hidden keeps its path hidden). */
 export function isPathOpen(
   progress: MapProgress,
   page: WorldMapPage,

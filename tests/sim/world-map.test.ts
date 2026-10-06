@@ -489,7 +489,7 @@ describe('developer mode: unlock all on the map', () => {
     h.idle(8);
     expect(worldsListed(h)).toEqual(['World 1']);
     walkTo(h, '1-1');
-    h.tap('right');
+    h.tap('up');
     h.idle(40);
     expect(h.map().node).toBe('1-1');
     // The file keeps the flag: dev mode on again unlocks again.
