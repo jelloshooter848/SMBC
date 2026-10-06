@@ -8,6 +8,31 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Link's Shadow Keep, round two: a boomerang (stuns monsters, fetches pickups) and bombs from
+  chests, a cracked wall hiding a shrine with the shield (blocks rocks and the Keeper's spells
+  from the front, and monsters hurt you less), and a heart container. Link starts without a shield.
+- Freed heroes hop for joy beside their level on the world map (with an outline so they stand out).
+- Developer mode: Mini games (play any mini game directly, nothing is saved), and the assists
+  (like No damage) work inside mini games, with Assists in their menus.
+
+### Changed
+
+- The end-of-level time tally counts about four times faster, and JUMP finishes it at once (same
+  points).
+- A secret exit only opens its own road: 1-2's warp-zone pipe draws the road to the warp spot, and
+  1-3 opens when 1-2 is beaten at the flagpole.
+- The tutorial and training explain running on touch (push the d-pad far to the side, or hold RUN).
+
+### Fixed
+
+- Link's sword covers the whole tile in front and a little to the sides, and wins ties, so
+  monsters coming in at an angle no longer hit him through a swing.
+- Luigi's training "slippery stop" lesson passes on a normal attempt (the room was too short).
+- Toad's OK hint follows the controls in use; the training skip hint no longer covers the floor;
+  the Keeper's name no longer covers him and his spells vanish when he falls.
+
 ## [0.4.3] - 2026-10-06
 
 ### Added
