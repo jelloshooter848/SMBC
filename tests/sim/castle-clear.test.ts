@@ -105,11 +105,14 @@ describe('castle clear: Toad and the news', () => {
     expect(r.goToLevel).toHaveBeenCalledWith('ll-2-1', { mode: 'stand' });
   });
 
-  it('Lost Levels 8-4: the princess waits instead of Toad, the quest is over, and the ending runs', () => {
+  it('Lost Levels 8-4: the princess waits instead of Toad, and the ending card is her thanks', () => {
     const r = clearCastle(load('lost/world8/ll-8-4-end3.map', 'll-8-4-end3'), 125);
     expect(r.world.entities.some((e) => e instanceof Princess && e.alive)).toBe(true);
     expect(r.world.entities.some((e) => e instanceof Toad)).toBe(false);
-    expect(r.texts).toEqual([['THANK YOU MARIO!'], ['THANK YOU MARIO!', ...QUEST_OVER]]);
+    // The castle says nothing: the card (Game.showLostEnding) carries "THANK YOU <hero>!" and
+    // "YOUR QUEST IS OVER.", so neither is said twice.
+    expect(r.texts).toEqual([]);
+    expect(r.world.castleHero).toBe(MARIO);
     expect(r.showEnding).toHaveBeenCalledWith('ll-8-4');
     expect(r.goToLevel).not.toHaveBeenCalled();
   });

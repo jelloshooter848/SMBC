@@ -1675,6 +1675,10 @@ export class World {
     this.bossPlayer = p;
   }
   private bossPlayer: Player | null = null;
+  /** The hero who took the axe (Toad's "THANK YOU <hero>!"), or null before the bridge is cut. */
+  get castleHero(): Player['def'] | null {
+    return this.bossPlayer?.def ?? null;
+  }
 
   private updateBossClear(): void {
     const c = this.bossClear as NonNullable<typeof this.bossClear>;
@@ -1726,8 +1730,18 @@ export class World {
     // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle says instead that
     // the quest is over (ScreenManager.addTxtTmrHandler, GameTextMessages.QUEST_IS_OVER) and hands
     // over to the ending 2.5 s later (START_MOVE_CREDITS_TMR_DUR), where the credits roll.
+    // The Lost Levels' last castles (8-4, 9-4, D-4) say nothing themselves: the ending's card
+    // (Game.showLostEnding) is the thanks, over the level, when Toad's thanks would start, so
+    // no line is said twice.
     const next = exit?.next ?? 'end';
     const s = c.t - c.stop;
+    if (next === 'end' && (this.level.parent ?? this.level.id).startsWith('ll-')) {
+      if (s >= 30) {
+        this.events.push({ type: 'exit', next });
+        c.t = -100000;
+      }
+      return;
+    }
     if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
     if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
     if (s === 120 && next === 'end') this.castleText.push('', 'YOUR QUEST IS OVER.');

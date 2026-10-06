@@ -7,7 +7,6 @@ import { TitleScene } from './title';
 import { IntroScene } from './intro';
 import { LevelScene, type LevelStart } from './level';
 import { startTime } from '../world/world';
-import { pad, SCORE_MAX } from '../hud/hud';
 import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
@@ -19,7 +18,7 @@ import { EditorScene } from './editor';
 import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
-import { MessageScene } from './message';
+import { CardScene, MessageScene } from './message';
 import { CreditsScene } from './credits';
 import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress } from '../map/types';
@@ -98,7 +97,8 @@ export class Game {
    * marked as cleared and saved, and the title follows (owner decision, 2026-10-05).
    *
    * The Lost Levels follow the NES rules (owner decision, 2026-10-05): 8-4 counts a game beaten
-   * (worlds A-D open after 8) and, without warps, goes on to World 9; World 9 and D-4 end the game.
+   * (worlds A-D open after 8) and, without warps, goes on to World 9; World 9 and D-4 end the game,
+   * D-4 with the credits (see showLostEnding).
    */
   showEnding(from = ''): void {
     if (from.startsWith('ll-')) return this.showLostEnding(from);
@@ -122,12 +122,35 @@ export class Game {
     this.showTitle();
   }
 
-  /** The Lost Levels' game ends: 8-4 (on to World 9 without warps), 9-4 and D-4. */
+  /**
+   * The Lost Levels' game ends: 8-4 (on to World 9 without warps), 9-4 and D-4 (ll-13-4), each
+   * with the owner's card (the NES wording, 2026-10-06). The card is the castle's thanks: those
+   * castles say nothing themselves (World.updateBossClear), and the card is drawn where their
+   * text would be, over the level, with the HUD's score above it as in the SMB 8-4 ending.
+   * Start or B continues ("PUSH BUTTON B TO SELECT A WORLD": there is no world picker, so B
+   * goes on like Start). 8-4 then shows the games-beaten tally (and, warped, why World 9 stays
+   * shut) before World 9 or the title; 9-4 goes to the title; D-4 rolls the credits over the
+   * castle, scrolling the card away (the SMB 8-4 path), then the title.
+   */
   private showLostEnding(from: string): void {
     const s = this.state;
-    const score = pad(Math.min(s.score, SCORE_MAX), 7);
-    let next: string | null = null;
-    let lines: string[];
+    const below = this.scenes.top;
+    const world = below instanceof LevelScene ? below.world : null;
+    // "THANK YOU <hero>!" names the hero who took the axe, as Toad's thanks do (World.castleText).
+    const hero = (world?.castleHero ?? s.character).hudName;
+    const card =
+      from === 'll-8-4' || from === 'll-13-4'
+        ? [
+            `THANK YOU ${hero}!`,
+            '',
+            'YOUR QUEST IS OVER.',
+            'WE PRESENT YOU A NEW QUEST.',
+            '',
+            'PUSH BUTTON B',
+            'TO SELECT A WORLD',
+          ]
+        : ['THANK YOU!'];
+    let then: () => void;
     if (from === 'll-8-4') {
       const before = loadProgress();
       const progress = recordLostGameBeaten(before, s.warped);
@@ -136,36 +159,36 @@ export class Game {
       const tally = opened
         ? ['WORLDS A-D ARE OPEN!']
         : [`GAMES BEATEN ${Math.min(progress.lost.beaten, 99)}`];
-      if (!s.warped) {
-        next = 'll-9-1-start';
-        lines = ['A NEW QUEST AWAITS', 'IN WORLD 9!', '', ...tally, '', `SCORE ${score}`];
-      } else {
-        lines = [
-          'WORLD 9 OPENS AFTER A RUN',
-          'THROUGH WORLDS 1-8',
-          'WITHOUT WARP ZONES.',
-          '',
-          ...tally,
-          '',
-          `FINAL SCORE ${score}`,
-        ];
-      }
-    } else if (from === 'll-9-4') lines = ['WORLD 9 CLEARED!', '', `FINAL SCORE ${score}`];
-    else if (from === 'll-13-4') lines = ['WORLDS A-D CLEARED!', '', `FINAL SCORE ${score}`];
-    else lines = [`FINAL SCORE ${score}`];
+      const warped = s.warped;
+      const page = warped
+        ? ['WORLD 9 OPENS AFTER A RUN', 'THROUGH WORLDS 1-8', 'WITHOUT WARP ZONES.', '', ...tally]
+        : tally;
+      then = () => {
+        this.deps.announcer?.say(page.filter(Boolean).join(' '));
+        this.scenes.clear();
+        this.scenes.push(
+          new MessageScene(
+            this,
+            [...page, '', 'PRESS START'],
+            () => (warped ? this.showTitle() : this.goToLevel('ll-9-1-start', { mode: 'stand' })),
+            1800,
+          ),
+        );
+      };
+    } else if (from === 'll-13-4') {
+      then = () => {
+        const head = world ? world.castleText.splice(0) : card;
+        this.deps.announcer?.say('Credits.');
+        this.scenes.pop(); // the card; the level (if any) stays beneath the credits
+        this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
+      };
+    } else then = () => this.showTitle();
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
-    this.deps.announcer?.say(lines.filter(Boolean).join(' '));
-    this.scenes.clear();
-    this.scenes.push(
-      new MessageScene(
-        this,
-        [...lines, '', 'PRESS START'],
-        () => (next ? this.goToLevel(next, { mode: 'stand' }) : this.showTitle()),
-        1800,
-      ),
-    );
+    this.deps.announcer?.say(card.filter(Boolean).join(' '));
+    if (!world) this.scenes.clear();
+    this.scenes.push(new CardScene(this, card, then, world));
   }
 
   showTitle(): void {

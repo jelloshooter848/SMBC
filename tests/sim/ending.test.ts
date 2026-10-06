@@ -10,10 +10,11 @@ import { Game } from '@game/scenes/game';
 import { CreditsScene, CREDITS, CREDITS_HOLD_FRAMES, CREDITS_TAIL } from '@game/scenes/credits';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
-import { MessageScene } from '@game/scenes/message';
+import { CardScene, MessageScene } from '@game/scenes/message';
 import { TitleScene } from '@game/scenes/title';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
+import { LINK } from '@game/characters/link';
 import { loadProgress, LOST_LETTERS_GAMES, PROGRESS_KEY } from '@engine/save/progress';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
@@ -21,7 +22,8 @@ import type { Announcer } from '@engine/a11y/announcer';
 // The game's endings. SMB 8-4: "Your quest is over." in the castle, then the credits
 // (ScreenManager.startMoveCreditsTmrHandler / moveCreditsLoopTmrHandler / restartGameTmrHandler),
 // then the title. The Lost Levels follow the NES rules (owner decision 2026-10-05): every 8-4
-// clear counts a game beaten, worlds A-D open after 8, a warpless 8-4 goes on to World 9.
+// clear counts a game beaten, worlds A-D open after 8, a warpless 8-4 goes on to World 9. Their
+// last castles show the owner's card (NES wording, 2026-10-06) as the thanks; D-4 rolls the credits.
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -111,19 +113,66 @@ describe('the credits roll', () => {
 });
 
 describe('Lost Levels endings (NES rules)', () => {
-  it('a warpless 8-4 counts one game beaten, opens World 9 and goes on to 9-1', () => {
+  // The owner's closing cards (the NES wording, 2026-10-06), with the hero's name.
+  const quest = (hero: string) => [
+    `THANK YOU ${hero}!`,
+    '',
+    'YOUR QUEST IS OVER.',
+    'WE PRESENT YOU A NEW QUEST.',
+    '',
+    'PUSH BUTTON B',
+    'TO SELECT A WORLD',
+  ];
+
+  /** Waits out the card's half-second guard, then presses `action` once. */
+  function press(h: ReturnType<typeof makeGame>, action: Action) {
+    for (let i = 0; i < 40; i++) h.step();
+    h.step([action]);
+  }
+
+  it.each([
+    ['ll-8-4', quest('MARIO')],
+    ['ll-9-4', ['THANK YOU!']],
+    ['ll-13-4', quest('MARIO')],
+  ])("%s shows the owner's card, line for line", (from, lines) => {
+    const h = makeGame();
+    h.game.newGame(MARIO, from);
+    h.game.showEnding(from);
+    const card = h.top();
+    expect(card).toBeInstanceOf(CardScene);
+    expect((card as CardScene).lines).toEqual(lines);
+    expect(h.said.at(-1)).toBe(lines.filter(Boolean).join(' '));
+  });
+
+  it("the card names the current hero, as Toad's thanks do", () => {
+    const h = makeGame();
+    h.game.newGame(LINK, 'll-13-4');
+    h.game.showEnding('ll-13-4');
+    expect((h.top() as CardScene).lines).toEqual(quest('LINK'));
+  });
+
+  it('a warpless 8-4 counts one game beaten, then B goes on to 9-1 (no world picker yet)', () => {
     const h = makeGame();
     h.game.newGame(MARIO, 'll-8-4');
     h.game.showEnding('ll-8-4');
-    expect(h.top()).toBeInstanceOf(MessageScene);
     const p = loadProgress();
     expect(p.lost).toEqual({ world9: true, letters: false, beaten: 1 });
-    expect(h.said.at(-1)).toContain('WORLD 9');
-    expect(h.said.at(-1)).not.toContain('PRINCESS IS SAFE');
-    for (let i = 0; i < 40; i++) h.step();
-    h.step(['start']);
+    press(h, 'attack');
+    expect(h.top()).toBeInstanceOf(MessageScene);
+    expect(h.said.at(-1)).toBe('GAMES BEATEN 1');
+    press(h, 'start');
     expect(h.top()).toBeInstanceOf(IntroScene);
     expect(h.game.state.world).toBe(9);
+  });
+
+  it('Start continues from the card too', () => {
+    const h = makeGame();
+    h.game.newGame(MARIO, 'll-8-4');
+    h.game.showEnding('ll-8-4');
+    press(h, 'start');
+    expect(h.top()).toBeInstanceOf(MessageScene);
+    press(h, 'start');
+    expect(h.top()).toBeInstanceOf(IntroScene);
   });
 
   it('a warped 8-4 counts too, ends the game and says why World 9 stays shut', () => {
@@ -132,9 +181,9 @@ describe('Lost Levels endings (NES rules)', () => {
     h.game.state.warped = true;
     h.game.showEnding('ll-8-4');
     expect(loadProgress().lost).toEqual({ world9: false, letters: false, beaten: 1 });
+    press(h, 'start');
     expect(h.said.at(-1)).toContain('WITHOUT WARP ZONES');
-    for (let i = 0; i < 40; i++) h.step();
-    h.step(['start']);
+    press(h, 'start');
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 
@@ -147,6 +196,7 @@ describe('Lost Levels endings (NES rules)', () => {
       expect(loadProgress().lost.letters).toBe(n >= LOST_LETTERS_GAMES);
       expect(loadProgress().lost.beaten).toBe(n);
     }
+    press(h, 'start');
     expect(h.said.at(-1)).toContain('WORLDS A-D ARE OPEN!');
   });
 
@@ -167,18 +217,34 @@ describe('Lost Levels endings (NES rules)', () => {
     expect(loadProgress().lost).toEqual({ world9: false, letters: false, beaten: 3 });
   });
 
-  it.each([
-    ['ll-9-4', 'WORLD 9 CLEARED!'],
-    ['ll-13-4', 'WORLDS A-D CLEARED!'],
-  ])('%s ends the game with its own card, then the title', (from, text) => {
+  it('9-4 ends the game with its card, then the title', () => {
     const h = makeGame();
-    h.game.newGame(MARIO, from);
-    h.game.showEnding(from);
-    expect(h.said.at(-1)).toContain(text);
-    expect(h.said.at(-1)).not.toContain('PRINCESS IS SAFE');
+    h.game.newGame(MARIO, 'll-9-4');
+    h.game.showEnding('ll-9-4');
     expect(loadProgress().lost.beaten).toBe(0);
-    for (let i = 0; i < 40; i++) h.step();
-    h.step(['start']);
+    press(h, 'attack');
+    expect(h.top()).toBeInstanceOf(TitleScene);
+  });
+
+  it('D-4: the card over the castle, then the credits scroll it away, then the title', () => {
+    const h = makeGame();
+    h.game.newGame(MARIO, 'll-13-4-end');
+    for (let i = 0; i < 400 && !(h.top() instanceof LevelScene); i++) h.step();
+    const level = h.top() as LevelScene;
+    level.world.events.push({ type: 'exit', next: 'end' });
+    h.step();
+    const card = h.top();
+    expect(card).toBeInstanceOf(CardScene);
+    expect((card as CardScene).translucent).toBe(true); // the level (and the HUD's score) stays
+    expect(level.world.castleText).toEqual(quest('MARIO'));
+    expect(loadProgress().lost.beaten).toBe(0);
+    press(h, 'attack');
+    const credits = h.top();
+    expect(credits).toBeInstanceOf(CreditsScene);
+    expect((credits as CreditsScene).translucent).toBe(true);
+    expect(level.world.castleText).toEqual([]); // handed to the credits
+    expect(h.audio.playMusic).toHaveBeenCalledWith('credits');
+    for (let i = 0; i < 5000 && !(h.top() instanceof TitleScene); i++) h.step();
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 });
