@@ -39,7 +39,7 @@ Every fix below follows the original Crossover 3.1.21 source; each report in `bu
   (original text and music), then saves the file as cleared.
 - Mario and Luigi run across one-tile gaps at full speed.
 - Lost Levels: worlds A-D open after eight games are beaten, and 8-4, 9-4 and D-4 have their own
-  closing cards.
+  closing cards; saves that already had A-D open keep them.
 
 ## [0.2.1] - 2026-10-06
 
