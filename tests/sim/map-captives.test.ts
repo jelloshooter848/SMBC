@@ -265,6 +265,32 @@ describe('the trophy: glad to be free', () => {
     expect(hopsIn(TROPHY_HOP_EVERY)).toBeLessThanOrEqual(1);
   });
 
+  it("another file's already-freed trophy does no burst: opening a file or the title forgets it", () => {
+    const { h } = onMap(freedFile);
+    // Freed on this file this session, then quit to the title before the map showed it.
+    h.game.freed = ['mario'];
+    h.game.freeHero('luigi');
+    expect(h.game.celebrate.has('luigi')).toBe(true);
+    h.game.showTitle();
+    expect(h.game.celebrate.size).toBe(0);
+    // And straight into another file (no title in between) that freed Luigi long ago.
+    h.game.freed = ['mario'];
+    h.game.freeHero('luigi');
+    expect(h.game.celebrate.size).toBe(1);
+    file(freedFile);
+    h.game.openFile(1);
+    expect(h.game.celebrate.size).toBe(0);
+    h.idle(8);
+    const map = h.top() as WorldMapScene;
+    let jumps = 0;
+    for (let i = 0; i < TROPHY_BURST_HOPS * 24; i++) {
+      h.step();
+      if (frame(map).sprites.some((s) => s.key === 'mario@luigi' && s.frame === 'small-jump')) jumps++;
+    }
+    // At most one idle hop (24 frames), not the burst's three.
+    expect(jumps).toBeLessThan(24 + 1);
+  });
+
   it('every hero hops in its own jump frame (its CharacterDef sprite in the air)', () => {
     const { h, map } = onMap(freedFile);
     type Look = { sheet: string; palette: string; frame: string };

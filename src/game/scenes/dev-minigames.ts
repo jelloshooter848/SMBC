@@ -67,12 +67,8 @@ export class DevMiniGamesScene extends MenuScene {
     audio.resume();
     audio.setTempoScale(1);
     audio.stopMusic();
-    let over = false;
-    const scene = def.create(game, (result) => {
-      if (over) return;
-      over = true;
-      // The round and anything it left on top (its menu) go.
-      while (game.scenes.depth > 0 && game.scenes.top !== this) game.scenes.pop();
+    /** Everything as it was before the round (its music stopped). */
+    const restore = () => {
       game.state = saved;
       Object.assign(saved, before);
       game.freed = freed;
@@ -81,6 +77,14 @@ export class DevMiniGamesScene extends MenuScene {
       game.campaign = campaign;
       audio.setTempoScale(1);
       audio.stopMusic();
+    };
+    let over = false;
+    const onDone = (result: MiniGameResult) => {
+      if (over) return;
+      over = true;
+      // The round and anything it left on top (its menu) go.
+      while (game.scenes.depth > 0 && game.scenes.top !== this) game.scenes.pop();
+      restore();
       this.lastResult = result;
       game.scenes.push(
         new DevMiniGameResultScene(game, def, result, () => {
@@ -89,7 +93,17 @@ export class DevMiniGamesScene extends MenuScene {
           this.announce();
         }),
       );
-    });
+    };
+    let scene: Scene;
+    try {
+      scene = def.create(game, onDone);
+    } catch (e) {
+      // A round that cannot even start leaves nothing behind: the list, as it was, with its music.
+      over = true;
+      restore();
+      this.restoreMusic();
+      throw e;
+    }
     game.scenes.push(scene);
   }
 

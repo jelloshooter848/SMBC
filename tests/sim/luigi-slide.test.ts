@@ -90,6 +90,27 @@ describe("Luigi's slippery stop (training 2/3) passes on the first honest attemp
     }
   });
 
+  it('letting go for a single frame mid-run does not count (GLIDE_SEEN_PX: the slide must be seen)', () => {
+    const { h, scene } = lesson2();
+    let blinked = false;
+    let fast = 0;
+    for (let i = 0; i < 240 && scene.phase === 'lesson'; i++) {
+      const p = scene.player;
+      // One frame with nothing held at a good clip, then right and run again, on into the gap.
+      const blink = !blinked && toPx(p.centerX) >= 135;
+      if (blink) {
+        blinked = true;
+        fast = Math.abs(p.body.vx) / 4096;
+      }
+      h.step(blink ? [] : ['right', 'attack']);
+    }
+    expect(blinked).toBe(true);
+    // Fast enough that, without the guard, its projected glide alone would pass.
+    expect((fast * fast) / (2 * (LUIGI.movement.releaseDecel / 4096))).toBeGreaterThan(LUIGI_SLIDE_PX);
+    expect(scene.tracker.maxRunGlide).toBeLessThan(LUIGI_SLIDE_PX);
+    expect(scene.phase).toBe('lesson');
+  });
+
   it('letting go at walking speed, or not before the gap, does not count', () => {
     expect(attempt('keys', 100).passed).toBe(false);
     expect(attempt('keys', 200).passed).toBe(false);

@@ -148,6 +148,41 @@ describe('Dev → Mini games', () => {
     expect(draw(h.top() as Scene).texts.map((t) => t.str)).toContain('PASS');
   });
 
+  it('a round that throws while being built leaves everything as it was, then rethrows', () => {
+    const h = fromTitle();
+    const list = h.top() as DevMiniGamesScene;
+    const state = h.game.state;
+    const before = { ...state, kit: { ...state.kit } };
+    h.game.celebrate.add('link');
+    const freed = h.game.freed.slice();
+    const campaign = h.game.campaign;
+    const broken: MiniGameDef = {
+      hero: 'luigi',
+      title: 'BROKEN',
+      rules: [],
+      create(game) {
+        game.state.score = 5;
+        game.state = { ...game.state, lives: 0 };
+        game.freed.push('luigi');
+        game.celebrate.clear();
+        game.campaign = { slot: 2 };
+        throw new Error('no course');
+      },
+    };
+    h.audio.playMusic.mockClear();
+    expect(() => list.play(broken)).toThrow('no course');
+    expect(h.game.state).toBe(state);
+    expect({ ...state, kit: { ...state.kit } }).toEqual(before);
+    expect(h.game.freed).toEqual(freed);
+    expect([...h.game.celebrate]).toEqual(['link']);
+    expect(h.game.campaign).toBe(campaign);
+    expect(h.top()).toBe(list);
+    expect(h.audio.playMusic).toHaveBeenLastCalledWith('title');
+    // The list still works.
+    h.idle(4);
+    expect(h.top()).toBe(list);
+  });
+
   it('from pause → Dev mode in a level: the level music comes back, still paused', () => {
     const h = makeGame();
     h.game.deps.settings = { ...defaultSettings(), dev: true };
