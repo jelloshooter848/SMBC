@@ -210,7 +210,8 @@ describe('Lost Levels 9-3', () => {
     expect(l.parent).toBe('ll-9-3');
     expect(l.start).toEqual({ x: 4, y: 14 });
     expect(l.startMode).toBe('climb');
-    expect(tile(l, 1, 13)).toBe(T.GROUND); // where the pipe from 148 lands
+    // Its floor is the gray coin heaven's cloud blocks (TG_COIN_HEAVEN_GRAY), not ground.
+    expect(tile(l, 1, 13)).toBe(T.CLOUD_BLOCK);
     expect(l.zones).toContainEqual({ kind: 'pit', x: 0, target: { level: 'll-9-3', x: 98, y: 0 } });
   });
 });
