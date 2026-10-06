@@ -141,17 +141,46 @@ interface MiniGameDef {
 ## Link's mini game: the Shadow Keep (`src/game/minigames/link/`)
 
 A small dungeon in the style of the first Zelda game, the spell's prison in Link's mind. You play
-Link (overhead, four-way walking on a half-tile grid, a sword stab, a shield that stops rocks from
-the front while not stabbing, three hearts taken in halves). Eight rooms, in order: the start
-(the wake-up line), bats, a push-block room (one loose block onto a plate opens the shutter; if
-it gets stuck, leaving and coming back puts it back), skeleton knights (two hits each; the key
-appears when they are gone), a locked door into a room whose shutters open when every monster is
-gone, rock-spitters with a floor switch behind water (it opens the way on and shows a heart
-refill), the keeper (drifts across the top, glows, then fans three spells at Link that the shield
-can't stop; six hits) and the shining exit. Exit reached: `pass`; no hearts left: `fail` after the
-death spin; menu Give up: `quit`. Hearts and keys live in the keep, never in `game.state`.
-Music `dungeon` and `keeper`; sounds `secret`, `sword-stab`, `door-open`, `key-get`.
-Dev: `?minigame=link` (the scene is `window.__miniGame`; `world.warpTo(roomId, x, y)` jumps).
+Link (overhead, four-way walking on a half-tile grid, three hearts taken in halves). He starts
+with only his sword: a stab hits the whole tile in front of him plus 4 px to each side (and 6 px
+back into his own tile), is out for 12 of its 14 frames, and wins ties: a monster the blade
+touches is knocked back and does no touch damage that frame, so monsters coming in at an angle
+meet the blade (owner feedback: "attacking with the sword is flawed"). Items, Zelda style: an
+item box labelled ITEM beside the SWORD box on the HUD; SPECIAL uses the item in it, SELECT
+switches items; touch labels SWORD, the item's name (BOOMERANG / BOMB, hidden while it can't be
+used), ITEM (with two items) and MENU. Walking into a chest opens it; Link holds the prize up for
+a moment while the room waits, with a banner and announcement saying how to use it (`item-get`).
+
+Eleven rooms, in order: the start (the wake-up line), bats, the cellar (a chest with the
+**boomerang**: flies five tiles along Link's facing and back, one out at a time, stuns monsters
+for three seconds, the keeper for half a second; brings back hearts, keys and bombs it touches),
+a push-block room (one loose block onto a plate opens the shutter; if it gets stuck, leaving and
+coming back puts it back), skeleton knights (two hits each; the key appears when they are gone),
+a locked door into a room whose shutters open when every monster is gone (a **heart container**
+appears there too: three hearts become four, all refilled), the armory (a chest with **bombs**:
+four, up to eight, refills dropped by monsters; set one down in front, it blows after 1.5 s,
+2 damage to monsters and half a heart to Link within a tile and a half, and opens **cracked
+walls**; statues point at the cracked west wall), behind it the secret shrine (a chest with the
+**shield**: from then on it stops rocks from the front while not stabbing; spells it can't),
+rock-spitters with a floor switch behind water (it opens the way on and shows a heart refill), the
+keeper (drifts across the top, glows, then fans three spells at Link; eight hits, a bomb counts
+two; its name shows between it and Link; its spells vanish when it falls) and the shining exit.
+The cellar and the shrine are side rooms; only the shrine is hidden. Exit reached: `pass`; no
+hearts left: `fail` after the death spin; menu Give up: `quit`. Hearts, keys and items live in the
+keep, never in `game.state`. Music `dungeon` and `keeper`; sounds `secret` (also a wall breaking
+open), `sword-stab`, `door-open`, `key-get`, `item-get`, `boomerang`, `bomb-fuse`, `bomb-blast`,
+`select`. Dev mode's assists apply: **No damage** (`invulnerable`) keeps Link's hearts against
+monsters, rocks, spells and his own bombs (he is still knocked back), read each time he is hurt,
+so switching it mid-round counts at once; **slow motion** slows the whole loop, the keep
+included; the others have nothing to act on here.
+Dev: `?minigame=link` (the scene is `window.__miniGame`; `world.warpTo(roomId, x, y)` jumps,
+`world.grant('bomb')` gives an item, a pickup kind or `shield`).
+
+Difficulty (a "cautious human" sim, `human-sim.test.ts`: the bot's plan seen through a 15-frame
+reaction delay, monster positions misjudged by up to 4 px, pauses and early swings; `KEEP_SIM=30
+pnpm vitest run human-sim` prints the report): before v2 it escaped 40% of 30 seeds (70% at a
+12-frame reaction, 27% at 18), mostly falling to the keeper; with v2 about 95-100%, losing about
+two of four hearts to the keeper, which got two more hit points to keep it a fight.
 
 ### The top-down kit (`src/game/topdown/`)
 
@@ -167,13 +196,25 @@ Reusable for later top-down mini games; it knows no particular game.
   shutters that close once the hero has stepped in, room memory (conditions met stay met,
   cleared rooms stay empty, a solved block stays put, an unsolved one resets), room slides and
   events for the game to turn into sounds and announcements. The update order is documented there.
-- `hero.ts`, `entity.ts`, `enemies.ts`: the sword-and-shield hero (corner rounding into gaps),
-  enemies with knockback, invulnerability and heart drops (bat, knight, spitter), shots, pickups,
-  push blocks, switches, torches. A game adds its own spawn kinds (the keeper) through `spawners`.
+- `hero.ts`, `entity.ts`, `enemies.ts`: the hero (corner rounding into gaps, `swordReach`, a
+  `shield` flag, the throw and hold-up poses, `-ns` frames without the shield), enemies with
+  knockback, stuns (`stunFor` lets a boss shorten them), invulnerability and drops (bat, knight,
+  spitter), shots, pickups (`heart`, `key`, `heart-container`, `refill`, `shield`, ammo, items),
+  chests (`c`, contents in the room's `chests`), push blocks, switches, torches. A game adds its
+  own spawn kinds (the keeper) through `spawners`.
+- `items.ts`: `TdItem` (label, icon, optional ammo, `ready`, `use`), the `Inventory` (owned items,
+  the slot, SELECT cycling, ammo caps), and the kit's boomerang and bombs with the `Explosion`
+  entity (`world.blast` hurts monsters and the hero in a radius and opens cracked walls).
+  Cracked walls (`C`) are a tile kind: inside a room a wall cell, on the border a doorway (door
+  kind `cracked`, opened on both sides by a blast); `wall-cracked` / `wall-hole` frames.
+  `world.grant(what)` gives anything; `noDamage` (a world option) keeps the hero's hearts.
 - `render.ts`, `hud.ts`, `frames.ts`: tiles drawn for the north wall are flipped for the south
   and rotated for the sides (`withSideFrames` derives `-side` and the doorway halves `-l`/`-r`
-  when the sheet is registered); the Zelda-style HUD (map, keys, item box, life).
-- `bot.ts`: a breadth-first-search player driven by a per-room plan, used by the tests.
+  when the sheet is registered); the Zelda-style HUD (map, keys and ammo, item boxes, life).
+- `bot.ts`: a breadth-first-search player driven by a per-room plan (a list of steps, or a
+  function of the world for rooms passed twice): fights (stunning with a boomerang it owns),
+  pushes, opens chests, bombs walls. `CautiousBot` wraps it as a cautious first-time player for
+  difficulty tuning.
 
 ## Hero training (optional practice rooms)
 
