@@ -8,6 +8,29 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Mario's tutorial stage, 1-0: a new file starts on it (1-1 opens once it's cleared). Toad tells
+  the story and the stage teaches the basics step by step; falls cost no lives, and the pause menu
+  can skip it. Files that already cleared a level count it as done.
+- Optional hero training: the first time you pick a freed hero on a file you're asked whether to
+  practise their signature moves in a training room (also in the pause menu as Training).
+- Link is hidden above 2-1's coin heaven: follow the arrow of coins, find the hidden vine and climb
+  to the sky ruins. His mini game, Escape the Shadow Keep, is a top-down dungeon with puzzles,
+  monsters and a boss, in the style of his own game.
+- World map hints for hidden heroes: a faint silhouette by a cleared level that still hides
+  someone, and the hero standing beside it once freed.
+- Developer mode: an "All heroes" toggle in the world map menu.
+
+### Changed
+
+- The story intro cards are replaced by Toad in 1-0.
+
+### Fixed
+
+- Coin heavens stand on cloud blocks, as in the original (2-1, 3-1, 5-2, 6-2 and the Lost Levels'
+  sky areas).
+
 ## [0.4.2] - 2026-10-06
 
 ### Added
