@@ -8,6 +8,10 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Touch d-pad: down engages as easily as the other directions (only the down-diagonals still need a firmer push, so running doesn't crouch).
+
 ## [0.3.0] - 2026-10-06
 
 ### Added
