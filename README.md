@@ -101,8 +101,11 @@ has the same guide for the hero you are playing.
 - **Video**: integer scaling, colour-blind safe palettes (deuteranopia, protanopia,
   tritanopia) and high contrast, reduced flashing, FPS counter, screen-reader announcements.
 - **Audio**: master, music and sound volumes, mute.
-- **Controls**: full keyboard and gamepad remapping, touch pad on/off and size.
-- **How to play**: the per-hero guides (also in the pause menu for the hero you are playing).
+- **Controls**: full keyboard and gamepad remapping, touch pad on/off and size. The touch
+  buttons say what they do right now (JUMP, RUN or FIRE, SWORD, the selected tool's name,
+  PAUSE, OK/BACK in menus) and hide when they do nothing for your hero.
+- **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
+  written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
 - **Level editor** (title screen only): build and share your own levels.
 

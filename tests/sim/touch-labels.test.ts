@@ -11,7 +11,7 @@ import { Game, type ControlScheme } from '@game/scenes/game';
 import { LevelScene } from '@game/scenes/level';
 import { PauseScene } from '@game/scenes/pause';
 import { GuideScene } from '@game/scenes/guide';
-import { OptionsScene } from '@game/scenes/options';
+import { AssistOptionsScene, OptionsScene } from '@game/scenes/options';
 import { IntroScene } from '@game/scenes/intro';
 import { GameOverScene } from '@game/scenes/game-over';
 import { CharacterSelectScene } from '@game/scenes/character-select';
@@ -80,6 +80,9 @@ describe('touch labels per scene', () => {
     h.game.showTitle();
     expect(shown(h.game)).toBe('OK - - - -');
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop()));
+    expect(shown(h.game)).toBe('OK BACK - - -');
+    // The pause menu's Assists entry (campaign, dev mode) opens a menu with a way back.
+    h.game.scenes.replace(new AssistOptionsScene(h.game, () => h.game.scenes.pop()));
     expect(shown(h.game)).toBe('OK BACK - - -');
     h.game.scenes.replace(new FileSelectScene(h.game));
     expect(shown(h.game)).toBe('OK BACK - - -');
