@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-06
+
 ### Added
 
 - Free the heroes: Bowser has brainwashed the other heroes. A new campaign file starts with Mario
@@ -241,7 +243,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/jelloshooter848/SMBC/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/jelloshooter848/SMBC/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jelloshooter848/SMBC/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jelloshooter848/SMBC/compare/v0.2.2...v0.3.0
