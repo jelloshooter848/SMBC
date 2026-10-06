@@ -161,13 +161,14 @@ export function warpText(
 }
 
 /**
- * A path counts as walked once its `from` node is cleared, is the start of an open page, or is
- * a found warp node that works.
+ * A path counts as walked once its `from` node is cleared, is the start of an open page (a start
+ * carrying a level, World 1's 1-0, once that level is cleared), or is a found warp node that works.
  */
 function pathFromDone(progress: MapProgress, page: WorldMapPage, p: MapPath): boolean {
   const from = node(page, p.from);
   if (!from) return false;
-  if (from.kind === 'start') return isPageOpen(progress, page.id);
+  if (from.kind === 'start')
+    return isPageOpen(progress, page.id) && (!from.level || isCleared(progress, page, p.from));
   if (from.kind === 'warp')
     return isPageOpen(progress, page.id) && keyFound(progress, from) && conditionMet(progress, from.requires);
   return isCleared(progress, page, p.from);

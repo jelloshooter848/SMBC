@@ -82,7 +82,7 @@ describe('save files', () => {
     const s = newSave(1, 'link', 'samus');
     s.created = 1000;
     s.updated = 1000;
-    s.cleared = ['1-1', '1-2'];
+    s.cleared = ['1-0', '1-1', '1-2'];
     s.pages = ['smb-1', 'smb-4', 'hub'];
     s.secrets = ['bonus-1'];
     s.position = { page: 'smb-4', node: 'start' };
@@ -143,7 +143,8 @@ describe('save files', () => {
     expect(s.slot).toBe(2);
     expect(s.character).toBe('luigi');
     expect(s.lives).toBe(3);
-    expect(s.cleared).toEqual(['1-1']);
+    // Any clear means a file from before the tutorial: 1-0 counts as cleared.
+    expect(s.cleared).toEqual(['1-0', '1-1']);
     expect(s.pages).toEqual(['smb-1', 'smb-3']);
     expect(s.kit).toEqual({ hearts: 4 });
     expect(s.position).toEqual({ page: 'smb-3', node: 'start' });
@@ -322,6 +323,34 @@ describe('save files', () => {
     expect(highestWorld(s)).toBe(5);
   });
 
+  it('a file from before the tutorial (0.5.0) with any clear counts 1-0 as cleared; no format bump', () => {
+    // Played before 1-0 existed: 1-1 cleared, standing on World 1's old start node.
+    const old = { ...newSave(1, 'mario'), cleared: ['1-1'], position: { page: 'smb-1', node: 'start' } };
+    store.set(saveKey(1), JSON.stringify(old));
+    const s = loadSave(1) as SaveFile;
+    expect(s.v).toBe(SAVE_VERSION);
+    expect(s.cleared).toEqual(['1-0', '1-1']);
+    // The old start node is still a node (now 1-0's): nothing to remap.
+    expect(s.position).toEqual({ page: 'smb-1', node: 'start' });
+    expect(clearedMainLevels(s)).toBe(1);
+    // A Lost Levels clear counts too; a file with no clears still has the tutorial ahead.
+    store.set(saveKey(2), JSON.stringify({ ...newSave(2, 'mario'), cleared: ['ll-1-1'] }));
+    expect(loadSave(2)?.cleared).toEqual(['1-0', 'll-1-1']);
+    store.set(saveKey(3), JSON.stringify(newSave(3, 'mario')));
+    expect(loadSave(3)?.cleared).toEqual([]);
+    // No clears but standing past the start (1-1 was open on a new file before 0.5.0): back on 1-0.
+    store.set(
+      saveKey(3),
+      JSON.stringify({ ...newSave(3, 'mario'), position: { page: 'smb-1', node: '1-1' } }),
+    );
+    expect(loadSave(3)?.position).toEqual({ page: 'smb-1', node: 'start' });
+    // Already there: kept once, in place.
+    expect(migrateSave({ ...newSave(1, 'mario'), cleared: ['1-0', '1-1'] }, 1)?.cleared).toEqual([
+      '1-0',
+      '1-1',
+    ]);
+  });
+
   it('never throws when storage is unavailable', () => {
     (globalThis as { localStorage?: unknown }).localStorage = undefined;
     expect(loadSave(1)).toBeNull();
@@ -389,6 +418,7 @@ describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
       ...Object.fromEntries(Object.entries(V1).filter(([k]) => k !== 'worlds')),
       v: SAVE_VERSION,
       freed: ['mario', 'link'],
+      cleared: ['1-0', ...V1.cleared],
       pages: ['smb-1', 'smb-4', 'smb-2'],
       position: { page: 'smb-4', node: '4-1' },
       lastNode: { 'smb-1': '1-4', 'smb-4': '4-1', 'smb-2': 'start' },
@@ -428,7 +458,7 @@ describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
     expect(s.position).toEqual({ page: 'smb-1', node: 'start' });
     expect(s.lastNode).toEqual({});
     expect(s.pendingReveal).toEqual([]);
-    expect(s.cleared).toEqual(V1.cleared);
+    expect(s.cleared).toEqual(['1-0', ...V1.cleared]);
   });
 });
 

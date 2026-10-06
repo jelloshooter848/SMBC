@@ -167,6 +167,31 @@ describe('map rules', () => {
     expect(p.cleared).toContain('3-4');
   });
 
+  it('a start node carrying a level (World 1: 1-0) is a level: its road opens once it is cleared', () => {
+    const base = P1;
+    const page: WorldMapPage = {
+      ...base,
+      nodes: base.nodes.map((n) => (n.kind === 'start' ? { ...n, level: '1-0' } : n)),
+    };
+    const pages = [page, ...PAGES.slice(1)];
+    const get = (id: string) => (id === '1-0' ? ({ id, parent: null } as LevelData) : getLevel(id));
+    const p = newMapProgress();
+    expect(p.position).toEqual({ page: 'smb-1', node: 'start' });
+    expect(open(p, page)).toEqual(['start']);
+    expect(isCleared(p, page, 'start')).toBe(false);
+    expect(openPaths(p, page).paths).toEqual([]);
+    expect(nextStep(page, p, 'start', 'right', pages)).toBeNull();
+    // Clearing 1-0 draws in the road to 1-1 and 1-1; the hero stays on the start node.
+    expect(clearLevel(p, '1-0', get, pages)).toEqual(['smb-1:start>1-1', 'smb-1:1-1']);
+    expect(isCleared(p, page, 'start')).toBe(true);
+    expect(open(p, page)).toEqual(['start', '1-1']);
+    expect(p.position).toEqual({ page: 'smb-1', node: 'start' });
+    // Unlock all opens it all without clearing 1-0.
+    const q = newMapProgress();
+    expect(page.nodes.filter((n) => isOpen(q, page, n.id, true)).map((n) => n.id)).toContain('1-1');
+    expect(isCleared(q, page, 'start')).toBe(false);
+  });
+
   it('reveal ids round-trip', () => {
     expect(revealId('smb-2', 'start')).toBe('smb-2:start');
     expect(parseRevealId('smb-1:1-1>1-2')).toEqual({ page: 'smb-1', id: '1-1>1-2' });

@@ -42,7 +42,7 @@ import { campaignLevel } from '../level/campaign';
 import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
-import { StoryScene, STORY_PAGES } from './story';
+import { levelTutorial, stageTutorial, type TutorialRun } from '../tutorial/stage-tutorial';
 import {
   FIRST_HERO,
   loadSave,
@@ -108,6 +108,11 @@ export class Game {
   devUnlockAll = false;
   /** Heroes freed on the campaign's file (SaveFile.freed); see `heroLocked`. */
   freed: string[] = [FIRST_HERO];
+  /**
+   * The stage tutorial being played (1-0): its lesson, kept across respawns and its pipe room;
+   * null outside one (src/game/tutorial/stage-tutorial.ts).
+   */
+  tutorialRun: TutorialRun | null = null;
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -276,6 +281,7 @@ export class Game {
     this.campaign = null;
     this.pendingReveal = [];
     this.devUnlockAll = false;
+    this.tutorialRun = null;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -288,6 +294,7 @@ export class Game {
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;
+    this.tutorialRun = null;
     if (this.campaign) this.addReveal(openMetExits(this.mapProgress));
     this.scenes.clear();
     this.scenes.push(new WorldMapScene(this, page ?? this.mapProgress.position.page, opts));
@@ -299,6 +306,7 @@ export class Game {
    * a two-player file, then the level (its intro scene when it has one). A file stays one- or
    * two-player as created. The picks apply only once the level starts, and are saved to the file
    * so the map and the file select show them; Back from either pick returns to the map unchanged.
+   * A stage tutorial (1-0) is played with its own hero, with no pick (player two keeps theirs).
    */
   enterLevelFromMap(levelId: string): void {
     const s = this.state;
@@ -315,6 +323,12 @@ export class Game {
       const entry = entryLevel(levelId, this.deps.getLevel);
       this.goToLevel(entry === levelId ? this.firstArea(levelId) : entry, { mode: 'stand' });
     };
+    const tutorialHero = this.deps.characters.find((c) => c.id === stageTutorial(levelId)?.hero);
+    if (tutorialHero) {
+      hero = tutorialHero;
+      go();
+      return;
+    }
     const pick = (player: 0 | 1, then: () => void) =>
       new CharacterSelectScene(this, {
         player,
@@ -552,6 +566,7 @@ export class Game {
 
   /** Developer level select: any level, character and power state, with 99 lives. */
   devStart(levelId: string, character: CharacterDef, power: string, fullKit = false): void {
+    this.tutorialRun = null;
     this.state = newGameState(character);
     this.state.lives = 99;
     if (fullKit && character.devKit) this.state.kit = character.devKit();
@@ -591,6 +606,7 @@ export class Game {
 
   /** Run a level from the editor; returns to it when the level ends or the player quits. */
   playtest(level: LevelData, done: () => void): void {
+    this.tutorialRun = null;
     this.state = newGameState(this.state.character);
     this.state.lives = 99;
     this.playtestDone = done;
@@ -601,6 +617,7 @@ export class Game {
 
   /** Play a level decoded from a share link with the default character. */
   playShared(level: LevelData): void {
+    this.tutorialRun = null;
     this.sharedLevel = level;
     this.state = newGameState(this.deps.characters[0] as CharacterDef);
     this.playtestDone = null;
@@ -610,6 +627,7 @@ export class Game {
   }
 
   newGame(character: CharacterDef, levelId = '1-1', character2: CharacterDef | null = null): void {
+    this.tutorialRun = null;
     this.state = newGameState(character, character2);
     this.playtestDone = null;
     this.quickRespawn = false;
@@ -653,12 +671,42 @@ export class Game {
   }
 
   /**
-   * A file just created on the file select: the story (Bowser has brainwashed the heroes of
-   * other worlds; Mario must find and free them), then its World 1 map.
+   * A file just created on the file select: its World 1 map, the hero standing on 1-0, Mario's
+   * tutorial stage, where Toad tells the story (Bowser has brainwashed the heroes of other worlds;
+   * Mario must find and free them). 1-1 opens once 1-0 is cleared (or skipped from its pause menu).
    */
   startNewFile(slot: SaveSlot, save: SaveFile): void {
-    this.scenes.clear();
-    this.scenes.push(new StoryScene(this, STORY_PAGES, () => this.openFile(slot, save)));
+    this.openFile(slot, save);
+  }
+
+  /**
+   * Pause → "Skip tutorial" in a stage tutorial: campaign play counts it as cleared and returns to
+   * the map, which draws in what that opens (1-0: the road to 1-1), as a clear would. Elsewhere
+   * (dev select, ?level=) play goes on to the level its exit leads to.
+   */
+  skipTutorial(): void {
+    const run = this.tutorialRun;
+    if (!run) return;
+    this.tutorialRun = null;
+    this.state.checkpoint = null;
+    this.state.time = null;
+    if (this.campaign) {
+      this.levelCleared(run.level);
+      return;
+    }
+    const next = this.exitOf(run.level);
+    if (next && next !== 'end') this.goToLevel(next, { mode: 'stand' });
+    else this.showTitle();
+  }
+
+  /** Where level `id`'s exit leads (its `next`), or null without one. */
+  private exitOf(id: string): string | null {
+    try {
+      const exit = this.deps.getLevel(id).zones.find((z) => z.kind === 'exit');
+      return exit?.kind === 'exit' ? exit.next : null;
+    } catch {
+      return null;
+    }
   }
 
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */
@@ -696,7 +744,11 @@ export class Game {
     this.deps.ctx.audio.setTempoScale(1);
     this.scenes.clear();
     this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
-    const time = startTime(level, this.state, start);
+    // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
+    // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
+    const tutorial = levelTutorial(level);
+    if (!tutorial) this.tutorialRun = null;
+    const time = tutorial ? null : startTime(level, this.state, start);
     this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
   }
 

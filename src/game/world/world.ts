@@ -73,6 +73,18 @@ export interface CaptiveRules {
   hero(id: string): CharacterDef | undefined;
 }
 
+/** Counts of things the players did in this world (stage tutorials check their lessons by them). */
+export interface WorldFeats {
+  /** Enemies stomped. */
+  stomps: number;
+  /** ? blocks (and coin bricks) bumped for a coin. */
+  coinBlocks: number;
+  /** Blocks bumped for a power-up (mushroom or flower). */
+  powerBlocks: number;
+  /** Bricks broken. */
+  bricks: number;
+}
+
 export interface WorldStart {
   /** Override the level's start tile. */
   x?: number;
@@ -221,6 +233,8 @@ export class World {
   readonly flagpole: Flagpole | null = null;
   /** Set by LevelScene in campaign play; see CaptiveRules. */
   captives: CaptiveRules | null = null;
+  /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
+  readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0 };
 
   constructor(
     readonly level: LevelData,
@@ -629,6 +643,7 @@ export class World {
       p.stompFrame = this.frame;
     }
     this.seqHit(stompScore(p.combo, e.scores.stomp, double), e.body.x, e.body.y - px(8));
+    this.feats.stomps++;
   }
 
   /** Kick a still shell (KoopaGreen.kickShell), scored by when in the shell's rest it happens. */
@@ -1069,6 +1084,7 @@ export class World {
         this.spawn(new BrickPiece(cx + px(8), cy + px(8), 0x01000, -0x03000));
         this.addScore(50);
         this.audio.sfx('break');
+        this.feats.bricks++;
       } else {
         this.bump(tx, ty, 'brick', id);
         this.audio.sfx('bump');
@@ -1080,6 +1096,7 @@ export class World {
       case 'coin':
         this.spawn(new CoinPop(tileToSub(tx) + px(4), tileToSub(ty - 1)));
         this.addCoin();
+        this.feats.coinBlocks++;
         break;
       case 'coins10': {
         const key = `${tx},${ty}`;
@@ -1100,6 +1117,7 @@ export class World {
       case 'powerup':
         this.spawn(new PowerUp(tx, ty, p.def.blockPowerUp(p)));
         this.audio.sfx('powerup-appear');
+        this.feats.powerBlocks++;
         break;
       case '1up':
         this.spawn(new PowerUp(tx, ty, '1up'));

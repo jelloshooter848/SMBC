@@ -83,7 +83,8 @@ describe('world map pages', () => {
       expect(new Set(ids).size).toBe(ids.length);
       expect(ids.sort()).toEqual(['start', `${w}-1`, `${w}-2`, `${w}-3`, `${w}-4`, `bonus-${w}`].sort());
       expect(nodeAt(page, 'start').kind).toBe('start');
-      expect(nodeAt(page, 'start').level).toBeUndefined();
+      // World 1's start is Mario's tutorial stage 1-0 (where a new file begins); 1-1 opens after it.
+      expect(nodeAt(page, 'start').level).toBe(w === 1 ? '1-0' : undefined);
       for (let s = 1; s <= 4; s++) {
         const n = nodeAt(page, `${w}-${s}`);
         expect(n.kind).toBe(s === 4 ? 'castle' : 'level');

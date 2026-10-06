@@ -46,6 +46,12 @@ export const sfx: Sfx[] = [
     noise: 'v13 x1 l16 n3 n6 l8 n9 l4 n13',
     triangle: 'q8 x0 p-24 o2 g4',
   },
+  // Bowser's laugh (the tutorial's tease): three low falling "ha"s, each with a breathy rasp.
+  {
+    id: 'bowser-laugh',
+    pulse: '@3 v12 q6 x1 l16 p-3 o3 a r16 p-3 o3 g r16 p-5 o3 f8',
+    noise: 'v7 x1 l16 n11 r16 n11 r16 l8 n12',
+  },
   // Noise whoosh.
   { id: 'bowser-flame', noise: 'v11 x1 l16 n1 n2 n3 l8 n5' },
   // Firework pop.

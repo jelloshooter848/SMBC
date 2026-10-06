@@ -13,6 +13,7 @@ import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
 import { talkToCaptive } from './free-hero';
+import { TutorialDirector } from '../tutorial/stage-tutorial';
 
 export type LevelStart = WorldStart;
 
@@ -29,6 +30,8 @@ export class LevelScene implements Scene {
   private started = false;
   /** Back from scenes pushed over the level: the press that closed them must not jump. */
   private swallowJump = false;
+  /** The stage tutorial played here (1-0 and its pipe room), else null. */
+  readonly tutorial: TutorialDirector | null;
 
   constructor(
     private readonly game: Game,
@@ -44,6 +47,9 @@ export class LevelScene implements Scene {
         isFreed: (id) => game.freed.includes(id),
         hero: (id) => game.deps.characters.find((c) => c.id === id),
       };
+    // A stage tutorial has no clock (and keeps every life: TutorialDirector).
+    this.tutorial = TutorialDirector.attach(game, this);
+    if (this.tutorial) this.world.time = null;
   }
 
   enter(): void {
@@ -89,6 +95,7 @@ export class LevelScene implements Scene {
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
     this.world.update(inputs);
     this.syncState();
+    this.tutorial?.update();
     for (const ev of this.world.events.splice(0)) this.handle(ev);
   }
 
@@ -200,6 +207,11 @@ export class LevelScene implements Scene {
           s.hp2 = startHp(s.character2);
         }
         s.time = null;
+        // A stage tutorial: no life lost, straight back in at the current lesson.
+        if (this.tutorial) {
+          this.tutorial.respawn();
+          break;
+        }
         if (!game.ctx.assist.infiniteLives) s.lives--;
         // Campaign: the lost life is saved at once, so quitting now keeps the count.
         if (game.campaign && s.lives > 0) game.autosave();
@@ -241,6 +253,7 @@ export class LevelScene implements Scene {
     this.world.render(r);
     const time = this.world.timeHidden ? null : this.world.time;
     drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players);
+    this.tutorial?.render(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
   }
 }
