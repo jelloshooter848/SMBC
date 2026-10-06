@@ -249,8 +249,8 @@ describe('top-down kit: doors, keys and shutters', () => {
     ]);
     const { world, pad, hero } = setup(d);
     expect(hero.x).toBe(112); // half a tile left of the door's middle
-    expect(world.blocked(hero.feet(112, 0), 'link')).toBe(true); // in the left jamb
-    expect(world.blocked(hero.feet(120, 0), 'link')).toBe(false);
+    expect(world.blocked(hero.feet(112, 0), 'hero')).toBe(true); // in the left jamb
+    expect(world.blocked(hero.feet(120, 0), 'hero')).toBe(false);
     pad.until(['up'], () => world.room.id === 'north');
     expect(hero.x).toBe(120);
   });
@@ -374,6 +374,15 @@ describe('top-down kit: push blocks and switches', () => {
     expect(block.fixed).toBe(true); // stays on its plate
     pad.step(['right'], 60);
     expect(block.x).toBe(7 * TILE);
+  });
+
+  it('leaning on the block from half a tile off slides onto its column and the push takes', () => {
+    const { world, pad, hero } = setup(blockRooms());
+    const block = world.entities.find((e) => e instanceof PushBlock) as PushBlock;
+    hero.x = 5 * TILE + 8; // half over the block's column
+    hero.y = 3 * TILE;
+    pad.until(['down'], () => block.y === 6 * TILE && !block.moving, 200);
+    expect(hero.x).toBe(5 * TILE);
   });
 
   it('a block pushed into a corner comes back when the room is left and re-entered', () => {
@@ -601,6 +610,29 @@ describe('top-down kit: sword, shield and damage', () => {
     }
     expect(drops).toBeGreaterThan(4);
     expect(drops).toBeLessThan(25);
+    // A heart dropped over a statue lands on the nearest walkable tile.
+    const s = setup(
+      buildDungeon([
+        room(
+          'r',
+          [0, 0],
+          map([
+            [7, 5, '@'],
+            [3, 3, 'S'],
+            [5, 5, 'b'],
+          ]),
+        ),
+      ]),
+      7,
+    );
+    const bat = s.world.enemies()[0] as Bat;
+    bat.dropChance = 1;
+    bat.x = 3 * TILE;
+    bat.y = 3 * TILE;
+    bat.die(s.world);
+    const heart = s.world.entities.find((e) => e instanceof Pickup) as Pickup;
+    expect(s.world.blocked(heart.hurtbox(), 'hero')).toBe(false);
+    expect(Math.abs(heart.x - 3 * TILE) + Math.abs(heart.y - 3 * TILE)).toBeLessThanOrEqual(2 * TILE);
     const { world, pad, hero } = setup(d);
     hero.hp = 2;
     world.add(new Pickup(hero.x + 4, hero.y + 4, 'heart'));

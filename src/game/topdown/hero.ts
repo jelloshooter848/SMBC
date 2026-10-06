@@ -191,20 +191,21 @@ export class TdHero {
     const open = (c: number) => {
       const p = at(c);
       return (
-        !world.blocked(this.feet(p.x, p.y), 'link', null) &&
-        !world.blocked(this.feet(p.x + v.dx, p.y + v.dy), 'link', null)
+        !world.blocked(this.feet(p.x, p.y), 'hero', null) &&
+        !world.blocked(this.feet(p.x + v.dx, p.y + v.dy), 'hero', null)
       );
     };
+    // Leaning on a push block half a tile off: slide onto its row or column so the push takes.
+    const block = world.solidEntityAt(this.feet(this.x + v.dx, this.y + v.dy));
+    const line = block instanceof PushBlock ? (h ? block.y : block.x) : null;
+    const square = line !== null && (pos === line || (h && pos === line - ALIGN));
     let target = pos;
-    if (cross !== 0) {
+    if (line !== null && !square && Math.abs(line - pos) <= ALIGN) target = line;
+    else if (cross !== 0) {
       const near = cross < ALIGN / 2 ? pos - cross : pos - cross + ALIGN;
       const far = near < pos ? near + ALIGN : near - ALIGN;
       target = !open(near) && open(far) ? far : near;
-    } else if (!open(pos)) {
-      const ahead = at(pos);
-      const leaning = world.solidEntityAt(this.feet(ahead.x + v.dx, ahead.y + v.dy)) instanceof PushBlock;
-      if (!leaning) target = [pos - ALIGN, pos + ALIGN].find(open) ?? pos;
-    }
+    } else if (!open(pos) && line === null) target = [pos - ALIGN, pos + ALIGN].find(open) ?? pos;
     if (target !== pos) {
       const n = Math.min(step, Math.abs(target - pos)) * Math.sign(target - pos);
       if (h ? this.moveBy(world, 0, n, false) : this.moveBy(world, n, 0, false)) return;
@@ -223,7 +224,7 @@ export class TdHero {
     const sy = Math.sign(dy);
     for (let i = 0; i < n; i++) {
       const box = this.feet(this.x + sx, this.y + sy);
-      if (world.blocked(box, 'link', null)) {
+      if (world.blocked(box, 'hero', null)) {
         if (lean) this.lean(world, box);
         return false;
       }

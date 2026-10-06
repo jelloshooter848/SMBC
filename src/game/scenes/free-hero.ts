@@ -57,6 +57,8 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     'BEAT ME, AND MAYBE...',
     'I WILL REMEMBER.',
   ],
+  // The spell holds Link inside his own mind: the Shadow Keep.
+  link: (you) => ['THE SHADOW... HOLDS ME...', '', `${you}... FIGHT IT WITH ME,`, 'IN HERE.'],
 };
 
 /** The freed card's lines. */

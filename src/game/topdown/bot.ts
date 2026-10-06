@@ -222,7 +222,7 @@ export class TopDownBot {
       n.y >= 0 &&
       n.x <= ROOM_W - TILE &&
       n.y <= ROOM_H - TILE &&
-      !world.blocked(hero.feet(n.x, n.y), 'link', null) &&
+      !world.blocked(hero.feet(n.x, n.y), 'hero', null) &&
       !avoid.some((b) => boxesOverlap({ x: n.x + 2, y: n.y + 2, w: 12, h: 12 }, b));
     if (goal(start)) return { dist: 0, first: null };
     const prev = new Map<string, { from: Node; dir: Dir; dist: number } | null>([[key(start), null]]);

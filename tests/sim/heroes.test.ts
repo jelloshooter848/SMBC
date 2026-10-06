@@ -11,6 +11,7 @@ import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
+import { SAMUS } from '@game/characters/samus';
 import type { Captive } from '@game/entities/objects/captive';
 import { loadSave, newSave } from '@game/save/save-files';
 import { miniGameFor, type MiniGameDef, type MiniGameResult } from '@game/minigames';
@@ -502,14 +503,15 @@ describe('the unlock flow, in detail', () => {
   });
 
   it('a long mini game title wraps to the dialogue box', () => {
+    // A hero with no lines of their own gets the generic challenge, which names the title.
     const def: MiniGameDef = {
-      hero: 'link',
-      title: 'THE VERY LONG AND WINDING TRIAL OF THE TRIFORCE',
+      hero: 'samus',
+      title: 'THE VERY LONG AND WINDING TRIAL OF THE CHOZO',
       rules: [],
       create: () => ({ update() {}, render() {} }),
     };
-    const pages = captiveDialogue(LINK, def, MARIO);
+    const pages = captiveDialogue(SAMUS, def, MARIO);
     for (const page of pages) for (const line of page) expect(line.length).toBeLessThanOrEqual(CARD_COLS);
-    expect(pages.flat().join(' ')).toContain('TRIFORCE');
+    expect(pages.flat().join(' ')).toContain('CHOZO');
   });
 });

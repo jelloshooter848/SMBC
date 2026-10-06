@@ -182,7 +182,7 @@ export class ShadowKeepScene implements Scene {
         this.endT = 0;
         this.music = null;
         this.game.ctx.audio.stopMusic();
-        this.say('Link fell. Try again.');
+        this.say('Link fell.'); // the flow asks "Try again?"
         return;
       case 'exit':
         this.phase = 'won';

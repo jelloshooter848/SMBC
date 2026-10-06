@@ -11,10 +11,12 @@ import type { Scene } from '@engine/scene';
 import type { Announcer } from '@engine/a11y/announcer';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
+import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
 import { CHARACTERS } from '@game/characters/registry';
 import { TopDownBot } from '@game/topdown/bot';
 import { DEATH_FRAMES } from '@game/topdown/hero';
 import { TILE } from '@game/topdown/geometry';
+import { FloorSwitch, Pickup } from '@game/topdown/entity';
 import { miniGameFor } from '..';
 import type { MiniGameResult } from '../types';
 import { LINK_MINIGAME } from '.';
@@ -116,6 +118,16 @@ describe('Shadow Keep: the mini game contract', () => {
     expect(LINK_MINIGAME.rules.join(' ')).not.toMatch(/\b[AB] BUTTON|\bPRESS [AB]\b/);
   });
 
+  it("Link's captive lines fit the dialogue box: the shadow holds him in his own mind", () => {
+    const link = CHARACTERS.find((c) => c.id === 'link');
+    const mario = CHARACTERS.find((c) => c.id === 'mario');
+    if (!link || !mario) throw new Error('missing heroes');
+    const pages = captiveDialogue(link, LINK_MINIGAME, mario);
+    for (const page of pages) for (const line of page) expect(line.length).toBeLessThanOrEqual(CARD_COLS);
+    expect(pages[1]?.join(' ')).toContain('THE SHADOW... HOLDS ME...');
+    expect(pages[1]?.join(' ')).toContain('FIGHT IT WITH ME');
+  });
+
   it('uses the dungeon and keeper music and the puzzle sounds by id (they exist)', () => {
     const songIds = songs.map((s) => s.id);
     const sfxIds = sfx.map((s) => s.id);
@@ -173,6 +185,44 @@ describe('Shadow Keep: the dungeon', () => {
     expect(def('keeper')?.music).toBe('keeper');
     expect(kinds('keeper')).toMatch(/M/);
     expect(kinds('exit')).toMatch(/E/);
+  });
+});
+
+describe('Shadow Keep: rewards', () => {
+  it("the knights' key stays hidden (and can't be taken) until the room is clear", () => {
+    const h = setup();
+    h.world.warpTo('knights', 7.5 * TILE, 10 * TILE);
+    const key = () => h.world.entities.find((e) => e instanceof Pickup && e.kind === 'key') as Pickup;
+    expect(key().hidden).toBe(true);
+    h.world.hero.invuln = 100000;
+    h.world.hero.x = key().x - 4;
+    h.world.hero.y = key().y;
+    h.step([], 5);
+    expect(h.world.keys).toBe(0);
+    for (const k of h.world.enemies()) k.die(h.world);
+    h.step();
+    expect(h.said).toContain('A key appears!');
+    h.world.hero.x = key().x - 4;
+    h.world.hero.y = key().y;
+    h.step();
+    expect(h.world.keys).toBe(1);
+  });
+
+  it('the heart refill appears only once the floor switch is down', () => {
+    const h = setup();
+    h.world.warpTo('switch', TILE, 5 * TILE);
+    const refill = () => h.world.entities.find((e) => e instanceof Pickup && e.kind === 'heart-container');
+    expect((refill() as Pickup).hidden).toBe(true);
+    for (const k of h.world.enemies()) k.die(h.world);
+    h.step([], 2);
+    expect((refill() as Pickup).hidden).toBe(true); // clearing the room isn't it
+    const sw = h.world.entities.find((e) => e instanceof FloorSwitch) as FloorSwitch;
+    h.world.hero.x = sw.x;
+    h.world.hero.y = sw.y;
+    h.step();
+    expect(sw.pressed).toBe(true);
+    expect((refill() as Pickup).hidden).toBe(false);
+    expect(h.world.doorOpen('n')).toBe(true);
   });
 });
 
@@ -263,7 +313,7 @@ describe('Shadow Keep: outcomes', () => {
     expect(h.scene.touchLabels().attack).toBe('SWORD');
     h.step();
     expect(h.scene.phase).toBe('dying');
-    expect(h.said).toContain('Link fell. Try again.');
+    expect(h.said).toContain('Link fell.');
     h.step([], DEATH_FRAMES - 5);
     expect(h.results).toEqual([]);
     h.step([], FAIL_DELAY + 10);

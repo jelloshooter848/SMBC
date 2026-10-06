@@ -111,9 +111,11 @@ export abstract class TdEnemy extends TdEntity {
     world.add(new Poof(this.x + this.w / 2 - 8, this.y + this.h / 2 - 8));
     if (this.dropChance > 0 && world.rng.chance(this.dropChance)) {
       // Dropped hearts sit on the 8-px grid so they are easy to walk onto.
+      // Over a statue, block or water it goes to the nearest tile the hero can walk onto.
       const x = Math.round((this.x + this.w / 2 - 4) / 8) * 8;
       const y = Math.round((this.y + this.h / 2 - 4) / 8) * 8;
-      world.add(new Pickup(x, y, 'heart'));
+      const at = world.openSpotNear({ x, y, w: 8, h: 8 });
+      world.add(new Pickup(at.x, at.y, 'heart'));
     }
   }
 

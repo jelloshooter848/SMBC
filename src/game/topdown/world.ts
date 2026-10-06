@@ -28,12 +28,12 @@ import {
 } from './room';
 
 /**
- * How something moves through tiles. `link`: the hero (open doors and exits let him through, and
+ * How something moves through tiles. `hero`: the player (open doors and exits let him through, and
  * an open doorway lets him walk off the edge into the next room). `walk`: walking enemies.
  * `fly`: over water, blocks and statues but not walls. `shot`: projectiles (over water).
  * `block`: a push block (only onto open floor).
  */
-export type Mover = 'link' | 'walk' | 'fly' | 'shot' | 'block';
+export type Mover = 'hero' | 'walk' | 'fly' | 'shot' | 'block';
 
 export type TdEvent =
   | { type: 'sword' }
@@ -269,7 +269,7 @@ export class TopDownWorld {
   private tileSolid(col: number, row: number, mover: Mover): boolean {
     const inside = col >= 0 && row >= 0 && col < ROOM_COLS && row < ROOM_ROWS;
     if (!inside) {
-      if (mover !== 'link') return true;
+      if (mover !== 'hero') return true;
       // Past the edge: open only straight through an open doorway.
       const c = Math.max(0, Math.min(ROOM_COLS - 1, col));
       const r = Math.max(0, Math.min(ROOM_ROWS - 1, row));
@@ -288,11 +288,11 @@ export class TopDownWorld {
       case 'statue':
         return mover !== 'fly';
       case 'water':
-        return mover === 'link' || mover === 'walk' || mover === 'block';
+        return mover === 'hero' || mover === 'walk' || mover === 'block';
       case 'exit':
-        return mover !== 'link';
+        return mover !== 'hero';
       case 'door':
-        return mover !== 'link' || !this.doorOpen(sideOf(col, row) as Side);
+        return mover !== 'hero' || !this.doorOpen(sideOf(col, row) as Side);
     }
   }
 
@@ -311,7 +311,7 @@ export class TopDownWorld {
     const r1 = Math.floor((box.y + box.h - 1) / TILE);
     for (let r = r0; r <= r1; r++)
       for (let c = c0; c <= c1; c++) if (this.tileSolid(c, r, mover)) return true;
-    if (mover === 'link' && this.inDoorJamb(box)) return true;
+    if (mover === 'hero' && this.inDoorJamb(box)) return true;
     if (mover === 'fly') return false;
     return this.solidEntityAt(box, self) !== null;
   }
@@ -333,6 +333,26 @@ export class TopDownWorld {
       if (box.x < left + TILE / 2 || box.x + box.w > right - TILE / 2) return true;
     }
     return false;
+  }
+
+  /**
+   * `box` if the hero could stand on it, else the same box centred in the nearest tile (by
+   * distance from its centre) that the hero can walk onto.
+   */
+  openSpotNear(box: Box): { x: number; y: number } {
+    if (!this.blocked(box, 'hero')) return { x: box.x, y: box.y };
+    const cx = box.x + box.w / 2;
+    const cy = box.y + box.h / 2;
+    let best: { x: number; y: number; d: number } | null = null;
+    for (let row = 1; row < ROOM_ROWS - 1; row++)
+      for (let col = 1; col < ROOM_COLS - 1; col++) {
+        const x = col * TILE + (TILE - box.w) / 2;
+        const y = row * TILE + (TILE - box.h) / 2;
+        if (this.blocked({ x, y, w: box.w, h: box.h }, 'hero')) continue;
+        const d = (x + box.w / 2 - cx) ** 2 + (y + box.h / 2 - cy) ** 2;
+        if (!best || d < best.d) best = { x, y, d };
+      }
+    return best ?? { x: box.x, y: box.y };
   }
 
   /** Moves an entity pixel by pixel; returns false (stopping there) when something solid is in the way. */
