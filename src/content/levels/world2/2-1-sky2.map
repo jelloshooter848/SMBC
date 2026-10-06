@@ -1,0 +1,56 @@
+id: 2-1-sky2
+name: WORLD 2-1
+world: 2
+stage: 1
+theme: overworld
+music: overworld
+time: inherit
+start: 4,14
+startMode: climb
+camera: scroll
+parent: 2-1
+
+;; Sky ruins above the 2-1 coin heaven (reached by the hidden vine block in 2-1-sky): a fallen
+;; temple on the clouds where captive Link waits beside the doorway. The clouds end on the right in a
+;; drop, signposted by a down-arrow of coins, that lands in 2-1 where the coin heaven's drop does.
+
+[tiles]
+;; 0                16               32               48
+................ ................ ................ ................
+................ ................ ................ ................
+................ ................ ................ ................
+................ ................ ................ ................
+................ ................ ................ ................
+................ ................ ................ ...........$....
+................ ...........$.... ................ ...........$....
+................ ..........$$$... ................ ...........$....
+................ .........$...$.. ................ .........$.$.$..
+.........$$$.... ........$$$.$$$. ......$$$....... ..........$$$...
+................ .....OO......... .OO............. ...........$....
+..............OO O............... ............OO.. ................
+..............OO O............... ................ ................
+OOOO.OOOOOOOOOOO OOOOOOOOOOOOOOOO OOOOOOOOOOOOOOOO OOOOOOOO........
+................ ................ ................ ................
+
+[entities]
+vine 4 14 len=8
+captive 30 12 hero=link
+
+[zones]
+pit 0 -> 2-1 162 0
+
+[decor]
+cloud-1 2 3
+cloud-2 18 2
+cloud-1 36 4
+cloud-2 50 2
+ruin-pillar 8 12
+ruin-pillar-broken 11 12
+ruin-statue 15 10
+ruin-pillar 19 12
+ruin-temple 26 12
+ruin-pillar 35 12
+ruin-pillar-broken 41 12
+ruin-pillar 44 10
+ruin-pillar 49 12
+ruin-pillar-broken 53 12

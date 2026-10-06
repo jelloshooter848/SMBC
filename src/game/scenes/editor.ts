@@ -488,6 +488,10 @@ export class EditorScene implements Scene {
       'fence',
       'castle-small',
       'castle-big',
+      'ruin-pillar',
+      'ruin-pillar-broken',
+      'ruin-statue',
+      'ruin-temple',
     ]) {
       decor.appendChild(this.brushButton({ kind: 'decor', name: d, label: d }, d));
     }

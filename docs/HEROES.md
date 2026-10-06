@@ -62,6 +62,8 @@ Luigi waits in the 1-1 bonus room on a hard-block ledge at the top right (row 7,
 12-14), 48 px above the top of the coin bricks. From the bricks a running or walking jump reaches
 it for every hero but Ryu, who climbs walls instead (`tests/sim/heroes.test.ts` scripts Mario there).
 
+Link waits beside the temple doorway of the 2-1 sky ruins (`2-1-sky2`, column 30 on the cloud floor; TALK shows against the sky there), reached by the hidden vine block (`7` in maps) over the middle cloud platform past the end of the 2-1 coin heaven; the drop at the ruins' right end lands in 2-1 at column 162 like the coin heaven's (`tests/sim/heroes-link-sky.test.ts`, `tests/sim/sky-ruins.test.ts`).
+
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 
 Every step is a scene pushed over the paused level, so the level's clock and world stand still:

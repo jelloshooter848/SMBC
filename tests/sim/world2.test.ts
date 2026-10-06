@@ -287,7 +287,17 @@ describe('World 2: bridges, springs, vines and lava', () => {
   });
 
   it('every World 2 area loads and runs', () => {
-    for (const id of ['2-1', '2-1-sky', '2-1-bonus', '2-2-intro', '2-2', '2-2-exit', '2-3', '2-4']) {
+    for (const id of [
+      '2-1',
+      '2-1-sky',
+      '2-1-sky2',
+      '2-1-bonus',
+      '2-2-intro',
+      '2-2',
+      '2-2-exit',
+      '2-3',
+      '2-4',
+    ]) {
       const r = runSim({ level: level(id), character: MARIO, script: none, maxFrames: 60 });
       expect(r.frames).toBe(60);
     }

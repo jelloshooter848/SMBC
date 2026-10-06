@@ -95,6 +95,8 @@ export const T = {
    * them, lines 2047-2051): the first bump releases the Clock, the next one gives the coin.
    */
   Q_CLOCK: def('question-clock', 'solid', { block: { kind: 'question', content: 'clock' } }),
+  /** An invisible block holding a vine (the 2-1 coin heaven's way up to the sky ruins). */
+  HIDDEN_VINE: def('hidden-vine', 'none', { block: { kind: 'hidden', content: 'vine' } }),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
@@ -122,6 +124,7 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   '4': T.Q_POISON,
   '5': T.BRICK_POISON,
   '6': T.HIDDEN_POISON,
+  '7': T.HIDDEN_VINE,
   Q: T.Q_CLOCK,
   B: T.HARD,
   u: T.USED,
