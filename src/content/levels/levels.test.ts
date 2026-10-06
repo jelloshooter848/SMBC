@@ -92,13 +92,15 @@ describe('World 1 sub-areas and later stages follow the original layouts', () =>
     for (let y = 0; y < l.height; y++)
       for (let x = 0; x < l.width; x++) if (tile(l, x, y) === T.COIN) coins++;
     expect(coins).toBe(19);
-    // The ledge: three hard blocks at row 6 against the pipe, open above for Luigi.
+    // The ledge: three hard blocks at row 7 against the pipe (48 px above the coin bricks' top,
+    // row 10), open above for Luigi.
     for (const x of [12, 13, 14]) {
-      expect(tile(l, x, 6)).toBe(T.HARD);
-      expect(tile(l, x, 5)).toBe(T.AIR);
+      expect(tile(l, x, 7)).toBe(T.HARD);
+      expect(tile(l, x, 6)).toBe(T.AIR);
     }
-    expect(tile(l, 11, 6)).toBe(T.AIR);
-    expect(l.entities).toEqual([{ type: 'captive', x: 13, y: 5, props: { hero: 'luigi' } }]);
+    expect(tile(l, 11, 7)).toBe(T.AIR);
+    expect(tile(l, 10, 10)).toBe(T.BRICK);
+    expect(l.entities).toEqual([{ type: 'captive', x: 13, y: 6, props: { hero: 'luigi' } }]);
   });
   it('1-2 intro walks into the side pipe and 1-2 starts with the drop from the ceiling', () => {
     const intro = load('1-2-intro');

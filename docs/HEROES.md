@@ -30,14 +30,17 @@ the map, the pick after a death, warps, and both players' picks on a two-player 
 `PaletteBook.fx` (`src/engine/gfx/palette.ts`) recolours a whole palette when a sheet is asked
 for with `<palette>~<fx>` (for example `assets.sheet('mario', 'luigi~silhouette')`). The effect
 runs on the palette of the active colour mode, so colour-blind modes and asset-pack palette
-overrides still apply. The effects are `silhouette`, `rim`, `brainwashed` and
-`brainwashed-glow` (`src/content/sprites/palette-fx.ts`).
+overrides still apply. Effects chain left to right (`luigi~brainwashed~silhouette`), and an
+unknown effect is an error. The effects are `silhouette`, `rim`, `brainwashed` and
+`brainwashed-glow` (`src/content/sprites/palette-fx.ts`). A pack image that replaces a sheet does
+not replace its `~fx` variants (`applyPack`): they stay the built-in art recoloured, so a pack
+can't unhide a locked hero.
 
 ## The captive entity
 
 ```
 [entities]
-captive 13 5 hero=luigi
+captive 13 6 hero=luigi
 ```
 
 - `x y`: the tile the hero's feet stand in, so the hero stands on the tile below it.
@@ -48,22 +51,27 @@ captive 13 5 hero=luigi
 - It spawns only in campaign play (`World.captives`, set by LevelScene), and only while that hero
   is not freed on the file.
 - **Talking:** a player on the ground within 1.5 tiles (24 px, same floor) sees `TALK` with an
-  up arrow above it. Pressing **up** talks (`World.checkTalk` raises a `talk` event). Up was
+  up arrow above it, and the announcer says "Luigi. Up to talk." each time a player comes into
+  reach. Pressing **up** talks (`World.checkTalk` raises a `talk` event). Up was
   picked because every control scheme has it, including the touch d-pad, so no face button
   changes its label or meaning. Heroes that also use up on the ground (Samus and Bill aim up)
   just talk as well while in reach. It does nothing on a vine.
 
-Luigi waits in the 1-1 bonus room on a hard-block ledge at the top right (row 6, columns 12-14).
-From the brick block a running or walking jump reaches it (`tests/sim/heroes.test.ts`).
+Luigi waits in the 1-1 bonus room on a hard-block ledge at the top right (row 7, columns
+12-14), 48 px above the top of the coin bricks. From the bricks a running or walking jump reaches
+it for every hero but Ryu, who climbs walls instead (`tests/sim/heroes.test.ts` scripts Mario there).
 
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 
 Every step is a scene pushed over the paused level, so the level's clock and world stand still:
 
 1. Dialogue cards in a box over the level. The hero says "...LUIGI SERVES KING KOOPA..." and then
-   the challenge (per hero in `DIALOGUE`, with a generic line built from the title). OK, B or
-   MENU goes on.
-2. A rules card: `MiniGameDef.title` and `rules`, then OK.
+   the challenge (per hero in `DIALOGUE`, with a generic line built from the title, wrapped to
+   the box). The challenge names the hero of the player who talked (player 2's in co-op). OK, B
+   or MENU goes on; the box shows OK once it takes input, and each card is announced with "OK to
+   continue."
+2. A rules card: `MiniGameDef.title` and `rules`. It waits for OK; it never starts the round by
+   itself.
 3. One round: `def.create(game, done)` is pushed.
    - `pass`: the "LUIGI IS FREE!" card. The hero is added to `freed` and saved at once, and
      the captive leaves in a puff. Then back to the level.

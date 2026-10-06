@@ -80,8 +80,11 @@ export async function buildPack(stored: StoredPack, registry: AssetRegistry): Pr
 export function applyPack(pack: LoadedPack, registry: AssetRegistry): void {
   for (const [id, sheet] of pack.sheets) {
     registry.override(id, sheet);
-    // A pack image replaces every palette variant of that sheet too.
-    for (const key of registry.sheetKeys()) if (key.startsWith(`${id}@`)) registry.override(key, sheet);
+    // A pack image replaces every palette variant of that sheet too, but not the whole-palette
+    // effects ('mario@luigi~silhouette'): those stay the built-in art recoloured, so a pack can't
+    // unhide a locked hero's silhouette or a captive's trance.
+    for (const key of registry.sheetKeys())
+      if (key.startsWith(`${id}@`) && !key.includes('~')) registry.override(key, sheet);
   }
   for (const [name, colors] of Object.entries(pack.manifest.palettes ?? {}))
     registry.overridePalette(name, colors);

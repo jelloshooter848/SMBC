@@ -68,6 +68,8 @@ export interface CardOptions {
    * castle text spot, so they stay readable over a busy room (World.castleText is left alone).
    */
   panel?: boolean;
+  /** With `panel`: a continue prompt (the ability's name, e.g. "OK") at the box's bottom right. */
+  prompt?: string;
 }
 
 /**
@@ -90,12 +92,14 @@ export class CardScene implements Scene {
   ) {
     this.keys = opts.keys ?? ['start', 'attack'];
     this.panel = world !== null && opts.panel === true;
+    this.prompt = opts.prompt ?? '';
     this.translucent = world !== null;
     if (world && !this.panel) world.castleText = [...lines];
   }
 
   private readonly keys: readonly Action[];
   private readonly panel: boolean;
+  private readonly prompt: string;
 
   /** B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. A when it goes on too. */
   touchLabels(): TouchLabels {
@@ -113,11 +117,15 @@ export class CardScene implements Scene {
   render(r: Renderer): void {
     const font = this.game.ctx.assets.sheet('font');
     if (this.panel) {
-      const h = this.lines.length * 10 + 12;
+      const rows = this.lines.length + (this.prompt ? 1 : 0);
+      const h = rows * 10 + 12;
       const y = SCREEN_H - 12 - h;
       r.rect(12, y, SCREEN_W - 24, h, '#fcfcfc');
       r.rect(14, y + 2, SCREEN_W - 28, h - 4, '#000');
       this.lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + 7 + i * 10));
+      // The prompt shows once the card takes input (after the guard).
+      if (this.prompt && this.t > CARD_GUARD_FRAMES)
+        r.text(font, this.prompt, SCREEN_W - 20 - this.prompt.length * 8, y + 7 + this.lines.length * 10);
       return;
     }
     if (this.world) return; // the level beneath draws the lines (World.castleText)

@@ -26,6 +26,8 @@ export class Captive extends Entity {
   /** The hero as it would stand in play: only used to pick its idle sprite. */
   private readonly pose: Player;
   private t = 0;
+  /** Players in reach last frame, so each new arrival is announced once. */
+  private readonly near = new Set<Player>();
 
   constructor(
     tx: number,
@@ -65,6 +67,11 @@ export class Captive extends Entity {
     this.t++;
     const near = world.activePlayers().filter((p) => this.inReach(p));
     this.prompt = near.length > 0;
+    for (const p of near)
+      if (!this.near.has(p))
+        world.events.push({ type: 'captive-near', hero: this.hero.id, player: world.players.indexOf(p) });
+    this.near.clear();
+    for (const p of near) this.near.add(p);
     // He turns to whoever comes close, but stays where he is.
     const p = near[0] ?? null;
     if (p) this.pose.facing = p.centerX < this.centerX ? -1 : 1;

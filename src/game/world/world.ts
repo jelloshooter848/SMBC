@@ -60,7 +60,9 @@ export type WorldEvent =
   /** The castle maze moved the players from column `from` to `to` (informational). */
   | { type: 'loop'; from: number; to: number }
   /** A player pressed up next to a captive hero (campaign): the level starts the unlock flow. */
-  | { type: 'talk'; hero: string };
+  | { type: 'talk'; hero: string; player: number }
+  /** A player came within a captive's talking reach (TALK shows for them): announced. */
+  | { type: 'captive-near'; hero: string; player: number };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -756,7 +758,7 @@ export class World {
       if (!(inputs[i] ?? NO_INPUT).pressed('up') || p.vine) continue;
       const c = this.entities.find((e): e is Captive => e instanceof Captive && e.alive && e.inReach(p));
       if (c) {
-        this.events.push({ type: 'talk', hero: c.hero.id });
+        this.events.push({ type: 'talk', hero: c.hero.id, player: i });
         return;
       }
     }

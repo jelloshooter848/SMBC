@@ -84,13 +84,21 @@ describe('headless sim on World 1', () => {
   });
 
   it('the 1-1 bonus room drops you in and its side pipe leads back to the 2-tall pipe at 163', () => {
-    const bot = newBot();
+    // Over the coin bricks and off their far end to the floor (the generic bot's running jump
+    // from the end now lands on Luigi's ledge, a dead end it has no way to back out of).
     const r = runSim({
       level: level('1-1-bonus'),
       character: MARIO,
       script: none,
       maxFrames: 1500,
-      controller: (w) => autoPlayer(w, bot),
+      controller: (w) => {
+        const p = w.player;
+        const feet = toPx(p.body.y + p.body.h);
+        const x = toPx(p.body.x);
+        if (p.body.onGround && feet === 208 && x >= 36 && x < 60) return ['right', 'jump'];
+        if (!p.body.onGround && p.body.vy < 0 && x < 70) return ['right', 'jump'];
+        return ['right'];
+      },
     });
     expect(r.outcome).toBe('pipe');
     expect(r.events[0]).toMatchObject({

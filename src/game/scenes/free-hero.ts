@@ -7,7 +7,7 @@ import type { CharacterDef } from '../characters/character';
 import { CardScene, MessageScene } from './message';
 import { MenuScene } from './menu';
 import { abilityHint } from './hints';
-import { fontText } from '../hud/text';
+import { fontText, wrapText } from '../hud/text';
 import { miniGameFor, type MiniGameDef, type MiniGameResult } from '../minigames';
 
 /*
@@ -26,19 +26,26 @@ import { miniGameFor, type MiniGameDef, type MiniGameResult } from '../minigames
 /** Dialogue cards go on with OK, B or MENU (any player), as the castle cards do plus OK. */
 const CARD_KEYS: readonly Action[] = ['jump', 'attack', 'start'];
 
-/** What a brainwashed hero says before the round; `player` is the hero who came to talk. */
+/** Columns a line may take in the dialogue box (CardScene panel: 228 px inside). */
+export const CARD_COLS = 28;
+
+/** Lines wrapped to the dialogue box (blank lines kept). */
+function fit(lines: readonly string[]): string[] {
+  return lines.flatMap((l) => (l.trim() === '' ? [''] : wrapText(l, CARD_COLS)));
+}
+
+/**
+ * What a brainwashed hero says before the round; `player` is the hero of the player who came to
+ * talk. Every line fits the box (a long mini game title wraps).
+ */
 export function captiveDialogue(hero: CharacterDef, def: MiniGameDef, player: CharacterDef): string[][] {
   const name = fontText(hero.hudName);
   const you = fontText(player.hudName);
   const lines = DIALOGUE[hero.id]?.(you) ?? [
     'NO ONE PASSES HERE.',
-    `BEAT ME AT THE ${fontText(def.title)}`,
-    'IF YOU DARE!',
+    `BEAT ME AT THE ${def.title}, IF YOU DARE!`,
   ];
-  return [
-    [`${name}:`, '', `...${name} SERVES`, 'KING KOOPA...'],
-    [`${name}:`, '', ...lines],
-  ];
+  return [fit([`${name}:`, '', `...${name} SERVES`, 'KING KOOPA...']), fit([`${name}:`, '', ...lines])];
 }
 
 /** Each hero's own challenge (after "...<HERO> SERVES KING KOOPA..."). */
@@ -55,7 +62,12 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
 /** The freed card's lines. */
 export function freedCard(hero: CharacterDef): string[] {
   const name = fontText(hero.hudName);
-  return [`${name} IS FREE!`, '', `${name} JOINS YOUR TEAM.`, 'PICK THE NEW HERO WHEN', 'YOU ENTER A LEVEL.'];
+  return fit([
+    `${name} IS FREE!`,
+    '',
+    `${name} JOINS YOUR TEAM.`,
+    'PICK THE NEW HERO WHEN YOU ENTER A LEVEL.',
+  ]);
 }
 
 /** The run's carried state, so nothing a round does to it leaks back into the level. */
@@ -69,10 +81,16 @@ function snapshot(s: GameState): GameState {
 }
 
 /**
- * Start the unlock flow for captive `heroId` over `level`. Does nothing for a hero without a
- * mini game (miniGameFor) or one already freed.
+ * Start the unlock flow for captive `heroId` over `level`; `talker` is the hero of the player who
+ * talked (player 2's in co-op). Does nothing for a hero without a mini game (miniGameFor) or one
+ * already freed.
  */
-export function talkToCaptive(game: Game, level: LevelScene, heroId: string): void {
+export function talkToCaptive(
+  game: Game,
+  level: LevelScene,
+  heroId: string,
+  talker: CharacterDef = game.state.character,
+): void {
   const def = miniGameFor(heroId);
   const hero = game.deps.characters.find((c) => c.id === heroId);
   if (!def || !hero || game.freed.includes(heroId)) return;
@@ -86,9 +104,9 @@ export function talkToCaptive(game: Game, level: LevelScene, heroId: string): vo
     level.resume();
   };
 
-  /** A card in a box over the level, then `then`. */
+  /** A card in a box over the level with an OK prompt, then `then`. */
   const card = (lines: string[], then: () => void): Scene => {
-    say(lines);
+    say([...lines, 'OK to continue.']);
     return new CardScene(
       game,
       lines,
@@ -98,12 +116,12 @@ export function talkToCaptive(game: Game, level: LevelScene, heroId: string): vo
       },
       world,
       3600,
-      { keys: CARD_KEYS, panel: true },
+      { keys: CARD_KEYS, panel: true, prompt: fontText(abilityHint(game, 'OK', 'jump')) },
     );
   };
 
   const rules = () => {
-    const lines = [fontText(def.title), '', ...def.rules.map(fontText)];
+    const lines = fit([def.title, '', ...def.rules].map(fontText));
     say([...lines, 'OK to start.']);
     game.scenes.push(
       new MessageScene(
@@ -113,7 +131,8 @@ export function talkToCaptive(game: Game, level: LevelScene, heroId: string): vo
           game.scenes.pop();
           round();
         },
-        3600,
+        // No timeout: the round starts only on OK.
+        Infinity,
         ['start', 'jump'],
       ),
     );
@@ -168,7 +187,7 @@ export function talkToCaptive(game: Game, level: LevelScene, heroId: string): vo
   };
 
   audio.sfx('pause');
-  const [first, ...more] = captiveDialogue(hero, def, game.state.character);
+  const [first, ...more] = captiveDialogue(hero, def, talker);
   const chain = (pages: string[][], then: () => void): (() => void) =>
     pages.reduceRight<() => void>((next, lines) => () => game.scenes.push(card(lines, next)), then);
   chain(first ? [first, ...more] : more, rules)();

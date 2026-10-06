@@ -1,157 +1,78 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getLevel } from '@content/levels';
-import { PALETTES, SPRITES } from '@content/sprites';
-import { DEFAULT_ASSIST } from '@game/context';
-import { AssetRegistry } from '@engine/assets/registry';
-import { NULL_AUDIO } from '@engine/audio/audio-manager';
-import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
-import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import { describe, expect, it, vi } from 'vitest';
 import { toPx, px } from '@engine/math/units';
-import { ScriptedInput } from '@game/sim/headless';
-import { Game } from '@game/scenes/game';
-import { WorldMapScene } from '@game/scenes/world-map';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { FileSelectScene } from '@game/scenes/file-select';
 import { CardScene, MessageScene } from '@game/scenes/message';
 import { MenuScene } from '@game/scenes/menu';
 import { StoryScene } from '@game/scenes/story';
+import { WorldMapScene } from '@game/scenes/world-map';
+import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
-import { Captive } from '@game/entities/objects/captive';
-import { loadSave, newSave, writeSave, type SaveFile } from '@game/save/save-files';
-import { miniGameFor } from '@game/minigames';
+import type { Captive } from '@game/entities/objects/captive';
+import { loadSave, newSave } from '@game/save/save-files';
+import { miniGameFor, type MiniGameDef, type MiniGameResult } from '@game/minigames';
 import type { Action } from '@engine/input/actions';
-import type { Announcer } from '@engine/a11y/announcer';
+import type { Scene } from '@engine/scene';
+import type { Game } from '@game/scenes/game';
+import {
+  captives,
+  draw,
+  file,
+  intoBonus,
+  makeGame,
+  offered,
+  standByLuigi,
+  store,
+  talkIntoMiniGame,
+  useStorage,
+} from './heroes-harness';
 
 // Freeing the heroes (0.5.0): a campaign file starts with Mario only; the others are brainwashed
-// captives to find. Luigi waits in the 1-1 bonus room; talking to him starts his mini game (the
-// placeholder here: jump passes, attack fails, menu quits).
+// captives to find. Luigi waits in the 1-1 bonus room; talking to him starts his mini game. The
+// flow is tested against a stub MiniGameDef (the contract only): jump passes, attack fails, menu
+// quits, and special scribbles over the run's state before passing. The real Mirror Race has its
+// own sims (heroes-race.test.ts, minigames/luigi/race.test.ts).
 
-const store = new Map<string, string>();
-beforeEach(() => {
-  store.clear();
-  (globalThis as { localStorage?: unknown }).localStorage = {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, v),
-    removeItem: (k: string) => void store.delete(k),
+vi.mock('@game/minigames', () => {
+  const stub: MiniGameDef = {
+    hero: 'luigi',
+    title: 'STUB RACE',
+    rules: ['JUMP PASSES.', 'ATTACK FAILS.'],
+    create(game: Game, done: (r: MiniGameResult) => void): Scene {
+      let over = false;
+      const end = (r: MiniGameResult) => {
+        if (over) return;
+        over = true;
+        done(r);
+      };
+      return {
+        update(input) {
+          if (input.pressed('jump')) end('pass');
+          else if (input.pressed('attack')) end('fail');
+          else if (input.pressed('start')) end('quit');
+          else if (input.pressed('special')) {
+            // A round that tramples the run: the flow must put it back.
+            const s = game.state;
+            s.lives = 42;
+            s.score = 99999;
+            s.powerState = 'fire';
+            s.kit.junk = 1;
+            game.state = { ...s, coins: 77 };
+            end('pass');
+          }
+        },
+        render() {},
+      };
+    },
   };
+  return { MINIGAMES: { luigi: stub }, miniGameFor: (hero: string) => (hero === 'luigi' ? stub : null) };
 });
 
-function makeGame() {
-  const said: string[] = [];
-  const assets = new AssetRegistry(PALETTES);
-  assets.defineAll(SPRITES);
-  const audio = { ...NULL_AUDIO, stopMusic: vi.fn(), playMusic: vi.fn(), setTempoScale: vi.fn() };
-  const game = new Game({
-    ctx: { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
-    getLevel,
-    characters: CHARACTERS,
-    announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
-  });
-  const p1 = new ScriptedInput({ steps: [] });
-  const p2 = new ScriptedInput({ steps: [] });
-  const r = new NullRenderer();
-  const step = (a: Action[] = [], a2: Action[] = []) => {
-    p1.setHeld(a);
-    p2.setHeld(a2);
-    p1.next();
-    p2.next();
-    game.scenes.update([p1, p2]);
-    game.scenes.render(r);
-  };
-  const tap = (a: Action, player = 0) => {
-    step(player === 0 ? [a] : [], player === 1 ? [a] : []);
-    step();
-  };
-  const idle = (n: number) => {
-    for (let i = 0; i < n; i++) step();
-  };
-  const until = (pred: () => boolean, max = 2000) => {
-    for (let i = 0; i < max && !pred(); i++) step();
-    expect(pred()).toBe(true);
-  };
-  const top = () => game.scenes.top;
-  return { game, said, step, tap, idle, until, top, audio };
-}
-type H = ReturnType<typeof makeGame>;
-
-/** A campaign file in slot 1, written to storage. */
-function file(over: Partial<SaveFile> = {}, c1 = MARIO.id): SaveFile {
-  const s = { ...newSave(1, c1), ...over };
-  writeSave(s);
-  return s;
-}
-
-/** Draw a scene, recording text and the sheet/palette of each sprite. */
-function draw(scene: { render(r: Renderer): void }) {
-  const texts: { str: string; x: number; y: number }[] = [];
-  const sprites: { key: string; frame: string; x: number; y: number }[] = [];
-  const r: Renderer = Object.assign(new NullRenderer(), {
-    text(_f: SpriteSheet, str: string, x: number, y: number): void {
-      texts.push({ str, x, y });
-    },
-    sprite(s: SpriteSheet, frame: string, x: number, y: number): void {
-      sprites.push({ key: s.id, frame, x, y });
-    },
-  });
-  scene.render(r);
-  return { texts, sprites };
-}
-
-/** The picks a character select offers: step right through the roster, collecting each name said. */
-function offered(h: H): string[] {
-  const names: string[] = [];
-  for (let i = 0; i < CHARACTERS.length; i++) {
-    h.tap('right');
-    names.push(h.said.at(-1) ?? '');
-  }
-  return names;
-}
-
-/** File 1 open on the map, then into the 1-1 bonus room (falling in at column 1, as from the pipe). */
-function intoBonus(h: H, time = 300) {
-  h.game.openFile(1);
-  expect(h.top()).toBeInstanceOf(WorldMapScene);
-  h.game.startLevel(getLevel('1-1-bonus'), { mode: 'fall', x: 1, y: 1, time });
-  h.step();
-  expect(h.top()).toBeInstanceOf(LevelScene);
-  return h.top() as LevelScene;
-}
-
-const captives = (l: LevelScene) =>
-  l.world.entities.filter((e): e is Captive => e instanceof Captive && e.alive);
-
-/** Put player 1 next to Luigi on his ledge and let him land. */
-function standByLuigi(h: H, l: LevelScene) {
-  const c = captives(l)[0] as Captive;
-  const p = l.world.player;
-  p.body.x = c.body.x - px(18);
-  p.body.y = c.body.y + c.body.h - p.body.h - px(2);
-  p.body.vx = 0;
-  p.body.vy = 0;
-  p.body.onGround = false;
-  h.until(() => p.body.onGround, 60);
-  h.idle(10);
-}
-
-/** Talk to Luigi and go through the dialogue and rules cards into his mini game. */
-function talkIntoMiniGame(h: H, l: LevelScene) {
-  h.tap('up');
-  expect(h.top()).not.toBe(l);
-  // Dialogue cards (OK goes on), then the rules card, then the round.
-  for (let i = 0; i < 6 && (h.top() instanceof CardScene || h.top() instanceof MessageScene); i++) {
-    h.idle(32);
-    h.tap('jump');
-  }
-  const round = h.top();
-  expect(round).not.toBeInstanceOf(CardScene);
-  expect(round).not.toBeInstanceOf(MessageScene);
-  expect(round).not.toBe(l);
-  return round;
-}
+useStorage();
 
 describe('save files lock heroes in campaign play', () => {
   it('a new file offers only Mario: the others are black silhouettes named ???, skipped by the cursor', () => {
@@ -180,15 +101,6 @@ describe('save files lock heroes in campaign play', () => {
     h.tap('jump');
     h.until(() => h.top() instanceof LevelScene);
     expect(h.game.state.character).toBe(MARIO);
-  });
-
-  it('the silhouette palette turns every colour black', () => {
-    const assets = new AssetRegistry(PALETTES);
-    assets.defineAll(SPRITES);
-    const pal = PALETTES.default.luigi as readonly string[];
-    expect(pal.some((c) => c !== '#000000')).toBe(true);
-    const sheet = assets.sheet('mario', 'luigi~silhouette');
-    expect(sheet.id).toBe('mario@luigi~silhouette');
   });
 
   it('an old v2 file keeps Mario and its last hero; the death pick respects it', () => {
@@ -289,9 +201,9 @@ describe('the captive Luigi in the 1-1 bonus room', () => {
     expect(cs).toHaveLength(1);
     const c = cs[0] as Captive;
     expect(c.hero.id).toBe('luigi');
-    // Top right: on the ledge at row 6, columns 12-14 (feet on its top).
+    // Top right: on the ledge at row 7, columns 12-14 (feet on its top).
     expect(toPx(c.body.x) >> 4).toBeGreaterThanOrEqual(12);
-    expect(toPx(c.body.y + c.body.h)).toBe(6 * 16);
+    expect(toPx(c.body.y + c.body.h)).toBe(7 * 16);
     // Touching him does nothing to the player.
     const p = l.world.player;
     p.body.x = c.body.x;
@@ -495,5 +407,114 @@ describe('freeing Luigi', () => {
       h.step();
       expect(l.world.player.body.y).toBe(y);
     }
+  });
+});
+
+describe('the unlock flow, in detail', () => {
+  it("restores the run's state a round changed (lives, score, power, kit, even a new state object)", () => {
+    const h = makeGame();
+    file({ lives: 4, score: 1200, coins: 9 });
+    const l = intoBonus(h);
+    standByLuigi(h, l);
+    const state = h.game.state;
+    const before = { ...state, kit: { ...state.kit } };
+    talkIntoMiniGame(h, l);
+    h.tap('special'); // the stub tramples the run, then passes
+    expect(h.game.state).toBe(state);
+    expect({ ...h.game.state, kit: { ...h.game.state.kit } }).toEqual(before);
+    // The save written as Luigi was freed has the run as the level left it.
+    const saved = loadSave(1)!;
+    expect([saved.lives, saved.score, saved.coins, saved.powerState]).toEqual([4, 1200, 9, 'small']);
+    expect(saved.freed).toEqual(['mario', 'luigi']);
+  });
+
+  it('the rules card never starts the round by itself: it waits for OK', () => {
+    const h = makeGame();
+    file();
+    const l = intoBonus(h);
+    standByLuigi(h, l);
+    h.tap('up');
+    for (let i = 0; i < 6 && h.top() instanceof CardScene; i++) {
+      h.idle(32);
+      h.tap('jump');
+    }
+    const rules = h.top();
+    expect(rules).toBeInstanceOf(MessageScene);
+    h.idle(5000);
+    expect(h.top()).toBe(rules);
+    h.tap('jump');
+    expect(h.top()).not.toBe(rules);
+    expect(h.top()).not.toBeInstanceOf(MessageScene);
+  });
+
+  it('dialogue cards show and announce how to go on (OK), once they take input', () => {
+    const h = makeGame();
+    file();
+    const l = intoBonus(h);
+    standByLuigi(h, l);
+    h.tap('up');
+    const card = h.top() as CardScene;
+    expect(card).toBeInstanceOf(CardScene);
+    expect(h.said.at(-1)).toMatch(/OK to continue\.$/);
+    expect(draw(card).texts.some((t) => t.str === 'OK')).toBe(false); // not during the guard
+    h.idle(32);
+    expect(draw(card).texts.some((t) => t.str === 'OK')).toBe(true);
+    // Every line fits the box.
+    for (const t of draw(card).texts) expect(t.str.length).toBeLessThanOrEqual(CARD_COLS);
+  });
+
+  it('announces Talk once when a player comes within reach (again after leaving)', () => {
+    const h = makeGame();
+    file();
+    const l = intoBonus(h);
+    h.idle(5);
+    const talk = () => h.said.filter((t) => t === 'Luigi. Up to talk.').length;
+    expect(talk()).toBe(0);
+    standByLuigi(h, l);
+    expect(talk()).toBe(1);
+    h.idle(30);
+    expect(talk()).toBe(1);
+    const p = l.world.player;
+    p.body.x -= px(40);
+    h.idle(2);
+    expect((captives(l)[0] as Captive).prompt).toBe(false);
+    p.body.x += px(40);
+    h.idle(2);
+    expect(talk()).toBe(2);
+  });
+
+  it("the dialogue names the hero of the player who talked (player two's in co-op)", () => {
+    const h = makeGame();
+    file({ character2: 'link', freed: ['mario', 'link'], lives: 5 });
+    const l = intoBonus(h);
+    expect(h.game.state.character2).toBe(LINK);
+    h.idle(5);
+    const c = captives(l)[0] as Captive;
+    const p2 = l.world.players[1]!;
+    l.world.player.body.x = px(40); // player one far away
+    p2.body.x = c.body.x - px(18);
+    p2.body.y = c.body.y + c.body.h - p2.body.h - px(2);
+    p2.body.vx = 0;
+    p2.body.vy = 0;
+    p2.body.onGround = false;
+    h.until(() => p2.body.onGround, 60);
+    h.idle(5);
+    h.tap('up', 1);
+    expect(h.top()).toBeInstanceOf(CardScene);
+    h.idle(32);
+    h.tap('jump');
+    expect((h.top() as CardScene).lines).toContain('LINK? I KNOW NO LINK.');
+  });
+
+  it('a long mini game title wraps to the dialogue box', () => {
+    const def: MiniGameDef = {
+      hero: 'link',
+      title: 'THE VERY LONG AND WINDING TRIAL OF THE TRIFORCE',
+      rules: [],
+      create: () => ({ update() {}, render() {} }),
+    };
+    const pages = captiveDialogue(LINK, def, MARIO);
+    for (const page of pages) for (const line of page) expect(line.length).toBeLessThanOrEqual(CARD_COLS);
+    expect(pages.flat().join(' ')).toContain('TRIFORCE');
   });
 });

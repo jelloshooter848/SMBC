@@ -121,8 +121,15 @@ export class LevelScene implements Scene {
         break;
       case 'talk':
         // A captive hero: the unlock flow plays over the paused level (scenes/free-hero.ts).
-        if (game.campaign && !game.playtestDone) talkToCaptive(game, this, ev.hero);
+        if (game.campaign && !game.playtestDone)
+          talkToCaptive(game, this, ev.hero, this.world.players[ev.player]?.def);
         break;
+      case 'captive-near': {
+        const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
+        const who = this.world.coop ? `Player ${ev.player + 1}: ` : '';
+        game.deps.announcer?.say(`${who}${name}. Up to talk.`);
+        break;
+      }
       case 'pipe': {
         // Campaign: a secret warp zone's one pipe (level/campaign.ts) ends the level on the map.
         if (ev.target.secret && game.campaign) {
