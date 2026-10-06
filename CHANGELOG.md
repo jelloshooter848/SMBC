@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-10-06
+
 ### Added
 
 - Mario's tutorial stage, 1-0: a new file starts on it (1-1 opens once it's cleared). Toad tells
@@ -266,7 +268,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/jelloshooter848/SMBC/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/jelloshooter848/SMBC/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/jelloshooter848/SMBC/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jelloshooter848/SMBC/compare/v0.3.0...v0.4.0
