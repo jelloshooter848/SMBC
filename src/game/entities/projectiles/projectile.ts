@@ -136,13 +136,18 @@ export const BOWSER_FLAME: ProjectileSpec = {
   frameRate: 4,
 };
 
-/** A Hammer Bro's hammer: spins along an arc through everything, only the player minds it. */
+/**
+ * A Hammer Bro's hammer: spins along an arc through everything, only the player minds it.
+ * `com/smbc/projectiles/Hammer.as`: `xSpeed` 120 px/s, `jumpPwr` 200 px/s, `gravity` 500 px/s² on
+ * 32-px tiles: 1.0 px/f across, 1.67 px/f up and 0.069 px/f² here, a low arc about 20 px high.
+ */
 export const HAMMER: ProjectileSpec = {
   kind: 'hammer',
   damage: 'contact',
   amount: 1,
   speed: 0x01000,
-  gravity: 0x00200,
+  vy: -0x01aab,
+  gravity: 0x0011c,
   bounceVy: null,
   hitsTiles: false,
   hitsEnemies: false,

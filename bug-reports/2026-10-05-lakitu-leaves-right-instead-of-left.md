@@ -50,3 +50,5 @@ every time
 - Merged from `smb-w4/2026-10-05-lakitu-leaves-right-instead-of-left.md` (4-1) and
   `smb-w6/2026-10-05-6-1-lakitu-leaves-to-the-right.md` (6-1).
 - Reviewed: verified against `com/smbc/enemies/Lakitu.as` (`checkState`, `EXIT_SPEED`), `com/smbc/level/EnemySpawner.as` (`enemyEndPos`), `GlobVars.TILE_SIZE` = 32, `levelDataSmb.xml` (6-1 `lakituEnd` at column 170 on NORMAL), and ours: `src/game/entities/enemies/lakitu.ts`, `src/engine/math/units.ts`
+
+Status: fixed — while the player's middle is past the end column (`player.nx > enemyEndPos`) Lakitu drifts left at `EXIT_SPEED` (0.83 px/frame) without throwing and is removed once off screen; walking back before then brings it back. In 4-1 the end column 208 is the first stair, so Mario has to step onto the stairs (standing against them is not past the end in the original either).

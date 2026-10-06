@@ -118,7 +118,9 @@ export class World {
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
   private leaving = false;
   private cheepTimer = 0;
-  private bulletTimer = 60;
+  /** Flying-bill respawn timer in frames (0 = stopped) and the one bill it has out. */
+  private bulletTimer = 0;
+  private flyingBill: BulletBill | null = null;
   /** Bowser's long-range flames (`bowser-fire` zone), or null. */
   private readonly bowserFire: BowserFire | null;
   /** Castle maze: lead player's centre x last frame (px) and the loop checkpoints passed. */
@@ -728,25 +730,36 @@ export class World {
     this.spawn(c);
   }
 
-  /** 5-3 style: Bullet Bills fly in from the screen edges while the lead is in a `bullets` zone. */
+  /**
+   * 5-3 style flying Bullet Bills (`com/smbc/level/BulletBillSpawner.as`): one at a time, each sent
+   * 250 ms (`DEL_DEFAULT`) after the last is gone, from just off the right edge flying left, its
+   * bottom on the grid line nearest the player's feet plus -2..2 tiles, kept at least 3 tiles below
+   * the top of the screen and 1 tile above the bottom (`respawnTmrHandler`, `bulletBillDestroyed`).
+   */
   private flyingBullets(): void {
     const lead = this.rightmost();
     if (!lead || this.leaving) return;
     const inZone = this.level.zones.some(
       (z) => z.kind === 'bullets' && lead.body.x >= tileToSub(z.x) && lead.body.x < tileToSub(z.x + z.w),
     );
-    if (!inZone) return;
-    if (--this.bulletTimer > 0) return;
-    this.bulletTimer = 90 + this.rng.int(90);
-    let flying = 0;
-    for (const e of this.entities) if (e instanceof BulletBill && e.alive) flying++;
-    if (flying >= 2) return;
-    const fromLeft = this.rng.int(4) === 0;
-    const y = px((3 + this.rng.int(9)) * 16 + 2);
-    const x = fromLeft ? this.camera.x - px(14) : this.camera.right;
-    const bill = new BulletBill(x, y, fromLeft ? 1 : -1);
-    bill.body.vx = (fromLeft ? 1 : -1) * BULLET_SPEED;
-    this.spawn(bill);
+    if (this.flyingBill && !this.flyingBill.alive) {
+      this.flyingBill = null;
+      this.bulletTimer = 15; // bulletBillDestroyed restarts the 250 ms timer
+    }
+    if (this.bulletTimer > 0) {
+      if (--this.bulletTimer > 0) return;
+      if (!inZone || this.flyingBill) return;
+      const feet = toPx(lead.body.y + lead.body.h);
+      let bottom = Math.round(feet / 16) * 16 + (this.rng.int(5) - 2) * 16;
+      while (bottom > SCREEN_H - 16) bottom -= 16;
+      while (bottom < 3 * 16) bottom += 16;
+      const bill = new BulletBill(this.camera.right, px(bottom - 14), -1);
+      bill.body.vx = -BULLET_SPEED;
+      this.flyingBill = bill;
+      this.spawn(bill);
+      return;
+    }
+    if (inZone && !this.flyingBill) this.bulletTimer = 15;
   }
 
   private rightmost(): Player | null {

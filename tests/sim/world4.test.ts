@@ -73,7 +73,7 @@ describe('World 4: Lakitu and Spinies', () => {
       level: level('4-1'),
       character: MARIO,
       script: none,
-      maxFrames: 900,
+      maxFrames: 1400, // LakituSpawner waits 40 TIME units (953 frames)
       assist: { invulnerable: true },
       controller: (w, f) => {
         zone ??= w.entities.find((e): e is LakituZone => e instanceof LakituZone);
@@ -100,10 +100,11 @@ describe('World 4: Lakitu and Spinies', () => {
       script: { steps: [{ frame: 0, hold: ['right'] }] },
       maxFrames: 600,
       assist: { invulnerable: true },
-      controller: (w) => {
+      controller: (w, f) => {
         lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
         if (lakitu?.leaving) left = true;
-        return ['right'];
+        // Up the staircase: the end marker is column 208, the first stair (player.nx > enemyEndPos).
+        return f % 30 < 15 ? ['right', 'jump'] : ['right'];
       },
       until: () => left && !(lakitu as Lakitu).alive,
     });

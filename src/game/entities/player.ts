@@ -49,6 +49,8 @@ export class Player {
   transition: Transition | null = null;
   /** When true, input is ignored and physics skipped (pipes, flagpole, death). */
   frozen = false;
+  /** Left/right held on the last update (Lakitu reads it, like `player.lftBtn/rhtBtn` in Lakitu.as). */
+  heldDirX: -1 | 0 | 1 = 0;
   anim: PlayerAnim = 'idle';
   walkFrame = 0;
   private walkTick = 0;
@@ -140,6 +142,7 @@ export class Player {
     onHeadBump?: (tx: number, ty: number) => void,
   ): void {
     this.frame++;
+    this.heldDirX = input.dirX;
     if (this.invuln > 0) this.invuln--;
     if (this.star > 0) this.star--;
     if (this.attackTimer > 0) this.attackTimer--;

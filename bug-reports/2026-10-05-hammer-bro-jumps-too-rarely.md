@@ -33,3 +33,5 @@ every time
 - Split by the reviewer from `smb-w3/2026-10-05-hammer-bro-throw-and-jump-timing.md`. The throwing part is `2026-10-05-hammer-bro-throws-volleys-of-three.md`.
 - Also reported in 5-2 by smb-w5 (`smb-w5/2026-10-05-5-2-hammer-bro-hops.md`): code reading for the original, playtest of ours only (same recording as (screenshot not committed: the repo's `check:assets` bans image files)). The smb-w5 tester could not reach a Hammer Bro in the original.
 - Reviewed: verified against `com/smbc/enemies/HammerBro.as` (`JUMP_TMR_DUR_MIN/MAX` 600/2000, `updateStats`, `jumpTmrLsr`, `jump`) and ours: `src/game/entities/enemies/hammer-bro.ts` (`hopTimer`, `tryHop`).
+
+Status: fixed — a 600-2000 ms (36-119 frame) jump timer runs whenever the Hammer Bro stands on something; it then always jumps: high (625 px/s) up through floors from the floor row or off non-brick ground, a low hop (200 px/s) down through up to 2 tiles from the top brick row, else either at 50%, and only straight up in castles and underground (`HammerBro.jump`, `passThroughGround`).

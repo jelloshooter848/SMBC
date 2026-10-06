@@ -6,21 +6,53 @@ import { Spiny } from './spiny';
 import { Entity, type View } from '../entity';
 import type { World } from '../../world/world';
 
-const MAX_SPEED = 0x02c00; // a little faster than a running player
-const ACCEL = 0x00100;
-const MAX_SPINIES = 3;
-const RESPAWN_FRAMES = 420;
+/*
+ * Numbers from com/smbc/enemies/Lakitu.as and com/smbc/level/LakituSpawner.as (NORMAL difficulty).
+ * The original works in px/s on 32-px tiles with ms timers; here that is halved and taken per frame
+ * at 60 fps (velocities in 1/4096 px/f).
+ */
+/** `DEF_VX_MAX` 200 px/s: 1.67 px/f. */
+const DEF_VX_MAX = 0x01aab;
+/** `VX_MAX_INCREASE_NUM` 100 px/s: while following, top speed is the player's plus 0.83 px/f. */
+const VX_MAX_INCREASE = 0x00d55;
+/** `EXIT_SPEED` 100 px/s: drifts off to the left past the end of the stretch. */
+const EXIT_SPEED = 0x00d55;
+/** `ax` 200 px/s² (setStats). */
+const ACCEL = 0x00072;
+/** 50 px/s: the overshoot threshold of the homing swing (checkState). */
+const SWING_VX = 0x006ab;
+/** `MIN_CHANGE_DIR_DIST` (1 tile) and `edgeBuffer` (2 tiles), in px. */
+const SWING_DIST = 16;
+const EDGE_BUFFER = 32;
+/** `START_FOLLOW_DEL_TMR` 800 ms: holding a direction this long starts the follow. */
+const FOLLOW_DELAY = 48;
+/** `hideTmrDur` 1500 ms, then `throwTmrDur` 250 ms in the hide pose, then a throw. */
+const HIDE_FRAMES = 90;
+const THROW_FRAMES = 15;
+/** `maxSpinyDifficulty` on NORMAL: this Lakitu's own Spinies alive at once (`SPINEY_DCT`). */
+const MAX_SPINIES = 4;
+/** `LakituSpawner.spawnDelTmrDur` = 40 × 397 ms (40 TIME units) = 15.88 s on NORMAL. */
+const RESPAWN_FRAMES = 953;
 
 /**
  * Lakitu: rides a cloud along the top of the screen, swinging back and forth over the player,
- * and lobs spiny eggs. Leaves once the player reaches the end of its stretch.
+ * follows a player who keeps going one way, and lobs spiny eggs. Drifts off to the left once the
+ * player is past the end of its stretch (and comes back if the player returns before it is gone).
  */
 export class Lakitu extends Enemy {
   readonly kind = 'lakitu';
-  private t = 0;
-  private throwTimer = 90;
-  private arm = 0;
+  /** Set by its zone while the player is past the end of the stretch (`checkState`, `exiting`). */
   leaving = false;
+  /** Still flying in from the right edge until this is set (`withinBoundaries`). */
+  private withinBoundaries = false;
+  private followDir: -1 | 0 | 1 = 0;
+  private following = false;
+  private followTimer = 0;
+  private hideTimer = HIDE_FRAMES;
+  private throwTimer = 0;
+  /** At the Spiny cap: throws the moment one of its own is gone (`setState("wait")`). */
+  private waiting = false;
+  private spinies: Spiny[] = [];
 
   constructor(x: number, y: number) {
     super(x, y, 12, 20);
@@ -36,42 +68,86 @@ export class Lakitu extends Enemy {
 
   update(world: World): void {
     const b = this.body;
-    this.t++;
     const cam = world.camera;
+    const half = b.w >> 1;
     if (this.leaving) {
-      b.vx = Math.min(MAX_SPEED, b.vx + ACCEL);
+      // checkState: vx = -EXIT_SPEED, timers stopped, destroyed once off screen.
+      b.vx = -EXIT_SPEED;
       b.x += velToSub(b.vx);
-      if (b.x > cam.right + px(32)) this.destroy();
+      this.currentFrame = 'lakitu-0';
+      if (b.x + b.w < cam.x || b.x > cam.right) this.destroy();
       return;
     }
-    const pl = world.nearestPlayer(b.x);
-    // Swing around a point a little ahead of the player, staying on screen.
-    const swing = Math.round(Math.sin((this.t * Math.PI * 2) / 240) * 72);
-    let target = pl.centerX + px(16 + swing);
-    target = Math.max(cam.x + px(16), Math.min(cam.right - px(32), target));
-    // Steer toward a speed that closes the gap in about half a second, so it eases in
-    // instead of overshooting; never leave the screen.
-    const want = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, Math.round((target - b.x) / 2)));
-    if (b.vx < want) b.vx = Math.min(want, b.vx + ACCEL * 2);
-    else b.vx = Math.max(want, b.vx - ACCEL * 2);
-    b.x += velToSub(b.vx);
-    b.x = Math.max(cam.x, Math.min(cam.right - px(16), b.x));
-    this.facing = pl.centerX < b.x + b.w / 2 ? -1 : 1;
-
-    if (this.arm > 0) this.arm--;
-    if (--this.throwTimer <= 0) {
-      this.throwTimer = 110 + world.rng.int(80);
-      let spinies = 0;
-      for (const e of world.entities) if (e instanceof Spiny && e.alive) spinies++;
-      if (spinies < MAX_SPINIES) {
-        const egg = new Spiny(b.x, b.y - px(8));
-        egg.body.vx = this.facing * 0x00800;
-        egg.body.vy = -0x03000;
-        world.spawn(egg);
-        this.arm = 16;
-      }
+    const pl = world.nearestPlayer(b.x + half);
+    const pvx = pl.body.vx;
+    const held = pl.heldDirX;
+    let vxMax = DEF_VX_MAX;
+    // Held at the edge buffer and pushed along by a player moving away from it.
+    const lft = cam.x + px(EDGE_BUFFER);
+    const rht = cam.right - px(EDGE_BUFFER);
+    if (this.withinBoundaries && b.x + half < lft) {
+      if (pvx > 0 && b.vx < pvx) b.vx = pvx;
+      b.x = lft - half;
+    } else if (this.withinBoundaries && b.x + half > rht) {
+      if (pvx < 0 && b.vx > pvx) b.vx = pvx;
+      b.x = rht - half;
     }
-    this.currentFrame = this.arm > 0 ? 'lakitu-1' : 'lakitu-0';
+    if (this.followDir !== 0 && held !== this.followDir) this.cancelFollow();
+    if (!this.withinBoundaries) {
+      b.vx = -vxMax;
+      if (b.x + half < rht) this.withinBoundaries = true;
+    }
+    if (this.following) {
+      // Accelerate the way the player is going, up to the player's speed plus a bit.
+      if (this.followDir > 0) {
+        b.vx += ACCEL;
+        if (pvx > DEF_VX_MAX - VX_MAX_INCREASE) vxMax = pvx + VX_MAX_INCREASE;
+      } else {
+        b.vx -= ACCEL;
+        if (pvx < -DEF_VX_MAX + VX_MAX_INCREASE) vxMax = -(pvx - VX_MAX_INCREASE);
+      }
+    } else {
+      if (held !== 0 && this.followTimer === 0) {
+        this.followTimer = FOLLOW_DELAY;
+        this.followDir = held;
+      }
+      // Home in on the player's x, overshooting into a back-and-forth swing.
+      const cx = b.x + half;
+      const near = Math.abs(cx - pl.centerX) < px(SWING_DIST);
+      if (cx > pl.centerX) b.vx += near && b.vx > SWING_VX ? ACCEL : -ACCEL;
+      else b.vx += near && b.vx < -SWING_VX ? -ACCEL : ACCEL;
+    }
+    if (this.followTimer > 0 && --this.followTimer === 0) this.following = true;
+    b.vx = Math.max(-vxMax, Math.min(vxMax, b.vx));
+    b.x += velToSub(b.vx);
+    this.facing = pl.centerX < b.x + half ? -1 : 1;
+
+    // Throw cycle: hideTmr, then throwTmr in the hide pose, then a Spiny unless at the cap.
+    this.spinies = this.spinies.filter((e) => e.alive);
+    if (this.hideTimer > 0 && --this.hideTimer === 0) this.throwTimer = THROW_FRAMES;
+    else if (this.throwTimer > 0 && --this.throwTimer === 0) {
+      if (this.spinies.length < MAX_SPINIES) this.throwSpiny(world);
+      else this.waiting = true;
+    }
+    if (this.waiting && this.spinies.length < MAX_SPINIES) this.throwSpiny(world);
+    this.currentFrame = this.throwTimer > 0 || this.waiting ? 'lakitu-1' : 'lakitu-0';
+  }
+
+  private cancelFollow(): void {
+    this.followTimer = 0;
+    this.following = false;
+    this.followDir = 0;
+  }
+
+  private throwSpiny(world: World): void {
+    const b = this.body;
+    const egg = new Spiny(b.x, b.y - px(8));
+    egg.body.vx = this.facing * 0x00800;
+    egg.body.vy = -0x03000;
+    world.spawn(egg);
+    this.spinies.push(egg);
+    this.waiting = false;
+    this.hideTimer = HIDE_FRAMES;
   }
 
   protected override squash(world: World): void {
@@ -81,14 +157,16 @@ export class Lakitu extends Enemy {
 }
 
 /**
- * Keeps a Lakitu over a stretch of level: sends one in from the right when the stretch starts,
- * sends a new one a while after it is defeated, and calls it off at column `end`.
+ * Keeps a Lakitu over a stretch of level (`LakituSpawner`): sends one in from the right once the
+ * player's middle is past the start column, sends the next one 15.88 s after the last is gone (only
+ * while the player is inside the stretch), and tells it to leave while the player is past `end`.
  */
 export class LakituZone extends Entity {
   readonly kind = 'lakitu-zone';
   private lakitu: Lakitu | null = null;
+  /** Frames left on `spawnDelTmr` (0 = stopped). */
   private respawn = 0;
-  private done = false;
+  private spawnedFirst = false;
   private readonly flyY: number;
 
   constructor(
@@ -109,19 +187,26 @@ export class LakituZone extends Entity {
   }
 
   update(world: World): void {
-    if (this.done) return;
-    const lead = world.nearestPlayer(world.camera.right);
-    if (lead.body.x + lead.body.w >= px(this.endCol * 16)) {
-      if (this.lakitu?.alive) this.lakitu.leaving = true;
-      this.done = true;
+    // EnemySpawner.updateSpawner: inside while start < player.nx < end (both tile left edges).
+    const x = world.nearestPlayer(world.camera.right).centerX;
+    const endX = px(this.endCol * 16);
+    const inZone = x > this.body.x && x < endX;
+    const alive = this.lakitu?.alive ?? false;
+    if (alive) (this.lakitu as Lakitu).leaving = x > endX;
+    if (this.respawn > 0) {
+      if (--this.respawn === 0 && inZone && !alive) this.send(world);
       return;
     }
-    if (this.lakitu?.alive) return;
-    if (this.lakitu && --this.respawn > 0) return;
-    const l = new Lakitu(world.camera.right - px(8), px(this.flyY));
-    l.body.vx = -MAX_SPEED;
+    if (!inZone || alive) return;
+    if (this.spawnedFirst) this.respawn = RESPAWN_FRAMES;
+    else this.send(world);
+  }
+
+  private send(world: World): void {
+    // Lakitu.as: x = locStgRht + width*.5, just past the right edge of the screen.
+    const l = new Lakitu(world.camera.right, px(this.flyY));
     this.lakitu = l;
-    this.respawn = RESPAWN_FRAMES;
+    this.spawnedFirst = true;
     world.spawn(l);
   }
 

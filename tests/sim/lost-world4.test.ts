@@ -99,7 +99,7 @@ describe('Lost Levels 4-1', () => {
       maxFrames: 300,
       assist: { invulnerable: true },
       controller: (w, f) => {
-        if (f === 0) place(w, 88, 13);
+        if (f === 0) place(w, 93, 13); // past column 92, where the second stretch starts
         lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
         return [];
       },

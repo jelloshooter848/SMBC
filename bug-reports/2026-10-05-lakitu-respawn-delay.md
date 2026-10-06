@@ -44,3 +44,5 @@ every time (by code)
   `smb-w6/2026-10-05-6-1-lakitu-arrives-early-and-returns-fast.md` (6-1; its arrival half is in
   `2026-10-05-4-1-lakitu-appears-before-start-column.md`). Both cite the same constants.
 - Reviewed: verified against `com/smbc/level/LakituSpawner.as`, `com/smbc/level/EnemySpawner.as`, `com/smbc/enemies/Lakitu.as` (`cleanUp`), `com/smbc/managers/StatManager.as` (`TIME_LEFT_INT`), `com/explodingRabbit/utils/CustomTimer.as`, and ours: `src/game/entities/enemies/lakitu.ts`, `src/game/entities/enemies/enemy.ts`
+
+Status: fixed — after a Lakitu is gone the zone waits 953 frames (40 × 397 ms, `LakituSpawner.spawnDelTmrDur` on NORMAL), starting only while the player is inside the stretch, and sends the next one only if the player is still inside (our death fall is a separate corpse, so it is not added to the wait).

@@ -50,3 +50,5 @@ every time
 - The tester described our steering as "half the remaining gap per frame"; the velocity is gap/2 in
   velocity units (1/16 subpixel per frame), which is 1/32 of the gap in pixels per frame. Corrected.
 - Reviewed: verified against `com/smbc/enemies/Lakitu.as` (`checkState`), `com/smbc/main/AnimatedObject.as` (`vxMax` clamp), and ours: `src/game/entities/enemies/lakitu.ts`, `src/engine/math/units.ts` (`velToSub`), `src/game/world/camera.ts` (`pushX`), `src/game/entities/player.test.ts` (max run 2.5625 px/f)
+
+Status: fixed — Lakitu now steers as `Lakitu.checkState`: homes in at 200 px/s² with the overshoot swing, starts following after a direction is held 0.8 s (`START_FOLLOW_DEL_TMR`) with top speed the player's plus 100 px/s (`VX_MAX_INCREASE_NUM`), and is held at the 2-tile edge buffer and pushed along by the player.
