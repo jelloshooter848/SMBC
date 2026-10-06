@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { rasterizeToBuffer, validateDef } from '@engine/gfx/pixelart';
+import { NES } from '@engine/gfx/palette';
 import { enemiesDef, enemyPalettes } from './enemies';
+import { PALETTES } from './index';
 import { marioDef, marioPalettes } from './mario';
 
 const size = (rows: readonly string[]): [number, number] => [rows[0]?.length ?? 0, rows.length];
@@ -218,5 +220,9 @@ describe('enemy sprites', () => {
     tf.forEach((c, i) => {
       if (i !== 1) expect(c, `index ${i}`).toBe(castle[i]);
     });
+  });
+
+  it('keeps the true-form outline visible in high contrast', () => {
+    expect(PALETTES.highContrast?.['bowser-true-form']?.[1]).toBe(NES.gray);
   });
 });

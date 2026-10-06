@@ -294,6 +294,33 @@ describe('Bowser death', () => {
     expect(c.body.vx).toBe(0);
   });
 
+  it('the 8-4 king falls as himself and, like every die frame, keeps the way he was facing', () => {
+    const corpses: Corpse[] = [];
+    runSim({
+      level: load('world1/1-4.map', '1-4'),
+      character: MARIO,
+      script: none,
+      maxFrames: 400,
+      state: { world: 8 },
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        if (f === 0) place(w, 127);
+        const bw = bowserOf(w);
+        if (bw && f === 200) {
+          bw.facing = 1; // as if turned to chase
+          for (let i = 0; i < 5; i++) bw.hit({ kind: 'fireball', amount: 1, owner: null, dirX: 1 }, w);
+        }
+        for (const e of w.entities) if (e instanceof Corpse && !corpses.includes(e)) corpses.push(e);
+        return [];
+      },
+    });
+    expect(corpses.length).toBe(1);
+    const c = corpses[0] as Corpse;
+    expect(c.frame).toBe('bowser-die-8');
+    expect(c.palette).toBe('enemies-castle');
+    expect(c.facing).toBe(1);
+  });
+
   it('the axe drops him for no points (BowserAxe.as gives none)', () => {
     let score = -1;
     let cleared = false;
