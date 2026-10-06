@@ -196,6 +196,24 @@ describe('page registry', () => {
     }
   });
 
+  it('pairs every portal 1:1: its arrival node is a warp straight back to it', () => {
+    // A warp X on page P to page Q lands on Q's toNode (or Q's start), which must warp back to P
+    // with toNode X. One-way portals opt out with `oneWay`; pads that never work go nowhere.
+    let pairs = 0;
+    for (const p of MAP_PAGES)
+      for (const x of p.nodes.filter((n) => isWarpNode(n) && !n.oneWay && n.requires !== 'never')) {
+        const q = mapPage(x.to as string) as WorldMapPage;
+        const there = x.toNode ? nodeAt(q, x.toNode) : q.nodes.find((n) => n.kind === 'start');
+        const what = `${p.id}:${x.id} -> ${q.id}:${there?.id}`;
+        expect(there && isWarpNode(there), `${what} is a warp`).toBe(true);
+        expect(there?.to, `${what} leads back to ${p.id}`).toBe(p.id);
+        const back = there?.toNode ? nodeAt(p, there.toNode) : p.nodes.find((n) => n.kind === 'start');
+        expect(back?.id, `${what} lands back on ${x.id}`).toBe(x.id);
+        pairs++;
+      }
+    expect(pairs).toBeGreaterThanOrEqual(6); // smb-1 spot / hub centre, hub pad / ll-1, ll-8 pad / ll-10
+  });
+
   describe.each(MAP_PAGES.map((p) => [p.id, p] as const))('%s', (_, page) => {
     it('is 15 rows of 16 legend chars with plain sky under the header', () => {
       expect(page.tiles).toHaveLength(15);

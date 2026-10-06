@@ -59,8 +59,13 @@ export interface MapNode {
    * on it warps (the hub's centre: back to World 1). See rules.isWarpNode.
    */
   to?: PageId;
-  /** Warp nodes: the node arrived on (default: the target page's start node). */
+  /**
+   * Warp nodes: the node arrived on (default: the target page's start node). Portals pair 1:1:
+   * the node arrived on warps straight back here (pages.test.ts checks it) unless `oneWay`.
+   */
   toNode?: string;
+  /** Warp nodes: a one-way portal, exempt from the 1:1 pairing (none yet). */
+  oneWay?: boolean;
   /** Warp nodes: what must hold for the warp to work (always works when absent). */
   requires?: MapCondition;
   /** Warp nodes: the hint line while it is locked ('LOST LEVELS - BEAT 8-4 TO UNLOCK'). */

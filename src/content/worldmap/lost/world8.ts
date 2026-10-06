@@ -14,7 +14,7 @@ export const SKETCH_LL_8 = [
   'hhhhhhhVWVWVhhhh',
   '####^#RWWWWW#^R#',
   '#R^#R^#WWGWWR#^R',
-  '##P#^R##########',
+  '##^#^R##########',
   'R^##RP##R#######',
   '#R^##R^#R##LLLLL',
   '^#R^##R^#R#LLLLL',
@@ -41,13 +41,13 @@ export const LL_8: WorldMapPage = {
         [8, 11],
         [9, 6],
       ],
-      [1, 6],
     ),
-    // Worlds A-D: open once Lost 8-4 is beaten on the file ('llLetters').
+    // Worlds A-D: open once Lost 8-4 is beaten on the file ('llLetters'); lands on A's pipe back.
     {
       id: 'warp-ll-10',
       kind: 'warp',
       to: 'll-10',
+      toNode: 'warp-ll-8', // World A's pipe back here (portals pair 1:1)
       requires: 'llLetters',
       label: 'LOST WORLD A',
       hint: 'LOST A - BEAT LOST 8-4',
@@ -57,7 +57,6 @@ export const LL_8: WorldMapPage = {
   ],
   paths: [
     { from: 'start', to: 'll-8-1', points: poly([0, 4], [3, 4], [3, 8], [4, 8]) },
-    { from: 'start', to: 'hub', points: poly([0, 4], [0, 6], [1, 6]) },
     { from: 'll-8-1', to: 'll-8-2', points: poly([4, 8], [4, 10], [2, 10], [2, 12], [3, 12]) },
     { from: 'll-8-2', to: 'll-8-3', points: poly([3, 12], [6, 12], [6, 10], [8, 10], [8, 11]) },
     { from: 'll-8-3', to: 'll-8-4', points: poly([8, 11], [10, 11], [10, 7], [9, 7], [9, 6]) },

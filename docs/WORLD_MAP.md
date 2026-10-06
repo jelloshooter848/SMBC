@@ -79,13 +79,17 @@ A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the fil
 ```ts
 { id: 'warp-lost', kind: 'warp', x: 13, y: 8,
   to: 'll-1',               // target page id (must be registered)
-  toNode?: 'start',         // arrival node there (default: its start node)
+  toNode?: 'hub',           // arrival node there (default: its start node)
+  oneWay?: true,            // optional: exempt from the 1:1 pairing
   requires?: 'gameCleared', // MapCondition; absent = always works
   label?: 'LOST LEVELS',    // hint line while open (default: the target page's title)
   hint?: 'LOST LEVELS - BEAT 8-4 TO UNLOCK', // hint line while locked (needed with `requires`)
   unlock?: 'bonus-1' }      // optional: hidden until this secret is found
 ```
 
+- **Portals pair 1:1**: a warp X on page P lands on Q's `toNode` (or start), which must be a warp
+  back to P whose `toNode` is X (`pages.test.ts`). A one-way portal sets `oneWay: true`; none do
+  yet. Pads that never work (`requires: 'never'`) are exempt.
 - A warp node is shown and walkable whenever a road to it is open (like any node), even locked.
 - While the hero stands on it, the **hint line** (a black strip at the bottom of the map) shows
   `label` when it works, `hint` when locked; the announcer says it ("Warp, Lost Levels" /
@@ -130,8 +134,9 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 - Lost Levels pages unlock like SMB: levels open in order along the roads, a castle exit opens
   the next page. World 9: exit `ll-8-4 → ll-9` with `requires: 'll9'`. Worlds A-D: the warp node
   `warp-ll-10` on World 8, off the castle, with `requires: 'llLetters'` (A-D can open without
-  World 9); then castle exits `ll-10 → ll-11 → ll-12 → ll-13`. Every Lost Levels page has a warp
-  node `hub` back to the Warp Zone.
+  World 9); then castle exits `ll-10 → ll-11 → ll-12 → ll-13`. Only World 1 has a warp node
+  `hub` back to the Warp Zone (paired with the hub's Lost Levels pad); World A's pipe
+  `warp-ll-8` leads back to World 8's pad. Worlds 2-9 and B-D have no other portals.
 - Every condition reads the save file alone (campaign rules, owner decision for 0.4.0; the
   global NES progress store in `src/engine/save/progress.ts` is only for non-campaign play).
 - A condition can come true after its castle was cleared (World 9 when the 32nd of Lost 1-1 to
@@ -169,6 +174,6 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
    rows 2-13, contiguous paths.
 2. Add it to its list in play order (`LOST_PAGES` in `lost/index.ts`; the hub is `HUB_PAGE`).
 3. Give castles their exits (with `requires` where the rules need one) and any warp nodes their
-   `to`/`toNode`/`requires`/`label`/`hint`. A Lost Levels page usually has a warp back to the hub.
+   `to`/`toNode`/`requires`/`label`/`hint`. Only Lost World 1 has a warp back to the hub.
 4. Run `pnpm test`: `src/content/worldmap/pages.test.ts` checks every registered page (ids,
    labels, tiles, nodes, paths, warp targets, exits within the group).

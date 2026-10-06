@@ -219,12 +219,17 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     h.game.mapProgress.gameCleared = true;
     expect(h.map().hintLine).toBe('LOST LEVELS');
     warp(h, 'll-1');
-    expect(h.map().node).toBe('start');
-    expect(loadSave(1)).toMatchObject({ gameCleared: true, position: { page: 'll-1', node: 'start' } });
+    // Portals pair 1:1: the pad lands on Lost 1's warp back to the hub, which lands on the pad.
+    expect(h.map().node).toBe('hub');
+    expect(loadSave(1)).toMatchObject({ gameCleared: true, position: { page: 'll-1', node: 'hub' } });
     expect(loadSave(1)?.pages).toEqual(['smb-1', 'hub', 'll-1']);
-    expect(loadSave(1)?.lastNode).toMatchObject({ 'smb-1': 'bonus-1', hub: 'warp-lost', 'll-1': 'start' });
+    expect(loadSave(1)?.lastNode).toMatchObject({ 'smb-1': 'bonus-1', hub: 'warp-lost', 'll-1': 'hub' });
     h.step();
     expect(h.r.texts.some((t) => t.s === 'LOST 1')).toBe(true);
+    expect(h.map().hintLine).toBe('RETURN TO WARP ZONE');
+    warp(h, 'hub');
+    expect(h.map().node).toBe('warp-lost');
+    expect(loadSave(1)?.position).toEqual({ page: 'hub', node: 'warp-lost' });
   });
 
   it("the hub's centre warps back to World 1's warp spot, which warps to the hub again", () => {
