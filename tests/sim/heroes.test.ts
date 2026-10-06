@@ -44,7 +44,7 @@ function makeGame() {
   const said: string[] = [];
   const assets = new AssetRegistry(PALETTES);
   assets.defineAll(SPRITES);
-  const audio = { ...NULL_AUDIO, stopMusic: vi.fn(), playMusic: vi.fn() };
+  const audio = { ...NULL_AUDIO, stopMusic: vi.fn(), playMusic: vi.fn(), setTempoScale: vi.fn() };
   const game = new Game({
     ctx: { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
     getLevel,
@@ -74,7 +74,7 @@ function makeGame() {
     expect(pred()).toBe(true);
   };
   const top = () => game.scenes.top;
-  return { game, said, step, tap, idle, until, top };
+  return { game, said, step, tap, idle, until, top, audio };
 }
 type H = ReturnType<typeof makeGame>;
 
@@ -112,10 +112,10 @@ function offered(h: H): string[] {
 }
 
 /** File 1 open on the map, then into the 1-1 bonus room (falling in at column 1, as from the pipe). */
-function intoBonus(h: H) {
+function intoBonus(h: H, time = 300) {
   h.game.openFile(1);
   expect(h.top()).toBeInstanceOf(WorldMapScene);
-  h.game.startLevel(getLevel('1-1-bonus'), { mode: 'fall', x: 1, y: 1, time: 300 });
+  h.game.startLevel(getLevel('1-1-bonus'), { mode: 'fall', x: 1, y: 1, time });
   h.step();
   expect(h.top()).toBeInstanceOf(LevelScene);
   return h.top() as LevelScene;
@@ -457,6 +457,26 @@ describe('freeing Luigi', () => {
     expect(l.world.frame).toBe(frame);
     h.step();
     expect(l.world.frame).toBe(frame + 1);
+  });
+
+  it('back in the level its music (and the hurry tempo) restarts after the round stopped it', () => {
+    for (const [time, tempo] of [
+      [300, 1],
+      [90, 1.4],
+    ] as const) {
+      const h = makeGame();
+      file();
+      const l = intoBonus(h, time);
+      standByLuigi(h, l);
+      talkIntoMiniGame(h, l);
+      h.audio.stopMusic(); // as a mini game does before it reports
+      h.audio.playMusic.mockClear();
+      h.audio.setTempoScale.mockClear();
+      h.tap('start'); // quit
+      expect(h.top()).toBe(l);
+      expect(h.audio.playMusic).toHaveBeenLastCalledWith('underground');
+      expect(h.audio.setTempoScale).toHaveBeenLastCalledWith(tempo);
+    }
   });
 
   it('the OK press that closes the last card does not make the hero jump back in the level', () => {
