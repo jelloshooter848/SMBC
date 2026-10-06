@@ -1,5 +1,8 @@
 # Super Mario Bros. Crossover (browser rebuild)
 
+**▶ Play it in your browser: https://jelloshooter848.github.io/SMBC/** (latest release; see
+[CHANGELOG.md](CHANGELOG.md) for what's new).
+
 A from-scratch, browser-based reimplementation inspired by the 2010 Flash fan game
 _Super Mario Bros. Crossover_: play the Super Mario Bros. levels as characters from other
 NES-era games, each with their own mechanics. Flash is gone; this runs anywhere a modern
@@ -111,6 +114,8 @@ with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
   (all tools, ammo and magic) and 99 lives.
 - **Assists** (active only while dev mode is on): scroll back, infinite lives, infinite time, no
   damage, keep big when losing fire, coyote time, half-speed slow motion.
+- **Unlock all** (map menu, per save file, active only while dev mode is on): every world, level
+  and road on the world map open, without marking anything cleared.
 - **Dev mode off** hides it again.
 
 ### The Lost Levels

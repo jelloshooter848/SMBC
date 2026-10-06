@@ -5,6 +5,10 @@ import type { MapNode, MapPath, MapProgress, WorldExit, WorldMapPage } from './t
 /*
  * World map rules (pure apart from the documented in-place updates of `progress`): which nodes and
  * paths are open, what a level clear or a warp opens, and where the hero walks on the d-pad.
+ *
+ * The open checks take an optional `unlockAll` (developer mode's "Unlock all"): every world, level
+ * and castle node, path and world exit counts as open, without anything counting as cleared.
+ * Bonus nodes still need their secret key.
  */
 
 export type GetLevel = (id: string) => LevelData;
@@ -25,8 +29,8 @@ export function exitId(e: WorldExit): string {
   return `${e.from}>world-${e.toWorld}`;
 }
 
-export function isWorldOpen(progress: MapProgress, world: number): boolean {
-  return world === 1 || progress.worlds.includes(world);
+export function isWorldOpen(progress: MapProgress, world: number, unlockAll = false): boolean {
+  return world === 1 || (unlockAll && world >= 1) || progress.worlds.includes(world);
 }
 
 function node(page: WorldMapPage, id: string): MapNode | undefined {
@@ -55,19 +59,37 @@ function keyFound(progress: MapProgress, n: MapNode): boolean {
  * World 1's start always; a world's start when the world is open; any node at the `to` end of
  * a path whose `from` is cleared or is the start of an open world. Bonus nodes also need their key.
  */
-export function isOpen(progress: MapProgress, page: WorldMapPage, nodeId: string): boolean {
+export function isOpen(
+  progress: MapProgress,
+  page: WorldMapPage,
+  nodeId: string,
+  unlockAll = false,
+): boolean {
   const n = node(page, nodeId);
-  if (!n || !isWorldOpen(progress, page.world) || !keyFound(progress, n)) return false;
-  if (n.kind === 'start') return true;
+  if (!n || !isWorldOpen(progress, page.world, unlockAll) || !keyFound(progress, n)) return false;
+  if (n.kind === 'start' || unlockAll) return true;
   return page.paths.some((p) => p.to === nodeId && pathFromDone(progress, page, p));
 }
 
-export function isPathOpen(progress: MapProgress, page: WorldMapPage, p: MapPath): boolean {
+/** Unlock all: a path is open when both its ends are (a hidden bonus node keeps its path hidden). */
+export function isPathOpen(
+  progress: MapProgress,
+  page: WorldMapPage,
+  p: MapPath,
+  unlockAll = false,
+): boolean {
+  if (unlockAll) return isOpen(progress, page, p.from, true) && isOpen(progress, page, p.to, true);
   return pathFromDone(progress, page, p) && isOpen(progress, page, p.to);
 }
 
-/** A world exit opens when the node it leaves from (the castle) is cleared. */
-export function isExitOpen(progress: MapProgress, page: WorldMapPage, e: WorldExit): boolean {
+/** A world exit opens when the node it leaves from (the castle) is cleared (or is open, with unlock all). */
+export function isExitOpen(
+  progress: MapProgress,
+  page: WorldMapPage,
+  e: WorldExit,
+  unlockAll = false,
+): boolean {
+  if (unlockAll) return isOpen(progress, page, e.from, true);
   return isWorldOpen(progress, page.world) && isCleared(progress, page, e.from);
 }
 
@@ -75,10 +97,11 @@ export function isExitOpen(progress: MapProgress, page: WorldMapPage, e: WorldEx
 export function openPaths(
   progress: MapProgress,
   page: WorldMapPage,
+  unlockAll = false,
 ): { paths: MapPath[]; exits: WorldExit[] } {
   return {
-    paths: page.paths.filter((p) => isPathOpen(progress, page, p)),
-    exits: page.exits.filter((e) => isExitOpen(progress, page, e)),
+    paths: page.paths.filter((p) => isPathOpen(progress, page, p, unlockAll)),
+    exits: page.exits.filter((e) => isExitOpen(progress, page, e, unlockAll)),
   };
 }
 
@@ -225,9 +248,10 @@ export function nextStep(
   from: string,
   dir: Dir,
   pages: readonly WorldMapPage[] = MAP_PAGES,
+  unlockAll = false,
 ): MapStep | null {
   for (const p of page.paths) {
-    if (!isPathOpen(progress, page, p)) continue;
+    if (!isPathOpen(progress, page, p, unlockAll)) continue;
     if (p.from === from && heads(p.points, dir)) return { kind: 'node', to: p.to, points: p.points.slice() };
     if (p.to === from) {
       const back = p.points.slice().reverse();
@@ -235,13 +259,18 @@ export function nextStep(
     }
   }
   for (const e of page.exits) {
-    if (e.from !== from || !isExitOpen(progress, page, e) || !isWorldOpen(progress, e.toWorld)) continue;
+    if (
+      e.from !== from ||
+      !isExitOpen(progress, page, e, unlockAll) ||
+      !isWorldOpen(progress, e.toWorld, unlockAll)
+    )
+      continue;
     if (heads(e.points, dir)) return { kind: 'exit', exit: e, points: e.points.slice() };
   }
   if (node(page, from)?.kind === 'start') {
     for (const prev of pages) {
       if (prev.world === page.world) continue;
-      const e = prev.exits.find((x) => x.toWorld === page.world && isExitOpen(progress, prev, x));
+      const e = prev.exits.find((x) => x.toWorld === page.world && isExitOpen(progress, prev, x, unlockAll));
       if (!e || OPPOSITE[SIDE_DIR[e.side]] !== dir) continue;
       const start = node(page, from) as MapNode;
       const [dx, dy] = DELTA[dir];

@@ -36,6 +36,11 @@ export interface SaveFile extends MapProgress {
   lastNode: Record<number, string>;
   /** Map ids opened but not drawn in yet ('4:start', '2:start>2-1'), see Game.pendingReveal. */
   pendingReveal: string[];
+  /**
+   * Developer mode's map menu "Unlock all": every world, level, castle and road on the map open
+   * (nothing marked cleared). Only has an effect while dev mode is on; missing in older files (off).
+   */
+  devUnlockAll?: boolean;
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -93,6 +98,7 @@ export function newSave(
     gameCleared: false,
     lastNode: {},
     pendingReveal: [],
+    devUnlockAll: false,
   };
 }
 
@@ -187,6 +193,7 @@ export function migrateSave(
     gameCleared: stored.gameCleared === true,
     lastNode: lastNodes(stored.lastNode, worlds),
     pendingReveal: revealIds(stored.pendingReveal, worlds),
+    devUnlockAll: stored.devUnlockAll === true,
   };
 }
 
