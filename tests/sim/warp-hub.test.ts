@@ -9,7 +9,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
-import { WorldMapScene, MAP_FADE_FRAMES } from '@game/scenes/world-map';
+import { WorldMapScene, WorldsMenu, MAP_FADE_FRAMES } from '@game/scenes/world-map';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
@@ -115,6 +115,19 @@ function warp(h: H, to: string) {
   expect(h.map().page.id).toBe(to);
   h.idle(MAP_FADE_FRAMES);
   h.until(() => h.map().mode === 'idle', 800);
+}
+
+/** Opens map menu → Worlds; its labels and where the cursor starts (both menus stay open). */
+function worldsMenu(h: H): { labels: string[]; cursor: number } {
+  h.tap('select');
+  (h.top() as unknown as { items: MenuItem[] }).items.find((i) => i.label === 'Worlds')?.select?.();
+  const menu = h.top() as WorldsMenu;
+  expect(menu).toBeInstanceOf(WorldsMenu);
+  expect((menu as MenuScene).title).toBe('WORLDS');
+  return {
+    labels: (menu as unknown as { items: MenuItem[] }).items.map((i) => i.label),
+    cursor: menu.cursor,
+  };
 }
 
 const pipesIn = (zones: Zone[], x0: number, x1: number) =>
@@ -232,12 +245,60 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(loadSave(1)?.position).toEqual({ page: 'smb-1', node: 'bonus-1' });
     warp(h, 'hub');
     expect(h.map().node).toBe('start');
-    // The Worlds menu lists the SMB worlds open and the hub.
-    h.tap('select');
-    (h.top() as unknown as { items: MenuItem[] }).items.find((i) => i.label === 'Worlds')?.select?.();
-    const labels = (h.top() as unknown as { items: MenuItem[] }).items.map((i) => i.label);
-    expect((h.top() as MenuScene).title).toBe('WORLDS');
-    expect(labels).toEqual(['World 1', 'Warp Zone']);
+    // The Worlds menu lists the hub (the current page, first, under the cursor), then SMB.
+    expect(worldsMenu(h)).toEqual({ labels: ['Warp Zone', 'World 1'], cursor: 0 });
+  });
+
+  it('the Worlds menu: current group first, then the Warp Zone, then other groups; cursor on HERE', () => {
+    const h = makeGame();
+    const pages = ['smb-1', 'smb-2', 'smb-3', 'hub', 'll-1', 'll-2'];
+    h.game.openFile(1, file({ pages, position: { page: 'smb-2', node: 'start' } }));
+    h.idle(8);
+    expect(worldsMenu(h)).toEqual({ labels: ['World 1', 'World 2', 'World 3', 'Warp Zone'], cursor: 1 });
+    h.game.scenes.pop();
+    h.game.scenes.pop();
+    h.game.travelToPage('ll-2');
+    h.idle(8);
+    expect(worldsMenu(h)).toEqual({ labels: ['Lost 1', 'Lost 2', 'Warp Zone'], cursor: 1 });
+    h.game.scenes.pop();
+    h.game.scenes.pop();
+    h.game.travelToPage('hub');
+    h.idle(8);
+    expect(worldsMenu(h)).toEqual({
+      labels: ['Warp Zone', 'World 1', 'World 2', 'World 3', 'Lost 1', 'Lost 2'],
+      cursor: 0,
+    });
+    // Confirming right away keeps the hero here.
+    h.idle(8);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().page.id).toBe('hub');
+  });
+
+  it('the fade switches the header at its midpoint; arriving on the hub reads only the arrival node', () => {
+    const h = makeGame();
+    h.game.openFile(
+      1,
+      file({ cleared: ['1-1', '1-2'], secrets: ['bonus-1'], position: { page: 'smb-1', node: 'bonus-1' } }),
+    );
+    h.idle(8);
+    const header = () => h.r.texts.filter((t) => t.y < 10).map((t) => t.s);
+    h.tap('jump');
+    expect(h.map().mode).toBe('fade');
+    expect(header()).toContain('WORLD 1');
+    h.idle(MAP_FADE_FRAMES / 2 - 3);
+    expect(header()).toContain('WORLD 1');
+    expect(header()).not.toContain('WARP ZONE');
+    h.idle(3);
+    expect(header()).toContain('WARP ZONE');
+    const from = h.said.length;
+    h.until(() => h.map().mode === 'reveal', 60);
+    h.until(() => h.map().mode === 'idle', 800);
+    const said = h.said.slice(from);
+    expect(said).toEqual([`Warp Zone, ${mapPage('hub')!.title}. Warp, Return To World 1`]);
+    // A pad's hint is read when the hero stands on it.
+    walkTo(h, 'warp-lost');
+    expect(h.said.at(-1)).toBe('Lost Levels - Beat 8-4 To Unlock, locked');
   });
 
   it('the warp spot stays hidden without the secret, and a plain 1-2 clear does not find it', () => {

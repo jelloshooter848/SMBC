@@ -86,6 +86,19 @@ interface HeroFrames {
   walk: string[];
 }
 
+/** The map menu's WORLDS list, its cursor starting on the current page. */
+export class WorldsMenu extends MenuScene {
+  constructor(game: Game, items: MenuItem[], onBack: () => void, start: number) {
+    super(game, 'WORLDS', items, onBack, true);
+    this.index = start;
+  }
+
+  /** The highlighted entry. */
+  get cursor(): number {
+    return this.index;
+  }
+}
+
 /** Black at 0/8 .. 8/8 opacity, for the fade (precomputed: no strings built per frame). */
 const FADE_SHADES = Array.from({ length: 9 }, (_, i) => `rgba(0,0,0,${i / 8})`);
 
@@ -419,9 +432,11 @@ export class WorldMapScene implements Scene {
     const taken = this.revealTaken;
     this.game.pendingReveal = this.game.pendingReveal.filter((id) => !taken.includes(id));
     this.revealTaken = [];
+    // Warp pads drawn in are not read out (four hints in a row on the hub): a pad's hint is
+    // said when the hero stands on it.
     const opened = this.revealNodes
       .map((id) => this.nodeById(id))
-      .filter((n): n is MapNode => !!n)
+      .filter((n): n is MapNode => !!n && !isWarpNode(n))
       .map((n) => this.nodeLabel(n));
     this.revealNodes = [];
     if (opened.length) this.say(opened.join('. '));
@@ -646,18 +661,25 @@ export class WorldMapScene implements Scene {
    */
   worldsMenuPages(): WorldMapPage[] {
     const group = this.page.group;
-    return MAP_PAGES.filter(
+    const open = MAP_PAGES.filter(
       (p) =>
         (group === 'hub' || p.group === group || p.group === 'hub') &&
         isPageOpen(this.progress, p.id, this.unlockAll),
     );
+    // The current group first, then the Warp Zone, then the other groups (registry order).
+    const rank = (p: WorldMapPage) => (p.group === group ? 0 : p.group === 'hub' ? 1 : 2);
+    return open.sort((a, b) => rank(a) - rank(b) || MAP_PAGES.indexOf(a) - MAP_PAGES.indexOf(b));
   }
 
-  /** Map menu "Worlds": the pages of worldsMenuPages by label; the current one is marked HERE. */
+  /**
+   * Map menu "Worlds": the pages of worldsMenuPages by label; the current one is marked HERE and
+   * the cursor starts on it.
+   */
   private openWorlds(): void {
     const game = this.game;
     const here = this.page.id;
-    const items = this.worldsMenuPages().map((p): MenuItem => ({
+    const pages = this.worldsMenuPages();
+    const items = pages.map((p): MenuItem => ({
       label: spoken(p.label),
       ...(p.id === here ? { value: () => 'here', hint: 'You are here' } : {}),
       select: () => {
@@ -666,7 +688,11 @@ export class WorldMapScene implements Scene {
         game.scenes.pop();
       },
     }));
-    game.scenes.push(new MenuScene(game, 'WORLDS', items, () => game.scenes.pop(), true));
+    const start = Math.max(
+      0,
+      pages.findIndex((p) => p.id === here),
+    );
+    game.scenes.push(new WorldsMenu(game, items, () => game.scenes.pop(), start));
   }
 
   // ---------------------------------------------------------------- drawing
@@ -799,21 +825,24 @@ export class WorldMapScene implements Scene {
     const font = this.game.ctx.assets.sheet('font');
     const s = this.game.state;
     const h = this.header;
+    // A fade switches the header at its midpoint, when the screen is darkest.
+    const f = this.fade;
+    const page = f && f.t < MAP_FADE_FRAMES / 2 ? f.from : this.page;
     // Rebuild the strings only when what they show changes.
     if (
-      h.page !== this.page ||
+      h.page !== page ||
       h.hero !== s.character ||
       h.lives !== s.lives ||
       h.score !== s.score ||
       h.coins !== s.coins
     ) {
-      h.page = this.page;
+      h.page = page;
       h.hero = s.character;
       h.lives = s.lives;
       h.score = s.score;
       h.coins = s.coins;
-      h.title = this.page.title.toUpperCase().slice(0, 20);
-      h.world = this.page.label.slice(0, 10);
+      h.title = page.title.toUpperCase().slice(0, 20);
+      h.world = page.label.slice(0, 10);
       h.livesText = `${s.character.hudName.slice(0, 5)}×${pad(s.lives, 2)}`;
       h.scoreText = pad(s.score, 7);
       h.coinsText = `$×${pad(s.coins, 2)}`;
