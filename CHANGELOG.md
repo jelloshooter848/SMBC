@@ -8,6 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Free the heroes: Bowser has brainwashed the other heroes. A new campaign file starts with Mario
+  only (with a short story intro); the rest show as silhouettes in character select until found.
+  Talk to a brainwashed hero (up, when close) to start a mini game from their world; win it to free
+  them for that save file, or try again as often as you like.
+- Luigi waits in the 1-1 bonus room. His mini game is the Mirror Race: beat him to the flagpole.
+
+### Changed
+
+- Save files move to format v3 (freed heroes). Older files convert and keep Mario plus the heroes
+  they were last played with. Dev mode, custom and shared levels keep every hero.
+
 ### Fixed
 
 - Mushrooms (and 1-ups and poison mushrooms) on a block hop when the block is bumped from below, as in the original.
