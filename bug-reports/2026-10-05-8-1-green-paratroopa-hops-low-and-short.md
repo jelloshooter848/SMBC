@@ -59,7 +59,7 @@ every time
   from it.
 - The walking speed is close (0.5 vs 0.54 px/frame). Mainly the hop height and air time differ.
 - Not the same bug as `2026-10-05-3-3-red-paratroopa-flight.md` (red flyers that bob up and down) or
-  `2026-10-05-7-3-gliding-paratroopa-sway.md` (sideways flyers).
+  `2026-10-05-paratroopa-sideways-sway-too-wide-no-bob.md` (sideways flyers; formerly `7-3-gliding-paratroopa-sway`).
 - Levels with `enemyWingedKoopaGreen` on the normal layer (`levelDataSmb.xml`, `levelDataLostLevels.xml`):
   SMB 2-1, 3-1, 3-2, 5-1, 5-2, 6-2, 7-1, 7-3, 8-1, 8-2, 8-3 and 8-4; Lost Levels ll-1-1, ll-1-2, ll-2-1,
   ll-2-2, ll-2-3, ll-5-1, ll-6-1, ll-7-1, ll-7-2, ll-8-1, ll-8-2, ll-8-4, ll-9-1, ll-9-4, ll-10-1, ll-11-1,

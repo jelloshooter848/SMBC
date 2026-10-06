@@ -37,7 +37,7 @@ every time
 
 ## Notes
 
-- Playtested in both games. Our screenshot: `2026-10-05-flying-bullet-bills-wrong-pattern.png` (contact sheet, 0.4 s between frames).
+- Playtested in both games. Our screenshot: not committed (the repo's `check:assets` bans image files) (contact sheet, 0.4 s between frames).
 - Levels with a `bullets` zone in our maps, which match the original's `bulletBillStart` tokens on the normal layer: 5-3, 6-3, ll-4-3, ll-5-3, ll-11-3 and ll-12-2. Only 5-3 was played.
 - Our limit of two counts every live `BulletBill`, including blaster bills; the original's spawner counts only its own one bill.
 - The flight speed is a separate report: `2026-10-05-bullet-bill-too-slow.md`.

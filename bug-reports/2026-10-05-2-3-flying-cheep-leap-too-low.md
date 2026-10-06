@@ -22,7 +22,7 @@ Playtested in the original's 2-3 (standing on the first mushroom, `orig/110_oc1.
 
 ## Actual
 
-Ours spawns the fish at y 248 with `vy` of -4.5 to -5.5 px/frame under `FLY_GRAVITY = 0x00180` (0.094 px/frame²). See `build/src/game/world/world.ts` `flyingCheeps()` lines 724-727 and `build/src/game/entities/enemies/cheep.ts` line 11. Each fish peaks at y 87–140 (rows 5.4–8.8), only 20–73 px (1.3–4.6 tiles) above the bridge deck at y 160, and stays in the air 1.6–2.0 s. In testing, the fish peaked at y 92–95 (screenshot `2026-10-05-2-3-flying-cheep-leap-too-low.png`, column 50). So our fish skim at Mario's jump height instead of arcing high overhead and dropping onto him from above.
+Ours spawns the fish at y 248 with `vy` of -4.5 to -5.5 px/frame under `FLY_GRAVITY = 0x00180` (0.094 px/frame²). See `build/src/game/world/world.ts` `flyingCheeps()` lines 724-727 and `build/src/game/entities/enemies/cheep.ts` line 11. Each fish peaks at y 87–140 (rows 5.4–8.8), only 20–73 px (1.3–4.6 tiles) above the bridge deck at y 160, and stays in the air 1.6–2.0 s. In testing, the fish peaked at y 92–95 (screenshot (screenshot not committed: the repo's `check:assets` bans image files), column 50). So our fish skim at Mario's jump height instead of arcing high overhead and dropping onto him from above.
 
 ## How often
 
@@ -34,5 +34,7 @@ Playtested in both games, and confirmed in the original's source. The sideways s
 - Arithmetic: the original's values are Flash px/s at 32 px tiles, so 555 / 2 / 60 = 4.63 px/frame and 375 / 2 / 3600 = 0.052 px/frame²; rise 4.63² / (2 × 0.052) ≈ 205 px; time up and down ≈ 178 frames. The flying fish has no fall-speed cap (`vyMaxPsv` is only set for swimming fish, line 157). Ours: 4.5² / (2 × 0.094) = 108 px to 5.5² / (2 × 0.094) = 161 px.
 - Other levels with a `cheeps` zone in our maps, all spawned by the same `flyingCheeps()`: 7-3 (`cheeps 9 173`), 8-4 (two zones), ll-2-3, ll-6-3, ll-7-1, ll-10-3, ll-12-2 and ll-13-4. 2-3 and 7-3 were playtested.
 - 7-3 (smb-w7), playtested in both games: in the original the fish leap to about row 1, right under the HUD (`gauntlet/shots/smb-w7/orig/049_cs.png` to `064_cs.png` and `065_ls.png`, reviewer only); in ours, standing at column 9, they peak around rows 4-6 (`gauntlet/shots/smb-w7/ours/378_cs.png` to `393_cs.png`). The reviewer checked four frames from each set. Source: `gauntlet/notes/smb-w7.md`, folded in during the smb-w7/w8 consolidation.
+- Original, seen (ll-wD tester): in the original's D-4 (13-4) area a, a flying cheep leapt to about row 2, just under the castle ceiling (`gauntlet/shots/ll-wD/orig/046_b3.png`). That fits the original's higher leap. Ours was not compared there.
+- PR #24 check: still applies on main 2225155. `git diff b8379f9 HEAD` is empty for `world.ts`, `cheep.ts` and every map in `src/content/levels/`.
 - Source: `smb-w2/2026-10-05-2-3-flying-cheep-leap-too-low.md`. The reviewer corrected the height above the deck (the tester wrote 1 to 3.5 tiles) and added the level list.
 - Reviewed: verified against `com/smbc/enemies/CheepFast.as` (`FLYING_JUMP_PWR`, `FLYING_GRAVITY`, `setStats`), `com/smbc/enemies/CheepFlying.as`, `com/smbc/level/FlyingCheepSpawner.as`, and ours: `src/game/world/world.ts` (`flyingCheeps`), `src/game/entities/enemies/cheep.ts` (`FLY_GRAVITY`, `update`), the `cheeps` lines in `src/content/levels/`.

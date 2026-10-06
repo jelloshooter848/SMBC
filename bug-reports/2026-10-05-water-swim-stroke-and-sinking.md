@@ -34,4 +34,5 @@ Playtested in both games, and confirmed in the original's source. The original's
 - Units: the original's speeds are Flash px per second at 32 px tiles, so NES px/frame = Flash value / 2 / 60 (200 → 1.67, 250 → 2.08, `MAX_WALK_SPEED` 175 → 1.46) and gravity NES px/frame² = Flash value / 2 / 3600 (350 → 0.049). Rise = 1.67² / (2 × 0.049) ≈ 28.6 px; ours 1.5² / (2 × 0.0625) = 18 px.
 - In the original, Mario counts as out of the water while his top is within 2 tiles of the screen top (`Character.as` lines 985-995); the sink cap and water gravity apply only below that.
 - Source: `smb-w2/2026-10-05-water-swim-stroke-and-sinking.md`.
+- Also seen in ll-4-1-water (ll-w4 tester, ours; folded in by the ll-w3 to ll-w5 review). No new measurements.
 - Reviewed: verified against `com/smbc/characters/base/MarioBase.as` (`JUMP_PWR_WATER`, `setStats` water gravity, `jump`), `com/smbc/characters/Character.as` (`vyMaxPsvWater`, the water block in the per-frame update), and ours: `src/game/entities/player.ts` (`SWIM_STROKE`, `SWIM_GRAVITY`, `SWIM_SINK_MAX`, `swim`).

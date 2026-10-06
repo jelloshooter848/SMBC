@@ -36,6 +36,6 @@ every time
 
 - Evidence: code reading and a playtest of ours (shared copy of 3-3 starting at column 57). Not
   playtested in the original (Ruffle too slow to reach column 61 reliably).
-- Our screenshot: `2026-10-05-3-3-falling-lift-keeps-falling.png`.
+- Our screenshot: not committed (the repo's `check:assets` bans image files).
 - `lift-fall` is used 50 times across our maps, so other levels' drop lifts are affected too. In the SMB set the original's `StepFall` platforms (normal layer, not counting `charHorz=Show` helpers) are in 3-3, 6-3 (4) and 7-4 (2); ours has them as `lift-fall` in `6-3.map` and `7-4.map`. The rest are in Lost Levels maps.
 - Reviewed: verified against `com/smbc/ground/Platform.as` (`fallSpeed` 225, `setCharOnPlat` `PT_STEP_FALL`, `updateGround`), `levelDataSmb.xml` (`<LEVEL ID="3-3">` `movingPlatform&&width=6&&type=StepFall` at x=61 y=6, shown on normal only), and ours: `src/game/entities/objects/lift.ts` (`carry`, `update` case `'lift-fall'`).

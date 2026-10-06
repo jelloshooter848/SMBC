@@ -31,5 +31,5 @@ every time
 
 - Evidence: code reading, plus a short playtest of both games (the original runs at roughly a fifth of real time in Ruffle, so I could not time it precisely there). The Ruffle observation used the original's All Hammer Bros cheat, which only swaps which enemy class spawns.
 - Split by the reviewer from `smb-w3/2026-10-05-hammer-bro-throw-and-jump-timing.md`. The throwing part is `2026-10-05-hammer-bro-throws-volleys-of-three.md`.
-- Also reported in 5-2 by smb-w5 (`smb-w5/2026-10-05-5-2-hammer-bro-hops.md`): code reading for the original, playtest of ours only (same recording as `2026-10-05-hammer-bro-throws-volleys-of-three.png`). The smb-w5 tester could not reach a Hammer Bro in the original.
+- Also reported in 5-2 by smb-w5 (`smb-w5/2026-10-05-5-2-hammer-bro-hops.md`): code reading for the original, playtest of ours only (same recording as (screenshot not committed: the repo's `check:assets` bans image files)). The smb-w5 tester could not reach a Hammer Bro in the original.
 - Reviewed: verified against `com/smbc/enemies/HammerBro.as` (`JUMP_TMR_DUR_MIN/MAX` 600/2000, `updateStats`, `jumpTmrLsr`, `jump`) and ours: `src/game/entities/enemies/hammer-bro.ts` (`hopTimer`, `tryHop`).

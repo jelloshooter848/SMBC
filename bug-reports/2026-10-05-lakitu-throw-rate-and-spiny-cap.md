@@ -50,7 +50,7 @@ every time
   at once**, two beside Lakitu and two falling. That is playtest evidence for the cap of 4, a second sighting
   after the 4-1 one above. The throw interval was not timed there either (Ruffle ran several
   times slower than real time).
-- Screenshot: `2026-10-05-lakitu-throw-rate-and-spiny-cap.png` (6-1, Mario at column 12, three Spinies out, the
+- Screenshot: not committed (the repo's `check:assets` bans image files) (6-1, Mario at column 12, three Spinies out, the
   most ours allows).
 - Merged from `smb-w4/2026-10-05-lakitu-throw-rate-and-spiny-cap.md` (4-1) and
   `smb-w6/2026-10-05-6-1-lakitu-spiny-limit-and-throw-rate.md` (6-1).

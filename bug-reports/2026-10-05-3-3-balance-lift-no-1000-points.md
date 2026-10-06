@@ -34,7 +34,7 @@ every time
 
 - Evidence: code reading and a playtest of ours (shared copy of 3-3 starting at column 78). Not
   playtested in the original.
-- Our screenshot: `2026-10-05-3-3-balance-lift-no-1000-points.png` (rope gone, score 0000400).
+- Our screenshot: not committed (the repo's `check:assets` bans image files) (rope gone, score 0000400).
 - 4-3 (smb-w4): the tester's notes say the rope snapped with no 1000 points there too (score stayed 0), in a share-link copy of 4-3: `gauntlet/shots/smb-w4/ours/276_bal0.png` to `283_bal7.png` (snap between frames 251 and 281). The reviewer could not read the score in these frames because the F1 overlay covers it, so this rests on the tester's note. Folded in from `review/smb-w4.md` during the smb-w7/w8 consolidation.
 - The way the lifts move also differs: see `2026-10-05-3-3-balance-lift-motion.md`.
 - Reviewed: verified against `com/smbc/ground/Platform.as` `setCharOnPlat` (`level.scorePop(ScoreValue.PULLY_FALL, ...)` when `pullyLoc == "bottom"`), `com/smbc/data/ScoreValue.as` (`PULLY_FALL = 1000`), and ours: `src/game/entities/objects/balance-lift.ts` `update()` (drops both lifts, no `addScore`).

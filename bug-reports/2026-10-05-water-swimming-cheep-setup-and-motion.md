@@ -68,7 +68,7 @@ every time
   Speed, motion and start position were found by reading code; the original's Ruffle frame rate was too
   uneven to time a 10% speed difference or the wave. The level-hold seen in `orig/116_sw.png` to
   `121_sw.png` fits the slow wave or straight swim but was not measured.
-- Our screenshot: `2026-10-05-water-swimming-cheep-setup-and-motion.png` (7-2, column 77: only a grey fish
+- Our screenshot: not committed (the repo's `check:assets` bans image files) (7-2, column 77: only a grey fish
   in the first group).
 - One fix: all four points come from `CheepFast.setStats()` (plus the colour pick in `Level.as`), which
   our `Cheep` constructor and swim branch of `update()` replace. `CheepFast.calcColor()` (lines 78-90) is

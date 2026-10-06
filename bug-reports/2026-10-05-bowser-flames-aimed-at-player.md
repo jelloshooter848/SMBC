@@ -36,7 +36,7 @@ every time
 ## Notes
 
 - Merged from `smb-w3/2026-10-05-bowser-flame-aims-at-player.md`, the "fires backwards" part of `smb-w3/2026-10-05-bowser-does-not-chase-and-fires-backwards.md`, and the fire-timing lines of `smb-w1/2026-10-05-bowser-pacing-speed-and-range.md`.
-- Evidence: code reading and a playtest of ours (flames observed in `shots/smb-w3/ours/051_bz*.png` ... `062_bz12.png`, all at Mario's row; backwards flame in `2026-10-05-bowser-no-chase-2.png`). Not seen in the original (1-4 and 3-4 froze Ruffle on load).
+- Evidence: code reading and a playtest of ours (flames observed in `shots/smb-w3/ours/051_bz*.png` ... `062_bz12.png`, all at Mario's row; backwards flame in (screenshot not committed: the repo's `check:assets` bans image files)). Not seen in the original (1-4 and 3-4 froze Ruffle on load).
 - The long-range flames before the bridge (`bowser-fire.ts`) already use three random heights; only Bowser's own on-screen flame is aimed.
 - The 450 ms stop before each flame is in `2026-10-05-bowser-pacing-speed-and-range.md`.
 - Reviewed: verified against `com/smbc/projectiles/BowserFireBall.as` (`SPEED` 160, `vx = -sx`, `yFinal`, `updateStats`), `com/smbc/enemies/Bowser.as` (`fbLev1-3`, `FB_TMR_DUR_MIN/MAX` 1500/3500, `MAX_FIREBALLS_ON_SCREEN` 2, `startFbTmr`, `fbTmrLsr`, `fbDelTmrLsr`) and ours: `src/game/entities/enemies/bowser.ts` (`flameTimer`), `src/game/entities/projectiles/projectile.ts` (`BOWSER_FLAME`).

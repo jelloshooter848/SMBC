@@ -29,7 +29,7 @@ every time (3 at once seen once in 18 s; 2 at once most of the time)
 
 - Found by reading the original's code, and playtested in our game only. The tester could not reach column 163 in the original (Ruffle ran at about a sixth of real speed).
 - 7-1 (smb-w7): three blaster Bullet Bills on screen at once near column 143 in ours, with Mario jumping past the blasters (share-link copy of 7-1, so the HUD reads WORLD 1-1): `gauntlet/shots/smb-w7/ours/181_shot.png` (reviewer checked: three bills). 7-1 has stacked blasters at columns 28, 56, 105 and 146. Source: `gauntlet/notes/smb-w7.md`, folded in during the smb-w7/w8 consolidation.
-- Our screenshot: `2026-10-05-blaster-no-two-bullet-limit.png` (three bills at once).
+- Our screenshot: not committed (the repo's `check:assets` bans image files) (three bills at once).
 - The tester wrote that two of the bills came from column 170 flying left and right. Our launcher always fires toward the nearest player (lines 65-69), and Mario at column 163 is left of column 170, so both right-facing bills in the screenshot came from column 159; the reviewer corrected this.
 - The 5-3 flying Bullet Bills come from a separate spawner with its own one-at-a-time rule (`com/smbc/level/BulletBillSpawner.as`), see `2026-10-05-flying-bullet-bills-wrong-pattern.md`. Our flying-bill spawner counts every live `BulletBill` toward its own limit of two (`src/game/world/world.ts` lines 741-743), but the launchers do not.
 - Related: `2026-10-05-blaster-fire-rate-too-slow.md`.

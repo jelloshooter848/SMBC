@@ -37,4 +37,5 @@ every time
 - Ours: playtested in 1-4 and 3-4 (`shots/smb-w3/ours/051_bz1.png` ... `062_bz12.png`). Original: code reading only; 1-4 and 3-4 froze on load in Ruffle.
 - Not verified: the exact x of the original's bridge pieces (tile left edge or centre), so the column range above is ±0.5 tile.
 - Related: `2026-10-05-bowser-no-chase.md`.
+- Related: the Lost Levels' fake Bowsers (ll-8-4, ll-9-3, ll-13-4) use a different window in the original (±5 tiles around their spawn, `BowserFake.as`) but the same `homeX - 48 / + 8` rule in ours: `2026-10-05-bowser-fake-paces-in-bridge-window.md`.
 - Reviewed: verified against `com/smbc/enemies/Bowser.as` (`WALK_SPEED`, `getXMaxMin`, `updateStats`, `pastXMax`, `fbTmrLsr`, `fbDelTmrLsr`), `com/smbc/pickups/BowserAxe.as` (`setUpBridge`, `sortBBVec`), `levelDataSmb.xml` (bridge 128-140, Bowser 136, axe 141 in 1-4 and 3-4), and ours: `src/game/entities/enemies/bowser.ts`.

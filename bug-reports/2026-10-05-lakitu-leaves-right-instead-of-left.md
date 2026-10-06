@@ -44,8 +44,8 @@ every time
   Lakitu is mid-screen in `shots/smb-w6/ours/043_e3.png`, at the right edge in `044_e4.png` and gone in
   `045_e5.png` (series `041_e1` … `046_e6`). The original is from code only there too: the tester could not
   reach column 170 in Ruffle.
-- Screenshots: `2026-10-05-lakitu-leaves-right-instead-of-left.png` (4-1, three frames, 0.8 s apart) and
-  `2026-10-05-lakitu-leaves-right-instead-of-left-2.png` (6-1, Mario at column 170, Lakitu at the right edge).
+- Screenshots: not committed (the repo's `check:assets` bans image files) (4-1, three frames, 0.8 s apart) and
+  (screenshot not committed: the repo's `check:assets` bans image files) (6-1, Mario at column 170, Lakitu at the right edge).
 - Related: `2026-10-05-4-1-lakitu-appears-before-start-column.md` (the zone start).
 - Merged from `smb-w4/2026-10-05-lakitu-leaves-right-instead-of-left.md` (4-1) and
   `smb-w6/2026-10-05-6-1-lakitu-leaves-to-the-right.md` (6-1).

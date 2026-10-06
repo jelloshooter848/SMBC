@@ -68,8 +68,8 @@ every time
   only while he is off screen, as in the original (`Level.as` lines 1935-1941; ours
   `src/game/world/bowser-fire.ts`). The flame in the screenshot is one of those, sent just before
   Bowser came on screen.
-- Screenshot: `2026-10-05-bowser-hammers-in-volleys.png` (one volley of five in the air).
-- 8-4 (smb-w8), playtested in ours: the `8-4-end` Bowser (fire and hammers) throws the same volleys with gaps. Contact sheet `2026-10-05-bowser-hammers-in-volleys-2.png` (frames `gauntlet/shots/smb-w8/ours/085_sh.png` to `116_sh.png`, Mario at column 32 with No damage; reviewer checked: bunches of hammers, then frames with none). The smb-w8 tester first filed this and withdrew it as a duplicate of the 6-4 report.
+- Screenshot: not committed (the repo's `check:assets` bans image files) (one volley of five in the air).
+- 8-4 (smb-w8), playtested in ours: the `8-4-end` Bowser (fire and hammers) throws the same volleys with gaps. Contact sheet (screenshot not committed: the repo's `check:assets` bans image files) (frames `gauntlet/shots/smb-w8/ours/085_sh.png` to `116_sh.png`, Mario at column 32 with No damage; reviewer checked: bunches of hammers, then frames with none). The smb-w8 tester first filed this and withdrew it as a duplicate of the 6-4 report.
 - 7-4 (smb-w7): the tester saw the same volleys of five from the column-328 hammer Bowser (`gauntlet/notes/smb-w7.md`; no shot cited). Both folded in during the smb-w7/w8 consolidation.
 - Source report: `smb-w6/2026-10-05-6-4-bowser-hammers-in-volleys.md`.
 - Reviewed: verified against `com/smbc/enemies/Bowser.as`, `com/smbc/enemies/BowserFake.as`, `com/smbc/projectiles/Hammer.as`, `com/smbc/level/Level.as` (1935-1941), `levelDataSmb.xml` and `levelDataLostLevels.xml` (every `enemyBowser` token on NORMAL), and ours: `src/game/entities/enemies/bowser.ts`, `src/game/world/bowser-fire.ts`, `src/game/world/world.ts` (`case 'bowser'`), `tools/levelgen/convert-smbc.mjs`, every `bowser` line in `src/content/levels/**/*.map`

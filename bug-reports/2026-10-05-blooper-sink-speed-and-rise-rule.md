@@ -74,7 +74,7 @@ every time
     `gauntlet/shots/smb-w7/orig/116_sw.png`-`121_sw.png`, reviewer only).
   - The stuck Blooper above a seabed Mario was seen in ours only, in a test copy of 7-2 where only the
     start and one Blooper were moved (share link `gauntlet/notes/72-bl3.url`; screenshot
-    `2026-10-05-blooper-sink-speed-and-rise-rule.png`, HUD reads WORLD 1-1 because it is a share-link
+    (screenshot not committed: the repo's `check:assets` bans image files), HUD reads WORLD 1-1 because it is a share-link
     copy). The tester didn't test the same setup in the original.
 - **Reviewer checks:** the tester asked to confirm that `ny` is the bottom edge. It is (`Level.as` lines
   1250-1251; `AnimatedObject.setHitPoints` uses `hBot = ny` when there is no hit rectangle). The
@@ -92,7 +92,13 @@ every time
     (2 + 2; `ll-8-4-water`, `ll-8-4-end2`), ll-9-1 (2), ll-9-4 (1), ll-10-3 (1), ll-11-2 (6), ll-12-2 (3),
     ll-13-4 (2 + 3; `ll-13-4-exit`, `ll-13-4-end`).
   - Several Lost Levels ones are out of water. There the original makes them stompable (`Bloopa.as`
-    lines 50-53) and the same sink and rise rules apply.
+    lines 50-53) and the same sink and rise rules apply. The stomp is filed separately as
+    `2026-10-05-blooper-out-of-water-not-stompable.md`, which lists the 17 out-of-water Bloopers.
+- **Out-of-water ceiling** (from the ll-w2 tester, added by the ll-w1/w2 reviewer, code only): out of
+  water ours clamps the Blooper's top at y 32 (`AIR_TOP`, `blooper.ts` lines 11 and 57-58). The original
+  has no hard ceiling: it only starts the rise's friction once its bottom is within 4 tiles of the stage
+  top (`Bloopa.as` line 112) and then drifts on until |vy| < 50. In the original's ll-2-3 the Blooper was
+  seen as high as about row 1 (reviewer only: `gauntlet/shots/ll-w2/orig/146_lb.png`-`150_bw4.png`).
 - Source: `smb-w7/2026-10-05-blooper-sink-speed-and-rise-rule.md`.
 - Reviewed: verified against `com/smbc/enemies/Bloopa.as`, `com/smbc/level/Level.as` (spawn point),
   `com/smbc/main/AnimatedObject.as` (`updateObj`, `updateLoc`, `setHitPoints`), `com/smbc/main/GlobVars.as`

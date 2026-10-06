@@ -41,7 +41,7 @@ every time
   as Birdo). To get a Hammer Bro on screen quickly in the slow emulator I used the original's
   All Hammer Bros cheat, which only swaps which enemy class spawns (`Level.as` line 899) and does
   not change `Hammer.as`.
-- Our screenshot: `2026-10-05-hammer-bro-hammer-arc-too-high.png` (three hammers at rows 3-5).
+- Our screenshot: not committed (the repo's `check:assets` bans image files) (three hammers at rows 3-5).
 - Bowser's hammers (6-4, 7-4, 8-4 and the Lost Levels hammer Bowsers) have the same high arc in ours, but
   from a separate copy of the throw: `src/game/entities/enemies/bowser.ts` lines 116-117 give vx 0.625-1.37
   and vy -3.5 to -4.5 px/frame with the same `HAMMER` projectile. A fix only to `hammer-bro.ts` misses him.

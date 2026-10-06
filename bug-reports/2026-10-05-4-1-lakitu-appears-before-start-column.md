@@ -49,13 +49,14 @@ every time
   `245_la3` Mario is at column 9 with camera x 65, at `246_la4` he is at column 12 and Lakitu is overhead).
   Original (reviewer only): `shots/smb-w6/orig/034_o61p.png` has no Lakitu with Mario at about column 18 (screen
   showing columns 10–26); `orig/036_o61r.png` has Lakitu once Mario is past column 21 (about column 25).
-- Screenshots: `2026-10-05-4-1-lakitu-appears-before-start-column.png` (4-1, Mario at column 8, frame 120,
-  Lakitu already overhead) and `2026-10-05-4-1-lakitu-appears-before-start-column-2.png` (6-1, Mario at column 12,
+- Screenshots: not committed (the repo's `check:assets` bans image files) (4-1, Mario at column 8, frame 120,
+  Lakitu already overhead) and (screenshot not committed: the repo's `check:assets` bans image files) (6-1, Mario at column 12,
   camera x 112, Lakitu overhead).
 - The smb-w4 tester wrote that Lakitu enters 4-1 with Mario at about column 3. The spawn code puts it at column 7
   (camera x ≥ 32 px), which matches the screenshot, so the column was corrected.
 - Other SMB levels with a NORMAL Lakitu, same code path: 6-1 (columns 21–170, playtested above) and 8-2
   (columns 8–40, not playtested). Lost Levels Lakitus use the same `LakituZone`.
+- Also seen in ll-4-1 (ll-w4 tester, ours only; folded in by the ll-w3 to ll-w5 review): Lakitu appears before Mario reaches column 19 and starts throwing early. No exact column was recorded. The Lakitu zones match the original's XML (ours `lakitu 19 0 end=50` and `lakitu 92 0 end=180`, `ll-4-1.map` lines 32 and 36).
 - Related: `2026-10-05-lakitu-leaves-right-instead-of-left.md`, `2026-10-05-lakitu-respawn-delay.md`,
   `2026-10-05-lakitu-throw-rate-and-spiny-cap.md`, `2026-10-05-lakitu-falls-behind-running-player.md`.
 - Merged from `smb-w4/2026-10-05-4-1-lakitu-appears-before-start-column.md` (4-1) and the arrival half of
