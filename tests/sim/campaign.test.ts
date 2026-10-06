@@ -16,6 +16,7 @@ import { PauseScene } from '@game/scenes/pause';
 import { CreditsScene } from '@game/scenes/credits';
 import { GameOverScene, GAME_OVER_CARD_FRAMES } from '@game/scenes/game-over';
 import { TitleScene } from '@game/scenes/title';
+import { FileSelectScene } from '@game/scenes/file-select';
 import type { MenuScene, MenuItem } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -153,6 +154,116 @@ function choose(scene: unknown, label: string) {
   expect(item?.select).toBeDefined();
   item?.select?.();
 }
+
+/** Title → Start game → file 1 (empty): a new file. */
+function newFileFromTitle(h: H) {
+  h.game.showTitle();
+  h.idle(8);
+  h.tap('start');
+  expect(h.top()).toBeInstanceOf(FileSelectScene);
+  h.idle(8);
+  h.tap('jump');
+}
+
+/** Step until the level runs, counting the distinct character selects shown on the way. */
+function picksUntilLevel(h: H, onPick: (n: number) => void): number {
+  const seen = new Set<unknown>();
+  for (let i = 0; i < 2000 && !(h.top() instanceof LevelScene); i++) {
+    const t = h.top();
+    if (t instanceof CharacterSelectScene && !seen.has(t)) {
+      seen.add(t);
+      h.idle(12);
+      onPick(seen.size);
+    } else h.step();
+  }
+  expect(h.top()).toBeInstanceOf(LevelScene);
+  return seen.size;
+}
+
+describe('campaign: a new file picks heroes only on entering a level', () => {
+  it('new file → World 1 map with Mario; 1-1 asks once; picking Link makes the file and walker Link', () => {
+    const h = makeGame();
+    newFileFromTitle(h);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.game.scenes.depth).toBe(1);
+    expect(h.map().page.world).toBe(1);
+    expect(h.game.state.character).toBe(MARIO);
+    expect(loadSave(1)?.character).toBe('mario');
+    h.idle(8);
+    walkTo(h, '1-1');
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.said.some((t) => /choose your hero\. Mario\./i.test(t))).toBe(true); // Mario preselected
+    const picks = picksUntilLevel(h, () => {
+      h.tap('right'); // Luigi
+      h.tap('right'); // Link
+      h.tap('jump');
+    });
+    expect(picks).toBe(1);
+    expect(h.level().level.id).toBe('1-1');
+    expect(h.game.state.character).toBe(LINK);
+    // The file follows the pick at once (the file select portrait reads it).
+    expect(loadSave(1)?.character).toBe('link');
+    expect(loadSave(1)?.character2).toBeNull();
+    // Back on the map, the walker is Link; reopening the file keeps him.
+    h.game.returnToMap();
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.game.state.character).toBe(LINK);
+    const again = makeGame();
+    again.game.showTitle();
+    again.idle(8);
+    again.tap('start');
+    again.idle(8);
+    again.tap('jump');
+    expect(again.top()).toBeInstanceOf(WorldMapScene);
+    expect(again.game.state.character).toBe(LINK);
+  });
+
+  it('a hero change at the level select starts small; keeping the hero keeps its power', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ powerState: 'fire', position: { world: 1, node: '1-1' } }));
+    expect(h.game.state.powerState).toBe('fire');
+    enter(h, '1-1'); // keeps Mario
+    expect(h.game.state.powerState).toBe('fire');
+    h.game.returnToMap();
+    h.game.enterLevelFromMap('1-1');
+    h.idle(12);
+    h.tap('right'); // Luigi
+    h.tap('jump');
+    h.until(() => h.top() instanceof LevelScene);
+    expect(h.game.state.character).toBe(LUIGI);
+    expect(h.game.state.powerState).toBe('small');
+    expect(loadSave(1)?.powerState).toBe('small');
+  });
+
+  it('player two joins at the level select of a one-player file', () => {
+    const h = makeGame();
+    newFileFromTitle(h);
+    expect(h.game.state.lives).toBe(3);
+    h.idle(8);
+    walkTo(h, '1-1');
+    h.tap('jump');
+    const picks = picksUntilLevel(h, () => {
+      h.tap('start', 1); // player two joins (Luigi preselected for them)
+      h.tap('right', 1); // → Link
+      h.tap('jump'); // player one keeps Mario and starts for both
+    });
+    expect(picks).toBe(1);
+    expect(h.game.state.character).toBe(MARIO);
+    expect(h.game.state.character2).toBe(LINK);
+    expect(h.game.state.lives).toBe(5); // the pool a two-player file starts with
+    const saved = loadSave(1) as SaveFile;
+    expect([saved.character, saved.character2, saved.lives]).toEqual(['mario', 'link', 5]);
+    // From then on the file is two-player: each player picks in turn.
+    h.game.returnToMap();
+    h.game.enterLevelFromMap('1-1');
+    const p1 = h.top();
+    h.idle(12);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.top()).not.toBe(p1);
+  });
+});
 
 describe('campaign: clears return to the map', () => {
   it('new file → map → 1-1 → exit: back on the map with 1-2 drawn in, and the file saved', () => {

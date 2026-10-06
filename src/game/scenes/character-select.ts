@@ -5,25 +5,23 @@ import type { CharacterDef } from '../characters/character';
 import type { Game } from './game';
 
 /**
- * One player picks a hero mid-run: after a death with lives left, or after a continue. The
- * original goes through CharacterSelect every time a level is (re)loaded with newLev set
- * (ScreenManager.createLevel), with no way back to the title.
+ * One player picks a hero mid-run: entering a level from the world map, after a death with lives
+ * left, or after a continue. The original goes through CharacterSelect every time a level is
+ * (re)loaded with newLev set (ScreenManager.createLevel), with no way back to the title.
  */
 export interface HeroPick {
   /** Which player picks (0 = player 1); the other player's hero is kept. */
   player: number;
   /** Hero highlighted on entry (the one that just died). */
   current: CharacterDef;
-  onPick: (c: CharacterDef) => void;
+  /**
+   * Player two may press start to join and pick alongside player one (a one-player file entering
+   * a level from the map); their hero comes as `joined` when player one confirms.
+   */
+  join?: boolean;
+  onPick: (c: CharacterDef, joined: CharacterDef | null) => void;
   /** Back (B/Select), e.g. to the world map; without it there is no way back. */
   onCancel?: () => void;
-}
-
-/** New-game mode hooks (file select): the chosen heroes go back to the caller instead of `newGame`. */
-export interface NewGameHooks {
-  onStart: (c: CharacterDef, c2: CharacterDef | null) => void;
-  /** Back (B/Select); defaults to the title. */
-  onBack?: () => void;
 }
 
 export class CharacterSelectScene implements Scene {
@@ -34,7 +32,6 @@ export class CharacterSelectScene implements Scene {
   constructor(
     private readonly game: Game,
     private readonly pick: HeroPick | null = null,
-    private readonly hooks: NewGameHooks | null = null,
   ) {}
 
   enter(): void {
@@ -45,8 +42,9 @@ export class CharacterSelectScene implements Scene {
         this.game.deps.characters.findIndex((c) => c.id === pick.current.id),
       );
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
+      const join = pick.join ? ' Player two: press start to join.' : '';
       this.game.deps.announcer?.say(
-        `${who} your hero. ${pick.current.name}. Left and right to choose, start to confirm.`,
+        `${who} your hero. ${pick.current.name}. Left and right to choose, start to confirm.${join}`,
       );
       return;
     }
@@ -74,22 +72,10 @@ export class CharacterSelectScene implements Scene {
       }
       return idx;
     };
-    if (this.pick) {
-      const f = inputs[this.pick.player] ?? input;
-      this.index = move(this.index, f);
-      const c = chars[this.index];
-      if (this.t > 10 && c && (f.pressed('start') || f.pressed('jump'))) {
-        this.game.ctx.audio.sfx('coin');
-        this.pick.onPick(c);
-      } else if (this.pick.onCancel && (f.pressed('select') || f.pressed('attack'))) {
-        this.game.ctx.audio.sfx('select');
-        this.pick.onCancel();
-      }
-      return;
-    }
-    this.index = move(this.index, input);
-    const f2 = inputs[1];
-    if (f2) {
+    // Player two joins with start and picks alongside player one (new game, or a map level).
+    const joinP2 = () => {
+      const f2 = inputs[1];
+      if (!f2) return;
       if (!this.p2 && f2.pressed('start')) {
         this.p2 = true;
         this.game.ctx.audio.sfx('1up');
@@ -98,18 +84,29 @@ export class CharacterSelectScene implements Scene {
         this.index2 = move(this.index2, f2);
         if (f2.pressed('select')) this.p2 = false;
       }
-    }
-    if (this.t > 10 && (input.pressed('start') || input.pressed('jump'))) {
+    };
+    if (this.pick) {
+      const f = inputs[this.pick.player] ?? input;
+      this.index = move(this.index, f);
+      if (this.pick.join) joinP2();
       const c = chars[this.index];
-      const c2 = this.p2 ? chars[this.index2] : null;
-      if (c && this.hooks) this.hooks.onStart(c, c2 ?? null);
-      else if (c) this.game.newGame(c, '1-1', c2 ?? null);
+      if (this.t > 10 && c && (f.pressed('start') || f.pressed('jump'))) {
+        this.game.ctx.audio.sfx('coin');
+        this.pick.onPick(c, this.p2 ? (chars[this.index2] ?? null) : null);
+      } else if (this.pick.onCancel && (f.pressed('select') || f.pressed('attack'))) {
+        this.game.ctx.audio.sfx('select');
+        this.pick.onCancel();
+      }
       return;
     }
-    if (input.pressed('select') || input.pressed('attack')) {
-      if (this.hooks?.onBack) this.hooks.onBack();
-      else this.game.showTitle();
+    this.index = move(this.index, input);
+    joinP2();
+    if (this.t > 10 && (input.pressed('start') || input.pressed('jump'))) {
+      const c = chars[this.index];
+      if (c) this.game.newGame(c, '1-1', this.p2 ? (chars[this.index2] ?? null) : null);
+      return;
     }
+    if (input.pressed('select') || input.pressed('attack')) this.game.showTitle();
   }
 
   render(r: Renderer): void {
@@ -140,13 +137,15 @@ export class CharacterSelectScene implements Scene {
       if (this.p2 && i === this.index2)
         r.text(font, '2', tight ? x - 4 : x + 12, tight ? 120 - h - 10 : 112 - h / 2);
     });
-    if (this.pick) {
-      // The original's CharacterSelect shows the lives left (numLives / livesTxt).
-      r.text(font, `×  ${this.game.state.lives}`, 108, 158);
-    } else if (this.p2) {
-      const c2 = chars[this.index2];
-      if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, 158);
-    } else if ((this.t >> 6) % 2 === 1) r.text(font, 'P2 PRESS START TO JOIN', 40, 158);
+    // The original's CharacterSelect shows the lives left (numLives / livesTxt); a level pick that
+    // player two may join puts the join line below them.
+    if (this.pick) r.text(font, `×  ${this.game.state.lives}`, 108, 158);
+    if (!this.pick || this.pick.join) {
+      const y = this.pick ? 170 : 158;
+      const c2 = this.p2 ? chars[this.index2] : undefined;
+      if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, y);
+      else if (!this.p2 && (this.t >> 6) % 2 === 1) r.text(font, 'P2 PRESS START TO JOIN', 40, y);
+    }
     if ((this.t >> 5) % 2 === 0) r.text(font, 'PRESS START', 84, 184);
   }
 }

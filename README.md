@@ -29,10 +29,10 @@ controls automatically. Press **F1** for the debug overlay and **F2** for a free
 
 **Start game** opens the file select: three save files, each showing its hero, the world
 reached, levels cleared (out of 32), lives and score (a star once the game is beaten); pick a
-file to continue it, start a new one (character select, player two can join) or erase one.
-A file plays on a Super Mario World-style map with one page per world (1-8). Walk the d-pad
-along open paths and press jump on a level to play it (character select first; the
-current hero is preselected). Clearing a level, at the flagpole or by Toad in a castle, returns
+file to continue it, start a new one (it opens straight on World 1's map with Mario) or erase
+one. A file plays on a Super Mario World-style map with one page per world (1-8). Walk the d-pad
+along open paths and press jump on a level to play it (character select first: the current hero
+is preselected, player two can join, and the file and map keep the last pick). Clearing a level, at the flagpole or by Toad in a castle, returns
 to the map and draws in the road to the next one; a castle opens the next world's page. A warp
 pipe opens only the world it leads to; the map menu's **Worlds** list travels between open
 worlds (back to the spot you left in each). **Pause → Quit to map** leaves any level without
@@ -133,11 +133,12 @@ Settings persist in the browser.
 
 ### Two players
 
-On the character select, player two presses **Start** (numpad 0/Enter, or a second gamepad's
-start button) to join and picks their own hero. Both play on one screen with a shared pool
-of lives; a fallen player drops back in beside the survivor. Player two's default keys are on
-the numpad (4/6 move, 8 up, 5 down, 0 jump, . attack, Enter special, + start) and can be
-remapped in Options → Controls.
+On the character select before a level (picked on the map with one player, or a custom
+level), player two presses **Start** (numpad 0/Enter, or a second gamepad's start button) to
+join and picks their own hero; a file then stays two-player. Both play on one screen with a
+shared pool of lives; a fallen player drops back in beside the survivor. Player two's default
+keys are on the numpad (4/6 move, 8 up, 5 down, 0 jump, . attack, Enter special, + start) and
+can be remapped in Options → Controls.
 
 ### Level editor and sharing
 

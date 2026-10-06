@@ -216,13 +216,18 @@ export class Game {
   /**
    * A level node picked on the map: character select with the current hero preselected (keeping
    * it keeps its power; a different hero starts from its default), then player two's own pick in
-   * co-op, then the level (its intro scene when it has one). Back returns to the map.
+   * co-op, then the level (its intro scene when it has one). With one player, player two may join
+   * on player one's pick (their hero starts from its default; the shared pool gains the two lives
+   * a two-player file starts with). The picks are saved to the file, so the map and the file
+   * select show them. Back returns to the map.
    */
   enterLevelFromMap(levelId: string): void {
     const s = this.state;
+    const coop = s.character2 !== null;
     const back = () => this.scenes.pop();
     const go = () => {
       s.checkpoint = null;
+      this.autosave();
       this.deps.ctx.audio.stopMusic();
       this.goToLevel(entryLevel(levelId, this.deps.getLevel), { mode: 'stand' });
     };
@@ -230,15 +235,20 @@ export class Game {
       new CharacterSelectScene(this, {
         player,
         current: player === 1 ? (s.character2 as CharacterDef) : s.character,
-        onPick: (c) => {
+        join: !coop,
+        onPick: (c, joined) => {
           if (c !== (player === 1 ? s.character2 : s.character)) this.setHero(player, c);
+          if (joined) {
+            this.setHero(1, joined);
+            s.lives = Math.min(99, s.lives + 2);
+          }
           then();
         },
         onCancel: back,
       });
     this.scenes.push(
       pick(0, () => {
-        if (!s.character2) return go();
+        if (!coop) return go();
         this.scenes.pop();
         this.scenes.push(pick(1, go));
       }),
