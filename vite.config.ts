@@ -7,19 +7,26 @@ import type { Plugin } from 'vite';
 
 const base = process.env.VITE_BASE ?? '/';
 
-// Version shown on the title screen: package.json version plus the short git commit.
+// Version shown on the title screen (docs/RELEASING.md): the bare package.json version for a release
+// build (RELEASE_TAG, or the commit carrying the tag v<version>), `<version>-dev.<sha>` otherwise.
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version: string;
 };
-let sha = 'dev';
-try {
-  sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
-    .toString()
-    .trim();
-} catch {
-  /* no git */
+function git(args: string): string | null {
+  try {
+    return execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return null; // no git, not a repository, or no such tag
+  }
 }
-const appVersion = `${pkg.version}-${sha}`;
+const releaseTag = `v${pkg.version}`;
+const isRelease =
+  process.env.RELEASE_TAG === releaseTag ||
+  git(`describe --exact-match --tags --match ${releaseTag} HEAD`) === releaseTag;
+const sha = git('rev-parse --short HEAD');
+const appVersion = isRelease ? pkg.version : sha ? `${pkg.version}-dev.${sha}` : `${pkg.version}-dev`;
 
 /**
  * Level files use the `.map` extension, which Vite's dev server treats as a source map: any URL whose
