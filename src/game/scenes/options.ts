@@ -203,13 +203,14 @@ class ControlsOptions extends MenuScene {
     this.capturing = { action, kind };
     this.status = kind === 'keyboard' ? 'Press a key (Esc cancels)' : 'Press a button';
     this.game.deps.announcer?.say(this.status);
-    void input.captureNext().then(({ code, kind: got }) => {
+    void input.captureNext().then((got) => {
       const s = settings(this.game);
       const b = s.input.bindings[0];
-      if (b && got === kind) {
-        b[kind][action] = [code];
+      if (b && got && got.kind === kind) {
+        b[kind][action] = [got.code];
         apply(this.game);
-        this.status = `${ActionLabels[action]} = ${describeCode(code)}`;
+        const name = kind === 'gamepad' ? describePad(got.code) : describeCode(got.code);
+        this.status = `${ActionLabels[action]}: ${name}`;
       } else this.status = 'Cancelled';
       this.capturing = null;
       this.announce();

@@ -74,6 +74,12 @@ export const NO_INPUT: InputFrame = {
   dirX: 0,
 };
 
+/** A key or pad button caught by the remap UI. */
+export interface CaptureResult {
+  code: Code;
+  kind: 'keyboard' | 'gamepad';
+}
+
 export class InputManager {
   readonly players: ActionState[] = [];
   bindings: PlayerBindings[];
@@ -83,8 +89,13 @@ export class InputManager {
     touch: [],
   };
 
-  /** While set, raw presses are routed here instead of to players (remap UI). */
-  private capture: ((code: Code, kind: 'keyboard' | 'gamepad') => void) | null = null;
+  /** While set, raw presses are routed here instead of to players (remap UI); null = cancelled. */
+  private capture: ((got: CaptureResult | null) => void) | null = null;
+  /**
+   * Codes held when a capture ended (the key just bound, Esc that cancelled, anything else still
+   * down): ignored until released, so the new key does not also fire its new action at once.
+   */
+  private readonly suppressed = new Set<Code>();
 
   constructor(playerCount = 2, bindings?: PlayerBindings[]) {
     this.bindings = bindings ?? Array.from({ length: playerCount }, (_, i) => defaultBindings(i));
@@ -95,18 +106,19 @@ export class InputManager {
     this.sources[kind].push(src);
   }
 
-  /** Capture the next raw key or button press; resolves with the code. */
-  captureNext(): Promise<{ code: Code; kind: 'keyboard' | 'gamepad' }> {
+  /** Capture the next raw key or button press; resolves with the code, or null if cancelled (Esc). */
+  captureNext(): Promise<CaptureResult | null> {
+    this.capture?.(null);
     return new Promise((resolve) => {
-      this.capture = (code, kind) => {
+      this.capture = (got) => {
         this.capture = null;
-        resolve({ code, kind });
+        resolve(got);
       };
     });
   }
 
   cancelCapture(): void {
-    this.capture = null;
+    this.capture?.(null);
   }
 
   get capturing(): boolean {
@@ -118,35 +130,47 @@ export class InputManager {
     const kb = union(this.sources.keyboard.map((s) => s.poll()));
     const touch = union(this.sources.touch.map((s) => s.poll()));
     const padsByIndex = this.sources.gamepad.map((s) => s.poll());
+    const allPads = union(padsByIndex);
+    // A suppressed code counts again once it has been seen released.
+    for (const c of this.suppressed) if (!kb.has(c) && !allPads.has(c)) this.suppressed.delete(c);
     if (this.capture) {
+      let got: CaptureResult | null | undefined;
       for (const s of this.sources.keyboard) {
         const code = s.takeJustPressed?.()[0];
         if (code) {
-          if (code === 'Escape') this.capture = null;
-          else this.capture(code, 'keyboard');
+          got = code === 'Escape' ? null : { code, kind: 'keyboard' };
           break;
         }
       }
-      if (this.capture) {
+      if (got === undefined) {
         for (const s of this.sources.gamepad) {
           const code = s.takeJustPressed?.()[0];
           if (code) {
-            this.capture(code, 'gamepad');
+            got = { code, kind: 'gamepad' };
             break;
           }
         }
+      }
+      if (got !== undefined) {
+        // Everything down now (the captured key or button, Esc) waits for its release.
+        for (const c of kb) this.suppressed.add(c);
+        for (const c of allPads) this.suppressed.add(c);
+        if (got) this.suppressed.add(got.code);
+        this.capture(got);
       }
       for (const p of this.players) p.beginFrame(new Set());
       return;
     }
     for (const s of [...this.sources.keyboard, ...this.sources.gamepad]) s.takeJustPressed?.();
+    const live = (set: ReadonlySet<Code>) => (c: Code) => set.has(c) && !this.suppressed.has(c);
+    const kbDown = live(kb);
     for (let p = 0; p < this.players.length; p++) {
       const b = this.bindings[p] ?? defaultBindings(p);
-      const pad = padsByIndex[b.gamepadIndex ?? p] ?? padsByIndex[0] ?? EMPTY;
+      const padDown = live(padsByIndex[b.gamepadIndex ?? p] ?? padsByIndex[0] ?? EMPTY);
       const next = new Set<Action>();
       for (const a of Actions) {
-        if (b.keyboard[a]?.some((c) => kb.has(c))) next.add(a);
-        else if (b.gamepad[a]?.some((c) => pad.has(c))) next.add(a);
+        if (b.keyboard[a]?.some(kbDown)) next.add(a);
+        else if (b.gamepad[a]?.some(padDown)) next.add(a);
         else if (p === 0 && touch.has(`touch:${a}`)) next.add(a);
       }
       this.players[p]?.beginFrame(next);
@@ -168,6 +192,7 @@ export class InputManager {
 
 const EMPTY: ReadonlySet<Code> = new Set();
 function union(sets: ReadonlySet<Code>[]): ReadonlySet<Code> {
+  if (sets.length === 0) return EMPTY;
   if (sets.length === 1) return sets[0] as ReadonlySet<Code>;
   const out = new Set<Code>();
   for (const s of sets) for (const c of s) out.add(c);
