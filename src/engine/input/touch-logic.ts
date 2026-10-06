@@ -137,24 +137,123 @@ export function hitButton(x: number, y: number, targets: readonly ButtonTarget[]
 
 // ---- Labels ----------------------------------------------------------------------------------
 
-/** Smallest font scale a long label shrinks to. */
-export const LABEL_MIN_SCALE = 0.45;
-/** Font scale for a label wrapped onto two lines. */
+/** No label is drawn smaller than this font size (px at touch scale 1): readable on a phone. */
+export const LABEL_MIN_PX = 11;
+/** A two-line label is drawn no bigger than this fraction of the button's font. */
 export const LABEL_WRAP_SCALE = 0.85;
+/** A label that could wrap stays on one line while it fits at this scale or more. */
+export const LABEL_ONE_LINE_SCALE = 0.75;
+/** Clear space between the letters and the button's rim (px). */
+export const LABEL_MARGIN = 2;
+/** The buttons' border (px). */
+export const BUTTON_BORDER = 2;
+/** The buttons' font family (the canvas measures labels in it). */
+export const BUTTON_FONT = 'system-ui, sans-serif';
+
+/** A fully rounded button (a circle, or a pill when wider than tall) at touch scale 1, in px. */
+export interface ButtonShape {
+  w: number;
+  h: number;
+  /** Font size of a label that fits at full size. */
+  font: number;
+}
+
+/** A, B and C are the same round size; Start and Select are small pills. */
+export const FACE_BUTTON: ButtonShape = { w: 68, h: 68, font: 18 };
+export const SMALL_BUTTON: ButtonShape = { w: 68, h: 30, font: 12 };
+
+export function buttonShape(a: Action): ButtonShape {
+  return a === 'start' || a === 'select' ? SMALL_BUTTON : FACE_BUTTON;
+}
+
+/** Text width in em of the bold button font. */
+export type MeasureEm = (text: string) => number;
 
 /**
- * How to fit `text` on a button that holds `maxChars` characters at full size: multi-word labels
- * wrap (one word a line) and shrink to their longest word; single words shrink to fit.
+ * Advance widths (em) of bold DejaVu Sans, measured in Chromium: the widest common system-ui
+ * fallback, so a label that fits with these fits on a phone's narrower Roboto or SF too.
  */
-export function fitLabel(text: string, maxChars: number): { scale: number; wrap: boolean } {
-  const t = text.trim();
-  if (t.length <= maxChars) return { scale: 1, wrap: false };
-  const words = t.split(/\s+/);
-  if (words.length > 1) {
-    const widest = Math.max(...words.map((w) => w.length));
-    return { scale: Math.max(LABEL_MIN_SCALE, Math.min(LABEL_WRAP_SCALE, maxChars / widest)), wrap: true };
+// prettier-ignore
+const WIDE_EM: Readonly<Record<string, number>> = {
+  A: 0.774, B: 0.763, C: 0.734, D: 0.831, E: 0.684, F: 0.684, G: 0.821, H: 0.837, I: 0.373,
+  J: 0.373, K: 0.775, L: 0.638, M: 0.996, N: 0.837, O: 0.851, P: 0.733, Q: 0.851, R: 0.771,
+  S: 0.721, T: 0.683, U: 0.813, V: 0.774, W: 1.104, X: 0.771, Y: 0.725, Z: 0.726, '-': 0.416,
+  ' ': 0.349,
+};
+
+/** Width in em by the wide table (an unknown character counts as a full em). */
+export const wideEm: MeasureEm = (t) =>
+  [...t].reduce((s, c) => s + (WIDE_EM[c] ?? (/\d/.test(c) ? 0.696 : 1)), 0);
+
+/** Half the height of a capital (0.73 em), which sits about centred in a line box (line-height 1). */
+const CAP_HALF = 0.37;
+
+/**
+ * The largest font scale (≤ `cap`) at which a block of `lines` lines (line-height 1) whose widest
+ * line is `em` wide stays `LABEL_MARGIN` inside the rounded button: its corners must clear the rim.
+ */
+function maxScale(shape: ButtonShape, em: number, lines: number, cap: number): number {
+  const r = Math.min(shape.w, shape.h) / 2 - BUTTON_BORDER - LABEL_MARGIN;
+  const straight = Math.abs(shape.w - shape.h) / 2;
+  const fits = (s: number) => {
+    const y = (lines / 2 - 0.5 + CAP_HALF) * shape.font * s;
+    return y < r && (em * shape.font * s) / 2 <= straight + Math.sqrt(r * r - y * y);
+  };
+  if (fits(cap)) return cap;
+  let lo = 0;
+  let hi = cap;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
   }
-  return { scale: Math.max(LABEL_MIN_SCALE, maxChars / t.length), wrap: false };
+  return lo;
+}
+
+/** Ways to put `text` on two lines: after a space or a hyphen (HI-JUMP → HI- / JUMP). */
+function twoLineSplits(text: string): [string, string][] {
+  const out: [string, string][] = [];
+  for (let i = 1; i < text.length; i++) {
+    if (text[i - 1] === '-' || (text[i] === ' ' && text[i - 1] !== ' ')) {
+      const a = text.slice(0, i).trim();
+      const b = text.slice(i).trim();
+      if (a && b) out.push([a, b]);
+    }
+  }
+  return out;
+}
+
+export interface LabelFit {
+  /** Font scale for the button (`--fs`), never below LABEL_MIN_PX. */
+  scale: number;
+  /** One line, or two when that reads bigger (only at a space or hyphen). */
+  lines: string[];
+  wrap: boolean;
+  /** False when the label only fits below LABEL_MIN_PX (it is then drawn at the floor, clipped). */
+  fits: boolean;
+}
+
+/**
+ * How to draw `text` on a button: one line as big as fits, or, for a label with a space or a
+ * hyphen that would otherwise be small, two lines. `measure` gives text width in em (by default
+ * the wide table; the page passes the real font's).
+ */
+export function fitLabel(text: string, shape: ButtonShape, measure: MeasureEm = wideEm): LabelFit {
+  const t = text.trim();
+  let scale = maxScale(shape, measure(t), 1, 1);
+  let lines = [t];
+  if (scale < LABEL_ONE_LINE_SCALE) {
+    for (const split of twoLineSplits(t)) {
+      const s = maxScale(shape, Math.max(...split.map(measure)), 2, LABEL_WRAP_SCALE);
+      if (s > scale) {
+        scale = s;
+        lines = split;
+      }
+    }
+  }
+  const min = LABEL_MIN_PX / shape.font;
+  const fits = scale >= min;
+  return { scale: Math.max(min, Math.floor(scale * 100) / 100), lines, wrap: lines.length > 1, fits };
 }
 
 /** The little of an element that labelling needs (a DOM element, or a stub in tests). */
@@ -168,18 +267,21 @@ export interface LabelSlot {
   el: LabelTarget;
   /** Label shown when the scene gives none (the A/B/C identity). */
   def: string;
-  /** Characters that fit at full size. */
-  maxChars: number;
+  shape: ButtonShape;
 }
 
 /**
  * Applies TouchLabels to the buttons. Only touches the DOM for buttons whose label changed, so
  * it is cheap to call every frame. `null` hides a button; an absent key restores its default.
+ * A two-line label is written with a line break (the button keeps line breaks: pre-line).
  */
 export class ButtonLabeler {
   private readonly current = new Map<Action, string | null>();
 
-  constructor(private readonly slots: ReadonlyMap<Action, LabelSlot>) {
+  constructor(
+    private readonly slots: ReadonlyMap<Action, LabelSlot>,
+    private readonly measure: MeasureEm = wideEm,
+  ) {
     for (const [a, s] of slots) this.current.set(a, s.def);
   }
 
@@ -197,9 +299,9 @@ export class ButtonLabeler {
         hidden.push(a);
         continue;
       }
-      const fit = fitLabel(next, slot.maxChars);
-      el.textContent = next;
-      el.style.setProperty('--fs', String(Math.round(fit.scale * 100) / 100));
+      const fit = fitLabel(next, slot.shape, this.measure);
+      el.textContent = fit.lines.join('\n');
+      el.style.setProperty('--fs', String(fit.scale));
       el.classList.toggle('wrap', fit.wrap);
       // A custom label keeps a small corner badge with the button's letter.
       el.classList.toggle('custom', next !== slot.def);

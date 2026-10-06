@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import type { TouchLabels } from '@engine/input/touch';
+import type { Action } from '@engine/input/actions';
+import { LABEL_MIN_PX, buttonShape, fitLabel } from '@engine/input/touch-logic';
 import { Player } from './entities/player';
 import type { World } from './world/world';
 import type { CharacterDef } from './characters/character';
 import { CHARACTERS } from './characters/registry';
 import { MARIO } from './characters/mario';
 import { LUIGI } from './characters/luigi';
-import { LINK } from './characters/link';
-import { MEGAMAN } from './characters/megaman';
+import { LINK, LINK_TOOL_LABELS } from './characters/link';
+import { MEGAMAN, MEGAMAN_TOOL_LABELS } from './characters/megaman';
 import { SAMUS } from './characters/samus';
-import { SIMON } from './characters/simon';
-import { RYU } from './characters/ryu';
-import { BILL } from './characters/bill';
+import { SIMON, SIMON_TOOL_LABELS } from './characters/simon';
+import { RYU, RYU_TOOL_LABELS } from './characters/ryu';
+import { BILL, BILL_TOOL_LABELS } from './characters/bill';
 import { levelTouchLabels } from './touch-labels';
 
 /** No hero's labels read the world; the level passes it for heroes that may want it. */
@@ -55,7 +57,7 @@ const TABLE: [CharacterDef, string, Setup, string][] = [
   [MARIO, 'dead', { dead: true }, '- - - PAUSE -'],
   [LUIGI, 'small', {}, 'JUMP RUN - PAUSE -'],
   [LUIGI, 'fire', { power: 'fire' }, 'JUMP FIRE - PAUSE -'],
-  [LINK, 'boomerang', {}, 'JUMP SWORD BOOMERANG PAUSE TOOLS'],
+  [LINK, 'boomerang', {}, 'JUMP SWORD RANG PAUSE TOOLS'],
   [LINK, 'boomerang in flight', { kit: { boomerangOut: 1 } }, 'JUMP SWORD - PAUSE TOOLS'],
   [LINK, 'bombs, none left', { kit: { tool: 1 } }, 'JUMP SWORD - PAUSE TOOLS'],
   [LINK, 'bombs', { kit: { tool: 1, bombs: 3 } }, 'JUMP SWORD BOMB PAUSE TOOLS'],
@@ -87,8 +89,8 @@ const TABLE: [CharacterDef, string, Setup, string][] = [
   [SIMON, 'stopwatch', { kit: { ...SIMON_ALL, tool: 4 } }, 'JUMP WHIP WATCH PAUSE TOOLS'],
   [SIMON, 'stopwatch, 4 hearts', { kit: { ...SIMON_ALL, tool: 4, hearts: 4 } }, 'JUMP WHIP - PAUSE TOOLS'],
   [RYU, 'no arts', {}, 'JUMP SLASH - PAUSE -'],
-  [RYU, 'throwing star', { kit: { ...RYU_ALL, tool: 0 } }, 'JUMP SLASH SHURIKEN PAUSE NINPO'],
-  [RYU, 'windmill', { kit: { ...RYU_ALL, tool: 1 } }, 'JUMP SLASH WINDMILL PAUSE NINPO'],
+  [RYU, 'throwing star', { kit: { ...RYU_ALL, tool: 0 } }, 'JUMP SLASH STAR PAUSE NINPO'],
+  [RYU, 'windmill', { kit: { ...RYU_ALL, tool: 1 } }, 'JUMP SLASH WIND-MILL PAUSE NINPO'],
   [RYU, 'fire wheel', { kit: { ...RYU_ALL, tool: 2 } }, 'JUMP SLASH WHEEL PAUSE NINPO'],
   [RYU, 'jump and slash', { kit: { ...RYU_ALL, tool: 3 } }, 'JUMP SLASH SPIN PAUSE NINPO'],
   [RYU, 'out of ninpo', { kit: { ...RYU_ALL, ninpo: 0 } }, 'JUMP SLASH - PAUSE NINPO'],
@@ -121,6 +123,29 @@ describe('touch labels in a level', () => {
     }
   });
 
+  it(`every label fits its button at ${LABEL_MIN_PX} px or more (widest font, touch scale 1)`, () => {
+    const shown: [Action, string][] = [];
+    for (const [def, , s] of TABLE)
+      for (const [a, l] of Object.entries(levelTouchLabels(hero(def, s), world)))
+        if (l) shown.push([a as Action, l]);
+    // Every tool caption C can show, whether or not a table row selects it.
+    for (const names of [
+      LINK_TOOL_LABELS,
+      MEGAMAN_TOOL_LABELS,
+      SIMON_TOOL_LABELS,
+      RYU_TOOL_LABELS,
+      BILL_TOOL_LABELS,
+    ])
+      for (const l of Object.values(names)) shown.push(['special', l]);
+    for (const [a, l] of shown) {
+      const shape = buttonShape(a);
+      const fit = fitLabel(l, shape);
+      expect(fit.fits, `${a} ${l}`).toBe(true);
+      expect(fit.scale * shape.font, `${a} ${l}`).toBeGreaterThanOrEqual(LABEL_MIN_PX);
+    }
+    expect(shown.length).toBeGreaterThan(TABLE.length);
+  });
+
   it('labels follow the state: a power-up, the ball and a tool switch change them', () => {
     const p = hero(MARIO);
     expect(levelTouchLabels(p, world).attack).toBe('RUN');
@@ -132,7 +157,7 @@ describe('touch labels in a level', () => {
     s.scratch.ball = 0;
     expect(levelTouchLabels(s, world).jump).toBe('JUMP');
     const l = hero(LINK, { kit: { bombs: 2 } });
-    expect(levelTouchLabels(l, world).special).toBe('BOOMERANG');
+    expect(levelTouchLabels(l, world).special).toBe('RANG');
     l.scratch.tool = 1;
     expect(levelTouchLabels(l, world).special).toBe('BOMB');
   });
