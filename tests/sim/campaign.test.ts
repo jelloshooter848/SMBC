@@ -726,6 +726,88 @@ describe('campaign: deaths, game over and quitting', () => {
     expect(h.level().level.id).toBe('1-1');
   });
 
+  const labels = (h: H) => (h.top() as CharacterSelectScene).touchLabels();
+
+  it('death select → RETURN TO MAP: the map at the same node, saved, lives as the death left them, no clear', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ powerState: 'fire', position: { world: 1, node: '1-1' } }));
+    enter(h, '1-1');
+    h.game.state.score = 500;
+    h.game.state.coins = 7;
+    die(h);
+    const pick = h.top();
+    expect(pick).toBeInstanceOf(CharacterSelectScene);
+    expect(textsOver(h, 4)).toContain('RETURN TO MAP');
+    expect(loadSave(1)?.lives).toBe(2);
+    // Down moves the cursor to RETURN TO MAP; up goes back; down again and OK leaves.
+    h.idle(12);
+    h.tap('down');
+    h.tap('up');
+    expect(h.top()).toBe(pick);
+    h.tap('down');
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().node).toBe('1-1');
+    expect(h.map().revealing).toBe(false);
+    expect(h.game.mapProgress.cleared).toEqual([]);
+    const s = h.game.state;
+    // The lost life counted once: not lost again, not refunded. The hero stays as the death left it.
+    expect([s.lives, s.score, s.coins, s.character, s.powerState]).toEqual([2, 500, 7, MARIO, 'small']);
+    const saved = loadSave(1) as SaveFile;
+    expect([saved.lives, saved.score, saved.coins, saved.powerState, saved.cleared, saved.position]).toEqual([
+      2,
+      500,
+      7,
+      'small',
+      [],
+      { world: 1, node: '1-1' },
+    ]);
+    // Entering again keeps the count.
+    enter(h, '1-1');
+    expect(h.game.state.lives).toBe(2);
+  });
+
+  it('the MAP button (B/Select) on the death select leaves for the map too', () => {
+    const h = makeGame();
+    h.game.openFile(1, file());
+    enter(h, '1-1');
+    die(h);
+    expect(labels(h)).toEqual({ jump: 'OK', attack: 'MAP', special: null, start: null, select: null });
+    h.idle(12);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(loadSave(1)?.lives).toBe(2);
+  });
+
+  it("an old 2P save: player two's death pick offers it, and player 1's input drives it", () => {
+    const h = makeGame();
+    openOld2P(h);
+    h.idle(8);
+    walkTo(h, '1-1');
+    h.tap('jump');
+    picksUntilLevel(h, () => h.tap('jump'));
+    die(h); // player two's death ends the attempt
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(textsOver(h, 4)).toContain('P2 SELECT YOUR HERO');
+    expect(textsOver(h, 4)).toContain('RETURN TO MAP');
+    expect(labels(h).attack).toBe('MAP');
+    h.idle(12);
+    h.tap('down'); // player 1's device
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().node).toBe('1-1');
+    expect([h.game.state.lives, loadSave(1)?.lives]).toEqual([4, 4]);
+  });
+
+  it('the level-entry select keeps OK/BACK and has no RETURN TO MAP entry', () => {
+    const h = makeGame();
+    h.game.openFile(1, file());
+    h.idle(4);
+    h.game.enterLevelFromMap('1-1');
+    expect(labels(h)).toEqual({ jump: 'OK', attack: 'BACK', special: null, start: null, select: null });
+    expect(textsOver(h, 4)).not.toContain('RETURN TO MAP');
+  });
+
   function toGameOver(h: H, c2: string | null = null) {
     h.game.openFile(
       2,
@@ -915,6 +997,31 @@ describe('non-campaign starts never touch save files', () => {
     h.tap('start');
     expect(menuItem(h.top(), 'Quit to map')).toBeUndefined();
     expect(menuItem(h.top(), 'Quit')).toBeDefined();
+    expect(saveKeys()).toEqual([]);
+  });
+
+  it('a non-campaign death select offers no RETURN TO MAP', () => {
+    const h = makeGame();
+    h.game.newGame(MARIO, '1-1');
+    h.until(() => h.top() instanceof LevelScene);
+    const w = h.level().world;
+    w.kill(w.player);
+    h.until(() => h.top() instanceof CharacterSelectScene, 400);
+    const pick = h.top();
+    expect(textsOver(h, 80)).not.toContain('RETURN TO MAP');
+    expect((pick as CharacterSelectScene).touchLabels()).toEqual({
+      jump: 'OK',
+      attack: null,
+      special: null,
+      start: null,
+      select: null,
+    });
+    h.tap('down');
+    h.tap('attack');
+    h.tap('select');
+    expect(h.top()).toBe(pick);
+    h.tap('jump');
+    h.until(() => h.top() instanceof LevelScene);
     expect(saveKeys()).toEqual([]);
   });
 

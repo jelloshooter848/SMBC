@@ -605,6 +605,9 @@ export class Game {
           this.setHero(p2 ? 1 : 0, c);
           then();
         },
+        // Campaign: back to the map as Pause → Quit to map (no clear; the life lost here is
+        // already counted and saved, and the hero stays as the death left it).
+        ...(this.campaign && !this.playtestDone ? { onMap: () => this.returnToMap() } : {}),
       }),
     );
   }

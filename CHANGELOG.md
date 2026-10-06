@@ -8,6 +8,10 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- After a death in a campaign level, the character select offers **Return to map**.
+
 ### Fixed
 
 - Touch d-pad: down engages as easily as the other directions (only the down-diagonals still need a firmer push, so running doesn't crouch).
