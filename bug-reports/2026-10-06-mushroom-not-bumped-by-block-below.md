@@ -2,8 +2,8 @@
 
 - **Severity:** wrong behaviour
 - **Build:** V0.4.1
-- **Where:** any ? block or brick with a mushroom on it, for example the first mushroom block in 1-1 (column 21) before the mushroom walks off it
-- **How to get there:** `?level=1-1&char=mario`, knock the mushroom out of the block at column 21, then jump into the block again while the mushroom is still on it (or on any brick it walks over)
+- **Where:** any ? block or brick with a mushroom on it, for example the brick at 1-1 column 22 that the first mushroom walks onto
+- **How to get there:** `?level=1-1&char=mario`, knock the mushroom out of the block at column 21, then bump the brick at column 22 from below while the mushroom walks over it (the used block at 21 no longer reacts, here or in the original)
 - **Character and power:** any hero that can bump blocks (reported with Mario, small)
 - **Input:** keyboard
 - **Browser and device:** reported by the owner
@@ -11,7 +11,7 @@
 ## Steps
 
 1. Knock a mushroom (red, 1-up or poison) out of a block, or let one walk onto a brick.
-2. While it stands on the block, bump that block from below (head bump, Link's up-thrust, or big Mario breaking the brick).
+2. While it stands on a block that can still be hit (not the used one it came out of), bump that block from below (head bump, Link's up-thrust, or big Mario breaking the brick).
 
 ## Expected
 
