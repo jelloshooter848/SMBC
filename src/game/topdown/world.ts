@@ -255,9 +255,32 @@ export class TopDownWorld {
       e.key = `${s.col},${s.row}`;
       this.entities.push(e);
     }
+    this.offerWallBreaker();
     this.syncHidden();
     this.shutWas = this.shuttersShut();
     this.emit({ type: 'room', id: room.id, first });
+  }
+
+  /**
+   * A cracked wall here still shut, and the item that breaks it owned but out of ammo: a refill
+   * waits in the middle of the room (each time, until the wall is open), so it can't soft-lock.
+   */
+  private offerWallBreaker(): void {
+    const st = this.state();
+    const shut = this.room.tiles.some((t, i) => {
+      const col = i % ROOM_COLS;
+      const row = Math.floor(i / ROOM_COLS);
+      if (t === 'cracked') return !st.blasted.has(`${col},${row}`);
+      if (t !== 'door') return false;
+      const side = sideOf(col, row) as Side;
+      return this.room.doors[side] === 'cracked' && !st.blasted.has(side);
+    });
+    if (!shut) return;
+    for (const it of this.inv.withAmmo()) {
+      if (!it.breaksWalls || !it.ammo || this.inv.count(it.id) > 0) continue;
+      const at = this.openSpotNear({ x: 7.5 * TILE + 4, y: 5 * TILE, w: 8, h: 16 });
+      this.entities.push(new Pickup(at.x, at.y, it.ammo.pickup));
+    }
   }
 
   /** Is the room's condition true right now (or met before)? */

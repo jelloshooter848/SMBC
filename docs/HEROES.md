@@ -160,7 +160,8 @@ a locked door into a room whose shutters open when every monster is gone (a **he
 appears there too: three hearts become four, all refilled), the armory (a chest with **bombs**:
 four, up to eight, refills dropped by monsters; set one down in front, it blows after 1.5 s,
 2 damage to monsters and half a heart to Link within a tile and a half, and opens **cracked
-walls**; statues point at the cracked west wall), behind it the secret shrine (a chest with the
+walls**; statues point at the cracked west wall; entering a room whose cracked wall is still shut
+with no bombs left puts a refill in the middle of the room, so wasted bombs can't lose the shield), behind it the secret shrine (a chest with the
 magic **shield**, owner decision "make it worth the secret room": from then on it stops rocks and
 the keeper's spells coming at Link's front while he isn't stabbing (an angled spell by its main
 axis), and its guard halves monsters' touch damage, never below half a heart; the banner says
@@ -181,7 +182,8 @@ Dev: `?minigame=link` (the scene is `window.__miniGame`; `world.warpTo(roomId, x
 
 Difficulty (a "cautious human" sim, `human-sim.test.ts`: the bot's plan seen through a 15-frame
 reaction delay, monster positions misjudged by up to 4 px, pauses and early swings; `KEEP_SIM=30
-pnpm vitest run human-sim` prints the report, with and without the shrine): before v2 it escaped
+pnpm vitest run human-sim --silent=false` prints the report, with and without the shrine; it
+knows the whole plan, so it measures combat difficulty, not puzzles or finding the way): before v2 it escaped
 40% of 30 seeds (70% at a 12-frame reaction, 27% at 18), mostly falling to the keeper. With v2
 and the magic shield 97-100% (about 1.8 of four hearts lost to the keeper); skipping the shrine
 93-100% (about 2.2 lost). The keeper got two more hit points to keep it a fight. The sim dodges

@@ -38,7 +38,7 @@ export class Spell extends Projectile {
 /**
  * The keeper of the spell: a hooded shadow (32×32) that drifts from side to side across the top
  * of its room with a slow bob. Every couple of seconds it stops and glows, then casts three
- * spells fanned out at Link. Six sword hits (a bomb counts two); it glows faster once it is down
+ * spells fanned out at Link. Eight sword hits (a bomb counts two); it glows faster once it is down
  * to half. A boomerang only stops it for half a second. It stays still until Link has stepped
  * into the room (the shutters close behind him); its spells vanish when it falls.
  */

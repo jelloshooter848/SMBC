@@ -17,6 +17,11 @@ export interface TdItem {
   readonly icon: string;
   /** Ammo: how many come with the item, the most that can be carried, and the pickup that adds more. */
   readonly ammo?: { start: number; max: number; refill: number; pickup: string };
+  /**
+   * It breaks cracked walls: a room with one still shut, entered with none of this item's ammo
+   * left, offers a refill (so wasted ammo can never lock the way for good).
+   */
+  readonly breaksWalls?: boolean;
   /** Can it be used right now, ammo aside (e.g. not while one is still out)? */
   ready?(world: TopDownWorld): boolean;
   /** Uses it; true if it was used. The world has checked ammo and `ready`, and spends the ammo. */
@@ -258,6 +263,7 @@ export const BOMBS: TdItem = {
   label: 'BOMB',
   icon: 'bomb-icon',
   ammo: { start: 4, max: 8, refill: 4, pickup: 'bombs' },
+  breaksWalls: true,
   ready: (w) => !w.entities.some((e) => e instanceof Bomb && !e.dead),
   use: (w) => {
     const h = w.hero;

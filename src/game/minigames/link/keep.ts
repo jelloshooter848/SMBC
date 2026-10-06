@@ -200,7 +200,10 @@ export class ShadowKeepScene implements Scene {
         } else if (e.kind === 'refill') {
           this.sfx('powerup');
           this.say('Hearts refilled.');
-        } else if (e.kind === 'heart' || e.kind === 'bombs') this.sfx('pickup');
+        } else if (e.kind === 'bombs') {
+          this.sfx('pickup');
+          this.say(`Bombs! ${world.inv.count('bomb')}`);
+        } else if (e.kind === 'heart') this.sfx('pickup');
         return; // a chest's prize has its own fanfare
       case 'chest':
         this.sfx('item-get');

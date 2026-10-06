@@ -9,12 +9,7 @@ import { ShadowKeepScene } from './keep';
 export const LINK_MINIGAME: MiniGameDef = {
   hero: 'link',
   title: 'SHADOW KEEP',
-  rules: [
-    'ESCAPE THE SHADOW KEEP!',
-    'SWORD: ATTACK.',
-    'ITEMS FROM CHESTS: SPECIAL',
-    'SOLVE ROOMS, FIND KEYS.',
-  ],
+  rules: ['ESCAPE THE SHADOW KEEP!', 'SWORD: ATTACK.', 'CHEST ITEMS: SPECIAL.', 'SOLVE ROOMS, FIND KEYS.'],
   create(game, done): Scene {
     return new ShadowKeepScene(game, done);
   },

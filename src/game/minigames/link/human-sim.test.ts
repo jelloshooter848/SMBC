@@ -67,7 +67,7 @@ export function cautiousPassRate(
 }
 
 describe('Shadow Keep: a cautious human (difficulty)', () => {
-  // KEEP_SIM=40 pnpm vitest run human-sim prints a fuller report.
+  // KEEP_SIM=40 pnpm vitest run human-sim --silent=false prints a fuller report.
   const n = Number(process.env.KEEP_SIM ?? 0);
   it('a cautious first-timer (late reactions, misjudged distances, pauses) usually escapes, and not unscathed', () => {
     const { rate, runs } = cautiousPassRate(6);
