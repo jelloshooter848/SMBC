@@ -8,8 +8,27 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Touch controls revamp:
+  - On-screen buttons say what they do for the current hero, power-up and tool (JUMP, RUN or
+    FIRE, SWORD, BOOMERANG, SHOOT, BOMB, MENU…), hide when they do nothing, and read OK / BACK
+    in menus.
+  - Pushing the d-pad to its edge runs (without firing). The d-pad uses angle zones (wide left
+    and right, a deliberate push for down), a larger touch area, lights up the pressed
+    direction and vibrates on Android.
+  - Options → Controls chooses a fixed d-pad or a floating stick that appears under the thumb.
+  - A thumb can slide from one button to the next; the tool-belt button sits beside the tool
+    button.
+  - Auto mode shows the controls on phones and tablets only, brings them back on a touch and
+    hides them on a key or gamepad press; the pause menu has a Touch controls row (Auto / On;
+    Off from a keyboard or gamepad).
+- How to play shows only the controls in use: touch buttons, the gamepad or the keyboard.
+
 ### Changed
 
+- The touch size setting now ranges from 100% to 160% so button text stays readable; smaller
+  stored sizes load as 100%.
 - A new save file opens straight on the World 1 map with Mario; the hero is picked only when
   entering a level. A new file is one player; new two-player save files are paused for now
   (older two-player files still load and play).
