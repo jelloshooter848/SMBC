@@ -118,7 +118,7 @@ export function talkToCaptive(
       },
       world,
       3600,
-      { keys: CARD_KEYS, panel: true, prompt: fontText(abilityHint(game, 'OK', 'jump')) },
+      { keys: CARD_KEYS, panel: true, prompt: () => fontText(abilityHint(game, 'OK', 'jump')) },
     );
   };
 

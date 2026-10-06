@@ -247,11 +247,13 @@ export class TutorialDirector {
     const l = this.tracker.lessons[this.shown];
     if (!l) return [];
     const labels = levelTouchLabels(this.scene.world.players[0], this.scene.world);
-    const key = `${this.shown}|${controlScheme(this.game)}|${labels.jump}|${labels.attack}`;
+    const scheme = controlScheme(this.game);
+    const key = `${this.shown}|${scheme}|${labels.jump}|${labels.attack}`;
+    const text = (scheme === 'touch' ? l.touchText : undefined) ?? l.text;
     if (this.cache.key !== key)
       this.cache = {
         key,
-        lines: wrapPrompt(fillAbilities(l.text, (a, act) => this.abilityName(a, act, labels))),
+        lines: wrapPrompt(fillAbilities(text, (a, act) => this.abilityName(a, act, labels))),
       };
     return this.cache.lines;
   }

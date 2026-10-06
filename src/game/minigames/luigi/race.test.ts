@@ -19,6 +19,10 @@ import { LUIGI_MINIGAME } from '.';
 import { COUNT_FRAMES, GO_FRAME, RaceMenuScene, type MirrorRaceScene } from './race';
 import { LUIGI_ROUTE, poleOf, raceCourse } from './course';
 import { RivalLuigi, RouteInput, type Route } from './rival';
+import { defaultSettings } from '@engine/save/settings';
+import type { MenuItem } from '@game/scenes/menu';
+import { AssistOptionsScene } from '@game/scenes/options';
+import { Goomba } from '@game/entities/enemies/goomba';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -251,6 +255,44 @@ describe('Mirror Race: outcomes', () => {
     h.tap('jump'); // Give up
     expect(h.results).toEqual(['quit']);
     expect(h.game.scenes.top).toBe(h.below);
+  });
+
+  it('in dev mode the menu offers the assists too (not without dev mode)', () => {
+    const labels = (dev: boolean) => {
+      const h = setup(null);
+      h.game.deps.settings = { ...defaultSettings(), dev };
+      for (let i = 0; i < 20; i++) h.step();
+      h.tap('start');
+      const menu = h.game.scenes.top as RaceMenuScene;
+      expect(menu).toBeInstanceOf(RaceMenuScene);
+      return { h, items: (menu as unknown as { items: MenuItem[] }).items };
+    };
+    expect(labels(false).items.map((i) => i.label)).toEqual(['Continue', 'Give up']);
+    const { h, items } = labels(true);
+    expect(items.map((i) => i.label)).toEqual(['Continue', 'Give up', 'Assists']);
+    items[2]?.select?.();
+    expect(h.game.scenes.top).toBeInstanceOf(AssistOptionsScene);
+  });
+
+  it('dev assist No damage: an enemy cannot hurt Mario, but a pit still ends the race', () => {
+    const touch = (invulnerable: boolean) => {
+      const h = setup(null);
+      h.game.ctx.assist.invulnerable = invulnerable;
+      for (let i = 0; i < GO_FRAME + 5; i++) h.step();
+      const m = h.scene.world.player.body;
+      h.scene.world.spawn(new Goomba(m.x + px(20), m.y + m.h - px(14)));
+      for (let i = 0; i < 90 && h.results.length === 0; i++) h.step();
+      return h;
+    };
+    expect(touch(false).scene.world.player.dead).toBe(true);
+    const safe = touch(true);
+    expect(safe.scene.world.player.dead).toBe(false);
+    expect(safe.scene.phase).toBe('race');
+    const pit = setup(PIT);
+    pit.game.ctx.assist.invulnerable = true;
+    pit.play();
+    expect(pit.results).toEqual(['fail']);
+    expect(pit.said).toContain('Mario fell. Try again.');
   });
 
   it('the menu opens during the countdown too, and Give up quits from there', () => {

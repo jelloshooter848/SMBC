@@ -28,7 +28,10 @@ import type { CharacterDef } from '../characters/character';
 import { pad } from '../hud/hud';
 import { hasSecretExit } from '../map/secret-exits';
 import { heroHint, heroSide, hiddenHeroesAt, type HeroHint } from '../map/captives';
-import { mapShadePalette } from '@content/sprites/palette-fx';
+import { fxPalette, mapShadePalette } from '@content/sprites/palette-fx';
+import { trophyPose } from '../map/trophy';
+import { Player } from '../entities/player';
+import { startHp } from '../characters/character';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import type { Game } from './game';
@@ -61,9 +64,13 @@ export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
 /** The hidden hero's slow shimmer: one cycle, and the frames of it the faint glow shade shows. */
 export const HIDING_SHIMMER_FRAMES = 360;
 export const HIDING_GLOW_FRAMES = 30;
-/** A freed hero's idle hop beside its node: one cycle, and the frames of it spent 1 px up. */
-const TROPHY_HOP_FRAMES = 150;
-const TROPHY_HOP_UP = 8;
+/** A freed hero's 1-px dark outline: its silhouette drawn once each way, under it. */
+const TROPHY_OUTLINE: readonly (readonly [number, number])[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
 
 export interface WorldMapOptions {
   /**
@@ -227,6 +234,13 @@ export class WorldMapScene implements Scene {
   /** Render caches. */
   private readonly views = new Map<WorldMapPage, PageView>();
   private readonly heroFrames = new Map<CharacterDef, HeroFrames>();
+  /** Each trophy hero's jump frame (its CharacterDef sprite in the air), or null without one. */
+  private readonly jumpFrames = new Map<
+    CharacterDef,
+    { sheet: string; palette: string; frame: string } | null
+  >();
+  /** Freed heroes celebrating on this map: the frame their burst of hops began (map/trophy.ts). */
+  private readonly trophyBursts = new Map<string, number>();
   private readonly scratchActor: MapActor = { type: '', x: 0, y: 0 };
   private readonly header = {
     page: null as WorldMapPage | null,
@@ -380,6 +394,17 @@ export class WorldMapScene implements Scene {
     return out;
   }
 
+  /**
+   * A hero freed since the map last showed it (Game.celebrate) starts its burst of happy hops the
+   * first time its trophy is on the page shown.
+   */
+  private startTrophyBursts(): void {
+    const c = this.game.celebrate;
+    if (c.size === 0 || !this.page.nodes.length) return;
+    for (const m of this.view(this.page).heroes)
+      if (m.hint === 'trophy' && c.delete(m.def.id)) this.trophyBursts.set(m.def.id, this.t);
+  }
+
   /** The node the hero stands still on hides a hero not freed yet whose level is cleared. */
   private hidingHere(): boolean {
     if (this.mode !== 'idle') return false;
@@ -455,6 +480,7 @@ export class WorldMapScene implements Scene {
 
   update(input: InputFrame): void {
     this.t++;
+    this.startTrophyBursts();
     switch (this.mode) {
       case 'reveal':
         this.updateReveal(input);
@@ -919,22 +945,83 @@ export class WorldMapScene implements Scene {
 
   /**
    * A hidden hero beside its node, facing it: the silhouette in the page's ground shade (with a
-   * slow, faint shimmer unless reduce flashing is on), or the freed hero in colour with a small
-   * idle hop.
+   * slow, faint shimmer unless reduce flashing is on), or the freed hero in colour (drawTrophy).
    */
   private drawHeroMark(r: Renderer, page: WorldMapPage, m: HeroMark, ox: number): void {
+    if (m.hint === 'trophy') return this.drawTrophy(r, m, ox);
     const p = m.def.portrait;
-    let palette = p.palette;
-    let lift = 0;
-    if (m.hint === 'silhouette') {
-      const glow = !this.game.ctx.reduceFlashing && this.t % HIDING_SHIMMER_FRAMES < HIDING_GLOW_FRAMES;
-      palette = mapShadePalette(p.palette, page.theme, glow);
-    } else if (this.t % TROPHY_HOP_FRAMES < TROPHY_HOP_UP) lift = 1;
-    const sheet = this.game.ctx.assets.sheet(p.sheet, palette);
+    const glow = !this.game.ctx.reduceFlashing && this.t % HIDING_SHIMMER_FRAMES < HIDING_GLOW_FRAMES;
+    const sheet = this.game.ctx.assets.sheet(p.sheet, mapShadePalette(p.palette, page.theme, glow));
     const f = sheet.frames.get(p.frame);
     const w = f?.w ?? 16;
     const h = f?.h ?? 16;
-    r.sprite(sheet, p.frame, ox + Math.round(m.cx - w / 2), m.feet - h - lift, m.side > 0);
+    r.sprite(sheet, p.frame, ox + Math.round(m.cx - w / 2), m.feet - h, m.side > 0);
+  }
+
+  /**
+   * A freed hero beside its node, glad to be free (map/trophy.ts): every few seconds a happy hop
+   * in its jump frame with a small sparkle at the top (none with reduce flashing), a burst of
+   * hops the first time after freeing. A 1-px dark outline keeps it clear of the map's ground
+   * (Luigi's green on grass).
+   */
+  private drawTrophy(r: Renderer, m: HeroMark, ox: number): void {
+    const def = m.def;
+    const assets = this.game.ctx.assets;
+    const phase = Math.max(0, this.game.deps.characters.indexOf(def)) * 53;
+    const pose = trophyPose(
+      this.t,
+      phase,
+      this.trophyBursts.get(def.id) ?? null,
+      this.game.ctx.reduceFlashing,
+    );
+    const jump = pose.airborne ? this.jumpFrame(def) : null;
+    const look = jump ?? def.portrait;
+    const sheet = assets.sheet(look.sheet, look.palette);
+    const f = sheet.frames.get(look.frame);
+    const w = f?.w ?? 16;
+    const h = f?.h ?? 16;
+    const x = ox + Math.round(m.cx - w / 2);
+    const y = m.feet - h - pose.lift;
+    const flip = m.side > 0;
+    const dark = assets.sheet(look.sheet, fxPalette(look.palette, 'silhouette'));
+    for (const [dx, dy] of TROPHY_OUTLINE) r.sprite(dark, look.frame, x + dx, y + dy, flip);
+    r.sprite(sheet, look.frame, x, y, flip);
+    if (pose.sparkle > 0) {
+      // A little twinkle over the head, on the side away from the node.
+      const sx = x + (w >> 1) - m.side * 6;
+      const sy = y - 3;
+      const n = pose.sparkle;
+      r.rect(sx - n, sy, 2 * n + 1, 1, '#fce4a0');
+      r.rect(sx, sy - n, 1, 2 * n + 1, '#fce4a0');
+      r.rect(sx, sy, 1, 1, '#fcfcfc');
+    }
+  }
+
+  /** `def`'s jump frame through its CharacterDef sprite (a stand-in in the air), cached. */
+  private jumpFrame(def: CharacterDef): { sheet: string; palette: string; frame: string } | null {
+    if (this.jumpFrames.has(def)) return this.jumpFrames.get(def) ?? null;
+    let out: { sheet: string; palette: string; frame: string } | null = null;
+    try {
+      const states = def.damage.kind === 'powerup' ? def.damage.states : [];
+      const power =
+        def.damage.kind === 'powerup'
+          ? states.includes('small')
+            ? 'small'
+            : (states[0] ?? 'small')
+          : 'full';
+      const pose = new Player(0, 0, def, power, startHp(def));
+      pose.body.onGround = false;
+      pose.body.vy = -0x02000;
+      pose.anim = 'jump';
+      pose.facing = 1;
+      const spec = def.sprite(pose, 0, true);
+      if (this.game.ctx.assets.sheet(spec.sheet, spec.palette).frames.has(spec.frame))
+        out = { sheet: spec.sheet, palette: spec.palette, frame: spec.frame };
+    } catch {
+      out = null;
+    }
+    this.jumpFrames.set(def, out);
+    return out;
   }
 
   private drawHeroes(r: Renderer): void {

@@ -590,9 +590,18 @@ export class Game {
     return chars.find((c) => c.id === FIRST_HERO) ?? (chars[0] as CharacterDef);
   }
 
+  /**
+   * Heroes freed this session whose trophy the world map has not shown yet: it greets each with
+   * a burst of happy hops (map/trophy.ts), once.
+   */
+  readonly celebrate = new Set<string>();
+
   /** A mini game was passed: hero `id` joins the file's roster, saved at once. */
   freeHero(id: string): void {
-    if (!this.freed.includes(id)) this.freed.push(id);
+    if (!this.freed.includes(id)) {
+      this.freed.push(id);
+      this.celebrate.add(id);
+    }
     this.autosave();
   }
 

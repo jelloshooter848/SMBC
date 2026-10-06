@@ -21,6 +21,11 @@ export interface Lesson {
   id: string;
   /** The advice, with ability tokens `[NAME:action]` (e.g. `HOLD [RUN:attack]`). */
   text: string;
+  /**
+   * The advice on touch, when the touch controls do it differently (running: push the d-pad far
+   * to the side); absent: `text`.
+   */
+  touchText?: string;
   /** Column (tile) where the lesson starts: a respawn while it is current stands here. */
   at: number;
   /** Row the respawn stands on (feet on the tile below it; default 12). */

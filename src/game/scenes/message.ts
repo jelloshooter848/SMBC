@@ -68,8 +68,12 @@ export interface CardOptions {
    * castle text spot, so they stay readable over a busy room (World.castleText is left alone).
    */
   panel?: boolean;
-  /** With `panel`: a continue prompt (the ability's name, e.g. "OK") at the box's bottom right. */
-  prompt?: string;
+  /**
+   * With `panel`: a continue prompt (the ability's name, e.g. "OK") at the box's bottom right. A
+   * function is asked again every frame drawn, so "OK (Z)" becomes "OK" when the player picks up
+   * the touch pad mid-dialogue.
+   */
+  prompt?: string | (() => string);
   /** With `panel`: the box goes near the top, under the HUD (the tutorial's Toad), not the bottom. */
   top?: boolean;
 }
@@ -102,7 +106,7 @@ export class CardScene implements Scene {
 
   private readonly keys: readonly Action[];
   private readonly panel: boolean;
-  private readonly prompt: string;
+  private readonly prompt: string | (() => string);
   private readonly top: boolean;
 
   /** B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. A when it goes on too. */
@@ -121,15 +125,16 @@ export class CardScene implements Scene {
   render(r: Renderer): void {
     const font = this.game.ctx.assets.sheet('font');
     if (this.panel) {
-      const rows = this.lines.length + (this.prompt ? 1 : 0);
+      const prompt = typeof this.prompt === 'function' ? this.prompt() : this.prompt;
+      const rows = this.lines.length + (prompt ? 1 : 0);
       const h = rows * 10 + 12;
       const y = this.top ? 40 : SCREEN_H - 12 - h;
       r.rect(12, y, SCREEN_W - 24, h, '#fcfcfc');
       r.rect(14, y + 2, SCREEN_W - 28, h - 4, '#000');
       this.lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + 7 + i * 10));
       // The prompt shows once the card takes input (after the guard).
-      if (this.prompt && this.t > CARD_GUARD_FRAMES)
-        r.text(font, this.prompt, SCREEN_W - 20 - this.prompt.length * 8, y + 7 + this.lines.length * 10);
+      if (prompt && this.t > CARD_GUARD_FRAMES)
+        r.text(font, prompt, SCREEN_W - 20 - prompt.length * 8, y + 7 + this.lines.length * 10);
       return;
     }
     if (this.world) return; // the level beneath draws the lines (World.castleText)
