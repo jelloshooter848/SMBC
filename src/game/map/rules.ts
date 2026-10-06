@@ -1,12 +1,11 @@
 import { MAP_PAGES } from '@content/worldmap';
-import { loadProgress, lostLettersOpen } from '@engine/save/progress';
 import type { LevelData } from '../level/schema';
 import type { MapCondition, MapNode, MapPath, MapProgress, PageId, WorldExit, WorldMapPage } from './types';
 
 /*
- * World map rules (pure apart from the documented in-place updates of `progress`, and the
- * global progress store read for the 'll9' / 'llLetters' conditions): which pages, nodes and
- * paths are open, what a level clear or a warp opens, and where the hero walks on the d-pad.
+ * World map rules (pure apart from the documented in-place updates of `progress`; every
+ * condition reads the file alone): which pages, nodes and paths are open, what a level clear or
+ * a warp opens, and where the hero walks on the d-pad.
  *
  * The open checks take an optional `unlockAll` (developer mode's "Unlock all"): every page,
  * level and castle node, path and world exit counts as open, and every condition holds except
@@ -55,6 +54,27 @@ export function isPageOpen(
   return id === FIRST_PAGE || progress.pages.includes(id) || (unlockAll && registered(id, pages));
 }
 
+/**
+ * The main levels whose clears open the Lost Levels' World 9 in campaign play ('ll9', owner
+ * decision for 0.4.0): all 32 of Lost 1-1 to 8-4.
+ */
+export const LOST_NINE_LEVELS: readonly string[] = Array.from(
+  { length: 32 },
+  (_, i) => `ll-${Math.floor(i / 4) + 1}-${(i % 4) + 1}`,
+);
+
+/** How many of LOST_NINE_LEVELS the file has cleared. */
+export function lostNineCleared(progress: MapProgress): number {
+  return LOST_NINE_LEVELS.filter((id) => progress.cleared.includes(id)).length;
+}
+
+/**
+ * A condition's progress so far, for a hint's '{n}' ('ll9': '31/32'); '' for the others.
+ */
+export function conditionCount(progress: MapProgress, cond: MapCondition | undefined): string {
+  return cond === 'll9' ? `${lostNineCleared(progress)}/${LOST_NINE_LEVELS.length}` : '';
+}
+
 /** Whether `cond` holds (no condition always does; 'never' never does, even with unlock all). */
 export function conditionMet(
   progress: MapProgress,
@@ -66,8 +86,8 @@ export function conditionMet(
   if (unlockAll) return true;
   if (cond === 'gameCleared') return progress.gameCleared === true;
   if (cond.startsWith('secret:')) return progress.secrets.includes(cond.slice('secret:'.length));
-  if (cond === 'll9') return loadProgress().lost.world9;
-  if (cond === 'llLetters') return lostLettersOpen(loadProgress());
+  if (cond === 'll9') return lostNineCleared(progress) === LOST_NINE_LEVELS.length;
+  if (cond === 'llLetters') return progress.cleared.includes('ll-8-4');
   return false;
 }
 
@@ -176,6 +196,20 @@ export function isExitOpen(
   if (!conditionMet(progress, e.requires, unlockAll)) return false;
   if (unlockAll) return isOpen(progress, page, e.from, true);
   return isPageOpen(progress, page.id) && isCleared(progress, page, e.from);
+}
+
+/**
+ * The hint line on node `nodeId` while a world exit leaving it with a `hint` is locked (its
+ * '{n}' filled in by conditionCount: 'WORLD 9 - CLEAR 1-1 TO 8-4 31/32'); '' when there is none.
+ */
+export function exitHint(
+  progress: MapProgress,
+  page: WorldMapPage,
+  nodeId: string,
+  unlockAll = false,
+): string {
+  const e = page.exits.find((x) => x.from === nodeId && x.hint && !isExitOpen(progress, page, x, unlockAll));
+  return e?.hint ? e.hint.replace('{n}', conditionCount(progress, e.requires)) : '';
 }
 
 /** The paths and world exits to draw. */

@@ -15,14 +15,11 @@ import {
  * The Lost Levels in campaign play (docs/WORLD_MAP.md): their levels sit on the 'll-*' pages and
  * play like SMB's from the map. What is theirs alone:
  * - their warp zones stay as on the NES (backward ones too): a warp pipe opens only its target
- *   page and the map moves there (Game.campaignWarpToMap), and the file remembers it was used
- *   (secret LOST_WARPED), so a later 8-4 clear on that file is not warpless (World 9);
+ *   page and the map moves there (Game.campaignWarpToMap);
+ * - World 9 and A-D open by the file's clears ('ll9': all of 1-1 to 8-4; 'llLetters': 8-4);
  * - their three game ends (8-4, 9-4, D-4) return to the map (Game.showLostEnding), and a warp
- *   node whose condition the ending made true (worlds A-D, 'llLetters') draws its road in.
+ *   node whose condition the ending made true (World A, 'llLetters') draws its road in.
  */
-
-/** File secret: a Lost Levels warp pipe was taken on this file (no World 9 from its 8-4 clears). */
-export const LOST_WARPED = 'll-warped';
 
 /** A Lost Levels level id ('ll-3-2', 'll-9-1-start'). */
 export function isLostLevel(id: string): boolean {

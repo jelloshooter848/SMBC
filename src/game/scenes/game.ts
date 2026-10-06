@@ -25,6 +25,8 @@ import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId } from '../map/types';
 import {
   clearLevel,
+  conditionCount,
+  conditionMet,
   entryLevel,
   findLevelNode,
   findSecret,
@@ -37,7 +39,7 @@ import {
 } from '../map/rules';
 import { mapPage } from '@content/worldmap';
 import { campaignLevel } from '../level/campaign';
-import { isLostLevel, LOST_WARPED, warpsOpened, workingWarps } from '../level/lost-campaign';
+import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import {
@@ -159,18 +161,22 @@ export class Game {
    * shut) before World 9 or the title; 9-4 goes to the title; D-4 rolls the credits over the
    * castle, scrolling the card away (the SMB 8-4 path), then the title.
    *
-   * Campaign play (a save file from the map, owner decision for 0.4.0): the clear is recorded on
-   * the castle's page (the level → page lookup) and saved as the card shows, and the end goes
-   * back to that page instead: 8-4 after the tally (Game.showMap's rules.openMetExits then opens
-   * World 9 and draws its road in when the clear was warpless; a warp node the clear opened,
-   * worlds A-D after the eighth game, draws its road in too), 9-4 after the card, D-4 after the
-   * credits. "Warpless" there means no Lost Levels warp pipe was ever taken on the file.
+   * Campaign play (a save file from the map, owner decision for 0.4.0) has its own unlock rules,
+   * read from the file alone (rules.conditionMet; the global NES progress store is left alone):
+   * World A opens once 8-4 is beaten ('llLetters'), World 9 once all 32 levels from 1-1 to 8-4
+   * are cleared ('ll9'). The clear is recorded on the castle's page (the level → page lookup)
+   * and saved as the card shows, and the end goes back to that page: 8-4 after a page saying
+   * what is open (the map then draws in the World A warp's road, and World 9's when it opened),
+   * 9-4 after the card, D-4 after the credits.
    */
   private showLostEnding(from: string): void {
     const s = this.state;
     const campaign = this.campaign !== null;
+    const prog = this.mapProgress;
+    const firstClear = campaign && !prog.cleared.includes(from);
+    const nineBefore = campaign && conditionMet(prog, 'll9');
     // Campaign: the clear first, so a condition the ending makes true opens with a draw-in.
-    const warpsBefore = campaign ? workingWarps(this.mapProgress) : null;
+    const warpsBefore = campaign ? workingWarps(prog) : null;
     if (campaign) {
       s.checkpoint = null;
       s.time = null;
@@ -193,8 +199,27 @@ export class Game {
           ]
         : ['THANK YOU!'];
     let then: () => void;
-    if (from === 'll-8-4') {
-      const warped = this.lostWarped;
+    if (from === 'll-8-4' && campaign) {
+      // What is open now ('!' when this clear opened it).
+      const page = [firstClear ? 'WORLD A IS OPEN!' : 'WORLD A IS OPEN.'];
+      if (!conditionMet(prog, 'll9'))
+        page.push('', 'WORLD 9 OPENS ONCE LOST 1-1', `TO 8-4 ARE CLEARED (${conditionCount(prog, 'll9')}).`);
+      else page.push(nineBefore ? 'WORLD 9 IS OPEN.' : 'WORLD 9 IS OPEN!');
+      then = () => {
+        this.deps.announcer?.say(page.filter(Boolean).join(' '));
+        this.scenes.clear();
+        this.scenes.push(
+          new MessageScene(
+            this,
+            [...page, '', fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`)],
+            () => this.returnToMap(),
+            1800,
+            ['start', 'attack', 'jump'], // as the card, plus A
+          ),
+        );
+      };
+    } else if (from === 'll-8-4') {
+      const warped = s.warped;
       const before = loadProgress();
       const progress = recordLostGameBeaten(before, warped);
       saveProgress(progress);
@@ -202,19 +227,10 @@ export class Game {
       const tally = opened
         ? ['WORLDS A-D ARE OPEN!']
         : [`GAMES BEATEN ${Math.min(progress.lost.beaten, 99)}`];
-      // Campaign: World 9 opens on the map rather than straight after; say so the first time.
-      const nine = campaign && progress.lost.world9 && !before.lost.world9;
       const page = warped
         ? ['WORLD 9 OPENS AFTER A RUN', 'THROUGH WORLDS 1-8', 'WITHOUT WARP ZONES.', '', ...tally]
-        : nine
-          ? ['WORLD 9 IS OPEN!', '', ...tally]
-          : tally;
-      const next = () =>
-        campaign
-          ? this.returnToMap()
-          : warped
-            ? this.showTitle()
-            : this.goToLevel('ll-9-1-start', { mode: 'stand' });
+        : tally;
+      const next = () => (warped ? this.showTitle() : this.goToLevel('ll-9-1-start', { mode: 'stand' }));
       then = () => {
         this.deps.announcer?.say(page.filter(Boolean).join(' '));
         this.scenes.clear();
@@ -246,22 +262,6 @@ export class Game {
     this.deps.announcer?.say(card.filter(Boolean).join(' '));
     if (!world) this.scenes.clear();
     this.scenes.push(new CardScene(this, card, then, world));
-  }
-
-  /**
-   * The run used a warp zone (no World 9 from an 8-4 clear): the run's flag, and in campaign
-   * play also the file's (a Lost Levels warp pipe was ever taken on it, LOST_WARPED).
-   */
-  get lostWarped(): boolean {
-    return this.state.warped || (this.campaign !== null && this.mapProgress.secrets.includes(LOST_WARPED));
-  }
-
-  /** Campaign: a Lost Levels warp pipe was taken; the file keeps it (lostWarped). */
-  recordLostWarp(): void {
-    this.state.warped = true;
-    if (!this.campaign || this.mapProgress.secrets.includes(LOST_WARPED)) return;
-    this.mapProgress.secrets.push(LOST_WARPED);
-    this.autosave();
   }
 
   showTitle(): void {
@@ -305,9 +305,6 @@ export class Game {
       if (hero !== s.character) this.setHero(0, hero);
       if (hero2 && hero2 !== s.character2) this.setHero(1, hero2);
       s.checkpoint = null;
-      // A Lost Levels run is warped when the file is (an SMB warp zone doesn't count).
-      if (isLostLevel(levelId))
-        s.warped = this.campaign !== null && this.mapProgress.secrets.includes(LOST_WARPED);
       this.autosave();
       this.deps.ctx.audio.stopMusic();
       // Its intro when it has one, else its first area (Lost Levels 9-1 starts in ll-9-1-start).

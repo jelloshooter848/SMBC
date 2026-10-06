@@ -24,6 +24,9 @@ import {
   isWarpOpen,
   openMetExits,
   warpText,
+  conditionCount,
+  exitHint,
+  LOST_NINE_LEVELS,
 } from './rules';
 import { saveProgress, type Progress } from '@engine/save/progress';
 
@@ -556,7 +559,7 @@ describe('pages, warp nodes and conditions', () => {
     expect(conditionMet(p, 'never', true)).toBe(false);
   });
 
-  it('conditions read the file (gameCleared, secrets) and the global progress store (ll9, llLetters)', () => {
+  it('conditions read the file alone (gameCleared, secrets, Lost Levels clears)', () => {
     const p = newMapProgress();
     expect(conditionMet(p, undefined)).toBe(true);
     for (const c of ['gameCleared', 'll9', 'llLetters', 'never', 'secret:x'] as const)
@@ -566,11 +569,37 @@ describe('pages, warp nodes and conditions', () => {
     expect(conditionMet(p, 'gameCleared')).toBe(true);
     expect(conditionMet(p, 'secret:x')).toBe(true);
     expect(conditionMet(p, 'secret:y')).toBe(false);
-    setLost({ world9: true, letters: false, beaten: 1 });
-    expect(conditionMet(p, 'll9')).toBe(true);
-    expect(conditionMet(p, 'llLetters')).toBe(false);
+    // The NES progress store does not count.
     setLost({ world9: true, letters: true, beaten: 8 });
+    expect(conditionMet(p, 'll9')).toBe(false);
+    expect(conditionMet(p, 'llLetters')).toBe(false);
+    // World A: Lost 8-4 beaten on the file; World 9: all 32 of 1-1 to 8-4.
+    p.cleared.push('ll-8-4');
     expect(conditionMet(p, 'llLetters')).toBe(true);
+    expect(conditionMet(p, 'll9')).toBe(false);
+    expect(conditionCount(p, 'll9')).toBe('1/32');
+    p.cleared.push(
+      ...LOST_NINE_LEVELS.filter((id) => id !== 'll-8-4' && id !== 'll-1-1'),
+      'll-9-1',
+      'll-10-1',
+    );
+    expect(conditionCount(p, 'll9')).toBe('31/32');
+    expect(conditionMet(p, 'll9')).toBe(false);
+    p.cleared.push('ll-1-1');
+    expect(conditionMet(p, 'll9')).toBe(true);
+    expect(conditionCount(p, 'll9')).toBe('32/32');
+    expect(conditionCount(p, 'llLetters')).toBe('');
+  });
+
+  it('a locked world exit with a hint shows it on its node, with the count filled in', () => {
+    const p = newMapProgress();
+    p.pages.push('ll-8');
+    const page = { ...LL8, exits: LL8.exits.map((e) => (e.to === 'll-9' ? { ...e, hint: 'NINE {n}' } : e)) };
+    expect(exitHint(p, page, 'll-8-4')).toBe('NINE 0/32');
+    expect(exitHint(p, page, 'start')).toBe('');
+    expect(exitHint(p, page, 'll-8-4', true)).toBe(''); // unlock all: open
+    p.cleared.push(...LOST_NINE_LEVELS);
+    expect(exitHint(p, page, 'll-8-4')).toBe('');
   });
 
   it('Lost Levels clears find their page by lookup; a castle opens the next page', () => {
@@ -596,22 +625,23 @@ describe('pages, warp nodes and conditions', () => {
   it('exits with requires open only while it holds, also after the castle was cleared', () => {
     const p = newMapProgress();
     p.pages.push('ll-8');
-    expect(clearLevel(p, 'll-8-4', getLevelAny, ALL)).toEqual([]);
-    expect(p.pages).toEqual(['smb-1', 'll-8']);
-    expect(openPaths(p, LL8).exits).toEqual([]);
+    // 8-4 beaten: 'llLetters' holds at once, 'll9' (all 32 of 1-1 to 8-4) not yet.
+    const opened = clearLevel(p, 'll-8-4', getLevelAny, ALL);
+    expect(opened[0]).toBe('ll-8:ll-8-4>ll-10');
+    expect(opened).toContain('ll-10:start');
+    expect(p.pages).toEqual(['smb-1', 'll-8', 'll-10']);
+    expect(openPaths(p, LL8).exits.map((e) => e.to)).toEqual(['ll-10']);
     expect(openMetExits(p, ALL)).toEqual([]);
-    setLost({ world9: true, letters: false, beaten: 1 });
-    expect(openPaths(p, LL8).exits.map((e) => e.to)).toEqual(['ll-9']);
+    // The other 31 cleared later, anywhere: World 9 opens the next time the map is shown.
+    p.cleared.push(...LOST_NINE_LEVELS.filter((id) => id !== 'll-8-4'));
+    expect(openPaths(p, LL8).exits.map((e) => e.to)).toEqual(['ll-9', 'll-10']);
     expect(openMetExits(p, ALL)).toEqual([
       'll-8:ll-8-4>ll-9',
       'll-9:start',
       'll-9:start>ll-9-1',
       'll-9:ll-9-1',
     ]);
-    expect(p.pages).toEqual(['smb-1', 'll-8', 'll-9']);
+    expect(p.pages).toEqual(['smb-1', 'll-8', 'll-10', 'll-9']);
     expect(openMetExits(p, ALL)).toEqual([]);
-    setLost({ world9: true, letters: true, beaten: 8 });
-    expect(openMetExits(p, ALL)[0]).toBe('ll-8:ll-8-4>ll-10');
-    expect(p.pages).toContain('ll-10');
   });
 });

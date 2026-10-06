@@ -89,7 +89,11 @@ describe('Lost Levels map pages', () => {
     expect(warps).toEqual(['ll-8>ll-10?llLetters']);
     const letters = nodeAt(mapPage('ll-8') as WorldMapPage, 'warp-ll-10');
     expect(letters.level).toBeUndefined();
-    expect(letters.hint).toBeTruthy();
+    expect(letters.hint).toBe('LOST A - BEAT LOST 8-4');
+    // World 9's exit says how far the file is while it is locked, within the hint line.
+    const nine = mapPage('ll-8')?.exits.find((e) => e.to === 'll-9');
+    expect(nine?.hint?.includes('{n}')).toBe(true);
+    expect(nine?.hint?.replace('{n}', '32/32').length).toBeLessThanOrEqual(32);
     // It opens from the World 8 castle.
     expect(mapPage('ll-8')?.paths.some((p) => p.from === 'll-8-4' && p.to === 'warp-ll-10')).toBe(true);
   });

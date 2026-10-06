@@ -20,10 +20,11 @@ import { LL_D } from './worldD';
  * nodes ll-W-1..ll-W-3 (kind 'level') and the ll-W-4 castle, a 'hub' warp node back to the Warp
  * Zone hub, and paths between them. Roads between pages:
  *   1 -> 2 -> ... -> 8: the castle's exit off the right edge, as in SMB.
- *   8 -> 9: the World 8 castle's exit, behind the condition 'll9' (an 8-4 clear without warps).
- *   8 -> A: a warp node 'warp-ll-10' beside the World 8 keep, behind 'llLetters' (the game
- *           beaten eight times). It sits on World 8 rather than World 9 because the NES rules
- *           open A-D without World 9: a player may have the letters and not 9.
+ *   8 -> 9: the World 8 castle's exit, behind the condition 'll9' (the file has cleared all 32
+ *           levels from 1-1 to 8-4), with a hint showing the count while it is locked.
+ *   8 -> A: a warp node 'warp-ll-10' beside the World 8 keep, behind 'llLetters' (the file has
+ *           beaten 8-4). It sits on World 8 rather than World 9 because A-D can open
+ *           without World 9.
  *   A -> B -> C -> D: castle exits as in SMB. Worlds 9 and D end at their castles.
  */
 export const LOST_PAGES: WorldMapPage[] = [

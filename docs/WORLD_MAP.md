@@ -102,13 +102,13 @@ A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the fil
 
 ### Conditions (`MapCondition`)
 
-| Value            | Holds when                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------------ |
-| `'gameCleared'`  | SMB 8-4 beaten on this file (`SaveFile.gameCleared`, `MapProgress.gameCleared`)            |
-| `'secret:<key>'` | The file has found secret `<key>`                                                          |
-| `'ll9'`          | Lost Levels World 9 is open: global progress `lost.world9` (`src/engine/save/progress.ts`) |
-| `'llLetters'`    | Lost Levels worlds A-D are open: global progress, 8 games beaten (`lostLettersOpen`)       |
-| `'never'`        | Never: a future secret ("??? - A FUTURE SECRET")                                           |
+| Value            | Holds when                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| `'gameCleared'`  | SMB 8-4 beaten on this file (`SaveFile.gameCleared`, `MapProgress.gameCleared`)             |
+| `'secret:<key>'` | The file has found secret `<key>`                                                           |
+| `'ll9'`          | The file has cleared all 32 Lost Levels main levels `ll-1-1`..`ll-8-4` (`LOST_NINE_LEVELS`) |
+| `'llLetters'`    | The file has cleared Lost 8-4 (`ll-8-4`)                                                    |
+| `'never'`        | Never: a future secret ("??? - A FUTURE SECRET")                                            |
 
 Developer mode's **Unlock all** treats every condition as met **except `'never'`**, opens every
 registered page (the hub included, so the Worlds menu lists it), and still keeps `unlock`-hidden
@@ -117,19 +117,25 @@ nodes hidden until their secret is found.
 ## World exits and the Lost Levels unlocks
 
 ```ts
-exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9' }]
+exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
+           hint?: 'WORLD 9 - CLEAR 1-1 TO 8-4 {n}' }]
 ```
 
 - An exit opens when its `from` node (a castle) is cleared **and** its `requires` holds. A
   castle clear (`rules.clearLevel`) opens the target page of every exit whose condition holds.
 - Exits only lead to pages of the same group.
+- `hint` (optional): the hint line while the hero stands on `from` and the exit is locked;
+  `{n}` is filled in with the condition's count (`rules.conditionCount`: `'ll9'` → `31/32`). At
+  most 32 chars once filled in. The announcer adds it to the node's name (`rules.exitHint`).
 - Lost Levels pages unlock like SMB: levels open in order along the roads, a castle exit opens
   the next page. World 9: exit `ll-8-4 → ll-9` with `requires: 'll9'`. Worlds A-D: the warp node
   `warp-ll-10` on World 8, off the castle, with `requires: 'llLetters'` (A-D can open without
   World 9); then castle exits `ll-10 → ll-11 → ll-12 → ll-13`. Every Lost Levels page has a warp
   node `hub` back to the Warp Zone.
-- A condition can come true after its castle was cleared (World 9 after a warpless 8-4; A-D
-  after the 8th game). `rules.openMetExits(progress)` opens those pages and returns the ids to
+- Every condition reads the save file alone (campaign rules, owner decision for 0.4.0; the
+  global NES progress store in `src/engine/save/progress.ts` is only for non-campaign play).
+- A condition can come true after its castle was cleared (World 9 when the 32nd of Lost 1-1 to
+  8-4 is cleared, wherever it is). `rules.openMetExits(progress)` opens those pages and returns the ids to
   draw in; `Game.showMap` calls it every time the map is shown, so nothing else is needed.
 
 ## Progress, reveals and saves

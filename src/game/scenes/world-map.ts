@@ -18,6 +18,7 @@ import {
   parseRevealId,
   pathId,
   warpText,
+  exitHint,
   warpTo,
   type Dir,
   type MapStep,
@@ -310,6 +311,12 @@ export class WorldMapScene implements Scene {
       return isWarpOpen(this.progress, n, this.unlockAll) ? `Warp, ${text}` : `${text}, locked`;
     }
     const state = isCleared(this.progress, this.page, n.id) ? 'cleared' : 'open';
+    const hint = exitHint(this.progress, this.page, n.id, this.unlockAll);
+    if (hint) return `${this.nodeLabelPlain(n, label, state)}. ${spoken(hint)}`;
+    return this.nodeLabelPlain(n, label, state);
+  }
+
+  private nodeLabelPlain(n: MapNode, label: string, state: string): string {
     if (n.kind === 'start') return `${label} start`;
     if (n.kind === 'bonus') return `Bonus level, ${state}`;
     // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
@@ -325,10 +332,14 @@ export class WorldMapScene implements Scene {
     return n && isWarpNode(n) ? n : null;
   }
 
-  /** The hint line's text while the hero stands on a warp node ('' otherwise). */
+  /**
+   * The hint line's text while the hero stands still on a warp node, or on the node a locked
+   * world exit with a hint leaves from (Lost 8-4: World 9's count); '' otherwise.
+   */
   get hintLine(): string {
     const n = this.warpHere();
-    return n ? warpText(this.progress, n, this.unlockAll) : '';
+    if (n) return warpText(this.progress, n, this.unlockAll);
+    return this.mode === 'idle' ? exitHint(this.progress, this.page, this.node, this.unlockAll) : '';
   }
 
   update(input: InputFrame): void {
@@ -685,7 +696,7 @@ export class WorldMapScene implements Scene {
     this.drawHint(r);
   }
 
-  /** The hint line across the bottom while the hero stands on a warp node (open or locked). */
+  /** The hint line across the bottom (a warp node, open or locked, or a locked exit's hint). */
   private drawHint(r: Renderer): void {
     const text = this.hintLine;
     if (!text) return;

@@ -12,7 +12,6 @@ import type { Game } from './game';
 import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
-import { isLostLevel } from '../level/lost-campaign';
 
 export type LevelStart = WorldStart;
 
@@ -122,9 +121,7 @@ export class LevelScene implements Scene {
           // Campaign: the warp ends the level on the map, at the target level's page (owner
           // decision; pages found by the level → page lookup, 'll-3-1' → 'll-3'), opening only
           // that page; otherwise character select, the WORLD card and the level, as the original
-          // does. Lost Levels warp zones stay as on the NES, backward ones too, and the file
-          // remembers one was taken (no World 9 from its 8-4 clears, Game.lostWarped).
-          if (game.campaign && isLostLevel(this.level.id)) game.recordLostWarp();
+          // does. Lost Levels warp zones stay as on the NES, backward ones too.
           const from = game.campaign ? game.pageOfLevel(this.level.id) : null;
           const to = game.campaign ? game.pageOfLevel(target.id) : null;
           if (game.campaign && from && to && from !== to) game.campaignWarpToMap(from, to);

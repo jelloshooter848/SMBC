@@ -4,8 +4,8 @@ import { lostNodes, lostPageIds } from './build';
 
 /**
  * Lost World 8, DARK CITADEL: crags round a lava lake below Bowser's keep. The castle's road east
- * leads on to World 9, open only after a warpless 8-4; a warp pipe beside the keep leads to
- * World A once the game has been beaten eight times.
+ * leads on to World 9, open once the file has cleared all 32 levels from Lost 1-1 to 8-4; a warp
+ * pipe beside the keep leads to World A once Lost 8-4 is beaten (campaign rules, 0.4.0).
  */
 export const SKETCH_LL_8 = [
   '................',
@@ -43,14 +43,14 @@ export const LL_8: WorldMapPage = {
       ],
       [1, 6],
     ),
-    // Worlds A-D (NES rules: after eight Lost Levels games).
+    // Worlds A-D: open once Lost 8-4 is beaten on the file ('llLetters').
     {
       id: 'warp-ll-10',
       kind: 'warp',
       to: 'll-10',
       requires: 'llLetters',
       label: 'LOST WORLD A',
-      hint: 'LOST A - BEAT LOST 8-4 8 TIMES',
+      hint: 'LOST A - BEAT LOST 8-4',
       x: 6,
       y: 7,
     },
@@ -63,12 +63,13 @@ export const LL_8: WorldMapPage = {
     { from: 'll-8-3', to: 'll-8-4', points: poly([8, 11], [10, 11], [10, 7], [9, 7], [9, 6]) },
     { from: 'll-8-4', to: 'warp-ll-10', points: poly([9, 6], [7, 6], [7, 7], [6, 7]) },
   ],
-  // World 9 (NES rules: 8-4 cleared without a warp zone).
+  // World 9: every level from Lost 1-1 to 8-4 cleared on the file ('ll9'); the hint shows the count.
   exits: [
     {
       from: 'll-8-4',
       to: 'll-9',
       requires: 'll9',
+      hint: 'WORLD 9 - CLEAR 1-1 TO 8-4 {n}',
       side: 'right',
       points: poly([9, 6], [15, 6]),
     },

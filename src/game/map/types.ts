@@ -32,8 +32,8 @@ export type PageGroup = 'smb' | 'hub' | 'll';
  * Something that must hold for a warp node to work or a world exit to open:
  * - 'gameCleared': SMB 8-4 beaten on this file (MapProgress.gameCleared);
  * - 'secret:<key>': the file has found secret <key> (MapProgress.secrets);
- * - 'll9' / 'llLetters': the Lost Levels' World 9 / worlds A-D are open (global progress store,
- *   src/engine/save/progress.ts lost.world9 / letters);
+ * - 'll9': the file has cleared all 32 Lost Levels main levels 1-1 to 8-4 (World 9);
+ * - 'llLetters': the file has cleared Lost 8-4 (worlds A-D);
  * - 'never': not yet (a future secret).
  */
 export type MapCondition = 'gameCleared' | 'll9' | 'llLetters' | 'never' | `secret:${string}`;
@@ -84,6 +84,11 @@ export interface WorldExit {
   side: 'right' | 'left' | 'top';
   /** Opens only while this holds too (e.g. Lost Levels 8 → 9: 'll9'). */
   requires?: MapCondition;
+  /**
+   * The hint line while the hero stands on `from` and the exit is locked (at most 32 chars once
+   * '{n}' is filled in with the condition's count, rules.exitHint).
+   */
+  hint?: string;
 }
 
 /** Decorative animated thing on a page (drawn by src/content/worldmap/render.ts). */
