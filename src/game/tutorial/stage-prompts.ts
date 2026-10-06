@@ -38,6 +38,11 @@ export interface Lesson {
    * asks for something no longer there. Absent: only `done` ends it.
    */
   passX?: number;
+  /**
+   * Moving on: what the lesson needs is gone (the Goomba walked off), checked after `done`. A
+   * lesson it returns true for is skipped too.
+   */
+  gone?(world: World): boolean;
 }
 
 /** What `LessonTracker.update` saw this frame. */
@@ -79,6 +84,11 @@ export class LessonTracker {
       this.done.push(l.id);
       this.index++;
       return { kind: 'done', lesson: l };
+    }
+    if (l.gone?.(world)) {
+      this.missed.push(l.id);
+      this.index++;
+      return { kind: 'missed', lesson: l };
     }
     if (
       mainArea &&
@@ -135,25 +145,38 @@ export function wrapPrompt(text: string, cols = PROMPT_COLS): string[] {
 /** Top of the prompt box: under the HUD's rows. */
 export const PROMPT_BOX_Y = 40;
 
+/** Where a prompt box goes and what it carries beyond its lines (all optional). */
+export interface PromptBoxOptions {
+  /** Left edge of the box (default 8); the box is centred, `SCREEN_W - 2 * x` wide. */
+  x?: number;
+  /** Top of the box (default PROMPT_BOX_Y, under the HUD). */
+  y?: number;
+  /** A short tag at the box's top right, over the frame ("NICE!"). */
+  tag?: string;
+}
+
 /**
- * A prompt box near the top of the screen (white frame, black inside), lines centred; `tag` (e.g.
- * "NICE!") at its top right, drawn over the frame. Returns the box's bottom.
+ * A prompt box (white frame, black inside), lines centred, by default near the top of the screen;
+ * `tag` at its top right, drawn over the frame. Returns the box's bottom.
  */
 export function drawPromptBox(
   r: Renderer,
   font: SpriteSheet,
   lines: readonly string[],
-  y = PROMPT_BOX_Y,
-  tag = '',
+  opts: PromptBoxOptions = {},
 ): number {
+  const x0 = opts.x ?? 8;
+  const y = opts.y ?? PROMPT_BOX_Y;
+  const tag = opts.tag ?? '';
+  const w = SCREEN_W - 2 * x0;
   const h = lines.length * 10 + 10;
-  r.rect(8, y, SCREEN_W - 16, h, '#fcfcfc');
-  r.rect(10, y + 2, SCREEN_W - 20, h - 4, '#000');
+  r.rect(x0, y, w, h, '#fcfcfc');
+  r.rect(x0 + 2, y + 2, w - 4, h - 4, '#000');
   lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + 6 + i * 10));
   if (tag) {
-    const x = SCREEN_W - 16 - tag.length * 8;
-    r.rect(x - 2, y - 4, tag.length * 8 + 4, 10, '#000');
-    r.text(font, tag, x, y - 3);
+    const tx = x0 + w - 8 - tag.length * 8;
+    r.rect(tx - 2, y - 4, tag.length * 8 + 4, 10, '#000');
+    r.text(font, tag, tx, y - 3);
   }
   return y + h;
 }

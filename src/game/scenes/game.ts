@@ -42,7 +42,7 @@ import { campaignLevel } from '../level/campaign';
 import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
-import { levelTutorial, stageTutorial, type TutorialRun } from '../tutorial/stage-tutorial';
+import { levelTutorial, newTutorialRun, stageTutorial, type TutorialRun } from '../tutorial/stage-tutorial';
 import {
   FIRST_HERO,
   loadSave,
@@ -283,7 +283,7 @@ export class Game {
     this.campaign = null;
     this.pendingReveal = [];
     this.devUnlockAll = false;
-    this.tutorialRun = null;
+    this.endTutorial();
     this.devAllHeroes = false;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
@@ -297,7 +297,7 @@ export class Game {
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;
-    this.tutorialRun = null;
+    this.endTutorial();
     if (this.campaign) this.addReveal(openMetExits(this.mapProgress));
     this.scenes.clear();
     this.scenes.push(new WorldMapScene(this, page ?? this.mapProgress.position.page, opts));
@@ -326,10 +326,20 @@ export class Game {
       const entry = entryLevel(levelId, this.deps.getLevel);
       this.goToLevel(entry === levelId ? this.firstArea(levelId) : entry, { mode: 'stand' });
     };
-    const tutorialHero = this.deps.characters.find((c) => c.id === stageTutorial(levelId)?.hero);
-    if (tutorialHero) {
-      hero = tutorialHero;
-      go();
+    const tutorial = stageTutorial(levelId);
+    const tutorialHero = this.deps.characters.find((c) => c.id === tutorial?.hero);
+    if (tutorial && tutorialHero) {
+      // Saved as the file has it; the tutorial's hero plays, and the file's comes back after.
+      s.checkpoint = null;
+      this.autosave();
+      const heroes =
+        s.character === tutorialHero
+          ? null
+          : { character: s.character, powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+      if (heroes) this.setHero(0, tutorialHero);
+      this.tutorialRun = newTutorialRun(tutorial, s.lives, heroes);
+      this.deps.ctx.audio.stopMusic();
+      this.goToLevel(this.firstArea(levelId), { mode: 'stand' });
       return;
     }
     const pick = (player: 0 | 1, then: () => void) =>
@@ -361,8 +371,11 @@ export class Game {
     if (!base) return;
     const p = this.mapProgress;
     this.mapLastNode[p.position.page] = p.position.node;
+    // In a stage tutorial that swapped in its own hero, the file keeps its own.
+    const heroes = this.tutorialRun?.heroes;
+    const state = heroes ? { ...this.state, ...heroes } : this.state;
     const save: SaveFile = {
-      ...saveFromState(base, this.state),
+      ...saveFromState(base, state),
       cleared: p.cleared.slice(),
       pages: p.pages.slice(),
       secrets: p.secrets.slice(),
@@ -389,8 +402,24 @@ export class Game {
     this.state.time = null;
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
+    this.endTutorial();
     this.autosave();
     this.showMap(this.mapProgress.position.page, opts);
+  }
+
+  /**
+   * A stage tutorial is over (its clear, a skip, the map, the title): the file's own hero, if the
+   * tutorial swapped in its own, comes back with its power, hit points and kit.
+   */
+  endTutorial(): void {
+    const heroes = this.tutorialRun?.heroes;
+    this.tutorialRun = null;
+    if (!heroes) return;
+    const s = this.state;
+    s.character = heroes.character;
+    s.powerState = heroes.powerState;
+    s.hp = heroes.hp;
+    s.kit = { ...heroes.kit };
   }
 
   /** Queue map ids to draw in (each page takes its own when shown). */
@@ -522,6 +551,7 @@ export class Game {
 
   /** Map menu "Save and quit": save the file, then the title. */
   saveAndQuit(): void {
+    this.endTutorial();
     this.autosave();
     this.showTitle();
   }
@@ -700,13 +730,14 @@ export class Game {
   skipTutorial(): void {
     const run = this.tutorialRun;
     if (!run) return;
-    this.tutorialRun = null;
     this.state.checkpoint = null;
     this.state.time = null;
+    // Campaign: the clear's way back to the map gives the file's hero back (endTutorial).
     if (this.campaign) {
       this.levelCleared(run.level);
       return;
     }
+    this.endTutorial();
     const next = this.exitOf(run.level);
     if (next && next !== 'end') this.goToLevel(next, { mode: 'stand' });
     else this.showTitle();
@@ -760,7 +791,7 @@ export class Game {
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
     const tutorial = levelTutorial(level);
-    if (!tutorial) this.tutorialRun = null;
+    if (!tutorial) this.endTutorial();
     const time = tutorial ? null : startTime(level, this.state, start);
     this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
   }

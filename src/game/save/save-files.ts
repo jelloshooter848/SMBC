@@ -260,7 +260,13 @@ export function migrateSave(
     : { page: furthest, node: 'start' };
   // Before 1-0, 1-1 was open on a new file: a file with no clears may stand there (or anywhere
   // past World 1's start), which is locked until 1-0 is cleared. Back to the start, on 1-0.
-  if (!cleared.length && position.page === FIRST_PAGE_ID && position.node !== 'start')
+  // A file on the developer's "Unlock all" may stand anywhere: left as it is.
+  if (
+    !cleared.length &&
+    stored.devUnlockAll !== true &&
+    position.page === FIRST_PAGE_ID &&
+    position.node !== 'start'
+  )
     position = { page: FIRST_PAGE_ID, node: 'start' };
   return {
     ...d,

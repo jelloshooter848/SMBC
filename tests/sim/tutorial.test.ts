@@ -388,7 +388,79 @@ describe('1-0: Toad, the lessons and the tease', () => {
   });
 });
 
+describe("1-0 gives the file's own hero back", () => {
+  const KIT = { maxHp: 12, tunic: 1, beam: 1, bombs: 8, magic: 4 };
+  /** A Link file past the tutorial, with a full kit, on 1-0; entered as Mario. */
+  function linkOn10(h: H) {
+    file({
+      character: LINK.id,
+      freed: ['mario', 'link'],
+      powerState: 'full',
+      hp: 11,
+      kit: KIT,
+      cleared: ['1-0'],
+    });
+    h.game.openFile(1);
+    enter10(h);
+    expect(h.game.state.character).toBe(MARIO);
+    // Saved as the file had it, even while Mario plays.
+    expect(loadSave(1)?.character).toBe('link');
+    expect(loadSave(1)?.kit).toEqual(KIT);
+  }
+  const expectLink = (h: H) => {
+    const s = h.game.state;
+    expect([s.character, s.powerState, s.hp, s.kit]).toEqual([LINK, 'full', 11, KIT]);
+    const saved = loadSave(1);
+    expect([saved?.character, saved?.powerState, saved?.hp, saved?.kit]).toEqual(['link', 'full', 11, KIT]);
+  };
+
+  it('after Pause → Quit to map', () => {
+    const h = makeGame();
+    linkOn10(h);
+    skipGreeting(h);
+    h.tap('start');
+    (h.top() as PauseScene as unknown as { items: MenuItem[] }).items
+      .find((i) => i.label === 'Quit to map')
+      ?.select?.();
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expectLink(h);
+  });
+
+  it('after clearing it at the flagpole', () => {
+    const h = makeGame();
+    linkOn10(h);
+    playTutorial(h, () => h.top() instanceof WorldMapScene, 8000);
+    expectLink(h);
+  });
+
+  it('after Skip tutorial, and after Save and quit', () => {
+    const h = makeGame();
+    linkOn10(h);
+    skipGreeting(h);
+    h.game.skipTutorial();
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expectLink(h);
+    const h2 = makeGame();
+    linkOn10(h2);
+    h2.game.saveAndQuit();
+    expectLink(h2);
+  });
+});
+
 describe('1-0 outside the campaign', () => {
+  it('another hero (dev select) plays it as a plain stage: no lessons, no tutorial run', () => {
+    const h = makeGame();
+    h.game.devStart('1-0', LINK, 'full');
+    h.until(() => h.top() instanceof LevelScene, 300);
+    h.idle(60);
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    expect(director(h)).toBeNull();
+    expect(h.game.tutorialRun).toBeNull();
+    h.tap('start');
+    const items = (h.top() as PauseScene as unknown as { items: MenuItem[] }).items;
+    expect(items.some((i) => i.label === 'Skip tutorial')).toBe(false);
+  });
+
   it('?level=1-0 / dev select play it, nothing saves; its exit goes on to 1-1', () => {
     const h = makeGame();
     h.game.devStart('1-0', MARIO, 'small');
@@ -414,6 +486,63 @@ describe('1-0 outside the campaign', () => {
   });
 });
 
+describe('lessons: co-op, NICE!, a Goomba that is gone', () => {
+  it('co-op: a partner with hit points does not count as grown; Mario does', () => {
+    const grow = MARIO_LESSONS.find((l) => l.id === 'grow')!;
+    const h = makeGame();
+    h.game.newGame(MARIO, '1-0', LINK);
+    h.until(() => h.top() instanceof LevelScene, 300);
+    const w = level(h).world;
+    expect(director(h)).not.toBeNull();
+    expect(w.players[1]?.def).toBe(LINK);
+    expect(grow.done(w)).toBe(false);
+    w.player.powerState = 'big';
+    expect(grow.done(w)).toBe(true);
+  });
+
+  it('"NICE!" shows over the lesson just done, then the next one comes', () => {
+    const h = makeGame();
+    h.game.devStart('1-0', MARIO, 'small');
+    h.until(() => h.top() instanceof LevelScene, 300);
+    skipGreeting(h);
+    const drawn = () => {
+      const texts: string[] = [];
+      const r: Renderer = Object.assign(new NullRenderer(), {
+        text(_f: SpriteSheet, str: string): void {
+          texts.push(str);
+        },
+      });
+      h.top()?.render(r);
+      return texts;
+    };
+    playTutorial(h, () => director(h)?.lesson?.id === 'jump');
+    let t = drawn();
+    expect(t).toContain('NICE!');
+    expect(t.some((x) => x.startsWith('HOLD RIGHT'))).toBe(true);
+    expect(h.said.at(-1)).toBe('Nice!');
+    h.idle(61);
+    t = drawn();
+    expect(t).not.toContain('NICE!');
+    expect(t.some((x) => x.startsWith('PRESS JUMP'))).toBe(true);
+    expect(h.said.at(-1)).toMatch(/^PRESS JUMP/);
+  });
+
+  it('the stomp lesson moves on once its Goomba is gone', () => {
+    const h = makeGame();
+    h.game.devStart('1-0', MARIO, 'small');
+    h.until(() => h.top() instanceof LevelScene, 300);
+    skipGreeting(h);
+    playTutorial(h, () => director(h)?.lesson?.id === 'stomp');
+    const w = level(h).world;
+    h.until(() => w.entities.some((e) => e instanceof Goomba && e.alive), 300);
+    for (const e of w.entities) if (e instanceof Goomba) e.destroy();
+    w.player.body.x = tileToSub(39);
+    h.step();
+    expect(director(h)?.missed).toEqual(['stomp']);
+    expect(director(h)?.lesson?.id).toBe('block');
+  });
+});
+
 describe('the prompts name abilities, never buttons', () => {
   /** A button named by its letter ("A", "BUTTON B", "press B", "(A)"). */
   const LETTER = /\b(BUTTON|PRESS|PUSH|TAP|HOLD)\s+[ABC]\b|\([ABC]\)|\b[ABC]\s*[:/]/;
@@ -427,7 +556,8 @@ describe('the prompts name abilities, never buttons', () => {
     const d = director(h)!;
     return MARIO_LESSONS.map((_, i) => {
       d.run.lesson = i;
-      (d as unknown as { tracker: { index: number } }).tracker.index = i;
+      (d as unknown as { tracker: { index: number }; shown: number }).tracker.index = i;
+      (d as unknown as { shown: number }).shown = i;
       return d.lines();
     });
   }

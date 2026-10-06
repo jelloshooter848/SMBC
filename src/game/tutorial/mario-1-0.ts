@@ -2,6 +2,7 @@ import type { Action } from '@engine/input/actions';
 import { tileToSub } from '@engine/math/units';
 import type { World } from '../world/world';
 import type { Player } from '../entities/player';
+import { Goomba } from '../entities/enemies/goomba';
 import { CardScene } from '../scenes/message';
 import { abilityHint } from '../scenes/hints';
 import { fontText, wrapText } from '../hud/text';
@@ -65,6 +66,9 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     text: 'JUMP ON THE GOOMBA TO STOMP IT!',
     done: (w) => w.feats.stomps > 0,
     passX: 50,
+    // Its Goomba (column 40) has spawned once a player is past column 38; none alive then means
+    // it walked off the left of the screen.
+    gone: (w) => past(w, 38) && !w.entities.some((e) => e instanceof Goomba && e.alive),
   },
   {
     id: 'block',
@@ -77,7 +81,9 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     id: 'grow',
     at: 52,
     text: 'THIS ? BLOCK HOLDS A MUSHROOM. BUMP IT, THEN TOUCH THE MUSHROOM TO GROW BIG.',
-    done: (w) => w.players.some((p) => alive(p) && p.powerState !== 'small'),
+    // Power-up heroes only: a co-op partner with hit points is never 'small'.
+    done: (w) =>
+      w.players.some((p) => alive(p) && p.def.damage.kind === 'powerup' && p.powerState !== 'small'),
     passX: 65,
   },
   {

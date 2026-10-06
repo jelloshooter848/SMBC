@@ -359,6 +359,16 @@ describe('save files', () => {
       JSON.stringify({ ...newSave(3, 'mario'), position: { page: 'smb-1', node: '1-1' } }),
     );
     expect(loadSave(3)?.position).toEqual({ page: 'smb-1', node: 'start' });
+    // Not on the developer's "Unlock all", where it may stand anywhere.
+    store.set(
+      saveKey(3),
+      JSON.stringify({
+        ...newSave(3, 'mario'),
+        devUnlockAll: true,
+        position: { page: 'smb-1', node: '1-1' },
+      }),
+    );
+    expect(loadSave(3)?.position).toEqual({ page: 'smb-1', node: '1-1' });
     // Already there: kept once, in place.
     expect(migrateSave({ ...newSave(1, 'mario'), cleared: ['1-0', '1-1'] }, 1)?.cleared).toEqual([
       '1-0',

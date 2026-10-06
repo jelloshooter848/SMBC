@@ -5,6 +5,7 @@ import { tileToSub } from '@engine/math/units';
 import type { Game } from '../scenes/game';
 import type { LevelScene } from '../scenes/level';
 import type { LevelData } from '../level/schema';
+import type { CharacterDef } from '../characters/character';
 import { abilityHint, controlScheme } from '../scenes/hints';
 import { levelTouchLabels } from '../touch-labels';
 import { drawPromptBox, fillAbilities, LessonTracker, wrapPrompt, type Lesson } from './stage-prompts';
@@ -68,6 +69,29 @@ export interface TutorialRun {
   beat: boolean;
   /** The lives count it keeps (no life is lost; 1-ups still count). */
   lives: number;
+  /**
+   * Player one's hero as the file had it when the tutorial swapped in its own hero (campaign:
+   * Game.enterLevelFromMap), given back when the tutorial ends (Game.endTutorial) and written by
+   * every save in between; null when nothing was swapped.
+   */
+  heroes: TutorialHeroes | null;
+}
+
+/** A hero and its power, as a save file keeps them. */
+export interface TutorialHeroes {
+  character: CharacterDef;
+  powerState: string;
+  hp: number;
+  kit: Record<string, number>;
+}
+
+/** A fresh run of `def`, keeping `lives`; `heroes` is what to give back at the end. */
+export function newTutorialRun(
+  def: StageTutorial,
+  lives: number,
+  heroes: TutorialHeroes | null = null,
+): TutorialRun {
+  return { level: def.level, lesson: 0, done: [], missed: [], greeted: false, beat: false, lives, heroes };
 }
 
 /** Frames before the greeting starts, so the stage shows first. */
@@ -82,6 +106,8 @@ export class TutorialDirector {
   private busy = false;
   private frames = 0;
   private nice = 0;
+  /** The lesson the box shows: the one just done while "NICE!" is up, else the current one. */
+  private shown: number;
   private cache = { key: '', lines: [] as string[] };
 
   constructor(
@@ -93,29 +119,23 @@ export class TutorialDirector {
     this.tracker = new LessonTracker(def.lessons, run.lesson);
     this.tracker.done.push(...run.done);
     this.tracker.missed.push(...run.missed);
+    this.shown = this.tracker.index;
   }
 
   /**
-   * The director for `scene`'s level, or null when it has no tutorial. Picks up the game's run of
-   * that tutorial (a respawn, a pipe) or starts one; any other level ends the run.
+   * The director for `scene`'s level, or null when it has no tutorial or player one is not its
+   * hero (dev select or `?level=` with another hero: then it is a plain stage). Picks up the
+   * game's run of that tutorial (a respawn, a pipe) or starts one; any other level ends the run.
    */
   static attach(game: Game, scene: LevelScene): TutorialDirector | null {
     const def = levelTutorial(scene.level);
-    if (!def) {
+    if (!def || game.state.character.id !== def.hero) {
       game.tutorialRun = null;
       return null;
     }
     let run = game.tutorialRun;
     if (!run || run.level !== def.level) {
-      run = {
-        level: def.level,
-        lesson: 0,
-        done: [],
-        missed: [],
-        greeted: false,
-        beat: false,
-        lives: game.state.lives,
-      };
+      run = newTutorialRun(def, game.state.lives);
       game.tutorialRun = run;
     }
     return new TutorialDirector(game, scene, def, run);
@@ -160,8 +180,9 @@ export class TutorialDirector {
     if (s.lives < this.run.lives) s.lives = this.run.lives;
     else this.run.lives = s.lives;
     this.frames++;
-    if (this.nice > 0) this.nice--;
     if (this.busy) return;
+    // "NICE!" over the lesson just done, then the next one.
+    if (this.nice > 0 && --this.nice === 0) this.showCurrent();
     const def = this.def;
     if (!this.run.greeted && def.greet && this.mainArea) {
       if (this.frames < GREET_DELAY) return;
@@ -191,21 +212,27 @@ export class TutorialDirector {
     if (step.kind === 'done') {
       this.nice = NICE_FRAMES;
       this.game.ctx.audio.sfx('select');
-    }
-    this.announce(step.kind === 'done' ? 'Nice!' : '');
+      this.game.deps.announcer?.say('Nice!');
+    } else this.showCurrent();
+  }
+
+  /** The box moves on to the current lesson, read out. */
+  private showCurrent(): void {
+    this.nice = 0;
+    this.shown = this.tracker.index;
+    this.announce();
   }
 
   /** A scripted scene is over: the prompt comes (back) and is read out. */
   private resume(): void {
     this.busy = false;
-    this.announce();
+    this.showCurrent();
   }
 
-  /** Reads out the current prompt (after `before`), as the box shows it. */
-  announce(before = ''): void {
-    const text = this.lesson ? this.lines().join(' ') : '';
-    const say = `${before} ${text}`.trim();
-    if (say) this.game.deps.announcer?.say(say);
+  /** Reads out the prompt the box shows. */
+  announce(): void {
+    const text = this.lines().join(' ');
+    if (text) this.game.deps.announcer?.say(text);
   }
 
   /** The words for ability `ability` on `action`: the touch button's caption on touch, then the key. */
@@ -215,12 +242,12 @@ export class TutorialDirector {
     return abilityHint(this.game, touch && caption ? caption : ability, action);
   }
 
-  /** The current prompt's lines as shown (cached until the lesson or the scheme changes). */
+  /** The prompt's lines as the box shows them (cached until the lesson or the scheme changes). */
   lines(): string[] {
-    const l = this.lesson;
+    const l = this.tracker.lessons[this.shown];
     if (!l) return [];
     const labels = levelTouchLabels(this.scene.world.players[0], this.scene.world);
-    const key = `${this.tracker.index}|${controlScheme(this.game)}|${labels.jump}|${labels.attack}`;
+    const key = `${this.shown}|${controlScheme(this.game)}|${labels.jump}|${labels.attack}`;
     if (this.cache.key !== key)
       this.cache = {
         key,
@@ -234,14 +261,10 @@ export class TutorialDirector {
    * the pause menu).
    */
   render(r: Renderer): void {
-    if (this.busy || !this.run.greeted || !this.lesson || this.game.scenes.top !== this.scene) return;
-    drawPromptBox(
-      r,
-      this.game.ctx.assets.sheet('font'),
-      this.lines(),
-      undefined,
-      this.nice > 0 ? 'NICE!' : '',
-    );
+    if (this.busy || !this.run.greeted || this.game.scenes.top !== this.scene) return;
+    const lines = this.lines();
+    if (!lines.length) return;
+    drawPromptBox(r, this.game.ctx.assets.sheet('font'), lines, { tag: this.nice > 0 ? 'NICE!' : '' });
   }
 
   /**
