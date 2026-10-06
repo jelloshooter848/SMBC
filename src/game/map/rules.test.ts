@@ -27,6 +27,7 @@ import {
   conditionCount,
   exitHint,
   LOST_NINE_LEVELS,
+  warpRecords,
 } from './rules';
 import { saveProgress, type Progress } from '@engine/save/progress';
 
@@ -545,7 +546,7 @@ describe('pages, warp nodes and conditions', () => {
     expect(warpText(p, never, false, ALL)).toBe('???');
   });
 
-  it('unlock all opens every page and pad except "never"; hidden warps still need their key', () => {
+  it('unlock all opens every page and pad except "never"', () => {
     const p = newMapProgress();
     for (const pg of ALL) expect(isPageOpen(p, pg.id, true, ALL)).toBe(true);
     expect(isPageOpen(p, 'll-99', true, ALL)).toBe(false);
@@ -554,9 +555,58 @@ describe('pages, warp nodes and conditions', () => {
     expect(isWarpOpen(p, lost!, true, ALL)).toBe(true);
     expect(isWarpOpen(p, never!, true, ALL)).toBe(false);
     expect(isOpen(p, HUB, 'never', true)).toBe(true);
-    expect(isOpen(p, W1, 'bonus-1', true)).toBe(false);
     expect(conditionMet(p, 'll9', true)).toBe(true);
     expect(conditionMet(p, 'never', true)).toBe(false);
+  });
+
+  it('unlock all shows a warp node hidden only by its key, and its road; off, it hides again', () => {
+    const p = newMapProgress();
+    const spot = W1.nodes.find((n) => n.id === 'bonus-1')!;
+    const road = W1.paths.find((x) => x.to === 'bonus-1')!;
+    expect(isOpen(p, W1, 'bonus-1', true)).toBe(true);
+    expect(isPathOpen(p, W1, road, true)).toBe(true);
+    expect(openPaths(p, W1, true).paths).toContain(road);
+    expect(isWarpOpen(p, spot, true, ALL)).toBe(true);
+    // Walkable both ways from 1-2 (the road leaves it going down).
+    const there = nextStep(W1, p, '1-2', 'down', ALL, true);
+    expect(there && there.kind === 'node' ? there.to : null).toBe('bonus-1');
+    const back = nextStep(W1, p, 'bonus-1', 'up', ALL, true);
+    expect(back && back.kind === 'node' ? back.to : null).toBe('1-2');
+    // It works only through Unlock all: the trip records nothing (warpRecords).
+    expect(warpRecords(p, W1, spot, ALL)).toBe(false);
+    // Off again: hidden, its road too.
+    expect(isOpen(p, W1, 'bonus-1')).toBe(false);
+    expect(openPaths(p, W1).paths).not.toContain(road);
+    expect(nextStep(W1, p, '1-2', 'down', ALL)).toBeNull();
+    expect(p).toEqual(newMapProgress());
+  });
+
+  it('unlock all keeps hidden a keyed warp that never works, and bonus nodes', () => {
+    const p = newMapProgress();
+    const page: WorldMapPage = {
+      ...W1,
+      nodes: W1.nodes.map((n) => (n.id === 'bonus-1' ? { ...n, requires: 'never', hint: '???' } : n)),
+    };
+    expect(isOpen(p, page, 'bonus-1', true)).toBe(false);
+    expect(isOpen(p, P1, 'bonus-1', true)).toBe(false);
+    p.secrets.push('key-1');
+    expect(isOpen(p, page, 'bonus-1', true)).toBe(true);
+  });
+
+  it('a warp records its trip only when it works in the file alone', () => {
+    const p = newMapProgress();
+    const spot = W1.nodes.find((n) => n.id === 'bonus-1')!;
+    clearLevel(p, '1-1', getLevel, ALL);
+    clearLevel(p, '1-2', getLevel, ALL);
+    expect(warpRecords(p, W1, spot, ALL)).toBe(false);
+    findSecret(p, 'key-1', ALL);
+    expect(warpRecords(p, W1, spot, ALL)).toBe(true);
+    const lost = HUB.nodes.find((n) => n.id === 'lost')!;
+    expect(warpRecords(p, HUB, lost, ALL)).toBe(false); // the hub is not open in the file
+    p.pages.push('hub');
+    expect(warpRecords(p, HUB, lost, ALL)).toBe(false); // locked until 8-4
+    p.gameCleared = true;
+    expect(warpRecords(p, HUB, lost, ALL)).toBe(true);
   });
 
   it('conditions read the file alone (gameCleared, secrets, Lost Levels clears)', () => {

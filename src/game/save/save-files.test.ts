@@ -231,11 +231,11 @@ describe('save files', () => {
           'smb-3': '3-1',
           x: 'a',
           'smb-2': 7,
-          hub: 'lost',
+          hub: 'warp-lost',
           1: '1-1',
         },
       }).lastNode,
-    ).toEqual({ 'smb-1': '1-2', 'smb-4': '4-1', hub: 'lost' });
+    ).toEqual({ 'smb-1': '1-2', 'smb-4': '4-1', hub: 'warp-lost' });
     expect(put({ lastNode: ['1-1'] }).lastNode).toEqual({});
     expect(put({ lastNode: { 'smb-1': '' } }).lastNode).toEqual({});
   });
@@ -264,6 +264,35 @@ describe('save files', () => {
       }).pendingReveal,
     ).toEqual(['smb-4:start', 'smb-1:1-1>1-2', 'hub:lost']);
     expect(put({ pendingReveal: 'x' }).pendingReveal).toEqual([]);
+  });
+
+  it("renames World 1's old warp spot road (0.4.0: from 1-1; 0.4.1: from 1-2)", () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1)!;
+    };
+    const s = put({
+      cleared: ['1-1', '1-2'],
+      secrets: ['bonus-1'],
+      position: { page: 'smb-1', node: 'bonus-1' },
+      lastNode: { 'smb-1': '1-1>bonus-1' },
+      pendingReveal: ['smb-1:1-1>bonus-1', 'smb-1:bonus-1', 'smb-1:1-2>bonus-1'],
+    });
+    expect(s.pendingReveal).toEqual(['smb-1:1-2>bonus-1', 'smb-1:bonus-1']);
+    // lastNode holds node ids: a road id (or any id the page has no node for) is dropped.
+    expect(s.lastNode).toEqual({});
+    expect(s.position).toEqual({ page: 'smb-1', node: 'bonus-1' });
+    // A v1 file ('1:1-1>bonus-1') too.
+    store.set(
+      'smbc.save.2',
+      JSON.stringify({
+        ...newSave(2, 'mario'),
+        v: 1,
+        worlds: [1],
+        pendingReveal: ['1:1-1>bonus-1', '1:bonus-1'],
+      }),
+    );
+    expect(loadSave(2)?.pendingReveal).toEqual(['smb-1:1-2>bonus-1', 'smb-1:bonus-1']);
   });
 
   it('keeps the developer "unlock all" flag only when it is true (missing in older files: off)', () => {

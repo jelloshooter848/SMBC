@@ -1,5 +1,5 @@
 import type { MapProgress, PageId } from '@game/map/types';
-import { isPageId, MAP_PAGES } from '@content/worldmap';
+import { isPageId, MAP_PAGES, mapPage } from '@content/worldmap';
 import { startHp, type CharacterDef } from '@game/characters/character';
 import { CHARACTERS } from '@game/characters/registry';
 import { newGameState, type GameState } from '@game/context';
@@ -141,20 +141,29 @@ const whole = (x: unknown, d: number, min: number, max = Number.MAX_SAFE_INTEGER
 const str = (x: unknown, d: string): string => (typeof x === 'string' ? x : d);
 const strs = (x: unknown, d: string[]): string[] =>
   Array.isArray(x) ? x.filter((e): e is string => typeof e === 'string') : d;
-/** Page id → node id, for open pages only. */
+/** Page id → node id, for open pages only, and nodes the page has. */
 function lastNodes(x: unknown, pages: readonly PageId[]): Record<PageId, string> {
   const out: Record<PageId, string> = {};
   if (isObj(x))
-    for (const [k, v] of Object.entries(x)) if (pages.includes(k) && typeof v === 'string' && v) out[k] = v;
+    for (const [k, v] of Object.entries(x))
+      if (pages.includes(k) && typeof v === 'string' && mapPage(k)?.nodes.some((n) => n.id === v)) out[k] = v;
   return out;
 }
 
-/** Pending reveal ids ('<page>:<id>') of open pages, each once, at most 64. */
+/**
+ * Reveal ids a map change renamed, old → new: 0.4.1 moved World 1's warp spot road from 1-1
+ * to 1-2.
+ */
+const RENAMED_REVEALS: Readonly<Record<string, string>> = { 'smb-1:1-1>bonus-1': 'smb-1:1-2>bonus-1' };
+
+/** Pending reveal ids ('<page>:<id>') of open pages, renamed ones updated, each once, at most 64. */
 function revealIds(x: unknown, pages: readonly PageId[]): string[] {
-  const ids = strs(x, []).filter((id) => {
-    const i = id.indexOf(':');
-    return i > 0 && i < id.length - 1 && pages.includes(id.slice(0, i));
-  });
+  const ids = strs(x, [])
+    .map((id) => RENAMED_REVEALS[id] ?? id)
+    .filter((id) => {
+      const i = id.indexOf(':');
+      return i > 0 && i < id.length - 1 && pages.includes(id.slice(0, i));
+    });
   return [...new Set(ids)].slice(0, 64);
 }
 

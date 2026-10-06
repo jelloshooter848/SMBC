@@ -20,6 +20,7 @@ import {
   warpText,
   exitHint,
   warpTo,
+  warpRecords,
   type Dir,
   type MapStep,
 } from '../map/rules';
@@ -561,7 +562,7 @@ export class WorldMapScene implements Scene {
     if (!next) return;
     this.game.ctx.audio.sfx('coin');
     this.game.mapLastNode[this.page.id] = this.node;
-    if (isWarpOpen(this.progress, n)) this.game.addReveal(warpTo(this.progress, next.id));
+    if (warpRecords(this.progress, this.page, n)) this.game.addReveal(warpTo(this.progress, next.id));
     // A hidden or unreachable arrival node (World 1's warp spot before its secret) would strand
     // the hero: the start instead.
     const target =
