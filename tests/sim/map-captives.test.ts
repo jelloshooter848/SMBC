@@ -5,6 +5,10 @@ import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import type { SaveFile } from '@game/save/save-files';
 import type { Settings } from '@engine/save/settings';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import { CHARACTERS } from '@game/characters/registry';
+import { TROPHY_BURST_HOPS, TROPHY_HOP_EVERY, TROPHY_HOP_PX } from '@game/map/trophy';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
 // The world map's hint for levels that hide a brainwashed hero (docs/HEROES.md "The map hint"):
@@ -148,20 +152,30 @@ describe('map hint for hidden heroes: the three stages', () => {
     h.until(() => map.node === '1-1' && h.said.some((t) => t.includes(HIDING)), 300);
   });
 
-  it('the trophy has a small idle hop; the silhouette sits still', () => {
+  it('the trophy hops for joy every few seconds in its jump frame; the silhouette sits still', () => {
     const c = CASES[0]!;
     const freed = onMap({
       cleared: ['1-0', '1-1'],
       position: { page: 'smb-1', node: '1-1' },
       freed: ['mario', 'luigi'],
     });
-    const ys = new Set<number>();
-    for (let i = 0; i < 240; i++) {
+    const ys: number[] = [];
+    const frames = new Set<string>();
+    for (let i = 0; i < TROPHY_HOP_EVERY * 2; i++) {
       freed.h.step();
       const s = hintSprites(freed.map, c);
-      ys.add(s.sprites[s.trophy]!.y);
+      const t = s.sprites[s.trophy]!;
+      ys.push(t.y);
+      frames.add(t.frame);
     }
-    expect(ys.size).toBe(2);
+    const rest = Math.max(...ys);
+    // About 8 px up, in Luigi's jump frame (his CharacterDef sprite in the air), then back down.
+    expect(rest - Math.min(...ys)).toBe(TROPHY_HOP_PX);
+    expect(frames).toEqual(new Set(['small-idle', 'small-jump']));
+    // Two hops in two cycles, mostly at rest.
+    const takeoffs = ys.filter((y, i) => y < rest && (ys[i - 1] ?? rest) === rest).length;
+    expect(takeoffs).toBe(2);
+    expect(ys.filter((y) => y === rest).length).toBeGreaterThan(ys.length * 0.7);
     const shaded = onMap({ cleared: ['1-0', '1-1'], position: { page: 'smb-1', node: '1-1' } });
     const pos = new Set<string>();
     for (let i = 0; i < 240; i++) {
@@ -170,6 +184,102 @@ describe('map hint for hidden heroes: the three stages', () => {
       pos.add(`${s.sprites[s.shade]!.x},${s.sprites[s.shade]!.y}`);
     }
     expect(pos.size).toBe(1);
+  });
+});
+
+describe('the trophy: glad to be free', () => {
+  const freedFile = {
+    cleared: ['1-0', '1-1'],
+    position: { page: 'smb-1', node: '1-1' },
+    freed: ['mario', 'luigi'],
+  };
+  /** The trophy's sprites and the sparkle's pale rects for one frame. */
+  const frame = (map: WorldMapScene) => {
+    const sprites: { key: string; frame: string; x: number; y: number }[] = [];
+    const rects: string[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      sprite(s: SpriteSheet, f: string, x: number, y: number): void {
+        sprites.push({ key: s.id, frame: f, x, y });
+      },
+      rect(_x: number, _y: number, _w: number, _h: number, c: string): void {
+        rects.push(c);
+      },
+    });
+    map.render(r);
+    return { sprites, sparkle: rects.filter((c) => c === '#fce4a0').length > 0 };
+  };
+
+  it('a 1-px dark outline under it keeps Luigi clear of the grass', () => {
+    const { map } = onMap(freedFile);
+    const { sprites } = frame(map);
+    const body = sprites.find((s) => s.key === 'mario@luigi')!;
+    const outline = sprites.filter((s) => s.key === 'mario@luigi~silhouette');
+    expect(outline.map((s) => `${s.x - body.x},${s.y - body.y}`).sort()).toEqual(
+      ['-1,0', '0,-1', '0,1', '1,0'].sort(),
+    );
+    // Drawn under the hero.
+    expect(sprites.indexOf(body)).toBeGreaterThan(sprites.indexOf(outline[3]!));
+  });
+
+  it('a small sparkle at the top of a hop; none with reduce flashing (the hops stay)', () => {
+    for (const reduce of [false, true]) {
+      const { h, map } = onMap(freedFile);
+      h.game.ctx.reduceFlashing = reduce;
+      let sparkles = 0;
+      let hops = 0;
+      for (let i = 0; i < TROPHY_HOP_EVERY; i++) {
+        h.step();
+        const f = frame(map);
+        if (f.sparkle) sparkles++;
+        if (f.sprites.some((s) => s.key === 'mario@luigi' && s.frame === 'small-jump')) hops++;
+      }
+      expect(hops).toBeGreaterThan(0);
+      if (reduce) expect(sparkles).toBe(0);
+      else {
+        expect(sparkles).toBeGreaterThan(0);
+        expect(sparkles).toBeLessThan(hops);
+      }
+    }
+  });
+
+  it('just freed: a burst of 3 hops the first time the trophy shows, once', () => {
+    const { h, map } = onMap(freedFile);
+    // Freed this session (Game.freeHero), as after the mini game.
+    h.game.freed = ['mario'];
+    h.game.freeHero('luigi');
+    expect(h.game.celebrate.has('luigi')).toBe(true);
+    const hopsIn = (n: number) => {
+      let takeoffs = 0;
+      let wasUp = false;
+      for (let i = 0; i < n; i++) {
+        h.step();
+        const up = frame(map).sprites.some((s) => s.key === 'mario@luigi' && s.frame === 'small-jump');
+        if (up && !wasUp) takeoffs++;
+        wasUp = up;
+      }
+      return takeoffs;
+    };
+    expect(hopsIn(TROPHY_BURST_HOPS * 24 + 1)).toBe(TROPHY_BURST_HOPS);
+    expect(h.game.celebrate.has('luigi')).toBe(false);
+    // Afterwards only the idle hop, every few seconds.
+    expect(hopsIn(TROPHY_HOP_EVERY)).toBeLessThanOrEqual(1);
+  });
+
+  it('every hero hops in its own jump frame (its CharacterDef sprite in the air)', () => {
+    const { h, map } = onMap(freedFile);
+    type Look = { sheet: string; palette: string; frame: string };
+    const m = map as unknown as { jumpFrame(d: (typeof CHARACTERS)[number]): Look | null };
+    for (const def of CHARACTERS) {
+      const j = m.jumpFrame(def);
+      expect(j, def.id).not.toBeNull();
+      expect(h.game.ctx.assets.sheet(j!.sheet, j!.palette).frames.has(j!.frame), def.id).toBe(true);
+      expect(j!.frame, def.id).not.toBe(def.portrait.frame);
+    }
+    expect(m.jumpFrame(CHARACTERS.find((c) => c.id === 'luigi')!)).toEqual({
+      sheet: 'mario',
+      palette: 'luigi',
+      frame: 'small-jump',
+    });
   });
 });
 

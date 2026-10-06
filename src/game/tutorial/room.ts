@@ -17,7 +17,7 @@ import { Projectile, type ProjectileSpec } from '../entities/projectiles/project
 import type { DamageSource } from '../rules/damage';
 import type { Game } from '../scenes/game';
 import { MenuScene } from '../scenes/menu';
-import { abilityHint } from '../scenes/hints';
+import { abilityHint, controlScheme } from '../scenes/hints';
 import { drawHud } from '../hud/hud';
 import { fontText } from '../hud/text';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
@@ -241,13 +241,24 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
    * bare names when that would not fit ROOM_LINES lines.
    */
   promptWrapped(): string[] {
-    const prompt = this.lesson?.prompt ?? '';
+    const prompt = this.promptSource();
     const hinted = wrapPrompt(
       promptText(prompt, (l, a) => this.hint(l, a)),
       ROOM_COLS,
     );
     if (hinted.length <= ROOM_LINES) return hinted;
     return wrapPrompt(promptText(prompt), ROOM_COLS).slice(0, ROOM_LINES);
+  }
+
+  /**
+   * The current lesson's prompt for the controls in use: its touch wording when player 1 trains
+   * on touch (touch drives player 1 only), else the usual one.
+   */
+  promptSource(): string {
+    const l = this.lesson;
+    if (!l) return '';
+    const touch = this.player_ === 0 && controlScheme(this.game) === 'touch';
+    return (touch ? l.touchPrompt : undefined) ?? l.prompt;
   }
 
   /** TrainingLesson `i` comes up: counting starts afresh, its setup runs, and it is announced. */
@@ -435,11 +446,17 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     drawHud(r, assets, this.state, null, this.world.frame, this.world.players, { place: 'TRAINING' });
     const font = assets.sheet('font');
     const tick = this.phase === 'good' || this.phase === 'ready' || this.phase === 'over';
-    drawRoomBox(r, font, this.promptLines(), tick ? 2 : -1);
-    const skip = fontText(`${this.hint('MENU', 'start')} TO SKIP`);
+    const bottom = drawRoomBox(r, font, this.promptLines(), tick ? 2 : -1);
+    // How to skip, on the box's bottom edge (like its tag on the top one): never over the floor.
+    const skip = this.skipText();
     const sx = (SCREEN_W - skip.length * 8) >> 1;
-    r.rect(sx - 4, 223, skip.length * 8 + 8, 12, 'rgba(0,0,0,0.6)');
-    r.text(font, skip, sx, 226);
+    r.rect(sx - 4, bottom - 5, skip.length * 8 + 8, 10, '#000');
+    r.text(font, skip, sx, bottom - 4);
+  }
+
+  /** "MENU (ESC) TO SKIP" with keys, "MENU TO SKIP" on touch. */
+  skipText(): string {
+    return fontText(`${this.hint('MENU', 'start')} TO SKIP`);
   }
 }
 
@@ -451,12 +468,13 @@ const ROOM_BOX_X = (SCREEN_W - (ROOM_COLS * 8 + 8)) >> 1;
 /**
  * The room's prompt box: the stage tutorials' box (stage-prompts.ts drawPromptBox), centred under
  * the HUD, ROOM_COLS wide. With `tick` >= 0 a green tick is drawn left of that line (GOOD!, READY!).
+ * Returns the box's bottom.
  */
-export function drawRoomBox(r: Renderer, font: SpriteSheet, lines: readonly string[], tick = -1): void {
+export function drawRoomBox(r: Renderer, font: SpriteSheet, lines: readonly string[], tick = -1): number {
   const y = ROOM_BOX_Y;
-  drawPromptBox(r, font, lines, { x: ROOM_BOX_X, y });
+  const bottom = drawPromptBox(r, font, lines, { x: ROOM_BOX_X, y });
   const line = lines[tick];
-  if (line === undefined) return;
+  if (line === undefined) return bottom;
   // Where drawPromptBox puts the line (centred), less the tick's width and a gap.
   const tx = ((SCREEN_W - line.length * 8) >> 1) - 14;
   const ty = y + 6 + tick * 10;
@@ -468,6 +486,7 @@ export function drawRoomBox(r: Renderer, font: SpriteSheet, lines: readonly stri
     [8, -1],
   ] as const)
     r.rect(tx + dx, ty + dy, 2, 2, '#58d854');
+  return bottom;
 }
 
 /** The room's menu: Continue, or Skip training (ends the room). Pauses the music. */

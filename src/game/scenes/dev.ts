@@ -1,5 +1,6 @@
 import { MenuScene } from './menu';
 import { DevLevelSelectScene } from './dev-level-select';
+import { DevMiniGamesScene } from './dev-minigames';
 import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 
@@ -16,6 +17,11 @@ export class DevMenuScene extends MenuScene {
     };
     this.setItems([
       { label: 'Level select', select: () => push(new DevLevelSelectScene(game, () => game.scenes.pop())) },
+      {
+        label: 'Mini games',
+        select: () => push(new DevMiniGamesScene(game, fromPause)),
+        hint: "Play any hero's freeing mini game; nothing is saved",
+      },
       {
         label: 'Assists',
         select: () => push(new AssistOptionsScene(game, () => game.scenes.pop())),
