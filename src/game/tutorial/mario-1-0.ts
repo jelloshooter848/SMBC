@@ -121,7 +121,13 @@ const CARD_COLS = 28;
 export const TOAD_PAGES: readonly (readonly string[])[] = [
   ['TOAD:', '', "MARIO! THANK GOODNESS YOU'RE HERE!"],
   ['TOAD:', '', 'BOWSER HAS BRAINWASHED THE HEROES OF OTHER WORLDS AND HIDDEN THEM ALONG YOUR ROAD.'],
-  ['TOAD:', '', 'FIND THEM, TALK TO THEM AND FREE THEM FROM HIS SPELL!'],
+  ['TOAD:', '', 'THEY HIDE IN SECRET PLACES: DOWN PIPES, UP VINES, BEHIND HIDDEN BLOCKS. LOOK EVERYWHERE!'],
+  // The map's hint (a cleared level that still hides a hero shows a faint shape by its node).
+  [
+    'TOAD:',
+    '',
+    'FIND THEM, TALK TO THEM AND FREE THEM FROM HIS SPELL! IF A LEVEL HIDES SOMEONE YOU MISSED, LOOK CLOSELY AT THE MAP.',
+  ],
   ['TOAD:', '', 'BUT FIRST, A QUICK WARM-UP. FOLLOW THE TIPS UP TOP!'],
 ];
 

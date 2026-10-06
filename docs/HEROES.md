@@ -64,6 +64,32 @@ it for every hero but Ryu, who climbs walls instead (`tests/sim/heroes.test.ts` 
 
 Link waits beside the temple doorway of the 2-1 sky ruins (`2-1-sky2`, column 30 on the cloud floor; TALK shows against the sky there), reached by the hidden vine block (`7` in maps) over the middle cloud platform past the end of the 2-1 coin heaven; the drop at the ruins' right end lands in 2-1 at column 162 like the coin heaven's (`tests/sim/heroes-link-sky.test.ts`, `tests/sim/sky-ruins.test.ts`).
 
+## The map hint (`src/game/map/captives.ts`)
+
+The world map hints at levels that still hide a hero, in three stages (campaign play only, read
+from the file's `cleared` and `freed`):
+
+1. **Before the level's node is cleared:** nothing.
+2. **Cleared, the hero not freed yet:** the hero's idle sprite as a faint silhouette peeking from
+   behind the node (drawn before the dot, so the dot hides part of it). Its colour is the page's
+   ground shade lifted a little toward the ground colour (`<palette>~shade-<theme>`, `mapShadeFx`
+   in `palette-fx.ts`), so it is just barely visible. Every 6 seconds it shimmers faintly toward
+   the trance's lilac for half a second (`~shade-<theme>-glow`); never with reduce flashing.
+   Standing on the node, the announcer adds "Someone is hiding in this level." to the node's name
+   and the hint line shows `SOMEONE IS HIDING IN THIS LEVEL`. Nothing says where in the level.
+3. **Freed:** the hero stands beside the node in full colour, facing it, with a small idle hop.
+   A hero freed some other way (a file started with that hero) shows here too, once the node is
+   open.
+
+Where heroes hide is found from the level data alone (`hiddenHeroes()`): every `captive` entity
+of every bundled level, through its level's `parent` chain to the main level, to the map node
+that names it (`rules.findLevelNode`). So a new captive gets its hint with nothing else to write.
+The hero stands on the right of the node unless a road leaves it to the right (then the left);
+a node can choose with `heroSpot: 'left' | 'right'` (`MapNode`). Dev mode's "All heroes" never
+shows a trophy (it does not touch `freed`), and "Unlock all" shows no silhouette (it opens nodes
+without clearing them). Toad's greeting in 1-0 tells the player where heroes hide (pipes, vines,
+hidden blocks) and to look closely at the map for a level hiding someone missed.
+
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 
 Every step is a scene pushed over the paused level, so the level's clock and world stand still:
@@ -109,6 +135,8 @@ interface MiniGameDef {
 2. Optionally, the hero's own challenge lines in `DIALOGUE` (`free-hero.ts`).
 3. `captive x y hero=<id>` in a campaign level's `[entities]`, on a spot the player can reach.
    Prove it with a sim.
+4. Check the map hint on its node's page: the silhouette and trophy must not cover a road or
+   decoration (set the node's `heroSpot`, or move the decoration). No other wiring is needed.
 
 ## Hero training (optional practice rooms)
 

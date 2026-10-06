@@ -1,0 +1,267 @@
+import { describe, expect, it } from 'vitest';
+import { mapPage } from '@content/worldmap';
+import { WorldMapScene } from '@game/scenes/world-map';
+import type { MenuItem, MenuScene } from '@game/scenes/menu';
+import type { MapNode, WorldMapPage } from '@game/map/types';
+import type { SaveFile } from '@game/save/save-files';
+import type { Settings } from '@engine/save/settings';
+import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
+
+// The world map's hint for levels that hide a brainwashed hero (docs/HEROES.md "The map hint"):
+// nothing before the level is cleared, a faint silhouette peeking from behind the node once it
+// is cleared while the hero is still a captive, and the hero beside the node in full colour once
+// freed. Luigi hides in 1-1 (its bonus room), Link in 2-1 (its sky ruins).
+
+useStorage();
+
+const HIDING = 'Someone is hiding in this level.';
+const HINT_LINE = 'SOMEONE IS HIDING IN THIS LEVEL';
+
+const W1_CLEAR = ['1-0', '1-1', '1-2', '1-3', '1-4'];
+
+interface Case {
+  hero: string;
+  /** The hero's map sheet key (sheet@palette) in full colour. */
+  colour: string;
+  /** Its silhouette's key on that page. */
+  shade: string;
+  page: string;
+  node: string;
+  /** A file with the page open, the hero on the node, before its level is cleared. */
+  before: Partial<SaveFile>;
+  /** The level's clear. */
+  level: string;
+  side: 1 | -1;
+}
+
+const CASES: Case[] = [
+  {
+    hero: 'luigi',
+    colour: 'mario@luigi',
+    shade: 'mario@luigi~shade-grass',
+    page: 'smb-1',
+    node: '1-1',
+    before: { cleared: ['1-0'], position: { page: 'smb-1', node: '1-1' } },
+    level: '1-1',
+    side: 1,
+  },
+  {
+    hero: 'link',
+    colour: 'link@link',
+    shade: 'link@link~shade-sea',
+    page: 'smb-2',
+    node: '2-1',
+    before: { cleared: W1_CLEAR, pages: ['smb-1', 'smb-2'], position: { page: 'smb-2', node: '2-1' } },
+    level: '2-1',
+    side: -1,
+  },
+];
+
+/** File 1 open on the map (dev mode `dev`), the map drawn a few frames in. */
+function onMap(over: Partial<SaveFile>, dev = false): { h: H; map: WorldMapScene } {
+  const h = makeGame();
+  h.game.deps.settings = { dev } as Settings;
+  file(over);
+  h.game.openFile(1);
+  h.idle(8);
+  const map = h.top() as WorldMapScene;
+  expect(map).toBeInstanceOf(WorldMapScene);
+  return { h, map };
+}
+
+const nodeOf = (page: string, id: string) =>
+  (mapPage(page) as WorldMapPage).nodes.find((n) => n.id === id) as MapNode;
+
+/** The sprites drawn this frame for case `c`: its node's dot, and the hero in colour or shade. */
+function hintSprites(map: WorldMapScene, c: Case) {
+  const { sprites, texts } = draw(map);
+  const n = nodeOf(c.page, c.node);
+  const nodeAt = sprites.findIndex((s) => s.x === n.x * 16 && s.y === n.y * 16 && /^map-node/.test(s.frame));
+  const shade = sprites.findIndex((s) => s.key === c.shade);
+  // The trophy: the hero in colour, not the player's own marker (the player is Mario).
+  const trophy = sprites.findIndex((s) => s.key === c.colour);
+  return { sprites, texts, n, nodeAt, shade, trophy };
+}
+
+describe('map hint for hidden heroes: the three stages', () => {
+  for (const c of CASES) {
+    describe(`${c.hero} (${c.page} ${c.node})`, () => {
+      it('1. before the level is cleared: nothing at all', () => {
+        const { h, map } = onMap(c.before);
+        const s = hintSprites(map, c);
+        expect(s.nodeAt).toBeGreaterThanOrEqual(0);
+        expect(s.sprites.some((x) => x.key.includes(`~shade-`))).toBe(false);
+        expect(s.trophy).toBe(-1);
+        expect(h.said.join(' ')).not.toMatch(/hiding/i);
+        expect(map.hintLine).toBe('');
+      });
+
+      it('2. cleared, not freed: a silhouette peeking from behind the node, and a spoken hint', () => {
+        const before = c.before as { cleared: string[] };
+        const { h, map } = onMap({ ...c.before, cleared: [...before.cleared, c.level] });
+        const s = hintSprites(map, c);
+        expect(s.trophy).toBe(-1);
+        expect(s.shade).toBeGreaterThanOrEqual(0);
+        // Drawn before the node's dot (so the dot hides part of it), on the side away from the roads.
+        expect(s.shade).toBeLessThan(s.nodeAt);
+        const sx = s.sprites[s.shade]!.x;
+        if (c.side === 1) expect(sx).toBeGreaterThan(s.n.x * 16);
+        else expect(sx).toBeLessThan(s.n.x * 16);
+        // Partly behind the node: it overlaps the node's tile.
+        expect(Math.abs(sx - s.n.x * 16)).toBeLessThan(16);
+        // Standing on the node: the announcer adds the line, the hint line shows it.
+        expect(h.said.some((t) => t.includes(HIDING))).toBe(true);
+        expect(map.hintLine).toBe(HINT_LINE);
+        expect(s.texts.map((t) => t.str)).toContain(HINT_LINE);
+        // It never says where in the level.
+        expect(h.said.join(' ')).not.toMatch(/bonus|pipe|vine|sky|ruins/i);
+      });
+
+      it('3. freed: the hero stands beside the node in full colour, no hint line', () => {
+        const before = c.before as { cleared: string[] };
+        const { h, map } = onMap({
+          ...c.before,
+          cleared: [...before.cleared, c.level],
+          freed: ['mario', c.hero],
+        });
+        const s = hintSprites(map, c);
+        expect(s.shade).toBe(-1);
+        expect(s.trophy).toBeGreaterThan(s.nodeAt); // in front of the dot
+        const tx = s.sprites[s.trophy]!.x;
+        if (c.side === 1) expect(tx).toBeGreaterThan(s.n.x * 16);
+        else expect(tx).toBeLessThan(s.n.x * 16);
+        expect(h.said.join(' ')).not.toMatch(/hiding/i);
+        expect(map.hintLine).toBe('');
+      });
+    });
+  }
+
+  it('the line is said only on the node hiding someone: walking on to the next node, it is not', () => {
+    const { h, map } = onMap({ cleared: ['1-0', '1-1'], position: { page: 'smb-1', node: '1-1' } });
+    expect(h.said.some((t) => t.includes(HIDING))).toBe(true);
+    h.said.length = 0;
+    h.tap('up'); // 1-1 → 1-2
+    h.until(() => map.node === '1-2' && map.hintLine === '' && h.said.length > 0, 300);
+    expect(h.said.join(' ')).not.toMatch(/hiding/i);
+    // Back: said again on arrival.
+    h.tap('left'); // the road leaves 1-2 to the left
+    h.until(() => map.node === '1-1' && h.said.some((t) => t.includes(HIDING)), 300);
+  });
+
+  it('the trophy has a small idle hop; the silhouette sits still', () => {
+    const c = CASES[0]!;
+    const freed = onMap({
+      cleared: ['1-0', '1-1'],
+      position: { page: 'smb-1', node: '1-1' },
+      freed: ['mario', 'luigi'],
+    });
+    const ys = new Set<number>();
+    for (let i = 0; i < 240; i++) {
+      freed.h.step();
+      const s = hintSprites(freed.map, c);
+      ys.add(s.sprites[s.trophy]!.y);
+    }
+    expect(ys.size).toBe(2);
+    const shaded = onMap({ cleared: ['1-0', '1-1'], position: { page: 'smb-1', node: '1-1' } });
+    const pos = new Set<string>();
+    for (let i = 0; i < 240; i++) {
+      shaded.h.step();
+      const s = hintSprites(shaded.map, c);
+      pos.add(`${s.sprites[s.shade]!.x},${s.sprites[s.shade]!.y}`);
+    }
+    expect(pos.size).toBe(1);
+  });
+});
+
+describe('map hint: shimmer and reduce flashing', () => {
+  const cleared = { cleared: ['1-0', '1-1'], position: { page: 'smb-1', node: '1-1' } };
+  const keysOver = (h: H, map: WorldMapScene, frames: number) => {
+    const keys = new Set<string>();
+    for (let i = 0; i < frames; i++) {
+      h.step();
+      for (const s of draw(map).sprites) if (s.key.includes('~shade-')) keys.add(s.key);
+    }
+    return keys;
+  };
+
+  it('a very slow faint shimmer: the glow shade shows now and then, mostly the plain one', () => {
+    const { h, map } = onMap(cleared);
+    h.game.ctx.reduceFlashing = false;
+    let glow = 0;
+    const frames = 720;
+    for (let i = 0; i < frames; i++) {
+      h.step();
+      if (draw(map).sprites.some((s) => s.key === 'mario@luigi~shade-grass-glow')) glow++;
+    }
+    expect(glow).toBeGreaterThan(0);
+    expect(glow).toBeLessThan(frames / 4);
+  });
+
+  it('with reduce flashing there is no shimmer', () => {
+    const { h, map } = onMap(cleared);
+    h.game.ctx.reduceFlashing = true;
+    expect(keysOver(h, map, 720)).toEqual(new Set(['mario@luigi~shade-grass']));
+  });
+});
+
+describe('map hint: dev toggles and campaign only', () => {
+  const openMenu = (h: H) => {
+    h.tap('select');
+    h.idle(8);
+    return h.top() as MenuScene;
+  };
+  const toggle = (h: H, label: string) => {
+    const menu = openMenu(h);
+    const row = (menu as unknown as { items: MenuItem[] }).items.findIndex((i) => i.label === label);
+    expect(row).toBeGreaterThan(0);
+    for (let i = 0; i < row; i++) h.tap('down');
+    h.tap('right');
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+  };
+
+  it('"All heroes" shows no trophy for a hero not freed (the silhouette stays)', () => {
+    const { h } = onMap({ cleared: ['1-0', '1-1'], position: { page: 'smb-1', node: '1-1' } }, true);
+    toggle(h, 'All heroes');
+    expect(h.game.devAllHeroes).toBe(true);
+    const s = hintSprites(h.top() as WorldMapScene, CASES[0]!);
+    expect(s.trophy).toBe(-1);
+    expect(s.shade).toBeGreaterThanOrEqual(0);
+  });
+
+  it('"Unlock all" opens nodes without clearing them: no silhouette', () => {
+    const { h } = onMap({ cleared: [], position: { page: 'smb-1', node: 'start' } }, true);
+    toggle(h, 'Unlock all');
+    expect(h.game.devUnlockAll).toBe(true);
+    const s1 = hintSprites(h.top() as WorldMapScene, CASES[0]!);
+    expect(s1.nodeAt).toBeGreaterThanOrEqual(0); // 1-1 shows, open
+    expect(s1.sprites.some((x) => x.key.includes('~shade-'))).toBe(false);
+    h.game.travelToPage('smb-2');
+    h.idle(8);
+    const s2 = hintSprites(h.top() as WorldMapScene, CASES[1]!);
+    expect(s2.nodeAt).toBeGreaterThanOrEqual(0);
+    expect(s2.sprites.some((x) => x.key.includes('~shade-'))).toBe(false);
+    expect(s2.trophy).toBe(-1);
+  });
+
+  it('a hero freed before its node opens shows nothing until the node is drawn', () => {
+    // A file started with Luigi frees him, but 1-1 is still locked behind the tutorial.
+    const { map } = onMap({ cleared: [], freed: ['mario', 'luigi'] });
+    const s = hintSprites(map, CASES[0]!);
+    expect(s.nodeAt).toBe(-1);
+    expect(s.trophy).toBe(-1);
+  });
+
+  it('outside campaign play (no file open) the map shows no hints', () => {
+    const h = makeGame();
+    h.game.mapProgress.cleared = ['1-0', '1-1'];
+    h.game.mapProgress.position = { page: 'smb-1', node: '1-1' };
+    h.game.showMap('smb-1');
+    h.idle(8);
+    const map = h.top() as WorldMapScene;
+    expect(h.game.campaign).toBeNull();
+    const s = hintSprites(map, CASES[0]!);
+    expect(s.shade).toBe(-1);
+    expect(h.said.join(' ')).not.toMatch(/hiding/i);
+  });
+});
