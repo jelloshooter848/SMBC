@@ -4,7 +4,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { CharacterDef } from '../characters/character';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
-import { NO_TOUCH_BUTTONS } from '../touch-labels';
+import type { Action } from '@engine/input/actions';
 
 /**
  * One player picks a hero mid-run: entering a level from the world map, after a death with lives
@@ -49,9 +49,8 @@ export class CharacterSelectScene implements Scene {
     );
   }
 
-  /** Touch drives player 1 only, so nothing to press while player 2 picks. */
+  /** Touch drives player 1, who can also make player 2's pick (one device sets up both). */
   touchLabels(): TouchLabels {
-    if (this.pick && this.pick.player !== 0) return NO_TOUCH_BUTTONS;
     const back = !this.pick || !!this.pick.onCancel;
     return { jump: 'OK', attack: back ? 'BACK' : null, special: null, start: null, select: null };
   }
@@ -76,13 +75,18 @@ export class CharacterSelectScene implements Scene {
       return idx;
     };
     if (this.pick) {
-      const f = inputs[this.pick.player] ?? input;
-      this.index = move(this.index, f);
+      // Player 2's pick also takes player 1's input, so one device (a phone's touch buttons
+      // drive player 1 only) can set up both heroes; player 2's own device works too.
+      const own = inputs[this.pick.player] ?? input;
+      const frames = [...new Set(this.pick.player === 0 ? [own] : [own, inputs[0] ?? input])];
+      const pressed = (a: Action) => frames.some((f) => f.pressed(a));
+      const steer = frames.find((f) => f.pressed('left') || f.pressed('right'));
+      if (steer) this.index = move(this.index, steer);
       const c = chars[this.index];
-      if (this.t > 10 && c && (f.pressed('start') || f.pressed('jump'))) {
+      if (this.t > 10 && c && (pressed('start') || pressed('jump'))) {
         this.game.ctx.audio.sfx('coin');
         this.pick.onPick(c);
-      } else if (this.pick.onCancel && (f.pressed('select') || f.pressed('attack'))) {
+      } else if (this.pick.onCancel && (pressed('select') || pressed('attack'))) {
         this.game.ctx.audio.sfx('select');
         this.pick.onCancel();
       }

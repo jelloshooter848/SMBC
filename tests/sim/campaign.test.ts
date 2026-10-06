@@ -278,8 +278,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
         h.tap('right'); // P1 → Link
         h.tap('jump');
       } else {
-        h.tap('jump', 0); // player one can't confirm player two's pick
-        h.tap('right', 1); // P2: Luigi → Link
+        h.tap('right', 1); // P2, on their own device: Luigi → Link
         h.tap('jump', 1);
       }
     });
@@ -289,6 +288,36 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     expect(h.game.state.lives).toBe(5);
     const saved = loadSave(1) as SaveFile;
     expect([saved.character, saved.character2, saved.lives]).toEqual(['link', 'link', 5]);
+  });
+
+  it('a 2P file on one device (player 1 input only, as on a phone): both picks and Back work', () => {
+    const h = makeGame();
+    newFileFromTitle(h, true);
+    h.idle(8);
+    walkTo(h, '1-1');
+    const map = h.top();
+    // Back from player two's pick with player 1's B returns to the map, unchanged.
+    h.tap('jump');
+    h.idle(12);
+    h.tap('right'); // P1 → Luigi
+    h.tap('jump');
+    const p2Pick = h.top();
+    expect(p2Pick).toBeInstanceOf(CharacterSelectScene);
+    h.idle(12);
+    h.tap('attack');
+    expect(h.top()).toBe(map);
+    expect([h.game.state.character, h.game.state.character2]).toEqual([MARIO, LUIGI]);
+    // Again, player 1 makes both picks.
+    h.idle(8);
+    h.tap('jump');
+    const picks = picksUntilLevel(h, (n) => {
+      if (n === 2) h.tap('left'); // P2: Luigi → Mario
+      h.tap('jump');
+    });
+    expect(picks).toBe(2);
+    expect(h.game.state.character).toBe(MARIO);
+    expect(h.game.state.character2).toBe(MARIO);
+    expect(loadSave(1)?.character2).toBe('mario');
   });
 
   /** The run and the save fields a level select could change. */

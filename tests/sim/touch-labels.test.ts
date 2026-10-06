@@ -93,12 +93,16 @@ describe('touch labels per scene', () => {
     expect(shown(h.game)).toBe('OK BACK - - -');
     h.game.scenes.replace(new CharacterSelectScene(h.game));
     expect(shown(h.game)).toBe('OK BACK - - -');
-    // A mid-run pick without a way back, and player 2's pick (touch drives player 1 only).
+    // A mid-run pick without a way back. Player 2's pick keeps the buttons: touch drives player
+    // 1, who can make player 2's pick too (one phone sets up both heroes).
     const pick = { current: MARIO, onPick: () => undefined };
     h.game.scenes.replace(new CharacterSelectScene(h.game, { ...pick, player: 0 }));
     expect(shown(h.game)).toBe('OK - - - -');
     h.game.scenes.replace(new CharacterSelectScene(h.game, { ...pick, player: 1 }));
-    expect(shown(h.game)).toBe('- - - - -');
+    expect(shown(h.game)).toBe('OK - - - -');
+    const back = { ...pick, onCancel: () => undefined };
+    h.game.scenes.replace(new CharacterSelectScene(h.game, { ...back, player: 1 }));
+    expect(shown(h.game)).toBe('OK BACK - - -');
   });
 
   it('cards and cut-scenes show only the button that moves on', () => {
