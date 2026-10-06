@@ -185,6 +185,8 @@ export class Lift extends Entity {
     const sheet = view.assets.sheet('items');
     const x = toPx(this.body.x) - view.camX;
     const y = toPx(this.body.y);
-    for (let i = 0; i < this.len; i += 2) r.sprite(sheet, 'platform', x + i * 8, y);
+    // One 8 px plank per `len` segment, so the drawing is exactly the body's width (a len=3
+    // lift is 24 px; whole 16 px platforms overhung it by 8 px).
+    for (let i = 0; i < this.len; i++) r.sprite(sheet, 'plank', x + i * 8, y);
   }
 }

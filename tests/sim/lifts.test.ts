@@ -15,6 +15,10 @@ import { ScriptedInput } from '@game/sim/headless';
 import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import type { View } from '@game/entities/entity';
+import { itemsDef } from '@content/sprites/items';
 
 const LEVELS = join(import.meta.dirname, '../../src/content/levels');
 
@@ -394,5 +398,25 @@ describe('Balance lifts in co-op', () => {
     // Both riders: no net pull, so the pair keeps its speed (one move of v per frame).
     for (let i = 43; i < 54; i++) expect(Math.abs(step(i) - before)).toBeLessThanOrEqual(px(1));
     expect(pair?.platforms?.[0].isFalling).toBe(false);
+  });
+});
+
+describe('Lift drawing', () => {
+  it('covers exactly the solid width, for odd and even lengths', () => {
+    const frameW = (f: string) => itemsDef.frames[f]?.[0]?.length ?? 0;
+    for (const len of [2, 3, 4, 5, 6]) {
+      const lift = new Lift('lift-h', 10, 6, { len });
+      const spans: [number, number][] = [];
+      const rec: Renderer = Object.assign(new NullRenderer(), {
+        sprite(_s: SpriteSheet, f: string, x: number): void {
+          spans.push([x, x + frameW(f)]);
+        },
+      });
+      const view = { camX: 0, frame: 0, assets: { sheet: () => ({}) }, theme: 'castle' } as unknown as View;
+      lift.render(rec, view);
+      const left = Math.min(...spans.map((s) => s[0]));
+      const right = Math.max(...spans.map((s) => s[1]));
+      expect([left, right]).toEqual([toPx(lift.body.x), toPx(lift.body.x + lift.body.w)]);
+    }
   });
 });
