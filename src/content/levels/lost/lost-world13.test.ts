@@ -293,12 +293,12 @@ describe('D-4 (ll-13-4 ... ll-13-4-end): the last castle', () => {
       dir: 'down',
       target: { level: 'll-13-4-exit', x: 3, y: 10, exitDir: 'up' },
     });
-    expect(l.entities).toContainEqual({ type: 'firebar', x: 17, y: 9, props: { len: 12 } });
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 17, y: 9, props: { len: 12 } });
+    expect(at(l, 'firebar')).toEqual([
       [25, 9],
       [37, 9],
     ]);
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [17, 9],
       [75, 13],
     ]);
@@ -359,7 +359,7 @@ describe('D-4 (ll-13-4 ... ll-13-4-end): the last castle', () => {
     for (let x = 96; x <= 108; x++) expect(tile(l, x, 10)).toBe(T.BRIDGE);
     expect(tile(l, 108, 9)).toBe(T.CHAIN);
     expect(l.entities).toContainEqual({ type: 'axe', x: 109, y: 8 });
-    expect(l.entities).toContainEqual({ type: 'firebar', x: 103, y: 6 });
+    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 103, y: 6 });
     expect(l.entities).toContainEqual({ type: 'princess', x: 121, y: 12 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 120, next: 'end' });
     expect(l.zones).toContainEqual({

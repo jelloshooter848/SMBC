@@ -93,3 +93,5 @@ every time
   `updateLoc`), both level XMLs, and ours: `src/game/entities/enemies/cheep.ts`, `src/game/world/world.ts`
   (`spawn` switch), `src/engine/math/units.ts` (4096 = 1 px/frame), the `cheep-*` lines in
   `src/content/levels/`.
+
+Status: fixed — each swimming fish now picks red/grey 50/50 (Level.as), speed 50/100 Flash px/s, straight or a ±1-tile wave at ySpeed 20, and a start moved -2..+2 tiles each way with its bottom kept in rows 3-11 (CheepFast.as setStats/calcMovement/calcPosition/updateStats), using the world RNG.

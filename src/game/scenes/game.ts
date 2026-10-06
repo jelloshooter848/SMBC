@@ -1,5 +1,5 @@
 import { SceneStack } from '@engine/scene';
-import { loadProgress, saveProgress } from '@engine/save/progress';
+import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { GameContext, GameState } from '../context';
 import { newGameState } from '../context';
 import { startHp, type CharacterDef } from '../characters/character';
@@ -20,6 +20,7 @@ import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
+import { CreditsScene } from './credits';
 import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress } from '../map/types';
 import { clearLevel, entryLevel, isOpen, isWorldOpen, newMapProgress, warpTo } from '../map/rules';
@@ -89,55 +90,79 @@ export class Game {
   }
 
   /**
-   * After the last castle: the princess's thanks, the final score, then the title. In campaign
-   * mode the clear is recorded, the file marked as cleared and saved, and the ending leads back
-   * to the map (World 8).
+   * The end of a game (an exit marked `next=end`; `from` is the main level's id).
+   *
+   * SMB (and custom levels): the castle has said "Your quest is over."; the credits roll over it
+   * (ScreenManager.startMoveCreditsTmrHandler), then the title (restartGameTmrHandler ->
+   * beatGame -> restartGame). In campaign mode, after the credits the clear is recorded, the file
+   * marked as cleared and saved, and the title follows (owner decision, 2026-10-05).
+   *
+   * The Lost Levels follow the NES rules (owner decision, 2026-10-05): 8-4 counts a game beaten
+   * (worlds A-D open after 8) and, without warps, goes on to World 9; World 9 and D-4 end the game.
    */
   showEnding(from = ''): void {
-    const s = this.state;
-    let reveal: string[] | null = null;
+    if (from.startsWith('ll-')) return this.showLostEnding(from);
+    const below = this.scenes.top;
+    const world = below instanceof LevelScene ? below.world : null;
+    const head = world ? world.castleText.splice(0) : [];
+    this.deps.announcer?.say(`${head.filter(Boolean).join(' ')} Credits.`.trim());
+    this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
+  }
+
+  /** The credits are over: campaign files record the clear and save, then the title. */
+  private afterCredits(from: string): void {
     if (this.campaign) {
+      const s = this.state;
       s.checkpoint = null;
       s.time = null;
-      reveal = clearLevel(this.mapProgress, from, this.deps.getLevel);
+      this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
       if (this.campaignSave) this.campaignSave = { ...this.campaignSave, gameCleared: true };
       this.autosave();
     }
-    // The Lost Levels: clearing 8-4 opens worlds A-D; a run without warps goes on to World 9.
+    this.showTitle();
+  }
+
+  /** The Lost Levels' game ends: 8-4 (on to World 9 without warps), 9-4 and D-4. */
+  private showLostEnding(from: string): void {
+    const s = this.state;
+    const score = pad(Math.min(s.score, SCORE_MAX), 7);
     let next: string | null = null;
+    let lines: string[];
     if (from === 'll-8-4') {
-      const progress = loadProgress();
-      progress.lost.letters = true;
-      if (!s.warped) {
-        progress.lost.world9 = true;
-        next = 'll-9-1-start';
-      }
+      const before = loadProgress();
+      const progress = recordLostGameBeaten(before, s.warped);
       saveProgress(progress);
-    }
+      const opened = lostLettersOpen(progress) && !lostLettersOpen(before);
+      const tally = opened
+        ? ['WORLDS A-D ARE OPEN!']
+        : [`GAMES BEATEN ${Math.min(progress.lost.beaten, 99)}`];
+      if (!s.warped) {
+        next = 'll-9-1-start';
+        lines = ['A NEW QUEST AWAITS', 'IN WORLD 9!', '', ...tally, '', `SCORE ${score}`];
+      } else {
+        lines = [
+          'WORLD 9 OPENS AFTER A RUN',
+          'THROUGH WORLDS 1-8',
+          'WITHOUT WARP ZONES.',
+          '',
+          ...tally,
+          '',
+          `FINAL SCORE ${score}`,
+        ];
+      }
+    } else if (from === 'll-9-4') lines = ['WORLD 9 CLEARED!', '', `FINAL SCORE ${score}`];
+    else if (from === 'll-13-4') lines = ['WORLDS A-D CLEARED!', '', `FINAL SCORE ${score}`];
+    else lines = [`FINAL SCORE ${score}`];
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
-    this.deps.announcer?.say(`Thank you ${s.character.name}! The princess is safe. Final score ${s.score}.`);
+    this.deps.announcer?.say(lines.filter(Boolean).join(' '));
     this.scenes.clear();
     this.scenes.push(
       new MessageScene(
         this,
-        [
-          `THANK YOU ${s.character.hudName}!`,
-          '',
-          'THE PRINCESS IS SAFE',
-          'AND THE KINGDOM IS FREE.',
-          '',
-          `FINAL SCORE ${pad(Math.min(s.score, SCORE_MAX), 7)}`,
-          '',
-          'PRESS START',
-        ],
-        () =>
-          reveal
-            ? this.returnToMap(reveal)
-            : next
-              ? this.goToLevel(next, { mode: 'stand' })
-              : this.showTitle(),
+        [...lines, '', 'PRESS START'],
+        () => (next ? this.goToLevel(next, { mode: 'stand' }) : this.showTitle()),
         1800,
       ),
     );

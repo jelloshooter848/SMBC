@@ -29,16 +29,16 @@ camera: scroll
 
 [entities]
 decor-castle 0 12
-lift-v 56 9 len=6 range=6
+lift-v 56 9 len=6 range=6 dx=-16
 koopa-para-red 74 7
-lift-h 85 8 len=6 range=3
-lift-h 93 9 len=6 range=3
+lift-h 85 8 len=6 range=3 dx=-16
+lift-h 93 9 len=6 range=3 dx=-16
 koopa-para-red 114 7
-lift-h 131 6 len=6 range=3
+lift-h 131 6 len=6 range=3 dx=-16
 decor-castle-big 155 12
 
 [zones]
-checkpoint 66
+checkpoint 66 12
 exit 153 next=1-4
 
 [decor]

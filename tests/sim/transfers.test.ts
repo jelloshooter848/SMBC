@@ -342,7 +342,7 @@ describe('enemies near the arrival point are removed (Level.destroyNearbyEnemies
     h.game.newGame(MARIO, '1-2');
     h.until(() => h.top() instanceof LevelScene);
     h.play('1-2');
-    h.fire({ type: 'checkpoint', x: 97 });
+    h.fire({ type: 'checkpoint', x: 97, y: 12 });
     h.die();
     h.pickAndPlay();
     for (let i = 0; i < 4; i++) h.step();

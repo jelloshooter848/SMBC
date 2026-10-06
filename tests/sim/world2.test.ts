@@ -39,7 +39,8 @@ describe('World 2: water', () => {
     expect(r.outcome).toBe('stopped');
     expect(r.world.player.inWater).toBe(true);
     expect(toPx(r.world.player.body.y + r.world.player.body.h)).toBe(13 * 16);
-    expect(r.frames).toBeGreaterThan(150); // slower than falling through air
+    // Slower than falling through air: the sink is capped at Character.as vyMaxPsvWater (2.08 px/f).
+    expect(r.frames).toBeGreaterThan(80);
   });
 
   it('tapping jump strokes upward but cannot leave the water', () => {
@@ -144,7 +145,7 @@ describe('World 2: water', () => {
 
 describe('World 2: bridges, springs, vines and lava', () => {
   it('flying cheep cheeps leap from below on the 2-3 bridges and can be stomped', () => {
-    const l = at(level('2-3'), 20, 12);
+    const l = at(level('2-3'), 20, 9); // on the bridge deck (row 10)
     const r = runSim({
       level: l,
       character: MARIO,

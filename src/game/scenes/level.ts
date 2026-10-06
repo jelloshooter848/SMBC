@@ -83,7 +83,7 @@ export class LevelScene implements Scene {
     const game = this.game;
     switch (ev.type) {
       case 'checkpoint':
-        game.state.checkpoint = { level: this.level.id, x: ev.x };
+        game.state.checkpoint = { level: this.level.id, x: ev.x, y: ev.y };
         break;
       case 'pipe': {
         const target = game.deps.getLevel(ev.target.level);
@@ -156,10 +156,10 @@ export class LevelScene implements Scene {
           game.gameOver(mainLevel, ev.player ?? 0);
           return;
         }
-        // A checkpoint restart clears the enemies around it (Level.startAtHalfwayPoint →
-        // destroyNearbyEnemies()).
+        // Feet on the bottom of the midpoint's row (Level.as hwPnt, startAtHalfwayPoint), which
+        // also clears the enemies around it (destroyNearbyEnemies()).
         const start: LevelStart = cp
-          ? { x: cp.x, y: 12, mode: 'stand', clearEnemies: 'all' }
+          ? { x: cp.x, y: cp.y ?? 12, mode: 'stand', clearEnemies: 'all' }
           : { mode: 'stand' };
         // Through character select first (Game.respawn), as in the original. Without a
         // checkpoint the level restarts in its first area (Level.reloadLevel: area a).

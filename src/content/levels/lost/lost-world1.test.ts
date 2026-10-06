@@ -133,12 +133,13 @@ describe('Lost Levels 1-1', () => {
     expect(tile(l, 76, 5)).toBe(T.BRICK_COIN);
   });
   it('has its enemies where the XML puts them', () => {
+    // 47 and 103 have the original's shiftRight: entity lines (dx=8), listed before the grid.
     expect(at(l, 'goomba')).toEqual([
+      [47, 12],
+      [103, 12],
       [69, 4],
       [46, 12],
-      [47, 12],
       [102, 12],
-      [103, 12],
       [170, 12],
     ]);
     expect(at(l, 'koopa-red')).toEqual([
@@ -166,7 +167,7 @@ describe('Lost Levels 1-1', () => {
       target: { level: 'll-1-1-bonus', x: 1, y: 0, exitDir: 'none' },
     });
     expect(tile(l, 163, 11)).toBe(T.PIPE_TL);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98, y: 12 });
     expect(tile(l, 188, 2)).toBe(T.FLAG_BALL);
     expect(tile(l, 188, 12)).toBe(T.HARD);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 188, next: 'll-1-2-intro' });
@@ -214,15 +215,16 @@ describe('Lost Levels 1-2', () => {
       [152, 9],
     ]);
     expect(ofType(l, 'lift-up')).toEqual([
-      { type: 'lift-up', x: 158, y: 5, props: { len: 6 } },
-      { type: 'lift-up', x: 158, y: 13, props: { len: 6 } },
+      { type: 'lift-up', x: 158, y: 5, props: { len: 6, dx: -16 } },
+      { type: 'lift-up', x: 158, y: 13, props: { len: 6, dx: -16 } },
     ]);
     expect(l.entities).toContainEqual({ type: 'buzzy', x: 53, y: 12 });
+    // 44 has the original's shiftRight: an entity line (dx=8), listed before the grid.
     expect(at(l, 'goomba')).toEqual([
-      [43, 12],
       [44, 12],
+      [43, 12],
     ]);
-    expect(ofType(l, 'koopa-green').map((e) => e.x)).toEqual([140, 141, 143]);
+    expect(ofType(l, 'koopa-green').map((e) => e.x)).toEqual([141, 140, 143]); // 141: dx=8 line
     expect(at(l, 'koopa-para-green')).toEqual([[16, 11]]);
   });
   it('has the 1-up/mushroom brick row, the star brick and the vine brick', () => {
@@ -235,7 +237,7 @@ describe('Lost Levels 1-2', () => {
     expect(tile(l, 31, 2)).toBe(T.BRICK_POWERUP);
     expect(tile(l, 107, 9)).toBe(T.BRICK_STAR);
     expect(tile(l, 53, 4)).toBe(T.BRICK_VINE);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98, y: 12 });
   });
   it('splits its warp zone in three: a vine to the World 3 pipe, a pipe to the World 4 room, World 2 at the end', () => {
     expect(l.zones).toContainEqual({
@@ -347,8 +349,8 @@ describe('Lost Levels 1-3', () => {
       { type: 'balance', x: 138, y: 5, props: { x2: 145, y2: 10, len: 6, top: 2 } },
     ]);
     expect(ofType(l, 'lift-h')).toEqual([
-      { type: 'lift-h', x: 71, y: 9, props: { len: 6, range: 3 } },
-      { type: 'lift-h', x: 134, y: 6, props: { len: 6, range: 3 } },
+      { type: 'lift-h', x: 71, y: 9, props: { len: 6, range: 3, dx: -16 } },
+      { type: 'lift-h', x: 134, y: 6, props: { len: 6, range: 3, dx: -16 } },
     ]);
   });
   it('has Bloopers in the sky, red Koopas and a red paratroopa', () => {
@@ -367,7 +369,7 @@ describe('Lost Levels 1-3', () => {
     expect(tile(l, 118, 5)).toBe(T.Q_POWERUP);
   });
   it('ends at the flag at 169 in front of the big castle', () => {
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98, y: 12 });
     expect(tile(l, 169, 2)).toBe(T.FLAG_BALL);
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 171, y: 12 });
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 169, next: 'll-1-4' });
@@ -383,13 +385,13 @@ describe('Lost Levels 1-4', () => {
     expect(l.start).toEqual({ x: 1, y: 6 });
   });
   it('has nine fire bars (four clockwise, five counter-clockwise)', () => {
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [19, 5],
       [53, 9],
       [91, 9],
       [101, 9],
     ]);
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(at(l, 'firebar')).toEqual([
       [37, 5],
       [44, 9],
       [68, 5],

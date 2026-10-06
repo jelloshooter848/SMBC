@@ -261,9 +261,9 @@ describe('Lost Levels A-4', () => {
     expect(l.theme).toBe('castle');
     expect(l.time).toBe(300);
     expect(l.start).toEqual({ x: 1, y: 6 });
-    expect(where(l, 'firebar')).toEqual(['18,10']);
-    expect(where(l, 'firebar-ccw')).toEqual(['24,13', '30,10', '46,6', '56,12']);
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 30, y: 10, props: { len: 12 } });
+    expect(where(l, 'firebar-ccw')).toEqual(['18,10']);
+    expect(where(l, 'firebar')).toEqual(['24,13', '30,10', '46,6', '56,12']);
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 30, y: 10, props: { len: 12 } });
     expect(where(l, 'podoboo')).toEqual(['22,12', '59,12', '89,12', '93,12', '97,12', '102,12', '107,12']);
     expect(where(l, 'koopa-red')).toEqual(['79,4']);
     for (const [x, y] of [

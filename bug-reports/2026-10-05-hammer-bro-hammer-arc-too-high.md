@@ -49,3 +49,5 @@ every time
   `review/smb-w6.md` during the smb-w7/w8 consolidation. `2026-10-05-bowser-hammers-in-volleys.md` notes
   this too.
 - Reviewed: verified against `com/smbc/projectiles/Hammer.as` (`xSpeed` 120, `jumpPwr` 200, `gravity` 500, 32 px tiles: rise 40 px, 20 px at our scale) and ours: `src/game/entities/enemies/hammer-bro.ts` `throwHammer()` (vx 0.75-1.25, vy -3.5 to -4.5 px/frame) with `HAMMER.gravity` 0x00200 in `src/game/entities/projectiles/projectile.ts`. The screenshot HUD reads WORLD 1-1 because it was taken in a share-link copy of 3-1.
+
+Status: fixed — the `HAMMER` spec now flies 1.0 px/frame across and 1.67 px/frame up under 0.069 px/frame² (`Hammer.as` `xSpeed` 120, `jumpPwr` 200, `gravity` 500), thrown from beside the head (`nx ± hWidth*.75`, `ny - height*1.2`), rising about 20 px; Bowser still passes his own vx/vy in `bowser.ts`, which the Bowser report's fix should drop to use the spec.

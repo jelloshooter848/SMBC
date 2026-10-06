@@ -29,18 +29,18 @@ BBBB............ ......%%%%%%%%%% %%%B............ %%%%%%%%%%%%%%%% .....%%%%%%%
 
 [entities]
 piranha 19 11 red=1
-firebar 35 8
-firebar-ccw 45 9
-lift-h 66 10 len=4 range=3
-firebar 81 8
+firebar-ccw 35 8
+firebar 45 9
+lift-h 66 10 len=4 range=3 dx=-8
+firebar-ccw 81 8
 piranha 97 10 red=1
-firebar 113 8
+firebar-ccw 113 8
 piranha 129 10 red=1
-firebar 145 8
+firebar-ccw 145 8
 piranha 161 10 red=1
-firebar 177 8
+firebar-ccw 177 8
 piranha 193 10 red=1
-firebar 203 9
+firebar-ccw 203 9
 bowser 231 9 attack=hammer
 axe 237 8
 toad 249 12

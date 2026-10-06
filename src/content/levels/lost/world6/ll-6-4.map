@@ -29,39 +29,39 @@ BBBB............ ................ ...........{}... ................ ............
 
 [entities]
 piranha 24 10 red=1
-firebar-ccw 32 9
+firebar 32 9
 piranha-down 43 10 red=1
 podoboo 66 12
-firebar-ccw 78 9
-firebar-ccw 82 5
+firebar 78 9
+firebar 82 5
 piranha 88 10 red=1
-firebar-ccw 96 9
+firebar 96 9
 piranha-down 107 10 red=1
 podoboo 130 12
-firebar-ccw 142 9
-firebar-ccw 146 5
+firebar 142 9
+firebar 146 5
 piranha 152 10 red=1
 piranha-down 160 10 red=1
 piranha 164 9 red=1
 piranha 166 9 red=1
-firebar 176 9
+firebar-ccw 176 9
 lift-h 182 13 len=4 range=3
-firebar-ccw 185 9
-lift-down 188 5 len=3
-lift-down 188 13 len=3
+firebar 185 9
+lift-down 188 5 len=3 dx=-4
+lift-down 188 13 len=3 dx=-4
 podoboo 196 12
-firebar-ccw 208 9
+firebar 208 9
 piranha-down 219 6 red=1
 piranha-down 224 10 red=1
 piranha 228 9 red=1
 piranha 230 9 red=1
-firebar 240 9
+firebar-ccw 240 9
 lift-h 246 13 len=4 range=3
-firebar-ccw 249 9
-lift-down 252 5 len=3
-lift-down 252 13 len=3
+firebar 249 9
+lift-down 252 5 len=3 dx=-4
+lift-down 252 13 len=3 dx=-4
 podoboo 260 12
-firebar-ccw 272 9
+firebar 272 9
 piranha-down 283 6 red=1
 lift-h 297 13 len=4 range=3
 podoboo 322 12

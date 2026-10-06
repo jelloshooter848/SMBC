@@ -52,7 +52,7 @@ koopa-para-green 132 10
 koopa-para-green 142 12
 koopa-para-green-h 150 11
 piranha-down 180 8 red=1
-koopa-para-red 192 9
+koopa-para-red 192 9 dy=-8
 piranha 217 8 red=1
 piranha 219 5 red=1
 decor-castle 232 12

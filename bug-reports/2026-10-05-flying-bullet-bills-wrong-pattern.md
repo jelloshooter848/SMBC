@@ -43,3 +43,5 @@ every time
 - The flight speed is a separate report: `2026-10-05-bullet-bill-too-slow.md`.
 - Source: `smb-w5/2026-10-05-5-3-flying-bullet-bills.md`.
 - Reviewed: verified against `com/smbc/level/BulletBillSpawner.as` (`DEL_DEFAULT`, `respawnTmrHandler`, `bulletBillDestroyed`), `com/smbc/enemies/BulletBill.as` (`cleanUp`), `levelDataSmb.xml` (`<LEVEL ID="5-3">` `bulletBillStart` at column 0, `bulletBillEnd` at 126) and ours: `src/game/world/world.ts` (`flyingBullets`), `src/content/levels/world5/5-3.map` (`bullets 0 126`).
+
+Status: fixed — the `bullets` spawner keeps one bill of its own, sends the next 250 ms (15 frames) after it is gone, always from just off the right edge flying left, its bottom on the grid line nearest the player's feet plus -2..2 tiles, clamped 3 tiles below the top and 1 tile above the bottom (`BulletBillSpawner.as`).

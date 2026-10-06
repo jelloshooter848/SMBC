@@ -32,3 +32,5 @@ every time
 - The jump height is close (36 px vs about 39 px); the frequency is the main difference. The airtime and gravity also differ.
 - Related: `2026-10-05-bowser-pacing-speed-and-range.md`.
 - Reviewed: verified against `com/smbc/enemies/Bowser.as` (`JUMP_TMR_DUR_MIN/MAX` 400/3000, `updateStats`, `jumpTmrLsr`, `jump`, `jumpPwr` 280), `com/smbc/main/AnimatedObject.as` (`gravity` 500; Bowser does not override it), and ours: `src/game/entities/enemies/bowser.ts` (`jumpTimer`).
+
+Status: fixed — Bowser now jumps every time a 400-3000 ms timer (restarted whenever he is on the ground) runs out in his normal state, with `jumpPwr` 280 px/s against the default 500 px/s² gravity (Bowser.as `JUMP_TMR_DUR_MIN/MAX`, `jumpTmrLsr`).

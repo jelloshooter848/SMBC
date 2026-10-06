@@ -1,35 +1,60 @@
-import { px, toPx, velToSub } from '@engine/math/units';
+import { px, tileAt, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
 import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
-import { moveX } from '../body';
+import { moveX, moveY } from '../body';
+import { tileDef } from '../../level/tiles';
 import { Projectile, HAMMER } from '../projectiles/projectile';
 
-const SHUFFLE_SPEED = 0x00400; // 0.25 px/f
-const ADVANCE_SPEED = 0x00800; // 0.5 px/f
-const ADVANCE_AFTER = 600; // frames of standing before walking at the player
-const HOP_UP = 0x05000; // 5 px/f
-const VOLLEY_SIZE = 3;
-const VOLLEY_GAP = 16;
+/*
+ * Numbers from com/smbc/enemies/HammerBro.as. The original works in px/s on 32-px tiles with ms
+ * timers; here that is halved and taken per frame at 60 fps (velocities in 1/4096 px/f).
+ */
+/** `WALK_SPEED` 30 px/s: paces at 0.25 px/f. */
+const WALK_SPEED = 0x00400;
+/** `chaseSpeed` = `Enemy.ENEMY_WALK_SPEED_NORMAL` 65 px/s: 0.54 px/f. */
+const CHASE_SPEED = 0x008ab;
+/** `xWaveLeft/Right` = nx -/+ TILE_SIZE*.5: paces half a tile either side of its spot (px). */
+const PACE_RANGE = 8;
+/** `CHASE_TMR_DUR` 27000 ms: after this it walks at a player on its left. */
+const CHASE_AFTER = 1620;
+/** `JUMP_TMR_DUR_MIN/MAX` 600-2000 ms, run whenever it stands on something. */
+const JUMP_MIN = 36;
+const JUMP_SPREAD = 84;
+/** `HAMMER_TMR_DUR_MIN/MAX` 300-1200 ms, then `HAMMER_DEL_TMR` 250 ms in the throw pose. */
+const HAMMER_MIN = 18;
+const HAMMER_SPREAD = 54;
+const HAMMER_DELAY = 15;
+/** `jumpPwr` 625 and `smallJumpPwr` 200 px/s, `gravity` 1250 px/s², `vyMaxPsv` 500 px/s. */
+const HIGH_JUMP = 0x05355;
+const LOW_JUMP = 0x01aab;
+const GRAVITY = 0x002c7;
+const MAX_FALL = 0x042ab;
+/** A low hop falls through floors for at most 2 tiles (`ny - startJumpLoc > TILE_SIZE*2`). */
+const DROP_THROUGH = px(32);
+/** Feet from the screen bottom below which it never passes through (`GLOB_STG_BOT - TILE_SIZE*2.9`). */
+const SOLID_BELOW = Math.round(px(240 - 2.9 * 16));
+/** Feet on the floor (`GLOB_STG_BOT - TILE_SIZE*2`) and on the top brick row (`GLOB_STG_TOP + TILE_SIZE*5`). */
+const FLOOR_FEET = px(240 - 32);
+const TOP_ROW_FEET = px(5 * 16);
 
 /**
- * Hammer Bro: shuffles on its row facing the player, throws hammers in volleys of three, and
- * hops between the brick rows it lives on. After a while (or once passed) it walks at you; a
- * chasing one (The Lost Levels) walks at you from the start.
+ * Hammer Bro: paces half a tile either side of its spot facing the player, throws single hammers,
+ * and jumps up through or hops down through the brick rows every 0.6-2 s. After 27 s it walks at a
+ * player on its left (never to the right); a chasing one (The Lost Levels) does so from the start.
  */
 export class HammerBro extends Enemy {
   readonly kind = 'hammer-bro';
-  private readonly homeX: number;
+  private waveLeft = 0;
+  private waveRight = 0;
   private age = 0;
-  private shuffleDir: -1 | 1 = -1;
-  private throwTimer = 60;
-  private volley = 0;
-  private volleyTimer = 0;
-  private hopTimer = 150;
-  /** Frames left of tile-free rising (hopping up through a platform). */
-  private rising = 0;
-  /** Frames left of tile-free falling (dropping through the floor). */
-  private dropping = 0;
+  private chasing = false;
+  private jumpTimer = 0;
+  private hammerTimer = 0;
+  private throwDelay = 0;
+  private jumped = false;
+  private jumpedHigh = false;
+  private jumpFeet = 0;
 
   constructor(
     x: number,
@@ -37,99 +62,119 @@ export class HammerBro extends Enemy {
     readonly chase = false,
   ) {
     super(x, y, 12, 22);
-    this.homeX = x;
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.scores = ENEMY_SCORES.HAMMER_BRO;
     this.fallsOffLedges = false;
     this.currentFrame = 'hammer-bro-1';
-    this.body.vx = 0;
+    this.body.vx = WALK_SPEED;
   }
 
   update(world: World): void {
     const b = this.body;
     const pl = world.nearestPlayer(b.x).body;
-    const passed = pl.x > b.x + px(24);
+    const cx = b.x + (b.w >> 1);
     this.age++;
-    this.facing = pl.x + pl.w / 2 < b.x + b.w / 2 ? -1 : 1;
+    const chase = this.chase || this.age >= CHASE_AFTER;
 
-    // Horizontal: shuffle around home, or advance on the player.
-    if (this.chase || this.age > ADVANCE_AFTER || passed) {
-      b.vx = this.facing * ADVANCE_SPEED;
-      this.fallsOffLedges = true;
+    // Timers (the constructor starts JUMP_TMR; updateStats restarts it while on the ground).
+    if (this.age === 1) {
+      // initiate(): the pacing range is set where it is when it enters the level.
+      this.waveLeft = b.x - px(PACE_RANGE);
+      this.waveRight = b.x + px(PACE_RANGE);
+      this.jumpTimer = JUMP_MIN + world.rng.int(JUMP_SPREAD);
+    }
+    if (b.onGround) {
+      this.jumped = false;
+      if (this.jumpTimer === 0) this.jumpTimer = JUMP_MIN + world.rng.int(JUMP_SPREAD);
+    }
+    if (this.hammerTimer === 0 && this.throwDelay === 0)
+      this.hammerTimer = HAMMER_MIN + world.rng.int(HAMMER_SPREAD);
+
+    // Horizontal: walk at a player on its left once chasing, otherwise pace around its spot.
+    if (pl.x + pl.w < cx) {
+      if (chase) {
+        b.vx = -CHASE_SPEED;
+        this.chasing = true;
+      } else this.chasing = false;
+      this.facing = -1;
     } else {
-      if (b.x < this.homeX - px(16)) this.shuffleDir = 1;
-      else if (b.x > this.homeX + px(16)) this.shuffleDir = -1;
-      else if (this.age % 48 === 0) this.shuffleDir = world.rng.chance(0.5) ? -1 : 1;
-      b.vx = this.shuffleDir * SHUFFLE_SPEED;
+      if (this.chasing) {
+        this.chasing = false;
+        this.waveLeft = b.x - px(PACE_RANGE);
+        this.waveRight = b.x + px(PACE_RANGE);
+      }
+      this.facing = pl.x > cx || pl.x + (pl.w >> 1) >= cx ? 1 : -1;
+    }
+    if (!this.chasing) {
+      b.vx = Math.max(-WALK_SPEED, Math.min(WALK_SPEED, b.vx));
+      if (b.x < this.waveLeft) {
+        b.x = this.waveLeft;
+        b.vx = -b.vx;
+      } else if (b.x > this.waveRight) {
+        b.x = this.waveRight;
+        b.vx = -b.vx;
+      }
     }
     moveX(b, world.map, velToSub(b.vx));
-    if (b.hitWall !== 0) this.shuffleDir = -b.hitWall as -1 | 1;
+    if (b.hitWall !== 0) b.vx = -b.hitWall * Math.abs(b.vx);
 
-    // Vertical: hops through platforms, otherwise normal gravity.
-    if (this.rising > 0) {
-      this.rising--;
-      b.vy += 0x00400;
+    // Vertical: jumps pass up through floors, hops pass down through one (passThroughGround).
+    if (this.jumpTimer > 0 && --this.jumpTimer === 0 && b.onGround) this.jump(world);
+    const feet = b.y + b.h;
+    let through = (this.jumpedHigh && b.vy < 0) || (!this.jumpedHigh && this.jumped && b.vy > 0);
+    if (feet - this.jumpFeet > DROP_THROUGH || feet > SOLID_BELOW || this.solidFloors(world)) through = false;
+    // `if (wallOnLeft || wallOnRight) passThroughGround = false`: never pass through beside a wall.
+    if (b.hitWall !== 0) through = false;
+    b.vy = Math.min(MAX_FALL, b.vy + GRAVITY);
+    if (through) {
       b.y += velToSub(b.vy);
-      if (b.vy >= 0) this.rising = 0;
-    } else if (this.dropping > 0) {
-      this.dropping--;
-      b.vy += 0x00400;
-      b.y += velToSub(b.vy);
+      b.onGround = false;
     } else {
-      this.fall(world);
-      if (b.onGround && --this.hopTimer <= 0) {
-        this.hopTimer = 180 + world.rng.int(120);
-        this.tryHop(world);
-      }
+      moveY(b, world.map, b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy));
+      if (b.onGround || b.hitHead) b.vy = 0;
     }
 
-    // Hammers.
-    if (this.volley > 0) {
-      if (--this.volleyTimer <= 0) {
-        this.volley--;
-        this.volleyTimer = VOLLEY_GAP;
-        this.throwHammer(world);
-      }
-    } else if (--this.throwTimer <= 0) {
-      this.throwTimer = 90 + world.rng.int(60);
-      this.volley = VOLLEY_SIZE;
-      this.volleyTimer = 12;
-    }
-    const armUp = this.volley > 0 && this.volleyTimer > 4;
-    this.currentFrame = armUp ? 'hammer-bro-0' : `hammer-bro-${(world.frame >> 3) & 1}`;
+    // Hammers: one at a time, after the timer and a short wind-up in the throw pose.
+    if (this.hammerTimer > 0 && --this.hammerTimer === 0) this.throwDelay = HAMMER_DELAY;
+    else if (this.throwDelay > 0 && --this.throwDelay === 0) this.throwHammer(world);
+    this.currentFrame = this.throwDelay > 0 ? 'hammer-bro-0' : `hammer-bro-${(world.frame >> 3) & 1}`;
     if (this.isBelowLevel()) this.destroy();
   }
 
-  private throwHammer(world: World): void {
-    const b = this.body;
-    const vx = this.facing * (0x00c00 + world.rng.int(0x00800));
-    const vy = -(0x03800 + world.rng.int(0x01000));
-    world.spawn(new Projectile(b.x + px(2), b.y - px(8), this.facing, HAMMER, this, { vx, vy }));
+  /** Castles and underground (`cannotPassThroughGround`): jumps only go straight up and down. */
+  private solidFloors(world: World): boolean {
+    const t = world.level.theme;
+    return t === 'underground' || t.startsWith('castle');
   }
 
-  /** Hop up onto a solid row 3-5 tiles above, else drop through to ground 2-8 rows below. */
-  private tryHop(world: World): void {
+  /** HammerBro.jump: high from the floor or off solid ground, a hop down from the top row, else either. */
+  private jump(world: World): void {
     const b = this.body;
-    const col = toPx(b.x + (b.w >> 1)) >> 4;
-    const feetRow = toPx(b.y + b.h) >> 4;
-    for (let r = feetRow - 3; r >= feetRow - 5; r--) {
-      if (world.map.isSolid(col, r) && !world.map.isSolid(col, r - 1)) {
-        b.vy = -HOP_UP;
-        b.onGround = false;
-        this.rising = 40;
-        return;
-      }
-    }
-    for (let r = feetRow + 2; r <= feetRow + 8; r++) {
-      if (world.map.isSolid(col, r)) {
-        b.vy = 0;
-        b.onGround = false;
-        this.dropping = 12;
-        b.y += px(1);
-        return;
-      }
-    }
+    const feet = b.y + b.h;
+    const under = tileDef(world.map.get(tileAt(b.x + (b.w >> 1)), tileAt(feet)));
+    const high =
+      feet === FLOOR_FEET || this.solidFloors(world) || under.block?.kind !== 'brick'
+        ? true
+        : feet === TOP_ROW_FEET
+          ? false
+          : world.rng.chance(0.5);
+    b.vy = -(high ? HIGH_JUMP : LOW_JUMP);
+    b.onGround = false;
+    this.jumpedHigh = high;
+    this.jumped = true;
+    this.jumpFeet = feet;
+  }
+
+  /**
+   * Hammer.as: thrown from `nx ± hWidth*.75`, `ny - height*1.2` (centre), 120 px/s across and
+   * 200 px/s up under 500 px/s² (the HAMMER spec), so it rises only about 20 px.
+   */
+  private throwHammer(world: World): void {
+    const b = this.body;
+    const x = b.x + (b.w >> 1) + this.facing * px(9) - px(HAMMER.w >> 1);
+    const y = b.y + b.h - px(29) - px(HAMMER.h >> 1);
+    world.spawn(new Projectile(x, y, this.facing, HAMMER, this));
   }
 
   protected override squash(world: World): void {

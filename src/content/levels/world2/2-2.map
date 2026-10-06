@@ -33,25 +33,25 @@ blooper 46 10
 blooper 55 11
 cheep-grey 76 10
 cheep-grey 79 7
-cheep-grey 81 11
+cheep-grey 81 11 dx=8
 blooper 83 9
 blooper 94 4
-cheep-grey 94 6
-cheep-red 97 3
+cheep-grey 94 6 dx=8
+cheep-red 97 3 dx=8
 cheep-grey 101 10
 blooper 105 12
 cheep-grey 117 4
-cheep-red 127 10
+cheep-red 127 10 dx=8
 cheep-grey 131 11
-cheep-grey 136 8
+cheep-grey 136 8 dx=8
 cheep-grey 145 10
 cheep-red 150 6
 cheep-grey 164 3
 cheep-red 167 11
 cheep-grey 175 8
 cheep-red 183 4
-cheep-red 185 7
+cheep-red 185 7 dx=8
 
 [zones]
-checkpoint 82
+checkpoint 82 12
 pipe 189 8 right -> 2-2-exit 3 10 exit=up

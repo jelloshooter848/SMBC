@@ -40,7 +40,8 @@ clearing it. Game over offers CONTINUE: yes returns to the map with fresh lives 
 reset, cleared levels kept), no goes to the title. The file saves itself whenever the map is
 shown, after each death and on a warp; the map menu (start or select) has **Save and quit**, and the
 level pause menu **Quit to title** saves too.
-Beating 8-4 marks the file with a star and returns to the World 8 map. Developer mode,
+Beating 8-4 rolls the credits, then marks the file with a star, saves it and returns to the
+title. Developer mode,
 `?level=`, custom and shared levels and editor play-tests skip the map and never write a save.
 
 ### Characters
@@ -125,8 +126,8 @@ reachable only from **Dev mode → Level select** (their ids start with `ll-`; t
 10–13 as A–D). They bring upside-down pipes with hanging Piranha Plants, poison mushrooms (they
 hurt like an enemy), green springboards that launch far higher, Hammer Bros that charge
 straight at you, fake Bowsers, Bloopers in the air, mid-screen Lakitus and warp pipes that send
-you backwards. As in the original, 8-4 ends the game: a run that used no warp pipe continues
-into World 9, and clearing 8-4 saves the unlock of Worlds A–D.
+you backwards. As on the NES, 8-4 ends the game: a run that used no warp pipe continues
+into World 9, and every 8-4 clear counts a game beaten; Worlds A–D unlock after eight.
 
 Settings persist in the browser.
 
