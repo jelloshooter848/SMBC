@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-06
+
 ### Added
 
 - Developer mode: an **Unlock all** switch in the map menu opens every world, level and road on
@@ -90,6 +92,7 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/jelloshooter848/SMBC/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/jelloshooter848/SMBC/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jelloshooter848/SMBC/releases/tag/v0.1.0
