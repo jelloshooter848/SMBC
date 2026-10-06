@@ -288,6 +288,9 @@ describe('Bowser death', () => {
     const c = corpses[0] as Corpse;
     expect(c.frame).toBe('bowser-die-5');
     expect(c.mirrorY).toBe(true);
+    // A castle: the true form's grey-outlined palette; it keeps the way he faced.
+    expect(c.palette).toBe('bowser-true-form');
+    expect(c.facing).toBe(-1);
     expect(c.body.vx).toBe(0);
   });
 

@@ -60,6 +60,9 @@ export const enemyPalettes: Record<string, string[]> = {
   'koopa-red': koopaRed,
   'piranha-green': piranhaGreen,
   'piranha-red': piranhaRed,
+  // The fake king's true forms in a castle: the castle colours, but outlined in dark grey (the
+  // NES castle sprite palettes carry no black), so they read against the black background.
+  'bowser-true-form': base(NES.darkGray, NES.gray, NES.tan, NES.redBright),
 };
 
 /** Paint `top` over `bottom`; '.' in `top` keeps the pixel underneath. */
@@ -706,20 +709,199 @@ const KING_LEGS_1 = pad32([
 
 const king = (head: readonly string[], legs: readonly string[]): string[] => [...head, ...KING_BODY, ...legs];
 
-/**
- * The fireball death frames (the original's Bowser clip has one per world, `die_1` to `die_8`,
- * shown upside down as he falls: Bowser.as `die`, FL_DIE + level.worldNum). Worlds 1-7 unmask
- * the fake king as that world's stand-in (toadstool, turtle, steel beetle, spiked crawler, cloud
- * rider, squid, hammer-thrower), centred in his 32x32 box; world 8's is the king himself.
+/* ------------------------------------------------------------------------------------------ */
+/* The fake king's true forms (bowser-die-1..7)                                                */
+/* ------------------------------------------------------------------------------------------ */
+
+/*
+ * The fireball death frames: the original's Bowser clip has one per world, `die_1` to `die_8`,
+ * shown upside down as he falls (Bowser.as `die`: FL_DIE + level.worldNum; Enemy.die: scaleY =
+ * -1). Worlds 1-7 unmask the fake king as that world's stand-in; world 8's is the king himself.
+ *
+ * How the unmasking reads, following the NES game Crossover copies (HandleEnemyFBallCol swaps
+ * the defeated king's enemy id for BowserIdentities[world] and flips it over):
+ *   - the stand-in is drawn at its own size (16 wide, 16 or 24 tall), not stretched to the
+ *     king's, in the place of his front half: the head end of the box, its top 24 rows;
+ *   - worlds 1-3 get the defeated state $23, which draws the turtle and the steel beetle as an
+ *     overturned SHELL (no head or feet), not as the walking enemy; 4-7 are the whole enemy;
+ *   - nothing in that castle palette is black, so outlines stay visible on the black castle
+ *     background (see the `bowser-true-form` palette).
+ *
+ * Frames are drawn upright here (feet down, facing left like every enemy frame); the corpse is
+ * mirrored vertically when drawn, so on screen each one is head-down at the top of the box.
  */
-const trueForm = (rows: readonly string[]): string[] => {
-  const top = (32 - rows.length) >> 1;
-  return [
-    ...blank(32, top),
-    ...rows.map((r) => `........${r}........`),
-    ...blank(32, 32 - top - rows.length),
-  ];
-};
+
+/** Knocked-out toadstool: crossed eyes, feet kicked out. 16x16. */
+const TF_GOOMBA = [
+  '.....111111.....',
+  '...1122222211...',
+  '..122222222221..',
+  '.12112222221121.',
+  '.12221122112221.',
+  '.12244122144221.',
+  '.12244122144221.',
+  '.12222222222221.',
+  '..122222222221..',
+  '...1333333331...',
+  '..133111111331..',
+  '..133433334331..',
+  '...1333333331...',
+  '.11111333311111.',
+  '1111111..1111111',
+  '.11111....11111.',
+];
+
+/** The turtle's empty shell, a hex plate on the dome and the pale rim below. 16x16. */
+const TF_SHELL = [
+  '................',
+  '.....111111.....',
+  '...1156666511...',
+  '..155666655551..',
+  '.15655555555551.',
+  '.15655666655551.',
+  '.15556555565551.',
+  '.15556555565551.',
+  '.15555666655551.',
+  '.15555555555551.',
+  '.11555555555511.',
+  '1331111111111331',
+  '1333333333333331',
+  '.13333333333331.',
+  '..111111111111..',
+  '................',
+];
+
+/** The steel beetle's empty shell: lit dome, dark band, steel lip. 16x16. */
+const TF_BUZZY_SHELL = [
+  '................',
+  '................',
+  '.....111111.....',
+  '...11bbbaaa11...',
+  '..1bbbaaaaaaa1..',
+  '.1bbaaaaaaaaaa1.',
+  '.1baaaaaaaaaaa1.',
+  '1baaaaaaaaaaaaa1',
+  '1aaaaaaaaaaaaaa1',
+  '1aaaaaaaaaaaaaa1',
+  '1aaaaaaaaaaaaaa1',
+  '11aaaaaaaaaaaa11',
+  '.11111111111111.',
+  '..1bbbbbbbbbb1..',
+  '...1111111111...',
+  '................',
+];
+
+/** Spiked crawler with its legs splayed. 16x16. */
+const TF_SPINY = [
+  '....1...1...1...',
+  '...141.141.141..',
+  '..1444144414441.',
+  '.177777777777771',
+  '.147777777777771',
+  '1441777777777771',
+  '1441777777777771',
+  '.117777777777771',
+  '..17777777777771',
+  '..17777777777771',
+  '...117777777711.',
+  '.....11111111...',
+  '...1331..1331...',
+  '..1331....1331..',
+  '.1331......1331.',
+  '.111........111.',
+];
+
+/** Cloud rider knocked about in his seat: goggles wide, hands gripping the cloud's rim. 16x24. */
+const TF_LAKITU = [
+  '.....111111.....',
+  '....15566551....',
+  '...1555556651...',
+  '..111111111111..',
+  '..14441144441...',
+  '..14141141441...',
+  '..14441144441...',
+  '...1111331111...',
+  '....13333331....',
+  '...1133333311...',
+  '..131333333131..',
+  '..131333333131..',
+  '..111.1111.111..',
+  '.1bbb1bbbb1bbb1.',
+  '1b444b4444b444b1',
+  '1b444444444444b1',
+  '1b441444144444b1',
+  '1b444444444444b1',
+  '.1b4444444444b1.',
+  '..1bbbbbbbbbb1..',
+  '...1111111111...',
+  '................',
+  '................',
+  '................',
+];
+
+/** Squid gone limp: slit eyes, tentacles fanned out. 16x24. */
+const TF_BLOOPER = [
+  '.....111111.....',
+  '....14444441....',
+  '...1444444441...',
+  '..144444444441..',
+  '..144444444441..',
+  '.14444444444441.',
+  '.14444444444441.',
+  '.14414444441441.',
+  '.14414444441441.',
+  '.14444444444441.',
+  '..144444444441..',
+  '..114444444411..',
+  '.14444444444441.',
+  '.141.141141.141.',
+  '141..141141..141',
+  '41...141141...14',
+  '1....141141....1',
+  '.....141141.....',
+  '....141..141....',
+  '....141..141....',
+  '....11....11....',
+  '................',
+  '................',
+  '................',
+];
+
+/** Hammer-thrower caught mid-throw: hammer raised behind the helmet, legs kicked out. 16x24. */
+const TF_HAMMER_BRO = layer(
+  [
+    ...HAMMER_BRO_HEAD,
+    ...KOOPA_BODY.slice(8, 17),
+    '....13331111111.',
+    '...13331..13331.',
+    '..13331....13331',
+    '.13331......1331',
+    '.1111.......1111',
+    '................',
+    '................',
+  ],
+  [
+    '..........1111..',
+    '.........1abba1.',
+    '.........1aaaa1.',
+    '..........1111..',
+    '...........12...',
+    '...........12...',
+    '..........1331..',
+    '..........1331..',
+  ],
+);
+
+/**
+ * Place an upright 16-wide form in the king's 32x32 box: two columns in (his hit box's front
+ * edge), from row 8 down, so once mirrored it fills the top 24 rows (a 16-tall form the lower 16
+ * of those, as the NES draws a 16x16 enemy in the bottom two of its three tile rows).
+ */
+const trueForm = (rows: readonly string[]): string[] => [
+  ...blank(32, 8),
+  ...rows.map((r) => `..${r}..............`),
+  ...blank(32, 24 - rows.length),
+];
 
 /* ------------------------------------------------------------------------------------------ */
 
@@ -760,13 +942,13 @@ export const enemiesDef: SpriteDef = {
     'bowser-1': king(KING_HEAD_CLOSED, KING_LEGS_1),
     'bowser-2': king(KING_HEAD_OPEN, KING_LEGS_0),
     'bowser-3': king(KING_HEAD_OPEN, KING_LEGS_1),
-    'bowser-die-1': trueForm([...GOOMBA_TOP, ...GOOMBA_FEET_0]),
-    'bowser-die-2': trueForm(KOOPA_0),
-    'bowser-die-3': trueForm(BUZZY_0),
-    'bowser-die-4': trueForm(SPINY_0),
-    'bowser-die-5': trueForm(LAKITU_0),
-    'bowser-die-6': trueForm(BLOOPER_0),
-    'bowser-die-7': trueForm(HAMMER_BRO_0),
+    'bowser-die-1': trueForm(TF_GOOMBA),
+    'bowser-die-2': trueForm(TF_SHELL),
+    'bowser-die-3': trueForm(TF_BUZZY_SHELL),
+    'bowser-die-4': trueForm(TF_SPINY),
+    'bowser-die-5': trueForm(TF_LAKITU),
+    'bowser-die-6': trueForm(TF_BLOOPER),
+    'bowser-die-7': trueForm(TF_HAMMER_BRO),
     'bowser-die-8': king(KING_HEAD_OPEN, KING_LEGS_0),
   },
 };

@@ -141,17 +141,19 @@ export class Bowser extends Enemy {
    * Bowser.die: Enemy.die turns him upside down and pops him up, then he shows the world's
    * `die_N` frame (FL_DIE + level.worldNum) and drops straight down (vx = 0). Worlds 1-7 show
    * the true form; world 8 (and the Lost Levels' later worlds, which have no frame of their own)
-   * the king himself.
+   * the king himself. The true form sits at his head end, so it keeps the way he was facing; in a
+   * castle it takes the grey-outlined `bowser-true-form` palette so it shows on the black.
    */
   protected override flipOut(_src: DamageSource, world: World): void {
     const n = Math.min(8, Math.max(1, world.state.world | 0));
+    const palette = this.corpsePalette(world.level.theme);
     const corpse = new Corpse(
       this.body.x,
       this.body.y,
       toPx(this.body.w),
       toPx(this.body.h),
       this.sheet,
-      this.corpsePalette(world.level.theme),
+      n < 8 && palette === 'enemies-castle' ? 'bowser-true-form' : palette,
       `bowser-die-${n}`,
       0, // drops straight down
       false,
@@ -159,6 +161,7 @@ export class Bowser extends Enemy {
       this.spriteOffsetY,
       true,
     );
+    corpse.facing = this.facing;
     world.spawn(corpse);
     world.audio.sfx('bowser-fall');
     this.destroy();
