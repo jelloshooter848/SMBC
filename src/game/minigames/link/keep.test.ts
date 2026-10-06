@@ -11,6 +11,9 @@ import type { Scene } from '@engine/scene';
 import type { Announcer } from '@engine/a11y/announcer';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
+import type { MenuItem } from '@game/scenes/menu';
+import { AssistOptionsScene } from '@game/scenes/options';
+import { defaultSettings } from '@engine/save/settings';
 import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
 import { CHARACTERS } from '@game/characters/registry';
 import { TopDownBot } from '@game/topdown/bot';
@@ -252,7 +255,8 @@ describe('Shadow Keep: rewards', () => {
   });
 });
 
-describe('Shadow Keep: a full run', () => {
+// Full bot runs take a few seconds each (eleven rooms, two of them twice).
+describe('Shadow Keep: a full run', { timeout: 30_000 }, () => {
   it('the bot escapes the keep: every room, then pass once the spell breaks', () => {
     const h = setup({ keep: true });
     const rooms: string[] = [];
@@ -360,7 +364,7 @@ describe('Shadow Keep: the keeper', () => {
   });
 });
 
-describe('Shadow Keep: outcomes', () => {
+describe('Shadow Keep: outcomes', { timeout: 30_000 }, () => {
   it('losing every heart fails, after the death spin, once', () => {
     const h = setup({ keep: true });
     h.step([], 5);
@@ -394,6 +398,23 @@ describe('Shadow Keep: outcomes', () => {
     h.tap('jump'); // Give up
     expect(h.results).toEqual(['quit']);
     expect(h.game.scenes.top).toBe(h.below);
+  });
+
+  it('in dev mode the menu offers the assists too (not without dev mode)', () => {
+    const labels = (dev: boolean) => {
+      const h = setup();
+      h.game.deps.settings = { ...defaultSettings(), dev };
+      h.step([], 5);
+      h.tap('start');
+      const menu = h.game.scenes.top as KeepMenuScene;
+      expect(menu).toBeInstanceOf(KeepMenuScene);
+      return { h, items: (menu as unknown as { items: MenuItem[] }).items };
+    };
+    expect(labels(false).items.map((i) => i.label)).toEqual(['Continue', 'Give up']);
+    const { h, items } = labels(true);
+    expect(items.map((i) => i.label)).toEqual(['Continue', 'Give up', 'Assists']);
+    items[2]?.select?.();
+    expect(h.game.scenes.top).toBeInstanceOf(AssistOptionsScene);
   });
 
   it.each(['pass', 'fail', 'quit'] as const)(

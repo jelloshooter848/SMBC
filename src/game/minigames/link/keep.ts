@@ -6,7 +6,7 @@ import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_W } from '@engine/viewport';
 import { abilityHint } from '../../scenes/hints';
 import type { Game } from '../../scenes/game';
-import { MenuScene } from '../../scenes/menu';
+import { MiniGameMenuScene } from '../menu';
 import { NO_TOUCH_BUTTONS } from '../../touch-labels';
 import type { MiniGameResult } from '../types';
 import { TopDownWorld, type TdEvent } from '../../topdown/world';
@@ -294,35 +294,17 @@ export function drawBanner(r: Renderer, font: SpriteSheet, lines: readonly strin
   lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + i * 12));
 }
 
-/** The keep's own menu: Continue, or Give up (ends the round as 'quit'). Pauses the music. */
-export class KeepMenuScene extends MenuScene {
+/**
+ * The keep's own menu: Continue, or Give up (ends the round as 'quit'), and in dev mode the
+ * assists (No damage keeps Link's hearts). Pauses the music.
+ */
+export class KeepMenuScene extends MiniGameMenuScene {
   constructor(game: Game, giveUp: () => void) {
     super(
       game,
       'SHADOW KEEP',
-      [
-        { label: 'Continue', select: () => game.scenes.pop() },
-        {
-          label: 'Give up',
-          select: () => {
-            game.scenes.pop();
-            giveUp();
-          },
-          hint: 'Link stays under the spell for now; you can try the keep again later',
-        },
-      ],
-      () => game.scenes.pop(),
-      true,
+      giveUp,
+      'Link stays under the spell for now; you can try the keep again later',
     );
-  }
-
-  override enter(): void {
-    this.game.ctx.audio.sfx('pause');
-    this.game.ctx.audio.pause();
-    super.enter();
-  }
-
-  exit(): void {
-    this.game.ctx.audio.resume();
   }
 }
