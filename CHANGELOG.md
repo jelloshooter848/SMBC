@@ -10,11 +10,35 @@ under `## [Unreleased]`.
 
 ### Added
 
+- **Warp Zone**: in the campaign, the 1-2 warp zone has a single pipe; taking it clears 1-2 and
+  draws a new road on the World 1 map to a warp spot that leads to the Warp Zone hub. The hub
+  links to the Lost Levels (unlocked by beating 8-4; a locked pad shows how to open it) and has
+  three mystery pads reserved for future secrets.
+- **The Lost Levels campaign**: 13 world maps (1-8, 9, A-D) with their own layouts, entered from
+  the hub. Levels open in order like SMB; World A opens after beating Lost 8-4, World 9 after
+  clearing every Lost level from 1-1 to 8-4 (the castle shows the count). Their warp zones work as
+  on the NES. The 8-4, 9-4 and D-4 endings return to the map.
+- Warp pads on the map show a hint line while you stand on them; the Worlds menu lists the Warp
+  Zone and Lost Levels pages and starts on the current page.
 - After a death in a campaign level, the character select offers **Return to map**.
+
+### Changed
+
+- Save files move to format 2 (map pages by name); older files convert automatically and keep
+  all their progress. SMB 4-2's warp zones still skip worlds.
 
 ### Fixed
 
-- Touch d-pad: down engages as easily as the other directions (only the down-diagonals still need a firmer push, so running doesn't crouch).
+- Touch d-pad: down engages as easily as the other directions (only the down-diagonals still need
+  a firmer push, so running doesn't crouch).
+- Lakitu kept throwing only four Spinies, and flying Bullet Bills stopped for good after scrolling
+  (enemies that scrolled away were never marked gone).
+- Hammer Bros keep pacing after touching a wall; swimming Cheep Cheeps change on every visit;
+  balance lifts are centred on their spot as in the original; a stomped Blooper on land drops
+  straight down.
+- Remapping a key no longer fires its new action, and Esc cancels a capture; long key names show
+  in full or as a clear short form; menu hints stay inside the panel over the map and levels;
+  percentages show a % sign.
 
 ## [0.3.0] - 2026-10-06
 
