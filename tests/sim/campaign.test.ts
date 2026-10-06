@@ -229,10 +229,20 @@ describe('campaign: clears return to the map', () => {
     h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
     enter(h, '1-2');
     play(h, '1-2');
+    h.game.state.checkpoint = { level: '1-2', x: 97 };
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
-    // Play goes on into the target level as before.
-    expect(h.top()).toBeInstanceOf(LevelScene);
+    // Owner decision (2026-10-05): the warp ends the level on the map, which slides over to
+    // World 4 and draws it in; 4-1 is picked there (character select, then the WORLD card).
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().page.world).toBe(4);
+    expect(h.map().mode).toBe('slide');
+    expect(h.game.state.checkpoint).toBeNull();
+    h.until(() => h.map().mode === 'reveal');
+    h.until(() => h.map().mode === 'idle', 600);
+    expect(h.map().node).toBe('start');
+    enter(h, '4-1');
     expect(h.level().level.id).toBe('4-1');
+    expect([h.game.state.world, h.game.state.stage]).toEqual([4, 1]);
     expect(h.game.mapProgress.worlds).toEqual([1, 4]);
     expect(loadSave(1)?.worlds).toEqual([1, 4]);
     expect(isOpen(h.game.mapProgress, page(4), '4-1')).toBe(true);
@@ -256,6 +266,8 @@ describe('campaign: clears return to the map', () => {
     enter(h, '1-2');
     play(h, '1-2');
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
+    h.until(() => h.map().mode === 'idle', 600);
+    enter(h, '4-1');
     h.fire({ type: 'exit', next: '4-2-intro' });
     h.until(() => h.map().mode === 'idle');
     expect(h.map().page.world).toBe(4);
@@ -402,12 +414,10 @@ describe('campaign: other worlds draw in on arrival', () => {
     enter(h, '1-2');
     play(h, '1-2');
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
-    // Saved right away (closing the tab now keeps it).
+    // Saved right away (closing the tab now keeps it), while the map slides over to World 4.
+    expect(h.map().mode).toBe('slide');
     expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['4:start', '4:4-1']));
-    h.idle(4);
-    h.tap('start');
-    choose(h.top(), 'Quit to title');
-    expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['4:start', '4:4-1']));
+    expect(loadSave(1)?.position).toEqual({ world: 4, node: 'start' });
     const h2 = makeGame();
     h2.game.openFile(1);
     expect(h2.map().page.world).toBe(4);

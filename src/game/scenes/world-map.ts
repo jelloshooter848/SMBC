@@ -40,6 +40,8 @@ export interface WorldMapOptions {
    * one, then save; each page reveals only its own.
    */
   reveal?: string[];
+  /** Open by sliding over from this world's page (a campaign warp), then draw in. */
+  slideFrom?: number;
 }
 
 type Mode = 'reveal' | 'idle' | 'walk' | 'slide';
@@ -177,6 +179,14 @@ export class WorldMapScene implements Scene {
     this.announceHere();
     this.game.addReveal(this.opts.reveal ?? []);
     this.takeReveal();
+    const from = this.opts.slideFrom === undefined ? undefined : mapPage(this.opts.slideFrom);
+    if (from && from !== this.page) {
+      // A warp: slide in from the page warped from; the reveal follows (updateSlide).
+      this.slide = { from, dir: from.world < this.page.world ? 1 : -1, t: 0, node: this.node };
+      this.mode = 'slide';
+      if (!this.revealQueue.length) this.game.autosave();
+      return;
+    }
     if (this.revealQueue.length) this.mode = 'reveal';
     else this.game.autosave();
   }

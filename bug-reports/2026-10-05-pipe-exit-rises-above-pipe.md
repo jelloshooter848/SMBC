@@ -49,3 +49,5 @@ every time
 - Seen again (folded in by the ll-w6/w9/wB review, ours only): ll-10-1 column 147 (back from `ll-10-1-bonus`, `pipe 13 12 right -> ll-10-1 147 10 exit=up`) and `ll-10-2-exit` column 3 (ll-wA notes), and `ll-11-2-exit` column 3 (ll-wB notes). Both exit areas use `startMode: pipe-exit`.
 - Source: `ll-w7/2026-10-05-pipe-exit-rises-above-pipe.md`.
 - Reviewed: verified against `com/smbc/characters/Character.as` (lines 238, 908, 932-942, 1180-1205, 1227-1244) and ours at b8379f9: `src/game/world/world.ts` (spawn lines 166-195, `updatePipeExit` 1235-1248, `enterPipe`/`updatePipeAnim` 1199-1233) and `src/content/levels/lost/world7/ll-7-2.map` / `ll-7-2-bonus.map` (pipe link `pipe 13 12 right -> ll-7-2 147 10 exit=up`, pipe top at row 11).
+
+Status: fixed — a pipe exit starts one body height below the pipe top and each player stops with the feet on it (exitPipeVert / completePipeExit), rising at 25 px/s.

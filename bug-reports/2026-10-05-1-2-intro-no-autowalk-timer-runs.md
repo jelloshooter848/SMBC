@@ -52,3 +52,5 @@ every time (3 of 3 tries: twice through the 1-1 flagpole, once with `?level=1-2-
 - Both parts need fixing for the intro to behave like the original's cutscene; they are filed together because they are one scene.
 - Screenshot: not committed (the repo's `check:assets` bans image files) (Mario still at the castle door after about 6 s, TIME 386).
 - Reviewed: verified against `levelDataSmb.xml` (`<LEVEL ID="1-2">` area `a` `TYPE="intro"`), the original screenshots above (TIME blank in the intro, 396 shortly after the underground starts), and ours: `src/content/levels/world1/1-2-intro.map`, `src/game/scenes/level.ts`, `src/game/world/world.ts`.
+
+Status: fixed — intro areas always start in autowalk (a caller's `stand` no longer overrides it) and run with no clock, so the main area after the pipe starts at its own 400.
