@@ -45,7 +45,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 
 ```ts
 {
-  id: 'll-1', group: 'll', label: 'LOST 1', title: 'MUSHROOM PLAINS',
+  id: 'll-1', group: 'll', label: 'LOST 1', title: 'GREEN MEADOW',
   theme: 'grass', music: 'map',
   tiles: autoShore(SKETCH),   // 15 rows × 16 legend chars (render.ts); rows 0-1 plain sky '.'
   nodes, paths, exits, actors,
@@ -77,7 +77,7 @@ A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the fil
 ### Warp nodes
 
 ```ts
-{ id: 'lost', kind: 'warp', x: 8, y: 5,
+{ id: 'warp-lost', kind: 'warp', x: 13, y: 8,
   to: 'll-1',               // target page id (must be registered)
   toNode?: 'start',         // arrival node there (default: its start node)
   requires?: 'gameCleared', // MapCondition; absent = always works
@@ -124,8 +124,10 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9' }]
   castle clear (`rules.clearLevel`) opens the target page of every exit whose condition holds.
 - Exits only lead to pages of the same group.
 - Lost Levels pages unlock like SMB: levels open in order along the roads, a castle exit opens
-  the next page. World 9: exit `ll-8-4 → ll-9` with `requires: 'll9'`. Worlds A-D: an exit to
-  `ll-10` with `requires: 'llLetters'` (then `ll-10 → ll-11 → ll-12 → ll-13` plain).
+  the next page. World 9: exit `ll-8-4 → ll-9` with `requires: 'll9'`. Worlds A-D: the warp node
+  `warp-ll-10` on World 8, off the castle, with `requires: 'llLetters'` (A-D can open without
+  World 9); then castle exits `ll-10 → ll-11 → ll-12 → ll-13`. Every Lost Levels page has a warp
+  node `hub` back to the Warp Zone.
 - A condition can come true after its castle was cleared (World 9 after a warpless 8-4; A-D
   after the 8th game). `rules.openMetExits(progress)` opens those pages and returns the ids to
   draw in; `Game.showMap` calls it every time the map is shown, so nothing else is needed.
@@ -134,7 +136,7 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9' }]
 
 - `MapProgress`: `cleared` (main level ids), `pages` (open page ids, `smb-1` always),
   `secrets`, `position: { page, node }`, `gameCleared`.
-- Reveal ids are page-qualified: `'<page>:<id>'` (`'hub:start>lost'`, `'smb-1:1-4>smb-2'`); an
+- Reveal ids are page-qualified: `'<page>:<id>'` (`'hub:start>warp-lost'`, `'smb-1:1-4>smb-2'`); an
   exit's id is `'<from>><to page>'`. Each page draws in only its own when shown.
 - `rules.findSecret(progress, key)` records a secret and returns what it reveals;
   `rules.warpTo(progress, page)` opens a page (warp pipes, warp nodes).

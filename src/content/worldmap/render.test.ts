@@ -80,10 +80,14 @@ describe('map rendering', () => {
 
   it('draws every actor type on every page over a long stretch of frames', () => {
     const assets = registry();
+    const themes = new Set<string>();
     for (const page of MAP_PAGES) {
+      // Every actor type once per theme (22 pages made this slow), plus each page's own actors.
+      const fresh = !themes.has(page.theme);
+      themes.add(page.theme);
       const actors: MapActor[] = [
         ...page.actors,
-        ...MAP_ACTOR_TYPES.map((type): MapActor => ({ type, x: 100, y: 100, props: {} })),
+        ...(fresh ? MAP_ACTOR_TYPES : []).map((type): MapActor => ({ type, x: 100, y: 100, props: {} })),
       ];
       const r = new CheckingRenderer();
       for (let t = 0; t < 2000; t += 3) for (const a of actors) drawMapActor(r, assets, page, a, t);

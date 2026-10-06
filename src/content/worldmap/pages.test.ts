@@ -141,37 +141,6 @@ describe('world map pages', () => {
       }
     });
 
-    it('never lets two roads share or cross a tile, or run through another node', () => {
-      const owner = new Map<string, string>();
-      const nodes = new Map(page.nodes.map((n) => [key([n.x, n.y]), n.id]));
-      const roads = [
-        ...page.paths.map((p) => ({ name: `${p.from}->${p.to}`, ends: [p.from, p.to], pts: p.points })),
-        ...page.exits.map((e) => ({ name: `exit ${e.to}`, ends: [e.from], pts: e.points })),
-      ];
-      for (const r of roads)
-        for (const pt of r.pts) {
-          const k = key(pt);
-          const node = nodes.get(k);
-          if (node) {
-            expect(r.ends, `${r.name} runs through node ${node}`).toContain(node);
-            continue;
-          }
-          expect(owner.get(k), `${r.name} shares ${k}`).toBeUndefined();
-          owner.set(k, r.name);
-        }
-    });
-
-    it('offers each direction at most once at every node', () => {
-      const steps = new Map<string, string[]>();
-      const add = (id: string, d: string) => steps.set(id, [...(steps.get(id) ?? []), d]);
-      for (const p of page.paths) {
-        add(p.from, dir(p.points[0] as Pt, p.points[1] as Pt));
-        add(p.to, dir(p.points.at(-1) as Pt, p.points.at(-2) as Pt));
-      }
-      for (const e of page.exits) add(e.from, dir(e.points[0] as Pt, e.points[1] as Pt));
-      for (const [id, ds] of steps) expect(new Set(ds).size, `${id}: ${ds.join(' ')}`).toBe(ds.length);
-    });
-
     it(w < 8 ? 'leaves from the castle off the right edge to the next world' : 'ends at the castle', () => {
       if (w === 8) {
         expect(page.exits).toEqual([]);
@@ -189,45 +158,6 @@ describe('world map pages', () => {
       if (e.side === 'right') expect(last[0]).toBe(15);
       if (e.side === 'left') expect(last[0]).toBe(0);
       if (e.side === 'top') expect(last[1]).toBe(HEADER_ROWS);
-    });
-
-    it('has 6-15 known actors inside the page', () => {
-      expect(page.actors.length).toBeGreaterThanOrEqual(6);
-      expect(page.actors.length).toBeLessThanOrEqual(15);
-      for (const a of page.actors) {
-        expect(MAP_ACTOR_TYPES).toContain(a.type);
-        expect(a.x >= 0 && a.x <= 240 && a.y >= 0 && a.y <= 224, `${a.type} at ${a.x},${a.y}`).toBe(true);
-        expect(a.props, 'actors carry a props object').toBeDefined();
-      }
-    });
-
-    it('keeps rows 0-1, under the header, as plain sky', () => {
-      expect(page.tiles[0]).toBe('.'.repeat(16));
-      expect(page.tiles[1]).toBe('.'.repeat(16));
-    });
-
-    it('keeps every actor, wherever it moves, off roads, exits and nodes', () => {
-      const busy = new Set<string>();
-      for (const n of page.nodes) busy.add(key([n.x, n.y]));
-      for (const p of [...page.paths, ...page.exits]) for (const pt of p.points) busy.add(key(pt));
-      for (const a of page.actors) {
-        const [x0, y0, x1, y1] = mapActorBounds(a);
-        for (let ty = Math.floor(y0 / 16); ty <= Math.floor((y1 - 1) / 16); ty++)
-          for (let tx = Math.floor(x0 / 16); tx <= Math.floor((x1 - 1) / 16); tx++)
-            expect(busy.has(key([tx, ty])), `${a.type} at ${a.x},${a.y} covers road tile ${tx},${ty}`).toBe(
-              false,
-            );
-      }
-    });
-
-    it('drifts clouds only in the sky band or over open water', () => {
-      const open = new Set(['.', '~', 'L', '|', '{', '-', '}', 's', 'x', 'D', 'k']);
-      for (const a of page.actors.filter((b) => b.type === 'cloud')) {
-        if (a.y + 24 <= 48) continue; // the sky band just under the header
-        for (let ty = Math.floor(a.y / 16); ty <= Math.floor((a.y + 23) / 16); ty++)
-          for (const ch of page.tiles[ty] ?? '')
-            expect(open.has(ch), `cloud at y ${a.y} over '${ch}'`).toBe(true);
-      }
     });
   });
 });
@@ -276,16 +206,36 @@ describe('page registry', () => {
       expect(page.tiles[0]).toBe('.'.repeat(16));
       expect(page.tiles[1]).toBe('.'.repeat(16));
       expect(songs.map((s) => s.id)).toContain(page.music);
+      expect(page.title).toMatch(/^[A-Z' ]+$/);
     });
 
     it('has one start and its nodes on walkable tiles, above the hint line (row 13 at most)', () => {
       expect(page.nodes.filter((n) => n.kind === 'start')).toHaveLength(1);
       const ids = page.nodes.map((n) => n.id);
       expect(new Set(ids).size).toBe(ids.length);
+      const spots = page.nodes.map((n) => key([n.x, n.y]));
+      expect(new Set(spots).size, 'one node per tile').toBe(spots.length);
       for (const n of page.nodes) {
         expectWalk(page, [[n.x, n.y]], `node ${n.id}`);
         expect(n.y, `node ${n.id}`).toBeLessThanOrEqual(13);
       }
+    });
+
+    it('reaches every node from the start along contiguous walkable paths', () => {
+      const seen = new Set(['start']);
+      for (let grew = true; grew;) {
+        grew = false;
+        for (const p of page.paths)
+          for (const [a, b] of [
+            [p.from, p.to],
+            [p.to, p.from],
+          ] as const)
+            if (seen.has(a) && !seen.has(b)) {
+              seen.add(b);
+              grew = true;
+            }
+      }
+      expect([...seen].sort()).toEqual(page.nodes.map((n) => n.id).sort());
       for (const p of page.paths) {
         const a = nodeAt(page, p.from);
         const b = nodeAt(page, p.to);
@@ -308,7 +258,77 @@ describe('page registry', () => {
         for (const t of [n.hint, n.label]) if (t) expect(t.length).toBeLessThanOrEqual(32);
         expect(n.level).toBeUndefined();
       }
-      for (const e of page.exits) expect(mapPage(e.to)?.group).toBe(page.group);
+      for (const e of page.exits) {
+        expect(mapPage(e.to)?.group).toBe(page.group);
+        const c = nodeAt(page, e.from);
+        expect(e.points[0], `exit ${e.to} leaves from its node`).toEqual([c.x, c.y]);
+        expectWalk(page, e.points, `exit ${e.to}`);
+      }
+    });
+
+    it('never lets two roads share or cross a tile, or run through another node', () => {
+      const owner = new Map<string, string>();
+      const nodes = new Map(page.nodes.map((n) => [key([n.x, n.y]), n.id]));
+      const roads = [
+        ...page.paths.map((p) => ({ name: `${p.from}->${p.to}`, ends: [p.from, p.to], pts: p.points })),
+        ...page.exits.map((e) => ({ name: `exit ${e.to}`, ends: [e.from], pts: e.points })),
+      ];
+      for (const r of roads)
+        for (const pt of r.pts) {
+          const k = key(pt);
+          const node = nodes.get(k);
+          if (node) {
+            expect(r.ends, `${r.name} runs through node ${node}`).toContain(node);
+            continue;
+          }
+          expect(owner.get(k), `${r.name} shares ${k}`).toBeUndefined();
+          owner.set(k, r.name);
+        }
+    });
+
+    it('offers each direction at most once at every node', () => {
+      const steps = new Map<string, string[]>();
+      const add = (id: string, d: string) => steps.set(id, [...(steps.get(id) ?? []), d]);
+      for (const p of page.paths) {
+        add(p.from, dir(p.points[0] as Pt, p.points[1] as Pt));
+        add(p.to, dir(p.points.at(-1) as Pt, p.points.at(-2) as Pt));
+      }
+      for (const e of page.exits) add(e.from, dir(e.points[0] as Pt, e.points[1] as Pt));
+      for (const [id, ds] of steps) expect(new Set(ds).size, `${id}: ${ds.join(' ')}`).toBe(ds.length);
+    });
+
+    it('has 6-15 known actors inside the page', () => {
+      expect(page.actors.length).toBeGreaterThanOrEqual(6);
+      expect(page.actors.length).toBeLessThanOrEqual(15);
+      for (const a of page.actors) {
+        expect(MAP_ACTOR_TYPES).toContain(a.type);
+        expect(a.x >= 0 && a.x <= 240 && a.y >= 0 && a.y <= 224, `${a.type} at ${a.x},${a.y}`).toBe(true);
+        expect(a.props, 'actors carry a props object').toBeDefined();
+      }
+    });
+
+    it('keeps every actor, wherever it moves, off roads, exits and nodes', () => {
+      const busy = new Set<string>();
+      for (const n of page.nodes) busy.add(key([n.x, n.y]));
+      for (const p of [...page.paths, ...page.exits]) for (const pt of p.points) busy.add(key(pt));
+      for (const a of page.actors) {
+        const [x0, y0, x1, y1] = mapActorBounds(a);
+        for (let ty = Math.floor(y0 / 16); ty <= Math.floor((y1 - 1) / 16); ty++)
+          for (let tx = Math.floor(x0 / 16); tx <= Math.floor((x1 - 1) / 16); tx++)
+            expect(busy.has(key([tx, ty])), `${a.type} at ${a.x},${a.y} covers road tile ${tx},${ty}`).toBe(
+              false,
+            );
+      }
+    });
+
+    it('drifts clouds only in the sky band or over open water', () => {
+      const open = new Set(['.', '~', 'L', '|', '{', '-', '}', 's', 'x', 'D', 'k']);
+      for (const a of page.actors.filter((b) => b.type === 'cloud')) {
+        if (a.y + 24 <= 48) continue; // the sky band just under the header
+        for (let ty = Math.floor(a.y / 16); ty <= Math.floor((a.y + 23) / 16); ty++)
+          for (const ch of page.tiles[ty] ?? '')
+            expect(open.has(ch), `cloud at y ${a.y} over '${ch}'`).toBe(true);
+      }
     });
   });
 });
