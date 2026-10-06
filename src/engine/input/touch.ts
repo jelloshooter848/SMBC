@@ -12,11 +12,13 @@ import {
   FLOAT_ZONE_FRACTION,
   NO_DIRS,
   dpadDirs,
+  clampCentre,
   followCentre,
   hitButton,
   readTouchFacts,
   SMALL_BUTTON,
   buttonShape,
+  BUTTON_PLACES,
   touchPadVisible,
   type ButtonTarget,
   type DpadDirs,
@@ -116,12 +118,15 @@ export class TouchSource implements InputSource {
         .touch-controls .btn.a { border-color: rgba(255,150,150,0.6); }
         .touch-controls .btn.b { border-color: rgba(150,190,255,0.6); }
         .touch-controls .btn.c { border-color: rgba(170,255,170,0.6); }
-        .touch-controls .jump { right: calc(24px * var(--ts)); bottom: calc(40px * var(--ts)); }
-        .touch-controls .attack { right: calc(104px * var(--ts)); bottom: calc(24px * var(--ts)); }
-        .touch-controls .special { right: calc(60px * var(--ts)); bottom: calc(114px * var(--ts)); }
-        .touch-controls .start, .touch-controls .select { top: calc(10px * var(--ts)); width: calc(${SMALL_BUTTON.w}px * var(--ts)); height: calc(${SMALL_BUTTON.h}px * var(--ts)); border-radius: calc(${SMALL_BUTTON.h / 2}px * var(--ts)); font-size: calc(${SMALL_BUTTON.font}px * var(--ts) * var(--fs, 1)); }
-        .touch-controls .start { right: calc(16px * var(--ts)); }
-        .touch-controls .select { right: calc(92px * var(--ts)); }
+        ${Object.entries(BUTTON_PLACES)
+          .map(
+            ([a, p]) =>
+              `.touch-controls .${a} { ${Object.entries(p)
+                .map(([k, v]) => `${k}: calc(${v}px * var(--ts));`)
+                .join(' ')} }`,
+          )
+          .join('\n        ')}
+        .touch-controls .start, .touch-controls .select { width: calc(${SMALL_BUTTON.w}px * var(--ts)); height: calc(${SMALL_BUTTON.h}px * var(--ts)); border-radius: calc(${SMALL_BUTTON.h / 2}px * var(--ts)); font-size: calc(${SMALL_BUTTON.font}px * var(--ts) * var(--fs, 1)); }
       </style>
       <div class="tc zone" data-zone></div>
       <div class="tc dpad-hit" data-dpad>
@@ -202,6 +207,11 @@ export class TouchSource implements InputSource {
     return this.visible;
   }
 
+  /** The kind of input used last (a touch, or a key / gamepad button), null before any. */
+  get lastInput(): LastInput {
+    return this.last;
+  }
+
   private refresh(): void {
     const on = touchPadVisible(this.mode, readTouchFacts(), this.last);
     if (on !== this.visible) this.show(on);
@@ -241,13 +251,13 @@ export class TouchSource implements InputSource {
       // One thumb drives the pad; a new touch on it takes over.
       for (const [id, p] of this.pointers) if (p.kind === 'dpad') this.pointers.delete(id);
       const rest = this.restCentre();
-      const floating = this.style === 'floating';
-      this.pointers.set(e.pointerId, {
-        kind: 'dpad',
-        cx: floating ? e.clientX : rest.x,
-        cy: floating ? e.clientY : rest.y,
-        radius: rest.radius,
-      });
+      // The floating stick centres under the thumb, but never so near an edge that a push
+      // towards that edge (down at the bottom, left at the left) has no room.
+      const c =
+        this.style === 'floating'
+          ? clampCentre(e.clientX, e.clientY, rest.radius, innerWidth, innerHeight)
+          : { cx: rest.x, cy: rest.y };
+      this.pointers.set(e.pointerId, { kind: 'dpad', cx: c.cx, cy: c.cy, radius: rest.radius });
       this.moveDpad(e.clientX, e.clientY);
     } else return;
     this.update();
@@ -283,7 +293,8 @@ export class TouchSource implements InputSource {
     const p = [...this.pointers.values()].find((q) => q.kind === 'dpad');
     if (!p || p.kind !== 'dpad') return;
     if (this.style === 'floating') {
-      const c = followCentre(p.cx, p.cy, x, y, p.radius);
+      const f = followCentre(p.cx, p.cy, x, y, p.radius);
+      const c = clampCentre(f.cx, f.cy, p.radius, innerWidth, innerHeight);
       p.cx = c.cx;
       p.cy = c.cy;
       const rest = this.restCentre();
@@ -363,7 +374,11 @@ function canvasMeasure(): MeasureEm | undefined {
 /** A short tick on direction changes where the browser supports it (not iOS Safari). */
 function buzz(): void {
   try {
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(8);
+    if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    // Before the first user gesture Chrome refuses (and logs "Blocked call to navigator.vibrate").
+    const activation = (navigator as { userActivation?: { hasBeenActive: boolean } }).userActivation;
+    if (activation && !activation.hasBeenActive) return;
+    navigator.vibrate(8);
   } catch {
     // Some browsers throw when vibration is blocked (no user activation yet); it is only a nicety.
   }

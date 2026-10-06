@@ -5,7 +5,8 @@ import { describeCode } from '@engine/input/bindings';
 import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
 import { exportTemplate, importPackFiles } from '@engine/assets/pack-loader';
-import type { Settings } from '@engine/save/settings';
+import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type Settings } from '@engine/save/settings';
+import { nextTouchMode } from '@engine/input/touch-logic';
 import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import { GuideIndexScene } from './guide';
@@ -143,8 +144,8 @@ class ControlsOptions extends MenuScene {
       label: 'Touch pad',
       value: () => s.input.touch,
       adjust: (d) => {
-        const modes = ['auto', 'on', 'off'] as const;
-        s.input.touch = modes[(modes.indexOf(s.input.touch) + d + 3) % 3] as typeof s.input.touch;
+        // On touch, Off is skipped: it would hide the pad with no touch way back.
+        s.input.touch = nextTouchMode(s.input.touch, d, game.deps.lastInput?.() ?? null);
         apply(game);
       },
     });
@@ -157,7 +158,9 @@ class ControlsOptions extends MenuScene {
     items.push({
       label: 'Touch size',
       value: () => pct(s.input.touchScale),
-      adjust: (d) => void ((s.input.touchScale = step(s.input.touchScale, d, 0.6, 1.6, 0.1)), apply(game)),
+      adjust: (d) =>
+        void ((s.input.touchScale = step(s.input.touchScale, d, TOUCH_SCALE_MIN, TOUCH_SCALE_MAX, 0.1)),
+        apply(game)),
     });
     for (const a of Actions) {
       items.push({

@@ -5,7 +5,8 @@ import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
 import type { TouchLabels } from '@engine/input/touch';
-import { TOUCH_MODES, type TouchMode } from '@engine/save/settings';
+import type { TouchMode } from '@engine/save/settings';
+import { nextTouchMode } from '@engine/input/touch-logic';
 
 const TOUCH_MODE_LABELS: Record<TouchMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
@@ -41,12 +42,12 @@ export class PauseScene extends MenuScene {
         },
       });
     }
-    // The on-screen pad can be forced on or off right here (saved and applied at once).
+    // The on-screen pad can be forced on or off right here (saved and applied at once). On touch
+    // the row skips Off, which would leave no touch control to turn it back on.
     const s = game.deps.settings;
     if (s?.input) {
       const cycle = (d: -1 | 1) => {
-        const i = TOUCH_MODES.indexOf(s.input.touch);
-        s.input.touch = TOUCH_MODES[(i + d + TOUCH_MODES.length) % TOUCH_MODES.length] as TouchMode;
+        s.input.touch = nextTouchMode(s.input.touch, d, game.deps.lastInput?.() ?? null);
         game.deps.applySettings?.();
         this.announce();
       };

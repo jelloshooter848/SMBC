@@ -143,12 +143,12 @@ function cast(p: Player, world: World): void {
 }
 
 /**
- * Touch captions for the belt (C shows the selected one), sized to read on the round button
- * (fitLabel): SHURIKEN is too wide, so STAR (the guide's throwing star); WIND-MILL wraps in two.
+ * Touch captions for the belt (C shows the selected one), sized by fitLabel: SHURIKEN and
+ * WINDMILL are long single words, so they shrink (down to LABEL_LONG_WORD_MIN_PX).
  */
 export const RYU_TOOL_LABELS: Record<string, string> = {
-  'throwing-star': 'STAR',
-  windmill: 'WIND-MILL',
+  'throwing-star': 'SHURIKEN',
+  windmill: 'WINDMILL',
   'fire-wheel': 'WHEEL',
   slash: 'SPIN',
 };

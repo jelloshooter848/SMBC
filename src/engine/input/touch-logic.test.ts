@@ -8,13 +8,18 @@ import {
   DPAD_RUN_R,
   DPAD_UP_MIN_DEG,
   FACE_BUTTON,
+  LABEL_LONG_WORD_MIN_PX,
   LABEL_MIN_PX,
   LABEL_WRAP_SCALE,
   SMALL_BUTTON,
   buttonShape,
+  BUTTON_PLACES,
   dpadDirs,
   fitLabel,
   followCentre,
+  clampCentre,
+  FLOAT_EDGE_R,
+  nextTouchMode,
   hitButton,
   readTouchFacts,
   touchPadVisible,
@@ -22,6 +27,7 @@ import {
   type LabelTarget,
 } from './touch-logic';
 import type { Action } from './actions';
+import type { TouchMode } from '../save/settings';
 
 const R = 75;
 /** Thumb at `deg` (0 = right, 90 = up, counter-clockwise like a maths diagram) and `r` × radius. */
@@ -91,6 +97,48 @@ describe('floating stick', () => {
     expect(300 - c.cx).toBeCloseTo(DPAD_FOLLOW_R * 50);
     // After following, the thumb is still past the run ring.
     expect(dpadDirs(300 - c.cx, 0, 50).run).toBe(true);
+  });
+
+  it('keeps its centre 0.8 × radius from every screen edge', () => {
+    const [w, h] = [844, 390];
+    expect(clampCentre(300, 200, R, w, h)).toEqual({ cx: 300, cy: 200 });
+    expect(clampCentre(6, 378, R, w, h)).toEqual({ cx: FLOAT_EDGE_R * R, cy: h - FLOAT_EDGE_R * R });
+    expect(clampCentre(840, 2, R, w, h)).toEqual({ cx: w - FLOAT_EDGE_R * R, cy: FLOAT_EDGE_R * R });
+  });
+
+  it('a touch 12 px from the bottom can still press down; 6 px from the left can go and run left', () => {
+    const [w, h] = [844, 390];
+    const low = clampCentre(200, h - 12, R, w, h);
+    expect(held(dpadDirs(0, h - 12 - low.cy, R))).toBe('down'); // no slide needed
+    expect(held(dpadDirs(0, h - 1 - low.cy, R))).toBe('down');
+    const side = clampCentre(6, 200, R, w, h);
+    expect(held(dpadDirs(6 - side.cx, 0, R))).toBe('left');
+    expect(held(dpadDirs(0 - side.cx, 0, R))).toBe('left+run'); // thumb at the very edge
+    // Without the clamp the centre would sit under the thumb and neither could happen.
+    expect(held(dpadDirs(0, 11, R))).toBe('none');
+  });
+});
+
+describe('nextTouchMode (pause and Options rows)', () => {
+  it('cycles Auto → On → Off with a keyboard or gamepad', () => {
+    for (const last of ['keys', null] as const) {
+      expect(nextTouchMode('auto', 1, last)).toBe('on');
+      expect(nextTouchMode('on', 1, last)).toBe('off');
+      expect(nextTouchMode('off', 1, last)).toBe('auto');
+      expect(nextTouchMode('auto', -1, last)).toBe('off');
+    }
+  });
+
+  it('on touch only Auto ↔ On: pressing OK repeatedly never reaches Off', () => {
+    let m: TouchMode = 'auto';
+    for (let i = 0; i < 6; i++) {
+      m = nextTouchMode(m, i % 2 ? -1 : 1, 'touch');
+      expect(m).not.toBe('off');
+    }
+    expect(nextTouchMode('auto', 1, 'touch')).toBe('on');
+    expect(nextTouchMode('on', 1, 'touch')).toBe('auto');
+    expect(nextTouchMode('auto', -1, 'touch')).toBe('on');
+    expect(nextTouchMode('off', 1, 'touch')).toBe('auto');
   });
 });
 
@@ -164,12 +212,26 @@ describe('labels', () => {
     expect(fitLabel('M-GUN', FACE_BUTTON).wrap).toBe(false);
   });
 
-  it('a word too long for the floor is flagged and drawn at the floor', () => {
-    for (const l of ['BOOMERANG', 'SHURIKEN', 'WINDMILL', 'SUPERCALIFRAGILISTIC']) {
+  it('a long single word may shrink below the floor, to about 8 px, rather than be abbreviated', () => {
+    for (const l of ['BOOMERANG', 'SHURIKEN', 'WINDMILL']) {
       const f = fitLabel(l, FACE_BUTTON);
-      expect(f.fits, l).toBe(false);
-      expect(f.scale * FACE_BUTTON.font).toBeCloseTo(LABEL_MIN_PX);
+      expect(f.fits, l).toBe(true);
+      expect(px(l)).toBeLessThan(LABEL_MIN_PX);
+      expect(px(l)).toBeGreaterThanOrEqual(LABEL_LONG_WORD_MIN_PX);
     }
+    expect(px('BOOMERANG')).toBeLessThan(9);
+    // Too long even for that: flagged, and drawn at the long-word floor.
+    const f = fitLabel('SUPERCALIFRAGILISTIC', FACE_BUTTON);
+    expect(f.fits).toBe(false);
+    expect(f.scale * FACE_BUTTON.font).toBeCloseTo(LABEL_LONG_WORD_MIN_PX);
+  });
+
+  it('labels that can wrap, or are short, keep the 11 px floor', () => {
+    // Two-word labels wrap instead of shrinking; a wide pair still never goes below 11 px.
+    const f = fitLabel('WWWWWW WWWWWW', FACE_BUTTON);
+    expect(f.fits).toBe(false);
+    expect(f.scale * FACE_BUTTON.font).toBeCloseTo(LABEL_MIN_PX);
+    expect(px('KNUCKLE')).toBeGreaterThanOrEqual(LABEL_MIN_PX);
   });
 
   it('measures with the font it is given (a narrower font fits bigger)', () => {
@@ -243,5 +305,63 @@ describe('labels', () => {
     const writes = els.jump.writes + els.attack.writes + els.start.writes;
     for (let i = 0; i < 10; i++) labeler.apply({ jump: 'JUMP' });
     expect(els.jump.writes + els.attack.writes + els.start.writes).toBe(writes);
+  });
+});
+
+describe('button layout', () => {
+  /** A button as a capsule in viewport px: a horizontal segment x0..x1 at y, of radius r. */
+  function capsule(a: keyof typeof BUTTON_PLACES, ts: number, vw: number, vh: number) {
+    const p = BUTTON_PLACES[a];
+    const s = buttonShape(a);
+    const w = s.w * ts;
+    const h = s.h * ts;
+    const left = vw - p.right * ts - w;
+    const top = 'top' in p ? p.top * ts : vh - p.bottom * ts - h;
+    const r = Math.min(w, h) / 2;
+    return { x0: left + r, x1: left + w - r, y: top + h / 2, r, left, top, w, h };
+  }
+  /** Gap between two capsules (negative when they overlap). */
+  function gap(a: ReturnType<typeof capsule>, b: ReturnType<typeof capsule>): number {
+    const dx = Math.max(0, a.x0 - b.x1, b.x0 - a.x1);
+    return Math.hypot(dx, a.y - b.y) - a.r - b.r;
+  }
+  const sizes = Array.from({ length: 11 }, (_, i) => 0.6 + i / 10);
+  const screens = [
+    [844, 390],
+    [390, 844],
+  ] as const;
+
+  it('Select sits beside C, clear of A, B, C and Start, at every size on landscape and portrait', () => {
+    for (const ts of sizes)
+      for (const [vw, vh] of screens) {
+        const at = (a: keyof typeof BUTTON_PLACES) => capsule(a, ts, vw, vh);
+        const sel = at('select');
+        for (const other of ['jump', 'attack', 'special', 'start'] as const)
+          expect(gap(sel, at(other)), `select/${other} at ${ts} on ${vw}x${vh}`).toBeGreaterThan(8 * ts);
+        // Nearer C than anything else in the cluster: swap next to use.
+        expect(gap(sel, at('special'))).toBeLessThan(gap(sel, at('jump')));
+        expect(gap(sel, at('special'))).toBeLessThan(gap(sel, at('attack')));
+        expect(gap(sel, at('special'))).toBeLessThan(24 * ts);
+        // Up and to the left of C (away from A, which is low on the right).
+        expect(sel.y).toBeLessThan(at('special').y);
+        expect(sel.x1).toBeLessThan(at('special').x1);
+      }
+  });
+
+  it('A, B and C never overlap, and every button stays on screen', () => {
+    for (const ts of sizes)
+      for (const [vw, vh] of screens) {
+        const at = (a: keyof typeof BUTTON_PLACES) => capsule(a, ts, vw, vh);
+        expect(gap(at('jump'), at('attack'))).toBeGreaterThan(0);
+        expect(gap(at('jump'), at('special'))).toBeGreaterThan(0);
+        expect(gap(at('attack'), at('special'))).toBeGreaterThan(0);
+        for (const a of Object.keys(BUTTON_PLACES) as (keyof typeof BUTTON_PLACES)[]) {
+          const c = at(a);
+          expect(c.left, a).toBeGreaterThanOrEqual(0);
+          expect(c.top, a).toBeGreaterThanOrEqual(0);
+          expect(c.left + c.w, a).toBeLessThanOrEqual(vw);
+          expect(c.top + c.h, a).toBeLessThanOrEqual(vh);
+        }
+      }
   });
 });

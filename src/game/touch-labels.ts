@@ -57,7 +57,7 @@ export function beltButton(tools: readonly ToolInfo[], label: string): string | 
  * (no jumps or attacks there), out of the game, or unable to jump (morph ball). In water A swims.
  */
 export function levelTouchLabels(p: Player | undefined, world: World): TouchLabels {
-  const out: TouchLabels = { jump: 'JUMP', attack: null, special: null, start: 'PAUSE', select: null };
+  const out: TouchLabels = { jump: 'JUMP', attack: null, special: null, start: 'MENU', select: null };
   if (!p) return out;
   const def = p.def;
   const tools = def.tools?.(p) ?? [];

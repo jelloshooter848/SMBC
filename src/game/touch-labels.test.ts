@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { TouchLabels } from '@engine/input/touch';
 import type { Action } from '@engine/input/actions';
-import { LABEL_MIN_PX, buttonShape, fitLabel } from '@engine/input/touch-logic';
+import {
+  FACE_BUTTON,
+  LABEL_LONG_WORD_MIN_PX,
+  LABEL_MIN_PX,
+  buttonShape,
+  fitLabel,
+} from '@engine/input/touch-logic';
+import { TOUCH_SCALE_MIN } from '@engine/save/settings';
 import { Player } from './entities/player';
 import type { World } from './world/world';
 import type { CharacterDef } from './characters/character';
@@ -48,57 +55,57 @@ const RYU_ALL = { arts: 4, ninpo: 40 };
 
 // [hero, state, setup, "A B C START SELECT"]
 const TABLE: [CharacterDef, string, Setup, string][] = [
-  [MARIO, 'small', {}, 'JUMP RUN - PAUSE -'],
-  [MARIO, 'big', { power: 'big' }, 'JUMP RUN - PAUSE -'],
-  [MARIO, 'fire', { power: 'fire' }, 'JUMP FIRE - PAUSE -'],
-  [MARIO, 'small, swimming (no running in water)', { water: true }, 'SWIM - - PAUSE -'],
-  [MARIO, 'fire, swimming', { power: 'fire', water: true }, 'SWIM FIRE - PAUSE -'],
-  [MARIO, 'on a vine', { power: 'fire', vine: true }, '- - - PAUSE -'],
-  [MARIO, 'dead', { dead: true }, '- - - PAUSE -'],
-  [LUIGI, 'small', {}, 'JUMP RUN - PAUSE -'],
-  [LUIGI, 'fire', { power: 'fire' }, 'JUMP FIRE - PAUSE -'],
-  [LINK, 'boomerang', {}, 'JUMP SWORD RANG PAUSE TOOLS'],
-  [LINK, 'boomerang in flight', { kit: { boomerangOut: 1 } }, 'JUMP SWORD - PAUSE TOOLS'],
-  [LINK, 'bombs, none left', { kit: { tool: 1 } }, 'JUMP SWORD - PAUSE TOOLS'],
-  [LINK, 'bombs', { kit: { tool: 1, bombs: 3 } }, 'JUMP SWORD BOMB PAUSE TOOLS'],
-  [LINK, 'jump spell', { kit: { tool: 2 } }, 'JUMP SWORD HI-JUMP PAUSE TOOLS'],
-  [LINK, 'jump spell, low magic', { kit: { tool: 2, magic: 4 } }, 'JUMP SWORD - PAUSE TOOLS'],
-  [LINK, 'shield spell', { kit: { tool: 3 } }, 'JUMP SWORD SHIELD PAUSE TOOLS'],
-  [LINK, 'fire spell', { kit: { tool: 4, magic: 4 } }, 'JUMP SWORD FIRE PAUSE TOOLS'],
-  [MEGAMAN, 'no helmet', {}, 'JUMP SHOOT BUSTER PAUSE -'],
-  [MEGAMAN, 'helmet (buster + Rush)', { kit: { helmet: 1 } }, 'JUMP SHOOT BUSTER PAUSE WEAPON'],
-  [MEGAMAN, 'Rush selected', { kit: { helmet: 1, tool: 1 } }, 'JUMP SHOOT RUSH PAUSE WEAPON'],
-  [MEGAMAN, 'Saw Disc', { kit: { ...MM, tool: 1 } }, 'JUMP SHOOT SAW PAUSE WEAPON'],
-  [MEGAMAN, 'Saw Disc, empty', { kit: { ...MM, tool: 1, wsaw: 0 } }, 'JUMP SHOOT - PAUSE WEAPON'],
-  [MEGAMAN, 'Leaf Guard', { kit: { ...MM, tool: 2 } }, 'JUMP SHOOT LEAF PAUSE WEAPON'],
-  [MEGAMAN, 'Flame Wave', { kit: { ...MM, tool: 3 } }, 'JUMP SHOOT FLAME PAUSE WEAPON'],
-  [MEGAMAN, 'Homing Knuckle', { kit: { ...MM, tool: 4 } }, 'JUMP SHOOT KNUCKLE PAUSE WEAPON'],
-  [MEGAMAN, 'Bolt', { kit: { ...MM, tool: 5 } }, 'JUMP SHOOT BOLT PAUSE WEAPON'],
-  [MEGAMAN, 'Rush, all weapons', { kit: { ...MM, tool: 6 } }, 'JUMP SHOOT RUSH PAUSE WEAPON'],
-  [SAMUS, 'beam, no missiles', {}, 'JUMP SHOOT - PAUSE WEAPON'],
-  [SAMUS, 'beam, missiles', { kit: { missiles: 5 } }, 'JUMP SHOOT MISSILE PAUSE WEAPON'],
-  [SAMUS, 'missiles selected', { kit: { missiles: 5, tool: 1 } }, 'JUMP MISSILE MISSILE PAUSE WEAPON'],
-  [SAMUS, 'missiles selected, none left', { kit: { tool: 1 } }, 'JUMP - - PAUSE WEAPON'],
-  [SAMUS, 'morph ball', { kit: { ball: 1, missiles: 5 } }, '- BOMB BOMB PAUSE WEAPON'],
-  [SAMUS, 'swimming', { water: true }, 'SWIM SHOOT - PAUSE WEAPON'],
-  [SIMON, 'whip only', {}, 'JUMP WHIP - PAUSE -'],
-  [SIMON, 'dagger only', { kit: { subs: 1 } }, 'JUMP WHIP DAGGER PAUSE -'],
-  [SIMON, 'axe', { kit: { ...SIMON_ALL, tool: 1 } }, 'JUMP WHIP AXE PAUSE TOOLS'],
-  [SIMON, 'holy water', { kit: { ...SIMON_ALL, tool: 2 } }, 'JUMP WHIP WATER PAUSE TOOLS'],
-  [SIMON, 'cross', { kit: { ...SIMON_ALL, tool: 3 } }, 'JUMP WHIP CROSS PAUSE TOOLS'],
-  [SIMON, 'stopwatch', { kit: { ...SIMON_ALL, tool: 4 } }, 'JUMP WHIP WATCH PAUSE TOOLS'],
-  [SIMON, 'stopwatch, 4 hearts', { kit: { ...SIMON_ALL, tool: 4, hearts: 4 } }, 'JUMP WHIP - PAUSE TOOLS'],
-  [RYU, 'no arts', {}, 'JUMP SLASH - PAUSE -'],
-  [RYU, 'throwing star', { kit: { ...RYU_ALL, tool: 0 } }, 'JUMP SLASH STAR PAUSE NINPO'],
-  [RYU, 'windmill', { kit: { ...RYU_ALL, tool: 1 } }, 'JUMP SLASH WIND-MILL PAUSE NINPO'],
-  [RYU, 'fire wheel', { kit: { ...RYU_ALL, tool: 2 } }, 'JUMP SLASH WHEEL PAUSE NINPO'],
-  [RYU, 'jump and slash', { kit: { ...RYU_ALL, tool: 3 } }, 'JUMP SLASH SPIN PAUSE NINPO'],
-  [RYU, 'out of ninpo', { kit: { ...RYU_ALL, ninpo: 0 } }, 'JUMP SLASH - PAUSE NINPO'],
-  [BILL, 'rifle', {}, 'JUMP SHOOT RIFLE PAUSE -'],
-  [BILL, 'machine gun', { kit: { guns: 4, tool: 1 } }, 'JUMP SHOOT M-GUN PAUSE WEAPON'],
-  [BILL, 'spread', { kit: { guns: 4, tool: 2 } }, 'JUMP SHOOT SPREAD PAUSE WEAPON'],
-  [BILL, 'laser', { kit: { guns: 4, tool: 3 } }, 'JUMP SHOOT LASER PAUSE WEAPON'],
-  [BILL, 'flame thrower', { kit: { guns: 4, tool: 4 } }, 'JUMP SHOOT FLAME PAUSE WEAPON'],
+  [MARIO, 'small', {}, 'JUMP RUN - MENU -'],
+  [MARIO, 'big', { power: 'big' }, 'JUMP RUN - MENU -'],
+  [MARIO, 'fire', { power: 'fire' }, 'JUMP FIRE - MENU -'],
+  [MARIO, 'small, swimming (no running in water)', { water: true }, 'SWIM - - MENU -'],
+  [MARIO, 'fire, swimming', { power: 'fire', water: true }, 'SWIM FIRE - MENU -'],
+  [MARIO, 'on a vine', { power: 'fire', vine: true }, '- - - MENU -'],
+  [MARIO, 'dead', { dead: true }, '- - - MENU -'],
+  [LUIGI, 'small', {}, 'JUMP RUN - MENU -'],
+  [LUIGI, 'fire', { power: 'fire' }, 'JUMP FIRE - MENU -'],
+  [LINK, 'boomerang', {}, 'JUMP SWORD BOOMERANG MENU TOOLS'],
+  [LINK, 'boomerang in flight', { kit: { boomerangOut: 1 } }, 'JUMP SWORD - MENU TOOLS'],
+  [LINK, 'bombs, none left', { kit: { tool: 1 } }, 'JUMP SWORD - MENU TOOLS'],
+  [LINK, 'bombs', { kit: { tool: 1, bombs: 3 } }, 'JUMP SWORD BOMB MENU TOOLS'],
+  [LINK, 'jump spell', { kit: { tool: 2 } }, 'JUMP SWORD HI-JUMP MENU TOOLS'],
+  [LINK, 'jump spell, low magic', { kit: { tool: 2, magic: 4 } }, 'JUMP SWORD - MENU TOOLS'],
+  [LINK, 'shield spell', { kit: { tool: 3 } }, 'JUMP SWORD SHIELD MENU TOOLS'],
+  [LINK, 'fire spell', { kit: { tool: 4, magic: 4 } }, 'JUMP SWORD FIRE MENU TOOLS'],
+  [MEGAMAN, 'no helmet', {}, 'JUMP SHOOT BUSTER MENU -'],
+  [MEGAMAN, 'helmet (buster + Rush)', { kit: { helmet: 1 } }, 'JUMP SHOOT BUSTER MENU WEAPON'],
+  [MEGAMAN, 'Rush selected', { kit: { helmet: 1, tool: 1 } }, 'JUMP SHOOT RUSH MENU WEAPON'],
+  [MEGAMAN, 'Saw Disc', { kit: { ...MM, tool: 1 } }, 'JUMP SHOOT SAW MENU WEAPON'],
+  [MEGAMAN, 'Saw Disc, empty', { kit: { ...MM, tool: 1, wsaw: 0 } }, 'JUMP SHOOT - MENU WEAPON'],
+  [MEGAMAN, 'Leaf Guard', { kit: { ...MM, tool: 2 } }, 'JUMP SHOOT LEAF MENU WEAPON'],
+  [MEGAMAN, 'Flame Wave', { kit: { ...MM, tool: 3 } }, 'JUMP SHOOT FLAME MENU WEAPON'],
+  [MEGAMAN, 'Homing Knuckle', { kit: { ...MM, tool: 4 } }, 'JUMP SHOOT KNUCKLE MENU WEAPON'],
+  [MEGAMAN, 'Bolt', { kit: { ...MM, tool: 5 } }, 'JUMP SHOOT BOLT MENU WEAPON'],
+  [MEGAMAN, 'Rush, all weapons', { kit: { ...MM, tool: 6 } }, 'JUMP SHOOT RUSH MENU WEAPON'],
+  [SAMUS, 'beam, no missiles', {}, 'JUMP SHOOT - MENU WEAPON'],
+  [SAMUS, 'beam, missiles', { kit: { missiles: 5 } }, 'JUMP SHOOT MISSILE MENU WEAPON'],
+  [SAMUS, 'missiles selected', { kit: { missiles: 5, tool: 1 } }, 'JUMP MISSILE MISSILE MENU WEAPON'],
+  [SAMUS, 'missiles selected, none left', { kit: { tool: 1 } }, 'JUMP - - MENU WEAPON'],
+  [SAMUS, 'morph ball', { kit: { ball: 1, missiles: 5 } }, '- BOMB BOMB MENU WEAPON'],
+  [SAMUS, 'swimming', { water: true }, 'SWIM SHOOT - MENU WEAPON'],
+  [SIMON, 'whip only', {}, 'JUMP WHIP - MENU -'],
+  [SIMON, 'dagger only', { kit: { subs: 1 } }, 'JUMP WHIP DAGGER MENU -'],
+  [SIMON, 'axe', { kit: { ...SIMON_ALL, tool: 1 } }, 'JUMP WHIP AXE MENU TOOLS'],
+  [SIMON, 'holy water', { kit: { ...SIMON_ALL, tool: 2 } }, 'JUMP WHIP WATER MENU TOOLS'],
+  [SIMON, 'cross', { kit: { ...SIMON_ALL, tool: 3 } }, 'JUMP WHIP CROSS MENU TOOLS'],
+  [SIMON, 'stopwatch', { kit: { ...SIMON_ALL, tool: 4 } }, 'JUMP WHIP WATCH MENU TOOLS'],
+  [SIMON, 'stopwatch, 4 hearts', { kit: { ...SIMON_ALL, tool: 4, hearts: 4 } }, 'JUMP WHIP - MENU TOOLS'],
+  [RYU, 'no arts', {}, 'JUMP SLASH - MENU -'],
+  [RYU, 'throwing star', { kit: { ...RYU_ALL, tool: 0 } }, 'JUMP SLASH SHURIKEN MENU NINPO'],
+  [RYU, 'windmill', { kit: { ...RYU_ALL, tool: 1 } }, 'JUMP SLASH WINDMILL MENU NINPO'],
+  [RYU, 'fire wheel', { kit: { ...RYU_ALL, tool: 2 } }, 'JUMP SLASH WHEEL MENU NINPO'],
+  [RYU, 'jump and slash', { kit: { ...RYU_ALL, tool: 3 } }, 'JUMP SLASH SPIN MENU NINPO'],
+  [RYU, 'out of ninpo', { kit: { ...RYU_ALL, ninpo: 0 } }, 'JUMP SLASH - MENU NINPO'],
+  [BILL, 'rifle', {}, 'JUMP SHOOT RIFLE MENU -'],
+  [BILL, 'machine gun', { kit: { guns: 4, tool: 1 } }, 'JUMP SHOOT M-GUN MENU WEAPON'],
+  [BILL, 'spread', { kit: { guns: 4, tool: 2 } }, 'JUMP SHOOT SPREAD MENU WEAPON'],
+  [BILL, 'laser', { kit: { guns: 4, tool: 3 } }, 'JUMP SHOOT LASER MENU WEAPON'],
+  [BILL, 'flame thrower', { kit: { guns: 4, tool: 4 } }, 'JUMP SHOOT FLAME MENU WEAPON'],
 ];
 
 describe('touch labels in a level', () => {
@@ -123,7 +130,12 @@ describe('touch labels in a level', () => {
     }
   });
 
-  it(`every label fits its button at ${LABEL_MIN_PX} px or more (widest font, touch scale 1)`, () => {
+  it(`every label fits at ${LABEL_MIN_PX} px or more at the smallest Touch size (long single words: ${LABEL_LONG_WORD_MIN_PX} px)`, () => {
+    // Labels scale with Touch size (--ts); the slider stops at TOUCH_SCALE_MIN so the floor holds.
+    // At the old 0.6 minimum KNUCKLE fell to about 6.7 px, which is why the range starts at 1.
+    expect(TOUCH_SCALE_MIN).toBe(1);
+    const atOldMin = fitLabel('KNUCKLE', FACE_BUTTON).scale * FACE_BUTTON.font * 0.6;
+    expect(atOldMin).toBeLessThan(LABEL_MIN_PX);
     const shown: [Action, string][] = [];
     for (const [def, , s] of TABLE)
       for (const [a, l] of Object.entries(levelTouchLabels(hero(def, s), world)))
@@ -137,12 +149,22 @@ describe('touch labels in a level', () => {
       BILL_TOOL_LABELS,
     ])
       for (const l of Object.values(names)) shown.push(['special', l]);
+    const small: string[] = [];
     for (const [a, l] of shown) {
       const shape = buttonShape(a);
       const fit = fitLabel(l, shape);
+      const px = fit.scale * shape.font * TOUCH_SCALE_MIN;
       expect(fit.fits, `${a} ${l}`).toBe(true);
-      expect(fit.scale * shape.font, `${a} ${l}`).toBeGreaterThanOrEqual(LABEL_MIN_PX);
+      // The one exception to the floor: a single long word (no space or hyphen to wrap at)
+      // is spelled out in full at a smaller size instead of abbreviated.
+      if (px < LABEL_MIN_PX) {
+        expect(l, `${a} ${l} is below ${LABEL_MIN_PX} px`).toMatch(/^[A-Z]{7,}$/);
+        small.push(l);
+      }
+      expect(px, `${a} ${l}`).toBeGreaterThanOrEqual(LABEL_LONG_WORD_MIN_PX);
     }
+    // Full words, not abbreviations (BOOMERANG ~8 px, SHURIKEN and WINDMILL ~10 px at 100%).
+    expect(new Set(small)).toEqual(new Set(['BOOMERANG', 'SHURIKEN', 'WINDMILL']));
     expect(shown.length).toBeGreaterThan(TABLE.length);
   });
 
@@ -157,13 +179,13 @@ describe('touch labels in a level', () => {
     s.scratch.ball = 0;
     expect(levelTouchLabels(s, world).jump).toBe('JUMP');
     const l = hero(LINK, { kit: { bombs: 2 } });
-    expect(levelTouchLabels(l, world).special).toBe('RANG');
+    expect(levelTouchLabels(l, world).special).toBe('BOOMERANG');
     l.scratch.tool = 1;
     expect(levelTouchLabels(l, world).special).toBe('BOMB');
   });
 
   it('with no player there is still a pause button', () => {
-    expect(row(levelTouchLabels(undefined, world))).toBe('JUMP - - PAUSE -');
+    expect(row(levelTouchLabels(undefined, world))).toBe('JUMP - - MENU -');
   });
 
   it("each guide's touch captions are labels the hero's buttons really show", () => {
