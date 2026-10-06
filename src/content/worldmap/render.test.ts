@@ -78,6 +78,8 @@ describe('map rendering', () => {
     expect(mapSky(MAP_PAGES[7] as (typeof MAP_PAGES)[number])).toBe('#881400');
   });
 
+  // Rasterizes every page over many frames: ~3.5 s alone, so the 5 s default is too tight
+  // when the whole suite runs in parallel.
   it('draws every actor type on every page over a long stretch of frames', () => {
     const assets = registry();
     const themes = new Set<string>();
@@ -96,7 +98,7 @@ describe('map rendering', () => {
       const offPage = r.drawn.filter((d) => d.x <= -80 || d.x >= 336).map((d) => `${d.frame} x=${d.x}`);
       expect(offPage, `page ${page.id}`).toEqual([]);
     }
-  });
+  }, 20_000);
 
   it('keeps every page actor moving and on screen at some point', () => {
     const assets = registry();
