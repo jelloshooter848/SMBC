@@ -182,7 +182,7 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(h.map().hintLine).toBe('RETURN TO WORLD 1');
 
     // The Lost Levels pad: locked until 8-4 is beaten; the hint line says so.
-    walkTo(h, 'lost');
+    walkTo(h, 'warp-lost');
     expect(h.map().hintLine).toBe('LOST LEVELS - BEAT 8-4 TO UNLOCK');
     h.step();
     expect(h.r.texts.some((t) => t.s === 'LOST LEVELS - BEAT 8-4 TO UNLOCK')).toBe(true);
@@ -195,21 +195,21 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(h.map().hintLine).toBe('LOST LEVELS - BEAT 8-4 TO UNLOCK');
     // A mystery pad never opens.
     walkTo(h, 'start');
-    walkTo(h, 'mystery-1');
+    walkTo(h, 'warp-mystery-1');
     expect(h.map().hintLine).toBe('??? - A FUTURE SECRET');
     h.tap('jump');
     expect(h.map().page.id).toBe('hub');
 
     // 8-4 beaten: the pad opens and leads to the Lost Levels' first page.
     walkTo(h, 'start');
-    walkTo(h, 'lost');
+    walkTo(h, 'warp-lost');
     h.game.mapProgress.gameCleared = true;
     expect(h.map().hintLine).toBe('LOST LEVELS');
     warp(h, 'll-1');
     expect(h.map().node).toBe('start');
     expect(loadSave(1)).toMatchObject({ gameCleared: true, position: { page: 'll-1', node: 'start' } });
     expect(loadSave(1)?.pages).toEqual(['smb-1', 'hub', 'll-1']);
-    expect(loadSave(1)?.lastNode).toMatchObject({ 'smb-1': 'bonus-1', hub: 'lost', 'll-1': 'start' });
+    expect(loadSave(1)?.lastNode).toMatchObject({ 'smb-1': 'bonus-1', hub: 'warp-lost', 'll-1': 'start' });
     h.step();
     expect(h.r.texts.some((t) => t.s === 'LOST 1')).toBe(true);
   });
@@ -290,16 +290,58 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     const hub = mapPage('hub')!;
     const node = (id: string) => hub.nodes.find((n) => n.id === id)!;
     const all = h.game.mapUnlockAll;
-    expect(isWarpOpen(h.game.mapProgress, node('lost'), all)).toBe(true);
+    expect(isWarpOpen(h.game.mapProgress, node('warp-lost'), all)).toBe(true);
     expect(isWarpOpen(h.game.mapProgress, node('start'), all)).toBe(true);
-    for (const id of ['mystery-1', 'mystery-2', 'mystery-3'])
+    for (const id of ['warp-mystery-1', 'warp-mystery-2', 'warp-mystery-3'])
       expect(isWarpOpen(h.game.mapProgress, node(id), all), id).toBe(false);
     h.idle(8);
-    walkTo(h, 'lost');
+    walkTo(h, 'warp-lost');
     expect(h.map().hintLine).toBe('LOST LEVELS');
     warp(h, 'll-1');
-    // Nothing was written to the file's progress by unlocking, only by the warp itself.
-    expect(h.game.mapProgress.gameCleared).toBe(false);
     expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
+    // The pad works only through Unlock all: the trip opens nothing in the file.
+    expect(h.game.mapProgress.gameCleared).toBe(false);
+    expect(h.game.mapProgress.pages).toEqual(['smb-1']);
+    expect(loadSave(1)?.pages).toEqual(['smb-1']);
+    // Unlock all off: the Lost Levels are closed again and the hero is back on World 1.
+    h.game.deps.settings = { dev: false } as Settings;
+    h.game.showMap();
+    expect(h.map().page.id).toBe('smb-1');
+  });
+
+  it("with Unlock all and no secret, the hub's centre lands on World 1's start, not the hidden spot", () => {
+    const h = makeGame();
+    h.game.deps.settings = { dev: true } as Settings;
+    h.game.openFile(1, file({ devUnlockAll: true }));
+    h.idle(8);
+    h.game.travelToPage('hub');
+    h.idle(8);
+    expect(h.map().node).toBe('start');
+    warp(h, 'smb-1');
+    expect(h.map().node).toBe('start');
+    expect(isOpen(h.game.mapProgress, mapPage('smb-1')!, 'bonus-1', true)).toBe(false);
+    walkTo(h, '1-1'); // not stranded
+  });
+
+  it('a warp zone pipe in a 4-2 sub-area opens World 8 on the map (its page found through 4-2)', () => {
+    const h = makeGame();
+    h.game.openFile(
+      1,
+      file({
+        cleared: ['1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1'],
+        pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4'],
+        position: { page: 'smb-4', node: '4-2' },
+      }),
+    );
+    h.idle(8);
+    // Standing on the first warp pipe of the vine area above 4-2 (it leads to 8-1).
+    h.game.startLevel(getLevel('4-2-warp'), { x: 50, y: 9, mode: 'stand' });
+    h.step();
+    h.until(() => h.top() instanceof WorldMapScene, 300, ['down']);
+    expect(h.map().page.id).toBe('smb-8');
+    expect(h.game.mapProgress.pages).toContain('smb-8');
+    expect(h.game.mapProgress.pages).not.toContain('smb-5');
+    expect(loadSave(1)?.pages).toContain('smb-8');
+    expect(h.game.mapProgress.cleared).not.toContain('4-2');
   });
 });

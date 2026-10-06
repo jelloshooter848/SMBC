@@ -495,40 +495,58 @@ describe('campaign: clears return to the map', () => {
     h.until(() => m.mode === 'idle');
   });
 
-  it('a warp pipe from 1-2 to 4-1 opens World 4 only; clearing 4-1 returns to the World 4 map', () => {
+  it('a warp pipe from 4-2 to 5-1 opens World 5 only; clearing 5-1 returns to the World 5 map', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
-    enter(h, '1-2');
-    play(h, '1-2');
-    h.game.state.checkpoint = { level: '1-2', x: 97 };
-    h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
+    const before = [
+      '1-1',
+      '1-2',
+      '1-3',
+      '1-4',
+      '2-1',
+      '2-2',
+      '2-3',
+      '2-4',
+      '3-1',
+      '3-2',
+      '3-3',
+      '3-4',
+      '4-1',
+    ];
+    const pages = ['smb-1', 'smb-2', 'smb-3', 'smb-4'];
+    h.game.openFile(1, file({ cleared: before, pages, position: { page: 'smb-4', node: '4-2' } }));
+    enter(h, '4-2');
+    play(h, '4-2');
+    h.game.state.checkpoint = { level: '4-2', x: 97 };
+    // The 4-2 warp zone's pipe (4-2 keeps its warp zones in campaign play).
+    h.fire({ type: 'pipe', target: { level: '5-1', x: 2, y: 12 } });
     // Owner decision (2026-10-05): the warp ends the level on the map, which slides over to
-    // World 4 and draws it in; 4-1 is picked there (character select, then the WORLD card).
+    // World 5 and draws it in; 5-1 is picked there (character select, then the WORLD card).
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    expect(h.map().page.id).toBe('smb-4');
+    expect(h.map().page.id).toBe('smb-5');
     expect(h.map().mode).toBe('slide');
     expect(h.game.state.checkpoint).toBeNull();
     h.until(() => h.map().mode === 'reveal');
     h.until(() => h.map().mode === 'idle', 600);
     expect(h.map().node).toBe('start');
-    enter(h, '4-1');
-    expect(h.level().level.id).toBe('4-1');
-    expect([h.game.state.world, h.game.state.stage]).toEqual([4, 1]);
-    expect(h.game.mapProgress.pages).toEqual(['smb-1', 'smb-4']);
-    expect(loadSave(1)?.pages).toEqual(['smb-1', 'smb-4']);
-    expect(isOpen(h.game.mapProgress, page(4), '4-1')).toBe(true);
-    expect(isOpen(h.game.mapProgress, page(2), 'start')).toBe(false);
-    expect(isOpen(h.game.mapProgress, page(3), 'start')).toBe(false);
-    h.fire({ type: 'exit', next: '4-2-intro' });
+    enter(h, '5-1');
+    expect(h.level().level.id).toBe('5-1');
+    expect([h.game.state.world, h.game.state.stage]).toEqual([5, 1]);
+    expect(h.game.mapProgress.pages).toEqual([...pages, 'smb-5']);
+    expect(loadSave(1)?.pages).toEqual([...pages, 'smb-5']);
+    expect(isOpen(h.game.mapProgress, page(5), '5-1')).toBe(true);
+    expect(isOpen(h.game.mapProgress, page(6), 'start')).toBe(false);
+    // World 4's castle still stands: its road on to World 5 stays closed.
+    expect(isExitOpen(h.game.mapProgress, page(4), page(4).exits[0]!)).toBe(false);
+    h.fire({ type: 'exit', next: '5-2' });
     const m = h.map();
     expect(m).toBeInstanceOf(WorldMapScene);
-    expect(m.page.id).toBe('smb-4');
-    expect(m.node).toBe('4-1');
+    expect(m.page.id).toBe('smb-5');
+    expect(m.node).toBe('5-1');
     expect(m.revealing).toBe(true);
-    expect(loadSave(1)?.cleared).toEqual(['1-1', '4-1']);
-    expect(loadSave(1)?.position).toEqual({ page: 'smb-4', node: '4-1' });
-    // 1-2 itself was not cleared by the warp.
-    expect(isOpen(h.game.mapProgress, page(1), '1-3')).toBe(false);
+    expect(loadSave(1)?.cleared).toEqual([...before, '5-1']);
+    expect(loadSave(1)?.position).toEqual({ page: 'smb-5', node: '5-1' });
+    // 4-2 itself was not cleared by the warp.
+    expect(isOpen(h.game.mapProgress, page(4), '4-3')).toBe(false);
   });
 
   it('after a warp, the map menu WORLDS travels back to an open world, at the node left there', () => {

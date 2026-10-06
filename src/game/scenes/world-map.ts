@@ -527,15 +527,19 @@ export class WorldMapScene implements Scene {
   /**
    * Jump on an open warp node: its target page opens (what that opens is drawn in on arrival),
    * the hero's place here is kept for map travel, and the map fades over to the target node
-   * (`toNode`, else the start), where the position is saved.
+   * (`toNode` when it is open, else the start), where the position is saved. A warp that works
+   * only through developer "Unlock all" travels without opening anything in the file.
    */
   private warp(n: MapNode): void {
     const next = n.to === undefined ? undefined : mapPage(n.to);
     if (!next) return;
     this.game.ctx.audio.sfx('coin');
     this.game.mapLastNode[this.page.id] = this.node;
-    this.game.addReveal(warpTo(this.progress, next.id));
-    const target = n.toNode && next.nodes.some((x) => x.id === n.toNode) ? n.toNode : startNode(next)?.id;
+    if (isWarpOpen(this.progress, n)) this.game.addReveal(warpTo(this.progress, next.id));
+    // A hidden or unreachable arrival node (World 1's warp spot before its secret) would strand
+    // the hero: the start instead.
+    const target =
+      n.toNode && isOpen(this.progress, next, n.toNode, this.unlockAll) ? n.toNode : startNode(next)?.id;
     this.fade = { from: this.page, t: 0, node: target ?? '' };
     this.page = next;
     this.views.clear();
