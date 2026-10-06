@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { fontDef } from '@content/sprites/font';
 import { fontText, wrapText } from './text';
 
 describe('fontText', () => {
@@ -6,6 +7,16 @@ describe('fontText', () => {
     expect(fontText('Jump: hold Z (or A)!')).toBe('JUMP: HOLD Z (OR A)!');
     expect(fontText('a_b#c')).toBe('ABC');
     expect(fontText('don’t — go & stop')).toBe("DON'T - GO + STOP");
+  });
+
+  it('keeps the percent sign ("100%")', () => {
+    expect(fontText('Touch size 100%')).toBe('TOUCH SIZE 100%');
+  });
+
+  it('keeps only characters the font has a glyph for', () => {
+    let all = '';
+    for (let c = 32; c < 127; c++) all += String.fromCharCode(c);
+    for (const ch of fontText(`${all}×©’—`)) if (ch !== ' ') expect(fontDef.frames[ch], ch).toBeDefined();
   });
 });
 

@@ -29,3 +29,5 @@ every time
 
 - Other long names, such as some gamepad buttons or numpad keys, would be cut the same way.
 - Found by the build review's smoke test of V0.3.0-DEV.8F4BF1A. Screenshot name in the review: 084. Not committed (`check:assets` bans image files).
+
+Status: fixed — menu values are no longer cut to 10 characters: `fitMenuValue` shows the full name when it fits beside the row's label ("RIGHT SHIFT"), else shortens its words ("R SHIFT", "L CTRL", "NUM +", "PRT SC", "BTN 16"), and cuts only as a last resort, so no row overlaps its label or leaves the panel (tested with long key and pad names).

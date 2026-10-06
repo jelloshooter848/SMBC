@@ -29,3 +29,5 @@ every time
 
 - Full-screen menus, such as from the title, look fine, because there is nothing behind the text.
 - Found by the build review's smoke test of V0.3.0-DEV.8F4BF1A. Screenshot names in the review: 084-087, touch/018, touch/023. Not committed (`check:assets` bans image files).
+
+Status: fixed — see-through menus use their own layout (title y 32, rows from 52, status y 184, "BACK" y 198), all inside the 24-216 panel; full-screen menus keep y 200/216. Tests check every Options sub-menu over the map draws inside its panel.

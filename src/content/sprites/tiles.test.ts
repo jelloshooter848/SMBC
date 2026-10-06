@@ -70,6 +70,7 @@ const fontGlyphs = [
   '.',
   '!',
   '?',
+  '%',
   ':',
   ',',
   "'",
@@ -319,6 +320,21 @@ describe('font sprites', () => {
     for (const glyph of fontGlyphs) expectFrame(fontDef, glyph, S8);
     expect(fontPalette[1]).toBe('#fcfcfc');
     expectRenders(fontDef, { font: fontPalette });
+  });
+
+  it('draws % as two dots and a slash in the 7x7 cell, in 2px strokes', () => {
+    const rows = fontDef.frames['%'] as readonly string[];
+    expect(rows[7]).toBe('........');
+    for (const line of rows) expect(line[7]).toBe('.');
+    // a dot top left, a dot bottom right, the slash rising to the right between them
+    expect(rows[0]?.slice(0, 2)).toBe('11');
+    expect(rows[1]?.slice(0, 2)).toBe('11');
+    expect(rows[5]?.slice(5, 7)).toBe('11');
+    expect(rows[6]?.slice(5, 7)).toBe('11');
+    expect(rows[0]?.[6]).toBe('1');
+    expect(rows[5]?.[0]).toBe('1');
+    expect(rows.slice(0, 7).every((l) => /^[.1]{8}$/.test(l))).toBe(true);
+    expect(Object.entries(fontDef.frames).filter(([, r]) => r.join() === rows.join())).toHaveLength(1);
   });
 });
 
