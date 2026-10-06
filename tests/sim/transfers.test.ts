@@ -13,6 +13,7 @@ import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
+import { LINK } from '@game/characters/link';
 import { Enemy } from '@game/entities/enemies/enemy';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Piranha } from '@game/entities/enemies/piranha';
@@ -158,6 +159,53 @@ describe('the vine arrival in a sky area', () => {
     expect(w.player.vine).toBeNull();
     expect(toPx(w.player.body.x)).toBeGreaterThan(4 * 16 + 9);
     expect(toPx(w.player.body.y + w.player.body.h)).toBe(13 * 16);
+  });
+});
+
+describe('the vine arrival with other heroes and co-op', () => {
+  it('Link climbing with up held thrusts nothing: no sword box, no block struck', () => {
+    let onVine = 0;
+    let bad = 0;
+    let struck = 0;
+    runSim({
+      level: getLevel('4-2-warp'),
+      character: LINK,
+      script: { steps: [{ frame: 0, hold: [] }] },
+      maxFrames: 600,
+      controller: (w, f) => {
+        if (f === 0) vi.spyOn(w, 'strikeBlock').mockImplementation(() => void struck++);
+        const p = w.player;
+        if (p.vine && !p.hidden) {
+          onVine++;
+          if (p.activeMelee || p.scratch.upThrust) bad++;
+        }
+        return ['up', 'attack'];
+      },
+      until: (w) => !w.timeHidden && w.player.body.onGround,
+    });
+    expect(onVine).toBeGreaterThan(60);
+    expect(bad).toBe(0);
+    expect(struck).toBe(0);
+  });
+
+  it('a player who drops out mid-arrival does not keep the time hidden', () => {
+    const r = runSim({
+      level: getLevel('4-2-warp'),
+      character: MARIO,
+      state: { character2: MARIO },
+      script: { steps: [{ frame: 0, hold: [] }] },
+      maxFrames: 600,
+      controller: (w, f) => {
+        const p2 = w.players[1];
+        if (f === 200 && p2) {
+          p2.out = true;
+          p2.body.y = px(260); // left hanging below the vine's top
+        }
+        return [];
+      },
+      until: (w) => !w.timeHidden && w.player.body.onGround,
+    });
+    expect(r.outcome).toBe('stopped');
   });
 });
 

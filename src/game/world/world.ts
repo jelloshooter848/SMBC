@@ -262,7 +262,8 @@ export class World {
       const x0 = mode === 'pipe-exit' || mode === 'fall' ? tileToSub(sx + 1) : this.player.centerX;
       const keepPiranhas = start.clearEnemies === 'keep-piranhas';
       this.spawns = this.spawns.filter((s) => {
-        if (Math.abs(tileToSub(s.x) + px(8) - x0) >= px(ENEMY_REMOVAL_PX)) return true;
+        const cx = tileToSub(s.x) + px(8 + Number(s.props?.dx ?? 0));
+        if (Math.abs(cx - x0) >= px(ENEMY_REMOVAL_PX)) return true;
         const e = this.makeEntity(s);
         const enemy = e instanceof Enemy && !(e instanceof Firebar) && !(e instanceof Podoboo);
         return !enemy || (keepPiranhas && e instanceof Piranha);
@@ -626,7 +627,13 @@ export class World {
         return;
       }
       p.update(input, this.map, this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
-      p.def.behaviour.update(p, input, this);
+      // No attacks, tools or thrusts on a vine: every hero's checkState returns on ST_VINE (e.g.
+      // Link.checkState on "vine", MarioBase.checkState) and pressAtkBtn / pressSpcBtn return there.
+      if (p.vine) {
+        p.activeMelee = null;
+        p.scratch.upThrust = 0;
+        p.scratch.downThrust = 0;
+      } else p.def.behaviour.update(p, input, this);
       if (p.body.x < this.camera.x) {
         p.body.x = this.camera.x;
         if (p.body.vx < 0) p.body.vx = 0;
@@ -722,6 +729,7 @@ export class World {
     const v = this.vineArrival as Vine;
     let climbing = false;
     for (const p of this.players) {
+      if (p.dead || p.out) continue;
       const on = p.vine !== null && p.vine.x === v.centerX;
       if (on && !v.grown) {
         climbing = true;
