@@ -29,6 +29,7 @@ import { Spiny } from '../entities/enemies/spiny';
 import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bullet-bill';
 import { BalanceLift } from '../entities/objects/balance-lift';
 import { Princess } from '../entities/objects/princess';
+import { Captive } from '../entities/objects/captive';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
@@ -57,7 +58,18 @@ export type WorldEvent =
   | { type: 'died'; player?: number }
   | { type: 'checkpoint'; x: number; y: number }
   /** The castle maze moved the players from column `from` to `to` (informational). */
-  | { type: 'loop'; from: number; to: number };
+  | { type: 'loop'; from: number; to: number }
+  /** A player pressed up next to a captive hero (campaign): the level starts the unlock flow. */
+  | { type: 'talk'; hero: string };
+
+/**
+ * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
+ * definition. Null outside campaign mode, where no captive spawns.
+ */
+export interface CaptiveRules {
+  isFreed(id: string): boolean;
+  hero(id: string): CharacterDef | undefined;
+}
 
 export interface WorldStart {
   /** Override the level's start tile. */
@@ -205,6 +217,8 @@ export class World {
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
   autoWalk = false;
   readonly flagpole: Flagpole | null = null;
+  /** Set by LevelScene in campaign play; see CaptiveRules. */
+  captives: CaptiveRules | null = null;
 
   constructor(
     readonly level: LevelData,
@@ -430,6 +444,13 @@ export class World {
         return new Princess(s.x, s.y);
       case 'toad':
         return new Toad(s.x, s.y);
+      case 'captive': {
+        // Campaign only, and only until that hero is freed on the file.
+        const id = String(s.props?.hero ?? '');
+        const hero = this.captives?.hero(id);
+        if (!hero || this.captives?.isFreed(id)) return null;
+        return new Captive(s.x, s.y, hero);
+      }
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
@@ -692,6 +713,7 @@ export class World {
       e.update(this);
     }
     this.resolveLifts();
+    this.checkTalk(inputs);
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
     for (const [i, p] of this.players.entries()) {
@@ -721,6 +743,23 @@ export class World {
       }
     }
     this.cull();
+  }
+
+  /** Up pressed by a player within a captive's reach: a `talk` event (one a frame). */
+  private checkTalk(inputs: InputFrame[]): void {
+    for (const [i, p] of this.players.entries()) {
+      if (!(inputs[i] ?? NO_INPUT).pressed('up') || p.vine) continue;
+      const c = this.entities.find((e): e is Captive => e instanceof Captive && e.alive && e.inReach(p));
+      if (c) {
+        this.events.push({ type: 'talk', hero: c.hero.id });
+        return;
+      }
+    }
+  }
+
+  /** A captive hero was freed: it leaves the room in a puff. */
+  freeCaptive(hero: string): void {
+    for (const e of this.entities) if (e instanceof Captive && e.alive && e.hero.id === hero) e.free(this);
   }
 
   /** Castle maze teleports (see the `loop` zone). Follows the lead player; everyone moves. */

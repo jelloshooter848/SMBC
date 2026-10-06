@@ -18,7 +18,7 @@ parent: 1-1
 =..............{
 =..............{
 =....$$$$$.....{
-=..............{
+=...........BBB{
 =...$$$$$$$....{
 =..............{
 =...$$$$$$$....{
@@ -27,6 +27,10 @@ parent: 1-1
 =...=======..<>>
 ################
 ################
+
+[entities]
+;; Luigi, brainwashed, on the ledge at the top right (campaign only, until freed: docs/HEROES.md)
+captive 13 5 hero=luigi
 
 [zones]
 pipe 13 12 right -> 1-1 163 10 exit=up

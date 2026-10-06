@@ -42,7 +42,8 @@ tool, which is named after the selected tool. Touch size runs from 100% to 160%.
 **Start game** opens the file select: three save files, each showing its hero (two for a
 two-player file), the world reached, levels cleared (out of 32), lives and score (a star once
 the game is beaten); pick a file to continue it, start a new one or erase one. A new file is one
-player and opens straight on World 1's map with Mario (3 lives); new two-player files are paused
+player and opens on World 1's map with Mario (3 lives) after a short story (OK pages through it,
+menu skips it); new two-player files are paused
 for now, but two-player files from earlier versions still load and play. A file plays on a Super
 Mario World-style map with one page per world (1-8). Walk the d-pad along open paths and press
 jump on a level to play it (character select first, each player in turn on a two-player file:
@@ -57,6 +58,17 @@ select) has **Save and quit**, and the level pause menu **Quit to title** saves 
 rolls the credits, then marks the file with a star, saves it and returns to the title. Developer
 mode, `?level=`, custom and shared levels and editor play-tests skip the map and never write a
 save.
+
+### Freeing the heroes
+
+Bowser has brainwashed the heroes of other worlds. A campaign file starts with **Mario only**:
+the others show in character select as black silhouettes marked ??? and can't be picked. Each
+one waits somewhere in the campaign (Luigi is in the 1-1 bonus room, on a ledge at the top
+right). Stand next to a hero and press **up** to talk; that starts a mini game themed on the
+hero's own game. Win it and the hero joins your file for good. You can retry a lost mini game
+as often as you like, or leave and come back later. Files from earlier versions keep Mario plus
+the hero(es) they last used. Outside the campaign (developer mode, `?level=`, custom and shared
+levels) every hero stays playable. See [docs/HEROES.md](docs/HEROES.md).
 
 ### Characters
 

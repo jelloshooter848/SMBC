@@ -15,7 +15,8 @@ import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
-import { listSaves, loadSave, newSave, writeSave } from '@game/save/save-files';
+import { listSaves, loadSave, newSave, SAVE_VERSION, writeSave } from '@game/save/save-files';
+import { StoryScene } from '@game/scenes/story';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 
@@ -115,12 +116,16 @@ describe('file select', () => {
     expect(h.said.at(-1)).toBe('File 2. New game.');
   });
 
-  it('NEW opens straight on the World 1 map as a one-player Mario file (no choice, no character select)', () => {
+  it('NEW opens on the World 1 map (after the story) as a one-player Mario file (no choice, no character select)', () => {
     const h = makeGame();
     toFileSelect(h);
     h.tap('down'); // file 2
     h.tap('jump');
-    // The file opens on World 1's map, at the start: no player-count choice or character select.
+    // The story first (MENU skips it), then World 1's map, at the start: no player-count choice
+    // or character select.
+    expect(top(h.game)).toBeInstanceOf(StoryScene);
+    h.idle(32);
+    h.tap('start');
     const map = top(h.game) as WorldMapScene;
     expect(map).toBeInstanceOf(WorldMapScene);
     expect(map.page.id).toBe('smb-1');
@@ -133,6 +138,7 @@ describe('file select', () => {
     expect(save.lives).toBe(3);
     expect(save.powerState).toBe('small');
     expect(save.pages).toEqual(['smb-1']);
+    expect(save.freed).toEqual(['mario']);
     expect(listSaves()[0]).toBeNull();
     expect(listSaves()[2]).toBeNull();
     expect(h.game.campaign).toEqual({ slot: 2 });
@@ -171,7 +177,8 @@ describe('file select', () => {
     expect(h.game.state.character2).toBe(LINK);
     expect([h.game.state.lives, h.game.state.score, h.game.state.powerState]).toEqual([6, 900, 'big']);
     expect(loadSave(1)!.cleared).toEqual(['1-1']);
-    expect(loadSave(1)!.v).toBe(2); // migrated and saved again as the map opened
+    expect(loadSave(1)!.v).toBe(SAVE_VERSION); // migrated and saved again as the map opened
+    expect(loadSave(1)!.freed).toEqual(['mario', 'luigi', 'link']);
     expect(loadSave(1)!.position).toEqual({ page: 'smb-1', node: '1-1' });
   });
 
@@ -280,6 +287,9 @@ describe('file select', () => {
     expect(store.has('smbc.save.1')).toBe(false);
     expect(h.said.at(-1)).toMatch(/File 1 erased\. File 1\. New game\./);
     h.tap('jump');
+    expect(top(h.game)).toBeInstanceOf(StoryScene);
+    h.idle(32);
+    h.tap('start');
     expect(top(h.game)).toBeInstanceOf(WorldMapScene);
   });
 

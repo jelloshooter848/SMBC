@@ -13,8 +13,16 @@ export const PALETTE_MODES: PaletteMode[] = [
 /** Named palettes for one mode; alternative modes only list the palettes they change. */
 export type PaletteTable = Record<string, Palette>;
 
+/** A whole-palette recolour (every colour of a palette mapped at once). */
+export type PaletteFx = (palette: Palette) => Palette;
+
 export interface PaletteBook {
   default: PaletteTable;
+  /**
+   * Recolours asked for by name as `<palette>~<fx>` ('luigi~silhouette'): the named palette
+   * (for the active mode) run through the effect, so every palette gets them for free.
+   */
+  fx?: Record<string, PaletteFx>;
   deuteranopia?: Partial<PaletteTable>;
   protanopia?: Partial<PaletteTable>;
   tritanopia?: Partial<PaletteTable>;
@@ -22,6 +30,12 @@ export interface PaletteBook {
 }
 
 export function resolvePalette(book: PaletteBook, name: string, mode: PaletteMode): Palette {
+  const tilde = name.lastIndexOf('~');
+  if (tilde > 0) {
+    const fx = book.fx?.[name.slice(tilde + 1)];
+    if (!fx) throw new Error(`unknown palette effect in "${name}"`);
+    return fx(resolvePalette(book, name.slice(0, tilde), mode));
+  }
   const alt = mode === 'default' ? undefined : book[mode]?.[name];
   const p = alt ?? book.default[name];
   if (!p) throw new Error(`unknown palette "${name}"`);

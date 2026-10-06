@@ -7,6 +7,7 @@ import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import type { TouchLabels } from '@engine/input/touch';
 import type { Action } from '@engine/input/actions';
+import { fxPalette } from '@content/sprites/palette-fx';
 
 /**
  * One player picks a hero mid-run: entering a level from the world map, after a death with lives
@@ -40,22 +41,55 @@ export class CharacterSelectScene implements Scene {
     private readonly pick: HeroPick | null = null,
   ) {}
 
+  /** Hero `i` is a brainwashed captive on this campaign file: drawn as a silhouette, skipped. */
+  private locked(i: number): boolean {
+    const c = this.game.deps.characters[i];
+    return !c || this.game.heroLocked(c);
+  }
+
+  /** An unlocked index: `i` itself, else the first hero (Mario), else the first unlocked one. */
+  private unlocked(i: number): number {
+    if (!this.locked(i)) return i;
+    const chars = this.game.deps.characters;
+    const first = chars.indexOf(this.game.firstHero);
+    if (first >= 0 && !this.locked(first)) return first;
+    return Math.max(
+      0,
+      chars.findIndex((_, k) => !this.locked(k)),
+    );
+  }
+
+  /** " 7 heroes still to be found." in campaign play while any are locked, else nothing. */
+  private toFind(): string {
+    const n = this.game.heroesToFind;
+    return n > 0 ? ` ${n} ${n === 1 ? 'hero' : 'heroes'} still to be found.` : '';
+  }
+
   enter(): void {
     const pick = this.pick;
+    const chars = this.game.deps.characters;
     if (pick) {
-      this.index = Math.max(
-        0,
-        this.game.deps.characters.findIndex((c) => c.id === pick.current.id),
+      // A locked current hero (it should not happen) falls back to Mario.
+      this.index = this.unlocked(
+        Math.max(
+          0,
+          chars.findIndex((c) => c.id === pick.current.id),
+        ),
       );
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
+      const name = chars[this.index]?.name ?? pick.current.name;
       this.game.deps.announcer?.say(
-        `${who} your hero. ${pick.current.name}. Left and right to choose, OK to confirm.` +
-          (pick.onMap ? ' Down for return to map.' : ''),
+        `${who} your hero. ${name}. Left and right to choose, OK to confirm.` +
+          (pick.onMap ? ' Down for return to map.' : '') +
+          this.toFind(),
       );
       return;
     }
+    this.index = this.unlocked(this.index);
+    this.index2 = this.unlocked(this.index2);
     this.game.deps.announcer?.say(
-      'Select your hero. Left and right to choose, OK to begin. Player two: press menu to join.',
+      'Select your hero. Left and right to choose, OK to begin. Player two: press menu to join.' +
+        this.toFind(),
     );
   }
 
@@ -70,20 +104,17 @@ export class CharacterSelectScene implements Scene {
     this.t++;
     const chars = this.game.deps.characters;
     const n = chars.length;
+    // Left/right step to the next hero that is not locked (wrapping); with every other hero
+    // locked the cursor stays put.
     const move = (idx: number, f: InputFrame): number => {
-      if (f.pressed('left')) {
-        this.game.ctx.audio.sfx('select');
-        const c = chars[(idx + n - 1) % n];
-        if (c) this.game.deps.announcer?.say(c.name);
-        return (idx + n - 1) % n;
-      }
-      if (f.pressed('right')) {
-        this.game.ctx.audio.sfx('select');
-        const c = chars[(idx + 1) % n];
-        if (c) this.game.deps.announcer?.say(c.name);
-        return (idx + 1) % n;
-      }
-      return idx;
+      const d = f.pressed('left') ? n - 1 : f.pressed('right') ? 1 : 0;
+      if (!d) return idx;
+      let to = (idx + d) % n;
+      while (to !== idx && this.locked(to)) to = (to + d) % n;
+      this.game.ctx.audio.sfx(to === idx ? 'bump' : 'select');
+      const c = chars[to];
+      if (c) this.game.deps.announcer?.say(c.name);
+      return to;
     };
     if (this.pick) {
       // Player 2's pick also takes player 1's input, so one device (a phone's touch buttons
@@ -150,14 +181,36 @@ export class CharacterSelectScene implements Scene {
         ? `P${this.pick.player + 1} SELECT YOUR HERO`
         : 'SELECT YOUR HERO';
     r.text(font, heading, 128 - heading.length * 4, 32);
+    const find = this.game.heroesToFind;
+    if (find > 0) {
+      const line = `${find} ${find === 1 ? 'HERO' : 'HEROES'} TO FIND`;
+      r.text(font, line, 128 - line.length * 4, 52);
+    }
     const chars = this.game.deps.characters;
     const spacing = Math.min(64, 224 / Math.max(1, chars.length));
     const x0 = 128 - ((chars.length - 1) * spacing) / 2;
     chars.forEach((c, i) => {
       const x = Math.round(x0 + i * spacing);
-      const sheet = assets.sheet(c.portrait.sheet, c.portrait.palette);
+      const locked = this.locked(i);
+      const sheet = assets.sheet(
+        c.portrait.sheet,
+        locked ? fxPalette(c.portrait.palette, 'silhouette') : c.portrait.palette,
+      );
       const f = sheet.frames.get(c.portrait.frame);
       const h = f?.h ?? 32;
+      if (locked) {
+        // A captive still to be found: a black silhouette with a grey rim (so it reads on the
+        // black screen) and ??? for its name.
+        const rim = assets.sheet(c.portrait.sheet, fxPalette(c.portrait.palette, 'rim'));
+        for (const [dx, dy] of [
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1],
+        ] as const)
+          r.sprite(rim, c.portrait.frame, x - 8 + dx, 120 - h + dy);
+        r.text(font, '???', x - 12, 128);
+      }
       r.sprite(sheet, c.portrait.frame, x - 8, 120 - h);
       // With a full roster the heroes stand close together, so the cursor becomes an underline.
       const tight = spacing < 40;

@@ -2,7 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
-import { SCREEN_W } from '@engine/viewport';
+import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
@@ -59,11 +59,22 @@ export class MessageScene implements Scene {
   }
 }
 
+/** CardScene options beyond the endings' defaults (the captive heroes' dialogue, free-hero.ts). */
+export interface CardOptions {
+  /** What goes on (default Start and B); the dialogue adds A (OK). */
+  keys?: readonly Action[];
+  /**
+   * Over a level, draw the lines in a dark box at the bottom of the screen instead of the
+   * castle text spot, so they stay readable over a busy room (World.castleText is left alone).
+   */
+  panel?: boolean;
+}
+
 /**
  * A closing card (the Lost Levels' endings): its lines drawn where the castle's text goes
  * (World.castleText), over the level when given its `world` so the HUD keeps showing the score,
  * as in the SMB 8-4 ending; else on black. Start or B (attack, the card's "PUSH BUTTON B")
- * from any player continues, or the timeout.
+ * from any player continues, or the timeout. With `panel` the lines go in a box over the level.
  */
 export class CardScene implements Scene {
   readonly translucent: boolean;
@@ -75,28 +86,42 @@ export class CardScene implements Scene {
     private readonly next: () => void,
     private readonly world: World | null = null,
     private readonly timeout = 1800,
+    opts: CardOptions = {},
   ) {
+    this.keys = opts.keys ?? ['start', 'attack'];
+    this.panel = world !== null && opts.panel === true;
     this.translucent = world !== null;
-    if (world) world.castleText = [...lines];
+    if (world && !this.panel) world.castleText = [...lines];
   }
 
-  /** B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. */
+  private readonly keys: readonly Action[];
+  private readonly panel: boolean;
+
+  /** B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. A when it goes on too. */
   touchLabels(): TouchLabels {
-    return { ...NO_TOUCH_BUTTONS, attack: 'OK' };
+    return { ...NO_TOUCH_BUTTONS, [this.keys.includes('jump') ? 'jump' : 'attack']: 'OK' };
   }
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
     if (this.done) return;
-    if (cardContinues(++this.t, this.timeout, inputs, ['start', 'attack'])) {
+    if (cardContinues(++this.t, this.timeout, inputs, this.keys)) {
       this.done = true;
       this.next();
     }
   }
 
   render(r: Renderer): void {
+    const font = this.game.ctx.assets.sheet('font');
+    if (this.panel) {
+      const h = this.lines.length * 10 + 12;
+      const y = SCREEN_H - 12 - h;
+      r.rect(12, y, SCREEN_W - 24, h, '#fcfcfc');
+      r.rect(14, y + 2, SCREEN_W - 28, h - 4, '#000');
+      this.lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + 7 + i * 10));
+      return;
+    }
     if (this.world) return; // the level beneath draws the lines (World.castleText)
     r.clear('#000');
-    const font = this.game.ctx.assets.sheet('font');
     this.lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, 80 + i * 16));
   }
 }

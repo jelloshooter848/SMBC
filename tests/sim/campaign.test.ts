@@ -17,6 +17,7 @@ import { CreditsScene } from '@game/scenes/credits';
 import { GameOverScene, GAME_OVER_CARD_FRAMES } from '@game/scenes/game-over';
 import { TitleScene } from '@game/scenes/title';
 import { FileSelectScene } from '@game/scenes/file-select';
+import { StoryScene } from '@game/scenes/story';
 import type { MenuScene, MenuItem } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -163,6 +164,11 @@ function newFileFromTitle(h: H) {
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);
   h.tap('jump');
+  // A new file tells the story first: MENU skips it.
+  if (h.top() instanceof StoryScene) {
+    h.idle(32);
+    h.tap('start');
+  }
 }
 
 /** A two-player file as 0.2.x created it (Mario and Luigi, 5 lives), opened from the title. */
@@ -190,7 +196,7 @@ function picksUntilLevel(h: H, onPick: (n: number) => void): number {
 }
 
 describe('campaign: a new file picks heroes only on entering a level', () => {
-  it('new 1P file → World 1 map with Mario; 1-1 asks once; picking Link makes the file and walker Link', () => {
+  it('new 1P file → World 1 map with Mario; 1-1 asks once; picking (freed) Link makes the file and walker Link', () => {
     const h = makeGame();
     newFileFromTitle(h);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
@@ -205,9 +211,11 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     expect(h.said.some((t) => /choose your hero\. Mario\./i.test(t))).toBe(true); // Mario preselected
+    // A new file has only Mario; once Link is freed the cursor goes straight to him (Luigi is
+    // still a captive).
+    h.game.freeHero('link');
     const picks = picksUntilLevel(h, () => {
-      h.tap('right'); // Luigi
-      h.tap('right'); // Link
+      h.tap('right'); // Link (Luigi is skipped)
       h.tap('jump');
     });
     expect(picks).toBe(1);
@@ -232,7 +240,10 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
 
   it('a hero change at the level select starts small; keeping the hero keeps its power', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ powerState: 'fire', position: { page: 'smb-1', node: '1-1' } }));
+    h.game.openFile(
+      1,
+      file({ powerState: 'fire', position: { page: 'smb-1', node: '1-1' }, freed: ['mario', 'luigi'] }),
+    );
     expect(h.game.state.powerState).toBe('fire');
     enter(h, '1-1'); // keeps Mario
     expect(h.game.state.powerState).toBe('fire');
@@ -277,22 +288,23 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     h.idle(8);
     walkTo(h, '1-1');
     h.tap('jump');
+    // The file keeps the heroes it was played with (0.5.0): Mario and Luigi only.
+    expect(h.game.freed).toEqual(['mario', 'luigi']);
     const picks = picksUntilLevel(h, (n) => {
       if (n === 1) {
-        h.tap('right');
-        h.tap('right'); // P1 → Link
+        h.tap('right'); // P1 → Luigi
         h.tap('jump');
       } else {
-        h.tap('right', 1); // P2, on their own device: Luigi → Link
+        h.tap('right', 1); // P2, on their own device: Luigi → Mario (the rest are locked)
         h.tap('jump', 1);
       }
     });
     expect(picks).toBe(2);
-    expect(h.game.state.character).toBe(LINK);
-    expect(h.game.state.character2).toBe(LINK);
+    expect(h.game.state.character).toBe(LUIGI);
+    expect(h.game.state.character2).toBe(MARIO);
     expect(h.game.state.lives).toBe(5);
     const saved = loadSave(1) as SaveFile;
-    expect([saved.character, saved.character2, saved.lives]).toEqual(['link', 'link', 5]);
+    expect([saved.character, saved.character2, saved.lives]).toEqual(['luigi', 'mario', 5]);
   });
 
   it('an old 2P save on one device (player 1 input only, as on a phone): both picks and Back work', () => {
@@ -748,7 +760,10 @@ describe('campaign: deaths, game over and quitting', () => {
 
   it('death select → RETURN TO MAP: the map at the same node, saved, lives as the death left them, no clear', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ powerState: 'fire', position: { page: 'smb-1', node: '1-1' } }));
+    h.game.openFile(
+      1,
+      file({ powerState: 'fire', position: { page: 'smb-1', node: '1-1' }, freed: ['mario', 'luigi'] }),
+    );
     enter(h, '1-1');
     h.game.state.score = 500;
     h.game.state.coins = 7;

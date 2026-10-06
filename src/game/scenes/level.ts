@@ -12,6 +12,7 @@ import type { Game } from './game';
 import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
+import { talkToCaptive } from './free-hero';
 
 export type LevelStart = WorldStart;
 
@@ -26,6 +27,8 @@ export class LevelScene implements Scene {
   readonly debug = new DebugOverlay();
   private lastDebugToggle = { f1: false, f2: false };
   private started = false;
+  /** Back from scenes pushed over the level: the press that closed them must not jump. */
+  private swallowJump = false;
 
   constructor(
     private readonly game: Game,
@@ -35,19 +38,41 @@ export class LevelScene implements Scene {
     // Each visit plays out differently (swimming Cheep Cheeps, timers); headless sims and tests
     // keep the level's fixed seed.
     this.world = new World(level, game.ctx, game.state, { ...start, seed: start.seed ?? freshSeed() });
+    // Campaign play: brainwashed heroes wait in some rooms until freed on this file.
+    if (game.campaign)
+      this.world.captives = {
+        isFreed: (id) => game.freed.includes(id),
+        hero: (id) => game.deps.characters.find((c) => c.id === id),
+      };
   }
 
   enter(): void {
+    this.playMusic();
+    this.started = true;
+  }
+
+  /** The level's music (the hero's own overworld theme when it has one), at the clock's tempo. */
+  playMusic(): void {
     const music =
       this.game.state.character.music && this.level.theme === 'overworld'
         ? this.game.state.character.music
         : this.level.music;
     this.game.ctx.audio.setTempoScale(this.world.time !== null && this.world.time <= 100 ? 1.4 : 1);
     this.game.ctx.audio.playMusic(music);
-    this.started = true;
+  }
+
+  /** Play on after scenes pushed over the level (a captive's unlock flow): music back on. */
+  resume(): void {
+    this.game.ctx.audio.stopMusic();
+    this.playMusic();
+    this.swallowJump = true;
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
+    if (this.swallowJump) {
+      this.swallowJump = false;
+      for (const f of inputs) f.consumeJumpBuffer();
+    }
     this.handleDebugKeys();
     if (this.debug.freeCamera) {
       const keys = this.game.deps.debugKeys;
@@ -93,6 +118,10 @@ export class LevelScene implements Scene {
     switch (ev.type) {
       case 'checkpoint':
         game.state.checkpoint = { level: this.level.id, x: ev.x, y: ev.y };
+        break;
+      case 'talk':
+        // A captive hero: the unlock flow plays over the paused level (scenes/free-hero.ts).
+        if (game.campaign && !game.playtestDone) talkToCaptive(game, this, ev.hero);
         break;
       case 'pipe': {
         // Campaign: a secret warp zone's one pipe (level/campaign.ts) ends the level on the map.
