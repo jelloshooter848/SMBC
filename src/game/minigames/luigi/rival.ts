@@ -1,5 +1,6 @@
 import type { Action } from '@engine/input/actions';
-import type { InputFrame } from '@engine/input/input-manager';
+import { NO_INPUT, type InputFrame } from '@engine/input/input-manager';
+import { SCREEN_H } from '@engine/viewport';
 import type { Renderer } from '@engine/gfx/renderer';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { px, toPx } from '@engine/math/units';
@@ -110,7 +111,10 @@ export class RivalLuigi {
   /** Frames run so far, and the frame he reached the pole (null until then). */
   frames = 0;
   finishedAt: number | null = null;
-  /** Frozen in place (the race was decided another way). */
+  /**
+   * The race was decided another way: he lets go of every button and his physics coast him to
+   * a stop (landing first if mid-jump); no route, no finish.
+   */
   stopped = false;
 
   constructor(
@@ -141,8 +145,11 @@ export class RivalLuigi {
 
   update(): void {
     const p = this.player;
-    if (this.stopped) return;
     if (this.finished) return this.slide();
+    if (this.stopped) {
+      if (toPx(p.body.y) < SCREEN_H + 64) p.update(NO_INPUT, this.map, NULL_AUDIO);
+      return;
+    }
     this.frames++;
     this.input.step(p);
     p.update(this.input, this.map, NULL_AUDIO);

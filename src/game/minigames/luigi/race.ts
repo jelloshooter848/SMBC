@@ -3,7 +3,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { px, toPx } from '@engine/math/units';
-import { SCREEN_W } from '@engine/viewport';
+import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { levelSeed, World } from '../../world/world';
 import { newGameState } from '../../context';
 import { MARIO } from '../../characters/mario';
@@ -112,6 +112,7 @@ export class MirrorRaceScene implements Scene {
       else if (this.rival.finished) this.lose('lost');
       return;
     }
+    this.rival.update(); // stopped: he coasts and lands
     this.endT++;
     if (this.phase === 'won' && (events.some((e) => e.type === 'exit') || this.endT >= WIN_MAX_FRAMES))
       this.finish('pass');
@@ -148,6 +149,8 @@ export class MirrorRaceScene implements Scene {
     audio.setTempoScale(1);
     if (why === 'dead') {
       this.rival.stopped = true; // the world plays the death
+      const fell = toPx(this.world.player.body.y) > SCREEN_H;
+      this.game.deps.announcer?.say(fell ? 'Mario fell. Try again.' : 'Mario was hit. Try again.');
       return;
     }
     audio.stopMusic();

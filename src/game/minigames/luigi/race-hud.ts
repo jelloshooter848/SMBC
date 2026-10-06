@@ -52,7 +52,9 @@ export const MARIO_COLOR = '#f83800';
 export const RIVAL_COLOR = '#9878f8';
 
 const TRACK_X0 = 48;
-const TRACK_X1 = 200;
+const TRACK_X1 = 192;
+/** The flag stands clear of the track's end, so a marker at 100% never covers it. */
+const FLAG_X = TRACK_X1 + 7;
 const TRACK_Y = 18;
 
 /**
@@ -63,8 +65,8 @@ export function drawTrack(r: Renderer, font: SpriteSheet, mario: number, rival: 
   r.rect(TRACK_X0 - 2, TRACK_Y - 1, TRACK_X1 - TRACK_X0 + 4, 3, '#000');
   r.rect(TRACK_X0, TRACK_Y, TRACK_X1 - TRACK_X0, 1, '#fcfcfc');
   // The flag at the far end.
-  r.rect(TRACK_X1, TRACK_Y - 12, 1, 13, '#fcfcfc');
-  r.rect(TRACK_X1 - 7, TRACK_Y - 12, 7, 5, '#00a800');
+  r.rect(FLAG_X, TRACK_Y - 12, 1, 13, '#fcfcfc');
+  r.rect(FLAG_X + 1, TRACK_Y - 12, 7, 5, '#00a800');
   const at = (f: number) => TRACK_X0 + Math.round(Math.max(0, Math.min(1, f)) * (TRACK_X1 - TRACK_X0));
   marker(r, font, 'M', at(mario), TRACK_Y - 11, MARIO_COLOR);
   marker(r, font, 'L', at(rival), TRACK_Y + 3, RIVAL_COLOR);

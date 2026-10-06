@@ -7,6 +7,7 @@ import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Action } from '@engine/input/actions';
 import type { Scene } from '@engine/scene';
+import type { Announcer } from '@engine/a11y/announcer';
 import { overlaps } from '@engine/math/aabb';
 import { px, toPx } from '@engine/math/units';
 import { ScriptedInput } from '@game/sim/headless';
@@ -98,10 +99,12 @@ function setup(route: Route | null, opts: { keep?: boolean; stubAssets?: boolean
   const assets = opts.stubAssets
     ? ({ sheet: () => ({ id: 'stub', image: null, frames: new Map() }) } as unknown as AssetRegistry)
     : new AssetRegistry({ default: {} });
+  const said: string[] = [];
   const game = new Game({
     ctx: { assets, audio: NULL_AUDIO, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
     getLevel,
     characters: CHARACTERS,
+    announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
   });
   const below: Scene = { update() {}, render() {} };
   game.scenes.push(below);
@@ -124,7 +127,7 @@ function setup(route: Route | null, opts: { keep?: boolean; stubAssets?: boolean
   const play = (max = 2000) => {
     for (let i = 0; i < max && results.length === 0; i++) step();
   };
-  return { game, scene, below, results, step, tap, play };
+  return { game, scene, below, results, said, step, tap, play };
 }
 
 /** Luigi's finishing time on his own (frames after GO). */
@@ -212,6 +215,20 @@ describe('Mirror Race: outcomes', () => {
     expect(h.results).toEqual(['fail']);
     expect(h.scene.world.player.dead).toBe(true);
     expect(toPx(h.scene.world.player.body.y)).toBeGreaterThan(240);
+    expect(h.scene.rival.finished).toBe(false);
+    expect(h.said).toContain('Mario fell. Try again.');
+  });
+
+  it('once Mario wins, Luigi lets go and coasts to a stop on the ground (no mid-air freeze)', () => {
+    const h = setup(FAST, { keep: true });
+    for (let i = 0; i < 2000 && h.scene.phase !== 'won'; i++) h.step();
+    const l = h.scene.rival.player.body;
+    const at = { x: l.x, y: l.y };
+    h.play();
+    expect(h.results).toEqual(['pass']);
+    expect(l.onGround).toBe(true);
+    expect(l.vx).toBe(0);
+    expect(l.x !== at.x || l.y !== at.y).toBe(true);
     expect(h.scene.rival.finished).toBe(false);
   });
 
