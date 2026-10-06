@@ -48,6 +48,7 @@ import {
   loadSave,
   saveFromState,
   stateFromSave,
+  tutorialHeroes,
   writeSave,
   type SaveFile,
   type SaveSlot,
@@ -108,6 +109,8 @@ export class Game {
   devUnlockAll = false;
   /** Heroes freed on the campaign's file (SaveFile.freed); see `heroLocked`. */
   freed: string[] = [FIRST_HERO];
+  /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
+  tutorials: string[] = [];
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -355,6 +358,7 @@ export class Game {
       pendingReveal: this.pendingReveal.slice(),
       devUnlockAll: this.devUnlockAll,
       freed: this.freed.slice(),
+      tutorials: this.tutorials.slice(),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -533,6 +537,12 @@ export class Game {
     this.autosave();
   }
 
+  /** The "<HERO> TRAINING?" question was answered (yes or no): never asked again; saved at once. */
+  answerTraining(id: string): void {
+    if (!this.tutorials.includes(id)) this.tutorials.push(id);
+    this.autosave();
+  }
+
   showCharacterSelect(): void {
     this.scenes.replace(new CharacterSelectScene(this));
   }
@@ -642,6 +652,12 @@ export class Game {
     if (this.heroLocked(this.state.character)) this.setHero(0, this.firstHero);
     const c2 = this.state.character2;
     if (c2 && this.heroLocked(c2)) this.setHero(1, this.firstHero);
+    // The heroes the file plays now count as answered: their training is never asked.
+    this.tutorials = tutorialHeroes([
+      ...(save.tutorials ?? []),
+      this.state.character.id,
+      this.state.character2?.id,
+    ]);
     this.mapProgress = {
       cleared: save.cleared.slice(),
       pages: save.pages.slice(),

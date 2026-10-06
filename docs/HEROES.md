@@ -106,3 +106,53 @@ interface MiniGameDef {
 2. Optionally, the hero's own challenge lines in `DIALOGUE` (`free-hero.ts`).
 3. `captive x y hero=<id>` in a campaign level's `[entities]`, on a spot the player can reach.
    Prove it with a sim.
+
+## Hero training (optional practice rooms)
+
+Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:
+"tutorials other than Mario's can be optional"). Code: `src/game/tutorial/`.
+
+- **The question.** The first time a hero other than Mario is picked on a file (entering a level
+  from the map, the pick after a death, player two's pick), "<HERO> TRAINING?" asks YES / NO
+  (`TrainingQuestionScene`, announced). YES plays the room, then the pick goes on exactly as it
+  would have (the level starts, or the respawn); NO goes on at once. Either answer is recorded and
+  saved at once, so each hero is asked once per file. Never asked outside campaign play, in an
+  editor play-test, or for Mario. The hook is in `CharacterSelectScene` (`needsTraining`,
+  `askTraining`), so every campaign pick follows it.
+- **The save.** `SaveFile.tutorials?: string[]`: hero ids whose question was answered, each once,
+  known ids only. It is optional (no format bump); validation adds the file's current
+  `character` / `character2`, so players already using a hero are never interrupted.
+  `Game.tutorials` carries it, `Game.answerTraining(id)` records and saves.
+- **Pause → Training.** In a campaign level the pause menu offers Training (one entry per hero
+  in co-op, Mario excluded). The room plays over the paused level; afterwards the pause menu
+  closes and the level goes on as it was left (its clock stood still, its music restarts).
+- **The room.** `src/content/levels/practice.map`, one locked screen loaded with `?raw` (kept out
+  of the level library and the dev select): a floor, a step up to a high ledge, a brick row with a
+  ? block, a target dummy (`dummy x y` in the map; `TargetDummy` never moves or hurts, pops after
+  three hits and comes back), a gap (falling in puts the hero back at the start) and a tall wall to
+  cling to. It runs in a World of its own with a fresh GameState for the hero and its full kit
+  (`devKit`: Mega Man's helmet, Samus's missiles, Simon's sub-weapons...), and the run's GameState
+  is snapshotted and restored around it (as the mini games do), so lives, score and power are never
+  touched. Hit points stay topped up, so nothing in the room can end it.
+- **Lessons** (`lessons.ts`). `Lesson { id, prompt, done(tracker), setup?(room) }` per hero in
+  `LESSONS`; `LessonTracker` watches the player and world each frame (jumps and their height,
+  ground speed and glide, attacks, shots by kind and direction, charge shots, slides, crouching,
+  tool changes, wall cling and wall jumps, scratch flags like the morph ball, bombs, shield blocks,
+  gap crossings, and how the dummy was hit). The tracker is reset when a lesson comes up, so each
+  is done while its prompt shows. Prompts name abilities as the guide and touch buttons do (never
+  button letters), at most 3 lines of 28 columns, one at a time in a box near the top, announced;
+  each ticks off with a sound and GOOD!, and after the last READY! ends the room. MENU in the
+  room: Continue / Skip training.
+
+| Hero     | Lessons                                                                                     |
+| -------- | ------------------------------------------------------------------------------------------- |
+| Luigi    | high jump, slippery stop, fireball (the lesson gives fire power)                            |
+| Link     | sword, down-thrust, up-thrust, shield blocks the dummy's shot, boomerang (USE TOOL / TOOLS) |
+| Mega Man | buster, slide, charge shot, special weapon (WEAPON, USE WEAPON)                             |
+| Samus    | beam, aim up, morph ball, bomb, missile                                                     |
+| Simon    | whip, crouch whip, sub-weapon (THROW), the committed jump over the gap                      |
+| Ryu      | sword slash, wall cling, wall jump, ninpo (CAST)                                            |
+| Bill     | shoot, 8-way aim (three directions), prone, jump and shoot                                  |
+
+To add a hero's training: a list in `LESSONS` (3-5 lessons, tested by
+`src/game/tutorial/lessons.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.

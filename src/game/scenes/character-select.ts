@@ -8,6 +8,7 @@ import { fontText } from '../hud/text';
 import type { TouchLabels } from '@engine/input/touch';
 import type { Action } from '@engine/input/actions';
 import { fxPalette } from '@content/sprites/palette-fx';
+import { askTraining, needsTraining } from '../tutorial/training';
 
 /**
  * One player picks a hero mid-run: entering a level from the world map, after a death with lives
@@ -145,7 +146,10 @@ export class CharacterSelectScene implements Scene {
         onMap();
       } else if (ok && c) {
         this.game.ctx.audio.sfx('coin');
-        this.pick.onPick(c);
+        // Campaign: the first pick of a hero on the file asks about training first.
+        const pick = this.pick;
+        if (needsTraining(this.game, c)) askTraining(this.game, c, pick.player, () => pick.onPick(c));
+        else pick.onPick(c);
       } else if (this.pick.onCancel && (pressed('select') || pressed('attack'))) {
         this.game.ctx.audio.sfx('select');
         this.pick.onCancel();

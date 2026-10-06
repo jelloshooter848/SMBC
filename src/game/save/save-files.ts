@@ -47,6 +47,12 @@ export interface SaveFile extends MapProgress {
    * in campaign play; the rest are brainwashed captives to find (docs/HEROES.md).
    */
   freed: string[];
+  /**
+   * Heroes whose "<HERO> TRAINING?" question was answered on this file (CharacterDef ids, each
+   * once), so it is asked only the first time a hero is picked. Missing in older files: [] plus the
+   * file's current heroes (validation adds them, so players already using a hero aren't asked).
+   */
+  tutorials?: string[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -98,6 +104,15 @@ export function freedHeroes(
 ): string[] {
   const known = (id: unknown): id is string => typeof id === 'string' && characters.some((c) => c.id === id);
   return [...new Set([FIRST_HERO, ...ids.filter(known)])];
+}
+
+/** Known hero ids from `ids`, each once, in order (unknown ids and non-strings dropped). */
+export function tutorialHeroes(
+  ids: readonly unknown[],
+  characters: readonly CharacterDef[] = CHARACTERS,
+): string[] {
+  const known = (id: unknown): id is string => typeof id === 'string' && characters.some((c) => c.id === id);
+  return [...new Set(ids.filter(known))];
 }
 
 /**
@@ -156,6 +171,7 @@ export function newSave(
     pendingReveal: [],
     devUnlockAll: false,
     freed: freedHeroes([character, character2], characters),
+    tutorials: tutorialHeroes([character, character2], characters),
   };
 }
 
@@ -259,6 +275,12 @@ export function migrateSave(
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
     freed: Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed,
+    // The file's current heroes count as answered, so an existing player is never interrupted.
+    tutorials: tutorialHeroes([
+      ...(Array.isArray(stored.tutorials) ? stored.tutorials : []),
+      stored.character,
+      stored.character2,
+    ]),
   };
 }
 
