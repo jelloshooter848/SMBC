@@ -46,3 +46,5 @@ every time
 - Source: `ll-w8/2026-10-05-ll-8-4-fake-bowser-paces-like-bridge-bowser.md`.
 - PR #24 check: still applies on main 2225155. `git diff b8379f9 HEAD` is empty for `bowser.ts`, `world.ts` and the three maps.
 - Reviewed: verified against `com/smbc/enemies/BowserFake.as`, `com/smbc/enemies/Bowser.as` (lines 99, 148, 202-206, 251-260), `levelDataLostLevels.xml` (lines 422, 448, 652), and ours: `src/game/entities/enemies/bowser.ts`, `src/game/world/world.ts` (lines 339, 1407), `ll-8-4-end3.map`, `ll-9-3.map`, `ll-13-4-end.map`.
+
+Status: fixed — a fake Bowser now paces within 5 tiles either side of its spawn centre (BowserFake.as `WALK_DISTANCE`, `setXMinMax`), turns at the right end only in its normal state and re-centres its window after a chase (`returnToNormalStateFromChase`); the bridge Bowser uses `getXMaxMin`.

@@ -330,7 +330,10 @@ export class World {
         return new Vine(s.x, s.y, Number(s.props?.len ?? 8));
       case 'firebar':
       case 'firebar-ccw':
-        return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
+        // The converter writes the original's fireBarLeft as `firebar` and fireBarRight as
+        // `firebar-ccw`; FireBar.as turns a Left bar counter-clockwise (clockwise = false) and a
+        // Right bar clockwise, so `firebar` is -1 here and `firebar-ccw` +1.
+        return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? 1 : -1, Number(s.props?.len ?? 6));
       case 'bowser':
         return new Bowser(
           s.x,
@@ -1123,7 +1126,9 @@ export class World {
   private updateDeath(p: Player): void {
     const t = (this.deathTimers.get(p) ?? 0) + 1;
     this.deathTimers.set(p, t);
-    if (t === 30) p.body.vy = -0x04000;
+    // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
+    // has no hop: the original's Character.initiatePitDeath only starts the die timer.
+    if (t === 30 && toPx(p.body.y) <= SCREEN_H) p.body.vy = -0x04000;
     if (t > 30) {
       p.body.vy += 0x00280;
       p.body.y += velToSub(p.body.vy);
@@ -1405,10 +1410,11 @@ export class World {
     for (const e of this.entities) if (e instanceof Bowser) e.update(this);
     // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
     const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);
+    // No points: BowserAxe.as only calls breakBridgeStart/Inc/End (Bowser.as), never die(), and
+    // the fall below the screen (AnimatedObject.checkDosSides -> destroy) scores nothing either.
     if (bowser && c.t === 60) {
       bowser.fallDead();
       this.audio.sfx('bowser-fall');
-      this.addScore(5000, bowser.body.x, bowser.body.y);
     }
     if (c.t === 120) this.audio.playJingle('castle-clear');
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');

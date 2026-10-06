@@ -68,6 +68,14 @@ const ENEMY_FRAMES: Record<string, [number, number]> = {
   'bowser-1': [32, 32],
   'bowser-2': [32, 32],
   'bowser-3': [32, 32],
+  'bowser-die-1': [32, 32],
+  'bowser-die-2': [32, 32],
+  'bowser-die-3': [32, 32],
+  'bowser-die-4': [32, 32],
+  'bowser-die-5': [32, 32],
+  'bowser-die-6': [32, 32],
+  'bowser-die-7': [32, 32],
+  'bowser-die-8': [32, 32],
 };
 
 const HERO_PALETTES = [
