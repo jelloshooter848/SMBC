@@ -77,6 +77,8 @@ export class Game {
    * own when the hero first arrives there (SaveFile.pendingReveal).
    */
   pendingReveal: string[] = [];
+  /** The file's developer "Unlock all" map flag (SaveFile.devUnlockAll); see `mapUnlockAll`. */
+  devUnlockAll = false;
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -148,6 +150,7 @@ export class Game {
     this.quickRespawn = false;
     this.campaign = null;
     this.pendingReveal = [];
+    this.devUnlockAll = false;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -210,6 +213,7 @@ export class Game {
       position: { world: p.position.world, node: p.position.node },
       lastNode: { ...this.mapLastNode },
       pendingReveal: this.pendingReveal.slice(),
+      devUnlockAll: this.devUnlockAll,
     };
     this.campaignSave = save;
     writeSave(save);
@@ -268,10 +272,11 @@ export class Game {
   travelToWorld(world: number): void {
     const p = this.mapProgress;
     const page = mapPage(world);
-    if (!page || !isWorldOpen(p, world)) return;
+    const all = this.mapUnlockAll;
+    if (!page || !isWorldOpen(p, world, all)) return;
     const last = this.mapLastNode[world];
     const node =
-      last && page.nodes.some((n) => n.id === last) && isOpen(p, page, last)
+      last && page.nodes.some((n) => n.id === last) && isOpen(p, page, last, all)
         ? last
         : (page.nodes.find((n) => n.kind === 'start')?.id ?? 'start');
     this.mapLastNode[p.position.world] = p.position.node;
@@ -292,6 +297,11 @@ export class Game {
 
   get devMode(): boolean {
     return this.deps.settings?.dev ?? false;
+  }
+
+  /** The map rules' `unlockAll`: the file's "Unlock all" flag, only while dev mode is on. */
+  get mapUnlockAll(): boolean {
+    return this.devMode && this.devUnlockAll;
   }
 
   showDevMenu(): void {
@@ -384,6 +394,7 @@ export class Game {
     this.campaignSave = save;
     this.pendingReveal = save.pendingReveal.slice();
     this.mapLastNode = { ...save.lastNode };
+    this.devUnlockAll = save.devUnlockAll === true;
     this.mapProgress = {
       cleared: save.cleared.slice(),
       worlds: save.worlds.slice(),

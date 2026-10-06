@@ -11,7 +11,7 @@ import { Game } from '@game/scenes/game';
 import { WorldMapScene, MAP_SLIDE_FRAMES } from '@game/scenes/world-map';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { IntroScene } from '@game/scenes/intro';
-import { MenuScene } from '@game/scenes/menu';
+import { MenuScene, type MenuItem } from '@game/scenes/menu';
 import { TitleScene } from '@game/scenes/title';
 import { CHARACTERS } from '@game/characters/registry';
 import { LUIGI } from '@game/characters/luigi';
@@ -19,11 +19,12 @@ import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { newGameState } from '@game/context';
 import { loadSave, newSave } from '@game/save/save-files';
-import { clearLevel } from '@game/map/rules';
+import { clearLevel, isOpen, isWorldOpen } from '@game/map/rules';
 import type { Dir } from '@game/map/rules';
 import type { WorldMapPage } from '@game/map/types';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import type { Settings } from '@engine/save/settings';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -416,5 +417,107 @@ describe('campaign saves from the map', () => {
     h.game.saveAndQuit();
     expect(store.size).toBe(0);
     expect(h.game.scenes.top).toBeInstanceOf(TitleScene);
+  });
+});
+
+describe('developer mode: unlock all on the map', () => {
+  const items = (scene: unknown) => (scene as { items: MenuItem[] }).items;
+  const labels = (scene: unknown) => items(scene).map((i) => i.label);
+  /** Opens the map menu and lets it take input. */
+  const openMenu = (h: ReturnType<typeof makeGame>) => {
+    h.tap('select');
+    expect((h.game.scenes.top as MenuScene).title).toBe('MAP');
+    h.idle(8);
+    return h.game.scenes.top as MenuScene;
+  };
+  const worldsListed = (h: ReturnType<typeof makeGame>) => {
+    const menu = openMenu(h);
+    items(menu)
+      .find((i) => i.label === 'Worlds')
+      ?.select?.();
+    const worlds = h.game.scenes.top as MenuScene;
+    expect(worlds.title).toBe('WORLDS');
+    const out = labels(worlds);
+    h.game.scenes.pop();
+    h.game.scenes.pop();
+    return out;
+  };
+
+  it('toggles from the map menu, opens every level and world without clearing any, and saves', () => {
+    const h = makeGame();
+    const settings = { dev: true } as Settings;
+    h.game.deps.settings = settings;
+    h.game.openFile(1, newSave(1, 'mario'));
+    h.idle(8);
+    walkTo(h, '1-1');
+    let menu = openMenu(h);
+    expect(labels(menu).at(-1)).toBe('Unlock all');
+    expect(items(menu).at(-1)?.value?.()).toBe('off');
+    h.tap('up'); // wraps to the last row
+    h.tap('right');
+    expect(items(menu).at(-1)?.value?.()).toBe('on');
+    expect(h.said.at(-1)).toMatch(/^Unlock all: on\./);
+    expect(loadSave(1)?.devUnlockAll).toBe(true);
+    h.tap('attack'); // back to the map
+    expect(h.map()).toBeInstanceOf(WorldMapScene);
+    h.idle(8);
+    // Straight past the locked nodes to the castle, then back to 1-3 and in.
+    walkTo(h, '1-2');
+    walkTo(h, '1-3');
+    walkTo(h, '1-4');
+    expect(h.said.at(-1)).toBe('World 1-4 castle, open');
+    walkTo(h, '1-3');
+    const enter = vi.spyOn(h.game, 'enterLevelFromMap');
+    h.tap('jump');
+    expect(enter).toHaveBeenCalledWith('1-3');
+    expect(h.game.mapProgress.cleared).toEqual([]);
+    expect(h.game.mapProgress.worlds).toEqual([1]);
+    // Back on the map: the Worlds menu lists every world.
+    h.game.showMap();
+    h.idle(8);
+    expect(h.map().node).toBe('1-3');
+    expect(worldsListed(h)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`));
+
+    // Dev mode off: the row is gone and the map is back to normal, the hero on an open node.
+    settings.dev = false;
+    h.game.showMap();
+    h.idle(8);
+    expect(h.map().node).toBe('start');
+    expect(isOpen(h.game.mapProgress, page(1), '1-2', h.game.mapUnlockAll)).toBe(false);
+    menu = openMenu(h);
+    expect(labels(menu)).toEqual(['Continue', 'Worlds', 'Save and quit', 'Options']);
+    h.tap('attack');
+    h.idle(8);
+    expect(worldsListed(h)).toEqual(['World 1']);
+    walkTo(h, '1-1');
+    h.tap('right');
+    h.idle(40);
+    expect(h.map().node).toBe('1-1');
+    // The file keeps the flag: dev mode on again unlocks again.
+    expect(loadSave(1)?.devUnlockAll).toBe(true);
+    settings.dev = true;
+    expect(h.game.mapUnlockAll).toBe(true);
+  });
+
+  it('turning it off from a locked world goes back to the furthest open one', () => {
+    const h = makeGame();
+    h.game.deps.settings = { dev: true } as Settings;
+    h.game.openFile(1, newSave(1, 'mario'));
+    h.idle(8);
+    const menu = openMenu(h);
+    items(menu).at(-1)?.adjust?.(1);
+    h.game.travelToWorld(5);
+    expect(h.map().page.world).toBe(5);
+    expect(isWorldOpen(h.game.mapProgress, 5)).toBe(false);
+    h.idle(8);
+    const again = openMenu(h);
+    h.tap('up');
+    h.tap('jump'); // confirm toggles too
+    expect(h.game.devUnlockAll).toBe(false);
+    expect(h.map().page.world).toBe(1);
+    expect(h.map().node).toBe('start');
+    expect(again.title).toBe('MAP');
+    expect(loadSave(1)?.devUnlockAll).toBe(false);
+    expect(loadSave(1)?.position).toEqual({ world: 1, node: 'start' });
   });
 });

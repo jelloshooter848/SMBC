@@ -235,6 +235,23 @@ describe('save files', () => {
     expect(put({ pendingReveal: 'x' }).pendingReveal).toEqual([]);
   });
 
+  it('keeps the developer "unlock all" flag only when it is true (missing in older files: off)', () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1)!;
+    };
+    expect(newSave(1, 'mario').devUnlockAll).toBe(false);
+    const { devUnlockAll: _, ...old } = newSave(1, 'mario');
+    store.set('smbc.save.1', JSON.stringify(old));
+    const loaded = loadSave(1)!;
+    expect(loaded.devUnlockAll).toBe(false);
+    expect(loaded.v).toBe(SAVE_VERSION);
+    expect(put({ devUnlockAll: true }).devUnlockAll).toBe(true);
+    for (const bad of ['true', 1, null, {}]) expect(put({ devUnlockAll: bad }).devUnlockAll).toBe(false);
+    // Unlocking opens nothing in the file itself.
+    expect(put({ devUnlockAll: true }).worlds).toEqual([1]);
+  });
+
   it('counts main levels cleared and the highest world', () => {
     const s = newSave(1, 'mario');
     s.cleared = ['1-1', '1-2', '1-2', '8-4', 'll-1-1', 'custom-x', '9-1'];

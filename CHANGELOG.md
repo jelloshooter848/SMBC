@@ -8,6 +8,11 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Developer mode: an **Unlock all** switch in the map menu opens every world, level and road on
+  the world map for that save file, without marking anything cleared.
+
 ## [0.2.0] - 2026-10-05
 
 ### Added

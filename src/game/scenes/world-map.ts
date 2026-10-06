@@ -4,7 +4,7 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import { MAP_PAGES, mapPage } from '@content/worldmap';
 import { drawMapActor, drawMapTile, mapSky } from '@content/worldmap/render';
-import type { MapActor, MapNode, WorldMapPage } from '../map/types';
+import type { MapActor, MapNode, MapProgress, WorldMapPage } from '../map/types';
 import {
   exitId,
   isCleared,
@@ -95,6 +95,12 @@ function startNode(page: WorldMapPage): MapNode | null {
   return page.nodes.find((n) => n.kind === 'start') ?? page.nodes[0] ?? null;
 }
 
+/** The highest open world with a page (World 1 when there is none). */
+function furthestOpenWorld(progress: MapProgress, unlockAll: boolean): number {
+  const open = MAP_PAGES.map((p) => p.world).filter((w) => isWorldOpen(progress, w, unlockAll));
+  return open.length ? Math.max(...open) : 1;
+}
+
 /**
  * The Super Mario World-style map of one world: the page's scenery, the open paths and nodes,
  * the hero walking between nodes with the d-pad, entering levels, sliding to the next page along
@@ -143,16 +149,26 @@ export class WorldMapScene implements Scene {
     private readonly opts: WorldMapOptions = {},
   ) {
     const prog = game.mapProgress;
-    const w = isWorldOpen(prog, world) && mapPage(world) ? world : prog.position.world;
+    const all = game.mapUnlockAll;
+    let w = isWorldOpen(prog, world, all) && mapPage(world) ? world : prog.position.world;
+    // A file left on "Unlock all" (dev mode since turned off) may stand somewhere locked.
+    const recheck = game.devUnlockAll;
+    if (recheck && !(isWorldOpen(prog, w, all) && mapPage(w))) w = furthestOpenWorld(prog, all);
     this.page = mapPage(w) ?? mapPage(1) ?? MAP_PAGES[0] ?? EMPTY_PAGE;
     const pos = prog.position;
-    const here = pos.world === this.page.world ? this.nodeById(pos.node) : undefined;
+    let here = pos.world === this.page.world ? this.nodeById(pos.node) : undefined;
+    if (recheck && here && !isOpen(prog, this.page, here.id, all)) here = undefined;
     this.node = here?.id ?? startNode(this.page)?.id ?? '';
     this.placeHero();
   }
 
   private get progress() {
     return this.game.mapProgress;
+  }
+
+  /** Developer "Unlock all" in effect (the file's flag, while dev mode is on). */
+  private get unlockAll(): boolean {
+    return this.game.mapUnlockAll;
   }
 
   enter(): void {
@@ -207,14 +223,14 @@ export class WorldMapScene implements Scene {
   private view(page: WorldMapPage): PageView {
     let v = this.views.get(page);
     if (v) return v;
-    const { paths, exits } = openPaths(this.progress, page);
+    const { paths, exits } = openPaths(this.progress, page, this.unlockAll);
     v = {
       runs: [
         ...paths.map((p) => ({ id: pathId(p), dots: pathDots(p.points, true, true) })),
         ...exits.map((e) => ({ id: exitId(e), dots: pathDots(e.points, true, false) })),
       ],
       nodes: page.nodes
-        .filter((n) => isOpen(this.progress, page, n.id))
+        .filter((n) => isOpen(this.progress, page, n.id, this.unlockAll))
         .map((n) => ({ node: n, frame: this.nodeFrame(page, n) })),
     };
     this.views.set(page, v);
@@ -323,14 +339,14 @@ export class WorldMapScene implements Scene {
       this.openPause();
       return;
     }
-    if (input.pressed('jump') && here?.level && isOpen(this.progress, this.page, here.id)) {
+    if (input.pressed('jump') && here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll)) {
       this.game.ctx.audio.sfx('coin');
       this.game.enterLevelFromMap(here.level);
       return;
     }
     for (const d of DIRS) {
       if (!input.pressed(d)) continue;
-      const step = here ? nextStep(this.page, this.progress, this.node, d) : null;
+      const step = here ? nextStep(this.page, this.progress, this.node, d, MAP_PAGES, this.unlockAll) : null;
       if (!step) {
         this.game.ctx.audio.sfx('bump');
         return;
@@ -371,7 +387,7 @@ export class WorldMapScene implements Scene {
     }
     const toWorld = step.kind === 'exit' ? step.exit.toWorld : step.world;
     const next = mapPage(toWorld);
-    if (!next || !isWorldOpen(this.progress, toWorld)) {
+    if (!next || !isWorldOpen(this.progress, toWorld, this.unlockAll)) {
       this.mode = 'idle';
       this.placeHero();
       return;
@@ -430,6 +446,16 @@ export class WorldMapScene implements Scene {
           { label: 'Worlds', select: () => this.openWorlds() },
           { label: 'Save and quit', select: () => game.saveAndQuit() },
           { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, pop, true)) },
+          ...(game.devMode
+            ? [
+                {
+                  label: 'Unlock all',
+                  value: () => (game.devUnlockAll ? 'on' : 'off'),
+                  adjust: () => this.toggleUnlockAll(),
+                  hint: 'Developer mode: every level on the map open',
+                },
+              ]
+            : []),
         ],
         pop,
         true,
@@ -437,12 +463,35 @@ export class WorldMapScene implements Scene {
     );
   }
 
+  /**
+   * Map menu "Unlock all" (dev mode only): flips the file's flag and saves. Turning it off puts a
+   * hero standing somewhere locked back on the start of its world, or of the furthest open world.
+   */
+  private toggleUnlockAll(): void {
+    const game = this.game;
+    game.devUnlockAll = !game.devUnlockAll;
+    this.views.clear();
+    if (!game.devUnlockAll) {
+      const prog = this.progress;
+      if (!isWorldOpen(prog, this.page.world)) {
+        game.travelToWorld(furthestOpenWorld(prog, false)); // shows that page, which saves
+        game.autosave();
+        return;
+      }
+      if (!isOpen(prog, this.page, this.node)) {
+        this.node = startNode(this.page)?.id ?? '';
+        this.placeHero();
+      }
+    }
+    game.autosave();
+  }
+
   /** Map menu "Worlds": every open world with a page; the current one is marked HERE. */
   private openWorlds(): void {
     const game = this.game;
     const here = this.page.world;
     const worlds = MAP_PAGES.map((p) => p.world)
-      .filter((w) => isWorldOpen(this.progress, w))
+      .filter((w) => isWorldOpen(this.progress, w, this.unlockAll))
       .sort((a, b) => a - b);
     const items = worlds.map((w): MenuItem => ({
       label: `World ${w}`,
