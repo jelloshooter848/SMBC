@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { rasterizeToBuffer, validateDef } from '@engine/gfx/pixelart';
+import { charIndex, hexToRgb, PALETTE_MODES, resolvePalette } from '@engine/gfx/palette';
 import { mapDef, mapPalettes, SHORES, WATER_FRAMES } from './map';
 import { PALETTES, SPRITES } from './index';
 import { mapIconFrames } from './map-icons';
@@ -165,5 +166,104 @@ describe('warp pad icons', () => {
     expect(open.slice(0, 3).join('')).toContain('1');
     expect(locked.slice(0, 3).join('')).toBe('.'.repeat(48));
     for (const bright of ['1', 'a', 'c', 'e']) expect(colours(locked).has(bright), bright).toBe(false);
+  });
+});
+
+describe('secret-exit node icons', () => {
+  const frame = (id: string) => mapIconFrames[id] as readonly string[];
+  const at = (rows: readonly string[], x: number, y: number) => rows[y]?.[x] ?? '.';
+  const cells = [...Array(256).keys()].map((i) => [i % 16, i >> 4] as const);
+  /** The colour most of a frame is filled with (not the outline, the ring or the shine). */
+  const body = (rows: readonly string[]) => {
+    const n = new Map<string, number>();
+    for (const ch of rows.join('')) if (!'.01'.includes(ch)) n.set(ch, (n.get(ch) ?? 0) + 1);
+    return [...n].sort((a, b) => b[1] - a[1])[0]?.[0] as string;
+  };
+  const SECRET = ['map-node-secret', 'map-node-secret-cleared'];
+
+  it('are 16×16 and keep the dot, with a white ring around it and a keyhole cut in it', () => {
+    const dot = frame('map-node-open');
+    for (const id of SECRET) {
+      const f = frame(id);
+      expect(f).toHaveLength(16);
+      for (const row of f) expect(row).toHaveLength(16);
+      // Every pixel of the plain dot is drawn, plus a white ring outside it.
+      for (const [x, y] of cells)
+        if (at(dot, x, y) !== '.') expect(at(f, x, y), `${id} ${x},${y}`).not.toBe('.');
+      const ring = cells.filter(([x, y]) => at(dot, x, y) === '.' && at(f, x, y) !== '.');
+      expect(ring.length, id).toBeGreaterThan(30);
+      for (const [x, y] of ring) expect(at(f, x, y), `${id} ring ${x},${y}`).toBe('1');
+      // The keyhole: outline-black pixels inside the dot where the plain one is coloured.
+      const hole = cells.filter(([x, y]) => !'.0'.includes(at(dot, x, y)) && at(f, x, y) === '0');
+      expect(hole.length, id).toBeGreaterThanOrEqual(8);
+      for (const [x] of hole) expect(x >= 6 && x <= 9, id).toBe(true);
+    }
+    const shape = (id: string) => frame(id).map((r) => r.replace(/[^.0]/g, 'x'));
+    expect(shape('map-node-secret-cleared')).toEqual(shape('map-node-secret'));
+  });
+
+  it('are filled with colours apart from the plain open and cleared dots in every palette mode', () => {
+    const dist = (a: string, b: string) => {
+      const [p, q] = [hexToRgb(a), hexToRgb(b)];
+      return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+    };
+    const fills = ['map-node-open', 'map-node-cleared', ...SECRET].map((id) => charIndex(body(frame(id))));
+    expect(new Set(fills).size).toBe(4);
+    for (const mode of PALETTE_MODES) {
+      const pal = resolvePalette(PALETTES, 'items', mode);
+      const [open, cleared, secret, secretCleared] = fills.map((i) => pal[i] as string) as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      for (const s of [secret, secretCleared])
+        for (const plain of [open, cleared])
+          expect(dist(s, plain), `${mode} ${s} vs ${plain}`).toBeGreaterThan(80);
+      // Pink, then cream shaded pink: apart in every mode (purple turns pink under tritanopia).
+      expect(dist(secret, secretCleared), `${mode} open vs cleared`).toBeGreaterThan(80);
+    }
+  });
+
+  it('are on the items sheet', () => {
+    for (const id of SECRET) expect(SPRITES.items?.frames[id], id).toBeDefined();
+  });
+
+  describe('the secret-exit castle (Lost B-4)', () => {
+    const pairs = [
+      ['map-castle', 'map-castle-secret'],
+      ['map-castle-cleared', 'map-castle-secret-cleared'],
+    ] as const;
+
+    it('is the castle outline, flag once cleared, with a keyhole for a door', () => {
+      for (const [plainId, id] of pairs) {
+        const [plain, f] = [frame(plainId), frame(id)];
+        expect(f).toHaveLength(16);
+        for (const row of f) expect(row).toHaveLength(16);
+        for (const [x, y] of cells)
+          expect(at(f, x, y) === '.', `${id} ${x},${y}`).toBe(at(plain, x, y) === '.');
+        // The keyhole: black where the plain castle's wall is, above and beside its door.
+        const hole = cells.filter(([x, y]) => at(plain, x, y) === 'b' && at(f, x, y) === '0');
+        expect(hole.length, id).toBeGreaterThanOrEqual(2);
+        for (const [x, y] of hole) expect(x >= 6 && x <= 9 && y >= 9, `${id} ${x},${y}`).toBe(true);
+      }
+      expect(frame('map-castle-secret').join('')).not.toContain('4');
+      expect(frame('map-castle-secret-cleared').slice(0, 4).join('')).toContain('4');
+    });
+
+    it('has walls apart from the plain grey castle in every palette mode', () => {
+      const dist = (a: string, b: string) => {
+        const [p, q] = [hexToRgb(a), hexToRgb(b)];
+        return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+      };
+      for (const [plainId, id] of pairs) {
+        const [wall, secretWall] = [charIndex(body(frame(plainId))), charIndex(body(frame(id)))];
+        for (const mode of PALETTE_MODES) {
+          const pal = resolvePalette(PALETTES, 'items', mode);
+          expect(dist(pal[wall] as string, pal[secretWall] as string), `${id} ${mode}`).toBeGreaterThan(80);
+        }
+        expect(SPRITES.items?.frames[id], id).toBeDefined();
+      }
+    });
   });
 });

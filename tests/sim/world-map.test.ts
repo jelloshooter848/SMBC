@@ -205,7 +205,7 @@ describe('world map scene', () => {
     h.until(() => !h.map().revealing, 600);
     expect(autosave).toHaveBeenCalledTimes(1);
     // Then it says what opened.
-    expect(h.said.at(-1)).toBe('World 1-2, open');
+    expect(h.said.at(-1)).toBe('World 1-2, open, secret exit');
 
     const k = makeGame();
     const save2 = vi.spyOn(k.game, 'autosave');
@@ -489,7 +489,7 @@ describe('developer mode: unlock all on the map', () => {
     h.idle(8);
     expect(worldsListed(h)).toEqual(['World 1']);
     walkTo(h, '1-1');
-    h.tap('right');
+    h.tap('up');
     h.idle(40);
     expect(h.map().node).toBe('1-1');
     // The file keeps the flag: dev mode on again unlocks again.

@@ -72,9 +72,9 @@ describe('Warp Zone hub page', () => {
     const pads = page.nodes.filter((n) => n.id !== 'start');
     expect(pads).toHaveLength(4);
     for (const n of pads) expect(n.kind).toBe('warp');
-    expect(pads.filter((n) => n.to === 'll-1').map((n) => [n.x, n.y, n.requires, n.label, n.hint])).toEqual([
-      [13, 8, 'gameCleared', 'LOST LEVELS', 'LOST LEVELS - BEAT 8-4 TO UNLOCK'],
-    ]);
+    expect(
+      pads.filter((n) => n.to === 'll-1').map((n) => [n.x, n.y, n.toNode, n.requires, n.label, n.hint]),
+    ).toEqual([[13, 8, 'hub', 'gameCleared', 'LOST LEVELS', 'LOST LEVELS - BEAT 8-4 TO UNLOCK']]);
     const mystery = pads.filter((n) => n.requires === 'never');
     expect(mystery.map((n) => [n.x, n.y])).toEqual(
       expect.arrayContaining([

@@ -17,14 +17,15 @@ import { LL_D } from './worldD';
  * The thirteen Lost Levels map pages in play order ('ll-1'..'ll-9', then 'll-10'..'ll-13' for
  * worlds A-D), group 'll'; the registry (../index.ts) spreads this list after the hub. Each is a
  * new layout in one of the SMB map themes. Every page has: a 'start' node on the left edge,
- * nodes ll-W-1..ll-W-3 (kind 'level') and the ll-W-4 castle, a 'hub' warp node back to the Warp
- * Zone hub, and paths between them. Roads between pages:
+ * nodes ll-W-1..ll-W-3 (kind 'level') and the ll-W-4 castle, and paths between them. Only World 1
+ * has a 'hub' warp node back to the Warp Zone hub (the hub's Lost Levels pad lands on it, and it
+ * lands back on the pad). Roads between pages:
  *   1 -> 2 -> ... -> 8: the castle's exit off the right edge, as in SMB.
  *   8 -> 9: the World 8 castle's exit, behind the condition 'll9' (the file has cleared all 32
  *           levels from 1-1 to 8-4), with a hint showing the count while it is locked.
  *   8 -> A: a warp node 'warp-ll-10' beside the World 8 keep, behind 'llLetters' (the file has
  *           beaten 8-4). It sits on World 8 rather than World 9 because A-D can open
- *           without World 9.
+ *           without World 9. It lands on World A's pipe 'warp-ll-8', which leads back to it.
  *   A -> B -> C -> D: castle exits as in SMB. Worlds 9 and D end at their castles.
  */
 export const LOST_PAGES: WorldMapPage[] = [

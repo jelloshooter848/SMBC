@@ -96,6 +96,8 @@ function makeGame() {
 type H = ReturnType<typeof makeGame>;
 
 const page = (id: PageId) => mapPage(id) as WorldMapPage;
+/** The warp node on page `id` that leads to page `to`. */
+const nodeOn = (id: PageId, to: PageId) => page(id).nodes.find((n) => n.to === to) as MapNode;
 const startOf = (id: PageId) => (page(id).nodes.find((n) => n.kind === 'start') as MapNode).id;
 /** The node a level sits on, by the level → page lookup. */
 function at(levelId: string): { page: PageId; node: string } {
@@ -328,7 +330,38 @@ describe('Lost Levels campaign: the game ends and the unlocks (read from the fil
     h.idle(MAP_FADE_FRAMES);
     h.until(() => h.map().mode === 'idle', 800);
     expect(h.map().page.id).toBe('ll-10');
+    expect(h.map().node).toBe(nodeOn('ll-10', 'll-8').id);
     expect(loadSave(1)?.pages).toContain('ll-10');
+  });
+
+  it("World 8's pad → Lost A → A's portal → back on World 8's pad, both ways a fade", () => {
+    const h = makeGame();
+    const pad = warpA();
+    const eight = ['ll-8-1', 'll-8-2', 'll-8-3', 'll-8-4'];
+    open(h, file({ cleared: eight, pages: llPages(8), position: { page: 'll-8', node: pad.id } }));
+    expect(h.map().node).toBe(pad.id);
+    h.tap('jump');
+    expect(h.map().mode).toBe('fade');
+    h.idle(MAP_FADE_FRAMES);
+    h.until(() => h.map().mode === 'idle', 2000);
+    // Portals pair 1:1: the pad lands on A's pipe back to it.
+    const portal = page('ll-10').nodes.find((n) => n.kind === 'warp') as MapNode;
+    expect(portal.to).toBe('ll-8');
+    expect(h.map().page.id).toBe('ll-10');
+    expect(h.map().node).toBe(portal.id);
+    expect(h.map().hintLine).toBe('LOST WORLD 8');
+    // Off to the start and back, then through the pipe.
+    walkTo(h, startOf('ll-10'));
+    walkTo(h, portal.id);
+    h.tap('jump');
+    expect(h.map().mode).toBe('fade');
+    h.idle(MAP_FADE_FRAMES);
+    h.until(() => h.map().mode === 'idle', 800);
+    expect(h.map().page.id).toBe('ll-8');
+    expect(h.map().node).toBe(pad.id);
+    expect(h.map().hintLine).toBe(pad.label);
+    expect(loadSave(1)?.position).toEqual({ page: 'll-8', node: pad.id });
+    expect(h.game.mapLastNode['ll-10']).toBe(portal.id);
   });
 
   it('31 of 32 with 8-4 beaten: World 9 shut, the hint says 31/32; the 32nd clear opens it, drawn in', () => {

@@ -20,11 +20,13 @@ import {
   warpText,
   exitHint,
   warpTo,
+  warpRecords,
   type Dir,
   type MapStep,
 } from '../map/rules';
 import type { CharacterDef } from '../characters/character';
 import { pad } from '../hud/hud';
+import { hasSecretExit } from '../map/secret-exits';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import type { Game } from './game';
@@ -66,6 +68,16 @@ type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade';
 /** 'WORLD 1' → 'World 1', 'LOST LEVELS - BEAT 8-4 TO UNLOCK' → 'Lost Levels - Beat 8-4 To Unlock'. */
 export function spoken(text: string): string {
   return text.toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, a: string, b: string) => a + b.toUpperCase());
+}
+
+/**
+ * The header's top right: the page label ('WORLD 1', 'LOST A', 'WARP ZONE'), with the stage when
+ * the hero stands on a level or castle node ('WORLD 1-2', 'LOST A-2'); at most 10 chars.
+ */
+export function mapHeaderLabel(page: WorldMapPage, node: MapNode | null): string {
+  // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
+  const stage = node && !isWarpNode(node) && node.kind !== 'start' ? node.level?.split('-').pop() : undefined;
+  return (stage ? `${page.label}-${stage}` : page.label).slice(0, 10);
 }
 
 /** A path or world exit as drawn: its id and the dot centres, flat [x0, y0, x1, y1, ...]. */
@@ -181,6 +193,7 @@ export class WorldMapScene implements Scene {
   private readonly scratchActor: MapActor = { type: '', x: 0, y: 0 };
   private readonly header = {
     page: null as WorldMapPage | null,
+    node: null as MapNode | null,
     hero: null as CharacterDef | null,
     lives: -1,
     score: -1,
@@ -313,7 +326,7 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * "World 1-2, cleared" / "World 1-3, open" / "World 1-4 castle, open" / "Lost A-1, open";
+   * "World 1-2, cleared, secret exit" / "World 1-3, open" / "World 1-4 castle, open" / "Lost A-1, open";
    * warp nodes say their hint line: "Warp, Return To World 1" / "Lost Levels - Beat 8-4 To
    * Unlock, locked".
    */
@@ -323,7 +336,8 @@ export class WorldMapScene implements Scene {
       const text = spoken(warpText(this.progress, n, this.unlockAll));
       return isWarpOpen(this.progress, n, this.unlockAll) ? `Warp, ${text}` : `${text}, locked`;
     }
-    const state = isCleared(this.progress, this.page, n.id) ? 'cleared' : 'open';
+    let state = isCleared(this.progress, this.page, n.id) ? 'cleared' : 'open';
+    if (hasSecretExit(n.level)) state += ', secret exit';
     const hint = exitHint(this.progress, this.page, n.id, this.unlockAll);
     if (hint) return `${this.nodeLabelPlain(n, label, state)}. ${spoken(hint)}`;
     return this.nodeLabelPlain(n, label, state);
@@ -561,7 +575,7 @@ export class WorldMapScene implements Scene {
     if (!next) return;
     this.game.ctx.audio.sfx('coin');
     this.game.mapLastNode[this.page.id] = this.node;
-    if (isWarpOpen(this.progress, n)) this.game.addReveal(warpTo(this.progress, next.id));
+    if (warpRecords(this.progress, this.page, n)) this.game.addReveal(warpTo(this.progress, next.id));
     // A hidden or unreachable arrival node (World 1's warp spot before its secret) would strand
     // the hero: the start instead.
     const target =
@@ -782,8 +796,11 @@ export class WorldMapScene implements Scene {
       case 'bonus':
         return cleared ? 'map-node-cleared' : 'map-node-bonus';
       case 'castle':
+        if (hasSecretExit(n.level)) return cleared ? 'map-castle-secret-cleared' : 'map-castle-secret';
         return cleared ? 'map-castle-cleared' : 'map-castle';
       default:
+        // Levels with a secret (alternate) exit keep their own look, cleared or not.
+        if (hasSecretExit(n.level)) return cleared ? 'map-node-secret-cleared' : 'map-node-secret';
         return cleared ? 'map-node-cleared' : 'map-node-open';
     }
   }
@@ -828,21 +845,30 @@ export class WorldMapScene implements Scene {
     // A fade switches the header at its midpoint, when the screen is darkest.
     const f = this.fade;
     const page = f && f.t < MAP_FADE_FRAMES / 2 ? f.from : this.page;
+    // Standing on a level or castle node (not walking, sliding or fading) names the level.
+    const standing =
+      !f && (this.mode === 'idle' || this.mode === 'reveal') ? this.nodeById(this.node) : undefined;
+    const node =
+      standing && (standing.kind === 'level' || standing.kind === 'castle') && standing.level
+        ? standing
+        : null;
     // Rebuild the strings only when what they show changes.
     if (
       h.page !== page ||
+      h.node !== node ||
       h.hero !== s.character ||
       h.lives !== s.lives ||
       h.score !== s.score ||
       h.coins !== s.coins
     ) {
       h.page = page;
+      h.node = node;
       h.hero = s.character;
       h.lives = s.lives;
       h.score = s.score;
       h.coins = s.coins;
       h.title = page.title.toUpperCase().slice(0, 20);
-      h.world = page.label.slice(0, 10);
+      h.world = mapHeaderLabel(page, node);
       h.livesText = `${s.character.hudName.slice(0, 5)}×${pad(s.lives, 2)}`;
       h.scoreText = pad(s.score, 7);
       h.coinsText = `$×${pad(s.coins, 2)}`;

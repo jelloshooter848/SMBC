@@ -16,7 +16,7 @@ export const SKETCH_LL_7 = [
   'X##R^#R,#XR#~~~~',
   '###X,####,R#~~~~',
   '#R^^#X,R#X,#~~~~',
-  '##P,R#^X,R##~~~~',
+  '##R,R#^X,R##~~~~',
   'KKKKKKKKKKKK~~~~',
   '~~~~~~~~~~~~~~~~',
 ];
@@ -36,11 +36,9 @@ export const LL_7: WorldMapPage = {
       [10, 6],
       [13, 4],
     ],
-    [1, 12],
   ),
   paths: [
     { from: 'start', to: 'll-7-1', points: poly([0, 10], [2, 10], [2, 7], [3, 7]) },
-    { from: 'start', to: 'hub', points: poly([0, 10], [0, 12], [1, 12]) },
     { from: 'll-7-1', to: 'll-7-2', points: poly([3, 7], [5, 7], [5, 10], [7, 10]) },
     { from: 'll-7-2', to: 'll-7-3', points: poly([7, 10], [8, 10], [8, 6], [10, 6]) },
     { from: 'll-7-3', to: 'll-7-4', points: poly([10, 6], [10, 4], [13, 4]) },

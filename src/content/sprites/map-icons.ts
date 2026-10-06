@@ -2,9 +2,10 @@ import { swapColors } from '@engine/gfx/pixelart';
 
 /*
  * World map markers (original art), drawn with the items palette (see items.ts for the roles):
- * level dots (open yellow, cleared red, start blue, bonus green), warp pads (open, locked), the
- * castle icon (a green flag on top once cleared, with a white halo so it stands out on any page)
- * and the small dot the paths are drawn with.
+ * level dots (open yellow, cleared red, start blue, bonus green; secret exits pink, then pale pink,
+ * with a keyhole and a white ring), warp pads (open, locked), the castle icon (a green flag on top
+ * once cleared, with a white halo so it stands out on any page; pink with a keyhole door for a
+ * castle with a secret exit) and the small dot the paths are drawn with.
  */
 
 const nodeOpen = [
@@ -26,6 +27,16 @@ const nodeOpen = [
   '................',
 ];
 
+/**
+ * Secret-exit level dot (0.4.1; Super Mario World marks such levels in another colour): the
+ * dot with a keyhole cut in its middle and a white ring around it, so it reads without colour
+ * too. Open it is pink, cleared pale pink (never the plain yellow and red, even once found).
+ */
+const keyhole = new Set(['7,6', '8,6', '6,7', '7,7', '8,7', '9,7', '7,8', '8,8', '6,9', '7,9', '8,9', '9,9']);
+const nodeSecret = halo(
+  nodeOpen.map((row, y) => [...row].map((ch, x) => (keyhole.has(`${x},${y}`) ? '0' : ch)).join('')),
+);
+
 const castleBody = [
   '..000.0000.000..',
   '..0b0.0bb0.0b0..',
@@ -40,6 +51,14 @@ const castleBody = [
   '................',
   '................',
 ];
+
+/** A secret-exit castle (Lost B-4): pink walls, and a keyhole for a door. */
+const castleSecret = swapColors(
+  castleBody.map((row, y) =>
+    y === 5 || y === 7 ? '..0bbbb00bbbb0..' : y === 6 || y === 8 ? '..0bbb0000bbb0..' : row,
+  ),
+  { b: 'd' },
+);
 
 const castleFlag = ['.......0444.....', '.......044......', '.......04.......', '.......0........'];
 
@@ -107,8 +126,12 @@ export const mapIconFrames: Record<string, readonly string[]> = {
   'map-node-cleared': swapColors(nodeOpen, { '5': '2', '6': 'd', '9': '8' }),
   'map-node-start': swapColors(nodeOpen, { '5': 'e', '6': 'a', '9': 'c' }),
   'map-node-bonus': swapColors(nodeOpen, { '5': '4', '6': '1', '9': '0' }),
+  'map-node-secret': swapColors(nodeSecret, { '5': 'd', '6': '1', '9': 'c' }),
+  'map-node-secret-cleared': swapColors(nodeSecret, { '5': '3', '6': '1', '9': 'd' }),
   'map-castle': halo([...castleFlag.map(() => '................'), ...castleBody]),
   'map-castle-cleared': halo([...castleFlag, ...castleBody]),
+  'map-castle-secret': halo([...castleFlag.map(() => '................'), ...castleSecret]),
+  'map-castle-secret-cleared': halo([...castleFlag, ...castleSecret]),
   'map-warp': warpPad,
   'map-warp-locked': warpPadLocked,
   'map-path-dot': pathDot,
