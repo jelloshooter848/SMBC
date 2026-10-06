@@ -21,6 +21,7 @@ import {
   linkTdDef,
   linkTdPalettes,
 } from './dungeon';
+import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
 import { HERO_FX } from './palette-fx';
 
@@ -39,7 +40,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   ryu: ryuDef,
   bill: billDef,
   map: mapDef,
-  dungeon: dungeonDef,
+  // Walls and doors are drawn for the north edge; the top-down kit adds rotated west twins.
+  dungeon: withSideFrames(dungeonDef),
   'link-td': linkTdDef,
   'dungeon-enemies': dungeonEnemiesDef,
 };

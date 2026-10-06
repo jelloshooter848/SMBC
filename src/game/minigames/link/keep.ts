@@ -14,7 +14,6 @@ import { drawTdHud, hudData } from '../../topdown/hud';
 import { DEFAULT_SHEETS, fontOf, sheetLookup, type TdView } from '../../topdown/view';
 import { Keeper } from './keeper';
 import { keepDungeon } from './dungeon';
-import { keepMusic, keepSfx } from './audio';
 
 /** The keep's fixed seed: every round plays the same way for the same inputs. */
 export const KEEP_SEED = 0x11c4;
@@ -94,7 +93,7 @@ export class ShadowKeepScene implements Scene {
   }
 
   private sfx(id: string): void {
-    this.game.ctx.audio.sfx(keepSfx(id));
+    this.game.ctx.audio.sfx(id);
   }
 
   /** The room's music: the keeper's loop while it lives, the dungeon loop everywhere else. */
@@ -102,7 +101,7 @@ export class ShadowKeepScene implements Scene {
     if (this.phase !== 'play') return;
     const room = this.world.room;
     const boss = room.def.music === 'keeper' && !this.world.state().met.has('clear');
-    const want = keepMusic(boss ? 'keeper' : 'dungeon');
+    const want = boss ? 'keeper' : 'dungeon';
     if (want === this.music) return;
     this.music = want;
     this.game.ctx.audio.playMusic(want);
@@ -136,8 +135,7 @@ export class ShadowKeepScene implements Scene {
         if (e.kind === 'keeper') {
           this.sfx('secret');
           this.say('The keeper falls! The way out is open.');
-          this.music = null;
-          this.game.ctx.audio.stopMusic();
+          this.updateMusic(); // back to the dungeon loop
         }
         return;
       case 'hurt':

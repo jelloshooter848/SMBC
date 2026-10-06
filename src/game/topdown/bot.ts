@@ -1,6 +1,17 @@
 import type { Action } from '@engine/input/actions';
 import { ALIGN, swordAt } from './hero';
-import { DIRS, DIR_VEC, isHorizontal, mod, ROOM_H, ROOM_W, TILE, boxesOverlap, type Box, type Dir, type Side } from './geometry';
+import {
+  DIRS,
+  DIR_VEC,
+  mod,
+  ROOM_H,
+  ROOM_W,
+  TILE,
+  boxesOverlap,
+  type Box,
+  type Dir,
+  type Side,
+} from './geometry';
 import { Pickup, PushBlock } from './entity';
 import { Projectile } from './enemies';
 import type { TopDownWorld } from './world';
@@ -18,8 +29,8 @@ export type BotStep =
   | { do: 'leave'; side: Side };
 
 const INSIDE: Record<Side, { x: number; y: number; dir: Dir }> = {
-  n: { x: 7 * TILE, y: TILE, dir: 'up' },
-  s: { x: 7 * TILE, y: ROOM_H - 2 * TILE, dir: 'down' },
+  n: { x: 7.5 * TILE, y: TILE, dir: 'up' },
+  s: { x: 7.5 * TILE, y: ROOM_H - 2 * TILE, dir: 'down' },
   w: { x: TILE, y: 5 * TILE, dir: 'left' },
   e: { x: ROOM_W - 2 * TILE, y: 5 * TILE, dir: 'right' },
 };
@@ -77,7 +88,9 @@ export class TopDownBot {
         const item = world.entities.find((e): e is Pickup => e instanceof Pickup && !e.hidden && !e.dead);
         if (!item) return 'done';
         const box = item.hurtbox();
-        return this.walkTo(world, (n) => boxesOverlap({ x: n.x + 2, y: n.y + 2, w: 12, h: 12 }, box)) ?? 'done';
+        return (
+          this.walkTo(world, (n) => boxesOverlap({ x: n.x + 2, y: n.y + 2, w: 12, h: 12 }, box)) ?? 'done'
+        );
       }
       case 'push': {
         if (s.until(world)) return 'done';
@@ -104,7 +117,9 @@ export class TopDownBot {
   private atPushSpot(world: TopDownWorld, s: Extract<BotStep, { do: 'push' }>): boolean {
     const hero = world.hero;
     const v = DIR_VEC[s.dir];
-    return v.dx !== 0 ? hero.y === s.from.y && (hero.x - s.from.x) * v.dx > 0 : hero.x === s.from.x && (hero.y - s.from.y) * v.dy > 0;
+    return v.dx !== 0
+      ? hero.y === s.from.y && (hero.x - s.from.x) * v.dx > 0
+      : hero.x === s.from.x && (hero.y - s.from.y) * v.dy > 0;
   }
 
   private fight(world: TopDownWorld): Action[] {
@@ -114,7 +129,11 @@ export class TopDownBot {
     // Step out of the way of a shot the shield won't stop.
     const danger = (x: number, y: number) => this.inLine(world, x, y);
     if (danger(hero.x, hero.y)) {
-      const out = this.walkTo(world, (n) => !danger(n.x, n.y), foes.map((f) => grow(f.hurtbox(), 2)));
+      const out = this.walkTo(
+        world,
+        (n) => !danger(n.x, n.y),
+        foes.map((f) => grow(f.hurtbox(), 2)),
+      );
       if (out) return out;
     }
     // Stab if the blade would reach something from here, turning first if needed.
@@ -166,13 +185,37 @@ export class TopDownBot {
     const hero = world.hero;
     const offX = mod(hero.x, ALIGN) !== 0;
     const offY = mod(hero.y, ALIGN) !== 0;
+    if (offX && offY) return ['left']; // knocked off the grid: walking snaps one axis back first
     if (offX || offY) {
-      // Between two grid points: carry on to the next one.
-      const last = this.lastDir;
-      if (last && (isHorizontal(last) ? offX && !offY : offY && !offX)) return [last];
-      // Knocked off the grid: walking across the misaligned axis snaps back first.
-      return [offY ? 'left' : 'up'];
+      // Between two grid points: head for whichever of them is nearer the goal.
+      const lo = offX
+        ? { x: hero.x - mod(hero.x, ALIGN), y: hero.y }
+        : { x: hero.x, y: hero.y - mod(hero.y, ALIGN) };
+      const hi = offX ? { x: lo.x + ALIGN, y: lo.y } : { x: lo.x, y: lo.y + ALIGN };
+      const a = this.search(world, lo, goal, avoid);
+      const b = this.search(world, hi, goal, avoid);
+      const toLo: Dir = offX ? 'left' : 'up';
+      const toHi: Dir = offX ? 'right' : 'down';
+      if (!a && !b) return [this.lastDir === toHi ? toHi : toLo];
+      return [!b || (a && a.dist <= b.dist) ? toLo : toHi];
     }
+    const found = this.search(world, { x: hero.x, y: hero.y }, goal, avoid);
+    if (found?.first) {
+      this.stuck = 0;
+      return [found.first];
+    }
+    if (!found && ++this.stuck > 600) this.step++;
+    return null;
+  }
+
+  /** Breadth-first search on the half-tile grid: distance to the goal and the first move (null if none). */
+  private search(
+    world: TopDownWorld,
+    start: Node,
+    goal: (n: Node) => boolean,
+    avoid: Box[],
+  ): { dist: number; first: Dir | null } | null {
+    const hero = world.hero;
     const key = (n: Node) => `${n.x},${n.y}`;
     const free = (n: Node) =>
       n.x >= 0 &&
@@ -181,17 +224,17 @@ export class TopDownBot {
       n.y <= ROOM_H - TILE &&
       !world.blocked(hero.feet(n.x, n.y), 'link', null) &&
       !avoid.some((b) => boxesOverlap({ x: n.x + 2, y: n.y + 2, w: 12, h: 12 }, b));
-    const start = { x: hero.x, y: hero.y };
-    if (goal(start)) return null;
-    const prev = new Map<string, { from: Node; dir: Dir } | null>([[key(start), null]]);
+    if (goal(start)) return { dist: 0, first: null };
+    const prev = new Map<string, { from: Node; dir: Dir; dist: number } | null>([[key(start), null]]);
     const queue: Node[] = [start];
     while (queue.length) {
       const n = queue.shift() as Node;
+      const nd = prev.get(key(n))?.dist ?? 0;
       for (const d of DIRS) {
         const v = DIR_VEC[d];
         const m = { x: n.x + v.dx * ALIGN, y: n.y + v.dy * ALIGN };
         if (prev.has(key(m)) || !free(m)) continue;
-        prev.set(key(m), { from: n, dir: d });
+        prev.set(key(m), { from: n, dir: d, dist: nd + 1 });
         if (goal(m)) {
           let cur = m;
           let first: Dir = d;
@@ -201,13 +244,11 @@ export class TopDownBot {
             first = p.dir;
             cur = p.from;
           }
-          this.stuck = 0;
-          return [first];
+          return { dist: nd + 1, first };
         }
         queue.push(m);
       }
     }
-    if (++this.stuck > 600) this.step++;
     return null;
   }
 }

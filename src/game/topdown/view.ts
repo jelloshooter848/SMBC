@@ -23,6 +23,8 @@ export interface TdView {
   readonly frame: number;
   readonly reduceFlashing: boolean;
   readonly sheets: TdSheets;
+  /** The tile palette of the room being drawn (a dark room's), for things drawn from the tile sheet. */
+  readonly tilePalette?: string | undefined;
   /** A sheet (optionally recoloured), or null when it is not registered (headless tests, missing art). */
   sheet(id: string, palette?: string): SpriteSheet | null;
 }

@@ -20,17 +20,17 @@ export const DEATH_FRAMES = SPIN_FRAMES + 24;
 /** Movement snaps the cross axis to this grid (Zelda's half tile), so doorways line up. */
 export const ALIGN = 8;
 
-/** The blade's box for a hero at (x, y) facing `d`: a short stab in front, in the sword hand. */
+/** The blade's box for a hero at (x, y) facing `d` (where the art draws it): a short stab in front. */
 export function swordAt(x: number, y: number, d: Dir): Box {
   switch (d) {
     case 'up':
-      return { x: x + 3, y: y - 12, w: 8, h: 16 };
+      return { x, y: y - 12, w: 8, h: 16 };
     case 'down':
-      return { x: x + 5, y: y + 12, w: 8, h: 16 };
+      return { x: x + 8, y: y + 12, w: 8, h: 16 };
     case 'left':
-      return { x: x - 12, y: y + 6, w: 16, h: 8 };
+      return { x: x - 12, y: y + 8, w: 16, h: 8 };
     case 'right':
-      return { x: x + 12, y: y + 6, w: 16, h: 8 };
+      return { x: x + 12, y: y + 8, w: 16, h: 8 };
   }
 }
 
@@ -181,15 +181,33 @@ export class TdHero {
     const step = this.parity ? 1 : 2; // 1.5 px/frame on average
     this.walkT++;
     const v = DIR_VEC[want];
-    // Zelda's half-tile grid: first slide onto the grid across the way you are going.
-    const cross = isHorizontal(want) ? mod(this.y, ALIGN) : mod(this.x, ALIGN);
+    // Zelda's half-tile grid: first slide onto the grid across the way you are going, to the
+    // grid line with the way ahead open if only one of the two has it; and round a corner by up
+    // to half a tile when the way ahead is shut but open just beside (doorways, gaps).
+    const h = isHorizontal(want);
+    const pos = h ? this.y : this.x;
+    const cross = mod(pos, ALIGN);
+    const at = (c: number) => (h ? { x: this.x, y: c } : { x: c, y: this.y });
+    const open = (c: number) => {
+      const p = at(c);
+      return (
+        !world.blocked(this.feet(p.x, p.y), 'link', null) &&
+        !world.blocked(this.feet(p.x + v.dx, p.y + v.dy), 'link', null)
+      );
+    };
+    let target = pos;
     if (cross !== 0) {
-      const toward = cross < ALIGN / 2 ? -1 : 1;
-      const n = Math.min(step, toward < 0 ? cross : ALIGN - cross);
-      const moved = isHorizontal(want)
-        ? this.moveBy(world, 0, toward * n, false)
-        : this.moveBy(world, toward * n, 0, false);
-      if (moved) return;
+      const near = cross < ALIGN / 2 ? pos - cross : pos - cross + ALIGN;
+      const far = near < pos ? near + ALIGN : near - ALIGN;
+      target = !open(near) && open(far) ? far : near;
+    } else if (!open(pos)) {
+      const ahead = at(pos);
+      const leaning = world.solidEntityAt(this.feet(ahead.x + v.dx, ahead.y + v.dy)) instanceof PushBlock;
+      if (!leaning) target = [pos - ALIGN, pos + ALIGN].find(open) ?? pos;
+    }
+    if (target !== pos) {
+      const n = Math.min(step, Math.abs(target - pos)) * Math.sign(target - pos);
+      if (h ? this.moveBy(world, 0, n, false) : this.moveBy(world, n, 0, false)) return;
     }
     this.moveBy(world, v.dx * step, v.dy * step, true);
   }
@@ -255,8 +273,9 @@ export class TdHero {
     }
     let palette: string | undefined;
     if (this.invuln > 0 || this.dying) {
-      const phase = view.reduceFlashing ? 0 : (view.frame >> 2) & 1;
-      palette = `${view.sheets.hero}-hurt-${phase}`;
+      palette = view.reduceFlashing
+        ? `${view.sheets.hero}-hurt-calm`
+        : `${view.sheets.hero}-hurt-${(view.frame >> 2) & 1}`;
     }
     let sheet = palette ? view.sheet(view.sheets.hero, palette) : null;
     if (palette && !sheet) {

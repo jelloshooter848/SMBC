@@ -33,5 +33,5 @@ export const KEEP_PLAN: Readonly<Record<string, readonly BotStep[]>> = {
     { do: 'leave', side: 'n' },
   ],
   keeper: [{ do: 'fight' }, { do: 'leave', side: 'e' }],
-  exit: [{ do: 'goto', x: 7 * TILE, y: 0 }],
+  exit: [{ do: 'goto', x: 7.5 * TILE, y: 0 }],
 };

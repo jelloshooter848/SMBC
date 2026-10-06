@@ -311,8 +311,28 @@ export class TopDownWorld {
     const r1 = Math.floor((box.y + box.h - 1) / TILE);
     for (let r = r0; r <= r1; r++)
       for (let c = c0; c <= c1; c++) if (this.tileSolid(c, r, mover)) return true;
+    if (mover === 'link' && this.inDoorJamb(box)) return true;
     if (mover === 'fly') return false;
     return this.solidEntityAt(box, self) !== null;
+  }
+
+  /**
+   * A two-cell north or south doorway is drawn as one 16-px door centred across its cells: the
+   * outer 8 px of each cell are its jambs, solid to the hero.
+   */
+  private inDoorJamb(box: Box): boolean {
+    for (const side of ['n', 's'] as const) {
+      const cells = this.room.doorCells[side];
+      if (!cells || cells.length !== 2) continue;
+      const top = side === 'n' ? -Infinity : (ROOM_ROWS - 1) * TILE;
+      const bottom = side === 'n' ? TILE : Infinity;
+      if (box.y + box.h <= top || box.y >= bottom) continue;
+      const left = (cells[0] as number) * TILE;
+      const right = left + 2 * TILE;
+      if (box.x + box.w <= left || box.x >= right) continue;
+      if (box.x < left + TILE / 2 || box.x + box.w > right - TILE / 2) return true;
+    }
+    return false;
   }
 
   /** Moves an entity pixel by pixel; returns false (stopping there) when something solid is in the way. */

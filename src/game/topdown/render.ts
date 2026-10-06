@@ -26,7 +26,8 @@ type DoorLook = 'open' | 'locked' | 'shut';
  * Draws one room's tiles with its top-left at (ox, oy). Edge walls use `wall-top` (north, flipped
  * for south) and `wall-top-side` (west, flipped for east), corners `wall-corner`, inner walls
  * `wall`. Doors are drawn for the north edge and flipped for the south; east and west use the
- * `-side` frames (made by rotation, frames.ts). The second cell of a two-cell doorway is mirrored.
+ * `-side` frames (made by rotation, frames.ts). A two-cell doorway (and exit) draws one 16-px door
+ * centred across its cells, from the `-l` / `-r` halves (frames.ts).
  */
 export function drawRoomTiles(
   r: Renderer,
@@ -63,17 +64,19 @@ export function drawRoomTiles(
         }
         case 'door': {
           const s = side as Side;
-          const look = door(s);
-          const name = `door-${look}` as const;
+          const name = `door-${door(s)}` as const;
           const cells = room.doorCells[s] ?? [];
-          const second = cells.length > 1 && (s === 'n' || s === 's' ? col : row) === cells[cells.length - 1];
-          if (s === 'n' || s === 's') put(name, x, y, PLACEHOLDER[name], second, s === 's');
-          else put(`${name}-side`, x, y, PLACEHOLDER[name], s === 'e', second);
+          if (s === 'e' || s === 'w') put(`${name}-side`, x, y, PLACEHOLDER[name], s === 'e');
+          else if (cells.length === 2)
+            put(`${name}-${col === cells[0] ? 'l' : 'r'}`, x, y, PLACEHOLDER[name], false, s === 's');
+          else put(name, x, y, PLACEHOLDER[name], false, s === 's');
           break;
         }
         case 'exit': {
           const f = view.reduceFlashing ? 'exit-0' : `exit-${(view.frame >> 4) & 1}`;
-          put(f, x, y, PLACEHOLDER.exit);
+          const pair =
+            tileAt(room, col - 1, row) === 'exit' ? 'r' : tileAt(room, col + 1, row) === 'exit' ? 'l' : null;
+          put(pair ? `${f}-${pair}` : f, x, y, PLACEHOLDER.exit, false, side === 's');
           break;
         }
         default:
@@ -104,7 +107,15 @@ function pastDoor(world: TopDownWorld, room: Room, side: Side, left: Side): Door
  * Draws the play area (y from HUD_H down): the room, its entities and the hero; during a slide,
  * the room left behind and the new one moving in together, the hero riding with the new one.
  */
-export function renderWorld(r: Renderer, view: TdView, world: TopDownWorld): void {
+export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld): void {
+  const dark = world.room.def.dark && base.sheets.tilesDark ? base.sheets.tilesDark : undefined;
+  const view: TdView = {
+    frame: base.frame,
+    reduceFlashing: base.reduceFlashing,
+    sheets: base.sheets,
+    sheet: base.sheet,
+    tilePalette: dark,
+  };
   let ox = 0;
   let oy = HUD_H;
   const tr = world.transition;

@@ -169,7 +169,7 @@ export class Pickup extends TdEntity {
   update(): void {}
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
     if (this.hidden) return;
-    const sheet = view.sheet(view.sheets.tiles);
+    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
     const frame = this.kind === 'heart' ? 'heart-pickup' : this.kind === 'key' ? 'key' : 'heart';
     const color = this.kind === 'key' ? '#f8b800' : '#f83800';
     if (this.kind === 'heart-container') {
@@ -226,7 +226,7 @@ export class PushBlock extends TdEntity {
   }
 
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.tiles);
+    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
     if (sheet?.frames.has('block')) r.sprite(sheet, 'block', ox + this.x, oy + this.y);
     else {
       r.rect(ox + this.x, oy + this.y, 16, 16, '#503000');
@@ -266,7 +266,7 @@ export class FloorSwitch extends TdEntity {
     }
   }
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.tiles);
+    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
     const f = this.pressed ? 'switch-down' : 'switch-up';
     if (sheet?.frames.has(f)) r.sprite(sheet, f, ox + this.x, oy + this.y);
     else r.rect(ox + this.x + 3, oy + this.y + 3, 10, 10, this.pressed ? '#404040' : '#bcbcbc');
@@ -295,7 +295,7 @@ export class Torch extends TdEntity {
     return true;
   }
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.tiles);
+    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
     const f = !this.lit ? 'torch-off' : view.reduceFlashing ? 'torch-0' : `torch-${(view.frame >> 3) & 1}`;
     if (sheet?.frames.has(f)) r.sprite(sheet, f, ox + this.x, oy + this.y);
     else {

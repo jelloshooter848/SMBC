@@ -6,8 +6,16 @@ import { ScriptedInput } from '@game/sim/headless';
 import { buildDungeon, parseRoom, type RoomDef } from './room';
 import { TopDownWorld, type TdEvent } from './world';
 import { Pickup, PushBlock, ENEMY_INVULN, FloorSwitch, Torch } from './entity';
-import { Bat, Knight, Rock, Spitter, SPIT_WINDUP, ROCK_SPEED } from './enemies';
-import { ATTACK_FRAMES, DEATH_FRAMES, HERO_INVULN, KNOCK_FRAMES, KNOCK_PX, SWORD_FIRST, swordAt } from './hero';
+import { Rock, SPIT_WINDUP, ROCK_SPEED, type Bat, type Knight, type Spitter } from './enemies';
+import {
+  ATTACK_FRAMES,
+  DEATH_FRAMES,
+  HERO_INVULN,
+  KNOCK_FRAMES,
+  KNOCK_PX,
+  SWORD_FIRST,
+  swordAt,
+} from './hero';
 import { ROOM_W, TILE, boxesOverlap } from './geometry';
 import { rotateCcw, withSideFrames } from './frames';
 import { drawTdHud, hudData } from './hud';
@@ -40,7 +48,11 @@ function map(at: [number, number, string][], base = EMPTY): string[] {
 }
 
 /** A west room (start) and an east room joined by a doorway of `door` on row 5. */
-function twoRooms(door: 'O' | 'L' | 'X', westExtra: [number, number, string][] = [], opts: Partial<RoomDef> = {}) {
+function twoRooms(
+  door: 'O' | 'L' | 'X',
+  westExtra: [number, number, string][] = [],
+  opts: Partial<RoomDef> = {},
+) {
   const west = room('west', [0, 0], map([[7, 5, '@'], [15, 5, door], ...westExtra]), opts);
   const east = room('east', [1, 0], map([[0, 5, door === 'X' ? 'O' : door]]));
   return buildDungeon([west, east]);
@@ -134,7 +146,14 @@ describe('top-down kit: rooms from text', () => {
   });
 
   it('checks a dungeon: one start, doors that lead somewhere and line up', () => {
-    const a = room('a', [0, 0], map([[7, 5, '@'], [15, 5, 'O']]));
+    const a = room(
+      'a',
+      [0, 0],
+      map([
+        [7, 5, '@'],
+        [15, 5, 'O'],
+      ]),
+    );
     expect(() => buildDungeon([a])).toThrow(/east|e door leads nowhere/);
     const wall = room('b', [1, 0], EMPTY);
     expect(() => buildDungeon([a, wall])).toThrow(/meets a wall/);
@@ -183,8 +202,12 @@ describe('top-down kit: movement and collision', () => {
 
   it('water, blocks and statues stop the hero and walkers; bats fly over them, shots over water', () => {
     const d = twoRooms('O', [
+      [8, 4, '~'],
       [8, 5, '~'],
+      [8, 6, '~'],
+      [6, 4, 'B'],
       [6, 5, 'B'],
+      [6, 6, 'B'],
       [7, 4, 'S'],
     ]);
     const { world, pad, hero } = setup(d);
@@ -204,6 +227,34 @@ describe('top-down kit: movement and collision', () => {
 });
 
 describe('top-down kit: doors, keys and shutters', () => {
+  it('a two-cell doorway is one 16-px door in the middle: its jambs are solid, and the hero rounds the corner into it', () => {
+    const d = buildDungeon([
+      room(
+        'south',
+        [0, 1],
+        map([
+          [7, 0, 'O'],
+          [8, 0, 'O'],
+          [7, 8, '@'],
+        ]),
+      ),
+      room(
+        'north',
+        [0, 0],
+        map([
+          [7, 10, 'O'],
+          [8, 10, 'O'],
+        ]),
+      ),
+    ]);
+    const { world, pad, hero } = setup(d);
+    expect(hero.x).toBe(112); // half a tile left of the door's middle
+    expect(world.blocked(hero.feet(112, 0), 'link')).toBe(true); // in the left jamb
+    expect(world.blocked(hero.feet(120, 0), 'link')).toBe(false);
+    pad.until(['up'], () => world.room.id === 'north');
+    expect(hero.x).toBe(120);
+  });
+
   it('an open doorway slides the view to the next room and lands the hero in its doorway', () => {
     const { world, pad, hero } = setup();
     const events = pad.step(['right'], 90);
@@ -237,8 +288,23 @@ describe('top-down kit: doors, keys and shutters', () => {
 
   it("shutters stay open until the hero steps in, then close until the room's condition is met", () => {
     const d = buildDungeon([
-      room('west', [0, 0], map([[7, 5, '@'], [15, 5, 'O']])),
-      room('east', [1, 0], map([[0, 5, 'X'], [10, 5, 'n']]), { shutters: 'clear' }),
+      room(
+        'west',
+        [0, 0],
+        map([
+          [7, 5, '@'],
+          [15, 5, 'O'],
+        ]),
+      ),
+      room(
+        'east',
+        [1, 0],
+        map([
+          [0, 5, 'X'],
+          [10, 5, 'n'],
+        ]),
+        { shutters: 'clear' },
+      ),
     ]);
     const { world, pad, hero } = setup(d);
     pad.until(['right'], () => world.room.id === 'east' && !world.transition);
@@ -277,7 +343,14 @@ describe('top-down kit: push blocks and switches', () => {
         ]),
         { shutters: 'plates' },
       ),
-      room('north', [0, 0], map([[7, 10, 'O'], [8, 10, 'O']])),
+      room(
+        'north',
+        [0, 0],
+        map([
+          [7, 10, 'O'],
+          [8, 10, 'O'],
+        ]),
+      ),
       room('east', [1, 1], map([[0, 5, 'O']])),
     ]);
 
@@ -293,7 +366,8 @@ describe('top-down kit: push blocks and switches', () => {
     pad.until(['right'], () => block.x === 6 * TILE && !block.moving);
     expect(world.doorOpen('n')).toBe(false);
     const events: TdEvent[] = [];
-    for (let i = 0; i < 200 && !(block.x === 7 * TILE && !block.moving); i++) events.push(...pad.step(['right']));
+    for (let i = 0; i < 200 && !(block.x === 7 * TILE && !block.moving); i++)
+      events.push(...pad.step(['right']));
     events.push(...pad.step([], 2));
     expect(events.map((e) => e.type)).toEqual(expect.arrayContaining(['push', 'met', 'shutters']));
     expect(world.doorOpen('n')).toBe(true);
@@ -368,7 +442,16 @@ describe('top-down kit: push blocks and switches', () => {
 
 describe('top-down kit: sword, shield and damage', () => {
   function withKnight() {
-    const d = buildDungeon([room('r', [0, 0], map([[7, 5, '@'], [9, 5, 'n']]))]);
+    const d = buildDungeon([
+      room(
+        'r',
+        [0, 0],
+        map([
+          [7, 5, '@'],
+          [9, 5, 'n'],
+        ]),
+      ),
+    ]);
     const s = setup(d);
     const k = s.world.enemies()[0] as Knight;
     return { ...s, k };
@@ -475,7 +558,7 @@ describe('top-down kit: sword, shield and damage', () => {
     hero.y = 80;
     world.add(new Rock(hero.x + 24, hero.y + 4, 'left'));
     pad.step(['attack']);
-    events = pad.step([], 12);
+    expect(pad.step([], 12)).toContainEqual({ type: 'hurt', hp: 4 });
     expect(hero.hp).toBe(4);
     expect(ROCK_SPEED).toBeGreaterThan(1);
   });
@@ -500,7 +583,16 @@ describe('top-down kit: sword, shield and damage', () => {
   });
 
   it('dead monsters sometimes leave a heart (seeded); a heart gives a heart back', () => {
-    const d = buildDungeon([room('r', [0, 0], map([[7, 5, '@'], [3, 3, 'b']]))]);
+    const d = buildDungeon([
+      room(
+        'r',
+        [0, 0],
+        map([
+          [7, 5, '@'],
+          [3, 3, 'b'],
+        ]),
+      ),
+    ]);
     let drops = 0;
     for (let seed = 1; seed <= 40; seed++) {
       const { world } = setup(d, seed);
@@ -520,7 +612,19 @@ describe('top-down kit: sword, shield and damage', () => {
 
 describe('top-down kit: enemies', () => {
   const open = (ch: string, seed = 3) =>
-    setup(buildDungeon([room('r', [0, 0], map([[1, 9, '@'], [7, 5, ch]]))]), seed);
+    setup(
+      buildDungeon([
+        room(
+          'r',
+          [0, 0],
+          map([
+            [1, 9, '@'],
+            [7, 5, ch],
+          ]),
+        ),
+      ]),
+      seed,
+    );
 
   it('a bat flutters about in all directions, rests now and then, and stays in the room', () => {
     const { world, pad } = open('b');
@@ -591,9 +695,18 @@ describe('top-down kit: enemies', () => {
 describe('top-down kit: drawing helpers', () => {
   it('rotates a north frame to face west (top edge becomes the left edge)', () => {
     expect(rotateCcw(['12', '34'])).toEqual(['24', '13']);
-    const def = withSideFrames({ palette: 'p', frames: { 'door-open': ['11', '..'], 'wall-top-side': ['x'] } });
+    const def = withSideFrames({
+      palette: 'p',
+      frames: { 'door-open': ['11', '..'], 'wall-top-side': ['x'] },
+    });
     expect(def.frames['door-open-side']).toEqual(['1.', '1.']);
     expect(def.frames['wall-top-side']).toEqual(['x']); // a drawn one is kept
+    const split = withSideFrames({
+      palette: 'p',
+      frames: { 'wall-top': ['1111', '2222'], 'exit-0': ['abcd', 'efgh'] },
+    });
+    expect(split.frames['exit-0-l']).toEqual(['11ab', '22ef']);
+    expect(split.frames['exit-0-r']).toEqual(['cd11', 'gh22']);
   });
 
   it('the HUD shows the title, the item by its ability name, whole, half and empty hearts, and keys', () => {
@@ -602,7 +715,12 @@ describe('top-down kit: drawing helpers', () => {
     const sheet: SpriteSheet = {
       id: 's',
       image: null,
-      frames: new Map(['heart', 'heart-half', 'heart-empty', 'key', 'sword-icon'].map((f) => [f, { x: 0, y: 0, w: 8, h: 8 }])),
+      frames: new Map(
+        ['heart', 'heart-half', 'heart-empty', 'key', 'sword-icon'].map((f) => [
+          f,
+          { x: 0, y: 0, w: 8, h: 8 },
+        ]),
+      ),
     };
     const none = new NullRenderer();
     const r: Renderer = {

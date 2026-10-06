@@ -20,14 +20,30 @@ export function rotateCcw(rows: readonly string[]): string[] {
 export const SIDE_FRAMES = ['wall-top', 'door-open', 'door-locked', 'door-shut'] as const;
 
 /**
- * The tile sheet with a `<frame>-side` for each of SIDE_FRAMES, rotated from the north frame,
- * unless the sheet already draws its own.
+ * 16-px doorway frames that a two-cell (north or south) doorway draws centred across its cells:
+ * `<frame>-l` is wall-top's left half then the frame's left half, `<frame>-r` the frame's right
+ * half then wall-top's right half.
+ */
+export const SPLIT_FRAMES = ['door-open', 'door-locked', 'door-shut', 'exit-0', 'exit-1'] as const;
+
+/**
+ * The tile sheet with the frames the top-down renderer derives: a `<frame>-side` for each of
+ * SIDE_FRAMES (rotated from the north frame) and the `-l` / `-r` halves of SPLIT_FRAMES, unless
+ * the sheet already draws its own.
  */
 export function withSideFrames(def: SpriteDef): SpriteDef {
   const frames: Record<string, readonly string[]> = { ...def.frames };
   for (const name of SIDE_FRAMES) {
     const north = def.frames[name];
     if (north && !frames[`${name}-side`]) frames[`${name}-side`] = rotateCcw(north);
+  }
+  const wall = def.frames['wall-top'];
+  for (const name of SPLIT_FRAMES) {
+    const f = def.frames[name];
+    if (!f || !wall) continue;
+    const half = (f[0]?.length ?? 16) >> 1;
+    frames[`${name}-l`] ??= f.map((row, y) => (wall[y] ?? '').slice(0, half) + row.slice(0, half));
+    frames[`${name}-r`] ??= f.map((row, y) => row.slice(half) + (wall[y] ?? '').slice(half));
   }
   return { ...def, frames };
 }

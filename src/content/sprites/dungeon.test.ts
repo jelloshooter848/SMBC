@@ -111,7 +111,9 @@ describe.each(SHEETS)('%s sheet', (id, def, frames, palettes) => {
   });
 
   it('is registered with its palettes, which share one index layout', () => {
-    expect(SPRITES[id]).toBe(def);
+    // Registered as drawn (the tile sheet also gains the top-down kit's derived frames).
+    expect(SPRITES[id]?.palette).toBe(def.palette);
+    for (const [frame, rows] of Object.entries(def.frames)) expect(SPRITES[id]?.frames[frame]).toBe(rows);
     expect(palettes[def.palette]).toBeDefined();
     expect(new Set(Object.values(palettes).map((p) => p.length)).size).toBe(1);
     for (const [name, p] of Object.entries(palettes)) expect(PALETTES.default[name]).toBe(p);

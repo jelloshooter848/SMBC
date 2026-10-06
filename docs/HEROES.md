@@ -108,6 +108,43 @@ interface MiniGameDef {
 3. `captive x y hero=<id>` in a campaign level's `[entities]`, on a spot the player can reach.
    Prove it with a sim.
 
+## Link's mini game: the Shadow Keep (`src/game/minigames/link/`)
+
+A small dungeon in the style of the first Zelda game, the spell's prison in Link's mind. You play
+Link (overhead, four-way walking on a half-tile grid, a sword stab, a shield that stops rocks from
+the front while not stabbing, three hearts taken in halves). Eight rooms, in order: the start
+(the wake-up line), bats, a push-block room (one loose block onto a plate opens the shutter; if
+it gets stuck, leaving and coming back puts it back), skeleton knights (two hits each; the key
+appears when they are gone), a locked door into a room whose shutters open when every monster is
+gone, rock-spitters with a floor switch behind water (it opens the way on and shows a heart
+refill), the keeper (drifts across the top, glows, then fans three spells at Link that the shield
+can't stop; six hits) and the shining exit. Exit reached: `pass`; no hearts left: `fail` after the
+death spin; menu Give up: `quit`. Hearts and keys live in the keep, never in `game.state`.
+Music `dungeon` and `keeper`; sounds `secret`, `sword-stab`, `door-open`, `key-get`.
+Dev: `?minigame=link` (the scene is `window.__miniGame`; `world.warpTo(roomId, x, y)` jumps).
+
+### The top-down kit (`src/game/topdown/`)
+
+Reusable for later top-down mini games; it knows no particular game.
+
+- `room.ts`: rooms as 11 strings of 16 characters (legend in the file: walls, blocks, water,
+  doors `O`/`L`/`X` on the border, spawns such as `b` `n` `r` `P` `o` `_` `k`). Room options:
+  `shutters` and `reveal` conditions (`clear`, `plates`, `switches`, `torches`), `music`, `hint`,
+  `dark`. `buildDungeon` checks that every door meets a doorway that lines up in the next room.
+  North and south doorways are two cells holding one 16-px door in the middle (its jambs are solid).
+- `world.ts`: `TopDownWorld` (seeded `Rng`, deterministic): tile collision per mover (hero,
+  walkers, flyers, shots, blocks), doors and keys (a key opens both sides of a locked door),
+  shutters that close once the hero has stepped in, room memory (conditions met stay met,
+  cleared rooms stay empty, a solved block stays put, an unsolved one resets), room slides and
+  events for the game to turn into sounds and announcements. The update order is documented there.
+- `hero.ts`, `entity.ts`, `enemies.ts`: the sword-and-shield hero (corner rounding into gaps),
+  enemies with knockback, invulnerability and heart drops (bat, knight, spitter), shots, pickups,
+  push blocks, switches, torches. A game adds its own spawn kinds (the keeper) through `spawners`.
+- `render.ts`, `hud.ts`, `frames.ts`: tiles drawn for the north wall are flipped for the south
+  and rotated for the sides (`withSideFrames` derives `-side` and the doorway halves `-l`/`-r`
+  when the sheet is registered); the Zelda-style HUD (map, keys, item box, life).
+- `bot.ts`: a breadth-first-search player driven by a per-room plan, used by the tests.
+
 ## Hero training (optional practice rooms)
 
 Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:
