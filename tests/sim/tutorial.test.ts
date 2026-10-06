@@ -603,6 +603,14 @@ describe('the prompts name abilities, never buttons', () => {
     expect(texts()).not.toContain('OK (Z)');
   });
 
+  it('wrapPrompt keeps punctuation after a key on the key ("RUN (X)," not "RUN (X) ,")', () => {
+    expect(wrapPrompt('HOLD RIGHT AND RUN (X), LET GO BEFORE THE GAP AND WATCH LUIGI SLIDE!', 25)).toEqual([
+      'HOLD RIGHT AND RUN (X),',
+      'LET GO BEFORE THE GAP AND',
+      'WATCH LUIGI SLIDE!',
+    ]);
+  });
+
   it('wrapPrompt keeps an ability with its key on one line', () => {
     expect(wrapPrompt('HOLD RUN (RIGHT SHIFT) TO RUN, THEN JUMP (Z) OVER THE GAP.', 20)).toEqual([
       'HOLD',

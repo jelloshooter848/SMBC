@@ -988,7 +988,7 @@ export class WorldMapScene implements Scene {
     r.sprite(sheet, look.frame, x, y, flip);
     if (pose.sparkle > 0) {
       // A little twinkle over the head, on the side away from the node.
-      const sx = x + (w >> 1) - m.side * 6;
+      const sx = x + (w >> 1) + m.side * 6;
       const sy = y - 3;
       const n = pose.sparkle;
       r.rect(sx - n, sy, 2 * n + 1, 1, '#fce4a0');

@@ -145,7 +145,7 @@ describe('the run lesson on touch', () => {
   it('says to push the d-pad far to the side (the RUN button too); keys keep the usual words', () => {
     const { h, scene } = lesson2();
     const keys = scene.promptWrapped().join(' ');
-    expect(keys).toContain('RUN (');
+    expect(keys).toBe('HOLD RIGHT AND RUN (X), LET GO BEFORE THE GAP AND WATCH LUIGI SLIDE!');
     expect(keys).not.toContain('D-PAD');
     const settings = h.game.deps.settings;
     if (settings) settings.input.touch = 'on';

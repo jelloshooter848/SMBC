@@ -132,7 +132,8 @@ export const PROMPT_COLS = 28;
  * SHIFT)") stays on one line.
  */
 export function wrapPrompt(text: string, cols = PROMPT_COLS): string[] {
-  const words = fontText(text).match(/[^\s(]+(?:\s\([^)]*\))?|\([^)]*\)/g) ?? [];
+  // A word, with its key in brackets and any punctuation after them ("RUN (X),") kept together.
+  const words = fontText(text).match(/[^\s(]+(?:\s\([^)]*\)[^\s(]*)?|\([^)]*\)[^\s(]*/g) ?? [];
   const lines: string[] = [];
   let line = '';
   for (const w of words) {
