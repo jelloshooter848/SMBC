@@ -21,18 +21,26 @@ pnpm dev          # http://localhost:5173
 ```
 
 Keyboard: arrows move, **Z** jump, **X** run / attack (and _back_ in menus), **C** special
-(use the selected tool), **Right Shift** select (cycle tools), **Enter** start/pause. Gamepads use the standard mapping. Phones and tablets get on-screen
-controls automatically. Press **F1** for the debug overlay and **F2** for a free camera
+(use the selected tool), **Right Shift** select (cycle tools), **Enter** start/pause. Gamepads use the standard mapping. Press **F1** for the debug overlay and **F2** for a free camera
 (arrows scroll) when checking level layouts.
+
+Touch controls appear on phones and tablets (a touch-first screen that cannot hover; touchscreen
+laptops count as desktops). In _Auto_ they also come up on the first touch and go away when a key
+or gamepad button is used; the pause menu's **Touch controls** row switches Auto / On / Off. The
+d-pad's zones are by angle, with wide left/right bands and a firmer push needed for down, so running
+does not crouch by accident. Pushing it past the ring runs (Mario and Luigi) without firing. It is
+a fixed pad by default, or a floating stick that centres under your thumb anywhere on the left of
+the screen (**Options > Controls > Touch d-pad**). A thumb can roll from one button to the next
+without lifting, and the buttons say what they do for the hero and scene.
 
 ### World map and save files
 
 **Start game** opens the file select: three save files, each showing its hero, the world
 reached, levels cleared (out of 32), lives and score (a star once the game is beaten); pick a
-file to continue it, start a new one (character select, player two can join) or erase one.
-A file plays on a Super Mario World-style map with one page per world (1-8). Walk the d-pad
-along open paths and press jump on a level to play it (character select first; the
-current hero is preselected). Clearing a level, at the flagpole or by Toad in a castle, returns
+file to continue it, start a new one (it opens straight on World 1's map with Mario) or erase
+one. A file plays on a Super Mario World-style map with one page per world (1-8). Walk the d-pad
+along open paths and press jump on a level to play it (character select first: the current hero
+is preselected, player two can join, and the file and map keep the last pick). Clearing a level, at the flagpole or by Toad in a castle, returns
 to the map and draws in the road to the next one; a castle opens the next world's page. A warp
 pipe opens only the world it leads to; the map menu's **Worlds** list travels between open
 worlds (back to the spot you left in each). **Pause → Quit to map** leaves any level without
@@ -101,9 +109,9 @@ has the same guide for the hero you are playing.
 - **Video**: integer scaling, colour-blind safe palettes (deuteranopia, protanopia,
   tritanopia) and high contrast, reduced flashing, FPS counter, screen-reader announcements.
 - **Audio**: master, music and sound volumes, mute.
-- **Controls**: full keyboard and gamepad remapping, touch pad on/off and size. The touch
-  buttons say what they do right now (JUMP, RUN or FIRE, SWORD, the selected tool's name,
-  PAUSE, OK/BACK in menus) and hide when they do nothing for your hero.
+- **Controls**: full keyboard and gamepad remapping; touch pad auto/on/off, size, and fixed
+  or floating d-pad. The touch buttons say what they do right now (JUMP, RUN or FIRE, SWORD,
+  the selected tool's name, PAUSE, OK/BACK in menus) and hide when they do nothing for your hero.
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
@@ -136,11 +144,12 @@ Settings persist in the browser.
 
 ### Two players
 
-On the character select, player two presses **Start** (numpad 0/Enter, or a second gamepad's
-start button) to join and picks their own hero. Both play on one screen with a shared pool
-of lives; a fallen player drops back in beside the survivor. Player two's default keys are on
-the numpad (4/6 move, 8 up, 5 down, 0 jump, . attack, Enter special, + start) and can be
-remapped in Options → Controls.
+On the character select before a level (picked on the map with one player, or a custom
+level), player two presses **Start** (numpad 0/Enter, or a second gamepad's start button) to
+join and picks their own hero; a file then stays two-player. Both play on one screen with a
+shared pool of lives; a fallen player drops back in beside the survivor. Player two's default
+keys are on the numpad (4/6 move, 8 up, 5 down, 0 jump, . attack, Enter special, + start) and
+can be remapped in Options → Controls.
 
 ### Level editor and sharing
 

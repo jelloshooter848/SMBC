@@ -14,8 +14,8 @@ import {
   type SlotContents,
 } from '@game/save/save-files';
 import type { CharacterDef } from '../characters/character';
+import { MARIO } from '../characters/mario';
 import { pad, SCORE_MAX } from '../hud/hud';
-import { CharacterSelectScene } from './character-select';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { menuTouchLabels } from '../touch-labels';
@@ -32,8 +32,9 @@ const BOTTOM_Y = 176;
 /**
  * Title → "Start game": three save files. A used file shows its hero(es), world reached, levels
  * cleared, lives and score (and a star once the game was beaten); an empty one says NEW GAME.
- * Picking an empty file goes through character select (player 2 may join) and creates it; a used
- * file opens its map. The bottom row erases a file (pick it, then confirm YES / NO).
+ * Picking an empty file creates it with Mario and opens World 1's map (heroes are picked, and
+ * player 2 joins, on entering a level); a used file opens its map. The bottom row erases a file
+ * (pick it, then confirm YES / NO).
  * A slot whose data can't be read shows UNREADABLE and must be erased before it is reused.
  * Up/down move, A/Start choose, B/Select back.
  */
@@ -175,19 +176,14 @@ export class FileSelectScene implements Scene {
     this.say(this.rowText());
   }
 
-  /** Character select (P2 may join), then create the file and open it. */
+  /**
+   * Create the file with Mario and open it on World 1's map; heroes are picked (and player two
+   * joins) on entering a level.
+   */
   private newFile(slot: SaveSlot): void {
-    const game = this.game;
-    game.scenes.replace(
-      new CharacterSelectScene(game, null, {
-        onStart: (c, c2) => {
-          const save = newSave(slot, c.id, c2?.id ?? null);
-          writeSave(save);
-          game.openFile(slot, save);
-        },
-        onBack: () => game.scenes.replace(new FileSelectScene(game, slot)),
-      }),
-    );
+    const save = newSave(slot, MARIO.id);
+    writeSave(save);
+    this.game.openFile(slot, save);
   }
 
   render(r: Renderer): void {

@@ -52,8 +52,11 @@ export class MenuScene implements Scene {
     this.game.deps.announcer?.say(`${it.label}${v}${it.hint ? `. ${it.hint}` : ''}`);
   }
 
+  /** A picks the highlighted entry, or steps a setting that has no action (CHANGE). */
   touchLabels(): TouchLabels {
-    return menuTouchLabels(this.onBack !== null);
+    const it = this.items[this.index];
+    const a = !it || it.select ? 'OK' : it.adjust ? 'CHANGE' : null;
+    return { ...menuTouchLabels(this.onBack !== null), jump: a };
   }
 
   setItems(items: MenuItem[]): void {

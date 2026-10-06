@@ -149,6 +149,12 @@ class ControlsOptions extends MenuScene {
       },
     });
     items.push({
+      label: 'Touch d-pad',
+      value: () => (s.input.dpad === 'floating' ? 'Floating' : 'Fixed'),
+      adjust: () => void ((s.input.dpad = s.input.dpad === 'floating' ? 'fixed' : 'floating'), apply(game)),
+      hint: 'Fixed pad, or a stick that appears under your thumb on the left of the screen',
+    });
+    items.push({
       label: 'Touch size',
       value: () => pct(s.input.touchScale),
       adjust: (d) => void ((s.input.touchScale = step(s.input.touchScale, d, 0.6, 1.6, 0.1)), apply(game)),

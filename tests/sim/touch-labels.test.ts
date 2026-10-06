@@ -86,8 +86,9 @@ describe('touch labels per scene', () => {
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop()));
     expect(shown(h.game)).toBe('OK BACK - - -');
     // The pause menu's Assists entry (campaign, dev mode) opens a menu with a way back.
+    // Its first row is a toggle, so A says CHANGE (it flips the setting).
     h.game.scenes.replace(new AssistOptionsScene(h.game, () => h.game.scenes.pop()));
-    expect(shown(h.game)).toBe('OK BACK - - -');
+    expect(shown(h.game)).toBe('CHANGE BACK - - -');
     h.game.scenes.replace(new FileSelectScene(h.game));
     expect(shown(h.game)).toBe('OK BACK - - -');
     h.game.scenes.replace(new CharacterSelectScene(h.game));

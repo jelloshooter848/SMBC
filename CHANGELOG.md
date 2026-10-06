@@ -10,6 +10,8 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- A new save file opens straight on the World 1 map with Mario; the hero is picked only when
+  entering a level. Player two joins (or leaves with Select) at that pick.
 - Dev mode: the pause menu in a campaign level now has **Assists** (the full dev menu with level
   select stays outside campaign play).
 - Lost Levels endings use the NES wording: 8-4 and D-4 show "THANK YOU <HERO>! / YOUR QUEST IS

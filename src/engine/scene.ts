@@ -12,7 +12,7 @@ export interface Scene {
   readonly translucent?: boolean;
   /**
    * What the on-screen touch buttons say while this scene is on top (null hides a button). Keys
-   * left out keep the menu defaults (main.ts). Touch drives player 1 only.
+   * left out keep the menu defaults (main.ts, MENU_TOUCH_LABELS). Touch drives player 1 only.
    */
   touchLabels?(): TouchLabels;
 }

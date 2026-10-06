@@ -33,9 +33,14 @@ function boot(): void {
   const input = new InputManager(2, settings.input.bindings);
   const keyboard = new KeyboardSource();
   input.addSource('keyboard', keyboard);
-  if (GamepadSource.available()) input.addSource('gamepad', new GamepadSource());
   const touch = new TouchSource(overlay, settings.input.touchScale);
   input.addSource('touch', touch);
+  if (GamepadSource.available()) {
+    const pad = new GamepadSource();
+    // Auto touch mode hides the on-screen pad once a gamepad button is used (keys: see TouchSource).
+    pad.onAnyPress = () => touch.noteInput('keys');
+    input.addSource('gamepad', pad);
+  }
 
   const assets = new AssetRegistry(PALETTES);
   assets.defineAll(SPRITES);
@@ -88,8 +93,9 @@ function boot(): void {
     step() {
       input.beginFrame();
       game.scenes.update([input.player(0), input.player(1)]);
-      // The buttons say what they do in the scene now on top (setLabels is a no-op when unchanged).
-      touch.setLabels({ ...MENU_TOUCH_LABELS, ...game.scenes.top?.touchLabels?.() });
+      // The buttons say what they do in the scene now on top: its labels over the menu defaults
+      // (setLabels only touches buttons whose label changed).
+      if (touch.shown) touch.setLabels({ ...MENU_TOUCH_LABELS, ...game.scenes.top?.touchLabels?.() });
     },
     render() {
       game.scenes.render(renderer);
@@ -114,9 +120,8 @@ function boot(): void {
     ctx.reduceFlashing = settings.video.reduceFlashing;
     audio.setVolumes(settings.audio);
     input.bindings = settings.input.bindings;
-    const touchOn =
-      settings.input.touch === 'on' || (settings.input.touch === 'auto' && TouchSource.likelyTouchDevice());
-    touch.show(touchOn);
+    touch.setMode(settings.input.touch);
+    touch.setDpadStyle(settings.input.dpad);
     touch.setScale(settings.input.touchScale);
     // Assists are developer tools: they only take effect while dev mode is on (values are kept).
     const { slowMotion, ...assist } = settings.assist;
