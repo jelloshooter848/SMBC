@@ -795,7 +795,7 @@ describe('campaign: deaths, game over and quitting', () => {
     expect([saved.cleared, saved.coins, saved.position]).toEqual([['1-1'], 9, { world: 1, node: '1-2' }]);
   });
 
-  it('the level pause hides Dev mode during campaign play (shown elsewhere)', () => {
+  it('the level pause hides Dev mode during campaign play but offers Assists (full menu elsewhere)', () => {
     const h = makeGame();
     h.game.deps.settings = { dev: true } as Settings;
     h.game.openFile(1, file());
@@ -805,12 +805,25 @@ describe('campaign: deaths, game over and quitting', () => {
     expect(h.top()).toBeInstanceOf(PauseScene);
     h.idle(4);
     expect(menuItem(h.top(), 'Dev mode')).toBeUndefined();
+    expect(menuItem(h.top(), 'Assists')).toBeDefined();
     h.tap('jump'); // Continue
     h.game.devStart('1-1', MARIO, 'big');
     h.until(() => h.top() instanceof LevelScene);
     h.idle(4);
     h.tap('start');
     expect(menuItem(h.top(), 'Dev mode')).toBeDefined();
+    expect(menuItem(h.top(), 'Assists')).toBeUndefined(); // inside Dev mode there
+  });
+
+  it('campaign pause without dev mode shows neither Dev mode nor Assists', () => {
+    const h = makeGame();
+    h.game.openFile(1, file());
+    enter(h, '1-1');
+    h.idle(4);
+    h.tap('start');
+    expect(h.top()).toBeInstanceOf(PauseScene);
+    expect(menuItem(h.top(), 'Dev mode')).toBeUndefined();
+    expect(menuItem(h.top(), 'Assists')).toBeUndefined();
   });
 
   it('reopening the file restores position, lives, score, coins and heroes', () => {
