@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { rasterizeToBuffer, validateDef } from '@engine/gfx/pixelart';
+import { NES } from '@engine/gfx/palette';
 import { enemiesDef, enemyPalettes } from './enemies';
+import { PALETTES } from './index';
 import { marioDef, marioPalettes } from './mario';
 
 const size = (rows: readonly string[]): [number, number] => [rows[0]?.length ?? 0, rows.length];
@@ -97,6 +99,7 @@ const ENEMY_PALETTES = [
   'koopa-red',
   'piranha-green',
   'piranha-red',
+  'bowser-true-form',
 ];
 
 /** The bottom row of a standing frame must carry pixels (feet on the ground). */
@@ -188,5 +191,38 @@ describe('enemy sprites', () => {
     const shell = (enemiesDef.frames['koopa-0'] as readonly string[]).join('');
     expect(shell).toContain('5');
     expect(shell).toContain('6');
+  });
+
+  // SMB1 (which Crossover's die_N frames follow) swaps the beaten fake for BowserIdentities[world]
+  // at its own size, where his front half was; worlds 1-3 get state $23, an overturned shell.
+  it("draws the fake king's true forms at enemy size, at his head end", () => {
+    for (let n = 1; n <= 7; n++) {
+      const rows = enemiesDef.frames[`bowser-die-${n}`] as readonly string[];
+      const ys = rows.flatMap((r, y) => (/[^.]/.test(r) ? [y] : []));
+      const xs = rows.flatMap((r) => [...r].flatMap((c, x) => (c === '.' ? [] : [x])));
+      // Within a 16x24 slot two columns in and eight rows down (the top 24 rows once mirrored).
+      expect(Math.min(...xs), `bowser-die-${n}`).toBeGreaterThanOrEqual(2);
+      expect(Math.max(...xs), `bowser-die-${n}`).toBeLessThanOrEqual(17);
+      expect(Math.min(...ys), `bowser-die-${n}`).toBeGreaterThanOrEqual(8);
+      expect(Math.max(...ys), `bowser-die-${n}`).toBeLessThanOrEqual(31);
+    }
+    // 2-4 and 3-4 are empty shells: no eye (4) in the turtle's, no legs (3) under the beetle's.
+    const koopa = (enemiesDef.frames['bowser-die-2'] as readonly string[]).join('');
+    expect(koopa).toContain('5');
+    expect(koopa).not.toContain('4');
+    expect((enemiesDef.frames['bowser-die-3'] as readonly string[]).join('')).not.toContain('3');
+  });
+
+  it('outlines the true forms in a colour that shows on the black castle background', () => {
+    const castle = enemyPalettes['enemies-castle'] as string[];
+    const tf = enemyPalettes['bowser-true-form'] as string[];
+    expect(tf[1]).not.toBe('#000000');
+    tf.forEach((c, i) => {
+      if (i !== 1) expect(c, `index ${i}`).toBe(castle[i]);
+    });
+  });
+
+  it('keeps the true-form outline visible in high contrast', () => {
+    expect(PALETTES.highContrast?.['bowser-true-form']?.[1]).toBe(NES.gray);
   });
 });
