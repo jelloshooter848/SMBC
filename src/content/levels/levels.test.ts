@@ -137,7 +137,7 @@ describe('World 1 sub-areas and later stages follow the original layouts', () =>
     const l = load('1-4');
     expect(l.theme).toBe('castle');
     expect(l.start).toEqual({ x: 1, y: 6 });
-    expect(l.entities.filter((e) => e.type === 'firebar')).toHaveLength(7);
+    expect(l.entities.filter((e) => e.type === 'firebar-ccw')).toHaveLength(7);
     expect(l.entities).toContainEqual({ type: 'lift-h', x: 136, y: 6, props: { len: 4, range: 3, dx: -8 } });
     for (let x = 128; x <= 140; x++) expect(tile(l, x, 10)).toBe(T.BRIDGE);
     expect(tile(l, 140, 9)).toBe(T.CHAIN);
@@ -392,7 +392,7 @@ describe('World 5 follows the original layouts', () => {
   });
   it('5-4: castle with a long fire bar, Podoboos and Bowser', () => {
     const l = load('5-4');
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 23, y: 7, props: { len: 12 } });
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 23, y: 7, props: { len: 12 } });
     expect(l.entities.filter((e) => e.type === 'podoboo')).toHaveLength(6);
     expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9 });
     expect(l.entities).toContainEqual({ type: 'axe', x: 141, y: 8 });

@@ -30,10 +30,10 @@ parent: ll-8-4
 
 [entities]
 piranha 3 11 red=1
-firebar-ccw 16 7
+firebar 16 7
 blooper 16 11
-firebar-ccw 27 9
-firebar-ccw 38 6
+firebar 27 9
+firebar 38 6
 blooper 39 9
 
 [zones]

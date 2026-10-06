@@ -29,16 +29,16 @@ BBBBB........... ................ ..........?M?... ................ ............
 
 [entities]
 podoboo 16 12
-firebar 19 11
-firebar 24 11
+firebar-ccw 19 11
+firebar-ccw 24 11
 podoboo 26 12
-firebar 29 11
-firebar 54 5
-firebar-ccw 54 11
-firebar 64 5
-firebar-ccw 64 11
-firebar-ccw 80 5
-firebar 80 11
+firebar-ccw 29 11
+firebar-ccw 54 5
+firebar 54 11
+firebar-ccw 64 5
+firebar 64 11
+firebar 80 5
+firebar-ccw 80 11
 podoboo 88 12
 podoboo 97 12
 podoboo 103 12

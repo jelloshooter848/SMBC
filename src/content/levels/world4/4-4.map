@@ -29,16 +29,16 @@ BBBBB........... ..%%%%%%.%.%.%.% .%.%%%......%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%.
 
 [entities]
 piranha 40 10
-firebar-ccw 53 6
-firebar-ccw 60 9
+firebar 53 6
+firebar 60 9
 piranha 104 10
-firebar-ccw 117 6
-firebar-ccw 124 9
-firebar-ccw 180 6
-firebar-ccw 187 10
-firebar-ccw 244 6
-firebar-ccw 251 10
-firebar-ccw 290 10
+firebar 117 6
+firebar 124 9
+firebar 180 6
+firebar 187 10
+firebar 244 6
+firebar 251 10
+firebar 290 10
 podoboo 293 12
 bowser 296 9
 axe 301 8

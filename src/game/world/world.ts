@@ -901,7 +901,8 @@ export class World {
     if (this.hurryPlayed && this.time > HURRY_TIME) {
       this.hurryPlayed = false;
       this.audio.setTempoScale(1);
-      this.audio.playMusic(this.level.music);
+      // Under star power the star tune keeps playing; the level tune returns when it ends.
+      if (!this.players.some((p) => p.star > 0)) this.audio.playMusic(this.level.music);
     }
   }
 

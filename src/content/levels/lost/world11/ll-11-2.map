@@ -54,7 +54,7 @@ lift-up 126 9 len=4 dx=-8
 cheep-grey 129 3 dy=-8
 cheep-grey 135 10
 cheep-red 147 8 dx=8 dy=-8
-firebar-ccw 151 7 len=12
+firebar 151 7 len=12
 cheep-grey 154 12 dy=-8
 cheep-grey 164 5 dx=8 dy=-8
 blooper 164 7

@@ -166,7 +166,7 @@ describe('Lost Levels B-2', () => {
     expect(where(l, 'koopa-para-green-h')).toEqual(['96,7']);
     expect(where(l, 'koopa-para-red')).toEqual(['171,6']);
     expect(where(l, 'koopa-green')).toEqual(['60,12', '108,12']);
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 151, y: 7, props: { len: 12 } });
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 151, y: 7, props: { len: 12 } });
     expect(where(l, 'lift-up')).toEqual(['126,3', '126,9']);
   });
 
@@ -239,8 +239,8 @@ describe('Lost Levels B-4', () => {
     expect(l.theme).toBe('castle');
     expect(l.time).toBe(300);
     expect(l.start).toEqual({ x: 1, y: 6 });
-    expect(where(l, 'firebar')).toEqual(['35,8', '81,8', '113,8', '145,8', '177,8', '203,9']);
-    expect(where(l, 'firebar-ccw')).toEqual(['45,9']);
+    expect(where(l, 'firebar-ccw')).toEqual(['35,8', '81,8', '113,8', '145,8', '177,8', '203,9']);
+    expect(where(l, 'firebar')).toEqual(['45,9']);
     expect(l.entities).toContainEqual({ type: 'lift-h', x: 66, y: 10, props: { len: 4, range: 3, dx: -8 } });
     expect(tile(l, 34, 10)).toBe(T.BRICK_POWERUP);
     expect(l.entities).toContainEqual({ type: 'bowser', x: 231, y: 9, props: { attack: 'hammer' } });

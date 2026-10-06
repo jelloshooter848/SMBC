@@ -385,13 +385,13 @@ describe('Lost Levels 1-4', () => {
     expect(l.start).toEqual({ x: 1, y: 6 });
   });
   it('has nine fire bars (four clockwise, five counter-clockwise)', () => {
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [19, 5],
       [53, 9],
       [91, 9],
       [101, 9],
     ]);
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(at(l, 'firebar')).toEqual([
       [37, 5],
       [44, 9],
       [68, 5],

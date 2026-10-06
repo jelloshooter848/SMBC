@@ -171,7 +171,7 @@ describe('Lost Levels 9-3', () => {
     expect(l.entities).toContainEqual({ type: 'bowser', x: 183, y: 8, props: { attack: 'hammer', fake: 1 } });
     expect(where(l, 'axe')).toEqual([]);
     expect(where(l, 'spring')).toEqual(['66,12']);
-    expect(where(l, 'firebar')).toEqual([]);
+    expect(where(l, 'firebar-ccw')).toEqual([]);
     expect(where(l, 'podoboo')).toEqual([]);
     expect(tile(l, 120, 12)).toBe(T.LAVA);
   });

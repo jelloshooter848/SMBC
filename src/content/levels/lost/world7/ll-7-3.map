@@ -36,10 +36,10 @@ piranha 127 9 red=1
 lift-fall 158 3 len=4
 piranha 188 9 red=1
 balance 214 5 x2=219 y2=9 len=4 top=2
-firebar 277 9
-firebar-ccw 282 9
+firebar-ccw 277 9
+firebar 282 9
 koopa-para-red 290 7 dy=-8
-firebar-ccw 305 5
+firebar 305 5
 decor-castle-big 318 12
 
 [zones]

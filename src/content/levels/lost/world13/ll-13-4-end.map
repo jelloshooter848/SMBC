@@ -37,7 +37,7 @@ blooper 39 10
 blooper 42 6
 lift-v 69 10 len=4 range=6
 podoboo 88 12
-firebar 103 6
+firebar-ccw 103 6
 bowser 103 9 attack=hammer
 axe 109 8
 princess 121 12

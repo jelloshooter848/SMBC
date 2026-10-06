@@ -266,11 +266,11 @@ describe('Lost Levels 7-2', () => {
   it('has a Lakitu from 170 to 218, fire bars, a gliding paratroopa and falling lifts', () => {
     // Its end marker is lakituEndMiddle: it flies at mid height (mid=1).
     expect(l.entities).toContainEqual({ type: 'lakitu', x: 170, y: 7, props: { end: 218, mid: 1 } });
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [179, 9],
       [219, 9],
     ]);
-    expect(at(l, 'firebar-ccw')).toEqual([[183, 9]]);
+    expect(at(l, 'firebar')).toEqual([[183, 9]]);
     expect(at(l, 'koopa-para-green-h')).toEqual([[209, 7]]);
     expect(at(l, 'lift-fall')).toEqual([
       [222, 7],
@@ -293,8 +293,8 @@ describe('Lost Levels 7-2', () => {
       piranha: 4,
       lakitu: 1,
       'koopa-para-green': 1,
-      firebar: 2,
-      'firebar-ccw': 1,
+      'firebar-ccw': 2,
+      firebar: 1,
       'koopa-para-green-h': 1,
       'lift-fall': 5,
       'koopa-red': 2,
@@ -333,8 +333,8 @@ describe('Lost Levels 7-3', () => {
       y: 5,
       props: { x2: 219, y2: 9, len: 4, top: 2 },
     });
-    expect(at(l, 'firebar')).toEqual([[277, 9]]);
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([[277, 9]]);
+    expect(at(l, 'firebar')).toEqual([
       [282, 9],
       [305, 5],
     ]);
@@ -398,7 +398,7 @@ describe('Lost Levels 7-4', () => {
       [64, 12],
     ]);
     expect(at(l, 'lift-h')).toEqual([[31, 13]]);
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [16, 5],
       [45, 13],
       [82, 6],
@@ -406,7 +406,7 @@ describe('Lost Levels 7-4', () => {
       [170, 6],
       [231, 10],
     ]);
-    expect(at(l, 'firebar-ccw')).toEqual([[201, 13]]);
+    expect(at(l, 'firebar')).toEqual([[201, 13]]);
     expect(at(l, 'podoboo')).toEqual([[184, 12]]);
     expect(tile(l, 44, 9)).toBe(T.HIDDEN_POWERUP);
   });

@@ -158,7 +158,8 @@ describe('World 5: the coin-heaven cloud and the long fire bar', () => {
       until: () => bar !== undefined,
     });
     expect(bar).toBeDefined();
-    expect((bar as Firebar).dir).toBe(-1);
+    // fireBarLongRight: clockwise (FireBar.as, clockwise = true for a "Right" label).
+    expect((bar as Firebar).dir).toBe(1);
   });
 });
 

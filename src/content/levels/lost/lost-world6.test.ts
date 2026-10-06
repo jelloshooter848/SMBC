@@ -267,11 +267,11 @@ describe('Lost Levels 6-4', () => {
       [56, 12],
       [120, 12],
     ]);
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [176, 9],
       [240, 9],
     ]);
-    expect(count(l, 'firebar-ccw')).toBe(10);
+    expect(count(l, 'firebar')).toBe(10);
     expect(at(l, 'podoboo').map(([x]) => x)).toEqual([66, 130, 196, 260, 322]);
     expect(at(l, 'lift-down')).toEqual([
       [188, 5],

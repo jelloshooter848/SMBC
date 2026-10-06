@@ -34,7 +34,7 @@ piranha 14 13 red=1
 bowser 23 9 attack=hammer fake=1
 lift-fall 67 11 len=4
 piranha-down 71 9 red=1
-firebar 117 5
+firebar-ccw 117 5
 bowser 119 9 attack=both
 axe 125 8
 princess 137 12

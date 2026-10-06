@@ -339,7 +339,7 @@ describe('Lost Levels 8-4', () => {
       { kind: 'loop', x: 88, y0: 10, y1: 12, to: 24, checks: [], need: 'all' },
     ]);
     expect(zones(l, 'pipe')).toEqual([pipe(47, 11, 'down', 'll-8-4-water', 3, 10, 'up')]);
-    expect(at(l, 'firebar-ccw').map((p) => p[0])).toEqual([17, 25, 37, 81, 89]);
+    expect(at(l, 'firebar').map((p) => p[0])).toEqual([17, 25, 37, 81, 89]);
     expect(at(l, 'piranha')).toEqual([
       [47, 11],
       [51, 11],
@@ -358,7 +358,7 @@ describe('Lost Levels 8-4', () => {
       [16, 11],
       [39, 9],
     ]);
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(at(l, 'firebar')).toEqual([
       [16, 7],
       [27, 9],
       [38, 6],
@@ -383,8 +383,8 @@ describe('Lost Levels 8-4', () => {
       pipe(99, 11, 'down', 'll-8-4', 47, 10, 'up'),
       pipe(203, 9, 'right', 'll-8-4-end3', 3, 10, 'up'),
     ]);
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 53, y: 9, props: { len: 12 } });
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 117, y: 9, props: { len: 12 } });
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 53, y: 9, props: { len: 12 } });
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 117, y: 9, props: { len: 12 } });
     expect(at(l, 'piranha').map((p) => p[0])).toEqual([3, 19, 35, 67, 83, 99]);
     expect(at(l, 'blooper')).toEqual([
       [25, 12],
@@ -415,7 +415,7 @@ describe('Lost Levels 8-4', () => {
     expect(zones(l, 'pipe')).toEqual([pipe(14, 13, 'down', 'll-8-4', 47, 10, 'up')]);
     expect(at(l, 'piranha-down')).toEqual([[71, 9]]);
     expect(tile(l, 71, 9)).toBe(T.PIPE_BOTTOM_L);
-    expect(at(l, 'firebar')).toEqual([[117, 5]]);
+    expect(at(l, 'firebar-ccw')).toEqual([[117, 5]]);
     expect(at(l, 'lift-fall')).toEqual([[67, 11]]);
     // The Crossover data ends 8-4 with Toad, but the NES game ends it with the princess: the
     // converter turns the Toad of a level that ends the game into her.

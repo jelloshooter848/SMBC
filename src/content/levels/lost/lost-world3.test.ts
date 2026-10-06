@@ -372,13 +372,13 @@ describe('Lost Levels 3-4', () => {
       [224, 9],
     ]);
     expect(ofType(l, 'podoboo').map((e) => e.x)).toEqual([73, 137, 299]);
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [198, 5],
       [212, 9],
       [268, 5],
       [282, 9],
     ]);
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(at(l, 'firebar')).toEqual([
       [188, 5],
       [258, 5],
     ]);

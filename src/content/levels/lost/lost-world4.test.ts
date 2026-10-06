@@ -253,15 +253,15 @@ describe('Lost Levels 4-4', () => {
     expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([]);
   });
   it('has nine fire bars (two long), three lifts, a Podoboo and two piranhas', () => {
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [39, 9],
       [59, 11],
       [100, 9],
       [128, 9],
     ]);
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 20, y: 9, props: { len: 12 } });
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 53, y: 7, props: { len: 12 } });
-    expect(count(l, 'firebar-ccw')).toBe(5);
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 20, y: 9, props: { len: 12 } });
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 53, y: 7, props: { len: 12 } });
+    expect(count(l, 'firebar')).toBe(5);
     expect(l.entities).toContainEqual({ type: 'lift-v', x: 61, y: 10, props: { len: 4, range: 6, dx: -8 } });
     expect(l.entities).toContainEqual({ type: 'lift-fall', x: 92, y: 6, props: { len: 4 } });
     expect(l.entities).toContainEqual({ type: 'lift-h', x: 172, y: 12, props: { len: 4, range: 3 } });

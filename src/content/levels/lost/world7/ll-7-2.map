@@ -44,10 +44,10 @@ piranha 115 4 red=1
 piranha 147 11 red=1
 lakitu 170 7 end=218 mid=1
 koopa-para-green 171 10
-firebar 179 9
-firebar-ccw 183 9
+firebar-ccw 179 9
+firebar 183 9
 koopa-para-green-h 209 7
-firebar 219 9
+firebar-ccw 219 9
 lift-fall 222 7 len=4
 koopa-para-red 224 6
 lift-fall 227 8 len=4

@@ -220,8 +220,9 @@ const ENTITIES = {
   enemyWingedKoopaGreen: 'koopa-para-green',
   enemyWingedKoopaHorizontalGreen: 'koopa-para-green-h',
   bowserAxe: 'axe',
-  fireBarLeft: 'firebar',
-  fireBarRight: 'firebar-ccw',
+  // FireBar.as: a label with "Left" turns counter-clockwise (clockwise = false), "Right" clockwise.
+  fireBarLeft: 'firebar-ccw',
+  fireBarRight: 'firebar',
 };
 const LIFTS = {
   WaveHorizontal: 'lift-h',
@@ -664,7 +665,8 @@ function convertArea(level, area, id, levels) {
             break;
           case 'fireBarLongLeft':
           case 'fireBarLongRight':
-            b.entity(name === 'fireBarLongLeft' ? 'firebar' : 'firebar-ccw', x, y, { len: 12 });
+            // FireBar.as: "Left" is counter-clockwise, "Right" clockwise (see ENTITIES).
+            b.entity(name === 'fireBarLongLeft' ? 'firebar-ccw' : 'firebar', x, y, { len: 12 });
             break;
           case 'pipeTransporterGlobalVertEnd':
             vertEnds.set(String(params.number ?? '1'), { x, y });

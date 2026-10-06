@@ -274,13 +274,13 @@ describe('Lost Levels 2-4', () => {
     expect(l.start).toEqual({ x: 1, y: 6 });
   });
   it('has seven fire bars, four Podoboos and a corridor of Goombas and Koopas', () => {
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [56, 12],
       [76, 9],
       [91, 5],
       [109, 12],
     ]);
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(at(l, 'firebar')).toEqual([
       [80, 5],
       [85, 9],
       [103, 12],

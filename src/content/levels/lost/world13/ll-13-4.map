@@ -29,15 +29,15 @@ camera: scroll
 
 [entities]
 piranha 3 11 red=1
-firebar 17 9 len=12
-firebar-ccw 25 9
+firebar-ccw 17 9 len=12
+firebar 25 9
 podoboo 34 12
-firebar-ccw 37 9
+firebar 37 9
 koopa-para-red 44 6
 piranha 47 11 red=1
 piranha 59 7 red=1
 lift-fall 64 9 len=4
-firebar 75 13
+firebar-ccw 75 13
 piranha 103 9 red=1
 
 [zones]
