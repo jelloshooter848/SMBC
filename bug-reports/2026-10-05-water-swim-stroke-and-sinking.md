@@ -36,3 +36,5 @@ Playtested in both games, and confirmed in the original's source. The original's
 - Source: `smb-w2/2026-10-05-water-swim-stroke-and-sinking.md`.
 - Also seen in ll-4-1-water (ll-w4 tester, ours; folded in by the ll-w3 to ll-w5 review). No new measurements.
 - Reviewed: verified against `com/smbc/characters/base/MarioBase.as` (`JUMP_PWR_WATER`, `setStats` water gravity, `jump`), `com/smbc/characters/Character.as` (`vyMaxPsvWater`, the water block in the per-frame update), and ours: `src/game/entities/player.ts` (`SWIM_STROKE`, `SWIM_GRAVITY`, `SWIM_SINK_MAX`, `swim`).
+
+Status: fixed — Mario and Luigi swim with JUMP_PWR_WATER = 200 (1.67 px/f, ~28 px per stroke) and water gravity 350, and every hero sinks at up to Character.as vyMaxPsvWater = 250 (2.08 px/f).

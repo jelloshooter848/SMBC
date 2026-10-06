@@ -29,14 +29,14 @@ parent: 8-4
 ###{}########### ################ ################ ################ ########
 
 [entities]
-firebar 20 7
+firebar-ccw 20 7
 blooper 28 12
-firebar-ccw 31 10
-firebar-ccw 40 6
+firebar 31 10
+firebar 40 6
 blooper 51 11
 blooper 53 7
-firebar-ccw 56 8
-firebar 64 7
+firebar 56 8
+firebar-ccw 64 7
 
 [zones]
 pipe 68 8 right -> 8-4-end 3 10 exit=up

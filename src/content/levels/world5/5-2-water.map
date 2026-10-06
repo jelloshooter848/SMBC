@@ -30,14 +30,14 @@ wwwwwwwwwwwwwwww wwwwwwwwwwBBwwww BBwwwwwwwwwwwwww wwwwwwwwwwwwwBBB B
 
 [entities]
 blooper 19 12
-lift-down 23 6 len=6
-cheep-grey 27 6
-lift-down 29 10 len=6
+lift-down 23 6 len=6 dx=-8
+cheep-grey 27 6 dx=8 dy=-8
+lift-down 29 10 len=6 dx=-8
 blooper 35 12
-cheep-grey 39 11
+cheep-grey 39 11 dy=-8
 blooper 45 12
-cheep-red 48 8
-cheep-grey 53 3
+cheep-red 48 8 dx=8
+cheep-grey 53 3 dy=-8
 
 [zones]
 pipe 62 8 right -> 5-2 115 10 exit=up

@@ -158,7 +158,7 @@ describe('Lost Levels 2-1', () => {
   it('has water over its pits and ends at the flag at 232 (walk to the door at 237)', () => {
     expect(tile(l, 30, 12)).toBe(T.WATER);
     expect(tile(l, 30, 13)).toBe(T.AIR);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 130 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 130, y: 12 });
     expect(tile(l, 232, 2)).toBe(T.FLAG_BALL);
     expect(tile(l, 232, 12)).toBe(T.HARD);
     // The exit zone is the castle door minus six (the flag walk ends 6 tiles right of it).
@@ -180,7 +180,7 @@ describe('Lost Levels 2-1', () => {
     expect(s.startMode).toBe('climb');
     expect(s.entities).toEqual([
       { type: 'vine', x: 4, y: 14, props: { len: 8 } },
-      { type: 'lift-right', x: 17, y: 10, props: { len: 6 } },
+      { type: 'lift-right', x: 17, y: 10, props: { len: 6, dx: -16 } },
     ]);
     expect(s.zones).toEqual([{ kind: 'pit', x: 0, target: { level: 'll-2-1', x: 146, y: 0 } }]);
     expect(Array.from(s.tiles).filter((t) => t === T.COIN)).toHaveLength(73);
@@ -223,7 +223,7 @@ describe('Lost Levels 2-2', () => {
       { kind: 'pipe', x: 13, y: 12, dir: 'right', target: { level: 'll-2-2', x: 179, y: 10, exitDir: 'up' } },
     ]);
     expect(tile(l, 179, 11)).toBe(T.PIPE_TL);
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 130 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 130, y: 12 });
     expect(tile(l, 262, 2)).toBe(T.FLAG_BALL);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 262, next: 'll-2-3' });
   });
@@ -239,9 +239,10 @@ describe('Lost Levels 2-3', () => {
   });
   it('has a Blooper in the air and a mix of Koopas', () => {
     expect(at(l, 'blooper')).toEqual([[95, 9]]);
+    // 26 has the original's shiftRight: an entity line (dx=8), listed before the grid.
     expect(at(l, 'koopa-green')).toEqual([
-      [25, 8],
       [26, 8],
+      [25, 8],
       [28, 8],
     ]);
     expect(at(l, 'koopa-red')).toEqual([
@@ -257,7 +258,7 @@ describe('Lost Levels 2-3', () => {
     expect(tile(l, 80, 5)).toBe(T.Q_POWERUP);
   });
   it('ends at the flag at 177; the walk reaches the big castle door at 184', () => {
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98, y: 12 });
     expect(tile(l, 177, 2)).toBe(T.FLAG_BALL);
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 180, y: 12 });
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 178, next: 'll-2-4' });
@@ -273,29 +274,31 @@ describe('Lost Levels 2-4', () => {
     expect(l.start).toEqual({ x: 1, y: 6 });
   });
   it('has seven fire bars, four Podoboos and a corridor of Goombas and Koopas', () => {
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [56, 12],
       [76, 9],
       [91, 5],
       [109, 12],
     ]);
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(at(l, 'firebar')).toEqual([
       [80, 5],
       [85, 9],
       [103, 12],
     ]);
     expect(ofType(l, 'podoboo').map((e) => e.x)).toEqual([81, 98, 118, 123]);
+    // 29 has the original's shiftRight: an entity line (dx=8), listed before the grid.
     expect(at(l, 'goomba')).toEqual([
-      [28, 12],
       [29, 12],
+      [28, 12],
       [31, 12],
     ]);
+    // 40 and 50 have the original's shiftRight: entity lines (dx=8), listed before the grid.
     expect(at(l, 'koopa-green')).toEqual([
+      [40, 12],
+      [50, 12],
       [23, 5],
       [39, 12],
-      [40, 12],
       [49, 12],
-      [50, 12],
       [52, 12],
     ]);
     expect(tile(l, 66, 5)).toBe(T.HIDDEN_POWERUP);

@@ -47,3 +47,5 @@ every time (3 respawns watched in a row; 2 separate runs)
 - Screenshot: not committed (the repo's `check:assets` bans image files). It shows Mario just after the respawn, inside the stalk below the mushroom (F1 on, frame 65 after the respawn).
 - Source: `ll-w5/2026-10-05-ll-5-3-checkpoint-respawn-falls-into-pit.md`. The reviewer checked the original's code and data, the scan, the game-over route and the converter, and added the scan of every checkpoint and the cross-reference.
 - Reviewed: verified against `com/smbc/level/Level.as` (lines 315, 1068-1072, 1404-1405, 1453-1459, 1663-1687), `levelDataSmb.xml` and `levelDataLostLevels.xml` (every `halfwayPoint` and `LOCKED_CP`), and ours: `src/game/scenes/level.ts` (lines 133-143), `src/game/scenes/game.ts` (`gameOver`, `continueGame`, `firstLevelOfWorld`), `src/game/world/world.ts` (start placement, lines 165-200), `tools/levelgen/convert-smbc.mjs` (line 583), and every map's `checkpoint` line.
+
+Status: fixed — checkpoint zones keep the midpoint's row (`checkpoint 154 9`) and the respawn stands on the bottom of it, so Mario lands on the mushroom.

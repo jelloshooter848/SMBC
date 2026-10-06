@@ -34,7 +34,7 @@ piranha 28 9
 piranha 32 6
 piranha 35 11
 piranha 37 11
-koopa-para-green 43 10
+koopa-para-green 43 10 dy=-8
 piranha 46 9
 piranha 56 8
 piranha 62 7
@@ -62,7 +62,7 @@ koopa-para-green 206 3
 decor-castle 220 12
 
 [zones]
-checkpoint 98
+checkpoint 98 12
 exit 216 next=6-3
 vine 81 5 -> 6-2-sky 4 14
 pipe 19 9 down -> 6-2-bonus 1 0 exit=none

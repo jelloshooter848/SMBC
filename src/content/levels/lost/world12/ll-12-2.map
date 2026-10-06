@@ -36,7 +36,7 @@ blooper 65 5
 koopa-para-green-h 73 7
 koopa-para-red 121 6
 lift-h 137 13 len=4 range=3
-lift-v 160 10 len=4 range=6
+lift-v 160 10 len=4 range=6 dx=-8
 balance 166 5 x2=171 y2=9 len=4 top=2
 decor-castle 196 12
 

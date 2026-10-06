@@ -5,13 +5,19 @@ import { ENEMY_SCORES } from '../../rules/score';
 import { Entity, type View } from '../entity';
 import type { World } from '../../world/world';
 
-export const BULLET_SPEED = 0x01400; // 1.25 px/f
-const FIRE_MIN = 150;
-const FIRE_SPREAD = 120;
+/** `BulletBill.SPEED` = 170 px/s on the original's 32-px tiles: 85 px/s here, 1.42 px/f. */
+export const BULLET_SPEED = 0x016ab;
+/** `Canon.SHOOT_TMR_DUR_MIN/MAX` = 1000-3500 ms: 60-209 frames, before every shot attempt. */
+const FIRE_MIN = 60;
+const FIRE_SPREAD = 150;
+/** `Canon.MAX_BULLET_BILLS`: blaster bills alive in the whole level at once (`Canon.BILL_DCT`). */
+const MAX_BLASTER_BILLS = 2;
 
 /** Bullet Bill: flies straight through everything. Fireballs bounce off; a stomp drops it. */
 export class BulletBill extends Enemy {
   readonly kind = 'bullet-bill';
+  /** Fired by a blaster (counts towards `Canon.BILL_DCT`'s limit of two). */
+  fromBlaster = false;
 
   constructor(x: number, y: number, dir: -1 | 1) {
     super(x, y, 14, 12);
@@ -40,10 +46,15 @@ export class BulletBill extends Enemy {
   }
 }
 
-/** Sits on a blaster barrel tile and fires Bullet Bills at the nearest player now and then. */
+/**
+ * Sits on a blaster barrel tile and fires Bullet Bills at the nearest player now and then
+ * (`com/smbc/ground/Canon.as`: a random 1.0-3.5 s timer before the first shot and after every
+ * attempt; an attempt is skipped while two blaster bills are out or the player is close).
+ */
 export class BulletLauncher extends Entity {
   readonly kind = 'bullet-launcher';
-  private timer: number;
+  /** Frames to the next shot attempt; 0 until the first update draws it (`Canon.initiate`). */
+  private timer = 0;
 
   constructor(
     readonly tx: number,
@@ -53,23 +64,28 @@ export class BulletLauncher extends Entity {
     this.layer = 'back';
     this.despawnMargin = null;
     this.body.vx = 0;
-    this.timer = 60 + ((tx * 37) % 90);
   }
 
   update(world: World): void {
+    if (this.timer === 0) this.timer = FIRE_MIN + world.rng.int(FIRE_SPREAD);
     if (--this.timer > 0) return;
     this.timer = FIRE_MIN + world.rng.int(FIRE_SPREAD);
+    let out = 0;
+    for (const e of world.entities) if (e instanceof BulletBill && e.alive && e.fromBlaster) out++;
+    if (out >= MAX_BLASTER_BILLS) return;
     const cam = world.camera;
     const b = this.body;
     // Only while the barrel is on screen (give or take a tile).
     if (b.x + b.w < cam.x - px(16) || b.x > cam.right + px(16)) return;
     const pl = world.nearestPlayer(b.x + px(8));
     const dx = pl.centerX - (b.x + px(8));
-    // No point-blank shots: SMB1 holds fire while you stand next to (or on) the cannon.
+    // No point-blank shots: holds fire while you are within 2 tiles (`Canon.STOP_SHOOT_DIST`).
     if (Math.abs(dx) <= px(32)) return;
     const dir: -1 | 1 = dx < 0 ? -1 : 1;
     const x = dir < 0 ? b.x - px(14) : b.x + px(16);
-    world.spawn(new BulletBill(x, b.y + px(2), dir));
+    const bill = new BulletBill(x, b.y + px(2), dir);
+    bill.fromBlaster = true;
+    world.spawn(bill);
     world.audio.sfx('kick');
   }
 

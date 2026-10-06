@@ -38,3 +38,5 @@ every time
 - 4-3 (smb-w4): the tester's notes say the rope snapped with no 1000 points there too (score stayed 0), in a share-link copy of 4-3: `gauntlet/shots/smb-w4/ours/276_bal0.png` to `283_bal7.png` (snap between frames 251 and 281). The reviewer could not read the score in these frames because the F1 overlay covers it, so this rests on the tester's note. Folded in from `review/smb-w4.md` during the smb-w7/w8 consolidation.
 - The way the lifts move also differs: see `2026-10-05-3-3-balance-lift-motion.md`.
 - Reviewed: verified against `com/smbc/ground/Platform.as` `setCharOnPlat` (`level.scorePop(ScoreValue.PULLY_FALL, ...)` when `pullyLoc == "bottom"`), `com/smbc/data/ScoreValue.as` (`PULLY_FALL = 1000`), and ours: `src/game/entities/objects/balance-lift.ts` `update()` (drops both lifts, no `addScore`).
+
+Status: fixed — standing on a balance lift that has bottomed out snaps the rope and scores 1000 at the rider (Platform.as setCharOnPlat, ScoreValue.PULLY_FALL).

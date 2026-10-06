@@ -1,16 +1,19 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import type { AABB } from '@engine/math/aabb';
-import { px, sign, velToSub } from '@engine/math/units';
+import { px, sign, tileAt, tileToSub, velToSub } from '@engine/math/units';
 import { JUMP_BUFFER_FRAMES } from '../constants';
-import { pickJumpTier, type JumpTier, type MovementProfile } from '../characters/profile';
+import { pickJumpTier, type JumpTier, type MovementProfile, type SwimProfile } from '../characters/profile';
 import type { CharacterDef } from '../characters/character';
 import { makeBody, moveX, moveY, type Body } from './body';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
 
-const SWIM_STROKE = 0x01800; // 1.5 px/f upward per tap
-const SWIM_GRAVITY = 0x00100; // 0.0625 px/f²
-const SWIM_SINK_MAX = 0x01000; // 1 px/f
+/**
+ * Swimming for heroes without their own `swim` profile. The original gives them no stroke (they
+ * jump off the floor with lighter gravity), so the stroke and gravity are ours; the sink cap is
+ * Character.as `vyMaxPsvWater = 250` (2.083 px/f), which applies to every character.
+ */
+const DEFAULT_SWIM: SwimProfile = { stroke: 0x01800, gravity: 0x00100, sinkMax: 0x02155 };
 const CLIMB_SPEED = 0x00100; // 1 px/f in subpixels
 
 /** The part of a player's scratch state that follows them to the next level (not per-swing hit marks). */
@@ -49,6 +52,8 @@ export class Player {
   transition: Transition | null = null;
   /** When true, input is ignored and physics skipped (pipes, flagpole, death). */
   frozen = false;
+  /** Left/right held on the last update (Lakitu reads it, like `player.lftBtn/rhtBtn` in Lakitu.as). */
+  heldDirX: -1 | 0 | 1 = 0;
   anim: PlayerAnim = 'idle';
   walkFrame = 0;
   private walkTick = 0;
@@ -142,6 +147,7 @@ export class Player {
     onHeadBump?: (tx: number, ty: number) => void,
   ): void {
     this.frame++;
+    this.heldDirX = input.dirX;
     if (this.invuln > 0) this.invuln--;
     if (this.star > 0) this.star--;
     if (this.attackTimer > 0) this.attackTimer--;
@@ -231,10 +237,13 @@ export class Player {
       else if (dir !== 0) this.facing = dir;
     }
 
+    const wasOnGround = b.onGround;
+    const gapSpeed = wasOnGround && p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx;
     moveX(b, map, velToSub(b.vx));
     this.fallSpeed = b.onGround ? 0 : b.vy;
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
     moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
+    if (gapSpeed && !b.onGround) this.crossSmallGap(map);
     if (b.onGround) {
       this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
@@ -246,6 +255,30 @@ export class Player {
       if (b.vy > p.maxFall) b.vy = p.fallReset;
     }
     this.updateAnim(dir);
+  }
+
+  /**
+   * The original's Level.checkCrossSmallGap (run on the first frame a player with
+   * canCrossSmallGaps has left the ground): when the tiles one column left and one column right
+   * of the player's centre column both have ground whose top is exactly at the feet, the player
+   * stands on it and runs on at the same height. Only one-tile gaps qualify; lifts never do (they
+   * are entities, the original's `Platform`).
+   */
+  private crossSmallGap(map: TileMap): void {
+    const b = this.body;
+    const feet = b.prevBottom;
+    const row = tileAt(feet);
+    if (tileToSub(row) !== feet) return;
+    const col = tileAt(b.x + (b.w >> 1));
+    if (col - 1 <= 0 || col + 1 >= map.width) return;
+    const ground = (tx: number) => {
+      const c = map.collisionAt(tx, row);
+      return c === 'solid' || c === 'top';
+    };
+    if (!ground(col - 1) || !ground(col + 1)) return;
+    b.y = feet - b.h;
+    b.vy = 0;
+    b.onGround = true;
   }
 
   /**
@@ -261,16 +294,19 @@ export class Player {
   ): void {
     const p = this.profile;
     const b = this.body;
+    const sw = p.swim ?? DEFAULT_SWIM;
     this.airCap = p.maxWalk;
-    if (b.vx > p.maxWalk) b.vx = p.maxWalk;
-    if (b.vx < -p.maxWalk) b.vx = -p.maxWalk;
+    // Character.as water block: on the floor a slow walker is capped at vxMaxGroundWater.
+    const cap = b.onGround && sw.floorWalk !== undefined ? sw.floorWalk : p.maxWalk;
+    if (b.vx > cap) b.vx = cap;
+    if (b.vx < -cap) b.vx = -cap;
     if (
       input.bufferedJump(JUMP_BUFFER_FRAMES) &&
       this.sliding === 0 &&
       (this.def.behaviour.canJump?.(this) ?? true)
     ) {
       input.consumeJumpBuffer();
-      b.vy = -SWIM_STROKE;
+      b.vy = -sw.stroke;
       b.onGround = false;
       this.jumping = false;
       audio.sfx('swim');
@@ -292,8 +328,8 @@ export class Player {
       this.combo = 0;
       b.vy = 0;
     } else {
-      b.vy += SWIM_GRAVITY;
-      if (b.vy > SWIM_SINK_MAX) b.vy = SWIM_SINK_MAX;
+      b.vy += sw.gravity;
+      if (b.vy > sw.sinkMax) b.vy = sw.sinkMax;
     }
     this.tier = pickJumpTier(p, b.vx);
     this.updateAnim(dir);

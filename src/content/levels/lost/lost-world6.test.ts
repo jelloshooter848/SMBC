@@ -112,7 +112,7 @@ describe('Lost Levels 6-1', () => {
     expect(tile(l, 244, 2)).toBe(T.FLAG_BALL);
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 248, y: 12 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 244, next: 'll-6-2-intro' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 114 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 114, y: 12 });
   });
 });
 
@@ -162,7 +162,7 @@ describe('Lost Levels 6-2', () => {
     const e = load('ll-6-2-exit');
     expect(e.width).toBe(40);
     expect(e.zones).toContainEqual({ kind: 'exit', x: 28, next: 'll-6-3' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 114 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 114, y: 12 });
   });
 });
 
@@ -201,7 +201,7 @@ describe('Lost Levels 6-3', () => {
     expect(tile(l, 217, 2)).toBe(T.FLAG_BALL);
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 220, y: 12 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 218, next: 'll-6-4' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 129 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 129, y: 12 });
   });
 });
 
@@ -267,11 +267,11 @@ describe('Lost Levels 6-4', () => {
       [56, 12],
       [120, 12],
     ]);
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [176, 9],
       [240, 9],
     ]);
-    expect(count(l, 'firebar-ccw')).toBe(10);
+    expect(count(l, 'firebar')).toBe(10);
     expect(at(l, 'podoboo').map(([x]) => x)).toEqual([66, 130, 196, 260, 322]);
     expect(at(l, 'lift-down')).toEqual([
       [188, 5],

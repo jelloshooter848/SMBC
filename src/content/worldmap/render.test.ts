@@ -88,10 +88,9 @@ describe('map rendering', () => {
       const r = new CheckingRenderer();
       for (let t = 0; t < 2000; t += 3) for (const a of actors) drawMapActor(r, assets, page, a, t);
       expect(r.drawn.length).toBeGreaterThan(0);
-      for (const d of r.drawn) {
-        expect(d.x, `${d.frame} x`).toBeGreaterThan(-80);
-        expect(d.x, `${d.frame} x`).toBeLessThan(336);
-      }
+      // One assertion per page: hundreds of thousands of expect() calls made this test time out.
+      const offPage = r.drawn.filter((d) => d.x <= -80 || d.x >= 336).map((d) => `${d.frame} x=${d.x}`);
+      expect(offPage, `world ${page.world}`).toEqual([]);
     }
   });
 

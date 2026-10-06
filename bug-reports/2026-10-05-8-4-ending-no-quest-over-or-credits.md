@@ -82,3 +82,5 @@ every time
   `com/smbc/level/LevelData.as` (`_worldCount`), `com/smbc/level/Level.as` (lines 2840-2848),
   `GameTextMessages.as`, and ours: `src/game/world/world.ts` (castle text), `src/game/scenes/game.ts`
   (`showEnding`), `src/content/levels/world8/8-4-end.map` (`exit 56 next=end`).
+
+Status: fixed — every game-ending castle adds "YOUR QUEST IS OVER." 1.5 s after the thanks; for SMB 8-4 the credits (our own text and an original credits song) roll 2.5 s later at 20 px/s behind the level, the closing lines hold mid-screen 6.5 s (Start fast-forwards 10x), then campaign files record 8-4, are marked cleared and saved, and the title follows (ScreenManager.addTxtTmrHandler/startMoveCreditsTmrHandler/moveCreditsLoopTmrHandler); whether D-4 also gets credits is still the owner's call (it gets the quest-over line and its own card).

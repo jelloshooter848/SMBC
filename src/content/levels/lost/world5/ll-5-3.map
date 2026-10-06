@@ -29,21 +29,21 @@ camera: scroll
 
 [entities]
 decor-castle 0 12
-lift-h 20 10 len=4 range=3
+lift-h 20 10 len=4 range=3 dx=-8
 piranha 25 10 red=1
 koopa-para-red 33 6
 koopa-para-red 36 5
-lift-h 37 11 len=6 range=3
+lift-h 37 11 len=6 range=3 dx=-8
 piranha 38 4 red=1
 blooper 45 9
 koopa-para-green-h 53 8
 piranha 56 13 red=1
 piranha 58 13 red=1
-lift-h 84 10 len=4 range=3
+lift-h 84 10 len=4 range=3 dx=-8
 piranha 89 10 red=1
 koopa-para-red 97 6
 koopa-para-red 100 5
-lift-h 101 11 len=6 range=3
+lift-h 101 11 len=6 range=3 dx=-8
 piranha 102 4 red=1
 blooper 109 9
 koopa-para-green-h 117 8
@@ -63,7 +63,7 @@ balance 235 7 x2=241 y2=10 len=4 top=2
 decor-castle-big 257 12
 
 [zones]
-checkpoint 154
+checkpoint 154 9
 loop 128 0 14 -> 64
 exit 255 next=ll-5-4
 bullets 155 75

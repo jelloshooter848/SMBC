@@ -28,21 +28,21 @@ BBBBB........... ................ ...%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%....
 %%%%%%%%%%%%%..% %%%%%%%%%%...%%% ...%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
-firebar-ccw 23 6
+firebar 23 6
 podoboo 27 12
-firebar 30 10
+firebar-ccw 30 10
 podoboo 33 12
-firebar 37 6
-firebar 49 6
-firebar 60 6
-firebar 67 6
-firebar 76 9
-firebar-ccw 80 4
-firebar 84 9
-firebar-ccw 88 4
-firebar 92 9
+firebar-ccw 37 6
+firebar-ccw 49 6
+firebar-ccw 60 6
+firebar-ccw 67 6
+firebar-ccw 76 9
+firebar 80 4
+firebar-ccw 84 9
+firebar 88 4
+firebar-ccw 92 9
 podoboo 131 12
-lift-h 136 6 len=4 range=3
+lift-h 136 6 len=4 range=3 dx=-8
 bowser 136 9 attack=hammer
 axe 141 8
 toad 153 12

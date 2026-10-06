@@ -29,9 +29,9 @@ camera: scroll
 
 [entities]
 decor-castle 0 12
-koopa-para-green 30 10
+koopa-para-green 30 10 dy=-8
 piranha 53 9
-koopa-para-green 93 11
+koopa-para-green 93 11 dy=-8
 piranha 126 9
 koopa-green 137 12
 hammer-bro 146 12

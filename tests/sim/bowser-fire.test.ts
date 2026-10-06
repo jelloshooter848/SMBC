@@ -160,10 +160,11 @@ describe('Bowser fire zone', () => {
   });
 
   it('stop once Bowser is on screen (his own attack takes over)', () => {
-    // Flames come while he is off screen; at frame 400 the player is next to him.
+    // Flames come while he is off screen; at frame 400 the player is next to him, with the
+    // screen showing all of his walk (no bridge here, so ±5 tiles around column 71).
     const { flames, firstFrame } = watch(castle({ fireCol: 20 }), 1200, (w, f) => {
       if (f === 0) place(w, 22);
-      if (f === 400) place(w, 62);
+      if (f === 400) place(w, 66);
       return [];
     });
     const before = flames.filter((_, i) => firstFrame[i]! < 400);

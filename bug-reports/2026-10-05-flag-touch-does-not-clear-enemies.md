@@ -43,3 +43,5 @@ every time
 - Related: `2026-10-05-flagpole-no-fireworks.md` (the same clear sequence).
 - Raised by the orchestrator from the ll-w7 notes.
 - Reviewed: verified against `com/smbc/managers/EventManager.as` (`touchedFlagPole`), `com/smbc/level/Level.as` (`destroyAllEnemiesAndProjectilesOnScreen`, `destroy`, `addObj`), `com/smbc/main/AnimatedObject.as` (`addedToStageHandler`, `removedLsr`, `checkStgPos`), the class headers of `BulletBill`, `Hammer`, `FireBar` and `EnemySpawner`, and ours: `src/game/world/world.ts` (`update`, `startClear`, `updateClear`, `render`).
+
+Status: fixed — at the flag touch `World.startClear` now destroys every enemy, projectile, brick piece, popping coin and falling defeated enemy within 2 tiles of the screen (Level.destroyAllEnemiesAndProjectilesOnScreen, AnimatedObject.checkStgPos), leaving spawners and pickups.

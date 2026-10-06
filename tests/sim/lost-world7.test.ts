@@ -234,7 +234,7 @@ describe('Lost Levels 7-2: the repeating stretch', () => {
         lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
         if (lakitu?.leaving) left = true;
         if (lakitu && !left) ys.add(toPx(lakitu.body.y));
-        if (f === 0) place(w, 160, 13);
+        if (f === 0) place(w, 171, 13); // inside the stretch: it comes once the player passes 170
         if (f === 200 && lakitu) place(w, 222, 13); // past the end column
         return [];
       },
@@ -286,7 +286,9 @@ describe('Lost Levels 7-4: the hammer Bowser', () => {
       maxFrames: 700,
       assist: { invulnerable: true },
       controller: (w, f) => {
-        if (f === 0) place(w, 222, 10);
+        // Close enough that his whole walk (bridge columns 227-237) stays on screen, so the
+        // long-range flames (sent only while he is off screen) stay out of it.
+        if (f === 0) place(w, 226, 10);
         bowser ??= w.entities.find((e): e is Bowser => e instanceof Bowser);
         for (const e of w.entities) {
           if (!(e instanceof Projectile) || e.owner !== bowser || seen.has(e.id)) continue;
