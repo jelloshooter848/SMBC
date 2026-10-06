@@ -205,7 +205,7 @@ describe('world map scene', () => {
     h.until(() => !h.map().revealing, 600);
     expect(autosave).toHaveBeenCalledTimes(1);
     // Then it says what opened.
-    expect(h.said.at(-1)).toBe('World 1-2, open');
+    expect(h.said.at(-1)).toBe('World 1-2, open, secret exit');
 
     const k = makeGame();
     const save2 = vi.spyOn(k.game, 'autosave');
