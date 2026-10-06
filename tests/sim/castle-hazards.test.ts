@@ -63,7 +63,7 @@ describe('lava', () => {
 });
 
 describe('fire bars (FireBar.as)', () => {
-  /** `firebar` is the converter's fireBarLeft, `firebar-ccw` its fireBarRight. */
+  /** fireBarLeft is `firebar-ccw` (counter-clockwise), fireBarRight `firebar` (clockwise). */
   const level = (): LevelData =>
     parseTextMap(
       [
@@ -78,12 +78,12 @@ describe('fire bars (FireBar.as)', () => {
         '#'.repeat(W),
         '',
         '[entities]',
-        'firebar 6 5',
-        'firebar-ccw 10 5',
+        'firebar-ccw 6 5',
+        'firebar 10 5',
       ].join('\n'),
     );
 
-  it('start pointing up; Left bars turn counter-clockwise, Right bars clockwise, at 106 degrees a second', () => {
+  it('start pointing up; `firebar-ccw` (Left) turns counter-clockwise, `firebar` (Right) clockwise, at 106 degrees a second', () => {
     const seen = new Map<number, number[]>();
     runSim({
       level: level(),

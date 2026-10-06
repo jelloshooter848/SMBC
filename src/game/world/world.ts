@@ -330,10 +330,7 @@ export class World {
         return new Vine(s.x, s.y, Number(s.props?.len ?? 8));
       case 'firebar':
       case 'firebar-ccw':
-        // The converter writes the original's fireBarLeft as `firebar` and fireBarRight as
-        // `firebar-ccw`; FireBar.as turns a Left bar counter-clockwise (clockwise = false) and a
-        // Right bar clockwise, so `firebar` is -1 here and `firebar-ccw` +1.
-        return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? 1 : -1, Number(s.props?.len ?? 6));
+        return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
       case 'bowser':
         return new Bowser(
           s.x,

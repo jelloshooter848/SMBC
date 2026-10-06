@@ -150,6 +150,13 @@ describe('Bowser flames (BowserFireBall.as)', () => {
     const heights = new Set<number>();
     for (const fl of w.flames.values()) {
       for (const vx of fl.vx) expect(vx).toBe(-0x01555);
+      // Drifts 3 original px per 30 fps frame: at most 0.75 px per frame of ours, except the
+      // last step, which snaps onto its height from within 5 original px (2.5 of ours).
+      const final = fl.ys[fl.ys.length - 1]!;
+      for (let i = 1; i < fl.ys.length; i++) {
+        const d = Math.abs(fl.ys[i]! - fl.ys[i - 1]!);
+        expect(d).toBeLessThanOrEqual(fl.ys[i] === final ? px(2.5) : px(0.75));
+      }
       const last = fl.ys[fl.ys.length - 1]!;
       if (fl.ys.length > 40) {
         const centre = last + px(4);

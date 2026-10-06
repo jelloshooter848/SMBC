@@ -35,8 +35,11 @@ const AFTER_FB = ms(300);
 
 /** BowserFireBall.as: SPEED = 160 px/s (1.33 px/f), always to the left. */
 const FLAME_SPEED = 0x01555;
-/** BowserFireBall.updateStats: 3 px a frame toward its height, snapping within 5 px (ours: half). */
-const FLAME_DRIFT = px(1.5);
+/**
+ * BowserFireBall.updateStats: ny moves 3 px a frame toward its height at the original's 30 fps
+ * (90 px/s: 0.75 px per frame of ours), snapping within 5 px (2.5 of ours).
+ */
+const FLAME_DRIFT = px(0.75);
 const FLAME_SNAP = px(2.5);
 
 /** Hammer.as: xSpeed 120 px/s (1 px/f), jumpPwr 200 px/s (1.67 px/f), gravity 500 px/s². */
@@ -306,8 +309,9 @@ export class Bowser extends Enemy {
       // centre; the flame is 8 px tall).
       const lev = [8, 24, 40][world.rng.int(3)] as number;
       const targetY = this.feetY - px(lev) - px(4);
-      // From his left side (x = nx - width/2 - flame width/2), at his mouth.
-      world.spawn(new BowserFlame(b.x - px(BOWSER_FLAME.w), b.y + px(10), targetY, this));
+      // From his left side (x = nx - width/2 - flame width/2), centred on the top of his hit
+      // box (y = ny - hHeight).
+      world.spawn(new BowserFlame(b.x - px(BOWSER_FLAME.w), b.y - px(4), targetY, this));
       world.audio.sfx('bowser-flame');
       this.afterFbTmr = AFTER_FB;
     }
