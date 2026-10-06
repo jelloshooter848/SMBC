@@ -15,9 +15,12 @@ export const DPAD_DEAD = 0.2;
 export const DPAD_HORIZONTAL_MAX_DEG = 60;
 /** Up is held at this elevation or steeper: up-diagonals 35°–60°, pure up within ±30° of vertical. */
 export const DPAD_UP_MIN_DEG = 35;
-/** Down is held at this elevation or steeper (down-diagonals 45°–60°)... */
+/** Down is held at this elevation or steeper: down-diagonals 45°–60°, pure down within ±30° of vertical. */
 export const DPAD_DOWN_MIN_DEG = 45;
-/** ...and only past this fraction of the radius, so a thumb running sideways never crouches. */
+/**
+ * Only the down-diagonals need a push past this fraction of the radius, so a thumb sagging down
+ * while running sideways never crouches; a straight-down push engages at the dead zone like up.
+ */
 export const DPAD_DOWN_MIN_R = 0.55;
 /** Past this fraction of the radius a left/right push also holds `run` (the drawn ring). */
 export const DPAD_RUN_R = 0.75;
@@ -41,7 +44,7 @@ export const NO_DIRS: Readonly<DpadDirs> = { left: false, right: false, up: fals
 /**
  * Directions held for a thumb at (dx, dy) px from the pad centre (screen axes, +y down) on a pad
  * of `radius` px. Eight sectors by angle: left/right wide, up/down narrower, diagonals only in
- * the bands between; down also needs a deliberate push, and a far push left/right adds `run`.
+ * the bands between; the down-diagonals also need a firmer push, and a far push left/right adds `run`.
  */
 export function dpadDirs(dx: number, dy: number, radius: number): DpadDirs {
   const r = Math.hypot(dx, dy) / radius;
@@ -51,7 +54,7 @@ export function dpadDirs(dx: number, dy: number, radius: number): DpadDirs {
   const left = horizontal && dx < 0;
   const right = horizontal && dx > 0;
   const up = dy < 0 && elev >= DPAD_UP_MIN_DEG;
-  const down = dy > 0 && elev >= DPAD_DOWN_MIN_DEG && r >= DPAD_DOWN_MIN_R;
+  const down = dy > 0 && elev >= DPAD_DOWN_MIN_DEG && (!horizontal || r >= DPAD_DOWN_MIN_R);
   const run = r >= DPAD_RUN_R && (left || right);
   return { left, right, up, down, run };
 }

@@ -61,9 +61,21 @@ describe('dpadDirs: angle zones', () => {
     expect(at(DPAD_UP_MIN_DEG - 1, 0.5).up).toBe(false);
   });
 
-  it('down needs a deliberate push, so running never crouches by accident', () => {
-    expect(held(at(270, DPAD_DOWN_MIN_R - 0.05))).toBe('none');
-    expect(held(at(270, DPAD_DOWN_MIN_R + 0.05))).toBe('down');
+  it('straight down engages as easily as up', () => {
+    expect(held(at(270, DPAD_DEAD + 0.05))).toBe('down');
+    // Anywhere in the straight-down band (just inside ±30° of vertical; exactly 240°/300° is
+    // the left/right band's edge and rounds into it).
+    expect(held(at(241, 0.3))).toBe('down');
+    expect(held(at(299, 0.3))).toBe('down');
+    // Up and down engage at the same radius: the dead zone.
+    for (const deg of [90, 270]) {
+      expect(held(at(deg, DPAD_DEAD * 0.99))).toBe('none');
+      expect(held(at(deg, DPAD_DEAD))).not.toBe('none');
+    }
+  });
+
+  it('only the down-diagonals need a firmer push, so running never crouches by accident', () => {
+    expect(DPAD_DOWN_MIN_R).toBeGreaterThan(DPAD_DEAD);
     // A thumb sagging down-right while running stays plain right until pushed hard.
     expect(held(at(-50, 0.5))).toBe('right');
     expect(held(at(-50, 0.7))).toBe('right+down');
