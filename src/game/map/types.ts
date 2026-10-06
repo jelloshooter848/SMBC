@@ -76,6 +76,11 @@ export interface MapNode {
   hint?: string;
   /** Warp nodes: the hint line while it is open ('LOST LEVELS'; default: the target page's title). */
   label?: string;
+  /**
+   * Level nodes hiding a captive hero (map/captives.ts): the side of the node its silhouette and
+   * trophy stand on. Default: the right, or the left when a road leaves the node to the right.
+   */
+  heroSpot?: 'left' | 'right';
 }
 
 export interface MapPath {

@@ -23,7 +23,7 @@ import {
 } from './dungeon';
 import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
-import { HERO_FX } from './palette-fx';
+import { HERO_FX, mapShadeFx } from './palette-fx';
 
 /** All built-in sprite definitions keyed by sheet id. */
 export const SPRITES: Record<string, SpriteDef> = {
@@ -114,4 +114,8 @@ const trueFormHc = modes.highContrast?.['bowser-true-form'];
 if (modes.highContrast && trueFormHc)
   modes.highContrast['bowser-true-form'] = trueFormHc.map((c, i) => (i === 1 ? NES.gray : c));
 
-export const PALETTES: PaletteBook = { default: defaults, ...modes, fx: { ...HERO_FX } };
+export const PALETTES: PaletteBook = {
+  default: defaults,
+  ...modes,
+  fx: { ...HERO_FX, ...mapShadeFx(mapPalettes) },
+};

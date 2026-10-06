@@ -74,6 +74,10 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the file has that secret
 (`MapProgress.secrets`). Bonus nodes always need one.
 
+A level node whose level hides a captive hero shows the map hint beside it (docs/HEROES.md "The
+map hint"): on its right, or its left when a road leaves to the right; `heroSpot: 'left' |
+'right'` picks the side. Keep that side's tile free of decorations.
+
 ### World 1's start is a level: Mario's tutorial 1-0 (0.5.0)
 
 - **A start node may carry `level`**: it stays the page's arrival node (id `start`), JUMP on it

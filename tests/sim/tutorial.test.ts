@@ -250,6 +250,11 @@ describe('1-0: Toad, the lessons and the tease', () => {
     const all = TOAD_PAGES.flat().join(' ');
     expect(all).toMatch(/BOWSER HAS BRAINWASHED THE HEROES OF OTHER WORLDS/);
     expect(all).toMatch(/FIND THEM, TALK TO THEM AND FREE THEM/);
+    // Where they hide (secret places), and the map's hint for a level that still hides one.
+    expect(all).toMatch(/THEY HIDE IN SECRET PLACES: DOWN PIPES, UP VINES, BEHIND HIDDEN BLOCKS/);
+    expect(all).toMatch(/IF A LEVEL HIDES SOMEONE YOU MISSED, LOOK CLOSELY AT THE MAP/);
+    expect(TOAD_PAGES.length).toBeLessThanOrEqual(5);
+    for (const page of TOAD_PAGES) expect(page.join(' ').length).toBeLessThanOrEqual(130);
     skipGreeting(h);
     expect(h.said.some((t) => /brainwashed/i.test(t))).toBe(true);
     expect(director(h)?.lesson?.id).toBe('walk');
