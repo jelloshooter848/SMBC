@@ -119,6 +119,7 @@ const itemFrames: Record<string, Size> = {
   'bowser-flame-0': [24, 8],
   'bowser-flame-1': [24, 8],
   platform: [16, 8],
+  plank: S8,
   'spring-0': T16,
   princess: [16, 24],
   toad: [16, 24],

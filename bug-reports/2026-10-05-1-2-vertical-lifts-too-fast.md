@@ -33,3 +33,5 @@ every time
 - 2-4 (smb-w2): the lifts in the shaft at columns 86 (`lift-up`) and 89 (`lift-down`) also move at 1 px/frame in ours. Shots: `gauntlet/shots/smb-w2/ours/455_lf1.png` to `460_lf6.png`. The original side is code reading only. Folded in from `review/smb-w2.md` during the smb-w7/w8 consolidation.
 - Related: `2026-10-05-2-4-castle-lift-wrap-height.md` (same lift types, where they wrap in castles).
 - Reviewed: verified against `com/smbc/ground/Platform.as` (`ySpeed = 110`, `updateGround` `PT_CONSTANT_FALL` / `PT_CONSTANT_RISE`), `levelDataSmb.xml`, and ours: `src/game/entities/objects/lift.ts` (`lift-up` / `lift-down`, default `speed` 0x01000 = 1 px/frame) and `src/content/levels/world1/1-2.map`, `src/content/levels/world2/2-4.map` (lines 38-41).
+
+Status: fixed — `lift-up` / `lift-down` move at ySpeed 110 Flash px/s = 0.917 px/frame (Platform.as PT_CONSTANT_RISE / PT_CONSTANT_FALL) instead of 1 px/frame.

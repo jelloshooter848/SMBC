@@ -147,7 +147,7 @@ describe('Lost Levels 4-3', () => {
       level: level('ll-4-3'),
       character: MARIO,
       script: none,
-      maxFrames: 90,
+      maxFrames: 60, // it speeds up (ayPully); by 90 frames the rope has snapped
       assist: { invulnerable: true },
       controller: (w, f) => {
         if (f === 0) place(w, 44, 4, 8); // bring the camera (and the lifts) along

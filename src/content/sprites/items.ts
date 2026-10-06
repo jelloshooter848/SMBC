@@ -297,7 +297,7 @@ const bowserFlame1 = [
   '......77777....77.......',
 ];
 
-/* Lift surface: one 8x8 plank, repeated twice. */
+/* Lift surface: one 8x8 plank (lifts draw one per 8 px of width), and two side by side. */
 const plank = [
   '00000000',
   '03333390',
@@ -1751,6 +1751,7 @@ export const itemsDef: SpriteDef = {
     'bowser-flame-0': bowserFlame0,
     'bowser-flame-1': bowserFlame1,
     platform,
+    plank,
     'spring-0': spring0,
     'spring-1': spring1,
     'spring-2': spring2,

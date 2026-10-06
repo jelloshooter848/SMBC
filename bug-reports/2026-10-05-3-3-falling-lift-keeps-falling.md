@@ -39,3 +39,5 @@ every time
 - Our screenshot: not committed (the repo's `check:assets` bans image files).
 - `lift-fall` is used 50 times across our maps, so other levels' drop lifts are affected too. In the SMB set the original's `StepFall` platforms (normal layer, not counting `charHorz=Show` helpers) are in 3-3, 6-3 (4) and 7-4 (2); ours has them as `lift-fall` in `6-3.map` and `7-4.map`. The rest are in Lost Levels maps.
 - Reviewed: verified against `com/smbc/ground/Platform.as` (`fallSpeed` 225, `setCharOnPlat` `PT_STEP_FALL`, `updateGround`), `levelDataSmb.xml` (`<LEVEL ID="3-3">` `movingPlatform&&width=6&&type=StepFall` at x=61 y=6, shown on normal only), and ours: `src/game/entities/objects/lift.ts` (`carry`, `update` case `'lift-fall'`).
+
+Status: fixed — `lift-fall` moves only while ridden, at fallSpeed 225 Flash px/s = 1.875 px/frame (Platform.as setCharOnPlat PT_STEP_FALL), and waits where the rider left it.
