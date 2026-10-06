@@ -7,7 +7,11 @@ import {
   DPAD_HORIZONTAL_MAX_DEG,
   DPAD_RUN_R,
   DPAD_UP_MIN_DEG,
-  LABEL_MIN_SCALE,
+  FACE_BUTTON,
+  LABEL_MIN_PX,
+  LABEL_WRAP_SCALE,
+  SMALL_BUTTON,
+  buttonShape,
   dpadDirs,
   fitLabel,
   followCentre,
@@ -137,15 +141,42 @@ describe('hitButton', () => {
 });
 
 describe('labels', () => {
-  it('fits long labels: wraps multi-word, shrinks single words', () => {
-    expect(fitLabel('JUMP', 5)).toEqual({ scale: 1, wrap: false });
-    const belt = fitLabel('TOOL BELT', 5);
-    expect(belt.wrap).toBe(true);
-    expect(belt.scale).toBeLessThan(1);
-    const boomerang = fitLabel('BOOMERANG', 5);
-    expect(boomerang.wrap).toBe(false);
-    expect(boomerang.scale).toBeCloseTo(5 / 9);
-    expect(fitLabel('SUPERCALIFRAGILISTIC', 5).scale).toBe(LABEL_MIN_SCALE);
+  const px = (l: string, shape = FACE_BUTTON) => fitLabel(l, shape).scale * shape.font;
+
+  it('A, B and C are one size; Start and Select are pills', () => {
+    for (const a of ['jump', 'attack', 'special'] as const) expect(buttonShape(a)).toBe(FACE_BUTTON);
+    for (const a of ['start', 'select'] as const) expect(buttonShape(a)).toBe(SMALL_BUTTON);
+  });
+
+  it('short labels are full size; longer single words shrink to fit', () => {
+    expect(fitLabel('JUMP', FACE_BUTTON)).toEqual({ scale: 1, lines: ['JUMP'], wrap: false, fits: true });
+    expect(px('SWORD')).toBeLessThan(FACE_BUTTON.font);
+    expect(px('SWORD')).toBeGreaterThan(px('KNUCKLE'));
+    expect(px('PAUSE', SMALL_BUTTON)).toBe(SMALL_BUTTON.font);
+  });
+
+  it('wraps after a space or hyphen when one line would be small', () => {
+    const hi = fitLabel('HI-JUMP', FACE_BUTTON);
+    expect(hi.lines).toEqual(['HI-', 'JUMP']);
+    expect(hi.scale).toBe(LABEL_WRAP_SCALE);
+    expect(fitLabel('TOOL BELT', FACE_BUTTON).lines).toEqual(['TOOL', 'BELT']);
+    // Fits on one line big enough: no wrap.
+    expect(fitLabel('M-GUN', FACE_BUTTON).wrap).toBe(false);
+  });
+
+  it('a word too long for the floor is flagged and drawn at the floor', () => {
+    for (const l of ['BOOMERANG', 'SHURIKEN', 'WINDMILL', 'SUPERCALIFRAGILISTIC']) {
+      const f = fitLabel(l, FACE_BUTTON);
+      expect(f.fits, l).toBe(false);
+      expect(f.scale * FACE_BUTTON.font).toBeCloseTo(LABEL_MIN_PX);
+    }
+  });
+
+  it('measures with the font it is given (a narrower font fits bigger)', () => {
+    const narrow = (t: string) => t.length * 0.6;
+    expect(fitLabel('SWORD', FACE_BUTTON, narrow).scale).toBeGreaterThan(
+      fitLabel('SWORD', FACE_BUTTON).scale,
+    );
   });
 
   class StubEl implements LabelTarget {
@@ -170,7 +201,10 @@ describe('labels', () => {
   function setup() {
     const els = { jump: new StubEl('A'), attack: new StubEl('B'), start: new StubEl('START') };
     const slots = new Map<Action, LabelSlot>(
-      Object.entries(els).map(([a, el]) => [a as Action, { el, def: el.textContent ?? '', maxChars: 5 }]),
+      Object.entries(els).map(([a, el]) => [
+        a as Action,
+        { el, def: el.textContent ?? '', shape: buttonShape(a as Action) },
+      ]),
     );
     return { els, labeler: new ButtonLabeler(slots) };
   }
@@ -191,10 +225,12 @@ describe('labels', () => {
     expect(els.jump.classes.has('custom')).toBe(false);
   });
 
-  it('shrinks long labels to fit', () => {
+  it('shrinks long labels to fit, and writes a wrapped one on two lines', () => {
     const { els, labeler } = setup();
     labeler.apply({ attack: 'TOOL BELT' });
     expect(els.attack.classes.has('wrap')).toBe(true);
+    expect(els.attack.textContent).toBe('TOOL\nBELT');
+    expect(labeler.label('attack')).toBe('TOOL BELT');
     expect(Number(els.attack.props.get('--fs'))).toBeLessThan(1);
     labeler.apply({ attack: 'FIRE' });
     expect(els.attack.classes.has('wrap')).toBe(false);

@@ -3,8 +3,11 @@ import type { Code } from './bindings';
 import type { InputSource } from './input-manager';
 import type { DpadStyle, TouchMode } from '../save/settings';
 import {
+  BUTTON_BORDER,
+  BUTTON_FONT,
   ButtonLabeler,
   DPAD_HIT_SCALE,
+  FACE_BUTTON,
   DPAD_RUN_R,
   FLOAT_ZONE_FRACTION,
   NO_DIRS,
@@ -12,11 +15,14 @@ import {
   followCentre,
   hitButton,
   readTouchFacts,
+  SMALL_BUTTON,
+  buttonShape,
   touchPadVisible,
   type ButtonTarget,
   type DpadDirs,
   type LabelSlot,
   type LastInput,
+  type MeasureEm,
 } from './touch-logic';
 
 /**
@@ -102,8 +108,8 @@ export class TouchSource implements InputSource {
         .touch-controls .dpad .wedge.on { fill: rgba(255,255,255,0.6); }
         .touch-controls .thumb { position: absolute; left: 50%; top: 50%; width: 34%; height: 34%; margin: -17% 0 0 -17%; border-radius: 50%; background: rgba(255,255,255,0.45); border: 2px solid rgba(255,255,255,0.7); display: none; }
         .touch-controls.active .thumb { display: block; }
-        .touch-controls .btn { width: calc(68px * var(--ts)); height: calc(68px * var(--ts)); border-radius: 50%; background: rgba(255,255,255,0.14); border: 2px solid rgba(255,255,255,0.4); color: #fff; font: bold calc(18px * var(--ts) * var(--fs, 1)) system-ui, sans-serif; line-height: 1; text-align: center; white-space: nowrap; overflow: hidden; text-transform: uppercase; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 0 2px; }
-        .touch-controls .btn.wrap { white-space: normal; }
+        .touch-controls .btn { width: calc(${FACE_BUTTON.w}px * var(--ts)); height: calc(${FACE_BUTTON.h}px * var(--ts)); border-radius: 50%; background: rgba(255,255,255,0.14); border: ${BUTTON_BORDER}px solid rgba(255,255,255,0.4); color: #fff; font: bold calc(${FACE_BUTTON.font}px * var(--ts) * var(--fs, 1)) ${BUTTON_FONT}; line-height: 1; text-align: center; white-space: nowrap; overflow: hidden; text-transform: uppercase; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 0; }
+        .touch-controls .btn.wrap { white-space: pre-line; }
         .touch-controls .btn.hidden { display: none; }
         .touch-controls .btn.active { background: rgba(255,255,255,0.45); }
         .touch-controls .btn.custom::after { content: attr(data-id); position: absolute; top: 8%; left: 50%; transform: translateX(-50%); font-size: calc(9px * var(--ts)); opacity: 0.6; }
@@ -112,10 +118,10 @@ export class TouchSource implements InputSource {
         .touch-controls .btn.c { border-color: rgba(170,255,170,0.6); }
         .touch-controls .jump { right: calc(24px * var(--ts)); bottom: calc(40px * var(--ts)); }
         .touch-controls .attack { right: calc(104px * var(--ts)); bottom: calc(24px * var(--ts)); }
-        .touch-controls .special { right: calc(64px * var(--ts)); bottom: calc(118px * var(--ts)); width: calc(54px * var(--ts)); height: calc(54px * var(--ts)); font-size: calc(15px * var(--ts) * var(--fs, 1)); }
-        .touch-controls .start, .touch-controls .select { top: calc(10px * var(--ts)); width: calc(64px * var(--ts)); height: calc(30px * var(--ts)); border-radius: 15px; font-size: calc(12px * var(--ts) * var(--fs, 1)); }
+        .touch-controls .special { right: calc(60px * var(--ts)); bottom: calc(114px * var(--ts)); }
+        .touch-controls .start, .touch-controls .select { top: calc(10px * var(--ts)); width: calc(${SMALL_BUTTON.w}px * var(--ts)); height: calc(${SMALL_BUTTON.h}px * var(--ts)); border-radius: calc(${SMALL_BUTTON.h / 2}px * var(--ts)); font-size: calc(${SMALL_BUTTON.font}px * var(--ts) * var(--fs, 1)); }
         .touch-controls .start { right: calc(16px * var(--ts)); }
-        .touch-controls .select { right: calc(90px * var(--ts)); }
+        .touch-controls .select { right: calc(92px * var(--ts)); }
       </style>
       <div class="tc zone" data-zone></div>
       <div class="tc dpad-hit" data-dpad>
@@ -141,13 +147,9 @@ export class TouchSource implements InputSource {
     this.root.querySelectorAll<HTMLElement>('[data-action]').forEach((el) => {
       const a = el.dataset.action as Action;
       this.buttons.set(a, el);
-      slots.set(a, {
-        el,
-        def: el.textContent ?? '',
-        maxChars: a === 'special' ? 4 : a === 'start' || a === 'select' ? 7 : 5,
-      });
+      slots.set(a, { el, def: el.textContent ?? '', shape: buttonShape(a) });
     });
-    this.labeler = new ButtonLabeler(slots);
+    this.labeler = new ButtonLabeler(slots, canvasMeasure());
     this.bind();
   }
 
@@ -340,6 +342,22 @@ export class TouchSource implements InputSource {
     this.latched.clear();
     return this.polled;
   }
+}
+
+/**
+ * Label widths in the font the page really draws (a phone's Roboto or SF is narrower than the
+ * fallback table, so labels there can be bigger); the table when there is no canvas.
+ */
+function canvasMeasure(): MeasureEm | undefined {
+  const ctx = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
+  if (!ctx) return undefined;
+  ctx.font = `bold 100px ${BUTTON_FONT}`;
+  const cache = new Map<string, number>();
+  return (t) => {
+    let w = cache.get(t);
+    if (w === undefined) cache.set(t, (w = ctx.measureText(t).width / 100));
+    return w;
+  };
 }
 
 /** A short tick on direction changes where the browser supports it (not iOS Safari). */

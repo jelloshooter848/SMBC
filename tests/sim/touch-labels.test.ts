@@ -126,7 +126,7 @@ describe('touch labels per scene', () => {
     const h = makeGame();
     h.game.newGame(LINK, '1-1', MARIO);
     const level = toLevel(h);
-    expect(shown(h.game)).toBe('JUMP SWORD BOOMERANG PAUSE TOOLS');
+    expect(shown(h.game)).toBe('JUMP SWORD RANG PAUSE TOOLS');
     level.world.players[0]?.def.behaviour.onPowerUp(level.world.players[0], 'mushroom', level.world);
     h.game.scenes.push(new PauseScene(h.game, level.world));
     expect(shown(h.game)).toBe('OK - - RESUME -');
