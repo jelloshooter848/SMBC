@@ -97,6 +97,14 @@ deploys it and creates or updates its GitHub Release. Use this to:
 
 With the GitHub CLI: `gh workflow run release.yml -f tag=v0.1.0`.
 
+**Run it from a `main` commit that hasn't been deployed yet.** GitHub Pages labels each deployment
+with the commit the workflow runs from (not the tag), and it ignores a deployment whose label it
+has already served: when v0.1.0 was published by hand from `main` and v0.2.0 was then tagged on
+that same `main` commit, the v0.2.0 deploy reported success but the site stayed on v0.1.0 until
+v0.2.0 was redeployed from a newer `main` commit. So after publishing an older tag by hand, make
+sure `main` has moved on (merge anything, even a docs change) before the next release runs, or
+redeploy the newest tag by hand afterwards.
+
 ## Pre-releases for testers
 
 A release candidate is a normal release with a `-rc.N` suffix:

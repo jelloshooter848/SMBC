@@ -8,6 +8,10 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- The README links the online version at the top.
+
 ## [0.2.0] - 2026-10-05
 
 ### Added

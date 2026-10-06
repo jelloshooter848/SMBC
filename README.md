@@ -1,5 +1,8 @@
 # Super Mario Bros. Crossover (browser rebuild)
 
+**▶ Play it in your browser: https://jelloshooter848.github.io/SMBC/** (latest release; see
+[CHANGELOG.md](CHANGELOG.md) for what's new).
+
 A from-scratch, browser-based reimplementation inspired by the 2010 Flash fan game
 _Super Mario Bros. Crossover_: play the Super Mario Bros. levels as characters from other
 NES-era games, each with their own mechanics. Flash is gone; this runs anywhere a modern
