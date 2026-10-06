@@ -9,7 +9,12 @@ import { Lift, type LiftKind } from '@game/entities/objects/lift';
 import { px, toPx } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
 import type { Action } from '@engine/input/actions';
-import type { World } from '@game/world/world';
+import { World } from '@game/world/world';
+import { ScorePopup } from '@game/entities/effects/effects';
+import { ScriptedInput } from '@game/sim/headless';
+import { AssetRegistry } from '@engine/assets/registry';
+import { NULL_AUDIO } from '@engine/audio/audio-manager';
+import { DEFAULT_ASSIST, newGameState } from '@game/context';
 
 const LEVELS = join(import.meta.dirname, '../../src/content/levels');
 
@@ -206,6 +211,7 @@ describe('Balance lifts (Platform.as PT_PULLY)', () => {
     let pair: BalanceLift | undefined;
     const lefts: number[] = [];
     const scores: number[] = [];
+    let popup: { y: number; riderMid: number } | undefined;
     const r = runSim({
       level: at(level('3-3'), 80, 5),
       character: MARIO,
@@ -223,6 +229,9 @@ describe('Balance lifts (Platform.as PT_PULLY)', () => {
           }
           lefts.push(p[0].body.y);
           scores.push(w.state.score);
+          const pop = w.entities.find((e): e is ScorePopup => e instanceof ScorePopup && e.text === '1000');
+          const b = w.player.body;
+          popup ??= pop && { y: pop.body.y, riderMid: b.y + (b.h >> 1) };
         }
         if (f >= leaveAt && f < leaveAt + 3) {
           // Lift Mario off and park him on the mushroom at 77-79 (row 4).
@@ -233,7 +242,13 @@ describe('Balance lifts (Platform.as PT_PULLY)', () => {
         return [];
       },
     });
-    return { r, pair: pair as BalanceLift, lefts: lefts.map((y) => toPx(y - (lefts[0] as number))), scores };
+    return {
+      r,
+      pair: pair as BalanceLift,
+      lefts: lefts.map((y) => toPx(y - (lefts[0] as number))),
+      scores,
+      popup,
+    };
   };
 
   it('speed up under a rider (ayPully 200 Flash px/s²) instead of sinking at a constant rate', () => {
@@ -253,8 +268,12 @@ describe('Balance lifts (Platform.as PT_PULLY)', () => {
   });
 
   it('snapping the rope scores 1000 (ScoreValue.PULLY_FALL) and both platforms fall', () => {
-    const { pair, scores } = ride(400);
+    const { pair, scores, popup } = ride(400);
     const [left, right] = pair.platforms as [Lift, Lift];
+    // Popped at the rider's centre (level.scorePop at player.hMidX, hMidY), not his head.
+    expect(popup).toBeDefined();
+    const { y, riderMid } = popup as { y: number; riderMid: number };
+    expect(Math.abs(toPx(y - riderMid))).toBeLessThanOrEqual(3);
     expect(left.isFalling).toBe(true);
     expect(right.isFalling).toBe(true);
     const jumps = scores
@@ -323,5 +342,57 @@ describe('Lava castles: the sideways lift reaches under the drop shaft', () => {
     expect(toPx(Math.min(...xs))).toBeLessThan(64 * 16 + 4);
     expect(toPx(Math.max(...xs)) + 32).toBeGreaterThanOrEqual(69 * 16);
     expect(anyLanding('ll-11-4', 63, 5, ['right', 'attack'])).toBe(true);
+  });
+});
+
+describe('Balance lifts in co-op', () => {
+  it('a rider on each platform cancels the pulls: the pair moves once per frame, not twice', () => {
+    const level = room(['balance 10 6 x2=16 y2=6 len=6 top=2']);
+    const world = new World(
+      level,
+      {
+        assets: new AssetRegistry({ default: {} }),
+        audio: NULL_AUDIO,
+        assist: { ...DEFAULT_ASSIST, invulnerable: true },
+        reduceFlashing: true,
+      },
+      newGameState(MARIO, MARIO),
+    );
+    const a = new ScriptedInput({ steps: [] });
+    const b = new ScriptedInput({ steps: [] });
+    const [p1, p2] = world.players as [(typeof world.players)[0], (typeof world.players)[0]];
+    const stand = (p: typeof p1, lift: Lift) => {
+      p.body.x = lift.body.x + px(16);
+      p.body.y = lift.body.y - p.body.h;
+      p.body.vy = 0;
+      p.body.onGround = true;
+    };
+    let pair: BalanceLift | undefined;
+    const lefts: number[] = [];
+    for (let f = 0; f < 56; f++) {
+      pair ??= world.entities.find((e): e is BalanceLift => e instanceof BalanceLift);
+      const plats = pair?.platforms;
+      if (plats) {
+        if (lefts.length === 0) stand(p1, plats[0]);
+        if (lefts.length === 40) stand(p2, plats[1]); // player two boards the rising platform
+        // Park player two off to the side until then.
+        if (lefts.length < 40) {
+          p2.body.x = px(2 * 16);
+          p2.body.y = px(13 * 16) - p2.body.h;
+        }
+        lefts.push(plats[0].body.y);
+      }
+      for (const i of [a, b]) {
+        i.setHeld([]);
+        i.next();
+      }
+      world.update([a, b]);
+    }
+    const step = (i: number) => (lefts[i] as number) - (lefts[i - 1] as number);
+    const before = step(40);
+    expect(before).toBeGreaterThan(0);
+    // Both riders: no net pull, so the pair keeps its speed (one move of v per frame).
+    for (let i = 43; i < 54; i++) expect(Math.abs(step(i) - before)).toBeLessThanOrEqual(px(1));
+    expect(pair?.platforms?.[0].isFalling).toBe(false);
   });
 });

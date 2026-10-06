@@ -81,28 +81,31 @@ export class BalanceLift extends Entity {
     if (this.slack) return;
     const l = this.left;
     const r = this.right;
-    // Platform.setCharOnPlat for each ridden platform: speed it up downwards, or snap the rope
-    // when it is already at the bottom.
-    if (l.ridden) this.pull(world, l, 1);
-    if (r.ridden && !this.slack) this.pull(world, r, -1);
-    if (l.ridden || r.ridden || this.v === 0) return;
+    // Platform.setCharOnPlat for each ridden platform: snap the rope when it is already at the
+    // bottom, else speed it up downwards. With a rider on each (co-op) the pulls cancel; sum them
+    // and move the pair once, so it never moves twice in a frame.
+    if (l.ridden && this.loc === 'bottom') return this.snap(world, l);
+    if (r.ridden && this.loc === 'top') return this.snap(world, r);
+    if (l.ridden || r.ridden) {
+      const pull = (l.ridden ? ACCEL : 0) - (r.ridden ? ACCEL : 0);
+      this.v = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, this.v + pull));
+      this.move();
+      return;
+    }
+    if (this.v === 0) return;
     // Platform.updatePully: nobody on either, so the pair coasts and slows down.
     this.v *= FRICTION;
     if (Math.abs(this.v) < MIN_SPEED) this.v = 0;
     this.move();
   }
 
-  private pull(world: World, p: Lift, dir: 1 | -1): void {
-    if (this.loc === (dir === 1 ? 'bottom' : 'top')) {
-      const rider = p.rider ?? p.body;
-      world.addScore(SNAP_SCORE, rider.x + (rider.w >> 1), rider.y);
-      this.left?.drop();
-      this.right?.drop();
-      this.slack = true;
-      return;
-    }
-    this.v = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, this.v + dir * ACCEL));
-    this.move();
+  /** The rope snaps: 1000 points at the rider's centre (scorePop at hMidX, hMidY) and both fall. */
+  private snap(world: World, p: Lift): void {
+    const rider = p.rider ?? p.body;
+    world.addScore(SNAP_SCORE, rider.x + (rider.w >> 1), rider.y + (rider.h >> 1));
+    this.left?.drop();
+    this.right?.drop();
+    this.slack = true;
   }
 
   /** Platform.movePartner: the partner mirrors the move; either one at its pulley stops both. */
