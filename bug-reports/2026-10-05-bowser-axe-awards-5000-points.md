@@ -43,3 +43,5 @@ every time
   - Lost Levels ll-8-4 (ll-w8, `ll-8-4-end3`, axe at column 125): the ending card after the axe shows FINAL SCORE 0005000 from the axe alone (screenshot not committed).
   - Lost Levels ll-12-4 (ll-wC notes, test map `notes/llwC/t124-216.url`): the axe gives +5000, then Toad's message and the WORLD D-1 card for ll-13-1, with no time tally.
 - Reviewed: verified against `com/smbc/pickups/BowserAxe.as`, `com/smbc/enemies/Bowser.as` (`breakBridgeStart/Inc/End`), `com/smbc/main/AnimatedObject.as` (`checkDosSides`), `com/smbc/data/ScoreValue.as`, `com/smbc/managers/EventManager.as` (`enterLevelExit`; `convertTimeToScore` has no other caller), and ours: `src/game/world/world.ts` (`updateBossClear`).
+
+Status: fixed — `World.updateBossClear` no longer adds 5000 when the axe drops Bowser (BowserAxe.as only calls `breakBridgeStart/Inc/End`, never `die()`).

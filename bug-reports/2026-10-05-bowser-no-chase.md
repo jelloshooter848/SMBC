@@ -35,3 +35,5 @@ every time
   - 8-4 (smb-w8), fire-and-hammer Bowser: the tester jumped over him and he kept facing left (`gauntlet/notes/smb-w8.md`; no shot cited).
 - Related: `2026-10-05-bowser-pacing-speed-and-range.md`, `2026-10-05-bowser-jumps-too-rarely.md`.
 - Reviewed: verified against `com/smbc/enemies/Bowser.as` (`RUN_SPEED` 62, `updateStats`, `pastXMax`, `fbTmrLsr`, `fbDelTmrLsr`, `jumpTmrLsr`) and ours: `src/game/entities/enemies/bowser.ts` (`update`).
+
+Status: fixed — once a player is right of him and he is on the ground, Bowser turns right and runs at 62 px/s (0.52 px/f) until his right edge reaches `xMax`, where he stops; while chasing he breathes no fire, throws no hammers and does not jump, and in his normal state he always faces left (Bowser.as `updateStats` `ST_CHASE`, `pastXMax`).

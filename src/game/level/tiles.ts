@@ -73,7 +73,9 @@ export const T = {
   TREE_TRUNK: def('tree-trunk', 'none'),
   MUSHROOM_TOP: def('mushroom-top', 'solid'),
   MUSHROOM_STEM: def('mushroom-stem', 'none'),
-  LAVA: def('lava', 'none', { hazard: true }),
+  // Scenery only: the original's wavesLava is a back-layer Scenery (Level.as, Scenery.as), so a
+  // player falls through it and dies off the bottom of the screen like in any pit.
+  LAVA: def('lava', 'none'),
   BRIDGE: def('bridge', 'solid'),
   CHAIN: def('chain', 'none'),
   CASTLE_BRICK: def('castle-brick', 'solid'),

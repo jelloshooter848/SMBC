@@ -33,3 +33,5 @@ every time
 - The bars were also watched turning in our 2-4 (smb-w2, `gauntlet/shots/smb-w2/ours/445_fb1.png` to `450_fb6.png`), 4-4 (smb-w4, `gauntlet/shots/smb-w4/ours/318_fb0.png` to `320_fb2.png`), 7-4 and 8-4 (smb-w7, smb-w8 notes), but their speed was not timed there. Folded in from `review/smb-w2.md` and `review/smb-w4.md` during the smb-w7/w8 consolidation.
 - Related: `2026-10-05-firebar-rotation-direction-reversed.md`.
 - Reviewed: verified against `com/smbc/projectiles/FireBar.as` (`ROTATE_SPEED` 106, `rotate`) and ours: `src/game/entities/enemies/firebar.ts` (`update`, `angle` 0..255).
+
+Status: fixed — fire bars turn 106 degrees a second, one turn in 204 frames (FireBar.as `ROTATE_SPEED`), using a 1/65536-turn angle.

@@ -48,3 +48,5 @@ every time (by code; see Notes)
 - Related: `2026-10-05-bowser-axe-awards-5000-points.md` (the axe route).
 - Source: `smb-w5/2026-10-05-bowser-no-true-form-on-fireball-kill.md`.
 - Reviewed: verified against `com/smbc/enemies/Bowser.as` (`FL_DIE`, `die`, `breakBridgeStart/Inc/End`), `com/smbc/enemies/Enemy.as` (`die`), the SWF frame labels of sprite 213 (`gauntlet/notes/swflabels.py`), and ours: `src/game/entities/enemies/bowser.ts`, `src/game/entities/enemies/enemy.ts` (`hit`, `flipOut`), `src/game/entities/effects/effects.ts` (`Corpse`), `src/game/world/world.ts`.
+
+Status: fixed — a fireball (or other hit-point) kill now drops Bowser straight down (vx 0), upside down, showing a per-world `bowser-die-N` frame (Bowser.as `die`, `FL_DIE + level.worldNum`): new 32x32 frames built from our own enemy art (worlds 1-7: toadstool, turtle, steel beetle, spiked crawler, cloud rider, squid, hammer-thrower; world 8 and the Lost Levels' worlds 9-13, which have no `die_N` frame, the king himself).

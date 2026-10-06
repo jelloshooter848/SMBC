@@ -118,11 +118,12 @@ export const SWORD_BEAM: ProjectileSpec = {
   frameRate: 1,
 };
 
+/** Bowser's flame (BowserFireBall.as SPEED = 160 px/s: 1.33 px/f). */
 export const BOWSER_FLAME: ProjectileSpec = {
   kind: 'bowser-flame',
   damage: 'contact',
   amount: 1,
-  speed: 0x01800,
+  speed: 0x01555,
   gravity: 0,
   bounceVy: null,
   hitsTiles: false,
