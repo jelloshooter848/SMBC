@@ -317,7 +317,7 @@ describe('Shadow Keep: a full run', { timeout: 30_000 }, () => {
 });
 
 describe('Shadow Keep: the keeper', () => {
-  it("waits for Link to step in; the shutters shut; it glows, then fans three spells at him that the shield can't stop", () => {
+  it('waits for Link to step in; the shutters shut; it glows, then fans three spells at him; without the shield facing them is no help', () => {
     const h = setup();
     h.world.warpTo('keeper', 7.5 * TILE, 10 * TILE);
     const keeper = h.world.enemies().find((e) => e instanceof Keeper) as Keeper;
@@ -333,7 +333,8 @@ describe('Shadow Keep: the keeper', () => {
     h.step([], GLOW_FRAMES);
     const spells = h.world.entities.filter((e) => e instanceof Spell) as Spell[];
     expect(spells).toHaveLength(3);
-    // Facing them with the shield up doesn't help.
+    // No shield yet: facing them doesn't help.
+    expect(h.world.hero.shield).toBe(false);
     h.world.hero.facing = 'up';
     const hp = h.world.hero.hp;
     for (let i = 0; i < 120 && h.world.hero.hp === hp; i++) h.step();
@@ -607,7 +608,16 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(h.world.room.id).toBe('shrine');
     openChest(h);
     expect(hero.shield).toBe(true);
-    expect(h.said).toContain('You got the shield! It stops rocks from the front.');
+    expect(h.said).toContain(
+      'You got the magic shield! Face rocks and spells to block them, and monsters hurt you less.',
+    );
+    expect(drawnText(h)).toEqual(
+      expect.arrayContaining([
+        'YOU GOT THE SHIELD!',
+        'FACE ROCKS AND SPELLS TO BLOCK',
+        'MONSTERS HURT YOU LESS',
+      ]),
+    );
     h.step([], 70);
     hero.invuln = 0;
     hero.facing = 'right';
@@ -651,6 +661,53 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(STUN_FRAMES).toBeGreaterThanOrEqual(150);
     keeper.awake = false;
     expect(keeper.stun(h.world, STUN_FRAMES)).toBe(false);
+  });
+
+  it('with the magic shield, a spell is blocked from the front (not from the side, not mid-stab, not without it)', () => {
+    const spellAt = (h: Harness, dx: number, dy: number, angle: number) => {
+      const hero = h.world.hero;
+      hero.invuln = 0;
+      h.world.add(new Spell(hero.x + 4 + dx, hero.y + 4 + dy, angle));
+    };
+    const down = Math.PI / 2 + 0.3; // fanned, but mostly down
+    for (const shield of [true, false]) {
+      const h = setup();
+      h.world.hero.shield = shield;
+      h.world.hero.facing = 'up';
+      spellAt(h, 10, -40, down);
+      h.step([], 40);
+      expect(h.world.hero.hp).toBe(shield ? 6 : 5);
+    }
+    const h = setup();
+    const hero = h.world.hero;
+    hero.shield = true;
+    hero.facing = 'right'; // from above while facing right: the side
+    spellAt(h, 10, -40, down);
+    h.step([], 40);
+    expect(hero.hp).toBe(5);
+    hero.facing = 'up';
+    hero.x = 112;
+    hero.y = 80;
+    spellAt(h, 8, -20, down);
+    h.step(['attack']); // mid-stab
+    h.step([], 12);
+    expect(hero.hp).toBe(4);
+  });
+
+  it("with the shield the keeper's touch costs half a heart instead of a whole one", () => {
+    for (const shield of [false, true]) {
+      const h = setup();
+      const keeper = toKeeper(h);
+      const hero = h.world.hero;
+      hero.shield = shield;
+      hero.invuln = 0;
+      hero.attackT = 0;
+      const hp = hero.hp;
+      hero.x = keeper.x + 8;
+      hero.y = keeper.y + 8;
+      h.step();
+      expect(hp - hero.hp).toBe(shield ? 1 : 2);
+    }
   });
 
   it("the keeper's spells vanish when it falls", () => {

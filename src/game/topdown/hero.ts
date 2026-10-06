@@ -64,8 +64,8 @@ const SPIN: readonly Dir[] = ['down', 'left', 'up', 'right'];
 /**
  * The top-down hero (Link in the Shadow Keep): four-way walking at 1.5 px/frame on a half-tile
  * grid, a sword stab in the facing direction (one at a time), the item in the slot on SPECIAL
- * (SELECT moves the slot), a shield once he has one that stops axis-aligned blockable shots
- * coming at his front while not stabbing, hearts in halves, knockback with invulnerability after
+ * (SELECT moves the slot), a shield once he has one that stops blockable shots coming at his
+ * front while not stabbing and halves monsters' touch damage, hearts in halves, knockback with invulnerability after
  * a hit, and a death spin. Walking into a chest opens it; he holds the prize up for a moment.
  */
 export class TdHero {
@@ -143,6 +143,14 @@ export class TdHero {
     const b = swordAt(this.x, this.y, this.facing);
     const v = this.facing === 'up' || this.facing === 'down';
     return { ...b, frame: v ? 'sword-v' : 'sword-h', fx: this.facing === 'left', fy: this.facing === 'down' };
+  }
+
+  /**
+   * The guard: with the shield, a monster's touch costs half as much (never less than half a
+   * heart). `damage` in half hearts.
+   */
+  contactDamage(damage: number): number {
+    return this.shield ? Math.max(1, Math.floor(damage / 2)) : damage;
   }
 
   /** Does the shield stop a shot travelling in `dir`? Only a shot coming at the hero's front. */

@@ -477,10 +477,10 @@ export class TopDownWorld {
       }
       if (e.dead) continue;
       if (e instanceof TdEnemy && e.contact > 0 && !bladed && boxesOverlap(hb, e.hurtbox()))
-        hero.hurt(this, e.contact, dirToward(e.hurtbox(), hb));
+        hero.hurt(this, hero.contactDamage(e.contact), dirToward(e.hurtbox(), hb));
       else if (e instanceof Projectile && e.hostile && boxesOverlap(hb, e.hurtbox())) {
         e.dead = true;
-        if (e.blockable && hero.shieldBlocks(e.dir)) this.emit({ type: 'block' });
+        if (e.blockable && hero.shieldBlocks(e.heading())) this.emit({ type: 'block' });
         else hero.hurt(this, e.damage, e.dir ?? dirToward(e.hurtbox(), hb));
       } else if (e instanceof Pickup && !e.hidden && boxesOverlap(hb, e.hurtbox())) this.collect(e);
     }

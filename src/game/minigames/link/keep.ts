@@ -125,8 +125,8 @@ export class ShadowKeepScene implements Scene {
       }
       if (what === 'bomb') said += ' Bombs can open cracked walls.';
     } else if (what === 'shield') {
-      lines = ['YOU GOT THE SHIELD!', 'IT STOPS ROCKS FROM THE FRONT'];
-      said = 'You got the shield! It stops rocks from the front.';
+      lines = ['YOU GOT THE SHIELD!', 'FACE ROCKS AND SPELLS TO BLOCK', 'MONSTERS HURT YOU LESS'];
+      said = 'You got the magic shield! Face rocks and spells to block them, and monsters hurt you less.';
     } else return;
     const y = this.world.hero.y > 88 ? HUD_H + 16 : HUD_H + 120;
     this.banner = { lines, until: this.t + ITEM_BANNER_FRAMES, y };

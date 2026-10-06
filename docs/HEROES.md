@@ -161,7 +161,10 @@ appears there too: three hearts become four, all refilled), the armory (a chest 
 four, up to eight, refills dropped by monsters; set one down in front, it blows after 1.5 s,
 2 damage to monsters and half a heart to Link within a tile and a half, and opens **cracked
 walls**; statues point at the cracked west wall), behind it the secret shrine (a chest with the
-**shield**: from then on it stops rocks from the front while not stabbing; spells it can't),
+magic **shield**, owner decision "make it worth the secret room": from then on it stops rocks and
+the keeper's spells coming at Link's front while he isn't stabbing (an angled spell by its main
+axis), and its guard halves monsters' touch damage, never below half a heart; the banner says
+"FACE ROCKS AND SPELLS TO BLOCK" / "MONSTERS HURT YOU LESS"),
 rock-spitters with a floor switch behind water (it opens the way on and shows a heart refill), the
 keeper (drifts across the top, glows, then fans three spells at Link; eight hits, a bomb counts
 two; its name shows between it and Link; its spells vanish when it falls) and the shining exit.
@@ -178,9 +181,11 @@ Dev: `?minigame=link` (the scene is `window.__miniGame`; `world.warpTo(roomId, x
 
 Difficulty (a "cautious human" sim, `human-sim.test.ts`: the bot's plan seen through a 15-frame
 reaction delay, monster positions misjudged by up to 4 px, pauses and early swings; `KEEP_SIM=30
-pnpm vitest run human-sim` prints the report): before v2 it escaped 40% of 30 seeds (70% at a
-12-frame reaction, 27% at 18), mostly falling to the keeper; with v2 about 95-100%, losing about
-two of four hearts to the keeper, which got two more hit points to keep it a fight.
+pnpm vitest run human-sim` prints the report, with and without the shrine): before v2 it escaped
+40% of 30 seeds (70% at a 12-frame reaction, 27% at 18), mostly falling to the keeper. With v2
+and the magic shield 97-100% (about 1.8 of four hearts lost to the keeper); skipping the shrine
+93-100% (about 2.2 lost). The keeper got two more hit points to keep it a fight. The sim dodges
+spells rather than facing them, so a player who learns to block does better than it does.
 
 ### The top-down kit (`src/game/topdown/`)
 

@@ -6,7 +6,7 @@ import { ScriptedInput } from '@game/sim/headless';
 import { buildDungeon, parseRoom, type RoomDef } from './room';
 import { TopDownWorld, type TdEvent } from './world';
 import { Chest, Pickup } from './entity';
-import { Rock, type Knight } from './enemies';
+import { Projectile, Rock, type Knight } from './enemies';
 import {
   BLAST_RADIUS,
   BOMB_FUSE,
@@ -317,6 +317,34 @@ describe('top-down kit: chests, the shield and heart containers', () => {
     w.add(new Rock(hero.x + 40, hero.y + 4, 'left'));
     expect(step([], 30)).toContainEqual({ type: 'block' });
     expect(hero.hp).toBe(4);
+  });
+
+  it('with the shield an angled blockable shot is stopped from the front by its main axis', () => {
+    const { w, hero, step } = world([{ id: 'r', at: [0, 0], map: map([[7, 5, '@']]) }], { shield: false });
+    const angled = () => {
+      hero.invuln = 0;
+      hero.x = 112;
+      hero.y = 80;
+      // Down and a little left: from above, its main axis is down.
+      w.add(new Projectile(hero.x + 10, hero.y - 40, -0.4, 1.5, null));
+    };
+    hero.facing = 'up';
+    angled();
+    expect(step([], 40)).toContainEqual({ type: 'hurt', hp: 5 });
+    hero.shield = true;
+    angled();
+    expect(step([], 40)).toContainEqual({ type: 'block' });
+    hero.facing = 'left';
+    angled();
+    expect(step([], 40)).toContainEqual({ type: 'hurt', hp: 4 });
+  });
+
+  it("the shield's guard halves a monster's touch, never below half a heart", () => {
+    const { hero } = one([]);
+    hero.shield = false;
+    expect([hero.contactDamage(1), hero.contactDamage(2), hero.contactDamage(4)]).toEqual([1, 2, 4]);
+    hero.shield = true;
+    expect([hero.contactDamage(1), hero.contactDamage(2), hero.contactDamage(4)]).toEqual([1, 1, 2]);
   });
 
   it('a heart container adds a heart and fills them all; a refill only fills', () => {

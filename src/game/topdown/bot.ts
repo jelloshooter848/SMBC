@@ -264,7 +264,7 @@ export class TopDownBot {
     return world.entities.some((e) => {
       if (!(e instanceof Projectile) || !e.hostile || e.dead) return false;
       // A shot the shield would stop doesn't count when standing still facing it.
-      if (e.blockable && x === hero.x && y === hero.y && hero.shieldBlocks(e.dir)) return false;
+      if (e.blockable && x === hero.x && y === hero.y && hero.shieldBlocks(e.heading())) return false;
       for (let t = 0; t <= 30; t += 2) {
         const b = e.hurtbox();
         if (boxesOverlap({ x: b.x + e.vx * t, y: b.y + e.vy * t, w: b.w, h: b.h }, hb)) return true;

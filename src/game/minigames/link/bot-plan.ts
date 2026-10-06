@@ -63,3 +63,15 @@ export const KEEP_PLAN: Readonly<Record<string, BotPlan>> = {
   keeper: [{ do: 'fight' }, { do: 'leave', side: 'e' }],
   exit: [{ do: 'goto', x: 7.5 * TILE, y: 0 }],
 };
+
+/**
+ * The same run for a player who never finds the secret: bombs from the armory's chest, then
+ * straight back down, no shrine and no shield (difficulty tuning, human-sim.test.ts).
+ */
+export const KEEP_PLAN_NO_SHRINE: Readonly<Record<string, BotPlan>> = {
+  ...KEEP_PLAN,
+  armory: (w) =>
+    w.inv.has('bomb')
+      ? [{ do: 'leave', side: 's' }]
+      : [{ do: 'fight' }, { do: 'chest' }, { do: 'leave', side: 's' }],
+};
