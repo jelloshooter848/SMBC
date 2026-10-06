@@ -55,6 +55,8 @@ export class HammerBro extends Enemy {
   private jumped = false;
   private jumpedHigh = false;
   private jumpFeet = 0;
+  /** Which way it is pacing. Kept apart from vx, which a wall bump zeroes (`moveX`). */
+  private paceDir: -1 | 1 = 1;
 
   constructor(
     x: number,
@@ -108,25 +110,38 @@ export class HammerBro extends Enemy {
       this.facing = pl.x > cx || pl.x + (pl.w >> 1) >= cx ? 1 : -1;
     }
     if (!this.chasing) {
-      b.vx = Math.max(-WALK_SPEED, Math.min(WALK_SPEED, b.vx));
       if (b.x < this.waveLeft) {
         b.x = this.waveLeft;
-        b.vx = -b.vx;
+        this.paceDir = 1;
       } else if (b.x > this.waveRight) {
         b.x = this.waveRight;
-        b.vx = -b.vx;
+        this.paceDir = -1;
       }
+      b.vx = this.paceDir * WALK_SPEED;
     }
-    moveX(b, world.map, velToSub(b.vx));
-    if (b.hitWall !== 0) b.vx = -b.hitWall * Math.abs(b.vx);
 
     // Vertical: jumps pass up through floors, hops pass down through one (passThroughGround).
     if (this.jumpTimer > 0 && --this.jumpTimer === 0 && b.onGround) this.jump(world);
     const feet = b.y + b.h;
     let through = (this.jumpedHigh && b.vy < 0) || (!this.jumpedHigh && this.jumped && b.vy > 0);
     if (feet - this.jumpFeet > DROP_THROUGH || feet > SOLID_BELOW || this.solidFloors(world)) through = false;
-    // `if (wallOnLeft || wallOnRight) passThroughGround = false`: never pass through beside a wall.
+    // `if (wallOnLeft || wallOnRight) passThroughGround = false`: never pass through beside a wall
+    // (the wall contact of the last frame's hit tests).
     if (b.hitWall !== 0) through = false;
+
+    // While passing through, the original drops its ground and brick hit tests, walls included;
+    // and a pass that has just ended inside the row is not shoved sideways out of it.
+    if (through || this.embedded(world)) {
+      b.x += velToSub(b.vx);
+      b.hitWall = 0;
+    } else {
+      moveX(b, world.map, velToSub(b.vx));
+      if (b.hitWall !== 0 && !this.chasing) {
+        this.paceDir = b.hitWall > 0 ? -1 : 1;
+        b.vx = this.paceDir * WALK_SPEED;
+      }
+    }
+
     b.vy = Math.min(MAX_FALL, b.vy + GRAVITY);
     if (through) {
       b.y += velToSub(b.vy);
@@ -141,6 +156,15 @@ export class HammerBro extends Enemy {
     else if (this.throwDelay > 0 && --this.throwDelay === 0) this.throwHammer(world);
     this.currentFrame = this.throwDelay > 0 ? 'hammer-bro-0' : `hammer-bro-${(world.frame >> 3) & 1}`;
     if (this.isBelowLevel()) this.destroy();
+  }
+
+  /** Overlapping a solid tile (still inside the brick row a pass-through has just ended in). */
+  private embedded(world: World): boolean {
+    const b = this.body;
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++)
+        if (world.map.isSolid(tx, ty)) return true;
+    return false;
   }
 
   /** Castles and underground (`cannotPassThroughGround`): jumps only go straight up and down. */

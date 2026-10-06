@@ -19,6 +19,7 @@ import { BulletBill, BulletLauncher } from '@game/entities/enemies/bullet-bill';
 import { Lakitu, LakituZone } from '@game/entities/enemies/lakitu';
 import { Spiny } from '@game/entities/enemies/spiny';
 import { HammerBro } from '@game/entities/enemies/hammer-bro';
+import { Goomba } from '@game/entities/enemies/goomba';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import { px, toPx } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
@@ -554,5 +555,108 @@ describe('Hammer Bros (HammerBro.as, Hammer.as)', () => {
     });
     expect(Math.abs(at1500 - home)).toBeLessThanOrEqual(px(9));
     expect(home - at1700).toBeGreaterThan(px(40)); // 65 px/s → 0.54 px/frame once chasing
+  });
+});
+
+// Bug reports 2026-10-06-4-1-lakitu-stops-throwing-after-four-spinies and
+// 2026-10-06-5-3-flying-bullet-bills-stop-after-scrolling: World.cull() dropped things off the
+// left of the screen without marking them dead, so whoever kept a reference still counted them.
+describe('Culled off the left of the screen (World.cull)', () => {
+  it('an entity culled off the left edge is no longer alive', () => {
+    let goomba: Goomba | undefined;
+    runSim({
+      level: field({ width: 64, start: 30, entities: ['goomba 34 12'] }),
+      character: MARIO,
+      script: none,
+      maxFrames: 4,
+      controller: (w, f) => {
+        goomba ??= w.entities.find((e): e is Goomba => e instanceof Goomba);
+        if (f === 2 && goomba) goomba.body.x = w.camera.x - px(200);
+        return [];
+      },
+    });
+    expect(goomba).toBeDefined();
+    expect(goomba?.alive).toBe(false);
+  });
+
+  it('4-1: Lakitu keeps throwing after four of his Spinies walk off the left of the screen', () => {
+    const eggs = tracker((w) => w.entities.filter((e): e is Spiny => e instanceof Spiny));
+    runSim({
+      level: at(level('world4', '4-1'), 20, 12),
+      character: MARIO,
+      script: none,
+      maxFrames: 1500,
+      assist: { invulnerable: true, infiniteTime: true },
+      controller: (w, f) => {
+        eggs.look(w, f);
+        // Send every Spiny off the left of the screen as soon as it lands.
+        for (const e of w.entities)
+          if (e instanceof Spiny && e.alive && e.body.onGround) e.body.x = w.camera.x - px(120);
+        return [];
+      },
+    });
+    // One every 105 frames from about frame 290: six or more by frame 1500, not stuck at four.
+    expect(eggs.seen.size).toBeGreaterThan(6);
+  });
+
+  it('5-3: flying Bullet Bills keep coming after one is culled while the screen scrolls', () => {
+    const seen = tracker(bills);
+    let firstGone = -1;
+    runSim({
+      level: at(level('world5', '5-3'), 2, 12),
+      character: MARIO,
+      script: none,
+      maxFrames: 1400,
+      assist: { invulnerable: true, infiniteTime: true },
+      controller: (w, f) => {
+        seen.look(w, f);
+        const first = [...seen.seen.keys()][0];
+        if (first && firstGone < 0 && first.body.x < w.camera.x + px(48)) firstGone = f;
+        // Walk right while the first bill leaves on the left, then stand.
+        return firstGone >= 0 && f < firstGone + 120 ? ['right'] : [];
+      },
+    });
+    expect(firstGone).toBeGreaterThan(0);
+    const later = [...seen.seen.values()].filter((f) => f > firstGone + 200);
+    expect(later.length).toBeGreaterThan(0);
+  });
+});
+
+// Bug report 2026-10-06-3-1-hammer-bros-stop-pacing-after-wall-contact.
+describe('Hammer Bros keep pacing after touching a wall', () => {
+  it('a Hammer Bro beside a block keeps pacing after it bumps into it', () => {
+    const xs: number[] = [];
+    runSim({
+      level: field({ width: 64, start: 14, rows: { 12: put(21, 'B') }, entities: ['hammer-bro 20 12'] }),
+      character: MARIO,
+      script: none,
+      maxFrames: 900,
+      assist: { invulnerable: true, infiniteTime: true },
+      until: (w, f) => {
+        const b = bros(w)[0];
+        if (b && f > 300) xs.push(b.body.x);
+        return false;
+      },
+    });
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThanOrEqual(px(6));
+  });
+
+  it('3-1: the Hammer Bro by column 116 keeps pacing after jumping through the brick row', () => {
+    const late = new Map<HammerBro, number[]>();
+    runSim({
+      level: at(level('world3', '3-1'), 100, 12),
+      character: MARIO,
+      script: none,
+      maxFrames: 1500,
+      assist: { invulnerable: true, infiniteTime: true },
+      // Stand at column 108.
+      controller: (w) => (w.player.centerX < px(108 * 16) ? ['right'] : []),
+      until: (w, f) => {
+        if (f > 900) for (const b of bros(w)) late.set(b, [...(late.get(b) ?? []), b.body.x]);
+        return false;
+      },
+    });
+    expect(late.size).toBeGreaterThanOrEqual(1);
+    for (const xs of late.values()) expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThanOrEqual(px(8));
   });
 });

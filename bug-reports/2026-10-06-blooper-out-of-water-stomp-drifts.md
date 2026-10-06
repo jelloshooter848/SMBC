@@ -29,3 +29,5 @@ every time
 
 - Cause, by code: ours uses the generic `flip` reaction, so the corpse gets the standard knock-out launch from `2026-10-05-enemies-knocked-out-fall-upright.md`. The Blooper needs its own: no hop and no sideways speed.
 - Found by the build review of V0.3.0-DEV.8F4BF1A. Screenshot names in the review: `150_bj`…`164_bk6`. Not committed (`check:assets` bans image files).
+
+Status: fixed — `Enemy.flipOut` takes a `hop` flag, and `Blooper` passes false for a stomp, so its corpse starts with vx 0 and vy 0 and drops straight down upside down (Bloopa.stomp). Other kills keep the knock-out hop. Test: tests/sim/water-enemies.test.ts, "a stomped Blooper drops straight down".

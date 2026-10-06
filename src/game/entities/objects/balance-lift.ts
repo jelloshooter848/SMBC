@@ -31,7 +31,10 @@ export class BalanceLift extends Entity {
   private left: Lift | null = null;
   private right: Lift | null = null;
   private slack = false;
+  private readonly x1: number;
   private readonly x2: number;
+  /** px from a cell's left edge to its platform's: centred on the cell (Level.as `currentX + TILE_SIZE/2`). */
+  private readonly dx: number;
   private readonly y2: number;
   private readonly len: number;
   private readonly topRow: number;
@@ -44,10 +47,14 @@ export class BalanceLift extends Entity {
   private loc: 'top' | 'mid' | 'bottom' = 'mid';
 
   constructor(tx: number, ty: number, props: Record<string, string | number | boolean>) {
-    super(px(tx * 16), px(ty * 16), 16, 8);
+    const len = Number(props.len ?? 6);
+    const dx = 8 - len * 4;
+    super(px(tx * 16 + dx), px(ty * 16), 16, 8);
+    this.x1 = tx;
     this.x2 = Number(props.x2 ?? tx + 4);
     this.y2 = Number(props.y2 ?? ty);
-    this.len = Number(props.len ?? 6);
+    this.len = len;
+    this.dx = dx;
     this.topRow = Number(props.top ?? ty - 4);
     this.layer = 'back';
     this.despawnMargin = 64;
@@ -70,8 +77,9 @@ export class BalanceLift extends Entity {
 
   update(world: World): void {
     if (!this.left || !this.right) {
-      this.left = new Lift('lift-balance', this.body.x / px(16), this.body.y / px(16), { len: this.len });
-      this.right = new Lift('lift-balance', this.x2, this.y2, { len: this.len });
+      const opts = { len: this.len, dx: this.dx };
+      this.left = new Lift('lift-balance', this.x1, this.body.y / px(16), opts);
+      this.right = new Lift('lift-balance', this.x2, this.y2, opts);
       world.spawn(this.left);
       world.spawn(this.right);
       this.fy = this.left.body.y;
@@ -133,7 +141,7 @@ export class BalanceLift extends Entity {
   render(r: Renderer, view: View): void {
     const sheet = view.assets.sheet('items');
     const lx = toPx(this.body.x) - view.camX;
-    const rx = this.x2 * 16 - view.camX;
+    const rx = this.x2 * 16 + this.dx - view.camX;
     const ropeY = this.ropeY;
     const halfW = (this.len * 8) / 2;
     // Rope across the top, then down to each platform's centre.
