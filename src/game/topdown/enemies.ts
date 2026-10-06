@@ -6,8 +6,8 @@ import type { Mover, TopDownWorld } from './world';
 
 /**
  * A straight-flying shot. Positions are kept as floats so any angle works; `dir` is set for
- * shots that travel along an axis (only those can be blocked by the hero's shield, and only
- * when `blockable`).
+ * shots that travel along an axis. A `blockable` shot is stopped by the hero's shield when it
+ * comes at his front: along its axis, or for an angled one its main axis (`heading`).
  */
 export class Projectile extends TdEntity {
   override layer = 2;
@@ -37,6 +37,14 @@ export class Projectile extends TdEntity {
 
   override hurtbox(): Box {
     return { x: this.x + 1, y: this.y + 1, w: this.w - 2, h: this.h - 2 };
+  }
+
+  /** The way it is going for the shield: its axis, or the main axis of an angled shot. */
+  heading(): Dir | null {
+    if (this.dir) return this.dir;
+    if (this.vx === 0 && this.vy === 0) return null;
+    if (Math.abs(this.vx) > Math.abs(this.vy)) return this.vx < 0 ? 'left' : 'right';
+    return this.vy < 0 ? 'up' : 'down';
   }
 
   update(world: TopDownWorld): void {

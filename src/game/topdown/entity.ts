@@ -1,6 +1,6 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { DIR_VEC, TILE, boxesOverlap, mod, type Box, type Dir } from './geometry';
-import type { TdView } from './view';
+import { drawFrame, type TdView } from './view';
 import type { Mover, TopDownWorld } from './world';
 
 /**
@@ -73,6 +73,8 @@ export abstract class TdEnemy extends TdEntity {
   mover: Mover = 'walk';
   /** Sword knockback (bosses stand firm). */
   knockable = true;
+  /** Frames left stunned (a boomerang): it stands still and does nothing else. */
+  stunT = 0;
 
   update(world: TopDownWorld): void {
     if (this.invuln > 0) this.invuln--;
@@ -82,14 +84,38 @@ export abstract class TdEnemy extends TdEntity {
       world.moveEntity(this, v.dx * KNOCK_SPEED, v.dy * KNOCK_SPEED, this.mover);
       return;
     }
+    if (this.stunT > 0) {
+      this.stunT--;
+      return;
+    }
     this.think(world);
+  }
+
+  /** How long a stun of `frames` holds this monster (a boss may shorten it; 0 = immune). */
+  stunFor(frames: number): number {
+    return frames;
+  }
+
+  /** Stuns it for `frames` (as this monster takes it). True if it is stunned now. */
+  stun(world: TopDownWorld, frames: number): boolean {
+    const n = this.stunFor(frames);
+    if (n <= 0 || this.dead) return false;
+    this.stunT = Math.max(this.stunT, n);
+    world.emit({ type: 'stun', kind: this.kind });
+    return true;
   }
 
   /** Behaviour once knockback is over. */
   protected abstract think(world: TopDownWorld): void;
 
   override onSword(world: TopDownWorld, dir: Dir): boolean {
-    return this.hurt(world, 1, dir);
+    if (this.hurt(world, 1, dir)) return true;
+    // Still blinking from the last hit: the blade pushes it back all the same.
+    if (this.knockable && !this.dead && this.kbT === 0) {
+      this.kbDir = dir;
+      this.kbT = ENEMY_KNOCK_FRAMES;
+    }
+    return false;
   }
 
   hurt(world: TopDownWorld, damage: number, dir: Dir): boolean {
@@ -109,13 +135,15 @@ export abstract class TdEnemy extends TdEntity {
     this.dead = true;
     world.emit({ type: 'kill', kind: this.kind });
     world.add(new Poof(this.x + this.w / 2 - 8, this.y + this.h / 2 - 8));
-    if (this.dropChance > 0 && world.rng.chance(this.dropChance)) {
-      // Dropped hearts sit on the 8-px grid so they are easy to walk onto.
-      // Over a statue, block or water it goes to the nearest tile the hero can walk onto.
-      const x = Math.round((this.x + this.w / 2 - 4) / 8) * 8;
-      const y = Math.round((this.y + this.h / 2 - 4) / 8) * 8;
-      const at = world.openSpotNear({ x, y, w: 8, h: 8 });
-      world.add(new Pickup(at.x, at.y, 'heart'));
+    const kind = world.lootFor(this.dropChance);
+    if (kind) {
+      // Drops sit on the 8-px grid so they are easy to walk onto.
+      // Over a statue, block or water they go to the nearest tile the hero can walk onto.
+      const size = pickupSize(kind);
+      const x = Math.round((this.x + this.w / 2 - size.w / 2) / 8) * 8;
+      const y = Math.round((this.y + this.h / 2 - size.h / 2) / 8) * 8;
+      const at = world.openSpotNear({ x, y, ...size });
+      world.add(new Pickup(at.x, at.y, kind));
     }
   }
 
@@ -145,9 +173,39 @@ export class Poof extends TdEntity {
   }
 }
 
-export type PickupKind = 'heart' | 'key' | 'heart-container';
+/**
+ * What a pickup or chest can give (world.ts `grant`): `heart` (one heart back), `key`,
+ * `heart-container` (one more heart, all of them back), `refill` (all hearts back), `shield`,
+ * an item's ammo pickup (`bombs`), or an item id (the item itself).
+ */
+export type PickupKind = string;
 
-/** Something to pick up: a heart (one heart back), a key, or a heart container (all hearts back). */
+/** Small pickups are 8 px wide (a heart is 8×8); the rest fill a tile. */
+export function pickupSize(kind: PickupKind): { w: number; h: number } {
+  if (kind === 'heart') return { w: 8, h: 8 };
+  if (kind === 'key' || kind === 'bombs') return { w: 8, h: 16 };
+  return { w: 16, h: 16 };
+}
+
+/** The tile-sheet frame a pickup (or a chest's prize held up) is drawn with. */
+export function pickupFrame(kind: PickupKind): string {
+  switch (kind) {
+    case 'heart':
+      return 'heart-pickup';
+    case 'key':
+      return 'key';
+    case 'bombs':
+      return 'bomb-pickup';
+    case 'shield':
+      return 'shield-pickup';
+    case 'heart-container':
+      return 'heart-container';
+    default:
+      return `${kind}-icon`;
+  }
+}
+
+/** Something lying on the floor to pick up (see PickupKind). */
 export class Pickup extends TdEntity {
   override layer = 0;
   /** Not there yet: the room's `reveal` condition shows it. */
@@ -158,12 +216,9 @@ export class Pickup extends TdEntity {
     readonly kind: PickupKind,
   ) {
     super(x, y);
-    if (kind === 'heart') {
-      this.w = 8;
-      this.h = 8;
-    } else if (kind === 'key') {
-      this.w = 8;
-    }
+    const size = pickupSize(kind);
+    this.w = size.w;
+    this.h = size.h;
   }
   override hurtbox(): Box {
     return { x: this.x, y: this.y, w: this.w, h: this.h };
@@ -172,23 +227,54 @@ export class Pickup extends TdEntity {
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
     if (this.hidden) return;
     const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
-    const frame = this.kind === 'heart' ? 'heart-pickup' : this.kind === 'key' ? 'key' : 'heart';
-    const color = this.kind === 'key' ? '#f8b800' : '#f83800';
-    if (this.kind === 'heart-container') {
-      // A big heart: the 8×8 heart at double size isn't possible, so four of them.
+    if (this.kind === 'refill') {
+      // A refill: four little hearts in a square.
       for (const [dx, dy] of [
         [0, 0],
         [8, 0],
         [0, 8],
         [8, 8],
-      ] as const) {
-        if (sheet?.frames.has('heart')) r.sprite(sheet, 'heart', ox + this.x + dx, oy + this.y + dy);
-        else r.rect(ox + this.x + dx + 1, oy + this.y + dy + 1, 6, 6, color);
-      }
+      ] as const)
+        drawFrame(r, sheet, 'heart', ox + this.x + dx, oy + this.y + dy, '#f83800', { w: 7, h: 7 });
       return;
     }
-    if (sheet?.frames.has(frame)) r.sprite(sheet, frame, ox + this.x, oy + this.y);
-    else r.rect(ox + this.x + 1, oy + this.y + 1, this.w - 2, this.h - 2, color);
+    const color = this.kind === 'key' ? '#f8b800' : this.kind === 'heart' ? '#f83800' : '#fcfcfc';
+    drawFrame(r, sheet, pickupFrame(this.kind), ox + this.x, oy + this.y, color, { w: this.w, h: this.h });
+  }
+}
+
+/**
+ * A chest (solid): walking into it opens it and the hero holds up what was inside (world.ts
+ * `grant`). The room remembers it open.
+ */
+export class Chest extends TdEntity {
+  override layer = 0;
+  override solid = true;
+  constructor(
+    x: number,
+    y: number,
+    readonly contents: string,
+    public open = false,
+  ) {
+    super(x, y);
+  }
+  override hurtbox(): Box {
+    return this.body();
+  }
+  update(): void {}
+  /** Opens it (once): its contents go to the hero. */
+  tryOpen(world: TopDownWorld): boolean {
+    if (this.open) return false;
+    this.open = true;
+    if (this.key) world.state().taken.add(this.key);
+    world.emit({ type: 'chest', item: this.contents });
+    world.grant(this.contents);
+    world.hero.holdUp(pickupFrame(this.contents));
+    return true;
+  }
+  render(r: Renderer, view: TdView, ox: number, oy: number): void {
+    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
+    drawFrame(r, sheet, this.open ? 'chest-open' : 'chest', ox + this.x, oy + this.y, '#ac7c00');
   }
 }
 

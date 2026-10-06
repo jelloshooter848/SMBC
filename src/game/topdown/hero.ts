@@ -1,15 +1,21 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
-import { DIRS, DIR_VEC, isHorizontal, mod, type Box, type Dir } from './geometry';
-import { PUSH_DELAY, PushBlock } from './entity';
-import type { TdView } from './view';
+import { DIRS, DIR_VEC, TILE, isHorizontal, mod, type Box, type Dir } from './geometry';
+import { Chest, PUSH_DELAY, PushBlock } from './entity';
+import { drawFrame, type TdView } from './view';
 import type { TopDownWorld } from './world';
 
 /** Frames of one sword stab (the hero stands still for all of them). */
 export const ATTACK_FRAMES = 14;
 /** The blade is out (and hits) from this frame of the stab to SWORD_LAST, inclusive. */
-export const SWORD_FIRST = 2;
-export const SWORD_LAST = 10;
+export const SWORD_FIRST = 1;
+export const SWORD_LAST = 12;
+/** How far the stab's reach spills past the tile in front, to each side (angled approaches). */
+export const SWORD_SPREAD = 4;
+/** Frames the hero stands in the throw pose after using an item. */
+export const USE_FRAMES = 10;
+/** Frames the hero holds a chest's prize over his head (the room waits). */
+export const HOLD_FRAMES = 64;
 /** After a hit: this long invulnerable, and knocked back KNOCK_FRAMES frames at KNOCK_PX. */
 export const HERO_INVULN = 60;
 export const KNOCK_FRAMES = 8;
@@ -34,13 +40,33 @@ export function swordAt(x: number, y: number, d: Dir): Box {
   }
 }
 
+/**
+ * Where a stab hits for a hero at (x, y) facing `d`: the whole tile in front, SWORD_SPREAD px
+ * past it on each side, and 6 px back into the hero's own tile, so a monster coming in at an
+ * angle meets the blade before it reaches him.
+ */
+export function swordReach(x: number, y: number, d: Dir): Box {
+  const s = SWORD_SPREAD;
+  switch (d) {
+    case 'up':
+      return { x: x - s, y: y - TILE, w: TILE + 2 * s, h: TILE + 6 };
+    case 'down':
+      return { x: x - s, y: y + TILE - 6, w: TILE + 2 * s, h: TILE + 6 };
+    case 'left':
+      return { x: x - TILE, y: y - s, w: TILE + 6, h: TILE + 2 * s };
+    case 'right':
+      return { x: x + TILE - 6, y: y - s, w: TILE + 6, h: TILE + 2 * s };
+  }
+}
+
 const SPIN: readonly Dir[] = ['down', 'left', 'up', 'right'];
 
 /**
  * The top-down hero (Link in the Shadow Keep): four-way walking at 1.5 px/frame on a half-tile
- * grid, a sword stab in the facing direction (one at a time), a shield that stops axis-aligned
- * blockable shots coming at the hero's front while not stabbing, hearts in halves, knockback with
- * invulnerability after a hit, and a death spin.
+ * grid, a sword stab in the facing direction (one at a time), the item in the slot on SPECIAL
+ * (SELECT moves the slot), a shield once he has one that stops blockable shots coming at his
+ * front while not stabbing and halves monsters' touch damage, hearts in halves, knockback with invulnerability after
+ * a hit, and a death spin. Walking into a chest opens it; he holds the prize up for a moment.
  */
 export class TdHero {
   x: number;
@@ -51,6 +77,13 @@ export class TdHero {
   maxHp: number;
   /** Frames left in the current stab (0 = not attacking). */
   attackT = 0;
+  /** Carries a shield (it blocks shots from the front). */
+  shield = true;
+  /** Frames left in the throw pose after using an item. */
+  useT = 0;
+  /** Frames left holding a prize up, and its tile-sheet frame. */
+  holdT = 0;
+  holding: string | null = null;
   invuln = 0;
   kbT = 0;
   kbDir: Dir = 'down';
@@ -88,13 +121,21 @@ export class TdHero {
     return { x: this.x + 2, y: this.y + 2, w: 12, h: 12 };
   }
 
-  /** The blade's box while it is out, else null. */
+  /** What the stab hits while the blade is out (swordReach), else null. */
   swordBox(): Box | null {
     if (!this.attacking) return null;
     const e = ATTACK_FRAMES - this.attackT;
     if (e < SWORD_FIRST || e > SWORD_LAST) return null;
-    const s = this.swordSprite();
-    return { x: s.x, y: s.y, w: s.w, h: s.h };
+    return swordReach(this.x, this.y, this.facing);
+  }
+
+  /** Holds a chest's prize up (its frame) for HOLD_FRAMES; the room waits meanwhile. */
+  holdUp(frame: string): void {
+    this.holdT = HOLD_FRAMES;
+    this.holding = frame;
+    this.attackT = 0;
+    this.useT = 0;
+    this.facing = 'down';
   }
 
   /** Where the blade is drawn (and hits), by facing. */
@@ -104,19 +145,31 @@ export class TdHero {
     return { ...b, frame: v ? 'sword-v' : 'sword-h', fx: this.facing === 'left', fy: this.facing === 'down' };
   }
 
+  /**
+   * The guard: with the shield, a monster's touch costs half as much (never less than half a
+   * heart). `damage` in half hearts.
+   */
+  contactDamage(damage: number): number {
+    return this.shield ? Math.max(1, Math.floor(damage / 2)) : damage;
+  }
+
   /** Does the shield stop a shot travelling in `dir`? Only a shot coming at the hero's front. */
   shieldBlocks(dir: Dir | null): boolean {
-    if (!dir || this.attacking || this.dying || this.kbT > 0) return false;
+    if (!dir || !this.shield || this.attacking || this.dying || this.kbT > 0) return false;
     const v = DIR_VEC[this.facing];
     const s = DIR_VEC[dir];
     return v.dx === -s.dx && v.dy === -s.dy;
   }
 
-  /** Takes `damage` half hearts, knocked back toward `push`. False when invulnerable or already down. */
+  /**
+   * Takes `damage` half hearts, knocked back toward `push`. False when invulnerable or already
+   * down. With the world's no-damage assist on he is still knocked back but keeps his hearts.
+   */
   hurt(world: TopDownWorld, damage: number, push: Dir): boolean {
-    if (this.invuln > 0 || this.dying) return false;
-    this.hp = Math.max(0, this.hp - damage);
+    if (this.invuln > 0 || this.dying || this.holdT > 0) return false;
+    if (!world.noDamage()) this.hp = Math.max(0, this.hp - damage);
     this.attackT = 0;
+    this.useT = 0;
     this.pushT = 0;
     if (this.hp === 0) {
       this.dying = 1;
@@ -162,14 +215,28 @@ export class TdHero {
       this.moveBy(world, v.dx * KNOCK_PX, v.dy * KNOCK_PX, false);
       return;
     }
+    if (this.holdT > 0) {
+      if (--this.holdT === 0) this.holding = null;
+      return;
+    }
     if (this.attackT > 0) {
       this.attackT--;
       return;
     }
+    if (this.useT > 0) {
+      this.useT--;
+      return;
+    }
+    if (input.pressed('select')) world.cycleItem();
     if (input.pressed('attack')) {
       this.attackT = ATTACK_FRAMES;
       this.pushT = 0;
       world.emit({ type: 'sword' });
+      return;
+    }
+    if (input.pressed('special') && world.useItem()) {
+      this.useT = USE_FRAMES;
+      this.pushT = 0;
       return;
     }
     if (!want) {
@@ -205,7 +272,9 @@ export class TdHero {
       const near = cross < ALIGN / 2 ? pos - cross : pos - cross + ALIGN;
       const far = near < pos ? near + ALIGN : near - ALIGN;
       target = !open(near) && open(far) ? far : near;
-    } else if (!open(pos) && line === null) target = [pos - ALIGN, pos + ALIGN].find(open) ?? pos;
+    } else if (!open(pos) && line === null && !(block instanceof Chest))
+      // (Walking into a chest opens it, so no rounding it.)
+      target = [pos - ALIGN, pos + ALIGN].find(open) ?? pos;
     if (target !== pos) {
       const n = Math.min(step, Math.abs(target - pos)) * Math.sign(target - pos);
       if (h ? this.moveBy(world, 0, n, false) : this.moveBy(world, n, 0, false)) return;
@@ -235,10 +304,14 @@ export class TdHero {
     return true;
   }
 
-  /** Bumped into something while walking: lean on a push block, or unlock a locked door. */
+  /** Bumped into something while walking: lean on a push block, open a chest, or unlock a locked door. */
   private lean(world: TopDownWorld, box: Box): void {
     world.tryUnlock(box);
     const block = world.solidEntityAt(box);
+    if (block instanceof Chest) {
+      block.tryOpen(world);
+      return;
+    }
     if (!(block instanceof PushBlock)) {
       this.pushT = 0;
       this.pushing = null;
@@ -287,7 +360,20 @@ export class TdHero {
     const side = isHorizontal(this.facing);
     const dirName = side ? 'side' : this.facing;
     const sword = this.attacking ? this.swordSprite() : null;
-    const frame = this.attacking ? `attack-${dirName}` : `${dirName}-${(this.walkT >> 3) & 1}`;
+    const pose = this.attacking
+      ? `attack-${dirName}`
+      : this.useT > 0
+        ? `throw-${dirName}`
+        : this.holdT > 0
+          ? 'down-0'
+          : `${dirName}-${(this.walkT >> 3) & 1}`;
+    // Without the shield: the `-ns` twin of the pose.
+    const frame = !this.shield && sheet?.frames.has(`${pose}-ns`) ? `${pose}-ns` : pose;
+    if (this.holding) {
+      const tiles = view.sheet(view.sheets.tiles, view.tilePalette);
+      const w = tiles?.frames.get(this.holding)?.w ?? 8;
+      drawFrame(r, tiles, this.holding, x + 8 - (w >> 1), y - 16, '#fcfcfc', { w, h: 16 });
+    }
     if (sword) {
       if (sheet?.frames.has(sword.frame))
         r.sprite(sheet, sword.frame, ox + sword.x, oy + sword.y, sword.fx, sword.fy);

@@ -4,14 +4,17 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_W } from '@engine/viewport';
+import { abilityHint } from '../../scenes/hints';
 import type { Game } from '../../scenes/game';
-import { MenuScene } from '../../scenes/menu';
+import { MiniGameMenuScene } from '../menu';
 import { NO_TOUCH_BUTTONS } from '../../touch-labels';
 import type { MiniGameResult } from '../types';
 import { TopDownWorld, type TdEvent } from '../../topdown/world';
 import { renderWorld } from '../../topdown/render';
 import { drawTdHud, hudData } from '../../topdown/hud';
 import { DEFAULT_SHEETS, fontOf, sheetLookup, type TdView } from '../../topdown/view';
+import { HUD_H } from '../../topdown/geometry';
+import { DEFAULT_ITEMS } from '../../topdown/items';
 import { Keeper } from './keeper';
 import { keepDungeon } from './dungeon';
 
@@ -24,7 +27,13 @@ export const WIN_FRAMES = 150;
 /** Frames after the death spin and puff before the round fails. */
 export const FAIL_DELAY = 30;
 /** Frames a short banner (the keeper's name) stays up. */
-const BANNER_FRAMES = 100;
+const BANNER_FRAMES = 80;
+/** Frames a chest's banner (what Link found and how to use it) stays up. */
+export const ITEM_BANNER_FRAMES = 150;
+/** Screen y of the keeper's name: below the keeper, above Link at the door. */
+export const KEEPER_BANNER_Y = HUD_H + 86;
+/** Screen y of the intro line. */
+const INTRO_Y = 112;
 
 export const INTRO_LINES = ['LINK... WAKE UP...', 'THE SPELL HOLDS YOU HERE'] as const;
 
@@ -48,7 +57,7 @@ export class ShadowKeepScene implements Scene {
   /** Frames since the scene started. */
   t = 0;
   private endT = 0;
-  private banner: { lines: readonly string[]; until: number } | null = null;
+  private banner: { lines: readonly string[]; until: number; y: number } | null = null;
   private music: string | null = null;
   private readonly view: TdView;
   private readonly sheet: (id: string, palette?: string) => SpriteSheet | null;
@@ -58,9 +67,14 @@ export class ShadowKeepScene implements Scene {
     private readonly done: (result: MiniGameResult) => void,
     opts: KeepOptions = {},
   ) {
+    // Link starts with only his sword; the shield is in the secret shrine. The no-damage assist
+    // (dev mode) is read each time he is hurt, so turning it on mid-round counts at once.
     this.world = new TopDownWorld(keepDungeon(), {
       seed: opts.seed ?? KEEP_SEED,
       spawners: { keeper: (_w, s) => new Keeper(s.x, s.y) },
+      items: DEFAULT_ITEMS,
+      shield: false,
+      noDamage: () => game.ctx.assist.invulnerable,
     });
     this.world.events.length = 0; // the first room's arrival is announced in enter()
     this.sheet = sheetLookup(game.ctx.assets);
@@ -79,13 +93,44 @@ export class ShadowKeepScene implements Scene {
   enter(): void {
     this.game.ctx.audio.stopMusic();
     this.updateMusic();
-    this.banner = { lines: INTRO_LINES, until: INTRO_FRAMES };
+    this.banner = { lines: INTRO_LINES, until: INTRO_FRAMES, y: INTRO_Y };
     this.say(`Escape the Shadow Keep. ${this.world.room.def.hint ?? ''}`.trim());
   }
 
+  /**
+   * SWORD, the item in the slot by name while it can be used (none left, or the boomerang still
+   * out: hidden), ITEM to switch once there are two, and MENU.
+   */
   touchLabels(): TouchLabels {
     if (this.phase !== 'play') return { ...NO_TOUCH_BUTTONS };
-    return { jump: null, attack: 'SWORD', special: null, start: 'MENU', select: null };
+    const w = this.world;
+    const item = w.itemUsable() ? (w.inv.current?.label ?? null) : null;
+    const select = w.inv.owned.length >= 2 ? 'ITEM' : null;
+    return { jump: null, attack: 'SWORD', special: item, start: 'MENU', select };
+  }
+
+  /** The banner and announcement for a chest's prize: what it is and how to use it. */
+  private gotItem(what: string): void {
+    const game = this.game;
+    const item = this.world.items[what];
+    let lines: string[];
+    let said: string;
+    if (item) {
+      const verb = what === 'bomb' ? 'SET ONE DOWN' : 'THROW';
+      lines = [`YOU GOT THE ${item.label}!`, `${abilityHint(game, item.label, 'special')}: ${verb}`];
+      said = `You got the ${item.label.toLowerCase()}! ${abilityHint(game, item.label, 'special')} uses it.`;
+      if (this.world.inv.owned.length >= 2) {
+        lines.push(`${abilityHint(game, 'ITEM', 'select')}: SWITCH`);
+        said += ` ${abilityHint(game, 'ITEM', 'select')} switches items.`;
+      }
+      if (what === 'bomb') said += ' Bombs can open cracked walls.';
+    } else if (what === 'shield') {
+      lines = ['YOU GOT THE SHIELD!', 'FACE ROCKS AND SPELLS TO BLOCK', 'MONSTERS HURT YOU LESS'];
+      said = 'You got the magic shield! Face rocks and spells to block them, and monsters hurt you less.';
+    } else return;
+    const y = this.world.hero.y > 88 ? HUD_H + 16 : HUD_H + 120;
+    this.banner = { lines, until: this.t + ITEM_BANNER_FRAMES, y };
+    this.say(said);
   }
 
   private say(text: string): void {
@@ -151,9 +196,33 @@ export class ShadowKeepScene implements Scene {
           this.say('Got a key!');
         } else if (e.kind === 'heart-container') {
           this.sfx('powerup');
+          this.say('A heart container! One more heart, and every heart refilled.');
+        } else if (e.kind === 'refill') {
+          this.sfx('powerup');
           this.say('Hearts refilled.');
-        } else this.sfx('pickup');
+        } else if (e.kind === 'bombs') {
+          this.sfx('pickup');
+          this.say(`Bombs! ${world.inv.count('bomb')}`);
+        } else if (e.kind === 'heart') this.sfx('pickup');
+        return; // a chest's prize has its own fanfare
+      case 'chest':
+        this.sfx('item-get');
+        this.gotItem(String(e.item));
         return;
+      case 'item-select':
+        this.sfx('select');
+        return this.say(world.inv.current?.label ?? '');
+      case 'whirr':
+        return this.sfx('boomerang');
+      case 'fuse':
+        return this.sfx('bomb-fuse');
+      case 'blast':
+        return this.sfx('bomb-blast');
+      case 'stun':
+        return this.sfx('bump');
+      case 'secret':
+        this.sfx('secret');
+        return this.say('The cracked wall breaks open!');
       case 'unlock':
         this.sfx('door-open');
         return this.say('The key opens the door.');
@@ -174,7 +243,7 @@ export class ShadowKeepScene implements Scene {
         this.banner = null;
         return this.updateMusic();
       case 'keeper-wakes':
-        this.banner = { lines: ['THE KEEPER'], until: this.t + BANNER_FRAMES };
+        this.banner = { lines: ['THE KEEPER'], until: this.t + BANNER_FRAMES, y: KEEPER_BANNER_Y };
         this.updateMusic();
         return;
       case 'dying':
@@ -190,7 +259,7 @@ export class ShadowKeepScene implements Scene {
         this.music = null;
         this.game.ctx.audio.stopMusic();
         this.sfx('secret');
-        this.banner = { lines: ['THE SPELL BREAKS!'], until: Infinity };
+        this.banner = { lines: ['THE SPELL BREAKS!'], until: Infinity, y: INTRO_Y };
         this.say('The spell breaks! Link is free.');
         return;
     }
@@ -207,8 +276,17 @@ export class ShadowKeepScene implements Scene {
   render(r: Renderer): void {
     r.clear('#000000');
     renderWorld(r, this.view, this.world);
-    drawTdHud(r, this.view, hudData(this.world, 'SHADOW KEEP', { label: 'SWORD', frame: 'sword-icon' }));
-    if (this.banner && this.t < this.banner.until) drawBanner(r, fontOf(this.view), this.banner.lines, 112);
+    const item = this.world.inv.current;
+    drawTdHud(
+      r,
+      this.view,
+      hudData(this.world, 'SHADOW KEEP', [
+        { label: 'ITEM', frame: item?.icon ?? null },
+        { label: 'SWORD', frame: 'sword-icon' },
+      ]),
+    );
+    const b = this.banner;
+    if (b && this.t < b.until) drawBanner(r, fontOf(this.view), b.lines, b.y);
   }
 }
 
@@ -219,35 +297,17 @@ export function drawBanner(r: Renderer, font: SpriteSheet, lines: readonly strin
   lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + i * 12));
 }
 
-/** The keep's own menu: Continue, or Give up (ends the round as 'quit'). Pauses the music. */
-export class KeepMenuScene extends MenuScene {
+/**
+ * The keep's own menu: Continue, or Give up (ends the round as 'quit'), and in dev mode the
+ * assists (No damage keeps Link's hearts). Pauses the music.
+ */
+export class KeepMenuScene extends MiniGameMenuScene {
   constructor(game: Game, giveUp: () => void) {
     super(
       game,
       'SHADOW KEEP',
-      [
-        { label: 'Continue', select: () => game.scenes.pop() },
-        {
-          label: 'Give up',
-          select: () => {
-            game.scenes.pop();
-            giveUp();
-          },
-          hint: 'Link stays under the spell for now; you can try the keep again later',
-        },
-      ],
-      () => game.scenes.pop(),
-      true,
+      giveUp,
+      'Link stays under the spell for now; you can try the keep again later',
     );
-  }
-
-  override enter(): void {
-    this.game.ctx.audio.sfx('pause');
-    this.game.ctx.audio.pause();
-    super.enter();
-  }
-
-  exit(): void {
-    this.game.ctx.audio.resume();
   }
 }

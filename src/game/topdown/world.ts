@@ -13,7 +13,8 @@ import {
   type Box,
   type Side,
 } from './geometry';
-import { FloorSwitch, Pickup, PushBlock, TdEnemy, Torch, type TdEntity } from './entity';
+import { Chest, FloorSwitch, Pickup, PushBlock, TdEnemy, Torch, type TdEntity } from './entity';
+import { DEFAULT_ITEMS, Inventory, circleHits, type TdItem } from './items';
 import { Bat, Knight, Projectile, Spitter } from './enemies';
 import { TdHero } from './hero';
 import {
@@ -54,6 +55,15 @@ export type TdEvent =
   | { type: 'reveal' }
   | { type: 'room'; id: string; first: boolean }
   | { type: 'exit' }
+  | { type: 'item'; id: string }
+  | { type: 'item-select'; id: string }
+  | { type: 'chest'; item: string }
+  | { type: 'stun'; kind: string }
+  | { type: 'secret' }
+  | { type: 'bomb' }
+  | { type: 'fuse' }
+  | { type: 'blast' }
+  | { type: 'whirr' }
   | { type: string; [k: string]: unknown };
 
 /** What a room remembers between visits (for the whole run). */
@@ -69,6 +79,8 @@ export interface RoomState {
   pressed: Set<string>;
   /** Torches lit. */
   lit: Set<string>;
+  /** Cracked walls blown open: doorway sides ('n', 'e', ...) and inner cells ("col,row"). */
+  blasted: Set<string>;
   /** Where the push blocks ended up once the room's plates were solved (else they reset). */
   blocks: Map<string, { x: number; y: number }> | null;
 }
@@ -98,7 +110,16 @@ export const DEFAULT_SPAWNERS: Readonly<Record<string, Spawner>> = {
   heart: (w, s) => (w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x + 4, s.y + 4, 'heart')),
   'heart-container': (w, s) =>
     w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x, s.y, 'heart-container'),
+  refill: (w, s) => (w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x, s.y, 'refill')),
+  chest: (w, s) => {
+    const chests = w.room.spawns.filter((c) => c.kind === 'chest');
+    const contents = w.room.def.chests?.[chests.indexOf(s)] ?? 'heart';
+    return new Chest(s.x, s.y, contents, w.state().taken.has(`${s.col},${s.row}`));
+  },
 };
+
+/** Chance that a monster with no heart for the hero leaves ammo for an item he owns. */
+export const AMMO_DROP = 0.25;
 
 /** Pixels per frame the view slides between rooms (Zelda's pace: about a second across). */
 export const SLIDE_SPEED = 4;
@@ -117,6 +138,12 @@ export interface TdWorldOptions {
   spawners?: Readonly<Record<string, Spawner>>;
   /** Hero hit points in half hearts. */
   maxHp?: number;
+  /** The items there are (the kit's boomerang and bombs by default). */
+  items?: Readonly<Record<string, TdItem>>;
+  /** Does the hero start with a shield (default yes)? */
+  shield?: boolean;
+  /** Asked whenever the hero is hurt: true keeps his hearts (a no-damage assist). */
+  noDamage?: () => boolean;
 }
 
 /**
@@ -137,6 +164,11 @@ export class TopDownWorld {
   readonly rng: Rng;
   readonly hero: TdHero;
   readonly spawners: Readonly<Record<string, Spawner>>;
+  readonly items: Readonly<Record<string, TdItem>>;
+  /** The hero's items, the one in the slot and ammo. */
+  readonly inv: Inventory;
+  /** True keeps the hero's hearts when he is hurt (asked each time, so it can change mid-run). */
+  readonly noDamage: () => boolean;
   room: Room;
   entities: TdEntity[] = [];
   readonly events: TdEvent[] = [];
@@ -160,9 +192,13 @@ export class TopDownWorld {
     this.rng = new Rng(Math.imul((opts.seed ?? 0x5eed) ^ 0x9e3779b9, 0x85ebca6b) >>> 0);
     for (let i = 0; i < 8; i++) this.rng.next();
     this.spawners = { ...DEFAULT_SPAWNERS, ...opts.spawners };
+    this.items = opts.items ?? DEFAULT_ITEMS;
+    this.inv = new Inventory(this.items);
+    this.noDamage = opts.noDamage ?? (() => false);
     const start = dungeon.rooms.get(dungeon.startRoom) as Room;
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
     this.hero = new TdHero(at.x, at.y, opts.maxHp);
+    this.hero.shield = opts.shield ?? true;
     this.room = start;
     this.enterRoom(start);
   }
@@ -186,6 +222,7 @@ export class TopDownWorld {
         taken: new Set(),
         pressed: new Set(),
         lit: new Set(),
+        blasted: new Set(),
         blocks: null,
       };
       this.states.set(id, s);
@@ -218,9 +255,32 @@ export class TopDownWorld {
       e.key = `${s.col},${s.row}`;
       this.entities.push(e);
     }
+    this.offerWallBreaker();
     this.syncHidden();
     this.shutWas = this.shuttersShut();
     this.emit({ type: 'room', id: room.id, first });
+  }
+
+  /**
+   * A cracked wall here still shut, and the item that breaks it owned but out of ammo: a refill
+   * waits in the middle of the room (each time, until the wall is open), so it can't soft-lock.
+   */
+  private offerWallBreaker(): void {
+    const st = this.state();
+    const shut = this.room.tiles.some((t, i) => {
+      const col = i % ROOM_COLS;
+      const row = Math.floor(i / ROOM_COLS);
+      if (t === 'cracked') return !st.blasted.has(`${col},${row}`);
+      if (t !== 'door') return false;
+      const side = sideOf(col, row) as Side;
+      return this.room.doors[side] === 'cracked' && !st.blasted.has(side);
+    });
+    if (!shut) return;
+    for (const it of this.inv.withAmmo()) {
+      if (!it.breaksWalls || !it.ammo || this.inv.count(it.id) > 0) continue;
+      const at = this.openSpotNear({ x: 7.5 * TILE + 4, y: 5 * TILE, w: 8, h: 16 });
+      this.entities.push(new Pickup(at.x, at.y, it.ammo.pickup));
+    }
   }
 
   /** Is the room's condition true right now (or met before)? */
@@ -262,6 +322,7 @@ export class TopDownWorld {
     if (!kind) return false;
     if (kind === 'open') return true;
     if (kind === 'locked') return this.state().unlocked.has(side);
+    if (kind === 'cracked') return this.state().blasted.has(side);
     return !this.shuttersShut();
   }
 
@@ -284,6 +345,8 @@ export class TopDownWorld {
         return false;
       case 'wall':
         return true;
+      case 'cracked':
+        return !this.state().blasted.has(`${col},${row}`);
       case 'block':
       case 'statue':
         return mover !== 'fly';
@@ -416,6 +479,7 @@ export class TopDownWorld {
     }
     const hero = this.hero;
     hero.update(this, input);
+    if (hero.holdT > 0) return; // holding up a prize: the room waits
     for (const e of [...this.entities]) if (!e.dead) e.update(this);
     if (!hero.dying) this.contacts();
     this.roomLogic();
@@ -429,25 +493,129 @@ export class TopDownWorld {
     const hb = hero.hurtbox();
     for (const e of this.entities) {
       if (e.dead) continue;
-      if (sword && boxesOverlap(sword, e.hurtbox()) && e.onSword(this, hero.facing)) {
+      // The blade wins ties: a monster it touches this frame does no touch damage.
+      const bladed = !!sword && boxesOverlap(sword, e.hurtbox());
+      if (bladed && e.onSword(this, hero.facing)) {
         if (e instanceof Torch) this.state().lit.add(e.key ?? '');
       }
       if (e.dead) continue;
-      if (e instanceof TdEnemy && e.contact > 0 && boxesOverlap(hb, e.hurtbox()))
-        hero.hurt(this, e.contact, dirToward(e.hurtbox(), hb));
+      if (e instanceof TdEnemy && e.contact > 0 && !bladed && boxesOverlap(hb, e.hurtbox()))
+        hero.hurt(this, hero.contactDamage(e.contact), dirToward(e.hurtbox(), hb));
       else if (e instanceof Projectile && e.hostile && boxesOverlap(hb, e.hurtbox())) {
         e.dead = true;
-        if (e.blockable && hero.shieldBlocks(e.dir)) this.emit({ type: 'block' });
+        if (e.blockable && hero.shieldBlocks(e.heading())) this.emit({ type: 'block' });
         else hero.hurt(this, e.damage, e.dir ?? dirToward(e.hurtbox(), hb));
-      } else if (e instanceof Pickup && !e.hidden && boxesOverlap(hb, e.hurtbox())) {
-        e.dead = true;
-        if (e.key) this.state().taken.add(e.key);
-        if (e.kind === 'key') this.keys++;
-        else if (e.kind === 'heart') hero.heal(2);
-        else hero.heal(hero.maxHp);
-        this.emit({ type: 'pickup', kind: e.kind });
+      } else if (e instanceof Pickup && !e.hidden && boxesOverlap(hb, e.hurtbox())) this.collect(e);
+    }
+  }
+
+  /** The hero (or his boomerang) takes a pickup. */
+  collect(p: Pickup): void {
+    if (p.dead || p.hidden) return;
+    p.dead = true;
+    if (p.key) this.state().taken.add(p.key);
+    this.grant(p.kind);
+  }
+
+  /**
+   * Gives the hero something (see PickupKind): a heart, a key, a heart container (one more
+   * heart, all refilled), a refill, the shield, an item's ammo, or an item. Emits 'pickup'.
+   */
+  grant(what: string): void {
+    const hero = this.hero;
+    switch (what) {
+      case 'heart':
+        hero.heal(2);
+        break;
+      case 'key':
+        this.keys++;
+        break;
+      case 'heart-container':
+        hero.maxHp += 2;
+        hero.heal(hero.maxHp);
+        break;
+      case 'refill':
+        hero.heal(hero.maxHp);
+        break;
+      case 'shield':
+        hero.shield = true;
+        break;
+      default: {
+        const ammo = Object.values(this.items).find((i) => i.ammo?.pickup === what);
+        if (ammo?.ammo) this.inv.addAmmo(ammo.id, ammo.ammo.refill);
+        else this.inv.give(what);
       }
     }
+    this.emit({ type: 'pickup', kind: what });
+  }
+
+  /** What a dying monster leaves (seeded): a heart by its chance, else maybe ammo for an owned item. */
+  lootFor(heartChance: number): string | null {
+    if (heartChance <= 0) return null;
+    if (this.rng.chance(heartChance)) return 'heart';
+    const ammo = this.inv.withAmmo();
+    if (ammo.length === 0 || !this.rng.chance(AMMO_DROP)) return null;
+    return this.rng.pick(ammo).ammo?.pickup ?? null;
+  }
+
+  /** Can the item in the slot be used right now (owned, ammo left, `ready`)? */
+  itemUsable(): boolean {
+    const it = this.inv.current;
+    if (!it) return false;
+    if (it.ammo && this.inv.count(it.id) <= 0) return false;
+    return !it.ready || it.ready(this);
+  }
+
+  /** Uses the item in the slot (SPECIAL); spends its ammo. True if it was used. */
+  useItem(): boolean {
+    const it = this.inv.current;
+    if (!it || !this.itemUsable() || !it.use(this)) return false;
+    if (it.ammo) this.inv.addAmmo(it.id, -1);
+    this.emit({ type: 'item', id: it.id });
+    return true;
+  }
+
+  /** Moves the item slot to the next owned item (SELECT). */
+  cycleItem(): boolean {
+    if (!this.inv.cycle()) return false;
+    this.emit({ type: 'item-select', id: this.inv.current?.id ?? '' });
+    return true;
+  }
+
+  /**
+   * A blast at (cx, cy): monsters within `radius` take `damage`, the hero `selfDamage`, each
+   * knocked away from it; cracked walls within it open (a cracked doorway on both sides).
+   */
+  blast(cx: number, cy: number, radius: number, damage: number, selfDamage: number): void {
+    const at = { x: cx - 1, y: cy - 1, w: 2, h: 2 };
+    for (const e of this.entities)
+      if (e instanceof TdEnemy && !e.dead && circleHits(cx, cy, radius, e.hurtbox()))
+        e.hurt(this, damage, dirToward(at, e.hurtbox()));
+    const hero = this.hero;
+    if (!hero.dying && circleHits(cx, cy, radius, hero.hurtbox()))
+      hero.hurt(this, selfDamage, dirToward(at, hero.hurtbox()));
+    const st = this.state();
+    let opened = false;
+    for (let row = 0; row < ROOM_ROWS; row++)
+      for (let col = 0; col < ROOM_COLS; col++) {
+        const box = { x: col * TILE, y: row * TILE, w: TILE, h: TILE };
+        if (!circleHits(cx, cy, radius, box)) continue;
+        const t = tileAt(this.room, col, row);
+        if (t === 'cracked' && !st.blasted.has(`${col},${row}`)) {
+          st.blasted.add(`${col},${row}`);
+          opened = true;
+        } else if (t === 'door') {
+          const side = sideOf(col, row) as Side;
+          if (this.room.doors[side] !== 'cracked' || st.blasted.has(side)) continue;
+          st.blasted.add(side);
+          const [gx, gy] = neighbourCell(this.room, side);
+          const next = this.dungeon.roomAt(gx, gy);
+          const back = ({ n: 's', s: 'n', e: 'w', w: 'e' } as const)[side];
+          if (next?.doors[back] === 'cracked') this.state(next.id).blasted.add(back);
+          opened = true;
+        }
+      }
+    if (opened) this.emit({ type: 'secret' });
   }
 
   private roomLogic(): void {

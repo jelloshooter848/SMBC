@@ -8,8 +8,12 @@ import { ROOM_COLS, ROOM_ROWS, TILE, type Side } from './geometry';
  *   #...BBBPBBB....#     O open door     L locked door  X shutter door E exit doorway
  *   #......o.......O     @ player start  P push block   o block plate  _ floor switch
  *   ...                  t torch (unlit) T torch (lit)  k key  h heart H heart container
+ *                        f heart refill  c chest        C cracked wall
  *                        b bat           n knight       r rock-spitter
  *
+ * A cracked wall (C) is a wall a blast opens (world.ts). On the border it is a doorway that
+ * starts shut (door kind `cracked`); inside the room it is a wall cell that becomes floor.
+ * A chest (c) holds what the room's `chests` list says, in reading order.
  * Doors sit on the border (not a corner); a door's side is the edge it is on, and every door cell
  * on one side has the same kind (north and south doorways are two cells wide, east and west one).
  * Everything after the tile itself (spawns: enemies, blocks, switches, pickups) stands on floor.
@@ -17,8 +21,9 @@ import { ROOM_COLS, ROOM_ROWS, TILE, type Side } from './geometry';
  */
 
 export type TileKind =
-  'floor' | 'floor-alt' | 'wall' | 'block' | 'statue' | 'water' | 'stairs' | 'door' | 'exit';
-export type DoorKind = 'open' | 'locked' | 'shutter';
+  'floor' | 'floor-alt' | 'wall' | 'cracked' | 'block' | 'statue' | 'water' | 'stairs' | 'door' | 'exit';
+/** `cracked`: a doorway walled up with cracked stone until a blast opens it. */
+export type DoorKind = 'open' | 'locked' | 'shutter' | 'cracked';
 /**
  * A room condition: every enemy gone, every block plate held down by a block, every floor switch
  * pressed, every torch lit. Met once, it stays met for the run (the room remembers).
@@ -53,6 +58,9 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
   k: { tile: 'floor', spawn: 'key' },
   h: { tile: 'floor', spawn: 'heart' },
   H: { tile: 'floor', spawn: 'heart-container' },
+  f: { tile: 'floor', spawn: 'refill' },
+  c: { tile: 'floor', spawn: 'chest' },
+  C: { tile: 'cracked' },
   b: { tile: 'floor', spawn: 'bat' },
   n: { tile: 'floor', spawn: 'knight' },
   r: { tile: 'floor', spawn: 'spitter' },
@@ -74,6 +82,8 @@ export interface RoomDef {
   hint?: string;
   /** Free-form flag a game may use (e.g. a darker palette for a boss room). */
   dark?: boolean;
+  /** What each chest (c) holds, in reading order: an item id or a pickup kind (world.ts `grant`). */
+  chests?: readonly string[];
 }
 
 export interface Spawn {
@@ -134,9 +144,11 @@ export function parseRoom(def: RoomDef, extraLegend: Readonly<Record<string, Leg
       throw new Error(`${where(row)}: ${line.length} columns, expected ${ROOM_COLS}`);
     for (let col = 0; col < ROOM_COLS; col++) {
       const ch = line[col] as string;
-      const e = extraLegend[ch] ?? LEGEND[ch];
-      if (!e) throw new Error(`${where(row, col)}: unknown character "${ch}"`);
+      const found = extraLegend[ch] ?? LEGEND[ch];
+      if (!found) throw new Error(`${where(row, col)}: unknown character "${ch}"`);
       const side = sideOf(col, row);
+      // A cracked wall on the border is a doorway a blast opens.
+      const e: LegendEntry = found.tile === 'cracked' && side ? { tile: 'door', door: 'cracked' } : found;
       if (e.door) {
         if (!side)
           throw new Error(`${where(row, col)}: a door must be on an edge, not inside or on a corner`);
@@ -157,6 +169,9 @@ export function parseRoom(def: RoomDef, extraLegend: Readonly<Record<string, Leg
   });
   if (Object.values(doors).includes('shutter') && !def.shutters)
     throw new Error(`room "${def.id}": shutter doors need a \`shutters\` condition`);
+  const chests = spawns.filter((s) => s.kind === 'chest').length;
+  if (chests !== (def.chests?.length ?? 0))
+    throw new Error(`room "${def.id}": ${chests} chests but ${def.chests?.length ?? 0} in \`chests\``);
   return { id: def.id, gx: def.at[0], gy: def.at[1], def, tiles, doors, doorCells, spawns, start };
 }
 
