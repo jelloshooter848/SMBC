@@ -8,6 +8,24 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Map levels with a second way out (a secret exit or warp zone) are drawn in pink with a keyhole,
+  Super Mario World style, and the announcer says "secret exit": 1-2, 4-2 and Lost 1-2, 3-1, 5-1,
+  5-2, 8-1, A-2, A-3 and B-4.
+- The map header shows the level you stand on ("WORLD 1-2", "LOST A-2").
+
+### Changed
+
+- The road to the Warp Zone's warp spot now starts at 1-2, where the secret is (1-1's road to 1-2
+  goes round so the roads never cross); older saves convert.
+- Portals are paired: each one lands on its partner. Only Lost World 1 links to the Warp Zone
+  (landing on the hub's Lost Levels pad), and Lost World A's portal leads back to the World 8 pad.
+
+### Fixed
+
+- Developer mode's Unlock all now shows the warp spot and its road (still without saving anything).
+
 ## [0.4.0] - 2026-10-06
 
 ### Added
