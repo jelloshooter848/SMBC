@@ -216,3 +216,45 @@ describe('Luigi physics', () => {
     expect(LUIGI.behaviour).toBe(MARIO.behaviour);
   });
 });
+
+/** Flat floor (rows 13-14) with a one-tile hole at column 30 and a two-tile hole at 44-45. */
+function gapMap(): TileMap {
+  const rows = Array.from({ length: 13 }, () => '.'.repeat(64));
+  const floor = '#'.repeat(30) + '.' + '#'.repeat(13) + '..' + '#'.repeat(18);
+  const src = ['id: t', '', '[tiles]', ...rows, floor, floor].join('\n');
+  return new TileMap(parseTextMap(src));
+}
+
+describe('one-tile gaps (Level.checkCrossSmallGap, MarioBase canCrossSmallGaps)', () => {
+  /** Hold right (and run) from `startPx` until past `untilPx` or fallen in; returns the player. */
+  const runOver = (startPx: number, run: boolean, untilPx: number, def: CharacterDef = MARIO) => {
+    const map = gapMap();
+    const p = new Player(px(startPx), px(13 * 16 - 16), def, 'small', 0);
+    p.body.onGround = true;
+    const held = new Set<Action>(run ? ['right', 'attack'] : ['right']);
+    for (let i = 0; i < 400 && toPx(p.body.x) < untilPx && toPx(p.body.y) < 13 * 16; i++)
+      p.update(fakeInput(held), map, NULL_AUDIO);
+    return p;
+  };
+
+  it('carries a full-speed run across a one-tile gap at ground level, from any sub-tile start', () => {
+    for (const def of [MARIO, LUIGI])
+      for (let s = 0; s < 16; s++) {
+        const p = runOver(2 * 16 + s, true, 33 * 16, def);
+        expect(toPx(p.body.x)).toBeGreaterThanOrEqual(33 * 16);
+        expect(toPx(p.body.y + p.body.h)).toBe(13 * 16);
+      }
+  });
+
+  it('lets a walk (below RUN_TMR_2_MIN_VX) drop in', () => {
+    const p = runOver(2 * 16, false, 33 * 16);
+    expect(toPx(p.body.x)).toBeLessThan(31 * 16);
+    expect(toPx(p.body.y)).toBeGreaterThanOrEqual(13 * 16);
+  });
+
+  it('does not bridge a two-tile gap', () => {
+    const p = runOver(32 * 16, true, 47 * 16);
+    expect(toPx(p.body.x)).toBeLessThan(46 * 16);
+    expect(toPx(p.body.y)).toBeGreaterThanOrEqual(13 * 16);
+  });
+});

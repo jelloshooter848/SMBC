@@ -37,4 +37,7 @@ export const MARIO_PROFILE: MovementProfile = {
     sinkMax: 0x02155, // 250 → 2.083 px/f
     floorWalk: 0x00c00, // 90 → 0.75 px/f on the sea floor
   },
+  // MarioBase.as: canCrossSmallGaps is set on the ground only in the fastest run-animation band,
+  // vx > RUN_TMR_2_MIN_VX = 220 Flash px/s (32 px tiles, 60 fps) = 110 px/s = 1.833 px/f here.
+  crossGapMinVx: Math.round((220 / 2 / 60) * 0x1000),
 };

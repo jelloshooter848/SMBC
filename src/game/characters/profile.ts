@@ -59,6 +59,12 @@ export interface MovementProfile {
   slide?: { speed: number; frames: number; hitboxH: number } | undefined;
   /** Underwater movement; absent: the player's shared default (`DEFAULT_SWIM` in player.ts). */
   swim?: SwimProfile | undefined;
+  /**
+   * Running on the ground faster than this (|vx|) carries the character over one-tile gaps in a
+   * walking surface (the original's Character.canCrossSmallGaps + Level.checkCrossSmallGap).
+   * Undefined: never.
+   */
+  crossGapMinVx?: number | undefined;
 }
 
 export function pickJumpTier(p: MovementProfile, vx: number): JumpTier {
