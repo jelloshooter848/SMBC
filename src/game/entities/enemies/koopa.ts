@@ -1,4 +1,4 @@
-import { px, toPx, velToSub } from '@engine/math/units';
+import { SUB, px, toPx, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
 import type { View } from '../entity';
 import type { World } from '../../world/world';
@@ -19,13 +19,28 @@ const SHELL_WIGGLE_FRAMES = 54 + SHELL_LAST_FRAMES;
  * it (KoopaGreen.stomp returns early).
  */
 export const SHELL_NO_HIT_FRAMES = 15;
-/** Red paratroopas bob this far above and below their spawn height, once per period. */
-const PARA_AMPLITUDE = 48; // px
-const PARA_PERIOD = 192; // frames
-const PARA_HOP = 0x03800; // 3.5 px/f take-off for hopping green paratroopas
-/** Gliding paratroopas sway this far either side of their spawn column, once per period. */
-const GLIDE_AMPLITUDE = 56; // px
-const GLIDE_PERIOD = 256; // frames
+/**
+ * Flying paratroopas (KoopaGreen.checkState, FT_VERT for red, FT_HORZ for the sideways green):
+ * `centre + sin(waveAngle) * waveRange` with `waveRange = 85` Flash px and `waveAngle += waveSpeed
+ * * dt`, `waveSpeed = 1.5` rad/s. Flash tiles are 32 px and ours 16, at 60 frames a second:
+ * ±42.5 px, 0.025 rad a frame (one cycle every 251 frames).
+ */
+export const PARA_WAVE_RANGE = 42.5; // px
+export const PARA_WAVE_STEP = 1.5 / 60; // rad per frame
+/**
+ * The sideways flyer also drifts between `y - TILE_SIZE/2` and `y + TILE_SIZE/2` at
+ * HORZ_FLY_VERT_MOVEMENT_SPEED = 25 Flash px/s (0.208 px/f), starting upwards (KoopaGreen.setStats).
+ */
+export const GLIDE_BOB_RANGE = px(8);
+export const GLIDE_BOB_SPEED = 0x00355; // 25 / 2 / 60 px/f
+/**
+ * Hopping green paratroopas (FT_JUMP): `vy = -ySpeed` on every landing with `ySpeed = 400`, falling
+ * under `gravity = enemyGravDef` (1300 px/s², Enemy.as) capped at `enemyVYMaxPsvDef` (800 px/s):
+ * 3.33 px/f, 0.181 px/f² and 6.67 px/f here, so a hop rises 31 px and lasts 37 frames.
+ */
+export const PARA_HOP = 0x03555;
+export const PARA_HOP_GRAVITY = 0x002e4;
+const PARA_HOP_MAX_FALL = 0x06aab;
 
 export type KoopaState = 'walk' | 'shell' | 'shell-moving' | 'wiggle';
 
@@ -43,7 +58,10 @@ export class Koopa extends Enemy {
   readonly glide: boolean;
   private readonly homeX: number;
   private readonly homeY: number;
-  private flyT = 0;
+  /** KoopaGreen.waveAngle (radians) for the red and sideways flyers. */
+  private waveAngle = 0;
+  /** Vertical drift of the sideways flyer (VEL units; negative is up). */
+  private glideVy = -GLIDE_BOB_SPEED;
   private shellTimer = 0;
   /** Frames left of the post-kick no-hit window (KoopaGreen.NO_HIT_SHELL_TMR). */
   noHitTimer = 0;
@@ -79,6 +97,8 @@ export class Koopa extends Enemy {
     // after losing its wings. Buzzy Beetles score as Koopas: Beetle.overwriteInitialStats sets the
     // BEETLE_* values and then calls super, which overwrites them with KOOPA_* unconditionally.
     this.scores = wings ? ENEMY_SCORES.KOOPA_FLYING : ENEMY_SCORES.KOOPA;
+    // KoopaGreen.setStats (Beetle extends it): gravity = enemyGravDef, 1300 Flash px/s².
+    this.corpseGravity = PARA_HOP_GRAVITY;
   }
 
   /** Frame name prefix for walking frames. */
@@ -261,18 +281,22 @@ export class Koopa extends Enemy {
   private fly(world: World): void {
     const b = this.body;
     if (this.glide) {
-      // Sway side to side through the air, ignoring tiles, facing the way it is going.
-      this.flyT++;
+      // FT_HORZ: sway side to side through the air, ignoring tiles, facing the way it is going,
+      // while drifting up and down half a tile either side of its spawn height.
       const prevX = b.x;
-      b.x = this.homeX + px(Math.round(Math.sin((this.flyT * Math.PI * 2) / GLIDE_PERIOD) * GLIDE_AMPLITUDE));
-      b.vy = 0;
+      b.x = this.homeX + Math.round(Math.sin(this.waveAngle) * PARA_WAVE_RANGE * SUB);
+      this.waveAngle += PARA_WAVE_STEP;
       if (b.x !== prevX) this.facing = b.x > prevX ? 1 : -1;
+      if (b.y <= this.homeY - GLIDE_BOB_RANGE) this.glideVy = GLIDE_BOB_SPEED;
+      else if (b.y >= this.homeY + GLIDE_BOB_RANGE) this.glideVy = -GLIDE_BOB_SPEED;
+      b.y += velToSub(this.glideVy);
+      b.vy = 0;
       return;
     }
     if (this.color === 'red') {
-      // Bob vertically through the air, ignoring tiles, facing the nearest player.
-      this.flyT++;
-      b.y = this.homeY + px(Math.round(Math.sin((this.flyT * Math.PI * 2) / PARA_PERIOD) * PARA_AMPLITUDE));
+      // FT_VERT: bob vertically through the air, ignoring tiles, facing the nearest player.
+      b.y = this.homeY + Math.round(Math.sin(this.waveAngle) * PARA_WAVE_RANGE * SUB);
+      this.waveAngle += PARA_WAVE_STEP;
       b.vy = 0;
       const pl = world.nearestPlayer(b.x).body;
       this.facing = pl.x + pl.w / 2 < b.x + b.w / 2 ? -1 : 1;
@@ -284,6 +308,13 @@ export class Koopa extends Enemy {
       b.vy = -PARA_HOP;
       b.onGround = false;
     }
+  }
+
+  /** A hopping paratroopa falls under the original's enemy gravity (see PARA_HOP). */
+  protected override fall(world: World, gravity?: number, maxFall?: number): void {
+    if (this.wings && this.state === 'walk' && !this.glide && this.color !== 'red')
+      super.fall(world, PARA_HOP_GRAVITY, PARA_HOP_MAX_FALL);
+    else super.fall(world, gravity, maxFall);
   }
 
   /** A moving shell hitting another enemy. */

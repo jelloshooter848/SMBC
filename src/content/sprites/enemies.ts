@@ -706,6 +706,21 @@ const KING_LEGS_1 = pad32([
 
 const king = (head: readonly string[], legs: readonly string[]): string[] => [...head, ...KING_BODY, ...legs];
 
+/**
+ * The fireball death frames (the original's Bowser clip has one per world, `die_1` to `die_8`,
+ * shown upside down as he falls: Bowser.as `die`, FL_DIE + level.worldNum). Worlds 1-7 unmask
+ * the fake king as that world's stand-in (toadstool, turtle, steel beetle, spiked crawler, cloud
+ * rider, squid, hammer-thrower), centred in his 32x32 box; world 8's is the king himself.
+ */
+const trueForm = (rows: readonly string[]): string[] => {
+  const top = (32 - rows.length) >> 1;
+  return [
+    ...blank(32, top),
+    ...rows.map((r) => `........${r}........`),
+    ...blank(32, 32 - top - rows.length),
+  ];
+};
+
 /* ------------------------------------------------------------------------------------------ */
 
 export const enemiesDef: SpriteDef = {
@@ -745,5 +760,13 @@ export const enemiesDef: SpriteDef = {
     'bowser-1': king(KING_HEAD_CLOSED, KING_LEGS_1),
     'bowser-2': king(KING_HEAD_OPEN, KING_LEGS_0),
     'bowser-3': king(KING_HEAD_OPEN, KING_LEGS_1),
+    'bowser-die-1': trueForm([...GOOMBA_TOP, ...GOOMBA_FEET_0]),
+    'bowser-die-2': trueForm(KOOPA_0),
+    'bowser-die-3': trueForm(BUZZY_0),
+    'bowser-die-4': trueForm(SPINY_0),
+    'bowser-die-5': trueForm(LAKITU_0),
+    'bowser-die-6': trueForm(BLOOPER_0),
+    'bowser-die-7': trueForm(HAMMER_BRO_0),
+    'bowser-die-8': king(KING_HEAD_OPEN, KING_LEGS_0),
   },
 };

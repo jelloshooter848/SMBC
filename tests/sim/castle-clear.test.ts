@@ -22,12 +22,14 @@ import type { World } from '@game/world/world';
 // The castle clear: the bridge falls, the player walks to Toad (or the princess) and stops at
 // the exit marker, Toad's thanks appear over the level, then "BUT OUR PRINCESS IS IN ANOTHER
 // CASTLE!" in every castle but the last (the original's ScreenManager.displayThankYouText and
-// GameTextMessages), and the next level starts; the last castle goes to the ending.
+// GameTextMessages), and the next level starts; the last castle says "YOUR QUEST IS OVER."
+// (GameTextMessages.QUEST_IS_OVER) and goes to the ending 2.5 s later.
 
 const levels = join(import.meta.dirname, '../../src/content/levels');
 const load = (path: string, id: string): LevelData =>
   parseTextMap(readFileSync(join(levels, path), 'utf8'), id);
 const NEWS = ['', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+const QUEST_OVER = ['', 'YOUR QUEST IS OVER.'];
 
 /** Put the player on the axe (feet on top of row `floor`) once the bridge's Bowser is there. */
 function place(w: World, col: number, floor: number): void {
@@ -103,19 +105,20 @@ describe('castle clear: Toad and the news', () => {
     expect(r.goToLevel).toHaveBeenCalledWith('ll-2-1', { mode: 'stand' });
   });
 
-  it('Lost Levels 8-4: the princess waits instead of Toad, no news, and the ending runs for 8-4', () => {
+  it('Lost Levels 8-4: the princess waits instead of Toad, the quest is over, and the ending runs', () => {
     const r = clearCastle(load('lost/world8/ll-8-4-end3.map', 'll-8-4-end3'), 125);
     expect(r.world.entities.some((e) => e instanceof Princess && e.alive)).toBe(true);
     expect(r.world.entities.some((e) => e instanceof Toad)).toBe(false);
-    expect(r.texts).toEqual([['THANK YOU MARIO!']]);
+    expect(r.texts).toEqual([['THANK YOU MARIO!'], ['THANK YOU MARIO!', ...QUEST_OVER]]);
     expect(r.showEnding).toHaveBeenCalledWith('ll-8-4');
     expect(r.goToLevel).not.toHaveBeenCalled();
   });
 
-  it('SMB1 8-4: the princess, no news, and the ending', () => {
+  it('SMB1 8-4: the princess, "YOUR QUEST IS OVER." and the ending', () => {
     const r = clearCastle(load('world8/8-4-end.map', '8-4-end'), 45);
     expect(r.world.entities.some((e) => e instanceof Princess && e.alive)).toBe(true);
     expect(r.texts.flat()).not.toContain('ANOTHER CASTLE!');
+    expect(r.texts.at(-1)).toEqual(['THANK YOU MARIO!', ...QUEST_OVER]);
     expect(r.showEnding).toHaveBeenCalledWith('8-4');
   });
 });
@@ -192,7 +195,7 @@ describe('castle clear walk', () => {
     expect(r.playerY + toPx(r.world.player.body.h)).toBe(13 * 16);
   });
 
-  it('a castle that ends the game shows only the thanks before the ending', () => {
+  it('a castle that ends the game shows the thanks and "YOUR QUEST IS OVER." before the ending', () => {
     const r = runSim({
       level: castle(['exit 39 next=end'], false),
       character: MARIO,
@@ -205,6 +208,6 @@ describe('castle clear walk', () => {
       },
     });
     expect(r.events.at(-1)).toEqual({ type: 'exit', next: 'end' });
-    expect(r.world.castleText).toEqual(['THANK YOU MARIO!']);
+    expect(r.world.castleText).toEqual(['THANK YOU MARIO!', ...QUEST_OVER]);
   });
 });

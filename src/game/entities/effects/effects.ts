@@ -154,6 +154,16 @@ export class Explosion extends Entity {
   }
 }
 
+/**
+ * Enemy.die in the original: `vx = ±DIE_BOOST_X` (100 Flash px/s, away from the player; 0 in a
+ * water level), `vy = -DIE_BOOST_Y` (200 Flash px/s), `scaleY = -1`, then the enemy's own gravity.
+ * At SCALE 2 and 60 frames a second: 0.83 px/f sideways and 1.67 px/f up.
+ */
+export const CORPSE_VX = 0x00d55;
+export const CORPSE_VY = 0x01aab;
+/** AnimatedObject.gravity's default (500 Flash px/s² = 0.069 px/f²), for enemies that keep it. */
+export const CORPSE_GRAVITY_DEFAULT = 0x0011c;
+
 /** A dead enemy flipped upside down, falling off the screen. */
 export class Corpse extends Entity {
   readonly kind = 'corpse';
@@ -165,37 +175,44 @@ export class Corpse extends Entity {
     readonly sheet: string,
     readonly palette: string | undefined,
     readonly frame: string,
-    dirX: -1 | 1,
+    /** Sideways direction of the knock-out; 0 (a water level) drops straight down. */
+    dirX: -1 | 0 | 1,
     readonly flipV = true,
     readonly spriteOffX = 0,
     readonly spriteOffY = 0,
     /** Draw the frame mirrored vertically (an enemy that was hanging upside down). */
     readonly mirrorY = false,
+    /** The dead enemy's own gravity (VEL units per frame). */
+    readonly gravity = CORPSE_GRAVITY_DEFAULT,
   ) {
     super(x, y, wPx, hPx);
-    this.body.vx = dirX * 0x01000;
-    this.body.vy = -0x03000;
+    this.body.vx = dirX * CORPSE_VX;
+    this.body.vy = -CORPSE_VY;
     this.layer = 'front';
+    if (dirX !== 0) this.facing = dirX;
   }
   update(): void {
-    this.body.vy += 0x00400;
+    this.body.vy += this.gravity;
     this.body.x += velToSub(this.body.vx);
     this.body.y += velToSub(this.body.vy);
     if (this.isBelowLevel()) this.destroy();
   }
+  /** Drawn upside down (Enemy.die's `scaleY = -1`); a hanging enemy was already head-down and stays so. */
+  get upsideDown(): boolean {
+    return this.flipV || this.mirrorY;
+  }
   render(r: Renderer, view: View): void {
-    // Vertical flip is drawn by inverting via a transform-free trick: we rely on a "-flip" frame if present,
-    // otherwise draw as-is (the fall itself reads as death).
+    // A sheet may carry a hand-drawn "-flip" frame; otherwise the renderer flips the frame.
     const sheet = view.assets.sheet(this.sheet, this.palette);
     const flipped = `${this.frame}-flip`;
-    const f = this.flipV && sheet.frames.has(flipped) ? flipped : this.frame;
+    const own = this.flipV && sheet.frames.has(flipped);
     r.sprite(
       sheet,
-      f,
+      own ? flipped : this.frame,
       toPx(this.body.x) - view.camX - this.spriteOffX,
       toPx(this.body.y) - this.spriteOffY,
-      this.body.vx > 0,
-      this.mirrorY,
+      this.facing > 0,
+      own ? this.mirrorY : this.upsideDown,
     );
   }
 }

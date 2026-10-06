@@ -99,7 +99,7 @@ describe('Lost Levels 4-1', () => {
       maxFrames: 300,
       assist: { invulnerable: true },
       controller: (w, f) => {
-        if (f === 0) place(w, 88, 13);
+        if (f === 0) place(w, 93, 13); // past column 92, where the second stretch starts
         lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
         return [];
       },
@@ -147,7 +147,7 @@ describe('Lost Levels 4-3', () => {
       level: level('ll-4-3'),
       character: MARIO,
       script: none,
-      maxFrames: 90,
+      maxFrames: 60, // it speeds up (ayPully); by 90 frames the rope has snapped
       assist: { invulnerable: true },
       controller: (w, f) => {
         if (f === 0) place(w, 44, 4, 8); // bring the camera (and the lifts) along

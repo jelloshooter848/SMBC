@@ -48,3 +48,5 @@ every time
   - Climbing down. The original also stops Mario climbing down within 2 tiles of the bottom of the screen during play (`checkVinePosition`, `Character.as` lines 1846-1851). Ours lets go once his hands pass the vine's base (`climb()` line 339). This was not playtested.
 - Source: `ll-wC/2026-10-05-vine-left-right-does-not-step-off.md`. The reviewer added the `MarioBase.movePlayer` override (the code that actually runs for Mario), the attack/special-button line numbers, and the climbing-down note.
 - Reviewed: verified against `com/smbc/characters/Character.as` (`movePlayer` 1095-1120, `relLftBtn`/`relRhtBtn` 1323-1334, `getOffVine` 1798-1812, `getOnVine` 1813-1825, `checkVinePosition` 1838-1879), `com/smbc/characters/base/MarioBase.as` (`movePlayer` 418-468, `checkState` 588-595, `pressAtkBtn` 835-838, `pressSpcBtn` 858-861, `pressJmpBtn` 1253-1256), and ours: `src/game/entities/player.ts` (`climb`, `letGo`).
+
+Status: fixed — on a vine, left or right steps off beside the vine once a direction has been released on it (exitVine / getOffVine), and jump does nothing (pressJmpBtn returns on ST_VINE), for every hero.

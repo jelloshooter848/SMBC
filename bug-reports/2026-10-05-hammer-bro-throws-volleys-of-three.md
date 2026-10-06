@@ -36,3 +36,5 @@ every time
 - The arc of each hammer is a separate report: `2026-10-05-hammer-bro-hammer-arc-too-high.md`.
 - Also reported in 5-2 by smb-w5 (`smb-w5/2026-10-05-5-2-hammer-bro-volleys.md`): code reading for the original, playtest of ours. The smb-w5 tester could not reach a Hammer Bro in the original (Ruffle ran at about a sixth of real speed). Our screenshot from that report: (screenshot not committed: the repo's `check:assets` bans image files).
 - Reviewed: verified against `com/smbc/enemies/HammerBro.as` (`HAMMER_TMR_DUR_MIN/MAX` 300/1200, `HAMMER_DEL_TMR` 250, `hammerTmrLsr`, `hammerDelTmrLsr`) and ours: `src/game/entities/enemies/hammer-bro.ts` (`VOLLEY_SIZE` 3, `VOLLEY_GAP` 16, `throwTimer`).
+
+Status: fixed — Hammer Bros throw one hammer at a time: a 300-1200 ms (18-71 frame) timer, a 250 ms (15 frame) wind-up in the throw pose, then one hammer, then the next timer (`hammerTmrLsr`, `hammerDelTmrLsr`).

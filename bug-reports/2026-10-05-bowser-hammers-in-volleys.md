@@ -73,3 +73,5 @@ every time
 - 7-4 (smb-w7): the tester saw the same volleys of five from the column-328 hammer Bowser (`gauntlet/notes/smb-w7.md`; no shot cited). Both folded in during the smb-w7/w8 consolidation.
 - Source report: `smb-w6/2026-10-05-6-4-bowser-hammers-in-volleys.md`.
 - Reviewed: verified against `com/smbc/enemies/Bowser.as`, `com/smbc/enemies/BowserFake.as`, `com/smbc/projectiles/Hammer.as`, `com/smbc/level/Level.as` (1935-1941), `levelDataSmb.xml` and `levelDataLostLevels.xml` (every `enemyBowser` token on NORMAL), and ours: `src/game/entities/enemies/bowser.ts`, `src/game/world/bowser-fire.ts`, `src/game/world/world.ts` (`case 'bowser'`), `tools/levelgen/convert-smbc.mjs`, every `bowser` line in `src/content/levels/**/*.map`
+
+Status: fixed — hammer Bowsers now throw one hammer each time a 40-199 ms timer runs out, only in the normal state and while fewer than six of theirs are alive (Bowser.as `throwHammerTmrHandler`, `MAX_HAMMERS_ON_SCREEN`), always to the left at Hammer.as's fixed 120 px/s, `jumpPwr` 200 and gravity 500 (Bowser's own copy; the Hammer Bro's `HAMMER` spec is untouched).

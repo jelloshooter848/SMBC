@@ -1,5 +1,5 @@
 import { SceneStack } from '@engine/scene';
-import { loadProgress, saveProgress } from '@engine/save/progress';
+import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { GameContext, GameState } from '../context';
 import { newGameState } from '../context';
 import { startHp, type CharacterDef } from '../characters/character';
@@ -20,6 +20,7 @@ import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { MessageScene } from './message';
+import { CreditsScene } from './credits';
 import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress } from '../map/types';
 import { clearLevel, entryLevel, isOpen, isWorldOpen, newMapProgress, warpTo } from '../map/rules';
@@ -89,55 +90,79 @@ export class Game {
   }
 
   /**
-   * After the last castle: the princess's thanks, the final score, then the title. In campaign
-   * mode the clear is recorded, the file marked as cleared and saved, and the ending leads back
-   * to the map (World 8).
+   * The end of a game (an exit marked `next=end`; `from` is the main level's id).
+   *
+   * SMB (and custom levels): the castle has said "Your quest is over."; the credits roll over it
+   * (ScreenManager.startMoveCreditsTmrHandler), then the title (restartGameTmrHandler ->
+   * beatGame -> restartGame). In campaign mode, after the credits the clear is recorded, the file
+   * marked as cleared and saved, and the title follows (owner decision, 2026-10-05).
+   *
+   * The Lost Levels follow the NES rules (owner decision, 2026-10-05): 8-4 counts a game beaten
+   * (worlds A-D open after 8) and, without warps, goes on to World 9; World 9 and D-4 end the game.
    */
   showEnding(from = ''): void {
-    const s = this.state;
-    let reveal: string[] | null = null;
+    if (from.startsWith('ll-')) return this.showLostEnding(from);
+    const below = this.scenes.top;
+    const world = below instanceof LevelScene ? below.world : null;
+    const head = world ? world.castleText.splice(0) : [];
+    this.deps.announcer?.say(`${head.filter(Boolean).join(' ')} Credits.`.trim());
+    this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
+  }
+
+  /** The credits are over: campaign files record the clear and save, then the title. */
+  private afterCredits(from: string): void {
     if (this.campaign) {
+      const s = this.state;
       s.checkpoint = null;
       s.time = null;
-      reveal = clearLevel(this.mapProgress, from, this.deps.getLevel);
+      this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
       if (this.campaignSave) this.campaignSave = { ...this.campaignSave, gameCleared: true };
       this.autosave();
     }
-    // The Lost Levels: clearing 8-4 opens worlds A-D; a run without warps goes on to World 9.
+    this.showTitle();
+  }
+
+  /** The Lost Levels' game ends: 8-4 (on to World 9 without warps), 9-4 and D-4. */
+  private showLostEnding(from: string): void {
+    const s = this.state;
+    const score = pad(Math.min(s.score, SCORE_MAX), 7);
     let next: string | null = null;
+    let lines: string[];
     if (from === 'll-8-4') {
-      const progress = loadProgress();
-      progress.lost.letters = true;
-      if (!s.warped) {
-        progress.lost.world9 = true;
-        next = 'll-9-1-start';
-      }
+      const before = loadProgress();
+      const progress = recordLostGameBeaten(before, s.warped);
       saveProgress(progress);
-    }
+      const opened = lostLettersOpen(progress) && !lostLettersOpen(before);
+      const tally = opened
+        ? ['WORLDS A-D ARE OPEN!']
+        : [`GAMES BEATEN ${Math.min(progress.lost.beaten, 99)}`];
+      if (!s.warped) {
+        next = 'll-9-1-start';
+        lines = ['A NEW QUEST AWAITS', 'IN WORLD 9!', '', ...tally, '', `SCORE ${score}`];
+      } else {
+        lines = [
+          'WORLD 9 OPENS AFTER A RUN',
+          'THROUGH WORLDS 1-8',
+          'WITHOUT WARP ZONES.',
+          '',
+          ...tally,
+          '',
+          `FINAL SCORE ${score}`,
+        ];
+      }
+    } else if (from === 'll-9-4') lines = ['WORLD 9 CLEARED!', '', `FINAL SCORE ${score}`];
+    else if (from === 'll-13-4') lines = ['WORLDS A-D CLEARED!', '', `FINAL SCORE ${score}`];
+    else lines = [`FINAL SCORE ${score}`];
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
-    this.deps.announcer?.say(`Thank you ${s.character.name}! The princess is safe. Final score ${s.score}.`);
+    this.deps.announcer?.say(lines.filter(Boolean).join(' '));
     this.scenes.clear();
     this.scenes.push(
       new MessageScene(
         this,
-        [
-          `THANK YOU ${s.character.hudName}!`,
-          '',
-          'THE PRINCESS IS SAFE',
-          'AND THE KINGDOM IS FREE.',
-          '',
-          `FINAL SCORE ${pad(Math.min(s.score, SCORE_MAX), 7)}`,
-          '',
-          'PRESS START',
-        ],
-        () =>
-          reveal
-            ? this.returnToMap(reveal)
-            : next
-              ? this.goToLevel(next, { mode: 'stand' })
-              : this.showTitle(),
+        [...lines, '', 'PRESS START'],
+        () => (next ? this.goToLevel(next, { mode: 'stand' }) : this.showTitle()),
         1800,
       ),
     );
@@ -224,14 +249,14 @@ export class Game {
    * file first (with `reveal` pending), then shows the page the hero stands on, which draws in
    * its share of what is pending (another world's share waits until the hero gets there).
    */
-  returnToMap(reveal: string[] = []): void {
+  returnToMap(reveal: string[] = [], opts: WorldMapOptions = {}): void {
     this.addReveal(reveal);
     this.state.checkpoint = null;
     this.state.time = null;
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
     this.autosave();
-    this.showMap(this.mapProgress.position.world);
+    this.showMap(this.mapProgress.position.world, opts);
   }
 
   /** Queue map ids to draw in (each page takes its own when shown). */
@@ -262,6 +287,64 @@ export class Game {
     const start = mapPage(world)?.nodes.find((n) => n.kind === 'start');
     if (start) this.mapProgress.position = { world, node: start.id };
     this.autosave();
+  }
+
+  /**
+   * Campaign: a warp pipe from world `from` into world `to` (owner decision, 2026-10-05): the
+   * level ends on the map, which opens the target world (campaignWarp), slides over to it and
+   * draws it in; the player picks the level there (character select and the WORLD card follow).
+   * The level warped from is not cleared, and its checkpoint is gone.
+   */
+  campaignWarpToMap(from: number, to: number): void {
+    this.campaignWarp(to);
+    this.returnToMap([], { slideFrom: from });
+  }
+
+  /**
+   * A warp outside campaign mode (?level=, dev, shared and custom levels, the Lost Levels): as in
+   * the original, where a pipe to another level sets levelIDToLoad and ScreenManager.loadNewLevel
+   * sets newLev, so createLevel shows CharacterSelect, then the pre-level card and the level.
+   * Keeping the hero keeps its power (a different one starts from its default); in co-op player
+   * two picks next.
+   */
+  warpToLevel(levelId: string, start: LevelStart): void {
+    const s = this.state;
+    const go = () => this.goToLevel(levelId, start);
+    const pick = (player: 0 | 1, then: () => void) => {
+      const current = player === 1 ? (s.character2 as CharacterDef) : s.character;
+      return new CharacterSelectScene(this, {
+        player,
+        current,
+        onPick: (c) => {
+          if (c !== current) this.setHero(player, c);
+          then();
+        },
+      });
+    };
+    this.deps.ctx.audio.stopMusic();
+    this.scenes.clear();
+    this.scenes.push(
+      pick(0, () => {
+        if (!s.character2) return go();
+        this.scenes.pop();
+        this.scenes.push(pick(1, go));
+      }),
+    );
+  }
+
+  /**
+   * The area a level restarts in without a checkpoint: its first area (Level.reloadLevel loads
+   * area a, or b when a is an intro). Only Lost Levels 9-1 has a normal first area before its
+   * main one: the converter names it `<main>-start` (convert-smbc.mjs entryId).
+   */
+  firstArea(levelId: string): string {
+    const start = `${levelId}-start`;
+    try {
+      this.deps.getLevel(start);
+      return start;
+    } catch {
+      return levelId;
+    }
   }
 
   /**
@@ -429,6 +512,10 @@ export class Game {
       );
       return;
     }
+    // An intro area (TYPE="intro" with gameStateWatch) and a vine area (vineStart) always open
+    // with their scripted watch-mode start, whatever start the caller asked for.
+    if (level.startMode === 'autowalk' || level.startMode === 'climb')
+      start = { ...start, mode: level.startMode };
     this.state.world = level.world;
     this.state.stage = level.stage;
     this.deps.ctx.audio.stopMusic();
@@ -542,7 +629,8 @@ export class Game {
     const first = `${m[1]}${m[2]}-1`;
     try {
       this.deps.getLevel(first);
-      return first;
+      // changeToFirstWorldLevel loads area a of it (ll-9-1-start for Lost Levels 9-1).
+      return this.firstArea(first);
     } catch {
       return levelId;
     }

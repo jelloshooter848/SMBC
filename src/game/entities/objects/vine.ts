@@ -42,6 +42,16 @@ export class Vine extends Entity {
     this.syncBody();
   }
 
+  /** px per frame while growing. */
+  private growSpeed = GROW_SPEED;
+
+  /** Grow up from the base at `speed` px a frame (the sky-area arrival vine, Vine.growFromStgBot). */
+  growFromBase(speed: number): void {
+    this.top = this.basePx;
+    this.growSpeed = speed;
+    this.syncBody();
+  }
+
   get grown(): boolean {
     return this.top <= this.topPx;
   }
@@ -63,7 +73,7 @@ export class Vine extends Entity {
 
   update(): void {
     if (this.top > this.topPx) {
-      this.top = Math.max(this.topPx, this.top - GROW_SPEED);
+      this.top = Math.max(this.topPx, this.top - this.growSpeed);
       this.syncBody();
     }
   }

@@ -13,7 +13,7 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import { PauseScene } from '@game/scenes/pause';
-import { MessageScene } from '@game/scenes/message';
+import { CreditsScene } from '@game/scenes/credits';
 import { GameOverScene, GAME_OVER_CARD_FRAMES } from '@game/scenes/game-over';
 import { TitleScene } from '@game/scenes/title';
 import type { MenuScene, MenuItem } from '@game/scenes/menu';
@@ -22,7 +22,7 @@ import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
 import { loadSave, newSave, writeSave, type SaveFile, type SaveSlot } from '@game/save/save-files';
-import { isExitOpen, isOpen, type Dir } from '@game/map/rules';
+import { isCleared, isExitOpen, isOpen, type Dir } from '@game/map/rules';
 import type { WorldMapPage } from '@game/map/types';
 import type { WorldEvent } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
@@ -229,10 +229,20 @@ describe('campaign: clears return to the map', () => {
     h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
     enter(h, '1-2');
     play(h, '1-2');
+    h.game.state.checkpoint = { level: '1-2', x: 97 };
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
-    // Play goes on into the target level as before.
-    expect(h.top()).toBeInstanceOf(LevelScene);
+    // Owner decision (2026-10-05): the warp ends the level on the map, which slides over to
+    // World 4 and draws it in; 4-1 is picked there (character select, then the WORLD card).
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().page.world).toBe(4);
+    expect(h.map().mode).toBe('slide');
+    expect(h.game.state.checkpoint).toBeNull();
+    h.until(() => h.map().mode === 'reveal');
+    h.until(() => h.map().mode === 'idle', 600);
+    expect(h.map().node).toBe('start');
+    enter(h, '4-1');
     expect(h.level().level.id).toBe('4-1');
+    expect([h.game.state.world, h.game.state.stage]).toEqual([4, 1]);
     expect(h.game.mapProgress.worlds).toEqual([1, 4]);
     expect(loadSave(1)?.worlds).toEqual([1, 4]);
     expect(isOpen(h.game.mapProgress, page(4), '4-1')).toBe(true);
@@ -256,6 +266,8 @@ describe('campaign: clears return to the map', () => {
     enter(h, '1-2');
     play(h, '1-2');
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
+    h.until(() => h.map().mode === 'idle', 600);
+    enter(h, '4-1');
     h.fire({ type: 'exit', next: '4-2-intro' });
     h.until(() => h.map().mode === 'idle');
     expect(h.map().page.world).toBe(4);
@@ -326,7 +338,9 @@ describe('campaign: clears return to the map', () => {
     expect(h.game.mapProgress.worlds).toEqual([1]);
   });
 
-  it("8-4's ending marks the file cleared, then returns to the World 8 map", () => {
+  // Owner decision (2026-10-05): after 8-4, "Your quest is over." and the credits, then the
+  // file is saved with 8-4 complete, then the title.
+  it("8-4's ending rolls the credits, then saves the file cleared and goes to the title", () => {
     const h = makeGame();
     const cleared = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     h.game.openFile(
@@ -340,18 +354,19 @@ describe('campaign: clears return to the map', () => {
     enter(h, '8-4');
     play(h, '8-4-end');
     h.fire({ type: 'exit', next: 'end' });
-    expect(h.top()).toBeInstanceOf(MessageScene);
+    expect(h.top()).toBeInstanceOf(CreditsScene);
+    expect(loadSave(1)?.gameCleared).toBe(false);
+    h.idle(60);
+    h.tap('start'); // fast-forwards (the original's pause button during the credits)
+    h.until(() => h.top() instanceof TitleScene, 3000);
     const saved = loadSave(1) as SaveFile;
     expect(saved.gameCleared).toBe(true);
     expect(saved.cleared).toContain('8-4');
-    h.idle(40);
-    h.tap('start');
-    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.game.campaign).toBeNull();
+    // Reopening the file shows 8-4 completed.
+    h.game.openFile(1);
     expect(h.map().page.world).toBe(8);
-    expect(h.map().node).toBe('8-4');
-    expect(h.game.campaign).toEqual({ slot: 1 });
-    // The next save keeps the mark.
-    h.game.autosave();
+    expect(isCleared(h.game.mapProgress, page(8), '8-4')).toBe(true);
     expect(loadSave(1)?.gameCleared).toBe(true);
   });
 });
@@ -399,12 +414,10 @@ describe('campaign: other worlds draw in on arrival', () => {
     enter(h, '1-2');
     play(h, '1-2');
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
-    // Saved right away (closing the tab now keeps it).
+    // Saved right away (closing the tab now keeps it), while the map slides over to World 4.
+    expect(h.map().mode).toBe('slide');
     expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['4:start', '4:4-1']));
-    h.idle(4);
-    h.tap('start');
-    choose(h.top(), 'Quit to title');
-    expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['4:start', '4:4-1']));
+    expect(loadSave(1)?.position).toEqual({ world: 4, node: 'start' });
     const h2 = makeGame();
     h2.game.openFile(1);
     expect(h2.map().page.world).toBe(4);
@@ -621,16 +634,14 @@ describe('non-campaign starts never touch save files', () => {
     expect(saveKeys()).toEqual([]);
   });
 
-  it('the ending outside campaign mode goes to the title and saves nothing', () => {
+  it('the ending outside campaign mode rolls the credits, goes to the title and saves nothing', () => {
     const h = makeGame();
     h.game.newGame(MARIO, '8-4');
     h.until(() => h.top() instanceof LevelScene);
     play(h, '8-4-end');
     h.fire({ type: 'exit', next: 'end' });
-    expect(h.top()).toBeInstanceOf(MessageScene);
-    h.idle(40);
-    h.tap('start');
-    expect(h.top()).toBeInstanceOf(TitleScene);
+    expect(h.top()).toBeInstanceOf(CreditsScene);
+    h.until(() => h.top() instanceof TitleScene, 6000);
     expect(saveKeys()).toEqual([]);
   });
 

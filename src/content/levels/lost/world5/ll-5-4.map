@@ -31,26 +31,26 @@ BBBB............ ................ ............P... ................ ............
 lift-fall 18 10 len=4
 podoboo 22 12
 podoboo 28 12
-firebar-ccw 33 5
-firebar-ccw 40 9
-firebar 44 12
-firebar 48 9
-firebar-ccw 63 5
+firebar 33 5
+firebar 40 9
+firebar-ccw 44 12
+firebar-ccw 48 9
+firebar 63 5
 lift-fall 70 11 len=4
 podoboo 74 12
 lift-fall 77 11 len=4
-firebar 84 8
+firebar-ccw 84 8
 podoboo 89 12
 podoboo 101 12
-firebar-ccw 106 5
-firebar 116 9
-firebar 119 9
-firebar 128 9
+firebar 106 5
+firebar-ccw 116 9
+firebar-ccw 119 9
+firebar-ccw 128 9
 podoboo 134 12
-firebar-ccw 140 9 len=12
+firebar 140 9 len=12
 podoboo 147 12
-firebar-ccw 171 9
-firebar 177 9
+firebar 171 9
+firebar-ccw 177 9
 podoboo 195 12
 bowser 199 9
 lift-h 202 6 len=4 range=3

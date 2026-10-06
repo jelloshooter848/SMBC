@@ -79,3 +79,5 @@ goomba 26 12
 
 - Sources: the smb-w5 reviewer's finding (point 1), and `ll-wB/2026-10-05-water-knocked-out-enemies-drift-sideways.md` (point 2, plus the launch-speed note that became point 3). Merged by the ll-w6/w9/wB review, which widened the title.
 - Reviewed: verified against `com/smbc/enemies/Enemy.as` (`die`, lines 108-109, 124-125, 321-399), `com/smbc/enemies/Goomba.as` (line 56), `com/smbc/enemies/KoopaGreen.as` (line 162), `com/smbc/main/AnimatedObject.as` (lines 35, 255-285), `com/smbc/level/Level.as` (lines 440-444), and ours at b8379f9: `src/game/entities/enemies/enemy.ts` (`flipOut`, `corpseFlipY`), `src/game/entities/effects/effects.ts` (`Corpse`, lines 158-201), `src/game/entities/enemies/piranha.ts`, `src/engine/gfx/renderer.ts`, `src/engine/math/units.ts`.
+
+Status: fixed — corpses are drawn upside down with the renderer flipY (hanging plants stay head-down), launch at 1.67 px/f up and 0.83 px/f sideways (0 in water themes), and fall with the enemy's own gravity (Goomba/Spiny 1400, Koopa/Beetle 1300, Hammer Bro/Bullet Bill 1250, else AnimatedObject's 500 Flash px/s²).

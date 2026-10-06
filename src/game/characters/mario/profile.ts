@@ -28,4 +28,16 @@ export const MARIO_PROFILE: MovementProfile = {
   variableJump: true,
   instantAccel: false,
   coyoteFrames: 0,
+  // Under water (MarioBase.as setStats: JUMP_PWR_WATER = 200, water gravity 350,
+  // walksSlowUnderWater; Character.as vyMaxPsvWater = 250, vxMaxGroundWater = 90). Flash px/s at
+  // 32 px tiles: /2/60 per frame, /2/3600 per frame². Luigi (also a MarioBase) inherits it.
+  swim: {
+    stroke: 0x01aab, // 200 → 1.667 px/f: a stroke from rest rises about 28 px
+    gravity: 0x000c7, // 350 → 0.049 px/f²
+    sinkMax: 0x02155, // 250 → 2.083 px/f
+    floorWalk: 0x00c00, // 90 → 0.75 px/f on the sea floor
+  },
+  // MarioBase.as: canCrossSmallGaps is set on the ground only in the fastest run-animation band,
+  // vx > RUN_TMR_2_MIN_VX = 220 Flash px/s (32 px tiles, 60 fps) = 110 px/s = 1.833 px/f here.
+  crossGapMinVx: Math.round((220 / 2 / 60) * 0x1000),
 };

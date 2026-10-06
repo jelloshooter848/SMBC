@@ -36,8 +36,8 @@ piranha-down 51 8 red=1
 piranha 55 9 red=1
 piranha-down 59 9 red=1
 piranha 89 8 red=1
-koopa-para-red 110 7
-koopa-para-red 113 8
+koopa-para-red 110 7 dy=-8
+koopa-para-red 113 8 dy=-8
 piranha 117 3 red=1
 piranha 140 13 red=1
 piranha 163 11 red=1
@@ -45,7 +45,7 @@ koopa-para-green 177 4
 decor-castle 206 12
 
 [zones]
-checkpoint 114
+checkpoint 114 12
 exit 202 next=ll-7-2
 cheeps 73 33
 pipe 117 3 down -> ll-7-1-bonus 1 0 exit=none

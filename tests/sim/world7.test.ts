@@ -46,7 +46,7 @@ describe('World 7: gliding paratroopas', () => {
       ].join('\n'),
     );
 
-  it('sway side to side at a fixed height', () => {
+  it('sway side to side ±42.5 px while drifting half a tile up and down', () => {
     let k: Koopa | undefined;
     let minX = Infinity;
     let maxX = -Infinity;
@@ -68,8 +68,12 @@ describe('World 7: gliding paratroopas', () => {
     });
     expect(k?.glide).toBe(true);
     expect(k?.currentFrame).toMatch(/^koopa-fly-/);
-    expect(maxX - minX).toBeGreaterThanOrEqual(100);
-    expect(ys.size).toBe(1);
+    // KoopaGreen FT_HORZ: waveRange 85 Flash px end to end at our scale, and the vertical drift
+    // between y ± TILE_SIZE/2 (8 px here).
+    expect(maxX - minX).toBeGreaterThanOrEqual(84);
+    expect(maxX - minX).toBeLessThanOrEqual(86);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThanOrEqual(15);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThanOrEqual(17);
   });
 
   it('lose their wings to a stomp and walk off', () => {

@@ -39,3 +39,5 @@ every time
 - Related: `2026-10-05-bowser-no-chase.md`.
 - Related: the Lost Levels' fake Bowsers (ll-8-4, ll-9-3, ll-13-4) use a different window in the original (±5 tiles around their spawn, `BowserFake.as`) but the same `homeX - 48 / + 8` rule in ours: `2026-10-05-bowser-fake-paces-in-bridge-window.md`.
 - Reviewed: verified against `com/smbc/enemies/Bowser.as` (`WALK_SPEED`, `getXMaxMin`, `updateStats`, `pastXMax`, `fbTmrLsr`, `fbDelTmrLsr`), `com/smbc/pickups/BowserAxe.as` (`setUpBridge`, `sortBBVec`), `levelDataSmb.xml` (bridge 128-140, Bowser 136, axe 141 in 1-4 and 3-4), and ours: `src/game/entities/enemies/bowser.ts`.
+
+Status: fixed — the bridge Bowser now walks at 30 px/s (0.25 px/f) within `xMin = bridge's first piece + 3 tiles` and `xMax = last piece + 1 tile` (columns 131-141 in 1-4), and stops for the 450 ms wind-up before each flame, then sets off left (40%) or right (60%) (Bowser.as `WALK_SPEED`, `getXMaxMin`, `fbTmrLsr`, `fbDelTmrLsr`).

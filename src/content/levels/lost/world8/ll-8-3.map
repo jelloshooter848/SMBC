@@ -32,18 +32,18 @@ decor-castle 0 12
 lift-fall 16 9 len=4
 lakitu 24 0 end=55 mid=1
 koopa-para-green-h 29 6
-koopa-para-red 42 9
+koopa-para-red 42 9 dy=-8
 lift-fall 45 5 len=4
 koopa-red 66 12
 koopa-red 69 9
 hammer-bro-chase 94 12
 piranha 112 9 red=1
-koopa-para-red 148 9
-koopa-para-red 151 10
+koopa-para-red 148 9 dy=-8
+koopa-para-red 151 10 dy=-8
 hammer-bro 166 12
 hammer-bro 173 12
 balance 189 6 x2=194 y2=9 len=4 top=2
-koopa-para-red 209 7
+koopa-para-red 209 7 dy=-8
 decor-castle-big 216 12
 
 [zones]

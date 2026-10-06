@@ -44,3 +44,5 @@ every time
 - Screenshot: not committed (the repo's `check:assets` bans image files) (ours: after the death at column 32 and SELECT YOUR HERO, Mario is back in the flooded area at column 1).
 - Source: `ll-w9/2026-10-05-ll-9-1-death-skips-start-room.md`. The reviewer traced the death path from `EventManager` and added the start-room death, the timer check and the cross-references.
 - Reviewed: verified against `com/smbc/managers/EventManager.as` (lines 95-115), `com/smbc/level/Level.as` (lines 1453-1459, 3426-3441), `com/smbc/data/LevelID.as` (line 8, `Create`), `com/smbc/managers/StatManager.as` (lines 339-342, 550-554), `levelDataSmb.xml` and `levelDataLostLevels.xml` (every `MAIN_AREA`), and ours at b8379f9: `src/game/scenes/level.ts` (lines 122-142), `src/game/scenes/game.ts` (lines 66-75, 279-314), `src/game/world/world.ts` (line 71), `src/content/levels/lost/world9/ll-9-1.map` and `ll-9-1-start.map`, `tools/levelgen/convert-smbc.mjs` (`entryId`).
+
+Status: fixed — a death without a checkpoint and a Continue restart a level in its first area (`<main>-start` when it exists, so ll-9-1-start), as Level.reloadLevel and changeToFirstWorldLevel load area a.

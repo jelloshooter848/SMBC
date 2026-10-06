@@ -12,8 +12,8 @@ import {
   type Vulnerability,
 } from '../../rules/damage';
 import { ENEMY_SCORES, killScore, type KillScores } from '../../rules/score';
-import { Corpse } from '../effects/effects';
-import type { Theme } from '../../level/schema';
+import { CORPSE_GRAVITY_DEFAULT, Corpse } from '../effects/effects';
+import { isWaterTheme, type Theme } from '../../level/schema';
 
 /**
  * A block bumped under a koopa or spiny pops it up (KoopaGreen.gBounceHit / Spiney.gBounceHit):
@@ -59,6 +59,11 @@ export abstract class Enemy extends Entity {
   stunned = 0;
   /** Draw the knocked-out corpse flipped vertically (things that hang upside down). */
   protected corpseFlipY = false;
+  /**
+   * Gravity the knocked-out corpse falls with: the enemy's own `gravity` in the original
+   * (AnimatedObject's default 500 Flash px/s² unless its setStats changes it).
+   */
+  protected corpseGravity = CORPSE_GRAVITY_DEFAULT;
   /** Popped up by a bumped block: falls with BUMP_POP_GRAVITY until it lands. */
   protected bumpPopped = false;
 
@@ -150,9 +155,9 @@ export abstract class Enemy extends Entity {
     this.destroy();
   }
 
-  /** Knocked off the screen upside down. */
+  /** Knocked off the screen upside down (Enemy.die; no sideways boost in a water level). */
   protected flipOut(src: DamageSource, world: World): void {
-    const dir = src.dirX;
+    const dir = isWaterTheme(world.level.theme) ? 0 : src.dirX;
     world.spawn(
       new Corpse(
         this.body.x,
@@ -167,6 +172,7 @@ export abstract class Enemy extends Entity {
         this.spriteOffsetX,
         this.spriteOffsetY,
         this.corpseFlipY,
+        this.corpseGravity,
       ),
     );
     this.destroy();

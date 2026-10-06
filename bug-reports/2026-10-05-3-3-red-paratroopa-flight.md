@@ -33,3 +33,5 @@ every time
   the gap at columns 112-118.
 - 1-3's two red Paratroopas (`enemyWingedKoopaRed` at x=74 and x=114, y=7, shown on normal) are `koopa-para-red` in our `1-3.map` and use the same code; the 1-3 tester did not compare their flight.
 - Reviewed: verified against `com/smbc/enemies/KoopaGreen.as` (`waveSpeed` 1.5, `waveRange` 85, `checkState` `FT_VERT`), `levelDataSmb.xml` (3-3 and 1-3), and ours: `src/game/entities/enemies/koopa.ts` (`fly`), `src/content/levels/world3/3-3.map`, `src/content/levels/world1/1-3.map`.
+
+Status: fixed — red Paratroopas now bob centreY + sin(waveAngle) × 42.5 px with waveAngle += 0.025 rad a frame (KoopaGreen FT_VERT, waveRange 85, waveSpeed 1.5): ±42.5 px, 251-frame cycle, 1.06 px/f top speed.

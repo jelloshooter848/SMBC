@@ -47,7 +47,8 @@ export interface GameState {
   /** Timer carried into bonus rooms. */
   time: number | null;
   /** Checkpoint reached in the current level (x tile), if any. */
-  checkpoint: { level: string; x: number } | null;
+  /** `y`: the midpoint's row (12 when left out). */
+  checkpoint: { level: string; x: number; y?: number } | null;
   /** Player 2's carried power state / hp. */
   powerState2: string;
   hp2: number;

@@ -35,3 +35,5 @@ every time (3 at once seen once in 18 s; 2 at once most of the time)
 - Related: `2026-10-05-blaster-fire-rate-too-slow.md`.
 - Source: `smb-w5/2026-10-05-5-1-blaster-no-two-bullet-cap.md`.
 - Reviewed: verified against `com/smbc/ground/Canon.as` (`BILL_DCT`, `MAX_BULLET_BILLS`, `shootTmrLsr`), `com/smbc/enemies/BulletBill.as` (`cleanUp`) and ours: `src/game/entities/enemies/bullet-bill.ts` (`BulletLauncher.update`).
+
+Status: fixed — a blaster skips its shot while two blaster-fired Bullet Bills are alive anywhere in the level (`Canon.as` `MAX_BULLET_BILLS`, shared `BILL_DCT`); the flying-bill spawner's bills do not count.

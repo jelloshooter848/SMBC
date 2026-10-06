@@ -249,6 +249,40 @@ describe('C-3: Lakitu over the treetops', () => {
     expect(r.outcome).toBe('stopped');
     expect(toPx((lakitu as Lakitu).body.y)).toBe(112);
   });
+
+  it('a boosted launch from the green spring at 73 carries Mario 25 tiles to the treetop at 98-100', () => {
+    let spring: Spring | undefined;
+    let pressed = false;
+    let launched = false;
+    const r = runSim({
+      level: level('ll-12-3'),
+      character: MARIO,
+      script: none,
+      maxFrames: 900,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        if (f === 0) place(w, 73, 11, 0); // on top of the two-tile spring standing on row 12
+        spring ??= w.entities.find((e): e is Spring => e instanceof Spring && toPx(e.body.x) >> 4 === 73);
+        if (spring?.busy && !pressed) {
+          pressed = true; // a fresh press while on the spring (SpringRed.springLaunch's boost)
+          return ['jump'];
+        }
+        if (pressed && !spring?.busy) launched = true;
+        if (!launched) return [];
+        // Steer for the middle of the treetop.
+        const b = w.player.body;
+        const mid = toPx(b.x + b.w / 2);
+        return mid < 98 * 16 + 4 ? ['right'] : mid > 100 * 16 + 4 ? ['left'] : [];
+      },
+      until: (w) => launched && w.player.body.onGround,
+    });
+    expect(r.outcome).toBe('stopped');
+    const b = r.world.player.body;
+    expect(r.world.player.dead).toBe(false);
+    expect(toPx(b.y + b.h)).toBe(9 * 16); // standing on the treetop (row 9)
+    expect(toPx(b.x + b.w)).toBeGreaterThan(98 * 16);
+    expect(toPx(b.x)).toBeLessThan(101 * 16);
+  });
 });
 
 describe('C-4: Bowser and the axe', () => {

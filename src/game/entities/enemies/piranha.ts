@@ -7,7 +7,13 @@ import type { World } from '../../world/world';
 import type { Theme } from '../../level/schema';
 
 const HEIGHT = 24;
-const RISE_FRAMES = 32;
+/**
+ * PiranhaGreen.setStats: `ySpeed = 75` Flash px/s; Flash tiles are 32 px and ours 16, at 60 frames a
+ * second that is 0.625 px a frame, so the 24 px rise (or sink) takes 39 frames.
+ */
+export const RISE_SPEED = 0.625; // px per frame
+export const RISE_FRAMES = Math.ceil(HEIGHT / RISE_SPEED);
+/** PiranhaGreen.WAIT_TMR (1000 ms): out of the pipe, and back in after each sink. */
 const HOLD_FRAMES = 60;
 const HIDDEN_FRAMES = 60;
 /**
@@ -32,7 +38,11 @@ export function piranhaPalette(red: boolean): string {
 export class Piranha extends Enemy {
   readonly kind = 'piranha';
   private phase: 'hidden' | 'rising' | 'up' | 'sinking' = 'hidden';
-  private t = HIDDEN_FRAMES;
+  /**
+   * No wait before the first rise: PiranhaGreen.setStats (and rearm) set `readyToRise = true`, and
+   * WAIT_TMR only starts once a rise or a sink has finished.
+   */
+  private t = 0;
   /** Subpixels: y of the pipe opening (the top edge, or the bottom edge when hanging). */
   private readonly mouthY: number;
   private readonly centerX: number; // subpixels
@@ -119,7 +129,7 @@ export class Piranha extends Enemy {
         }
         break;
       case 'rising':
-        this.visible = Math.round(((RISE_FRAMES - this.t) / RISE_FRAMES) * HEIGHT);
+        this.visible = Math.round((RISE_FRAMES - this.t) * RISE_SPEED);
         if (this.t <= 0) {
           this.phase = 'up';
           this.t = HOLD_FRAMES;
@@ -133,7 +143,7 @@ export class Piranha extends Enemy {
         }
         break;
       case 'sinking':
-        this.visible = Math.round((this.t / RISE_FRAMES) * HEIGHT);
+        this.visible = HEIGHT - Math.round((RISE_FRAMES - this.t) * RISE_SPEED);
         if (this.t <= 0) {
           this.phase = 'hidden';
           this.t = HIDDEN_FRAMES;

@@ -4,8 +4,12 @@
  */
 export type Collision = 'none' | 'solid' | 'top';
 
-/** `poison`: a Lost Levels poison mushroom, which hurts the player like an enemy. */
-export type BlockContent = 'coin' | 'powerup' | '1up' | 'star' | 'coins10' | 'vine' | 'poison' | 'none';
+/**
+ * `poison`: a Lost Levels poison mushroom, which hurts the player like an enemy. `clock`: a Lost
+ * Levels Clock (+100 time); its block then holds a coin (see T.Q_CLOCK).
+ */
+export type BlockContent =
+  'coin' | 'powerup' | '1up' | 'star' | 'coins10' | 'vine' | 'poison' | 'clock' | 'none';
 
 export interface TileDef {
   readonly id: number;
@@ -69,7 +73,9 @@ export const T = {
   TREE_TRUNK: def('tree-trunk', 'none'),
   MUSHROOM_TOP: def('mushroom-top', 'solid'),
   MUSHROOM_STEM: def('mushroom-stem', 'none'),
-  LAVA: def('lava', 'none', { hazard: true }),
+  // Scenery only: the original's wavesLava is a back-layer Scenery (Level.as, Scenery.as), so a
+  // player falls through it and dies off the bottom of the screen like in any pit.
+  LAVA: def('lava', 'none'),
   BRIDGE: def('bridge', 'solid'),
   CHAIN: def('chain', 'none'),
   CASTLE_BRICK: def('castle-brick', 'solid'),
@@ -83,6 +89,12 @@ export const T = {
   WALL: def('wall', 'none'),
   /** Invisible solid placeholder while a block-bump effect animates the real tile. */
   BUMPING: def('bumping', 'solid'),
+  /**
+   * Lost Levels 9-1's two `?` blocks on one cell (24,9 on normal difficulty: a Clock block and a
+   * coin block; Level.as builds one ItemBlock per `()`-separated token and a bump hits one of
+   * them, lines 2047-2051): the first bump releases the Clock, the next one gives the coin.
+   */
+  Q_CLOCK: def('question-clock', 'solid', { block: { kind: 'question', content: 'clock' } }),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
@@ -110,6 +122,7 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   '4': T.Q_POISON,
   '5': T.BRICK_POISON,
   '6': T.HIDDEN_POISON,
+  Q: T.Q_CLOCK,
   B: T.HARD,
   u: T.USED,
   '[': T.PIPE_TL,

@@ -36,7 +36,8 @@ import { PowerUp } from '../entities/objects/powerup';
 import { Pickup } from '../entities/objects/pickup';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
-import { BlockBump, BrickPiece, CoinPop, Explosion, ScorePopup } from '../entities/effects/effects';
+import { BlockBump, BrickPiece, CoinPop, Corpse, Explosion, ScorePopup } from '../entities/effects/effects';
+import { castleFlagStart, Firework, FIREWORK_FRAMES, FIREWORK_TILES } from '../entities/effects/firework';
 import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { shellKickSeqScore, stompScore } from '../rules/score';
 import type { GameContext, GameState } from '../context';
@@ -54,7 +55,7 @@ export type WorldEvent =
   | { type: 'exit'; next: string }
   /** `player`: index of the player whose death ended the attempt (they pick the next hero). */
   | { type: 'died'; player?: number }
-  | { type: 'checkpoint'; x: number }
+  | { type: 'checkpoint'; x: number; y: number }
   /** The castle maze moved the players from column `from` to `to` (informational). */
   | { type: 'loop'; from: number; to: number };
 
@@ -65,7 +66,38 @@ export interface WorldStart {
   mode?: LevelData['startMode'];
   /** Timer to continue with (transfers within one stage). */
   time?: number;
+  /**
+   * Remove the enemies within 6 tiles of the arrival point (Level.destroyNearbyEnemies):
+   * 'all' at a checkpoint restart (startAtHalfwayPoint), 'keep-piranhas' on a pipe or pit
+   * arrival (changePlayerLoc calls destroyNearbyEnemies(true)).
+   */
+  clearEnemies?: 'all' | 'keep-piranhas';
 }
+
+/**
+ * Pipe travel speed: the original's vertPipeSpeed = horzPipeSpeed = 50 Flash px/s
+ * (Character.as), with 2 Flash px to our px and 60 frames a second: 25/60 px per frame, in subpixels.
+ */
+const PIPE_SPEED = px(25) / 60;
+/** Character.PIPE_LEV_TRANS_DELAY (500 ms): hidden in the pipe before the next area loads. */
+const PIPE_TRANSFER_DELAY_FRAMES = 30;
+/** Level.HW_ENEMY_REMOVAL_DIST = TILE_SIZE*6: enemies closer than this (px, horizontally) go. */
+const ENEMY_REMOVAL_PX = 6 * 16;
+/**
+ * The vine you arrive on in a sky area (Vine.growFromStgBot): it grows from the screen bottom
+ * (GLOB_STG_BOT) until its top is 5 tiles up, at riseSpeed 60 Flash px/s (0.5 px a frame).
+ */
+const ARRIVAL_VINE_TILES = 5;
+const ARRIVAL_VINE_RISE = 0.5;
+/** Synthetic input for the vine arrival (Character.climbVineStarter sets upBtn). */
+const AUTO_CLIMB_INPUT: InputFrame = {
+  held: (a) => a === 'up',
+  pressed: () => false,
+  released: () => false,
+  bufferedJump: () => false,
+  consumeJumpBuffer: () => undefined,
+  dirX: 0,
+};
 
 /** The clock a level starts with: a carried timer, else the level's, else the stage's (or 400). */
 export function startTime(level: LevelData, state: GameState, start: WorldStart = {}): number {
@@ -77,7 +109,10 @@ type PipeAnim = {
   player: Player;
   dir: PipeDir;
   t: number;
-  frames: number;
+  /** Subpixel y (down) or x (right) of the body when it started into the pipe. */
+  from: number;
+  /** Frames left hidden in the pipe before the transfer (PIPE_LEV_TRANS_DELAY); null while moving. */
+  hold: number | null;
   target: WorldEvent & { type: 'pipe' };
 };
 
@@ -112,23 +147,39 @@ export class World {
   private timerTick = 0;
   hurryPlayed = false;
   private spawnIndex = 0;
-  private readonly spawns: EntitySpawn[];
+  private spawns: EntitySpawn[];
   /** Subpixel y of the water line in water levels; Infinity elsewhere. */
   waterTop = Infinity;
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
   private leaving = false;
   private cheepTimer = 0;
-  private bulletTimer = 60;
+  /** Frames since the lead player last moved right (flying Cheep Cheeps' reverse rule). */
+  private cheepNoRight = 0;
+  /** Flying-bill respawn timer in frames (0 = stopped) and the one bill it has out. */
+  private bulletTimer = 0;
+  private flyingBill: BulletBill | null = null;
   /** Bowser's long-range flames (`bowser-fire` zone), or null. */
   private readonly bowserFire: BowserFire | null;
   /** Castle maze: lead player's centre x last frame (px) and the loop checkpoints passed. */
   private loopPrevX: number | null = null;
   private readonly loopChecks = new Set<string>();
   private readonly coinBlocks = new Map<string, { left: number; until: number }>();
-  private clear: { phase: ClearPhase; t: number; pole: Flagpole; walkTo: number; player: Player } | null =
-    null;
+  private clear: {
+    phase: ClearPhase;
+    t: number;
+    pole: Flagpole;
+    walkTo: number;
+    player: Player;
+    /** Fireworks to set off after the tally (1, 3 or 6, else 0): StatManager.touchFlag's HUD time. */
+    fireworks: number;
+  } | null = null;
   private pipeAnim: PipeAnim | null = null;
-  private pipeExit: { t: number; frames: number } | null = null;
+  /** Rising out of a pipe; `feet` is the subpixel y of the pipe top, where the rise ends. */
+  private pipeExit: { t: number; feet: number } | null = null;
+  /** The vine grown for a sky-area arrival while the players climb it on their own. */
+  private vineArrival: Vine | null = null;
+  /** The HUD leaves the time blank (the vine arrival's watch mode: Level.as tsTxt.hideTime). */
+  timeHidden = false;
   private readonly deathTimers = new Map<Player, number>();
   private readonly respawnTimers = new Map<Player, number>();
   private checkpointSent = false;
@@ -136,6 +187,8 @@ export class World {
   bossClear: { t: number; stop?: number } | null = null;
   /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
   castleText: string[] = [];
+  /** Drawn behind the tiles and sprites (the ending's credits, which the original adds under the level). */
+  backdrop: ((r: Renderer) => void) | null = null;
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
   autoWalk = false;
   readonly flagpole: Flagpole | null = null;
@@ -155,12 +208,17 @@ export class World {
     this.rng = new Rng(level.id.length * 7919 + 1);
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     this.time = startTime(level, state, start);
-    this.spawns = [...level.entities].sort((a, b) => a.x - b.x);
-    this.bowserFire = BowserFire.forLevel(level);
-
     const sx = start.x ?? level.start.x;
     const sy = start.y ?? level.start.y;
     const mode = start.mode ?? level.startMode;
+    // Swimming Cheep Cheeps get their random start tile now, like the original's calcPosition at
+    // level load, so the shifted fish still spawns off screen. A climb start replaces the map's
+    // vine at the start column with the arrival vine (below).
+    this.spawns = level.entities
+      .map((e) => Cheep.placeSwimmer(e, this.rng))
+      .filter((e) => !(mode === 'climb' && e.type === 'vine' && e.x === sx))
+      .sort((a, b) => a.x - b.x);
+    this.bowserFire = BowserFire.forLevel(level);
     const defs: [CharacterDef, string, number][] = [[state.character, state.powerState, state.hp]];
     if (state.character2) defs.push([state.character2, state.powerState2, state.hp2]);
     defs.forEach(([def, power, hp], i) => {
@@ -179,24 +237,57 @@ export class World {
       Object.assign(p.scratch, i === 0 ? state.kit : state.kit2);
       if (mode === 'fall') p.body.y = px(-32) - px(i * 24);
       else if (mode === 'climb') {
-        // Hanging on the vine entity at the start column, feet on the start tile.
-        const spec = level.entities.find((e) => e.type === 'vine' && e.x === sx);
-        const len = Number(spec?.props?.len ?? 8);
-        const vine = new Vine(sx, spec?.y ?? sy, len);
-        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx };
-        p.body.y = feet - px(hb.h) - px(i * 24);
+        // The original's vineStart (Level.as watchModeOverrideVine): the vine grows from the
+        // screen bottom while the player is hidden (Vine.initiate → growFromStgBot), then
+        // Character.climbVineStarter puts him on it with his head at the screen bottom
+        // (ny = GLOB_STG_BOT + height) and holds up; updateVineArrival steps him off at the top.
+        if (!this.vineArrival) {
+          this.vineArrival = new Vine(sx, SCREEN_H / 16 - 1, ARRIVAL_VINE_TILES);
+          this.vineArrival.growFromBase(ARRIVAL_VINE_RISE);
+          this.entities.push(this.vineArrival);
+        }
+        const vine = this.vineArrival;
+        def.behaviour.onGrabVine?.(p); // a carried morph ball unrolls before the height is used
+        const h = p.body.h;
+        // `bottom` leaves room for the body below the base: he starts there and climbs up.
+        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + toPx(h) };
+        p.body.x = vine.centerX - (p.body.w >> 1);
+        p.body.y = px(vine.basePx);
         p.anim = 'climb';
+        p.hidden = true;
+        p.frozen = true;
+        this.timeHidden = true;
       } else if (mode === 'pipe-exit') {
-        // Start inside the pipe below (centred on the 2-wide pipe) and rise out; P2 arrives a moment later.
+        // Character.exitPipeVert: start one body height below the pipe top (y = startPipeLoc +
+        // height), centred on the 2-wide pipe, and rise out; P2 arrives a moment later.
         p.body.x += px(8) - px(i * 20);
-        p.body.y = feet + px(8);
+        p.body.y = feet;
         p.frozen = true;
         if (i > 0) p.hidden = true;
-        this.pipeExit = { t: 0, frames: hb.h + 8 };
+        this.pipeExit = { t: 0, feet };
       } else if (mode === 'autowalk') this.autoWalk = true;
       this.players.push(p);
     });
+    // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
+    // the main area after it starts its own.
+    if (this.autoWalk) this.time = null;
     this.camera.snapTo(this.player.body.x);
+    if (start.clearEnemies) {
+      // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
+      // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
+      // transporter at the right edge of the start cell (the pipe's middle; pitTransferEnd is
+      // shiftRight), a checkpoint from the player's centre. Fire bars and lava balls are
+      // projectiles there (FireBar, LavaFireBall), not enemies.
+      const x0 = mode === 'pipe-exit' || mode === 'fall' ? tileToSub(sx + 1) : this.player.centerX;
+      const keepPiranhas = start.clearEnemies === 'keep-piranhas';
+      this.spawns = this.spawns.filter((s) => {
+        const cx = tileToSub(s.x) + px(8 + Number(s.props?.dx ?? 0));
+        if (Math.abs(cx - x0) >= px(ENEMY_REMOVAL_PX)) return true;
+        const e = this.makeEntity(s);
+        const enemy = e instanceof Enemy && !(e instanceof Firebar) && !(e instanceof Podoboo);
+        return !enemy || (keepPiranhas && e instanceof Piranha);
+      });
+    }
     // Water levels (any swimming theme): everything from the first row of wave tiles down is swimmable.
     if (isWaterTheme(level.theme)) {
       let row = 0;
@@ -280,8 +371,9 @@ export class World {
   }
 
   private makeEntity(s: EntitySpawn): Entity | null {
-    const x = tileToSub(s.x);
-    const y = tileToSub(s.y);
+    // `dx` / `dy`: the original's half-tile shiftRight / shiftUp nudges, in px (convert-smbc.mjs).
+    const x = tileToSub(s.x) + px(Number(s.props?.dx ?? 0));
+    const y = tileToSub(s.y) + px(Number(s.props?.dy ?? 0));
     switch (s.type) {
       case 'goomba':
         return new Goomba(x + px(2), y + px(2));
@@ -301,7 +393,9 @@ export class World {
         return new Piranha(s.x, s.y, true, !!s.props?.red);
       case 'cheep-red':
       case 'cheep-grey':
-        return new Cheep(x + px(2), y + px(2), s.type === 'cheep-red' ? 'red' : 'grey');
+        // The map's colour is ignored, as in the original (Level.as lines 953-958); the start tile
+        // was already moved by Cheep.placeSwimmer.
+        return Cheep.swimmer(x, y, this.rng);
       case 'blooper':
         return new Blooper(x + px(2), y + px(2));
       case 'podoboo':
@@ -530,6 +624,7 @@ export class World {
 
     this.tickTimer();
     this.spawnPending();
+    if (this.vineArrival) this.updateVineArrival();
 
     this.players.forEach((p, i) => {
       if (p.dead || p.out) return;
@@ -544,16 +639,26 @@ export class World {
       }
       let input = inputs[i] ?? NO_INPUT;
       if (this.autoWalk) input = AUTO_WALK_INPUT;
+      else if (this.vineArrival && p.vine) input = AUTO_CLIMB_INPUT;
       p.inWater = p.body.y + (p.body.h >> 1) >= this.waterTop;
       this.grabVines(p, input);
       const spring = this.springUnder(p);
       if (spring) {
-        spring.ride(input.held('jump'));
+        spring.ride(input.pressed('jump'));
         p.anim = 'jump';
         return;
       }
       p.update(input, this.map, this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
-      p.def.behaviour.update(p, input, this);
+      // No attacks, tools or thrusts on a vine: every hero's checkState returns on ST_VINE (e.g.
+      // Link.checkState on "vine", MarioBase.checkState) and pressAtkBtn / pressSpcBtn return there.
+      if (p.vine) {
+        p.activeMelee = null;
+        p.scratch.upThrust = 0;
+        p.scratch.downThrust = 0;
+        p.def.behaviour.vineTick?.(p);
+      } else p.def.behaviour.update(p, input, this);
+      // Springboards are solid: keep the player out of their box (landing on top starts a ride).
+      for (const e of this.entities) if (e instanceof Spring && e.alive) e.block(p);
       if (p.body.x < this.camera.x) {
         p.body.x = this.camera.x;
         if (p.body.vx < 0) p.body.vx = 0;
@@ -639,6 +744,44 @@ export class World {
     }
   }
 
+  /**
+   * The vine arrival after the vine has grown: the players appear and climb (AUTO_CLIMB_INPUT);
+   * each one whose head reaches the vine's top steps off to the right
+   * (Character.checkVinePosition → getOffVine in watch mode: x = vine.hRht + hWidth*.5, then
+   * nx += 5 Flash px) and falls; play and the time display resume once all are off.
+   */
+  private updateVineArrival(): void {
+    const v = this.vineArrival as Vine;
+    let climbing = false;
+    for (const p of this.players) {
+      if (p.dead || p.out) continue;
+      const on = p.vine !== null && p.vine.x === v.centerX;
+      if (on && !v.grown) {
+        climbing = true;
+        continue;
+      }
+      if (p.frozen && p.hidden) {
+        p.frozen = false;
+        p.hidden = false;
+      }
+      if (!on) continue;
+      if (p.body.y > px(v.topPx)) {
+        climbing = true;
+        continue;
+      }
+      p.letGo();
+      p.leftVine = v.centerX;
+      p.facing = 1;
+      p.body.x = v.body.x + v.body.w + px(2.5);
+      p.body.vy = 0;
+      p.body.onGround = false;
+    }
+    if (!climbing) {
+      this.vineArrival = null;
+      this.timeHidden = false;
+    }
+  }
+
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
   private transfer(target: { level: string; x: number; y: number }, mode: 'climb' | 'fall'): void {
     if (this.leaving) return;
@@ -666,8 +809,11 @@ export class World {
       return;
     }
     if (p.vineLock > 0 || p.dead || p.frozen || p.sliding > 0) return;
+    // A vine just stepped off (Character.getOffVine leaves him beside its hit box) is not grabbed
+    // again until he lands or moves out of reach.
+    if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
     for (const e of this.entities) {
-      if (!(e instanceof Vine) || !e.alive) continue;
+      if (!(e instanceof Vine) || !e.alive || e.centerX === p.leftVine) continue;
       const v = e.body;
       // Generous sideways reach (the original lets you grab from beside the block it grew from).
       const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);
@@ -679,6 +825,7 @@ export class World {
         p.body.vy = 0;
         p.jumping = false;
         p.anim = 'climb';
+        p.def.behaviour.onGrabVine?.(p);
         return;
       }
     }
@@ -699,7 +846,11 @@ export class World {
       const feet = b.y + b.h;
       const overlapX = b.x < s.x + s.w && b.x + b.w > s.x;
       if (!overlapX) continue;
-      if (e.busy) return e;
+      // A spring in use belongs to its rider; another player only meets its solid box.
+      if (e.busy) {
+        if (e.ridBy(p)) return e;
+        continue;
+      }
       if (b.vy > 0 && feet >= s.y && feet <= s.y + px(10) && b.prevBottom <= s.y + px(4)) {
         e.press(p);
         return e;
@@ -708,45 +859,66 @@ export class World {
     return null;
   }
 
-  /** Bridge levels: red Cheep Cheeps leap from below while the lead player is inside a `cheeps` zone. */
+  /**
+   * Bridge levels: red Cheep Cheeps leap from below while the lead player is inside a `cheeps`
+   * zone (FlyingCheepSpawner.as). With fewer than MAX_CHEEP_NORMAL = 3 out and no spawn pending it
+   * waits a random 600-1050 ms (36-63 frames) and then launches one if still in the zone and below
+   * the limit. Fish may only fly left once the lead has not moved right for 2 s
+   * (CAN_REVERSE_DIRECTION_DELAY = 2000).
+   */
   private flyingCheeps(): void {
     const lead = this.rightmost();
     if (!lead || this.leaving) return;
+    if (lead.body.vx > 0) this.cheepNoRight = 0;
+    else this.cheepNoRight++;
     const inZone = this.level.zones.some(
       (z) => z.kind === 'cheeps' && lead.body.x >= tileToSub(z.x) && lead.body.x < tileToSub(z.x + z.w),
     );
-    if (!inZone) return;
-    if (--this.cheepTimer > 0) return;
-    this.cheepTimer = 24 + this.rng.int(40);
     let flying = 0;
     for (const e of this.entities) if (e instanceof Cheep && e.alive && e.flying) flying++;
-    if (flying >= 3) return;
-    const x = this.camera.x + px(32 + this.rng.int(SCREEN_W - 64));
-    const c = new Cheep(x, px(SCREEN_H + 8), 'red', true);
-    c.body.vx = ((x < lead.body.x ? 1 : -1) * (0x00400 + this.rng.int(0x00800))) | 0;
-    c.body.vy = -(0x04800 + this.rng.int(0x01000));
-    this.spawn(c);
+    if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < 3) {
+      const marioType = lead.def.id === 'mario' || lead.def.id === 'luigi';
+      const target = {
+        centerX: lead.centerX,
+        vx: lead.body.vx,
+        marioWalk: marioType ? lead.profile.maxWalk : null,
+      };
+      this.spawn(Cheep.leaper(this.rng, this.camera.x, SCREEN_H, target, this.cheepNoRight >= 120));
+      flying++;
+    }
+    if (inZone && flying < 3 && this.cheepTimer === 0) this.cheepTimer = 36 + this.rng.int(28);
   }
 
-  /** 5-3 style: Bullet Bills fly in from the screen edges while the lead is in a `bullets` zone. */
+  /**
+   * 5-3 style flying Bullet Bills (`com/smbc/level/BulletBillSpawner.as`): one at a time, each sent
+   * 250 ms (`DEL_DEFAULT`) after the last is gone, from just off the right edge flying left, its
+   * bottom on the grid line nearest the player's feet plus -2..2 tiles, kept at least 3 tiles below
+   * the top of the screen and 1 tile above the bottom (`respawnTmrHandler`, `bulletBillDestroyed`).
+   */
   private flyingBullets(): void {
     const lead = this.rightmost();
     if (!lead || this.leaving) return;
     const inZone = this.level.zones.some(
       (z) => z.kind === 'bullets' && lead.body.x >= tileToSub(z.x) && lead.body.x < tileToSub(z.x + z.w),
     );
-    if (!inZone) return;
-    if (--this.bulletTimer > 0) return;
-    this.bulletTimer = 90 + this.rng.int(90);
-    let flying = 0;
-    for (const e of this.entities) if (e instanceof BulletBill && e.alive) flying++;
-    if (flying >= 2) return;
-    const fromLeft = this.rng.int(4) === 0;
-    const y = px((3 + this.rng.int(9)) * 16 + 2);
-    const x = fromLeft ? this.camera.x - px(14) : this.camera.right;
-    const bill = new BulletBill(x, y, fromLeft ? 1 : -1);
-    bill.body.vx = (fromLeft ? 1 : -1) * BULLET_SPEED;
-    this.spawn(bill);
+    if (this.flyingBill && !this.flyingBill.alive) {
+      this.flyingBill = null;
+      this.bulletTimer = 15; // bulletBillDestroyed restarts the 250 ms timer
+    }
+    if (this.bulletTimer > 0) {
+      if (--this.bulletTimer > 0) return;
+      if (!inZone || this.flyingBill) return;
+      const feet = toPx(lead.body.y + lead.body.h);
+      let bottom = Math.round(feet / 16) * 16 + (this.rng.int(5) - 2) * 16;
+      while (bottom > SCREEN_H - 16) bottom -= 16;
+      while (bottom < 3 * 16) bottom += 16;
+      const bill = new BulletBill(this.camera.right, px(bottom - 14), -1);
+      bill.body.vx = -BULLET_SPEED;
+      this.flyingBill = bill;
+      this.spawn(bill);
+      return;
+    }
+    if (inZone && !this.flyingBill) this.bulletTimer = 15;
   }
 
   private rightmost(): Player | null {
@@ -871,6 +1043,12 @@ export class World {
         this.spawn(new PowerUp(tx, ty, 'poison'));
         this.audio.sfx('powerup-appear');
         break;
+      case 'clock':
+        // The Clock comes out of its block; the coin block on the same cell is next (T.Q_CLOCK).
+        this.spawn(new PowerUp(tx, ty, 'clock'));
+        this.audio.sfx('powerup-appear');
+        restore = T.Q_COIN;
+        break;
       case 'vine':
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
         this.audio.sfx('vine');
@@ -879,6 +1057,24 @@ export class World {
         break;
     }
     this.bump(tx, ty, frame, restore);
+  }
+
+  /**
+   * Any hero's Clock (Character.as, PickupInfo.CLOCK): Clock.SCORE_VALUE = 1000 points and
+   * Clock.TIME_TO_ADD = 100 on the timer; back above the hurry time, the hurry tune ends
+   * (StatManager.checkCancelSecondsLeft).
+   */
+  private collectClock(e: PowerUp): void {
+    this.addScore(1000, e.body.x, e.body.y);
+    this.audio.sfx('powerup');
+    if (this.time === null) return;
+    this.time += 100;
+    if (this.hurryPlayed && this.time > HURRY_TIME) {
+      this.hurryPlayed = false;
+      this.audio.setTempoScale(1);
+      // Under star power the star tune keeps playing; the level tune returns when it ends.
+      if (!this.players.some((p) => p.star > 0)) this.audio.playMusic(this.level.music);
+    }
   }
 
   private bump(tx: number, ty: number, frame: string, restore: number): void {
@@ -933,7 +1129,8 @@ export class World {
           // the character's onPowerUp.
           if (e.item === 'poison') {
             if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
-          } else p.def.behaviour.onPowerUp(p, e.item, this);
+          } else if (e.item === 'clock') this.collectClock(e);
+          else p.def.behaviour.onPowerUp(p, e.item, this);
         }
       } else if (e instanceof Pickup) {
         if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();
@@ -1123,7 +1320,9 @@ export class World {
   private updateDeath(p: Player): void {
     const t = (this.deathTimers.get(p) ?? 0) + 1;
     this.deathTimers.set(p, t);
-    if (t === 30) p.body.vy = -0x04000;
+    // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
+    // has no hop: the original's Character.initiatePitDeath only starts the die timer.
+    if (t === 30 && toPx(p.body.y) <= SCREEN_H) p.body.vy = -0x04000;
     if (t > 30) {
       p.body.vy += 0x00280;
       p.body.y += velToSub(p.body.vy);
@@ -1210,40 +1409,76 @@ export class World {
       player: p,
       dir,
       t: 0,
-      frames: dir === 'down' ? toPx(p.body.h) + 8 : 24,
+      from: dir === 'down' ? p.body.y : p.body.x,
+      hold: null,
       target: { type: 'pipe', target: z.target },
     };
   }
 
+  /**
+   * Into a pipe at PIPE_SPEED (Character.updateStats, pType "enterVert" / "enterHorz"). Down ends
+   * once the body's top is HRECT_PADDING_Y (6 Flash px, 3 of ours) below where the feet started;
+   * right once its left edge is HRECT_PADDING_X (4 Flash px, 2 of ours) past where its right
+   * edge started. Then the player is hidden and the next area loads PIPE_LEV_TRANS_DELAY later.
+   */
   private updatePipeAnim(): void {
     const a = this.pipeAnim as PipeAnim;
     const p = a.player;
     a.t++;
+    if (a.hold !== null) {
+      if (--a.hold <= 0) {
+        this.events.push(a.target);
+        this.pipeAnim = null;
+      }
+      return;
+    }
     const b = p.body;
-    if (a.dir === 'down') b.y += px(1);
-    else if (a.dir === 'right') {
-      b.x += px(1);
+    const d = Math.round(a.t * PIPE_SPEED);
+    let inside: boolean;
+    if (a.dir === 'down') {
+      b.y = a.from + d;
+      inside = b.y - px(3) > a.from + b.h;
+    } else {
+      b.x = a.from + d;
       p.anim = 'walk';
       if (a.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
+      inside = b.x - px(2) > a.from + b.w;
     }
-    if (a.t >= a.frames) {
-      this.events.push(a.target);
-      this.pipeAnim = null;
+    if (inside) {
+      p.hidden = true;
+      a.hold = PIPE_TRANSFER_DELAY_FRAMES;
     }
   }
 
+  /**
+   * Out of a pipe (Character.exitPipeVert, pType "exitVert"): each player rises at PIPE_SPEED
+   * until the feet reach the pipe top, and stops there (completePipeExit: ny = startPipeLoc,
+   * onGround). Player 2 starts 20 frames after player 1.
+   */
   private updatePipeExit(): void {
     const e = this.pipeExit as NonNullable<typeof this.pipeExit>;
     e.t++;
+    let rising = false;
     for (const p of this.players) {
-      if (p.index === 0 || e.t > 20) {
-        p.hidden = false;
-        p.body.y -= px(1);
+      const t = e.t - (p.index === 0 ? 0 : 20);
+      if (t <= 0) {
+        rising = true;
+        continue;
       }
+      p.hidden = false;
+      const b = p.body;
+      if (b.y + b.h <= e.feet) continue;
+      const step = Math.round(t * PIPE_SPEED) - Math.round((t - 1) * PIPE_SPEED);
+      b.y = Math.max(e.feet - b.h, b.y - step);
+      if (b.y + b.h > e.feet) rising = true;
     }
-    if (e.t >= e.frames + 20) {
+    if (!rising) {
       this.pipeExit = null;
-      for (const p of this.players) p.frozen = false;
+      for (const p of this.players) {
+        p.frozen = false;
+        p.body.vy = 0;
+        p.body.onGround = true;
+      }
     }
   }
 
@@ -1259,7 +1494,7 @@ export class World {
         this.players.some((p) => p.body.x >= tileToSub(z.x))
       ) {
         this.checkpointSent = true;
-        this.events.push({ type: 'checkpoint', x: z.x });
+        this.events.push({ type: 'checkpoint', x: z.x, y: z.y ?? 12 });
       }
     }
   }
@@ -1267,6 +1502,7 @@ export class World {
   /* ---------- Level clear ---------- */
 
   private startClear(pole: Flagpole, p: Player): void {
+    this.destroyEnemiesAndProjectilesOnScreen();
     for (const o of this.players) {
       o.frozen = true;
       o.body.vx = 0;
@@ -1284,8 +1520,54 @@ export class World {
     this.spawn(new FlagScore(pole, String(score)));
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
     const walkTo = tileToSub((exit?.x ?? pole.tx) + 6) + px(8);
-    this.clear = { phase: 'slide', t: 0, pole, walkTo, player: p };
+    // StatManager.touchFlag keeps the HUD time (timeLeftBeatLevel); when the tally ends,
+    // timeScoreConverterTmrLsr sets off that many fireworks if its last digit is 1, 3 or 6.
+    const digit = (this.time ?? 0) % 10;
+    const fireworks = digit === 1 || digit === 3 || digit === 6 ? digit : 0;
+    this.clear = { phase: 'slide', t: 0, pole, walkTo, player: p, fireworks };
     this.time ??= 0;
+  }
+
+  /**
+   * EventManager.touchedFlagPole → Level.destroyAllEnemiesAndProjectilesOnScreen: every enemy and
+   * projectile on the stage vanishes (no score, no death animation). An object is on the stage
+   * while within 2 tiles (Flash 64 px, 32 px here) of either screen edge
+   * (AnimatedObject.checkStgPos). Brick pieces, coins popping from blocks and falling defeated
+   * enemies are the original's Projectiles / Enemies too; spawners and pickups stay.
+   */
+  private destroyEnemiesAndProjectilesOnScreen(): void {
+    const left = this.camera.x - px(32);
+    const right = this.camera.right + px(32);
+    for (const e of this.entities) {
+      if (!e.alive || e.body.x + e.body.w < left || e.body.x > right) continue;
+      if (
+        e instanceof Enemy ||
+        e instanceof Projectile ||
+        e instanceof BrickPiece ||
+        e instanceof CoinPop ||
+        e instanceof Corpse
+      )
+        e.destroy();
+    }
+  }
+
+  /** Level.launchNextFirework: the `i`-th firework over the castle flag, worth ScoreValue.FIREWORK. */
+  private launchFirework(c: NonNullable<typeof this.clear>, i: number): void {
+    const [dx, dy] = FIREWORK_TILES[i] ?? [0, 0];
+    // The castle whose flag rises: the nearest one past the pole.
+    let castle: Decoration | null = null;
+    for (const e of this.entities)
+      if (e instanceof Decoration && e.name.startsWith('castle') && e.body.x > c.pole.body.x)
+        if (!castle || e.body.x < castle.body.x) castle = e;
+    const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
+    // No castle drawn: where a small castle's flag would start, over the exit on the ground (row 13).
+    const flag = castle ? castleFlagStart(castle) : { x: (exit?.x ?? c.pole.tx + 6) * 16, y: 13 * 16 - 72 };
+    // Level.launchNextFirework: on x-3 levels every position moves one tile right.
+    const x = flag.x + 8 + (dx + (this.level.stage === 3 ? 1 : 0)) * 16;
+    const y = flag.y - 16 + dy * 16;
+    this.spawn(new Firework(x, y));
+    this.audio.sfx('firework');
+    this.addScore(500);
   }
 
   /** Score popups keep floating up and expiring through the clear sequences, while all else holds still. */
@@ -1357,14 +1639,23 @@ export class World {
           c.t = 0;
         }
         break;
-      case 'flag':
+      case 'flag': {
         if (c.t === 1) for (const e of this.entities) if (e instanceof Decoration) e.raiseFlag();
-        if (c.t >= 90) {
+        // Level.raiseFlag starts the castle flag and the first firework together; each firework
+        // launches the next when it is removed (Firework.cleanUp), and the level ends
+        // WIN_END_TMR_FIREWORKS_DUR (1 s) after the last one. Without fireworks the wait stays
+        // 90 frames.
+        const fw = (c.t - 1) / FIREWORK_FRAMES;
+        if (Number.isInteger(fw) && fw < c.fireworks) this.launchFirework(c, fw);
+        for (const e of this.entities)
+          if (e.alive && (e instanceof Decoration || e instanceof Firework)) e.update();
+        if (c.t >= (c.fireworks > 0 ? 1 + c.fireworks * FIREWORK_FRAMES + 60 : 90)) {
           c.phase = 'done';
           const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
           this.events.push({ type: 'exit', next: exit?.next ?? 'end' });
         }
         break;
+      }
       case 'done':
         break;
     }
@@ -1405,10 +1696,11 @@ export class World {
     for (const e of this.entities) if (e instanceof Bowser) e.update(this);
     // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
     const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);
+    // No points: BowserAxe.as only calls breakBridgeStart/Inc/End (Bowser.as), never die(), and
+    // the fall below the screen (AnimatedObject.checkDosSides -> destroy) scores nothing either.
     if (bowser && c.t === 60) {
       bowser.fallDead();
       this.audio.sfx('bowser-fall');
-      this.addScore(5000, bowser.body.x, bowser.body.y);
     }
     if (c.t === 120) this.audio.playJingle('castle-clear');
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
@@ -1431,13 +1723,15 @@ export class World {
     }
     if (c.stop === undefined) return;
     // Then Toad's thanks; 1.5 s later the news, and 3.5 s after it the next level (the
-    // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle hands the thanks
-    // over to the ending.
+    // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle says instead that
+    // the quest is over (ScreenManager.addTxtTmrHandler, GameTextMessages.QUEST_IS_OVER) and hands
+    // over to the ending 2.5 s later (START_MOVE_CREDITS_TMR_DUR), where the credits roll.
     const next = exit?.next ?? 'end';
     const s = c.t - c.stop;
     if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
     if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
-    if (s >= (next === 'end' ? 120 : 330)) {
+    if (s === 120 && next === 'end') this.castleText.push('', 'YOUR QUEST IS OVER.');
+    if (s >= (next === 'end' ? 270 : 330)) {
       this.events.push({ type: 'exit', next });
       c.t = -100000;
     }
@@ -1477,6 +1771,7 @@ export class World {
       reduceFlashing: this.ctx.reduceFlashing,
     };
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
+    this.backdrop?.(r);
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     renderTiles(r, view, this.map);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);

@@ -37,7 +37,7 @@ export interface CharacterBehaviour {
   /** Runs after movement each frame. Attacks, slides, weapon logic. */
   update(p: Player, input: InputFrame, world: World): void;
   /** A helpful item was collected (a poison mushroom is handled by the world, never here). */
-  onPowerUp(p: Player, kind: Exclude<PowerUpKind, 'poison'>, world: World): void;
+  onPowerUp(p: Player, kind: Exclude<PowerUpKind, 'poison' | 'clock'>, world: World): void;
   /** The player ran into an enemy without stomping. Return damage to deal instead of getting hurt, or null. */
   contactDamage(p: Player, enemy: Enemy, world: World): DamageSource | null;
   /** Apply a hit to the player (already past invulnerability/star checks). */
@@ -50,6 +50,10 @@ export interface CharacterBehaviour {
   blocks?(p: Player, projectile: Projectile): boolean;
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
+  /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
+  onGrabVine?(p: Player): void;
+  /** Runs instead of `update` each frame on a vine (no attacks there): timers that keep running. */
+  vineTick?(p: Player): void;
 }
 
 /** How a hero plays, shown on the "How to play" pages. Text is wrapped and upper-cased. */

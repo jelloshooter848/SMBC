@@ -237,7 +237,7 @@ describe('Lost Levels 8-3: Lakitu', () => {
         lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
         if (lakitu?.leaving) left = true;
         if (lakitu && !left) ys.add(toPx(lakitu.body.y));
-        if (f === 0) place(w, 14, 13); // end of the starting ledge: its start column comes on screen
+        if (f === 0) place(w, 25, 13); // just past the start column: Lakitu comes once the player is in
         if (f === 200 && lakitu) place(w, 60, 13); // past the end column
         return [];
       },
@@ -273,7 +273,7 @@ describe('Lost Levels 8-4: the last castle', () => {
       y: 10,
       exitDir: 'up',
     });
-    expect(pipeTarget(enterPipe('ll-8-4-water', 44, 10, 'right').events)).toEqual({
+    expect(pipeTarget(enterPipe('ll-8-4-water', 45, 10, 'right').events)).toEqual({
       level: 'll-8-4-end',
       x: 3,
       y: 10,

@@ -31,8 +31,8 @@ BBBBB........... ................ ..%%%%%%%%%%%%%% %%.............. ......%%%%%%
 lift-fall 18 7 len=4
 podoboo 20 12
 lift-fall 22 8 len=4
-firebar-ccw 167 7
-firebar-ccw 231 7
+firebar 167 7
+firebar 231 7
 podoboo 324 12
 bowser 328 9 attack=hammer
 axe 333 8

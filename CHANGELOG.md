@@ -8,6 +8,39 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+Every fix below follows the original Crossover 3.1.21 source; each report in `bug-reports/`
+(2026-10-05 batch) ends with a Status line naming what changed.
+
+- Level data: half-tile offsets from the original (shifted enemies, centred lifts), the 9-1
+  clock block, the ll-5-3 checkpoint row, and fire bars named by the direction they really turn.
+- Lifts: sideways, vertical, falling and balance lifts move on the original's paths and speeds;
+  balance lifts snap for 1000 points; lifts no longer carry players through walls; 2-4 and
+  ll-12-4 lifts reach where they should.
+- Castles: Bowser paces, jumps, chases, throws single hammers and aims his flames as in
+  the original, shows his true form after a fireball kill, and the axe no longer gives 5000;
+  fake Bowsers stay near their spot; fire bars turn at the right speed and direction; Podoboos
+  jump to the right height; lava drops the player in instead of killing with a hop.
+- Cannons and air: blaster timing and the two-bill limit, Bullet Bill speed, the 5-3 flying
+  bills, Lakitu's steering, throws, Spiny cap, start column, exit and respawn delay, and Hammer
+  Bros' pacing, jumps, single throws and hammer arc.
+- Water: swim stroke and sinking, sea-floor walking, swimming and leaping Cheep Cheeps, and
+  Bloopers (sink speed, rise rule, stompable out of water).
+- Enemies: paratroopa flight (red bob, green hops, sideways sway), piranha first rise, knocked-out
+  enemies fall upside down; springboards are two tiles tall, solid to players, launch every hero
+  with the original's power and gravity, and a second player can't ride someone else's.
+- Pipes, vines and warps: pipe travel speed and the hidden wait, pipe exits stop on the pipe,
+  vine areas start with an automatic climb, left/right steps off a vine, no attacks on a vine,
+  warps clear the old checkpoint and show the new world's card, the 1-2 intro walks itself,
+  enemies near a restart or pipe exit are cleared, and ll-9-1 restarts in its first room.
+- Level end: touching the flag clears enemies on screen, fireworks follow when the time ends in
+  1, 3 or 6, and the castle flag rises; 8-4 ends with "YOUR QUEST IS OVER." and a credits roll
+  (original text and music), then saves the file as cleared.
+- Mario and Luigi run across one-tile gaps at full speed.
+- Lost Levels: worlds A-D open after eight games are beaten, and 8-4, 9-4 and D-4 have their own
+  closing cards; saves that already had A-D open keep them.
+
 ## [0.2.1] - 2026-10-06
 
 ### Added

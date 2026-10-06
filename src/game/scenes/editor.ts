@@ -521,7 +521,8 @@ export class EditorScene implements Scene {
             this.addZone({ kind: 'exit', x: tx, next: 'end' });
             break;
           case 'checkpoint':
-            this.addZone({ kind: 'checkpoint', x: tx });
+            // The respawn stands on the bottom of the checkpoint's row (Level.as hwPnt).
+            this.addZone({ kind: 'checkpoint', x: tx, y: ty });
             break;
           case 'scrollStop':
             this.level.zones = this.level.zones.filter((z) => z.kind !== 'scrollStop');

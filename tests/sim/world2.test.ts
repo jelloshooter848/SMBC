@@ -39,7 +39,8 @@ describe('World 2: water', () => {
     expect(r.outcome).toBe('stopped');
     expect(r.world.player.inWater).toBe(true);
     expect(toPx(r.world.player.body.y + r.world.player.body.h)).toBe(13 * 16);
-    expect(r.frames).toBeGreaterThan(150); // slower than falling through air
+    // Slower than falling through air: the sink is capped at Character.as vyMaxPsvWater (2.08 px/f).
+    expect(r.frames).toBeGreaterThan(80);
   });
 
   it('tapping jump strokes upward but cannot leave the water', () => {
@@ -144,7 +145,7 @@ describe('World 2: water', () => {
 
 describe('World 2: bridges, springs, vines and lava', () => {
   it('flying cheep cheeps leap from below on the 2-3 bridges and can be stomped', () => {
-    const l = at(level('2-3'), 20, 12);
+    const l = at(level('2-3'), 20, 9); // on the bridge deck (row 10)
     const r = runSim({
       level: l,
       character: MARIO,
@@ -166,7 +167,7 @@ describe('World 2: bridges, springs, vines and lava', () => {
     expect(r.world.entities.some((e) => e instanceof Cheep)).toBe(false);
   });
 
-  it('the 2-1 springboard throws the player higher than a jump, higher still with jump held', () => {
+  it('the 2-1 springboard bounces the player 2.6 tiles, about 10 with jump pressed on it', () => {
     const l = level('2-1');
     expect(l.entities).toContainEqual({ type: 'spring', x: 188, y: 12 });
     const bounce = (hold: boolean): number => {
@@ -195,8 +196,11 @@ describe('World 2: bridges, springs, vines and lava', () => {
     };
     const plain = bounce(false);
     const held = bounce(true);
-    expect(plain).toBeGreaterThanOrEqual(80);
-    expect(held).toBeGreaterThan(plain + 48);
+    // SpringRed.springLaunch: 500 Flash px/s plain (2.6 tiles above the launch spot, one tile up),
+    // 1000 when jump is pressed on the spring (about 10.4 tiles).
+    expect(plain).toBeGreaterThanOrEqual(16 + 40);
+    expect(plain).toBeLessThanOrEqual(16 + 46);
+    expect(held).toBeGreaterThan(16 + 160);
   });
 
   it('hitting the vine brick grows a beanstalk; climbing off the top leads to the sky', () => {
@@ -231,16 +235,18 @@ describe('World 2: bridges, springs, vines and lava', () => {
   });
 
   it('the sky area starts on the vine, climbs up onto the clouds, and ends by dropping back into 2-1', () => {
+    // The arrival plays itself (the original's vineStart): the vine grows, Mario climbs it and
+    // steps off to the right with no input.
     const climb = runSim({
       level: level('2-1-sky'),
       character: MARIO,
-      script: { steps: [{ frame: 0, hold: ['up'] }] },
-      maxFrames: 120,
+      script: none,
+      maxFrames: 200,
     });
     const p = climb.world.player;
     expect(p.vine).not.toBeNull();
     expect(p.anim).toBe('climb');
-    expect(toPx(p.body.y)).toBeLessThan(224 - 60);
+    expect(toPx(p.body.y)).toBeLessThan(240);
 
     const bot = newBot();
     const r = runSim({
@@ -248,7 +254,7 @@ describe('World 2: bridges, springs, vines and lava', () => {
       character: MARIO,
       script: none,
       maxFrames: 3000,
-      controller: (w, f) => (f < 90 ? ['up'] : w.player.vine ? ['jump', 'right'] : autoPlayer(w, bot)),
+      controller: (w) => (w.player.vine || w.player.frozen ? [] : autoPlayer(w, bot)),
     });
     expect(r.outcome).toBe('pipe');
     expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({

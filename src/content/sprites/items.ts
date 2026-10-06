@@ -75,6 +75,27 @@ const poisonMushroom = [
   '...0000000000...',
 ];
 
+/* Lost Levels Clock (original art): a gold alarm clock with two bells, a white face and black
+ * hands at ten past ten, standing on two feet. */
+const clock = [
+  '..000......000..',
+  '.05560....06550.',
+  '.0550000000550..',
+  '..00555555500...',
+  '...0511111150...',
+  '..051111111150..',
+  '..051101111150..',
+  '.05111011101150.',
+  '.05111100011150.',
+  '.05111110111150.',
+  '.05111111111150.',
+  '..051111111150..',
+  '..055111111550..',
+  '...0555555550...',
+  '...050000050....',
+  '...00.....00....',
+];
+
 const flower0 = [
   '....00000000....',
   '..007777777700..',
@@ -276,7 +297,7 @@ const bowserFlame1 = [
   '......77777....77.......',
 ];
 
-/* Lift surface: one 8x8 plank, repeated twice. */
+/* Lift surface: one 8x8 plank (lifts draw one per 8 px of width), and two side by side. */
 const plank = [
   '00000000',
   '03333390',
@@ -291,20 +312,13 @@ const platform = plank.map((r) => r + r);
 
 const springPlate = ['.00000000000000.', '0bbbbbbbbbbbbbb0', '.00000000000000.'];
 const springBase = ['.00000000000000.', '0bbbbbbbbbbbbbb0', '.00000000000000.'];
-const coilRows = [
-  '...0220....0220.',
-  '..0220....0220..',
-  '.0220....0220...',
-  '..0220....0220..',
-  '...0220....0220.',
-  '....0220....0220',
-  '...0220....0220.',
-  '..0220....0220..',
-  '.0220....0220...',
-  '..0220....0220..',
-];
+/** `n` rows of the zig-zag coil (the indent cycles 3 2 1 2 3 4 3 2). */
+const coil = (n: number): string[] =>
+  Array.from({ length: n }, (_, i) => {
+    const indent = [3, 2, 1, 2, 3, 4, 3, 2][i % 8] as number;
+    return `${'.'.repeat(indent)}0220....0220${'.'.repeat(4 - indent)}`;
+  });
 const blank = '................';
-const spring0 = [...springPlate, ...coilRows, ...springBase];
 
 /* The rescued princess (original design): gold crown, brown hair, pink gown, 16x24. */
 const princess = [
@@ -419,13 +433,19 @@ const vineTop = [
   '.0444404440.....',
   '..0440.044......',
 ];
-const spring1 = [blank, blank, blank, blank, ...springPlate, ...coilRows.slice(2, 8), ...springBase];
-const spring2 = [
-  ...Array.from({ length: 8 }, () => blank),
+/**
+ * Springboard frames, 16x32 standing on their bottom edge: idle the spring is two tiles tall
+ * (SpringRed's clip fills its own cell and the one above), squashing to one tile as it is ridden.
+ */
+const springOfHeight = (h: number): string[] => [
+  ...Array.from({ length: 32 - h }, () => blank),
   ...springPlate,
-  ...coilRows.slice(4, 6),
+  ...coil(h - springPlate.length - springBase.length),
   ...springBase,
 ];
+const spring0 = springOfHeight(32);
+const spring1 = springOfHeight(24);
+const spring2 = springOfHeight(16);
 
 /* Goal flag: cloth to the left of the pole, white with a green border and diamond. */
 const flag = [
@@ -465,6 +485,63 @@ const castleFlag = [
   '......0b........',
   '......0b........',
   '......0b........',
+];
+
+/* Firework over the castle after the flagpole (original art): a white-hot pop, an eight-ray gold
+ * burst, then scattered orange and red embers. */
+const firework0 = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.......66.......',
+  '......6116......',
+  '.....611116.....',
+  '.....611116.....',
+  '......6116......',
+  '.......66.......',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+];
+const firework1 = [
+  '................',
+  '.......55.......',
+  '..5....66....5..',
+  '...6...11...6...',
+  '....1......1....',
+  '................',
+  '................',
+  '.5661..11..1665.',
+  '.5661..11..1665.',
+  '................',
+  '................',
+  '....1......1....',
+  '...6...11...6...',
+  '..5....66....5..',
+  '.......55.......',
+  '................',
+];
+const firework2 = [
+  '.......77.......',
+  '..7..........7..',
+  '................',
+  '................',
+  '.....2....2.....',
+  '................',
+  '................',
+  '7..2........2..7',
+  '7..2........2..7',
+  '................',
+  '................',
+  '.....2....2.....',
+  '................',
+  '................',
+  '..7..........7..',
+  '.......77.......',
 ];
 
 /* Round black bomb with a grey cap, a short fuse curling up to the right and a grey highlight; frame 1
@@ -1704,6 +1781,7 @@ export const itemsDef: SpriteDef = {
     mushroom,
     '1up': swapColors(mushroom, { '2': '4' }),
     'poison-mushroom': poisonMushroom,
+    clock,
     'flower-0': flower0,
     'flower-1': swapColors(flower0, { '7': '2', '5': '6', '6': '5' }),
     'star-0': star0,
@@ -1729,6 +1807,7 @@ export const itemsDef: SpriteDef = {
     'bowser-flame-0': bowserFlame0,
     'bowser-flame-1': bowserFlame1,
     platform,
+    plank,
     'spring-0': spring0,
     'spring-1': spring1,
     'spring-2': spring2,
@@ -1740,6 +1819,9 @@ export const itemsDef: SpriteDef = {
     'vine-mid': vineMid,
     flag,
     'castle-flag': castleFlag,
+    'firework-0': firework0,
+    'firework-1': firework1,
+    'firework-2': firework2,
     princess,
     toad,
     'bomb-0': bomb0,

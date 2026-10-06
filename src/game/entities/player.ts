@@ -1,16 +1,19 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import type { AABB } from '@engine/math/aabb';
-import { px, sign, velToSub } from '@engine/math/units';
+import { px, sign, tileAt, tileToSub, velToSub } from '@engine/math/units';
 import { JUMP_BUFFER_FRAMES } from '../constants';
-import { pickJumpTier, type JumpTier, type MovementProfile } from '../characters/profile';
+import { pickJumpTier, type JumpTier, type MovementProfile, type SwimProfile } from '../characters/profile';
 import type { CharacterDef } from '../characters/character';
 import { makeBody, moveX, moveY, type Body } from './body';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
 
-const SWIM_STROKE = 0x01800; // 1.5 px/f upward per tap
-const SWIM_GRAVITY = 0x00100; // 0.0625 px/f²
-const SWIM_SINK_MAX = 0x01000; // 1 px/f
+/**
+ * Swimming for heroes without their own `swim` profile. The original gives them no stroke (they
+ * jump off the floor with lighter gravity), so the stroke and gravity are ours; the sink cap is
+ * Character.as `vyMaxPsvWater = 250` (2.083 px/f), which applies to every character.
+ */
+const DEFAULT_SWIM: SwimProfile = { stroke: 0x01800, gravity: 0x00100, sinkMax: 0x02155 };
 const CLIMB_SPEED = 0x00100; // 1 px/f in subpixels
 
 /** The part of a player's scratch state that follows them to the next level (not per-swing hit marks). */
@@ -49,6 +52,8 @@ export class Player {
   transition: Transition | null = null;
   /** When true, input is ignored and physics skipped (pipes, flagpole, death). */
   frozen = false;
+  /** Left/right held on the last update (Lakitu reads it, like `player.lftBtn/rhtBtn` in Lakitu.as). */
+  heldDirX: -1 | 0 | 1 = 0;
   anim: PlayerAnim = 'idle';
   walkFrame = 0;
   private walkTick = 0;
@@ -84,8 +89,17 @@ export class Player {
   vine: { x: number; top: number; bottom: number } | null = null;
   /** Frames after letting go of a vine during which it cannot be grabbed again. */
   vineLock = 0;
+  /**
+   * Character.exitVine: set once left or right is released on the vine (relLftBtn/relRhtBtn),
+   * so the next left or right press steps off; cleared on grabbing one (getOnVine).
+   */
+  vineExit = false;
+  /** Centre line of the vine just stepped off, not grabbed again until he lands or leaves its reach. */
+  leftVine: number | null = null;
   /** Thrown by a spring: floats with hold-gravity to the apex whether or not jump is held. */
   launched = false;
+  /** Set by springLaunch: the gravity of the rise to the apex instead of the hold-gravity (0 = none). */
+  private launchGravity = 0;
   private runTimer = 0;
   private tier: JumpTier;
   private airCap: number;
@@ -140,6 +154,7 @@ export class Player {
     onHeadBump?: (tx: number, ty: number) => void,
   ): void {
     this.frame++;
+    this.heldDirX = input.dirX;
     if (this.invuln > 0) this.invuln--;
     if (this.star > 0) this.star--;
     if (this.attackTimer > 0) this.attackTimer--;
@@ -229,20 +244,48 @@ export class Player {
       else if (dir !== 0) this.facing = dir;
     }
 
+    const wasOnGround = b.onGround;
+    const gapSpeed = wasOnGround && p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx;
     moveX(b, map, velToSub(b.vx));
     this.fallSpeed = b.onGround ? 0 : b.vy;
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
     moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
+    if (gapSpeed && !b.onGround) this.crossSmallGap(map);
     if (b.onGround) {
       this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
       this.combo = 0;
       b.vy = 0;
     } else if (!this.clinging) {
-      b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
+      if (this.launched && this.launchGravity) b.vy += this.launchGravity;
+      else b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
       if (b.vy > p.maxFall) b.vy = p.fallReset;
     }
     this.updateAnim(dir);
+  }
+
+  /**
+   * The original's Level.checkCrossSmallGap (run on the first frame a player with
+   * canCrossSmallGaps has left the ground): when the tiles one column left and one column right
+   * of the player's centre column both have ground whose top is exactly at the feet, the player
+   * stands on it and runs on at the same height. Only one-tile gaps qualify; lifts never do (they
+   * are entities, the original's `Platform`).
+   */
+  private crossSmallGap(map: TileMap): void {
+    const b = this.body;
+    const feet = b.prevBottom;
+    const row = tileAt(feet);
+    if (tileToSub(row) !== feet) return;
+    const col = tileAt(b.x + (b.w >> 1));
+    if (col - 1 <= 0 || col + 1 >= map.width) return;
+    const ground = (tx: number) => {
+      const c = map.collisionAt(tx, row);
+      return c === 'solid' || c === 'top';
+    };
+    if (!ground(col - 1) || !ground(col + 1)) return;
+    b.y = feet - b.h;
+    b.vy = 0;
+    b.onGround = true;
   }
 
   /**
@@ -258,16 +301,19 @@ export class Player {
   ): void {
     const p = this.profile;
     const b = this.body;
+    const sw = p.swim ?? DEFAULT_SWIM;
     this.airCap = p.maxWalk;
-    if (b.vx > p.maxWalk) b.vx = p.maxWalk;
-    if (b.vx < -p.maxWalk) b.vx = -p.maxWalk;
+    // Character.as water block: on the floor a slow walker is capped at vxMaxGroundWater.
+    const cap = b.onGround && sw.floorWalk !== undefined ? sw.floorWalk : p.maxWalk;
+    if (b.vx > cap) b.vx = cap;
+    if (b.vx < -cap) b.vx = -cap;
     if (
       input.bufferedJump(JUMP_BUFFER_FRAMES) &&
       this.sliding === 0 &&
       (this.def.behaviour.canJump?.(this) ?? true)
     ) {
       input.consumeJumpBuffer();
-      b.vy = -SWIM_STROKE;
+      b.vy = -sw.stroke;
       b.onGround = false;
       this.jumping = false;
       audio.sfx('swim');
@@ -289,34 +335,28 @@ export class Player {
       this.combo = 0;
       b.vy = 0;
     } else {
-      b.vy += SWIM_GRAVITY;
-      if (b.vy > SWIM_SINK_MAX) b.vy = SWIM_SINK_MAX;
+      b.vy += sw.gravity;
+      if (b.vy > sw.sinkMax) b.vy = sw.sinkMax;
     }
     this.tier = pickJumpTier(p, b.vx);
     this.updateAnim(dir);
     if (!b.onGround) this.anim = 'swim';
   }
 
-  /** On a vine: up/down climb, left/right turn, jump lets go. The world handles grabbing. */
-  private climb(input: InputFrame, map: TileMap, audio: AudioSink): void {
+  /**
+   * On a vine: up/down climb; left or right steps off once a direction has been released on it
+   * (Character/MarioBase.movePlayer: with `exitVine` set, getOffVine, else return without moving
+   * or turning). Jump does nothing there (pressJmpBtn returns while cState == ST_VINE). The
+   * world handles grabbing.
+   */
+  private climb(input: InputFrame, map: TileMap, _audio: AudioSink): void {
     const v = this.vine as NonNullable<typeof this.vine>;
     const b = this.body;
     b.vx = 0;
     b.x = v.x - (b.w >> 1);
-    if (input.dirX !== 0) this.facing = input.dirX;
-    if (input.bufferedJump(JUMP_BUFFER_FRAMES)) {
-      input.consumeJumpBuffer();
-      this.letGo();
-      this.tier = pickJumpTier(this.profile, 0);
-      b.vy = -this.tier.initial;
-      b.onGround = false;
-      this.jumping = this.profile.variableJump !== 'cut';
-      this.airCap = this.profile.maxWalk;
-      // Pushing a direction leaps clear of the vine at walking speed; otherwise a small hop.
-      b.vx = this.facing * (input.dirX !== 0 ? this.profile.maxWalk : this.profile.minWalk << 2);
-      audio.sfx(this.def.jumpSfx(this));
-      return;
-    }
+    if (input.bufferedJump(JUMP_BUFFER_FRAMES)) input.consumeJumpBuffer();
+    if (input.released('left') || input.released('right')) this.vineExit = true;
+    if (input.dirX !== 0 && this.vineExit && this.stepOffVine(input.dirX, map)) return;
     let dy = 0;
     if (input.held('up')) dy = -CLIMB_SPEED;
     else if (input.held('down')) dy = CLIMB_SPEED;
@@ -339,10 +379,28 @@ export class Player {
     if (b.y + px(8) > px(v.bottom)) this.letGo();
   }
 
-  /** Release the vine (jump off, climb down to the floor, or the vine ended). */
+  /**
+   * Character.getOffVine: put the body just outside the vine's hit box on side `dir`
+   * (nx = vine.hLft - hWidth*.5 or vine.hRht + hWidth*.5; our vine is 2 px wide) and let go,
+   * with gravity back on. Not into a wall (movePlayer checks !wallOnLeft / !wallOnRight).
+   */
+  private stepOffVine(dir: -1 | 1, map: TileMap): boolean {
+    const v = this.vine as NonNullable<typeof this.vine>;
+    const b = this.body;
+    const x = dir > 0 ? v.x + px(1) : v.x - px(1) - b.w;
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++) if (map.isSolid(tx, ty)) return false;
+    b.x = x;
+    this.letGo();
+    this.leftVine = v.x;
+    return true;
+  }
+
+  /** Release the vine (step off, climb down to the floor, or the vine ended). */
   letGo(): void {
     this.vine = null;
     this.vineLock = 20;
+    this.vineExit = false;
     this.anim = 'idle';
   }
 
@@ -438,9 +496,21 @@ export class Player {
     // A spring launch cannot be cut short, and it floats to its apex like a held jump.
     this.jumping = this.profile.variableJump !== 'cut';
     this.launched = true;
+    this.launchGravity = 0;
     this.sliding = 0;
     this.crouching = false;
     this.refitHitbox();
+  }
+
+  /**
+   * Thrown up by a springboard (SpringRed.springLaunch): `vy` is fixed, whatever the run speed, and
+   * the rise to the apex uses `riseGravity` whether or not jump is held (the original starts no
+   * jump rise; Character.springLaunch is empty for Mario).
+   */
+  springLaunch(vy: number, riseGravity: number): void {
+    this.launch(1);
+    this.body.vy = -vy;
+    this.launchGravity = riseGravity;
   }
 
   /** Bounce after a stomp. Holding jump bounces higher (uses the hold-gravity mechanic). */

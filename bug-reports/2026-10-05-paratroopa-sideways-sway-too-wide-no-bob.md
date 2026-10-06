@@ -71,3 +71,5 @@ every time
   `levelDataLostLevels.xml` (3-1 cell 156,9; 3-3 cell 25,3), and ours: `src/game/entities/enemies/koopa.ts`
   (`GLIDE_AMPLITUDE`, `GLIDE_PERIOD`, `fly`), `src/content/levels/world7/7-3.map` lines 33-34,
   `src/content/levels/lost/world3/ll-3-1.map` line 44, `ll-3-3.map` line 35.
+
+Status: fixed — sideways Paratroopas now sway ±42.5 px on the 251-frame FT_HORZ wave starting right, and drift ±8 px at 0.208 px/f starting up (HORZ_FLY_VERT_MOVEMENT_SPEED 25, yTop/yBot = y ∓ TILE_SIZE/2).
