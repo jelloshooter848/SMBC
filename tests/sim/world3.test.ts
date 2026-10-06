@@ -139,7 +139,7 @@ describe('World 3: balance lifts', () => {
   });
 
   it('sink under the player while the partner rises by the same amount', () => {
-    const { r, left, right } = setup(80, true);
+    const { r, left, right } = setup(50, true); // it speeds up (ayPully); by 80 frames the rope has snapped
     expect(r.world.player.body.onGround).toBe(true);
     const sunk = toPx(left.body.y) - 6 * 16;
     const risen = 8 * 16 - toPx(right.body.y);

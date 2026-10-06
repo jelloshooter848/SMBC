@@ -1,10 +1,24 @@
 import type { Renderer } from '@engine/gfx/renderer';
-import { px, toPx } from '@engine/math/units';
+import { px, toPx, SUB } from '@engine/math/units';
 import { Entity, type View } from '../entity';
 import type { World } from '../../world/world';
 import { Lift } from './lift';
 
-const SINK_SPEED = 0x00100; // 1 px/f in subpixels
+/*
+ * com/smbc/ground/Platform.as (PT_PULLY), in Flash px (32 px tiles) per second, halved for our 16 px
+ * tiles and taken per 60 fps frame. Speeds here are in px/frame.
+ */
+const FPS = 60;
+/** ayPully 200 px/s²: a rider speeds his platform up by this much each frame (setCharOnPlat). */
+const ACCEL = (200 * 0.5) / FPS / FPS;
+/** vyMaxPully 275 px/s. */
+const MAX_SPEED = (275 * 0.5) / FPS;
+/** fyPully 0.0006: with nobody on either platform the speed is multiplied by 0.0006 per second. */
+const FRICTION = Math.pow(0.0006, 1 / FPS);
+/** vyMinPully 20 px/s: below this a coasting pair stops (updatePully). */
+const MIN_SPEED = (20 * 0.5) / FPS;
+/** ScoreValue.PULLY_FALL: popped at the rider when the rope snaps. */
+const SNAP_SCORE = 1000;
 const ROPE_COLOUR = '#d8b878';
 
 /**
@@ -21,6 +35,13 @@ export class BalanceLift extends Entity {
   private readonly y2: number;
   private readonly len: number;
   private readonly topRow: number;
+  /** Speed of the left platform in px/frame, down positive; the right one mirrors it. */
+  private v = 0;
+  /** Exact y of the left platform (subpixels) and the constant sum of both platforms' y. */
+  private fy = 0;
+  private ySum = 0;
+  /** Where the left platform is: at its pulley ('top'), at the bottom, or between. */
+  private loc: 'top' | 'mid' | 'bottom' = 'mid';
 
   constructor(tx: number, ty: number, props: Record<string, string | number | boolean>) {
     super(px(tx * 16), px(ty * 16), 16, 8);
@@ -42,28 +63,68 @@ export class BalanceLift extends Entity {
     return this.left && this.right ? [this.left, this.right] : null;
   }
 
+  /** Platform.yMin: one tile below the pulley corners. */
+  private get yMin(): number {
+    return px((this.topRow + 1) * 16);
+  }
+
   update(world: World): void {
     if (!this.left || !this.right) {
-      this.left = new Lift('lift-balance', toPx(this.body.x) >> 4, toPx(this.body.y) >> 4, { len: this.len });
+      this.left = new Lift('lift-balance', this.body.x / px(16), this.body.y / px(16), { len: this.len });
       this.right = new Lift('lift-balance', this.x2, this.y2, { len: this.len });
       world.spawn(this.left);
       world.spawn(this.right);
+      this.fy = this.left.body.y;
+      this.ySum = this.left.body.y + this.right.body.y;
       return;
     }
     if (this.slack) return;
     const l = this.left;
     const r = this.right;
-    if (l.ridden === r.ridden) return;
-    const sinking = l.ridden ? l : r;
-    const rising = l.ridden ? r : l;
-    sinking.shift(SINK_SPEED);
-    rising.shift(-SINK_SPEED);
-    // The rising platform reaching its pulley snaps the rope: both fall.
-    if (toPx(rising.body.y) <= this.ropeY + 8) {
-      l.drop();
-      r.drop();
+    // Platform.setCharOnPlat for each ridden platform: speed it up downwards, or snap the rope
+    // when it is already at the bottom.
+    if (l.ridden) this.pull(world, l, 1);
+    if (r.ridden && !this.slack) this.pull(world, r, -1);
+    if (l.ridden || r.ridden || this.v === 0) return;
+    // Platform.updatePully: nobody on either, so the pair coasts and slows down.
+    this.v *= FRICTION;
+    if (Math.abs(this.v) < MIN_SPEED) this.v = 0;
+    this.move();
+  }
+
+  private pull(world: World, p: Lift, dir: 1 | -1): void {
+    if (this.loc === (dir === 1 ? 'bottom' : 'top')) {
+      const rider = p.rider ?? p.body;
+      world.addScore(SNAP_SCORE, rider.x + (rider.w >> 1), rider.y);
+      this.left?.drop();
+      this.right?.drop();
       this.slack = true;
+      return;
     }
+    this.v = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, this.v + dir * ACCEL));
+    this.move();
+  }
+
+  /** Platform.movePartner: the partner mirrors the move; either one at its pulley stops both. */
+  private move(): void {
+    const l = this.left as Lift;
+    const r = this.right as Lift;
+    const yMin = this.yMin;
+    const yMax = this.ySum - yMin;
+    this.fy += this.v * SUB;
+    if (this.fy <= yMin) {
+      this.fy = yMin;
+      this.v = 0;
+      this.loc = 'top';
+    } else if (this.fy >= yMax) {
+      this.fy = yMax;
+      this.v = 0;
+      this.loc = 'bottom';
+    } else this.loc = 'mid';
+    // Whole pixels, so the two platforms (and their ropes) stay mirror images on screen.
+    const y = Math.round(this.fy / SUB) * SUB;
+    l.shift(y - l.body.y);
+    r.shift(this.ySum - y - r.body.y);
   }
 
   render(r: Renderer, view: View): void {
