@@ -818,7 +818,7 @@ describe('top-down kit: drawing helpers', () => {
     const { world } = setup();
     world.hero.hp = 3;
     world.keys = 2;
-    drawTdHud(r, view, hudData(world, 'TEST KEEP', { label: 'SWORD', frame: 'sword-icon' }));
+    drawTdHud(r, view, hudData(world, 'TEST KEEP', [{ label: 'SWORD', frame: 'sword-icon' }]));
     expect(texts).toEqual(expect.arrayContaining(['TEST KEEP', 'SWORD', '-LIFE-', '×2']));
     expect(frames.filter((f) => f.startsWith('heart'))).toEqual(['heart', 'heart-half', 'heart-empty']);
   });

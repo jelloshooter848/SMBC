@@ -5,7 +5,7 @@ import { Projectile } from '../../topdown/enemies';
 import type { TdView } from '../../topdown/view';
 import type { TopDownWorld } from '../../topdown/world';
 
-export const KEEPER_HP = 6;
+export const KEEPER_HP = 8;
 /** Frames between spells (and while badly hurt), and how long it glows before casting. */
 export const CAST_EVERY = 110;
 export const CAST_EVERY_ANGRY = 76;
@@ -18,6 +18,8 @@ export const SPELL_SPREAD = 0.4;
 /** It drifts between these x (room px). */
 export const DRIFT_MIN = 2 * TILE;
 export const DRIFT_MAX = 12 * TILE;
+/** A boomerang only makes it falter for half a second. */
+export const KEEPER_STUN = 30;
 
 const BOB = [0, 1, 2, 2, 1, 0, -1, -1] as const;
 
@@ -34,8 +36,9 @@ export class Spell extends Projectile {
 /**
  * The keeper of the spell: a hooded shadow (32×32) that drifts from side to side across the top
  * of its room with a slow bob. Every couple of seconds it stops and glows, then casts three
- * spells fanned out at Link. Six sword hits; it glows faster once it is down to half. It stays
- * still until Link has stepped into the room (the shutters close behind him).
+ * spells fanned out at Link. Six sword hits (a bomb counts two); it glows faster once it is down
+ * to half. A boomerang only stops it for half a second. It stays still until Link has stepped
+ * into the room (the shutters close behind him); its spells vanish when it falls.
  */
 export class Keeper extends TdEnemy {
   readonly kind = 'keeper';
@@ -112,8 +115,14 @@ export class Keeper extends TdEnemy {
     return hit;
   }
 
+  override stunFor(_frames: number): number {
+    return this.awake ? KEEPER_STUN : 0;
+  }
+
   override die(world: TopDownWorld): void {
     super.die(world);
+    // Its spells die with it.
+    for (const e of world.entities) if (e instanceof Spell) e.dead = true;
     for (const [dx, dy] of [
       [-10, -8],
       [10, -8],

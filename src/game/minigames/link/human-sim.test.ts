@@ -31,13 +31,22 @@ export function cautiousRun(seed: number, opts: Partial<CautiousOptions> = {}, m
   const input = new ScriptedInput({ steps: [] });
   const bot = new CautiousBot(KEEP_PLAN, { seed, ...opts });
   let frames = 0;
+  let lost = 0;
+  let bossLost = 0;
+  let hp = scene.world.hero.hp;
   for (; frames < max && results.length === 0; frames++) {
     const held: Action[] = bot.next(scene.world);
     input.setHeld(held);
     input.next();
     game.scenes.update([input]);
+    const now = scene.world.hero.hp;
+    if (now < hp) {
+      lost += hp - now;
+      if (scene.world.room.id === 'keeper') bossLost += hp - now;
+    }
+    hp = now;
   }
-  return { result: results[0] ?? 'timeout', room: scene.world.room.id, frames, hp: scene.world.hero.hp };
+  return { result: results[0] ?? 'timeout', room: scene.world.room.id, frames, hp, lost, bossLost };
 }
 
 /** Pass rate of the cautious human over seeds 1..n. */
@@ -50,17 +59,30 @@ export function cautiousPassRate(n: number, opts: Partial<CautiousOptions> = {})
 describe('Shadow Keep: a cautious human (difficulty)', () => {
   // KEEP_SIM=40 pnpm vitest run human-sim prints a fuller report.
   const n = Number(process.env.KEEP_SIM ?? 0);
+  it('a cautious first-timer (late reactions, misjudged distances, pauses) usually escapes, and not unscathed', () => {
+    const { rate, runs } = cautiousPassRate(6);
+    expect(rate).toBeGreaterThanOrEqual(4 / 6);
+    // Some effort: the keeper still costs hearts.
+    expect(runs.reduce((a, r) => a + r.bossLost, 0)).toBeGreaterThan(6);
+  }, 120_000);
+
   it.runIf(n > 0)(
     'reports the pass rate',
     () => {
-      for (const reaction of [12, 15, 18]) {
+      for (const reaction of [12, 15, 18, 21]) {
         const { rate, runs } = cautiousPassRate(n, { reaction });
-        const fails: Record<string, number> = {};
-        for (const r of runs) {
+        const fails: Record<string, number[]> = {};
+        for (const [i, r] of runs.entries()) {
           const k = `${r.result}@${r.room}`;
-          if (r.result !== 'pass') fails[k] = (fails[k] ?? 0) + 1;
+          if (r.result !== 'pass') (fails[k] ??= []).push(i + 1);
         }
-        console.log(`reaction ${reaction}: pass ${(rate * 100).toFixed(0)}% of ${n}`, JSON.stringify(fails));
+        const low = runs.filter((r) => r.result === 'pass' && r.hp <= 2).length;
+        const avg = (k: 'lost' | 'bossLost') => (runs.reduce((a, r) => a + r[k], 0) / n / 2).toFixed(1);
+        console.log(
+          `reaction ${reaction}: pass ${(rate * 100).toFixed(0)}% of ${n}`,
+          `(passes on a heart or less: ${low}; hearts lost: ${avg('lost')}, to the keeper: ${avg('bossLost')})`,
+          JSON.stringify(fails),
+        );
       }
       expect(n).toBeGreaterThan(0);
     },

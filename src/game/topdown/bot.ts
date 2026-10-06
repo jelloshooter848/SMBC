@@ -1,5 +1,5 @@
 import type { Action } from '@engine/input/actions';
-import { ALIGN, swordAt } from './hero';
+import { ALIGN, swordReach } from './hero';
 import {
   DIRS,
   DIR_VEC,
@@ -13,21 +13,35 @@ import {
   type Side,
 } from './geometry';
 import { Rng } from '@engine/rng';
-import { Pickup, PushBlock, type TdEntity } from './entity';
+import { Chest, Pickup, PushBlock, type TdEntity } from './entity';
+import { BOOMERANG_RANGE, Bomb, Explosion } from './items';
 import { Projectile } from './enemies';
 import type { TopDownWorld } from './world';
 
 /**
  * A simple player for tests and tuning: walks the half-tile grid by breadth-first search, fights
- * by stepping to where the sword reaches an enemy (and stabbing), pushes blocks and leaves rooms.
- * A game gives it a plan per room (a list of steps); it holds the actions for one frame at a time.
+ * by stepping to where the sword reaches an enemy (and stabbing, or stunning one further off
+ * with a boomerang it owns), pushes blocks, opens chests, bombs walls and leaves rooms. A game
+ * gives it a plan per room (a list of steps, or a function of the world for a room visited more
+ * than once, picked on entry); it holds the actions for one frame at a time.
  */
 export type BotStep =
   | { do: 'fight' }
   | { do: 'goto'; x: number; y: number }
   | { do: 'push'; dir: Dir; from: { x: number; y: number }; until: (w: TopDownWorld) => boolean }
   | { do: 'pickup' }
+  | { do: 'chest' }
+  | {
+      do: 'bomb';
+      /** Where to set it down from, facing `dir`; then wait at `hide` until `until`. */
+      from: { x: number; y: number };
+      dir: Dir;
+      hide: { x: number; y: number };
+      until: (w: TopDownWorld) => boolean;
+    }
   | { do: 'leave'; side: Side };
+
+export type BotPlan = readonly BotStep[] | ((w: TopDownWorld) => readonly BotStep[]);
 
 const INSIDE: Record<Side, { x: number; y: number; dir: Dir }> = {
   n: { x: 7.5 * TILE, y: TILE, dir: 'up' },
@@ -48,24 +62,33 @@ export class TopDownBot {
   /** Frames stuck on the current step (a goto that can't make progress moves on). */
   private stuck = 0;
   private lastDir: Dir | null = null;
+  private plan: readonly BotStep[] = [];
+  /** Buttons held last frame (a press needs a release in between). */
+  private held: Action[] = [];
 
   constructor(
-    private readonly plans: Readonly<Record<string, readonly BotStep[]>>,
+    private readonly plans: Readonly<Record<string, BotPlan>>,
     /** Pixels it keeps between itself and a monster while lining up a stab. */
     private readonly margin = 6,
   ) {}
 
   /** The actions to hold this frame. */
   next(world: TopDownWorld): Action[] {
+    this.held = this.decide(world);
+    return this.held;
+  }
+
+  private decide(world: TopDownWorld): Action[] {
     if (world.transition || world.hero.dying) return [];
     if (world.room.id !== this.room) {
       this.room = world.room.id;
       this.step = 0;
       this.stuck = 0;
+      const p = this.plans[this.room] ?? [];
+      this.plan = typeof p === 'function' ? p(world) : p;
     }
-    const plan = this.plans[this.room] ?? [];
     for (let guard = 0; guard < 8; guard++) {
-      const s = plan[this.step];
+      const s = this.plan[this.step];
       if (!s) return [];
       const out = this.run(world, s);
       if (out !== 'done') {
@@ -76,6 +99,17 @@ export class TopDownBot {
       this.stuck = 0;
     }
     return [];
+  }
+
+  /** Presses `a` this frame unless it was held last frame (then lets go, so the next is a press). */
+  private tap(a: Action): Action[] {
+    return this.held.includes(a) ? [] : [a];
+  }
+
+  /** Taps SELECT until `id` is in the item slot; null once it is. */
+  private selectItem(world: TopDownWorld, id: string): Action[] | null {
+    if (world.inv.current?.id === id) return null;
+    return this.tap('select');
   }
 
   private run(world: TopDownWorld, s: BotStep): Action[] | 'done' {
@@ -106,6 +140,34 @@ export class TopDownBot {
           return this.walkTo(world, (n) => n.x === s.from.x && n.y === s.from.y) ?? [s.dir];
         }
         return [s.dir];
+      }
+      case 'chest': {
+        const c = world.entities.find((e): e is Chest => e instanceof Chest && !e.open);
+        if (!c || hero.holdT > 0) return 'done';
+        // Spots on the grid next to it, and the way to walk from each into it (the hero's
+        // feet are his lower half, so from below he stands half a tile into its row).
+        const spots: { x: number; y: number; d: Dir }[] = [
+          { x: c.x, y: c.y + ALIGN, d: 'up' },
+          { x: c.x - TILE, y: c.y, d: 'right' },
+          { x: c.x + TILE, y: c.y, d: 'left' },
+          { x: c.x, y: c.y - TILE, d: 'down' },
+        ];
+        // On a spot, or between it and the chest: walk in.
+        const here = spots.find((p) => onApproach(hero, p, p.d));
+        if (here) return [here.d];
+        return this.walkTo(world, (n) => spots.some((p) => p.x === n.x && p.y === n.y)) ?? 'done';
+      }
+      case 'bomb': {
+        if (s.until(world)) return 'done';
+        if (world.entities.some((e) => (e instanceof Bomb || e instanceof Explosion) && !e.dead)) {
+          if (hero.x === s.hide.x && hero.y === s.hide.y) return [];
+          return this.walkTo(world, (n) => n.x === s.hide.x && n.y === s.hide.y) ?? [];
+        }
+        if (world.inv.count('bomb') <= 0) return 'done';
+        if (!onApproach(hero, s.from, s.dir))
+          return this.walkTo(world, (n) => n.x === s.from.x && n.y === s.from.y) ?? 'done';
+        if (hero.facing !== s.dir) return [s.dir];
+        return this.selectItem(world, 'bomb') ?? this.tap('special');
       }
       case 'leave': {
         const at = INSIDE[s.side];
@@ -143,7 +205,7 @@ export class TopDownBot {
     }
     // Stab if the blade would reach something from here, turning first if needed.
     for (const d of DIRS) {
-      const blade = swordAt(hero.x, hero.y, d);
+      const blade = swordReach(hero.x, hero.y, d);
       if (!foes.some((f) => boxesOverlap(blade, f.hurtbox()))) continue;
       if (hero.facing !== d) return [d];
       if (this.attackHeld) {
@@ -154,16 +216,45 @@ export class TopDownBot {
       return ['attack'];
     }
     this.attackHeld = false;
+    const throwAt = this.boomerangShot(world);
+    if (throwAt) return throwAt;
     const path = this.walkTo(
       world,
       // Big foes (a boss) only from below, out of their path.
       (n) =>
         DIRS.some((d) =>
-          foes.some((f) => (f.w < 32 || d === 'up') && boxesOverlap(swordAt(n.x, n.y, d), f.hurtbox())),
+          foes.some((f) => (f.w < 32 || d === 'up') && boxesOverlap(swordReach(n.x, n.y, d), f.hurtbox())),
         ),
       foes.map((f) => grow(f.hurtbox(), this.margin)),
     );
     return path ?? [];
+  }
+
+  /**
+   * With the boomerang owned and ready: a monster (not a big one, not already stunned) two to
+   * five tiles off straight along a direction gets it thrown at it (turning and picking it first).
+   */
+  private boomerangShot(world: TopDownWorld): Action[] | null {
+    if (!world.inv.has('boomerang')) return null;
+    const hero = world.hero;
+    for (const d of DIRS) {
+      const v = DIR_VEC[d];
+      const lane = {
+        x: v.dx > 0 ? hero.x + 2 * TILE : v.dx < 0 ? hero.x - BOOMERANG_RANGE : hero.x + 2,
+        y: v.dy > 0 ? hero.y + 2 * TILE : v.dy < 0 ? hero.y - BOOMERANG_RANGE : hero.y + 2,
+        w: v.dx !== 0 ? BOOMERANG_RANGE - 2 * TILE : 12,
+        h: v.dy !== 0 ? BOOMERANG_RANGE - 2 * TILE : 12,
+      };
+      const target = world
+        .enemies()
+        .find((f) => f.w < 32 && f.stunT === 0 && boxesOverlap(lane, f.hurtbox()));
+      if (!target) continue;
+      if (world.inv.current?.id !== 'boomerang') return this.selectItem(world, 'boomerang');
+      if (!world.itemUsable()) return null;
+      if (hero.facing !== d) return [d];
+      return this.tap('special');
+    }
+    return null;
   }
 
   /** Would a hostile shot hit a hero standing at (x, y) within the next half second? */
@@ -197,8 +288,10 @@ export class TopDownBot {
         ? { x: hero.x - mod(hero.x, ALIGN), y: hero.y }
         : { x: hero.x, y: hero.y - mod(hero.y, ALIGN) };
       const hi = offX ? { x: lo.x + ALIGN, y: lo.y } : { x: lo.x, y: lo.y + ALIGN };
-      const a = this.search(world, lo, goal, avoid);
-      const b = this.search(world, hi, goal, avoid);
+      // (A grid point inside something solid, e.g. a chest just opened beside it, is no way on.)
+      const free = (n: Node) => !world.blocked(hero.feet(n.x, n.y), 'hero', null);
+      const a = free(lo) ? this.search(world, lo, goal, avoid) : null;
+      const b = free(hi) ? this.search(world, hi, goal, avoid) : null;
       const toLo: Dir = offX ? 'left' : 'up';
       const toHi: Dir = offX ? 'right' : 'down';
       if (!a && !b) return [this.lastDir === toHi ? toHi : toLo];
@@ -258,6 +351,14 @@ export class TopDownBot {
   }
 }
 
+/** At `p`, or up to half a tile past it going `d` (walking on into something from there). */
+function onApproach(hero: { x: number; y: number }, p: { x: number; y: number }, d: Dir): boolean {
+  const v = DIR_VEC[d];
+  const along = v.dx !== 0 ? (hero.x - p.x) * v.dx : (hero.y - p.y) * v.dy;
+  const lined = v.dx !== 0 ? hero.y === p.y : hero.x === p.x;
+  return lined && along >= 0 && along < ALIGN;
+}
+
 function grow(b: Box, n: number): Box {
   return { x: b.x - n, y: b.y - n, w: b.w + 2 * n, h: b.h + 2 * n };
 }
@@ -303,7 +404,7 @@ export class CautiousBot {
   private room = '';
   private t = 0;
 
-  constructor(plans: Readonly<Record<string, readonly BotStep[]>>, opts: Partial<CautiousOptions> = {}) {
+  constructor(plans: Readonly<Record<string, BotPlan>>, opts: Partial<CautiousOptions> = {}) {
     this.opts = { seed: 1, ...CAUTIOUS_DEFAULTS, ...opts };
     this.bot = new TopDownBot(plans, this.opts.margin);
     this.rng = new Rng(Math.imul(this.opts.seed, 0x9e3779b1) >>> 0 || 1);

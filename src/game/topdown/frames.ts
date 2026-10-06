@@ -17,14 +17,29 @@ export function rotateCcw(rows: readonly string[]): string[] {
 }
 
 /** North-edge frames the top-down renderer also needs for the west edge (east is that, mirrored). */
-export const SIDE_FRAMES = ['wall-top', 'door-open', 'door-locked', 'door-shut'] as const;
+export const SIDE_FRAMES = [
+  'wall-top',
+  'door-open',
+  'door-locked',
+  'door-shut',
+  'wall-cracked',
+  'wall-hole',
+] as const;
 
 /**
  * 16-px doorway frames that a two-cell (north or south) doorway draws centred across its cells:
  * `<frame>-l` is wall-top's left half then the frame's left half, `<frame>-r` the frame's right
  * half then wall-top's right half.
  */
-export const SPLIT_FRAMES = ['door-open', 'door-locked', 'door-shut', 'exit-0', 'exit-1'] as const;
+export const SPLIT_FRAMES = [
+  'door-open',
+  'door-locked',
+  'door-shut',
+  'wall-cracked',
+  'wall-hole',
+  'exit-0',
+  'exit-1',
+] as const;
 
 /**
  * The tile sheet with the frames the top-down renderer derives: a `<frame>-side` for each of

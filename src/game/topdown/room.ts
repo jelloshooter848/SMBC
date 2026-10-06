@@ -21,16 +21,7 @@ import { ROOM_COLS, ROOM_ROWS, TILE, type Side } from './geometry';
  */
 
 export type TileKind =
-  | 'floor'
-  | 'floor-alt'
-  | 'wall'
-  | 'cracked'
-  | 'block'
-  | 'statue'
-  | 'water'
-  | 'stairs'
-  | 'door'
-  | 'exit';
+  'floor' | 'floor-alt' | 'wall' | 'cracked' | 'block' | 'statue' | 'water' | 'stairs' | 'door' | 'exit';
 /** `cracked`: a doorway walled up with cracked stone until a blast opens it. */
 export type DoorKind = 'open' | 'locked' | 'shutter' | 'cracked';
 /**
