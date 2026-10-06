@@ -160,8 +160,9 @@ a locked door into a room whose shutters open when every monster is gone (a **he
 appears there too: three hearts become four, all refilled), the armory (a chest with **bombs**:
 four, up to eight, refills dropped by monsters; set one down in front, it blows after 1.5 s,
 2 damage to monsters and half a heart to Link within a tile and a half, and opens **cracked
-walls**; statues point at the cracked west wall; entering a room whose cracked wall is still shut
-with no bombs left puts a refill in the middle of the room, so wasted bombs can't lose the shield), behind it the secret shrine (a chest with the
+walls**; statues point at the cracked west wall; owner decision: no refill waits there, so
+wasting the bombs can cost the optional shield, by design), behind it the secret shrine (a chest
+with the
 magic **shield**, owner decision "make it worth the secret room": from then on it stops rocks and
 the keeper's spells coming at Link's front while he isn't stabbing (an angled spell by its main
 axis), and its guard halves monsters' touch damage, never below half a heart; the banner says

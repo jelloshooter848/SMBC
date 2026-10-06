@@ -577,28 +577,17 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(h.said).toContain('A heart container! One more heart, and every heart refilled.');
   });
 
-  it('wasted bombs never lose the shield: no bombs and the wall still shut, the armory offers a refill', () => {
+  it('a bombs pickup adds four and is announced; no refill waits by the cracked wall (wasting bombs can cost the shield)', () => {
     const h = setup();
     h.world.grant('bomb');
     h.world.inv.addAmmo('bomb', -9);
-    const refill = () => h.world.entities.find((e) => e instanceof Pickup && e.kind === 'bombs') as Pickup;
-    h.world.warpTo('shutters', TILE, 5 * TILE);
-    expect(refill()).toBeUndefined(); // no cracked wall here
     h.world.warpTo('armory', 7.5 * TILE, 9 * TILE);
-    expect(refill()).toBeDefined();
-    expect(h.world.blocked(refill().hurtbox(), 'hero')).toBe(false);
-    h.world.collect(refill());
+    expect(h.world.entities.some((e) => e instanceof Pickup && e.kind === 'bombs')).toBe(false);
+    const hero = h.world.hero;
+    h.world.add(new Pickup(hero.x + 4, hero.y, 'bombs'));
     h.step();
     expect(h.world.inv.count('bomb')).toBe(4);
     expect(h.said).toContain('Bombs! 4');
-    // With bombs in hand, or once the wall is open, none.
-    h.world.warpTo('shutters', TILE, 5 * TILE);
-    h.world.warpTo('armory', 7.5 * TILE, 9 * TILE);
-    expect(refill()).toBeUndefined();
-    h.world.inv.addAmmo('bomb', -9);
-    h.world.state('armory').blasted.add('w');
-    h.world.warpTo('armory', 7.5 * TILE, 9 * TILE);
-    expect(refill()).toBeUndefined();
   });
 
   it("a bomb opens the armory's cracked wall (only a blast does); the shrine's chest holds the shield", () => {
