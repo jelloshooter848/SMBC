@@ -14,6 +14,11 @@ import { LevelScene } from '@game/scenes/level';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
+import { SAMUS } from '@game/characters/samus';
+import { MEGAMAN } from '@game/characters/megaman';
+import { Projectile } from '@game/entities/projectiles/projectile';
+import type { CharacterDef } from '@game/characters/character';
+import type { GameState } from '@game/context';
 import { Enemy } from '@game/entities/enemies/enemy';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Piranha } from '@game/entities/enemies/piranha';
@@ -206,6 +211,102 @@ describe('the vine arrival with other heroes and co-op', () => {
       until: (w) => !w.timeHidden && w.player.body.onGround,
     });
     expect(r.outcome).toBe('stopped');
+  });
+});
+
+describe('hero states on a vine (Character.getOnVine → setState("vine"))', () => {
+  /** 4-2-warp after the arrival, beside the vine; `script(f, w)` from there; returns the World. */
+  function heroRun(
+    character: CharacterDef,
+    state: Partial<GameState>,
+    script: (f: number, w: World) => Action[],
+    frames: number,
+  ): World {
+    let base = -1;
+    const r = runSim({
+      level: getLevel('4-2-warp'),
+      character,
+      state,
+      script: { steps: [{ frame: 0, hold: [] }] },
+      maxFrames: 900,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        if (base < 0 && !w.timeHidden && w.player.body.onGround) base = f;
+        return base < 0 ? [] : script(f - base, w);
+      },
+      until: (_w, f) => base >= 0 && f - base >= frames,
+    });
+    expect(r.outcome).toBe('stopped');
+    return r.world;
+  }
+
+  it('Samus curled up grabs the vine standing, not as a morph ball', () => {
+    let standH = 0;
+    let checked = 0;
+    heroRun(
+      SAMUS,
+      {},
+      (f, w) => {
+        const p = w.player;
+        if (f === 0) standH = p.body.h;
+        if (f < 2) return ['down']; // curl up beside the vine
+        if (f === 2) expect(p.scratch.ball).toBe(1);
+        if (p.vine) {
+          checked++;
+          expect(p.scratch.ball ?? 0).toBe(0);
+          expect(p.body.h).toBe(standH);
+        }
+        return f < 6 ? [] : ['up'];
+      },
+      40,
+    );
+    expect(checked).toBeGreaterThan(20);
+  });
+
+  it('Mega Man: a charge held into the vine does not fire when he steps off', () => {
+    const charged = new Set<unknown>();
+    let offAt = -1;
+    heroRun(
+      MEGAMAN,
+      { kit: { helmet: 1 } },
+      (f, w) => {
+        for (const e of w.entities)
+          if (e instanceof Projectile && e.kind === 'buster-charged') charged.add(e);
+        if (offAt < 0 && f > 50 && !w.player.vine) offAt = f;
+        if (f < 45) return ['attack'];
+        if (f < 55) return ['attack', 'up']; // grabbed while fully charged
+        if (f < 58) return []; // attack released on the vine
+        if (f < 60) return ['right'];
+        if (f < 62) return []; // right released: armed
+        return ['right'];
+      },
+      90,
+    );
+    expect(offAt).toBeGreaterThan(60);
+    expect(charged.size).toBe(0);
+  });
+
+  it("Link's jump spell keeps counting down while he is on a vine", () => {
+    let at = -1;
+    let before = 0;
+    let after = 0;
+    heroRun(
+      LINK,
+      {},
+      (f, w) => {
+        const p = w.player;
+        if (p.vine && at < 0) {
+          at = f;
+          p.scratch.jumpSpell = 200;
+          before = 200;
+        }
+        if (at >= 0 && f === at + 60) after = p.scratch.jumpSpell ?? 0;
+        return ['up'];
+      },
+      100,
+    );
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(before - after).toBeGreaterThanOrEqual(58);
   });
 });
 

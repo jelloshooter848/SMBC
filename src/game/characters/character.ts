@@ -50,6 +50,10 @@ export interface CharacterBehaviour {
   blocks?(p: Player, projectile: Projectile): boolean;
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
+  /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
+  onGrabVine?(p: Player): void;
+  /** Runs instead of `update` each frame on a vine (no attacks there): timers that keep running. */
+  vineTick?(p: Player): void;
 }
 
 /** How a hero plays, shown on the "How to play" pages. Text is wrapped and upper-cased. */

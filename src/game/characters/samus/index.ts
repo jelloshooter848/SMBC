@@ -204,6 +204,13 @@ export const SAMUS: CharacterDef = {
   guide: SAMUS_GUIDE,
   behaviour: {
     canJump: (p) => !inBall(p),
+    // Character.getOnVine → setState("vine") replaces ST_BALL: she climbs standing.
+    onGrabVine(p) {
+      p.scratch.aimUp = 0;
+      if (!inBall(p)) return;
+      p.scratch.ball = 0;
+      p.refitHitbox();
+    },
     update(p, input, world) {
       const b = p.body;
       cycleTool(p, input, tools(p), world);
