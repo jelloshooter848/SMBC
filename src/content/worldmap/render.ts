@@ -1,7 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { MapActor, MapTheme, WorldMapPage } from '@game/map/types';
-import { WATER_FRAMES } from '@content/sprites/map';
+import { WARP_SPACE, WATER_FRAMES } from '@content/sprites/map';
 import { POND_CHARS } from './build';
 
 /*
@@ -24,6 +24,7 @@ import { POND_CHARS } from './build';
  *   ( O )  giant mushroom cap (left, middle, right)   !  mushroom stem
  *   { - }  treetop platform in the sea (left, middle, right)   |  tree trunk in the sea
  *   W castle wall   V battlements   G castle gate      P pipe   X cannon
+ *   A  crystal cluster (the Warp Zone's scenery)
  *   s x  twinkling stars     D moon     k small cloud
  *   a b d f / g i l m / p r t v  a round pond, 4×3 tiles, always written as this whole block
  *
@@ -41,6 +42,7 @@ import { POND_CHARS } from './build';
  *   goomba / koopa {range, speed, color} / hammer-bro {range}   pace back and forth
  *   paratroopa {range, color}  bobs up and down    lakitu {range}  bobs on its cloud and drifts
  *   bullet {speed}  crosses the sky and wraps
+ *   comet {speed, phase}  streaks across the sky, bobbing a little, and wraps
  */
 
 interface TileDef {
@@ -111,6 +113,7 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   G: { frame: 'gate', walk: true },
   P: { frame: 'pipe' },
   X: { frame: 'blaster' },
+  A: { frame: 'crystal' },
   s: { frame: 'star', frames: 4, ticks: 28 },
   x: { frame: 'star', frames: 4, ticks: 36, phase: 2 },
   D: { frame: 'moon' },
@@ -158,6 +161,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   snow: 'map-snow',
   coast: 'map-coast',
   bowser: 'map-bowser',
+  warp: 'map-warp',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -169,6 +173,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   snow: '#000000',
   coast: '#5c94fc',
   bowser: '#881400',
+  warp: WARP_SPACE, // the same indigo as its void, so sky and void are one starfield
 };
 
 /** Background colour behind the tiles. */
@@ -201,6 +206,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   snow: 'enemies-overworld',
   coast: 'enemies-overworld',
   bowser: 'enemies-castle',
+  warp: 'enemies-underground',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -211,6 +217,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   snow: 'enemies-water',
   coast: 'enemies-water',
   bowser: 'enemies-castle',
+  warp: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -221,6 +228,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   snow: 'decor-night',
   coast: 'decor-overworld',
   bowser: 'decor-gray',
+  warp: 'decor-night',
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
@@ -236,6 +244,7 @@ const KOOPA = ['koopa-0', 'koopa-1'] as const;
 const KOOPA_FLY = ['koopa-fly-0', 'koopa-fly-1'] as const;
 const HAMMER_BRO = ['hammer-bro-0', 'hammer-bro-1'] as const;
 const LAKITU = ['lakitu-0', 'lakitu-1'] as const;
+const COMET = ['comet-0', 'comet-1'] as const;
 
 const num = (a: MapActor, key: string, fallback: number): number => {
   const v = a.props?.[key];
@@ -286,6 +295,7 @@ export const MAP_ACTOR_TYPES = [
   'hammer-bro',
   'paratroopa',
   'lakitu',
+  'comet',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -406,6 +416,14 @@ export function drawMapActor(
       r.sprite(sheet, LAKITU[(t >> 5) & 1] as string, lx, y - 8 + Math.sin(t / 30) * 2);
       return;
     }
+    case 'comet': {
+      const speed = num(actor, 'speed', 0.45);
+      const ox = pageOffset(page, actor);
+      const cx = ox + wrapX(x - ox + t * speed, 16);
+      const map = assets.sheet('map', MAP_PAL[page.theme]);
+      r.sprite(map, COMET[(t >> 2) & 1] as string, cx, y + Math.sin(t / 50) * 2, speed < 0);
+      return;
+    }
     default:
       return;
   }
@@ -413,7 +431,7 @@ export function drawMapActor(
 
 /**
  * Everything an actor can ever cover, in px: [x0, y0, x1, y1) with the ends exclusive. Pages keep
- * this off roads and nodes. Clouds and Bullet Bills sweep the whole width of the page.
+ * this off roads and nodes. Clouds, comets and Bullet Bills sweep the whole width of the page.
  */
 export function mapActorBounds(a: MapActor): [number, number, number, number] {
   const { x, y } = a;
@@ -422,6 +440,8 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
       return [0, y, 256, y + 24];
     case 'bullet':
       return [0, y, 256, y + 16];
+    case 'comet':
+      return [0, y - 2, 256, y + 10];
     case 'cheep': {
       const range = num(a, 'range', 32);
       return [Math.min(x, x + range), y - num(a, 'height', 32), Math.max(x, x + range) + 16, y + 16];
