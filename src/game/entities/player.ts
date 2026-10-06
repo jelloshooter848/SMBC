@@ -2,15 +2,18 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { AABB } from '@engine/math/aabb';
 import { px, sign, velToSub } from '@engine/math/units';
 import { JUMP_BUFFER_FRAMES } from '../constants';
-import { pickJumpTier, type JumpTier, type MovementProfile } from '../characters/profile';
+import { pickJumpTier, type JumpTier, type MovementProfile, type SwimProfile } from '../characters/profile';
 import type { CharacterDef } from '../characters/character';
 import { makeBody, moveX, moveY, type Body } from './body';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
 
-const SWIM_STROKE = 0x01800; // 1.5 px/f upward per tap
-const SWIM_GRAVITY = 0x00100; // 0.0625 px/f²
-const SWIM_SINK_MAX = 0x01000; // 1 px/f
+/**
+ * Swimming for heroes without their own `swim` profile. The original gives them no stroke (they
+ * jump off the floor with lighter gravity), so the stroke and gravity are ours; the sink cap is
+ * Character.as `vyMaxPsvWater = 250` (2.083 px/f), which applies to every character.
+ */
+const DEFAULT_SWIM: SwimProfile = { stroke: 0x01800, gravity: 0x00100, sinkMax: 0x02155 };
 const CLIMB_SPEED = 0x00100; // 1 px/f in subpixels
 
 /** The part of a player's scratch state that follows them to the next level (not per-swing hit marks). */
@@ -258,16 +261,19 @@ export class Player {
   ): void {
     const p = this.profile;
     const b = this.body;
+    const sw = p.swim ?? DEFAULT_SWIM;
     this.airCap = p.maxWalk;
-    if (b.vx > p.maxWalk) b.vx = p.maxWalk;
-    if (b.vx < -p.maxWalk) b.vx = -p.maxWalk;
+    // Character.as water block: on the floor a slow walker is capped at vxMaxGroundWater.
+    const cap = b.onGround && sw.floorWalk !== undefined ? sw.floorWalk : p.maxWalk;
+    if (b.vx > cap) b.vx = cap;
+    if (b.vx < -cap) b.vx = -cap;
     if (
       input.bufferedJump(JUMP_BUFFER_FRAMES) &&
       this.sliding === 0 &&
       (this.def.behaviour.canJump?.(this) ?? true)
     ) {
       input.consumeJumpBuffer();
-      b.vy = -SWIM_STROKE;
+      b.vy = -sw.stroke;
       b.onGround = false;
       this.jumping = false;
       audio.sfx('swim');
@@ -289,8 +295,8 @@ export class Player {
       this.combo = 0;
       b.vy = 0;
     } else {
-      b.vy += SWIM_GRAVITY;
-      if (b.vy > SWIM_SINK_MAX) b.vy = SWIM_SINK_MAX;
+      b.vy += sw.gravity;
+      if (b.vy > sw.sinkMax) b.vy = sw.sinkMax;
     }
     this.tier = pickJumpTier(p, b.vx);
     this.updateAnim(dir);

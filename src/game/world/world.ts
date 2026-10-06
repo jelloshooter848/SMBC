@@ -118,6 +118,8 @@ export class World {
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
   private leaving = false;
   private cheepTimer = 0;
+  /** Frames since the lead player last moved right (flying Cheep Cheeps' reverse rule). */
+  private cheepNoRight = 0;
   private bulletTimer = 60;
   /** Bowser's long-range flames (`bowser-fire` zone), or null. */
   private readonly bowserFire: BowserFire | null;
@@ -301,7 +303,8 @@ export class World {
         return new Piranha(s.x, s.y, true, !!s.props?.red);
       case 'cheep-red':
       case 'cheep-grey':
-        return new Cheep(x + px(2), y + px(2), s.type === 'cheep-red' ? 'red' : 'grey');
+        // The map's colour is ignored, as in the original (Level.as lines 953-958).
+        return Cheep.swimmer(x, y, this.rng);
       case 'blooper':
         return new Blooper(x + px(2), y + px(2));
       case 'podoboo':
@@ -708,24 +711,34 @@ export class World {
     return null;
   }
 
-  /** Bridge levels: red Cheep Cheeps leap from below while the lead player is inside a `cheeps` zone. */
+  /**
+   * Bridge levels: red Cheep Cheeps leap from below while the lead player is inside a `cheeps`
+   * zone (FlyingCheepSpawner.as). With fewer than MAX_CHEEP_NORMAL = 3 out and no spawn pending it
+   * waits a random 600-1050 ms (36-63 frames) and then launches one if still in the zone and below
+   * the limit. Fish may only fly left once the lead has not moved right for 2 s
+   * (CAN_REVERSE_DIRECTION_DELAY = 2000).
+   */
   private flyingCheeps(): void {
     const lead = this.rightmost();
     if (!lead || this.leaving) return;
+    if (lead.body.vx > 0) this.cheepNoRight = 0;
+    else this.cheepNoRight++;
     const inZone = this.level.zones.some(
       (z) => z.kind === 'cheeps' && lead.body.x >= tileToSub(z.x) && lead.body.x < tileToSub(z.x + z.w),
     );
-    if (!inZone) return;
-    if (--this.cheepTimer > 0) return;
-    this.cheepTimer = 24 + this.rng.int(40);
     let flying = 0;
     for (const e of this.entities) if (e instanceof Cheep && e.alive && e.flying) flying++;
-    if (flying >= 3) return;
-    const x = this.camera.x + px(32 + this.rng.int(SCREEN_W - 64));
-    const c = new Cheep(x, px(SCREEN_H + 8), 'red', true);
-    c.body.vx = ((x < lead.body.x ? 1 : -1) * (0x00400 + this.rng.int(0x00800))) | 0;
-    c.body.vy = -(0x04800 + this.rng.int(0x01000));
-    this.spawn(c);
+    if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < 3) {
+      const marioType = lead.def.id === 'mario' || lead.def.id === 'luigi';
+      const target = {
+        centerX: lead.centerX,
+        vx: lead.body.vx,
+        marioWalk: marioType ? lead.profile.maxWalk : null,
+      };
+      this.spawn(Cheep.leaper(this.rng, this.camera.x, SCREEN_H, target, this.cheepNoRight >= 120));
+      flying++;
+    }
+    if (inZone && flying < 3 && this.cheepTimer === 0) this.cheepTimer = 36 + this.rng.int(28);
   }
 
   /** 5-3 style: Bullet Bills fly in from the screen edges while the lead is in a `bullets` zone. */

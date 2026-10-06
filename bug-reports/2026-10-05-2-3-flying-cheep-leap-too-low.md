@@ -38,3 +38,5 @@ Playtested in both games, and confirmed in the original's source. The sideways s
 - PR #24 check: still applies on main 2225155. `git diff b8379f9 HEAD` is empty for `world.ts`, `cheep.ts` and every map in `src/content/levels/`.
 - Source: `smb-w2/2026-10-05-2-3-flying-cheep-leap-too-low.md`. The reviewer corrected the height above the deck (the tester wrote 1 to 3.5 tiles) and added the level list.
 - Reviewed: verified against `com/smbc/enemies/CheepFast.as` (`FLYING_JUMP_PWR`, `FLYING_GRAVITY`, `setStats`), `com/smbc/enemies/CheepFlying.as`, `com/smbc/level/FlyingCheepSpawner.as`, and ours: `src/game/world/world.ts` (`flyingCheeps`), `src/game/entities/enemies/cheep.ts` (`FLY_GRAVITY`, `update`), the `cheeps` lines in `src/content/levels/`.
+
+Status: fixed — leaping fish start at the screen bottom with FLYING_JUMP_PWR = 555 under FLYING_GRAVITY = 375 (4.625 px/f, 0.052 px/f²), peaking about y 30 and staying up about 3 s.

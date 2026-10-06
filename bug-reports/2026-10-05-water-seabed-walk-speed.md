@@ -35,3 +35,5 @@ Playtested in both games, with the original's source as backup. Related report: 
 - The clamp in the original applies only while Mario is under water (more than 2 tiles below the screen top) and on the ground, so it covers the sea floor and any underwater ledge.
 - Source: `smb-w2/2026-10-05-water-seabed-walk-speed.md`.
 - Reviewed: verified against `com/smbc/characters/base/MarioBase.as` (`walksSlowUnderWater`, `MAX_WALK_SPEED`), `com/smbc/characters/Character.as` (`vxMaxGroundWater`, the water block in the per-frame update), and ours: `src/game/entities/player.ts` (`swim`), `src/game/characters/mario/profile.ts` (`maxWalk`).
+
+Status: fixed — Mario and Luigi now walk on the sea floor at vxMaxGroundWater = 90 (0.75 px/f) via a per-hero `swim.floorWalk` (MarioBase.as walksSlowUnderWater, Character.as water block); other heroes keep their walk cap.

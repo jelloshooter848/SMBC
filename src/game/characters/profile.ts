@@ -13,6 +13,21 @@ export interface JumpTier {
   fallGravity: number;
 }
 
+/**
+ * Underwater movement (the original's `Character.as` water block plus each hero's `setStats`).
+ * Same units as the rest of the profile.
+ */
+export interface SwimProfile {
+  /** Upward speed a stroke (jump tap) sets (positive number; applied as -stroke). */
+  stroke: number;
+  /** Gravity while under water. */
+  gravity: number;
+  /** Sinking speed cap. */
+  sinkMax: number;
+  /** Ground speed cap while standing under water (`walksSlowUnderWater`); absent: `maxWalk`. */
+  floorWalk?: number | undefined;
+}
+
 export interface MovementProfile {
   /** Speed snapped to when starting to walk from rest. */
   minWalk: number;
@@ -42,6 +57,8 @@ export interface MovementProfile {
   /** Frames after leaving a ledge during which a jump is still allowed (assist; 0 = SMB1 behaviour). */
   coyoteFrames: number;
   slide?: { speed: number; frames: number; hitboxH: number } | undefined;
+  /** Underwater movement; absent: the player's shared default (`DEFAULT_SWIM` in player.ts). */
+  swim?: SwimProfile | undefined;
 }
 
 export function pickJumpTier(p: MovementProfile, vx: number): JumpTier {

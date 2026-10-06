@@ -105,3 +105,5 @@ every time
   and `com/smbc/data/ScreenSize.as` (480 px stage, 32 px tiles), both level XMLs, and ours:
   `src/game/entities/enemies/blooper.ts`, `src/game/characters/mario/index.ts` (hitbox 16/24 px),
   the `blooper` lines in `src/content/levels/`.
+
+Status: fixed — Bloopers sink at ySpeed 80 (0.67 px/f), rise only after the 200 ms wait when the player's feet are above their bottom or their bottom passes MAX_BOTTOM_Y (y 184), with the axy 700 burst and fxy friction of Bloopa.as; the out-of-water y 32 ceiling is gone.
