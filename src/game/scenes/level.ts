@@ -3,7 +3,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { px } from '@engine/math/units';
 import type { LevelData } from '../level/schema';
-import { World, type WorldStart } from '../world/world';
+import { freshSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
 import { drawHud } from '../hud/hud';
 import { carriedKit } from '../entities/player';
@@ -32,7 +32,9 @@ export class LevelScene implements Scene {
     readonly level: LevelData,
     start: LevelStart,
   ) {
-    this.world = new World(level, game.ctx, game.state, start);
+    // Each visit plays out differently (swimming Cheep Cheeps, timers); headless sims and tests
+    // keep the level's fixed seed.
+    this.world = new World(level, game.ctx, game.state, { ...start, seed: start.seed ?? freshSeed() });
   }
 
   enter(): void {

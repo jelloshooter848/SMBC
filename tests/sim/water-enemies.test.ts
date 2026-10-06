@@ -14,7 +14,7 @@ import { SCREEN_W } from '@engine/viewport';
 import { px, toPx, vel } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
 import type { Action } from '@engine/input/actions';
-import { World } from '@game/world/world';
+import { freshSeed, World } from '@game/world/world';
 import type { EntitySpawn } from '@game/level/schema';
 import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
@@ -181,8 +181,11 @@ describe('Swimming Cheep Cheeps', () => {
         .filter((s) => s.type.startsWith('cheep'))
         .map((s) => `${s.type}@${s.x},${s.y}`)
         .join(' ');
+    // A visit in play: LevelScene gives every world a fresh seed.
     const visit = (id: string) =>
-      new World(map(id === '2-2' ? 'world2' : 'world7', id), ctx(), newGameState(MARIO));
+      new World(map(id === '2-2' ? 'world2' : 'world7', id), ctx(), newGameState(MARIO), {
+        seed: freshSeed(),
+      });
 
     it('two visits to 2-2 differ, and 2-2 and 7-2 do not share a seed', () => {
       const a = school(visit('2-2'));

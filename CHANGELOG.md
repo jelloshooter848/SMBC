@@ -19,7 +19,7 @@ under `## [Unreleased]`.
   clearing every Lost level from 1-1 to 8-4 (the castle shows the count). Their warp zones work as
   on the NES. The 8-4, 9-4 and D-4 endings return to the map.
 - Warp pads on the map show a hint line while you stand on them; the Worlds menu lists the Warp
-  Zone and Lost Levels pages and starts on the current page.
+  Zone (and the Lost Levels pages once you are there) and starts on the current page.
 - After a death in a campaign level, the character select offers **Return to map**.
 
 ### Changed

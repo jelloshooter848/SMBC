@@ -83,8 +83,9 @@ export interface WorldStart {
 export const levelSeed = (level: LevelData): number => level.id.length * 7919 + 1;
 
 let visits = 0;
-/** A fresh seed for each world built in play, so no two visits share a school of fish. */
-const freshSeed = (): number => ((Math.random() * 0x100000000) ^ Math.imul(++visits, 0x9e3779b1)) >>> 0;
+/** A fresh seed for each world built in play (LevelScene), so no two visits share a school of fish. */
+export const freshSeed = (): number =>
+  ((Math.random() * 0x100000000) ^ Math.imul(++visits, 0x9e3779b1)) >>> 0;
 
 /**
  * Pipe travel speed: the original's vertPipeSpeed = horzPipeSpeed = 50 Flash px/s
@@ -217,7 +218,7 @@ export class World {
     const stop = level.zones.find((z): z is Zone & { kind: 'scrollStop' } => z.kind === 'scrollStop');
     this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked');
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
-    this.rng = new Rng(start.seed ?? freshSeed());
+    this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     this.time = startTime(level, state, start);
     const sx = start.x ?? level.start.x;
