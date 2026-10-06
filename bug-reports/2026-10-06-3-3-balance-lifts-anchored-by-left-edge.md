@@ -30,3 +30,5 @@ every time
 - The converter fix in `2026-10-05-converter-ignores-shiftup-shiftright.md` centred sideways and vertical lifts but left balance lifts out.
 - It doesn't block play: the balance lift motion and the 1000-point snap work (`2026-10-05-3-3-balance-lift-motion.md` and `2026-10-05-3-3-balance-lift-no-1000-points.md` verified).
 - Found by the build review of V0.3.0-DEV.8F4BF1A. Screenshot names in the review: `150_b0`, `182_bc13`. Not committed (`check:assets` bans image files).
+
+Status: fixed — `BalanceLift` centres both platforms on their cells (`dx = 8 - len*4` px, as Level.as `currentX + TILE_SIZE/2`), and the rope and pulleys move with them. The 3-3 left lift now spans x 1296-1344. Checked all 12 maps with balance lifts (3-3, 4-3, 6-3 and nine Lost Levels); the existing balance-lift tests pass, and the B-3 test now checks the centre cell. Tests: tests/sim/lifts.test.ts, "Balance lifts are centred on their cells".

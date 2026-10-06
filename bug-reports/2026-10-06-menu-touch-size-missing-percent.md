@@ -29,3 +29,5 @@ every time
 
 - Fix ideas: add a % glyph to the font, or show the value another way, such as "x1.1".
 - Found by the build review's smoke test of V0.3.0-DEV.8F4BF1A. Screenshot names in the review: 082, touch/016. Not committed (`check:assets` bans image files).
+
+Status: fixed — the bitmap font has an original 8x8 "%" glyph (two 2x2 dots and a 2px slash) and `fontText` keeps "%", so Touch size and the Master, Music and Sound volumes read "100%"; font tests cover the glyph, and a test checks every character the Options menus draw has a glyph (which also changed the remap status "=" to ":").

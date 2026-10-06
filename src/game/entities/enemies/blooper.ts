@@ -2,6 +2,7 @@ import { px, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
 import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
+import type { DamageSource } from '../../rules/damage';
 
 // Bloopa.as, Flash px/s at 32 px tiles: /2/60 for px/f, /2/3600 for px/f².
 /** `ySpeed = 80`: the steady sink (defyGrav, so no gravity). */
@@ -92,5 +93,10 @@ export class Blooper extends Enemy {
     if (water && b.y < world.waterTop + px(8)) b.y = world.waterTop + px(8);
     if (b.y + b.h > px(13 * 16)) b.y = px(13 * 16) - b.h;
     if (b.vx !== 0) this.facing = b.vx > 0 ? 1 : -1;
+  }
+
+  /** Bloopa.stomp: die(), then `vx = 0; vy = 0`, so a stomped one drops straight down, no hop. */
+  protected override flipOut(src: DamageSource, world: World): void {
+    super.flipOut(src, world, src.kind !== 'stomp');
   }
 }

@@ -51,7 +51,7 @@ import { Axe } from '../entities/objects/axe';
 import { startHp, type CharacterDef } from '../characters/character';
 
 export type WorldEvent =
-  | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode } }
+  | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode; secret?: string } }
   | { type: 'exit'; next: string }
   /** `player`: index of the player whose death ended the attempt (they pick the next hero). */
   | { type: 'died'; player?: number }
@@ -72,7 +72,20 @@ export interface WorldStart {
    * arrival (changePlayerLoc calls destroyNearbyEnemies(true)).
    */
   clearEnemies?: 'all' | 'keep-piranhas';
+  /**
+   * Seed for the world's RNG (swimming Cheep Cheeps' setup, jump and throw timers...). Left out,
+   * every visit gets a fresh one, as the original's Math.random does; headless runs pass a fixed one.
+   */
+  seed?: number;
 }
+
+/** The fixed seed headless runs use for a level unless they pass their own. */
+export const levelSeed = (level: LevelData): number => level.id.length * 7919 + 1;
+
+let visits = 0;
+/** A fresh seed for each world built in play (LevelScene), so no two visits share a school of fish. */
+export const freshSeed = (): number =>
+  ((Math.random() * 0x100000000) ^ Math.imul(++visits, 0x9e3779b1)) >>> 0;
 
 /**
  * Pipe travel speed: the original's vertPipeSpeed = horzPipeSpeed = 50 Flash px/s
@@ -205,7 +218,7 @@ export class World {
     const stop = level.zones.find((z): z is Zone & { kind: 'scrollStop' } => z.kind === 'scrollStop');
     this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked');
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
-    this.rng = new Rng(level.id.length * 7919 + 1);
+    this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     this.time = startTime(level, state, start);
     const sx = start.x ?? level.start.x;
@@ -954,8 +967,12 @@ export class World {
         this.entities.splice(i, 1);
         continue;
       }
-      if (e.despawnMargin !== null && e.body.x + e.body.w < left - px(e.despawnMargin))
+      if (e.despawnMargin !== null && e.body.x + e.body.w < left - px(e.despawnMargin)) {
+        // Gone for good (the original's cleanUp/destroy): whoever still holds it (Lakitu's
+        // Spinies, the flying-bill spawner) must see it dead, or it counts against them forever.
+        e.destroy();
         this.entities.splice(i, 1);
+      }
     }
   }
 

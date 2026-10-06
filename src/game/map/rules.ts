@@ -1,22 +1,33 @@
 import { MAP_PAGES } from '@content/worldmap';
 import type { LevelData } from '../level/schema';
-import type { MapNode, MapPath, MapProgress, WorldExit, WorldMapPage } from './types';
+import type { MapCondition, MapNode, MapPath, MapProgress, PageId, WorldExit, WorldMapPage } from './types';
 
 /*
- * World map rules (pure apart from the documented in-place updates of `progress`): which nodes and
- * paths are open, what a level clear or a warp opens, and where the hero walks on the d-pad.
+ * World map rules (pure apart from the documented in-place updates of `progress`; every
+ * condition reads the file alone): which pages, nodes and paths are open, what a level clear or
+ * a warp opens, and where the hero walks on the d-pad.
  *
- * The open checks take an optional `unlockAll` (developer mode's "Unlock all"): every world, level
- * and castle node, path and world exit counts as open, without anything counting as cleared.
- * Bonus nodes still need their secret key.
+ * The open checks take an optional `unlockAll` (developer mode's "Unlock all"): every page,
+ * level and castle node, path and world exit counts as open, and every condition holds except
+ * 'never', without anything counting as cleared. Bonus and hidden warp nodes still need their
+ * secret key. docs/WORLD_MAP.md describes the page contract.
  */
 
 export type GetLevel = (id: string) => LevelData;
 export type Dir = 'left' | 'right' | 'up' | 'down';
 
+/** The page every file starts on, always open. */
+export const FIRST_PAGE: PageId = 'smb-1';
+
 /** A fresh file: World 1 open, the hero on its start node. */
 export function newMapProgress(): MapProgress {
-  return { cleared: [], worlds: [1], secrets: [], position: { world: 1, node: 'start' } };
+  return {
+    cleared: [],
+    pages: [FIRST_PAGE],
+    secrets: [],
+    position: { page: FIRST_PAGE, node: 'start' },
+    gameCleared: false,
+  };
 }
 
 /** Reveal/animation id of a path ('1-1>1-2'). */
@@ -24,40 +35,130 @@ export function pathId(p: MapPath): string {
   return `${p.from}>${p.to}`;
 }
 
-/** Reveal/animation id of a world exit ('1-4>world-2'). */
+/** Reveal/animation id of a world exit ('1-4>smb-2'). */
 export function exitId(e: WorldExit): string {
-  return `${e.from}>world-${e.toWorld}`;
+  return `${e.from}>${e.to}`;
 }
 
-export function isWorldOpen(progress: MapProgress, world: number, unlockAll = false): boolean {
-  return world === 1 || (unlockAll && world >= 1) || progress.worlds.includes(world);
+function registered(id: PageId, pages: readonly WorldMapPage[]): boolean {
+  return pages.some((p) => p.id === id);
+}
+
+/** World 1 always; with unlock all every registered page; otherwise the file's open pages. */
+export function isPageOpen(
+  progress: MapProgress,
+  id: PageId,
+  unlockAll = false,
+  pages: readonly WorldMapPage[] = MAP_PAGES,
+): boolean {
+  return id === FIRST_PAGE || progress.pages.includes(id) || (unlockAll && registered(id, pages));
+}
+
+/**
+ * The main levels whose clears open the Lost Levels' World 9 in campaign play ('ll9', owner
+ * decision for 0.4.0): all 32 of Lost 1-1 to 8-4.
+ */
+export const LOST_NINE_LEVELS: readonly string[] = Array.from(
+  { length: 32 },
+  (_, i) => `ll-${Math.floor(i / 4) + 1}-${(i % 4) + 1}`,
+);
+
+/** How many of LOST_NINE_LEVELS the file has cleared. */
+export function lostNineCleared(progress: MapProgress): number {
+  return LOST_NINE_LEVELS.filter((id) => progress.cleared.includes(id)).length;
+}
+
+/**
+ * A condition's progress so far, for a hint's '{n}' ('ll9': '31/32'); '' for the others.
+ */
+export function conditionCount(progress: MapProgress, cond: MapCondition | undefined): string {
+  return cond === 'll9' ? `${lostNineCleared(progress)}/${LOST_NINE_LEVELS.length}` : '';
+}
+
+/** Whether `cond` holds (no condition always does; 'never' never does, even with unlock all). */
+export function conditionMet(
+  progress: MapProgress,
+  cond: MapCondition | undefined,
+  unlockAll = false,
+): boolean {
+  if (cond === undefined) return true;
+  if (cond === 'never') return false;
+  if (unlockAll) return true;
+  if (cond === 'gameCleared') return progress.gameCleared === true;
+  if (cond.startsWith('secret:')) return progress.secrets.includes(cond.slice('secret:'.length));
+  if (cond === 'll9') return lostNineCleared(progress) === LOST_NINE_LEVELS.length;
+  if (cond === 'llLetters') return progress.cleared.includes('ll-8-4');
+  return false;
 }
 
 function node(page: WorldMapPage, id: string): MapNode | undefined {
   return page.nodes.find((n) => n.id === id);
 }
 
-/** The node's level has been cleared (start nodes never are). */
+/** The node's level has been cleared (start and warp nodes never are). */
 export function isCleared(progress: MapProgress, page: WorldMapPage, nodeId: string): boolean {
   const n = node(page, nodeId);
   return !!n?.level && progress.cleared.includes(n.level);
 }
 
-/** A path counts as walked once its `from` node is cleared (or is the start of an open world). */
-function pathFromDone(progress: MapProgress, page: WorldMapPage, p: MapPath): boolean {
-  const from = node(page, p.from);
-  if (!from) return false;
-  if (from.kind === 'start') return isWorldOpen(progress, page.world);
-  return isCleared(progress, page, p.from);
-}
-
+/** A node's secret key: bonus nodes always need one, any node with `unlock` needs its key. */
 function keyFound(progress: MapProgress, n: MapNode): boolean {
-  return n.kind !== 'bonus' || (!!n.unlock && progress.secrets.includes(n.unlock));
+  if (n.unlock) return progress.secrets.includes(n.unlock);
+  return n.kind !== 'bonus';
 }
 
 /**
- * World 1's start always; a world's start when the world is open; any node at the `to` end of
- * a path whose `from` is cleared or is the start of an open world. Bonus nodes also need their key.
+ * Whether JUMP on the node warps: a 'warp' node, or a 'start' node carrying `to` (a page's
+ * arrival node that is also a warp, like the hub's centre; arriving there never warps).
+ */
+export function isWarpNode(n: MapNode): boolean {
+  return n.kind === 'warp' || (n.kind === 'start' && n.to !== undefined);
+}
+
+/**
+ * A warp node works: its target page exists and its `requires` holds (with unlock all, every
+ * condition but 'never'). Says nothing about whether the node is shown (isOpen).
+ */
+export function isWarpOpen(
+  progress: MapProgress,
+  n: MapNode,
+  unlockAll = false,
+  pages: readonly WorldMapPage[] = MAP_PAGES,
+): boolean {
+  return isWarpNode(n) && !!n.to && registered(n.to, pages) && conditionMet(progress, n.requires, unlockAll);
+}
+
+/**
+ * The hint line for a warp node: its destination while open (`label`, else the target page's
+ * title), its `hint` while locked ('???' without one).
+ */
+export function warpText(
+  progress: MapProgress,
+  n: MapNode,
+  unlockAll = false,
+  pages: readonly WorldMapPage[] = MAP_PAGES,
+): string {
+  if (!isWarpOpen(progress, n, unlockAll, pages)) return n.hint ?? '???';
+  return n.label ?? pages.find((p) => p.id === n.to)?.title ?? '';
+}
+
+/**
+ * A path counts as walked once its `from` node is cleared, is the start of an open page, or is
+ * a found warp node that works.
+ */
+function pathFromDone(progress: MapProgress, page: WorldMapPage, p: MapPath): boolean {
+  const from = node(page, p.from);
+  if (!from) return false;
+  if (from.kind === 'start') return isPageOpen(progress, page.id);
+  if (from.kind === 'warp')
+    return isPageOpen(progress, page.id) && keyFound(progress, from) && conditionMet(progress, from.requires);
+  return isCleared(progress, page, p.from);
+}
+
+/**
+ * Shown and walkable: World 1's start always; a page's start when the page is open; any node at
+ * the `to` end of a path whose `from` is done (pathFromDone). Bonus nodes, and warp nodes with
+ * an `unlock` key, also need their key. A locked warp node is still shown (its hint says why).
  */
 export function isOpen(
   progress: MapProgress,
@@ -66,12 +167,12 @@ export function isOpen(
   unlockAll = false,
 ): boolean {
   const n = node(page, nodeId);
-  if (!n || !isWorldOpen(progress, page.world, unlockAll) || !keyFound(progress, n)) return false;
+  if (!n || !isPageOpen(progress, page.id, unlockAll) || !keyFound(progress, n)) return false;
   if (n.kind === 'start' || unlockAll) return true;
   return page.paths.some((p) => p.to === nodeId && pathFromDone(progress, page, p));
 }
 
-/** Unlock all: a path is open when both its ends are (a hidden bonus node keeps its path hidden). */
+/** Unlock all: a path is open when both its ends are (a hidden node keeps its path hidden). */
 export function isPathOpen(
   progress: MapProgress,
   page: WorldMapPage,
@@ -82,15 +183,33 @@ export function isPathOpen(
   return pathFromDone(progress, page, p) && isOpen(progress, page, p.to);
 }
 
-/** A world exit opens when the node it leaves from (the castle) is cleared (or is open, with unlock all). */
+/**
+ * A world exit opens when the node it leaves from (the castle) is cleared and its `requires`
+ * holds (with unlock all: when the node is open and the condition isn't 'never').
+ */
 export function isExitOpen(
   progress: MapProgress,
   page: WorldMapPage,
   e: WorldExit,
   unlockAll = false,
 ): boolean {
+  if (!conditionMet(progress, e.requires, unlockAll)) return false;
   if (unlockAll) return isOpen(progress, page, e.from, true);
-  return isWorldOpen(progress, page.world) && isCleared(progress, page, e.from);
+  return isPageOpen(progress, page.id) && isCleared(progress, page, e.from);
+}
+
+/**
+ * The hint line on node `nodeId` while a world exit leaving it with a `hint` is locked (its
+ * '{n}' filled in by conditionCount: 'WORLD 9 - CLEAR 1-1 TO 8-4 31/32'); '' when there is none.
+ */
+export function exitHint(
+  progress: MapProgress,
+  page: WorldMapPage,
+  nodeId: string,
+  unlockAll = false,
+): string {
+  const e = page.exits.find((x) => x.from === nodeId && x.hint && !isExitOpen(progress, page, x, unlockAll));
+  return e?.hint ? e.hint.replace('{n}', conditionCount(progress, e.requires)) : '';
 }
 
 /** The paths and world exits to draw. */
@@ -118,25 +237,24 @@ function openIds(progress: MapProgress, page: WorldMapPage): string[] {
   return ids;
 }
 
-/** A reveal id qualified by its page: '2:start', '1:1-1>1-2'. */
-export function revealId(world: number, id: string): string {
-  return `${world}:${id}`;
+/** A reveal id qualified by its page: 'smb-2:start', 'smb-1:1-1>1-2', 'hub:start>ll'. */
+export function revealId(page: PageId, id: string): string {
+  return `${page}:${id}`;
 }
 
-/** Splits a reveal id back into its world and page-local id (null when malformed). */
-export function parseRevealId(rid: string): { world: number; id: string } | null {
+/** Splits a reveal id back into its page and page-local id (null when malformed). */
+export function parseRevealId(rid: string): { page: PageId; id: string } | null {
   const i = rid.indexOf(':');
-  const world = Number(rid.slice(0, i));
-  return i > 0 && Number.isInteger(world) ? { world, id: rid.slice(i + 1) } : null;
+  return i > 0 && i < rid.length - 1 ? { page: rid.slice(0, i), id: rid.slice(i + 1) } : null;
 }
 
 function openedBy(pages: readonly WorldMapPage[], progress: MapProgress, change: () => void): string[] {
-  const before = new Set(pages.flatMap((p) => openIds(progress, p).map((id) => revealId(p.world, id))));
+  const before = new Set(pages.flatMap((p) => openIds(progress, p).map((id) => revealId(p.id, id))));
   change();
   const out: string[] = [];
   for (const p of pages)
     for (const id of openIds(progress, p)) {
-      const rid = revealId(p.world, id);
+      const rid = revealId(p.id, id);
       if (!before.has(rid)) out.push(rid);
     }
   return out;
@@ -158,7 +276,10 @@ export function mainLevel(levelId: string, getLevel: GetLevel): string {
   return id;
 }
 
-/** The page and node a (main) level sits on. */
+/**
+ * The page and node a (main) level sits on: the level → page lookup ('ll-3-2' is wherever a
+ * node says `level: 'll-3-2'`; nothing parses the world number).
+ */
 export function findLevelNode(
   levelId: string,
   pages: readonly WorldMapPage[] = MAP_PAGES,
@@ -170,12 +291,16 @@ export function findLevelNode(
   return null;
 }
 
+function openPage(progress: MapProgress, id: PageId): void {
+  if (!progress.pages.includes(id)) progress.pages.push(id);
+}
+
 /**
  * Records a clear of `levelId` (a sub-area counts for its main level) in `progress`, puts the
- * hero on its node, and on a castle clear opens the worlds its exits lead to. Returns the
- * world-qualified `revealId`s of the nodes, `pathId`s and `exitId`s that were not open before
- * (on every page), for the reveal animation; levels not on any page change
- * nothing but the cleared list.
+ * hero on its node, and on a castle clear opens the pages its exits lead to (those whose
+ * `requires` holds). Returns the page-qualified `revealId`s of the nodes, `pathId`s and
+ * `exitId`s that were not open before (on every page), for the reveal animation; levels not on
+ * any page change nothing but the cleared list.
  */
 export function clearLevel(
   progress: MapProgress,
@@ -188,22 +313,61 @@ export function clearLevel(
   return openedBy(pages, progress, () => {
     if (!progress.cleared.includes(main)) progress.cleared.push(main);
     if (!at) return;
-    progress.position = { world: at.page.world, node: at.node.id };
+    progress.position = { page: at.page.id, node: at.node.id };
     if (at.node.kind !== 'castle') return;
     // The castle's world exits lead on (World 8's castle has none: the ending follows).
-    const next = at.page.exits.filter((e) => e.from === at.node.id).map((e) => e.toWorld);
-    for (const w of next) if (!progress.worlds.includes(w)) progress.worlds.push(w);
+    for (const e of at.page.exits)
+      if (e.from === at.node.id && conditionMet(progress, e.requires)) openPage(progress, e.to);
   });
 }
 
-/** A warp pipe opens only its target world (its start and first level). Returns the opened `revealId`s. */
+/**
+ * Opens the pages of cleared castles' exits whose `requires` has come to hold since (the
+ * Lost Levels' World 9 and A-D, opened by the global progress store). Returns the opened
+ * `revealId`s. Game.showMap calls it each time the map is shown.
+ */
+export function openMetExits(progress: MapProgress, pages: readonly WorldMapPage[] = MAP_PAGES): string[] {
+  const due = pages.flatMap((page) =>
+    isPageOpen(progress, page.id)
+      ? page.exits
+          .filter(
+            (e) =>
+              e.requires !== undefined &&
+              !progress.pages.includes(e.to) &&
+              isExitOpen(progress, page, e) &&
+              registered(e.to, pages),
+          )
+          .map((e) => ({ e, rid: revealId(page.id, exitId(e)) }))
+      : [],
+  );
+  if (!due.length) return [];
+  // The exits themselves count as open as soon as the condition holds: draw them in too.
+  const opened = openedBy(pages, progress, () => {
+    for (const { e } of due) openPage(progress, e.to);
+  });
+  return [...due.map((d) => d.rid).filter((rid) => !opened.includes(rid)), ...opened];
+}
+
+/**
+ * A warp pipe or warp node opens only its target page (its start and what its start leads to).
+ * Returns the opened `revealId`s.
+ */
 export function warpTo(
   progress: MapProgress,
-  world: number,
+  page: PageId,
+  pages: readonly WorldMapPage[] = MAP_PAGES,
+): string[] {
+  return openedBy(pages, progress, () => openPage(progress, page));
+}
+
+/** Records secret `key` (shows the nodes it unlocks). Returns the opened `revealId`s. */
+export function findSecret(
+  progress: MapProgress,
+  key: string,
   pages: readonly WorldMapPage[] = MAP_PAGES,
 ): string[] {
   return openedBy(pages, progress, () => {
-    if (!progress.worlds.includes(world)) progress.worlds.push(world);
+    if (!progress.secrets.includes(key)) progress.secrets.push(key);
   });
 }
 
@@ -221,8 +385,8 @@ export function entryLevel(levelId: string, getLevel: GetLevel): string {
 export type MapStep =
   | { kind: 'node'; to: string; points: [number, number][] }
   | { kind: 'exit'; exit: WorldExit; points: [number, number][] }
-  /** Back off a world's start to the page that leads here; arrive at `node` (that page's castle). */
-  | { kind: 'back'; world: number; node: string; points: [number, number][] };
+  /** Back off a page's start to the page (same group) that leads here; arrive at `node` (its castle). */
+  | { kind: 'back'; page: PageId; node: string; points: [number, number][] };
 
 const DELTA: Record<Dir, [number, number]> = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] };
 
@@ -239,8 +403,9 @@ const OPPOSITE: Record<Dir, Dir> = { left: 'right', right: 'left', up: 'down', d
 
 /**
  * The open path (either way along it) or world exit leaving `from` whose first step goes `dir`;
- * null when there is none. On a world's start, the way the page was entered leads back to the
- * previous page when its exit is open.
+ * null when there is none. On a page's start, the way the page was entered leads back to the
+ * previous page of the same group when its exit is open. Warp nodes are walked to and from like
+ * any node; warping is a jump (WorldMapScene), not a step.
  */
 export function nextStep(
   page: WorldMapPage,
@@ -262,15 +427,15 @@ export function nextStep(
     if (
       e.from !== from ||
       !isExitOpen(progress, page, e, unlockAll) ||
-      !isWorldOpen(progress, e.toWorld, unlockAll)
+      !isPageOpen(progress, e.to, unlockAll, pages)
     )
       continue;
     if (heads(e.points, dir)) return { kind: 'exit', exit: e, points: e.points.slice() };
   }
   if (node(page, from)?.kind === 'start') {
     for (const prev of pages) {
-      if (prev.world === page.world) continue;
-      const e = prev.exits.find((x) => x.toWorld === page.world && isExitOpen(progress, prev, x, unlockAll));
+      if (prev.id === page.id || prev.group !== page.group) continue;
+      const e = prev.exits.find((x) => x.to === page.id && isExitOpen(progress, prev, x, unlockAll));
       if (!e || OPPOSITE[SIDE_DIR[e.side]] !== dir) continue;
       const start = node(page, from) as MapNode;
       const [dx, dy] = DELTA[dir];
@@ -279,7 +444,7 @@ export function nextStep(
       for (let x = start.x + dx, y = start.y + dy; x >= 0 && x < 16 && y >= 0 && y < 15; x += dx, y += dy)
         points.push([x, y]);
       if (points.length < 2) points.push([start.x + dx, start.y + dy]);
-      return { kind: 'back', world: prev.world, node: e.from, points };
+      return { kind: 'back', page: prev.id, node: e.from, points };
     }
   }
   return null;

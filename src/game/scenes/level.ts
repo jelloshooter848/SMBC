@@ -3,7 +3,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { px } from '@engine/math/units';
 import type { LevelData } from '../level/schema';
-import { World, type WorldStart } from '../world/world';
+import { freshSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
 import { drawHud } from '../hud/hud';
 import { carriedKit } from '../entities/player';
@@ -32,7 +32,9 @@ export class LevelScene implements Scene {
     readonly level: LevelData,
     start: LevelStart,
   ) {
-    this.world = new World(level, game.ctx, game.state, start);
+    // Each visit plays out differently (swimming Cheep Cheeps, timers); headless sims and tests
+    // keep the level's fixed seed.
+    this.world = new World(level, game.ctx, game.state, { ...start, seed: start.seed ?? freshSeed() });
   }
 
   enter(): void {
@@ -93,6 +95,13 @@ export class LevelScene implements Scene {
         game.state.checkpoint = { level: this.level.id, x: ev.x, y: ev.y };
         break;
       case 'pipe': {
+        // Campaign: a secret warp zone's one pipe (level/campaign.ts) ends the level on the map.
+        if (ev.target.secret && game.campaign) {
+          game.state.checkpoint = null;
+          game.state.time = null;
+          game.campaignSecret(ev.target.secret, this.level.id);
+          break;
+        }
         const target = game.deps.getLevel(ev.target.level);
         const exitDir = ev.target.exitDir ?? 'none';
         const start: LevelStart = {
@@ -111,10 +120,13 @@ export class LevelScene implements Scene {
           game.state.warped = true;
           game.state.checkpoint = null;
           game.state.time = null;
-          // Campaign: the warp ends the level on the map, at the target world (owner decision);
-          // otherwise character select, the WORLD card and the level, as the original does.
-          if (game.campaign && target.world !== this.level.world)
-            game.campaignWarpToMap(this.level.world, target.world);
+          // Campaign: the warp ends the level on the map, at the target level's page (owner
+          // decision; pages found by the level → page lookup, 'll-3-1' → 'll-3'), opening only
+          // that page; otherwise character select, the WORLD card and the level, as the original
+          // does. Lost Levels warp zones stay as on the NES, backward ones too.
+          const from = game.campaign ? game.pageOfLevel(this.level.id) : null;
+          const to = game.campaign ? game.pageOfLevel(target.id) : null;
+          if (game.campaign && from && to && from !== to) game.campaignWarpToMap(from, to);
           else game.warpToLevel(target.id, start);
           break;
         }

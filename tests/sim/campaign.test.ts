@@ -92,9 +92,9 @@ function makeGame() {
 }
 type H = ReturnType<typeof makeGame>;
 
-const page = (w: number) => mapPage(w) as WorldMapPage;
+const page = (w: number) => mapPage(`smb-${w}`) as WorldMapPage;
 
-/** A file in `slot` with `cleared` levels and `worlds` open, standing on `node` of `world`. */
+/** A file in `slot` with `cleared` levels and `pages` open, standing on `node` of `page`. */
 function file(
   over: Partial<SaveFile> = {},
   slot: SaveSlot = 1,
@@ -195,7 +195,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     newFileFromTitle(h);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.game.scenes.depth).toBe(1);
-    expect(h.map().page.world).toBe(1);
+    expect(h.map().page.id).toBe('smb-1');
     expect(h.game.state.character).toBe(MARIO);
     expect(h.game.state.character2).toBeNull();
     expect(h.game.state.lives).toBe(3);
@@ -232,7 +232,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
 
   it('a hero change at the level select starts small; keeping the hero keeps its power', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ powerState: 'fire', position: { world: 1, node: '1-1' } }));
+    h.game.openFile(1, file({ powerState: 'fire', position: { page: 'smb-1', node: '1-1' } }));
     expect(h.game.state.powerState).toBe('fire');
     enter(h, '1-1'); // keeps Mario
     expect(h.game.state.powerState).toBe('fire');
@@ -338,7 +338,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
 
   it('back from the level select of a one-player file changes nothing', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ powerState: 'fire', lives: 4, position: { world: 1, node: '1-1' } }));
+    h.game.openFile(1, file({ powerState: 'fire', lives: 4, position: { page: 'smb-1', node: '1-1' } }));
     h.idle(4);
     const before = snapshot(h);
     const map = h.top();
@@ -359,7 +359,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
       powerState: 'fire',
       powerState2: 'big',
       lives: 6,
-      position: { world: 1, node: '1-1' },
+      position: { page: 'smb-1', node: '1-1' },
     };
     h.game.openFile(1, file(over, 1, MARIO.id, LUIGI.id));
     h.idle(4);
@@ -447,14 +447,14 @@ describe('campaign: clears return to the map', () => {
     h.fire({ type: 'exit', next: '1-2-intro' });
     // Back to the map (not the next level), drawing in what the clear opened.
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    expect(h.map().page.world).toBe(1);
+    expect(h.map().page.id).toBe('smb-1');
     expect(h.map().node).toBe('1-1');
     expect(h.map().revealing).toBe(true);
     expect(isOpen(h.game.mapProgress, page(1), '1-2')).toBe(true);
     // Saved at once, with the run carried on.
     const saved = loadSave(1) as SaveFile;
     expect(saved.cleared).toEqual(['1-1']);
-    expect(saved.position).toEqual({ world: 1, node: '1-1' });
+    expect(saved.position).toEqual({ page: 'smb-1', node: '1-1' });
     expect([saved.lives, saved.score, saved.coins, saved.powerState]).toEqual([4, 4200, 13, 'fire']);
     expect([s.lives, s.score, s.coins, s.powerState]).toEqual([4, 4200, 13, 'fire']);
     expect(s.checkpoint).toBeNull();
@@ -464,7 +464,7 @@ describe('campaign: clears return to the map', () => {
 
   it('clearing 1-2 through its exit sub-area records 1-2', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
     enter(h, '1-2');
     expect(h.level().level.id).toBe('1-2-intro');
     play(h, '1-2-exit');
@@ -478,62 +478,80 @@ describe('campaign: clears return to the map', () => {
 
   it('the castle (Toad) clear of 1-4 opens World 2 and shows World 1 drawing in the exit', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3'], position: { world: 1, node: '1-4' } }));
+    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3'], position: { page: 'smb-1', node: '1-4' } }));
     enter(h, '1-4');
     h.fire({ type: 'exit', next: '2-1' });
     const m = h.map();
     expect(m).toBeInstanceOf(WorldMapScene);
-    expect(m.page.world).toBe(1);
+    expect(m.page.id).toBe('smb-1');
     expect(m.revealing).toBe(true);
-    expect(h.game.mapProgress.worlds).toEqual([1, 2]);
-    expect(loadSave(1)?.worlds).toEqual([1, 2]);
+    expect(h.game.mapProgress.pages).toEqual(['smb-1', 'smb-2']);
+    expect(loadSave(1)?.pages).toEqual(['smb-1', 'smb-2']);
     expect(loadSave(1)?.cleared).toContain('1-4');
     // The reveal ends with the road to World 2.
-    const exit = page(1).exits.find((e) => e.toWorld === 2);
+    const exit = page(1).exits.find((e) => e.to === 'smb-2');
     expect(exit).toBeDefined();
     expect(isExitOpen(h.game.mapProgress, page(1), exit!)).toBe(true);
     h.until(() => m.mode === 'idle');
   });
 
-  it('a warp pipe from 1-2 to 4-1 opens World 4 only; clearing 4-1 returns to the World 4 map', () => {
+  it('a warp pipe from 4-2 to 5-1 opens World 5 only; clearing 5-1 returns to the World 5 map', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
-    enter(h, '1-2');
-    play(h, '1-2');
-    h.game.state.checkpoint = { level: '1-2', x: 97 };
-    h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
+    const before = [
+      '1-1',
+      '1-2',
+      '1-3',
+      '1-4',
+      '2-1',
+      '2-2',
+      '2-3',
+      '2-4',
+      '3-1',
+      '3-2',
+      '3-3',
+      '3-4',
+      '4-1',
+    ];
+    const pages = ['smb-1', 'smb-2', 'smb-3', 'smb-4'];
+    h.game.openFile(1, file({ cleared: before, pages, position: { page: 'smb-4', node: '4-2' } }));
+    enter(h, '4-2');
+    play(h, '4-2');
+    h.game.state.checkpoint = { level: '4-2', x: 97 };
+    // The 4-2 warp zone's pipe (4-2 keeps its warp zones in campaign play).
+    h.fire({ type: 'pipe', target: { level: '5-1', x: 2, y: 12 } });
     // Owner decision (2026-10-05): the warp ends the level on the map, which slides over to
-    // World 4 and draws it in; 4-1 is picked there (character select, then the WORLD card).
+    // World 5 and draws it in; 5-1 is picked there (character select, then the WORLD card).
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    expect(h.map().page.world).toBe(4);
+    expect(h.map().page.id).toBe('smb-5');
     expect(h.map().mode).toBe('slide');
     expect(h.game.state.checkpoint).toBeNull();
     h.until(() => h.map().mode === 'reveal');
     h.until(() => h.map().mode === 'idle', 600);
     expect(h.map().node).toBe('start');
-    enter(h, '4-1');
-    expect(h.level().level.id).toBe('4-1');
-    expect([h.game.state.world, h.game.state.stage]).toEqual([4, 1]);
-    expect(h.game.mapProgress.worlds).toEqual([1, 4]);
-    expect(loadSave(1)?.worlds).toEqual([1, 4]);
-    expect(isOpen(h.game.mapProgress, page(4), '4-1')).toBe(true);
-    expect(isOpen(h.game.mapProgress, page(2), 'start')).toBe(false);
-    expect(isOpen(h.game.mapProgress, page(3), 'start')).toBe(false);
-    h.fire({ type: 'exit', next: '4-2-intro' });
+    enter(h, '5-1');
+    expect(h.level().level.id).toBe('5-1');
+    expect([h.game.state.world, h.game.state.stage]).toEqual([5, 1]);
+    expect(h.game.mapProgress.pages).toEqual([...pages, 'smb-5']);
+    expect(loadSave(1)?.pages).toEqual([...pages, 'smb-5']);
+    expect(isOpen(h.game.mapProgress, page(5), '5-1')).toBe(true);
+    expect(isOpen(h.game.mapProgress, page(6), 'start')).toBe(false);
+    // World 4's castle still stands: its road on to World 5 stays closed.
+    expect(isExitOpen(h.game.mapProgress, page(4), page(4).exits[0]!)).toBe(false);
+    h.fire({ type: 'exit', next: '5-2' });
     const m = h.map();
     expect(m).toBeInstanceOf(WorldMapScene);
-    expect(m.page.world).toBe(4);
-    expect(m.node).toBe('4-1');
+    expect(m.page.id).toBe('smb-5');
+    expect(m.node).toBe('5-1');
     expect(m.revealing).toBe(true);
-    expect(loadSave(1)?.cleared).toEqual(['1-1', '4-1']);
-    expect(loadSave(1)?.position).toEqual({ world: 4, node: '4-1' });
-    // 1-2 itself was not cleared by the warp.
-    expect(isOpen(h.game.mapProgress, page(1), '1-3')).toBe(false);
+    expect(loadSave(1)?.cleared).toEqual([...before, '5-1']);
+    expect(loadSave(1)?.position).toEqual({ page: 'smb-5', node: '5-1' });
+    // 4-2 itself was not cleared by the warp.
+    expect(isOpen(h.game.mapProgress, page(4), '4-3')).toBe(false);
   });
 
   it('after a warp, the map menu WORLDS travels back to an open world, at the node left there', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
     enter(h, '1-2');
     play(h, '1-2');
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
@@ -541,7 +559,7 @@ describe('campaign: clears return to the map', () => {
     enter(h, '4-1');
     h.fire({ type: 'exit', next: '4-2-intro' });
     h.until(() => h.map().mode === 'idle');
-    expect(h.map().page.world).toBe(4);
+    expect(h.map().page.id).toBe('smb-4');
     const openWorlds = () => {
       h.tap('select');
       expect((h.top() as MenuScene).title).toBe('MAP');
@@ -558,29 +576,29 @@ describe('campaign: clears return to the map', () => {
     choose(menu, 'World 1');
     const m = h.map();
     expect(m).toBeInstanceOf(WorldMapScene);
-    expect(m.page.world).toBe(1);
+    expect(m.page.id).toBe('smb-1');
     expect(m.node).toBe('1-2'); // where the hero warped from
     expect(h.said.some((t) => t.startsWith('World 1,') && t.includes('World 1-2'))).toBe(true);
-    expect(loadSave(1)?.position).toEqual({ world: 1, node: '1-2' });
+    expect(loadSave(1)?.position).toEqual({ page: 'smb-1', node: '1-2' });
     // Clearing 1-2 still works from here.
     enter(h, '1-2');
     play(h, '1-2-exit');
     h.fire({ type: 'exit', next: '1-3' });
-    expect(h.map().page.world).toBe(1);
+    expect(h.map().page.id).toBe('smb-1');
     expect(h.game.mapProgress.cleared).toEqual(['1-1', '4-1', '1-2']);
     expect(isOpen(h.game.mapProgress, page(1), '1-3')).toBe(true);
     h.until(() => h.map().mode === 'idle');
     // And back to World 4, at 4-1; the current world just closes the menus.
     menu = openWorlds();
     choose(menu, 'World 4');
-    expect(h.map().page.world).toBe(4);
+    expect(h.map().page.id).toBe('smb-4');
     expect(h.map().node).toBe('4-1');
     h.idle(8);
     choose(openWorlds(), 'World 4');
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    expect(h.map().page.world).toBe(4);
+    expect(h.map().page.id).toBe('smb-4');
     // The last nodes are saved with the file.
-    expect(loadSave(1)?.lastNode).toEqual({ 1: '1-2', 4: '4-1' });
+    expect(loadSave(1)?.lastNode).toEqual({ 'smb-1': '1-2', 'smb-4': '4-1' });
     const h2 = makeGame();
     h2.game.openFile(1);
     h2.idle(8);
@@ -592,21 +610,21 @@ describe('campaign: clears return to the map', () => {
 
   it('a world never visited is entered at its start', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3', '1-4'], worlds: [1, 2] }));
-    h.game.travelToWorld(2);
-    expect(h.map().page.world).toBe(2);
+    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3', '1-4'], pages: ['smb-1', 'smb-2'] }));
+    h.game.travelToPage('smb-2');
+    expect(h.map().page.id).toBe('smb-2');
     expect(h.map().node).toBe('start');
-    h.game.travelToWorld(5); // closed: nothing happens
-    expect(h.map().page.world).toBe(2);
+    h.game.travelToPage('smb-5'); // closed: nothing happens
+    expect(h.map().page.id).toBe('smb-2');
   });
 
   it('a pipe within the world (1-2 into its exit area) is no warp', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
     play(h, '1-2');
     h.fire({ type: 'pipe', target: { level: '1-2-exit', x: 3, y: 10, exitDir: 'up' } });
     expect(h.level().level.id).toBe('1-2-exit');
-    expect(h.game.mapProgress.worlds).toEqual([1]);
+    expect(h.game.mapProgress.pages).toEqual(['smb-1']);
   });
 
   // Owner decision (2026-10-05): after 8-4, "Your quest is over." and the credits, then the
@@ -618,8 +636,8 @@ describe('campaign: clears return to the map', () => {
       1,
       file({
         cleared: cleared.filter((id) => id !== '8-4'),
-        worlds: [1, 2, 3, 4, 5, 6, 7, 8],
-        position: { world: 8, node: '8-4' },
+        pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
+        position: { page: 'smb-8', node: '8-4' },
       }),
     );
     enter(h, '8-4');
@@ -636,7 +654,7 @@ describe('campaign: clears return to the map', () => {
     expect(h.game.campaign).toBeNull();
     // Reopening the file shows 8-4 completed.
     h.game.openFile(1);
-    expect(h.map().page.world).toBe(8);
+    expect(h.map().page.id).toBe('smb-8');
     expect(isCleared(h.game.mapProgress, page(8), '8-4')).toBe(true);
     expect(loadSave(1)?.gameCleared).toBe(true);
   });
@@ -644,22 +662,22 @@ describe('campaign: clears return to the map', () => {
 
 describe('campaign: other worlds draw in on arrival', () => {
   function clearCastle(h: H) {
-    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3'], position: { world: 1, node: '1-4' } }));
+    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3'], position: { page: 'smb-1', node: '1-4' } }));
     enter(h, '1-4');
     h.fire({ type: 'exit', next: '2-1' });
     h.until(() => h.map().mode === 'idle');
     // World 1's share is drawn; World 2's waits (and is saved) for the hero to get there.
-    expect(h.game.pendingReveal).toContain('2:start');
-    expect(h.game.pendingReveal.every((id) => id.startsWith('2:'))).toBe(true);
-    expect(loadSave(1)?.pendingReveal).toContain('2:start');
+    expect(h.game.pendingReveal).toContain('smb-2:start');
+    expect(h.game.pendingReveal.every((id) => id.startsWith('smb-2:'))).toBe(true);
+    expect(loadSave(1)?.pendingReveal).toContain('smb-2:start');
   }
 
   it('after a castle clear, walking on to World 2 draws in its start and first path', () => {
     const h = makeGame();
     clearCastle(h);
-    const exit = page(1).exits.find((e) => e.toWorld === 2)!;
+    const exit = page(1).exits.find((e) => e.to === 'smb-2')!;
     h.tap(dirOf(exit.points));
-    h.until(() => h.map().page.world === 2 && h.map().mode !== 'walk' && h.map().mode !== 'slide');
+    h.until(() => h.map().page.id === 'smb-2' && h.map().mode !== 'walk' && h.map().mode !== 'slide');
     expect(h.map().mode).toBe('reveal');
     h.until(() => h.map().mode === 'idle', 600);
     expect(h.said.at(-1)).toContain('World 2-1, open');
@@ -670,8 +688,8 @@ describe('campaign: other worlds draw in on arrival', () => {
   it('travelling to World 2 through the Worlds menu draws it in too', () => {
     const h = makeGame();
     clearCastle(h);
-    h.game.travelToWorld(2);
-    expect(h.map().page.world).toBe(2);
+    h.game.travelToPage('smb-2');
+    expect(h.map().page.id).toBe('smb-2');
     expect(h.map().revealing).toBe(true);
     h.idle(2);
     h.tap('jump'); // skips
@@ -681,17 +699,17 @@ describe('campaign: other worlds draw in on arrival', () => {
 
   it("a warp's draw-in survives quitting: the reopened file shows it on the target page", () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
     enter(h, '1-2');
     play(h, '1-2');
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
     // Saved right away (closing the tab now keeps it), while the map slides over to World 4.
     expect(h.map().mode).toBe('slide');
-    expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['4:start', '4:4-1']));
-    expect(loadSave(1)?.position).toEqual({ world: 4, node: 'start' });
+    expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['smb-4:start', 'smb-4:4-1']));
+    expect(loadSave(1)?.position).toEqual({ page: 'smb-4', node: 'start' });
     const h2 = makeGame();
     h2.game.openFile(1);
-    expect(h2.map().page.world).toBe(4);
+    expect(h2.map().page.id).toBe('smb-4');
     expect(h2.map().revealing).toBe(true);
     h2.until(() => h2.map().mode === 'idle', 600);
     expect(loadSave(1)?.pendingReveal).toEqual([]);
@@ -726,10 +744,92 @@ describe('campaign: deaths, game over and quitting', () => {
     expect(h.level().level.id).toBe('1-1');
   });
 
+  const labels = (h: H) => (h.top() as CharacterSelectScene).touchLabels();
+
+  it('death select → RETURN TO MAP: the map at the same node, saved, lives as the death left them, no clear', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ powerState: 'fire', position: { page: 'smb-1', node: '1-1' } }));
+    enter(h, '1-1');
+    h.game.state.score = 500;
+    h.game.state.coins = 7;
+    die(h);
+    const pick = h.top();
+    expect(pick).toBeInstanceOf(CharacterSelectScene);
+    expect(textsOver(h, 4)).toContain('RETURN TO MAP');
+    expect(loadSave(1)?.lives).toBe(2);
+    // Down moves the cursor to RETURN TO MAP; up goes back; down again and OK leaves.
+    h.idle(12);
+    h.tap('down');
+    h.tap('up');
+    expect(h.top()).toBe(pick);
+    h.tap('down');
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().node).toBe('1-1');
+    expect(h.map().revealing).toBe(false);
+    expect(h.game.mapProgress.cleared).toEqual([]);
+    const s = h.game.state;
+    // The lost life counted once: not lost again, not refunded. The hero stays as the death left it.
+    expect([s.lives, s.score, s.coins, s.character, s.powerState]).toEqual([2, 500, 7, MARIO, 'small']);
+    const saved = loadSave(1) as SaveFile;
+    expect([saved.lives, saved.score, saved.coins, saved.powerState, saved.cleared, saved.position]).toEqual([
+      2,
+      500,
+      7,
+      'small',
+      [],
+      { page: 'smb-1', node: '1-1' },
+    ]);
+    // Entering again keeps the count.
+    enter(h, '1-1');
+    expect(h.game.state.lives).toBe(2);
+  });
+
+  it('the MAP button (B/Select) on the death select leaves for the map too', () => {
+    const h = makeGame();
+    h.game.openFile(1, file());
+    enter(h, '1-1');
+    die(h);
+    expect(labels(h)).toEqual({ jump: 'OK', attack: 'MAP', special: null, start: null, select: null });
+    h.idle(12);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(loadSave(1)?.lives).toBe(2);
+  });
+
+  it("an old 2P save: player two's death pick offers it, and player 1's input drives it", () => {
+    const h = makeGame();
+    openOld2P(h);
+    h.idle(8);
+    walkTo(h, '1-1');
+    h.tap('jump');
+    picksUntilLevel(h, () => h.tap('jump'));
+    die(h); // player two's death ends the attempt
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(textsOver(h, 4)).toContain('P2 SELECT YOUR HERO');
+    expect(textsOver(h, 4)).toContain('RETURN TO MAP');
+    expect(labels(h).attack).toBe('MAP');
+    h.idle(12);
+    h.tap('down'); // player 1's device
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().node).toBe('1-1');
+    expect([h.game.state.lives, loadSave(1)?.lives]).toEqual([4, 4]);
+  });
+
+  it('the level-entry select keeps OK/BACK and has no RETURN TO MAP entry', () => {
+    const h = makeGame();
+    h.game.openFile(1, file());
+    h.idle(4);
+    h.game.enterLevelFromMap('1-1');
+    expect(labels(h)).toEqual({ jump: 'OK', attack: 'BACK', special: null, start: null, select: null });
+    expect(textsOver(h, 4)).not.toContain('RETURN TO MAP');
+  });
+
   function toGameOver(h: H, c2: string | null = null) {
     h.game.openFile(
       2,
-      file({ cleared: ['1-1', '1-2'], position: { world: 1, node: '1-3' } }, 2, LUIGI.id, c2),
+      file({ cleared: ['1-1', '1-2'], position: { page: 'smb-1', node: '1-3' } }, 2, LUIGI.id, c2),
     );
     enter(h, '1-3');
     const s = h.game.state;
@@ -780,13 +880,13 @@ describe('campaign: deaths, game over and quitting', () => {
       3,
       0,
       ['1-1', '1-2'],
-      { world: 1, node: '1-3' },
+      { page: 'smb-1', node: '1-3' },
     ]);
   });
 
   it('pause → Quit to map: no clear recorded, the run kept and saved', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
     enter(h, '1-2');
     h.game.state.coins = 21;
     h.game.state.lives = 2;
@@ -807,7 +907,7 @@ describe('campaign: deaths, game over and quitting', () => {
 
   it('pause → Quit to title saves the run (no clear) and shows the title', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1'], position: { world: 1, node: '1-2' } }));
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
     enter(h, '1-2');
     h.game.state.coins = 9;
     h.idle(4);
@@ -815,7 +915,11 @@ describe('campaign: deaths, game over and quitting', () => {
     choose(h.top(), 'Quit to title');
     expect(h.top()).toBeInstanceOf(TitleScene);
     const saved = loadSave(1) as SaveFile;
-    expect([saved.cleared, saved.coins, saved.position]).toEqual([['1-1'], 9, { world: 1, node: '1-2' }]);
+    expect([saved.cleared, saved.coins, saved.position]).toEqual([
+      ['1-1'],
+      9,
+      { page: 'smb-1', node: '1-2' },
+    ]);
   });
 
   it('the level pause hides Dev mode during campaign play but offers Assists (full menu elsewhere)', () => {
@@ -892,7 +996,7 @@ describe('non-campaign starts never touch save files', () => {
     h.until(() => h.top() instanceof LevelScene);
     expect(h.level().level.id).toBe('1-2-intro');
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
-    expect(h.game.mapProgress.worlds).toEqual([1]);
+    expect(h.game.mapProgress.pages).toEqual(['smb-1']);
     expect(saveKeys()).toEqual([]);
   });
 
@@ -915,6 +1019,31 @@ describe('non-campaign starts never touch save files', () => {
     h.tap('start');
     expect(menuItem(h.top(), 'Quit to map')).toBeUndefined();
     expect(menuItem(h.top(), 'Quit')).toBeDefined();
+    expect(saveKeys()).toEqual([]);
+  });
+
+  it('a non-campaign death select offers no RETURN TO MAP', () => {
+    const h = makeGame();
+    h.game.newGame(MARIO, '1-1');
+    h.until(() => h.top() instanceof LevelScene);
+    const w = h.level().world;
+    w.kill(w.player);
+    h.until(() => h.top() instanceof CharacterSelectScene, 400);
+    const pick = h.top();
+    expect(textsOver(h, 80)).not.toContain('RETURN TO MAP');
+    expect((pick as CharacterSelectScene).touchLabels()).toEqual({
+      jump: 'OK',
+      attack: null,
+      special: null,
+      start: null,
+      select: null,
+    });
+    h.tap('down');
+    h.tap('attack');
+    h.tap('select');
+    expect(h.top()).toBe(pick);
+    h.tap('jump');
+    h.until(() => h.top() instanceof LevelScene);
     expect(saveKeys()).toEqual([]);
   });
 

@@ -41,7 +41,8 @@ function parseProps(parts: string[]): Props {
  *   [entities]            `type x y key=val ...` (`dx=` / `dy=`: a pixel nudge off the tile,
  *                         e.g. the original's half-tile shiftRight / shiftUp)
  *   [zones]               `pipe x y dir -> level x y [exit=dir]`, `exit x next=id`,
- *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2`, `text x y triggerX "..."`,
+ *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key]`,
+ *                         `text x y triggerX "..."`,
  *                         `bowser-fire x`
  *   [decor]               `kind x y`
  */
@@ -264,6 +265,7 @@ function parseZone(line: string): Zone {
         throw new Error('expected "warp x w worlds=a,b,c"');
       const z: Zone = { kind: 'warp', x: Number(xs), w: Number(ws), worlds };
       if (typeof props.text === 'string') z.text = props.text.replace(/_/g, ' ');
+      if (typeof props.secret === 'string') z.secret = props.secret;
       return z;
     }
     case 'text': {
@@ -365,7 +367,9 @@ function serializeZone(z: Zone): string {
     case 'scrollStop':
       return `scrollStop ${z.x}`;
     case 'warp':
-      return `warp ${z.x} ${z.w} worlds=${z.worlds.join(',')}${z.text ? ` text=${z.text.replace(/ /g, '_')}` : ''}`;
+      return `warp ${z.x} ${z.w} worlds=${z.worlds.join(',')}${z.text ? ` text=${z.text.replace(/ /g, '_')}` : ''}${
+        z.secret ? ` secret=${z.secret}` : ''
+      }`;
     case 'text':
       return `text ${z.x} ${z.y} ${z.triggerX} "${z.text}"`;
   }

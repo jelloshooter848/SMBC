@@ -32,3 +32,5 @@ every time, if the screen is scrolling as a bill leaves; in normal play that's m
 - Cause, by code: `World.cull()` (`src/game/world/world.ts` around lines 949-958) splices off entities that pass the left edge (`despawnMargin`) without calling `destroy()` or setting `alive = false`. `BulletBill.update` checks `camera.x - 32` before `camera.follow`, while `cull()` runs after it. A bill that crosses in between is removed with `alive` still true, so `World.flyingBill` (world.ts around lines 904-917) is never cleared, and the spawner waits for it forever.
 - Same root cause as `2026-10-06-4-1-lakitu-stops-throwing-after-four-spinies.md`, so one fix in `cull()` probably covers both.
 - Found by the build review of V0.3.0-DEV.8F4BF1A. Screenshot names in the review: `flybill_cull_sheet.png`, `2417_c53long` (frame 1230). Not committed (`check:assets` bans image files).
+
+Status: fixed — `World.cull()` now calls `destroy()` on anything it drops off the left of the screen, so a bill culled while the screen scrolls is seen as gone and the spawner sends the next one 15 frames later. Test: tests/sim/enemy-ai-original.test.ts, "Culled off the left of the screen".

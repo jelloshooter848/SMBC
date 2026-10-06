@@ -36,3 +36,5 @@ every time
 - Fix idea: after a capture, ignore that key until it has been released.
 - Gamepad remapping wasn't tested; it may have the same problem.
 - Found by the build review's smoke test of V0.3.0-DEV.8F4BF1A. Screenshot names in the review: 084-089. Not committed (`check:assets` bans image files).
+
+Status: fixed — after a capture, InputManager ignores the captured key or pad button (and Esc, or anything else still held) until it is released, so the new binding no longer fires its action at once; Esc now resolves the capture as cancelled instead of leaving Controls stuck, and the status reads "JUMP: A". Covered for keyboard and gamepad in tests/sim/menus.test.ts.

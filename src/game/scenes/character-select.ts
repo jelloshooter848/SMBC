@@ -21,6 +21,11 @@ export interface HeroPick {
   onPick: (c: CharacterDef) => void;
   /** Back (B/Select), e.g. to the world map; without it there is no way back. */
   onCancel?: () => void;
+  /**
+   * Campaign deaths: RETURN TO MAP, an entry below the hero row (Down, then OK) and the
+   * B/Select shortcut (shown on touch as MAP). Leaves the level as Pause → Quit to map does.
+   */
+  onMap?: () => void;
 }
 
 export class CharacterSelectScene implements Scene {
@@ -28,6 +33,8 @@ export class CharacterSelectScene implements Scene {
   private index2 = 1;
   private p2 = false;
   private t = 0;
+  /** The cursor is on RETURN TO MAP rather than the hero row. */
+  private onMapRow = false;
   constructor(
     private readonly game: Game,
     private readonly pick: HeroPick | null = null,
@@ -42,7 +49,8 @@ export class CharacterSelectScene implements Scene {
       );
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
       this.game.deps.announcer?.say(
-        `${who} your hero. ${pick.current.name}. Left and right to choose, OK to confirm.`,
+        `${who} your hero. ${pick.current.name}. Left and right to choose, OK to confirm.` +
+          (pick.onMap ? ' Down for return to map.' : ''),
       );
       return;
     }
@@ -53,6 +61,7 @@ export class CharacterSelectScene implements Scene {
 
   /** Touch drives player 1, who can also make player 2's pick (one device sets up both). */
   touchLabels(): TouchLabels {
+    if (this.pick?.onMap) return { jump: 'OK', attack: 'MAP', special: null, start: null, select: null };
     const back = !this.pick || !!this.pick.onCancel;
     return { jump: 'OK', attack: back ? 'BACK' : null, special: null, start: null, select: null };
   }
@@ -83,9 +92,27 @@ export class CharacterSelectScene implements Scene {
       const frames = [...new Set(this.pick.player === 0 ? [own] : [own, inputs[0] ?? input])];
       const pressed = (a: Action) => frames.some((f) => f.pressed(a));
       const steer = frames.find((f) => f.pressed('left') || f.pressed('right'));
-      if (steer) this.index = move(this.index, steer);
+      if (steer) {
+        this.index = move(this.index, steer);
+        this.onMapRow = false;
+      }
+      const onMap = this.pick.onMap;
+      if (onMap && !this.onMapRow && pressed('down')) {
+        this.onMapRow = true;
+        this.game.ctx.audio.sfx('select');
+        this.game.deps.announcer?.say('Return to map');
+      } else if (this.onMapRow && pressed('up')) {
+        this.onMapRow = false;
+        this.game.ctx.audio.sfx('select');
+        const h = chars[this.index];
+        if (h) this.game.deps.announcer?.say(h.name);
+      }
       const c = chars[this.index];
-      if (this.t > 10 && c && (pressed('start') || pressed('jump'))) {
+      const ok = this.t > 10 && (pressed('start') || pressed('jump'));
+      if (onMap && (pressed('select') || pressed('attack') || (ok && this.onMapRow))) {
+        this.game.ctx.audio.sfx('select');
+        onMap();
+      } else if (ok && c) {
         this.game.ctx.audio.sfx('coin');
         this.pick.onPick(c);
       } else if (this.pick.onCancel && (pressed('select') || pressed('attack'))) {
@@ -135,8 +162,11 @@ export class CharacterSelectScene implements Scene {
       // With a full roster the heroes stand close together, so the cursor becomes an underline.
       const tight = spacing < 40;
       if (i === this.index) {
-        if (tight) r.rect(x - 8, 122, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
-        else r.text(font, '>', x - 20, 112 - h / 2);
+        // While the cursor is on RETURN TO MAP the hero stays named but unmarked.
+        if (!this.onMapRow) {
+          if (tight) r.rect(x - 8, 122, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
+          else r.text(font, '>', x - 20, 112 - h / 2);
+        }
         r.text(font, c.name.toUpperCase(), 128 - (c.name.length * 8) / 2, 144);
       }
       if (this.p2 && i === this.index2)
@@ -155,5 +185,11 @@ export class CharacterSelectScene implements Scene {
     // Named by ability (OK), with the real key or pad button when not on touch.
     const go = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
     if ((this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, 184);
+    if (this.pick?.onMap) {
+      const label = 'RETURN TO MAP';
+      const x = 128 - label.length * 4;
+      r.text(font, label, x, 204);
+      if (this.onMapRow) r.text(font, '>', x - 12, 204);
+    }
   }
 }

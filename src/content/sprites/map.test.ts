@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { rasterizeToBuffer, validateDef } from '@engine/gfx/pixelart';
 import { mapDef, mapPalettes, SHORES, WATER_FRAMES } from './map';
 import { PALETTES, SPRITES } from './index';
+import { mapIconFrames } from './map-icons';
 
 type Size = readonly [w: number, h: number];
 const T16: Size = [16, 16];
 
-const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser'];
+const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser', 'warp'];
 
 const tileFrames = [
   'ground',
@@ -33,6 +34,7 @@ const tileFrames = [
   'gate',
   'pipe',
   'blaster',
+  'crystal',
   'moon',
   'cloud',
   ...[0, 1, 2, 3].flatMap((i) => [`star-${i}`, `lava-${i}`]),
@@ -66,6 +68,8 @@ const actorFrames: Record<string, Size> = {
   bubble: [8, 8],
   'splash-0': [16, 8],
   'splash-1': [16, 8],
+  'comet-0': [16, 8],
+  'comet-1': [16, 8],
 };
 
 function expectFrame(name: string, [w, h]: Size): void {
@@ -103,6 +107,23 @@ describe('map sprites', () => {
     expect(PALETTES.highContrast?.['map-bowser']).toBeDefined();
   });
 
+  it('draws the crystal standing on plain ground, outlined, in the accent colours', () => {
+    const crystal = mapDef.frames['crystal'] as readonly string[];
+    const ground = mapDef.frames['ground'] as readonly string[];
+    expect(crystal[15]).toBe(ground[15]);
+    expect(crystal[0]?.[0]).toBe(ground[0]?.[0]);
+    const px = crystal.join('');
+    for (const c of '0ior') expect(px, `crystal uses '${c}'`).toContain(c);
+  });
+
+  it('draws the comet heading right: a bright head with a fading tail', () => {
+    for (const name of ['comet-0', 'comet-1']) {
+      const mid = (mapDef.frames[name] as readonly string[])[3] as string;
+      expect(mid.lastIndexOf('o'), name).toBeGreaterThan(mid.indexOf('p'));
+    }
+    expect(mapDef.frames['comet-0']).not.toEqual(mapDef.frames['comet-1']);
+  });
+
   it('water rows tile seamlessly and loop over the water frames', () => {
     const w0 = mapDef.frames['water-0'] as readonly string[];
     // Every row has an 8 px period, so the drift loops after WATER_FRAMES steps.
@@ -122,5 +143,27 @@ describe('map sprites', () => {
       expect(water('shore-w-0', y, 15), `w over w col ${y}`).toBe(water('shore-w-0', y, 0));
       expect(water('shore-in-nw-0', 0, y), `n|in-nw row ${y}`).toBe(water('shore-n-0', 15, y));
     }
+  });
+});
+
+describe('warp pad icons', () => {
+  const open = mapIconFrames['map-warp'] as readonly string[];
+  const locked = mapIconFrames['map-warp-locked'] as readonly string[];
+  const colours = (rows: readonly string[]) => new Set(rows.join('').replace(/\./g, ''));
+
+  it('are 16×16 frames with the same pad outline', () => {
+    for (const f of [open, locked]) {
+      expect(f).toHaveLength(16);
+      for (const row of f) expect(row).toHaveLength(16);
+    }
+    for (let y = 3; y < 16; y++)
+      for (let x = 0; x < 16; x++) expect(open[y]?.[x] === '.', `${x},${y}`).toBe(locked[y]?.[x] === '.');
+  });
+
+  it('the open pad is purple and blue with a white sparkle; the locked one dim grey, no sparkle', () => {
+    expect([...colours(open)].sort()).toEqual(['0', '1', 'a', 'c', 'e']);
+    expect(open.slice(0, 3).join('')).toContain('1');
+    expect(locked.slice(0, 3).join('')).toBe('.'.repeat(48));
+    for (const bright of ['1', 'a', 'c', 'e']) expect(colours(locked).has(bright), bright).toBe(false);
   });
 });

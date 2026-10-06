@@ -6,6 +6,7 @@ import {
   listSaves,
   loadSave,
   migrateSave,
+  migrateV1toV2,
   SAVE_VERSION,
   UNREADABLE,
   type SaveFile,
@@ -48,9 +49,9 @@ describe('save files', () => {
       score: 0,
       coins: 0,
       cleared: [],
-      worlds: [1],
+      pages: ['smb-1'],
       secrets: [],
-      position: { world: 1, node: 'start' },
+      position: { page: 'smb-1', node: 'start' },
       gameCleared: false,
     });
     expect(newSave(1, 'mario', 'luigi').lives).toBe(5);
@@ -80,9 +81,9 @@ describe('save files', () => {
     s.created = 1000;
     s.updated = 1000;
     s.cleared = ['1-1', '1-2'];
-    s.worlds = [1, 4];
+    s.pages = ['smb-1', 'smb-4', 'hub'];
     s.secrets = ['bonus-1'];
-    s.position = { world: 4, node: 'start' };
+    s.position = { page: 'smb-4', node: 'start' };
     s.score = 12345;
     s.kit = { hearts: 5, bombs: 3 };
     s.gameCleared = true;
@@ -141,9 +142,9 @@ describe('save files', () => {
     expect(s.character).toBe('luigi');
     expect(s.lives).toBe(3);
     expect(s.cleared).toEqual(['1-1']);
-    expect(s.worlds).toEqual([1, 3]);
+    expect(s.pages).toEqual(['smb-1', 'smb-3']);
     expect(s.kit).toEqual({ hearts: 4 });
-    expect(s.position).toEqual({ world: 3, node: 'start' });
+    expect(s.position).toEqual({ page: 'smb-3', node: 'start' });
     expect((s as unknown as { bogus?: boolean }).bogus).toBeUndefined();
   });
 
@@ -189,19 +190,25 @@ describe('save files', () => {
     expect(put({ lives: 4.7 }).lives).toBe(4);
     expect(put({ score: -100, coins: 12.5 })).toMatchObject({ score: 0, coins: 12 });
     expect(put({ score: 1234.9, coins: -1 })).toMatchObject({ score: 1234, coins: 0 });
-    expect(put({ worlds: [3, 3, 9, 0, 2.5, 8, 'x', 1] }).worlds).toEqual([1, 3, 8]);
-    expect(put({ worlds: [] }).worlds).toEqual([1]);
-    expect(put({ worlds: [1, 4], position: { world: 4, node: '4-2' } }).position).toEqual({
-      world: 4,
+    expect(put({ pages: ['smb-3', 'smb-3', 'smb-9', 'hub', 'x', 3, 'smb-8', 'smb-1'] }).pages).toEqual([
+      'smb-1',
+      'smb-3',
+      'hub',
+      'smb-8',
+    ]);
+    expect(put({ pages: [] }).pages).toEqual(['smb-1']);
+    expect(put({ pages: 'smb-2' }).pages).toEqual(['smb-1']);
+    expect(put({ pages: ['smb-1', 'smb-4'], position: { page: 'smb-4', node: '4-2' } }).position).toEqual({
+      page: 'smb-4',
       node: '4-2',
     });
     // A world not reached: the hero goes to the start of the highest world reached.
-    expect(put({ worlds: [1, 4], position: { world: 6, node: '6-2' } }).position).toEqual({
-      world: 4,
+    expect(put({ pages: ['smb-1', 'smb-4'], position: { page: 'smb-6', node: '6-2' } }).position).toEqual({
+      page: 'smb-4',
       node: 'start',
     });
-    expect(put({ worlds: [1, 2], position: { world: 2, node: 5 } }).position).toEqual({
-      world: 2,
+    expect(put({ pages: ['smb-1', 'smb-2'], position: { page: 'smb-2', node: 5 } }).position).toEqual({
+      page: 'smb-2',
       node: 'start',
     });
   });
@@ -216,10 +223,21 @@ describe('save files', () => {
     store.set('smbc.save.1', JSON.stringify(old));
     expect(loadSave(1)!.lastNode).toEqual({});
     expect(
-      put({ worlds: [1, 4], lastNode: { 1: '1-2', 4: '4-1', 3: '3-1', x: 'a', 2: 7, 9: '9-1' } }).lastNode,
-    ).toEqual({ 1: '1-2', 4: '4-1' });
+      put({
+        pages: ['smb-1', 'smb-4', 'hub'],
+        lastNode: {
+          'smb-1': '1-2',
+          'smb-4': '4-1',
+          'smb-3': '3-1',
+          x: 'a',
+          'smb-2': 7,
+          hub: 'lost',
+          1: '1-1',
+        },
+      }).lastNode,
+    ).toEqual({ 'smb-1': '1-2', 'smb-4': '4-1', hub: 'lost' });
     expect(put({ lastNode: ['1-1'] }).lastNode).toEqual({});
-    expect(put({ lastNode: { 1: '' } }).lastNode).toEqual({});
+    expect(put({ lastNode: { 'smb-1': '' } }).lastNode).toEqual({});
   });
 
   it('keeps pending reveal ids of open worlds only, each once', () => {
@@ -229,9 +247,22 @@ describe('save files', () => {
     };
     expect(newSave(1, 'mario').pendingReveal).toEqual([]);
     expect(
-      put({ worlds: [1, 4], pendingReveal: ['4:start', '4:start', '2:start', 'start', 7, '1:1-1>1-2', ':x'] })
-        .pendingReveal,
-    ).toEqual(['4:start', '1:1-1>1-2']);
+      put({
+        pages: ['smb-1', 'smb-4', 'hub'],
+        pendingReveal: [
+          'smb-4:start',
+          'smb-4:start',
+          'smb-2:start',
+          'start',
+          7,
+          'smb-1:1-1>1-2',
+          ':x',
+          'hub:',
+          'hub:lost',
+          '4:start',
+        ],
+      }).pendingReveal,
+    ).toEqual(['smb-4:start', 'smb-1:1-1>1-2', 'hub:lost']);
     expect(put({ pendingReveal: 'x' }).pendingReveal).toEqual([]);
   });
 
@@ -249,13 +280,13 @@ describe('save files', () => {
     expect(put({ devUnlockAll: true }).devUnlockAll).toBe(true);
     for (const bad of ['true', 1, null, {}]) expect(put({ devUnlockAll: bad }).devUnlockAll).toBe(false);
     // Unlocking opens nothing in the file itself.
-    expect(put({ devUnlockAll: true }).worlds).toEqual([1]);
+    expect(put({ devUnlockAll: true }).pages).toEqual(['smb-1']);
   });
 
   it('counts main levels cleared and the highest world', () => {
     const s = newSave(1, 'mario');
     s.cleared = ['1-1', '1-2', '1-2', '8-4', 'll-1-1', 'custom-x', '9-1'];
-    s.worlds = [1, 2, 5];
+    s.pages = ['smb-1', 'smb-2', 'smb-5', 'hub', 'll-1'];
     expect(clearedMainLevels(s)).toBe(3);
     expect(highestWorld(s)).toBe(5);
   });
@@ -265,6 +296,107 @@ describe('save files', () => {
     expect(loadSave(1)).toBeNull();
     expect(writeSave(newSave(1, 'mario'))).toBe(false);
     expect(() => eraseSave(1)).not.toThrow();
+  });
+});
+
+describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
+  /** A real 0.3.0 file: warped from 1-2 to World 4, World 2 opened by 1-4, standing on 4-1. */
+  const V1 = {
+    v: 1,
+    slot: 1,
+    created: 1759700000000,
+    updated: 1759790000000,
+    character: 'link',
+    character2: null,
+    lives: 4,
+    score: 52300,
+    coins: 41,
+    powerState: 'full',
+    hp: 5,
+    kit: { hearts: 5, bombs: 2 },
+    powerState2: 'small',
+    hp2: 0,
+    kit2: {},
+    cleared: ['1-1', '1-3', '1-2', '1-4', '4-1'],
+    worlds: [1, 4, 2],
+    secrets: ['bonus-3'],
+    position: { world: 4, node: '4-1' },
+    gameCleared: false,
+    lastNode: { 1: '1-4', 4: '4-1', 2: 'start' },
+    pendingReveal: ['2:start', '2:start>2-1', '2:2-1', '1:1-4>world-2', '4:4-1>4-2', '4:4-2'],
+    devUnlockAll: false,
+  };
+
+  it('is the one migration; files are written at v2', () => {
+    expect(SAVE_VERSION).toBe(2);
+    expect(newSave(1, 'mario').v).toBe(2);
+  });
+
+  it('maps worlds, the position, lastNode and pending reveal ids to page ids', () => {
+    expect(migrateV1toV2(V1)).toEqual({
+      ...Object.fromEntries(Object.entries(V1).filter(([k]) => k !== 'worlds')),
+      v: 2,
+      pages: ['smb-1', 'smb-4', 'smb-2'],
+      position: { page: 'smb-4', node: '4-1' },
+      lastNode: { 'smb-1': '1-4', 'smb-4': '4-1', 'smb-2': 'start' },
+      pendingReveal: [
+        'smb-2:start',
+        'smb-2:start>2-1',
+        'smb-2:2-1',
+        'smb-1:1-4>smb-2',
+        'smb-4:4-1>4-2',
+        'smb-4:4-2',
+      ],
+    });
+  });
+
+  it('loads a stored v1 file with nothing lost, and the counts the file select shows', () => {
+    store.set('smbc.save.1', JSON.stringify(V1));
+    const s = loadSave(1)!;
+    expect(s).toEqual({
+      ...newSave(1, 'link'),
+      ...Object.fromEntries(Object.entries(V1).filter(([k]) => k !== 'worlds')),
+      v: 2,
+      pages: ['smb-1', 'smb-4', 'smb-2'],
+      position: { page: 'smb-4', node: '4-1' },
+      lastNode: { 'smb-1': '1-4', 'smb-4': '4-1', 'smb-2': 'start' },
+      pendingReveal: [
+        'smb-2:start',
+        'smb-2:start>2-1',
+        'smb-2:2-1',
+        'smb-1:1-4>smb-2',
+        'smb-4:4-1>4-2',
+        'smb-4:4-2',
+      ],
+    });
+    expect(clearedMainLevels(s)).toBe(5);
+    expect(highestWorld(s)).toBe(4);
+    // Saved again it stays v2 and loads the same.
+    writeSave(s);
+    expect(loadSave(1)).toEqual(s);
+  });
+
+  it('keeps a cleared game, and a 2P file still loads', () => {
+    store.set(
+      'smbc.save.2',
+      JSON.stringify({ ...V1, character2: 'samus', gameCleared: true, worlds: [1, 2, 3, 4, 5, 6, 7, 8] }),
+    );
+    const s = loadSave(2)!;
+    expect(s.character2).toBe('samus');
+    expect(s.gameCleared).toBe(true);
+    expect(s.pages).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`));
+    expect(highestWorld(s)).toBe(8);
+  });
+
+  it('a v1 file without the later optional fields still migrates', () => {
+    const { lastNode: _l, pendingReveal: _p, devUnlockAll: _d, ...old } = V1;
+    store.set('smbc.save.3', JSON.stringify({ ...old, position: 'bad', worlds: 'bad' }));
+    const s = loadSave(3)!;
+    expect(s.pages).toEqual(['smb-1']);
+    expect(s.position).toEqual({ page: 'smb-1', node: 'start' });
+    expect(s.lastNode).toEqual({});
+    expect(s.pendingReveal).toEqual([]);
+    expect(s.cleared).toEqual(V1.cleared);
   });
 });
 
@@ -301,10 +433,10 @@ describe('save file ↔ game state', () => {
   it('keeps the map progress when copying the run in', () => {
     const save = newSave(2, 'luigi');
     save.cleared = ['1-1'];
-    save.position = { world: 1, node: '1-1' };
+    save.position = { page: 'smb-1', node: '1-1' };
     const out = saveFromState(save, stateFromSave(save, CHARACTERS));
     expect(out.cleared).toEqual(['1-1']);
-    expect(out.position).toEqual({ world: 1, node: '1-1' });
+    expect(out.position).toEqual({ page: 'smb-1', node: '1-1' });
     expect(out.slot).toBe(2);
   });
 

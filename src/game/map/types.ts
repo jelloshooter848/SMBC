@@ -1,7 +1,7 @@
 /**
- * World map (Super Mario World style): one page per world, nodes joined by paths. This file is
- * the shared contract between the map engine (src/game/map), the pages and their art
- * (src/content/worldmap) and the save files (src/game/save/save-files.ts).
+ * World map (Super Mario World style): pages of nodes joined by paths. This file is the shared
+ * contract between the map engine (src/game/map), the pages and their art (src/content/worldmap)
+ * and the save files (src/game/save/save-files.ts). docs/WORLD_MAP.md explains how to add a page.
  */
 
 /** Look of a map page; each has its own palette and scenery. */
@@ -13,20 +13,60 @@ export type MapTheme =
   | 'sky' // World 5
   | 'snow' // World 6
   | 'coast' // World 7
-  | 'bowser'; // World 8
+  | 'bowser' // World 8
+  | 'warp'; // Warp Zone hub
 
-export type MapNodeKind = 'start' | 'level' | 'castle' | 'bonus';
+/**
+ * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone) and
+ * 'll-1'..'ll-13' (Lost Levels worlds 1-8, 9 and A-D). Saved in files; never rename one.
+ */
+export type PageId = string;
+
+/**
+ * The set of pages a page belongs to: page order (slides, the Worlds menu) and the start-node
+ * "back" road only work within a group; travel between groups is by warp node (a fade).
+ */
+export type PageGroup = 'smb' | 'hub' | 'll';
+
+/**
+ * Something that must hold for a warp node to work or a world exit to open:
+ * - 'gameCleared': SMB 8-4 beaten on this file (MapProgress.gameCleared);
+ * - 'secret:<key>': the file has found secret <key> (MapProgress.secrets);
+ * - 'll9': the file has cleared all 32 Lost Levels main levels 1-1 to 8-4 (World 9);
+ * - 'llLetters': the file has cleared Lost 8-4 (worlds A-D);
+ * - 'never': not yet (a future secret).
+ */
+export type MapCondition = 'gameCleared' | 'll9' | 'llLetters' | 'never' | `secret:${string}`;
+
+export type MapNodeKind = 'start' | 'level' | 'castle' | 'bonus' | 'warp';
 
 export interface MapNode {
   id: string;
   kind: MapNodeKind;
-  /** Main level id ('1-2', not '1-2-intro'); absent for 'start'. */
+  /** Main level id ('1-2', not '1-2-intro'; Lost Levels 'll-1-2'); absent for 'start' and 'warp'. */
   level?: string;
   /** Tile on the page's 16×15 grid (16 px tiles). */
   x: number;
   y: number;
-  /** Bonus nodes only: the secret key that reveals them (in MapProgress.secrets). */
+  /**
+   * The secret key that reveals the node (in MapProgress.secrets): required on bonus nodes,
+   * optional on warp nodes (hidden until found); other kinds don't use it.
+   */
   unlock?: string;
+  /**
+   * Warp nodes: the page jumping on it takes the hero to. A 'start' node may carry it too (and
+   * the other warp fields): it stays the page's arrival node (arriving never warps), and JUMP
+   * on it warps (the hub's centre: back to World 1). See rules.isWarpNode.
+   */
+  to?: PageId;
+  /** Warp nodes: the node arrived on (default: the target page's start node). */
+  toNode?: string;
+  /** Warp nodes: what must hold for the warp to work (always works when absent). */
+  requires?: MapCondition;
+  /** Warp nodes: the hint line while it is locked ('LOST LEVELS - BEAT 8-4 TO UNLOCK'). */
+  hint?: string;
+  /** Warp nodes: the hint line while it is open ('LOST LEVELS'; default: the target page's title). */
+  label?: string;
 }
 
 export interface MapPath {
@@ -36,12 +76,19 @@ export interface MapPath {
   points: [number, number][];
 }
 
-/** The road off the page to another world, starting at a node (usually the castle). */
+/** The road off the page to the next page of the same group, starting at a node (usually the castle). */
 export interface WorldExit {
   from: string;
-  toWorld: number;
+  to: PageId;
   points: [number, number][];
   side: 'right' | 'left' | 'top';
+  /** Opens only while this holds too (e.g. Lost Levels 8 → 9: 'll9'). */
+  requires?: MapCondition;
+  /**
+   * The hint line while the hero stands on `from` and the exit is locked (at most 32 chars once
+   * '{n}' is filled in with the condition's count, rules.exitHint).
+   */
+  hint?: string;
 }
 
 /** Decorative animated thing on a page (drawn by src/content/worldmap/render.ts). */
@@ -53,8 +100,11 @@ export interface MapActor {
 }
 
 export interface WorldMapPage {
-  world: number;
-  /** Shown in the map header, e.g. 'GRASS LAND'. */
+  id: PageId;
+  group: PageGroup;
+  /** Shown in the header's top right: 'WORLD 1', 'WARP ZONE', 'LOST A' (at most 10 chars). */
+  label: string;
+  /** Shown in the header's top left, e.g. 'GRASS LAND' (at most 20 chars). */
   title: string;
   theme: MapTheme;
   /** Song id to loop on this page. */
@@ -69,12 +119,14 @@ export interface WorldMapPage {
 
 /** The part of a save file the map rules read and write. */
 export interface MapProgress {
-  /** Main level ids cleared ('1-1', '1-2', ...). */
+  /** Main level ids cleared ('1-1', '1-2', ..., 'll-1-1'). */
   cleared: string[];
-  /** Worlds whose page is reachable (World 1 always; others by a castle clear or a warp). */
-  worlds: number[];
-  /** Secret keys found (reveal bonus nodes). */
+  /** Pages that are reachable ('smb-1' always; others by a castle clear, a warp pipe or a warp node). */
+  pages: PageId[];
+  /** Secret keys found (reveal bonus and warp nodes; `secret:<key>` conditions). */
   secrets: string[];
   /** Where the hero stands on the map. */
-  position: { world: number; node: string };
+  position: { page: PageId; node: string };
+  /** SMB 8-4 beaten on this file (the 'gameCleared' condition); absent counts as false. */
+  gameCleared?: boolean;
 }

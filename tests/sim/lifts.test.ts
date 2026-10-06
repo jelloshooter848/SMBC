@@ -288,6 +288,51 @@ describe('Balance lifts (Platform.as PT_PULLY)', () => {
   });
 });
 
+// Bug report 2026-10-06-3-3-balance-lifts-anchored-by-left-edge: Level.as 1205-1207 places
+// every Platform, balance lifts included, at `currentX + TILE_SIZE/2`, centred on its cell.
+describe('Balance lifts are centred on their cells', () => {
+  it('3-3: the left lift spans x 1296-1344 and clears the mushroom at its low point', () => {
+    const r = runSim({
+      level: at(level('3-3'), 80, 5),
+      character: MARIO,
+      script: { steps: [{ frame: 0, hold: [] }] },
+      maxFrames: 3,
+    });
+    const pair = r.world.entities.find((e): e is BalanceLift => e instanceof BalanceLift);
+    const [left, right] = pair?.platforms as [Lift, Lift];
+    expect(toPx(left.body.x)).toBe(1296);
+    expect(toPx(left.body.x + left.body.w)).toBe(1344);
+    expect(toPx(right.body.x)).toBe(89 * 16 + 8 - 24);
+  });
+
+  it.each([
+    '3-3',
+    '4-3',
+    '6-3',
+    'll-1-3',
+    'll-3-3',
+    'll-4-3',
+    'll-5-3',
+    'll-7-3',
+    'll-8-3',
+    'll-11-3',
+    'll-12-2',
+    'll-12-3',
+  ])('%s: every balance lift platform is centred on its map cell', (id) => {
+    const l = level(id);
+    const specs = l.entities.filter((e) => e.type === 'balance');
+    expect(specs.length).toBeGreaterThan(0);
+    for (const s of specs) {
+      const pair = new BalanceLift(s.x, s.y, s.props ?? {});
+      const spawned: Lift[] = [];
+      pair.update({ spawn: (e: Lift) => spawned.push(e) } as unknown as World);
+      const [left, right] = spawned as [Lift, Lift];
+      expect(left.body.x + (left.body.w >> 1)).toBe(px(s.x * 16 + 8));
+      expect(right.body.x + (right.body.w >> 1)).toBe(px(Number(s.props?.x2) * 16 + 8));
+    }
+  });
+});
+
 describe('Lifts and walls', () => {
   it('ll-4-1-sky: the brick column at 32 scrapes Mario off the cloud lift (Character.groundOnSide)', () => {
     let inside = false;

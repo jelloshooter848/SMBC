@@ -19,7 +19,7 @@ import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { newGameState } from '@game/context';
 import { loadSave, newSave } from '@game/save/save-files';
-import { clearLevel, isOpen, isWorldOpen } from '@game/map/rules';
+import { clearLevel, isOpen, isPageOpen } from '@game/map/rules';
 import type { Dir } from '@game/map/rules';
 import type { WorldMapPage } from '@game/map/types';
 import type { Action } from '@engine/input/actions';
@@ -73,7 +73,7 @@ function makeGame() {
   return { game, said, step, tap, idle, until, map, audio };
 }
 
-const page = (w: number) => mapPage(w) as WorldMapPage;
+const page = (w: number) => mapPage(`smb-${w}`) as WorldMapPage;
 
 /** Direction of the first step of a tile path. */
 function dirOf(points: [number, number][]): Dir {
@@ -105,7 +105,7 @@ describe('world map scene', () => {
     h.idle(8);
     walkTo(h, '1-1');
     expect(h.said.at(-1)).toBe('World 1-1, open');
-    expect(h.game.mapProgress.position).toEqual({ world: 1, node: '1-1' });
+    expect(h.game.mapProgress.position).toEqual({ page: 'smb-1', node: '1-1' });
     const back = page(1).paths.find((p) => p.to === '1-1');
     const backDir = dirOf([...(back as { points: [number, number][] }).points].reverse());
     for (const d of ['left', 'right', 'up', 'down'] as Dir[]) {
@@ -119,7 +119,7 @@ describe('world map scene', () => {
 
   it('jump on an open level node enters it through character select', () => {
     const h = makeGame();
-    h.game.showMap(1);
+    h.game.showMap('smb-1');
     h.idle(8);
     const enter = vi.spyOn(h.game, 'enterLevelFromMap');
     h.tap('jump'); // the start node has no level
@@ -138,7 +138,7 @@ describe('world map scene', () => {
 
   it('start on a level node opens the map menu; only jump enters', () => {
     const h = makeGame();
-    h.game.showMap(1);
+    h.game.showMap('smb-1');
     h.idle(8);
     walkTo(h, '1-1');
     const enter = vi.spyOn(h.game, 'enterLevelFromMap');
@@ -155,7 +155,7 @@ describe('world map scene', () => {
   it('enterLevelFromMap starts at the intro scene when the level has one', () => {
     const h = makeGame();
     const go = vi.spyOn(h.game, 'goToLevel');
-    h.game.showMap(1);
+    h.game.showMap('smb-1');
     h.game.enterLevelFromMap('1-2');
     h.idle(12);
     h.tap('start');
@@ -166,8 +166,8 @@ describe('world map scene', () => {
     const h = makeGame();
     const prog = h.game.mapProgress;
     for (const id of ['1-1', '1-2', '1-3', '1-4']) clearLevel(prog, id, getLevel);
-    expect(prog.worlds).toContain(2);
-    expect(prog.position).toEqual({ world: 1, node: '1-4' });
+    expect(prog.pages).toContain('smb-2');
+    expect(prog.position).toEqual({ page: 'smb-1', node: '1-4' });
     h.game.showMap();
     h.idle(8);
     const exit = page(1).exits[0] as WorldMapPage['exits'][number];
@@ -176,9 +176,9 @@ describe('world map scene', () => {
     h.until(() => h.map().mode === 'slide', 400);
     h.idle(MAP_SLIDE_FRAMES - 1);
     h.until(() => h.map().mode === 'idle', 5);
-    expect(h.map().page.world).toBe(2);
+    expect(h.map().page.id).toBe('smb-2');
     expect(h.map().node).toBe('start');
-    expect(prog.position).toEqual({ world: 2, node: 'start' });
+    expect(prog.position).toEqual({ page: 'smb-2', node: 'start' });
     expect(h.said).toContain(`World 2, ${page(2).title}. World 2 start`);
   });
 
@@ -186,20 +186,20 @@ describe('world map scene', () => {
     const h = makeGame();
     const prog = h.game.mapProgress;
     for (const id of ['1-1', '1-2', '1-3']) clearLevel(prog, id, getLevel);
-    prog.position = { world: 1, node: '1-4' };
+    prog.position = { page: 'smb-1', node: '1-4' };
     h.game.showMap();
     h.idle(8);
     h.tap(dirOf((page(1).exits[0] as WorldMapPage['exits'][number]).points));
     h.idle(60);
-    expect(h.map().page.world).toBe(1);
+    expect(h.map().page.id).toBe('smb-1');
   });
 
   it('draws in what a clear opened, then saves; any button skips', () => {
     const h = makeGame();
     const autosave = vi.spyOn(h.game, 'autosave');
     const reveal = clearLevel(h.game.mapProgress, '1-1', getLevel);
-    expect(reveal).toContain('1:1-2');
-    h.game.showMap(1, { reveal });
+    expect(reveal).toContain('smb-1:1-2');
+    h.game.showMap('smb-1', { reveal });
     expect(h.map().revealing).toBe(true);
     expect(h.map().node).toBe('1-1');
     h.until(() => !h.map().revealing, 600);
@@ -210,7 +210,7 @@ describe('world map scene', () => {
     const k = makeGame();
     const save2 = vi.spyOn(k.game, 'autosave');
     const r2 = clearLevel(k.game.mapProgress, '1-1', getLevel);
-    k.game.showMap(1, { reveal: r2 });
+    k.game.showMap('smb-1', { reveal: r2 });
     k.idle(3);
     expect(k.map().revealing).toBe(true);
     k.tap('attack');
@@ -222,7 +222,7 @@ describe('world map scene', () => {
 
   it('select opens the map menu; save and quit falls back to the title', () => {
     const h = makeGame();
-    h.game.showMap(1);
+    h.game.showMap('smb-1');
     h.idle(8);
     h.tap('select');
     const menu = h.game.scenes.top as MenuScene;
@@ -240,7 +240,7 @@ describe('world map scene', () => {
 
     const k = makeGame();
     const quit = vi.spyOn(k.game, 'saveAndQuit');
-    k.game.showMap(1);
+    k.game.showMap('smb-1');
     k.idle(8);
     k.tap('select');
     k.idle(8);
@@ -255,18 +255,18 @@ describe('world map scene', () => {
     const prog = h.game.mapProgress;
     for (const id of ['1-1', '1-2', '1-3']) clearLevel(prog, id, getLevel);
     const reveal = clearLevel(prog, '1-4', getLevel);
-    const w1 = reveal.filter((id) => id.startsWith('1:'));
-    const w2 = reveal.filter((id) => id.startsWith('2:'));
+    const w1 = reveal.filter((id) => id.startsWith('smb-1:'));
+    const w2 = reveal.filter((id) => id.startsWith('smb-2:'));
     expect(w1.length).toBeGreaterThan(0);
-    expect(w2).toContain('2:start');
+    expect(w2).toContain('smb-2:start');
     // World 1's page ignores World 2's ids ('start' is on both pages).
-    h.game.showMap(1, { reveal: w2 });
+    h.game.showMap('smb-1', { reveal: w2 });
     expect(h.map().revealing).toBe(false);
-    h.game.showMap(1, { reveal });
+    h.game.showMap('smb-1', { reveal });
     expect(h.map().revealing).toBe(true);
     h.until(() => !h.map().revealing, 600);
     // World 2's page draws in its start, path and first level, and says the level opened.
-    h.game.showMap(2, { reveal });
+    h.game.showMap('smb-2', { reveal });
     expect(h.map().revealing).toBe(true);
     h.until(() => !h.map().revealing, 600);
     expect(h.said.at(-1)).toContain('World 2-1, open');
@@ -276,19 +276,19 @@ describe('world map scene', () => {
     const h = makeGame();
     const prog = h.game.mapProgress;
     clearLevel(prog, '1-1', getLevel);
-    h.game.showMap(2); // World 2 is not open
-    expect(h.map().page.world).toBe(1);
+    h.game.showMap('smb-2'); // World 2 is not open
+    expect(h.map().page.id).toBe('smb-1');
     expect(h.map().node).toBe('1-1');
     for (const id of ['1-2', '1-3', '1-4']) clearLevel(prog, id, getLevel);
-    expect(prog.position).toEqual({ world: 1, node: '1-4' });
-    h.game.showMap(2);
-    expect(h.map().page.world).toBe(2);
-    expect(prog.position).toEqual({ world: 2, node: 'start' });
+    expect(prog.position).toEqual({ page: 'smb-1', node: '1-4' });
+    h.game.showMap('smb-2');
+    expect(h.map().page.id).toBe('smb-2');
+    expect(prog.position).toEqual({ page: 'smb-2', node: 'start' });
   });
 
   it('back from the map hero pick returns to the map; picking stops the map music', () => {
     const h = makeGame();
-    h.game.showMap(1);
+    h.game.showMap('smb-1');
     const map = h.map();
     h.idle(8);
     walkTo(h, '1-1');
@@ -312,7 +312,7 @@ describe('world map scene', () => {
     const h = makeGame();
     h.game.state = newGameState(MARIO, LUIGI);
     h.game.state.powerState2 = 'big';
-    h.game.showMap(1);
+    h.game.showMap('smb-1');
     h.idle(8);
     walkTo(h, '1-1');
     h.tap('jump');
@@ -333,7 +333,7 @@ describe('world map scene', () => {
     const k = makeGame();
     k.game.state = newGameState(MARIO, LUIGI);
     k.game.state.powerState2 = 'big';
-    k.game.showMap(1);
+    k.game.showMap('smb-1');
     k.idle(8);
     walkTo(k, '1-1');
     k.tap('jump');
@@ -347,23 +347,23 @@ describe('world map scene', () => {
 
   it('copes with a page without nodes and one without a start node', () => {
     const h = makeGame();
-    const empty: WorldMapPage = { ...page(1), world: 98, nodes: [], paths: [], exits: [], actors: [] };
+    const empty: WorldMapPage = { ...page(1), id: 'x-98', nodes: [], paths: [], exits: [], actors: [] };
     const noStart: WorldMapPage = {
       ...page(1),
-      world: 97,
+      id: 'x-97',
       nodes: page(1).nodes.filter((n) => n.kind !== 'start'),
       exits: [],
     };
     MAP_PAGES.push(empty, noStart);
     try {
-      h.game.mapProgress.worlds.push(97, 98);
-      h.game.showMap(98);
-      expect(h.map().page.world).toBe(98);
+      h.game.mapProgress.pages.push('x-97', 'x-98');
+      h.game.showMap('x-98');
+      expect(h.map().page.id).toBe('x-98');
       expect(h.map().node).toBe('');
       h.idle(8);
       for (const a of ['left', 'right', 'up', 'down', 'jump'] as Action[]) h.tap(a);
       expect(h.map().mode).toBe('idle');
-      h.game.showMap(97);
+      h.game.showMap('x-97');
       expect(h.map().node).toBe(noStart.nodes[0]!.id);
       h.idle(8);
       h.tap('right');
@@ -380,7 +380,7 @@ describe('campaign saves from the map', () => {
     const h = makeGame();
     h.game.openFile(1, newSave(1, 'luigi'));
     expect(h.map()).toBeInstanceOf(WorldMapScene);
-    expect(loadSave(1)?.position).toEqual({ world: 1, node: 'start' });
+    expect(loadSave(1)?.position).toEqual({ page: 'smb-1', node: 'start' });
     h.idle(8);
     walkTo(h, '1-1');
     clearLevel(h.game.mapProgress, '1-1', getLevel);
@@ -389,7 +389,7 @@ describe('campaign saves from the map', () => {
     h.game.autosave();
     const saved = loadSave(1)!;
     expect(saved.cleared).toEqual(['1-1']);
-    expect(saved.position).toEqual({ world: 1, node: '1-1' });
+    expect(saved.position).toEqual({ page: 'smb-1', node: '1-1' });
     expect(saved.score).toBe(4200);
     expect(saved.character).toBe('luigi');
     h.game.state.lives = 7;
@@ -409,7 +409,7 @@ describe('campaign saves from the map', () => {
 
   it('outside campaign mode autosave writes nothing', () => {
     const h = makeGame();
-    h.game.showMap(1);
+    h.game.showMap('smb-1');
     clearLevel(h.game.mapProgress, '1-1', getLevel);
     h.game.autosave();
     h.game.saveAndQuit();
@@ -469,12 +469,13 @@ describe('developer mode: unlock all on the map', () => {
     h.tap('jump');
     expect(enter).toHaveBeenCalledWith('1-3');
     expect(h.game.mapProgress.cleared).toEqual([]);
-    expect(h.game.mapProgress.worlds).toEqual([1]);
+    expect(h.game.mapProgress.pages).toEqual(['smb-1']);
     // Back on the map: the Worlds menu lists every world.
     h.game.showMap();
     h.idle(8);
     expect(h.map().node).toBe('1-3');
-    expect(worldsListed(h)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`));
+    // Unlock all opens the Warp Zone hub too.
+    expect(worldsListed(h)).toEqual([...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`), 'Warp Zone']);
 
     // Dev mode off: the row is gone and the map is back to normal, the hero on an open node.
     settings.dev = false;
@@ -504,18 +505,18 @@ describe('developer mode: unlock all on the map', () => {
     h.idle(8);
     const menu = openMenu(h);
     items(menu).at(-1)?.adjust?.(1);
-    h.game.travelToWorld(5);
-    expect(h.map().page.world).toBe(5);
-    expect(isWorldOpen(h.game.mapProgress, 5)).toBe(false);
+    h.game.travelToPage('smb-5');
+    expect(h.map().page.id).toBe('smb-5');
+    expect(isPageOpen(h.game.mapProgress, 'smb-5')).toBe(false);
     h.idle(8);
     const again = openMenu(h);
     h.tap('up');
     h.tap('jump'); // confirm toggles too
     expect(h.game.devUnlockAll).toBe(false);
-    expect(h.map().page.world).toBe(1);
+    expect(h.map().page.id).toBe('smb-1');
     expect(h.map().node).toBe('start');
     expect(again.title).toBe('MAP');
     expect(loadSave(1)?.devUnlockAll).toBe(false);
-    expect(loadSave(1)?.position).toEqual({ world: 1, node: 'start' });
+    expect(loadSave(1)?.position).toEqual({ page: 'smb-1', node: 'start' });
   });
 });

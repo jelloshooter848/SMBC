@@ -4,7 +4,7 @@ import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { toPx } from '@engine/math/units';
 import type { LevelData } from '../level/schema';
-import { World, type WorldEvent, type WorldStart } from '../world/world';
+import { levelSeed, World, type WorldEvent, type WorldStart } from '../world/world';
 import { DEFAULT_ASSIST, newGameState, type AssistOptions, type GameState } from '../context';
 import type { CharacterDef } from '../characters/character';
 
@@ -70,6 +70,8 @@ export interface SimOptions {
   controller?: (world: World, frame: number) => Action[];
   /** Start overrides (position, mode, carried timer), as a pipe transfer would pass them. */
   start?: WorldStart;
+  /** World RNG seed; defaults to the level's fixed seed so every run is repeatable. */
+  seed?: number;
 }
 
 export interface SimResult {
@@ -92,7 +94,7 @@ export function runSim(opts: SimOptions): SimResult {
     opts.level,
     { assets, audio: NULL_AUDIO, assist: { ...DEFAULT_ASSIST, ...opts.assist }, reduceFlashing: true },
     state,
-    opts.start,
+    { ...opts.start, seed: opts.start?.seed ?? opts.seed ?? levelSeed(opts.level) },
   );
   const input = new ScriptedInput(opts.script);
   const events: WorldEvent[] = [];

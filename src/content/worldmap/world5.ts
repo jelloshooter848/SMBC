@@ -21,7 +21,9 @@ export const SKETCH_5 = [
 ];
 
 export const WORLD_5: WorldMapPage = {
-  world: 5,
+  id: 'smb-5',
+  group: 'smb',
+  label: 'WORLD 5',
   title: 'SKY TREES',
   theme: 'sky',
   music: 'map',
@@ -44,7 +46,7 @@ export const WORLD_5: WorldMapPage = {
     { from: '5-3', to: '5-4', points: poly([12, 9], [12, 11], [14, 11]) },
     { from: '5-1', to: 'bonus-5', points: poly([8, 4], [8, 10], [7, 10]) },
   ],
-  exits: [{ from: '5-4', toWorld: 6, side: 'right', points: poly([14, 11], [15, 11]) }],
+  exits: [{ from: '5-4', to: 'smb-6', side: 'right', points: poly([14, 11], [15, 11]) }],
   actors: [
     actor('bullet', 200, 26, { speed: -0.7 }),
     actor('bullet', 40, 218, { speed: -0.5 }),

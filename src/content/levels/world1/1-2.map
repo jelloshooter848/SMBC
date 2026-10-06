@@ -44,4 +44,6 @@ pipe 166 9 right -> 1-2-exit 3 10 exit=up
 pipe 178 10 down -> 4-1 2 12
 pipe 182 10 down -> 3-1 2 12
 pipe 186 10 down -> 2-1 2 12
-warp 176 16 worlds=4,3,2 text=WELCOME_TO_WARP_ZONE!
+;; Campaign play: one unlabelled pipe (the middle one) that records map secret bonus-1 and
+;; returns to the World 1 map (level/campaign.ts); other play keeps the three warps.
+warp 176 16 worlds=4,3,2 text=WELCOME_TO_WARP_ZONE! secret=bonus-1

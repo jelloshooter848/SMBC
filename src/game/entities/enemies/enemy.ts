@@ -155,26 +155,29 @@ export abstract class Enemy extends Entity {
     this.destroy();
   }
 
-  /** Knocked off the screen upside down (Enemy.die; no sideways boost in a water level). */
-  protected flipOut(src: DamageSource, world: World): void {
-    const dir = isWaterTheme(world.level.theme) ? 0 : src.dirX;
-    world.spawn(
-      new Corpse(
-        this.body.x,
-        this.body.y,
-        toPx(this.body.w),
-        toPx(this.body.h),
-        this.sheet,
-        this.corpsePalette(world.level.theme),
-        this.currentFrame,
-        dir,
-        true,
-        this.spriteOffsetX,
-        this.spriteOffsetY,
-        this.corpseFlipY,
-        this.corpseGravity,
-      ),
+  /**
+   * Knocked off the screen upside down (Enemy.die; no sideways boost in a water level). With
+   * `hop` false it just drops from where it is, as after a `vx = 0; vy = 0` (Bloopa.stomp).
+   */
+  protected flipOut(src: DamageSource, world: World, hop = true): void {
+    const dir = !hop || isWaterTheme(world.level.theme) ? 0 : src.dirX;
+    const corpse = new Corpse(
+      this.body.x,
+      this.body.y,
+      toPx(this.body.w),
+      toPx(this.body.h),
+      this.sheet,
+      this.corpsePalette(world.level.theme),
+      this.currentFrame,
+      dir,
+      true,
+      this.spriteOffsetX,
+      this.spriteOffsetY,
+      this.corpseFlipY,
+      this.corpseGravity,
     );
+    if (!hop) corpse.body.vy = 0;
+    world.spawn(corpse);
     this.destroy();
   }
 
