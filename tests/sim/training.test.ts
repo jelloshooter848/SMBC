@@ -14,6 +14,8 @@ import { loadSave, migrateSave, newSave } from '@game/save/save-files';
 import { PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
 import { TrainingQuestionScene } from '@game/tutorial/training';
 import type { TargetDummy } from '@game/tutorial/dummy';
+import type { Settings } from '@engine/save/settings';
+import { mapPage } from '@content/worldmap';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
 
 useStorage();
@@ -179,6 +181,17 @@ describe('the training question', () => {
     expect(loadSave(1)?.tutorials).toEqual(['mario', 'luigi']);
   });
 
+  it("after player one's room the map music is back for player two's pick", () => {
+    const h = makeGame();
+    file({ freed: ['mario', 'luigi'], character2: 'mario', lives: 5 });
+    h.game.openFile(1);
+    pick(h, 1);
+    choose(h, 'Yes');
+    skip(h);
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.audio.playMusic).toHaveBeenLastCalledWith(mapPage('smb-1')?.music);
+  });
+
   it("player two's pick on a two-player file asks for player two's hero", () => {
     const h = makeGame();
     file({ freed: ['mario', 'luigi'], character2: 'mario', lives: 5 });
@@ -196,6 +209,35 @@ describe('the training question', () => {
     // The room answers to player two's input (player one's drives it too).
     expect(h.top()).toBeInstanceOf(PracticeRoomScene);
     expect((h.top() as PracticeRoomScene).hero).toBe(LUIGI);
+  });
+});
+
+describe('training and the dev "All heroes" toggle', () => {
+  it('a hero picked only through All heroes is not asked (or recorded); once freed, it is', () => {
+    const h = makeGame();
+    const settings = { dev: true } as Settings;
+    h.game.deps.settings = settings;
+    file();
+    h.game.openFile(1);
+    h.game.devAllHeroes = true;
+    pick(h, 1); // Luigi, still a captive on the file
+    expect(h.top()).not.toBeInstanceOf(TrainingQuestionScene);
+    h.until(() => h.top() instanceof LevelScene);
+    expect(h.game.state.character).toBe(LUIGI);
+    h.game.returnToMap();
+    expect(loadSave(1)?.tutorials).toEqual(['mario']);
+    // Reopened while he is the file's hero: still not marked.
+    const again = makeGame();
+    again.game.deps.settings = settings;
+    again.game.openFile(1);
+    expect(again.game.state.character).toBe(LUIGI);
+    expect(again.game.tutorials).toEqual(['mario']);
+    // Freed for real, dev mode off: the real question comes.
+    settings.dev = false;
+    again.game.freeHero('luigi');
+    again.game.state.character = MARIO;
+    pick(again, 1);
+    expect(again.top()).toBeInstanceOf(TrainingQuestionScene);
   });
 });
 

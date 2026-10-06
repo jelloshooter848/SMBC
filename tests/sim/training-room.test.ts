@@ -7,9 +7,17 @@ import { LUIGI } from '@game/characters/luigi';
 import { MARIO } from '@game/characters/mario';
 import type { Player } from '@game/entities/player';
 import { lessonsFor, LUIGI_HIGH_JUMP_PX, LUIGI_COAST_PX } from '@game/tutorial/lessons';
-import { PracticeRoomScene, practiceRoom, TrainingMenuScene, type TrainingResult } from '@game/tutorial/room';
+import {
+  PracticeRoomScene,
+  practiceRoom,
+  PROMPT_LINES,
+  TrainingMenuScene,
+  type TrainingResult,
+} from '@game/tutorial/room';
+import { defaultSettings } from '@engine/save/settings';
 import type { TargetDummy } from '@game/tutorial/dummy';
 import { runSim } from '@game/sim/headless';
+import { getLevel } from '@content/levels';
 import { draw, makeGame, useStorage } from './heroes-harness';
 
 useStorage();
@@ -32,10 +40,10 @@ function policies(): Record<string, Policy> {
     'high-jump': (p, f) => (Math.abs(cx(p) - 140) > 3 ? goTo(p, 140) : f % 60 < 45 ? ['jump'] : []),
     'slippery-stop': (p) => {
       if (!backed) {
-        backed = cx(p) <= 92;
+        backed = cx(p) <= 72;
         return ['left'];
       }
-      if (!released && cx(p) >= 120) released = true;
+      if (!released && cx(p) >= 112) released = true;
       return released ? [] : ['right', 'attack'];
     },
     fireball: (_p, f) => (f < 60 ? [] : tapEvery(f, 'attack', 12)),
@@ -250,11 +258,109 @@ describe('the practice room', () => {
     expect(scene.tracker.blocked).toBe(1);
   });
 
+  it('the HUD names the place instead of WORLD and TIME, with no score or coins', () => {
+    const { h, scene } = room('megaman');
+    h.step();
+    const texts = draw(scene).texts.map((t) => t.str.trim());
+    expect(texts).toContain('TRAINING');
+    expect(texts).toContain('MEGA');
+    expect(texts.some((t) => /WORLD|TIME|^\d{7}$|\$×/.test(t))).toBe(false);
+  });
+
+  it('the prompt box is centred, and prompts show the keys (bare names on touch, or when too long)', () => {
+    const { h, scene } = room('link');
+    h.game.deps.settings = defaultSettings();
+    h.step();
+    const { texts } = draw(scene);
+    const heading = texts.find((t) => t.str === 'LINK TRAINING 1/5');
+    expect(heading).toBeDefined();
+    expect(heading && heading.x + (heading.str.length * 8) / 2).toBe(128);
+    expect(scene.promptWrapped().join(' ')).toBe('SWING YOUR SWORD (X) AT THE DUMMY.');
+    // Touch: the button carries the name itself.
+    h.game.deps.settings.input.touch = 'on';
+    expect(scene.promptWrapped().join(' ')).toBe('SWING YOUR SWORD AT THE DUMMY.');
+    // A long key name that would push the prompt past three lines: the bare names.
+    h.game.deps.settings.input.touch = 'off';
+    scene.startLesson(4);
+    const bound = h.game.deps.settings.input.bindings[0];
+    if (bound) {
+      bound.keyboard.special = ['ShiftRight'];
+      bound.keyboard.select = ['ControlRight'];
+    }
+    expect(scene.promptWrapped().length).toBeLessThanOrEqual(PROMPT_LINES);
+    expect(scene.promptWrapped().join(' ')).toBe('USE TOOL THROWS THE BOOMERANG. TOOLS PICKS ANOTHER TOOL.');
+  });
+
+  it("Link's shield lesson works standing right next to the dummy too", () => {
+    const { h, scene } = room('link');
+    h.step();
+    scene.startLesson(3);
+    expect(scene.lesson?.id).toBe('shield');
+    for (let i = 0; i < 120 && cx(scene.player) < 134; i++) h.step(['right']);
+    h.until(() => scene.phase === 'good', 200);
+    expect(scene.tracker.blocked).toBe(1);
+  });
+
+  it("Bill's spread fan counts as one direction: aiming is what counts", () => {
+    const { h, scene } = room('bill');
+    h.step();
+    scene.startLesson(1);
+    scene.player.scratch.tool = 2; // the spread gun
+    for (let i = 0; i < 120; i++) h.step(i % 12 < 2 ? ['attack'] : []);
+    expect(scene.tracker.shots).toBeGreaterThan(5);
+    expect([...scene.tracker.shotDirs]).toEqual(['1,0']);
+    expect(scene.phase).toBe('lesson');
+  });
+
   it('gives the kit only inside the room: the run outside keeps its own', () => {
     const { h } = room('megaman');
     h.step();
     expect(h.game.state.kit).toEqual({});
     expect(h.game.state.character).toBe(MARIO);
+  });
+});
+
+/**
+ * The lessons that walking, jumping and the basic attack must not tick (the basic attack's own
+ * lessons, and Link's shield, which blocks while he walks toward a shot, are left out).
+ */
+const MOVE_LESSONS: Record<string, string[]> = {
+  luigi: ['high-jump', 'slippery-stop'],
+  link: ['down-thrust', 'up-thrust', 'boomerang'],
+  megaman: ['slide', 'charge', 'weapon'],
+  samus: ['aim-up', 'morph-ball', 'bomb', 'missile'],
+  simon: ['crouch-whip', 'sub-weapon', 'committed-jump'],
+  ryu: ['cling', 'wall-jump', 'ninpo'],
+  bill: ['aim', 'prone', 'jump-shoot'],
+};
+
+/** Walk back and forth between the step and the dummy, tap-jump now and then, attack on the ground. */
+const unrelated = (p: Player, f: number, dir: { d: 1 | -1 }): Action[] => {
+  if (cx(p) >= 136) dir.d = -1;
+  else if (cx(p) <= 84) dir.d = 1;
+  const walk: Action[] = [dir.d > 0 ? 'right' : 'left'];
+  // A jump every 90 frames from the ground; attacks only on the ground, well after landing.
+  if (f % 90 < 3 && p.body.onGround) return [...walk, 'jump'];
+  if (p.body.onGround && f % 90 >= 60 && f % 8 < 2) return [...walk, 'attack'];
+  return walk;
+};
+
+describe('walking, jumping and the basic attack never tick a move lesson', () => {
+  it.each(Object.entries(MOVE_LESSONS))('%s', (id, moves) => {
+    expect(moves.every((m) => lessonsFor(id).some((l) => l.id === m))).toBe(true);
+    for (const m of moves) {
+      const { h, scene } = room(id);
+      h.step();
+      scene.startLesson(lessonsFor(id).findIndex((l) => l.id === m));
+      const dir = { d: 1 as 1 | -1 };
+      for (let f = 0; f < 600; f++) h.step(unrelated(scene.player, f, dir));
+      expect(scene.lesson?.id, `${id} ${m}`).toBe(m);
+      expect(scene.phase, `${id} ${m}`).toBe('lesson');
+      // The script did walk, jump and attack.
+      expect(scene.tracker.jumps).toBeGreaterThanOrEqual(4);
+      // (Small Luigi's attack button runs.)
+      if (id !== 'luigi') expect(scene.tracker.attacks + scene.tracker.shots).toBeGreaterThan(5);
+    }
   });
 });
 
@@ -287,23 +393,23 @@ describe("the heroes' standout moves really are measured as the lessons say", ()
     expect(peak(40, MARIO)).toBeLessThan(LUIGI_HIGH_JUMP_PX);
   });
 
-  it('Luigi glides LUIGI_COAST_PX after letting go at a walk; Mario stops sooner', () => {
+  it('Luigi glides LUIGI_COAST_PX after letting go from a run; Mario stops sooner', () => {
+    // On 1-1's long first floor: run right for 40 frames, then let go.
     const coast = (c = LUIGI) => {
       let from = 0;
       const r = runSim({
-        level,
+        level: getLevel('1-1'),
         character: c,
-        maxFrames: 200,
+        maxFrames: 300,
         script: {
           steps: [
-            { frame: 0, hold: ['left'] },
-            { frame: 4, hold: ['right'] },
-            { frame: 50, hold: [] },
+            { frame: 0, hold: ['right', 'attack'] },
+            { frame: 40, hold: [] },
           ],
         },
         until: (w, f) => {
-          if (f === 50) from = toPx(w.player.body.x);
-          return f > 50 && w.player.body.vx === 0;
+          if (f === 40) from = toPx(w.player.body.x);
+          return f > 40 && w.player.body.vx === 0;
         },
       });
       return toPx(r.world.player.body.x) - from;

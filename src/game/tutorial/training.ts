@@ -23,9 +23,11 @@ export function trainingOffered(game: Game, hero: CharacterDef): boolean {
   );
 }
 
-/** The first pick of this hero on the file: ask about training before going on. */
+/** The first pick of this freed hero on the file: ask about training before going on. */
 export function needsTraining(game: Game, hero: CharacterDef): boolean {
-  return trainingOffered(game, hero) && !game.tutorials.includes(hero.id);
+  // A hero picked only through dev "All heroes" (not freed on the file) is not asked: the real
+  // question waits for the hero to be freed.
+  return trainingOffered(game, hero) && game.freed.includes(hero.id) && !game.tutorials.includes(hero.id);
 }
 
 /** "<HERO> TRAINING?" YES / NO, over the character select. */
@@ -100,9 +102,16 @@ export function runTraining(game: Game, hero: CharacterDef, player: number, afte
 
 /**
  * A pick confirmed `hero` for the first time on this file: ask, record the answer (saved at once),
- * then the practice room on YES, and `then` (the pick going on) either way.
+ * then the practice room on YES, and `then` (the pick going on) either way. `music` (the map's)
+ * is put back after the room.
  */
-export function askTraining(game: Game, hero: CharacterDef, player: number, then: () => void): void {
+export function askTraining(
+  game: Game,
+  hero: CharacterDef,
+  player: number,
+  then: () => void,
+  music?: string,
+): void {
   const below = game.scenes.top;
   let answered = false;
   const answer = (yes: boolean) => {
@@ -110,8 +119,12 @@ export function askTraining(game: Game, hero: CharacterDef, player: number, then
     answered = true;
     game.answerTraining(hero.id);
     while (game.scenes.depth > 0 && game.scenes.top !== below) game.scenes.pop();
-    if (yes) runTraining(game, hero, player, then);
-    else then();
+    if (!yes) return then();
+    runTraining(game, hero, player, () => {
+      // The music that played under the pick (the map's) comes back for what follows.
+      if (music) game.ctx.audio.playMusic(music);
+      then();
+    });
   };
   game.scenes.push(new TrainingQuestionScene(game, hero, answer, player));
 }

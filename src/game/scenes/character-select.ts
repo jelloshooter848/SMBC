@@ -28,6 +28,11 @@ export interface HeroPick {
    * B/Select shortcut (shown on touch as MAP). Leaves the level as Pause → Quit to map does.
    */
   onMap?: () => void;
+  /**
+   * The music playing under the pick (the map's), put back after a training room so the next
+   * pick (player two's) has it.
+   */
+  music?: string | undefined;
 }
 
 export class CharacterSelectScene implements Scene {
@@ -148,7 +153,8 @@ export class CharacterSelectScene implements Scene {
         this.game.ctx.audio.sfx('coin');
         // Campaign: the first pick of a hero on the file asks about training first.
         const pick = this.pick;
-        if (needsTraining(this.game, c)) askTraining(this.game, c, pick.player, () => pick.onPick(c));
+        if (needsTraining(this.game, c))
+          askTraining(this.game, c, pick.player, () => pick.onPick(c), pick.music);
         else pick.onPick(c);
       } else if (this.pick.onCancel && (pressed('select') || pressed('attack'))) {
         this.game.ctx.audio.sfx('select');

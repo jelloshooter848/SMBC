@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../characters/registry';
 import { fontText, wrapText } from '../hud/text';
-import { LESSONS, lessonsFor } from './lessons';
+import { LESSONS, lessonsFor, promptActions, promptText } from './lessons';
+
+/** Actions a prompt token may name: the face buttons (directions are written plainly). */
+const BUTTONS = ['jump', 'attack', 'special', 'select'];
 import { PROMPT_COLS, PROMPT_LINES } from './room';
 
 /**
@@ -45,15 +48,31 @@ describe('hero lessons', () => {
       expect(new Set(lessons.map((l) => l.id)).size).toBe(lessons.length);
       const vocab = vocabulary(id);
       for (const l of lessons) {
-        expect(fontText(l.prompt), l.id).toBe(l.prompt);
-        const lines = wrapText(l.prompt, PROMPT_COLS);
+        // Bare: each [LABEL:action] token as its label (the box falls back to this).
+        const bare = promptText(l.prompt);
+        expect(fontText(bare), l.id).toBe(bare);
+        const lines = wrapText(bare, PROMPT_COLS);
         expect(lines.length, l.id).toBeLessThanOrEqual(PROMPT_LINES);
         for (const line of lines) expect(line.length).toBeLessThanOrEqual(PROMPT_COLS);
-        expect(l.prompt, l.id).not.toMatch(LETTER);
-        expect(l.prompt, l.id).not.toMatch(PROSE);
-        const named = vocab.filter((w) => new RegExp(`\\b${w}\\b`).test(l.prompt));
+        expect(PROMPT_COLS).toBeLessThanOrEqual(28);
+        expect(bare, l.id).not.toMatch(LETTER);
+        expect(bare, l.id).not.toMatch(PROSE);
+        // Tokens name real button actions, and their labels are the hero's ability words.
+        for (const a of promptActions(l.prompt)) expect(BUTTONS, `${id} ${l.id}`).toContain(a);
+        const named = vocab.filter((w) => new RegExp(`\\b${w}\\b`).test(bare));
         expect(named.length, `${id} ${l.id}: names an ability`).toBeGreaterThan(0);
       }
     },
   );
+});
+
+describe('prompt tokens', () => {
+  it('[LABEL:action] becomes the hint, or the bare label', () => {
+    const p = 'HOLD [SHOOT:attack], THEN [JUMP:jump].';
+    expect(promptText(p)).toBe('HOLD SHOOT, THEN JUMP.');
+    expect(promptText(p, (l, a) => `${l} (${a.toUpperCase()})`)).toBe(
+      'HOLD SHOOT (ATTACK), THEN JUMP (JUMP).',
+    );
+    expect(promptActions(p)).toEqual(['attack', 'jump']);
+  });
 });

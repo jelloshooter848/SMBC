@@ -314,6 +314,21 @@ describe('save files', () => {
     expect(put({ devUnlockAll: true }).pages).toEqual(['smb-1']);
   });
 
+  it('keeps the developer "all heroes" flag only when it is true (missing: off), freed untouched', () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1)!;
+    };
+    expect(newSave(1, 'mario').devAllHeroes).toBe(false);
+    const { devAllHeroes: _, ...old } = newSave(1, 'mario');
+    store.set('smbc.save.1', JSON.stringify(old));
+    expect(loadSave(1)!.devAllHeroes).toBe(false);
+    expect(loadSave(1)!.v).toBe(SAVE_VERSION);
+    expect(put({ devAllHeroes: true }).devAllHeroes).toBe(true);
+    for (const bad of ['true', 1, null, {}]) expect(put({ devAllHeroes: bad }).devAllHeroes).toBe(false);
+    expect(put({ devAllHeroes: true }).freed).toEqual(['mario']);
+  });
+
   it('counts main levels cleared and the highest world', () => {
     const s = newSave(1, 'mario');
     s.cleared = ['1-1', '1-2', '1-2', '8-4', 'll-1-1', 'custom-x', '9-1'];

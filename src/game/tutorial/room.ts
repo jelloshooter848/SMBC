@@ -2,6 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { TouchLabels } from '@engine/input/touch';
 import { px, tileToSub, toPx } from '@engine/math/units';
 import { SCREEN_W } from '@engine/viewport';
@@ -21,11 +22,21 @@ import { drawHud } from '../hud/hud';
 import { fontText, wrapText } from '../hud/text';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 import { TargetDummy } from './dummy';
-import { lessonsFor, LessonTracker, type Lesson, type PracticeRoom, type RoomGeometry } from './lessons';
+import {
+  lessonsFor,
+  LessonTracker,
+  promptText,
+  type Lesson,
+  type PracticeRoom,
+  type RoomGeometry,
+} from './lessons';
 import source from '../../content/levels/practice.map?raw';
 
-/** Columns of the prompt box (the same as the dialogue box). */
-export const PROMPT_COLS = 28;
+/**
+ * Columns of the prompt box: 25 (200 px) keeps the box centred under the HUD and clear of the
+ * health and weapon bars at the left edge (and of a co-op bar at the right).
+ */
+export const PROMPT_COLS = 25;
 /** Lines a prompt may take in the box. */
 export const PROMPT_LINES = 3;
 /** Frames "GOOD!" shows after a lesson before the next prompt. */
@@ -208,7 +219,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     audio.setTempoScale(1);
     audio.playMusic(this.music());
     this.putUpDummy();
-    this.begin(0, `${this.hero.name} training. ${spoken(abilityHint(this.game, 'MENU', 'start'))} to skip. `);
+    this.startLesson(0, `${this.hero.name} training. ${spoken(this.hint('MENU', 'start'))} to skip. `);
   }
 
   exit(): void {
@@ -219,8 +230,27 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     return this.hero.music ?? this.layout.level.music;
   }
 
+  /** A button's ability for the training player: "SHOOT (X)" with keys or a pad, "SHOOT" on touch. */
+  private hint(label: string, action: Action): string {
+    return abilityHint(this.game, label, action, this.player_);
+  }
+
+  /**
+   * The current prompt wrapped for the box: abilities with their keys (`abilityHint`), or the
+   * bare names when that would not fit PROMPT_LINES lines.
+   */
+  promptWrapped(): string[] {
+    const prompt = this.lesson?.prompt ?? '';
+    const hinted = wrapText(
+      promptText(prompt, (l, a) => this.hint(l, a)),
+      PROMPT_COLS,
+    );
+    if (hinted.length <= PROMPT_LINES && hinted.every((l) => l.length <= PROMPT_COLS)) return hinted;
+    return wrapText(promptText(prompt), PROMPT_COLS).slice(0, PROMPT_LINES);
+  }
+
   /** Lesson `i` comes up: counting starts afresh, its setup runs, and it is announced. */
-  private begin(i: number, lead = ''): void {
+  startLesson(i: number, lead = ''): void {
     this.index = i;
     this.phase = 'lesson';
     this.phaseT = 0;
@@ -229,7 +259,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     const lesson = this.lesson;
     if (!lesson) return this.ready();
     lesson.setup?.(this);
-    this.game.deps.announcer?.say(`${lead}${spoken(lesson.prompt)}`);
+    this.game.deps.announcer?.say(`${lead}${spoken(this.promptWrapped().join(' '))}`);
   }
 
   private ready(): void {
@@ -317,7 +347,8 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     const p = this.player;
     const db = d.body;
     const dir: -1 | 1 = p.centerX < db.x + (db.w >> 1) ? -1 : 1;
-    if (Math.abs(p.centerX - (db.x + (db.w >> 1))) < px(24)) return;
+    // Not while the hero stands in the dummy itself (which way would it fire?).
+    if (Math.abs(p.centerX - (db.x + (db.w >> 1))) < px(8)) return;
     this.shotT = 0;
     const x = dir < 0 ? db.x - px(DUMMY_SHOT.w) : db.x + db.w;
     const shot = new Projectile(x, db.y + px(8), dir, DUMMY_SHOT, d);
@@ -373,7 +404,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
         this.game.deps.announcer?.say('Good!');
       }
     } else if (this.phase === 'good') {
-      if (this.phaseT >= GOOD_FRAMES) this.begin(this.index + 1);
+      if (this.phaseT >= GOOD_FRAMES) this.startLesson(this.index + 1);
     } else if (this.phase === 'ready' && this.phaseT >= READY_FRAMES) this.finish('done');
   }
 
@@ -394,41 +425,50 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     if (this.phase === 'ready' || this.phase === 'over')
       return [fontText(`${this.hero.hudName} TRAINING`), '', 'READY!'];
     if (this.phase === 'good') return [head, '', 'GOOD!'];
-    return [head, ...wrapText(this.lesson?.prompt ?? '', PROMPT_COLS).slice(0, PROMPT_LINES)];
+    return [head, ...this.promptWrapped()];
   }
 
   render(r: Renderer): void {
     this.world.render(r);
     const assets = this.game.ctx.assets;
-    drawHud(r, assets, this.state, null, this.world.frame, this.world.players);
+    drawHud(r, assets, this.state, null, this.world.frame, this.world.players, { place: 'TRAINING' });
     const font = assets.sheet('font');
-    // The box sits under the HUD (and a magic meter), clear of the health bars at the left edge.
-    const lines = this.promptLines();
-    const x = 24;
-    const w = SCREEN_W - x - 2;
-    const y = 44;
-    const h = lines.length * 10 + 8;
-    r.rect(x, y, w, h, '#fcfcfc');
-    r.rect(x + 1, y + 1, w - 2, h - 2, '#000');
-    lines.forEach((l, i) => {
-      const lx = x + ((w - l.length * 8) >> 1);
-      r.text(font, l, lx, y + 5 + i * 10);
-    });
-    if (this.phase === 'good' || this.phase === 'ready') {
-      // A tick beside GOOD! / READY!.
-      const tx = x + ((w - 6 * 8) >> 1) - 14;
-      const ty = y + 5 + 20;
-      r.rect(tx, ty + 3, 2, 2, '#58d854');
-      r.rect(tx + 2, ty + 5, 2, 2, '#58d854');
-      r.rect(tx + 4, ty + 3, 2, 2, '#58d854');
-      r.rect(tx + 6, ty + 1, 2, 2, '#58d854');
-      r.rect(tx + 8, ty - 1, 2, 2, '#58d854');
-    }
-    const skip = fontText(`${abilityHint(this.game, 'MENU', 'start')} TO SKIP`);
+    const tick = this.phase === 'good' || this.phase === 'ready' || this.phase === 'over';
+    drawPromptBox(r, font, this.promptLines(), tick ? 2 : -1);
+    const skip = fontText(`${this.hint('MENU', 'start')} TO SKIP`);
     const sx = (SCREEN_W - skip.length * 8) >> 1;
     r.rect(sx - 4, 223, skip.length * 8 + 8, 12, 'rgba(0,0,0,0.6)');
     r.text(font, skip, sx, 226);
   }
+}
+
+/** Top of the prompt box: under the HUD and a magic meter. */
+export const PROMPT_BOX_Y = 44;
+
+/**
+ * The room's prompt box: centred under the HUD, PROMPT_COLS wide, a white rim on black, each line
+ * centred. With `tick` >= 0 a green tick is drawn left of that line (GOOD!, READY!).
+ */
+export function drawPromptBox(r: Renderer, font: SpriteSheet, lines: readonly string[], tick = -1): void {
+  const w = PROMPT_COLS * 8 + 8;
+  const x = (SCREEN_W - w) >> 1;
+  const y = PROMPT_BOX_Y;
+  const h = lines.length * 10 + 8;
+  r.rect(x, y, w, h, '#fcfcfc');
+  r.rect(x + 1, y + 1, w - 2, h - 2, '#000');
+  lines.forEach((l, i) => r.text(font, l, x + ((w - l.length * 8) >> 1), y + 5 + i * 10));
+  const line = lines[tick];
+  if (line === undefined) return;
+  const tx = x + ((w - line.length * 8) >> 1) - 14;
+  const ty = y + 5 + tick * 10;
+  for (const [dx, dy] of [
+    [0, 3],
+    [2, 5],
+    [4, 3],
+    [6, 1],
+    [8, -1],
+  ] as const)
+    r.rect(tx + dx, ty + dy, 2, 2, '#58d854');
 }
 
 /** The room's menu: Continue, or Skip training (ends the room). Pauses the music. */

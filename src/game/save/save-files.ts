@@ -43,6 +43,11 @@ export interface SaveFile extends MapProgress {
    */
   devUnlockAll?: boolean;
   /**
+   * Developer mode's map menu "All heroes": every hero can be picked on this file without freeing
+   * any (`freed` is never written by it). Only has an effect while dev mode is on; missing: off.
+   */
+  devAllHeroes?: boolean;
+  /**
    * Heroes freed on this file (CharacterDef ids, Mario always first): only these can be picked
    * in campaign play; the rest are brainwashed captives to find (docs/HEROES.md).
    */
@@ -170,6 +175,7 @@ export function newSave(
     lastNode: {},
     pendingReveal: [],
     devUnlockAll: false,
+    devAllHeroes: false,
     freed: freedHeroes([character, character2], characters),
     tutorials: tutorialHeroes([character, character2], characters),
   };
@@ -252,6 +258,7 @@ export function migrateSave(
   const position = pages.includes(posPage)
     ? { page: posPage, node: str(pos.node, d.position.node) }
     : { page: furthest, node: 'start' };
+  const freed = Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed;
   return {
     ...d,
     v: current,
@@ -274,12 +281,13 @@ export function migrateSave(
     lastNode: lastNodes(stored.lastNode, pages),
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
-    freed: Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed,
-    // The file's current heroes count as answered, so an existing player is never interrupted.
+    devAllHeroes: stored.devAllHeroes === true,
+    freed,
+    // The file's current (freed) heroes count as answered, so an existing player is never
+    // interrupted; a hero used only through dev "All heroes" still gets its real question.
     tutorials: tutorialHeroes([
       ...(Array.isArray(stored.tutorials) ? stored.tutorials : []),
-      stored.character,
-      stored.character2,
+      ...[stored.character, stored.character2].filter((id) => freed.includes(id as string)),
     ]),
   };
 }

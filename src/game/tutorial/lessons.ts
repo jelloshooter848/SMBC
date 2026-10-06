@@ -1,4 +1,5 @@
 import { toPx } from '@engine/math/units';
+import type { Action } from '@engine/input/actions';
 import type { Player } from '../entities/player';
 import type { World } from '../world/world';
 import { Projectile } from '../entities/projectiles/projectile';
@@ -14,6 +15,24 @@ import { NINPO_ARTS } from '../characters/ryu/weapons';
  * touch buttons do (JUMP, SWORD, SHOOT, TOOLS...), never button letters, and wrap to the room's
  * prompt box (28 columns, at most 3 lines).
  */
+
+/** `[LABEL:action]`: a button's ability in a prompt. */
+const TOKEN = /\[([^:\]]+):(\w+)\]/g;
+
+/**
+ * A prompt's text: each `[LABEL:action]` through `hint` (the room passes `abilityHint`), or the
+ * bare label without one.
+ */
+export function promptText(prompt: string, hint?: (label: string, action: Action) => string): string {
+  return prompt.replace(TOKEN, (_m, label: string, action: string) =>
+    hint ? hint(label, action as Action) : label,
+  );
+}
+
+/** The actions named by a prompt's `[LABEL:action]` tokens. */
+export function promptActions(prompt: string): string[] {
+  return [...prompt.matchAll(TOKEN)].map((m) => m[2] as string);
+}
 
 /** Where things are in the practice room (px), so lessons can ask "on the ledge", "over the gap". */
 export interface RoomGeometry {
@@ -35,7 +54,11 @@ export interface PracticeRoom {
 
 export interface Lesson {
   id: string;
-  /** Shown in the prompt box and announced: ability names, never button letters. */
+  /**
+   * Shown in the prompt box and announced: ability names, never button letters. A button's
+   * ability is written `[LABEL:action]` ('[SHOOT:attack]'): the room shows it through
+   * `abilityHint` ("SHOOT (X)" with keys, "SHOOT" on touch); `promptText` gives the bare label.
+   */
   prompt: string;
   /** True once the player has done it (since the lesson came up: the tracker is reset). */
   done(t: LessonTracker): boolean;
@@ -58,6 +81,8 @@ export class LessonTracker {
   maxSpeed = 0;
   /** Longest glide on the ground with no direction held (px). */
   maxCoast = 0;
+  /** Longest such glide that began faster than walking speed: a stop from a run (px). */
+  maxRunCoast = 0;
   /** Attacks started (melee swings, shots, throws). */
   attacks = 0;
   crouched = false;
@@ -70,7 +95,11 @@ export class LessonTracker {
   wallJumps = 0;
   /** Projectiles the player launched, by kind; also 'bomb' and 'rush' for placed things. */
   readonly shotKinds = new Set<string>();
-  /** Directions shots flew in, as 'x,y' signs ('1,0' ahead to the right, '0,-1' straight up). */
+  /**
+   * Directions the hero fired in, once per firing frame, as 'x,y' signs ('1,0' ahead to the
+   * right, '0,-1' straight up): the hero's aim (Bill's scratch aimX/aimY) when it has one, else
+   * the first shot's flight. A fan of shots counts once.
+   */
   readonly shotDirs = new Set<string>();
   shots = 0;
   /** Shots fired in the air. */
@@ -94,6 +123,7 @@ export class LessonTracker {
   private wasClinging = false;
   private airborne: { jumped: boolean; feet: number; top: number; x: number } | null = null;
   private coast = 0;
+  private coastFast = false;
   private lastTool: number | undefined;
   private lastAttack = 0;
   private lastEntity = 0;
@@ -107,6 +137,7 @@ export class LessonTracker {
     this.highestStand = Infinity;
     this.maxSpeed = 0;
     this.maxCoast = 0;
+    this.maxRunCoast = 0;
     this.attacks = 0;
     this.crouched = false;
     this.crouchAttacks = 0;
@@ -167,8 +198,10 @@ export class LessonTracker {
       this.maxSpeed = Math.max(this.maxSpeed, Math.abs(b.vx));
       // Gliding with nothing held: how far it carries.
       if (p.heldDirX === 0 && b.vx !== 0) {
+        if (this.coast === 0) this.coastFast = Math.abs(b.vx) > p.profile.maxWalk;
         this.coast += Math.abs(b.vx) / 4096;
         this.maxCoast = Math.max(this.maxCoast, this.coast);
+        if (this.coastFast) this.maxRunCoast = Math.max(this.maxRunCoast, this.coast);
       } else this.coast = 0;
     } else this.coast = 0;
     this.wasOnGround = b.onGround;
@@ -187,6 +220,7 @@ export class LessonTracker {
     this.lastTool = tool;
     // What the hero launched or placed this frame (entity ids only grow).
     let last = this.lastEntity;
+    let fired: string | null = null;
     for (const e of world.entities) {
       if (e.id <= this.lastEntity) continue;
       last = Math.max(last, e.id);
@@ -195,7 +229,7 @@ export class LessonTracker {
         this.shotKinds.add(e.kind);
         const vx = Math.sign(e.body.vx);
         const vy = Math.sign(e.body.vy);
-        this.shotDirs.add(`${vx},${vy}`);
+        fired ??= `${vx},${vy}`;
         if (!b.onGround) this.airShots++;
         if (vx === 0 && vy < 0) this.shotsUp++;
       } else if (e instanceof Bomb && e.owner === p) {
@@ -204,6 +238,16 @@ export class LessonTracker {
       } else if (e instanceof RushCoil && e.owner === p) this.shotKinds.add('rush');
     }
     this.lastEntity = last;
+    if (fired !== null) {
+      const ax = p.scratch.aimX;
+      const ay = p.scratch.aimY;
+      this.shotDirs.add(ax !== undefined && ay !== undefined ? `${ax},${ay}` : fired);
+    }
+  }
+
+  /** Directions fired in that were aimed up or down (not straight ahead). */
+  get aimedDirs(): number {
+    return [...this.shotDirs].filter((d) => !d.endsWith(',0')).length;
   }
 }
 
@@ -220,25 +264,25 @@ const any = (set: ReadonlySet<string>, kinds: readonly string[]) => kinds.some((
 
 /** Luigi's standing jump with JUMP held all the way clears this; a tap or Mario's does not. */
 export const LUIGI_HIGH_JUMP_PX = 72;
-/** Luigi glides at least this far after letting go at a walk (Mario stops in about half). */
-export const LUIGI_COAST_PX = 40;
+/** Luigi glides at least this far after letting go from a run (Mario stops well short). */
+export const LUIGI_COAST_PX = 48;
 
 /** Each hero's lessons: the 3-5 things that make them different from Mario. */
 export const LESSONS: Readonly<Record<string, readonly Lesson[]>> = {
   luigi: [
     {
       id: 'high-jump',
-      prompt: "HOLD JUMP FOR LUIGI'S HIGH JUMP. REACH THE HIGH LEDGE FROM THE STEP!",
+      prompt: "HOLD [JUMP:jump] FOR LUIGI'S HIGH JUMP. REACH THE HIGH LEDGE FROM THE STEP!",
       done: (t) => t.maxJumpHeight >= LUIGI_HIGH_JUMP_PX || t.highestStand <= t.room.ledgeTop,
     },
     {
       id: 'slippery-stop',
-      prompt: 'RUN, THEN LET GO. LUIGI SLIDES A LONG WAY BEFORE HE STOPS.',
-      done: (t) => t.maxCoast >= LUIGI_COAST_PX,
+      prompt: '[RUN:attack], THEN LET GO. LUIGI SLIDES A LONG WAY BEFORE HE STOPS.',
+      done: (t) => t.maxRunCoast >= LUIGI_COAST_PX,
     },
     {
       id: 'fireball',
-      prompt: 'FIRE POWER! USE FIRE TO THROW A FIREBALL AT THE DUMMY.',
+      prompt: 'FIRE POWER! [FIRE:attack] THROWS A FIREBALL. HIT THE DUMMY WITH ONE.',
       setup(room) {
         const p = room.player;
         if (p.powerState === 'fire') return;
@@ -252,22 +296,22 @@ export const LESSONS: Readonly<Record<string, readonly Lesson[]>> = {
   link: [
     {
       id: 'sword',
-      prompt: 'SWING YOUR SWORD AT THE DUMMY.',
+      prompt: 'SWING YOUR [SWORD:attack] AT THE DUMMY.',
       done: (t) => t.dummyHits.has('sword'),
     },
     {
       id: 'down-thrust',
-      prompt: 'JUMP OVER THE DUMMY AND HOLD DOWN FOR A DOWN-THRUST.',
+      prompt: '[JUMP:jump] OVER THE DUMMY AND HOLD DOWN FOR A DOWN-THRUST.',
       done: (t) => t.dummyHits.has('down-thrust'),
     },
     {
       id: 'up-thrust',
-      prompt: 'JUMP UNDER THE BRICKS AND HOLD UP FOR AN UP-THRUST.',
+      prompt: '[JUMP:jump] UNDER THE BRICKS AND HOLD UP FOR AN UP-THRUST.',
       done: (t) => t.seen.has('upThrust'),
     },
     {
       id: 'shield',
-      prompt: 'STAND STILL FACING THE DUMMY. YOUR SHIELD BLOCKS ITS SHOT.',
+      prompt: 'STAND STILL A FEW STEPS FROM THE DUMMY, FACING IT: YOUR SHIELD BLOCKS.',
       setup(room) {
         room.dummyShoots = true;
       },
@@ -275,41 +319,41 @@ export const LESSONS: Readonly<Record<string, readonly Lesson[]>> = {
     },
     {
       id: 'boomerang',
-      prompt: 'USE TOOL THROWS THE BOOMERANG. TOOLS PICKS ANOTHER TOOL.',
+      prompt: '[USE TOOL:special] THROWS THE BOOMERANG. [TOOLS:select] PICKS ANOTHER TOOL.',
       done: (t) => t.shotKinds.has('boomerang'),
     },
   ],
   megaman: [
     {
       id: 'shoot',
-      prompt: 'SHOOT THE DUMMY WITH YOUR BUSTER.',
+      prompt: '[SHOOT:attack] THE DUMMY WITH YOUR BUSTER.',
       done: (t) => t.dummyHits.has('buster'),
     },
     {
       id: 'slide',
-      prompt: 'HOLD DOWN AND PRESS JUMP TO SLIDE.',
+      prompt: 'HOLD DOWN AND PRESS [JUMP:jump] TO SLIDE.',
       done: (t) => t.slid,
     },
     {
       id: 'charge',
-      prompt: 'HOLD SHOOT TO CHARGE UP, THEN LET GO FOR A CHARGE SHOT.',
+      prompt: 'HOLD [SHOOT:attack] TO CHARGE UP, THEN LET GO FOR A CHARGE SHOT.',
       done: (t) => t.shotKinds.has('buster-charged'),
     },
     {
       id: 'weapon',
-      prompt: 'WEAPON PICKS A SPECIAL WEAPON. FIRE IT WITH USE WEAPON.',
+      prompt: '[WEAPON:select] PICKS A SPECIAL WEAPON. FIRE IT WITH [USE WEAPON:special].',
       done: (t) => any(t.shotKinds, MEGAMAN_SPECIALS),
     },
   ],
   samus: [
     {
       id: 'shoot',
-      prompt: 'SHOOT THE DUMMY WITH YOUR BEAM.',
+      prompt: '[SHOOT:attack] THE DUMMY WITH YOUR BEAM.',
       done: (t) => t.dummyHits.has('beam'),
     },
     {
       id: 'aim-up',
-      prompt: 'HOLD UP TO AIM STRAIGHT UP, AND SHOOT.',
+      prompt: 'HOLD UP TO AIM STRAIGHT UP, AND [SHOOT:attack].',
       done: (t) => t.shotsUp > 0,
     },
     {
@@ -319,69 +363,69 @@ export const LESSONS: Readonly<Record<string, readonly Lesson[]>> = {
     },
     {
       id: 'bomb',
-      prompt: 'IN THE MORPH BALL, BOMB DROPS A BOMB.',
+      prompt: 'IN THE MORPH BALL, [BOMB:attack] DROPS A BOMB.',
       done: (t) => t.bombs > 0,
     },
     {
       id: 'missile',
-      prompt: 'UP STANDS YOU UP. MISSILE FIRES A MISSILE.',
+      prompt: 'UP STANDS YOU UP. [MISSILE:special] FIRES A MISSILE.',
       done: (t) => t.shotKinds.has('missile'),
     },
   ],
   simon: [
     {
       id: 'whip',
-      prompt: 'CRACK THE WHIP AT THE DUMMY. IT WINDS UP, SO SWING EARLY!',
+      prompt: 'CRACK THE [WHIP:attack] AT THE DUMMY. IT WINDS UP, SO SWING EARLY!',
       done: (t) => t.dummyHits.has('melee'),
     },
     {
       id: 'crouch-whip',
-      prompt: 'HOLD DOWN TO CROUCH, AND WHIP LOW.',
+      prompt: 'HOLD DOWN TO CROUCH, AND [WHIP:attack] LOW.',
       done: (t) => t.crouchAttacks > 0,
     },
     {
       id: 'sub-weapon',
-      prompt: 'THROW HURLS YOUR SUB-WEAPON. IT COSTS HEARTS.',
+      prompt: '[THROW:special] HURLS YOUR SUB-WEAPON. IT COSTS HEARTS.',
       done: (t) => any(t.shotKinds, SIMON_SUBS),
     },
     {
       id: 'committed-jump',
-      prompt: "SIMON'S JUMP IS COMMITTED: NO STEERING IN THE AIR. JUMP THE GAP!",
+      prompt: "SIMON'S [JUMP:jump] IS COMMITTED: NO STEERING IN THE AIR. JUMP THE GAP!",
       done: (t) => t.gapCrossings > 0,
     },
   ],
   ryu: [
     {
       id: 'slash',
-      prompt: 'SLASH THE DUMMY WITH YOUR SWORD.',
+      prompt: '[SLASH:attack] THE DUMMY WITH YOUR SWORD.',
       done: (t) => t.dummyHits.has('melee'),
     },
     {
       id: 'cling',
-      prompt: 'JUMP AT THE TALL WALL AND HOLD TOWARD IT TO CLING.',
+      prompt: '[JUMP:jump] AT THE TALL WALL AND HOLD TOWARD IT TO CLING.',
       done: (t) => t.clung,
     },
     {
       id: 'wall-jump',
-      prompt: 'WHILE CLINGING, JUMP TO KICK OFF THE WALL.',
+      prompt: 'WHILE CLINGING, [JUMP:jump] TO KICK OFF THE WALL.',
       done: (t) => t.wallJumps > 0,
     },
     {
       id: 'ninpo',
-      prompt: 'CAST USES A NINPO ART. IT COSTS NINPO.',
+      prompt: '[CAST:special] USES A NINPO ART. IT COSTS NINPO.',
       done: (t) => any(t.shotKinds, RYU_ARTS) || t.seen.has('spin'),
     },
   ],
   bill: [
     {
       id: 'shoot',
-      prompt: 'SHOOT THE DUMMY. YOUR BULLETS NEVER RUN OUT.',
+      prompt: '[SHOOT:attack] THE DUMMY. YOUR BULLETS NEVER RUN OUT.',
       done: (t) => t.dummyHits.has('shot'),
     },
     {
       id: 'aim',
-      prompt: 'AIM IN 8 WAYS: HOLD UP, OR UP AND A DIRECTION. SHOOT 3 WAYS.',
-      done: (t) => t.shotDirs.size >= 3,
+      prompt: 'AIM IN 8 WAYS: HOLD UP, OR UP AND A DIRECTION. [SHOOT:attack] 3 WAYS.',
+      done: (t) => t.shotDirs.size >= 3 && t.aimedDirs >= 2,
     },
     {
       id: 'prone',
@@ -390,7 +434,7 @@ export const LESSONS: Readonly<Record<string, readonly Lesson[]>> = {
     },
     {
       id: 'jump-shoot',
-      prompt: 'JUMP AND SHOOT IN THE AIR.',
+      prompt: '[JUMP:jump] AND [SHOOT:attack] IN THE AIR.',
       done: (t) => t.airShots > 0,
     },
   ],
