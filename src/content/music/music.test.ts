@@ -54,6 +54,11 @@ const SFX_IDS = [
   'sword-stab',
   'door-open',
   'key-get',
+  // Shadow Keep v2 items.
+  'boomerang',
+  'bomb-fuse',
+  'bomb-blast',
+  'item-get',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);
@@ -150,5 +155,37 @@ describe("Link's dungeon music", () => {
       .filter((n): n is number => n !== null);
     expect(notes.at(-1)).toBe(Math.max(...notes));
     expect(notes.at(-1)).toBeGreaterThan(notes[0] as number);
+  });
+});
+
+describe('Shadow Keep item sounds', () => {
+  const effect = (id: string) => sfx.find((s) => s.id === id) as Sfx;
+  const length = (id: string) => {
+    const e = effect(id);
+    const lens = (['pulse', 'pulse2', 'triangle', 'noise'] as const).flatMap((k) => {
+      const src = e[k];
+      const kind = k === 'pulse2' ? 'pulse' : k;
+      return typeof src === 'string' ? [seconds(parseMml(src, kind).length, e.bpm ?? 150)] : [];
+    });
+    return Math.max(...lens);
+  };
+
+  it('the boomerang whirr and the fuse hiss are short enough to repeat while the item is out', () => {
+    expect(length('boomerang')).toBeLessThanOrEqual(0.25);
+    expect(length('bomb-fuse')).toBeLessThanOrEqual(0.25);
+    expect(effect('bomb-fuse').noise).toBeDefined();
+  });
+
+  it('the blast is a big noise burst, longer than the fuse', () => {
+    expect(effect('bomb-blast').noise).toBeDefined();
+    expect(length('bomb-blast')).toBeGreaterThan(length('bomb-fuse'));
+  });
+
+  it('the item fanfare climbs to its last note and outlasts the key jingle', () => {
+    const notes = parseMml(effect('item-get').pulse as string, 'pulse')
+      .events.map((e) => e.note)
+      .filter((n): n is number => n !== null);
+    expect(notes.at(-1)).toBe(Math.max(...notes));
+    expect(length('item-get')).toBeGreaterThan(length('key-get'));
   });
 });

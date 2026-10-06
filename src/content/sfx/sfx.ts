@@ -76,7 +76,8 @@ export const sfx: Sfx[] = [
   { id: 'vine', pulse: '@1 v10 q8 x1 l64 o4 g a b o5 c d e f+ g' },
   // Bomb blast: a thump and a long noise tail.
   { id: 'explosion', pulse: '@0 v12 q8 x1 p-12 o2 c8', noise: 'v14 x1 l16 n3 n6 l8 n10 n13 n14' },
-  // Boomerang whoosh: a quick down-up wobble.
+  // Boomerang whoosh: a quick down-up wobble (150 ms, so it can be repeated as a whirr while
+  // the boomerang is in flight).
   { id: 'boomerang', pulse: '@1 v8 q8 x1 p-6 o5 g32 p6 o5 d32 p-6 o5 g32' },
   // Spell cast: a bright sparkle.
   {
@@ -108,4 +109,25 @@ export const sfx: Sfx[] = [
   },
   // A key in hand: a quick climbing fanfare.
   { id: 'key-get', pulse: '@2 v11 q7 x0 l32 o6 d f+ a o7 d r32 o6 a o7 d x1 f+8' },
+  // Shadow Keep items. A lit fuse: a thin crackling hiss with a high tick (200 ms; repeat it
+  // for the whole fuse).
+  {
+    id: 'bomb-fuse',
+    pulse: '@3 v5 q4 x1 o7 c+64 r64 r32 o7 d64',
+    noise: 'v7 x1 l64 n0 n1 n0 r64 n1 n0 n2 r64',
+  },
+  // A bomb going off: a deep falling boom under a long, rolling roar of noise.
+  {
+    id: 'bomb-blast',
+    pulse: '@0 v13 q8 x1 p-12 o2 e8',
+    triangle: 'q8 x1 p-12 o2 c4',
+    noise: 'v15 x0 l32 n2 n4 x1 l16 n7 n10 l8 n12 n13 l4 n15',
+  },
+  // A chest item held up: a bright climbing fanfare in two phrases that rings out on its top
+  // note, a step grander than the key's jingle.
+  {
+    id: 'item-get',
+    pulse: '@2 v11 q7 x0 l32 o5 a o6 c+ e a r32 o6 e a o7 c+ r32 o6 b o7 d f+ x1 o7 a4',
+    pulse2: '@2 v6 q7 x0 l32 r32 o5 a o6 c+ e a r32 o6 e a o7 c+ r32 o6 b o7 d x1 f+4',
+  },
 ];
