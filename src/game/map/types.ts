@@ -83,9 +83,22 @@ export interface MapNode {
   heroSpot?: 'left' | 'right';
 }
 
+/**
+ * Which way out of a level opens a road (Super Mario World's secret exits): 'normal' (the level's
+ * flagpole or castle, recorded in MapProgress.cleared) or 'secret:<key>' (a secret exit, recorded
+ * as the key in MapProgress.secrets; the level does not count as cleared).
+ */
+export type PathExit = 'normal' | `secret:${string}`;
+
 export interface MapPath {
   from: string;
   to: string;
+  /**
+   * The exit of `from`'s level that opens this road (rules.pathExit). Default: 'secret:<key>' when
+   * `to` is hidden by `unlock: '<key>'`, else 'normal'. Only roads leaving a node with a `level`
+   * use it (a start's roads open with its level's normal clear, a warp node's while it works).
+   */
+  exit?: PathExit;
   /** Tiles from `from` to `to`, both ends included, each step one tile horizontally or vertically. */
   points: [number, number][];
 }

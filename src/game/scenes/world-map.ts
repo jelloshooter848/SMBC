@@ -9,6 +9,7 @@ import {
   exitId,
   FIRST_PAGE,
   isCleared,
+  secretExitTaken,
   isOpen,
   isPageOpen,
   isWarpNode,
@@ -429,7 +430,8 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * "World 1-2, cleared, secret exit" / "World 1-3, open" / "World 1-4 castle, open" / "Lost A-1, open";
+   * "World 1-2, cleared, secret exit" ("World 1-2, open, secret exit found": beaten only through its
+   * secret exit, rules.secretExitTaken) / "World 1-3, open" / "World 1-4 castle, open" / "Lost A-1, open";
    * warp nodes say their hint line: "Warp, Return To World 1" / "Lost Levels - Beat 8-4 To
    * Unlock, locked".
    */
@@ -440,7 +442,8 @@ export class WorldMapScene implements Scene {
       return isWarpOpen(this.progress, n, this.unlockAll) ? `Warp, ${text}` : `${text}, locked`;
     }
     let state = isCleared(this.progress, this.page, n.id) ? 'cleared' : 'open';
-    if (hasSecretExit(n.level)) state += ', secret exit';
+    if (hasSecretExit(n.level))
+      state += secretExitTaken(this.progress, this.page, n.id) ? ', secret exit found' : ', secret exit';
     const hint = exitHint(this.progress, this.page, n.id, this.unlockAll);
     let text = this.nodeLabelPlain(n, label, state);
     if (hint) text += `. ${spoken(hint)}`;

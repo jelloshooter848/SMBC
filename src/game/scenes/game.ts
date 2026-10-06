@@ -29,7 +29,7 @@ import {
   conditionMet,
   entryLevel,
   findLevelNode,
-  findSecret,
+  secretExit,
   isOpen,
   isPageOpen,
   mainLevel,
@@ -477,15 +477,14 @@ export class Game {
 
   /**
    * Campaign: a secret pipe (a warp zone with `secret`, see level/campaign.ts) taken in level
-   * `levelId`: the level counts as cleared, the secret is recorded, and back on the map what
-   * that opened is drawn in (the 1-2 pipe: the road from 1-1 to World 1's warp spot).
+   * `levelId`: a secret exit, Super Mario World style (rules.secretExit). The secret is recorded
+   * and back on the map only the road tied to it is drawn in (the 1-2 pipe: the road from 1-2 to
+   * World 1's warp spot). The level does not count as cleared: its normal roads (1-2 to 1-3) open
+   * with its normal exit.
    */
   campaignSecret(secret: string, levelId: string): void {
     if (!this.campaign) return;
-    const p = this.mapProgress;
-    const reveal = clearLevel(p, levelId, this.deps.getLevel);
-    reveal.push(...findSecret(p, secret));
-    this.returnToMap(reveal);
+    this.returnToMap(secretExit(this.mapProgress, levelId, secret, this.deps.getLevel));
   }
 
   /**
