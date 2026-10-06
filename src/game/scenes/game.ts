@@ -25,6 +25,8 @@ import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress } from '../map/types';
 import { clearLevel, entryLevel, isOpen, isWorldOpen, newMapProgress, warpTo } from '../map/rules';
 import { mapPage } from '@content/worldmap';
+import { abilityHint } from './hints';
+import { fontText } from '../hud/text';
 import {
   loadSave,
   saveFromState,
@@ -177,7 +179,7 @@ export class Game {
         this.scenes.push(
           new MessageScene(
             this,
-            [...page, '', 'PRESS START'],
+            [...page, '', fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`)],
             () => (warped ? this.showTitle() : this.goToLevel('ll-9-1-start', { mode: 'stand' })),
             1800,
             ['start', 'attack', 'jump'], // as the card, plus A

@@ -20,8 +20,9 @@ pnpm install
 pnpm dev          # http://localhost:5173
 ```
 
-Keyboard: arrows move, **Z** jump, **X** run / attack (and _back_ in menus), **C** special
-(use the selected tool), **Right Shift** select (cycle tools), **Enter** start/pause. Gamepads use the standard mapping. Press **F1** for the debug overlay and **F2** for a free camera
+Keyboard: arrows move, **Z** jump (and _OK_ in menus), **X** attack / run (and _back_ in
+menus), **C** special (use the selected tool), **Right Shift** tools (cycle the tool belt),
+**Enter** pause / menu. Gamepads use the standard mapping. Press **F1** for the debug overlay and **F2** for a free camera
 (arrows scroll) when checking level layouts.
 
 Touch controls appear on phones and tablets (a touch-first screen that cannot hover; touchscreen
@@ -33,8 +34,8 @@ does not crouch by accident. Pushing it past the ring runs (Mario and Luigi) wit
 a fixed pad by default, or a floating stick that centres under your thumb anywhere on the left of
 the screen (**Options > Controls > Touch d-pad**). A thumb can roll from one button to the next
 without lifting, and the buttons say what they do for the hero and scene. Heroes with a tool belt
-get a small swap button (TOOLS, WEAPON, NINPO) just above and left of C, the button that uses the
-tool. Touch size runs from 100% to 160%.
+get a small swap button (TOOLS, WEAPON, NINPO) just above and left of the button that uses the
+tool, which is named after the selected tool. Touch size runs from 100% to 160%.
 
 ### World map and save files
 
@@ -69,16 +70,16 @@ has the same guide for the hero you are playing.
 - **Link**: Zelda II style. Fixed-height jump, hearts, sword with down-thrust (bounces) and
   up-thrust (up + attack in the air), a shield that stops projectiles from the front while
   standing. Mushrooms add a heart container and the white tunic (every other hit glances off);
-  flowers give the red tunic and a sword beam at full health. **Select** cycles the tool belt
-  and **C** uses it: boomerang (stuns), bombs (ammo dropped by enemies; break bricks, hurt
+  flowers give the red tunic and a sword beam at full health. **Tools** cycles the tool belt
+  and **Special** uses it: boomerang (stuns), bombs (ammo dropped by enemies; break bricks, hurt
   Link too), and the Jump, Shield and Fire spells, which spend the magic meter that enemy
   drops refill. Can't stomp.
 - **Mega Man**: instant acceleration, cut-able jump, slide (down + jump), arm cannon with
   three shots on screen, 28-point health bar. A mushroom fits the helmet: charge shot, brick
   breaking and the Rush Coil spring. Each flower unlocks the next weapon: Saw Disc (eight-way
   aim, cuts bricks), Leaf Guard (orbits and blocks shots, press again to throw), Flame Wave
-  (runs along the floor, burns shells), Homing Knuckle and Bolt. **Select** cycles the belt,
-  **C** fires the selection and **X** always fires the buster; each weapon has its own energy
+  (runs along the floor, burns shells), Homing Knuckle and Bolt. **Tools** cycles the belt,
+  **Special** fires the selection and **Attack** always fires the buster; each weapon has its own energy
   bar beside the health bar. Enemies drop health and weapon pellets and the odd E-tank, used
   from the pause menu. Can't stomp.
 - **Samus**: floaty somersault jump, energy counter (starts at 30), arm cannon that aims
@@ -86,27 +87,27 @@ has the same guide for the hero you are playing.
   can't jump) where fire drops small bombs that open blocks and bomb-jump her; up stands back
   up. The first mushroom is the **Varia suit** (half damage), later ones are energy tanks
   (+30, up to 90). Flowers upgrade the beam: Long → Ice (freezes; a second shot shatters) →
-  Wave (snakes through walls), then add missiles. **Select** picks beam or **missiles**
-  (3 damage, open bricks; **C** always fires one); enemies drop energy orbs and missile packs.
+  Wave (snakes through walls), then add missiles. **Tools** picks beam or **missiles**
+  (3 damage, open bricks; **Special** always fires one); enemies drop energy orbs and missile packs.
   Can't stomp.
 - **Simon**: stiff committed jump (no steering in the air), heavy knockback when hit, 16-point
-  health bar, crouch. The **whip** (X) winds up then strikes; flowers lengthen it (leather →
+  health bar, crouch. The **whip** (attack) winds up then strikes; flowers lengthen it (leather →
   chain → morning star) and then add double and triple shot. Mushrooms unlock the
   **sub-weapons** in order: dagger, axe (arcs over walls), holy water (burns on the floor),
-  cross (comes back) and the stopwatch (freezes everything on screen). **Select** picks one,
-  **C** or up + X throws it, and each throw costs **hearts** (the watch costs five), which
+  cross (comes back) and the stopwatch (freezes everything on screen). **Tools** picks one,
+  **Special** or up + attack throws it, and each throw costs **hearts** (the watch costs five), which
   enemies drop. Can't stomp.
-- **Ryu**: fast run, a quick sword (X) and **wall climbing**: hold toward a wall in the air to
+- **Ryu**: fast run, a quick sword (attack) and **wall climbing**: hold toward a wall in the air to
   cling, jump to kick off it (chain wall jumps to scale anything). Mushrooms unlock the
   **ninpo arts** in order: throwing star, windmill shuriken (comes back), fire wheel (three
-  orbiting flames) and the jump-and-slash somersault; **Select** picks one and **C** casts it
+  orbiting flames) and the jump-and-slash somersault; **Tools** picks one and **Special** casts it
   from the ninpo meter (the second bar), which flowers enlarge and enemy drops refill. 16-point
   health bar. Can't stomp.
-- **Bill**: a commando with a somersault jump and a rifle (X) that aims in **eight directions**
+- **Bill**: a commando with a somersault jump and a rifle (attack) that aims in **eight directions**
   from the d-pad (up, diagonals, straight down in the air); down on the ground goes **prone**.
   Flowers and dropped capsules unlock guns in order: machine gun (hold to fire), spread (five
-  shots), laser (pierces everything in a line) and the flame thrower; **Select** switches
-  between the guns you have. Starts with three hits; mushrooms add one (up to five). Can't
+  shots), laser (pierces everything in a line) and the flame thrower; **Tools** switches
+  between the guns you have (**Special** fires too). Starts with three hits; mushrooms add one (up to five). Can't
   stomp.
 
 ### Options (title screen or pause)
@@ -117,6 +118,9 @@ has the same guide for the hero you are playing.
 - **Controls**: full keyboard and gamepad remapping; touch pad auto/on/off, size, and fixed
   or floating d-pad. The touch buttons say what they do right now (JUMP, RUN or FIRE, SWORD,
   the selected tool's name, MENU, OK/BACK in menus) and hide when they do nothing for your hero.
+  **Key hints** (off by default) shows the same ability buttons with their current labels and
+  bound keys beside the game ("JUMP / Z"), and a key line on the touch buttons. Instructions
+  name abilities (JUMP, BACK, TOOLS), with your bound key or pad button when not on touch.
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
@@ -124,7 +128,7 @@ has the same guide for the hero you are playing.
 
 ### Developer mode
 
-Enter up, up, down, down, left, right, left, right, B, A on the title screen (or open the game
+Enter up, up, down, down, left, right, left, right, attack, jump on the title screen (or open the game
 with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
 
 - **Level select**: any built-in or custom level, any character, starting power, a full kit
@@ -151,11 +155,11 @@ Settings persist in the browser.
 
 New save files are one player for now (two-player files from earlier versions still play, and
 player one's controls can make player two's picks, so one phone can run both). Co-op stays
-available outside save files: on a custom level's character select, player two presses **Start**
-(numpad 0/Enter, or a second gamepad's start button) to join and picks their own hero, and a
+available outside save files: on a custom level's character select, player two presses **Pause / Menu**
+(numpad +, or a second gamepad's Start button) to join and picks their own hero, and a
 `?level=` link takes `&char2=` for player two. Both play on one screen with a shared pool of
 lives; a fallen player drops back in beside the survivor. Player two's default keys are on the
-numpad (4/6 move, 8 up, 5 down, 0 jump, . attack, Enter special, + start) and can be remapped in
+numpad (4/6 move, 8 up, 5 down, 0 jump, . attack, Enter special, + pause/menu) and can be remapped in
 Options → Controls.
 
 ### Level editor and sharing

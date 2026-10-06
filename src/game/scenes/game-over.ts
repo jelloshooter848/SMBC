@@ -76,7 +76,7 @@ export class GameOverScene implements Scene {
     }
     this._prompting = true;
     this._yes = true;
-    this.game.deps.announcer?.say('Continue? Yes. Up and down to choose, start to confirm.');
+    this.game.deps.announcer?.say('Continue? Yes. Up and down to choose, OK to confirm.');
   }
 
   render(r: Renderer): void {

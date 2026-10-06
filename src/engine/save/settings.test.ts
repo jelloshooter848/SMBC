@@ -25,6 +25,18 @@ describe('settings', () => {
     expect(loadSettings()).toEqual(defaultSettings());
   });
 
+  it('key hints: off by default, off for files saved before the option, kept once set', () => {
+    expect(defaultSettings().input.keyHints).toBe(false);
+    const old = defaultSettings() as unknown as { input: Record<string, unknown> };
+    delete old.input.keyHints;
+    store.set(SETTINGS_KEY, JSON.stringify(old));
+    expect(loadSettings().input.keyHints).toBe(false);
+    const on = defaultSettings();
+    on.input.keyHints = true;
+    saveSettings(on);
+    expect(loadSettings().input.keyHints).toBe(true);
+  });
+
   it('round-trips and fills in missing fields', () => {
     const s = defaultSettings();
     s.audio.music = 0.5;

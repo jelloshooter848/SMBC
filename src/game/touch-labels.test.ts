@@ -196,9 +196,9 @@ describe('touch labels in a level', () => {
           for (const l of Object.values(levelTouchLabels(hero(def, s), world))) if (l) shown.add(l);
       for (const ctl of c.guide.controls) {
         if (!ctl.touch) continue;
-        // C named after the selected tool is described as "<THING> BUTTON".
-        if (ctl.touch.endsWith(' BUTTON')) expect(ctl.action, c.name).toBe('special');
-        else expect(shown.has(ctl.touch), `${c.name}: ${ctl.touch}`).toBe(true);
+        // The tool button is captioned with the selected tool, so its row names what it does.
+        const toolButton = ctl.action === 'special' && c.tools && c !== SAMUS;
+        if (!toolButton) expect(shown.has(ctl.touch), `${c.name}: ${ctl.touch}`).toBe(true);
       }
       // Rows for B, C and Select say which caption to look for.
       for (const ctl of c.guide.controls)

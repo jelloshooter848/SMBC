@@ -30,7 +30,17 @@ export interface Settings {
   v: 1;
   video: { integerScale: boolean; palette: PaletteMode; reduceFlashing: boolean; showFps: boolean };
   audio: { master: number; music: number; sfx: number; muted: boolean };
-  input: { bindings: PlayerBindings[]; touch: TouchMode; touchScale: number; dpad: DpadStyle };
+  input: {
+    bindings: PlayerBindings[];
+    touch: TouchMode;
+    touchScale: number;
+    dpad: DpadStyle;
+    /**
+     * Key hints: a reference of the ability buttons with their bound keys beside the game (and a
+     * key line on the touch buttons). Optional, so files saved before it existed need no migration.
+     */
+    keyHints?: boolean;
+  };
   assist: AssistSettings;
   /** Enabled asset pack names, in override order. */
   packs: string[];
@@ -52,6 +62,7 @@ export function defaultSettings(): Settings {
       touch: 'auto',
       touchScale: 1,
       dpad: 'fixed',
+      keyHints: false,
     },
     assist: {
       allowLeftScroll: false,

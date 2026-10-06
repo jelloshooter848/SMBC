@@ -63,10 +63,11 @@ export interface CharacterGuide {
   tagline: string;
   /**
    * Actions in the order to list them; combined inputs are written as 'up+attack'. `touch` is
-   * the caption of the touch button that does it (as `touchLabels` shows it), when that button
-   * is B, C or Select (the d-pad, A "JUMP" and Start are named by the guide itself). When C is
-   * captioned with the selected tool's name, `touch` says so ("TOOL BUTTON"). `touchDoes`
-   * replaces `does` on touch where the touch controls differ (the d-pad edge runs).
+   * the ability's name for attack, special and select rows: the caption the touch button shows
+   * (as `touchLabels` does, e.g. RUN, SWORD, TOOLS), or for the tool button, whose caption is
+   * the selected tool's name, what it does ("USE TOOL", "THROW"). The guide names every row by
+   * its ability, never by a button letter. `touchDoes` replaces `does` on touch where the touch
+   * controls differ (the d-pad edge runs).
    */
   controls: { action: GuideAction; does: string; touch?: string; touchDoes?: string }[];
   powerups: { item: 'mushroom' | 'flower' | 'star' | 'drops'; does: string }[];

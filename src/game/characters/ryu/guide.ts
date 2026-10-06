@@ -11,7 +11,7 @@ export const RYU_GUIDE: CharacterGuide = {
     { action: 'select', touch: 'NINPO', does: 'Pick the next ninpo art.' },
     {
       action: 'special',
-      touch: 'ART BUTTON',
+      touch: 'CAST',
       does: 'Cast the selected art. Costs ninpo (blue bar).',
       touchDoes: 'Shows the selected art. Tap to cast it. Costs ninpo (blue bar).',
     },

@@ -75,6 +75,7 @@ export class TouchSource implements InputSource {
   private readonly pad: HTMLElement;
   private readonly thumb: HTMLElement;
   private readonly buttons = new Map<Action, HTMLElement>();
+  private keySig = '';
   private readonly labeler: ButtonLabeler;
   private dirs: DpadDirs = { ...NO_DIRS };
   private visible = false;
@@ -112,6 +113,7 @@ export class TouchSource implements InputSource {
         .touch-controls.active .thumb { display: block; }
         .touch-controls .btn { width: calc(${FACE_BUTTON.w}px * var(--ts)); height: calc(${FACE_BUTTON.h}px * var(--ts)); border-radius: 50%; background: rgba(255,255,255,0.14); border: ${BUTTON_BORDER}px solid rgba(255,255,255,0.4); color: #fff; font: bold calc(${FACE_BUTTON.font}px * var(--ts) * var(--fs, 1)) ${BUTTON_FONT}; line-height: 1; text-align: center; white-space: nowrap; overflow: hidden; text-transform: uppercase; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 0; }
         .touch-controls .btn.wrap { white-space: pre-line; }
+        .touch-controls.key-hints .btn::after { content: attr(data-key); position: absolute; left: 0; right: 0; bottom: 9%; font-size: calc(9px * var(--ts)); font-weight: normal; opacity: 0.7; }
         .touch-controls .btn.hidden { display: none; }
         .touch-controls .btn.active { background: rgba(255,255,255,0.45); }
         .touch-controls .btn.a { border-color: rgba(255,150,150,0.6); }
@@ -194,6 +196,15 @@ export class TouchSource implements InputSource {
     for (const p of this.pointers.values())
       if (p.kind === 'btn' && p.action && hidden.includes(p.action)) p.action = null;
     this.update();
+  }
+
+  /** Key hints: each button's keyboard key as a small second line (null turns them off). */
+  setKeyHints(keys: Partial<Record<Action, string>> | null): void {
+    const sig = keys ? JSON.stringify(keys) : '';
+    if (sig === this.keySig) return;
+    this.keySig = sig;
+    this.root.classList.toggle('key-hints', !!keys);
+    for (const [a, el] of this.buttons) el.dataset.key = keys?.[a] ?? '';
   }
 
   show(on: boolean): void {

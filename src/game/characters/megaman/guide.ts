@@ -11,7 +11,7 @@ export const MEGAMAN_GUIDE: CharacterGuide = {
     { action: 'select', touch: 'WEAPON', does: 'Pick the next weapon.' },
     {
       action: 'special',
-      touch: 'WEAPON BUTTON',
+      touch: 'USE WEAPON',
       does: 'Fire the selected weapon.',
       touchDoes: 'Shows the selected weapon. Tap to fire it.',
     },

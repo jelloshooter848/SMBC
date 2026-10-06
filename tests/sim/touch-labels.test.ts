@@ -27,6 +27,7 @@ import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { SAMUS } from '@game/characters/samus';
 import { MENU_TOUCH_LABELS } from '@game/touch-labels';
+import { keyHintItems, keyHintMap } from '@engine/input/key-hints';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -139,6 +140,27 @@ describe('touch labels per scene', () => {
     expect(shown(h.game)).toBe('OK - - - -');
   });
 
+  it('key hints in a level: the hero’s labels with the bound keys, following a remap', () => {
+    const h = makeGame();
+    h.game.newGame(LINK, '1-1');
+    toLevel(h);
+    const kb = h.game.deps.settings?.input.bindings[0]?.keyboard;
+    const hints = () =>
+      keyHintItems({ ...MENU_TOUCH_LABELS, ...h.game.scenes.top?.touchLabels?.() }, keyHintMap(kb)).map(
+        (i) => `${i.label} / ${i.key}`,
+      );
+    expect(hints()).toEqual([
+      'MOVE / ←→↑↓',
+      'JUMP / Z',
+      'SWORD / X',
+      'BOOMERANG / C',
+      'TOOLS / RIGHT SHIFT',
+      'MENU / ENTER',
+    ]);
+    if (kb) kb.attack = ['KeyJ'];
+    expect(hints()).toContain('SWORD / J');
+  });
+
   it('co-op: player 2’s hero never decides the buttons', () => {
     const h = makeGame();
     h.game.newGame(MARIO, '1-1', SAMUS);
@@ -156,24 +178,33 @@ describe('touch labels per scene', () => {
 describe('guides show one control scheme', () => {
   const guide = (scheme: ControlScheme, def = MARIO) => new GuideScene(makeGame(scheme).game, def, () => {});
 
-  it('keyboard: the keys only', () => {
+  it('keyboard: each ability, then its bound key', () => {
     const g = guide('keyboard');
     const text = g.text.join('\n');
-    expect(g.text).toContain('Z - JUMP. HOLD FOR HIGHER, LET');
-    expect(text).toContain('HOLD X - RUN.');
-    expect(text).toContain('LEFT/RIGHT - WALK.');
-    expect(text).not.toMatch(/\bTOUCH\b|D-PAD|\(A\)/);
-    expect(g.backHint).toBe('X: BACK');
+    expect(text).toContain('JUMP (Z) - JUMP. HOLD FOR');
+    expect(text).toContain('RUN (HOLD X) - RUN.');
+    expect(text).toContain('FIRE (X) - WITH THE FLOWER');
+    expect(text).toContain('MOVE (LEFT/RIGHT) - WALK.');
+    expect(text).not.toMatch(/\bTOUCH\b|D-PAD|^[A-Z] -/m);
+    expect(g.backHint).toBe('BACK (X)');
   });
 
-  it('gamepad: the pad buttons only', () => {
+  it('gamepad: each ability, then its pad button', () => {
     const g = guide('gamepad');
     const text = g.text.join('\n');
-    expect(text).toContain('A - JUMP.');
-    expect(text).toContain('HOLD X - RUN.');
-    expect(text).toContain('D-PAD - WALK.');
-    expect(text).toContain('D-DOWN - CROUCH');
+    expect(text).toContain('JUMP (A) - JUMP.');
+    expect(text).toContain('RUN (HOLD X) - RUN.');
+    expect(text).toContain('MOVE (D-PAD) - WALK.');
+    expect(text).toContain('DOWN (D-DOWN) - CROUCH');
     expect(text).not.toMatch(/\bTOUCH\b|LEFT\/RIGHT/);
+  });
+
+  it('a remapped key shows in the guide', () => {
+    const h = makeGame('keyboard');
+    const b = h.game.deps.settings?.input.bindings[0];
+    if (b) b.keyboard.jump = ['KeyK'];
+    const text = new GuideScene(h.game, MARIO, () => {}).text.join('\n');
+    expect(text).toContain('JUMP (K) - JUMP.');
   });
 
   it('touch: each control by its button caption', () => {
@@ -181,14 +212,14 @@ describe('guides show one control scheme', () => {
     const text = g.text.join('\n');
     expect(text).toContain('JUMP - JUMP. HOLD FOR HIGHER');
     expect(text).toContain('HOLD RUN - RUN.');
-    expect(text).toContain('D-PAD - WALK. PUSH FAR TO RUN.');
+    expect(text).toContain('MOVE - WALK. PUSH FAR TO RUN.');
     expect(text).toContain('FIRE - WITH THE FLOWER');
     expect(text).not.toMatch(/LEFT\/RIGHT|HOLD X|\bZ -/);
-    expect(g.backHint).toBe('TAP BACK');
+    expect(g.backHint).toBe('BACK');
     const link = guide('touch', LINK).text.join('\n');
     expect(link).toContain('SWORD - SLASH.');
     expect(link).toContain('TOOLS - PICK THE NEXT TOOL.');
-    expect(link).toContain('TOOL BUTTON - SHOWS THE');
+    expect(link).toContain('USE TOOL - SHOWS THE');
     const samus = guide('touch', SAMUS).text.join('\n');
     expect(samus).toContain('BOMB - IN THE BALL: DROP A');
     expect(samus).toContain('MISSILE - FIRE A MISSILE.');

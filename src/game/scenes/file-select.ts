@@ -17,6 +17,7 @@ import type { CharacterDef } from '../characters/character';
 import { MARIO } from '../characters/mario';
 import { pad, SCORE_MAX } from '../hud/hud';
 import type { Game } from './game';
+import { abilityHint } from './hints';
 import type { TouchLabels } from '@engine/input/touch';
 import { menuTouchLabels } from '../touch-labels';
 
@@ -234,6 +235,6 @@ export class FileSelectScene implements Scene {
       r.text(font, label, 128 - label.length * 4, BOTTOM_Y);
       if (this.index === 3 && blink) r.text(font, '>', 116 - label.length * 4, BOTTOM_Y);
     }
-    if ((this.t >> 5) % 2 === 0) r.text(font, 'B: BACK', 24, 216);
+    if ((this.t >> 5) % 2 === 0) r.text(font, abilityHint(this.game, 'BACK', 'attack'), 24, 216);
   }
 }

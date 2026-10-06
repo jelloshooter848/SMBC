@@ -11,7 +11,7 @@ export const BILL_GUIDE: CharacterGuide = {
     { action: 'select', touch: 'WEAPON', does: 'Switch guns.' },
     {
       action: 'special',
-      touch: 'GUN BUTTON',
+      touch: 'GUN',
       does: 'Also fires.',
       touchDoes: 'Shows the gun in hand. Also fires.',
     },

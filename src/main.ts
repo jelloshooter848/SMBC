@@ -5,6 +5,7 @@ import { InputManager } from '@engine/input/input-manager';
 import { KeyboardSource } from '@engine/input/keyboard';
 import { GamepadSource } from '@engine/input/gamepad';
 import { TouchSource } from '@engine/input/touch';
+import { KeyHintsOverlay, keyHintItems, keyHintMap } from '@engine/input/key-hints';
 import { AssetRegistry } from '@engine/assets/registry';
 import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
@@ -34,6 +35,7 @@ function boot(): void {
   const keyboard = new KeyboardSource();
   input.addSource('keyboard', keyboard);
   const touch = new TouchSource(overlay, settings.input.touchScale);
+  const keyHints = new KeyHintsOverlay(overlay);
   input.addSource('touch', touch);
   if (GamepadSource.available()) {
     const pad = new GamepadSource();
@@ -96,7 +98,15 @@ function boot(): void {
       game.scenes.update([input.player(0), input.player(1)]);
       // The buttons say what they do in the scene now on top: its labels over the menu defaults
       // (setLabels only touches buttons whose label changed).
-      if (touch.shown) touch.setLabels({ ...MENU_TOUCH_LABELS, ...game.scenes.top?.touchLabels?.() });
+      const labels = { ...MENU_TOUCH_LABELS, ...game.scenes.top?.touchLabels?.() };
+      // Key hints (Options > Controls): the bound keyboard key with each ability, on the touch
+      // buttons when the pad is up, else as a small reference beside the game.
+      const keys = settings.input.keyHints ? keyHintMap(settings.input.bindings[0]?.keyboard) : null;
+      if (touch.shown) {
+        touch.setLabels(labels);
+        touch.setKeyHints(keys);
+      }
+      keyHints.update(keys && !touch.shown ? keyHintItems(labels, keys) : null);
     },
     render() {
       game.scenes.render(renderer);

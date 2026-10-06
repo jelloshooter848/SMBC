@@ -1,7 +1,7 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { Actions, ActionLabels, type Action } from '@engine/input/actions';
-import { describeCode } from '@engine/input/bindings';
+import { describeCode, describePad } from '@engine/input/bindings';
 import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
 import { exportTemplate, importPackFiles } from '@engine/assets/pack-loader';
@@ -162,20 +162,26 @@ class ControlsOptions extends MenuScene {
         void ((s.input.touchScale = step(s.input.touchScale, d, TOUCH_SCALE_MIN, TOUCH_SCALE_MAX, 0.1)),
         apply(game)),
     });
+    items.push({
+      label: 'Key hints',
+      value: () => onOff(!!s.input.keyHints),
+      adjust: () => void ((s.input.keyHints = !s.input.keyHints), apply(game)),
+      hint: 'Shows each ability with its key beside the game',
+    });
     for (const a of Actions) {
       items.push({
         label: `Key ${ActionLabels[a].split(' ')[0]}`,
         value: () => describeCode(b.keyboard[a][0] ?? '-'),
         select: () => this.capture(a, 'keyboard'),
-        hint: 'Press A to change',
+        hint: 'OK, then press the new key',
       });
     }
     for (const a of Actions) {
       items.push({
         label: `Pad ${ActionLabels[a].split(' ')[0]}`,
-        value: () => describeCode(b.gamepad[a][0] ?? '-'),
+        value: () => (b.gamepad[a][0] ? describePad(b.gamepad[a][0]) : '-'),
         select: () => this.capture(a, 'gamepad'),
-        hint: 'Press A then a button',
+        hint: 'OK, then press the new pad button',
       });
     }
     items.push({
@@ -297,7 +303,7 @@ class PacksOptions extends MenuScene {
           s.packs = s.packs.includes(name) ? s.packs.filter((n) => n !== name) : [...s.packs, name];
           apply(game);
         },
-        hint: 'Left/right toggles. Press A to delete',
+        hint: 'Left/right toggles. OK deletes it',
       });
     }
     if (this.names.length) {

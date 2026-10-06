@@ -386,7 +386,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     const m = makeGame();
     m.game.pendingLevel = '1-1';
     m.game.showCharacterSelect();
-    expect(textsOver(m, 140)).toContain('P2 PRESS START TO JOIN');
+    expect(textsOver(m, 140)).toContain('P2 MENU TO JOIN');
     const opens = [(h: H) => h.game.respawn('1-1', { mode: 'stand' }), (h: H) => h.game.continueGame('1-1')];
     for (const open of opens) {
       const h = makeGame();

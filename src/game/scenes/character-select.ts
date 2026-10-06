@@ -3,6 +3,8 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { CharacterDef } from '../characters/character';
 import type { Game } from './game';
+import { abilityHint } from './hints';
+import { fontText } from '../hud/text';
 import type { TouchLabels } from '@engine/input/touch';
 import type { Action } from '@engine/input/actions';
 
@@ -40,12 +42,12 @@ export class CharacterSelectScene implements Scene {
       );
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
       this.game.deps.announcer?.say(
-        `${who} your hero. ${pick.current.name}. Left and right to choose, start to confirm.`,
+        `${who} your hero. ${pick.current.name}. Left and right to choose, OK to confirm.`,
       );
       return;
     }
     this.game.deps.announcer?.say(
-      'Select your hero. Left and right to choose, start to begin. Player two: press start to join.',
+      'Select your hero. Left and right to choose, OK to begin. Player two: press menu to join.',
     );
   }
 
@@ -146,7 +148,12 @@ export class CharacterSelectScene implements Scene {
     } else if (this.p2) {
       const c2 = chars[this.index2];
       if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, 158);
-    } else if ((this.t >> 6) % 2 === 1) r.text(font, 'P2 PRESS START TO JOIN', 40, 158);
-    if ((this.t >> 5) % 2 === 0) r.text(font, 'PRESS START', 84, 184);
+    } else if ((this.t >> 6) % 2 === 1) {
+      const join = fontText(`P2 ${abilityHint(this.game, 'MENU', 'start', 1)} TO JOIN`);
+      r.text(font, join, 128 - join.length * 4, 158);
+    }
+    // Named by ability (OK), with the real key or pad button when not on touch.
+    const go = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
+    if ((this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, 184);
   }
 }

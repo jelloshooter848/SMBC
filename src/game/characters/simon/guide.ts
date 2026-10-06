@@ -10,7 +10,7 @@ export const SIMON_GUIDE: CharacterGuide = {
     { action: 'select', touch: 'TOOLS', does: 'Pick the next sub-weapon.' },
     {
       action: 'special',
-      touch: 'TOOL BUTTON',
+      touch: 'THROW',
       does: 'Throw the selected sub-weapon. Costs hearts.',
       touchDoes: 'Shows the selected sub-weapon. Tap to throw it. Costs hearts.',
     },

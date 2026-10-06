@@ -11,7 +11,7 @@ export const LINK_GUIDE: CharacterGuide = {
     { action: 'select', touch: 'TOOLS', does: 'Pick the next tool.' },
     {
       action: 'special',
-      touch: 'TOOL BUTTON',
+      touch: 'USE TOOL',
       does: 'Use the selected tool.',
       touchDoes: 'Shows the selected tool. Tap to use it.',
     },

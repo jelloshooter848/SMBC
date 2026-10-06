@@ -2,8 +2,8 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
-import type { Code } from '@engine/input/bindings';
-import { describeCode } from '@engine/input/bindings';
+import type { Action } from '@engine/input/actions';
+import { abilityHint, boundKey, controlScheme } from './hints';
 import { px, toPx } from '@engine/math/units';
 import type { ControlScheme, Game } from './game';
 import { MenuScene } from './menu';
@@ -20,34 +20,21 @@ const DEMO_FRAMES = 90;
 const DEMO_FLOOR_Y = 62;
 const DEMO_CENTER_X = 40;
 
-/** Names for the standard gamepad mapping. */
-export function describePad(code: Code): string {
-  const names: Record<string, string> = {
-    'pad:0': 'A',
-    'pad:1': 'B',
-    'pad:2': 'X',
-    'pad:3': 'Y',
-    'pad:4': 'LB',
-    'pad:5': 'RB',
-    'pad:6': 'LT',
-    'pad:7': 'RT',
-    'pad:8': 'BACK',
-    'pad:9': 'START',
-    'pad:12': 'D-UP',
-    'pad:13': 'D-DOWN',
-    'pad:14': 'D-LEFT',
-    'pad:15': 'D-RIGHT',
-  };
-  return names[code] ?? describeCode(code).toUpperCase();
-}
+export { describePad } from '@engine/input/bindings';
 
-/** How the touch scheme names the d-pad, A and Start (B, C and Select captions come from the guide). */
-const TOUCH_PAD: Record<string, string> = {
-  'left/right': 'D-PAD',
+/**
+ * The ability each guide action stands for. B, C and Select rows give their own (the touch
+ * caption: RUN, SWORD, TOOLS...); these are the rest, and the fallbacks.
+ */
+const ABILITY: Record<string, string> = {
+  'left/right': 'MOVE',
   up: 'UP',
   down: 'DOWN',
-  start: 'MENU',
   jump: 'JUMP',
+  start: 'MENU',
+  attack: 'ATTACK',
+  special: 'SPECIAL',
+  select: 'TOOLS',
 };
 
 /** Word-wrap `text` to `cols`, the lines after the first indented by two spaces. */
@@ -163,38 +150,32 @@ export class GuideScene implements Scene {
     p.refitHitbox();
   }
 
-  /** The controls in use: main.ts decides (touch pad shown, else a gamepad, else the keyboard). */
   private currentScheme(): ControlScheme {
-    const live = this.game.deps.controlScheme?.();
-    if (live) return live;
-    return this.game.deps.settings?.input.touch === 'on' ? 'touch' : 'keyboard';
+    return controlScheme(this.game);
   }
 
   /**
-   * The name of the input for one guide row in the scheme in use, e.g. "X", "HOLD X",
-   * "D-DOWN + A" or, on touch, the button's own caption ("JUMP", "HOLD RUN", "DOWN + JUMP").
+   * How a guide row names its control: always the ability first ("JUMP", "HOLD RUN",
+   * "DOWN + JUMP"), then with a keyboard or pad the real bound keys ("JUMP (Z)",
+   * "RUN (HOLD X)", "MOVE (D-PAD)"). Never a bare button letter.
    */
-  keyLabel(action: GuideAction, touch?: string): string {
-    const b = this.game.deps.settings?.input.bindings[0];
-    const scheme = this.scheme;
+  keyLabel(action: GuideAction, caption?: string): string {
     const parts = action.replace(' (hold)', '').split('+');
-    const one = (a: string): string => {
-      if (scheme === 'touch') return TOUCH_PAD[a] ?? touch ?? a.toUpperCase();
-      if (scheme === 'gamepad') {
-        if (a === 'left/right') return 'D-PAD';
-        const pad = b?.gamepad[a as keyof typeof b.gamepad]?.[0];
-        return pad ? describePad(pad) : a.toUpperCase();
-      }
-      if (a === 'left/right') {
-        const l = b?.keyboard.left[0];
-        const r = b?.keyboard.right[0];
-        return `${l ? describeCode(l) : 'LEFT'}/${r ? describeCode(r) : 'RIGHT'}`;
-      }
-      const kb = b?.keyboard[a as keyof typeof b.keyboard]?.[0];
-      return kb ? describeCode(kb) : a.toUpperCase();
-    };
     const hold = action.endsWith('(hold)') ? 'HOLD ' : '';
-    return fontText(hold + parts.map(one).join(' + '));
+    const own = (a: string) => a === 'attack' || a === 'special' || a === 'select';
+    const ability = parts.map((a) => (own(a) && caption) || ABILITY[a] || a.toUpperCase()).join(' + ');
+    if (this.scheme === 'touch') return fontText(hold + ability);
+    const key = (a: string): string => {
+      if (a === 'left/right') {
+        if (this.scheme === 'gamepad') return 'D-PAD';
+        const l = boundKey(this.game, 'left', 0, this.scheme) ?? 'LEFT';
+        const r = boundKey(this.game, 'right', 0, this.scheme) ?? 'RIGHT';
+        return `${l}/${r}`;
+      }
+      return boundKey(this.game, a as Action, 0, this.scheme) ?? a.toUpperCase();
+    };
+    const keys = hold + parts.map(key).join(' + ');
+    return fontText(keys === ability ? ability : `${ability} (${keys})`);
   }
 
   private buildPages(): { title: string; lines: string[] }[] {
@@ -215,11 +196,9 @@ export class GuideScene implements Scene {
     if (g.belt?.length || g.tips?.length) {
       const belt: string[] = [];
       if (g.belt?.length) {
-        // On touch the controls page already says which button uses the pick.
+        // The controls page says which button uses the pick.
         const sel = g.controls.find((c) => c.action === 'select');
-        const head = touch
-          ? `${sel?.touch ?? 'SELECT'} picks one of these:`
-          : `${this.keyLabel('select')} picks, ${this.keyLabel('special')} uses:`;
+        const head = `${this.keyLabel('select', sel?.touch)} picks one of these:`;
         belt.push(...wrapText(head, COLS));
         for (const t of g.belt)
           belt.push(...wrapHanging(`${t.name}${t.cost ? ` (${t.cost})` : ''} - ${t.does}`, COLS));
@@ -263,7 +242,7 @@ export class GuideScene implements Scene {
 
   /** The footer: the back button in the scheme in use. */
   get backHint(): string {
-    return this.scheme === 'touch' ? 'TAP BACK' : `${this.keyLabel('attack')}: BACK`;
+    return abilityHint(this.game, 'BACK', 'attack');
   }
 
   update(input: InputFrame): void {
