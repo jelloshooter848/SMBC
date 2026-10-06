@@ -234,7 +234,7 @@ describe('Lost Levels 7-2: the repeating stretch', () => {
         lakitu ??= w.entities.find((e): e is Lakitu => e instanceof Lakitu);
         if (lakitu?.leaving) left = true;
         if (lakitu && !left) ys.add(toPx(lakitu.body.y));
-        if (f === 0) place(w, 160, 13);
+        if (f === 0) place(w, 171, 13); // inside the stretch: it comes once the player passes 170
         if (f === 200 && lakitu) place(w, 222, 13); // past the end column
         return [];
       },

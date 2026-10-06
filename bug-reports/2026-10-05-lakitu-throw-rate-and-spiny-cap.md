@@ -55,3 +55,5 @@ every time
 - Merged from `smb-w4/2026-10-05-lakitu-throw-rate-and-spiny-cap.md` (4-1) and
   `smb-w6/2026-10-05-6-1-lakitu-spiny-limit-and-throw-rate.md` (6-1).
 - Reviewed: verified against `com/smbc/enemies/Lakitu.as`, `com/smbc/enemies/Spiney.as` (`cleanUp`), `com/explodingRabbit/utils/CustomTimer.as` (ms `flash.utils.Timer`), and ours: `src/game/entities/enemies/lakitu.ts`, `src/engine/rng.ts` (`int(n)` is 0…n-1)
+
+Status: fixed — Lakitu runs the original cycle (1500 ms `hideTmr`, 250 ms `throwTmr` in the hide pose, then a throw: one Spiny per 1.75 s) and keeps up to four of its own Spinies (`maxSpinyDifficulty` NORMAL), throwing at once when one is gone (`wait` state).

@@ -36,3 +36,5 @@ every time
 - Both games hold fire while the player is close: the original within 2 tiles of the blaster's centre (`STOP_SHOOT_DIST`, line 27), ours within 32 px (`bullet-bill.ts` line 68).
 - Source: `smb-w5/2026-10-05-5-1-blaster-fire-rate.md`. The tester's title said "about half as often"; the reviewer replaced it with the timer ranges, which give about two-thirds on average.
 - Reviewed: verified against `com/smbc/ground/Canon.as` (`SHOOT_TMR_DUR_MIN/MAX`, `initiate`, `shootTmrLsr`) and ours: `src/game/entities/enemies/bullet-bill.ts` (`FIRE_MIN`, `FIRE_SPREAD`, `BulletLauncher`), `src/game/world/world.ts` (launcher creation).
+
+Status: fixed — each blaster now draws a random 1.0-3.5 s timer (60-209 frames) before its first shot and after every attempt, as `Canon.as` `SHOOT_TMR_DUR_MIN/MAX` (`initiate`, `shootTmrLsr`).

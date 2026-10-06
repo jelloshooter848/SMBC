@@ -64,3 +64,5 @@ every time
   `2026-10-05-lakitu-respawn-delay.md`). The smb-w6 tester gave 6-1 column 12, the first shot with Lakitu on
   screen; the spawn code puts the send at column 9 (camera x ≥ 64 px), so both are given.
 - Reviewed: verified against `com/smbc/level/EnemySpawner.as`, `com/smbc/level/LakituSpawner.as`, `com/smbc/level/Level.as` (1133–1143), `com/smbc/enemies/Lakitu.as`, `levelDataSmb.xml` (4-1, 6-1, 8-2 Lakitu markers), and ours: `src/game/world/world.ts` (`spawnPending`), `src/game/world/camera.ts` (`pushX`), `src/game/constants.ts` (`SPAWN_MARGIN_PX`), `src/game/entities/enemies/lakitu.ts` (`LakituZone`)
+
+Status: fixed — `LakituZone` now sends the first Lakitu only once the lead player's middle is past the start column (`EnemySpawner.updateSpawner`, `player.nx > _enemyStartPos`), entering from just past the right edge (`x = locStgRht + width*.5`).
