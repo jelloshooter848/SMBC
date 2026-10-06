@@ -24,6 +24,10 @@ under `## [Unreleased]`.
     hides them on a key or gamepad press; the pause menu has a Touch controls row (Auto / On;
     Off from a keyboard or gamepad).
 - How to play shows only the controls in use: touch buttons, the gamepad or the keyboard.
+  Instructions name the ability (JUMP, BACK, TOOLS) and, on a keyboard or gamepad, the real
+  bound key; on-screen buttons no longer carry A/B/C letters.
+- Options → Controls → **Key hints**: on desktop, a see-through copy of the touch layout shows
+  each ability with its bound key (follows remapping and the hero's labels).
 
 ### Changed
 
