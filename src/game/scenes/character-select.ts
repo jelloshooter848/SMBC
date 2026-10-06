@@ -3,11 +3,15 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { CharacterDef } from '../characters/character';
 import type { Game } from './game';
+import { abilityHint } from './hints';
+import { fontText } from '../hud/text';
+import type { TouchLabels } from '@engine/input/touch';
+import type { Action } from '@engine/input/actions';
 
 /**
- * One player picks a hero mid-run: after a death with lives left, or after a continue. The
- * original goes through CharacterSelect every time a level is (re)loaded with newLev set
- * (ScreenManager.createLevel), with no way back to the title.
+ * One player picks a hero mid-run: entering a level from the world map, after a death with lives
+ * left, or after a continue. The original goes through CharacterSelect every time a level is
+ * (re)loaded with newLev set (ScreenManager.createLevel), with no way back to the title.
  */
 export interface HeroPick {
   /** Which player picks (0 = player 1); the other player's hero is kept. */
@@ -19,13 +23,6 @@ export interface HeroPick {
   onCancel?: () => void;
 }
 
-/** New-game mode hooks (file select): the chosen heroes go back to the caller instead of `newGame`. */
-export interface NewGameHooks {
-  onStart: (c: CharacterDef, c2: CharacterDef | null) => void;
-  /** Back (B/Select); defaults to the title. */
-  onBack?: () => void;
-}
-
 export class CharacterSelectScene implements Scene {
   private index = 0;
   private index2 = 1;
@@ -34,7 +31,6 @@ export class CharacterSelectScene implements Scene {
   constructor(
     private readonly game: Game,
     private readonly pick: HeroPick | null = null,
-    private readonly hooks: NewGameHooks | null = null,
   ) {}
 
   enter(): void {
@@ -46,13 +42,19 @@ export class CharacterSelectScene implements Scene {
       );
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
       this.game.deps.announcer?.say(
-        `${who} your hero. ${pick.current.name}. Left and right to choose, start to confirm.`,
+        `${who} your hero. ${pick.current.name}. Left and right to choose, OK to confirm.`,
       );
       return;
     }
     this.game.deps.announcer?.say(
-      'Select your hero. Left and right to choose, start to begin. Player two: press start to join.',
+      'Select your hero. Left and right to choose, OK to begin. Player two: press menu to join.',
     );
+  }
+
+  /** Touch drives player 1, who can also make player 2's pick (one device sets up both). */
+  touchLabels(): TouchLabels {
+    const back = !this.pick || !!this.pick.onCancel;
+    return { jump: 'OK', attack: back ? 'BACK' : null, special: null, start: null, select: null };
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
@@ -75,13 +77,18 @@ export class CharacterSelectScene implements Scene {
       return idx;
     };
     if (this.pick) {
-      const f = inputs[this.pick.player] ?? input;
-      this.index = move(this.index, f);
+      // Player 2's pick also takes player 1's input, so one device (a phone's touch buttons
+      // drive player 1 only) can set up both heroes; player 2's own device works too.
+      const own = inputs[this.pick.player] ?? input;
+      const frames = [...new Set(this.pick.player === 0 ? [own] : [own, inputs[0] ?? input])];
+      const pressed = (a: Action) => frames.some((f) => f.pressed(a));
+      const steer = frames.find((f) => f.pressed('left') || f.pressed('right'));
+      if (steer) this.index = move(this.index, steer);
       const c = chars[this.index];
-      if (this.t > 10 && c && (f.pressed('start') || f.pressed('jump'))) {
+      if (this.t > 10 && c && (pressed('start') || pressed('jump'))) {
         this.game.ctx.audio.sfx('coin');
         this.pick.onPick(c);
-      } else if (this.pick.onCancel && (f.pressed('select') || f.pressed('attack'))) {
+      } else if (this.pick.onCancel && (pressed('select') || pressed('attack'))) {
         this.game.ctx.audio.sfx('select');
         this.pick.onCancel();
       }
@@ -101,15 +108,10 @@ export class CharacterSelectScene implements Scene {
     }
     if (this.t > 10 && (input.pressed('start') || input.pressed('jump'))) {
       const c = chars[this.index];
-      const c2 = this.p2 ? chars[this.index2] : null;
-      if (c && this.hooks) this.hooks.onStart(c, c2 ?? null);
-      else if (c) this.game.newGame(c, '1-1', c2 ?? null);
+      if (c) this.game.newGame(c, '1-1', this.p2 ? (chars[this.index2] ?? null) : null);
       return;
     }
-    if (input.pressed('select') || input.pressed('attack')) {
-      if (this.hooks?.onBack) this.hooks.onBack();
-      else this.game.showTitle();
-    }
+    if (input.pressed('select') || input.pressed('attack')) this.game.showTitle();
   }
 
   render(r: Renderer): void {
@@ -146,7 +148,12 @@ export class CharacterSelectScene implements Scene {
     } else if (this.p2) {
       const c2 = chars[this.index2];
       if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, 158);
-    } else if ((this.t >> 6) % 2 === 1) r.text(font, 'P2 PRESS START TO JOIN', 40, 158);
-    if ((this.t >> 5) % 2 === 0) r.text(font, 'PRESS START', 84, 184);
+    } else if ((this.t >> 6) % 2 === 1) {
+      const join = fontText(`P2 ${abilityHint(this.game, 'MENU', 'start', 1)} TO JOIN`);
+      r.text(font, join, 128 - join.length * 4, 158);
+    }
+    // Named by ability (OK), with the real key or pad button when not on touch.
+    const go = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
+    if ((this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, 184);
   }
 }

@@ -5,6 +5,7 @@ import type { Player } from '../../entities/player';
 import { Projectile, FIREBALL } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
 import { plumberGuide } from './guide';
+import type { TouchLabels } from '@engine/input/touch';
 
 export const PLUMBER_STATES = ['small', 'big', 'fire'] as const;
 const STATES = PLUMBER_STATES;
@@ -143,6 +144,12 @@ export const PLUMBER_BEHAVIOUR: CharacterDef['behaviour'] = {
   },
 };
 
+/** B runs (not in water); with the flower it throws fireballs too, so it says FIRE. */
+export function plumberTouchLabels(p: Player): TouchLabels {
+  if (p.powerState === 'fire') return { attack: 'FIRE' };
+  return { attack: p.inWater ? null : 'RUN' };
+}
+
 export const MARIO: CharacterDef = {
   id: 'mario',
   name: 'Mario',
@@ -158,5 +165,6 @@ export const MARIO: CharacterDef = {
   jumpSfx: (p) => (p.powerState === 'small' ? 'jump-small' : 'jump-big'),
   portrait: { sheet: 'mario', palette: 'mario', frame: 'small-idle' },
   behaviour: PLUMBER_BEHAVIOUR,
+  touchLabels: plumberTouchLabels,
   guide: plumberGuide('Mario', 'the all-rounder'),
 };

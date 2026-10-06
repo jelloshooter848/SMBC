@@ -5,14 +5,16 @@ export const RYU_GUIDE: CharacterGuide = {
   controls: [
     { action: 'left/right', does: 'Run fast.' },
     { action: 'jump', does: 'Jump. Let go early to cut it short.' },
-    { action: 'attack', does: 'A quick sword slash.' },
+    { action: 'attack', touch: 'SLASH', does: 'A quick sword slash.' },
     { action: 'down', does: 'Crouch, and slash low.' },
+    { action: 'left/right', does: 'In the air, hold toward a wall to cling. Jump kicks off.' },
+    { action: 'select', touch: 'NINPO', does: 'Pick the next ninpo art.' },
     {
-      action: 'left/right',
-      does: 'In the air, hold toward a wall to cling to it. Jump to kick off. Repeat to climb.',
+      action: 'special',
+      touch: 'CAST',
+      does: 'Cast the selected art. Costs ninpo (blue bar).',
+      touchDoes: 'Shows the selected art. Tap to cast it. Costs ninpo (blue bar).',
     },
-    { action: 'select', does: 'Cycle the ninpo arts.' },
-    { action: 'special', does: 'Cast the selected art. It costs ninpo from the blue bar.' },
   ],
   powerups: [
     { item: 'mushroom', does: 'Unlocks the next ninpo art. Full heal.' },

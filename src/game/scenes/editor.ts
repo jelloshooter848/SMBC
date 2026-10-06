@@ -14,6 +14,8 @@ import { enemyPalette } from '../entities/enemies/enemy';
 import { decorPalette } from '../entities/objects/decoration';
 import type { View } from '../entities/entity';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { NO_TOUCH_BUTTONS } from '../touch-labels';
 
 type Brush =
   | { kind: 'tile'; id: number; label: string }
@@ -308,6 +310,11 @@ export class EditorScene implements Scene {
   }
 
   /* ---------- Input ---------- */
+
+  /** The d-pad scrolls; holding B scrolls faster. Everything else is in the side panel. */
+  touchLabels(): TouchLabels {
+    return { ...NO_TOUCH_BUTTONS, attack: 'FAST' };
+  }
 
   update(input: InputFrame): void {
     this.frame++;

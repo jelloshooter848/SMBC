@@ -8,6 +8,8 @@ export const Actions = [
   'special',
   'start',
   'select',
+  /** Run without attacking (the touch pad's outer ring). Running = held('attack') || held('run'). */
+  'run',
 ] as const;
 export type Action = (typeof Actions)[number];
 
@@ -16,9 +18,10 @@ export const ActionLabels: Record<Action, string> = {
   right: 'Right',
   up: 'Up',
   down: 'Down',
-  jump: 'Jump (A)',
-  attack: 'Run / Attack (B)',
+  jump: 'Jump',
+  attack: 'Attack / Run',
   special: 'Special',
-  start: 'Start / Pause',
-  select: 'Select',
+  start: 'Pause / Menu',
+  select: 'Tools',
+  run: 'Run',
 };

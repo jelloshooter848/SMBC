@@ -139,13 +139,27 @@ describe('death with lives left goes through character select', () => {
     const sel = top(h.game) as CharacterSelectScene;
     expect(sel).toBeInstanceOf(CharacterSelectScene);
     h.idle(12);
-    // Player 1's presses do nothing here.
-    h.tap('right', 0);
-    h.tap('jump', 0);
-    expect(top(h.game)).toBe(sel);
     // Luigi is preselected for player 2; one step right is Link.
     h.tap('right', 1);
     h.tap('jump', 1);
+    expect(top(h.game)).toBeInstanceOf(IntroScene);
+    expect(h.game.state.character).toBe(MARIO);
+    expect(h.game.state.character2).toBe(LINK);
+  });
+
+  it("two players on one device: player 1's input makes player 2's death pick", () => {
+    const h = makeGame();
+    h.game.newGame(MARIO, '1-1', LUIGI);
+    h.until(() => inLevel(h.game));
+    const w = (top(h.game) as LevelScene).world;
+    w.players[0]!.out = true;
+    w.players[0]!.hidden = true;
+    w.kill(w.players[1]!);
+    h.until(() => !inLevel(h.game), 400);
+    expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
+    h.idle(12);
+    h.tap('right', 0); // Luigi → Link, for player 2
+    h.tap('jump', 0);
     expect(top(h.game)).toBeInstanceOf(IntroScene);
     expect(h.game.state.character).toBe(MARIO);
     expect(h.game.state.character2).toBe(LINK);
@@ -232,9 +246,7 @@ describe('game over offers CONTINUE? YES / NO', () => {
     expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
     expect(h.game.state.lives).toBe(5);
     h.idle(12);
-    h.tap('jump', 0); // player 1 does not pick
-    expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
-    h.tap('right', 1);
+    h.tap('right', 1); // player 2's pick (player 1 could make it too, on one device)
     h.tap('jump', 1);
     expect(top(h.game)).toBeInstanceOf(IntroScene);
     expect(h.game.state.character).toBe(MARIO);

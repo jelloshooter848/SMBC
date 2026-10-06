@@ -23,6 +23,8 @@ import { worldLabel } from '../hud/world-label';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { NO_TOUCH_BUTTONS } from '../touch-labels';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -282,6 +284,18 @@ export class WorldMapScene implements Scene {
       case 'idle':
         this.updateIdle(input);
     }
+  }
+
+  /**
+   * Idle: A enters the level underfoot when it is open, Start (or Select) opens the map menu.
+   * A reveal skips on any button (A says so); nothing to press while walking or sliding.
+   */
+  touchLabels(): TouchLabels {
+    if (this.mode === 'reveal') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
+    if (this.mode !== 'idle') return NO_TOUCH_BUTTONS;
+    const here = this.nodeById(this.node);
+    const open = !!here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll);
+    return { ...NO_TOUCH_BUTTONS, jump: open ? 'ENTER' : null, start: 'MENU' };
   }
 
   private updateReveal(input: InputFrame): void {

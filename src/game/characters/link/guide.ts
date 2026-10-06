@@ -4,18 +4,17 @@ export const LINK_GUIDE: CharacterGuide = {
   tagline: 'Sword, shield and a tool belt',
   controls: [
     { action: 'left/right', does: 'Walk. No running.' },
-    { action: 'jump', does: 'A fixed-height jump, steerable in the air.' },
-    { action: 'attack', does: 'Sword slash. At full hearts with the red tunic it fires a beam.' },
+    { action: 'jump', does: 'A fixed-height jump. Steer in the air.' },
+    { action: 'attack', touch: 'SWORD', does: 'Slash. Full hearts and the red tunic fire a beam.' },
+    { action: 'down', does: 'Crouch. In the air: down-thrust, bouncing off enemies.' },
+    { action: 'up', does: 'In the air: up-thrust. Hits enemies above and opens blocks.' },
+    { action: 'select', touch: 'TOOLS', does: 'Pick the next tool.' },
     {
-      action: 'down',
-      does: 'On the ground: crouch. In the air: hold for a down-thrust that bounces off enemies.',
+      action: 'special',
+      touch: 'USE TOOL',
+      does: 'Use the selected tool.',
+      touchDoes: 'Shows the selected tool. Tap to use it.',
     },
-    {
-      action: 'up',
-      does: 'In the air: hold for an up-thrust. It hits enemies overhead and opens blocks; your head only bumps them.',
-    },
-    { action: 'select', does: 'Cycle the tool belt.' },
-    { action: 'special', does: 'Use the selected tool.' },
   ],
   powerups: [
     {

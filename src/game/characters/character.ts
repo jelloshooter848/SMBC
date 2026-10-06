@@ -9,6 +9,7 @@ import type { Enemy } from '../entities/enemies/enemy';
 import type { Projectile } from '../entities/projectiles/projectile';
 import type { Rng } from '@engine/rng';
 import type { ToolInfo } from './toolbelt';
+import type { TouchLabels } from '@engine/input/touch';
 
 export type DamageModel =
   | { kind: 'powerup'; states: readonly string[] }
@@ -60,8 +61,15 @@ export interface CharacterBehaviour {
 export interface CharacterGuide {
   /** One line under the name. */
   tagline: string;
-  /** Actions in the order to list them; combined inputs are written as 'up+attack'. */
-  controls: { action: GuideAction; does: string }[];
+  /**
+   * Actions in the order to list them; combined inputs are written as 'up+attack'. `touch` is
+   * the ability's name for attack, special and select rows: the caption the touch button shows
+   * (as `touchLabels` does, e.g. RUN, SWORD, TOOLS), or for the tool button, whose caption is
+   * the selected tool's name, what it does ("USE TOOL", "THROW"). The guide names every row by
+   * its ability, never by a button letter. `touchDoes` replaces `does` on touch where the touch
+   * controls differ (the d-pad edge runs).
+   */
+  controls: { action: GuideAction; does: string; touch?: string; touchDoes?: string }[];
   powerups: { item: 'mushroom' | 'flower' | 'star' | 'drops'; does: string }[];
   /** Tool belt entries (Select cycles, C uses). */
   belt?: { name: string; icon: string; cost?: string; does: string }[];
@@ -130,6 +138,12 @@ export interface CharacterDef {
   startHp?: number;
   /** "How to play" page content. */
   guide: CharacterGuide;
+  /**
+   * What the touch buttons say for this hero right now (short upper-case words; null hides a
+   * button that does nothing in this state). Merged over the level's defaults: A "JUMP",
+   * Start "MENU", B and C hidden, Select "TOOLS" with two or more tools (touch-labels.ts).
+   */
+  touchLabels?(p: Player, world: World): TouchLabels;
 }
 
 /** Hit points a fresh run of this character starts with (0 for power-up characters). */

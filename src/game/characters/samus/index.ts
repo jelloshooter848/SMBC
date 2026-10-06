@@ -202,6 +202,14 @@ export const SAMUS: CharacterDef = {
     return null;
   },
   guide: SAMUS_GUIDE,
+  touchLabels(p) {
+    // In the ball both buttons drop bombs (and A does nothing: canJump). Standing, B fires the
+    // selected beam or missile and C always a missile; a missile button hides with none left.
+    if (inBall(p)) return { attack: 'BOMB', special: 'BOMB', select: 'WEAPON' };
+    const missile = missiles(p) > 0 ? 'MISSILE' : null;
+    const missileSelected = activeTool(p, tools(p))?.id === 'missile';
+    return { attack: missileSelected ? missile : 'SHOOT', special: missile, select: 'WEAPON' };
+  },
   behaviour: {
     canJump: (p) => !inBall(p),
     // Character.getOnVine → setState("vine") replaces ST_BALL: she climbs standing.

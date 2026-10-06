@@ -8,7 +8,6 @@ import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
 import { IntroScene } from '@game/scenes/intro';
-import { CharacterSelectScene } from '@game/scenes/character-select';
 import { FileSelectScene } from '@game/scenes/file-select';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { TitleScene } from '@game/scenes/title';
@@ -116,48 +115,62 @@ describe('file select', () => {
     expect(h.said.at(-1)).toBe('File 2. New game.');
   });
 
-  it('a new file goes through character select (P2 may join), then is written and opened', () => {
+  it('NEW opens straight on the World 1 map as a one-player Mario file (no choice, no character select)', () => {
     const h = makeGame();
     toFileSelect(h);
     h.tap('down'); // file 2
     h.tap('jump');
-    expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
-    h.idle(12);
-    h.tap('right'); // Luigi
-    h.tap('start', 1); // player 2 joins (Luigi preselected for P2); one right → Link
-    h.tap('right', 1);
-    h.tap('start');
-    const save = loadSave(2)!;
-    expect(save).not.toBeNull();
-    expect(save.character).toBe('luigi');
-    expect(save.character2).toBe('link');
-    expect(save.lives).toBe(5);
-    expect(save.worlds).toEqual([1]);
-    expect(listSaves()[0]).toBeNull();
-    expect(listSaves()[2]).toBeNull();
-    expect(h.game.campaign).toEqual({ slot: 2 });
-    expect(h.game.state.character).toBe(LUIGI);
-    expect(h.game.state.character2).toBe(LINK);
-    expect(h.game.state.lives).toBe(5);
-    // The file opens on World 1's map, at the start.
+    // The file opens on World 1's map, at the start: no player-count choice or character select.
     const map = top(h.game) as WorldMapScene;
     expect(map).toBeInstanceOf(WorldMapScene);
     expect(map.page.world).toBe(1);
     expect(map.node).toBe('start');
+    expect(h.game.scenes.depth).toBe(1); // nothing under or over the map
+    const save = loadSave(2)!;
+    expect(save).not.toBeNull();
+    expect(save.character).toBe('mario');
+    expect(save.character2).toBeNull();
+    expect(save.lives).toBe(3);
+    expect(save.powerState).toBe('small');
+    expect(save.worlds).toEqual([1]);
+    expect(listSaves()[0]).toBeNull();
+    expect(listSaves()[2]).toBeNull();
+    expect(h.game.campaign).toEqual({ slot: 2 });
+    // The map walker is Mario, alone.
+    expect(h.game.state.character).toBe(MARIO);
+    expect(h.game.state.character2).toBeNull();
+    expect(h.game.state.lives).toBe(3);
   });
 
-  it('back from that character select returns to file select on the same file', () => {
+  it('a file saved before heroes were picked on the map still loads, straight onto its map', () => {
+    // A version-1 file from an older build: no lastNode, pendingReveal or devUnlockAll yet.
+    store.set(
+      'smbc.save.1',
+      JSON.stringify({
+        v: 1,
+        slot: 1,
+        character: 'luigi',
+        character2: 'link',
+        lives: 6,
+        score: 900,
+        coins: 3,
+        powerState: 'big',
+        cleared: ['1-1'],
+        worlds: [1],
+        secrets: [],
+        position: { world: 1, node: '1-1' },
+      }),
+    );
     const h = makeGame();
     toFileSelect(h);
-    h.tap('down');
-    h.tap('down');
     h.tap('jump');
-    h.idle(12);
-    h.tap('attack');
-    const fs = top(h.game) as FileSelectScene;
-    expect(fs).toBeInstanceOf(FileSelectScene);
-    expect(fs.index).toBe(2);
-    expect(listSaves()).toEqual([null, null, null]);
+    const map = top(h.game) as WorldMapScene;
+    expect(map).toBeInstanceOf(WorldMapScene);
+    expect(map.node).toBe('1-1');
+    expect(h.game.state.character).toBe(LUIGI);
+    expect(h.game.state.character2).toBe(LINK);
+    expect([h.game.state.lives, h.game.state.score, h.game.state.powerState]).toEqual([6, 900, 'big']);
+    expect(loadSave(1)!.cleared).toEqual(['1-1']);
   });
 
   it('a used file shows its stats and loads into the game', () => {
@@ -265,7 +278,7 @@ describe('file select', () => {
     expect(store.has('smbc.save.1')).toBe(false);
     expect(h.said.at(-1)).toMatch(/File 1 erased\. File 1\. New game\./);
     h.tap('jump');
-    expect(top(h.game)).toBeInstanceOf(CharacterSelectScene);
+    expect(top(h.game)).toBeInstanceOf(WorldMapScene);
   });
 
   it('back leaves erase mode, then goes to the title', () => {

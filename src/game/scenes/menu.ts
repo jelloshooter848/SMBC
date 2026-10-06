@@ -2,6 +2,9 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { menuTouchLabels } from '../touch-labels';
+import { abilityHint } from './hints';
 
 export interface MenuItem {
   label: string;
@@ -48,6 +51,13 @@ export class MenuScene implements Scene {
     if (!it) return;
     const v = it.value ? `: ${it.value()}` : '';
     this.game.deps.announcer?.say(`${it.label}${v}${it.hint ? `. ${it.hint}` : ''}`);
+  }
+
+  /** A picks the highlighted entry, or steps a setting that has no action (CHANGE). */
+  touchLabels(): TouchLabels {
+    const it = this.items[this.index];
+    const a = !it || it.select ? 'OK' : it.adjust ? 'CHANGE' : null;
+    return { ...menuTouchLabels(this.onBack !== null), jump: a };
   }
 
   setItems(items: MenuItem[]): void {
@@ -114,7 +124,7 @@ export class MenuScene implements Scene {
     });
     if (this.status)
       r.text(font, this.status.toUpperCase().slice(0, 28), 128 - Math.min(28, this.status.length) * 4, 200);
-    const back = this.onBack ? 'B: BACK' : '';
+    const back = this.onBack ? abilityHint(this.game, 'BACK', 'attack') : '';
     if (back && (this.t >> 5) % 2 === 0) r.text(font, back, 24, 216);
   }
 }

@@ -8,6 +8,7 @@ import { STAR_FRAMES } from '../../constants';
 import { SIMON_GUIDE } from './guide';
 import { STUN_FRAMES } from '../../rules/damage';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
+import { beltButton, toolButton } from '../../touch-labels';
 import { SUB_WEAPONS, WHIP_FRAMES, WHIP_REACH, type SubWeapon } from './weapons';
 
 /** Vampire hunter: slow walk, a committed fixed-arc jump, a whip with a wind-up. */
@@ -124,6 +125,15 @@ function throwSub(p: Player, world: World): void {
   p.activeMelee = null;
 }
 
+/** Touch captions for the belt (C shows the selected one). */
+export const SIMON_TOOL_LABELS: Record<string, string> = {
+  dagger: 'DAGGER',
+  'hand-axe': 'AXE',
+  'holy-water': 'WATER',
+  cross: 'CROSS',
+  stopwatch: 'WATCH',
+};
+
 export const SIMON: CharacterDef = {
   id: 'simon',
   name: 'Simon',
@@ -165,6 +175,14 @@ export const SIMON: CharacterDef = {
     return null;
   },
   guide: SIMON_GUIDE,
+  touchLabels(p) {
+    const belt = tools(p);
+    return {
+      attack: 'WHIP',
+      special: toolButton(belt, p, SIMON_TOOL_LABELS),
+      select: beltButton(belt, 'TOOLS'),
+    };
+  },
   behaviour: {
     update(p, input, world) {
       const b = p.body;

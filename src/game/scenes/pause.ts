@@ -1,9 +1,14 @@
 import { MenuScene, type MenuItem } from './menu';
-import { OptionsScene } from './options';
+import { AssistOptionsScene, OptionsScene } from './options';
 import { DevMenuScene } from './dev';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
+import type { TouchLabels } from '@engine/input/touch';
+import type { TouchMode } from '@engine/save/settings';
+import { nextTouchMode } from '@engine/input/touch-logic';
+
+const TOUCH_MODE_LABELS: Record<TouchMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
 export class PauseScene extends MenuScene {
   constructor(
@@ -37,12 +42,35 @@ export class PauseScene extends MenuScene {
         },
       });
     }
+    // The on-screen pad can be forced on or off right here (saved and applied at once). On touch
+    // the row skips Off, which would leave no touch control to turn it back on.
+    const s = game.deps.settings;
+    if (s?.input) {
+      const cycle = (d: -1 | 1) => {
+        s.input.touch = nextTouchMode(s.input.touch, d, game.deps.lastInput?.() ?? null);
+        game.deps.applySettings?.();
+        this.announce();
+      };
+      items.push({
+        label: 'Touch controls',
+        value: () => TOUCH_MODE_LABELS[s.input.touch],
+        adjust: cycle,
+        select: () => cycle(1),
+        hint: 'Auto shows them on phones and tablets',
+      });
+    }
     items.push({
       label: 'Options',
       select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
     });
     if (this.showDev)
       items.push({ label: 'Dev mode', select: () => game.scenes.push(new DevMenuScene(game, true)) });
+    // In campaign play dev mode offers only the assists (no level select, which would leave the file).
+    if (this.showAssists)
+      items.push({
+        label: 'Assists',
+        select: () => game.scenes.push(new AssistOptionsScene(game, () => game.scenes.pop())),
+      });
     if (game.campaign && !game.playtestDone) {
       // Leave the level for the map (any level, cleared or not; no clear is recorded, the run's
       // lives, score, coins and power are kept and saved), or save and go to the title.
@@ -56,9 +84,14 @@ export class PauseScene extends MenuScene {
     this.setItems(items);
   }
 
-  /** Dev mode's menu (assists, level select) stays out of campaign play, so no file saves them. */
+  /** Dev mode's full menu (level select, dev mode off) stays out of campaign play. */
   private get showDev(): boolean {
     return this.game.devMode && !this.game.campaign;
+  }
+
+  /** Campaign play in dev mode gets the assists on their own. */
+  private get showAssists(): boolean {
+    return this.game.devMode && !!this.game.campaign;
   }
 
   override enter(): void {
@@ -71,9 +104,15 @@ export class PauseScene extends MenuScene {
     this.game.ctx.audio.resume();
   }
 
+  /** Start resumes from Continue (where the cursor starts); elsewhere it would pick that entry. */
+  override touchLabels(): TouchLabels {
+    return { ...super.touchLabels(), start: this.index === 0 ? 'RESUME' : null };
+  }
+
   override update(input: Parameters<MenuScene['update']>[0]): void {
     // Returning from a sub-menu (dev mode off) must refresh the entries.
-    if (this.items.some((i) => i.label === 'Dev mode') !== this.showDev) this.rebuild();
+    const has = (label: string) => this.items.some((i) => i.label === label);
+    if (has('Dev mode') !== this.showDev || has('Assists') !== this.showAssists) this.rebuild();
     // Start selects the highlighted entry (Continue by default), so a double tap of Start still resumes.
     super.update(input);
   }

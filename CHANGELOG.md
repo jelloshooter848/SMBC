@@ -8,8 +8,36 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Touch controls revamp:
+  - On-screen buttons say what they do for the current hero, power-up and tool (JUMP, RUN or
+    FIRE, SWORD, BOOMERANG, SHOOT, BOMB, MENU…), hide when they do nothing, and read OK / BACK
+    in menus.
+  - Pushing the d-pad to its edge runs (without firing). The d-pad uses angle zones (wide left
+    and right, a deliberate push for down), a larger touch area, lights up the pressed
+    direction and vibrates on Android.
+  - Options → Controls chooses a fixed d-pad or a floating stick that appears under the thumb.
+  - A thumb can slide from one button to the next; the tool-belt button sits beside the tool
+    button.
+  - Auto mode shows the controls on phones and tablets only, brings them back on a touch and
+    hides them on a key or gamepad press; the pause menu has a Touch controls row (Auto / On;
+    Off from a keyboard or gamepad).
+- How to play shows only the controls in use: touch buttons, the gamepad or the keyboard.
+  Instructions name the ability (JUMP, BACK, TOOLS) and, on a keyboard or gamepad, the real
+  bound key; on-screen buttons no longer carry A/B/C letters.
+- Options → Controls → **Key hints**: on desktop, a see-through copy of the touch layout shows
+  each ability with its bound key (follows remapping and the hero's labels).
+
 ### Changed
 
+- The touch size setting now ranges from 100% to 160% so button text stays readable; smaller
+  stored sizes load as 100%.
+- A new save file opens straight on the World 1 map with Mario; the hero is picked only when
+  entering a level. A new file is one player; new two-player save files are paused for now
+  (older two-player files still load and play).
+- Dev mode: the pause menu in a campaign level now has **Assists** (the full dev menu with level
+  select stays outside campaign play).
 - Lost Levels endings use the NES wording: 8-4 and D-4 show "THANK YOU <HERO>! / YOUR QUEST IS
   OVER. / WE PRESENT YOU A NEW QUEST. / PUSH BUTTON B / TO SELECT A WORLD", 9-4 shows "THANK
   YOU!", and D-4 now rolls the credits. B or Start continues, from either player.

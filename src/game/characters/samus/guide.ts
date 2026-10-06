@@ -3,17 +3,14 @@ import type { CharacterGuide } from '../character';
 export const SAMUS_GUIDE: CharacterGuide = {
   tagline: 'Beams, missiles and morph ball',
   controls: [
-    { action: 'left/right', does: 'Walk. Jumping while moving somersaults.' },
+    { action: 'left/right', does: 'Walk. Jump while moving to somersault.' },
     { action: 'jump', does: 'A floaty jump. Let go early to cut it short.' },
-    { action: 'attack', does: 'Fire the arm cannon.' },
+    { action: 'attack', touch: 'SHOOT', does: 'Fire the beam, or a missile when missiles are picked.' },
     { action: 'up', does: 'Hold to aim straight up.' },
-    { action: 'down', does: 'Curl into the morph ball: fits one-tile gaps, cannot jump. Press up to stand.' },
-    {
-      action: 'attack',
-      does: 'In ball form: drop a bomb. It opens blocks and bounces you if you sit in it.',
-    },
-    { action: 'select', does: 'Switch between beam and missiles.' },
-    { action: 'special', does: 'Fire a missile.' },
+    { action: 'down', does: 'Morph ball: fits one-tile gaps, no jumping. Up stands.' },
+    { action: 'attack', touch: 'BOMB', does: 'In the ball: drop a bomb. Opens blocks. Sit on it to bounce.' },
+    { action: 'select', touch: 'WEAPON', does: 'Switch the cannon between beam and missiles.' },
+    { action: 'special', touch: 'MISSILE', does: 'Fire a missile.' },
   ],
   powerups: [
     {

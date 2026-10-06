@@ -4,11 +4,17 @@ export const SIMON_GUIDE: CharacterGuide = {
   tagline: 'Whip and holy sub-weapons',
   controls: [
     { action: 'left/right', does: 'Walk, slowly.' },
-    { action: 'jump', does: 'A committed jump: you cannot steer once in the air.' },
-    { action: 'attack', does: 'Crack the whip. It winds up first, so swing early.' },
-    { action: 'down', does: 'Crouch. Whip low while crouched.' },
-    { action: 'select', does: 'Cycle the sub-weapons.' },
-    { action: 'special', does: 'Throw the selected sub-weapon. Up + attack also throws.' },
+    { action: 'jump', does: 'A committed jump: no steering in the air.' },
+    { action: 'attack', touch: 'WHIP', does: 'Crack the whip. It winds up, so swing early.' },
+    { action: 'down', does: 'Crouch, and whip low.' },
+    { action: 'select', touch: 'TOOLS', does: 'Pick the next sub-weapon.' },
+    {
+      action: 'special',
+      touch: 'THROW',
+      does: 'Throw the selected sub-weapon. Costs hearts.',
+      touchDoes: 'Shows the selected sub-weapon. Tap to throw it. Costs hearts.',
+    },
+    { action: 'up+attack', touch: 'WHIP', does: 'Also throws the sub-weapon.' },
   ],
   powerups: [
     { item: 'mushroom', does: 'Unlocks the next sub-weapon. Full heal.' },

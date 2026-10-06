@@ -8,6 +8,7 @@ import { Projectile } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
 import { BILL_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
+import { beltButton, toolButton } from '../../touch-labels';
 import { GUNS, type Gun } from './weapons';
 
 /** Commando: fast run, fixed somersault jump, eight-way rifle, goes prone. */
@@ -105,6 +106,15 @@ function fire(p: Player, g: Gun, input: InputFrame, world: World): void {
   p.attackTimer = SHOOT_POSE_FRAMES;
 }
 
+/** Touch captions for the belt (C shows the selected one). */
+export const BILL_TOOL_LABELS: Record<string, string> = {
+  rifle: 'RIFLE',
+  mg: 'M-GUN',
+  spread: 'SPREAD',
+  laser: 'LASER',
+  'flame-gun': 'FLAME',
+};
+
 export const BILL: CharacterDef = {
   id: 'bill',
   name: 'Bill',
@@ -135,6 +145,14 @@ export const BILL: CharacterDef = {
     return null;
   },
   guide: BILL_GUIDE,
+  touchLabels(p) {
+    const belt = tools(p);
+    return {
+      attack: 'SHOOT',
+      special: toolButton(belt, p, BILL_TOOL_LABELS),
+      select: beltButton(belt, 'WEAPON'),
+    };
+  },
   behaviour: {
     update(p, input, world) {
       cycleTool(p, input, tools(p), world);

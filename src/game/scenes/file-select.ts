@@ -14,9 +14,12 @@ import {
   type SlotContents,
 } from '@game/save/save-files';
 import type { CharacterDef } from '../characters/character';
+import { MARIO } from '../characters/mario';
 import { pad, SCORE_MAX } from '../hud/hud';
-import { CharacterSelectScene } from './character-select';
 import type { Game } from './game';
+import { abilityHint } from './hints';
+import type { TouchLabels } from '@engine/input/touch';
+import { menuTouchLabels } from '../touch-labels';
 
 /** Main levels on the map (1-1..8-4). */
 export const MAIN_LEVEL_COUNT = 32;
@@ -30,8 +33,9 @@ const BOTTOM_Y = 176;
 /**
  * Title → "Start game": three save files. A used file shows its hero(es), world reached, levels
  * cleared, lives and score (and a star once the game was beaten); an empty one says NEW GAME.
- * Picking an empty file goes through character select (player 2 may join) and creates it; a used
- * file opens its map. The bottom row erases a file (pick it, then confirm YES / NO).
+ * Picking an empty file creates a one-player file with Mario and opens World 1's map (the hero
+ * is picked on entering a level); a used file opens its map, two-player files from older builds
+ * included. The bottom row erases a file (pick it, then confirm YES / NO).
  * A slot whose data can't be read shows UNREADABLE and must be erased before it is reused.
  * Up/down move, A/Start choose, B/Select back.
  */
@@ -82,6 +86,11 @@ export class FileSelectScene implements Scene {
       `${clearedMainLevels(s)} of ${MAIN_LEVEL_COUNT} levels cleared. ${s.lives} lives. Score ${s.score}.` +
       (s.gameCleared ? ' Game cleared.' : '')
     );
+  }
+
+  /** A picks (or answers the erase prompt), B goes back. */
+  touchLabels(): TouchLabels {
+    return menuTouchLabels(true);
   }
 
   update(input: InputFrame): void {
@@ -168,19 +177,14 @@ export class FileSelectScene implements Scene {
     this.say(this.rowText());
   }
 
-  /** Character select (P2 may join), then create the file and open it. */
+  /**
+   * Create a one-player file with Mario and open it on World 1's map; the hero is picked on
+   * entering a level. (New two-player files are paused for now.)
+   */
   private newFile(slot: SaveSlot): void {
-    const game = this.game;
-    game.scenes.replace(
-      new CharacterSelectScene(game, null, {
-        onStart: (c, c2) => {
-          const save = newSave(slot, c.id, c2?.id ?? null);
-          writeSave(save);
-          game.openFile(slot, save);
-        },
-        onBack: () => game.scenes.replace(new FileSelectScene(game, slot)),
-      }),
-    );
+    const save = newSave(slot, MARIO.id);
+    writeSave(save);
+    this.game.openFile(slot, save);
   }
 
   render(r: Renderer): void {
@@ -231,6 +235,6 @@ export class FileSelectScene implements Scene {
       r.text(font, label, 128 - label.length * 4, BOTTOM_Y);
       if (this.index === 3 && blink) r.text(font, '>', 116 - label.length * 4, BOTTOM_Y);
     }
-    if ((this.t >> 5) % 2 === 0) r.text(font, 'B: BACK', 24, 216);
+    if ((this.t >> 5) % 2 === 0) r.text(font, abilityHint(this.game, 'BACK', 'attack'), 24, 216);
   }
 }

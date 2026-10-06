@@ -4,6 +4,16 @@ import { defaultBindings } from '../input/bindings';
 import { loadJson, saveJson } from './storage';
 
 export type TouchMode = 'auto' | 'on' | 'off';
+/** Touch d-pad: drawn at a fixed spot, or a stick that centres under the thumb. */
+export type DpadStyle = 'fixed' | 'floating';
+export const DPAD_STYLES: readonly DpadStyle[] = ['fixed', 'floating'];
+export const TOUCH_MODES: readonly TouchMode[] = ['auto', 'on', 'off'];
+/**
+ * Touch size range. The pad is laid out at 1 (68 px face buttons, every label at 11 px or more);
+ * smaller made buttons under the 44 px touch-target size and labels unreadable, so 1 is the floor.
+ */
+export const TOUCH_SCALE_MIN = 1;
+export const TOUCH_SCALE_MAX = 1.6;
 
 export interface AssistSettings {
   allowLeftScroll: boolean;
@@ -20,7 +30,17 @@ export interface Settings {
   v: 1;
   video: { integerScale: boolean; palette: PaletteMode; reduceFlashing: boolean; showFps: boolean };
   audio: { master: number; music: number; sfx: number; muted: boolean };
-  input: { bindings: PlayerBindings[]; touch: TouchMode; touchScale: number };
+  input: {
+    bindings: PlayerBindings[];
+    touch: TouchMode;
+    touchScale: number;
+    dpad: DpadStyle;
+    /**
+     * Key hints: a reference of the ability buttons with their bound keys beside the game (and a
+     * key line on the touch buttons). Optional, so files saved before it existed need no migration.
+     */
+    keyHints?: boolean;
+  };
   assist: AssistSettings;
   /** Enabled asset pack names, in override order. */
   packs: string[];
@@ -37,7 +57,13 @@ export function defaultSettings(): Settings {
     v: 1,
     video: { integerScale: true, palette: 'default', reduceFlashing: false, showFps: false },
     audio: { master: 0.8, music: 1, sfx: 1, muted: false },
-    input: { bindings: [defaultBindings(0), defaultBindings(1)], touch: 'auto', touchScale: 1 },
+    input: {
+      bindings: [defaultBindings(0), defaultBindings(1)],
+      touch: 'auto',
+      touchScale: 1,
+      dpad: 'fixed',
+      keyHints: false,
+    },
     assist: {
       allowLeftScroll: false,
       infiniteLives: false,
@@ -81,7 +107,24 @@ export function loadSettings(): Settings {
   }
   const s = merge(defaultSettings(), stored);
   s.v = 1;
+  // Fields added later (input.dpad, the `run` action) are filled in here; no migration needed.
+  if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
+  if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
+  s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
+  s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;
+}
+
+/** Stored bindings predate newer actions: give any missing action its default codes. */
+function fillBindings(b: PlayerBindings | null, player: number): PlayerBindings {
+  const def = defaultBindings(player);
+  if (!b || typeof b !== 'object') return def;
+  return {
+    ...b,
+    keyboard: { ...def.keyboard, ...b.keyboard },
+    gamepad: { ...def.gamepad, ...b.gamepad },
+    gamepadIndex: b.gamepadIndex ?? null,
+  };
 }
 
 export function saveSettings(s: Settings): void {

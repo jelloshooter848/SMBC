@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { defaultSettings, loadSettings, saveSettings, SETTINGS_KEY } from './settings';
+import {
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  SETTINGS_KEY,
+  TOUCH_SCALE_MAX,
+  TOUCH_SCALE_MIN,
+} from './settings';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -18,6 +25,18 @@ describe('settings', () => {
     expect(loadSettings()).toEqual(defaultSettings());
   });
 
+  it('key hints: off by default, off for files saved before the option, kept once set', () => {
+    expect(defaultSettings().input.keyHints).toBe(false);
+    const old = defaultSettings() as unknown as { input: Record<string, unknown> };
+    delete old.input.keyHints;
+    store.set(SETTINGS_KEY, JSON.stringify(old));
+    expect(loadSettings().input.keyHints).toBe(false);
+    const on = defaultSettings();
+    on.input.keyHints = true;
+    saveSettings(on);
+    expect(loadSettings().input.keyHints).toBe(true);
+  });
+
   it('round-trips and fills in missing fields', () => {
     const s = defaultSettings();
     s.audio.music = 0.5;
@@ -34,5 +53,44 @@ describe('settings', () => {
   it('ignores values of the wrong type', () => {
     store.set(SETTINGS_KEY, JSON.stringify({ v: 1, video: { integerScale: 'yes' } }));
     expect(loadSettings().video.integerScale).toBe(true);
+  });
+});
+
+describe('settings: fields added after release', () => {
+  it('defaults input.dpad to fixed for old saves and rejects unknown styles', () => {
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { touch: 'on', touchScale: 1.2 } }));
+    const s = loadSettings();
+    expect(s.input.dpad).toBe('fixed');
+    expect(s.input.touch).toBe('on');
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { dpad: 'wobbly' } }));
+    expect(loadSettings().input.dpad).toBe('fixed');
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { dpad: 'floating' } }));
+    expect(loadSettings().input.dpad).toBe('floating');
+  });
+
+  it('a stored Touch size of 0.6 (old minimum) loads as the readable minimum 1', () => {
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { touchScale: 0.6 } }));
+    expect(loadSettings().input.touchScale).toBe(TOUCH_SCALE_MIN);
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { touchScale: 1.3 } }));
+    expect(loadSettings().input.touchScale).toBe(1.3);
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { touchScale: 9 } }));
+    expect(loadSettings().input.touchScale).toBe(TOUCH_SCALE_MAX);
+  });
+
+  it('gives old stored bindings the new run action without touching remaps', () => {
+    const old = defaultSettings().input.bindings.map((b) => {
+      const kb: Record<string, string[]> = { ...b.keyboard, jump: ['KeyQ'] };
+      delete kb.run;
+      const pad: Record<string, string[]> = { ...b.gamepad };
+      delete pad.run;
+      return { ...b, keyboard: kb, gamepad: pad };
+    });
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { bindings: old } }));
+    const s = loadSettings();
+    for (const b of s.input.bindings) {
+      expect(b.keyboard.run).toEqual([]);
+      expect(b.gamepad.run).toEqual([]);
+      expect(b.keyboard.jump).toEqual(['KeyQ']);
+    }
   });
 });

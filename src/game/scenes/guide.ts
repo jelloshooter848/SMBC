@@ -1,10 +1,11 @@
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
-import type { Code } from '@engine/input/bindings';
-import { describeCode } from '@engine/input/bindings';
+import type { TouchLabels } from '@engine/input/touch';
+import type { Action } from '@engine/input/actions';
+import { abilityHint, boundKey, controlScheme } from './hints';
 import { px, toPx } from '@engine/math/units';
-import type { Game } from './game';
+import type { ControlScheme, Game } from './game';
 import { MenuScene } from './menu';
 import type { CharacterDef, DemoPose, GuideAction } from '../characters/character';
 import { Player } from '../entities/player';
@@ -19,37 +20,39 @@ const DEMO_FRAMES = 90;
 const DEMO_FLOOR_Y = 62;
 const DEMO_CENTER_X = 40;
 
-/** Names for the standard gamepad mapping. */
-export function describePad(code: Code): string {
-  const names: Record<string, string> = {
-    'pad:0': 'A',
-    'pad:1': 'B',
-    'pad:2': 'X',
-    'pad:3': 'Y',
-    'pad:4': 'LB',
-    'pad:5': 'RB',
-    'pad:6': 'LT',
-    'pad:7': 'RT',
-    'pad:8': 'BACK',
-    'pad:9': 'START',
-    'pad:12': 'D-UP',
-    'pad:13': 'D-DOWN',
-    'pad:14': 'D-LEFT',
-    'pad:15': 'D-RIGHT',
-  };
-  return names[code] ?? describeCode(code).toUpperCase();
-}
+export { describePad } from '@engine/input/bindings';
 
-const TOUCH: Record<string, string> = {
-  jump: 'A',
-  attack: 'B',
-  special: 'C',
-  start: 'START',
-  select: 'SELECT',
-  up: 'PAD UP',
-  down: 'PAD DOWN',
-  'left/right': 'PAD',
+/**
+ * The ability each guide action stands for. B, C and Select rows give their own (the touch
+ * caption: RUN, SWORD, TOOLS...); these are the rest, and the fallbacks.
+ */
+const ABILITY: Record<string, string> = {
+  'left/right': 'MOVE',
+  up: 'UP',
+  down: 'DOWN',
+  jump: 'JUMP',
+  start: 'MENU',
+  attack: 'ATTACK',
+  special: 'SPECIAL',
+  select: 'TOOLS',
 };
+
+/** Word-wrap `text` to `cols`, the lines after the first indented by two spaces. */
+export function wrapHanging(text: string, cols: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const w of fontText(text).split(/\s+/).filter(Boolean)) {
+    const width = lines.length ? cols - 2 : cols;
+    if (!line) line = w;
+    else if (line.length + 1 + w.length <= width) line += ` ${w}`;
+    else {
+      lines.push(line);
+      line = w;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.map((l, i) => (i ? `  ${l}` : l));
+}
 
 /** Index of heroes; picking one opens its guide. */
 export class GuideIndexScene extends MenuScene {
@@ -72,7 +75,9 @@ export class GuideScene implements Scene {
   private page = 0;
   private scroll = 0;
   private t = 0;
-  private readonly pages: { title: string; lines: string[] }[];
+  private pages: { title: string; lines: string[] }[];
+  /** The control scheme the pages were written for (rebuilt when it changes). */
+  private scheme: ControlScheme;
   private readonly demo: Player;
   private poseIndex = 0;
   private poseT = 0;
@@ -83,6 +88,7 @@ export class GuideScene implements Scene {
     private readonly def: CharacterDef,
     private readonly onBack: () => void,
   ) {
+    this.scheme = this.currentScheme();
     this.pages = this.buildPages();
     const power = def.damage.kind === 'powerup' ? 'fire' : 'full';
     this.demo = new Player(px(64), px(112), def, power, def.damage.kind === 'hp' ? def.damage.max : 0);
@@ -144,67 +150,76 @@ export class GuideScene implements Scene {
     p.refitHitbox();
   }
 
-  private bindingLabel(action: GuideAction): string {
-    const s = this.game.deps.settings;
-    const b = s?.input.bindings[0];
-    // Touch labels only when the pad is forced on or this is a touch device.
-    const mode = s?.input.touch ?? 'auto';
-    const touchDevice = typeof navigator !== 'undefined' && (navigator.maxTouchPoints ?? 0) > 0;
-    const touchOn = mode === 'on' || (mode === 'auto' && touchDevice);
-    const parts = action.split('+').map((a) => a.trim().replace(' (hold)', ''));
-    const one = (a: string): string => {
+  private currentScheme(): ControlScheme {
+    return controlScheme(this.game);
+  }
+
+  /**
+   * How a guide row names its control: always the ability first ("JUMP", "HOLD RUN",
+   * "DOWN + JUMP"), then with a keyboard or pad the real bound keys ("JUMP (Z)",
+   * "RUN (HOLD X)", "MOVE (D-PAD)"). Never a bare button letter.
+   */
+  keyLabel(action: GuideAction, caption?: string): string {
+    const parts = action.replace(' (hold)', '').split('+');
+    const hold = action.endsWith('(hold)') ? 'HOLD ' : '';
+    const own = (a: string) => a === 'attack' || a === 'special' || a === 'select';
+    const ability = parts.map((a) => (own(a) && caption) || ABILITY[a] || a.toUpperCase()).join(' + ');
+    if (this.scheme === 'touch') return fontText(hold + ability);
+    const key = (a: string): string => {
       if (a === 'left/right') {
-        const l = b?.keyboard.left[0];
-        const r = b?.keyboard.right[0];
-        return `${l ? describeCode(l) : 'LEFT'}/${r ? describeCode(r) : 'RIGHT'}`;
+        if (this.scheme === 'gamepad') return 'D-PAD';
+        const l = boundKey(this.game, 'left', 0, this.scheme) ?? 'LEFT';
+        const r = boundKey(this.game, 'right', 0, this.scheme) ?? 'RIGHT';
+        return `${l}/${r}`;
       }
-      const kb = b?.keyboard[a as keyof typeof b.keyboard]?.[0];
-      const pad = b?.gamepad[a as keyof typeof b.gamepad]?.[0];
-      const bits = [kb ? describeCode(kb) : a.toUpperCase()];
-      if (pad) bits.push(`(${describePad(pad)})`);
-      if (touchOn && TOUCH[a]) bits.push(`TOUCH ${TOUCH[a]}`);
-      return bits.join(' ');
+      return boundKey(this.game, a as Action, 0, this.scheme) ?? a.toUpperCase();
     };
-    const hold = action.endsWith('(hold)') ? ' HOLD' : '';
-    return fontText(parts.map(one).join(' + ') + hold);
+    const keys = hold + parts.map(key).join(' + ');
+    return fontText(keys === ability ? ability : `${ability} (${keys})`);
   }
 
   private buildPages(): { title: string; lines: string[] }[] {
     const g = this.def.guide;
+    const touch = this.scheme === 'touch';
     const pages: { title: string; lines: string[] }[] = [];
+    // One entry per control, "KEY - what it does", naming only the scheme in use.
     const controls: string[] = [];
     for (const c of g.controls) {
-      controls.push(`${this.bindingLabel(c.action)}:`);
-      for (const l of wrapText(c.does, COLS - 2)) controls.push(`  ${l}`);
+      const does = (touch && c.touchDoes) || c.does;
+      controls.push(...wrapHanging(`${this.keyLabel(c.action, c.touch)} - ${does}`, COLS));
     }
     pages.push({ title: 'CONTROLS', lines: controls });
     const power: string[] = [];
     const names = { mushroom: 'MUSHROOM', flower: 'FIRE FLOWER', star: 'STAR', drops: 'ENEMY DROPS' };
-    for (const pu of g.powerups) {
-      power.push(`${names[pu.item]}:`);
-      for (const l of wrapText(pu.does, COLS - 2)) power.push(`  ${l}`);
-    }
+    for (const pu of g.powerups) power.push(...wrapHanging(`${names[pu.item]} - ${pu.does}`, COLS));
     pages.push({ title: 'POWER-UPS', lines: power });
     if (g.belt?.length || g.tips?.length) {
       const belt: string[] = [];
       if (g.belt?.length) {
-        for (const l of wrapText(
-          `${this.bindingLabel('select')} cycles, ${this.bindingLabel('special')} uses:`,
-          COLS,
-        ))
-          belt.push(l);
-        for (const t of g.belt) {
-          belt.push(fontText(`${t.name}${t.cost ? ` (${t.cost})` : ''}:`));
-          for (const l of wrapText(t.does, COLS - 2)) belt.push(`  ${l}`);
-        }
+        // The controls page says which button uses the pick.
+        const sel = g.controls.find((c) => c.action === 'select');
+        const head = `${this.keyLabel('select', sel?.touch)} picks one of these:`;
+        belt.push(...wrapText(head, COLS));
+        for (const t of g.belt)
+          belt.push(...wrapHanging(`${t.name}${t.cost ? ` (${t.cost})` : ''} - ${t.does}`, COLS));
       }
       if (g.tips?.length) {
         if (belt.length) belt.push('');
-        for (const tip of g.tips) for (const l of wrapText(`> ${tip}`, COLS)) belt.push(l);
+        for (const tip of g.tips) belt.push(...wrapHanging(`> ${tip}`, COLS));
       }
       pages.push({ title: g.belt?.length ? 'TOOL BELT' : 'TIPS', lines: belt });
     }
     return pages;
+  }
+
+  /** Every page's title and lines, as drawn (tests read the text through this). */
+  get text(): string[] {
+    return this.pages.flatMap((p) => [p.title, ...p.lines]);
+  }
+
+  /** A and right turn the page, B and Select leave (Start also turns: no need for a second NEXT). */
+  touchLabels(): TouchLabels {
+    return { jump: 'NEXT', attack: 'BACK', special: null, start: null, select: null };
   }
 
   enter(): void {
@@ -225,8 +240,21 @@ export class GuideScene implements Scene {
     this.announce();
   }
 
+  /** The footer: the back button in the scheme in use. */
+  get backHint(): string {
+    return abilityHint(this.game, 'BACK', 'attack');
+  }
+
   update(input: InputFrame): void {
     this.t++;
+    // A pad plugged in (or the touch pad turned on) rewrites the pages for it.
+    const scheme = this.currentScheme();
+    if (scheme !== this.scheme) {
+      this.scheme = scheme;
+      this.pages = this.buildPages();
+      this.page = Math.min(this.page, this.pages.length - 1);
+      this.scroll = 0;
+    }
     // Demo sprite: advance the walk cycle and cycle poses.
     this.demoFrame++;
     if (this.demo.anim === 'walk' && this.demoFrame % 6 === 0)
@@ -280,6 +308,6 @@ export class GuideScene implements Scene {
     const rows = pg.lines.slice(this.scroll, this.scroll + ROWS);
     rows.forEach((l, i) => r.text(font, l.slice(0, COLS), PAGE_X, TEXT_Y + i * 9));
     if (this.scroll + ROWS < pg.lines.length) r.text(font, 'MORE...', 192, 226);
-    if ((this.t >> 5) % 2 === 0) r.text(font, 'B: BACK', 8, 226);
+    if ((this.t >> 5) % 2 === 0) r.text(font, this.backHint, 8, 226);
   }
 }

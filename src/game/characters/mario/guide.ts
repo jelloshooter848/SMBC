@@ -5,11 +5,15 @@ export function plumberGuide(name: string, note: string): CharacterGuide {
   return {
     tagline: `${name}: ${note}`,
     controls: [
-      { action: 'left/right', does: 'Walk. Speed builds up, and he skids when you turn.' },
-      { action: 'attack (hold)', does: 'Run. A running jump goes higher and further.' },
-      { action: 'jump', does: 'Jump. Hold it to go higher, let go to drop sooner.' },
-      { action: 'down', does: 'Crouch when big. Slide down a pipe that leads somewhere.' },
-      { action: 'attack', does: 'Throw a fireball when you have the flower. Two on screen.' },
+      {
+        action: 'left/right',
+        does: 'Walk. Speed builds up, turning skids.',
+        touchDoes: 'Walk. Push far to run.',
+      },
+      { action: 'attack (hold)', touch: 'RUN', does: 'Run. Running jumps go higher and further.' },
+      { action: 'jump', does: 'Jump. Hold for higher, let go to drop sooner.' },
+      { action: 'down', does: 'Crouch when big. Enter a pipe that leads somewhere.' },
+      { action: 'attack', touch: 'FIRE', does: 'With the flower: throw a fireball, two at a time.' },
     ],
     powerups: [
       { item: 'mushroom', does: 'Grow big: take one hit without dying and break bricks with your head.' },

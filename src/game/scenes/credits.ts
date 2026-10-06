@@ -3,6 +3,8 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { World } from '../world/world';
 
 /** Our credits (the original's GameTextMessages.CREDITS_* credit its own team; these credit ours). */
@@ -87,6 +89,11 @@ export class CreditsScene implements Scene {
   get tailY(): number {
     const natural = SCREEN_H + CREDITS.length * LINE - this.scroll;
     return Math.max(natural, (SCREEN_H - CREDITS_TAIL.length * LINE) / 2);
+  }
+
+  /** Start speeds the roll up (once). */
+  touchLabels(): TouchLabels {
+    return { ...NO_TOUCH_BUTTONS, start: this.fast || this.finished ? null : 'FASTER' };
   }
 
   update(input: InputFrame): void {

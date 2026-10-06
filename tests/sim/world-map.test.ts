@@ -323,9 +323,7 @@ describe('world map scene', () => {
     expect(p2Pick).toBeInstanceOf(CharacterSelectScene);
     expect(p2Pick).not.toBe(p1Pick);
     h.idle(12);
-    h.tap('jump', 0); // player one can't confirm player two's pick
-    expect(h.game.scenes.top).toBe(p2Pick);
-    h.tap('right', 1); // Luigi → Link
+    h.tap('right', 1); // Luigi → Link, on player two's own device
     h.tap('jump', 1);
     expect(h.game.scenes.top).toBeInstanceOf(IntroScene);
     expect(h.game.state.character).toBe(MARIO);

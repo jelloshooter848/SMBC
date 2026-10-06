@@ -10,6 +10,8 @@ import { carriedKit } from '../entities/player';
 import { startHp } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
+import type { TouchLabels } from '@engine/input/touch';
+import { levelTouchLabels } from '../touch-labels';
 
 export type LevelStart = WorldStart;
 
@@ -61,6 +63,11 @@ export class LevelScene implements Scene {
     this.world.update(inputs);
     this.syncState();
     for (const ev of this.world.events.splice(0)) this.handle(ev);
+  }
+
+  /** Player 1's hero decides the buttons: touch input only ever drives player 1. */
+  touchLabels(): TouchLabels {
+    return levelTouchLabels(this.world.players[0], this.world);
   }
 
   /** Mirror the player's power state into the carried game state. */

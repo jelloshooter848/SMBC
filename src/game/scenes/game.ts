@@ -1,4 +1,5 @@
 import { SceneStack } from '@engine/scene';
+import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { GameContext, GameState } from '../context';
 import { newGameState } from '../context';
@@ -24,6 +25,8 @@ import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress } from '../map/types';
 import { clearLevel, entryLevel, isOpen, isWorldOpen, newMapProgress, warpTo } from '../map/rules';
 import { mapPage } from '@content/worldmap';
+import { abilityHint } from './hints';
+import { fontText } from '../hud/text';
 import {
   loadSave,
   saveFromState,
@@ -50,7 +53,14 @@ export interface GameDeps {
   canvas?: HTMLCanvasElement;
   overlay?: HTMLElement;
   viewport?: Viewport;
+  /** The controls the player is using, so the guides show only that scheme (wired by main). */
+  controlScheme?: () => ControlScheme;
+  /** The last kind of input used (touch, or keys / gamepad), so touch menus never offer Off. */
+  lastInput?: () => LastInput;
 }
+
+/** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
+export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 
 /** Orchestrates scenes and carries GameState between levels. */
 export class Game {
@@ -169,7 +179,7 @@ export class Game {
         this.scenes.push(
           new MessageScene(
             this,
-            [...page, '', 'PRESS START'],
+            [...page, '', fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`)],
             () => (warped ? this.showTitle() : this.goToLevel('ll-9-1-start', { mode: 'stand' })),
             1800,
             ['start', 'attack', 'jump'], // as the card, plus A
@@ -215,14 +225,21 @@ export class Game {
 
   /**
    * A level node picked on the map: character select with the current hero preselected (keeping
-   * it keeps its power; a different hero starts from its default), then player two's own pick in
-   * co-op, then the level (its intro scene when it has one). Back returns to the map.
+   * it keeps its power; a different hero starts from its default), then player two's own pick on
+   * a two-player file, then the level (its intro scene when it has one). A file stays one- or
+   * two-player as created. The picks apply only once the level starts, and are saved to the file
+   * so the map and the file select show them; Back from either pick returns to the map unchanged.
    */
   enterLevelFromMap(levelId: string): void {
     const s = this.state;
+    let hero = s.character;
+    let hero2 = s.character2;
     const back = () => this.scenes.pop();
     const go = () => {
+      if (hero !== s.character) this.setHero(0, hero);
+      if (hero2 && hero2 !== s.character2) this.setHero(1, hero2);
       s.checkpoint = null;
+      this.autosave();
       this.deps.ctx.audio.stopMusic();
       this.goToLevel(entryLevel(levelId, this.deps.getLevel), { mode: 'stand' });
     };
@@ -231,7 +248,8 @@ export class Game {
         player,
         current: player === 1 ? (s.character2 as CharacterDef) : s.character,
         onPick: (c) => {
-          if (c !== (player === 1 ? s.character2 : s.character)) this.setHero(player, c);
+          if (player === 1) hero2 = c;
+          else hero = c;
           then();
         },
         onCancel: back,
