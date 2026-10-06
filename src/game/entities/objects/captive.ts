@@ -135,10 +135,5 @@ export class FreedPuff extends Entity {
       const col = i % 2 === 0 ? '#fcfcfc' : '#f8d878';
       r.rect(Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d), size, size, col);
     }
-    // A soft cloud in the middle for the first few frames.
-    if (this.age < 10) {
-      const c = 6 - (this.age >> 1);
-      r.rect(cx - c, cy - c, c * 2, c * 2, '#bcbcbc');
-    }
   }
 }

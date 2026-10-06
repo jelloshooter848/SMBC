@@ -235,6 +235,11 @@ describe('the captive Luigi in the 1-1 bonus room', () => {
     standByLuigi(h, l);
     expect(c.prompt).toBe(true);
     expect(draw(l).texts.some((t) => t.str === 'TALK')).toBe(true);
+    // Talking hides it under the dialogue box.
+    h.tap('up');
+    expect(h.top()).not.toBe(l);
+    expect(c.prompt).toBe(false);
+    expect(draw(l).texts.some((t) => t.str === 'TALK')).toBe(false);
   });
 
   it('a scripted Mario can reach talking range from where he falls in', () => {

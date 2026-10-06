@@ -758,6 +758,7 @@ export class World {
       if (!(inputs[i] ?? NO_INPUT).pressed('up') || p.vine) continue;
       const c = this.entities.find((e): e is Captive => e instanceof Captive && e.alive && e.inReach(p));
       if (c) {
+        c.prompt = false; // hidden under the dialogue; back on the next update in reach
         this.events.push({ type: 'talk', hero: c.hero.id, player: i });
         return;
       }
