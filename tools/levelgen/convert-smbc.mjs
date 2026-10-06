@@ -176,8 +176,8 @@ const THEME_MUSIC = {
   'castle-water': 'water',
 };
 
-// Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6); the Clock item (time bonus)
-// is not modelled and becomes a plain coin block.
+// Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6). A Clock in a `?` block is
+// `Q` (see tileChar); in a brick or hidden block (none on normal difficulty) it stays a coin.
 const ITEM_BRICK = {
   Coin: 'E',
   MultiCoin: 'C',
@@ -188,7 +188,7 @@ const ITEM_BRICK = {
   PoisonMushroom: '5',
   Clock: 'E',
 };
-const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*', PoisonMushroom: '4', Clock: '?' };
+const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*', PoisonMushroom: '4', Clock: 'Q' };
 const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Clock: '2' };
 const MARKERS = {
   enemyGoomba: 'g',
@@ -231,6 +231,41 @@ const LIFTS = {
   ConstantRise: 'lift-up',
   StepConstantRight: 'lift-right',
 };
+/**
+ * The original's half-tile nudges. `Level.as` reads `shiftRight` / `shiftUp` per object
+ * (PROP_SHIFT_RIGHT / PROP_SHIFT_UP, lines 791-794) and, once the object is placed, moves it
+ * `TILE_SIZE*.5` right / up (lines 1254-1257): 16 Flash px, 8 px at our scale. Our maps keep
+ * whole-tile coordinates (`tileToSub` cannot hold half tiles), so the nudge becomes pixel props
+ * `dx=8` / `dy=-8` on the entity line, which `World.makeEntity` and `Lift` add to the spawn.
+ * Only types whose spawn reads them get them: piranhas (centred on their pipe), Bowser (centred on
+ * his two columns), pipes, the midpoint and the start are already placed where the shifted
+ * original object is, and bowserFireBallStart ignores the token in the original (line 1153).
+ */
+const SHIFTABLE = new Set([
+  'goomba',
+  'koopa-green',
+  'koopa-red',
+  'koopa-para-red',
+  'koopa-para-green',
+  'koopa-para-green-h',
+  'cheep-red',
+  'cheep-grey',
+  'blooper',
+  'hammer-bro',
+  'hammer-bro-chase',
+  'buzzy',
+]);
+const shiftProps = (params) => ({
+  ...(params.shiftRight ? { dx: 8 } : {}),
+  ...(params.shiftUp ? { dy: -8 } : {}),
+});
+/** Entity props with the shift nudge appended (undefined when there are none). */
+function withShift(type, params, props) {
+  const shift = SHIFTABLE.has(type) ? shiftProps(params) : {};
+  const all = { ...props, ...shift };
+  return Object.keys(all).length ? all : undefined;
+}
+
 const IGNORED = new Set([
   'flag',
   'colorRed',
@@ -447,16 +482,21 @@ function convertArea(level, area, id, levels) {
         if (ch) {
           // Water and lava are a background layer: they never cover a tile (9-1's flag ball).
           if ((ch === 'w' || ch === '~') && b.rows[y][x] !== '.') continue;
+          // Two `?` blocks on one cell (Lost Levels 9-1, 24,9 on normal: a Clock block and a
+          // coin block; Level.as builds one ItemBlock per token): `Q` is that pair.
+          if (ch === '?' && b.rows[y][x] === 'Q') continue;
+          if (ch === 'Q' && !tokensAt(area, x, y).some((t) => tileChar(t, area, world) === '?'))
+            console.warn(`${id}: Clock block at ${x},${y} without a coin block: becomes Q`);
           b.set(x, y, ch);
           if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
           continue;
         }
         if (MARKERS[name]) {
-          cellMarkers.push(MARKERS[name]);
+          cellMarkers.push({ m: MARKERS[name], props: withShift(MARKER_TYPES[MARKERS[name]], params) });
           continue;
         }
         if (ENTITIES[name]) {
-          b.entity(ENTITIES[name], x, y);
+          b.entity(ENTITIES[name], x, y, withShift(ENTITIES[name], params));
           continue;
         }
         switch (name) {
@@ -539,6 +579,16 @@ function convertArea(level, area, id, levels) {
             const props = { len };
             if (kind === 'lift-h') props.range = 3;
             if (kind === 'lift-v') props.range = 6;
+            // The original centres a lift on its cell: Level.as places a Platform at
+            // `currentX + TILE_SIZE/2`, `currentY` (lines 1205-1207), and the platform clip's HRect
+            // (Platform.setColPoints, hMidX = x) spans -w/2..w/2 around it with its top at y in
+            // every width frame. Ours is placed by its top-left corner, so `dx` moves it from the
+            // cell's left edge to `8 - len*4` px (half the cell minus half the lift), plus the
+            // shift nudges above: the lift's centre is then the original's x, its top the
+            // original's y.
+            const dx = 8 - len * 4 + (params.shiftRight ? 8 : 0);
+            if (dx) props.dx = dx;
+            if (params.shiftUp) props.dy = -8;
             b.entity(kind, x, y, props);
             break;
           }
@@ -580,7 +630,9 @@ function convertArea(level, area, id, levels) {
           case 'halfwayPoint':
             // LOCKED_CP levels (castles, SMB1 World 8, Lost Levels 7-4 to 8-4) have no halfway
             // start on normal difficulty in the original (Level.as shouldStartAtCheckPoint).
-            if (level.attrs.LOCKED_CP !== 'True') b.zone(`checkpoint ${x}`);
+            // The row is kept: the respawn puts the feet on the bottom of the midpoint's cell
+            // (Level.as hwPnt = currentY + TILE_SIZE, lines 1068-1072); ll-5-3's is on row 9.
+            if (level.attrs.LOCKED_CP !== 'True') b.zone(`checkpoint ${x} ${y}`);
             break;
           case 'levelExit':
             levelExit = { x, y };
@@ -634,9 +686,10 @@ function convertArea(level, area, id, levels) {
             if (!IGNORED.has(name)) skip(name);
         }
       }
-      for (const m of cellMarkers) {
-        if (b.rows[y][x] === '.' && m === cellMarkers[0]) b.set(x, y, m);
-        else b.entity(MARKER_TYPES[m], x, y);
+      // A shifted enemy needs its nudge props, so it gets an entity line too.
+      for (const c of cellMarkers) {
+        if (b.rows[y][x] === '.' && c === cellMarkers[0] && !c.props) b.set(x, y, c.m);
+        else b.entity(MARKER_TYPES[c.m], x, y, c.props);
       }
     }
   }

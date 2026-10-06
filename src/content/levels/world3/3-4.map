@@ -43,7 +43,7 @@ podoboo 88 12
 podoboo 97 12
 podoboo 103 12
 podoboo 109 12
-lift-h 136 6 len=4 range=3
+lift-h 136 6 len=4 range=3 dx=-8
 bowser 136 9
 axe 141 8
 toad 153 12

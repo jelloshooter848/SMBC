@@ -29,14 +29,14 @@ camera: scroll
 
 [entities]
 decor-castle 0 12
-lift-h 21 10 len=4 range=3
-lift-h 28 10 len=4 range=3
+lift-h 21 10 len=4 range=3 dx=-8
+lift-h 28 10 len=4 range=3 dx=-8
 lift-h 44 11 len=4 range=3
 koopa-para-red 45 6
 koopa-para-red 48 4
 piranha 51 4 red=1
-lift-h 85 10 len=4 range=3
-lift-h 92 10 len=4 range=3
+lift-h 85 10 len=4 range=3 dx=-8
+lift-h 92 10 len=4 range=3 dx=-8
 lift-h 108 11 len=4 range=3
 koopa-para-red 109 6
 koopa-para-red 112 4
@@ -52,14 +52,14 @@ lift-fall 222 7 len=4
 koopa-para-red 224 6
 lift-fall 227 8 len=4
 lift-fall 232 9 len=4
-lift-fall 241 9 len=4
-koopa-para-red 242 7
+lift-fall 241 9 len=4 dx=-8
+koopa-para-red 242 7 dx=8
 lift-fall 244 6 len=4
 piranha 248 5 red=1
 decor-castle 261 12
 
 [zones]
-checkpoint 151
+checkpoint 151 12
 loop 128 0 14 -> 64
 exit 257 next=ll-7-3
 pipe 51 4 down -> ll-7-2-bonus 1 0 exit=none

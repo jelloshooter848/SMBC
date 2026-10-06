@@ -144,7 +144,7 @@ describe('Lost Levels 5-1', () => {
     expect(tile(l, 361, 2)).toBe(T.FLAG_BALL);
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 365, y: 12 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 361, next: 'll-5-2-intro' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 210 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 210, y: 12 });
   });
 });
 
@@ -328,7 +328,7 @@ describe('Lost Levels 5-3', () => {
     expect(tile(l, 253, 2)).toBe(T.FLAG_BALL);
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 257, y: 12 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 255, next: 'll-5-4' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 154 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 154, y: 9 });
   });
 });
 

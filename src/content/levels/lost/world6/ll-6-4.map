@@ -47,8 +47,8 @@ piranha 166 9 red=1
 firebar 176 9
 lift-h 182 13 len=4 range=3
 firebar-ccw 185 9
-lift-down 188 5 len=3
-lift-down 188 13 len=3
+lift-down 188 5 len=3 dx=-4
+lift-down 188 13 len=3 dx=-4
 podoboo 196 12
 firebar-ccw 208 9
 piranha-down 219 6 red=1
@@ -58,8 +58,8 @@ piranha 230 9 red=1
 firebar 240 9
 lift-h 246 13 len=4 range=3
 firebar-ccw 249 9
-lift-down 252 5 len=3
-lift-down 252 13 len=3
+lift-down 252 5 len=3 dx=-4
+lift-down 252 13 len=3 dx=-4
 podoboo 260 12
 firebar-ccw 272 9
 piranha-down 283 6 red=1

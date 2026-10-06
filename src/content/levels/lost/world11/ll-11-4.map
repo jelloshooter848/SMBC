@@ -31,7 +31,7 @@ BBBB............ ......%%%%%%%%%% %%%B............ %%%%%%%%%%%%%%%% .....%%%%%%%
 piranha 19 11 red=1
 firebar 35 8
 firebar-ccw 45 9
-lift-h 66 10 len=4 range=3
+lift-h 66 10 len=4 range=3 dx=-8
 firebar 81 8
 piranha 97 10 red=1
 firebar 113 8

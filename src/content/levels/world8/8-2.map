@@ -35,16 +35,16 @@ koopa-para-green 22 6
 koopa-para-green 57 10
 koopa-para-green 66 10
 koopa-para-green 69 10
-koopa-para-green 92 10
-koopa-para-green 95 11
+koopa-para-green 92 10 dy=-8
+koopa-para-green 95 11 dy=-8
 piranha 131 11
 koopa-para-green 139 12
 piranha 142 11
 piranha 156 9
 piranha 163 11
-koopa-para-green 170 10
-koopa-para-green 172 11
-koopa-para-green 175 8
+koopa-para-green 170 10 dy=-8
+koopa-para-green 172 11 dy=-8
+koopa-para-green 175 8 dy=-8
 koopa-para-green 203 5
 decor-castle 220 12
 

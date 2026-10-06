@@ -35,7 +35,7 @@ firebar 67 6
 firebar 76 9
 firebar 84 9
 firebar 88 4
-lift-h 136 6 len=4 range=3
+lift-h 136 6 len=4 range=3 dx=-8
 bowser 136 9
 axe 141 8
 toad 153 12

@@ -35,7 +35,7 @@ blooper 25 12
 koopa-para-green 35 10
 piranha 35 11 red=1
 koopa-para-green-h 40 8
-lift-h 41 13 len=4 range=3
+lift-h 41 13 len=4 range=3 dx=-8
 firebar-ccw 53 9 len=12
 piranha 67 11 red=1
 piranha 83 11 red=1
@@ -43,7 +43,7 @@ blooper 89 12
 koopa-para-green 99 10
 piranha 99 11 red=1
 koopa-para-green-h 104 8
-lift-h 105 13 len=4 range=3
+lift-h 105 13 len=4 range=3 dx=-8
 firebar-ccw 117 9 len=12
 koopa-para-red 195 8
 koopa-para-green-h 199 8

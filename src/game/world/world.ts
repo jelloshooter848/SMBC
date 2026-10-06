@@ -54,7 +54,7 @@ export type WorldEvent =
   | { type: 'exit'; next: string }
   /** `player`: index of the player whose death ended the attempt (they pick the next hero). */
   | { type: 'died'; player?: number }
-  | { type: 'checkpoint'; x: number }
+  | { type: 'checkpoint'; x: number; y: number }
   /** The castle maze moved the players from column `from` to `to` (informational). */
   | { type: 'loop'; from: number; to: number };
 
@@ -280,8 +280,9 @@ export class World {
   }
 
   private makeEntity(s: EntitySpawn): Entity | null {
-    const x = tileToSub(s.x);
-    const y = tileToSub(s.y);
+    // `dx` / `dy`: the original's half-tile shiftRight / shiftUp nudges, in px (convert-smbc.mjs).
+    const x = tileToSub(s.x) + px(Number(s.props?.dx ?? 0));
+    const y = tileToSub(s.y) + px(Number(s.props?.dy ?? 0));
     switch (s.type) {
       case 'goomba':
         return new Goomba(x + px(2), y + px(2));
@@ -871,6 +872,12 @@ export class World {
         this.spawn(new PowerUp(tx, ty, 'poison'));
         this.audio.sfx('powerup-appear');
         break;
+      case 'clock':
+        // The Clock comes out of its block; the coin block on the same cell is next (T.Q_CLOCK).
+        this.spawn(new PowerUp(tx, ty, 'clock'));
+        this.audio.sfx('powerup-appear');
+        restore = T.Q_COIN;
+        break;
       case 'vine':
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
         this.audio.sfx('vine');
@@ -879,6 +886,23 @@ export class World {
         break;
     }
     this.bump(tx, ty, frame, restore);
+  }
+
+  /**
+   * Any hero's Clock (Character.as, PickupInfo.CLOCK): Clock.SCORE_VALUE = 1000 points and
+   * Clock.TIME_TO_ADD = 100 on the timer; back above the hurry time, the hurry tune ends
+   * (StatManager.checkCancelSecondsLeft).
+   */
+  private collectClock(e: PowerUp): void {
+    this.addScore(1000, e.body.x, e.body.y);
+    this.audio.sfx('powerup');
+    if (this.time === null) return;
+    this.time += 100;
+    if (this.hurryPlayed && this.time > HURRY_TIME) {
+      this.hurryPlayed = false;
+      this.audio.setTempoScale(1);
+      this.audio.playMusic(this.level.music);
+    }
   }
 
   private bump(tx: number, ty: number, frame: string, restore: number): void {
@@ -933,7 +957,8 @@ export class World {
           // the character's onPowerUp.
           if (e.item === 'poison') {
             if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
-          } else p.def.behaviour.onPowerUp(p, e.item, this);
+          } else if (e.item === 'clock') this.collectClock(e);
+          else p.def.behaviour.onPowerUp(p, e.item, this);
         }
       } else if (e instanceof Pickup) {
         if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();
@@ -1259,7 +1284,7 @@ export class World {
         this.players.some((p) => p.body.x >= tileToSub(z.x))
       ) {
         this.checkpointSent = true;
-        this.events.push({ type: 'checkpoint', x: z.x });
+        this.events.push({ type: 'checkpoint', x: z.x, y: z.y ?? 12 });
       }
     }
   }

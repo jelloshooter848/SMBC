@@ -35,7 +35,7 @@ koopa-para-green-h 153 9
 decor-castle-big 228 12
 
 [zones]
-checkpoint 114
+checkpoint 114 12
 exit 226 next=7-4
 cheeps 9 173
 

@@ -241,7 +241,7 @@ describe('Lost Levels B-4', () => {
     expect(l.start).toEqual({ x: 1, y: 6 });
     expect(where(l, 'firebar')).toEqual(['35,8', '81,8', '113,8', '145,8', '177,8', '203,9']);
     expect(where(l, 'firebar-ccw')).toEqual(['45,9']);
-    expect(l.entities).toContainEqual({ type: 'lift-h', x: 66, y: 10, props: { len: 4, range: 3 } });
+    expect(l.entities).toContainEqual({ type: 'lift-h', x: 66, y: 10, props: { len: 4, range: 3, dx: -8 } });
     expect(tile(l, 34, 10)).toBe(T.BRICK_POWERUP);
     expect(l.entities).toContainEqual({ type: 'bowser', x: 231, y: 9, props: { attack: 'hammer' } });
     expect(where(l, 'axe')).toEqual(['237,8']);

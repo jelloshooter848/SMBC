@@ -106,7 +106,8 @@ export type Zone =
       need: 'all' | 'any';
     }
   | { kind: 'warp'; x: number; w: number; worlds: number[]; text?: string }
-  | { kind: 'checkpoint'; x: number }
+  /** `y`: the midpoint's row; the respawn stands on the bottom of it (row 12 when left out). */
+  | { kind: 'checkpoint'; x: number; y?: number }
   | { kind: 'exit'; x: number; next: string }
   | { kind: 'scrollStop'; x: number }
   | { kind: 'text'; x: number; y: number; text: string; triggerX: number };

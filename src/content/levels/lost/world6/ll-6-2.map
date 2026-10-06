@@ -30,19 +30,19 @@ wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww Bwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwBB
 [entities]
 blooper 21 12
 blooper 26 12
-cheep-red 33 7
-cheep-red 37 9
+cheep-red 33 7 dx=8 dy=-8
+cheep-red 37 9 dy=-8
 blooper 38 10
 cheep-grey 39 10
-cheep-grey 40 7
+cheep-grey 40 7 dx=8
 blooper 43 11
-cheep-grey 54 12
+cheep-grey 54 12 dx=8 dy=-8
 cheep-red 58 3
 cheep-grey 61 5
 blooper 63 12
-lift-down 71 5 len=4
-lift-down 71 10 len=4
-cheep-red 72 5
+lift-down 71 5 len=4 dx=-8
+lift-down 71 10 len=4 dx=-8
+cheep-red 72 5 dx=8 dy=-8
 cheep-red 75 11
 cheep-red 78 6
 cheep-red 91 3
@@ -51,25 +51,25 @@ lift-down 91 12 len=4
 cheep-grey 95 7
 blooper 97 12
 blooper 104 9
-cheep-red 108 9
+cheep-red 108 9 dx=8 dy=-8
 cheep-red 114 4
-cheep-grey 119 5
+cheep-grey 119 5 dx=8 dy=-8
 blooper 119 12
 cheep-red 124 10
 cheep-red 129 11
 koopa-para-green-h 138 8
 cheep-red 144 8
 cheep-red 147 5
-cheep-red 150 5
-lift-down 162 4 len=4
-lift-down 162 9 len=4
+cheep-red 150 5 dy=-8
+lift-down 162 4 len=4 dx=-8
+lift-down 162 9 len=4 dx=-8
 blooper 167 8
-cheep-red 169 10
+cheep-red 169 10 dy=-8
 blooper 175 9
 koopa-para-red 180 8
 cheep-grey 184 6
 blooper 187 10
 
 [zones]
-checkpoint 114
+checkpoint 114 12
 pipe 189 8 right -> ll-6-2-exit 3 10 exit=up

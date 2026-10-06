@@ -32,7 +32,7 @@ decor-castle 0 12
 decor-castle-big 228 12
 
 [zones]
-checkpoint 113
+checkpoint 113 12
 exit 226 next=2-4
 cheeps 9 173
 

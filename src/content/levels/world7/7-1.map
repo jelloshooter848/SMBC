@@ -32,7 +32,7 @@ decor-castle-big -2 12
 koopa-para-green 26 11
 koopa-para-green 44 10
 koopa-para-green 53 11
-koopa-para-green 65 12
+koopa-para-green 65 12 dy=-8
 piranha 76 10
 piranha 93 10
 piranha 109 10
@@ -41,7 +41,7 @@ piranha 128 11
 decor-castle 183 12
 
 [zones]
-checkpoint 98
+checkpoint 98 12
 exit 179 next=7-2-intro
 pipe 93 10 down -> 7-1-bonus 1 0 exit=none
 

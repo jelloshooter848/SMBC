@@ -44,7 +44,7 @@ piranha 176 9 red=1
 decor-castle 204 12
 
 [zones]
-checkpoint 114
+checkpoint 114 12
 exit 200 next=ll-4-2
 vine 170 5 -> ll-4-1-sky 4 14
 pipe 152 6 down -> ll-4-1-water 1 1 exit=none

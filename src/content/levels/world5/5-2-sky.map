@@ -30,7 +30,7 @@ parent: 5-2
 
 [entities]
 vine 4 14 len=8
-lift-right 17 10 len=6
+lift-right 17 10 len=6 dx=-16
 
 [zones]
 pit 0 -> 5-2 130 0

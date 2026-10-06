@@ -4,8 +4,11 @@ import { Entity, type View } from '../entity';
 import { moveX } from '../body';
 import type { World } from '../../world/world';
 
-/** `poison` (Lost Levels) slides like a mushroom but hurts on touch (see World.collisions). */
-export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star' | 'poison';
+/**
+ * `poison` (Lost Levels) slides like a mushroom but hurts on touch; `clock` (Lost Levels) stays
+ * on its block like a flower and adds time (both handled in World.collisions).
+ */
+export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star' | 'poison' | 'clock';
 
 /** An item rising out of a block, then behaving per kind. */
 export class PowerUp extends Entity {
@@ -33,12 +36,14 @@ export class PowerUp extends Entity {
       if (this.emerging === 0) {
         b.y = this.targetY;
         this.layer = 'main';
-        if (this.item !== 'flower') b.vx = 0x01000;
+        if (this.item !== 'flower' && this.item !== 'clock') b.vx = 0x01000;
         if (this.item === 'star') b.vy = -0x04000;
       }
       return;
     }
-    if (this.item === 'flower') return;
+    // The original's Clock (pickups/Clock.as) is a plain Pickup: it rises out of the block and
+    // stays there (defyGrav, vy = 0 in Pickup.exitBrickEnd), like the flower.
+    if (this.item === 'flower' || this.item === 'clock') return;
     moveX(b, world.map, velToSub(b.vx));
     if (b.hitWall !== 0) b.vx = -b.hitWall * 0x01000;
     this.fall(world, this.item === 'star' ? 0x00300 : undefined);

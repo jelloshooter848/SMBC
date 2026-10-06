@@ -83,7 +83,7 @@ export class LevelScene implements Scene {
     const game = this.game;
     switch (ev.type) {
       case 'checkpoint':
-        game.state.checkpoint = { level: this.level.id, x: ev.x };
+        game.state.checkpoint = { level: this.level.id, x: ev.x, y: ev.y };
         break;
       case 'pipe': {
         const target = game.deps.getLevel(ev.target.level);
@@ -145,7 +145,8 @@ export class LevelScene implements Scene {
           game.gameOver(mainLevel, ev.player ?? 0);
           return;
         }
-        const start: LevelStart = cp ? { x: cp.x, y: 12, mode: 'stand' } : { mode: 'stand' };
+        // Feet on the bottom of the midpoint's row (Level.as hwPnt, startAtHalfwayPoint).
+        const start: LevelStart = cp ? { x: cp.x, y: cp.y ?? 12, mode: 'stand' } : { mode: 'stand' };
         // Through character select first (Game.respawn), as in the original.
         game.respawn(mainLevel, start, ev.player ?? 0);
         break;

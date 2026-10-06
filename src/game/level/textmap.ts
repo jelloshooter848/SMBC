@@ -38,9 +38,10 @@ function parseProps(parts: string[]): Props {
  *   [legend]              optional overrides: `X tile-name` or `X @entity`
  *   [tiles]               15 rows; spaces and `;;` comments are stripped, so rows can be
  *                         written as space-separated 16-column screens
- *   [entities]            `type x y key=val ...`
+ *   [entities]            `type x y key=val ...` (`dx=` / `dy=`: a pixel nudge off the tile,
+ *                         e.g. the original's half-tile shiftRight / shiftUp)
  *   [zones]               `pipe x y dir -> level x y [exit=dir]`, `exit x next=id`,
- *                         `checkpoint x`, `scrollStop x`, `warp x w worlds=4,3,2`, `text x y triggerX "..."`,
+ *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2`, `text x y triggerX "..."`,
  *                         `bowser-fire x`
  *   [decor]               `kind x y`
  */
@@ -246,7 +247,10 @@ function parseZone(line: string): Zone {
       return { kind: 'exit', x: Number(xs), next: props.next };
     }
     case 'checkpoint':
-      return { kind: 'checkpoint', x: Number(parts[1]) };
+      // checkpoint x [y]
+      return parts[2] === undefined
+        ? { kind: 'checkpoint', x: Number(parts[1]) }
+        : { kind: 'checkpoint', x: Number(parts[1]), y: Number(parts[2]) };
     case 'scrollStop':
       return { kind: 'scrollStop', x: Number(parts[1]) };
     case 'warp': {
@@ -357,7 +361,7 @@ function serializeZone(z: Zone): string {
         z.checks.length ? ` check=${z.checks.map((c) => `${c.x}:${c.y0}:${c.y1}`).join(',')}` : ''
       }${z.need === 'any' ? ' any' : ''}`;
     case 'checkpoint':
-      return `checkpoint ${z.x}`;
+      return `checkpoint ${z.x}${z.y === undefined ? '' : ` ${z.y}`}`;
     case 'scrollStop':
       return `scrollStop ${z.x}`;
     case 'warp':

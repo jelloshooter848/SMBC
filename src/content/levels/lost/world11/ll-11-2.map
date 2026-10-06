@@ -30,36 +30,36 @@ wwwwwwwwwwwwwwww BBBBBBBBBBBBBBBB wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww BBBBBBBBBBBB
 [entities]
 blooper 34 7
 cheep-red 41 10
-cheep-grey 44 7
+cheep-grey 44 7 dx=8 dy=-8
 koopa-para-green 47 4
 blooper 54 7
-cheep-red 56 11
+cheep-red 56 11 dx=8
 koopa-green 60 12
-cheep-red 63 4
+cheep-red 63 4 dx=8 dy=-8
 blooper 70 6
 cheep-grey 73 4
 cheep-grey 75 7
-cheep-grey 78 8
+cheep-grey 78 8 dy=-8
 cheep-red 90 5
 cheep-grey 93 4
-cheep-red 96 5
+cheep-red 96 5 dy=-8
 koopa-para-green-h 96 7
 blooper 105 8
 cheep-grey 110 6
-cheep-grey 110 12
+cheep-grey 110 12 dx=8 dy=-8
 blooper 119 6
-cheep-red 120 8
-lift-up 126 3 len=4
-lift-up 126 9 len=4
-cheep-grey 129 3
+cheep-red 120 8 dx=8
+lift-up 126 3 len=4 dx=-8
+lift-up 126 9 len=4 dx=-8
+cheep-grey 129 3 dy=-8
 cheep-grey 135 10
-cheep-red 147 8
+cheep-red 147 8 dx=8 dy=-8
 firebar-ccw 151 7 len=12
-cheep-grey 154 12
-cheep-grey 164 5
+cheep-grey 154 12 dy=-8
+cheep-grey 164 5 dx=8 dy=-8
 blooper 164 7
-koopa-para-red 171 6
-cheep-grey 173 10
+koopa-para-red 171 6 dy=-8
+cheep-grey 173 10 dx=8
 
 [zones]
 pipe 173 8 right -> ll-11-2-exit 3 10 exit=up

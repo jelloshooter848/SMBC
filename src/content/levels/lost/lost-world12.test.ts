@@ -178,7 +178,7 @@ describe('C-2 (ll-12-2): treetop bridges with flying Bloopers, cheeps and bullet
     expect(at(l, 'spring-green')).toEqual([[131, 12]]);
     expect(tile(l, 131, 13)).toBe(T.TREE_TOP);
     expect(l.entities).toContainEqual({ type: 'lift-h', x: 137, y: 13, props: { len: 4, range: 3 } });
-    expect(l.entities).toContainEqual({ type: 'lift-v', x: 160, y: 10, props: { len: 4, range: 6 } });
+    expect(l.entities).toContainEqual({ type: 'lift-v', x: 160, y: 10, props: { len: 4, range: 6, dx: -8 } });
     expect(l.entities).toContainEqual({
       type: 'balance',
       x: 166,
@@ -271,8 +271,8 @@ describe('C-4 (ll-12-4): the castle with elevator shafts, Buzzy Beetles and a ha
       [64, 4],
       [64, 12],
     ]);
-    for (const e of [...of(l, 'lift-down'), ...of(l, 'lift-up')]) expect(e.props).toEqual({ len: 3 });
-    expect(l.entities).toContainEqual({ type: 'lift-h', x: 31, y: 13, props: { len: 4, range: 3 } });
+    for (const e of [...of(l, 'lift-down'), ...of(l, 'lift-up')]) expect(e.props).toEqual({ len: 3, dx: -4 });
+    expect(l.entities).toContainEqual({ type: 'lift-h', x: 31, y: 13, props: { len: 4, range: 3, dx: -8 } });
   });
   it('has ten Buzzy Beetles, three red Koopas, a podoboo and eight fire bars', () => {
     expect(at(l, 'buzzy')).toEqual([

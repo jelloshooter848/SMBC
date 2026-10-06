@@ -130,7 +130,8 @@ describe('Lost Levels 3-1', () => {
       [47, 12],
       [59, 12],
     ]);
-    expect(ofType(l, 'koopa-green').map((e) => e.x)).toEqual([93, 110, 111, 113]);
+    // 111 has the original's shiftRight: an entity line (dx=8), listed before the grid.
+    expect(ofType(l, 'koopa-green').map((e) => e.x)).toEqual([111, 93, 110, 113]);
     expect(ofType(l, 'koopa-para-red').map((e) => [e.x, e.y])).toEqual([
       [57, 9],
       [95, 9],
@@ -191,7 +192,7 @@ describe('Lost Levels 3-1', () => {
     ]);
   });
   it('flag at 186; past it, beyond the castle, a warp pipe back to World 1', () => {
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 97 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 97, y: 12 });
     expect(tile(l, 186, 2)).toBe(T.FLAG_BALL);
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 186, next: 'll-3-2-intro' });
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 190, y: 12 });
@@ -266,7 +267,7 @@ describe('Lost Levels 3-2', () => {
     expect(at(l, 'koopa-para-red')).toEqual([[107, 8]]);
   });
   it('leaves through the side pipe at 189 to the exit area', () => {
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 99 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 99, y: 12 });
     expect(pipeAt(l, 189)).toEqual({
       kind: 'pipe',
       x: 189,
@@ -291,9 +292,9 @@ describe('Lost Levels 3-3', () => {
       { type: 'balance', x: 104, y: 11, props: { x2: 108, y2: 8, len: 6, top: 2 } },
     ]);
     expect(ofType(l, 'lift-fall')).toEqual([
-      { type: 'lift-fall', x: 90, y: 6, props: { len: 6 } },
-      { type: 'lift-fall', x: 139, y: 9, props: { len: 6 } },
-      { type: 'lift-fall', x: 148, y: 8, props: { len: 6 } },
+      { type: 'lift-fall', x: 90, y: 6, props: { len: 6, dx: -16 } },
+      { type: 'lift-fall', x: 139, y: 9, props: { len: 6, dx: -16 } },
+      { type: 'lift-fall', x: 148, y: 8, props: { len: 6, dx: -16 } },
     ]);
   });
   it('has a green springboard, piranhas and Koopas', () => {
@@ -317,7 +318,7 @@ describe('Lost Levels 3-3', () => {
     expect(tile(l, 100, 2)).toBe(T.HIDDEN_POWERUP);
   });
   it('ends at the flag at 186 in front of the big castle', () => {
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 114 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 114, y: 12 });
     expect(tile(l, 186, 2)).toBe(T.FLAG_BALL);
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 188, y: 12 });
     expect(exitOf(l)).toEqual({ kind: 'exit', x: 186, next: 'll-3-4' });

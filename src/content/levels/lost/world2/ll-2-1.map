@@ -38,8 +38,8 @@ piranha 70 12
 piranha 77 12
 piranha 83 11
 piranha 90 12
-lift-h 107 12 len=6 range=3
-lift-h 121 12 len=6 range=3
+lift-h 107 12 len=6 range=3 dx=-16
+lift-h 121 12 len=6 range=3 dx=-16
 piranha 135 10
 koopa-para-green 152 12
 koopa-para-green-h 175 8
@@ -49,7 +49,7 @@ koopa-para-green 211 3
 decor-castle 235 12
 
 [zones]
-checkpoint 130
+checkpoint 130 12
 exit 231 next=ll-2-2
 vine 137 5 -> ll-2-1-sky 4 14
 pipe 70 12 down -> ll-2-1-bonus 1 0 exit=none

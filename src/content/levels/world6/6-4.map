@@ -42,7 +42,7 @@ firebar 84 9
 firebar-ccw 88 4
 firebar 92 9
 podoboo 131 12
-lift-h 136 6 len=4 range=3
+lift-h 136 6 len=4 range=3 dx=-8
 bowser 136 9 attack=hammer
 axe 141 8
 toad 153 12

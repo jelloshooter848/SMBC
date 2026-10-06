@@ -25,9 +25,14 @@ export class Lift extends Entity {
   /** A `lift-right` cloud has been stepped on and is drifting. */
   moving = false;
 
+  /**
+   * Top-left corner at tile (tx, ty), moved by the map's pixel props `dx` / `dy`. The converter
+   * sets them so the lift's centre and top sit where the original's Platform x / y are (centred
+   * on its cell, plus the half-tile shifts: tools/levelgen/convert-smbc.mjs `movingPlatform`).
+   */
   constructor(kind: LiftKind, tx: number, ty: number, props: Record<string, string | number | boolean>) {
     const len = Number(props.len ?? 3);
-    super(px(tx * 16), px(ty * 16), len * 8, 8);
+    super(px(tx * 16 + Number(props.dx ?? 0)), px(ty * 16 + Number(props.dy ?? 0)), len * 8, 8);
     this.kind = kind;
     this.len = len;
     this.originX = this.body.x;

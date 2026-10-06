@@ -29,13 +29,13 @@ wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww wwBwwwwwwwwwwwww BBBBBBBBBBBB
 
 [entities]
 blooper 18 11
-cheep-red 28 8
+cheep-red 28 8 dx=8
 blooper 30 10
 cheep-red 31 11
 cheep-red 39 5
 cheep-red 40 4
 cheep-red 43 11
-cheep-grey 54 6
+cheep-grey 54 6 dx=8
 blooper 54 12
 cheep-red 57 3
 cheep-red 60 7
@@ -43,29 +43,29 @@ blooper 63 10
 cheep-red 72 8
 cheep-grey 76 6
 blooper 82 11
-cheep-grey 85 8
+cheep-grey 85 8 dx=8 dy=-8
 cheep-red 88 4
-cheep-red 93 6
+cheep-red 93 6 dx=8 dy=-8
 blooper 100 11
 cheep-red 102 10
-cheep-grey 104 11
-koopa-para-red 107 8
-cheep-red 109 4
+cheep-grey 104 11 dx=8
+koopa-para-red 107 8 dy=-8
+cheep-red 109 4 dx=8 dy=-8
 blooper 120 5
 cheep-red 120 6
-cheep-grey 122 5
+cheep-grey 122 5 dy=-8
 cheep-grey 136 3
 blooper 136 8
-cheep-red 138 10
-cheep-grey 142 7
+cheep-red 138 10 dx=8
+cheep-grey 142 7 dy=-8
 blooper 144 11
-cheep-grey 155 7
-cheep-red 157 12
+cheep-grey 155 7 dx=8
+cheep-red 157 12 dx=8 dy=-8
 cheep-grey 161 8
 blooper 164 3
-cheep-red 174 4
+cheep-red 174 4 dx=8
 blooper 177 12
 
 [zones]
-checkpoint 99
+checkpoint 99 12
 pipe 189 8 right -> ll-3-2-exit 3 10 exit=up

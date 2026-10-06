@@ -31,16 +31,16 @@ camera: scroll
 decor-castle 0 12
 balance 26 6 x2=32 y2=9 len=6 top=2
 blooper 57 6
-koopa-para-red 63 10
-lift-h 71 9 len=6 range=3
+koopa-para-red 63 10 dy=-8
+lift-h 71 9 len=6 range=3 dx=-16
 blooper 83 4
 balance 89 6 x2=93 y2=9 len=6 top=2
-lift-h 134 6 len=6 range=3
+lift-h 134 6 len=6 range=3 dx=-16
 balance 138 5 x2=145 y2=10 len=6 top=2
 decor-castle-big 171 12
 
 [zones]
-checkpoint 98
+checkpoint 98 12
 exit 169 next=ll-1-4
 
 [decor]
