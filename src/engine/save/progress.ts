@@ -25,14 +25,22 @@ export function loadProgress(): Progress {
   const p = loadJson<Progress>(PROGRESS_KEY);
   const lost = { world9: false, letters: false, beaten: 0 };
   if (!p || p.v !== 1) return { v: 1, bestScore: 0, lastCharacter: 'mario', reached: {}, cleared: [], lost };
-  const beaten = typeof p.lost?.beaten === 'number' && p.lost.beaten > 0 ? Math.floor(p.lost.beaten) : 0;
+  const stored = p.lost?.beaten;
+  // A 0.2.1 file has no count but may hold `letters: true` (set after one 8-4 clear then): it
+  // starts at LOST_LETTERS_GAMES so the unlock it already had is kept (docs/RELEASING.md: never
+  // silently drop saved data). New files still need LOST_LETTERS_GAMES clears.
+  const beaten =
+    typeof stored === 'number'
+      ? Math.max(0, Math.floor(stored))
+      : p.lost?.letters === true
+        ? LOST_LETTERS_GAMES
+        : 0;
   return {
     v: 1,
     bestScore: p.bestScore ?? 0,
     lastCharacter: p.lastCharacter ?? 'mario',
     reached: p.reached ?? {},
     cleared: p.cleared ?? [],
-    // `letters` follows the count: older builds set it after a single 8-4 clear.
     lost: { world9: p.lost?.world9 === true, letters: beaten >= LOST_LETTERS_GAMES, beaten },
   };
 }

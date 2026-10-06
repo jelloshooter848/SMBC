@@ -150,9 +150,21 @@ describe('Lost Levels endings (NES rules)', () => {
     expect(h.said.at(-1)).toContain('WORLDS A-D ARE OPEN!');
   });
 
-  it("an older build's single-clear unlock no longer counts", () => {
+  it('a 0.2.1 file that had worlds A-D keeps them (beaten starts at 8), and the next save keeps it', () => {
     store.set(PROGRESS_KEY, JSON.stringify({ v: 1, lost: { world9: true, letters: true } }));
+    expect(loadProgress().lost).toEqual({ world9: true, letters: true, beaten: LOST_LETTERS_GAMES });
+    const h = makeGame();
+    h.game.newGame(MARIO, 'll-8-4');
+    h.game.state.warped = true;
+    h.game.showEnding('ll-8-4');
+    expect(loadProgress().lost).toEqual({ world9: true, letters: true, beaten: LOST_LETTERS_GAMES + 1 });
+  });
+
+  it('a 0.2.1 file without the unlock starts at 0, and a stored count is trusted', () => {
+    store.set(PROGRESS_KEY, JSON.stringify({ v: 1, lost: { world9: true, letters: false } }));
     expect(loadProgress().lost).toEqual({ world9: true, letters: false, beaten: 0 });
+    store.set(PROGRESS_KEY, JSON.stringify({ v: 1, lost: { world9: false, letters: true, beaten: 3 } }));
+    expect(loadProgress().lost).toEqual({ world9: false, letters: false, beaten: 3 });
   });
 
   it.each([
