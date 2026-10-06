@@ -11,6 +11,15 @@ export function pad(n: number, width: number): string {
   return String(Math.max(0, Math.floor(n))).padStart(width, '0');
 }
 
+/** Optional HUD variations. */
+export interface HudOptions {
+  /**
+   * A place name (e.g. 'TRAINING') shown instead of the WORLD and TIME columns; the score and
+   * coin counter are left out too (a practice room has no run to count).
+   */
+  place?: string;
+}
+
 /** SMB1-style two-row HUD across the top of the screen, plus HP for hit-point characters. */
 export function drawHud(
   r: Renderer,
@@ -19,6 +28,7 @@ export function drawHud(
   time: number | null,
   frame: number,
   players: Player[],
+  opts: HudOptions = {},
 ): void {
   const player = players[0] ?? null;
   const font = assets.sheet('font');
@@ -26,12 +36,16 @@ export function drawHud(
   r.text(font, name, 24, 8);
   // A 7-digit score (World.addScore caps it at SCORE_MAX). The coin counter sits 16 px after it,
   // as in the original's TopScreenText (SCORE_TXT_PNT, COIN_SYMBOL_PNT).
-  r.text(font, pad(state.score, 7), 24, 16);
-  r.text(font, `$×${pad(state.coins, 2)}`, 96, 16);
-  r.text(font, 'WORLD', 144, 8);
-  r.text(font, `${worldLabel(state.world)}-${state.stage}`, 152, 16);
-  r.text(font, 'TIME', 200, 8);
-  if (time !== null) r.text(font, pad(time, 3), 208, 16);
+  if (opts.place !== undefined) {
+    r.text(font, opts.place, 232 - opts.place.length * 8, 8);
+  } else {
+    r.text(font, pad(state.score, 7), 24, 16);
+    r.text(font, `$×${pad(state.coins, 2)}`, 96, 16);
+    r.text(font, 'WORLD', 144, 8);
+    r.text(font, `${worldLabel(state.world)}-${state.stage}`, 152, 16);
+    r.text(font, 'TIME', 200, 8);
+    if (time !== null) r.text(font, pad(time, 3), 208, 16);
+  }
   const dmg = state.character.damage;
   if (dmg.kind === 'hp' && player) {
     if (dmg.hudStyle === 'number') {
@@ -117,5 +131,6 @@ export function drawHud(
     if (p2.out) r.text(font, 'OUT', 200, 24);
   }
   // Blink the timer label when low.
-  if (time !== null && time <= 100 && (frame >> 4) % 2 === 0) r.text(font, 'TIME', 200, 8);
+  if (opts.place === undefined && time !== null && time <= 100 && (frame >> 4) % 2 === 0)
+    r.text(font, 'TIME', 200, 8);
 }

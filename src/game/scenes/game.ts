@@ -48,6 +48,7 @@ import {
   loadSave,
   saveFromState,
   stateFromSave,
+  tutorialHeroes,
   writeSave,
   type SaveFile,
   type SaveSlot,
@@ -110,6 +111,8 @@ export class Game {
   devAllHeroes = false;
   /** Heroes freed on the campaign's file (SaveFile.freed); see `heroLocked`. */
   freed: string[] = [FIRST_HERO];
+  /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
+  tutorials: string[] = [];
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -328,6 +331,8 @@ export class Game {
           then();
         },
         onCancel: back,
+        // A training room on the way plays its own music; the map's comes back after it.
+        music: mapPage(this.mapProgress.position.page)?.music,
       });
     this.scenes.push(
       pick(0, () => {
@@ -359,6 +364,7 @@ export class Game {
       devUnlockAll: this.devUnlockAll,
       devAllHeroes: this.devAllHeroes,
       freed: this.freed.slice(),
+      tutorials: this.tutorials.slice(),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -546,6 +552,12 @@ export class Game {
     this.autosave();
   }
 
+  /** The "<HERO> TRAINING?" question was answered (yes or no): never asked again; saved at once. */
+  answerTraining(id: string): void {
+    if (!this.tutorials.includes(id)) this.tutorials.push(id);
+    this.autosave();
+  }
+
   showCharacterSelect(): void {
     this.scenes.replace(new CharacterSelectScene(this));
   }
@@ -655,6 +667,14 @@ export class Game {
     // A hero the file has not freed (a hand-edited file, or one picked through "All heroes" with
     // dev mode since off) gives way to Mario.
     this.dropLockedHeroes();
+    // The freed heroes the file plays now count as answered: their training is never asked. (A
+    // hero picked only through dev "All heroes" is not freed, so its real question still comes.)
+    this.tutorials = tutorialHeroes([
+      ...(save.tutorials ?? []),
+      ...[this.state.character.id, this.state.character2?.id].filter(
+        (id) => id !== undefined && this.freed.includes(id),
+      ),
+    ]);
     this.mapProgress = {
       cleared: save.cleared.slice(),
       pages: save.pages.slice(),
