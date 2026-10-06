@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Dev mode: the pause menu in a campaign level now has **Assists** (the full dev menu with level
+  select stays outside campaign play).
+- Lost Levels endings use the NES wording: 8-4 and D-4 show "THANK YOU <HERO>! / YOUR QUEST IS
+  OVER. / WE PRESENT YOU A NEW QUEST. / PUSH BUTTON B / TO SELECT A WORLD", 9-4 shows "THANK
+  YOU!", and D-4 now rolls the credits. B or Start continues, from either player.
+
+### Fixed
+
+- Fake Bowsers' true forms are redrawn: worlds 1-3 show the overturned enemy (Koopa and Buzzy as
+  shells), worlds 4-7 the whole enemy upside down, at the enemy's size where Bowser's head was,
+  with an outline that shows against the castle's black; the body keeps Bowser's facing.
+
 ## [0.2.2] - 2026-10-06
 
 ### Fixed
