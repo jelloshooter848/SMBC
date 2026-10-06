@@ -21,9 +21,17 @@ pnpm dev          # http://localhost:5173
 ```
 
 Keyboard: arrows move, **Z** jump, **X** run / attack (and _back_ in menus), **C** special
-(use the selected tool), **Right Shift** select (cycle tools), **Enter** start/pause. Gamepads use the standard mapping. Phones and tablets get on-screen
-controls automatically. Press **F1** for the debug overlay and **F2** for a free camera
+(use the selected tool), **Right Shift** select (cycle tools), **Enter** start/pause. Gamepads use the standard mapping. Press **F1** for the debug overlay and **F2** for a free camera
 (arrows scroll) when checking level layouts.
+
+Touch controls appear on phones and tablets (a touch-first screen that cannot hover; touchscreen
+laptops count as desktops). In _Auto_ they also come up on the first touch and go away when a key
+or gamepad button is used; the pause menu's **Touch controls** row switches Auto / On / Off. The
+d-pad's zones are by angle, with wide left/right bands and a firmer push needed for down, so running
+does not crouch by accident. Pushing it past the ring runs (Mario and Luigi) without firing. It is
+a fixed pad by default, or a floating stick that centres under your thumb anywhere on the left of
+the screen (**Options > Controls > Touch d-pad**). A thumb can roll from one button to the next
+without lifting, and the buttons say what they do for the hero and scene.
 
 ### World map and save files
 
@@ -101,7 +109,8 @@ has the same guide for the hero you are playing.
 - **Video**: integer scaling, colour-blind safe palettes (deuteranopia, protanopia,
   tritanopia) and high contrast, reduced flashing, FPS counter, screen-reader announcements.
 - **Audio**: master, music and sound volumes, mute.
-- **Controls**: full keyboard and gamepad remapping, touch pad on/off and size.
+- **Controls**: full keyboard and gamepad remapping; touch pad auto/on/off, size, and fixed
+  or floating d-pad.
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing).
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
 - **Level editor** (title screen only): build and share your own levels.

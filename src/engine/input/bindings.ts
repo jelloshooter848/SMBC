@@ -21,6 +21,7 @@ export const DEFAULT_KEYBOARD_P1: BindingMap = {
   special: ['KeyC', 'KeyL'],
   start: ['Enter', 'Escape'],
   select: ['ShiftRight', 'Backspace'],
+  run: [],
 };
 
 export const DEFAULT_KEYBOARD_P2: BindingMap = {
@@ -33,6 +34,7 @@ export const DEFAULT_KEYBOARD_P2: BindingMap = {
   special: ['NumpadEnter'],
   start: ['NumpadAdd'],
   select: ['NumpadSubtract'],
+  run: [],
 };
 
 /** Standard gamepad mapping (https://w3c.github.io/gamepad/#remapping). */
@@ -46,6 +48,7 @@ export const DEFAULT_GAMEPAD: BindingMap = {
   special: ['pad:5', 'pad:4'],
   start: ['pad:9'],
   select: ['pad:8'],
+  run: [],
 };
 
 export function defaultBindings(player: number): PlayerBindings {

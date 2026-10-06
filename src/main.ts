@@ -4,7 +4,7 @@ import { CanvasRenderer } from '@engine/gfx/renderer';
 import { InputManager } from '@engine/input/input-manager';
 import { KeyboardSource } from '@engine/input/keyboard';
 import { GamepadSource } from '@engine/input/gamepad';
-import { TouchSource } from '@engine/input/touch';
+import { TouchSource, type TouchLabels } from '@engine/input/touch';
 import { AssetRegistry } from '@engine/assets/registry';
 import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
@@ -21,6 +21,8 @@ import { Game } from '@game/scenes/game';
 import { CHARACTERS } from '@game/characters/registry';
 import { DEFAULT_ASSIST } from '@game/context';
 
+const NO_LABELS: TouchLabels = {};
+
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
   if (!canvas) throw new Error('#screen canvas missing');
@@ -32,9 +34,14 @@ function boot(): void {
   const input = new InputManager(2, settings.input.bindings);
   const keyboard = new KeyboardSource();
   input.addSource('keyboard', keyboard);
-  if (GamepadSource.available()) input.addSource('gamepad', new GamepadSource());
   const touch = new TouchSource(overlay, settings.input.touchScale);
   input.addSource('touch', touch);
+  if (GamepadSource.available()) {
+    const pad = new GamepadSource();
+    // Auto touch mode hides the on-screen pad once a gamepad button is used (keys: see TouchSource).
+    pad.onAnyPress = () => touch.noteInput('keys');
+    input.addSource('gamepad', pad);
+  }
 
   const assets = new AssetRegistry(PALETTES);
   assets.defineAll(SPRITES);
@@ -81,6 +88,7 @@ function boot(): void {
     step() {
       input.beginFrame();
       game.scenes.update([input.player(0), input.player(1)]);
+      if (touch.shown) touch.setLabels(game.scenes.top?.touchLabels?.() ?? NO_LABELS);
     },
     render() {
       game.scenes.render(renderer);
@@ -105,9 +113,8 @@ function boot(): void {
     ctx.reduceFlashing = settings.video.reduceFlashing;
     audio.setVolumes(settings.audio);
     input.bindings = settings.input.bindings;
-    const touchOn =
-      settings.input.touch === 'on' || (settings.input.touch === 'auto' && TouchSource.likelyTouchDevice());
-    touch.show(touchOn);
+    touch.setMode(settings.input.touch);
+    touch.setDpadStyle(settings.input.dpad);
     touch.setScale(settings.input.touchScale);
     // Assists are developer tools: they only take effect while dev mode is on (values are kept).
     const { slowMotion, ...assist } = settings.assist;

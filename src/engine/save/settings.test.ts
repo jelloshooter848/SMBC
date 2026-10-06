@@ -36,3 +36,33 @@ describe('settings', () => {
     expect(loadSettings().video.integerScale).toBe(true);
   });
 });
+
+describe('settings: fields added after release', () => {
+  it('defaults input.dpad to fixed for old saves and rejects unknown styles', () => {
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { touch: 'on', touchScale: 1.2 } }));
+    const s = loadSettings();
+    expect(s.input.dpad).toBe('fixed');
+    expect(s.input.touch).toBe('on');
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { dpad: 'wobbly' } }));
+    expect(loadSettings().input.dpad).toBe('fixed');
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { dpad: 'floating' } }));
+    expect(loadSettings().input.dpad).toBe('floating');
+  });
+
+  it('gives old stored bindings the new run action without touching remaps', () => {
+    const old = defaultSettings().input.bindings.map((b) => {
+      const kb: Record<string, string[]> = { ...b.keyboard, jump: ['KeyQ'] };
+      delete kb.run;
+      const pad: Record<string, string[]> = { ...b.gamepad };
+      delete pad.run;
+      return { ...b, keyboard: kb, gamepad: pad };
+    });
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { bindings: old } }));
+    const s = loadSettings();
+    for (const b of s.input.bindings) {
+      expect(b.keyboard.run).toEqual([]);
+      expect(b.gamepad.run).toEqual([]);
+      expect(b.keyboard.jump).toEqual(['KeyQ']);
+    }
+  });
+});

@@ -4,6 +4,9 @@ import { DevMenuScene } from './dev';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
+import { TOUCH_MODES, type TouchMode } from '@engine/save/settings';
+
+const TOUCH_MODE_LABELS: Record<TouchMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
 export class PauseScene extends MenuScene {
   constructor(
@@ -35,6 +38,23 @@ export class PauseScene extends MenuScene {
         select: () => {
           if (reserve.use(p, world)) game.scenes.pop();
         },
+      });
+    }
+    // The on-screen pad can be forced on or off right here (saved and applied at once).
+    const s = game.deps.settings;
+    if (s?.input) {
+      const cycle = (d: -1 | 1) => {
+        const i = TOUCH_MODES.indexOf(s.input.touch);
+        s.input.touch = TOUCH_MODES[(i + d + TOUCH_MODES.length) % TOUCH_MODES.length] as TouchMode;
+        game.deps.applySettings?.();
+        this.announce();
+      };
+      items.push({
+        label: 'Touch controls',
+        value: () => TOUCH_MODE_LABELS[s.input.touch],
+        adjust: cycle,
+        select: () => cycle(1),
+        hint: 'Auto shows them on phones and tablets',
       });
     }
     items.push({
