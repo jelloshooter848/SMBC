@@ -114,7 +114,6 @@ export class TouchSource implements InputSource {
         .touch-controls .btn.wrap { white-space: pre-line; }
         .touch-controls .btn.hidden { display: none; }
         .touch-controls .btn.active { background: rgba(255,255,255,0.45); }
-        .touch-controls .btn.custom::after { content: attr(data-id); position: absolute; top: 8%; left: 50%; transform: translateX(-50%); font-size: calc(9px * var(--ts)); opacity: 0.6; }
         .touch-controls .btn.a { border-color: rgba(255,150,150,0.6); }
         .touch-controls .btn.b { border-color: rgba(150,190,255,0.6); }
         .touch-controls .btn.c { border-color: rgba(170,255,170,0.6); }
@@ -139,11 +138,11 @@ export class TouchSource implements InputSource {
           <div class="thumb"></div>
         </div>
       </div>
-      <div class="tc btn a jump" data-action="jump" data-id="A">A</div>
-      <div class="tc btn b attack" data-action="attack" data-id="B">B</div>
-      <div class="tc btn c special" data-action="special" data-id="C">C</div>
-      <div class="tc btn start" data-action="start">START</div>
-      <div class="tc btn select" data-action="select">SELECT</div>`;
+      <div class="tc btn a jump" data-action="jump" data-id="A">JUMP</div>
+      <div class="tc btn b attack" data-action="attack" data-id="B">ATTACK</div>
+      <div class="tc btn c special" data-action="special" data-id="C">SPECIAL</div>
+      <div class="tc btn start" data-action="start">MENU</div>
+      <div class="tc btn select" data-action="select">TOOLS</div>`;
     container.appendChild(this.root);
     this.hit = this.root.querySelector('[data-dpad]') as HTMLElement;
     this.pad = this.root.querySelector('.dpad') as HTMLElement;

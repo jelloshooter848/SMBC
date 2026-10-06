@@ -82,7 +82,7 @@ describe('touch labels per scene', () => {
   it('menus: A is OK, B is BACK only where there is a way back', () => {
     const h = makeGame();
     h.game.showTitle();
-    expect(shown(h.game)).toBe('OK B - - -'); // B only for the developer code
+    expect(shown(h.game)).toBe('OK  - - -'); // B blank, only for the developer code
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop()));
     expect(shown(h.game)).toBe('OK BACK - - -');
     // The pause menu's Assists entry (campaign, dev mode) opens a menu with a way back.
@@ -224,8 +224,8 @@ describe('the developer code by touch', () => {
     for (let i = 0; i < 10; i++) frame();
     const title = game.scenes.top as TitleScene;
     expect(title).toBeInstanceOf(TitleScene);
-    // B is on screen (just "B") and does nothing else here.
-    expect(title.touchLabels().attack).toBe('B');
+    // B is on screen (blank) and does nothing else here.
+    expect(title.touchLabels().attack).toBe('');
     held.add('touch:attack');
     frame();
     held.clear();

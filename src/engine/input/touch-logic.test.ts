@@ -261,7 +261,7 @@ describe('labels', () => {
     };
   }
   function setup() {
-    const els = { jump: new StubEl('A'), attack: new StubEl('B'), start: new StubEl('START') };
+    const els = { jump: new StubEl('JUMP'), attack: new StubEl('ATTACK'), start: new StubEl('MENU') };
     const slots = new Map<Action, LabelSlot>(
       Object.entries(els).map(([a, el]) => [
         a as Action,
@@ -277,14 +277,12 @@ describe('labels', () => {
     expect(els.jump.textContent).toBe('JUMP');
     expect(els.attack.textContent).toBe('FIRE');
     expect(els.start.textContent).toBe('PAUSE');
-    expect(els.jump.classes.has('custom')).toBe(true); // keeps the A badge
     expect(labeler.apply({ jump: 'JUMP', attack: null })).toEqual(['attack']);
     expect(els.attack.classes.has('hidden')).toBe(true);
     labeler.apply({});
     expect(els.attack.classes.has('hidden')).toBe(false);
-    expect(els.attack.textContent).toBe('B');
-    expect(els.jump.textContent).toBe('A');
-    expect(els.jump.classes.has('custom')).toBe(false);
+    expect(els.attack.textContent).toBe('ATTACK');
+    expect(els.jump.textContent).toBe('JUMP');
   });
 
   it('shrinks long labels to fit, and writes a wrapped one on two lines', () => {

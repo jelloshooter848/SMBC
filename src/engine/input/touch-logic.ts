@@ -362,8 +362,6 @@ export class ButtonLabeler {
       el.textContent = fit.lines.join('\n');
       el.style.setProperty('--fs', String(fit.scale));
       el.classList.toggle('wrap', fit.wrap);
-      // A custom label keeps a small corner badge with the button's letter.
-      el.classList.toggle('custom', next !== slot.def);
     }
     return hidden;
   }

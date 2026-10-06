@@ -37,9 +37,9 @@ export class TitleScene extends MenuScene {
     super.enter();
   }
 
-  /** B does nothing here, but stays (as plain "B") so the developer code can be entered by touch. */
+  /** B does nothing here, but stays (blank) so the developer code can be entered by touch. */
   override touchLabels(): TouchLabels {
-    return { ...super.touchLabels(), attack: 'B' };
+    return { ...super.touchLabels(), attack: '' };
   }
 
   override update(input: InputFrame): void {
