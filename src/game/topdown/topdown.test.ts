@@ -14,6 +14,8 @@ import {
   KNOCK_FRAMES,
   KNOCK_PX,
   SWORD_FIRST,
+  SWORD_LAST,
+  swordReach,
   swordAt,
 } from './hero';
 import { ROOM_W, TILE, boxesOverlap } from './geometry';
@@ -528,6 +530,54 @@ describe('top-down kit: sword, shield and damage', () => {
     pad.step(['attack']); // mashing doesn't restart it
     expect(hero.attackT).toBe(t - 2);
     expect(boxesOverlap(swordAt(0, 0, 'up'), { x: 0, y: -12, w: 16, h: 4 })).toBe(true);
+  });
+
+  it('a monster coming in at an angle walks into the stab: it is hit and knocked back, the hero is not', () => {
+    const { pad, hero, k } = withKnight();
+    // Down and to the left, toward the hero's upper right: past the old thin blade's reach.
+    k.x = 130;
+    k.y = 56;
+    Object.assign(k, {
+      think: () => {
+        k.x -= 1;
+        k.y += 1;
+      },
+    });
+    hero.facing = 'right';
+    const events: TdEvent[] = [];
+    for (let i = 0; i < 40; i++) events.push(...pad.step(hero.attacking || i % 2 ? [] : ['attack']));
+    expect(events).toContainEqual({ type: 'hit', kind: 'knight' });
+    expect(k.hp).toBeLessThan(2);
+    expect(hero.hp).toBe(6);
+    expect(events.some((e) => e.type === 'hurt')).toBe(false);
+  });
+
+  it('the blade wins ties: a monster touching the hero and the blade on the same frame does no harm', () => {
+    const { pad, hero, k } = withKnight();
+    k.update = () => undefined;
+    hero.facing = 'right';
+    pad.step(['attack']);
+    pad.step([], SWORD_FIRST);
+    // Now on the hero's shoulder and in the blade at once.
+    k.x = hero.x + 10;
+    k.y = hero.y - 6;
+    const events = pad.step([]);
+    expect(events).toContainEqual({ type: 'hit', kind: 'knight' });
+    expect(hero.hp).toBe(6);
+  });
+
+  it('the stab covers the whole tile in front plus a little to each side, and stays out longer', () => {
+    for (const d of ['up', 'down', 'left', 'right'] as const) {
+      const reach = swordReach(0, 0, d);
+      const v = { up: [0, -16], down: [0, 16], left: [-16, 0], right: [16, 0] }[d] as [number, number];
+      const tile = { x: v[0], y: v[1], w: 16, h: 16 };
+      // The tile in front is inside it, with room to spare across the stab.
+      expect(reach.x).toBeLessThanOrEqual(tile.x - (v[0] === 0 ? 3 : 0));
+      expect(reach.y).toBeLessThanOrEqual(tile.y - (v[1] === 0 ? 3 : 0));
+      expect(reach.x + reach.w).toBeGreaterThanOrEqual(tile.x + 16 + (v[0] === 0 ? 3 : 0));
+      expect(reach.y + reach.h).toBeGreaterThanOrEqual(tile.y + 16 + (v[1] === 0 ? 3 : 0));
+    }
+    expect(SWORD_LAST - SWORD_FIRST).toBeGreaterThan(8);
   });
 
   it('touching an enemy costs half a heart, knocks the hero back and makes him invulnerable', () => {

@@ -12,7 +12,8 @@ import {
   type Dir,
   type Side,
 } from './geometry';
-import { Pickup, PushBlock } from './entity';
+import { Rng } from '@engine/rng';
+import { Pickup, PushBlock, type TdEntity } from './entity';
 import { Projectile } from './enemies';
 import type { TopDownWorld } from './world';
 
@@ -48,7 +49,11 @@ export class TopDownBot {
   private stuck = 0;
   private lastDir: Dir | null = null;
 
-  constructor(private readonly plans: Readonly<Record<string, readonly BotStep[]>>) {}
+  constructor(
+    private readonly plans: Readonly<Record<string, readonly BotStep[]>>,
+    /** Pixels it keeps between itself and a monster while lining up a stab. */
+    private readonly margin = 6,
+  ) {}
 
   /** The actions to hold this frame. */
   next(world: TopDownWorld): Action[] {
@@ -156,7 +161,7 @@ export class TopDownBot {
         DIRS.some((d) =>
           foes.some((f) => (f.w < 32 || d === 'up') && boxesOverlap(swordAt(n.x, n.y, d), f.hurtbox())),
         ),
-      foes.map((f) => grow(f.hurtbox(), 6)),
+      foes.map((f) => grow(f.hurtbox(), this.margin)),
     );
     return path ?? [];
   }
@@ -255,4 +260,117 @@ export class TopDownBot {
 
 function grow(b: Box, n: number): Box {
   return { x: b.x - n, y: b.y - n, w: b.w + 2 * n, h: b.h + 2 * n };
+}
+
+/** How a cautious first-time player differs from the perfect bot (see CautiousBot). */
+export interface CautiousOptions {
+  /** Seeds the player's own slips (not the world's dice). */
+  seed: number;
+  /** Frames between something happening on screen and the player reacting to it. */
+  reaction: number;
+  /** Chance per frame of a short pause (looking around, thinking). */
+  hesitate: number;
+  /** Chance per frame, with a monster close, of swinging early instead of lining up. */
+  sloppy: number;
+  /** Pixels kept from monsters while lining up (the perfect bot keeps 6). */
+  margin: number;
+  /** Misjudged monster positions: up to this many pixels off on each axis, changing now and then. */
+  aim: number;
+}
+
+export const CAUTIOUS_DEFAULTS: Omit<CautiousOptions, 'seed'> = {
+  reaction: 15,
+  hesitate: 0.01,
+  sloppy: 0.04,
+  margin: 2,
+  aim: 4,
+};
+
+/**
+ * A "cautious human" for tuning difficulty: the same plan as TopDownBot, but it sees monsters and
+ * shots where they were `reaction` frames ago (a shot fired more recently than that isn't seen
+ * yet), misjudges where monsters are by a few pixels, keeps less distance, pauses now and then,
+ * and sometimes swings before it has lined up. It knows where it is
+ * itself. Its pass rate over many seeds is a rough stand-in for a first-time player's.
+ */
+export class CautiousBot {
+  private readonly bot: TopDownBot;
+  private readonly rng: Rng;
+  private readonly opts: CautiousOptions;
+  private readonly seen = new Map<TdEntity, { x: number; y: number }[]>();
+  private readonly misjudged = new Map<TdEntity, { dx: number; dy: number }>();
+  private pause = 0;
+  private room = '';
+  private t = 0;
+
+  constructor(plans: Readonly<Record<string, readonly BotStep[]>>, opts: Partial<CautiousOptions> = {}) {
+    this.opts = { seed: 1, ...CAUTIOUS_DEFAULTS, ...opts };
+    this.bot = new TopDownBot(plans, this.opts.margin);
+    this.rng = new Rng(Math.imul(this.opts.seed, 0x9e3779b1) >>> 0 || 1);
+  }
+
+  next(world: TopDownWorld): Action[] {
+    if (world.room.id !== this.room) {
+      this.room = world.room.id;
+      this.seen.clear();
+      this.misjudged.clear();
+    }
+    if (++this.t % 24 === 0) this.misjudged.clear();
+    // Remember where every monster and shot is now; forget the ones that are gone.
+    const watched = world.entities.filter((e) => !e.dead && (e.enemy || e instanceof Projectile));
+    for (const k of [...this.seen.keys()]) if (!watched.includes(k)) this.seen.delete(k);
+    for (const e of watched) {
+      const h = this.seen.get(e) ?? [];
+      h.push({ x: e.x, y: e.y });
+      if (h.length > this.opts.reaction + 1) h.shift();
+      this.seen.set(e, h);
+    }
+    if (this.pause > 0) {
+      this.pause--;
+      return [];
+    }
+    if (!world.transition && this.rng.chance(this.opts.hesitate)) {
+      this.pause = 4 + this.rng.int(12);
+      return [];
+    }
+    // Decide on the old picture: monsters where they were, shots not seen yet left out.
+    const real = new Map<TdEntity, { x: number; y: number; dead: boolean }>();
+    for (const e of watched) {
+      const h = this.seen.get(e) ?? [];
+      real.set(e, { x: e.x, y: e.y, dead: e.dead });
+      const old = h.length > this.opts.reaction ? h[0] : null;
+      if (old) {
+        e.x = old.x;
+        e.y = old.y;
+      } else if (!e.enemy) e.dead = true;
+      if (e.enemy) {
+        const a = this.opts.aim;
+        let off = this.misjudged.get(e);
+        if (!off) {
+          off = { dx: this.rng.int(2 * a + 1) - a, dy: this.rng.int(2 * a + 1) - a };
+          this.misjudged.set(e, off);
+        }
+        e.x += off.dx;
+        e.y += off.dy;
+      }
+    }
+    let out: Action[];
+    try {
+      out = this.bot.next(world);
+    } finally {
+      for (const [e, s] of real) {
+        e.x = s.x;
+        e.y = s.y;
+        e.dead = s.dead;
+      }
+    }
+    const hero = world.hero;
+    if (!out.includes('attack') && !hero.attacking && this.rng.chance(this.opts.sloppy)) {
+      const near = world
+        .enemies()
+        .some((f) => Math.abs(f.x - hero.x) < 2 * TILE && Math.abs(f.y - hero.y) < 2 * TILE);
+      if (near) return ['attack'];
+    }
+    return out;
+  }
 }
