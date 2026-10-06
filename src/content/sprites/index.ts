@@ -1,4 +1,4 @@
-import type { PaletteBook } from '@engine/gfx/palette';
+import { NES, type PaletteBook } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { tilePalettes, tilesDef } from './tiles';
 import { fontPalette, fontDef } from './font';
@@ -90,4 +90,11 @@ fallback('samus-varia', 'samus');
 for (const w of ['plain', 'saw', 'leaf', 'flame', 'knuckle', 'bolt', 'rush'])
   fallback(`megaman-${w}`, 'megaman');
 
-export const PALETTES: PaletteBook = { default: defaults, ...colorblindPalettes(defaults) };
+const modes = colorblindPalettes(defaults);
+// High contrast crushes dark greys toward black, which would sink the fake king's true forms'
+// dark-grey outline back into the castle's black; give that one outline a mid grey there.
+const trueFormHc = modes.highContrast?.['bowser-true-form'];
+if (modes.highContrast && trueFormHc)
+  modes.highContrast['bowser-true-form'] = trueFormHc.map((c, i) => (i === 1 ? NES.gray : c));
+
+export const PALETTES: PaletteBook = { default: defaults, ...modes };
