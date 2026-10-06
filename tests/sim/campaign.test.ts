@@ -9,6 +9,7 @@ import { NullRenderer } from '@engine/gfx/renderer';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
 import { WorldMapScene } from '@game/scenes/world-map';
+import { TrainingQuestionScene } from '@game/tutorial/training';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
@@ -190,6 +191,14 @@ function openOld2P(h: H) {
   newFileFromTitle(h);
 }
 
+/** A hero's first pick on the file asks "<HERO> TRAINING?": answer NO. */
+function declineTraining(h: H) {
+  expect(h.top()).toBeInstanceOf(TrainingQuestionScene);
+  h.idle(8);
+  h.tap('down');
+  h.tap('jump');
+}
+
 /** Step until the level runs, counting the distinct character selects shown on the way. */
 function picksUntilLevel(h: H, onPick: (n: number) => void): number {
   const seen = new Set<unknown>();
@@ -227,6 +236,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     const picks = picksUntilLevel(h, () => {
       h.tap('right'); // Link (Luigi is skipped)
       h.tap('jump');
+      declineTraining(h); // Link's first pick on the file asks about training
     });
     expect(picks).toBe(1);
     expect(h.level().level.id).toBe('1-1');
@@ -267,6 +277,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     h.idle(12);
     h.tap('right'); // Luigi
     h.tap('jump');
+    declineTraining(h); // Luigi's first pick on the file asks about training
     h.until(() => h.top() instanceof LevelScene);
     expect(h.game.state.character).toBe(LUIGI);
     expect(h.game.state.powerState).toBe('small');

@@ -52,6 +52,12 @@ export interface SaveFile extends MapProgress {
    * in campaign play; the rest are brainwashed captives to find (docs/HEROES.md).
    */
   freed: string[];
+  /**
+   * Heroes whose "<HERO> TRAINING?" question was answered on this file (CharacterDef ids, each
+   * once), so it is asked only the first time a hero is picked. Missing in older files: [] plus the
+   * file's current heroes (validation adds them, so players already using a hero aren't asked).
+   */
+  tutorials?: string[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -103,6 +109,15 @@ export function freedHeroes(
 ): string[] {
   const known = (id: unknown): id is string => typeof id === 'string' && characters.some((c) => c.id === id);
   return [...new Set([FIRST_HERO, ...ids.filter(known)])];
+}
+
+/** Known hero ids from `ids`, each once, in order (unknown ids and non-strings dropped). */
+export function tutorialHeroes(
+  ids: readonly unknown[],
+  characters: readonly CharacterDef[] = CHARACTERS,
+): string[] {
+  const known = (id: unknown): id is string => typeof id === 'string' && characters.some((c) => c.id === id);
+  return [...new Set(ids.filter(known))];
 }
 
 /**
@@ -162,6 +177,7 @@ export function newSave(
     devUnlockAll: false,
     devAllHeroes: false,
     freed: freedHeroes([character, character2], characters),
+    tutorials: tutorialHeroes([character, character2], characters),
   };
 }
 
@@ -268,6 +284,7 @@ export function migrateSave(
     position.node !== 'start'
   )
     position = { page: FIRST_PAGE_ID, node: 'start' };
+  const freed = Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed;
   return {
     ...d,
     v: current,
@@ -291,7 +308,13 @@ export function migrateSave(
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
     devAllHeroes: stored.devAllHeroes === true,
-    freed: Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed,
+    freed,
+    // The file's current (freed) heroes count as answered, so an existing player is never
+    // interrupted; a hero used only through dev "All heroes" still gets its real question.
+    tutorials: tutorialHeroes([
+      ...(Array.isArray(stored.tutorials) ? stored.tutorials : []),
+      ...[stored.character, stored.character2].filter((id) => freed.includes(id as string)),
+    ]),
   };
 }
 
