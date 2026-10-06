@@ -10,7 +10,7 @@ import { Game } from '@game/scenes/game';
 import { CreditsScene, CREDITS, CREDITS_HOLD_FRAMES, CREDITS_TAIL } from '@game/scenes/credits';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
-import { CardScene, MessageScene } from '@game/scenes/message';
+import { CARD_GUARD_FRAMES, CardScene, MessageScene } from '@game/scenes/message';
 import { TitleScene } from '@game/scenes/title';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -47,11 +47,15 @@ function makeGame() {
     announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
   });
   const p1 = new ScriptedInput({ steps: [] });
+  const p2 = new ScriptedInput({ steps: [] });
   const r = new NullRenderer();
-  const step = (a: Action[] = []) => {
+  /** One frame with player 1 holding `a` and player 2 holding `b`. */
+  const step = (a: Action[] = [], b: Action[] = []) => {
     p1.setHeld(a);
     p1.next();
-    game.scenes.update([p1]);
+    p2.setHeld(b);
+    p2.next();
+    game.scenes.update([p1, p2]);
     game.scenes.render(r);
   };
   return { game, said, audio, step, top: () => game.scenes.top };
@@ -246,5 +250,99 @@ describe('Lost Levels endings (NES rules)', () => {
     expect(h.audio.playMusic).toHaveBeenCalledWith('credits');
     for (let i = 0; i < 5000 && !(h.top() instanceof TitleScene); i++) h.step();
     expect(h.top()).toBeInstanceOf(TitleScene);
+  });
+
+  describe('input on the cards and the 8-4 tally page', () => {
+    /** 8-4 (warpless): the card, or the tally page after it (continued by P1 Start). */
+    function at(page: 'card' | 'tally') {
+      const h = makeGame();
+      h.game.newGame(MARIO, 'll-8-4');
+      h.game.showEnding('ll-8-4');
+      if (page === 'tally') press(h, 'start');
+      expect(h.top()).toBeInstanceOf(page === 'card' ? CardScene : MessageScene);
+      return h;
+    }
+
+    it.each(['card', 'tally'] as const)(
+      `the %s ignores presses in its first ${CARD_GUARD_FRAMES} frames`,
+      (page) => {
+        const h = at(page);
+        const scene = h.top();
+        h.step(['start'], ['attack']); // frame 1
+        for (let t = 2; t < CARD_GUARD_FRAMES; t++) h.step();
+        h.step(['attack'], ['start']); // frame 30, the last guarded one
+        expect(h.top()).toBe(scene);
+        h.step(); // frame 31
+        expect(h.top()).toBe(scene);
+        h.step(['attack']); // frame 32
+        expect(h.top()).not.toBe(scene);
+      },
+    );
+
+    it('B held from the axe through the D-4 card does not continue it', () => {
+      const h = makeGame();
+      h.game.newGame(MARIO, 'll-13-4-end');
+      for (let i = 0; i < 400 && !(h.top() instanceof LevelScene); i++) h.step();
+      const level = h.top() as LevelScene;
+      for (let i = 0; i < 10; i++) h.step(['attack'], ['attack']);
+      level.world.events.push({ type: 'exit', next: 'end' });
+      h.step(['attack'], ['attack']);
+      const card = h.top();
+      expect(card).toBeInstanceOf(CardScene);
+      for (let i = 0; i < 120; i++) h.step(['attack'], ['attack']);
+      expect(h.top()).toBe(card);
+      h.step();
+      h.step(['attack']);
+      expect(h.top()).toBeInstanceOf(CreditsScene);
+    });
+
+    it('B held through the 8-4 card and onto the tally page does not continue the page', () => {
+      const h = makeGame();
+      h.game.newGame(MARIO, 'll-8-4');
+      h.step(['attack']);
+      h.game.showEnding('ll-8-4');
+      for (let i = 0; i < 40; i++) h.step(['attack']);
+      expect(h.top()).toBeInstanceOf(CardScene);
+      h.step(['attack', 'start']); // Start goes on; B stays held
+      const page = h.top();
+      expect(page).toBeInstanceOf(MessageScene);
+      for (let i = 0; i < 120; i++) h.step(['attack']);
+      expect(h.top()).toBe(page);
+    });
+
+    it.each(['start', 'attack'] as const)("player 2's %s continues the card", (key) => {
+      const h = at('card');
+      for (let i = 0; i < 40; i++) h.step();
+      h.step([], [key]);
+      expect(h.top()).toBeInstanceOf(MessageScene);
+    });
+
+    it.each(['start', 'attack', 'jump'] as const)(
+      'the tally page goes on to World 9 on %s, from either player',
+      (key) => {
+        for (const who of [1, 2]) {
+          const h = at('tally');
+          for (let i = 0; i < 40; i++) h.step();
+          if (who === 1) h.step([key]);
+          else h.step([], [key]);
+          expect(h.top()).toBeInstanceOf(IntroScene);
+          expect(h.game.state.world).toBe(9);
+        }
+      },
+    );
+
+    it.each([
+      ['ll-8-4', MessageScene],
+      ['ll-9-4', TitleScene],
+      ['ll-13-4', CreditsScene],
+    ] as const)('left alone for 30 s, the %s card goes on by itself', (from, after) => {
+      const h = makeGame();
+      h.game.newGame(MARIO, from);
+      h.game.showEnding(from);
+      for (let i = 0; i < 1799; i++) h.step();
+      expect(h.top()).toBeInstanceOf(CardScene);
+      h.step();
+      expect(h.top()).toBeInstanceOf(after);
+    });
   });
 });

@@ -1,24 +1,46 @@
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
+import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_W } from '@engine/viewport';
 import type { Game } from './game';
 import type { World } from '../world/world';
 
-/** Centered lines of text on black; continues on start/jump or after a timeout. */
+/** Frames a card ignores input for, so a press meant for the level doesn't skip it. */
+export const CARD_GUARD_FRAMES = 30;
+
+/**
+ * Whether a card `t` frames old should go on: any player newly pressed one of `keys` (a button
+ * held since before the card does not count) once the guard is over, or the timeout ran out.
+ */
+export function cardContinues(
+  t: number,
+  timeout: number,
+  inputs: readonly InputFrame[],
+  keys: readonly Action[],
+): boolean {
+  if (t >= timeout) return true;
+  return t > CARD_GUARD_FRAMES && inputs.some((i) => keys.some((k) => i.pressed(k)));
+}
+
+/** Centered lines of text on black; continues on `keys` (any player) or after a timeout. */
 export class MessageScene implements Scene {
   private t = 0;
+  private done = false;
   constructor(
     private readonly game: Game,
     private readonly lines: string[],
     private readonly next: () => void,
     private readonly timeout = 600,
+    private readonly keys: readonly Action[] = ['start', 'jump'],
   ) {}
 
-  update(input: InputFrame): void {
-    this.t++;
-    if (this.t >= this.timeout || (this.t > 30 && (input.pressed('start') || input.pressed('jump'))))
+  update(_input: InputFrame, inputs: InputFrame[]): void {
+    if (this.done) return;
+    if (cardContinues(++this.t, this.timeout, inputs, this.keys)) {
+      this.done = true;
       this.next();
+    }
   }
 
   render(r: Renderer): void {
@@ -52,9 +74,7 @@ export class CardScene implements Scene {
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
     if (this.done) return;
-    this.t++;
-    const pushed = this.t > 30 && inputs.some((i) => i.pressed('start') || i.pressed('attack'));
-    if (this.t >= this.timeout || pushed) {
+    if (cardContinues(++this.t, this.timeout, inputs, ['start', 'attack'])) {
       this.done = true;
       this.next();
     }

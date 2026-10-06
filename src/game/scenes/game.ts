@@ -172,6 +172,7 @@ export class Game {
             [...page, '', 'PRESS START'],
             () => (warped ? this.showTitle() : this.goToLevel('ll-9-1-start', { mode: 'stand' })),
             1800,
+            ['start', 'attack', 'jump'], // as the card, plus A
           ),
         );
       };
