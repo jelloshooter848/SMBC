@@ -1,4 +1,5 @@
 import { SceneStack } from '@engine/scene';
+import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { GameContext, GameState } from '../context';
 import { newGameState } from '../context';
@@ -52,6 +53,8 @@ export interface GameDeps {
   viewport?: Viewport;
   /** The controls the player is using, so the guides show only that scheme (wired by main). */
   controlScheme?: () => ControlScheme;
+  /** The last kind of input used (touch, or keys / gamepad), so touch menus never offer Off. */
+  lastInput?: () => LastInput;
 }
 
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */

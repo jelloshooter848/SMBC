@@ -140,7 +140,7 @@ export interface CharacterDef {
   /**
    * What the touch buttons say for this hero right now (short upper-case words; null hides a
    * button that does nothing in this state). Merged over the level's defaults: A "JUMP",
-   * Start "PAUSE", B and C hidden, Select "TOOLS" with two or more tools (touch-labels.ts).
+   * Start "MENU", B and C hidden, Select "TOOLS" with two or more tools (touch-labels.ts).
    */
   touchLabels?(p: Player, world: World): TouchLabels;
 }

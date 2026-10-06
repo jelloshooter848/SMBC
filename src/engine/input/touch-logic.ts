@@ -1,5 +1,5 @@
 import type { Action } from './actions';
-import type { TouchMode } from '../save/settings';
+import { TOUCH_MODES, type TouchMode } from '../save/settings';
 import type { TouchLabels } from './touch';
 
 /*
@@ -57,6 +57,25 @@ export function dpadDirs(dx: number, dy: number, radius: number): DpadDirs {
 }
 
 /** Floating stick: the centre after the thumb moved to (x, y); it trails a thumb dragged far out. */
+/** Floating stick: its centre stays this far (× radius) from every screen edge. */
+export const FLOAT_EDGE_R = 0.8;
+
+/**
+ * Floating stick: keep the centre `FLOAT_EDGE_R` × radius inside a `w` × `h` screen, so a touch
+ * near an edge can still push towards it (down near the bottom, left and run-left near the left).
+ */
+export function clampCentre(
+  x: number,
+  y: number,
+  radius: number,
+  w: number,
+  h: number,
+): { cx: number; cy: number } {
+  const m = FLOAT_EDGE_R * radius;
+  const clamp = (v: number, hi: number) => (hi < m ? hi / 2 : Math.max(m, Math.min(hi - m, v)));
+  return { cx: clamp(x, w), cy: clamp(y, h) };
+}
+
 export function followCentre(
   cx: number,
   cy: number,
@@ -91,6 +110,18 @@ export type LastInput = 'touch' | 'keys' | null;
  * shows it, a key or gamepad button hides it) and otherwise the device: phones and tablets
  * (coarse primary pointer that cannot hover) yes, desktops and touchscreen laptops no.
  */
+/**
+ * The next touch mode for a menu row (Auto → On → Off). While the player is on touch, Off is
+ * skipped (Auto ↔ On): it would hide the pad with no way to bring it back by touch, so Off can
+ * only be chosen with a keyboard or gamepad.
+ */
+export function nextTouchMode(mode: TouchMode, dir: -1 | 1, last: LastInput): TouchMode {
+  const modes: readonly TouchMode[] = last === 'touch' ? ['auto', 'on'] : TOUCH_MODES;
+  const i = modes.indexOf(mode);
+  if (i < 0) return 'auto';
+  return modes[(i + dir + modes.length) % modes.length] as TouchMode;
+}
+
 export function touchPadVisible(mode: TouchMode, facts: TouchFacts, last: LastInput): boolean {
   if (mode === 'on') return true;
   if (mode === 'off') return false;
@@ -139,6 +170,11 @@ export function hitButton(x: number, y: number, targets: readonly ButtonTarget[]
 
 /** No label is drawn smaller than this font size (px at touch scale 1): readable on a phone. */
 export const LABEL_MIN_PX = 11;
+/**
+ * The exception: one long word with nowhere to wrap (BOOMERANG, SHURIKEN, WINDMILL) may shrink to
+ * this instead, so the full word is shown rather than an abbreviation.
+ */
+export const LABEL_LONG_WORD_MIN_PX = 8;
 /** A two-line label is drawn no bigger than this fraction of the button's font. */
 export const LABEL_WRAP_SCALE = 0.85;
 /** A label that could wrap stays on one line while it fits at this scale or more. */
@@ -165,6 +201,24 @@ export const SMALL_BUTTON: ButtonShape = { w: 68, h: 30, font: 12 };
 export function buttonShape(a: Action): ButtonShape {
   return a === 'start' || a === 'select' ? SMALL_BUTTON : FACE_BUTTON;
 }
+
+/** Where a button sits, in px at touch scale 1: from the right edge, and the bottom (or top). */
+export type ButtonPlace = { right: number; bottom: number } | { right: number; top: number };
+
+/**
+ * The right-thumb cluster: A low on the right, B low on the left, C above between them, and
+ * Select (the tool-belt swap) just up and to the left of C, so swapping sits next to using
+ * and away from A/B. Start alone in the top-right corner. Everything scales with --ts.
+ */
+export const BUTTON_PLACES: Readonly<
+  Record<'jump' | 'attack' | 'special' | 'select' | 'start', ButtonPlace>
+> = {
+  jump: { right: 24, bottom: 40 },
+  attack: { right: 104, bottom: 24 },
+  special: { right: 60, bottom: 114 },
+  select: { right: 134, bottom: 167 },
+  start: { right: 16, top: 10 },
+};
 
 /** Text width in em of the bold button font. */
 export type MeasureEm = (text: string) => number;
@@ -229,7 +283,10 @@ export interface LabelFit {
   /** One line, or two when that reads bigger (only at a space or hyphen). */
   lines: string[];
   wrap: boolean;
-  /** False when the label only fits below LABEL_MIN_PX (it is then drawn at the floor, clipped). */
+  /**
+   * False when the label only fits below LABEL_MIN_PX (LABEL_LONG_WORD_MIN_PX for a single word);
+   * it is then drawn at that floor, clipped.
+   */
   fits: boolean;
 }
 
@@ -251,7 +308,9 @@ export function fitLabel(text: string, shape: ButtonShape, measure: MeasureEm = 
       }
     }
   }
-  const min = LABEL_MIN_PX / shape.font;
+  // A single word that cannot wrap may go below the floor, down to LABEL_LONG_WORD_MIN_PX.
+  const longWord = !/[\s-]/.test(t) && scale * shape.font < LABEL_MIN_PX;
+  const min = (longWord ? LABEL_LONG_WORD_MIN_PX : LABEL_MIN_PX) / shape.font;
   const fits = scale >= min;
   return { scale: Math.max(min, Math.floor(scale * 100) / 100), lines, wrap: lines.length > 1, fits };
 }

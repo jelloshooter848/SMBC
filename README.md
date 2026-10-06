@@ -26,12 +26,15 @@ Keyboard: arrows move, **Z** jump, **X** run / attack (and _back_ in menus), **C
 
 Touch controls appear on phones and tablets (a touch-first screen that cannot hover; touchscreen
 laptops count as desktops). In _Auto_ they also come up on the first touch and go away when a key
-or gamepad button is used; the pause menu's **Touch controls** row switches Auto / On / Off. The
+or gamepad button is used; the pause menu's **Touch controls** row switches Auto / On / Off (on
+touch it offers only Auto / On, so the pad can't be switched off by touch with no way back). The
 d-pad's zones are by angle, with wide left/right bands and a firmer push needed for down, so running
 does not crouch by accident. Pushing it past the ring runs (Mario and Luigi) without firing. It is
 a fixed pad by default, or a floating stick that centres under your thumb anywhere on the left of
 the screen (**Options > Controls > Touch d-pad**). A thumb can roll from one button to the next
-without lifting, and the buttons say what they do for the hero and scene.
+without lifting, and the buttons say what they do for the hero and scene. Heroes with a tool belt
+get a small swap button (TOOLS, WEAPON, NINPO) just above and left of C, the button that uses the
+tool. Touch size runs from 100% to 160%.
 
 ### World map and save files
 
@@ -112,7 +115,7 @@ has the same guide for the hero you are playing.
 - **Audio**: master, music and sound volumes, mute.
 - **Controls**: full keyboard and gamepad remapping; touch pad auto/on/off, size, and fixed
   or floating d-pad. The touch buttons say what they do right now (JUMP, RUN or FIRE, SWORD,
-  the selected tool's name, PAUSE, OK/BACK in menus) and hide when they do nothing for your hero.
+  the selected tool's name, MENU, OK/BACK in menus) and hide when they do nothing for your hero.
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.

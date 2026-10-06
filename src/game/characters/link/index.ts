@@ -202,11 +202,11 @@ function applyJumpSpell(p: Player): void {
 }
 
 /**
- * Touch captions for the belt (C shows the selected tool). Each must fit the round button at a
- * readable size (fitLabel): BOOMERANG would not, so RANG; HI-JUMP wraps after its hyphen.
+ * Touch captions for the belt (C shows the selected tool), sized by fitLabel: BOOMERANG is one
+ * long word, so it shrinks (down to LABEL_LONG_WORD_MIN_PX); HI-JUMP wraps after its hyphen.
  */
 export const LINK_TOOL_LABELS: Record<string, string> = {
-  boomerang: 'RANG',
+  boomerang: 'BOOMERANG',
   bomb: 'BOMB',
   jump: 'HI-JUMP',
   shield: 'SHIELD',

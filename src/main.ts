@@ -81,6 +81,7 @@ function boot(): void {
     input,
     announcer,
     applySettings: () => applySettings(),
+    lastInput: () => touch.lastInput,
     controlScheme: () =>
       touch.shown
         ? 'touch'

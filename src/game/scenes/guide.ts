@@ -46,7 +46,7 @@ const TOUCH_PAD: Record<string, string> = {
   'left/right': 'D-PAD',
   up: 'UP',
   down: 'DOWN',
-  start: 'PAUSE',
+  start: 'MENU',
   jump: 'JUMP',
 };
 

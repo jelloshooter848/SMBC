@@ -122,11 +122,11 @@ describe('touch labels per scene', () => {
     expect(shown(h.game)).toBe('OK - - - -');
   });
 
-  it('in a level: player 1’s hero, PAUSE on Start; the pause menu offers RESUME', () => {
+  it('in a level: player 1’s hero, MENU on Start; the pause menu offers RESUME', () => {
     const h = makeGame();
     h.game.newGame(LINK, '1-1', MARIO);
     const level = toLevel(h);
-    expect(shown(h.game)).toBe('JUMP SWORD RANG PAUSE TOOLS');
+    expect(shown(h.game)).toBe('JUMP SWORD BOOMERANG MENU TOOLS');
     level.world.players[0]?.def.behaviour.onPowerUp(level.world.players[0], 'mushroom', level.world);
     h.game.scenes.push(new PauseScene(h.game, level.world));
     expect(shown(h.game)).toBe('OK - - RESUME -');
@@ -139,7 +139,7 @@ describe('touch labels per scene', () => {
     const h = makeGame();
     h.game.newGame(MARIO, '1-1', SAMUS);
     toLevel(h);
-    expect(shown(h.game)).toBe('JUMP RUN - PAUSE -');
+    expect(shown(h.game)).toBe('JUMP RUN - MENU -');
   });
 
   it('the guide turns pages with NEXT and leaves with BACK', () => {

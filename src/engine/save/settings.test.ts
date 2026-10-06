@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { defaultSettings, loadSettings, saveSettings, SETTINGS_KEY } from './settings';
+import {
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  SETTINGS_KEY,
+  TOUCH_SCALE_MAX,
+  TOUCH_SCALE_MIN,
+} from './settings';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -47,6 +54,15 @@ describe('settings: fields added after release', () => {
     expect(loadSettings().input.dpad).toBe('fixed');
     store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { dpad: 'floating' } }));
     expect(loadSettings().input.dpad).toBe('floating');
+  });
+
+  it('a stored Touch size of 0.6 (old minimum) loads as the readable minimum 1', () => {
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { touchScale: 0.6 } }));
+    expect(loadSettings().input.touchScale).toBe(TOUCH_SCALE_MIN);
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { touchScale: 1.3 } }));
+    expect(loadSettings().input.touchScale).toBe(1.3);
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, input: { touchScale: 9 } }));
+    expect(loadSettings().input.touchScale).toBe(TOUCH_SCALE_MAX);
   });
 
   it('gives old stored bindings the new run action without touching remaps', () => {
