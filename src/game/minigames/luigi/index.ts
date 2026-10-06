@@ -1,31 +1,16 @@
 import type { MiniGameDef } from '../types';
 import type { Scene } from '@engine/scene';
+import { MirrorRaceScene } from './race';
 
 /**
- * Placeholder until the Mirror Race lands: jump passes, attack fails, menu quits. Keeps the
- * unlock flow testable on its own.
+ * Luigi's mini game, the Mirror Race: race brainwashed Luigi along a short course to the
+ * flagpole as Mario; touching it first frees him (race.ts).
  */
 export const LUIGI_MINIGAME: MiniGameDef = {
   hero: 'luigi',
   title: 'MIRROR RACE',
-  rules: ['BEAT LUIGI TO THE FLAG!'],
+  rules: ['RACE LUIGI TO THE FLAG!', 'RUN AND JUMP.', "DON'T FALL IN A PIT!"],
   create(game, done): Scene {
-    let over = false;
-    const end = (r: 'pass' | 'fail' | 'quit'): void => {
-      if (over) return;
-      over = true;
-      done(r);
-    };
-    return {
-      update(input) {
-        if (input.pressed('jump')) end('pass');
-        else if (input.pressed('attack')) end('fail');
-        else if (input.pressed('start')) end('quit');
-      },
-      render(r) {
-        r.clear('#000');
-        r.text(game.ctx.assets.sheet('font'), 'MIRROR RACE', 84, 112);
-      },
-    };
+    return new MirrorRaceScene(game, done);
   },
 };

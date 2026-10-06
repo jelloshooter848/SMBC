@@ -22,6 +22,7 @@ import { Game } from '@game/scenes/game';
 import { CHARACTERS } from '@game/characters/registry';
 import { DEFAULT_ASSIST } from '@game/context';
 import { MENU_TOUCH_LABELS } from '@game/touch-labels';
+import { miniGameFor } from '@game/minigames';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
@@ -187,6 +188,18 @@ function boot(): void {
       .then((text) => game.playShared(parseTextMap(text, 'custom-shared')))
       .catch((e: Error) => console.warn(`shared level could not be loaded: ${e.message}`));
   } else game.showTitle();
+  // Dev server only: `?minigame=luigi` plays that hero's mini game straight away, over the title
+  // (for tuning and screenshots; the scene is window.__miniGame); the result is logged and the
+  // title follows.
+  const minigame = import.meta.env.DEV ? miniGameFor(params.get('minigame') ?? '') : null;
+  if (minigame) {
+    const scene = minigame.create(game, (result) => {
+      console.info(`[dev] mini game ${minigame.hero}: ${result}`);
+      game.showTitle();
+    });
+    (window as unknown as { __miniGame?: unknown }).__miniGame = scene;
+    game.scenes.push(scene);
+  }
   loop.start();
   (window as unknown as { __bootDone?: () => void }).__bootDone?.();
 }
