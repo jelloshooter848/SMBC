@@ -9,6 +9,7 @@ import { LINK } from '@game/characters/link';
 import { Cheep } from '@game/entities/enemies/cheep';
 import { Blooper } from '@game/entities/enemies/blooper';
 import { Rng } from '@engine/rng';
+import { SCREEN_W } from '@engine/viewport';
 import { px, toPx, vel } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
 import type { Action } from '@engine/input/actions';
@@ -145,18 +146,46 @@ describe('Swimming Cheep Cheeps', () => {
   });
 
   it('starts within two tiles of its map spot, with its bottom in rows 3-11', () => {
-    const all = [...fish(100, 40, 12), ...fish(100, 40, 2)];
+    const rng = new Rng(1234);
     const xs = new Set<number>();
-    for (const c of all) {
-      const dx = toPx(c.body.x) - 2 - 40 * 16;
-      xs.add(dx);
-      expect([-32, -16, 0, 16, 32]).toContain(dx);
-      const tileBottom = toPx(c.body.y) + 14;
-      expect(tileBottom).toBeGreaterThanOrEqual(64);
-      expect(tileBottom).toBeLessThanOrEqual(192);
-      expect(tileBottom % 16).toBe(0);
-    }
+    for (const ty of [12, 2])
+      for (let i = 0; i < 100; i++) {
+        const s = Cheep.placeSwimmer({ type: 'cheep-grey', x: 40, y: ty }, rng);
+        xs.add(s.x - 40);
+        expect(Math.abs(s.x - 40)).toBeLessThanOrEqual(2);
+        expect(s.y).toBeGreaterThanOrEqual(3);
+        expect(s.y).toBeLessThanOrEqual(11);
+      }
     expect(xs.size).toBe(5);
+    const other = { type: 'goomba', x: 40, y: 12 };
+    expect(Cheep.placeSwimmer(other, rng)).toBe(other);
+  });
+
+  it('in 7-2 no swimming fish is ever spawned inside the visible screen', () => {
+    const seen = new Set<Cheep>();
+    const inView: number[] = [];
+    runSim({
+      level: map('world7', '7-2'),
+      character: MARIO,
+      script: none,
+      maxFrames: 3000,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        for (const e of w.entities)
+          if (e instanceof Cheep && !e.flying && !seen.has(e)) {
+            seen.add(e);
+            // Spawned during the previous update, with the camera where it is now.
+            if (f > 1 && e.body.x < w.camera.x + px(SCREEN_W)) inView.push(toPx(e.body.x - w.camera.x));
+          }
+        // Carry the player along the top of the water at swimming speed, past any wall.
+        w.player.body.x = px(32) + (f * MARIO.movement.maxWalk) / 16;
+        w.player.body.y = px(48);
+        w.player.body.vy = 0;
+        return [];
+      },
+    });
+    expect(seen.size).toBeGreaterThan(10);
+    expect(inView).toEqual([]);
   });
 
   it('half swim level, the rest wave a tile up and down at 0.167 px/f', () => {

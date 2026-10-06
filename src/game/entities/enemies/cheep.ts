@@ -1,6 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
-import { px, tileToSub, toPx, velToSub } from '@engine/math/units';
+import { px, toPx, velToSub } from '@engine/math/units';
 import type { Rng } from '@engine/rng';
+import type { EntitySpawn } from '../../level/schema';
 import { Enemy } from './enemy';
 import { ENEMY_SCORES } from '../../rules/score';
 import type { View } from '../entity';
@@ -14,8 +15,8 @@ const WAVE_SPEED = 0x002ab; // 0.167 px/f
 /** calcPosition(): a wave turns one tile above and below its start (yWaveTop / yWaveBot). */
 const WAVE_RANGE = px(16);
 /** calcPosition(): the start tile's bottom is pulled into GLOB_STG_TOP + 4 tiles .. GLOB_STG_BOT - 3 tiles. */
-const SWIM_BOTTOM_MIN = px(4 * 16);
-const SWIM_BOTTOM_MAX = px(15 * 16 - 3 * 16);
+const SWIM_ROW_MIN = 3;
+const SWIM_ROW_MAX = 11;
 /** FLYING_GRAVITY = 375. */
 const FLY_GRAVITY = 0x000d5; // 0.052 px/f²
 /** FLYING_JUMP_PWR = 555: from below the screen the fish peaks about 205 px up. */
@@ -47,19 +48,29 @@ export class Cheep extends Enemy {
   wave = false;
 
   /**
-   * A swimming fish from a map entry, set up like the original: Level.as (lines 953-958) ignores
-   * the map's colour and picks red (fast) or grey (slow) 50/50; CheepFast.calcMovement picks
-   * "wave" or "straight" 50/50; calcPosition moves it -2..+2 tiles each way and then a tile at a
-   * time until its bottom is in rows 3-11. `tileX`, `tileY`: the map tile's top-left (subpixels).
+   * CheepFast.calcPosition, rolled when the level is loaded (as the original does) so the fish
+   * still spawns off screen: a swimming fish's map entry moves -2..+2 tiles each way, then a tile
+   * at a time until its bottom is in rows 3-11 (GLOB_STG_TOP + 4 tiles .. GLOB_STG_BOT - 3 tiles).
+   * Other entries are returned unchanged.
+   */
+  static placeSwimmer(s: EntitySpawn, rng: Rng): EntitySpawn {
+    if (s.type !== 'cheep-red' && s.type !== 'cheep-grey') return s;
+    const x = Math.max(0, s.x + rng.int(5) - 2);
+    let y = s.y + rng.int(5) - 2;
+    while (y > SWIM_ROW_MAX) y--;
+    while (y < SWIM_ROW_MIN) y++;
+    return { ...s, x, y };
+  }
+
+  /**
+   * A swimming fish from a (placed) map entry, set up like the original: Level.as (lines 953-958)
+   * ignores the map's colour and picks red (fast) or grey (slow) 50/50; CheepFast.calcMovement
+   * picks "wave" or "straight" 50/50. `tileX`, `tileY`: the tile's top-left (subpixels).
    */
   static swimmer(tileX: number, tileY: number, rng: Rng): Cheep {
     const color = rng.float() > 0.5 ? 'red' : 'grey';
     const wave = rng.float() > 0.5;
-    const x = tileX + tileToSub(rng.int(5) - 2);
-    let bottom = tileY + px(16) + tileToSub(rng.int(5) - 2);
-    while (bottom > SWIM_BOTTOM_MAX) bottom -= px(16);
-    while (bottom < SWIM_BOTTOM_MIN) bottom += px(16);
-    const c = new Cheep(x + px(2), bottom - px(14), color);
+    const c = new Cheep(tileX + px(2), tileY + px(2), color);
     c.wave = wave;
     if (wave) c.body.vy = -WAVE_SPEED;
     return c;

@@ -157,7 +157,9 @@ export class World {
     this.rng = new Rng(level.id.length * 7919 + 1);
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     this.time = startTime(level, state, start);
-    this.spawns = [...level.entities].sort((a, b) => a.x - b.x);
+    // Swimming Cheep Cheeps get their random start tile now, like the original's calcPosition at
+    // level load, so the shifted fish still spawns off screen.
+    this.spawns = level.entities.map((e) => Cheep.placeSwimmer(e, this.rng)).sort((a, b) => a.x - b.x);
     this.bowserFire = BowserFire.forLevel(level);
 
     const sx = start.x ?? level.start.x;
@@ -303,7 +305,8 @@ export class World {
         return new Piranha(s.x, s.y, true, !!s.props?.red);
       case 'cheep-red':
       case 'cheep-grey':
-        // The map's colour is ignored, as in the original (Level.as lines 953-958).
+        // The map's colour is ignored, as in the original (Level.as lines 953-958); the start tile
+        // was already moved by Cheep.placeSwimmer.
         return Cheep.swimmer(x, y, this.rng);
       case 'blooper':
         return new Blooper(x + px(2), y + px(2));
