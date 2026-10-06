@@ -42,12 +42,13 @@ import { campaignLevel } from '../level/campaign';
 import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
-import { StoryScene, STORY_PAGES } from './story';
+import { levelTutorial, newTutorialRun, stageTutorial, type TutorialRun } from '../tutorial/stage-tutorial';
 import {
   FIRST_HERO,
   loadSave,
   saveFromState,
   stateFromSave,
+  tutorialHeroes,
   writeSave,
   type SaveFile,
   type SaveSlot,
@@ -106,8 +107,17 @@ export class Game {
   pendingReveal: string[] = [];
   /** The file's developer "Unlock all" map flag (SaveFile.devUnlockAll); see `mapUnlockAll`. */
   devUnlockAll = false;
+  /** The file's developer "All heroes" flag (SaveFile.devAllHeroes); see `heroLocked`. */
+  devAllHeroes = false;
   /** Heroes freed on the campaign's file (SaveFile.freed); see `heroLocked`. */
   freed: string[] = [FIRST_HERO];
+  /**
+   * The stage tutorial being played (1-0): its lesson, kept across respawns and its pipe room;
+   * null outside one (src/game/tutorial/stage-tutorial.ts).
+   */
+  tutorialRun: TutorialRun | null = null;
+  /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
+  tutorials: string[] = [];
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -276,6 +286,8 @@ export class Game {
     this.campaign = null;
     this.pendingReveal = [];
     this.devUnlockAll = false;
+    this.endTutorial();
+    this.devAllHeroes = false;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -288,6 +300,7 @@ export class Game {
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;
+    this.endTutorial();
     if (this.campaign) this.addReveal(openMetExits(this.mapProgress));
     this.scenes.clear();
     this.scenes.push(new WorldMapScene(this, page ?? this.mapProgress.position.page, opts));
@@ -299,6 +312,7 @@ export class Game {
    * a two-player file, then the level (its intro scene when it has one). A file stays one- or
    * two-player as created. The picks apply only once the level starts, and are saved to the file
    * so the map and the file select show them; Back from either pick returns to the map unchanged.
+   * A stage tutorial (1-0) is played with its own hero, with no pick (player two keeps theirs).
    */
   enterLevelFromMap(levelId: string): void {
     const s = this.state;
@@ -315,6 +329,22 @@ export class Game {
       const entry = entryLevel(levelId, this.deps.getLevel);
       this.goToLevel(entry === levelId ? this.firstArea(levelId) : entry, { mode: 'stand' });
     };
+    const tutorial = stageTutorial(levelId);
+    const tutorialHero = this.deps.characters.find((c) => c.id === tutorial?.hero);
+    if (tutorial && tutorialHero) {
+      // Saved as the file has it; the tutorial's hero plays, and the file's comes back after.
+      s.checkpoint = null;
+      this.autosave();
+      const heroes =
+        s.character === tutorialHero
+          ? null
+          : { character: s.character, powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+      if (heroes) this.setHero(0, tutorialHero);
+      this.tutorialRun = newTutorialRun(tutorial, s.lives, heroes);
+      this.deps.ctx.audio.stopMusic();
+      this.goToLevel(this.firstArea(levelId), { mode: 'stand' });
+      return;
+    }
     const pick = (player: 0 | 1, then: () => void) =>
       new CharacterSelectScene(this, {
         player,
@@ -325,6 +355,8 @@ export class Game {
           then();
         },
         onCancel: back,
+        // A training room on the way plays its own music; the map's comes back after it.
+        music: mapPage(this.mapProgress.position.page)?.music,
       });
     this.scenes.push(
       pick(0, () => {
@@ -344,8 +376,11 @@ export class Game {
     if (!base) return;
     const p = this.mapProgress;
     this.mapLastNode[p.position.page] = p.position.node;
+    // In a stage tutorial that swapped in its own hero, the file keeps its own.
+    const heroes = this.tutorialRun?.heroes;
+    const state = heroes ? { ...this.state, ...heroes } : this.state;
     const save: SaveFile = {
-      ...saveFromState(base, this.state),
+      ...saveFromState(base, state),
       cleared: p.cleared.slice(),
       pages: p.pages.slice(),
       secrets: p.secrets.slice(),
@@ -354,7 +389,9 @@ export class Game {
       lastNode: { ...this.mapLastNode },
       pendingReveal: this.pendingReveal.slice(),
       devUnlockAll: this.devUnlockAll,
+      devAllHeroes: this.devAllHeroes,
       freed: this.freed.slice(),
+      tutorials: this.tutorials.slice(),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -371,8 +408,24 @@ export class Game {
     this.state.time = null;
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
+    this.endTutorial();
     this.autosave();
     this.showMap(this.mapProgress.position.page, opts);
+  }
+
+  /**
+   * A stage tutorial is over (its clear, a skip, the map, the title): the file's own hero, if the
+   * tutorial swapped in its own, comes back with its power, hit points and kit.
+   */
+  endTutorial(): void {
+    const heroes = this.tutorialRun?.heroes;
+    this.tutorialRun = null;
+    if (!heroes) return;
+    const s = this.state;
+    s.character = heroes.character;
+    s.powerState = heroes.powerState;
+    s.hp = heroes.hp;
+    s.kit = { ...heroes.kit };
   }
 
   /** Queue map ids to draw in (each page takes its own when shown). */
@@ -504,16 +557,26 @@ export class Game {
 
   /** Map menu "Save and quit": save the file, then the title. */
   saveAndQuit(): void {
+    this.endTutorial();
     this.autosave();
     this.showTitle();
   }
 
   /**
    * Whether hero `def` is still a brainwashed captive on the campaign's file, so it cannot be
-   * picked. Always false outside campaign mode (dev, ?level=, custom, shared, playtests).
+   * picked. Always false outside campaign mode (dev, ?level=, custom, shared, playtests), and
+   * while the file's dev "All heroes" flag is on in dev mode (`freed` itself stays as it is).
    */
   heroLocked(def: CharacterDef): boolean {
+    if (this.devMode && this.devAllHeroes) return false;
     return this.campaign !== null && !this.freed.includes(def.id);
+  }
+
+  /** A player whose hero is locked (the real roster is back) gives way to the first hero. */
+  dropLockedHeroes(): void {
+    if (this.heroLocked(this.state.character)) this.setHero(0, this.firstHero);
+    const c2 = this.state.character2;
+    if (c2 && this.heroLocked(c2)) this.setHero(1, this.firstHero);
   }
 
   /** Heroes still to be found on the campaign's file (0 outside campaign mode). */
@@ -530,6 +593,12 @@ export class Game {
   /** A mini game was passed: hero `id` joins the file's roster, saved at once. */
   freeHero(id: string): void {
     if (!this.freed.includes(id)) this.freed.push(id);
+    this.autosave();
+  }
+
+  /** The "<HERO> TRAINING?" question was answered (yes or no): never asked again; saved at once. */
+  answerTraining(id: string): void {
+    if (!this.tutorials.includes(id)) this.tutorials.push(id);
     this.autosave();
   }
 
@@ -552,6 +621,7 @@ export class Game {
 
   /** Developer level select: any level, character and power state, with 99 lives. */
   devStart(levelId: string, character: CharacterDef, power: string, fullKit = false): void {
+    this.tutorialRun = null;
     this.state = newGameState(character);
     this.state.lives = 99;
     if (fullKit && character.devKit) this.state.kit = character.devKit();
@@ -591,6 +661,7 @@ export class Game {
 
   /** Run a level from the editor; returns to it when the level ends or the player quits. */
   playtest(level: LevelData, done: () => void): void {
+    this.tutorialRun = null;
     this.state = newGameState(this.state.character);
     this.state.lives = 99;
     this.playtestDone = done;
@@ -601,6 +672,7 @@ export class Game {
 
   /** Play a level decoded from a share link with the default character. */
   playShared(level: LevelData): void {
+    this.tutorialRun = null;
     this.sharedLevel = level;
     this.state = newGameState(this.deps.characters[0] as CharacterDef);
     this.playtestDone = null;
@@ -610,6 +682,7 @@ export class Game {
   }
 
   newGame(character: CharacterDef, levelId = '1-1', character2: CharacterDef | null = null): void {
+    this.tutorialRun = null;
     this.state = newGameState(character, character2);
     this.playtestDone = null;
     this.quickRespawn = false;
@@ -637,11 +710,19 @@ export class Game {
     this.pendingReveal = save.pendingReveal.slice();
     this.mapLastNode = { ...save.lastNode };
     this.devUnlockAll = save.devUnlockAll === true;
+    this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
-    // A hero the file has not freed (a hand-edited file) gives way to Mario.
-    if (this.heroLocked(this.state.character)) this.setHero(0, this.firstHero);
-    const c2 = this.state.character2;
-    if (c2 && this.heroLocked(c2)) this.setHero(1, this.firstHero);
+    // A hero the file has not freed (a hand-edited file, or one picked through "All heroes" with
+    // dev mode since off) gives way to Mario.
+    this.dropLockedHeroes();
+    // The freed heroes the file plays now count as answered: their training is never asked. (A
+    // hero picked only through dev "All heroes" is not freed, so its real question still comes.)
+    this.tutorials = tutorialHeroes([
+      ...(save.tutorials ?? []),
+      ...[this.state.character.id, this.state.character2?.id].filter(
+        (id) => id !== undefined && this.freed.includes(id),
+      ),
+    ]);
     this.mapProgress = {
       cleared: save.cleared.slice(),
       pages: save.pages.slice(),
@@ -653,12 +734,43 @@ export class Game {
   }
 
   /**
-   * A file just created on the file select: the story (Bowser has brainwashed the heroes of
-   * other worlds; Mario must find and free them), then its World 1 map.
+   * A file just created on the file select: its World 1 map, the hero standing on 1-0, Mario's
+   * tutorial stage, where Toad tells the story (Bowser has brainwashed the heroes of other worlds;
+   * Mario must find and free them). 1-1 opens once 1-0 is cleared (or skipped from its pause menu).
    */
   startNewFile(slot: SaveSlot, save: SaveFile): void {
-    this.scenes.clear();
-    this.scenes.push(new StoryScene(this, STORY_PAGES, () => this.openFile(slot, save)));
+    this.openFile(slot, save);
+  }
+
+  /**
+   * Pause → "Skip tutorial" in a stage tutorial: campaign play counts it as cleared and returns to
+   * the map, which draws in what that opens (1-0: the road to 1-1), as a clear would. Elsewhere
+   * (dev select, ?level=) play goes on to the level its exit leads to.
+   */
+  skipTutorial(): void {
+    const run = this.tutorialRun;
+    if (!run) return;
+    this.state.checkpoint = null;
+    this.state.time = null;
+    // Campaign: the clear's way back to the map gives the file's hero back (endTutorial).
+    if (this.campaign) {
+      this.levelCleared(run.level);
+      return;
+    }
+    this.endTutorial();
+    const next = this.exitOf(run.level);
+    if (next && next !== 'end') this.goToLevel(next, { mode: 'stand' });
+    else this.showTitle();
+  }
+
+  /** Where level `id`'s exit leads (its `next`), or null without one. */
+  private exitOf(id: string): string | null {
+    try {
+      const exit = this.deps.getLevel(id).zones.find((z) => z.kind === 'exit');
+      return exit?.kind === 'exit' ? exit.next : null;
+    } catch {
+      return null;
+    }
   }
 
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */
@@ -696,7 +808,11 @@ export class Game {
     this.deps.ctx.audio.setTempoScale(1);
     this.scenes.clear();
     this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
-    const time = startTime(level, this.state, start);
+    // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
+    // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
+    const tutorial = levelTutorial(level);
+    if (!tutorial) this.endTutorial();
+    const time = tutorial ? null : startTime(level, this.state, start);
     this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
   }
 

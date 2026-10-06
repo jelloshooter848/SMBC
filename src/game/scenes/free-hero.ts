@@ -71,7 +71,7 @@ export function freedCard(hero: CharacterDef): string[] {
 }
 
 /** The run's carried state, so nothing a round does to it leaks back into the level. */
-function snapshot(s: GameState): GameState {
+export function snapshot(s: GameState): GameState {
   return {
     ...s,
     kit: { ...s.kit },

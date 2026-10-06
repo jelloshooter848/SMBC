@@ -17,6 +17,7 @@ game themed on that hero's own game. Passing it frees the hero, who joins the fi
   in the list. Dev starts, `?level=`, custom and shared levels and editor play-tests keep
   every hero. `Game.freeHero(id)` adds a hero and saves at once.
 - A file whose current hero is locked (hand-edited) falls back to Mario when it opens.
+- Dev mode's map menu **All heroes** (`SaveFile.devAllHeroes`, missing = off) makes `heroLocked` false for every hero while dev mode is on; it never writes `freed`, and turning it off restores the real roster (a player on a locked hero goes back to Mario).
 
 ### Character select
 
@@ -106,3 +107,62 @@ interface MiniGameDef {
 2. Optionally, the hero's own challenge lines in `DIALOGUE` (`free-hero.ts`).
 3. `captive x y hero=<id>` in a campaign level's `[entities]`, on a spot the player can reach.
    Prove it with a sim.
+
+## Hero training (optional practice rooms)
+
+Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:
+"tutorials other than Mario's can be optional"). Code: `src/game/tutorial/`.
+
+- **The question.** The first time a hero other than Mario is picked on a file (entering a level
+  from the map, the pick after a death, player two's pick), "<HERO> TRAINING?" asks YES / NO
+  (`TrainingQuestionScene`, announced). YES plays the room, then the pick goes on exactly as it
+  would have (the level starts, or the respawn); NO goes on at once. Either answer is recorded and
+  saved at once, so each hero is asked once per file. Never asked outside campaign play, in an
+  editor play-test, for Mario, or for a hero the file has not freed (one picked through dev mode's
+  "All heroes" keeps its real question for when it is freed). The hook is in
+  `CharacterSelectScene` (`needsTraining`, `askTraining`), so every campaign pick follows it. After
+  the room the map's music comes back (`HeroPick.music`) for player two's pick.
+- **The save.** `SaveFile.tutorials?: string[]`: hero ids whose question was answered, each once,
+  known ids only. It is optional (no format bump); validation (and `openFile`) adds the file's
+  current `character` / `character2` when freed, so players already using a hero are never
+  interrupted.
+  `Game.tutorials` carries it, `Game.answerTraining(id)` records and saves.
+- **Pause → Training.** In a campaign level the pause menu offers Training (one entry per hero
+  in co-op, Mario excluded). The room plays over the paused level; afterwards the pause menu
+  closes and the level goes on as it was left (its clock stood still, its music restarts).
+- **The room.** `src/content/levels/practice.map`, one locked screen loaded with `?raw` (kept out
+  of the level library and the dev select): a floor, a step up to a high ledge, a brick row with a
+  ? block, a target dummy (`dummy x y` in the map; `TargetDummy` never moves or hurts, pops after
+  three hits and comes back), a gap (falling in puts the hero back at the start) and a tall wall to
+  cling to. It runs in a World of its own with a fresh GameState for the hero and its full kit
+  (`devKit`: Mega Man's helmet, Samus's missiles, Simon's sub-weapons...), and the run's GameState
+  is snapshotted and restored around it (as the mini games do), so lives, score and power are never
+  touched. Hit points stay topped up, so nothing in the room can end it. The HUD shows TRAINING
+  where WORLD and TIME go, and no score or coins (`drawHud`'s `place` option).
+- **Lessons** (`lessons.ts`). `TrainingLesson { id, prompt, done(tracker), setup?(room) }` per hero in
+  `LESSONS`; `MoveStats` watches the player and world each frame (jumps and their height,
+  ground speed and glide, attacks, shots by kind and direction, charge shots, slides, crouching,
+  tool changes, wall cling and wall jumps, scratch flags like the morph ball, bombs, shield blocks,
+  gap crossings, and how the dummy was hit). The tracker is reset when a lesson comes up, so each
+  is done while its prompt shows. Prompts name abilities as the guide and touch buttons do (never
+  button letters); a button's ability is written `[SHOOT:attack]` and shown through `abilityHint`
+  ("SHOOT (X)" with keys or a pad, "SHOOT" on touch), falling back to the bare names when that
+  would not fit 3 lines of 25 columns (`promptText`). They come one at a time in a centred box
+  under the HUD (`drawRoomBox`: the stage tutorials' `drawPromptBox` from `stage-prompts.ts`,
+  24 px margins, with a green tick), announced; each ticks off with a sound and GOOD!, and after
+  the last READY! ends the room. MENU in the room: Continue / Skip training. Walking, jumping and
+  the basic attack never tick a move lesson (tested per hero): Luigi's stop counts only from a run,
+  Bill's aim counts once per shot (a Spread fan is one direction) and needs two aimed directions.
+
+| Hero     | Lessons                                                                                     |
+| -------- | ------------------------------------------------------------------------------------------- |
+| Luigi    | high jump, slippery stop, fireball (the lesson gives fire power)                            |
+| Link     | sword, down-thrust, up-thrust, shield blocks the dummy's shot, boomerang (USE TOOL / TOOLS) |
+| Mega Man | buster, slide, charge shot, special weapon (WEAPON, USE WEAPON)                             |
+| Samus    | beam, aim up, morph ball, bomb, missile                                                     |
+| Simon    | whip, crouch whip, sub-weapon (THROW), the committed jump over the gap                      |
+| Ryu      | sword slash, wall cling, wall jump, ninpo (CAST)                                            |
+| Bill     | shoot, 8-way aim (three directions), prone, jump and shoot                                  |
+
+To add a hero's training: a list in `LESSONS` (3-5 lessons, tested by
+`src/game/tutorial/lessons.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.

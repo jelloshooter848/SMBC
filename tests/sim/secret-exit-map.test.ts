@@ -143,7 +143,9 @@ describe('map header world label', () => {
   it('names the level on a level or castle node, just the world elsewhere', () => {
     expect(world(onMap('smb-1', '1-1'))).toBe('WORLD 1-1');
     expect(world(onMap('smb-1', '1-4'))).toBe('WORLD 1-4');
-    expect(world(onMap('smb-1', 'start'))).toBe('WORLD 1');
+    // World 1's start is a level: Mario's tutorial stage 1-0.
+    expect(world(onMap('smb-1', 'start'))).toBe('WORLD 1-0');
+    expect(world(onMap('smb-2', 'start'))).toBe('WORLD 2');
     expect(world(onMap('ll-10', 'll-10-2'))).toBe('LOST A-2');
     expect(world(onMap('ll-3', 'll-3-4'))).toBe('LOST 3-4');
     expect(world(onMap('ll-3', 'hub'))).toBe('LOST 3');

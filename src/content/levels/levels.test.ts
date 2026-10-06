@@ -630,3 +630,41 @@ describe('World 8 follows the original layouts', () => {
     );
   });
 });
+
+// Owner bug report 2026-10-06: the original's coin heavens (area TYPE="coinHeaven") are skinned by
+// the TG_COIN_HEAVEN theme groups (GameSuperMarioBros.as), which draw their groundNormal floor and
+// ledges as the NES cloud block, not as overworld ground.
+describe('Coin heavens stand on cloud blocks, as in the original', () => {
+  const tilesOf = (l: LevelData, id: number) => Array.from(l.tiles).filter((t) => t === id).length;
+  it.each([
+    ['2-1-sky', 61],
+    ['3-1-sky', 82],
+    ['5-2-sky', 61],
+    ['6-2-sky', 82],
+  ])('%s: the floor is a row of cloud blocks with no ground left', (id, floor) => {
+    const l = load(id as string);
+    expect(tilesOf(l, T.GROUND)).toBe(0);
+    let clouds = 0;
+    for (let x = 0; x < l.width; x++) if (tile(l, x, 13) === T.CLOUD_BLOCK) clouds++;
+    expect(clouds).toBe(floor);
+  });
+  it('2-1 sky: clouds on both sides of the vine hole, ending before the drop back to 2-1', () => {
+    const l = load('2-1-sky');
+    for (const x of [0, 3, 5, 61]) expect(tile(l, x, 13)).toBe(T.CLOUD_BLOCK);
+    expect(tile(l, 4, 13)).toBe(T.AIR); // the vine comes up through here
+    expect(tile(l, 62, 13)).toBe(T.AIR);
+  });
+  it('3-1 and 6-2 sky: the raised ledges are clouds too', () => {
+    for (const id of ['3-1-sky', '6-2-sky']) {
+      const l = load(id);
+      expect(tile(l, 32, 8)).toBe(T.CLOUD_BLOCK);
+      expect(tile(l, 67, 6)).toBe(T.CLOUD_BLOCK);
+      expect(tile(l, 51, 7)).toBe(T.CLOUD_BLOCK);
+    }
+  });
+  it("4-2's vine area is no coin heaven (a giant-mushroom platform area): it keeps its ground", () => {
+    const l = load('4-2-warp');
+    expect(tile(l, 0, 13)).toBe(T.GROUND);
+    expect(tilesOf(l, T.CLOUD_BLOCK)).toBe(0);
+  });
+});

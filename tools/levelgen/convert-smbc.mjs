@@ -340,6 +340,10 @@ function entryId(level) {
 function tileChar(tok, area, world) {
   const { name, params } = tok;
   const castle = area.type === 'castle';
+  // Coin heavens: the original skins them with its TG_COIN_HEAVEN theme groups (normal, night,
+  // gray; GameSuperMarioBros.as setUpLevelThemes), whose groundNormal is the NES cloud block. Our
+  // themes only recolour, so their ground becomes the cloud-block tile `O` (solid, like `#`).
+  const clouds = area.type === 'coinHeaven';
   // Platform and bridge levels are treetops, except World 4's giant mushrooms.
   // (The Lost Levels draw every platform level as treetops.)
   const trees = (area.type === 'platform' || area.type === 'cheepCheep') && (LOST || world !== 4);
@@ -348,6 +352,7 @@ function tileChar(tok, area, world) {
     case 'groundWideNormal':
     case 'groundSinglePiece':
     case 'groundCoral':
+      if (clouds) return 'O';
       return castle ? '%' : '#';
     case 'groundBlock':
     case 'boxGray':

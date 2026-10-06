@@ -179,8 +179,8 @@ export class FileSelectScene implements Scene {
 
   /**
    * Create a one-player file with Mario (the only hero it has freed) and open it on World 1's
-   * map after the story; the hero is picked on entering a level. (New two-player files are
-   * paused for now.)
+   * map, standing on 1-0 (the tutorial, where the story starts); the hero is picked on entering a
+   * level. (New two-player files are paused for now.)
    */
   private newFile(slot: SaveSlot): void {
     const save = newSave(slot, MARIO.id);

@@ -147,6 +147,8 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   ':': T.CHAIN,
   '%': T.CASTLE_BRICK,
   w: T.WATER,
+  // The coin heavens' floor and ledges (the original's TG_COIN_HEAVEN skin of groundNormal).
+  O: T.CLOUD_BLOCK,
   '^': T.BLASTER_TOP,
   '|': T.BLASTER_BASE,
   A: T.WALL_TOP,
