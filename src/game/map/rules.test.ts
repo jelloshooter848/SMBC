@@ -6,7 +6,10 @@ import {
   entryLevel,
   exitId,
   isCleared,
+  isExitOpen,
   isOpen,
+  isPathOpen,
+  isWorldOpen,
   mainLevel,
   newMapProgress,
   nextStep,
@@ -268,5 +271,59 @@ describe('nextStep', () => {
     const q = newMapProgress();
     warpTo(q, 3, PAGES);
     expect(nextStep(PAGES[2]!, q, 'start', 'left', PAGES)).toBeNull();
+  });
+});
+
+describe('unlock all (developer mode)', () => {
+  const openAll = (p: ReturnType<typeof newMapProgress>, page: WorldMapPage) =>
+    page.nodes.filter((n) => isOpen(p, page, n.id, true)).map((n) => n.id);
+
+  it('opens every world, level and castle node, path and exit; bonus nodes keep needing their key', () => {
+    const p = newMapProgress();
+    for (const w of [1, 2, 3, 4, 5, 6, 7, 8]) expect(isWorldOpen(p, w, true)).toBe(true);
+    expect(isWorldOpen(p, 0, true)).toBe(false);
+    for (const page of PAGES) {
+      const w = page.world;
+      expect(openAll(p, page)).toEqual(['start', `${w}-1`, `${w}-2`, `${w}-3`, `${w}-4`]);
+      const { paths, exits } = openPaths(p, page, true);
+      expect(paths.map(pathId)).toEqual(page.paths.filter((x) => !x.to.startsWith('bonus')).map(pathId));
+      expect(exits).toEqual(page.exits);
+      for (const e of page.exits) expect(isExitOpen(p, page, e, true)).toBe(true);
+    }
+    // The bonus node and its path still need the key.
+    const bonusPath = P1.paths.find((x) => x.to === 'bonus-1')!;
+    expect(isOpen(p, P1, 'bonus-1', true)).toBe(false);
+    expect(isPathOpen(p, P1, bonusPath, true)).toBe(false);
+    p.secrets.push('key-1');
+    expect(isOpen(p, P1, 'bonus-1', true)).toBe(true);
+    expect(isPathOpen(p, P1, bonusPath, true)).toBe(true);
+  });
+
+  it('marks nothing cleared and changes nothing; without it the rules are as before', () => {
+    const p = newMapProgress();
+    clearLevel(p, '1-1', getLevel, PAGES);
+    const before = JSON.stringify(p);
+    for (const page of PAGES) {
+      openAll(p, page);
+      openPaths(p, page, true);
+    }
+    expect(JSON.stringify(p)).toBe(before);
+    expect(P1.nodes.filter((n) => isCleared(p, P1, n.id)).map((n) => n.id)).toEqual(['1-1']);
+    expect(open(p, P1)).toEqual(['start', '1-1', '1-2']);
+    expect(open(p, P2)).toEqual([]);
+    expect(isWorldOpen(p, 2)).toBe(false);
+    expect(openPaths(p, P1).exits).toEqual([]);
+  });
+
+  it('nextStep walks past locked nodes, off the world exit and back from the next start', () => {
+    const p = newMapProgress();
+    expect(nextStep(P1, p, '1-1', 'right', PAGES)).toBeNull();
+    const s = nextStep(P1, p, '1-1', 'right', PAGES, true);
+    expect(s && s.kind === 'node' ? s.to : null).toBe('1-2');
+    const exit = nextStep(P1, p, '1-4', 'right', PAGES, true);
+    expect(exit && exit.kind === 'exit' ? exit.exit.toWorld : null).toBe(2);
+    const back = nextStep(P2, p, 'start', 'left', PAGES, true);
+    expect(back && back.kind === 'back' ? [back.world, back.node] : null).toEqual([1, '1-4']);
+    expect(nextStep(P2, p, 'start', 'left', PAGES)).toBeNull();
   });
 });

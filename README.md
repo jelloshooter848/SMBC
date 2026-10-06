@@ -114,6 +114,8 @@ with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
   (all tools, ammo and magic) and 99 lives.
 - **Assists** (active only while dev mode is on): scroll back, infinite lives, infinite time, no
   damage, keep big when losing fire, coyote time, half-speed slow motion.
+- **Unlock all** (map menu, per save file, active only while dev mode is on): every world, level
+  and road on the world map open, without marking anything cleared.
 - **Dev mode off** hides it again.
 
 ### The Lost Levels
