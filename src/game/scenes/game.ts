@@ -42,7 +42,9 @@ import { campaignLevel } from '../level/campaign';
 import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
+import { StoryScene, STORY_PAGES } from './story';
 import {
+  FIRST_HERO,
   loadSave,
   saveFromState,
   stateFromSave,
@@ -104,6 +106,8 @@ export class Game {
   pendingReveal: string[] = [];
   /** The file's developer "Unlock all" map flag (SaveFile.devUnlockAll); see `mapUnlockAll`. */
   devUnlockAll = false;
+  /** Heroes freed on the campaign's file (SaveFile.freed); see `heroLocked`. */
+  freed: string[] = [FIRST_HERO];
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -350,6 +354,7 @@ export class Game {
       lastNode: { ...this.mapLastNode },
       pendingReveal: this.pendingReveal.slice(),
       devUnlockAll: this.devUnlockAll,
+      freed: this.freed.slice(),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -503,6 +508,31 @@ export class Game {
     this.showTitle();
   }
 
+  /**
+   * Whether hero `def` is still a brainwashed captive on the campaign's file, so it cannot be
+   * picked. Always false outside campaign mode (dev, ?level=, custom, shared, playtests).
+   */
+  heroLocked(def: CharacterDef): boolean {
+    return this.campaign !== null && !this.freed.includes(def.id);
+  }
+
+  /** Heroes still to be found on the campaign's file (0 outside campaign mode). */
+  get heroesToFind(): number {
+    return this.deps.characters.filter((c) => this.heroLocked(c)).length;
+  }
+
+  /** The hero every file starts with: the fallback for a locked current hero. */
+  get firstHero(): CharacterDef {
+    const chars = this.deps.characters;
+    return chars.find((c) => c.id === FIRST_HERO) ?? (chars[0] as CharacterDef);
+  }
+
+  /** A mini game was passed: hero `id` joins the file's roster, saved at once. */
+  freeHero(id: string): void {
+    if (!this.freed.includes(id)) this.freed.push(id);
+    this.autosave();
+  }
+
   showCharacterSelect(): void {
     this.scenes.replace(new CharacterSelectScene(this));
   }
@@ -607,6 +637,11 @@ export class Game {
     this.pendingReveal = save.pendingReveal.slice();
     this.mapLastNode = { ...save.lastNode };
     this.devUnlockAll = save.devUnlockAll === true;
+    this.freed = save.freed.slice();
+    // A hero the file has not freed (a hand-edited file) gives way to Mario.
+    if (this.heroLocked(this.state.character)) this.setHero(0, this.firstHero);
+    const c2 = this.state.character2;
+    if (c2 && this.heroLocked(c2)) this.setHero(1, this.firstHero);
     this.mapProgress = {
       cleared: save.cleared.slice(),
       pages: save.pages.slice(),
@@ -615,6 +650,15 @@ export class Game {
       gameCleared: save.gameCleared,
     };
     this.showMap(); // the map saves the file as it opens
+  }
+
+  /**
+   * A file just created on the file select: the story (Bowser has brainwashed the heroes of
+   * other worlds; Mario must find and free them), then its World 1 map.
+   */
+  startNewFile(slot: SaveSlot, save: SaveFile): void {
+    this.scenes.clear();
+    this.scenes.push(new StoryScene(this, STORY_PAGES, () => this.openFile(slot, save)));
   }
 
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */

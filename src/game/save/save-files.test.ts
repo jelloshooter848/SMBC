@@ -7,6 +7,8 @@ import {
   loadSave,
   migrateSave,
   migrateV1toV2,
+  migrateV2toV3,
+  SAVE_MIGRATIONS,
   SAVE_VERSION,
   UNREADABLE,
   type SaveFile,
@@ -356,9 +358,9 @@ describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
     devUnlockAll: false,
   };
 
-  it('is the one migration; files are written at v2', () => {
-    expect(SAVE_VERSION).toBe(2);
-    expect(newSave(1, 'mario').v).toBe(2);
+  it('is the first migration (v3 follows); v1 files load at the current version', () => {
+    expect(SAVE_MIGRATIONS[0]).toBe(migrateV1toV2);
+    expect(newSave(1, 'mario').v).toBe(SAVE_VERSION);
   });
 
   it('maps worlds, the position, lastNode and pending reveal ids to page ids', () => {
@@ -385,7 +387,8 @@ describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
     expect(s).toEqual({
       ...newSave(1, 'link'),
       ...Object.fromEntries(Object.entries(V1).filter(([k]) => k !== 'worlds')),
-      v: 2,
+      v: SAVE_VERSION,
+      freed: ['mario', 'link'],
       pages: ['smb-1', 'smb-4', 'smb-2'],
       position: { page: 'smb-4', node: '4-1' },
       lastNode: { 'smb-1': '1-4', 'smb-4': '4-1', 'smb-2': 'start' },
@@ -400,7 +403,7 @@ describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
     });
     expect(clearedMainLevels(s)).toBe(5);
     expect(highestWorld(s)).toBe(4);
-    // Saved again it stays v2 and loads the same.
+    // Saved again it stays at the current version and loads the same.
     writeSave(s);
     expect(loadSave(1)).toEqual(s);
   });
@@ -426,6 +429,81 @@ describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
     expect(s.lastNode).toEqual({});
     expect(s.pendingReveal).toEqual([]);
     expect(s.cleared).toEqual(V1.cleared);
+  });
+});
+
+describe('migration v2 → v3 (freed heroes, 0.5.0)', () => {
+  /** A 0.4.x file: Link and Samus playing, two-player. */
+  const V2 = {
+    ...newSave(1, 'mario'),
+    v: 2,
+    character: 'link',
+    character2: 'samus',
+    powerState: 'full',
+    hp: 6,
+    powerState2: 'full',
+    hp2: 30,
+  } as Record<string, unknown>;
+  delete V2.freed;
+
+  it('files are written at v3', () => {
+    expect(SAVE_VERSION).toBe(3);
+    expect(SAVE_MIGRATIONS).toEqual([migrateV1toV2, migrateV2toV3]);
+    expect(newSave(1, 'mario').v).toBe(3);
+  });
+
+  it('a new file has freed only Mario (and the heroes it was made with)', () => {
+    expect(newSave(1, 'mario').freed).toEqual(['mario']);
+    expect(newSave(1, 'mario', null).freed).toEqual(['mario']);
+    expect(newSave(1, 'link', 'mario').freed).toEqual(['mario', 'link']);
+    expect(newSave(1, 'wario').freed).toEqual(['mario']);
+  });
+
+  it('keeps Mario plus the hero(es) last used, deduped, nulls and unknown ids dropped', () => {
+    expect(migrateV2toV3(V2).freed).toEqual(['mario', 'link', 'samus']);
+    expect(migrateV2toV3({ ...V2, character2: null }).freed).toEqual(['mario', 'link']);
+    expect(migrateV2toV3({ ...V2, character: 'mario', character2: 'mario' }).freed).toEqual(['mario']);
+    expect(migrateV2toV3({ ...V2, character: 'wario', character2: 'luigi' }).freed).toEqual([
+      'mario',
+      'luigi',
+    ]);
+    expect(migrateV2toV3({ ...V2, character: 7, character2: undefined }).freed).toEqual(['mario']);
+    expect(migrateV2toV3(V2).v).toBe(3);
+  });
+
+  it('loads a stored v2 file locked to its last heroes, the rest of it untouched', () => {
+    store.set('smbc.save.1', JSON.stringify(V2));
+    const s = loadSave(1)!;
+    expect(s.v).toBe(3);
+    expect(s.freed).toEqual(['mario', 'link', 'samus']);
+    expect(s.character).toBe('link');
+    expect(s.character2).toBe('samus');
+    expect(s.hp2).toBe(30);
+    writeSave(s);
+    expect(loadSave(1)).toEqual(s);
+  });
+
+  it('a v1 file goes through both migrations', () => {
+    store.set('smbc.save.2', JSON.stringify({ v: 1, character: 'ryu', character2: 'luigi', worlds: [1, 2] }));
+    const s = loadSave(2)!;
+    expect(s.v).toBe(3);
+    expect(s.pages).toEqual(['smb-1', 'smb-2']);
+    expect(s.freed).toEqual(['mario', 'ryu', 'luigi']);
+  });
+
+  it('validation keeps an array of known ids, each once, always with Mario', () => {
+    const put = (freed: unknown) => {
+      store.set('smbc.save.3', JSON.stringify({ ...newSave(3, 'mario'), freed }));
+      return loadSave(3)!.freed;
+    };
+    expect(put(['mario', 'luigi'])).toEqual(['mario', 'luigi']);
+    expect(put(['luigi'])).toEqual(['mario', 'luigi']);
+    expect(put(['luigi', 'luigi', 'wario', 3, null, 'link'])).toEqual(['mario', 'luigi', 'link']);
+    expect(put([])).toEqual(['mario']);
+    // Not an array at all: Mario and the file's heroes, as a migrated file gets.
+    for (const bad of ['luigi', 1, null, { luigi: true }]) expect(put(bad)).toEqual(['mario']);
+    store.set('smbc.save.3', JSON.stringify({ ...newSave(3, 'link'), freed: 'x' }));
+    expect(loadSave(3)!.freed).toEqual(['mario', 'link']);
   });
 });
 

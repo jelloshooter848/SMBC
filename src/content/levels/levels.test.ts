@@ -86,6 +86,22 @@ describe('World 1 sub-areas and later stages follow the original layouts', () =>
     expect(tile(main, 163, 11)).toBe(T.PIPE_TL);
     expect(tile(main, 163, 10)).toBe(T.AIR);
   });
+  it('1-1 bonus room: 19 coins, and brainwashed Luigi on a ledge at the top right (0.5.0)', () => {
+    const l = load('1-1-bonus');
+    let coins = 0;
+    for (let y = 0; y < l.height; y++)
+      for (let x = 0; x < l.width; x++) if (tile(l, x, y) === T.COIN) coins++;
+    expect(coins).toBe(19);
+    // The ledge: three hard blocks at row 7 against the pipe (48 px above the coin bricks' top,
+    // row 10), open above for Luigi.
+    for (const x of [12, 13, 14]) {
+      expect(tile(l, x, 7)).toBe(T.HARD);
+      expect(tile(l, x, 6)).toBe(T.AIR);
+    }
+    expect(tile(l, 11, 7)).toBe(T.AIR);
+    expect(tile(l, 10, 10)).toBe(T.BRICK);
+    expect(l.entities).toEqual([{ type: 'captive', x: 13, y: 6, props: { hero: 'luigi' } }]);
+  });
   it('1-2 intro walks into the side pipe and 1-2 starts with the drop from the ceiling', () => {
     const intro = load('1-2-intro');
     expect(intro.startMode).toBe('autowalk');

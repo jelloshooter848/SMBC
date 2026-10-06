@@ -42,6 +42,11 @@ export interface SaveFile extends MapProgress {
    * (nothing marked cleared). Only has an effect while dev mode is on; missing in older files (off).
    */
   devUnlockAll?: boolean;
+  /**
+   * Heroes freed on this file (CharacterDef ids, Mario always first): only these can be picked
+   * in campaign play; the rest are brainwashed captives to find (docs/HEROES.md).
+   */
+  freed: string[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -83,7 +88,27 @@ export function migrateV1toV2(old: Record<string, unknown>): Record<string, unkn
   return out;
 }
 
-export const SAVE_MIGRATIONS: SaveMigration[] = [migrateV1toV2];
+/** The hero every file starts with (never locked). */
+export const FIRST_HERO = 'mario';
+
+/** Known hero ids from `ids`, Mario first, each once (unknown ids and non-strings dropped). */
+export function freedHeroes(
+  ids: readonly unknown[],
+  characters: readonly CharacterDef[] = CHARACTERS,
+): string[] {
+  const known = (id: unknown): id is string => typeof id === 'string' && characters.some((c) => c.id === id);
+  return [...new Set([FIRST_HERO, ...ids.filter(known)])];
+}
+
+/**
+ * v2 → v3 (0.5.0, freeing the heroes): existing files are locked too, keeping Mario plus the
+ * hero(es) they last used (`character`, `character2`).
+ */
+export function migrateV2toV3(old: Record<string, unknown>): Record<string, unknown> {
+  return { ...old, v: 3, freed: freedHeroes([old.character, old.character2]) };
+}
+
+export const SAVE_MIGRATIONS: SaveMigration[] = [migrateV1toV2, migrateV2toV3];
 /** The current format: version 1 plus one per migration. */
 export const SAVE_VERSION = 1 + SAVE_MIGRATIONS.length;
 
@@ -130,6 +155,7 @@ export function newSave(
     lastNode: {},
     pendingReveal: [],
     devUnlockAll: false,
+    freed: freedHeroes([character, character2], characters),
   };
 }
 
@@ -232,6 +258,7 @@ export function migrateSave(
     lastNode: lastNodes(stored.lastNode, pages),
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
+    freed: Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed,
   };
 }
 
