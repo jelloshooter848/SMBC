@@ -8,12 +8,17 @@ import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
 import { Cheep } from '@game/entities/enemies/cheep';
 import { Blooper } from '@game/entities/enemies/blooper';
+import { Corpse } from '@game/entities/effects/effects';
 import { Rng } from '@engine/rng';
 import { SCREEN_W } from '@engine/viewport';
 import { px, toPx, vel } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
 import type { Action } from '@engine/input/actions';
-import type { World } from '@game/world/world';
+import { World } from '@game/world/world';
+import type { EntitySpawn } from '@game/level/schema';
+import { AssetRegistry } from '@engine/assets/registry';
+import { NULL_AUDIO } from '@engine/audio/audio-manager';
+import { DEFAULT_ASSIST, newGameState } from '@game/context';
 
 const map = (dir: string, id: string): LevelData =>
   parseTextMap(
@@ -159,6 +164,48 @@ describe('Swimming Cheep Cheeps', () => {
     expect(xs.size).toBe(5);
     const other = { type: 'goomba', x: 40, y: 12 };
     expect(Cheep.placeSwimmer(other, rng)).toBe(other);
+  });
+
+  // Bug report 2026-10-06-2-2-swimming-cheeps-same-every-visit: the world RNG was seeded from the
+  // length of the level id, so every visit (and 7-2) got the same school.
+  describe('a new school on every visit', () => {
+    const ctx = () => ({
+      assets: new AssetRegistry({ default: {} }),
+      audio: NULL_AUDIO,
+      assist: DEFAULT_ASSIST,
+      reduceFlashing: true,
+    });
+    /** The swimmers' colours and start spots as the world placed them at load. */
+    const school = (w: World): string =>
+      (w as unknown as { spawns: EntitySpawn[] }).spawns
+        .filter((s) => s.type.startsWith('cheep'))
+        .map((s) => `${s.type}@${s.x},${s.y}`)
+        .join(' ');
+    const visit = (id: string) =>
+      new World(map(id === '2-2' ? 'world2' : 'world7', id), ctx(), newGameState(MARIO));
+
+    it('two visits to 2-2 differ, and 2-2 and 7-2 do not share a seed', () => {
+      const a = school(visit('2-2'));
+      expect(a.length).toBeGreaterThan(0);
+      expect(school(visit('2-2'))).not.toBe(a);
+      expect(visit('2-2').rng.next()).not.toBe(visit('7-2').rng.next());
+    });
+
+    it('headless runs stay repeatable, and runSim can pass its own seed', () => {
+      const run = (seed?: number) =>
+        school(
+          runSim({
+            level: map('world2', '2-2'),
+            character: MARIO,
+            script: none,
+            maxFrames: 1,
+            ...(seed === undefined ? {} : { seed }),
+          }).world,
+        );
+      expect(run()).toBe(run());
+      expect(run(5)).toBe(run(5));
+      expect(run(5)).not.toBe(run(6));
+    });
   });
 
   it('in 7-2 no swimming fish is ever spawned inside the visible screen', () => {
@@ -401,6 +448,36 @@ describe('Bloopers', () => {
     expect(r.world.player.dead).toBe(false);
     expect(r.world.player.powerState).toBe('small');
     expect(r.score).toBe(1000);
+  });
+
+  // Bug report 2026-10-06-blooper-out-of-water-stomp-drifts: Bloopa.stomp() calls die() and then
+  // sets vx = 0, vy = 0, so it drops straight down without the knock-out hop.
+  it('a stomped Blooper drops straight down from where it was stomped', () => {
+    let bl: Blooper | undefined;
+    let corpse: Corpse | undefined;
+    const ys: number[] = [];
+    const xs: number[] = [];
+    runSim({
+      level: dry(),
+      character: MARIO,
+      script: none,
+      maxFrames: 200,
+      controller: (w) => {
+        bl ??= w.entities.find((e): e is Blooper => e instanceof Blooper);
+        corpse ??= w.entities.find((e): e is Corpse => e instanceof Corpse);
+        if (corpse?.alive) {
+          ys.push(corpse.body.y);
+          xs.push(corpse.body.x);
+        }
+        return [];
+      },
+    });
+    expect(corpse).toBeDefined();
+    expect(ys.length).toBeGreaterThan(5);
+    // No sideways drift, and no hop: it only ever falls.
+    for (const x of xs) expect(x).toBe(xs[0]);
+    for (let i = 1; i < ys.length; i++) expect(ys[i] as number).toBeGreaterThanOrEqual(ys[i - 1] as number);
+    expect(corpse?.upsideDown).toBe(true);
   });
 
   it('in water it still cannot be stomped', () => {

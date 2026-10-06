@@ -43,6 +43,7 @@ describe('flagpole touch clears the stage (EventManager.touchedFlagPole)', () =>
             new Goomba(cam.right + px(20), px(4 * 16)), // just off screen, still on the stage
           ];
           far = new Goomba(cam.x - px(60), px(12 * 16)); // more than 2 tiles left of the screen
+          far.despawnMargin = null; // so only the flag clear could remove it, not World.cull
           for (const e of [...near, far]) w.spawn(e);
         }
         if (phase(w) === 'slide') {

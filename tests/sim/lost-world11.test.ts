@@ -170,8 +170,9 @@ describe('Lost Levels B-3', () => {
       },
     });
     const [left, right] = (pair as BalanceLift).platforms as [Lift, Lift];
-    expect(toPx(left.body.x) >> 4).toBe(27);
-    expect(toPx(right.body.x) >> 4).toBe(31);
+    // Centred on their cells (Level.as: Platform x = currentX + TILE_SIZE/2).
+    expect(toPx(left.body.x + (left.body.w >> 1)) >> 4).toBe(27);
+    expect(toPx(right.body.x + (right.body.w >> 1)) >> 4).toBe(31);
     const [l0, r0] = start as [number, number];
     const sunk = toPx(left.body.y) - l0;
     expect(sunk).toBeGreaterThan(8);
