@@ -10,7 +10,9 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * - `door-*`, `exit-*`, `wall-top` are drawn for the NORTH wall (the room's floor is below
  *   them); rotate them for the other walls. `wall-corner` is the north-west corner (floor to its
  *   bottom-right). `wall` is plain brick for wall cells that don't touch the floor.
- * - Floor objects (`statue`, `stairs`, `switch-*`, `torch-*`, `chest`) are full opaque tiles
+ * - `wall-cracked` (a bombable wall) and `wall-hole` (the passage a bomb blows through it) are
+ *   north-wall tiles too, drawn on `wall-top`.
+ * - Floor objects (`statue`, `stairs`, `switch-*`, `torch-*`, `chest`, `chest-open`) are full opaque tiles
  *   with the floor drawn under them. `block` is a full opaque tile (it slides, so it is drawn as
  *   an entity over the floor). Pickups and HUD icons are transparent around the shape.
  * - Overhead Link and the monsters face DOWN / UP / RIGHT (`side-*`); flip for left. The sword
@@ -54,7 +56,8 @@ const recolor = (rows: readonly string[], map: Record<string, string>): string[]
  *   4 floor highlight       5 pale glow          6 white              7 dark stone (blocks, statues)
  *   8 mid stone             9 light stone        a wood               b dark wood
  *   c flame orange          d gold / flame core  e heart red          f light gold / glow
- *   g heart shade
+ *   g heart shade           h item blue (shield, bomb)                h..j are the same in both
+ *   i item blue shade       j item blue highlight                     palettes: items keep colour
  */
 const dungeonBase = (wall: string, wallHi: string, floor: string, floorHi: string): string[] => [
   NES.black,
@@ -74,6 +77,9 @@ const dungeonBase = (wall: string, wallHi: string, floor: string, floorHi: strin
   NES.redBright,
   NES.yellowLight,
   NES.redDark,
+  NES.blueMid,
+  NES.blueDark,
+  NES.blueLight,
 ];
 
 export const dungeonPalettes: Record<string, string[]> = {
@@ -87,6 +93,8 @@ export const dungeonPalettes: Record<string, string[]> = {
  * `link-td` index roles (as the platformer Link's, so the two read as one hero):
  *   0 outline   1 tunic   2 tunic shade / cap band   3 skin   4 hair   5 boots & belt
  *   6 glint     7 blade   8 grip / blade shade       9 hilt & shield trim   a shield   b shield shade
+ *   c blast orange   d blast red   e bomb highlight (c..e are the same in every tint)
+ * The boomerang is drawn in 4/5/9 (wood and gold), the bomb in a/b/e (the shield's blues).
  */
 const linkTd = (tunic: string, shade: string, skin: string, hair: string, shield: string): string[] => [
   NES.black,
@@ -101,6 +109,9 @@ const linkTd = (tunic: string, shade: string, skin: string, hair: string, shield
   NES.yellow,
   shield,
   NES.blueDark,
+  NES.orange,
+  NES.redBright,
+  NES.blueLight,
 ];
 
 export const linkTdPalettes: Record<string, string[]> = {
@@ -482,6 +493,68 @@ const WATER = [
   '3333333333333333',
 ];
 
+/* ---------- Shadow Keep v2: the bombable wall, the opened chest ---------- */
+
+// A bombable wall: the north wall split by a jagged crack around a crumbled hollow, the bricks
+// beside it chipped (lit edges) and the ledge broken, so it stands out in a run of plain wall.
+const WALL_CRACKED = paste(WALL_TOP, [
+  '.....00.........',
+  '......02........',
+  '......02........',
+  '.......0........',
+  '.20....002......',
+  '..00...00...02..',
+  '...20000000.0...',
+  '.....0000.000...',
+  '....0000000002..',
+  '...00.0000..00..',
+  '..00..00.00..0..',
+  '.02...0...00....',
+  '......0....02...',
+  '...12......21...',
+  '..1221....1221..',
+  '................',
+]);
+
+// The blown-open wall: a ragged hole through the bricks down to the floor, rubble at its feet.
+const WALL_HOLE = paste(WALL_TOP, [
+  '................',
+  '.....0.000......',
+  '....00000002....',
+  '...20000000000..',
+  '..000000000000..',
+  '..2000000000002.',
+  '...00000000000..',
+  '..000000000000..',
+  '.2000000000000..',
+  '..000000000000..',
+  '..20000000000002',
+  '...00000000000..',
+  '..000000000000..',
+  '.01200000000120.',
+  '0122100000012210',
+  '...0000000000...',
+]);
+
+// The chest after it is opened: lid tipped back, the dark inside showing over the gold rim.
+const CHEST_OPEN = paste(FLOOR, [
+  '..000000000000..',
+  '.0aaaaaaaaaaaa0.',
+  '.0abbbbbbbbbba0.',
+  '.0aaaaaaaaaaaa0.',
+  '.00000000000000.',
+  '.0dddddddddddd0.',
+  '.0d0000000000d0.',
+  '.0d0000000000d0.',
+  '.0dddddddddddd0.',
+  '.0aaaaaaaaaaaa0.',
+  '.0aaaaaaaaaaaa0.',
+  '.0aaaaaaaaaaaa0.',
+  '.0dddddddddddd0.',
+  '.0bbbbbbbbbbbb0.',
+  '..000000000000..',
+]);
+
 /* ---------- HUD icons and pickups ---------- */
 
 const KEY = [
@@ -563,6 +636,89 @@ const SWORD_ICON = [
   '...00...',
 ];
 
+// Link's shield, lying in the secret room: a blue heater shield with a gold rim and cross.
+const SHIELD_PICKUP = [
+  '................',
+  '.00000000000000.',
+  '.0ffffffffffff0.',
+  '.0fjhhhddhhhhd0.',
+  '.0fjhhhddhhhhd0.',
+  '.0fhhhhddhhhid0.',
+  '.0fddddddddddd0.',
+  '.0fhhhhddhhhid0.',
+  '.0fhhhhddhhhid0.',
+  '..0fhhhddhhid0..',
+  '..0fhhhddhiid0..',
+  '...0fhhddhid0...',
+  '....0fhddid0....',
+  '.....0fddd0.....',
+  '......0dd0......',
+  '.......00.......',
+];
+
+// A heart container: a big heart ringed in gold, with a white glint.
+const HEART_CONTAINER = [
+  '................',
+  '..0000....0000..',
+  '.0dddd0..0dddd0.',
+  '0dee66d00deeeed0',
+  '0de6eeedddeeeed0',
+  '0de6eeeeeeeeegd0',
+  '0deeeeeeeeeeegd0',
+  '0deeeeeeeeeeegd0',
+  '.0deeeeeeeeegd0.',
+  '..0deeeeeeeggd0.',
+  '...0deeeeeegd0..',
+  '....0deeeegd0...',
+  '.....0deegd0....',
+  '......0dgd0.....',
+  '.......0d0......',
+  '........0.......',
+];
+
+/** A round bomb in an 8x16 cell: cap and fuse on top, the ball filling the bottom. */
+const bombIcon = (rim: string): string[] =>
+  paste(
+    Array.from({ length: 16 }, (_, y) =>
+      Array.from({ length: 8 }, (_, x) => {
+        const dx = x + 0.5 - 4;
+        const dy = y + 0.5 - 11.5;
+        const r = Math.sqrt(dx * dx + dy * dy);
+        if (r > 4.1) return '.';
+        if (r > 3.2) return '0';
+        if (Math.hypot(dx + 1.3, dy + 1.3) < 0.9) return '6';
+        if (r > 2.4 && dx + dy < -1.5) return rim;
+        return dx + dy > 2 ? 'i' : 'h';
+      }).join(''),
+    ),
+    ['.....00.', '....0bb0', '...0b00.', '..0000..', '..0980..', '..0000..'],
+    0,
+    2,
+  );
+const BOMB_ICON = bombIcon('h');
+// The dropped refill: the same bomb with a bright rim, so it pops off the blue floor.
+const BOMB_PICKUP = bombIcon('j');
+
+// The boomerang: a curved wooden "<" with a gold-lit leading edge.
+const BOOMERANG_ICON = [
+  '........',
+  '........',
+  '.....00.',
+  '....0ff0',
+  '...0fa0.',
+  '..0fa0..',
+  '.0fa0...',
+  '0fab0...',
+  '0aab0...',
+  '.0ab0...',
+  '..0ab0..',
+  '...0ab0.',
+  '....0bb0',
+  '.....00.',
+  '........',
+  '........',
+];
+
 export const dungeonDef: SpriteDef = {
   palette: 'dungeon',
   frames: {
@@ -592,6 +748,14 @@ export const dungeonDef: SpriteDef = {
     'heart-empty': HEART_EMPTY,
     'heart-pickup': HEART_PICKUP,
     'sword-icon': SWORD_ICON,
+    'wall-cracked': WALL_CRACKED,
+    'wall-hole': WALL_HOLE,
+    'chest-open': CHEST_OPEN,
+    'shield-pickup': SHIELD_PICKUP,
+    'heart-container': HEART_CONTAINER,
+    'bomb-pickup': BOMB_PICKUP,
+    'boomerang-icon': BOOMERANG_ICON,
+    'bomb-icon': BOMB_ICON,
   },
 };
 
@@ -626,8 +790,8 @@ const LEGS_B = ['...0000..0550...', '.........0000...'];
 // Shield held across the front: blue face, gold cross.
 const SHIELD_FRONT = ['.000.', '0aaa0', '0a9a0', '09990', '0a9a0', '0aab0', '.000.'];
 
-const linkDown = (legs: readonly string[]) =>
-  paste([...HEAD_DOWN, ...BODY_DOWN, ...legs], SHIELD_FRONT, 0, 9);
+const linkDownNs = (legs: readonly string[]) => [...HEAD_DOWN, ...BODY_DOWN, ...legs];
+const linkDown = (legs: readonly string[]) => paste(linkDownNs(legs), SHIELD_FRONT, 0, 9);
 
 // Facing up: the back of the cap with its tail hanging down, hair, the shield's rim on the arm.
 const HEAD_UP = [
@@ -650,8 +814,8 @@ const BODY_UP = [
 ];
 const CAP_TAIL = ['0120', '0120', '.00.'];
 const SHIELD_EDGE = ['000', '0a0', '0b0', '0a0', '0b0', '000'];
-const upBody = (legs: readonly string[]) =>
-  paste(paste([...HEAD_UP, ...BODY_UP, ...legs], CAP_TAIL, 8, 7), SHIELD_EDGE, 13, 9);
+const upBodyNs = (legs: readonly string[]) => paste([...HEAD_UP, ...BODY_UP, ...legs], CAP_TAIL, 8, 7);
+const upBody = (legs: readonly string[]) => paste(upBodyNs(legs), SHIELD_EDGE, 13, 9);
 
 // Facing right: cap peak and tail streaming back, pointed ear, eye, nose; shield held in front.
 const HEAD_SIDE = [
@@ -675,25 +839,28 @@ const BODY_SIDE = [
 const LEGS_SIDE_A = ['..0550..0550....', '..0000..0000....'];
 const LEGS_SIDE_B = ['....0550550.....', '....0000000.....'];
 const SHIELD_SIDE = ['000.', '0aa0', '0a90', '0990', '0a90', '0aa0', '0bb0', '000.'];
-const linkSide = (legs: readonly string[]) =>
-  paste([...HEAD_SIDE, ...BODY_SIDE, ...legs], SHIELD_SIDE, 12, 8);
+const linkSideNs = (legs: readonly string[]) => [...HEAD_SIDE, ...BODY_SIDE, ...legs];
+const linkSide = (legs: readonly string[]) => paste(linkSideNs(legs), SHIELD_SIDE, 12, 8);
 
 // Attacks: the sword arm thrust to the tile edge, where the blade sprite's grip overlaps the hand
 // (see LINK_SWORD_GRIP below).
-const ATTACK_DOWN = paste(
-  [
-    ...HEAD_DOWN,
-    '..022111111220..',
-    '.02211111111220.',
-    '.03211111111120.',
-    '..005559955110..',
-    '...02111110330..',
-    '...0550..0330...',
-    '...0000...00....',
-  ],
-  SHIELD_FRONT,
+const ATTACK_DOWN_NS = [
+  ...HEAD_DOWN,
+  '..022111111220..',
+  '.02211111111220.',
+  '.03211111111120.',
+  '..005559955110..',
+  '...02111110330..',
+  '...0550..0330...',
+  '...0000...00....',
+];
+const ATTACK_DOWN = paste(ATTACK_DOWN_NS, SHIELD_FRONT, 0, 9);
+const UP_ARM_RAISED = ['.00.', '0330', '0330', '0110', '0110', '0110', '0120', '0120', '0220'];
+const ATTACK_UP_NS = paste(
+  paste(['.'.repeat(16), ...HEAD_UP, ...BODY_UP, '...0000..0000...'], CAP_TAIL, 8, 8),
+  UP_ARM_RAISED,
+  2,
   0,
-  9,
 );
 const ATTACK_UP = paste(
   paste(
@@ -702,25 +869,51 @@ const ATTACK_UP = paste(
     13,
     10,
   ),
-  ['.00.', '0330', '0330', '0110', '0110', '0110', '0120', '0120', '0220'],
+  UP_ARM_RAISED,
   2,
   0,
 );
-const ATTACK_SIDE = paste(
-  [
-    ...HEAD_SIDE,
-    '...0221111120...',
-    '...0211111110000',
-    '...0211111111333',
-    '...0555555550000',
-    '...0211111120...',
-    '..0550....0550..',
-    '..0000....0000..',
-  ],
-  ['000', '0a0', '090', '0a0', '000'],
-  1,
-  9,
-);
+const ATTACK_SIDE_NS = [
+  ...HEAD_SIDE,
+  '...0221111120...',
+  '...0211111110000',
+  '...0211111111333',
+  '...0555555550000',
+  '...0211111120...',
+  '..0550....0550..',
+  '..0000....0000..',
+];
+// Facing right the shield hangs on the far arm, its rim peeking out behind him.
+const SHIELD_BACK = ['000', '0a0', '090', '0a0', '000'];
+const ATTACK_SIDE = paste(ATTACK_SIDE_NS, SHIELD_BACK, 1, 9);
+
+// Throwing the boomerang or setting down a bomb: the free hand flung out, open, short of the
+// sword's reach (no grip to hold), the other arm as in the walk.
+const THROW_DOWN_NS = [
+  ...HEAD_DOWN,
+  '..022111111220..',
+  '.02211111111220.',
+  '.03211111111120.',
+  '..005559955110..',
+  '...0211111330...',
+  '...0550...00....',
+  '...0000.........',
+];
+const THROW_DOWN = paste(THROW_DOWN_NS, SHIELD_FRONT, 0, 9);
+const UP_ARM_THROW = ['.00.', '0330', '0330', '0110', '0120', '0220'];
+const THROW_UP_NS = paste(paste([...HEAD_UP, ...BODY_UP, ...LEGS_A], CAP_TAIL, 8, 7), UP_ARM_THROW, 2, 3);
+const THROW_UP = paste(THROW_UP_NS, SHIELD_EDGE, 13, 9);
+const THROW_SIDE_NS = [
+  ...HEAD_SIDE,
+  '...0221111120...',
+  '...021111111000.',
+  '...0211111111330',
+  '...055555555000.',
+  '...0211111120...',
+  '..0550....0550..',
+  '..0000....0000..',
+];
+const THROW_SIDE = paste(THROW_SIDE_NS, SHIELD_BACK, 1, 9);
 
 // Sword blade pointing up: white edge, grey spine, gold guard, brown grip, gold pommel.
 const SWORD_V = [
@@ -746,6 +939,101 @@ const SWORD_H = Array.from({ length: 8 }, (_, i) =>
   Array.from({ length: 16 }, (_, j) => (SWORD_V[15 - j] as string)[i]).join(''),
 );
 
+/** A frame turned a quarter clockwise (square frames). */
+const turnCw = (rows: readonly string[]): string[] =>
+  rows.map((_, y) => rows.map((_, x) => (rows[rows.length - 1 - x] as string)[y]).join(''));
+
+// The boomerang in flight (8x8): an L of wood with a gold elbow, spun a quarter turn per frame.
+const BOOMERANG = [
+  '.000000.',
+  '09944450',
+  '09455550',
+  '0450000.',
+  '0450....',
+  '0450....',
+  '0550....',
+  '.00.....',
+];
+const BOOMERANG_SPIN = [BOOMERANG];
+for (let i = 1; i < 4; i++) BOOMERANG_SPIN.push(turnCw(BOOMERANG_SPIN[i - 1] as string[]));
+
+// A lit bomb (16x16): the blue ball with a glint, an iron cap and a fuse whose spark flickers.
+const BOMB_BALL = Array.from({ length: 16 }, (_, y) =>
+  Array.from({ length: 16 }, (_, x) => {
+    const dx = x + 0.5 - 8;
+    const dy = y + 0.5 - 10.5;
+    const r = Math.sqrt(dx * dx + dy * dy);
+    if (r > 5.6) return '.';
+    if (r > 4.6) return '0';
+    if (Math.hypot(dx + 1.8, dy + 1.8) < 1.1) return '6';
+    if (r > 3.5 && dx + dy < -2.5) return 'e';
+    return dx + dy > 2.5 ? 'b' : 'a';
+  }).join(''),
+);
+const BOMB_TOP = ['.......0000.....', '......087700....', '......0000......'];
+const FUSE = ['.........55.....', '........5.......'];
+const bomb = (spark: readonly string[]) => paste(paste(paste(BOMB_BALL, BOMB_TOP, 0, 3), FUSE, 0, 1), spark);
+const BOMB_0 = bomb(['..........6.....', '.........969....', '..........9.....']);
+const BOMB_1 = bomb(['.........c.c....', '..........6.....', '.........c.c....']);
+
+/*
+ * The blast (32x32): a white-hot flash, a billowing fireball (white core, gold, orange, a red
+ * rim, lumpy edge), then rings of grey smoke breaking apart.
+ */
+const blast = (paint: (r: number, a: number, x: number, y: number) => string): string[] =>
+  Array.from({ length: 32 }, (_, y) =>
+    Array.from({ length: 32 }, (_, x) => {
+      const dx = x + 0.5 - 16;
+      const dy = y + 0.5 - 16;
+      return paint(Math.sqrt(dx * dx + dy * dy), Math.atan2(dy, dx), x, y);
+    }).join(''),
+  );
+const BLAST_0 = blast((r, a) => {
+  const edge = 7 + 2.5 * Math.max(0, Math.cos(4 * a)) ** 3;
+  if (r > edge) return '.';
+  if (r > edge - 1) return '0';
+  if (r < 3) return '6';
+  if (r < 5) return '9';
+  return 'c';
+});
+const BLAST_1 = blast((r, a, x, y) => {
+  const edge = 13.2 + 1.6 * Math.sin(7 * a) + 0.8 * Math.sin(3 * a + 1);
+  if (r > edge) return '.';
+  if (r > edge - 1.2) return '0';
+  const t = r / edge;
+  const dither = (x + y) % 2 === 0;
+  if (t < 0.25 || (t < 0.32 && dither)) return '6';
+  if (t < 0.5 || (t < 0.57 && dither)) return '9';
+  if (t < 0.75 || (t < 0.82 && dither)) return 'c';
+  return 'd';
+});
+// Smoke breaking up: a lumpy ring of soft white puffs (grey rims, grey undersides) with a few
+// stray wisps, open in the middle where the fire was.
+const PUFFS = Array.from({ length: 10 }, (_, i) => {
+  const a = (i / 10) * Math.PI * 2 + (i % 3) * 0.12;
+  const d = i % 2 ? 11.5 : 9.8;
+  return { x: 16 + d * Math.cos(a), y: 16 + d * Math.sin(a), r: i % 2 ? 3.3 : 4.4 };
+});
+const WISPS = [
+  [3, 4],
+  [28, 6],
+  [2, 25],
+  [29, 27],
+  [16, 1],
+] as const;
+const BLAST_2 = blast((_r, _a, x, y) => {
+  if (WISPS.some(([wx, wy]) => wx === x && wy === y)) return '7';
+  for (const p of PUFFS) {
+    const dx = x + 0.5 - p.x;
+    const dy = y + 0.5 - p.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d > p.r) continue;
+    if (d > p.r - 1) return '8';
+    return dx + dy < 0.5 ? '6' : '7';
+  }
+  return '.';
+});
+
 export const linkTdDef: SpriteDef = {
   palette: 'link-td',
   frames: {
@@ -760,6 +1048,31 @@ export const linkTdDef: SpriteDef = {
     'attack-side': ATTACK_SIDE,
     'sword-v': SWORD_V,
     'sword-h': SWORD_H,
+    'boomerang-0': BOOMERANG_SPIN[0] as string[],
+    'boomerang-1': BOOMERANG_SPIN[1] as string[],
+    'boomerang-2': BOOMERANG_SPIN[2] as string[],
+    'boomerang-3': BOOMERANG_SPIN[3] as string[],
+    'bomb-0': BOMB_0,
+    'bomb-1': BOMB_1,
+    'blast-0': BLAST_0,
+    'blast-1': BLAST_1,
+    'blast-2': BLAST_2,
+    // Before the shield is found: the same poses with the shield left off.
+    'down-0-ns': linkDownNs(LEGS_A),
+    'down-1-ns': linkDownNs(LEGS_B),
+    'up-0-ns': upBodyNs(LEGS_B),
+    'up-1-ns': upBodyNs(LEGS_A),
+    'side-0-ns': linkSideNs(LEGS_SIDE_A),
+    'side-1-ns': linkSideNs(LEGS_SIDE_B),
+    'attack-down-ns': ATTACK_DOWN_NS,
+    'attack-up-ns': ATTACK_UP_NS,
+    'attack-side-ns': ATTACK_SIDE_NS,
+    'throw-down': THROW_DOWN,
+    'throw-up': THROW_UP,
+    'throw-side': THROW_SIDE,
+    'throw-down-ns': THROW_DOWN_NS,
+    'throw-up-ns': THROW_UP_NS,
+    'throw-side-ns': THROW_SIDE_NS,
   },
 };
 

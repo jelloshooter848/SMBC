@@ -44,6 +44,15 @@ const DUNGEON_FRAMES: Record<string, Size> = {
   'heart-empty': S8,
   'heart-pickup': S8,
   'sword-icon': V8,
+  // Shadow Keep v2: secret wall, opened chest, the new items and their HUD icons.
+  'wall-cracked': T16,
+  'wall-hole': T16,
+  'chest-open': T16,
+  'shield-pickup': T16,
+  'heart-container': T16,
+  'bomb-pickup': V8,
+  'boomerang-icon': V8,
+  'bomb-icon': V8,
 };
 
 const LINK_TD_FRAMES: Record<string, Size> = {
@@ -58,6 +67,32 @@ const LINK_TD_FRAMES: Record<string, Size> = {
   'attack-side': T16,
   'sword-v': V8,
   'sword-h': [16, 8],
+  'boomerang-0': S8,
+  'boomerang-1': S8,
+  'boomerang-2': S8,
+  'boomerang-3': S8,
+  'bomb-0': T16,
+  'bomb-1': T16,
+  'blast-0': [32, 32],
+  'blast-1': [32, 32],
+  'blast-2': [32, 32],
+  // Before the shield is found.
+  'down-0-ns': T16,
+  'down-1-ns': T16,
+  'up-0-ns': T16,
+  'up-1-ns': T16,
+  'side-0-ns': T16,
+  'side-1-ns': T16,
+  'attack-down-ns': T16,
+  'attack-up-ns': T16,
+  'attack-side-ns': T16,
+  // Throwing the boomerang / setting a bomb, with and without the shield.
+  'throw-down': T16,
+  'throw-up': T16,
+  'throw-side': T16,
+  'throw-down-ns': T16,
+  'throw-up-ns': T16,
+  'throw-side-ns': T16,
 };
 
 const ENEMY_FRAMES: Record<string, Size> = {
@@ -157,6 +192,9 @@ describe('dungeon tiles', () => {
       'exit-0',
       'exit-1',
       'water',
+      'wall-cracked',
+      'wall-hole',
+      'chest-open',
     ])
       expect(rows(dungeonDef, name).join(''), name).not.toContain('.');
   });
@@ -175,11 +213,61 @@ describe('dungeon tiles', () => {
     expect(rows(dungeonDef, 'door-shut')).not.toEqual(rows(dungeonDef, 'door-open'));
   });
 
+  it('the cracked wall is the north wall with a visible crack; the hole opens it to the floor', () => {
+    const wallTop = rows(dungeonDef, 'wall-top');
+    const cracked = rows(dungeonDef, 'wall-cracked');
+    const hole = rows(dungeonDef, 'wall-hole');
+    // Same orientation as wall-top: the corners match, so it sits flush in a run of wall.
+    for (const f of [cracked, hole]) {
+      expect(f[0]?.slice(0, 3)).toBe(wallTop[0]?.slice(0, 3));
+      expect(f[15]?.slice(0, 2)).toBe(wallTop[15]?.slice(0, 2));
+    }
+    // Noticeable: a good share of the tile differs from plain wall, mostly as new dark pixels.
+    let changed = 0;
+    let darkened = 0;
+    cracked.forEach((row, y) =>
+      [...row].forEach((ch, x) => {
+        if (ch === wallTop[y]?.[x]) return;
+        changed++;
+        if (ch === '0') darkened++;
+      }),
+    );
+    expect(changed).toBeGreaterThanOrEqual(24);
+    expect(darkened).toBeGreaterThanOrEqual(16);
+    // The blast leaves a dark way through, reaching the floor like an open door.
+    expect(hole[15]?.slice(5, 11)).toBe('000000');
+    expect(hole[8]?.slice(5, 11)).toBe('000000');
+  });
+
+  it("the opened chest shows its dark inside and keeps the closed chest's footprint", () => {
+    const open = rows(dungeonDef, 'chest-open');
+    const shut = rows(dungeonDef, 'chest');
+    expect(open).not.toEqual(shut);
+    expect(open[15]).toBe(shut[15]);
+    expect(open.some((r) => r.includes('0000000000'))).toBe(true);
+  });
+
+  it("the shield pickup is Link's blue shield with its gold cross; the heart container is a big heart", () => {
+    const shield = rows(dungeonDef, 'shield-pickup').join('');
+    for (const ch of ['h', 'd']) expect(shield).toContain(ch);
+    const container = rows(dungeonDef, 'heart-container');
+    const red = container.join('').replace(/[^eg]/g, '').length;
+    expect(red).toBeGreaterThan(4 * rows(dungeonDef, 'heart-pickup').join('').replace(/[^eg]/g, '').length);
+  });
+
+  it('the bomb icon, the bomb pickup and the boomerang icon are distinct', () => {
+    const names = ['bomb-icon', 'bomb-pickup', 'boomerang-icon'];
+    const drawn = new Set(names.map((n) => rows(dungeonDef, n).join('/')));
+    expect(drawn.size).toBe(names.length);
+  });
+
   it('animated pairs differ between frames', () => {
     for (const [a, b] of [
       ['torch-0', 'torch-1'],
       ['exit-0', 'exit-1'],
       ['switch-up', 'switch-down'],
+      ['chest', 'chest-open'],
+      ['wall-cracked', 'wall-hole'],
     ] as const)
       expect(rows(dungeonDef, a), `${a} vs ${b}`).not.toEqual(rows(dungeonDef, b));
   });
@@ -189,6 +277,56 @@ describe('overhead Link', () => {
   it('walk cycles have two distinct frames each', () => {
     for (const dir of ['down', 'up', 'side'])
       expect(rows(linkTdDef, `${dir}-0`), dir).not.toEqual(rows(linkTdDef, `${dir}-1`));
+  });
+
+  it('without the shield: the same poses, only the shield pixels removed', () => {
+    // The shield is drawn in its blue face/shade, gold trim and black outline; nothing else moves.
+    const SHIELD = new Set(['0', '9', 'a', 'b']);
+    for (const pose of [
+      'down-0',
+      'down-1',
+      'up-0',
+      'up-1',
+      'side-0',
+      'side-1',
+      'attack-down',
+      'attack-up',
+      'attack-side',
+      'throw-down',
+      'throw-up',
+      'throw-side',
+    ]) {
+      const withShield = rows(linkTdDef, pose);
+      const bare = rows(linkTdDef, `${pose}-ns`);
+      expect(bare.join(''), `${pose}-ns has no shield`).not.toMatch(/[ab]/);
+      expect(withShield.join(''), `${pose} has a shield`).toMatch(/a/);
+      let diff = 0;
+      withShield.forEach((row, y) =>
+        [...row].forEach((ch, x) => {
+          if (ch === bare[y]?.[x]) return;
+          diff++;
+          expect(SHIELD.has(ch), `${pose} (${x},${y}) '${ch}' is shield`).toBe(true);
+        }),
+      );
+      expect(diff, pose).toBeGreaterThan(0);
+    }
+  });
+
+  it('throwing is its own pose, distinct from the sword thrust', () => {
+    for (const dir of ['down', 'up', 'side'])
+      for (const ns of ['', '-ns'])
+        expect(rows(linkTdDef, `throw-${dir}${ns}`), dir + ns).not.toEqual(
+          rows(linkTdDef, `attack-${dir}${ns}`),
+        );
+  });
+
+  it('item animations: the boomerang spins, the fuse flickers, the blast grows then scatters', () => {
+    const spin = [0, 1, 2, 3].map((i) => rows(linkTdDef, `boomerang-${i}`).join('/'));
+    expect(new Set(spin).size).toBe(4);
+    expect(rows(linkTdDef, 'bomb-0')).not.toEqual(rows(linkTdDef, 'bomb-1'));
+    const [a, b, c] = ['blast-0', 'blast-1', 'blast-2'].map((n) => opaque(rows(linkTdDef, n)));
+    expect(b).toBeGreaterThan(a as number);
+    expect(c).toBeLessThan(b as number);
   });
 
   it('the horizontal blade is the vertical one turned to point right', () => {
