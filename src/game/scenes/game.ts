@@ -106,6 +106,8 @@ export class Game {
   pendingReveal: string[] = [];
   /** The file's developer "Unlock all" map flag (SaveFile.devUnlockAll); see `mapUnlockAll`. */
   devUnlockAll = false;
+  /** The file's developer "All heroes" flag (SaveFile.devAllHeroes); see `heroLocked`. */
+  devAllHeroes = false;
   /** Heroes freed on the campaign's file (SaveFile.freed); see `heroLocked`. */
   freed: string[] = [FIRST_HERO];
 
@@ -276,6 +278,7 @@ export class Game {
     this.campaign = null;
     this.pendingReveal = [];
     this.devUnlockAll = false;
+    this.devAllHeroes = false;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -354,6 +357,7 @@ export class Game {
       lastNode: { ...this.mapLastNode },
       pendingReveal: this.pendingReveal.slice(),
       devUnlockAll: this.devUnlockAll,
+      devAllHeroes: this.devAllHeroes,
       freed: this.freed.slice(),
     };
     this.campaignSave = save;
@@ -510,10 +514,19 @@ export class Game {
 
   /**
    * Whether hero `def` is still a brainwashed captive on the campaign's file, so it cannot be
-   * picked. Always false outside campaign mode (dev, ?level=, custom, shared, playtests).
+   * picked. Always false outside campaign mode (dev, ?level=, custom, shared, playtests), and
+   * while the file's dev "All heroes" flag is on in dev mode (`freed` itself stays as it is).
    */
   heroLocked(def: CharacterDef): boolean {
+    if (this.devMode && this.devAllHeroes) return false;
     return this.campaign !== null && !this.freed.includes(def.id);
+  }
+
+  /** A player whose hero is locked (the real roster is back) gives way to the first hero. */
+  dropLockedHeroes(): void {
+    if (this.heroLocked(this.state.character)) this.setHero(0, this.firstHero);
+    const c2 = this.state.character2;
+    if (c2 && this.heroLocked(c2)) this.setHero(1, this.firstHero);
   }
 
   /** Heroes still to be found on the campaign's file (0 outside campaign mode). */
@@ -637,11 +650,11 @@ export class Game {
     this.pendingReveal = save.pendingReveal.slice();
     this.mapLastNode = { ...save.lastNode };
     this.devUnlockAll = save.devUnlockAll === true;
+    this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
-    // A hero the file has not freed (a hand-edited file) gives way to Mario.
-    if (this.heroLocked(this.state.character)) this.setHero(0, this.firstHero);
-    const c2 = this.state.character2;
-    if (c2 && this.heroLocked(c2)) this.setHero(1, this.firstHero);
+    // A hero the file has not freed (a hand-edited file, or one picked through "All heroes" with
+    // dev mode since off) gives way to Mario.
+    this.dropLockedHeroes();
     this.mapProgress = {
       cleared: save.cleared.slice(),
       pages: save.pages.slice(),

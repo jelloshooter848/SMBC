@@ -631,6 +631,12 @@ export class WorldMapScene implements Scene {
           ...(game.devMode
             ? [
                 {
+                  label: 'All heroes',
+                  value: () => (game.devAllHeroes ? 'on' : 'off'),
+                  adjust: () => this.toggleAllHeroes(),
+                  hint: 'Developer mode: every hero can be picked, none freed',
+                },
+                {
                   label: 'Unlock all',
                   value: () => (game.devUnlockAll ? 'on' : 'off'),
                   adjust: () => this.toggleUnlockAll(),
@@ -643,6 +649,18 @@ export class WorldMapScene implements Scene {
         true,
       ),
     );
+  }
+
+  /**
+   * Map menu "All heroes" (dev mode only): flips the file's flag and saves. The file's freed list
+   * is never touched; turning it off puts a player on a hero it has not freed back on Mario.
+   */
+  private toggleAllHeroes(): void {
+    const game = this.game;
+    game.devAllHeroes = !game.devAllHeroes;
+    if (!game.devAllHeroes) game.dropLockedHeroes();
+    this.views.clear();
+    game.autosave();
   }
 
   /**

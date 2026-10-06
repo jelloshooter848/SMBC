@@ -17,6 +17,7 @@ game themed on that hero's own game. Passing it frees the hero, who joins the fi
   in the list. Dev starts, `?level=`, custom and shared levels and editor play-tests keep
   every hero. `Game.freeHero(id)` adds a hero and saves at once.
 - A file whose current hero is locked (hand-edited) falls back to Mario when it opens.
+- Dev mode's map menu **All heroes** (`SaveFile.devAllHeroes`, missing = off) makes `heroLocked` false for every hero while dev mode is on; it never writes `freed`, and turning it off restores the real roster (a player on a locked hero goes back to Mario).
 
 ### Character select
 

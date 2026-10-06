@@ -43,6 +43,11 @@ export interface SaveFile extends MapProgress {
    */
   devUnlockAll?: boolean;
   /**
+   * Developer mode's map menu "All heroes": every hero can be picked on this file without freeing
+   * any (`freed` is never written by it). Only has an effect while dev mode is on; missing: off.
+   */
+  devAllHeroes?: boolean;
+  /**
    * Heroes freed on this file (CharacterDef ids, Mario always first): only these can be picked
    * in campaign play; the rest are brainwashed captives to find (docs/HEROES.md).
    */
@@ -155,6 +160,7 @@ export function newSave(
     lastNode: {},
     pendingReveal: [],
     devUnlockAll: false,
+    devAllHeroes: false,
     freed: freedHeroes([character, character2], characters),
   };
 }
@@ -258,6 +264,7 @@ export function migrateSave(
     lastNode: lastNodes(stored.lastNode, pages),
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
+    devAllHeroes: stored.devAllHeroes === true,
     freed: Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed,
   };
 }
