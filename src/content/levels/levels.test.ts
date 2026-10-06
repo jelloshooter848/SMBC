@@ -55,7 +55,7 @@ describe('World 1-1 landmarks', () => {
     expect(tile(l, 198, 11)).toBe(T.FLAG_SHAFT);
     expect(tile(l, 198, 2)).toBe(T.FLAG_BALL);
     expect(l.zones).toContainEqual({ kind: 'exit', x: 198, next: '1-2-intro' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 82 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 82, y: 12 });
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 202, y: 12 });
   });
   it('has 16 goombas and 1 koopa', () => {
@@ -137,8 +137,8 @@ describe('World 1 sub-areas and later stages follow the original layouts', () =>
     const l = load('1-4');
     expect(l.theme).toBe('castle');
     expect(l.start).toEqual({ x: 1, y: 6 });
-    expect(l.entities.filter((e) => e.type === 'firebar')).toHaveLength(7);
-    expect(l.entities).toContainEqual({ type: 'lift-h', x: 136, y: 6, props: { len: 4, range: 3 } });
+    expect(l.entities.filter((e) => e.type === 'firebar-ccw')).toHaveLength(7);
+    expect(l.entities).toContainEqual({ type: 'lift-h', x: 136, y: 6, props: { len: 4, range: 3, dx: -8 } });
     for (let x = 128; x <= 140; x++) expect(tile(l, x, 10)).toBe(T.BRIDGE);
     expect(tile(l, 140, 9)).toBe(T.CHAIN);
     expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9 });
@@ -258,7 +258,7 @@ describe('World 3 follows the original layouts', () => {
       props: { x2: 141, y2: 8, len: 6, top: 2 },
     });
     expect(l.entities.filter((e) => e.type === 'lift-h')).toHaveLength(6);
-    expect(l.entities).toContainEqual({ type: 'lift-fall', x: 61, y: 6, props: { len: 6 } });
+    expect(l.entities).toContainEqual({ type: 'lift-fall', x: 61, y: 6, props: { len: 6, dx: -16 } });
     expect(tile(l, 84, 11)).toBe(T.TREE_TOP);
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 154, y: 12 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '3-4' });
@@ -270,7 +270,7 @@ describe('World 3 follows the original layouts', () => {
       16, 26, 88, 97, 103, 109,
     ]);
     expect(l.entities.filter((e) => e.type.startsWith('firebar'))).toHaveLength(9);
-    expect(l.entities).toContainEqual({ type: 'lift-h', x: 136, y: 6, props: { len: 4, range: 3 } });
+    expect(l.entities).toContainEqual({ type: 'lift-h', x: 136, y: 6, props: { len: 4, range: 3, dx: -8 } });
     expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 152, next: '4-1' });
   });
@@ -348,11 +348,12 @@ describe('World 5 follows the original layouts', () => {
   });
   it('5-2: Hammer Bros, beetles, blasters, a springboard, an underwater detour and a coin heaven', () => {
     const l = load('5-2');
+    // The Hammer Bro at 45 has the original's shiftRight: an entity line (dx=8), listed first.
     expect(l.entities.filter((e) => e.type === 'hammer-bro').map((e) => [e.x, e.y])).toEqual([
+      [45, 9],
       [124, 4],
       [81, 8],
       [120, 8],
-      [45, 9],
     ]);
     expect(l.entities.filter((e) => e.type === 'buzzy').map((e) => e.x)).toEqual([136, 137, 138]);
     expect(l.entities).toContainEqual({ type: 'spring', x: 25, y: 12 });
@@ -376,7 +377,12 @@ describe('World 5 follows the original layouts', () => {
       dir: 'right',
       target: { level: '5-2', x: 115, y: 10, exitDir: 'up' },
     });
-    expect(load('5-2-sky').entities).toContainEqual({ type: 'lift-right', x: 17, y: 10, props: { len: 6 } });
+    expect(load('5-2-sky').entities).toContainEqual({
+      type: 'lift-right',
+      x: 17,
+      y: 10,
+      props: { len: 6, dx: -16 },
+    });
   });
   it('5-3: treetops under a stretch of Bullet Bills', () => {
     const l = load('5-3');
@@ -386,7 +392,7 @@ describe('World 5 follows the original layouts', () => {
   });
   it('5-4: castle with a long fire bar, Podoboos and Bowser', () => {
     const l = load('5-4');
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 23, y: 7, props: { len: 12 } });
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 23, y: 7, props: { len: 12 } });
     expect(l.entities.filter((e) => e.type === 'podoboo')).toHaveLength(6);
     expect(l.entities).toContainEqual({ type: 'bowser', x: 136, y: 9 });
     expect(l.entities).toContainEqual({ type: 'axe', x: 141, y: 8 });

@@ -178,7 +178,7 @@ describe('C-2 (ll-12-2): treetop bridges with flying Bloopers, cheeps and bullet
     expect(at(l, 'spring-green')).toEqual([[131, 12]]);
     expect(tile(l, 131, 13)).toBe(T.TREE_TOP);
     expect(l.entities).toContainEqual({ type: 'lift-h', x: 137, y: 13, props: { len: 4, range: 3 } });
-    expect(l.entities).toContainEqual({ type: 'lift-v', x: 160, y: 10, props: { len: 4, range: 6 } });
+    expect(l.entities).toContainEqual({ type: 'lift-v', x: 160, y: 10, props: { len: 4, range: 6, dx: -8 } });
     expect(l.entities).toContainEqual({
       type: 'balance',
       x: 166,
@@ -221,8 +221,8 @@ describe('C-3 (ll-12-3): green springboards, Lakitu and fire bars on treetops', 
     expect(of(l, 'piranha').map((e) => e.x)).toEqual([117, 122, 127, 188]);
   });
   it('has fire bars on blocks near the end, a falling lift and a balance lift', () => {
-    expect(at(l, 'firebar')).toEqual([[277, 9]]);
-    expect(at(l, 'firebar-ccw')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([[277, 9]]);
+    expect(at(l, 'firebar')).toEqual([
       [282, 9],
       [305, 5],
     ]);
@@ -271,8 +271,8 @@ describe('C-4 (ll-12-4): the castle with elevator shafts, Buzzy Beetles and a ha
       [64, 4],
       [64, 12],
     ]);
-    for (const e of [...of(l, 'lift-down'), ...of(l, 'lift-up')]) expect(e.props).toEqual({ len: 3 });
-    expect(l.entities).toContainEqual({ type: 'lift-h', x: 31, y: 13, props: { len: 4, range: 3 } });
+    for (const e of [...of(l, 'lift-down'), ...of(l, 'lift-up')]) expect(e.props).toEqual({ len: 3, dx: -4 });
+    expect(l.entities).toContainEqual({ type: 'lift-h', x: 31, y: 13, props: { len: 4, range: 3, dx: -8 } });
   });
   it('has ten Buzzy Beetles, three red Koopas, a podoboo and eight fire bars', () => {
     expect(at(l, 'buzzy')).toEqual([
@@ -293,8 +293,8 @@ describe('C-4 (ll-12-4): the castle with elevator shafts, Buzzy Beetles and a ha
       [102, 5],
     ]);
     expect(at(l, 'podoboo')).toEqual([[184, 12]]);
-    expect(of(l, 'firebar').map((e) => e.x)).toEqual([16, 22, 45, 82, 156, 170, 231]);
-    expect(at(l, 'firebar-ccw')).toEqual([[201, 13]]);
+    expect(of(l, 'firebar-ccw').map((e) => e.x)).toEqual([16, 22, 45, 82, 156, 170, 231]);
+    expect(at(l, 'firebar')).toEqual([[201, 13]]);
     expect(tile(l, 44, 9)).toBe(T.HIDDEN_POWERUP);
   });
   it('ends with a hammer-throwing Bowser on the bridge, a fire bar in the bridge and the axe', () => {

@@ -75,6 +75,27 @@ const poisonMushroom = [
   '...0000000000...',
 ];
 
+/* Lost Levels Clock (original art): a gold alarm clock with two bells, a white face and black
+ * hands at ten past ten, standing on two feet. */
+const clock = [
+  '..000......000..',
+  '.05560....06550.',
+  '.0550000000550..',
+  '..00555555500...',
+  '...0511111150...',
+  '..051111111150..',
+  '..051101111150..',
+  '.05111011101150.',
+  '.05111100011150.',
+  '.05111110111150.',
+  '.05111111111150.',
+  '..051111111150..',
+  '..055111111550..',
+  '...0555555550...',
+  '...050000050....',
+  '...00.....00....',
+];
+
 const flower0 = [
   '....00000000....',
   '..007777777700..',
@@ -1704,6 +1725,7 @@ export const itemsDef: SpriteDef = {
     mushroom,
     '1up': swapColors(mushroom, { '2': '4' }),
     'poison-mushroom': poisonMushroom,
+    clock,
     'flower-0': flower0,
     'flower-1': swapColors(flower0, { '7': '2', '5': '6', '6': '5' }),
     'star-0': star0,

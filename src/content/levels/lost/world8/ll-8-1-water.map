@@ -31,8 +31,8 @@ wwwwwwwwwwwwwwww BBBBBBBBBBBBBBBB wwwBBBBBBBBBBwww BBBBBBBBBBBBBBBB wwwwwwwwwwww
 [entities]
 blooper 25 8
 blooper 39 6
-lift-up 46 3 len=4
-lift-up 46 9 len=4
+lift-up 46 3 len=4 dx=-8
+lift-up 46 9 len=4 dx=-8
 koopa-para-red 69 7
 
 [zones]

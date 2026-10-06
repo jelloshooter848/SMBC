@@ -30,26 +30,26 @@ BBBBB........... ..%%.......%%... .....%%%%%%%%%%% %B%%%%%%%%%%%B%% %%%%%%%%%B..
 [entities]
 podoboo 16 12
 podoboo 20 12
-firebar-ccw 23 7 len=12
+firebar 23 7 len=12
 podoboo 30 12
-firebar-ccw 43 13
-firebar 49 9
-firebar 55 5
-firebar-ccw 55 13
-firebar 61 9
-firebar 67 13
-firebar 73 9
-firebar 82 6
-lift-up 86 6 len=3
-lift-up 86 14 len=3
-lift-down 89 4 len=3
-lift-down 89 12 len=3
-firebar-ccw 92 10
-firebar-ccw 103 11
+firebar 43 13
+firebar-ccw 49 9
+firebar-ccw 55 5
+firebar 55 13
+firebar-ccw 61 9
+firebar-ccw 67 13
+firebar-ccw 73 9
+firebar-ccw 82 6
+lift-up 86 6 len=3 dx=-4
+lift-up 86 14 len=3 dx=-4
+lift-down 89 4 len=3 dx=-4
+lift-down 89 12 len=3 dx=-4
+firebar 92 10
+firebar 103 11
 podoboo 109 12
 podoboo 113 12
 podoboo 131 12
-lift-h 136 6 len=4 range=3
+lift-h 136 6 len=4 range=3 dx=-8
 bowser 136 9
 axe 141 8
 toad 153 12

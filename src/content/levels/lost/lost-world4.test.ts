@@ -101,7 +101,7 @@ describe('Lost Levels 4-1', () => {
     expect(s.width).toBe(120);
     expect(s.startMode).toBe('climb');
     expect(s.start).toEqual({ x: 4, y: 14 });
-    expect(s.entities).toContainEqual({ type: 'lift-right', x: 17, y: 10, props: { len: 6 } });
+    expect(s.entities).toContainEqual({ type: 'lift-right', x: 17, y: 10, props: { len: 6, dx: -16 } });
     expect(s.zones).toContainEqual({ kind: 'pit', x: 0, target: { level: 'll-4-1', x: 98, y: 0 } });
     expect(tile(l, 98, 13)).toBe(T.GROUND);
   });
@@ -110,7 +110,7 @@ describe('Lost Levels 4-1', () => {
     expect(tile(l, 199, 12)).toBe(T.HARD);
     expect(l.entities).toContainEqual({ type: 'decor-castle', x: 204, y: 12 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 200, next: 'll-4-2' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 114 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 114, y: 12 });
   });
 });
 
@@ -238,7 +238,7 @@ describe('Lost Levels 4-3', () => {
     expect(tile(l, 185, 2)).toBe(T.FLAG_BALL);
     expect(l.entities).toContainEqual({ type: 'decor-castle-big', x: 188, y: 12 });
     expect(l.zones).toContainEqual({ kind: 'exit', x: 186, next: 'll-4-4' });
-    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98 });
+    expect(l.zones).toContainEqual({ kind: 'checkpoint', x: 98, y: 12 });
   });
 });
 
@@ -253,16 +253,16 @@ describe('Lost Levels 4-4', () => {
     expect(l.zones.filter((z) => z.kind === 'loop')).toEqual([]);
   });
   it('has nine fire bars (two long), three lifts, a Podoboo and two piranhas', () => {
-    expect(at(l, 'firebar')).toEqual([
+    expect(at(l, 'firebar-ccw')).toEqual([
       [39, 9],
       [59, 11],
       [100, 9],
       [128, 9],
     ]);
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 20, y: 9, props: { len: 12 } });
-    expect(l.entities).toContainEqual({ type: 'firebar-ccw', x: 53, y: 7, props: { len: 12 } });
-    expect(count(l, 'firebar-ccw')).toBe(5);
-    expect(l.entities).toContainEqual({ type: 'lift-v', x: 61, y: 10, props: { len: 4, range: 6 } });
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 20, y: 9, props: { len: 12 } });
+    expect(l.entities).toContainEqual({ type: 'firebar', x: 53, y: 7, props: { len: 12 } });
+    expect(count(l, 'firebar')).toBe(5);
+    expect(l.entities).toContainEqual({ type: 'lift-v', x: 61, y: 10, props: { len: 4, range: 6, dx: -8 } });
     expect(l.entities).toContainEqual({ type: 'lift-fall', x: 92, y: 6, props: { len: 4 } });
     expect(l.entities).toContainEqual({ type: 'lift-h', x: 172, y: 12, props: { len: 4, range: 3 } });
     expect(at(l, 'podoboo')).toEqual([[188, 12]]);

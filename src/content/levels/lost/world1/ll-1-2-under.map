@@ -29,10 +29,10 @@ parent: ll-1-2
 ############.... ....##...###.... ........######## .##########...## ################ ################
 
 [entities]
-lift-fall 17 9 len=6
+lift-fall 17 9 len=6 dx=-16
 piranha 20 9
 piranha 26 9
-lift-fall 34 9 len=6
+lift-fall 34 9 len=6 dx=-16
 piranha 40 10
 piranha 51 11
 

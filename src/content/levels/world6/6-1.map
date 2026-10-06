@@ -34,7 +34,7 @@ piranha 102 10
 decor-castle 192 12
 
 [zones]
-checkpoint 98
+checkpoint 98 12
 exit 188 next=6-2
 
 [decor]

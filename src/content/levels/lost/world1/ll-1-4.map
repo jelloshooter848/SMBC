@@ -28,15 +28,15 @@ BBBBB........... ................ ............B%%% %%%%%B.......... %%%%%%%%%%%%
 %%%%%%%%%%%%%%%% %%%%%...%%...%%. ..%%%%%%%.%%%%%% %%%%%%......%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% ....%%%.%%%.%%%% %%%%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
-firebar 19 5
-firebar-ccw 37 5
-firebar-ccw 44 9
-firebar 53 9
-firebar-ccw 68 5
-firebar-ccw 76 5
-firebar-ccw 84 5
-firebar 91 9
-firebar 101 9
+firebar-ccw 19 5
+firebar 37 5
+firebar 44 9
+firebar-ccw 53 9
+firebar 68 5
+firebar 76 5
+firebar 84 5
+firebar-ccw 91 9
+firebar-ccw 101 9
 bowser 135 9
 lift-h 137 6 len=4 range=3
 axe 141 8

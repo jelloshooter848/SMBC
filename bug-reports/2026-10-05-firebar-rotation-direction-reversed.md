@@ -54,3 +54,5 @@ every time
 - Speed is a separate report: `2026-10-05-firebar-rotation-too-slow.md`.
 - The NES agrees with the original Crossover, so this is not an NES-versus-Crossover choice. In the SMB1 disassembly (https://gist.github.com/1wErt3r/4048722), 1-4's enemy data (`E_CastleArea1`) mostly uses fire bar type `$1d`. `FirebarSpinDirData` gives that type a nonzero direction, which takes the branch the disassembly labels `SpinCounterClockwise`.
 - Reviewed: verified against `com/smbc/projectiles/FireBar.as` (`clockwise`, `rotate`, no initial rotation), the placements in sprite 259 of `smbc3.swf` (`MovieClipInfo_FireBarMc`), `levelDataSmb.xml` and `levelDataLostLevels.xml` (every `fireBar*` token not hidden on normal), and ours: `tools/levelgen/convert-smbc.mjs`, `src/game/world/world.ts`, `src/game/entities/enemies/firebar.ts`, and every `.map` with a `firebar` line.
+
+Status (converter): the converter now emits the right names (fireBarLeft / fireBarLongLeft → firebar-ccw, fireBarRight / fireBarLongRight → firebar, per FireBar.as: a "Left" label sets clockwise = false), and every SMB1 and Lost Levels map is regenerated.
