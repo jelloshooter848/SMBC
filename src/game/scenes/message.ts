@@ -4,6 +4,8 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_W } from '@engine/viewport';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { World } from '../world/world';
 
 /** Frames a card ignores input for, so a press meant for the level doesn't skip it. */
@@ -34,6 +36,12 @@ export class MessageScene implements Scene {
     private readonly timeout = 600,
     private readonly keys: readonly Action[] = ['start', 'jump'],
   ) {}
+
+  /** One OK button: A if it continues the message, else B, else Start. */
+  touchLabels(): TouchLabels {
+    const key = (['jump', 'attack', 'start'] as const).find((k) => this.keys.includes(k));
+    return key ? { ...NO_TOUCH_BUTTONS, [key]: 'OK' } : NO_TOUCH_BUTTONS;
+  }
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
     if (this.done) return;
@@ -70,6 +78,11 @@ export class CardScene implements Scene {
   ) {
     this.translucent = world !== null;
     if (world) world.castleText = [...lines];
+  }
+
+  /** B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. */
+  touchLabels(): TouchLabels {
+    return { ...NO_TOUCH_BUTTONS, attack: 'OK' };
   }
 
   update(_input: InputFrame, inputs: InputFrame[]): void {

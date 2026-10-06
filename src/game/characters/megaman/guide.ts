@@ -3,13 +3,18 @@ import type { CharacterGuide } from '../character';
 export const MEGAMAN_GUIDE: CharacterGuide = {
   tagline: 'Arm cannon and a full arsenal',
   controls: [
-    { action: 'left/right', does: 'Run. Starts and stops instantly.' },
+    { action: 'left/right', does: 'Run. Starts and stops at once.' },
     { action: 'jump', does: 'A tall jump. Let go early to cut it short.' },
-    { action: 'down+jump', does: 'Slide: low and fast, fits under one-tile gaps.' },
-    { action: 'attack', does: 'Fire the buster. Three shots on screen.' },
-    { action: 'attack (hold)', does: 'With the helmet: charge, then release for a big shot that pierces.' },
-    { action: 'select', does: 'Cycle the weapon belt.' },
-    { action: 'special', does: 'Fire the selected weapon.' },
+    { action: 'down+jump', does: 'Slide: low and fast, under one-tile gaps.' },
+    { action: 'attack', touch: 'SHOOT', does: 'Fire the buster, three shots at a time.' },
+    { action: 'attack (hold)', touch: 'SHOOT', does: 'With the helmet: charge, let go for a piercing shot.' },
+    { action: 'select', touch: 'WEAPON', does: 'Pick the next weapon.' },
+    {
+      action: 'special',
+      touch: 'WEAPON BUTTON',
+      does: 'Fire the selected weapon.',
+      touchDoes: 'Shows the selected weapon. Tap to fire it.',
+    },
   ],
   powerups: [
     { item: 'mushroom', does: 'The helmet: charge shot, brick breaking and the Rush Coil. Full heal.' },

@@ -20,6 +20,7 @@ import { sfx } from '@content/sfx/sfx';
 import { Game } from '@game/scenes/game';
 import { CHARACTERS } from '@game/characters/registry';
 import { DEFAULT_ASSIST } from '@game/context';
+import { MENU_TOUCH_LABELS } from '@game/touch-labels';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
@@ -75,12 +76,20 @@ function boot(): void {
     input,
     announcer,
     applySettings: () => applySettings(),
+    controlScheme: () =>
+      touch.shown
+        ? 'touch'
+        : GamepadSource.available() && [...navigator.getGamepads()].some((g) => g?.connected)
+          ? 'gamepad'
+          : 'keyboard',
   });
 
   const loop = new FixedLoop({
     step() {
       input.beginFrame();
       game.scenes.update([input.player(0), input.player(1)]);
+      // The buttons say what they do in the scene now on top (setLabels is a no-op when unchanged).
+      touch.setLabels({ ...MENU_TOUCH_LABELS, ...game.scenes.top?.touchLabels?.() });
     },
     render() {
       game.scenes.render(renderer);

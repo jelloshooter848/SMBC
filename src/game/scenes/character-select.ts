@@ -3,6 +3,8 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { CharacterDef } from '../characters/character';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { NO_TOUCH_BUTTONS } from '../touch-labels';
 
 /**
  * One player picks a hero mid-run: after a death with lives left, or after a continue. The
@@ -53,6 +55,13 @@ export class CharacterSelectScene implements Scene {
     this.game.deps.announcer?.say(
       'Select your hero. Left and right to choose, start to begin. Player two: press start to join.',
     );
+  }
+
+  /** Touch drives player 1 only, so nothing to press while player 2 picks. */
+  touchLabels(): TouchLabels {
+    if (this.pick && this.pick.player !== 0) return NO_TOUCH_BUTTONS;
+    const back = !this.pick || !!this.pick.onCancel;
+    return { jump: 'OK', attack: back ? 'BACK' : null, special: null, start: null, select: null };
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {

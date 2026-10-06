@@ -5,11 +5,16 @@ export const BILL_GUIDE: CharacterGuide = {
   controls: [
     { action: 'left/right', does: 'Run.' },
     { action: 'jump', does: 'A fixed somersault jump.' },
-    { action: 'attack', does: 'Fire the rifle. Unlimited bullets.' },
-    { action: 'up', does: 'Aim straight up when standing, diagonally up when moving.' },
-    { action: 'down', does: 'On the ground: go prone and fire along the floor. In the air: aim down.' },
-    { action: 'select', does: 'Switch between the guns you have.' },
-    { action: 'special', does: 'Also fires.' },
+    { action: 'attack', touch: 'SHOOT', does: 'Fire. Unlimited bullets. Hold with the machine gun.' },
+    { action: 'up', does: 'Aim up, diagonally while moving.' },
+    { action: 'down', does: 'Go prone on the ground. In the air: aim down.' },
+    { action: 'select', touch: 'WEAPON', does: 'Switch guns.' },
+    {
+      action: 'special',
+      touch: 'GUN BUTTON',
+      does: 'Also fires.',
+      touchDoes: 'Shows the gun in hand. Also fires.',
+    },
   ],
   powerups: [
     { item: 'mushroom', does: 'One more hit, up to five.' },

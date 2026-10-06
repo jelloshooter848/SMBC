@@ -2,6 +2,9 @@ import type { Action } from './actions';
 import type { Code } from './bindings';
 import type { InputSource } from './input-manager';
 
+/** Button captions: a string shows that label, null hides the button, a missing key keeps the default. */
+export type TouchLabels = Partial<Record<Action, string | null>>;
+
 /**
  * On-screen controls for phones and tablets: a d-pad on the left, buttons on the right, and
  * small start/select buttons. Multi-touch aware, and the thumb can slide across the d-pad.
@@ -58,6 +61,11 @@ export class TouchSource implements InputSource {
     this.visible = on;
     this.root.classList.toggle('visible', on);
     if (!on) this.down.clear();
+  }
+
+  /** Stub: the real implementation (agent T1) relabels and hides buttons; cheap every frame. */
+  setLabels(labels: TouchLabels): void {
+    void labels;
   }
 
   get shown(): boolean {

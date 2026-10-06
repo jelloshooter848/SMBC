@@ -1,6 +1,12 @@
 import type { CharacterDef } from '../character';
 import { MARIO } from '../mario';
-import { plumberSprite, PLUMBER_BEHAVIOUR, PLUMBER_STATES, type PlumberPalettes } from '../mario';
+import {
+  plumberSprite,
+  plumberTouchLabels,
+  PLUMBER_BEHAVIOUR,
+  PLUMBER_STATES,
+  type PlumberPalettes,
+} from '../mario';
 import { LUIGI_PROFILE } from './profile';
 import { plumberGuide } from '../mario/guide';
 
@@ -22,5 +28,6 @@ export const LUIGI: CharacterDef = {
   jumpSfx: MARIO.jumpSfx,
   portrait: { sheet: 'mario', palette: 'luigi', frame: 'small-idle' },
   behaviour: PLUMBER_BEHAVIOUR,
+  touchLabels: plumberTouchLabels,
   guide: plumberGuide('Luigi', 'higher, floatier jumps'),
 };

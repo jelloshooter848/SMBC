@@ -2,6 +2,8 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { menuTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 
 /**
  * How long GAME OVER shows before the continue prompt: the original's
@@ -31,6 +33,11 @@ export class GameOverScene implements Scene {
   /** YES is selected. */
   get yes(): boolean {
     return this._yes;
+  }
+
+  /** Nothing to press until CONTINUE? shows; then A answers it. */
+  touchLabels(): TouchLabels {
+    return this._prompting ? menuTouchLabels(false) : NO_TOUCH_BUTTONS;
   }
 
   enter(): void {

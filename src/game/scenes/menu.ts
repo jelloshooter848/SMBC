@@ -2,6 +2,8 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { menuTouchLabels } from '../touch-labels';
 
 export interface MenuItem {
   label: string;
@@ -48,6 +50,10 @@ export class MenuScene implements Scene {
     if (!it) return;
     const v = it.value ? `: ${it.value()}` : '';
     this.game.deps.announcer?.say(`${it.label}${v}${it.hint ? `. ${it.hint}` : ''}`);
+  }
+
+  touchLabels(): TouchLabels {
+    return menuTouchLabels(this.onBack !== null);
   }
 
   setItems(items: MenuItem[]): void {

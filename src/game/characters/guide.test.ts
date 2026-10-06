@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from './registry';
 import { describePad } from '../scenes/guide';
 import { itemsDef } from '@content/sprites/items';
+import { fontText } from '../hud/text';
 
 const ACTIONS = new Set([
   'left/right',
@@ -31,6 +32,19 @@ describe('character guides', () => {
       expect(g.powerups.some((p) => p.item === item)).toBe(true);
     expect(g.demo.length).toBeGreaterThan(0);
     for (const t of g.belt ?? []) expect(itemsDef.frames[t.icon]).toBeDefined();
+  });
+
+  it('guide text only uses characters the bitmap font can draw', () => {
+    for (const c of CHARACTERS) {
+      const g = c.guide;
+      const texts = [
+        ...g.controls.flatMap((x) => [x.does, x.touchDoes ?? '', x.touch ?? '']),
+        ...g.powerups.map((x) => x.does),
+        ...(g.belt ?? []).map((x) => x.does),
+        ...(g.tips ?? []),
+      ];
+      for (const t of texts) expect(fontText(t).length, `${c.name}: ${t}`).toBe(t.length);
+    }
   });
 
   it('heroes with a tool belt document every tool', () => {

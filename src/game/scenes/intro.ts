@@ -3,6 +3,8 @@ import { worldLabel } from '../hud/world-label';
 import { drawHud } from '../hud/hud';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { NO_TOUCH_BUTTONS } from '../touch-labels';
 
 /** The black "WORLD 1-1  × 3" card shown before a level, under the HUD row. */
 export class IntroScene implements Scene {
@@ -17,6 +19,10 @@ export class IntroScene implements Scene {
     private readonly next: () => void,
     private readonly time: number | null = null,
   ) {}
+
+  touchLabels(): TouchLabels {
+    return NO_TOUCH_BUTTONS;
+  }
 
   update(): void {
     if (++this.t >= 120) this.next();

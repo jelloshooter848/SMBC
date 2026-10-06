@@ -9,6 +9,7 @@ import { RushCoil } from '../../entities/objects/rush-coil';
 import { STAR_FRAMES } from '../../constants';
 import { MEGAMAN_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
+import { beltButton, toolButton } from '../../touch-labels';
 import { RUSH, WEAPON_ENERGY, WEAPONS, type WeaponDef } from './weapons';
 
 /** Robot boy: instant acceleration, tall cut-able jump, slide, arm cannon, hit-point bar. */
@@ -203,6 +204,17 @@ function heal(p: Player, n: number, world: World): boolean {
   return true;
 }
 
+/** Touch captions for the belt (C shows the selected weapon). */
+export const MEGAMAN_TOOL_LABELS: Record<string, string> = {
+  buster: 'BUSTER',
+  saw: 'SAW',
+  leaf: 'LEAF',
+  flame: 'FLAME',
+  knuckle: 'KNUCKLE',
+  bolt: 'BOLT',
+  rush: 'RUSH',
+};
+
 export const MEGAMAN: CharacterDef = {
   id: 'megaman',
   name: 'Mega Man',
@@ -248,6 +260,14 @@ export const MEGAMAN: CharacterDef = {
     return null;
   },
   guide: MEGAMAN_GUIDE,
+  touchLabels(p) {
+    const belt = tools(p);
+    return {
+      attack: 'SHOOT',
+      special: toolButton(belt, p, MEGAMAN_TOOL_LABELS),
+      select: beltButton(belt, 'WEAPON'),
+    };
+  },
   behaviour: {
     // A charge held into a vine is dropped (no attacks on a vine: MegaManBase.pressAtkBtn
     // returns on ST_VINE), so letting go there fires nothing.

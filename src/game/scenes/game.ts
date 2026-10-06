@@ -50,7 +50,12 @@ export interface GameDeps {
   canvas?: HTMLCanvasElement;
   overlay?: HTMLElement;
   viewport?: Viewport;
+  /** The controls the player is using, so the guides show only that scheme (wired by main). */
+  controlScheme?: () => ControlScheme;
 }
+
+/** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
+export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 
 /** Orchestrates scenes and carries GameState between levels. */
 export class Game {

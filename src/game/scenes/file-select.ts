@@ -17,6 +17,8 @@ import type { CharacterDef } from '../characters/character';
 import { pad, SCORE_MAX } from '../hud/hud';
 import { CharacterSelectScene } from './character-select';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
+import { menuTouchLabels } from '../touch-labels';
 
 /** Main levels on the map (1-1..8-4). */
 export const MAIN_LEVEL_COUNT = 32;
@@ -82,6 +84,11 @@ export class FileSelectScene implements Scene {
       `${clearedMainLevels(s)} of ${MAIN_LEVEL_COUNT} levels cleared. ${s.lives} lives. Score ${s.score}.` +
       (s.gameCleared ? ' Game cleared.' : '')
     );
+  }
+
+  /** A picks (or answers the erase prompt), B goes back. */
+  touchLabels(): TouchLabels {
+    return menuTouchLabels(true);
   }
 
   update(input: InputFrame): void {

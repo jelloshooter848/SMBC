@@ -9,6 +9,7 @@ import { tileDef } from '../../level/tiles';
 import { STAR_FRAMES } from '../../constants';
 import { LINK_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
+import { toolButton } from '../../touch-labels';
 
 /** Sword-and-shield adventurer: fixed-height jump, no run, hearts, sword melee and a down-thrust. */
 export const LINK_PROFILE: MovementProfile = {
@@ -200,6 +201,15 @@ function applyJumpSpell(p: Player): void {
   };
 }
 
+/** Touch captions for the belt (C shows the selected tool). */
+export const LINK_TOOL_LABELS: Record<string, string> = {
+  boomerang: 'BOOMERANG',
+  bomb: 'BOMB',
+  jump: 'HI-JUMP',
+  shield: 'SHIELD',
+  fire: 'FIRE',
+};
+
 export const LINK: CharacterDef = {
   id: 'link',
   name: 'Link',
@@ -232,6 +242,11 @@ export const LINK: CharacterDef = {
     return null;
   },
   guide: LINK_GUIDE,
+  touchLabels: (p) => ({
+    attack: 'SWORD',
+    special: toolButton(tools(p), p, LINK_TOOL_LABELS),
+    select: 'TOOLS',
+  }),
   behaviour: {
     // The spells' timers keep running on a vine, where update (attacks) is skipped.
     vineTick(p) {

@@ -7,6 +7,7 @@ import { Projectile } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
 import { RYU_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
+import { beltButton, toolButton } from '../../touch-labels';
 import { NINPO_ARTS, type NinpoArt } from './weapons';
 
 /** Ninja: fast run, cut-able jump, clings to walls and kicks off them. */
@@ -141,6 +142,14 @@ function cast(p: Player, world: World): void {
   }
 }
 
+/** Touch captions for the belt (C shows the selected one). */
+export const RYU_TOOL_LABELS: Record<string, string> = {
+  'throwing-star': 'SHURIKEN',
+  windmill: 'WINDMILL',
+  'fire-wheel': 'WHEEL',
+  slash: 'SPIN',
+};
+
 export const RYU: CharacterDef = {
   id: 'ryu',
   name: 'Ryu',
@@ -172,6 +181,14 @@ export const RYU: CharacterDef = {
     return null;
   },
   guide: RYU_GUIDE,
+  touchLabels(p) {
+    const belt = tools(p);
+    return {
+      attack: 'SLASH',
+      special: toolButton(belt, p, RYU_TOOL_LABELS),
+      select: beltButton(belt, 'NINPO'),
+    };
+  },
   behaviour: {
     update(p, input, world) {
       const b = p.body;

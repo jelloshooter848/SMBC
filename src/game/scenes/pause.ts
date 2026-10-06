@@ -4,6 +4,7 @@ import { DevMenuScene } from './dev';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
+import type { TouchLabels } from '@engine/input/touch';
 
 export class PauseScene extends MenuScene {
   constructor(
@@ -69,6 +70,11 @@ export class PauseScene extends MenuScene {
   }
   exit(): void {
     this.game.ctx.audio.resume();
+  }
+
+  /** Start resumes from Continue (where the cursor starts); elsewhere it would pick that entry. */
+  override touchLabels(): TouchLabels {
+    return { ...super.touchLabels(), start: this.index === 0 ? 'RESUME' : null };
   }
 
   override update(input: Parameters<MenuScene['update']>[0]): void {
