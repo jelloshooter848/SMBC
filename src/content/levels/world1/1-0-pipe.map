@@ -1,0 +1,33 @@
+id: 1-0-pipe
+name: WORLD 1-0
+world: 1
+stage: 0
+theme: underground
+music: underground
+time: inherit
+start: 2,0
+startMode: fall
+camera: locked
+parent: 1-0
+
+;; Under 1-0's pipe (the tutorial's pipe lesson): an arch of coins, then the side pipe back up.
+[tiles]
+;; 0
+................
+................
+=..............{
+=..............{
+=..............{
+=..............{
+=..............{
+=......$$......{
+=.....$..$.....{
+=....$....$....{
+=..............{
+=...=======..())
+=...=======..<>>
+################
+################
+
+[zones]
+pipe 13 12 right -> 1-0 80 10 exit=up

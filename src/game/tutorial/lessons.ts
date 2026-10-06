@@ -52,7 +52,7 @@ export interface PracticeRoom {
   dummyShoots: boolean;
 }
 
-export interface Lesson {
+export interface TrainingLesson {
   id: string;
   /**
    * Shown in the prompt box and announced: ability names, never button letters. A button's
@@ -61,7 +61,7 @@ export interface Lesson {
    */
   prompt: string;
   /** True once the player has done it (since the lesson came up: the tracker is reset). */
-  done(t: LessonTracker): boolean;
+  done(t: MoveStats): boolean;
   /** Runs when the lesson comes up (gives the room's kit, e.g. Luigi's fire flower). */
   setup?(room: PracticeRoom): void;
 }
@@ -71,7 +71,7 @@ export interface Lesson {
  * counts what the hero did. The room resets it whenever a new lesson comes up, so a lesson is
  * done only by doing it while its prompt shows.
  */
-export class LessonTracker {
+export class MoveStats {
   jumps = 0;
   /** Highest jump since the reset: takeoff feet minus the highest feet (px). */
   maxJumpHeight = 0;
@@ -268,7 +268,7 @@ export const LUIGI_HIGH_JUMP_PX = 72;
 export const LUIGI_COAST_PX = 48;
 
 /** Each hero's lessons: the 3-5 things that make them different from Mario. */
-export const LESSONS: Readonly<Record<string, readonly Lesson[]>> = {
+export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = {
   luigi: [
     {
       id: 'high-jump',
@@ -441,6 +441,6 @@ export const LESSONS: Readonly<Record<string, readonly Lesson[]>> = {
 };
 
 /** A hero's lessons; empty for Mario (his tutorial is stage 1-0) and heroes without a room. */
-export function lessonsFor(heroId: string): readonly Lesson[] {
+export function lessonsFor(heroId: string): readonly TrainingLesson[] {
   return LESSONS[heroId] ?? [];
 }

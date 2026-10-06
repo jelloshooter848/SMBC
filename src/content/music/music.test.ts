@@ -38,6 +38,7 @@ const SFX_IDS = [
   'fireball',
   'flagpole',
   'bowser-fall',
+  'bowser-laugh',
   'bowser-flame',
   'firework',
   'pause',

@@ -83,6 +83,13 @@ export class PauseScene extends MenuScene {
         label: 'Assists',
         select: () => game.scenes.push(new AssistOptionsScene(game, () => game.scenes.pop())),
       });
+    // A stage tutorial (1-0) can be skipped: it counts as cleared (Game.skipTutorial).
+    if (game.tutorialRun && !game.playtestDone)
+      items.push({
+        label: 'Skip tutorial',
+        select: () => game.skipTutorial(),
+        hint: 'Counts as cleared and opens the next level',
+      });
     if (game.campaign && !game.playtestDone) {
       // Leave the level for the map (any level, cleared or not; no clear is recorded, the run's
       // lives, score, coins and power are kept and saved), or save and go to the title.

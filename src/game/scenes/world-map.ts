@@ -76,8 +76,16 @@ export function spoken(text: string): string {
  */
 export function mapHeaderLabel(page: WorldMapPage, node: MapNode | null): string {
   // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
-  const stage = node && !isWarpNode(node) && node.kind !== 'start' ? node.level?.split('-').pop() : undefined;
+  const stage = node && levelNode(node) ? node.level?.split('-').pop() : undefined;
   return (stage ? `${page.label}-${stage}` : page.label).slice(0, 10);
+}
+
+/**
+ * A node JUMP enters a level from: level and castle nodes, and a start carrying a level (World 1's
+ * start is Mario's tutorial stage 1-0).
+ */
+function levelNode(n: MapNode): boolean {
+  return !!n.level && !isWarpNode(n) && (n.kind === 'level' || n.kind === 'castle' || n.kind === 'start');
 }
 
 /** A path or world exit as drawn: its id and the dot centres, flat [x0, y0, x1, y1, ...]. */
@@ -344,7 +352,7 @@ export class WorldMapScene implements Scene {
   }
 
   private nodeLabelPlain(n: MapNode, label: string, state: string): string {
-    if (n.kind === 'start') return `${label} start`;
+    if (n.kind === 'start' && !n.level) return `${label} start`;
     if (n.kind === 'bonus') return `Bonus level, ${state}`;
     // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
     const stage = n.level?.split('-').pop();
@@ -810,6 +818,7 @@ export class WorldMapScene implements Scene {
     if (isWarpNode(n)) return isWarpOpen(this.progress, n, this.unlockAll) ? 'map-warp' : 'map-warp-locked';
     switch (n.kind) {
       case 'start':
+        if (n.level) return cleared ? 'map-node-cleared' : 'map-node-open';
         return 'map-node-start';
       case 'bonus':
         return cleared ? 'map-node-cleared' : 'map-node-bonus';
@@ -866,10 +875,7 @@ export class WorldMapScene implements Scene {
     // Standing on a level or castle node (not walking, sliding or fading) names the level.
     const standing =
       !f && (this.mode === 'idle' || this.mode === 'reveal') ? this.nodeById(this.node) : undefined;
-    const node =
-      standing && (standing.kind === 'level' || standing.kind === 'castle') && standing.level
-        ? standing
-        : null;
+    const node = standing && levelNode(standing) ? standing : null;
     // Rebuild the strings only when what they show changes.
     if (
       h.page !== page ||

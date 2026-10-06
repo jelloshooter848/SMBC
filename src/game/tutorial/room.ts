@@ -19,26 +19,27 @@ import type { Game } from '../scenes/game';
 import { MenuScene } from '../scenes/menu';
 import { abilityHint } from '../scenes/hints';
 import { drawHud } from '../hud/hud';
-import { fontText, wrapText } from '../hud/text';
+import { fontText } from '../hud/text';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 import { TargetDummy } from './dummy';
 import {
   lessonsFor,
-  LessonTracker,
+  MoveStats,
   promptText,
-  type Lesson,
+  type TrainingLesson,
   type PracticeRoom,
   type RoomGeometry,
 } from './lessons';
+import { drawPromptBox, wrapPrompt } from './stage-prompts';
 import source from '../../content/levels/practice.map?raw';
 
 /**
  * Columns of the prompt box: 25 (200 px) keeps the box centred under the HUD and clear of the
  * health and weapon bars at the left edge (and of a co-op bar at the right).
  */
-export const PROMPT_COLS = 25;
+export const ROOM_COLS = 25;
 /** Lines a prompt may take in the box. */
-export const PROMPT_LINES = 3;
+export const ROOM_LINES = 3;
 /** Frames "GOOD!" shows after a lesson before the next prompt. */
 export const GOOD_FRAMES = 50;
 /** Frames "READY!" shows before the room ends. */
@@ -160,8 +161,8 @@ export interface RoomOptions {
  */
 export class PracticeRoomScene implements Scene, PracticeRoom {
   world: World;
-  readonly tracker: LessonTracker;
-  readonly lessons: readonly Lesson[];
+  readonly tracker: MoveStats;
+  readonly lessons: readonly TrainingLesson[];
   readonly state: GameState;
   index = 0;
   phase: RoomPhase = 'lesson';
@@ -182,7 +183,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
   ) {
     this.player_ = opts.player ?? 0;
     this.lessons = lessonsFor(hero.id);
-    this.tracker = new LessonTracker(this.layout.geometry);
+    this.tracker = new MoveStats(this.layout.geometry);
     this.state = this.freshState();
     this.world = this.build();
   }
@@ -209,7 +210,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     return this.world.player;
   }
 
-  get lesson(): Lesson | null {
+  get lesson(): TrainingLesson | null {
     return this.lessons[this.index] ?? null;
   }
 
@@ -237,19 +238,19 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
 
   /**
    * The current prompt wrapped for the box: abilities with their keys (`abilityHint`), or the
-   * bare names when that would not fit PROMPT_LINES lines.
+   * bare names when that would not fit ROOM_LINES lines.
    */
   promptWrapped(): string[] {
     const prompt = this.lesson?.prompt ?? '';
-    const hinted = wrapText(
+    const hinted = wrapPrompt(
       promptText(prompt, (l, a) => this.hint(l, a)),
-      PROMPT_COLS,
+      ROOM_COLS,
     );
-    if (hinted.length <= PROMPT_LINES && hinted.every((l) => l.length <= PROMPT_COLS)) return hinted;
-    return wrapText(promptText(prompt), PROMPT_COLS).slice(0, PROMPT_LINES);
+    if (hinted.length <= ROOM_LINES) return hinted;
+    return wrapPrompt(promptText(prompt), ROOM_COLS).slice(0, ROOM_LINES);
   }
 
-  /** Lesson `i` comes up: counting starts afresh, its setup runs, and it is announced. */
+  /** TrainingLesson `i` comes up: counting starts afresh, its setup runs, and it is announced. */
   startLesson(i: number, lead = ''): void {
     this.index = i;
     this.phase = 'lesson';
@@ -434,7 +435,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     drawHud(r, assets, this.state, null, this.world.frame, this.world.players, { place: 'TRAINING' });
     const font = assets.sheet('font');
     const tick = this.phase === 'good' || this.phase === 'ready' || this.phase === 'over';
-    drawPromptBox(r, font, this.promptLines(), tick ? 2 : -1);
+    drawRoomBox(r, font, this.promptLines(), tick ? 2 : -1);
     const skip = fontText(`${this.hint('MENU', 'start')} TO SKIP`);
     const sx = (SCREEN_W - skip.length * 8) >> 1;
     r.rect(sx - 4, 223, skip.length * 8 + 8, 12, 'rgba(0,0,0,0.6)');
@@ -442,25 +443,23 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
   }
 }
 
-/** Top of the prompt box: under the HUD and a magic meter. */
-export const PROMPT_BOX_Y = 44;
+/** Top of the room's prompt box: under the HUD and a magic meter. */
+export const ROOM_BOX_Y = 44;
+/** The room's box is centred with these side margins (ROOM_COLS wide), clear of the health bars. */
+const ROOM_BOX_X = (SCREEN_W - (ROOM_COLS * 8 + 8)) >> 1;
 
 /**
- * The room's prompt box: centred under the HUD, PROMPT_COLS wide, a white rim on black, each line
- * centred. With `tick` >= 0 a green tick is drawn left of that line (GOOD!, READY!).
+ * The room's prompt box: the stage tutorials' box (stage-prompts.ts drawPromptBox), centred under
+ * the HUD, ROOM_COLS wide. With `tick` >= 0 a green tick is drawn left of that line (GOOD!, READY!).
  */
-export function drawPromptBox(r: Renderer, font: SpriteSheet, lines: readonly string[], tick = -1): void {
-  const w = PROMPT_COLS * 8 + 8;
-  const x = (SCREEN_W - w) >> 1;
-  const y = PROMPT_BOX_Y;
-  const h = lines.length * 10 + 8;
-  r.rect(x, y, w, h, '#fcfcfc');
-  r.rect(x + 1, y + 1, w - 2, h - 2, '#000');
-  lines.forEach((l, i) => r.text(font, l, x + ((w - l.length * 8) >> 1), y + 5 + i * 10));
+export function drawRoomBox(r: Renderer, font: SpriteSheet, lines: readonly string[], tick = -1): void {
+  const y = ROOM_BOX_Y;
+  drawPromptBox(r, font, lines, { x: ROOM_BOX_X, y });
   const line = lines[tick];
   if (line === undefined) return;
-  const tx = x + ((w - line.length * 8) >> 1) - 14;
-  const ty = y + 5 + tick * 10;
+  // Where drawPromptBox puts the line (centred), less the tick's width and a gap.
+  const tx = ((SCREEN_W - line.length * 8) >> 1) - 14;
+  const ty = y + 6 + tick * 10;
   for (const [dx, dy] of [
     [0, 3],
     [2, 5],

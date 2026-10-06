@@ -18,7 +18,6 @@ import { CreditsScene } from '@game/scenes/credits';
 import { GameOverScene, GAME_OVER_CARD_FRAMES } from '@game/scenes/game-over';
 import { TitleScene } from '@game/scenes/title';
 import { FileSelectScene } from '@game/scenes/file-select';
-import { StoryScene } from '@game/scenes/story';
 import type { MenuScene, MenuItem } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -105,7 +104,23 @@ function file(
 ): SaveFile {
   const s = { ...newSave(slot, c1, c2), ...over };
   writeSave(s);
-  return s;
+  // As loaded (a file with clears counts the tutorial, 1-0, as cleared).
+  return loadSave(slot) ?? s;
+}
+
+/**
+ * A new file on the map, standing on 1-0: enter it and skip it from the pause menu (Game.skipTutorial),
+ * back on the map once 1-1 is drawn in.
+ */
+function pastTutorial(h: H) {
+  expect(h.map().node).toBe('start');
+  h.idle(8);
+  h.tap('jump');
+  h.until(() => h.top() instanceof LevelScene);
+  expect(h.level().level.id).toBe('1-0');
+  h.game.skipTutorial();
+  h.until(() => h.top() instanceof WorldMapScene && h.map().mode === 'idle');
+  expect(isOpen(h.game.mapProgress, page(1), '1-1')).toBe(true);
 }
 
 /** Direction of the first step of a tile path. */
@@ -165,11 +180,6 @@ function newFileFromTitle(h: H) {
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);
   h.tap('jump');
-  // A new file tells the story first: MENU skips it.
-  if (h.top() instanceof StoryScene) {
-    h.idle(32);
-    h.tap('start');
-  }
 }
 
 /** A two-player file as 0.2.x created it (Mario and Luigi, 5 lives), opened from the title. */
@@ -215,7 +225,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     expect(h.game.state.character2).toBeNull();
     expect(h.game.state.lives).toBe(3);
     expect(loadSave(1)?.character).toBe('mario');
-    h.idle(8);
+    pastTutorial(h);
     walkTo(h, '1-1');
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
@@ -252,7 +262,12 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     const h = makeGame();
     h.game.openFile(
       1,
-      file({ powerState: 'fire', position: { page: 'smb-1', node: '1-1' }, freed: ['mario', 'luigi'] }),
+      file({
+        powerState: 'fire',
+        cleared: ['1-0'],
+        position: { page: 'smb-1', node: '1-1' },
+        freed: ['mario', 'luigi'],
+      }),
     );
     expect(h.game.state.powerState).toBe('fire');
     enter(h, '1-1'); // keeps Mario
@@ -296,7 +311,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     expect(h.game.state.character2).toBe(LUIGI);
     expect(h.game.state.lives).toBe(5);
     expect(loadSave(1)?.character2).toBe('luigi');
-    h.idle(8);
+    pastTutorial(h);
     walkTo(h, '1-1');
     h.tap('jump');
     // The file keeps the heroes it was played with (0.5.0): Mario and Luigi only.
@@ -322,7 +337,7 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     const h = makeGame();
     openOld2P(h);
     expect(h.game.state.character2).toBe(LUIGI);
-    h.idle(8);
+    pastTutorial(h);
     walkTo(h, '1-1');
     const map = h.top();
     // Back from player two's pick with player 1's B returns to the map, unchanged.
@@ -454,7 +469,7 @@ describe('campaign: clears return to the map', () => {
     h.game.openFile(1, newSave(1, MARIO.id));
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(loadSave(1)?.cleared).toEqual([]);
-    h.idle(8);
+    pastTutorial(h);
     walkTo(h, '1-1');
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
@@ -476,7 +491,7 @@ describe('campaign: clears return to the map', () => {
     expect(isOpen(h.game.mapProgress, page(1), '1-2')).toBe(true);
     // Saved at once, with the run carried on.
     const saved = loadSave(1) as SaveFile;
-    expect(saved.cleared).toEqual(['1-1']);
+    expect(saved.cleared).toEqual(['1-0', '1-1']);
     expect(saved.position).toEqual({ page: 'smb-1', node: '1-1' });
     expect([saved.lives, saved.score, saved.coins, saved.powerState]).toEqual([4, 4200, 13, 'fire']);
     expect([s.lives, s.score, s.coins, s.powerState]).toEqual([4, 4200, 13, 'fire']);
@@ -493,8 +508,8 @@ describe('campaign: clears return to the map', () => {
     play(h, '1-2-exit');
     h.fire({ type: 'exit', next: '1-3' });
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    expect(h.game.mapProgress.cleared).toEqual(['1-1', '1-2']);
-    expect(loadSave(1)?.cleared).toEqual(['1-1', '1-2']);
+    expect(h.game.mapProgress.cleared).toEqual(['1-0', '1-1', '1-2']);
+    expect(loadSave(1)?.cleared).toEqual(['1-0', '1-1', '1-2']);
     expect(h.map().node).toBe('1-2');
     expect(isOpen(h.game.mapProgress, page(1), '1-3')).toBe(true);
   });
@@ -566,7 +581,7 @@ describe('campaign: clears return to the map', () => {
     expect(m.page.id).toBe('smb-5');
     expect(m.node).toBe('5-1');
     expect(m.revealing).toBe(true);
-    expect(loadSave(1)?.cleared).toEqual([...before, '5-1']);
+    expect(loadSave(1)?.cleared).toEqual(['1-0', ...before, '5-1']);
     expect(loadSave(1)?.position).toEqual({ page: 'smb-5', node: '5-1' });
     // 4-2 itself was not cleared by the warp.
     expect(isOpen(h.game.mapProgress, page(4), '4-3')).toBe(false);
@@ -608,7 +623,7 @@ describe('campaign: clears return to the map', () => {
     play(h, '1-2-exit');
     h.fire({ type: 'exit', next: '1-3' });
     expect(h.map().page.id).toBe('smb-1');
-    expect(h.game.mapProgress.cleared).toEqual(['1-1', '4-1', '1-2']);
+    expect(h.game.mapProgress.cleared).toEqual(['1-0', '1-1', '4-1', '1-2']);
     expect(isOpen(h.game.mapProgress, page(1), '1-3')).toBe(true);
     h.until(() => h.map().mode === 'idle');
     // And back to World 4, at 4-1; the current world just closes the menus.
@@ -773,7 +788,12 @@ describe('campaign: deaths, game over and quitting', () => {
     const h = makeGame();
     h.game.openFile(
       1,
-      file({ powerState: 'fire', position: { page: 'smb-1', node: '1-1' }, freed: ['mario', 'luigi'] }),
+      file({
+        powerState: 'fire',
+        cleared: ['1-0'],
+        position: { page: 'smb-1', node: '1-1' },
+        freed: ['mario', 'luigi'],
+      }),
     );
     enter(h, '1-1');
     h.game.state.score = 500;
@@ -793,7 +813,7 @@ describe('campaign: deaths, game over and quitting', () => {
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.map().node).toBe('1-1');
     expect(h.map().revealing).toBe(false);
-    expect(h.game.mapProgress.cleared).toEqual([]);
+    expect(h.game.mapProgress.cleared).toEqual(['1-0']);
     const s = h.game.state;
     // The lost life counted once: not lost again, not refunded. The hero stays as the death left it.
     expect([s.lives, s.score, s.coins, s.character, s.powerState]).toEqual([2, 500, 7, MARIO, 'small']);
@@ -803,7 +823,7 @@ describe('campaign: deaths, game over and quitting', () => {
       500,
       7,
       'small',
-      [],
+      ['1-0'],
       { page: 'smb-1', node: '1-1' },
     ]);
     // Entering again keeps the count.
@@ -826,7 +846,7 @@ describe('campaign: deaths, game over and quitting', () => {
   it("an old 2P save: player two's death pick offers it, and player 1's input drives it", () => {
     const h = makeGame();
     openOld2P(h);
-    h.idle(8);
+    pastTutorial(h);
     walkTo(h, '1-1');
     h.tap('jump');
     picksUntilLevel(h, () => h.tap('jump'));
@@ -874,13 +894,13 @@ describe('campaign: deaths, game over and quitting', () => {
     // Already saved as a continue leaves it.
     const saved = loadSave(2) as SaveFile;
     expect([saved.lives, saved.score, saved.coins]).toEqual([3, 0, 0]);
-    expect(saved.cleared).toEqual(['1-1', '1-2']);
+    expect(saved.cleared).toEqual(['1-0', '1-1', '1-2']);
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.map().node).toBe('1-3');
     const s = h.game.state;
     expect([s.lives, s.score, s.coins, s.character]).toEqual([3, 0, 0, LUIGI]);
-    expect(h.game.mapProgress.cleared).toEqual(['1-1', '1-2']);
+    expect(h.game.mapProgress.cleared).toEqual(['1-0', '1-1', '1-2']);
     expect(h.game.campaign).toEqual({ slot: 2 });
   });
 
@@ -905,7 +925,7 @@ describe('campaign: deaths, game over and quitting', () => {
     expect([saved.lives, saved.score, saved.cleared, saved.position]).toEqual([
       3,
       0,
-      ['1-1', '1-2'],
+      ['1-0', '1-1', '1-2'],
       { page: 'smb-1', node: '1-3' },
     ]);
   });
@@ -926,9 +946,9 @@ describe('campaign: deaths, game over and quitting', () => {
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.map().node).toBe('1-2');
     expect(h.map().revealing).toBe(false);
-    expect(h.game.mapProgress.cleared).toEqual(['1-1']);
+    expect(h.game.mapProgress.cleared).toEqual(['1-0', '1-1']);
     const saved = loadSave(1) as SaveFile;
-    expect([saved.cleared, saved.coins, saved.lives]).toEqual([['1-1'], 21, 2]);
+    expect([saved.cleared, saved.coins, saved.lives]).toEqual([['1-0', '1-1'], 21, 2]);
   });
 
   it('pause → Quit to title saves the run (no clear) and shows the title', () => {
@@ -942,7 +962,7 @@ describe('campaign: deaths, game over and quitting', () => {
     expect(h.top()).toBeInstanceOf(TitleScene);
     const saved = loadSave(1) as SaveFile;
     expect([saved.cleared, saved.coins, saved.position]).toEqual([
-      ['1-1'],
+      ['1-0', '1-1'],
       9,
       { page: 'smb-1', node: '1-2' },
     ]);
@@ -1008,7 +1028,7 @@ describe('campaign: deaths, game over and quitting', () => {
       LUIGI,
       'big',
     ]);
-    expect(h2.game.mapProgress.cleared).toEqual(['1-1']);
+    expect(h2.game.mapProgress.cleared).toEqual(['1-0', '1-1']);
   });
 });
 

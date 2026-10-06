@@ -215,6 +215,21 @@ function revealIds(x: unknown, pages: readonly PageId[]): string[] {
   return [...new Set(ids)].slice(0, 64);
 }
 
+/** World 1's page, where every file starts. */
+const FIRST_PAGE_ID: PageId = 'smb-1';
+
+/** Mario's tutorial stage, World 1's start node (0.5.0): every new file plays it first. */
+export const TUTORIAL_LEVEL = '1-0';
+
+/**
+ * A file that has cleared anything was played before the tutorial existed: it counts 1-0 as
+ * cleared (derived on load, no format change), so 1-1 stays open. The node it stood on, World 1's
+ * 'start', is 1-0's node now, so no position needs remapping.
+ */
+function withTutorial(cleared: string[]): string[] {
+  return cleared.length && !cleared.includes(TUTORIAL_LEVEL) ? [TUTORIAL_LEVEL, ...cleared] : cleared;
+}
+
 function kit(x: unknown): Record<string, number> {
   const out: Record<string, number> = {};
   if (isObj(x))
@@ -255,9 +270,20 @@ export function migrateSave(
   const posPage = str(pos.page, d.position.page);
   const furthest =
     [...MAP_PAGES].reverse().find((p) => p.group === 'smb' && pages.includes(p.id))?.id ?? d.position.page;
-  const position = pages.includes(posPage)
+  const cleared = withTutorial(strs(stored.cleared, d.cleared));
+  let position = pages.includes(posPage)
     ? { page: posPage, node: str(pos.node, d.position.node) }
     : { page: furthest, node: 'start' };
+  // Before 1-0, 1-1 was open on a new file: a file with no clears may stand there (or anywhere
+  // past World 1's start), which is locked until 1-0 is cleared. Back to the start, on 1-0.
+  // A file on the developer's "Unlock all" may stand anywhere: left as it is.
+  if (
+    !cleared.length &&
+    stored.devUnlockAll !== true &&
+    position.page === FIRST_PAGE_ID &&
+    position.node !== 'start'
+  )
+    position = { page: FIRST_PAGE_ID, node: 'start' };
   const freed = Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed;
   return {
     ...d,
@@ -273,7 +299,7 @@ export function migrateSave(
     powerState2: str(stored.powerState2, d.powerState2),
     hp2: num(stored.hp2, d.hp2),
     kit2: kit(stored.kit2),
-    cleared: strs(stored.cleared, d.cleared),
+    cleared,
     pages,
     secrets: strs(stored.secrets, d.secrets),
     position,

@@ -42,9 +42,12 @@ tool, which is named after the selected tool. Touch size runs from 100% to 160%.
 **Start game** opens the file select: three save files, each showing its hero (two for a
 two-player file), the world reached, levels cleared (out of 32), lives and score (a star once
 the game is beaten); pick a file to continue it, start a new one or erase one. A new file is one
-player and opens on World 1's map with Mario (3 lives) after a short story (OK pages through it,
-menu skips it); new two-player files are paused
-for now, but two-player files from earlier versions still load and play. A file plays on a Super
+player and opens on World 1's map with Mario (3 lives) standing on **1-0**, his tutorial stage:
+Toad tells the story there, then tips at the top of the screen teach walking, jumping, running,
+stomping, ? blocks, growing, bricks, pipes and the flagpole, each moving on once you have done it
+(no clock, no lives lost; **Pause → Skip tutorial** counts it as cleared). 1-1 opens once 1-0 is
+cleared, and files that had cleared anything before count it as cleared already. New two-player
+files are paused for now, but two-player files from earlier versions still load and play. A file plays on a Super
 Mario World-style map with one page per world (1-8). Walk the d-pad along open paths and press
 jump on a level to play it (character select first, each player in turn on a two-player file:
 the current hero is preselected, and the file and map keep the last pick). Clearing a level, at
