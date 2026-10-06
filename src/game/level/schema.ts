@@ -122,7 +122,7 @@ export type Zone =
   | { kind: 'text'; x: number; y: number; text: string; triggerX: number };
 
 export interface Decor {
-  kind: string; // hill-big, hill-small, bush-1, bush-3, cloud-1, cloud-3, tree-big, tree-small, fence, castle-small, castle-big
+  kind: string; // hill-big, hill-small, bush-1, bush-3, cloud-1, cloud-3, tree-big, tree-small, fence, castle-small, castle-big, ruin-pillar, ruin-pillar-broken, ruin-statue, ruin-temple
   x: number;
   y: number;
 }
