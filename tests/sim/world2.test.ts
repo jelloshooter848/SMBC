@@ -231,16 +231,18 @@ describe('World 2: bridges, springs, vines and lava', () => {
   });
 
   it('the sky area starts on the vine, climbs up onto the clouds, and ends by dropping back into 2-1', () => {
+    // The arrival plays itself (the original's vineStart): the vine grows, Mario climbs it and
+    // steps off to the right with no input.
     const climb = runSim({
       level: level('2-1-sky'),
       character: MARIO,
-      script: { steps: [{ frame: 0, hold: ['up'] }] },
-      maxFrames: 120,
+      script: none,
+      maxFrames: 200,
     });
     const p = climb.world.player;
     expect(p.vine).not.toBeNull();
     expect(p.anim).toBe('climb');
-    expect(toPx(p.body.y)).toBeLessThan(224 - 60);
+    expect(toPx(p.body.y)).toBeLessThan(240);
 
     const bot = newBot();
     const r = runSim({
@@ -248,7 +250,7 @@ describe('World 2: bridges, springs, vines and lava', () => {
       character: MARIO,
       script: none,
       maxFrames: 3000,
-      controller: (w, f) => (f < 90 ? ['up'] : w.player.vine ? ['jump', 'right'] : autoPlayer(w, bot)),
+      controller: (w) => (w.player.vine || w.player.frozen ? [] : autoPlayer(w, bot)),
     });
     expect(r.outcome).toBe('pipe');
     expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({

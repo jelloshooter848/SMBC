@@ -43,3 +43,5 @@ every time (1 of 1 run through the full warp; the code path has no other branch)
 - Related: `2026-10-05-1-2-warp-skips-world-card-and-hud.md`.
 - Also seen in 4-2 (smb-w4 tester, ours playtested): after passing the 4-2 midpoint (column 98) and warping through the pipe at column 214 to 5-1, a time-up death in 5-1 put Mario back in 4-2 at column 98 (`shots/smb-w4/ours/548_shot.png`, `549_shot.png`, HUD WORLD 4-2, tile 98). The 4-2 vine-area pipes (columns 50, 54 and 58 of `4-2-warp`, to 8-1, 7-1 and 6-1) are reached before the 4-2 midpoint, so a stale checkpoint is not set on that route. Same code path: `4-2.map` `pipe 214 10 down -> 5-1 2 12`.
 - Reviewed: verified against `com/smbc/managers/EventManager.as` (`levelTransfer`: `passedHw = false`, `levelIDToLoad`) and ours: `src/game/scenes/level.ts` (`pipe`, `exit`, `checkpoint` and `died` cases), `src/content/levels/world4/4-2.map` (checkpoint 98, pipe 214).
+
+Status: fixed — a pipe into another world or stage clears the checkpoint (and the carried clock) in every mode, as EventManager.levelTransfer sets passedHw = false, so a death after a warp restarts the target level.

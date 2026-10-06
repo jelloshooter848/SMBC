@@ -1,6 +1,6 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import type { AABB } from '@engine/math/aabb';
-import { px, sign, velToSub } from '@engine/math/units';
+import { px, sign, tileAt, velToSub } from '@engine/math/units';
 import { JUMP_BUFFER_FRAMES } from '../constants';
 import { pickJumpTier, type JumpTier, type MovementProfile } from '../characters/profile';
 import type { CharacterDef } from '../characters/character';
@@ -84,6 +84,13 @@ export class Player {
   vine: { x: number; top: number; bottom: number } | null = null;
   /** Frames after letting go of a vine during which it cannot be grabbed again. */
   vineLock = 0;
+  /**
+   * Character.exitVine: set once left or right is released on the vine (relLftBtn/relRhtBtn),
+   * so the next left or right press steps off; cleared on grabbing one (getOnVine).
+   */
+  vineExit = false;
+  /** Centre line of the vine just stepped off, not grabbed again until he lands or leaves its reach. */
+  leftVine: number | null = null;
   /** Thrown by a spring: floats with hold-gravity to the apex whether or not jump is held. */
   launched = false;
   private runTimer = 0;
@@ -297,26 +304,20 @@ export class Player {
     if (!b.onGround) this.anim = 'swim';
   }
 
-  /** On a vine: up/down climb, left/right turn, jump lets go. The world handles grabbing. */
-  private climb(input: InputFrame, map: TileMap, audio: AudioSink): void {
+  /**
+   * On a vine: up/down climb; left or right steps off once a direction has been released on it
+   * (Character/MarioBase.movePlayer: with `exitVine` set, getOffVine, else return without moving
+   * or turning). Jump does nothing there (pressJmpBtn returns while cState == ST_VINE). The
+   * world handles grabbing.
+   */
+  private climb(input: InputFrame, map: TileMap, _audio: AudioSink): void {
     const v = this.vine as NonNullable<typeof this.vine>;
     const b = this.body;
     b.vx = 0;
     b.x = v.x - (b.w >> 1);
-    if (input.dirX !== 0) this.facing = input.dirX;
-    if (input.bufferedJump(JUMP_BUFFER_FRAMES)) {
-      input.consumeJumpBuffer();
-      this.letGo();
-      this.tier = pickJumpTier(this.profile, 0);
-      b.vy = -this.tier.initial;
-      b.onGround = false;
-      this.jumping = this.profile.variableJump !== 'cut';
-      this.airCap = this.profile.maxWalk;
-      // Pushing a direction leaps clear of the vine at walking speed; otherwise a small hop.
-      b.vx = this.facing * (input.dirX !== 0 ? this.profile.maxWalk : this.profile.minWalk << 2);
-      audio.sfx(this.def.jumpSfx(this));
-      return;
-    }
+    if (input.bufferedJump(JUMP_BUFFER_FRAMES)) input.consumeJumpBuffer();
+    if (input.released('left') || input.released('right')) this.vineExit = true;
+    if (input.dirX !== 0 && this.vineExit && this.stepOffVine(input.dirX, map)) return;
     let dy = 0;
     if (input.held('up')) dy = -CLIMB_SPEED;
     else if (input.held('down')) dy = CLIMB_SPEED;
@@ -339,10 +340,28 @@ export class Player {
     if (b.y + px(8) > px(v.bottom)) this.letGo();
   }
 
-  /** Release the vine (jump off, climb down to the floor, or the vine ended). */
+  /**
+   * Character.getOffVine: put the body just outside the vine's hit box on side `dir`
+   * (nx = vine.hLft - hWidth*.5 or vine.hRht + hWidth*.5; our vine is 2 px wide) and let go,
+   * with gravity back on. Not into a wall (movePlayer checks !wallOnLeft / !wallOnRight).
+   */
+  private stepOffVine(dir: -1 | 1, map: TileMap): boolean {
+    const v = this.vine as NonNullable<typeof this.vine>;
+    const b = this.body;
+    const x = dir > 0 ? v.x + px(1) : v.x - px(1) - b.w;
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++) if (map.isSolid(tx, ty)) return false;
+    b.x = x;
+    this.letGo();
+    this.leftVine = v.x;
+    return true;
+  }
+
+  /** Release the vine (step off, climb down to the floor, or the vine ended). */
   letGo(): void {
     this.vine = null;
     this.vineLock = 20;
+    this.vineExit = false;
     this.anim = 'idle';
   }
 

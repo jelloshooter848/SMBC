@@ -65,7 +65,38 @@ export interface WorldStart {
   mode?: LevelData['startMode'];
   /** Timer to continue with (transfers within one stage). */
   time?: number;
+  /**
+   * Remove the enemies within 6 tiles of the arrival point (Level.destroyNearbyEnemies):
+   * 'all' at a checkpoint restart (startAtHalfwayPoint), 'keep-piranhas' on a pipe or pit
+   * arrival (changePlayerLoc calls destroyNearbyEnemies(true)).
+   */
+  clearEnemies?: 'all' | 'keep-piranhas';
 }
+
+/**
+ * Pipe travel speed: the original's vertPipeSpeed = horzPipeSpeed = 50 Flash px/s
+ * (Character.as), with 2 Flash px to our px and 60 frames a second: 25/60 px per frame, in subpixels.
+ */
+const PIPE_SPEED = px(25) / 60;
+/** Character.PIPE_LEV_TRANS_DELAY (500 ms): hidden in the pipe before the next area loads. */
+const PIPE_TRANSFER_DELAY_FRAMES = 30;
+/** Level.HW_ENEMY_REMOVAL_DIST = TILE_SIZE*6: enemies closer than this (px, horizontally) go. */
+const ENEMY_REMOVAL_PX = 6 * 16;
+/**
+ * The vine you arrive on in a sky area (Vine.growFromStgBot): it grows from the screen bottom
+ * (GLOB_STG_BOT) until its top is 5 tiles up, at riseSpeed 60 Flash px/s (0.5 px a frame).
+ */
+const ARRIVAL_VINE_TILES = 5;
+const ARRIVAL_VINE_RISE = 0.5;
+/** Synthetic input for the vine arrival (Character.climbVineStarter sets upBtn). */
+const AUTO_CLIMB_INPUT: InputFrame = {
+  held: (a) => a === 'up',
+  pressed: () => false,
+  released: () => false,
+  bufferedJump: () => false,
+  consumeJumpBuffer: () => undefined,
+  dirX: 0,
+};
 
 /** The clock a level starts with: a carried timer, else the level's, else the stage's (or 400). */
 export function startTime(level: LevelData, state: GameState, start: WorldStart = {}): number {
@@ -77,7 +108,10 @@ type PipeAnim = {
   player: Player;
   dir: PipeDir;
   t: number;
-  frames: number;
+  /** Subpixel y (down) or x (right) of the body when it started into the pipe. */
+  from: number;
+  /** Frames left hidden in the pipe before the transfer (PIPE_LEV_TRANS_DELAY); null while moving. */
+  hold: number | null;
   target: WorldEvent & { type: 'pipe' };
 };
 
@@ -112,7 +146,7 @@ export class World {
   private timerTick = 0;
   hurryPlayed = false;
   private spawnIndex = 0;
-  private readonly spawns: EntitySpawn[];
+  private spawns: EntitySpawn[];
   /** Subpixel y of the water line in water levels; Infinity elsewhere. */
   waterTop = Infinity;
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
@@ -128,7 +162,12 @@ export class World {
   private clear: { phase: ClearPhase; t: number; pole: Flagpole; walkTo: number; player: Player } | null =
     null;
   private pipeAnim: PipeAnim | null = null;
-  private pipeExit: { t: number; frames: number } | null = null;
+  /** Rising out of a pipe; `feet` is the subpixel y of the pipe top, where the rise ends. */
+  private pipeExit: { t: number; feet: number } | null = null;
+  /** The vine grown for a sky-area arrival while the players climb it on their own. */
+  private vineArrival: Vine | null = null;
+  /** The HUD leaves the time blank (the vine arrival's watch mode: Level.as tsTxt.hideTime). */
+  timeHidden = false;
   private readonly deathTimers = new Map<Player, number>();
   private readonly respawnTimers = new Map<Player, number>();
   private checkpointSent = false;
@@ -155,12 +194,14 @@ export class World {
     this.rng = new Rng(level.id.length * 7919 + 1);
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     this.time = startTime(level, state, start);
-    this.spawns = [...level.entities].sort((a, b) => a.x - b.x);
-    this.bowserFire = BowserFire.forLevel(level);
-
     const sx = start.x ?? level.start.x;
     const sy = start.y ?? level.start.y;
     const mode = start.mode ?? level.startMode;
+    // A climb start replaces the map's vine at the start column with the arrival vine (below).
+    this.spawns = [...level.entities]
+      .filter((e) => !(mode === 'climb' && e.type === 'vine' && e.x === sx))
+      .sort((a, b) => a.x - b.x);
+    this.bowserFire = BowserFire.forLevel(level);
     const defs: [CharacterDef, string, number][] = [[state.character, state.powerState, state.hp]];
     if (state.character2) defs.push([state.character2, state.powerState2, state.hp2]);
     defs.forEach(([def, power, hp], i) => {
@@ -179,24 +220,54 @@ export class World {
       Object.assign(p.scratch, i === 0 ? state.kit : state.kit2);
       if (mode === 'fall') p.body.y = px(-32) - px(i * 24);
       else if (mode === 'climb') {
-        // Hanging on the vine entity at the start column, feet on the start tile.
-        const spec = level.entities.find((e) => e.type === 'vine' && e.x === sx);
-        const len = Number(spec?.props?.len ?? 8);
-        const vine = new Vine(sx, spec?.y ?? sy, len);
-        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx };
-        p.body.y = feet - px(hb.h) - px(i * 24);
+        // The original's vineStart (Level.as watchModeOverrideVine): the vine grows from the
+        // screen bottom while the player is hidden (Vine.initiate → growFromStgBot), then
+        // Character.climbVineStarter puts him on it with his head at the screen bottom
+        // (ny = GLOB_STG_BOT + height) and holds up; updateVineArrival steps him off at the top.
+        if (!this.vineArrival) {
+          this.vineArrival = new Vine(sx, SCREEN_H / 16 - 1, ARRIVAL_VINE_TILES);
+          this.vineArrival.growFromBase(ARRIVAL_VINE_RISE);
+          this.entities.push(this.vineArrival);
+        }
+        const vine = this.vineArrival;
+        // `bottom` leaves room for the body below the base: he starts there and climbs up.
+        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + hb.h };
+        p.body.x = vine.centerX - (p.body.w >> 1);
+        p.body.y = px(vine.basePx);
         p.anim = 'climb';
+        p.hidden = true;
+        p.frozen = true;
+        this.timeHidden = true;
       } else if (mode === 'pipe-exit') {
-        // Start inside the pipe below (centred on the 2-wide pipe) and rise out; P2 arrives a moment later.
+        // Character.exitPipeVert: start one body height below the pipe top (y = startPipeLoc +
+        // height), centred on the 2-wide pipe, and rise out; P2 arrives a moment later.
         p.body.x += px(8) - px(i * 20);
-        p.body.y = feet + px(8);
+        p.body.y = feet;
         p.frozen = true;
         if (i > 0) p.hidden = true;
-        this.pipeExit = { t: 0, frames: hb.h + 8 };
+        this.pipeExit = { t: 0, feet };
       } else if (mode === 'autowalk') this.autoWalk = true;
       this.players.push(p);
     });
+    // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
+    // the main area after it starts its own.
+    if (this.autoWalk) this.time = null;
     this.camera.snapTo(this.player.body.x);
+    if (start.clearEnemies) {
+      // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
+      // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
+      // transporter at the right edge of the start cell (the pipe's middle; pitTransferEnd is
+      // shiftRight), a checkpoint from the player's centre. Fire bars and lava balls are
+      // projectiles there (FireBar, LavaFireBall), not enemies.
+      const x0 = mode === 'pipe-exit' || mode === 'fall' ? tileToSub(sx + 1) : this.player.centerX;
+      const keepPiranhas = start.clearEnemies === 'keep-piranhas';
+      this.spawns = this.spawns.filter((s) => {
+        if (Math.abs(tileToSub(s.x) + px(8) - x0) >= px(ENEMY_REMOVAL_PX)) return true;
+        const e = this.makeEntity(s);
+        const enemy = e instanceof Enemy && !(e instanceof Firebar) && !(e instanceof Podoboo);
+        return !enemy || (keepPiranhas && e instanceof Piranha);
+      });
+    }
     // Water levels (any swimming theme): everything from the first row of wave tiles down is swimmable.
     if (isWaterTheme(level.theme)) {
       let row = 0;
@@ -530,6 +601,7 @@ export class World {
 
     this.tickTimer();
     this.spawnPending();
+    if (this.vineArrival) this.updateVineArrival();
 
     this.players.forEach((p, i) => {
       if (p.dead || p.out) return;
@@ -544,6 +616,7 @@ export class World {
       }
       let input = inputs[i] ?? NO_INPUT;
       if (this.autoWalk) input = AUTO_WALK_INPUT;
+      else if (this.vineArrival && p.vine) input = AUTO_CLIMB_INPUT;
       p.inWater = p.body.y + (p.body.h >> 1) >= this.waterTop;
       this.grabVines(p, input);
       const spring = this.springUnder(p);
@@ -639,6 +712,43 @@ export class World {
     }
   }
 
+  /**
+   * The vine arrival after the vine has grown: the players appear and climb (AUTO_CLIMB_INPUT);
+   * each one whose head reaches the vine's top steps off to the right
+   * (Character.checkVinePosition → getOffVine in watch mode: x = vine.hRht + hWidth*.5, then
+   * nx += 5 Flash px) and falls; play and the time display resume once all are off.
+   */
+  private updateVineArrival(): void {
+    const v = this.vineArrival as Vine;
+    let climbing = false;
+    for (const p of this.players) {
+      const on = p.vine !== null && p.vine.x === v.centerX;
+      if (on && !v.grown) {
+        climbing = true;
+        continue;
+      }
+      if (p.frozen && p.hidden) {
+        p.frozen = false;
+        p.hidden = false;
+      }
+      if (!on) continue;
+      if (p.body.y > px(v.topPx)) {
+        climbing = true;
+        continue;
+      }
+      p.letGo();
+      p.leftVine = v.centerX;
+      p.facing = 1;
+      p.body.x = v.body.x + v.body.w + px(2.5);
+      p.body.vy = 0;
+      p.body.onGround = false;
+    }
+    if (!climbing) {
+      this.vineArrival = null;
+      this.timeHidden = false;
+    }
+  }
+
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
   private transfer(target: { level: string; x: number; y: number }, mode: 'climb' | 'fall'): void {
     if (this.leaving) return;
@@ -666,8 +776,11 @@ export class World {
       return;
     }
     if (p.vineLock > 0 || p.dead || p.frozen || p.sliding > 0) return;
+    // A vine just stepped off (Character.getOffVine leaves him beside its hit box) is not grabbed
+    // again until he lands or moves out of reach.
+    if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
     for (const e of this.entities) {
-      if (!(e instanceof Vine) || !e.alive) continue;
+      if (!(e instanceof Vine) || !e.alive || e.centerX === p.leftVine) continue;
       const v = e.body;
       // Generous sideways reach (the original lets you grab from beside the block it grew from).
       const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);
@@ -1210,40 +1323,76 @@ export class World {
       player: p,
       dir,
       t: 0,
-      frames: dir === 'down' ? toPx(p.body.h) + 8 : 24,
+      from: dir === 'down' ? p.body.y : p.body.x,
+      hold: null,
       target: { type: 'pipe', target: z.target },
     };
   }
 
+  /**
+   * Into a pipe at PIPE_SPEED (Character.updateStats, pType "enterVert" / "enterHorz"). Down ends
+   * once the body's top is HRECT_PADDING_Y (6 Flash px, 3 of ours) below where the feet started;
+   * right once its left edge is HRECT_PADDING_X (4 Flash px, 2 of ours) past where its right
+   * edge started. Then the player is hidden and the next area loads PIPE_LEV_TRANS_DELAY later.
+   */
   private updatePipeAnim(): void {
     const a = this.pipeAnim as PipeAnim;
     const p = a.player;
     a.t++;
+    if (a.hold !== null) {
+      if (--a.hold <= 0) {
+        this.events.push(a.target);
+        this.pipeAnim = null;
+      }
+      return;
+    }
     const b = p.body;
-    if (a.dir === 'down') b.y += px(1);
-    else if (a.dir === 'right') {
-      b.x += px(1);
+    const d = Math.round(a.t * PIPE_SPEED);
+    let inside: boolean;
+    if (a.dir === 'down') {
+      b.y = a.from + d;
+      inside = b.y - px(3) > a.from + b.h;
+    } else {
+      b.x = a.from + d;
       p.anim = 'walk';
       if (a.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
+      inside = b.x - px(2) > a.from + b.w;
     }
-    if (a.t >= a.frames) {
-      this.events.push(a.target);
-      this.pipeAnim = null;
+    if (inside) {
+      p.hidden = true;
+      a.hold = PIPE_TRANSFER_DELAY_FRAMES;
     }
   }
 
+  /**
+   * Out of a pipe (Character.exitPipeVert, pType "exitVert"): each player rises at PIPE_SPEED
+   * until the feet reach the pipe top, and stops there (completePipeExit: ny = startPipeLoc,
+   * onGround). Player 2 starts 20 frames after player 1.
+   */
   private updatePipeExit(): void {
     const e = this.pipeExit as NonNullable<typeof this.pipeExit>;
     e.t++;
+    let rising = false;
     for (const p of this.players) {
-      if (p.index === 0 || e.t > 20) {
-        p.hidden = false;
-        p.body.y -= px(1);
+      const t = e.t - (p.index === 0 ? 0 : 20);
+      if (t <= 0) {
+        rising = true;
+        continue;
       }
+      p.hidden = false;
+      const b = p.body;
+      if (b.y + b.h <= e.feet) continue;
+      const step = Math.round(t * PIPE_SPEED) - Math.round((t - 1) * PIPE_SPEED);
+      b.y = Math.max(e.feet - b.h, b.y - step);
+      if (b.y + b.h > e.feet) rising = true;
     }
-    if (e.t >= e.frames + 20) {
+    if (!rising) {
       this.pipeExit = null;
-      for (const p of this.players) p.frozen = false;
+      for (const p of this.players) {
+        p.frozen = false;
+        p.body.vy = 0;
+        p.body.onGround = true;
+      }
     }
   }
 

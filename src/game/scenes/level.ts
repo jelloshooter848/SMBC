@@ -98,13 +98,24 @@ export class LevelScene implements Scene {
                 ? exitDir
                 : target.startMode,
         };
+        // A pipe into another world or stage is a warp. EventManager.levelTransfer loads a new
+        // level for it (passedHw = false: the old checkpoint is gone), with a fresh clock.
+        if (target.world !== this.level.world || target.stage !== this.level.stage) {
+          game.state.warped = true;
+          game.state.checkpoint = null;
+          game.state.time = null;
+          // Campaign: the warp ends the level on the map, at the target world (owner decision);
+          // otherwise character select, the WORLD card and the level, as the original does.
+          if (game.campaign && target.world !== this.level.world)
+            game.campaignWarpToMap(this.level.world, target.world);
+          else game.warpToLevel(target.id, start);
+          break;
+        }
         if (target.time === null) game.state.time = this.world.time;
-        // A pipe into another world or stage is a warp.
-        if (target.world !== this.level.world || target.stage !== this.level.stage) game.state.warped = true;
-        // Campaign: a warp into another world opens that world on the map (only that one).
-        if (game.campaign && target.world !== this.level.world) game.campaignWarp(target.world);
         const time = carryTime(this.level, target, this.world.time);
         if (time !== undefined) start.time = time;
+        // Level.changePlayerLoc (pipe and pit arrivals) ends with destroyNearbyEnemies(true).
+        if (exitDir !== 'climb') start.clearEnemies = 'keep-piranhas';
         game.startLevel(target, start);
         break;
       }
@@ -145,9 +156,14 @@ export class LevelScene implements Scene {
           game.gameOver(mainLevel, ev.player ?? 0);
           return;
         }
-        const start: LevelStart = cp ? { x: cp.x, y: 12, mode: 'stand' } : { mode: 'stand' };
-        // Through character select first (Game.respawn), as in the original.
-        game.respawn(mainLevel, start, ev.player ?? 0);
+        // A checkpoint restart clears the enemies around it (Level.startAtHalfwayPoint →
+        // destroyNearbyEnemies()).
+        const start: LevelStart = cp
+          ? { x: cp.x, y: 12, mode: 'stand', clearEnemies: 'all' }
+          : { mode: 'stand' };
+        // Through character select first (Game.respawn), as in the original. Without a
+        // checkpoint the level restarts in its first area (Level.reloadLevel: area a).
+        game.respawn(cp ? mainLevel : game.firstArea(mainLevel), start, ev.player ?? 0);
         break;
       }
     }
@@ -168,7 +184,8 @@ export class LevelScene implements Scene {
 
   render(r: Renderer): void {
     this.world.render(r);
-    drawHud(r, this.game.ctx.assets, this.game.state, this.world.time, this.world.frame, this.world.players);
+    const time = this.world.timeHidden ? null : this.world.time;
+    drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
   }
 }

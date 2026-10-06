@@ -273,7 +273,7 @@ describe('Lost Levels 8-4: the last castle', () => {
       y: 10,
       exitDir: 'up',
     });
-    expect(pipeTarget(enterPipe('ll-8-4-water', 44, 10, 'right').events)).toEqual({
+    expect(pipeTarget(enterPipe('ll-8-4-water', 45, 10, 'right').events)).toEqual({
       level: 'll-8-4-end',
       x: 3,
       y: 10,

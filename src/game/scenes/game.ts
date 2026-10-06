@@ -224,14 +224,14 @@ export class Game {
    * file first (with `reveal` pending), then shows the page the hero stands on, which draws in
    * its share of what is pending (another world's share waits until the hero gets there).
    */
-  returnToMap(reveal: string[] = []): void {
+  returnToMap(reveal: string[] = [], opts: WorldMapOptions = {}): void {
     this.addReveal(reveal);
     this.state.checkpoint = null;
     this.state.time = null;
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
     this.autosave();
-    this.showMap(this.mapProgress.position.world);
+    this.showMap(this.mapProgress.position.world, opts);
   }
 
   /** Queue map ids to draw in (each page takes its own when shown). */
@@ -262,6 +262,64 @@ export class Game {
     const start = mapPage(world)?.nodes.find((n) => n.kind === 'start');
     if (start) this.mapProgress.position = { world, node: start.id };
     this.autosave();
+  }
+
+  /**
+   * Campaign: a warp pipe from world `from` into world `to` (owner decision, 2026-10-05): the
+   * level ends on the map, which opens the target world (campaignWarp), slides over to it and
+   * draws it in; the player picks the level there (character select and the WORLD card follow).
+   * The level warped from is not cleared, and its checkpoint is gone.
+   */
+  campaignWarpToMap(from: number, to: number): void {
+    this.campaignWarp(to);
+    this.returnToMap([], { slideFrom: from });
+  }
+
+  /**
+   * A warp outside campaign mode (?level=, dev, shared and custom levels, the Lost Levels): as in
+   * the original, where a pipe to another level sets levelIDToLoad and ScreenManager.loadNewLevel
+   * sets newLev, so createLevel shows CharacterSelect, then the pre-level card and the level.
+   * Keeping the hero keeps its power (a different one starts from its default); in co-op player
+   * two picks next.
+   */
+  warpToLevel(levelId: string, start: LevelStart): void {
+    const s = this.state;
+    const go = () => this.goToLevel(levelId, start);
+    const pick = (player: 0 | 1, then: () => void) => {
+      const current = player === 1 ? (s.character2 as CharacterDef) : s.character;
+      return new CharacterSelectScene(this, {
+        player,
+        current,
+        onPick: (c) => {
+          if (c !== current) this.setHero(player, c);
+          then();
+        },
+      });
+    };
+    this.deps.ctx.audio.stopMusic();
+    this.scenes.clear();
+    this.scenes.push(
+      pick(0, () => {
+        if (!s.character2) return go();
+        this.scenes.pop();
+        this.scenes.push(pick(1, go));
+      }),
+    );
+  }
+
+  /**
+   * The area a level restarts in without a checkpoint: its first area (Level.reloadLevel loads
+   * area a, or b when a is an intro). Only Lost Levels 9-1 has a normal first area before its
+   * main one: the converter names it `<main>-start` (convert-smbc.mjs entryId).
+   */
+  firstArea(levelId: string): string {
+    const start = `${levelId}-start`;
+    try {
+      this.deps.getLevel(start);
+      return start;
+    } catch {
+      return levelId;
+    }
   }
 
   /**
@@ -429,6 +487,10 @@ export class Game {
       );
       return;
     }
+    // An intro area (TYPE="intro" with gameStateWatch) and a vine area (vineStart) always open
+    // with their scripted watch-mode start, whatever start the caller asked for.
+    if (level.startMode === 'autowalk' || level.startMode === 'climb')
+      start = { ...start, mode: level.startMode };
     this.state.world = level.world;
     this.state.stage = level.stage;
     this.deps.ctx.audio.stopMusic();
@@ -542,7 +604,8 @@ export class Game {
     const first = `${m[1]}${m[2]}-1`;
     try {
       this.deps.getLevel(first);
-      return first;
+      // changeToFirstWorldLevel loads area a of it (ll-9-1-start for Lost Levels 9-1).
+      return this.firstArea(first);
     } catch {
       return levelId;
     }
