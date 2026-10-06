@@ -31,7 +31,8 @@ const BOTTOM_Y = 176;
  * Title → "Start game": three save files. A used file shows its hero(es), world reached, levels
  * cleared, lives and score (and a star once the game was beaten); an empty one says NEW GAME.
  * Picking an empty file creates it with Mario and opens World 1's map (heroes are picked, and
- * player 2 joins, on entering a level); a used file opens its map. The bottom row erases a file (pick it, then confirm YES / NO).
+ * player 2 joins, on entering a level); a used file opens its map. The bottom row erases a file
+ * (pick it, then confirm YES / NO).
  * A slot whose data can't be read shows UNREADABLE and must be erased before it is reused.
  * Up/down move, A/Start choose, B/Select back.
  */

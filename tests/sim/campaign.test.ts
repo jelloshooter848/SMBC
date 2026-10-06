@@ -263,7 +263,144 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     expect(h.top()).not.toBe(p1);
   });
+
+  /** The run and the save fields a level select could change. */
+  const snapshot = (h: H) => {
+    const s = h.game.state;
+    const f = loadSave(1) as SaveFile;
+    return {
+      state: [s.character.id, s.powerState, s.character2?.id ?? null, s.powerState2, s.lives],
+      save: [f.character, f.powerState, f.character2, f.powerState2, f.lives],
+    };
+  };
+
+  it('back from the level select of a one-player file changes nothing, even after P2 joined', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ powerState: 'fire', lives: 4, position: { world: 1, node: '1-1' } }));
+    h.idle(4);
+    const before = snapshot(h);
+    const map = h.top();
+    h.game.enterLevelFromMap('1-1');
+    h.idle(12);
+    h.tap('right'); // P1 → Luigi
+    h.tap('start', 1); // P2 joins
+    h.tap('right', 1);
+    h.tap('attack'); // P1 backs out
+    expect(h.top()).toBe(map);
+    h.idle(4);
+    expect(snapshot(h)).toEqual(before);
+    expect(before.state).toEqual(['mario', 'fire', null, 'full', 4]);
+  });
+
+  it("back from player two's pick on a two-player file changes nothing", () => {
+    const h = makeGame();
+    const over: Partial<SaveFile> = {
+      powerState: 'fire',
+      powerState2: 'big',
+      lives: 6,
+      position: { world: 1, node: '1-1' },
+    };
+    h.game.openFile(1, file(over, 1, MARIO.id, LUIGI.id));
+    h.idle(4);
+    const before = snapshot(h);
+    const map = h.top();
+    h.game.enterLevelFromMap('1-1');
+    h.idle(12);
+    h.tap('right');
+    h.tap('right'); // P1 → Link
+    h.tap('jump');
+    const p2Pick = h.top();
+    expect(p2Pick).toBeInstanceOf(CharacterSelectScene);
+    h.idle(12);
+    h.tap('right', 1);
+    h.tap('attack', 1); // P2 backs out
+    expect(h.top()).toBe(map);
+    h.idle(4);
+    expect(snapshot(h)).toEqual(before);
+    expect(before.state).toEqual(['mario', 'fire', 'luigi', 'big', 6]);
+  });
+
+  it('player two leaves a two-player file at the level select (lives back off, never below 1)', () => {
+    for (const [lives, after] of [
+      [6, 4],
+      [2, 1],
+    ] as const) {
+      store.clear();
+      const h = makeGame();
+      h.game.openFile(1, file({ lives, position: { world: 1, node: '1-1' } }, 1, MARIO.id, LUIGI.id));
+      h.idle(4);
+      h.game.enterLevelFromMap('1-1');
+      expect(drawTexts(h)).toContain('P2 SELECT: LEAVE');
+      const picks = picksUntilLevel(h, () => {
+        h.tap('select', 1); // P2 drops out
+        expect(drawTexts(h)).toContain('P2 OUT  START: STAY');
+        h.tap('jump'); // no P2 pick follows
+      });
+      expect(picks).toBe(1);
+      expect(h.game.state.character2).toBeNull();
+      expect(h.game.state.lives).toBe(after);
+      const saved = loadSave(1) as SaveFile;
+      expect([saved.character, saved.character2, saved.lives]).toEqual(['mario', null, after]);
+    }
+    // Select then start: player two stays and picks next.
+    store.clear();
+    const h = makeGame();
+    h.game.openFile(1, file({ lives: 6, position: { world: 1, node: '1-1' } }, 1, MARIO.id, LUIGI.id));
+    h.idle(4);
+    h.game.enterLevelFromMap('1-1');
+    const p1 = h.top();
+    h.idle(12);
+    h.tap('select', 1);
+    h.tap('start', 1);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.top()).not.toBe(p1);
+    expect(h.game.state.character2).toBe(LUIGI);
+  });
+
+  it('death and continue selects offer player two no join', () => {
+    // The map's level select shows the join line (so its absence below means something).
+    const m = makeGame();
+    m.game.openFile(1, file({ position: { world: 1, node: '1-1' } }));
+    m.game.enterLevelFromMap('1-1');
+    expect(textsOver(m, 140)).toContain('P2 PRESS START TO JOIN');
+    const opens = [(h: H) => h.game.respawn('1-1', { mode: 'stand' }), (h: H) => h.game.continueGame('1-1')];
+    for (const open of opens) {
+      const h = makeGame();
+      h.game.newGame(MARIO, '1-1');
+      open(h);
+      expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+      expect(textsOver(h, 140).some((t) => t.startsWith('P2'))).toBe(false);
+      h.tap('start', 1);
+      expect(textsOver(h, 4).some((t) => t.startsWith('P2'))).toBe(false);
+      h.tap('jump');
+      h.until(() => h.top() instanceof LevelScene);
+      expect(h.game.state.character2).toBeNull();
+    }
+  });
 });
+
+/** The texts the top scene draws now. */
+function drawTexts(h: H): string[] {
+  const texts: string[] = [];
+  const r = Object.assign(new NullRenderer(), {
+    text(_f: unknown, str: string): void {
+      texts.push(str);
+    },
+  });
+  h.top()?.render(r);
+  return texts;
+}
+
+/** The texts the top scene draws over `n` frames. */
+function textsOver(h: H, n: number): string[] {
+  const texts: string[] = [];
+  for (let i = 0; i < n; i++) {
+    h.step();
+    texts.push(...drawTexts(h));
+  }
+  return texts;
+}
 
 describe('campaign: clears return to the map', () => {
   it('new file → map → 1-1 → exit: back on the map with 1-2 drawn in, and the file saved', () => {
