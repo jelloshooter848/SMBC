@@ -13,6 +13,10 @@ import { PauseScene } from '@game/scenes/pause';
 import { GuideScene } from '@game/scenes/guide';
 import { AssistOptionsScene, OptionsScene } from '@game/scenes/options';
 import { IntroScene } from '@game/scenes/intro';
+import { TitleScene } from '@game/scenes/title';
+import { InputManager } from '@engine/input/input-manager';
+import type { Code } from '@engine/input/bindings';
+import { DEV_CODE } from '@game/scenes/cheat';
 import { GameOverScene } from '@game/scenes/game-over';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { FileSelectScene } from '@game/scenes/file-select';
@@ -78,7 +82,7 @@ describe('touch labels per scene', () => {
   it('menus: A is OK, B is BACK only where there is a way back', () => {
     const h = makeGame();
     h.game.showTitle();
-    expect(shown(h.game)).toBe('OK - - - -');
+    expect(shown(h.game)).toBe('OK B - - -'); // B only for the developer code
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop()));
     expect(shown(h.game)).toBe('OK BACK - - -');
     // The pause menu's Assists entry (campaign, dev mode) opens a menu with a way back.
@@ -190,5 +194,46 @@ describe('guides show one control scheme', () => {
       for (const c of CHARACTERS)
         for (const l of guide(scheme, c).text)
           expect(l.length, `${c.name} ${scheme}: ${l}`).toBeLessThanOrEqual(30);
+  });
+});
+
+describe('the developer code by touch', () => {
+  it('up up down down left right left right B A on the touch pad unlocks dev mode on the title', () => {
+    const settings = defaultSettings();
+    const held = new Set<Code>();
+    const input = new InputManager(2, settings.input.bindings);
+    input.addSource('touch', { poll: () => held });
+    const game = new Game({
+      ctx: { assets, audio: NULL_AUDIO, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
+      getLevel,
+      characters: CHARACTERS,
+      settings,
+      applySettings: () => undefined,
+      controlScheme: () => 'touch',
+    });
+    const frame = () => {
+      input.beginFrame();
+      game.scenes.update([input.player(0), input.player(1)]);
+    };
+    game.showTitle();
+    for (let i = 0; i < 10; i++) frame();
+    const title = game.scenes.top as TitleScene;
+    expect(title).toBeInstanceOf(TitleScene);
+    // B is on screen (just "B") and does nothing else here.
+    expect(title.touchLabels().attack).toBe('B');
+    held.add('touch:attack');
+    frame();
+    held.clear();
+    frame();
+    expect(game.scenes.top).toBe(title);
+    expect(settings.dev).toBe(false);
+    for (const a of DEV_CODE) {
+      held.add(`touch:${a}`);
+      frame();
+      held.clear();
+      frame();
+    }
+    expect(settings.dev).toBe(true);
+    expect(game.scenes.top).toBe(title);
   });
 });

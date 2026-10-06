@@ -5,6 +5,7 @@ import { OptionsScene } from './options';
 import { FileSelectScene } from './file-select';
 import { CheatCode, DEV_CODE } from './cheat';
 import type { Game } from './game';
+import type { TouchLabels } from '@engine/input/touch';
 
 export class TitleScene extends MenuScene {
   private readonly cheat = new CheatCode(DEV_CODE);
@@ -34,6 +35,11 @@ export class TitleScene extends MenuScene {
     this.game.ctx.audio.playMusic('title');
     this.rebuild();
     super.enter();
+  }
+
+  /** B does nothing here, but stays (as plain "B") so the developer code can be entered by touch. */
+  override touchLabels(): TouchLabels {
+    return { ...super.touchLabels(), attack: 'B' };
   }
 
   override update(input: InputFrame): void {
