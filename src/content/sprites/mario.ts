@@ -20,6 +20,8 @@ export const marioPalettes: Record<string, string[]> = {
   'mario-fire': [NES.black, NES.brownDark, NES.skin, NES.white, NES.redBright, NES.yellow],
   luigi: [NES.black, NES.brownDark, NES.skin, NES.green, NES.darkGray, NES.yellow],
   'luigi-fire': [NES.black, NES.brownDark, NES.skin, NES.white, NES.green, NES.yellow],
+  // Brainwashed Luigi, the Mirror Race rival: pale skin, a dark purple suit, glowing red buttons.
+  'luigi-mirror': [NES.black, NES.black, NES.lavender, NES.purple, NES.darkGray, NES.red],
   // Star power: the whole suit cycles through loud colours, four steps.
   'mario-star-0': [NES.black, NES.brownDark, NES.skin, NES.redBright, NES.brown, NES.yellow],
   'mario-star-1': [NES.black, NES.greenDark, NES.yellowLight, NES.green, NES.white, NES.redBright],

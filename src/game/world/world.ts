@@ -337,6 +337,11 @@ export class World {
     for (const d of level.decor) this.entities.push(new Decoration(d.kind, d.x, d.y));
   }
 
+  /** The player who touched the flagpole (its level-clear sequence is running), else null. */
+  get flagGrabbedBy(): Player | null {
+    return this.clear?.player ?? null;
+  }
+
   /** Player 1 (also what enemies and the camera use as the primary target in solo play). */
   get player(): Player {
     return this.players[0] as Player;
