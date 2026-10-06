@@ -9,13 +9,13 @@ anyone can find again.
 
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the pre-1.0 rules:
 
-| Change                                                                   | Bump                 | Example       |
-| ------------------------------------------------------------------------ | -------------------- | ------------- |
-| New features or content: worlds, heroes, modes, the map, editor features | minor: `0.MINOR.0`   | 0.1.0 → 0.2.0 |
-| Any change to the save-file or settings format (ships with a migration)  | minor: `0.MINOR.0`   | 0.2.0 → 0.3.0 |
-| Fixes only, nothing new and no format change                             | patch: `0.x.PATCH`   | 0.2.0 → 0.2.1 |
-| A build for testers before a release                                     | pre-release: `-rc.N` | 0.3.0-rc.1    |
-| The owner calls the game complete                                        | `1.0.0`              |               |
+| Change                                                                                                                                                | Bump                 | Example       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | ------------- |
+| New player-facing features or content: worlds, heroes, modes, the map, editor features                                                                | minor: `0.MINOR.0`   | 0.1.0 → 0.2.0 |
+| A save-file or settings format change that needs a migration                                                                                          | minor: `0.MINOR.0`   | 0.2.0 → 0.3.0 |
+| Fixes, and changes players don't see: dev-mode tools, docs, build and release tooling, optional save fields that older saves load without a migration | patch: `0.x.PATCH`   | 0.2.0 → 0.2.1 |
+| A build for testers before a release                                                                                                                  | pre-release: `-rc.N` | 0.3.0-rc.1    |
+| The owner calls the game complete                                                                                                                     | `1.0.0`              |               |
 
 After 1.0.0 the usual SemVer rules apply (major for breaking changes such as dropping old saves).
 
@@ -129,7 +129,8 @@ Players keep their progress across releases:
   migration to `SAVE_MIGRATIONS` (each maps version v to v + 1; `SAVE_VERSION` follows) with a unit
   test that loads the old shape. Settings (`src/engine/save/settings.ts`) and the global progress
   flags (`src/engine/save/progress.ts`) follow the same rule.
-- A format change is a minor version bump and gets a changelog line.
+- A format change that needs a migration is a minor version bump; adding an optional field that
+  older saves load with its default (no migration) is a patch. Either way it gets a changelog line.
 
 ## The version in the game
 
