@@ -3,7 +3,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
- * themed map pages. One frame set recolours into every theme through the `map-<theme>` palettes,
+ * themed world map pages and the Warp Zone hub. One frame set recolours into every theme through the `map-<theme>` palettes,
  * which all share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
@@ -68,6 +68,12 @@ const theme = (c: {
 ];
 
 const stone: [string, string, string] = [NES.gray, NES.lightGray, NES.darkGray];
+
+/** The Warp Zone's deep indigo between worlds: its void, and the page's sky colour behind it. */
+export const WARP_SPACE = '#1c0858';
+/* Two NES violets (2C02 $03 and $12) the curated NES table doesn't name. */
+const INDIGO = '#4428bc';
+const VIOLET = '#6844fc';
 const lava: [string, string] = [NES.lava, NES.lavaLight];
 
 export const mapPalettes: Record<string, string[]> = {
@@ -173,6 +179,23 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: [NES.darkGray, NES.gray, NES.black],
     white: [NES.lightGray, NES.gray],
+  }),
+  /*
+   * The Warp Zone, the space between worlds: violet platforms floating in a starry indigo void
+   * (the "water", the same colour as the sky, with a pink glow along every rim), walkways of pale
+   * light (sand), bridges of light (wood) and pink crystals (accent).
+   */
+  'map-warp': theme({
+    ground: [INDIGO, VIOLET, NES.purple],
+    sand: [NES.skyLight, NES.lavender],
+    water: [WARP_SPACE, WARP_SPACE, INDIGO, NES.pink],
+    rock: [NES.black, INDIGO, VIOLET],
+    leaf: [NES.black, NES.magenta, NES.pink],
+    wood: [NES.skyLight, NES.blueLight],
+    accent: [NES.pink, NES.yellowLight, NES.magenta],
+    lava,
+    wall: stone,
+    white: [NES.white, NES.lavender],
   }),
 };
 
@@ -734,6 +757,24 @@ const BLASTER = stamp(GROUND, [
   '..111111111111..',
 ]);
 
+/** A cluster of glowing crystals: a tall spire between two shards (the Warp Zone's scenery). */
+const CRYSTAL = stamp(GROUND, [
+  '.......00.......',
+  '......0oi0......',
+  '.....0oiir0.....',
+  '.....0oiir0.....',
+  '.....0oiir0.....',
+  '..00.0oiir0.....',
+  '.0oi00oiir0.....',
+  '.0oir0oiir0.00..',
+  '.0oir0oiir00oi0.',
+  '.0oir0oiir0oir0.',
+  '.0oir0oiir0oir0.',
+  '.0oir0oiir0oir0.',
+  '..000000000000..',
+  '.11111111111111.',
+]);
+
 /* Sky details on transparent backgrounds. */
 const starTile = (size: number, cx: number, cy: number): Rows => {
   const rows = fill('.').map((r) => r.split(''));
@@ -834,6 +875,30 @@ const twinkle = (size: number): Rows =>
     .slice(0, 8)
     .map((r) => r.slice(0, 8));
 
+/** A comet heading right, its sparkling tail flickering between two frames. */
+const COMET = [
+  [
+    '................',
+    '..........pjj...',
+    '.....p.ppjjooj..',
+    '..p.pppjjjoooo..',
+    '.....p.ppjjooj..',
+    '..........pjj...',
+    '................',
+    '................',
+  ],
+  [
+    '................',
+    '...........jj...',
+    '...p..pppjjooj..',
+    '.p..ippjjjoooo..',
+    '......pppjjooj..',
+    '...........jj...',
+    '................',
+    '................',
+  ],
+];
+
 const puff = (r: number): Rows =>
   Array.from({ length: 8 }, (_, y) =>
     Array.from({ length: 8 }, (_, x) => {
@@ -904,6 +969,7 @@ const frames: Record<string, readonly string[]> = {
   gate: GATE,
   pipe: PIPE,
   blaster: BLASTER,
+  crystal: CRYSTAL,
   moon: MOON,
   cloud: CLOUD,
   'flag-0': flag(0),
@@ -915,6 +981,8 @@ const frames: Record<string, readonly string[]> = {
   bubble: BUBBLE,
   'splash-0': SPLASH[0] as Rows,
   'splash-1': SPLASH[1] as Rows,
+  'comet-0': COMET[0] as Rows,
+  'comet-1': COMET[1] as Rows,
 };
 for (let i = 0; i < 4; i++) {
   frames[`star-${i}`] = starTile([0, 1, 2, 1][i] as number, 7, 7);

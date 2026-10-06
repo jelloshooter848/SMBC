@@ -13,7 +13,8 @@ export type MapTheme =
   | 'sky' // World 5
   | 'snow' // World 6
   | 'coast' // World 7
-  | 'bowser'; // World 8
+  | 'bowser' // World 8
+  | 'warp'; // Warp Zone hub
 
 export type MapNodeKind = 'start' | 'level' | 'castle' | 'bonus';
 

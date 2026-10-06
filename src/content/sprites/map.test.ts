@@ -6,7 +6,7 @@ import { PALETTES, SPRITES } from './index';
 type Size = readonly [w: number, h: number];
 const T16: Size = [16, 16];
 
-const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser'];
+const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser', 'warp'];
 
 const tileFrames = [
   'ground',
@@ -33,6 +33,7 @@ const tileFrames = [
   'gate',
   'pipe',
   'blaster',
+  'crystal',
   'moon',
   'cloud',
   ...[0, 1, 2, 3].flatMap((i) => [`star-${i}`, `lava-${i}`]),
@@ -66,6 +67,8 @@ const actorFrames: Record<string, Size> = {
   bubble: [8, 8],
   'splash-0': [16, 8],
   'splash-1': [16, 8],
+  'comet-0': [16, 8],
+  'comet-1': [16, 8],
 };
 
 function expectFrame(name: string, [w, h]: Size): void {
@@ -101,6 +104,23 @@ describe('map sprites', () => {
     expect(SPRITES['map']).toBe(mapDef);
     for (const t of THEMES) expect(PALETTES.default[`map-${t}`]).toBeDefined();
     expect(PALETTES.highContrast?.['map-bowser']).toBeDefined();
+  });
+
+  it('draws the crystal standing on plain ground, outlined, in the accent colours', () => {
+    const crystal = mapDef.frames['crystal'] as readonly string[];
+    const ground = mapDef.frames['ground'] as readonly string[];
+    expect(crystal[15]).toBe(ground[15]);
+    expect(crystal[0]?.[0]).toBe(ground[0]?.[0]);
+    const px = crystal.join('');
+    for (const c of '0ior') expect(px, `crystal uses '${c}'`).toContain(c);
+  });
+
+  it('draws the comet heading right: a bright head with a fading tail', () => {
+    for (const name of ['comet-0', 'comet-1']) {
+      const mid = (mapDef.frames[name] as readonly string[])[3] as string;
+      expect(mid.lastIndexOf('o'), name).toBeGreaterThan(mid.indexOf('p'));
+    }
+    expect(mapDef.frames['comet-0']).not.toEqual(mapDef.frames['comet-1']);
   });
 
   it('water rows tile seamlessly and loop over the water frames', () => {
