@@ -21,7 +21,7 @@ import {
 
 /*
  * The Warp Zone hub page: the same validity rules as the eight world pages (pages.test.ts), for a
- * page whose start sits in the middle with a warp pad in each direction and no exits.
+ * page whose centre node (arrival point and warp home) has a warp pad in each direction and no exits.
  */
 
 /** Tile rows the engine's header bar covers (24 px): background only. */
@@ -93,27 +93,37 @@ describe('Warp Zone hub page', () => {
     expect(page.tiles[1]).toBe('.'.repeat(16));
   });
 
-  it('has a start in the middle and the four warp pads around it', () => {
+  it('arrives on the centre node, the warp home, with four pads around it', () => {
     const ids = page.nodes.map((n) => n.id);
     expect(new Set(ids).size).toBe(ids.length);
     const start = nodeAt('start');
-    expect(start.kind).toBe('start');
-    expect(start.x >= 6 && start.x <= 9 && start.y >= 6 && start.y <= 9, 'start in the middle').toBe(true);
-    const pads = page.nodes.filter((n) => n.kind === 'warp');
+    expect([start.x, start.y], 'arrival in the middle').toEqual([7, 8]);
+    expect([start.kind, start.to, start.requires, start.hint]).toEqual([
+      'warp',
+      'smb-1',
+      undefined,
+      'RETURN TO WORLD 1',
+    ]);
+    const pads = page.nodes.filter((n) => n.id !== 'start');
     expect(pads).toHaveLength(4);
-    expect(pads.map((n) => [n.to, n.requires, n.hint])).toEqual(
+    for (const n of pads) expect(n.kind).toBe('warp');
+    expect(pads.filter((n) => n.to === 'll-1').map((n) => [n.x, n.y, n.requires, n.hint])).toEqual([
+      [13, 8, 'gameCleared', 'LOST LEVELS - BEAT 8-4 TO UNLOCK'],
+    ]);
+    const mystery = pads.filter((n) => n.requires === 'never');
+    expect(mystery.map((n) => [n.x, n.y])).toEqual(
       expect.arrayContaining([
-        ['smb-1', undefined, 'RETURN TO WORLD 1'],
-        ['ll-1', 'gameCleared', 'LOST LEVELS - BEAT 8-4 TO UNLOCK'],
+        [7, 3],
+        [7, 13],
+        [1, 8],
       ]),
     );
-    const mystery = pads.filter((n) => n.requires === 'never');
-    expect(mystery).toHaveLength(2);
+    expect(mystery).toHaveLength(3);
     for (const n of mystery) {
       expect(n.to).toBeUndefined();
       expect(n.hint).toMatch(/^\?\?\?/);
     }
-    for (const n of pads) expect(n.hint, 'hints name no buttons').toMatch(/^[A-Z0-9?' -]+$/);
+    for (const n of page.nodes) expect(n.hint, 'hints name no buttons').toMatch(/^[A-Z0-9?' -]+$/);
     const spots = page.nodes.map((n) => key([n.x, n.y]));
     expect(new Set(spots).size, 'one node per tile').toBe(spots.length);
     for (const n of page.nodes) expectWalk([[n.x, n.y]], `node ${n.id}`);
@@ -121,7 +131,7 @@ describe('Warp Zone hub page', () => {
 
   it('joins the start to every pad with a contiguous walkable path', () => {
     expect(page.paths).toHaveLength(4);
-    for (const n of page.nodes.filter((m) => m.kind === 'warp'))
+    for (const n of page.nodes.filter((m) => m.id !== 'start'))
       expect(
         page.paths.filter((p) => p.from === 'start' && p.to === n.id),
         n.id,
@@ -160,9 +170,9 @@ describe('Warp Zone hub page', () => {
     for (const [id, ds] of steps) expect(new Set(ds).size, `${id}: ${ds.join(' ')}`).toBe(ds.length);
   });
 
-  it('leaves walkable room beside the mystery pads for more pads later', () => {
+  it('leaves walkable room beside the north and south pads for more pads later', () => {
     const busy = new Set(page.paths.flatMap((p) => p.points.map(key)));
-    for (const n of page.nodes.filter((m) => m.requires === 'never'))
+    for (const n of page.nodes.filter((m) => m.x === 7 && m.y !== 8))
       for (const dx of [-3, 3]) {
         const spot: Pt = [n.x + dx, n.y];
         const lane = Array.from({ length: 4 }, (_, k): Pt => [n.x + Math.sign(dx) * k, n.y]);

@@ -4,14 +4,14 @@ import { actor, autoShore, poly } from './build';
 /*
  * The Warp Zone hub: the space between worlds, reached from World 1's warp spot. Violet
  * platforms float in a starry void ('~' in the 'warp' theme), joined by bridges of light, with a
- * walkway of light (':') across the middle. The start stands in the middle; four warp pads sit
- * one in each direction:
+ * walkway of light (':') across the middle. The hero arrives from World 1 on the centre node,
+ * which is also the warp back (RETURN TO WORLD 1); four pads sit one in each direction:
  *
- *   west   RETURN TO WORLD 1                     east   LOST LEVELS (after SMB 8-4 is beaten)
- *   north  ??? (a future secret)                 south  ??? (a future secret)
+ *   east   LOST LEVELS (after SMB 8-4 is beaten)
+ *   north, south, west   ??? (future secrets)
  *
- * Room for more pads: the start offers all four directions already, so new pads hang off the
- * mystery pads, west or east along their platforms: (4,3), (10,3), (4,13) and (10,13) are free
+ * Room for more pads: the centre offers all four directions already, so new pads hang off the
+ * north and south pads, west or east along their platforms: (4,3), (10,3), (4,13) and (10,13) are free
  * walkable ground kept for that. Crystals ('A', '*') stay on the middle platform, off the roads.
  */
 export const SKETCH_HUB = [
@@ -65,8 +65,10 @@ export const HUB_PAGE: HubPageDraft = {
   music: 'map',
   tiles: autoShore(SKETCH_HUB),
   nodes: [
-    { id: 'start', kind: 'start', x: 7, y: 8 },
-    { id: 'warp-world-1', kind: 'warp', x: 1, y: 8, to: 'smb-1', hint: 'RETURN TO WORLD 1' },
+    // The arrival point and the warp home in one. TODO(H0): if the engine needs a separate kind
+    // 'start' entry, make this warp node the page's entry (or put the start on this same tile).
+    { id: 'start', kind: 'warp', x: 7, y: 8, to: 'smb-1', hint: 'RETURN TO WORLD 1' },
+    { id: 'warp-mystery-3', kind: 'warp', x: 1, y: 8, requires: 'never', hint: '??? - A FUTURE SECRET' },
     {
       id: 'warp-lost',
       kind: 'warp',
@@ -80,7 +82,7 @@ export const HUB_PAGE: HubPageDraft = {
     { id: 'warp-mystery-2', kind: 'warp', x: 7, y: 13, requires: 'never', hint: '??? - A FUTURE SECRET' },
   ],
   paths: [
-    { from: 'start', to: 'warp-world-1', points: poly([7, 8], [1, 8]) },
+    { from: 'start', to: 'warp-mystery-3', points: poly([7, 8], [1, 8]) },
     { from: 'start', to: 'warp-lost', points: poly([7, 8], [13, 8]) },
     { from: 'start', to: 'warp-mystery-1', points: poly([7, 8], [7, 3]) },
     { from: 'start', to: 'warp-mystery-2', points: poly([7, 8], [7, 13]) },
