@@ -701,7 +701,11 @@ export class World {
       const feet = b.y + b.h;
       const overlapX = b.x < s.x + s.w && b.x + b.w > s.x;
       if (!overlapX) continue;
-      if (e.busy) return e;
+      // A spring in use belongs to its rider; another player only meets its solid box.
+      if (e.busy) {
+        if (e.ridBy(p)) return e;
+        continue;
+      }
       if (b.vy > 0 && feet >= s.y && feet <= s.y + px(10) && b.prevBottom <= s.y + px(4)) {
         e.press(p);
         return e;

@@ -34,15 +34,20 @@ export const SPRING_GREEN_BOOST: Readonly<Record<string, number>> = {
   simon: flash(4250),
 };
 /**
- * The rise after a launch uses the hero's own gravity (the launch starts no jump rise):
- * Mario.GRAVITY 1500, Luigi 1400, Link 1300, Ryu 1400; Mario's for the heroes whose gravity
- * changes with their state.
+ * The rise after a launch uses the hero's own gravity (the launch starts no jump rise), in Flash
+ * px/s²: Mario.GRAVITY 1500, Luigi.GRAVITY 1400, Link.GRAVITY 1300, Ryu.GRAVITY 1400, Samus 700
+ * (Samus.as setStats), Bill 1000 (Bill.as setStats), Mega Man 1500 (MegaManBase.GRAVITY), Simon
+ * 1500 (Simon.as setStats). Out of water every hero has one fixed value.
  */
 export const SPRING_RISE_GRAVITY: Readonly<Record<string, number>> = {
   mario: flashAccel(1500),
   luigi: flashAccel(1400),
   link: flashAccel(1300),
   ryu: flashAccel(1400),
+  samus: flashAccel(700),
+  bill: flashAccel(1000),
+  megaman: flashAccel(1500),
+  simon: flashAccel(1500),
 };
 
 /**
@@ -124,6 +129,11 @@ export class Spring extends Entity {
 
   get busy(): boolean {
     return this.rider !== null;
+  }
+
+  /** Is `p` the player riding it right now? */
+  ridBy(p: Player): boolean {
+    return this.rider === p;
   }
 
   /**

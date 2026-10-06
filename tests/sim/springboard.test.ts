@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { parseTextMap } from '@game/level/textmap';
-import { runSim } from '@game/sim/headless';
+import { runSim, ScriptedInput } from '@game/sim/headless';
 import { MARIO } from '@game/characters/mario';
+import { SAMUS } from '@game/characters/samus';
 import { Spring, SPRING_SQUASHED, SPRING_TALL } from '@game/entities/objects/spring';
-import { toPx } from '@engine/math/units';
+import { World } from '@game/world/world';
+import { DEFAULT_ASSIST, newGameState } from '@game/context';
+import { AssetRegistry } from '@engine/assets/registry';
+import { NULL_AUDIO } from '@engine/audio/audio-manager';
+import { px, toPx } from '@engine/math/units';
+import type { CharacterDef } from '@game/characters/character';
 import type { LevelData } from '@game/level/schema';
+import type { Action } from '@engine/input/actions';
 
 // Springboards (com/smbc/ground/SpringRed.as, SpringGreen.as): a solid Ground two tiles tall that
 // squashes to one tile while ridden, then launches at defSpringPwr (500 Flash px/s = 4.17 px/f),
@@ -35,8 +42,8 @@ const flat = (marker: 's' | 'y', start: [number, number]): LevelData => {
 
 type JumpInput = 'none' | 'press-on-spring' | 'held-from-above';
 
-/** Drop Mario onto the spring and return how far his top rises above where it was at launch. */
-function rise(marker: 's' | 'y', jump: JumpInput): number {
+/** Drop the hero onto the spring and return how far its top rises above where it was at launch. */
+function rise(marker: 's' | 'y', jump: JumpInput, character: CharacterDef = MARIO): number {
   let spring: Spring | undefined;
   let launchTop: number | null = null;
   let wasBusy = false;
@@ -44,7 +51,7 @@ function rise(marker: 's' | 'y', jump: JumpInput): number {
   let pressed = false;
   runSim({
     level: flat(marker, [SPRING_COL, 6]),
-    character: MARIO,
+    character,
     script: { steps: [{ frame: 0, hold: [] }] },
     maxFrames: 900,
     controller: (w) => {
@@ -94,6 +101,12 @@ describe('springboards', () => {
     expect(red).toBeGreaterThanOrEqual(40);
     expect(red).toBeLessThanOrEqual(46);
     expect(rise('y', 'none')).toBe(red);
+  });
+
+  it("the rise uses the hero's own gravity: Samus (700 Flash px/s²) bounces about 89 px", () => {
+    const samus = rise('s', 'none', SAMUS);
+    expect(samus).toBeGreaterThanOrEqual(85);
+    expect(samus).toBeLessThanOrEqual(93);
   });
 
   it('jump pressed on the red spring launches at 8.33 px/f: about 167 px', () => {
@@ -178,5 +191,62 @@ describe('springboards', () => {
     });
     expect(rode).toBe(false);
     expect(maxRight).toBe(SPRING_COL * 16);
+  });
+
+  it('co-op: a spring in use belongs to its rider; the other player is not frozen and cannot boost it', () => {
+    const world = new World(
+      flat('s', [2, 12]),
+      {
+        assets: new AssetRegistry({ default: {} }),
+        audio: NULL_AUDIO,
+        assist: { ...DEFAULT_ASSIST },
+        reduceFlashing: true,
+      },
+      newGameState(MARIO, MARIO),
+    );
+    const [p1, p2] = world.players as [typeof world.player, typeof world.player];
+    // Both above the spring: P1 just over its top, P2 40 px higher (still over it while P1 rides).
+    for (const [p, top] of [
+      [p1, 5 * 16],
+      [p2, 3 * 16],
+    ] as const) {
+      p.body.x = px(SPRING_COL * 16 + 2);
+      p.body.y = px(top);
+      p.body.vy = 0;
+    }
+    const riding = (): boolean => world.entities.some((e) => e instanceof Spring && e.ridBy(p1));
+    const a = new ScriptedInput({ steps: [] });
+    const b = new ScriptedInput({ steps: [] });
+    let busyFrames = 0;
+    let p2Moved = false;
+    let launchTop: number | null = null;
+    let minTop = Infinity;
+    let pressed = false;
+    for (let f = 0; f < 200 && !(launchTop !== null && p1.body.onGround); f++) {
+      const p2Input: Action[] = [];
+      if (riding() && !pressed) {
+        pressed = true; // P2 presses jump while P1 is on the spring
+        p2Input.push('jump');
+      }
+      a.setHeld([]);
+      b.setHeld(p2Input);
+      a.next();
+      b.next();
+      const p2Before = p2.body.y;
+      const wasRiding = riding();
+      world.update([a, b]);
+      if (riding() && launchTop === null) {
+        busyFrames++;
+        if (p2.body.y !== p2Before) p2Moved = true;
+      }
+      if (wasRiding && !riding() && launchTop === null) launchTop = toPx(p1.body.y);
+      if (launchTop !== null) minTop = Math.min(minTop, toPx(p1.body.y));
+    }
+    expect(pressed).toBe(true);
+    // Landing frame plus 8 squashing frames, launched on the next: not twice as fast.
+    expect(busyFrames).toBe(9);
+    expect(p2Moved).toBe(true);
+    // P1 got the plain bounce (about 42 px), not P2's boost (about 167 px).
+    expect((launchTop as unknown as number) - minTop).toBeLessThanOrEqual(46);
   });
 });
