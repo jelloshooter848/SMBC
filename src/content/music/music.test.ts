@@ -19,6 +19,8 @@ const SONG_IDS = [
   'map',
   'map-bowser',
   'credits',
+  'dungeon',
+  'keeper',
 ];
 
 const SFX_IDS = [
@@ -47,6 +49,10 @@ const SFX_IDS = [
   'select',
   'timer-tick',
   'vine',
+  'secret',
+  'sword-stab',
+  'door-open',
+  'key-get',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);
@@ -120,5 +126,28 @@ describe('sfx', () => {
     it('is under 3 seconds', () => {
       for (const [, t] of tracks) expect(seconds(t.length, bpm)).toBeLessThan(3);
     });
+  });
+});
+
+describe("Link's dungeon music", () => {
+  const song = (id: string) => compileSong(songs.find((s) => s.id === id) as (typeof songs)[number]);
+
+  it('the dungeon theme and the boss loop both loop, the boss faster and shorter', () => {
+    const dungeon = song('dungeon');
+    const keeper = song('keeper');
+    expect(dungeon.loop && keeper.loop).toBe(true);
+    expect(keeper.bpm).toBeGreaterThan(dungeon.bpm);
+    expect(seconds(keeper.length, keeper.bpm)).toBeLessThan(seconds(dungeon.length, dungeon.bpm));
+    // whole bars on every channel
+    for (const s of [dungeon, keeper]) expect(s.length % (PPQ * 4)).toBe(0);
+  });
+
+  it('the puzzle chime rises to its last note', () => {
+    const chime = sfx.find((s) => s.id === 'secret') as Sfx;
+    const notes = parseMml(chime.pulse as string, 'pulse')
+      .events.map((e) => e.note)
+      .filter((n): n is number => n !== null);
+    expect(notes.at(-1)).toBe(Math.max(...notes));
+    expect(notes.at(-1)).toBeGreaterThan(notes[0] as number);
   });
 });

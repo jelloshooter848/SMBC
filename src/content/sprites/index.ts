@@ -13,6 +13,14 @@ import { simonPalettes, simonDef } from './simon';
 import { ryuPalettes, ryuDef } from './ryu';
 import { billPalettes, billDef } from './bill';
 import { mapPalettes, mapDef } from './map';
+import {
+  dungeonDef,
+  dungeonEnemiesDef,
+  dungeonEnemiesPalettes,
+  dungeonPalettes,
+  linkTdDef,
+  linkTdPalettes,
+} from './dungeon';
 import { colorblindPalettes } from './colorblind';
 import { HERO_FX } from './palette-fx';
 
@@ -31,6 +39,9 @@ export const SPRITES: Record<string, SpriteDef> = {
   ryu: ryuDef,
   bill: billDef,
   map: mapDef,
+  dungeon: dungeonDef,
+  'link-td': linkTdDef,
+  'dungeon-enemies': dungeonEnemiesDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -47,6 +58,9 @@ const defaults: Record<string, readonly string[]> = {
   ...ryuPalettes,
   ...billPalettes,
   ...mapPalettes,
+  ...dungeonPalettes,
+  ...linkTdPalettes,
+  ...dungeonEnemiesPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
