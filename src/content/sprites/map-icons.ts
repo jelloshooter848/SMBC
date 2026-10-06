@@ -2,9 +2,9 @@ import { swapColors } from '@engine/gfx/pixelart';
 
 /*
  * World map markers (original art), drawn with the items palette (see items.ts for the roles):
- * level dots (open yellow, cleared red, start blue, bonus green), the castle icon (a green flag on
- * top once cleared, with a white halo so it stands out on any page) and the small dot the paths
- * are drawn with.
+ * level dots (open yellow, cleared red, start blue, bonus green), warp pads (open, locked), the
+ * castle icon (a green flag on top once cleared, with a white halo so it stands out on any page)
+ * and the small dot the paths are drawn with.
  */
 
 const nodeOpen = [
@@ -74,6 +74,34 @@ const pathDot = [
   '........',
 ];
 
+/**
+ * Warp pad (0.4.0): a ringed purple and blue pad seen from above, a white sparkle over it. The
+ * locked pad is dimmed to grey with a dark centre and no sparkle.
+ */
+const warpPad = [
+  '......010.......',
+  '.....01110......',
+  '......010.......',
+  '....00000000....',
+  '..00cccccccc00..',
+  '.0ccaaaaaaaacc0.',
+  '0ccaa111111aacc0',
+  '0cca11eeee11acc0',
+  '0cca11eeee11acc0',
+  '0ccaa111111aacc0',
+  '.0ccaaaaaaaacc0.',
+  '..00cccccccc00..',
+  '....00000000....',
+  '................',
+  '................',
+  '................',
+];
+
+const warpPadLocked = swapColors(
+  warpPad.map((row, y) => (y < 3 ? '................' : row)),
+  { c: 'b', a: 'b', '1': '3', e: '0' },
+);
+
 export const mapIconFrames: Record<string, readonly string[]> = {
   'map-node-open': nodeOpen,
   'map-node-cleared': swapColors(nodeOpen, { '5': '2', '6': 'd', '9': '8' }),
@@ -81,5 +109,7 @@ export const mapIconFrames: Record<string, readonly string[]> = {
   'map-node-bonus': swapColors(nodeOpen, { '5': '4', '6': '1', '9': '0' }),
   'map-castle': halo([...castleFlag.map(() => '................'), ...castleBody]),
   'map-castle-cleared': halo([...castleFlag, ...castleBody]),
+  'map-warp': warpPad,
+  'map-warp-locked': warpPadLocked,
   'map-path-dot': pathDot,
 };

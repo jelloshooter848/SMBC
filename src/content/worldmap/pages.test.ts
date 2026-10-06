@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { songs } from '@content/music/songs';
-import { MAP_PAGES, mapPage } from './index';
+import { isPageId, levelPage, MAP_PAGES, mapPage, pagesInGroup, SMB_PAGES } from './index';
 import { MAP_ACTOR_TYPES, MAP_LEGEND, MAP_WALKABLE, mapActorBounds } from './render';
 import { autoShore, poly, sketchProblems } from './build';
+import { isWarpNode } from '@game/map/rules';
 import { SKETCH_1 } from './world1';
 import { SKETCH_2 } from './world2';
 import { SKETCH_3 } from './world3';
@@ -49,13 +50,18 @@ function expectWalk(page: WorldMapPage, pts: Pt[], what: string): void {
 
 describe('world map pages', () => {
   it('has the eight SMB1 worlds in order, each with its own theme', () => {
-    expect(MAP_PAGES.map((p) => p.world)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(MAP_PAGES.map((p) => p.theme)).toEqual(THEMES);
-    for (const p of MAP_PAGES) expect(mapPage(p.world)).toBe(p);
-    expect(mapPage(9)).toBeUndefined();
+    expect(SMB_PAGES.map((p) => p.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`));
+    expect(SMB_PAGES.map((p) => p.label)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((w) => `WORLD ${w}`));
+    expect(SMB_PAGES.every((p) => p.group === 'smb')).toBe(true);
+    expect(SMB_PAGES.map((p) => p.theme)).toEqual(THEMES);
+    expect(pagesInGroup('smb')).toEqual(SMB_PAGES);
+    // Node counts: start, 3 levels, the castle and the bonus slot on each.
+    expect(SMB_PAGES.map((p) => p.nodes.length)).toEqual([6, 6, 6, 6, 6, 6, 6, 6]);
+    expect(SMB_PAGES.map((p) => p.paths.length)).toEqual([5, 5, 5, 5, 5, 5, 5, 5]);
+    expect(SMB_PAGES.map((p) => p.exits.length)).toEqual([1, 1, 1, 1, 1, 1, 1, 0]);
   });
 
-  describe.each(MAP_PAGES.map((p) => [p.world, p] as const))('world %i', (w, page) => {
+  describe.each(SMB_PAGES.map((p, i) => [i + 1, p] as const))('world %i', (w, page) => {
     it('is 15 rows of 16 legend chars, sketched without hard shores', () => {
       expect(page.tiles).toHaveLength(15);
       for (const row of page.tiles) {
@@ -84,7 +90,9 @@ describe('world map pages', () => {
         expect(n.level).toBe(`${w}-${s}`);
       }
       const bonus = nodeAt(page, `bonus-${w}`);
-      expect(bonus.kind).toBe('bonus');
+      // World 1's slot is the warp spot to the hub (0.4.0); the others are still bonus slots.
+      expect(bonus.kind).toBe(w === 1 ? 'warp' : 'bonus');
+      if (w === 1) expect(bonus.to).toBe('hub');
       expect(bonus.unlock).toBe(`bonus-${w}`);
       expect(bonus.level).toBeUndefined();
       const spots = page.nodes.map((n) => key([n.x, n.y]));
@@ -98,9 +106,9 @@ describe('world map pages', () => {
       // Walking left off the start goes back to the previous page, so no road may leave that way.
       for (const p of page.paths.filter((q) => q.from === 'start'))
         expect(dir(p.points[0] as Pt, p.points[1] as Pt)).not.toBe('-1,0');
-      const prev = mapPage(w - 1);
+      const prev = mapPage(`smb-${w - 1}`);
       if (prev) {
-        const exit = prev.exits.find((e) => e.toWorld === w);
+        const exit = prev.exits.find((e) => e.to === page.id);
         expect(exit?.side).toBe('right');
         expect(exit?.points.at(-1)?.[1], 'same row as the previous exit').toBe(start.y);
       }
@@ -138,7 +146,7 @@ describe('world map pages', () => {
       const nodes = new Map(page.nodes.map((n) => [key([n.x, n.y]), n.id]));
       const roads = [
         ...page.paths.map((p) => ({ name: `${p.from}->${p.to}`, ends: [p.from, p.to], pts: p.points })),
-        ...page.exits.map((e) => ({ name: `exit ${e.toWorld}`, ends: [e.from], pts: e.points })),
+        ...page.exits.map((e) => ({ name: `exit ${e.to}`, ends: [e.from], pts: e.points })),
       ];
       for (const r of roads)
         for (const pt of r.pts) {
@@ -173,7 +181,7 @@ describe('world map pages', () => {
       const e = page.exits[0];
       if (!e) return;
       expect(e.from).toBe(`${w}-4`);
-      expect(e.toWorld).toBe(w + 1);
+      expect(e.to).toBe(`smb-${w + 1}`);
       const c = nodeAt(page, e.from);
       expect(e.points[0]).toEqual([c.x, c.y]);
       expectWalk(page, e.points, 'exit');
@@ -220,6 +228,87 @@ describe('world map pages', () => {
           for (const ch of page.tiles[ty] ?? '')
             expect(open.has(ch), `cloud at y ${a.y} over '${ch}'`).toBe(true);
       }
+    });
+  });
+});
+
+describe('page registry', () => {
+  it('lists SMB worlds, the hub, then the Lost Levels, each id once', () => {
+    const ids = MAP_PAGES.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.slice(0, 9)).toEqual([...SMB_PAGES.map((p) => p.id), 'hub']);
+    for (const id of ids.slice(9)) expect(id).toMatch(/^ll-(\d|1[0-3])$/);
+    expect(ids).toContain('ll-1');
+    expect(MAP_PAGES.map((p) => p.group)).toEqual([
+      ...SMB_PAGES.map(() => 'smb'),
+      'hub',
+      ...ids.slice(9).map(() => 'll'),
+    ]);
+  });
+
+  it('looks pages up by id and levels up by node', () => {
+    for (const p of MAP_PAGES) expect(mapPage(p.id)).toBe(p);
+    for (const p of MAP_PAGES) expect(isPageId(p.id)).toBe(true);
+    for (const bad of ['smb-9', 'world-1', '1', 1, null, '']) expect(isPageId(bad)).toBe(false);
+    expect(mapPage('smb-9')).toBeUndefined();
+    expect(mapPage('hub')?.label).toBe('WARP ZONE');
+    expect(pagesInGroup('hub').map((p) => p.id)).toEqual(['hub']);
+    expect(levelPage('1-2')?.id).toBe('smb-1');
+    expect(levelPage('8-4')?.id).toBe('smb-8');
+    expect(levelPage('1-2-exit')).toBeUndefined(); // main levels only
+  });
+
+  it('labels fit the header (10 chars) and titles fit it too (20)', () => {
+    for (const p of MAP_PAGES) {
+      expect(p.label.length, p.id).toBeLessThanOrEqual(10);
+      expect(p.label).toMatch(/^[A-Z0-9 ]+$/);
+      expect(p.title.length, p.id).toBeLessThanOrEqual(20);
+    }
+  });
+
+  describe.each(MAP_PAGES.map((p) => [p.id, p] as const))('%s', (_, page) => {
+    it('is 15 rows of 16 legend chars with plain sky under the header', () => {
+      expect(page.tiles).toHaveLength(15);
+      for (const row of page.tiles) {
+        expect(row).toHaveLength(16);
+        for (const ch of row) expect(MAP_LEGEND[ch], `legend has '${ch}'`).toBeDefined();
+      }
+      expect(page.tiles[0]).toBe('.'.repeat(16));
+      expect(page.tiles[1]).toBe('.'.repeat(16));
+      expect(songs.map((s) => s.id)).toContain(page.music);
+    });
+
+    it('has one start and its nodes on walkable tiles, above the hint line (row 13 at most)', () => {
+      expect(page.nodes.filter((n) => n.kind === 'start')).toHaveLength(1);
+      const ids = page.nodes.map((n) => n.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const n of page.nodes) {
+        expectWalk(page, [[n.x, n.y]], `node ${n.id}`);
+        expect(n.y, `node ${n.id}`).toBeLessThanOrEqual(13);
+      }
+      for (const p of page.paths) {
+        const a = nodeAt(page, p.from);
+        const b = nodeAt(page, p.to);
+        expect(p.points[0]).toEqual([a.x, a.y]);
+        expect(p.points.at(-1)).toEqual([b.x, b.y]);
+        expectWalk(page, p.points, `${p.from}->${p.to}`);
+      }
+    });
+
+    it('warps to registered pages and nodes; exits stay within the group', () => {
+      for (const n of page.nodes.filter(isWarpNode)) {
+        const to = mapPage(n.to ?? '');
+        expect(to, `${n.id} → ${n.to}`).toBeDefined();
+        if (n.toNode)
+          expect(
+            to?.nodes.some((m) => m.id === n.toNode),
+            `${n.id} toNode`,
+          ).toBe(true);
+        if (n.requires) expect(n.hint, `${n.id} has a hint while locked`).toBeTruthy();
+        for (const t of [n.hint, n.label]) if (t) expect(t.length).toBeLessThanOrEqual(32);
+        expect(n.level).toBeUndefined();
+      }
+      for (const e of page.exits) expect(mapPage(e.to)?.group).toBe(page.group);
     });
   });
 });

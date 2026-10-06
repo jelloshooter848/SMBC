@@ -90,7 +90,7 @@ describe('map rendering', () => {
       expect(r.drawn.length).toBeGreaterThan(0);
       // One assertion per page: hundreds of thousands of expect() calls made this test time out.
       const offPage = r.drawn.filter((d) => d.x <= -80 || d.x >= 336).map((d) => `${d.frame} x=${d.x}`);
-      expect(offPage, `world ${page.world}`).toEqual([]);
+      expect(offPage, `page ${page.id}`).toEqual([]);
     }
   });
 
@@ -100,12 +100,12 @@ describe('map rendering', () => {
       for (const a of page.actors) {
         const r = new CheckingRenderer();
         for (let t = 0; t < 1200; t += 5) drawMapActor(r, assets, page, a, t);
-        expect(r.drawn.length, `${page.world} ${a.type}`).toBeGreaterThan(0);
+        expect(r.drawn.length, `${page.id} ${a.type}`).toBeGreaterThan(0);
         const spots = new Set(r.drawn.map((d) => `${d.frame}@${Math.round(d.x)},${Math.round(d.y)}`));
-        expect(spots.size, `${page.world} ${a.type} animates`).toBeGreaterThan(1);
+        expect(spots.size, `${page.id} ${a.type} animates`).toBeGreaterThan(1);
         expect(
           r.drawn.some((d) => d.x > -16 && d.x < 256 && d.y > -16 && d.y < 240),
-          `${page.world} ${a.type} visible`,
+          `${page.id} ${a.type} visible`,
         ).toBe(true);
       }
   });

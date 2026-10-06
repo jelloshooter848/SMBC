@@ -93,8 +93,8 @@ function draw(scene: FileSelectScene) {
 function usedFile(slot: 1 | 2 | 3, c1: string, c2: string | null = null) {
   const s = newSave(slot, c1, c2);
   s.cleared = ['1-1', '1-2', '1-3', '1-4', '2-1'];
-  s.worlds = [1, 2];
-  s.position = { world: 2, node: '2-1' };
+  s.pages = ['smb-1', 'smb-2'];
+  s.position = { page: 'smb-2', node: '2-1' };
   s.lives = 4;
   s.score = 31337;
   s.coins = 12;
@@ -123,7 +123,7 @@ describe('file select', () => {
     // The file opens on World 1's map, at the start: no player-count choice or character select.
     const map = top(h.game) as WorldMapScene;
     expect(map).toBeInstanceOf(WorldMapScene);
-    expect(map.page.world).toBe(1);
+    expect(map.page.id).toBe('smb-1');
     expect(map.node).toBe('start');
     expect(h.game.scenes.depth).toBe(1); // nothing under or over the map
     const save = loadSave(2)!;
@@ -132,7 +132,7 @@ describe('file select', () => {
     expect(save.character2).toBeNull();
     expect(save.lives).toBe(3);
     expect(save.powerState).toBe('small');
-    expect(save.worlds).toEqual([1]);
+    expect(save.pages).toEqual(['smb-1']);
     expect(listSaves()[0]).toBeNull();
     expect(listSaves()[2]).toBeNull();
     expect(h.game.campaign).toEqual({ slot: 2 });
@@ -171,6 +171,8 @@ describe('file select', () => {
     expect(h.game.state.character2).toBe(LINK);
     expect([h.game.state.lives, h.game.state.score, h.game.state.powerState]).toEqual([6, 900, 'big']);
     expect(loadSave(1)!.cleared).toEqual(['1-1']);
+    expect(loadSave(1)!.v).toBe(2); // migrated and saved again as the map opened
+    expect(loadSave(1)!.position).toEqual({ page: 'smb-1', node: '1-1' });
   });
 
   it('a used file shows its stats and loads into the game', () => {
@@ -206,10 +208,10 @@ describe('file select', () => {
     // The map opens where the file left the hero, with the file's progress.
     const map = top(h.game) as WorldMapScene;
     expect(map).toBeInstanceOf(WorldMapScene);
-    expect(map.page.world).toBe(2);
+    expect(map.page.id).toBe('smb-2');
     expect(map.node).toBe('2-1');
     expect(h.game.mapProgress.cleared).toEqual(['1-1', '1-2', '1-3', '1-4', '2-1']);
-    expect(h.game.mapProgress.worlds).toEqual([1, 2]);
+    expect(h.game.mapProgress.pages).toEqual(['smb-1', 'smb-2']);
     expect(loadSave(1)!.cleared).toHaveLength(5); // progress untouched
   });
 

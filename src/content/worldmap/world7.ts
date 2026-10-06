@@ -21,7 +21,9 @@ export const SKETCH_7 = [
 ];
 
 export const WORLD_7: WorldMapPage = {
-  world: 7,
+  id: 'smb-7',
+  group: 'smb',
+  label: 'WORLD 7',
   title: 'CANNON COAST',
   theme: 'coast',
   music: 'map',
@@ -44,7 +46,7 @@ export const WORLD_7: WorldMapPage = {
     { from: '7-3', to: '7-4', points: poly([11, 4], [12, 4], [12, 7], [10, 7], [10, 10], [12, 10]) },
     { from: '7-2', to: 'bonus-7', points: poly([7, 7], [7, 10], [5, 10], [5, 11]) },
   ],
-  exits: [{ from: '7-4', toWorld: 8, side: 'right', points: poly([12, 10], [15, 10]) }],
+  exits: [{ from: '7-4', to: 'smb-8', side: 'right', points: poly([12, 10], [15, 10]) }],
   actors: [
     actor('hammer-bro', 208, 144, { range: 6 }),
     actor('bullet', 180, 26, { speed: -0.8 }),

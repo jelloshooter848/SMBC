@@ -89,6 +89,8 @@ const itemFrames: Record<string, Size> = {
   'map-node-bonus': T16,
   'map-castle': T16,
   'map-castle-cleared': T16,
+  'map-warp': T16,
+  'map-warp-locked': T16,
   'map-path-dot': S8,
   mushroom: T16,
   '1up': T16,

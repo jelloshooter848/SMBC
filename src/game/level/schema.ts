@@ -74,7 +74,11 @@ export type Zone =
       x: number;
       y: number;
       dir: PipeDir;
-      target: { level: string; x: number; y: number; exitDir?: TransferMode };
+      /**
+       * `secret`: set only by the campaign variant (level/campaign.ts) on a secret warp zone's
+       * pipe: taking it records that secret on the map instead of entering `level`.
+       */
+      target: { level: string; x: number; y: number; exitDir?: TransferMode; secret?: string };
     }
   /** A vine brick at (x, y): climbing its vine off the top of the screen leads to `target` (climb mode). */
   | { kind: 'vine'; x: number; y: number; target: { level: string; x: number; y: number } }
@@ -105,7 +109,12 @@ export type Zone =
       /** 'all' checkpoints must be passed, or 'any' one of them. */
       need: 'all' | 'any';
     }
-  | { kind: 'warp'; x: number; w: number; worlds: number[]; text?: string }
+  /**
+   * A warp zone: the pipes inside [x, x + w) are labelled with `worlds` in order. `secret`: in
+   * campaign play the room shows only its middle pipe, unlabelled, which records this map
+   * secret instead of warping (level/campaign.ts; 1-2: 'bonus-1').
+   */
+  | { kind: 'warp'; x: number; w: number; worlds: number[]; text?: string; secret?: string }
   /** `y`: the midpoint's row; the respawn stands on the bottom of it (row 12 when left out). */
   | { kind: 'checkpoint'; x: number; y?: number }
   | { kind: 'exit'; x: number; next: string }

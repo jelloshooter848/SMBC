@@ -22,9 +22,21 @@ import { loadLibrary, customLevelId } from '../level/library';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene } from './credits';
 import { WorldMapScene, type WorldMapOptions } from './world-map';
-import type { MapProgress } from '../map/types';
-import { clearLevel, entryLevel, isOpen, isWorldOpen, newMapProgress, warpTo } from '../map/rules';
+import type { MapProgress, PageId } from '../map/types';
+import {
+  clearLevel,
+  entryLevel,
+  findLevelNode,
+  findSecret,
+  isOpen,
+  isPageOpen,
+  mainLevel,
+  newMapProgress,
+  openMetExits,
+  warpTo,
+} from '../map/rules';
 import { mapPage } from '@content/worldmap';
+import { campaignLevel } from '../level/campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import {
@@ -80,10 +92,10 @@ export class Game {
   campaign: { slot: SaveSlot } | null = null;
   /** The campaign's file as last written (the base `autosave` updates). */
   private campaignSave: SaveFile | null = null;
-  /** The node the hero last stood on in each world (SaveFile.lastNode), for map travel. */
-  mapLastNode: Record<number, string> = {};
+  /** The node the hero last stood on in each page (SaveFile.lastNode), for map travel. */
+  mapLastNode: Record<PageId, string> = {};
   /**
-   * World-qualified map ids (rules.revealId) opened but not yet drawn in: each page draws in its
+   * Page-qualified map ids (rules.revealId) opened but not yet drawn in: each page draws in its
    * own when the hero first arrives there (SaveFile.pendingReveal).
    */
   pendingReveal: string[] = [];
@@ -125,8 +137,8 @@ export class Game {
       const s = this.state;
       s.checkpoint = null;
       s.time = null;
+      if (!from.startsWith('ll-')) this.mapProgress.gameCleared = true;
       this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
-      if (this.campaignSave) this.campaignSave = { ...this.campaignSave, gameCleared: true };
       this.autosave();
     }
     this.showTitle();
@@ -214,13 +226,17 @@ export class Game {
     this.scenes.push(new TitleScene(this));
   }
 
-  /** The world map page of `world` (default: where the hero stands), replacing every scene. */
-  showMap(world?: number, opts: WorldMapOptions = {}): void {
+  /**
+   * The world map page `page` (default: where the hero stands), replacing every scene. Pages
+   * whose castle exit's condition has come to hold since (rules.openMetExits) open first.
+   */
+  showMap(page?: PageId, opts: WorldMapOptions = {}): void {
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;
+    if (this.campaign) this.addReveal(openMetExits(this.mapProgress));
     this.scenes.clear();
-    this.scenes.push(new WorldMapScene(this, world ?? this.mapProgress.position.world, opts));
+    this.scenes.push(new WorldMapScene(this, page ?? this.mapProgress.position.page, opts));
   }
 
   /**
@@ -271,13 +287,14 @@ export class Game {
     const base = this.campaign ? this.campaignSave : null;
     if (!base) return;
     const p = this.mapProgress;
-    this.mapLastNode[p.position.world] = p.position.node;
+    this.mapLastNode[p.position.page] = p.position.node;
     const save: SaveFile = {
       ...saveFromState(base, this.state),
       cleared: p.cleared.slice(),
-      worlds: p.worlds.slice(),
+      pages: p.pages.slice(),
       secrets: p.secrets.slice(),
-      position: { world: p.position.world, node: p.position.node },
+      position: { page: p.position.page, node: p.position.node },
+      gameCleared: p.gameCleared === true,
       lastNode: { ...this.mapLastNode },
       pendingReveal: this.pendingReveal.slice(),
       devUnlockAll: this.devUnlockAll,
@@ -298,7 +315,7 @@ export class Game {
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
     this.autosave();
-    this.showMap(this.mapProgress.position.world, opts);
+    this.showMap(this.mapProgress.position.page, opts);
   }
 
   /** Queue map ids to draw in (each page takes its own when shown). */
@@ -321,25 +338,43 @@ export class Game {
    * closed) and the hero's map place moves to its start, so a quit or game over before the
    * target level is cleared comes back to that page. Play goes on into the level as before.
    */
-  campaignWarp(world: number): void {
+  campaignWarp(page: PageId): void {
     if (!this.campaign) return;
     const pos = this.mapProgress.position;
-    this.mapLastNode[pos.world] = pos.node; // map travel back returns here
-    this.addReveal(warpTo(this.mapProgress, world));
-    const start = mapPage(world)?.nodes.find((n) => n.kind === 'start');
-    if (start) this.mapProgress.position = { world, node: start.id };
+    this.mapLastNode[pos.page] = pos.node; // map travel back returns here
+    this.addReveal(warpTo(this.mapProgress, page));
+    const start = mapPage(page)?.nodes.find((n) => n.kind === 'start');
+    if (start) this.mapProgress.position = { page, node: start.id };
     this.autosave();
   }
 
+  /** The map page a level (or one of its sub-areas) sits on, by the level → page lookup. */
+  pageOfLevel(levelId: string): PageId | null {
+    return findLevelNode(mainLevel(levelId, this.deps.getLevel))?.page.id ?? null;
+  }
+
   /**
-   * Campaign: a warp pipe from world `from` into world `to` (owner decision, 2026-10-05): the
-   * level ends on the map, which opens the target world (campaignWarp), slides over to it and
+   * Campaign: a warp pipe from page `from` into page `to` (owner decision, 2026-10-05): the
+   * level ends on the map, which opens the target page (campaignWarp), slides over to it and
    * draws it in; the player picks the level there (character select and the WORLD card follow).
    * The level warped from is not cleared, and its checkpoint is gone.
    */
-  campaignWarpToMap(from: number, to: number): void {
+  campaignWarpToMap(from: PageId, to: PageId): void {
     this.campaignWarp(to);
     this.returnToMap([], { slideFrom: from });
+  }
+
+  /**
+   * Campaign: a secret pipe (a warp zone with `secret`, see level/campaign.ts) taken in level
+   * `levelId`: the level counts as cleared, the secret is recorded, and back on the map what
+   * that opened is drawn in (the 1-2 pipe: the road from 1-1 to World 1's warp spot).
+   */
+  campaignSecret(secret: string, levelId: string): void {
+    if (!this.campaign) return;
+    const p = this.mapProgress;
+    const reveal = clearLevel(p, levelId, this.deps.getLevel);
+    reveal.push(...findSecret(p, secret));
+    this.returnToMap(reveal);
   }
 
   /**
@@ -390,24 +425,24 @@ export class Game {
   }
 
   /**
-   * Map menu "Worlds": show the page of open world `world` with the hero on the node it last
-   * stood on there (its start when never visited). Lets a player who warped ahead go back to
-   * worlds left unfinished.
+   * Map menu "Worlds": show open page `id` with the hero on the node it last stood on there
+   * (its start when never visited). Lets a player who warped ahead go back to worlds left
+   * unfinished.
    */
-  travelToWorld(world: number): void {
+  travelToPage(id: PageId): void {
     const p = this.mapProgress;
-    const page = mapPage(world);
+    const page = mapPage(id);
     const all = this.mapUnlockAll;
-    if (!page || !isWorldOpen(p, world, all)) return;
-    const last = this.mapLastNode[world];
+    if (!page || !isPageOpen(p, id, all)) return;
+    const last = this.mapLastNode[id];
     const node =
       last && page.nodes.some((n) => n.id === last) && isOpen(p, page, last, all)
         ? last
         : (page.nodes.find((n) => n.kind === 'start')?.id ?? 'start');
-    this.mapLastNode[p.position.world] = p.position.node;
-    p.position = { world, node };
+    this.mapLastNode[p.position.page] = p.position.node;
+    p.position = { page: id, node };
     this.deps.ctx.audio.stopMusic();
-    this.showMap(world); // the map announces the page and node, and saves
+    this.showMap(id); // the map announces the page and node, and saves
   }
 
   /** Map menu "Save and quit": save the file, then the title. */
@@ -522,9 +557,10 @@ export class Game {
     this.devUnlockAll = save.devUnlockAll === true;
     this.mapProgress = {
       cleared: save.cleared.slice(),
-      worlds: save.worlds.slice(),
+      pages: save.pages.slice(),
       secrets: save.secrets.slice(),
-      position: { world: save.position.world, node: save.position.node },
+      position: { page: save.position.page, node: save.position.node },
+      gameCleared: save.gameCleared,
     };
     this.showMap(); // the map saves the file as it opens
   }
@@ -568,10 +604,10 @@ export class Game {
     this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
   }
 
-  /** Straight into a level (pipes, bonus rooms). */
+  /** Straight into a level (pipes, bonus rooms); campaign play gets its variant (level/campaign.ts). */
   startLevel(level: LevelData, start: LevelStart): void {
     this.scenes.clear();
-    this.scenes.push(new LevelScene(this, level, start));
+    this.scenes.push(new LevelScene(this, this.campaign ? campaignLevel(level) : level, start));
   }
 
   /**

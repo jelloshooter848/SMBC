@@ -51,7 +51,7 @@ import { Axe } from '../entities/objects/axe';
 import { startHp, type CharacterDef } from '../characters/character';
 
 export type WorldEvent =
-  | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode } }
+  | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode; secret?: string } }
   | { type: 'exit'; next: string }
   /** `player`: index of the player whose death ended the attempt (they pick the next hero). */
   | { type: 'died'; player?: number }

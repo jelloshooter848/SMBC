@@ -21,7 +21,9 @@ export const SKETCH_2 = [
 ];
 
 export const WORLD_2: WorldMapPage = {
-  world: 2,
+  id: 'smb-2',
+  group: 'smb',
+  label: 'WORLD 2',
   title: 'SEA SIDE',
   theme: 'sea',
   music: 'map',
@@ -44,7 +46,7 @@ export const WORLD_2: WorldMapPage = {
     { from: '2-3', to: '2-4', points: poly([12, 8], [13, 8], [13, 6], [12, 6], [12, 4], [13, 4]) },
     { from: '2-1', to: 'bonus-2', points: poly([3, 6], [3, 4], [8, 4]) },
   ],
-  exits: [{ from: '2-4', toWorld: 3, side: 'right', points: poly([13, 4], [15, 4]) }],
+  exits: [{ from: '2-4', to: 'smb-3', side: 'right', points: poly([13, 4], [15, 4]) }],
   actors: [
     actor('cheep', 104, 136, { range: 24, height: 36, period: 150 }),
     actor('cheep', 140, 140, { range: -24, height: 28, period: 190, phase: 70 }),

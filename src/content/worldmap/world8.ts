@@ -21,7 +21,9 @@ export const SKETCH_8 = [
 ];
 
 export const WORLD_8: WorldMapPage = {
-  world: 8,
+  id: 'smb-8',
+  group: 'smb',
+  label: 'WORLD 8',
   title: "BOWSER'S LAND",
   theme: 'bowser',
   music: 'map-bowser',

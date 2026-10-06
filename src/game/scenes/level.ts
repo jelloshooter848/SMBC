@@ -93,6 +93,13 @@ export class LevelScene implements Scene {
         game.state.checkpoint = { level: this.level.id, x: ev.x, y: ev.y };
         break;
       case 'pipe': {
+        // Campaign: a secret warp zone's one pipe (level/campaign.ts) ends the level on the map.
+        if (ev.target.secret && game.campaign) {
+          game.state.checkpoint = null;
+          game.state.time = null;
+          game.campaignSecret(ev.target.secret, this.level.id);
+          break;
+        }
         const target = game.deps.getLevel(ev.target.level);
         const exitDir = ev.target.exitDir ?? 'none';
         const start: LevelStart = {
@@ -111,10 +118,12 @@ export class LevelScene implements Scene {
           game.state.warped = true;
           game.state.checkpoint = null;
           game.state.time = null;
-          // Campaign: the warp ends the level on the map, at the target world (owner decision);
-          // otherwise character select, the WORLD card and the level, as the original does.
-          if (game.campaign && target.world !== this.level.world)
-            game.campaignWarpToMap(this.level.world, target.world);
+          // Campaign: the warp ends the level on the map, at the target level's page (owner
+          // decision; pages found by the level → page lookup); otherwise character select, the
+          // WORLD card and the level, as the original does.
+          const from = game.campaign ? game.pageOfLevel(this.level.id) : null;
+          const to = game.campaign ? game.pageOfLevel(target.id) : null;
+          if (game.campaign && from && to && from !== to) game.campaignWarpToMap(from, to);
           else game.warpToLevel(target.id, start);
           break;
         }

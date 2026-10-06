@@ -1,4 +1,5 @@
-import type { MapProgress } from '@game/map/types';
+import type { MapProgress, PageId } from '@game/map/types';
+import { isPageId, MAP_PAGES } from '@content/worldmap';
 import { startHp, type CharacterDef } from '@game/characters/character';
 import { CHARACTERS } from '@game/characters/registry';
 import { newGameState, type GameState } from '@game/context';
@@ -32,9 +33,9 @@ export interface SaveFile extends MapProgress {
   kit2: Record<string, number>;
   /** 8-4 was beaten on this file. */
   gameCleared: boolean;
-  /** The node the hero last stood on in each world visited (where map travel returns to). */
-  lastNode: Record<number, string>;
-  /** Map ids opened but not drawn in yet ('4:start', '2:start>2-1'), see Game.pendingReveal. */
+  /** The node the hero last stood on in each page visited (where map travel returns to). */
+  lastNode: Record<PageId, string>;
+  /** Map ids opened but not drawn in yet ('smb-4:start', 'smb-2:start>2-1'), see Game.pendingReveal. */
   pendingReveal: string[];
   /**
    * Developer mode's map menu "Unlock all": every world, level, castle and road on the map open
@@ -49,12 +50,42 @@ export function saveKey(slot: SaveSlot): string {
 
 /** Ordered migrations from older stored versions; each maps v → v+1 (index 0 maps v1 → v2). */
 export type SaveMigration = (old: Record<string, unknown>) => Record<string, unknown>;
-export const SAVE_MIGRATIONS: SaveMigration[] = [];
+
+/** v1 world number → v2 page id. */
+const smbPage = (w: unknown): unknown => (typeof w === 'number' && Number.isInteger(w) ? `smb-${w}` : w);
+
+/** A v1 reveal id ('4:start', '1:1-4>world-2') → v2 ('smb-4:start', 'smb-1:1-4>smb-2'). */
+function revealIdV2(rid: unknown): unknown {
+  if (typeof rid !== 'string') return rid;
+  const m = /^(\d+):(.+)$/.exec(rid);
+  if (!m) return rid;
+  return `smb-${m[1]}:${(m[2] as string).replace(/>world-(\d+)$/, '>smb-$1')}`;
+}
+
+/**
+ * v1 → v2 (0.4.0, map pages by id): numeric `worlds` become `pages` ('smb-N'), position.world
+ * becomes position.page, and lastNode keys and pendingReveal ids name pages. Anything else is
+ * carried over untouched (validation in migrateSave then keeps what is well formed).
+ */
+export function migrateV1toV2(old: Record<string, unknown>): Record<string, unknown> {
+  const { worlds, ...rest } = old;
+  const out: Record<string, unknown> = { ...rest, v: 2 };
+  if (Array.isArray(worlds)) out.pages = worlds.map(smbPage);
+  if (isObj(old.position)) {
+    const { world, ...pos } = old.position;
+    out.position = { ...pos, page: smbPage(world) };
+  }
+  if (isObj(old.lastNode))
+    out.lastNode = Object.fromEntries(
+      Object.entries(old.lastNode).map(([k, v]) => [/^\d+$/.test(k) ? `smb-${k}` : k, v]),
+    );
+  if (Array.isArray(old.pendingReveal)) out.pendingReveal = old.pendingReveal.map(revealIdV2);
+  return out;
+}
+
+export const SAVE_MIGRATIONS: SaveMigration[] = [migrateV1toV2];
 /** The current format: version 1 plus one per migration. */
 export const SAVE_VERSION = 1 + SAVE_MIGRATIONS.length;
-
-/** Worlds with map pages. */
-export const MAP_WORLDS = 8;
 
 /** A hero's starting power: 'small' and no hp for power-up heroes, 'full' at starting hp otherwise. */
 function defaultPower(c: CharacterDef | undefined): { power: string; hp: number } {
@@ -92,9 +123,9 @@ export function newSave(
     hp2: p2.hp,
     kit2: {},
     cleared: [],
-    worlds: [1],
+    pages: ['smb-1'],
     secrets: [],
-    position: { world: 1, node: 'start' },
+    position: { page: 'smb-1', node: 'start' },
     gameCleared: false,
     lastNode: {},
     pendingReveal: [],
@@ -110,22 +141,19 @@ const whole = (x: unknown, d: number, min: number, max = Number.MAX_SAFE_INTEGER
 const str = (x: unknown, d: string): string => (typeof x === 'string' ? x : d);
 const strs = (x: unknown, d: string[]): string[] =>
   Array.isArray(x) ? x.filter((e): e is string => typeof e === 'string') : d;
-/** World number → node id, for open worlds only. */
-function lastNodes(x: unknown, worlds: readonly number[]): Record<number, string> {
-  const out: Record<number, string> = {};
+/** Page id → node id, for open pages only. */
+function lastNodes(x: unknown, pages: readonly PageId[]): Record<PageId, string> {
+  const out: Record<PageId, string> = {};
   if (isObj(x))
-    for (const [k, v] of Object.entries(x)) {
-      const w = Number(k);
-      if (worlds.includes(w) && typeof v === 'string' && v) out[w] = v;
-    }
+    for (const [k, v] of Object.entries(x)) if (pages.includes(k) && typeof v === 'string' && v) out[k] = v;
   return out;
 }
 
-/** Pending reveal ids ('<world>:<id>') of open worlds, each once, at most 64. */
-function revealIds(x: unknown, worlds: readonly number[]): string[] {
+/** Pending reveal ids ('<page>:<id>') of open pages, each once, at most 64. */
+function revealIds(x: unknown, pages: readonly PageId[]): string[] {
   const ids = strs(x, []).filter((id) => {
-    const m = /^(\d+):./.exec(id);
-    return !!m && worlds.includes(Number(m[1]));
+    const i = id.indexOf(':');
+    return i > 0 && i < id.length - 1 && pages.includes(id.slice(0, i));
   });
   return [...new Set(ids)].slice(0, 64);
 }
@@ -163,15 +191,16 @@ export function migrateSave(
   if (typeof stored.character !== 'string') return null;
   const d = newSave(slot, stored.character, typeof stored.character2 === 'string' ? stored.character2 : null);
   const pos = isObj(stored.position) ? stored.position : {};
-  // Worlds 1-8, each once, World 1 always; the hero stands in one of them.
-  const listed = Array.isArray(stored.worlds) ? stored.worlds : [];
-  const worlds = [
-    ...new Set([1, ...listed.filter((w): w is number => Number.isInteger(w) && w >= 1 && w <= MAP_WORLDS)]),
-  ];
-  const posWorld = num(pos.world, d.position.world);
-  const position = worlds.includes(posWorld)
-    ? { world: posWorld, node: str(pos.node, d.position.node) }
-    : { world: Math.max(...worlds), node: 'start' };
+  // Registered pages, each once, World 1 always (an id this build has no page for is left
+  // out); the hero stands on one of them, else on the start of the furthest open SMB world.
+  const listed = Array.isArray(stored.pages) ? stored.pages : [];
+  const pages = [...new Set(['smb-1', ...listed.filter(isPageId)])];
+  const posPage = str(pos.page, d.position.page);
+  const furthest =
+    [...MAP_PAGES].reverse().find((p) => p.group === 'smb' && pages.includes(p.id))?.id ?? d.position.page;
+  const position = pages.includes(posPage)
+    ? { page: posPage, node: str(pos.node, d.position.node) }
+    : { page: furthest, node: 'start' };
   return {
     ...d,
     v: current,
@@ -187,12 +216,12 @@ export function migrateSave(
     hp2: num(stored.hp2, d.hp2),
     kit2: kit(stored.kit2),
     cleared: strs(stored.cleared, d.cleared),
-    worlds,
+    pages,
     secrets: strs(stored.secrets, d.secrets),
     position,
     gameCleared: stored.gameCleared === true,
-    lastNode: lastNodes(stored.lastNode, worlds),
-    pendingReveal: revealIds(stored.pendingReveal, worlds),
+    lastNode: lastNodes(stored.lastNode, pages),
+    pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
   };
 }
@@ -226,9 +255,9 @@ export function clearedMainLevels(save: MapProgress): number {
   return new Set(save.cleared.filter((id) => /^[1-8]-[1-4]$/.test(id))).size;
 }
 
-/** Highest world reached. */
+/** Highest SMB world reached (its page 'smb-N' open). */
 export function highestWorld(save: MapProgress): number {
-  return Math.max(1, ...save.worlds);
+  return Math.max(1, ...save.pages.map((id) => Number(/^smb-(\d+)$/.exec(id)?.[1] ?? 1)));
 }
 
 /** Hit points capped at the hero's maximum (heart containers / tanks raise it through the kit). */
@@ -252,7 +281,7 @@ export function stateFromSave(save: SaveFile, characters: readonly CharacterDef[
   s.lives = save.lives;
   s.score = save.score;
   s.coins = save.coins;
-  s.world = save.position.world;
+  s.world = Number(/-(\d+)$/.exec(save.position.page)?.[1] ?? 1);
   s.stage = 1;
   if (c1 && validPower(c1, save.powerState)) {
     s.powerState = save.powerState;

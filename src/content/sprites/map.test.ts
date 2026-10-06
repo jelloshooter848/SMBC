@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { rasterizeToBuffer, validateDef } from '@engine/gfx/pixelart';
 import { mapDef, mapPalettes, SHORES, WATER_FRAMES } from './map';
 import { PALETTES, SPRITES } from './index';
+import { mapIconFrames } from './map-icons';
 
 type Size = readonly [w: number, h: number];
 const T16: Size = [16, 16];
@@ -122,5 +123,27 @@ describe('map sprites', () => {
       expect(water('shore-w-0', y, 15), `w over w col ${y}`).toBe(water('shore-w-0', y, 0));
       expect(water('shore-in-nw-0', 0, y), `n|in-nw row ${y}`).toBe(water('shore-n-0', 15, y));
     }
+  });
+});
+
+describe('warp pad icons', () => {
+  const open = mapIconFrames['map-warp'] as readonly string[];
+  const locked = mapIconFrames['map-warp-locked'] as readonly string[];
+  const colours = (rows: readonly string[]) => new Set(rows.join('').replace(/\./g, ''));
+
+  it('are 16×16 frames with the same pad outline', () => {
+    for (const f of [open, locked]) {
+      expect(f).toHaveLength(16);
+      for (const row of f) expect(row).toHaveLength(16);
+    }
+    for (let y = 3; y < 16; y++)
+      for (let x = 0; x < 16; x++) expect(open[y]?.[x] === '.', `${x},${y}`).toBe(locked[y]?.[x] === '.');
+  });
+
+  it('the open pad is purple and blue with a white sparkle; the locked one dim grey, no sparkle', () => {
+    expect([...colours(open)].sort()).toEqual(['0', '1', 'a', 'c', 'e']);
+    expect(open.slice(0, 3).join('')).toContain('1');
+    expect(locked.slice(0, 3).join('')).toBe('.'.repeat(48));
+    for (const bright of ['1', 'a', 'c', 'e']) expect(colours(locked).has(bright), bright).toBe(false);
   });
 });

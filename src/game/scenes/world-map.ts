@@ -4,22 +4,26 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import { MAP_PAGES, mapPage } from '@content/worldmap';
 import { drawMapActor, drawMapTile, mapSky } from '@content/worldmap/render';
-import type { MapActor, MapNode, MapProgress, WorldMapPage } from '../map/types';
+import type { MapActor, MapNode, MapProgress, PageId, WorldMapPage } from '../map/types';
 import {
   exitId,
+  FIRST_PAGE,
   isCleared,
   isOpen,
-  isWorldOpen,
+  isPageOpen,
+  isWarpNode,
+  isWarpOpen,
   nextStep,
   openPaths,
   parseRevealId,
   pathId,
+  warpText,
+  warpTo,
   type Dir,
   type MapStep,
 } from '../map/rules';
 import type { CharacterDef } from '../characters/character';
 import { pad } from '../hud/hud';
-import { worldLabel } from '../hud/world-label';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import type { Game } from './game';
@@ -33,20 +37,35 @@ export const MAP_SLIDE_FRAMES = 30;
 /** Frames between two dots of a path being revealed, and before a revealed node pops in. */
 export const REVEAL_DOT_FRAMES = 6;
 export const REVEAL_NODE_FRAMES = 16;
+/** Length of the fade between two pages of different groups (a warp node). */
+export const MAP_FADE_FRAMES = 40;
 /** Height of the header bar across the top of the map (keep nodes below it). */
 export const MAP_HEADER_H = 24;
+/**
+ * The hint line across the bottom of the map while the hero stands on a warp node (below tile
+ * row 13, the lowest a node may sit on).
+ */
+export const MAP_HINT_Y = 226;
 
 export interface WorldMapOptions {
   /**
-   * World-qualified ids (rules.revealId: '1:1-2', '1:1-1>1-2', '2:start') to draw in one by
-   * one, then save; each page reveals only its own.
+   * Page-qualified ids (rules.revealId: 'smb-1:1-2', 'smb-1:1-1>1-2', 'smb-2:start') to draw
+   * in one by one, then save; each page reveals only its own.
    */
   reveal?: string[];
-  /** Open by sliding over from this world's page (a campaign warp), then draw in. */
-  slideFrom?: number;
+  /**
+   * Open by moving over from this page (a campaign warp pipe), then draw in: a slide within a
+   * group (by page order), a fade between groups.
+   */
+  slideFrom?: PageId;
 }
 
-type Mode = 'reveal' | 'idle' | 'walk' | 'slide';
+type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade';
+
+/** 'WORLD 1' → 'World 1', 'LOST LEVELS - BEAT 8-4 TO UNLOCK' → 'Lost Levels - Beat 8-4 To Unlock'. */
+export function spoken(text: string): string {
+  return text.toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, a: string, b: string) => a + b.toUpperCase());
+}
 
 /** A path or world exit as drawn: its id and the dot centres, flat [x0, y0, x1, y1, ...]. */
 interface DotRun {
@@ -66,12 +85,17 @@ interface HeroFrames {
   walk: string[];
 }
 
+/** Black at 0/8 .. 8/8 opacity, for the fade (precomputed: no strings built per frame). */
+const FADE_SHADES = Array.from({ length: 9 }, (_, i) => `rgba(0,0,0,${i / 8})`);
+
 const DIRS: Dir[] = ['left', 'right', 'up', 'down'];
 const ANY: Action[] = ['left', 'right', 'up', 'down', 'jump', 'attack', 'special', 'start', 'select'];
 
 /** Stands in when no page exists (no content yet): nothing to draw or walk to. */
 const EMPTY_PAGE: WorldMapPage = {
-  world: 1,
+  id: '',
+  group: 'smb',
+  label: '',
   title: '',
   theme: 'grass',
   music: 'title',
@@ -99,10 +123,15 @@ function startNode(page: WorldMapPage): MapNode | null {
   return page.nodes.find((n) => n.kind === 'start') ?? page.nodes[0] ?? null;
 }
 
-/** The highest open world with a page (World 1 when there is none). */
-function furthestOpenWorld(progress: MapProgress, unlockAll: boolean): number {
-  const open = MAP_PAGES.map((p) => p.world).filter((w) => isWorldOpen(progress, w, unlockAll));
-  return open.length ? Math.max(...open) : 1;
+/** The furthest open SMB world's page (World 1 when there is none). */
+function furthestOpenPage(progress: MapProgress, unlockAll: boolean): PageId {
+  const open = MAP_PAGES.filter((p) => p.group === 'smb' && isPageOpen(progress, p.id, unlockAll));
+  return open[open.length - 1]?.id ?? FIRST_PAGE;
+}
+
+/** -1 / 1: whether `to` comes before or after `from` in the registry (play order). */
+function pageOrder(from: WorldMapPage, to: WorldMapPage): -1 | 1 {
+  return MAP_PAGES.indexOf(from) < MAP_PAGES.indexOf(to) ? 1 : -1;
 }
 
 /**
@@ -123,6 +152,8 @@ export class WorldMapScene implements Scene {
   private walkPts: [number, number][] = [];
   private walkStep: MapStep | null = null;
   private slide: { from: WorldMapPage; dir: -1 | 1; t: number; node: string } | null = null;
+  /** A fade to `this.page` (a warp node, or a warp pipe across groups): black out, then in. */
+  private fade: { from: WorldMapPage; t: number; node: string } | null = null;
   /** Reveal state: local ids still to show (in order) and how many dots of each are drawn. */
   private revealQueue: string[] = [];
   private readonly revealShown = new Map<string, number>();
@@ -149,18 +180,18 @@ export class WorldMapScene implements Scene {
 
   constructor(
     private readonly game: Game,
-    world: number,
+    pageId: PageId,
     private readonly opts: WorldMapOptions = {},
   ) {
     const prog = game.mapProgress;
     const all = game.mapUnlockAll;
-    let w = isWorldOpen(prog, world, all) && mapPage(world) ? world : prog.position.world;
+    let id = isPageOpen(prog, pageId, all) && mapPage(pageId) ? pageId : prog.position.page;
     // A file left on "Unlock all" (dev mode since turned off) may stand somewhere locked.
     const recheck = game.devUnlockAll;
-    if (recheck && !(isWorldOpen(prog, w, all) && mapPage(w))) w = furthestOpenWorld(prog, all);
-    this.page = mapPage(w) ?? mapPage(1) ?? MAP_PAGES[0] ?? EMPTY_PAGE;
+    if (recheck && !(isPageOpen(prog, id, all) && mapPage(id))) id = furthestOpenPage(prog, all);
+    this.page = mapPage(id) ?? mapPage(FIRST_PAGE) ?? MAP_PAGES[0] ?? EMPTY_PAGE;
     const pos = prog.position;
-    let here = pos.world === this.page.world ? this.nodeById(pos.node) : undefined;
+    let here = pos.page === this.page.id ? this.nodeById(pos.node) : undefined;
     if (recheck && here && !isOpen(prog, this.page, here.id, all)) here = undefined;
     this.node = here?.id ?? startNode(this.page)?.id ?? '';
     this.placeHero();
@@ -183,9 +214,15 @@ export class WorldMapScene implements Scene {
     this.takeReveal();
     const from = this.opts.slideFrom === undefined ? undefined : mapPage(this.opts.slideFrom);
     if (from && from !== this.page) {
-      // A warp: slide in from the page warped from; the reveal follows (updateSlide).
-      this.slide = { from, dir: from.world < this.page.world ? 1 : -1, t: 0, node: this.node };
-      this.mode = 'slide';
+      // A warp: slide in from the page warped from (fade in from another group); the reveal
+      // follows (updateSlide / updateFade).
+      if (from.group === this.page.group) {
+        this.slide = { from, dir: pageOrder(from, this.page), t: 0, node: this.node };
+        this.mode = 'slide';
+      } else {
+        this.fade = { from, t: 0, node: this.node };
+        this.mode = 'fade';
+      }
       if (!this.revealQueue.length) this.game.autosave();
       return;
     }
@@ -199,10 +236,10 @@ export class WorldMapScene implements Scene {
    */
   private takeReveal(): void {
     const ids = new Set(this.pageIds(this.page));
-    const world = this.page.world;
+    const page = this.page.id;
     this.game.pendingReveal = this.game.pendingReveal.filter((rid) => {
       const r = parseRevealId(rid);
-      if (!r || r.world !== world) return true;
+      if (!r || r.page !== page) return true;
       if (ids.has(r.id) && !this.revealShown.has(r.id)) {
         this.revealQueue.push(r.id);
         this.revealShown.set(r.id, 0);
@@ -223,8 +260,8 @@ export class WorldMapScene implements Scene {
     const n = this.nodeById(this.node);
     this.hx = n ? n.x * 16 : 0;
     this.hy = n ? n.y * 16 : 0;
-    this.progress.position = { world: this.page.world, node: this.node };
-    if (this.node) this.game.mapLastNode[this.page.world] = this.node;
+    this.progress.position = { page: this.page.id, node: this.node };
+    if (this.node) this.game.mapLastNode[this.page.id] = this.node;
   }
 
   /** Every id a reveal may name on a page. */
@@ -256,17 +293,42 @@ export class WorldMapScene implements Scene {
   /** The page's name and the node the hero stands on. */
   private announceHere(): void {
     const n = this.nodeById(this.node);
-    const page = `World ${this.page.world}, ${this.page.title}`;
+    const label = spoken(this.page.label);
+    const page = label.toUpperCase() === this.page.title ? label : `${label}, ${this.page.title}`;
     this.say(n ? `${page}. ${this.nodeLabel(n)}` : page);
   }
 
-  /** "World 1-2, cleared" / "World 1-3, open" / "World 1-4 castle, open". */
+  /**
+   * "World 1-2, cleared" / "World 1-3, open" / "World 1-4 castle, open" / "Lost A-1, open";
+   * warp nodes say their hint line: "Warp, Return To World 1" / "Lost Levels - Beat 8-4 To
+   * Unlock, locked".
+   */
   nodeLabel(n: MapNode): string {
+    const label = spoken(this.page.label);
+    if (isWarpNode(n)) {
+      const text = spoken(warpText(this.progress, n, this.unlockAll));
+      return isWarpOpen(this.progress, n, this.unlockAll) ? `Warp, ${text}` : `${text}, locked`;
+    }
     const state = isCleared(this.progress, this.page, n.id) ? 'cleared' : 'open';
-    if (n.kind === 'start') return `World ${this.page.world} start`;
+    if (n.kind === 'start') return `${label} start`;
     if (n.kind === 'bonus') return `Bonus level, ${state}`;
-    const lvl = n.level ? `World ${n.level}` : `World ${this.page.world}`;
+    // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
+    const stage = n.level?.split('-').pop();
+    const lvl = stage ? `${label}-${stage}` : label;
     return n.kind === 'castle' ? `${lvl} castle, ${state}` : `${lvl}, ${state}`;
+  }
+
+  /** The warp node the hero stands still on (the hint line shows), or null. */
+  warpHere(): MapNode | null {
+    if (this.mode !== 'idle') return null;
+    const n = this.nodeById(this.node);
+    return n && isWarpNode(n) ? n : null;
+  }
+
+  /** The hint line's text while the hero stands on a warp node ('' otherwise). */
+  get hintLine(): string {
+    const n = this.warpHere();
+    return n ? warpText(this.progress, n, this.unlockAll) : '';
   }
 
   update(input: InputFrame): void {
@@ -281,21 +343,26 @@ export class WorldMapScene implements Scene {
       case 'slide':
         this.updateSlide();
         return;
+      case 'fade':
+        this.updateFade();
+        return;
       case 'idle':
         this.updateIdle(input);
     }
   }
 
   /**
-   * Idle: A enters the level underfoot when it is open, Start (or Select) opens the map menu.
-   * A reveal skips on any button (A says so); nothing to press while walking or sliding.
+   * Idle: A enters the level underfoot when it is open (warps on an open warp node), Start (or
+   * Select) opens the map menu. A reveal skips on any button (A says so); nothing to press
+   * while walking, sliding or fading.
    */
   touchLabels(): TouchLabels {
     if (this.mode === 'reveal') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
     if (this.mode !== 'idle') return NO_TOUCH_BUTTONS;
     const here = this.nodeById(this.node);
     const open = !!here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll);
-    return { ...NO_TOUCH_BUTTONS, jump: open ? 'ENTER' : null, start: 'MENU' };
+    const warp = !!here && isWarpOpen(this.progress, here, this.unlockAll);
+    return { ...NO_TOUCH_BUTTONS, jump: open ? 'ENTER' : warp ? 'WARP' : null, start: 'MENU' };
   }
 
   private updateReveal(input: InputFrame): void {
@@ -368,6 +435,15 @@ export class WorldMapScene implements Scene {
       this.game.enterLevelFromMap(here.level);
       return;
     }
+    if (input.pressed('jump') && here && isWarpNode(here)) {
+      if (isWarpOpen(this.progress, here, this.unlockAll)) this.warp(here);
+      else {
+        // Locked: a bump, and the hint (still on the hint line) said again.
+        this.game.ctx.audio.sfx('bump');
+        this.say(this.nodeLabel(here));
+      }
+      return;
+    }
     for (const d of DIRS) {
       if (!input.pressed(d)) continue;
       const step = here ? nextStep(this.page, this.progress, this.node, d, MAP_PAGES, this.unlockAll) : null;
@@ -409,9 +485,9 @@ export class WorldMapScene implements Scene {
       this.arrive(step.to);
       return;
     }
-    const toWorld = step.kind === 'exit' ? step.exit.toWorld : step.world;
-    const next = mapPage(toWorld);
-    if (!next || !isWorldOpen(this.progress, toWorld, this.unlockAll)) {
+    const toPage = step.kind === 'exit' ? step.exit.to : step.page;
+    const next = mapPage(toPage);
+    if (!next || !isPageOpen(this.progress, toPage, this.unlockAll)) {
       this.mode = 'idle';
       this.placeHero();
       return;
@@ -446,6 +522,44 @@ export class WorldMapScene implements Scene {
     this.mode = this.revealQueue.length ? 'reveal' : 'idle';
     this.revealT = 0;
     this.announceHere();
+  }
+
+  /**
+   * Jump on an open warp node: its target page opens (what that opens is drawn in on arrival),
+   * the hero's place here is kept for map travel, and the map fades over to the target node
+   * (`toNode`, else the start), where the position is saved.
+   */
+  private warp(n: MapNode): void {
+    const next = n.to === undefined ? undefined : mapPage(n.to);
+    if (!next) return;
+    this.game.ctx.audio.sfx('coin');
+    this.game.mapLastNode[this.page.id] = this.node;
+    this.game.addReveal(warpTo(this.progress, next.id));
+    const target = n.toNode && next.nodes.some((x) => x.id === n.toNode) ? n.toNode : startNode(next)?.id;
+    this.fade = { from: this.page, t: 0, node: target ?? '' };
+    this.page = next;
+    this.views.clear();
+    this.mode = 'fade';
+    this.takeReveal(); // hidden while fading in, drawn in on arrival
+  }
+
+  private updateFade(): void {
+    const f = this.fade;
+    if (!f) {
+      this.mode = 'idle';
+      return;
+    }
+    f.t++;
+    if (f.t < MAP_FADE_FRAMES) return;
+    this.fade = null;
+    this.views.clear();
+    this.node = this.nodeById(f.node) ? f.node : (startNode(this.page)?.id ?? '');
+    this.placeHero();
+    if (this.page.music !== f.from.music) this.game.ctx.audio.playMusic(this.page.music);
+    this.mode = this.revealQueue.length ? 'reveal' : 'idle';
+    this.revealT = 0;
+    this.announceHere();
+    if (this.mode === 'idle') this.game.autosave(); // a reveal saves when it is drawn in
   }
 
   private arrive(nodeId: string): void {
@@ -497,8 +611,8 @@ export class WorldMapScene implements Scene {
     this.views.clear();
     if (!game.devUnlockAll) {
       const prog = this.progress;
-      if (!isWorldOpen(prog, this.page.world)) {
-        game.travelToWorld(furthestOpenWorld(prog, false)); // shows that page, which saves
+      if (!isPageOpen(prog, this.page.id)) {
+        game.travelToPage(furthestOpenPage(prog, false)); // shows that page, which saves
         game.autosave();
         return;
       }
@@ -510,18 +624,29 @@ export class WorldMapScene implements Scene {
     game.autosave();
   }
 
-  /** Map menu "Worlds": every open world with a page; the current one is marked HERE. */
+  /**
+   * The pages the map menu "Worlds" lists, in play order: the open pages of the current group
+   * (SMB worlds, or Lost Levels worlds), plus the hub when it is open; on the hub, the open
+   * pages of every group.
+   */
+  worldsMenuPages(): WorldMapPage[] {
+    const group = this.page.group;
+    return MAP_PAGES.filter(
+      (p) =>
+        (group === 'hub' || p.group === group || p.group === 'hub') &&
+        isPageOpen(this.progress, p.id, this.unlockAll),
+    );
+  }
+
+  /** Map menu "Worlds": the pages of worldsMenuPages by label; the current one is marked HERE. */
   private openWorlds(): void {
     const game = this.game;
-    const here = this.page.world;
-    const worlds = MAP_PAGES.map((p) => p.world)
-      .filter((w) => isWorldOpen(this.progress, w, this.unlockAll))
-      .sort((a, b) => a - b);
-    const items = worlds.map((w): MenuItem => ({
-      label: `World ${w}`,
-      ...(w === here ? { value: () => 'here', hint: 'You are here' } : {}),
+    const here = this.page.id;
+    const items = this.worldsMenuPages().map((p): MenuItem => ({
+      label: spoken(p.label),
+      ...(p.id === here ? { value: () => 'here', hint: 'You are here' } : {}),
       select: () => {
-        if (w !== here) return game.travelToWorld(w);
+        if (p.id !== here) return game.travelToPage(p.id);
         game.scenes.pop(); // the current world: just close both menus
         game.scenes.pop();
       },
@@ -539,11 +664,31 @@ export class WorldMapScene implements Scene {
       r.clear(mapSky(s.from));
       this.drawPage(r, s.from, -off, false);
       this.drawPage(r, this.page, s.dir * 256 - off, false);
+    } else if (this.fade) {
+      // First half: the page left darkens to black; second half: the new page comes up.
+      const half = MAP_FADE_FRAMES / 2;
+      const t = this.fade.t;
+      const page = t < half ? this.fade.from : this.page;
+      r.clear(mapSky(page));
+      this.drawPage(r, page, 0, false);
+      const k = t < half ? t / half : Math.max(0, (MAP_FADE_FRAMES - t) / half);
+      r.rect(0, 0, 256, 240, FADE_SHADES[Math.min(FADE_SHADES.length - 1, Math.round(k * 8))] as string);
     } else {
       r.clear(mapSky(this.page));
       this.drawPage(r, this.page, 0, true);
     }
     this.drawHeader(r);
+    this.drawHint(r);
+  }
+
+  /** The hint line across the bottom while the hero stands on a warp node (open or locked). */
+  private drawHint(r: Renderer): void {
+    const text = this.hintLine;
+    if (!text) return;
+    const font = this.game.ctx.assets.sheet('font');
+    const line = text.slice(0, 32);
+    r.rect(0, MAP_HINT_Y, 256, 240 - MAP_HINT_Y, '#000');
+    r.text(font, line, Math.max(0, 128 - line.length * 4), MAP_HINT_Y + 3);
   }
 
   private drawPage(r: Renderer, page: WorldMapPage, ox: number, hero: boolean): void {
@@ -589,6 +734,7 @@ export class WorldMapScene implements Scene {
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {
     const cleared = isCleared(this.progress, page, n.id);
+    if (isWarpNode(n)) return isWarpOpen(this.progress, n, this.unlockAll) ? 'map-warp' : 'map-warp-locked';
     switch (n.kind) {
       case 'start':
         return 'map-node-start';
@@ -652,7 +798,7 @@ export class WorldMapScene implements Scene {
       h.score = s.score;
       h.coins = s.coins;
       h.title = this.page.title.toUpperCase().slice(0, 20);
-      h.world = `WORLD ${worldLabel(this.page.world)}`;
+      h.world = this.page.label.slice(0, 10);
       h.livesText = `${s.character.hudName.slice(0, 5)}×${pad(s.lives, 2)}`;
       h.scoreText = pad(s.score, 7);
       h.coinsText = `$×${pad(s.coins, 2)}`;
