@@ -124,6 +124,8 @@ export class HammerBro extends Enemy {
     const feet = b.y + b.h;
     let through = (this.jumpedHigh && b.vy < 0) || (!this.jumpedHigh && this.jumped && b.vy > 0);
     if (feet - this.jumpFeet > DROP_THROUGH || feet > SOLID_BELOW || this.solidFloors(world)) through = false;
+    // `if (wallOnLeft || wallOnRight) passThroughGround = false`: never pass through beside a wall.
+    if (b.hitWall !== 0) through = false;
     b.vy = Math.min(MAX_FALL, b.vy + GRAVITY);
     if (through) {
       b.y += velToSub(b.vy);

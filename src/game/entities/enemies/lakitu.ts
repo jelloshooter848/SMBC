@@ -78,7 +78,8 @@ export class Lakitu extends Enemy {
       if (b.x + b.w < cam.x || b.x > cam.right) this.destroy();
       return;
     }
-    const pl = world.nearestPlayer(b.x + half);
+    // The original has one player; in co-op follow the lead one, as the zone does.
+    const pl = world.nearestPlayer(cam.right);
     const pvx = pl.body.vx;
     const held = pl.heldDirX;
     let vxMax = DEF_VX_MAX;

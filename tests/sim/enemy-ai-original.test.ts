@@ -8,7 +8,12 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseTextMap } from '@game/level/textmap';
-import { runSim } from '@game/sim/headless';
+import { runSim, ScriptedInput } from '@game/sim/headless';
+import { AssetRegistry } from '@engine/assets/registry';
+import { NULL_AUDIO } from '@engine/audio/audio-manager';
+import { World } from '@game/world/world';
+import { DEFAULT_ASSIST, newGameState } from '@game/context';
+import type { Player } from '@game/entities/player';
 import { MARIO } from '@game/characters/mario';
 import { BulletBill, BulletLauncher } from '@game/entities/enemies/bullet-bill';
 import { Lakitu, LakituZone } from '@game/entities/enemies/lakitu';
@@ -18,7 +23,6 @@ import { Projectile } from '@game/entities/projectiles/projectile';
 import { px, toPx } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
 import type { Action } from '@engine/input/actions';
-import type { World } from '@game/world/world';
 
 const level = (world: string, id: string): LevelData =>
   parseTextMap(
@@ -378,6 +382,34 @@ describe('Lakitu (Lakitu.as, LakituSpawner.as, EnemySpawner.as)', () => {
     expect(r.outcome).toBe('stopped');
     expect(lakitus(r.world).filter((l) => l.alive)).toHaveLength(0);
     expect(zone?.current?.alive ?? false).toBe(false);
+  });
+
+  it('in co-op it follows the lead player even while the other one holds the other way', () => {
+    const world = new World(
+      lakituField(4, 300, 10),
+      {
+        assets: new AssetRegistry({ default: {} }),
+        audio: NULL_AUDIO,
+        assist: { ...DEFAULT_ASSIST, invulnerable: true, infiniteTime: true },
+        reduceFlashing: true,
+      },
+      newGameState(MARIO, MARIO),
+    );
+    const a = new ScriptedInput({ steps: [] });
+    const b = new ScriptedInput({ steps: [] });
+    let ahead = 0;
+    for (let f = 0; f < 900; f++) {
+      // Player one runs right; player two keeps holding left at the back.
+      a.setHeld(f > 240 ? ['right', 'attack'] : []);
+      b.setHeld(f > 240 ? ['left'] : []);
+      a.next();
+      b.next();
+      world.update([a, b]);
+      const l = lakitus(world)[0];
+      const lead = world.players[0] as Player;
+      if (l && f > 480 && l.body.x + l.body.w / 2 > lead.centerX + px(8)) ahead++;
+    }
+    expect(ahead).toBeGreaterThan(60);
   });
 });
 
