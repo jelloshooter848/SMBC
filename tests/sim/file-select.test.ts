@@ -115,24 +115,17 @@ describe('file select', () => {
     expect(h.said.at(-1)).toBe('File 2. New game.');
   });
 
-  it('NEW → 1 PLAYER opens straight on the World 1 map with Mario (no character select)', () => {
+  it('NEW opens straight on the World 1 map as a one-player Mario file (no choice, no character select)', () => {
     const h = makeGame();
-    const fs = toFileSelect(h);
+    toFileSelect(h);
     h.tap('down'); // file 2
     h.tap('jump');
-    // A small 1 PLAYER / 2 PLAYERS choice, 1 PLAYER first.
-    expect(top(h.game)).toBe(fs);
-    expect(fs.mode).toBe('players');
-    expect(fs.two).toBe(false);
-    expect(draw(fs).texts).toEqual(expect.arrayContaining(['1 PLAYER', '2 PLAYERS']));
-    expect(listSaves()).toEqual([null, null, null]);
-    h.tap('jump');
-    // The file opens on World 1's map, at the start, without a character select.
+    // The file opens on World 1's map, at the start: no player-count choice or character select.
     const map = top(h.game) as WorldMapScene;
     expect(map).toBeInstanceOf(WorldMapScene);
     expect(map.page.world).toBe(1);
     expect(map.node).toBe('start');
-    expect(h.game.scenes.depth).toBe(1); // nothing (no character select) under or over the map
+    expect(h.game.scenes.depth).toBe(1); // nothing under or over the map
     const save = loadSave(2)!;
     expect(save).not.toBeNull();
     expect(save.character).toBe('mario');
@@ -143,52 +136,10 @@ describe('file select', () => {
     expect(listSaves()[0]).toBeNull();
     expect(listSaves()[2]).toBeNull();
     expect(h.game.campaign).toEqual({ slot: 2 });
-    // The map walker is Mario.
+    // The map walker is Mario, alone.
     expect(h.game.state.character).toBe(MARIO);
     expect(h.game.state.character2).toBeNull();
     expect(h.game.state.lives).toBe(3);
-  });
-
-  it('NEW → 2 PLAYERS opens the map with Mario and Luigi and 5 lives; the card shows both', () => {
-    const h = makeGame();
-    const fs = toFileSelect(h);
-    h.tap('jump');
-    h.tap('right');
-    expect(fs.two).toBe(true);
-    expect(h.said.at(-1)).toBe('Two players');
-    h.tap('jump');
-    expect(top(h.game)).toBeInstanceOf(WorldMapScene);
-    expect(h.game.scenes.depth).toBe(1);
-    const save = loadSave(1)!;
-    expect([save.character, save.character2, save.lives]).toEqual(['mario', 'luigi', 5]);
-    expect(h.game.state.character).toBe(MARIO);
-    expect(h.game.state.character2).toBe(LUIGI);
-    expect(h.game.state.lives).toBe(5);
-    // Back on the file select, the card shows both heroes.
-    const again = makeGame();
-    const fs2 = toFileSelect(again);
-    const { sprites } = draw(fs2);
-    expect(sprites).toContainEqual({ sheet: 'mario', palette: 'mario', frame: 'small-idle' });
-    expect(sprites).toContainEqual({ sheet: 'mario', palette: 'luigi', frame: 'small-idle' });
-    expect(again.said.at(-1)).toMatch(/File 1\. Mario and Luigi\./);
-  });
-
-  it('back from the 1 PLAYER / 2 PLAYERS choice returns to the file list on the same file', () => {
-    const h = makeGame();
-    const fs = toFileSelect(h);
-    h.tap('down');
-    h.tap('down');
-    h.tap('jump');
-    expect(fs.mode).toBe('players');
-    h.tap('right');
-    h.tap('attack');
-    expect(top(h.game)).toBe(fs);
-    expect(fs.mode).toBe('choose');
-    expect(fs.index).toBe(2);
-    expect(listSaves()).toEqual([null, null, null]);
-    // A second back leaves for the title, as usual.
-    h.tap('select');
-    expect(top(h.game)).toBeInstanceOf(TitleScene);
   });
 
   it('a file saved before heroes were picked on the map still loads, straight onto its map', () => {
@@ -327,7 +278,7 @@ describe('file select', () => {
     expect(store.has('smbc.save.1')).toBe(false);
     expect(h.said.at(-1)).toMatch(/File 1 erased\. File 1\. New game\./);
     h.tap('jump');
-    expect(fs.mode).toBe('players');
+    expect(top(h.game)).toBeInstanceOf(WorldMapScene);
   });
 
   it('back leaves erase mode, then goes to the title', () => {

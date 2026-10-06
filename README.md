@@ -37,21 +37,22 @@ without lifting, and the buttons say what they do for the hero and scene.
 
 **Start game** opens the file select: three save files, each showing its hero (two for a
 two-player file), the world reached, levels cleared (out of 32), lives and score (a star once
-the game is beaten); pick a file to continue it, start a new one or erase one. A new file asks
-**1 player** or **2 players** and opens straight on World 1's map, with Mario (3 lives) or Mario
-and Luigi (5 lives); it stays one- or two-player. A file plays on a Super Mario World-style map
-with one page per world (1-8). Walk the d-pad along open paths and press jump on a level to play
-it (character select first, each player in turn on a two-player file: the current hero is
-preselected, and the file and map keep the last pick). Clearing a level, at the flagpole or by
-Toad in a castle, returns to the map and draws in the road to the next one; a castle opens the
-next world's page. A warp pipe opens only the world it leads to; the map menu's **Worlds** list
-travels between open worlds (back to the spot you left in each). **Pause → Quit to map** leaves
-any level without clearing it. Game over offers CONTINUE: yes returns to the map with fresh
-lives (score and coins reset, cleared levels kept), no goes to the title. The file saves itself
-whenever the map is shown, after each death and on a warp; the map menu (start or select) has
-**Save and quit**, and the level pause menu **Quit to title** saves too. Beating 8-4 rolls the
-credits, then marks the file with a star, saves it and returns to the title. Developer mode,
-`?level=`, custom and shared levels and editor play-tests skip the map and never write a save.
+the game is beaten); pick a file to continue it, start a new one or erase one. A new file is one
+player and opens straight on World 1's map with Mario (3 lives); new two-player files are paused
+for now, but two-player files from earlier versions still load and play. A file plays on a Super
+Mario World-style map with one page per world (1-8). Walk the d-pad along open paths and press
+jump on a level to play it (character select first, each player in turn on a two-player file:
+the current hero is preselected, and the file and map keep the last pick). Clearing a level, at
+the flagpole or by Toad in a castle, returns to the map and draws in the road to the next one; a
+castle opens the next world's page. A warp pipe opens only the world it leads to; the map menu's
+**Worlds** list travels between open worlds (back to the spot you left in each). **Pause → Quit
+to map** leaves any level without clearing it. Game over offers CONTINUE: yes returns to the map
+with fresh lives (score and coins reset, cleared levels kept), no goes to the title. The file
+saves itself whenever the map is shown, after each death and on a warp; the map menu (start or
+select) has **Save and quit**, and the level pause menu **Quit to title** saves too. Beating 8-4
+rolls the credits, then marks the file with a star, saves it and returns to the title. Developer
+mode, `?level=`, custom and shared levels and editor play-tests skip the map and never write a
+save.
 
 ### Characters
 
@@ -145,9 +146,11 @@ Settings persist in the browser.
 
 ### Two players
 
-A save file is one- or two-player from the start (**2 players** on a new file). For a custom
-level, player two presses **Start** (numpad 0/Enter, or a second gamepad's start button) on the
-character select to join and picks their own hero. Both play on one screen with a shared pool of
+New save files are one player for now (two-player files from earlier versions still play, and
+player one's controls can make player two's picks, so one phone can run both). Co-op stays
+available outside save files: on a custom level's character select, player two presses **Start**
+(numpad 0/Enter, or a second gamepad's start button) to join and picks their own hero, and a
+`?level=` link takes `&char2=` for player two. Both play on one screen with a shared pool of
 lives; a fallen player drops back in beside the survivor. Player two's default keys are on the
 numpad (4/6 move, 8 up, 5 down, 0 jump, . attack, Enter special, + start) and can be remapped in
 Options → Controls.

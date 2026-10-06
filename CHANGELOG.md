@@ -11,7 +11,8 @@ under `## [Unreleased]`.
 ### Changed
 
 - A new save file opens straight on the World 1 map with Mario; the hero is picked only when
-  entering a level. A new file is chosen as one or two players and stays that way.
+  entering a level. A new file is one player; new two-player save files are paused for now
+  (older two-player files still load and play).
 - Dev mode: the pause menu in a campaign level now has **Assists** (the full dev menu with level
   select stays outside campaign play).
 - Lost Levels endings use the NES wording: 8-4 and D-4 show "THANK YOU <HERO>! / YOUR QUEST IS

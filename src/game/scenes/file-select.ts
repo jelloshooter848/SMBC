@@ -14,7 +14,6 @@ import {
   type SlotContents,
 } from '@game/save/save-files';
 import type { CharacterDef } from '../characters/character';
-import { LUIGI } from '../characters/luigi';
 import { MARIO } from '../characters/mario';
 import { pad, SCORE_MAX } from '../hud/hud';
 import type { Game } from './game';
@@ -24,7 +23,7 @@ import { menuTouchLabels } from '../touch-labels';
 /** Main levels on the map (1-1..8-4). */
 export const MAIN_LEVEL_COUNT = 32;
 
-type Mode = 'choose' | 'erase' | 'confirm' | 'players';
+type Mode = 'choose' | 'erase' | 'confirm';
 
 const ROW_Y = [32, 78, 124] as const;
 const ROW_H = 40;
@@ -33,10 +32,9 @@ const BOTTOM_Y = 176;
 /**
  * Title → "Start game": three save files. A used file shows its hero(es), world reached, levels
  * cleared, lives and score (and a star once the game was beaten); an empty one says NEW GAME.
- * Picking an empty file asks 1 PLAYER / 2 PLAYERS, then creates it (Mario, or Mario and Luigi)
- * and opens World 1's map; heroes are picked on entering a level, and a file stays one- or
- * two-player. A used file opens its map. The bottom row erases a file (pick it, then confirm
- * YES / NO).
+ * Picking an empty file creates a one-player file with Mario and opens World 1's map (the hero
+ * is picked on entering a level); a used file opens its map, two-player files from older builds
+ * included. The bottom row erases a file (pick it, then confirm YES / NO).
  * A slot whose data can't be read shows UNREADABLE and must be erased before it is reused.
  * Up/down move, A/Start choose, B/Select back.
  */
@@ -46,8 +44,6 @@ export class FileSelectScene implements Scene {
   mode: Mode = 'choose';
   /** Confirm prompt: YES highlighted (NO by default). */
   yes = false;
-  /** New-file prompt: 2 PLAYERS highlighted (1 PLAYER by default). */
-  two = false;
   saves: SlotContents[] = [];
   private t = 0;
 
@@ -102,21 +98,6 @@ export class FileSelectScene implements Scene {
     const audio = this.game.ctx.audio;
     const ok = input.pressed('jump') || input.pressed('start');
     const back = input.pressed('attack') || input.pressed('select');
-    if (this.mode === 'players') {
-      if (input.pressed('left') || input.pressed('right') || input.pressed('up') || input.pressed('down')) {
-        this.two = !this.two;
-        audio.sfx('select');
-        this.say(this.two ? 'Two players' : 'One player');
-      } else if (ok) {
-        audio.sfx('coin');
-        this.newFile((this.index + 1) as SaveSlot, this.two);
-      } else if (back) {
-        this.mode = 'choose';
-        audio.sfx('select');
-        this.say(this.rowText());
-      }
-      return;
-    }
     if (this.mode === 'confirm') {
       if (input.pressed('left') || input.pressed('right') || input.pressed('up') || input.pressed('down')) {
         this.yes = !this.yes;
@@ -184,15 +165,9 @@ export class FileSelectScene implements Scene {
       this.say(`File ${slot} is unreadable. Erase it first.`);
       return;
     }
-    if (save) {
-      audio.sfx('coin');
-      this.game.openFile(slot, save);
-      return;
-    }
-    this.mode = 'players';
-    this.two = false;
-    audio.sfx('select');
-    this.say(`New game, file ${slot}. One player. Left and right to choose one or two players.`);
+    audio.sfx('coin');
+    if (save) this.game.openFile(slot, save);
+    else this.newFile(slot);
   }
 
   private cancelErase(): void {
@@ -202,11 +177,11 @@ export class FileSelectScene implements Scene {
   }
 
   /**
-   * Create the file (Mario, plus Luigi for player two) and open it on World 1's map; heroes are
-   * picked on entering a level.
+   * Create a one-player file with Mario and open it on World 1's map; the hero is picked on
+   * entering a level. (New two-player files are paused for now.)
    */
-  private newFile(slot: SaveSlot, two: boolean): void {
-    const save = newSave(slot, MARIO.id, two ? LUIGI.id : null);
+  private newFile(slot: SaveSlot): void {
+    const save = newSave(slot, MARIO.id);
     writeSave(save);
     this.game.openFile(slot, save);
   }
@@ -216,19 +191,15 @@ export class FileSelectScene implements Scene {
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
     const blink = (this.t >> 4) % 2 === 0;
-    const heading = this.mode === 'choose' || this.mode === 'players' ? 'SELECT A FILE' : 'ERASE WHICH FILE?';
+    const heading = this.mode === 'choose' ? 'SELECT A FILE' : 'ERASE WHICH FILE?';
     r.text(font, heading, 128 - heading.length * 4, 14);
     SAVE_SLOTS.forEach((slot, i) => {
       const y = ROW_Y[i] as number;
       const sel = i === this.index;
-      const edge = sel
-        ? this.mode === 'choose' || this.mode === 'players'
-          ? '#fcfcfc'
-          : '#f83800'
-        : '#3c3c3c';
+      const edge = sel ? (this.mode === 'choose' ? '#fcfcfc' : '#f83800') : '#3c3c3c';
       r.rect(20, y, 224, ROW_H, edge);
       r.rect(22, y + 2, 220, ROW_H - 4, '#0c1c48');
-      if (sel && (blink || this.mode === 'confirm' || this.mode === 'players')) r.text(font, '>', 8, y + 16);
+      if (sel && (blink || this.mode === 'confirm')) r.text(font, '>', 8, y + 16);
       r.text(font, `FILE ${slot}`, 84, y + 8);
       const s = this.saves[i];
       if (!s || s === UNREADABLE) {
@@ -252,13 +223,7 @@ export class FileSelectScene implements Scene {
       r.text(font, pad(Math.min(s.score, SCORE_MAX), 7), 180, y + 24);
       if (s.gameCleared) r.sprite(assets.sheet('items'), 'star-0', 152, y + 4);
     });
-    if (this.mode === 'players') {
-      const q = `NEW GAME, FILE ${this.index + 1}`;
-      r.text(font, q, 128 - q.length * 4, BOTTOM_Y);
-      r.text(font, '1 PLAYER', 44, BOTTOM_Y + 18);
-      r.text(font, '2 PLAYERS', 148, BOTTOM_Y + 18);
-      if (blink) r.text(font, '>', this.two ? 136 : 32, BOTTOM_Y + 18);
-    } else if (this.mode === 'confirm') {
+    if (this.mode === 'confirm') {
       const q = `ERASE FILE ${this.index + 1}?`;
       r.text(font, q, 128 - q.length * 4, BOTTOM_Y);
       r.text(font, 'YES', 88, BOTTOM_Y + 18);

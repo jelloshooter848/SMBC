@@ -155,18 +155,23 @@ function choose(scene: unknown, label: string) {
   item?.select?.();
 }
 
-/** Title → Start game → file 1 (empty) → 1 PLAYER or 2 PLAYERS: a new file. */
-function newFileFromTitle(h: H, two = false) {
+/** Title → Start game → file 1: a new file when it is empty, else that file. */
+function newFileFromTitle(h: H) {
   h.game.showTitle();
   h.idle(8);
   h.tap('start');
-  const fs = h.top() as FileSelectScene;
-  expect(fs).toBeInstanceOf(FileSelectScene);
+  expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);
   h.tap('jump');
-  expect(fs.mode).toBe('players');
-  if (two) h.tap('right');
-  h.tap('jump');
+}
+
+/** A two-player file as 0.2.x created it (Mario and Luigi, 5 lives), opened from the title. */
+function openOld2P(h: H) {
+  store.set(
+    'smbc.save.1',
+    JSON.stringify({ v: 1, slot: 1, character: 'mario', character2: 'luigi', lives: 5, worlds: [1] }),
+  );
+  newFileFromTitle(h);
 }
 
 /** Step until the level runs, counting the distinct character selects shown on the way. */
@@ -260,9 +265,9 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     expect([saved.character, saved.character2, saved.lives]).toEqual(['mario', null, 3]);
   });
 
-  it('new 2P file → map with Mario and Luigi, 5 lives; each level select picks both, in turn', () => {
+  it('an old 2P save (0.2.x) loads onto its map; each level select picks both, in turn', () => {
     const h = makeGame();
-    newFileFromTitle(h, true);
+    openOld2P(h);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.game.scenes.depth).toBe(1);
     expect(h.game.state.character).toBe(MARIO);
@@ -290,9 +295,10 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     expect([saved.character, saved.character2, saved.lives]).toEqual(['link', 'link', 5]);
   });
 
-  it('a 2P file on one device (player 1 input only, as on a phone): both picks and Back work', () => {
+  it('an old 2P save on one device (player 1 input only, as on a phone): both picks and Back work', () => {
     const h = makeGame();
-    newFileFromTitle(h, true);
+    openOld2P(h);
+    expect(h.game.state.character2).toBe(LUIGI);
     h.idle(8);
     walkTo(h, '1-1');
     const map = h.top();
