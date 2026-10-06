@@ -36,7 +36,8 @@ import { PowerUp } from '../entities/objects/powerup';
 import { Pickup } from '../entities/objects/pickup';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
-import { BlockBump, BrickPiece, CoinPop, Explosion, ScorePopup } from '../entities/effects/effects';
+import { BlockBump, BrickPiece, CoinPop, Corpse, Explosion, ScorePopup } from '../entities/effects/effects';
+import { castleFlagStart, Firework, FIREWORK_FRAMES, FIREWORK_TILES } from '../entities/effects/firework';
 import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { shellKickSeqScore, stompScore } from '../rules/score';
 import type { GameContext, GameState } from '../context';
@@ -125,8 +126,15 @@ export class World {
   private loopPrevX: number | null = null;
   private readonly loopChecks = new Set<string>();
   private readonly coinBlocks = new Map<string, { left: number; until: number }>();
-  private clear: { phase: ClearPhase; t: number; pole: Flagpole; walkTo: number; player: Player } | null =
-    null;
+  private clear: {
+    phase: ClearPhase;
+    t: number;
+    pole: Flagpole;
+    walkTo: number;
+    player: Player;
+    /** Fireworks to set off after the tally (1, 3 or 6, else 0): StatManager.touchFlag's HUD time. */
+    fireworks: number;
+  } | null = null;
   private pipeAnim: PipeAnim | null = null;
   private pipeExit: { t: number; frames: number } | null = null;
   private readonly deathTimers = new Map<Player, number>();
@@ -136,6 +144,8 @@ export class World {
   bossClear: { t: number; stop?: number } | null = null;
   /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
   castleText: string[] = [];
+  /** Drawn behind the tiles and sprites (the ending's credits, which the original adds under the level). */
+  backdrop: ((r: Renderer) => void) | null = null;
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
   autoWalk = false;
   readonly flagpole: Flagpole | null = null;
@@ -1267,6 +1277,7 @@ export class World {
   /* ---------- Level clear ---------- */
 
   private startClear(pole: Flagpole, p: Player): void {
+    this.destroyEnemiesAndProjectilesOnScreen();
     for (const o of this.players) {
       o.frozen = true;
       o.body.vx = 0;
@@ -1284,8 +1295,54 @@ export class World {
     this.spawn(new FlagScore(pole, String(score)));
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
     const walkTo = tileToSub((exit?.x ?? pole.tx) + 6) + px(8);
-    this.clear = { phase: 'slide', t: 0, pole, walkTo, player: p };
+    // StatManager.touchFlag keeps the HUD time (timeLeftBeatLevel); when the tally ends,
+    // timeScoreConverterTmrLsr sets off that many fireworks if its last digit is 1, 3 or 6.
+    const digit = (this.time ?? 0) % 10;
+    const fireworks = digit === 1 || digit === 3 || digit === 6 ? digit : 0;
+    this.clear = { phase: 'slide', t: 0, pole, walkTo, player: p, fireworks };
     this.time ??= 0;
+  }
+
+  /**
+   * EventManager.touchedFlagPole → Level.destroyAllEnemiesAndProjectilesOnScreen: every enemy and
+   * projectile on the stage vanishes (no score, no death animation). An object is on the stage
+   * while within 2 tiles (Flash 64 px, 32 px here) of either screen edge
+   * (AnimatedObject.checkStgPos). Brick pieces, coins popping from blocks and falling defeated
+   * enemies are the original's Projectiles / Enemies too; spawners and pickups stay.
+   */
+  private destroyEnemiesAndProjectilesOnScreen(): void {
+    const left = this.camera.x - px(32);
+    const right = this.camera.right + px(32);
+    for (const e of this.entities) {
+      if (!e.alive || e.body.x + e.body.w < left || e.body.x > right) continue;
+      if (
+        e instanceof Enemy ||
+        e instanceof Projectile ||
+        e instanceof BrickPiece ||
+        e instanceof CoinPop ||
+        e instanceof Corpse
+      )
+        e.destroy();
+    }
+  }
+
+  /** Level.launchNextFirework: the `i`-th firework over the castle flag, worth ScoreValue.FIREWORK. */
+  private launchFirework(c: NonNullable<typeof this.clear>, i: number): void {
+    const [dx, dy] = FIREWORK_TILES[i] ?? [0, 0];
+    // The castle whose flag rises: the nearest one past the pole.
+    let castle: Decoration | null = null;
+    for (const e of this.entities)
+      if (e instanceof Decoration && e.name.startsWith('castle') && e.body.x > c.pole.body.x)
+        if (!castle || e.body.x < castle.body.x) castle = e;
+    const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
+    // No castle drawn: where a small castle's flag would start, over the exit on the ground (row 13).
+    const flag = castle ? castleFlagStart(castle) : { x: (exit?.x ?? c.pole.tx + 6) * 16, y: 13 * 16 - 72 };
+    // Level.launchNextFirework: on x-3 levels every position moves one tile right.
+    const x = flag.x + 8 + (dx + (this.level.stage === 3 ? 1 : 0)) * 16;
+    const y = flag.y - 16 + dy * 16;
+    this.spawn(new Firework(x, y));
+    this.audio.sfx('firework');
+    this.addScore(500);
   }
 
   /** Score popups keep floating up and expiring through the clear sequences, while all else holds still. */
@@ -1357,14 +1414,23 @@ export class World {
           c.t = 0;
         }
         break;
-      case 'flag':
+      case 'flag': {
         if (c.t === 1) for (const e of this.entities) if (e instanceof Decoration) e.raiseFlag();
-        if (c.t >= 90) {
+        // Level.raiseFlag starts the castle flag and the first firework together; each firework
+        // launches the next when it is removed (Firework.cleanUp), and the level ends
+        // WIN_END_TMR_FIREWORKS_DUR (1 s) after the last one. Without fireworks the wait stays
+        // 90 frames.
+        const fw = (c.t - 1) / FIREWORK_FRAMES;
+        if (Number.isInteger(fw) && fw < c.fireworks) this.launchFirework(c, fw);
+        for (const e of this.entities)
+          if (e.alive && (e instanceof Decoration || e instanceof Firework)) e.update();
+        if (c.t >= (c.fireworks > 0 ? 1 + c.fireworks * FIREWORK_FRAMES + 60 : 90)) {
           c.phase = 'done';
           const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
           this.events.push({ type: 'exit', next: exit?.next ?? 'end' });
         }
         break;
+      }
       case 'done':
         break;
     }
@@ -1431,13 +1497,15 @@ export class World {
     }
     if (c.stop === undefined) return;
     // Then Toad's thanks; 1.5 s later the news, and 3.5 s after it the next level (the
-    // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle hands the thanks
-    // over to the ending.
+    // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle says instead that
+    // the quest is over (ScreenManager.addTxtTmrHandler, GameTextMessages.QUEST_IS_OVER) and hands
+    // over to the ending 2.5 s later (START_MOVE_CREDITS_TMR_DUR), where the credits roll.
     const next = exit?.next ?? 'end';
     const s = c.t - c.stop;
     if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
     if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
-    if (s >= (next === 'end' ? 120 : 330)) {
+    if (s === 120 && next === 'end') this.castleText.push('', 'YOUR QUEST IS OVER.');
+    if (s >= (next === 'end' ? 270 : 330)) {
       this.events.push({ type: 'exit', next });
       c.t = -100000;
     }
@@ -1477,6 +1545,7 @@ export class World {
       reduceFlashing: this.ctx.reduceFlashing,
     };
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
+    this.backdrop?.(r);
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     renderTiles(r, view, this.map);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);

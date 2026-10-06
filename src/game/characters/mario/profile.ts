@@ -28,4 +28,7 @@ export const MARIO_PROFILE: MovementProfile = {
   variableJump: true,
   instantAccel: false,
   coyoteFrames: 0,
+  // MarioBase.as: canCrossSmallGaps is set on the ground only in the fastest run-animation band,
+  // vx > RUN_TMR_2_MIN_VX = 220 Flash px/s (32 px tiles, 60 fps) = 110 px/s = 1.833 px/f here.
+  crossGapMinVx: Math.round((220 / 2 / 60) * 0x1000),
 };

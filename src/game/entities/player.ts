@@ -1,6 +1,6 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import type { AABB } from '@engine/math/aabb';
-import { px, sign, velToSub } from '@engine/math/units';
+import { px, sign, tileAt, tileToSub, velToSub } from '@engine/math/units';
 import { JUMP_BUFFER_FRAMES } from '../constants';
 import { pickJumpTier, type JumpTier, type MovementProfile } from '../characters/profile';
 import type { CharacterDef } from '../characters/character';
@@ -229,10 +229,13 @@ export class Player {
       else if (dir !== 0) this.facing = dir;
     }
 
+    const wasOnGround = b.onGround;
+    const gapSpeed = wasOnGround && p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx;
     moveX(b, map, velToSub(b.vx));
     this.fallSpeed = b.onGround ? 0 : b.vy;
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
     moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
+    if (gapSpeed && !b.onGround) this.crossSmallGap(map);
     if (b.onGround) {
       this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
@@ -243,6 +246,30 @@ export class Player {
       if (b.vy > p.maxFall) b.vy = p.fallReset;
     }
     this.updateAnim(dir);
+  }
+
+  /**
+   * The original's Level.checkCrossSmallGap (run on the first frame a player with
+   * canCrossSmallGaps has left the ground): when the tiles one column left and one column right
+   * of the player's centre column both have ground whose top is exactly at the feet, the player
+   * stands on it and runs on at the same height. Only one-tile gaps qualify; lifts never do (they
+   * are entities, the original's `Platform`).
+   */
+  private crossSmallGap(map: TileMap): void {
+    const b = this.body;
+    const feet = b.prevBottom;
+    const row = tileAt(feet);
+    if (tileToSub(row) !== feet) return;
+    const col = tileAt(b.x + (b.w >> 1));
+    if (col - 1 <= 0 || col + 1 >= map.width) return;
+    const ground = (tx: number) => {
+      const c = map.collisionAt(tx, row);
+      return c === 'solid' || c === 'top';
+    };
+    if (!ground(col - 1) || !ground(col + 1)) return;
+    b.y = feet - b.h;
+    b.vy = 0;
+    b.onGround = true;
   }
 
   /**

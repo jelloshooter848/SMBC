@@ -18,6 +18,7 @@ const SONG_IDS = [
   'world-clear',
   'map',
   'map-bowser',
+  'credits',
 ];
 
 const SFX_IDS = [

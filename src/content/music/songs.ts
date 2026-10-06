@@ -468,6 +468,51 @@ export const songs: Song[] = [
   },
 
   {
+    id: 'credits',
+    bpm: 108,
+    loop: true,
+    // The ending's credits roll (the original changes to its credits music there). C major,
+    // 8 bars: an unhurried, singing farewell over a rocking root-fifth bass and soft brushes.
+    pulse1: `
+      @2 v11 q7 x0
+      o5 e4 d8 c8 d4 o4 g4                 ; bar 1  (C)
+      o5 c4. d8 e2                         ; bar 2  (C)
+      o5 f4 e8 d8 e4 a4                    ; bar 3  (F)
+      o5 g2. r4                            ; bar 4  (G)
+      o5 a4 g8 f8 e4 c4                    ; bar 5  (Am)
+      o5 f4. e8 d2                         ; bar 6  (F)
+      o5 e4 d8 c8 d4 o4 b4                 ; bar 7  (G)
+      o5 c2. r4                            ; bar 8  (C)
+    `,
+    pulse2: `
+      @0 v7 q8 x0
+      o4 e2 g2                             ; bar 1
+      o4 e2 g2                             ; bar 2
+      o4 a2 o5 c2                          ; bar 3
+      o4 b2 g2                             ; bar 4
+      o5 c2 o4 a2                          ; bar 5
+      o4 a2 f2                             ; bar 6
+      o4 g2 f2                             ; bar 7
+      o4 e2. r4                            ; bar 8
+    `,
+    triangle: `
+      q7
+      o2 c4 g4 o3 c4 o2 g4                 ; bar 1
+      o2 c4 g4 o3 c4 o2 g4                 ; bar 2
+      o2 f4 o3 c4 f4 c4                    ; bar 3
+      o2 g4 o3 d4 g4 d4                    ; bar 4
+      o2 a4 o3 e4 a4 e4                    ; bar 5
+      o2 f4 o3 c4 f4 c4                    ; bar 6
+      o2 g4 o3 d4 o2 g4 b4                 ; bar 7
+      o3 c2. r4                            ; bar 8
+    `,
+    noise: `
+      [v8 k4 v5 h8 h8 v7 s4 v5 h8 h8]7     ; bars 1-7
+      v8 k4 v5 h8 h8 v7 s4 s8 s8           ; bar 8
+    `,
+  },
+
+  {
     id: 'map',
     bpm: 132,
     loop: true,

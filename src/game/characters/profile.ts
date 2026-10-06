@@ -42,6 +42,12 @@ export interface MovementProfile {
   /** Frames after leaving a ledge during which a jump is still allowed (assist; 0 = SMB1 behaviour). */
   coyoteFrames: number;
   slide?: { speed: number; frames: number; hitboxH: number } | undefined;
+  /**
+   * Running on the ground faster than this (|vx|) carries the character over one-tile gaps in a
+   * walking surface (the original's Character.canCrossSmallGaps + Level.checkCrossSmallGap).
+   * Undefined: never.
+   */
+  crossGapMinVx?: number | undefined;
 }
 
 export function pickJumpTier(p: MovementProfile, vx: number): JumpTier {
