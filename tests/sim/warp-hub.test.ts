@@ -160,13 +160,13 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(h.r.texts.some((t) => /^[1-8]$/.test(t.s) && t.y < 160)).toBe(false);
 
     // Down the pipe: 1-2 counts as cleared, the secret is kept, and the map draws in the road
-    // from 1-1 to the warp spot.
+    // from 1-2 to the warp spot.
     h.until(() => h.top() instanceof WorldMapScene, 300, ['down']);
     const prog = h.game.mapProgress;
     expect(prog.cleared).toEqual(['1-1', '1-2']);
     expect(prog.secrets).toEqual(['bonus-1']);
     expect(h.game.pendingReveal).toEqual(
-      expect.arrayContaining(['smb-1:1-2>1-3', 'smb-1:1-3', 'smb-1:1-1>bonus-1', 'smb-1:bonus-1']),
+      expect.arrayContaining(['smb-1:1-2>1-3', 'smb-1:1-3', 'smb-1:1-2>bonus-1', 'smb-1:bonus-1']),
     );
     expect(h.map().page.id).toBe('smb-1');
     expect(h.map().revealing).toBe(true);
@@ -176,8 +176,7 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     const w1 = mapPage('smb-1') as WorldMapPage;
     expect(isOpen(prog, w1, 'bonus-1')).toBe(true);
 
-    // Walk to the warp spot: the hint line names where it goes.
-    walkTo(h, '1-1');
+    // Walk to the warp spot, straight from 1-2: the hint line names where it goes.
     walkTo(h, 'bonus-1');
     expect(h.map().hintLine).toBe('WARP ZONE');
     h.step();
@@ -375,18 +374,51 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(h.map().page.id).toBe('smb-1');
   });
 
-  it("with Unlock all and no secret, the hub's centre lands on World 1's start, not the hidden spot", () => {
+  it('with Unlock all and no secret, the warp spot and its road show and the spot warps to the hub', () => {
     const h = makeGame();
     h.game.deps.settings = { dev: true } as Settings;
     h.game.openFile(1, file({ devUnlockAll: true }));
     h.idle(8);
-    h.game.travelToPage('hub');
-    h.idle(8);
+    const w1 = mapPage('smb-1')!;
+    expect(isOpen(h.game.mapProgress, w1, 'bonus-1', true)).toBe(true);
+    expect(w1.paths.find((p) => p.to === 'bonus-1')?.from).toBe('1-2');
+    walkTo(h, '1-1');
+    walkTo(h, '1-2');
+    walkTo(h, 'bonus-1');
+    expect(h.map().hintLine).toBe('WARP ZONE');
+    warp(h, 'hub');
     expect(h.map().node).toBe('start');
+    // The trip records nothing: no secret, no page, no clear.
+    const prog = h.game.mapProgress;
+    expect([prog.secrets, prog.pages, prog.cleared]).toEqual([[], ['smb-1'], []]);
+    const after = loadSave(1)!;
+    expect([after.secrets, after.pages, after.cleared, after.gameCleared]).toEqual([
+      [],
+      ['smb-1'],
+      [],
+      false,
+    ]);
+    // The hub's centre returns to the spot, which walks on to 1-2 (not stranded).
     warp(h, 'smb-1');
+    expect(h.map().node).toBe('bonus-1');
+    walkTo(h, '1-2');
+    walkTo(h, 'bonus-1');
+  });
+
+  it('turning Unlock all off hides the warp spot again and moves the hero off it', () => {
+    const h = makeGame();
+    h.game.deps.settings = { dev: true } as Settings;
+    h.game.openFile(1, file({ devUnlockAll: true, position: { page: 'smb-1', node: 'bonus-1' } }));
+    h.idle(8);
+    expect(h.map().node).toBe('bonus-1');
+    h.tap('select');
+    (h.top() as unknown as { items: MenuItem[] }).items.at(-1)?.adjust?.(-1);
+    expect(h.game.devUnlockAll).toBe(false);
+    h.game.scenes.pop();
+    expect(isOpen(h.game.mapProgress, mapPage('smb-1')!, 'bonus-1', h.game.mapUnlockAll)).toBe(false);
     expect(h.map().node).toBe('start');
-    expect(isOpen(h.game.mapProgress, mapPage('smb-1')!, 'bonus-1', true)).toBe(false);
-    walkTo(h, '1-1'); // not stranded
+    expect(loadSave(1)?.position).toEqual({ page: 'smb-1', node: 'start' });
+    expect(loadSave(1)?.secrets).toEqual([]);
   });
 
   it('a warp zone pipe in a 4-2 sub-area opens World 8 on the map (its page found through 4-2)', () => {

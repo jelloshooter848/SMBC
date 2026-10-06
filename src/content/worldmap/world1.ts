@@ -29,7 +29,8 @@ export const WORLD_1: WorldMapPage = {
   music: 'map',
   tiles: autoShore(SKETCH_1),
   // The bonus slot is the warp spot (0.4.0): found by taking the 1-2 warp zone's pipe in a
-  // campaign (secret 'bonus-1'), it leads to the Warp Zone hub.
+  // campaign (secret 'bonus-1'), it leads to the Warp Zone hub. Its road grows from 1-2 (0.4.1).
+  // The path ids '1-1>1-2' and '1-2>bonus-1' are saved in pending reveals (save-files.ts).
   nodes: worldNodes(
     1,
     [0, 10],
@@ -39,14 +40,14 @@ export const WORLD_1: WorldMapPage = {
       [11, 6],
       [13, 10],
     ],
-    [6, 11],
+    [5, 11],
   ).map((n): MapNode => (n.kind === 'bonus' ? { ...n, kind: 'warp', to: 'hub', label: 'WARP ZONE' } : n)),
   paths: [
     { from: 'start', to: '1-1', points: poly([0, 10], [2, 10], [2, 7], [4, 7]) },
-    { from: '1-1', to: '1-2', points: poly([4, 7], [6, 7], [6, 4]) },
+    { from: '1-1', to: '1-2', points: poly([4, 7], [4, 4], [6, 4]) },
     { from: '1-2', to: '1-3', points: poly([6, 4], [11, 4], [11, 6]) },
     { from: '1-3', to: '1-4', points: poly([11, 6], [11, 8], [13, 8], [13, 10]) },
-    { from: '1-1', to: 'bonus-1', points: poly([4, 7], [4, 11], [6, 11]) },
+    { from: '1-2', to: 'bonus-1', points: poly([6, 4], [6, 11], [5, 11]) },
   ],
   exits: [{ from: '1-4', to: 'smb-2', side: 'right', points: poly([13, 10], [15, 10]) }],
   actors: [

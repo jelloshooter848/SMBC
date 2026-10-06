@@ -115,8 +115,10 @@ A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the fil
 | `'never'`        | Never: a future secret ("??? - A FUTURE SECRET")                                            |
 
 Developer mode's **Unlock all** treats every condition as met **except `'never'`**, opens every
-registered page (the hub included, so the Worlds menu lists it), and still keeps `unlock`-hidden
-nodes hidden until their secret is found.
+registered page (the hub included, so the Worlds menu lists it), and shows warp nodes hidden only
+by their `unlock` key (World 1's warp spot) with their roads. Bonus nodes, and keyed warps that
+have `requires: 'never'`, stay hidden until their secret is found. It writes nothing to the file: a warp
+that works only through Unlock all travels without opening its page (`rules.warpRecords`).
 
 ## World exits and the Lost Levels unlocks
 
@@ -161,8 +163,9 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 - `1-2.map`'s warp zone carries `secret=bonus-1`. In campaign play (`Game.startLevel` with a file
   open) `level/campaign.ts` keeps only the middle pipe, unlabelled, removes the other two, and
   marks the pipe with the secret. Taking it clears 1-2, records `bonus-1`, returns to the World 1
-  map and draws in the road from 1-1 to World 1's warp spot (the old bonus slot at (6,11), now a
-  warp node to `hub`, hidden by `unlock: 'bonus-1'`).
+  map and draws in the road from 1-2 to World 1's warp spot (the old bonus slot, now at (5,11), a
+  warp node to `hub`, hidden by `unlock: 'bonus-1'`). Until 0.4.0 the road came from 1-1: loading
+  renames a pending reveal of the old road id `smb-1:1-1>bonus-1` (save-files.ts).
 - Dev select, `?level=` and custom play keep the classic three numbered pipes.
 - SMB 4-2's warp zones are unchanged (they still skip worlds); a `secret=` key on one is the hook
   for a future secret. Lost Levels warp zones (backward ones too) are unchanged.
