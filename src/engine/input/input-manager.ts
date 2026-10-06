@@ -145,8 +145,8 @@ export class InputManager {
       const pad = padsByIndex[b.gamepadIndex ?? p] ?? padsByIndex[0] ?? EMPTY;
       const next = new Set<Action>();
       for (const a of Actions) {
-        if (b.keyboard[a].some((c) => kb.has(c))) next.add(a);
-        else if (b.gamepad[a].some((c) => pad.has(c))) next.add(a);
+        if (b.keyboard[a]?.some((c) => kb.has(c))) next.add(a);
+        else if (b.gamepad[a]?.some((c) => pad.has(c))) next.add(a);
         else if (p === 0 && touch.has(`touch:${a}`)) next.add(a);
       }
       this.players[p]?.beginFrame(next);

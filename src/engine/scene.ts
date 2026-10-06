@@ -1,5 +1,6 @@
 import type { InputFrame } from './input/input-manager';
 import type { Renderer } from './gfx/renderer';
+import type { TouchLabels } from './input/touch';
 
 export interface Scene {
   enter?(): void;
@@ -9,6 +10,8 @@ export interface Scene {
   render(r: Renderer): void;
   /** When true the scene below keeps rendering (pause menu over the level). */
   readonly translucent?: boolean;
+  /** What the on-screen touch buttons say while this scene is on top (absent = A, B, C...). */
+  touchLabels?(): TouchLabels;
 }
 
 export class SceneStack {

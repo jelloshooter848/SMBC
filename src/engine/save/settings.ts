@@ -4,6 +4,10 @@ import { defaultBindings } from '../input/bindings';
 import { loadJson, saveJson } from './storage';
 
 export type TouchMode = 'auto' | 'on' | 'off';
+/** Touch d-pad: drawn at a fixed spot, or a stick that centres under the thumb. */
+export type DpadStyle = 'fixed' | 'floating';
+export const DPAD_STYLES: readonly DpadStyle[] = ['fixed', 'floating'];
+export const TOUCH_MODES: readonly TouchMode[] = ['auto', 'on', 'off'];
 
 export interface AssistSettings {
   allowLeftScroll: boolean;
@@ -20,7 +24,7 @@ export interface Settings {
   v: 1;
   video: { integerScale: boolean; palette: PaletteMode; reduceFlashing: boolean; showFps: boolean };
   audio: { master: number; music: number; sfx: number; muted: boolean };
-  input: { bindings: PlayerBindings[]; touch: TouchMode; touchScale: number };
+  input: { bindings: PlayerBindings[]; touch: TouchMode; touchScale: number; dpad: DpadStyle };
   assist: AssistSettings;
   /** Enabled asset pack names, in override order. */
   packs: string[];
@@ -37,7 +41,12 @@ export function defaultSettings(): Settings {
     v: 1,
     video: { integerScale: true, palette: 'default', reduceFlashing: false, showFps: false },
     audio: { master: 0.8, music: 1, sfx: 1, muted: false },
-    input: { bindings: [defaultBindings(0), defaultBindings(1)], touch: 'auto', touchScale: 1 },
+    input: {
+      bindings: [defaultBindings(0), defaultBindings(1)],
+      touch: 'auto',
+      touchScale: 1,
+      dpad: 'fixed',
+    },
     assist: {
       allowLeftScroll: false,
       infiniteLives: false,
@@ -81,7 +90,23 @@ export function loadSettings(): Settings {
   }
   const s = merge(defaultSettings(), stored);
   s.v = 1;
+  // Fields added later (input.dpad, the `run` action) are filled in here; no migration needed.
+  if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
+  if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
+  s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;
+}
+
+/** Stored bindings predate newer actions: give any missing action its default codes. */
+function fillBindings(b: PlayerBindings | null, player: number): PlayerBindings {
+  const def = defaultBindings(player);
+  if (!b || typeof b !== 'object') return def;
+  return {
+    ...b,
+    keyboard: { ...def.keyboard, ...b.keyboard },
+    gamepad: { ...def.gamepad, ...b.gamepad },
+    gamepadIndex: b.gamepadIndex ?? null,
+  };
 }
 
 export function saveSettings(s: Settings): void {

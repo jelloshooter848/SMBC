@@ -165,7 +165,7 @@ export class Player {
     const p = this.profile;
     const b = this.body;
     let dir = input.dirX;
-    const wantRun = p.canRun && input.held('attack') && !this.inWater;
+    const wantRun = p.canRun && (input.held('attack') || input.held('run')) && !this.inWater;
     if (wantRun) this.runTimer = p.runTimerFrames;
     else if (this.runTimer > 0) this.runTimer--;
     const running = wantRun || this.runTimer > 0;
