@@ -1000,8 +1000,14 @@ export class World {
           const r = e.hit({ kind: 'bump', amount: 1, owner: null, dirX, fromX: tileToSub(tx) + px(8) }, this);
           // A bounce (KoopaGreen/Spiney.gBounceHit) skips Enemy.gBounceHit's BELOW score.
           if (r !== 'immune' && r !== 'bounce') this.addScore(e.scoreFor('bump'), b.x, b.y);
-        } else b.vy = -0x03000;
+        } else e.bounceHit(tileToSub(tx) + px(8));
       }
+    }
+    // Coin.gBounceHit: a coin on the block flies off as a FlyingCoin (a coin, then 200 points).
+    if (tileDef(this.map.get(tx, ty - 1)).pickup === 'coin') {
+      this.map.set(tx, ty - 1, T.AIR);
+      this.spawn(new CoinPop(tileToSub(tx) + px(4), tileToSub(ty - 1)));
+      this.addCoin();
     }
     const { kind, content } = def.block;
     const frame = kind === 'brick' ? 'brick' : 'used';

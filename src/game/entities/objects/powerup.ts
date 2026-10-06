@@ -2,6 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { px, velToSub } from '@engine/math/units';
 import { Entity, type View } from '../entity';
 import { moveX } from '../body';
+import { BUMP_POP_GRAVITY, BUMP_POP_VY } from '../enemies/enemy';
 import type { World } from '../../world/world';
 
 /**
@@ -10,10 +11,15 @@ import type { World } from '../../world/world';
  */
 export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star' | 'poison' | 'clock';
 
+/** The kinds that are the original's Mushroom (red, ST_GREEN and ST_POISON), with its gBounceHit. */
+const MUSHROOMS: ReadonlySet<PowerUpKind> = new Set(['mushroom', '1up', 'poison']);
+
 /** An item rising out of a block, then behaving per kind. */
 export class PowerUp extends Entity {
   readonly kind = 'powerup';
   private emerging = 32;
+  /** Popped up by a bumped block: falls with the bounce gravity until it lands. */
+  private bounced = false;
   private readonly targetY: number;
 
   constructor(
@@ -26,6 +32,23 @@ export class PowerUp extends Entity {
     this.layer = 'back';
     this.spriteOffsetX = 2;
     this.body.vx = 0;
+  }
+
+  /**
+   * The block under it was bumped (Brick.hitObjectsAbove, on a bounce or a break). Mushroom.gBounceHit
+   * pops it up with the same BOUNCE_AMT (350 px/s = 2.92 px/f) and BOUNCE_GRAVITY (1500 px/s² =
+   * 0.208 px/f²) as KoopaGreen's, that gravity lasting until it lands (Mushroom.groundBelow puts
+   * its fall gravity back), and turns it round when its middle is left of the block's
+   * (`if (nx < g.hMidX) vx = -vx`). Star, FireFlower and the Clock (a plain Pickup) have no
+   * gBounceHit, so they ignore the bump.
+   */
+  bounceHit(blockMidX: number): void {
+    if (this.emerging > 0 || !MUSHROOMS.has(this.item)) return;
+    const b = this.body;
+    b.vy = -BUMP_POP_VY;
+    b.onGround = false;
+    this.bounced = true;
+    if (b.x + (b.w >> 1) < blockMidX) b.vx = -b.vx;
   }
 
   update(world: World): void {
@@ -46,7 +69,8 @@ export class PowerUp extends Entity {
     if (this.item === 'flower' || this.item === 'clock') return;
     moveX(b, world.map, velToSub(b.vx));
     if (b.hitWall !== 0) b.vx = -b.hitWall * 0x01000;
-    this.fall(world, this.item === 'star' ? 0x00300 : undefined);
+    this.fall(world, this.item === 'star' ? 0x00300 : this.bounced ? BUMP_POP_GRAVITY : undefined);
+    if (b.onGround) this.bounced = false;
     if (this.item === 'star' && b.onGround) b.vy = -0x04000;
     if (this.isBelowLevel()) this.destroy();
   }

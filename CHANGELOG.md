@@ -8,6 +8,11 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Mushrooms (and 1-ups and poison mushrooms) on a block hop when the block is bumped from below, as in the original.
+- A coin on a block bumped from below is collected, as in the original.
+
 ## [0.4.1] - 2026-10-06
 
 ### Added
