@@ -86,6 +86,8 @@ export class Player {
   vineLock = 0;
   /** Thrown by a spring: floats with hold-gravity to the apex whether or not jump is held. */
   launched = false;
+  /** Set by springLaunch: the gravity of the rise to the apex instead of the hold-gravity (0 = none). */
+  private launchGravity = 0;
   private runTimer = 0;
   private tier: JumpTier;
   private airCap: number;
@@ -239,7 +241,8 @@ export class Player {
       this.combo = 0;
       b.vy = 0;
     } else if (!this.clinging) {
-      b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
+      if (this.launched && this.launchGravity) b.vy += this.launchGravity;
+      else b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
       if (b.vy > p.maxFall) b.vy = p.fallReset;
     }
     this.updateAnim(dir);
@@ -438,9 +441,21 @@ export class Player {
     // A spring launch cannot be cut short, and it floats to its apex like a held jump.
     this.jumping = this.profile.variableJump !== 'cut';
     this.launched = true;
+    this.launchGravity = 0;
     this.sliding = 0;
     this.crouching = false;
     this.refitHitbox();
+  }
+
+  /**
+   * Thrown up by a springboard (SpringRed.springLaunch): `vy` is fixed, whatever the run speed, and
+   * the rise to the apex uses `riseGravity` whether or not jump is held (the original starts no
+   * jump rise; Character.springLaunch is empty for Mario).
+   */
+  springLaunch(vy: number, riseGravity: number): void {
+    this.launch(1);
+    this.body.vy = -vy;
+    this.launchGravity = riseGravity;
   }
 
   /** Bounce after a stomp. Holding jump bounces higher (uses the hold-gravity mechanic). */

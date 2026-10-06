@@ -41,6 +41,7 @@ export class HammerBro extends Enemy {
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.scores = ENEMY_SCORES.HAMMER_BRO;
+    this.corpseGravity = 0x002c7; // HammerBro.setStats: gravity = 1250 Flash px/s² (0.174 px/f²)
     this.fallsOffLedges = false;
     this.currentFrame = 'hammer-bro-1';
     this.body.vx = 0;

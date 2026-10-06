@@ -71,3 +71,5 @@ every time
   (`updateLoc`, `gravityPull`), both level XMLs, and ours: `src/game/entities/enemies/koopa.ts`
   (`PARA_HOP`, `fly`), `src/game/entities/enemies/enemy.ts` (`walkSpeed`, `patrol`),
   `src/game/entities/entity.ts` (`ENTITY_GRAVITY`), `src/content/levels/world8/8-1.map` lines 39-41.
+
+Status: fixed — hopping green Paratroopas now take off at 3.33 px/f and fall at 0.181 px/f² capped at 6.67 px/f (KoopaGreen FT_JUMP ySpeed 400, enemyGravDef 1300, enemyVYMaxPsvDef 800): 31 px high, 37 frames and about 18 px forward per hop (walk speed left at 0.5 px/f).

@@ -53,3 +53,5 @@ every time
 - Steps 1-2 use a share-link copy of `ll-6-4.map` with only `start:` changed. Step 3 uses the real level.
 - Source: `ll-w6/2026-10-05-piranha-first-rise-delay-and-speed.md`. The reviewer added the plant counts and the cycle arithmetic.
 - Reviewed: verified against `com/smbc/enemies/PiranhaGreen.as` (lines 22, 32, 91-99, 102-112, 115-147, 148-160), `com/smbc/enemies/PiranhaRed.as`, `com/smbc/main/LevObj.as` (line 323), both level XMLs (every `enemyPiranha*` token on the normal layer), and ours at b8379f9: `src/game/entities/enemies/piranha.ts` and every map's `piranha` / `piranha-down` lines.
+
+Status: fixed — a plant now starts rising the frame it appears (readyToRise is true at setStats; the 1 s wait only follows a rise or sink) and moves at 0.625 px/f (ySpeed 75), 39 frames for its 24 px.

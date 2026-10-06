@@ -291,20 +291,13 @@ const platform = plank.map((r) => r + r);
 
 const springPlate = ['.00000000000000.', '0bbbbbbbbbbbbbb0', '.00000000000000.'];
 const springBase = ['.00000000000000.', '0bbbbbbbbbbbbbb0', '.00000000000000.'];
-const coilRows = [
-  '...0220....0220.',
-  '..0220....0220..',
-  '.0220....0220...',
-  '..0220....0220..',
-  '...0220....0220.',
-  '....0220....0220',
-  '...0220....0220.',
-  '..0220....0220..',
-  '.0220....0220...',
-  '..0220....0220..',
-];
+/** `n` rows of the zig-zag coil (the indent cycles 3 2 1 2 3 4 3 2). */
+const coil = (n: number): string[] =>
+  Array.from({ length: n }, (_, i) => {
+    const indent = [3, 2, 1, 2, 3, 4, 3, 2][i % 8] as number;
+    return `${'.'.repeat(indent)}0220....0220${'.'.repeat(4 - indent)}`;
+  });
 const blank = '................';
-const spring0 = [...springPlate, ...coilRows, ...springBase];
 
 /* The rescued princess (original design): gold crown, brown hair, pink gown, 16x24. */
 const princess = [
@@ -419,13 +412,19 @@ const vineTop = [
   '.0444404440.....',
   '..0440.044......',
 ];
-const spring1 = [blank, blank, blank, blank, ...springPlate, ...coilRows.slice(2, 8), ...springBase];
-const spring2 = [
-  ...Array.from({ length: 8 }, () => blank),
+/**
+ * Springboard frames, 16x32 standing on their bottom edge: idle the spring is two tiles tall
+ * (SpringRed's clip fills its own cell and the one above), squashing to one tile as it is ridden.
+ */
+const springOfHeight = (h: number): string[] => [
+  ...Array.from({ length: 32 - h }, () => blank),
   ...springPlate,
-  ...coilRows.slice(4, 6),
+  ...coil(h - springPlate.length - springBase.length),
   ...springBase,
 ];
+const spring0 = springOfHeight(32);
+const spring1 = springOfHeight(24);
+const spring2 = springOfHeight(16);
 
 /* Goal flag: cloth to the left of the pole, white with a green border and diamond. */
 const flag = [

@@ -67,12 +67,13 @@ describe('Lost Levels: green springboard', () => {
     expect(l.entities).toContainEqual({ type: 'spring-green', x: 6, y: 12 });
   });
 
-  it('launches much higher than the red one, well off the top of the screen', () => {
+  it('bounces like the red one, but a jump pressed on it launches far off the top of the screen', () => {
     const red = apex('s', false);
     const redHeld = apex('s', true);
     const green = apex('y', false);
     const greenHeld = apex('y', true);
-    expect(green).toBeGreaterThan(redHeld);
+    // SpringGreen only raises boostSpringPwr; defSpringPwr (500) is shared.
+    expect(green).toBe(red);
     expect(greenHeld).toBeGreaterThan(redHeld * 3);
     expect(greenHeld).toBeGreaterThanOrEqual(10 * 16);
     expect(12 * 16 - greenHeld).toBeLessThan(0); // the feet leave the top of the screen

@@ -548,12 +548,14 @@ export class World {
       this.grabVines(p, input);
       const spring = this.springUnder(p);
       if (spring) {
-        spring.ride(input.held('jump'));
+        spring.ride(input.pressed('jump'));
         p.anim = 'jump';
         return;
       }
       p.update(input, this.map, this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
       p.def.behaviour.update(p, input, this);
+      // Springboards are solid: keep the player out of their box (landing on top starts a ride).
+      for (const e of this.entities) if (e instanceof Spring && e.alive) e.block(p);
       if (p.body.x < this.camera.x) {
         p.body.x = this.camera.x;
         if (p.body.vx < 0) p.body.vx = 0;

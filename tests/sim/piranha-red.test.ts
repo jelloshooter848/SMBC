@@ -211,3 +211,41 @@ describe('piranha plant colours', () => {
     expect(corpse?.palette).toBe('piranha-red');
   });
 });
+
+describe('piranha plant timing (PiranhaGreen.as)', () => {
+  /** Frames (from the plant's spawn) at which it first shows and first is fully out. */
+  const timing = (entity: string): { first: number; full: number } => {
+    let spawned = -1;
+    let first = -1;
+    let full = -1;
+    runSim({
+      level: level(entity),
+      character: MARIO,
+      script: none,
+      maxFrames: 200,
+      controller: (w, f) => {
+        holdAt(w, 100);
+        const p = plant(w);
+        if (p && spawned < 0) spawned = f;
+        if (p && first < 0 && toPx(p.body.h) > 0) first = f - spawned;
+        if (p && full < 0 && toPx(p.body.h) >= 24) full = f - spawned;
+        return [];
+      },
+    });
+    return { first, full };
+  };
+
+  it('rises as soon as it appears (readyToRise starts true; WAIT_TMR only runs between moves)', () => {
+    for (const e of [`piranha ${PIPE} 11`, `piranha-down ${PIPE} 7`]) {
+      const { first } = timing(e);
+      expect(first).toBeGreaterThanOrEqual(0);
+      expect(first).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('rises at 75 Flash px/s = 0.625 px a frame: 24 px in about 38 frames', () => {
+    const { first, full } = timing(`piranha ${PIPE} 11`);
+    expect(full - first).toBeGreaterThanOrEqual(36);
+    expect(full - first).toBeLessThanOrEqual(39);
+  });
+});

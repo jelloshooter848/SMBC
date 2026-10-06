@@ -64,7 +64,7 @@ describe('Lost Levels 2-1', () => {
       level: bare('ll-2-1', 114, 6),
       character: MARIO,
       script: none,
-      maxFrames: 400,
+      maxFrames: 800,
       controller: (w) => {
         spring ??= w.entities.find((e): e is Spring => e instanceof Spring && toPx(e.body.x) >> 4 === 114);
         if (spring?.busy) launched = true;

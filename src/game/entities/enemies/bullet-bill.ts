@@ -19,6 +19,7 @@ export class BulletBill extends Enemy {
     this.spriteOffsetY = 2;
     this.currentFrame = 'bullet';
     this.scores = ENEMY_SCORES.BULLET_BILL;
+    this.corpseGravity = 0x002c7; // BulletBill.setStats: gravity = 1250 Flash px/s² (0.174 px/f²)
     this.layer = 'front';
     this.activated = true;
     this.despawnMargin = 32;

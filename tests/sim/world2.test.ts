@@ -166,7 +166,7 @@ describe('World 2: bridges, springs, vines and lava', () => {
     expect(r.world.entities.some((e) => e instanceof Cheep)).toBe(false);
   });
 
-  it('the 2-1 springboard throws the player higher than a jump, higher still with jump held', () => {
+  it('the 2-1 springboard bounces the player 2.6 tiles, about 10 with jump pressed on it', () => {
     const l = level('2-1');
     expect(l.entities).toContainEqual({ type: 'spring', x: 188, y: 12 });
     const bounce = (hold: boolean): number => {
@@ -195,8 +195,11 @@ describe('World 2: bridges, springs, vines and lava', () => {
     };
     const plain = bounce(false);
     const held = bounce(true);
-    expect(plain).toBeGreaterThanOrEqual(80);
-    expect(held).toBeGreaterThan(plain + 48);
+    // SpringRed.springLaunch: 500 Flash px/s plain (2.6 tiles above the launch spot, one tile up),
+    // 1000 when jump is pressed on the spring (about 10.4 tiles).
+    expect(plain).toBeGreaterThanOrEqual(16 + 40);
+    expect(plain).toBeLessThanOrEqual(16 + 46);
+    expect(held).toBeGreaterThan(16 + 160);
   });
 
   it('hitting the vine brick grows a beanstalk; climbing off the top leads to the sky', () => {

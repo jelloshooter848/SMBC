@@ -10,6 +10,7 @@ export class Goomba extends Enemy {
     this.spriteOffsetY = 2;
     this.currentFrame = 'goomba-0';
     this.scores = ENEMY_SCORES.GOOMBA;
+    this.corpseGravity = 0x0031c; // Goomba.setStats: gravity = 1400 Flash px/s² (0.194 px/f²)
   }
 
   update(world: World): void {

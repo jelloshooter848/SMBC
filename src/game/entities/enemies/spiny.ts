@@ -19,6 +19,7 @@ export class Spiny extends Enemy {
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
     this.scores = ENEMY_SCORES.SPINEY;
+    this.corpseGravity = 0x0031c; // Spiney extends Goomba: gravity = 1400 Flash px/s² (0.194 px/f²)
     this.vulnerability = { ...this.vulnerability, stomp: 'hurtAttacker', bump: 'bounce' };
     this.currentFrame = egg ? 'spiny-egg' : 'spiny-0';
     this.activated = true;

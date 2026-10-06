@@ -135,7 +135,7 @@ describe('headless sim on World 1', () => {
     expect(b.x + b.w).toBeLessThanOrEqual(5 * 16 * 256);
   });
 
-  it("1-3's red paratroopas bob three tiles around their spawn height and a stomp clips their wings", () => {
+  it("1-3's red paratroopas bob ±42.5 px around their spawn height and a stomp clips their wings", () => {
     const l = level('1-3');
     l.start = { x: 71, y: 8 };
     l.startMode = 'stand';
@@ -159,8 +159,9 @@ describe('headless sim on World 1', () => {
     expect(para).toBeDefined();
     const k = para as Koopa;
     expect(k.color).toBe('red');
-    expect(maxY - minY).toBeGreaterThanOrEqual(90);
-    expect(maxY - minY).toBeLessThanOrEqual(98);
+    // KoopaGreen FT_VERT: waveRange 85 Flash px = ±42.5 px here.
+    expect(maxY - minY).toBeGreaterThanOrEqual(84);
+    expect(maxY - minY).toBeLessThanOrEqual(86);
     expect(k.currentFrame).toMatch(/^koopa-fly-/);
     expect(k.hit({ kind: 'stomp', amount: 1, owner: null, dirX: 1 }, r.world)).toBe('shell');
     expect(k.wings).toBe(false);
