@@ -38,7 +38,7 @@ describe('flagpole touch clears the stage (EventManager.touchedFlagPole)', () =>
           const cam = w.camera;
           near = [
             new Goomba(px(190 * 16), px(12 * 16)),
-            new BulletBill(px(192 * 16), px(3 * 16), -1),
+            new BulletBill(px(204 * 16), px(3 * 16), -1), // still on screen at the touch at full bill speed
             new Projectile(px(191 * 16), px(2 * 16), 1, HAMMER, null),
             new Goomba(cam.right + px(20), px(4 * 16)), // just off screen, still on the stage
           ];
