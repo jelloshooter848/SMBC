@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../characters/registry';
-import { fontText, wrapText } from '../hud/text';
+import { fontText } from '../hud/text';
+import { wrapPrompt } from './stage-prompts';
 import { LESSONS, lessonsFor, promptActions, promptText } from './lessons';
 
 /** Actions a prompt token may name: the face buttons (directions are written plainly). */
 const BUTTONS = ['jump', 'attack', 'special', 'select'];
-import { PROMPT_COLS, PROMPT_LINES } from './room';
+import { ROOM_COLS, ROOM_LINES } from './room';
 
 /**
  * A button named by its letter ("B", "BUTTON C"), or "A" used as one ("PRESS A", "(A)", "A:") rather
@@ -51,10 +52,10 @@ describe('hero lessons', () => {
         // Bare: each [LABEL:action] token as its label (the box falls back to this).
         const bare = promptText(l.prompt);
         expect(fontText(bare), l.id).toBe(bare);
-        const lines = wrapText(bare, PROMPT_COLS);
-        expect(lines.length, l.id).toBeLessThanOrEqual(PROMPT_LINES);
-        for (const line of lines) expect(line.length).toBeLessThanOrEqual(PROMPT_COLS);
-        expect(PROMPT_COLS).toBeLessThanOrEqual(28);
+        const lines = wrapPrompt(bare, ROOM_COLS);
+        expect(lines.length, l.id).toBeLessThanOrEqual(ROOM_LINES);
+        for (const line of lines) expect(line.length).toBeLessThanOrEqual(ROOM_COLS);
+        expect(ROOM_COLS).toBeLessThanOrEqual(28);
         expect(bare, l.id).not.toMatch(LETTER);
         expect(bare, l.id).not.toMatch(PROSE);
         // Tokens name real button actions, and their labels are the hero's ability words.

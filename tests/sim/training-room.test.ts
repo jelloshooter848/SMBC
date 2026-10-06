@@ -10,7 +10,7 @@ import { lessonsFor, LUIGI_HIGH_JUMP_PX, LUIGI_COAST_PX } from '@game/tutorial/l
 import {
   PracticeRoomScene,
   practiceRoom,
-  PROMPT_LINES,
+  ROOM_LINES,
   TrainingMenuScene,
   type TrainingResult,
 } from '@game/tutorial/room';
@@ -287,7 +287,7 @@ describe('the practice room', () => {
       bound.keyboard.special = ['ShiftRight'];
       bound.keyboard.select = ['ControlRight'];
     }
-    expect(scene.promptWrapped().length).toBeLessThanOrEqual(PROMPT_LINES);
+    expect(scene.promptWrapped().length).toBeLessThanOrEqual(ROOM_LINES);
     expect(scene.promptWrapped().join(' ')).toBe('USE TOOL THROWS THE BOOMERANG. TOOLS PICKS ANOTHER TOOL.');
   });
 

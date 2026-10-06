@@ -139,8 +139,8 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
   is snapshotted and restored around it (as the mini games do), so lives, score and power are never
   touched. Hit points stay topped up, so nothing in the room can end it. The HUD shows TRAINING
   where WORLD and TIME go, and no score or coins (`drawHud`'s `place` option).
-- **Lessons** (`lessons.ts`). `Lesson { id, prompt, done(tracker), setup?(room) }` per hero in
-  `LESSONS`; `LessonTracker` watches the player and world each frame (jumps and their height,
+- **Lessons** (`lessons.ts`). `TrainingLesson { id, prompt, done(tracker), setup?(room) }` per hero in
+  `LESSONS`; `MoveStats` watches the player and world each frame (jumps and their height,
   ground speed and glide, attacks, shots by kind and direction, charge shots, slides, crouching,
   tool changes, wall cling and wall jumps, scratch flags like the morph ball, bombs, shield blocks,
   gap crossings, and how the dummy was hit). The tracker is reset when a lesson comes up, so each
@@ -148,7 +148,8 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
   button letters); a button's ability is written `[SHOOT:attack]` and shown through `abilityHint`
   ("SHOOT (X)" with keys or a pad, "SHOOT" on touch), falling back to the bare names when that
   would not fit 3 lines of 25 columns (`promptText`). They come one at a time in a centred box
-  under the HUD (`drawPromptBox`), announced; each ticks off with a sound and GOOD!, and after
+  under the HUD (`drawRoomBox`: the stage tutorials' `drawPromptBox` from `stage-prompts.ts`,
+  24 px margins, with a green tick), announced; each ticks off with a sound and GOOD!, and after
   the last READY! ends the room. MENU in the room: Continue / Skip training. Walking, jumping and
   the basic attack never tick a move lesson (tested per hero): Luigi's stop counts only from a run,
   Bill's aim counts once per shot (a Spread fan is one direction) and needs two aimed directions.
