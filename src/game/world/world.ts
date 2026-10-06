@@ -167,6 +167,11 @@ const AUTO_WALK_INPUT: InputFrame = {
 
 const COOP_RESPAWN_FRAMES = 120;
 
+/** TIME units the clear tally turns into points each frame (the original: one every two frames). */
+export const TALLY_PER_FRAME = 2;
+/** Points per TIME unit left (ScoreValue.TIME_REMAINING). */
+const TIME_POINTS = 50;
+
 /**
  * One loaded level: tiles, camera, players, entities and the rules that tie them together.
  * Supports one or two players; with two, deaths respawn from a shared life pool.
@@ -665,7 +670,7 @@ export class World {
     if (transitioning) return;
     if (this.clear) {
       this.tickScorePopups();
-      return this.updateClear();
+      return this.updateClear(inputs);
     }
     if (this.bossClear) {
       this.tickScorePopups();
@@ -1663,7 +1668,7 @@ export class World {
     for (const e of this.entities) if (e.alive && e instanceof ScorePopup) e.update();
   }
 
-  private updateClear(): void {
+  private updateClear(inputs: readonly InputFrame[]): void {
     const c = this.clear as NonNullable<typeof this.clear>;
     const p = c.player;
     const b = p.body;
@@ -1713,15 +1718,21 @@ export class World {
       }
       case 'countdown':
         // The original's StatManager.convertTimeToScore: a 10 ms timer takes one TIME unit per
-        // tick for TIME_PT_VAL (ScoreValue.TIME_REMAINING = 50) points. The timer is held back by
-        // the locked 30 fps (GameSettings.FRAME_RATE_LOCKED); 3.1.21 measures about 30 units a
-        // second, so one unit every two of our frames.
+        // tick for TIME_PT_VAL (ScoreValue.TIME_REMAINING = 50) points; held back by the locked
+        // 30 fps (GameSettings.FRAME_RATE_LOCKED), 3.1.21 measures about 30 units a second.
+        // Deliberately faster here (owner feedback: a full clock took over 13 s): TALLY_PER_FRAME
+        // units a frame (400 in about 3.3 s), and JUMP finishes it at once for the same points.
         if (this.time && this.time > 0) {
-          if (c.t % 2 === 1) {
-            this.time--;
-            this.addScore(50);
+          if (inputs.some((f) => f.pressed('jump'))) {
+            this.addScore(this.time * TIME_POINTS);
+            this.time = 0;
+            this.audio.sfx('timer-tick');
+          } else {
+            const n = Math.min(TALLY_PER_FRAME, this.time);
+            this.time -= n;
+            this.addScore(n * TIME_POINTS);
+            if (c.t % 4 === 1) this.audio.sfx('timer-tick');
           }
-          if (c.t % 4 === 1) this.audio.sfx('timer-tick');
         } else {
           c.phase = 'flag';
           c.t = 0;

@@ -48,7 +48,10 @@ describe('hero lessons', () => {
       const lessons = lessonsFor(id);
       expect(new Set(lessons.map((l) => l.id)).size).toBe(lessons.length);
       const vocab = vocabulary(id);
-      for (const l of lessons) {
+      const prompts = lessons.flatMap((l) =>
+        [l.prompt, l.touchPrompt].flatMap((prompt) => (prompt ? [{ id: l.id, prompt }] : [])),
+      );
+      for (const l of prompts) {
         // Bare: each [LABEL:action] token as its label (the box falls back to this).
         const bare = promptText(l.prompt);
         expect(fontText(bare), l.id).toBe(bare);

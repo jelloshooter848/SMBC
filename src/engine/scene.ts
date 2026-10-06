@@ -44,6 +44,15 @@ export class SceneStack {
     while (this.stack.length) this.pop();
   }
 
+  /** The topmost scene `pred` accepts, or undefined. */
+  find(pred: (s: Scene) => boolean): Scene | undefined {
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      const s = this.stack[i] as Scene;
+      if (pred(s)) return s;
+    }
+    return undefined;
+  }
+
   update(inputs: InputFrame[]): void {
     const first = inputs[0];
     if (first) this.top?.update(first, inputs);

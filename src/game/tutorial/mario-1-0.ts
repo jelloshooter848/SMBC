@@ -58,6 +58,8 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     id: 'run',
     at: 17,
     text: 'HOLD [RUN:attack] TO RUN, THEN [JUMP:jump] OVER THE GAP.',
+    // The touch pad runs too: a push to its outer ring (touch-logic.ts DPAD_RUN_R).
+    touchText: 'TO RUN, PUSH THE D-PAD FAR TO THE SIDE OR HOLD [RUN:attack]. THEN [JUMP:jump] OVER THE GAP.',
     done: (w) => landedPast(w, 29),
   },
   {
@@ -142,7 +144,8 @@ function fit(lines: readonly string[]): string[] {
 /** Toad's pages one after another over the frozen level (CardScene panel, at the top), then `done`. */
 function greet({ game, scene }: TutorialContext, done: () => void): void {
   game.ctx.audio.sfx('pause');
-  const prompt = fontText(abilityHint(game, 'OK', 'jump'));
+  // Asked every frame: switching to the touch pad mid-dialogue drops the key ("OK (Z)" → "OK").
+  const prompt = (): string => fontText(abilityHint(game, 'OK', 'jump'));
   const show = (i: number): void => {
     const page = TOAD_PAGES[i];
     if (!page) {
