@@ -9,7 +9,7 @@ import type { LevelData } from '../level/schema';
  * Ids are main level ids ('1-2', Lost Levels 'll-5-1'), as map nodes name them.
  */
 export function secretExitLevels(): ReadonlySet<string> {
-  cached ??= find();
+  cached ??= secretExitsIn(levelIds().map((id) => getLevel(id)));
   return cached;
 }
 
@@ -20,21 +20,25 @@ export function hasSecretExit(id: string | undefined): boolean {
 
 let cached: ReadonlySet<string> | undefined;
 
-function find(): ReadonlySet<string> {
-  const ids = levelIds();
-  const levels = new Map<string, LevelData>(ids.map((id) => [id, getLevel(id)]));
+/**
+ * The rule behind secretExitLevels, over any set of levels, given in play order (the main level
+ * after a level is its next one when it has no flagpole exit).
+ */
+export function secretExitsIn(levels: readonly LevelData[]): Set<string> {
+  const byId = new Map<string, LevelData>(levels.map((l) => [l.id, l]));
+  const ids = levels.map((l) => l.id);
   const mainOf = (id: string): string => {
     let at = id;
     for (let hops = 0; hops < 8; hops++) {
-      const parent = levels.get(at)?.parent;
+      const parent = byId.get(at)?.parent;
       if (!parent || parent === at) return at;
       at = parent;
     }
     return at;
   };
   const families = new Map<string, LevelData[]>();
-  for (const [id, level] of levels) {
-    const main = mainOf(id);
+  for (const level of levels) {
+    const main = mainOf(level.id);
     families.set(main, [...(families.get(main) ?? []), level]);
   }
   const mains = ids.filter((id) => mainOf(id) === id);

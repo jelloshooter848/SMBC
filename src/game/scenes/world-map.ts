@@ -796,6 +796,7 @@ export class WorldMapScene implements Scene {
       case 'bonus':
         return cleared ? 'map-node-cleared' : 'map-node-bonus';
       case 'castle':
+        if (hasSecretExit(n.level)) return cleared ? 'map-castle-secret-cleared' : 'map-castle-secret';
         return cleared ? 'map-castle-cleared' : 'map-castle';
       default:
         // Levels with a secret (alternate) exit keep their own look, cleared or not.

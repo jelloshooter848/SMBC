@@ -228,4 +228,42 @@ describe('secret-exit node icons', () => {
   it('are on the items sheet', () => {
     for (const id of SECRET) expect(SPRITES.items?.frames[id], id).toBeDefined();
   });
+
+  describe('the secret-exit castle (Lost B-4)', () => {
+    const pairs = [
+      ['map-castle', 'map-castle-secret'],
+      ['map-castle-cleared', 'map-castle-secret-cleared'],
+    ] as const;
+
+    it('is the castle outline, flag once cleared, with a keyhole for a door', () => {
+      for (const [plainId, id] of pairs) {
+        const [plain, f] = [frame(plainId), frame(id)];
+        expect(f).toHaveLength(16);
+        for (const row of f) expect(row).toHaveLength(16);
+        for (const [x, y] of cells)
+          expect(at(f, x, y) === '.', `${id} ${x},${y}`).toBe(at(plain, x, y) === '.');
+        // The keyhole: black where the plain castle's wall is, above and beside its door.
+        const hole = cells.filter(([x, y]) => at(plain, x, y) === 'b' && at(f, x, y) === '0');
+        expect(hole.length, id).toBeGreaterThanOrEqual(2);
+        for (const [x, y] of hole) expect(x >= 6 && x <= 9 && y >= 9, `${id} ${x},${y}`).toBe(true);
+      }
+      expect(frame('map-castle-secret').join('')).not.toContain('4');
+      expect(frame('map-castle-secret-cleared').slice(0, 4).join('')).toContain('4');
+    });
+
+    it('has walls apart from the plain grey castle in every palette mode', () => {
+      const dist = (a: string, b: string) => {
+        const [p, q] = [hexToRgb(a), hexToRgb(b)];
+        return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+      };
+      for (const [plainId, id] of pairs) {
+        const [wall, secretWall] = [charIndex(body(frame(plainId))), charIndex(body(frame(id)))];
+        for (const mode of PALETTE_MODES) {
+          const pal = resolvePalette(PALETTES, 'items', mode);
+          expect(dist(pal[wall] as string, pal[secretWall] as string), `${id} ${mode}`).toBeGreaterThan(80);
+        }
+        expect(SPRITES.items?.frames[id], id).toBeDefined();
+      }
+    });
+  });
 });

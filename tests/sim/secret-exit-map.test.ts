@@ -119,6 +119,13 @@ describe('secret-exit level nodes', () => {
     expect(h.frameAt('hub')).toMatch(/^map-warp/);
   });
 
+  it('Lost B-4, a castle with a warp zone, uses the secret-exit castle, open and cleared', () => {
+    expect(onMap('ll-11').frameAt('ll-11-4')).toBe('map-castle-secret');
+    expect(onMap('ll-11', 'start', ['ll-11-4']).frameAt('ll-11-4')).toBe('map-castle-secret-cleared');
+    expect(onMap('ll-11').frameAt('ll-11-2')).toBe('map-node-open');
+    expect(onMap('ll-1', 'start', ['ll-1-4']).frameAt('ll-1-4')).toBe('map-castle-cleared');
+  });
+
   it('the announcer says "secret exit" for such a node only', () => {
     const h = onMap('smb-1');
     expect(h.map.nodeLabel(h.node('1-2'))).toBe('World 1-2, open, secret exit');
@@ -156,5 +163,23 @@ describe('map header world label', () => {
     expect(world(h)).toBe(`WORLD ${h.map.node}`);
     const [title, label] = h.r.texts as [string, string];
     expect(title.length + label.length).toBeLessThanOrEqual(30);
+  });
+
+  it('walking off 1-1 shows "WORLD 1", then "WORLD 1-2" on arrival', () => {
+    const h = onMap('smb-1', '1-1');
+    expect(world(h)).toBe('WORLD 1-1');
+    const path = (mapPage('smb-1') as WorldMapPage).paths.find((p) => p.from === '1-1' && p.to === '1-2');
+    const [[ax, ay], [bx, by]] = path?.points as [[number, number], [number, number]];
+    const dir: Action = bx > ax ? 'right' : bx < ax ? 'left' : by > ay ? 'down' : 'up';
+    h.step([dir]);
+    h.step();
+    expect(h.map.mode).toBe('walk');
+    expect(world(h)).toBe('WORLD 1');
+    for (let i = 0; i < 300 && h.map.mode === 'walk'; i++) {
+      expect(world(h)).toBe('WORLD 1');
+      h.step();
+    }
+    expect(h.map.node).toBe('1-2');
+    expect(world(h)).toBe('WORLD 1-2');
   });
 });
