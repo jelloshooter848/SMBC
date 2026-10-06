@@ -233,6 +233,12 @@ export const LINK: CharacterDef = {
   },
   guide: LINK_GUIDE,
   behaviour: {
+    // The spells' timers keep running on a vine, where update (attacks) is skipped.
+    vineTick(p) {
+      if (p.scratch.jumpSpell) p.scratch.jumpSpell--;
+      if (p.scratch.shieldSpell) p.scratch.shieldSpell--;
+      applyJumpSpell(p);
+    },
     update(p, input, world) {
       const b = p.body;
       if (p.scratch.jumpSpell) p.scratch.jumpSpell--;

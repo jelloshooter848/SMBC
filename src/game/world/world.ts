@@ -247,8 +247,10 @@ export class World {
           this.entities.push(this.vineArrival);
         }
         const vine = this.vineArrival;
+        def.behaviour.onGrabVine?.(p); // a carried morph ball unrolls before the height is used
+        const h = p.body.h;
         // `bottom` leaves room for the body below the base: he starts there and climbs up.
-        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + hb.h };
+        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + toPx(h) };
         p.body.x = vine.centerX - (p.body.w >> 1);
         p.body.y = px(vine.basePx);
         p.anim = 'climb';
@@ -653,6 +655,7 @@ export class World {
         p.activeMelee = null;
         p.scratch.upThrust = 0;
         p.scratch.downThrust = 0;
+        p.def.behaviour.vineTick?.(p);
       } else p.def.behaviour.update(p, input, this);
       // Springboards are solid: keep the player out of their box (landing on top starts a ride).
       for (const e of this.entities) if (e instanceof Spring && e.alive) e.block(p);
@@ -822,6 +825,7 @@ export class World {
         p.body.vy = 0;
         p.jumping = false;
         p.anim = 'climb';
+        p.def.behaviour.onGrabVine?.(p);
         return;
       }
     }

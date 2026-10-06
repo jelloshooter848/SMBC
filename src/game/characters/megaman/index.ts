@@ -249,6 +249,11 @@ export const MEGAMAN: CharacterDef = {
   },
   guide: MEGAMAN_GUIDE,
   behaviour: {
+    // A charge held into a vine is dropped (no attacks on a vine: MegaManBase.pressAtkBtn
+    // returns on ST_VINE), so letting go there fires nothing.
+    onGrabVine(p) {
+      p.scratch.chargeT = 0;
+    },
     update(p, input, world) {
       cycleTool(p, input, tools(p), world);
       if (p.stun > 0 || p.sliding > 0) {
