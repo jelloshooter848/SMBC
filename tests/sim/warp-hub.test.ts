@@ -170,7 +170,8 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     );
     expect(h.map().page.id).toBe('smb-1');
     expect(h.map().revealing).toBe(true);
-    expect(loadSave(1)).toMatchObject({ cleared: ['1-1', '1-2'], secrets: ['bonus-1'] });
+    // Loaded, a file with clears counts the tutorial (1-0) as cleared too.
+    expect(loadSave(1)).toMatchObject({ cleared: ['1-0', '1-1', '1-2'], secrets: ['bonus-1'] });
     h.until(() => h.map().mode === 'idle', 800);
     expect(h.map().node).toBe('1-2');
     const w1 = mapPage('smb-1') as WorldMapPage;

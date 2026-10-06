@@ -157,8 +157,9 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     schema: 1,
     id,
     name: header.name ?? `WORLD ${id}`,
-    world: Number(header.world ?? ws ?? 1) || 1,
-    stage: Number(header.stage ?? ss ?? 1) || 1,
+    world: whole(header.world ?? ws, 1),
+    // Stage 0 is real: Mario's tutorial stage 1-0.
+    stage: whole(header.stage ?? ss, 1),
     theme,
     music: header.music ?? themeMusic(theme),
     time: timeRaw === 'inherit' || timeRaw === 'null' ? null : Number(timeRaw),
@@ -174,6 +175,12 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     parent: header.parent ?? null,
   };
   return level;
+}
+
+/** A whole number ≥ 0 from a header or id part, else `d`. */
+function whole(v: string | undefined, d: number): number {
+  const n = Number(v);
+  return v !== undefined && v.trim() !== '' && Number.isInteger(n) && n >= 0 ? n : d;
 }
 
 function parseZone(line: string): Zone {

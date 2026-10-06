@@ -258,6 +258,10 @@ const decorFrames: Record<string, Size> = {
   fence: T16,
   'castle-small': [80, 80],
   'castle-big': [144, 176],
+  'ruin-pillar': [16, 48],
+  'ruin-pillar-broken': [16, 32],
+  'ruin-statue': [16, 32],
+  'ruin-temple': [48, 48],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {

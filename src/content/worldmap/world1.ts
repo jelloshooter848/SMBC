@@ -41,7 +41,11 @@ export const WORLD_1: WorldMapPage = {
       [13, 10],
     ],
     [5, 11],
-  ).map((n): MapNode => (n.kind === 'bonus' ? { ...n, kind: 'warp', to: 'hub', label: 'WARP ZONE' } : n)),
+  )
+    // The start is Mario's tutorial stage 1-0 (0.5.0): a new file stands on it, and the road to
+    // 1-1 opens once it is cleared. It keeps the id 'start' (saved in lastNode and reveal ids).
+    .map((n): MapNode => (n.kind === 'start' ? { ...n, level: '1-0' } : n))
+    .map((n): MapNode => (n.kind === 'bonus' ? { ...n, kind: 'warp', to: 'hub', label: 'WARP ZONE' } : n)),
   paths: [
     { from: 'start', to: '1-1', points: poly([0, 10], [2, 10], [2, 7], [4, 7]) },
     { from: '1-1', to: '1-2', points: poly([4, 7], [4, 4], [6, 4]) },

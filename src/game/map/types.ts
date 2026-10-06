@@ -43,7 +43,11 @@ export type MapNodeKind = 'start' | 'level' | 'castle' | 'bonus' | 'warp';
 export interface MapNode {
   id: string;
   kind: MapNodeKind;
-  /** Main level id ('1-2', not '1-2-intro'; Lost Levels 'll-1-2'); absent for 'start' and 'warp'. */
+  /**
+   * Main level id ('1-2', not '1-2-intro'; Lost Levels 'll-1-2'); absent for 'warp'. A 'start'
+   * node may carry one (World 1's start is Mario's tutorial stage '1-0'): it stays the page's
+   * arrival node, JUMP on it enters the level, and its roads open once the level is cleared.
+   */
   level?: string;
   /** Tile on the page's 16×15 grid (16 px tiles). */
   x: number;
@@ -72,6 +76,11 @@ export interface MapNode {
   hint?: string;
   /** Warp nodes: the hint line while it is open ('LOST LEVELS'; default: the target page's title). */
   label?: string;
+  /**
+   * Level nodes hiding a captive hero (map/captives.ts): the side of the node its silhouette and
+   * trophy stand on. Default: the right, or the left when a road leaves the node to the right.
+   */
+  heroSpot?: 'left' | 'right';
 }
 
 export interface MapPath {

@@ -13,8 +13,17 @@ import { simonPalettes, simonDef } from './simon';
 import { ryuPalettes, ryuDef } from './ryu';
 import { billPalettes, billDef } from './bill';
 import { mapPalettes, mapDef } from './map';
+import {
+  dungeonDef,
+  dungeonEnemiesDef,
+  dungeonEnemiesPalettes,
+  dungeonPalettes,
+  linkTdDef,
+  linkTdPalettes,
+} from './dungeon';
+import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
-import { HERO_FX } from './palette-fx';
+import { HERO_FX, mapShadeFx } from './palette-fx';
 
 /** All built-in sprite definitions keyed by sheet id. */
 export const SPRITES: Record<string, SpriteDef> = {
@@ -31,6 +40,10 @@ export const SPRITES: Record<string, SpriteDef> = {
   ryu: ryuDef,
   bill: billDef,
   map: mapDef,
+  // Walls and doors are drawn for the north edge; the top-down kit adds rotated west twins.
+  dungeon: withSideFrames(dungeonDef),
+  'link-td': linkTdDef,
+  'dungeon-enemies': dungeonEnemiesDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -47,6 +60,9 @@ const defaults: Record<string, readonly string[]> = {
   ...ryuPalettes,
   ...billPalettes,
   ...mapPalettes,
+  ...dungeonPalettes,
+  ...linkTdPalettes,
+  ...dungeonEnemiesPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
@@ -98,4 +114,8 @@ const trueFormHc = modes.highContrast?.['bowser-true-form'];
 if (modes.highContrast && trueFormHc)
   modes.highContrast['bowser-true-form'] = trueFormHc.map((c, i) => (i === 1 ? NES.gray : c));
 
-export const PALETTES: PaletteBook = { default: defaults, ...modes, fx: { ...HERO_FX } };
+export const PALETTES: PaletteBook = {
+  default: defaults,
+  ...modes,
+  fx: { ...HERO_FX, ...mapShadeFx(mapPalettes) },
+};

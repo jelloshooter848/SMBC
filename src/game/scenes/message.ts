@@ -70,6 +70,8 @@ export interface CardOptions {
   panel?: boolean;
   /** With `panel`: a continue prompt (the ability's name, e.g. "OK") at the box's bottom right. */
   prompt?: string;
+  /** With `panel`: the box goes near the top, under the HUD (the tutorial's Toad), not the bottom. */
+  top?: boolean;
 }
 
 /**
@@ -93,6 +95,7 @@ export class CardScene implements Scene {
     this.keys = opts.keys ?? ['start', 'attack'];
     this.panel = world !== null && opts.panel === true;
     this.prompt = opts.prompt ?? '';
+    this.top = opts.top === true;
     this.translucent = world !== null;
     if (world && !this.panel) world.castleText = [...lines];
   }
@@ -100,6 +103,7 @@ export class CardScene implements Scene {
   private readonly keys: readonly Action[];
   private readonly panel: boolean;
   private readonly prompt: string;
+  private readonly top: boolean;
 
   /** B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. A when it goes on too. */
   touchLabels(): TouchLabels {
@@ -119,7 +123,7 @@ export class CardScene implements Scene {
     if (this.panel) {
       const rows = this.lines.length + (this.prompt ? 1 : 0);
       const h = rows * 10 + 12;
-      const y = SCREEN_H - 12 - h;
+      const y = this.top ? 40 : SCREEN_H - 12 - h;
       r.rect(12, y, SCREEN_W - 24, h, '#fcfcfc');
       r.rect(14, y + 2, SCREEN_W - 28, h - 4, '#000');
       this.lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + 7 + i * 10));

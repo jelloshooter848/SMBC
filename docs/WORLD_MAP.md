@@ -64,15 +64,37 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 
 ## Nodes
 
-| kind              | Meaning                                                                      |
-| ----------------- | ---------------------------------------------------------------------------- |
-| `start`           | The page's arrival node. May also carry the warp fields (see below).         |
-| `level`, `castle` | Enter `level` with JUMP. A castle clear opens the page(s) its exits lead to. |
-| `bonus`           | Hidden until `unlock` (a secret key) is found.                               |
-| `warp`            | JUMP warps to another page (see below).                                      |
+| kind              | Meaning                                                                       |
+| ----------------- | ----------------------------------------------------------------------------- |
+| `start`           | The page's arrival node. May also carry the warp fields or a `level` (below). |
+| `level`, `castle` | Enter `level` with JUMP. A castle clear opens the page(s) its exits lead to.  |
+| `bonus`           | Hidden until `unlock` (a secret key) is found.                                |
+| `warp`            | JUMP warps to another page (see below).                                       |
 
 A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the file has that secret
 (`MapProgress.secrets`). Bonus nodes always need one.
+
+A level node whose level hides a captive hero shows the map hint beside it (docs/HEROES.md "The
+map hint"): on its right, or its left when a road leaves to the right; `heroSpot: 'left' |
+'right'` picks the side. Keep that side's tile free of decorations.
+
+### World 1's start is a level: Mario's tutorial 1-0 (0.5.0)
+
+- **A start node may carry `level`**: it stays the page's arrival node (id `start`), JUMP on it
+  enters the level, and its roads count as walked only once that level is cleared
+  (`rules.pathFromDone`). Only World 1's does: `level: '1-0'` (`world1.ts`), so a new file stands
+  on 1-0 with 1-1 locked, and clearing 1-0 (or **Pause → Skip tutorial**, `Game.skipTutorial`)
+  draws in `smb-1:start>1-1` and `smb-1:1-1`. The hero stays on `start`.
+- The map treats it as a level node: header `WORLD 1-0`, the open/cleared node look, the
+  announcer's "World 1-0, open".
+- Entering it skips character select: the stage is played as Mario (`StageTutorial.hero`).
+- **Old files** (no format change): a file that has cleared anything counts `1-0` as cleared on
+  load (`save-files.ts withTutorial`), so 1-1 stays open. Their `position` / `lastNode` `start`
+  is 1-0's node now, so nothing is remapped; a file with no clears standing past World 1's start
+  (1-1 was open on a new file before 0.5.0) goes back to `start`.
+- The stage itself, its lessons and the story: `src/game/tutorial/` (`stage-prompts.ts` is the
+  reusable lesson/prompt part, `stage-tutorial.ts` the director, `mario-1-0.ts` the content) and
+  `src/content/levels/world1/1-0.map`, `1-0-pipe.map`.
 
 ### Warp nodes
 
@@ -147,7 +169,7 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 
 ## Progress, reveals and saves
 
-- `MapProgress`: `cleared` (main level ids), `pages` (open page ids, `smb-1` always),
+- `MapProgress`: `cleared` (main level ids, `1-0` included once the tutorial is cleared), `pages` (open page ids, `smb-1` always),
   `secrets`, `position: { page, node }`, `gameCleared`.
 - Reveal ids are page-qualified: `'<page>:<id>'` (`'hub:start>warp-lost'`, `'smb-1:1-4>smb-2'`); an
   exit's id is `'<from>><to page>'`. Each page draws in only its own when shown.

@@ -5,19 +5,20 @@ import { LevelScene } from '@game/scenes/level';
 import { FileSelectScene } from '@game/scenes/file-select';
 import { CardScene, MessageScene } from '@game/scenes/message';
 import { MenuScene } from '@game/scenes/menu';
-import { StoryScene } from '@game/scenes/story';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
+import { SAMUS } from '@game/characters/samus';
 import type { Captive } from '@game/entities/objects/captive';
 import { loadSave, newSave } from '@game/save/save-files';
 import { miniGameFor, type MiniGameDef, type MiniGameResult } from '@game/minigames';
 import type { Action } from '@engine/input/actions';
 import type { Scene } from '@engine/scene';
 import type { Game } from '@game/scenes/game';
+import { TOAD_PAGES } from '@game/tutorial/mario-1-0';
 import {
   captives,
   draw,
@@ -154,7 +155,7 @@ describe('save files lock heroes in campaign play', () => {
 });
 
 describe('the story intro', () => {
-  it('a NEW file shows the story cards before the World 1 map; OK pages through them', () => {
+  it('a NEW file opens straight on the World 1 map, on 1-0, where Toad tells the story', () => {
     const h = makeGame();
     h.game.showTitle();
     h.idle(8);
@@ -162,27 +163,17 @@ describe('the story intro', () => {
     expect(h.top()).toBeInstanceOf(FileSelectScene);
     h.idle(8);
     h.tap('jump');
-    expect(h.top()).toBeInstanceOf(StoryScene);
-    expect(h.said.some((t) => /bowser/i.test(t))).toBe(true);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect((h.top() as WorldMapScene).node).toBe('start');
     expect(loadSave(1)?.freed).toEqual(['mario']);
-    h.until(() => {
-      if (h.top() instanceof StoryScene) h.tap('jump');
-      return h.top() instanceof WorldMapScene;
-    }, 400);
     expect(h.game.campaign).toEqual({ slot: 1 });
+    // The story is Toad's, in 1-0 (tests/sim/tutorial.test.ts).
+    expect(TOAD_PAGES.flat().join(' ')).toMatch(/BRAINWASHED THE HEROES OF OTHER WORLDS/);
   });
 
-  it('MENU skips the rest of the story; an existing file opens straight on its map', () => {
+  it('an existing file opens straight on its map', () => {
     const h = makeGame();
-    h.game.showTitle();
-    h.idle(8);
-    h.tap('start');
-    h.idle(8);
-    h.tap('jump');
-    expect(h.top()).toBeInstanceOf(StoryScene);
-    h.idle(32);
-    h.tap('start');
-    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    file({ cleared: ['1-0'] });
     h.game.showTitle();
     h.idle(8);
     h.tap('start');
@@ -512,14 +503,15 @@ describe('the unlock flow, in detail', () => {
   });
 
   it('a long mini game title wraps to the dialogue box', () => {
+    // A hero with no lines of their own gets the generic challenge, which names the title.
     const def: MiniGameDef = {
-      hero: 'link',
-      title: 'THE VERY LONG AND WINDING TRIAL OF THE TRIFORCE',
+      hero: 'samus',
+      title: 'THE VERY LONG AND WINDING TRIAL OF THE CHOZO',
       rules: [],
       create: () => ({ update() {}, render() {} }),
     };
-    const pages = captiveDialogue(LINK, def, MARIO);
+    const pages = captiveDialogue(SAMUS, def, MARIO);
     for (const page of pages) for (const line of page) expect(line.length).toBeLessThanOrEqual(CARD_COLS);
-    expect(pages.flat().join(' ')).toContain('TRIFORCE');
+    expect(pages.flat().join(' ')).toContain('CHOZO');
   });
 });

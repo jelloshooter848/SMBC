@@ -1,0 +1,40 @@
+;; The practice room (hero training, docs/HEROES.md): one screen with a floor, a step up to a high
+;; ledge, a brick row with a ? block, a target dummy, a gap (falling in puts the hero back at the
+;; start) and a tall wall to cling to. src/game/tutorial/room.ts loads it with ?raw, so it is not in
+;; the level library, the dev level select or the campaign. The room spawns the dummy itself.
+id: practice
+name: TRAINING
+world: 1
+stage: 1
+theme: overworld
+music: overworld
+time: 400
+start: 5,12
+startMode: stand
+camera: locked
+
+[tiles]
+;; 0123456789012345
+................
+................
+...............B
+...............B
+...............B
+...............B
+...............B
+...............B
+BBB............B
+.....=?=.......B
+...............B
+...............B
+...B...........B
+###########..###
+###########..###
+
+[entities]
+dummy 9 12
+
+[decor]
+hill-small 0 12
+cloud-1 10 7
+bush-1 13 12

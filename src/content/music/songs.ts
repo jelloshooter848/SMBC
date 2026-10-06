@@ -624,4 +624,117 @@ export const songs: Song[] = [
       [v10 k4 r4 v8 k8 k8 v5 h4]8        ; heartbeat
     `,
   },
+
+  {
+    id: 'dungeon',
+    bpm: 120,
+    loop: true,
+    // A minor, 16 bars: Link's top-down dungeon. A rolling sixteenth-note arpeggio in the cellar,
+    // a slow, wary melody with a flat-six sigh (bar 7) and a raised seventh that keeps pulling it
+    // back to the start, a heavy quarter-note bass and only a faint tick of percussion.
+    pulse1: `
+      @1 v10 q7 x0
+      o4 a2 o5 c4 o4 b4               ; bar 1  Am
+      o4 a4. e8 e2                    ; bar 2  Am
+      o4 f4 a4 o5 c4 d4               ; bar 3  F
+      o5 e2 o4 b4 g+4                 ; bar 4  E
+      o4 a4 o5 c4 e4 d8 c8            ; bar 5  Am
+      o5 d2 f4 e8 d8                  ; bar 6  Dm
+      o5 d4 c4 o4 b-4 a4              ; bar 7  Bb
+      o4 g+2 e4 r4                    ; bar 8  E
+      o5 f2 e4 d4                     ; bar 9  Dm
+      o5 c2 o4 a4 b4                  ; bar 10 Am
+      o5 d4. f8 a4 g4                 ; bar 11 Dm
+      o5 g+2 e2                       ; bar 12 E
+      o5 f4 e4 d4 c4                  ; bar 13 F
+      o4 a4 b-4 o5 c4 d4              ; bar 14 Dm
+      o5 e2 d4 c4                     ; bar 15 E
+      o4 b2 g+4 e4                    ; bar 16 E
+    `,
+    pulse2: `
+      @0 v7 q6 x0
+      [o3 a16 o4 c16 e16 c16]4        ; bar 1  Am
+      [o3 a16 o4 c16 e16 c16]4        ; bar 2  Am
+      [o3 f16 a16 o4 c16 o3 a16]4     ; bar 3  F
+      [o3 e16 g+16 b16 g+16]4         ; bar 4  E
+      [o3 a16 o4 c16 e16 c16]4        ; bar 5  Am
+      [o3 d16 f16 a16 f16]4           ; bar 6  Dm
+      [o3 b-16 o4 d16 f16 d16]4       ; bar 7  Bb
+      [o3 e16 g+16 b16 g+16]4         ; bar 8  E
+      [o3 d16 a16 o4 d16 o3 a16]4     ; bar 9  Dm  (root-fifth-octave in the second half)
+      [o3 a16 o4 e16 a16 e16]4        ; bar 10 Am
+      [o3 d16 a16 o4 d16 o3 a16]4     ; bar 11 Dm
+      [o3 e16 b16 o4 e16 o3 b16]4     ; bar 12 E
+      [o3 f16 o4 c16 f16 c16]4        ; bar 13 F
+      [o3 d16 a16 o4 d16 o3 a16]4     ; bar 14 Dm
+      [o3 e16 b16 o4 e16 o3 b16]4     ; bar 15 E
+      [o3 e16 g+16 b16 g+16]4         ; bar 16 E
+    `,
+    triangle: `
+      q6
+      o2 a4. a8 a4 e4                 ; bar 1
+      o2 a4. a8 a4 g+4                ; bar 2
+      o2 f4. f8 f4 c4                 ; bar 3
+      o2 e4. e8 e4 g+4                ; bar 4
+      o2 a4. a8 a4 e4                 ; bar 5
+      o2 d4. d8 d4 a4                 ; bar 6
+      o2 b-4. b-8 b-4 f4              ; bar 7
+      o2 e4. e8 e4 g+4                ; bar 8
+      o2 d4. d8 d4 a4                 ; bar 9
+      o2 a4. a8 a4 e4                 ; bar 10
+      o2 d4. d8 d4 f4                 ; bar 11
+      o2 e4. e8 e4 b4                 ; bar 12
+      o2 f4. f8 f4 c4                 ; bar 13
+      o2 d4. d8 d4 a4                 ; bar 14
+      o2 e4. e8 e4 b4                 ; bar 15
+      o2 e4 g+4 b4 e4                 ; bar 16
+    `,
+    noise: `
+      [v8 k4 v4 h8 h8 v5 h4 v4 h8 h8]16 ; a slow footstep and dripping ticks
+    `,
+  },
+
+  {
+    id: 'keeper',
+    bpm: 160,
+    loop: true,
+    // E minor, 8 bars: the keeper's lair. A jabbing half-step motif (e-f) over pounding octave
+    // eighths, a tritone lurch to B-flat in bar 6 and a leading-tone pull back to the top.
+    pulse1: `
+      @0 v11 q6 x0
+      o5 e8 r8 e8 f8 e4 r8 o4 b8      ; bar 1  Em
+      o5 c8 o4 b8 a+8 b8 o5 e4 r4     ; bar 2  Em
+      o5 e8 r8 e8 f8 g4 f8 e8         ; bar 3  C
+      o5 d+4 f+4 b4 a+4               ; bar 4  B
+      o6 e8 r8 d+8 e8 f8 e8 d8 c8     ; bar 5  Em
+      o5 b-8 a8 b-8 o6 c8 d4 c4       ; bar 6  Bb
+      o5 g8 f+8 g8 a8 b4 o6 c4        ; bar 7  C
+      o5 b4 a+4 b8 r8 b8 r8           ; bar 8  B
+    `,
+    pulse2: `
+      @1 v7 q5 x0
+      [o3 b8 o4 e8 g8 e8]2            ; bar 1  Em
+      [o3 b8 o4 e8 g8 e8]2            ; bar 2  Em
+      [o3 g8 o4 c8 e8 c8]2            ; bar 3  C
+      [o3 f+8 b8 o4 d+8 o3 b8]2       ; bar 4  B
+      [o3 b8 o4 e8 g8 e8]2            ; bar 5  Em
+      [o3 f8 b-8 o4 d8 o3 b-8]2       ; bar 6  Bb
+      [o3 g8 o4 c8 e8 c8]2            ; bar 7  C
+      [o3 f+8 b8 o4 d+8 o3 b8]2       ; bar 8  B
+    `,
+    triangle: `
+      q6
+      [o2 e8 o3 e8]4                  ; bar 1
+      [o2 e8 o3 e8]4                  ; bar 2
+      [o2 c8 o3 c8]4                  ; bar 3
+      [o2 b8 o3 b8]4                  ; bar 4
+      [o2 e8 o3 e8]4                  ; bar 5
+      [o2 b-8 o3 b-8]4                ; bar 6
+      [o2 c8 o3 c8]4                  ; bar 7
+      [o2 b8 o3 b8]2 o2 b8 a+8 b8 o3 d+8 ; bar 8
+    `,
+    noise: `
+      [${DRIVE_BAR}]7 ${DRIVE_FILL}   ; bars 1-8
+    `,
+  },
 ];

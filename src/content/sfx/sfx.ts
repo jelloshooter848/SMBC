@@ -46,6 +46,12 @@ export const sfx: Sfx[] = [
     noise: 'v13 x1 l16 n3 n6 l8 n9 l4 n13',
     triangle: 'q8 x0 p-24 o2 g4',
   },
+  // Bowser's laugh (the tutorial's tease): three low falling "ha"s, each with a breathy rasp.
+  {
+    id: 'bowser-laugh',
+    pulse: '@3 v12 q6 x1 l16 p-3 o3 a r16 p-3 o3 g r16 p-5 o3 f8',
+    noise: 'v7 x1 l16 n11 r16 n11 r16 l8 n12',
+  },
   // Noise whoosh.
   { id: 'bowser-flame', noise: 'v11 x1 l16 n1 n2 n3 l8 n5' },
   // Firework pop.
@@ -84,4 +90,22 @@ export const sfx: Sfx[] = [
   { id: 'whip', pulse: '@0 v9 q8 x1 p-14 o6 c64', noise: 'v13 x1 l64 n1 n0 l32 n3' },
   // Missile launch: a low thump with a noise tail.
   { id: 'missile', pulse: '@0 v11 q8 x1 p-10 o4 c16', noise: 'v10 x1 l32 n6 n8 n10' },
+  // Link's dungeon. A puzzle solved: a rising run through two bright chords that settles on a
+  // long, ringing top note, with a quieter shadow a sixteenth behind.
+  {
+    id: 'secret',
+    pulse: '@2 v11 q7 x0 l16 o5 e g+ o6 c+ o5 f+ a+ o6 d+ f+ x1 o6 b4',
+    pulse2: '@2 v6 q7 x0 l16 r16 o5 e g+ o6 c+ o5 f+ a+ o6 d+ x1 f+4',
+  },
+  // A sword thrust: a short hiss and a falling glint.
+  { id: 'sword-stab', pulse: '@1 v10 q8 x1 p-12 o6 e32', noise: 'v9 x1 l64 n1 n2 l32 n3' },
+  // A heavy door grinding open: a low rising rumble and a final thunk.
+  {
+    id: 'door-open',
+    pulse: '@0 v9 q8 x0 l16 r16 r16 r16 r16 x1 p-5 o3 c16',
+    triangle: 'q8 x0 p7 o2 c4',
+    noise: 'v10 x0 l16 n12 n11 n12 n11 x1 n9',
+  },
+  // A key in hand: a quick climbing fanfare.
+  { id: 'key-get', pulse: '@2 v11 q7 x0 l32 o6 d f+ a o7 d r32 o6 a o7 d x1 f+8' },
 ];

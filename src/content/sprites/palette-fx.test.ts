@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { hexToRgb, PALETTE_MODES, resolvePalette } from '@engine/gfx/palette';
 import { rasterizeToBuffer } from '@engine/gfx/pixelart';
 import { PALETTES, SPRITES } from './index';
-import { fxPalette, HERO_FX } from './palette-fx';
+import { fxPalette, HERO_FX, mapShadePalette } from './palette-fx';
+import { mapPalettes } from './map';
 
 const BLACK = '#000000';
 
@@ -70,5 +71,42 @@ describe('hero palette effects (<palette>~<fx>)', () => {
     expect(() => resolvePalette({ default: { luigi: ['#fff'] } }, 'luigi~silhouette', 'default')).toThrow(
       /unknown palette effect/,
     );
+  });
+});
+
+describe("map shade effects (<palette>~shade-<theme>): the map hint's hidden hero", () => {
+  const themes = Object.keys(mapPalettes).map((k) => k.replace(/^map-/, ''));
+
+  it('every map theme has one: one colour, between its ground shade (role 1) and main (role 2)', () => {
+    expect(themes).toEqual(expect.arrayContaining(['grass', 'sea']));
+    const lum = (h: string) => hexToRgb(h).reduce((a, n) => a + n, 0);
+    for (const theme of themes) {
+      const ground = mapPalettes[`map-${theme}`] as string[];
+      const pal = resolvePalette(PALETTES, mapShadePalette('luigi', theme, false), 'default');
+      expect(pal.length).toBe(resolvePalette(PALETTES, 'luigi', 'default').length);
+      expect(new Set(pal).size).toBe(1);
+      const [dark, main] = [lum(ground[1] as string), lum(ground[2] as string)];
+      const l = lum(pal[0] as string);
+      expect(l).toBeGreaterThanOrEqual(Math.min(dark, main));
+      expect(l).toBeLessThanOrEqual(Math.max(dark, main));
+    }
+  });
+
+  it('the shimmer variant is one other colour, a faint purple tint of the shade', () => {
+    for (const theme of themes) {
+      const [base] = resolvePalette(PALETTES, mapShadePalette('link', theme, false), 'default');
+      const glow = resolvePalette(PALETTES, mapShadePalette('link', theme, true), 'default');
+      expect(new Set(glow).size).toBe(1);
+      expect(glow[0]).not.toBe(base);
+      const d = hexToRgb(glow[0] as string).map((c, i) =>
+        Math.abs(c - (hexToRgb(base as string)[i] as number)),
+      );
+      expect(Math.max(...d)).toBeLessThanOrEqual(64); // faint
+    }
+  });
+
+  it('names: <palette>~shade-<theme>[-glow]', () => {
+    expect(mapShadePalette('luigi', 'grass', false)).toBe('luigi~shade-grass');
+    expect(mapShadePalette('link', 'sea', true)).toBe('link~shade-sea-glow');
   });
 });

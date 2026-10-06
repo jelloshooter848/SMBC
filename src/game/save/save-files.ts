@@ -43,10 +43,21 @@ export interface SaveFile extends MapProgress {
    */
   devUnlockAll?: boolean;
   /**
+   * Developer mode's map menu "All heroes": every hero can be picked on this file without freeing
+   * any (`freed` is never written by it). Only has an effect while dev mode is on; missing: off.
+   */
+  devAllHeroes?: boolean;
+  /**
    * Heroes freed on this file (CharacterDef ids, Mario always first): only these can be picked
    * in campaign play; the rest are brainwashed captives to find (docs/HEROES.md).
    */
   freed: string[];
+  /**
+   * Heroes whose "<HERO> TRAINING?" question was answered on this file (CharacterDef ids, each
+   * once), so it is asked only the first time a hero is picked. Missing in older files: [] plus the
+   * file's current heroes (validation adds them, so players already using a hero aren't asked).
+   */
+  tutorials?: string[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -98,6 +109,15 @@ export function freedHeroes(
 ): string[] {
   const known = (id: unknown): id is string => typeof id === 'string' && characters.some((c) => c.id === id);
   return [...new Set([FIRST_HERO, ...ids.filter(known)])];
+}
+
+/** Known hero ids from `ids`, each once, in order (unknown ids and non-strings dropped). */
+export function tutorialHeroes(
+  ids: readonly unknown[],
+  characters: readonly CharacterDef[] = CHARACTERS,
+): string[] {
+  const known = (id: unknown): id is string => typeof id === 'string' && characters.some((c) => c.id === id);
+  return [...new Set(ids.filter(known))];
 }
 
 /**
@@ -155,7 +175,9 @@ export function newSave(
     lastNode: {},
     pendingReveal: [],
     devUnlockAll: false,
+    devAllHeroes: false,
     freed: freedHeroes([character, character2], characters),
+    tutorials: tutorialHeroes([character, character2], characters),
   };
 }
 
@@ -191,6 +213,21 @@ function revealIds(x: unknown, pages: readonly PageId[]): string[] {
       return i > 0 && i < id.length - 1 && pages.includes(id.slice(0, i));
     });
   return [...new Set(ids)].slice(0, 64);
+}
+
+/** World 1's page, where every file starts. */
+const FIRST_PAGE_ID: PageId = 'smb-1';
+
+/** Mario's tutorial stage, World 1's start node (0.5.0): every new file plays it first. */
+export const TUTORIAL_LEVEL = '1-0';
+
+/**
+ * A file that has cleared anything was played before the tutorial existed: it counts 1-0 as
+ * cleared (derived on load, no format change), so 1-1 stays open. The node it stood on, World 1's
+ * 'start', is 1-0's node now, so no position needs remapping.
+ */
+function withTutorial(cleared: string[]): string[] {
+  return cleared.length && !cleared.includes(TUTORIAL_LEVEL) ? [TUTORIAL_LEVEL, ...cleared] : cleared;
 }
 
 function kit(x: unknown): Record<string, number> {
@@ -233,9 +270,21 @@ export function migrateSave(
   const posPage = str(pos.page, d.position.page);
   const furthest =
     [...MAP_PAGES].reverse().find((p) => p.group === 'smb' && pages.includes(p.id))?.id ?? d.position.page;
-  const position = pages.includes(posPage)
+  const cleared = withTutorial(strs(stored.cleared, d.cleared));
+  let position = pages.includes(posPage)
     ? { page: posPage, node: str(pos.node, d.position.node) }
     : { page: furthest, node: 'start' };
+  // Before 1-0, 1-1 was open on a new file: a file with no clears may stand there (or anywhere
+  // past World 1's start), which is locked until 1-0 is cleared. Back to the start, on 1-0.
+  // A file on the developer's "Unlock all" may stand anywhere: left as it is.
+  if (
+    !cleared.length &&
+    stored.devUnlockAll !== true &&
+    position.page === FIRST_PAGE_ID &&
+    position.node !== 'start'
+  )
+    position = { page: FIRST_PAGE_ID, node: 'start' };
+  const freed = Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed;
   return {
     ...d,
     v: current,
@@ -250,7 +299,7 @@ export function migrateSave(
     powerState2: str(stored.powerState2, d.powerState2),
     hp2: num(stored.hp2, d.hp2),
     kit2: kit(stored.kit2),
-    cleared: strs(stored.cleared, d.cleared),
+    cleared,
     pages,
     secrets: strs(stored.secrets, d.secrets),
     position,
@@ -258,7 +307,14 @@ export function migrateSave(
     lastNode: lastNodes(stored.lastNode, pages),
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
-    freed: Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed,
+    devAllHeroes: stored.devAllHeroes === true,
+    freed,
+    // The file's current (freed) heroes count as answered, so an existing player is never
+    // interrupted; a hero used only through dev "All heroes" still gets its real question.
+    tutorials: tutorialHeroes([
+      ...(Array.isArray(stored.tutorials) ? stored.tutorials : []),
+      ...[stored.character, stored.character2].filter((id) => freed.includes(id as string)),
+    ]),
   };
 }
 

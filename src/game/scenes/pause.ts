@@ -7,6 +7,7 @@ import type { World } from '../world/world';
 import type { TouchLabels } from '@engine/input/touch';
 import type { TouchMode } from '@engine/save/settings';
 import { nextTouchMode } from '@engine/input/touch-logic';
+import { trainFromPause, trainingOffered } from '../tutorial/training';
 
 const TOUCH_MODE_LABELS: Record<TouchMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
@@ -29,8 +30,19 @@ export class PauseScene extends MenuScene {
         label: heroes.length > 1 ? `Guide: ${c.name}` : 'Guide',
         select: () => game.scenes.push(new GuideScene(game, c, () => game.scenes.pop())),
       });
-    // Stored items (E-tanks) are used from here, like the original weapon menu.
     const world = this.world;
+    // Campaign levels: replay the hero's practice room, then back to this paused level.
+    if (world)
+      heroes.forEach((c, i) => {
+        if (!trainingOffered(game, c)) return;
+        items.push({
+          label: 'Training',
+          ...(heroes.length > 1 ? { value: () => c.name } : {}),
+          select: () => trainFromPause(game, c, i),
+          hint: `Practise ${c.name}'s moves in a training room`,
+        });
+      });
+    // Stored items (E-tanks) are used from here, like the original weapon menu.
     const p = world?.player;
     const reserve = p?.def.reserve;
     const label = p && reserve ? reserve.label(p) : null;
@@ -70,6 +82,13 @@ export class PauseScene extends MenuScene {
       items.push({
         label: 'Assists',
         select: () => game.scenes.push(new AssistOptionsScene(game, () => game.scenes.pop())),
+      });
+    // A stage tutorial (1-0) can be skipped: it counts as cleared (Game.skipTutorial).
+    if (game.tutorialRun && !game.playtestDone)
+      items.push({
+        label: 'Skip tutorial',
+        select: () => game.skipTutorial(),
+        hint: 'Counts as cleared and opens the next level',
       });
     if (game.campaign && !game.playtestDone) {
       // Leave the level for the map (any level, cleared or not; no clear is recorded, the run's

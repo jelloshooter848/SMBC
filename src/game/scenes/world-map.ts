@@ -27,6 +27,8 @@ import {
 import type { CharacterDef } from '../characters/character';
 import { pad } from '../hud/hud';
 import { hasSecretExit } from '../map/secret-exits';
+import { heroHint, heroSide, hiddenHeroesAt, type HeroHint } from '../map/captives';
+import { mapShadePalette } from '@content/sprites/palette-fx';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import type { Game } from './game';
@@ -49,6 +51,19 @@ export const MAP_HEADER_H = 24;
  * row 13, the lowest a node may sit on).
  */
 export const MAP_HINT_Y = 226;
+
+/**
+ * A level node hiding a captive hero the file has not freed, once that level is cleared: the
+ * announcer's line and the hint line (map/captives.ts; it never says where in the level).
+ */
+export const HIDING_SAID = 'Someone is hiding in this level.';
+export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
+/** The hidden hero's slow shimmer: one cycle, and the frames of it the faint glow shade shows. */
+export const HIDING_SHIMMER_FRAMES = 360;
+export const HIDING_GLOW_FRAMES = 30;
+/** A freed hero's idle hop beside its node: one cycle, and the frames of it spent 1 px up. */
+const TROPHY_HOP_FRAMES = 150;
+const TROPHY_HOP_UP = 8;
 
 export interface WorldMapOptions {
   /**
@@ -76,8 +91,16 @@ export function spoken(text: string): string {
  */
 export function mapHeaderLabel(page: WorldMapPage, node: MapNode | null): string {
   // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
-  const stage = node && !isWarpNode(node) && node.kind !== 'start' ? node.level?.split('-').pop() : undefined;
+  const stage = node && levelNode(node) ? node.level?.split('-').pop() : undefined;
   return (stage ? `${page.label}-${stage}` : page.label).slice(0, 10);
+}
+
+/**
+ * A node JUMP enters a level from: level and castle nodes, and a start carrying a level (World 1's
+ * start is Mario's tutorial stage 1-0).
+ */
+function levelNode(n: MapNode): boolean {
+  return !!n.level && !isWarpNode(n) && (n.kind === 'level' || n.kind === 'castle' || n.kind === 'start');
 }
 
 /** A path or world exit as drawn: its id and the dot centres, flat [x0, y0, x1, y1, ...]. */
@@ -86,10 +109,24 @@ interface DotRun {
   dots: number[];
 }
 
+/**
+ * A hidden hero drawn beside its node (map/captives.ts): its silhouette (behind the node) or its
+ * trophy (beside it, in colour). `cx` is the sprite's centre, `feet` the row under its feet.
+ */
+interface HeroMark {
+  node: MapNode;
+  hint: Exclude<HeroHint, 'none'>;
+  def: CharacterDef;
+  side: 1 | -1;
+  cx: number;
+  feet: number;
+}
+
 /** What is drawn of a page for the current progress (rebuilt only when progress may change). */
 interface PageView {
   runs: DotRun[];
   nodes: { node: MapNode; frame: string }[];
+  heroes: HeroMark[];
 }
 
 /** The hero's frames on the map: standing, and walking when the sheet has them. */
@@ -300,17 +337,58 @@ export class WorldMapScene implements Scene {
     let v = this.views.get(page);
     if (v) return v;
     const { paths, exits } = openPaths(this.progress, page, this.unlockAll);
+    const nodes = page.nodes
+      .filter((n) => isOpen(this.progress, page, n.id, this.unlockAll))
+      .map((n) => ({ node: n, frame: this.nodeFrame(page, n) }));
     v = {
       runs: [
         ...paths.map((p) => ({ id: pathId(p), dots: pathDots(p.points, true, true) })),
         ...exits.map((e) => ({ id: exitId(e), dots: pathDots(e.points, true, false) })),
       ],
-      nodes: page.nodes
-        .filter((n) => isOpen(this.progress, page, n.id, this.unlockAll))
-        .map((n) => ({ node: n, frame: this.nodeFrame(page, n) })),
+      nodes,
+      heroes: nodes.flatMap(({ node }) => this.heroMarks(page, node)),
     };
     this.views.set(page, v);
     return v;
+  }
+
+  /**
+   * The hidden heroes beside a shown node, in campaign play only (map/captives.ts): a silhouette
+   * once its level is cleared, the hero in colour once freed (the file's `freed`; dev "All
+   * heroes" never changes it). A second hero at one node stands a little further out.
+   */
+  private heroMarks(page: WorldMapPage, node: MapNode): HeroMark[] {
+    if (!this.game.campaign || !node.level) return [];
+    const side = heroSide(page, node);
+    const out: HeroMark[] = [];
+    for (const h of hiddenHeroesAt(page.id, node.id)) {
+      const hint = heroHint(h, this.progress, this.game.freed);
+      const def = this.game.deps.characters.find((c) => c.id === h.hero);
+      if (hint === 'none' || !def) continue;
+      // The silhouette peeks out from behind the dot (half of it hidden); the trophy stands just
+      // clear of it, feet on the ground beside it as the player's marker stands on the node.
+      const out0 = hint === 'silhouette' ? 9 : 17;
+      out.push({
+        node,
+        hint,
+        def,
+        side,
+        cx: node.x * 16 + 8 + side * (out0 + out.length * 12),
+        feet: node.y * 16 + (hint === 'silhouette' ? 9 : 10),
+      });
+    }
+    return out;
+  }
+
+  /** The node the hero stands still on hides a hero not freed yet whose level is cleared. */
+  private hidingHere(): boolean {
+    if (this.mode !== 'idle') return false;
+    const n = this.nodeById(this.node);
+    return !!n && this.isHiding(n);
+  }
+
+  private isHiding(n: MapNode): boolean {
+    return this.view(this.page).heroes.some((m) => m.node === n && m.hint === 'silhouette');
   }
 
   private say(text: string): void {
@@ -339,12 +417,14 @@ export class WorldMapScene implements Scene {
     let state = isCleared(this.progress, this.page, n.id) ? 'cleared' : 'open';
     if (hasSecretExit(n.level)) state += ', secret exit';
     const hint = exitHint(this.progress, this.page, n.id, this.unlockAll);
-    if (hint) return `${this.nodeLabelPlain(n, label, state)}. ${spoken(hint)}`;
-    return this.nodeLabelPlain(n, label, state);
+    let text = this.nodeLabelPlain(n, label, state);
+    if (hint) text += `. ${spoken(hint)}`;
+    if (this.isHiding(n)) text += `. ${HIDING_SAID}`;
+    return text;
   }
 
   private nodeLabelPlain(n: MapNode, label: string, state: string): string {
-    if (n.kind === 'start') return `${label} start`;
+    if (n.kind === 'start' && !n.level) return `${label} start`;
     if (n.kind === 'bonus') return `Bonus level, ${state}`;
     // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
     const stage = n.level?.split('-').pop();
@@ -360,13 +440,17 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * The hint line's text while the hero stands still on a warp node, or on the node a locked
-   * world exit with a hint leaves from (Lost 8-4: World 9's count); '' otherwise.
+   * The hint line's text while the hero stands still on a warp node, on the node a locked world
+   * exit with a hint leaves from (Lost 8-4: World 9's count), or on a cleared level that still
+   * hides a hero (HIDING_HINT); '' otherwise.
    */
   get hintLine(): string {
     const n = this.warpHere();
     if (n) return warpText(this.progress, n, this.unlockAll);
-    return this.mode === 'idle' ? exitHint(this.progress, this.page, this.node, this.unlockAll) : '';
+    if (this.mode !== 'idle') return '';
+    return (
+      exitHint(this.progress, this.page, this.node, this.unlockAll) || (this.hidingHere() ? HIDING_HINT : '')
+    );
   }
 
   update(input: InputFrame): void {
@@ -631,6 +715,12 @@ export class WorldMapScene implements Scene {
           ...(game.devMode
             ? [
                 {
+                  label: 'All heroes',
+                  value: () => (game.devAllHeroes ? 'on' : 'off'),
+                  adjust: () => this.toggleAllHeroes(),
+                  hint: 'Developer mode: every hero can be picked, none freed',
+                },
+                {
                   label: 'Unlock all',
                   value: () => (game.devUnlockAll ? 'on' : 'off'),
                   adjust: () => this.toggleUnlockAll(),
@@ -643,6 +733,18 @@ export class WorldMapScene implements Scene {
         true,
       ),
     );
+  }
+
+  /**
+   * Map menu "All heroes" (dev mode only): flips the file's flag and saves. The file's freed list
+   * is never touched; turning it off puts a player on a hero it has not freed back on Mario.
+   */
+  private toggleAllHeroes(): void {
+    const game = this.game;
+    game.devAllHeroes = !game.devAllHeroes;
+    if (!game.devAllHeroes) game.dropLockedHeroes();
+    this.views.clear();
+    game.autosave();
   }
 
   /**
@@ -779,10 +881,19 @@ export class WorldMapScene implements Scene {
       for (let j = 0; j + 1 < n; j += 2)
         r.sprite(items, 'map-path-dot', ox + (run.dots[j] as number) - 4, (run.dots[j + 1] as number) - 4);
     }
+    // Hidden heroes' silhouettes go behind the dots, freed heroes in front (before the player).
+    for (let i = 0; i < v.heroes.length; i++) {
+      const m = v.heroes[i] as HeroMark;
+      if (m.hint === 'silhouette') this.drawHeroMark(r, page, m, ox);
+    }
     for (let i = 0; i < v.nodes.length; i++) {
       const nv = v.nodes[i] as PageView['nodes'][number];
       if (revealing && this.revealShown.has(nv.node.id)) continue;
       r.sprite(items, nv.frame, ox + nv.node.x * 16, nv.node.y * 16);
+    }
+    for (let i = 0; i < v.heroes.length; i++) {
+      const m = v.heroes[i] as HeroMark;
+      if (m.hint === 'trophy') this.drawHeroMark(r, page, m, ox);
     }
     if (hero && page.nodes.length) this.drawHeroes(r);
   }
@@ -792,6 +903,7 @@ export class WorldMapScene implements Scene {
     if (isWarpNode(n)) return isWarpOpen(this.progress, n, this.unlockAll) ? 'map-warp' : 'map-warp-locked';
     switch (n.kind) {
       case 'start':
+        if (n.level) return cleared ? 'map-node-cleared' : 'map-node-open';
         return 'map-node-start';
       case 'bonus':
         return cleared ? 'map-node-cleared' : 'map-node-bonus';
@@ -803,6 +915,26 @@ export class WorldMapScene implements Scene {
         if (hasSecretExit(n.level)) return cleared ? 'map-node-secret-cleared' : 'map-node-secret';
         return cleared ? 'map-node-cleared' : 'map-node-open';
     }
+  }
+
+  /**
+   * A hidden hero beside its node, facing it: the silhouette in the page's ground shade (with a
+   * slow, faint shimmer unless reduce flashing is on), or the freed hero in colour with a small
+   * idle hop.
+   */
+  private drawHeroMark(r: Renderer, page: WorldMapPage, m: HeroMark, ox: number): void {
+    const p = m.def.portrait;
+    let palette = p.palette;
+    let lift = 0;
+    if (m.hint === 'silhouette') {
+      const glow = !this.game.ctx.reduceFlashing && this.t % HIDING_SHIMMER_FRAMES < HIDING_GLOW_FRAMES;
+      palette = mapShadePalette(p.palette, page.theme, glow);
+    } else if (this.t % TROPHY_HOP_FRAMES < TROPHY_HOP_UP) lift = 1;
+    const sheet = this.game.ctx.assets.sheet(p.sheet, palette);
+    const f = sheet.frames.get(p.frame);
+    const w = f?.w ?? 16;
+    const h = f?.h ?? 16;
+    r.sprite(sheet, p.frame, ox + Math.round(m.cx - w / 2), m.feet - h - lift, m.side > 0);
   }
 
   private drawHeroes(r: Renderer): void {
@@ -848,10 +980,7 @@ export class WorldMapScene implements Scene {
     // Standing on a level or castle node (not walking, sliding or fading) names the level.
     const standing =
       !f && (this.mode === 'idle' || this.mode === 'reveal') ? this.nodeById(this.node) : undefined;
-    const node =
-      standing && (standing.kind === 'level' || standing.kind === 'castle') && standing.level
-        ? standing
-        : null;
+    const node = standing && levelNode(standing) ? standing : null;
     // Rebuild the strings only when what they show changes.
     if (
       h.page !== page ||

@@ -70,6 +70,8 @@ function makeGame() {
     expect(pred()).toBe(true);
   };
   const map = () => game.scenes.top as WorldMapScene;
+  // Past the tutorial: 1-0 (World 1's start node) is cleared, so 1-1 is open.
+  game.mapProgress.cleared.push('1-0');
   return { game, said, step, tap, idle, until, map, audio };
 }
 
@@ -101,7 +103,7 @@ describe('world map scene', () => {
     h.game.showMap();
     expect(h.map()).toBeInstanceOf(WorldMapScene);
     // Entering says the page and the node the hero stands on.
-    expect(h.said).toContain(`World 1, ${page(1).title}. World 1 start`);
+    expect(h.said).toContain(`World 1, ${page(1).title}. World 1-0, cleared`);
     h.idle(8);
     walkTo(h, '1-1');
     expect(h.said.at(-1)).toBe('World 1-1, open');
@@ -122,8 +124,6 @@ describe('world map scene', () => {
     h.game.showMap('smb-1');
     h.idle(8);
     const enter = vi.spyOn(h.game, 'enterLevelFromMap');
-    h.tap('jump'); // the start node has no level
-    expect(enter).not.toHaveBeenCalled();
     walkTo(h, '1-1');
     h.tap('jump');
     expect(enter).toHaveBeenCalledWith('1-1');
@@ -378,7 +378,7 @@ describe('world map scene', () => {
 describe('campaign saves from the map', () => {
   it('autosave writes the run and the map progress; save and quit saves then shows the title', () => {
     const h = makeGame();
-    h.game.openFile(1, newSave(1, 'luigi'));
+    h.game.openFile(1, { ...newSave(1, 'luigi'), cleared: ['1-0'] });
     expect(h.map()).toBeInstanceOf(WorldMapScene);
     expect(loadSave(1)?.position).toEqual({ page: 'smb-1', node: 'start' });
     h.idle(8);
@@ -388,7 +388,7 @@ describe('campaign saves from the map', () => {
     h.game.state.coins = 9;
     h.game.autosave();
     const saved = loadSave(1)!;
-    expect(saved.cleared).toEqual(['1-1']);
+    expect(saved.cleared).toEqual(['1-0', '1-1']);
     expect(saved.position).toEqual({ page: 'smb-1', node: '1-1' });
     expect(saved.score).toBe(4200);
     expect(saved.character).toBe('luigi');
@@ -445,7 +445,7 @@ describe('developer mode: unlock all on the map', () => {
     const h = makeGame();
     const settings = { dev: true } as Settings;
     h.game.deps.settings = settings;
-    h.game.openFile(1, newSave(1, 'mario'));
+    h.game.openFile(1, { ...newSave(1, 'mario'), cleared: ['1-0'] });
     h.idle(8);
     walkTo(h, '1-1');
     let menu = openMenu(h);
@@ -468,7 +468,7 @@ describe('developer mode: unlock all on the map', () => {
     const enter = vi.spyOn(h.game, 'enterLevelFromMap');
     h.tap('jump');
     expect(enter).toHaveBeenCalledWith('1-3');
-    expect(h.game.mapProgress.cleared).toEqual([]);
+    expect(h.game.mapProgress.cleared).toEqual(['1-0']);
     expect(h.game.mapProgress.pages).toEqual(['smb-1']);
     // Back on the map: the Worlds menu lists every world.
     h.game.showMap();

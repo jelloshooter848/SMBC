@@ -8,7 +8,7 @@ export const SKETCH_2 = [
   '~~~~~~~~~~~~~~~~',
   '######~###~#####',
   'Y#,###=###~#####',
-  '##Y###~###~##T,#',
+  '#Y####~###~##T,#', // the palm left of 2-1 stands one tile out, clear of Link's map hint
   ',#####~~~~~###Y#',
   '#Y,#T#~~~~~#*##,',
   '####,#~~~~~###Y#',
