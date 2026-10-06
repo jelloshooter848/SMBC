@@ -40,13 +40,6 @@ import type { Announcer } from '@engine/a11y/announcer';
 // The Lost Levels in campaign play (docs/WORLD_MAP.md): their levels are entered from their own
 // map pages like SMB's, clears draw the next road in, warp zones (backward ones too) open and
 // move to only their target page, and the three game ends (8-4, 9-4, D-4) come back to the map.
-//
-// Until the Lost Levels pages land these run on stand-in pages that follow the contract
-// (lost-pages.fixture.ts); everything is found by lookup, so the real pages slot in.
-vi.mock('@content/worldmap/lost', async () => {
-  const { LOST_FIXTURE_PAGES } = await import('./lost-pages.fixture');
-  return { LOST_PAGES: LOST_FIXTURE_PAGES };
-});
 
 const store = new Map<string, string>();
 beforeEach(() => {
