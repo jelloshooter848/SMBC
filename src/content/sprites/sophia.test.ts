@@ -142,7 +142,10 @@ describe('sophia sheet', () => {
   });
 
   it('is registered with its palettes, which share one index layout', () => {
-    expect(SPRITES.sophia).toBe(sophiaDef);
+    // Registered as is, plus `portrait` (the idle tank cropped, content/sprites/index.ts).
+    for (const [name, rows] of Object.entries(sophiaDef.frames))
+      expect(SPRITES.sophia?.frames[name]).toBe(rows);
+    expect(SPRITES.sophia?.frames.portrait?.length).toBeLessThan(sophiaDef.frames.idle?.length ?? 0);
     expect(sophiaDef.palette).toBe('sophia');
     expect(Object.keys(sophiaPalettes).sort()).toEqual(
       [

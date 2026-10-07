@@ -78,8 +78,6 @@ export interface SophiaState {
   vineBox: boolean;
   /** On a wall she drove up from the floor (the training room's wall climb, not a ceiling's end). */
   wallFromFloor: boolean;
-  /** Frames the drive animation has run (wheels). */
-  roll: number;
   /** Jason on foot: the parked tank (jason.ts). */
   jason: JasonOut | null;
 }
@@ -118,7 +116,6 @@ export function sophiaState(p: Player): SophiaState {
       waterTop: Infinity,
       levelH: 240,
       boomFrom: -1,
-      roll: 0,
       vineBox: false,
       wallFromFloor: false,
       jason: null,

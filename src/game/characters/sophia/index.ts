@@ -182,9 +182,16 @@ function settle(p: Player, st: SophiaState): void {
   st.coasting = false;
 }
 
+/**
+ * The tank frames are 32x32 centred on her box (S3's sheet); the world draws them centred and
+ * turned, and these offsets place them for anything drawing the plain way (a captive Sophia).
+ */
+const TANK_OX = 6;
+const TANK_OY = 8;
+
 const HULL: Record<string, string> = { small: 'sophia', big: 'sophia-hyper', fire: 'sophia-crusher' };
 
-function tankFrame(p: Player, st: SophiaState): string {
+function tankFrame(p: Player, st: SophiaState, frame: number): string {
   const b = p.body;
   const t = st.turn;
   if (t) {
@@ -194,7 +201,7 @@ function tankFrame(p: Player, st: SophiaState): string {
     return (st.surface === t.to) === inside ? 'tilt-down' : 'tilt-up';
   }
   if (st.surface === FLOOR) {
-    if (st.hovering) return `hover-${(st.roll >> 1) & 1}`;
+    if (st.hovering) return `hover-${(frame >> 1) & 1}`;
     if (!b.onGround && !p.inWater) return 'jump';
   }
   if (st.raise >= CANNON_RAISE_FRAMES) return 'aim-up';
@@ -202,7 +209,7 @@ function tankFrame(p: Player, st: SophiaState): string {
   const speed = Math.abs(st.surface === LEFT || st.surface === RIGHT ? b.vy : b.vx);
   if (speed === 0) return 'idle';
   const rate = speed < 0x00555 ? 6 : speed < 0x01000 ? 4 : 3;
-  return `drive-${Math.floor(st.roll / rate) & 3}`;
+  return `drive-${Math.floor(frame / rate) & 3}`;
 }
 
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
@@ -221,17 +228,25 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     const t = frame - st.boomFrom;
     // She blows up (4 frames, 4 each) and is gone; a pit death shows nothing.
     const name = t < 16 && p.body.y < px(st.levelH) ? `die-${t >> 2}` : 'none';
-    return { sheet: SOPHIA_SHEET, palette, frame: name, flip: false, offsetX: 0, offsetY: 0, rotate: 0 };
+    return {
+      sheet: SOPHIA_SHEET,
+      palette,
+      frame: name,
+      flip: false,
+      offsetX: TANK_OX,
+      offsetY: TANK_OY,
+      rotate: 0,
+    };
   }
   st.boomFrom = -1;
-  const name = p.vine ? 'idle' : tankFrame(p, st);
+  const name = p.vine ? 'idle' : tankFrame(p, st, frame);
   const spec: SpriteSpec = {
     sheet: SOPHIA_SHEET,
     palette,
     frame: name,
     flip: false,
-    offsetX: 0,
-    offsetY: 0,
+    offsetX: TANK_OX,
+    offsetY: TANK_OY,
     rotate: 0,
   };
   // On a vine she is drawn nose up (SO-43); her box stays upright.
@@ -278,7 +293,7 @@ export const SOPHIA: CharacterDef = {
   sprite,
   blockPowerUp: (p) => (p.powerState === 'small' ? 'mushroom' : 'flower'),
   jumpSfx: (p) => (sophiaState(p).jason ? SOUNDS.jasonJump : SOUNDS.jump),
-  portrait: { sheet: SOPHIA_SHEET, palette: 'sophia', frame: 'idle' },
+  portrait: { sheet: SOPHIA_SHEET, palette: 'sophia', frame: 'portrait' },
   tools,
   meter(p) {
     if (!hasHover(p) || sophiaState(p).jason) return null;

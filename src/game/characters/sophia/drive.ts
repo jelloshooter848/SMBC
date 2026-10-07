@@ -236,7 +236,6 @@ export function driveSophia(
   if (st.jason) return false;
   lastMap.set(p, map);
   const b = p.body;
-  st.roll++;
   if (st.vineBox) {
     // Off the vine: back to the upright box, feet where they were.
     st.vineBox = false;
