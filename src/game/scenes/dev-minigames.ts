@@ -55,6 +55,8 @@ export function playRound(game: Game, def: DevRound, ended: (result: MiniGameRes
   const inventoryUnlocked = game.inventoryUnlocked;
   const tutorialRun = game.tutorialRun;
   const stageRound = game.stageRound;
+  const inRound = game.inRound;
+  game.inRound = true;
   // No file is open for the round: nothing it does can autosave.
   game.campaign = null;
   // A pause menu below suspended the audio; the round has its own music.
@@ -81,6 +83,7 @@ export function playRound(game: Game, def: DevRound, ended: (result: MiniGameRes
     game.inventoryUnlocked = inventoryUnlocked;
     game.tutorialRun = tutorialRun;
     game.stageRound = stageRound;
+    game.inRound = inRound;
     game.airship = null;
     audio.setTempoScale(1);
     audio.stopMusic();

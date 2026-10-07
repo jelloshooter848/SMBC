@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLevel } from '@content/levels';
+import { getLevel, levelIds } from '@content/levels';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -150,6 +150,24 @@ describe('the areas', () => {
   });
 });
 
+describe('the HUD rows', () => {
+  it.each(['5-4-dungeon', '5-4-crypt', '4-2-cavern', '4-2-larry', '3-1-station', '2-1-sky2'])(
+    '%s keeps rows 0-1 clear under the HUD: no tiles',
+    (id) => {
+      const l = getLevel(id);
+      for (let y = 0; y < 2; y++)
+        for (let x = 0; x < l.width; x++) expect(tile(l, x, y), `${id} ${x},${y}`).toBe(T.AIR);
+    },
+  );
+
+  it('the dungeon and the crypt stay closed: a solid ceiling on row 2 but for the arrival shaft', () => {
+    const open = (l: ReturnType<typeof getLevel>) =>
+      Array.from({ length: l.width }, (_, x) => x).filter((x) => tile(l, x, 2) === T.AIR);
+    expect(open(dungeon())).toEqual([11, 12, 13, 14]);
+    expect(open(crypt())).toEqual([0, 1, 2]);
+  });
+});
+
 describe('the down lift into the dungeon (campaign)', () => {
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
     '%s rides the down lift on past the bottom of the shaft and drops into the dungeon',
@@ -206,7 +224,7 @@ describe('the down lift into the dungeon (campaign)', () => {
     }
   });
 
-  it('the fire bar at (92, 10) is one ball short in the campaign, so its tip clears the lift; other bars and plain 5-4 keep theirs', () => {
+  it('the fire bar at (92, 10) is three balls short in the campaign, so its tip clears any rider on the lift; other bars and plain 5-4 keep theirs', () => {
     const bars = (level: ReturnType<typeof getLevel>) =>
       runSim({ level, character: MARIO, script: none, start: { x: 89, y: 2, mode: 'stand' }, maxFrames: 2 })
         .world.entities.filter((e): e is Firebar => e instanceof Firebar)
@@ -214,9 +232,64 @@ describe('the down lift into the dungeon (campaign)', () => {
     const plain = bars(getLevel('5-4'));
     const camp = bars(campaignLevel(getLevel('5-4')));
     expect(plain).toContainEqual([92, 10, 6]);
-    expect(camp).toContainEqual([92, 10, 5]);
+    expect(camp).toContainEqual([92, 10, 3]);
     expect(camp.filter(([x]) => x !== 92)).toEqual(plain.filter(([x]) => x !== 92));
   });
+
+  it('no hero is wider than a tile (the bar clears a tile of overhang past the lift)', () => {
+    for (const c of CHARACTERS)
+      for (const power of ['small', 'big', 'fire'] as const) {
+        const r = runSim({
+          level: getLevel('5-4'),
+          character: c,
+          script: none,
+          state: { powerState: power },
+          maxFrames: 1,
+        });
+        expect(toPx(r.world.player.body.w), `${c.name} ${power}`).toBeLessThanOrEqual(16);
+      }
+  });
+
+  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
+    '%s anywhere on the lift, hanging off either end, is never hit, whatever the bar phase (16 phases)',
+    (_n, c) => {
+      const TURN = 65536;
+      // Lift: 24 px wide; the rider's body (12 px) overlaps it by 1 px at either extreme.
+      for (const off of [-11, -8, -4, 0, 4, 8, 12, 16, 20, 23])
+        for (let k = 0; k < 16; k++) {
+          let hurt = false;
+          let power = '';
+          const r = runSim({
+            level: campaignLevel(getLevel('5-4')),
+            character: c,
+            state: { powerState: 'big' },
+            script: none,
+            start: { x: 89, y: 2, mode: 'stand', time: 250 },
+            maxFrames: 600,
+            controller: (w, f) => {
+              if (f === 0)
+                for (const e of w.entities)
+                  if (e instanceof Firebar && toPx(e.body.x) >> 4 === 92) e.angle = (k * TURN) / 16;
+              const p = w.player;
+              if (f === 1) {
+                const lift = w.entities.find(
+                  (e): e is Lift => e instanceof Lift && e.kind === 'lift-down' && toPx(e.body.y) < 100,
+                ) as Lift;
+                p.body.x = lift.body.x + px(off);
+                p.body.y = lift.body.y - p.body.h;
+                p.body.vx = 0;
+                p.body.vy = 0;
+                power = p.powerState;
+              }
+              if (power && (p.invuln > 0 || p.dead || p.powerState !== power)) hurt = true;
+              return [];
+            },
+          });
+          expect(r.outcome, `${c.name} offset ${off} phase ${k}`).toBe('pipe');
+          expect(hurt, `${c.name} offset ${off} phase ${k}`).toBe(false);
+        }
+    },
+  );
 
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
     '%s standing in the middle of the lift is never hit, whatever the bar phase (16 phases)',
@@ -574,6 +647,112 @@ describe('every hero gets to Simon and back to 5-4', () => {
       expect(toPx(back.world.player.body.x) >> 4).toBeGreaterThanOrEqual(92);
     },
   );
+});
+
+describe('co-op arrivals', () => {
+  /** Whether `p`'s body overlaps a solid tile of `w`. */
+  const inWall = (w: World, b: { x: number; y: number; w: number; h: number }) => {
+    for (let ty = toPx(b.y) >> 4; ty <= (toPx(b.y + b.h) - 1) >> 4; ty++)
+      for (let tx = toPx(b.x) >> 4; tx <= (toPx(b.x + b.w) - 1) >> 4; tx++)
+        if (w.map.isSolid(tx, ty)) return true;
+    return false;
+  };
+
+  it.each([
+    ['the dungeon', dungeon, 11],
+    ['the crypt', crypt, 6],
+  ] as const)('dropping into %s, both players land inside the room, on screen', (_n, level, floor) => {
+    for (const c of CHARACTERS) {
+      const r = runSim({
+        level: level(),
+        character: MARIO,
+        state: { character2: c, powerState2: 'small', hp2: 0 },
+        script: none,
+        start: { time: 250 },
+        maxFrames: 120,
+      });
+      expect(r.world.players, c.name).toHaveLength(2);
+      for (const p of r.world.players) {
+        const b = p.body;
+        expect(p.dead, c.name).toBe(false);
+        expect(b.onGround, `${c.name} P${p.index + 1} on the ground`).toBe(true);
+        expect(toPx(b.y + b.h), `${c.name} P${p.index + 1} on the floor`).toBe(floor * 16);
+        expect(toPx(b.x), c.name).toBeGreaterThanOrEqual(0);
+        expect(toPx(b.x + b.w), c.name).toBeLessThanOrEqual(256);
+        expect(inWall(r.world, b), `${c.name} P${p.index + 1} in a wall`).toBe(false);
+      }
+    }
+  });
+
+  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
+    'back from the crypt into 5-4 at 99 (campaign): player 2 (%s) lands clear of the fire bar at (103, 11)',
+    (_n, c) => {
+      for (const power of ['small', 'big'] as const)
+        for (let k = 0; k < 4; k++) {
+          let hurt = false;
+          const r = runSim({
+            level: campaignLevel(getLevel('5-4')),
+            character: LUIGI,
+            state: { powerState: power, character2: c, powerState2: power, hp2: 0 },
+            script: none,
+            start: { x: 99, y: 0, mode: 'fall', time: 200, clearEnemies: 'keep-piranhas' },
+            maxFrames: 240,
+            controller: (w, f) => {
+              if (f === 0)
+                for (const e of w.entities)
+                  if (e instanceof Firebar && toPx(e.body.x) >> 4 === 103) e.angle = (k * 65536) / 4;
+              if (w.players.some((p) => p.invuln > 0 || p.dead)) hurt = true;
+              return [];
+            },
+          });
+          expect(r.world.players).toHaveLength(2);
+          expect(hurt, `${c.name} ${power} phase ${k}`).toBe(false);
+          expect(r.events.some((e) => e.type === 'died')).toBe(false);
+          for (const p of r.world.players) {
+            expect(p.body.onGround).toBe(true);
+            expect(toPx(p.body.y + p.body.h)).toBe(13 * 16);
+            expect(toPx(p.body.x) >> 4).toBeGreaterThanOrEqual(92);
+            expect(inWall(r.world, p.body)).toBe(false);
+          }
+        }
+    },
+  );
+
+  it('every fall arrival of every level puts player 2 in the open, not inside or on top of a wall', () => {
+    const bad: string[] = [];
+    // Each level's own fall start, and every pit, descent and fall-exit transfer into a level.
+    const arrivals = new Map<string, { level: string; x?: number; y?: number }>();
+    for (const id of levelIds()) {
+      const l = getLevel(id);
+      if (l.startMode === 'fall') arrivals.set(id, { level: id });
+      for (const z of l.zones) {
+        if (!('target' in z) || !z.target) continue;
+        const t = z.target as { level: string; x: number; y: number; exitDir?: string };
+        if (z.kind === 'pit' || z.kind === 'descent' || t.exitDir === 'fall')
+          arrivals.set(`${t.level} ${t.x},${t.y}`, { level: t.level, x: t.x, y: t.y });
+      }
+    }
+    expect(arrivals.size).toBeGreaterThan(3);
+    for (const [name, a] of arrivals) {
+      const level = campaignLevel(getLevel(a.level));
+      const r = runSim({
+        level,
+        character: MARIO,
+        state: { character2: LUIGI, powerState2: 'small', hp2: 0 },
+        script: none,
+        start: {
+          ...(a.x === undefined ? {} : { x: a.x, y: a.y }),
+          mode: 'fall',
+          clearEnemies: 'keep-piranhas',
+        },
+        maxFrames: 150,
+      });
+      const [p1, p2] = r.world.players;
+      if (!p1 || !p2) continue;
+      if (inWall(r.world, p2.body) || toPx(p2.body.y) < 0) bad.push(`${name} P2`);
+    }
+    expect(bad).toEqual([]);
+  });
 });
 
 /** File 1 open on World 5, then 5-4 from the map's flow (campaign variant), on the down lift. */

@@ -22,6 +22,7 @@ import { SIMON, SIMON_TOOL_LABELS } from './characters/simon';
 import { RYU, RYU_TOOL_LABELS } from './characters/ryu';
 import { BILL, BILL_TOOL_LABELS } from './characters/bill';
 import { levelTouchLabels } from './touch-labels';
+import { stairLine } from './entities/objects/stairs';
 
 /** No hero's labels read the world; the level passes it for heroes that may want it. */
 const world = {} as World;
@@ -31,6 +32,7 @@ interface Setup {
   kit?: Record<string, number>;
   water?: boolean;
   vine?: boolean;
+  stairs?: boolean;
   dead?: boolean;
 }
 
@@ -40,6 +42,7 @@ function hero(def: CharacterDef, s: Setup = {}): Player {
   Object.assign(p.scratch, s.kit ?? {});
   p.inWater = !!s.water;
   if (s.vine) p.vine = { x: 0, top: 0, bottom: 64 };
+  if (s.stairs) p.stairs = { line: stairLine(4, 10, 4, 'ur'), pos: 8 };
   p.dead = !!s.dead;
   return p;
 }
@@ -61,6 +64,10 @@ const TABLE: [CharacterDef, string, Setup, string][] = [
   [MARIO, 'small, swimming (no running in water)', { water: true }, 'SWIM - - MENU -'],
   [MARIO, 'fire, swimming', { power: 'fire', water: true }, 'SWIM FIRE - MENU -'],
   [MARIO, 'on a vine', { power: 'fire', vine: true }, '- - - MENU -'],
+  // On stairs JUMP does nothing (Player.stairWalk): no JUMP button, whoever the hero.
+  [MARIO, 'on stairs', { stairs: true }, '- RUN - MENU -'],
+  [SIMON, 'on stairs', { kit: { subs: 1 }, stairs: true }, '- WHIP DAGGER MENU -'],
+  [LINK, 'on stairs', { stairs: true }, '- SWORD BOOMERANG MENU TOOLS'],
   [MARIO, 'dead', { dead: true }, '- - - MENU -'],
   [LUIGI, 'small', {}, 'JUMP RUN - MENU -'],
   [LUIGI, 'fire', { power: 'fire' }, 'JUMP FIRE - MENU -'],

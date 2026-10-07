@@ -18,9 +18,10 @@ parent: 5-4
 ;; running on. Column 16 is the doorway's back wall, just off the locked screen.
 
 [tiles]
+;; Rows 0-1 stay clear (no tiles, black) under the HUD; the room's ceiling starts on row 2.
 ;; 0               16
-...%%%%%%%%%%%%%%
-...%%%%%%%%%%%%%%
+.................
+.................
 ...%%%%%%%%%%%%%%
 ...............%%
 ...............%%

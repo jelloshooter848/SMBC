@@ -164,6 +164,7 @@ describe('arena theme', () => {
 
 describe('arena pad icons', () => {
   const PADS = ['map-arena-game', 'map-arena-tutorial', 'map-arena-locked'];
+  const PLATES = PADS.map((id) => `${id}-plate`);
   const frame = (id: string) => mapIconFrames[id] as readonly string[];
   const colours = (rows: readonly string[]) => new Set(rows.join('').replace(/\./g, ''));
 
@@ -188,6 +189,15 @@ describe('arena pad icons', () => {
 
   it('the locked pad is dark: only black, grey and its question mark, no bright colours', () => {
     expect([...colours(frame('map-arena-locked'))].sort()).toEqual(['0', 'b']);
+  });
+
+  it('each has a bare twin a hero stands on: the same pad, no emblem above it', () => {
+    PADS.forEach((id, i) => {
+      const plate = frame(PLATES[i] as string);
+      expect(SPRITES.items?.frames[PLATES[i] as string]).toBe(plate);
+      expect(plate.slice(10)).toEqual(frame(id).slice(10));
+      for (const row of plate.slice(0, 10)) expect(row).toBe('.'.repeat(16));
+    });
   });
 
   it('the Return pad reuses the hub warp pad', () => {

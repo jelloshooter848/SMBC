@@ -42,6 +42,7 @@ import {
 } from './scene';
 import { CastleBot, SHARP } from './bot';
 import { castleHarness, type CastleHarness } from './harness';
+import { ScorePopup } from '@game/entities/effects/effects';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -556,6 +557,14 @@ const BONE_SPEC = {
 };
 
 describe("Dracula's Castle: screen and controls", () => {
+  it('a kill scores no Mario-style point popup: the castle HUD has no score', () => {
+    const h = castleHarness();
+    ready(h);
+    h.world.addScore(200, px(100), px(100));
+    h.step();
+    expect(h.world.entities.some((e) => e instanceof ScorePopup)).toBe(false);
+  });
+
   it("Simon's touch labels while he plays (WHIP), only MENU in the cut-scenes, none once decided", () => {
     const h = castleHarness();
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: 'MENU' });

@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldMapPage } from '@game/map/types';
 import { isWarpNode } from '@game/map/rules';
-import { ARENA_GAMES } from '@game/arena';
+import { ARENA_FEET, ARENA_GAMES } from '@game/arena';
 import { mapPage } from './index';
 import {
   ARENA_PAGE,
-  ARENA_RING,
   ARENA_SLOTS,
   arenaLayout,
   arenaPadId,
@@ -120,15 +119,49 @@ describe('Mini Game Arena page', () => {
   });
 
   it('grows soundly for any number of games, up to every slot (the ring closes when full)', () => {
-    expect(ARENA_SLOTS.length).toBeGreaterThanOrEqual(24);
+    expect(ARENA_SLOTS.length).toBeGreaterThanOrEqual(22);
     for (let n = 0; n <= ARENA_SLOTS.length + 2; n++) {
       const games = Array.from({ length: n }, (_, i) => `g${i}`);
       const page = arenaPage(games);
       expect(problems(page), `${n} games`).toEqual([]);
       expect(page.nodes.length).toBe(1 + Math.min(n, ARENA_SLOTS.length));
     }
-    const full = arenaLayout(ARENA_RING.map((_, i) => `g${i}`));
-    expect(full.paths.some((p) => p.from === 'pad-g19' && p.to === 'pad-g0')).toBe(true);
+    const full = arenaLayout(ARENA_SLOTS.map((_, i) => `g${i}`));
+    expect(full.paths.some((p) => p.from === 'pad-g6' && p.to === `pad-g${ARENA_SLOTS.length - 1}`)).toBe(
+      true,
+    );
+  });
+
+  it('a hero up to 32 px tall standing on any pad covers no other pad and no road, at every count', () => {
+    for (let n = 1; n <= ARENA_SLOTS.length; n++) {
+      const page = arenaPage(Array.from({ length: n }, (_, i) => `g${i}`));
+      const pads = page.nodes.filter((p) => p.kind === 'game');
+      for (const a of pads) {
+        // The hero: 16 px wide over the pad, feet on its plate (drawArenaPad), 32 px tall.
+        const x0 = a.x * 16;
+        const y1 = a.y * 16 + ARENA_FEET;
+        const y0 = y1 - 32;
+        const hits = (x: number, y: number, w: number, h: number) =>
+          x < x0 + 16 && x0 < x + w && y < y1 && y0 < y + h;
+        // Other pads (the plate, rows 10-15 of the tile) and their heroes.
+        for (const b of pads) {
+          if (b === a) continue;
+          expect(hits(b.x * 16, b.y * 16 + 10, 16, 6), `${n}: ${a.id} over ${b.id}`).toBe(false);
+          expect(
+            hits(b.x * 16, b.y * 16 + ARENA_FEET - 32, 16, 32),
+            `${n}: ${a.id} over ${b.id}'s hero`,
+          ).toBe(false);
+        }
+        // Road tiles that are not this pad's (its roads leave the tile at its edges).
+        for (const p of page.paths)
+          for (const [x, y] of p.points)
+            if (x !== a.x || y !== a.y)
+              expect(
+                hits(x * 16 + 4, y * 16 + 4, 8, 8),
+                `${n}: ${a.id} over road ${p.from}->${p.to} at ${x},${y}`,
+              ).toBe(false);
+      }
+    }
   });
 
   it('keeps its actors off every road and pad, whatever the layout', () => {

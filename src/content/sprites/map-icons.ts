@@ -140,6 +140,12 @@ const arenaPad = (ring: string, rim: string, middle: string): string[] =>
 /** A 10-row emblem, outlined in black, standing on a 6-row pad. */
 const onPad = (emblem: readonly string[], pad: readonly string[]): string[] => [...halo(emblem, '0'), ...pad];
 
+/** The pad alone, at the same place in its 16×16 frame: a hero stands on it (drawArenaPad). */
+const bare = (pad: readonly string[]): string[] => [
+  ...Array.from({ length: 10 }, () => '.'.repeat(16)),
+  ...pad,
+];
+
 /** A gold cup with two handles on a brown base. */
 const TROPHY = [
   '................',
@@ -199,4 +205,7 @@ export const mapIconFrames: Record<string, readonly string[]> = {
   'map-arena-game': onPad(TROPHY, arenaPad('2', '8', '5')),
   'map-arena-tutorial': onPad(SIGNPOST, arenaPad('e', 'a', '1')),
   'map-arena-locked': onPad(QUESTION, arenaPad('b', '0', '0')),
+  'map-arena-game-plate': bare(arenaPad('2', '8', '5')),
+  'map-arena-tutorial-plate': bare(arenaPad('e', 'a', '1')),
+  'map-arena-locked-plate': bare(arenaPad('b', '0', '0')),
 };

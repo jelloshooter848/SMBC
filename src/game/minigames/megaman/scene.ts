@@ -96,6 +96,7 @@ export class StationScene implements Scene {
     state.world = 3;
     this.state = state;
     this.world = new World(level, game.ctx, state, {
+      scorePopups: false, // the HUD shows no score
       seed: opts.seed ?? levelSeed(level),
       extraEntities: stationEntities({ onCapsule: (p) => this.gotSaw(p) }),
     });
@@ -324,7 +325,7 @@ export class StationScene implements Scene {
     // Nothing can hurt him now; the room is his to leave.
     for (const e of this.world.entities) if (e instanceof EnemyShot) e.destroy();
     this.banner = { lines: ['DARK MEGA MAN IS BEATEN!'], until: Infinity, y: BAR_Y + 64 };
-    this.say('Dark Mega Man is beaten! The spell on Mega Man breaks.');
+    this.say(`Dark Mega Man is beaten!${this.game.inRound ? '' : ' The spell on Mega Man breaks.'}`);
   }
 
   private updateWon(): void {

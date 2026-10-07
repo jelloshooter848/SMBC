@@ -71,7 +71,8 @@ export function levelTouchLabels(p: Player | undefined, world: World): TouchLabe
     return out;
   }
   const canJump = def.behaviour.canJump?.(p) ?? true;
-  if (!canJump) out.jump = null;
+  // On Castlevania stairs JUMP does nothing (Player.stairWalk), whoever the hero.
+  if (!canJump || p.stairs) out.jump = null;
   else if (p.inWater) out.jump = 'SWIM';
   return out;
 }

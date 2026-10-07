@@ -101,6 +101,11 @@ export class Game {
   mapProgress: MapProgress = newMapProgress();
   /** The save file being played from the world map; null for every non-campaign start. */
   campaign: { slot: SaveSlot } | null = null;
+  /**
+   * A round played for fun is on (dev-minigames.ts playRound: the arena and Dev → Mini games):
+   * nothing it wins is kept and no hero is freed, so its words stay neutral (no campaign lines).
+   */
+  inRound = false;
   /** Larry's airship challenge in progress (scenes/airship.ts), else null. */
   airship: AirshipRun | null = null;
   /** The campaign's file as last written (the base `autosave` updates). */

@@ -70,7 +70,7 @@ the pointer's bob over the chests (still with reduce flashing) and the reels.
 
 Toad and three chests on a wooden floor; Toad says "PICK A BOX. ITS CONTENTS WILL HELP YOU ON YOUR
 WAY." Left / right move the pointer (announced "Box 2 of 3"), OPEN opens the chest. Its prize rises
-out and goes into the inventory with a banner ("YOU GOT A MUSHROOM! / ADDED TO YOUR ITEMS (1)").
+out and goes into the inventory with a banner ("YOU GOT A MUSHROOM! / ADDED TO YOUR ITEMS (1)"). In a round for fun (the arena, Dev → Mini games) nothing is kept: "YOU GOT A MUSHROOM! / (JUST FOR FUN)".
 Chests are rolled from the seed as the house opens, each on its own: mushroom 50%, fire flower
 35%, star 15% (`CHEST_WEIGHTS`). Music `toad-house`; sounds `powerup-appear` (the lid), `bonus-win`.
 

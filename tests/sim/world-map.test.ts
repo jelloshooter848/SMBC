@@ -172,6 +172,9 @@ describe('world map scene', () => {
     h.idle(8);
     const exit = page(1).exits[0] as WorldMapPage['exits'][number];
     expect(h.map().node).toBe(exit.from);
+    // The new place is saved once the slide is over (a file in play keeps it).
+    const saved: unknown[] = [];
+    vi.spyOn(h.game, 'autosave').mockImplementation(() => void saved.push({ ...prog.position }));
     h.tap(dirOf(exit.points));
     h.until(() => h.map().mode === 'slide', 400);
     h.idle(MAP_SLIDE_FRAMES - 1);
@@ -179,6 +182,7 @@ describe('world map scene', () => {
     expect(h.map().page.id).toBe('smb-2');
     expect(h.map().node).toBe('start');
     expect(prog.position).toEqual({ page: 'smb-2', node: 'start' });
+    expect(saved.at(-1)).toEqual({ page: 'smb-2', node: 'start' });
     expect(h.said).toContain(`World 2, ${page(2).title}. World 2 start`);
   });
 

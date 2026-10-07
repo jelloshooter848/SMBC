@@ -153,6 +153,11 @@ export interface WorldStart {
   extraEntities?: (s: EntitySpawn, world: World) => Entity | null | undefined;
   /** A `climb` arrival up an anchor chain (4-2's anchor to Larry's airship): the vine is a chain. */
   chain?: boolean;
+  /**
+   * False: points still count, but no "200" popup floats up where they were scored (a mini game
+   * whose HUD shows no score: Dracula's Castle, Zebes Escape, Station Escape). 1UP still shows.
+   */
+  scorePopups?: boolean;
 }
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
@@ -265,11 +270,25 @@ export const TALLY_PER_FRAME = 2;
 /** Points per TIME unit left (ScoreValue.TIME_REMAINING). */
 const TIME_POINTS = 50;
 
+/** No hero's body is wider than a tile (characters' hitboxes; simon-crypt.test.ts checks). */
+const MAX_HERO_W = 16;
+
+/**
+ * Whether fire bar (tx, ty) of `n` balls can sweep anything spanning x0..x1 (px, end exclusive):
+ * ball i's hit box is x = tx * 16 + 4 ± i * 8, plus 1..7 (Firebar.ballPos and its 6 px box).
+ */
+function barSweepX(tx: number, n: number, x0: number, x1: number): boolean {
+  const r = (n - 1) * 8;
+  return tx * 16 + 4 - r + 1 < x1 && tx * 16 + 4 + r + 7 > x0;
+}
+
 /**
  * One loaded level: tiles, camera, players, entities and the rules that tie them together.
  * Supports one or two players; with two, deaths respawn from a shared life pool.
  */
 export class World {
+  /** Points scored float up as a popup (WorldStart.scorePopups). */
+  readonly scorePopups: boolean;
   readonly map: TileMap;
   readonly camera: Camera;
   readonly players: Player[] = [];
@@ -361,6 +380,7 @@ export class World {
     this.audio = ctx.audio;
     this.assist = ctx.assist;
     this.extraEntities = start.extraEntities;
+    this.scorePopups = start.scorePopups ?? true;
     this.map = new TileMap(level);
     for (const id of level.tiles) if (id === T.CRACKED) this.cracked++;
     this.descents = level.zones.filter(
@@ -411,8 +431,12 @@ export class World {
       p.profile = { ...def.movement, coyoteFrames: ctx.assist.coyoteFrames };
       p.index = i;
       Object.assign(p.scratch, i === 0 ? state.kit : state.kit2);
-      if (mode === 'fall') p.body.y = px(-32) - px(i * 24);
-      else if (mode === 'climb') {
+      if (mode === 'fall') {
+        p.body.y = px(-32) - px(i * 24);
+        // Co-op: player 2 drops in beside player 1 where that drop is clear (fallSpot).
+        const first = this.players[0];
+        if (first) p.body.x = px(this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w));
+      } else if (mode === 'climb') {
         // The original's vineStart (Level.as watchModeOverrideVine): the vine grows from the
         // screen bottom while the player is hidden (Vine.initiate → growFromStgBot), then
         // Character.climbVineStarter puts him on it with his head at the screen bottom
@@ -803,7 +827,7 @@ export class World {
   addScore(n: number, x?: number, y?: number): void {
     // Capped like the original's StatManager.addPoints (SCORE_MAX = 9999999).
     this.state.score = Math.min(this.state.score + n, SCORE_MAX);
-    if (x !== undefined && y !== undefined) this.spawn(new ScorePopup(x, y, String(n)));
+    if (x !== undefined && y !== undefined && this.scorePopups) this.spawn(new ScorePopup(x, y, String(n)));
   }
 
   addCoin(): void {
@@ -2395,8 +2419,10 @@ export class World {
 
   /**
    * A fire bar sweeping a live descent shaft's down lift (5-4's at (92, 10) in the campaign) loses
-   * balls until its tip clears the lift's span, so a rider standing on the lift is never hit on
-   * the long ride down. Other bars, and every bar outside the campaign, keep their length.
+   * balls until its tip clears the lift's span widened by a hero's width each side (no hero is
+   * wider than a tile), so a rider whose body overlaps the lift at all, even hanging off either
+   * end, is never hit on the long ride down. Other bars, and every bar outside the campaign, keep
+   * their length.
    */
   private descentBarLen(tx: number, len: number): number {
     if (!this.descents.length) return len;
@@ -2404,17 +2430,45 @@ export class World {
       .filter((e) => e.type === 'lift-down' && this.descents.some((z) => e.x >= z.x && e.x < z.x + z.w))
       .map((e) => {
         const x = e.x * 16 + Number(e.props?.dx ?? 0);
-        return { x0: x, x1: x + Number(e.props?.len ?? 3) * 8 };
+        return { x0: x - (MAX_HERO_W - 1), x1: x + Number(e.props?.len ?? 3) * 8 + (MAX_HERO_W - 1) };
       });
-    // Ball i's hit box: x = tx * 16 + 4 ± i * 8, plus 1..7 (Firebar.ballPos and its 6 px box).
-    const reaches = (n: number) =>
-      spans.some(({ x0, x1 }) => {
-        const r = (n - 1) * 8;
-        return tx * 16 + 4 - r + 1 < x1 && tx * 16 + 4 + r + 7 > x0;
-      });
+    const reaches = (n: number) => spans.some(({ x0, x1 }) => barSweepX(tx, n, x0, x1));
     let n = len;
     while (n > 1 && reaches(n)) n--;
     return n;
+  }
+
+  /**
+   * Co-op, a fall arrival: player 2's x (px). Beside player 1 (`x1`, `w1`; 20 px right) when that
+   * drop is clear, else the nearest spot that is: inside the level, no solid tile in its columns
+   * above the row player 1 lands on (a shaft's wall, a ceiling), and outside every fire bar's sweep
+   * on the way down (5-4 at 99, back from the crypt: the bar at (103, 11)). 20 px right when none is.
+   */
+  private fallSpot(x1: number, w1: number, w: number): number {
+    const map = this.map;
+    const groundRow = (x0: number, x1e: number) => {
+      let row = map.height;
+      for (let tx = x0 >> 4; tx <= (x1e - 1) >> 4; tx++)
+        for (let ty = 0; ty < row; ty++)
+          if (map.isSolid(tx, ty)) {
+            row = ty;
+            break;
+          }
+      return row;
+    };
+    const floor = groundRow(x1, x1 + w1);
+    const bars = this.level.entities
+      .filter((e) => e.type === 'firebar' || e.type === 'firebar-ccw')
+      .map((e) => ({ tx: e.x, ty: e.y, n: this.descentBarLen(e.x, Number(e.props?.len ?? 6)) }))
+      // Only a bar whose sweep reaches above the landing row can meet the drop.
+      .filter((b) => b.ty * 16 + 4 - (b.n - 1) * 8 + 1 < floor * 16);
+    const clear = (x: number) =>
+      x >= 0 &&
+      x + w <= map.width * 16 &&
+      groundRow(x, x + w) >= floor &&
+      !bars.some((b) => barSweepX(b.tx, b.n, x, x + w));
+    for (const d of [20, 16, 12, -20, -16, -12, 8, -8, 4, -4, 0]) if (clear(x1 + d)) return x1 + d;
+    return x1 + 20;
   }
 
   /** Whether a cracked wall still stands in this level. */

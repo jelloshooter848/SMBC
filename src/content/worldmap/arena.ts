@@ -12,15 +12,12 @@ import { actor, poly } from './build';
  * The pads are not written here: the game list comes from the registries (src/game/arena:
  * MINIGAMES, the heroes with training rooms, Larry's airship, the bonus games, 1-0), which
  * installs them with `installArenaGames`, so the arena grows by itself as games are added. Pad
- * slots, in fill order (ARENA_SLOTS):
+ * slots, in fill order (SLOTS): three rows of pads three tiles apart, two tiles apart in a row, the
+ * middle row out from the Return pad, then the far row, then the near row (see SLOTS). Each hero
+ * stands on its pad (src/game/arena drawArenaPad), up to 32 px tall, so a road never reaches a
+ * pad from above.
  *
- *   - a ring round the pitch: 20 slots two tiles apart (rows 6 and 12, columns 1 and 15), from
- *     (7,12) on the near side round to the right, up, along the far side and down the left; each
- *     joined to the next, the ring closing once all 20 are used. The Return pad's roads go down
- *     to (7,12) and up to (7,6) (slot 11);
- *   - then 5 more across the middle of the pitch, off the Return pad's left and right roads.
- *
- * A pad is a node `{ id: 'pad-<game>', kind: 'game', game: '<game>' }`. Games beyond the 25 slots
+ * A pad is a node `{ id: 'pad-<game>', kind: 'game', game: '<game>' }`. Games beyond the 22 slots
  * would be left out (arena.test.ts checks that every registered game has its slot).
  */
 export const SKETCH_ARENA = [
@@ -49,47 +46,56 @@ export const ARENA_CENTRE: Pt = [7, 9];
 /** The hub's pad that leads here, and that the Return pad leads back to (portals pair 1:1). */
 export const HUB_ARENA_PAD = 'warp-arena';
 
-/** The ring's slots, in fill order: near side from the middle, right, up, along the far side, down the left. */
-export const ARENA_RING: readonly Pt[] = [
-  [7, 12],
-  [9, 12],
-  [11, 12],
-  [13, 12],
-  [15, 12],
-  [15, 10],
-  [15, 8],
-  [15, 6],
-  [13, 6],
-  [11, 6],
-  [9, 6],
-  [7, 6],
-  [5, 6],
-  [3, 6],
-  [1, 6],
-  [1, 8],
-  [1, 10],
-  [1, 12],
-  [3, 12],
-  [5, 12],
-];
-
-/** The ring slot the Return pad's upward road leads to (the far side's middle). */
-const RING_TOP = 11;
+/**
+ * A pad slot: where it stands, the slot its road comes from (an index into ARENA_SLOTS, or -1 for
+ * the Return pad) and the corners that road turns at on the way (none: a straight road).
+ */
+interface Slot {
+  at: Pt;
+  from: number;
+  via?: Pt[];
+}
 
 /**
- * The pitch's slots after the ring, across its middle, each with the slot (index into
- * ARENA_SLOTS, or -1 for the Return pad) its road comes from.
+ * The pad slots, in fill order: three rows three tiles apart (a 32 px hero standing on a pad
+ * stays clear of the pads and roads of the row above), pads two tiles apart in each row. Every
+ * road reaches a pad from the side or from below, never from above, where the hero stands.
+ *
+ *   - the middle row (9) out from the Return pad, left then right, to the touchlines;
+ *   - the far row (6) out from (7,6), which the Return pad's road goes up to;
+ *   - the near row (12), its pads at even columns: its road comes down the left touchline from
+ *     (1,9) and turns in at (1,12), and the row closes back up to (15,9) once it is full.
  */
-const FIELD: readonly { at: Pt; from: number }[] = [
+const SLOTS: readonly Slot[] = [
   { at: [5, 9], from: -1 },
   { at: [9, 9], from: -1 },
-  { at: [3, 9], from: 20 },
-  { at: [11, 9], from: 21 },
-  { at: [13, 9], from: 23 },
+  { at: [3, 9], from: 0 },
+  { at: [11, 9], from: 1 },
+  { at: [1, 9], from: 2 },
+  { at: [13, 9], from: 3 },
+  { at: [15, 9], from: 5 },
+  { at: [7, 6], from: -1 },
+  { at: [5, 6], from: 7 },
+  { at: [9, 6], from: 7 },
+  { at: [3, 6], from: 8 },
+  { at: [11, 6], from: 9 },
+  { at: [1, 6], from: 10 },
+  { at: [13, 6], from: 11 },
+  { at: [15, 6], from: 13 },
+  { at: [2, 12], from: 4, via: [[1, 12]] },
+  { at: [4, 12], from: 15 },
+  { at: [6, 12], from: 16 },
+  { at: [8, 12], from: 17 },
+  { at: [10, 12], from: 18 },
+  { at: [12, 12], from: 19 },
+  { at: [14, 12], from: 20 },
 ];
 
-/** Every pad slot, in fill order (the ring, then the field). */
-export const ARENA_SLOTS: readonly Pt[] = [...ARENA_RING, ...FIELD.map((f) => f.at)];
+/** Once the near row is full, its last pad joins (15,9) round the right touchline. */
+const CLOSE = { from: 6, to: SLOTS.length - 1, via: [[15, 12]] as Pt[] };
+
+/** Every pad slot, in fill order. */
+export const ARENA_SLOTS: readonly Pt[] = SLOTS.map((s) => s.at);
 
 /** A game's pad node id. */
 export const arenaPadId = (game: string): string => `pad-${game}`;
@@ -117,22 +123,13 @@ export function arenaLayout(games: readonly string[]): { nodes: MapNode[]; paths
   ];
   const id = (slot: number) => (slot < 0 ? 'start' : arenaPadId(used[slot] as string));
   const at = (slot: number): Pt => (slot < 0 ? ARENA_CENTRE : (ARENA_SLOTS[slot] as Pt));
-  const road = (from: number, to: number): MapPath => ({
+  const road = (from: number, to: number, via: Pt[] = []): MapPath => ({
     from: id(from),
     to: id(to),
-    points: poly(at(from), at(to)),
+    points: poly(at(from), ...via, at(to)),
   });
-  const n = used.length;
-  const ring = Math.min(n, ARENA_RING.length);
-  const paths: MapPath[] = [];
-  if (ring > 0) paths.push(road(-1, 0));
-  for (let i = 0; i + 1 < ring; i++) paths.push(road(i, i + 1));
-  if (ring > RING_TOP) paths.push(road(-1, RING_TOP));
-  if (ring === ARENA_RING.length) paths.push(road(ARENA_RING.length - 1, 0));
-  FIELD.forEach((f, k) => {
-    const slot = ARENA_RING.length + k;
-    if (slot < n) paths.push(road(f.from, slot));
-  });
+  const paths: MapPath[] = SLOTS.slice(0, used.length).map((s, i) => road(s.from, i, s.via));
+  if (used.length > CLOSE.to) paths.push(road(CLOSE.from, CLOSE.to, CLOSE.via));
   return { nodes, paths };
 }
 

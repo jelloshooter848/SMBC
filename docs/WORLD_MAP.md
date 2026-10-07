@@ -160,10 +160,12 @@ the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pad
 - **Pads** (`kind: 'game'`, id `pad-<game>`) are not written in the page: `src/game/arena` lists the
   games from the registries (MINIGAMES, Larry's airship, the bonus games, 1-0, the heroes with
   training lessons) and lays the page out with `installArenaGames` when it loads, so the arena
-  grows by itself. Slots, in fill order: a ring round the pitch (20 slots two tiles apart, from the
-  near side's middle round to the right, each joined to the next; the ring closes when all 20 are
-  used; the Return pad's roads go down to the first and up to the twelfth), then 5 across the
-  middle of the pitch off the Return pad's left and right roads. 16 games use 16 slots today.
+  grows by itself. Slots (22), in fill order: three rows three tiles apart (rows 9, 6 and 12),
+  pads two tiles apart in a row: the middle row out from the Return pad to both touchlines, the
+  far row out from (7,6) (the Return pad's road goes up to it), then the near row at even
+  columns, its road coming down the left touchline from (1,9) and turning in at (1,12); full, it
+  closes back up to (15,9). A hero up to 32 px tall stands on each pad, so no road reaches a pad
+  from above and no hero covers another pad or a road (`arena.test.ts`). 17 games use 17 slots.
 - Every pad and road of the arena is walkable as soon as the page is open (`rules.pathFromDone`:
   roads leaving a `game` node count as walked on an open page). Whether a game is **found** is the
   arena's own rule (docs/HEROES.md "Met heroes and the Mini Game Arena"); a dark pad shows the
@@ -177,10 +179,12 @@ the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pad
   banners `E` (rows 3-4), the barrier wall `B` (row 5), the walkable chequered pitch `F` (rows
   6-13, every pad and road on it) and a crowd again (row 14). Actors: the `scoreboard` at (104,40),
   `light-tower`s at (0,64) and (240,64), and fans' flags in the stands. Pads (`drawArenaPad`) are
-  items-sheet frames: `map-arena-game` (a trophy: mini games, the airship, bonus games),
-  `map-arena-tutorial` (a signpost: 1-0 and training) and `map-arena-locked` (the dark `?`), drawn
-  in front of what stands at the pad: the hero's portrait (a black silhouette until found), Larry,
-  or the bonus game's icon.
+  items-sheet frames: `map-arena-game` (a trophy on a red pad: mini games, the airship, bonus
+  games), `map-arena-tutorial` (a signpost on a blue pad: 1-0 and training) and
+  `map-arena-locked` (the dark `?`). What stands at a pad (the hero's portrait, a black silhouette
+  until found; Larry; the bonus game's icon) stands on the bare pad (`<frame>-plate`), feet on
+  its plate (`ARENA_FEET`, 13 px below the tile's top), centred and fully in view; the emblem
+  shows only on a pad nobody stands on.
 
 ## Secret exits: each exit opens its own road (0.5.0)
 
@@ -435,10 +439,18 @@ descent x w -> level x y [campaign]
   level: no secret, no map road, no clear.
 - 5-4: `descent 84 8 -> 5-4-dungeon 13 0 campaign` (the open shaft, columns 84-91; its down
   lifts run in column 89). While a descent zone is live, a fire bar whose tip would sweep one of
-  its down lifts loses balls until it clears the lift (`World.descentBarLen`): 5-4's at (92, 10)
-  is 5 long in the campaign, 6 elsewhere, so a rider anywhere on the lift rides down unhurt.
+  its down lifts loses balls until it clears the lift widened by a tile each side, the widest
+  hero's overhang (`World.descentBarLen`): 5-4's at (92, 10) is 3 long in the campaign, 6
+  elsewhere, so a rider whose body overlaps the lift at all, even hanging off either end, rides
+  down unhurt (tests: every hero at offsets across the lift, over 16 bar phases).
 - Every rider counts: two co-op players on the lift both go down (the check is the geometry,
   feet on the lift's top, not `Lift.rider`, which holds only the last body carried).
+- **Co-op fall arrivals** (any `fall` arrival: a level's fall start, a pit, a descent, a pipe
+  with `exit=fall`): player 2 drops in 20 px right of player 1 when that drop is clear, else at
+  the nearest clear offset (16, 12 right, 20, 16, 12 left, then closer; `World.fallSpot`): inside
+  the level, no solid tile in its columns above the row player 1 lands on, outside every fire
+  bar's sweep. So the dungeon's and crypt's arrivals stay in their open shafts (16 px right), and
+  5-4 at 99 from the crypt lands 12 px right, clear of the bar at (103, 11).
 
 ## Adding a page (checklist)
 

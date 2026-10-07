@@ -99,6 +99,7 @@ export class CastleScene implements Scene {
     this.bossSeed = opts.bossSeed ?? 5;
     this.world = new World(level, game.ctx, state, {
       seed: opts.seed ?? levelSeed(level),
+      scorePopups: false, // the HUD shows no score
       extraEntities: castleEntities({ onSubWeapon: (p) => this.gotDagger(p) }),
     });
     this.world.time = null;
@@ -371,8 +372,14 @@ export class CastleScene implements Scene {
     this.setPhase('won');
     this.stopMusic();
     for (const e of this.world.entities) if (e instanceof CvShot || e instanceof ShockWave) e.destroy();
-    this.banner = { lines: ['DRACULA IS DEFEATED!', 'THE CURSE IS BROKEN.'], until: Infinity, y: 96 };
-    this.say('Dracula is defeated! The curse on Simon is broken.');
+    // A round for fun (Game.inRound) frees nobody: no word of the curse.
+    const fun = this.game.inRound;
+    this.banner = {
+      lines: fun ? ['DRACULA IS DEFEATED!'] : ['DRACULA IS DEFEATED!', 'THE CURSE IS BROKEN.'],
+      until: Infinity,
+      y: 96,
+    };
+    this.say(fun ? 'Dracula is defeated!' : 'Dracula is defeated! The curse on Simon is broken.');
   }
 
   private updateWon(): void {

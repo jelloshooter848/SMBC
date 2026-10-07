@@ -857,6 +857,7 @@ export class WorldMapScene implements Scene {
     this.mode = this.revealQueue.length ? 'reveal' : 'idle';
     this.revealT = 0;
     this.announceHere();
+    if (this.mode === 'idle') this.game.autosave(); // a reveal saves when it is drawn in
   }
 
   /**

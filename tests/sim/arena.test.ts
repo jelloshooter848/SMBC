@@ -3,9 +3,13 @@ import type { Scene } from '@engine/scene';
 import { getLevel } from '@content/levels';
 import { mapPage } from '@content/worldmap';
 import { arenaPadId } from '@content/worldmap/arena';
-import { ARENA_GAMES, ARENA_LOCKED, arenaGameAt } from '@game/arena';
+import { ARENA_FEET, ARENA_GAMES, ARENA_LOCKED, arenaGameAt } from '@game/arena';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import { SPRITES } from '@content/sprites';
 import { WorldMapScene, MAP_FADE_FRAMES } from '@game/scenes/world-map';
-import { DevMiniGameResultScene } from '@game/scenes/dev-minigames';
+import { DevMiniGameResultScene, playRound } from '@game/scenes/dev-minigames';
+import { awardPrize, type AwardOutcome } from '@game/bonus/use';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import type { MapNode, WorldMapPage } from '@game/map/types';
@@ -147,19 +151,19 @@ describe('the Mini Game Arena', () => {
     const prog = h.game.mapProgress;
     for (const n of arena().nodes) expect(isOpen(prog, arena(), n.id), n.id).toBe(true);
     expect(openPaths(prog, arena()).paths).toHaveLength(arena().paths.length);
-    // Down to the first pad of the track, then along it with the d-pad.
+    // Left to the first pad of the middle row, on along it with the d-pad, and back.
     const first = ARENA_GAMES[0]!.id;
-    const second = ARENA_GAMES[1]!.id;
-    h.tap('down');
+    const third = ARENA_GAMES[2]!.id;
+    h.tap('left');
     h.until(() => m.mode === 'idle', 120);
     expect(m.node).toBe(arenaPadId(first));
     expect(h.said.at(-1)).toBe('Locked. Find This Hero First.');
-    h.tap('right');
-    h.until(() => m.mode === 'idle', 120);
-    expect(m.node).toBe(arenaPadId(second));
     h.tap('left');
     h.until(() => m.mode === 'idle', 120);
-    h.tap('up');
+    expect(m.node).toBe(arenaPadId(third));
+    h.tap('right');
+    h.until(() => m.mode === 'idle', 120);
+    h.tap('right');
     h.until(() => m.mode === 'idle', 120);
     expect(m.node).toBe('start');
   });
@@ -183,12 +187,16 @@ describe('the Mini Game Arena', () => {
     expect(h.top()).toBe(map(h));
     expect(h.said.at(-1)).toBe('Locked. Find This Hero First.');
     expect(new Map(store)).toEqual(saves);
-    // Drawn dark: Luigi's black silhouette behind the dark '?' pad.
+    // Drawn dark: Luigi's black silhouette standing on the dark pad; a pad with no hero shows '?'.
     const d = draw(map(h));
     const p = pad('mini-luigi');
     expect(d.sprites.some((s) => s.key.includes('luigi~silhouette'))).toBe(true);
     expect(
-      d.sprites.some((s) => s.frame === 'map-arena-locked' && s.x === p.x * 16 && s.y === p.y * 16),
+      d.sprites.some((s) => s.frame === 'map-arena-locked-plate' && s.x === p.x * 16 && s.y === p.y * 16),
+    ).toBe(true);
+    const a = pad('airship');
+    expect(
+      d.sprites.some((s) => s.frame === 'map-arena-locked' && s.x === a.x * 16 && s.y === a.y * 16),
     ).toBe(true);
   });
 
@@ -198,14 +206,14 @@ describe('the Mini Game Arena', () => {
     expect(found(h)).toEqual(ARENA_GAMES.map((g) => g.id).sort());
     const d = draw(map(h));
     expect(d.sprites.some((s) => s.key.includes('~silhouette'))).toBe(false);
-    expect(d.sprites.some((s) => s.frame === 'map-arena-locked')).toBe(false);
-    // Trophies for the games, signposts for the tutorials.
+    expect(d.sprites.some((s) => s.frame.startsWith('map-arena-locked'))).toBe(false);
+    // Red pads for the games, blue pads for the tutorials, a figure standing on each.
     const frameAt = (game: string) =>
       d.sprites.find((s) => s.key === 'items' && s.x === pad(game).x * 16 && s.y === pad(game).y * 16)?.frame;
-    expect(frameAt('mini-luigi')).toBe('map-arena-game');
-    expect(frameAt('bonus-memory')).toBe('map-arena-game');
-    expect(frameAt('train-link')).toBe('map-arena-tutorial');
-    expect(frameAt('stage-1-0')).toBe('map-arena-tutorial');
+    expect(frameAt('mini-luigi')).toBe('map-arena-game-plate');
+    expect(frameAt('bonus-memory')).toBe('map-arena-game-plate');
+    expect(frameAt('train-link')).toBe('map-arena-tutorial-plate');
+    expect(frameAt('stage-1-0')).toBe('map-arena-tutorial-plate');
     expect(d.sprites.some((s) => s.key === 'mario@luigi')).toBe(true);
   });
 
@@ -365,6 +373,152 @@ describe('the Mini Game Arena', () => {
     expect(h.top()).toBe(m);
     expect(h.game.state.character.id).toBe('link');
     expect(new Map(store)).toEqual(saves);
+  });
+});
+
+type Box = [number, number, number, number];
+interface Drawn {
+  sheet: string;
+  frame: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** The opaque pixels' bounds on screen (x0, y0, x1, y1; ends exclusive). */
+  box: Box;
+}
+
+/** Draws `scene`, recording every sprite in order with its frame size and opaque bounds. */
+function drawBoxes(scene: { render(r: Renderer): void }): Drawn[] {
+  const out: Drawn[] = [];
+  const r: Renderer = Object.assign(new NullRenderer(), {
+    sprite(sh: SpriteSheet, frame: string, x: number, y: number, flip = false): void {
+      const rows = SPRITES[sh.id.split(/[@~]/)[0] as string]?.frames[frame] as readonly string[];
+      const h = rows.length;
+      const w = rows[0]?.length ?? 0;
+      let [x0, y0, x1, y1] = [w, h, 0, 0];
+      rows.forEach((row, j) =>
+        [...row].forEach((c, i) => {
+          if (c === '.') return;
+          const u = flip ? w - 1 - i : i;
+          [x0, y0, x1, y1] = [Math.min(x0, u), Math.min(y0, j), Math.max(x1, u + 1), Math.max(y1, j + 1)];
+        }),
+      );
+      out.push({ sheet: sh.id, frame, x, y, w, h, box: [x + x0, y + y0, x + x1, y + y1] });
+    },
+  });
+  scene.render(r);
+  return out;
+}
+
+const meets = (a: Box, b: Box) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+
+describe('the pads drawn (a late file, every game found)', () => {
+  it('each hero (or Larry, or the bonus icon) stands on its pad: feet on the plate, centred, in front of it', () => {
+    const h = makeGame();
+    onArena(h, LATE);
+    const d = drawBoxes(map(h));
+    for (const g of ARENA_GAMES) {
+      const n = pad(g.id);
+      const i = d.findIndex(
+        (s) =>
+          s.sheet === 'items' && s.frame.startsWith('map-arena-') && s.x === n.x * 16 && s.y === n.y * 16,
+      );
+      expect(i, g.id).toBeGreaterThanOrEqual(0);
+      const fig = d[i + 1] as Drawn;
+      expect(fig.frame.startsWith('map-arena-') || fig.frame === 'map-path-dot', g.id).toBe(false);
+      expect(fig.y + fig.h, `${g.id} feet on the plate`).toBe(n.y * 16 + ARENA_FEET);
+      expect(fig.x + fig.w / 2, `${g.id} centred`).toBe(n.x * 16 + 8);
+    }
+  });
+
+  it('no figure is covered, and none covers another pad, another figure or a road', () => {
+    const h = makeGame();
+    onArena(h, LATE);
+    const d = drawBoxes(map(h));
+    const plates = d.filter((s) => s.sheet === 'items' && s.frame.startsWith('map-arena-'));
+    const dots = d.filter((s) => s.frame === 'map-path-dot');
+    for (const g of ARENA_GAMES) {
+      const n = pad(g.id);
+      const tile: Box = [n.x * 16, n.y * 16, n.x * 16 + 16, n.y * 16 + 16];
+      const i = d.findIndex(
+        (s) => s.sheet === 'items' && s.frame.startsWith('map-arena-') && s.x === tile[0] && s.y === tile[1],
+      );
+      const fig = d[i + 1] as Drawn;
+      // Fully in view: nothing drawn after it overlaps it (the player's hero is on the Return pad).
+      for (const later of d.slice(i + 2))
+        expect(meets(fig.box, later.box), `${g.id} under ${later.frame}`).toBe(false);
+      for (const p of plates)
+        if (p.x !== tile[0] || p.y !== tile[1])
+          expect(meets(fig.box, p.box), `${g.id} over the pad at ${p.x},${p.y}`).toBe(false);
+      for (const p of plates) {
+        const other = d[d.indexOf(p) + 1] as Drawn;
+        if (other !== fig) expect(meets(fig.box, other.box), `${g.id} over ${other.frame}`).toBe(false);
+      }
+      // Roads: every dot but the ones on the pad's own tile edge.
+      for (const dot of dots) {
+        const cx = dot.x + 4;
+        const cy = dot.y + 4;
+        if (cx >= tile[0] && cx <= tile[2] && cy >= tile[1] && cy <= tile[3]) continue;
+        expect(meets(fig.box, dot.box), `${g.id} over the road dot at ${cx},${cy}`).toBe(false);
+      }
+    }
+  });
+});
+
+describe('arena rounds say nothing about the campaign', () => {
+  it.each(
+    ARENA_GAMES.filter((g) => g.kind === 'mini' || g.kind === 'bonus' || g.kind === 'airship').map(
+      (g) => [g.id] as const,
+    ),
+  )("%s: the menu's Give up just ends the round", (id) => {
+    const h = makeGame();
+    const m = onArena(h, LATE, arenaPadId(id));
+    h.tap('jump');
+    let hint: string | undefined;
+    for (let f = 0; f < 3000 && hint === undefined; f++) {
+      if (f % 90 !== 89) {
+        h.step();
+        continue;
+      }
+      h.tap('start');
+      const items = (h.top() as { items?: MenuItem[] }).items ?? [];
+      const quit = items.find((i) => i.label === 'Give up');
+      if (quit) hint = quit.hint ?? '';
+      else if (items.length) h.tap('start');
+    }
+    expect(hint, id).toBe('Ends the round');
+    quitRound(h, m);
+  });
+
+  it('a Toad House prize in a round is just for fun: nothing added to the items', () => {
+    const h = makeGame();
+    onArena(h, LATE);
+    const outs: AwardOutcome[] = [];
+    playRound(
+      h.game,
+      {
+        title: 'TEST',
+        create: (game, done) => {
+          outs.push(awardPrize(game, { kind: 'item', item: 'flower' }));
+          outs.push(awardPrize(game, { kind: 'lives', amount: 1 }));
+          outs.push(awardPrize(game, { kind: 'coins', amount: 10 }));
+          return { update: () => done('pass'), render: () => {} };
+        },
+      },
+      () => {},
+    );
+    expect(outs.map((o) => o.lines)).toEqual([
+      ['YOU GOT A FIRE FLOWER!', '(JUST FOR FUN)'],
+      ['1 UP!', '(JUST FOR FUN)'],
+      ['10 COINS!', '(JUST FOR FUN)'],
+    ]);
+    expect(outs.map((o) => o.said)).toEqual([
+      'You got a Fire Flower, just for fun.',
+      'One more life, just for fun.',
+      '10 coins, just for fun.',
+    ]);
+    expect(outs.every((o) => !o.stored)).toBe(true);
   });
 });
 

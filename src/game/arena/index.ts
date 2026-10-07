@@ -1,4 +1,5 @@
 import type { Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { TouchLabels } from '@engine/input/touch';
 import { arenaPadId, installArenaGames } from '@content/worldmap/arena';
 import { fxPalette } from '@content/sprites/palette-fx';
@@ -237,36 +238,58 @@ export const ARENA_PAD_FRAMES: Readonly<Record<ArenaKind | 'locked', string>> = 
   locked: 'map-arena-locked',
 };
 
+/** The bare pad (no emblem) a figure stands on: the pad's own frame + '-plate'. */
+export const arenaPlateFrame = (pad: string): string => `${pad}-plate`;
+
+/** Px below the pad tile's top where a figure's feet rest: the middle of the pad's plate (rows 10-15). */
+export const ARENA_FEET = 13;
+
 /**
- * Draws pad `n` at its tile (shifted `ox`): what stands at the pad first (the hero in colour when
- * found, a black silhouette when not; Larry at his airship's pad; the bonus game's icon), then the
- * pad in front of its feet: a trophy (games), a signpost (tutorials) or the dark '?' pad.
+ * Draws pad `n` at its tile (shifted `ox`). What stands at the pad (the hero in colour when found,
+ * a black silhouette when not; Larry at his airship's pad; the bonus game's icon) stands on the
+ * bare pad, feet on its plate, centred and fully in view; the pad's colour still tells a game
+ * (red) from a tutorial (blue) or a dark pad. A pad with nobody on it shows its emblem: a trophy,
+ * a signpost or the dark '?'. Heroes are up to 32 px tall; the page's slots leave room (arena.ts).
  */
 export function drawArenaPad(r: Renderer, game: Game, n: MapNode, ox: number, t: number): void {
-  const assets = game.ctx.assets;
+  const items = game.ctx.assets.sheet('items');
   const g = arenaGameAt(n);
   const found = !!g && g.found(game);
   const x = ox + n.x * 16;
   const y = n.y * 16;
-  // Figures stand just behind the pad, their feet hidden by it.
-  const feet = y + 6;
+  const pad = ARENA_PAD_FRAMES[found && g ? g.kind : 'locked'];
+  const figure = arenaFigure(game, g, found, t);
+  if (!figure) {
+    r.sprite(items, pad, x, y);
+    return;
+  }
+  r.sprite(items, arenaPlateFrame(pad), x, y);
+  const f = figure.sheet.frames.get(figure.frame);
+  const w = f?.w ?? 16;
+  r.sprite(figure.sheet, figure.frame, x + 8 - (w >> 1), y + ARENA_FEET - (f?.h ?? 16), figure.flip);
+}
+
+/** What stands on a pad: the game's hero (a silhouette until found), Larry, a bonus icon; else null. */
+function arenaFigure(
+  game: Game,
+  g: ArenaGame | null,
+  found: boolean,
+  t: number,
+): { sheet: SpriteSheet; frame: string; flip: boolean } | null {
+  const assets = game.ctx.assets;
   if (g && found && g.kind === 'bonus') {
     const kind = g.id.slice('bonus-'.length) as BonusKind;
-    r.sprite(assets.sheet('smb3'), BONUS_FRAME[kind] ?? 'node-spade', x, feet - 16);
-  } else if (g && found && g.kind === 'airship') {
-    const smb3 = assets.sheet('smb3');
-    const frame = (t >> 4) & 1 ? 'larry-1' : 'larry-0';
-    r.sprite(smb3, frame, x, feet - (smb3.frames.get(frame)?.h ?? 16));
-  } else if (g?.hero) {
-    const def = game.deps.characters.find((c) => c.id === g.hero);
-    if (def) {
-      const p = def.portrait;
-      const sheet = assets.sheet(p.sheet, found ? p.palette : fxPalette(p.palette, 'silhouette'));
-      const f = sheet.frames.get(p.frame);
-      const w = f?.w ?? 16;
-      // A training pad's hero faces left, a mini game's right.
-      r.sprite(sheet, p.frame, x + 8 - (w >> 1), feet - (f?.h ?? 16), g.kind === 'training');
-    }
+    return { sheet: assets.sheet('smb3'), frame: BONUS_FRAME[kind] ?? 'node-spade', flip: false };
   }
-  r.sprite(assets.sheet('items'), ARENA_PAD_FRAMES[found && g ? g.kind : 'locked'], x, y);
+  if (g && found && g.kind === 'airship')
+    return { sheet: assets.sheet('smb3'), frame: (t >> 4) & 1 ? 'larry-1' : 'larry-0', flip: false };
+  const def = g?.hero ? game.deps.characters.find((c) => c.id === g.hero) : undefined;
+  if (!g || !def) return null;
+  const p = def.portrait;
+  // A training pad's hero faces left, a mini game's right.
+  return {
+    sheet: assets.sheet(p.sheet, found ? p.palette : fxPalette(p.palette, 'silhouette')),
+    frame: p.frame,
+    flip: g.kind === 'training',
+  };
 }

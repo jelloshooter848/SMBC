@@ -199,8 +199,10 @@ describe("the cabin's look (the SMB3 art)", () => {
     const cells = (xs: number[], ys: number[]) => xs.flatMap((x) => ys.map((y) => `${x},${y}`)).sort();
     const span = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
     expect(l.width).toBe(16);
-    // No sky at all: the log back wall even behind the HUD, solid hull, posts or the pipe.
-    for (let y = 0; y < 15; y++) for (let x = 0; x < 16; x++) expect(t(x, y), `${x},${y}`).not.toBe(T.AIR);
+    // No sky in the room: the log back wall, solid hull, posts or the pipe. Rows 0-1 under the HUD
+    // stay clear (black, no tiles) so the HUD reads; the room is closed by the ceiling on row 2.
+    for (let y = 0; y < 2; y++) for (let x = 0; x < 16; x++) expect(t(x, y), `${x},${y}`).toBe(T.AIR);
+    for (let y = 2; y < 15; y++) for (let x = 0; x < 16; x++) expect(t(x, y), `${x},${y}`).not.toBe(T.AIR);
     for (let y = 3; y < 12; y++) for (let x = 1; x < 15; x++) expect(t(x, y), `${x},${y}`).toBe(T.WALL);
     // The ceiling row and both edge columns are solid, each tile covered by its 16x16 decor: a
     // ceiling beam along row 2, a pillar per row down columns 0 and 15.
