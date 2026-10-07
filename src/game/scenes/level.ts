@@ -17,6 +17,7 @@ import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
 import { abilityHint } from './hints';
+import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
 import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
 
 export type LevelStart = WorldStart;
@@ -159,6 +160,9 @@ export class LevelScene implements Scene {
         break;
       case 'crystal-ball':
         this.takeCrystalBall(ev.next);
+        break;
+      case 'anchor':
+        game.deps.announcer?.say(`${ANCHOR_SAID} Climb its chain: ${abilityHint(game, 'UP', 'up')}.`);
         break;
       case 'captive-near': {
         const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
