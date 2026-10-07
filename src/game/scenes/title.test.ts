@@ -158,6 +158,8 @@ describe('title text', () => {
     expect(last).toContain('REMIX');
     expect(last).toContain('Exploding Rabbit');
     expect(last).toContain('Start game');
+    // Mario starts free: a new save has none of the eight heroes to find yet.
+    expect(last).toContain('0 of 8 heroes freed.');
   });
 });
 
@@ -249,13 +251,15 @@ describe('reduce flashing', () => {
     let shook = false;
     let flashed = false;
     const rims = new Set<number>();
+    const blasts = new Set<number>();
     for (let i = 0; i < 500; i++) {
       h.step();
       if (title.shake() !== 0) shook = true;
       if (title.boltFlash()) flashed = true;
       rims.add(title.rimPhase());
+      blasts.add(title.blastFrame(i));
     }
-    return { shook, flashed, rims };
+    return { shook, flashed, rims, blasts };
   }
 
   it('the stamp shakes the screen, the bolt flashes and the rim cycles normally', () => {
@@ -263,6 +267,7 @@ describe('reduce flashing', () => {
     expect(r.shook).toBe(true);
     expect(r.flashed).toBe(true);
     expect(r.rims.size).toBeGreaterThan(1);
+    expect(r.blasts.size).toBe(2);
   });
 
   it('with reduce flashing there is no shake, no flash and no colour cycling', () => {
@@ -270,6 +275,7 @@ describe('reduce flashing', () => {
     expect(r.shook).toBe(false);
     expect(r.flashed).toBe(false);
     expect(r.rims.size).toBe(1);
+    expect(r.blasts.size).toBe(1);
   });
 });
 

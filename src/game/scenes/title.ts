@@ -138,12 +138,14 @@ export class TitleScene extends MenuScene {
     if (this.phase === 'rift') audio.playJingle('title-rift');
     else audio.playMusic('title');
     this.rebuild();
-    const freed = this.heroes.filter((h) => h.freed).length;
+    // Mario starts free, so count the heroes to find, as character select does.
+    const toFind = this.heroes.filter((h) => h.def.id !== 'mario');
+    const freed = toFind.filter((h) => h.freed).length;
     const it = this.items[this.index];
     this.game.deps.announcer?.say(
       [
         `${TITLE_NAME}. Chapter 1.`,
-        `${freed} of ${this.heroes.length} heroes freed.`,
+        `${freed} of ${toFind.length} heroes freed.`,
         'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit. Unofficial fan project.',
         `Version ${__APP_VERSION__}.`,
         this.phase === 'rift' ? 'Press any button to skip the intro.' : '',
@@ -176,6 +178,11 @@ export class TitleScene extends MenuScene {
   /** The wand bolt's white flash frame (never with reduce flashing). */
   boltFlash(): boolean {
     return !this.calm && this.phase === 'rift' && this.clock >= T.flashFrom && this.clock < T.flashTo;
+  }
+
+  /** The wand blast's frame: it flickers between two, held steady with reduce flashing. */
+  blastFrame(t: number): number {
+    return this.calm ? 0 : (t >> 2) % 2;
   }
 
   /** Which rotation of the rift's band colours shows (fixed with reduce flashing). */
@@ -324,7 +331,12 @@ export class TitleScene extends MenuScene {
       y = ny;
     }
     if (k >= 1)
-      r.sprite(this.game.ctx.assets.sheet('smb3'), `wand-blast-${(t >> 2) % 2}`, RIFT_CX - 8, RIFT_CY - 8);
+      r.sprite(
+        this.game.ctx.assets.sheet('smb3'),
+        `wand-blast-${this.blastFrame(t)}`,
+        RIFT_CX - 8,
+        RIFT_CY - 8,
+      );
   }
 
   /** Where CROSSOVER letter `i` is now (null: not out yet). */
