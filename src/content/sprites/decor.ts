@@ -2,6 +2,7 @@ import { NES } from '@engine/gfx/palette';
 import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
+import { underworldDecorFrames, underworldDecorPalette } from './sophia-tiles';
 import { castlevaniaDecorFrames, castlevaniaDecorPalette } from './castlevania-look';
 import { ninjaCityDecorFrames, ninjaCityDecorPalette } from './ninja-city-look';
 import { smwDecorFrames, smwDecorPalette } from './top-secret';
@@ -121,6 +122,8 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-ninja-city': ninjaCityDecorPalette,
   // Bill's jungle: dark canopy greens, distant mountain blues, concrete greys, palm bark (contra-decor.ts).
   'decor-jungle': jungleDecorPalette,
+  // Sophia's Underworld: slime greens, cave mist, rust rock, pale roots (sophia-tiles.ts).
+  'decor-underworld': underworldDecorPalette,
   /* The Top Secret Area: Super Mario World greens, white sparkles. */
   'decor-smw': smwDecorPalette,
   // The campaign looks of 2-1, 3-1 and 4-2.
@@ -686,6 +689,8 @@ export const decorDef: SpriteDef = {
     'ruin-temple': ruinTemple,
     // Bill's jungle: palms, canopy, mountains, sandbags, a searchlight; clouds become canopy.
     ...jungleDecorFrames,
+    // Sophia's Underworld: the gateway Jason walks through, roots hanging from the roof.
+    ...underworldDecorFrames,
     // The 0.4.12 restyles: Simon's castle hall (5-4) and Ryu's city street (6-2).
     ...castlevaniaDecorFrames,
     ...ninjaCityDecorFrames,

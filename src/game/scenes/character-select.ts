@@ -213,6 +213,8 @@ export class CharacterSelectScene implements Scene {
       );
       const f = sheet.frames.get(c.portrait.frame);
       const h = f?.h ?? 32;
+      // Centred on its slot (a 16 px hero at x - 8; Sophia III's tank is wider).
+      const left = x - ((f?.w ?? 16) >> 1);
       if (locked) {
         // A captive still to be found: a black silhouette with a grey rim (so it reads on the
         // black screen) and ??? for its name.
@@ -223,10 +225,10 @@ export class CharacterSelectScene implements Scene {
           [0, -1],
           [0, 1],
         ] as const)
-          r.sprite(rim, c.portrait.frame, x - 8 + dx, 120 - h + dy);
+          r.sprite(rim, c.portrait.frame, left + dx, 120 - h + dy);
         r.text(font, '???', x - 12, 128);
       }
-      r.sprite(sheet, c.portrait.frame, x - 8, 120 - h);
+      r.sprite(sheet, c.portrait.frame, left, 120 - h);
       // With a full roster the heroes stand close together, so the cursor becomes an underline.
       const tight = spacing < 40;
       if (i === this.index) {

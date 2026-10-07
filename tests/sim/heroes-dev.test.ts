@@ -108,7 +108,7 @@ describe('dev "All heroes" toggle', () => {
     expect(loadSave(1)?.freed).toEqual(['mario']);
     const again = nextPick(h);
     expect(again.names).toEqual(new Set(['Mario']));
-    expect(again.texts).toContain('7 HEROES TO FIND');
+    expect(again.texts).toContain('8 HEROES TO FIND');
   });
 
   it('with dev mode off the flag does nothing', () => {

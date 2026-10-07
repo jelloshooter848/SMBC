@@ -3,6 +3,7 @@ import { smb3Sfx } from './smb3';
 import { castlevaniaSfx } from './castlevania';
 import { ninjaSfx } from './ninja';
 import { contraSfx } from './contra';
+import { sophiaSfx } from './sophia';
 import { deathSfx } from './deaths';
 
 /**
@@ -192,6 +193,8 @@ export const sfx: Sfx[] = [
   ...ninjaSfx,
   // Bill's jungle and his mini game.
   ...contraSfx,
+  // Sophia, Jason and the Underworld.
+  ...sophiaSfx,
   // The mini game heroes' own deaths (WorldStart.deathStyle).
   ...deathSfx,
 ];

@@ -39,3 +39,8 @@ princess 57 12
 [zones]
 exit 56 next=end
 pipe 10 11 down -> 8-4 19 10 exit=up
+;; Campaign only (level/campaign.ts): the trap pipe at 10 leads instead to Jason's secret area
+;; (8-4-jason), then after Fred through the flooded tunnel (8-4-fred) to Sophia III's garage
+;; (8-4-garage), whose pipe brings the hero back up out of this pipe. A secret detour, not a
+;; shortcut. Outside the campaign this zone sleeps and the trap pipe is as it always was.
+pipe 10 11 down -> 8-4-jason 1 10 exit=up campaign

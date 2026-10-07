@@ -1,0 +1,54 @@
+id: 8-4-jason
+name: WORLD 8-4
+world: 8
+stage: 4
+theme: underworld
+music: bm-cutscene
+time: inherit
+start: 1,10
+startMode: pipe-exit
+camera: locked
+parent: 8-4
+
+;; Jason's secret area under 8-4 (campaign only, docs/HEROES.md): one locked screen of the
+;; Underworld. In the campaign 8-4-end's trap pipe (column 10) brings the hero up out of the pipe
+;; at the left. Jason, Sophia III's pilot (a story partner), is calling his frog Fred, who sits on
+;; the edge of the pool. Talk to Jason (or come close to Fred) and Fred hops into the pool (columns
+;; 10-13, open at the bottom) and dives out of sight: its `pit` drops the hero after him into the
+;; flooded tunnel (8-4-fred). The clock runs on (time: inherit). Theme `underworld`, music
+;; `bm-cutscene` (the night yard where Fred first jumped down the hole).
+
+[tiles]
+;; Rows 0-1 stay clear under the HUD; row 2 is the cavern's roof.
+;; 0               16
+................
+................
+BBBBBBBBBBBBBBBB
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B[]............B
+B{}............B
+##########wwww##
+##########wwww##
+
+[entities]
+;; Jason, Sophia III's pilot, looking for his frog (a story partner: campaign only).
+partner 5 12 who=jason campaign=true
+;; Fred, on the edge of the pool: in he dives (column 11) once Jason is talked to or a hero
+;; comes close.
+fred 9 12 to=11
+
+[zones]
+;; The pool: after Fred into the flooded tunnel.
+pit 10 -> 8-4-fred 4 0 w=4
+
+[decor]
+roots 3 3
+roots 9 3
+bush-1 7 12

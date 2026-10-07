@@ -78,6 +78,8 @@ Ryu waits in his hideout behind 6-2's first bonus room (`6-2-dojo`, an area of 6
 
 Bill waits in his jungle camp under 7-3 (`7-3-camp`, an area of 7-3: `parent: 7-3`, `time: inherit`), standing by the sandbags of his base under a searchlight (column 5, feet in row 12). In campaign play 7-3 is a Contra jungle stage: the same tiles, enemies, coins and collision in the `contra-jungle` theme and music, under a hanging jungle canopy and a black starry sky (no clouds, as NES Contra's), distant snow-capped mountains under the bridges, palms and a band of palms and undergrowth (`jungle-band`) along the ground (its campaign look, docs/WORLD_MAP.md "Campaign looks"). The girder bridge just past the checkpoint (columns 128-142, walled to the bottom by the pillars at 127 and 143) is marked: a red light blinks on its post and a coin arrow points down at it. A hero stepping on sets off a chain of explosions, Contra stage 1 style (`bridge-blast`, docs/WORLD_MAP.md "Exploding bridges"): segment after segment flashes and blows, at a pace a hero who keeps running just about outruns; whoever stops or walks falls through the gap, which a campaign-only `pit` turns into the drop into the camp (dropping in from above at column 2; co-op, both players). Anyone who ran across can still drop in on purpose; every other fall in 7-3 kills, and the bridge is whole again on any new visit. Outside the campaign 7-3 is exactly v0.4.8's (a plain bridge, no pit, its own look). In the camp a shallow river (one tile deep: a hop gets out) runs at the foot of a waterfall; past it, the cave mouth under the cliff (a side `pipe` at column 16) leads into **the waterfall climb** (`7-3-falls`, Contra stage 3 style: `camera: free`, 16 by 32 tiles): rock ledges three rows up and one tile apart beside the waterfall climb right to a jungle vine on the right wall, which rises nine rows to the ledges climbing left to a vine on the left wall; that one leads off the top of the screen into 7-3 at column 199, climbing up out of the jungle onto the tree platform past the bridge (a climb arrival). No ledge hangs over another's take-off, the floor catches every fall and walls close both sides, so nobody gets stuck. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing Red Falcon's (Super C): King Koopa's spell let the alien take his mind (`DIALOGUE.bill`). Art and sound (B3's): theme and music `contra-jungle` (7-3's look and the camp), theme `contra-falls` (the climb: its falling water slides down); decor `canopy-hang` (the ceiling, every 2 columns on row 0), `canopy`, `palm`, `mountain`, `sandbags`, `searchlight`; the `contra` sheet's `blast-bridge-0/1` (lamp lit, dark) and `boom-0..3`; sfx `bridge-boom` (rect, item-blast and `explosion` fallbacks without them). Tests: `tests/sim/bill-camp.test.ts` (7-3 outside the campaign tile for tile and in look; the campaign variant's collision unchanged; the look hook; the chain's pace and order; every hero, small and big, falls in standing still, outruns it running, drops in on purpose; co-op; every hero reaches Bill and the cave, climbs the falls from the pool and from every ledge, and lands in 7-3; the whole way through the Game).
 
+Sophia III waits in her garage under 8-4 (`8-4-garage`, an area of 8-4: `parent: 8-4`, `time: inherit`), the tank parked under a mutant-stained gateway (column 8, feet in row 12). The way in is campaign only (the owner's design): after the water section the hero comes up a pipe into `8-4-end`, whose next pipe (column 10) is the trap that leads back into the castle maze (8-4 at column 19). In campaign play a sleeping `pipe ... campaign` zone on the same mouth takes its place (docs/WORLD_MAP.md "Hidden paths and campaign pipes"), so that pipe leads instead to **Jason's secret area** (`8-4-jason`, one locked Underworld screen, music `bm-cutscene`): the hero rises out of a pipe at the left; **Jason** (Sophia's pilot on foot, a story partner: her sheet's side-view `jason-stand`, looking about for his frog) stands by it, and **Fred** sits on the edge of a pool at the right (columns 10-13, water over an open bottom). Talking to Jason (his three pages, docs/STORY.md 2.11), or coming within 2 tiles of Fred, sends Fred hopping into the pool and out of sight (`objects/fred.ts`; the `frog` croak; the announcer: "Fred dives into the pool. Follow him!"). The pool is a `pit` into **Fred's flooded tunnel** (`8-4-fred`, music `bm-area`): the hero drops in through a hole in its roof and swims as in 8-4's water (the map's `swim: true` header: docs/WORLD_MAP.md "Swimming in any theme"), murky Underworld water from the roof down, with Fred swimming on ahead (darting when the hero comes close, waiting when left behind) to a side pipe on the floor at the far end (column 36). Rows 8-12 are open from end to end, so every hero swims through, and Simon, who cannot steer once off the ground, walks the floor all the way. That pipe leads up into the garage (Fred rests there, hopping and croaking now and then); its other pipe (column 13) brings the hero back up out of 8-4-end's trap pipe, so 8-4 goes on from there as before: a secret detour, not a shortcut. The clock runs on throughout; nothing is recorded on the map. Outside the campaign 8-4-end is exactly v0.4.12's (the trap pipe as ever). Her lines: a tank can't talk, so the spell speaks through her computer: PILOT NOT FOUND, the Plutonium Boss has the wheel (`DIALOGUE.sophia`); the round is her mini game, Underworld. Tests: `tests/sim/sophia-garage.test.ts` (8-4-end outside the campaign tile for tile, its pipe still the trap for Mario and the tank; every hero, small and big, down the campaign pipe, through Jason's area into the pool, through the tunnel, past Sophia III and back up out of 8-4-end's pipe; Fred; co-op; the whole way through the Game with the clock carried; captive only in the campaign and until freed; her words; the map hint; her missed card, hint line and joined card; her Arena pad once met) and `tests/sim/partners.test.ts` (Jason).
+
 ## The map hint (`src/game/map/captives.ts`)
 
 The world map hints at levels that still hide a hero, in three stages (campaign play only, read
@@ -444,7 +446,9 @@ Reusable for later top-down mini games; it knows no particular game.
   entity (`world.blast` hurts monsters and the hero in a radius and opens cracked walls).
   Cracked walls (`C`) are a tile kind: inside a room a wall cell, on the border a doorway (door
   kind `cracked`, opened on both sides by a blast); `wall-cracked` / `wall-hole` frames.
-  `world.grant(what)` gives anything; `noDamage` (a world option) keeps the hero's hearts.
+  `world.grant(what)` gives anything; `noDamage` (a world option) keeps the hero's hearts. A
+  blast with no self damage (0) leaves the hero alone (no knock, no blink). The `hero` world
+  option builds a game's own `TdHero` subclass (Jason in Underworld).
 - `render.ts`, `hud.ts`, `frames.ts`: tiles drawn for the north wall are flipped for the south
   and rotated for the sides (`withSideFrames` derives `-side` and the doorway halves `-l`/`-r`
   when the sheet is registered); the Zelda-style HUD (the level over the map, keys and ammo,
@@ -1011,6 +1015,116 @@ sharp run passes 100% (~93 s); a careful first-timer (15-frame reactions, 6 px m
 passes 100% (~101 s; 100% at 12 frames, 87% at 18), a clumsy one (21 frames, 10 px, more pauses)
 40%.
 
+## Sophia's mini game: Underworld (`src/game/minigames/sophia/`)
+
+Bowser's spell reached Sophia III through the Underworld's radiation; the round is Blaster
+Master in brief, both of its modes (owner rule: as true to the NES game as possible; all art and
+music original, S3's `sophia` sheet, `underworld` and `bm-dungeon` themes and `bm-*` songs;
+`art.ts`: a missing sheet, frame, palette or sound draws a box or plays a stock sound, the
+dungeon falls back to the Shadow Keep's tiles; nothing throws). Five parts: the opening, the
+tank's cavern, Jason's dungeon and its guardian, the run back to the tank, and the Plutonium Boss
+fought in the tank (owner decision: as in Blaster Master, side view). Three lives across the
+round (Blaster Master's), the REST shown; one GAME OVER fails the round.
+
+- **The opening** (`cutscene.ts`, music `bm-cutscene`): letterboxed, a night yard: Fred, Jason's
+  pet frog, hops in, touches the glowing chest, swells up (`fred-big`) and leaps down the hole;
+  Jason runs after him and jumps in. Lines under the picture, ending on the radiation carrying
+  Bowser's spell. JUMP or SHOOT skips (SKIP with the JUMP key, top right); the glow pulses,
+  steady with reduce flashing.
+- **The tank** (S1's real `SOPHIA` def) plays the two side-view parts, each in a World of its own
+  with a fresh GameState (the campaign is never touched). Its kit is chosen so the lessons hold:
+  **Hyper** (the Mushroom: the hover, the stronger cannon, one hit to spare before Normal) with 8
+  homing missiles, never Crusher (the Flower's wall climb). Each part and each new life starts
+  with it. The round leaves the tank's parts out while no `sophia` CharacterDef is registered
+  (`tankHero`; tests use a stand-in hero).
+- **1. The tank's cavern** (`area.ts`, `area.map`, `cavern.ts`, music `bm-area`): five screens: a
+  crawler, a step and a wall of bricks under a low roof (the cannon breaks it), ledges with flyers,
+  the open cavern (a hopper, a crawler, a flyer), then the gateway's shaft: a ladder (a vine in the
+  `underworld` look, which only Jason climbs) up a shaft one tile wide to a roofed ledge where the
+  `gateway` stands; the tank can't go through a gateway (Blaster Master's rule). Nearing the shaft
+  in the tank shows, once, GATEWAYS ARE FOR JASON. / EXIT: JASON HOPS OUT (announced). Jason on
+  foot walking into the doorway (12×20 at the bottom of the 32×32 decor) goes in: the cavern
+  fades, then the dungeon. Mutants (side view, face left): **crawlers** creep along the floor and
+  turn at ledges (2 hits), **hoppers** crouch, then leap at the player within 96 px (2 hits),
+  **flyers** bob, then swoop at the player within 112 px and climb back (1 hit); any attack hurts
+  them, nothing stomps them, World's contact rules hurt the player. A life lost starts again at the
+  start, or at column 48 once passed. Row 1 is the cavern's roof all along (row 0 is under the
+  HUD), so the tank can't jump and hover over a wall behind the HUD (tested).
+- **The tank's bar** (the side-view parts, Blaster Master's POW and HOV): POW, the tank's power
+  (Normal, Hyper, Crusher in three cells and by name; Jason on foot shares it), HOV, the hover
+  gauge (S1's `meter`; empty without the hover or while Jason is out), the missile in hand and its
+  count (S1's `tools`), and REST.
+- **2. Jason's overhead dungeon** (`dungeon.ts`, `jason.ts`, `mutants.ts`, music `bm-dungeon`) on
+  the top-down kit: eight rooms on a 4×3 map, walked from the gateway up (the gateway room with a
+  G capsule, the hall's blobs and eyes, the turrets round a pool, the crossing whose statues point
+  at a cracked wall, the cache behind it (two G, a P), the antechamber's P, the guardian's chamber,
+  and the way out). Every door is open (no keys, as in the original) but the guardian's shutters.
+  **Jason** walks eight ways at 1.25 px a frame (sliding round corners into doorways), faces the
+  way last pressed and fires along it (SHOOT; tap, or hold for auto fire). **GUN**: 8 levels,
+  shown as Blaster Master's upright meter: 1 a short pellet, 2 longer, 3 a double shot, 4 full
+  range, 5-6 the wave beam, 7 two waves crossing, 8 through walls; every hit he takes drops it a
+  level (never below 1), G capsules raise it. **POW**: 8 bars of health; P capsules give 3 back.
+  **Grenades** (SPECIAL; endless, as in the original; one in the air at a time) skip along his
+  facing and blast mutants and cracked walls, never him. Mutants: **blobs** creep at him in bursts
+  (2 hits), **eyes** loop at their post and glare (stand still) for 24 frames before spitting an
+  aimed orb (3 hits), **turrets** turn a quarter every 48 frames and fire along the barrel when it
+  comes round to him, after a 20-frame aim (4 hits). Each may leave a capsule (seeded; dropped ones
+  blink out after 7 s, dimmed instead with reduce flashing). A life lost in the dungeon starts again
+  at the doorway he came in by, with full POW. The HUD: GUN and POW meters, UNDERWORLD over the map
+  of rooms seen, REST and the grenade.
+- **The guardian** (`guardian.ts`, music `bm-boss`): an original area guardian in the style of the
+  original's overhead dungeon bosses, in S3's `boss-a` / `boss-b` frames (64×64, facing down);
+  asleep until Jason steps past its door (the shutters close behind him), then on its own fight
+  clock. **The shell** (24 hit points) drifts along the top; shut, shots clang off while its vents
+  drip two orbs straight down (frames 40 and 90 of 246); it runs hot (`plutonium-hot`, 30 frames:
+  the warning), opens with a ring of 8 orbs and can be hurt for 96 frames, spitting one big aimed
+  orb halfway. **The core** (20 hit points): the shell cracks (90 frames of booms, every orb gone,
+  nothing hurts), then the beating core bounces round the room on the diagonals at 0.75 px a frame
+  (1 below half), stopping every 200 frames to run hot for 30 and fan 5 orbs at Jason. A hit
+  flashes it white (`sophia-hit`; not with reduce flashing). Its fall (THE GUARDIAN FALLS!,
+  announced) opens the shutters; the corridor east leads up to the way out.
+- **3. Back to the tank**: Jason runs back to Sophia (JASON RUNS BACK / TO SOPHIA..., the tank
+  with its hatch open; 2 s), then the boss's chamber.
+- **4. The Plutonium Boss** (`plutonium.ts`, `boss.map`, music `bm-boss`; owner decision: side
+  view, in the tank, as in Blaster Master; an original design): one locked screen, open overhead
+  (the raised cannon reaches the core anywhere). It wakes a moment after the tank arrives
+  (PLUTONIUM BOSS, announced), then on its own fight clock. **The mass** (`pluto-a-0/1`, 64×64 against the right wall, 30 hit
+  points): shut for 120 frames (shots do nothing), lobbing two globs that come down where the
+  tank stood (70 frames in the air); it runs hot for 30, opens its maw and rolls a
+  ball of plutonium along the floor (the tank jumps it driving into it: a standing jump can't hang
+  over it long enough), and can be hurt for 90 frames (no globs then: the ball is enough; a third
+  lob over the ball took the cautious player under 85%). **The core**
+  (`pluto-b-0/1`, 32×32, 24 hit points): the mass bursts (90 frames of booms, every shot gone,
+  nothing hurts) and the core loops a slow figure of eight over the upper half of the chamber,
+  always clear of the ceiling (aim up, hover, or send homing missiles); every 160 frames it holds still and runs hot for 30,
+  then rains three drops. Below half it loops faster. A hit flashes it white. Until its frames
+  exist it is drawn as boxes, its core shut grey or open green in the maw. A life lost here starts
+  the chamber again, the boss whole, the tank with the round's kit.
+- **Endings**: the Plutonium Boss falls: THE PLUTONIUM BOSS FALLS! / THE SPELL ON SOPHIA BREAKS!
+  (the first line only in a round for fun), the jingle, then `pass`; out of lives: GAME OVER, then
+  `fail`; the menu (`UnderworldMenuScene`, the shared MiniGameMenuScene with the dev assists: No
+  damage keeps the tank's power, POW and the GUN level; Infinite lives) gives Give up = `quit`.
+  `done` is called once.
+- **Touch**: SKIP and MENU in the opening; the tank's own buttons (S1: SHOOT, HOMING, EXIT) and
+  MENU in its parts; SHOOT, GRENADE and MENU in the dungeon; nothing once the round is decided.
+
+Difficulty (`human-sim.test.ts`): Jason's dungeon is played by `HumanJason` over `JasonBot` (it
+walks an 8-px grid by breadth-first search, steps in line with a mutant (in range, a clear line of
+fire, not too close; the guardian's shell only from below), faces it and taps SHOOT, leads the
+bouncing core, steps out of the way of orbs, takes G capsules (P when hurt), grenades the cracked
+wall and visits the cache); the tank by `TankBot` (`tankbot.ts`: it drives right firing the
+cannon, stops to shoot a mutant ahead on its level, jumps what stops it, hops Jason out at the
+shaft and climbs to the gateway; against the Plutonium Boss it faces the mass from the left and
+fires while it is open, jumps the ball driving into it, drives to the nearest spot clear of where
+globs and drops come down, and under the core raises the cannon and sends homing missiles). The
+human sees mutants and shots `reaction` frames late but judges their paths from there, misjudges
+by a few pixels, taps at a thumb's pace and pauses now and then;
+`SOPHIA_SIM=30 pnpm vitest run sophia/human-sim --silent=false` prints the report.
+Over 30 seeds, the whole round (the cavern to the Plutonium Boss): sharp 100% (~145 s), a careful
+first-timer (15-frame reactions, a few px misjudged, pauses) 97% (~151 s), at 12 or 18 frames 97%,
+a clumsy one (21 frames, 10 px, more pauses) 37%. The dungeon and guardian alone: sharp, careful
+100%, at 18 frames 97%, clumsy 60%.
+
 ## Hero training (optional practice rooms)
 
 Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:
@@ -1066,6 +1180,87 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
 | Simon    | whip, crouch whip, sub-weapon (THROW), the committed jump over the gap                      |
 | Ryu      | sword slash, wall cling, wall jump, ninpo (CAST)                                            |
 | Bill     | shoot, 8-way aim (three directions), prone, jump and shoot                                  |
+| Sophia   | cannon, hover (the lesson gives Hyper), missiles, wall climb (gives Crusher), Jason (EXIT)  |
 
 To add a hero's training: a list in `LESSONS` (3-5 lessons, tested by
 `src/game/tutorial/lessons.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.
+
+## Sophia III in the campaign levels
+
+Sophia III's tank is wider than a tile (19 × 15.5), cannot stomp, and at Normal jumps about 4.5
+tiles high and 6 across, so the levels built for Mario need her own ways through:
+
+- **Nose first down a one-tile hole** (down while driving over it, every power state): her turned
+  15.5 × 19 box drops through, and she rights herself as soon as there is room: on the floor, on
+  a lift, or in the air where the shaft opens to one side (4-4's maze, castle drops). A fall into
+  an area down a one-tile gap (Larry's cabin) starts nose first too (`CharacterBehaviour.narrowFall`).
+- **Jason on foot** (EXIT, our design): 8 × 16, a hop of about three tiles (49 px with jump
+  held), fits one-tile gaps and climbs ladders (an Underworld vine). The parked tank keeps the
+  camera: the screen never scrolls past it (`camera.x <= tank.x - 32 px`, `Entity.anchorsCamera`),
+  he is held at the right edge like a co-op partner, and EXIT is refused on an auto-scrolling
+  screen and anywhere but solid ground (a lift, a spring). A pipe takes him on with the tank into
+  the next area; the flagpole and the axe work on foot (the anchor lets go once the level is won).
+- **Hyper's hover** and **Crusher's wall and ceiling climbing**.
+
+The completability sweep (`tests/sim/sophia-reach.ts`) searches each level with the real game
+(enemies removed, invulnerable, endless time) for a route at Normal, then Hyper, then Crusher:
+`SOPHIA_SWEEP=1 POWERS=small,big,fire pnpm vitest run tests/sim/sophia-sweep.test.ts`
+(about half an hour split over four runs with `GROUP=<file>`). `tests/sim/sophia-routes.test.ts`
+replays some of the routes it found on every test run. A level it cannot finish is not proof
+that no route exists (it tries fixed moves from standing spots, and a block it reveals or a lift
+it rides is gone again at its next try), so the table says which places were checked by hand.
+
+**Results (2026-10-07, 0.4.13).** Super Mario Bros.: 32 of 33 levels (1-0 to 8-4) are finished at
+Normal (by the sweep, which ran before the search kept the screen's left edge: rows other than 4-4,
+7-4 and 8-4 may be optimistic, see below). The one that is not is **8-4**: its hanging pipe (column
+163, seven tiles over the floor; Mario gets there off the Paratroopas) is out of the tank's reach,
+and of Jason's hop even from the parked tank's roof. As Crusher the search finishes it, but 8-4 has
+no power-up, so a Normal Sophia who dies there cannot finish it until its variant is built (the
+owner's call: Normal Sophia's gaps ship as a known issue, fixed with the variants in the Chapter 1 finishing pass). The Lost
+Levels: 25 of 52 at Normal; the rest below. "Hyper: yes" also means Crusher (which has the hover
+too); Crusher is searched only when Hyper fails. A number is the column where the search stopped.
+**Genuine** marks a level checked by hand that the tank and Jason cannot get through at that power;
+the others are where the search gave up and need a look when their variants are made.
+
+The sweep ran before the search kept the screen's left edge from one try to the next (it re-centred
+the camera at each spot, so a route could go back past an edge the screen had already scrolled by).
+Re-run with the edge kept: 7-4 is still finished at Normal; 8-4 is finished as Crusher, not found as
+Hyper; 4-4's end is not found any more (the search only found the way that backtracked), but 4-4 is
+finished at Normal from its start without the screen going back: the search's route to the floor
+left of the chamber at 224, then a scripted drop through the chamber and the hole (the sim in
+`tests/sim/sophia.test.ts`). The other rows may be optimistic in the same way.
+
+| Level   | Normal | Hyper    | Crusher  | At Normal                                                                                                                                                                                                                    |
+| ------- | ------ | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 8-4     | no     | no (206) | yes      | 163: the hanging pipe, 7 tiles over the floor (Mario bounces off the Paratroopas); out of the tank's and Jason's reach. **Genuine.**                                                                                         |
+| ll-1-2  | no     | yes      | yes      | 63: four falling lifts over a pit (67-91); not timed by the search.                                                                                                                                                          |
+| ll-2-2  | no     | yes      | yes      | 187: a 10-tile gap crossed on hidden blocks (185, 186); the search does not keep blocks it revealed.                                                                                                                         |
+| ll-2-4  | no     | no (30)  | yes      | 30: the way on is a one-tile shaft four tiles up (column 17); the tank does not fit, Jason hops three. Crusher climbs past it. **Genuine at Normal and Hyper.**                                                              |
+| ll-3-3  | no     | yes      | yes      | 15: the first platform is five tiles up (80 px); the tank jumps 72. **Genuine.**                                                                                                                                             |
+| ll-3-4  | no     | no (126) | yes      | 126: not checked by hand.                                                                                                                                                                                                    |
+| ll-4-1  | no     | yes      | yes      | 73: an 11-tile gap with a springboard at its edge; the search does not time a spring boost.                                                                                                                                  |
+| ll-4-2  | no     | yes      | yes      | 116: not checked by hand.                                                                                                                                                                                                    |
+| ll-4-3  | no     | yes      | yes      | 15: an 8-tile gap at the same height (the tank clears about 7, checked by hand). **Genuine.**                                                                                                                                |
+| ll-4-4  | no     | no (94)  | yes      | 94: not checked by hand.                                                                                                                                                                                                     |
+| ll-5-1  | no     | yes      | yes      | 133: not checked by hand.                                                                                                                                                                                                    |
+| ll-6-1  | no     | yes      | yes      | 79: a pipe seven tiles tall, climbed from a hidden block beside it; done by hand at Normal (the search does not keep revealed blocks). Finishable.                                                                           |
+| ll-6-3  | no     | yes      | yes      | 192: not checked by hand.                                                                                                                                                                                                    |
+| ll-7-1  | no     | yes      | yes      | 31: not checked by hand.                                                                                                                                                                                                     |
+| ll-7-2  | no     | yes      | yes      | 127: not checked by hand.                                                                                                                                                                                                    |
+| ll-7-3  | no     | no (22)  | no (22)  | 22: green super springs; by hand a flight braked in the air lands on the next tree. Not followed further.                                                                                                                    |
+| ll-8-1  | no     | yes      | yes      | 74: an 11-tile gap Mario crosses on Paratroopas. **Likely genuine** (she cannot stomp).                                                                                                                                      |
+| ll-8-2  | no     | no (174) | no (175) | 104: the level goes on by a vine out of a block (127) to the warp area; the search found no way to it at any power.                                                                                                          |
+| ll-8-3  | no     | no (183) | no (183) | 26: lifts and long gaps; at Hyper it stops at 183, a 29-tile gap with balance lifts before the exit.                                                                                                                         |
+| ll-8-4  | no     | yes      | yes      | 48: pipes over lava, 4 to 7 tiles apart; not checked by hand.                                                                                                                                                                |
+| ll-11-3 | no     | no (20)  | no (20)  | 20: lifts out of a 6-tile gap two tiles up from the start; not timed by the search.                                                                                                                                          |
+| ll-11-4 | no     | no (63)  | no (63)  | 63: a one-tile shaft up from a moving lift over lava (column 68); the tank does not fit and Jason cannot get out on a lift. **Genuine at Normal and Hyper**; Crusher would have to climb the wall from the lift (not found). |
+| ll-12-1 | no     | yes      | yes      | 144: not checked by hand.                                                                                                                                                                                                    |
+| ll-12-2 | no     | yes      | yes      | 21: an 8-tile gap from the block at 19-21 to the platform at 30. **Likely genuine.**                                                                                                                                         |
+| ll-12-3 | no     | no (22)  | no (22)  | 22: green super springs, as 7-3.                                                                                                                                                                                             |
+| ll-13-1 | no     | yes      | yes      | 31: from the ledge at row 6 to the staircase at 37; done by hand at Normal. Finishable.                                                                                                                                      |
+| ll-13-3 | no     | yes      | yes      | 143: not checked by hand.                                                                                                                                                                                                    |
+| ll-13-4 | no     | yes      | yes      | 52: in the exit area, a 9-tile jump from the staircase to the pipe at 85. **Genuine.**                                                                                                                                       |
+
+For the Chapter 1 finishing pass (Sophia's level variants, the Sophia-only tiles of the original): 8-4 first (Chapter 1),
+then the Lost Levels marked genuine (2-4, 3-3, 4-3, 11-4, 13-4, likely 8-1 and 12-2), then the rest
+of the table once checked by hand. The variants can be checked with the same sweep.

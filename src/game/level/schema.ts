@@ -43,6 +43,10 @@ export type Theme =
   | 'contra-falls'
   // Red Falcon's lair (Bill's mini game): organic walls and floor.
   | 'alien-lair'
+  // Sophia's Underworld (her garage, her mini game's cavern): rust rock, roots, slime, gateways.
+  | 'underworld'
+  // The overhead dungeon's metal seen from the side (the top-down kit draws the `bm-dungeon` sheet).
+  | 'bm-dungeon'
   // The Top Secret Area behind World 2's hidden bonus spot (0.4.10), in a Super Mario World look:
   // grass-topped dirt, green bush hills and a big sparkly hill under a cream sky.
   | 'smw-secret'
@@ -83,6 +87,8 @@ export const THEMES: readonly Theme[] = [
   'contra-jungle',
   'contra-falls',
   'alien-lair',
+  'underworld',
+  'bm-dungeon',
   'smw-secret',
   'zelda2',
   'megaman-stage',
@@ -98,6 +104,14 @@ export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).
  */
 export const isWaterTheme = (theme: Theme): boolean =>
   theme === 'water' || theme === 'overworld-water' || theme === 'water-gray' || theme === 'castle-water';
+
+/**
+ * Whether the player swims in `level` (from its first row of wave tiles down): a swimming theme,
+ * or any theme with the map's `swim: true` header (LevelData.swim; Fred's flooded tunnel under
+ * 8-4, `8-4-fred`, in the Underworld's look).
+ */
+export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =>
+  level.swim === true || isWaterTheme(level.theme);
 
 /**
  * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
@@ -130,6 +144,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'ninja-city') return 'ng-city';
   if (theme === 'contra-jungle' || theme === 'contra-falls') return 'contra-jungle';
   if (theme === 'alien-lair') return 'contra-lair';
+  if (theme === 'underworld') return 'bm-area';
+  if (theme === 'bm-dungeon') return 'bm-dungeon';
   if (theme === 'zelda2') return 'zelda2-field';
   if (theme === 'megaman-stage') return 'mm-stage-31';
   if (theme === 'brinstar') return 'brinstar';
@@ -373,6 +389,12 @@ export interface LevelData {
    * leads back to the map. Every visit starts afresh, so its blocks are full again.
    */
   bonus?: boolean;
+  /**
+   * The player swims here although the theme is no water theme (the map's `swim: true` header):
+   * from the first row of wave tiles down, as in a water level (isSwimLevel). Fred's flooded
+   * tunnel under 8-4 (`8-4-fred`) swims in the Underworld's look.
+   */
+  swim?: boolean;
 }
 
 /**

@@ -21,6 +21,7 @@ import { SAMUS } from './characters/samus';
 import { SIMON, SIMON_TOOL_LABELS } from './characters/simon';
 import { RYU, RYU_TOOL_LABELS } from './characters/ryu';
 import { BILL, BILL_TOOL_LABELS } from './characters/bill';
+import { SOPHIA } from './characters/sophia';
 import { levelTouchLabels } from './touch-labels';
 import { stairLine } from './entities/objects/stairs';
 
@@ -55,6 +56,7 @@ function row(l: TouchLabels): string {
 const MM = { helmet: 1, weapons: 5 };
 const SIMON_ALL = { subs: 5, hearts: 10 };
 const RYU_ALL = { arts: 4, ninpo: 40 };
+const SOPHIA_ALL = { hasTriple: 1, triple: 60, hasHoming: 1, homing: 20 };
 
 // [hero, state, setup, "A B C START SELECT"]
 const TABLE: [CharacterDef, string, Setup, string][] = [
@@ -113,6 +115,16 @@ const TABLE: [CharacterDef, string, Setup, string][] = [
   [BILL, 'spread', { kit: { guns: 4, tool: 2 } }, 'JUMP SHOOT SPREAD MENU WEAPON'],
   [BILL, 'laser', { kit: { guns: 4, tool: 3 } }, 'JUMP SHOOT LASER MENU WEAPON'],
   [BILL, 'flame thrower', { kit: { guns: 4, tool: 4 } }, 'JUMP SHOOT FLAME MENU WEAPON'],
+  [SOPHIA, 'no missiles', {}, 'JUMP SHOOT - MENU EXIT'],
+  [
+    SOPHIA,
+    'triple missile',
+    { power: 'fire', kit: { hasTriple: 1, triple: 9 } },
+    'JUMP SHOOT MISSILE MENU EXIT',
+  ],
+  [SOPHIA, 'triple missile, empty', { kit: { hasTriple: 1, triple: 2 } }, 'JUMP SHOOT - MENU EXIT'],
+  [SOPHIA, 'homing missile selected', { kit: { ...SOPHIA_ALL, tool: 1 } }, 'JUMP SHOOT HOMING MENU EXIT'],
+  [SOPHIA, 'swimming', { water: true }, 'SWIM SHOOT - MENU EXIT'],
 ];
 
 describe('touch labels in a level', () => {

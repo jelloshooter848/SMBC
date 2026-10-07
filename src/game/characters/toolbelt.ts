@@ -5,8 +5,10 @@ import type { World } from '../world/world';
 /** One entry on a character's tool belt (sub-weapons, spells, special weapons). */
 export interface ToolInfo {
   id: string;
-  /** Frame on the `items` sheet drawn in the HUD (8x8). */
+  /** Frame on the `items` sheet (or `sheet`) drawn in the HUD (8x8). */
   icon: string;
+  /** The sheet holding `icon`; default `items`. */
+  sheet?: string;
   /** Ammo / stored count shown next to the icon, or null for unlimited. */
   count: number | null;
   /** False when it cannot be used right now (no ammo, not enough magic). */

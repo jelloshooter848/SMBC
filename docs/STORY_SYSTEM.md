@@ -118,18 +118,22 @@ once on arrival; up talks (`partner` event → `talkToPartner`), and the pages c
 time. Any player can talk (in co-op, player 2 too); the pages close back into play with
 `resumePlay`, the music untouched.
 
-| `who`         | Level and spot           | For   |
-| ------------- | ------------------------ | ----- |
-| `old-man`     | 2-1 (8, 12), `dx=8`      | Link  |
-| `dr-light`    | 3-1's bonus room (4, 12) | Mega  |
-| `chozo`       | 4-1's bonus room (2, 12) | Samus |
-| `townsperson` | 5-4 (10, 9)              | Simon |
-| `irene`       | 6-2 (7, 12)              | Ryu   |
-| `lance`       | 7-3 (5, 12)              | Bill  |
+| `who`         | Level and spot           | For        |
+| ------------- | ------------------------ | ---------- |
+| `old-man`     | 2-1 (8, 12), `dx=8`      | Link       |
+| `dr-light`    | 3-1's bonus room (4, 12) | Mega       |
+| `chozo`       | 4-1's bonus room (2, 12) | Samus      |
+| `townsperson` | 5-4 (10, 9)              | Simon      |
+| `irene`       | 6-2 (7, 12)              | Ryu        |
+| `lance`       | 7-3 (5, 12)              | Bill       |
+| `jason`       | 8-4-jason (5, 12)        | Sophia III |
 
 The old man gives one coin after his first page (`coinAfter`, once a visit). The statue's eyes
 glow slowly, held dim with reduce flashing. Art: `src/content/sprites/partners.ts` (`<who>-0`,
-`<who>-1`).
+`<who>-1`), but Jason is drawn from Sophia III's sheet (`jason-stand`, `BORROWED` in
+`objects/partner.ts`), facing the heroes and now and then looking round at the pool. A partner
+talked to is marked (`Partner.talked`): talking to Jason sends his frog Fred into the pool, the way
+on to Sophia III (`objects/fred.ts`, docs/HEROES.md).
 
 ## Castle pages (`World.updateBossClear`)
 

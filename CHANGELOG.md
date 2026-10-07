@@ -8,6 +8,24 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Sophia III from Blaster Master, the last hidden hero, can now be freed in the campaign.
+  - She is a tank: she drives, jumps and fires her cannon in any direction, and her Mushroom power gives her a hover.
+    Her pilot Jason can hop out on foot with EXIT and board again.
+  - She is hidden in 8-4: after the water section, the pipe everyone skips leads to Jason, who is looking for his frog
+    Fred. Follow Fred through a flooded tunnel to her garage, then take the pipe back to where you left off (the clock
+    keeps running). Classic 8-4 is unchanged.
+  - Her mini game, Underworld, is Blaster Master in brief: the tank's cavern, Jason's overhead dungeon and its
+    guardian, the run back to the tank, then the Plutonium Boss. It joins the Mini Game Arena once you have met her.
+  - New partner: Jason. Toad's World 8 pages about her, Jason's frog card and hint after 8-4, and his card when she
+    joins now play.
+  - New original art and music in Blaster Master's style.
+  - Secrets guide: a new entry for Sophia III and Jason, with screenshots.
+  - Maps can use `swim: true` to swim in any theme.
+- Known issue: with only her Normal power, Sophia can't finish 8-4, 3-3, 4-3 and some Lost Levels yet. Level variants
+  for her come with the finishing pass.
+
 ## [0.4.17] - 2026-10-07
 
 ### Changed

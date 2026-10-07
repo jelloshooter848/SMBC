@@ -8,10 +8,10 @@ import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/un
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
-import { isWaterTheme } from '../level/schema';
+import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
-import { drawStars, renderTiles, SKY, STARRY_SKIES } from './tile-render';
+import { drawStars, FLOODED, FLOODED_WATER, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
 import { SafetyFloor } from './safety-floor';
 import { Player } from '../entities/player';
@@ -32,6 +32,7 @@ import { BalanceLift } from '../entities/objects/balance-lift';
 import { Princess } from '../entities/objects/princess';
 import { Captive } from '../entities/objects/captive';
 import { Partner } from '../entities/objects/partner';
+import { Fred } from '../entities/objects/fred';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
@@ -338,6 +339,9 @@ export const TALLY_PER_FRAME = 2;
 /** Points per TIME unit left (ScoreValue.TIME_REMAINING). */
 const TIME_POINTS = 50;
 
+/** px the camera keeps behind a camera anchor (Entity.anchorsCamera: a parked tank). */
+const ANCHOR_ROOM = 32;
+
 /** No hero's body is wider than a tile (characters' hitboxes; simon-crypt.test.ts checks). */
 const MAX_HERO_W = 16;
 
@@ -529,7 +533,7 @@ export class World {
       const hb = def.hitbox(tmp);
       const feet = tileToSub(sy + 1);
       const p = new Player(
-        tileToSub(sx) + px((16 - hb.w) >> 1) + px(i * 20),
+        tileToSub(sx) + (px(16 - hb.w) >> 1) + px(i * 20),
         feet - px(hb.h),
         def,
         power,
@@ -543,7 +547,18 @@ export class World {
         this.fallingIn.add(p);
         // Co-op: player 2 drops in beside player 1 where that drop is clear (fallSpot).
         const first = this.players[0];
-        if (first) p.body.x = px(this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w));
+        if (first) {
+          const x = this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w);
+          // No clear drop beside player 1 for a wide body (a one-tile gap): fit through it.
+          if (x === null && hb.w > 16 && def.behaviour.narrowFall) {
+            const tx = tileAt(first.body.x + (first.body.w >> 1));
+            def.behaviour.narrowFall(p, tx, this.gapLip(tx));
+          } else p.body.x = px(x ?? toPx(first.body.x) + 20);
+        } else if (hb.w > 16) {
+          const x = this.wideFall(sx, p.body.x, p.body.w);
+          if (x !== null) p.body.x = x;
+          else def.behaviour.narrowFall?.(p, sx, this.gapLip(sx));
+        }
       } else if (mode === 'climb') {
         // The original's vineStart (Level.as watchModeOverrideVine): the vine grows from the
         // screen bottom while the player is hidden (Vine.initiate → growFromStgBot), then
@@ -597,7 +612,7 @@ export class World {
         // hidden until the panel turns edge-on; player 2 a step further into the room.
         const wall = this.trickBeside(sx, sy);
         const side = wall?.side ?? 1;
-        p.body.x = tileToSub(sx) + px((16 - hb.w) >> 1) + side * px(i * 20);
+        p.body.x = tileToSub(sx) + (px(16 - hb.w) >> 1) + side * px(i * 20);
         p.facing = side;
         if (wall) {
           p.frozen = true;
@@ -605,6 +620,22 @@ export class World {
           this.trickSpin ??= { wall, dir: 'in', t: 0 };
         }
       } else if (mode === 'autowalk') this.autoWalk = true;
+      // A body wider than a tile standing at its start (Sophia III's tank): centred on the start
+      // column unless that clips a wall beside it; then flush with the column's clear side.
+      // (A fall picks its column in wideFall; a pipe exit is two tiles wide; a vine is open air.)
+      const standing = mode === 'stand' || mode === 'autowalk' || mode === 'spin' || mode === 'beam';
+      if (hb.w > 16 && standing) {
+        const b = p.body;
+        const clear = (x: number) => {
+          for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+            for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++)
+              if (this.map.isSolid(tx, ty)) return false;
+          return true;
+        };
+        // Player 2 (beside player 1) tries its own spot first, then player 1's column.
+        const fit = [b.x, tileToSub(sx), tileToSub(sx + 1) - b.w, b.x - px(i * 20)].find(clear);
+        if (fit !== undefined) b.x = fit;
+      }
       this.players.push(p);
     });
     // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
@@ -628,8 +659,9 @@ export class World {
         return !enemy || (keepPiranhas && e instanceof Piranha);
       });
     }
-    // Water levels (any swimming theme): everything from the first row of wave tiles down is swimmable.
-    if (isWaterTheme(level.theme)) {
+    // Water levels (any swimming theme, or a map's `swim: true`): everything from the first row of
+    // wave tiles down is swimmable.
+    if (isSwimLevel(level)) {
       let row = 0;
       for (let ty = 0; ty < level.height && row === 0; ty++) {
         for (let tx = 0; tx < level.width; tx++) {
@@ -864,6 +896,9 @@ export class World {
         return new Moblin(s.x, s.y, s.props.secret, typeof s.props.next === 'string' ? s.props.next : null);
       case 'cave-fire':
         return new CaveFire(s.x, s.y);
+      case 'fred':
+        // Jason's frog on Sophia III's route under 8-4 (objects/fred.ts): scenery that leads.
+        return Fred.create(s.x, s.y, s.props);
       case 'decor':
         // Any decor kind as a spawned entity (`decor x y kind=items:cave-mouth`): a campaign-only
         // piece of scenery (`campaign=true`) sleeps with the rest outside the campaign.
@@ -916,7 +951,7 @@ export class World {
     if (o instanceof Player) killer = o;
     else if (o instanceof Projectile && o.owner instanceof Player) killer = o.owner;
     if (!killer) killer = this.nearestPlayer(e.body.x);
-    const kind = killer.def.drop?.(this.rng, e);
+    const kind = killer.def.drop?.(this.rng, e, killer);
     if (kind) this.spawn(new Pickup(e.body.x + (e.body.w >> 1), e.body.y + e.body.h, kind));
   }
 
@@ -1057,6 +1092,7 @@ export class World {
     this.spawnPending();
     if (this.vineArrival) this.updateVineArrival();
 
+    const anchor = this.cameraAnchor();
     this.players.forEach((p, i) => {
       if (p.dead || p.out) return;
       const respawn = this.respawnTimers.get(p);
@@ -1098,12 +1134,18 @@ export class World {
       if (p.body.x < this.camera.x) {
         this.placeX(p, this.camera.x);
         if (p.body.vx < 0) p.body.vx = 0;
+        this.unsqueeze(p);
       }
       const rightEdge = Math.min(tileToSub(this.level.width), this.camera.x + px(SCREEN_W));
-      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right).
-      if (p.body.x + p.body.w > rightEdge && (this.camera.auto || (this.coop && p !== this.rightmost()))) {
+      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right), and
+      // so does a camera held back by an anchor (a parked tank).
+      if (
+        p.body.x + p.body.w > rightEdge &&
+        (this.camera.auto || anchor !== null || (this.coop && p !== this.rightmost()))
+      ) {
         this.placeX(p, rightEdge - p.body.w);
         if (this.camera.auto && p.body.vx > 0) p.body.vx = 0;
+        this.unsqueeze(p);
       }
       if (p.body.x + p.body.w > tileToSub(this.level.width))
         this.placeX(p, tileToSub(this.level.width) - p.body.w);
@@ -1153,7 +1195,16 @@ export class World {
 
     const lead = this.rightmost();
     if (this.camera.auto) this.autoScroll();
-    else if (lead) this.camera.follow(lead.body.x, lead.body.y);
+    else if (lead) {
+      const before = this.camera.x;
+      this.camera.follow(lead.body.x, lead.body.y);
+      // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
+      // held where it was, never pulled back (the screen does not scroll left), and a locked
+      // screen is left alone.
+      const a = this.cameraAnchor();
+      if (a !== null && !this.camera.locked && this.camera.x > a - px(ANCHOR_ROOM))
+        this.camera.x = Math.max(before, a - px(ANCHOR_ROOM));
+    }
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
       if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
@@ -1248,6 +1299,7 @@ export class World {
       );
       if (partner) {
         partner.prompt = false; // hidden under its pages; back on the next update in reach
+        partner.talked = true;
         this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }
@@ -1288,6 +1340,8 @@ export class World {
         p.stairs = null;
         p.body.x += dx;
       }
+      // A camera anchor (a parked tank) goes round the loop with them.
+      for (const e of this.entities) if (e.alive && e.anchorsCamera) e.body.x += dx;
       this.camera.x = Math.max(0, Math.min(this.camera.maxX, this.camera.x + dx));
       this.loopPrevX = cur + toPx(dx);
       this.loopChecks.clear();
@@ -1373,6 +1427,7 @@ export class World {
     if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
     for (const e of this.entities) {
       if (!(e instanceof Vine) || !e.alive || e.centerX === p.leftVine) continue;
+      if (p.def.behaviour.canGrabVine?.(p, e.art, this) === false) continue;
       const v = e.body;
       // Generous sideways reach (the original lets you grab from beside the block it grew from).
       const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);
@@ -1963,7 +2018,7 @@ export class World {
 
   hurtPlayer(p: Player, fromDir: -1 | 1 = 1): void {
     if (p.invulnerable || this.assist.invulnerable) return;
-    const result = p.def.behaviour.onHurt(p, this);
+    const result = p.def.behaviour.onHurt(p, this, fromDir);
     if (result === 'dead') this.kill(p);
     // On stairs a hit never knocks the player off (Castlevania's stairs keep you on them).
     else if (result === 'hurt' && p.def.damage.kind === 'hp' && p.def.damage.knockback && !p.stairs) {
@@ -2066,6 +2121,7 @@ export class World {
     p.body.vy = 0;
     this.deathTimers.delete(p);
     this.respawnTimers.set(p, COOP_RESPAWN_FRAMES);
+    p.def.behaviour.onRespawn?.(p, this);
   }
 
   /* ---------- Pipes & zones ---------- */
@@ -2317,6 +2373,7 @@ export class World {
       o.body.vy = 0;
       if (o !== p) o.hidden = true;
     }
+    p.def.behaviour.onLevelClear?.(p);
     p.body.x = tileToSub(pole.tx) - p.body.w + px(2);
     p.facing = 1;
     p.anim = 'climb';
@@ -2485,6 +2542,7 @@ export class World {
       o.anim = 'idle';
       if (o !== p) o.hidden = true;
     }
+    p.def.behaviour.onLevelClear?.(p);
     this.audio.stopMusic();
     this.bossClear = { t: 0 };
     this.bossPlayer = p;
@@ -2663,6 +2721,12 @@ export class World {
       o.inner = screen;
       o.dy = -(view.camY ?? 0) + shake;
       r = o;
+    }
+    // A flooded area in a dry theme (a map's `swim: true`: Fred's tunnel under 8-4): its murky
+    // water fills the screen from the wave row down, behind everything (FLOODED).
+    if (this.level.swim && !isWaterTheme(theme) && Number.isFinite(this.waterTop)) {
+      const top = toPx(this.waterTop) - 8;
+      r.rect(0, top, SCREEN_W, this.heightPx - top, FLOODED[theme] ?? FLOODED_WATER);
     }
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
     this.backdrop?.(screen);
@@ -2904,7 +2968,7 @@ export class World {
    * above the row player 1 lands on (a shaft's wall, a ceiling), and outside every fire bar's sweep
    * on the way down (5-4 at 99, back from the crypt: the bar at (103, 11)). 20 px right when none is.
    */
-  private fallSpot(x1: number, w1: number, w: number): number {
+  private fallSpot(x1: number, w1: number, w: number): number | null {
     const map = this.map;
     const groundRow = (x0: number, x1e: number) => {
       let row = map.height;
@@ -2928,7 +2992,71 @@ export class World {
       groundRow(x, x + w) >= floor &&
       !bars.some((b) => barSweepX(b.tx, b.n, x, x + w));
     for (const d of [20, 16, 12, -20, -16, -12, 8, -8, 4, -4, 0]) if (clear(x1 + d)) return x1 + d;
-    return x1 + 20;
+    return null;
+  }
+
+  /**
+   * A fall arrival for a body wider than a tile (Sophia III's tank): centred on column `tx` unless
+   * that clips a solid tile on the way down to the column's floor; then flush with the column's
+   * left or right side, whichever drops clear (the drops are laid out for one-tile heroes).
+   */
+  private wideFall(tx: number, x: number, w: number): number | null {
+    const map = this.map;
+    let floor = 0;
+    while (floor < map.height && !map.isSolid(tx, floor)) floor++;
+    const clear = (x0: number) => {
+      for (let c = tileAt(x0); c <= tileAt(x0 + w - 1); c++)
+        for (let ty = 0; ty < floor; ty++) if (map.isSolid(c, ty)) return false;
+      return true;
+    };
+    for (const c of [x, tileToSub(tx), tileToSub(tx + 1) - w]) if (clear(c)) return c;
+    return null;
+  }
+
+  /** The last row of the first stretch where column `tx` has a solid tile on either side. */
+  private gapLip(tx: number): number {
+    const map = this.map;
+    let lip = -1;
+    for (let ty = 0; ty < map.height; ty++) {
+      const narrow = map.isSolid(tx - 1, ty) || map.isSolid(tx + 1, ty);
+      if (narrow) lip = ty;
+      else if (lip >= 0) break;
+      if (map.isSolid(tx, ty)) break;
+    }
+    return lip;
+  }
+
+  /**
+   * A screen edge pushed the player back into a wall: that undoes a head-bump corner slip (the
+   * body slipped sideways past a block's corner, the edge put it back under the block), so
+   * undo this frame's move up or down too, as the bump it should have been.
+   */
+  private unsqueeze(p: Player): void {
+    const b = p.body;
+    if (p.stairs || p.vine || !this.overlapsSolid(b)) return;
+    const y = b.prevBottom - b.h;
+    if (y === b.y || this.overlapsSolid({ x: b.x, y, w: b.w, h: b.h })) return;
+    b.y = y;
+    if (b.vy < 0) b.vy = 0;
+  }
+
+  /** Whether a box overlaps a solid tile. */
+  private overlapsSolid(b: { x: number; y: number; w: number; h: number }): boolean {
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++) if (this.map.isSolid(tx, ty)) return true;
+    return false;
+  }
+
+  /**
+   * The left edge (subpixels) of the left-most live camera anchor (Entity.anchorsCamera), or null.
+   * None once the level is won (flagpole or axe): the walk to the castle goes on past it.
+   */
+  cameraAnchor(): number | null {
+    if (this.clear || this.bossClear) return null;
+    let x: number | null = null;
+    for (const e of this.entities)
+      if (e.alive && e.anchorsCamera && (x === null || e.body.x < x)) x = e.body.x;
+    return x;
   }
 
   /** Whether a cracked wall still stands in this level. */
@@ -3083,8 +3211,19 @@ export class World {
     const sheet = view.assets.sheet(s.sheet, s.palette);
     const f = sheet.frames.get(s.frame);
     const w = f?.w ?? 16;
-    const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
-    r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+    if (s.rotate !== undefined || s.flipY) {
+      // Turned or upside down (Sophia III on a wall or ceiling): centred on the hitbox.
+      const h = f?.h ?? 16;
+      const side = s.rotate === 90 || s.rotate === 270;
+      const bw = side ? h : w;
+      const bh = side ? w : h;
+      const cx = toPx(p.body.x + (p.body.w >> 1)) - view.camX;
+      const cy = toPx(p.body.y + (p.body.h >> 1));
+      r.sprite(sheet, s.frame, cx - (bw >> 1), cy - (bh >> 1), s.flip, s.flipY, s.rotate ?? 0);
+    } else {
+      const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
+      r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+    }
     if (this.coop && p.index > 0 && !p.dead) {
       // Small "2" tag above player two so both players can tell who is who.
       r.text(view.assets.sheet('font'), '2', toPx(p.body.x) - view.camX + 2, toPx(p.body.y) - s.offsetY - 10);

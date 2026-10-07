@@ -1,0 +1,35 @@
+;; Sophia's mini game, Underworld, section 5: the Plutonium Boss's chamber, one screen, fought in
+;; the tank. cavern.ts / area.ts loads it with ?raw (not in the level library, the dev level select
+;; or the campaign). Rows 0-1 stay clear under the HUD. The boss (plutonium.ts) is placed by the
+;; scene against the right wall on the floor. Open overhead, so the raised cannon reaches the core everywhere.
+id: bm-plutonium
+name: PLUTONIUM BOSS
+world: 8
+stage: 4
+theme: underworld
+music: bm-boss
+time: 300
+start: 3,12
+startMode: stand
+camera: locked
+
+[tiles]
+................
+................
+BBBBBBBBBBBBBBBB
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+################
+################
+
+[decor]
+roots 3 3
+roots 9 3

@@ -5,7 +5,6 @@ import { CreditsScene } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
 import { CRASH_FRAMES } from '@game/map/airship-crash';
 import { CHARACTERS } from '@game/characters/registry';
-import { MARIO } from '@game/characters/mario';
 import type { CharacterDef } from '@game/characters/character';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { beat, seedSeen } from '@game/story/beats';
@@ -230,12 +229,16 @@ describe("Toad's map scenes", () => {
         },
         setup,
       );
-    const without = at8();
+    // The roster without Sophia III (as before 0.4.13), then with her (she is in CHARACTERS now).
+    const without = at8((h) => {
+      (h.game.deps as { characters: CharacterDef[] }).characters = CHARACTERS.filter(
+        (c) => c.id !== 'sophia',
+      );
+    });
     expect(readAll(without)).toEqual([entry[0], entry[3]]);
     expect(without.game.seen('enter:smb-8:sophia')).toBe(false);
-    const sophia: CharacterDef = { ...MARIO, id: 'sophia', name: 'Sophia III', hudName: 'SOPHIA' };
     const withHer = at8((h) => {
-      (h.game.deps as { characters: CharacterDef[] }).characters = [...CHARACTERS, sophia];
+      (h.game.deps as { characters: CharacterDef[] }).characters = [...CHARACTERS];
     });
     expect(readAll(withHer)).toEqual(entry);
     expect(withHer.game.seen('enter:smb-8:sophia')).toBe(true);

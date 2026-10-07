@@ -39,10 +39,10 @@ import {
 const HERO = '<HERO>';
 
 /**
- * Blocks of the shipped sections that are not in this build yet: World 8's Sophia III (2.11, her
- * partner Jason and her own lines) lands with her character. Each is matched by its first line.
+ * Blocks of the shipped sections that are not in this build yet, matched by their first line.
+ * None since 0.4.18: World 8's Sophia III (2.11, her partner Jason and her own lines) is built.
  */
-const NOT_BUILT = ['JASON:', 'SOPHIA III:'];
+const NOT_BUILT: readonly string[] = [];
 
 /** The ```text blocks of docs/STORY.md from section `from` up to (not including) section `to`. */
 function docBlocks(from: string, to: string): { section: string; lines: string[]; old: boolean }[] {
@@ -119,6 +119,8 @@ function scriptPages(): Map<string, Page> {
   // with what follows it in his card, without the speaker.
   add('CAPTIVE_HUNT', captiveCards('luigi')[0] as Page);
   add('SIMON_CURSE', (captiveCards('simon')[1] as Page).slice(2));
+  // Sophia III's challenge (2.11), her own card in full.
+  add('DIALOGUE.sophia', captiveCards('sophia')[1] as Page);
   add('JOINED_CRACK', JOINED_CRACK);
   add('JOINED_GENERIC', JOINED_GENERIC);
   for (const [id, page] of Object.entries(JOINED_PAGES)) add(`JOINED_PAGES.${id}`, page);
@@ -144,12 +146,15 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
     expect(now.length).toBeGreaterThan(90);
   });
 
-  it('the old text the doc quotes is gone from script.ts; only Sophia III is not built yet', () => {
+  it('the old text the doc quotes is gone from script.ts; every block is built (Sophia III since 0.4.18)', () => {
     const old = blocks.filter((b) => b.old);
     expect(old.length).toBeGreaterThan(0);
     for (const b of old) expect(byText.has(key(b.lines)), key(b.lines)).toBe(false);
-    const later = blocks.filter((b) => NOT_BUILT.includes(b.lines[0] as string));
-    expect(new Set(later.map((b) => b.section))).toEqual(new Set(['2.11']));
+    expect(NOT_BUILT).toEqual([]);
+    // Jason's three pages and Sophia III's challenge are among the pages the doc and script share.
+    const firsts = blocks.filter((b) => !b.old).map((b) => b.lines[0]);
+    expect(firsts.filter((l) => l === 'JASON:')).toHaveLength(3);
+    expect(firsts.filter((l) => l === 'SOPHIA III:')).toHaveLength(1);
   });
 
   it('every page of script.ts is in the doc', () => {

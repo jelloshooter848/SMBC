@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from './registry';
 import { describePad } from '../scenes/guide';
-import { itemsDef } from '@content/sprites/items';
+import { SPRITES } from '@content/sprites';
 import { fontText } from '../hud/text';
 
 const ACTIONS = new Set([
@@ -15,6 +15,7 @@ const ACTIONS = new Set([
   'up+attack',
   'down+attack',
   'down+jump',
+  'down+special',
   'attack (hold)',
 ]);
 
@@ -31,7 +32,7 @@ describe('character guides', () => {
     for (const item of ['mushroom', 'flower', 'star'])
       expect(g.powerups.some((p) => p.item === item)).toBe(true);
     expect(g.demo.length).toBeGreaterThan(0);
-    for (const t of g.belt ?? []) expect(itemsDef.frames[t.icon]).toBeDefined();
+    for (const t of g.belt ?? []) expect(SPRITES[t.sheet ?? 'items']?.frames[t.icon], t.icon).toBeDefined();
   });
 
   it('guide text only uses characters the bitmap font can draw', () => {
