@@ -108,7 +108,7 @@ hidden blocks) and to look closely at the map for a level hiding someone missed.
 ## Larry Koopa and the crystal ball (4-2's airship, campaign)
 
 Story (docs/STORY.md 2.7): King Koopa stole Larry Koopa's magic wand, and its spell is what
-brainwashed the heroes; Larry fights with a cheap spare, to get his own back. In the
+brainwashed the heroes; Larry fights with a "lousy spare" and wants his own back. In the
 campaign, 4-2's right warp zone first looks classic (WELCOME TO WARP ZONE!, the pipe and its 5,
 though the pipe is dead), until the hero drops in and lands: then his **anchor** crashes down,
 smashes the pipe and rests on the floor, its **chain** rising through the ceiling off the top of

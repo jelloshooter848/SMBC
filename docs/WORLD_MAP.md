@@ -492,8 +492,8 @@ and `smw-bush`; music `top-secret`, an 8-bar G-major loop in `songs.ts`), and on
 Yoshi egg frames, `egg-shell`, the Moblin, `cave-fire-0/1` (flickering slower with reduce flashing),
 `cave-mouth` and `map-node-tsa`. The hills' sparkles never twinkle.
 
-**Toad** has no map voice yet (the story batch, 0.4.13, adds it). A suggested line for the node:
-"SOMETHING TELLS ME THIS SPOT WAS MEANT TO STAY A SECRET..."
+**Toad** speaks on the map since 0.4.13 ("Story system" below), but has no line for this node
+yet. A suggested one: "SOMETHING TELLS ME THIS SPOT WAS MEANT TO STAY A SECRET..."
 
 ## Hidden paths and campaign pipes (level zones, 0.4.10)
 
@@ -698,6 +698,16 @@ palm 1 12
 - A reskin's checklist: the theme (and its music) registered as for any theme; the two headers
   and the decor in the level's map; a test like `tests/sim/bill-camp.test.ts` "outside the
   campaign".
+
+## Story system (0.4.13)
+
+In the campaign (`storyOn`, src/game/story/beats.ts) Toad is the map's guide: when a page shows,
+his due story scenes (map/toad-guide.ts `dueScenes`) play in the map's `story` mode, in a box at
+the top of the map, before the page's reveal draws in; for the major ones (World 1's entry after
+1-0, the fake Bowsers, the airship crash, the 8-4 rift) his map sprite walks in from the left.
+Each plays once per file (the save file's optional `story` list). The whole system (beats,
+partners, castle pages, the fake Bowsers, 8-4's hand-off to Lost World 1, adding a beat) is in
+docs/STORY_SYSTEM.md.
 
 ## Adding a page (checklist)
 
