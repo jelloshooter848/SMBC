@@ -182,7 +182,7 @@ describe('Mirror Race: outcomes', () => {
     // A short beat on the course before GO, so nobody starts blind off the black card.
     expect(GO_FRAME - CARD_FRAMES).toBeGreaterThanOrEqual(20);
     expect(GO_FRAME - CARD_FRAMES).toBeLessThanOrEqual(60);
-    expect(h.said[0]).toMatch(/^World 1-1\./);
+    expect(h.said[0]).toBe('World 1-1. Race Luigi to the flag!');
     expect(h.said).toContain('Go!');
   });
 
@@ -391,6 +391,26 @@ describe('Mirror Race: screen', () => {
     // The track (its white line, a 1-px rect) runs under the HUD's two rows.
     const line = rects.find((b) => b.h === 1);
     expect(line?.y).toBeGreaterThan(24);
+  });
+
+  it("the card shows the campaign's lives when raced from a save file, and no TIME with infinite time", () => {
+    const h = setup(null, { stubAssets: true });
+    h.game.campaign = { slot: 1 } as typeof h.game.campaign;
+    h.game.state.lives = 7;
+    h.game.ctx.assist.infiniteTime = true;
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('×  7');
+    expect(r.texts).toContain('TIME');
+    expect(r.texts).not.toContain('400');
+    // A round for fun keeps the round's own lives.
+    const fun = setup(null, { stubAssets: true });
+    fun.game.campaign = { slot: 1 } as typeof fun.game.campaign;
+    fun.game.inRound = true;
+    fun.game.state.lives = 7;
+    const r2 = new TextRenderer();
+    fun.game.scenes.render(r2);
+    expect(r2.texts).toContain(`×  ${fun.scene.world.state.lives}`);
   });
 
   it('draws the track, the off-screen arrow and the result banner', () => {

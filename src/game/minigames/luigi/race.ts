@@ -85,9 +85,16 @@ export class MirrorRaceScene implements Scene {
   enter(): void {
     this.game.ctx.audio.stopMusic();
     const s = this.world.state;
-    this.game.deps.announcer?.say(
-      `World ${worldLabel(s.world)}-${s.stage}. Mario, ${s.lives} lives. Race Luigi to the flag!`,
-    );
+    this.game.deps.announcer?.say(`World ${worldLabel(s.world)}-${s.stage}. Race Luigi to the flag!`);
+  }
+
+  /**
+   * The lives on the card: the campaign's when raced from a save file (the player's own count),
+   * else the round's (a round for fun, the dev menu).
+   */
+  private cardLives(): number {
+    const g = this.game;
+    return g.campaign && !g.inRound ? g.state.lives : this.world.state.lives;
   }
 
   /** Before GO: the card, then the course held still. */
@@ -189,16 +196,20 @@ export class MirrorRaceScene implements Scene {
 
   /** The HUD's TIME: the course's clock running down at a level's pace while the race is on. */
   private time(): number {
+    // Infinite time holds the clock, as a level's World.tickTimer does.
+    if (this.game.ctx.assist.infiniteTime) return this.world.level.time ?? 400;
     return Math.max(0, (this.world.level.time ?? 400) - Math.floor(this.raceFrames / TIMER_FRAMES));
   }
 
   /** The SMB HUD across the top: the race's own name, score and coins, WORLD 1-1 and TIME. */
   private drawHud(r: Renderer, onCourse: boolean): void {
     const w = this.world;
+    // The card hides TIME's digits under infinite time (scenes/intro.ts).
+    const time = !onCourse && this.game.ctx.assist.infiniteTime ? null : this.time();
     const opts = onCourse
       ? { covered: (x: number, y: number, ww: number, h: number) => w.spriteIn(x, y, ww, h) }
       : {};
-    drawHud(r, this.game.ctx.assets, w.state, this.time(), w.frame, onCourse ? w.players : [], opts);
+    drawHud(r, this.game.ctx.assets, w.state, time, w.frame, onCourse ? w.players : [], opts);
   }
 
   /** The black card before the race (scenes/intro.ts's): the HUD, WORLD 1-1, Mario and his lives. */
@@ -213,7 +224,7 @@ export class MirrorRaceScene implements Scene {
     const sheet = assets.sheet(c.portrait.sheet, c.portrait.palette);
     const f = sheet.frames.get(c.portrait.frame);
     r.sprite(sheet, c.portrait.frame, 96, 112 - (f?.h ?? 16) + 16);
-    r.text(font, `×  ${s.lives}`, 120, 120);
+    r.text(font, `×  ${this.cardLives()}`, 120, 120);
   }
 
   render(r: Renderer): void {

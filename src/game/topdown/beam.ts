@@ -33,8 +33,9 @@ function beamPalette(view: TdView): string {
 /**
  * Zelda's sword beam: with every heart full, a stab also throws the blade's image straight ahead
  * (one on screen at a time). It flies until it meets a monster, which it hurts like the sword
- * (an invulnerable one just stops it), or something solid (a wall, a block, the room's edge),
- * where it bursts into four pieces that fly apart diagonally (BeamBurst).
+ * (an invulnerable one just stops it), or a wall, a door or the room's edge, where it bursts
+ * into four pieces that fly apart diagonally (BeamBurst). Like Zelda's, it flies over blocks,
+ * statues, water, torches and push blocks (it moves as a flyer).
  */
 export class SwordBeam extends TdEntity {
   override layer = 2;
@@ -57,7 +58,7 @@ export class SwordBeam extends TdEntity {
   update(world: TopDownWorld): void {
     if (this.hitMonster(world)) return;
     const v = DIR_VEC[this.dir];
-    if (!world.moveEntity(this, v.dx * BEAM_SPEED, v.dy * BEAM_SPEED, 'shot')) {
+    if (!world.moveEntity(this, v.dx * BEAM_SPEED, v.dy * BEAM_SPEED, 'fly')) {
       this.burst(world);
       return;
     }

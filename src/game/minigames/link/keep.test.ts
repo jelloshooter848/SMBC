@@ -20,7 +20,7 @@ import { TopDownBot } from '@game/topdown/bot';
 import { ATTACK_FRAMES, DEATH_FRAMES } from '@game/topdown/hero';
 import { BeamBurst, SwordBeam } from '@game/topdown/beam';
 import { TILE } from '@game/topdown/geometry';
-import { Chest, FloorSwitch, Pickup } from '@game/topdown/entity';
+import { Chest, FloorSwitch, Pickup, PushBlock, Torch } from '@game/topdown/entity';
 import { Knight, Rock } from '@game/topdown/enemies';
 import { STUN_FRAMES } from '@game/topdown/items';
 import { miniGameFor } from '..';
@@ -578,6 +578,44 @@ describe('Shadow Keep: the sword beam', () => {
     expect(new Set(spread)).toEqual(new Set(['-1,-1', '1,-1', '-1,1', '1,1']));
     h.step([], 40);
     expect(h.world.entities.some((e) => e instanceof BeamBurst)).toBe(false);
+  });
+
+  /** Fires a beam from Link at (col, row) facing `dir`; returns where it burst (room px). */
+  function fireUntilBurst(h: Harness, col: number, row: number, dir: 'left' | 'up'): BeamBurst | null {
+    const hero = h.world.hero;
+    hero.x = col * TILE;
+    hero.y = row * TILE;
+    hero.facing = dir;
+    h.tap('attack');
+    for (let i = 0; i < 120; i++) {
+      const b = h.world.entities.find((e) => e instanceof BeamBurst) as BeamBurst | undefined;
+      if (b) return b;
+      h.step();
+    }
+    return null;
+  }
+
+  it('flies over push blocks and torches (only walls, doors and the room edge stop it)', () => {
+    const h = setup();
+    // The start room's lit torch at (2,8), and a push block put in the way at (4,8).
+    h.world.add(new PushBlock(4 * TILE, 8 * TILE));
+    expect(h.world.entities.some((e) => e instanceof Torch && e.x === 2 * TILE && e.y === 8 * TILE)).toBe(
+      true,
+    );
+    const burst = fireUntilBurst(h, 7, 8, 'left');
+    expect(burst).not.toBeNull();
+    expect(burst?.cx).toBeLessThan(2 * TILE); // at the west wall, past both
+  });
+
+  it('flies over statues too, and bursts at the wall behind them', () => {
+    const h = setup();
+    h.world.warpTo('bats', 12 * TILE, 4 * TILE);
+    for (const e of h.world.enemies()) e.dead = true;
+    h.step();
+    // Statues at (9,4) and (6,4) on the way to the west wall.
+    const burst = fireUntilBurst(h, 12, 4, 'left');
+    expect(burst).not.toBeNull();
+    expect(burst?.cx).toBeLessThan(2 * TILE);
   });
 });
 
