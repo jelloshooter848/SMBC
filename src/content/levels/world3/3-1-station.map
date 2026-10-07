@@ -2,7 +2,7 @@ id: 3-1-station
 name: WORLD 3-1
 world: 3
 stage: 1
-theme: castle
+theme: station
 time: inherit
 start: 3,12
 startMode: beam
@@ -13,8 +13,7 @@ parent: 3-1
 ;; past the end of its clouds (3-1-sky). The player beams down onto the arrival pad; captive
 ;; Mega Man waits on the command deck under the big window (Earth below the stars), and the
 ;; return pad just past him beams the player back down into 3-1 at column 162, where the coin
-;; heaven's drop lands (the arrival pad goes there too, once stepped off). Theme `castle` stands
-;; in for `station` until the station art lands.
+;; heaven's drop lands (the arrival pad goes there too, once stepped off).
 
 [tiles]
 ;; 0                16               32

@@ -20,7 +20,8 @@ import type { World } from '../../world/world';
  * a pad (or having it appear under you) never sends you straight back.
  *
  * `block=bx,by`: the pad is hidden in that hidden teleporter block (tile `8`) until the block is
- * bumped; it then rises out of the floor with the power-up sound.
+ * bumped; it then rises out of the floor with the power-up sound. Art: the `station` sheet
+ * (pad-0/1 16×8, beam-0..2 16×32).
  */
 
 /** Frames the pad takes to rise out of the floor once revealed (px 8 over these frames). */
@@ -109,11 +110,7 @@ export class TeleportPad extends Entity {
     const y = this.floorPx - Math.round((8 * this.risen) / PAD_RISE_FRAMES);
     // A slow glow between the two frames; steady with reduce flashing.
     const glow = !view.reduceFlashing && Math.floor(view.frame / 12) % 2 === 1;
-    drawStation(r, view, glow ? 'pad-1' : 'pad-0', x, y, () => {
-      r.rect(x, y + 3, 16, 5, '#7c7c7c');
-      r.rect(x + 1, y + 4, 14, 1, '#bcbcbc');
-      r.rect(x + 2, y, 12, 3, glow ? '#a4e4fc' : '#3cbcfc');
-    });
+    drawStation(r, view, glow ? 'pad-1' : 'pad-0', x, y);
   }
 }
 
@@ -121,35 +118,10 @@ export class TeleportPad extends Entity {
 export function drawBeam(r: Renderer, view: View, x: number, top: number, gather: boolean): void {
   const left = Math.round(x - BEAM_W / 2) - view.camX;
   const frame = gather ? 'beam-2' : !view.reduceFlashing && view.frame % 4 < 2 ? 'beam-1' : 'beam-0';
-  drawStation(r, view, frame, left, top, () => {
-    if (gather) {
-      r.rect(left + 2, top + 20, 12, 12, '#3cbcfc');
-      r.rect(left + 5, top + 16, 6, 16, '#fcfcfc');
-    } else {
-      r.rect(left + 5, top, 6, BEAM_H, '#3cbcfc');
-      r.rect(left + 7, top, 2, BEAM_H, '#fcfcfc');
-    }
-  });
+  drawStation(r, view, frame, left, top);
 }
 
-/**
- * Draw a frame of the `station` sheet, or `fallback` (plain rects) while that sheet or frame is
- * missing, so the pads work before (or without) their art.
- */
-export function drawStation(
-  r: Renderer,
-  view: View,
-  frame: string,
-  x: number,
-  y: number,
-  fallback: () => void,
-): void {
-  if (view.assets.has('station')) {
-    const sheet = view.assets.sheet('station');
-    if (sheet.frames.has(frame)) {
-      r.sprite(sheet, frame, x, y);
-      return;
-    }
-  }
-  fallback();
+/** Draw a frame of the `station` sheet (src/content/sprites/station.ts). */
+function drawStation(r: Renderer, view: View, frame: string, x: number, y: number): void {
+  r.sprite(view.assets.sheet('station'), frame, x, y);
 }

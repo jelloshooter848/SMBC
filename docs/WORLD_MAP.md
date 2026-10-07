@@ -234,7 +234,7 @@ is a `[zones]` line (`src/game/entities/objects/teleporter.ts`):
 teleport x y -> level x y [exit=beam|fall] [block=bx,by]
 ```
 
-- The pad lies on the floor of tile (x, y), 16×8 (`station:pad-0/1`, plain rects without the art).
+- The pad lies on the floor of tile (x, y), 16×8 (`station:pad-0/1`).
 - **Standing on it** (on the ground, the body's centre over it) beams the player up: everyone
   freezes, the rider is hidden, a `station:beam-*` streak gathers and rises off the screen (sfx
   `beam`), then the level moves to `target` exactly like a pipe transfer (`pipe` event; the clock

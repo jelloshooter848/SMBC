@@ -26,13 +26,11 @@ export class Decoration extends Entity {
     if (this.flag && this.flagT < 24) this.flagT++;
   }
   render(r: Renderer, view: View): void {
-    // `sheet:frame` decor comes from another sheet in its own palette (`station:window`); it
-    // is left out while that sheet or frame is missing.
+    // `sheet:frame` decor comes from another sheet in its own palette (`station:window`).
     const colon = this.name.indexOf(':');
     if (colon > 0) {
       const id = this.name.slice(0, colon);
       const frame = this.name.slice(colon + 1);
-      if (!view.assets.has(id)) return;
       const other = view.assets.sheet(id);
       const f = other.frames.get(frame);
       if (f) r.sprite(other, frame, this.screenX(view), this.screenY() + 16 - f.h);

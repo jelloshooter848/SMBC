@@ -121,7 +121,8 @@ describe('the space station (3-1-station)', () => {
     expect(l.time).toBeNull();
     expect(l.startMode).toBe('beam');
     expect(l.start).toEqual({ x: 3, y: 12 });
-    expect(['castle', 'station']).toContain(l.theme);
+    expect(l.theme).toBe('station');
+    expect(l.music).toBe('mm-station'); // the theme's own music
     expect(l.width).toBeGreaterThanOrEqual(32);
     expect(l.width).toBeLessThanOrEqual(48);
   });
