@@ -27,6 +27,11 @@ import { T, isSolid } from './tiles';
  *   With `until=<secret>` and that secret on the file (`larry`: the airship has crashed on the
  *   map) the room is sealed instead: its pipe is gone and the gap in its ceiling is closed, so
  *   nobody can drop into a room with no way out (no anchor, no chain, no warp, no text).
+ *
+ * A `descent` zone marked `campaign` (5-4's lift shaft, owner decision for 0.4.7: Simon's
+ * dungeon) sleeps outside the campaign; its campaign variant wakes it, so riding the down lift
+ * past the screen bottom carries the player down into the area below. Like a `goto`, it is an
+ * ordinary way into an area of the same level: no secret, no map road, the clock carries on.
  */
 
 const PIPE_TILES = new Set<number>([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
@@ -60,7 +65,9 @@ export function campaignLevel(
   const variants = level.zones.filter(
     (z): z is Warp => z.kind === 'warp' && (!!z.secret || (!!z.goto && has(z.goto.level))),
   );
-  if (!variants.length) {
+  // A sleeping `descent` zone (5-4's down lift into Simon's dungeon) wakes in campaign play.
+  const sleeping = level.zones.some((z) => z.kind === 'descent' && z.campaign);
+  if (!variants.length && !sleeping) {
     memo.set(level, level);
     return level;
   }
@@ -116,6 +123,11 @@ export function campaignLevel(
   const zones = level.zones
     .filter((z) => !dropped.has(z))
     .map((z): Zone => {
+      if (z.kind === 'descent' && z.campaign) {
+        const live: Zone = { ...z };
+        delete live.campaign;
+        return live;
+      }
       if (z.kind === 'warp' && variants.includes(z)) {
         const climb = climbs.get(z);
         if (climb) return climb;

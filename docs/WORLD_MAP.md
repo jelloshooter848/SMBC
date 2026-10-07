@@ -314,7 +314,8 @@ hammer-battle.map`, outside the level library: floor, two brick rows at the SMB1
 
 ## Teleport pads (level zone, 0.5.0)
 
-Hidden areas can be joined by Mega Man style teleport pads as well as pipes, vines and pits. A pad
+Hidden areas can be joined by Mega Man style teleport pads as well as pipes, vines, pits and
+descent shafts (below). A pad
 is a `[zones]` line (`src/game/entities/objects/teleporter.ts`):
 
 ```
@@ -337,6 +338,27 @@ teleport x y -> level x y [exit=beam|fall] [block=bx,by]
   floor with the power-up sound.
 - Pads count as ways out for the map's secret-exit look (`map/secret-exits.ts`) like pipes and
   vines; the 3-1 pads stay within 3-1, so nothing changes there.
+
+## Descent shafts (level zone, 0.4.7)
+
+A down lift can carry the player into a hidden area below (5-4's shaft into Simon's dungeon):
+
+```
+descent x w -> level x y [campaign]
+```
+
+- A player standing on a `lift-down` whose column lies within `[x, x + w)` rides it on past the
+  screen bottom (the lift does not wrap while ridden; `Lift.descent`) and, once out of sight
+  below, the level moves to `target` like a pit, dropping in from above (a `fall` arrival; the
+  clock carries over within a stage). Falling into the shaft without the lift, or jumping off
+  it, still kills: only a rider carried below the bottom this frame is taken down.
+- Its lifts bear a faint bone-grey skull on the middle plank: the only hint.
+- `campaign`: the zone sleeps (no descent, no skull) outside campaign play; the campaign variant
+  (`level/campaign.ts`) wakes it. Like a warp zone's `goto`, it leads into an area of the same
+  level: no secret, no map road, no clear.
+- 5-4: `descent 84 8 -> 5-4-dungeon 13 0 campaign` (the open shaft, columns 84-91; its down
+  lifts run in column 89). The fire bar at (92, 10) sweeps the down lift's right end on the way
+  down: ride on its left side.
 
 ## Adding a page (checklist)
 

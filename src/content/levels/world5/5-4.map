@@ -56,4 +56,7 @@ toad 153 12
 
 [zones]
 exit 152 next=6-1
+;; Campaign only (level/campaign.ts): riding the down lift (column 89) on past the bottom of the
+;; shaft carries the player down into Simon's dungeon; falling in without the lift still kills.
+descent 84 8 -> 5-4-dungeon 13 0 campaign
 bowser-fire 87

@@ -48,7 +48,8 @@ function parseProps(parts: string[]): Props {
  *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key] [goto=level,x,y[,exit]] [until=secret]`,
  *                         `text x y triggerX "..."`,
  *                         `bowser-fire x`, `vine x y -> level x y`, `pit x -> level x y`,
- *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad)
+ *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad),
+ *                         `descent x w -> level x y [campaign]` (a down lift's shaft)
  *   [decor]               `kind x y`
  */
 export function parseTextMap(src: string, idHint = 'level'): LevelData {
@@ -266,6 +267,20 @@ function parseZone(line: string): Zone {
         throw new Error('expected "pit x -> level x y"');
       return { kind: 'pit', x: Number(xs), target: { level, x: Number(tx), y: Number(ty) } };
     }
+    case 'descent': {
+      // descent x w -> level x y [campaign]
+      const [, xs, ws, arrow, level, tx, ty, ...rest] = parts;
+      if (arrow !== '->' || !level || ws === undefined || tx === undefined || ty === undefined)
+        throw new Error('expected "descent x w -> level x y [campaign]"');
+      const z: Zone = {
+        kind: 'descent',
+        x: Number(xs),
+        w: Number(ws),
+        target: { level, x: Number(tx), y: Number(ty) },
+      };
+      if (rest.includes('campaign')) z.campaign = true;
+      return z;
+    }
     case 'cheeps':
       return { kind: 'cheeps', x: Number(parts[1]), w: Number(parts[2]) };
     case 'bullets':
@@ -420,6 +435,8 @@ function serializeZone(z: Zone): string {
       return `vine ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
     case 'pit':
       return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
+    case 'descent':
+      return `descent ${z.x} ${z.w} -> ${z.target.level} ${z.target.x} ${z.target.y}${z.campaign ? ' campaign' : ''}`;
     case 'teleport':
       return `teleport ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}${
         z.target.exitDir === 'beam' ? '' : ` exit=${z.target.exitDir}`

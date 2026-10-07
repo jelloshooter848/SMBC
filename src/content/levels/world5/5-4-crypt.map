@@ -1,0 +1,50 @@
+id: 5-4-crypt
+name: WORLD 5-4
+world: 5
+stage: 4
+theme: castle
+music: castle
+time: inherit
+start: 1,0
+startMode: fall
+camera: locked
+parent: 5-4
+
+;; Simon's crypt, below the dungeon (campaign only, docs/HEROES.md): a high gothic room. The
+;; player drops in from the dungeon's hole onto the landing at the top left, and a stair of
+;; castle stone leads down to the floor, where captive Simon kneels under the spell (11,11)
+;; beneath the stained glass, candles either side. The dark doorway in the right wall (rows
+;; 10-11) leads back up into 5-4, dropping in at column 99, past the lift shaft, with the clock
+;; running on. Column 16 is the doorway's back wall, just off the locked screen.
+
+[tiles]
+;; 0               16
+...%%%%%%%%%%%%%%
+...%%%%%%%%%%%%%%
+...%%%%%%%%%%%%%%
+...............%%
+...............%%
+...............%%
+%%%............%%
+%%%%...........%%
+%%%%%..........%%
+%%%%%%.........%%
+%%%%%%%..........
+%%%%%%%%.........
+%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%
+
+[entities]
+;; Simon, Dracula's thrall since Larry's wand woke the curse (campaign only, until freed).
+captive 11 11 hero=simon
+candle 9 8
+candle 14 8
+candle 4 4
+
+[zones]
+pipe 16 10 right -> 5-4 99 0 exit=fall
+
+[decor]
+crypt:stained-glass 10 7
+crypt:coffin 13 11
