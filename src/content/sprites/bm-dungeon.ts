@@ -221,6 +221,139 @@ const WALL_HOLE = paste(
   new Canvas(16, 16).ellipse(8, 10, 5.5, 7, '0').set(3, 9, 'c').set(12, 6, 'c').set(4, 14, 'd').rows(),
 );
 
+/* ---------- pickups and HUD (the kit's item frames, as a tank game's gear) ---------- */
+
+// Life: an energy cell (8x8, 7x7 drawn) in place of a heart: full, half, spent.
+const CELL = ['.00000..', '0a77aa0.', '0aaaaa0.', '0aaaaa0.', '0aaaaa0.', '0aaaaa0.', '.00000..', '........'];
+const CELL_HALF = CELL.map((r) => r.slice(0, 4) + r.slice(4).replace(/[a7]/g, 'c'));
+const CELL_EMPTY = CELL.map((r) => r.replace(/[a7]/g, 'c'));
+// A dropped cell: the same with a glow ring so it pops off the floor.
+const CELL_PICKUP = [
+  '.09990..',
+  '0a77aa0.',
+  '9aaaaa9.',
+  '9aaaaa9.',
+  '9aaaaa9.',
+  '0aaaaa0.',
+  '.09990..',
+  '........',
+];
+
+// A keycard (8x16): a gold card with a dark strip and a clip.
+const KEY = [
+  '..000...',
+  '..0d0...',
+  '00000000',
+  '0bbbbbb0',
+  '0b7bbbb0',
+  '0bbbbbb0',
+  '00000000',
+  '0bbbbbb0',
+  '0bbbbbb0',
+  '0bb00bb0',
+  '0bb00bb0',
+  '0bbbbbb0',
+  '0bbbbbb0',
+  '0bbbbbb0',
+  '00000000',
+  '........',
+];
+
+// A blaster (8x16, the sword's slot): a grip and a barrel pointing up.
+const GUN_ICON = [
+  '...00...',
+  '..0770..',
+  '..0dd0..',
+  '..0dd0..',
+  '..0dd0..',
+  '..0dd0..',
+  '.00dd00.',
+  '0cddddc0',
+  '0cdaadc0',
+  '0cddddc0',
+  '.00cc00.',
+  '..0cc0..',
+  '..0cc0..',
+  '..0cc0..',
+  '..0000..',
+  '........',
+];
+
+// A grenade (8x16; the bomb's slots): a steel egg with a pin, its dropped twin rimmed in glow.
+const grenade = (rim: string): string[] => [
+  '........',
+  '...00...',
+  '..0bb0..',
+  '...00...',
+  '..0000..',
+  `.0dddd${rim}.`,
+  `0dd7ddd${rim}`,
+  `0d7dddd${rim}`,
+  `0ddddcd${rim}`,
+  `0dddccd${rim}`,
+  `0ddcccd${rim}`,
+  `.0dccc${rim}.`,
+  '..0000..',
+  '........',
+  '........',
+  '........',
+];
+
+// A homing round (8x16; the boomerang's slot): a dart pointing up with a glowing tail.
+const HOMING_ICON = [
+  '...00...',
+  '..0770..',
+  '..0dd0..',
+  '.0dddd0.',
+  '.0dddd0.',
+  '.0dddd0.',
+  '.0dddd0.',
+  '0cddddc0',
+  '0c0dd0c0',
+  '00.99.00',
+  '...99...',
+  '...88...',
+  '....8...',
+  '........',
+  '........',
+  '........',
+];
+
+/** A 16x16 pickup on a dark disc so it reads on the floor. */
+const onPad = (shape: (c: Canvas) => void): string[] => {
+  const c = new Canvas(16, 16);
+  shape(c);
+  return c.outline().rows();
+};
+
+// Armour plating (the shield's slot), a big cell (a life more), and a refill of four cells.
+const ARMOUR = onPad((c) => {
+  c.poly(
+    [
+      [2, 2],
+      [14, 2],
+      [14, 9],
+      [8, 15],
+      [2, 9],
+    ],
+    'd',
+  );
+  c.hline(3, 13, 3, '7').vline(8, 4, 12, 'c').rect(6, 6, 5, 2, 'b');
+});
+const BIG_CELL = onPad((c) => {
+  c.rect(2, 3, 12, 11, 'a').rect(5, 1, 6, 2, 'b');
+  c.hline(3, 12, 4, '7').rect(7, 6, 2, 6, '7').rect(5, 8, 6, 2, '7');
+});
+const REFILL = onPad((c) => {
+  for (const [x, y] of [
+    [1, 1],
+    [9, 1],
+    [1, 9],
+    [9, 9],
+  ] as const)
+    c.rect(x, y, 6, 6, 'a').set(x + 1, y + 1, '7');
+});
+
 export const bmDungeonDef: SpriteDef = {
   palette: 'bm-dungeon',
   frames: {
@@ -247,5 +380,19 @@ export const bmDungeonDef: SpriteDef = {
     water: WATER,
     'wall-cracked': WALL_CRACKED,
     'wall-hole': WALL_HOLE,
+    // The kit's pickups and HUD frames, at Link's sizes: energy cells for hearts, a keycard, a
+    // blaster, grenades, a homing round, armour plating, a big cell and a refill.
+    heart: CELL,
+    'heart-half': CELL_HALF,
+    'heart-empty': CELL_EMPTY,
+    'heart-pickup': CELL_PICKUP,
+    'heart-container': BIG_CELL,
+    'refill-icon': REFILL,
+    key: KEY,
+    'sword-icon': GUN_ICON,
+    'shield-pickup': ARMOUR,
+    'bomb-icon': grenade('0'),
+    'bomb-pickup': grenade('9'),
+    'boomerang-icon': HOMING_ICON,
   },
 };

@@ -14,6 +14,7 @@ import type { DamageSource, Reaction } from '../../rules/damage';
 import { BUSTER, CHARGED_BUSTER, FIREBALL, type ProjectileSpec } from '../projectiles/projectile';
 import { BEAMS, BEAM_NAMES } from '../../characters/samus/weapons';
 import { GUNS } from '../../characters/bill/weapons';
+import { CANNON, TRIPLE } from '../../characters/sophia/weapons';
 import {
   BALL_DIAG_SPEED,
   BALL_SPEED,
@@ -325,6 +326,7 @@ describe('every hero can deal with the airship enemies (or at least avoid them)'
     simon: [MELEE],
     ryu: [MELEE],
     bill: GUNS.map((g) => g.spec),
+    sophia: [...CANNON, TRIPLE], // the cannon's three levels and the Triple Missile
   };
   const KILLS: readonly Reaction[] = ['kill', 'flip', 'hp', 'stun'];
 
@@ -335,9 +337,11 @@ describe('every hero can deal with the airship enemies (or at least avoid them)'
   /**
    * Cannonballs, like Bullet Bills, shrug off fire, boomerangs and ice: Mario and Luigi stomp
    * them, everyone else cuts or shoots them down, and Samus's Ice Beam (the one beam that only
-   * freezes) leaves her to jump them. Rocky Wrench, once up, falls to anything.
+   * freezes) leaves her to jump them. Sophia III's cannon is stopped by their armour like a
+   * Bullet Bill's (SO-29): her Triple Missile pierces it, or she drives clear. Rocky Wrench,
+   * once up, falls to anything.
    */
-  const AVOID_ONLY: Record<string, string[]> = { samus: ['Ice Beam'] };
+  const AVOID_ONLY: Record<string, string[]> = { samus: ['Ice Beam'], sophia: ['sophia-cannon'] };
 
   for (const c of CHARACTERS)
     it(c.name, () => {

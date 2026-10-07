@@ -33,6 +33,25 @@ import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
 import { HERO_FX, mapShadeFx } from './palette-fx';
 
+/** `rows` cropped to its drawn pixels (no transparent border). */
+function trim(rows: readonly string[]): string[] {
+  const ys = rows.map((r, y) => (/[^.]/.test(r) ? y : -1)).filter((y) => y >= 0);
+  const xs = rows.flatMap((r) => [...r].map((c, x) => (c === '.' ? -1 : x)).filter((x) => x >= 0));
+  if (!ys.length) return [...rows];
+  const x0 = Math.min(...xs);
+  const x1 = Math.max(...xs);
+  return rows.slice(ys[0], (ys[ys.length - 1] as number) + 1).map((r) => r.slice(x0, x1 + 1));
+}
+
+/**
+ * Sophia III's sheet plus `portrait`: her `idle` tank cropped to its pixels, for the screens
+ * that stand a hero's portrait on a floor line (her tank frames are padded 32x32 for turning).
+ */
+const sophiaSheet: SpriteDef = {
+  ...sophiaDef,
+  frames: { ...sophiaDef.frames, portrait: trim(sophiaDef.frames.idle ?? []) },
+};
+
 /** All built-in sprite definitions keyed by sheet id. */
 export const SPRITES: Record<string, SpriteDef> = {
   tiles: tilesDef,
@@ -58,7 +77,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   crypt: cryptDef,
   ninja: ninjaDef,
   contra: contraDef,
-  sophia: sophiaDef,
+  sophia: sophiaSheet,
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
 };
