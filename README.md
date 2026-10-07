@@ -230,7 +230,8 @@ bump for new content or a save-format change, a patch for fixes), every pull req
 user-facing changes in [CHANGELOG.md](CHANGELOG.md), and pushing a tag `vX.Y.Z` builds, deploys
 and publishes the GitHub Release. The title screen shows `V0.2.0` on a release and
 `V0.2.0-DEV.<commit>` on any other build. See [docs/RELEASING.md](docs/RELEASING.md) for the
-rules and the release steps.
+rules and the release steps. What's planned next, and ideas kept for later, are in
+[docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Asset packs
 
