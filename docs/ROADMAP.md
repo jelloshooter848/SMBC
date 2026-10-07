@@ -90,7 +90,18 @@ hero, so she would be hidden there.
   - drives, hovers and fires the cannon;
   - Jason, the pilot, can climb out on foot to fit small gaps;
   - power-ups give hover fuel and cannon upgrades.
-- **Hiding place:** her hideout is somewhere in World 8, with an entrance unlike any used so far.
+- **Hiding place (owner's design): Jason's trap pipe in 8-4.** In `8-4-end`, you come up the pipe from the water room
+  at column 3. The next pipe, at column 10, normally sends you back to the start of 8-4's pipe maze
+  (`pipe 10 11 down -> 8-4 19 10`). In the campaign only, that "trap" pipe leads instead to a hidden Underworld area:
+  1. Jason, Sophia's pilot, is there looking for his pet frog Fred.
+  2. You dive into the area's water and follow Fred, who swims down through a crack in the floor.
+  3. The crack leads to Sophia III's garage in a Blaster Master-style cavern, where Sophia waits as the captive.
+
+  It works as a misdirect: everyone walks past a pipe they've learned is a trap, so only players who explore find
+  her. The way back returns to `8-4-end` for the Bowser fight.
+
+- **Story:** Blaster Master's opening has Fred touch a radioactive chest and jump down a hole into the Underworld.
+  Here, Bowser's spell reached Sophia through the Underworld's radiation.
 - **Mini game:** in Blaster Master's style, as true to the real game as possible.
 - **Size:** this is the biggest of the three ideas, because it adds a full character kit as well as the usual
   hideout, mini game, art and music.
