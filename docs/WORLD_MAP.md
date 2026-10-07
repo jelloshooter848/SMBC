@@ -516,9 +516,10 @@ pipe x y down -> map 0 0
 - **`ledge`** (0.4.12): the `w` tiles from (x, y) rightward become one-way cloud ledges
   (T.CLOUD_LEDGE: stood on from above, passed through from below and from the sides) in campaign
   play only; `campaign` is required and the classic level is untouched. 2-1's ledge against its
-  last tower (188-189, row 6) is Simon's way up: his committed jump lands on it off the bricks'
-  edge or coming down from the springboard (whose launch rises through it), and from it he reaches
-  the hidden coin block's top and the tower top. Ordinary flagpole runs end exactly as before
+  last tower (188-189, row 8, a row over the bricks) is Simon's way up: his committed jump lands
+  on it off the bricks or coming down from the springboard (whose launch rises through it), and
+  from it he reaches the hidden coin block's top, and from there the tower top. It is too low for
+  any hero to reach the hidden block from it. Ordinary flagpole runs end exactly as before
   (`tests/sim/top-secret.test.ts` replays every hero's whole way to the secret from the ground).
 - **A `campaign` pipe** sleeps outside campaign play (no way in; a zone only, so the level's tiles
   are the same either way); the campaign variant wakes it. 2-1's way into the cave.
