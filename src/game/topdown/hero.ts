@@ -197,6 +197,22 @@ export class TdHero {
     return true;
   }
 
+  /**
+   * One frame of walking himself toward (x, y) in `dir` (after coming through a doorway), at his
+   * walking pace. False once he is there or something stops him.
+   */
+  walkInStep(world: TopDownWorld, dir: Dir, x: number, y: number): boolean {
+    if (this.invuln > 0) this.invuln--;
+    this.facing = dir;
+    const left = Math.abs(x - this.x) + Math.abs(y - this.y);
+    if (left === 0) return false;
+    this.parity ^= 1;
+    this.walkT++;
+    const step = Math.min(left, this.parity ? 1 : 2);
+    const v = DIR_VEC[dir];
+    return this.moveBy(world, v.dx * step, v.dy * step, false) && left > step;
+  }
+
   heal(halves: number): void {
     this.hp = Math.min(this.maxHp, this.hp + halves);
   }
@@ -384,7 +400,9 @@ export class TdHero {
       : this.useT > 0
         ? `throw-${dirName}`
         : this.holdT > 0
-          ? 'down-0'
+          ? sheet?.frames.has('hold')
+            ? 'hold'
+            : 'down-0'
           : `${dirName}-${(this.walkT >> 3) & 1}`;
     // Without the shield: the `-ns` twin of the pose.
     const frame = !this.shield && sheet?.frames.has(`${pose}-ns`) ? `${pose}-ns` : pose;

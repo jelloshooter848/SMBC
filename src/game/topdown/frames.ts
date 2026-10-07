@@ -24,6 +24,12 @@ export const SIDE_FRAMES = [
   'door-shut',
   'wall-cracked',
   'wall-hole',
+  // Zelda's 32×32 doors through a two-tile wall.
+  'door-open-thick',
+  'door-locked-thick',
+  'door-shut-thick',
+  'wall-cracked-thick',
+  'wall-hole-thick',
 ] as const;
 
 /**

@@ -18,10 +18,11 @@ import {
   swordReach,
   swordAt,
 } from './hero';
-import { ROOM_W, TILE, boxesOverlap } from './geometry';
+import { ROOM_H, ROOM_W, TILE, boxesOverlap } from './geometry';
 import { rotateCcw, withSideFrames } from './frames';
 import { drawTdHud, hudData } from './hud';
 import { DEFAULT_SHEETS, type TdView } from './view';
+import { drawRoomTiles } from './render';
 
 /** A room def from rows (16×11), at a map cell. */
 function room(id: string, at: [number, number], map: string[], extra: Partial<RoomDef> = {}): RoomDef {
@@ -821,5 +822,189 @@ describe('top-down kit: drawing helpers', () => {
     drawTdHud(r, view, hudData(world, 'TEST KEEP', [{ label: 'SWORD', frame: 'sword-icon' }]));
     expect(texts).toEqual(expect.arrayContaining(['TEST KEEP', 'SWORD', '-LIFE-', '×2']));
     expect(frames.filter((f) => f.startsWith('heart'))).toEqual(['heart', 'heart-half', 'heart-empty']);
+  });
+});
+
+describe("top-down kit: Zelda's rooms (2-tile walls, a 12×7 floor)", () => {
+  const THICK = [
+    '################',
+    '################',
+    '##............##',
+    '##............##',
+    '##............##',
+    '##............##',
+    '##............##',
+    '##............##',
+    '##............##',
+    '################',
+    '################',
+  ];
+  const thick = (at: [number, number, string][]) => map(at, THICK);
+  /** Both cells of a doorway through the wall (n/s: two columns × two rows; e/w: one row × two). */
+  const door = (side: 'n' | 's' | 'e' | 'w', ch: string): [number, number, string][] =>
+    side === 'n'
+      ? [[7, 0, ch], [8, 0, ch], [7, 1, ch], [8, 1, ch]]
+      : side === 's'
+        ? [[7, 9, ch], [8, 9, ch], [7, 10, ch], [8, 10, ch]]
+        : side === 'w'
+          ? [[0, 5, ch], [1, 5, ch]]
+          : [[14, 5, ch], [15, 5, ch]];
+  const opts = { wall: 2 };
+
+  it('parses a room with walls two tiles thick: doors run through both, a 12×7 floor inside', () => {
+    const r = parseRoom(
+      room('r', [0, 0], thick([...door('n', 'X'), ...door('w', 'L'), [2, 2, 'b'], [7, 6, '@']]), {
+        shutters: 'clear',
+      }),
+      {},
+      2,
+    );
+    expect(r.wall).toBe(2);
+    expect(r.doors).toEqual({ n: 'shutter', w: 'locked' });
+    expect(r.doorCells).toEqual({ n: [7, 8], w: [5] });
+    expect(r.tiles.filter((t) => t === 'floor').length).toBe(12 * 7);
+    expect(r.spawns.map((s) => [s.kind, s.x, s.y])).toEqual([['bat', 32, 32]]);
+  });
+
+  it.each([
+    ['a door only through the outer row', thick([[7, 0, 'O'], [8, 0, 'O']]), /through the whole wall/],
+    ['a hole in the inner wall row', thick([[5, 1, '.']]), /border must be wall/],
+    ['a door in the corner', thick([[1, 1, 'O']]), /must be on an edge/],
+  ])('rejects %s', (_name, rows, msg) => {
+    expect(() => parseRoom(room('bad', [0, 0], rows), {}, 2)).toThrow(msg);
+  });
+
+  function thickRooms(westDoor: string, eastDoor: string, eastOpts: Partial<RoomDef> = {}, east: [number, number, string][] = []) {
+    return buildDungeon(
+      [
+        room('west', [0, 0], thick([[7, 5, '@'], ...door('e', westDoor)])),
+        room('east', [1, 0], thick([...door('w', eastDoor), ...east]), eastOpts),
+      ],
+      {},
+      opts,
+    );
+  }
+
+  it('the hero stops flush against the inner wall row on every side', () => {
+    const { pad, hero } = setup(thickRooms('O', 'O'));
+    pad.step(['left'], 200);
+    expect(hero.x).toBe(2 * TILE - 1);
+    pad.step(['up'], 200);
+    expect(hero.y).toBe(2 * TILE - 8);
+    pad.step(['down'], 300);
+    expect(hero.y).toBe(ROOM_H - 2 * TILE - 16);
+  });
+
+  it('through a doorway: the screen scrolls, then Link walks himself in past the wall before he answers the pad', () => {
+    const { world, pad, hero } = setup(thickRooms('O', 'O'));
+    pad.until(['right'], () => world.room.id === 'east');
+    pad.until([], () => !world.transition);
+    expect(hero.x).toBeLessThan(2 * TILE); // still in the doorway
+    expect(world.walkingIn).toBe(true);
+    pad.step(['left'], 4); // ignored: he keeps walking in
+    expect(hero.facing).toBe('right');
+    pad.until([], () => !world.walkingIn, 60);
+    expect(hero.x).toBe(2 * TILE);
+    expect(hero.y).toBe(5 * TILE);
+    pad.step(['left'], 4);
+    expect(hero.x).toBeLessThan(2 * TILE);
+  });
+
+  it('the shutters slam behind him once he has walked in', () => {
+    const { world, pad } = setup(thickRooms('O', 'X', { shutters: 'clear' }, [[10, 5, 'n']]));
+    const events: TdEvent[] = [];
+    for (let i = 0; i < 400 && (world.room.id !== 'east' || world.transition || world.walkingIn); i++)
+      events.push(...pad.step(['right']));
+    events.push(...pad.step([], 1));
+    expect(world.sealed).toBe(true);
+    expect(events).toContainEqual({ type: 'shutters', open: false });
+  });
+
+  it('draws the wall band as brick with a ledge row facing the floor, mitred corners and 32-px doors', () => {
+    const calls: [string, number, number][] = [];
+    const frames = new Map<string, { x: number; y: number; w: number; h: number }>();
+    for (const f of ['wall', 'wall-top', 'wall-top-side', 'wall-corner', 'floor', 'door-open-thick', 'door-locked-thick-side'])
+      frames.set(f, { x: 0, y: 0, w: 16, h: 16 });
+    const sheet: SpriteSheet = { id: 's', image: null, frames };
+    const none = new NullRenderer();
+    const r: Renderer = {
+      ...none,
+      clear: none.clear,
+      rect: none.rect,
+      line: none.line,
+      debugText: none.debugText,
+      text: none.text,
+      sprite: (_s, f, x, y) => void calls.push([f, x, y]),
+    };
+    const view: TdView = { frame: 0, reduceFlashing: true, sheets: DEFAULT_SHEETS, sheet: () => sheet };
+    const rm = parseRoom(room('r', [0, 0], thick([...door('n', 'O'), ...door('w', 'L')])), {}, 2);
+    drawRoomTiles(r, view, rm, (s) => (s === 'w' ? 'locked' : 'open'), 0, 64);
+    const at = (x: number, y: number) => calls.filter((c) => c[1] === x && c[2] === y).map((c) => c[0]);
+    expect(at(48, 64)).toEqual(['wall']); // outer row
+    expect(at(48, 80)).toEqual(['wall-top']); // the row facing the floor
+    expect(at(16, 80)).toEqual(['wall-corner']);
+    expect(at(0, 64)).toEqual(['wall']);
+    expect(at(16, 96)).toEqual(['wall-top-side']);
+    expect(at(112, 64)).toContain('door-open-thick'); // one 32×32 door over the doorway
+    expect(at(0, 64 + 72)).toContain('door-locked-thick-side'); // centred on row 5
+    expect(calls.filter((c) => c[0] === 'door-open-thick').length).toBe(1);
+  });
+});
+
+describe("top-down kit: the dungeon's map and compass", () => {
+  /** West (start, a map and a compass on the floor), east, and a goal room north of east. */
+  const threeRooms = () =>
+    buildDungeon([
+      room('west', [0, 1], map([[7, 5, '@'], [15, 5, 'O'], [9, 5, 'm'], [9, 7, 'v']])),
+      room('east', [1, 1], map([[0, 5, 'O'], [7, 0, 'O'], [8, 0, 'O']])),
+      room('goal', [1, 0], map([[7, 10, 'O'], [8, 10, 'O']]), { goal: true }),
+    ]);
+
+  it('without the map the minimap shows the rooms seen; the map shows them all; the compass marks the goal', () => {
+    const { world, pad } = setup(threeRooms());
+    let hud = hudData(world, 'L', []);
+    expect(hud.map.visited).toEqual([[0, 1]]);
+    expect(hud.map.goal).toBeNull();
+    const at = (kind: string) => world.entities.find((e) => e instanceof Pickup && e.kind === kind) as Pickup;
+    world.hero.x = at('map').x - 4;
+    world.hero.y = at('map').y;
+    const events = pad.step();
+    expect(events).toContainEqual({ type: 'pickup', kind: 'map' });
+    expect(world.found.has('map')).toBe(true);
+    expect(world.inv.owned).toEqual([]); // not an item for the slot
+    hud = hudData(world, 'L', []);
+    expect(hud.map.visited.length).toBe(1);
+    expect([...hud.map.known].sort()).toEqual([
+      [0, 1],
+      [1, 0],
+      [1, 1],
+    ]);
+    world.hero.x = at('compass').x;
+    world.hero.y = at('compass').y;
+    pad.step();
+    expect(hudData(world, 'L', []).map.goal).toEqual([1, 0]);
+  });
+
+  it('draws the map as Zelda does: small rooms on an 8×8 grid, the hero a green dot, the goal a red one', () => {
+    const rects: [number, number, number, number, string][] = [];
+    const none = new NullRenderer();
+    const r: Renderer = {
+      ...none,
+      clear: none.clear,
+      line: none.line,
+      debugText: none.debugText,
+      text: none.text,
+      sprite: none.sprite,
+      rect: (x, y, w, h, c) => void rects.push([x, y, w, h, c]),
+    };
+    const view: TdView = { frame: 0, reduceFlashing: true, sheets: DEFAULT_SHEETS, sheet: () => null };
+    const { world } = setup(threeRooms());
+    world.found.add('map');
+    world.found.add('compass');
+    drawTdHud(r, view, hudData(world, 'L', []));
+    const blue = rects.filter((c) => c[4] === '#2038ec' && c[2] === 7 && c[3] === 3);
+    expect(blue.length).toBe(3); // every room, 7×3 in an 8×4 cell
+    expect(rects.some((c) => c[4] === '#00e800' && c[2] === 3)).toBe(true);
+    expect(rects.some((c) => c[4] === '#f83800' && c[2] === 3)).toBe(true);
   });
 });
