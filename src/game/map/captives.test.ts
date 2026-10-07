@@ -13,6 +13,7 @@ import { newMapProgress } from './rules';
 import { WORLD_1 } from '@content/worldmap/world1';
 import { WORLD_2 } from '@content/worldmap/world2';
 import { WORLD_3 } from '@content/worldmap/world3';
+import { SKETCH_4, WORLD_4 } from '@content/worldmap/world4';
 
 /** A made-up level: only the id, the parent and the entities matter to the index. */
 const lvl = (id: string, entities: EntitySpawn[] = [], parent: string | null = null): LevelData =>
@@ -100,11 +101,23 @@ describe('hiddenHeroes (the bundled levels and map pages)', () => {
     expect(hiddenHeroesAt('smb-3', '3-1').map((h) => h.hero)).toEqual(['megaman']);
   });
 
+  it("Samus is hidden in World 4, node 4-2 (her cavern under the vine area's one pipe)", () => {
+    expect(hiddenHeroes()).toContainEqual({
+      hero: 'samus',
+      level: '4-2-cavern',
+      main: '4-2',
+      page: 'smb-4',
+      node: '4-2',
+    });
+    expect(hiddenHeroesAt('smb-4', '4-2').map((h) => h.hero)).toEqual(['samus']);
+  });
+
   it('other nodes hide no one', () => {
     expect(hiddenHeroesAt('smb-1', '1-2')).toEqual([]);
     expect(hiddenHeroesAt('smb-1', 'start')).toEqual([]);
     expect(hiddenHeroesAt('smb-2', '2-2')).toEqual([]);
     expect(hiddenHeroesAt('smb-3', '3-2')).toEqual([]);
+    expect(hiddenHeroesAt('smb-4', '4-1')).toEqual([]);
   });
 });
 
@@ -154,6 +167,15 @@ describe('heroSide: beside the node, clear of its roads', () => {
         WORLD_3.nodes.find((n) => n.id === '3-1')!,
       ),
     ).toBe(-1);
+  });
+
+  it('World 4 4-2: left (its roads leave right, up and down), on plain ground clear of the trees', () => {
+    const n = WORLD_4.nodes.find((n) => n.id === '4-2')!;
+    expect(heroSide(WORLD_4, n)).toBe(-1);
+    // The tile the hero stands on and the one above it (a tall hero) hold no decoration or road.
+    expect(SKETCH_4[n.y]![n.x - 1]).toBe('#');
+    expect(SKETCH_4[n.y - 1]![n.x - 1]).toBe('#');
+    expect(WORLD_4.paths.some((p) => p.points.some(([x, y]) => x === n.x - 1 && y === n.y))).toBe(false);
   });
 
   it('a node may pick its side (heroSpot)', () => {

@@ -117,6 +117,25 @@ describe('the crystal ball (campaign)', () => {
     expect(h.said.at(-1)).toMatch(/Bonus Game, open/);
   });
 
+  it("4-2's right warp-zone pipe (the campaign's one pipe) lands in the cabin, rising out of its pipe", () => {
+    const { h } = onMap(world4());
+    const main = getLevel('4-2');
+    const pipe = main.zones.find((z) => z.kind === 'pipe' && z.x === 214) as { x: number; y: number };
+    h.game.startLevel(main, { mode: 'stand', x: pipe.x, y: pipe.y - 1, time: 300 });
+    h.step();
+    for (let f = 0; f < 300 && (h.top() as LevelScene).level?.id !== '4-2-airship'; f++) h.step(['down']);
+    const cabin = h.top() as LevelScene;
+    expect(cabin.level.id).toBe('4-2-airship');
+    // Out of the pipe at columns 2-3 onto its top (row 13), the clock carried on, no map change.
+    h.until(() => !cabin.world.player.frozen, 200);
+    const p = cabin.world.player;
+    expect((p.body.y + p.body.h) >> 8).toBe(13 * 16);
+    expect(p.centerX >> 8).toBe(3 * 16); // the middle of the 2-wide pipe
+    expect(cabin.world.time).toBeGreaterThan(280);
+    expect(h.game.mapProgress.secrets).not.toContain('larry');
+    h.until(() => cabin.world.entities.some((e) => e instanceof Larry), 30);
+  });
+
   it('a file without the ball never shows the bonus node, even with 4-2 cleared', () => {
     const { map } = onMap(world4({ cleared: [...W3, '4-1', '4-2'] }));
     const b = node('bonus-4');

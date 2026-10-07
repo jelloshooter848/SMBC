@@ -169,10 +169,13 @@ different road with each, and **no ending opens every road leaving its level**.
   re-locks.
 - Today 1-2's campaign pipe is a secret exit (below), and so is Larry Koopa's crystal ball in
   4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
-  Bro" below). Every other warp pipe (SMB 4-2, the
-  Lost Levels' warp zones, `workingWarps` / `warpsOpened`) still warps as in the original and
-  clears nothing; the map's secret-exit look (`map/secret-exits.ts`) only marks levels that
-  have another way out.
+  Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each shows one pipe
+  into an area of 4-2 (below), an ordinary pipe that is no exit at all (no `target.secret`, no
+  road); the right one leads to Larry's cabin, where the crystal ball is the exit. The Lost
+  Levels' warp zones (`workingWarps` / `warpsOpened`) still warp as in the original and clear
+  nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels that have another
+  way out; it reads the level data as it is, so 4-2 keeps its look (in the campaign its other way
+  out is Larry's `secret:larry` road).
 
 ## World exits and the Lost Levels unlocks
 
@@ -213,6 +216,30 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
   `pendingReveal` ids. Loading keeps only registered page ids. Any later change to the stored
   format appends a migration (docs/RELEASING.md).
 
+## Campaign warp zones (`level/campaign.ts`)
+
+`Game.startLevel` plays a campaign variant of a level while a save file is played from the map
+(`campaignLevel`); dev select, `?level=`, custom and shared levels keep the level as it is. A
+warp zone (`warp x w worlds=..`) may carry one of two campaign keys, and then shows **one pipe**:
+the middle pipe of the zone stays, the others are taken out of the room (their pipe tiles and
+pipe zones), and the world numbers go.
+
+| Key                             | The one pipe                                                                                      | Text  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- | ----- |
+| `secret=<key>`                  | Records `<key>` as a secret exit and returns to the map (`target.secret` → `Game.campaignSecret`) | stays |
+| `goto=<level>,<x>,<y>[,<exit>]` | Leads into `<level>` at (x, y) like any pipe (`exit` as a pipe's `exit=`); no secret, no map road | goes  |
+
+`goto` is meant for an area of the same level (same world and stage, `parent` leading back), so
+the clock carries over (`carryTime`) and nothing on the map changes. A `goto` whose level is not
+in the library (yet) leaves the warp zone as it is, so a branch can name an area another branch
+adds. Owner decision (0.5.0): all warp pipes go eventually.
+
+- **4-2 vine area** (`4-2-warp`, pipes 50/54/58): `goto=4-2-cavern,2,0`. Pipe 54 drops the
+  player into Samus's cavern (docs/HEROES.md), whose side pipe brings them up out of 4-2's pipe
+  at column 72, the first pipe past the vine block.
+- **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,12`, Larry Koopa's
+  airship cabin. Larry's road (`secret:larry`) is granted by beating him, not by the pipe.
+
 ## The 1-2 secret (campaign only)
 
 - `1-2.map`'s warp zone carries `secret=bonus-1`. In campaign play (`Game.startLevel` with a file
@@ -224,8 +251,8 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
   warp node to `hub`, hidden by `unlock: 'bonus-1'`. Until 0.4.0 the road came from 1-1: loading
   renames a pending reveal of the old road id `smb-1:1-1>bonus-1` (save-files.ts).
 - Dev select, `?level=` and custom play keep the classic three numbered pipes.
-- SMB 4-2's warp zones are unchanged (they still skip worlds); a `secret=` key on one is the hook
-  for a future secret. Lost Levels warp zones (backward ones too) are unchanged.
+- SMB 4-2's warp zones lead into areas of 4-2 in campaign play (`goto`, above). Lost Levels warp
+  zones (backward ones too) are unchanged.
 
 ## The bonus spot and its Hammer Bro (World 4, 0.5.0)
 

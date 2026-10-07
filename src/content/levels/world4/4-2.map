@@ -53,6 +53,7 @@ vine 64 5 -> 4-2-warp 4 14
 pipe 84 10 down -> 4-2-bonus 1 0 exit=none
 pipe 187 9 right -> 4-2-exit 3 10 exit=up
 pipe 214 10 down -> 5-1 2 12
-;; Kept as in SMB (it still skips a world in campaign play). Future secret hook: a `secret=`
-;; key here would turn it into a map secret like 1-2's (level/campaign.ts).
-warp 208 16 worlds=5 text=WELCOME_TO_WARP_ZONE!
+;; Campaign play: the one pipe, unlabelled and with no welcome text, leads into Larry Koopa's
+;; airship cabin (an area of 4-2: no map road of its own; level/campaign.ts). Other play keeps
+;; the warp to 5-1.
+warp 208 16 worlds=5 text=WELCOME_TO_WARP_ZONE! goto=4-2-airship,2,12
