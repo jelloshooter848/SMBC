@@ -16,7 +16,11 @@ import { NES } from '@engine/gfx/palette';
  * - `canopy-hang` (32x16): the foliage ceiling, its top row solid leaves, leaf tips and vines
  *   hanging down. Place it at row 0 (`canopy-hang x 0`: anchored bottom-left like all decor, so
  *   it covers the top tile row) every 2 columns: its left and right edges join into one ceiling.
- * - `mountain` (64x32): a distant ridge of peaks. Needs ground (or the screen's bottom) under it.
+ * - `mountain` (64x32): a distant ridge of snow-capped peaks. Needs ground (or the screen's
+ *   bottom) under it.
+ * - `jungle-band` (32x32) / `jungle-band-half` (its left 16 columns): palms and undergrowth along
+ *   a cliff top or the ground; pieces side by side join up. Needs ground under it.
+ * - `jungle-trunks` (32x32): a wall of dark trunks for behind the later tiers; tiles both ways.
  * - `sandbags` (32x16): a low wall of olive canvas bags, background only.
  * - `searchlight` (32x48): a lamp on a tripod, its beam slanting up and to the left.
  * - `cloud-1/2/3@contra-jungle` (32, 48, 64 x16): low dim night clouds; drawDecor uses them for a
@@ -217,7 +221,8 @@ const palm = ((): string[] => {
   );
 })();
 
-/* Distant mountains: a high peak and a lower one, lit on their left flanks, ridges in shadow. */
+/* Distant mountains: pale snow-capped peaks (the snow down their upper slopes in a ragged line),
+   blue-grey rock below, lit on their left flanks, ridges in shadow. */
 const mountain = ((): string[] => {
   const peaks: [number, number, number][] = [
     [12, 20, 1.3],
@@ -236,12 +241,69 @@ const mountain = ((): string[] => {
     if (y + 0.5 < top + 1) return '0';
     // lit where the skyline climbs to the right (the face turned to the upper left)
     const climbing = height(x + 2) > height(x - 2);
+    // the snow: down the upper slopes to a ragged line, lit white-grey, shadowed grey
+    const snow = 32 - height(x) + 6 + Math.round(hash(x >> 1, 3, 11) * 4) + Math.max(0, 6 - height(x) / 3);
+    if (y + 0.5 < snow && 32 - height(x) < 22) return climbing ? '8' : '7';
     // gullies: a few dark streaks running down from the crags
     if (hash(x, 7, 2) < 0.12 && y > top + 2) return '5';
     if (climbing) return hash(x, y, 9) < 0.08 ? '5' : '4';
     return hash(x, y, 10) < 0.06 ? '4' : '5';
   });
 })();
+
+/* The jungle band (32x32, repeating along a cliff top): a row of palms, their fronds fanning
+   out over trunks that reach down into a dense undergrowth. Periodic in x: pieces join up. */
+const jungleBand = ((): string[] => {
+  const W = 32;
+  const wrap = (dx: number) => {
+    const a = ((dx % W) + W) % W;
+    return a > W / 2 ? a - W : a;
+  };
+  const crowns: [number, number, number][] = [
+    [7, 7, 10],
+    [22, 5, 11],
+  ];
+  const body = draw(W, 32, (x, y) => {
+    // the undergrowth along the foot: overlapping round bushes
+    for (let i = 0; i < 5; i++) {
+      const cx = i * 8 + 3;
+      const cy = 27 + hash(i, 0, 31) * 2;
+      const d = Math.hypot(wrap(x + 0.5 - cx), (y + 0.5 - cy) * 1.2);
+      if (d < 5.5) return y + 0.5 < cy - 2 && hash(x, y, 32) < 0.5 ? '3' : hash(x, y, 33) < 0.25 ? '1' : '2';
+    }
+    // the fronds: long leaves fanning out and drooping from each crown
+    for (const [cx, cy, r] of crowns) {
+      const dx = wrap(x + 0.5 - cx);
+      const dy = y + 0.5 - cy;
+      const a = Math.atan2(dy - Math.abs(dx) * 0.25, dx);
+      const reach = r * (0.55 + 0.45 * Math.abs(Math.cos(a * 3.5)));
+      if (Math.hypot(dx, dy * 1.6) < reach && dy < 6) {
+        if (dy < -1 && dx < 2) return hash(x, y, 34) < 0.3 ? '2' : '3';
+        return dy > 2 ? '1' : '2';
+      }
+    }
+    // the trunks: ringed, lit on one side
+    for (const [cx] of crowns) {
+      const dx = wrap(x + 0.5 - cx);
+      if (y > 8 && Math.abs(dx) < 1.6) return y % 3 === 0 ? '0' : dx < 0 ? 'a' : '9';
+    }
+    return '.';
+  });
+  return edged(body, '0');
+})();
+
+/* A wall of dark jungle trunks (32x32) for behind the later tiers: trunks of a few widths, lit
+   faintly on one edge, black between them. Tiles both ways. */
+const jungleTrunks = draw(32, 32, (x) => {
+  const trunks: [number, number][] = [
+    [1, 5],
+    [9, 3],
+    [15, 6],
+    [24, 4],
+  ];
+  for (const [l, w] of trunks) if (x >= l && x < l + w) return x === l ? '9' : x === l + w - 1 ? '0' : '6';
+  return '0';
+});
 
 /* Sandbags: three courses of plump olive canvas bags, staggered, dark seams between. */
 const sandbags = draw(32, 16, (x, y) => {
@@ -291,6 +353,9 @@ export const jungleDecorFrames: Record<string, Rows> = {
   canopy,
   'canopy-hang': canopyHang,
   mountain,
+  'jungle-band': jungleBand,
+  'jungle-band-half': jungleBand.map((r) => r.slice(0, 16)),
+  'jungle-trunks': jungleTrunks,
   sandbags,
   searchlight,
   'cloud-1@contra-jungle': nightCloud(32, 1),

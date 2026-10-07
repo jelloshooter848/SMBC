@@ -11,7 +11,7 @@ import type { View } from '../entities/entity';
 import { T, tileDef } from './tiles';
 import { parseTextMap, serializeTextMap } from './textmap';
 import { THEMES, isTheme, isWaterTheme, themeMusic, type Theme } from './schema';
-import { SKY } from '../world/tile-render';
+import { SKY, STARRY_SKIES } from '../world/tile-render';
 import { decorPalette, drawDecor } from '../entities/objects/decoration';
 import { enemyPalette } from '../entities/enemies/enemy';
 
@@ -573,10 +573,11 @@ describe('themes', () => {
       expect([sg, sb]).toEqual([sr, sr]); // grey steel
       expect(tiles[4]).toBe(PALETTES.default['tiles-overworld']?.[4]); // gold ? blocks and coins
       expect(tiles[5]).toBe(PALETTES.default['tiles-overworld']?.[5]); // the green flagpole
-      // a deep blue-black night sky, not the overworld's or the castle's
+      // NES Contra's black night sky, with sparse stars in it
       const [r, g, b] = rgb(SKY['contra-jungle'] as string);
-      expect(b).toBeGreaterThan(r + g);
-      expect(r + g + b).toBeLessThan(0x80);
+      expect(r + g + b).toBeLessThan(0x18);
+      expect(STARRY_SKIES.has('contra-jungle')).toBe(true);
+      expect(STARRY_SKIES.has('overworld')).toBe(false);
       // jungle scenery; SMB's own enemies keep their look; the jungle tune; no swimming
       expect(decorPalette('contra-jungle')).toBe('decor-jungle');
       expect(PALETTES.default['decor-jungle']).not.toEqual(PALETTES.default['decor-overworld']);
@@ -630,9 +631,9 @@ describe('themes', () => {
         expect(f[12]?.replace(/^\.+|\.+$/g, ''), n).toMatch(/^5+$/);
         expect(f.slice(13).join(''), n).toMatch(/^\.+$/);
       }
-      // the cloud body is low contrast against the night sky
+      // the cloud body is dim (7-3's jungle look leaves its clouds out of the black starry sky)
       const lum = (hex: string) => rgb(hex).reduce((x, y) => x + y);
-      expect(Math.abs(lum(dark[5] as string) - lum(SKY['contra-jungle'] as string))).toBeLessThan(0x80);
+      expect(lum(dark[5] as string)).toBeLessThan(0xd0);
       // the foliage ceiling: a solid top row, leaves hanging down, its edges joining up
       const hang = decorFrame('canopy-hang');
       expect(hang[0]).toMatch(/^[0-3]{32}$/);

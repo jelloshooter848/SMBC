@@ -11,7 +11,7 @@ import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../lev
 import { isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
-import { renderTiles, SKY } from './tile-render';
+import { drawStars, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
 import { Player } from '../entities/player';
 import type { Entity } from '../entities/entity';
@@ -2428,6 +2428,7 @@ export class World {
   render(screen: Renderer): void {
     const theme = this.level.theme;
     screen.clear(SKY[theme] ?? '#5c94fc');
+    if (STARRY_SKIES.has(theme)) drawStars(screen, this.camera.pxX);
     const view: View = {
       camX: this.camera.pxX,
       frame: this.frame,

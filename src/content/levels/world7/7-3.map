@@ -90,8 +90,9 @@ cloud-1 230 6
 cloud-1 238 11
 
 [campaign-decor]
-;; The jungle: a hanging canopy for a ceiling, the clouds (drawn as night clouds in this theme),
-;; distant mountains on the screen's bottom under the bridges, and palms on the ground.
+;; The jungle: a hanging canopy for a ceiling over the black starry night (NES Contra's sky has
+;; no clouds: the level's clouds are left out here), snow-capped mountains on the screen's bottom
+;; under the bridges, palms, and a band of palms and undergrowth along every stretch of ground.
 canopy-hang 0 0
 canopy-hang 2 0
 canopy-hang 4 0
@@ -212,41 +213,6 @@ canopy-hang 232 0
 canopy-hang 234 0
 canopy-hang 236 0
 canopy-hang 238 0
-cloud-2 3 3
-cloud-1 9 7
-cloud-2 18 2
-cloud-1 28 11
-cloud-1 35 7
-cloud-1 38 6
-cloud-1 46 11
-cloud-2 51 3
-cloud-1 57 7
-cloud-2 66 2
-cloud-1 76 11
-cloud-1 83 7
-cloud-1 86 6
-cloud-1 94 11
-cloud-2 99 3
-cloud-1 105 7
-cloud-2 114 2
-cloud-1 124 11
-cloud-1 131 7
-cloud-1 134 6
-cloud-1 142 11
-cloud-2 147 3
-cloud-1 153 7
-cloud-2 162 2
-cloud-1 172 11
-cloud-1 179 7
-cloud-1 182 6
-cloud-1 190 11
-cloud-2 195 3
-cloud-1 201 7
-cloud-2 210 2
-cloud-1 220 11
-cloud-1 227 7
-cloud-1 230 6
-cloud-1 238 11
 mountain 18 14
 mountain 66 14
 mountain 98 14
@@ -256,3 +222,20 @@ palm 1 12
 palm 116 12
 palm 200 12
 palm 219 12
+jungle-band-half 6 12
+jungle-band 8 12
+jungle-band-half 15 12
+jungle-band 112 12
+jungle-band 114 12
+jungle-band 116 12
+jungle-band-half 118 12
+jungle-band-half 192 12
+jungle-band 197 12
+jungle-band 199 12
+jungle-band 201 12
+jungle-band 203 12
+jungle-band-half 207 12
+jungle-band 217 12
+jungle-band 219 12
+jungle-band 221 12
+jungle-band-half 223 12

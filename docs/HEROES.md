@@ -76,7 +76,7 @@ Simon waits in his crypt under 5-4 (`5-4-crypt`, an area of 5-4: `parent: 5-4`, 
 
 Ryu waits in his hideout behind 6-2's first bonus room (`6-2-dojo`, an area of 6-2: `parent: 6-2`, `time: inherit`), standing on the dojo's floor (column 5, feet in row 12) under the moon window. The way in is campaign only: in campaign play the bonus room under the pipe at 19 (`6-2-bonus`) has a **ninja trick wall** in its left wall (column 0, rows 10-12), its middle tile cracked with a shuriken stuck in it, and a coin arrow pointing at it (outside the campaign the room is exactly as it was: plain bricks, no arrow). Pushing into it for about a second (every hero: just walking into it; Ryu clinging to it and Samus rolling into it in her morph ball count too) spins the panel and flips the player through into the dojo, stepping out beside the dojo's own panel in its right wall (column 15, rows 10-12). Pushing into that one flips him out into 6-2 itself, rising out of the pipe at 35 where the bonus room's pipe leads, so the trick wall is one way and the bonus room's coins are not restocked by going round. A short push does nothing (docs/WORLD_MAP.md "Trick walls"). In co-op both players go through together and step out inside the dojo, player 2 further in. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing the curse of the Masked Ninja, a cursed masked rival whose mask rules Ryu's blade; the round is their duel under the moon (`DIALOGUE.ryu`). Art and sound (R3's): theme and music `dojo`; the `ninja` sheet's `trick-wall-0..3`, `trick-wall-back`, `trick-wall-cracked` and `shuriken-mark` for the panel, decor `ninja:moon-window`, two `ninja:lantern-0` and two `ninja:shoji` screens (columns 1 and 12); sfx `panel-spin`. Tests: `tests/sim/ryu-dojo.test.ts` (every hero pushes through, small and big; Ryu's cling, Samus's ball; a short push does nothing; campaign only, the room otherwise v0.4.7's; one way; co-op; every hero reaches Ryu and gets out into 6-2).
 
-Bill waits in his jungle camp under 7-3 (`7-3-camp`, an area of 7-3: `parent: 7-3`, `time: inherit`), standing by the sandbags of his base under a searchlight (column 5, feet in row 12). In campaign play 7-3 is a Contra jungle stage: the same tiles, enemies, coins and collision in the `contra-jungle` theme and music, under a hanging jungle canopy, the clouds drawn as night clouds, distant mountains under the bridges and palms on the ground (its campaign look, docs/WORLD_MAP.md "Campaign looks"). The girder bridge just past the checkpoint (columns 128-142, walled to the bottom by the pillars at 127 and 143) is marked: a red light blinks on its post and a coin arrow points down at it. A hero stepping on sets off a chain of explosions, Contra stage 1 style (`bridge-blast`, docs/WORLD_MAP.md "Exploding bridges"): segment after segment flashes and blows, at a pace a hero who keeps running just about outruns; whoever stops or walks falls through the gap, which a campaign-only `pit` turns into the drop into the camp (dropping in from above at column 2; co-op, both players). Anyone who ran across can still drop in on purpose; every other fall in 7-3 kills, and the bridge is whole again on any new visit. Outside the campaign 7-3 is exactly v0.4.8's (a plain bridge, no pit, its own look). In the camp a shallow river (one tile deep: a hop gets out) runs at the foot of a waterfall; past it, the cave mouth under the cliff (a side `pipe` at column 16) leads into **the waterfall climb** (`7-3-falls`, Contra stage 3 style: `camera: free`, 16 by 32 tiles): rock ledges three rows up and one tile apart beside the waterfall climb right to a jungle vine on the right wall, which rises nine rows to the ledges climbing left to a vine on the left wall; that one leads off the top of the screen into 7-3 at column 199, climbing up out of the jungle onto the tree platform past the bridge (a climb arrival). No ledge hangs over another's take-off, the floor catches every fall and walls close both sides, so nobody gets stuck. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing Red Falcon's (Super C): King Koopa's spell let the alien take his mind (`DIALOGUE.bill`). Art and sound (B3's): theme and music `contra-jungle` (7-3's look and the camp), theme `contra-falls` (the climb: its falling water slides down); decor `canopy-hang` (the ceiling, every 2 columns on row 0), `canopy`, `palm`, `mountain`, `sandbags`, `searchlight`; the `contra` sheet's `blast-bridge-0/1` (lamp lit, dark) and `boom-0..3`; sfx `bridge-boom` (rect, item-blast and `explosion` fallbacks without them). Tests: `tests/sim/bill-camp.test.ts` (7-3 outside the campaign tile for tile and in look; the campaign variant's collision unchanged; the look hook; the chain's pace and order; every hero, small and big, falls in standing still, outruns it running, drops in on purpose; co-op; every hero reaches Bill and the cave, climbs the falls from the pool and from every ledge, and lands in 7-3; the whole way through the Game).
+Bill waits in his jungle camp under 7-3 (`7-3-camp`, an area of 7-3: `parent: 7-3`, `time: inherit`), standing by the sandbags of his base under a searchlight (column 5, feet in row 12). In campaign play 7-3 is a Contra jungle stage: the same tiles, enemies, coins and collision in the `contra-jungle` theme and music, under a hanging jungle canopy and a black starry sky (no clouds, as NES Contra's), distant snow-capped mountains under the bridges, palms and a band of palms and undergrowth (`jungle-band`) along the ground (its campaign look, docs/WORLD_MAP.md "Campaign looks"). The girder bridge just past the checkpoint (columns 128-142, walled to the bottom by the pillars at 127 and 143) is marked: a red light blinks on its post and a coin arrow points down at it. A hero stepping on sets off a chain of explosions, Contra stage 1 style (`bridge-blast`, docs/WORLD_MAP.md "Exploding bridges"): segment after segment flashes and blows, at a pace a hero who keeps running just about outruns; whoever stops or walks falls through the gap, which a campaign-only `pit` turns into the drop into the camp (dropping in from above at column 2; co-op, both players). Anyone who ran across can still drop in on purpose; every other fall in 7-3 kills, and the bridge is whole again on any new visit. Outside the campaign 7-3 is exactly v0.4.8's (a plain bridge, no pit, its own look). In the camp a shallow river (one tile deep: a hop gets out) runs at the foot of a waterfall; past it, the cave mouth under the cliff (a side `pipe` at column 16) leads into **the waterfall climb** (`7-3-falls`, Contra stage 3 style: `camera: free`, 16 by 32 tiles): rock ledges three rows up and one tile apart beside the waterfall climb right to a jungle vine on the right wall, which rises nine rows to the ledges climbing left to a vine on the left wall; that one leads off the top of the screen into 7-3 at column 199, climbing up out of the jungle onto the tree platform past the bridge (a climb arrival). No ledge hangs over another's take-off, the floor catches every fall and walls close both sides, so nobody gets stuck. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing Red Falcon's (Super C): King Koopa's spell let the alien take his mind (`DIALOGUE.bill`). Art and sound (B3's): theme and music `contra-jungle` (7-3's look and the camp), theme `contra-falls` (the climb: its falling water slides down); decor `canopy-hang` (the ceiling, every 2 columns on row 0), `canopy`, `palm`, `mountain`, `sandbags`, `searchlight`; the `contra` sheet's `blast-bridge-0/1` (lamp lit, dark) and `boom-0..3`; sfx `bridge-boom` (rect, item-blast and `explosion` fallbacks without them). Tests: `tests/sim/bill-camp.test.ts` (7-3 outside the campaign tile for tile and in look; the campaign variant's collision unchanged; the look hook; the chain's pace and order; every hero, small and big, falls in standing still, outruns it running, drops in on purpose; co-op; every hero reaches Bill and the cave, climbs the falls from the pool and from every ledge, and lands in 7-3; the whole way through the Game).
 
 ## The map hint (`src/game/map/captives.ts`)
 
@@ -765,6 +765,90 @@ up to 2 frames, pauses now and then) passes 100% of 30 seeds with the windmill i
 about 11-12 hit points (about 5 to the Masked Ninja); a clumsy player (21 frames, 10 px, more
 pauses) passes roughly 70-90% (80% of 30 seeds; a third before the bot took the windmill and the
 health lantern's drops).
+
+## Bill's mini game: Jungle Assault (`src/game/minigames/bill/`)
+
+Red Falcon's aliens have taken Bill's mind; the round is an NES Contra stage 1-style run-and-gun
+played **as Bill in Contra form**, a mini-game-only variant (`commando.ts`; his main-game kit in
+`characters/bill` is untouched). It runs its own simulation (`jungle.ts`, seeded and
+deterministic, no `World`: Contra's ground is one-way floors and a river, not SMB tiles), with a
+fresh state, so lives, score and power in the campaign are never touched. Art: B3's `contra` sheet
+and the `contra-jungle` / `alien-lair` themes (`art.ts`: a missing sheet, frame, palette, theme or
+sound draws a box, falls back to the overworld/castle tiles or a stock sound; nothing throws).
+
+- **The stage card** (`card.ts`, sting `contra-card`): the island map with the route drawn dot by
+  dot, 1P / REST 2, STAGE 1 / JUNGLE and a typed briefing. JUMP skips the drawing (SKIP), then
+  starts (OK); it starts by itself after 20 s. **The Konami code** on the card (UP UP DOWN DOWN
+  LEFT RIGHT LEFT RIGHT, FIRE, JUMP: the title's `CheatCode` sequence, its own instance) gives 30
+  lives (REST 29, sfx `konami`, announced); its last JUMP does not start the stage, and a START
+  within half a second after it (the NES code's last press) opens no menu. Keys, pad and
+  touch send the same actions; FIRE stays on the touch pad (blank) for it. It works only on the
+  card; the title's developer code never fires here and never carries in.
+- **Contra rules**: 3 lives (the medals top left are Contra's REST, the lives in reserve, at most 4
+  drawn), **one hit kills**: the backward death flip (`bill-death-0..3`), then the next life drops
+  in from the top of the screen 48 px in from the left with ~2 s of blinking invulnerability
+  (steady with reduce flashing). Out of lives: GAME OVER (3 s), then `fail`. The scroll is
+  right-only; Bill starts the stage dropping in.
+- **Bill in Contra form**: walks 1 px/f; a fixed somersault jump (40 px apex, small round hit box,
+  steered at walking pace in the air, no momentum); aim: standing ahead / straight up (UP) /
+  up-diagonals (UP + direction, running), running with DOWN the down-diagonals, DOWN alone prone
+  (shots low along the floor), all eight in the air. Every grass ledge and bridge is one-way: jump
+  up through it, **DOWN + JUMP** drops through (not through a bank or the base floor). In the
+  river he wades head-and-gun high, cannot jump, shoots ahead/up/up-diagonally, **DOWN ducks
+  under** (no bullet reaches him; no shooting) and climbs out walking into a bank.
+- **Falcons** from flying capsules (sine flight in from the left) and pillbox sensors (shut 90,
+  half 10, open 80 frames; only open can be hit, 5 hits): **M** auto fire while FIRE is held, **S**
+  five-way spread, **L** one beam (a new one replaces it), **F** a corkscrewing fireball, **R**
+  faster shots and presses (kept with the gun), **B** a 16 s barrier (touching soldiers or larvae
+  fells them). M S L F replace the gun; **death loses the weapon** (default gun, no R, no B). The
+  default gun: a shot a press, four on screen.
+- **Foes** (`foes.ts`, original designs; they face left in the sheet): running soldiers from the
+  screen edge (`SoldierZone`s; some from the left), who hop down at a ledge end and drown in the
+  river; riflemen standing and in bushes (they pop up to fire; no point-blank shots); rotating wall
+  guns (open once in view, turn one 30° step every 8 frames toward Bill, 12 steps, fire when on
+  him; 8 hits); pop-up cannons (hatch, rise, fire left / 30° / 60° up; 8 hits); **exploding
+  bridges** (`BlastBridge`: once Bill steps on, a segment every 16 frames flashes 12 frames then
+  blows; a running Bill just outruns it; falling lands in the river).
+- **The stage** (`stage.ts`, built from spans; 224 columns): the drop zone, bridge 1, the first
+  pillbox (on the lower ledge: drop through to it), bridge 2, tiers down to the river and a crag
+  with a wall gun, the bank and up, riflemen, a bush sniper and a second wall gun, the second
+  river, the spread gun's pillbox, the last ledges (a wall gun, the barrier capsule, a third
+  pillbox, a cannon), the base floor. Every stretch of river ends at a bank. Fixed foes come in at
+  the screen's right edge as it scrolls; capsules have a queue of their own.
+- **The look** (as NES stage 1, original art): a black night sky with sparse fixed stars
+  (`tile-render.ts STARRY_SKIES`/`drawStars`, shared with 7-3's jungle look), snow-capped
+  mountains far off, a band of palms and undergrowth along every cliff top and bank (decor
+  `jungle-band` / `jungle-band-half`), and from column 112 a wall of dark trunks (`jungle-trunks`)
+  under the hanging canopy. The defense wall is a tall blue plated wall with two gun towers
+  (`defense-wall-tower`, armour too) on its crown.
+- **Boss, two phases** (`boss.ts`, on the fight's own clock: the same every round). The **defense
+  wall** (camera locked at column 192, music `contra-boss`): two wall cannons lob shells to land
+  where Bill stands (every 96 frames each, by turns), a sniper on its crown fires at him (every 110),
+  the core glows in the door (24 hits; it beats slowly, steady with reduce flashing); shots stop
+  on the wall's face and its towers. The core
+  destroyed, the wall blows apart (2 s of booms), and Bill walks on through it, a short drop into
+  **Red Falcon's lair** (camera locked again, music `contra-lair`): the heart beats in the back wall
+  (48 hits), two mouths overhead open by turns and spit larvae (at most 3) that crawl at Bill and
+  leap when near (prone shots meet them).
+- **Endings**: the heart bursts: a chain of booms over the lair (a soft flash at most every 24
+  frames, only without reduce flashing), the banner RED FALCON'S HEART BURSTS! BILL'S MIND IS HIS OWN! (the first line only in a
+  round for fun), the jingle, then `pass`. The menu (`JungleMenuScene`, the shared
+  MiniGameMenuScene with the dev assists: No damage, Infinite lives) gives Give up = `quit`. `done`
+  is called once. No score (no popups: the HUD is the medals, on a dark backing in the lair).
+- **Touch**: card SKIP/OK, a blank FIRE (for the code), MENU; in play JUMP (hidden in the river),
+  the gun's name (FIRE, M-GUN, SPREAD, LASER, FIREBALL; hidden under water), MENU; nothing while
+  Bill is down or once the round is decided.
+
+Difficulty (`human-sim.test.ts`, `JungleBot`: it runs the route, jumps gaps and up tiers, wades the
+river, shoots whatever Contra's aims line up with (never through the wall's armour), stops for
+guns and shoots every capsule and pillbox (it cannot see a letter until the falcon is out), drops
+through a ledge to the first pillbox, goes back or down for falcons, keeps the spread gun, turns
+to what comes up behind it, and dodges by lying flat, jumping, stepping back or ducking under; at
+the wall it shoots the core while dodging, in the lair it lies flat for larvae;
+`BILL_SIM=1 pnpm vitest run bill/human-sim --silent=false` prints the report): over 30 seeds a
+sharp run passes 100% (~93 s); a careful first-timer (15-frame reactions, 6 px misjudging, pauses)
+passes 100% (~101 s; 100% at 12 frames, 87% at 18), a clumsy one (21 frames, 10 px, more pauses)
+40%.
 
 ## Hero training (optional practice rooms)
 
