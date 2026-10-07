@@ -14,7 +14,7 @@ export const SKETCH_4 = [
   '#T,*#,T##T#,###T',
   '#(O)##,#####T#,#',
   ',#!##T*#,T#,##T#',
-  '#,#T#####(O)###,',
+  '#,T######(O)###,', // the tree left of 4-2 stands one tile out, clear of Samus's map hint
   '#T,##,T*##!#,T##',
   'T#####(O),#T(O)#',
   ',T#*,##!#T,##!#T',
