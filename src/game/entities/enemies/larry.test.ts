@@ -22,7 +22,7 @@ import { GUNS } from '../../characters/bill/weapons';
 function cabin(invulnerable = true, power = 'big') {
   const state = { ...newGameState(MARIO), powerState: power };
   const world = new World(
-    getLevel('4-2-airship'),
+    getLevel('4-2-larry'),
     {
       assets: new AssetRegistry({ default: {} }),
       audio: NULL_AUDIO,

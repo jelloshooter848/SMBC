@@ -55,11 +55,13 @@ describe('Dev → Mini games', () => {
     const h = fromTitle();
     const rows = items(h.top());
     const defs = Object.values(MINIGAMES);
-    expect(rows.length).toBe(defs.length + 1);
+    // Every hero's mini game, Larry's airship, Back.
+    expect(rows.length).toBe(defs.length + 2);
     defs.forEach((d, i) => {
       expect(rows[i]?.label.toUpperCase()).toBe(d.title);
       expect(rows[i]?.value?.()).toBe(h.game.deps.characters.find((c) => c.id === d.hero)?.name);
     });
+    expect(rows.at(-2)?.label).toBe("Larry's airship");
     expect(rows.at(-1)?.label).toBe('Back');
     const texts = draw(h.top() as Scene).texts.map((t) => t.str);
     expect(texts).toContain('MINI GAMES');

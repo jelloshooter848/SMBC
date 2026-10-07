@@ -11,6 +11,13 @@ import { abilityHint } from './hints';
 import { cardContinues } from './message';
 import { snapshot } from './free-hero';
 import type { Game } from './game';
+import { AIRSHIP_CHALLENGE } from './airship';
+
+/**
+ * One dev round: a hero's freeing mini game (MiniGameDef), or another challenge played the same
+ * way (Larry's airship: `who` names it on the card instead of a hero).
+ */
+export type DevRound = Pick<MiniGameDef, 'title' | 'create'> & { hero?: string; who?: string };
 
 /*
  * Dev mode → Mini games: every hero's freeing mini game (MINIGAMES), played straight from the
@@ -23,7 +30,7 @@ import type { Game } from './game';
 /** What the result card says for each ending. */
 export const RESULT_WORDS: Record<MiniGameResult, string> = { pass: 'PASS', fail: 'FAIL', quit: 'QUIT' };
 
-/** 'MIRROR RACE' → 'Mirror race' (the menu's label case). */
+/** 'MIRROR RACE' → 'Mirror race', "LARRY'S AIRSHIP" → "Larry's airship" (the menu's label case). */
 function label(title: string): string {
   const t = title.toLowerCase();
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -48,12 +55,18 @@ export class DevMiniGamesScene extends MenuScene {
         select: () => this.play(def),
         hint: `Frees ${heroName(def.hero)}. Plays one round; nothing is saved`,
       })),
+      {
+        label: label(AIRSHIP_CHALLENGE.title),
+        value: () => game.state.character.name,
+        select: () => this.play(AIRSHIP_CHALLENGE),
+        hint: "Deck and Larry's room with your hero. Plays one round; nothing is saved",
+      },
       { label: 'Back', select: () => game.scenes.pop() },
     ]);
   }
 
   /** One round of `def` over this list, then its result card; the game is left as it was. */
-  play(def: MiniGameDef): void {
+  play(def: DevRound): void {
     const game = this.game;
     const audio = game.ctx.audio;
     const saved = game.state;
@@ -75,6 +88,7 @@ export class DevMiniGamesScene extends MenuScene {
       game.celebrate.clear();
       for (const id of celebrate) game.celebrate.add(id);
       game.campaign = campaign;
+      game.airship = null;
       audio.setTempoScale(1);
       audio.stopMusic();
     };
@@ -127,12 +141,13 @@ export class DevMiniGameResultScene implements Scene {
 
   constructor(
     private readonly game: Game,
-    def: MiniGameDef,
+    def: DevRound,
     readonly result: MiniGameResult,
     private readonly next: () => void,
   ) {
     const hero = game.deps.characters.find((c) => c.id === def.hero);
-    this.lines = [fontText(def.title), fontText(hero?.name ?? def.hero), '', RESULT_WORDS[result]];
+    const who = hero?.name ?? def.who ?? def.hero ?? '';
+    this.lines = [fontText(def.title), fontText(who), '', RESULT_WORDS[result]];
   }
 
   enter(): void {

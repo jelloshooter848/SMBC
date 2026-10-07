@@ -10,7 +10,7 @@ import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
 import { isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
-import { Camera } from './camera';
+import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
 import { renderTiles, SKY } from './tile-render';
 import { TileMap } from './tilemap';
 import { Player } from '../entities/player';
@@ -281,6 +281,8 @@ export class World {
   private offsetRenderer: OffsetRenderer | null = null;
   /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
   readonly heightPx: number;
+  /** Co-op respawns cost no shared life (Larry's airship challenge: deaths there are free). */
+  livesFree = false;
   /** WorldStart.extraEntities: a mini game's own entity types. */
   private readonly extraEntities: WorldStart['extraEntities'];
 
@@ -298,6 +300,7 @@ export class World {
     this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked', {
       free: level.camera === 'free',
       heightTiles: level.height,
+      ...(level.camera === 'auto' ? { autoScroll: level.scroll ?? DEFAULT_AUTO_SCROLL } : {}),
     });
     this.heightPx = level.height * 16;
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
@@ -797,8 +800,11 @@ export class World {
         if (p.body.vx < 0) p.body.vx = 0;
       }
       const rightEdge = Math.min(tileToSub(this.level.width), this.camera.x + px(SCREEN_W));
-      if (p.body.x + p.body.w > rightEdge && this.coop && p !== this.rightmost())
+      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right).
+      if (p.body.x + p.body.w > rightEdge && (this.camera.auto || (this.coop && p !== this.rightmost()))) {
         p.body.x = rightEdge - p.body.w;
+        if (this.camera.auto && p.body.vx > 0) p.body.vx = 0;
+      }
       if (p.body.x + p.body.w > tileToSub(this.level.width))
         p.body.x = tileToSub(this.level.width) - p.body.w;
     });
@@ -832,7 +838,8 @@ export class World {
     }
 
     const lead = this.rightmost();
-    if (lead) this.camera.follow(lead.body.x, lead.body.y);
+    if (this.camera.auto) this.autoScroll();
+    else if (lead) this.camera.follow(lead.body.x, lead.body.y);
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
       if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
@@ -844,6 +851,36 @@ export class World {
       }
     }
     this.cull();
+  }
+
+  /**
+   * An auto-scroll frame (`camera: auto`): the camera moves on, and its left edge pushes every
+   * player it catches. One pushed into a solid wall is squashed between the two and dies, as in
+   * SMB3 (whatever the assists: there is no way out, as with a pit). The frames the world stands
+   * still (pause, a death with no one left, pipes, growing) never get here, so the scroll holds.
+   */
+  private autoScroll(): void {
+    if (this.leaving) return;
+    this.camera.scroll();
+    for (const p of this.activePlayers()) {
+      if (p.body.x >= this.camera.x || p.frozen || p.hidden) continue;
+      p.body.x = this.camera.x;
+      if (p.body.vx < 0) p.body.vx = 0;
+      if (this.inWall(p)) this.kill(p);
+    }
+  }
+
+  /** The player's body overlaps a solid tile (squashed by an auto-scroll edge). */
+  private inWall(p: Player): boolean {
+    const b = p.body;
+    // A pixel's grace on every side, so a body merely touching a floor, ceiling or wall is free.
+    const x0 = tileAt(b.x + px(1));
+    const x1 = tileAt(b.x + b.w - px(1) - 1);
+    const y0 = tileAt(b.y + px(1));
+    const y1 = tileAt(b.y + b.h - px(1) - 1);
+    for (let ty = Math.max(0, y0); ty <= y1; ty++)
+      for (let tx = x0; tx <= x1; tx++) if (this.map.isSolid(tx, ty)) return true;
+    return false;
   }
 
   /** Up pressed by a player within a captive's reach: a `talk` event (one a frame). */
@@ -1515,8 +1552,9 @@ export class World {
         return;
       }
       const others = this.activePlayers();
-      if (others.length && (this.state.lives > 0 || this.assist.infiniteLives)) {
-        if (!this.assist.infiniteLives) this.state.lives--;
+      const free = this.assist.infiniteLives || this.livesFree;
+      if (others.length && (this.state.lives > 0 || free)) {
+        if (!free) this.state.lives--;
         this.respawn(p, others[0] as Player);
       } else {
         p.out = true;

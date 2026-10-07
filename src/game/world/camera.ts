@@ -1,18 +1,32 @@
 import { clamp, px, toPx } from '@engine/math/units';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 
-/** Opt-in vertical following (a map's `camera: free`, with `height: N` rows). */
+/**
+ * Opt-in camera modes: vertical following (a map's `camera: free`, with `height: N` rows) or
+ * auto-scroll (`camera: auto`, with `scroll: <px per frame>`).
+ */
 export interface CameraOptions {
   /** Follow up and down (and both ways sideways). */
   free?: boolean;
   /** The map's height in tiles (one screen is 15). */
   heightTiles?: number;
+  /**
+   * Auto-scroll (SMB3's airships): the camera moves right this many px per frame (decimals are
+   * fine) on its own, whatever the players do, until its end (the scroll stop or the map's end).
+   */
+  autoScroll?: number;
 }
+
+/** An auto-scroll map's speed when its header names none (`camera: auto` without `scroll:`). */
+export const DEFAULT_AUTO_SCROLL = 0.5;
 
 /**
  * The platformer camera: SMB1's right-only horizontal scrolling (left scroll is an accessibility
  * option). A `free` camera (tall maps with shafts) also scrolls left and follows the player up
  * and down, keeping the body's top inside a band of the screen; every other camera keeps y at 0.
+ * An `auto` camera (SMB3 airships) ignores the players: World calls `scroll()` once a live frame
+ * and it moves right at its own speed until its end; World pushes the players along with its
+ * left edge (squashing one against a wall) and keeps them from leaving past its right edge.
  */
 export class Camera {
   /** Subpixels. */
@@ -31,6 +45,8 @@ export class Camera {
   pushBottom = px(128);
   locked: boolean;
   readonly free: boolean;
+  /** Auto-scroll speed in subpixels per frame; 0 for every camera but an `auto` one. */
+  readonly autoSpeed: number;
 
   constructor(
     levelWidthTiles: number,
@@ -43,11 +59,29 @@ export class Camera {
     this.locked = locked;
     this.free = opts.free ?? false;
     this.maxY = this.free ? Math.max(0, px((opts.heightTiles ?? 15) * 16 - SCREEN_H)) : 0;
+    this.autoSpeed = opts.autoScroll ? Math.max(1, Math.round(px(opts.autoScroll))) : 0;
+  }
+
+  /** An auto-scroll camera (`camera: auto`). */
+  get auto(): boolean {
+    return this.autoSpeed > 0;
+  }
+
+  /** An auto camera has reached its end (the scroll stop or the map's end) and stays there. */
+  get autoDone(): boolean {
+    return this.auto && this.x >= this.maxX;
+  }
+
+  /** One frame of auto-scroll: right by the speed, up to the end. Does nothing for other cameras. */
+  scroll(): void {
+    if (!this.auto || this.locked) return;
+    this.x = Math.min(this.maxX, this.x + this.autoSpeed);
   }
 
   /** Follow the lead player (`playerY`, the body's top, only matters to a free camera). */
   follow(playerX: number, playerY?: number): void {
-    if (this.locked) return;
+    // An auto camera moves on its own (scroll()), never after the players.
+    if (this.locked || this.auto) return;
     if (playerX - this.x > this.pushX) this.x = playerX - this.pushX;
     else if ((this.allowLeftScroll || this.free) && playerX - this.x < this.pushX)
       this.x = playerX - this.pushX;

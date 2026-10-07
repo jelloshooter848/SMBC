@@ -98,10 +98,17 @@ hidden blocks) and to look closely at the map for a level hiding someone missed.
 ## Larry Koopa and the crystal ball (4-2's airship, campaign)
 
 Story: Larry Koopa stole a magic wand, and its spell is what brainwashed the heroes. In the
-campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (pipe target
-`4-2-airship 2 12`, wired in `level/campaign.ts`; dev select and `?level=4-2-airship` reach it too).
+campaign, 4-2's right warp-zone pipe leads aboard his airship: the auto-scrolling **deck**
+`4-2-airship` (target `4-2-airship 2 12`, the deck's start; wired in `level/campaign.ts`), whose
+stern pipe drops into **Larry's room** `4-2-larry` (`pipe x y down -> 4-2-larry 2 12`). Dev select
+and `?level=` reach both as plain levels. See "Larry's airship challenge" below for how a run
+aboard ends.
 
-- **The cabin** (`src/content/levels/world4/4-2-airship.map`, parent 4-2): one locked screen,
+- **The deck** (`src/content/levels/world4/4-2-airship.map`, parent 4-2, theme `airship-deck`,
+  music `airship`, `camera: auto` + `scroll: 0.5`): for now a PLACEHOLDER (40 columns of flat
+  deck, start at column 2, the stern pipe at columns 36-37 on rows 11-12); A2's SMB3-style layout
+  replaces it. Keep the stern pipe's zone pointing at `4-2-larry 2 12`.
+- **The room** (`src/content/levels/world4/4-2-larry.map`, parent 4-2): one locked screen,
   enclosed like SMB3's (the owner's reference, built to the SMB3 art's frames and mock), no sky. The
   log back wall (`H`, not solid) fills the room, behind the HUD too, with two `smb3:porthole`
   windows at (5,6) and (10,6). The ceiling row (row 2) and both edge columns (0 and 15) are solid
@@ -137,6 +144,31 @@ campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (p
   Hammer Bro"); 4-2 is **not** cleared. The file's `inventoryUnlocked` is set (the SMB3 item
   inventory; a file with `larry` in its secrets counts as unlocked). Outside the campaign play
   goes on to `next` (4-3); an editor play-test ends.
+
+### Larry's airship challenge (`scenes/airship.ts`)
+
+The deck and the room play with the current hero(es) as real levels, but end like a mini game
+round. Co-op works (both players board; a partner's respawn aboard is free).
+
+- **Boarding** (campaign only): `Game.startLevel` into `4-2-airship` or `4-2-larry` from any other
+  level starts a run (`Game.airship`, an `AirshipRun`) and snapshots the run state as it was
+  before (`snapshot()` from free-hero.ts: lives, power, hp, kit, score, coins, 4-2's checkpoint).
+  Any other level, the map or the title ends the run. Dev select / `?level=` never start one.
+- **No clock aboard**: `LevelScene` sets the world's time to null (the HUD leaves it blank).
+- **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
+  restarts the deck as it was boarded, or Larry's room once it has been reached (rising out of its
+  pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
+  restores the pre-boarding snapshot and goes back to 4-2 at its last checkpoint (4-2's own respawn
+  rules: its start without one, a fresh clock, the WORLD card; no hero select).
+- **MENU** aboard is `MiniGameMenuScene` titled LARRY'S AIRSHIP: Continue / Give up (= NO) and, in
+  dev mode, Assists.
+- **Held items** (mushroom/flower/Starman used on the map) given at an airship area's start are
+  folded into the run's snapshots (`AirshipRun.itemsGiven`), so a retry or NO keeps them once.
+- **Beating Larry**: the crystal ball exactly as before. The run ends in the card's OK
+  (`airshipWon`), then `Game.takeCrystalBall(levelId)` is the campaign's hand-off to the map.
+- **Dev → Mini games → "Larry's airship"** (`AIRSHIP_CHALLENGE`): deck + room as one round over the
+  dev list with the current hero; the ball is PASS, a death FAIL (no retry prompt), Give up QUIT,
+  then the dev result card; nothing is saved.
 - **The crystal ball's hint**: from then on every hero not freed yet shows its silhouette by its
   level's node (stage 2 above) even before that level is cleared, with the same announcer line and
   hint line (`heroHint` in `map/captives.ts`). A node the file has not reached (its page not open, or
@@ -404,6 +436,18 @@ first (Samus cannot move, the countdown waits, the press that started the round 
 - Touch labels: Samus's level labels while she runs (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
   WEAPON; BOMB in the ball, no JUMP), only MENU while READY, none once the round is decided.
   Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Mini games.
+
+**The auto-scroll camera** (generic, `world/camera.ts`, SMB3's airships): a map's header
+`camera: auto` with `scroll: <px per frame>` (decimals fine, above 0 and at most 16; 0.5 when left
+out; `scroll:` without `camera: auto` and unknown `camera:` values are parse errors; one screen high
+only; `serializeTextMap` writes `scroll:` for auto maps only). The camera ignores the players and
+moves right at that speed (`Camera.scroll()`, called once per live `World.update` frame) until its
+end (a `scrollStop x` zone or the map's end; `Camera.autoDone`). Its left edge pushes every player
+along; one pushed into a solid tile (a pixel's grace on each side) is squashed and dies, whatever
+the assists, as in a pit. No one can run past its right edge. Spawning and despawning work as in
+any level (by the camera's edges). It holds whenever the world does: the pause menu (the scene is
+not updated), a death with no one left, pipes, growing/shrinking, a vine or pit transfer. Every
+other level is untouched (camera tests: no library level but the deck is `auto` or has a speed).
 
 **The vertical camera** (generic, `world/camera.ts`): a map's header `camera: free` with
 `height: N` (at least 15 rows; the text map then needs exactly N rows, and `serializeTextMap`

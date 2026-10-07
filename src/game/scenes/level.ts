@@ -17,6 +17,7 @@ import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
 import { abilityHint } from './hints';
+import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
 
 export type LevelStart = WorldStart;
 
@@ -60,13 +61,25 @@ export class LevelScene implements Scene {
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);
     if (this.tutorial) this.world.time = null;
+    // Larry's airship challenge (scenes/airship.ts): no clock aboard, and co-op respawns are free.
+    if (this.airship) {
+      this.world.time = null;
+      this.world.livesFree = true;
+    }
+  }
+
+  /** The airship challenge this level is part of (deck or room, while a run is on), else null. */
+  get airship(): AirshipRun | null {
+    return isAirshipArea(this.level.id) ? this.game.airship : null;
   }
 
   enter(): void {
     this.playMusic();
     this.started = true;
     // Items used from the map (mushroom, flower, Starman) go to the hero who entered.
-    applyHeldItems(this.game, this.world);
+    const held = applyHeldItems(this.game, this.world);
+    // Aboard Larry's airship a retry or NO restores the run: it keeps what they gave, once.
+    if (held.some((o) => o.given)) this.airship?.itemsGiven(this.game.state);
   }
 
   /** The level's music (the hero's own overworld theme when it has one), at the clock's tempo. */
@@ -101,7 +114,8 @@ export class LevelScene implements Scene {
       return;
     }
     if (inputs.some((f) => f.pressed('start')) && this.world.activePlayers().length > 0 && this.started) {
-      this.game.scenes.push(new PauseScene(this.game, this.world));
+      // Aboard Larry's airship MENU is Continue / Give up, as in a mini game.
+      this.game.scenes.push(this.airship ? airshipMenu(this.game) : new PauseScene(this.game, this.world));
       return;
     }
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
@@ -212,6 +226,11 @@ export class LevelScene implements Scene {
           game.playtestDone();
           return;
         }
+        // Aboard Larry's airship a death costs no life: TRY AGAIN? YES / NO (scenes/airship.ts).
+        if (this.airship) {
+          airshipDied(game);
+          return;
+        }
         const s = game.state;
         s.powerState = s.character.damage.kind === 'powerup' ? 'small' : 'full';
         s.hp = startHp(s.character);
@@ -269,7 +288,10 @@ export class LevelScene implements Scene {
         game,
         CRYSTAL_BALL_CARD,
         () => {
+          // A run aboard ends here (a dev round passes and goes to its result card).
+          if (this.airship && airshipWon(game)) return;
           if (game.playtestDone) game.playtestDone();
+          // The campaign's hand-off back to the map (Game.takeCrystalBall).
           else if (game.campaign) game.takeCrystalBall(this.level.id);
           else if (next) game.goToLevel(next, { mode: 'stand' });
           else game.showTitle();

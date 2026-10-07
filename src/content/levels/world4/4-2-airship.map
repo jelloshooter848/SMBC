@@ -2,80 +2,43 @@ id: 4-2-airship
 name: WORLD 4-2
 world: 4
 stage: 2
-theme: airship
-music: smb3-boss
-time: inherit
+theme: airship-deck
+music: airship
+time: 300
 start: 2,12
-startMode: pipe-exit
-camera: locked
+startMode: stand
+camera: auto
+scroll: 0.5
 parent: 4-2
 
-;; Larry Koopa's airship cabin (0.5.0, SMB3 style, after the owner's reference of SMB3's cabin and
-;; the SMB3 art's mock of it): enclosed, no sky. The log back wall (`H`, not solid) fills the room,
-;; with two porthole windows; a ceiling of beams across row 2 and a pillar down each edge column
-;; (smb3 decor, 16x16, one per tile, drawn over solid `%` so the room stays closed); a floor of log
-;; posts, `#` the post tops on row 13 and `%` the posts carrying on below, and one raised post at
-;; (7,12). In the campaign 4-2's right warp-zone pipe leads here (`4-2-airship 2 12`,
-;; level/campaign.ts): the hero rises out of the pipe in the floor at the left. Larry hops at the
-;; hero, fires wand blasts and spins in his shell when stomped; beaten, he drops the crystal ball,
-;; whose touch is 4-2's secret exit `secret:larry` (docs/HEROES.md).
+;; Larry Koopa's airship DECK, a PLACEHOLDER (A1) for A2's real SMB3-style layout: 40 columns of
+;; flat deck (A3's `airship-deck` tiles: `#` deck planking, `B` posts, `-` thin plank) under an auto-scrolling camera (`camera: auto`, `scroll: <px per frame>`, decimals
+;; fine; world/camera.ts). The screen moves right on its own; its left edge pushes the hero, a
+;; hero squashed between it and a wall dies, and no one can run past its right edge. It stops at
+;; the map's end (or a `scrollStop x` zone).
+;;
+;; The way on is the stern pipe, the pipe at columns 36-37 (top `[]` on row 11, body `{}` on
+;; row 12, standing on the deck): its zone `pipe 36 11 down -> 4-2-larry 2 12` drops the hero into
+;; Larry's room, rising out of the room's floor pipe (the room's startMode is pipe-exit). Keep that
+;; target when the deck is redrawn: the airship challenge (scenes/airship.ts) counts any arrival
+;; in `4-2-larry` as "reached the room". The campaign boards here at the start, `4-2-airship 2 12`
+;; (4-2.map's right warp zone `goto=`).
 [tiles]
-;; 0
-HHHHHHHHHHHHHHHH
-HHHHHHHHHHHHHHHH
-%%%%%%%%%%%%%%%%
-%HHHHHHHHHHHHHH%
-%HHHHHHHHHHHHHH%
-%HHHHHHHHHHHHHH%
-%HHHHHHHHHHHHHH%
-%HHHHHHHHHHHHHH%
-%HHHHHHHHHHHHHH%
-%HHHHHHHHHHHHHH%
-%HHHHHHHHHHHHHH%
-%HHHHHHHHHHHHHH%
-%HHHHHH#HHHHHHH%
-##[]###%########
-%%{}%%%%%%%%%%%%
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ........
+................ ................ ....[]..
+................ ................ ....{}..
+################ ################ ########
+################ ################ ########
 
-[entities]
-larry 12 12 next=4-3
-
-[decor]
-smb3:ceiling-beam 1 2
-smb3:ceiling-beam 2 2
-smb3:ceiling-beam 3 2
-smb3:ceiling-beam 4 2
-smb3:ceiling-beam 5 2
-smb3:ceiling-beam 6 2
-smb3:ceiling-beam 7 2
-smb3:ceiling-beam 8 2
-smb3:ceiling-beam 9 2
-smb3:ceiling-beam 10 2
-smb3:ceiling-beam 11 2
-smb3:ceiling-beam 12 2
-smb3:ceiling-beam 13 2
-smb3:ceiling-beam 14 2
-smb3:pillar 0 2
-smb3:pillar 0 3
-smb3:pillar 0 4
-smb3:pillar 0 5
-smb3:pillar 0 6
-smb3:pillar 0 7
-smb3:pillar 0 8
-smb3:pillar 0 9
-smb3:pillar 0 10
-smb3:pillar 0 11
-smb3:pillar 0 12
-smb3:pillar 15 2
-smb3:pillar 15 3
-smb3:pillar 15 4
-smb3:pillar 15 5
-smb3:pillar 15 6
-smb3:pillar 15 7
-smb3:pillar 15 8
-smb3:pillar 15 9
-smb3:pillar 15 10
-smb3:pillar 15 11
-smb3:pillar 15 12
-smb3:porthole 5 6
-smb3:porthole 10 6
+[zones]
+pipe 36 11 down -> 4-2-larry 2 12
