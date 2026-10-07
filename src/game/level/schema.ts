@@ -155,6 +155,16 @@ export type Zone =
       text?: string;
       secret?: string;
       goto?: { level: string; x: number; y: number; exitDir?: TransferMode };
+      /**
+       * A climb `goto` (an anchor chain) works until the file has this map secret (`larry`):
+       * then the room shows only the smashed pipe's stump (level/campaign.ts).
+       */
+      until?: string;
+      /**
+       * Set only by the campaign variant: pipe mouths whose world numbers are drawn though they
+       * are no pipe zones (the climb zone's dead pipe, before the anchor smashes it).
+       */
+      labelAt?: { x: number; y: number }[];
     }
   /** `y`: the midpoint's row; the respawn stands on the bottom of it (row 12 when left out). */
   | { kind: 'checkpoint'; x: number; y?: number }

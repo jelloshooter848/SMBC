@@ -18,7 +18,7 @@ import { loadSave, type SaveFile } from '@game/save/save-files';
 import { registerBonusGame, BONUS_CLOSED_HINT, type BonusOutcome } from '@game/map/bonus-spot';
 import { SMB3_BONUS } from '@game/bonus/spot';
 import type { MapNode, WorldMapPage } from '@game/map/types';
-import { draw, file, makeGame, rideToStern, useStorage, type H } from './heroes-harness';
+import { draw, dropInAndClimb, file, makeGame, rideToStern, useStorage, type H } from './heroes-harness';
 
 // Larry Koopa's airship (4-2), the crystal ball and World 4's bonus spot with its Hammer Bro
 // (docs/HEROES.md "Larry Koopa and the crystal ball", docs/WORLD_MAP.md "The bonus spot and its
@@ -123,12 +123,11 @@ describe('the crystal ball (campaign)', () => {
 
   it("4-2's anchor chain (the campaign's way in, no pipe) boards the deck; its stern pipe leads into the room", () => {
     const { h } = onMap(world4());
-    const main = getLevel('4-2');
-    // The chain stands where the warp-zone pipe stood (anchor-chain.test.ts has the details).
-    const pipe = main.zones.find((z) => z.kind === 'pipe' && z.x === 214) as { x: number; y: number };
-    h.game.startLevel(main, { mode: 'stand', x: pipe.x, y: 12, time: 300 });
+    // Into the hidden right zone from above: the anchor crashes down and its chain climbs to the
+    // airship (anchor-chain.test.ts has the details).
+    h.game.startLevel(getLevel('4-2'), { mode: 'stand', x: 200, y: 1, time: 300 });
     h.step();
-    for (let f = 0; f < 900 && (h.top() as LevelScene).level?.id !== '4-2-airship'; f++) h.step(['up']);
+    dropInAndClimb(h, h.top() as LevelScene);
     const deck = h.top() as LevelScene;
     expect(deck.level.id).toBe('4-2-airship');
     expect(h.game.airship).not.toBeNull();

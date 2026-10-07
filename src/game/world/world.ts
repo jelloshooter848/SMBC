@@ -33,6 +33,7 @@ import { Captive } from '../entities/objects/captive';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
+import { AnchorDrop } from '../entities/objects/anchor-drop';
 import {
   BEAM_GATHER_FRAMES,
   BEAM_H,
@@ -88,7 +89,9 @@ export type WorldEvent =
    * A player touched Larry Koopa's crystal ball (objects/crystal-ball.ts): the level shows its
    * card and ends the area (campaign: 4-2's secret exit; else on to `next`).
    */
-  | { type: 'crystal-ball'; player: number; next: string | null };
+  | { type: 'crystal-ball'; player: number; next: string | null }
+  /** A line for the announcer (the anchor crashing into 4-2's warp zone). */
+  | { type: 'say'; text: string };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -289,6 +292,10 @@ export class World {
   private vineArrival: Vine | null = null;
   /** The HUD leaves the time blank (the vine arrival's watch mode: Level.as tsTxt.hideTime). */
   timeHidden = false;
+  /** Frames of screen shake left (the anchor's crash); never drawn with reduce flashing. */
+  shakeFrames = 0;
+  /** Warp zones whose pipe the anchor smashed: their number and welcome text are gone. */
+  private readonly smashedWarps = new Set<Zone>();
   private readonly deathTimers = new Map<Player, number>();
   private readonly respawnTimers = new Map<Player, number>();
   private checkpointSent = false;
@@ -585,6 +592,8 @@ export class World {
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
+      case 'anchor-drop':
+        return new AnchorDrop(s.x, s.y, s.props);
       case 'vine':
       case 'chain':
         return new Vine(s.x, s.y, Number(s.props?.len ?? 8), null, s.type === 'chain' ? 'chain' : 'vine');
@@ -771,6 +780,7 @@ export class World {
 
   update(inputs: InputFrame[]): void {
     this.frame++;
+    if (this.shakeFrames > 0) this.shakeFrames--;
 
     // Growth/shrink pauses the world (SMB1 does too).
     let transitioning = false;
@@ -2172,11 +2182,12 @@ export class World {
     // A free camera scrolls vertically too: the map is drawn moved up by its y (the backdrop and
     // the castle text stay screen-fixed). Every other level draws straight to the screen.
     let r = screen;
-    if (this.camera.free) {
-      view.camY = this.camera.pxY;
+    const shake = this.shakeY;
+    if (this.camera.free || shake) {
+      if (this.camera.free) view.camY = this.camera.pxY;
       const o = (this.offsetRenderer ??= new OffsetRenderer(screen, 0, 0));
       o.inner = screen;
-      o.dy = -view.camY;
+      o.dy = -(view.camY ?? 0) + shake;
       r = o;
     }
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
@@ -2203,16 +2214,36 @@ export class World {
     }
   }
 
+  /** Shake the screen for `frames` (drawn only without reduce flashing). */
+  shake(frames: number): void {
+    this.shakeFrames = Math.max(this.shakeFrames, frames);
+  }
+
+  /** The warp zone over column `tx` loses its world numbers and welcome text (pipe smashed). */
+  smashWarpAt(tx: number): void {
+    for (const z of this.level.zones)
+      if (z.kind === 'warp' && tx >= z.x && tx < z.x + z.w) this.smashedWarps.add(z);
+  }
+
+  /** The screen's vertical offset this frame (a shake), 0 with reduce flashing. */
+  get shakeY(): number {
+    if (this.shakeFrames <= 0 || this.ctx.reduceFlashing) return 0;
+    return (this.shakeFrames >> 1) & 1 ? 2 : -2;
+  }
+
   private renderWarpText(r: Renderer, view: View): void {
     for (const z of this.level.zones) {
-      if (z.kind !== 'warp') continue;
+      if (z.kind !== 'warp' || this.smashedWarps.has(z)) continue;
       const x0 = z.x * 16 - view.camX;
       if (x0 > SCREEN_W || x0 + z.w * 16 < 0) continue;
       const font = view.assets.sheet('font');
       if (z.text) r.text(font, z.text, Math.max(8, x0 + 8), 72);
-      const pipes = this.level.zones.filter(
-        (p): p is Zone & { kind: 'pipe' } => p.kind === 'pipe' && p.x >= z.x && p.x < z.x + z.w,
-      );
+      // The campaign's dead pipe (labelAt) keeps its number until the anchor smashes it.
+      const pipes =
+        z.labelAt ??
+        this.level.zones.filter(
+          (p): p is Zone & { kind: 'pipe' } => p.kind === 'pipe' && p.x >= z.x && p.x < z.x + z.w,
+        );
       pipes.forEach((p, i) => {
         const w = z.worlds[i];
         if (w !== undefined) r.text(font, worldLabel(w), p.x * 16 + 12 - view.camX, p.y * 16 - 16);

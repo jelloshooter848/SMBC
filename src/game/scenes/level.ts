@@ -160,6 +160,9 @@ export class LevelScene implements Scene {
       case 'crystal-ball':
         this.takeCrystalBall(ev.next);
         break;
+      case 'say':
+        game.deps.announcer?.say(ev.text);
+        break;
       case 'captive-near': {
         const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
         const who = this.world.coop ? `Player ${ev.player + 1}: ` : '';

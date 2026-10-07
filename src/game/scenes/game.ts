@@ -968,7 +968,11 @@ export class Game {
 
   /** The scene for `level` (its campaign variant in campaign play), not yet pushed. */
   levelScene(level: LevelData, start: LevelStart): LevelScene {
-    return new LevelScene(this, this.campaign ? campaignLevel(level) : level, start);
+    return new LevelScene(
+      this,
+      this.campaign ? campaignLevel(level, undefined, this.mapProgress.secrets) : level,
+      start,
+    );
   }
 
   /**

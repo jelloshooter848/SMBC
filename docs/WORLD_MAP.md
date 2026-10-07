@@ -171,8 +171,8 @@ different road with each, and **no ending opens every road leaving its level**.
   4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
   Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each leads into an
   area of 4-2 (below) and is no exit at all (no `target.secret`, no road). The vine area's shows
-  one ordinary pipe, down into Samus's cavern; the right one shows no pipe but Larry's anchor
-  chain, up onto his airship deck, whose stern pipe leads to his room, where the crystal ball is
+  one ordinary pipe, down into Samus's cavern; the right one shows a dead pipe until Larry's anchor
+  crashes down on it, and its chain climbs up onto his airship deck, whose stern pipe leads to his room, where the crystal ball is
   the exit. The Lost Levels' warp zones (`workingWarps` / `warpsOpened`) still warp as in the
   original and clear nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels
   that have another way out; it reads the level data as it is, so 4-2 keeps its look (in the
@@ -230,11 +230,15 @@ pipe zones), and the world numbers go.
 | `secret=<key>`                  | Records `<key>` as a secret exit and returns to the map (`target.secret` → `Game.campaignSecret`) | stays |
 | `goto=<level>,<x>,<y>[,<exit>]` | Leads into `<level>` at (x, y) like any pipe (`exit` as a pipe's `exit=`); no secret, no map road | goes  |
 
-A `goto` with exit `climb` shows **no pipe** at all: every pipe of the room goes, and where the
-middle one stood an anchor (`smb3:anchor`) rests on the floor with its chain (a `chain` entity,
-climbed like a vine) rising off the top of the screen through anything solid above it; climbing
-off its top arrives in `<level>` up a chain at column x, landing on the first solid tile in column
-x + 1 below row y (docs/HEROES.md "The anchor chain").
+A `goto` with exit `climb` shows **no working pipe**: the other pipes of the room go, and the
+middle one stands dead (solid, no pipe zone; its world number and the text stay, drawn through
+the zone's `labelAt`) until a player stands on the room's floor. Then an anchor crashes down on it
+(an `anchor-drop` entity): the pipe is smashed, the number and text go, and the anchor rests on the
+floor with its chain (climbed like a vine) rising off the top of the screen through the hole it
+broke above. Climbing off its top arrives in `<level>` up a chain at column x, landing on the
+first solid tile in column x + 1 below row y. With `until=<secret>` and that secret on the file,
+the room shows only the pipe's stump instead: no anchor, no chain, no warp, no text
+(docs/HEROES.md "The anchor's drop").
 
 `goto` is meant for an area of the same level (same world and stage, `parent` leading back), so
 the clock carries over (`carryTime`) and nothing on the map changes. A `goto` whose level is not
@@ -244,8 +248,8 @@ adds. Owner decision (0.5.0): all warp pipes go eventually.
 - **4-2 vine area** (`4-2-warp`, pipes 50/54/58): `goto=4-2-cavern,2,0`. Pipe 54 drops the
   player into Samus's cavern (docs/HEROES.md), whose side pipe brings them up out of 4-2's pipe
   at column 72, the first pipe past the vine block.
-- **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,3,climb`, Larry
-  Koopa's anchor chain at column 214 up to the bow of his airship deck (whose stern pipe leads into
+- **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,3,climb until=larry`,
+  Larry Koopa's anchor crashing onto the pipe at column 214, its chain up to the bow of his airship deck (whose stern pipe leads into
   his room `4-2-larry`; docs/HEROES.md). Larry's road (`secret:larry`) is granted by beating him,
   not by the chain; the first time, World 4's map plays the airship's crash before drawing it in.
 

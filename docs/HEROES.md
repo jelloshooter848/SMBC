@@ -98,19 +98,33 @@ hidden blocks) and to look closely at the map for a level hiding someone missed.
 ## Larry Koopa and the crystal ball (4-2's airship, campaign)
 
 Story: Larry Koopa stole a magic wand, and its spell is what brainwashed the heroes. In the
-campaign, 4-2's right warp zone has no pipe: his **anchor** rests on the floor there and its
-**chain** rises through the ceiling off the top of the screen. Climbed (vine mechanics) to the top,
+campaign, 4-2's right warp zone first looks classic (WELCOME TO WARP ZONE!, the pipe and its 5,
+though the pipe is dead), until the hero drops in and lands: then his **anchor** crashes down,
+smashes the pipe and rests on the floor, its **chain** rising through the ceiling off the top of
+the screen. Climbed (vine mechanics) to the top,
 it leads aboard his airship: the auto-scrolling **deck** `4-2-airship`, arriving up the chain at
 the bow (wired in `level/campaign.ts`; docs/WORLD_MAP.md "Campaign warp zones"), whose stern
 pipe drops into **Larry's room** `4-2-larry` (`pipe x y down -> 4-2-larry 2 12`). Dev select and
 `?level=` reach both as plain levels. See "Larry's airship challenge" below for how a run aboard
 ends.
 
-- **The anchor chain**: the anchor is the decor `smb3:anchor` (32×32, its ring under the chain,
-  drawn at x = column×16 − 8, standing on the floor); the chain is a `chain x y len=N` entity, a
-  placed `Vine` drawn in `smb3:chain` links (`VineArt` in `entities/objects/vine.ts`, theme-free),
-  standing on the floor at column 214 and reaching a tile above the screen; the ceiling brick over
-  it is opened. A `vine` zone on its foot (column 214, row 12) links its top to the airship like a
+- **The anchor's drop** (`entities/objects/anchor-drop.ts`, an `anchor-drop` spawn built by
+  `level/campaign.ts`): the room shows the classic warp zone, but its pipe (column 214) is no pipe
+  zone, so it never warps (its 5 is drawn through the warp zone's `labelAt`). Once a player stands
+  on the room's floor (row 13, columns 208-223; not on the pipe, not on the ceiling) the anchor
+  shows at the top 20 frames later and falls (4 px/f gaining 0.5 up to 10), trailing its chain,
+  breaks the ceiling brick in its column (brick pieces, `break`), smashes the pipe (its tiles gone
+  in pipe-green chunks, the `cannon` boom and a `break`, a 16-frame screen shake that reduce
+  flashing skips, the 5 and the welcome text gone, the announcer: "An anchor crashes down and
+  smashes the pipe!") and rests on the floor: about a second in all. Nothing of it is solid or
+  hurts; the players keep control. It plays on every visit (each new 4-2 world).
+- **After Larry is beaten** (`until=larry` on the warp zone and `larry` in the file's secrets: the
+  airship has crashed on the map) the room shows only the smashed pipe's stump (its bottom row): no
+  anchor, no chain, no warp, no text.
+- **The anchor chain**: the anchor is `smb3:anchor` (32×32, its ring under the chain, drawn at x =
+  column×16 − 8, standing on the floor); the chain is a placed `Vine` drawn in `smb3:chain` links
+  (`VineArt` in `entities/objects/vine.ts`, theme-free; also a `chain x y len=N` map entity),
+  standing on the floor at column 214 and reaching a tile above the screen. A `vine` zone on its foot (column 214, row 12) links its top to the airship like a
   vine brick's, and the arrival's vine is a chain too (`WorldStart.chain`). **Arrival point**
   (`goto=4-2-airship,2,3,climb`): the chain rises from the screen bottom at **column 2** (faster
   than a beanstalk, 1.5 px/f) and the hero climbs it, through any hull in the way, until he can
@@ -118,9 +132,10 @@ ends.
   chain's top is two tiles above that tile only when that is higher than the classic arrival vine
   (5 tiles up from the screen bottom); otherwise it stays at the classic height and the hero drops
   onto the floor from there (`arrivalVineTop` in `world/world.ts` takes the higher of the two, so
-  the classic sky-area vine, start row 14, is unchanged). `World.arriving` is true until everyone is off it (the deck's auto-scroll waits for it). The
-  airship run boards with this start, so TRY AGAIN? YES climbs the chain again. Every hero climbs it and lands
-  on the deck (`tests/sim/anchor-chain.test.ts`).
+  the classic sky-area vine, start row 14, is unchanged). `World.arriving` is true until everyone
+  is off it (the deck's auto-scroll waits for it). The airship run boards with this start, so TRY
+  AGAIN? YES climbs the chain again. Every hero drops in, climbs it and lands on the deck
+  (`tests/sim/anchor-chain.test.ts`).
 - **The airship's crash on the map** (`map/airship-crash.ts`, the map's `cutscene` mode; campaign,
   the first time the ball is taken): after the crystal ball's card `Game.takeCrystalBall` sets
   `Game.mapCutscene = 'airship-crash'` (never saved), and World 4's map plays it before the reveal

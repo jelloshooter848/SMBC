@@ -179,3 +179,29 @@ export function rideToStern(h: H, deck: LevelScene, max = 3000): void {
     }
   }
 }
+
+/** 4-2's hidden right zone: the dead pipe's (and the anchor chain's) column, and the ceiling gap. */
+export const ANCHOR_COL = 214;
+export const ROOM_GAP = 220;
+
+/**
+ * Campaign 4-2 (already the top LevelScene): put the hero on the ceiling beside its gap, walk into
+ * the gap and drop into the hidden right zone, wait for the anchor to crash down, then walk to
+ * its chain and climb it off the top of the screen. Returns once the level has changed.
+ */
+export function dropInAndClimb(h: H, level: LevelScene, max = 1500): void {
+  const w = level.world;
+  const p = w.player;
+  p.body.x = px(ROOM_GAP * 16 - 14);
+  p.body.y = px(2 * 16) - p.body.h;
+  p.body.vy = 0;
+  const chainX = px(ANCHOR_COL * 16 + 8);
+  for (let f = 0; f < max && h.top() === level; f++) {
+    const chain = w.entities.some((e) => e.kind === 'vine' && e.alive);
+    if (!chain) h.step(f < 20 ? ['right'] : []);
+    else if (p.vine) h.step(['up']);
+    else if (p.centerX > chainX + px(4)) h.step(['left', 'up']);
+    else if (p.centerX < chainX - px(4)) h.step(['right', 'up']);
+    else h.step(['up']);
+  }
+}
