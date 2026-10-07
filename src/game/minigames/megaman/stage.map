@@ -1,0 +1,52 @@
+;; Mega Man's mini game (the station stage and Dark Mega Man's room): five screens of station
+;; corridor, then the boss room behind a two-tile shutter. stage.ts loads it with ?raw, so it is not
+;; in the level library, the dev level select or the campaign. The robots and the weapon capsule
+;; are the mini game's own entity types (World's `extraEntities`); `shutter` and `dark-megaman` are
+;; taken out of the map, and the scene places them itself. Column 80's doorway (rows 11-12) is the
+;; shutter, solid until it opens. scrollStop keeps the boss room out of sight until the shutter
+;; opens; the camera then scrolls over and locks on columns 80-95.
+id: mm-station
+name: STATION ESCAPE
+world: 3
+stage: 1
+theme: castle
+music: castle
+time: 400
+start: 2,12
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0              16               32               48               64               80
+................ ................ ................ ................ ..........BB.... B..............B
+................ ................ ................ ................ ..........BB.... B..............B
+................ ................ ................ ................ ..........BB.... B..............B
+................ ................ ................ ................ ..........BB.... B..............B
+................ ................ ................ ................ ..........BB.... B..............B
+................ ................ ................ ................ ..........BB.... B..............B
+................ ................ ................ ................ ..........BB.... B..............B
+................ ................ ................ ................ ..........BB.... B..............B
+................ ................ ................ ................ ..........BB.... B..............B
+................ ........BBB..... ................ ................ ................ B..............B
+................ ................ ................ ................ ................ B..............B
+................ ................ ..BBBB.......... ................ ................ B..............B
+..........BB.... ................ ..BBBB.......... ................ ................ B..............B
+################ ###...########## ###############. ..######...##### ################ ################
+################ ###...########## ###############. ..######...##### ################ ################
+
+[entities]
+hopper 13 12
+drone 26 5
+turret 29 12
+capsule 36 10
+hopper 45 12
+drone 54 4
+drone 63 5
+hopper 62 12
+turret 66 12
+turret 73 8 mount=wall
+shutter 80 11
+dark-megaman 91 12
+
+[zones]
+scrollStop 81

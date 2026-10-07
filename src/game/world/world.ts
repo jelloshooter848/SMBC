@@ -103,6 +103,12 @@ export interface WorldStart {
    * every visit gets a fresh one, as the original's Math.random does; headless runs pass a fixed one.
    */
   seed?: number;
+  /**
+   * Entity types of a mini game's own map (Mega Man's station robots...), so they need no case in
+   * makeEntity. Asked first for every spawn: an entity takes the spawn, null drops it (a type the
+   * mini game handles some other way), undefined leaves it to the built-in types.
+   */
+  extraEntities?: (s: EntitySpawn, world: World) => Entity | null | undefined;
 }
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
@@ -240,6 +246,8 @@ export class World {
   captives: CaptiveRules | null = null;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
   readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0 };
+  /** WorldStart.extraEntities: a mini game's own entity types. */
+  private readonly extraEntities: WorldStart['extraEntities'];
 
   constructor(
     readonly level: LevelData,
@@ -249,6 +257,7 @@ export class World {
   ) {
     this.audio = ctx.audio;
     this.assist = ctx.assist;
+    this.extraEntities = start.extraEntities;
     this.map = new TileMap(level);
     const stop = level.zones.find((z): z is Zone & { kind: 'scrollStop' } => z.kind === 'scrollStop');
     this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked');
@@ -427,6 +436,8 @@ export class World {
     // `dx` / `dy`: the original's half-tile shiftRight / shiftUp nudges, in px (convert-smbc.mjs).
     const x = tileToSub(s.x) + px(Number(s.props?.dx ?? 0));
     const y = tileToSub(s.y) + px(Number(s.props?.dy ?? 0));
+    const extra = this.extraEntities?.(s, this);
+    if (extra !== undefined) return extra;
     switch (s.type) {
       case 'goomba':
         return new Goomba(x + px(2), y + px(2));
