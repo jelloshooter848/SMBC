@@ -453,6 +453,9 @@ describe('tile sprites', () => {
         'tiles-zelda2',
         'tiles-megaman-stage',
         'tiles-brinstar',
+        // the 0.4.12 restyles of 5-4 and 6-2
+        'tiles-castlevania',
+        'tiles-ninja-city',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -524,6 +527,9 @@ describe('decor sprites', () => {
         'decor-gray',
         'decor-cavern',
         'decor-jungle',
+        // the 0.4.12 restyles of 5-4 and 6-2
+        'decor-castlevania',
+        'decor-ninja-city',
         'decor-smw',
         'decor-zelda2',
         'decor-megaman-stage',

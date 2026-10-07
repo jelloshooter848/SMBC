@@ -54,6 +54,9 @@ const SONG_IDS = [
   'zelda2-field',
   'mm-stage-31',
   'brinstar',
+  // The 0.4.12 restyles: 5-4 as Simon's castle hall, 6-2 as Ryu's city street.
+  'cv-hall',
+  'ng-city',
 ];
 
 const SFX_IDS = [

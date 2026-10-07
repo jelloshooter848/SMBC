@@ -2,6 +2,8 @@ import { NES } from '@engine/gfx/palette';
 import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
+import { castlevaniaDecorFrames, castlevaniaDecorPalette } from './castlevania-look';
+import { ninjaCityDecorFrames, ninjaCityDecorPalette } from './ninja-city-look';
 import { smwDecorFrames, smwDecorPalette } from './top-secret';
 import { zelda2DecorFrames, zelda2DecorPalette } from './zelda2-look';
 import { megamanDecorFrames, megamanDecorPalette } from './megaman-look';
@@ -113,6 +115,10 @@ export const decorPalettes: Record<string, string[]> = {
     DEEP_TEAL,
     NES.teal,
   ],
+  // 5-4 as Simon's castle hall: wall greys, window blues, brass and candle flame (castlevania-look.ts).
+  'decor-castlevania': castlevaniaDecorPalette,
+  // 6-2 as Ryu's city street: concrete, far indigo towers, red brick, lit windows (ninja-city-look.ts).
+  'decor-ninja-city': ninjaCityDecorPalette,
   // Bill's jungle: dark canopy greens, distant mountain blues, concrete greys, palm bark (contra-decor.ts).
   'decor-jungle': jungleDecorPalette,
   /* The Top Secret Area: Super Mario World greens, white sparkles. */
@@ -680,6 +686,9 @@ export const decorDef: SpriteDef = {
     'ruin-temple': ruinTemple,
     // Bill's jungle: palms, canopy, mountains, sandbags, a searchlight; clouds become canopy.
     ...jungleDecorFrames,
+    // The 0.4.12 restyles: Simon's castle hall (5-4) and Ryu's city street (6-2).
+    ...castlevaniaDecorFrames,
+    ...ninjaCityDecorFrames,
     // The Top Secret Area: a big sparkly hill, a small one, bushes.
     ...smwDecorFrames,
     // The campaign looks of 2-1, 3-1 and 4-2: forest trees, clouds, pipe stacks, brush.

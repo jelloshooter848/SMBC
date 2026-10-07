@@ -8,6 +8,8 @@ import {
   contraTilePalettes,
   rivets,
 } from './contra-tiles';
+import { castlevaniaTileFrames, castlevaniaTilePalette } from './castlevania-look';
+import { ninjaCityTileFrames, ninjaCityTilePalette, nightCloudBlock, pipeFrames } from './ninja-city-look';
 import { smwSecretTileFrames, smwSecretTilePalette } from './top-secret';
 import { zelda2TileFrames, zelda2TilePalette } from './zelda2-look';
 import { megamanTileFrames, megamanTilePalette } from './megaman-look';
@@ -294,6 +296,9 @@ export const tilePalettes: Record<string, string[]> = {
     '#2c1878',
     NES.lava,
   ],
+  // The 0.4.12 restyles: 5-4 as Simon's castle hall, 6-2 as Ryu's city street (campaign only).
+  'tiles-castlevania': castlevaniaTilePalette,
+  'tiles-ninja-city': ninjaCityTilePalette,
   // Bill's jungle under 7-3, his waterfall climb and Red Falcon's lair (contra-tiles.ts).
   ...contraTilePalettes,
   /* The Top Secret Area (0.4.10): warm dirt under Super Mario World-style grass. */
@@ -2022,6 +2027,23 @@ const themed = (
 ): Record<string, readonly string[]> =>
   Object.fromEntries(Object.entries(frames).map(([name, rows]) => [`${name}@${theme}`, rows]));
 
+/** SMB's own frames by name, for a theme that keeps them as they are (`?` blocks, coins). */
+const smbOwn = (...names: string[]): Record<string, readonly string[]> =>
+  Object.fromEntries(names.map((n) => [n, SMB_OWN[n] as readonly string[]]));
+const SMB_OWN: Record<string, readonly string[]> = {
+  'question-0': question0,
+  'question-1': swapColors(question0, { '7': '4' }),
+  'question-2': swapColors(question0, { '4': '7' }),
+  'coin-0': coin0,
+  'coin-1': coin1,
+  'coin-2': coin2,
+  'coin-3': coin3,
+  'lava-0': lava0,
+  'lava-1': lava1,
+  'flag-shaft': flagShaft,
+  'flag-ball': flagBall,
+};
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -2155,6 +2177,50 @@ export const tilesDef: SpriteDef = {
     'wall-top@ninja-night': wallTopNinja,
     'tree-top@ninja-night': treeTopNinja,
     'tree-trunk@ninja-night': treeTrunkNinja,
+    // 5-4 as Simon's castle hall (castlevania-look.ts): stone blocks, grey stone, an iron bridge;
+    // its `?` blocks, coins and lava are SMB's own so they read at a glance.
+    ...themed(castlevaniaTileFrames, 'castlevania'),
+    ...themed(
+      smbOwn(
+        'question-0',
+        'question-1',
+        'question-2',
+        'coin-0',
+        'coin-1',
+        'coin-2',
+        'coin-3',
+        'lava-0',
+        'lava-1',
+      ),
+      'castlevania',
+    ),
+    // 6-2 as Ryu's city street (ninja-city-look.ts): pavement, red brick, concrete, banded pipes;
+    // `?` blocks, coins and the flagpole are SMB's own, the coin heaven's clouds dim night clouds.
+    ...themed(ninjaCityTileFrames, 'ninja-city'),
+    ...themed(
+      pipeFrames({
+        'pipe-top-left': pipeTopLeft,
+        'pipe-top-right': pipeTopRight,
+        'pipe-body-left': pipeBodyLeft,
+        'pipe-body-right': pipeBodyRight,
+      }),
+      'ninja-city',
+    ),
+    ...themed(
+      smbOwn(
+        'question-0',
+        'question-1',
+        'question-2',
+        'coin-0',
+        'coin-1',
+        'coin-2',
+        'coin-3',
+        'flag-shaft',
+        'flag-ball',
+      ),
+      'ninja-city',
+    ),
+    'cloud-block@ninja-city': nightCloudBlock(cloudBlock),
     // Bill's jungle (the 7-3 reskin, his camp, the mini game), the waterfall and Red Falcon's lair.
     ...themed(contraJungleFrames, 'contra-jungle'),
     ...themed(contraFallsFrames, 'contra-falls'),
