@@ -41,7 +41,9 @@ const AFTER_FB = ms(300);
 
 /**
  * The campaign's tell (docs/STORY.md 2.3a): every TELL_PERIOD frames (4 s) a fake's disguise
- * flickers for the last TELL_FRAMES of them, its true form showing every other two frames.
+ * flickers for the last TELL_FRAMES of them, its true form showing every other two frames. With
+ * reduce flashing on there is no flicker: the true form's bright outline is held over him for the
+ * whole window instead.
  */
 const TELL_PERIOD = 240;
 const TELL_FRAMES = 12;
@@ -236,10 +238,15 @@ export class Bowser extends Enemy {
     return n;
   }
 
+  /** Whether the tell is on (its last TELL_FRAMES of every TELL_PERIOD; campaign fakes only). */
+  get tellWindow(): boolean {
+    if (!this.disguise || this.dead) return false;
+    return this.age % TELL_PERIOD >= TELL_PERIOD - TELL_FRAMES;
+  }
+
   /** Whether the tell's flicker shows the true form this frame (campaign fakes only). */
   get tellShowing(): boolean {
-    if (!this.disguise || this.dead) return false;
-    return this.age % TELL_PERIOD >= TELL_PERIOD - TELL_FRAMES && ((this.age >> 1) & 1) === 0;
+    return this.tellWindow && ((this.age >> 1) & 1) === 0;
   }
 
   override render(r: Renderer, view: View): void {
@@ -279,10 +286,10 @@ export class Bowser extends Enemy {
       return;
     }
     super.render(r, view);
-    // Reduce flashing: no flicker, the true form's faint outline over him all the time.
-    if (view.reduceFlashing)
+    // Reduce flashing: no flicker; the true form's bright outline held over him for the window.
+    if (view.reduceFlashing && this.tellWindow)
       r.sprite(
-        assets.sheet(this.sheet, fxPalette(this.palette(view), 'rim')),
+        assets.sheet(this.sheet, fxPalette(this.palette(view), 'tell')),
         `bowser-ghost-${n}`,
         x,
         fy,

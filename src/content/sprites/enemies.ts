@@ -905,8 +905,8 @@ const trueForm = (rows: readonly string[]): string[] => [
 
 /**
  * A frame's outline: its opaque pixels that touch a clear one (or the edge), all in colour 1.
- * The campaign's fake Bowsers wear their true form's outline with reduce flashing on, the steady
- * stand-in for the tell's flicker (docs/STORY.md 2.3a).
+ * The campaign's fake Bowsers wear their true form's outline (bright, held for the tell's window)
+ * with reduce flashing on, the steady stand-in for the tell's flicker (docs/STORY.md 2.3a).
  */
 const outline = (rows: readonly string[]): string[] => {
   const clear = (x: number, y: number) => (rows[y]?.[x] ?? '.') === '.';
