@@ -10,9 +10,10 @@ here.
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
 | 1     | **0.4.9: Bill under 7-3** (Contra look for 7-3, the exploding bridge, the jungle camp, the Jungle Assault mini game) and the Arena airship hero pick | Built; browser QA, then the PR |
 | 2     | **0.4.10: "Safety floor" dev assist**: deadly pits get an invisible floor at the pit's rim and lava turns solid (dev mode only)                      | Being built                    |
-| 3     | **Level restyles**: each earlier hero's level takes on their game's look in the campaign (see below)                                                 | Next                           |
-| 4     | **Mini game fidelity pass**: compare the older mini games with their real NES games, using the owner's reference screenshots                         | With the restyles              |
-| 5     | **Classic SMBC rules** (the 19 reports from PR #51), plus an automated tile-by-tile check of our levels against the NES maps                         | After the restyles             |
+| 3     | **0.4.11: Sophia III**: build her as a new playable hero and make her unlockable in World 8 (see idea 3 below)                                       | Next, the owner's priority     |
+| 4     | **0.4.12: Level restyles**: each earlier hero's level takes on their game's look in the campaign (see below)                                         | Planned                        |
+| 5     | **Mini game fidelity pass**: compare the older mini games with their real NES games, using the owner's reference screenshots                         | With the restyles              |
+| 6     | **Classic SMBC rules** (the 19 reports from PR #51), plus an automated tile-by-tile check of our levels against the NES maps                         | After the restyles             |
 
 ### Level restyles (campaign only)
 
@@ -79,7 +80,7 @@ Keep the joke, with a payoff:
 - Getting through it gives a big reward.
 - Failing it costs nothing: you go back out to the level.
 
-### 3. Sophia III, the last original hero
+### 3. Sophia III, the last original hero (planned for 0.4.11)
 
 The original Crossover's cast was Mario, Luigi, Link, Mega Man, Samus, Simon, Bill, Ryu and Sophia III. Sophia III,
 the tank from Blaster Master, is the only one we haven't made. World 8 is also the only SMB world without a hidden
