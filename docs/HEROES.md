@@ -256,7 +256,9 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
 
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 
-Every step is a scene pushed over the paused level, so the level's clock and world stand still:
+Every step is a scene pushed over the paused level, so the level's clock and world stand still.
+Talking to the captive first marks the hero as **met** on the file (`SaveFile.met`, below), which
+puts its mini game in the Mini Game Arena:
 
 1. Dialogue cards in a box over the level. The hero says "...LUIGI SERVES KING KOOPA..." and then
    the challenge (per hero in `DIALOGUE`, with a generic line built from the title, wrapped to
@@ -275,6 +277,28 @@ Every step is a scene pushed over the paused level, so the level's clock and wor
    last card does not make the hero jump. The run's GameState is restored after each round, so
    a mini game cannot change lives, power or score.
 
+## Met heroes and the Mini Game Arena (0.5.0)
+
+- **`SaveFile.met?: string[]`** (optional, no format bump): hero ids whose captive was talked to at
+  least once (`Game.meet(id)` from `talkToCaptive`, saved at once), plus `'larry'` once Larry
+  Koopa's airship is boarded (`boardAirship`). Freed heroes always count as met. Older files derive
+  it on load from `freed` (and `'larry'` from the secret `larry`): `save-files.ts metIds`.
+- **The Mini Game Arena** (`src/game/arena/`, the `arena` map page off the Warp Zone hub's first
+  pad; docs/WORLD_MAP.md): one pad per game, built from the registries, so a new `MINIGAMES` entry
+  or a new hero with training lessons gets its pad by itself. Found rules: a hero's mini game once
+  the hero is met; 1-0 once cleared or skipped; a training room once the hero is in `tutorials` or
+  freed; Larry's airship once boarded (or beaten); the three bonus games once the bonus spot exists
+  (secret `larry`). Unfound games are dark "???" pads (the hero's black silhouette and a `?`) whose
+  hint line says what to find; JUMP bumps.
+- **A round** is Dev → Mini games' round (`scenes/dev-minigames.ts playRound`) over the map: no file
+  is open while it runs, and the run, freed and met heroes, training answers, map progress and
+  bonus state and items are put back after, so playing never changes progress, lives, items or
+  the save (`tests/sim/arena.test.ts` checks the file byte for byte for every game). Then the
+  same result card (PASS / FAIL / QUIT) and the map again, on that pad. The 1-0 pad plays the stage
+  as a round (`arena/stage-round.ts`, `Game.stageRound`): its exit passes, pause → Give up quits.
+  Training rooms pass when every lesson is done (Skip training quits); bonus games pass with a
+  prize; the airship passes with the crystal ball. No best results are kept.
+
 ## The `MiniGameDef` contract (`src/game/minigames/types.ts`)
 
 ```ts
@@ -289,7 +313,7 @@ interface MiniGameDef {
 - `create` builds one round as a scene. The flow pushes it and pops it (along with any scenes
   the round pushed itself) when `done` is called. `done` must be called exactly once.
 - The round owns its music, touch labels and its own menu (Continue / Give up → `done('quit')`).
-- Register it in `MINIGAMES` (`src/game/minigames/index.ts`). The flow looks it up only through
+- Register it in `MINIGAMES` (`src/game/minigames/index.ts`); the Mini Game Arena gives it a pad. The flow looks it up only through
   `miniGameFor(hero)`, so a mini game folder can be replaced, for example by one in the hero's
   own game style, without touching the flow.
 

@@ -17,8 +17,9 @@ export type MapTheme =
   | 'warp'; // Warp Zone hub
 
 /**
- * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone) and
- * 'll-1'..'ll-13' (Lost Levels worlds 1-8, 9 and A-D). Saved in files; never rename one.
+ * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),
+ * 'll-1'..'ll-13' (Lost Levels worlds 1-8, 9 and A-D) and 'arena' (the Mini Game Arena, off the
+ * hub). Saved in files; never rename one.
  */
 export type PageId = string;
 
@@ -26,7 +27,7 @@ export type PageId = string;
  * The set of pages a page belongs to: page order (slides, the Worlds menu) and the start-node
  * "back" road only work within a group; travel between groups is by warp node (a fade).
  */
-export type PageGroup = 'smb' | 'hub' | 'll';
+export type PageGroup = 'smb' | 'hub' | 'll' | 'arena';
 
 /**
  * Something that must hold for a warp node to work or a world exit to open:
@@ -38,7 +39,11 @@ export type PageGroup = 'smb' | 'hub' | 'll';
  */
 export type MapCondition = 'gameCleared' | 'll9' | 'llLetters' | 'never' | `secret:${string}`;
 
-export type MapNodeKind = 'start' | 'level' | 'castle' | 'bonus' | 'warp';
+/**
+ * 'game': a pad of the Mini Game Arena (src/game/arena): JUMP plays one round of its `game`, for
+ * fun; nothing is saved. Walked to like any node.
+ */
+export type MapNodeKind = 'start' | 'level' | 'castle' | 'bonus' | 'warp' | 'game';
 
 export interface MapNode {
   id: string;
@@ -87,6 +92,8 @@ export interface MapNode {
    * opens the bonus again (World 4's bonus spot, docs/WORLD_MAP.md).
    */
   guard?: 'hammer-bro';
+  /** 'game' nodes: the arena game played there (src/game/arena ArenaGame.id, e.g. 'mini-luigi'). */
+  game?: string;
 }
 
 /**

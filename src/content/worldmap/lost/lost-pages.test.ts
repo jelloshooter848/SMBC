@@ -110,12 +110,9 @@ describe('Lost Levels map pages', () => {
     expect(hub.requires).toBeUndefined();
     expect(hub.level).toBeUndefined();
     expect(one.paths.some((p) => p.to === HUB_WARP || p.from === HUB_WARP)).toBe(true);
-    // The hub's Lost Levels pad lands on World 1.
-    expect(
-      mapPage('hub')
-        ?.nodes.filter((n) => n.to?.startsWith('ll-'))
-        .map((n) => n.to),
-    ).toEqual(['ll-1']);
+    // The hub's old Lost Levels pad is the Mini Game Arena's (0.5.0): nothing on the hub leads here.
+    expect(mapPage('hub')?.nodes.filter((n) => n.to?.startsWith('ll-'))).toEqual([]);
+    expect(hub.oneWay).toBe(true);
   });
 
   it("World A's portal goes back to World 8's pad that leads to A, always open", () => {

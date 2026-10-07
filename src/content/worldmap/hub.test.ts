@@ -58,7 +58,7 @@ describe('Warp Zone hub page', () => {
     expect(page.tiles).toEqual(autoShore(SKETCH_HUB));
   });
 
-  it('arrives on the centre node, the warp home, with four pads around it', () => {
+  it('arrives on the centre node, the warp home, with four pads around it (the Arena first)', () => {
     const start = nodeAt('start');
     expect([start.x, start.y], 'arrival in the middle').toEqual([7, 8]);
     expect([start.kind, start.to, start.toNode, start.requires, start.label]).toEqual([
@@ -72,9 +72,16 @@ describe('Warp Zone hub page', () => {
     const pads = page.nodes.filter((n) => n.id !== 'start');
     expect(pads).toHaveLength(4);
     for (const n of pads) expect(n.kind).toBe('warp');
+    // The first pad (east, once the Lost Levels') is the Mini Game Arena's, open from the start.
     expect(
-      pads.filter((n) => n.to === 'll-1').map((n) => [n.x, n.y, n.toNode, n.requires, n.label, n.hint]),
-    ).toEqual([[13, 8, 'hub', 'gameCleared', 'LOST LEVELS', 'LOST LEVELS - BEAT 8-4 TO UNLOCK']]);
+      pads
+        .filter((n) => n.to === 'arena')
+        .map((n) => [n.id, n.x, n.y, n.toNode, n.requires, n.label, n.hint]),
+    ).toEqual([['warp-arena', 13, 8, undefined, undefined, 'MINI GAME ARENA', undefined]]);
+    expect(
+      pads.some((n) => n.to?.startsWith('ll-')),
+      'no Lost Levels pad',
+    ).toBe(false);
     const mystery = pads.filter((n) => n.requires === 'never');
     expect(mystery.map((n) => [n.x, n.y])).toEqual(
       expect.arrayContaining([

@@ -165,16 +165,19 @@ describe('world map pages', () => {
 });
 
 describe('page registry', () => {
-  it('lists SMB worlds, the hub, then the Lost Levels, each id once', () => {
+  it('lists SMB worlds, the hub, the Lost Levels, then the Mini Game Arena, each id once', () => {
     const ids = MAP_PAGES.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.slice(0, 9)).toEqual([...SMB_PAGES.map((p) => p.id), 'hub']);
-    for (const id of ids.slice(9)) expect(id).toMatch(/^ll-(\d|1[0-3])$/);
+    expect(ids.at(-1)).toBe('arena');
+    const lost = ids.slice(9, -1);
+    for (const id of lost) expect(id).toMatch(/^ll-(\d|1[0-3])$/);
     expect(ids).toContain('ll-1');
     expect(MAP_PAGES.map((p) => p.group)).toEqual([
       ...SMB_PAGES.map(() => 'smb'),
       'hub',
-      ...ids.slice(9).map(() => 'll'),
+      ...lost.map(() => 'll'),
+      'arena',
     ]);
   });
 
@@ -213,7 +216,7 @@ describe('page registry', () => {
         expect(back?.id, `${what} lands back on ${x.id}`).toBe(x.id);
         pairs++;
       }
-    expect(pairs).toBeGreaterThanOrEqual(6); // smb-1 spot / hub centre, hub pad / ll-1, ll-8 pad / ll-10
+    expect(pairs).toBeGreaterThanOrEqual(6); // smb-1 spot / hub centre, hub pad / arena, ll-8 pad / ll-10
   });
 
   describe.each(MAP_PAGES.map((p) => [p.id, p] as const))('%s', (_, page) => {

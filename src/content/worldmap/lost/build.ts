@@ -14,14 +14,13 @@ export const lostLabel = (w: number): string => `LOST ${w <= 9 ? w : 'ABCD'[w - 
 /** Node id of the warp back to the Warp Zone hub; only World 1 has one (the hub's pad lands there). */
 export const HUB_WARP = 'hub';
 
-/** The hub's Lost Levels pad, which World 1's hub warp lands on (portals pair 1:1). */
-export const HUB_LOST_PAD = 'warp-lost';
-
+// The hub's Lost Levels pad is the Mini Game Arena's since 0.5.0: until World 1's hub warp goes
+// (the Lost Levels road from World 8), it lands on the hub's centre, one way.
 const hubWarp = ([x, y]: [number, number]): MapNode => ({
   id: HUB_WARP,
   kind: 'warp',
   to: 'hub',
-  toNode: HUB_LOST_PAD,
+  oneWay: true,
   label: 'RETURN TO WARP ZONE',
   x,
   y,

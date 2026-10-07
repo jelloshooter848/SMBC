@@ -66,6 +66,13 @@ export interface SaveFile extends MapProgress {
    */
   tutorials?: string[];
   /**
+   * Who the file has met (0.5.0; the Mini Game Arena's "found" rule, src/game/arena): CharacterDef
+   * ids of heroes whose captive was talked to at least once (freed heroes count as met), plus
+   * 'larry' once Larry Koopa's airship was boarded. Missing in older files: derived on load from
+   * `freed` (and 'larry' from the secret `larry`). No format change.
+   */
+  met?: string[];
+  /**
    * The SMB3 item inventory is unlocked on this file (Larry Koopa's crystal ball, 4-2's airship).
    * Missing in older files: off, but a file that has the crystal ball's secret `larry` counts as on.
    */
@@ -147,6 +154,24 @@ export function tutorialHeroes(
   return [...new Set(ids.filter(known))];
 }
 
+/** Larry Koopa in `met`: his airship has been boarded on the file (src/game/arena). */
+export const MET_LARRY = 'larry';
+
+/**
+ * The file's `met` list (SaveFile.met): known hero ids and 'larry' from `ids`, each once, in
+ * order, then the freed heroes (always met), then 'larry' when `larrySecret` (his crystal ball).
+ */
+export function metIds(
+  ids: readonly unknown[],
+  freed: readonly string[],
+  larrySecret = false,
+  characters: readonly CharacterDef[] = CHARACTERS,
+): string[] {
+  const known = (id: unknown): id is string =>
+    typeof id === 'string' && (id === MET_LARRY || characters.some((c) => c.id === id));
+  return [...new Set([...ids.filter(known), ...freed, ...(larrySecret ? [MET_LARRY] : [])])];
+}
+
 /**
  * v2 → v3 (0.5.0, freeing the heroes): existing files are locked too, keeping Mario plus the
  * hero(es) they last used (`character`, `character2`).
@@ -205,6 +230,7 @@ export function newSave(
     devAllHeroes: false,
     freed: freedHeroes([character, character2], characters),
     tutorials: tutorialHeroes([character, character2], characters),
+    met: metIds([], freedHeroes([character, character2], characters), false, characters),
     inventoryUnlocked: false,
     bonusOpen: true,
     ...bonusSaveFields(newBonusState()),
@@ -346,6 +372,8 @@ export function migrateSave(
       ...(Array.isArray(stored.tutorials) ? stored.tutorials : []),
       ...[stored.character, stored.character2].filter((id) => freed.includes(id as string)),
     ]),
+    // Talked-to captives; older files derive it from the freed heroes (and Larry from his secret).
+    met: metIds(Array.isArray(stored.met) ? stored.met : [], freed, secrets.includes(MET_LARRY)),
     // Larry Koopa's crystal ball (secret 'larry') unlocks the inventory.
     inventoryUnlocked: stored.inventoryUnlocked === true || secrets.includes('larry'),
     bonusOpen: stored.bonusOpen !== false,

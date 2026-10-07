@@ -193,16 +193,17 @@ const menuItem = (scene: unknown, label: string): MenuItem | undefined =>
   (scene as { items: MenuItem[] }).items.find((i) => i.label === label);
 
 describe('Lost Levels campaign: maps, clears and warps', () => {
-  it('hub → Lost 1 → enter 1-1 → its exit → the Lost 1 map with 1-2 open and saved', () => {
+  it('Lost 1 → enter 1-1 → its exit → the Lost 1 map with 1-2 open and saved', () => {
     const h = makeGame();
-    const pad = page('hub').nodes.find((n) => n.to === 'll-1') as MapNode;
+    // (The hub's pad to Lost 1 is the Mini Game Arena's since 0.5.0.)
     open(
       h,
-      file({ cleared: ['1-1', '1-2'], pages: ['smb-1', 'hub'], position: { page: 'hub', node: pad.id } }),
+      file({
+        cleared: ['1-1', '1-2'],
+        pages: ['smb-1', 'hub', 'll-1'],
+        position: { page: 'll-1', node: 'start' },
+      }),
     );
-    h.tap('jump');
-    expect(h.map().mode).toBe('fade');
-    h.idle(MAP_FADE_FRAMES);
     h.until(() => h.map().mode === 'idle', 800);
     expect(h.map().page.id).toBe('ll-1');
 

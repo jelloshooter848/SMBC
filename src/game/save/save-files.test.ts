@@ -5,6 +5,7 @@ import {
   highestWorld,
   listSaves,
   loadSave,
+  metIds,
   migrateSave,
   migrateV1toV2,
   migrateV2toV3,
@@ -234,11 +235,11 @@ describe('save files', () => {
           'smb-3': '3-1',
           x: 'a',
           'smb-2': 7,
-          hub: 'warp-lost',
+          hub: 'warp-arena',
           1: '1-1',
         },
       }).lastNode,
-    ).toEqual({ 'smb-1': '1-2', 'smb-4': '4-1', hub: 'warp-lost' });
+    ).toEqual({ 'smb-1': '1-2', 'smb-4': '4-1', hub: 'warp-arena' });
     expect(put({ lastNode: ['1-1'] }).lastNode).toEqual({});
     expect(put({ lastNode: { 'smb-1': '' } }).lastNode).toEqual({});
   });
@@ -587,6 +588,41 @@ describe("Larry Koopa's crystal ball and World 4's bonus spot (optional fields, 
       inventoryUnlocked: false,
       bonusOpen: true,
     });
+  });
+});
+
+describe('the heroes met (SaveFile.met, optional, 0.5.0: the Mini Game Arena)', () => {
+  const put = (over: Record<string, unknown>) => {
+    const { met: _m, ...base } = newSave(3, 'mario');
+    store.set('smbc.save.3', JSON.stringify({ ...base, ...over }));
+    return loadSave(3)!;
+  };
+
+  it('a new file has met only the heroes it was made with', () => {
+    expect(newSave(1, 'mario').met).toEqual(['mario']);
+    expect(newSave(1, 'mario', 'luigi').met).toEqual(['mario', 'luigi']);
+  });
+
+  it('an older file derives it from the freed heroes, and Larry from his crystal ball', () => {
+    expect(put({ freed: ['mario', 'link'] }).met).toEqual(['mario', 'link']);
+    expect(put({ freed: ['mario'], secrets: ['bonus-1', 'larry'] }).met).toEqual(['mario', 'larry']);
+  });
+
+  it('keeps the heroes talked to (known ids and Larry, each once), freed heroes always counted', () => {
+    expect(put({ met: ['samus', 'samus', 'nobody', 3, 'larry'], freed: ['mario', 'luigi'] }).met).toEqual([
+      'samus',
+      'larry',
+      'mario',
+      'luigi',
+    ]);
+    expect(put({ met: 'samus' }).met).toEqual(['mario']);
+    expect(metIds(['link', 'zelda'], ['mario'], true)).toEqual(['link', 'mario', 'larry']);
+  });
+
+  it('round-trips through storage', () => {
+    const s = { ...newSave(2, 'mario'), met: ['mario', 'megaman'] };
+    writeSave(s);
+    expect(loadSave(2)!.met).toEqual(['mario', 'megaman']);
   });
 });
 

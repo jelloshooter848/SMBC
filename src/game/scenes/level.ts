@@ -13,6 +13,7 @@ import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
 import { talkToCaptive } from './free-hero';
+import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
@@ -219,6 +220,8 @@ export class LevelScene implements Scene {
         game.state.checkpoint = null;
         game.state.time = null;
         if (game.playtestDone) game.playtestDone();
+        // A stage played as an arena round (arena/stage-round.ts): its exit passes the round.
+        else if (endStageRound(game, 'pass')) break;
         else if (ev.next === 'end') game.showEnding(this.level.parent ?? this.level.id);
         // Campaign: the clear is recorded and the map shows what it opened (flagpole or castle).
         // Otherwise on to the next level; a castle's "another castle" news is shown in the

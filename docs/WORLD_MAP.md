@@ -31,6 +31,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 | -------------------------------------------- | ------------------- | ---------------------------------------------------- |
 | `smb-1` .. `smb-8`                           | `smb`               | `WORLD 1` .. `WORLD 8`                               |
 | `hub`                                        | `hub`               | `WARP ZONE`                                          |
+| `arena`                                      | `arena`             | `ARENA`                                              |
 | `ll-1` .. `ll-8`, `ll-9`, `ll-10` .. `ll-13` | `ll`                | `LOST 1` .. `LOST 8`, `LOST 9`, `LOST A` .. `LOST D` |
 
 - `label` (at most 10 chars, `A-Z 0-9 space`) shows at the header's top right; `title` (at most 20) at its top left. The announcer reads the label in title case ("Lost A") and the title.
@@ -70,6 +71,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 | `level`, `castle` | Enter `level` with JUMP. A castle clear opens the page(s) its exits lead to.  |
 | `bonus`           | Hidden until `unlock` (a secret key) is found. JUMP plays the bonus game.     |
 | `warp`            | JUMP warps to another page (see below).                                       |
+| `game`            | A Mini Game Arena pad (`game`: its arena game id). JUMP plays one round.      |
 
 A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the file has that secret
 (`MapProgress.secrets`). Bonus nodes always need one.
@@ -141,6 +143,33 @@ registered page (the hub included, so the Worlds menu lists it), and shows warp 
 by their `unlock` key (World 1's warp spot) with their roads. Bonus nodes, and keyed warps that
 have `requires: 'never'`, stay hidden until their secret is found. It writes nothing to the file: a warp
 that works only through Unlock all travels without opening its page (`rules.warpRecords`).
+
+## The Mini Game Arena (0.5.0)
+
+The Warp Zone hub's first pad (east, `warp-arena`; the Lost Levels' pad until 0.5.0) leads to the
+`arena` page, open as soon as the hub is reachable (no `requires`). The arena
+(`src/content/worldmap/arena.ts`) is a stadium: the hero arrives on the Return pad in the middle of
+the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pads stand around it.
+
+- **Pads** (`kind: 'game'`, id `pad-<game>`) are not written in the page: `src/game/arena` lists the
+  games from the registries (MINIGAMES, Larry's airship, the bonus games, 1-0, the heroes with
+  training lessons) and lays the page out with `installArenaGames` when it loads, so the arena
+  grows by itself. Slots, in fill order: the running track (20 slots two tiles apart, from the
+  bottom middle round to the right, each joined to the next; the ring closes when all 20 are
+  used; the Return pad's roads go down to the first and up to the eleventh), then 10 on the field
+  off the Return pad's left and right roads. 16 games use 16 slots today.
+- Every pad and road of the arena is walkable as soon as the page is open (`rules.pathFromDone`:
+  roads leaving a `game` node count as walked on an open page). Whether a game is **found** is the
+  arena's own rule (docs/HEROES.md "Met heroes and the Mini Game Arena"); a dark pad shows the
+  hero's silhouette and `?`, its hint line says what to find (`??? - FIND THIS HERO FIRST`) and JUMP
+  bumps. On a found pad the hint line names the game, the touch JUMP says PLAY, and the announcer
+  says "Mirror Race, Luigi. Jump to play, for fun."
+- A round is played over the map and nothing is saved (docs/HEROES.md); arriving and walking save
+  the hero's place as on any page. The Worlds menu lists the arena on the hub and on the arena.
+- **Art** (placeholder until the arena's own): theme `grass`, music `map`, stands of castle wall.
+  `drawArenaPad` uses the map sheet's `arena-pad-mini`, `arena-pad-training`, `arena-pad-tutorial`,
+  `arena-pad-airship`, `arena-pad-bonus` and `arena-pad-locked` frames when the theme's sheet has
+  them, else items-sheet icons; heroes stand on their pads in their portrait frames.
 
 ## Secret exits: each exit opens its own road (0.5.0)
 

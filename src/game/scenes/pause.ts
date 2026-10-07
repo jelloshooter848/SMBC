@@ -8,6 +8,7 @@ import type { TouchLabels } from '@engine/input/touch';
 import type { TouchMode } from '@engine/save/settings';
 import { nextTouchMode } from '@engine/input/touch-logic';
 import { trainFromPause, trainingOffered } from '../tutorial/training';
+import { endStageRound } from '../arena/stage-round';
 
 const TOUCH_MODE_LABELS: Record<TouchMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
@@ -83,6 +84,16 @@ export class PauseScene extends MenuScene {
         label: 'Assists',
         select: () => game.scenes.push(new AssistOptionsScene(game, () => game.scenes.pop())),
       });
+    // A stage played as an arena round (arena/stage-round.ts): Give up ends the round, nothing else.
+    if (game.stageRound) {
+      items.push({
+        label: 'Give up',
+        select: () => endStageRound(game, 'quit'),
+        hint: 'Ends the round',
+      });
+      this.setItems(items);
+      return;
+    }
     // A stage tutorial (1-0) can be skipped: it counts as cleared (Game.skipTutorial).
     if (game.tutorialRun && !game.playtestDone)
       items.push({
@@ -105,7 +116,7 @@ export class PauseScene extends MenuScene {
 
   /** Dev mode's full menu (level select, dev mode off) stays out of campaign play. */
   private get showDev(): boolean {
-    return this.game.devMode && !this.game.campaign;
+    return this.game.devMode && !this.game.campaign && !this.game.stageRound;
   }
 
   /** Campaign play in dev mode gets the assists on their own. */

@@ -25,8 +25,8 @@ import type { Announcer } from '@engine/a11y/announcer';
 import type { Settings } from '@engine/save/settings';
 
 // The 0.4.0 Warp Zone: in campaign play the 1-2 warp zone has one pipe, which records secret
-// bonus-1 and opens the road to World 1's warp spot; the spot warps to the hub, whose Lost
-// Levels pad opens once SMB 8-4 is beaten (the file's gameCleared).
+// bonus-1 and opens the road to World 1's warp spot; the spot warps to the hub, whose first pad
+// (the Lost Levels' until 0.5.0) leads to the Mini Game Arena, open from the start.
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -143,7 +143,7 @@ function file(over: Partial<SaveFile> = {}): SaveFile {
 }
 
 describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
-  it('1-2 → one pipe → World 1 warp spot → hub → Lost Levels pad locked, then open → Lost Levels 1', () => {
+  it('1-2 → one pipe → World 1 warp spot → hub → the Arena pad, open → the Mini Game Arena', () => {
     const h = makeGame();
     h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
     h.idle(8);
@@ -197,18 +197,12 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     // The centre is the warp back to World 1 (arriving did not warp).
     expect(h.map().hintLine).toBe('RETURN TO WORLD 1');
 
-    // The Lost Levels pad: locked until 8-4 is beaten; the hint line says so.
-    walkTo(h, 'warp-lost');
-    expect(h.map().hintLine).toBe('LOST LEVELS - BEAT 8-4 TO UNLOCK');
+    // The first pad: the Mini Game Arena, open as soon as the hub is (0.5.0).
+    walkTo(h, 'warp-arena');
+    expect(h.map().hintLine).toBe('MINI GAME ARENA');
     h.step();
-    expect(h.r.texts.some((t) => t.s === 'LOST LEVELS - BEAT 8-4 TO UNLOCK')).toBe(true);
-    h.audio.sfx.mockClear();
-    h.tap('jump');
-    expect(h.audio.sfx).toHaveBeenCalledWith('bump');
-    expect(h.map().mode).toBe('idle');
-    expect(h.map().page.id).toBe('hub');
-    expect(h.said.at(-1)).toBe('Lost Levels - Beat 8-4 To Unlock, locked');
-    expect(h.map().hintLine).toBe('LOST LEVELS - BEAT 8-4 TO UNLOCK');
+    expect(h.r.texts.some((t) => t.s === 'MINI GAME ARENA' && t.y > 220)).toBe(true);
+    expect(h.said.at(-1)).toBe('Warp, Mini Game Arena');
     // A mystery pad never opens.
     walkTo(h, 'start');
     walkTo(h, 'warp-mystery-1');
@@ -216,23 +210,21 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     h.tap('jump');
     expect(h.map().page.id).toBe('hub');
 
-    // 8-4 beaten: the pad opens and leads to the Lost Levels' first page.
+    // The Arena pad leads to the arena, nothing beaten.
     walkTo(h, 'start');
-    walkTo(h, 'warp-lost');
-    h.game.mapProgress.gameCleared = true;
-    expect(h.map().hintLine).toBe('LOST LEVELS');
-    warp(h, 'll-1');
-    // Portals pair 1:1: the pad lands on Lost 1's warp back to the hub, which lands on the pad.
-    expect(h.map().node).toBe('hub');
-    expect(loadSave(1)).toMatchObject({ gameCleared: true, position: { page: 'll-1', node: 'hub' } });
-    expect(loadSave(1)?.pages).toEqual(['smb-1', 'hub', 'll-1']);
-    expect(loadSave(1)?.lastNode).toMatchObject({ 'smb-1': 'bonus-1', hub: 'warp-lost', 'll-1': 'hub' });
+    walkTo(h, 'warp-arena');
+    warp(h, 'arena');
+    // Portals pair 1:1: the pad lands on the arena's Return pad, which lands back on the pad.
+    expect(h.map().node).toBe('start');
+    expect(loadSave(1)).toMatchObject({ gameCleared: false, position: { page: 'arena', node: 'start' } });
+    expect(loadSave(1)?.pages).toEqual(['smb-1', 'hub', 'arena']);
+    expect(loadSave(1)?.lastNode).toMatchObject({ 'smb-1': 'bonus-1', hub: 'warp-arena', arena: 'start' });
     h.step();
-    expect(h.r.texts.some((t) => t.s === 'LOST 1')).toBe(true);
+    expect(h.r.texts.some((t) => t.s === 'ARENA' && t.y < 24)).toBe(true);
     expect(h.map().hintLine).toBe('RETURN TO WARP ZONE');
     warp(h, 'hub');
-    expect(h.map().node).toBe('warp-lost');
-    expect(loadSave(1)?.position).toEqual({ page: 'hub', node: 'warp-lost' });
+    expect(h.map().node).toBe('warp-arena');
+    expect(loadSave(1)?.position).toEqual({ page: 'hub', node: 'warp-arena' });
   });
 
   it("the hub's centre warps back to World 1's warp spot, which warps to the hub again", () => {
@@ -305,8 +297,8 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     const said = h.said.slice(from);
     expect(said).toEqual([`Warp Zone, ${mapPage('hub')!.title}. Warp, Return To World 1`]);
     // A pad's hint is read when the hero stands on it.
-    walkTo(h, 'warp-lost');
-    expect(h.said.at(-1)).toBe('Lost Levels - Beat 8-4 To Unlock, locked');
+    walkTo(h, 'warp-mystery-1');
+    expect(h.said.at(-1)).toBe('??? - A Future Secret, locked');
   });
 
   it('the warp spot stays hidden without the secret, and a plain 1-2 clear does not find it', () => {
@@ -438,20 +430,20 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     const hub = mapPage('hub')!;
     const node = (id: string) => hub.nodes.find((n) => n.id === id)!;
     const all = h.game.mapUnlockAll;
-    expect(isWarpOpen(h.game.mapProgress, node('warp-lost'), all)).toBe(true);
+    expect(isWarpOpen(h.game.mapProgress, node('warp-arena'), all)).toBe(true);
     expect(isWarpOpen(h.game.mapProgress, node('start'), all)).toBe(true);
     for (const id of ['warp-mystery-1', 'warp-mystery-2', 'warp-mystery-3'])
       expect(isWarpOpen(h.game.mapProgress, node(id), all), id).toBe(false);
     h.idle(8);
-    walkTo(h, 'warp-lost');
-    expect(h.map().hintLine).toBe('LOST LEVELS');
-    warp(h, 'll-1');
+    walkTo(h, 'warp-arena');
+    expect(h.map().hintLine).toBe('MINI GAME ARENA');
+    warp(h, 'arena');
     expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
-    // The pad works only through Unlock all: the trip opens nothing in the file.
+    // The hub is open only through Unlock all: the trip opens nothing in the file.
     expect(h.game.mapProgress.gameCleared).toBe(false);
     expect(h.game.mapProgress.pages).toEqual(['smb-1']);
     expect(loadSave(1)?.pages).toEqual(['smb-1']);
-    // Unlock all off: the Lost Levels are closed again and the hero is back on World 1.
+    // Unlock all off: the arena is closed again and the hero is back on World 1.
     h.game.deps.settings = { dev: false } as Settings;
     h.game.showMap();
     expect(h.map().page.id).toBe('smb-1');

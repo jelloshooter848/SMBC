@@ -182,7 +182,8 @@ export function pathExit(page: WorldMapPage, p: MapPath): PathExit {
 
 /**
  * A path counts as walked once its `from` node is done: a start of an open page (a start carrying
- * a level, World 1's 1-0, once that level is cleared), a found warp node that works, or a level
+ * a level, World 1's 1-0, once that level is cleared) or a Mini Game Arena pad of an open page
+ * (src/game/arena: found or not, every pad is walkable), a found warp node that works, or a level
  * left by the road's exit (pathExit): its normal clear, or, for a secret road, the secret's key
  * found while the level is reached (open). A secret exit never opens the normal roads, and the
  * normal exit never a secret road.
@@ -190,7 +191,8 @@ export function pathExit(page: WorldMapPage, p: MapPath): PathExit {
 function pathFromDone(progress: MapProgress, page: WorldMapPage, p: MapPath): boolean {
   const from = node(page, p.from);
   if (!from) return false;
-  if (from.kind === 'start' && !from.level) return isPageOpen(progress, page.id);
+  // A start, and the Mini Game Arena's pads (all walkable as soon as the arena is open).
+  if ((from.kind === 'start' && !from.level) || from.kind === 'game') return isPageOpen(progress, page.id);
   if (from.kind === 'warp')
     return isPageOpen(progress, page.id) && keyFound(progress, from) && conditionMet(progress, from.requires);
   const exit = from.level ? pathExit(page, p) : 'normal';
