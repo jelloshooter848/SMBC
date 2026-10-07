@@ -1,6 +1,6 @@
 import type { Collision } from '../level/tiles';
 import { T } from '../level/tiles';
-import { isWaterTheme, type LevelData } from '../level/schema';
+import { isSwimLevel, type LevelData } from '../level/schema';
 import { TileMap } from './tilemap';
 
 /**
@@ -93,9 +93,7 @@ export class SafetyFloor {
   /** The floor row of column `tx` (its top is the surface), or -1 when there is none right now. */
   rowAt(tx: number): number {
     if (tx < 0 || tx >= this.map.width || this.transfer[tx]) return -1;
-    const row = (this.rims ??= rimRows(new TileMap(this.level), isWaterTheme(this.level.theme)))[
-      tx
-    ] as number;
+    const row = (this.rims ??= rimRows(new TileMap(this.level), isSwimLevel(this.level)))[tx] as number;
     if (row < 0) return -1;
     // Something solid at or below the rim (a bridge) keeps the column's own surface.
     for (let ty = row; ty < this.map.height; ty++) if (this.map.isSolid(tx, ty)) return -1;
@@ -106,7 +104,8 @@ export class SafetyFloor {
   at(tx: number, ty: number): boolean {
     if (tx < 0 || tx >= this.map.width || this.transfer[tx]) return false;
     if (this.map.get(tx, ty) === T.LAVA) return true;
-    return ty === this.rowAt(tx);
+    // rowAt's -1 means "no floor", never the row above the screen.
+    return ty >= 0 && ty === this.rowAt(tx);
   }
 
   /**

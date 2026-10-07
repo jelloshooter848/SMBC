@@ -61,6 +61,8 @@ export class AirshipRun {
   retryAt: Checkpoint;
   /** The player has reached Larry's room. */
   reachedRoom = false;
+  /** Larry has had his say this run (story/level-beats.ts): not again on TRY AGAIN. */
+  larrySpoke = false;
 
   constructor(
     level: string,

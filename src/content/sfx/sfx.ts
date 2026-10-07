@@ -3,6 +3,8 @@ import { smb3Sfx } from './smb3';
 import { castlevaniaSfx } from './castlevania';
 import { ninjaSfx } from './ninja';
 import { contraSfx } from './contra';
+import { sophiaSfx } from './sophia';
+import { deathSfx } from './deaths';
 
 /**
  * Original sound effects. At the default 150 bpm one tick is ~8.3 ms, so l64 = 25 ms,
@@ -23,6 +25,8 @@ export const sfx: Sfx[] = [
   { id: 'stomp', pulse: '@0 v10 q8 x1 p-7 o3 g32.', noise: 'v11 x1 l32 n9 n6' },
   // Shell kick: two falling clicks.
   { id: 'kick', pulse: '@1 v11 q8 x1 p-5 o4 a32 r64 p-5 o4 e32', noise: 'v8 x1 l32 n5' },
+  // A shot glancing off a hard hat: a thin, very short high tick and its echo.
+  { id: 'dink', pulse: '@0 v11 q8 x1 l64 o7 e p-2 o7 b32' },
   // Head bump on a block: dull and short.
   { id: 'bump', pulse: '@0 v10 q8 x1 p-3 o3 e16', noise: 'v9 x1 l32 n10' },
   // Brick break: noise burst with a crunch and a low pulse drop.
@@ -63,6 +67,22 @@ export const sfx: Sfx[] = [
     id: 'bowser-laugh',
     pulse: '@3 v12 q6 x1 l16 p-3 o3 a r16 p-3 o3 g r16 p-5 o3 f8',
     noise: 'v7 x1 l16 n11 r16 n11 r16 l8 n12',
+  },
+  // The fake king's disguise bursting (campaign, docs/STORY.md 2.3a): a soft breathy puff under a
+  // quick tumbling chime of wand sparkles, ending on a high twinkle (about 400 ms).
+  {
+    id: 'poof',
+    pulse: '@2 v9 q8 x0 l64 o7 g e c o6 a f d x1 o7 c16',
+    pulse2: '@0 v6 q8 x0 l64 r64 o6 b g e c o5 a f x1 o6 g16',
+    noise: 'v10 x1 l32 n1 n2 l16 n4 l8 n6',
+  },
+  // The wand cracking over 8-4's lava (campaign, docs/STORY.md 2.12): a sharp snap, a glassy
+  // tumble of falling notes, and a low hum sliding down as the crack opens (about 600 ms).
+  {
+    id: 'wand-crack',
+    pulse: '@1 v10 q8 x0 l64 o7 a e c o6 g e c x1 p-12 o5 e8',
+    pulse2: '@2 v6 q8 x0 l64 r32 o7 g d o6 b f# d x1 o4 a8',
+    noise: 'v12 x1 l64 n0 n1 l32 n3 l8 n9',
   },
   // Noise whoosh.
   { id: 'bowser-flame', noise: 'v11 x1 l16 n1 n2 n3 l8 n5' },
@@ -112,6 +132,13 @@ export const sfx: Sfx[] = [
   },
   // A sword thrust: a short hiss and a falling glint.
   { id: 'sword-stab', pulse: '@1 v10 q8 x1 p-12 o6 e32', noise: 'v9 x1 l64 n1 n2 l32 n3' },
+  // The sword beam thrown at full hearts: a bright rising sweep with a thin shimmer behind it.
+  {
+    id: 'sword-beam',
+    pulse: '@2 v10 q8 x0 l64 o5 c e g o6 c e g x1 p12 o7 c16',
+    pulse2: '@3 v5 q8 x1 l64 r64 o6 g o7 c e g',
+    noise: 'v6 x1 l64 n2 n1 n0',
+  },
   // A heavy door grinding open: a low rising rumble and a final thunk.
   {
     id: 'door-open',
@@ -174,4 +201,8 @@ export const sfx: Sfx[] = [
   ...ninjaSfx,
   // Bill's jungle and his mini game.
   ...contraSfx,
+  // Sophia, Jason and the Underworld.
+  ...sophiaSfx,
+  // The mini game heroes' own deaths (WorldStart.deathStyle).
+  ...deathSfx,
 ];

@@ -10,7 +10,10 @@ import { CHARACTERS } from '@game/characters/registry';
 import type { MiniGameResult } from '../types';
 import { recordingAudio } from '../megaman/harness';
 import { SAMUS_MINIGAME } from '.';
-import { EscapeScene, type EscapeOptions } from './scene';
+import { px, tileToSub } from '@engine/math/units';
+import { APPEAR_FRAMES, EscapeScene, type EscapeOptions } from './scene';
+import { BrainTank, BRAIN_HITS, Cannon, CannonShot, Rinka, RinkaSpawner } from './tourian';
+import { MINI_LIVES } from '../lives';
 import { EscapeBot, type CautiousOptions } from './bot';
 
 /*
@@ -76,13 +79,85 @@ export function escapeHarness(opts: HarnessOptions = {}) {
     for (; i < max && results.length === 0; i++) step(bot.next(scene));
     return i;
   };
-  return { game, scene, below, results, said, log, tempo, step, tap, play, world: scene.world };
+  return {
+    game,
+    scene,
+    below,
+    results,
+    said,
+    log,
+    tempo,
+    step,
+    tap,
+    play,
+    /** The life in play's World (a new one after each lost life). */
+    get world() {
+      return scene.world;
+    },
+  };
 }
 
 export type EscapeHarness = ReturnType<typeof escapeHarness>;
 
+/** Past her materialising: Samus can move (in Tourian, or on the escape once the bomb is set). */
+export function ready(h: EscapeHarness): void {
+  h.step([], APPEAR_FRAMES);
+  if (h.scene.phase !== 'tourian' && h.scene.phase !== 'escape')
+    throw new Error(`not in play after materialising: ${h.scene.phase}`);
+}
+
+/**
+ * Puts Samus standing (or curled, `ball`) with her feet on row `feetRow` at `x` px (her body's
+ * left), the room and the camera on her.
+ */
+export function warp(h: EscapeHarness, x: number, feetRow: number, ball = false): void {
+  const p = h.scene.player;
+  p.scratch.ball = ball ? 1 : 0;
+  p.refitHitbox();
+  const b = p.body;
+  b.x = px(x);
+  b.y = tileToSub(feetRow) - b.h;
+  b.vx = 0;
+  b.vy = 0;
+  b.onGround = true;
+  h.scene.syncRoom(h.world, true);
+  h.world.spawnInView();
+}
+
+/**
+ * Skips Tourian: Samus in the brain's chamber, the brain destroyed by missiles (as a play would),
+ * so the time bomb is set and the escape is on.
+ */
+export function setBomb(h: EscapeHarness): void {
+  warp(h, 68 * 16, 57);
+  clearCreatures(h);
+  const brain = h.world.entities.find((e): e is BrainTank => e instanceof BrainTank);
+  if (!brain) throw new Error('no brain');
+  for (let i = 0; i < BRAIN_HITS; i++)
+    brain.hit({ kind: 'weapon', amount: 3, owner: null, dirX: 1 }, h.world);
+  if (h.scene.phase !== 'escape') throw new Error(`no escape: ${h.scene.phase}`);
+}
+
+/** Sheets with no frames (and no zebes sheet): every draw falls back to nothing, text is kept. */
+export const STUB_ASSETS = {
+  sheet: () => ({ id: 'stub', image: null, frames: new Map() }),
+  has: () => false,
+} as unknown as AssetRegistry;
+
+/** Clears Tourian's guards out of the way (Rinkas and their spawners, cannons unless kept, shots). */
+export function clearCreatures(h: EscapeHarness, keepCannons = false): void {
+  for (const e of h.world.entities)
+    if (
+      e instanceof Rinka ||
+      e instanceof RinkaSpawner ||
+      e instanceof CannonShot ||
+      (e instanceof Cannon && !keepCannons)
+    )
+      e.destroy();
+}
+
 /** One round played by a bot: how it ended, the time left and what it cost. */
-export function botRun(opts: Partial<CautiousOptions> = {}, max = 12000) {
+export function botRun(opts: Partial<CautiousOptions> = {}, max = 30000) {
   const h = escapeHarness();
   const bot = new EscapeBot(opts);
   let lost = 0;
@@ -100,6 +175,8 @@ export function botRun(opts: Partial<CautiousOptions> = {}, max = 12000) {
     phase: h.scene.phase,
     frames,
     secondsLeft: h.scene.seconds,
+    /** Lives lost on the way (3 on a game over). */
+    livesLost: MINI_LIVES - h.scene.lives.lives,
     hp,
     lost,
     x: p.body.x >> 12,

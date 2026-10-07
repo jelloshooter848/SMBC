@@ -52,6 +52,23 @@ const SONG_IDS = [
   'contra-boss',
   'contra-lair',
   'contra-card',
+  // Sophia's Underworld and her mini game.
+  'bm-area',
+  'bm-dungeon',
+  'bm-boss',
+  'bm-garage',
+  'bm-cutscene',
+  // The mini game heroes' own start jingles.
+  'zebes-start',
+  // The campaign looks of 2-1, 3-1 and 4-2.
+  'zelda2-field',
+  'mm-stage-31',
+  'brinstar',
+  // The 0.4.12 restyles: 5-4 as Simon's castle hall, 6-2 as Ryu's city street.
+  'cv-hall',
+  'ng-city',
+  // Tourian, before the escape (ZEBES ESCAPE, 0.4.16).
+  'tourian',
 ];
 
 const SFX_IDS = [
@@ -118,6 +135,32 @@ const SFX_IDS = [
   'spread',
   'laser',
   'konami',
+  // Sophia, Jason and the Underworld.
+  'sophia-jump',
+  'sophia-land',
+  'sophia-cannon',
+  'sophia-shoot-normal',
+  'sophia-shoot-hyper',
+  'sophia-shoot-crusher',
+  'sophia-missile',
+  'sophia-explode',
+  'sophia-hit-enemy',
+  'sophia-kill',
+  'sophia-hover',
+  'sophia-open',
+  'sophia-hurt',
+  'sophia-die',
+  'sophia-select',
+  'sophia-pickup',
+  'jason-shot',
+  'grenade',
+  'mutant-die',
+  'frog',
+  // The mini game heroes' own deaths (WorldStart.deathStyle).
+  'mm-death',
+  'samus-death',
+  'cv-death',
+  'ng-death',
   // The title screen's REMIX stamp.
   'stamp',
 ];
@@ -313,6 +356,19 @@ describe("Samus's cavern music", () => {
     // Sparse percussion, if any: at most one hit a beat.
     const noise = tracks('cavern').noise;
     if (noise) expect(sounding(noise).length).toBeLessThanOrEqual(cave.length / PPQ);
+  });
+
+  it("Tourian is slow and uneasy: a slower tempo than the escape, a heartbeat bass, the lead's long notes", () => {
+    const t = song('tourian');
+    const run = song('zebes-escape');
+    expect(t.loop).toBe(true);
+    expect(t.bpm).toBeLessThan(run.bpm);
+    expect(t.length % (PPQ * 4)).toBe(0);
+    const lead = sounding(tracks('tourian').pulse1 as Track);
+    expect(lead.reduce((a, e) => a + e.len, 0) / lead.length).toBeGreaterThanOrEqual(PPQ);
+    // The bass beats in pairs (two eighths, then a rest).
+    const bass = sounding(tracks('tourian').triangle as Track);
+    expect(bass.every((e) => e.len === PPQ / 2)).toBe(true);
   });
 
   it('the escape is urgent: fast, a shorter loop, and racing sixteenth-note arpeggios', () => {

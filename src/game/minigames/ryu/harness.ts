@@ -72,7 +72,21 @@ export function duelHarness(opts: HarnessOptions = {}) {
     for (; i < max && results.length === 0; i++) step(bot.next(scene));
     return i;
   };
-  return { game, scene, below, results, said, log, step, tap, play, world: scene.world };
+  return {
+    game,
+    scene,
+    below,
+    results,
+    said,
+    log,
+    step,
+    tap,
+    play,
+    /** The current life's World (each life builds a new one). */
+    get world() {
+      return scene.world;
+    },
+  };
 }
 
 export type DuelHarness = ReturnType<typeof duelHarness>;
@@ -92,8 +106,11 @@ export function botRun(opts: Partial<CautiousOptions> = {}, max = 30000) {
   let bossLost = 0;
   let hp = h.scene.player.hp;
   let frames = 0;
+  let deaths = 0;
   for (; frames < max && h.results.length === 0; frames++) {
+    const was = h.scene.phase;
     h.step(bot.next(h.scene));
+    if (h.scene.phase === 'dead' && was !== 'dead') deaths++;
     const now = h.scene.player.hp;
     if (now < hp) {
       lost += hp - now;
@@ -110,6 +127,8 @@ export function botRun(opts: Partial<CautiousOptions> = {}, max = 30000) {
     hp,
     lost,
     bossLost,
+    /** Lives lost (of three). */
+    deaths,
     bossHp: h.scene.boss ? h.scene.life.hp : null,
     x: p.body.x >> 12,
     row: (p.body.y + p.body.h) >> 12,

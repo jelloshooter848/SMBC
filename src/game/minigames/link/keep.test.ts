@@ -17,16 +17,16 @@ import { defaultSettings } from '@engine/save/settings';
 import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
 import { CHARACTERS } from '@game/characters/registry';
 import { TopDownBot } from '@game/topdown/bot';
-import { DEATH_FRAMES } from '@game/topdown/hero';
+import { ATTACK_FRAMES, DEATH_FRAMES } from '@game/topdown/hero';
+import { BeamBurst, SwordBeam } from '@game/topdown/beam';
 import { TILE } from '@game/topdown/geometry';
-import { Chest, FloorSwitch, Pickup } from '@game/topdown/entity';
-import { Rock } from '@game/topdown/enemies';
+import { Chest, FloorSwitch, Pickup, PushBlock, Torch } from '@game/topdown/entity';
+import { Knight, Rock } from '@game/topdown/enemies';
 import { STUN_FRAMES } from '@game/topdown/items';
-import { HUD_H } from '@game/topdown/geometry';
 import { miniGameFor } from '..';
 import type { MiniGameResult } from '../types';
 import { LINK_MINIGAME } from '.';
-import { FAIL_DELAY, INTRO_LINES, KEEPER_BANNER_Y, KeepMenuScene, ShadowKeepScene, WIN_FRAMES } from './keep';
+import { FAIL_DELAY, INTRO_LINES, KeepMenuScene, ShadowKeepScene, WIN_FRAMES } from './keep';
 import { KEEP_PLAN } from './bot-plan';
 import { KEEP_ROOMS, keepDungeon } from './dungeon';
 import { GLOW_FRAMES, KEEPER_HP, KEEPER_STUN, Keeper, Spell } from './keeper';
@@ -100,7 +100,7 @@ function setup(opts: { keep?: boolean; seed?: number } = {}) {
 type Harness = ReturnType<typeof setup>;
 
 /** Plays the bot until the keep reports (or `max` frames); returns the frames played. */
-function botRun(h: Harness, max = 12000): number {
+function botRun(h: Harness, max = 20000): number {
   const bot = new TopDownBot(KEEP_PLAN);
   let i = 0;
   for (; i < max && h.results.length === 0; i++) h.step(bot.next(h.world));
@@ -109,7 +109,7 @@ function botRun(h: Harness, max = 12000): number {
 
 /** Into the keeper's room by the south door, a few steps in (the shutters close behind). */
 function toKeeper(h: Harness): Keeper {
-  h.world.warpTo('keeper', 7.5 * TILE, 10 * TILE);
+  h.world.warpTo('keeper', 7.5 * TILE, 9 * TILE);
   h.step(['up'], 20);
   return h.world.enemies().find((e) => e instanceof Keeper) as Keeper;
 }
@@ -154,11 +154,10 @@ describe('Shadow Keep: the mini game contract', () => {
 });
 
 describe('Shadow Keep: the dungeon', () => {
-  it('eleven rooms on a 4×4 map, every door (the cracked wall too) leads somewhere, every room reachable from the start', () => {
+  it('thirteen rooms on a 4×6 map, every door (the cracked wall too) leads somewhere, every room reachable from the start', () => {
     const d = keepDungeon();
-    expect(d.rooms.size).toBe(11);
-    expect(d.cols).toBeLessThanOrEqual(4);
-    expect(d.rows).toBeLessThanOrEqual(4);
+    expect(d.rooms.size).toBe(13);
+    expect([d.cols, d.rows]).toEqual([4, 6]);
     const seen = new Set([d.startRoom]);
     const queue = [d.startRoom];
     while (queue.length) {
@@ -173,54 +172,62 @@ describe('Shadow Keep: the dungeon', () => {
         }
       }
     }
-    expect(seen.size).toBe(11);
+    expect(seen.size).toBe(13);
     // The shrine only through the cracked wall.
     expect(d.rooms.get('shrine')?.doors).toEqual({ e: 'cracked' });
     expect(d.rooms.get('armory')?.doors.w).toBe('cracked');
   });
 
-  it("holds the brief's rooms in order: bats, the boomerang's chest, a push block, knights with the key, a locked door into a kill-all room with a heart container, the bombs' chest by a cracked wall, the shield's shrine, spitters with a switch and a refill, the keeper, the exit", () => {
-    const kinds = (id: string) => KEEP_ROOMS.find((r) => r.id === id)?.map.join('') ?? '';
-    const def = (id: string) => KEEP_ROOMS.find((r) => r.id === id);
-    expect(KEEP_ROOMS.map((r) => r.id)).toEqual([
-      'start',
+  it("every room is Zelda's: walls two tiles thick round a 12×7 floor, each doorway centred in its wall", () => {
+    for (const r of keepDungeon().rooms.values()) {
+      expect(r.wall, r.id).toBe(2);
+      const inner = r.def.map.slice(2, 9).map((l) => l.slice(2, 14));
+      expect(inner.join('').includes('#'), r.id).toBe(false);
+      for (const [side, cells] of Object.entries(r.doorCells))
+        expect(cells, `${r.id} ${side}`).toEqual(side === 'n' || side === 's' ? [7, 8] : [5]);
+    }
+  });
+
+  it('laid out as a Zelda dungeon: the entrance at the bottom, locked doors, the map and compass, the boss next to the Triforce at the top', () => {
+    const d = keepDungeon();
+    const room = (id: string) => d.rooms.get(id);
+    const kinds = (id: string) => room(id)?.def.map.join('') ?? '';
+    expect(d.startRoom).toBe('start');
+    expect(room('start')?.gy).toBe(d.rows - 1);
+    expect(room('triforce')?.gy).toBe(0);
+    expect(room('triforce')?.def.goal).toBe(true);
+    // The keeper's lair opens north onto the Triforce.
+    expect([room('keeper')?.gx, room('keeper')?.gy]).toEqual([room('triforce')?.gx, 1]);
+    expect(room('keeper')?.doors.n).toBe('shutter');
+    expect(kinds('triforce')).toMatch(/A/);
+    // Two keys for two locked doors.
+    const locked = [...d.rooms.values()].flatMap((r) => Object.values(r.doors).filter((k) => k === 'locked'));
+    expect(locked.length).toBe(4); // each locked doorway, seen from both sides
+    expect(KEEP_ROOMS.filter((r) => r.map.join('').includes('k')).map((r) => r.id)).toEqual([
       'bats',
-      'cellar',
-      'blocks',
       'knights',
-      'shutters',
-      'armory',
-      'shrine',
-      'switch',
-      'keeper',
-      'exit',
     ]);
-    expect(def('cellar')?.chests).toEqual(['boomerang']);
-    expect(def('armory')?.chests).toEqual(['bomb']);
-    expect(kinds('armory')).toMatch(/C/);
-    expect(def('shrine')?.chests).toEqual(['shield']);
-    expect(kinds('shutters')).toMatch(/H/);
-    expect(def('shutters')?.reveal).toBe('clear');
-    expect(kinds('bats')).toMatch(/b/);
+    expect(kinds('map')).toMatch(/m/);
+    expect(kinds('compass')).toMatch(/v/);
+    // The rest of the keep, as before.
+    expect(room('cellar')?.def.chests).toEqual(['boomerang']);
+    expect(room('armory')?.def.chests).toEqual(['bomb']);
+    expect(room('shrine')?.def.chests).toEqual(['shield']);
     expect(kinds('blocks').match(/P/g)).toHaveLength(1);
-    expect(def('blocks')?.shutters).toBe('plates');
-    expect(kinds('knights')).toMatch(/n.*k|k.*n/);
-    expect(def('knights')?.reveal).toBe('clear');
-    expect(kinds('knights')).toMatch(/L/);
-    expect(def('shutters')?.shutters).toBe('clear');
-    expect(kinds('switch')).toMatch(/r/);
-    expect(kinds('switch')).toMatch(/_/);
-    expect(kinds('switch')).toMatch(/f/);
-    expect(def('keeper')?.music).toBe('keeper');
-    expect(kinds('keeper')).toMatch(/M/);
-    expect(kinds('exit')).toMatch(/E/);
+    expect(room('blocks')?.def.shutters).toBe('plates');
+    expect(room('shutters')?.def.shutters).toBe('clear');
+    expect(kinds('switch')).toMatch(/r.*_.*f/);
+    expect(room('keeper')?.def.music).toBe('keeper');
+    // A Zelda boss leaves its heart container.
+    expect(kinds('keeper')).toMatch(/M.*H/);
+    expect(room('keeper')?.def.reveal).toBe('clear');
   });
 });
 
 describe('Shadow Keep: rewards', () => {
   it("the knights' key stays hidden (and can't be taken) until the room is clear", () => {
     const h = setup();
-    h.world.warpTo('knights', 7.5 * TILE, 10 * TILE);
+    h.world.warpTo('knights', 7.5 * TILE, 8 * TILE);
     const key = () => h.world.entities.find((e) => e instanceof Pickup && e.kind === 'key') as Pickup;
     expect(key().hidden).toBe(true);
     h.world.hero.invuln = 100000;
@@ -239,7 +246,7 @@ describe('Shadow Keep: rewards', () => {
 
   it('the heart refill appears only once the floor switch is down', () => {
     const h = setup();
-    h.world.warpTo('switch', TILE, 5 * TILE);
+    h.world.warpTo('switch', 2 * TILE, 5 * TILE);
     const refill = () => h.world.entities.find((e) => e instanceof Pickup && e.kind === 'refill');
     expect((refill() as Pickup).hidden).toBe(true);
     for (const k of h.world.enemies()) k.die(h.world);
@@ -255,14 +262,14 @@ describe('Shadow Keep: rewards', () => {
   });
 });
 
-// Full bot runs take a few seconds each (eleven rooms, two of them twice).
+// Full bot runs take a few seconds each (thirteen rooms, some of them twice).
 describe('Shadow Keep: a full run', { timeout: 30_000 }, () => {
-  it('the bot escapes the keep: every room, then pass once the spell breaks', () => {
+  it('the bot escapes the keep: every room, the Triforce, then pass once the spell breaks', () => {
     const h = setup({ keep: true });
     const rooms: string[] = [];
     const bot = new TopDownBot(KEEP_PLAN);
     let wonAt = -1;
-    for (let i = 0; i < 12000 && h.results.length === 0; i++) {
+    for (let i = 0; i < 20000 && h.results.length === 0; i++) {
       h.step(bot.next(h.world));
       if (rooms[rooms.length - 1] !== h.world.room.id) rooms.push(h.world.room.id);
       if (wonAt < 0 && h.scene.phase === 'won') wonAt = i;
@@ -270,27 +277,32 @@ describe('Shadow Keep: a full run', { timeout: 30_000 }, () => {
     expect(rooms).toEqual([
       'start',
       'bats',
+      'start',
+      'map',
       'cellar',
-      'bats',
+      'map',
+      'shutters',
+      'compass',
+      'shutters',
       'blocks',
       'knights',
-      'shutters',
       'armory',
       'shrine',
       'armory',
-      'shutters',
+      'knights',
       'switch',
       'keeper',
-      'exit',
+      'triforce',
     ]);
     expect(h.results).toEqual(['pass']);
     expect(wonAt).toBeGreaterThan(0);
-    expect(h.said).toContain('The spell breaks! Link is free.');
-    expect(h.world.keys).toBe(0); // the key went into the locked door
+    expect(h.said).toContain('Link holds up the Triforce! The spell breaks. Link is free.');
+    expect(h.world.keys).toBe(0); // both keys went into the locked doors
+    expect([...h.world.found].sort()).toEqual(['compass', 'map', 'triforce']);
     expect(h.world.inv.owned).toEqual(['boomerang', 'bomb']);
     expect(h.world.hero.shield).toBe(true);
     expect(h.world.hero.maxHp).toBe(8);
-    expect(h.log.music).toEqual(['dungeon', 'keeper', 'dungeon']);
+    expect(h.log.music).toEqual(['dungeon', 'keeper', 'dungeon', 'triforce-get']);
     for (const id of [
       'sword-stab',
       'secret',
@@ -319,14 +331,14 @@ describe('Shadow Keep: a full run', { timeout: 30_000 }, () => {
 describe('Shadow Keep: the keeper', () => {
   it('waits for Link to step in; the shutters shut; it glows, then fans three spells at him; without the shield facing them is no help', () => {
     const h = setup();
-    h.world.warpTo('keeper', 7.5 * TILE, 10 * TILE);
+    h.world.warpTo('keeper', 7.5 * TILE, 9 * TILE);
     const keeper = h.world.enemies().find((e) => e instanceof Keeper) as Keeper;
     h.step([], 30);
     expect(keeper.awake).toBe(false);
     h.step(['up'], 20);
     expect(keeper.awake).toBe(true);
     expect(h.world.doorOpen('s')).toBe(false);
-    expect(h.world.doorOpen('e')).toBe(false);
+    expect(h.world.doorOpen('n')).toBe(false);
     expect(h.log.music[h.log.music.length - 1]).toBe('keeper');
     for (let i = 0; i < 400 && keeper.glowT === 0; i++) h.step();
     expect(keeper.glowT).toBeGreaterThan(0);
@@ -349,7 +361,7 @@ describe('Shadow Keep: the keeper', () => {
     for (let i = 0; i < 2000 && !keeper.dead; i++) {
       hero.invuln = 1000; // stand in the spells: this test is about the sword
       hero.x = Math.round((keeper.x + 12) / 8) * 8;
-      hero.y = 72;
+      hero.y = keeper.y + 40;
       hero.facing = 'up';
       const go = !hero.attacking && i % 2 === 0;
       if (go) stabs++;
@@ -358,9 +370,9 @@ describe('Shadow Keep: the keeper', () => {
     expect(keeper.dead).toBe(true);
     expect(stabs).toBeGreaterThanOrEqual(KEEPER_HP);
     h.step([], 2);
-    expect(h.world.doorOpen('e')).toBe(true);
+    expect(h.world.doorOpen('n')).toBe(true);
     expect(h.world.doorOpen('s')).toBe(true);
-    expect(h.said).toContain('The keeper falls! The way out is open.');
+    expect(h.said).toContain('The keeper falls! The north door opens.');
     expect(h.log.music[h.log.music.length - 1]).toBe('dungeon');
   });
 });
@@ -452,12 +464,66 @@ describe('Shadow Keep: outcomes', { timeout: 30_000 }, () => {
   it('a win holds "THE SPELL BREAKS!" for a moment before passing', () => {
     const h = setup({ keep: true });
     const bot = new TopDownBot(KEEP_PLAN);
-    for (let i = 0; i < 12000 && h.scene.phase !== 'won'; i++) h.step(bot.next(h.world));
+    for (let i = 0; i < 20000 && h.scene.phase !== 'won'; i++) h.step(bot.next(h.world));
     expect(h.scene.phase).toBe('won');
     h.step([], WIN_FRAMES - 2);
     expect(h.results).toEqual([]);
     h.step([], 2);
     expect(h.results).toEqual(['pass']);
+  });
+});
+
+describe('Shadow Keep: the Triforce', () => {
+  it('once the keeper falls the north shutters open onto the Triforce; Link holds it up in the item-get pose to its own fanfare, then the round passes', () => {
+    const h = setup({ keep: true });
+    const keeper = toKeeper(h);
+    expect(h.world.doorOpen('n')).toBe(false);
+    keeper.die(h.world);
+    h.step([], 2);
+    expect(h.world.doorOpen('n')).toBe(true);
+    h.world.warpTo('triforce', 7.5 * TILE, 8 * TILE);
+    const shard = h.world.entities.find((e) => e instanceof Pickup && e.kind === 'triforce') as Pickup;
+    expect(shard.x + shard.w / 2).toBe(8 * TILE); // centred in the room
+    for (let i = 0; i < 200 && h.scene.phase === 'play'; i++) h.step(['up']);
+    expect(h.scene.phase).toBe('won');
+    expect(h.world.hero.holding).toBe('triforce');
+    expect(h.world.found.has('triforce')).toBe(true);
+    expect(h.log.music[h.log.music.length - 1]).toBe('triforce-get');
+    expect(h.said.some((t) => t.includes('Triforce'))).toBe(true);
+    expect(h.world.hero.hp).toBe(h.world.hero.maxHp); // every heart refilled, as in Zelda
+    h.step([], WIN_FRAMES - 2);
+    expect(h.world.hero.holding).toBe('triforce'); // held up the whole fanfare
+    expect(h.results).toEqual([]);
+    h.step([], 2);
+    expect(h.results).toEqual(['pass']);
+  });
+
+  it('the fanfare is an original song of its own that fits the hold', () => {
+    const song = songs.find((s) => s.id === 'triforce-get');
+    expect(song?.loop).toBe(false);
+    expect(song?.pulse1).toBeTruthy();
+  });
+
+  it('no flashing on the pickup: nothing is drawn over the room while Link holds it up', () => {
+    const h = setup({ keep: true });
+    h.world.warpTo('triforce', 7.5 * TILE, 8 * TILE);
+    for (let i = 0; i < 200 && h.scene.phase === 'play'; i++) h.step(['up']);
+    const big: string[] = [];
+    const none = new NullRenderer();
+    const r: Renderer = {
+      ...none,
+      clear: none.clear,
+      line: none.line,
+      debugText: none.debugText,
+      text: none.text,
+      sprite: none.sprite,
+      rect: (_x, y, w, h2, c) => void (w >= 200 && h2 >= 100 && y >= 64 && big.push(c)),
+    };
+    for (let i = 0; i < 60; i++) {
+      h.step();
+      h.scene.render(r);
+    }
+    expect(big).toEqual([]);
   });
 });
 
@@ -477,7 +543,7 @@ describe('Shadow Keep: screen and controls', () => {
     expect(h.scene.touchLabels().start).toBeNull();
   });
 
-  it('draws the wake-up line, the HUD (map title, item, life) and announces the start', () => {
+  it('draws the wake-up line, the HUD (level over the map, item boxes, life) and announces the start', () => {
     const h = setup();
     const texts: string[] = [];
     const none = new NullRenderer();
@@ -491,7 +557,7 @@ describe('Shadow Keep: screen and controls', () => {
       text: (_f, t) => void texts.push(t),
     };
     h.game.scenes.render(r);
-    expect(texts).toEqual(expect.arrayContaining([...INTRO_LINES, 'SHADOW KEEP', 'SWORD', '-LIFE-']));
+    expect(texts).toEqual(expect.arrayContaining([...INTRO_LINES, 'LEVEL-1', 'B', 'A', '-LIFE-']));
     expect(h.said[0]).toMatch(/^Escape the Shadow Keep\. Link\.\.\. wake up/);
   });
 });
@@ -522,6 +588,103 @@ function openChest(h: Harness): Chest {
   return c;
 }
 
+describe('Shadow Keep: the sword beam', () => {
+  /** Link in the start room facing up the clear middle column, and a knight held still up it. */
+  function lineUp(h: Harness): Knight {
+    const hero = h.world.hero;
+    hero.x = 7 * TILE;
+    hero.y = 8 * TILE;
+    hero.facing = 'up';
+    const knight = new Knight(7 * TILE, 2 * TILE);
+    knight.stunT = 1000;
+    h.world.add(knight);
+    return knight;
+  }
+  const beams = (h: Harness) => h.world.entities.filter((e) => e instanceof SwordBeam);
+
+  it('at full hearts a stab also throws a beam up the room that hurts the first monster it meets', () => {
+    const h = setup();
+    const knight = lineUp(h);
+    const hp = knight.hp;
+    h.tap('attack');
+    expect(beams(h)).toHaveLength(1);
+    expect(h.log.sfx).toContain('sword-beam');
+    h.step([], 40);
+    expect(knight.hp).toBe(hp - 1);
+    expect(beams(h)).toHaveLength(0);
+  });
+
+  it('one beam at a time; none below full hearts', () => {
+    const h = setup();
+    lineUp(h).dead = true;
+    h.tap('attack');
+    h.step([], ATTACK_FRAMES);
+    h.tap('attack');
+    expect(beams(h)).toHaveLength(1);
+    h.step([], 60);
+    expect(beams(h)).toHaveLength(0);
+    h.world.hero.hp = h.world.hero.maxHp - 1;
+    h.tap('attack');
+    expect(beams(h)).toHaveLength(0);
+  });
+
+  it('bursts at the wall into four pieces that fly apart diagonally and are gone in a moment', () => {
+    const h = setup();
+    lineUp(h).dead = true;
+    h.tap('attack');
+    let burst: BeamBurst | null = null;
+    for (let i = 0; i < 80 && !burst; i++) {
+      h.step();
+      burst = (h.world.entities.find((e) => e instanceof BeamBurst) as BeamBurst | undefined) ?? null;
+    }
+    expect(burst).not.toBeNull();
+    expect(burst?.y).toBeLessThan(3 * TILE); // at the face of the two-tile wall
+    h.step([], 4);
+    const spread = burst?.pieces().map((p) => [Math.sign(p.dx), Math.sign(p.dy)].join());
+    expect(new Set(spread)).toEqual(new Set(['-1,-1', '1,-1', '-1,1', '1,1']));
+    h.step([], 40);
+    expect(h.world.entities.some((e) => e instanceof BeamBurst)).toBe(false);
+  });
+
+  /** Fires a beam from Link at (col, row) facing `dir`; returns where it burst (room px). */
+  function fireUntilBurst(h: Harness, col: number, row: number, dir: 'left' | 'up'): BeamBurst | null {
+    const hero = h.world.hero;
+    hero.x = col * TILE;
+    hero.y = row * TILE;
+    hero.facing = dir;
+    h.tap('attack');
+    for (let i = 0; i < 120; i++) {
+      const b = h.world.entities.find((e) => e instanceof BeamBurst) as BeamBurst | undefined;
+      if (b) return b;
+      h.step();
+    }
+    return null;
+  }
+
+  it('flies over push blocks and torches (only walls, doors and the room edge stop it)', () => {
+    const h = setup();
+    // The start room's lit torch at (3,7), and a push block put in the way at (5,7).
+    h.world.add(new PushBlock(5 * TILE, 7 * TILE));
+    expect(h.world.entities.some((e) => e instanceof Torch && e.x === 3 * TILE && e.y === 7 * TILE)).toBe(
+      true,
+    );
+    const burst = fireUntilBurst(h, 8, 7, 'left');
+    expect(burst).not.toBeNull();
+    expect(burst?.cx).toBeLessThan(3 * TILE); // at the west wall, past both
+  });
+
+  it('flies over statues too, and bursts at the wall behind them', () => {
+    const h = setup();
+    h.world.warpTo('bats', 12 * TILE, 4 * TILE);
+    for (const e of h.world.enemies()) e.dead = true;
+    h.step();
+    // Statues at (9,4) and (6,4) on the way to the west wall.
+    const burst = fireUntilBurst(h, 12, 4, 'left');
+    expect(burst).not.toBeNull();
+    expect(burst?.cx).toBeLessThan(3 * TILE);
+  });
+});
+
 describe('Shadow Keep: items, the shield and the secret', () => {
   it('Link starts with only his sword: no shield, so rocks hit from the front and from the side', () => {
     const h = setup();
@@ -540,7 +703,7 @@ describe('Shadow Keep: items, the shield and the secret', () => {
 
   it("the cellar's chest gives the boomerang once, with a fanfare and how to use it", () => {
     const h = setup();
-    h.world.warpTo('cellar', TILE, 5 * TILE);
+    h.world.warpTo('cellar', 12 * TILE, 5 * TILE);
     for (const k of h.world.enemies()) k.die(h.world);
     const chest = openChest(h);
     expect(chest.open).toBe(true);
@@ -549,8 +712,8 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(drawnText(h)).toEqual(expect.arrayContaining(['YOU GOT THE BOOMERANG!', 'BOOMERANG: THROW']));
     expect(h.said.some((t) => t.startsWith('You got the boomerang!'))).toBe(true);
     h.step([], 80);
-    h.world.warpTo('bats', 14 * TILE, 5 * TILE);
-    h.world.warpTo('cellar', TILE, 5 * TILE);
+    h.world.warpTo('bats', 12 * TILE, 5 * TILE);
+    h.world.warpTo('cellar', 12 * TILE, 5 * TILE);
     const again = h.world.entities.find((e) => e instanceof Chest) as Chest;
     expect(again.open).toBe(true);
     const gets = h.log.sfx.filter((s) => s === 'item-get').length;
@@ -559,14 +722,15 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(h.world.inv.owned).toEqual(['boomerang']);
   });
 
-  it('the shutters room shows a heart container once it is clear: three hearts become four, all full', () => {
+  it('the keeper leaves a heart container when it falls, as a Zelda boss does: three hearts become four, all full', () => {
     const h = setup();
-    h.world.warpTo('shutters', TILE, 5 * TILE);
+    const keeper = toKeeper(h);
     const hc = () =>
       h.world.entities.find((e) => e instanceof Pickup && e.kind === 'heart-container') as Pickup;
     expect(hc().hidden).toBe(true);
-    for (const k of h.world.enemies()) k.die(h.world);
+    keeper.die(h.world);
     h.step();
+    expect(h.said).toContain('A heart container appears!');
     expect(hc().hidden).toBe(false);
     h.world.hero.hp = 1;
     h.world.hero.x = hc().x;
@@ -581,7 +745,7 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     const h = setup();
     h.world.grant('bomb');
     h.world.inv.addAmmo('bomb', -9);
-    h.world.warpTo('armory', 7.5 * TILE, 9 * TILE);
+    h.world.warpTo('armory', 7.5 * TILE, 8 * TILE);
     expect(h.world.entities.some((e) => e instanceof Pickup && e.kind === 'bombs')).toBe(false);
     const hero = h.world.hero;
     h.world.add(new Pickup(hero.x + 4, hero.y, 'bombs'));
@@ -592,7 +756,7 @@ describe('Shadow Keep: items, the shield and the secret', () => {
 
   it("a bomb opens the armory's cracked wall (only a blast does); the shrine's chest holds the shield", () => {
     const h = setup();
-    h.world.warpTo('armory', 7.5 * TILE, 9 * TILE);
+    h.world.warpTo('armory', 7.5 * TILE, 8 * TILE);
     for (const k of h.world.enemies()) k.die(h.world);
     openChest(h);
     expect(h.world.inv.count('bomb')).toBe(4);
@@ -601,7 +765,7 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     h.world.grant('boomerang');
     h.world.inv.select('bomb');
     const hero = h.world.hero;
-    hero.x = TILE;
+    hero.x = 2 * TILE;
     hero.y = 5 * TILE;
     // The sword doesn't open it.
     h.tap('left');
@@ -615,10 +779,11 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(h.log.sfx).toEqual(expect.arrayContaining(['bomb-fuse', 'bomb-blast', 'secret']));
     expect(h.said).toContain('The cracked wall breaks open!');
     // Through it to the shrine and its chest.
-    hero.x = TILE;
+    hero.x = 2 * TILE;
     hero.y = 5 * TILE;
     h.step(['left'], 100);
     expect(h.world.room.id).toBe('shrine');
+    h.step([], 30); // he walks himself in past the wall
     openChest(h);
     expect(hero.shield).toBe(true);
     expect(h.said).toContain(
@@ -659,11 +824,41 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(labels().special).toBeNull(); // none left
   });
 
-  it('draws the item box (ITEM) beside the sword box, and the bomb count beside the keys', () => {
+  it('draws the Zelda HUD: LEVEL-1 over the map, key and bomb counts, the B and A boxes, -LIFE-', () => {
     const h = setup();
+    const first = drawnText(h);
+    expect(first).toEqual(expect.arrayContaining(['LEVEL-1', 'B', 'A', '-LIFE-']));
+    // The counts column shows keys and bombs from the start, as Zelda's does (no rupees here).
+    expect(first.filter((t) => t === '×0')).toHaveLength(2);
+    // No names on it: the art says what each box holds.
+    for (const name of ['SHADOW KEEP', 'ITEM', 'SWORD']) expect(first).not.toContain(name);
     h.world.grant('boomerang');
     h.world.grant('bomb');
-    expect(drawnText(h)).toEqual(expect.arrayContaining(['ITEM', 'SWORD', '×0', '×4', '-LIFE-']));
+    expect(drawnText(h)).toEqual(expect.arrayContaining(['×0', '×4']));
+  });
+
+  it('the B box holds the item in the slot and the A box the sword, B on the left', () => {
+    const h = setup();
+    h.world.grant('boomerang');
+    const at: Record<string, number> = {};
+    // Without the art (headless), an icon is drawn as a white 8x16 stand-in.
+    const icons: number[] = [];
+    const none = new NullRenderer();
+    const r: Renderer = {
+      ...none,
+      clear: none.clear,
+      sprite: none.sprite,
+      line: none.line,
+      debugText: none.debugText,
+      rect: (x, _y, w, h, c) => void (w === 8 && h === 16 && c === '#fcfcfc' && icons.push(x)),
+      text: (_f, t, x) => void (at[t] ??= x),
+    };
+    h.game.scenes.render(r);
+    expect(at.B).toBeLessThan(at.A as number);
+    expect(at.A).toBeLessThan(at['-LIFE-'] as number);
+    expect(at['LEVEL-1']).toBeLessThan(at.B as number);
+    // Each icon sits under its letter: the boomerang in B, the sword in A.
+    expect(icons).toEqual([at.B, at.A]);
   });
 
   it('the boomerang stuns monsters for seconds but the keeper for only half a second (and not asleep)', () => {
@@ -736,14 +931,14 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(h.world.entities.some((e) => e instanceof Spell)).toBe(false);
   });
 
-  it("the keeper's name shows between the keeper and Link at the door, covering neither", () => {
+  it('the keeper wakes without a name on screen, as a Zelda boss does', () => {
     const h = setup();
     const keeper = toKeeper(h);
-    expect(drawnText(h)).toContain('THE KEEPER');
-    const top = KEEPER_BANNER_Y - 6;
-    const bottom = KEEPER_BANNER_Y + 12 + 2;
-    expect(top).toBeGreaterThan(HUD_H + keeper.y + keeper.h + 2);
-    expect(bottom).toBeLessThan(HUD_H + h.world.hero.y);
+    expect(keeper.awake).toBe(true);
+    for (let i = 0; i < 60; i++) {
+      expect(drawnText(h)).not.toContain('THE KEEPER');
+      h.step();
+    }
   });
 
   it("dev mode's no-damage assist keeps Link's hearts, switched on and off mid-round", () => {

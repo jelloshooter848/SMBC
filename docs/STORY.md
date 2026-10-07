@@ -1,7 +1,9 @@
-# Story script (draft for 0.4.13)
+# Story script (0.4.13)
 
-Every story line the player will read, written out for the owner to review and edit **before** anything is built.
-Nothing here is in the game yet. When a line is approved, it can be pasted into the code as it stands.
+Every story line the player will read, written out for the owner to review and edit before it was built.
+**Chapter 1 (sections 2.1-2.14) is built in 0.4.13**: its text lives in `src/game/story/script.ts`, word for word as
+here (a test, `script-doc.test.ts`, keeps the two the same; Sophia III's lines in 2.11 came with her route in 0.4.18), and
+docs/STORY_SYSTEM.md says how it is wired in. **The Lost Kingdom parts (2.15 on) are Chapter 2**, not built yet.
 
 **How to read this file**
 
@@ -68,16 +70,16 @@ along, and now the wand's pieces, the Koopalings and Bowser are heading straight
 
 ### Who is where
 
-| World | Hero       | Hidden in                                      | Partner               | Partner stands in                                 | Toad's world hint, in short                                   |
-| ----- | ---------- | ---------------------------------------------- | --------------------- | ------------------------------------------------- | ------------------------------------------------------------- |
-| 1     | Luigi      | 1-1's bonus room, top-right ledge              | Toad himself          | (Toad covers him)                                 | In green, taller, always player two; down where coins are     |
-| 2     | Link       | 2-1 sky ruins, past the coin heaven's end      | The old man (Zelda 1) | 2-1's start, in a cave mouth before the vine      | A silent swordsman; ruins above the clouds                    |
-| 3     | Mega Man   | 3-1 space station, via a hidden teleporter     | Dr. Light             | 3-1's pipe room (`3-1-bonus`), before the vine    | A blue robot boy with a cannon arm; a star that blinks        |
-| 4     | Samus      | 4-2 cavern, down the vine area's warp pipe     | A Chozo statue        | 4-1's pipe room (`4-1-bonus`), the level before   | A hunter in a power suit; pipes that don't warp any more      |
-| 5     | Simon      | 5-4 crypt, riding the lift down past its end   | A Simon's Quest local | 5-4's entrance, on the safe floor at its start    | A hunter of the night; deep underground, in a dungeon         |
-| 6     | Ryu        | 6-2 dojo, through a trick wall in a pipe room  | Irene Lew             | 6-2's start, before the first pipe                | A ninja you only see if he wants you to; walls that aren't    |
-| 7     | Bill       | 7-3 camp, falling through the exploding bridge | Lance                 | 7-3's start, in the jungle                        | A soldier, one big gun, no shirt; bridges that go boom        |
-| 8     | Sophia III | 8-4, Jason's trap pipe (planned, 0.4.11)       | Jason (designed)      | `8-4-end`'s trap pipe, the hidden Underworld area | Not a person: a tank that jumps; her pilot takes the bad pipe |
+| World | Hero       | Hidden in                                       | Partner               | Partner stands in                                 | Toad's world hint, in short                                   |
+| ----- | ---------- | ----------------------------------------------- | --------------------- | ------------------------------------------------- | ------------------------------------------------------------- |
+| 1     | Luigi      | 1-1's bonus room, top-right ledge               | Toad himself          | (Toad covers him)                                 | In green, taller, always player two; down where coins are     |
+| 2     | Link       | 2-1 sky ruins, past the coin heaven's end       | The old man (Zelda 1) | 2-1's start, in a cave mouth before the vine      | A silent swordsman; ruins above the clouds                    |
+| 3     | Mega Man   | 3-1 space station, via a hidden teleporter      | Dr. Light             | 3-1's pipe room (`3-1-bonus`), before the vine    | A blue robot boy with a cannon arm; a star that blinks        |
+| 4     | Samus      | 4-2 cavern, down the vine area's warp pipe      | A Chozo statue        | 4-1's pipe room (`4-1-bonus`), the level before   | A hunter in a power suit; pipes that don't warp any more      |
+| 5     | Simon      | 5-4 crypt, riding the lift down past its end    | A Simon's Quest local | 5-4's entrance, on the safe floor at its start    | A hunter of the night; deep underground, in a dungeon         |
+| 6     | Ryu        | 6-2 dojo, through a trick wall in a pipe room   | Irene Lew             | 6-2's start, before the first pipe                | A ninja you only see if he wants you to; walls that aren't    |
+| 7     | Bill       | 7-3 camp, falling through the exploding bridge  | Lance                 | 7-3's start, in the jungle                        | A soldier, one big gun, no shirt; bridges that go boom        |
+| 8     | Sophia III | 8-4 garage, after Fred down 8-4-end's trap pipe | Jason                 | `8-4-end`'s trap pipe, the hidden Underworld area | Not a person: a tank that jumps; her pilot takes the bad pipe |
 
 Partners are NPCs you walk up to and talk to with **up**, exactly like a captive hero (`TALK` and the up arrow),
 campaign only, and they never leave. The Chozo statue is the one exception in wording: its prompt could read
@@ -187,8 +189,9 @@ in his own shape with the stolen wand**, so he never has to face Mario himself u
 What changes, in the campaign only (classic play keeps the NES behaviour):
 
 1. **A tell during the fight.** Every 4 s or so, the fake's disguise flickers for a few frames and the true creature's
-   silhouette shows through, with a soft wand sparkle. With reduce flashing on, use a steady faint outline instead of a
-   flicker. The real Bowser in 8-4 never flickers.
+   silhouette shows through, with a soft wand sparkle. With reduce flashing on, use a steady bright outline of the true form
+   instead of a flicker (one full-contrast colour over Bowser and the black, held for the tell's window, never
+   blinking). The real Bowser in 8-4 never flickers.
 2. **The disguise always comes off.** However he is beaten, by the axe and bridge or by fireballs, the disguise bursts
    in a puff of wand sparkles with a "poof" sound. The true form drops into the lava, or flees off screen where there's
    no lava. Every hero sees it, not only those who throw fireballs.

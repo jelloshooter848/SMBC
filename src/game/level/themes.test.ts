@@ -14,6 +14,7 @@ import { THEMES, isTheme, isWaterTheme, themeMusic, type Theme } from './schema'
 import { SKY, STARRY_SKIES } from '../world/tile-render';
 import { decorPalette, drawDecor } from '../entities/objects/decoration';
 import { enemyPalette } from '../entities/enemies/enemy';
+import { Vine } from '../entities/objects/vine';
 
 const map = (header: string[]) =>
   parseTextMap(
@@ -56,12 +57,20 @@ describe('themes', () => {
       'airship',
       'airship-deck',
       'crypt',
+      'castlevania',
       'dojo',
       'ninja-night',
+      'ninja-city',
       'contra-jungle',
       'contra-falls',
       'alien-lair',
+      'underworld',
+      'bm-dungeon',
       'smw-secret',
+      'zelda2',
+      'megaman-stage',
+      'brinstar',
+      'tourian',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -104,12 +113,20 @@ describe('themes', () => {
       airship: 'airship',
       'airship-deck': 'airship',
       crypt: 'crypt',
+      castlevania: 'cv-hall',
       dojo: 'dojo',
       'ninja-night': 'ng-stage',
+      'ninja-city': 'ng-city',
       'contra-jungle': 'contra-jungle',
       'contra-falls': 'contra-jungle',
       'alien-lair': 'contra-lair',
+      underworld: 'bm-area',
+      'bm-dungeon': 'bm-dungeon',
       'smw-secret': 'top-secret',
+      zelda2: 'zelda2-field',
+      'megaman-stage': 'mm-stage-31',
+      brinstar: 'brinstar',
+      tourian: 'tourian',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -701,6 +718,134 @@ describe('themes', () => {
       expect(drawn('contra-jungle', 'castle-big')?.frame).toBe('castle-big');
       // the classic look is untouched
       expect(drawn('overworld', 'cloud-1')?.frame).toBe('cloud-1');
+    });
+  });
+  describe("Sophia's Underworld and the dungeon's metal", () => {
+    const frames = tilesDef.frames;
+    const frame = (name: string) => frames[name] as readonly string[];
+    const rgb = (hex: string) =>
+      [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
+    const SOPHIA: Theme[] = ['underworld', 'bm-dungeon'];
+    const REDRAWN = [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+      'water-0',
+      'water-1',
+    ];
+
+    it('redraws the terrain, keeping each tile its collision shape', () => {
+      for (const t of SOPHIA) {
+        for (const name of REDRAWN) {
+          expect(frames[`${name}@${t}`], `${name}@${t}`).toBeDefined();
+          expect(frames[`${name}@${t}`], `${name}@${t}`).not.toEqual(frames[name]);
+        }
+        for (const name of ['ground', 'hard', 'brick', 'used', 'castle-brick', 'wall', 'water-0', 'water-1'])
+          expect(frame(`${name}@${t}`).join(''), `${name}@${t}`).not.toContain('.');
+        for (const row of frame(`tree-top@${t}`).slice(2)) expect(row, `tree-top@${t}`).not.toContain('.');
+        for (const row of frame(`bridge@${t}`).slice(0, 4)) expect(row, `bridge@${t}`).toMatch(/^[^.]{16}$/);
+        expect(frame(`bridge@${t}`).join(''), `bridge@${t}`).toContain('.');
+        // the root column and the pillar are scenery, open at the sides
+        expect(
+          frame(`tree-trunk@${t}`).every((r) => r[0] === '.' && r[15] === '.'),
+          t,
+        ).toBe(true);
+        // `?` blocks, coins, pipes and the flagpole are SMB's own
+        for (const n of ['question-0', 'coin-0', 'pipe-top-left', 'flag-shaft'])
+          expect(frames[`${n}@${t}`], `${n}@${t}`).toBeUndefined();
+        const pal = PALETTES.default[`tiles-${t}`] as string[];
+        const over = PALETTES.default['tiles-overworld'] as string[];
+        for (const i of [0, 4, 5, 6, 7]) expect(pal[i], `${t} role ${i}`).toBe(over[i]);
+      }
+    });
+
+    it('the Underworld: dark rust rock with pale roots, a near-black cave, its march', () => {
+      const uw = PALETTES.default['tiles-underworld'] as string[];
+      // the rock lightens in order, warm (red over blue); the roots are paler than the rock
+      const lum = (hex: string) => rgb(hex).reduce((a, b) => a + b, 0);
+      expect(lum(uw[1] as string)).toBeLessThan(lum(uw[2] as string));
+      expect(lum(uw[2] as string)).toBeLessThan(lum(uw[3] as string));
+      expect(lum(uw[8] as string)).toBeGreaterThan(lum(uw[3] as string));
+      const [r, , b] = rgb(uw[2] as string);
+      expect(r).toBeGreaterThan(b);
+      expect(frame('ground@underworld').join('')).toContain('8');
+      expect(frame('castle-brick@underworld').join('')).toMatch(/5/);
+      // a spent block reads as spent: darker than the bolted slab, its pale bolts gone
+      const shade = (f: readonly string[]) => [...f.join('')].filter((c) => c === '0' || c === '1').length;
+      expect(shade(frame('used@underworld'))).toBeGreaterThan(shade(frame('hard@underworld')) * 2);
+      expect(frame('used@underworld').join('')).not.toMatch(/[38]/);
+      expect(lum(SKY.underworld as string)).toBeLessThan(0x40);
+      expect(STARRY_SKIES.has('underworld')).toBe(false);
+      expect(decorPalette('underworld')).toBe('decor-underworld');
+      expect(enemyPalette('underworld')).toBe(enemyPalette('underground'));
+      expect(themeMusic('underworld')).toBe('bm-area');
+      // the dungeon's metal: black between the walls, castle enemies, the dungeon's tune
+      expect(SKY['bm-dungeon']).toBe('#000000');
+      expect(enemyPalette('bm-dungeon')).toBe(enemyPalette('castle'));
+      expect(decorPalette('bm-dungeon')).toBe('decor-night');
+      expect(themeMusic('bm-dungeon')).toBe('bm-dungeon');
+    });
+
+    it('the gateway is an arch round a doorway Jason fits through; ladders in place of beanstalks', () => {
+      const gate = decorDef.frames.gateway as readonly string[];
+      // the doorway: black, 12 wide and 20 tall, reaching the bottom row
+      for (let y = 31; y >= 16; y--) expect((gate[y] as string).slice(11, 21), `row ${y}`).toMatch(/^0{10}$/);
+      // stone round it and slime from the keystone
+      expect(gate.join('')).toMatch(/7/);
+      expect(gate.join('')).toMatch(/2/);
+      const roots = decorDef.frames.roots as readonly string[];
+      expect(roots[0]).toMatch(/^a{32}$/);
+      expect(roots.at(-1)).toContain('.');
+      const assets = new AssetRegistry(PALETTES);
+      assets.defineAll(SPRITES);
+      const view: View = { camX: 0, frame: 0, assets, theme: 'underworld', reduceFlashing: true };
+      const out: { sheet: string; frame: string }[] = [];
+      const r = Object.assign(new NullRenderer(), {
+        sprite(s: SpriteSheet, f: string): void {
+          out.push({ sheet: s.id, frame: f });
+        },
+      });
+      drawDecor(r, view, 'gateway', 0, 192);
+      expect(out[0]).toEqual({ sheet: 'decor@decor-underworld', frame: 'gateway' });
+      // the classic scenery is redrawn for the cavern at its own size: rock heaps, stalagmites,
+      // mist; none of it in the slime greens (no bright green hills underground)
+      for (const kind of [
+        'hill-big',
+        'hill-small',
+        'bush-1',
+        'bush-2',
+        'bush-3',
+        'cloud-1',
+        'cloud-2',
+        'cloud-3',
+      ]) {
+        const themed = decorDef.frames[`${kind}@underworld`] as readonly string[];
+        const plain = decorDef.frames[kind] as readonly string[];
+        expect([themed[0]?.length, themed.length], kind).toEqual([plain[0]?.length, plain.length]);
+        expect(themed.join(''), kind).not.toMatch(/[123]/);
+        out.length = 0;
+        drawDecor(r, view, kind, 0, 192);
+        expect(out[0]?.frame, kind).toBe(`${kind}@underworld`);
+      }
+      for (const kind of ['cloud-1', 'cloud-2', 'cloud-3'])
+        expect((decorDef.frames[`${kind}@underworld`] as readonly string[]).join(''), kind).toMatch(
+          /^[45.]+$/,
+        );
+      // a beanstalk in the Underworld is a steel ladder; elsewhere it stays a beanstalk
+      out.length = 0;
+      new Vine(3, 10, 3).render(r, view);
+      expect(out.map((o) => o.frame)).toEqual(['ladder', 'ladder', 'ladder-top']);
+      expect(out[0]?.sheet).toBe('sophia');
+      out.length = 0;
+      new Vine(3, 10, 3).render(r, { ...view, theme: 'underground' });
+      expect(out.map((o) => o.frame)).toEqual(['vine-mid', 'vine-mid', 'vine-top']);
     });
   });
 });

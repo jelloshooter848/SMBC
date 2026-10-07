@@ -12,6 +12,9 @@ export type VineArt = 'vine' | 'chain';
 /** The chain's frame (16x16, centred on the vine's climb line like the beanstalk). */
 export const CHAIN_SHEET = 'smb3';
 export const CHAIN_FRAME = 'chain';
+/** Themes whose beanstalks are drawn as ladders (`ladder` / `ladder-top` of LADDER_SHEET, 16x16). */
+export const LADDER_THEMES: ReadonlySet<string> = new Set(['underworld']);
+export const LADDER_SHEET = 'sophia';
 
 /**
  * A climbable beanstalk. Either placed in a level (`vine x y len=N`, standing on tile row y) or
@@ -101,6 +104,14 @@ export class Vine extends Entity {
       // Links tile with no gaps and need no top frame (the chain runs off the screen).
       const chain = view.assets.sheet(CHAIN_SHEET);
       for (let y = this.basePx - 16; y >= this.top; y -= 16) r.sprite(chain, CHAIN_FRAME, x, y);
+      return;
+    }
+    // The Underworld's climbs are steel ladders (the `sophia` sheet), climbed the same.
+    const ladder = LADDER_THEMES.has(view.theme) && view.assets.has(LADDER_SHEET);
+    if (ladder) {
+      const steel = view.assets.sheet(LADDER_SHEET);
+      for (let y = this.basePx - 16; y >= this.top; y -= 16)
+        r.sprite(steel, y - 16 < this.top ? 'ladder-top' : 'ladder', x, y);
       return;
     }
     const sheet = view.assets.sheet('items');

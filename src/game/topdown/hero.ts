@@ -2,6 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import { DIRS, DIR_VEC, TILE, isHorizontal, mod, type Box, type Dir } from './geometry';
 import { Chest, PUSH_DELAY, PushBlock } from './entity';
+import { SwordBeam } from './beam';
 import { drawFrame, type TdView } from './view';
 import type { TopDownWorld } from './world';
 
@@ -63,7 +64,8 @@ const SPIN: readonly Dir[] = ['down', 'left', 'up', 'right'];
 
 /**
  * The top-down hero (Link in the Shadow Keep): four-way walking at 1.5 px/frame on a half-tile
- * grid, a sword stab in the facing direction (one at a time), the item in the slot on SPECIAL
+ * grid, a sword stab in the facing direction (one at a time; at full hearts, in a world with
+ * beams, it also throws a sword beam), the item in the slot on SPECIAL
  * (SELECT moves the slot), a shield once he has one that stops blockable shots coming at his
  * front while not stabbing and halves monsters' touch damage, hearts in halves, knockback with invulnerability after
  * a hit, and a death spin. Walking into a chest opens it; he holds the prize up for a moment.
@@ -129,6 +131,18 @@ export class TdHero {
     return swordReach(this.x, this.y, this.facing);
   }
 
+  /**
+   * Does a stab now also throw a sword beam (beam.ts)? In a world with beams, with every heart
+   * full and no beam of his already flying, as in Zelda.
+   */
+  beamReady(world: TopDownWorld): boolean {
+    return (
+      world.swordBeam &&
+      this.hp >= this.maxHp &&
+      !world.entities.some((e) => e instanceof SwordBeam && !e.dead)
+    );
+  }
+
   /** Holds a chest's prize up (its frame) for HOLD_FRAMES; the room waits meanwhile. */
   holdUp(frame: string): void {
     this.holdT = HOLD_FRAMES;
@@ -183,6 +197,22 @@ export class TdHero {
     return true;
   }
 
+  /**
+   * One frame of walking himself toward (x, y) in `dir` (after coming through a doorway), at his
+   * walking pace. False once he is there or something stops him.
+   */
+  walkInStep(world: TopDownWorld, dir: Dir, x: number, y: number): boolean {
+    if (this.invuln > 0) this.invuln--;
+    this.facing = dir;
+    const left = Math.abs(x - this.x) + Math.abs(y - this.y);
+    if (left === 0) return false;
+    this.parity ^= 1;
+    this.walkT++;
+    const step = Math.min(left, this.parity ? 1 : 2);
+    const v = DIR_VEC[dir];
+    return this.moveBy(world, v.dx * step, v.dy * step, false) && left > step;
+  }
+
   heal(halves: number): void {
     this.hp = Math.min(this.maxHp, this.hp + halves);
   }
@@ -212,7 +242,14 @@ export class TdHero {
     if (this.kbT > 0) {
       this.kbT--;
       const v = DIR_VEC[this.kbDir];
-      this.moveBy(world, v.dx * KNOCK_PX, v.dy * KNOCK_PX, false);
+      // Knocked about the floor only, never back out through a doorway (as in Zelda): on the
+      // floor he stays on it; still in a doorway, only a step toward the floor is taken.
+      for (let i = 0; i < KNOCK_PX; i++) {
+        const now = world.offFloor(this.feet());
+        const next = world.offFloor(this.feet(this.x + v.dx, this.y + v.dy));
+        if (next > 0 && next >= now) break;
+        if (!this.moveBy(world, v.dx, v.dy, false)) break;
+      }
       return;
     }
     if (this.holdT > 0) {
@@ -232,6 +269,11 @@ export class TdHero {
       this.attackT = ATTACK_FRAMES;
       this.pushT = 0;
       world.emit({ type: 'sword' });
+      if (this.beamReady(world)) {
+        const b = swordAt(this.x, this.y, this.facing);
+        world.add(new SwordBeam(b.x, b.y, this.facing));
+        world.emit({ type: 'beam' });
+      }
       return;
     }
     if (input.pressed('special') && world.useItem()) {
@@ -365,7 +407,9 @@ export class TdHero {
       : this.useT > 0
         ? `throw-${dirName}`
         : this.holdT > 0
-          ? 'down-0'
+          ? sheet?.frames.has('hold')
+            ? 'hold'
+            : 'down-0'
           : `${dirName}-${(this.walkT >> 3) & 1}`;
     // Without the shield: the `-ns` twin of the pose.
     const frame = !this.shield && sheet?.frames.has(`${pose}-ns`) ? `${pose}-ns` : pose;

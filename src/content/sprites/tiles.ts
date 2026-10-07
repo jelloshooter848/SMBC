@@ -8,7 +8,14 @@ import {
   contraTilePalettes,
   rivets,
 } from './contra-tiles';
+import { bmDungeonTileFrames, sophiaTilePalettes, underworldFrames } from './sophia-tiles';
+import { castlevaniaTileFrames, castlevaniaTilePalette } from './castlevania-look';
+import { ninjaCityTileFrames, ninjaCityTilePalette, nightCloudBlock, pipeFrames } from './ninja-city-look';
 import { smwSecretTileFrames, smwSecretTilePalette } from './top-secret';
+import { zelda2TileFrames, zelda2TilePalette } from './zelda2-look';
+import { megamanTileFrames, megamanTilePalette } from './megaman-look';
+import { brinstarTileFrames, brinstarTilePalette } from './brinstar-look';
+import { tourianTileFrames, tourianTilePalette } from './tourian-look';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -291,10 +298,21 @@ export const tilePalettes: Record<string, string[]> = {
     '#2c1878',
     NES.lava,
   ],
+  // The 0.4.12 restyles: 5-4 as Simon's castle hall, 6-2 as Ryu's city street (campaign only).
+  'tiles-castlevania': castlevaniaTilePalette,
+  'tiles-ninja-city': ninjaCityTilePalette,
   // Bill's jungle under 7-3, his waterfall climb and Red Falcon's lair (contra-tiles.ts).
   ...contraTilePalettes,
+  // Sophia's Underworld cavern and the dungeon's metal (sophia-tiles.ts).
+  ...sophiaTilePalettes,
   /* The Top Secret Area (0.4.10): warm dirt under Super Mario World-style grass. */
   'tiles-smw-secret': smwSecretTilePalette,
+  // The campaign looks of 2-1, 3-1 and 4-2 (zelda2-look.ts, megaman-look.ts, brinstar-look.ts).
+  'tiles-zelda2': zelda2TilePalette,
+  'tiles-megaman-stage': megamanTilePalette,
+  'tiles-brinstar': brinstarTilePalette,
+  // Tourian, Samus's mini game ZEBES ESCAPE (tourian-look.ts).
+  'tiles-tourian': tourianTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -913,6 +931,29 @@ const cloudLedge = [
   '..aaaa....aaaa..',
   '................',
 ];
+/*
+ * A one-way cloud ledge (T.CLOUD_LEDGE, 2-1's step by its last tower in the campaign): a thin
+ * strip of two puffs on the tile's top half, open below, so it reads as a ledge to land on that a
+ * jump from under it passes through. The cloud block's roles (8 cloud, a its rim).
+ */
+const cloudLedgeThin = [
+  '..aaaa....aaaa..',
+  '.a8888a..a8888a.',
+  'a888888aa888888a',
+  '8888888888888888',
+  '88a8888888a88888',
+  '8888888888888888',
+  'a888888aa888888a',
+  '.a8888a..a8888a.',
+  '..aaaa....aaaa..',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+];
 const cloudWisp = Array.from({ length: 16 }, (_, i) => (i % 8 < 4 ? '......a88a......' : '.....a88a.......'));
 
 /* Cloud bank: the sky levels' ground, quilted puffs in two half-offset courses. */
@@ -1067,6 +1108,24 @@ const wallTopStation = [
   '0000000000000000',
   ...wallStation.slice(4),
 ];
+
+/*
+ * Mega Man's ladders (Station Escape's `chain` tiles, drawn as a ladder here): two light rails
+ * with dark edges and a rung every four rows, over the bulkhead.
+ */
+const ladderOver = (base: readonly string[]): string[] =>
+  base.map((row, i) => {
+    const r = row.split('');
+    for (const x of [2, 5, 10, 13]) r[x] = '0';
+    for (const x of [3, 11]) r[x] = '3';
+    for (const x of [4, 12]) r[x] = '2';
+    if (i % 4 === 1) for (let x = 6; x <= 9; x++) r[x] = '3';
+    if (i % 4 === 2) for (let x = 6; x <= 9; x++) r[x] = '0';
+    return r.join('');
+  });
+const ladderStation = ladderOver(wallStation);
+/* A ladder's top in a floor (`cloud-ledge`: stood on, climbed through): the ladder in a dark well. */
+const ladderTopStation = ladderOver(Array.from({ length: 16 }, () => '0000000000000000'));
 
 /* ---------- Samus's cavern (`@cavern`) ---------- */
 
@@ -2015,6 +2074,23 @@ const themed = (
 ): Record<string, readonly string[]> =>
   Object.fromEntries(Object.entries(frames).map(([name, rows]) => [`${name}@${theme}`, rows]));
 
+/** SMB's own frames by name, for a theme that keeps them as they are (`?` blocks, coins). */
+const smbOwn = (...names: string[]): Record<string, readonly string[]> =>
+  Object.fromEntries(names.map((n) => [n, SMB_OWN[n] as readonly string[]]));
+const SMB_OWN: Record<string, readonly string[]> = {
+  'question-0': question0,
+  'question-1': swapColors(question0, { '7': '4' }),
+  'question-2': swapColors(question0, { '4': '7' }),
+  'coin-0': coin0,
+  'coin-1': coin1,
+  'coin-2': coin2,
+  'coin-3': coin3,
+  'lava-0': lava0,
+  'lava-1': lava1,
+  'flag-shaft': flagShaft,
+  'flag-ball': flagBall,
+};
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -2053,6 +2129,7 @@ export const tilesDef: SpriteDef = {
     'water-0': water0,
     'water-1': water1,
     'cloud-block': cloudBlock,
+    'cloud-ledge': cloudLedgeThin,
     'blaster-top': blasterTop,
     'blaster-base': blasterBase,
     wall: brick,
@@ -2083,6 +2160,8 @@ export const tilesDef: SpriteDef = {
     'bridge@station': bridgeStation,
     'wall@station': wallStation,
     'wall-top@station': wallTopStation,
+    'chain@station': ladderStation,
+    'cloud-ledge@station': ladderTopStation,
     // Samus's cavern below 4-2.
     'ground@cavern': groundCavern,
     'castle-brick@cavern': castleBrickCavern,
@@ -2148,6 +2227,50 @@ export const tilesDef: SpriteDef = {
     'wall-top@ninja-night': wallTopNinja,
     'tree-top@ninja-night': treeTopNinja,
     'tree-trunk@ninja-night': treeTrunkNinja,
+    // 5-4 as Simon's castle hall (castlevania-look.ts): stone blocks, grey stone, an iron bridge;
+    // its `?` blocks, coins and lava are SMB's own so they read at a glance.
+    ...themed(castlevaniaTileFrames, 'castlevania'),
+    ...themed(
+      smbOwn(
+        'question-0',
+        'question-1',
+        'question-2',
+        'coin-0',
+        'coin-1',
+        'coin-2',
+        'coin-3',
+        'lava-0',
+        'lava-1',
+      ),
+      'castlevania',
+    ),
+    // 6-2 as Ryu's city street (ninja-city-look.ts): pavement, red brick, concrete, banded pipes;
+    // `?` blocks, coins and the flagpole are SMB's own, the coin heaven's clouds dim night clouds.
+    ...themed(ninjaCityTileFrames, 'ninja-city'),
+    ...themed(
+      pipeFrames({
+        'pipe-top-left': pipeTopLeft,
+        'pipe-top-right': pipeTopRight,
+        'pipe-body-left': pipeBodyLeft,
+        'pipe-body-right': pipeBodyRight,
+      }),
+      'ninja-city',
+    ),
+    ...themed(
+      smbOwn(
+        'question-0',
+        'question-1',
+        'question-2',
+        'coin-0',
+        'coin-1',
+        'coin-2',
+        'coin-3',
+        'flag-shaft',
+        'flag-ball',
+      ),
+      'ninja-city',
+    ),
+    'cloud-block@ninja-city': nightCloudBlock(cloudBlock),
     // Bill's jungle (the 7-3 reskin, his camp, the mini game), the waterfall and Red Falcon's lair.
     ...themed(contraJungleFrames, 'contra-jungle'),
     ...themed(contraFallsFrames, 'contra-falls'),
@@ -2165,5 +2288,19 @@ export const tilesDef: SpriteDef = {
     'coin-3@contra-jungle': coin3,
     'flag-shaft@contra-jungle': flagShaft,
     'flag-ball@contra-jungle': flagBall,
+    // Sophia's Underworld (her garage and the mini game's cavern) and the dungeon's metal; their
+    // `?` blocks, coins, pipes and flagpole are SMB's own.
+    ...themed(underworldFrames, 'underworld'),
+    ...themed(bmDungeonTileFrames, 'bm-dungeon'),
   },
 };
+
+// The campaign looks of 2-1 (Zelda II field), 3-1 (Mega Man night stage) and 4-2 (Brinstar):
+// their own frames, and SMB's `?` blocks, coins and pipes kept or recoloured under their names.
+Object.assign(
+  tilesDef.frames,
+  zelda2TileFrames(tilesDef.frames),
+  megamanTileFrames(tilesDef.frames),
+  brinstarTileFrames(tilesDef.frames),
+  tourianTileFrames(),
+);

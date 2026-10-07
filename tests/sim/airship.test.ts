@@ -1,10 +1,12 @@
+import { beat } from '@game/story/beats';
 import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { px } from '@engine/math/units';
 import { CHARACTERS } from '@game/characters/registry';
-import { LevelScene, CRYSTAL_BALL_CARD } from '@game/scenes/level';
-import type { CardScene } from '@game/scenes/message';
+import { LevelScene } from '@game/scenes/level';
+import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
+import { CardScene } from '@game/scenes/message';
 import { IntroScene } from '@game/scenes/intro';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { MenuScene, type MenuItem } from '@game/scenes/menu';
@@ -18,7 +20,17 @@ import { Larry } from '@game/entities/enemies/larry';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import type { SaveFile } from '@game/save/save-files';
 import { snapshot } from '@game/scenes/free-hero';
-import { draw, file, makeGame, offered, rideToStern, store, useStorage, type H } from './heroes-harness';
+import {
+  closeCards,
+  draw,
+  file,
+  makeGame,
+  offered,
+  rideToStern,
+  store,
+  useStorage,
+  type H,
+} from './heroes-harness';
 
 // Larry's airship challenge (scenes/airship.ts, docs/HEROES.md "Larry's airship"): the
 // auto-scrolling deck `4-2-airship` and Larry's room `4-2-larry`, played with the current hero
@@ -57,7 +69,8 @@ const playAirship = (h: H) => {
 function in42(over: Partial<SaveFile> = {}): { h: H; main: LevelScene } {
   const h = makeGame();
   h.game.deps.settings = { dev: false } as Settings;
-  file(world4(over));
+  // 4-2's campaign look has a one-time remark; it is not what these tests are about.
+  file(world4({ story: [beat.restyle('4-2')], ...over }));
   h.game.openFile(1);
   h.idle(8);
   expect(h.top()).toBeInstanceOf(WorldMapScene);
@@ -141,7 +154,11 @@ describe("Larry's airship challenge (campaign)", () => {
     const room = h.top() as LevelScene;
     expect(room.level.id).toBe(AIRSHIP_ROOM);
     expect(h.game.airship?.reachedRoom).toBe(true);
-    h.until(() => !room.world.player.frozen, 200);
+    // Out of the ceiling pipe Larry has his say (campaign story, once a run).
+    h.until(() => h.top() !== room || room.world.player.body.onGround, 200);
+    h.step();
+    expect(closeCards(h)).toEqual(LARRY_PAGES);
+    h.until(() => room.world.player.body.onGround, 200);
     die(h, room);
     pick(h, 'Yes');
     const again = h.top() as LevelScene;
@@ -149,8 +166,12 @@ describe("Larry's airship challenge (campaign)", () => {
     expect(again).not.toBe(room);
     expect(h.game.state.lives).toBe(4);
     expect(again.world.player.powerState).toBe('fire');
-    // Rising out of the room's pipe again, as when first arriving.
-    expect(again.world.player.frozen).toBe(true);
+    // Dropping in out of the room's ceiling pipe again, as when first arriving...
+    expect(again.world.player.body.y).toBeLessThan(0);
+    // ...but straight into the fight: Larry does not speak again on TRY AGAIN.
+    h.until(() => again.world.player.body.onGround, 200);
+    h.idle(30);
+    expect(h.top()).toBe(again);
   });
 
   it('NO goes back to 4-2 at its last checkpoint with the run as it was before boarding, no life lost', () => {
@@ -226,6 +247,9 @@ describe("Larry's airship challenge (campaign)", () => {
     const { h } = in42();
     rideToStern(h, board(h));
     const room = h.top() as LevelScene;
+    h.until(() => !room.world.player.frozen, 200);
+    h.step();
+    expect(closeCards(h)).toEqual(LARRY_PAGES);
     h.until(() => room.world.entities.some((e) => e instanceof Larry), 200);
     const larry = room.world.entities.find((e): e is Larry => e instanceof Larry) as Larry;
     room.world.player.invuln = 100000;
@@ -239,9 +263,9 @@ describe("Larry's airship challenge (campaign)", () => {
     p.body.x = ball.body.x;
     p.body.y = ball.body.y + ball.body.h - p.body.h;
     h.step();
-    expect((h.top() as CardScene).lines).toEqual(CRYSTAL_BALL_CARD);
-    h.idle(32);
-    h.tap('jump');
+    // The campaign's crystal ball: two pages (docs/STORY.md 2.7).
+    expect(h.top()).toBeInstanceOf(CardScene);
+    expect(closeCards(h)).toEqual(STORY_CRYSTAL_BALL_PAGES);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.game.airship).toBeNull();
     expect(h.game.mapProgress.secrets).toContain('larry');
@@ -399,7 +423,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     expect(h.game.campaign).toBeNull();
   });
 
-  it('the HUD shows WORLD 4-2 aboard, whatever world was played last; it is put back after', () => {
+  it('the status bar shows WORLD 4 aboard, whatever world was played last; it is put back after', () => {
     const h = makeGame();
     h.game.deps.settings = { ...defaultSettings(), dev: true };
     h.game.showTitle();
@@ -412,10 +436,10 @@ describe("Dev → Mini games → Larry's airship", () => {
     const deck = h.top() as LevelScene;
     expect(deck.level.id).toBe(AIRSHIP_DECK);
     expect([h.game.state.world, h.game.state.stage]).toEqual([4, 2]);
-    expect(draw(deck).texts.map((t) => t.str)).toContain('4-2');
+    expect(draw(deck).texts.map((t) => t.str)).toContain('WORLD 4');
     rideToStern(h, deck);
     const room = h.top() as LevelScene;
-    expect(draw(room).texts.map((t) => t.str)).toContain('4-2');
+    expect(draw(room).texts.map((t) => t.str)).toContain('WORLD 4');
     h.tap('start');
     pick(h, 'Give up');
     expect((h.top() as DevMiniGameResultScene).result).toBe('quit');
@@ -532,22 +556,33 @@ describe('TRY AGAIN? has no way back but its answers', () => {
   });
 });
 
+// The deck's shots vary with its world seed, so the ride is played on fixed seeds (devStart's
+// `seed`), each hero on every one. Besides an everyday seed, these once ended the bot's ride:
+// 3872769170: Simon (his jump committed at takeoff) jumped the 3-tall blaster post too slowly,
+//   bumped its face, and the screen's edge pushed him into it;
+// 1753536851 (Simon) and 3423891524 (Ryu): an unsteered jump over a Bullet Bill, made while
+//   stepping back, carried the hero back over the fore deck's cannon onto the screen's edge.
+const DECK_SEEDS = [1, 3872769170, 1753536851, 3423891524];
+
 describe('every hero rides the deck to the stern pipe', () => {
   for (const c of CHARACTERS) {
-    it(`${c.name}: stands on the scrolling deck and goes down the stern pipe into Larry's room`, () => {
-      const h = makeGame();
-      h.game.devStart(AIRSHIP_DECK, c, c.damage.kind === 'powerup' ? 'small' : 'full');
-      h.until(() => h.top() instanceof LevelScene, 400);
-      const deck = h.top() as LevelScene;
-      // Standing still, the left edge pushes the hero along the deck: alive, on the deck.
-      h.idle(200);
-      const p = deck.world.player;
-      expect(p.dead).toBe(false);
-      expect(p.body.onGround).toBe(true);
-      expect(p.body.x).toBeGreaterThanOrEqual(deck.world.camera.x);
-      expect(deck.world.camera.x).toBeGreaterThan(px(60)); // 200 frames at 0.375 px/f
-      rideToStern(h, deck);
-      expect((h.top() as LevelScene).level?.id).toBe(AIRSHIP_ROOM);
-    });
+    for (const seed of DECK_SEEDS) {
+      it(`${c.name}: stands on the scrolling deck and goes down the stern pipe into Larry's room (seed ${seed})`, () => {
+        const h = makeGame();
+        h.game.devStart(AIRSHIP_DECK, c, c.damage.kind === 'powerup' ? 'small' : 'full', false, seed);
+        h.until(() => h.top() instanceof LevelScene, 400);
+        const deck = h.top() as LevelScene;
+        // Standing still, the left edge pushes the hero along the deck: alive, on the deck.
+        h.idle(200);
+        const p = deck.world.player;
+        expect(p.dead).toBe(false);
+        expect(p.body.onGround).toBe(true);
+        expect(p.body.x).toBeGreaterThanOrEqual(deck.world.camera.x);
+        expect(deck.world.camera.x).toBeGreaterThan(px(60)); // 200 frames at 0.375 px/f
+        rideToStern(h, deck);
+        expect(p.dead).toBe(false);
+        expect((h.top() as LevelScene).level?.id).toBe(AIRSHIP_ROOM);
+      });
+    }
   }
 });

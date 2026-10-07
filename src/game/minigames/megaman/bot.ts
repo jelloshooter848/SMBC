@@ -4,12 +4,15 @@ import { Rng } from '@engine/rng';
 import { Enemy } from '../../entities/enemies/enemy';
 import type { World } from '../../world/world';
 import { DarkMegaMan } from './dark-megaman';
-import { EnemyShot, Turret, WeaponCapsule } from './robots';
+import { EnemyShot, Met, Turret, WeaponCapsule } from './robots';
+import { isLadder, onLadder } from './ladder';
 import type { StationScene } from './scene';
 
 /*
  * A player for Station Escape, for tests and difficulty tuning (docs/HEROES.md): it walks the
- * stage right, jumps pits and walls, shoots what is ahead, takes the capsule, and in the boss room
+ * stage right, jumps pits and walls, shoots what is ahead, takes the capsule, climbs the ladder
+ * that leads off the top of its screen (shooting robots level with it on the way), drops down
+ * holes that have a floor below, and in the boss room
  * keeps its distance, jumps his shots and fires (the Saw Disc while it has energy). With
  * `CautiousOptions` it plays like a careful first-timer: it sees the robots and shots `reaction`
  * frames late, misjudges where they are by up to `error` px, now and then stops for a moment, and
@@ -39,7 +42,7 @@ interface Seen {
   w: number;
   h: number;
   vx: number;
-  /** Turrets: open (can be hurt). Boss: his state. */
+  /** Turrets: open, Mets: out from under the hat (can be hurt). Boss: his state. */
   open: boolean;
   state: string;
 }
@@ -90,7 +93,7 @@ export class StationBot {
         w: toPx(e.body.w),
         h: toPx(e.body.h),
         vx: e.body.vx,
-        open: e instanceof Turret ? e.open : true,
+        open: e instanceof Turret ? e.open : e instanceof Met ? e.state !== 'hide' : true,
         state: e instanceof DarkMegaMan ? e.state : '',
       });
     }
@@ -126,6 +129,7 @@ export class StationBot {
     let useWeapon = false;
     let select = false;
     let charge = false;
+    let up = false;
 
     if (scene.phase === 'fight') {
       const boss = seen.find((s) => s.kind === 'dark-megaman');
@@ -139,11 +143,15 @@ export class StationBot {
       charge = r.charge;
     } else {
       const r = this.walk(world, me, seen, b.onGround);
-      dir = r.dir;
-      wantJump = r.jump;
-      shoot = r.shoot;
+      const c = this.ladders(scene, me, seen, r.dir);
+      dir = c?.dir ?? r.dir;
+      // No jumping on a ladder (it lets go) or while taking one.
+      wantJump = c?.up || onLadder(p) ? false : r.jump;
+      shoot = c?.shoot ?? r.shoot;
+      up = c?.up ?? false;
     }
 
+    if (up) held.push('up');
     if (dir < 0) held.push('left');
     if (dir > 0) held.push('right');
     // Jumps: press, hold for a full jump, then let go for a frame before the next.
@@ -183,6 +191,49 @@ export class StationBot {
     return held;
   }
 
+  /**
+   * Ladders: on one, climb (turning to shoot a robot level with it); else, with a ladder leading
+   * off the top of this screen, walk to it and take it. Null: no ladder business (walk on).
+   */
+  private ladders(
+    scene: StationScene,
+    me: { x: number; y: number; w: number; h: number; cx: number },
+    seen: Seen[],
+    walkDir: -1 | 0 | 1,
+  ): { dir: -1 | 0 | 1; up: boolean; shoot?: boolean } | null {
+    const p = scene.player;
+    if (onLadder(p)) {
+      let near: Seen | null = null;
+      for (const s of seen) {
+        // Only what a shot can hurt (each shot's pose holds him on the ladder).
+        if (s.kind === 'pellet' || s.kind === 'capsule' || s.kind === 'dark-megaman' || !s.open) continue;
+        const level = s.y + s.h > me.y + 4 && s.y < me.y + 14;
+        const dx = s.x + s.w / 2 - me.cx;
+        if (level && Math.abs(dx) < 150 && (!near || Math.abs(dx) < Math.abs(near.x - me.cx))) near = s;
+      }
+      if (!near) return { dir: 0, up: true, shoot: false };
+      const toward: -1 | 1 = near.x + near.w / 2 < me.cx ? -1 : 1;
+      return { dir: p.facing === toward ? 0 : toward, up: true, shoot: p.facing === toward };
+    }
+    const s = scene.layout.screens[scene.screen];
+    if (!s || scene.nextGate > 0) return null;
+    const map = scene.world.map;
+    // Only where a ladder leads off the top of this screen: the nearest ladder at its own level
+    // (knocked off one into a pit of the shaft, the one it fell from), else that one.
+    let up = -1;
+    for (let x = s.x; x < s.x + s.w && up < 0; x++) if (isLadder(map, x, s.y)) up = x;
+    if (up < 0) return null;
+    const row = (me.y + me.h - 1) >> 4;
+    let col = -1;
+    for (let x = s.x; x < s.x + s.w; x++)
+      if (isLadder(map, x, row) && (col < 0 || Math.abs(x * 16 + 8 - me.cx) < Math.abs(col * 16 + 8 - me.cx)))
+        col = x;
+    if (col < 0) col = up;
+    const dx = col * 16 + 8 - me.cx;
+    if (Math.abs(dx) <= 5) return { dir: 0, up: true };
+    return { dir: walkDir === 0 ? 0 : dx < 0 ? -1 : 1, up: false };
+  }
+
   /** The stage: right, over pits and walls, shooting what stands ahead at buster height. */
   private walk(
     world: World,
@@ -202,7 +253,7 @@ export class StationBot {
     if (onGround && !floorAhead) {
       // Is it a pit (nothing below) or a step down?
       let solid = false;
-      for (let ty = floorRow; ty < 15; ty++) if (map.isSolid(aheadX >> 4, ty)) solid = true;
+      for (let ty = floorRow; ty < map.height; ty++) if (map.isSolid(aheadX >> 4, ty)) solid = true;
       if (!solid) jump = true;
     }
     // A wall ahead.

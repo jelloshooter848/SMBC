@@ -20,9 +20,12 @@ export type PickupKind =
   | 'missile-pack'
   | 'ninpo-small'
   | 'ninpo-large'
-  | 'capsule';
+  | 'capsule'
+  /** Sophia III's missile ammo (her own sheet). */
+  | 'triple-ammo'
+  | 'homing-ammo';
 
-const FRAMES: Record<PickupKind, { frame: string; size: number }> = {
+const FRAMES: Record<PickupKind, { frame: string; size: number; sheet?: string }> = {
   bomb: { frame: 'bomb-0', size: 16 },
   'magic-small': { frame: 'magic-jar-small', size: 8 },
   'magic-large': { frame: 'magic-jar-large', size: 16 },
@@ -39,6 +42,8 @@ const FRAMES: Record<PickupKind, { frame: string; size: number }> = {
   'ninpo-small': { frame: 'ninpo-small', size: 8 },
   'ninpo-large': { frame: 'ninpo-large', size: 16 },
   capsule: { frame: 'capsule', size: 16 },
+  'triple-ammo': { frame: 'ammo-triple', size: 16, sheet: 'sophia' },
+  'homing-ammo': { frame: 'ammo-homing', size: 16, sheet: 'sophia' },
 };
 
 export const PICKUP_LIFETIME = 480;
@@ -67,6 +72,7 @@ export class Pickup extends Entity {
 
   render(r: Renderer, view: View): void {
     if (this.life < BLINK_FRAMES && !view.reduceFlashing && (view.frame & 2) === 0) return;
-    r.sprite(view.assets.sheet('items'), FRAMES[this.item].frame, this.screenX(view), this.screenY());
+    const f = FRAMES[this.item];
+    r.sprite(view.assets.sheet(f.sheet ?? 'items'), f.frame, this.screenX(view), this.screenY());
   }
 }

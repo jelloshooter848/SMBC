@@ -3,19 +3,19 @@ import type { Scene } from '@engine/scene';
 import { EscapeScene } from './scene';
 
 /**
- * Samus's mini game, Zebes Escape: the cavern under 4-2 self-destructs; played as Samus (beam,
- * missiles, morph ball and bombs) she climbs two shafts, rolls through tunnels and bombs through
- * walls to reach her ship before the countdown runs out (scene.ts).
+ * Samus's mini game, Zebes Escape, as the NES Metroid ends: played as Samus (beam, missiles, morph
+ * ball and bombs) she fights through Tourian's rooms to the brain, destroys it, and climbs the
+ * escape shaft to the surface before the time bomb goes off (scene.ts).
  */
 export const SAMUS_MINIGAME: MiniGameDef = {
   hero: 'samus',
   title: 'ZEBES ESCAPE',
   rules: [
     'PLAY AS SAMUS!',
-    'THE CAVERN WILL BLOW UP.',
-    'DOWN: MORPH BALL.',
-    'BOMB THE CRACKED BLOCKS.',
-    'REACH YOUR SHIP IN TIME!',
+    'SHOOT THE DOORS OPEN.',
+    'MISSILES BREAK RED DOORS.',
+    'DESTROY THE BRAIN, THEN',
+    'CLIMB OUT IN TIME!',
   ],
   create(game, done): Scene {
     return new EscapeScene(game, done);

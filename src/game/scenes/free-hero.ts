@@ -9,6 +9,7 @@ import { MenuScene } from './menu';
 import { abilityHint } from './hints';
 import { fontText, wrapText } from '../hud/text';
 import { miniGameFor, type MiniGameDef, type MiniGameResult } from '../minigames';
+import { CAPTIVE_HUNT, SIMON_CURSE } from '../story/script';
 
 /*
  * Freeing a brainwashed hero (campaign only, docs/HEROES.md). Talking to a captive pauses the
@@ -45,10 +46,13 @@ export function captiveDialogue(hero: CharacterDef, def: MiniGameDef, player: Ch
     'NO ONE PASSES HERE.',
     `BEAT ME AT THE ${def.title}, IF YOU DARE!`,
   ];
-  return [fit([`${name}:`, '', `...${name} SERVES`, 'KING KOOPA...']), fit([`${name}:`, '', ...lines])];
+  return [
+    fit([`${name}:`, '', `...${name} SERVES`, 'KING KOOPA...', ...CAPTIVE_HUNT]),
+    fit([`${name}:`, '', ...lines]),
+  ];
 }
 
-/** Each hero's own challenge (after "...<HERO> SERVES KING KOOPA..."). */
+/** Each hero's own challenge (after "...<HERO> SERVES KING KOOPA... ...MUST FIND THE PRINCESS..."). */
 const DIALOGUE: Record<string, (you: string) => string[]> = {
   luigi: (you) => [
     `${you}? I KNOW NO ${you}.`,
@@ -75,15 +79,8 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     'IT SET OFF THE COUNTDOWN.',
     `${you}... HELP ME ESCAPE!`,
   ],
-  // Larry's wand woke the curse Dracula left in him (Simon's Quest): he is Dracula's thrall.
-  simon: (you) => [
-    "LARRY'S WAND WOKE THE CURSE",
-    'DRACULA LEFT IN MY BLOOD.',
-    'NOW I AM HIS THRALL.',
-    '',
-    `${you}... TAKE MY WHIP.`,
-    'END HIM IN HIS CASTLE!',
-  ],
+  // The wand King Koopa stole woke the curse Dracula left in him (Simon's Quest): he is Dracula's thrall.
+  simon: (you) => [...SIMON_CURSE, '', `${you}... TAKE MY WHIP.`, 'END HIM IN HIS CASTLE!'],
   // The Masked Ninja, a cursed rival, holds him under the curse of his mask: they duel by night.
   ryu: (you) => [
     'THE MASKED NINJA CURSED ME.',
@@ -100,6 +97,14 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     '',
     `${you}... HIT ITS BASE.`,
     'BLOW UP ITS HEART!',
+  ],
+  // A tank can't talk: the spell speaks through her computer. The radiation of the Underworld
+  // carried it to her, and the Plutonium Boss has the wheel (docs/STORY.md 2.11).
+  sophia: (you) => [
+    'PILOT NOT FOUND. THE',
+    'PLUTONIUM BOSS HAS THE',
+    `WHEEL. ${you}...`,
+    'CLIMB IN. BLAST IT OUT!',
   ],
 };
 

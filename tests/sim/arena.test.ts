@@ -28,6 +28,7 @@ import {
   useStorage,
   type H,
 } from './heroes-harness';
+import { ALL_STORY } from './story-seen';
 
 // The MINI GAME ARENA (0.4.7): the hub's first pad leads to it; one pad per game the registries
 // list, found by the file's own progress (met heroes, 1-0, training answers, Larry's airship, the
@@ -45,7 +46,7 @@ const LATE: Partial<SaveFile> = {
   cleared: ['1-0', '1-1', '1-2', '4-1', '4-2'],
   secrets: ['bonus-1', 'larry'],
   pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4', 'hub', 'arena'],
-  freed: ['mario', 'luigi', 'link', 'megaman', 'samus', 'simon', 'ryu', 'bill'],
+  freed: ['mario', 'luigi', 'link', 'megaman', 'samus', 'simon', 'ryu', 'bill', 'sophia'],
 };
 
 /** File 1 open on the arena, the hero on `node`. */
@@ -71,6 +72,17 @@ const found = (h: H) =>
     .map((g) => g.id)
     .sort();
 
+/**
+ * Station Escape's MENU opens Mega Man 2's weapon screen first: its MENU row opens the round's
+ * menu (a no-op for any other round).
+ */
+function throughWeaponScreen(h: H): void {
+  const top = h.top() as { rows?: { kind: string }[]; cursor?: number; choose?: () => void };
+  if (!top.rows || !top.choose) return;
+  top.cursor = top.rows.findIndex((r) => r.kind === 'options');
+  top.choose();
+}
+
 /** End whatever round is on top the way a player would: its menu's Give up (or Skip training). */
 function quitRound(h: H, map: Scene): void {
   for (let f = 0; f < 3000 && !(h.top() instanceof DevMiniGameResultScene); f++) {
@@ -79,6 +91,7 @@ function quitRound(h: H, map: Scene): void {
       continue;
     }
     h.tap('start');
+    throughWeaponScreen(h);
     const items = (h.top() as { items?: MenuItem[] }).items ?? [];
     const quit = items.find((i) => i.label === 'Give up' || i.label === 'Skip training');
     if (quit) quit.select?.();
@@ -98,6 +111,7 @@ describe('the Warp Zone hub: the Arena pad', () => {
         secrets: ['bonus-1'],
         pages: ['smb-1', 'hub'],
         position: { page: 'hub', node: 'warp-arena' },
+        story: [...ALL_STORY], // Toad's first-visit line: toad-guide.test.ts
       }),
     );
     h.idle(8);
@@ -510,7 +524,7 @@ describe("Larry's airship pad: character select first (the one arena game played
     h.tap('jump');
     const select = h.top() as CharacterSelectScene;
     expect(select).toBeInstanceOf(CharacterSelectScene);
-    expect(draw(select).texts.map((t) => t.str)).toContain('5 HEROES TO FIND');
+    expect(draw(select).texts.map((t) => t.str)).toContain('6 HEROES TO FIND');
     h.idle(12);
     expect(new Set(offered(h))).toEqual(new Set(['Mario', 'Link', 'Samus']));
   });
@@ -638,6 +652,7 @@ describe('arena rounds say nothing about the campaign', () => {
         continue;
       }
       h.tap('start');
+      throughWeaponScreen(h);
       const items = (h.top() as { items?: MenuItem[] }).items ?? [];
       const quit = items.find((i) => i.label === 'Give up');
       if (quit) hint = quit.hint ?? '';

@@ -45,6 +45,7 @@ const tileFrames = [
   'water-0',
   'water-1',
   'cloud-block',
+  'cloud-ledge',
   'blaster-top',
   'blaster-base',
   'wall',
@@ -72,6 +73,8 @@ const tileFrames = [
   'bridge@station',
   'wall@station',
   'wall-top@station',
+  'chain@station',
+  'cloud-ledge@station',
   'ground@cavern',
   'castle-brick@cavern',
   'hard@cavern',
@@ -156,6 +159,23 @@ const tileFrames = [
   'coin-3@contra-jungle',
   'flag-shaft@contra-jungle',
   'flag-ball@contra-jungle',
+  // Sophia's Underworld and the dungeon's metal.
+  ...['underworld', 'bm-dungeon'].flatMap((t) =>
+    [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+      'water-0',
+      'water-1',
+    ].map((n) => `${n}@${t}`),
+  ),
 ];
 
 const fontGlyphs = [
@@ -389,6 +409,29 @@ const decorFrames: Record<string, Size> = {
   'cloud-1@contra-jungle': [32, 16],
   'cloud-2@contra-jungle': [48, 16],
   'cloud-3@contra-jungle': [64, 16],
+  // Sophia's Underworld.
+  gateway: [32, 32],
+  roots: [32, 16],
+  'hill-big@underworld': [80, 48],
+  'hill-small@underworld': [48, 32],
+  'bush-1@underworld': [32, 16],
+  'bush-2@underworld': [48, 16],
+  'bush-3@underworld': [64, 16],
+  'cloud-1@underworld': [32, 24],
+  'cloud-2@underworld': [48, 24],
+  'cloud-3@underworld': [64, 24],
+  // The campaign looks of 2-1, 3-1 and 4-2.
+  'cloud-1@zelda2': [32, 16],
+  'cloud-2@zelda2': [48, 16],
+  'cloud-3@zelda2': [64, 16],
+  'tree-big@zelda2': [16, 48],
+  'tree-small@zelda2': [16, 32],
+  henge: [48, 32],
+  'tree-big@megaman-stage': [16, 48],
+  'tree-small@megaman-stage': [16, 32],
+  'mm-skyline': [64, 32],
+  'brinstar-brush': [32, 16],
+  'brinstar-column': [16, 48],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -438,6 +481,16 @@ describe('tile sprites', () => {
         'tiles-smw-secret',
         'tiles-contra-falls',
         'tiles-alien-lair',
+        'tiles-underworld',
+        'tiles-bm-dungeon',
+        'tiles-zelda2',
+        'tiles-megaman-stage',
+        'tiles-brinstar',
+        // the 0.4.12 restyles of 5-4 and 6-2
+        'tiles-castlevania',
+        'tiles-ninja-city',
+        // Tourian, Samus's mini game (0.4.16)
+        'tiles-tourian',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -509,7 +562,14 @@ describe('decor sprites', () => {
         'decor-gray',
         'decor-cavern',
         'decor-jungle',
+        'decor-underworld',
+        // the 0.4.12 restyles of 5-4 and 6-2
+        'decor-castlevania',
+        'decor-ninja-city',
         'decor-smw',
+        'decor-zelda2',
+        'decor-megaman-stage',
+        'decor-brinstar',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

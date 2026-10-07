@@ -110,6 +110,25 @@ describe('Camera: `free` (vertical follow)', () => {
     expect(cam.y).toBe(0);
   });
 
+  it("keeps inside a room when one is set (Metroid's rooms), and anywhere on the map without", () => {
+    const cam = new Camera(96, null, false, { free: true, heightTiles: 60 });
+    // A room two screens wide on the bottom screen row of the map (tiles 32..63, rows 45..59).
+    cam.room = { x0: px(32 * 16), y0: px(45 * 16), x1: px(64 * 16), y1: px(60 * 16) };
+    cam.follow(px(34 * 16), px(50 * 16));
+    expect(cam.pxX).toBe(32 * 16);
+    expect(cam.pxY).toBe(45 * 16);
+    cam.follow(px(70 * 16), px(10 * 16));
+    expect(cam.pxX).toBe(64 * 16 - 256);
+    expect(cam.pxY).toBe(45 * 16);
+    cam.snapTo(px(0), px(0));
+    expect(cam.pxX).toBe(32 * 16);
+    expect(cam.pxY).toBe(45 * 16);
+    cam.room = null;
+    cam.snapTo(px(0), px(0));
+    expect(cam.pxX).toBe(0);
+    expect(cam.pxY).toBe(0);
+  });
+
   it('a locked camera stays put', () => {
     const cam = new Camera(32, null, true, { free: true, heightTiles: 45 });
     cam.follow(px(300), px(10));

@@ -137,6 +137,12 @@ export const T = {
   Q_EGG: def('question-egg', 'solid', { block: { kind: 'question', content: 'egg' } }),
   /** An invisible block that lays a hidden cloud path (a `path` zone; 2-1's, campaign only). */
   HIDDEN_PATH: def('hidden-path', 'none', { block: { kind: 'hidden', content: 'path' } }),
+  /**
+   * A one-way cloud ledge (0.4.12): stood on from above, passed through from below and from the
+   * sides. Laid by a `ledge` zone in the campaign only (2-1's ledge by its last tower, a step for a
+   * hero with a fixed jump arc), so a springboard's launch rises through it untouched.
+   */
+  CLOUD_LEDGE: def('cloud-ledge', 'top'),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
@@ -224,3 +230,17 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   Z: '@decor-castle', // small castle anchor (bottom-left)
   X: '@decor-castle-big',
 };
+
+/**
+ * The tiles the level editor offers as brushes, in its order: every tile with a map character,
+ * then any other a map can hold. Left out: air (the eraser), the bump placeholder and the one-way
+ * cloud ledge (laid only by a campaign `ledge` zone or a `one-way` path: no map character, so a
+ * painted one would save as air).
+ */
+export function editorTiles(): number[] {
+  const hidden = new Set<number>([T.AIR, T.BUMPING, T.CLOUD_LEDGE]);
+  const legend = Object.values(DEFAULT_LEGEND).filter((v): v is number => typeof v === 'number');
+  const out = legend.filter((v) => !hidden.has(v));
+  for (const def of TILES) if (!legend.includes(def.id) && !hidden.has(def.id)) out.push(def.id);
+  return out;
+}

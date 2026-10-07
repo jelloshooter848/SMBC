@@ -18,7 +18,7 @@ import {
   Inventory,
   STUN_FRAMES,
 } from './items';
-import { HOLD_FRAMES } from './hero';
+import { HOLD_FRAMES, TdHero } from './hero';
 import { TILE } from './geometry';
 import { drawTdHud, hudData } from './hud';
 import { DEFAULT_SHEETS, type TdView } from './view';
@@ -393,6 +393,28 @@ describe('top-down kit: chests, the shield and heart containers', () => {
     on = false;
     hero.hurt(w, 2, 'left');
     expect(hero.hp).toBe(4);
+  });
+});
+
+describe('top-down kit: a game of its own hero and harmless blasts', () => {
+  it("a world option builds the game's own hero (a TdHero subclass) at the start", () => {
+    class Gunner extends TdHero {}
+    const w = new TopDownWorld(buildDungeon([{ id: 'r', at: [0, 0], map: map([[7, 5, '@']]) }]), {
+      hero: (x, y, maxHp) => new Gunner(x, y, maxHp),
+      maxHp: 8,
+    });
+    expect(w.hero).toBeInstanceOf(Gunner);
+    expect([w.hero.x, w.hero.y, w.hero.maxHp, w.hero.hp]).toEqual([7 * TILE, 5 * TILE, 8, 8]);
+  });
+
+  it('a blast with no self damage never touches the hero (no knockback, no blink)', () => {
+    const { w, hero } = one([[9, 5, 'n']]);
+    const knight = stillKnight(w, 8 * TILE, 5 * TILE);
+    w.blast(hero.x + 8, hero.y + 8, BLAST_RADIUS, 2, 0);
+    expect(hero.invuln).toBe(0);
+    expect(hero.kbT).toBe(0);
+    expect(hero.hp).toBe(hero.maxHp);
+    expect(knight.dead).toBe(true);
   });
 });
 

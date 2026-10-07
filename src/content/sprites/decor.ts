@@ -2,7 +2,13 @@ import { NES } from '@engine/gfx/palette';
 import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
+import { underworldDecorFrames, underworldDecorPalette } from './sophia-tiles';
+import { castlevaniaDecorFrames, castlevaniaDecorPalette } from './castlevania-look';
+import { ninjaCityDecorFrames, ninjaCityDecorPalette } from './ninja-city-look';
 import { smwDecorFrames, smwDecorPalette } from './top-secret';
+import { zelda2DecorFrames, zelda2DecorPalette } from './zelda2-look';
+import { megamanDecorFrames, megamanDecorPalette } from './megaman-look';
+import { brinstarDecorFrames, brinstarDecorPalette } from './brinstar-look';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -110,10 +116,20 @@ export const decorPalettes: Record<string, string[]> = {
     DEEP_TEAL,
     NES.teal,
   ],
+  // 5-4 as Simon's castle hall: wall greys, window blues, brass and candle flame (castlevania-look.ts).
+  'decor-castlevania': castlevaniaDecorPalette,
+  // 6-2 as Ryu's city street: concrete, far indigo towers, red brick, lit windows (ninja-city-look.ts).
+  'decor-ninja-city': ninjaCityDecorPalette,
   // Bill's jungle: dark canopy greens, distant mountain blues, concrete greys, palm bark (contra-decor.ts).
   'decor-jungle': jungleDecorPalette,
+  // Sophia's Underworld: slime greens, cave mist, rust rock, pale roots (sophia-tiles.ts).
+  'decor-underworld': underworldDecorPalette,
   /* The Top Secret Area: Super Mario World greens, white sparkles. */
   'decor-smw': smwDecorPalette,
+  // The campaign looks of 2-1, 3-1 and 4-2.
+  'decor-zelda2': zelda2DecorPalette,
+  'decor-megaman-stage': megamanDecorPalette,
+  'decor-brinstar': brinstarDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -673,7 +689,16 @@ export const decorDef: SpriteDef = {
     'ruin-temple': ruinTemple,
     // Bill's jungle: palms, canopy, mountains, sandbags, a searchlight; clouds become canopy.
     ...jungleDecorFrames,
+    // Sophia's Underworld: the gateway Jason walks through, roots hanging from the roof.
+    ...underworldDecorFrames,
+    // The 0.4.12 restyles: Simon's castle hall (5-4) and Ryu's city street (6-2).
+    ...castlevaniaDecorFrames,
+    ...ninjaCityDecorFrames,
     // The Top Secret Area: a big sparkly hill, a small one, bushes.
     ...smwDecorFrames,
+    // The campaign looks of 2-1, 3-1 and 4-2: forest trees, clouds, pipe stacks, brush.
+    ...zelda2DecorFrames,
+    ...megamanDecorFrames,
+    ...brinstarDecorFrames,
   },
 };

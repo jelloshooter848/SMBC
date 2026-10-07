@@ -31,6 +31,11 @@ export abstract class Entity {
   alive = true;
   layer: Layer = 'main';
   facing: -1 | 1 = -1;
+  /**
+   * Keeps the camera from leaving it behind (World: camera x never passes its left edge, and
+   * players are held inside the screen): Sophia III's parked tank while Jason is on foot.
+   */
+  anchorsCamera = false;
   /** Despawn once this far off the left of the camera (px); null = never. */
   despawnMargin: number | null = 64;
   /** Draw the sprite this many px left/up of the body's top-left (sprites are often bigger than hitboxes). */

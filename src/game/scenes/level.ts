@@ -5,10 +5,11 @@ import { px } from '@engine/math/units';
 import { MAP_EXIT, type LevelData } from '../level/schema';
 import { freshSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
+import { drawSmb3Status, renderSmb3World, smb3Status } from '../hud/smb3-status';
 import { drawHud } from '../hud/hud';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
-import { startHp } from '../characters/character';
+import { startHp, type CharacterDef } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
@@ -18,13 +19,21 @@ import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
+import { storyOn } from '../story/beats';
+import { playStoryCards } from '../story/cards';
+import { playLevelBeat } from '../story/level-beats';
+import { STORY_CRYSTAL_BALL_PAGES } from '../story/script';
+import { partnerNearSaid, talkToPartner } from '../story/partners';
 import { abilityHint } from './hints';
 import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
 import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
 
 export type LevelStart = WorldStart;
 
-/** The crystal ball's card (Larry Koopa's, 4-2's airship), at most 26 columns a line. */
+/**
+ * The crystal ball's card (Larry Koopa's, 4-2's airship), at most 26 columns a line; the
+ * campaign's story shows STORY_CRYSTAL_BALL_PAGES instead.
+ */
 export const CRYSTAL_BALL_CARD: readonly string[] = [
   'THE CRYSTAL BALL SHOWS',
   'WHERE YOUR FRIENDS',
@@ -49,6 +58,15 @@ export const PATH_SAID = 'A path of clouds appears.';
 export function carryTime(from: LevelData, to: LevelData, time: number | null): number | undefined {
   if (time === null) return undefined;
   return from.world === to.world && from.stage === to.stage ? time : undefined;
+}
+
+/**
+ * The music a level plays for `hero`: the hero's own overworld theme (CharacterDef.music) in a
+ * plain overworld area, else the level's own. A campaign look's theme is never `overworld`, so a
+ * restyled level (and its coin heaven) plays the restyle's music for every hero.
+ */
+export function levelMusic(level: LevelData, hero: Pick<CharacterDef, 'music'>): string {
+  return hero.music && level.theme === 'overworld' ? hero.music : level.music;
 }
 
 export class LevelScene implements Scene {
@@ -77,6 +95,8 @@ export class LevelScene implements Scene {
         isFreed: (id) => game.freed.includes(id),
         hero: (id) => game.deps.characters.find((c) => c.id === id),
       };
+    // The campaign's story (src/game/story): entities and the world check it.
+    this.world.storyMode = storyOn(game);
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);
     if (this.tutorial) this.world.time = null;
@@ -101,12 +121,9 @@ export class LevelScene implements Scene {
     if (held.some((o) => o.given)) this.airship?.itemsGiven(this.game.state);
   }
 
-  /** The level's music (the hero's own overworld theme when it has one), at the clock's tempo. */
+  /** The level's music (levelMusic), at the clock's tempo. */
   playMusic(): void {
-    const music =
-      this.game.state.character.music && this.level.theme === 'overworld'
-        ? this.game.state.character.music
-        : this.level.music;
+    const music = levelMusic(this.level, this.game.state.character);
     this.game.ctx.audio.setTempoScale(this.world.time !== null && this.world.time <= 100 ? 1.4 : 1);
     this.game.ctx.audio.playMusic(music);
   }
@@ -118,11 +135,22 @@ export class LevelScene implements Scene {
     this.swallowJump = true;
   }
 
+  /**
+   * Play on after a story card over the level (a partner's pages, a restyle remark, Larry,
+   * Bowser in 8-4): the music never stopped, so it plays on untouched; only the press that
+   * closed the card is kept from making the hero jump.
+   */
+  resumePlay(): void {
+    this.swallowJump = true;
+  }
+
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     if (this.swallowJump) {
       this.swallowJump = false;
       for (const f of inputs) f.consumeJumpBuffer();
     }
+    // The campaign's story scenes in a level (a restyle's remark, Larry, Bowser in 8-4).
+    if (playLevelBeat(this.game, this)) return;
     this.handleDebugKeys();
     if (this.debug.freeCamera) {
       const keys = this.game.deps.debugKeys;
@@ -181,6 +209,13 @@ export class LevelScene implements Scene {
         if (game.campaign && !game.playtestDone)
           talkToCaptive(game, this, ev.hero, this.world.players[ev.player]?.def);
         break;
+      case 'partner':
+        // A story partner: its pages over the frozen level, then play on (story/partners.ts).
+        if (this.world.storyMode) talkToPartner(game, this, ev.who);
+        break;
+      case 'partner-near':
+        game.deps.announcer?.say(partnerNearSaid(ev.who, ev.player, this.world.coop));
+        break;
       case 'crystal-ball':
         this.takeCrystalBall(ev.next);
         break;
@@ -189,6 +224,9 @@ export class LevelScene implements Scene {
         break;
       case 'path':
         game.deps.announcer?.say(PATH_SAID);
+        break;
+      case 'say':
+        game.deps.announcer?.say(ev.text);
         break;
       case 'anchor':
         game.deps.announcer?.say(`${ANCHOR_SAID} Climb its chain: ${abilityHint(game, 'UP', 'up')}.`);
@@ -327,24 +365,25 @@ export class LevelScene implements Scene {
     audio.playJingle('castle-clear');
     game.state.checkpoint = null;
     game.state.time = null;
+    const done = () => {
+      // A run aboard ends here (a dev round passes and goes to its result card).
+      if (this.airship && airshipWon(game)) return;
+      if (game.playtestDone) game.playtestDone();
+      // The campaign's hand-off back to the map (Game.takeCrystalBall).
+      else if (game.campaign) game.takeCrystalBall(this.level.id);
+      else if (next) game.goToLevel(next, { mode: 'stand' });
+      else game.showTitle();
+    };
+    // The campaign's story: two pages (docs/STORY.md 2.7), in the same place as the old card.
+    if (storyOn(game))
+      return playStoryCards(game, this.world, STORY_CRYSTAL_BALL_PAGES, done, { bottom: true });
     game.deps.announcer?.say(`${CRYSTAL_BALL_CARD.join(' ')} OK to continue.`);
     game.scenes.push(
-      new CardScene(
-        game,
-        CRYSTAL_BALL_CARD,
-        () => {
-          // A run aboard ends here (a dev round passes and goes to its result card).
-          if (this.airship && airshipWon(game)) return;
-          if (game.playtestDone) game.playtestDone();
-          // The campaign's hand-off back to the map (Game.takeCrystalBall).
-          else if (game.campaign) game.takeCrystalBall(this.level.id);
-          else if (next) game.goToLevel(next, { mode: 'stand' });
-          else game.showTitle();
-        },
-        this.world,
-        1800,
-        { panel: true, keys: ['start', 'attack', 'jump'], prompt: () => abilityHint(game, 'OK', 'jump') },
-      ),
+      new CardScene(game, CRYSTAL_BALL_CARD, done, this.world, 1800, {
+        panel: true,
+        keys: ['start', 'attack', 'jump'],
+        prompt: () => abilityHint(game, 'OK', 'jump'),
+      }),
     );
   }
 
@@ -409,8 +448,17 @@ export class LevelScene implements Scene {
   }
 
   render(r: Renderer): void {
-    this.world.render(r);
     const time = this.world.timeHidden ? null : this.world.time;
+    // Larry's airship is SMB3's: its status bar along the bottom instead of the HUD on top.
+    if (isAirshipArea(this.level.id)) {
+      renderSmb3World(r, this.world);
+      const ctx = this.game.ctx;
+      const status = smb3Status(this.game.state, this.world.player, time);
+      drawSmb3Status(r, ctx.assets, status, this.world.frame, ctx.reduceFlashing);
+      this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
+      return;
+    }
+    this.world.render(r);
     drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players, {
       covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
       // A fill-up spot (the Top Secret Area) shows its name instead of WORLD and TIME.

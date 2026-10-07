@@ -3,26 +3,43 @@ import { NO_INPUT, type InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { TouchLabels } from '@engine/input/touch';
-import { px, tileToSub, toPx } from '@engine/math/units';
+import { clamp, px, tileAt, tileToSub, toPx } from '@engine/math/units';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { levelSeed, World } from '../../world/world';
 import { newGameState, type GameState } from '../../context';
-import { MAX_HP, MEGAMAN } from '../../characters/megaman';
+import { MAX_HP } from '../../characters/megaman';
 import { WEAPON_ENERGY } from '../../characters/megaman/weapons';
 import { T } from '../../level/tiles';
 import type { Player } from '../../entities/player';
 import type { Game } from '../../scenes/game';
 import { abilityHint } from '../../scenes/hints';
-import { drawHud } from '../../hud/hud';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import { MiniGameMenuScene } from '../menu';
+import { GAME_OVER_FRAMES, lifeLostSaid, MiniLives, type LifeLost, type MiniCheckpoint } from '../lives';
 import type { MiniGameResult } from '../types';
 import { drawStation, MM_SOUNDS } from './art';
 import { BOSS_HP, DarkMegaMan } from './dark-megaman';
+import { BAR_BOTTOM, BOSS_BAR_X, drawBossBar as drawBossBarAt, drawStationHud } from './hud';
+import { NES_MEGAMAN } from './nes-form';
 import { EnemyShot, Robot, Shutter } from './robots';
-import { stationEntities, stationStage, type StationLayout } from './stage';
+import { Pickup } from '../../entities/objects/pickup';
+import { StationWeaponScene } from './weapon-menu';
+import { onLadder } from './ladder';
+import {
+  isRobotSpawn,
+  screenAt,
+  SCREEN_ROWS,
+  stationEntities,
+  stationStage,
+  type StationLayout,
+} from './stage';
 
-/** Frames READY shows before Mega Man can move. */
+export { BOSS_BAR_X };
+
+/**
+ * Frames READY blinks on the empty start spot (the stage music already playing) before Mega Man
+ * beams down onto it; he can move once he has landed.
+ */
 export const READY_FRAMES = 75;
 /** Frames the station holds still while Mega Man takes the capsule. */
 export const ITEM_FREEZE = 60;
@@ -39,14 +56,33 @@ export const WIN_JINGLE = 50;
 export const WIN_BEAM = 220;
 export const WIN_FRAMES = 270;
 /**
- * Widest banner line: 24 columns keep the band clear of the health and weapon bars at the left.
+ * Frames a screen flip takes (Mega Man 2's vertical scroll: 240 px at 4 px a frame), the station
+ * holding still meanwhile.
  */
+export const SCROLL_FRAMES = 60;
+/** Where the camera keeps Mega Man inside a screen row (px from the left, as before). */
+const FOLLOW_X = 80;
+/** Widest banner line (columns). Banners sit below the bars (hud.ts BAR_BOTTOM). */
 export const BANNER_COLS = 24;
-/** Screen x of the boss's bar, beside Mega Man's health (x 8) and weapon energy (x 16) bars. */
-export const BOSS_BAR_X = 24;
-const BAR_Y = 40;
+/** The capsule's banner's first line (px): under the bars. */
+export const ITEM_BANNER_Y = BAR_BOTTOM + 16;
 
-export type StationPhase = 'ready' | 'stage' | 'item' | 'gate' | 'intro' | 'fight' | 'won' | 'dead' | 'over';
+/**
+ * Where a life starts (MiniLives): the stage start, a checkpoint halfway along the bottom run
+ * (column 40, past the capsule and the tall block), one at the top of the shaft (the top run's
+ * first screen), and the boss door (the landing room under the drop, reached on landing). A life
+ * lost in the boss room restarts at the door: through the shutters again, and Dark Mega Man's
+ * bar fills again.
+ */
+export const STATION_START: MiniCheckpoint = { id: 'start', x: 2, y: 42 };
+export const STATION_CHECKPOINTS: readonly MiniCheckpoint[] = [
+  { id: 'mid', x: 40, y: 42, rows: [30, 44] },
+  { id: 'top', x: 77, y: 12, at: 66, rows: [0, 14] },
+  { id: 'boss', x: 116, y: 42, at: 113, rows: [30, 44] },
+];
+
+export type StationPhase =
+  'ready' | 'stage' | 'scroll' | 'item' | 'gate' | 'intro' | 'fight' | 'won' | 'dead' | 'gameover' | 'over';
 export type GateStep = 'opening' | 'walking' | 'closing';
 
 export interface StationOptions {
@@ -54,23 +90,50 @@ export interface StationOptions {
   seed?: number;
 }
 
+/** A screen flip under way: from the camera's place to the next screen's, Mega Man nudged in. */
+interface ScreenScroll {
+  to: number;
+  from: { x: number; y: number; feet: number };
+  goal: { x: number; y: number; feet: number };
+}
+
 /** Input with only right held: Mega Man walking through the shutter. */
 const WALK_RIGHT: InputFrame = { ...NO_INPUT, held: (a) => a === 'right', dirX: 1 };
 
 /**
  * Mega Man's mini game, Station Escape: a short NES-style stage (stage.map) on the space station
- * above 3-1, played as Mega Man with the helmet kit (buster, charge shot, slide); a weapon capsule
- * halfway unlocks the Saw Disc. At the end a shutter opens into Dark Mega Man's room: the camera
- * locks, his life bar fills tick by tick while Mega Man waits, then the fight. Beating him passes
- * (after the orb burst, a jingle and Mega Man beaming out); losing every hit point or falling in
- * a pit fails; the menu's Give up quits. A World of its own runs it with a fresh GameState, so the
- * campaign's lives, score and power are never touched.
+ * above 3-1, played as Mega Man in NES form (nes-form.ts: Mega Man 2's jump, knockback,
+ * wall-passing shots and ladders) with the helmet kit (buster, charge shot, slide); a weapon
+ * capsule halfway unlocks the Saw Disc. As in Mega Man 2 the stage is screens: the camera scrolls
+ * sideways inside a row of them, and climbing off the top or falling off the bottom of one flips
+ * a whole screen up or down (SCROLL_FRAMES, everything holding still); the robots of a screen
+ * are spawned fresh each time he enters it. Each life starts with READY blinking on the empty
+ * spot, then Mega Man beams down. At the end Mega Man 2's two shutters: the first opens into a one-screen corridor
+ * (the camera locks on it), the second into Dark Mega Man's room: the camera locks, his life bar
+ * fills tick by tick while Mega Man waits, then the fight. Beating him passes (after the orb
+ * burst, a jingle and Mega Man beaming out). Three lives (lives.ts): losing every hit point or
+ * falling in a pit bursts him into orbs and costs one, and the next starts at the last
+ * checkpoint (halfway, or the boss door); losing the last is GAME OVER, which fails the round.
+ * MENU opens Mega Man 2's weapon screen (weapon-menu.ts); its MENU row, the round's menu, whose
+ * Give up quits. A World of its own (built again for each life) runs it with a fresh
+ * GameState, so the campaign's lives, score and power are never touched. The HUD is bars only.
  */
 export class StationScene implements Scene {
-  readonly world: World;
+  /** The life in play's World (a new one each life). */
+  world: World;
   readonly state: GameState;
   readonly layout: StationLayout = stationStage();
-  readonly shutter: Shutter;
+  /** The two boss shutters (the corridor's, then the boss room's). */
+  shutters: Shutter[];
+  /** The shutter the next gate opens (0, then 1 once in the corridor). */
+  nextGate = 0;
+  /** The camera's section (layout.screens) Mega Man is in. */
+  screen = 0;
+  /** A screen flip under way (phase 'scroll'). */
+  private scrolling: ScreenScroll | null = null;
+  /** Makes the station's entities (robots, the capsule, decor). */
+  private readonly station = stationEntities({ onCapsule: (p) => this.gotSaw(p) });
+  readonly lives: MiniLives;
   phase: StationPhase = 'ready';
   gate: GateStep = 'opening';
   /** Frames since the scene started, and in the current phase. */
@@ -80,44 +143,186 @@ export class StationScene implements Scene {
   /** Segments of the boss's bar while it fills. */
   bossBar = 0;
   banner: { lines: string[]; until: number; y: number } | null = null;
+  /** The Saw Disc was taken (it stays his for the round's later lives), and its energy then. */
+  sawGot = false;
+  private sawEnergy = WEAPON_ENERGY;
+  /** E-tanks carried from one life to the next. */
+  private etanks = 0;
+  /** What losing the life in play came to (decided as he goes down). */
+  private lost: LifeLost | null = null;
   private music: string | null = null;
+  private readonly seed: number;
 
   constructor(
     private readonly game: Game,
     private readonly done: (result: MiniGameResult) => void,
     opts: StationOptions = {},
   ) {
-    const level = this.layout.level;
-    // Mega Man with his helmet (buster, charge, slide), full health, one life, no clock.
-    const state = newGameState(MEGAMAN);
+    // Mega Man (NES form) with his helmet (buster, charge, slide), full health, no clock.
+    const state = newGameState(NES_MEGAMAN);
     state.kit = { helmet: 1 };
     state.hp = MAX_HP;
     state.lives = 1;
     state.world = 3;
     this.state = state;
-    this.world = new World(level, game.ctx, state, {
-      scorePopups: false, // the HUD shows no score
-      seed: opts.seed ?? levelSeed(level),
-      extraEntities: stationEntities({ onCapsule: (p) => this.gotSaw(p) }),
+    this.seed = opts.seed ?? levelSeed(this.layout.level);
+    this.lives = new MiniLives({
+      start: STATION_START,
+      checkpoints: STATION_CHECKPOINTS,
+      infinite: () => game.ctx.assist.infiniteLives,
     });
-    this.world.time = null;
-    // Mega Man's stages scroll both ways.
-    this.world.camera.allowLeftScroll = true;
-    const s = this.layout.shutter;
-    this.shutter = new Shutter(s.x, s.y, T.HARD, T.AIR);
-    this.world.spawn(this.shutter);
-    this.world.backdrop = (r) =>
-      drawStars(r, this.world.camera.pxX, this.world.frame, game.ctx.reduceFlashing);
+    const { world, shutters } = this.buildWorld();
+    this.world = world;
+    this.shutters = shutters;
+    this.enterScreen();
+  }
+
+  /** The shutter being passed (or the last one passed). */
+  get shutter(): Shutter {
+    return this.shutters[Math.min(this.nextGate, this.shutters.length - 1)] as Shutter;
+  }
+
+  /** A World for the next life: Mega Man beams down at the current checkpoint. */
+  private buildWorld(): { world: World; shutters: Shutter[] } {
+    const level = this.layout.level;
+    const game = this.game;
+    this.state.hp = MAX_HP;
+    const station = this.station;
+    const world = new World(level, game.ctx, this.state, {
+      ...this.lives.start,
+      mode: 'beam',
+      deathStyle: 'orbs',
+      scorePopups: false, // the HUD shows no score
+      seed: this.seed,
+      // A capsule already taken stays gone; the robots come with their screens (enterScreen).
+      extraEntities: (s) => ((s.type === 'capsule' && this.sawGot) || isRobotSpawn(s) ? null : station(s)),
+    });
+    world.time = null;
+    // The scene moves the camera (screens, gates), never World.
+    world.camera.locked = true;
+    const shutters = this.layout.shutters.map((s) => new Shutter(s.x, s.y, T.HARD, T.AIR));
+    for (const s of shutters) world.spawn(s);
+    world.backdrop = (r) =>
+      drawStars(r, world.camera.pxX, world.camera.pxY, world.frame, game.ctx.reduceFlashing);
+    if (this.sawGot) {
+      const p = world.player;
+      p.scratch.weapons = Math.max(1, p.scratch.weapons ?? 0);
+      p.scratch.wsaw = this.sawEnergy;
+    }
+    // E-tanks found stay his for the round's later lives (the weapon screen uses them).
+    if (this.etanks > 0) world.player.scratch.etanks = this.etanks;
+    return { world, shutters };
   }
 
   get player(): Player {
     return this.world.player;
   }
 
+  /* ---------- Screens ---------- */
+
+  /**
+   * Puts the camera on the screen Mega Man is in (a life's start; tests that move him) and spawns
+   * its robots fresh; a beam down starts at that screen's top.
+   */
+  enterScreen(): void {
+    const b = this.player.body;
+    const i = screenAt(this.layout.screens, tileAt(b.x + (b.w >> 1)), tileAt(b.y + (b.h >> 1)));
+    if (i >= 0) this.screen = i;
+    this.spawnRobots();
+    const cam = this.world.camera;
+    const at = this.cameraFor(this.screen);
+    cam.x = at.x;
+    cam.y = at.y;
+    this.world.alignBeam();
+  }
+
+  /** Where the camera stands on screen `i` with Mega Man where he is. */
+  private cameraFor(i: number): { x: number; y: number } {
+    const s = this.layout.screens[i];
+    if (!s) return { x: this.world.camera.x, y: this.world.camera.y };
+    const x = clamp(this.player.body.x - px(FOLLOW_X), tileToSub(s.x), tileToSub(s.x + s.w - SCREEN_W / 16));
+    return { x, y: tileToSub(s.y) };
+  }
+
+  /** The current screen's robots, fresh (the last screen's, their shots and drops, gone). */
+  private spawnRobots(): void {
+    this.clearScreen();
+    const s = this.layout.screens[this.screen];
+    if (!s) return;
+    for (const spawn of this.layout.level.entities) {
+      if (!isRobotSpawn(spawn) || screenAt([s], spawn.x, spawn.y) < 0) continue;
+      const e = this.station(spawn);
+      if (e) this.world.spawn(e);
+    }
+  }
+
+  /** As on a screen change in Mega Man's games: the robots, their shots and drops are gone. */
+  private clearScreen(): void {
+    for (const e of this.world.entities)
+      if (e instanceof EnemyShot || e instanceof Robot || e instanceof Pickup) e.destroy();
+  }
+
+  /**
+   * After a frame of play: off the top or the bottom of the screen (his middle past its edge)
+   * onto the next screen up or down starts a flip; else the camera follows him sideways.
+   */
+  private followScreen(): void {
+    const p = this.player;
+    const b = p.body;
+    const s = this.layout.screens[this.screen];
+    if (!s || p.dead || this.world.beaming) return;
+    const mid = b.y + (b.h >> 1);
+    const top = tileToSub(s.y);
+    const bottom = tileToSub(s.y + SCREEN_ROWS);
+    const col = tileAt(b.x + (b.w >> 1));
+    // As in Mega Man 2, only climbing a ladder scrolls up; falling off the bottom scrolls down.
+    const up = mid < top && onLadder(p);
+    const next = up
+      ? screenAt(this.layout.screens, col, s.y - 1)
+      : mid >= bottom
+        ? screenAt(this.layout.screens, col, s.y + SCREEN_ROWS)
+        : -1;
+    if (next >= 0) return this.startScroll(next, up ? -1 : 1);
+    const at = this.cameraFor(this.screen);
+    this.world.camera.x = at.x;
+    this.world.camera.y = at.y;
+  }
+
+  private startScroll(to: number, dir: -1 | 1): void {
+    const cam = this.world.camera;
+    const b = this.player.body;
+    const goal = this.cameraFor(to);
+    // He ends just inside the new screen: his feet a little above its bottom going up, his head a
+    // little below its top going down.
+    const edge = dir < 0 ? cam.y : cam.y + px(SCREEN_H);
+    const feet = dir < 0 ? Math.min(b.y + b.h, edge - px(4)) : Math.max(b.y + b.h, edge + px(2) + b.h);
+    this.scrolling = { to, from: { x: cam.x, y: cam.y, feet: b.y + b.h }, goal: { ...goal, feet } };
+    this.clearScreen();
+    this.setPhase('scroll');
+  }
+
+  private updateScroll(): void {
+    const sc = this.scrolling;
+    if (!sc) return this.setPhase('stage');
+    const k = Math.min(1, this.phaseT / SCROLL_FRAMES);
+    const lerp = (a: number, z: number) => a + Math.round((z - a) * k);
+    const cam = this.world.camera;
+    cam.x = lerp(sc.from.x, sc.goal.x);
+    cam.y = lerp(sc.from.y, sc.goal.y);
+    const b = this.player.body;
+    b.y = lerp(sc.from.feet, sc.goal.feet) - b.h;
+    if (this.phaseT < SCROLL_FRAMES) return;
+    this.scrolling = null;
+    this.screen = sc.to;
+    this.spawnRobots();
+    this.setPhase('stage');
+  }
+
   enter(): void {
     this.game.ctx.audio.stopMusic();
+    this.playMusic(MM_SOUNDS.stage);
     this.say(
-      `Station escape. Play as Mega Man: find the Saw Disc and beat Dark Mega Man. ${this.hint('MENU', 'start')} for the menu. Ready!`,
+      `Station escape. Play as Mega Man: find the Saw Disc and beat Dark Mega Man. ${this.lives.lives} lives. ${this.hint('MENU', 'start')} for the menu. Ready!`,
     );
   }
 
@@ -151,22 +356,31 @@ export class StationScene implements Scene {
 
   /** Mega Man's buttons as in a level while he plays; only MENU while the station takes over. */
   touchLabels(): TouchLabels {
+    if (this.phase === 'stage' && this.world.beaming) return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
     if (this.phase === 'stage' || this.phase === 'fight')
       return levelTouchLabels(this.world.players[0], this.world);
-    if (this.phase === 'ready' || this.phase === 'item' || this.phase === 'gate' || this.phase === 'intro')
+    if (
+      this.phase === 'ready' ||
+      this.phase === 'scroll' ||
+      this.phase === 'item' ||
+      this.phase === 'gate' ||
+      this.phase === 'intro'
+    )
       return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
     return { ...NO_TOUCH_BUTTONS };
   }
 
   /** Can the menu open now (not once the round is decided). */
   private get menuOpen(): boolean {
-    return this.phase !== 'won' && this.phase !== 'dead' && this.phase !== 'over';
+    return (
+      this.phase !== 'won' && this.phase !== 'dead' && this.phase !== 'gameover' && this.phase !== 'over'
+    );
   }
 
   update(input: InputFrame): void {
     if (this.phase === 'over') return;
     if (this.menuOpen && input.pressed('start')) {
-      this.game.scenes.push(new StationMenuScene(this.game, () => this.finish('quit')));
+      this.openWeapons();
       return;
     }
     this.t++;
@@ -175,18 +389,21 @@ export class StationScene implements Scene {
       case 'ready':
         // The OK that started the round must not make Mega Man jump.
         input.consumeJumpBuffer();
-        if (this.phaseT >= READY_FRAMES) {
-          this.setPhase('stage');
-          this.playMusic(MM_SOUNDS.stage);
-        }
+        if (this.phaseT >= READY_FRAMES) this.setPhase('stage');
         return;
       case 'item':
         if (this.phaseT >= ITEM_FREEZE) this.setPhase('stage');
         return;
       case 'stage':
         this.step(input);
+        if (this.phase !== 'stage') return;
+        this.reachCheckpoints();
+        // Before the first shutter the camera keeps to the screens; past it the gates hold it.
+        if (this.nextGate === 0) this.followScreen();
         if (this.phase === 'stage' && this.atShutter()) this.openGate();
         return;
+      case 'scroll':
+        return this.updateScroll();
       case 'gate':
         return this.updateGate();
       case 'intro':
@@ -197,20 +414,87 @@ export class StationScene implements Scene {
         return this.updateWon();
       case 'dead':
         return this.step(NO_INPUT);
+      case 'gameover':
+        if (this.phaseT >= GAME_OVER_FRAMES) this.finish('fail');
+        return;
     }
   }
 
-  /** One frame of the world with `input`; a death ends the round once its jingle has played. */
+  /**
+   * One frame of the world with `input`. Going down (the orb burst) costs a life; once the burst
+   * has played, the next life starts at the checkpoint, or GAME OVER shows.
+   */
   private step(input: InputFrame): void {
     this.world.update([input]);
     const events = this.world.events.splice(0);
-    if (this.phase !== 'dead' && this.player.dead) {
-      this.setPhase('dead');
-      this.music = null;
-      const fell = toPx(this.player.body.y) > SCREEN_H;
-      this.say(fell ? 'Mega Man fell. Try again.' : 'Mega Man is down. Try again.');
+    if (this.phase !== 'dead' && this.phase !== 'won' && this.player.dead) this.down();
+    if (this.phase === 'dead' && events.some((e) => e.type === 'died')) {
+      if (this.lost === 'retry') this.nextLife();
+      else this.gameOver();
     }
-    if (this.phase === 'dead' && events.some((e) => e.type === 'died')) this.finish('fail');
+  }
+
+  /** Mega Man went down (hit points or a pit): a life is lost. */
+  private down(): void {
+    this.setPhase('dead');
+    this.music = null; // the World stopped it for the burst's sound
+    this.banner = null;
+    const p = this.player;
+    if (this.sawGot) this.sawEnergy = p.scratch.wsaw ?? this.sawEnergy;
+    this.etanks = p.scratch.etanks ?? 0;
+    this.lost = this.lives.lose();
+    const fell = toPx(p.body.y) > this.world.heightPx;
+    const what = lifeLostSaid('Mega Man', this.lives.lives, this.game.ctx.assist.infiniteLives);
+    this.say(fell ? what.replace('is down', 'fell') : what);
+  }
+
+  /** The next life: a fresh World at the checkpoint, READY, and he beams down. */
+  private nextLife(): void {
+    const { world, shutters } = this.buildWorld();
+    this.world = world;
+    this.shutters = shutters;
+    this.scrolling = null;
+    this.enterScreen();
+    this.nextGate = 0;
+    this.boss = null;
+    this.bossBar = 0;
+    this.gate = 'opening';
+    this.lost = null;
+    this.setPhase('ready');
+    this.playMusic(MM_SOUNDS.stage);
+  }
+
+  private gameOver(): void {
+    this.setPhase('gameover');
+    this.stopMusic();
+    this.banner = { lines: ['GAME OVER'], until: Infinity, y: 104 };
+  }
+
+  /** Passing the halfway point or reaching the boss door moves where the next life starts. */
+  private reachCheckpoints(): void {
+    const p = this.player;
+    if (p.dead || this.world.beaming) return;
+    const b = p.body;
+    this.lives.reach((b.x + (b.w >> 1)) >> 12, (b.y + (b.h >> 1)) >> 12);
+  }
+
+  /* ---------- The weapon screen (MENU) ---------- */
+
+  /** Mega Man 2's START screen: his weapons and their energy, E-tanks, lives, the round's menu. */
+  private openWeapons(): void {
+    const game = this.game;
+    const p = this.player;
+    const screen: StationWeaponScene = new StationWeaponScene(game, {
+      player: p,
+      livesLeft: this.lives.lives,
+      tools: () => p.def.tools?.(p) ?? [],
+      // The round's menu takes the weapon screen's place: Continue goes straight back to play.
+      openOptions: () => {
+        if (game.scenes.top === screen) game.scenes.pop();
+        game.scenes.push(new StationMenuScene(game, () => this.finish('quit')));
+      },
+    });
+    game.scenes.push(screen);
   }
 
   /* ---------- The weapon capsule ---------- */
@@ -219,6 +503,8 @@ export class StationScene implements Scene {
   private gotSaw(p: Player): void {
     p.scratch.weapons = Math.max(1, p.scratch.weapons ?? 0);
     p.scratch.wsaw = WEAPON_ENERGY;
+    this.sawGot = true;
+    this.sawEnergy = WEAPON_ENERGY;
     this.game.ctx.audio.sfx(MM_SOUNDS.capsule);
     const weapon = this.hint('WEAPON', 'select');
     const use = this.hint('USE WEAPON', 'special');
@@ -230,7 +516,7 @@ export class StationScene implements Scene {
       fit(`${use}: FIRE`, 'USE WEAPON: FIRE IT'),
       'HOLD A DIRECTION TO AIM',
     ];
-    this.banner = { lines, until: this.t + ITEM_BANNER_FRAMES, y: 56 };
+    this.banner = { lines, until: this.t + ITEM_BANNER_FRAMES, y: ITEM_BANNER_Y };
     this.setPhase('item');
     this.say(
       `You got the Saw Disc! ${weapon} switches to it, ${use} fires it. Hold a direction to aim it eight ways. It cuts through Dark Mega Man.`,
@@ -239,11 +525,12 @@ export class StationScene implements Scene {
 
   /* ---------- The boss gate ---------- */
 
-  /** Mega Man on the floor against the shutter. */
+  /** Mega Man on the floor against the next shutter. */
   private atShutter(): boolean {
     const b = this.player.body;
     if (this.player.dead || !b.onGround) return false;
-    const s = this.layout.shutter;
+    const s = this.layout.shutters[this.nextGate];
+    if (!s) return false;
     const feetRow = (b.y + b.h - 1) >> 12;
     return b.x + b.w >= tileToSub(s.x) - px(1) && feetRow >= s.y && feetRow <= s.y + 1;
   }
@@ -252,7 +539,8 @@ export class StationScene implements Scene {
     this.setPhase('gate');
     this.gate = 'opening';
     this.banner = null;
-    this.stopMusic();
+    // The stage music plays on into the corridor; it stops at the boss room's shutter.
+    if (this.nextGate > 0) this.stopMusic();
     // As on a screen change in Mega Man's games, the robots and their shots are gone.
     for (const e of this.world.entities) if (e instanceof EnemyShot || e instanceof Robot) e.destroy();
     this.world.camera.locked = true;
@@ -262,8 +550,9 @@ export class StationScene implements Scene {
 
   private updateGate(): void {
     const cam = this.world.camera;
-    const goal = tileToSub(this.layout.roomX);
-    const inside = tileToSub(this.layout.roomX + 1) + px(8);
+    const room = this.nextGate === 0 ? this.layout.corridorX : this.layout.roomX;
+    const goal = tileToSub(room);
+    const inside = tileToSub(room + 1) + px(8);
     if (this.gate === 'opening') {
       this.step(NO_INPUT);
       if (this.shutter.state === 'open') this.gate = 'walking';
@@ -280,7 +569,14 @@ export class StationScene implements Scene {
       return;
     }
     this.step(NO_INPUT);
-    if (this.shutter.state === 'shut') this.startIntro();
+    if (this.shutter.state !== 'shut') return;
+    // The corridor: Mega Man walks it to the second shutter (the camera stays locked on it).
+    if (this.nextGate === 0) {
+      this.nextGate = 1;
+      this.setPhase('stage');
+      return;
+    }
+    this.startIntro();
   }
 
   /* ---------- Dark Mega Man's entrance ---------- */
@@ -324,7 +620,7 @@ export class StationScene implements Scene {
     this.stopMusic();
     // Nothing can hurt him now; the room is his to leave.
     for (const e of this.world.entities) if (e instanceof EnemyShot) e.destroy();
-    this.banner = { lines: ['DARK MEGA MAN IS BEATEN!'], until: Infinity, y: BAR_Y + 64 };
+    this.banner = { lines: ['DARK MEGA MAN IS BEATEN!'], until: Infinity, y: BAR_BOTTOM + 24 };
     this.say(`Dark Mega Man is beaten!${this.game.inRound ? '' : ' The spell on Mega Man breaks.'}`);
   }
 
@@ -353,7 +649,7 @@ export class StationScene implements Scene {
   bossBarValue(): number | null {
     if (this.phase === 'intro') return this.boss ? this.bossBar : null;
     if (this.phase === 'fight') return this.boss?.hp ?? 0;
-    if (this.phase === 'won' || (this.phase === 'dead' && this.boss))
+    if (this.phase === 'won' || ((this.phase === 'dead' || this.phase === 'gameover') && this.boss))
       return this.boss?.alive ? this.boss.hp : 0;
     return null;
   }
@@ -364,10 +660,8 @@ export class StationScene implements Scene {
     const font = assets.sheet('font');
     if (this.phase === 'intro' && this.phaseT < BEAM_FRAMES) this.drawBossBeam(r);
     if (this.phase === 'won' && this.phaseT >= WIN_BEAM) this.drawHeroBeam(r);
-    drawHud(r, assets, this.state, null, this.world.frame, this.world.players, {
-      place: 'STATION',
-      covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
-    });
+    // Bars only, as Mega Man 2's (no name, score or lives); none before he has beamed down.
+    if (!this.player.hidden || this.phase === 'won') drawStationHud(r, this.player);
     const bar = this.bossBarValue();
     if (bar !== null) drawBossBar(r, bar);
     if (this.phase === 'ready' && (this.game.ctx.reduceFlashing || ((this.phaseT >> 3) & 3) !== 3))
@@ -380,7 +674,7 @@ export class StationScene implements Scene {
   private drawBossBeam(r: Renderer): void {
     const s = this.bossSpot();
     const x = s.x - 2 - this.world.camera.pxX;
-    const yEnd = s.y - 10;
+    const yEnd = s.y - 10 - this.world.camera.pxY;
     const y = Math.round(-32 + ((yEnd + 32) * this.phaseT) / BEAM_FRAMES);
     this.drawBeam(r, x, y);
   }
@@ -389,7 +683,7 @@ export class StationScene implements Scene {
   private drawHeroBeam(r: Renderer): void {
     const b = this.player.body;
     const x = toPx(b.x) - 2 - this.world.camera.pxX;
-    const y = toPx(b.y) - 10 - (this.phaseT - WIN_BEAM) * 8;
+    const y = toPx(b.y) - this.world.camera.pxY - 10 - (this.phaseT - WIN_BEAM) * 8;
     this.drawBeam(r, x, y);
   }
 
@@ -399,16 +693,9 @@ export class StationScene implements Scene {
   }
 }
 
-/** The boss's life bar: Mega Man's bar style (28 segments of 2 px), in his colours. */
+/** The boss's life bar: Mega Man's bar style (28 segments of 2 px), in his colours (hud.ts). */
 export function drawBossBar(r: Renderer, value: number): void {
-  const segs = BOSS_HP;
-  r.rect(BOSS_BAR_X - 1, BAR_Y - 1, 8, segs * 2 + 2, '#000');
-  for (let i = 0; i < segs; i++) {
-    const on = i < value;
-    const y = BAR_Y + (segs - 1 - i) * 2;
-    r.rect(BOSS_BAR_X, y, 6, 1, on ? '#fcfcfc' : '#404040');
-    r.rect(BOSS_BAR_X, y + 1, 6, 1, on ? '#f83800' : '#202020');
-  }
+  drawBossBarAt(r, value, BOSS_HP);
 }
 
 /** Lines of the bitmap font on a dark band, centred, the first at `y`. */
@@ -419,11 +706,11 @@ export function drawBanner(r: Renderer, font: SpriteSheet, lines: readonly strin
 }
 
 /** Stars out of the station's windows: fixed, slow parallax, a few twinkle (not with reduce flashing). */
-function drawStars(r: Renderer, camX: number, frame: number, reduceFlashing: boolean): void {
+function drawStars(r: Renderer, camX: number, camY: number, frame: number, reduceFlashing: boolean): void {
   const span = 512;
   for (let i = 0; i < 56; i++) {
     const sx = (i * 197 + ((i * i * 31) % 89)) % span;
-    const sy = 8 + ((i * 113 + 41) % 190);
+    const sy = (((8 + ((i * 113 + 41) % 190) - (camY >> 2)) % SCREEN_H) + SCREEN_H) % SCREEN_H;
     const x = (((sx - (camX >> 2)) % span) + span) % span;
     if (x >= SCREEN_W) continue;
     const dim = !reduceFlashing && ((frame >> 4) + i) % 9 === 0;

@@ -8,6 +8,134 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.18] - 2026-10-07
+
+### Added
+
+- Sophia III from Blaster Master, the last hidden hero, can now be freed in the campaign.
+  - She is a tank: she drives, jumps and fires her cannon in any direction, and her Mushroom power gives her a hover.
+    Her pilot Jason can hop out on foot with EXIT and board again.
+  - She is hidden in 8-4: after the water section, the pipe everyone skips leads to Jason, who is looking for his frog
+    Fred. Follow Fred through a flooded tunnel to her garage, then take the pipe back to where you left off (the clock
+    keeps running). Classic 8-4 is unchanged.
+  - Her mini game, Underworld, is Blaster Master in brief: the tank's cavern, Jason's overhead dungeon and its
+    guardian, the run back to the tank, then the Plutonium Boss. It joins the Mini Game Arena once you have met her.
+  - New partner: Jason. Toad's World 8 pages about her, Jason's frog card and hint after 8-4, and his card when she
+    joins now play.
+  - New original art and music in Blaster Master's style.
+  - Secrets guide: a new entry for Sophia III and Jason, with screenshots.
+  - Maps can use `swim: true` to swim in any theme.
+- Known issue: with only her Normal power, Sophia can't finish 8-4, 3-3, 4-3 and some Lost Levels yet. Level variants
+  for her come with the finishing pass.
+
+## [0.4.17] - 2026-10-07
+
+### Changed
+
+- Zebes Escape (Samus) now ends like Metroid: fight through Tourian to the brain in its glass tank, then climb the
+  escape shaft to the surface before the time bomb goes off. There is no ship any more.
+  - Bubble doors between the rooms: SHOOT one open and walk through, and the screen scrolls on to the next room. The
+    red door takes five MISSILES.
+  - Barriers guard the brain and grow back if you leave them; only MISSILES break them, and only MISSILES hurt the
+    brain. Ceiling cannons and Rinkas defend the chamber.
+  - TIME BOMB SET and the TIME counter now start when the brain falls; a life lost after that starts at the foot of
+    the shaft with the clock full. Reach the surface for a short ending under the stars.
+  - New Tourian art and music. With reduce flashing on, the escape alarm is a steady tint.
+
+## [0.4.16] - 2026-10-07
+
+### Changed
+
+- Escape the Shadow Keep (Link) is rebuilt as a true Zelda dungeon:
+  - Thirteen rooms with thick brick walls around a smaller floor, doors centred in each wall, and Link walking himself
+    in through each door after the screen scrolls; shutters slam behind him.
+  - Find the dungeon's map to see every room on the minimap, and the compass to mark where the Triforce lies.
+  - Two keys for two locked doors; the first waits behind the bats beside the entrance.
+  - The Keeper now leaves a heart container when it falls, as a Zelda boss does.
+  - Beyond the Keeper lies a piece of the Triforce: Link holds it high to its own fanfare, every heart refilled, and
+    the spell breaks.
+  - A knockback no longer throws Link out of a room through a doorway.
+
+## [0.4.15] - 2026-10-07
+
+### Changed
+
+- Station Escape (Mega Man) is rebuilt in Mega Man 2's style:
+  - Mega Man climbs ladders: he can shoot left or right from them, let go to drop, and climb over the top onto the
+    floor above.
+  - The stage is laid out in Mega Man 2's screens: a run, a shaft two screens up, a run along the top, a drop two
+    screens down, then the boss shutters. The screen flips up (climbing) or down (falling) between them.
+  - Robots come back when you return to their screen, as in Mega Man 2.
+  - New checkpoints at the top of the shaft and before the boss door.
+
+## [0.4.14] - 2026-10-07
+
+### Changed
+
+- Luigi's Mirror Race now runs over the full Lost Levels 1-1: piranha plants, Koopas and a Paratroopa, the poison
+  mushroom, both brick bridges, the staircase and the flag. It is eased for one life, and Luigi races like a player
+  (he waits for piranha plants and hops walls).
+- SMB3's status bar (world, P-meter, lives, score, coins, time and the card slots) now shows aboard Larry's airship, in
+  the Hammer Bro battle and in the bonus games.
+- The Toad House is a room you walk into: walk up to a chest and open it.
+- The N-Spade game uses a fixed set of boards, and the pairs you found stay gone until a board is cleared.
+- The Hammer Bros leave a treasure chest to open.
+- Station Escape (Mega Man): two boss shutters with a corridor between them, as in Mega Man 2; Mets that hide under
+  their helmets (shots dink off), peek out and fire a three-way spread; pausing opens Mega Man 2's weapon screen with
+  each weapon's energy, the E-tanks (use one to fill your life) and your lives; E-tanks are kept when you lose a life.
+
+## [0.4.13] - 2026-10-07
+
+### Added
+
+- A secrets guide in docs/secrets/: every hidden hero, hidden area, secret exit and warp spot in the campaign, with
+  step-by-step screenshots (spoilers, for players who want the answers).
+
+## [0.4.12] - 2026-10-07
+
+### Added
+
+- The Chapter 1 story (campaign). Toad opens the game in 1-0 and Bowser teases the stolen heroes. Toad guides you on the
+  world map: each world's welcome, riddle hints for the heroes still missing, and the big moments (the airship crash,
+  the rift). Each freed hero gets a first card, and Simon tells of the stolen wand.
+- Six partners to talk to along the way, one per hero's level, with original art.
+- The castle scenes are rewritten: the fake Bowsers in 1-4 to 7-4 give themselves away with a flicker during the fight
+  (a steady outline with reduce flashing on) and show their true form when beaten, and each castle has two pages of
+  news.
+- 8-4's finale: Bowser's line, the wand breaking into a rift over the lava, Toad in place of the princess, a new credits
+  ending, and the road into the Lost Kingdom.
+- Remarks when you first see a restyled level, and Larry's and the crystal ball's pages.
+- Each story scene plays once per save file (Larry's once per run); OK reads on, BACK skips the rest. Classic play
+  keeps the original text.
+
+## [0.4.11] - 2026-10-07
+
+### Added
+
+- Hero tributes in the campaign: each freed hero's level takes on the look and music of their own game, coin heavens
+  included. 2-1 becomes a Zelda II field, 3-1 a Mega Man stage, 4-2 Metroid's Brinstar, 5-4 a Castlevania hall
+  and 6-2 a Ninja Gaiden city street. Layouts, enemies and physics are unchanged, the music plays for every hero,
+  and classic play keeps the original look.
+- 2-1's Top Secret Area route now works for Simon too: a one-way cloud ledge by the tower, and two cloud steps that
+  appear with the cloud path.
+
+### Changed
+
+- The mini games are truer to their heroes' own games:
+  - Their own HUDs: bars only for Mega Man, energy tanks and a missile count for Samus, Castlevania's three rows for
+    Simon, Ninja Gaiden's for Ryu, Zelda's for Link, and the SMB HUD for Luigi's race.
+  - Their own deaths: Mega Man bursts into orbs, Samus explodes, Simon collapses, Ryu falls.
+  - Their own starts: Mega Man beams in after READY, Samus materialises, Luigi's race opens on a WORLD 1-1 card,
+    and the hero drops into Larry's cabin from the ceiling.
+  - Three lives with checkpoints for Mega Man, Samus, Simon and Ryu; TRY AGAIN appears only on game over.
+  - Mini-game-only physics for Simon (rooted while whipping, the fixed knockback arc) and Mega Man.
+  - Samus's escape opens on "TIME BOMB SET / GET OUT FAST!" with a TIME counter.
+  - Link fires a sword beam at full hearts.
+  - Dracula's real second form: his head flies off, the beast drops in with a full bar, leaps and spits fire, and
+    only its head can be hurt. His room gets barred windows and a coffin on a dais.
+
+## [0.4.10] - 2026-10-07
+
 ### Added
 
 - A secret in 2-1 (campaign): get over the flagpole without touching it (a hidden block lays a cloud
@@ -412,7 +540,16 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.18...HEAD
+[0.4.18]: https://github.com/jelloshooter848/SMBC/compare/v0.4.17...v0.4.18
+[0.4.17]: https://github.com/jelloshooter848/SMBC/compare/v0.4.16...v0.4.17
+[0.4.16]: https://github.com/jelloshooter848/SMBC/compare/v0.4.15...v0.4.16
+[0.4.15]: https://github.com/jelloshooter848/SMBC/compare/v0.4.14...v0.4.15
+[0.4.14]: https://github.com/jelloshooter848/SMBC/compare/v0.4.13...v0.4.14
+[0.4.13]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...v0.4.13
+[0.4.12]: https://github.com/jelloshooter848/SMBC/compare/v0.4.11...v0.4.12
+[0.4.11]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...v0.4.11
+[0.4.10]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/jelloshooter848/SMBC/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/jelloshooter848/SMBC/compare/v0.4.6...v0.4.7

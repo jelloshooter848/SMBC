@@ -1,6 +1,6 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { DIR_VEC, HUD_H, ROOM_COLS, ROOM_H, ROOM_ROWS, ROOM_W, SIDE_DIR, TILE, type Side } from './geometry';
-import { sideOf, tileAt, type Room, type TileKind } from './room';
+import { isBorder, sideOf, tileAt, wallDepth, type Room, type TileKind } from './room';
 import type { TdView } from './view';
 import type { TdEnemy } from './entity';
 import type { TopDownWorld } from './world';
@@ -39,11 +39,15 @@ const DOOR_FRAME: Record<DoorLook, keyof typeof PLACEHOLDER> = {
 };
 
 /**
- * Draws one room's tiles with its top-left at (ox, oy). Edge walls use `wall-top` (north, flipped
- * for south) and `wall-top-side` (west, flipped for east), corners `wall-corner`, inner walls
- * `wall`. Doors are drawn for the north edge and flipped for the south; east and west use the
- * `-side` frames (made by rotation, frames.ts). A two-cell doorway (and exit) draws one 16-px door
- * centred across its cells, from the `-l` / `-r` halves (frames.ts).
+ * Draws one room's tiles with its top-left at (ox, oy). The wall band's row (or column) facing the
+ * floor uses `wall-top` (north, flipped for south) and `wall-top-side` (west, flipped for east),
+ * its inner corners `wall-corner`; the rest of a thick band plain `wall` (`wall-side` down the
+ * east and west), as are inner walls. In a
+ * room with one-tile walls doors are drawn for the north edge and flipped for the south; east and
+ * west use the `-side` frames (made by rotation, frames.ts), and a two-cell doorway (and exit)
+ * draws one 16-px door centred across its cells, from the `-l` / `-r` halves (frames.ts). Through
+ * a thicker wall a doorway is one 32×32 `<frame>-thick` (Zelda's doors) over the band, centred on
+ * its cells.
  */
 export function drawRoomTiles(
   r: Renderer,
@@ -56,30 +60,54 @@ export function drawRoomTiles(
 ): void {
   const pal = room.def.dark && view.sheets.tilesDark ? view.sheets.tilesDark : undefined;
   const sheet = view.sheet(view.sheets.tiles, pal);
-  const put = (frame: string, x: number, y: number, fallback: string, fx = false, fy = false) => {
+  const put = (
+    frame: string,
+    x: number,
+    y: number,
+    fallback: string,
+    fx = false,
+    fy = false,
+    size = TILE,
+  ) => {
     if (sheet?.frames.has(frame)) r.sprite(sheet, frame, x, y, fx, fy);
-    else r.rect(x, y, TILE, TILE, fallback);
+    else r.rect(x, y, size, size, fallback);
   };
+  const wall = room.wall;
+  const thick = wall > 1;
+  /** A cell of the wall band, as plain wall would draw it. */
+  const band = (col: number, row: number, x: number, y: number) => {
+    const side = sideOf(col, row, wall);
+    if (!side) {
+      const dx = col < wall ? col : ROOM_COLS - 1 - col;
+      const dy = row < wall ? row : ROOM_ROWS - 1 - row;
+      const right = col >= ROOM_COLS - wall;
+      const bottom = row >= ROOM_ROWS - wall;
+      if (dx === wall - 1 && dy === wall - 1) put('wall-corner', x, y, PLACEHOLDER.wall, right, bottom);
+      else put('wall', x, y, PLACEHOLDER.wall);
+    } else if (wallDepth(col, row, side) < wall - 1) {
+      if (side === 'n' || side === 's') put('wall', x, y, PLACEHOLDER.wall);
+      else put('wall-side', x, y, PLACEHOLDER.wall, side === 'e');
+    } else if (side === 'n' || side === 's') put('wall-top', x, y, PLACEHOLDER.wall, false, side === 's');
+    else put('wall-top-side', x, y, PLACEHOLDER.wall, side === 'e');
+  };
+  const exitLook = () => (view.reduceFlashing ? 'exit-0' : `exit-${(view.frame >> 4) & 1}`);
   for (let row = 0; row < ROOM_ROWS; row++)
     for (let col = 0; col < ROOM_COLS; col++) {
       const x = ox + col * TILE;
       const y = oy + row * TILE;
       if (x <= -TILE || x >= ROOM_W || y <= -TILE || y >= 240) continue;
       const t = tileAt(room, col, row) as TileKind;
-      const side = sideOf(col, row);
+      const side = sideOf(col, row, wall);
       switch (t) {
-        case 'wall': {
-          const left = col === 0;
-          const right = col === ROOM_COLS - 1;
-          const top = row === 0;
-          const bottom = row === ROOM_ROWS - 1;
-          if ((left || right) && (top || bottom)) put('wall-corner', x, y, PLACEHOLDER.wall, right, bottom);
-          else if (side === 'n' || side === 's') put('wall-top', x, y, PLACEHOLDER.wall, false, side === 's');
-          else if (side === 'w' || side === 'e') put('wall-top-side', x, y, PLACEHOLDER.wall, side === 'e');
+        case 'wall':
+          if (isBorder(col, row, wall)) band(col, row, x, y);
           else put('wall', x, y, PLACEHOLDER.wall);
           break;
-        }
         case 'door': {
+          if (thick) {
+            band(col, row, x, y); // the door is drawn over the band below
+            break;
+          }
           const s = side as Side;
           const name = DOOR_FRAME[door(s)];
           const cells = room.doorCells[s] ?? [];
@@ -90,7 +118,11 @@ export function drawRoomTiles(
           break;
         }
         case 'exit': {
-          const f = view.reduceFlashing ? 'exit-0' : `exit-${(view.frame >> 4) & 1}`;
+          if (thick) {
+            band(col, row, x, y);
+            break;
+          }
+          const f = exitLook();
           const pair =
             tileAt(room, col - 1, row) === 'exit' ? 'r' : tileAt(room, col + 1, row) === 'exit' ? 'l' : null;
           put(pair ? `${f}-${pair}` : f, x, y, PLACEHOLDER.exit, false, side === 's');
@@ -105,6 +137,32 @@ export function drawRoomTiles(
           put(t, x, y, PLACEHOLDER[t]);
       }
     }
+  if (!thick) return;
+  const span = wall * TILE;
+  for (const s of Object.keys(room.doorCells) as Side[]) {
+    const cells = room.doorCells[s] ?? [];
+    const first = (cells[0] ?? 0) * TILE;
+    const mid = first + (cells.length * TILE) / 2;
+    const name = DOOR_FRAME[door(s)];
+    const frame = `${name}-thick${s === 'e' || s === 'w' ? '-side' : ''}`;
+    const x = s === 'w' ? 0 : s === 'e' ? ROOM_W - span : mid - span / 2;
+    const y = s === 'n' ? 0 : s === 's' ? ROOM_H - span : mid - span / 2;
+    put(frame, ox + x, oy + y, PLACEHOLDER[name], s === 'e', s === 's', span);
+  }
+  // A thick-walled room's exit: one glowing 32×32 doorway on the north or south band.
+  const exits: number[] = [];
+  for (let col = 0; col < ROOM_COLS; col++) if (tileAt(room, col, 0) === 'exit') exits.push(col);
+  const south: number[] = [];
+  for (let col = 0; col < ROOM_COLS; col++) if (tileAt(room, col, ROOM_ROWS - 1) === 'exit') south.push(col);
+  for (const [cols, s] of [
+    [exits, 'n'],
+    [south, 's'],
+  ] as const) {
+    if (cols.length === 0) continue;
+    const mid = ((cols[0] as number) + cols.length / 2) * TILE;
+    const y = s === 'n' ? 0 : ROOM_H - span;
+    put(`${exitLook()}-thick`, ox + mid - span / 2, oy + y, PLACEHOLDER.exit, false, s === 's', span);
+  }
 }
 
 /** How a doorway of the room on screen looks right now. */

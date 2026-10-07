@@ -6,7 +6,7 @@ import { encodeShare } from '@engine/share';
 import type { LevelData, Theme, Zone } from '../level/schema';
 import { THEMES } from '../level/schema';
 import { parseTextMap, serializeTextMap } from '../level/textmap';
-import { DEFAULT_LEGEND, T, TILES, tileDef } from '../level/tiles';
+import { DEFAULT_LEGEND, T, editorTiles, tileDef } from '../level/tiles';
 import { TileMap } from '../world/tilemap';
 import { renderTiles, SKY } from '../world/tile-render';
 import { customLevelId, loadLibrary, saveLibrary } from '../level/library';
@@ -419,15 +419,15 @@ export class EditorScene implements Scene {
     this.panel = el;
 
     const tiles = el.querySelector('[data-tiles]') as HTMLElement;
-    for (const [ch, v] of Object.entries(DEFAULT_LEGEND)) {
-      if (typeof v !== 'number' || v === T.AIR) continue;
-      const def = tileDef(v);
-      tiles.appendChild(this.brushButton({ kind: 'tile', id: v, label: def.name }, `${ch} ${def.name}`));
-    }
-    for (const def of TILES) {
-      if (!Object.values(DEFAULT_LEGEND).includes(def.id) && def.id !== T.AIR && def.id !== T.BUMPING) {
-        tiles.appendChild(this.brushButton({ kind: 'tile', id: def.id, label: def.name }, def.name));
-      }
+    const chars = new Map<number, string>();
+    for (const [ch, v] of Object.entries(DEFAULT_LEGEND))
+      if (typeof v === 'number' && !chars.has(v)) chars.set(v, ch);
+    for (const id of editorTiles()) {
+      const def = tileDef(id);
+      const ch = chars.get(id);
+      tiles.appendChild(
+        this.brushButton({ kind: 'tile', id, label: def.name }, ch ? `${ch} ${def.name}` : def.name),
+      );
     }
     tiles.appendChild(this.brushButton({ kind: 'erase', label: 'eraser' }, 'eraser'));
     tiles.appendChild(this.brushButton({ kind: 'start', label: 'start' }, 'player start'));
@@ -504,6 +504,9 @@ export class EditorScene implements Scene {
       'mountain',
       'sandbags',
       'searchlight',
+      // Sophia's Underworld (drawn for its decor palette)
+      'gateway',
+      'roots',
     ]) {
       decor.appendChild(this.brushButton({ kind: 'decor', name: d, label: d }, d));
     }

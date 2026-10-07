@@ -52,6 +52,7 @@ const SMB3_FRAMES: Record<string, Size> = {
   porthole: T16,
   pillar: T16,
   'ceiling-beam': T16,
+  'ceiling-pipe': [40, 32],
   // Larry's airship deck: cannons, Rocky Wrench, the hull's fittings, the anchor and its chain.
   'cannon-r': T16,
   'cannon-l': T16,
@@ -256,6 +257,19 @@ describe('smb3 sheet', () => {
     expect(beam.join('')).not.toContain('.');
     // its edge bands (outline, lit top, shadowed underside) are solid rows that meet tile to tile
     for (const y of [0, 1, 2, 10, 11, 12, 13, 14, 15]) expect(new Set(beam[y]).size, `row ${y}`).toBe(1);
+  });
+  it('cabin decor: a green pipe hanging from the ceiling, its rim opening downward, 8 px in from the left', () => {
+    const pipe = rows('ceiling-pipe');
+    // nothing in the first 8 columns: the 32-px pipe is centred on the column the hero drops down
+    for (const r of pipe) expect(r.slice(0, 8)).toMatch(/^\.+$/);
+    // the body (top half) is narrower than the rim (bottom half), which spans all 32 px
+    const span = (r: string) => r.replace(/^\.+|\.+$/g, '').length;
+    expect(span(pipe[4] as string)).toBeLessThan(32);
+    expect(span(pipe[20] as string)).toBe(32);
+    // outlined at the very bottom (the opening's edge), and green
+    expect(pipe[31]?.slice(8)).toMatch(/^0+$/);
+    expect(pipe.join('')).toMatch(/5/);
+    expect(pipe.join('')).toMatch(/6/);
   });
 });
 

@@ -20,6 +20,8 @@ docs/WORLD_MAP.md "The Top Secret Area".
 | `bonusGuard`        | the used spot's Hammer Bro is out (after the next level entered)           | not out               |
 | `inventory`         | item ids won, in order: `mushroom`, `flower`, `star`, `1up`; at most 12    | `[]`                  |
 | `bonusNext`         | the rotation: 0 Toad House, 1 N-spade, 2 spade game                        | 0                     |
+| `spadeBoard`        | the N-spade board in play (an index into `NSPADE_BOARDS`, 0.4.14)          | 0 (the first)         |
+| `spadeTaken`        | its cards taken on earlier visits, whole pairs only (0.4.14)               | `[]`                  |
 | `devInventory`      | dev mode's map menu "Item inventory"                                       | off                   |
 | `itemsNext`         | items used from the map, waiting for the next level's start (one per kind) | `[]`                  |
 
@@ -44,8 +46,11 @@ spent spot has no guard until a level is entered from the map; then its Hammer B
 the spot reopens when he is beaten.
 
 **The Hammer Bro's prize**: beating the Hammer Bro battle also gives an item (SMB3 does): a
-mushroom, fire flower or star, weighted like a Toad House chest (`awardHammerPrize`), shown on the
-battle's win card and stored like any bonus prize.
+mushroom, fire flower or star, weighted like a Toad House chest (`hammerPrizeItem`, from the
+battle's seed). As in SMB3 it comes in a treasure chest (0.4.14): once both Hammer Bros are down
+the chest drops into the middle of the arena and lands on the floor; the hero walks up to it and
+opens it with OPEN (the ATTACK button, labelled by the chest), its item rises out, then the
+battle's win card lists it and it is stored like any bonus prize (campaign play only).
 
 ## Opening a bonus game elsewhere
 
@@ -73,22 +78,30 @@ the pointer's bob over the chests (still with reduce flashing) and the reels.
 
 ### Toad House
 
-Toad and three chests on a wooden floor; Toad says "PICK A BOX. ITS CONTENTS WILL HELP YOU ON YOUR
-WAY." Left / right move the pointer (announced "Box 2 of 3"), OPEN opens the chest. Its prize rises
-out and goes into the inventory with a banner ("YOU GOT A MUSHROOM! / ADDED TO YOUR ITEMS (1)"). In a round for fun (the arena, Dev → Mini games) nothing is kept: "YOU GOT A MUSHROOM! / (JUST FOR FUN)".
+A room you walk into (0.4.14, SMB3's): the hero walks in from the left on his own, Toad's line
+"PICK A BOX. ITS CONTENTS WILL HELP YOU ON YOUR WAY." shows at the top, and three chests stand on
+the wooden floor, Toad at the back on the right. The room is a real World (`toad-house.map`, one
+screen, `toadHouseRoom()`), so every hero walks and jumps about it with his own moves (a sim per
+hero and chest: `toad-house.test.ts`); nothing in it touches the run. Standing by a chest
+(announced "Box 2. Open it?", the ATTACK button labelled OPEN), OPEN opens it: the other two are
+gone at once (one pick). Its prize rises out and goes into the inventory with a banner ("YOU GOT A MUSHROOM! / ADDED TO YOUR ITEMS (1)"). In a round for fun (the arena, Dev → Mini games) nothing is kept: "YOU GOT A MUSHROOM! / (JUST FOR FUN)".
 Chests are rolled from the seed as the house opens, each on its own: mushroom 50%, fire flower
 35%, star 15% (`CHEST_WEIGHTS`). Music `toad-house`; sounds `powerup-appear` (the lid), `bonus-win`.
 
 ### N-spade (memory match)
 
 18 cards face down in 3 rows of 6 on a green table: nine pairs, two each of mushroom, fire flower
-and 1-up, one each of star, 10 coins and 20 coins (`MEMORY_PAIRS`), shuffled from the seed. The
+and 1-up, one each of star, 10 coins and 20 coins (`MEMORY_PAIRS`). As in SMB3 the boards are a
+fixed set dealt in turn, not a shuffle: `NSPADE_BOARDS` (rules.ts, eight layouts of our own), the
+file's `spadeBoard`. A board stays as it was left: the pairs found stay gone on the next visit
+(`spadeTaken`, saved with each pair's prize) until every pair on it is found; then the next board
+comes (after the last, the first again). A round for fun plays the file's board and changes
+nothing. The
 arrows move a cursor (it wraps; the announcer says the row, card and what is face up there), TURN
 turns a card. Two at a time: a matching pair stays up and wins its prize at once (items to the
 inventory, a 1-up a life, coins added with 100 making a life); a miss shows both for 50 frames and
-turns them back. Two misses end it (the second stays up), as does finding every pair. "MISSES
-LEFT" shows at the top, the prizes won along the bottom. A fresh board each time (SMB3 kept the
-board between visits; one game per visit here). Music `bonus-game`; sounds `card-flip`, `bonus-win`,
+turns them back. Two misses end it (the second stays up), as does clearing the board. "MISSES
+LEFT" shows at the top, the prizes won along the bottom. Music `bonus-game`; sounds `card-flip`, `bonus-win`,
 `bump`.
 
 ### Spade game (slots)
@@ -99,6 +112,13 @@ first, on the picture nearest the window's middle. A full picture wins lives: mu
 star 5 (SMB3's 2-up, 3-up, 5-up); a mismatch wins nothing. One try. Each strip has eight pictures,
 stars the rarest (`SLOT_STRIPS`); the reels start from the seed. Music `bonus-game`; sounds
 `slot-stop`, `bonus-win`, `bump`.
+
+### The status bar
+
+Every bonus game draws SMB3's status bar (`hud/smb3-status.ts`, as Larry's airship and the Hammer
+Bro battle do) along the bottom 32 px: WORLD, the P-meter (empty here), coins, the hero's badge
+and lives, the score and no clock, and the three end-card slots. The games keep their hints,
+banners and result cards above it (`HINT_Y`, `STATUS_BAR_Y`).
 
 ### Art
 

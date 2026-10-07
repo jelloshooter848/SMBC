@@ -1,7 +1,7 @@
 import { NES, type PaletteBook } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { tilePalettes, tilesDef } from './tiles';
-import { fontPalettes, fontDef } from './font';
+import { fontPalettes, fontDef, fontTints } from './font';
 import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
@@ -19,6 +19,10 @@ import { smb3Palettes, smb3Def } from './smb3';
 import { cryptPalettes, cryptDef } from './crypt';
 import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
+import { sophiaPalettes, sophiaDef } from './sophia';
+import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
+import { partnersPalettes, partnersDef } from './partners';
+import { wandPalettes, wandDef } from './wand';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -31,6 +35,25 @@ import { titleLogoDef, titleLogoPalettes, titleRiftDef } from './title-logo';
 import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
 import { HERO_FX, mapShadeFx } from './palette-fx';
+
+/** `rows` cropped to its drawn pixels (no transparent border). */
+function trim(rows: readonly string[]): string[] {
+  const ys = rows.map((r, y) => (/[^.]/.test(r) ? y : -1)).filter((y) => y >= 0);
+  const xs = rows.flatMap((r) => [...r].map((c, x) => (c === '.' ? -1 : x)).filter((x) => x >= 0));
+  if (!ys.length) return [...rows];
+  const x0 = Math.min(...xs);
+  const x1 = Math.max(...xs);
+  return rows.slice(ys[0], (ys[ys.length - 1] as number) + 1).map((r) => r.slice(x0, x1 + 1));
+}
+
+/**
+ * Sophia III's sheet plus `portrait`: her `idle` tank cropped to its pixels, for the screens
+ * that stand a hero's portrait on a floor line (her tank frames are padded 32x32 for turning).
+ */
+const sophiaSheet: SpriteDef = {
+  ...sophiaDef,
+  frames: { ...sophiaDef.frames, portrait: trim(sophiaDef.frames.idle ?? []) },
+};
 
 /** All built-in sprite definitions keyed by sheet id. */
 export const SPRITES: Record<string, SpriteDef> = {
@@ -59,11 +82,17 @@ export const SPRITES: Record<string, SpriteDef> = {
   contra: contraDef,
   'title-logo': titleLogoDef,
   'title-rift': titleRiftDef,
+  sophia: sophiaSheet,
+  // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
+  'bm-dungeon': withSideFrames(bmDungeonDef),
+  partners: partnersDef,
+  wand: wandDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
   ...tilePalettes,
   ...fontPalettes,
+  ...fontTints,
   ...itemPalettes,
   ...decorPalettes,
   ...marioPalettes,
@@ -85,6 +114,10 @@ const defaults: Record<string, readonly string[]> = {
   ...ninjaPalettes,
   ...contraPalettes,
   ...titleLogoPalettes,
+  ...sophiaPalettes,
+  ...bmDungeonPalettes,
+  ...partnersPalettes,
+  ...wandPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

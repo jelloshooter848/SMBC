@@ -104,6 +104,20 @@ function policies(): Record<string, Policy> {
     },
     prone: () => ['down'],
     'jump-shoot': (p, f) => (p.body.onGround ? tapEvery(f, 'jump', 20) : tapEvery(f, 'attack', 4)),
+    // Sophia III (the shared 'missile' fires hers too)
+    cannon: (_p, f) => tapEvery(f, 'attack', 10),
+    hover: (p, f) => (p.body.onGround ? tapEvery(f, 'jump', 40) : f % 40 >= 12 ? ['jump'] : []),
+    // Over the gap with a held jump, then up the tall wall.
+    'wall-climb': (p, f) => {
+      if (!p.body.onGround) return ['right', 'up', 'jump'];
+      return cx(p) > 150 && cx(p) < 176 && f % 2 ? ['right', 'up', 'jump'] : ['right', 'up'];
+    },
+    // Off the wall first (into it + jump lets go; her wall pose is under a tile wide), then
+    // EXIT on the floor.
+    jason: (p, f) => {
+      if (p.body.onGround) return f % 10 === 0 ? ['select'] : [];
+      return p.body.w < 16 * 256 && f % 2 ? ['right', 'jump'] : [];
+    },
   };
 }
 
@@ -332,6 +346,7 @@ const MOVE_LESSONS: Record<string, string[]> = {
   simon: ['crouch-whip', 'sub-weapon', 'committed-jump'],
   ryu: ['cling', 'wall-jump', 'ninpo'],
   bill: ['aim', 'prone', 'jump-shoot'],
+  sophia: ['hover', 'missile', 'wall-climb', 'jason'],
 };
 
 /** Walk back and forth between the step and the dummy, tap-jump now and then, attack on the ground. */
@@ -342,6 +357,9 @@ const unrelated = (p: Player, f: number, dir: { d: 1 | -1 }): Action[] => {
   // A jump every 90 frames from the ground; attacks only on the ground, well after landing.
   if (f % 90 < 3 && p.body.onGround) return [...walk, 'jump'];
   if (p.body.onGround && f % 90 >= 60 && f % 8 < 2) return [...walk, 'attack'];
+  // Sophia III with the Flower grips a ceiling she jumps into; holding down bumps it instead
+  // (her guide's tip), so her jumps come back down like everyone's.
+  if (p.def.id === 'sophia' && !p.body.onGround) return [...walk, 'down'];
   return walk;
 };
 

@@ -12,6 +12,7 @@ import { MiniGameMenuScene } from '../minigames/menu';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText } from '../hud/text';
 import { awardPrize } from './use';
+import { drawSmb3Status, smb3Status, STATUS_BAR_Y } from '../hud/smb3-status';
 import { BONUS_TITLES, type BonusKind, type BonusPrize } from './rules';
 
 /** How a bonus game ended: what it gave (already applied), and whether the player gave up from its menu. */
@@ -26,6 +27,9 @@ export interface BonusResult {
    */
   played: boolean;
 }
+
+/** The y of a game's line of hints, just above SMB3's status bar along the bottom. */
+export const HINT_Y = STATUS_BAR_Y - 12;
 
 /** Frames the game ignores input after it opens, so the press that opened it does nothing. */
 export const BONUS_GUARD_FRAMES = 20;
@@ -167,15 +171,18 @@ export abstract class BonusScene implements Scene {
 
   render(r: Renderer): void {
     this.draw(r);
-    const font = this.game.ctx.assets.sheet('font');
+    const ctx = this.game.ctx;
+    const font = ctx.assets.sheet('font');
+    // SMB3's status bar along the bottom (no clock in a bonus game).
+    drawSmb3Status(r, ctx.assets, smb3Status(this.game.state, null, null), this.t, ctx.reduceFlashing);
     if (this.over) {
       const lines = this.over.lines;
       const ok = fontText(`PRESS ${this.hint('OK', 'jump')}`);
       const all = [...lines, '', ...(this.t - this.over.t > CARD_GUARD_FRAMES ? [ok] : [])];
-      // At the bottom of the screen, so the board (or the chest and its prize) stays in view.
-      drawTextBox(r, font, all, 232 - (all.length * 10 + 10));
+      // Low on the screen above the bar, so the board (or the chest and its prize) stays in view.
+      drawTextBox(r, font, all, STATUS_BAR_Y - 4 - (all.length * 10 + 10));
     } else if (this.banner) {
-      drawTextBox(r, font, this.banner.lines, 184);
+      drawTextBox(r, font, this.banner.lines, STATUS_BAR_Y - 8 - (this.banner.lines.length * 10 + 10));
     }
   }
 }

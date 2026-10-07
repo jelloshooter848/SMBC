@@ -10,7 +10,8 @@ export const fontPalette: string[] = [NES.black, NES.white, NES.redBright, NES.y
 /** Coloured text: the font with its white (role 1) swapped, asked for as `sheet('font', FONT_COLOURS.gold)`. */
 export const FONT_COLOURS = {
   gold: 'font-gold',
-  grey: 'font-grey',
+  // Not 'font-grey': that id is Zebes Escape's darker held-clock grey (fontTints below).
+  grey: 'font-silver',
   cyan: 'font-cyan',
   black: 'font-black',
 } as const;
@@ -23,6 +24,16 @@ export const fontPalettes: Record<string, readonly string[]> = {
   [FONT_COLOURS.grey]: tint(NES.lightGray),
   [FONT_COLOURS.cyan]: tint(NES.skyLight),
   [FONT_COLOURS.black]: tint(NES.black),
+};
+
+/**
+ * The font with its letters in another colour (Zebes Escape's TIME: red in the last ten seconds,
+ * pulsing to a dark red, and grey while the Infinite time assist holds the clock).
+ */
+export const fontTints: Record<string, string[]> = {
+  'font-red': [NES.black, NES.redBright, NES.redBright, NES.yellow, NES.brown],
+  'font-red-dark': [NES.black, NES.redDark, NES.redBright, NES.yellow, NES.brown],
+  'font-grey': [NES.black, NES.gray, NES.redBright, NES.yellow, NES.brown],
 };
 
 /**

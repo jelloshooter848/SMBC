@@ -492,13 +492,14 @@ and `smw-bush`; music `top-secret`, an 8-bar G-major loop in `songs.ts`), and on
 Yoshi egg frames, `egg-shell`, the Moblin, `cave-fire-0/1` (flickering slower with reduce flashing),
 `cave-mouth` and `map-node-tsa`. The hills' sparkles never twinkle.
 
-**Toad** has no map voice yet (the story batch, 0.4.13, adds it). A suggested line for the node:
-"SOMETHING TELLS ME THIS SPOT WAS MEANT TO STAY A SECRET..."
+**Toad** speaks on the map since 0.4.13 ("Story system" below), but has no line for this node
+yet. A suggested one: "SOMETHING TELLS ME THIS SPOT WAS MEANT TO STAY A SECRET..."
 
 ## Hidden paths and campaign pipes (level zones, 0.4.10)
 
 ```
-path x y w block=bx,by [campaign]
+path x y w block=bx,by [one-way] [campaign]
+ledge x y w campaign
 pipe x y dir -> level x y [exit=dir] [campaign]
 pipe x y down -> map 0 0
 ```
@@ -507,11 +508,38 @@ pipe x y down -> map 0 0
   once the hidden path block at (bx, by) (tile `9`, T.HIDDEN_PATH, content `path`) is bumped
   (`World.layPath`, one every `PATH_STEP_FRAMES`, only on open air; a tile with a player in it waits
   for him). `campaign`: the zone sleeps (no block, no path) outside campaign play; the campaign
-  variant wakes it and puts the hidden block in at (bx, by). 2-1's (above).
+  variant wakes it and puts the hidden block in at (bx, by). 2-1's (above). Several `path` zones
+  may name the same block: all are laid, in map order, with one announcement. `one-way`: its tiles
+  are laid as one-way cloud ledges (T.CLOUD_LEDGE) instead of cloud blocks (0.4.12: 2-1's two steps
+  back up to the bricks, laid before the path, so a hero dropped on the ground by the bump climbs
+  back up; a jump from under them passes through).
+- **`ledge`** (0.4.12): the `w` tiles from (x, y) rightward become one-way cloud ledges
+  (T.CLOUD_LEDGE: stood on from above, passed through from below and from the sides) in campaign
+  play only; `campaign` is required and the classic level is untouched. 2-1's ledge against its
+  last tower (188-189, row 8, a row over the bricks) is Simon's way up: his committed jump lands
+  on it off the bricks or coming down from the springboard (whose launch rises through it), and
+  from it he reaches the hidden coin block's top, and from there the tower top. It is too low for
+  any hero to reach the hidden block from it. Ordinary flagpole runs end exactly as before
+  (`tests/sim/top-secret.test.ts` replays every hero's whole way to the secret from the ground).
 - **A `campaign` pipe** sleeps outside campaign play (no way in; a zone only, so the level's tiles
-  are the same either way); the campaign variant wakes it. 2-1's way into the cave.
+  are the same either way); the campaign variant wakes it. 2-1's way into the cave. A woken pipe
+  on the same mouth as a live one (same column, row and direction) takes its place, the live
+  zone going (0.4.18): 8-4-end's trap pipe at column 10 (`pipe 10 11 down -> 8-4 19 10 exit=up`)
+  has a `pipe 10 11 down -> 8-4-jason 1 10 exit=up campaign` on top of it, so in the campaign it
+  leads to Jason's secret area (Sophia III's route, docs/HEROES.md) and everywhere else it is the
+  trap pipe exactly as before.
 - **`-> map`** (`MAP_EXIT`): a pipe back to the world map (the Top Secret Area's). Nothing is
   cleared; it is no exit of a level for the map's secret-exit look.
+
+## Swimming in any theme (`swim: true`, 0.4.18)
+
+A map header `swim: true` (`LevelData.swim`) makes the player swim from the first row of wave
+tiles (`w`) down, as a water theme does (`isSwimLevel` in schema.ts: a water theme, or this
+header), whatever the theme: Fred's flooded tunnel under 8-4 (`8-4-fred`) swims in the
+Underworld's look. Its water is drawn as a murky fill behind everything from the wave row down
+(`FLOODED` in world/tile-render.ts, per theme; the Underworld's teal), since the theme's sky is no
+water colour. Enemies hop as in a water level, and the Safety floor treats it as one. Only `true`
+is allowed; the header is written back by `serializeTextMap`.
 
 ## Teleport pads (level zone, 0.5.0)
 
@@ -673,8 +701,16 @@ pit x -> level x y [w=N] [campaign]
 ## Campaign looks (`LevelData.campaignLook`, 0.4.9)
 
 A level can look different in campaign play only: the same tiles, zones, entities and collision
-in another theme, music and decor (7-3 as a Contra jungle stage; next 2-1, 3-1, 4-2, 5-4 and 6-2
-in their heroes' styles). In the map:
+in another theme, music and decor (7-3 as a Contra jungle stage; since 0.4.12 the hero tributes:
+2-1 as a Zelda II field `zelda2`, 3-1 as a Mega Man night stage `megaman-stage`, 4-2 as Metroid's
+Brinstar `brinstar`, 5-4 as a Castlevania hall `castlevania`, 6-2 as a Ninja Gaiden city street
+`ninja-city`, each with its own music; 1-1 stays as it is). The coin heavens above them (2-1-sky,
+2-1-sky2, 3-1-sky, 6-2-sky) share the look; bonus rooms, water areas and the other areas keep
+their own. A look stays after the hero is freed, and its music plays for every hero (a hero's own
+overworld tune, `levelMusic` in `scenes/level.ts`, plays only in a plain `overworld` area). No
+look is a water theme, and every rule that keys off the theme (`isWaterTheme`, `isCastleTheme`,
+`hasSolidFloors`, `enemyPalette`) answers as for the classic level
+(`src/content/levels/campaign-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle
@@ -698,6 +734,16 @@ palm 1 12
 - A reskin's checklist: the theme (and its music) registered as for any theme; the two headers
   and the decor in the level's map; a test like `tests/sim/bill-camp.test.ts` "outside the
   campaign".
+
+## Story system (0.4.13)
+
+In the campaign (`storyOn`, src/game/story/beats.ts) Toad is the map's guide: when a page shows,
+his due story scenes (map/toad-guide.ts `dueScenes`) play in the map's `story` mode, in a box at
+the top of the map, before the page's reveal draws in; for the major ones (World 1's entry after
+1-0, the fake Bowsers, the airship crash, the 8-4 rift) his map sprite walks in from the left.
+Each plays once per file (the save file's optional `story` list). The whole system (beats,
+partners, castle pages, the fake Bowsers, 8-4's hand-off to Lost World 1, adding a beat) is in
+docs/STORY_SYSTEM.md.
 
 ## Adding a page (checklist)
 

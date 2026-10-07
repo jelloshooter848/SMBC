@@ -55,6 +55,16 @@ import { T, isSolid } from './tiles';
  * the level is exactly as it was (no hidden block, no way into the cave). The campaign variant
  * wakes them, and puts the path's hidden block (T.HIDDEN_PATH) in at its `block` tile. Nothing
  * else changes: the cave is an area of 2-1, where the Moblin ends the level (scenes/level.ts).
+ * A woken pipe on the same mouth as a live one (same column, row and direction) takes its place,
+ * the live one's zone going: 8-4-end's trap pipe at column 10 (owner decision for 0.4.18: Sophia's
+ * route) leads, in the campaign only, to Jason's secret area (8-4-jason) instead of back into the
+ * castle maze; outside the campaign it is the trap pipe exactly as before.
+ *
+ * A `ledge` zone (always marked `campaign`; 2-1's step by its last tower, 0.4.12) is laid by the
+ * campaign variant only: its tiles become one-way cloud (T.CLOUD_LEDGE), which a hero lands on
+ * from above and passes through from below and the sides. Simon's fixed jump arc reaches the
+ * hidden coin block's top from it (and the tower top from there); a springboard's launch rises
+ * through it.
  *
  * A level's campaign LOOK (`LevelData.campaignLook`: the map's `campaignTheme:` and
  * `campaignMusic:` headers and its `[campaign-decor]` section; 7-3 as a Contra jungle stage) is
@@ -147,10 +157,11 @@ const isBundled = (id: string): boolean => (bundled ??= new Set(levelIds())).has
  * map secrets (a climb zone's `until`).
  */
 export function campaignLevel(
-  level: LevelData,
+  given: LevelData,
   has: (id: string) => boolean = isBundled,
   secrets: readonly string[] = [],
 ): LevelData {
+  const level = toadAt84(given);
   const gone = (w: Warp) => !!w.until && secrets.includes(w.until);
   const anyGone = level.zones.some((z) => z.kind === 'warp' && gone(z));
   // Cached for the bundled library only (a test's own `has` gets a fresh variant).
@@ -172,6 +183,15 @@ export function campaignLevel(
   }
   const tiles = new Uint16Array(level.tiles);
   const dropped = new Set<Zone>();
+  // A woken pipe takes the place of a live one on the same mouth (8-4-end's trap pipe).
+  const wokenPipes = level.zones.filter((z): z is Pipe => z.kind === 'pipe' && z.campaign === true);
+  for (const z of level.zones)
+    if (
+      z.kind === 'pipe' &&
+      !z.campaign &&
+      wokenPipes.some((w) => w.x === z.x && w.y === z.y && w.dir === z.dir)
+    )
+      dropped.add(z);
   const kept = new Map<Pipe, Warp>();
   const added: { zones: Zone[]; entities: EntitySpawn[] } = { zones: [], entities: [] };
   /** Climb zones as shown: the dead pipe's label (classic look), or the stump only (gone). */
@@ -236,6 +256,15 @@ export function campaignLevel(
     const { x, y } = z.block;
     if (x >= 0 && x < level.width && y >= 0 && y < level.height) tiles[y * level.width + x] = T.HIDDEN_PATH;
   }
+  // Woken cloud ledges (2-1's step by its last tower): their one-way cloud goes into open air.
+  for (const z of level.zones) {
+    if (z.kind !== 'ledge' || !z.campaign) continue;
+    for (let x = z.x; x < z.x + z.w; x++) {
+      const i = z.y * level.width + x;
+      if (x >= 0 && x < level.width && z.y >= 0 && z.y < level.height && tiles[i] === T.AIR)
+        tiles[i] = T.CLOUD_LEDGE;
+    }
+  }
   // Woken exploding bridges: a coin arrow points down at each one's marked end.
   for (const e of level.entities) {
     if (e.type !== 'bridge-blast' || e.props?.campaign !== true) continue;
@@ -279,6 +308,27 @@ export function campaignLevel(
   return out;
 }
 
+const toads = new WeakMap<LevelData, LevelData>();
+
+/**
+ * SMB 8-4 in the campaign: Toad, who came to cheer, stands where the princess waits (she is in
+ * hiding; docs/STORY.md 2.12). The map file and every other play keep the princess; the Lost
+ * Levels' castles are left alone.
+ */
+function toadAt84(level: LevelData): LevelData {
+  if ((level.parent ?? level.id) !== '8-4' || !level.entities.some((e) => e.type === 'princess'))
+    return level;
+  let out = toads.get(level);
+  if (!out) {
+    out = {
+      ...level,
+      entities: level.entities.map((e): EntitySpawn => (e.type === 'princess' ? { ...e, type: 'toad' } : e)),
+    };
+    toads.set(level, out);
+  }
+  return out;
+}
+
 /** A zone that sleeps outside campaign play (its `campaign` mark), woken by campaignLevel. */
 function isSleepingZone(z: Zone): boolean {
   return (
@@ -286,7 +336,8 @@ function isSleepingZone(z: Zone): boolean {
       z.kind === 'trick' ||
       z.kind === 'pit' ||
       z.kind === 'pipe' ||
-      z.kind === 'path') &&
+      z.kind === 'path' ||
+      z.kind === 'ledge') &&
     z.campaign === true
   );
 }

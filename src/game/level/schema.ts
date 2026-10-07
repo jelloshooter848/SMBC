@@ -27,19 +27,36 @@ export type Theme =
   | 'airship-deck'
   // Simon's crypt under 5-4 and his mini game's castle: grey stone, night-blue brick, candlelight.
   | 'crypt'
+  // 5-4's campaign look (0.4.12): Simon's castle hall, orange stone blocks before a grey brick wall.
+  // Castle gameplay keys off what it draws (lava, fire bars, Bowser, the axe), not the theme; its
+  // enemies take the castle's palette (enemyPalette) and hammer bros its solid floors.
+  | 'castlevania'
   // Ryu's hideout under 6-2: a night dojo of dark lacquered wood, shoji and lanterns.
   | 'dojo'
   // Ryu's mini game outdoors: a moonlit town of grey stone, tiled roofs and lit windows.
   | 'ninja-night'
+  // 6-2's campaign look (0.4.12): Ryu's city street at night, pavement, red brick, a far skyline.
+  | 'ninja-city'
   // Bill's jungle (7-3's campaign look, his camp, his mini game): rock, girders, palms, a river.
   | 'contra-jungle'
   // Bill's waterfall climb out of the camp: wet rock ledges, falling water, mist.
   | 'contra-falls'
   // Red Falcon's lair (Bill's mini game): organic walls and floor.
   | 'alien-lair'
+  // Sophia's Underworld (her garage, her mini game's cavern): rust rock, roots, slime, gateways.
+  | 'underworld'
+  // The overhead dungeon's metal seen from the side (the top-down kit draws the `bm-dungeon` sheet).
+  | 'bm-dungeon'
   // The Top Secret Area behind World 2's hidden bonus spot (0.4.10), in a Super Mario World look:
   // grass-topped dirt, green bush hills and a big sparkly hill under a cream sky.
-  | 'smw-secret';
+  | 'smw-secret'
+  // Campaign looks (0.4.12): 2-1 as a Zelda II field, 3-1 as a Mega Man night stage, 4-2 as
+  // Metroid's Brinstar.
+  | 'zelda2'
+  | 'megaman-stage'
+  | 'brinstar'
+  // Tourian (Samus's mini game, ZEBES ESCAPE): green machine panels and tubes in the dark.
+  | 'tourian';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -63,12 +80,20 @@ export const THEMES: readonly Theme[] = [
   'airship',
   'airship-deck',
   'crypt',
+  'castlevania',
   'dojo',
   'ninja-night',
+  'ninja-city',
   'contra-jungle',
   'contra-falls',
   'alien-lair',
+  'underworld',
+  'bm-dungeon',
   'smw-secret',
+  'zelda2',
+  'megaman-stage',
+  'brinstar',
+  'tourian',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -79,6 +104,29 @@ export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).
  */
 export const isWaterTheme = (theme: Theme): boolean =>
   theme === 'water' || theme === 'overworld-water' || theme === 'water-gray' || theme === 'castle-water';
+
+/**
+ * Whether the player swims in `level` (from its first row of wave tiles down): a swimming theme,
+ * or any theme with the map's `swim: true` header (LevelData.swim; Fred's flooded tunnel under
+ * 8-4, `8-4-fred`, in the Underworld's look).
+ */
+export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =>
+  level.swim === true || isWaterTheme(level.theme);
+
+/**
+ * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
+ * 5-4's campaign look (Simon's hall). Castle rules that key off the theme ask this, never the name.
+ */
+export const isCastleTheme = (theme: Theme): boolean =>
+  theme === 'castle' || theme === 'castle-overworld' || theme === 'castle-water' || theme === 'castlevania';
+
+/**
+ * The original's `cannotPassThroughGround`: underground and castle areas, where a Hammer Bro's
+ * jumps go only straight up and down (no hopping through the floors), and 4-2's campaign look
+ * (Brinstar), which is 4-2's underground still. Samus's cavern is not one.
+ */
+export const hasSolidFloors = (theme: Theme): boolean =>
+  theme === 'underground' || theme === 'brinstar' || isCastleTheme(theme);
 
 /** The music an area of this theme plays when its map names none. */
 export function themeMusic(theme: Theme): string {
@@ -92,8 +140,16 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'crypt') return 'crypt';
   if (theme === 'dojo') return 'dojo';
   if (theme === 'ninja-night') return 'ng-stage';
+  if (theme === 'castlevania') return 'cv-hall';
+  if (theme === 'ninja-city') return 'ng-city';
   if (theme === 'contra-jungle' || theme === 'contra-falls') return 'contra-jungle';
   if (theme === 'alien-lair') return 'contra-lair';
+  if (theme === 'underworld') return 'bm-area';
+  if (theme === 'bm-dungeon') return 'bm-dungeon';
+  if (theme === 'zelda2') return 'zelda2-field';
+  if (theme === 'megaman-stage') return 'mm-stage-31';
+  if (theme === 'brinstar') return 'brinstar';
+  if (theme === 'tourian') return 'tourian';
   return 'overworld';
 }
 
@@ -204,8 +260,19 @@ export type Zone =
       y: number;
       w: number;
       block: { x: number; y: number };
+      /** Laid as one-way cloud ledges (T.CLOUD_LEDGE) instead of cloud blocks (`one-way` in maps). */
+      oneWay?: boolean;
       campaign?: boolean;
     }
+  /**
+   * A one-way cloud ledge (0.4.12): the `w` tiles from (x, y) rightward, laid as T.CLOUD_LEDGE by
+   * the campaign variant only (level/campaign.ts; `campaign` is required): 2-1's step by its last
+   * tower, which a hero with a fixed jump arc (Simon) lands on to reach the hidden coin block's top
+   * (and from there the tower top). Elsewhere the zone sleeps and its tiles stay as they are. (Its woken copy, in
+   * the campaign variant, has no `campaign` mark: its tiles are laid. serializeTextMap writes either
+   * back as the sleeping zone.)
+   */
+  | { kind: 'ledge'; x: number; y: number; w: number; campaign?: boolean }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
   | { kind: 'cheeps'; x: number; w: number }
   /** Bullet Bills fly in from the screen edges while the player is within [x, x + w). */
@@ -322,6 +389,12 @@ export interface LevelData {
    * leads back to the map. Every visit starts afresh, so its blocks are full again.
    */
   bonus?: boolean;
+  /**
+   * The player swims here although the theme is no water theme (the map's `swim: true` header):
+   * from the first row of wave tiles down, as in a water level (isSwimLevel). Fred's flooded
+   * tunnel under 8-4 (`8-4-fred`) swims in the Underworld's look.
+   */
+  swim?: boolean;
 }
 
 /**

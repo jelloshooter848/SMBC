@@ -1,7 +1,8 @@
 import { ROOM_COLS, ROOM_ROWS, TILE, type Side } from './geometry';
 
 /**
- * Text rooms. A room is 11 strings of 16 characters, one per tile, read like a map:
+ * Text rooms. A room is 11 strings of 16 characters, one per tile, read like a map (here with
+ * walls one tile thick; a dungeon may have Zelda's two, buildDungeon's `wall`):
  *
  *   #######XX#######     # wall          . floor        : floor (alternate look)
  *   #..............#     B block         S statue       ~ water        = stairs
@@ -9,6 +10,7 @@ import { ROOM_COLS, ROOM_ROWS, TILE, type Side } from './geometry';
  *   #......o.......O     @ player start  P push block   o block plate  _ floor switch
  *   ...                  t torch (unlit) T torch (lit)  k key  h heart H heart container
  *                        f heart refill  c chest        C cracked wall
+ *                        m map           v compass
  *                        b bat           n knight       r rock-spitter
  *
  * A cracked wall (C) is a wall a blast opens (world.ts). On the border it is a doorway that
@@ -64,6 +66,8 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
   b: { tile: 'floor', spawn: 'bat' },
   n: { tile: 'floor', spawn: 'knight' },
   r: { tile: 'floor', spawn: 'spitter' },
+  m: { tile: 'floor', spawn: 'map' },
+  v: { tile: 'floor', spawn: 'compass' },
 };
 
 export interface RoomDef {
@@ -82,6 +86,8 @@ export interface RoomDef {
   hint?: string;
   /** Free-form flag a game may use (e.g. a darker palette for a boss room). */
   dark?: boolean;
+  /** The room the compass points to (Zelda's Triforce room), marked on the map once it is found. */
+  goal?: boolean;
   /** What each chest (c) holds, in reading order: an item id or a pickup kind (world.ts `grant`). */
   chests?: readonly string[];
 }
@@ -97,6 +103,8 @@ export interface Spawn {
 
 export interface Room {
   readonly id: string;
+  /** How many tiles thick the outer wall is (1, or Zelda's 2 for a 12×7 floor). */
+  readonly wall: number;
   readonly gx: number;
   readonly gy: number;
   readonly def: RoomDef;
@@ -111,12 +119,15 @@ export interface Room {
   readonly start: { x: number; y: number } | null;
 }
 
-/** The edge a border cell is on, or null inside the room or on a corner. */
-export function sideOf(col: number, row: number): Side | null {
-  const top = row === 0;
-  const bottom = row === ROOM_ROWS - 1;
-  const left = col === 0;
-  const right = col === ROOM_COLS - 1;
+/**
+ * The edge a cell of the wall band (`wall` tiles thick) is on, or null inside the room or in a
+ * corner.
+ */
+export function sideOf(col: number, row: number, wall = 1): Side | null {
+  const top = row < wall;
+  const bottom = row >= ROOM_ROWS - wall;
+  const left = col < wall;
+  const right = col >= ROOM_COLS - wall;
   if ((top || bottom) && (left || right)) return null;
   if (top) return 'n';
   if (bottom) return 's';
@@ -125,18 +136,35 @@ export function sideOf(col: number, row: number): Side | null {
   return null;
 }
 
-export function isBorder(col: number, row: number): boolean {
-  return row === 0 || col === 0 || row === ROOM_ROWS - 1 || col === ROOM_COLS - 1;
+export function isBorder(col: number, row: number, wall = 1): boolean {
+  return row < wall || col < wall || row >= ROOM_ROWS - wall || col >= ROOM_COLS - wall;
 }
 
-/** Parses one room; throws with the room id, row and column on any mistake. */
-export function parseRoom(def: RoomDef, extraLegend: Readonly<Record<string, LegendEntry>> = {}): Room {
+/** How deep into the wall band a cell on `side` is (0 = the outer row or column). */
+export function wallDepth(col: number, row: number, side: Side): number {
+  if (side === 'n') return row;
+  if (side === 's') return ROOM_ROWS - 1 - row;
+  if (side === 'w') return col;
+  return ROOM_COLS - 1 - col;
+}
+
+/**
+ * Parses one room (its outer wall `wall` tiles thick); throws with the room id, row and column on
+ * any mistake.
+ */
+export function parseRoom(
+  def: RoomDef,
+  extraLegend: Readonly<Record<string, LegendEntry>> = {},
+  wall = 1,
+): Room {
   const where = (r: number, c?: number) => `room "${def.id}" row ${r}${c === undefined ? '' : ` col ${c}`}`;
   if (def.map.length !== ROOM_ROWS)
     throw new Error(`room "${def.id}": ${def.map.length} rows, expected ${ROOM_ROWS}`);
   const tiles: TileKind[] = [];
   const doors: Partial<Record<Side, DoorKind>> = {};
   const doorCells: Partial<Record<Side, number[]>> = {};
+  /** Each doorway's cells at each depth into the wall ("depth:cell"), to check it goes through. */
+  const doorAt = new Set<string>();
   const spawns: Spawn[] = [];
   let start: { x: number; y: number } | null = null;
   def.map.forEach((line, row) => {
@@ -146,7 +174,7 @@ export function parseRoom(def: RoomDef, extraLegend: Readonly<Record<string, Leg
       const ch = line[col] as string;
       const found = extraLegend[ch] ?? LEGEND[ch];
       if (!found) throw new Error(`${where(row, col)}: unknown character "${ch}"`);
-      const side = sideOf(col, row);
+      const side = sideOf(col, row, wall);
       // A cracked wall on the border is a doorway a blast opens.
       const e: LegendEntry = found.tile === 'cracked' && side ? { tile: 'door', door: 'cracked' } : found;
       if (e.door) {
@@ -156,8 +184,11 @@ export function parseRoom(def: RoomDef, extraLegend: Readonly<Record<string, Leg
         if (had && had !== e.door)
           throw new Error(`${where(row, col)}: the ${side} doorway mixes ${had} and ${e.door} cells`);
         doors[side] = e.door;
-        (doorCells[side] ??= []).push(side === 'n' || side === 's' ? col : row);
-      } else if (isBorder(col, row) && e.tile !== 'wall' && e.tile !== 'exit') {
+        const along = side === 'n' || side === 's' ? col : row;
+        const cells = (doorCells[side] ??= []);
+        if (!cells.includes(along)) cells.push(along);
+        doorAt.add(`${side}:${wallDepth(col, row, side)}:${along}`);
+      } else if (isBorder(col, row, wall) && e.tile !== 'wall' && e.tile !== 'exit') {
         throw new Error(`${where(row, col)}: the border must be wall, door or exit (got "${ch}")`);
       }
       tiles.push(e.tile);
@@ -167,12 +198,19 @@ export function parseRoom(def: RoomDef, extraLegend: Readonly<Record<string, Leg
       } else if (e.spawn) spawns.push({ kind: e.spawn, col, row, x: col * TILE, y: row * TILE });
     }
   });
+  for (const side of Object.keys(doorCells) as Side[])
+    for (const along of doorCells[side] ?? [])
+      for (let d = 0; d < wall; d++)
+        if (!doorAt.has(`${side}:${d}:${along}`))
+          throw new Error(
+            `room "${def.id}": the ${side} doorway must go through the whole wall (${wall} tiles)`,
+          );
   if (Object.values(doors).includes('shutter') && !def.shutters)
     throw new Error(`room "${def.id}": shutter doors need a \`shutters\` condition`);
   const chests = spawns.filter((s) => s.kind === 'chest').length;
   if (chests !== (def.chests?.length ?? 0))
     throw new Error(`room "${def.id}": ${chests} chests but ${def.chests?.length ?? 0} in \`chests\``);
-  return { id: def.id, gx: def.at[0], gy: def.at[1], def, tiles, doors, doorCells, spawns, start };
+  return { id: def.id, wall, gx: def.at[0], gy: def.at[1], def, tiles, doors, doorCells, spawns, start };
 }
 
 export function tileAt(room: Room, col: number, row: number): TileKind | null {
@@ -201,9 +239,15 @@ export function neighbourCell(room: Room, side: Side): [number, number] {
   return [room.gx + dx, room.gy + dy];
 }
 
+export interface DungeonOptions {
+  /** Tiles of outer wall round every room: 1 (a 14×9 floor) or Zelda's 2 (a 12×7 floor). */
+  wall?: number;
+}
+
 export function buildDungeon(
   defs: readonly RoomDef[],
   extraLegend: Readonly<Record<string, LegendEntry>> = {},
+  opts: DungeonOptions = {},
 ): Dungeon {
   const rooms = new Map<string, Room>();
   const byCell = new Map<string, Room>();
@@ -211,7 +255,7 @@ export function buildDungeon(
   let cols = 0;
   let rows = 0;
   for (const d of defs) {
-    const room = parseRoom(d, extraLegend);
+    const room = parseRoom(d, extraLegend, opts.wall ?? 1);
     if (rooms.has(room.id)) throw new Error(`room "${room.id}" is defined twice`);
     const cell = `${room.gx},${room.gy}`;
     if (byCell.has(cell))

@@ -8,6 +8,12 @@ time: 400
 start: 2,12
 startMode: stand
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook): Link's tribute, 2-1 as a Zelda II field: the
+;; same tiles, enemies, coins and collision in the `zelda2` theme and music, its trees and clouds
+;; as forest and flat clouds, with standing stones on the field ([campaign-decor]). Elsewhere
+;; (level select, ?level=2-1) it looks as it always did.
+campaignTheme: zelda2
+campaignMusic: zelda2-field
 
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208
@@ -48,6 +54,12 @@ piranha 176 10
 decor-castle 204 12
 ;; Campaign only (0.4.10): past the castle, the rocky mouth of the Moblin's hidden cave.
 decor 220 12 kind=items:cave-mouth campaign=true
+;; Campaign only (0.4.13, docs/STORY.md 2.5): the old man at the start, in front of a cave doorway
+;; between the castle (to column 6) and the first tree (11), a fire either side.
+cave-fire 7 12 campaign=true
+decor 8 12 kind=partners:cave campaign=true
+partner 8 12 who=old-man dx=8 campaign=true
+cave-fire 10 12 campaign=true
 
 [zones]
 checkpoint 98 12
@@ -58,7 +70,18 @@ pipe 103 9 down -> 2-1-bonus 1 0 exit=none
 ;; back up-left off the hidden coin block (186,5), lays a cloud path from the last tower toward the
 ;; flagpole; jump over the pole without touching it and walk on past the
 ;; castle into the cave at the level's end (2-1-cave, where the Moblin tells his secret).
+;; The same bump first lays two one-way cloud steps back up to the bricks (0.4.12), one over the
+;; ground and one beside the bricks, so a hero who comes down from the jump finds his way up again
+;; (a jump from under them passes through).
+path 183 10 1 block=184,0 one-way campaign
+path 184 9 1 block=184,0 one-way campaign
 path 192 3 7 block=184,0 campaign
+;; Campaign only (0.4.12): a one-way cloud ledge against the last tower, a row over the bricks' top
+;; and three under the hidden coin block's, for a hero with a fixed jump arc (Simon): he hops onto it
+;; off the bricks or lands on it coming down from the springboard (whose launch rises through it),
+;; and jumps from it onto the hidden coin block's top. Too low for any hero to reach the hidden
+;; block from it.
+ledge 188 8 2 campaign
 pipe 224 11 right -> 2-1-cave 1 12 campaign
 
 [decor]
@@ -115,3 +138,67 @@ tree-small 215 12
 tree-small 216 12
 cloud-1 219 2
 cloud-1 222 3
+
+[campaign-decor]
+;; The field: the level's own trees and clouds (drawn as Zelda II's forest and flat clouds),
+;; and standing stones on open stretches of ground.
+cloud-2 0 3
+tree-small 11 12
+tree-big 13 12
+cloud-1 18 3
+tree-big 21 12
+cloud-1 27 2
+cloud-2 30 3
+tree-small 40 12
+tree-big 43 12
+cloud-1 45 2
+cloud-2 48 3
+tree-small 59 12
+tree-big 61 12
+cloud-1 66 3
+tree-big 69 12
+tree-small 71 12
+tree-small 72 12
+cloud-1 75 2
+cloud-2 78 3
+tree-small 88 12
+tree-big 91 12
+cloud-1 93 2
+cloud-2 96 3
+tree-big 109 12
+cloud-1 114 3
+tree-big 117 12
+tree-small 119 12
+tree-small 120 12
+cloud-1 123 2
+cloud-2 126 3
+tree-small 136 12
+cloud-1 141 2
+cloud-2 144 3
+tree-small 155 12
+tree-big 157 12
+cloud-1 162 3
+tree-big 165 12
+tree-small 167 12
+tree-small 168 12
+cloud-1 171 2
+cloud-2 174 3
+tree-small 184 12
+tree-big 187 12
+cloud-1 189 2
+cloud-2 192 3
+tree-small 203 12
+tree-big 205 12
+cloud-1 210 3
+tree-big 213 12
+tree-small 215 12
+tree-small 216 12
+cloud-1 219 2
+cloud-1 222 3
+henge 15 12
+henge 28 12
+henge 52 12
+henge 80 12
+henge 111 12
+henge 145 12
+henge 171 12

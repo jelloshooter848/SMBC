@@ -16,6 +16,9 @@ describe('Station Escape: a cautious human (difficulty)', () => {
   it('a cautious first-timer (late reactions, misjudged distances, pauses) usually wins, and not unscathed', () => {
     const { rate, runs } = cautiousPassRate(6);
     expect(rate).toBeGreaterThanOrEqual(5 / 6);
+    // Most make it on their first life (three lives are a cushion, not the plan).
+    const first = runs.filter((r) => r.result === 'pass' && r.livesLost === 0).length / runs.length;
+    expect(first).toBeGreaterThanOrEqual(0.7);
     // Some effort: the stage and Dark Mega Man still cost hit points.
     const avg = (k: 'lost' | 'bossLost') => runs.reduce((a, r) => a + r[k], 0) / runs.length;
     expect(avg('lost')).toBeGreaterThan(8);
@@ -42,9 +45,11 @@ describe('Station Escape: a cautious human (difficulty)', () => {
             if (r.result !== 'pass') (fails[where] ??= []).push(i + 1);
           }
           const low = runs.filter((r) => r.result === 'pass' && r.hp <= 8).length;
+          const first = runs.filter((r) => r.result === 'pass' && r.livesLost === 0).length;
           const avg = (k: 'lost' | 'bossLost') => (runs.reduce((a, r) => a + r[k], 0) / n).toFixed(1);
           console.log(
-            `${noSaw ? 'buster only' : 'with the saw'}, reaction ${reaction}: pass ${(rate * 100).toFixed(0)}% of ${n}`,
+            `${noSaw ? 'buster only' : 'with the saw'}, reaction ${reaction}: pass ${(rate * 100).toFixed(0)}% of ${n},`,
+            `on the first life ${((first / n) * 100).toFixed(0)}%`,
             `(passes on 8 HP or less: ${low}; HP lost: ${avg('lost')}, to Dark Mega Man: ${avg('bossLost')})`,
             JSON.stringify(fails),
           );

@@ -64,6 +64,16 @@ export interface MoveYOptions {
   onHeadBump?: (tx: number, ty: number) => void;
   /** Ignore one-way ('top') tiles. */
   ignoreOneWay?: boolean;
+  /**
+   * A head bump strikes every block the head touches that frame, not only one (the original's
+   * `canHitMultipleBricks`: Sophia III's wide body). Default: one.
+   */
+  bumpAll?: boolean;
+  /**
+   * Free tiles needed beside a block (same row, on the slip side) before the head-bump corner
+   * slip nudges the body past it (HitTester.as: 2 for Sophia III's wide body). Default 1.
+   */
+  cornerFreeTiles?: 1 | 2;
 }
 
 export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}): void {
@@ -89,6 +99,14 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
   } else {
     const row = tileAt(b.y);
     const center = tileAt(b.x + (b.w >> 1));
+    const two = opts.cornerFreeTiles === 2;
+    /** A wide body slips only where its shifted box is clear in every row it covers. */
+    const clearAt = (x: number): boolean => {
+      if (!two) return true;
+      for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+        for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++) if (map.isSolid(tx, ty)) return false;
+      return true;
+    };
     let bumpCol = -1;
     if (map.blocksFromBelow(center, row)) bumpCol = center;
     else if (map.blocksFromBelow(left, row)) {
@@ -96,7 +114,9 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
       if (
         overlap <= CORNER_NUDGE &&
         !map.blocksFromBelow(right, row) &&
-        !map.isSolid(left + 1, tileAt(b.y + b.h - 1))
+        !(two && (map.blocksFromBelow(left + 1, row) || map.blocksFromBelow(left + 2, row))) &&
+        !map.isSolid(left + 1, tileAt(b.y + b.h - 1)) &&
+        clearAt(b.x + overlap)
       ) {
         b.x += overlap; // slip past the corner
         return;
@@ -104,11 +124,23 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
       bumpCol = left;
     } else if (map.blocksFromBelow(right, row)) {
       const overlap = b.x + b.w - tileToSub(right);
-      if (overlap <= CORNER_NUDGE && !map.isSolid(right - 1, tileAt(b.y + b.h - 1))) {
+      if (
+        overlap <= CORNER_NUDGE &&
+        !(two && (map.blocksFromBelow(right - 1, row) || map.blocksFromBelow(right - 2, row))) &&
+        !map.isSolid(right - 1, tileAt(b.y + b.h - 1)) &&
+        clearAt(b.x - overlap)
+      ) {
         b.x -= overlap;
         return;
       }
       bumpCol = right;
+    }
+    if (bumpCol >= 0 && opts.bumpAll) {
+      b.y = tileToSub(row + 1);
+      b.vy = 0;
+      b.hitHead = true;
+      for (let tx = left; tx <= right; tx++) if (map.blocksFromBelow(tx, row)) opts.onHeadBump?.(tx, row);
+      return;
     }
     if (bumpCol >= 0) {
       b.y = tileToSub(row + 1);

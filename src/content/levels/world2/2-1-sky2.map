@@ -9,6 +9,9 @@ start: 4,14
 startMode: climb
 camera: scroll
 parent: 2-1
+;; Campaign play only: the sky ruins above 2-1 share its Zelda II look and music.
+campaignTheme: zelda2
+campaignMusic: zelda2-field
 
 ;; Sky ruins above the 2-1 coin heaven (reached by the hidden vine block in 2-1-sky): a fallen
 ;; temple on the clouds where captive Link waits beside the doorway. The clouds end on the right in a

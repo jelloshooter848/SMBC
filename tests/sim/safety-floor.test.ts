@@ -468,9 +468,19 @@ describe('the mini games built on World read the same assist', () => {
 
   const games = {
     'Shadow Duel (Ryu)': () => duelHarness({ skipCutscene: true }),
-    'Zebes Escape (Samus)': () => escapeHarness(),
-    'Station Escape (Mega Man)': () => stationHarness(),
+    'Station Escape (Mega Man)': () => {
+      // Past READY and the beam down (0.4.12): he moves from then on.
+      const h = stationHarness();
+      for (let i = 0; i < 400 && (h.scene.phase === 'ready' || h.world.beaming); i++) h.step();
+      return h;
+    },
   };
+  it("Zebes Escape (Samus): its world's assist is the game's (Tourian has no pits to catch)", () => {
+    const h = escapeHarness();
+    expect(h.world.assist).toBe(h.game.ctx.assist);
+    expect(drops(h.world.level).filter((d) => d.kind === 'pit')).toEqual([]);
+  });
+
   for (const [name, make] of Object.entries(games)) {
     it(`${name}: its world's assist is the game's, and its pits catch with the assist on`, () => {
       const h = make();

@@ -16,6 +16,19 @@ const LORD_FILL = 'v12 k8 v6 h16 h16 v11 s8 v6 h16 h16 v10 s16 s16 s16 s16 v12 s
 const BEAST_BAR = 'v12 k16 k16 v6 h16 h16 v11 s8 v6 h8 v12 k16 k16 v6 h16 h16 v11 s8 s16 s16';
 const BEAST_FILL = 'v12 k16 k16 v6 h16 h16 v11 s8 v6 h8 v10 s16 s16 s16 s16 v12 s16 s16 s16 s16';
 
+// 5-4's castle hall (0.4.12): a kick-hat-snare bar ending on a doubled kick, and a rolling fill.
+const HALL_BAR = 'v11 k8 v6 h16 h16 v10 s8 v6 h8 v11 k8 v6 h8 v10 s8 v11 k16 k16';
+const HALL_FILL = 'v11 k8 v6 h8 v10 s8 v6 h8 v10 s16 s16 v11 s16 s16 v12 s16 s16 v13 s8';
+// Half a bar of an organ-like sixteenth arpeggio: root, middle, top, middle, twice.
+const organ = ([a, b, c]: readonly [string, string, string]): string => `[${a}16 ${b}16 ${c}16 ${b}16]2`;
+const HALL_EM = ['o3 e', 'o3 g', 'o3 b'] as const;
+const HALL_C = ['o3 e', 'o3 g', 'o4 c'] as const;
+const HALL_D = ['o3 f+', 'o3 a', 'o4 d'] as const;
+const HALL_B = ['o3 f+', 'o3 b', 'o4 d+'] as const;
+const HALL_AM = ['o3 a', 'o4 c', 'o4 e'] as const;
+// Half a bar of the hall's bass: root and its octave in eighths.
+const pump = (n: string): string => `[o2 ${n}8 o3 ${n}8]2`;
+
 export const castlevaniaSongs: Song[] = [
   {
     id: 'crypt',
@@ -181,6 +194,54 @@ export const castlevaniaSongs: Song[] = [
     `,
     noise: `
       [${BEAST_BAR}]7 ${BEAST_FILL}   ; bars 1-8
+    `,
+  },
+  {
+    id: 'cv-hall',
+    bpm: 152,
+    loop: true,
+    // E minor, 16 bars: 5-4 as Simon's castle hall (its campaign look). A proud, climbing call
+    // that turns on B major's D-sharp, then a falling answer over the same pulse; an organ
+    // arpeggio in sixteenths and a pumping octave bass under it.
+    pulse1: `
+      @2 v11 q7 x0
+      o4 e8 b8 o5 e8 d8 o4 b8 a8 g8 a8      ; bar 1  Em
+      o4 b4 g8 e8 f+8 g8 a8 f+8             ; bar 2  Em
+      o4 g8 o5 c8 e8 d8 c8 o4 b8 a8 g8      ; bar 3  C
+      o4 f+4 a8 f+8 d+4 f+4                 ; bar 4  D B
+      o4 e8 b8 o5 e8 f+8 g8 f+8 e8 d8       ; bar 5  Em
+      o5 c4 o4 b8 a8 b4 g4                  ; bar 6  C Em
+      o4 a8 o5 c8 e8 c8 o4 b8 a8 g8 f+8     ; bar 7  Am
+      o4 b2 d+4 f+4                         ; bar 8  B
+      o5 e4. d8 c4 o4 b4                    ; bar 9  C
+      o5 d4. c8 o4 b4 a4                    ; bar 10 D
+      o4 g8 a8 b8 o5 e8 d8 c8 o4 b8 g8      ; bar 11 Em
+      o4 e2 r8 e16 f+16 g8 a8               ; bar 12 Em
+      o5 c4. o4 b8 a4 o5 e4                 ; bar 13 Am
+      o4 d+4. e8 f+4 b4                     ; bar 14 B
+      o5 e8 d8 c8 o4 b8 a8 g8 f+8 g8        ; bar 15 C D
+      o4 f+4 d+4 o3 b4 r4                   ; bar 16 B
+    `,
+    pulse2: `
+      @1 v6 q6 x0
+      ${organ(HALL_EM)} ${organ(HALL_EM)} ${organ(HALL_EM)} ${organ(HALL_EM)}
+      ${organ(HALL_C)} ${organ(HALL_C)} ${organ(HALL_D)} ${organ(HALL_B)}
+      ${organ(HALL_EM)} ${organ(HALL_EM)} ${organ(HALL_C)} ${organ(HALL_EM)}
+      ${organ(HALL_AM)} ${organ(HALL_AM)} ${organ(HALL_B)} ${organ(HALL_B)}
+      ${organ(HALL_C)} ${organ(HALL_C)} ${organ(HALL_D)} ${organ(HALL_D)}
+      ${organ(HALL_EM)} ${organ(HALL_EM)} ${organ(HALL_EM)} ${organ(HALL_EM)}
+      ${organ(HALL_AM)} ${organ(HALL_AM)} ${organ(HALL_B)} ${organ(HALL_B)}
+      ${organ(HALL_C)} ${organ(HALL_D)} ${organ(HALL_B)} ${organ(HALL_B)}
+    `,
+    triangle: `
+      q6
+      ${pump('e')} ${pump('e')} ${pump('e')} ${pump('e')} ${pump('c')} ${pump('c')} ${pump('d')} ${pump('b')}
+      ${pump('e')} ${pump('e')} ${pump('c')} ${pump('e')} ${pump('a')} ${pump('a')} ${pump('b')} ${pump('b')}
+      ${pump('c')} ${pump('c')} ${pump('d')} ${pump('d')} ${pump('e')} ${pump('e')} ${pump('e')} ${pump('e')}
+      ${pump('a')} ${pump('a')} ${pump('b')} ${pump('b')} ${pump('c')} ${pump('d')} ${pump('b')} ${pump('b')}
+    `,
+    noise: `
+      [${HALL_BAR}]7 ${HALL_FILL} [${HALL_BAR}]7 ${HALL_FILL}   ; bars 1-16
     `,
   },
 ];

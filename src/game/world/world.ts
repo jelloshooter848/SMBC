@@ -8,10 +8,10 @@ import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/un
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
-import { isWaterTheme } from '../level/schema';
+import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
-import { drawStars, renderTiles, SKY, STARRY_SKIES } from './tile-render';
+import { drawStars, FLOODED, FLOODED_WATER, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
 import { SafetyFloor } from './safety-floor';
 import { Player } from '../entities/player';
@@ -31,6 +31,8 @@ import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bu
 import { BalanceLift } from '../entities/objects/balance-lift';
 import { Princess } from '../entities/objects/princess';
 import { Captive } from '../entities/objects/captive';
+import { Partner } from '../entities/objects/partner';
+import { Fred } from '../entities/objects/fred';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
@@ -60,11 +62,14 @@ import {
   type PieceFrame,
 } from '../entities/effects/effects';
 import { castleFlagStart, Firework, FIREWORK_FRAMES, FIREWORK_TILES } from '../entities/effects/firework';
+import { WandBreak, WAND_SCENE_FRAMES } from '../entities/effects/wand-break';
+import { WandPoof } from '../entities/effects/wand-poof';
 import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { shellKickSeqScore, stompScore } from '../rules/score';
 import type { GameContext, GameState } from '../context';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
+import { drawThemeBackdrop } from './theme-backdrop';
 import { Lift } from '../entities/objects/lift';
 import { Candle, Respawner } from '../entities/objects/crypt';
 import {
@@ -78,6 +83,7 @@ import { sfx as SFX_LIB } from '@content/sfx/sfx';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
+import { DEATH_FRAMES, DEATH_SFX, renderDeath, startDeath, stepDeath, type DeathStyle } from './death-style';
 import { Axe } from '../entities/objects/axe';
 import { CaveFire, Moblin } from '../entities/objects/moblin';
 import { YoshiEgg } from '../entities/objects/yoshi-egg';
@@ -85,6 +91,7 @@ import { Larry } from '../entities/enemies/larry';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
+import { CASTLE_PAGES } from '../story/script';
 
 export type WorldEvent =
   /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
@@ -109,6 +116,10 @@ export type WorldEvent =
   | { type: 'talk'; hero: string; player: number }
   /** A player came within a captive's talking reach (TALK shows for them): announced. */
   | { type: 'captive-near'; hero: string; player: number }
+  /** A player pressed up next to a partner (campaign story): the level plays its pages. */
+  | { type: 'partner'; who: string; player: number }
+  /** A player came within a partner's reach (TALK or READ shows for them): announced. */
+  | { type: 'partner-near'; who: string; player: number }
   /**
    * A player touched Larry Koopa's crystal ball (objects/crystal-ball.ts): the level shows its
    * card and ends the area (campaign: 4-2's secret exit; else on to `next`).
@@ -122,7 +133,9 @@ export type WorldEvent =
    */
   | { type: 'moblin'; player: number; secret: string; next: string | null }
   /** A hidden path's block was bumped (World.layPath): its clouds are being laid. */
-  | { type: 'path' };
+  | { type: 'path' }
+  /** A line for the screen reader (the campaign's castle pages): the level announces it. */
+  | { type: 'say'; text: string };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -176,6 +189,14 @@ export interface WorldStart {
    * whose HUD shows no score: Dracula's Castle, Zebes Escape, Station Escape). 1UP still shows.
    */
   scorePopups?: boolean;
+  /**
+   * How a hero dies here (death-style.ts): `hop` (the default) is Mario's jingle and hop, as
+   * always; a mini game picks its hero's own NES death (`orbs` Mega Man, `explode` Samus,
+   * `collapse` Simon, `ninja` Ryu), each with its own sound. `died` is raised at the end of it.
+   */
+  deathStyle?: DeathStyle;
+  /** The sound a non-hop death makes, in place of its style's own (DEATH_SFX). */
+  deathSfx?: string;
 }
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
@@ -318,6 +339,9 @@ export const TALLY_PER_FRAME = 2;
 /** Points per TIME unit left (ScoreValue.TIME_REMAINING). */
 const TIME_POINTS = 50;
 
+/** px the camera keeps behind a camera anchor (Entity.anchorsCamera: a parked tank). */
+const ANCHOR_ROOM = 32;
+
 /** No hero's body is wider than a tile (characters' hitboxes; simon-crypt.test.ts checks). */
 const MAX_HERO_W = 16;
 
@@ -406,6 +430,11 @@ export class World {
   readonly flagpole: Flagpole | null = null;
   /** Set by LevelScene in campaign play; see CaptiveRules. */
   captives: CaptiveRules | null = null;
+  /**
+   * The campaign's story plays here (set by LevelScene when story/beats.ts storyOn holds): off in
+   * classic, dev, arena and play-test levels, which keep their old text and behaviour.
+   */
+  storyMode = false;
   /** The exploding bridge's boom (entities/objects/bridge-blast.ts). */
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
@@ -418,6 +447,9 @@ export class World {
   livesFree = false;
   /** WorldStart.extraEntities: a mini game's own entity types. */
   private readonly extraEntities: WorldStart['extraEntities'];
+  /** WorldStart.deathStyle: how a hero dies here (`hop`, Mario's, unless a mini game picks one). */
+  readonly deathStyle: DeathStyle;
+  private readonly deathSfx: string | null;
   /** Cracked-wall tiles still standing (T.CRACKED; crackWalls does nothing once none are left). */
   private cracked = 0;
   /** The Safety floor assist's rims and the players' view of the map with it (made on first use). */
@@ -445,6 +477,8 @@ export class World {
     this.audio = ctx.audio;
     this.assist = ctx.assist;
     this.extraEntities = start.extraEntities;
+    this.deathStyle = start.deathStyle ?? 'hop';
+    this.deathSfx = this.deathStyle === 'hop' ? null : (start.deathSfx ?? DEATH_SFX[this.deathStyle]);
     this.scorePopups = start.scorePopups ?? true;
     this.map = new TileMap(level);
     for (const id of level.tiles) if (id === T.CRACKED) this.cracked++;
@@ -499,7 +533,7 @@ export class World {
       const hb = def.hitbox(tmp);
       const feet = tileToSub(sy + 1);
       const p = new Player(
-        tileToSub(sx) + px((16 - hb.w) >> 1) + px(i * 20),
+        tileToSub(sx) + (px(16 - hb.w) >> 1) + px(i * 20),
         feet - px(hb.h),
         def,
         power,
@@ -513,7 +547,18 @@ export class World {
         this.fallingIn.add(p);
         // Co-op: player 2 drops in beside player 1 where that drop is clear (fallSpot).
         const first = this.players[0];
-        if (first) p.body.x = px(this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w));
+        if (first) {
+          const x = this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w);
+          // No clear drop beside player 1 for a wide body (a one-tile gap): fit through it.
+          if (x === null && hb.w > 16 && def.behaviour.narrowFall) {
+            const tx = tileAt(first.body.x + (first.body.w >> 1));
+            def.behaviour.narrowFall(p, tx, this.gapLip(tx));
+          } else p.body.x = px(x ?? toPx(first.body.x) + 20);
+        } else if (hb.w > 16) {
+          const x = this.wideFall(sx, p.body.x, p.body.w);
+          if (x !== null) p.body.x = x;
+          else def.behaviour.narrowFall?.(p, sx, this.gapLip(sx));
+        }
       } else if (mode === 'climb') {
         // The original's vineStart (Level.as watchModeOverrideVine): the vine grows from the
         // screen bottom while the player is hidden (Vine.initiate → growFromStgBot), then
@@ -567,7 +612,7 @@ export class World {
         // hidden until the panel turns edge-on; player 2 a step further into the room.
         const wall = this.trickBeside(sx, sy);
         const side = wall?.side ?? 1;
-        p.body.x = tileToSub(sx) + px((16 - hb.w) >> 1) + side * px(i * 20);
+        p.body.x = tileToSub(sx) + (px(16 - hb.w) >> 1) + side * px(i * 20);
         p.facing = side;
         if (wall) {
           p.frozen = true;
@@ -575,12 +620,29 @@ export class World {
           this.trickSpin ??= { wall, dir: 'in', t: 0 };
         }
       } else if (mode === 'autowalk') this.autoWalk = true;
+      // A body wider than a tile standing at its start (Sophia III's tank): centred on the start
+      // column unless that clips a wall beside it; then flush with the column's clear side.
+      // (A fall picks its column in wideFall; a pipe exit is two tiles wide; a vine is open air.)
+      const standing = mode === 'stand' || mode === 'autowalk' || mode === 'spin' || mode === 'beam';
+      if (hb.w > 16 && standing) {
+        const b = p.body;
+        const clear = (x: number) => {
+          for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+            for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++)
+              if (this.map.isSolid(tx, ty)) return false;
+          return true;
+        };
+        // Player 2 (beside player 1) tries its own spot first, then player 1's column.
+        const fit = [b.x, tileToSub(sx), tileToSub(sx + 1) - b.w, b.x - px(i * 20)].find(clear);
+        if (fit !== undefined) b.x = fit;
+      }
       this.players.push(p);
     });
     // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
     // the main area after it starts its own.
     if (this.autoWalk) this.time = null;
     this.camera.snapTo(this.player.body.x, this.player.body.y);
+    this.alignBeam();
     if (start.clearEnemies) {
       // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
       // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
@@ -597,8 +659,9 @@ export class World {
         return !enemy || (keepPiranhas && e instanceof Piranha);
       });
     }
-    // Water levels (any swimming theme): everything from the first row of wave tiles down is swimmable.
-    if (isWaterTheme(level.theme)) {
+    // Water levels (any swimming theme, or a map's `swim: true`): everything from the first row of
+    // wave tiles down is swimmable.
+    if (isSwimLevel(level)) {
       let row = 0;
       for (let ty = 0; ty < level.height && row === 0; ty++) {
         for (let tx = 0; tx < level.width; tx++) {
@@ -759,6 +822,11 @@ export class World {
         if (!hero || this.captives?.isFreed(id)) return null;
         return new Captive(s.x, s.y, hero);
       }
+      case 'partner':
+        // A campaign story partner (`partner x y who=<id>`): only while the story plays.
+        return this.storyMode
+          ? Partner.create(s.x, s.y, String(s.props?.who ?? ''), Number(s.props?.dx ?? 0))
+          : null;
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
@@ -828,6 +896,9 @@ export class World {
         return new Moblin(s.x, s.y, s.props.secret, typeof s.props.next === 'string' ? s.props.next : null);
       case 'cave-fire':
         return new CaveFire(s.x, s.y);
+      case 'fred':
+        // Jason's frog on Sophia III's route under 8-4 (objects/fred.ts): scenery that leads.
+        return Fred.create(s.x, s.y, s.props);
       case 'decor':
         // Any decor kind as a spawned entity (`decor x y kind=items:cave-mouth`): a campaign-only
         // piece of scenery (`campaign=true`) sleeps with the rest outside the campaign.
@@ -880,7 +951,7 @@ export class World {
     if (o instanceof Player) killer = o;
     else if (o instanceof Projectile && o.owner instanceof Player) killer = o.owner;
     if (!killer) killer = this.nearestPlayer(e.body.x);
-    const kind = killer.def.drop?.(this.rng, e);
+    const kind = killer.def.drop?.(this.rng, e, killer);
     if (kind) this.spawn(new Pickup(e.body.x + (e.body.w >> 1), e.body.y + e.body.h, kind));
   }
 
@@ -1021,6 +1092,7 @@ export class World {
     this.spawnPending();
     if (this.vineArrival) this.updateVineArrival();
 
+    const anchor = this.cameraAnchor();
     this.players.forEach((p, i) => {
       if (p.dead || p.out) return;
       const respawn = this.respawnTimers.get(p);
@@ -1062,12 +1134,18 @@ export class World {
       if (p.body.x < this.camera.x) {
         this.placeX(p, this.camera.x);
         if (p.body.vx < 0) p.body.vx = 0;
+        this.unsqueeze(p);
       }
       const rightEdge = Math.min(tileToSub(this.level.width), this.camera.x + px(SCREEN_W));
-      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right).
-      if (p.body.x + p.body.w > rightEdge && (this.camera.auto || (this.coop && p !== this.rightmost()))) {
+      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right), and
+      // so does a camera held back by an anchor (a parked tank).
+      if (
+        p.body.x + p.body.w > rightEdge &&
+        (this.camera.auto || anchor !== null || (this.coop && p !== this.rightmost()))
+      ) {
         this.placeX(p, rightEdge - p.body.w);
         if (this.camera.auto && p.body.vx > 0) p.body.vx = 0;
+        this.unsqueeze(p);
       }
       if (p.body.x + p.body.w > tileToSub(this.level.width))
         this.placeX(p, tileToSub(this.level.width) - p.body.w);
@@ -1117,7 +1195,16 @@ export class World {
 
     const lead = this.rightmost();
     if (this.camera.auto) this.autoScroll();
-    else if (lead) this.camera.follow(lead.body.x, lead.body.y);
+    else if (lead) {
+      const before = this.camera.x;
+      this.camera.follow(lead.body.x, lead.body.y);
+      // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
+      // held where it was, never pulled back (the screen does not scroll left), and a locked
+      // screen is left alone.
+      const a = this.cameraAnchor();
+      if (a !== null && !this.camera.locked && this.camera.x > a - px(ANCHOR_ROOM))
+        this.camera.x = Math.max(before, a - px(ANCHOR_ROOM));
+    }
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
       if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
@@ -1197,7 +1284,7 @@ export class World {
     return this.vineArrival !== null;
   }
 
-  /** Up pressed by a player within a captive's reach: a `talk` event (one a frame). */
+  /** Up pressed by a player within a captive's reach: a `talk` event; a partner's: a `partner` event (one a frame). */
   private checkTalk(inputs: InputFrame[]): void {
     for (const [i, p] of this.players.entries()) {
       if (!(inputs[i] ?? NO_INPUT).pressed('up') || p.vine) continue;
@@ -1205,6 +1292,15 @@ export class World {
       if (c) {
         c.prompt = false; // hidden under the dialogue; back on the next update in reach
         this.events.push({ type: 'talk', hero: c.hero.id, player: i });
+        return;
+      }
+      const partner = this.entities.find(
+        (e): e is Partner => e instanceof Partner && e.alive && e.inReach(p),
+      );
+      if (partner) {
+        partner.prompt = false; // hidden under its pages; back on the next update in reach
+        partner.talked = true;
+        this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }
     }
@@ -1244,6 +1340,8 @@ export class World {
         p.stairs = null;
         p.body.x += dx;
       }
+      // A camera anchor (a parked tank) goes round the loop with them.
+      for (const e of this.entities) if (e.alive && e.anchorsCamera) e.body.x += dx;
       this.camera.x = Math.max(0, Math.min(this.camera.maxX, this.camera.x + dx));
       this.loopPrevX = cur + toPx(dx);
       this.loopChecks.clear();
@@ -1329,6 +1427,7 @@ export class World {
     if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
     for (const e of this.entities) {
       if (!(e instanceof Vine) || !e.alive || e.centerX === p.leftVine) continue;
+      if (p.def.behaviour.canGrabVine?.(p, e.art, this) === false) continue;
       const v = e.body;
       // Generous sideways reach (the original lets you grab from beside the block it grew from).
       const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);
@@ -1649,21 +1748,27 @@ export class World {
 
   /**
    * A hidden path's block was bumped (a `path` zone whose `block` is this tile): its tiles are
-   * queued, left to right, and appear one every PATH_STEP_FRAMES as cloud blocks (tickPath), each
-   * with a soft pop. Only open air becomes cloud; a tile with a player in it waits for him to move.
+   * queued, left to right, and appear one every PATH_STEP_FRAMES as cloud blocks (one-way cloud
+   * ledges for a `oneWay` path; tickPath), each with a soft pop. Only open air becomes cloud; a
+   * tile with a player in it waits for him to move.
    */
   private layPath(tx: number, ty: number): void {
+    // Every path zone the block names is laid, in map order (2-1's steps back up, then its path).
+    let laid = false;
     for (const z of this.level.zones) {
       if (z.kind !== 'path' || z.campaign || z.block.x !== tx || z.block.y !== ty) continue;
-      for (let k = 0; k < z.w; k++) this.pathQueue.push({ x: z.x + k, y: z.y });
-      this.pathT = 0;
-      this.audio.sfx('vine');
-      this.events.push({ type: 'path' });
+      const tile = z.oneWay ? T.CLOUD_LEDGE : T.CLOUD_BLOCK;
+      for (let k = 0; k < z.w; k++) this.pathQueue.push({ x: z.x + k, y: z.y, tile });
+      laid = true;
     }
+    if (!laid) return;
+    this.pathT = 0;
+    this.audio.sfx('vine');
+    this.events.push({ type: 'path' });
   }
 
   /** Tiles of a bumped hidden path still to appear (layPath), in order. */
-  private pathQueue: { x: number; y: number }[] = [];
+  private pathQueue: { x: number; y: number; tile: number }[] = [];
   private pathT = 0;
 
   /** The next tile of a hidden path appears (layPath) unless a player stands in its cell. */
@@ -1675,7 +1780,7 @@ export class World {
     this.pathT = 0;
     this.pathQueue.shift();
     if (this.map.get(next.x, next.y) !== T.AIR) return;
-    this.map.set(next.x, next.y, T.CLOUD_BLOCK);
+    this.map.set(next.x, next.y, next.tile);
     this.audio.sfx('coin');
   }
 
@@ -1913,7 +2018,7 @@ export class World {
 
   hurtPlayer(p: Player, fromDir: -1 | 1 = 1): void {
     if (p.invulnerable || this.assist.invulnerable) return;
-    const result = p.def.behaviour.onHurt(p, this);
+    const result = p.def.behaviour.onHurt(p, this, fromDir);
     if (result === 'dead') this.kill(p);
     // On stairs a hit never knocks the player off (Castlevania's stairs keep you on them).
     else if (result === 'hurt' && p.def.damage.kind === 'hp' && p.def.damage.knockback && !p.stairs) {
@@ -1945,23 +2050,41 @@ export class World {
     p.star = 0;
     p.activeMelee = null;
     this.deathTimers.set(p, 0);
+    if (this.deathSfx) {
+      // A mini game's own death (WorldStart.deathStyle): its sound, and the music stops.
+      startDeath(this.deathStyle, p);
+      if (this.activePlayers().length === 0) {
+        this.audio.setTempoScale(1);
+        this.audio.stopMusic();
+      }
+      this.audio.sfx(this.deathSfx);
+      return;
+    }
     if (this.activePlayers().length === 0) {
       this.audio.setTempoScale(1);
       this.audio.playJingle('death');
     } else this.audio.sfx('hit');
   }
 
+  /** Frames since `p` died (null while alive): a death style's clock (death-style.ts). */
+  deathTime(p: Player): number | null {
+    return p.dead ? (this.deathTimers.get(p) ?? null) : null;
+  }
+
   private updateDeath(p: Player): void {
     const t = (this.deathTimers.get(p) ?? 0) + 1;
     this.deathTimers.set(p, t);
-    // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
-    // has no hop: the original's Character.initiatePitDeath only starts the die timer.
-    if (t === 30 && toPx(p.body.y) <= this.heightPx) p.body.vy = -0x04000;
-    if (t > 30) {
-      p.body.vy += 0x00280;
-      p.body.y += velToSub(p.body.vy);
+    if (this.deathStyle !== 'hop') stepDeath(this.deathStyle, p, t, this.map, this.heightPx);
+    else {
+      // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
+      // has no hop: the original's Character.initiatePitDeath only starts the die timer.
+      if (t === 30 && toPx(p.body.y) <= this.heightPx) p.body.vy = -0x04000;
+      if (t > 30) {
+        p.body.vy += 0x00280;
+        p.body.y += velToSub(p.body.vy);
+      }
     }
-    if (t === 200) {
+    if (t === DEATH_FRAMES[this.deathStyle]) {
       if (!this.coop) {
         this.events.push({ type: 'died', player: 0 });
         return;
@@ -1998,6 +2121,7 @@ export class World {
     p.body.vy = 0;
     this.deathTimers.delete(p);
     this.respawnTimers.set(p, COOP_RESPAWN_FRAMES);
+    p.def.behaviour.onRespawn?.(p, this);
   }
 
   /* ---------- Pipes & zones ---------- */
@@ -2124,6 +2248,15 @@ export class World {
     return this.pipeAnim !== null || this.pipeExit !== null;
   }
 
+  /**
+   * A beam down still on its way starts just above the camera's top (a tall map's lower screens
+   * too). A scene that moves the camera itself after the start calls it again.
+   */
+  alignBeam(): void {
+    if (this.beam?.dir !== 'down') return;
+    for (const s of this.beam.streaks) if (s.landed < 0) s.top = this.camera.pxY - BEAM_H;
+  }
+
   /** A teleport pad's beam is playing (up or down). */
   get beaming(): boolean {
     return this.beam !== null;
@@ -2240,6 +2373,7 @@ export class World {
       o.body.vy = 0;
       if (o !== p) o.hidden = true;
     }
+    p.def.behaviour.onLevelClear?.(p);
     p.body.x = tileToSub(pole.tx) - p.body.w + px(2);
     p.facing = 1;
     p.anim = 'climb';
@@ -2408,6 +2542,7 @@ export class World {
       o.anim = 'idle';
       if (o !== p) o.hidden = true;
     }
+    p.def.behaviour.onLevelClear?.(p);
     this.audio.stopMusic();
     this.bossClear = { t: 0 };
     this.bossPlayer = p;
@@ -2416,6 +2551,35 @@ export class World {
   /** The hero who took the axe (Toad's "THANK YOU <hero>!"), or null before the bridge is cut. */
   get castleHero(): Player['def'] | null {
     return this.bossPlayer?.def ?? null;
+  }
+
+  /**
+   * Whether the axe here breaks the wand (docs/STORY.md 2.12): the campaign's SMB 8-4 only (its
+   * main level and its areas), never classic play and never the Lost Levels' 8-4.
+   */
+  private get wandScene(): boolean {
+    return this.storyMode && (this.level.parent ?? this.level.id) === '8-4';
+  }
+
+  /**
+   * The wand spins up out of the falling king's hand (or, if fireballs already beat him, from the
+   * bridge before the axe) to a spot over the lava, where it breaks and the rift opens.
+   */
+  private breakWand(bowser: Bowser | undefined, p: Player): void {
+    let handX: number;
+    let feet: number;
+    if (bowser) {
+      const b = bowser.body;
+      handX = toPx(b.x + (b.w >> 1)) + bowser.facing * 10;
+      feet = toPx(b.y + b.h);
+    } else {
+      handX = toPx(p.body.x) - 72;
+      feet = toPx(p.body.y + p.body.h) + 16;
+    }
+    // The rift opens over the lava in view: the hero at the axe sees only the bridge's last
+    // tiles, so a king further left sends his wand flying in from the screen's edge.
+    const riftX = Math.max(handX, this.camera.pxX + 44);
+    this.spawn(new WandBreak(handX, feet - 16, riftX, feet - 56));
   }
 
   private updateBossClear(): void {
@@ -2435,18 +2599,24 @@ export class World {
       }
       if (cut) this.audio.sfx('break');
     }
-    for (const e of this.entities) if (e instanceof Bowser) e.update(this);
+    for (const e of this.entities)
+      if (e instanceof Bowser || ((e instanceof WandPoof || e instanceof WandBreak) && e.alive))
+        e.update(this);
     // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
     const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);
     // No points: BowserAxe.as only calls breakBridgeStart/Inc/End (Bowser.as), never die(), and
     // the fall below the screen (AnimatedObject.checkDosSides -> destroy) scores nothing either.
     if (bowser && c.t === 60) {
-      bowser.fallDead();
+      bowser.fallDead(this);
       this.audio.sfx('bowser-fall');
     }
+    // The campaign's 8-4: as the king drops, his wand breaks over the lava (docs/STORY.md 2.12),
+    // and the walk waits for its pieces to swirl into the rift.
+    const wand = this.wandScene;
+    if (wand && c.t === 60) this.breakWand(bowser, p);
     if (c.t === 120) this.audio.playJingle('castle-clear');
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-    if (c.t > 150 && c.stop === undefined) {
+    if (c.t > (wand ? 60 + WAND_SCENE_FRAMES + 10 : 150) && c.stop === undefined) {
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;
@@ -2481,6 +2651,22 @@ export class World {
       return;
     }
     if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
+    // The campaign's castles (docs/STORY.md 2.4-2.12) tell their own news in two pages instead:
+    // the fake Bowser's true form, then 2 s later the story, each read out; the exit waits 3.5 s
+    // after the second. The Lost castles keep the NES text (their story is Chapter 2).
+    const pages = this.storyMode ? CASTLE_PAGES[this.level.parent ?? this.level.id] : undefined;
+    if (pages) {
+      const page = s === 120 ? pages.reveal : s === 240 ? pages.news : null;
+      if (page) {
+        this.castleText = [`THANK YOU ${p.def.hudName}!`, '', ...page];
+        this.events.push({ type: 'say', text: [this.castleText[0], ...page].join(' ') });
+      }
+      if (s >= 450) {
+        this.events.push({ type: 'exit', next });
+        c.t = -100000;
+      }
+      return;
+    }
     if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
     if (s === 120 && next === 'end') this.castleText.push('', 'YOUR QUEST IS OVER.');
     if (s >= (next === 'end' ? 270 : 330)) {
@@ -2523,6 +2709,8 @@ export class World {
       theme,
       reduceFlashing: this.ctx.reduceFlashing,
     };
+    // A restyled theme's hall or skyline behind everything (theme-backdrop.ts).
+    drawThemeBackdrop(screen, view);
     // A free camera scrolls vertically too: the map is drawn moved up by its y (the backdrop and
     // the castle text stay screen-fixed). Every other level draws straight to the screen.
     let r = screen;
@@ -2533,6 +2721,12 @@ export class World {
       o.inner = screen;
       o.dy = -(view.camY ?? 0) + shake;
       r = o;
+    }
+    // A flooded area in a dry theme (a map's `swim: true`: Fred's tunnel under 8-4): its murky
+    // water fills the screen from the wave row down, behind everything (FLOODED).
+    if (this.level.swim && !isWaterTheme(theme) && Number.isFinite(this.waterTop)) {
+      const top = toPx(this.waterTop) - 8;
+      r.rect(0, top, SCREEN_W, this.heightPx - top, FLOODED[theme] ?? FLOODED_WATER);
     }
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
     this.backdrop?.(screen);
@@ -2774,7 +2968,7 @@ export class World {
    * above the row player 1 lands on (a shaft's wall, a ceiling), and outside every fire bar's sweep
    * on the way down (5-4 at 99, back from the crypt: the bar at (103, 11)). 20 px right when none is.
    */
-  private fallSpot(x1: number, w1: number, w: number): number {
+  private fallSpot(x1: number, w1: number, w: number): number | null {
     const map = this.map;
     const groundRow = (x0: number, x1e: number) => {
       let row = map.height;
@@ -2798,7 +2992,71 @@ export class World {
       groundRow(x, x + w) >= floor &&
       !bars.some((b) => barSweepX(b.tx, b.n, x, x + w));
     for (const d of [20, 16, 12, -20, -16, -12, 8, -8, 4, -4, 0]) if (clear(x1 + d)) return x1 + d;
-    return x1 + 20;
+    return null;
+  }
+
+  /**
+   * A fall arrival for a body wider than a tile (Sophia III's tank): centred on column `tx` unless
+   * that clips a solid tile on the way down to the column's floor; then flush with the column's
+   * left or right side, whichever drops clear (the drops are laid out for one-tile heroes).
+   */
+  private wideFall(tx: number, x: number, w: number): number | null {
+    const map = this.map;
+    let floor = 0;
+    while (floor < map.height && !map.isSolid(tx, floor)) floor++;
+    const clear = (x0: number) => {
+      for (let c = tileAt(x0); c <= tileAt(x0 + w - 1); c++)
+        for (let ty = 0; ty < floor; ty++) if (map.isSolid(c, ty)) return false;
+      return true;
+    };
+    for (const c of [x, tileToSub(tx), tileToSub(tx + 1) - w]) if (clear(c)) return c;
+    return null;
+  }
+
+  /** The last row of the first stretch where column `tx` has a solid tile on either side. */
+  private gapLip(tx: number): number {
+    const map = this.map;
+    let lip = -1;
+    for (let ty = 0; ty < map.height; ty++) {
+      const narrow = map.isSolid(tx - 1, ty) || map.isSolid(tx + 1, ty);
+      if (narrow) lip = ty;
+      else if (lip >= 0) break;
+      if (map.isSolid(tx, ty)) break;
+    }
+    return lip;
+  }
+
+  /**
+   * A screen edge pushed the player back into a wall: that undoes a head-bump corner slip (the
+   * body slipped sideways past a block's corner, the edge put it back under the block), so
+   * undo this frame's move up or down too, as the bump it should have been.
+   */
+  private unsqueeze(p: Player): void {
+    const b = p.body;
+    if (p.stairs || p.vine || !this.overlapsSolid(b)) return;
+    const y = b.prevBottom - b.h;
+    if (y === b.y || this.overlapsSolid({ x: b.x, y, w: b.w, h: b.h })) return;
+    b.y = y;
+    if (b.vy < 0) b.vy = 0;
+  }
+
+  /** Whether a box overlaps a solid tile. */
+  private overlapsSolid(b: { x: number; y: number; w: number; h: number }): boolean {
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++) if (this.map.isSolid(tx, ty)) return true;
+    return false;
+  }
+
+  /**
+   * The left edge (subpixels) of the left-most live camera anchor (Entity.anchorsCamera), or null.
+   * None once the level is won (flagpole or axe): the walk to the castle goes on past it.
+   */
+  cameraAnchor(): number | null {
+    if (this.clear || this.bossClear) return null;
+    let x: number | null = null;
+    for (const e of this.entities)
+      if (e.alive && e.anchorsCamera && (x === null || e.body.x < x)) x = e.body.x;
+    return x;
   }
 
   /** Whether a cracked wall still stands in this level. */
@@ -2938,13 +3196,34 @@ export class World {
 
   private renderPlayer(r: Renderer, view: View, p: Player): void {
     if (p.hidden || p.out) return;
+    if (p.dead && this.deathStyle !== 'hop') {
+      const t = this.deathTimers.get(p) ?? 0;
+      const draw = () => this.drawPlayer(r, view, p);
+      if (renderDeath(this.deathStyle, r, view, p, t, this.heightPx, draw)) return;
+      return draw();
+    }
     if (!p.visible(view.frame)) return;
+    this.drawPlayer(r, view, p);
+  }
+
+  private drawPlayer(r: Renderer, view: View, p: Player): void {
     const s = p.def.sprite(p, view.frame, view.reduceFlashing);
     const sheet = view.assets.sheet(s.sheet, s.palette);
     const f = sheet.frames.get(s.frame);
     const w = f?.w ?? 16;
-    const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
-    r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+    if (s.rotate !== undefined || s.flipY) {
+      // Turned or upside down (Sophia III on a wall or ceiling): centred on the hitbox.
+      const h = f?.h ?? 16;
+      const side = s.rotate === 90 || s.rotate === 270;
+      const bw = side ? h : w;
+      const bh = side ? w : h;
+      const cx = toPx(p.body.x + (p.body.w >> 1)) - view.camX;
+      const cy = toPx(p.body.y + (p.body.h >> 1));
+      r.sprite(sheet, s.frame, cx - (bw >> 1), cy - (bh >> 1), s.flip, s.flipY, s.rotate ?? 0);
+    } else {
+      const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
+      r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+    }
     if (this.coop && p.index > 0 && !p.dead) {
       // Small "2" tag above player two so both players can tell who is who.
       r.text(view.assets.sheet('font'), '2', toPx(p.body.x) - view.camX + 2, toPx(p.body.y) - s.offsetY - 10);

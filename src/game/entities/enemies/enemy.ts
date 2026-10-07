@@ -13,7 +13,7 @@ import {
 } from '../../rules/damage';
 import { ENEMY_SCORES, killScore, type KillScores } from '../../rules/score';
 import { CORPSE_GRAVITY_DEFAULT, Corpse } from '../effects/effects';
-import { isWaterTheme, type Theme } from '../../level/schema';
+import { isSwimLevel, type Theme } from '../../level/schema';
 
 /**
  * A block bumped under a koopa or spiny pops it up (KoopaGreen.gBounceHit / Spiney.gBounceHit):
@@ -27,6 +27,9 @@ export function enemyPalette(theme: Theme): string {
   switch (theme) {
     case 'underground':
     case 'cavern':
+    case 'underworld':
+    case 'brinstar':
+    case 'tourian':
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':
@@ -35,6 +38,8 @@ export function enemyPalette(theme: Theme): string {
     case 'crypt':
     case 'dojo':
     case 'alien-lair':
+    case 'bm-dungeon':
+    case 'castlevania': // 5-4's castle hall is a castle still (Podoboos; Bowser's true form)
       return 'enemies-castle';
     case 'water':
       return 'enemies-water';
@@ -166,7 +171,13 @@ export abstract class Enemy extends Entity {
    * `hop` false it just drops from where it is, as after a `vx = 0; vy = 0` (Bloopa.stomp).
    */
   protected flipOut(src: DamageSource, world: World, hop = true): void {
-    const dir = !hop || isWaterTheme(world.level.theme) ? 0 : src.dirX;
+    // A shot with its own kill effect (Sophia III's explosion) shows that instead of the corpse.
+    const o = src.owner as { killEffect?: (world: World, e: Entity) => boolean } | null;
+    if (o && typeof o.killEffect === 'function' && o.killEffect(world, this)) {
+      this.destroy();
+      return;
+    }
+    const dir = !hop || isSwimLevel(world.level) ? 0 : src.dirX;
     const corpse = new Corpse(
       this.body.x,
       this.body.y,

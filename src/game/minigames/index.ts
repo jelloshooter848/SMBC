@@ -6,6 +6,7 @@ import { SAMUS_MINIGAME } from './samus';
 import { SIMON_MINIGAME } from './simon';
 import { RYU_MINIGAME } from './ryu';
 import { BILL_MINIGAME } from './bill';
+import { SOPHIA_MINIGAME } from './sophia';
 
 export type { MiniGameDef, MiniGameResult } from './types';
 
@@ -18,6 +19,7 @@ export const MINIGAMES: Readonly<Record<string, MiniGameDef>> = {
   simon: SIMON_MINIGAME,
   ryu: RYU_MINIGAME,
   bill: BILL_MINIGAME,
+  sophia: SOPHIA_MINIGAME,
 };
 
 export function miniGameFor(hero: string): MiniGameDef | null {

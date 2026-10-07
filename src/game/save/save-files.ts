@@ -12,6 +12,7 @@ import {
   type NextItem,
 } from '@game/bonus/items';
 import { CRYSTAL_BALL } from '@game/map/captives';
+import { FIRST_HERO } from '@game/story/beats';
 
 /**
  * Three campaign save files (world map progress plus the run: lives, score, coins, heroes and
@@ -97,8 +98,20 @@ export interface SaveFile extends MapProgress {
    */
   inventory?: ItemId[];
   bonusNext?: number;
+  /**
+   * The N-spade's board in play and its cards taken on earlier visits (0.4.14, optional: missing,
+   * the first board with nothing taken; bonus/rules.ts NSPADE_BOARDS, takenCards).
+   */
+  spadeBoard?: number;
+  spadeTaken?: number[];
   devInventory?: boolean;
   itemsNext?: NextItem[];
+  /**
+   * The story beats this file has seen (0.4.13, src/game/story/beats.ts), each once. Missing in
+   * older files (and new ones until the first save): seeded on load from the file's progress
+   * (beats.ts seedSeen). No format change.
+   */
+  story?: string[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -140,8 +153,8 @@ export function migrateV1toV2(old: Record<string, unknown>): Record<string, unkn
   return out;
 }
 
-/** The hero every file starts with (never locked). */
-export const FIRST_HERO = 'mario';
+/** The hero every file starts with (never locked); defined in story/beats.ts, re-exported here. */
+export { FIRST_HERO };
 
 /** Known hero ids from `ids`, Mario first, each once (unknown ids and non-strings dropped). */
 export function freedHeroes(
@@ -253,6 +266,7 @@ const whole = (x: unknown, d: number, min: number, max = Number.MAX_SAFE_INTEGER
 const str = (x: unknown, d: string): string => (typeof x === 'string' ? x : d);
 const strs = (x: unknown, d: string[]): string[] =>
   Array.isArray(x) ? x.filter((e): e is string => typeof e === 'string') : d;
+const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((e) => typeof e === 'string');
 /** Page id → node id, for open pages only, and nodes the page has. */
 function lastNodes(x: unknown, pages: readonly PageId[]): Record<PageId, string> {
   const out: Record<PageId, string> = {};
@@ -404,6 +418,8 @@ export function migrateSave(
     bonusOpen: stored.bonusOpen !== false,
     bonusGuard: stored.bonusOpen === false && stored.bonusGuard === true,
     ...bonusSaveFields(bonusStateFrom(stored)),
+    // The seen story beats: kept only when well formed (else seeded on load, Game.openFile).
+    ...(isStrings(stored.story) ? { story: [...new Set(stored.story)] } : {}),
   };
 }
 

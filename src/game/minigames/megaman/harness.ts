@@ -11,6 +11,7 @@ import { CHARACTERS } from '@game/characters/registry';
 import type { MiniGameResult } from '../types';
 import { MEGAMAN_MINIGAME } from '.';
 import { StationScene } from './scene';
+import { MINI_LIVES } from '../lives';
 import { StationBot, type CautiousOptions } from './bot';
 import { WeaponCapsule } from './robots';
 
@@ -89,7 +90,21 @@ export function stationHarness(opts: HarnessOptions = {}) {
     for (; i < max && results.length === 0; i++) step(bot.next(scene));
     return i;
   };
-  return { game, scene, below, results, said, log, step, tap, play, world: scene.world };
+  return {
+    game,
+    scene,
+    below,
+    results,
+    said,
+    log,
+    step,
+    tap,
+    play,
+    /** The life in play's World (a new one after each lost life). */
+    get world() {
+      return scene.world;
+    },
+  };
 }
 
 export type StationHarness = ReturnType<typeof stationHarness>;
@@ -98,7 +113,7 @@ export type StationHarness = ReturnType<typeof stationHarness>;
  * One round played by a bot; how it ended and what it cost. `noSaw` takes the weapon capsule away
  * before the bot reaches it (the fight with the buster alone).
  */
-export function botRun(opts: Partial<CautiousOptions> = {}, noSaw = false, max = 20000) {
+export function botRun(opts: Partial<CautiousOptions> = {}, noSaw = false, max = 30000) {
   const h = stationHarness();
   const bot = new StationBot(opts);
   let lost = 0;
@@ -124,6 +139,8 @@ export function botRun(opts: Partial<CautiousOptions> = {}, noSaw = false, max =
     lost,
     bossLost,
     bossHp: h.scene.boss?.hp ?? null,
+    /** Lives lost on the way (3 on a game over). */
+    livesLost: MINI_LIVES - h.scene.lives.lives,
     x: Math.round(p.body.x / 256),
     saw: (p.scratch.weapons ?? 0) >= 1,
   };

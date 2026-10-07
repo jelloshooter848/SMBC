@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RESTYLES_SEEN } from './story-seen';
 import { getLevel, levelIds } from '@content/levels';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
@@ -49,14 +50,18 @@ const koopa = (w: World) => w.entities.find((e): e is Koopa => e instanceof Koop
 const descents = (zones: Zone[]) =>
   zones.filter((z): z is Zone & { kind: 'descent' } => z.kind === 'descent');
 
-/** Stand on the descent lift's left side, clear of the fire bar at (92, 10) sweeping its right end. */
+/**
+ * Stand on the descent lift's left side, clear of the fire bar at (92, 10) sweeping its right end.
+ * Edged over at no more than half a pixel a frame, so a hero that rolls on after letting go
+ * (Sophia III's tank) stops on the lift too.
+ */
 function rideLeft(w: World): Action[] {
   const b = w.player.body;
   const lift = w.entities.find(
     (e) => e instanceof Lift && e.kind === 'lift-down' && Math.abs(e.body.y - (b.y + b.h)) < px(4),
   );
   if (!lift || !b.onGround) return [];
-  return b.x + b.w > lift.body.x + px(10) ? ['left'] : [];
+  return b.x + b.w > lift.body.x + px(10) && b.vx > -0x00800 ? ['left'] : [];
 }
 
 describe('the areas', () => {
@@ -71,9 +76,11 @@ describe('the areas', () => {
     expect(descents(camp.zones)).toEqual([
       { kind: 'descent', x: 84, w: 8, target: { level: '5-4-dungeon', x: 13, y: 0 } },
     ]);
-    // Nothing else of 5-4 changes.
+    // Nothing else of 5-4 changes (but the townsperson at the start wakes: tests/sim/partners.test.ts).
     expect(camp.tiles).toEqual(raw.tiles);
-    expect(camp.entities).toEqual(raw.entities);
+    expect(camp.entities).toEqual(
+      raw.entities.map((e) => (e.type === 'partner' ? { ...e, props: { who: 'townsperson' } } : e)),
+    );
   });
 
   it('the descent zone parses and writes back the same', () => {
@@ -246,7 +253,11 @@ describe('the down lift into the dungeon (campaign)', () => {
           state: { powerState: power },
           maxFrames: 1,
         });
-        expect(toPx(r.world.player.body.w), `${c.name} ${power}`).toBeLessThanOrEqual(16);
+        // The one exception is Sophia III's tank (19 px, SO-3): the bar is still clear of her
+        // wherever she stands on the lift (the next test sweeps her whole overhang).
+        expect(toPx(r.world.player.body.w), `${c.name} ${power}`).toBeLessThanOrEqual(
+          c.id === 'sophia' ? 19 : 16,
+        );
       }
   });
 
@@ -254,8 +265,11 @@ describe('the down lift into the dungeon (campaign)', () => {
     '%s anywhere on the lift, hanging off either end, is never hit, whatever the bar phase (16 phases)',
     (_n, c) => {
       const TURN = 65536;
-      // Lift: 24 px wide; the rider's body (12 px) overlaps it by 1 px at either extreme.
-      for (const off of [-11, -8, -4, 0, 4, 8, 12, 16, 20, 23])
+      // Lift: 24 px wide; the rider's body (12 px) overlaps it by 1 px at either extreme (the
+      // tank's 19 px from -18).
+      const offs = [-11, -8, -4, 0, 4, 8, 12, 16, 20, 23];
+      if (c.id === 'sophia') offs.unshift(-18, -15);
+      for (const off of offs)
         for (let k = 0; k < 16; k++) {
           let hurt = false;
           let power = '';
@@ -757,7 +771,12 @@ describe('co-op arrivals', () => {
 
 /** File 1 open on World 5, then 5-4 from the map's flow (campaign variant), on the down lift. */
 function onTheLift(h: H): LevelScene {
-  file({ cleared: ['1-0', '5-3'], pages: ['smb-1', 'smb-5'], position: { page: 'smb-5', node: '5-4' } });
+  file({
+    story: [...RESTYLES_SEEN],
+    cleared: ['1-0', '5-3'],
+    pages: ['smb-1', 'smb-5'],
+    position: { page: 'smb-5', node: '5-4' },
+  });
   h.game.openFile(1);
   expect(h.top()).toBeInstanceOf(WorldMapScene);
   h.game.startLevel(getLevel('5-4'), { x: 89, y: 2, mode: 'stand', time: 250 });
@@ -838,7 +857,7 @@ describe('captive Simon', () => {
     expect(hiddenHeroesAt('smb-5', '5-3')).toEqual([]);
   });
 
-  it("his words: Larry's wand woke Dracula's curse in him, he is Dracula's thrall; every line fits", () => {
+  it("his words: the stolen wand woke Dracula's curse in him, he is Dracula's thrall; every line fits", () => {
     const def: MiniGameDef = {
       hero: 'simon',
       title: 'DRACULA',
@@ -851,7 +870,8 @@ describe('captive Simon', () => {
       for (const page of pages)
         for (const line of page) expect(line.length, `${talker.id}: ${line}`).toBeLessThanOrEqual(CARD_COLS);
       const own = (pages[1] ?? []).join(' ');
-      expect(own).toContain("LARRY'S WAND");
+      expect(own).toContain('THE STOLEN WAND WOKE THE');
+      expect(own).not.toContain('LARRY');
       expect(own).toContain('DRACULA');
       expect(own).toContain('THRALL');
       expect(own).toContain(`${fontText(talker.name)}...`);
