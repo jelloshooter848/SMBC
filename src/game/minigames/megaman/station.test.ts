@@ -117,14 +117,22 @@ function ready(h: StationHarness): void {
   expect(h.world.beaming).toBe(false);
 }
 
-/** Puts Mega Man standing on the floor (or a top at `feet` px) at `x` px, the camera on him. */
-function warp(h: StationHarness, x: number, feet = 208): void {
+/** The bottom run's floor (px): the top of row 43. */
+const FLOOR = 43 * 16;
+/** Just before the first shutter (px), on the landing room's floor. */
+const DOOR = 128 * 16 - 30;
+
+/**
+ * Puts Mega Man standing on the floor (or a top at `feet` px) at `x` px, the camera on his screen
+ * and its robots fresh.
+ */
+function warp(h: StationHarness, x: number, feet = FLOOR): void {
   const b = h.scene.player.body;
   b.x = px(x);
   b.y = px(feet) - b.h;
   b.vx = 0;
   b.vy = 0;
-  h.world.camera.snapTo(b.x);
+  h.scene.enterScreen();
 }
 
 /** MENU: the weapon screen opens; its MENU row opens the round's menu (Continue / Give up). */
@@ -142,7 +150,7 @@ function openMenu(h: StationHarness): StationMenuScene {
 /** Into the boss room: walks into the shutter and on until the fight starts. */
 function toFight(h: StationHarness): DarkMegaMan {
   ready(h);
-  warp(h, 1250);
+  warp(h, DOOR);
   for (let i = 0; i < 1000 && h.scene.phase !== 'fight'; i++) h.step(['right']);
   expect(h.scene.phase).toBe('fight');
   return h.scene.boss as DarkMegaMan;
@@ -200,50 +208,52 @@ describe('Station Escape: the stage', () => {
     expect(levelIds()).not.toContain('mm-station');
   });
 
-  it("five screens of station, then Mega Man 2's two shutters: a one-screen corridor with both in sight, then the 16-wide boss room", () => {
+  it("Mega Man 2's two shutters after the drop: a one-screen corridor with both in sight, then the 16-wide boss room", () => {
     const { level, shutters, boss, corridorX, roomX } = stationStage();
-    expect(level.width).toBe(111);
+    expect(level.width).toBe(159);
     expect(shutters).toEqual([
-      { x: 80, y: 11 },
-      { x: 95, y: 11 },
+      { x: 128, y: 41 },
+      { x: 143, y: 41 },
     ]);
-    expect([corridorX, roomX]).toEqual([80, 95]);
+    expect([corridorX, roomX]).toEqual([128, 143]);
     expect(level.width - roomX).toBe(16);
     const at = (x: number, y: number) => level.tiles[y * level.width + x];
     // Each shutter's two tiles are solid in the map, the doorway's floor below them.
-    for (const x of [80, 95]) {
-      expect(at(x, 11)).toBe(T.HARD);
-      expect(at(x, 12)).toBe(T.HARD);
-      expect(at(x, 13)).toBe(T.GROUND);
+    for (const x of [128, 143]) {
+      expect(at(x, 41)).toBe(T.HARD);
+      expect(at(x, 42)).toBe(T.HARD);
+      expect(at(x, 43)).toBe(T.GROUND);
     }
     // The corridor between them is open to walk.
-    for (let x = 81; x < 95; x++) for (const y of [11, 12]) expect(at(x, y)).not.toBe(T.HARD);
+    for (let x = 129; x < 143; x++) for (const y of [41, 42]) expect(at(x, y)).not.toBe(T.HARD);
     expect(boss.x).toBeGreaterThan(roomX);
-    // The scene places the shutter and the boss; the map keeps its robots and the capsule.
+    // The scene places the shutters and the boss; the map keeps its robots and the capsule.
     expect(level.entities.map((e) => e.type)).not.toContain('shutter');
     expect(level.entities.map((e) => e.type)).not.toContain('dark-megaman');
     const count = (t: string) => level.entities.filter((e) => e.type === t).length;
-    expect(count('hopper')).toBe(3);
+    expect(count('hopper')).toBe(4);
     expect(count('turret')).toBe(3);
-    expect(count('drone')).toBe(3);
+    expect(count('drone')).toBe(4);
+    expect(count('met')).toBe(6);
     expect(count('capsule')).toBe(1);
     expect(level.entities.find((e) => e.props?.mount === 'ceiling')?.type).toBe('turret');
-    // The camera stops at the shutter until it opens.
-    expect(level.zones).toContainEqual({ kind: 'scrollStop', x: 81 });
   });
 
   it('every robot and the capsule come from the station types (World knows none of them)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const h = stationHarness();
     ready(h);
-    for (let x = 0; x < 1260; x += 32) {
-      warp(h, x);
-      h.world.update([]);
-    }
+    const kinds = new Set<string>();
+    // Each screen in turn (its robots come with it), walked across in steps.
+    for (const s of stationStage().screens)
+      for (let x = s.x; x < s.x + s.w; x += 2) {
+        warp(h, x * 16 + 2, (s.y + 13) * 16);
+        h.world.update([]);
+        for (const e of h.world.entities) kinds.add(e.kind);
+      }
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
-    const kinds = new Set(h.world.entities.map((e) => e.kind));
-    for (const k of ['hopper', 'turret', 'drone', 'capsule', 'shutter']) expect(kinds).toContain(k);
+    for (const k of ['hopper', 'turret', 'drone', 'met', 'capsule', 'shutter']) expect(kinds).toContain(k);
   });
 
   it("World's extraEntities: an entity takes the spawn, null drops it, undefined leaves it to World", () => {
@@ -409,7 +419,7 @@ describe('Station Escape: the robots', () => {
     const p = h.scene.player;
     p.invuln = 100000;
     // A Met on the floor 64 px ahead of Mega Man.
-    const met = new Met(p.body.x + px(64), px(208 - 14));
+    const met = new Met(p.body.x + px(64), p.body.y + p.body.h - px(14));
     h.world.spawn(met);
     expect(met.state).toBe('hide');
     const sfx = h.log.sfx.length;
@@ -440,7 +450,7 @@ describe('Station Escape: the robots', () => {
     const h = stationHarness();
     ready(h);
     const p = h.scene.player;
-    const met = new Met(p.body.x + px(MET_RANGE + 40), px(208 - 14));
+    const met = new Met(p.body.x + px(MET_RANGE + 40), p.body.y + p.body.h - px(14));
     h.world.spawn(met);
     for (let i = 0; i < MET_HIDE * 3; i++) {
       h.step();
@@ -473,7 +483,7 @@ describe('Station Escape: the weapon capsule', () => {
   it('unlocks the Saw Disc: the station holds still, a banner and the announcer say how to switch and fire it', () => {
     const h = stationHarness();
     ready(h);
-    warp(h, 548, 176);
+    warp(h, 548, FLOOR - 32);
     for (let i = 0; i < 60 && h.scene.phase === 'stage'; i++) h.step(['right']);
     expect(h.scene.phase).toBe('item');
     const p = h.scene.player;
@@ -537,7 +547,7 @@ describe('Station Escape: the boss gate', () => {
   it('the first shutter opens when touched, Mega Man walks through, it shuts behind him, and the camera locks on the corridor', () => {
     const h = stationHarness();
     ready(h);
-    warp(h, 1250);
+    warp(h, DOOR);
     const cam = h.world.camera;
     for (let i = 0; i < 100 && h.scene.phase === 'stage'; i++) h.step(['right']);
     expect(h.scene.phase).toBe('gate');
@@ -545,33 +555,34 @@ describe('Station Escape: the boss gate', () => {
     // The robots and their shots are gone, as on a screen change.
     expect(h.world.enemies.filter((e) => !(e instanceof DarkMegaMan))).toEqual([]);
     expect(h.log.sfx).toContain('door-open');
-    const corridorPx = tileToSub(80);
+    const corridorPx = tileToSub(128);
     expect(cam.x).toBeLessThan(corridorPx);
     let walkedIn = false;
     for (let i = 0; i < 400 && h.scene.phase === 'gate'; i++) {
       h.step(['left']); // the player's input means nothing now
-      if (h.world.map.get(80, 12) === T.AIR) walkedIn = true;
+      if (h.world.map.get(128, 42) === T.AIR) walkedIn = true;
     }
     expect(walkedIn).toBe(true);
     // The corridor: Mega Man plays again, the stage music on, no boss and no boss bar yet.
     expect(h.scene.phase).toBe('stage');
     expect(h.scene.shutters[0]?.state).toBe('shut');
-    expect(h.world.map.get(80, 11)).toBe(T.HARD);
-    expect(h.world.map.get(80, 12)).toBe(T.HARD);
+    expect(h.world.map.get(128, 41)).toBe(T.HARD);
+    expect(h.world.map.get(128, 42)).toBe(T.HARD);
     expect(cam.x).toBe(corridorPx);
     expect(cam.locked).toBe(true);
-    expect(h.scene.player.body.x).toBeGreaterThan(tileToSub(81));
+    expect(h.scene.player.body.x).toBeGreaterThan(tileToSub(129));
     expect(h.scene.bossBarValue()).toBeNull();
     expect(h.log.music.at(-1)).toBe(MM_SOUNDS.stage);
-    // Locked: standing about never moves the camera.
+    // Locked: standing about never moves the camera (on the bottom screen row all along).
     h.step([], 100);
     expect(cam.x).toBe(corridorPx);
+    expect(cam.y).toBe(tileToSub(30));
   });
 
   it('the second shutter, at the end of the corridor, opens into the boss room: the camera locks there, then the bar fills', () => {
     const h = stationHarness();
     ready(h);
-    warp(h, 1250);
+    warp(h, DOOR);
     const cam = h.world.camera;
     for (let i = 0; i < 600 && h.scene.nextGate === 0; i++) h.step(['right']);
     for (let i = 0; i < 400 && h.scene.phase === 'stage'; i++) h.step(['right']);
@@ -580,19 +591,19 @@ describe('Station Escape: the boss gate', () => {
     for (let i = 0; i < 400 && h.scene.phase === 'gate'; i++) h.step(['left']);
     expect(h.scene.phase).toBe('intro');
     expect(h.scene.shutters[1]?.state).toBe('shut');
-    expect(h.world.map.get(95, 12)).toBe(T.HARD);
-    expect(cam.x).toBe(tileToSub(95));
+    expect(h.world.map.get(143, 42)).toBe(T.HARD);
+    expect(cam.x).toBe(tileToSub(143));
     expect(cam.locked).toBe(true);
-    expect(h.scene.player.body.x).toBeGreaterThan(tileToSub(96));
+    expect(h.scene.player.body.x).toBeGreaterThan(tileToSub(144));
     expect(h.log.music.at(-1)).toBe(MM_SOUNDS.boss);
     h.step([], 300);
-    expect(cam.x).toBe(tileToSub(95));
+    expect(cam.x).toBe(tileToSub(143));
   });
 
   it('Dark Mega Man beams in and his bar fills tick by tick (a boss-fill each) while Mega Man waits; then the fight', () => {
     const h = stationHarness();
     ready(h);
-    warp(h, 1250);
+    warp(h, DOOR);
     for (let i = 0; i < 500 && h.scene.phase !== 'intro'; i++) h.step(['right']);
     expect(h.log.music.at(-1)).toBe(MM_SOUNDS.boss);
     expect(h.said.at(-1)).toBe('Dark Mega Man!');
@@ -628,7 +639,7 @@ describe('Station Escape: Dark Mega Man', () => {
   it('is asleep (cannot be hurt, does not hurt) until his bar is full', () => {
     const h = stationHarness();
     ready(h);
-    warp(h, 1250);
+    warp(h, DOOR);
     for (let i = 0; i < 500 && !h.scene.boss; i++) h.step(['right']);
     const boss = h.scene.boss as DarkMegaMan;
     expect(boss.hit({ kind: 'buster', amount: 1, owner: null, dirX: 1 }, h.world)).toBe('immune');
@@ -737,7 +748,7 @@ describe('Station Escape: outcomes', { timeout: 60_000 }, () => {
     const h = stationHarness({ keep: true });
     const frames = h.play(new StationBot(SHARP));
     expect(h.results).toEqual(['pass']);
-    expect(frames).toBeLessThan(4000);
+    expect(frames).toBeLessThan(6000);
     expect(h.log.jingles).toContain(MM_SOUNDS.victory);
     expect(h.log.sfx.filter((s) => s === MM_SOUNDS.beam).length).toBeGreaterThanOrEqual(2);
     expect(h.said).toContain('Dark Mega Man is beaten! The spell on Mega Man breaks.');
@@ -806,7 +817,8 @@ describe('Station Escape: outcomes', { timeout: 60_000 }, () => {
     expect(h.scene.boss).toBeNull();
     expect(h.scene.bossBarValue()).toBeNull();
     expect(h.scene.shutter.state).toBe('shut');
-    expect(Math.floor(toPx(h.scene.player.body.x) / 16)).toBe(77);
+    // The landing room under the drop, before the first shutter.
+    expect(Math.floor(toPx(h.scene.player.body.x) / 16)).toBe(116);
     ready(h);
     for (let i = 0; i < 1000 && h.scene.phase !== 'fight'; i++) h.step(['right']);
     expect(h.scene.phase).toBe('fight');
@@ -986,7 +998,7 @@ describe('Station Escape: screen and controls', () => {
     expect(l.jump).toBe('JUMP');
     expect(l.attack).toBe('SHOOT');
     expect(l.start).toBe('MENU');
-    warp(h, 1250);
+    warp(h, DOOR);
     for (let i = 0; i < 200 && h.scene.phase === 'stage'; i++) h.step(['right']);
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: 'MENU' });
     for (let i = 0; i < 1000 && h.scene.phase !== 'fight'; i++) h.step(['right']);
@@ -1206,7 +1218,7 @@ describe('Station Escape: death, lives and checkpoints', { timeout: 60_000 }, ()
   it('a life lost past the halfway point starts at the checkpoint; the Saw Disc stays his and the capsule stays gone', () => {
     const h = stationHarness();
     ready(h);
-    warp(h, 548, 176);
+    warp(h, 548, FLOOR - 32);
     for (let i = 0; i < 60 && h.scene.phase === 'stage'; i++) h.step(['right']);
     expect(h.scene.sawGot).toBe(true);
     h.step([], ITEM_FREEZE + 2);
