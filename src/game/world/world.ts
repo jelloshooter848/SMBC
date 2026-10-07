@@ -47,7 +47,15 @@ import { PowerUp } from '../entities/objects/powerup';
 import { Pickup } from '../entities/objects/pickup';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
-import { BlockBump, BrickPiece, CoinPop, Corpse, Explosion, ScorePopup } from '../entities/effects/effects';
+import {
+  BlockBump,
+  BrickPiece,
+  CoinPop,
+  Corpse,
+  Explosion,
+  ScorePopup,
+  type PieceFrame,
+} from '../entities/effects/effects';
 import { castleFlagStart, Firework, FIREWORK_FRAMES, FIREWORK_TILES } from '../entities/effects/firework';
 import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { shellKickSeqScore, stompScore } from '../rules/score';
@@ -55,6 +63,8 @@ import type { GameContext, GameState } from '../context';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
 import { Lift } from '../entities/objects/lift';
+import { Candle, Respawner } from '../entities/objects/crypt';
+import { sfx as SFX_LIB } from '@content/sfx/sfx';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
@@ -157,6 +167,20 @@ export const freshSeed = (): number =>
  * (Character.as), with 2 Flash px to our px and 60 frames a second: 25/60 px per frame, in subpixels.
  */
 const PIPE_SPEED = px(25) / 60;
+/** The crypt's own sounds (S3's) once they exist; until then the plain brick break and none. */
+const hasSfx = (id: string): boolean => SFX_LIB.some((x) => x.id === id);
+const CRUMBLE_SFX = hasSfx('whip-wall') ? 'whip-wall' : 'break';
+const CANDLE_SFX = hasSfx('candle') ? 'candle' : null;
+/** The cracked wall's rubble (the `crypt` sheet's; BrickPiece falls back to the brick piece). */
+const RUBBLE: readonly PieceFrame[] = ['crypt:rubble-0', 'crypt:rubble-1'];
+
+/** A hero's attack in flight: a shot or thrown weapon a player owns (or a hero shot's own shot). */
+function heroShot(e: Entity): e is Projectile {
+  if (!(e instanceof Projectile)) return false;
+  const o = e.owner;
+  return o instanceof Player || (o instanceof Projectile && o.owner instanceof Player);
+}
+
 /** Character.PIPE_LEV_TRANS_DELAY (500 ms): hidden in the pipe before the next area loads. */
 const PIPE_TRANSFER_DELAY_FRAMES = 30;
 /** Level.HW_ENEMY_REMOVAL_DIST = TILE_SIZE*6: enemies closer than this (px, horizontally) go. */
@@ -322,6 +346,10 @@ export class World {
   livesFree = false;
   /** WorldStart.extraEntities: a mini game's own entity types. */
   private readonly extraEntities: WorldStart['extraEntities'];
+  /** Cracked-wall tiles still standing (T.CRACKED; crackWalls does nothing once none are left). */
+  private cracked = 0;
+  /** The live `descent` zones (a sleeping campaign one is left out): down-lift shafts. */
+  private readonly descents: (Zone & { kind: 'descent' })[];
 
   constructor(
     readonly level: LevelData,
@@ -333,6 +361,10 @@ export class World {
     this.assist = ctx.assist;
     this.extraEntities = start.extraEntities;
     this.map = new TileMap(level);
+    for (const id of level.tiles) if (id === T.CRACKED) this.cracked++;
+    this.descents = level.zones.filter(
+      (z): z is Zone & { kind: 'descent' } => z.kind === 'descent' && !z.campaign,
+    );
     const stop = level.zones.find((z): z is Zone & { kind: 'scrollStop' } => z.kind === 'scrollStop');
     this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked', {
       free: level.camera === 'free',
@@ -549,6 +581,11 @@ export class World {
     const y = tileToSub(s.y) + px(Number(s.props?.dy ?? 0));
     const extra = this.extraEntities?.(s, this);
     if (extra !== undefined) return extra;
+    if (s.props?.respawn) {
+      // Kept alive while a cracked wall stands (5-4's dungeon Koopa: objects/crypt.ts).
+      const { respawn: _, ...props } = s.props;
+      return new Respawner(s, (sp) => this.makeEntity({ ...sp, props }));
+    }
     switch (s.type) {
       case 'goomba':
         return new Goomba(x + px(2), y + px(2));
@@ -609,7 +646,12 @@ export class World {
         return new Vine(s.x, s.y, Number(s.props?.len ?? 8), null, s.type === 'chain' ? 'chain' : 'vine');
       case 'firebar':
       case 'firebar-ccw':
-        return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
+        return new Firebar(
+          s.x,
+          s.y,
+          s.type === 'firebar-ccw' ? -1 : 1,
+          this.descentBarLen(s.x, Number(s.props?.len ?? 6)),
+        );
       case 'bowser':
         return new Bowser(
           s.x,
@@ -637,8 +679,15 @@ export class World {
       case 'lift-fall':
       case 'lift-up':
       case 'lift-down':
-      case 'lift-right':
-        return new Lift(s.type, s.x, s.y, s.props ?? {});
+      case 'lift-right': {
+        const lift = new Lift(s.type, s.x, s.y, s.props ?? {});
+        // A down lift in a live descent shaft carries its rider down into the zone's area.
+        if (s.type === 'lift-down')
+          lift.descent = this.descents.find((z) => s.x >= z.x && s.x < z.x + z.w)?.target ?? null;
+        return lift;
+      }
+      case 'candle':
+        return new Candle(s.x, s.y);
       case 'decor-castle':
         return new Decoration('castle-small', s.x, s.y);
       case 'decor-castle-big':
@@ -887,6 +936,8 @@ export class World {
     this.checkTalk(inputs);
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
+    this.crackWalls();
+    this.snuffCandles();
     for (const [i, p] of this.players.entries()) {
       if (p.dead || p.out) continue;
       this.checkPipes(p, this.autoWalk ? AUTO_WALK_INPUT : (inputs[i] ?? NO_INPUT));
@@ -908,6 +959,12 @@ export class World {
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
       if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
+        // Carried down a descent shaft by its lift: into the area below, dropping in from above.
+        const down = this.descentLift(p);
+        if (down?.descent) {
+          this.transfer(down.descent, 'fall');
+          continue;
+        }
         const pit = this.level.zones.find(
           (z): z is Zone & { kind: 'pit' } => z.kind === 'pit' && p.body.x >= tileToSub(z.x),
         );
@@ -1285,6 +1342,13 @@ export class World {
       this.map.set(tx, ty - 1, T.AIR);
       this.spawn(new CoinPop(tileToSub(tx) + px(4), tileToSub(ty - 1)));
       this.addCoin();
+    }
+    if (id === T.CRACKED) {
+      // A cracked wall crumbles to a brick-breaking bump, shot or blast; a small hero's bump
+      // only jolts it (it stays in the wall: no hop).
+      if (breakBricks) this.shatterWall(tx, ty);
+      else this.audio.sfx('bump');
+      return;
     }
     const { kind, content } = def.block;
     const frame = kind === 'brick' ? 'brick' : 'used';
@@ -2257,8 +2321,136 @@ export class World {
     }
   }
 
+  /* ---------- Simon's dungeon (5-4, campaign): descent, cracked wall, candles ---------- */
+
+  /** The descent-shaft lift carrying `p` this frame (World.descents; Lift.descent), else null. */
+  private descentLift(p: Player): Lift | null {
+    if (!this.descents.length) return null;
+    // Every rider counts (co-op: Lift.rider holds only the last one it carried): a ridden lift
+    // under the body, its feet on the lift's top.
+    const b = p.body;
+    for (const e of this.entities) {
+      if (!(e instanceof Lift) || !e.alive || !e.descent || !e.ridden) continue;
+      const l = e.body;
+      if (b.x < l.x + l.w && b.x + b.w > l.x && Math.abs(b.y + b.h - l.y) <= px(1)) return e;
+    }
+    return null;
+  }
+
+  /**
+   * A fire bar sweeping a live descent shaft's down lift (5-4's at (92, 10) in the campaign) loses
+   * balls until its tip clears the lift's span, so a rider standing on the lift is never hit on
+   * the long ride down. Other bars, and every bar outside the campaign, keep their length.
+   */
+  private descentBarLen(tx: number, len: number): number {
+    if (!this.descents.length) return len;
+    const spans = this.level.entities
+      .filter((e) => e.type === 'lift-down' && this.descents.some((z) => e.x >= z.x && e.x < z.x + z.w))
+      .map((e) => {
+        const x = e.x * 16 + Number(e.props?.dx ?? 0);
+        return { x0: x, x1: x + Number(e.props?.len ?? 3) * 8 };
+      });
+    // Ball i's hit box: x = tx * 16 + 4 ± i * 8, plus 1..7 (Firebar.ballPos and its 6 px box).
+    const reaches = (n: number) =>
+      spans.some(({ x0, x1 }) => {
+        const r = (n - 1) * 8;
+        return tx * 16 + 4 - r + 1 < x1 && tx * 16 + 4 + r + 7 > x0;
+      });
+    let n = len;
+    while (n > 1 && reaches(n)) n--;
+    return n;
+  }
+
+  /** Whether a cracked wall still stands in this level. */
+  crackedWalls(): boolean {
+    return this.cracked > 0;
+  }
+
+  /**
+   * The cracked wall at (tx, ty) crumbles: it and every cracked tile joined to it (one hit opens
+   * the whole doorway) fly apart as rubble, with the wall-crumble sound.
+   */
+  shatterWall(tx: number, ty: number): void {
+    if (this.map.get(tx, ty) !== T.CRACKED) return;
+    const todo: [number, number][] = [[tx, ty]];
+    while (todo.length) {
+      const [x, y] = todo.pop() as [number, number];
+      if (this.map.get(x, y) !== T.CRACKED) continue;
+      this.map.set(x, y, T.AIR);
+      this.cracked--;
+      this.breakPieces(x, y, RUBBLE[(x + y) & 1]);
+      todo.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+    this.addScore(50);
+    this.audio.sfx(CRUMBLE_SFX);
+    this.shake(8);
+  }
+
+  /** The first cracked-wall tile a box (subpixels) touches, else null. */
+  private crackedIn(box: { x: number; y: number; w: number; h: number }): [number, number] | null {
+    for (let ty = tileAt(box.y); ty <= tileAt(box.y + box.h - 1); ty++)
+      for (let tx = tileAt(box.x); tx <= tileAt(box.x + box.w - 1); tx++)
+        if (this.map.get(tx, ty) === T.CRACKED) return [tx, ty];
+    return null;
+  }
+
+  /**
+   * Any hero attack breaks a cracked wall it touches: a melee hit (sword, whip, ...), a hero's
+   * shot or thrown weapon, or a kicked shell, which plows on through the opening it made. (A
+   * blast, or a head bump from a hero who breaks bricks, goes through strikeBlock.)
+   */
+  private crackWalls(): void {
+    if (this.cracked <= 0) return;
+    const grow = (b: { x: number; y: number; w: number; h: number }, n = px(2)) => ({
+      x: b.x - n,
+      y: b.y,
+      w: b.w + n * 2,
+      h: b.h,
+    });
+    for (const p of this.activePlayers()) {
+      if (!p.activeMelee) continue;
+      const at = this.crackedIn(grow(p.activeMelee));
+      if (at) this.shatterWall(at[0], at[1]);
+    }
+    for (const e of this.entities) {
+      // Not filtered on `alive`: a shot that hit the wall died in its own update this frame, before
+      // this check, and is only culled at the end of the frame; it must still break the wall.
+      if (heroShot(e)) {
+        const at = this.crackedIn(grow(e.body));
+        if (at) this.shatterWall(at[0], at[1]);
+      } else if (e instanceof Koopa && e.alive && e.isMovingShell) {
+        const b = e.body;
+        const at = this.crackedIn(grow(b));
+        if (!at) continue;
+        this.shatterWall(at[0], at[1]);
+        // It bounced off the wall this frame: it keeps going the way it was kicked instead.
+        if (b.hitWall !== 0 && Math.sign(b.vx) === -b.hitWall) b.vx = -b.vx;
+      }
+    }
+  }
+
+  /** Wall candles: any hero attack, a kicked shell, or a hero touching one snuffs it for a coin. */
+  private snuffCandles(): void {
+    for (const c of this.entities) {
+      if (!(c instanceof Candle) || !c.alive) continue;
+      const hit =
+        this.activePlayers().some(
+          (p) => overlaps(p.body, c.body) || (p.activeMelee !== null && overlaps(p.activeMelee, c.body)),
+        ) ||
+        this.entities.some(
+          (e) =>
+            e.alive && (heroShot(e) || (e instanceof Koopa && e.isMovingShell)) && overlaps(e.body, c.body),
+        );
+      if (!hit) continue;
+      c.snuff();
+      if (CANDLE_SFX) this.audio.sfx(CANDLE_SFX);
+      this.spawn(new CoinPop(c.body.x, c.body.y));
+      this.addCoin();
+    }
+  }
+
   /** Tile (tx, ty) flying apart in four pieces, as a broken brick (`pipe-piece`: a smashed pipe). */
-  breakPieces(tx: number, ty: number, frame: 'brick-piece' | 'pipe-piece' = 'brick-piece'): void {
+  breakPieces(tx: number, ty: number, frame: PieceFrame = 'brick-piece'): void {
     const cx = tileToSub(tx) + px(4);
     const cy = tileToSub(ty) + px(4);
     this.spawn(new BrickPiece(cx, cy, -0x01000, -0x05000, frame));

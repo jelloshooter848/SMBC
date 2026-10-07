@@ -1,0 +1,51 @@
+id: 5-4-dungeon
+name: WORLD 5-4
+world: 5
+stage: 4
+theme: crypt
+music: crypt
+time: inherit
+start: 13,0
+startMode: fall
+camera: locked
+parent: 5-4
+
+;; Simon's dungeon under the 5-4 lift shaft (campaign only: riding 5-4's down lift on past the
+;; screen bottom carries the player down here, the shaft's `descent` zone; level/campaign.ts).
+;; One screen: the player drops in at the right; a single hard block (11,10) stands between the
+;; landing and a Koopa pacing up to the CRACKED WALL (column 5, rows 8-10, `&`). Any hero attack
+;; breaks the wall; a hero with no attack stomps the Koopa and kicks its shell into it (kicked the
+;; wrong way, the shell bounces off the block and comes back to the wall). The Koopa comes back
+;; if lost while the wall stands (`respawn`). Behind the wall, steps lead down to a hole: the
+;; drop into Simon's crypt. The clock runs on (time: inherit).
+
+[tiles]
+;; 0
+%%%%%%%%%%%....%
+%%%%%%%%%%%....%
+%%%%%%%%%%%....%
+%%%%%%.........%
+%%%%%%.........%
+%%%%%%.........%
+%%%%%%.........%
+%%%%%%.........%
+.....&.........%
+.....&.........%
+.....&.....B...%
+....%%%%%%%%%%%%
+...%%%%%%%%%%%%%
+..%%%%%%%%%%%%%%
+..%%%%%%%%%%%%%%
+
+[entities]
+;; Comes back while the cracked wall stands (objects/crypt.ts Respawner).
+koopa-green 8 10 respawn=true
+candle 7 8
+candle 10 7
+
+[zones]
+;; Down the steps behind the wall and through the hole: Simon's crypt, dropping in from above.
+pit 0 -> 5-4-crypt 1 0
+
+[decor]
+crypt:candelabra-0 9 10

@@ -75,6 +75,15 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     'IT SET OFF THE COUNTDOWN.',
     `${you}... HELP ME ESCAPE!`,
   ],
+  // Larry's wand woke the curse Dracula left in him (Simon's Quest): he is Dracula's thrall.
+  simon: (you) => [
+    "LARRY'S WAND WOKE THE CURSE",
+    'DRACULA LEFT IN MY BLOOD.',
+    'NOW I AM HIS THRALL.',
+    '',
+    `${you}... TAKE MY WHIP.`,
+    'END HIM IN HIS CASTLE!',
+  ],
 };
 
 /** The freed card's lines (and so its announcement): the hero's full name, "MEGA MAN IS FREE!". */
