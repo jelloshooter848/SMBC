@@ -1103,6 +1103,24 @@ const wallTopStation = [
   ...wallStation.slice(4),
 ];
 
+/*
+ * Mega Man's ladders (Station Escape's `chain` tiles, drawn as a ladder here): two light rails
+ * with dark edges and a rung every four rows, over the bulkhead.
+ */
+const ladderOver = (base: readonly string[]): string[] =>
+  base.map((row, i) => {
+    const r = row.split('');
+    for (const x of [2, 5, 10, 13]) r[x] = '0';
+    for (const x of [3, 11]) r[x] = '3';
+    for (const x of [4, 12]) r[x] = '2';
+    if (i % 4 === 1) for (let x = 6; x <= 9; x++) r[x] = '3';
+    if (i % 4 === 2) for (let x = 6; x <= 9; x++) r[x] = '0';
+    return r.join('');
+  });
+const ladderStation = ladderOver(wallStation);
+/* A ladder's top in a floor (`cloud-ledge`: stood on, climbed through): the ladder in a dark well. */
+const ladderTopStation = ladderOver(Array.from({ length: 16 }, () => '0000000000000000'));
+
 /* ---------- Samus's cavern (`@cavern`) ---------- */
 
 /* Floor rock: a heap of round bubbles, lit from the top left, packed so the tile repeats both ways. */
@@ -2136,6 +2154,8 @@ export const tilesDef: SpriteDef = {
     'bridge@station': bridgeStation,
     'wall@station': wallStation,
     'wall-top@station': wallTopStation,
+    'chain@station': ladderStation,
+    'cloud-ledge@station': ladderTopStation,
     // Samus's cavern below 4-2.
     'ground@cavern': groundCavern,
     'castle-brick@cavern': castleBrickCavern,

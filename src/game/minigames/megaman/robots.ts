@@ -63,7 +63,13 @@ export const ROBOT_VULNERABILITY: Vulnerability = {
 /** Is a body on screen (with a margin, px)? */
 export function onScreen(world: World, e: Entity, margin = 0): boolean {
   const b = e.body;
-  return b.x + b.w > world.camera.x - px(margin) && b.x < world.camera.right + px(margin);
+  const cam = world.camera;
+  return (
+    b.x + b.w > cam.x - px(margin) &&
+    b.x < cam.right + px(margin) &&
+    b.y + b.h > cam.y - px(margin) &&
+    b.y < cam.bottom + px(margin)
+  );
 }
 
 /**
@@ -415,7 +421,8 @@ export class Drone extends Robot {
     } else if (this.phase === 'dive') {
       b.vy = DIVE_VY;
       moveY(b, world.map, velToSub(b.vy));
-      if (b.onGround || b.y > px(13 * 16) - b.h) {
+      // Down to the floor, or the screen's floor line (a dive never leaves the screen).
+      if (b.onGround || b.y > world.camera.y + px(13 * 16) - b.h) {
         b.onGround = false;
         this.phase = 'rise';
       }
@@ -486,9 +493,8 @@ export class EnemyShot extends Entity {
     b.y += velToSub(b.vy);
     const cx = tileAt(b.x + (b.w >> 1));
     const cy = tileAt(b.y + (b.h >> 1));
-    const off = b.x + b.w < world.camera.x - px(8) || b.x > world.camera.right + px(8);
-    if (off || b.y > px(240) || b.y + b.h < 0 || (world.map.isSolid(cx, cy) && this.age > 2))
-      return this.destroy();
+    const off = !onScreen(world, this, 8);
+    if (off || (world.map.isSolid(cx, cy) && this.age > 2)) return this.destroy();
     for (const p of world.activePlayers()) {
       if (!overlaps(b, p.body)) continue;
       hurtHero(world, p, this.spec.damage, b.vx > 0 ? 1 : -1);
