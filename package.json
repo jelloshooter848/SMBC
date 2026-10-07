@@ -1,6 +1,6 @@
 {
   "name": "smbc",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "private": true,
   "description": "Super Mario Bros. Crossover: an unaffiliated browser reimplementation with original art and music.",
   "type": "module",
