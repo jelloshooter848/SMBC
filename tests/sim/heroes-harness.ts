@@ -11,7 +11,7 @@ import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { LevelScene } from '@game/scenes/level';
-import { CardScene, MessageScene } from '@game/scenes/message';
+import { CardScene, CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { Captive } from '@game/entities/objects/captive';
@@ -72,6 +72,20 @@ export function makeGame() {
   return { game, said, step, tap, idle, until, top, audio };
 }
 export type H = ReturnType<typeof makeGame>;
+
+/**
+ * Pages through the story cards on top (story/cards.ts: Larry, a restyled level's remark) with
+ * OK until none is left; returns each card's lines.
+ */
+export function closeCards(h: H, max = 10): string[][] {
+  const seen: string[][] = [];
+  for (let i = 0; i < max && h.top() instanceof CardScene; i++) {
+    seen.push([...(h.top() as CardScene).lines]);
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('jump');
+  }
+  return seen;
+}
 
 /** A campaign file in slot 1, written to storage. */
 export function file(over: Partial<SaveFile> = {}, c1 = MARIO.id): SaveFile {

@@ -30,7 +30,8 @@ import type { Action } from '@engine/input/actions';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
 import { BLAST_LEAD, BridgeBlast, BridgeBoom, blastTimes } from '@game/entities/objects/bridge-blast';
 import { jungleDecorFrames } from '@content/sprites/contra-decor';
-import { captives, file, makeGame, useStorage, type H } from './heroes-harness';
+import { captives, closeCards, file, makeGame, useStorage, type H } from './heroes-harness';
+import { RESTYLE_PAGES } from '@game/story/script';
 import { FALLS, ROUTE, fallsBot, standingOn, walkRight, type Ledge } from './falls-bot';
 
 // Bill Rizer, hidden under 7-3 (owner design, 0.4.9 batch, B1): in campaign play 7-3 looks like a
@@ -82,8 +83,10 @@ describe('7-3 outside the campaign is v0.4.8 tile for tile and in look', () => {
     expect(l.decor).toEqual(old.decor);
     expect(l.zones.filter((z) => !('campaign' in z && z.campaign))).toEqual(old.zones);
     expect(l.entities.filter((e) => e.props?.campaign !== true)).toEqual(old.entities);
-    // What sleeps: the bridge's blast and its pit.
+    // What sleeps: the bridge's blast and its pit (and, from 0.4.13, Lance at the start:
+    // tests/sim/partners.test.ts).
     expect(l.entities.filter((e) => e.props?.campaign === true)).toEqual([
+      { type: 'partner', x: 5, y: 12, props: { who: 'lance', campaign: true } },
       { type: 'bridge-blast', x: 128, y: 10, props: { w: 15, campaign: true } },
     ]);
     expect(pits(l.zones)).toEqual([
@@ -165,11 +168,13 @@ describe('the campaign variant of 7-3', () => {
       [...arrow].sort((p, q) => p[1] - q[1] || p[0] - q[0]),
     );
     for (const [x, y] of arrow) expect(tile(l, x, y)).toBe(T.COIN);
-    // Every other zone and entity as they were.
+    // Every other zone and entity as they were (Lance, a story partner, woken too).
     expect(l.zones.filter((z) => z.kind !== 'pit')).toEqual(base.zones.filter((z) => z.kind !== 'pit'));
-    expect(l.entities.filter((e) => e.type !== 'bridge-blast')).toEqual(
-      base.entities.filter((e) => e.type !== 'bridge-blast'),
-    );
+    const other = (e: { type: string }) => e.type !== 'bridge-blast' && e.type !== 'partner';
+    expect(l.entities.filter(other)).toEqual(base.entities.filter(other));
+    expect(l.entities.filter((e) => e.type === 'partner')).toEqual([
+      { type: 'partner', x: 5, y: 12, props: { who: 'lance' } },
+    ]);
     expect(camp7()).toBe(l); // cached
   });
 
@@ -852,6 +857,8 @@ describe('the whole way in campaign play', () => {
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     h.game.startLevel(getLevel('7-3'), { x: 130, y: 9, mode: 'stand', time: 250 });
     h.step();
+    // Toad's remark on the restyled level comes first (campaign story, once per file).
+    expect(closeCards(h)).toEqual([RESTYLE_PAGES['7-3']]);
     expect(levelId(h)).toBe('7-3');
     expect(blast(scene(h).world)).toBeDefined();
     for (let f = 0; f < 400 && levelId(h) === '7-3'; f++) h.step();

@@ -1,5 +1,11 @@
 import { px, toPx, velToSub } from '@engine/math/units';
+import type { Renderer } from '@engine/gfx/renderer';
+import { fxPalette } from '@content/sprites/palette-fx';
+import { TRUE_FORM_HEIGHT } from '@content/sprites/enemies';
+import type { Theme } from '../../level/schema';
 import { Enemy } from './enemy';
+import type { View } from '../entity';
+import { drawSparkle, WandPoof, WAND_SPARKLE } from '../effects/wand-poof';
 import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 import type { DamageSource } from '../../rules/damage';
@@ -32,6 +38,24 @@ const ms = (n: number): number => Math.max(1, Math.round((n * 60) / 1000));
 /** FB_DEL_TMR (450 ms) and AFTER_FB_TMR (300 ms). */
 const FB_DELAY = ms(450);
 const AFTER_FB = ms(300);
+
+/**
+ * The campaign's tell (docs/STORY.md 2.3a): every TELL_PERIOD frames (4 s) a fake's disguise
+ * flickers for the last TELL_FRAMES of them, its true form showing every other two frames. With
+ * reduce flashing on there is no flicker: the true form's bright outline is held over him for the
+ * whole window instead.
+ */
+const TELL_PERIOD = 240;
+const TELL_FRAMES = 12;
+
+/**
+ * The fake king's true form in world `world` (1..7: `bowser-die-N`), or 0 for the king himself
+ * (world 8, and the Lost Levels' later worlds, whose die frame is the king).
+ */
+export function trueFormOf(world: number): number {
+  const n = Math.min(8, Math.max(1, world | 0));
+  return n < 8 ? n : 0;
+}
 
 /** BowserFireBall.as: SPEED = 160 px/s (1.33 px/f), always to the left. */
 const FLAME_SPEED = 0x01555;
@@ -92,6 +116,15 @@ export class Bowser extends Enemy {
   private afterFbTmr = 0;
   private hammerTmr = 0;
   private firstFb = true;
+  /**
+   * Campaign only: the true form under the disguise (1..7, see trueFormOf), 0 for the real king
+   * or outside the story. Set each update from the world.
+   */
+  private disguise = 0;
+  /** Frames since he first moved (the tell's clock). */
+  private age = 0;
+  /** The axe dropped a fake whose disguise burst: its true form (N of `bowser-die-N`) falls. */
+  private unmasked = 0;
 
   constructor(
     tx: number,
@@ -144,18 +177,18 @@ export class Bowser extends Enemy {
    * the king himself. Every die frame keeps the way he was facing (Enemy.die flips only scaleY,
    * so the clip's scaleX carries over), the 8-4 king included; the true forms sit at his head
    * end, so they need it. In a castle the true forms take the grey-outlined `bowser-true-form`
-   * palette so they show on the black.
+   * palette so they show on the black. In the campaign a fake's disguise bursts first (unmask).
    */
   protected override flipOut(_src: DamageSource, world: World): void {
     const n = Math.min(8, Math.max(1, world.state.world | 0));
-    const palette = this.corpsePalette(world.level.theme);
+    this.unmask(world);
     const corpse = new Corpse(
       this.body.x,
       this.body.y,
       toPx(this.body.w),
       toPx(this.body.h),
       this.sheet,
-      n < 8 && palette === 'enemies-castle' ? 'bowser-true-form' : palette,
+      n < 8 ? this.formPalette(world.level.theme) : this.corpsePalette(world.level.theme),
       `bowser-die-${n}`,
       0, // drops straight down
       false,
@@ -169,11 +202,99 @@ export class Bowser extends Enemy {
     this.destroy();
   }
 
-  fallDead(): void {
+  /**
+   * The axe drops him through the bridge. In the campaign (given the `world`) a fake's disguise
+   * bursts as he drops, and his true form falls into the lava, head down like a fireball kill.
+   */
+  fallDead(world?: World): void {
     this.dead = true;
     this.contactHurts = false;
     this.stompable = false;
     this.body.vx = 0;
+    if (!world) return;
+    const n = this.unmask(world);
+    if (!n) return;
+    this.unmasked = n;
+    this.currentFrame = `bowser-die-${n}`;
+  }
+
+  /** The true form's palette: the grey-outlined `bowser-true-form` in a castle (see flipOut). */
+  private formPalette(theme: Theme): string {
+    const palette = this.corpsePalette(theme);
+    return palette === 'enemies-castle' ? 'bowser-true-form' : palette;
+  }
+
+  /**
+   * Campaign: a fake's disguise bursts in a puff of wand sparkles with a "poof" (docs/STORY.md
+   * 2.3a), however he was beaten. Returns his true form (0: the real king, or classic play, where
+   * nothing happens).
+   */
+  private unmask(world: World): number {
+    const n = world.storyMode ? trueFormOf(world.state.world) : 0;
+    if (!n) return 0;
+    const b = this.body;
+    world.spawn(new WandPoof(b.x + (b.w >> 1), b.y + (b.h >> 1)));
+    world.audio.sfx('poof');
+    return n;
+  }
+
+  /** Whether the tell is on (its last TELL_FRAMES of every TELL_PERIOD; campaign fakes only). */
+  get tellWindow(): boolean {
+    if (!this.disguise || this.dead) return false;
+    return this.age % TELL_PERIOD >= TELL_PERIOD - TELL_FRAMES;
+  }
+
+  /** Whether the tell's flicker shows the true form this frame (campaign fakes only). */
+  get tellShowing(): boolean {
+    return this.tellWindow && ((this.age >> 1) & 1) === 0;
+  }
+
+  override render(r: Renderer, view: View): void {
+    const assets = view.assets;
+    const x = this.screenX(view);
+    const y = this.screenY();
+    const flip = this.facing > 0;
+    if (this.unmasked) {
+      const sheet = assets.sheet(this.sheet, this.formPalette(view.theme));
+      r.sprite(sheet, `bowser-die-${this.unmasked}`, x, y, flip, true);
+      return;
+    }
+    const n = this.disguise;
+    if (!n) return super.render(r, view);
+    // The true form stands on his feet: its rows start 8 px down his 32-px box.
+    const fy = y + 24 - (TRUE_FORM_HEIGHT[n] ?? 24);
+    if (this.tellShowing && !view.reduceFlashing) {
+      // The disguise flickers: the true creature's silhouette, rimmed so it reads on black, and a
+      // soft wand sparkle over it.
+      const pal = this.palette(view);
+      const rim = assets.sheet(this.sheet, fxPalette(pal, 'rim'));
+      const dark = assets.sheet(this.sheet, fxPalette(pal, 'silhouette'));
+      const frame = `bowser-die-${n}`;
+      for (const [dx, dy] of [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ] as const)
+        r.sprite(rim, frame, x + dx, fy + dy, flip);
+      r.sprite(dark, frame, x, fy, flip);
+      const cx = x + (flip ? 22 : 10);
+      const phase = this.age % TELL_PERIOD;
+      drawSparkle(r, cx + 6, fy + 10, 1, WAND_SPARKLE[0]);
+      drawSparkle(r, cx - 7, fy + 16, phase & 4 ? 1 : 0, WAND_SPARKLE[1]);
+      drawSparkle(r, cx + 1, fy + 4, 0, WAND_SPARKLE[2]);
+      return;
+    }
+    super.render(r, view);
+    // Reduce flashing: no flicker; the true form's bright outline held over him for the window.
+    if (view.reduceFlashing && this.tellWindow)
+      r.sprite(
+        assets.sheet(this.sheet, fxPalette(this.palette(view), 'tell')),
+        `bowser-ghost-${n}`,
+        x,
+        fy,
+        flip,
+      );
   }
 
   /** First update: the jump timer (started in the constructor in the original) and the window. */
@@ -219,6 +340,7 @@ export class Bowser extends Enemy {
 
   update(world: World): void {
     const b = this.body;
+    this.disguise = world.storyMode ? trueFormOf(world.state.world) : 0;
     if (this.dead) {
       b.vy += 0x00400;
       b.y += velToSub(b.vy);
@@ -226,6 +348,7 @@ export class Bowser extends Enemy {
       return;
     }
     if (world.bossClear) return;
+    this.age++;
     if (!this.started) this.start(world);
 
     // Timers (Bowser.as jumpTmrLsr, fbTmrLsr, fbDelTmrLsr, throwHammerTmrHandler).

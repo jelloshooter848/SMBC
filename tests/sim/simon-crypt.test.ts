@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RESTYLES_SEEN } from './story-seen';
 import { getLevel, levelIds } from '@content/levels';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
@@ -71,9 +72,11 @@ describe('the areas', () => {
     expect(descents(camp.zones)).toEqual([
       { kind: 'descent', x: 84, w: 8, target: { level: '5-4-dungeon', x: 13, y: 0 } },
     ]);
-    // Nothing else of 5-4 changes.
+    // Nothing else of 5-4 changes (but the townsperson at the start wakes: tests/sim/partners.test.ts).
     expect(camp.tiles).toEqual(raw.tiles);
-    expect(camp.entities).toEqual(raw.entities);
+    expect(camp.entities).toEqual(
+      raw.entities.map((e) => (e.type === 'partner' ? { ...e, props: { who: 'townsperson' } } : e)),
+    );
   });
 
   it('the descent zone parses and writes back the same', () => {
@@ -757,7 +760,12 @@ describe('co-op arrivals', () => {
 
 /** File 1 open on World 5, then 5-4 from the map's flow (campaign variant), on the down lift. */
 function onTheLift(h: H): LevelScene {
-  file({ cleared: ['1-0', '5-3'], pages: ['smb-1', 'smb-5'], position: { page: 'smb-5', node: '5-4' } });
+  file({
+    story: [...RESTYLES_SEEN],
+    cleared: ['1-0', '5-3'],
+    pages: ['smb-1', 'smb-5'],
+    position: { page: 'smb-5', node: '5-4' },
+  });
   h.game.openFile(1);
   expect(h.top()).toBeInstanceOf(WorldMapScene);
   h.game.startLevel(getLevel('5-4'), { x: 89, y: 2, mode: 'stand', time: 250 });
@@ -838,7 +846,7 @@ describe('captive Simon', () => {
     expect(hiddenHeroesAt('smb-5', '5-3')).toEqual([]);
   });
 
-  it("his words: Larry's wand woke Dracula's curse in him, he is Dracula's thrall; every line fits", () => {
+  it("his words: the stolen wand woke Dracula's curse in him, he is Dracula's thrall; every line fits", () => {
     const def: MiniGameDef = {
       hero: 'simon',
       title: 'DRACULA',
@@ -851,7 +859,8 @@ describe('captive Simon', () => {
       for (const page of pages)
         for (const line of page) expect(line.length, `${talker.id}: ${line}`).toBeLessThanOrEqual(CARD_COLS);
       const own = (pages[1] ?? []).join(' ');
-      expect(own).toContain("LARRY'S WAND");
+      expect(own).toContain('THE STOLEN WAND WOKE THE');
+      expect(own).not.toContain('LARRY');
       expect(own).toContain('DRACULA');
       expect(own).toContain('THRALL');
       expect(own).toContain(`${fontText(talker.name)}...`);

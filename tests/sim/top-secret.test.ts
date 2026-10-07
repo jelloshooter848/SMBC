@@ -47,6 +47,7 @@ import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { hudAreaLines } from '@game/hud/hud';
 import { LIGHT_SKIES } from '@game/world/tile-render';
 import { runRoute, type Move } from './route-bot';
+import { ALL_STORY } from './story-seen';
 
 // The Top Secret Area (owner design for 0.4.10, after Super Mario World's): in campaign play a
 // hidden block at the top of 2-1's last tower lays a cloud path toward the flagpole, so every hero
@@ -108,9 +109,14 @@ describe('2-1 outside the campaign is v0.4.9 tile for tile', () => {
     expect(l.campaignLook).toMatchObject({ theme: 'zelda2', music: 'zelda2-field' });
     expect(l.zones.filter((z) => !sleeps(z))).toEqual(old.zones);
     expect(l.entities.filter((e) => e.props?.campaign !== true)).toEqual(old.entities);
-    // What sleeps: the cave mouth, the hidden path and the way into the cave.
+    // What sleeps: the cave mouth, the hidden path and the way into the cave (and, from 0.4.13,
+    // the old man at the start with his cave doorway and fires: tests/sim/partners.test.ts).
     expect(l.entities.filter((e) => e.props?.campaign === true)).toEqual([
       { type: 'decor', x: 220, y: 12, props: { kind: 'items:cave-mouth', campaign: true } },
+      { type: 'cave-fire', x: 7, y: 12, props: { campaign: true } },
+      { type: 'decor', x: 8, y: 12, props: { kind: 'partners:cave', campaign: true } },
+      { type: 'partner', x: 8, y: 12, props: { who: 'old-man', dx: 8, campaign: true } },
+      { type: 'cave-fire', x: 10, y: 12, props: { campaign: true } },
     ]);
     expect(l.zones.filter(sleeps)).toEqual([
       ...STEPS.map((p) => ({ kind: 'path', ...p, w: 1, block: HIDDEN, oneWay: true, campaign: true })),
@@ -781,6 +787,7 @@ function onWorld2(h: H, over: Parameters<typeof file>[0] = {}) {
       cleared: ['1-0', '1-1', '1-2', '1-3', '1-4'],
       pages: ['smb-1', 'smb-2'],
       position: { page: 'smb-2', node: '2-1' },
+      story: [...ALL_STORY], // Toad's map scenes (0.4.13) are seen
       ...over,
     }),
   );

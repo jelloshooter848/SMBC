@@ -1,7 +1,9 @@
-# Story script (draft for 0.4.13)
+# Story script (0.4.13)
 
-Every story line the player will read, written out for the owner to review and edit **before** anything is built.
-Nothing here is in the game yet. When a line is approved, it can be pasted into the code as it stands.
+Every story line the player will read, written out for the owner to review and edit before it was built.
+**Chapter 1 (sections 2.1-2.14) is built in 0.4.13**: its text lives in `src/game/story/script.ts`, word for word as
+here (a test, `script-doc.test.ts`, keeps the two the same; Sophia III's lines in 2.11 are added when she lands), and
+docs/STORY_SYSTEM.md says how it is wired in. **The Lost Kingdom parts (2.15 on) are Chapter 2**, not built yet.
 
 **How to read this file**
 
@@ -187,8 +189,9 @@ in his own shape with the stolen wand**, so he never has to face Mario himself u
 What changes, in the campaign only (classic play keeps the NES behaviour):
 
 1. **A tell during the fight.** Every 4 s or so, the fake's disguise flickers for a few frames and the true creature's
-   silhouette shows through, with a soft wand sparkle. With reduce flashing on, use a steady faint outline instead of a
-   flicker. The real Bowser in 8-4 never flickers.
+   silhouette shows through, with a soft wand sparkle. With reduce flashing on, use a steady bright outline of the true form
+   instead of a flicker (one full-contrast colour over Bowser and the black, held for the tell's window, never
+   blinking). The real Bowser in 8-4 never flickers.
 2. **The disguise always comes off.** However he is beaten, by the axe and bridge or by fireballs, the disguise bursts
    in a puff of wand sparkles with a "poof" sound. The true form drops into the lava, or flees off screen where there's
    no lava. Every hero sees it, not only those who throw fireballs.
