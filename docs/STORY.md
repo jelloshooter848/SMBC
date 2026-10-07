@@ -229,6 +229,83 @@ code gives them the same true forms as worlds 1-7 (`bowser-die-N` by world numbe
 2-4 Koopa, 3-4 Buzzy Beetle, 4-4 Spiny, 5-4 Lakitu, 6-4 Blooper, 7-4 Hammer Bro. The Bowsers at Lost A-4 to C-4 have
 no true form of their own (from world 8 on the die frame is the king himself), so those castles keep one page.
 
+### 2.3b Restyled levels: "why does it look so different here?"
+
+From 0.4.9 (7-3) and 0.4.12 (2-1, 3-1, 4-2, 5-4, 6-2), the level where a hero hides takes on their game's look in
+the campaign. **The story reason:** when the wand pulled a hero into the Mushroom Kingdom, it dragged a bit of their
+world along, and that bit reshaped the level they hide in. The look **stays after the hero is freed**, as a souvenir
+of where they were found (owner decision). The level's look music plays there for every hero; it is effectively the
+hero's level.
+
+**WHEN:** the first time the player starts that level on a file (campaign), Toad's box shows one card before play.
+It is a light, story-flavoured hint that someone from another world is near; it never names them.
+
+```text
+TOAD:
+
+WHY DOES SEA SIDE LOOK SO
+DIFFERENT HERE? STONE
+RUINS? SOMEONE BROUGHT A
+BIT OF THEIR WORLD ALONG.
+```
+
+(2-1, Zelda II look)
+
+```text
+TOAD:
+
+WHY DOES NIGHT HILLS LOOK
+LIKE A FACTORY HERE? ALL
+BOLTS AND PIPES. SOMEBODY
+BROUGHT THEIR WORLD ALONG.
+```
+
+(3-1, Mega Man look)
+
+```text
+TOAD:
+
+MUSHROOM WOODS, BUT BLUE
+AND BUBBLY DOWN HERE? IT
+FEELS LIKE ANOTHER PLANET.
+```
+
+(4-2, Metroid look)
+
+```text
+TOAD:
+
+WHY DOES THIS CASTLE LOOK
+SO... OLD? CANDLES, STONE,
+AND I SWEAR SOMETHING JUST
+MOVED IN THAT WINDOW.
+```
+
+(5-4, Castlevania look)
+
+```text
+TOAD:
+
+SNOW NIGHT HAS STREETS
+NOW? SHOP FRONTS, LAMPS...
+SOMEONE'S WORLD HAS
+BLED INTO THIS ONE.
+```
+
+(6-2, Ninja Gaiden look)
+
+```text
+TOAD:
+
+CANNON COAST TURNED INTO A
+JUNGLE?! AND WHAT'S WITH
+THAT BRIDGE'S RED LIGHT?
+```
+
+(7-3, Contra look, already in the game since 0.4.9; this card is added with the story batch)
+
+The coin heavens above these levels share the look (owner decision); bonus rooms and water areas keep their own.
+
 ### 2.4 World 1: Grass Land (Luigi)
 
 **Toad's world entry**: NEW card on the World 1 map. **WHEN:** back on the map after 1-0 is cleared (or skipped),
