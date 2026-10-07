@@ -46,8 +46,11 @@ spent spot has no guard until a level is entered from the map; then its Hammer B
 the spot reopens when he is beaten.
 
 **The Hammer Bro's prize**: beating the Hammer Bro battle also gives an item (SMB3 does): a
-mushroom, fire flower or star, weighted like a Toad House chest (`awardHammerPrize`), shown on the
-battle's win card and stored like any bonus prize.
+mushroom, fire flower or star, weighted like a Toad House chest (`hammerPrizeItem`, from the
+battle's seed). As in SMB3 it comes in a treasure chest (0.4.14): once both Hammer Bros are down
+the chest drops into the middle of the arena and lands on the floor; the hero walks up to it and
+opens it with OPEN (the ATTACK button, labelled by the chest), its item rises out, then the
+battle's win card lists it and it is stored like any bonus prize (campaign play only).
 
 ## Opening a bonus game elsewhere
 
