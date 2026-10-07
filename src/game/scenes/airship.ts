@@ -7,6 +7,8 @@ import { MiniGameMenuScene } from '../minigames/menu';
 import { MenuScene } from './menu';
 import { snapshot } from './free-hero';
 import { MET_LARRY } from '../save/save-files';
+import type { CharacterDef } from '../characters/character';
+import type { DevRound } from './dev-minigames';
 
 /*
  * LARRY'S AIRSHIP CHALLENGE (docs/HEROES.md "Larry's airship"): the deck `4-2-airship` (an
@@ -184,22 +186,37 @@ export function airshipWon(game: Game): boolean {
   return false;
 }
 
+/** Deck + room as one round with the hero(es) the run has now (pushed by the round runner). */
+function createAirshipRound(game: Game, done: (result: MiniGameResult) => void): Scene {
+  const start: LevelStart = { mode: 'stand' };
+  const deck = game.deps.getLevel(AIRSHIP_DECK);
+  // The HUD's WORLD is the airship's (4-2), not the last world played; the round's restore
+  // puts the run's own back (DevMiniGamesScene.play). Set before the run snapshots the state,
+  // so a retry keeps it too.
+  game.state.world = deck.world;
+  game.state.stage = deck.stage;
+  game.airship = new AirshipRun(AIRSHIP_DECK, start, game.state, done, game.scenes.top ?? null);
+  return game.levelScene(deck, start);
+}
+
 /**
- * The dev Mini games entry: deck + room as one round with the current hero, over the dev list
- * (DevMiniGamesScene.play pushes the deck; the run's level changes clear down to the list).
+ * The Larry's airship round (Dev → Mini games and the Mini Game Arena): deck + room as one round
+ * over the list or the map (playRound pushes the deck; the run's level changes clear down to it).
+ * It is played as a hero the player picks first (`asHero`, scenes/dev-minigames.ts
+ * pickRoundHero): player one plays the round as that hero (keeping the hero keeps its power, a
+ * different one starts from its default) and player two keeps theirs; the round's restore puts
+ * the run's own hero, power and lives back after.
  */
-export const AIRSHIP_CHALLENGE = {
+export const AIRSHIP_CHALLENGE: DevRound = {
   title: AIRSHIP_TITLE,
   who: 'LARRY KOOPA',
-  create(game: Game, done: (result: MiniGameResult) => void): Scene {
-    const start: LevelStart = { mode: 'stand' };
-    const deck = game.deps.getLevel(AIRSHIP_DECK);
-    // The HUD's WORLD is the airship's (4-2), not the last world played; the round's restore
-    // puts the run's own back (DevMiniGamesScene.play). Set before the run snapshots the state,
-    // so a retry keeps it too.
-    game.state.world = deck.world;
-    game.state.stage = deck.stage;
-    game.airship = new AirshipRun(AIRSHIP_DECK, start, game.state, done, game.scenes.top ?? null);
-    return game.levelScene(deck, start);
-  },
+  create: createAirshipRound,
+  asHero: (hero: CharacterDef): DevRound => ({
+    title: AIRSHIP_TITLE,
+    who: 'LARRY KOOPA',
+    create(game, done) {
+      if (hero !== game.state.character) game.setHero(0, hero);
+      return createAirshipRound(game, done);
+    },
+  }),
 };

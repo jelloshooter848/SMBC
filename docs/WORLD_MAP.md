@@ -172,7 +172,8 @@ the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pad
   hero's silhouette and `?`, its hint line says what to find (`??? - FIND THIS HERO FIRST`, `??? - FREE THIS HERO FIRST` for a training room) and JUMP
   bumps. On a found pad the hint line names the game, the touch JUMP says PLAY, and the announcer
   says "Mirror Race, Luigi. Jump to play, for fun."
-- A round is played over the map and nothing is saved (docs/HEROES.md); arriving and walking save
+- A round is played over the map and nothing is saved (docs/HEROES.md); Larry's airship asks for
+  a hero first (character select over the map; Back returns to the pad). Arriving and walking save
   the hero's place as on any page. The Worlds menu lists the arena on the hub and on the arena.
 - **Art**: theme `arena` (a night match: `map-arena` palette, sky `ARENA_NIGHT`) and music `arena`.
   The sketch (`SKETCH_ARENA`): bunting `w` on the sky (row 2), crowds `M`/`N` alternating with
