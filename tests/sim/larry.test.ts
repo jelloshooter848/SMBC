@@ -49,9 +49,9 @@ function onMap(over: Partial<SaveFile>): { h: H; map: () => WorldMapScene } {
   return { h, map: () => h.top() as WorldMapScene };
 }
 
-/** Into the airship cabin as from 4-2's pipe; Larry is found once spawned. */
+/** Into the airship cabin as from the deck's stern pipe; Larry is found once spawned. */
 function intoAirship(h: H): { level: LevelScene; larry: Larry } {
-  h.game.startLevel(getLevel('4-2-airship'), { mode: 'pipe-exit', x: 2, y: 12, time: 300 });
+  h.game.startLevel(getLevel('4-2-larry'), { mode: 'pipe-exit', x: 2, y: 12, time: 300 });
   h.step();
   const level = h.top() as LevelScene;
   expect(level).toBeInstanceOf(LevelScene);
@@ -119,23 +119,27 @@ describe('the crystal ball (campaign)', () => {
     expect(h.said.at(-1)).toMatch(/Toad House, open/);
   });
 
-  it("4-2's right warp-zone pipe (the campaign's one pipe) lands in the cabin, rising out of its pipe", () => {
+  it("4-2's right warp-zone pipe (the campaign's one pipe) drops the hero onto the airship deck's bow", () => {
     const { h } = onMap(world4());
     const main = getLevel('4-2');
     const pipe = main.zones.find((z) => z.kind === 'pipe' && z.x === 214) as { x: number; y: number };
     h.game.startLevel(main, { mode: 'stand', x: pipe.x, y: pipe.y - 1, time: 300 });
     h.step();
     for (let f = 0; f < 300 && (h.top() as LevelScene).level?.id !== '4-2-airship'; f++) h.step(['down']);
-    const cabin = h.top() as LevelScene;
-    expect(cabin.level.id).toBe('4-2-airship');
-    // Out of the pipe at columns 2-3 onto its top (row 13), the clock carried on, no map change.
-    h.until(() => !cabin.world.player.frozen, 200);
-    const p = cabin.world.player;
-    expect((p.body.y + p.body.h) >> 8).toBe(13 * 16);
-    expect(p.centerX >> 8).toBe(3 * 16); // the middle of the 2-wide pipe
-    expect(cabin.world.time).toBeGreaterThan(280);
+    const deck = h.top() as LevelScene;
+    expect(deck.level.id).toBe('4-2-airship');
+    // Down onto the raised bow platform (row 7) at column 2, no map change.
+    h.until(() => deck.world.player.body.onGround, 200);
+    const p = deck.world.player;
+    expect((p.body.y + p.body.h) >> 8).toBe(7 * 16);
+    expect(p.body.x >> 12).toBe(2);
     expect(h.game.mapProgress.secrets).not.toContain('larry');
-    h.until(() => cabin.world.entities.some((e) => e instanceof Larry), 30);
+  });
+
+  it("the deck's stern pipe leads down into Larry's room", () => {
+    const deck = getLevel('4-2-airship');
+    const pipe = deck.zones.find((z) => z.kind === 'pipe');
+    expect(pipe).toMatchObject({ dir: 'down', target: { level: '4-2-larry', x: 2, y: 12 } });
   });
 
   it('a file without the ball never shows the bonus node, even with 4-2 cleared', () => {
@@ -148,7 +152,7 @@ describe('the crystal ball (campaign)', () => {
 
   it('outside the campaign the ball goes on to 4-3', () => {
     const h = makeGame();
-    h.game.devStart('4-2-airship', h.game.deps.characters[0]!, 'big');
+    h.game.devStart('4-2-larry', h.game.deps.characters[0]!, 'big');
     h.until(() => h.top() instanceof LevelScene, 400);
     const level = h.top() as LevelScene;
     h.until(() => level.world.entities.some((e) => e instanceof Larry), 200);
@@ -165,13 +169,13 @@ describe('the crystal ball (campaign)', () => {
 
 describe("the cabin's look (the SMB3 art)", () => {
   it('is an airship playing the SMB3 boss tune', () => {
-    const l = getLevel('4-2-airship');
+    const l = getLevel('4-2-larry');
     expect(l.theme).toBe('airship');
     expect(l.music).toBe('smb3-boss');
   });
 
   it("is enclosed like the SMB3 cabin, built for the SMB3 art's frames", () => {
-    const l = getLevel('4-2-airship');
+    const l = getLevel('4-2-larry');
     const t = (x: number, y: number) => l.tiles[y * l.width + x];
     const at = (kind: string) =>
       l.decor
@@ -193,7 +197,7 @@ describe("the cabin's look (the SMB3 art)", () => {
     expect(at('smb3:pillar')).toEqual(cells([0, 15], span(2, 12)));
     expect(at('smb3:porthole')).toEqual(['10,6', '5,6']);
     // The floor: post tops (`#`) on row 13, the posts going on (`%`) on row 14; the raised post's
-    // top at (7,12) with its post under it; the arrival pipe, `4-2-airship 2 12`, in the floor.
+    // top at (7,12) with its post under it; the arrival pipe, `4-2-larry 2 12`, in the floor.
     for (const x of span(0, 15)) {
       if (x === 2 || x === 3) continue;
       expect(t(x, 13), `top ${x}`).toBe(x === 7 ? T.CASTLE_BRICK : T.GROUND);

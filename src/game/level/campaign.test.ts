@@ -63,10 +63,10 @@ describe('4-2 (the right warp zone): campaign variant', () => {
     expect(warp(l)).toMatchObject({ worlds: [5], text: 'WELCOME TO WARP ZONE!' });
   });
 
-  it("campaign: the one pipe leads into Larry's airship at (2, 12), unlabelled, no text", () => {
+  it("campaign: the one pipe drops onto Larry's airship deck at the bow (2, 6), unlabelled, no text", () => {
     const l = campaignLevel(getLevel('4-2'), withAirship);
     expect(pipesIn(l, 208, 224).map((p) => [p.x, p.target])).toEqual([
-      [214, { level: '4-2-airship', x: 2, y: 12 }],
+      [214, { level: '4-2-airship', x: 2, y: 6, exitDir: 'fall' }],
     ]);
     expect(warp(l)?.worlds).toEqual([]);
     expect(warp(l)?.text).toBeUndefined();

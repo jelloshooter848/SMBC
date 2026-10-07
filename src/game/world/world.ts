@@ -59,6 +59,8 @@ import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
 import { Axe } from '../entities/objects/axe';
 import { Larry } from '../entities/enemies/larry';
+import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
+import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 
 export type WorldEvent =
@@ -563,6 +565,14 @@ export class World {
         );
       case 'axe':
         return new Axe(s.x, s.y);
+      case 'cannon': {
+        const dir = s.props?.dir;
+        const period = Number(s.props?.period ?? CANNON_PERIOD);
+        const delay = s.props?.delay === undefined ? undefined : Number(s.props.delay);
+        return new Cannon(s.x, s.y, isCannonDir(dir) ? dir : 'l', period, delay);
+      }
+      case 'rocky':
+        return new RockyWrench(s.x, s.y);
       case 'larry':
         return new Larry(s.x, s.y, typeof s.props?.next === 'string' ? s.props.next : null);
       case 'lift-h':

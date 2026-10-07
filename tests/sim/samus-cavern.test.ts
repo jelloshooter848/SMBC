@@ -218,7 +218,7 @@ describe('the whole way in campaign play: vine area → cavern → 4-2', () => {
   it('the 4-2 warp pipe (the right zone) is not a secret exit either: no secret on its pipe', () => {
     const l = campaignLevel(getLevel('4-2'), () => true);
     const p = pipes(l.zones).find((z) => z.x === 214);
-    expect(p?.target).toEqual({ level: '4-2-airship', x: 2, y: 12 });
+    expect(p?.target).toEqual({ level: '4-2-airship', x: 2, y: 6, exitDir: 'fall' });
   });
 });
 

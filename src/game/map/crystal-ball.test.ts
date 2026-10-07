@@ -70,7 +70,7 @@ describe("World 4's bonus spot (4-2's secret exit secret:larry)", () => {
   it('opens with the crystal ball (from the airship, an area of 4-2), without clearing 4-2', () => {
     const p = w4();
     expect(isOpen(p, WORLD_4, '4-2')).toBe(true);
-    const opened = secretExit(p, '4-2-airship', 'larry', getLevel);
+    const opened = secretExit(p, '4-2-larry', 'larry', getLevel);
     expect(opened).toEqual(['smb-4:4-2>bonus-4', 'smb-4:bonus-4']);
     expect(p.secrets).toContain('larry');
     expect(p.cleared).not.toContain('4-2');
