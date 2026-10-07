@@ -92,6 +92,15 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     `${you}... DUEL HIM UNDER`,
     'THE MOON. CUT ME FREE!',
   ],
+  // King Koopa's spell reached him through Red Falcon (Super C): the alien has taken his mind.
+  bill: (you) => [
+    'RED FALCON IS IN MY HEAD.',
+    "KING KOOPA'S SPELL LET THE",
+    'ALIEN TAKE MY MIND.',
+    '',
+    `${you}... HIT ITS BASE.`,
+    'BLOW UP ITS HEART!',
+  ],
 };
 
 /** The freed card's lines (and so its announcement): the hero's full name, "MEGA MAN IS FREE!". */

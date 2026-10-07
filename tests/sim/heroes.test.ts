@@ -503,11 +503,11 @@ describe('the unlock flow, in detail', () => {
   });
 
   it('a long mini game title wraps to the dialogue box', () => {
-    // A hero with no lines of their own (Bill, for now) gets the generic challenge, which names
-    // the title.
-    const bill = CHARACTERS.find((c) => c.id === 'bill')!;
+    // A hero with no lines of their own gets the generic challenge, which names the title (every
+    // captive has its own lines now: Bill's came with 0.4.9, so a stand-in hero without any).
+    const bill = { ...CHARACTERS.find((c) => c.id === 'bill')!, id: 'nobody' };
     const def: MiniGameDef = {
-      hero: 'bill',
+      hero: 'nobody',
       title: 'THE VERY LONG AND WINDING TRIAL OF THE CHOZO',
       rules: [],
       create: () => ({ update() {}, render() {} }),
