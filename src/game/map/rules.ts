@@ -436,7 +436,10 @@ export function entryLevel(levelId: string, getLevel: GetLevel): string {
 export type MapStep =
   | { kind: 'node'; to: string; points: [number, number][] }
   | { kind: 'exit'; exit: WorldExit; points: [number, number][] }
-  /** Back off a page's start to the page (same group) that leads here; arrive at `node` (its castle). */
+  /**
+   * Back off a page's start to the page whose open exit leads here (any group: Lost 1 → SMB
+   * World 8); arrive at `node` (its castle).
+   */
   | { kind: 'back'; page: PageId; node: string; points: [number, number][] };
 
 const DELTA: Record<Dir, [number, number]> = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] };

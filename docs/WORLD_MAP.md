@@ -104,7 +104,7 @@ map hint"): on its right, or its left when a road leaves to the right; `heroSpot
 ```ts
 { id: 'warp-lost', kind: 'warp', x: 13, y: 8,
   to: 'll-1',               // target page id (must be registered)
-  toNode?: 'hub',           // arrival node there (default: its start node)
+  toNode?: 'bonus-1',       // arrival node there (default: its start node); e.g. the hub's centre lands on World 1's warp spot
   oneWay?: true,            // optional: exempt from the 1:1 pairing
   requires?: 'gameCleared', // MapCondition; absent = always works
   label?: 'LOST LEVELS',    // hint line while open (default: the target page's title)
