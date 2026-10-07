@@ -130,11 +130,21 @@ export type Zone =
       need: 'all' | 'any';
     }
   /**
-   * A warp zone: the pipes inside [x, x + w) are labelled with `worlds` in order. `secret`: in
-   * campaign play the room shows only its middle pipe, unlabelled, which records this map
-   * secret instead of warping (level/campaign.ts; 1-2: 'bonus-1').
+   * A warp zone: the pipes inside [x, x + w) are labelled with `worlds` in order. Campaign
+   * variants (level/campaign.ts): `secret`: the room shows only its middle pipe, unlabelled,
+   * which records this map secret instead of warping (1-2: 'bonus-1'); `goto`: the room shows
+   * only its middle pipe, with no labels and no text, leading into `goto` instead (an area of the
+   * level, so no map road comes of it; 4-2's two zones). Other play keeps the warps.
    */
-  | { kind: 'warp'; x: number; w: number; worlds: number[]; text?: string; secret?: string }
+  | {
+      kind: 'warp';
+      x: number;
+      w: number;
+      worlds: number[];
+      text?: string;
+      secret?: string;
+      goto?: { level: string; x: number; y: number; exitDir?: TransferMode };
+    }
   /** `y`: the midpoint's row; the respawn stands on the bottom of it (row 12 when left out). */
   | { kind: 'checkpoint'; x: number; y?: number }
   | { kind: 'exit'; x: number; next: string }

@@ -45,10 +45,11 @@ export const decorInFront = (kind: string): boolean => kind.includes(':');
 /**
  * Draw decor `kind` with its bottom-left at screen (x, bottom) (shared with the editor): a frame
  * of the `decor` sheet in the theme's palette, or for `sheet:frame` that frame of another sheet
- * in its own palette. An unknown frame draws nothing.
+ * in its own palette. An unknown frame, or a sheet not registered (yet), draws nothing.
  */
 export function drawDecor(r: Renderer, view: View, kind: string, x: number, bottom: number): void {
   const colon = kind.indexOf(':');
+  if (colon > 0 && !view.assets.has(kind.slice(0, colon))) return;
   const sheet =
     colon > 0
       ? view.assets.sheet(kind.slice(0, colon))

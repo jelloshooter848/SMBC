@@ -41,7 +41,7 @@ function parseProps(parts: string[]): Props {
  *   [entities]            `type x y key=val ...` (`dx=` / `dy=`: a pixel nudge off the tile,
  *                         e.g. the original's half-tile shiftRight / shiftUp)
  *   [zones]               `pipe x y dir -> level x y [exit=dir]`, `exit x next=id`,
- *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key]`,
+ *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key] [goto=level,x,y[,exit]]`,
  *                         `text x y triggerX "..."`,
  *                         `bowser-fire x`, `vine x y -> level x y`, `pit x -> level x y`,
  *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad)
@@ -302,6 +302,14 @@ function parseZone(line: string): Zone {
       const z: Zone = { kind: 'warp', x: Number(xs), w: Number(ws), worlds };
       if (typeof props.text === 'string') z.text = props.text.replace(/_/g, ' ');
       if (typeof props.secret === 'string') z.secret = props.secret;
+      if (props.goto !== undefined) {
+        // goto=level,x,y[,exitDir]: the campaign's one pipe leads there (level/campaign.ts).
+        const [level, gx, gy, exit] = String(props.goto).split(',');
+        if (!level || !/^\d+$/.test(gx ?? '') || !/^\d+$/.test(gy ?? ''))
+          throw new Error('warp goto must be "level,x,y[,exit]"');
+        z.goto = { level, x: Number(gx), y: Number(gy) };
+        if (exit) z.goto.exitDir = exit as TransferMode;
+      }
       return z;
     }
     case 'text': {
@@ -409,6 +417,10 @@ function serializeZone(z: Zone): string {
     case 'warp':
       return `warp ${z.x} ${z.w} worlds=${z.worlds.join(',')}${z.text ? ` text=${z.text.replace(/ /g, '_')}` : ''}${
         z.secret ? ` secret=${z.secret}` : ''
+      }${
+        z.goto
+          ? ` goto=${[z.goto.level, z.goto.x, z.goto.y, ...(z.goto.exitDir ? [z.goto.exitDir] : [])].join(',')}`
+          : ''
       }`;
     case 'text':
       return `text ${z.x} ${z.y} ${z.triggerX} "${z.text}"`;

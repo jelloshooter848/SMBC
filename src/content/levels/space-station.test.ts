@@ -242,5 +242,7 @@ describe('`sheet:frame` decor (game and editor draw it the same way)', () => {
     expect(drawn('cloud-1')[0]?.frame).toBe('cloud-1');
     expect(drawn('cloud-1')[0]?.sheet).toMatch(/^decor@/);
     expect(drawn('station:nothing')).toEqual([]);
+    // A sheet not registered (yet: art landing in another branch) draws nothing and never throws.
+    expect(drawn('no-such-sheet:frame')).toEqual([]);
   });
 });

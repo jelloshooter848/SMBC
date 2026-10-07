@@ -67,6 +67,14 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     '',
     `${you}... HELP ME DELETE IT.`,
   ],
+  // A parasite holds her, feeding on her will the way a Metroid feeds; it set Zebes to blow.
+  samus: (you) => [
+    'A PARASITE... LIKE A METROID',
+    'IS FEEDING ON MY WILL.',
+    '',
+    'IT SET OFF THE COUNTDOWN.',
+    `${you}... HELP ME ESCAPE!`,
+  ],
 };
 
 /** The freed card's lines (and so its announcement): the hero's full name, "MEGA MAN IS FREE!". */
