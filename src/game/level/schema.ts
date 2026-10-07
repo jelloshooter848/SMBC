@@ -168,6 +168,10 @@ export interface Decor {
   y: number;
 }
 
+/** A map's `camera:` header. */
+export type CameraMode = 'scroll' | 'locked' | 'free' | 'auto';
+export const CAMERA_MODES: readonly CameraMode[] = ['scroll', 'locked', 'free', 'auto'];
+
 export interface LevelData {
   schema: 1;
   id: string;
@@ -194,10 +198,16 @@ export interface LevelData {
   /** When set, the level starts with the "walk in from a pipe" animation (`beam`: beamed down onto a teleport pad). */
   startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb' | 'beam';
   /**
-   * Camera behaviour: 'scroll' (default), 'locked' (bonus rooms) or 'free' (scrolls both ways
-   * and follows the player up and down a map taller than a screen; world/camera.ts).
+   * Camera behaviour: 'scroll' (default), 'locked' (bonus rooms), 'free' (scrolls both ways
+   * and follows the player up and down a map taller than a screen) or 'auto' (SMB3 airships:
+   * moves right on its own at `scroll` px per frame, pushing the players; world/camera.ts).
    */
-  camera: 'scroll' | 'locked' | 'free';
+  camera: CameraMode;
+  /**
+   * An `auto` camera's speed in px per frame (the map's `scroll:` header; decimals are fine).
+   * Set only on `camera: auto` maps.
+   */
+  scroll?: number;
   /** Level to respawn in after dying here (sub-areas point at their main level). */
   parent: string | null;
 }

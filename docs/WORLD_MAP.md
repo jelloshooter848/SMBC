@@ -169,13 +169,14 @@ different road with each, and **no ending opens every road leaving its level**.
   re-locks.
 - Today 1-2's campaign pipe is a secret exit (below), and so is Larry Koopa's crystal ball in
   4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
-  Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each shows one pipe
-  into an area of 4-2 (below), an ordinary pipe that is no exit at all (no `target.secret`, no
-  road); the right one leads to Larry's cabin, where the crystal ball is the exit. The Lost
-  Levels' warp zones (`workingWarps` / `warpsOpened`) still warp as in the original and clear
-  nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels that have another
-  way out; it reads the level data as it is, so 4-2 keeps its look (in the campaign its other way
-  out is Larry's `secret:larry` road).
+  Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each leads into an
+  area of 4-2 (below) and is no exit at all (no `target.secret`, no road). The vine area's shows
+  one ordinary pipe, down into Samus's cavern; the right one shows no pipe but Larry's anchor
+  chain, up onto his airship deck, whose stern pipe leads to his room, where the crystal ball is
+  the exit. The Lost Levels' warp zones (`workingWarps` / `warpsOpened`) still warp as in the
+  original and clear nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels
+  that have another way out; it reads the level data as it is, so 4-2 keeps its look (in the
+  campaign its other way out is Larry's `secret:larry` road).
 
 ## World exits and the Lost Levels unlocks
 
@@ -229,6 +230,12 @@ pipe zones), and the world numbers go.
 | `secret=<key>`                  | Records `<key>` as a secret exit and returns to the map (`target.secret` → `Game.campaignSecret`) | stays |
 | `goto=<level>,<x>,<y>[,<exit>]` | Leads into `<level>` at (x, y) like any pipe (`exit` as a pipe's `exit=`); no secret, no map road | goes  |
 
+A `goto` with exit `climb` shows **no pipe** at all: every pipe of the room goes, and where the
+middle one stood an anchor (`smb3:anchor`) rests on the floor with its chain (a `chain` entity,
+climbed like a vine) rising off the top of the screen through anything solid above it; climbing
+off its top arrives in `<level>` up a chain at column x, landing on the first solid tile in column
+x + 1 below row y (docs/HEROES.md "The anchor chain").
+
 `goto` is meant for an area of the same level (same world and stage, `parent` leading back), so
 the clock carries over (`carryTime`) and nothing on the map changes. A `goto` whose level is not
 in the library (yet) leaves the warp zone as it is, so a branch can name an area another branch
@@ -237,8 +244,10 @@ adds. Owner decision (0.5.0): all warp pipes go eventually.
 - **4-2 vine area** (`4-2-warp`, pipes 50/54/58): `goto=4-2-cavern,2,0`. Pipe 54 drops the
   player into Samus's cavern (docs/HEROES.md), whose side pipe brings them up out of 4-2's pipe
   at column 72, the first pipe past the vine block.
-- **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,6,fall`, dropping
-  onto the bow of Larry Koopa's airship deck (whose stern pipe leads to his cabin `4-2-larry`). Larry's road (`secret:larry`) is granted by beating him, not by the pipe.
+- **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,3,climb`, Larry
+  Koopa's anchor chain at column 214 up to the bow of his airship deck (whose stern pipe leads into
+  his room `4-2-larry`; docs/HEROES.md). Larry's road (`secret:larry`) is granted by beating him,
+  not by the chain; the first time, World 4's map plays the airship's crash before drawing it in.
 
 ## The 1-2 secret (campaign only)
 
@@ -260,7 +269,9 @@ World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `u
 `guard: 'hammer-bro'`, its road from 4-2 tagged `exit: 'secret:larry'` (`world4.ts`).
 
 - **Found** with Larry Koopa's crystal ball in 4-2's airship (docs/HEROES.md): a secret exit of
-  4-2 that draws in only this road. 4-2's flagpole never opens it.
+  4-2 that draws in only this road. 4-2's flagpole never opens it. The first time, the map's
+  airship-crash cutscene plays first (`map/airship-crash.ts`): the ship crashes on this spot and
+  Toad hammers the wreck into the node, which shows from then on; the road then draws in.
 - **The bonus** (`map/bonus-spot.ts`): standing on the open node the hint line shows the bonus
   game's name (`BonusGame.label`) and JUMP (ENTER) calls `Game.openBonus({ page, node })`, which
   pushes the bonus game's scene over the map. The scene calls `done('used')` once a round was

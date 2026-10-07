@@ -6,8 +6,9 @@ import { T } from './tiles';
 import type { LevelData, Zone } from './schema';
 
 // Campaign variants of warp zones (docs/WORLD_MAP.md): 1-2's `secret` (one pipe, a secret exit)
-// and 4-2's two `goto` zones (one pipe each, into an area of 4-2: Samus's cavern, Larry's
-// airship). Non-campaign play keeps every warp as in SMB.
+// and 4-2's two `goto` zones (into an area of 4-2): the vine area's one pipe into Samus's cavern,
+// and the right zone's anchor chain (a climb `goto`: no pipe) up to Larry's airship. Non-campaign
+// play keeps every warp as in SMB.
 
 type Pipe = Zone & { kind: 'pipe' };
 const pipesIn = (l: LevelData, x0: number, x1: number) =>
@@ -63,18 +64,37 @@ describe('4-2 (the right warp zone): campaign variant', () => {
     expect(warp(l)).toMatchObject({ worlds: [5], text: 'WELCOME TO WARP ZONE!' });
   });
 
-  it("campaign: the one pipe drops onto Larry's airship deck at the bow (2, 6), unlabelled, no text", () => {
-    const l = campaignLevel(getLevel('4-2'), withAirship);
-    expect(pipesIn(l, 208, 224).map((p) => [p.x, p.target])).toEqual([
-      [214, { level: '4-2-airship', x: 2, y: 6, exitDir: 'fall' }],
-    ]);
+  it("campaign: no pipe; an anchor and its chain up to Larry's airship (the bow), no text", () => {
+    const base = getLevel('4-2');
+    const l = campaignLevel(base, withAirship);
+    expect(warp(base)?.goto).toEqual({ level: '4-2-airship', x: 2, y: 3, exitDir: 'climb' });
+    expect(pipesIn(l, 208, 224)).toEqual([]);
+    for (const y of [10, 11, 12]) expect([tile(l, 214, y), tile(l, 215, y)]).toEqual([T.AIR, T.AIR]);
     expect(warp(l)?.worlds).toEqual([]);
     expect(warp(l)?.text).toBeUndefined();
-    expect(tile(l, 214, 10)).toBe(T.PIPE_TL);
+    // The chain stands on the floor (row 13) where the pipe stood and reaches above the screen,
+    // through a hole in the ceiling; its vine zone leads to the bow, the anchor is centred on it.
+    expect(l.entities.filter((e) => e.type === 'chain')).toEqual([
+      { type: 'chain', x: 214, y: 12, props: { len: 14 } },
+    ]);
+    expect(l.zones.filter((z) => z.kind === 'vine' && z.x >= 208)).toEqual([
+      { kind: 'vine', x: 214, y: 12, target: { level: '4-2-airship', x: 2, y: 3 } },
+    ]);
+    expect(l.decor.filter((d) => d.kind.includes(':'))).toEqual([{ kind: 'smb3:anchor', x: 213.5, y: 12 }]);
+    expect(tile(l, 214, 2)).toBe(T.AIR);
+    expect(tile(base, 214, 2)).not.toBe(T.AIR);
+    expect(tile(l, 213, 2)).toBe(tile(base, 213, 2));
     // The rest of 4-2 is as it was.
-    expect(l.zones.filter((z) => z.kind !== 'warp' && !(z.kind === 'pipe' && z.x === 214))).toEqual(
-      getLevel('4-2').zones.filter((z) => z.kind !== 'warp' && !(z.kind === 'pipe' && z.x === 214)),
-    );
+    const other = (z: Zone) =>
+      z.kind !== 'warp' && !(z.x === 214 && (z.kind === 'pipe' || z.kind === 'vine'));
+    expect(l.zones.filter(other)).toEqual(base.zones.filter(other));
+    expect(l.entities.filter((e) => e.type !== 'chain')).toEqual(base.entities);
+  });
+
+  it('the vine-area zone (a plain goto) still keeps its one pipe: only `climb` gets a chain', () => {
+    const l = campaignLevel(getLevel('4-2-warp'));
+    expect(l.entities.some((e) => e.type === 'chain')).toBe(false);
+    expect(pipesIn(l, 48, 64)).toHaveLength(1);
   });
 
   it('a goto whose level is not in the library (yet) leaves the warp as it is', () => {
@@ -93,10 +113,13 @@ describe('no 4-2 campaign pipe is a secret exit (no map road comes from them)', 
   });
 
   it('both lead into areas of 4-2 (same world and stage: the clock carries, no warp)', () => {
+    const chain = campaignLevel(getLevel('4-2'), withAirship).zones.find(
+      (z): z is Zone & { kind: 'vine' } => z.kind === 'vine' && z.x >= 208,
+    );
     const into = [
-      ...pipesIn(campaignLevel(getLevel('4-2-warp')), 48, 64),
-      ...pipesIn(campaignLevel(getLevel('4-2'), withAirship), 208, 224),
-    ].map((p) => p.target.level);
+      ...pipesIn(campaignLevel(getLevel('4-2-warp')), 48, 64).map((p) => p.target),
+      chain?.target,
+    ].map((t) => t?.level);
     expect(into).toEqual(['4-2-cavern', '4-2-airship']);
     const cave = getLevel('4-2-cavern');
     expect([cave.world, cave.stage, cave.parent]).toEqual([4, 2, '4-2']);
@@ -129,6 +152,8 @@ describe('warp zone goto in the map format', () => {
   it('parses goto=level,x,y[,exit] and writes it back', () => {
     const a = parseTextMap(src('warp 0 16 worlds=2 goto=4-2-cavern,2,0'), 't');
     expect(warp(a)?.goto).toEqual({ level: '4-2-cavern', x: 2, y: 0 });
+    const c = parseTextMap(src('warp 0 16 worlds=2 goto=x-1,2,3,climb'), 't');
+    expect(warp(c)?.goto).toEqual({ level: 'x-1', x: 2, y: 3, exitDir: 'climb' });
     const b = parseTextMap(src('warp 0 16 worlds=2 goto=x-1,3,4,up'), 't');
     expect(warp(b)?.goto).toEqual({ level: 'x-1', x: 3, y: 4, exitDir: 'up' });
     expect(serializeTextMap(b)).toContain('warp 0 16 worlds=2 goto=x-1,3,4,up');

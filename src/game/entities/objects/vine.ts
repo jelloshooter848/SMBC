@@ -5,9 +5,20 @@ import { Entity, type View } from '../entity';
 const GROW_SPEED = 2; // px per frame while sprouting from a block
 
 /**
+ * How a vine looks: the beanstalk (items sheet) or an anchor chain (`chain` of the smb3 sheet,
+ * 16x16 a link, theme-independent; 4-2's anchor chain up to Larry's airship). Climbed the same.
+ */
+export type VineArt = 'vine' | 'chain';
+/** The chain's frame (16x16, centred on the vine's climb line like the beanstalk). */
+export const CHAIN_SHEET = 'smb3';
+export const CHAIN_FRAME = 'chain';
+
+/**
  * A climbable beanstalk. Either placed in a level (`vine x y len=N`, standing on tile row y) or
  * sprouting from a hit vine brick, in which case it grows from the block up past the top of the
- * screen so the player can climb off it into the level's sky area.
+ * screen so the player can climb off it into the level's sky area. A `chain x y len=N` is the
+ * same thing drawn as an anchor chain (VineArt); a `vine` zone on its foot (column x, row y)
+ * links its top to another area like a vine brick's.
  */
 export class Vine extends Entity {
   readonly kind = 'vine';
@@ -27,6 +38,7 @@ export class Vine extends Entity {
     bottomRow: number,
     len: number,
     fromBlock: { tx: number; ty: number } | null = null,
+    readonly art: VineArt = 'vine',
   ) {
     const basePx = fromBlock ? bottomRow * 16 : (bottomRow + 1) * 16;
     const topPx = fromBlock ? -16 : basePx - len * 16;
@@ -78,9 +90,20 @@ export class Vine extends Entity {
     }
   }
 
+  /** Tile row the vine stands on (its foot), for a `vine` zone linking a placed vine or chain. */
+  get footRow(): number {
+    return (this.basePx >> 4) - 1;
+  }
+
   render(r: Renderer, view: View): void {
-    const sheet = view.assets.sheet('items');
     const x = toPx(this.body.x) - 7 - view.camX;
+    if (this.art === 'chain') {
+      // Links tile with no gaps and need no top frame (the chain runs off the screen).
+      const chain = view.assets.sheet(CHAIN_SHEET);
+      for (let y = this.basePx - 16; y >= this.top; y -= 16) r.sprite(chain, CHAIN_FRAME, x, y);
+      return;
+    }
+    const sheet = view.assets.sheet('items');
     for (let y = this.basePx - 16; y >= this.top; y -= 16) {
       const name = y - 16 < this.top ? 'vine-top' : 'vine-mid';
       r.sprite(sheet, name, x, y);

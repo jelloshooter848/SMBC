@@ -18,6 +18,7 @@ import { Captive } from '@game/entities/objects/captive';
 import { newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import { airshipBot } from './airship-bot';
 
 /** Shared setup for the freeing-the-heroes sims (heroes.test.ts, heroes-race.test.ts). */
 
@@ -145,4 +146,24 @@ export function talkIntoMiniGame(h: H, l: LevelScene) {
   expect(round).not.toBeInstanceOf(MessageScene);
   expect(round).not.toBe(l);
   return round;
+}
+
+/**
+ * Larry's airship deck (any `camera: auto` level with a down pipe): play it like a player (the
+ * airship bot, tests/sim/airship-bot.ts: on with the scrolling screen, jumping walls and pits,
+ * dodging shots, onto the stern pipe and DOWN), unhurtable. Returns once the deck is left (or
+ * after `max` frames).
+ */
+export function rideToStern(h: H, deck: LevelScene, max = 6000): void {
+  const bot = airshipBot();
+  // A flow helper: the ride is made with the hero unhurtable, so every test reaches the room
+  // the same way (pits and squashes still count). airship-deck.test.ts plays it with damage on.
+  const assist = deck.world.assist;
+  const was = assist.invulnerable;
+  assist.invulnerable = true;
+  try {
+    for (let f = 0; f < max && h.top() === deck; f++) h.step(bot(deck.world));
+  } finally {
+    assist.invulnerable = was;
+  }
 }

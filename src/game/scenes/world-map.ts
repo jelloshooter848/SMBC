@@ -46,6 +46,8 @@ import { inventoryAvailable, shownItems } from '../bonus/use';
 import { giveDevItems } from '../bonus/items';
 import { MapGuard, guardRoad } from '../map/hammer-bro';
 import { BONUS_CLOSED_HINT, BONUS_CLOSED_SAID, bonusGame } from '../map/bonus-spot';
+import { AirshipCrash, type CrashNames } from '../map/airship-crash';
+import { CRYSTAL_BALL } from '../map/captives';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -99,7 +101,7 @@ export interface WorldMapOptions {
   slideFrom?: PageId;
 }
 
-type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade';
+type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade' | 'cutscene';
 
 /** 'WORLD 1' → 'World 1', 'LOST LEVELS - BEAT 8-4 TO UNLOCK' → 'Lost Levels - Beat 8-4 To Unlock'. */
 export function spoken(text: string): string {
@@ -271,6 +273,17 @@ export class WorldMapScene implements Scene {
   /** Freed heroes celebrating on this map: the frame their burst of hops began (map/trophy.ts). */
   private readonly trophyBursts = new Map<string, number>();
   private readonly scratchActor: MapActor = { type: '', x: 0, y: 0 };
+  /**
+   * The airship's crash on World 4 (map/airship-crash.ts), playing before the reveal of the road
+   * to the bonus spot it opened (`node`: that bonus node, hidden until Toad has built it).
+   */
+  private crash: {
+    scene: AirshipCrash;
+    node: string;
+    names: CrashNames;
+    /** The page's line (announceHere), said ahead of the first narration line, not under it. */
+    lead: string;
+  } | null = null;
   /** The Hammer Bro wandering the road to a used bonus spot on this page, or null. */
   guard: MapGuard | null = null;
   private guardGrace = 0;
@@ -320,9 +333,10 @@ export class WorldMapScene implements Scene {
     this.game.ctx.audio.playMusic(this.page.music);
     this.views.clear();
     this.refreshGuard();
-    this.announceHere();
     this.game.addReveal(this.opts.reveal ?? []);
     this.takeReveal();
+    if (this.startCrash()) return;
+    this.announceHere();
     const from = this.opts.slideFrom === undefined ? undefined : mapPage(this.opts.slideFrom);
     if (from && from !== this.page) {
       // A warp: slide in from the page warped from (fade in from another group); the reveal
@@ -360,6 +374,69 @@ export class WorldMapScene implements Scene {
       }
       return false; // not on this page: stale
     });
+  }
+
+  /**
+   * The crystal ball's crash cutscene (Game.mapCutscene, set when the ball is taken; consumed here
+   * whether or not it plays): on the page whose bonus node the ball opens, while that node and its
+   * road wait in the reveal. It runs as the `cutscene` mode, then the reveal draws the road.
+   */
+  private startCrash(): boolean {
+    if (this.game.mapCutscene !== 'airship-crash') return false;
+    this.game.mapCutscene = null;
+    const bonus = this.page.nodes.find((n) => n.kind === 'bonus' && n.unlock === CRYSTAL_BALL);
+    const here = this.nodeById(this.node);
+    if (!this.game.campaign || !bonus || !here || !this.revealQueue.includes(bonus.id)) return false;
+    const s = this.game.state;
+    const names: CrashNames = {
+      heroes: s.character2 ? `${s.character.name} and ${s.character2.name}` : s.character.name,
+      bonus: spoken(bonusGame().label(this.game)),
+      skip: abilityHint(this.game, 'JUMP', 'jump'),
+    };
+    this.crash = { scene: new AirshipCrash(here, bonus), node: bonus.id, names, lead: `${this.hereLine()}.` };
+    this.mode = 'cutscene';
+    return true;
+  }
+
+  /** The crash cutscene's frame; JUMP (or MENU) skips straight to its end and the road drawn. */
+  private updateCrash(input: InputFrame): void {
+    const c = this.crash as NonNullable<typeof this.crash>;
+    if (this.t > 1 && (input.pressed('jump') || input.pressed('start'))) {
+      this.endCrash();
+      this.finishReveal();
+      return;
+    }
+    for (const ev of c.scene.update(c.names)) {
+      if (ev.sfx) this.game.ctx.audio.sfx(ev.sfx);
+      if (!ev.say) continue;
+      this.say(c.lead ? `${c.lead} ${ev.say}` : ev.say);
+      c.lead = '';
+    }
+    if (c.scene.built) this.showBonus(c.node);
+    if (!c.scene.done) return;
+    this.endCrash();
+    this.mode = 'reveal';
+    this.revealT = 0;
+    if (!this.revealQueue.length) this.finishReveal();
+  }
+
+  /** The bonus node built by Toad: out of the reveal (drawn from now on, still announced). */
+  private showBonus(id: string): void {
+    this.revealShown.delete(id);
+    this.revealQueue = this.revealQueue.filter((q) => q !== id);
+  }
+
+  private endCrash(): void {
+    const c = this.crash;
+    if (!c) return;
+    this.crash = null;
+    this.showBonus(c.node);
+    this.mode = 'reveal';
+  }
+
+  /** True while the airship's crash cutscene plays. */
+  get cutscene(): boolean {
+    return this.crash !== null;
   }
 
   private nodeById(id: string): MapNode | undefined {
@@ -462,10 +539,14 @@ export class WorldMapScene implements Scene {
 
   /** The page's name and the node the hero stands on. */
   private announceHere(): void {
+    this.say(this.hereLine());
+  }
+
+  private hereLine(): string {
     const n = this.nodeById(this.node);
     const label = spoken(this.page.label);
     const page = label.toUpperCase() === this.page.title ? label : `${label}, ${this.page.title}`;
-    this.say(n ? `${page}. ${this.nodeLabel(n)}` : page);
+    return n ? `${page}. ${this.nodeLabel(n)}` : page;
   }
 
   /**
@@ -532,6 +613,9 @@ export class WorldMapScene implements Scene {
       case 'reveal':
         this.updateReveal(input);
         return;
+      case 'cutscene':
+        this.updateCrash(input);
+        return;
       case 'walk':
         this.updateWalk();
         return;
@@ -552,7 +636,7 @@ export class WorldMapScene implements Scene {
    * while walking, sliding or fading.
    */
   touchLabels(): TouchLabels {
-    if (this.mode === 'reveal') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
+    if (this.mode === 'reveal' || this.mode === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
     if (this.mode !== 'idle') return NO_TOUCH_BUTTONS;
     const here = this.nodeById(this.node);
     const open = !!here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll);
@@ -623,9 +707,9 @@ export class WorldMapScene implements Scene {
     this.game.autosave();
   }
 
-  /** True while a reveal is still drawing in. */
+  /** True while a reveal is still drawing in (the crash cutscene before it included). */
   get revealing(): boolean {
-    return this.mode === 'reveal';
+    return this.mode === 'reveal' || this.mode === 'cutscene';
   }
 
   private updateIdle(input: InputFrame): void {
@@ -1101,7 +1185,13 @@ export class WorldMapScene implements Scene {
       if (m.hint === 'trophy') this.drawHeroMark(r, page, m, ox);
     }
     if (hero && this.guard) this.drawGuard(r, this.guard);
-    if (hero && page.nodes.length) this.drawHeroes(r);
+    const crash = hero ? this.crash?.scene : undefined;
+    if (crash) {
+      // The hero is aboard until he jumps out; then on his way down to (and standing on) 4-2.
+      const at = crash.heroAt();
+      if (at) this.drawHeroes(r, at.x, at.y);
+      crash.draw(r, this.game.ctx.assets, this.game.ctx.reduceFlashing);
+    } else if (hero && page.nodes.length) this.drawHeroes(r);
   }
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {
@@ -1206,11 +1296,11 @@ export class WorldMapScene implements Scene {
     return out;
   }
 
-  private drawHeroes(r: Renderer): void {
+  private drawHeroes(r: Renderer, x = this.hx, y = this.hy): void {
     const s = this.game.state;
     // Player two a little behind and to the side.
-    if (s.character2) this.drawHero(r, s.character2, this.hx - 7, this.hy - 2);
-    this.drawHero(r, s.character, this.hx, this.hy);
+    if (s.character2) this.drawHero(r, s.character2, x - 7, y - 2);
+    this.drawHero(r, s.character, x, y);
   }
 
   private framesFor(c: CharacterDef): HeroFrames {

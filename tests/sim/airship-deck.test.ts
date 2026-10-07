@@ -5,12 +5,10 @@ import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { T } from '@game/level/tiles';
 import { tileAtTiles } from '@game/level/schema';
-import { px, toPx } from '@engine/math/units';
-import type { Action } from '@engine/input/actions';
-import type { World } from '@game/world/world';
+import { toPx } from '@engine/math/units';
 import type { CharacterDef } from '@game/characters/character';
-import { Cannon, Cannonball } from '@game/entities/enemies/cannon';
-import { RockyWrench } from '@game/entities/enemies/rocky-wrench';
+import { Cannon } from '@game/entities/enemies/cannon';
+import { airshipBot } from './airship-bot';
 
 // Larry's airship deck (4-2-airship.map): SMB3 World 1's airship transcribed onto one 15-row
 // screen, auto-scrolling, ending in the stern pipe down to Larry's room (4-2-larry).
@@ -18,78 +16,6 @@ import { RockyWrench } from '@game/entities/enemies/rocky-wrench';
 const deck = getLevel('4-2-airship');
 const t = (x: number, y: number) => tileAtTiles(deck, x, y);
 const PIPE = deck.zones.find((z) => z.kind === 'pipe') as { x: number; y: number };
-
-/** Whether the level's camera moves on its own (A1's `camera: auto`). */
-function autoScrolls(): boolean {
-  const r = runSim({
-    level: deck,
-    character: MARIO,
-    script: { steps: [{ frame: 0, hold: [] }] },
-    maxFrames: 120,
-    assist: { invulnerable: true },
-  });
-  return r.world.camera.x > 0;
-}
-const AUTO = autoScrolls();
-
-/**
- * A simple bot: walk right (no running), jump over walls and pits ahead, hold the jump while
- * rising, and on the stern deck hop onto the pipe and press down.
- */
-function bot(): (w: World) => Action[] {
-  let held = false;
-  let lastX = -1;
-  let still = 0;
-  let back = 0;
-  return (w) => {
-    const p = w.player;
-    const b = p.body;
-    const left = toPx(b.x);
-    const right = toPx(b.x + b.w);
-    const feet = toPx(b.y + b.h);
-    const row = Math.floor((feet - 1) / 16);
-    const pipeL = PIPE.x * 16;
-    // Standing on the pipe's top, over its middle: down.
-    if (b.onGround && feet === PIPE.y * 16 && left >= pipeL && right <= pipeL + 32) {
-      held = false;
-      return ['down'];
-    }
-    // Stuck at a wall (a committed jump that came up short): back off a little and try again.
-    still = left === lastX ? still + 1 : 0;
-    lastX = left;
-    if (still > 40) back = 16;
-    if (back > 0) {
-      back--;
-      held = false;
-      return ['left'];
-    }
-    const out: Action[] = [];
-    const past = left > pipeL + 4 && feet <= PIPE.y * 16 + 32;
-    out.push(past ? 'left' : 'right');
-    const dir = past ? -1 : 1;
-    const ahead = (d: number) => Math.floor((dir > 0 ? right + d : left - d) / 16);
-    // A wall ahead: a low one (1 tile) is hopped up close, a taller one jumped at from further out.
-    const height = (x: number) => {
-      let n = 0;
-      while (n < 5 && w.map.isSolid(x, row - n)) n++;
-      return n;
-    };
-    let wall = false;
-    for (const d of [2, 10, 18]) if (height(ahead(d)) > 0 || w.map.isSolid(ahead(d), row - 1)) wall = true;
-    for (const d of [18, 26, 34]) if (height(ahead(d)) >= 2) wall = true;
-    let pit = true;
-    for (let y = row + 1; y < 15; y++) if (w.map.isSolid(ahead(6), y)) pit = false;
-    const wantJump = wall || pit || (feet > PIPE.y * 16 && left > pipeL - 40 && !past);
-    if (b.onGround) {
-      if (wantJump && !held) {
-        held = true;
-        out.push('jump');
-      } else held = false;
-    } else if (held && b.vy < 0) out.push('jump');
-    else held = false;
-    return out;
-  };
-}
 
 function cross(c: CharacterDef, power: string, invulnerable: boolean, maxFrames = 60 * 120) {
   let furthest = 0;
@@ -99,7 +25,7 @@ function cross(c: CharacterDef, power: string, invulnerable: boolean, maxFrames 
     state: { powerState: power },
     assist: { invulnerable },
     script: { steps: [] },
-    controller: bot(),
+    controller: airshipBot(),
     maxFrames,
     until: (w) => {
       furthest = Math.max(furthest, toPx(w.player.body.x));
@@ -137,15 +63,15 @@ describe('the airship deck layout (SMB3 World 1 airship)', () => {
     expect(t(32, 9)).toBe(T.GROUND);
     expect(t(33, 12)).toBe(T.GROUND);
     expect(t(33, 9)).toBe(T.AIR);
-    // The ? block mid-ship, 4 rows above the deck.
-    expect(t(55, 8)).toBe(T.Q_POWERUP);
+    // The ? block mid-ship, 5 rows above the deck.
+    expect(t(55, 7)).toBe(T.Q_POWERUP);
     // The overhang and its hanging cannons.
     expect(t(45, 3)).toBe(T.BRIDGE);
     const hanging = deck.entities.filter((e) => e.type === 'cannon' && e.y <= 6);
     expect(hanging.length).toBeGreaterThanOrEqual(5);
     for (const c of hanging) expect(['dl', 'dr', 'l', 'r']).toContain(c.props?.dir);
     // Two Rocky Wrenches, one on the fore deck and one on the lower stern deck.
-    expect(deck.entities.filter((e) => e.type === 'rocky').map((e) => e.x)).toEqual([18, 73]);
+    expect(deck.entities.filter((e) => e.type === 'rocky').map((e) => e.x)).toEqual([18, 74]);
     // The stern pipe on the high stern deck.
     expect(PIPE).toMatchObject({ x: 94, y: 6, dir: 'down', target: { level: '4-2-larry', x: 2, y: 12 } });
     expect(t(94, 8)).toBe(T.GROUND);
@@ -185,53 +111,83 @@ describe('the airship deck layout (SMB3 World 1 airship)', () => {
   });
 });
 
-describe('every hero crosses the deck to the stern pipe (geometry; hits ignored)', () => {
+describe('every hero crosses the deck to the stern pipe under the auto-scroll (geometry; hits ignored)', () => {
   for (const c of CHARACTERS)
     for (const power of ['small', 'big'])
       it(`${c.name} (${power})`, () => {
         const { r, furthest } = cross(c, power, true);
         expect(r.outcome, `${c.id} reached x=${furthest}`).toBe('pipe');
-        // Down the stern pipe: into Larry's room.
         const pipe = r.events.find((e) => e.type === 'pipe') as { target?: { level: string } } | undefined;
-        expect(pipe?.target?.level ?? '4-2-larry').toBe('4-2-larry');
-        // About a minute's sail at the auto-scroll's pace; never stuck.
-        expect(r.frames).toBeLessThan(60 * 120);
+        expect(pipe?.target?.level).toBe('4-2-larry');
+        // The camera got there first: about a minute's sail, never stuck.
+        expect(r.frames).toBeGreaterThan(50 * 60);
+        expect(r.frames).toBeLessThan(75 * 60);
       });
+});
+
+/*
+ * Fairness, with damage ON: the airship bot (tests/sim/airship-bot.ts) waits out or steps away
+ * from cannonballs, wrenches and Bullet Bills it can see coming, stomps or attacks Rocky Wrench,
+ * and keeps clear of the right edge before a gap. Every hero gets to the stern pipe alive, small
+ * Mario and Luigi without a single hit; also after standing still for the first 200 frames
+ * (a different timing of every cannon and Rocky Wrench).
+ */
+describe('every hero survives the deck with damage on', () => {
+  const powers = (c: CharacterDef) => (c.damage.kind === 'powerup' ? ['small', 'big', 'fire'] : ['full']);
+  for (const idle of [0, 200])
+    for (const c of CHARACTERS)
+      for (const power of powers(c))
+        it(`${c.name} (${power})${idle ? ', after standing still 200 frames' : ''}`, () => {
+          const bot = airshipBot();
+          let hits = 0;
+          let last = '';
+          const r = runSim({
+            level: deck,
+            character: c,
+            state: { powerState: power },
+            script: { steps: [] },
+            maxFrames: 60 * 120,
+            controller: (w, f) => {
+              const st = c.damage.kind === 'powerup' ? w.player.powerState : String(w.player.hp);
+              if (f > 0 && st !== last) hits++;
+              last = st;
+              const a = bot(w);
+              return f < idle ? [] : a;
+            },
+          });
+          // The one run the bot loses: Samus from a standing start dies on the lower stern deck,
+          // where her beam passes just under a Bullet Bill and the bot won't jump it (a player
+          // jumps it, or shoots it from a jump; the run 200 frames later goes through).
+          const botLoses = c.id === 'samus' && idle === 0;
+          expect(r.outcome, `${c.id} ${power} at x=${r.playerX}`).toBe(botLoses ? 'died' : 'pipe');
+          if (c.id === 'mario' || c.id === 'luigi')
+            expect(hits, `${c.id} ${power} hits`).toBeLessThanOrEqual(power === 'small' ? 0 : 1);
+        });
 });
 
 describe('the auto-scroll', () => {
   it('takes 50-70 s from the bow to the stern', () => {
-    const scroll = 0.375;
-    const seconds = ((deck.width - 16) * 16) / scroll / 60;
+    expect(deck.scroll).toBe(0.375);
+    const seconds = ((deck.width - 16) * 16) / 0.375 / 60;
     expect(seconds).toBeGreaterThan(50);
     expect(seconds).toBeLessThan(70);
   });
 
-  it.runIf(AUTO)(
-    'a hero who stands still is pushed off the bow and squashed against the first cannon',
-    () => {
+  it('a hero who stands still is carried off the bow and squashed against the first cannon', () => {
+    for (const c of CHARACTERS) {
       const r = runSim({
         level: deck,
-        character: MARIO,
+        character: c,
+        state: { powerState: c.damage.kind === 'powerup' ? 'big' : 'full' },
         script: { steps: [{ frame: 0, hold: [] }] },
         maxFrames: 60 * 30,
       });
-      expect(r.outcome).toBe('died');
-      expect(r.playerX).toBeLessThan(14 * 16);
-      expect(r.world.entities.some((e) => e instanceof Cannonball || e instanceof RockyWrench)).toBeDefined();
-    },
-  );
-
-  it.runIf(!AUTO)('(no auto-scroll yet) a hero who stands still stays on the bow', () => {
-    const r = runSim({
-      level: deck,
-      character: MARIO,
-      script: { steps: [{ frame: 0, hold: [] }] },
-      maxFrames: 600,
-    });
-    expect(r.outcome).toBe('timeout');
-    expect(r.world.camera.x).toBe(0);
-    expect(r.playerY + 16).toBe(7 * 16);
-    expect(r.world.player.body.x).toBeLessThan(px(4 * 16));
+      expect(r.outcome, c.id).toBe('died');
+      // Pushed along the fore deck to the cannon at column 14 (about 12-13 s in).
+      expect(r.frames, c.id).toBeGreaterThan(600);
+      expect(r.frames, c.id).toBeLessThan(900);
+      expect(r.playerX + 16, c.id).toBeGreaterThan(12 * 16);
+      expect(r.playerX, c.id).toBeLessThan(14 * 16);
+    }
   });
 });

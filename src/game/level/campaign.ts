@@ -1,6 +1,6 @@
 import { levelIds } from '@content/levels';
-import type { LevelData, Zone } from './schema';
-import { T } from './tiles';
+import type { Decor, EntitySpawn, LevelData, Zone } from './schema';
+import { T, isSolid } from './tiles';
 
 /*
  * Campaign variants of levels (Game.startLevel uses them while a save file is played from the
@@ -15,6 +15,12 @@ import { T } from './tiles';
  *   pipe leads to `goto` instead (an area of the level: Samus's cavern, Larry's airship), and the
  *   welcome text goes too. It is an ordinary pipe into an area: no secret, no map road, the clock
  *   carries on. A `goto` whose level is not in the library (yet) leaves the warp as it is.
+ * - `goto` with exit `climb` (4-2's right zone, owner decision 8:25 PM: Larry's airship): no pipe
+ *   at all. Every pipe of the room goes; where the middle one stood an anchor (`smb3:anchor`
+ *   decor, 32x32) rests on the floor and its CHAIN (a `chain` entity: a placed vine with chain
+ *   art) rises from the floor off the top of the screen, through a hole in anything solid above
+ *   it. A `vine` zone on the chain's foot links its top to `goto` (a climb arrival in chain art:
+ *   world/world.ts). See `anchorChain`.
  */
 
 const PIPE_TILES = new Set<number>([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
@@ -46,13 +52,19 @@ export function campaignLevel(level: LevelData, has: (id: string) => boolean = i
   const tiles = new Uint16Array(level.tiles);
   const dropped = new Set<Zone>();
   const kept = new Map<Pipe, Warp>();
+  const added: { zones: Zone[]; entities: EntitySpawn[]; decor: Decor[] } = {
+    zones: [],
+    entities: [],
+    decor: [],
+  };
   for (const w of variants) {
     const pipes = level.zones
       .filter((z): z is Pipe => z.kind === 'pipe' && z.x >= w.x && z.x < w.x + w.w)
       .sort((a, b) => a.x - b.x);
     const keep = pipes[Math.floor((pipes.length - 1) / 2)];
+    const chain = !w.secret && w.goto?.exitDir === 'climb';
     for (const p of pipes) {
-      if (p === keep) {
+      if (p === keep && !chain) {
         kept.set(p, w);
         continue;
       }
@@ -66,6 +78,12 @@ export function campaignLevel(level: LevelData, has: (id: string) => boolean = i
         if (PIPE_TILES.has(a)) tiles[row + p.x] = T.AIR;
         if (PIPE_TILES.has(b)) tiles[row + p.x + 1] = T.AIR;
       }
+    }
+    if (chain && keep && w.goto) {
+      const a = anchorChain(level, tiles, keep.x, keep.y, w.goto);
+      added.zones.push(a.zone);
+      added.entities.push(a.entity);
+      added.decor.push(a.decor);
     }
   }
   const zones = level.zones
@@ -81,8 +99,48 @@ export function campaignLevel(level: LevelData, has: (id: string) => boolean = i
       if (z.kind !== 'pipe' || !w) return z;
       if (w.secret) return { ...z, target: { ...z.target, secret: w.secret } };
       return { ...z, target: { ...(w.goto as NonNullable<Warp['goto']>) } };
-    });
-  const out: LevelData = { ...level, tiles, zones };
+    })
+    .concat(added.zones);
+  const out: LevelData = added.entities.length
+    ? {
+        ...level,
+        tiles,
+        zones,
+        entities: [...level.entities, ...added.entities],
+        decor: [...level.decor, ...added.decor],
+      }
+    : { ...level, tiles, zones };
   memo.set(level, out);
   return out;
+}
+
+/** The anchor's art (smb3 sheet, 32x32): centred on the chain, resting on the floor. */
+export const ANCHOR_DECOR = 'smb3:anchor';
+
+/**
+ * A climb `goto`'s anchor and chain where the room's middle pipe stood (its left column `x`,
+ * mouth row `y`; the pipe is already cleared from `tiles`). The floor is the first solid row
+ * below the mouth. The chain (a `chain` entity, long enough to reach one tile above the screen
+ * top, as a vine grown from a brick does) stands on the floor in column `x`; anything solid above
+ * it in that column (4-2's ceiling) is opened so the climb is clear. Its `vine` zone sits on the
+ * chain's foot (world/world.ts links a placed chain by its column and bottom row).
+ */
+function anchorChain(
+  level: LevelData,
+  tiles: Uint16Array,
+  x: number,
+  y: number,
+  to: NonNullable<Warp['goto']>,
+): { zone: Zone; entity: EntitySpawn; decor: Decor } {
+  const at = (r: number) => r * level.width + x;
+  let floor = y;
+  while (floor < level.height && !isSolid(tiles[at(floor)] as number)) floor++;
+  const foot = floor - 1;
+  for (let r = 0; r < foot; r++) if (isSolid(tiles[at(r)] as number)) tiles[at(r)] = T.AIR;
+  return {
+    zone: { kind: 'vine', x, y: foot, target: { level: to.level, x: to.x, y: to.y } },
+    entity: { type: 'chain', x, y: foot, props: { len: floor + 1 } },
+    // Decor stands on its bottom-left tile: half a tile left of the chain's column centres it.
+    decor: { kind: ANCHOR_DECOR, x: x - 0.5, y: foot },
+  };
 }

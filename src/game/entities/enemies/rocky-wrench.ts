@@ -11,7 +11,8 @@ import type { World } from '../../world/world';
  * SMB3's Rocky Wrench (Larry's airship deck, 4-2-airship.map): `rocky x y` hides in a manhole in
  * the deck under cell (x, y). When a player comes near it pops up, faces them, throws a wrench
  * that flies straight at the height of its hand, and ducks back down; then it waits and repeats.
- * Only while it is up (at least half out of the hole) can it hurt, be stomped or be hit.
+ * Only while it is up (at least half out of the hole on the way up, until it starts ducking back
+ * down) can it hurt, be stomped or be hit.
  */
 
 const SMB3 = 'smb3';
@@ -59,8 +60,11 @@ const WAIT = 20;
 export const ROCKY_HIDE = 100;
 /** Pops up only for a player within this many px sideways... */
 const NEAR = px(128);
-/** ...and never right under a player standing on its manhole lid. */
-const ON_LID = px(18);
+/**
+ * ...and never right under or beside a player near its manhole (no rising into them, no
+ * point-blank wrench): it waits until they are this far away sideways.
+ */
+const TOO_CLOSE = px(32);
 
 const HIDDEN: Vulnerability = {};
 
@@ -99,7 +103,7 @@ export class RockyWrench extends Enemy {
 
   /** Up far enough to be hit, stomped or to hurt. */
   get exposed(): boolean {
-    return this.out >= HALF;
+    return this.out >= HALF && this.state !== 'duck';
   }
 
   private setOut(n: number): void {
@@ -127,15 +131,15 @@ export class RockyWrench extends Enemy {
         if (this.t < this.hideFor) return;
         if (b.x + b.w < cam.x || b.x > cam.right) return;
         const dx = Math.abs(pl.centerX - cx);
-        const onLid = world
+        const tooClose = world
           .activePlayers()
           .some(
             (p) =>
-              Math.abs(p.centerX - cx) < ON_LID &&
+              Math.abs(p.centerX - cx) < TOO_CLOSE &&
               p.body.y + p.body.h <= this.deck + px(2) &&
               p.body.y + p.body.h > this.deck - px(40),
           );
-        if (pl.dead || pl.out || dx > NEAR || onLid) return;
+        if (pl.dead || pl.out || dx > NEAR || tooClose) return;
         this.enter('rise');
         return;
       }
@@ -148,7 +152,8 @@ export class RockyWrench extends Enemy {
         if (this.t >= AIM) this.enter('throw');
         break;
       case 'throw':
-        if (this.t === 1) {
+        // A hero who came right up to it while it aimed gets no point-blank wrench.
+        if (this.t === 1 && Math.abs(pl.centerX - cx) >= TOO_CLOSE) {
           const dir = this.facing;
           const x = dir < 0 ? b.x - px(6) : b.x + b.w - px(2);
           world.spawn(new Wrench(x, b.y + px(3), dir, WRENCH, this));
@@ -158,7 +163,10 @@ export class RockyWrench extends Enemy {
         if (this.t >= THROW) this.enter('wait');
         break;
       case 'wait':
-        if (this.t >= WAIT) this.enter('duck');
+        if (this.t >= WAIT) {
+          this.enter('duck');
+          this.setOut(this.out);
+        }
         break;
       case 'duck':
         this.setOut(this.out - 1);

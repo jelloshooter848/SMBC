@@ -18,7 +18,7 @@ import { loadSave, type SaveFile } from '@game/save/save-files';
 import { registerBonusGame, BONUS_CLOSED_HINT, type BonusOutcome } from '@game/map/bonus-spot';
 import { SMB3_BONUS } from '@game/bonus/spot';
 import type { MapNode, WorldMapPage } from '@game/map/types';
-import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
+import { draw, file, makeGame, rideToStern, useStorage, type H } from './heroes-harness';
 
 // Larry Koopa's airship (4-2), the crystal ball and World 4's bonus spot with its Hammer Bro
 // (docs/HEROES.md "Larry Koopa and the crystal ball", docs/WORLD_MAP.md "The bonus spot and its
@@ -49,7 +49,7 @@ function onMap(over: Partial<SaveFile>): { h: H; map: () => WorldMapScene } {
   return { h, map: () => h.top() as WorldMapScene };
 }
 
-/** Into the airship cabin as from the deck's stern pipe; Larry is found once spawned. */
+/** Into Larry's room as from the airship deck's stern pipe; Larry is found once spawned. */
 function intoAirship(h: H): { level: LevelScene; larry: Larry } {
   h.game.startLevel(getLevel('4-2-larry'), { mode: 'pipe-exit', x: 2, y: 12, time: 300 });
   h.step();
@@ -107,6 +107,8 @@ describe('the crystal ball (campaign)', () => {
     expect(saved.inventoryUnlocked).toBe(true);
     expect(saved.cleared).not.toContain('4-2');
     // Only the road to the bonus spot is drawn in (4-3 waits for 4-2's flagpole).
+    // The airship crash cutscene plays first (airship-crash.test.ts), then the road draws in.
+    expect(map.cutscene).toBe(true);
     expect(map.revealing).toBe(true);
     h.until(() => !map.revealing, 600);
     expect(h.game.pendingReveal).toEqual([]);
@@ -119,27 +121,35 @@ describe('the crystal ball (campaign)', () => {
     expect(h.said.at(-1)).toMatch(/Toad House, open/);
   });
 
-  it("4-2's right warp-zone pipe (the campaign's one pipe) drops the hero onto the airship deck's bow", () => {
+  it("4-2's anchor chain (the campaign's way in, no pipe) boards the deck; its stern pipe leads into the room", () => {
     const { h } = onMap(world4());
     const main = getLevel('4-2');
+    // The chain stands where the warp-zone pipe stood (anchor-chain.test.ts has the details).
     const pipe = main.zones.find((z) => z.kind === 'pipe' && z.x === 214) as { x: number; y: number };
-    h.game.startLevel(main, { mode: 'stand', x: pipe.x, y: pipe.y - 1, time: 300 });
+    h.game.startLevel(main, { mode: 'stand', x: pipe.x, y: 12, time: 300 });
     h.step();
-    for (let f = 0; f < 300 && (h.top() as LevelScene).level?.id !== '4-2-airship'; f++) h.step(['down']);
+    for (let f = 0; f < 900 && (h.top() as LevelScene).level?.id !== '4-2-airship'; f++) h.step(['up']);
     const deck = h.top() as LevelScene;
     expect(deck.level.id).toBe('4-2-airship');
-    // Down onto the raised bow platform (row 7) at column 2, no map change.
-    h.until(() => deck.world.player.body.onGround, 200);
-    const p = deck.world.player;
-    expect((p.body.y + p.body.h) >> 8).toBe(7 * 16);
-    expect(p.body.x >> 12).toBe(2);
+    expect(h.game.airship).not.toBeNull();
+    // Up the arrival chain at column 2 and off it onto the deck in column 3, the clock held
+    // (hidden), no map change.
+    h.until(() => !deck.world.arriving && deck.world.player.body.onGround, 900);
+    expect(Math.floor((deck.world.player.centerX >> 8) / 16)).toBe(3);
+    expect(deck.world.time).toBeNull();
     expect(h.game.mapProgress.secrets).not.toContain('larry');
-  });
-
-  it("the deck's stern pipe leads down into Larry's room", () => {
-    const deck = getLevel('4-2-airship');
-    const pipe = deck.zones.find((z) => z.kind === 'pipe');
-    expect(pipe).toMatchObject({ dir: 'down', target: { level: '4-2-larry', x: 2, y: 12 } });
+    // Along the deck to the stern pipe and down it: Larry's room.
+    rideToStern(h, deck);
+    const cabin = h.top() as LevelScene;
+    expect(cabin.level.id).toBe('4-2-larry');
+    // Out of the pipe at columns 2-3 onto its top (row 13), still no clock.
+    h.until(() => !cabin.world.player.frozen, 200);
+    const p = cabin.world.player;
+    expect((p.body.y + p.body.h) >> 8).toBe(13 * 16);
+    expect(p.centerX >> 8).toBe(3 * 16); // the middle of the 2-wide pipe
+    expect(cabin.world.time).toBeNull();
+    expect(h.game.airship?.reachedRoom).toBe(true);
+    h.until(() => cabin.world.entities.some((e) => e instanceof Larry), 30);
   });
 
   it('a file without the ball never shows the bonus node, even with 4-2 cleared', () => {
@@ -197,7 +207,7 @@ describe("the cabin's look (the SMB3 art)", () => {
     expect(at('smb3:pillar')).toEqual(cells([0, 15], span(2, 12)));
     expect(at('smb3:porthole')).toEqual(['10,6', '5,6']);
     // The floor: post tops (`#`) on row 13, the posts going on (`%`) on row 14; the raised post's
-    // top at (7,12) with its post under it; the arrival pipe, `4-2-larry 2 12`, in the floor.
+    // top at (7,12) with its post under it; the arrival pipe (the deck's stern pipe leads to `4-2-larry 2 12`) in the floor.
     for (const x of span(0, 15)) {
       if (x === 2 || x === 3) continue;
       expect(t(x, 13), `top ${x}`).toBe(x === 7 ? T.CASTLE_BRICK : T.GROUND);

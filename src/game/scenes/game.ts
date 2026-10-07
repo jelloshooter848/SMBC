@@ -42,6 +42,7 @@ import { CRYSTAL_BALL } from '../map/captives';
 import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
+import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship';
 import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
@@ -100,6 +101,8 @@ export class Game {
   mapProgress: MapProgress = newMapProgress();
   /** The save file being played from the world map; null for every non-campaign start. */
   campaign: { slot: SaveSlot } | null = null;
+  /** Larry's airship challenge in progress (scenes/airship.ts), else null. */
+  airship: AirshipRun | null = null;
   /** The campaign's file as last written (the base `autosave` updates). */
   private campaignSave: SaveFile | null = null;
   /** The node the hero last stood on in each page (SaveFile.lastNode), for map travel. */
@@ -109,6 +112,12 @@ export class Game {
    * own when the hero first arrives there (SaveFile.pendingReveal).
    */
   pendingReveal: string[] = [];
+  /**
+   * A one-time map cutscene to play before the next map's reveal: 'airship-crash' (Larry's
+   * airship crashing on World 4's bonus spot, map/airship-crash.ts), set when the crystal ball is
+   * taken. Never saved: it plays once, and a reload only draws the reveal.
+   */
+  mapCutscene: 'airship-crash' | null = null;
   /** The file's developer "Unlock all" map flag (SaveFile.devUnlockAll); see `mapUnlockAll`. */
   devUnlockAll = false;
   /** The file's developer "All heroes" flag (SaveFile.devAllHeroes); see `heroLocked`. */
@@ -296,6 +305,7 @@ export class Game {
   }
 
   showTitle(): void {
+    this.airship = null;
     this.deps.ctx.audio.stopMusic();
     this.pendingLevel = null;
     this.playtestDone = null;
@@ -316,6 +326,7 @@ export class Game {
    * whose castle exit's condition has come to hold since (rules.openMetExits) open first.
    */
   showMap(page?: PageId, opts: WorldMapOptions = {}): void {
+    this.airship = null;
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;
@@ -517,6 +528,8 @@ export class Game {
   takeCrystalBall(levelId: string): void {
     if (!this.campaign) return;
     this.inventoryUnlocked = true;
+    // The first time only: World 4's map plays the airship's crash before the road draws in.
+    if (!this.mapProgress.secrets.includes(CRYSTAL_BALL)) this.mapCutscene = 'airship-crash';
     this.returnToMap(secretExit(this.mapProgress, levelId, CRYSTAL_BALL, this.deps.getLevel));
   }
 
@@ -930,10 +943,32 @@ export class Game {
     this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
   }
 
-  /** Straight into a level (pipes, bonus rooms); campaign play gets its variant (level/campaign.ts). */
+  /**
+   * Straight into a level (pipes, bonus rooms); campaign play gets its variant (level/campaign.ts).
+   * Entering Larry's airship (deck or room) from elsewhere boards it (scenes/airship.ts); any
+   * other level ends a run aboard. A dev airship round's levels replace each other over its list.
+   */
   startLevel(level: LevelData, start: LevelStart): void {
-    this.scenes.clear();
-    this.scenes.push(new LevelScene(this, this.campaign ? campaignLevel(level) : level, start));
+    const run = this.airship;
+    if (!isAirshipArea(level.id)) {
+      // A dev round leaving the airship ends as QUIT (its own scenes go back to the dev list).
+      if (run?.onDone) {
+        endDev(this, 'quit');
+        return;
+      }
+      this.airship = null;
+    } else if (run) run.entered(level.id, start, this.state);
+    else boardAirship(this, level.id, start);
+    const base = this.airship?.base;
+    if (base && this.scenes.find((s) => s === base))
+      while (this.scenes.depth > 0 && this.scenes.top !== base) this.scenes.pop();
+    else this.scenes.clear();
+    this.scenes.push(this.levelScene(level, start));
+  }
+
+  /** The scene for `level` (its campaign variant in campaign play), not yet pushed. */
+  levelScene(level: LevelData, start: LevelStart): LevelScene {
+    return new LevelScene(this, this.campaign ? campaignLevel(level) : level, start);
   }
 
   /**
