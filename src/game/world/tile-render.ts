@@ -55,4 +55,6 @@ export const SKY: Record<string, string> = {
   station: '#000000',
   // Samus's cavern: a near-black blue, just off the castle's black, behind the rock.
   cavern: '#000818',
+  // Larry's airship sails a dark night sky.
+  airship: '#000040',
 };

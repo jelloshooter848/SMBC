@@ -27,6 +27,11 @@ const SONG_IDS = [
   // Samus's cavern below 4-2 and ZEBES ESCAPE.
   'cavern',
   'zebes-escape',
+  // Larry Koopa's airship and the bonus spot behind it.
+  'airship',
+  'smb3-boss',
+  'toad-house',
+  'bonus-game',
 ];
 
 const SFX_IDS = [
@@ -71,6 +76,11 @@ const SFX_IDS = [
   'capsule',
   // ZEBES ESCAPE.
   'alarm',
+  // The bonus spot behind Larry's airship and the item inventory.
+  'card-flip',
+  'slot-stop',
+  'bonus-win',
+  'item-use',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

@@ -82,6 +82,16 @@ const tileFrames = [
   'bridge@cavern',
   'wall@cavern',
   'wall-top@cavern',
+  'ground@airship',
+  'castle-brick@airship',
+  'hard@airship',
+  'brick@airship',
+  'used@airship',
+  'tree-top@airship',
+  'tree-trunk@airship',
+  'bridge@airship',
+  'wall@airship',
+  'wall-top@airship',
 ];
 
 const fontGlyphs = [
@@ -322,6 +332,7 @@ describe('tile sprites', () => {
         'tiles-water-gray',
         'tiles-station',
         'tiles-cavern',
+        'tiles-airship',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();

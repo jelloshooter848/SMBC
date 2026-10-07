@@ -15,6 +15,7 @@ import { billPalettes, billDef } from './bill';
 import { mapPalettes, mapDef } from './map';
 import { stationPalettes, stationDef } from './station';
 import { zebesPalettes, zebesDef } from './zebes';
+import { smb3Palettes, smb3Def } from './smb3';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -48,6 +49,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   'dungeon-enemies': dungeonEnemiesDef,
   station: stationDef,
   zebes: zebesDef,
+  smb3: smb3Def,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -69,6 +71,7 @@ const defaults: Record<string, readonly string[]> = {
   ...dungeonEnemiesPalettes,
   ...stationPalettes,
   ...zebesPalettes,
+  ...smb3Palettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

@@ -1,4 +1,5 @@
 import type { Sfx } from '@engine/audio/mml';
+import { smb3Sfx } from './smb3';
 
 /**
  * Original sound effects. At the default 150 bpm one tick is ~8.3 ms, so l64 = 25 ms,
@@ -154,4 +155,6 @@ export const sfx: Sfx[] = [
     pulse: '@1 v12 q7 x0 o5 a8 e8 a8 x1 e8',
     pulse2: '@0 v7 q7 x0 o5 a+8 f8 a+8 x1 f8',
   },
+  // The bonus spot behind Larry's airship and the item inventory.
+  ...smb3Sfx,
 ];

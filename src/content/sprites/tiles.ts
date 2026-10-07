@@ -200,6 +200,22 @@ export const tilePalettes: Record<string, string[]> = {
     NES.skyLight,
     NES.lava,
   ],
+  /* Larry Koopa's airship (4-2): oak-brown deck and hull planks, grey iron plates and bolts. The
+     airship has no water, so the water slots hold the iron's grey and its light edge. */
+  'tiles-airship': [
+    NES.black,
+    NES.brownDark,
+    NES.brown,
+    NES.brownLight,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.gray,
+    NES.lightGray,
+    NES.lava,
+  ],
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -1175,6 +1191,194 @@ const bridgeCavern = [
   '................',
 ];
 
+/* ---------- Larry Koopa's airship (`@airship`) ---------- */
+
+/**
+ * One deck plank (8 rows): a lit top edge, wood grain (`grain` pixels in the dark tone), a
+ * shadowed underside and a black seam. With a butt joint at column `j` it has an iron nail either
+ * side of the joint; a plank running on through the tile is nailed down at columns 3 and 12.
+ */
+const plankAirship = (j: number | null, grain: readonly (readonly [number, number])[]): string[] => {
+  const r = [
+    '3333333333333333',
+    ...Array.from({ length: 5 }, () => '2222222222222222'),
+    '1111111111111111',
+    '0000000000000000',
+  ].map((row) => [...row]);
+  const set = (x: number, y: number, c: string) => {
+    const row = r[y];
+    if (row) row[(x + 16) % 16] = c;
+  };
+  for (const [x, y] of grain) set(x, y, '1');
+  if (j !== null)
+    for (let y = 0; y < 7; y++) {
+      set(j, y, '0');
+      if (y < 6) set(j + 1, y, '3');
+      if (y > 0 && y < 6) set(j - 1, y, '1');
+    }
+  for (const x of j === null ? [3, 12] : [j - 3, j + 3]) {
+    set(x, 3, 'a');
+    set(x, 4, '0');
+  }
+  return r.map((row) => row.join(''));
+};
+
+/* Deck planking: long planks in two courses, joints far apart; tiles both ways. */
+const groundAirship = [
+  ...plankAirship(null, [
+    [2, 2],
+    [3, 2],
+    [4, 2],
+    [6, 4],
+    [7, 4],
+    [14, 2],
+  ]),
+  ...plankAirship(3, [
+    [9, 2],
+    [10, 2],
+    [11, 2],
+    [12, 4],
+    [13, 4],
+    [0, 4],
+  ]),
+];
+
+/* An iron strap riveted across a plank face. */
+const strapAirship = ['0000000000000000', 'aaaaaaaaaaaaaaaa', '9989999999989999', '9909999999909999'];
+
+/* Hull planking (solid walls): planks with an iron strap riveted across the middle. */
+const hullAirship = [
+  ...plankAirship(11, [
+    [2, 2],
+    [3, 2],
+    [6, 4],
+  ]).slice(0, 6),
+  ...strapAirship,
+  '0000000000000000',
+  ...plankAirship(3, [[12, 2]]).slice(1, 6),
+];
+
+/* Hard block: a bevelled iron plate with a bolt in each corner and a sunken panel. */
+const hardAirship = [
+  '8aaaaaaaaaaaaaa9',
+  ...[
+    '99999999999999',
+    '98a999999998a9',
+    '9a099999999a09',
+    '99999999999999',
+    '99000000000a99',
+    '99099999999a99',
+    '99099999999a99',
+    '99099999999a99',
+    '990aaaaaaaaa99',
+    '99999999999999',
+    '98a999999998a9',
+    '9a099999999a09',
+    '99999999999999',
+    '99999999999999',
+  ].map((mid) => `a${mid}0`),
+  '9000000000000000',
+];
+
+/* Breakable wooden block: a bevelled block with a sunken inner square, like turned hardwood. */
+const brickAirship = [
+  '3333333333333331',
+  '3222222222222210',
+  '3222222222222210',
+  '3221111111113210',
+  '3221222222223210',
+  '3221222122223210',
+  '3221221212223210',
+  '3221222122223210',
+  '3221222222223210',
+  '3221222222223210',
+  '3221222222223210',
+  '3221333333333210',
+  '3222222222222210',
+  '3222222222222210',
+  '3111111111111110',
+  '1000000000000000',
+];
+
+/* A spent block: dark scorched planks in an iron frame, nailed shut. */
+const usedAirship = [
+  '0000000000000000',
+  ...[
+    'aaaaaaaaaaaa',
+    '111111111111',
+    '181111111181',
+    '101111111101',
+    '111111111111',
+    '111111111111',
+    '000000000000',
+    '111111111111',
+    '111111111111',
+    '111111111111',
+    '181111111181',
+    '101111111101',
+    '111111111111',
+  ].map((mid) => `0a${mid}90`),
+  '0999999999999990',
+  '0000000000000000',
+];
+
+/* Platform ledge: an iron-capped deck plank on two wooden brackets. */
+const ledgeAirship = [
+  ...strapAirship,
+  '0000000000000000',
+  '3333333333333333',
+  '2222122222222122',
+  '2222222221222222',
+  '1111111111111111',
+  '0000000000000000',
+  '.0310......0310.',
+  '..030......030..',
+  '..0310....0310..',
+  '...030....030...',
+  '...0310..0310...',
+  '....00....00....',
+];
+
+/* The ledge's support (scenery): a stout wooden mast with iron hoops. */
+const mastAirship = Array.from({ length: 16 }, (_, i) =>
+  i % 8 === 3 || i % 8 === 5 ? '....00000000....' : i % 8 === 4 ? '....0aaaa990....' : '.....032210.....',
+);
+
+/* A gangplank on rope hangers (the boss bridge). */
+const bridgeAirship = [
+  '0000000000000000',
+  '3333333333333333',
+  '2222222a22222220',
+  '2212222022122220',
+  '2222222222222220',
+  '1111111111111110',
+  '0000000000000000',
+  '.33........33...',
+  '.03........03...',
+  '.33........33...',
+  '.00........00...',
+  ...Array.from({ length: 5 }, () => '................'),
+];
+
+/* Background hull (scenery): dark inboard planking, dimmer than anything solid. */
+const wallAirship = [
+  ...Array.from({ length: 7 }, (_, i) => (i === 2 ? '1121111111101111' : '1111111111101111')),
+  '0000000000000000',
+  ...Array.from({ length: 7 }, (_, i) => (i === 3 ? '1111111111112111' : '1111111111111111')),
+  '0000000000000000',
+];
+/* The top of the bulwark: a capping rail on stubby iron posts over the inboard planks. */
+const wallTopAirship = [
+  '0000000000000000',
+  '3333333333333333',
+  '2222222222222222',
+  '0000000000000000',
+  '.0a0.......0a0..',
+  '.090.......090..',
+  '.090.......090..',
+  ...wallAirship.slice(7),
+];
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -1254,5 +1458,16 @@ export const tilesDef: SpriteDef = {
     'bridge@cavern': bridgeCavern,
     'wall@cavern': wallCavern,
     'wall-top@cavern': wallTopCavern,
+    // Larry Koopa's airship (behind 4-2's right-hand pipe).
+    'ground@airship': groundAirship,
+    'castle-brick@airship': hullAirship,
+    'hard@airship': hardAirship,
+    'brick@airship': brickAirship,
+    'used@airship': usedAirship,
+    'tree-top@airship': ledgeAirship,
+    'tree-trunk@airship': mastAirship,
+    'bridge@airship': bridgeAirship,
+    'wall@airship': wallAirship,
+    'wall-top@airship': wallTopAirship,
   },
 };
