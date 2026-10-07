@@ -1,0 +1,479 @@
+import type { Scene } from '@engine/scene';
+import { NO_INPUT, type InputFrame } from '@engine/input/input-manager';
+import type { Renderer } from '@engine/gfx/renderer';
+import type { AssetRegistry } from '@engine/assets/registry';
+import type { TouchLabels } from '@engine/input/touch';
+import { px, tileToSub, toPx } from '@engine/math/units';
+import { SCREEN_H, SCREEN_W } from '@engine/viewport';
+import { levelSeed, World } from '../../world/world';
+import { newGameState, type GameState } from '../../context';
+import { MAX_HP, RYU } from '../../characters/ryu';
+import { NINPO_ARTS } from '../../characters/ryu/weapons';
+import { T } from '../../level/tiles';
+import type { Player } from '../../entities/player';
+import type { Game } from '../../scenes/game';
+import { abilityHint } from '../../scenes/hints';
+import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
+import { MiniGameMenuScene } from '../menu';
+import type { MiniGameResult } from '../types';
+import { drawBanner } from '../megaman/scene';
+import { drawNinja, hasNinjaFrame, NG_SOUNDS, STAGE_THEME } from './art';
+import { Creature, NgShot } from './creatures';
+import { CLASH_AT, CUT_SAY, CUTSCENE_FRAMES, drawCutscene } from './cutscene';
+import { BAR_SEGMENTS, drawNgHud, HUD_H } from './hud';
+import { Afterimage, BossLife, INTRO_FRAMES, MASKED_HP, MaskedNinja } from './masked';
+import { duelEntities, duelStage, type DuelLayout } from './stage';
+
+/** Frames READY shows before Ryu can move. */
+export const READY_FRAMES = 75;
+/** The stage's clock, in seconds (it runs out: Ryu falls). */
+export const TIME_LIMIT = 150;
+/** Camera speed onto the rooftop arena (px a frame). */
+export const GATE_SCROLL = 4;
+/** After the Masked Ninja falls: the jingle, then the round passes. */
+export const WIN_JINGLE = 100;
+export const WIN_FRAMES = 300;
+/** Over the rooftop arena Ryu's head never rises above this (px: the towers' tops). */
+export const SKY_TOP = 32;
+/** Frames the first cling's banner stays up. */
+export const CLIMB_BANNER_FRAMES = 240;
+/** Frames the art's banner stays up. */
+export const ART_BANNER_FRAMES = 220;
+/** Widest banner line. */
+export const BANNER_COLS = 26;
+/**
+ * Ryu's start kit: his sword, the first ninpo art (the throwing star) and 10 spirit points of
+ * 40; the lanterns hold more, and one holds the next art (the windmill shuriken).
+ */
+export const DUEL_KIT = { arts: 1, ninpo: 10, ninpoMax: 40, tool: 0 } as const;
+
+export type DuelPhase = 'cutscene' | 'ready' | 'stage' | 'gate' | 'intro' | 'fight' | 'won' | 'dead' | 'over';
+export type GateStep = 'walking' | 'closing';
+
+export interface DuelOptions {
+  /** World seed (drops). */
+  seed?: number;
+  /** Start at READY, without the cutscene (tests). */
+  skipCutscene?: boolean;
+}
+
+/** Input with only right held: Ryu walking into the arena. */
+const WALK_RIGHT: InputFrame = { ...NO_INPUT, held: (a) => a === 'right', dirX: 1 };
+
+/**
+ * Ryu's mini game, Shadow Duel: a Tecmo-style cutscene (skippable), then a short Ninja
+ * Gaiden-style stage (stage.map) played as Ryu with his own kit, built around his wall cling:
+ * walls to climb and kick between, lanterns holding spirit points, health and a ninpo art,
+ * knife throwers, attack dogs and hawks (never near a pit). On the rooftop at the end the Masked
+ * Ninja waits (masked.ts). Beating him passes; losing every hit point, a pit or the clock
+ * running out fails; the menu's Give up quits. A World of its own with a fresh GameState runs
+ * it, so the campaign is never touched.
+ */
+export class DuelScene implements Scene {
+  readonly world: World;
+  readonly state: GameState;
+  readonly layout: DuelLayout = duelStage();
+  readonly life = new BossLife();
+  phase: DuelPhase = 'cutscene';
+  gate: GateStep = 'walking';
+  /** Frames since the scene started, and in the current phase. */
+  t = 0;
+  phaseT = 0;
+  /** Frames of play the clock has counted. */
+  clock = 0;
+  boss: MaskedNinja | null = null;
+  banner: { lines: string[]; until: number; y: number } | null = null;
+  /** The cutscene was skipped (tests). */
+  skipped = false;
+  /** The first cling's banner has shown. */
+  clingTaught = false;
+  private music: string | null = null;
+  private timeSaid = false;
+  /** The cutscene's skip prompt: "SKIP" with the JUMP key, as the touch button says. */
+  private skipText = 'SKIP';
+
+  constructor(
+    private readonly game: Game,
+    private readonly done: (result: MiniGameResult) => void,
+    opts: DuelOptions = {},
+  ) {
+    const level = { ...this.layout.level, theme: STAGE_THEME } as typeof this.layout.level;
+    const state = newGameState(RYU);
+    state.kit = { ...DUEL_KIT };
+    state.hp = MAX_HP;
+    state.lives = 1;
+    state.world = 6;
+    state.stage = 2;
+    this.state = state;
+    this.world = new World(level, game.ctx, state, {
+      seed: opts.seed ?? levelSeed(level),
+      scorePopups: false, // the HUD shows no score
+      extraEntities: duelEntities({ onArt: (p) => this.gotArt(p) }, this.layout.pits),
+    });
+    this.world.time = null;
+    this.world.camera.allowLeftScroll = true;
+    const arenaX = this.layout.roomX * 16;
+    this.world.backdrop = (r) => drawNight(r, game.ctx.assets, this.world.camera.pxX, arenaX);
+    this.world.spawnInView();
+    if (opts.skipCutscene) this.setPhase('ready');
+  }
+
+  get player(): Player {
+    return this.world.player;
+  }
+
+  /** Whole seconds left on the clock. */
+  get seconds(): number {
+    return Math.max(0, TIME_LIMIT - Math.floor(this.clock / 60));
+  }
+
+  get ninpo(): number {
+    return this.player.scratch.ninpo ?? DUEL_KIT.ninpoMax;
+  }
+
+  enter(): void {
+    this.game.ctx.audio.stopMusic();
+    this.skipText = this.hint('SKIP', 'jump');
+    if (this.phase === 'cutscene') {
+      this.playMusic(NG_SOUNDS.cutscene);
+      this.say(`Shadow Duel. ${CUT_SAY} ${this.hint('JUMP', 'jump')} skips.`);
+    } else this.sayReady();
+  }
+
+  exit(): void {
+    this.game.ctx.audio.setTempoScale(1);
+  }
+
+  private sayReady(): void {
+    this.say(
+      `Play as Ryu: ${this.hint('SLASH', 'attack')} slashes, ${this.hint('CAST', 'special')} casts a ninpo art. ${this.climbHint()} Break lanterns for spirit points. Beat the Masked Ninja. ${this.hint('MENU', 'start')} for the menu. Ready!`,
+    );
+  }
+
+  /** How to climb, in the rules card's words (with the JUMP key). */
+  private climbHint(): string {
+    return `Hold toward a wall in the air to cling; keep holding and tap ${this.hint('JUMP', 'jump')} to climb.`;
+  }
+
+  private say(text: string): void {
+    this.game.deps.announcer?.say(text);
+  }
+
+  private hint(label: string, action: Parameters<typeof abilityHint>[2]): string {
+    return abilityHint(this.game, label, action);
+  }
+
+  private playMusic(id: string): void {
+    if (this.music === id) return;
+    this.music = id;
+    this.game.ctx.audio.playMusic(id);
+  }
+
+  private stopMusic(): void {
+    this.music = null;
+    this.game.ctx.audio.stopMusic();
+  }
+
+  private setPhase(p: DuelPhase): void {
+    this.phase = p;
+    this.phaseT = 0;
+  }
+
+  /**
+   * Ryu's buttons as in a level while he plays (SLASH hides while he clings, where it does
+   * nothing); SKIP and MENU in the cutscene; only MENU while the stage takes over.
+   */
+  touchLabels(): TouchLabels {
+    if (this.phase === 'stage' || this.phase === 'fight') {
+      const p = this.world.players[0];
+      const out = levelTouchLabels(p, this.world);
+      if (p?.clinging) out.attack = null;
+      return out;
+    }
+    if (this.phase === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP', start: 'MENU' };
+    if (this.phase === 'ready' || this.phase === 'gate' || this.phase === 'intro')
+      return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
+    return { ...NO_TOUCH_BUTTONS };
+  }
+
+  private get menuOpen(): boolean {
+    return this.phase !== 'won' && this.phase !== 'dead' && this.phase !== 'over';
+  }
+
+  update(input: InputFrame): void {
+    if (this.phase === 'over') return;
+    if (this.menuOpen && input.pressed('start')) {
+      this.game.scenes.push(new DuelMenuScene(this.game, () => this.finish('quit')));
+      return;
+    }
+    this.t++;
+    this.phaseT++;
+    switch (this.phase) {
+      case 'cutscene':
+        if (this.phaseT === CLASH_AT) this.game.ctx.audio.sfx(NG_SOUNDS.clang);
+        if (input.pressed('jump') || input.pressed('attack')) this.skipped = true;
+        if (this.skipped || this.phaseT >= CUTSCENE_FRAMES) {
+          input.consumeJumpBuffer();
+          this.stopMusic();
+          this.setPhase('ready');
+          this.sayReady();
+        }
+        return;
+      case 'ready':
+        input.consumeJumpBuffer();
+        if (this.phaseT >= READY_FRAMES) {
+          this.setPhase('stage');
+          this.playMusic(NG_SOUNDS.stage);
+        }
+        return;
+      case 'stage':
+        this.tickClock();
+        this.step(input);
+        if (!this.clingTaught && this.player.clinging) this.teachClimb();
+        if (this.phase === 'stage' && this.atDoor()) this.openGate();
+        return;
+      case 'gate':
+        return this.updateGate();
+      case 'intro':
+        this.step(NO_INPUT);
+        if (this.phaseT >= INTRO_FRAMES) this.setPhase('fight');
+        return;
+      case 'fight':
+        this.tickClock();
+        return this.step(input);
+      case 'won':
+        return this.updateWon();
+      case 'dead':
+        return this.step(NO_INPUT);
+    }
+  }
+
+  /** The clock (held by the Infinite time assist); at zero Ryu falls. */
+  private tickClock(): void {
+    if (this.game.ctx.assist.infiniteTime || this.player.dead) return;
+    this.clock++;
+    if (this.seconds === 30 && !this.timeSaid) {
+      this.timeSaid = true;
+      this.say('30 seconds left.');
+    }
+    if (this.seconds <= 0) {
+      this.world.kill(this.player);
+      this.setPhase('dead');
+      this.music = null;
+      this.say('Time is up. Try again.');
+    }
+  }
+
+  /** One frame of the world; a death ends the round once its jingle has played. */
+  private step(input: InputFrame): void {
+    this.world.update([input]);
+    // Over the open rooftop the screen's top is a ceiling: Ryu can't climb out over a tower.
+    const b = this.player.body;
+    if (this.boss && b.y < px(SKY_TOP)) {
+      b.y = px(SKY_TOP);
+      if (b.vy < 0) b.vy = 0;
+    }
+    const events = this.world.events;
+    let died = false;
+    for (const e of events) if (e.type === 'died') died = true;
+    events.length = 0;
+    // (a trade, Ryu falling in the update that fells the Masked Ninja, still wins)
+    if (this.phase !== 'dead' && this.phase !== 'won' && this.player.dead) {
+      this.setPhase('dead');
+      this.music = null;
+      const fell = toPx(this.player.body.y) > SCREEN_H;
+      this.say(fell ? 'Ryu fell. Try again.' : 'Ryu is down. Try again.');
+    }
+    if (this.phase === 'dead' && died) this.finish('fail');
+  }
+
+  /* ---------- The climb ---------- */
+
+  /** The first cling (building A's face): how to climb on from there, once. */
+  private teachClimb(): void {
+    this.clingTaught = true;
+    const jump = this.hint('JUMP', 'jump');
+    const tap = `TAP ${jump} TO CLIMB.`;
+    this.banner = {
+      lines: [
+        'CLINGING! KEEP HOLDING',
+        'TOWARD THE WALL AND',
+        tap.length <= BANNER_COLS ? tap : 'TAP JUMP TO CLIMB.',
+      ],
+      until: this.t + CLIMB_BANNER_FRAMES,
+      y: 40,
+    };
+    this.say(`Clinging! Keep holding toward the wall and tap ${jump} to climb.`);
+  }
+
+  /* ---------- The ninpo art ---------- */
+
+  private gotArt(p: Player): void {
+    const n = Math.min(NINPO_ARTS.length, (p.scratch.arts ?? 0) + 1);
+    p.scratch.arts = n;
+    p.scratch.tool = n - 1;
+    const art = NINPO_ARTS[n - 1];
+    this.game.ctx.audio.sfx(NG_SOUNDS.item);
+    const name = (art?.name ?? 'NINPO ART').toUpperCase();
+    const change = this.hint('NINPO', 'select');
+    const lines = [
+      'YOU GOT A NINPO ART:',
+      name.length <= BANNER_COLS ? name : 'A NEW ART',
+      change.length + 12 <= BANNER_COLS ? `${change}: CHANGE ART` : 'NINPO: CHANGE ART',
+    ];
+    this.banner = { lines, until: this.t + ART_BANNER_FRAMES, y: 64 };
+    this.say(`You got a ninpo art: the ${art?.name ?? 'next art'}! ${change} changes art.`);
+  }
+
+  /* ---------- The arena's doorway (in the left tower) ---------- */
+
+  private atDoor(): boolean {
+    const b = this.player.body;
+    if (this.player.dead || !b.onGround) return false;
+    const { roomX, doorY, doorH } = this.layout;
+    const feetRow = (b.y + b.h - 1) >> 12;
+    return b.x + b.w >= tileToSub(roomX) - px(1) && feetRow >= doorY && feetRow < doorY + doorH;
+  }
+
+  private openGate(): void {
+    this.setPhase('gate');
+    this.gate = 'walking';
+    this.banner = null;
+    this.stopMusic();
+    for (const e of this.world.entities) if (e instanceof NgShot || e instanceof Creature) e.destroy();
+    this.world.camera.locked = true;
+    this.say('Ryu steps out onto the rooftop.');
+  }
+
+  private updateGate(): void {
+    const cam = this.world.camera;
+    const goal = tileToSub(this.layout.roomX);
+    const inside = tileToSub(this.layout.roomX + 1) + px(12);
+    if (this.gate === 'walking') {
+      const walking = this.player.body.x < inside;
+      this.step(walking ? WALK_RIGHT : NO_INPUT);
+      cam.x = Math.min(goal, cam.x + px(GATE_SCROLL));
+      if (cam.x >= goal && this.player.body.x >= inside && this.player.body.onGround) {
+        this.gate = 'closing';
+        const { roomX, doorY, doorH } = this.layout;
+        for (let y = doorY; y < doorY + doorH; y++) this.world.map.set(roomX, y, T.CASTLE_BRICK);
+        this.world.audio.sfx(NG_SOUNDS.clang);
+      }
+      return;
+    }
+    this.step(NO_INPUT);
+    this.startIntro();
+  }
+
+  /** The arena's floor (px): the top of the row under the boss's feet tile. */
+  get floorY(): number {
+    return (this.layout.boss.y + 1) * 16;
+  }
+
+  private startIntro(): void {
+    const cx = tileToSub(this.layout.boss.x) + px(8);
+    this.boss = new MaskedNinja(cx, this.layout.roomX, this.floorY, this.life, () => this.bossDown());
+    this.world.spawn(this.boss);
+    this.world.spawn(this.boss.afterimage);
+    this.setPhase('intro');
+    this.playMusic(NG_SOUNDS.boss);
+    this.say(
+      'The Masked Ninja! He dashes at Ryu: jump him. He runs up the wall and throws stars: keep moving. Strike while he stands or kneels.',
+    );
+  }
+
+  /* ---------- The end ---------- */
+
+  private bossDown(): void {
+    this.setPhase('won');
+    this.stopMusic();
+    for (const e of this.world.entities) if (e instanceof NgShot || e instanceof Afterimage) e.destroy();
+    // A round for fun (Game.inRound) frees nobody: no word of the curse.
+    const fun = this.game.inRound;
+    this.banner = {
+      lines: fun ? ['THE MASKED NINJA FALLS!'] : ['THE MASKED NINJA FALLS!', 'THE CURSE IS BROKEN.'],
+      until: Infinity,
+      y: 96,
+    };
+    this.say(fun ? 'The Masked Ninja falls!' : 'The Masked Ninja falls! The curse on Ryu is broken.');
+  }
+
+  private updateWon(): void {
+    this.step(NO_INPUT);
+    if (this.phaseT === WIN_JINGLE) this.game.ctx.audio.playJingle(NG_SOUNDS.victory);
+    if (this.phaseT >= WIN_FRAMES) this.finish('pass');
+  }
+
+  /** The round is over: report it once. */
+  private finish(result: MiniGameResult): void {
+    if (this.phase === 'over') return;
+    this.phase = 'over';
+    this.stopMusic();
+    this.game.ctx.audio.setTempoScale(1);
+    this.done(result);
+  }
+
+  /* ---------- Drawing ---------- */
+
+  /** The ENEMY bar's segments: full until the fight, then his hit points. */
+  enemyBar(): number {
+    return Math.ceil((Math.max(0, this.life.hp) * BAR_SEGMENTS) / MASKED_HP);
+  }
+
+  render(r: Renderer): void {
+    const assets = this.game.ctx.assets;
+    const font = assets.sheet('font');
+    if (this.phase === 'cutscene') {
+      drawCutscene(r, assets, this.phaseT, this.game.ctx.reduceFlashing);
+      const skip = this.skipText;
+      r.text(font, skip, SCREEN_W - 8 - skip.length * 8, 16);
+      return;
+    }
+    this.world.render(r);
+    const p = this.player;
+    const arts = Math.max(1, Math.min(NINPO_ARTS.length, p.scratch.arts ?? 1));
+    const art = NINPO_ARTS[(p.scratch.tool ?? 0) % arts];
+    drawNgHud(r, assets, {
+      hp: p.hp,
+      maxHp: MAX_HP,
+      enemy: this.enemyBar(),
+      ninpo: this.ninpo,
+      time: this.seconds,
+      art: art?.icon ?? null,
+    });
+    if (this.phase === 'ready' && (this.game.ctx.reduceFlashing || ((this.phaseT >> 3) & 3) !== 3))
+      r.text(font, 'READY', (SCREEN_W - 40) >> 1, 104);
+    const b = this.banner;
+    if (b && this.t < b.until) drawBanner(r, font, b.lines, b.y);
+  }
+}
+
+/**
+ * The night behind the stage: the big moon (the cutscene's), drifting slowly with the camera so
+ * it hangs in the middle of the sky over the rooftop arena (`arenaX`, px) as in the cutscene (a
+ * round of boxes until the sheet has it).
+ */
+function drawNight(r: Renderer, assets: AssetRegistry, camX: number, arenaX: number): void {
+  const x = 96 + ((arenaX - camX) >> 4);
+  const y = HUD_H + 10;
+  if (hasNinjaFrame(assets, 'cut-moon')) {
+    drawNinja(r, assets, 'cut-moon', x, y, 64, 64, MOON);
+    return;
+  }
+  for (let i = 0; i < 40; i += 4) {
+    const d = Math.round(Math.sqrt(20 * 20 - (i + 2 - 20) ** 2));
+    r.rect(x + 32 - d, y + 12 + i, d * 2, 4, MOON[0]);
+  }
+}
+
+const MOON = ['#fce0a8', '#fce0a8'] as const;
+
+/**
+ * Shadow Duel's own menu: Continue, Give up (ends the round as 'quit'), and in dev mode the
+ * assists. Pauses the music.
+ */
+export class DuelMenuScene extends MiniGameMenuScene {
+  constructor(game: Game, giveUp: () => void) {
+    super(game, 'SHADOW DUEL', giveUp, 'Ryu stays under the curse for now; you can try the duel again later');
+  }
+}
