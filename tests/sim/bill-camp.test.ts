@@ -30,7 +30,8 @@ import type { Action } from '@engine/input/actions';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
 import { BLAST_LEAD, BridgeBlast, BridgeBoom, blastTimes } from '@game/entities/objects/bridge-blast';
 import { jungleDecorFrames } from '@content/sprites/contra-decor';
-import { captives, file, makeGame, useStorage, type H } from './heroes-harness';
+import { captives, closeCards, file, makeGame, useStorage, type H } from './heroes-harness';
+import { RESTYLE_PAGES } from '@game/story/script';
 import { FALLS, ROUTE, fallsBot, standingOn, walkRight, type Ledge } from './falls-bot';
 
 // Bill Rizer, hidden under 7-3 (owner design, 0.4.9 batch, B1): in campaign play 7-3 looks like a
@@ -848,6 +849,8 @@ describe('the whole way in campaign play', () => {
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     h.game.startLevel(getLevel('7-3'), { x: 130, y: 9, mode: 'stand', time: 250 });
     h.step();
+    // Toad's remark on the restyled level comes first (campaign story, once per file).
+    expect(closeCards(h)).toEqual([RESTYLE_PAGES['7-3']]);
     expect(levelId(h)).toBe('7-3');
     expect(blast(scene(h).world)).toBeDefined();
     for (let f = 0; f < 400 && levelId(h) === '7-3'; f++) h.step();

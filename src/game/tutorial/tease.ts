@@ -15,6 +15,9 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText } from '../hud/text';
 import { abilityHint } from '../scenes/hints';
 import { drawPromptBox, wrapPrompt } from './stage-prompts';
+import type { Action } from '@engine/input/actions';
+import { storyOn } from '../story/beats';
+import { STORY_TEASE_PAGES } from '../story/script';
 
 /** Pixels a frame the shadow hero runs. */
 const RUN_SPEED = 3;
@@ -28,11 +31,23 @@ export const TEASE_FRAMES = 330;
 /** What Bowser says, in the box at the top (and read out). */
 export const TEASE_LINES: readonly string[] = ['BOWSER: BWA HA HA!', 'YOUR FRIENDS SERVE ME NOW, MARIO!'];
 
+/** Frame the campaign's box shows (Bowser's shadow has risen). */
+const BOX_AT = BOWSER_AT + BOWSER_RISE;
+/** Frames the campaign's first page waits before turning by itself. */
+export const TEASE_PAGE_FRAMES = 240;
+/** Frames the campaign's second page waits before the tease ends by itself. */
+export const TEASE_LAST_FRAMES = 300;
+
 /**
  * The tutorial's tease (owner brief, 0.5.0): the level stands still while a dark silhouette of a
  * brainwashed hero dashes past Mario and off the right of the screen; then the sky dims, Bowser's
  * shadow rises over it and laughs. Short, and skippable as the cards are (OK, BACK or MENU after
  * the card guard). Drawn over the frozen level (translucent).
+ *
+ * In the campaign (story/beats storyOn) Bowser says STORY_TEASE_PAGES instead (docs/STORY.md 2.2),
+ * two pages in the same box: OK (or MENU) or TEASE_PAGE_FRAMES turns to the second, which OK or
+ * TEASE_LAST_FRAMES ends; BACK ends it at once. A press before the box shows skips to Bowser
+ * (a mandatory scene: his words are never skipped unseen). Each page is read out.
  */
 export class ShadowTeaseScene implements Scene {
   readonly translucent = true;
@@ -41,6 +56,11 @@ export class ShadowTeaseScene implements Scene {
   private readonly pose: Player;
   private x: number;
   private readonly feet: number;
+  /** The campaign's two pages (STORY_TEASE_PAGES), else null (TEASE_LINES as before). */
+  private readonly pages: readonly (readonly string[])[] | null;
+  /** The page shown (campaign) and the frame it showed. */
+  private page = 0;
+  private pageAt = BOX_AT;
 
   constructor(
     private readonly game: Game,
@@ -55,6 +75,7 @@ export class ShadowTeaseScene implements Scene {
     // From the left edge of the screen, along the ground Mario stands on.
     this.x = -24;
     this.feet = toPx(p.body.y + p.body.h);
+    this.pages = storyOn(game) ? STORY_TEASE_PAGES : null;
   }
 
   enter(): void {
@@ -78,9 +99,39 @@ export class ShadowTeaseScene implements Scene {
     }
     if (this.t === BOWSER_AT) {
       this.game.ctx.audio.sfx('bowser-laugh');
-      this.game.deps.announcer?.say(TEASE_LINES.join(' '));
+      this.game.deps.announcer?.say(this.pages ? this.said(0) : TEASE_LINES.join(' '));
     }
+    if (this.pages) return this.updatePages(inputs);
     if (cardContinues(this.t, TEASE_FRAMES, inputs, ['jump', 'attack', 'start'])) this.finish();
+  }
+
+  /** What the announcer reads for the campaign's page `i`. */
+  private said(i: number): string {
+    const last = i === (this.pages?.length ?? 0) - 1;
+    return `${this.pages?.[i]?.join(' ') ?? ''} ${last ? 'OK to continue.' : 'OK for more.'}`;
+  }
+
+  /** The campaign's two pages (see the class comment). */
+  private updatePages(inputs: InputFrame[]): void {
+    const pages = this.pages as readonly (readonly string[])[];
+    const any = (keys: readonly Action[]) => inputs.some((i) => keys.some((k) => i.pressed(k)));
+    if (this.t < BOX_AT) {
+      // Straight on to Bowser: the shadow hero is gone, the laugh plays next frame.
+      if (this.t > CARD_GUARD_FRAMES && this.t < BOWSER_AT && any(['jump', 'attack', 'start'])) {
+        this.x = SCREEN_W + 32;
+        this.t = BOWSER_AT - 1;
+      }
+      return;
+    }
+    const since = this.t - this.pageAt;
+    if (since > CARD_GUARD_FRAMES && any(['attack'])) return this.finish();
+    const last = this.page === pages.length - 1;
+    if (!cardContinues(since, last ? TEASE_LAST_FRAMES : TEASE_PAGE_FRAMES, inputs, ['jump', 'start']))
+      return;
+    if (last) return this.finish();
+    this.page++;
+    this.pageAt = this.t;
+    this.game.deps.announcer?.say(this.said(this.page));
   }
 
   private finish(): void {
@@ -127,6 +178,7 @@ export class ShadowTeaseScene implements Scene {
     if (k < 1) return;
     const font = assets.sheet('font');
     const ok = fontText(abilityHint(this.game, 'OK', 'jump'));
-    drawPromptBox(r, font, [...TEASE_LINES.flatMap((l) => wrapPrompt(l)), ok]);
+    const lines = this.pages?.[this.page] ?? TEASE_LINES;
+    drawPromptBox(r, font, [...lines.flatMap((l) => wrapPrompt(l)), ok]);
   }
 }
