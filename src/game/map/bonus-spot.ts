@@ -13,8 +13,9 @@ import type { PageId } from './types';
  *
  * JUMP on the open bonus node calls `Game.openBonus(spot)`, which pushes `bonusGame().create(...)`
  * over the map. The scene calls `done` exactly once: 'used' (a round was played: the bonus closes,
- * `Game.bonusOpen = false`, saved, and the Hammer Bro comes out on the map) or 'left' (backed out
- * before playing: it stays open). Either way the map comes back with the hero on the node.
+ * `Game.bonusOpen = false`, saved: the node is spent, with no Hammer Bro yet; he comes out once a
+ * level has been entered from the map, `Game.bonusGuard`) or 'left' (backed out before playing:
+ * it stays open). Either way the map comes back with the hero on the node.
  * Until a bonus game registers itself (`registerBonusGame`), a placeholder card stands in and
  * counts as used, so the Hammer Bro loop can be played.
  */
@@ -68,6 +69,9 @@ export function bonusGame(): BonusGame {
   return registered ?? PLACEHOLDER_BONUS;
 }
 
-/** The hint line on a bonus node that has been used (the Hammer Bro must be beaten first). */
+/** The hint line on a bonus node just used, before its Hammer Bro is out (a level played first). */
+export const BONUS_SPENT_HINT = 'COME BACK AFTER YOUR NEXT LEVEL';
+export const BONUS_SPENT_SAID = 'Bonus used. Come back after your next level.';
+/** The hint line on a used bonus node once its Hammer Bro is out (he must be beaten first). */
 export const BONUS_CLOSED_HINT = 'BEAT THE HAMMER BRO TO REOPEN';
 export const BONUS_CLOSED_SAID = 'Bonus used. Beat the Hammer Bro to open it again.';

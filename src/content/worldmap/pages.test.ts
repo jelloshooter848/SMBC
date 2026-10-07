@@ -14,13 +14,6 @@ import { SKETCH_6 } from './world6';
 import { SKETCH_7 } from './world7';
 import { SKETCH_8 } from './world8';
 
-/**
- * The hub's Lost Levels pad: until it becomes the Mini Game Arena pad (0.4.7, its own change),
- * it still leads to Lost World 1, whose warp back to the hub went with the road from World 8, so
- * it lands on Lost World 1's start and pairs with nothing.
- */
-const HUB_LOST_PAD = (page: WorldMapPage, n: MapNode) => page.id === 'hub' && n.to === 'll-1';
-
 const SKETCHES = [SKETCH_1, SKETCH_2, SKETCH_3, SKETCH_4, SKETCH_5, SKETCH_6, SKETCH_7, SKETCH_8];
 const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser'];
 
@@ -170,16 +163,19 @@ describe('world map pages', () => {
 });
 
 describe('page registry', () => {
-  it('lists SMB worlds, the hub, then the Lost Levels, each id once', () => {
+  it('lists SMB worlds, the hub, the Lost Levels, then the Mini Game Arena, each id once', () => {
     const ids = MAP_PAGES.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.slice(0, 9)).toEqual([...SMB_PAGES.map((p) => p.id), 'hub']);
-    for (const id of ids.slice(9)) expect(id).toMatch(/^ll-(\d|1[0-3])$/);
+    expect(ids.at(-1)).toBe('arena');
+    const lost = ids.slice(9, -1);
+    for (const id of lost) expect(id).toMatch(/^ll-(\d|1[0-3])$/);
     expect(ids).toContain('ll-1');
     expect(MAP_PAGES.map((p) => p.group)).toEqual([
       ...SMB_PAGES.map(() => 'smb'),
       'hub',
-      ...ids.slice(9).map(() => 'll'),
+      ...lost.map(() => 'll'),
+      'arena',
     ]);
   });
 
@@ -208,9 +204,7 @@ describe('page registry', () => {
     // with toNode X. One-way portals opt out with `oneWay`; pads that never work go nowhere.
     let pairs = 0;
     for (const p of MAP_PAGES)
-      for (const x of p.nodes.filter(
-        (n) => isWarpNode(n) && !n.oneWay && n.requires !== 'never' && !HUB_LOST_PAD(p, n),
-      )) {
+      for (const x of p.nodes.filter((n) => isWarpNode(n) && !n.oneWay && n.requires !== 'never')) {
         const q = mapPage(x.to as string) as WorldMapPage;
         const there = x.toNode ? nodeAt(q, x.toNode) : q.nodes.find((n) => n.kind === 'start');
         const what = `${p.id}:${x.id} -> ${q.id}:${there?.id}`;
@@ -220,7 +214,7 @@ describe('page registry', () => {
         expect(back?.id, `${what} lands back on ${x.id}`).toBe(x.id);
         pairs++;
       }
-    expect(pairs).toBeGreaterThanOrEqual(2); // smb-1 spot / hub centre
+    expect(pairs).toBeGreaterThanOrEqual(4); // smb-1 spot / hub centre, hub pad / arena
   });
 
   describe.each(MAP_PAGES.map((p) => [p.id, p] as const))('%s', (_, page) => {
@@ -276,7 +270,7 @@ describe('page registry', () => {
       for (const n of page.nodes.filter(isWarpNode)) {
         const to = mapPage(n.to ?? '');
         expect(to, `${n.id} → ${n.to}`).toBeDefined();
-        if (n.toNode && !HUB_LOST_PAD(page, n))
+        if (n.toNode)
           expect(
             to?.nodes.some((m) => m.id === n.toNode),
             `${n.id} toNode`,

@@ -31,6 +31,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 | -------------------------------------------- | ------------------- | ---------------------------------------------------- |
 | `smb-1` .. `smb-8`                           | `smb`               | `WORLD 1` .. `WORLD 8`                               |
 | `hub`                                        | `hub`               | `WARP ZONE`                                          |
+| `arena`                                      | `arena`             | `ARENA`                                              |
 | `ll-1` .. `ll-8`, `ll-9`, `ll-10` .. `ll-13` | `ll`                | `LOST 1` .. `LOST 8`, `LOST 9`, `LOST A` .. `LOST D` |
 
 - `label` (at most 10 chars, `A-Z 0-9 space`) shows at the header's top right; `title` (at most 20) at its top left. The announcer reads the label in title case ("Lost A") and the title.
@@ -73,6 +74,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 | `level`, `castle` | Enter `level` with JUMP. A castle clear opens the page(s) its exits lead to.  |
 | `bonus`           | Hidden until `unlock` (a secret key) is found. JUMP plays the bonus game.     |
 | `warp`            | JUMP warps to another page (see below).                                       |
+| `game`            | A Mini Game Arena pad (`game`: its arena game id). JUMP plays one round.      |
 
 A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the file has that secret
 (`MapProgress.secrets`). Bonus nodes always need one.
@@ -102,13 +104,14 @@ map hint"): on its right, or its left when a road leaves to the right; `heroSpot
 ### Warp nodes
 
 ```ts
-{ id: 'warp-lost', kind: 'warp', x: 13, y: 8,
-  to: 'll-1',               // target page id (must be registered)
-  toNode?: 'bonus-1',       // arrival node there (default: its start node); e.g. the hub's centre lands on World 1's warp spot
+{ id: 'bonus-1', kind: 'warp', x: 5, y: 11, // World 1's warp spot
+  to: 'hub',                // target page id (must be registered)
+  toNode?: 'start',         // arrival node there (default: its start node); the hub's centre
+                            // warps back with toNode: 'bonus-1' (portals pair 1:1)
   oneWay?: true,            // optional: exempt from the 1:1 pairing
-  requires?: 'gameCleared', // MapCondition; absent = always works
-  label?: 'LOST LEVELS',    // hint line while open (default: the target page's title)
-  hint?: 'LOST LEVELS - BEAT 8-4 TO UNLOCK', // hint line while locked (needed with `requires`)
+  requires?: 'gameCleared', // MapCondition; absent = always works (the spot has none)
+  label?: 'WARP ZONE',      // hint line while open (default: the target page's title)
+  hint?: '??? - A FUTURE SECRET', // hint line while locked (needed with `requires`)
   unlock?: 'bonus-1' }      // optional: hidden until this secret is found
 ```
 
@@ -117,8 +120,8 @@ map hint"): on its right, or its left when a road leaves to the right; `heroSpot
   yet. Pads that never work (`requires: 'never'`) are exempt.
 - A warp node is shown and walkable whenever a road to it is open (like any node), even locked.
 - While the hero stands on it, the **hint line** (a black strip at the bottom of the map) shows
-  `label` when it works, `hint` when locked; the announcer says it ("Warp, Lost Levels" /
-  "Lost Levels - Beat 8-4 To Unlock, locked"). Keep both at most 32 chars.
+  `label` when it works, `hint` when locked; the announcer says it ("Warp, Mini Game Arena" /
+  "??? - A Future Secret, locked"). Keep both at most 32 chars.
 - JUMP on an open warp: the target page opens (`progress.pages`), the map **fades** there, the
   hero lands on `toNode`, and the file is saved. JUMP on a locked one: the bump sound, nothing
   else.
@@ -146,6 +149,38 @@ registered page (the hub included, so the Worlds menu lists it), and shows warp 
 by their `unlock` key (World 1's warp spot) with their roads. Bonus nodes, and keyed warps that
 have `requires: 'never'`, stay hidden until their secret is found. It writes nothing to the file: a warp
 that works only through Unlock all travels without opening its page (`rules.warpRecords`).
+
+## The Mini Game Arena (0.4.7)
+
+The Warp Zone hub's first pad (east, `warp-arena`; the Lost Levels' pad until 0.4.7) leads to the
+`arena` page, open as soon as the hub is reachable (no `requires`). The arena
+(`src/content/worldmap/arena.ts`) is a stadium: the hero arrives on the Return pad in the middle of
+the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pads stand around it.
+
+- **Pads** (`kind: 'game'`, id `pad-<game>`) are not written in the page: `src/game/arena` lists the
+  games from the registries (MINIGAMES, Larry's airship, the bonus games, 1-0, the heroes with
+  training lessons) and lays the page out with `installArenaGames` when it loads, so the arena
+  grows by itself. Slots, in fill order: a ring round the pitch (20 slots two tiles apart, from the
+  near side's middle round to the right, each joined to the next; the ring closes when all 20 are
+  used; the Return pad's roads go down to the first and up to the twelfth), then 5 across the
+  middle of the pitch off the Return pad's left and right roads. 16 games use 16 slots today.
+- Every pad and road of the arena is walkable as soon as the page is open (`rules.pathFromDone`:
+  roads leaving a `game` node count as walked on an open page). Whether a game is **found** is the
+  arena's own rule (docs/HEROES.md "Met heroes and the Mini Game Arena"); a dark pad shows the
+  hero's silhouette and `?`, its hint line says what to find (`??? - FIND THIS HERO FIRST`, `??? - FREE THIS HERO FIRST` for a training room) and JUMP
+  bumps. On a found pad the hint line names the game, the touch JUMP says PLAY, and the announcer
+  says "Mirror Race, Luigi. Jump to play, for fun."
+- A round is played over the map and nothing is saved (docs/HEROES.md); arriving and walking save
+  the hero's place as on any page. The Worlds menu lists the arena on the hub and on the arena.
+- **Art**: theme `arena` (a night match: `map-arena` palette, sky `ARENA_NIGHT`) and music `arena`.
+  The sketch (`SKETCH_ARENA`): bunting `w` on the sky (row 2), crowds `M`/`N` alternating with
+  banners `E` (rows 3-4), the barrier wall `B` (row 5), the walkable chequered pitch `F` (rows
+  6-13, every pad and road on it) and a crowd again (row 14). Actors: the `scoreboard` at (104,40),
+  `light-tower`s at (0,64) and (240,64), and fans' flags in the stands. Pads (`drawArenaPad`) are
+  items-sheet frames: `map-arena-game` (a trophy: mini games, the airship, bonus games),
+  `map-arena-tutorial` (a signpost: 1-0 and training) and `map-arena-locked` (the dark `?`), drawn
+  in front of what stands at the pad: the hero's portrait (a black silhouette until found), Larry,
+  or the bonus game's icon.
 
 ## Secret exits: each exit opens its own road (0.5.0)
 
@@ -205,7 +240,8 @@ them after SMB 8-4 and they unlocked by the NES rules):
   draws in there, and Lost World 1's start with its first road waits in Lost 1's share of the
   reveal. Walking it slides to Lost World 1, arriving on its start (on the road's row); walking
   left off that start goes back to World 8's castle. Lost World 1 has no warp node back to the
-  hub any more (its road replaced it).
+  hub any more (its road replaced it), and the hub has no Lost Levels pad (its first pad is the
+  Mini Game Arena's).
 - **In order**: every Lost castle's exit opens the next page in play order, `ll-1 → … → ll-8 →
 ll-9 → ll-10 (A) → ll-11 → ll-12 → ll-13 (D)`, off the right edge, with no condition. World 9
   opens with Lost 8-4's clear whatever warp zones were taken (the NES needed a warpless run of
@@ -238,7 +274,7 @@ ll-9 → ll-10 (A) → ll-11 → ll-12 → ll-13 (D)`, off the right edge, with 
 - `MapProgress`: `cleared` (main level ids beaten through their **normal** exit, `1-0` included
   once the tutorial is cleared), `pages` (open page ids, `smb-1` always), `secrets` (keys found,
   secret exits included), `position: { page, node }`, `gameCleared`.
-- Reveal ids are page-qualified: `'<page>:<id>'` (`'hub:start>warp-lost'`, `'smb-1:1-4>smb-2'`); an
+- Reveal ids are page-qualified: `'<page>:<id>'` (`'hub:start>warp-arena'`, `'smb-1:1-4>smb-2'`); an
   exit's id is `'<from>><to page>'`. Each page draws in only its own when shown.
 - `rules.findSecret(progress, key)` records a secret and returns what it reveals;
   `rules.warpTo(progress, page)` opens a page (warp pipes, warp nodes).
@@ -319,27 +355,38 @@ World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `u
   `smb3:node-toad-house`; it must name an existing frame). The SMB3 bonus games
   (Toad House, N-spade, spade game, in rotation) are registered (docs/BONUS.md); with none, a
   placeholder card ("THE BONUS GAMES ARE COMING SOON!") stands in and counts as used.
-- **Used**: the node shows a spent dot, its hint line says `BEAT THE HAMMER BRO TO REOPEN`, JUMP
-  bumps, and a **Hammer Bro** (`map/hammer-bro.ts`, `MapGuard`) comes out on the road: on the road
-  tile farthest from the hero, then he wanders tile by tile (1 px/f, standing 50-100 frames
-  between steps) along the road between 4-2 (never on its node) and the bonus node. Drawn with the
-  SMB3 map frames `smb3:hammer-bro-map-0/1` (16×16, facing left).
-- **Touching him** (the hero walking into him on the road, or him walking into the hero waiting on
-  the bonus node; not in the first 45 frames after the map shows) starts the **Hammer Bro battle**
-  (`scenes/hammer-battle.ts`, `Game.startHammerBattle`): one locked screen (`content/levels/
-hammer-battle.map`, outside the level library: floor, two brick rows at the SMB1 heights) with
-  two SMB1 Hammer Bros, no clock, the run's hero, power, lives and score. The hero's map place
-  stays the node it last stood on. Start pauses (Quit to map leaves it undecided).
+- **Used**: the node shows a spent dot and JUMP on it bumps. Right after it is used there is no
+  guard yet: the hint line says `COME BACK AFTER YOUR NEXT LEVEL` and the hero walks the road back
+  freely (`Game.bonusGuard` false).
+- **The Hammer Bro comes out** once a level is entered from the map (any level, whatever the
+  result: clear, death or quit to map; `Game.enterLevelFromMap` sets `Game.bonusGuard`, saved).
+  From then on the node's hint line says `BEAT THE HAMMER BRO TO REOPEN` and a **Hammer Bro**
+  (`map/hammer-bro.ts`, `MapGuard`) stands on the road: on the road tile farthest from the hero,
+  then he wanders tile by tile (1 px/f, standing 50-100 frames between steps) along the road
+  between 4-2 (never on its node) and the bonus node. He never steps onto the hero's tile or the
+  road the hero is walking (`MapGuard.update(blocked)`). While the hero stands on that road's node
+  (the spent bonus node, e.g. back there through the Worlds menu) he stays away, so the way back is
+  never blocked; he comes out as soon as the hero arrives at any other node. Drawn with the SMB3
+  map frames `smb3:hammer-bro-map-0/1` (16×16, facing left). For the first 45 frames after the map
+  shows or he comes out he stands still (`GUARD_GRACE_FRAMES`); it never delays a battle.
+- **Walking into him** (opt-in: only the hero walking into him on the road, at once, even right
+  after the map shows, so the hero cannot slip past him; he never walks into the hero) starts the
+  **Hammer Bro battle** (`scenes/hammer-battle.ts`, `Game.startHammerBattle`): one locked screen
+  (`content/levels/hammer-battle.map`, outside the level library: floor, two brick rows at the
+  SMB1 heights) with two SMB1 Hammer Bros, no clock, the run's hero, power, lives and score. The
+  hero's map place stays the node it last stood on. Start pauses (Quit to map leaves it undecided).
   - **Win** (both Hammer Bros gone, then a second): their hammers vanish, the `castle-clear`
     jingle, the card "THE HAMMER BROS ARE BEATEN! / THE BONUS IS OPEN AGAIN." with the item they
     leave (SMB3 style: a mushroom, fire flower or star into the inventory, docs/BONUS.md), then
-    `Game.hammerBattleWon`: `bonusOpen = true`, back to the map (saved). He comes back the next
-    time the bonus is used.
+    `Game.hammerBattleWon`: `bonusOpen = true`, `bonusGuard = false`, back to the map (saved). He
+    comes back after the next level once the bonus is used again.
   - **Lose** (the hero falls): `Game.hammerBattleLost`: a life lost as in SMB3, power back to the
     start as after any death, back to the map with the Hammer Bro still there; no lives left is
     GAME OVER (the campaign's continue).
-- **Save** (optional fields, no format change): `bonusOpen?: boolean` (missing: open) and
-  `inventoryUnlocked?: boolean` (missing: off, but on for a file with the secret `larry`).
+- **Save** (optional fields, no format change): `bonusOpen?: boolean` (missing: open),
+  `bonusGuard?: boolean` (the Hammer Bro is out; kept only while the bonus is used; missing: not
+  out yet, so an older file's comes out after its next level) and `inventoryUnlocked?: boolean`
+  (missing: off, but on for a file with the secret `larry`).
 - Campaign only (the map is). Dev "Unlock all" does not show it (bonus nodes need their key).
 
 ## Teleport pads (level zone, 0.5.0)

@@ -9,6 +9,7 @@ import { WORLD_7 } from './world7';
 import { WORLD_8 } from './world8';
 import { HUB_PAGE } from './hub';
 import { LOST_PAGES } from './lost';
+import { ARENA_PAGE } from './arena';
 
 /*
  * The page registry (docs/WORLD_MAP.md). The eight themed SMB pages ('smb-1'..'smb-8'): every
@@ -31,8 +32,8 @@ export const SMB_PAGES: WorldMapPage[] = [
   WORLD_8,
 ];
 
-/** Every page: SMB worlds, the Warp Zone hub, the Lost Levels worlds. */
-export const MAP_PAGES: WorldMapPage[] = [...SMB_PAGES, HUB_PAGE, ...LOST_PAGES];
+/** Every page: SMB worlds, the Warp Zone hub, the Lost Levels worlds, the Mini Game Arena. */
+export const MAP_PAGES: WorldMapPage[] = [...SMB_PAGES, HUB_PAGE, ...LOST_PAGES, ARENA_PAGE];
 
 /** The registered page `id`. */
 export function mapPage(id: PageId): WorldMapPage | undefined {

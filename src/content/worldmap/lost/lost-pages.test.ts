@@ -91,6 +91,8 @@ describe('Lost Levels map pages', () => {
   });
 
   it('has no warp nodes: World 1 has no hub link, World 8 no pad to A, A no pipe back', () => {
+    // The hub's old Lost Levels pad is the Mini Game Arena's (0.4.7): nothing on the hub leads here.
+    expect(mapPage('hub')?.nodes.filter((n) => n.to?.startsWith('ll-'))).toEqual([]);
     for (const p of LOST_PAGES) {
       const warps = p.nodes.filter((n) => isWarpNode(n) || n.to !== undefined).map((n) => n.id);
       expect(warps, p.id).toEqual([]);

@@ -51,11 +51,13 @@ import {
   saveFromState,
   stateFromSave,
   tutorialHeroes,
+  metIds,
   writeSave,
   type SaveFile,
   type SaveSlot,
 } from '@game/save/save-files';
 import { bonusSaveFields, bonusStateFrom, newBonusState, type BonusState } from '../bonus/items';
+import type { StageRound } from '../arena/stage-round';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -130,10 +132,25 @@ export class Game {
   /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
   tutorials: string[] = [];
   /**
+   * Who the campaign's file has met (SaveFile.met): heroes whose captive was talked to, freed
+   * heroes, and 'larry' once his airship was boarded; the Mini Game Arena's "found" rule.
+   */
+  met: string[] = [];
+  /**
+   * A stage played as one round over another scene (the Mini Game Arena's 1-0: src/game/arena/
+   * stage-round.ts): its exit passes, Give up quits; level changes clear down to `base`. Else null.
+   */
+  stageRound: StageRound | null = null;
+  /**
    * World 4's bonus spot can be played (SaveFile.bonusOpen): closed once used, open again when its
    * Hammer Bro is beaten (map/bonus-spot.ts, map/hammer-bro.ts).
    */
   bonusOpen = true;
+  /**
+   * The used bonus spot's Hammer Bro is out on the map (SaveFile.bonusGuard): not right after the
+   * bonus is used, only once a level has been entered from the map since; off again when beaten.
+   */
+  bonusGuard = false;
   /** The SMB3 item inventory is unlocked on the file (SaveFile.inventoryUnlocked; the crystal ball). */
   inventoryUnlocked = false;
   /**
@@ -327,6 +344,7 @@ export class Game {
       if (hero !== s.character) this.setHero(0, hero);
       if (hero2 && hero2 !== s.character2) this.setHero(1, hero2);
       s.checkpoint = null;
+      this.guardBonus();
       this.autosave();
       this.deps.ctx.audio.stopMusic();
       // Its intro when it has one, else its first area (Lost Levels 9-1 starts in ll-9-1-start).
@@ -338,6 +356,7 @@ export class Game {
     if (tutorial && tutorialHero) {
       // Saved as the file has it; the tutorial's hero plays, and the file's comes back after.
       s.checkpoint = null;
+      this.guardBonus();
       this.autosave();
       const heroes =
         s.character === tutorialHero
@@ -396,8 +415,10 @@ export class Game {
       devAllHeroes: this.devAllHeroes,
       freed: this.freed.slice(),
       tutorials: this.tutorials.slice(),
+      met: this.met.slice(),
       inventoryUnlocked: this.inventoryUnlocked,
       bonusOpen: this.bonusOpen,
+      bonusGuard: this.bonusGuard,
       ...bonusSaveFields(this.bonus),
     };
     this.campaignSave = save;
@@ -509,7 +530,8 @@ export class Game {
 
   /**
    * JUMP on the open bonus node: the bonus game's scene over the map (map/bonus-spot.ts). Played,
-   * it closes (bonusUsed: the Hammer Bro comes out); either way back to the map on the node.
+   * it closes (bonusUsed: spent, the Hammer Bro out after the next level); either way back to the
+   * map on the node.
    */
   openBonus(spot: BonusSpot): void {
     if (!this.bonusOpen) return;
@@ -530,11 +552,20 @@ export class Game {
    */
   bonusUsed(): void {
     this.bonusOpen = false;
+    this.bonusGuard = false;
     this.autosave();
   }
 
   /**
-   * The map's Hammer Bro touched the hero: the one-screen Hammer Bro battle (scenes/hammer-battle.ts)
+   * A level entered from the map: a used bonus spot's Hammer Bro comes out, there when the map
+   * comes back whatever the result (saved by the caller).
+   */
+  private guardBonus(): void {
+    if (!this.bonusOpen) this.bonusGuard = true;
+  }
+
+  /**
+   * The hero walked into the map's Hammer Bro: the one-screen Hammer Bro battle (scenes/hammer-battle.ts)
    * with the run as it is. The hero's map place stays the node it last stood on.
    */
   startHammerBattle(): void {
@@ -547,6 +578,7 @@ export class Game {
   /** The Hammer Bros are beaten: the bonus opens again, back to the map (saved). */
   hammerBattleWon(): void {
     this.bonusOpen = true;
+    this.bonusGuard = false;
     this.returnToMap();
   }
 
@@ -691,6 +723,16 @@ export class Game {
     this.autosave();
   }
 
+  /**
+   * Campaign: the file has met `id` (a captive talked to, or 'larry' on boarding his airship): the
+   * Mini Game Arena shows that game from now on. Saved at once the first time.
+   */
+  meet(id: string): void {
+    if (!this.campaign || this.met.includes(id)) return;
+    this.met.push(id);
+    this.autosave();
+  }
+
   /** The "<HERO> TRAINING?" question was answered (yes or no): never asked again; saved at once. */
   answerTraining(id: string): void {
     if (!this.tutorials.includes(id)) this.tutorials.push(id);
@@ -807,7 +849,9 @@ export class Game {
     this.devUnlockAll = save.devUnlockAll === true;
     this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
+    this.met = metIds(save.met ?? [], this.freed, save.secrets.includes(CRYSTAL_BALL));
     this.bonusOpen = save.bonusOpen !== false;
+    this.bonusGuard = !this.bonusOpen && save.bonusGuard === true;
     this.inventoryUnlocked = save.inventoryUnlocked === true || save.secrets.includes(CRYSTAL_BALL);
     this.bonus = bonusStateFrom(save);
     // Only heroes freed on this file, this session, get the map's burst of hops.
@@ -907,7 +951,7 @@ export class Game {
     this.state.stage = level.stage;
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
-    this.scenes.clear();
+    this.clearToRoundBase();
     this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
@@ -933,11 +977,19 @@ export class Game {
       this.airship = null;
     } else if (run) run.entered(level.id, start, this.state);
     else boardAirship(this, level.id, start);
-    const base = this.airship?.base;
+    this.clearToRoundBase();
+    this.scenes.push(this.levelScene(level, start));
+  }
+
+  /**
+   * Clears the scenes for a level: down to the scene a round is played over (a dev airship round's
+   * list, an arena round's map: AirshipRun.base, StageRound.base) while one runs, else all.
+   */
+  private clearToRoundBase(): void {
+    const base = this.airship?.base ?? this.stageRound?.base;
     if (base && this.scenes.find((s) => s === base))
       while (this.scenes.depth > 0 && this.scenes.top !== base) this.scenes.pop();
     else this.scenes.clear();
-    this.scenes.push(this.levelScene(level, start));
   }
 
   /** The scene for `level` (its campaign variant in campaign play), not yet pushed. */

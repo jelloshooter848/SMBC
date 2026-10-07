@@ -45,9 +45,16 @@ import '../bonus/spot';
 import { inventoryAvailable, shownItems } from '../bonus/use';
 import { giveDevItems } from '../bonus/items';
 import { MapGuard, guardRoad } from '../map/hammer-bro';
-import { BONUS_CLOSED_HINT, BONUS_CLOSED_SAID, bonusGame } from '../map/bonus-spot';
+import {
+  BONUS_CLOSED_HINT,
+  BONUS_CLOSED_SAID,
+  BONUS_SPENT_HINT,
+  BONUS_SPENT_SAID,
+  bonusGame,
+} from '../map/bonus-spot';
 import { AirshipCrash, type CrashNames } from '../map/airship-crash';
 import { CRYSTAL_BALL } from '../map/captives';
+import { arenaPadHint, arenaPadSaid, arenaPadTouch, drawArenaPad, playArenaPad } from '../arena';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -76,8 +83,9 @@ export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
 export const HIDING_SHIMMER_FRAMES = 360;
 export const HIDING_GLOW_FRAMES = 30;
 /**
- * The map's Hammer Bro (map/hammer-bro.ts) does not start a battle for this many frames after the
- * map shows or he comes out, so coming back from the bonus or a battle never lands straight in one.
+ * The map's Hammer Bro (map/hammer-bro.ts) stands still for this many frames after the map shows
+ * or he comes out, before he starts to wander. It never delays a battle: walking into him starts
+ * one at once (he spawns on the road tile farthest from the hero, so it is always the hero's move).
  */
 export const GUARD_GRACE_FRAMES = 45;
 /** A freed hero's 1-px dark outline: its silhouette drawn once each way, under it. */
@@ -557,9 +565,11 @@ export class WorldMapScene implements Scene {
    */
   nodeLabel(n: MapNode): string {
     const label = spoken(this.page.label);
+    // A Mini Game Arena pad (src/game/arena): its game, or why it is still dark.
+    if (n.kind === 'game') return arenaPadSaid(this.game, n, abilityHint(this.game, 'JUMP', 'jump'));
     // The bonus spot (map/bonus-spot.ts): the bonus game's name while open.
     if (n.kind === 'bonus')
-      return this.game.bonusOpen ? `${spoken(bonusGame().label(this.game))}, open` : BONUS_CLOSED_SAID;
+      return this.game.bonusOpen ? `${spoken(bonusGame().label(this.game))}, open` : this.bonusShutSaid();
     if (isWarpNode(n)) {
       const text = spoken(warpText(this.progress, n, this.unlockAll));
       return isWarpOpen(this.progress, n, this.unlockAll) ? `Warp, ${text}` : `${text}, locked`;
@@ -599,7 +609,13 @@ export class WorldMapScene implements Scene {
     if (n) return warpText(this.progress, n, this.unlockAll);
     if (this.mode !== 'idle') return '';
     const here = this.nodeById(this.node);
-    if (here?.kind === 'bonus') return this.game.bonusOpen ? bonusGame().label(this.game) : BONUS_CLOSED_HINT;
+    if (here?.kind === 'bonus')
+      return this.game.bonusOpen
+        ? bonusGame().label(this.game)
+        : this.game.bonusGuard
+          ? BONUS_CLOSED_HINT
+          : BONUS_SPENT_HINT;
+    if (here?.kind === 'game') return arenaPadHint(this.game, here);
     return (
       exitHint(this.progress, this.page, this.node, this.unlockAll) || (this.hidingHere() ? HIDING_HINT : '')
     );
@@ -650,6 +666,7 @@ export class WorldMapScene implements Scene {
       jump: open || bonus ? 'ENTER' : warp ? 'WARP' : null,
       start: 'MENU',
       special: inventoryAvailable(this.game) ? 'ITEMS' : null,
+      ...(here?.kind === 'game' ? arenaPadTouch(this.game, here) : {}),
     };
   }
 
@@ -696,11 +713,11 @@ export class WorldMapScene implements Scene {
     const taken = this.revealTaken;
     this.game.pendingReveal = this.game.pendingReveal.filter((id) => !taken.includes(id));
     this.revealTaken = [];
-    // Warp pads drawn in are not read out (four hints in a row on the hub): a pad's hint is
-    // said when the hero stands on it.
+    // Warp pads and arena pads drawn in are not read out (four hints in a row on the hub, a
+    // dozen in the arena): a pad's hint is said when the hero stands on it.
     const opened = this.revealNodes
       .map((id) => this.nodeById(id))
-      .filter((n): n is MapNode => !!n && !isWarpNode(n))
+      .filter((n): n is MapNode => !!n && !isWarpNode(n) && n.kind !== 'game')
       .map((n) => this.nodeLabel(n));
     this.revealNodes = [];
     if (opened.length) this.say(opened.join('. '));
@@ -741,8 +758,14 @@ export class WorldMapScene implements Scene {
       } else {
         // Used: a bump, and why it is shut.
         this.game.ctx.audio.sfx('bump');
-        this.say(BONUS_CLOSED_SAID);
+        this.say(this.bonusShutSaid());
       }
+      return;
+    }
+    if (input.pressed('jump') && here?.kind === 'game') {
+      // A Mini Game Arena pad: one round for fun over the map, then back here (nothing saved).
+      if (!playArenaPad(this.game, here, this.page.music, () => this.announceHere()))
+        this.say(this.nodeLabel(here));
       return;
     }
     if (input.pressed('jump') && here && isWarpNode(here)) {
@@ -885,6 +908,8 @@ export class WorldMapScene implements Scene {
     this.mode = 'idle';
     this.placeHero();
     this.views.clear();
+    // Off the Hammer Bro's road node (where he holds back), he comes out now.
+    if (!this.guard) this.refreshGuard();
     const n = this.nodeById(nodeId);
     if (n) this.say(this.nodeLabel(n));
   }
@@ -1055,14 +1080,21 @@ export class WorldMapScene implements Scene {
     game.scenes.push(new WorldsMenu(game, items, () => game.scenes.pop(), start));
   }
 
+  /** Said on a used bonus node: come back after a level, or beat the Hammer Bro once he is out. */
+  private bonusShutSaid(): string {
+    return this.game.bonusGuard ? BONUS_CLOSED_SAID : BONUS_SPENT_SAID;
+  }
+
   /**
    * The Hammer Bro (campaign only): out on the road to a bonus node with `guard: 'hammer-bro'` while
-   * the bonus is used (Game.bonusOpen false) and the node is shown, on the road tile farthest from
-   * the hero (map/hammer-bro.ts).
+   * the bonus is used (Game.bonusOpen false), a level has been entered since (Game.bonusGuard) and
+   * the node is shown, on the road tile farthest from the hero (map/hammer-bro.ts). Not while the
+   * hero stands on that road (its node), where he would block the only way back: he comes out
+   * when the hero arrives anywhere else (arrive), or the map shows, slides or fades in again.
    */
   private refreshGuard(): void {
     this.guard = null;
-    if (!this.game.campaign || this.game.bonusOpen) return;
+    if (!this.game.campaign || this.game.bonusOpen || !this.game.bonusGuard) return;
     const n = this.page.nodes.find(
       (x) => x.guard === 'hammer-bro' && isOpen(this.progress, this.page, x.id, this.unlockAll),
     );
@@ -1070,23 +1102,30 @@ export class WorldMapScene implements Scene {
     const road = guardRoad(this.page, n.id);
     if (!road.length) return;
     const here = this.nodeById(this.node);
+    if (here && road.some(([x, y]) => x === here.x && y === here.y)) return;
     this.guard = MapGuard.spawn(road, here ? [here.x, here.y] : [n.x, n.y], 0x5eed + this.t);
     this.guardGrace = GUARD_GRACE_FRAMES;
   }
 
+  /** The Hammer Bro may not step onto tile (x, y): the hero is on it, or walking along it. */
+  private guardBlocked(x: number, y: number): boolean {
+    const px = x * 16;
+    const py = y * 16;
+    if (Math.abs(px - this.hx) < 16 && Math.abs(py - this.hy) < 16) return true;
+    return this.mode === 'walk' && this.walkPts.some(([wx, wy]) => wx === px && wy === py);
+  }
+
   /**
-   * The Hammer Bro wanders while the hero stands or walks; touching him (or him walking into the
-   * hero) starts the battle (Game.startHammerBattle). True when it did.
+   * The Hammer Bro wanders while the hero stands or walks, never onto the hero's tile or path;
+   * only the hero walking into him starts the battle (Game.startHammerBattle). True when it did.
    */
   private updateGuard(): boolean {
     const g = this.guard;
     if (!g || (this.mode !== 'idle' && this.mode !== 'walk')) return false;
-    g.update();
-    if (this.guardGrace > 0) {
-      this.guardGrace--;
-      return false;
-    }
-    if (!g.touches(this.hx, this.hy)) return false;
+    // He waits out the grace before his first step; walking into him counts at once.
+    if (this.guardGrace > 0) this.guardGrace--;
+    else g.update((x, y) => this.guardBlocked(x, y));
+    if (this.mode !== 'walk' || !g.touches(this.hx, this.hy)) return false;
     this.guard = null;
     this.game.ctx.audio.sfx('kick');
     this.game.startHammerBattle();
@@ -1179,6 +1218,10 @@ export class WorldMapScene implements Scene {
     for (let i = 0; i < v.nodes.length; i++) {
       const nv = v.nodes[i] as PageView['nodes'][number];
       if (revealing && this.revealShown.has(nv.node.id)) continue;
+      if (nv.node.kind === 'game') {
+        drawArenaPad(r, this.game, nv.node, ox, this.t);
+        continue;
+      }
       r.sprite(nv.sheet ? assets.sheet(nv.sheet) : items, nv.frame, ox + nv.node.x * 16, nv.node.y * 16);
     }
     for (let i = 0; i < v.heroes.length; i++) {

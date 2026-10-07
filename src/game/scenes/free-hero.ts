@@ -112,6 +112,8 @@ export function talkToCaptive(
   const def = miniGameFor(heroId);
   const hero = game.deps.characters.find((c) => c.id === heroId);
   if (!def || !hero || game.freed.includes(heroId)) return;
+  // Talked to once: the hero's mini game is in the Mini Game Arena from now on (saved).
+  game.meet(heroId);
   const world = level.world;
   const audio = game.ctx.audio;
   const say = (lines: readonly string[]) => game.deps.announcer?.say(lines.filter(Boolean).join(' '));

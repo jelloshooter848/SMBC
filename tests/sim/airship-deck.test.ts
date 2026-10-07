@@ -191,7 +191,8 @@ describe('fair over random blaster timings (damage on)', () => {
           if (r.outcome === 'pipe') wins++;
         }
       expect(wins).toBeGreaterThanOrEqual(19);
-    });
+      // 20 full deck runs: a few seconds alone, much longer on a busy machine.
+    }, 60_000);
 });
 
 describe('the auto-scroll', () => {
