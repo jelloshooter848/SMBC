@@ -31,7 +31,7 @@ describe("Ryu's hideout and ninja music", () => {
   it('is registered with the game songs and sounds', () => {
     for (const s of ninjaSongs) expect(songs).toContain(s);
     for (const e of ninjaSfx) expect(sfx).toContain(e);
-    expect(ninjaSongs.map((s) => s.id)).toEqual(['dojo', 'ng-stage', 'ng-boss', 'ng-cutscene']);
+    expect(ninjaSongs.map((s) => s.id)).toEqual(['dojo', 'ng-stage', 'ng-boss', 'ng-cutscene', 'ng-city']);
     expect(ninjaSfx.map((s) => s.id)).toEqual(['panel-spin', 'slash', 'hawk', 'clang']);
     expect(themeMusic('dojo')).toBe('dojo');
     expect(themeMusic('ninja-night')).toBe('ng-stage');

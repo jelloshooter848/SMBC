@@ -30,7 +30,13 @@ describe("Simon's crypt and castle music", () => {
   it('is registered with the game songs and sounds', () => {
     for (const s of castlevaniaSongs) expect(songs).toContain(s);
     for (const e of castlevaniaSfx) expect(sfx).toContain(e);
-    expect(castlevaniaSongs.map((s) => s.id)).toEqual(['crypt', 'cv-stage', 'cv-boss', 'cv-beast']);
+    expect(castlevaniaSongs.map((s) => s.id)).toEqual([
+      'crypt',
+      'cv-stage',
+      'cv-boss',
+      'cv-beast',
+      'cv-hall',
+    ]);
     expect(castlevaniaSfx.map((s) => s.id)).toEqual([
       'whip-wall',
       'candle',

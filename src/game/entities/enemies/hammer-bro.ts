@@ -4,6 +4,7 @@ import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 import { moveX, moveY } from '../body';
 import { tileDef } from '../../level/tiles';
+import { hasSolidFloors } from '../../level/schema';
 import { Projectile, HAMMER } from '../projectiles/projectile';
 
 /*
@@ -169,8 +170,7 @@ export class HammerBro extends Enemy {
 
   /** Castles and underground (`cannotPassThroughGround`): jumps only go straight up and down. */
   private solidFloors(world: World): boolean {
-    const t = world.level.theme;
-    return t === 'underground' || t.startsWith('castle');
+    return hasSolidFloors(world.level.theme);
   }
 
   /** HammerBro.jump: high from the floor or off solid ground, a hop down from the top row, else either. */

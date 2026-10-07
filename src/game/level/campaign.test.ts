@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getLevel, levelIds } from '@content/levels';
-import { campaignLevel } from './campaign';
+import { applyLook, campaignLevel } from './campaign';
 import { parseTextMap, serializeTextMap } from './textmap';
 import { T } from './tiles';
 import type { LevelData, Zone } from './schema';
@@ -86,7 +86,9 @@ describe('4-2 (the right warp zone): campaign variant', () => {
     expect(l.zones.filter((z) => z.kind === 'vine' && z.x >= 208)).toEqual([
       { kind: 'vine', x: 214, y: 12, target: { level: '4-2-airship', x: 2, y: 3 } },
     ]);
-    expect(l.decor).toEqual(base.decor);
+    // (the room's own decor: none; 4-2 in its Brinstar look, 0.4.12, places none in the room)
+    expect(l.decor).toEqual(base.campaignLook?.decor);
+    expect(l.decor.filter((d) => d.x >= 208)).toEqual(base.decor.filter((d) => d.x >= 208));
     expect(tile(l, 214, 2)).toBe(tile(base, 214, 2));
     // The rest of 4-2 is as it was.
     const other = (z: Zone) =>
@@ -118,7 +120,9 @@ describe('4-2 (the right warp zone): campaign variant', () => {
 
   it('a goto whose level is not in the library (yet) leaves the warp as it is', () => {
     const base = getLevel('4-2');
-    expect(campaignLevel(base, () => false)).toBe(base);
+    // only 4-2's campaign look (0.4.12) applies: the warp's tiles and zones stay as they are
+    expect(campaignLevel(base, () => false)).toEqual(applyLook(base));
+    expect(campaignLevel(base, () => false).zones).toBe(base.zones);
   });
 });
 

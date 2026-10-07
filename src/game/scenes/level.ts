@@ -8,7 +8,7 @@ import { DebugOverlay } from './debug-overlay';
 import { drawHud } from '../hud/hud';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
-import { startHp } from '../characters/character';
+import { startHp, type CharacterDef } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
@@ -49,6 +49,15 @@ export const PATH_SAID = 'A path of clouds appears.';
 export function carryTime(from: LevelData, to: LevelData, time: number | null): number | undefined {
   if (time === null) return undefined;
   return from.world === to.world && from.stage === to.stage ? time : undefined;
+}
+
+/**
+ * The music a level plays for `hero`: the hero's own overworld theme (CharacterDef.music) in a
+ * plain overworld area, else the level's own. A campaign look's theme is never `overworld`, so a
+ * restyled level (and its coin heaven) plays the restyle's music for every hero.
+ */
+export function levelMusic(level: LevelData, hero: Pick<CharacterDef, 'music'>): string {
+  return hero.music && level.theme === 'overworld' ? hero.music : level.music;
 }
 
 export class LevelScene implements Scene {
@@ -101,12 +110,9 @@ export class LevelScene implements Scene {
     if (held.some((o) => o.given)) this.airship?.itemsGiven(this.game.state);
   }
 
-  /** The level's music (the hero's own overworld theme when it has one), at the clock's tempo. */
+  /** The level's music (levelMusic), at the clock's tempo. */
   playMusic(): void {
-    const music =
-      this.game.state.character.music && this.level.theme === 'overworld'
-        ? this.game.state.character.music
-        : this.level.music;
+    const music = levelMusic(this.level, this.game.state.character);
     this.game.ctx.audio.setTempoScale(this.world.time !== null && this.world.time <= 100 ? 1.4 : 1);
     this.game.ctx.audio.playMusic(music);
   }
