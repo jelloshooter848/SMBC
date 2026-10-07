@@ -80,6 +80,8 @@ export interface GameDeps {
   controlScheme?: () => ControlScheme;
   /** The last kind of input used (touch, or keys / gamepad), so touch menus never offer Off. */
   lastInput?: () => LastInput;
+  /** Play the title's rift intro on the session's first title (main.ts; off in the headless sims). */
+  titleIntro?: boolean;
 }
 
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
@@ -89,6 +91,8 @@ export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 export class Game {
   readonly scenes = new SceneStack();
   state: GameState;
+  /** The title's rift intro has had its turn this session (later titles use the quick drop). */
+  titleIntroPlayed = false;
   /** Level to start after character select (custom levels / shared links). */
   pendingLevel: string | null = null;
   /** When set, the current level is an editor play-test; called when it ends. */

@@ -57,7 +57,7 @@ function boot(): void {
   for (const ev of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click', 'gamepadconnected']) {
     window.addEventListener(ev, unlock, { passive: true });
   }
-  console.info(`SMB Crossover ${__APP_VERSION__}`);
+  console.info(`SMBC REMIX ${__APP_VERSION__}`);
   const announcer = new Announcer(document.getElementById('announcer'));
 
   let fps = 0;
@@ -84,6 +84,7 @@ function boot(): void {
     settings,
     input,
     announcer,
+    titleIntro: true,
     applySettings: () => applySettings(),
     lastInput: () => touch.lastInput,
     controlScheme: () =>

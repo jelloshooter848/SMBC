@@ -10,6 +10,8 @@ const SONG_IDS = [
   'water',
   'star',
   'title',
+  // The title screen's rift intro (0.5.0).
+  'title-rift',
   'hurry',
   'death',
   'level-clear',
@@ -116,6 +118,8 @@ const SFX_IDS = [
   'spread',
   'laser',
   'konami',
+  // The title screen's REMIX stamp.
+  'stamp',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

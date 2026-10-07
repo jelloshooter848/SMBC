@@ -16,6 +16,9 @@ import { contraSongs } from './contra';
 // A swung shuffle bar: triplet subdivision with kick/snare on the beats and a soft hat on the
 // third triplet. Two half-bars per bar.
 const SWING_BAR = '[v11 k12 r12 v6 h12 v10 s12 r12 v6 h12]2';
+// The REMIX title's bouncy straight backbeat, and its fill.
+const BOUNCE_BAR = 'v11 k8 v6 h16 h16 v10 s8 v6 h8 v11 k8 k8 v10 s8 v6 h16 h16';
+const BOUNCE_FILL = 'v11 k8 v6 h16 h16 v10 s8 v6 h8 v10 s16 s16 s16 s16 v12 s8 r8';
 const SWING_FILL = 'v11 k12 r12 v6 h12 v10 s12 r12 v6 h12 v11 k12 r12 v6 h12 v10 s12 s12 s12';
 
 // Straight driving rock bar (8ths), plus a fill variant with a snare roll on beat 4.
@@ -276,15 +279,18 @@ export const songs: Song[] = [
 
   {
     id: 'title',
-    bpm: 140,
+    bpm: 150,
     loop: true,
-    // Two-bar fanfare on the overworld motif, then loops a gentler statement of the A phrase.
-    // The loop point (L) is at the start of bar 3 on every channel.
+    // SMB Crossover REMIX (0.5.0): the title theme re-orchestrated. A brassier two-bar fanfare
+    // (the stamp's record scratch and stinger land on it, sfx 'stamp'), then a bouncier loop of
+    // the A phrase: the melody staccato on a thinner duty, off-beat chord stabs, a dotted
+    // octave-hopping bass and a straight backbeat. The loop point (L) is at bar 3 everywhere.
     pulse1: `
       @2 v12 q7 x0
       o5 g16 g16 g8 e8 g8 a8 b8 o6 c4      ; bar 1  fanfare
       o6 c4. o5 g8 o6 c2                   ; bar 2
       L
+      @1 v12 q5
       o5 g8 g8 r8 e8 g8 r8 a8 b8           ; bar 3
       o6 c8 o5 b8 a8 g8 e4 r4              ; bar 4
       o5 a8 a8 r8 f8 a8 r8 b8 o6 c8        ; bar 5
@@ -293,34 +299,64 @@ export const songs: Song[] = [
       o5 e8 d8 c4 r2                       ; bar 8
     `,
     pulse2: `
-      @0 v9 q7 x0
+      @1 v9 q7 x0
       o5 e16 e16 e8 c8 e8 f8 g8 a4         ; bar 1
       o5 e4. e8 e2                         ; bar 2
       L
-      o5 e8 e8 r8 c8 e8 r8 f8 g8           ; bar 3
-      o5 a8 g8 f8 e8 c4 r4                 ; bar 4
-      o5 f8 f8 r8 d8 f8 r8 g8 a8           ; bar 5
-      o5 b8 a8 g8 e8 f4 r4                 ; bar 6
-      o5 c4 e8 f8 a4 f8 e8                 ; bar 7
-      o5 c8 o4 b8 g4 r2                    ; bar 8
+      @0 v7 q4
+      r8 o4 g8 r8 o5 e8 r8 o4 g8 r8 o5 e8  ; bar 3  (C)
+      r8 o4 g8 r8 o5 e8 r8 o4 b8 r8 o5 d8  ; bar 4  (C G)
+      r8 o4 a8 r8 o5 f8 r8 o4 a8 r8 o5 f8  ; bar 5  (F)
+      r8 o4 b8 r8 o5 d8 r8 o4 b8 r8 o5 f8  ; bar 6  (G7)
+      r8 o4 g8 r8 o5 e8 r8 o4 a8 r8 o5 f8  ; bar 7  (C F)
+      r8 o4 g8 r8 o5 e8 o4 b8 g8 r4        ; bar 8  (C)
     `,
     triangle: `
       q7
       o2 c16 c16 c8 c8 c8 c8 c4 r8         ; bar 1
       o2 c4. g8 c2                         ; bar 2
       L
-      o2 c8 o3 c8 o2 e8 o3 e8 o2 g8 o3 g8 o2 a8 o3 a8   ; bar 3
-      o2 c8 o3 c8 o2 g8 o3 g8 o2 c8 o3 c8 o2 e8 f8      ; bar 4
-      o2 f8 o3 f8 o2 a8 o3 a8 o3 c8 c8 o2 a8 f+8        ; bar 5
-      o2 g8 o3 g8 o2 d8 o3 d8 o2 g8 r8 o2 a8 b8         ; bar 6
-      o2 c8 o3 c8 o2 e8 o3 e8 o2 f8 o3 f8 o2 a8 o3 a8   ; bar 7
-      o2 c8 o3 c8 o2 c4 r2                              ; bar 8
+      q6
+      [o2 c8. g16 o3 c8. o2 g16]2                       ; bar 3
+      o2 c8. g16 o3 c8. o2 g16 o2 g8. d16 g8. d16       ; bar 4
+      [o2 f8. o3 c16 f8. c16]2                          ; bar 5
+      [o2 g8. o3 d16 g8. d16]2                          ; bar 6
+      o2 c8. g16 o3 c8. o2 g16 o2 f8. o3 c16 f8. c16    ; bar 7
+      o2 c8. g16 o3 c8. o2 g16 o2 c4 r4                 ; bar 8
     `,
     noise: `
       v11 k16 k16 k8 v10 s8 v6 h8 v10 s8 v11 k4 r8      ; bar 1
       v10 s4. v6 h8 v11 k2                              ; bar 2
       L
-      [${SWING_BAR}]5 ${SWING_FILL}                     ; bars 3-8
+      [${BOUNCE_BAR}]5 ${BOUNCE_FILL}                   ; bars 3-8
+    `,
+  },
+
+  {
+    id: 'title-rift',
+    bpm: 115,
+    loop: false,
+    // The title's rift intro (about 4 s): an eerie minor arpeggio climbing through C minor, A flat
+    // and F minor over a high pulse shimmer and a low drone, rising on G7 so the title fanfare (in
+    // C major) resolves it when the stamp lands.
+    pulse1: `
+      @1 v8 q6 x0
+      o4 c16 e-16 g16 o5 d16 e-16 d16 o4 g16 e-16 o3 a-16 o4 c16 e-16 g16 a-16 g16 e-16 c16   ; bar 1
+      o3 f16 a-16 o4 c16 f16 a-16 f16 c16 o3 a-16 o3 g16 b16 o4 d16 f16 g16 b16 o5 d16 f16    ; bar 2
+    `,
+    pulse2: `
+      @3 v4 q8 x0
+      [o6 g32 a-32]16                      ; bar 1
+      [o6 f32 g32]8 v6 [o6 g32 b32]8       ; bar 2
+    `,
+    triangle: `
+      q8
+      o2 c2 o1 a-2                         ; bar 1
+      o1 f2 g2                             ; bar 2
+    `,
+    noise: `
+      v3 l2 n15 n14                        ; bar 1
+      v4 l8 n13 n13 n13 n13 v6 l16 n7 n7 n7 n7 v8 n7 n7 v10 n7 n7   ; bar 2
     `,
   },
 
