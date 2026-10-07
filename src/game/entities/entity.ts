@@ -8,6 +8,8 @@ import type { World } from '../world/world';
 /** What render() needs beyond the renderer. */
 export interface View {
   camX: number; // px
+  /** px; only a `camera: free` level scrolls vertically (World.render draws through an offset). */
+  camY?: number;
   frame: number; // global animation counter
   assets: AssetRegistry;
   theme: Theme;
@@ -67,8 +69,11 @@ export abstract class Entity {
     return toPx(this.body.y + this.body.h);
   }
 
+  /** The map's height in px (World sets it before each update; taller in a `camera: free` map). */
+  levelHeightPx = 240;
+
   isBelowLevel(): boolean {
-    return this.body.y > px(240 + 32);
+    return this.body.y > px(this.levelHeightPx + 32);
   }
 
   destroy(): void {

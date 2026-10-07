@@ -26,6 +26,37 @@ export class NullRenderer implements Renderer {
   line(): void {}
 }
 
+/**
+ * Draws through `inner` moved by (dx, dy): a world drawn under a camera that also scrolls
+ * vertically (World.render with a `free` camera). `clear` fills the whole target as before.
+ */
+export class OffsetRenderer implements Renderer {
+  /** The target and the offset can be changed between frames (one instance reused). */
+  constructor(
+    public inner: Renderer,
+    public dx: number,
+    public dy: number,
+  ) {}
+  clear(color: string): void {
+    this.inner.clear(color);
+  }
+  rect(x: number, y: number, w: number, h: number, color: string): void {
+    this.inner.rect(x + this.dx, y + this.dy, w, h, color);
+  }
+  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX?: boolean, flipY?: boolean): void {
+    this.inner.sprite(sheet, frame, x + this.dx, y + this.dy, flipX, flipY);
+  }
+  text(font: SpriteSheet, str: string, x: number, y: number): void {
+    this.inner.text(font, str, x + this.dx, y + this.dy);
+  }
+  debugText(str: string, x: number, y: number, color?: string): void {
+    this.inner.debugText(str, x + this.dx, y + this.dy, color);
+  }
+  line(x1: number, y1: number, x2: number, y2: number, color: string): void {
+    this.inner.line(x1 + this.dx, y1 + this.dy, x2 + this.dx, y2 + this.dy, color);
+  }
+}
+
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export class CanvasRenderer implements Renderer {

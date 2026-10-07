@@ -36,8 +36,9 @@ function parseProps(parts: string[]): Props {
  *
  *   key: value            header lines (id, name, theme, music, time, start, width...)
  *   [legend]              optional overrides: `X tile-name` or `X @entity`
- *   [tiles]               15 rows; spaces and `;;` comments are stripped, so rows can be
- *                         written as space-separated 16-column screens
+ *   [tiles]               15 rows (or the header's `height: N`, at least 15, for a
+ *                         `camera: free` map with shafts); spaces and `;;` comments are
+ *                         stripped, so rows can be written as space-separated 16-column screens
  *   [entities]            `type x y key=val ...` (`dx=` / `dy=`: a pixel nudge off the tile,
  *                         e.g. the original's half-tile shiftRight / shiftUp)
  *   [zones]               `pipe x y dir -> level x y [exit=dir]`, `exit x next=id`,
@@ -126,14 +127,20 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     }
   });
 
-  if (rows.length !== LEVEL_ROWS) {
+  const height = header.height === undefined ? LEVEL_ROWS : Number(header.height);
+  if (!Number.isInteger(height) || height < LEVEL_ROWS)
+    throw new MapParseError(`height must be a whole number of at least ${LEVEL_ROWS} rows`, 0);
+  // Only a free camera can show more than one screen of rows.
+  if (height > LEVEL_ROWS && header.camera !== 'free')
+    throw new MapParseError(`height ${height} needs "camera: free" (only it scrolls vertically)`, 0);
+  if (rows.length !== height) {
     throw new MapParseError(
-      `expected ${LEVEL_ROWS} tile rows, got ${rows.length}`,
+      `expected ${height} tile rows, got ${rows.length}`,
       rows[rows.length - 1]?.line ?? 0,
     );
   }
   const width = (rows[0] as { text: string }).text.length;
-  const tiles = new Uint16Array(width * LEVEL_ROWS);
+  const tiles = new Uint16Array(width * height);
   rows.forEach((row, y) => {
     if (row.text.length !== width) {
       throw new MapParseError(`row ${y} has ${row.text.length} columns, expected ${width}`, row.line);
@@ -165,7 +172,7 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     music: header.music ?? themeMusic(theme),
     time: timeRaw === 'inherit' || timeRaw === 'null' ? null : Number(timeRaw),
     width,
-    height: 15,
+    height,
     tiles,
     entities,
     zones,
@@ -347,6 +354,7 @@ export function serializeTextMap(level: LevelData): string {
     `startMode: ${level.startMode}`,
     `camera: ${level.camera}`,
   );
+  if (level.height !== LEVEL_ROWS) out.push(`height: ${level.height}`);
   out.push('', '[tiles]');
   const markers = new Map<string, string>();
   for (const e of level.entities) {
