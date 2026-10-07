@@ -48,7 +48,16 @@ import {
 } from './masked';
 import { T } from '@game/level/tiles';
 import { BAR_H, CLASH_AT, CUTSCENE_FRAMES } from './cutscene';
-import { DuelMenuScene, READY_FRAMES, SKY_TOP, TIME_LIMIT, WIN_FRAMES } from './scene';
+import {
+  ART_BANNER_FRAMES,
+  BANNER_AVOIDS,
+  bannerBox,
+  DuelMenuScene,
+  READY_FRAMES,
+  SKY_TOP,
+  TIME_LIMIT,
+  WIN_FRAMES,
+} from './scene';
 import { DuelBot, SHARP } from './bot';
 import { duelHarness, type DuelHarness } from './harness';
 
@@ -702,6 +711,92 @@ describe('Shadow Duel: review follow-ups', () => {
     expect(r.texts).toContain('NINPO: CHANGE ART');
     expect(r.texts.join(' ')).not.toMatch(/TOOLS/);
     expect(h.said.at(-1)).toMatch(/NINPO changes art/);
+  });
+
+  it('touch: READY names the art button as it shows (SHURIKEN, later WINDMILL), not CAST', () => {
+    const h = duelHarness({ assets: STUB_ASSETS, scheme: 'touch' });
+    h.step([], 30);
+    h.tap('jump'); // skip the cutscene: READY is said
+    const ready = h.said.at(-1) ?? '';
+    expect(ready).toMatch(/SHURIKEN casts your ninpo art/);
+    expect(ready).not.toMatch(/CAST/);
+    expect(ready).toMatch(/SLASH slashes/);
+    h.step([], READY_FRAMES);
+    expect(h.scene.touchLabels().special).toBe('SHURIKEN');
+    // Keys and pads keep the ability's name with the key.
+    const k = duelHarness({ assets: STUB_ASSETS, skipCutscene: true, scheme: 'keyboard' });
+    expect(k.said.at(-1)).toMatch(/CAST casts a ninpo art/);
+  });
+
+  it('touch: READY after the windmill (a round with two arts) names the art in hand', () => {
+    const h = duelHarness({ assets: STUB_ASSETS, skipCutscene: true, scheme: 'touch' });
+    const p = h.scene.player;
+    p.scratch.arts = 2;
+    p.scratch.tool = 1;
+    (h.scene as unknown as { sayReady(): void }).sayReady();
+    expect(h.said.at(-1)).toMatch(/WINDMILL casts your ninpo art/);
+  });
+
+  describe('banners never cover Ryu, a lantern, a creature or a pickup', () => {
+    /** What the banner on screen covers this frame (Ryu and BANNER_AVOIDS kinds). */
+    const covered = (h: DuelHarness): string[] => {
+      const b = h.scene.banner;
+      if (!b || h.scene.t >= b.until) return [];
+      const box = bannerBox(b.lines, b.y);
+      const cam = h.world.camera;
+      const things: [string, { x: number; y: number; w: number; h: number }][] = [
+        ['ryu', h.scene.player.body],
+        ...h.world.entities
+          .filter((e) => e.alive && BANNER_AVOIDS.has(e.kind))
+          .map((e): [string, typeof e.body] => [e.kind, e.body]),
+      ];
+      return things
+        .filter(([, t]) => {
+          const x = toPx(t.x) - cam.pxX;
+          const y = toPx(t.y) - cam.pxY;
+          return x < box.x + box.w && box.x < x + toPx(t.w) && y < box.y + box.h && box.y < y + toPx(t.h);
+        })
+        .map(([k]) => `${k}@${h.scene.t}`);
+    };
+
+    it('the first cling (QA: it hid the lantern on building A’s roof), all the way up onto the roof', () => {
+      const h = round({ assets: STUB_ASSETS });
+      h.game.ctx.assist.invulnerable = true;
+      const p = h.scene.player;
+      warp(h, 300);
+      const hits: string[] = [];
+      let shown = 0;
+      for (let i = 0; i < 400; i++) {
+        const top = p.body.onGround && toPx(p.body.y + p.body.h) === 96;
+        h.step(top ? [] : i % 2 === 0 ? ['right', 'jump'] : ['right']);
+        if (h.scene.banner && h.scene.t < h.scene.banner.until) shown++;
+        hits.push(...covered(h));
+      }
+      expect(h.scene.clingTaught).toBe(true);
+      expect(shown).toBeGreaterThan(100);
+      expect(toPx(p.body.y + p.body.h)).toBe(96); // on the roof
+      expect(hits).toEqual([]);
+    });
+
+    it('the art (QA: it hid Ryu on top of the last wall for ~3.7 s), and it is shorter now', () => {
+      expect(ART_BANNER_FRAMES).toBeLessThanOrEqual(150);
+      const h = round({ assets: STUB_ASSETS });
+      h.game.ctx.assist.invulnerable = true;
+      const p = h.scene.player;
+      // On the last wall's top (columns 104-107, its top at 96), under the art lantern: slash it.
+      warp(h, 105 * 16 + 4, 96);
+      p.facing = 1;
+      const hits: string[] = [];
+      let shown = 0;
+      for (let i = 0; i < 260; i++) {
+        h.step(i < 2 ? ['attack'] : []);
+        if (h.scene.banner && h.scene.t < h.scene.banner.until) shown++;
+        hits.push(...covered(h));
+      }
+      expect(p.scratch.arts).toBe(2);
+      expect(shown).toBe(ART_BANNER_FRAMES);
+      expect(hits).toEqual([]);
+    });
   });
 
   it('the first cling (building A) shows how to climb on, once', () => {

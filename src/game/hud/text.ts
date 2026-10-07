@@ -1,5 +1,23 @@
 /** Characters the bitmap font can draw (besides letters, digits and space). */
-const FONT_MARKS = new Set(['-', '.', '!', '?', ',', '×', '©', '>', '$', ':', '/', '%', '+', '(', ')', "'"]);
+const FONT_MARKS = new Set([
+  '-',
+  '.',
+  '!',
+  '?',
+  ',',
+  '×',
+  '©',
+  '>',
+  '$',
+  ':',
+  ';',
+  '/',
+  '%',
+  '+',
+  '(',
+  ')',
+  "'",
+]);
 
 /** Upper-case a string and drop anything the font has no glyph for. */
 export function fontText(text: string): string {

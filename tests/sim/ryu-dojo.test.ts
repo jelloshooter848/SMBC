@@ -682,7 +682,7 @@ describe('the whole way in campaign play', () => {
     const h = makeGame();
     const l = intoBonus(h);
     expect(tricks(l.level.zones)[0]?.campaign).toBeUndefined();
-    // Drop in from the pipe onto the floor first (holding left in the air lands on the wall's top).
+    // Drop in from the pipe onto the floor first (the drop is straight: tests/sim/fall-arrival.test.ts).
     h.until(() => l.world.player.body.onGround, 120);
     for (let f = 0; f < 600 && levelId(h) === '6-2-bonus'; f++) h.step(['left']);
     expect(levelId(h)).toBe('6-2-dojo');
@@ -717,7 +717,7 @@ describe('captive Ryu', () => {
     return h.top() as LevelScene;
   };
 
-  it('kneels in the dojo only in campaign play, and only until freed', () => {
+  it('waits (standing) in the dojo only in campaign play, and only until freed', () => {
     const h = makeGame();
     file();
     const l = intoDojo(h);

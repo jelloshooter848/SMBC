@@ -272,6 +272,28 @@ const AUTO_WALK_INPUT: InputFrame = {
   dirX: 1,
 };
 
+/**
+ * A fall arrival (startMode / exit `fall`: a bonus room's pipe, a pit, a descent) drops each hero
+ * straight down from his start column: left and right do nothing until his head is below this
+ * line (px; the top of row 3), past the room's ceiling row and the HUD band above it, or he lands.
+ * Steering from the first frame (left still held from walking onto the pipe) could otherwise drift
+ * him over the wall beside the drop shaft and land him on its top, above the room (QA 0.4.8, 6-2's
+ * bonus room).
+ */
+export const FALL_IN_STEER_Y = 3 * 16;
+
+/** A player's input with left and right taken out (the straight drop of a fall arrival). */
+function withoutSteering(input: InputFrame): InputFrame {
+  return {
+    held: (a) => a !== 'left' && a !== 'right' && input.held(a),
+    pressed: (a) => a !== 'left' && a !== 'right' && input.pressed(a),
+    released: (a) => a !== 'left' && a !== 'right' && input.released(a),
+    bufferedJump: (w) => input.bufferedJump(w),
+    consumeJumpBuffer: () => input.consumeJumpBuffer(),
+    dirX: 0,
+  };
+}
+
 const COOP_RESPAWN_FRAMES = 120;
 
 /** TIME units the clear tally turns into points each frame (the original: one every two frames). */
@@ -353,6 +375,8 @@ export class World {
   private readonly smashedWarps = new Set<Zone>();
   private readonly deathTimers = new Map<Player, number>();
   private readonly respawnTimers = new Map<Player, number>();
+  /** Players still in a fall arrival's straight drop (FALL_IN_STEER_Y): no steering yet. */
+  private readonly fallingIn = new Set<Player>();
   private checkpointSent = false;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
   bossClear: { t: number; stop?: number } | null = null;
@@ -460,6 +484,7 @@ export class World {
       Object.assign(p.scratch, i === 0 ? state.kit : state.kit2);
       if (mode === 'fall') {
         p.body.y = px(-32) - px(i * 24);
+        this.fallingIn.add(p);
         // Co-op: player 2 drops in beside player 1 where that drop is clear (fallSpot).
         const first = this.players[0];
         if (first) p.body.x = px(this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w));
@@ -966,6 +991,10 @@ export class World {
         this.respawnTimers.delete(p);
       }
       let input = inputs[i] ?? NO_INPUT;
+      if (this.fallingIn.has(p)) {
+        if (p.body.onGround || p.body.y >= px(FALL_IN_STEER_Y)) this.fallingIn.delete(p);
+        else input = withoutSteering(input);
+      }
       if (this.autoWalk) input = AUTO_WALK_INPUT;
       else if (this.vineArrival && p.vine) input = AUTO_CLIMB_INPUT;
       p.inWater = p.body.y + (p.body.h >> 1) >= this.waterTop;

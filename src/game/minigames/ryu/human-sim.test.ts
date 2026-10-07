@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { CAUTIOUS, SHARP, type CautiousOptions } from './bot';
 import { botRun } from './harness';
 
+/** The art lantern's column (on the last wall's top) and the health lantern's (at its foot). */
+const ART_LANTERN = 105;
+const HEAL_LANTERN = 109;
+
 /** A clumsier first-timer: slower, misjudges more, pauses more. */
 export const CLUMSY: Partial<CautiousOptions> = { reaction: 21, error: 10, pause: 0.01 };
 
@@ -21,11 +25,18 @@ describe('Shadow Duel: a cautious human (difficulty)', () => {
     expect(r.result).toBe('pass');
     expect(r.lost).toBeLessThanOrEqual(10);
     expect(r.secondsLeft).toBeGreaterThan(80);
+    // It plays the stage as a player would: the last wall's art lantern (the windmill) and the
+    // health lantern at its foot are broken on the way.
+    expect(r.arts).toBe(2);
+    expect(r.broke).toEqual(expect.arrayContaining([ART_LANTERN, HEAL_LANTERN]));
   }, 60_000);
 
   it('a cautious first-timer (late reactions, misjudged distances and timing, pauses) usually wins, and not unscathed', () => {
     const { rate, runs } = passRate(8);
     expect(rate).toBeGreaterThanOrEqual(7 / 8);
+    // (with the windmill in hand: the pass rate counts what a player has at the Masked Ninja)
+    expect(runs.filter((r) => r.arts === 2).length).toBeGreaterThanOrEqual(7);
+    expect(runs.filter((r) => r.broke.includes(HEAL_LANTERN)).length).toBeGreaterThanOrEqual(6);
     expect(runs.reduce((a, r) => a + r.lost, 0) / runs.length).toBeGreaterThan(4);
   }, 300_000);
 
@@ -56,9 +67,11 @@ describe('Shadow Duel: a cautious human (difficulty)', () => {
         const lost = (runs.reduce((a, r) => a + r.lost, 0) / n).toFixed(1);
         const boss = (runs.reduce((a, r) => a + r.bossLost, 0) / n).toFixed(1);
         const left = runs.map((r) => r.secondsLeft).sort((a, b) => a - b);
+        const art = runs.filter((r) => r.arts === 2).length;
+        const heal = runs.filter((r) => r.broke.includes(HEAL_LANTERN)).length;
         console.log(
           `${name}: pass ${(rate * 100).toFixed(0)}% of ${n} (HP lost ${lost}, to the Masked Ninja ${boss};`,
-          `seconds left: median ${left[left.length >> 1]}, lowest ${left[0]})`,
+          `seconds left: median ${left[left.length >> 1]}, lowest ${left[0]}; windmill ${art}, health lantern ${heal})`,
           JSON.stringify(fails),
         );
       }

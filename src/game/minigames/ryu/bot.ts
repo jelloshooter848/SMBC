@@ -3,7 +3,8 @@ import { tileAt, toPx } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { Enemy } from '../../entities/enemies/enemy';
 import type { World } from '../../world/world';
-import { Hawk, NgShot, SHOT_SLACK } from './creatures';
+import { Pickup } from '../../entities/objects/pickup';
+import { ArtScroll, Hawk, NgShot, SHOT_SLACK } from './creatures';
 import { Afterimage, CROUCH_FRAMES, DASH_SPEED, DASH_SPEED_2, MaskedNinja, PHASE_TWO_HP } from './masked';
 import type { DuelScene } from './scene';
 
@@ -63,6 +64,10 @@ const POST = 120;
 export const WIND_UP = 2;
 /** The sword's reach past Ryu's front (px). */
 export const REACH = 12;
+/** How far past the blade's reach (px) it goes back or on for a lantern. */
+const LANTERN_NEAR = 24;
+/** Frames it spends on one lantern (or what one left) before it gives up on it. */
+const LANTERN_FRAMES = 90;
 
 export class DuelBot {
   private readonly opts: CautiousOptions;
@@ -84,6 +89,8 @@ export class DuelBot {
   readonly reached = new Set<string>();
   /** It clung to a wall (tests). */
   clung = 0;
+  /** Frames spent on each lantern or drop (by entity id). */
+  private readonly spent = new Map<number, number>();
 
   constructor(opts: Partial<CautiousOptions> = {}) {
     this.opts = { ...SHARP, ...opts };
@@ -105,7 +112,8 @@ export class DuelBot {
     const prev = new Map((this.history.at(-1) ?? []).map((s) => [s.id, s]));
     for (const e of world.entities) {
       if (!e.alive) continue;
-      if (!(e instanceof Enemy || e instanceof NgShot || e instanceof Afterimage)) continue;
+      const thing = e instanceof Enemy || e instanceof NgShot || e instanceof Afterimage;
+      if (!thing && !(e instanceof ArtScroll || e instanceof Pickup)) continue;
       const o = this.offset(e.id);
       const x = e.body.x / 256 + o.x;
       const y = e.body.y / 256 + o.y;
@@ -187,6 +195,15 @@ export class DuelBot {
     return res;
   }
 
+  /** Still worth going for (it has not had LANTERN_FRAMES of the bot's time yet). */
+  private worth(s: Seen): boolean {
+    return (this.spent.get(s.id) ?? 0) < LANTERN_FRAMES;
+  }
+
+  private spend(s: Seen): void {
+    this.spent.set(s.id, (this.spent.get(s.id) ?? 0) + 1);
+  }
+
   /** Me, in px. */
   private me(scene: DuelScene) {
     const b = scene.player.body;
@@ -263,6 +280,54 @@ export class DuelBot {
     );
     if (ahead && p.attackTimer === 0) {
       held.push('attack');
+      return held;
+    }
+    // A lantern close by at the blade's height, ahead or just passed (the art lantern on the last
+    // wall's top, the health lantern at its foot): turn to it, step in and slash it. Then what it
+    // left close by on his level (the art's scroll, spirit points, health): walk over it. A while
+    // on each at most (a misjudged one may be out of reach).
+    const lantern = ground
+      ? seen.find(
+          (s) =>
+            s.kind === 'lantern' &&
+            this.worth(s) &&
+            (this.inSlash(scene, s, 1, LANTERN_NEAR) || this.inSlash(scene, s, -1, LANTERN_NEAR)),
+        )
+      : undefined;
+    if (lantern) {
+      this.spend(lantern);
+      const dir: -1 | 1 = lantern.x + lantern.w / 2 < m.cx ? -1 : 1;
+      if (facing === dir && this.inSlash(scene, lantern, dir, -2)) {
+        if (p.attackTimer === 0) held.push('attack');
+      } else held.push(dir > 0 ? 'right' : 'left');
+      return held;
+    }
+    const drop = ground
+      ? seen.find(
+          (s) =>
+            (s.kind === 'art-scroll' || s.kind === 'pickup') &&
+            this.worth(s) &&
+            // (on his level, or still popping up out of the lantern above him)
+            s.y + s.h <= m.feet + 8 &&
+            s.y + s.h >= m.feet - 48 &&
+            s.x + s.w > m.x - LANTERN_NEAR &&
+            s.x < m.x + m.w + LANTERN_NEAR,
+        )
+      : undefined;
+    if (drop) {
+      this.spend(drop);
+      const dx = drop.x + drop.w / 2 - m.cx;
+      if (Math.abs(dx) > 2) held.push(dx < 0 ? 'left' : 'right');
+      return held;
+    }
+    // Dropping off a ledge with a lantern just ahead below (no pit there): brake, to land short of
+    // it and slash it.
+    const below = seen.some(
+      (s) => s.kind === 'lantern' && s.y > m.feet && s.x + s.w > m.x && s.x - (m.x + m.w) < LANTERN_NEAR,
+    );
+    const pitNear = scene.layout.pits.some((c) => c * 16 + 16 > m.x - 16 && c * 16 < m.x + m.w + 48);
+    if (!ground && !p.clinging && p.body.vy >= 0 && below && !pitNear) {
+      if (p.body.vx > 0) held.push('left');
       return held;
     }
     // A hawk diving in from behind: turn to it.

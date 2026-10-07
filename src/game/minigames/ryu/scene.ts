@@ -12,7 +12,7 @@ import { NINPO_ARTS } from '../../characters/ryu/weapons';
 import { T } from '../../level/tiles';
 import type { Player } from '../../entities/player';
 import type { Game } from '../../scenes/game';
-import { abilityHint } from '../../scenes/hints';
+import { abilityHint, controlScheme } from '../../scenes/hints';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import { MiniGameMenuScene } from '../menu';
 import type { MiniGameResult } from '../types';
@@ -38,9 +38,29 @@ export const SKY_TOP = 32;
 /** Frames the first cling's banner stays up. */
 export const CLIMB_BANNER_FRAMES = 240;
 /** Frames the art's banner stays up. */
-export const ART_BANNER_FRAMES = 220;
+export const ART_BANNER_FRAMES = 150;
 /** Widest banner line. */
 export const BANNER_COLS = 26;
+/** What a banner never covers, besides Ryu: what he plays for and what he fights. */
+export const BANNER_AVOIDS: ReadonlySet<string> = new Set([
+  'lantern',
+  'art-scroll',
+  'pickup',
+  'thrower',
+  'dog',
+  'hawk',
+  'masked-ninja',
+]);
+/** px kept clear around Ryu and those, and below the HUD band. */
+const BANNER_CLEAR = 4;
+/** The screen box drawBanner fills for `lines` with its first line at `y`. */
+export function bannerBox(
+  lines: readonly string[],
+  y: number,
+): { x: number; y: number; w: number; h: number } {
+  const w = Math.max(...lines.map((l) => l.length)) * 8;
+  return { x: ((SCREEN_W - w) >> 1) - 8, y: y - 6, w: w + 16, h: lines.length * 12 + 8 };
+}
 /**
  * Ryu's start kit: his sword, the first ninpo art (the throwing star) and 10 spirit points of
  * 40; the lanterns hold more, and one holds the next art (the windmill shuriken).
@@ -82,6 +102,7 @@ export class DuelScene implements Scene {
   /** Frames of play the clock has counted. */
   clock = 0;
   boss: MaskedNinja | null = null;
+  /** The banner on screen: its lines, until when (scene frames), its first line's y (px). */
   banner: { lines: string[]; until: number; y: number } | null = null;
   /** The cutscene was skipped (tests). */
   skipped = false;
@@ -146,8 +167,18 @@ export class DuelScene implements Scene {
 
   private sayReady(): void {
     this.say(
-      `Play as Ryu: ${this.hint('SLASH', 'attack')} slashes, ${this.hint('CAST', 'special')} casts a ninpo art. ${this.climbHint()} Break lanterns for spirit points. Beat the Masked Ninja. ${this.hint('MENU', 'start')} for the menu. Ready!`,
+      `Play as Ryu: ${this.hint('SLASH', 'attack')} slashes, ${this.castHint()}. ${this.climbHint()} Break lanterns for spirit points. Beat the Masked Ninja. ${this.hint('MENU', 'start')} for the menu. Ready!`,
     );
+  }
+
+  /**
+   * How to cast. With keys or a pad: "CAST (X) casts a ninpo art". On touch the button carries
+   * the name of the art in hand (SHURIKEN, later WINDMILL), so the text names it the same way.
+   */
+  private castHint(): string {
+    if (controlScheme(this.game) !== 'touch') return `${this.hint('CAST', 'special')} casts a ninpo art`;
+    const button = levelTouchLabels(this.player, this.world).special ?? 'CAST';
+    return `${button} casts your ninpo art`;
   }
 
   /** How to climb, in the rules card's words (with the JUMP key). */
@@ -201,6 +232,12 @@ export class DuelScene implements Scene {
   }
 
   update(input: InputFrame): void {
+    this.play(input);
+    if (this.banner && this.t < this.banner.until)
+      this.banner.y = this.bannerY(this.banner.lines, this.banner.y);
+  }
+
+  private play(input: InputFrame): void {
     if (this.phase === 'over') return;
     if (this.menuOpen && input.pressed('start')) {
       this.game.scenes.push(new DuelMenuScene(this.game, () => this.finish('quit')));
@@ -287,6 +324,49 @@ export class DuelScene implements Scene {
     if (this.phase === 'dead' && died) this.finish('fail');
   }
 
+  /* ---------- Banners ---------- */
+
+  /**
+   * Where a banner's first line goes (px): it stays at `y` while its box covers neither Ryu nor
+   * anything in BANNER_AVOIDS on screen; else it moves to the highest clear spot under the HUD
+   * band, and with nowhere clear to the spot covering the least (never Ryu, if it can help it).
+   */
+  private bannerY(lines: readonly string[], y: number): number {
+    const cam = this.world.camera;
+    const boxes: { x: number; y: number; w: number; h: number; weight: number }[] = [];
+    const add = (b: { x: number; y: number; w: number; h: number }, weight: number) =>
+      boxes.push({
+        x: toPx(b.x) - cam.pxX - BANNER_CLEAR,
+        y: toPx(b.y) - cam.pxY - BANNER_CLEAR,
+        w: toPx(b.w) + 2 * BANNER_CLEAR,
+        h: toPx(b.h) + 2 * BANNER_CLEAR,
+        weight,
+      });
+    if (!this.player.dead) add(this.player.body, 100);
+    for (const e of this.world.entities) if (e.alive && BANNER_AVOIDS.has(e.kind)) add(e.body, 1);
+    const cover = (top: number) => {
+      const r = bannerBox(lines, top);
+      let n = 0;
+      for (const b of boxes)
+        if (r.x < b.x + b.w && b.x < r.x + r.w && r.y < b.y + b.h && b.y < r.y + r.h) n += b.weight;
+      return n;
+    };
+    if (cover(y) === 0) return y;
+    const first = HUD_H + BANNER_CLEAR + 6;
+    const last = SCREEN_H - bannerBox(lines, 0).h - BANNER_CLEAR + 6;
+    let best = y;
+    let least = cover(y);
+    for (let top = first; top <= last; top += 4) {
+      const n = cover(top);
+      if (n < least) {
+        best = top;
+        least = n;
+        if (n === 0) break;
+      }
+    }
+    return best;
+  }
+
   /* ---------- The climb ---------- */
 
   /** The first cling (building A's face): how to climb on from there, once. */
@@ -321,7 +401,7 @@ export class DuelScene implements Scene {
       name.length <= BANNER_COLS ? name : 'A NEW ART',
       change.length + 12 <= BANNER_COLS ? `${change}: CHANGE ART` : 'NINPO: CHANGE ART',
     ];
-    this.banner = { lines, until: this.t + ART_BANNER_FRAMES, y: 64 };
+    this.banner = { lines, until: this.t + ART_BANNER_FRAMES, y: 40 };
     this.say(`You got a ninpo art: the ${art?.name ?? 'next art'}! ${change} changes art.`);
   }
 
