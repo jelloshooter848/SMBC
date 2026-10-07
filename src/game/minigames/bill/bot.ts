@@ -208,6 +208,8 @@ export class JungleBot {
    * keeps missing even so, it gives up waiting for.
    */
   private judge(ref: Thing, fired: boolean): void {
+    // (a moving foe it keeps shooting at: misses there are timing, not judgement)
+    if (ref.kind === 'soldier' || ref.kind === 'larva' || ref.kind === 'capsule') return;
     const hp = (ref as unknown as { hp?: number }).hp ?? 0;
     const m = this.misses.get(ref) ?? { n: 0, hp };
     if (hp < m.hp) {
@@ -219,14 +221,17 @@ export class JungleBot {
     if (m.n >= 24) this.givenUp.add(ref);
   }
 
-  /** A soldier coming at Bill from behind, on his tier (he turns to shoot). */
+  /** A soldier or a larva coming at Bill from behind, on his level (he turns to shoot). */
   private behind(j: Jungle, view: Snapshot): boolean {
     const b = j.bill;
     if (b.state !== 'ground') return false;
     for (const t of view.things) {
-      if (t.kind !== 'soldier') continue;
       const dx = t.x - b.x;
-      if (dx * b.facing < 0 && Math.abs(dx) < 110 && Math.abs(t.y - b.y) < 12 && t.dx * dx < 0) return true;
+      if (Math.abs(dx) >= 110 || Math.abs(t.y - b.y) >= 12) continue;
+      // a soldier running at him from behind, or a larva crawling on the lair's floor (either
+      // side: once he has turned to it, he stays turned until it is shot)
+      if (t.kind === 'soldier' && dx * b.facing < 0 && t.dx * dx < 0) return true;
+      if (t.kind === 'larva' && Math.abs(t.dy) < 0.01) return true;
     }
     return false;
   }
@@ -268,6 +273,8 @@ export class JungleBot {
   private navigate(j: Jungle, view: Snapshot): Move {
     const b = j.bill;
     const go = (dir: -1 | 0 | 1, name = 'go'): Move => ({ name, dir, down: false, jump: false });
+    // Something coming up from behind: stop and turn to shoot it.
+    if (this.behind(j, view)) return go(0, 'turn');
     if (j.phase === 'wall') return this.atWall(j, view);
     if (j.phase === 'lair') return this.inLair(j, view);
     // A falcon it wants: go and get it.
@@ -287,21 +294,18 @@ export class JungleBot {
         return { name: 'up', dir: Math.sign(dx) as -1 | 0 | 1, down: false, jump: true };
       if (Math.abs(dx) > 3) return this.walk(j, Math.sign(dx) as -1 | 1, 'falcon');
     }
-    // A pillbox it wants on the ledge below: drop through to it.
+    // A pillbox on the ledge below: drop through to it.
     if (b.state === 'ground' && this.canDrop(j))
       for (const t of view.things) {
         if (t.kind !== 'pillbox' || this.givenUp.has(t.ref)) continue;
-        const w = (t.ref as unknown as { weapon: WeaponId }).weapon;
         const dx = t.x - b.x;
-        if (this.wants(b, w) && t.y > b.y + 8 && t.y - b.y <= 40 && dx > 40 && dx < 72) {
+        if (t.y > b.y + 8 && t.y - b.y <= 40 && dx > 40 && dx < 72) {
           this.drops++;
           return { name: 'drop', dir: 0, down: true, jump: true };
         }
       }
     // On a bridge that is blowing up (or about to): run.
     if (this.onBridge(j)) return this.walk(j, 1, 'bridge');
-    // A soldier coming up from behind: stop and turn to shoot him.
-    if (this.behind(j, view)) return go(0, 'turn');
     // A gun, a pillbox or a capsule worth stopping for (not for ever).
     if (this.holdFor(j, view)) {
       if (++this.holdT > 600) {
@@ -398,20 +402,18 @@ export class JungleBot {
           if (t.hurt && this.aimAt(j, t.hurt, this.standAims(b), view)) return true;
           break;
         case 'pillbox': {
-          const w = (t.ref as unknown as { weapon: WeaponId }).weapon;
           // (only from where it can shoot it once it opens)
           const open = { x: t.x - 14, y: t.y - 30, w: 28, h: 28 };
-          if (this.wants(b, w) && dx > 40 && this.aimAt(j, open, this.standAims(b), view)) return true;
+          if (dx > 40 && this.aimAt(j, open, this.standAims(b), view)) return true;
           break;
         }
       }
     }
-    // A capsule it wants, anywhere on screen (they fly in from behind): wait and shoot it down.
-    for (const t of view.things) {
-      if (t.kind !== 'capsule' || t.x < j.camX + 8 || t.x > j.camX + 248 || this.givenUp.has(t.ref)) continue;
-      const w = (t.ref as unknown as { weapon: WeaponId }).weapon;
-      if (this.wants(b, w)) return true;
-    }
+    // A capsule anywhere on screen (they fly in from behind): wait and shoot it down. Like a
+    // player, it cannot tell what a capsule or a pillbox holds until the falcon is out.
+    for (const t of view.things)
+      if (t.kind === 'capsule' && t.x >= j.camX + 8 && t.x <= j.camX + 248 && !this.givenUp.has(t.ref))
+        return true;
     return false;
   }
 
@@ -520,6 +522,8 @@ export class JungleBot {
     if (b.untouchable && b.state !== 'water') return nav;
     const plan = this.firstHit(j, view, nav);
     if (plan.k > HORIZON) return nav;
+    // Turning to shoot what is coming up behind: stand and fight while there is time.
+    if (nav.name === 'turn' && (plan.what === 'larva' || plan.what === 'soldier') && plan.k > 12) return nav;
     const opts: Move[] = [];
     const fwd = (nav.dir || 1) as -1 | 1;
     if (b.state === 'water') opts.push({ name: 'dive', dir: 0, down: true, jump: false });
@@ -587,7 +591,21 @@ export class JungleBot {
       const px = m.x + ux * t;
       const py = m.y + uy * t;
       if (px >= box.x - tol && px <= box.x + box.w + tol && py >= box.y - tol && py <= box.y + box.h + tol)
-        return true;
+        if (!this.blocked(j, m.x, m.y, px, py)) return true;
+    }
+    return false;
+  }
+
+  /** Armour (the defense wall's face) between the muzzle and a point. */
+  private blocked(j: Jungle, x0: number, y0: number, x1: number, y1: number): boolean {
+    for (const t of j.things) {
+      const a = t.alive && t.shield ? t.hurtBox() : null;
+      if (!a) continue;
+      for (let k = 0; k <= 16; k++) {
+        const x = x0 + ((x1 - x0) * k) / 16;
+        const y = y0 + ((y1 - y0) * k) / 16;
+        if (x >= a.x && x <= a.x + a.w && y >= a.y && y <= a.y + a.h) return true;
+      }
     }
     return false;
   }
@@ -613,10 +631,8 @@ export class JungleBot {
         case 'wall-cannon':
           return 1;
         case 'capsule':
-        case 'pillbox': {
-          const w = (t.ref as unknown as { weapon: WeaponId }).weapon;
-          return this.wants(b, w) ? 2 : 4;
-        }
+        case 'pillbox':
+          return 2;
         case 'core':
         case 'heart':
         case 'pod':
@@ -626,7 +642,9 @@ export class JungleBot {
       }
     };
     return view.things
-      .filter((t) => t.hurt && rank(t) < 9 && t.x > j.camX - 8 && t.x < j.camX + 264)
+      .filter(
+        (t) => t.hurt && rank(t) < 9 && t.x > j.camX - 8 && t.x < j.camX + 264 && !this.givenUp.has(t.ref),
+      )
       .sort((a, c) => rank(a) - rank(c) || Math.abs(a.x - b.x) - Math.abs(c.x - b.x));
   }
 
@@ -693,7 +711,9 @@ export class JungleBot {
         const prone = b.state === 'ground' && c.down && (c.dir === 0 || !!c.turn);
         if (t.hurt && this.lineHits(j, c.aim, t.hurt, prone)) {
           // A change of stance to aim is fine only when it is no less safe.
-          if (c.dir !== m.dir || c.down !== m.down || c.turn) {
+          // (shooting the very thing coming at him is his way out: no veto there)
+          const threat = t.kind === 'soldier' || t.kind === 'larva';
+          if (!threat && (c.dir !== m.dir || c.down !== m.down || c.turn)) {
             const alt: Move = c.turn ? { ...m, dir: 0, down: true } : { ...m, dir: c.dir, down: c.down };
             if (this.firstHit(j, view, alt).k < Math.min(safeK, HORIZON + 1)) continue;
           }

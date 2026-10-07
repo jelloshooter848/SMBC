@@ -240,7 +240,10 @@ export function drawShots(p: Paint, j: Jungle): void {
 
 /** Contra's lives display: a medal for each life in reserve, top left (at most MEDALS_SHOWN). */
 export const MEDALS_SHOWN = 4;
-export function drawMedals(r: Renderer, assets: AssetRegistry, rest: number): void {
+export function drawMedals(r: Renderer, assets: AssetRegistry, rest: number, backed = false): void {
+  const n = Math.min(MEDALS_SHOWN, rest);
+  // Over the lair's pale flesh ceiling the medals sit on a dark backing.
+  if (backed && n > 0) r.rect(12, 12, n * 12 + 4, 24, 'rgba(0,0,0,0.7)');
   for (let i = 0; i < Math.min(MEDALS_SHOWN, rest); i++)
     drawContra(r, assets, 'medal', 16 + i * 12, 16, 8, 16, LOOK.medal);
 }
@@ -256,7 +259,7 @@ export function drawJungle(p: Paint, j: Jungle): void {
   drawCells(p.r, p.assets, j, p.t, true);
   if (j.bill.state === 'water' && j.bill.dive) drawCommando(p, j.bill);
   for (const t of j.things) if (t.alive && t.kind === 'boom') t.render(p, j);
-  drawMedals(p.r, p.assets, j.rest);
+  drawMedals(p.r, p.assets, j.rest, p.camX + SCREEN_W > LAIR_CAM);
 }
 
 /** Where Bill's feet are while he wades (tests). */

@@ -24,6 +24,10 @@ export const KONAMI_LIVES = 30;
 export const WIN_BANNER_AT = 140;
 export const WIN_JINGLE = 160;
 export const WIN_FRAMES = 420;
+/** START is swallowed this long after the Konami code (the NES code ends B A START). */
+export const KONAMI_START_GUARD = 30;
+/** Frames between the soft flashes over the breach and the win's booms (under 3 a second). */
+export const FLASH_EVERY = 24;
 /** GAME OVER shows this long before the round fails. */
 export const GAME_OVER_FRAMES = 180;
 
@@ -66,6 +70,8 @@ export class JungleScene implements Scene {
   /** The win's banner, and GAME OVER. */
   banner: string[] | null = null;
   private readonly cheat = new CheatCode(DEV_CODE);
+  /** Frames after the Konami code during which START is swallowed. */
+  private startGuard = 0;
   private readonly seed: number;
   private music: string | null = null;
   private winT = -1;
@@ -157,7 +163,9 @@ export class JungleScene implements Scene {
 
   update(input: InputFrame): void {
     if (this.phase === 'over') return;
-    if (!this.decided && input.pressed('start')) {
+    // (START right after the Konami code is the NES code's last press: it opens no menu)
+    if (this.startGuard > 0) this.startGuard--;
+    if (!this.decided && input.pressed('start') && this.startGuard === 0) {
       this.game.scenes.push(new JungleMenuScene(this.game, () => this.finish('quit')));
       return;
     }
@@ -171,6 +179,7 @@ export class JungleScene implements Scene {
     if (this.cheat.feed(input)) {
       // The code's last press (JUMP) must not also start the stage.
       input.consumeJumpBuffer();
+      this.startGuard = KONAMI_START_GUARD;
       if (!this.konami) {
         this.konami = true;
         this.lives = KONAMI_LIVES;
@@ -299,8 +308,8 @@ export class JungleScene implements Scene {
     }
     const j = this.jungle;
     drawJungle({ r, assets, camX: j.camX, t: j.t, rf }, j);
-    // A big boom's soft flash (never with reduce flashing).
-    if (!rf && (j.phase === 'breach' || j.phase === 'won') && j.phaseT % 12 < 2 && j.phaseT < 130)
+    // A big boom's soft flash, under 3 a second (never with reduce flashing).
+    if (!rf && (j.phase === 'breach' || j.phase === 'won') && j.phaseT % FLASH_EVERY < 2 && j.phaseT < 130)
       r.rect(0, 0, SCREEN_W, 240, 'rgba(252,252,252,0.18)');
     if (this.banner) drawBanner(r, assets.sheet('font'), this.banner, 96);
   }

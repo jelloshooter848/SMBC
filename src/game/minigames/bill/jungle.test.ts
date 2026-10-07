@@ -30,7 +30,15 @@ import { BREACH_FRAMES, CORE_HP, HEART_HP, Larva, POD_SPIT, POD_FIRST } from './
 import { Jungle, LAIR_BACK } from './jungle';
 import { C, COLS, jungleStage, LAIR_CAM, TIER, WALL_CAM, WALL_X, WATER_Y } from './stage';
 import { CARD_ANIM } from './card';
-import { GAME_OVER_FRAMES, JungleMenuScene, KONAMI_LIVES, LIVES, WIN_FRAMES } from './scene';
+import {
+  FLASH_EVERY,
+  GAME_OVER_FRAMES,
+  JungleMenuScene,
+  KONAMI_LIVES,
+  KONAMI_START_GUARD,
+  LIVES,
+  WIN_FRAMES,
+} from './scene';
 import { JungleBot, SHARP } from './bot';
 import { jungleHarness, type JungleHarness } from './harness';
 
@@ -141,8 +149,10 @@ describe('Jungle Assault: the mini game contract', () => {
     for (const k of ['rifleman', 'wall-gun', 'cannon', 'pillbox', 'capsule'])
       expect(kinds.has(k as never)).toBe(true);
     expect(st.placed.some((p) => p.type === 'rifleman' && p.bush)).toBe(true);
-    const weapons = st.placed.flatMap((p) => ('weapon' in p ? [p.weapon] : [])).sort();
+    const weapons = [...new Set(st.placed.flatMap((p) => ('weapon' in p ? [p.weapon] : [])))].sort();
     expect(weapons).toEqual(['B', 'F', 'L', 'M', 'R', 'S']);
+    expect(st.placed.filter((p) => p.type === 'pillbox')).toHaveLength(3);
+    expect(st.placed.filter((p) => p.type === 'wall-gun')).toHaveLength(3);
   });
 });
 
@@ -205,6 +215,12 @@ describe('Jungle Assault: the stage card and the Konami code', () => {
     expect(h.scene.phase).toBe('card');
     expect(h.game.deps.settings.dev).toBe(false);
     expect(draw(h).texts).toEqual(expect.arrayContaining(['REST 29', '30 LIVES!']));
+    // The NES code ends B A START: that START opens no menu.
+    h.tap('start');
+    expect(h.game.scenes.top).toBe(h.scene);
+    h.step([], KONAMI_START_GUARD);
+    h.tap('start');
+    expect(h.game.scenes.top).toBeInstanceOf(JungleMenuScene);
   });
 
   it('the code works only on the card, and the title screen code does not carry into the round', () => {
@@ -497,6 +513,28 @@ describe('Jungle Assault: falcon weapons, capsules and pillboxes', () => {
 });
 
 describe('Jungle Assault: the stage', () => {
+  it('fixed foes come in at the screen edge as it scrolls (a capsule waiting for Bill holds none of them up)', () => {
+    for (const bot of [new JungleBot(SHARP), null]) {
+      const h = jungleHarness({ skipCard: true, seed: 2 });
+      const j = h.jungle;
+      h.game.ctx.assist.invulnerable = true;
+      const seen = new Set<object>();
+      const late: string[] = [];
+      for (let f = 0; f < 6000 && j.phase === 'stage'; f++) {
+        // the sharp bot, or Bill walking right regardless (past capsules he never shoots)
+        h.step(bot ? bot.next(h.scene) : f % 600 < 20 ? ['right', 'jump'] : ['right']);
+        for (const t of j.things) {
+          if (seen.has(t) || !['rifleman', 'wall-gun', 'cannon', 'pillbox'].includes(t.kind)) continue;
+          seen.add(t);
+          const left = t.x - 16 - j.camX;
+          if (f > 1 && left < 256 - 8) late.push(`${t.kind}@${Math.round(t.x)}: ${Math.round(left)}`);
+        }
+      }
+      expect(late).toEqual([]);
+      expect(seen.size).toBe(jungleStage().placed.filter((p) => p.type !== 'capsule').length);
+    }
+  }, 60_000);
+
   it('an exploding bridge: once Bill steps on, each segment flashes, then blows (a boom) and is gone, at a pace a running Bill just outruns', () => {
     const { j, step, b } = sim();
     quiet(j);
@@ -762,17 +800,22 @@ describe('Jungle Assault: menu, assists and the screen', () => {
     const h2 = jungleHarness({ skipCard: true, reduceFlashing: false });
     h2.jungle.phase = 'lair';
     h2.jungle.heartDown();
-    let flashed = false;
-    for (let i = 0; i < 40; i++) {
+    // Without it, a soft flash with each big boom: never more than 3 a second.
+    const flashes: number[] = [];
+    for (let i = 0; i < 130; i++) {
       h2.step();
       if (
         draw(h2).rects.some(
           ([x, y, w, hh, c]) => x === 0 && y === 0 && w === 256 && hh === 240 && c.startsWith('rgba(252'),
         )
       )
-        flashed = true;
+        flashes.push(i);
     }
-    expect(flashed).toBe(true);
+    const starts = flashes.filter((f, i) => flashes[i - 1] !== f - 1);
+    expect(starts.length).toBeGreaterThan(1);
+    for (let i = 1; i < starts.length; i++)
+      expect((starts[i] as number) - (starts[i - 1] as number)).toBeGreaterThanOrEqual(20);
+    expect(FLASH_EVERY).toBeGreaterThanOrEqual(20);
   });
 
   it('a sharp bot plays the whole round (falcons, the bridges, the river, the wall and the lair) and passes, the campaign state untouched', () => {

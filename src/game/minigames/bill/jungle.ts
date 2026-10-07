@@ -95,6 +95,9 @@ export const LAIR_BACK = LAIR_CAM + 166;
 /** The camera's speed (px/f) into the lair once Bill is through the broken wall. */
 export const LAIR_SCROLL = 2;
 
+/** How far past the screen's right edge (px) a fixed foe is placed in. */
+export const SPAWN_AHEAD = 40;
+
 /** Most soldiers running at once. */
 export const MAX_SOLDIERS = 3;
 /** The camera follows Bill once he is this far into the screen (px). */
@@ -132,7 +135,8 @@ export class Jungle {
   readonly pods = [new Pod(LAIR_CAM + 40, 0), new Pod(LAIR_CAM + 96, 1)] as const;
   /** Where running soldiers come in (the stage's zones; tests may clear it). */
   readonly zones: SoldierZone[];
-  private nextPlaced = 0;
+  private nextFoe = 0;
+  private nextCapsule = 0;
   private readonly zoneT: number[];
   private soldiersSent = 0;
   private readonly noDamage: () => boolean;
@@ -312,21 +316,28 @@ export class Jungle {
     if (want > this.camX) this.camX = want;
   }
 
+  /**
+   * Fixed foes come in just past the screen's right edge as it scrolls to them; capsules have a
+   * queue of their own (each flies in from the left once Bill passes its x), so one waiting for
+   * Bill never holds up the foes behind it.
+   */
   private spawnPlaced(): void {
-    const list = this.stage.placed;
-    while (this.nextPlaced < list.length) {
-      const p = list[this.nextPlaced] as (typeof list)[number];
-      if (p.type === 'capsule') {
-        if (this.bill.x < p.x || !this.bill.alive) return;
-        this.spawn(new Capsule(this.camX - 12, p.y, p.weapon));
-      } else {
-        if (p.x > this.camX + 256 + 40) return;
-        if (p.type === 'rifleman') this.spawn(new Rifleman(p.x, p.y, !!p.bush));
-        else if (p.type === 'wall-gun') this.spawn(new WallGun(p.x, p.y));
-        else if (p.type === 'cannon') this.spawn(new Cannon(p.x, p.y));
-        else this.spawn(new Pillbox(p.x, p.y, p.weapon));
-      }
-      this.nextPlaced++;
+    const foes = this.stage.placed.filter((p) => p.type !== 'capsule');
+    while (this.nextFoe < foes.length) {
+      const p = foes[this.nextFoe] as (typeof foes)[number];
+      if (p.x > this.camX + 256 + SPAWN_AHEAD) break;
+      if (p.type === 'rifleman') this.spawn(new Rifleman(p.x, p.y, !!p.bush));
+      else if (p.type === 'wall-gun') this.spawn(new WallGun(p.x, p.y));
+      else if (p.type === 'cannon') this.spawn(new Cannon(p.x, p.y));
+      else if (p.type === 'pillbox') this.spawn(new Pillbox(p.x, p.y, p.weapon));
+      this.nextFoe++;
+    }
+    const caps = this.stage.placed.filter((p) => p.type === 'capsule');
+    while (this.nextCapsule < caps.length) {
+      const p = caps[this.nextCapsule] as (typeof caps)[number];
+      if (this.bill.x < p.x || !this.bill.alive || p.type !== 'capsule') break;
+      this.spawn(new Capsule(this.camX - 12, p.y, p.weapon));
+      this.nextCapsule++;
     }
   }
 

@@ -13,8 +13,8 @@
  * flying capsule) -> exploding bridge 1 (30-37) -> the first pillbox (on the lower ledge, 38-52) -> exploding
  * bridge 2 (53-60) -> tiers down to the river (61-89: a capsule, a wall gun on a crag) -> the
  * bank (90-96) and back up (a pop-up cannon) -> tiers and the second river (112-149: riflemen,
- * a bush sniper, a capsule) -> the second pillbox (the spread gun's) -> the last ledges (160-187:
- * a wall gun, a pop-up cannon, a capsule) -> the base floor and the defense wall (188-207, the
+ * a bush sniper, a wall gun, a capsule) -> the second pillbox (the spread gun's) -> the last
+ * ledges (160-187: a wall gun, a capsule, a third pillbox, a pop-up cannon) -> the base floor and the defense wall (188-207, the
  * camera locks at 192) -> through the broken wall, a short drop into Red Falcon's lair (208-223,
  * the camera locks again).
  */
@@ -177,10 +177,13 @@ export function jungleStage(): JungleStage {
     { type: 'capsule', x: px(99), y: 96, weapon: 'F' },
     { type: 'cannon', x: px(110), y: TIER.mid },
     { type: 'rifleman', x: px(121), y: TIER.high },
+    // In the high ledge's rock face, over the lower ledge.
+    { type: 'wall-gun', x: 122 * TILE + 8, y: TIER.low },
     { type: 'rifleman', x: px(130), y: TIER.low, bush: true },
     { type: 'pillbox', x: 157 * TILE, y: TIER.low, weapon: 'S' },
     { type: 'wall-gun', x: 167 * TILE, y: TIER.mid },
     { type: 'capsule', x: px(170), y: 80, weapon: 'B' },
+    { type: 'pillbox', x: 176 * TILE, y: TIER.mid, weapon: 'M' },
     { type: 'cannon', x: px(183), y: TIER.mid },
   ];
   const zones: SoldierZone[] = [

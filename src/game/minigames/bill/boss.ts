@@ -190,7 +190,7 @@ export class WallSniper extends Foe {
   readonly kind = 'sniper';
   constructor() {
     // On the ledge along the wall's crown.
-    super(WALL_X + 48, WALL_TOP + 6, SNIPER_HP);
+    super(WALL_X + 12, WALL_TOP + 6, SNIPER_HP);
     this.pinned = true;
   }
   override hurtBox(): Box {
