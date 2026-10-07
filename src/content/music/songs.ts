@@ -2,6 +2,7 @@ import type { Song } from '@engine/audio/mml';
 import { smb3Songs } from './smb3';
 import { castlevaniaSongs } from './castlevania';
 import { ninjaSongs } from './ninja';
+import { contraSongs } from './contra';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1054,4 +1055,6 @@ export const songs: Song[] = [
   ...castlevaniaSongs,
   // Ryu's hideout under 6-2 and his mini game.
   ...ninjaSongs,
+  // Bill's jungle under 7-3 and his mini game.
+  ...contraSongs,
 ];

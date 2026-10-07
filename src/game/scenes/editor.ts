@@ -497,6 +497,13 @@ export class EditorScene implements Scene {
       'ruin-pillar-broken',
       'ruin-statue',
       'ruin-temple',
+      // Bill's jungle (drawn for the jungle themes' decor palette)
+      'palm',
+      'canopy',
+      'canopy-hang',
+      'mountain',
+      'sandbags',
+      'searchlight',
     ]) {
       decor.appendChild(this.brushButton({ kind: 'decor', name: d, label: d }, d));
     }

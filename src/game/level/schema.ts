@@ -30,7 +30,13 @@ export type Theme =
   // Ryu's hideout under 6-2: a night dojo of dark lacquered wood, shoji and lanterns.
   | 'dojo'
   // Ryu's mini game outdoors: a moonlit town of grey stone, tiled roofs and lit windows.
-  | 'ninja-night';
+  | 'ninja-night'
+  // Bill's jungle (7-3's campaign look, his camp, his mini game): rock, girders, palms, a river.
+  | 'contra-jungle'
+  // Bill's waterfall climb out of the camp: wet rock ledges, falling water, mist.
+  | 'contra-falls'
+  // Red Falcon's lair (Bill's mini game): organic walls and floor.
+  | 'alien-lair';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -56,6 +62,9 @@ export const THEMES: readonly Theme[] = [
   'crypt',
   'dojo',
   'ninja-night',
+  'contra-jungle',
+  'contra-falls',
+  'alien-lair',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -78,6 +87,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'crypt') return 'crypt';
   if (theme === 'dojo') return 'dojo';
   if (theme === 'ninja-night') return 'ng-stage';
+  if (theme === 'contra-jungle' || theme === 'contra-falls') return 'contra-jungle';
+  if (theme === 'alien-lair') return 'contra-lair';
   return 'overworld';
 }
 
