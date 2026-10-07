@@ -7,6 +7,7 @@ import type { CharacterDef } from '../characters/character';
 import { makeBody, moveX, moveY, type Body } from './body';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
+import { placeOnStairs, STAIR_LOCK, STAIR_SPEED, type StairLine, type StairRide } from './objects/stairs';
 
 /**
  * Swimming for heroes without their own `swim` profile. The original gives them no stroke (they
@@ -99,6 +100,13 @@ export class Player {
   vineExit = false;
   /** Centre line of the vine just stepped off, not grabbed again until he lands or leaves its reach. */
   leftVine: number | null = null;
+  /**
+   * On Castlevania stairs (entities/objects/stairs.ts): the flight and how far up it. The world
+   * gets the player on (World.grabStairs); `stairWalk` moves them along it and steps off at the ends.
+   */
+  stairs: StairRide | null = null;
+  /** The end of a flight just stepped off, not got on again for a few frames. */
+  stairLock: { line: StairLine; end: 'foot' | 'top'; t: number } | null = null;
   /** Thrown by a spring: floats with hold-gravity to the apex whether or not jump is held. */
   launched = false;
   /** Set by springLaunch: the gravity of the rise to the apex instead of the hold-gravity (0 = none). */
@@ -163,8 +171,10 @@ export class Player {
     if (this.attackTimer > 0) this.attackTimer--;
     if (this.clingLock > 0) this.clingLock--;
     if (this.vineLock > 0) this.vineLock--;
+    if (this.stairLock && --this.stairLock.t <= 0) this.stairLock = null;
     if (this.frozen || this.dead) return;
     if (this.vine) return this.climb(input, map, audio);
+    if (this.stairs) return this.stairWalk(input);
     const p = this.profile;
     const b = this.body;
     let dir = input.dirX;
@@ -402,6 +412,57 @@ export class Player {
     this.letGo();
     this.leftVine = v.x;
     return true;
+  }
+
+  /**
+   * Walking a flight of stairs: UP (or the way the flight rises) climbs, DOWN (or the other way)
+   * descends, nothing stands. Jumps are swallowed; the walk pauses while an attack swings or a
+   * hit stuns. Reaching either end steps off onto the floor there.
+   */
+  private stairWalk(input: InputFrame): void {
+    const ride = this.stairs as StairRide;
+    const line = ride.line;
+    if (input.bufferedJump(JUMP_BUFFER_FRAMES)) input.consumeJumpBuffer();
+    this.crouching = false;
+    this.fallSpeed = 0;
+    this.jumping = false;
+    let along = 0;
+    if (input.held('up')) along = 1;
+    else if (input.held('down')) along = -1;
+    else if (input.dirX !== 0) along = input.dirX === line.sx ? 1 : -1;
+    const busy = this.attackTimer > 0 || this.stun > 0 || (this.scratch.throwT ?? 0) > 0;
+    if (this.stun > 0) this.stun--;
+    if (along !== 0 && !busy) {
+      this.facing = (along > 0 ? line.sx : -line.sx) as -1 | 1;
+      ride.pos += along * STAIR_SPEED;
+      if (++this.walkTick >= 8) {
+        this.walkTick = 0;
+        this.walkFrame = (this.walkFrame + 1) % 3;
+      }
+      this.anim = 'walk';
+    } else {
+      this.anim = this.attackTimer > 0 ? 'attack' : 'idle';
+    }
+    const end = ride.pos <= 0 ? 'foot' : ride.pos >= line.span ? 'top' : null;
+    ride.pos = Math.max(0, Math.min(line.span, ride.pos));
+    placeOnStairs(this, ride);
+    if (end && along !== 0 && !busy) {
+      this.stairs = null;
+      this.stairLock = { line, end, t: STAIR_LOCK };
+      this.anim = 'idle';
+    }
+  }
+
+  /** Gets on a flight of stairs at `ride` (World.grabStairs). */
+  getOnStairs(ride: StairRide): void {
+    this.def.behaviour.onGrabStairs?.(this); // a morph ball unrolls before the height is used
+    this.stairs = ride;
+    this.vine = null;
+    this.crouching = false;
+    this.sliding = 0;
+    this.refitHitbox();
+    placeOnStairs(this, ride);
+    this.anim = 'idle';
   }
 
   /** Release the vine (step off, climb down to the floor, or the vine ended). */

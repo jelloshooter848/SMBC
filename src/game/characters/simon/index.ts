@@ -192,7 +192,9 @@ export const SIMON: CharacterDef = {
         p.activeMelee = null;
         return;
       }
-      const wantThrow = input.pressed('special') || (input.pressed('attack') && input.held('up'));
+      // UP + whip throws the sub-weapon, except on stairs (UP climbs there; the whip always lashes).
+      const wantThrow =
+        input.pressed('special') || (input.pressed('attack') && input.held('up') && !p.stairs);
       if (wantThrow && p.attackTimer === 0 && !p.scratch.throwT) {
         throwSub(p, world);
         return;

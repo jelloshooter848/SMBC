@@ -584,6 +584,86 @@ slower reactions) and, rarely, the clock. A clumsier player (21 frames, 10 px, a
 let go early) escapes 63% of the time, mostly losing to the clock in shaft 2. A sharp run leaves
 about 43 seconds.
 
+## Simon's mini game: Dracula's Castle (`src/game/minigames/simon/`)
+
+Simon is Dracula's thrall; the round is an NES Castlevania-style castle stage and Dracula's
+throne room, played **as Simon** with his own kit (no new weapon code): the chain whip (`whip: 1`)
+and five hearts; a candle in the entrance hall drops the **dagger** (`subs: 1`, a banner and the
+announcer say how to throw it; each throw takes a heart). It runs in a `World` of its own
+(stage.map with `?raw`, not in the level library) with a fresh GameState, one life, no level clock:
+the scene keeps its own **300-second clock** (held by the Infinite time assist; at 0 Simon falls).
+READY shows first. Theme `crypt` and the `crypt` sheet (`art.ts`: `drawCrypt` draws a crypt frame,
+or a plain box for one that does not exist; nothing throws).
+
+- **The stage** (112 columns; rows 0-1 stay empty under the HUD; below them every empty cell is
+  the crypt's black-brick `wall` backdrop under a `wall-top` cornice, with four open windows,
+  stained glass and Dracula's throne as decor): the entrance hall (candles, a bat),
+  **stairs up** (`stairs 18 12 len=5 dir=ur`) onto the battlement walk (a brick block from column
+  23, so the flight must be climbed; a roast candle at its start; Medusa heads), **stairs down** (`stairs 50 12 len=5 dir=ul`)
+  into the bone hall (two skeletons, a bat), the gallery (Medusa heads low), the **door**
+  (column 96, rows 11-12) and the 16-wide throne room (`scrollStop 97`: the camera locks there
+  as the door opens; Simon walks in, it shuts).
+- **Candles** (`candle x y [drop=heart|big|dagger|meat]`, 8x16, 4 px down in their tile so a
+  standing lash reaches them): harmless; the whip or a dagger snuffs one (sfx `candle`) and it
+  leaves a small heart (1), a big heart (5), the dagger or a **wall roast** (+8 hit points).
+- **Creatures** (stage-creature hits cost one bar of 16; Dracula's two): **bats** (`bat x y`)
+  roost until Simon is within 96 px, swoop to his head height and fly straight on, bobbing;
+  **Medusa heads** (`medusa x y len=N`: while Simon is in columns x..x+N-1, one every 220
+  frames, one at a time, from the edge he faces, a 16 px sine wave around row y at 0.625 px/f); both
+  **crumble when they strike** (no chain of hits as one drifts along with him). **Skeletons**
+  (`skeleton x y`, two lashes) pace by their post facing Simon and lob a bone in an arc timed to
+  land where he stood. A lash knocks bones and fireballs out of the air.
+- **The HUD** (`hud.ts`): a black band with PLAYER and ENEMY bars (16 segments each), TIME, the
+  sub-weapon box and the hearts.
+- **Dracula** (`dracula.ts`), one ENEMY bar over two phases (`BOSS_HP` 14: 6 for the Count, 8
+  for the beast). **Phase 1, the Count** (music `cv-boss`): gone, appears (sfx `dracula-teleport`)
+  at one of four spots (never the last one, never within 48 px of Simon, preferring within 100),
+  opens his cape and 28 frames later throws a **three-fireball spread** from his low hand (level
+  at lash height, one rising over Simon, one dropping to the floor), lingers ~2 s, vanishes. Only
+  his **head** can be hurt (a separate 16x16 hit box over his 20x42 body; the body clinks), and
+  only while he stands there; 24 frames of grace after a hit. **Phase 2**: the transformation
+  (2 s, sfx `beast-roar`, no screen tint with reduce flashing), then the **beast** (48x48 art,
+  36x40 body, hurt anywhere; music `cv-beast`) rises and cycles walk → spit (three aimed
+  fireballs) → walk → spit → walk → crouch and **leap** at Simon → a landing stomp (a screen
+  shake, not with reduce flashing) with a **shock wave** running along the floor each way.
+- **Endings**: beating the beast passes (banner DRACULA IS DEFEATED! THE CURSE IS BROKEN., the
+  jingle, 5 s); losing every hit point, a pit or the clock fails; the menu's Give up quits
+  (`CastleMenuScene`, the shared MiniGameMenuScene with the dev assists). `done` is called once.
+
+Difficulty (`human-sim.test.ts`, `CastleBot`: it follows the route, lashes candles and whatever
+its prediction puts in the lash after the wind-up, keeps clear of Medusa heads until it can lash
+them, stands off while Dracula casts, lashes the level fireball, then steps in and jump-lashes his
+head on the way down; against the beast it throws daggers from a distance, flees its leaps and
+jumps its shock waves; `CV_SIM=30 pnpm vitest run simon/human-sim --silent=false` prints the
+report): a sharp run passes unhurt with ~250 s left. As a careful first-timer (sees things 15
+frames late, misjudges by up to 6 px and its jump-lash by up to 2 frames, pauses now and then,
+steps closer to a candle its lash fell short of, judges Dracula more closely after each hit or
+missed lash) it passes all 30 seeds at a 12, 15 and 18-frame reaction, losing 6-8 hit points a run
+(3-4 of them to Dracula) with a median of about 210 of the 300 seconds left; a clumsy player (21
+frames, 10 px, more pauses) passes 93%, losing 10.5 (7 to Dracula; the two misses are Dracula).
+The stage is gentle (one-bar creature hits, three roasts); the fight is the test.
+
+### Castlevania stairs (`src/game/entities/objects/stairs.ts`, any level)
+
+`stairs x y len=N dir=ur|ul [sheet=crypt]`: `x y` is the **bottom** step's tile (its foot stands
+on the floor of row y+1); `len` tiles of rise (two 8 px steps a tile); `ur` rises to the right
+(tiles (x+i, y-i)), `ul` to the left (tiles (x-i, y-i)). The top landing is the floor beside the
+top step (row y-len+1's top, from column x+len on, or up to column x-len), solid in the map. The
+steps are scenery (walked through until got on), drawn with the sheet's `stair-r` / `stair-l`
+frames (plain stone boxes until they exist). World builds every flight up front and never
+despawns them. **Getting on**: on the floor within 8 px of the foot, hold UP; within 8 px of the
+top, hold DOWN (`World.grabStairs`). **On them** (`Player.stairs`, `stairWalk`): UP or the way the
+flight rises climbs at 0.75 px/f along each axis, DOWN or the other way descends, nothing stands;
+no jumping or crouching; attacks work (the walk pauses while one swings); a hit never knocks the
+player off. Reaching the foot or the top steps off onto the floor (that end is locked for 8
+frames). Vines are never grabbed from stairs. The screen's edges (the camera's left edge, the
+co-op and auto-scroll right edge, the level's end) move a player along the flight instead of
+off it; the auto-scroll's pushing edge knocks a player off the stairs and pushes (or squashes)
+them like anyone else. Anything that moves players itself (a vine grab, pipes, transfers,
+teleports, a respawn, the castle maze's loops, the flagpole and the axe) takes them off the
+stairs first. Getting on calls the hero's `onGrabStairs` (Samus unrolls a morph ball; she never
+curls up on stairs), and on stairs Simon's UP + whip lashes (it throws the sub-weapon elsewhere).
+
 ## Hero training (optional practice rooms)
 
 Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:

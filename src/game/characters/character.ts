@@ -53,6 +53,8 @@ export interface CharacterBehaviour {
   canJump?(p: Player): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
+  /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */
+  onGrabStairs?(p: Player): void;
   /** Runs instead of `update` each frame on a vine (no attacks there): timers that keep running. */
   vineTick?(p: Player): void;
 }

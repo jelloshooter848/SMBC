@@ -33,6 +33,7 @@ import { Captive } from '../entities/objects/captive';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
+import { placeOnStairs, Stairs, type StairDir } from '../entities/objects/stairs';
 import { AnchorDrop } from '../entities/objects/anchor-drop';
 import {
   BEAM_GATHER_FRAMES,
@@ -386,6 +387,13 @@ export class World {
       .map((e) => Cheep.placeSwimmer(e, this.rng))
       .filter((e) => !(mode === 'climb' && (e.type === 'vine' || e.type === 'chain') && e.x === sx))
       .sort((a, b) => a.x - b.x);
+    // Stairs are scenery spanning several columns (a `ul` flight reaches left of its x): built
+    // with the world, never despawned.
+    for (const st of this.spawns.filter((e) => e.type === 'stairs')) {
+      const e = this.makeEntity(st);
+      if (e) this.entities.push(e);
+    }
+    this.spawns = this.spawns.filter((e) => e.type !== 'stairs');
     this.bowserFire = BowserFire.forLevel(level);
     const defs: [CharacterDef, string, number][] = [[state.character, state.powerState, state.hp]];
     if (state.character2) defs.push([state.character2, state.powerState2, state.hp2]);
@@ -423,6 +431,7 @@ export class World {
         def.behaviour.onGrabVine?.(p); // a carried morph ball unrolls before the height is used
         const h = p.body.h;
         // `bottom` leaves room for the body below the base: he starts there and climbs up.
+        p.stairs = null;
         p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + toPx(h), through: true };
         p.body.x = vine.centerX - (p.body.w >> 1);
         p.body.y = px(vine.basePx);
@@ -641,6 +650,11 @@ export class World {
         return new Spring(s.x, s.y, s.type === 'spring-green');
       case 'anchor-drop':
         return new AnchorDrop(s.x, s.y, s.props);
+      case 'stairs': {
+        const dir: StairDir = s.props?.dir === 'ul' ? 'ul' : 'ur';
+        const len = Math.max(1, Number(s.props?.len ?? 4) || 4);
+        return new Stairs(s.x, s.y, len, dir, typeof s.props?.sheet === 'string' ? s.props.sheet : 'crypt');
+      }
       case 'vine':
       case 'chain':
         return new Vine(s.x, s.y, Number(s.props?.len ?? 8), null, s.type === 'chain' ? 'chain' : 'vine');
@@ -892,6 +906,7 @@ export class World {
       else if (this.vineArrival && p.vine) input = AUTO_CLIMB_INPUT;
       p.inWater = p.body.y + (p.body.h >> 1) >= this.waterTop;
       this.grabVines(p, input);
+      this.grabStairs(p, input);
       const spring = this.springUnder(p);
       if (spring) {
         spring.ride(input.pressed('jump'));
@@ -910,17 +925,17 @@ export class World {
       // Springboards are solid: keep the player out of their box (landing on top starts a ride).
       for (const e of this.entities) if (e instanceof Spring && e.alive) e.block(p);
       if (p.body.x < this.camera.x) {
-        p.body.x = this.camera.x;
+        this.placeX(p, this.camera.x);
         if (p.body.vx < 0) p.body.vx = 0;
       }
       const rightEdge = Math.min(tileToSub(this.level.width), this.camera.x + px(SCREEN_W));
       // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right).
       if (p.body.x + p.body.w > rightEdge && (this.camera.auto || (this.coop && p !== this.rightmost()))) {
-        p.body.x = rightEdge - p.body.w;
+        this.placeX(p, rightEdge - p.body.w);
         if (this.camera.auto && p.body.vx > 0) p.body.vx = 0;
       }
       if (p.body.x + p.body.w > tileToSub(this.level.width))
-        p.body.x = tileToSub(this.level.width) - p.body.w;
+        this.placeX(p, tileToSub(this.level.width) - p.body.w);
     });
 
     for (const e of this.entities) {
@@ -987,6 +1002,9 @@ export class World {
     this.camera.scroll();
     for (const p of this.activePlayers()) {
       if (p.body.x >= this.camera.x || p.frozen || p.hidden) continue;
+      // Pushed by the screen's edge, a player on stairs is knocked off them and pushed like
+      // anyone else (squashed against a wall too).
+      p.stairs = null;
       const blocked = this.solidRows(p);
       p.body.x = this.camera.x;
       if (p.body.vx < 0) p.body.vx = 0;
@@ -1069,7 +1087,10 @@ export class World {
       const passed = z.checks.map((_, j) => this.loopChecks.has(`${i}:${j}`));
       if (z.checks.length && !(z.need === 'any' ? passed.some(Boolean) : passed.every(Boolean))) continue;
       const dx = tileToSub(z.to - z.x);
-      for (const p of this.players) p.body.x += dx;
+      for (const p of this.players) {
+        p.stairs = null;
+        p.body.x += dx;
+      }
       this.camera.x = Math.max(0, Math.min(this.camera.maxX, this.camera.x + dx));
       this.loopPrevX = cur + toPx(dx);
       this.loopChecks.clear();
@@ -1126,6 +1147,7 @@ export class World {
     this.leaving = true;
     for (const o of this.players) {
       o.frozen = true;
+      o.stairs = null;
       o.body.vx = 0;
       o.body.vy = 0;
     }
@@ -1148,7 +1170,7 @@ export class World {
       }
       return;
     }
-    if (p.vineLock > 0 || p.dead || p.frozen || p.sliding > 0) return;
+    if (p.vineLock > 0 || p.dead || p.frozen || p.sliding > 0 || p.stairs) return;
     // A vine just stepped off (Character.getOffVine leaves him beside its hit box) is not grabbed
     // again until he lands or moves out of reach.
     if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
@@ -1160,6 +1182,7 @@ export class World {
       const overlapY = b.y + px(8) <= v.y + v.h && b.y + b.h > v.y;
       if (!overlapX || !overlapY) continue;
       if (!b.onGround || input.held('up')) {
+        p.stairs = null;
         p.vine = { x: e.centerX, top: e.topPx, bottom: e.basePx };
         p.body.vx = 0;
         p.body.vy = 0;
@@ -1168,6 +1191,32 @@ export class World {
         p.def.behaviour.onGrabVine?.(p);
         return;
       }
+    }
+  }
+
+  /**
+   * Puts `p`'s body at `x` (subpixels): a player on stairs is moved along the flight instead, to
+   * where its body's x is `x` (within the flight), so it never floats off the steps.
+   */
+  private placeX(p: Player, x: number): void {
+    const ride = p.stairs;
+    if (!ride) {
+      p.body.x = x;
+      return;
+    }
+    const cx = x + (p.body.w >> 1);
+    ride.pos = Math.max(0, Math.min(ride.line.span, (cx - ride.line.footX) * ride.line.sx));
+    placeOnStairs(p, ride);
+  }
+
+  /** UP at the foot of a flight of stairs, or DOWN at its top, gets on (entities/objects/stairs.ts). */
+  private grabStairs(p: Player, input: InputFrame): void {
+    if (p.stairs || p.vine || p.dead || p.frozen || p.stun > 0 || p.sliding > 0 || p.inWater) return;
+    if (!input.held('up') && !input.held('down')) return;
+    for (const e of this.entities) {
+      if (!(e instanceof Stairs) || !e.alive) continue;
+      const ride = e.mount(p, input);
+      if (ride) return p.getOnStairs(ride);
     }
   }
 
@@ -1660,7 +1709,8 @@ export class World {
     if (p.invulnerable || this.assist.invulnerable) return;
     const result = p.def.behaviour.onHurt(p, this);
     if (result === 'dead') this.kill(p);
-    else if (result === 'hurt' && p.def.damage.kind === 'hp' && p.def.damage.knockback) {
+    // On stairs a hit never knocks the player off (Castlevania's stairs keep you on them).
+    else if (result === 'hurt' && p.def.damage.kind === 'hp' && p.def.damage.knockback && !p.stairs) {
       p.body.vx = fromDir * p.def.damage.knockback.vx;
       p.body.vy = -p.def.damage.knockback.vy;
       p.body.onGround = false;
@@ -1685,6 +1735,7 @@ export class World {
     if (p.dead || p.out) return;
     p.dead = true;
     p.frozen = true;
+    p.stairs = null;
     p.star = 0;
     p.activeMelee = null;
     this.deathTimers.set(p, 0);
@@ -1724,6 +1775,7 @@ export class World {
 
   /** Co-op: drop a dead player back in beside a living one. */
   private respawn(p: Player, beside: Player): void {
+    p.stairs = null;
     p.dead = false;
     p.frozen = false;
     p.hidden = false;
@@ -1776,6 +1828,7 @@ export class World {
   private enterPipe(p: Player, z: Zone & { kind: 'pipe' }, dir: PipeDir): void {
     for (const o of this.players) {
       o.frozen = true;
+      o.stairs = null;
       o.body.vx = 0;
       o.body.vy = 0;
       o.anim = 'idle';
@@ -1886,6 +1939,7 @@ export class World {
   private beamUp(p: Player, z: TeleportZone): void {
     for (const o of this.players) {
       o.frozen = true;
+      o.stairs = null;
       o.body.vx = 0;
       o.body.vy = 0;
       o.anim = 'idle';
@@ -1974,6 +2028,7 @@ export class World {
     this.destroyEnemiesAndProjectilesOnScreen();
     for (const o of this.players) {
       o.frozen = true;
+      o.stairs = null;
       o.body.vx = 0;
       o.body.vy = 0;
       if (o !== p) o.hidden = true;
@@ -2140,6 +2195,7 @@ export class World {
     axe.destroy();
     for (const o of this.players) {
       o.frozen = true;
+      o.stairs = null;
       o.body.vx = 0;
       o.body.vy = 0;
       o.anim = 'idle';
