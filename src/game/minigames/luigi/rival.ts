@@ -114,6 +114,8 @@ const MIRROR_PALETTES = { normal: 'luigi-mirror', fire: 'luigi-mirror', star: 'm
 /** px he keeps between himself and a pipe whose plant is up, and how far on a jump would take him. */
 const PLANT_MARGIN = 12;
 const PLANT_JUMP = 96;
+/** px past his front he looks for a pit's edge to jump from. */
+const PIT_LOOK = 4;
 
 /** Holding right, run and jump (no new press): carrying a jump through to its landing. */
 const HOLD_ON: InputFrame = {
@@ -198,11 +200,13 @@ export class RivalLuigi {
       this.waited++;
       p.update(p.body.vx > 0 ? HOLD_BACK : NO_INPUT, this.map, NULL_AUDIO);
     } else {
-      // Run into a wall (after waiting for a plant, short of his jump): hop up it.
+      // Run into a wall (after waiting for a plant, short of his jump): hop up it. At the edge of
+      // a pit with no route jump left to clear it (a plant wait threw him off it): jump it.
       if (p.body.onGround && p.body.vx === 0 && this.input.pauseLeft === 0 && ++this.blocked > 8) {
         this.blocked = 0;
         this.input.hop(20);
       } else if (p.body.vx !== 0) this.blocked = 0;
+      if (p.body.onGround && p.body.vx > 0 && this.pitAhead()) this.input.hop(20);
       this.input.step(p);
       p.update(this.input, this.map, NULL_AUDIO);
     }
@@ -232,8 +236,29 @@ export class RivalLuigi {
     const v = Math.max(0, b.vx) / 4096;
     const skid = this.player.profile.skidDecel / 4096;
     const jumping = (this.input.nextJumpAt ?? Infinity) <= toPx(b.x);
-    const reach = jumping ? PLANT_JUMP : (v * v) / (2 * skid) + PLANT_MARGIN;
+    // (Once stopped he keeps a little more room, so a skid back does not set him off again.)
+    const reach = jumping ? PLANT_JUMP : Math.max((v * v) / (2 * skid) + PLANT_MARGIN, 2 * PLANT_MARGIN);
     return this.plantUp(front, front + reach, toPx(b.y + b.h));
+  }
+
+  /**
+   * At an edge (no floor at his feet just past his front) with a pit there or a few columns on
+   * (no floor at all down a column), as off a ledge over the ground just short of a pit.
+   */
+  private pitAhead(): boolean {
+    const b = this.player.body;
+    const col = Math.floor((toPx(b.x + b.w) + PIT_LOOK) / 16);
+    const feet = Math.floor(toPx(b.y + b.h) / 16);
+    const floor = (c: number, from: number, to: number) => {
+      for (let row = from; row < to; row++) {
+        const k = this.map.collisionAt(c, row);
+        if (k === 'solid' || k === 'top') return true;
+      }
+      return false;
+    };
+    if (floor(col, feet, feet + 1)) return false;
+    for (let c = col; c < col + 4; c++) if (!floor(c, feet, this.map.height)) return true;
+    return false;
   }
 
   /** Down the pole after the win. */

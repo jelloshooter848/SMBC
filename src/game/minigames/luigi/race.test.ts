@@ -17,7 +17,7 @@ import { LUIGI } from '@game/characters/luigi';
 import type { MiniGameResult } from '../types';
 import { LUIGI_MINIGAME } from '.';
 import { CARD_FRAMES, GO_FRAME, plantUp, RaceMenuScene, type MirrorRaceScene } from './race';
-import { LUIGI_ROUTE, poleOf, raceCourse } from './course';
+import { LUIGI_ROUTE, poleOf, RACE_SPAWNS_LEFT_OUT, RACE_TILE_CHANGES, raceCourse } from './course';
 import { RivalLuigi, type Route } from './rival';
 import { defaultSettings } from '@engine/save/settings';
 import type { MenuItem } from '@game/scenes/menu';
@@ -26,7 +26,7 @@ import { Goomba } from '@game/entities/enemies/goomba';
 import { Enemy } from '@game/entities/enemies/enemy';
 import { Piranha } from '@game/entities/enemies/piranha';
 import { parseTextMap } from '@game/level/textmap';
-import { T } from '@game/level/tiles';
+import { DEFAULT_LEGEND, T } from '@game/level/tiles';
 import { levelSeed, World } from '@game/world/world';
 import { newGameState } from '@game/context';
 import { MARIO } from '@game/characters/mario';
@@ -45,8 +45,8 @@ beforeEach(() => {
   };
 });
 
-/** The first pit (px): the one past the ? blocks. */
-const PIT_X = 1152;
+/** The first pit (px): the three-wide one before the brick row. */
+const PIT_X = 848;
 
 /**
  * Plays as Mario: the race bot (bot.ts) once the race is on, if given one, while also pressing any
@@ -141,7 +141,7 @@ function setup(bot: RaceBot | null, opts: { keep?: boolean; stubAssets?: boolean
     step();
   };
   /** Steps until the race reports (or `max` frames). */
-  const play = (max = 2000) => {
+  const play = (max = 4000) => {
     for (let i = 0; i < max && results.length === 0; i++) step();
   };
   /** Once the race is on, puts Mario on the ground just short of the first pit and runs him in. */
@@ -185,21 +185,43 @@ describe('Mirror Race: the course and the rival', () => {
 
   it("Luigi's route reaches the pole on its own, the same way every time", () => {
     const t = rivalTime();
-    expect(t).toBeGreaterThan(1300);
-    expect(t).toBeLessThan(1420);
+    expect(t).toBeGreaterThan(2250);
+    expect(t).toBeLessThan(2330);
     expect(rivalTime()).toBe(t);
   });
 
-  it("is The Lost Levels' 1-1 (ll-1-1.map): its first 53 columns, then its last 76, tile for tile", () => {
+  it("is The Lost Levels' 1-1 (ll-1-1.map) tile for tile, but for the listed easings", () => {
     const race = raceCourse();
     const lost = ll11();
-    expect(race.width).toBe(53 + 76);
-    // Enemies drawn into the tiles are spawns, not tiles; compare the solid layout.
+    expect([race.width, race.height]).toEqual([lost.width, lost.height]);
+    const changed = new Map(RACE_TILE_CHANGES.map(([x, y, from, to]) => [`${x},${y}`, { from, to }]));
+    const glyph = (id: number | undefined) =>
+      Object.entries(DEFAULT_LEGEND).find(([, v]) => v === id)?.[0] ?? '.';
     for (let y = 0; y < race.height; y++)
       for (let x = 0; x < race.width; x++) {
-        const lx = x < 53 ? x : x + lost.width - race.width;
-        expect(race.tiles[y * race.width + x], `${x},${y}`).toBe(lost.tiles[y * lost.width + lx]);
+        const a = race.tiles[y * race.width + x];
+        const b = lost.tiles[y * lost.width + x];
+        const c = changed.get(`${x},${y}`);
+        if (!c) {
+          expect(a, `${x},${y}`).toBe(b);
+          continue;
+        }
+        // Enemy glyphs are spawns, not tiles: both read as air there; the bricks really go.
+        if (c.from === '=') expect([glyph(b), glyph(a)]).toEqual(['=', '.']);
       }
+    // Each listed enemy glyph change is a spawn moved or gone.
+    const at = (l: typeof race, x: number, y: number) => l.entities.some((e) => e.x === x && e.y === y);
+    for (const [x, y, from, to] of RACE_TILE_CHANGES) {
+      if (from !== '.' && from !== '=')
+        expect([at(lost, x, y), at(race, x, y)], `${x},${y}`).toEqual([true, false]);
+      if (to !== '.') expect(at(race, x, y), `${x},${y}`).toBe(true);
+    }
+    // The [entities] spawns: the level's, less the listed ones (and its halfway point, bonus pipe).
+    const line = (e: (typeof race.entities)[number]) => `${e.type} ${e.x} ${e.y}`;
+    const listed = (l: typeof race) =>
+      l.entities.filter((e) => !RACE_TILE_CHANGES.some(([x, y]) => e.x === x && e.y === y)).map(line);
+    expect(listed(race)).toEqual(listed(lost).filter((e) => !RACE_SPAWNS_LEFT_OUT.includes(e)));
+    expect(race.zones.map((z) => z.kind)).toEqual(['exit']);
   });
 
   it('has the 1-1 pieces: plants in its pipes, a Paratroopa and a Koopa, the poison mushroom, the staircase and the flag', () => {
@@ -238,13 +260,17 @@ describe('Mirror Race: the course and the rival', () => {
     expect(r.finished).toBe(true);
   });
 
-  it('Luigi hops up a wall he runs into short of a route jump (after waiting for a plant)', () => {
+  it('Luigi hops up a pipe he runs into, and jumps a pit off his route (after waiting for a plant)', () => {
     const level = raceCourse();
-    // No jump for the tall pipe: he runs into it, stands a moment, and hops up.
+    // No route jump for the tall pipe nor the first pit: he runs into the pipe, stands a moment
+    // and hops up it; at the pit's edge he jumps it.
     const route = { ...LUIGI_ROUTE, jumps: LUIGI_ROUTE.jumps.slice(1) };
     const r = new RivalLuigi(level, LUIGI, route, px(level.start.x * 16 - 16), poleOf(level));
-    for (let f = 0; f < 600; f++) r.update();
+    for (let f = 0; f < 500; f++) r.update();
     expect(r.x).toBeGreaterThan(660);
+    for (let f = 0; f < 400; f++) r.update();
+    expect(r.x).toBeGreaterThan(PIT_X + 48);
+    expect(toPx(r.player.body.y)).toBeLessThan(240);
     expect(rivalTime(route)).toBeLessThan(Infinity);
   });
 

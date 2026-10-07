@@ -257,8 +257,9 @@ export class MirrorRaceScene implements Scene {
 }
 
 /**
- * Whether a piranha plant of `world` is out of its pipe anywhere over px [x0, x1), with its pipe's
- * mouth no more than a jump (4 tiles) above `feet` (px).
+ * Whether a piranha plant of `world` is out of its pipe anywhere over px [x0, x1) (the stretch
+ * ahead of a racer whose front is at x0), with its pipe's mouth no more than a jump (4 tiles)
+ * above `feet` (px). A pipe the racer is already over (x0 inside it) does not count.
  */
 export function plantUp(world: World, x0: number, x1: number, feet: number): boolean {
   return world.entities.some((e) => {
@@ -266,6 +267,7 @@ export function plantUp(world: World, x0: number, x1: number, feet: number): boo
     if (toPx(e.body.y + e.body.h) < feet - 64) return false;
     // The plant's body sits 10 px into its 32 px pipe (piranha.ts).
     const left = toPx(e.body.x) - 10;
+    if (x0 > left && x0 <= left + 32) return false;
     return left < x1 && left + 32 > x0;
   });
 }

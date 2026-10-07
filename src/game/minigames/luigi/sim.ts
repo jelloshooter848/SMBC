@@ -66,6 +66,8 @@ export function raceRun(
     input.setHeld(racing ? bot.step(scene.world) : []);
     input.next();
     game.scenes.update([input]);
+    // Luigi races on as if Mario had not won (the scene would have him coast to a stop).
+    if (opts.rivalOn && scene.phase !== 'race') scene.rival.stopped = false;
     if (racing && scene.phase !== 'race') {
       x = toPx(scene.world.player.body.x);
       if (scene.phase === 'won') marioAt = scene.raceFrames;

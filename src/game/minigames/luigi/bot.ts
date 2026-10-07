@@ -27,9 +27,17 @@ export interface RaceBotOptions {
   /** Chance a frame on the ground starts a pause (it lets go of everything for 10-40 frames). */
   pause: number;
   seed: number;
+  /**
+   * What a player sees of the course at a glance: places to jump from (px of the body's left edge,
+   * standing with the feet in tile row `row`), such as up onto a brick bridge over a pit too wide
+   * to jump. Slower than `minVx` (px a frame) there, it backs up for a running start instead (to
+   * `back` px when given).
+   */
+  hints?: readonly { x0: number; x1: number; row: number; minVx?: number; back?: number }[];
 }
 
-/** A sharp player: sees everything at once, judges exactly, never pauses. */
+/** A sharp player: sees everything at once, judges exactly, never pauses. (Every preset knows
+ * the race's take-offs, RACE_HINTS.) */
 export const SHARP: RaceBotOptions = { reaction: 0, error: 0, pause: 0, seed: 1 };
 /** A careful first-timer (the human sim), as Jungle Assault's. */
 export const CAUTIOUS: RaceBotOptions = { reaction: 15, error: 6, pause: 0.004, seed: 1 };
@@ -64,6 +72,8 @@ export class RaceBot {
   private jumpHold = 0;
   private jumpWait = -1;
   private retreat = 0;
+  /** Backing up to here (px) for a run at a hinted take-off, or null. */
+  private backTo: number | null = null;
   private pauseLeft = 0;
   private stuckFrames = 0;
   private lastX = -1;
@@ -75,7 +85,7 @@ export class RaceBot {
   waited = 0;
 
   constructor(opts: Partial<RaceBotOptions> = {}) {
-    this.opts = { ...SHARP, ...opts };
+    this.opts = { ...SHARP, hints: RACE_HINTS, ...opts };
     this.rng = new Rng(this.opts.seed * 2654435761 + 7);
   }
 
@@ -132,8 +142,19 @@ export class RaceBot {
       this.pauseLeft--;
       return [];
     }
-    // A moment's pause (a person looking around), never with something coming at it.
-    const calm = this.history[0]?.every((e) => e.plant || !e.harms || Math.abs(e.x - x) > 120) ?? true;
+    // A moment's pause (a person looking around), never with something coming at it nor with an
+    // edge just ahead to slide off.
+    const ledge = (() => {
+      const feetRow = tileAt(b.y + b.h - 1);
+      const col = tileAt(b.x + b.w);
+      for (let c = col; c <= col + 3; c++) {
+        const k = world.map.collisionAt(c, feetRow + 1);
+        if (k !== 'solid' && k !== 'top') return true;
+      }
+      return false;
+    })();
+    const calm =
+      !ledge && (this.history[0]?.every((e) => e.plant || !e.harms || Math.abs(e.x - x) > 120) ?? true);
     if (b.onGround && calm && this.opts.pause && this.rng.chance(this.opts.pause)) {
       this.pauseLeft = 10 + this.rng.int(31);
       return [];
@@ -203,11 +224,15 @@ export class RaceBot {
       this.waited++;
       dir = v > 0.3 || front > limit + 2 ? -1 : 0;
       this.stuckFrames = 0;
-    } else if (this.retreat > 0 && mx + Math.min(0, v * Math.abs(v)) / 0.2 > back + 2) {
-      this.retreat--;
+    } else if (
+      (this.retreat > 0 || (this.backTo !== null && x > this.backTo)) &&
+      mx + Math.min(0, v * Math.abs(v)) / 0.2 > back + 2
+    ) {
+      this.retreat = Math.max(0, this.retreat - 1);
       dir = -1;
     } else {
       this.retreat = 0;
+      this.backTo = null;
       if (b.x === this.lastX && !noJump) this.stuckFrames++;
       else this.stuckFrames = 0;
       this.lastX = b.x;
@@ -219,8 +244,11 @@ export class RaceBot {
       const col = tileAt(b.x + b.w);
       const feetRow = tileAt(b.y + b.h - 1);
       const fast = Math.abs(b.vx) >= p.profile.maxWalk;
+      const hints = this.opts.hints?.filter((h) => h.row === feetRow) ?? [];
+      // A hinted take-off just ahead: hold on for it rather than jump early.
+      const soon = hints.some((h) => x < h.x0 && h.x0 - x < 48);
       for (let d = 1; d <= (fast ? 2 : 1); d++)
-        if (map.isSolid(col + d, feetRow) || map.isSolid(col + d, feetRow - 1)) wantJump = true;
+        if (!soon && (map.isSolid(col + d, feetRow) || map.isSolid(col + d, feetRow - 1))) wantJump = true;
       const groundAt = (c: number): boolean => {
         for (let r = feetRow + 1; r <= feetRow + 3; r++) {
           const k = map.collisionAt(c, r);
@@ -228,7 +256,14 @@ export class RaceBot {
         }
         return false;
       };
-      if (b.onGround && !(groundAt(col + 1) && (!fast || groundAt(col + 2)))) {
+      const hinted = hints.some((h) => x >= h.x0 && x <= h.x1);
+      const slow = hints.find((h) => x >= h.x0 && x <= h.x1 && h.minVx !== undefined && v < h.minVx);
+      if (slow && b.onGround) {
+        this.retreat = 60;
+        this.backTo = slow.back ?? null;
+        dir = -1;
+      } else if (hinted && b.onGround) wantJump = true;
+      else if (b.onGround && !soon && !(groundAt(col + 1) && (!fast || groundAt(col + 2)))) {
         // A pit with no floor: it needs speed, so back up for a running start if slow.
         // (A pit just past a short drop counts: it is jumped from the edge above.)
         const floorless = (c: number) => {
@@ -310,3 +345,15 @@ export class RaceBot {
     return out;
   }
 }
+
+/**
+ * The Mirror Race's take-offs a player picks out at a glance: the run-jump at the edge of the
+ * first pit that lands on the bricks beyond it, the jump from their far end up onto the brick
+ * bridge over the wide pit (the only way across it), and the hop from the right edge of the pipe
+ * top before the second bridge (onto the bridge, or across to the island pipe under it).
+ */
+export const RACE_HINTS: NonNullable<RaceBotOptions['hints']> = [
+  { x0: 822, x1: 838, row: 12, minVx: 2.2 },
+  { x0: 1070, x1: 1092, row: 8, minVx: 2.2 },
+  { x0: 1983, x1: 1995, row: 8 },
+];
