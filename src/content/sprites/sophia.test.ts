@@ -76,6 +76,11 @@ const SOPHIA_FRAMES: Record<string, Size> = {
   ...n('boss-b', 2, [64, 64]),
   ...n('boss-shot', 2, S8),
   'boss-shot-big': T16,
+  ...n('pluto-a', 2, [64, 64]),
+  ...n('pluto-b', 2, TANK),
+  'pluto-glob': T16,
+  ...n('pluto-ball', 2, T16),
+  'pluto-drop': S8,
   'cut-chest': [32, 24],
   'cut-hole': [48, 16],
   'cut-fred-jump': T16,
@@ -292,6 +297,62 @@ describe('sophia sheet', () => {
     expect((sophiaPalettes['plutonium-hot'] as string[])[23]).not.toBe(
       (sophiaPalettes.sophia as string[])[23],
     );
+  });
+
+  it('side view: the mass stands against the right wall facing left, opens on its core; the core beats', () => {
+    const glow = 'nop';
+    for (const f of ['pluto-a-0', 'pluto-a-1']) {
+      const b = bounds(rows(f));
+      // on its bottom row, its back to the wall, filling the frame
+      expect([b.y1, b.x1], f).toEqual([63, 63]);
+      expect(b.x0, f).toBeLessThanOrEqual(1);
+      expect(b.y0, f).toBeLessThanOrEqual(4);
+      // the bottom row is solid across: it sits on the floor
+      expect(rows(f)[63]?.replace(/[^.]/g, '').length, f).toBeLessThan(8);
+      // its glow is in the hot palette's slots (the warning shows on the shut frame too)
+      expect(count(rows(f), glow), f).toBeGreaterThan(60);
+    }
+    // open: the core shows in the throat, low on its left (where the ball rolls out)
+    const shut = rows('pluto-a-0');
+    const open = rows('pluto-a-1');
+    const inMaw = (f: readonly string[]) =>
+      count(
+        f.slice(30, 52).map((r) => r.slice(0, 32)),
+        glow,
+      );
+    expect(inMaw(open)).toBeGreaterThan(inMaw(shut) * 2);
+    expect(
+      centroid(
+        open.map((r) => r.slice(0, 32)),
+        'n',
+      )[0],
+    ).toBeLessThan(24);
+    // the core: centred, beating bigger, glowing
+    for (const f of ['pluto-b-0', 'pluto-b-1']) {
+      const [cx, cy] = centroid(rows(f), glow);
+      expect(Math.abs(cx - 16), f).toBeLessThan(1.5);
+      expect(Math.abs(cy - 16), f).toBeLessThan(1.5);
+    }
+    expect(count(rows('pluto-b-1'), glow)).toBeGreaterThan(count(rows('pluto-b-0'), glow));
+    // the shots are centred on their hit boxes: glob ~10 px, ball ~14 px, drop ~6 px
+    const span = (f: string) => {
+      const b = bounds(rows(f));
+      return [b.x1 - b.x0 + 1, b.y1 - b.y0 + 1, (b.x0 + b.x1 + 1) / 2, (b.y0 + b.y1 + 1) / 2];
+    };
+    for (const [f, lo, hi, mid] of [
+      ['pluto-glob', 9, 15, 8],
+      ['pluto-ball-0', 13, 16, 8],
+      ['pluto-ball-1', 13, 16, 8],
+      ['pluto-drop', 5, 8, 4],
+    ] as const) {
+      const [w, h, cx, cy] = span(f) as [number, number, number, number];
+      expect(Math.max(w, h), f).toBeGreaterThanOrEqual(lo);
+      expect(Math.max(w, h), f).toBeLessThanOrEqual(hi);
+      expect(Math.abs(cx - mid), f).toBeLessThanOrEqual(1.5);
+      expect(Math.abs(cy - mid), f).toBeLessThanOrEqual(1.5);
+    }
+    // the ball's crust turns between its two frames
+    expect(rows('pluto-ball-0')).not.toEqual(rows('pluto-ball-1'));
   });
 
   it('explodes: a flash, a growing fireball, a burst, then smoke', () => {

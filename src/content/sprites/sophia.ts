@@ -55,6 +55,14 @@ import { Canvas, LETTERS, draw, flipX, hash, recolour, rotate, turnCw, type Rows
  * - **The Plutonium Boss** (64x64, overhead, facing DOWN at the player): phase one
  *   `boss-a-0/1`, armoured shell, its vents shut / glowing open (it fires from the vents);
  *   phase two `boss-b-0/1`, the shell cracked away and its glowing core beating (small / big).
+ * - **The Plutonium Boss, side view** (fought in the tank, plutonium.ts): `pluto-a-0/1` (64x64,
+ *   faces LEFT, stands on row 63 with its back to the right wall) the mass, an armoured skull
+ *   and jaw at the floor before a heap of flesh: maw shut (a seam of glow) / open (the core in
+ *   the throat); `pluto-b-0/1` (32x32, centred) the freed core, a slit-eyed ball of plutonium
+ *   beating small / big; `pluto-glob` (16x16, centred, about 10 px) the lobbed glob;
+ *   `pluto-ball-0/1` (16x16, about 14 px) the rolling ball, its crust a quarter turned between
+ *   the two; `pluto-drop` (8x8, about 6 px) a drop of its rain. The glow is drawn in n/o/p, so
+ *   `plutonium-hot` turns its veins, boils, seam and core red; `sophia-hit` blanches it all.
  * - **The opening**: `cut-chest` (32x24) the glowing chest, `cut-hole` (48x16) the hole in the
  *   ground, `cut-fred-jump` (16x16) Fred diving head first, `cut-jason` (16x24) Jason in his
  *   jacket, running right.
@@ -854,6 +862,289 @@ const bossShotBig = (): string[] =>
     .outline()
     .rows();
 
+/* ---------- the Plutonium Boss, side view ---------- */
+
+/**
+ * Lumpy mutant flesh, back to front: each lump dark at its rim, lit along its upper left, so the
+ * lumps in front crease over the ones behind.
+ */
+function flesh(c: Canvas, lumps: readonly (readonly [number, number, number])[]): void {
+  for (const [x, y, r] of lumps) {
+    c.disc(x, y, r, 'l');
+    c.disc(x - 0.6, y - 0.6, r - 1.2, 'j');
+    const lit = (px: number, py: number) => Math.hypot(px + 0.5 - x - 1.4, py + 0.5 - y - 1.6) > r - 1.4;
+    c.map((ch, px, py) =>
+      ch === 'j' &&
+      Math.hypot(px + 0.5 - x + 0.6, py + 0.5 - y + 0.6) <= r - 1.2 &&
+      lit(px, py) &&
+      px + py < x + y
+        ? 'k'
+        : undefined,
+    );
+  }
+}
+
+/** A glowing boil: dark rim, mid ring, bright heart, a fleck of light. */
+function boil(c: Canvas, x: number, y: number, r: number): void {
+  c.disc(x, y, r, 'p');
+  c.disc(x, y, r - 1, 'o');
+  if (r >= 2.5) c.disc(x - 0.3, y - 0.3, r - 2, 'n');
+  c.set(Math.floor(x - r * 0.4), Math.floor(y - r * 0.4), 'a');
+}
+
+/** A vein of plutonium running through the flesh (only over flesh, so it stays inside). */
+function vein(c: Canvas, pts: readonly (readonly [number, number])[], t = 1): void {
+  const on = new Canvas(c.w, c.h);
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1] as readonly [number, number];
+    const [x1, y1] = pts[i] as readonly [number, number];
+    on.line(x0, y0, x1, y1, 'o', t);
+  }
+  c.map((ch, x, y) => (on.get(x, y) === 'o' && 'jkl'.includes(ch) ? (ch === 'k' ? 'n' : 'o') : undefined));
+}
+
+/** A small gold eye with a red rim and a slit pupil (it watches the tank: the pupil sits left). */
+function sideEye(c: Canvas, x: number, y: number): void {
+  c.ellipse(x, y, 2.6, 2, 't');
+  c.ellipse(x, y, 1.8, 1.2, 'm');
+  c.vline(Math.floor(x - 0.6), Math.floor(y - 1), Math.floor(y), '0');
+}
+
+/**
+ * The armoured head of the mass: a bony skull plate with a hooked snout and one glaring eye,
+ * over a heavy underbite jaw on the floor; fangs on both. The skull is lifted `open` px.
+ */
+function plutoHead(c: Canvas, open: number): void {
+  const y = (n: number) => n - open;
+  // The skull plate.
+  c.poly(
+    [
+      [1, y(47)],
+      [0.5, y(41)],
+      [3, y(35)],
+      [9, y(29)],
+      [18, y(25.5)],
+      [30, y(25)],
+      [39, y(28)],
+      [39, y(47)],
+    ],
+    '7',
+  );
+  c.poly(
+    [
+      [2, y(45.5)],
+      [2, y(41)],
+      [4, y(36)],
+      [9.5, y(30.5)],
+      [18.5, y(27)],
+      [30, y(26.5)],
+      [38, y(29.5)],
+      [38, y(44.5)],
+    ],
+    '6',
+  );
+  // Lit along its crown.
+  c.line(3, y(37), 9, y(31), '5').line(10, y(30), 18, y(27), '5').hline(19, 30, y(27), '5');
+  c.line(31, y(27), 37, y(29), '5');
+  // Seams between its plates, a row of knobs along the cheek.
+  c.line(28, y(27), 26, y(45), '7').line(34, y(29), 33, y(45), '7');
+  for (const x of [8, 15, 22]) c.set(x, y(43), '5').set(x + 1, y(44), '7');
+  // The eye in its socket, under a brow sloping down to the snout (a glare).
+  c.ellipse(16.5, y(36.5), 5, 3.6, '0');
+  c.ellipse(16.5, y(36.5), 3.8, 2.4, 'm');
+  c.hline(14, 19, y(36), 'a');
+  c.vline(14, y(35), y(38), '0').vline(15, y(35), y(38), '0');
+  c.line(23, y(31), 10, y(33.5), '0');
+  c.line(23, y(30), 11, y(32.5), '5');
+  // The jaw: an underbite slab with a jutting chin, resting on the floor.
+  c.poly(
+    [
+      [4, 49],
+      [39, 49],
+      [39, 64],
+      [7, 64],
+      [3, 57],
+    ],
+    '7',
+  );
+  c.poly(
+    [
+      [5.5, 50],
+      [38, 50],
+      [38, 62],
+      [8, 62],
+      [5, 57],
+    ],
+    '6',
+  );
+  c.hline(6, 37, 50, '5');
+  c.line(26, 51, 27, 62, '7').line(33, 51, 33, 62, '7');
+  for (const x of [11, 18]) c.set(x, 59, '5').set(x + 1, 60, '7');
+  // Fangs: down from the skull, up from the jaw, interlocking when shut.
+  const fang = (x: number, tip: number, base: number) => {
+    const dir = Math.sign(tip - base);
+    for (let k = 0; k <= Math.abs(tip - base); k++) {
+      const yy = base + k * dir;
+      const wide = k < Math.abs(tip - base) - 1;
+      c.set(x, yy, '4');
+      if (wide) c.set(x + 1, yy, '5');
+    }
+  };
+  for (const x of [3, 10, 19, 29]) fang(x, y(51), y(47));
+  for (const x of [7, 15, 24, 33]) fang(x, 45, 49);
+}
+
+/**
+ * Phase one, side view (64x64, faces LEFT, stands on row 63, its back to the right wall): a
+ * hulking heap of mutant flesh studded with glowing boils and small eyes, veined with glow; its
+ * head an armoured skull and jaw at the floor. Shut, the plates clamp over a seam of glow (shots
+ * clang off); open, the skull heaves up and the core shows in the throat. The glob is lobbed from
+ * the big boil on its neck (top left); the ball rolls out of the maw along the floor.
+ */
+function plutoMass(open: boolean): string[] {
+  const c = new Canvas(64, 64);
+  // The heap, hunched up against the wall, back to front.
+  c.rect(44, 14, 20, 50, 'l').rect(30, 58, 20, 6, 'l');
+  flesh(c, [
+    [55, 20, 12],
+    [44, 15, 10],
+    [57, 44, 13],
+    [22, 19, 10],
+    [16, 14, 6],
+    [38, 30, 13],
+    [48, 52, 12],
+    [34, 54, 10],
+  ]);
+  vein(
+    c,
+    [
+      [30, 30],
+      [40, 26],
+      [46, 30],
+      [56, 26],
+      [63, 30],
+    ],
+    2,
+  );
+  vein(
+    c,
+    [
+      [44, 34],
+      [50, 42],
+      [46, 52],
+      [50, 62],
+    ],
+    2,
+  );
+  vein(c, [
+    [52, 38],
+    [58, 46],
+    [63, 44],
+  ]);
+  vein(c, [
+    [36, 22],
+    [42, 14],
+    [50, 10],
+  ]);
+  // Boils; the big one on the neck lobs the globs.
+  boil(c, 14, 9, 5);
+  boil(c, 50, 8, 3);
+  boil(c, 60, 20, 2.5);
+  boil(c, 57, 54, 3.5);
+  boil(c, 42, 59, 2.5);
+  // Small eyes scattered over the heap, all on the tank.
+  sideEye(c, 46, 22);
+  sideEye(c, 44, 40);
+  // The throat behind the head: dark flesh, and the core when it opens.
+  if (open) {
+    c.rect(2, 33, 37, 17, 'u');
+    c.ellipse(20, 41.5, 17, 7.5, '0');
+    c.disc(18, 41, 7.5, 'p');
+    c.disc(18, 41, 6, 'o');
+    c.disc(17.5, 40.5, 4, 'n');
+    c.ellipse(15.5, 38.5, 1.6, 1.2, 'a');
+    c.set(15, 38, '4');
+  } else {
+    // The seam between the plates leaks glow.
+    c.rect(2, 47, 37, 2, 'o').hline(2, 38, 47, 'n');
+  }
+  plutoHead(c, open ? 12 : 0);
+  // Flesh bulging round the back of the head plates.
+  flesh(c, [
+    [42, 36, 5],
+    [42, 48, 5],
+  ]);
+  return c.outline().rows();
+}
+
+/**
+ * Phase two (32x32, centred): the freed core, a ball of plutonium with a slit eye, ringed by
+ * stubs of the flesh it tore out of. `big` is the beat's swell.
+ */
+function plutoCore(big: boolean): string[] {
+  const c = new Canvas(32, 32);
+  const r = big ? 12.5 : 10.5;
+  // Torn stubs of flesh round it, each with a little hook, longer on the swell.
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 7) * Math.PI * 2 + 0.3;
+    const reach = r + (big ? 4 : 3) - (k % 2);
+    const hook = a + (k % 2 ? 0.18 : -0.18);
+    const [mx, my] = [16 + Math.cos(a) * (reach - 1.5), 16 + Math.sin(a) * (reach - 1.5)];
+    c.line(16 + Math.cos(a) * (r - 3), 16 + Math.sin(a) * (r - 3), mx, my, 'j', 2);
+    c.line(mx, my, 16 + Math.cos(hook) * reach, 16 + Math.sin(hook) * reach, 'k');
+  }
+  c.disc(16, 16, r, 'p');
+  c.disc(16, 16, r - 1.5, 'o');
+  c.disc(15.5, 15.5, r - 4, 'n');
+  // Its eye: gold, a slit pupil turned to the left, a glint.
+  c.ellipse(14, 15.5, 5.6, 4.4, '0');
+  c.ellipse(14, 15.5, 4.6, 3.4, 'm');
+  c.ellipse(14.5, 14.5, 3.4, 1.4, 'a');
+  c.vline(11, 13, 18, '0').vline(12, 12, 19, '0');
+  c.set(15, 13, '4').set(16, 13, '4');
+  return c.outline().rows();
+}
+
+/** The lobbed glob (16x16, centred, about 10 px): a gout of glowing sludge with a tail. */
+function plutoGlob(): string[] {
+  const c = new Canvas(16, 16);
+  c.disc(8, 9, 5, 'p');
+  c.disc(10.5, 4.5, 2.2, 'p');
+  c.disc(12.5, 2.5, 1.2, 'p');
+  c.disc(7.6, 8.6, 3.8, 'o');
+  c.disc(10.4, 4.6, 1.2, 'o');
+  c.disc(7, 8, 2.4, 'n');
+  c.set(6, 7, 'a').set(5, 8, 'a');
+  return c.outline().rows();
+}
+
+/** The rolling ball (16x16, about 14 px): glowing, with a dark crust in four patches that turn. */
+function plutoBall(k: 0 | 1): string[] {
+  const c = new Canvas(16, 16);
+  c.disc(8, 8, 6.8, 'p');
+  c.disc(8, 8, 5.6, 'o');
+  c.disc(7.4, 7.4, 3.4, 'n');
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 2 + (k ? Math.PI / 4 : 0) + 0.2;
+    c.disc(8 + Math.cos(a) * 4.6, 8 + Math.sin(a) * 4.6, 1.7, 'l');
+    c.set(Math.floor(8 + Math.cos(a) * 4.6 - 0.6), Math.floor(8 + Math.sin(a) * 4.6 - 0.6), 'j');
+  }
+  c.set(5, 5, 'a').set(6, 5, 'a').set(5, 6, 'a');
+  return c.outline().rows();
+}
+
+/** A drop of the rain (8x8, about 6 px): a falling bead, its tail up. */
+const plutoDrop = [
+  '...00...', //
+  '...0n0..',
+  '..0nn0..',
+  '.0anoo0.',
+  '.0nooo0.',
+  '.0oopp0.',
+  '..0pp0..',
+  '...00...',
+];
+
 /* ---------- the opening ---------- */
 
 function cutChest(): string[] {
@@ -1024,6 +1315,15 @@ export const sophiaDef: SpriteDef = {
     'boss-shot-0': bossShot(0),
     'boss-shot-1': bossShot(1),
     'boss-shot-big': bossShotBig(),
+    // The Plutonium Boss, side view (fought in the tank).
+    'pluto-a-0': plutoMass(false),
+    'pluto-a-1': plutoMass(true),
+    'pluto-b-0': plutoCore(false),
+    'pluto-b-1': plutoCore(true),
+    'pluto-glob': plutoGlob(),
+    'pluto-ball-0': plutoBall(0),
+    'pluto-ball-1': plutoBall(1),
+    'pluto-drop': plutoDrop,
     // The opening.
     'cut-chest': cutChest(),
     'cut-hole': cutHole(),

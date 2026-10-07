@@ -439,7 +439,9 @@ Reusable for later top-down mini games; it knows no particular game.
   entity (`world.blast` hurts monsters and the hero in a radius and opens cracked walls).
   Cracked walls (`C`) are a tile kind: inside a room a wall cell, on the border a doorway (door
   kind `cracked`, opened on both sides by a blast); `wall-cracked` / `wall-hole` frames.
-  `world.grant(what)` gives anything; `noDamage` (a world option) keeps the hero's hearts.
+  `world.grant(what)` gives anything; `noDamage` (a world option) keeps the hero's hearts. A
+  blast with no self damage (0) leaves the hero alone (no knock, no blink). The `hero` world
+  option builds a game's own `TdHero` subclass (Jason in Underworld).
 - `render.ts`, `hud.ts`, `frames.ts`: tiles drawn for the north wall are flipped for the south
   and rotated for the sides (`withSideFrames` derives `-side` and the doorway halves `-l`/`-r`
   when the sheet is registered); the Zelda-style HUD (the level over the map, keys and ammo,
@@ -938,6 +940,116 @@ the wall it shoots the core while dodging, in the lair it lies flat for larvae;
 sharp run passes 100% (~93 s); a careful first-timer (15-frame reactions, 6 px misjudging, pauses)
 passes 100% (~101 s; 100% at 12 frames, 87% at 18), a clumsy one (21 frames, 10 px, more pauses)
 40%.
+
+## Sophia's mini game: Underworld (`src/game/minigames/sophia/`)
+
+Bowser's spell reached Sophia III through the Underworld's radiation; the round is Blaster
+Master in brief, both of its modes (owner rule: as true to the NES game as possible; all art and
+music original, S3's `sophia` sheet, `underworld` and `bm-dungeon` themes and `bm-*` songs;
+`art.ts`: a missing sheet, frame, palette or sound draws a box or plays a stock sound, the
+dungeon falls back to the Shadow Keep's tiles; nothing throws). Five parts: the opening, the
+tank's cavern, Jason's dungeon and its guardian, the run back to the tank, and the Plutonium Boss
+fought in the tank (owner decision: as in Blaster Master, side view). Three lives across the
+round (Blaster Master's), the REST shown; one GAME OVER fails the round.
+
+- **The opening** (`cutscene.ts`, music `bm-cutscene`): letterboxed, a night yard: Fred, Jason's
+  pet frog, hops in, touches the glowing chest, swells up (`fred-big`) and leaps down the hole;
+  Jason runs after him and jumps in. Lines under the picture, ending on the radiation carrying
+  Bowser's spell. JUMP or SHOOT skips (SKIP with the JUMP key, top right); the glow pulses,
+  steady with reduce flashing.
+- **The tank** (S1's real `SOPHIA` def) plays the two side-view parts, each in a World of its own
+  with a fresh GameState (the campaign is never touched). Its kit is chosen so the lessons hold:
+  **Hyper** (the Mushroom: the hover, the stronger cannon, one hit to spare before Normal) with 8
+  homing missiles, never Crusher (the Flower's wall climb). Each part and each new life starts
+  with it. The round leaves the tank's parts out while no `sophia` CharacterDef is registered
+  (`tankHero`; tests use a stand-in hero).
+- **1. The tank's cavern** (`area.ts`, `area.map`, `cavern.ts`, music `bm-area`): five screens: a
+  crawler, a step and a wall of bricks under a low roof (the cannon breaks it), ledges with flyers,
+  the open cavern (a hopper, a crawler, a flyer), then the gateway's shaft: a ladder (a vine in the
+  `underworld` look, which only Jason climbs) up a shaft one tile wide to a roofed ledge where the
+  `gateway` stands; the tank can't go through a gateway (Blaster Master's rule). Nearing the shaft
+  in the tank shows, once, GATEWAYS ARE FOR JASON. / EXIT: JASON HOPS OUT (announced). Jason on
+  foot walking into the doorway (12×20 at the bottom of the 32×32 decor) goes in: the cavern
+  fades, then the dungeon. Mutants (side view, face left): **crawlers** creep along the floor and
+  turn at ledges (2 hits), **hoppers** crouch, then leap at the player within 96 px (2 hits),
+  **flyers** bob, then swoop at the player within 112 px and climb back (1 hit); any attack hurts
+  them, nothing stomps them, World's contact rules hurt the player. A life lost starts again at the
+  start, or at column 48 once passed. Row 1 is the cavern's roof all along (row 0 is under the
+  HUD), so the tank can't jump and hover over a wall behind the HUD (tested).
+- **The tank's bar** (the side-view parts, Blaster Master's POW and HOV): POW, the tank's power
+  (Normal, Hyper, Crusher in three cells and by name; Jason on foot shares it), HOV, the hover
+  gauge (S1's `meter`; empty without the hover or while Jason is out), the missile in hand and its
+  count (S1's `tools`), and REST.
+- **2. Jason's overhead dungeon** (`dungeon.ts`, `jason.ts`, `mutants.ts`, music `bm-dungeon`) on
+  the top-down kit: eight rooms on a 4×3 map, walked from the gateway up (the gateway room with a
+  G capsule, the hall's blobs and eyes, the turrets round a pool, the crossing whose statues point
+  at a cracked wall, the cache behind it (two G, a P), the antechamber's P, the guardian's chamber,
+  and the way out). Every door is open (no keys, as in the original) but the guardian's shutters.
+  **Jason** walks eight ways at 1.25 px a frame (sliding round corners into doorways), faces the
+  way last pressed and fires along it (SHOOT; tap, or hold for auto fire). **GUN**: 8 levels,
+  shown as Blaster Master's upright meter: 1 a short pellet, 2 longer, 3 a double shot, 4 full
+  range, 5-6 the wave beam, 7 two waves crossing, 8 through walls; every hit he takes drops it a
+  level (never below 1), G capsules raise it. **POW**: 8 bars of health; P capsules give 3 back.
+  **Grenades** (SPECIAL; endless, as in the original; one in the air at a time) skip along his
+  facing and blast mutants and cracked walls, never him. Mutants: **blobs** creep at him in bursts
+  (2 hits), **eyes** loop at their post and glare (stand still) for 24 frames before spitting an
+  aimed orb (3 hits), **turrets** turn a quarter every 48 frames and fire along the barrel when it
+  comes round to him, after a 20-frame aim (4 hits). Each may leave a capsule (seeded; dropped ones
+  blink out after 7 s, dimmed instead with reduce flashing). A life lost in the dungeon starts again
+  at the doorway he came in by, with full POW. The HUD: GUN and POW meters, UNDERWORLD over the map
+  of rooms seen, REST and the grenade.
+- **The guardian** (`guardian.ts`, music `bm-boss`): an original area guardian in the style of the
+  original's overhead dungeon bosses, in S3's `boss-a` / `boss-b` frames (64×64, facing down);
+  asleep until Jason steps past its door (the shutters close behind him), then on its own fight
+  clock. **The shell** (24 hit points) drifts along the top; shut, shots clang off while its vents
+  drip two orbs straight down (frames 40 and 90 of 246); it runs hot (`plutonium-hot`, 30 frames:
+  the warning), opens with a ring of 8 orbs and can be hurt for 96 frames, spitting one big aimed
+  orb halfway. **The core** (20 hit points): the shell cracks (90 frames of booms, every orb gone,
+  nothing hurts), then the beating core bounces round the room on the diagonals at 0.75 px a frame
+  (1 below half), stopping every 200 frames to run hot for 30 and fan 5 orbs at Jason. A hit
+  flashes it white (`sophia-hit`; not with reduce flashing). Its fall (THE GUARDIAN FALLS!,
+  announced) opens the shutters; the corridor east leads up to the way out.
+- **3. Back to the tank**: Jason runs back to Sophia (JASON RUNS BACK / TO SOPHIA..., the tank
+  with its hatch open; 2 s), then the boss's chamber.
+- **4. The Plutonium Boss** (`plutonium.ts`, `boss.map`, music `bm-boss`; owner decision: side
+  view, in the tank, as in Blaster Master; an original design): one locked screen, open overhead
+  (the raised cannon reaches the core anywhere). It wakes a moment after the tank arrives
+  (PLUTONIUM BOSS, announced), then on its own fight clock. **The mass** (`pluto-a-0/1`, 64×64 against the right wall, 30 hit
+  points): shut for 120 frames (shots do nothing), lobbing two globs that come down where the
+  tank stood (70 frames in the air); it runs hot for 30, opens its maw and rolls a
+  ball of plutonium along the floor (the tank jumps it driving into it: a standing jump can't hang
+  over it long enough), and can be hurt for 90 frames (no globs then: the ball is enough; a third
+  lob over the ball took the cautious player under 85%). **The core**
+  (`pluto-b-0/1`, 32×32, 24 hit points): the mass bursts (90 frames of booms, every shot gone,
+  nothing hurts) and the core loops a slow figure of eight over the upper half of the chamber,
+  always clear of the ceiling (aim up, hover, or send homing missiles); every 160 frames it holds still and runs hot for 30,
+  then rains three drops. Below half it loops faster. A hit flashes it white. Until its frames
+  exist it is drawn as boxes, its core shut grey or open green in the maw. A life lost here starts
+  the chamber again, the boss whole, the tank with the round's kit.
+- **Endings**: the Plutonium Boss falls: THE PLUTONIUM BOSS FALLS! / THE SPELL ON SOPHIA BREAKS!
+  (the first line only in a round for fun), the jingle, then `pass`; out of lives: GAME OVER, then
+  `fail`; the menu (`UnderworldMenuScene`, the shared MiniGameMenuScene with the dev assists: No
+  damage keeps the tank's power, POW and the GUN level; Infinite lives) gives Give up = `quit`.
+  `done` is called once.
+- **Touch**: SKIP and MENU in the opening; the tank's own buttons (S1: SHOOT, HOMING, EXIT) and
+  MENU in its parts; SHOOT, GRENADE and MENU in the dungeon; nothing once the round is decided.
+
+Difficulty (`human-sim.test.ts`): Jason's dungeon is played by `HumanJason` over `JasonBot` (it
+walks an 8-px grid by breadth-first search, steps in line with a mutant (in range, a clear line of
+fire, not too close; the guardian's shell only from below), faces it and taps SHOOT, leads the
+bouncing core, steps out of the way of orbs, takes G capsules (P when hurt), grenades the cracked
+wall and visits the cache); the tank by `TankBot` (`tankbot.ts`: it drives right firing the
+cannon, stops to shoot a mutant ahead on its level, jumps what stops it, hops Jason out at the
+shaft and climbs to the gateway; against the Plutonium Boss it faces the mass from the left and
+fires while it is open, jumps the ball driving into it, drives to the nearest spot clear of where
+globs and drops come down, and under the core raises the cannon and sends homing missiles). The
+human sees mutants and shots `reaction` frames late but judges their paths from there, misjudges
+by a few pixels, taps at a thumb's pace and pauses now and then;
+`SOPHIA_SIM=30 pnpm vitest run sophia/human-sim --silent=false` prints the report.
+Over 30 seeds, the whole round (the cavern to the Plutonium Boss): sharp 100% (~145 s), a careful
+first-timer (15-frame reactions, a few px misjudged, pauses) 97% (~151 s), at 12 or 18 frames 97%,
+a clumsy one (21 frames, 10 px, more pauses) 37%. The dungeon and guardian alone: sharp, careful
+100%, at 18 frames 97%, clumsy 60%.
 
 ## Hero training (optional practice rooms)
 
