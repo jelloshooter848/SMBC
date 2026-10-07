@@ -15,7 +15,8 @@ import {
   MemoryScene,
   nextBonusKind,
   openBonusGame,
-  openNextBonus,
+  shownItems,
+  awardPrize,
   ToadHouseScene,
   useInventoryItem,
   awardHammerPrize,
@@ -28,6 +29,9 @@ import { RESULT_DELAY } from '@game/bonus/slots';
 import { MISS_FRAMES } from '@game/bonus/memory';
 import { SLOT_CELL, SLOT_STRIPS, type CardFace } from '@game/bonus/rules';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
+import { CHARACTERS } from '@game/characters/registry';
+import { carriedKit } from '@game/entities/player';
+import { giveDevItems } from '@game/bonus/items';
 import type { SaveFile } from '@game/save/save-files';
 
 // The SMB3 bonus games and the item inventory (docs/BONUS.md).
@@ -91,7 +95,7 @@ describe('item inventory on the save file', () => {
     expect(m.inventoryUnlocked).toBe(false);
     expect(m.bonusNext).toBe(0);
     expect(m.devInventory).toBe(false);
-    expect(m.starNext).toBe(false);
+    expect(m.itemsNext).toEqual([]);
   });
 
   it('keeps known items only, at most 12, and the flags as stored', () => {
@@ -102,18 +106,13 @@ describe('item inventory on the save file', () => {
       bonusOpen: true,
       bonusNext: 2,
       devInventory: true,
-      starNext: true,
+      itemsNext: ['star', 'leaf', 'mushroom', 'star'],
     };
     const m = migrateSave(JSON.parse(JSON.stringify(raw)), 1) as SaveFile;
     expect(m.inventory).toHaveLength(INVENTORY_MAX);
     expect(m.inventory?.slice(0, 3)).toEqual(['mushroom', 'star', '1up']);
-    expect([m.inventoryUnlocked, m.bonusOpen, m.bonusNext, m.devInventory, m.starNext]).toEqual([
-      true,
-      true,
-      2,
-      true,
-      true,
-    ]);
+    expect([m.inventoryUnlocked, m.bonusOpen, m.bonusNext, m.devInventory]).toEqual([true, true, 2, true]);
+    expect(m.itemsNext).toEqual(['mushroom', 'star']); // known kinds, each once, in giving order
   });
 
   it('opens with the file (Game.bonus) and is saved back by autosave', () => {
@@ -164,33 +163,68 @@ describe('the map ITEMS panel', () => {
   });
 });
 
+/** Straight into 1-1 (as from the map after the pick), one frame in. */
+function startLevel(h: H): LevelScene {
+  h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+  h.step();
+  const level = h.top() as LevelScene;
+  expect(level).toBeInstanceOf(LevelScene);
+  return level;
+}
+
 describe('using items (Mario, a power-up hero)', () => {
-  it('mushroom: small Mario grows, the item is used up and the file saved', () => {
+  it('mushroom: held for the next level, where small Mario grows; used up and saved', () => {
     const { h } = onMap({ inventory: ['mushroom', 'flower'], inventoryUnlocked: true });
-    expect(h.game.state.powerState).toBe('small');
     const note = useFromPanel(h, 0);
     expect(note?.ok).toBe(true);
-    expect(h.game.state.powerState).toBe('big');
-    expect(h.game.bonus.inventory).toEqual(['flower']);
-    expect(loadSave(1)?.powerState).toBe('big');
-    expect(loadSave(1)?.inventory).toEqual(['flower']);
+    expect(note?.lines.join(' ')).toMatch(/READY FOR THE START OF THE NEXT LEVEL/);
     expect(h.top()).toBeInstanceOf(WorldMapScene); // the panel closed after the use
+    expect(h.game.state.powerState).toBe('small'); // not yet
+    expect(h.game.bonus.inventory).toEqual(['flower']);
+    expect(loadSave(1)?.itemsNext).toEqual(['mushroom']);
+    expect(loadSave(1)?.inventory).toEqual(['flower']);
+    const score = h.game.state.score;
+    const level = startLevel(h);
+    expect(level.world.player.powerState).toBe('big');
+    expect(h.game.state.powerState).toBe('big');
+    expect(h.game.state.score).toBe(score);
+    expect(h.game.bonus.itemsNext).toEqual([]);
+    expect(loadSave(1)?.powerState).toBe('big');
+    expect(loadSave(1)?.itemsNext).toEqual([]);
   });
 
-  it('fire flower gives fire power; a mushroom on fire Mario is refused and kept', () => {
-    const { h } = onMap({ inventory: ['flower', 'mushroom'], inventoryUnlocked: true, powerState: 'big' });
+  it('mushroom and flower together: small Mario gets fire power at the start', () => {
+    const { h } = onMap({ inventory: ['flower', 'mushroom'], inventoryUnlocked: true });
     useFromPanel(h, 0);
-    expect(h.game.state.powerState).toBe('fire');
-    const score = h.game.state.score;
+    useFromPanel(h, 0);
+    expect(h.game.bonus.itemsNext).toEqual(['mushroom', 'flower']);
+    expect(startLevel(h).world.player.powerState).toBe('fire');
+  });
+
+  it('one of each kind can wait: a second mushroom is refused and kept', () => {
+    const { h } = onMap({ inventory: ['mushroom', 'mushroom'], inventoryUnlocked: true });
+    useFromPanel(h, 0);
     const inv = openItems(h);
     h.tap('jump');
     expect(inv.note?.ok).toBe(false);
+    expect(inv.note?.lines.join(' ')).toMatch(/ALREADY WAITING/);
     expect(h.game.bonus.inventory).toEqual(['mushroom']);
-    expect(h.game.state.powerState).toBe('fire');
-    expect(h.game.state.score).toBe(score);
   });
 
-  it('1-up adds a life', () => {
+  it('a mushroom that would do nothing (fire Mario) goes back into the inventory at the start', () => {
+    const { h } = onMap({ inventory: ['mushroom'], inventoryUnlocked: true, powerState: 'fire' });
+    useFromPanel(h, 0);
+    expect(h.game.bonus.inventory).toEqual([]);
+    startLevel(h);
+    expect(h.game.state.powerState).toBe('fire');
+    expect(h.game.bonus.inventory).toEqual(['mushroom']);
+    expect(loadSave(1)?.inventory).toEqual(['mushroom']);
+    expect(h.said.some((t) => /Mario is at full power: the mushroom went back to your items/.test(t))).toBe(
+      true,
+    );
+  });
+
+  it('1-up adds a life at once', () => {
     const { h } = onMap({ inventory: ['1up'], inventoryUnlocked: true });
     const lives = h.game.state.lives;
     useFromPanel(h, 0);
@@ -202,29 +236,50 @@ describe('using items (Mario, a power-up hero)', () => {
   it('star: waits for the next level, which starts with star power; a second is refused meanwhile', () => {
     const { h } = onMap({ inventory: ['star', 'star'], inventoryUnlocked: true });
     useFromPanel(h, 0);
-    expect(h.game.bonus.starNext).toBe(true);
-    expect(loadSave(1)?.starNext).toBe(true);
+    expect(h.game.bonus.itemsNext).toEqual(['star']);
     const inv = openItems(h);
     h.tap('jump');
     expect(inv.note?.ok).toBe(false);
     expect(h.game.bonus.inventory).toEqual(['star']);
     h.idle(12);
     h.tap('jump');
-    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
-    h.step();
-    const level = h.top() as LevelScene;
-    expect(level).toBeInstanceOf(LevelScene);
+    const level = startLevel(h);
     expect(level.world.player.star).toBeGreaterThan(0);
-    expect(h.game.bonus.starNext).toBe(false);
-    expect(loadSave(1)?.starNext).toBe(false);
+    expect(h.game.bonus.itemsNext).toEqual([]);
+    expect(loadSave(1)?.itemsNext).toEqual([]);
     expect(h.audio.playMusic).toHaveBeenLastCalledWith('star');
   });
 
-  it('no star waiting: a level starts without star power', () => {
+  it('nothing waiting: a level starts as it was', () => {
     const { h } = onMap({ inventoryUnlocked: true });
-    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
-    h.step();
-    expect((h.top() as LevelScene).world.player.star).toBe(0);
+    const p = startLevel(h).world.player;
+    expect(p.star).toBe(0);
+    expect(p.powerState).toBe('small');
+  });
+
+  it('a mushroom used as Mario goes to Link when Link is picked for the level', () => {
+    const { h } = onMap({
+      inventory: ['mushroom'],
+      inventoryUnlocked: true,
+      freed: ['mario', 'link'],
+      tutorials: ['link'], // no training question on the way
+    });
+    useFromPanel(h, 0);
+    h.game.enterLevelFromMap('1-1');
+    h.idle(12);
+    // Character select: step right until Link is said, then pick him.
+    for (let i = 0; i < 12; i++) {
+      h.tap('right');
+      if (h.said.at(-1)?.startsWith('Link')) break;
+    }
+    h.tap('jump');
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const p = (h.top() as LevelScene).world.player;
+    expect(p.def).toBe(LINK);
+    expect(p.scratch.maxHp).toBe(8);
+    expect(h.game.state.kit.maxHp).toBe(8);
+    expect(h.game.bonus.itemsNext).toEqual([]);
+    expect(loadSave(1)?.kit.maxHp).toBe(8);
   });
 });
 
@@ -233,6 +288,7 @@ describe('using items (Link, a hit-point hero)', () => {
     const { h } = onMap({ inventory: ['mushroom'], inventoryUnlocked: true, hp: 3 }, false, 'link');
     expect(h.game.state.character).toBe(LINK);
     useFromPanel(h, 0);
+    startLevel(h);
     expect(h.game.state.kit.maxHp).toBe(8);
     expect(h.game.state.kit.tunic).toBe(1);
     expect(h.game.state.hp).toBe(8);
@@ -243,6 +299,7 @@ describe('using items (Link, a hit-point hero)', () => {
   it('fire flower: the red tunic (sword beam), hearts refilled', () => {
     const { h } = onMap({ inventory: ['flower'], inventoryUnlocked: true, hp: 2 }, false, 'link');
     useFromPanel(h, 0);
+    startLevel(h);
     expect(h.game.state.kit.beam).toBe(1);
     expect(h.game.state.hp).toBe(6);
   });
@@ -250,12 +307,45 @@ describe('using items (Link, a hit-point hero)', () => {
   it("star: Link's star power at the next level's start", () => {
     const { h } = onMap({ inventory: ['star'], inventoryUnlocked: true }, false, 'link');
     useFromPanel(h, 0);
-    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
-    h.step();
-    const p = (h.top() as LevelScene).world.player;
+    const p = startLevel(h).world.player;
     expect(p.def).toBe(LINK);
     expect(p.star).toBeGreaterThan(0);
   });
+});
+
+describe('mushroom and flower for every hero', () => {
+  for (const def of CHARACTERS)
+    for (const item of ['mushroom', 'flower'] as const)
+      it(`${def.id}: ${item} at the start either changes something or goes back; the kit carries over`, () => {
+        const { h } = onMap(
+          { inventory: [item], inventoryUnlocked: true, freed: CHARACTERS.map((c) => c.id) },
+          false,
+          def.id,
+        );
+        const s = h.game.state;
+        expect(s.character).toBe(def);
+        const before = { power: s.powerState, hp: s.hp, kit: JSON.stringify(s.kit) };
+        useFromPanel(h, 0);
+        const level = startLevel(h);
+        const p = level.world.player;
+        const changed =
+          s.powerState !== before.power || s.hp !== before.hp || JSON.stringify(s.kit) !== before.kit;
+        expect(h.game.bonus.inventory).toEqual(changed ? [] : [item]);
+        // What the player has is what the run carries (and the file saves).
+        expect(s.powerState).toBe(p.powerState);
+        expect(s.hp).toBe(p.hp);
+        // Every carried kit entry is the player's own (runtime-only entries like aim come later).
+        for (const [k, v] of Object.entries(s.kit)) expect(carriedKit(p)[k]).toBe(v);
+        // The file saved the power-up's kit at the start.
+        for (const [k, v] of Object.entries(loadSave(1)?.kit ?? {})) expect(s.kit[k]).toBe(v);
+        const f = loadSave(1) as SaveFile;
+        if (changed)
+          expect(
+            f.powerState !== before.power || f.hp !== before.hp || JSON.stringify(f.kit) !== before.kit,
+          ).toBe(true);
+        h.idle(30); // plays on without throwing
+        expect(h.top()).toBe(level);
+      });
 });
 
 describe('dev mode "Item inventory"', () => {
@@ -270,10 +360,9 @@ describe('dev mode "Item inventory"', () => {
     toRow(h, menu, 'Item inventory');
     h.tap('right');
     expect(
-      row &&
-        items(menu)
-          .find((i) => i.label === 'Item inventory')
-          ?.value?.(),
+      items(menu)
+        .find((i) => i.label === 'Item inventory')
+        ?.value?.(),
     ).toBe('on');
     expect(labels(menu)).toContain('Items');
     expect(h.said.at(-1)).toMatch(/^Item inventory: on\./);
@@ -293,14 +382,40 @@ describe('dev mode "Item inventory"', () => {
     expect(useInventoryItem(h.game, 0)).toBeNull();
   });
 
-  it('"Give items" adds one of each item, up to the limit', () => {
-    const { h } = onMap({ inventory: Array(10).fill('mushroom') }, true);
+  it('"Give items": one of each, never saved, shown only in dev mode with the toggle on', () => {
+    const { h, settings } = onMap({ inventory: Array(10).fill('mushroom') }, true);
     const menu = openMenu(h);
     toRow(h, menu, 'Give items');
     h.tap('jump');
-    expect(h.game.bonus.inventory).toHaveLength(INVENTORY_MAX);
-    expect(h.game.bonus.inventory.slice(10)).toEqual(['mushroom', 'flower']);
-    expect(loadSave(1)?.inventory).toHaveLength(INVENTORY_MAX);
+    expect(labels(menu)).toContain('Items'); // the toggle came on
+    expect(h.game.bonus.inventory).toHaveLength(10);
+    expect(shownItems(h.game)).toHaveLength(INVENTORY_MAX);
+    expect(shownItems(h.game).slice(10)).toEqual(['mushroom', 'flower']);
+    h.game.autosave();
+    expect(loadSave(1)?.inventory).toEqual(Array(10).fill('mushroom'));
+    expect(JSON.stringify(loadSave(1))).not.toContain('devItems');
+    // Used from the panel: the dev item goes, the file's items stay.
+    h.tap('attack');
+    const inv = openItems(h);
+    for (let i = 0; i < 11; i++) h.tap('right');
+    h.tap('jump');
+    expect(inv.note?.ok).toBe(true);
+    expect(h.game.bonus.itemsNext).toEqual(['flower']);
+    expect(h.game.bonus.inventory).toHaveLength(10);
+    expect(shownItems(h.game)).toHaveLength(11);
+    // Dev mode off: they vanish.
+    settings.dev = false;
+    expect(shownItems(h.game)).toEqual(Array(10).fill('mushroom'));
+  });
+
+  it('a won item pushes a dev item out when the two lists are full', () => {
+    const { h } = onMap({ inventory: Array(8).fill('1up'), devInventory: true }, true);
+    giveDevItems(h.game.bonus);
+    expect(shownItems(h.game)).toHaveLength(INVENTORY_MAX);
+    awardPrize(h.game, { kind: 'item', item: 'star' });
+    expect(h.game.bonus.inventory).toHaveLength(9);
+    expect(shownItems(h.game)).toHaveLength(INVENTORY_MAX);
+    expect(h.game.bonus.devItems).toEqual(['mushroom', 'flower', 'star']);
   });
 });
 
@@ -350,7 +465,7 @@ describe('Toad House', () => {
     expect(b).toEqual(a);
   });
 
-  it('a full inventory: the prize is used at once on the hero', () => {
+  it('a full inventory: the prize waits for the next level instead', () => {
     const { h } = onMap({ inventoryUnlocked: true, inventory: Array(INVENTORY_MAX).fill('1up') });
     const { scene } = bonus(h, 'toad-house', 3);
     const house = scene as ToadHouseScene;
@@ -358,13 +473,14 @@ describe('Toad House', () => {
     h.tap('jump');
     h.idle(OPEN_FRAMES + 65);
     expect(h.game.bonus.inventory).toHaveLength(INVENTORY_MAX);
-    expect(h.game.state.powerState).toBe('big');
+    expect(h.game.bonus.itemsNext).toEqual(['mushroom']);
+    expect(h.said.some((t) => /items are full: kept for the next level/.test(t))).toBe(true);
   });
 
-  it('a full inventory and a prize that would do nothing: it is lost, and the banner says so', () => {
+  it('a full inventory and one of its kind already waiting: it is lost, and the banner says so', () => {
     const { h } = onMap({
       inventoryUnlocked: true,
-      powerState: 'fire',
+      itemsNext: ['flower'],
       inventory: Array(INVENTORY_MAX).fill('1up'),
     });
     const { scene } = bonus(h, 'toad-house', 3);
@@ -372,8 +488,20 @@ describe('Toad House', () => {
     h.tap('jump');
     h.idle(OPEN_FRAMES + 65);
     expect(h.game.bonus.inventory).toEqual(Array(INVENTORY_MAX).fill('1up'));
-    expect(h.game.state.powerState).toBe('fire');
-    expect(h.said.some((t) => /items are full: no use for it now, so it is lost/.test(t))).toBe(true);
+    expect(h.game.bonus.itemsNext).toEqual(['flower']);
+    expect(h.said.some((t) => /one is already waiting, so it is lost/.test(t))).toBe(true);
+  });
+
+  it('once a chest is open there is no Give up: the prize always comes', () => {
+    const { h } = onMap({ inventoryUnlocked: true });
+    const { scene, ends } = bonus(h, 'toad-house', 3);
+    h.tap('jump');
+    h.tap('start');
+    expect(h.top()).toBe(scene); // no menu
+    h.idle(OPEN_FRAMES + 65);
+    expect(h.game.bonus.inventory).toEqual([(scene as ToadHouseScene).chests[1]]);
+    closeCard(h);
+    expect(ends[0]?.gaveUp).toBe(false);
   });
 
   it('Give up from its menu ends it with no prize', () => {
@@ -566,17 +694,45 @@ describe("World 4's bonus spot plays the bonus games in rotation", () => {
     expect(loadSave(1)?.bonusNext).toBe(0);
   });
 
-  it('openNextBonus (outside the spot) also advances only once played', () => {
-    const { h } = onMap({ inventoryUnlocked: true });
-    openNextBonus(h.game, () => {}, { seed: 1 });
-    h.idle(25);
-    giveUp(h);
-    expect(h.game.bonus.bonusNext).toBe(0);
-    openNextBonus(h.game, () => {}, { seed: 1 });
-    h.idle(25);
+  it('the first choice closes the spot and saves before any prize: a reload finds it closed, the prize kept', () => {
+    const { h } = onBonusSpot();
     h.tap('jump');
-    giveUp(h);
-    expect(loadSave(1)?.bonusNext).toBe(1);
+    const house = h.top() as ToadHouseScene;
+    h.idle(25);
+    h.tap('jump'); // OPEN: decided, nothing given yet
+    let saved = loadSave(1) as SaveFile;
+    expect(saved.bonusOpen).toBe(false);
+    expect(saved.bonusNext).toBe(1);
+    expect(saved.inventory).toEqual([]);
+    h.idle(OPEN_FRAMES + 5); // the prize is given (and saved) here
+    saved = loadSave(1) as SaveFile;
+    expect(saved.inventory).toEqual([house.chests[1]]);
+    // A reload: a fresh game opens the file.
+    const r = makeGame();
+    r.game.deps.settings = { dev: false } as Settings;
+    r.game.openFile(1);
+    r.idle(8);
+    const map = r.top() as WorldMapScene;
+    expect(r.game.bonusOpen).toBe(false);
+    expect(r.game.bonus.inventory).toEqual([house.chests[1]]);
+    r.tap('jump');
+    expect(r.top()).toBe(map); // no way in
+  });
+
+  it('the spade game: no Give up once the last reel stops; the lives always come', () => {
+    const { h } = onBonusSpot({ bonusNext: 2 });
+    h.tap('jump');
+    const sl = h.top() as SlotsScene;
+    h.idle(25);
+    const lives = h.game.state.lives;
+    for (let r = 0; r < 3; r++) {
+      sl.machine.offsets[r] = (SLOT_STRIPS[r] as readonly string[]).indexOf('mushroom') * SLOT_CELL;
+      sl.stopReel();
+    }
+    h.tap('start');
+    expect(h.top()).toBe(sl);
+    h.idle(RESULT_DELAY + 2);
+    expect(h.game.state.lives).toBe(lives + 2);
   });
 });
 

@@ -42,8 +42,8 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { InventoryScene } from '../bonus/inventory';
 // Registers the SMB3 bonus games on World 4's bonus spot (map/bonus-spot.ts).
 import '../bonus/spot';
-import { inventoryAvailable } from '../bonus/use';
-import { addItem, ITEM_IDS } from '../bonus/items';
+import { inventoryAvailable, shownItems } from '../bonus/use';
+import { giveDevItems } from '../bonus/items';
 import { MapGuard, guardRoad } from '../map/hammer-bro';
 import { BONUS_CLOSED_HINT, BONUS_CLOSED_SAID, bonusGame } from '../map/bonus-spot';
 import { SMB3_SHEET, sheetWith } from '../art';
@@ -813,7 +813,7 @@ export class WorldMapScene implements Scene {
         ? [
             {
               label: 'Items',
-              value: () => String(game.bonus.inventory.length),
+              value: () => String(shownItems(game).length),
               select: () => {
                 pop();
                 this.openItems();
@@ -838,8 +838,11 @@ export class WorldMapScene implements Scene {
             },
             {
               label: 'Give items',
-              select: () => this.giveItems(),
-              hint: 'Developer mode: one of each item into the inventory',
+              select: () => {
+                this.giveItems();
+                menu.rebuild(items(), 'Give items');
+              },
+              hint: 'Developer mode: one of each item, never saved; turns Item inventory on',
             },
             {
               label: 'All heroes',
@@ -879,7 +882,7 @@ export class WorldMapScene implements Scene {
 
   /**
    * Map menu "Item inventory" (dev mode only): flips the file's dev flag and saves. It never writes
-   * `inventoryUnlocked`; the map menu rebuilds when next opened, with or without its Items entry.
+   * `inventoryUnlocked`; the open map menu is rebuilt with or without its Items row.
    */
   private toggleInventory(): void {
     const game = this.game;
@@ -887,15 +890,17 @@ export class WorldMapScene implements Scene {
     game.autosave();
   }
 
-  /** Map menu "Give items" (dev mode only): one of each item, as room allows; saved. */
+  /**
+   * Map menu "Give items" (dev mode only): one of each item, as room allows, into the dev list
+   * (`bonus.devItems`): never saved, shown only while dev mode and "Item inventory" are on (this
+   * turns it on). The file's own items and progress are not touched.
+   */
   private giveItems(): void {
     const game = this.game;
-    const added = ITEM_IDS.filter((id) => addItem(game.bonus, id)).length;
+    const added = giveDevItems(game.bonus);
+    game.bonus.devInventory = true;
     game.ctx.audio.sfx(added ? 'powerup' : 'bump');
-    this.say(
-      added ? `${added} items added. ${game.bonus.inventory.length} items.` : 'The inventory is full.',
-    );
-    game.autosave();
+    this.say(added ? `${added} dev items added. They are never saved.` : 'The inventory is full.');
   }
 
   /**

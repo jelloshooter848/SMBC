@@ -15,6 +15,7 @@ import { HammerBro } from '@game/entities/enemies/hammer-bro';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { registerBonusGame, BONUS_CLOSED_HINT, type BonusOutcome } from '@game/map/bonus-spot';
+import { SMB3_BONUS } from '@game/bonus/spot';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
@@ -23,7 +24,7 @@ import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 // Hammer Bro"), played through the game's scenes on a campaign file.
 
 useStorage();
-afterEach(() => registerBonusGame(null));
+afterEach(() => registerBonusGame(SMB3_BONUS));
 
 const W3 = ['1-0', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4'];
 /** A file on World 4 with 4-1 cleared, standing on `node`. */

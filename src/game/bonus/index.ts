@@ -7,26 +7,29 @@
  *   - `game.bonus.inventory: ItemId[]` ('mushroom' | 'flower' | 'star' | '1up'), at most 12.
  *   - `game.bonus.bonusNext`: the rotation (0 Toad House, 1 N-spade, 2 spade game).
  *   - `game.bonus.devInventory`: dev mode's map menu "Item inventory" (unlocks while dev is on).
- *   - `game.bonus.starNext`: a Starman used from the map waits for the next level's start.
+ *   - `game.bonus.itemsNext`: items used from the map, given at the next level's start to the hero
+ *     who enters it (one of each kind).
+ *   - `game.bonus.devItems`: dev "Give items", never saved.
  *
  * The bonus spot: `spot.ts` registers `SMB3_BONUS` with `registerBonusGame` (the world map
- * imports it), so JUMP on the open node plays the next game in the rotation.
+ * imports it), so JUMP on the open node plays the next game in the rotation; the first choice
+ * closes the spot and advances the rotation (saved before any prize).
  *
  * Opening a bonus game elsewhere (pushed; it pops itself):
- *   - `openNextBonus(game, onDone)`: the next game in the rotation, advanced once it is played.
  *   - `openBonusGame(game, kind, onDone, opts?)`: one game of `kind` without touching the
  *     rotation. `opts.seed` fixes the deal (tests); `opts.music` is played when it closes
  *     (default: the map page's music in campaign play, else nothing).
+ *   - `createBonusScene(game, kind, seed, onEnd, onPlayed?)`: the scene alone.
  *   - `nextBonusKind(save | game.bonus)`: which game the rotation plays next.
  *   - `onDone(result: BonusResult)` runs after the scene is gone: `result.prizes` lists what was
- *     won, already given (items in the inventory, or used at once when it is full; lives and coins
- *     counted) and saved; `result.gaveUp` when the player chose Give up from its menu (prizes won
- *     before that are kept); `result.played` once any choice was made.
+ *     won, already given (items in the inventory; lives and coins counted) and saved;
+ *     `result.gaveUp` when the player chose Give up from its menu (prizes won before that are
+ *     kept; there is no menu once the outcome is decided); `result.played` once any choice was made.
  *
  * Items:
  *   - `useInventoryItem(game, index)`: the Items panel's use (also usable by other code).
- *   - `useItem(game, item)`, `awardPrize(game, prize)`, `awardHammerPrize(game)`,
- *     `inventoryAvailable(game)`.
+ *   - `useItem`, `awardPrize`, `awardHammerPrize`, `applyHeldItems`, `inventoryAvailable`,
+ *     `shownItems`.
  *   - `InventoryScene`: the panel; the world map opens it.
  */
 import type { Scene } from '@engine/scene';
@@ -35,7 +38,7 @@ import { freshSeed } from '../world/world';
 import type { Game } from '../scenes/game';
 import type { BonusResult, BonusScene } from './common';
 import { MemoryScene } from './memory';
-import { BONUS_KINDS, nextBonusKind, type BonusKind } from './rules';
+import type { BonusKind } from './rules';
 import { SlotsScene } from './slots';
 import { ToadHouseScene } from './toad-house';
 
@@ -44,7 +47,15 @@ export type { BonusKind, BonusPrize, CardFace, SlotPicture } from './rules';
 export { BONUS_KINDS, BONUS_TITLES, isBonusKind, nextBonusKind } from './rules';
 export type { BonusState, ItemId } from './items';
 export { INVENTORY_MAX, ITEM_IDS, ITEM_NAMES, newBonusState } from './items';
-export { awardHammerPrize, awardPrize, inventoryAvailable, useInventoryItem, useItem } from './use';
+export {
+  applyHeldItems,
+  awardHammerPrize,
+  awardPrize,
+  inventoryAvailable,
+  shownItems,
+  useInventoryItem,
+  useItem,
+} from './use';
 export { InventoryScene } from './inventory';
 export { ToadHouseScene } from './toad-house';
 export { MemoryScene } from './memory';
@@ -57,21 +68,25 @@ export interface BonusOptions {
   music?: string | null;
 }
 
-/** One bonus game scene of `kind` (not pushed). */
+/**
+ * One bonus game scene of `kind` (not pushed). `onPlayed` runs once at the first choice, before any
+ * prize is given (the bonus spot closes itself there).
+ */
 export function createBonusScene(
   game: Game,
   kind: BonusKind,
   seed: number,
   onEnd: (r: BonusResult) => void,
+  onPlayed: (() => void) | null = null,
 ): BonusScene {
-  switch (kind) {
-    case 'toad-house':
-      return new ToadHouseScene(game, seed, onEnd);
-    case 'memory':
-      return new MemoryScene(game, seed, onEnd);
-    case 'slots':
-      return new SlotsScene(game, seed, onEnd);
-  }
+  const scene =
+    kind === 'toad-house'
+      ? new ToadHouseScene(game, seed, onEnd)
+      : kind === 'memory'
+        ? new MemoryScene(game, seed, onEnd)
+        : new SlotsScene(game, seed, onEnd);
+  scene.onPlayed = onPlayed;
+  return scene;
 }
 
 /**
@@ -102,25 +117,4 @@ export function openBonusGame(
   });
   game.scenes.push(scene);
   return scene;
-}
-
-/** The next game in the rotation (Toad House, N-spade, spade game, ...), advanced once it is played. */
-export function openNextBonus(
-  game: Game,
-  onDone: (result: BonusResult) => void,
-  opts: BonusOptions = {},
-): Scene {
-  const kind = nextBonusKind(game.bonus);
-  return openBonusGame(
-    game,
-    kind,
-    (result) => {
-      if (result.played) {
-        game.bonus.bonusNext = (BONUS_KINDS.indexOf(kind) + 1) % BONUS_KINDS.length;
-        game.autosave();
-      }
-      onDone(result);
-    },
-    opts,
-  );
 }

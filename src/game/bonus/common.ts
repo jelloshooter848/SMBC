@@ -51,6 +51,11 @@ export abstract class BonusScene implements Scene {
   private ended = false;
   /** A choice was made (BonusResult.played). */
   played = false;
+  /**
+   * Called once, at the first choice (before any prize is given or saved): the bonus spot closes
+   * itself there, so reloading the page cannot replay it.
+   */
+  onPlayed: (() => void) | null = null;
 
   constructor(
     protected readonly game: Game,
@@ -131,7 +136,9 @@ export abstract class BonusScene implements Scene {
         this.close(false);
       return;
     }
-    if (input.pressed('start')) {
+    // Once the outcome is decided (the chest is open, the last reel stopped, the board done) there
+    // is no menu, so Give up cannot drop a prize still on its way.
+    if (input.pressed('start') && !this.decided) {
       this.game.scenes.push(
         new MiniGameMenuScene(this.game, this.title, () => this.close(true), 'Leave with no more prizes'),
       );
@@ -140,6 +147,16 @@ export abstract class BonusScene implements Scene {
     if (this.t < BONUS_GUARD_FRAMES) return;
     this.play(input);
   }
+
+  /** The first choice: `played`, and `onPlayed` once. */
+  protected markPlayed(): void {
+    if (this.played) return;
+    this.played = true;
+    this.onPlayed?.();
+  }
+
+  /** The outcome is settled: no Give-up menu from here on. */
+  protected abstract get decided(): boolean;
 
   /** Ends the round once (the caller pops it). */
   private close(gaveUp: boolean): void {

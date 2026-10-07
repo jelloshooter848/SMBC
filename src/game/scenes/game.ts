@@ -537,7 +537,10 @@ export class Game {
     this.scenes.push(bonusGame().create(this, spot, done));
   }
 
-  /** The bonus was played: closed until its Hammer Bro is beaten; saved at once. */
+  /**
+   * The bonus was played: closed until its Hammer Bro is beaten; saved at once. Safe to call again
+   * (the SMB3 bonus games call it at the first choice, and the end calls it once more).
+   */
   bonusUsed(): void {
     this.bonusOpen = false;
     this.autosave();

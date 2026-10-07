@@ -37,6 +37,10 @@ export class SlotsScene extends BonusScene {
     this.machine = new SlotMachine(this.rng);
   }
 
+  protected get decided(): boolean {
+    return this.machine.done;
+  }
+
   protected intro(): string {
     return `Three reels: the top, middle and bottom of a picture. ${this.hint('stop', 'jump')} stops them one at a time, top first. A full mushroom wins 2 lives, a flower 3, a star 5. One try.`;
   }
@@ -61,7 +65,7 @@ export class SlotsScene extends BonusScene {
     const reel = m.next;
     const pic = m.stop();
     if (!pic) return;
-    this.played = true;
+    this.markPlayed();
     this.sfx(BONUS_SFX.stop);
     this.say(`${THIRDS[reel]}: ${NAMES[pic]}.`);
     if (m.done) this.doneT = this.t;

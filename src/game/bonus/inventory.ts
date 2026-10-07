@@ -10,28 +10,32 @@ import { fontText, wrapText } from '../hud/text';
 import { BONUS_SFX, drawItem } from './art';
 import { fitLine } from './common';
 import { INVENTORY_MAX, ITEM_NAMES, type ItemId } from './items';
-import { inventoryAvailable, useInventoryItem, type UseOutcome } from './use';
+import { inventoryAvailable, shownItems, useInventoryItem, type UseOutcome } from './use';
 
 /** The panel across the bottom of the map. */
 export const PANEL_Y = 120;
 const PANEL_H = 112;
 const SLOT = 18;
 const SLOTS_X = (SCREEN_W - INVENTORY_MAX * SLOT) >> 1;
-const SLOTS_Y = PANEL_Y + 18;
+const SLOTS_Y = PANEL_Y + 20;
 
 /** What item `item` does for `game`'s player 1 hero, as the panel says it (the hero's guide's words). */
 export function itemDoes(game: Game, item: ItemId): string {
   const hero = game.state.character;
   if (item === '1up') return 'One more life.';
-  if (item === 'star') return 'Star power at the start of the next level.';
+  if (item === 'star') return 'Star power: invincible for a few seconds.';
   return hero.guide.powerups.find((p) => p.item === item)?.does ?? 'A power-up.';
 }
 
+/** The note under a held kind's description: it waits for the next level's start. */
+export const HELD_NOTE = 'GIVEN AT THE NEXT LEVEL.';
+
 /**
  * The map's ITEMS panel (SMB3's item box): the inventory as a row of icons over the bottom of the
- * map. Left / right choose, USE uses the item on player 1's hero (useInventoryItem; refused when it
- * would do nothing), BACK closes. After a use the panel says what happened, and the next press
- * closes it.
+ * map (the file's items, then dev mode's unsaved ones). Left / right choose, USE uses the item
+ * (useInventoryItem: a 1-up at once, the others held for the hero who enters the next level, one
+ * of each kind), BACK closes. After a use the panel says what happened, and the next press closes
+ * it. The items waiting for the next level show at the top right.
  */
 export class InventoryScene implements Scene {
   readonly translucent = true;
@@ -43,7 +47,7 @@ export class InventoryScene implements Scene {
   constructor(private readonly game: Game) {}
 
   private get items(): ItemId[] {
-    return this.game.bonus.inventory;
+    return shownItems(this.game);
   }
 
   enter(): void {
@@ -59,7 +63,7 @@ export class InventoryScene implements Scene {
     const use = abilityHint(this.game, 'use', 'jump');
     const back = abilityHint(this.game, 'back', 'attack');
     const text = item
-      ? `${head}${this.cursor + 1}: ${ITEM_NAMES[item].toLowerCase()}. ${itemDoes(this.game, item)} ${use} to use it, ${back} to close.`
+      ? `${head}${this.cursor + 1}: ${ITEM_NAMES[item].toLowerCase()}. ${itemDoes(this.game, item)}${item === '1up' ? '' : ' Given at the start of the next level.'} ${use} to use it, ${back} to close.`
       : `${head}No items yet. Toad Houses and spade games give them. ${back} to close.`;
     this.game.deps.announcer?.say(text);
   }
@@ -129,12 +133,22 @@ export class InventoryScene implements Scene {
     const game = this.game;
     const assets = game.ctx.assets;
     const font = assets.sheet('font');
+    // The map's hint line under the panel is covered (its text would peek out below).
+    r.rect(0, PANEL_Y + PANEL_H, SCREEN_W, 240 - PANEL_Y - PANEL_H, '#000');
     r.rect(8, PANEL_Y, SCREEN_W - 16, PANEL_H, '#fcfcfc');
     r.rect(10, PANEL_Y + 2, SCREEN_W - 20, PANEL_H - 4, '#000');
     const title = fontText(`ITEMS - ${game.state.character.hudName}`);
     r.text(font, title, 16, PANEL_Y + 6);
-    const count = `${this.items.length}/${INVENTORY_MAX}`;
-    r.text(font, count, SCREEN_W - 16 - count.length * 8, PANEL_Y + 6);
+    const held = game.bonus.itemsNext;
+    if (held.length) {
+      // Waiting for the next level: NEXT and their icons.
+      const x0 = SCREEN_W - 16 - held.length * 18;
+      r.text(font, 'NEXT', x0 - 36, PANEL_Y + 6);
+      held.forEach((h, i) => drawItem(r, assets, h, x0 + i * 18, PANEL_Y + 2));
+    } else {
+      const count = `${this.items.length}/${INVENTORY_MAX}`;
+      r.text(font, count, SCREEN_W - 16 - count.length * 8, PANEL_Y + 6);
+    }
     for (let i = 0; i < INVENTORY_MAX; i++) {
       const x = SLOTS_X + i * SLOT;
       r.rect(x, SLOTS_Y, SLOT - 1, SLOT - 1, '#3c3c3c');
@@ -154,17 +168,20 @@ export class InventoryScene implements Scene {
     }
     let lines: string[];
     if (this.note) lines = this.note.lines.map(fontText);
-    else if (item) lines = [ITEM_NAMES[item], ...wrapText(itemDoes(game, item), 28).slice(0, 3)];
+    else if (item)
+      lines = [
+        ITEM_NAMES[item],
+        ...wrapText(itemDoes(game, item), 28).slice(0, 3),
+        ...(item === '1up' ? [] : [HELD_NOTE]),
+      ];
     else lines = ['NO ITEMS YET.', 'TOAD HOUSES AND SPADE', 'GAMES GIVE THEM.'];
-    lines.forEach((l, i) => r.text(font, l, 16, SLOTS_Y + 26 + i * 10));
-    if (game.bonus.starNext && !this.note)
-      r.text(font, 'STAR READY FOR NEXT LEVEL', 16, PANEL_Y + PANEL_H - 22);
+    lines.forEach((l, i) => r.text(font, l, 16, SLOTS_Y + 24 + i * 10));
     const prompt = this.note
       ? fontText(`PRESS ${abilityHint(game, 'OK', 'jump')}`)
       : fitLine(
           `${item ? `${abilityHint(game, 'USE', 'jump')}  ` : ''}${abilityHint(game, 'BACK', 'attack')}`,
           item ? 'USE  BACK' : 'BACK',
         );
-    r.text(font, prompt, 16, PANEL_Y + PANEL_H - 12);
+    r.text(font, prompt, 16, PANEL_Y + PANEL_H - 11);
   }
 }

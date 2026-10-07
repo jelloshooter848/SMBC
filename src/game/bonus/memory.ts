@@ -54,6 +54,10 @@ export class MemoryScene extends BonusScene {
     return this.row * MEMORY_COLS + this.col;
   }
 
+  protected get decided(): boolean {
+    return this.board.over;
+  }
+
   protected intro(): string {
     return `18 cards. Turn two at a time to find a pair; a pair wins its prize. Two misses end the game. Arrows move, ${this.hint('turn', 'jump')} turns a card. ${this.where()}`;
   }
@@ -100,7 +104,7 @@ export class MemoryScene extends BonusScene {
       this.sfx(BONUS_SFX.miss);
       return;
     }
-    this.played = true;
+    this.markPlayed();
     this.sfx(BONUS_SFX.flip);
     const face = (b.cards[i] as Card).face;
     if (res === 'first') {

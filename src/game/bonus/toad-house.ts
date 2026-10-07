@@ -36,6 +36,10 @@ export class ToadHouseScene extends BonusScene {
     this.chests = dealChests(this.rng);
   }
 
+  protected get decided(): boolean {
+    return this.opened !== null;
+  }
+
   protected intro(): string {
     return `Toad: Pick a box. Its contents will help you on your way. Left and right to choose, ${this.hint('open', 'jump')} to open. Box 2 of 3.`;
   }
@@ -73,7 +77,7 @@ export class ToadHouseScene extends BonusScene {
   open(index: number): void {
     if (this.opened) return;
     this.cursor = index;
-    this.played = true;
+    this.markPlayed();
     this.opened = { index, t: this.t };
     this.sfx(BONUS_SFX.open);
     this.say(`Box ${index + 1}: ${ITEM_SPOKEN[this.chests[index] as ItemId]}!`);

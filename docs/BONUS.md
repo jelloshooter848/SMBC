@@ -15,22 +15,25 @@ spot's (`src/game/map/bonus-spot.ts`, docs/WORLD_MAP.md "The bonus spot and its 
 | `inventory`         | item ids won, in order: `mushroom`, `flower`, `star`, `1up`; at most 12    | `[]`                  |
 | `bonusNext`         | the rotation: 0 Toad House, 1 N-spade, 2 spade game                        | 0                     |
 | `devInventory`      | dev mode's map menu "Item inventory"                                       | off                   |
-| `starNext`          | a Starman used from the map waits for the start of the next level          | off                   |
+| `itemsNext`         | items used from the map, waiting for the next level's start (one per kind) | `[]`                  |
 
 `Game.inventoryUnlocked` and `Game.bonusOpen` carry the first two (the bonus spot's); `Game.bonus`
 carries the rest (same names; `BonusState` in `items.ts`). Validation keeps known item ids only (at
-most 12) and each flag only when it is `true`. `openFile` loads them and `autosave` writes them;
-outside campaign play `Game.bonus` is a fresh, empty state.
+most 12; `itemsNext`: mushroom, flower and star, each once, in that order) and each flag only when
+it is `true`. `openFile` loads them and `autosave` writes them; outside campaign play `Game.bonus`
+is a fresh, empty state. `Game.bonus.devItems` (dev mode's "Give items") is never saved.
 
 ## The bonus spot
 
 `src/game/bonus/spot.ts` registers `SMB3_BONUS` with the spot's `registerBonusGame` (the world map
 imports it). The open node's hint line and the announcer name the next game in the rotation
 (TOAD HOUSE, N-SPADE, SPADE GAME) and its map icon is `smb3:node-toad-house` or `smb3:node-spade`.
-JUMP on it plays that game over the map. Once any choice was made (a chest opened, a card turned,
-a reel stopped) the visit counts as used, even if the player then gives up: the rotation moves on
-and the spot closes until its Hammer Bro is beaten ('used'). Giving up before any choice leaves it
-open, with the same game next time ('left').
+JUMP on it plays that game over the map. The **first choice** (a chest opened, a card turned, a
+reel stopped) uses the visit at once, before any prize is given: the rotation moves on and the spot
+closes (`Game.bonusUsed`, saved there), so reloading the page cannot replay it; prizes are saved as
+they are won. The end then reports 'used' and goes back to the map (`bonusUsed` again changes
+nothing). Giving up before any choice reports 'left': still open, the same game next time. The
+spot reopens when its Hammer Bro is beaten.
 
 **The Hammer Bro's prize**: beating the Hammer Bro battle also gives an item (SMB3 does): a
 mushroom, fire flower or star, weighted like a Toad House chest (`awardHammerPrize`), shown on the
@@ -38,7 +41,6 @@ battle's win card and stored like any bonus prize.
 
 ## Opening a bonus game elsewhere
 
-- `openNextBonus(game, onDone)`: the next game in the rotation, advanced (and saved) once played.
 - `openBonusGame(game, kind, onDone, { seed?, music? })`: one game of `kind` (`'toad-house'`,
   `'memory'`, `'slots'`) without touching the rotation. `seed` fixes the deal; `music` plays when it
   closes (default: the map page's music in campaign play).
@@ -47,12 +49,16 @@ battle's win card and stored like any bonus prize.
   runs once: `result.prizes` lists what was won, **already given and saved** (items in the
   inventory, lives and coins counted); `result.gaveUp` is true when the player chose Give up from
   its menu (prizes won before that are kept); `result.played` once any choice was made.
+- `createBonusScene(game, kind, seed, onEnd, onPlayed?)`: the scene alone; `onPlayed` runs once at
+  the first choice, before any prize (what the bonus spot uses).
 
 ## The games
 
 Each game opens with its title and rules said by the announcer, ignores input for 20 frames (the
 press that opened it), and ends on a result card at the bottom of the screen, closed with OK.
-START opens the menu (Continue / Give up, plus the dev assists in dev mode). Prompts name
+START opens the menu (Continue / Give up, plus the dev assists in dev mode) until the outcome is
+decided: once the chest is open, the last reel stopped or the board over there is no menu, so
+Give up can never drop a prize on its way (N-spade prizes are given as each pair is found). Prompts name
 abilities (OPEN, TURN, STOP, OK) with the bound key after them, never bare button letters; the
 touch buttons say the same. Nothing flashes: cursors are steady frames, and the only motion is
 the pointer's bob over the chests (still with reduce flashing) and the reels.
@@ -102,32 +108,41 @@ slots over the bottom of the map, the selected item's name and what it does for 
 inventory is unlocked there is no Items row, the button does nothing and `useInventoryItem`
 refuses.
 
-Using an item applies it to **player 1's hero** now (the hero who will enter the next level; a
-co-op file's player 2 gets none):
+Using an item:
 
-- **Mushroom / fire flower**: the hero's own `CharacterDef.behaviour.onPowerUp`, as touching one
-  in a level does, run in a silent one-screen scratch world; power, hit points and kit are carried
-  back into the run (Mario grows or gets fire power; Link a heart container and the white tunic, or
-  the red tunic; Mega Man the helmet or the next weapon...). Its points are not kept. When it would
-  change nothing (fire Mario, a hero at full strength) it is refused and kept: "MARIO IS AT FULL
-  POWER. SAVE THE MUSHROOM FOR LATER."
-- **Starman**: star power at the start of the next level (`starNext`; `LevelScene.enter` gives it
-  through the hero's own `onPowerUp`, music included, and saves). Only one can wait at a time.
-- **1-up**: a life (refused at 99).
+- **1-up**: a life at once (refused at 99).
+- **Mushroom, fire flower, Starman**: held for the start of the next level (`itemsNext`) and given
+  there to **player 1's hero who actually enters it**, after the character select (so picking
+  another hero on the way keeps the item; a co-op file's player 2 gets none). One of each kind can
+  wait (a second is refused and kept); the panel says "READY FOR THE START OF THE NEXT LEVEL!",
+  each item's text ends "GIVEN AT THE NEXT LEVEL." and the waiting ones show as NEXT and their
+  icons at the panel's top right.
+- At the level's start (`applyHeldItems`, from `LevelScene.enter`; campaign levels only, not a
+  stage tutorial) they go through the hero's own `CharacterDef.behaviour.onPowerUp`, as touching
+  one in a level does: mushroom, then flower, then Starman (its music too). Mario grows or gets fire
+  power; Link gains a heart container and the white tunic, or the red tunic; Mega Man the helmet or
+  the next weapon... Their points are not kept. A mushroom or flower that would change nothing for
+  that hero (tried first in a silent one-screen scratch world: fire Mario, a hero at full
+  strength) goes back into the inventory, and the announcer says so (lost only if the inventory has
+  filled up meanwhile). The run's power, hit points and kit are updated and the file saved at once.
 
 A used item leaves the inventory and the file is saved; the panel says what happened and the next
 press closes it (a refused use goes back to the list).
 
-**Prizes when the inventory is full** (or not unlocked yet): the item is used at once on player 1's
-hero instead (SMB3 lost it; this is kinder). If that use would do nothing, it is lost, and the
-banner says so.
+**Prizes when the inventory is full** (or not unlocked yet): the item is used as from the panel
+instead (a 1-up at once, the others held for the next level; SMB3 lost it). If one of its kind is
+already waiting, it is lost, and the banner says so.
 
 ## Dev mode
 
 - Map menu **Item inventory** (on / off, next to All heroes / Unlock all): unlocks the inventory
   at once while dev mode is on (the Items row appears in the open menu). It never writes
   `inventoryUnlocked`; with dev mode off it has no effect.
-- Map menu **Give items**: one of each item, as room allows; saved.
+- Map menu **Give items**: one of each item, as room allows, into a dev list that is **never
+  saved** (`Game.bonus.devItems`). It turns Item inventory on; the dev items show after the file's
+  own and can be used like them, only while dev mode and Item inventory are on (dev mode off: they
+  vanish). The file's items and the two lists together stay at 12: an item won pushes the last dev
+  item out.
 - **Dev → Bonus games**: the three games from the dev menu; one game, then a card listing what it
   won, and back to the list. Nothing sticks: no file is written, the run and the bonus state are
   put back.
@@ -138,7 +153,9 @@ banner says so.
 
 `src/game/bonus/rules.test.ts` (each game's rules from a seed, the weights, the rotation) and
 `tests/sim/bonus.test.ts` (the save fields, the panel locked and unlocked, each item for Mario and
-for Link, the star at the next level's start, the dev toggle and Give items, each game played
-through the scene, prizes, a full inventory, Give up, the bonus spot's rotation and used / left,
-the Hammer Bro prize, Dev → Bonus games); `tests/sim/larry.test.ts` checks the prize after a
-won Hammer Bro battle.
+for Link given at the next level's start, a mushroom used as Mario going to Link when Link is
+picked, a useless one coming back, one per kind, every hero with a mushroom and a flower, the dev
+toggle and unsaved Give items, each game played through the scene, prizes, a full inventory, no
+Give up once decided, the bonus spot's rotation, used / left and a reload after the first choice,
+the Hammer Bro prize, Dev → Bonus games); `tests/sim/larry.test.ts` checks the prize after a won
+Hammer Bro battle.

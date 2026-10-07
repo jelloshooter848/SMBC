@@ -4,7 +4,7 @@ import type { LevelData } from '../level/schema';
 import { carriedKit } from '../entities/player';
 import { freshSeed, World } from '../world/world';
 import type { Game } from '../scenes/game';
-import { addItem, ITEM_NAMES, ITEM_SPOKEN, takeItem, type ItemId } from './items';
+import { addItem, ITEM_NAMES, ITEM_SPOKEN, NEXT_ORDER, takeItem, type ItemId, type NextItem } from './items';
 import { Rng } from '@engine/rng';
 import { CHEST_WEIGHTS, rollWeighted, type BonusPrize } from './rules';
 
@@ -44,51 +44,45 @@ const ITEM_ROOM: LevelData = {
   parent: null,
 };
 
-/** The hero, power, hit points and kit of player `player` (0 or 1). */
-function heroOf(game: Game, player: 0 | 1) {
-  const s = game.state;
-  return player === 1 && s.character2
-    ? { def: s.character2, power: s.powerState2, hp: s.hp2, kit: s.kit2 }
-    : { def: s.character, power: s.powerState, hp: s.hp, kit: s.kit };
+/** Whether dev mode's "Give items" list is shown and usable (dev mode and "Item inventory" on). */
+export function devItemsShown(game: Game): boolean {
+  return game.devMode && game.bonus.devInventory;
 }
 
+/** The items the panel shows, in order: the file's, then (dev) the unsaved dev items. */
+export function shownItems(game: Game): ItemId[] {
+  const b = game.bonus;
+  return devItemsShown(game) ? [...b.inventory, ...b.devItems] : b.inventory;
+}
+
+/** A hero's carried power, for the dry run. */
+interface HeroPower {
+  def: CharacterDef;
+  power: string;
+  hp: number;
+  kit: Record<string, number>;
+}
+
+const sameKit = (a: Record<string, number>, b: Record<string, number>): boolean =>
+  JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
+
 /**
- * Gives player `player`'s hero a mushroom or fire flower through its own `onPowerUp`, in a silent
- * scratch world, and carries the result (power, hit points, kit) back into the run. The score it
- * would add is not kept. Returns false, leaving everything as it was, when it would change nothing
- * (Mario already on fire power, a hero at full strength).
+ * Whether a mushroom or fire flower would change anything for `hero` (its power, hit points or
+ * kit), tried through its own `onPowerUp` in a silent scratch world; nothing real is touched.
  */
-export function powerUpHero(game: Game, item: 'mushroom' | 'flower', player: 0 | 1 = 0): boolean {
-  const s = game.state;
-  const h = heroOf(game, player);
-  const def: CharacterDef = h.def;
+export function powerUpChanges(game: Game, hero: HeroPower, item: 'mushroom' | 'flower'): boolean {
   const temp = {
-    ...s,
-    character: def,
+    ...game.state,
+    character: hero.def,
     character2: null,
-    powerState: h.power,
-    hp: h.hp,
-    kit: { ...h.kit },
+    powerState: hero.power,
+    hp: hero.hp,
+    kit: { ...hero.kit },
   };
   const world = new World(ITEM_ROOM, { ...game.ctx, audio: NULL_AUDIO }, temp, { seed: 1 });
   const p = world.player;
-  def.behaviour.onPowerUp(p, item, world);
-  const kit = carriedKit(p);
-  const same =
-    p.powerState === h.power &&
-    p.hp === h.hp &&
-    JSON.stringify(Object.entries(kit).sort()) === JSON.stringify(Object.entries(h.kit).sort());
-  if (same) return false;
-  if (player === 1 && s.character2) {
-    s.powerState2 = p.powerState;
-    s.hp2 = p.hp;
-    s.kit2 = kit;
-  } else {
-    s.powerState = p.powerState;
-    s.hp = p.hp;
-    s.kit = kit;
-  }
-  return true;
+  hero.def.behaviour.onPowerUp(p, item, world);
+  return p.powerState !== hero.power || p.hp !== hero.hp || !sameKit(carriedKit(p), hero.kit);
 }
 
 /** What using an item did: `ok` false leaves the item where it was, `lines` say why. */
@@ -101,79 +95,103 @@ export interface UseOutcome {
 }
 
 /**
- * Uses `item` on player `player`'s hero now (the inventory is not touched): a mushroom or flower
- * powers the hero up, a Starman waits for the start of the next level (`bonus.starNext`), a 1-up
- * adds a life. Fails, changing nothing, when it would do nothing.
+ * Uses `item` now (the inventory is not touched). A 1-up adds a life at once. A mushroom, fire
+ * flower or Starman is held for the start of the next level (`bonus.itemsNext`) and given there to
+ * the hero who enters it (`applyHeldItems`), so picking another hero on the way keeps it; one of
+ * each kind can wait. Refused, changing nothing, when one of its kind already waits (or lives are
+ * full).
  */
-export function useItem(game: Game, item: ItemId, player: 0 | 1 = 0): UseOutcome {
-  const hero = heroOf(game, player).def;
+export function useItem(game: Game, item: ItemId): UseOutcome {
   const name = ITEM_NAMES[item];
-  switch (item) {
-    case 'mushroom':
-    case 'flower':
-      if (!powerUpHero(game, item, player))
-        return {
-          ok: false,
-          lines: [`${hero.hudName} IS AT FULL POWER.`, `SAVE THE ${name} FOR LATER.`],
-          said: `${hero.name} is at full power. Save the ${name.toLowerCase()} for later.`,
-        };
-      return {
-        ok: true,
-        lines: [`${hero.hudName} USED THE ${name}!`],
-        said: `${hero.name} used ${ITEM_SPOKEN[item]}.`,
-      };
-    case 'star':
-      if (game.bonus.starNext)
-        return {
-          ok: false,
-          lines: ['A STARMAN IS ALREADY', 'WAITING FOR THE NEXT LEVEL.'],
-          said: 'A Starman is already waiting for the next level.',
-        };
-      game.bonus.starNext = true;
-      return {
-        ok: true,
-        lines: ['STAR POWER AT THE START', 'OF THE NEXT LEVEL!'],
-        said: 'Star power at the start of the next level.',
-      };
-    case '1up':
-      if (game.state.lives >= MAX_LIVES)
-        return { ok: false, lines: ['YOU HAVE ALL THE LIVES', 'YOU CAN HOLD.'], said: 'Lives are full.' };
-      game.state.lives++;
-      return { ok: true, lines: ['1 UP!'], said: `One more life. ${game.state.lives} lives.` };
+  if (item === '1up') {
+    if (game.state.lives >= MAX_LIVES)
+      return { ok: false, lines: ['YOU HAVE ALL THE LIVES', 'YOU CAN HOLD.'], said: 'Lives are full.' };
+    game.state.lives++;
+    return { ok: true, lines: ['1 UP!'], said: `One more life. ${game.state.lives} lives.` };
   }
+  const next = game.bonus.itemsNext;
+  if (next.includes(item))
+    return {
+      ok: false,
+      lines: [`A ${name} IS ALREADY`, 'WAITING FOR THE NEXT LEVEL.'],
+      said: `${ITEM_SPOKEN[item]} is already waiting for the next level.`.replace(/^a /, 'A '),
+    };
+  game.bonus.itemsNext = NEXT_ORDER.filter((k) => k === item || next.includes(k));
+  return {
+    ok: true,
+    lines: [`${name} READY FOR THE`, 'START OF THE NEXT LEVEL!'],
+    said: `${ITEM_SPOKEN[item].replace(/^a /, 'A ')}, ready for the start of the next level.`,
+  };
 }
 
 /**
- * The Items menu's choice: uses inventory item `index` on player `player`'s hero. Used, it leaves
- * the inventory and the file is saved; refused (it would do nothing), it stays. Nothing happens
- * while the inventory is locked.
+ * The Items panel's choice: uses shown item `index` (the file's items, then the dev items). Used,
+ * it leaves its list and the file is saved; refused, it stays. Nothing happens while the inventory
+ * is locked.
  */
-export function useInventoryItem(game: Game, index: number, player: 0 | 1 = 0): UseOutcome | null {
+export function useInventoryItem(game: Game, index: number): UseOutcome | null {
   if (!inventoryAvailable(game)) return null;
-  const item = game.bonus.inventory[index];
+  const item = shownItems(game)[index];
   if (!item) return null;
-  const out = useItem(game, item, player);
+  const out = useItem(game, item);
   if (out.ok) {
-    takeItem(game.bonus, index);
+    const b = game.bonus;
+    if (index < b.inventory.length) takeItem(b, index);
+    else b.devItems.splice(index - b.inventory.length, 1);
     game.autosave();
   }
   return out;
 }
 
+/** What a held item did at a level's start. */
+export interface HeldOutcome {
+  item: NextItem;
+  /** Given to the hero (false: it would have done nothing, so it went back to the inventory). */
+  given: boolean;
+  /** Back in the inventory (false when it was given, or the inventory was full and it was lost). */
+  returned: boolean;
+}
+
 /**
- * The start of a level: a Starman used from the map gives player 1's hero star power through its
- * own `onPowerUp` (its music too). Called by LevelScene once it is on screen; true when it did.
+ * The start of a campaign level (LevelScene, once on screen; not in a stage tutorial): the items
+ * used from the map go to player 1's hero, the one who actually enters, through its own
+ * `onPowerUp`: mushroom, then flower, then Starman (music too). A mushroom or flower that would do
+ * nothing for this hero goes back into the inventory (lost only if that is full). The points they
+ * would add are not kept. The run's power is updated and the file saved at once.
  */
-export function applyStarAtStart(game: Game, world: World): boolean {
-  if (!game.campaign || !game.bonus.starNext) return false;
+export function applyHeldItems(game: Game, world: World): HeldOutcome[] {
+  const held = game.bonus.itemsNext;
+  if (!game.campaign || game.tutorialRun || !held.length) return [];
   const p = world.players[0];
-  if (!p) return false;
-  game.bonus.starNext = false;
+  if (!p) return [];
+  game.bonus.itemsNext = [];
   const score = game.state.score;
-  p.def.behaviour.onPowerUp(p, 'star', world);
-  game.state.score = score; // the item box's star is not worth points
+  const out: HeldOutcome[] = [];
+  for (const item of held) {
+    if (item !== 'star') {
+      const hero = { def: p.def, power: p.powerState, hp: p.hp, kit: carriedKit(p) };
+      if (!powerUpChanges(game, hero, item)) {
+        out.push({ item, given: false, returned: addItem(game.bonus, item) });
+        continue;
+      }
+    }
+    p.def.behaviour.onPowerUp(p, item, world);
+    out.push({ item, given: true, returned: false });
+  }
+  game.state.score = score; // items from the item box are not worth points
+  const s = game.state;
+  s.powerState = p.powerState;
+  s.hp = p.hp;
+  s.kit = carriedKit(p);
+  const back = out.filter((o) => !o.given);
+  if (back.length) {
+    const names = back.map((o) => ITEM_NAMES[o.item].toLowerCase()).join(' and ');
+    game.deps.announcer?.say(
+      `${p.def.name} is at full power: the ${names} ${back.every((o) => o.returned) ? 'went back to your items' : 'had no room in your items'}.`,
+    );
+  }
   game.autosave();
-  return true;
+  return out;
 }
 
 /** What winning a prize did. */
@@ -197,9 +215,8 @@ function addCoins(game: Game, n: number): void {
 
 /**
  * A bonus game's prize, given now: lives and coins count at once; an item goes into the
- * inventory, or, when that is full or still locked, is used at once on player 1's hero (owner
- * call left to L2: SMB3 lost it; using it is kinder, and a refused use is the only loss). The file
- * is saved.
+ * inventory, or, when that is full or still locked, is used as from the panel (a 1-up at once, the
+ * others held for the next level; owner call left to L2: SMB3 lost it). The file is saved.
  */
 export function awardPrize(game: Game, prize: BonusPrize): AwardOutcome {
   const s = game.state;
@@ -226,12 +243,15 @@ export function awardPrize(game: Game, prize: BonusPrize): AwardOutcome {
         stored: true,
       };
     } else {
+      // Full (or no item box yet): it waits for the next level instead (SMB3 lost it); lost only
+      // when one of its kind already waits.
       const why = inventoryAvailable(game) ? 'YOUR ITEMS ARE FULL:' : 'NO ITEM BOX YET:';
       const use = useItem(game, item);
-      // Refused (it would do nothing now), it is lost.
+      const said = why === 'NO ITEM BOX YET:' ? 'No item box yet' : 'Your items are full';
+      const now = item === '1up' ? 'USED AT ONCE.' : 'KEPT FOR THE NEXT LEVEL.';
       out = {
-        lines: [got, why, use.ok ? 'USED AT ONCE.' : 'NO USE FOR IT NOW. LOST.'],
-        said: `You got ${ITEM_SPOKEN[item]}. ${why === 'NO ITEM BOX YET:' ? 'No item box yet' : 'Your items are full'}: ${use.ok ? 'used at once.' : 'no use for it now, so it is lost.'}`,
+        lines: [got, why, use.ok ? now : 'ONE IS WAITING. LOST.'],
+        said: `You got ${ITEM_SPOKEN[item]}. ${said}: ${use.ok ? now.toLowerCase() : 'one is already waiting, so it is lost.'}`,
         stored: false,
       };
     }
