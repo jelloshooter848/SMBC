@@ -6,14 +6,15 @@ here.
 
 ## Planned
 
-| Order | What                                                                                                                                                 | Status                         |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| 1     | **0.4.9: Bill under 7-3** (Contra look for 7-3, the exploding bridge, the jungle camp, the Jungle Assault mini game) and the Arena airship hero pick | Built; browser QA, then the PR |
-| 2     | **0.4.10: "Safety floor" dev assist**: deadly pits get an invisible floor at the pit's rim and lava turns solid (dev mode only)                      | Being built                    |
-| 3     | **0.4.11: Sophia III**: build her as a new playable hero and make her unlockable in World 8 (see idea 3 below)                                       | Next, the owner's priority     |
-| 4     | **0.4.12: Level restyles**: each earlier hero's level takes on their game's look in the campaign (see below)                                         | Planned                        |
-| 5     | **Mini game fidelity pass**: compare the older mini games with their real NES games, using the owner's reference screenshots                         | With the restyles              |
-| 6     | **Classic SMBC rules** (the 19 reports from PR #51), plus an automated tile-by-tile check of our levels against the NES maps                         | After the restyles             |
+| Order | What                                                                                                                                                                    | Status                         |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| 1     | **0.4.9: Bill under 7-3** (Contra look for 7-3, the exploding bridge, the jungle camp, the Jungle Assault mini game) and the Arena airship hero pick                    | Built; browser QA, then the PR |
+| 2     | **0.4.10: "Safety floor" dev assist**: deadly pits get an invisible floor at the pit's rim and lava turns solid (dev mode only)                                         | Being built                    |
+| 3     | **0.4.11: Sophia III**: build her as a new playable hero and make her unlockable in World 8 (see idea 3 below)                                                          | Next, the owner's priority     |
+| 4     | **0.4.12: Level restyles**: each earlier hero's level takes on their game's look in the campaign (see below)                                                            | Planned                        |
+| 5     | **0.4.13: A coherent story** from 1-0 through 8-4 and on into the Lost Levels: a map guide, hint characters for each secret hero, castle messages rewritten (see below) | Brainstorming                  |
+| 6     | **Mini game fidelity pass**: compare the older mini games with their real NES games, using the owner's reference screenshots                                            | With the restyles              |
+| 7     | **Classic SMBC rules** (the 19 reports from PR #51), plus an automated tile-by-tile check of our levels against the NES maps                                            | After the restyles             |
 
 ### Level restyles (campaign only)
 
@@ -35,6 +36,17 @@ hook built for 7-3 (`campaignTheme:`, `campaignMusic:`, `[campaign-decor]` in th
   `overworld` theme. No restyle may use a water theme.
 - Open question: once the hero is freed, does the level keep its look? The current lean is yes, because it marks
   where they were found.
+
+### A coherent story (0.4.13)
+
+The owner wants one story that runs from the start through 8-4, and explains why 8-4 leads on into the Lost Levels.
+
+- **A guide on the world map** walks you through it, gives hints, and comments when you clear a level whose hidden hero
+  you missed.
+- **Partner characters** (like Jason for Sophia) for the other hidden heroes, who give hints about where to find them.
+- **The castle messages are rewritten.** "Our princess is in another castle" no longer fits this story, so each
+  castle gets its own story beat.
+- **Process:** first draft every line in a story document for the owner to review, then build.
 
 ## Ideas for later
 
@@ -102,6 +114,11 @@ hero, so she would be hidden there.
 
 - **Story:** Blaster Master's opening has Fred touch a radioactive chest and jump down a hole into the Underworld.
   Here, Bowser's spell reached Sophia through the Underworld's radiation.
+- **Owner decisions:**
+  - The villain is the **Plutonium Boss**, Blaster Master's real final boss.
+  - The mini game uses both of Blaster Master's modes: Sophia in side view, then Jason on foot in an overhead dungeon
+    (reusing Link's top-down kit), ending with the overhead boss fight.
+  - In the main game, **Jason can hop out of the tank**.
 - **Mini game:** in Blaster Master's style, as true to the real game as possible.
 - **Size:** this is the biggest of the three ideas, because it adds a full character kit as well as the usual
   hideout, mini game, art and music.
