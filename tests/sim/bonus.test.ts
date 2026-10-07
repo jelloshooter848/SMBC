@@ -26,7 +26,8 @@ import {
   type BonusResult,
 } from '@game/bonus';
 import { DevBonusGamesScene } from '@game/bonus/dev';
-import { OPEN_FRAMES } from '@game/bonus/toad-house';
+import { CHEST_X, OPEN_FRAMES } from '@game/bonus/toad-house';
+import { toPx } from '@engine/math/units';
 import { RESULT_DELAY } from '@game/bonus/slots';
 import { MISS_FRAMES } from '@game/bonus/memory';
 import { SLOT_CELL, SLOT_STRIPS, type CardFace } from '@game/bonus/rules';
@@ -488,6 +489,18 @@ function bonus(h: H, kind: BonusKind, seed = 1) {
   return { scene, ends };
 }
 
+/** In the Toad House: past the walk in, walks the hero to chest `i` and presses OPEN by it. */
+function openChest(h: H, house: ToadHouseScene, i: number) {
+  for (let f = 0; f < 400 && !house.entered; f++) h.step();
+  const target = (CHEST_X[i] as number) + 8;
+  for (let f = 0; f < 600 && house.nearChest() !== i; f++) {
+    const b = house.world.player.body;
+    h.step([toPx(b.x + b.w / 2) < target ? 'right' : 'left']);
+  }
+  h.idle(2);
+  h.tap('attack');
+}
+
 /** Closes the result card with OK. */
 function closeCard(h: H) {
   h.idle(35);
@@ -495,16 +508,13 @@ function closeCard(h: H) {
 }
 
 describe('Toad House', () => {
-  it('pick a chest with left/right and OPEN: its prize goes into the inventory, then OK ends it', () => {
+  it('walk up to a chest and OPEN it: its prize goes into the inventory, then OK ends it', () => {
     const { h } = onMap({ inventoryUnlocked: true });
     const { scene, ends } = bonus(h, 'toad-house', 42);
     const house = scene as ToadHouseScene;
     expect(h.said.some((t) => t.includes('Pick a box. Its contents will help you on your way.'))).toBe(true);
-    expect(house.touchLabels()).toMatchObject({ jump: 'OPEN', start: 'MENU' });
-    expect(house.cursor).toBe(1);
-    h.tap('left');
-    expect(house.cursor).toBe(0);
-    h.tap('jump');
+    expect(house.touchLabels()).toMatchObject({ jump: 'JUMP', attack: null, start: 'MENU' });
+    openChest(h, house, 0);
     expect(house.opened?.index).toBe(0);
     h.idle(OPEN_FRAMES + 65);
     expect(h.game.bonus.inventory).toEqual([house.chests[0]]);
@@ -530,7 +540,7 @@ describe('Toad House', () => {
     const { scene } = bonus(h, 'toad-house', 3);
     const house = scene as ToadHouseScene;
     house.chests[1] = 'mushroom';
-    h.tap('jump');
+    openChest(h, house, 1);
     h.idle(OPEN_FRAMES + 65);
     expect(h.game.bonus.inventory).toHaveLength(INVENTORY_MAX);
     expect(h.game.bonus.itemsNext).toEqual(['mushroom']);
@@ -545,7 +555,7 @@ describe('Toad House', () => {
     });
     const { scene } = bonus(h, 'toad-house', 3);
     (scene as ToadHouseScene).chests[1] = 'flower';
-    h.tap('jump');
+    openChest(h, scene as ToadHouseScene, 1);
     h.idle(OPEN_FRAMES + 65);
     expect(h.game.bonus.inventory).toEqual(Array(INVENTORY_MAX).fill('1up'));
     expect(h.game.bonus.itemsNext).toEqual(['flower']);
@@ -555,7 +565,7 @@ describe('Toad House', () => {
   it('once a chest is open there is no Give up: the prize always comes', () => {
     const { h } = onMap({ inventoryUnlocked: true });
     const { scene, ends } = bonus(h, 'toad-house', 3);
-    h.tap('jump');
+    openChest(h, scene as ToadHouseScene, 1);
     h.tap('start');
     expect(h.top()).toBe(scene); // no menu
     h.idle(OPEN_FRAMES + 65);
@@ -714,7 +724,7 @@ describe("World 4's bonus spot plays the bonus games in rotation", () => {
     const house = h.top() as ToadHouseScene;
     expect(house).toBeInstanceOf(ToadHouseScene);
     h.idle(25);
-    h.tap('jump'); // OPEN the middle chest
+    openChest(h, house, 1);
     h.idle(OPEN_FRAMES + 65);
     closeCard(h);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
@@ -759,7 +769,7 @@ describe("World 4's bonus spot plays the bonus games in rotation", () => {
     h.tap('jump');
     const house = h.top() as ToadHouseScene;
     h.idle(25);
-    h.tap('jump'); // OPEN: decided, nothing given yet
+    openChest(h, house, 1); // OPEN: decided, nothing given yet
     let saved = loadSave(1) as SaveFile;
     expect(saved.bonusOpen).toBe(false);
     expect(saved.bonusNext).toBe(1);

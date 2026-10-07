@@ -73,9 +73,13 @@ the pointer's bob over the chests (still with reduce flashing) and the reels.
 
 ### Toad House
 
-Toad and three chests on a wooden floor; Toad says "PICK A BOX. ITS CONTENTS WILL HELP YOU ON YOUR
-WAY." Left / right move the pointer (announced "Box 2 of 3"), OPEN opens the chest. Its prize rises
-out and goes into the inventory with a banner ("YOU GOT A MUSHROOM! / ADDED TO YOUR ITEMS (1)"). In a round for fun (the arena, Dev → Mini games) nothing is kept: "YOU GOT A MUSHROOM! / (JUST FOR FUN)".
+A room you walk into (0.4.14, SMB3's): the hero walks in from the left on his own, Toad's line
+"PICK A BOX. ITS CONTENTS WILL HELP YOU ON YOUR WAY." shows at the top, and three chests stand on
+the wooden floor, Toad at the back on the right. The room is a real World (`toad-house.map`, one
+screen, `toadHouseRoom()`), so every hero walks and jumps about it with his own moves (a sim per
+hero and chest: `toad-house.test.ts`); nothing in it touches the run. Standing by a chest
+(announced "Box 2. Open it?", the ATTACK button labelled OPEN), OPEN opens it: the other two are
+gone at once (one pick). Its prize rises out and goes into the inventory with a banner ("YOU GOT A MUSHROOM! / ADDED TO YOUR ITEMS (1)"). In a round for fun (the arena, Dev → Mini games) nothing is kept: "YOU GOT A MUSHROOM! / (JUST FOR FUN)".
 Chests are rolled from the seed as the house opens, each on its own: mushroom 50%, fire flower
 35%, star 15% (`CHEST_WEIGHTS`). Music `toad-house`; sounds `powerup-appear` (the lid), `bonus-win`.
 
