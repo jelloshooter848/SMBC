@@ -124,4 +124,6 @@ export const SKY: Record<string, string> = {
   'contra-falls': '#000c20',
   // Red Falcon's lair: a dark blood red between the organic walls.
   'alien-lair': '#200010',
+  // The Top Secret Area: Super Mario World's pale cream behind the hills.
+  'smw-secret': '#f8ecc0',
 };

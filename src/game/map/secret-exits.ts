@@ -1,11 +1,12 @@
 import { getLevel, levelIds } from '@content/levels';
-import type { LevelData } from '../level/schema';
+import { MAP_EXIT, type LevelData } from '../level/schema';
 
 /**
  * Levels with more than one way out (Super Mario World's "secret exit" dots), found from the level
  * data: a main level counts when it, or one of its areas (levels whose `parent` leads to it), has
  * a warp zone, or a pipe, vine, pit or teleport pad that leads into another main level than its own and than
- * the one its normal exit leads to. Pipes between a level's own areas (8-4's maze) don't count.
+ * the one its normal exit leads to, or someone who ends it with a secret (an entity with a `secret`
+ * prop: 2-1's cave Moblin). Pipes between a level's own areas (8-4's maze) don't count.
  * Ids are main level ids ('1-2', Lost Levels 'll-5-1'), as map nodes name them.
  */
 export function secretExitLevels(): ReadonlySet<string> {
@@ -52,10 +53,14 @@ export function secretExitsIn(levels: readonly LevelData[]): Set<string> {
     const elsewhere = zones.some((z) => {
       if (z.kind === 'warp') return true;
       if (z.kind !== 'pipe' && z.kind !== 'vine' && z.kind !== 'pit' && z.kind !== 'teleport') return false;
+      // The way back to the map (the Top Secret Area's pipe) is no exit of a level.
+      if (z.target.level === MAP_EXIT) return false;
       const to = mainOf(z.target.level);
       return to !== main && to !== next;
     });
-    if (elsewhere) out.add(main);
+    // Someone in an area who ends the level with a secret (2-1's cave Moblin, `secret=bonus-2`).
+    const told = family.some((l) => l.entities.some((e) => typeof e.props?.secret === 'string'));
+    if (elsewhere || told) out.add(main);
   }
   return out;
 }

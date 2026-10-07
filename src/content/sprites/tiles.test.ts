@@ -106,6 +106,10 @@ const tileFrames = [
     'blaster-top',
     'blaster-base',
   ].map((t) => `${t}@airship-deck`),
+  // The Top Secret Area (0.4.10).
+  'ground@smw-secret',
+  'tree-top@smw-secret',
+  'used@smw-secret',
   // Bill's jungle, waterfall and Red Falcon's lair.
   'ground@contra-jungle',
   'hard@contra-jungle',
@@ -180,6 +184,19 @@ const itemFrames: Record<string, Size> = {
   'map-node-bonus': T16,
   'map-node-secret': T16,
   'map-node-secret-cleared': T16,
+  // The Top Secret Area (0.4.10): its node, the Yoshi egg, the cave Moblin, fires and mouth.
+  'map-node-tsa': T16,
+  'yoshi-egg': T16,
+  'yoshi-egg-l': T16,
+  'yoshi-egg-r': T16,
+  'yoshi-egg-crack': T16,
+  'egg-shell': [8, 8],
+  'moblin-0': [16, 24],
+  'moblin-1': [16, 24],
+  'moblin-surprised': [16, 24],
+  'cave-fire-0': T16,
+  'cave-fire-1': T16,
+  'cave-mouth': [64, 64],
   'map-castle': T16,
   'map-castle-cleared': T16,
   'map-castle-secret': T16,
@@ -365,6 +382,10 @@ const decorFrames: Record<string, Size> = {
   'jungle-trunks': [32, 32],
   sandbags: [32, 16],
   searchlight: [32, 48],
+  // The Top Secret Area (0.4.10).
+  'smw-hill-big': [112, 96],
+  'smw-hill-small': [64, 48],
+  'smw-bush': [48, 16],
   'cloud-1@contra-jungle': [32, 16],
   'cloud-2@contra-jungle': [48, 16],
   'cloud-3@contra-jungle': [64, 16],
@@ -414,6 +435,7 @@ describe('tile sprites', () => {
         'tiles-dojo',
         'tiles-ninja-night',
         'tiles-contra-jungle',
+        'tiles-smw-secret',
         'tiles-contra-falls',
         'tiles-alien-lair',
       ].sort(),
@@ -487,6 +509,7 @@ describe('decor sprites', () => {
         'decor-gray',
         'decor-cavern',
         'decor-jungle',
+        'decor-smw',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

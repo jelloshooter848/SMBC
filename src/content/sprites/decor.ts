@@ -2,6 +2,7 @@ import { NES } from '@engine/gfx/palette';
 import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
+import { smwDecorFrames, smwDecorPalette } from './top-secret';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -111,6 +112,8 @@ export const decorPalettes: Record<string, string[]> = {
   ],
   // Bill's jungle: dark canopy greens, distant mountain blues, concrete greys, palm bark (contra-decor.ts).
   'decor-jungle': jungleDecorPalette,
+  /* The Top Secret Area: Super Mario World greens, white sparkles. */
+  'decor-smw': smwDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -670,5 +673,7 @@ export const decorDef: SpriteDef = {
     'ruin-temple': ruinTemple,
     // Bill's jungle: palms, canopy, mountains, sandbags, a searchlight; clouds become canopy.
     ...jungleDecorFrames,
+    // The Top Secret Area: a big sparkly hill, a small one, bushes.
+    ...smwDecorFrames,
   },
 };
