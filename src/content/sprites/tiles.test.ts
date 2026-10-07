@@ -72,6 +72,26 @@ const tileFrames = [
   'bridge@station',
   'wall@station',
   'wall-top@station',
+  'ground@cavern',
+  'castle-brick@cavern',
+  'hard@cavern',
+  'brick@cavern',
+  'used@cavern',
+  'tree-top@cavern',
+  'tree-trunk@cavern',
+  'bridge@cavern',
+  'wall@cavern',
+  'wall-top@cavern',
+  'ground@airship',
+  'castle-brick@airship',
+  'hard@airship',
+  'brick@airship',
+  'used@airship',
+  'tree-top@airship',
+  'tree-trunk@airship',
+  'bridge@airship',
+  'wall@airship',
+  'wall-top@airship',
 ];
 
 const fontGlyphs = [
@@ -311,6 +331,8 @@ describe('tile sprites', () => {
         'tiles-overworld-water',
         'tiles-water-gray',
         'tiles-station',
+        'tiles-cavern',
+        'tiles-airship',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -380,6 +402,7 @@ describe('decor sprites', () => {
         'decor-mushroom',
         'decor-mushroom-red',
         'decor-gray',
+        'decor-cavern',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

@@ -24,6 +24,14 @@ const SONG_IDS = [
   // Mega Man's station.
   'mm-station',
   'mm-boss',
+  // Samus's cavern below 4-2 and ZEBES ESCAPE.
+  'cavern',
+  'zebes-escape',
+  // Larry Koopa's airship and the bonus spot behind it.
+  'airship',
+  'smb3-boss',
+  'toad-house',
+  'bonus-game',
 ];
 
 const SFX_IDS = [
@@ -66,6 +74,13 @@ const SFX_IDS = [
   'boss-fill',
   'beam',
   'capsule',
+  // ZEBES ESCAPE.
+  'alarm',
+  // The bonus spot behind Larry's airship and the item inventory.
+  'card-flip',
+  'slot-stop',
+  'bonus-win',
+  'item-use',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);
@@ -239,5 +254,50 @@ describe("Mega Man's station music", () => {
     const capsule = notes(effect('capsule').pulse as string);
     expect(capsule.at(-1)).toBe(Math.max(...capsule));
     expect(length('capsule')).toBeGreaterThan(length('beam'));
+  });
+});
+
+describe("Samus's cavern music", () => {
+  const song = (id: string) => compileSong(songs.find((s) => s.id === id) as (typeof songs)[number]);
+  const sounding = (t: Track) => t.events.filter((e) => e.note !== null);
+  const tracks = (id: string) => song(id).tracks as Record<string, Track>;
+
+  it('the cavern is slow and moody: long lead notes over a slow pulse, hardly any drums', () => {
+    const cave = song('cavern');
+    expect(cave.loop).toBe(true);
+    expect(cave.bpm).toBeLessThanOrEqual(112);
+    expect(cave.length % (PPQ * 4)).toBe(0);
+    expect(seconds(cave.length, cave.bpm)).toBeGreaterThanOrEqual(30);
+    const lead = sounding(tracks('cavern').pulse1 as Track);
+    const mean = lead.reduce((a, e) => a + e.len, 0) / lead.length;
+    expect(mean).toBeGreaterThanOrEqual(PPQ);
+    // Sparse percussion, if any: at most one hit a beat.
+    const noise = tracks('cavern').noise;
+    if (noise) expect(sounding(noise).length).toBeLessThanOrEqual(cave.length / PPQ);
+  });
+
+  it('the escape is urgent: fast, a shorter loop, and racing sixteenth-note arpeggios', () => {
+    const cave = song('cavern');
+    const run = song('zebes-escape');
+    expect(run.loop).toBe(true);
+    expect(run.bpm).toBeGreaterThanOrEqual(160);
+    expect(run.length % (PPQ * 4)).toBe(0);
+    expect(seconds(run.length, run.bpm)).toBeLessThan(seconds(cave.length, cave.bpm));
+    const arps = Object.values(tracks('zebes-escape')).filter((t) => {
+      const s = sounding(t);
+      return s.filter((e) => e.len === PPQ / 4).length / s.length > 0.6;
+    });
+    expect(arps.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('the alarm is a short two-tone klaxon that can repeat back to back', () => {
+    const alarm = sfx.find((s) => s.id === 'alarm') as Sfx;
+    const t = parseMml(alarm.pulse as string, 'pulse');
+    expect(seconds(t.length, alarm.bpm ?? 150)).toBeLessThanOrEqual(0.8);
+    const notes = sounding(t).map((e) => e.note);
+    expect(new Set(notes).size).toBeGreaterThanOrEqual(2);
+    // It ends silent or decaying, so a repeat starts clean.
+    const last = t.events.at(-1);
+    expect(last?.note === null || last?.decay === true).toBe(true);
   });
 });
