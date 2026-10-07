@@ -51,6 +51,7 @@ import { BAR_H, CLASH_AT, CUTSCENE_FRAMES } from './cutscene';
 import {
   ART_BANNER_FRAMES,
   BANNER_AVOIDS,
+  BANNER_SLOTS,
   bannerBox,
   DuelMenuScene,
   READY_FRAMES,
@@ -778,6 +779,24 @@ describe('Shadow Duel: review follow-ups', () => {
       expect(hits).toEqual([]);
     });
 
+    it('climbing through it, the banner moves at most once, between fixed slots (no creeping)', () => {
+      const h = round({ assets: STUB_ASSETS });
+      h.game.ctx.assist.invulnerable = true;
+      const p = h.scene.player;
+      warp(h, 300);
+      const ys: number[] = [];
+      for (let i = 0; i < 400; i++) {
+        const top = p.body.onGround && toPx(p.body.y + p.body.h) === 96;
+        h.step(top ? [] : i % 2 === 0 ? ['right', 'jump'] : ['right']);
+        const b = h.scene.banner;
+        if (b && h.scene.t < b.until && ys.at(-1) !== b.y) ys.push(b.y);
+      }
+      expect(toPx(p.body.y + p.body.h)).toBe(96); // climbed onto the roof under the banner
+      expect(ys.length).toBeGreaterThan(0);
+      expect(ys.length).toBeLessThanOrEqual(2);
+      for (const y of ys) expect(BANNER_SLOTS).toContain(y);
+    });
+
     it('the art (QA: it hid Ryu on top of the last wall for ~3.7 s), and it is shorter now', () => {
       expect(ART_BANNER_FRAMES).toBeLessThanOrEqual(150);
       const h = round({ assets: STUB_ASSETS });
@@ -810,8 +829,8 @@ describe('Shadow Duel: review follow-ups', () => {
     h.step(['right']);
     const r = new TextRenderer();
     h.game.scenes.render(r);
-    expect(r.texts).toContain('CLINGING! KEEP HOLDING');
-    expect(r.texts).toContain('TAP JUMP TO CLIMB.');
+    expect(r.texts).toContain('CLINGING! KEEP HOLDING ON');
+    expect(r.texts).toContain('AND TAP JUMP TO CLIMB.');
     const said = h.said.filter((s) => s.startsWith('Clinging!')).length;
     expect(said).toBe(1);
     h.step([], 60);

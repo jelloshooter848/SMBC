@@ -715,6 +715,11 @@ fresh GameState, one life and a **150-second clock** (held by the Infinite time 
   knocks any shot away within 8 px (`SHOT_SLACK`).
 - **The HUD** (`hud.ts`; no score, so `scorePopups: false`): TIMER, the NINJA and ENEMY bars (16
   segments), the art in hand and NINPO.
+- **Banners** (the first cling's two lines, the art's for 2.5 s, the win's) sit in fixed slots
+  (`BANNER_SLOTS`, from the strip under the HUD down to low over the street). One keeps its slot
+  while it covers neither Ryu (16 px round him, plus where his rise or fall takes him in 12
+  frames) nor a lantern, drop, creature or the Masked Ninja, and otherwise moves to the first
+  clear slot, so it never creeps and moves about once as he climbs through it.
 - **The rooftop arena** (columns 112-127; the camera locks there as the doorway shuts behind
   Ryu): open night sky with the big `ninja:cut-moon` hanging over it, as in the cutscene, a tiled
   rooftop floor, and an 11-tile dressed-stone tower on each side (his wall run, Ryu's cling). The
@@ -747,8 +752,9 @@ glints, and slashes him while he stands or kneels; `RYU_SIM=30 pnpm vitest run r
 --silent=false` prints the report): a sharp run passes unhurt with 99 of the 150 seconds left.
 A careful first-timer (sees things 12-18 frames late, misjudges by up to 6 px, its jump timing by
 up to 2 frames, pauses now and then) passes 100% of 30 seeds with the windmill in hand, losing
-about 10-12 hit points (4-5 to the Masked Ninja); a clumsy player (21 frames, 10 px, more pauses)
-passes about 87% (a third before the bot took the windmill and the health lantern's drops).
+about 11-12 hit points (about 5 to the Masked Ninja); a clumsy player (21 frames, 10 px, more
+pauses) passes roughly 70-90% (80% of 30 seeds; a third before the bot took the windmill and the
+health lantern's drops).
 
 ## Hero training (optional practice rooms)
 

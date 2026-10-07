@@ -72,6 +72,8 @@ const LANTERN_FRAMES = 90;
 export class DuelBot {
   private readonly opts: CautiousOptions;
   private readonly rng: Rng;
+  /** Misjudging what lanterns leave (spirit points, health, the art's scroll). */
+  private readonly dropRng: Rng;
   private readonly history: Seen[][] = [];
   private readonly offsets = new Map<number, { x: number; y: number }>();
   private pauseLeft = 0;
@@ -95,13 +97,15 @@ export class DuelBot {
   constructor(opts: Partial<CautiousOptions> = {}) {
     this.opts = { ...SHARP, ...opts };
     this.rng = new Rng(this.opts.seed * 2654435761 + 7);
+    this.dropRng = new Rng(this.opts.seed * 40503 + 11);
   }
 
-  private offset(id: number): { x: number; y: number } {
+  /** `rng`: the stream it misjudges from (drops have their own, so they never reshuffle the rest). */
+  private offset(id: number, rng = this.rng): { x: number; y: number } {
     let o = this.offsets.get(id);
     if (!o) {
       const e = this.opts.error * this.learn;
-      o = { x: Math.round((this.rng.float() * 2 - 1) * e), y: Math.round((this.rng.float() * 2 - 1) * e) };
+      o = { x: Math.round((rng.float() * 2 - 1) * e), y: Math.round((rng.float() * 2 - 1) * e) };
       this.offsets.set(id, o);
     }
     return o;
@@ -112,9 +116,9 @@ export class DuelBot {
     const prev = new Map((this.history.at(-1) ?? []).map((s) => [s.id, s]));
     for (const e of world.entities) {
       if (!e.alive) continue;
-      const thing = e instanceof Enemy || e instanceof NgShot || e instanceof Afterimage;
-      if (!thing && !(e instanceof ArtScroll || e instanceof Pickup)) continue;
-      const o = this.offset(e.id);
+      const drop = e instanceof ArtScroll || e instanceof Pickup;
+      if (!drop && !(e instanceof Enemy || e instanceof NgShot || e instanceof Afterimage)) continue;
+      const o = this.offset(e.id, drop ? this.dropRng : this.rng);
       const x = e.body.x / 256 + o.x;
       const y = e.body.y / 256 + o.y;
       const before = prev.get(e.id);

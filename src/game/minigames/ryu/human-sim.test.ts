@@ -40,11 +40,13 @@ describe('Shadow Duel: a cautious human (difficulty)', () => {
     expect(runs.reduce((a, r) => a + r.lost, 0) / runs.length).toBeGreaterThan(4);
   }, 300_000);
 
-  it('a clumsy player gets through now and then, and falls short now and then', () => {
-    const { rate } = passRate(8, CLUMSY);
-    expect(rate).toBeGreaterThan(0);
-    expect(rate).toBeLessThan(1);
-  }, 300_000);
+  it('a clumsy player usually gets through, and falls short now and then', () => {
+    const n = 24;
+    const { rate } = passRate(n, CLUMSY);
+    const fails = Math.round((1 - rate) * n);
+    expect(rate).toBeGreaterThanOrEqual(1 / 2);
+    expect(fails).toBeGreaterThanOrEqual(2);
+  }, 600_000);
 
   it.runIf(n > 0)(
     'reports the pass rate',

@@ -3,7 +3,7 @@ import { NO_INPUT, type InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { TouchLabels } from '@engine/input/touch';
-import { px, tileToSub, toPx } from '@engine/math/units';
+import { px, tileToSub, toPx, velToPxf } from '@engine/math/units';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { levelSeed, World } from '../../world/world';
 import { newGameState, type GameState } from '../../context';
@@ -51,8 +51,19 @@ export const BANNER_AVOIDS: ReadonlySet<string> = new Set([
   'hawk',
   'masked-ninja',
 ]);
-/** px kept clear around Ryu and those, and below the HUD band. */
+/** px kept clear around those. */
 const BANNER_CLEAR = 4;
+/** px kept clear around Ryu, and frames of his rise or fall looked ahead. */
+const RYU_SLACK = 16;
+const RYU_LOOK_AHEAD = 12;
+/** px beside a slot that must be clear for a banner to move there (things scrolling in). */
+const BANNER_SCROLL = 32;
+/**
+ * A banner's first-line y (px) slots, from the strip right under the HUD band (a box starts 6 px
+ * above its first line) down to low over the street (a three-line box reaches 38 px below its
+ * first line; the floor is at 208).
+ */
+export const BANNER_SLOTS: readonly number[] = [36, 72, 104, 136, 168];
 /** The screen box drawBanner fills for `lines` with its first line at `y`. */
 export function bannerBox(
   lines: readonly string[],
@@ -327,43 +338,50 @@ export class DuelScene implements Scene {
   /* ---------- Banners ---------- */
 
   /**
-   * Where a banner's first line goes (px): it stays at `y` while its box covers neither Ryu nor
-   * anything in BANNER_AVOIDS on screen; else it moves to the highest clear spot under the HUD
-   * band, and with nowhere clear to the spot covering the least (never Ryu, if it can help it).
+   * Where a banner's first line goes (px): one of BANNER_SLOTS. It keeps its slot while its box
+   * covers neither Ryu (with RYU_SLACK round him, stretched the way he is moving by
+   * RYU_LOOK_AHEAD frames of his rise or fall) nor anything in BANNER_AVOIDS on screen; else it
+   * moves to the first slot that is clear (BANNER_SCROLL px either side too). With none clear it stays put unless it is on Ryu
+   * himself, and then goes to the slot covering least (Ryu above all). Fixed slots and the slack
+   * keep it from creeping or bouncing while he climbs through it.
    */
   private bannerY(lines: readonly string[], y: number): number {
     const cam = this.world.camera;
-    const boxes: { x: number; y: number; w: number; h: number; weight: number }[] = [];
-    const add = (b: { x: number; y: number; w: number; h: number }, weight: number) =>
-      boxes.push({
-        x: toPx(b.x) - cam.pxX - BANNER_CLEAR,
-        y: toPx(b.y) - cam.pxY - BANNER_CLEAR,
-        w: toPx(b.w) + 2 * BANNER_CLEAR,
-        h: toPx(b.h) + 2 * BANNER_CLEAR,
-        weight,
-      });
-    if (!this.player.dead) add(this.player.body, 100);
-    for (const e of this.world.entities) if (e.alive && BANNER_AVOIDS.has(e.kind)) add(e.body, 1);
-    const cover = (top: number) => {
+    type Box = { x: number; y: number; w: number; h: number };
+    const screen = (b: Box, slack: number): Box => ({
+      x: toPx(b.x) - cam.pxX - slack,
+      y: toPx(b.y) - cam.pxY - slack,
+      w: toPx(b.w) + 2 * slack,
+      h: toPx(b.h) + 2 * slack,
+    });
+    const hit = (r: Box, b: Box) => r.x < b.x + b.w && b.x < r.x + r.w && r.y < b.y + b.h && b.y < r.y + r.h;
+    const things = this.world.entities
+      .filter((e) => e.alive && BANNER_AVOIDS.has(e.kind))
+      .map((e) => screen(e.body, BANNER_CLEAR));
+    const p = this.player;
+    const ryu = p.dead ? null : screen(p.body, 0);
+    let wide: Box | null = null;
+    if (!p.dead) {
+      wide = screen(p.body, RYU_SLACK);
+      const reach = Math.round(velToPxf(p.body.vy) * RYU_LOOK_AHEAD);
+      if (reach < 0) wide.y += reach;
+      wide.h += Math.abs(reach);
+    }
+    // (a slot it moves to must also be clear of what is about to scroll in beside it)
+    const cover = (top: number, me: Box | null, scroll = 0) => {
       const r = bannerBox(lines, top);
-      let n = 0;
-      for (const b of boxes)
-        if (r.x < b.x + b.w && b.x < r.x + r.w && r.y < b.y + b.h && b.y < r.y + r.h) n += b.weight;
+      r.x -= scroll;
+      r.w += 2 * scroll;
+      let n = me && hit(r, me) ? 100 : 0;
+      for (const b of things) if (hit(r, b)) n++;
       return n;
     };
-    if (cover(y) === 0) return y;
-    const first = HUD_H + BANNER_CLEAR + 6;
-    const last = SCREEN_H - bannerBox(lines, 0).h - BANNER_CLEAR + 6;
-    let best = y;
-    let least = cover(y);
-    for (let top = first; top <= last; top += 4) {
-      const n = cover(top);
-      if (n < least) {
-        best = top;
-        least = n;
-        if (n === 0) break;
-      }
-    }
+    const slotted = BANNER_SLOTS.includes(y);
+    if (slotted && cover(y, wide) === 0) return y;
+    for (const top of BANNER_SLOTS) if (cover(top, wide, BANNER_SCROLL) === 0) return top;
+    if (slotted && !(ryu && hit(bannerBox(lines, y), ryu))) return y;
+    let best = BANNER_SLOTS[0] as number;
+    for (const top of BANNER_SLOTS) if (cover(top, ryu) < cover(best, ryu)) best = top;
     return best;
   }
 
@@ -373,15 +391,12 @@ export class DuelScene implements Scene {
   private teachClimb(): void {
     this.clingTaught = true;
     const jump = this.hint('JUMP', 'jump');
-    const tap = `TAP ${jump} TO CLIMB.`;
+    // Two lines: in the strip under the HUD band it clears the lantern on building A's roof.
+    const tap = `AND TAP ${jump} TO CLIMB.`;
     this.banner = {
-      lines: [
-        'CLINGING! KEEP HOLDING',
-        'TOWARD THE WALL AND',
-        tap.length <= BANNER_COLS ? tap : 'TAP JUMP TO CLIMB.',
-      ],
+      lines: ['CLINGING! KEEP HOLDING ON', tap.length <= BANNER_COLS ? tap : 'AND TAP JUMP TO CLIMB.'],
       until: this.t + CLIMB_BANNER_FRAMES,
-      y: 40,
+      y: BANNER_SLOTS[0] as number,
     };
     this.say(`Clinging! Keep holding toward the wall and tap ${jump} to climb.`);
   }
@@ -401,7 +416,7 @@ export class DuelScene implements Scene {
       name.length <= BANNER_COLS ? name : 'A NEW ART',
       change.length + 12 <= BANNER_COLS ? `${change}: CHANGE ART` : 'NINPO: CHANGE ART',
     ];
-    this.banner = { lines, until: this.t + ART_BANNER_FRAMES, y: 40 };
+    this.banner = { lines, until: this.t + ART_BANNER_FRAMES, y: BANNER_SLOTS[0] as number };
     this.say(`You got a ninpo art: the ${art?.name ?? 'next art'}! ${change} changes art.`);
   }
 
@@ -473,7 +488,7 @@ export class DuelScene implements Scene {
     this.banner = {
       lines: fun ? ['THE MASKED NINJA FALLS!'] : ['THE MASKED NINJA FALLS!', 'THE CURSE IS BROKEN.'],
       until: Infinity,
-      y: 96,
+      y: 104,
     };
     this.say(fun ? 'The Masked Ninja falls!' : 'The Masked Ninja falls! The curse on Ryu is broken.');
   }
