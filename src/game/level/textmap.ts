@@ -558,7 +558,9 @@ function serializeZone(z: Zone): string {
         z.campaign ? ' campaign' : ''
       }`;
     case 'ledge':
-      return `ledge ${z.x} ${z.y} ${z.w}${z.campaign ? ' campaign' : ''}`;
+      // Always `campaign` (the only way a map holds one): a campaign variant's woken ledge (its
+      // tiles laid, which a map cannot write) is written back as the sleeping zone that lays them.
+      return `ledge ${z.x} ${z.y} ${z.w} campaign`;
     case 'exit':
       return `exit ${z.x} next=${z.next}`;
     case 'vine':

@@ -78,6 +78,14 @@ const ENEMY_FRAMES: Record<string, [number, number]> = {
   'bowser-die-6': [32, 32],
   'bowser-die-7': [32, 32],
   'bowser-die-8': [32, 32],
+  // The true forms' outlines (the campaign fakes' steady tell with reduce flashing on).
+  'bowser-ghost-1': [32, 32],
+  'bowser-ghost-2': [32, 32],
+  'bowser-ghost-3': [32, 32],
+  'bowser-ghost-4': [32, 32],
+  'bowser-ghost-5': [32, 32],
+  'bowser-ghost-6': [32, 32],
+  'bowser-ghost-7': [32, 32],
 };
 
 const HERO_PALETTES = [

@@ -4,12 +4,15 @@ import { hexToRgb, type Palette, type PaletteFx } from '@engine/gfx/palette';
  * Whole-palette recolours (PaletteBook.fx), asked for as `<palette>~<fx>`:
  * - `silhouette`: every colour black (character select's locked heroes);
  * - `rim`: every colour a mid grey (the outline drawn around a silhouette so it reads on black);
+ * - `tell`: every colour a bright cyan (NES $3C), in none of the enemy palettes: a fake Bowser's
+ *   true-form outline with reduce flashing on, full contrast over his green, tan and red and the
+ *   castle's black (docs/STORY.md 2.3a);
  * - `brainwashed` / `brainwashed-glow`: a captive hero's dark purple trance, by brightness (the
  *   glow a little lighter, for the captive's slow pulse).
  * Map pages add `shade-<theme>` / `shade-<theme>-glow` (mapShadeFx): a hidden hero's faint
  * silhouette on the world map, in the page's own ground shade.
  */
-export type HeroFx = 'silhouette' | 'rim' | 'brainwashed' | 'brainwashed-glow';
+export type HeroFx = 'silhouette' | 'rim' | 'tell' | 'brainwashed' | 'brainwashed-glow';
 
 /** The palette name for `palette` recoloured by `fx` ('luigi' → 'luigi~silhouette'). */
 export function fxPalette(palette: string, fx: HeroFx): string {
@@ -34,6 +37,7 @@ function purple(boost: number): PaletteFx {
 export const HERO_FX: Record<HeroFx, PaletteFx> = {
   silhouette: (pal) => pal.map(() => '#000000'),
   rim: (pal) => pal.map(() => '#7c7c7c'),
+  tell: (pal) => pal.map(() => '#00fcfc'),
   brainwashed: purple(0),
   'brainwashed-glow': purple(0.25),
 };

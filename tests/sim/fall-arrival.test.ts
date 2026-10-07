@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RESTYLES_SEEN } from './story-seen';
 import { getLevel, levelIds } from '@content/levels';
 import { px, toPx } from '@engine/math/units';
 import { runSim } from '@game/sim/headless';
@@ -36,6 +37,7 @@ describe('6-2: down the pipe at 19 after stepping back left onto it', () => {
     it(`${id} lands in the bonus room at column 1, on its floor, not on the left wall`, () => {
       const h = makeGame();
       file({
+        story: [...RESTYLES_SEEN],
         cleared: ['1-0', '6-1'],
         pages: ['smb-1', 'smb-6'],
         position: { page: 'smb-6', node: '6-2' },

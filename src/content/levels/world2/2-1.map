@@ -54,6 +54,12 @@ piranha 176 10
 decor-castle 204 12
 ;; Campaign only (0.4.10): past the castle, the rocky mouth of the Moblin's hidden cave.
 decor 220 12 kind=items:cave-mouth campaign=true
+;; Campaign only (0.4.13, docs/STORY.md 2.5): the old man at the start, in front of a cave doorway
+;; between the castle (to column 6) and the first tree (11), a fire either side.
+cave-fire 7 12 campaign=true
+decor 8 12 kind=partners:cave campaign=true
+partner 8 12 who=old-man dx=8 campaign=true
+cave-fire 10 12 campaign=true
 
 [zones]
 checkpoint 98 12
@@ -70,10 +76,12 @@ pipe 103 9 down -> 2-1-bonus 1 0 exit=none
 path 183 10 1 block=184,0 one-way campaign
 path 184 9 1 block=184,0 one-way campaign
 path 192 3 7 block=184,0 campaign
-;; Campaign only (0.4.12): a one-way cloud ledge against the last tower, a row under the hidden
-;; coin block's top, for a hero with a fixed jump arc (Simon): the springboard's launch rises through
-;; it and he lands on it coming down; from it he reaches the hidden coin block and the tower top.
-ledge 188 6 2 campaign
+;; Campaign only (0.4.12): a one-way cloud ledge against the last tower, a row over the bricks' top
+;; and three under the hidden coin block's, for a hero with a fixed jump arc (Simon): he hops onto it
+;; off the bricks or lands on it coming down from the springboard (whose launch rises through it),
+;; and jumps from it onto the hidden coin block's top. Too low for any hero to reach the hidden
+;; block from it.
+ledge 188 8 2 campaign
 pipe 224 11 right -> 2-1-cave 1 12 campaign
 
 [decor]

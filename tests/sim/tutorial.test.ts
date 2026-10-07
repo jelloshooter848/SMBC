@@ -25,9 +25,11 @@ import type { WorldMapPage } from '@game/map/types';
 import { loadSave, newSave, saveKey } from '@game/save/save-files';
 import { MARIO_LESSONS, MARIO_TUTORIAL, TOAD_PAGES } from '@game/tutorial/mario-1-0';
 import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
+import { STORY_TEASE_PAGES, STORY_TOAD_PAGES } from '@game/story/script';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
 import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
+import { ALL_STORY } from './story-seen';
 
 // Mario's tutorial stage 1-0 (0.5.0): World 1's start node, where a new file begins; 1-1 opens
 // once it is cleared (or skipped). Toad tells the story, the lessons follow one by one in a
@@ -255,8 +257,10 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(all).toMatch(/IF A LEVEL HIDES SOMEONE YOU MISSED, LOOK CLOSELY AT THE MAP/);
     expect(TOAD_PAGES.length).toBeLessThanOrEqual(5);
     for (const page of TOAD_PAGES) expect(page.join(' ').length).toBeLessThanOrEqual(130);
+    // The campaign tells the story's greeting (docs/STORY.md 2.1); TOAD_PAGES stay for other play.
+    expect(card.lines).toEqual(STORY_TOAD_PAGES[0]);
     skipGreeting(h);
-    expect(h.said.some((t) => /brainwashed/i.test(t))).toBe(true);
+    expect(h.said.some((t) => t.startsWith(STORY_TOAD_PAGES[3]!.filter(Boolean).join(' ')))).toBe(true);
     expect(director(h)?.lesson?.id).toBe('walk');
     expect(h.said.at(-1)).toMatch(/HOLD RIGHT TO WALK/);
     // The greeting is not repeated after a respawn.
@@ -288,7 +292,8 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(d.done).toEqual(MARIO_LESSONS.map((l) => l.id));
     expect(d.missed).toEqual([]);
     expect(teased).toBe(true);
-    expect(h.said.some((t) => t.includes(TEASE_LINES.join(' ')))).toBe(true);
+    // The campaign's tease: Bowser's two pages (docs/STORY.md 2.2), each read out.
+    for (const page of STORY_TEASE_PAGES) expect(h.said.some((t) => t.startsWith(page.join(' ')))).toBe(true);
     expect(h.game.state.lives).toBe(lives);
     // The flag clears 1-0: back on the map, 1-1 drawn in.
     h.until(() => h.top() instanceof WorldMapScene, 1200);
@@ -340,7 +345,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
 
   it('Pause → Skip tutorial counts 1-0 cleared and opens 1-1 on the map', () => {
     const h = makeGame();
-    file();
+    file({ story: [...ALL_STORY] }); // Toad's World 1 entry: toad-guide.test.ts
     h.game.openFile(1);
     enter10(h);
     skipGreeting(h);

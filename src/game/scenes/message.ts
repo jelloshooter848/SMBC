@@ -76,6 +76,17 @@ export interface CardOptions {
   prompt?: string | (() => string);
   /** With `panel`: the box goes near the top, under the HUD (the tutorial's Toad), not the bottom. */
   top?: boolean;
+  /**
+   * Draw the `panel` box with no level (`world` null): over whatever scene is beneath (the world
+   * map), which keeps rendering. Without it a card with no world draws on black as before.
+   */
+  overlay?: boolean;
+  /**
+   * Keys that close the card another way (the story cards' BACK: 'attack'), once the guard is
+   * over: `onSkip` is called instead of the card's `next`. Default none.
+   */
+  skipKeys?: readonly Action[];
+  onSkip?: () => void;
 }
 
 /**
@@ -97,10 +108,12 @@ export class CardScene implements Scene {
     opts: CardOptions = {},
   ) {
     this.keys = opts.keys ?? ['start', 'attack'];
-    this.panel = world !== null && opts.panel === true;
+    this.panel = opts.panel === true && (world !== null || opts.overlay === true);
     this.prompt = opts.prompt ?? '';
     this.top = opts.top === true;
-    this.translucent = world !== null;
+    this.skipKeys = opts.onSkip ? (opts.skipKeys ?? []) : [];
+    this.onSkip = opts.onSkip ?? null;
+    this.translucent = world !== null || this.panel;
     if (world && !this.panel) world.castleText = [...lines];
   }
 
@@ -108,15 +121,27 @@ export class CardScene implements Scene {
   private readonly panel: boolean;
   private readonly prompt: string | (() => string);
   private readonly top: boolean;
+  private readonly skipKeys: readonly Action[];
+  private readonly onSkip: (() => void) | null;
 
-  /** B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. A when it goes on too. */
+  /**
+   * B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. A when it
+   * goes on too. With skip keys, B reads BACK when it is one of them.
+   */
   touchLabels(): TouchLabels {
-    return { ...NO_TOUCH_BUTTONS, [this.keys.includes('jump') ? 'jump' : 'attack']: 'OK' };
+    const ok = { ...NO_TOUCH_BUTTONS, [this.keys.includes('jump') ? 'jump' : 'attack']: 'OK' };
+    return this.skipKeys.includes('attack') ? { ...ok, attack: 'BACK' } : ok;
   }
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
     if (this.done) return;
-    if (cardContinues(++this.t, this.timeout, inputs, this.keys)) {
+    this.t++;
+    if (this.onSkip && cardContinues(this.t, Infinity, inputs, this.skipKeys)) {
+      this.done = true;
+      this.onSkip();
+      return;
+    }
+    if (cardContinues(this.t, this.timeout, inputs, this.keys)) {
       this.done = true;
       this.next();
     }

@@ -21,6 +21,8 @@ import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
 import { sophiaPalettes, sophiaDef } from './sophia';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
+import { partnersPalettes, partnersDef } from './partners';
+import { wandPalettes, wandDef } from './wand';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -80,6 +82,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   sophia: sophiaSheet,
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
+  partners: partnersDef,
+  wand: wandDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -108,6 +112,8 @@ const defaults: Record<string, readonly string[]> = {
   ...contraPalettes,
   ...sophiaPalettes,
   ...bmDungeonPalettes,
+  ...partnersPalettes,
+  ...wandPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

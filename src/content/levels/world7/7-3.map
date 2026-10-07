@@ -35,6 +35,8 @@ campaignMusic: contra-jungle
 
 [entities]
 decor-castle 0 12
+;; Campaign only (0.4.13, docs/STORY.md 2.10): Lance in the jungle at the start.
+partner 5 12 who=lance campaign=true
 koopa-para-green 52 8
 koopa-para-green-h 137 7
 koopa-para-green-h 153 9
