@@ -53,4 +53,6 @@ export const SKY: Record<string, string> = {
   'castle-water': '#000000',
   // The station hangs in space: black behind the plating.
   station: '#000000',
+  // Samus's cavern: a near-black blue, just off the castle's black, behind the rock.
+  cavern: '#000818',
 };

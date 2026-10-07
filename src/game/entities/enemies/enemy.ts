@@ -26,6 +26,7 @@ export const BUMP_POP_GRAVITY = 0x00355;
 export function enemyPalette(theme: Theme): string {
   switch (theme) {
     case 'underground':
+    case 'cavern':
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':
