@@ -238,6 +238,47 @@ describe('the space station (3-1-station)', () => {
     expect(r.world.time).toBeLessThanOrEqual(300);
   });
 
+  it('jumping over the return pad, in the air above it, does not beam; landing past it neither', () => {
+    let overInAir = 0;
+    let beamedInAir = false;
+    const r = runSim({
+      level: station(),
+      character: MARIO,
+      script: none,
+      start: { x: 40, y: 12, mode: 'stand' },
+      maxFrames: 160,
+      controller: (w, f) => {
+        const p = w.player;
+        const pad = w.pads.find((q) => q.tx === 44) as TeleportPad;
+        const over = Math.floor(centerCol(w)) === 44;
+        if (over && !p.body.onGround) {
+          overInAir++;
+          beamedInAir ||= w.beaming;
+        }
+        if (pad.standing(p)) throw new Error(`landed on the pad at frame ${f}`);
+        if (centerCol(w) > 45.2) return []; // past it: stop
+        return f > 5 && centerCol(w) > 42.3 && p.body.onGround ? ['right', 'jump', 'run'] : ['right', 'run'];
+      },
+    });
+    expect(overInAir).toBeGreaterThan(0);
+    expect(beamedInAir).toBe(false);
+    expect(r.outcome).toBe('timeout');
+    expect(r.world.beaming).toBe(false);
+    expect(centerCol(r.world)).toBeGreaterThan(45);
+  });
+
+  it('jumping straight up on the arrival pad does not send the hero back down', () => {
+    const r = runSim({
+      level: station(),
+      character: MARIO,
+      script: none,
+      maxFrames: 300,
+      controller: (w, f) => (w.player.frozen ? [] : f % 40 < 15 ? ['jump'] : []),
+    });
+    expect(r.outcome).toBe('timeout');
+    expect(Math.floor(centerCol(r.world))).toBe(3);
+  });
+
   it('two players: each beams down in turn (player 2 a moment later), then both play', () => {
     const shown: number[] = [-1, -1];
     const r = runSim({

@@ -16,7 +16,9 @@ export class Decoration extends Entity {
     ty: number,
   ) {
     super(px(tx * 16), px(ty * 16), 16, 16);
-    this.layer = 'back';
+    // Scenery of another sheet (`station:window`) hangs on background wall tiles: drawn after
+    // the tiles, still behind the players. The classic decor stands behind the tiles.
+    this.layer = decorInFront(name) ? 'main' : 'back';
     this.despawnMargin = 192;
   }
   raiseFlag(): void {
@@ -26,27 +28,34 @@ export class Decoration extends Entity {
     if (this.flag && this.flagT < 24) this.flagT++;
   }
   render(r: Renderer, view: View): void {
-    // `sheet:frame` decor comes from another sheet in its own palette (`station:window`).
-    const colon = this.name.indexOf(':');
-    if (colon > 0) {
-      const id = this.name.slice(0, colon);
-      const frame = this.name.slice(colon + 1);
-      const other = view.assets.sheet(id);
-      const f = other.frames.get(frame);
-      if (f) r.sprite(other, frame, this.screenX(view), this.screenY() + 16 - f.h);
-      return;
-    }
-    const sheet = view.assets.sheet('decor', decorPalette(view.theme));
-    const f = sheet.frames.get(this.name);
-    if (!f) return;
     const x = this.screenX(view);
     const bottom = this.screenY() + 16;
     if (this.flag) {
-      const fl = view.assets.sheet('items');
-      r.sprite(fl, 'castle-flag', x + f.w / 2 - 8, bottom - f.h + 8 - this.flagT);
+      const f = view.assets.sheet('decor', decorPalette(view.theme)).frames.get(this.name);
+      if (f)
+        r.sprite(view.assets.sheet('items'), 'castle-flag', x + f.w / 2 - 8, bottom - f.h + 8 - this.flagT);
     }
-    r.sprite(sheet, this.name, x, bottom - f.h);
+    drawDecor(r, view, this.name, x, bottom);
   }
+}
+
+/** `sheet:frame` decor (`station:window`) hangs in front of the tiles; the classic decor behind them. */
+export const decorInFront = (kind: string): boolean => kind.includes(':');
+
+/**
+ * Draw decor `kind` with its bottom-left at screen (x, bottom) (shared with the editor): a frame
+ * of the `decor` sheet in the theme's palette, or for `sheet:frame` that frame of another sheet
+ * in its own palette. An unknown frame draws nothing.
+ */
+export function drawDecor(r: Renderer, view: View, kind: string, x: number, bottom: number): void {
+  const colon = kind.indexOf(':');
+  const sheet =
+    colon > 0
+      ? view.assets.sheet(kind.slice(0, colon))
+      : view.assets.sheet('decor', decorPalette(view.theme));
+  const frame = colon > 0 ? kind.slice(colon + 1) : kind;
+  const f = sheet.frames.get(frame);
+  if (f) r.sprite(sheet, frame, x, bottom - f.h);
 }
 
 /** Decor palette for a theme (shared with the editor). */

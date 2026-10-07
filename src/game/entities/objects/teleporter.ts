@@ -54,7 +54,8 @@ export class TeleportPad extends Entity {
     super(px(zone.x * 16), px((zone.y + 1) * 16 - 8), 16, 8);
     this.shown = !hidden;
     this.risen = hidden ? 0 : PAD_RISE_FRAMES;
-    this.layer = 'back'; // behind the tiles: a revealed pad rises out of the floor
+    // While rising out of the floor it is drawn behind the tiles, so the floor hides its lower part.
+    this.layer = hidden ? 'back' : 'main';
     this.despawnMargin = null;
   }
 
@@ -95,6 +96,8 @@ export class TeleportPad extends Entity {
   update(world: World): void {
     if (!this.shown) return;
     if (this.risen < PAD_RISE_FRAMES) this.risen++;
+    // Risen: in front of background tiles (the station's walls), behind the players.
+    if (this.risen >= PAD_RISE_FRAMES) this.layer = 'main';
     for (const p of world.players) if (!this.over(p) || p.dead) this.ready.add(p);
   }
 

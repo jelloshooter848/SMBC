@@ -5,6 +5,12 @@ import { parseTextMap, serializeTextMap } from '@game/level/textmap';
 import { DEFAULT_LEGEND, T, TILES, tileDef } from '@game/level/tiles';
 import type { LevelData } from '@game/level/schema';
 import { getLevel, levelIds } from '.';
+import { PALETTES, SPRITES } from '@content/sprites';
+import { AssetRegistry } from '@engine/assets/registry';
+import { NullRenderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import { decorInFront, drawDecor } from '@game/entities/objects/decoration';
+import type { View } from '@game/entities/entity';
 
 // Owner design (3-1 coin heaven, Mega Man): past the end of the clouds a coin trail leads over
 // two small cloud platforms to a hidden block holding a teleport pad; standing on the pad beams
@@ -146,15 +152,15 @@ describe('the space station (3-1-station)', () => {
     const pit = load('3-1-sky').zones.find((z) => z.kind === 'pit');
     expect(pit?.kind === 'pit' && { ...pit.target, exitDir: 'fall' }).toEqual(back);
     for (const x of [3, 44]) {
-      expect(tile(l, x, 12)).toBe(T.AIR);
+      expect(tileDef(tile(l, x, 12) as number).collision).toBe('none');
       expect(tileDef(tile(l, x, 13) as number).collision).toBe('solid');
     }
   });
 
   it('captive Mega Man stands on the command deck floor, under the big window', () => {
     expect(l.entities).toContainEqual({ type: 'captive', x: 38, y: 12, props: { hero: 'megaman' } });
-    expect(tile(l, 38, 12)).toBe(T.AIR);
-    expect(tile(l, 38, 11)).toBe(T.AIR);
+    expect(tileDef(tile(l, 38, 12) as number).collision).toBe('none');
+    expect(tileDef(tile(l, 38, 11) as number).collision).toBe('none');
     expect(tileDef(tile(l, 38, 13) as number).collision).toBe('solid');
     expect(l.decor).toContainEqual({ kind: 'station:window', x: 37, y: 8 });
   });
@@ -164,5 +170,77 @@ describe('the space station (3-1-station)', () => {
     expect(kinds.filter((k) => k === 'station:window').length).toBeGreaterThanOrEqual(2);
     expect(kinds).toContain('station:console');
     expect(kinds).toContain('station:girder');
+  });
+});
+
+describe('every bundled level: teleport pads', () => {
+  it('each pad hidden in a block points at a hidden teleporter block (`8`)', () => {
+    let hidden = 0;
+    for (const id of levelIds()) {
+      const l = getLevel(id);
+      for (const z of l.zones) {
+        if (z.kind !== 'teleport' || !z.block) continue;
+        hidden++;
+        expect(tile(l, z.block.x, z.block.y), `${id} block=${z.block.x},${z.block.y}`).toBe(
+          T.HIDDEN_TELEPORTER,
+        );
+      }
+    }
+    expect(hidden).toBeGreaterThanOrEqual(1);
+  });
+
+  it('every pad targets a bundled level, and lies on a solid floor', () => {
+    for (const id of levelIds()) {
+      const l = getLevel(id);
+      for (const z of l.zones) {
+        if (z.kind !== 'teleport') continue;
+        expect(() => getLevel(z.target.level), id).not.toThrow();
+        expect(tileDef(tile(l, z.x, z.y + 1) as number).collision, `${id} ${z.x},${z.y}`).toBe('solid');
+      }
+    }
+  });
+});
+
+describe('the station interior', () => {
+  const l = load('3-1-station');
+  it('is a room: dark bulkhead wall tiles fill the background, a conduit along the top', () => {
+    for (let x = 1; x < l.width - 1; x++) {
+      const t = tile(l, x, 3);
+      expect([T.WALL_TOP, T.HARD], `${x},3`).toContain(t);
+      for (let y = 4; y <= 12; y++) {
+        const id = tile(l, x, y) as number;
+        expect([T.WALL, T.HARD], `${x},${y}`).toContain(id); // no coins: a coin cell would show black
+      }
+    }
+    expect(tileDef(T.WALL).collision).toBe('none'); // background only: collision unchanged
+  });
+});
+
+describe('`sheet:frame` decor (game and editor draw it the same way)', () => {
+  const assets = new AssetRegistry(PALETTES);
+  assets.defineAll(SPRITES);
+  const view: View = { camX: 0, frame: 0, assets, theme: 'station', reduceFlashing: true };
+  const drawn = (kind: string) => {
+    const out: { sheet: string; frame: string; x: number; y: number }[] = [];
+    const r = Object.assign(new NullRenderer(), {
+      sprite(s: SpriteSheet, frame: string, x: number, y: number): void {
+        out.push({ sheet: s.id, frame, x, y });
+      },
+    });
+    drawDecor(r, view, kind, 64, 128);
+    return out;
+  };
+
+  it('draws that frame of the other sheet, bottom-anchored, in front of the tiles', () => {
+    expect(drawn('station:window')).toEqual([{ sheet: 'station', frame: 'window', x: 64, y: 96 }]);
+    expect(drawn('station:console')).toEqual([{ sheet: 'station', frame: 'console', x: 64, y: 112 }]);
+    expect(decorInFront('station:girder')).toBe(true);
+    expect(decorInFront('cloud-1')).toBe(false);
+  });
+
+  it('classic decor still comes from the decor sheet; an unknown frame draws nothing', () => {
+    expect(drawn('cloud-1')[0]?.frame).toBe('cloud-1');
+    expect(drawn('cloud-1')[0]?.sheet).toMatch(/^decor@/);
+    expect(drawn('station:nothing')).toEqual([]);
   });
 });

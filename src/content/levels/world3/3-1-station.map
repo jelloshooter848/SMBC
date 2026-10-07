@@ -20,16 +20,16 @@ parent: 3-1
 ................ ................ ................
 ................ ................ ................
 ################ ################ ################
-#............... B............... B..............#
-#............... B............... B..............#
-#............... B............... B..............#
-#............... B............... B..............#
-#............... B............... B..............#
-#............... B....$$$$....... B..............#
-#............... ....BBBBBB...... ...............#
-#............... ................ ...............#
-#.......$$...... ................ ...............#
-#...........BB.. ..............BB ...............#
+#AAAAAAAAAAAAAAA BAAAAAAAAAAAAAAA BAAAAAAAAAAAAAA#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH HHHHBBBBBBHHHHHH HHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHH#
+#HHHHHHHHHHHBBHH HHHHHHHHHHHHHHBB HHHHHHHHHHHHHHH#
 ################ ################ ################
 ################ ################ ################
 
