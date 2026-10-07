@@ -4,15 +4,15 @@ import { Rng } from '@engine/rng';
 import { Enemy } from '../../entities/enemies/enemy';
 import type { World } from '../../world/world';
 import { CvShot, MEDUSA_PERIOD, MEDUSA_WAVE, MedusaHead } from './creatures';
-import { Beast, CAST_FIRE_AT, Dracula, DraculaHead, ShockWave } from './dracula';
+import { Beast, BeastHead, CAST_FIRE_AT, Dracula, DraculaHead } from './dracula';
 import type { CastleScene } from './scene';
 
 /*
  * A player for Dracula's Castle, for tests and difficulty tuning (docs/HEROES.md): it walks the
  * castle right, takes both flights of stairs, lashes candles, creatures and shots
  * in reach, and in the throne room stands off Dracula's head, jumps and lashes it as it comes
- * down, then keeps the beast at whip's length, backing off its leaps and jumping its shock
- * waves. With `CautiousOptions` it plays like a careful first-timer: it sees things `reaction`
+ * down; then it steps in under the beast's head as it lands, jumps and lashes it, backs off when
+ * it opens its maw to spit, and gets out from under its leaps (under a high one when cornered). With `CautiousOptions` it plays like a careful first-timer: it sees things `reaction`
  * frames late and up to `error` px off, mistimes its jumping lashes by up to `error / 3` frames,
  * and now and then stops for a moment; each hit Dracula lands, and each jumping lash that misses
  * his head, halves its misjudging (to a quarter).
@@ -37,6 +37,10 @@ export const CAUTIOUS: CautiousOptions = { reaction: 15, error: 6, pause: 0.004,
 export const ROUTE = { stairs1: 288, stairs2Top: 736, walkFloor: 128 } as const;
 /** Frames after take-off at which a jumping lash meets Dracula's head on the way down. */
 export const HEAD_LASH_AT = 37;
+/** The same for the beast's head (lower: later in the fall). */
+export const BEAST_LASH_AT = 41;
+/** Centre to head-centre distance (px) it lashes the beast's head from. */
+export const BEAST_REACH = 22;
 
 interface Seen {
   id: number;
@@ -56,6 +60,8 @@ interface Seen {
   dy: number;
   /** A Medusa head's wave: its age and centre line (px), to read its path ahead. */
   wave: { age: number; baseY: number } | null;
+  /** The beast in a leap: where it will land (its centre, px), as a player reads the arc. */
+  goal: number | null;
 }
 
 /** Frames from pressing the whip to the lash being live (its wind-up). */
@@ -102,7 +108,7 @@ export class CastleBot {
     const prev = new Map((this.history.at(-1) ?? []).map((s) => [s.id, s]));
     for (const e of world.entities) {
       if (!e.alive) continue;
-      const threat = e instanceof Enemy || e instanceof CvShot || e instanceof ShockWave;
+      const threat = e instanceof Enemy || e instanceof CvShot;
       if (!threat) continue;
       const o = this.offset(e.id);
       let state = '';
@@ -120,6 +126,10 @@ export class CastleBot {
         state = e.state;
         live = e.hurtable;
         t = e.t;
+      } else if (e instanceof BeastHead) {
+        state = e.owner.state;
+        live = e.owner.hurtable;
+        t = e.owner.t;
       }
       const x = e.body.x / 256 + o.x;
       const y = e.body.y / 256 + o.y;
@@ -130,6 +140,7 @@ export class CastleBot {
         x,
         y,
         wave: e instanceof MedusaHead ? { age: e.age, baseY: toPx(e.baseY) + o.y } : null,
+        goal: e instanceof Beast && e.state === 'leap' ? toPx(e.goal) + o.x : null,
         dx: before ? x - before.x : 0,
         dy: before ? y - before.y : 0,
         w: toPx(e.body.w),
@@ -317,17 +328,11 @@ export class CastleBot {
         return held;
       }
     }
-    const wave = seen.find(
-      (s) => s.kind === 'shock-wave' && Math.abs(s.x + 5 - m.cx) < 30 && s.vx > 0 === s.x < m.cx,
-    );
-    if (wave && p.body.onGround) {
-      held.push('jump');
-      return held;
-    }
     const head = seen.find((s) => s.kind === 'dracula-head');
     const beast = seen.find((s) => s.kind === 'beast');
+    const beastHead = seen.find((s) => s.kind === 'beast-head');
     if (head) return this.fightCount(scene, head, held, roomL, roomR, seen);
-    if (beast) return this.fightBeast(scene, beast, held, roomL, roomR);
+    if (beast && beastHead) return this.fightBeast(scene, beast, beastHead, held, roomL, roomR);
     return held;
   }
 
@@ -406,54 +411,84 @@ export class CastleBot {
     this.offsets.clear();
   }
 
-  private startJump(scene?: CastleScene): void {
+  private startJump(scene?: CastleScene, at = HEAD_LASH_AT): void {
     this.jumpT = 0;
     this.jumpLife = scene?.life.hp ?? -1;
     const e = Math.round((this.opts.error * this.learn) / 3);
-    this.lashAt = HEAD_LASH_AT + (e ? this.rng.int(2 * e + 1) - e : 0);
+    this.lashAt = at + (e ? this.rng.int(2 * e + 1) - e : 0);
   }
 
   /**
-   * Phase 2: daggers from a safe distance (lashes when it closes in), away from its leaps, over
-   * its shock waves; cornered, a jump over it.
+   * Form 2: out from under its leaps (away from where it will land; under a high one when the
+   * wall is at its back), well off while its maw is open, and in under its head as it lands: a
+   * jump, and the lash on the way down.
    */
   private fightBeast(
     scene: CastleScene,
     beast: Seen,
+    head: Seen,
     held: Action[],
     roomL: number,
     roomR: number,
   ): Action[] {
     const p = scene.player;
     const m = this.me(scene);
+    if (this.jumpT >= 0) {
+      if (this.jumpT === this.lashAt) held.push('attack');
+      return held;
+    }
     if (!p.body.onGround || p.attackTimer > 0) return held;
-    const bcx = beast.x + (beast.w >> 1);
-    const dir: -1 | 1 = bcx > m.cx ? 1 : -1;
-    const back: -1 | 1 = -dir as -1 | 1;
-    const gap = dir > 0 ? beast.x - (m.x + m.w) : m.x - (beast.x + beast.w);
     const move = (d: -1 | 1) => held.push(d > 0 ? 'right' : 'left');
-    const cornered = back < 0 ? m.x < roomL + 12 : m.x + m.w > roomR - 12;
-    if (beast.state === 'crouch' || beast.state === 'leap') {
-      // Run from where it will land (toward the side with more room).
-      move(m.cx - roomL > roomR - m.cx ? -1 : 1);
+    const bcx = beast.x + (beast.w >> 1);
+    const clear = 18 + 6 + 8;
+    if (beast.state === 'leap' || beast.state === 'drop') {
+      // Where it comes down: to lashing range of its head there, on this side of it (the other
+      // side, under it, when the wall is too close), out from under it.
+      const land = beast.goal ?? bcx;
+      let side: -1 | 1 = m.cx < land ? -1 : 1;
+      let want = land + side * (BEAST_REACH + 10);
+      if (want < roomL + 8 || want > roomR - 8) {
+        side = -side as -1 | 1;
+        want = land + side * (BEAST_REACH + 10);
+      }
+      if (Math.abs(want - m.cx) > 3) move(want > m.cx ? 1 : -1);
       return held;
     }
-    if (cornered && gap < 16 && beast.state === 'walk') {
-      held.push(dir > 0 ? 'right' : 'left', 'jump');
+    if (beast.state === 'crouch') {
+      // About to leap: not right against it.
+      if (Math.abs(bcx - m.cx) < clear) move(m.cx < bcx ? -1 : 1);
       return held;
     }
-    if (gap < 40 && !cornered && beast.state !== 'rise') {
-      move(back);
+    const dir: -1 | 1 = bcx > m.cx ? 1 : -1;
+    const hx = head.x + (head.w >> 1);
+    const gap = Math.abs(hx - m.cx);
+    // Its maw open (or soon to fire): stand well off and lash the fire as it comes.
+    if (beast.state === 'spit-wind' || beast.state === 'spit') {
+      const far = 64 + Math.max(0, this.opts.reaction - 12);
+      const back: -1 | 1 = -dir as -1 | 1;
+      const wall = back < 0 ? m.x < roomL + 2 : m.x + m.w > roomR - 2;
+      if (gap < far && !wall) move(back);
+      else if (p.facing !== dir) move(dir);
+      return held;
+    }
+    // In under its head, facing it.
+    const goal = hx - dir * BEAST_REACH;
+    const d = goal - m.cx;
+    if (Math.abs(d) > 3) {
+      move(d > 0 ? 1 : -1);
       return held;
     }
     if (p.facing !== dir) {
       move(dir);
       return held;
     }
-    if (!beast.live) return held;
-    if (gap <= 22) held.push('attack');
-    else if ((p.scratch.hearts ?? 0) > 0 && (p.scratch.subs ?? 0) > 0) held.push('special');
-    else if (gap > 22) move(dir);
+    // Jump while it stays put long enough for the lash to come down on its head (what it sees is
+    // `reaction` frames old: it allows for that).
+    const early = beast.state === 'land' || (beast.state === 'stand' && beast.t + this.opts.reaction <= 20);
+    if (head.live && early && p.body.vx === 0) {
+      held.push('jump');
+      this.startJump(scene, BEAST_LASH_AT);
+    }
     return held;
   }
 }

@@ -5,7 +5,7 @@ import { CastleScene } from './scene';
 /**
  * Simon's mini game, Dracula's Castle: an NES Castlevania-style castle stage under 5-4, played as
  * Simon (whip, the dagger from a candle with hearts as its ammunition, Castlevania stairs), ending
- * in Dracula's throne room: the Count, then his beast form, on one enemy bar (scene.ts).
+ * in Dracula's throne room: the Count, then his beast form, each with a full enemy bar (scene.ts).
  */
 export const SIMON_MINIGAME: MiniGameDef = {
   hero: 'simon',

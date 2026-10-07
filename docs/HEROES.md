@@ -614,7 +614,7 @@ or a plain box for one that does not exist; nothing throws).
 
 - **The stage** (112 columns; rows 0-1 stay empty under the HUD; below them every empty cell is
   the crypt's black-brick `wall` backdrop under a `wall-top` cornice, with four open windows,
-  stained glass and Dracula's throne as decor): the entrance hall (candles, a bat),
+  stained glass, and in Dracula's room barred windows and his coffin on its dais, as decor): the entrance hall (candles, a bat),
   **stairs up** (`stairs 18 12 len=5 dir=ur`) onto the battlement walk (a brick block from column
   23, so the flight must be climbed; a roast candle at its start; Medusa heads), **stairs down** (`stairs 50 12 len=5 dir=ul`)
   into the bone hall (two skeletons, a bat), the gallery (Medusa heads low), the **door**
@@ -630,19 +630,36 @@ or a plain box for one that does not exist; nothing throws).
   **crumble when they strike** (no chain of hits as one drifts along with him). **Skeletons**
   (`skeleton x y`, two lashes) pace by their post facing Simon and lob a bone in an arc timed to
   land where he stood. A lash knocks bones and fireballs out of the air.
-- **The HUD** (`hud.ts`; no score, so its World has `scorePopups: false`: kills float no "200", as in Zebes and Station Escape): a black band with PLAYER and ENEMY bars (16 segments each), TIME, the
-  sub-weapon box and the hearts.
-- **Dracula** (`dracula.ts`), one ENEMY bar over two phases (`BOSS_HP` 14: 6 for the Count, 8
-  for the beast). **Phase 1, the Count** (music `cv-boss`): gone, appears (sfx `dracula-teleport`)
+- **The HUD** (`hud.ts`), Castlevania's three lines on a black band: SCORE-000000, TIME and
+  STAGE 18; PLAYER with its bar, the sub-weapon box (over the two lower lines) and the hearts;
+  ENEMY with its bar and P (lives). 16 segments a bar. Kills float no "200" (`scorePopups:
+false`); the score is on the HUD.
+- **Simon's Castlevania form** (`hunter.ts`, `SIMON_HUNTER`, this mini game only; the campaign's
+  `SIMON` is untouched and a test checks it): full walking speed (1 px/f) from the first frame
+  and a dead stop on release; a lash on the ground roots him (no walking, turning or jumping until
+  it is done; in the air the arc carries on); a hit turns him to face it and throws him back in a
+  fixed arc (1 px/f back, 2.75 px/f up: about 24 px high and 35 px long) with no control until he
+  lands (none on stairs). The jump is his committed arc, as before.
+- **Dracula** (`dracula.ts`), two forms, each with a full ENEMY bar (8 hit points each, two
+  segments a lash). **Phase 1, the Count** (music `cv-boss`): gone, appears (sfx `dracula-teleport`)
   at one of four spots (never the last one, never within 48 px of Simon, preferring within 100),
   opens his cape and 28 frames later throws a **three-fireball spread** from his low hand (level
   at lash height, one rising over Simon, one dropping to the floor), lingers ~2 s, vanishes. Only
   his **head** can be hurt (a separate 16x16 hit box over his 20x42 body; the body clinks), and
-  only while he stands there; 24 frames of grace after a hit. **Phase 2**: the transformation
-  (2 s, sfx `beast-roar`, no screen tint with reduce flashing), then the **beast** (48x48 art,
-  36x40 body, hurt anywhere; music `cv-beast`) rises and cycles walk → spit (three aimed
-  fireballs) → walk → spit → walk → crouch and **leap** at Simon → a landing stomp (a screen
-  shake, not with reduce flashing) with a **shock wave** running along the floor each way.
+  only while he stands there; 24 frames of grace after a hit. **Between the forms** (no screen
+  tint with reduce flashing): his bar empty, his **head flies off** (`FlyingHead`, sfx
+  `beast-roar`), the headless body (`dracula-headless`) stands 50 frames and bursts, and 80
+  frames in the **beast** drops in through the ceiling's line (music `cv-beast`) as the ENEMY
+  bar **fills again** (a hit point every 4 frames, sfx `boss-fill`); the fight goes on once it has
+  landed and the bar is full. **Phase 2, the beast** (48x48 art, 36x40 body): it spits first,
+  then two hops, a fan, two hops... A **hop** lands 56 px short of Simon (back to 104 px if it is
+  there already), too low to run under (about 33 px). Cornered (his centre within 24 px of a
+  wall) or crouching, it takes a **high leap** (about 96 px) that comes down on him, and he can
+  run under it. Its **fan** (after a 40-frame roar with its maw open) is three fireballs at once,
+  the middle one at Simon, 0.35 rad apart; a lash knocks them away. Only its **head** can be hurt
+  by the whip and the dagger (`BeastHead`, 16x16 at its front, above a standing lash: jump and
+  lash it); holy water burns it anywhere; the body clinks. No shock wave (Castlevania has none).
+  The room is dressed as Castlevania's: two tall barred windows and the coffin on its dais.
 - **Endings**: beating the beast passes (banner DRACULA IS DEFEATED! THE CURSE IS BROKEN., the
   jingle, 5 s); losing every hit point, a pit or the clock fails; the menu's Give up quits
   (`CastleMenuScene`, the shared MiniGameMenuScene with the dev assists). `done` is called once.
@@ -650,14 +667,15 @@ or a plain box for one that does not exist; nothing throws).
 Difficulty (`human-sim.test.ts`, `CastleBot`: it follows the route, lashes candles and whatever
 its prediction puts in the lash after the wind-up, keeps clear of Medusa heads until it can lash
 them, stands off while Dracula casts, lashes the level fireball, then steps in and jump-lashes his
-head on the way down; against the beast it throws daggers from a distance, flees its leaps and
-jumps its shock waves; `CV_SIM=30 pnpm vitest run simon/human-sim --silent=false` prints the
-report): a sharp run passes unhurt with ~250 s left. As a careful first-timer (sees things 15
-frames late, misjudges by up to 6 px and its jump-lash by up to 2 frames, pauses now and then,
-steps closer to a candle its lash fell short of, judges Dracula more closely after each hit or
-missed lash) it passes all 30 seeds at a 12, 15 and 18-frame reaction, losing 6-8 hit points a run
-(3-4 of them to Dracula) with a median of about 210 of the 300 seconds left; a clumsy player (21
-frames, 10 px, more pauses) passes 93%, losing 10.5 (7 to Dracula; the two misses are Dracula).
+head on the way down; against the beast it moves to lashing range of where a leap will land (under
+a high one when the wall is too close), jumps and lashes its head as it lands, and backs off when
+its maw opens; `CV_SIM=30 pnpm vitest run simon/human-sim --silent=false` prints the report): a
+sharp run passes unhurt. As a careful first-timer (sees things 15 frames late, misjudges by up to 6
+px and its jump-lash by up to 2 frames, pauses now and then, steps closer to a candle its lash fell
+short of, judges Dracula more closely after each hit or missed lash) it passes all 30 seeds at a
+12, 15 and 18-frame reaction, losing 6-7 hit points a run (about 4 of them to Dracula) with a
+median of about 155 of the 300 seconds left; a clumsy player (21 frames, 10 px, more pauses)
+passes 60%, losing 15.5 (12 to Dracula; every miss is the beast).
 The stage is gentle (one-bar creature hits, three roasts); the fight is the test.
 
 ### Castlevania stairs (`src/game/entities/objects/stairs.ts`, any level)
@@ -723,8 +741,10 @@ fresh GameState, one life and a **150-second clock** (held by the Infinite time 
   swoop or glide once he is within 48 px of one (a knock carries him about 21 px). Nor does one
   turn on Ryu while he clings to a wall, and one mid-pass pulls up when he clings. Ryu's blade
   knocks any shot away within 8 px (`SHOT_SLACK`).
-- **The HUD** (`hud.ts`; no score, so `scorePopups: false`): TIMER, the NINJA and ENEMY bars (16
-  segments), the art in hand and NINPO.
+- **The HUD** (`hud.ts`), Ninja Gaiden's three lines: SCORE-000000 and STAGE-6-2; TIMER, the
+  ninpo box (the art in hand, over the two lower lines) and the NINJA bar; P (lives), the spirit
+  mark with the points and the ENEMY bar (16 segments each). Points float up nowhere
+  (`scorePopups: false`); the score is on the HUD.
 - **Banners** (the first cling's two lines, the art's for 2.5 s, the win's) sit in fixed slots
   (`BANNER_SLOTS`, from the strip under the HUD down to low over the street). One keeps its slot
   while it covers neither Ryu (16 px round him, plus where his rise or fall takes him in 12

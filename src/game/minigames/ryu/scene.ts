@@ -139,7 +139,7 @@ export class DuelScene implements Scene {
     this.state = state;
     this.world = new World(level, game.ctx, state, {
       seed: opts.seed ?? levelSeed(level),
-      scorePopups: false, // the HUD shows no score
+      scorePopups: false, // Ninja Gaiden floats no points (the HUD keeps the score)
       extraEntities: duelEntities({ onArt: (p) => this.gotArt(p) }, this.layout.pits),
     });
     this.world.time = null;
@@ -529,6 +529,9 @@ export class DuelScene implements Scene {
     const arts = Math.max(1, Math.min(NINPO_ARTS.length, p.scratch.arts ?? 1));
     const art = NINPO_ARTS[(p.scratch.tool ?? 0) % arts];
     drawNgHud(r, assets, {
+      score: this.state.score,
+      stage: `${this.state.world}-${this.state.stage}`,
+      lives: this.state.lives,
       hp: p.hp,
       maxHp: MAX_HP,
       enemy: this.enemyBar(),

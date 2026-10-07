@@ -6,7 +6,7 @@ import { px, tileToSub, toPx } from '@engine/math/units';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { levelSeed, World } from '../../world/world';
 import { newGameState, type GameState } from '../../context';
-import { MAX_HP, SIMON } from '../../characters/simon';
+import { MAX_HP } from '../../characters/simon';
 import { T } from '../../level/tiles';
 import type { Player } from '../../entities/player';
 import type { Game } from '../../scenes/game';
@@ -17,8 +17,10 @@ import type { MiniGameResult } from '../types';
 import { drawBanner } from '../megaman/scene';
 import { CV_SOUNDS, STAGE_THEME } from './art';
 import { CastleDoor, Creature, CvShot, MedusaSpawner } from './creatures';
-import { Beast, BEAST_HP, BossLife, BOSS_HP, Dracula, ShockWave, SPOTS } from './dracula';
+import { Beast, BEAST_H, BEAST_HP, BossLife, Dracula, FlyingHead, SPOTS } from './dracula';
+import { Burst } from './creatures';
 import { BAR_SEGMENTS, drawCastleHud, HUD_H } from './hud';
+import { hunterInput, SIMON_HUNTER } from './hunter';
 import { castleEntities, castleStage, type CastleLayout } from './stage';
 
 /** Frames READY shows before Simon can move. */
@@ -29,8 +31,15 @@ export const TIME_LIMIT = 300;
 export const GATE_SCROLL = 4;
 /** Frames Dracula's throne room waits before he first appears. */
 export const INTRO_FRAMES = 40;
-/** Frames of the transformation between the phases. */
-export const TRANSFORM_FRAMES = 120;
+/**
+ * Between the forms (frames): his head flies off and the headless body stands HEAD_OFF_FRAMES,
+ * then bursts; TRANSFORM_FRAMES in, the beast drops in through the ceiling while the ENEMY bar
+ * fills again, one hit point every REFILL_EVERY frames. The fight goes on once it has landed and
+ * the bar is full.
+ */
+export const HEAD_OFF_FRAMES = 50;
+export const TRANSFORM_FRAMES = 80;
+export const REFILL_EVERY = 4;
 /** After the beast falls: the jingle, then the round passes. */
 export const WIN_JINGLE = 100;
 export const WIN_FRAMES = 300;
@@ -38,6 +47,8 @@ export const WIN_FRAMES = 300;
 export const ITEM_BANNER_FRAMES = 200;
 /** Widest banner line. */
 export const BANNER_COLS = 26;
+/** The HUD's stage number: Castlevania's Dracula stage. */
+export const CASTLE_STAGE = 18;
 /** Simon's start kit: the chain whip, no sub-weapon yet, five hearts. */
 export const CASTLE_KIT = { whip: 1, subs: 0, multi: 1, hearts: 5 } as const;
 
@@ -58,9 +69,9 @@ const WALK_RIGHT: InputFrame = { ...NO_INPUT, held: (a) => a === 'right', dirX: 
  * Simon's mini game, Dracula's Castle: a short NES Castlevania-style stage (stage.map) played as
  * Simon with his whip (the chain whip) and the dagger from a candle, hearts as its ammunition;
  * Castlevania stairs, bats, Medusa heads and bone-throwing skeletons. Behind the door at the end
- * Dracula waits on one enemy bar for two phases: the Count (teleports, a three-fireball spread,
- * only his head can be hurt), then his beast form (walks, spits fire, leaps and stomps). Beating
- * the beast passes; losing every hit point, a pit or the clock running out fails; the menu's Give
+ * Dracula waits in two forms, each with a full ENEMY bar: the Count (teleports, a three-fireball
+ * spread, only his head can be hurt), then, his head flown off, the beast (leaps about the room
+ * and spits fans of fire; again only its head can be hurt). Beating the beast passes; losing every hit point, a pit or the clock running out fails; the menu's Give
  * up quits. A World of its own with a fresh GameState runs it, so the campaign is never touched.
  */
 export class CastleScene implements Scene {
@@ -89,7 +100,7 @@ export class CastleScene implements Scene {
     opts: CastleOptions = {},
   ) {
     const level = { ...this.layout.level, theme: STAGE_THEME } as typeof this.layout.level;
-    const state = newGameState(SIMON);
+    const state = newGameState(SIMON_HUNTER);
     state.kit = { ...CASTLE_KIT };
     state.hp = MAX_HP;
     state.lives = 1;
@@ -99,7 +110,7 @@ export class CastleScene implements Scene {
     this.bossSeed = opts.bossSeed ?? 5;
     this.world = new World(level, game.ctx, state, {
       seed: opts.seed ?? levelSeed(level),
-      scorePopups: false, // the HUD shows no score
+      scorePopups: false, // Castlevania floats no points (the HUD keeps the score)
       extraEntities: castleEntities({ onSubWeapon: (p) => this.gotDagger(p) }),
     });
     this.world.time = null;
@@ -238,7 +249,7 @@ export class CastleScene implements Scene {
 
   /** One frame of the world; a death ends the round once its jingle has played. */
   private step(input: InputFrame): void {
-    this.world.update([input]);
+    this.world.update([hunterInput(this.player, input)]);
     const events = this.world.events.splice(0);
     if (this.phase !== 'dead' && this.player.dead) {
       this.setPhase('dead');
@@ -335,22 +346,33 @@ export class CastleScene implements Scene {
     this.say('Dracula appears. Only his head can be hurt: jump and whip it.');
   }
 
+  /** His bar is empty: his head flies off. */
   private phaseOneDown(): void {
     this.setPhase('transform');
     this.stopMusic();
+    const d = this.dracula;
+    if (d) {
+      const h = d.head.body;
+      this.world.spawn(new FlyingHead(h.x, h.y, d.facing > 0 ? -1 : 1));
+    }
     this.game.ctx.audio.sfx(CV_SOUNDS.roar);
-    this.say('Dracula transforms into a giant beast!');
+    this.say("Dracula's head flies off! He transforms into a giant beast!");
   }
 
   private updateTransform(): void {
     this.step(NO_INPUT);
     const d = this.dracula;
-    if (this.phaseT === TRANSFORM_FRAMES >> 1 && d) {
+    if (this.phaseT === HEAD_OFF_FRAMES && d) {
+      // The headless body bursts.
+      const b = d.body;
+      for (let i = 0; i < 4; i++)
+        this.world.spawn(new Burst(b.x + px(4 + ((i * 7) % 14)), b.y + px(8 + i * 10)));
+      this.game.ctx.audio.sfx(CV_SOUNDS.stomp);
       d.destroy();
       d.head.destroy();
     }
-    if (this.phaseT >= TRANSFORM_FRAMES && d) {
-      // It rises where he fell, or at the spot farthest from Simon if he stands too close.
+    if (this.phaseT === TRANSFORM_FRAMES && d) {
+      // It drops where he fell, or at the spot farthest from Simon if he stands too close.
       let cx = d.body.x + (d.body.w >> 1);
       const pcx = this.player.centerX;
       if (Math.abs(cx - pcx) < px(56)) {
@@ -358,12 +380,32 @@ export class CastleScene implements Scene {
         const spots = SPOTS.map((s) => left + px(s));
         cx = spots.reduce((a, b) => (Math.abs(b - pcx) > Math.abs(a - pcx) ? b : a));
       }
-      this.beast = new Beast(cx, this.floorY, this.layout.roomX, this.life, () => this.beastDown());
+      // (from the ceiling's line: the room's top row of brick)
+      const top = px(this.ceilingY - BEAST_H);
+      this.life.max = BEAST_HP;
+      this.life.hp = 0;
+      this.life.iframes = 0;
+      this.beast = new Beast(cx, top, this.floorY, this.layout.roomX, this.life, () => this.beastDown());
       this.world.spawn(this.beast);
+      this.world.spawn(this.beast.head);
       this.playMusic(CV_SOUNDS.beast);
       this.game.ctx.audio.sfx(CV_SOUNDS.roar);
-      this.setPhase('fight');
     }
+    const beast = this.beast;
+    if (!beast) return;
+    if (this.life.hp < this.life.max && this.phaseT % REFILL_EVERY === 0) {
+      this.life.hp++;
+      this.game.ctx.audio.sfx(CV_SOUNDS.refill);
+    }
+    if (beast.state !== 'drop' && this.life.hp >= this.life.max) {
+      this.setPhase('fight');
+      this.say('Only its head can be hurt: jump and whip it.');
+    }
+  }
+
+  /** The bottom of the throne room's ceiling (px). */
+  get ceilingY(): number {
+    return 48;
   }
 
   /* ---------- The end ---------- */
@@ -371,7 +413,7 @@ export class CastleScene implements Scene {
   private beastDown(): void {
     this.setPhase('won');
     this.stopMusic();
-    for (const e of this.world.entities) if (e instanceof CvShot || e instanceof ShockWave) e.destroy();
+    for (const e of this.world.entities) if (e instanceof CvShot) e.destroy();
     // A round for fun (Game.inRound) frees nobody: no word of the curse.
     const fun = this.game.inRound;
     this.banner = {
@@ -399,14 +441,14 @@ export class CastleScene implements Scene {
 
   /* ---------- Drawing ---------- */
 
-  /** The ENEMY bar's segments: full until the fight, then both phases' hit points. */
+  /** The ENEMY bar's segments: the current form's hit points (full until the fight). */
   enemyBar(): number {
-    return Math.ceil((Math.max(0, this.life.hp) * BAR_SEGMENTS) / BOSS_HP);
+    return Math.ceil((Math.max(0, this.life.hp) * BAR_SEGMENTS) / this.life.max);
   }
 
-  /** Whether Dracula is in his second phase (the beast). */
+  /** Whether Dracula is in his second form (the beast). */
   get phaseTwo(): boolean {
-    return this.beast !== null || this.life.hp <= BEAST_HP;
+    return this.beast !== null;
   }
 
   render(r: Renderer): void {
@@ -416,6 +458,9 @@ export class CastleScene implements Scene {
     if (this.phase === 'transform' && !this.game.ctx.reduceFlashing && (this.phaseT & 8) === 0)
       r.rect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H, 'rgba(248,56,0,0.25)');
     drawCastleHud(r, assets, {
+      score: this.state.score,
+      stage: CASTLE_STAGE,
+      lives: this.state.lives,
       hp: this.player.hp,
       maxHp: MAX_HP,
       enemy: this.enemyBar(),

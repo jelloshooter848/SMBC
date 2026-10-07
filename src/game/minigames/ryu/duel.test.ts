@@ -628,11 +628,14 @@ describe('Shadow Duel: endings, menu and assists', () => {
 });
 
 describe('Shadow Duel: screen and controls', () => {
-  it('a kill scores no point popup: the HUD has no score', () => {
-    const h = round();
+  it('a kill scores without a point popup: the score is on the HUD', () => {
+    const h = round({ assets: STUB_ASSETS });
     h.world.addScore(200, px(100), px(100));
     h.step();
     expect(h.world.entities.some((e) => e instanceof ScorePopup)).toBe(false);
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('SCORE-000200');
   });
 
   it("touch: only MENU on READY and walking into the dojo, Ryu's buttons while he plays, none once decided", () => {
@@ -646,7 +649,7 @@ describe('Shadow Duel: screen and controls', () => {
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: null });
   });
 
-  it('draws the Ninja Gaiden HUD (TIMER, NINJA, ENEMY, ninpo) and a steady READY with reduce flashing', () => {
+  it('draws the 3-line Ninja Gaiden HUD (SCORE STAGE / TIMER NINJA / P, ninpo, ENEMY) and a steady READY with reduce flashing', () => {
     const h = duelHarness({ assets: STUB_ASSETS, skipCutscene: true });
     const reads: boolean[] = [];
     for (let i = 0; i < 40; i++) {
@@ -655,8 +658,16 @@ describe('Shadow Duel: screen and controls', () => {
       reads.push(r.texts.includes('READY'));
       if (i === 0)
         expect(r.texts).toEqual(
-          expect.arrayContaining([`TIMER-${TIME_LIMIT}`, 'NINJA', 'ENEMY', 'NINPO-10']),
+          expect.arrayContaining([
+            'SCORE-000000',
+            'STAGE-6-2',
+            `TIMER-${TIME_LIMIT}`,
+            'NINJA-',
+            'ENEMY-',
+            '-10',
+          ]),
         );
+      if (i === 0) expect(r.texts.some((t) => /^P-0\d$/.test(t))).toBe(true);
       h.step();
     }
     expect(reads.every(Boolean)).toBe(true);
