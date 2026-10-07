@@ -5,35 +5,86 @@ stage: 2
 theme: airship-deck
 music: airship
 time: 300
-start: 2,12
+start: 2,6
 startMode: stand
+;; SMB3 auto-scroll (world/camera.ts); the campaign boards up 4-2's anchor chain at column 2 onto
+;; the bow platform (column 3, row 7: keep it solid with headroom above).
 camera: auto
-scroll: 0.5
+scroll: 0.375
 parent: 4-2
 
-;; Larry Koopa's airship DECK: a PLACEHOLDER (A1) until A2's real layout. 40 columns of flat
-;; deck under an auto-scrolling camera (`camera: auto`, `scroll: <px per frame>`; world/camera.ts).
-;; The stern pipe (columns 36-37, rows 11-12) drops into Larry's room: keep its zone
-;; `pipe 36 11 down -> 4-2-larry 2 12` (any arrival in 4-2-larry counts as reaching the room).
-;; The campaign boards up 4-2's anchor chain (4-2.map's right warp zone `goto=4-2-airship,2,3,climb`):
-;; the arrival chain rises at column 2 and the hero steps off onto the first solid tile in column 3
-;; below row 3, so keep column 3 solid at the deck with headroom above it (column 2 may be hull).
+;; Larry Koopa's airship, the deck (0.5.0), laid out after SMB3 World 1's airship (owner's
+;; reference), all art and music original. The camera scrolls on its own (0.375 px/f: about
+;; 58 s from the bow to the stern) and stops at the stern.
+;; - BOW (0-32): a raised bow platform (row 7, the start) over the stair-stepped prow, the fore
+;;   deck (row 9) with two cannons aimed up-left (14, 22), a Rocky Wrench manhole (18), a short
+;;   post with a Bullet Bill blaster at its right end (28-30), right against the tall post (31-32,
+;;   3 high: a staircase, with no pocket between them to be trapped in)
+;;   where the deck steps down. A propeller turns under the prow's bottom hull (23).
+;; - MIDDLE (33-70): the long low main deck (row 12) on two hull segments with a 2-wide gap
+;;   (50-51), a propeller behind each (49, 65); a tall blaster post (44, its Bullet Bills
+;;   flying just over a standing hero's head), a plain post (59) and a ?
+;;   block (55, row 7: 5 rows above the deck so a Bullet Bill can be jumped under it; mushroom,
+;;   or fire flower when big). Above it the plank overhang (row 3, 40-60)
+;;   with cannons hanging under it aimed down-left (43, 49), a three-cannon turret (56-57: left,
+;;   right and down-left; nothing fires down-right into the gateway's crossfire), and
+;;   at its right end the thick block (61-75, rows 3-5) over the metal gateway (61-68, not solid); iron struts (`t`) frame the
+;;   gateway.
+;; - STERN (71-97): the lower deck (row 13) with a Rocky Wrench (77, well clear of where the hero drops in) and a tall blaster post (80, its
+;;   Bullet Bills flying over a standing hero's head, like the one mid-ship), then four 2-wide steps up (83-90) to the high stern deck (row 8, 91-97): a railing,
+;;   portholes in the hull (`%`), a propeller under it, and THE PIPE (94) down into Larry's room
+;;   (4-2-larry).
+;; Cannon cells are solid (the cannon fills its own cell). Every gap is 2 wide and every step up
+;; at most 2 tiles from where the hero can stand, except the tall post (3 above the fore deck,
+;; 2 above the blaster post next to it); tests/sim/airship-deck.test.ts runs every hero across.
 [tiles]
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ........
-................ ................ ....[]..
-................ ................ ....{}..
-################ ################ ########
-################ ################ ########
+;; 0              16               32               48               64               80               96
+................ ................ ................ ................ ................ ................ ..  ;; 0
+................ ................ ................ ................ ................ ................ ..  ;; 1
+................ ................ ................ ................ ................ ................ ..  ;; 2
+................ ................ ........-------- -------------### ############.... ................ ..  ;; 3
+................ ................ ................ .............### ############.... ................ ..  ;; 4
+................ ................ ................ .............### ############.... ................ ..  ;; 5
+................ ...............B B............... .............t.. ....t........... ..............[] ..  ;; 6
+##########...... ...............B B............... .......M.....t.. ....t........... ..............{} ..  ;; 7
+.#########...... ............BB^B B............... .............t.. ....t........... ...........##### ##  ;; 8
+..############## ################ #...........^... .............t.. ....t........... .........####### ##  ;; 9
+...############# ################ #...........|... ...........B.t.. ....t........... .......#####%### %#  ;; 10
+....############ ################ #...........|... ...........B.t.. ....t........... .....########### ##  ;; 11
+......########## ################ ################ ##..############ #######......... ...############# ##  ;; 12
+........######## #######......... ..############## #....########### #......######### ###########..... ..  ;; 13
+................ ................ ................ ................ .......######### ###########..... ..  ;; 14
+
+[entities]
+cannon 14 8 dir=ul
+rocky 18 8
+cannon 22 8 dir=ul
+cannon 43 4 dir=dl
+cannon 49 4 dir=dl
+cannon 56 4 dir=l period=200
+cannon 57 4 dir=r period=200
+cannon 56 5 dir=dl period=200
+rocky 77 12
 
 [zones]
-pipe 36 11 down -> 4-2-larry 2 12
+pipe 94 6 down -> 4-2-larry 2 12
+
+[decor]
+smb3:propeller-0 23 13
+smb3:propeller-0 49 13
+smb3:propeller-0 65 13
+smb3:propeller-0 91 13
+smb3:bolt 10 11
+smb3:bolt 16 11
+smb3:bolt 24 11
+smb3:bolt 30 11
+smb3:bolt 36 13
+smb3:bolt 44 13
+smb3:bolt 56 13
+smb3:bolt 74 14
+smb3:bolt 82 14
+smb3:railing 91 7
+smb3:railing 92 7
+smb3:railing 93 7
+smb3:railing 96 7
+smb3:railing 97 7

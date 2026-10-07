@@ -18,6 +18,7 @@ import { Captive } from '@game/entities/objects/captive';
 import { newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import { airshipBot } from './airship-bot';
 
 /** Shared setup for the freeing-the-heroes sims (heroes.test.ts, heroes-race.test.ts). */
 
@@ -148,35 +149,22 @@ export function talkIntoMiniGame(h: H, l: LevelScene) {
 }
 
 /**
- * Larry's airship deck (any `camera: auto` level with a down pipe): play it like a player, walking
- * right with the scrolling screen, jumping onto the stern pipe and pressing DOWN on it. Returns
- * once the deck is left (or after `max` frames).
+ * Larry's airship deck (any `camera: auto` level with a down pipe): play it like a player (the
+ * airship bot, tests/sim/airship-bot.ts: on with the scrolling screen, jumping walls and pits,
+ * dodging shots, onto the stern pipe and DOWN), unhurtable. Returns once the deck is left (or
+ * after `max` frames).
  */
-export function rideToStern(h: H, deck: LevelScene, max = 3000): void {
-  const stern = deck.level.zones.find((z) => z.kind === 'pipe' && z.dir === 'down') as {
-    x: number;
-    y: number;
-  };
-  const left = stern.x * 16;
-  const top = stern.y * 16;
-  let jumpHeld = false;
-  for (let f = 0; f < max && h.top() === deck; f++) {
-    const p = deck.world.player;
-    const x = p.body.x >> 8;
-    const w = p.body.w >> 8;
-    const feet = (p.body.y + p.body.h) >> 8;
-    const onGround = p.body.onGround;
-    if (onGround && Math.abs(feet - top) <= 1) {
-      jumpHeld = false;
-      h.step(x < left + 1 ? ['right'] : x + w > left + 31 ? ['left'] : ['down']);
-    } else if (x + w < left - 40 || x > left + 32) h.step(x > left + 32 ? ['left'] : ['right']);
-    else if (onGround && jumpHeld) {
-      jumpHeld = false;
-      h.step(['right']);
-    } else {
-      jumpHeld = true;
-      h.step(['right', 'jump']);
-    }
+export function rideToStern(h: H, deck: LevelScene, max = 6000): void {
+  const bot = airshipBot();
+  // A flow helper: the ride is made with the hero unhurtable, so every test reaches the room
+  // the same way (pits and squashes still count). airship-deck.test.ts plays it with damage on.
+  const assist = deck.world.assist;
+  const was = assist.invulnerable;
+  assist.invulnerable = true;
+  try {
+    for (let f = 0; f < max && h.top() === deck; f++) h.step(bot(deck.world));
+  } finally {
+    assist.invulnerable = was;
   }
 }
 

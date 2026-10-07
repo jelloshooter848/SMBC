@@ -30,6 +30,9 @@ export const ENEMY_SCORES = {
   SPINEY: { stomp: 100, attack: 200, star: 200, below: 100 },
   BULLET_BILL: { stomp: 200, attack: 200, star: 200, below: 200 },
   HAMMER_BRO: { stomp: 1000, attack: 1000, star: 1000, below: 1000 },
+  /** SMB3's airship (4-2-airship): a cannonball and a Rocky Wrench are worth 100 however they go. */
+  CANNONBALL: { stomp: 100, attack: 100, star: 100, below: 100 },
+  ROCKY_WRENCH: { stomp: 100, attack: 100, star: 100, below: 100 },
   BOWSER: { stomp: 5000, attack: 5000, star: 5000, below: 5000 },
 } as const satisfies Record<string, KillScores>;
 

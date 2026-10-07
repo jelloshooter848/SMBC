@@ -62,10 +62,11 @@ function in42(over: Partial<SaveFile> = {}): { h: H; main: LevelScene } {
   return { h, main };
 }
 
-/** Board the deck as the campaign does (4-2's right warp zone: `goto=4-2-airship,2,12`). */
+/** Board the deck, standing on its bow (the campaign climbs the anchor chain to the same spot). */
 function board(h: H): LevelScene {
   h.game.state.time = 250;
-  h.game.startLevel(getLevel(AIRSHIP_DECK), { x: 2, y: 12, mode: 'stand' });
+  const { x, y } = getLevel(AIRSHIP_DECK).start;
+  h.game.startLevel(getLevel(AIRSHIP_DECK), { x, y, mode: 'stand' });
   h.step();
   const deck = h.top() as LevelScene;
   expect(deck.level.id).toBe(AIRSHIP_DECK);
@@ -436,7 +437,7 @@ describe('TRY AGAIN? has no way back but its answers', () => {
   });
 });
 
-describe('every hero rides the placeholder deck to the stern pipe', () => {
+describe('every hero rides the deck to the stern pipe', () => {
   for (const c of CHARACTERS) {
     it(`${c.name}: stands on the scrolling deck and goes down the stern pipe into Larry's room`, () => {
       const h = makeGame();
@@ -449,7 +450,7 @@ describe('every hero rides the placeholder deck to the stern pipe', () => {
       expect(p.dead).toBe(false);
       expect(p.body.onGround).toBe(true);
       expect(p.body.x).toBeGreaterThanOrEqual(deck.world.camera.x);
-      expect(deck.world.camera.x).toBeGreaterThan(px(90));
+      expect(deck.world.camera.x).toBeGreaterThan(px(60)); // 200 frames at 0.375 px/f
       rideToStern(h, deck);
       expect((h.top() as LevelScene).level?.id).toBe(AIRSHIP_ROOM);
     });
