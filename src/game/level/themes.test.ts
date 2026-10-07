@@ -47,6 +47,7 @@ describe('themes', () => {
       'cavern',
       'airship',
       'airship-deck',
+      'crypt',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -88,6 +89,7 @@ describe('themes', () => {
       cavern: 'cavern',
       airship: 'airship',
       'airship-deck': 'airship',
+      crypt: 'crypt',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -346,5 +348,51 @@ describe('themes', () => {
     expect(enemyPalette('airship-deck')).toBe(enemyPalette('overworld'));
     expect(isWaterTheme('airship-deck')).toBe(false);
     expect(themeMusic('airship-deck')).toBe('airship');
+  });
+
+  it("lays Simon's crypt in grey stone and night-blue brick in the castle's dark", () => {
+    const frames = tilesDef.frames;
+    const frame = (name: string) => frames[name] as readonly string[];
+    for (const t of [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+    ]) {
+      expect(frames[`${t}@crypt`], t).toBeDefined();
+      expect(frames[`${t}@crypt`], t).not.toEqual(frames[t]);
+      for (const other of ['station', 'cavern', 'airship'])
+        expect(frames[`${t}@crypt`], `${t} vs ${other}`).not.toEqual(frames[`${t}@${other}`]);
+    }
+    // The breakable bricks are plainly not the solid masonry, and the hard block is carved.
+    expect(frame('brick@crypt')).not.toEqual(frame('castle-brick@crypt'));
+    expect(frame('hard@crypt')).not.toEqual(frame('ground@crypt'));
+    // The floor and masonry are opaque stone; the backdrop is the blue slots and black only.
+    for (const t of ['ground', 'castle-brick', 'brick', 'hard'])
+      expect(frame(`${t}@crypt`).join(''), t).toMatch(/^[0-3]+$/);
+    expect(frame('wall@crypt').join('')).toMatch(/^[09a]+$/);
+    expect(frame('wall-top@crypt').slice(4)).toEqual(frame('wall@crypt').slice(4));
+    // Grey stone shaded brown, unlike the castle's greys; blue backdrop bricks; a black sky.
+    const tiles = PALETTES.default['tiles-crypt'] as string[];
+    expect(tiles).not.toEqual(PALETTES.default['tiles-castle']);
+    expect(tiles[1]).not.toBe(PALETTES.default['tiles-castle']?.[1]);
+    const rgb = (hex: string) =>
+      [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
+    for (const i of [9, 10]) {
+      const [r, g, b] = rgb(tiles[i] as string);
+      expect(b, `index ${i} is blue`).toBeGreaterThan(r + g);
+    }
+    expect(SKY.crypt).toBe(SKY.castle);
+    // Castle scenery and enemies; no swimming; its own tune.
+    expect(decorPalette('crypt')).toBe(decorPalette('castle'));
+    expect(enemyPalette('crypt')).toBe(enemyPalette('castle'));
+    expect(isWaterTheme('crypt')).toBe(false);
+    expect(themeMusic('crypt')).toBe('crypt');
   });
 });
