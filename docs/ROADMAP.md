@@ -4,16 +4,38 @@ This file lists what is planned next and the ideas we have agreed to keep for la
 the owner picks the version number at release time. When an idea is built, move it to CHANGELOG.md and delete it
 here.
 
-## Planned
+## The chapters
 
-| Order | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Status                                                                                                |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| 1     | **0.4.10: "Safety floor" dev assist** (deadly pits get an invisible floor at the pit's rim and lava turns solid, dev mode only) **and the Top Secret Area** (jump over 2-1's flagpole in the campaign to find a Moblin, "IT'S A SECRET TO EVERYBODY", who opens World 2's hidden spot: five ? blocks, with two Fire Flowers, a Yoshi egg that gives a 1-up until Yoshi exists, and two Mushrooms)                                                                                                                                                                                                                                                                                            | Built; browser QA, then the PR                                                                        |
-| 2     | **0.4.11: Sophia III**: a new playable hero (a tank Jason can hop out of), unlockable in World 8 through 8-4's trap pipe. Mini game "Underworld": tank cavern, then Jason's overhead dungeon and its guardian, then the Plutonium Boss as a side-view tank fight (see idea 3 below)                                                                                                                                                                                                                                                                                                                                                                                                          | Art done; character and mini game being built; the 8-4 route after 0.4.10                             |
-| 3     | **0.4.12: Hero tributes.** **Level restyles:** each earlier hero's level takes on their game's look in the campaign (see below). **Mini game fidelity pass:** the older mini games brought closer to their real NES games, from the audit against the owner's reference screenshots. Approved scope: authentic HUDs (Link's B and A item boxes are allowed as HUD art), each hero's own death, proper starts (Mega Man beams in, Samus materialises), Samus's "TIME BOMB SET" escape timer, Link's sword beam, authentic physics for the mini games only (the campaign kits stay as they are), Larry's cabin entered from the ceiling, lives and checkpoints, and Dracula's real second form | Restyle art done (in review); fidelity fixes being built; restyles applied to the levels after 0.4.10 |
-| 4     | **0.4.13: A coherent story** from 1-0 through 8-4 and on into the Lost Levels: a map guide, hint characters for each secret hero, castle messages rewritten (see below)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Script drafted (docs/STORY.md); owner's latest decisions being written in                             |
-| 5     | **0.4.14: Koopaling airships** (side quest): six SMB3-style airships behind the six forward warp zones in Lost Worlds 1–8, one Koopaling each (Morton, Wendy, Iggy, Roy, Lemmy, Ludwig). Each returns a wand piece; all six unlock the Far Lands (Lost Worlds A–D) and the true ending (see idea 1 below)                                                                                                                                                                                                                                                                                                                                                                                    | Planned, its own release                                                                              |
-| 6     | **Classic SMBC rules** (the 19 reports from PR #51), plus an automated tile-by-tile check of our levels against the NES maps                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Later                                                                                                 |
+The game is released in three chapters. A chapter is "finished" when every level in it feels complete: its hidden
+hero, their mini game, its look, and its part of the story. Later chapters stay **playable but unfinished** in the
+meantime. Nothing is locked away because it isn't polished yet.
+
+| Chapter                     | Levels                                  | Release              | What makes it finished                                                                                                                                                                                                                            |
+| --------------------------- | --------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. The Mushroom Kingdom** | 1-0, then 1-1 through 8-4               | **0.5.0**            | All 8 hidden heroes (Luigi to Sophia III); every hero's level in their game's look; the mini games true to their games; the story from 1-0 to the 8-4 false ending and the road into the Lost Kingdom; World 2's Top Secret Area; Larry's airship |
+| **2. The Lost Kingdom**     | Lost 1-1 through Lost 8-4, plus World 9 | **0.6.0** (proposed) | The Lost Kingdom story; Peach found at Lost 4-4 and playable; the main ending at Lost 8-4; the Koopaling airships side quest (the six wand pieces); the backward-warp traps; the warp hub's "???" pads                                            |
+| **3. The Far Lands**        | Lost A-1 through D-4                    | **0.7.0** (proposed) | Opened by the six wand pieces; the chase for Bowser's star tip; the true ending at D-4                                                                                                                                                            |
+
+When the whole game is finished, the owner may call it **1.0.0** (docs/RELEASING.md).
+
+## Chapter 1: the path to 0.5.0
+
+| Order | Release    | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Status                                                                                   |
+| ----- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 1     | **0.4.10** | **"Safety floor" dev assist** (deadly pits get an invisible floor at the pit's rim and lava turns solid, dev mode only) and **the Top Secret Area** (jump over 2-1's flagpole in the campaign to find a Moblin, "IT'S A SECRET TO EVERYBODY", who opens World 2's hidden spot: two Fire Flowers, a Yoshi egg that gives a 1-up until Yoshi exists, two Mushrooms)                                                                                                               | Built; browser QA, then the PR                                                           |
+| 2     | **0.4.11** | **Sophia III**, the 8th hidden hero: a playable tank Jason can hop out of, found through 8-4's trap pipe (Jason looking for his frog Fred). Mini game "Underworld": tank cavern, Jason's overhead dungeon and its guardian, then the Plutonium Boss as a side-view tank fight (see idea 3 below)                                                                                                                                                                                | Art and character done (in review); mini game being finished; the 8-4 route after 0.4.10 |
+| 3     | **0.4.12** | **Hero tributes.** **Level restyles:** each hero's level takes on their game's look in the campaign (see below). **Mini game fidelity pass:** authentic HUDs (Link's B and A item boxes allowed as HUD art), each hero's own death, proper starts (Mega Man beams in, Samus materialises), Samus's "TIME BOMB SET" escape timer, Link's sword beam, mini-game-only authentic physics, Larry's cabin entered from the ceiling, lives and checkpoints, Dracula's real second form | Restyle art in review; fidelity fixes being built                                        |
+| 4     | **0.4.13** | **The Chapter 1 story** (see below): Toad as the map guide with riddle hints, a partner for each hero, the rewritten castle scenes with the fake Bowsers revealed, Peach's off-screen clues, the restyle remarks, Bowser's "NO MORE STAND-INS" in 8-4, the wand breaking, the false ending and the road into the Lost Kingdom. The Lost Kingdom's lines wait for Chapter 2                                                                                                      | Script drafted (docs/STORY.md)                                                           |
+| 5     | **0.4.14** | **Chapter 1 finishing pass.** A full playthrough of 1-0 to 8-4 with every hero, on desktop and phone, and fixing what it finds. The tile-by-tile check of SMB 1-1 to 8-4 against the owner's NES maps, and fixing real differences. Any of the bigger mini game rebuilds the owner wants in Chapter 1 (see "Bigger mini game rebuilds" below). The 8-4 credits marked as the end of Chapter 1                                                                                   | Planned                                                                                  |
+| 6     | **0.5.0**  | **Chapter 1 release.** README and in-game notes for Chapter 1, final checks; the Lost Levels stay playable as they are                                                                                                                                                                                                                                                                                                                                                          | Planned                                                                                  |
+
+## After Chapter 1
+
+| Chapter       | Planned work                                                                                                                                                                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **2 (0.6.0)** | The Lost Kingdom story (docs/STORY.md); Peach: a build spec, then her as a playable hero; the **Koopaling airships** (idea 1); the **backward-warp traps** (idea 2); the **"???" pads** in the warp hub; restyles or polish for the Lost levels if wanted |
+| **3 (0.7.0)** | The Far Lands opened by the six pieces; the chase for the star tip; the true ending at D-4                                                                                                                                                                |
+| **Any time**  | **Classic SMBC rules** (the 19 reports from PR #51, a dev-mode toggle that plays like the original 3.1.21); new heroes from PR #51's candidate list (Yoshi first: the Top Secret Area's egg will hatch him)                                               |
 
 ### Level restyles (campaign only)
 
@@ -41,7 +63,7 @@ hook built for 7-3 (`campaignTheme:`, `campaignMusic:`, `[campaign-decor]` in th
 - Decided: the look's own music plays there for every hero. The coin heavens above these levels share the look;
   bonus rooms and water areas keep their own.
 
-### A coherent story (0.4.13)
+### A coherent story (0.4.13 for Chapter 1; the Lost Kingdom parts in Chapter 2)
 
 One story runs from the start through 8-4, and explains why 8-4 leads on into the Lost Levels, where it ends.
 
@@ -100,7 +122,7 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
 
 These are agreed ideas, not yet scheduled.
 
-### 1. Koopaling airships in the Lost Levels warp zones
+### 1. Koopaling airships in the Lost Levels warp zones (Chapter 2)
 
 Larry Koopa, reached through 4-2's warp zone, was the first of SMB3's seven Koopalings. The other six are Morton,
 Wendy, Iggy, Roy, Lemmy and Ludwig. Each one would get an airship reached through a Lost Levels warp zone, the same
@@ -129,7 +151,7 @@ way Larry's is reached in 4-2.
 - **Reward:** beating a Koopaling opens one of the warp hub's "???" pads, which ties this idea to the boss rush, time
   trials and gallery ideas below. It could also add an item to the SMB3 inventory.
 
-### 2. The backward warps become a trap
+### 2. The backward warps become a trap (Chapter 2)
 
 Three Lost Levels warp zones send you back instead of forward. It was Nintendo's joke on players:
 
@@ -143,7 +165,7 @@ Keep the joke, with a payoff:
 - Getting through it gives a big reward.
 - Failing it costs nothing: you go back out to the level.
 
-### 3. Sophia III, the last original hero (planned for 0.4.11)
+### 3. Sophia III, the last original hero (0.4.11, Chapter 1)
 
 The original Crossover's cast was Mario, Luigi, Link, Mega Man, Samus, Simon, Bill, Ryu and Sophia III. Sophia III,
 the tank from Blaster Master, is the only one we haven't made. World 8 is also the only SMB world without a hidden
@@ -185,7 +207,7 @@ hero, so she would be hidden there.
 - **Size:** this is the biggest of the three ideas, because it adds a full character kit as well as the usual
   hideout, mini game, art and music.
 
-### Bigger mini game rebuilds (from the fidelity audit; later)
+### Bigger mini game rebuilds (from the fidelity audit; the owner picks which go into Chapter 1)
 
 - Luigi's race course rebuilt with Lost Levels pieces (piranha plants, Koopas, a poison mushroom, the end staircase).
 - An SMB3 status bar for the airship, the cabin and the bonus games.
@@ -194,7 +216,7 @@ hero, so she would be hidden there.
 - Link: a Triforce ending, and rooms rebuilt with 2-tile walls and 12×7 floors.
 - Samus: blue doors with room transitions, and a Tourian finale.
 
-### Yoshi hatches from the Top Secret Area's egg
+### Yoshi hatches from the Top Secret Area's egg (any time)
 
 World 2's Top Secret Area (0.4.10) has a Yoshi egg block. Yoshi is not in the game yet, so its egg
 always hatches a 1-up, as Super Mario World's does when Yoshi is already with you. Once Yoshi is
@@ -202,7 +224,7 @@ unlocked (a later release: a rideable partner or a hero), the egg hatches **Yosh
 hook is ready: `yoshiUnlocked(world)` and `hatch()` in `src/game/entities/objects/yoshi-egg.ts`
 (`TODO(yoshi)`): read the unlock from the save file there and let him out.
 
-### Uses for the warp hub's "???" pads
+### Uses for the warp hub's "???" pads (Chapter 2)
 
 The warp hub has three "???" pads. Once the Koopalings open them, they could hold:
 
