@@ -247,9 +247,10 @@ export type Zone =
   /**
    * A one-way cloud ledge (0.4.12): the `w` tiles from (x, y) rightward, laid as T.CLOUD_LEDGE by
    * the campaign variant only (level/campaign.ts; `campaign` is required): 2-1's step by its last
-   * tower, which a hero with a fixed jump arc (Simon) lands on to reach the hidden coin block and
-   * the tower top. Elsewhere the zone sleeps and its tiles stay as they are. (Its woken copy, in
-   * the campaign variant, has no `campaign` mark: its tiles are laid.)
+   * tower, which a hero with a fixed jump arc (Simon) lands on to reach the hidden coin block's top
+   * (and from there the tower top). Elsewhere the zone sleeps and its tiles stay as they are. (Its woken copy, in
+   * the campaign variant, has no `campaign` mark: its tiles are laid. serializeTextMap writes either
+   * back as the sleeping zone.)
    */
   | { kind: 'ledge'; x: number; y: number; w: number; campaign?: boolean }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
