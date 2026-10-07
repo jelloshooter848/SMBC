@@ -251,6 +251,38 @@ export const tilePalettes: Record<string, string[]> = {
     '#4428bc',
     NES.lava,
   ],
+  /* Ryu's hideout under 6-2: dark lacquered wood (deep red-brown, brown shadow, orange-brown lit
+     edge); the water slots hold the shoji paper glowing in lantern light (9 main, a lit). */
+  'tiles-dojo': [
+    NES.black,
+    NES.brownDark,
+    '#881400',
+    NES.orangeBrown,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.brownLight,
+    NES.tan,
+    NES.lava,
+  ],
+  /* Ryu's mini game outdoors: grey stone with indigo moonlit shadows; the water slots hold the
+     night city's distant walls (9 main, a lit edge), their lit windows in the gold-light slot. */
+  'tiles-ninja-night': [
+    NES.black,
+    '#4428bc',
+    NES.gray,
+    NES.lightGray,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    '#180c50',
+    '#2c1878',
+    NES.lava,
+  ],
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -1742,6 +1774,228 @@ const bridgeCrypt = [
   '................',
 ];
 
+/* ---------- Ryu's hideout under 6-2 (`@dojo`) ---------- */
+
+/* Floor: polished boards, four narrow planks a tile, their ends staggered (repeats both ways). */
+const groundDojo = [
+  '3333333333303333',
+  '2222112222103222',
+  '2222222222102221',
+  '1111111111111111',
+  '3333303333333333',
+  '2222102221122222',
+  '2112102222222222',
+  '1111111111111111',
+  '3333333333333303',
+  '2222222211222102',
+  '2222222222222102',
+  '1111111111111111',
+  '3033333333333333',
+  '1032222222112222',
+  '1032112222222222',
+  '1111111111111111',
+];
+/* Timber: two upright boards of dark wood, grain running down them (repeats both ways). */
+const castleBrickDojo = [
+  '0322222103222221',
+  '0322212103221221',
+  '0322212103221221',
+  '0322222103222221',
+  '0321222103222121',
+  '0321222103222121',
+  '0322222103222221',
+  '0322222103122221',
+  '0322122103122221',
+  '0322122103222221',
+  '0322222103222211',
+  '0322222103222211',
+  '0321222103222221',
+  '0321222103221221',
+  '0322222103221221',
+  '0322222103222221',
+];
+/* Breakable: a wooden crate with a cross brace. */
+const brickDojo = [
+  '3333333333333330',
+  '3322222222222110',
+  '3232222222221210',
+  '3223222222212210',
+  '3222322222122210',
+  '3222232221222210',
+  '3222223212222210',
+  '3222222322222210',
+  '3222221232222210',
+  '3222212223222210',
+  '3222122222322210',
+  '3221222222232210',
+  '3212222222223210',
+  '3122222222222310',
+  '3111111111111110',
+  '0000000000000000',
+];
+/* Hard block: a lacquered block inlaid with a diamond crest. */
+const hardDojo = [
+  '3333333333333330',
+  '3222222222222210',
+  '3222222112222210',
+  '3222221331222210',
+  '3222213223122210',
+  '3222132222312210',
+  '3221322112231210',
+  '3213221331223110',
+  '3213221331223110',
+  '3221322112231210',
+  '3222132222312210',
+  '3222213223122210',
+  '3222221331222210',
+  '3222222112222110',
+  '1111111111111110',
+  '0000000000000000',
+];
+/* Spent block: the crest block gone dark. */
+const usedDojo = swapColors(hardDojo, { '3': '2', '2': '1', '1': '0' });
+/* Backdrop (scenery): shoji, a dark lattice of tall panes over paper glowing in lantern light. */
+const wallDojo = Array.from({ length: 16 }, (_, y) =>
+  y === 0 ? '1111111111111111' : y === 1 ? '1aaaaaaa1aaaaaaa' : '1a9999991a999999',
+);
+/* The backdrop's top: a wooden lintel over the shoji. */
+const wallTopDojo = [
+  '3333333333333333',
+  '2222222222222222',
+  '1111111111111111',
+  '0000000000000000',
+  ...wallDojo.slice(4),
+];
+/* Ledge: a wooden shelf on two brackets. */
+const treeTopDojo = [
+  '3333333333333333',
+  '2222222222222222',
+  '2222222222222222',
+  '1111111111111111',
+  '0000000000000000',
+  '.01220....01220.',
+  '..0120.....0120.',
+  '...010......010.',
+  '....00.......00.',
+  ...Array.from({ length: 7 }, () => '................'),
+];
+/* The ledge's support (scenery): a round wooden pillar, banded once a tile; repeats downwards. */
+const treeTrunkDojo = Array.from({ length: 16 }, (_, y) =>
+  y === 0 ? '...03333333110..' : '...03322222110..',
+);
+/* A plank walkway. */
+const bridgeDojo = [
+  '3333333333333333',
+  '2222212222222122',
+  '1111111111111111',
+  '0000000000000000',
+  ...Array.from({ length: 12 }, () => '................'),
+];
+
+/* ---------- Ryu's mini game outdoors (`@ninja-night`) ---------- */
+
+/* Street: rounded cobbles, each course shifted half a stone (repeats both ways). */
+const cobble = [
+  '13333320',
+  '32222221',
+  '32222221',
+  '32222211',
+  '32222211',
+  '12221110',
+  '01111100',
+  '00000000',
+];
+const groundNinja = [
+  ...cobble.map((r) => r + r),
+  ...cobble.map((r) => (r + r).slice(4) + (r + r).slice(0, 4)),
+];
+/* Masonry: big dressed stones in running courses, the walls Ryu clings to. */
+const castleBrickNinja = [
+  '3333333333333331',
+  '3222222222222221',
+  '3222221222222221',
+  '3222222222222221',
+  '3222222222212221',
+  '3222222222222221',
+  '1111111111111111',
+  '0000000000000000',
+  '3333331033333333',
+  '2222221032222222',
+  '2122221032222122',
+  '2222221032222222',
+  '2222221032212222',
+  '2222221032222222',
+  '1111111031111111',
+  '0000000000000000',
+];
+/* Hard block: an iron-banded stone with two rivets. */
+const hardNinja = [
+  '3333333333333330',
+  '3222222222222210',
+  '3222222222222210',
+  '0000000000000000',
+  '3330333333330330',
+  '2210222222221020',
+  '1110111111111010',
+  '3222222222222210',
+  '3222222222222210',
+  '3222222222222210',
+  '0000000000000000',
+  '3330333333330330',
+  '2210222222221020',
+  '1110111111111010',
+  '1111111111111110',
+  '0000000000000000',
+];
+/* Backdrop (scenery): a distant wall of the sleeping town, plank-sided, one window still lit. */
+const wallNinja = [
+  '9999999999999999',
+  '9999999999999999',
+  '9999999999999999',
+  '9999900000999999',
+  '9999907770999999',
+  '9999907770999999',
+  '9999907770999999',
+  '9999900000999999',
+  '999999aaa9999999',
+  '9999999999999999',
+  '9999999999999999',
+  'a99999999999999a',
+  '9999999999999999',
+  '9999999999999999',
+  'aaaaaaaaaaaaaaaa',
+  '9999999999999999',
+];
+/* The backdrop's top: the town's roof line, an eave over the wall. */
+const wallTopNinja = [
+  '................',
+  '................',
+  '.......aa.......',
+  '....aaa99aaa....',
+  '.aaa99999999aaa.',
+  'a99999999999999a',
+  '0000000000000000',
+  'aaaaaaaaaaaaaaaa',
+  ...wallNinja.slice(8),
+];
+/* Ledge: a tiled rooftop, ridge cap on top, rows of round tiles and the dark eave. */
+const treeTopNinja = [
+  '3333333333333333',
+  '1111111111111111',
+  '2310231023102310',
+  '2210221022102210',
+  '1100110011001100',
+  '3102310231023102',
+  '2102210221022102',
+  '1001100110011001',
+  '0000000000000000',
+  ...Array.from({ length: 7 }, () => '................'),
+];
+/* The ledge's support (scenery): a wooden post with an iron band; repeats downwards. */
+const treeTrunkNinja = Array.from({ length: 16 }, (_, y) =>
+  y === 6 || y === 7 ? '.....003310.....' : '......03210.....',
+);
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -1856,5 +2110,24 @@ export const tilesDef: SpriteDef = {
     'tree-top@crypt': treeTopCrypt,
     'tree-trunk@crypt': treeTrunkCrypt,
     'bridge@crypt': bridgeCrypt,
+    // Ryu's hideout under 6-2.
+    'ground@dojo': groundDojo,
+    'castle-brick@dojo': castleBrickDojo,
+    'brick@dojo': brickDojo,
+    'hard@dojo': hardDojo,
+    'used@dojo': usedDojo,
+    'wall@dojo': wallDojo,
+    'wall-top@dojo': wallTopDojo,
+    'tree-top@dojo': treeTopDojo,
+    'tree-trunk@dojo': treeTrunkDojo,
+    'bridge@dojo': bridgeDojo,
+    // Ryu's mini game outdoors: the moonlit town.
+    'ground@ninja-night': groundNinja,
+    'castle-brick@ninja-night': castleBrickNinja,
+    'hard@ninja-night': hardNinja,
+    'wall@ninja-night': wallNinja,
+    'wall-top@ninja-night': wallTopNinja,
+    'tree-top@ninja-night': treeTopNinja,
+    'tree-trunk@ninja-night': treeTrunkNinja,
   },
 };

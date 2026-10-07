@@ -26,7 +26,11 @@ export type Theme =
   // The airship's open decks (4-2-airship, auto-scrolling): SMB3-style planks under a daylight sky.
   | 'airship-deck'
   // Simon's crypt under 5-4 and his mini game's castle: grey stone, night-blue brick, candlelight.
-  | 'crypt';
+  | 'crypt'
+  // Ryu's hideout under 6-2: a night dojo of dark lacquered wood, shoji and lanterns.
+  | 'dojo'
+  // Ryu's mini game outdoors: a moonlit town of grey stone, tiled roofs and lit windows.
+  | 'ninja-night';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -50,6 +54,8 @@ export const THEMES: readonly Theme[] = [
   'airship',
   'airship-deck',
   'crypt',
+  'dojo',
+  'ninja-night',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -70,6 +76,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'cavern') return 'cavern';
   if (theme === 'airship' || theme === 'airship-deck') return 'airship';
   if (theme === 'crypt') return 'crypt';
+  if (theme === 'dojo') return 'dojo';
+  if (theme === 'ninja-night') return 'ng-stage';
   return 'overworld';
 }
 
