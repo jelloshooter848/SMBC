@@ -553,8 +553,9 @@ export class EscapeScene implements Scene {
     else if (this.phase === 'gameover' && this.blasted) drawBlast(r, BOOM_FRAMES, ctx.reduceFlashing);
     // Metroid's HUD: energy tanks, EN, missiles; and after the bomb, the escape's TIME counter.
     const covered = (x: number, y: number, w: number, h: number) => this.world.spriteIn(x, y, w, h);
-    drawEscapeHud(r, ctx.assets, this.player, covered);
-    if (this.bombSet) {
+    // The ending shows the surface alone (no HUD over its sky).
+    if (this.phase !== 'ending') drawEscapeHud(r, ctx.assets, this.player, covered);
+    if (this.bombSet && this.phase !== 'ending') {
       const final = this.phase === 'escape' && this.seconds <= FINAL_SECONDS;
       const tint = this.held ? 'held' : final ? 'final' : 'plain';
       const palette = timePalette(tint, this.t, ctx.reduceFlashing);

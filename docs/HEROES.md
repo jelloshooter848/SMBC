@@ -583,7 +583,8 @@ name, place or score. All the art is original (`tourian-look.ts`, `tourian-zebes
   wear one down (four, a stage of damage each, drawn thinner and darker); left alone for 150
   frames it grows back a stage. **The brain** (`BrainTank`, 48x64: an original brain, no face, in
   a glass tank): a wall while it lives; beams glance off; six missiles (the glass cracks at
-  three) destroy it in a string of explosions, leaving glass on the floor and the way open.
+  three) destroy it in a string of explosions, leaving its wreck (`TankWreck`, glass on the floor,
+  back-layer scenery no shot stops on) and the way open.
 - **The guards** act only while Samus is in their room (and stop once the bomb is set):
   **cannons** (`Cannon`, under the ceiling, indestructible) fire every 90 frames, turning their
   barrel down-left, down, down-right, down; a shot is gone on the rock or out of its room.
@@ -599,7 +600,8 @@ name, place or score. All the art is original (`tourian-look.ts`, `tourian-zebes
   ten, when the music also speeds up (tempo 1.2; reset when the round ends). A red wash swells and
   fades about once a second (twice in the last ten); with reduce flashing it is a steady light
   tint, and the alarm lights stay lit. Nothing of this runs before the bomb.
-- **Outcomes**: standing on the surface ends the round: the countdown stops, Samus stands still,
+- **Outcomes**: standing on the surface ends the round: the countdown stops, the HUD goes, Samus
+  stands still,
   stars come out over the sky and a column of light rises from the shaft (it pulses; a steady
   swell with reduce flashing), "SAMUS ESCAPED!" and the win jingle, the announcer gives the
   seconds to spare, and the round passes after 240 frames (no ship: the NES escape ends on the
@@ -660,10 +662,10 @@ where it lands; it shoots Rinkas that come level with it or straight above. As a
 first-timer it sees the Rinkas 15 frames late, misjudges take-off spots by up to 6 px (halving the
 error after a failed jump), lets go of 12% of jumps early and pauses now and then;
 `ZEBES_SIM=30 pnpm vitest run samus/human-sim --silent=false` prints the report). With the 60-second
-escape and three lives it gets out 100% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction, 97% on
-the first life, with a median of 24-29 seconds to spare (the closest 3-11 s), losing about 44
+escape and three lives it gets out 100% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction, 100% on
+the first life, with a median of 24-30 seconds to spare (the closest 3-12 s), losing about 40-47
 energy on the way (the brain's chamber is where lives go). A clumsier player (21 frames, 10 px, a
-quarter of jumps let go early) gets out 100%, 53% on the first life, with a median of 15 seconds.
+quarter of jumps let go early) gets out 93%, 57% on the first life, with a median of 19 seconds.
 A sharp run leaves about 34 seconds. Both sims also check that at least 70% of cautious runs win
 on the first life.
 

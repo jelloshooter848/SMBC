@@ -9,6 +9,7 @@ import { SAMUS, SAMUS_PROFILE } from '@game/characters/samus';
 import { T } from '@game/level/tiles';
 import { ZEBES_SOUNDS, TOURIAN_FRAMES } from './art';
 import {
+  BRAIN_BOOM_FRAMES,
   BRAIN_HITS,
   BrainTank,
   Cannon,
@@ -20,13 +21,22 @@ import {
   Rinka,
   RinkaSpawner,
   RINKA_RESPAWN,
+  TankWreck,
   Zebetite,
   ZEBETITE_HITS,
   ZEBETITE_REGEN,
 } from './tourian';
 import { escapeStage, ROOMS, roomAt } from './stage';
 import { APPEAR_FRAMES, DOOR_SCROLL_FRAMES, ENDING_FRAMES, ESCAPE_KIT, OPENER } from './scene';
-import { clearCreatures, escapeHarness, ready, STUB_ASSETS, warp, type EscapeHarness } from './harness';
+import {
+  clearCreatures,
+  escapeHarness,
+  ready,
+  setBomb,
+  STUB_ASSETS,
+  warp,
+  type EscapeHarness,
+} from './harness';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -255,6 +265,23 @@ describe('Tourian: the brain and its barriers', () => {
     expect(h.scene.lives.current.id).toBe('escape');
   });
 
+  it("the destroyed tank's wreck lets shots through: a beam from beside it opens the shaft's door", () => {
+    const h = escapeHarness();
+    ready(h);
+    setBomb(h);
+    h.step([], BRAIN_BOOM_FRAMES + 2);
+    expect(h.world.entities.some((e) => e instanceof BrainTank && e.alive)).toBe(false);
+    expect(h.world.entities.some((e) => e instanceof TankWreck && e.alive)).toBe(true);
+    warp(h, 70 * 16, 57);
+    clearCreatures(h);
+    const door = find(h, Door, 79);
+    const missiles = h.scene.player.scratch.missiles;
+    fire(h, 1);
+    h.step([], 40); // the shot crosses the chamber
+    expect(door.open).toBe(true);
+    expect(h.scene.player.scratch.missiles).toBe(missiles);
+  });
+
   it('after the bomb, a lost life starts at the foot of the shaft with the clock full; the brain stays dead', () => {
     const h = escapeHarness({ assets: STUB_ASSETS });
     ready(h);
@@ -291,6 +318,8 @@ describe('Tourian: the brain and its barriers', () => {
     const at = h.scene.left;
     expect(at).toBeLessThanOrEqual(left);
     expect(texts(h)).toContain('SAMUS ESCAPED!');
+    // The surface alone: no HUD over its sky.
+    expect(texts(h).filter((t) => /^(TIME|EN)/.test(t))).toEqual([]);
     h.step([], ENDING_FRAMES - 2);
     expect(h.scene.left).toBe(at);
     expect(h.results).toEqual([]);
