@@ -11,12 +11,23 @@ import { WorldMapScene, MAP_FADE_FRAMES } from '@game/scenes/world-map';
 import { DevMiniGameResultScene, playRound } from '@game/scenes/dev-minigames';
 import { awardPrize, type AwardOutcome } from '@game/bonus/use';
 import { LevelScene } from '@game/scenes/level';
+import { CharacterSelectScene } from '@game/scenes/character-select';
 import type { MenuItem } from '@game/scenes/menu';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { isOpen, openPaths } from '@game/map/rules';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { defaultSettings } from '@engine/save/settings';
-import { draw, file, intoBonus, makeGame, standByLuigi, store, useStorage, type H } from './heroes-harness';
+import {
+  draw,
+  file,
+  intoBonus,
+  makeGame,
+  offered,
+  standByLuigi,
+  store,
+  useStorage,
+  type H,
+} from './heroes-harness';
 
 // The MINI GAME ARENA (0.4.7): the hub's first pad leads to it; one pad per game the registries
 // list, found by the file's own progress (met heroes, 1-0, training answers, Larry's airship, the
@@ -45,6 +56,14 @@ function onArena(h: H, over: Partial<SaveFile> = {}, node = 'start'): WorldMapSc
   expect(m).toBeInstanceOf(WorldMapScene);
   expect([m.page.id, m.node]).toEqual(['arena', node]);
   return m;
+}
+
+/** Character select is up (Larry's airship): OK on the hero highlighted. */
+function confirmHero(h: H): void {
+  expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+  h.idle(12);
+  h.tap('jump');
+  expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
 }
 
 const found = (h: H) =>
@@ -263,6 +282,8 @@ describe('the Mini Game Arena', () => {
       const progress = structuredClone(h.game.mapProgress);
       const bonus = structuredClone(h.game.bonus);
       h.tap('jump');
+      // Larry's airship asks for a hero first: the current one, as preselected.
+      if (id === 'airship') confirmHero(h);
       expect(h.top()).not.toBe(m);
       expect(h.game.campaign).toBeNull(); // no file open: nothing can save
       quitRound(h, m);
@@ -341,7 +362,9 @@ describe('the Mini Game Arena', () => {
     const before = { ...s, kit: { ...s.kit }, kit2: { ...s.kit2 } };
     const saves = new Map(store);
     h.tap('jump');
+    confirmHero(h);
     expect(h.game.airship).not.toBeNull();
+    expect(h.game.state.character2?.id).toBe('link');
     // Hurt player two aboard, then give up.
     h.game.state.hp2 = 1;
     quitRound(h, m);
@@ -413,6 +436,138 @@ function drawBoxes(scene: { render(r: Renderer): void }): Drawn[] {
 
 const meets = (a: Box, b: Box) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
 
+describe("Larry's airship pad: character select first (the one arena game played as your own hero)", () => {
+  const run = (s: { character: { id: string }; powerState: string; lives: number; hp: number }) => [
+    s.character.id,
+    s.powerState,
+    s.lives,
+    s.hp,
+  ];
+
+  it('opens character select over the map; picking Link plays the round as Link; the file keeps its hero', () => {
+    const h = makeGame();
+    const m = onArena(h, { ...LATE, powerState: 'fire', lives: 7 }, arenaPadId('airship'));
+    const s = h.game.state;
+    expect(run(s)).toEqual(['mario', 'fire', 7, s.hp]);
+    const before = { ...s, kit: { ...s.kit } };
+    const tutorials = h.game.tutorials.slice();
+    const saves = new Map(store);
+    h.tap('jump');
+    // The select, over the map: nothing has started yet (the file is still open).
+    const select = h.top();
+    expect(select).toBeInstanceOf(CharacterSelectScene);
+    expect(h.game.scenes.find((x) => x === m)).toBe(m);
+    expect(h.game.campaign).toEqual({ slot: 1 });
+    expect(h.game.airship).toBeNull();
+    expect(h.said.at(-1)).toMatch(/^Choose your hero\. Mario\. Left and right to choose, OK to confirm\./);
+    h.idle(12);
+    h.tap('right'); // Luigi
+    h.tap('right');
+    expect(h.said.at(-1)).toBe('Link');
+    h.tap('jump');
+    // Link is freed but never trained on this file: no training question in a round for fun.
+    const deck = h.top() as LevelScene;
+    expect(deck).toBeInstanceOf(LevelScene);
+    expect(deck.level.id).toBe('4-2-airship');
+    expect(deck.world.player.def.id).toBe('link');
+    expect(h.game.state.character.id).toBe('link');
+    expect(h.game.campaign).toBeNull();
+    expect(h.game.airship).not.toBeNull();
+    quitRound(h, m);
+    const card = h.top() as DevMiniGameResultScene;
+    expect(card.lines.slice(0, 2)).toEqual(["LARRY'S AIRSHIP", 'LARRY KOOPA']);
+    h.idle(40);
+    h.tap('jump');
+    expect(h.top()).toBe(m);
+    expect([m.page.id, m.node, m.mode]).toEqual(['arena', arenaPadId('airship'), 'idle']);
+    // The file's hero, power, lives and hit points, and the whole run, as they were.
+    expect(h.game.state).toBe(s);
+    expect(run(s)).toEqual(['mario', 'fire', 7, before.hp]);
+    expect({ ...s, kit: { ...s.kit } }).toEqual(before);
+    expect(h.game.tutorials).toEqual(tutorials);
+    expect(new Map(store)).toEqual(saves);
+    h.game.autosave();
+    expect(loadSave(1)?.character).toBe('mario');
+    expect(loadSave(1)?.powerState).toBe('fire');
+    expect(loadSave(1)?.lives).toBe(7);
+  });
+
+  it('OK straight away plays as the current hero, keeping its power for the round', () => {
+    const h = makeGame();
+    const m = onArena(h, { ...LATE, character: 'samus', powerState: 'full', hp: 2 }, arenaPadId('airship'));
+    h.tap('jump');
+    expect(h.said.at(-1)).toMatch(/^Choose your hero\. Samus\./);
+    confirmHero(h);
+    const deck = h.top() as LevelScene;
+    expect(deck.world.player.def.id).toBe('samus');
+    expect(h.game.state.hp).toBe(2);
+    quitRound(h, m);
+  });
+
+  it("offers only the file's freed heroes (the others are silhouettes, skipped)", () => {
+    const h = makeGame();
+    onArena(h, { ...LATE, freed: ['mario', 'link', 'samus'] }, arenaPadId('airship'));
+    h.tap('jump');
+    const select = h.top() as CharacterSelectScene;
+    expect(select).toBeInstanceOf(CharacterSelectScene);
+    expect(draw(select).texts.map((t) => t.str)).toContain('5 HEROES TO FIND');
+    h.idle(12);
+    expect(new Set(offered(h))).toEqual(new Set(['Mario', 'Link', 'Samus']));
+  });
+
+  it('developer "All heroes" offers every hero', () => {
+    const h = makeGame();
+    h.game.deps.settings = { ...defaultSettings(), dev: true };
+    onArena(h, { ...LATE, freed: ['mario'], devAllHeroes: true }, arenaPadId('airship'));
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    h.idle(12);
+    expect(new Set(offered(h)).size).toBe(h.game.deps.characters.length);
+  });
+
+  it('Back from the select is the arena again, on the pad, with nothing started or saved', () => {
+    const h = makeGame();
+    const m = onArena(h, LATE, arenaPadId('airship'));
+    const s = h.game.state;
+    const before = { ...s, kit: { ...s.kit } };
+    const saves = new Map(store);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(select(h).touchLabels().attack).toBe('BACK');
+    h.idle(12);
+    h.tap('right');
+    h.audio.stopMusic.mockClear();
+    h.tap('attack');
+    expect(h.top()).toBe(m);
+    expect([m.page.id, m.node, m.mode]).toEqual(['arena', arenaPadId('airship'), 'idle']);
+    expect(h.said.at(-1)).toMatch(/Larry's Airship\. JUMP.* to play, for fun\.$/);
+    expect(h.audio.stopMusic).not.toHaveBeenCalled(); // the map's music played on
+    expect(h.game.campaign).toEqual({ slot: 1 });
+    expect(h.game.airship).toBeNull();
+    expect(h.game.inRound).toBe(false);
+    expect(h.game.state).toBe(s);
+    expect({ ...s, kit: { ...s.kit } }).toEqual(before);
+    expect(new Map(store)).toEqual(saves);
+    // The map works as before: JUMP again opens the select again.
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+  });
+
+  it('every other game starts at once, with no select (Shadow Duel)', () => {
+    expect(ARENA_GAMES.filter((g) => g.round.asHero).map((g) => g.id)).toEqual(['airship']);
+    const h = makeGame();
+    const m = onArena(h, LATE, arenaPadId('mini-ryu'));
+    expect(m.hintLine).toBe('SHADOW DUEL');
+    h.tap('jump');
+    expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
+    expect(h.top()).not.toBe(m);
+    expect(h.game.campaign).toBeNull(); // the round is on
+    quitRound(h, m);
+  });
+});
+
+const select = (h: H) => h.top() as CharacterSelectScene;
+
 describe('the pads drawn (a late file, every game found)', () => {
   it('each hero (or Larry, or the bonus icon) stands on its pad: feet on the plate, centred, in front of it', () => {
     const h = makeGame();
@@ -475,6 +630,7 @@ describe('arena rounds say nothing about the campaign', () => {
     const h = makeGame();
     const m = onArena(h, LATE, arenaPadId(id));
     h.tap('jump');
+    if (id === 'airship') confirmHero(h);
     let hint: string | undefined;
     for (let f = 0; f < 3000 && hint === undefined; f++) {
       if (f % 90 !== 89) {

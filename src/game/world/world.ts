@@ -11,7 +11,7 @@ import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../lev
 import { isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
-import { renderTiles, SKY } from './tile-render';
+import { drawStars, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
 import { Player } from '../entities/player';
 import type { Entity } from '../entities/entity';
@@ -35,6 +35,7 @@ import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
 import { placeOnStairs, Stairs, type StairDir } from '../entities/objects/stairs';
 import { AnchorDrop } from '../entities/objects/anchor-drop';
+import { BridgeBlast } from '../entities/objects/bridge-blast';
 import {
   BEAM_GATHER_FRAMES,
   BEAM_H,
@@ -186,6 +187,8 @@ const CRUMBLE_SFX = hasSfx('whip-wall') ? 'whip-wall' : 'break';
 /** A trick wall's spin (R3's whoosh once it exists; until then the card flip). */
 const SPIN_SFX = hasSfx('panel-spin') ? 'panel-spin' : 'card-flip';
 const CANDLE_SFX = hasSfx('candle') ? 'candle' : null;
+/** 7-3's exploding bridge (B3's boom once it exists; until then the bomb blast). */
+const BRIDGE_BOOM_SFX = hasSfx('bridge-boom') ? 'bridge-boom' : 'explosion';
 /** The cracked wall's rubble (the `crypt` sheet's; BrickPiece falls back to the brick piece). */
 const RUBBLE: readonly PieceFrame[] = ['crypt:rubble-0', 'crypt:rubble-1'];
 
@@ -389,6 +392,8 @@ export class World {
   readonly flagpole: Flagpole | null = null;
   /** Set by LevelScene in campaign play; see CaptiveRules. */
   captives: CaptiveRules | null = null;
+  /** The exploding bridge's boom (entities/objects/bridge-blast.ts). */
+  readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
   readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0 };
   /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
@@ -455,6 +460,9 @@ export class World {
     // level load, so the shifted fish still spawns off screen. A climb start replaces the map's
     // vine at the start column with the arrival vine (below).
     this.spawns = level.entities
+      // A campaign-only entity (`campaign=true`: 7-3's exploding bridge) sleeps unless the
+      // campaign variant woke it (level/campaign.ts).
+      .filter((e) => e.props?.campaign !== true)
       .map((e) => Cheep.placeSwimmer(e, this.rng))
       .filter((e) => !(mode === 'climb' && (e.type === 'vine' || e.type === 'chain') && e.x === sx))
       .sort((a, b) => a.x - b.x);
@@ -736,6 +744,8 @@ export class World {
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
+      case 'bridge-blast':
+        return new BridgeBlast(s.x, s.y, Math.max(1, Number(s.props?.w ?? 1) || 1));
       case 'anchor-drop':
         return new AnchorDrop(s.x, s.y, s.props);
       case 'stairs': {
@@ -1084,8 +1094,14 @@ export class World {
           this.transfer(down.descent, 'fall');
           continue;
         }
+        // A sleeping campaign pit (7-3's bridge) kills like any other fall; one with `w` covers
+        // only its columns.
         const pit = this.level.zones.find(
-          (z): z is Zone & { kind: 'pit' } => z.kind === 'pit' && p.body.x >= tileToSub(z.x),
+          (z): z is Zone & { kind: 'pit' } =>
+            z.kind === 'pit' &&
+            !z.campaign &&
+            p.body.x >= tileToSub(z.x) &&
+            (z.w === undefined || p.body.x < tileToSub(z.x + z.w)),
         );
         if (pit) this.transfer(pit.target, 'fall');
         else this.kill(p);
@@ -2412,6 +2428,7 @@ export class World {
   render(screen: Renderer): void {
     const theme = this.level.theme;
     screen.clear(SKY[theme] ?? '#5c94fc');
+    if (STARRY_SKIES.has(theme)) drawStars(screen, this.camera.pxX);
     const view: View = {
       camX: this.camera.pxX,
       frame: this.frame,

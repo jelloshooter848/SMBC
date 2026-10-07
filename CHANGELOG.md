@@ -8,6 +8,27 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Bill is hidden under 7-3. In the campaign, 7-3 now looks like a Contra jungle stage (same layout).
+  One steel bridge with a blinking red light, marked by an arrow of coins, blows up piece by piece
+  when you step on it. Fall through it to reach Bill's jungle camp, then climb the waterfall back
+  into 7-3. His mini game, Jungle Assault, plays by NES Contra's rules:
+  - a stage card where the Konami code gives 30 lives;
+  - one hit costs a life;
+  - falcon weapons, lost when you die;
+  - aiming in eight directions, lying flat, dropping through ledges, wading and ducking in the
+    river;
+  - soldiers, snipers, wall guns, pillboxes and exploding bridges;
+  - two bosses: the defense wall, then Red Falcon's heart in the alien lair.
+- Campaign looks for levels (`campaignTheme:`, `campaignMusic:`, `[campaign-decor]`), plus original
+  Contra-style art and music (contra-jungle, contra-falls and alien-lair looks).
+
+### Fixed
+
+- Larry's Airship in the Mini Game Arena (and Dev → Mini games) now opens character select so
+  you can pick which freed hero to play the round as; the save's hero is unchanged.
+
 ## [0.4.8] - 2026-10-07
 
 ### Added

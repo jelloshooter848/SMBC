@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { PALETTES } from '@content/sprites';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { PALETTES, SPRITES } from '@content/sprites';
 import { tilesDef } from '@content/sprites/tiles';
+import { decorDef } from '@content/sprites/decor';
+import { AssetRegistry } from '@engine/assets/registry';
+import { NullRenderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import type { View } from '../entities/entity';
+import { T, tileDef } from './tiles';
 import { parseTextMap, serializeTextMap } from './textmap';
 import { THEMES, isTheme, isWaterTheme, themeMusic, type Theme } from './schema';
-import { SKY } from '../world/tile-render';
-import { decorPalette } from '../entities/objects/decoration';
+import { SKY, STARRY_SKIES } from '../world/tile-render';
+import { decorPalette, drawDecor } from '../entities/objects/decoration';
 import { enemyPalette } from '../entities/enemies/enemy';
 
 const map = (header: string[]) =>
@@ -50,6 +58,9 @@ describe('themes', () => {
       'crypt',
       'dojo',
       'ninja-night',
+      'contra-jungle',
+      'contra-falls',
+      'alien-lair',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -94,6 +105,9 @@ describe('themes', () => {
       crypt: 'crypt',
       dojo: 'dojo',
       'ninja-night': 'ng-stage',
+      'contra-jungle': 'contra-jungle',
+      'contra-falls': 'contra-jungle',
+      'alien-lair': 'contra-lair',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -467,5 +481,194 @@ describe('themes', () => {
     for (const t of ['dojo', 'ninja-night'] as Theme[]) expect(isWaterTheme(t)).toBe(false);
     expect(themeMusic('dojo')).toBe('dojo');
     expect(themeMusic('ninja-night')).toBe('ng-stage');
+  });
+
+  describe("Bill's jungle, waterfall and Red Falcon's lair", () => {
+    const frames = tilesDef.frames;
+    const frame = (name: string) => frames[name] as readonly string[];
+    const rgb = (hex: string) =>
+      [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
+    const BILL: Theme[] = ['contra-jungle', 'contra-falls', 'alien-lair'];
+    const REDRAWN = ['ground', 'hard', 'brick', 'used', 'castle-brick', 'tree-top', 'tree-trunk', 'bridge'];
+
+    it('redraws every tile 7-3 uses in the jungle, keeping ? blocks, coins and the flagpole readable', () => {
+      const lvl = parseTextMap(
+        readFileSync(join(import.meta.dirname, '../../content/levels/world7/7-3.map'), 'utf8'),
+      );
+      // the frame names renderTiles asks for, every animation step included
+      const used = new Set<string>();
+      for (const id of lvl.tiles) {
+        if (id === T.AIR) continue;
+        const def = tileDef(id);
+        if (def.block?.kind === 'hidden') continue;
+        if (def.block?.kind === 'question') for (const n of [0, 1, 2]) used.add(`question-${n}`);
+        else if (def.block?.kind === 'brick') used.add('brick');
+        else if (def.pickup === 'coin') for (const n of [0, 1, 2, 3]) used.add(`coin-${n}`);
+        else used.add(def.name);
+      }
+      expect([...used].sort()).toEqual(
+        [
+          'bridge',
+          'coin-0',
+          'coin-1',
+          'coin-2',
+          'coin-3',
+          'flag-ball',
+          'flag-shaft',
+          'ground',
+          'hard',
+          'question-0',
+          'question-1',
+          'question-2',
+          'tree-top',
+          'tree-trunk',
+        ].sort(),
+      );
+      for (const name of used) expect(frames[`${name}@contra-jungle`], name).toBeDefined();
+      // Coins and the flagpole are SMB's own; the ? block only gains four steel corner rivets.
+      for (const n of ['coin-0', 'coin-1', 'coin-2', 'coin-3', 'flag-shaft', 'flag-ball'])
+        expect(frame(`${n}@contra-jungle`), n).toEqual(frame(n));
+      for (const n of [0, 1, 2]) {
+        const q = frame(`question-${n}@contra-jungle`);
+        const base = frame(`question-${n}`);
+        let diff = 0;
+        q.forEach((r, y) => [...r].forEach((c, x) => c !== base[y]?.[x] && diff++));
+        expect(diff, `question-${n}`).toBe(4);
+        expect(q.join('').replace(/[^8]/g, '')).toBe('8888');
+      }
+    });
+
+    it('keeps each tile its collision shape: solid blocks fill their cell, the bridge deck is on top', () => {
+      for (const t of BILL)
+        for (const name of REDRAWN) {
+          expect(frames[`${name}@${t}`], `${name}@${t}`).toBeDefined();
+          expect(frames[`${name}@${t}`], `${name}@${t}`).not.toEqual(frames[name]);
+        }
+      for (const t of BILL) {
+        for (const name of ['ground', 'hard', 'brick', 'used', 'castle-brick'])
+          expect(frame(`${name}@${t}`).join(''), `${name}@${t}`).not.toContain('.');
+        // a ledge stands on its whole width: only blade tips or bumps may leave its top row open
+        for (const row of frame(`tree-top@${t}`).slice(2)) expect(row, `tree-top@${t}`).not.toContain('.');
+        // the bridge's deck spans the tile on its top rows; below it may open up
+        for (const row of frame(`bridge@${t}`).slice(0, 4)) expect(row, `bridge@${t}`).toMatch(/^[^.]{16}$/);
+        expect(frame(`bridge@${t}`).join(''), `bridge@${t}`).toContain('.');
+        // the backdrop is scenery, drawn behind: it fills its cell
+        expect(frame(`wall@${t}`).join(''), `wall@${t}`).not.toContain('.');
+        expect(frame(`wall-top@${t}`).slice(8), `wall-top@${t}`).toEqual(frame(`wall@${t}`).slice(8));
+      }
+    });
+
+    it('the jungle: girders and pylons of steel, cliffs of rock and grass, a river', () => {
+      // the bridge and the hard blocks (7-3's bridge pylons) are steel: the light and grey slots
+      // (8, b) and black, no rock; the cliffs are rock (1-3) under green grass (5, 6)
+      expect(frame('bridge@contra-jungle').join('')).toMatch(/^[08b.]+$/);
+      expect(frame('hard@contra-jungle').join('')).toMatch(/^[08b]+$/);
+      expect(frame('ground@contra-jungle').join('')).toMatch(/^[01235]+$/);
+      expect(frame('tree-top@contra-jungle').slice(0, 2).join('')).toMatch(/^[56.]+$/);
+      // breakable bricks are the SMB brick courses (same mortar lines) cut in the rock
+      const mortar = (rows: readonly string[]) => rows.map((r) => r.replace(/[^0]/g, '.'));
+      expect(mortar(frame('brick@contra-jungle'))).toEqual(mortar(frame('brick')));
+      const tiles = PALETTES.default['tiles-contra-jungle'] as string[];
+      const [sr, sg, sb] = rgb(tiles[0xb] as string);
+      expect([sg, sb]).toEqual([sr, sr]); // grey steel
+      expect(tiles[4]).toBe(PALETTES.default['tiles-overworld']?.[4]); // gold ? blocks and coins
+      expect(tiles[5]).toBe(PALETTES.default['tiles-overworld']?.[5]); // the green flagpole
+      // NES Contra's black night sky, with sparse stars in it
+      const [r, g, b] = rgb(SKY['contra-jungle'] as string);
+      expect(r + g + b).toBeLessThan(0x18);
+      expect(STARRY_SKIES.has('contra-jungle')).toBe(true);
+      expect(STARRY_SKIES.has('overworld')).toBe(false);
+      // jungle scenery; SMB's own enemies keep their look; the jungle tune; no swimming
+      expect(decorPalette('contra-jungle')).toBe('decor-jungle');
+      expect(PALETTES.default['decor-jungle']).not.toEqual(PALETTES.default['decor-overworld']);
+      expect(enemyPalette('contra-jungle')).toBe(enemyPalette('overworld'));
+      expect(themeMusic('contra-jungle')).toBe('contra-jungle');
+      for (const t of BILL) expect(isWaterTheme(t), t).toBe(false);
+    });
+
+    it('the waterfall falls: its water is streaks sliding down, the second frame 8 rows on', () => {
+      const a = frame('water-0@contra-falls');
+      const b = frame('water-1@contra-falls');
+      expect(b).toEqual([...a.slice(8), ...a.slice(0, 8)]);
+      expect(a.join('')).not.toContain('.');
+      expect(decorPalette('contra-falls')).toBe('decor-jungle');
+      expect(themeMusic('contra-falls')).toBe('contra-jungle');
+      expect(SKY['contra-falls']).not.toBe(SKY['contra-jungle']);
+    });
+
+    it("the lair is flesh: dark red night, flesh tones lighten in order, castle enemies, Red Falcon's tune", () => {
+      const lair = PALETTES.default['tiles-alien-lair'] as string[];
+      const lum = (i: number) => rgb(lair[i] as string).reduce((x, y) => x + y);
+      for (const i of [1, 2, 3]) {
+        const [r, g, b] = rgb(lair[i] as string);
+        expect(r, `lair ${i} is red`).toBeGreaterThan(Math.max(g, b));
+      }
+      expect(lum(1)).toBeLessThan(lum(2));
+      expect(lum(2)).toBeLessThan(lum(3));
+      const [r, g, b] = rgb(SKY['alien-lair'] as string);
+      expect(r).toBeGreaterThan(g + b);
+      expect(enemyPalette('alien-lair')).toBe(enemyPalette('castle'));
+      expect(themeMusic('alien-lair')).toBe('contra-lair');
+    });
+
+    it("the jungle's clouds are dim night clouds; palms, canopy, mountains, sandbags and a searchlight stand by", () => {
+      for (const n of ['palm', 'canopy', 'canopy-hang', 'mountain', 'sandbags', 'searchlight'])
+        expect(decorDef.frames[n], n).toBeDefined();
+      const decorFrame = (n: string) => decorDef.frames[n] as readonly string[];
+      const dark = PALETTES.default['decor-jungle'] as string[];
+      for (const [n, w] of [
+        ['cloud-1@contra-jungle', 32],
+        ['cloud-2@contra-jungle', 48],
+        ['cloud-3@contra-jungle', 64],
+      ] as const) {
+        const f = decorFrame(n);
+        expect([f[0]?.length, f.length], n).toEqual([w, 16]);
+        // mostly the dim navy body (5), a lighter rim (4), a star pixel or two (8); no greens
+        const px = f.join('').replace(/\./g, '');
+        expect(px, n).toMatch(/^[458]+$/);
+        expect(px.replace(/[^5]/g, '').length, n).toBeGreaterThan(px.length / 2);
+        // a flat bottom: the cloud's lowest row is one unbroken run
+        expect(f[12]?.replace(/^\.+|\.+$/g, ''), n).toMatch(/^5+$/);
+        expect(f.slice(13).join(''), n).toMatch(/^\.+$/);
+      }
+      // the cloud body is dim (7-3's jungle look leaves its clouds out of the black starry sky)
+      const lum = (hex: string) => rgb(hex).reduce((x, y) => x + y);
+      expect(lum(dark[5] as string)).toBeLessThan(0xd0);
+      // the foliage ceiling: a solid top row, leaves hanging down, its edges joining up
+      const hang = decorFrame('canopy-hang');
+      expect(hang[0]).toMatch(/^[0-3]{32}$/);
+      expect(hang.at(-1)).toContain('.');
+      // the sandbags are olive canvas, nothing like the jungle's rock and brick
+      const bags = decorFrame('sandbags').join('').replace(/\./g, '');
+      expect(bags).toMatch(/^[019a]+$/);
+      const rock = PALETTES.default['tiles-contra-jungle'] as string[];
+      for (const i of [9, 10])
+        for (const j of [1, 2, 3]) expect(dark[i], `${i} vs rock ${j}`).not.toBe(rock[j]);
+      const [r, g, b] = rgb(dark[9] as string);
+      expect(Math.abs(r - g)).toBeLessThan(0x10); // olive: red and green level, little blue
+      expect(b).toBeLessThan(r);
+      const assets = new AssetRegistry(PALETTES);
+      assets.defineAll(SPRITES);
+      const drawn = (theme: Theme, kind: string) => {
+        const view: View = { camX: 0, frame: 0, assets, theme, reduceFlashing: true };
+        const out: { sheet: string; frame: string; y: number }[] = [];
+        const r = Object.assign(new NullRenderer(), {
+          sprite(s: SpriteSheet, f: string, _x: number, y: number): void {
+            out.push({ sheet: s.id, frame: f, y });
+          },
+        });
+        drawDecor(r, view, kind, 0, 128);
+        return out[0];
+      };
+      expect(drawn('contra-jungle', 'cloud-1')).toEqual({
+        sheet: 'decor@decor-jungle',
+        frame: 'cloud-1@contra-jungle',
+        y: 112,
+      });
+      expect(drawn('contra-jungle', 'palm')?.frame).toBe('palm');
+      expect(drawn('contra-jungle', 'castle-big')?.frame).toBe('castle-big');
+      // the classic look is untouched
+      expect(drawn('overworld', 'cloud-1')?.frame).toBe('cloud-1');
+    });
   });
 });

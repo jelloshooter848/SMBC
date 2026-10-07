@@ -8,6 +8,12 @@ time: 300
 start: 2,12
 startMode: stand
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook, docs/WORLD_MAP.md "Campaign looks"): 7-3 is a
+;; Contra jungle stage there: the same tiles, enemies, coins and collision in the `contra-jungle`
+;; theme and music, with the [campaign-decor] below (a hanging canopy, mountains, palms). Elsewhere (level select,
+;; ?level=7-3) it looks as it always did.
+campaignTheme: contra-jungle
+campaignMusic: contra-jungle
 
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224
@@ -33,11 +39,18 @@ koopa-para-green 52 8
 koopa-para-green-h 137 7
 koopa-para-green-h 153 9
 decor-castle-big 228 12
+;; Bill's exploding bridge (campaign only: it sleeps elsewhere, a plain bridge; docs/HEROES.md):
+;; the girders at 128-142 just past the checkpoint, the red light on the post at 127. A hero
+;; stepping on sets off the chain; the gap it leaves drops into the jungle camp (the pit below).
+bridge-blast 128 10 w=15 campaign=true
 
 [zones]
 checkpoint 114 12
 exit 226 next=7-4
 cheeps 9 173
+;; Through the blown bridge's gap only (columns 128-142, walled by the pillars at 127 and 143):
+;; Bill's jungle camp, dropping in from above. Campaign only; any other fall in 7-3 still kills.
+pit 128 -> 7-3-camp 2 0 w=15 campaign
 
 [decor]
 cloud-2 3 3
@@ -75,3 +88,154 @@ cloud-1 220 11
 cloud-1 227 7
 cloud-1 230 6
 cloud-1 238 11
+
+[campaign-decor]
+;; The jungle: a hanging canopy for a ceiling over the black starry night (NES Contra's sky has
+;; no clouds: the level's clouds are left out here), snow-capped mountains on the screen's bottom
+;; under the bridges, palms, and a band of palms and undergrowth along every stretch of ground.
+canopy-hang 0 0
+canopy-hang 2 0
+canopy-hang 4 0
+canopy-hang 6 0
+canopy-hang 8 0
+canopy-hang 10 0
+canopy-hang 12 0
+canopy-hang 14 0
+canopy-hang 16 0
+canopy-hang 18 0
+canopy-hang 20 0
+canopy-hang 22 0
+canopy-hang 24 0
+canopy-hang 26 0
+canopy-hang 28 0
+canopy-hang 30 0
+canopy-hang 32 0
+canopy-hang 34 0
+canopy-hang 36 0
+canopy-hang 38 0
+canopy-hang 40 0
+canopy-hang 42 0
+canopy-hang 44 0
+canopy-hang 46 0
+canopy-hang 48 0
+canopy-hang 50 0
+canopy-hang 52 0
+canopy-hang 54 0
+canopy-hang 56 0
+canopy-hang 58 0
+canopy-hang 60 0
+canopy-hang 62 0
+canopy-hang 64 0
+canopy-hang 66 0
+canopy-hang 68 0
+canopy-hang 70 0
+canopy-hang 72 0
+canopy-hang 74 0
+canopy-hang 76 0
+canopy-hang 78 0
+canopy-hang 80 0
+canopy-hang 82 0
+canopy-hang 84 0
+canopy-hang 86 0
+canopy-hang 88 0
+canopy-hang 90 0
+canopy-hang 92 0
+canopy-hang 94 0
+canopy-hang 96 0
+canopy-hang 98 0
+canopy-hang 100 0
+canopy-hang 102 0
+canopy-hang 104 0
+canopy-hang 106 0
+canopy-hang 108 0
+canopy-hang 110 0
+canopy-hang 112 0
+canopy-hang 114 0
+canopy-hang 116 0
+canopy-hang 118 0
+canopy-hang 120 0
+canopy-hang 122 0
+canopy-hang 124 0
+canopy-hang 126 0
+canopy-hang 128 0
+canopy-hang 130 0
+canopy-hang 132 0
+canopy-hang 134 0
+canopy-hang 136 0
+canopy-hang 138 0
+canopy-hang 140 0
+canopy-hang 142 0
+canopy-hang 144 0
+canopy-hang 146 0
+canopy-hang 148 0
+canopy-hang 150 0
+canopy-hang 152 0
+canopy-hang 154 0
+canopy-hang 156 0
+canopy-hang 158 0
+canopy-hang 160 0
+canopy-hang 162 0
+canopy-hang 164 0
+canopy-hang 166 0
+canopy-hang 168 0
+canopy-hang 170 0
+canopy-hang 172 0
+canopy-hang 174 0
+canopy-hang 176 0
+canopy-hang 178 0
+canopy-hang 180 0
+canopy-hang 182 0
+canopy-hang 184 0
+canopy-hang 186 0
+canopy-hang 188 0
+canopy-hang 190 0
+canopy-hang 192 0
+canopy-hang 194 0
+canopy-hang 196 0
+canopy-hang 198 0
+canopy-hang 200 0
+canopy-hang 202 0
+canopy-hang 204 0
+canopy-hang 206 0
+canopy-hang 208 0
+canopy-hang 210 0
+canopy-hang 212 0
+canopy-hang 214 0
+canopy-hang 216 0
+canopy-hang 218 0
+canopy-hang 220 0
+canopy-hang 222 0
+canopy-hang 224 0
+canopy-hang 226 0
+canopy-hang 228 0
+canopy-hang 230 0
+canopy-hang 232 0
+canopy-hang 234 0
+canopy-hang 236 0
+canopy-hang 238 0
+mountain 18 14
+mountain 66 14
+mountain 98 14
+mountain 140 14
+mountain 172 14
+palm 1 12
+palm 116 12
+palm 200 12
+palm 219 12
+jungle-band-half 6 12
+jungle-band 8 12
+jungle-band-half 15 12
+jungle-band 112 12
+jungle-band 114 12
+jungle-band 116 12
+jungle-band-half 118 12
+jungle-band-half 192 12
+jungle-band 197 12
+jungle-band 199 12
+jungle-band 201 12
+jungle-band 203 12
+jungle-band-half 207 12
+jungle-band 217 12
+jungle-band 219 12
+jungle-band 221 12
+jungle-band-half 223 12

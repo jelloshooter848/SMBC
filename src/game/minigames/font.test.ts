@@ -6,6 +6,9 @@ import { MINIGAMES } from '.';
 import { duelHarness, type DuelHarness } from './ryu/harness';
 import { ArtScroll } from './ryu/creatures';
 import { READY_FRAMES } from './ryu/scene';
+import { jungleHarness, type JungleHarness } from './bill/harness';
+import { CARD_ANIM } from './bill/card';
+import { DEATH_FRAMES } from './bill/commando';
 
 // Mini games draw their rules cards and hint banners in the bitmap font, which silently drops
 // any character it has no glyph for (QA 0.4.8: the Shadow Duel card's semicolon vanished, so it
@@ -32,7 +35,7 @@ function missing(line: string): string[] {
 }
 
 /** Every string the scene draws in one frame. */
-function drawn(h: DuelHarness): string[] {
+function drawn(h: DuelHarness | JungleHarness): string[] {
   const out: string[] = [];
   const r: Renderer = Object.assign(new NullRenderer(), {
     text: (...args: Parameters<Renderer['text']>) => void out.push(args[1]),
@@ -80,6 +83,50 @@ describe('the bitmap font draws every mini game line', () => {
       h.step();
       lines.push(...(h.scene.banner?.lines ?? []), ...drawn(h));
       expect(lines.length).toBeGreaterThan(10);
+      const bad = lines.filter((l) => missing(l).length > 0);
+      expect(bad).toEqual([]);
+    });
+
+  for (const scheme of ['keyboard', 'touch'] as const)
+    it(`bill (${scheme}): the stage card (with the Konami code), play, the win banner and GAME OVER`, () => {
+      const h = jungleHarness({ scheme, assets: STUB_ASSETS, keep: true });
+      const lines: string[] = [];
+      h.step([], 5);
+      lines.push(...drawn(h));
+      for (const a of [
+        'up',
+        'up',
+        'down',
+        'down',
+        'left',
+        'right',
+        'left',
+        'right',
+        'attack',
+        'jump',
+      ] as const) {
+        h.step([a]);
+        h.step();
+      }
+      h.step([], CARD_ANIM);
+      lines.push(...drawn(h));
+      h.step(['jump']);
+      h.step([], 60);
+      lines.push(...drawn(h));
+      const j = h.jungle;
+      j.phase = 'lair';
+      j.heartDown();
+      h.step([], 200);
+      lines.push(...(h.scene.banner ?? []), ...drawn(h));
+      const h2 = jungleHarness({ scheme, assets: STUB_ASSETS, keep: true, skipCard: true });
+      h2.step([], 60);
+      h2.jungle.rest = 0;
+      h2.jungle.bill.kill(h2.jungle);
+      h2.step([], DEATH_FRAMES + 5);
+      lines.push(...(h2.scene.banner ?? []), ...drawn(h2));
+      expect(lines).toEqual(
+        expect.arrayContaining(['REST 29', 'STAGE 1', 'GAME OVER', "RED FALCON'S HEART BURSTS!"]),
+      );
       const bad = lines.filter((l) => missing(l).length > 0);
       expect(bad).toEqual([]);
     });

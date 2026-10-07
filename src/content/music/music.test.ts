@@ -44,6 +44,12 @@ const SONG_IDS = [
   'ng-stage',
   'ng-boss',
   'ng-cutscene',
+  // Bill's jungle under 7-3 and his mini game.
+  'contra-jungle',
+  'contra-stage',
+  'contra-boss',
+  'contra-lair',
+  'contra-card',
 ];
 
 const SFX_IDS = [
@@ -103,6 +109,13 @@ const SFX_IDS = [
   'slash',
   'hawk',
   'clang',
+  // Bill's jungle and his mini game.
+  'bridge-boom',
+  'falcon',
+  'contra-death',
+  'spread',
+  'laser',
+  'konami',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

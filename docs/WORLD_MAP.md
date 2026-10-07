@@ -172,7 +172,8 @@ the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pad
   hero's silhouette and `?`, its hint line says what to find (`??? - FIND THIS HERO FIRST`, `??? - FREE THIS HERO FIRST` for a training room) and JUMP
   bumps. On a found pad the hint line names the game, the touch JUMP says PLAY, and the announcer
   says "Mirror Race, Luigi. Jump to play, for fun."
-- A round is played over the map and nothing is saved (docs/HEROES.md); arriving and walking save
+- A round is played over the map and nothing is saved (docs/HEROES.md); Larry's airship asks for
+  a hero first (character select over the map; Back returns to the pad). Arriving and walking save
   the hero's place as on any page. The Worlds menu lists the arena on the hub and on the arena.
 - **Art**: theme `arena` (a night match: `map-arena` palette, sky `ARENA_NIGHT`) and music `arena`.
   The sketch (`SKETCH_ARENA`): bunting `w` on the sky (row 2), crowds `M`/`N` alternating with
@@ -507,6 +508,77 @@ trick x y h -> level x y [exit=up] [campaign]
   `6-2-dojo` has `trick 15 10 3 -> 6-2 35 10 exit=up` (always awake): the way out rises out of the
   pipe at 35 in 6-2, where the bonus room's own pipe leads, so the panel is one way and the bonus
   room (and its coins) is entered again only down the pipe at 19.
+
+## Exploding bridges and ranged pits (level entity and zone, 0.4.9)
+
+7-3's way into Bill Rizer's jungle camp (campaign only, docs/HEROES.md):
+
+```
+[entities]
+bridge-blast x y w=N campaign=true
+[zones]
+pit x -> level x y [w=N] [campaign]
+```
+
+- **Campaign-only entities**: any spawn with `campaign=true` sleeps outside campaign play (World
+  leaves it out of its spawns); the campaign variant (`level/campaign.ts`) drops the mark, so it
+  spawns. Nothing else of the level changes for it.
+- **`bridge-blast`** (`entities/objects/bridge-blast.ts`) marks the N bridge tiles (`-`) from
+  (x, y) rightward. At rest: the `contra` sheet's `blast-bridge-0/1` over its girders (the red
+  light blinking about once a second; steady with reduce flashing), or without the sheet a post
+  with a blinking red lamp on the tile before its left end. The campaign variant also lays a coin
+  arrow pointing down at its marked end (`blastArrow`: a shaft of two, then a head of five, three
+  and one, tip two tiles above the girders over its third segment; open air only).
+- **The chain**: a hero standing on an intact segment sets it off, from the end it came on at
+  (the end of the half it stands on, whichever way it faces). It chases a ghost (`blastTimes`): a
+  hero with the slowest active hero's movement (the one whose ghost takes longest to cross) sets
+  off from that end at the moment of the step, as fast as the hero who stepped on (else from
+  rest), speeds up by its run (or walk) acceleration to its top speed and holds it; each segment
+  blows the first frame the ghost is `BLAST_LEAD` (28) px past its far end. From rest that is
+  Mario's first blast 39 frames after the step and then one about every 6.2 frames (his top
+  speed), Simon's 48 and every 16; a hero already at full tilt gets no wind-up. Each segment
+  flashes for `BLAST_FLASH` (16) frames first (a steady orange glow with reduce flashing), then
+  its tile turns to air with a 32x32 boom (`contra:boom-0..3`, else the items sheet's blast) and
+  the `bridge-boom` sound (else `explosion`). The booms hurt nobody. So a hero who runs flat out
+  from rest on the post just about outruns it, every hero, small or big, with 16-18 px between its
+  heels and the gap at every blast (tests: 8-25 px; QA of 0.4.9 found the first pacing, 0.8 of
+  top speed after a fixed 36 frames, left 40-80 px by the far pillar); one who walks (Mario,
+  Luigi), stops or takes a hit's knockback falls through. The bridge is whole again on any new
+  visit (a respawn, a re-entry: World copies the map's tiles).
+- **Ranged pits**: `w=N` limits a pit to columns x..x+N-1 (else, as before, every column from x
+  on); `campaign` makes it sleep outside campaign play like a descent (a fall there kills). 7-3
+  has `pit 128 -> 7-3-camp 2 0 w=15 campaign` under the bridge, whose gap is walled to the bottom
+  by the pillars at 127 and 143, so only a fall through the blown bridge reaches it; every other
+  fall in 7-3 still kills. A pit takes every player along (co-op fall arrival: `World.fallSpot`).
+
+## Campaign looks (`LevelData.campaignLook`, 0.4.9)
+
+A level can look different in campaign play only: the same tiles, zones, entities and collision
+in another theme, music and decor (7-3 as a Contra jungle stage; next 2-1, 3-1, 4-2, 5-4 and 6-2
+in their heroes' styles). In the map:
+
+```
+campaignTheme: contra-jungle
+campaignMusic: contra-jungle
+...
+[campaign-decor]
+canopy-hang 0 0
+cloud-2 3 3
+palm 1 12
+```
+
+- The headers and the section are parsed into `campaignLook: { theme, music?, decor? }` and
+  written back by `serializeTextMap`. `campaignMusic` or `[campaign-decor]` without
+  `campaignTheme` is a parse error.
+- `applyLook` (`level/campaign.ts`), called by `campaignLevel`: the theme replaces the level's,
+  `[campaign-decor]` (if given) replaces `[decor]`, and the music replaces the level's once that
+  song is registered. A look whose theme is not registered yet (`isTheme`) is left out entirely,
+  so a level can name its look before its art lands; nothing throws.
+- Outside the campaign (level select, `?level=`, the editor) the level is exactly its own. For
+  7-3 a test holds it to v0.4.8 tile for tile and in look (`tests/sim/fixtures/7-3-v0.4.8.map`).
+- A reskin's checklist: the theme (and its music) registered as for any theme; the two headers
+  and the decor in the level's map; a test like `tests/sim/bill-camp.test.ts` "outside the
+  campaign".
 
 ## Adding a page (checklist)
 

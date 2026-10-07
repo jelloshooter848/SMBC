@@ -1045,7 +1045,7 @@ export class Game {
   }
 
   /** Give player `player` hero `c`, starting from its default power (small, or full hp). */
-  private setHero(player: 0 | 1, c: CharacterDef): void {
+  setHero(player: 0 | 1, c: CharacterDef): void {
     const s = this.state;
     const power = c.damage.kind === 'powerup' ? 'small' : 'full';
     if (player === 1) {

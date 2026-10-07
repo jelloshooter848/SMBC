@@ -1,0 +1,83 @@
+id: 7-3-falls
+name: WORLD 7-3
+world: 7
+stage: 3
+theme: contra-falls
+time: inherit
+start: 1,29
+startMode: stand
+camera: free
+height: 32
+parent: 7-3
+
+;; The waterfall climb from Bill's jungle camp back up into 7-3 (campaign only, docs/HEROES.md),
+;; in the style of Contra's third stage: one screen wide, two screens tall (a free camera follows
+;; the climb). The player steps out of the camp's cave onto the pool's floor at the bottom left.
+;; Rock ledges (`T`, three tiles up and one tile apart: every hero's jump makes it, small Mario's
+;; and Simon's stiff one too) climb right beside the waterfall to a jungle vine on the right wall,
+;; and from its top more ledges climb left to a vine on the left wall that leads off the top of the
+;; screen: up into 7-3 at column 199, climbing out of the jungle onto the tree platform past the
+;; exploding bridge (a climb arrival). No ledge hangs over another's take-off (each vine rises nine
+;; rows), the floor catches every fall and the walls close both sides, so nobody gets stuck. The
+;; clock runs on (time: inherit). Theme `contra-falls` (B3's art: the falling water slides down).
+
+[tiles]
+;; Rows 0-1 stay clear under the HUD at the top of the climb.
+;; 0             15
+................
+................
+#......ww......#
+#......ww......#
+#......ww......#
+#......ww......#
+#TTTT..ww......#
+#......ww......#
+#......ww......#
+#.....TTT......#
+#......ww......#
+#......ww......#
+#......ww.TTTT.#
+#......ww......#
+#......ww......#
+#......ww......#
+#......ww......#
+#......ww......#
+#......ww......#
+#......ww......#
+#......ww......#
+#......ww...TTT#
+#......ww......#
+#......ww......#
+#......wTTT....#
+#......ww......#
+#......ww......#
+#...TTTww......#
+#......ww......#
+#....wwwwww....#
+################
+################
+
+[entities]
+;; The switchback: from the third ledge (21) up the right wall to the fourth (12).
+vine 14 20 len=12
+;; The way out: from the top ledge (6) up off the top of the screen.
+vine 1 5 len=8
+
+[zones]
+;; Climbing the left vine off the top: 7-3 at 199, onto the tree platform past the bridge.
+vine 1 5 -> 7-3 199 12
+
+[decor]
+;; The canopy over the top of the climb, palms by the pool, jungle crowns on two ledges.
+canopy-hang 0 0
+canopy-hang 2 0
+canopy-hang 4 0
+canopy-hang 6 0
+canopy-hang 8 0
+canopy-hang 10 0
+canopy-hang 12 0
+canopy-hang 14 0
+palm 2 29
+palm 11 29
+canopy 4 26
+canopy 11 11

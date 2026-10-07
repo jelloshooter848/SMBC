@@ -1,6 +1,13 @@
 import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { swapColors } from '@engine/gfx/pixelart';
+import {
+  alienLairFrames,
+  contraFallsFrames,
+  contraJungleFrames,
+  contraTilePalettes,
+  rivets,
+} from './contra-tiles';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -283,6 +290,8 @@ export const tilePalettes: Record<string, string[]> = {
     '#2c1878',
     NES.lava,
   ],
+  // Bill's jungle under 7-3, his waterfall climb and Red Falcon's lair (contra-tiles.ts).
+  ...contraTilePalettes,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -1996,6 +2005,13 @@ const treeTrunkNinja = Array.from({ length: 16 }, (_, y) =>
   y === 6 || y === 7 ? '.....003310.....' : '......03210.....',
 );
 
+/** A theme's frames under their `<tile>@<theme>` names. */
+const themed = (
+  frames: Record<string, readonly string[]>,
+  theme: string,
+): Record<string, readonly string[]> =>
+  Object.fromEntries(Object.entries(frames).map(([name, rows]) => [`${name}@${theme}`, rows]));
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -2129,5 +2145,20 @@ export const tilesDef: SpriteDef = {
     'wall-top@ninja-night': wallTopNinja,
     'tree-top@ninja-night': treeTopNinja,
     'tree-trunk@ninja-night': treeTrunkNinja,
+    // Bill's jungle (the 7-3 reskin, his camp, the mini game), the waterfall and Red Falcon's lair.
+    ...themed(contraJungleFrames, 'contra-jungle'),
+    ...themed(contraFallsFrames, 'contra-falls'),
+    ...themed(alienLairFrames, 'alien-lair'),
+    // The jungle's `?` blocks are the SMB blocks with steel corner rivets; its coins and flagpole
+    // are SMB's own, kept as they are so they read at a glance.
+    'question-0@contra-jungle': rivets(question0),
+    'question-1@contra-jungle': rivets(swapColors(question0, { '7': '4' })),
+    'question-2@contra-jungle': rivets(swapColors(question0, { '4': '7' })),
+    'coin-0@contra-jungle': coin0,
+    'coin-1@contra-jungle': coin1,
+    'coin-2@contra-jungle': coin2,
+    'coin-3@contra-jungle': coin3,
+    'flag-shaft@contra-jungle': flagShaft,
+    'flag-ball@contra-jungle': flagBall,
   },
 };

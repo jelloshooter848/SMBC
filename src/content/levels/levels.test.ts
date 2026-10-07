@@ -25,7 +25,9 @@ describe('bundled levels parse', () => {
   it.each(files.map((f) => [f.file, f.path]))('%s', (_name, path) => {
     const lvl = parseTextMap(readFileSync(path as string, 'utf8'));
     expect(lvl.width).toBeGreaterThan(15);
-    expect(lvl.height).toBe(15);
+    // One screen tall, but for a free camera's climb (7-3-falls).
+    if (lvl.camera === 'free') expect(lvl.height).toBeGreaterThan(15);
+    else expect(lvl.height).toBe(15);
   });
 });
 

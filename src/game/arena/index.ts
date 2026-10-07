@@ -16,7 +16,7 @@ import { createBonusScene } from '../bonus';
 import { freshSeed } from '../world/world';
 import { CRYSTAL_BALL } from '../map/captives';
 import { FIRST_HERO, MET_LARRY, TUTORIAL_LEVEL } from '../save/save-files';
-import { DevMiniGameResultScene, playRound, type DevRound } from '../scenes/dev-minigames';
+import { DevMiniGameResultScene, pickRoundHero, playRound, type DevRound } from '../scenes/dev-minigames';
 import { TUTORIAL_ROUND } from './stage-round';
 
 /*
@@ -35,6 +35,9 @@ import { TUTORIAL_ROUND } from './stage-round';
  *
  * Developer "Unlock all" counts every game as found. A game not found yet shows as a dark "???"
  * pad (the hero's black silhouette when it has one) whose hint line says what to do; JUMP bumps.
+ *
+ * Larry's airship is played as a hero of the player's choosing: its pad opens character select
+ * first (the file's freed heroes; Back is the arena again). The other games have no select.
  *
  * A round is Dev → Mini games' round (scenes/dev-minigames.ts playRound) played over the map: no
  * file is open meanwhile and everything is put back after, so the arena never changes progress,
@@ -197,7 +200,10 @@ export function arenaPadTouch(game: Game, n: MapNode): Partial<TouchLabels> {
 /**
  * JUMP on pad `n` (the map is on top): a found game plays one round over the map, then the result
  * card, then the map again with the hero on the pad and its music (nothing saved: `then` runs when
- * the card is gone). A dark pad bumps. Returns whether a round started.
+ * the card is gone). Larry's airship, the one game played as a hero of your own, opens character
+ * select first (pickRoundHero: the round is played as the picked hero, the file keeps its own;
+ * Back is the map again with nothing started, and `then` runs). A dark pad bumps. Returns whether
+ * a round (or its character select) started.
  */
 export function playArenaPad(game: Game, n: MapNode, music: string, then: () => void): boolean {
   const g = arenaGameAt(n);
@@ -210,21 +216,27 @@ export function playArenaPad(game: Game, n: MapNode, music: string, then: () => 
     game.ctx.audio.playMusic(music);
     then();
   };
-  try {
-    playRound(game, g.round, (result) => {
-      game.scenes.push(
-        new DevMiniGameResultScene(game, g.round, result, () => {
-          game.scenes.pop();
-          back();
-        }),
-      );
-    });
-  } catch (e) {
-    // A round that cannot start: the map as it was, and why in the console.
-    console.error(e);
-    back();
-    return false;
-  }
+  const start = (round: DevRound): boolean => {
+    try {
+      playRound(game, round, (result) => {
+        game.scenes.push(
+          new DevMiniGameResultScene(game, round, result, () => {
+            game.scenes.pop();
+            back();
+          }),
+        );
+      });
+    } catch (e) {
+      // A round that cannot start: the map as it was, and why in the console.
+      console.error(e);
+      back();
+      return false;
+    }
+    return true;
+  };
+  if (!g.round.asHero) return start(g.round);
+  // The map's music plays on under the select; Back leaves it playing.
+  pickRoundHero(game, g.round, start, then);
   return true;
 }
 

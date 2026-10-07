@@ -2,6 +2,7 @@ import type { Sfx } from '@engine/audio/mml';
 import { smb3Sfx } from './smb3';
 import { castlevaniaSfx } from './castlevania';
 import { ninjaSfx } from './ninja';
+import { contraSfx } from './contra';
 
 /**
  * Original sound effects. At the default 150 bpm one tick is ~8.3 ms, so l64 = 25 ms,
@@ -163,4 +164,6 @@ export const sfx: Sfx[] = [
   ...castlevaniaSfx,
   // Ryu's hideout and his mini game.
   ...ninjaSfx,
+  // Bill's jungle and his mini game.
+  ...contraSfx,
 ];
