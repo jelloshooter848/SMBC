@@ -162,6 +162,18 @@ describe('2-1 sky: the hidden vine block over the second to last cloud platform'
             return f > 2 && f % 50 < 22 ? ['jump'] : [];
           }
           if (p.vine) return ['up'];
+          if (p.body.w > px(16)) {
+            // Sophia III's tank is too wide to jump up past the block's side: from beside it she
+            // jumps up onto the used block and gets on the vine from its top.
+            const feet = p.body.y + p.body.h;
+            if (phase === 0 && p.body.onGround) {
+              phase = 1;
+              p.body.x = px(B.x0 * 16 - 4);
+              return [];
+            }
+            if (p.body.onGround) return feet <= px(BLOCK.ty * 16) ? ['up'] : f % 2 ? ['jump'] : [];
+            return feet < px(BLOCK.ty * 16) ? ['jump', 'right'] : ['jump'];
+          }
           if (phase === 0 && p.body.onGround) {
             phase = 1;
             p.body.x = px(B.x0 * 16 + 4); // beside the block (now a used block)

@@ -86,7 +86,7 @@ describe('save files lock heroes in campaign play', () => {
     h.game.enterLevelFromMap('1-1');
     const cs = h.top() as CharacterSelectScene;
     expect(cs).toBeInstanceOf(CharacterSelectScene);
-    expect(h.said.some((t) => /7 heroes still to be found/i.test(t))).toBe(true);
+    expect(h.said.some((t) => /8 heroes still to be found/i.test(t))).toBe(true);
     h.idle(12);
     const { texts, sprites } = draw(cs);
     expect(texts.filter((t) => t.str === '???')).toHaveLength(CHARACTERS.length - 1);
@@ -124,7 +124,7 @@ describe('save files lock heroes in campaign play', () => {
     h.until(() => h.top() instanceof CharacterSelectScene);
     h.idle(12);
     expect(new Set(offered(h))).toEqual(new Set(['Mario', 'Link']));
-    expect(h.said.some((t) => /6 heroes still to be found/i.test(t))).toBe(true);
+    expect(h.said.some((t) => /7 heroes still to be found/i.test(t))).toBe(true);
   });
 
   it('a file whose hero is somehow locked falls back to Mario', () => {

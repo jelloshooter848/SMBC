@@ -14,6 +14,7 @@ import { CHARACTERS } from '../../characters/registry';
 import { BUSTER, CHARGED_BUSTER, FIREBALL, type ProjectileSpec } from '../projectiles/projectile';
 import { BEAMS, BEAM_NAMES } from '../../characters/samus/weapons';
 import { GUNS } from '../../characters/bill/weapons';
+import { CANNON, TRIPLE } from '../../characters/sophia/weapons';
 
 // Larry Koopa in 4-2's airship cabin (docs/HEROES.md "Larry Koopa and the crystal ball"): hops at
 // the hero, now and then a high jump, wand blasts flying straight at where the hero was; three
@@ -259,6 +260,7 @@ describe("every hero's main attack hurts Larry (larryDamage)", () => {
     simon: [MELEE],
     ryu: [MELEE],
     bill: GUNS.map((g) => g.spec),
+    sophia: [...CANNON, TRIPLE], // the cannon's three levels and the Triple Missile
   };
 
   it('covers the whole roster', () => {

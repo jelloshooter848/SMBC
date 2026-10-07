@@ -43,9 +43,9 @@ export const CONTRA_SHEET = 'contra';
  * movement `m` stepping on at `speed` (|vx|, 1/4096 px a frame): a ghost of that hero runs on from
  * the bridge's end at that speed, or from rest (its first step at `minWalk`), speeding up by
  * `runAccel` (`walkAccel` for heroes who cannot run) to its top speed (Mega Man straight at his),
- * and each segment blows the first frame the ghost is BLAST_LEAD px past its far end.
+ * and each segment blows the first frame the ghost is `lead` px (BLAST_LEAD) past its far end.
  */
-export function blastTimes(m: MovementProfile, n: number, speed = 0): number[] {
+export function blastTimes(m: MovementProfile, n: number, speed = 0, lead = BLAST_LEAD): number[] {
   const top = m.canRun ? m.maxRun : m.maxWalk;
   const accel = m.canRun ? m.runAccel : m.walkAccel;
   const out: number[] = [];
@@ -54,7 +54,7 @@ export function blastTimes(m: MovementProfile, n: number, speed = 0): number[] {
   for (let t = 1; out.length < n; t++) {
     v = m.instantAccel ? top : v === 0 ? Math.max(1, m.minWalk) : Math.min(top, v + accel);
     g += v;
-    while (out.length < n && g >= (16 * (out.length + 1) + BLAST_LEAD) * 4096) out.push(t);
+    while (out.length < n && g >= (16 * (out.length + 1) + lead) * 4096) out.push(t);
   }
   return out;
 }
@@ -127,7 +127,10 @@ export class BridgeBlast extends Entity {
     const last = (t: number[]) => t[t.length - 1] ?? 0;
     this.times = [];
     for (const o of world.activePlayers()) {
-      const times = blastTimes(o.profile, this.w, o === p ? o.body.vx : 0);
+      // BLAST_LEAD is for a 12 px hero: a wider body (Sophia III's tank) trails further behind its
+      // front, so the ghost leads by the difference too.
+      const lead = BLAST_LEAD + Math.max(0, toPx(o.body.w) - 12);
+      const times = blastTimes(o.profile, this.w, o === p ? o.body.vx : 0, lead);
       if (this.times.length === 0 || last(times) > last(this.times)) this.times = times;
     }
   }

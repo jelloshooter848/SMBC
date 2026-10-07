@@ -8,6 +8,7 @@ import {
   contraTilePalettes,
   rivets,
 } from './contra-tiles';
+import { bmDungeonTileFrames, sophiaTilePalettes, underworldFrames } from './sophia-tiles';
 import { castlevaniaTileFrames, castlevaniaTilePalette } from './castlevania-look';
 import { ninjaCityTileFrames, ninjaCityTilePalette, nightCloudBlock, pipeFrames } from './ninja-city-look';
 import { smwSecretTileFrames, smwSecretTilePalette } from './top-secret';
@@ -301,6 +302,8 @@ export const tilePalettes: Record<string, string[]> = {
   'tiles-ninja-city': ninjaCityTilePalette,
   // Bill's jungle under 7-3, his waterfall climb and Red Falcon's lair (contra-tiles.ts).
   ...contraTilePalettes,
+  // Sophia's Underworld cavern and the dungeon's metal (sophia-tiles.ts).
+  ...sophiaTilePalettes,
   /* The Top Secret Area (0.4.10): warm dirt under Super Mario World-style grass. */
   'tiles-smw-secret': smwSecretTilePalette,
   // The campaign looks of 2-1, 3-1 and 4-2 (zelda2-look.ts, megaman-look.ts, brinstar-look.ts).
@@ -2262,6 +2265,10 @@ export const tilesDef: SpriteDef = {
     'coin-3@contra-jungle': coin3,
     'flag-shaft@contra-jungle': flagShaft,
     'flag-ball@contra-jungle': flagBall,
+    // Sophia's Underworld (her garage and the mini game's cavern) and the dungeon's metal; their
+    // `?` blocks, coins, pipes and flagpole are SMB's own.
+    ...themed(underworldFrames, 'underworld'),
+    ...themed(bmDungeonTileFrames, 'bm-dungeon'),
   },
 };
 

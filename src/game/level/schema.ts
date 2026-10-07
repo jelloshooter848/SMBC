@@ -43,6 +43,10 @@ export type Theme =
   | 'contra-falls'
   // Red Falcon's lair (Bill's mini game): organic walls and floor.
   | 'alien-lair'
+  // Sophia's Underworld (her garage, her mini game's cavern): rust rock, roots, slime, gateways.
+  | 'underworld'
+  // The overhead dungeon's metal seen from the side (the top-down kit draws the `bm-dungeon` sheet).
+  | 'bm-dungeon'
   // The Top Secret Area behind World 2's hidden bonus spot (0.4.10), in a Super Mario World look:
   // grass-topped dirt, green bush hills and a big sparkly hill under a cream sky.
   | 'smw-secret'
@@ -81,6 +85,8 @@ export const THEMES: readonly Theme[] = [
   'contra-jungle',
   'contra-falls',
   'alien-lair',
+  'underworld',
+  'bm-dungeon',
   'smw-secret',
   'zelda2',
   'megaman-stage',
@@ -127,6 +133,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'ninja-city') return 'ng-city';
   if (theme === 'contra-jungle' || theme === 'contra-falls') return 'contra-jungle';
   if (theme === 'alien-lair') return 'contra-lair';
+  if (theme === 'underworld') return 'bm-area';
+  if (theme === 'bm-dungeon') return 'bm-dungeon';
   if (theme === 'zelda2') return 'zelda2-field';
   if (theme === 'megaman-stage') return 'mm-stage-31';
   if (theme === 'brinstar') return 'brinstar';

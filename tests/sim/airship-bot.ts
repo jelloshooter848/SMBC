@@ -106,9 +106,17 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
         return [];
       }
       // Coming down over the stern pipe: stop steering so the hero lands on it.
+      const wide = right - left > 16;
       const overPipe =
-        stern !== undefined && b.vy > 0 && feet <= pipeTop && left >= pipeL - 2 && right <= pipeL + 34;
-      const mid = (left + right) / 2 - (pipeL + 16);
+        stern !== undefined &&
+        b.vy > 0 &&
+        feet <= pipeTop &&
+        ((left >= pipeL - 2 && right <= pipeL + 34) ||
+          // A body wider than a tile (Sophia III) over the pipe at all: brake toward its middle.
+          (wide && right > pipeL && left < pipeL + 32));
+      // Where the drift carries it over the next few frames (a hero that keeps its speed in the
+      // air, Sophia III's tank, has to brake against it).
+      const mid = (left + right) / 2 + (wide ? (b.vx / 4096) * 8 : 0) - (pipeL + 16);
       const steer: Action[] = mid > 3 ? ['left'] : mid < -3 ? ['right'] : [];
       let out: Action[] = overPipe ? steer : airDir ? [airDir] : [];
       if (!overPipe) {

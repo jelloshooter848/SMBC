@@ -50,14 +50,18 @@ const koopa = (w: World) => w.entities.find((e): e is Koopa => e instanceof Koop
 const descents = (zones: Zone[]) =>
   zones.filter((z): z is Zone & { kind: 'descent' } => z.kind === 'descent');
 
-/** Stand on the descent lift's left side, clear of the fire bar at (92, 10) sweeping its right end. */
+/**
+ * Stand on the descent lift's left side, clear of the fire bar at (92, 10) sweeping its right end.
+ * Edged over at no more than half a pixel a frame, so a hero that rolls on after letting go
+ * (Sophia III's tank) stops on the lift too.
+ */
 function rideLeft(w: World): Action[] {
   const b = w.player.body;
   const lift = w.entities.find(
     (e) => e instanceof Lift && e.kind === 'lift-down' && Math.abs(e.body.y - (b.y + b.h)) < px(4),
   );
   if (!lift || !b.onGround) return [];
-  return b.x + b.w > lift.body.x + px(10) ? ['left'] : [];
+  return b.x + b.w > lift.body.x + px(10) && b.vx > -0x00800 ? ['left'] : [];
 }
 
 describe('the areas', () => {
@@ -249,7 +253,11 @@ describe('the down lift into the dungeon (campaign)', () => {
           state: { powerState: power },
           maxFrames: 1,
         });
-        expect(toPx(r.world.player.body.w), `${c.name} ${power}`).toBeLessThanOrEqual(16);
+        // The one exception is Sophia III's tank (19 px, SO-3): the bar is still clear of her
+        // wherever she stands on the lift (the next test sweeps her whole overhang).
+        expect(toPx(r.world.player.body.w), `${c.name} ${power}`).toBeLessThanOrEqual(
+          c.id === 'sophia' ? 19 : 16,
+        );
       }
   });
 
@@ -257,8 +265,11 @@ describe('the down lift into the dungeon (campaign)', () => {
     '%s anywhere on the lift, hanging off either end, is never hit, whatever the bar phase (16 phases)',
     (_n, c) => {
       const TURN = 65536;
-      // Lift: 24 px wide; the rider's body (12 px) overlaps it by 1 px at either extreme.
-      for (const off of [-11, -8, -4, 0, 4, 8, 12, 16, 20, 23])
+      // Lift: 24 px wide; the rider's body (12 px) overlaps it by 1 px at either extreme (the
+      // tank's 19 px from -18).
+      const offs = [-11, -8, -4, 0, 4, 8, 12, 16, 20, 23];
+      if (c.id === 'sophia') offs.unshift(-18, -15);
+      for (const off of offs)
         for (let k = 0; k < 16; k++) {
           let hurt = false;
           let power = '';

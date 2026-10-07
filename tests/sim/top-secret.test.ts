@@ -588,6 +588,27 @@ const ROUTES: Readonly<Record<string, readonly Move[]>> = {
     { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
     { do: 'exit', jumpAt: 3170 },
   ],
+  // Sophia III's tank (19 px wide): straight up past the coin block's side, then steered onto it.
+  'sophia small': [
+    { do: 'hop', dir: 1, at: 2880 },
+    { do: 'hop', dir: 0, at: 0, from: 2962 },
+    { do: 'hop', dir: 0, at: 0, from: 2950, steer: 2970, over: 72 },
+    { do: 'hop', dir: -1, at: 2960, from: 2976 },
+    { do: 'hop', dir: 1, at: 2860 },
+    { do: 'hop', dir: 0, at: 0, from: 2940, steer: 2970, over: 80 },
+    { do: 'hop', dir: 1, at: 2978, from: 2976 },
+    { do: 'exit', jumpAt: 3128 },
+  ],
+  'sophia big': [
+    { do: 'hop', dir: 1, at: 2880 },
+    { do: 'hop', dir: 0, at: 0, from: 2962 },
+    { do: 'hop', dir: 0, at: 0, from: 2950, steer: 2970, over: 72 },
+    { do: 'hop', dir: -1, at: 2960, from: 2976 },
+    { do: 'hop', dir: 1, at: 2860 },
+    { do: 'hop', dir: 0, at: 0, from: 2940, steer: 2970, over: 80 },
+    { do: 'hop', dir: 1, at: 2978, from: 2976 },
+    { do: 'exit', jumpAt: 3128 },
+  ],
 };
 const FROM_GROUND = { x: 180, y: 12 };
 

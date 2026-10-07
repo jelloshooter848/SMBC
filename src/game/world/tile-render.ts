@@ -134,6 +134,10 @@ export const SKY: Record<string, string> = {
   'contra-falls': '#000c20',
   // Red Falcon's lair: a dark blood red between the organic walls.
   'alien-lair': '#200010',
+  // Sophia's Underworld: the black of a deep cave with a little rust in it.
+  underworld: '#100400',
+  // The overhead dungeon's metal: black between the walls.
+  'bm-dungeon': '#000000',
   // The Top Secret Area: Super Mario World's pale cream behind the hills.
   'smw-secret': '#f8ecc0',
   // Link's field (2-1's campaign look): Zelda II's softer periwinkle daylight.
