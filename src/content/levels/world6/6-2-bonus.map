@@ -22,11 +22,15 @@ parent: 6-2
 =...=======...C{
 =..............{
 =..............{
-=..............{
-=............())
-=............<>>
+N..$...........{
+N.$$$$.......())
+N..$.........<>>
 ################
 ################
 
 [zones]
 pipe 13 12 right -> 6-2 35 10 exit=up
+;; Ryu's trick wall (campaign only, docs/HEROES.md): the panel in the left wall (rows 10-12, tile
+;; N) that the coin arrow points at. Pushing into it for about a second flips the player through
+;; into his dojo; outside the campaign it is a plain wall.
+trick 0 10 3 -> 6-2-dojo 14 12 campaign

@@ -32,6 +32,11 @@ import { T, isSolid } from './tiles';
  * dungeon) sleeps outside the campaign; its campaign variant wakes it, so riding the down lift
  * past the screen bottom carries the player down into the area below. Like a `goto`, it is an
  * ordinary way into an area of the same level: no secret, no map road, the clock carries on.
+ *
+ * A `trick` zone marked `campaign` (6-2's bonus room, owner decision for 0.4.8: Ryu's dojo) sleeps
+ * the same way: outside the campaign its panel is a plain wall; the campaign variant wakes it, so
+ * pushing into it flips the player through into the dojo (World.checkTricks). Likewise no secret,
+ * no map road, the clock carries on.
  */
 
 const PIPE_TILES = new Set<number>([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
@@ -65,8 +70,9 @@ export function campaignLevel(
   const variants = level.zones.filter(
     (z): z is Warp => z.kind === 'warp' && (!!z.secret || (!!z.goto && has(z.goto.level))),
   );
-  // A sleeping `descent` zone (5-4's down lift into Simon's dungeon) wakes in campaign play.
-  const sleeping = level.zones.some((z) => z.kind === 'descent' && z.campaign);
+  // A sleeping `descent` zone (5-4's down lift into Simon's dungeon) or `trick` zone (6-2's
+  // trick wall into Ryu's dojo) wakes in campaign play.
+  const sleeping = level.zones.some((z) => (z.kind === 'descent' || z.kind === 'trick') && z.campaign);
   if (!variants.length && !sleeping) {
     memo.set(level, level);
     return level;
@@ -123,7 +129,7 @@ export function campaignLevel(
   const zones = level.zones
     .filter((z) => !dropped.has(z))
     .map((z): Zone => {
-      if (z.kind === 'descent' && z.campaign) {
+      if ((z.kind === 'descent' || z.kind === 'trick') && z.campaign) {
         const live: Zone = { ...z };
         delete live.campaign;
         return live;

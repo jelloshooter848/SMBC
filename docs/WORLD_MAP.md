@@ -395,8 +395,8 @@ World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `u
 
 ## Teleport pads (level zone, 0.5.0)
 
-Hidden areas can be joined by Mega Man style teleport pads as well as pipes, vines, pits and
-descent shafts (below). A pad
+Hidden areas can be joined by Mega Man style teleport pads as well as pipes, vines, pits,
+descent shafts and trick walls (below). A pad
 is a `[zones]` line (`src/game/entities/objects/teleporter.ts`):
 
 ```
@@ -451,6 +451,43 @@ descent x w -> level x y [campaign]
   the level, no solid tile in its columns above the row player 1 lands on, outside every fire
   bar's sweep. So the dungeon's and crypt's arrivals stay in their open shafts (16 px right), and
   5-4 at 99 from the crypt lands 12 px right, clear of the bar at (103, 11).
+
+## Trick walls (level zone, 0.4.8)
+
+A ninja trick wall (a karakuri revolving panel) can flip the player through a wall into a hidden
+area (6-2's first bonus room into Ryu's dojo):
+
+```
+trick x y h -> level x y [campaign]
+```
+
+- The panel is the `h` tiles from (x, y) down in column x, written `N` in maps (`T.TRICK`: solid,
+  drawn as the theme's brick, with no block behaviour, so no bump or blast breaks it). The room
+  lies on the open side of its bottom tile.
+- **Pushing into it** for `TRICK_PUSH_FRAMES` (60, about a second) without letting go spins it:
+  holding toward it with the body against its face and the body's middle within its rows. That
+  is plain walking for every hero; jumping into it counts, Ryu clinging to it counts (his cling is
+  holding toward the wall) and Samus rolling into it in her morph ball counts. Letting go, or a
+  short push, starts the count over (`World.checkTricks`, `TrickWall.pushedBy`).
+- The spin (`World.trickSpin`, `entities/objects/trick-wall.ts`): everyone freezes, the others
+  hidden as for a pipe; the panel makes a half turn over `TRICK_SPIN_FRAMES` (24) with the
+  `panel-spin` sound (`card-flip` until it exists); the pusher is hidden as it turns edge-on, and
+  `TRICK_HOLD_FRAMES` (12) later the level moves to `target` like a pipe transfer (`pipe` event,
+  `exitDir: 'spin'`; the clock carries over within a stage). Only the panel turns: no flashing.
+- A `spin` arrival (also a level `startMode`): the start tile is beside the target's own panel;
+  the panel there turns, and the players appear as it turns edge-on (player 2 20 px further into
+  the room, both facing into it) and move once it is shut. Holding on in the same direction walks
+  away from the panel, so nobody spins straight back.
+- A live panel is marked: a faint seam along its top, bottom and far edge, and a shuriken stuck in
+  its face half way up (`ninja:shuriken-mark`, a grey star until that sheet exists; a brief glint
+  every two seconds, never with reduce flashing). Its half turn draws `ninja:trick-wall-0..3`
+  (flat to edge-on, mirrored on the way back), else rects in the theme's brick colours.
+- `campaign`: the zone sleeps outside campaign play (a plain wall: no mark, no spin; a sleeping
+  panel still turns for an arrival); the campaign variant (`level/campaign.ts`) wakes it. Like a
+  descent, it leads into an area of the same level: no secret, no map road, no clear.
+- 6-2: `6-2-bonus` has `trick 0 10 3 -> 6-2-dojo 14 12 campaign` (its left wall, rows 10-12, with
+  a coin arrow pointing at it); `6-2-dojo` has `trick 15 10 3 -> 6-2-bonus 1 12` (always awake: the
+  way back).
 
 ## Adding a page (checklist)
 

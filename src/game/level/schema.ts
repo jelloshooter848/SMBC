@@ -85,9 +85,10 @@ export type PipeDir = 'down' | 'up' | 'left' | 'right';
 
 /**
  * How the player arrives in a linked area: rising from a pipe, dropping in, climbing a vine,
- * beamed down by a teleport pad (`beam`), or placed.
+ * beamed down by a teleport pad (`beam`), flipped through a trick wall's spinning panel
+ * (`spin`), or placed.
  */
-export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam';
+export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam' | 'spin';
 
 export type Zone =
   | {
@@ -130,6 +131,21 @@ export type Zone =
       kind: 'descent';
       x: number;
       w: number;
+      target: { level: string; x: number; y: number };
+      campaign?: boolean;
+    }
+  /**
+   * A ninja trick wall (6-2's bonus room into Ryu's dojo): the panel of `h` tiles from (x, y)
+   * down, in a wall (tile `N`, T.TRICK). A player pushing into its open side for TRICK_PUSH_FRAMES
+   * (about a second) spins the panel and is flipped through into `target` (a `spin` arrival: the
+   * panel there spins and the players step out beside it). `campaign`: the zone sleeps (a plain
+   * wall: no mark, no spin) unless the campaign variant (level/campaign.ts) wakes it.
+   */
+  | {
+      kind: 'trick';
+      x: number;
+      y: number;
+      h: number;
       target: { level: string; x: number; y: number };
       campaign?: boolean;
     }
@@ -224,7 +240,7 @@ export interface LevelData {
   /** Player start, tile coords (feet on the tile below `y`). */
   start: { x: number; y: number };
   /** When set, the level starts with the "walk in from a pipe" animation (`beam`: beamed down onto a teleport pad). */
-  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb' | 'beam';
+  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb' | 'beam' | 'spin';
   /**
    * Camera behaviour: 'scroll' (default), 'locked' (bonus rooms), 'free' (scrolls both ways
    * and follows the player up and down a map taller than a screen) or 'auto' (SMB3 airships:

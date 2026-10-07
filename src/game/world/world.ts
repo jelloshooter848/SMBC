@@ -65,6 +65,13 @@ import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
 import { Lift } from '../entities/objects/lift';
 import { Candle, Respawner } from '../entities/objects/crypt';
+import {
+  TRICK_HOLD_FRAMES,
+  TRICK_PUSH_FRAMES,
+  TRICK_SPIN_FRAMES,
+  TrickWall,
+  type TrickZone,
+} from '../entities/objects/trick-wall';
 import { sfx as SFX_LIB } from '@content/sfx/sfx';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
@@ -176,6 +183,8 @@ const PIPE_SPEED = px(25) / 60;
 /** The crypt's own sounds (S3's) once they exist; until then the plain brick break and none. */
 const hasSfx = (id: string): boolean => SFX_LIB.some((x) => x.id === id);
 const CRUMBLE_SFX = hasSfx('whip-wall') ? 'whip-wall' : 'break';
+/** A trick wall's spin (R3's whoosh once it exists; until then the card flip). */
+const SPIN_SFX = hasSfx('panel-spin') ? 'panel-spin' : 'card-flip';
 const CANDLE_SFX = hasSfx('candle') ? 'candle' : null;
 /** The cracked wall's rubble (the `crypt` sheet's; BrickPiece falls back to the brick piece). */
 const RUBBLE: readonly PieceFrame[] = ['crypt:rubble-0', 'crypt:rubble-1'];
@@ -370,6 +379,16 @@ export class World {
   private cracked = 0;
   /** The live `descent` zones (a sleeping campaign one is left out): down-lift shafts. */
   private readonly descents: (Zone & { kind: 'descent' })[];
+  /** Every `trick` zone's panel (a sleeping one too: it still turns for an arrival). */
+  private readonly tricks: TrickWall[] = [];
+  /** Frames each player has pushed into a live panel without letting go (TRICK_PUSH_FRAMES). */
+  private readonly trickPush = new Map<Player, number>();
+  /**
+   * A trick wall's half turn: `out`, the pusher flipped through (hidden as it turns edge-on), then
+   * the transfer TRICK_HOLD_FRAMES later; `in`, a `spin` arrival (the players appear beside it as
+   * it turns edge-on and move once it is shut).
+   */
+  private trickSpin: { wall: TrickWall; dir: 'out' | 'in'; t: number } | null = null;
 
   constructor(
     readonly level: LevelData,
@@ -386,6 +405,14 @@ export class World {
     this.descents = level.zones.filter(
       (z): z is Zone & { kind: 'descent' } => z.kind === 'descent' && !z.campaign,
     );
+    for (const z of level.zones) {
+      if (z.kind !== 'trick') continue;
+      // The room lies on the open side of the panel's bottom tile.
+      const side = this.map.isSolid(z.x + 1, z.y + z.h - 1) ? -1 : 1;
+      const wall = new TrickWall(z, !z.campaign, side);
+      this.tricks.push(wall);
+      this.entities.push(wall);
+    }
     const stop = level.zones.find((z): z is Zone & { kind: 'scrollStop' } => z.kind === 'scrollStop');
     this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked', {
       free: level.camera === 'free',
@@ -484,6 +511,18 @@ export class World {
           delay: i * BEAM_P2_DELAY,
           landed: -1,
         });
+      } else if (mode === 'spin') {
+        // Flipped through a trick wall (World.trickSpin): beside its panel, facing into the room,
+        // hidden until the panel turns edge-on; player 2 a step further into the room.
+        const wall = this.trickBeside(sx, sy);
+        const side = wall?.side ?? 1;
+        p.body.x = tileToSub(sx) + px((16 - hb.w) >> 1) + side * px(i * 20);
+        p.facing = side;
+        if (wall) {
+          p.frozen = true;
+          p.hidden = true;
+          this.trickSpin ??= { wall, dir: 'in', t: 0 };
+        }
       } else if (mode === 'autowalk') this.autoWalk = true;
       this.players.push(p);
     });
@@ -905,6 +944,7 @@ export class World {
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
     if (this.beam) return this.updateBeam();
+    if (this.trickSpin) return this.updateTrickSpin();
     if (this.leaving) return;
 
     for (const p of this.players) if (p.dead) this.updateDeath(p);
@@ -982,7 +1022,13 @@ export class World {
       this.checkPipes(p, this.autoWalk ? AUTO_WALK_INPUT : (inputs[i] ?? NO_INPUT));
       if (this.pipeAnim) break;
     }
-    if (!this.pipeAnim && !this.leaving) this.checkTeleports();
+    if (!this.pipeAnim && !this.leaving)
+      for (const [i, p] of this.players.entries()) {
+        if (p.dead || p.out) continue;
+        this.checkTricks(p, inputs[i] ?? NO_INPUT);
+        if (this.trickSpin) break;
+      }
+    if (!this.pipeAnim && !this.leaving && !this.trickSpin) this.checkTeleports();
     this.checkZones();
     this.checkLoops();
     this.flyingCheeps();
@@ -1164,7 +1210,7 @@ export class World {
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
   private transfer(
     target: { level: string; x: number; y: number },
-    mode: 'climb' | 'fall',
+    mode: 'climb' | 'fall' | 'spin',
     chain = false,
   ): void {
     if (this.leaving) return;
@@ -2398,6 +2444,72 @@ export class World {
       } else if (a.t > s.delay && s.landed < BEAM_GATHER_FRAMES && !s.player.dead) {
         drawBeam(r, view, s.x, s.top, s.landed >= 0);
       }
+    }
+  }
+
+  /* ---------- Ryu's trick wall (6-2's bonus room, campaign) ---------- */
+
+  /** A trick wall's half turn is playing (a player flipped through, or the arrival). */
+  get spinning(): boolean {
+    return this.trickSpin !== null;
+  }
+
+  /** The panels of this level's trick walls (live and sleeping). */
+  get trickWalls(): readonly TrickWall[] {
+    return this.tricks;
+  }
+
+  /** The panel a `spin` arrival at tile (x, y) steps out of: in the column beside it, on its room side. */
+  private trickBeside(x: number, y: number): TrickWall | undefined {
+    return this.tricks.find((w) => {
+      const z: TrickZone = w.zone;
+      return z.x + w.side === x && y >= z.y && y < z.y + z.h;
+    });
+  }
+
+  /**
+   * Pushing into a live panel: a player holding toward it with the body against its face counts
+   * up (any hero: standing, jumping, Ryu clinging to it, Samus rolled up in a ball); letting go,
+   * or leaving it, starts over. TRICK_PUSH_FRAMES of it spin the panel: everyone freezes (the
+   * others hidden, as for a pipe) and the pusher goes through with it.
+   */
+  private checkTricks(p: Player, input: InputFrame): void {
+    if (!this.tricks.length) return;
+    const free = !p.frozen && !p.hidden && !p.vine && !p.stairs;
+    const wall = free ? this.tricks.find((w) => w.live && w.pushedBy(p, input)) : undefined;
+    const n = wall ? (this.trickPush.get(p) ?? 0) + 1 : 0;
+    this.trickPush.set(p, n);
+    if (!wall || n < TRICK_PUSH_FRAMES) return;
+    this.trickPush.clear();
+    for (const o of this.players) {
+      o.frozen = true;
+      o.stairs = null;
+      o.body.vx = 0;
+      o.body.vy = 0;
+      if (o !== p) o.hidden = true;
+    }
+    this.trickSpin = { wall, dir: 'out', t: 0 };
+  }
+
+  /** The half turn (see trickSpin), with the spin sound as it starts. */
+  private updateTrickSpin(): void {
+    const s = this.trickSpin as NonNullable<typeof this.trickSpin>;
+    s.t++;
+    if (s.t === 1) this.audio.sfx(SPIN_SFX);
+    s.wall.spinT = s.t <= TRICK_SPIN_FRAMES ? s.t : null;
+    const edgeOn = s.t === TRICK_SPIN_FRAMES >> 1;
+    if (s.dir === 'out') {
+      if (edgeOn) for (const p of this.players) p.hidden = true;
+      if (s.t >= TRICK_SPIN_FRAMES + TRICK_HOLD_FRAMES) {
+        this.trickSpin = null;
+        this.transfer(s.wall.zone.target, 'spin');
+      }
+      return;
+    }
+    if (edgeOn) for (const p of this.players) if (!p.dead && !p.out) p.hidden = false;
+    if (s.t >= TRICK_SPIN_FRAMES) {
+      this.trickSpin = null;
+      for (const p of this.players) p.frozen = false;
     }
   }
 

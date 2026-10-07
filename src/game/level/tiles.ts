@@ -116,6 +116,12 @@ export const T = {
    * jolts it.
    */
   CRACKED: def('wall-cracked', 'solid', { block: { kind: 'brick', content: 'none' } }),
+  /**
+   * A trick wall's panel (6-2's bonus room and Ryu's dojo, `N` in maps; a `trick` zone): solid,
+   * drawn as the theme's brick, and unbreakable (no block: a bump or a blast leaves it), so the
+   * panel always stands. Only its zone makes it spin.
+   */
+  TRICK: def('trick-wall', 'solid'),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
@@ -177,6 +183,7 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   A: T.WALL_TOP,
   H: T.WALL,
   '&': T.CRACKED,
+  N: T.TRICK,
   // entity markers
   g: '@goomba',
   k: '@koopa-green',

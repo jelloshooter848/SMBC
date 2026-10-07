@@ -1,0 +1,50 @@
+id: 6-2-dojo
+name: WORLD 6-2
+world: 6
+stage: 2
+theme: castle
+music: underground
+time: inherit
+start: 14,12
+startMode: spin
+camera: locked
+parent: 6-2
+
+;; Ryu's hideout behind the trick wall of 6-2's first bonus room (campaign only, docs/HEROES.md):
+;; a night dojo, one locked screen. The player is flipped in through the trick panel in the right
+;; wall (column 15, rows 10-12) and steps out beside it at column 14; captive Ryu kneels on the
+;; floor at column 5 under the moon window. Pushing into the same panel flips the player back
+;; into the bonus room beside its own panel (column 1), the clock running on throughout.
+;; Until R3's `dojo` theme lands it borrows the castle's; its `ninja` decor draws once that sheet
+;; exists.
+
+[tiles]
+;; Rows 0-1 stay clear (no tiles, black) under the HUD; the room's ceiling beam is row 2.
+;; 0             15
+................
+................
+================
+=..............=
+=..............=
+=..............=
+=..............=
+=..............=
+=AAAAAAAAAAAAAA=
+=HHHHHHHHHHHHHH=
+=HHHHHHHHHHHHHHN
+=HHHHHHHHHHHHHHN
+=HHHHHHHHHHHHHHN
+################
+################
+
+[entities]
+;; Ryu, under the Masked Ninja's curse (campaign only, until freed).
+captive 5 12 hero=ryu
+
+[zones]
+trick 15 10 3 -> 6-2-bonus 1 12
+
+[decor]
+ninja:moon-window 6 6
+ninja:lantern-0 2 4
+ninja:lantern-0 12 4
