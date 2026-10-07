@@ -47,6 +47,9 @@ const SMB3_FRAMES: Record<string, Size> = {
   'item-flower': T16,
   'item-star': T16,
   'item-1up': T16,
+  porthole: T16,
+  pillar: T16,
+  'ceiling-beam': T16,
 };
 
 const rows = (name: string): readonly string[] => smb3Def.frames[name] as readonly string[];
@@ -197,5 +200,25 @@ describe('smb3 sheet', () => {
     const spade = rows('node-spade');
     expect(spade.join('')).toContain('1');
     expect(spade.join('')).toContain('p');
+  });
+  it('cabin decor: a framed dark porthole, a pillar that tiles vertically, a beam that tiles sideways', () => {
+    const port = rows('porthole');
+    // dark glass (black with a navy sheen) inside a wooden frame with a black outline
+    const glass = port
+      .slice(4, 13)
+      .map((r) => r.slice(4, 13))
+      .join('');
+    expect(glass).toMatch(/^[0pc]+$/);
+    expect(glass).toContain('p');
+    expect(port[0]).toMatch(/^\.0+\.$/);
+    expect(port.map((r) => r[1]).join('')).toMatch(/[rji]/);
+    // a pillar is the same row all the way down apart from knots, with black edges
+    const pillar = rows('pillar');
+    for (const r of pillar) expect(r).toMatch(/^0[a-z]{14}0$/);
+    expect(pillar[0]).toBe(pillar[15]);
+    const beam = rows('ceiling-beam');
+    expect(beam.join('')).not.toContain('.');
+    // its edge bands (outline, lit top, shadowed underside) are solid rows that meet tile to tile
+    for (const y of [0, 1, 2, 10, 11, 12, 13, 14, 15]) expect(new Set(beam[y]).size, `row ${y}`).toBe(1);
   });
 });

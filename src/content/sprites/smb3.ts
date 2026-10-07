@@ -20,6 +20,9 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  *   the slot game's three stacked reels (top, middle, bottom); thirds of different pictures still
  *   meet cleanly, so a miss shows a jumbled picture.
  * - `item-*` icons keep a 1px clear margin (14x14 of art) so the cards can show them whole.
+ * - Cabin decor (drawn in front of the airship's background logs): `porthole` is a framed dark
+ *   window, `pillar` a thick upright post that tiles vertically, `ceiling-beam` a heavy beam that
+ *   tiles sideways. Their wood matches the airship tiles' tan and red-brown.
  */
 
 /* ------------------------------------------------------------------------------------------ */
@@ -33,7 +36,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  *   a skin shade        b sky blue       c deep blue       d red             e dark red
  *   f gold              g pale gold      h brown           i dark brown      j orange brown
  *   k pink (magic)      l magenta        m pale cyan       n lavender        o purple
- *   p navy              q orange
+ *   p navy              q orange         r light wood
  */
 const smb3Base = (): string[] => [
   NES.black,
@@ -63,6 +66,7 @@ const smb3Base = (): string[] => [
   NES.purple,
   NES.blueDark,
   NES.orange,
+  NES.brownLight,
 ];
 
 export const smb3Palettes: Record<string, string[]> = {
@@ -605,6 +609,59 @@ const nodeSpade = (() => {
 /* The sheet                                                                                   */
 /* ------------------------------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------------------------------ */
+/* Cabin decor: porthole, pillar, ceiling beam                                                 */
+/* ------------------------------------------------------------------------------------------ */
+
+/* A small square window in a wooden frame: lit top and left, shadowed bottom and right, the night
+   outside near-black with a navy sheen and a faint glint on the glass. */
+const porthole = (() => {
+  const g = grid(16, 16);
+  blob(
+    g,
+    (x, y) => x >= 0 && x <= 15 && y >= 0 && y <= 15 && !((x === 0 || x === 15) && (y === 0 || y === 15)),
+    'j',
+    {
+      light: [(x, y) => (x <= 1 || y <= 1) && x + y < 26, 'r'],
+      shade: [(x, y) => (x >= 14 || y >= 14) && x + y > 4, 'i'],
+    },
+  );
+  // the night through the glass: near-black, a navy sheen in the upper corner, a faint glint
+  rect(g, 3, 3, 10, 10, '0');
+  for (let y = 4; y <= 8; y++) for (let x = 12 - (8 - y); x <= 12; x++) put(g, x, y, 'p');
+  put(g, 10, 6, 'c');
+  put(g, 11, 5, 'c');
+  return rows(g);
+})();
+
+/* A thick upright post, full width, with vertical grain and a couple of knots; tiles vertically. */
+const pillar = Array.from({ length: 16 }, (_, y) => {
+  const r = [...'0jrrjrrrrjrrjji0'];
+  if (y === 3 || y === 4) r[7] = 'i';
+  if (y === 11) r[10] = 'i';
+  return r.join('');
+});
+
+/* A heavy ceiling beam, horizontal grain, lit top and shadowed underside; tiles sideways. */
+const ceilingBeam = [
+  '0000000000000000',
+  'rrrrrrrrrrrrrrrr',
+  'jjjjjjjjjjjjjjjj',
+  'iiiijjjjjjjjjjjj',
+  'jjjjjjjjjjjiiiii',
+  'jjjjjjjjjjjjjjjj',
+  'jjjjjjiijjjjjjjj',
+  'jjjjjjjjjjjjjjjj',
+  'iiiiiiijjjjjjjji',
+  'jjjjjjjjjjjjjjjj',
+  'jjjjjjjjjjjjjjjj',
+  'iiiiiiiiiiiiiiii',
+  'iiiiiiiiiiiiiiii',
+  'iiiiiiiiiiiiiiii',
+  '0000000000000000',
+  '0000000000000000',
+];
+
 const slotFrames: Record<string, string[]> = {};
 for (const [name, pic] of [
   ['mushroom', slotMushroom],
@@ -644,5 +701,8 @@ export const smb3Def: SpriteDef = {
     'item-flower': itemFlower,
     'item-star': itemStar,
     'item-1up': item1up,
+    porthole,
+    pillar,
+    'ceiling-beam': ceilingBeam,
   },
 };
