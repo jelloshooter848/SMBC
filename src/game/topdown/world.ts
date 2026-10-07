@@ -144,6 +144,8 @@ export interface TdWorldOptions {
   shield?: boolean;
   /** Asked whenever the hero is hurt: true keeps his hearts (a no-damage assist). */
   noDamage?: () => boolean;
+  /** Builds the hero at the start (a game's own TdHero subclass); the kit's sword hero by default. */
+  hero?: (x: number, y: number, maxHp?: number) => TdHero;
 }
 
 /**
@@ -197,7 +199,7 @@ export class TopDownWorld {
     this.noDamage = opts.noDamage ?? (() => false);
     const start = dungeon.rooms.get(dungeon.startRoom) as Room;
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
-    this.hero = new TdHero(at.x, at.y, opts.maxHp);
+    this.hero = opts.hero ? opts.hero(at.x, at.y, opts.maxHp) : new TdHero(at.x, at.y, opts.maxHp);
     this.hero.shield = opts.shield ?? true;
     this.room = start;
     this.enterRoom(start);
@@ -560,8 +562,9 @@ export class TopDownWorld {
   }
 
   /**
-   * A blast at (cx, cy): monsters within `radius` take `damage`, the hero `selfDamage`, each
-   * knocked away from it; cracked walls within it open (a cracked doorway on both sides).
+   * A blast at (cx, cy): monsters within `radius` take `damage`, the hero `selfDamage` (none at
+   * all, not even a knock, when it is 0), each knocked away from it; cracked walls within it open
+   * (a cracked doorway on both sides).
    */
   blast(cx: number, cy: number, radius: number, damage: number, selfDamage: number): void {
     const at = { x: cx - 1, y: cy - 1, w: 2, h: 2 };
@@ -569,7 +572,7 @@ export class TopDownWorld {
       if (e instanceof TdEnemy && !e.dead && circleHits(cx, cy, radius, e.hurtbox()))
         e.hurt(this, damage, dirToward(at, e.hurtbox()));
     const hero = this.hero;
-    if (!hero.dying && circleHits(cx, cy, radius, hero.hurtbox()))
+    if (selfDamage > 0 && !hero.dying && circleHits(cx, cy, radius, hero.hurtbox()))
       hero.hurt(this, selfDamage, dirToward(at, hero.hurtbox()));
     const st = this.state();
     let opened = false;
