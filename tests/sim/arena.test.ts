@@ -71,6 +71,17 @@ const found = (h: H) =>
     .map((g) => g.id)
     .sort();
 
+/**
+ * Station Escape's MENU opens Mega Man 2's weapon screen first: its MENU row opens the round's
+ * menu (a no-op for any other round).
+ */
+function throughWeaponScreen(h: H): void {
+  const top = h.top() as { rows?: { kind: string }[]; cursor?: number; choose?: () => void };
+  if (!top.rows || !top.choose) return;
+  top.cursor = top.rows.findIndex((r) => r.kind === 'options');
+  top.choose();
+}
+
 /** End whatever round is on top the way a player would: its menu's Give up (or Skip training). */
 function quitRound(h: H, map: Scene): void {
   for (let f = 0; f < 3000 && !(h.top() instanceof DevMiniGameResultScene); f++) {
@@ -79,6 +90,7 @@ function quitRound(h: H, map: Scene): void {
       continue;
     }
     h.tap('start');
+    throughWeaponScreen(h);
     const items = (h.top() as { items?: MenuItem[] }).items ?? [];
     const quit = items.find((i) => i.label === 'Give up' || i.label === 'Skip training');
     if (quit) quit.select?.();
@@ -638,6 +650,7 @@ describe('arena rounds say nothing about the campaign', () => {
         continue;
       }
       h.tap('start');
+      throughWeaponScreen(h);
       const items = (h.top() as { items?: MenuItem[] }).items ?? [];
       const quit = items.find((i) => i.label === 'Give up');
       if (quit) hint = quit.hint ?? '';

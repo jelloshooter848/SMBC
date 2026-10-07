@@ -10,7 +10,7 @@ import type { Player } from '../../entities/player';
 import type { DamageSource, Reaction, Vulnerability } from '../../rules/damage';
 import type { World } from '../../world/world';
 import { MEGAMAN } from '../../characters/megaman';
-import { darkSheet, drawStation, FLASH_PALETTE } from './art';
+import { darkSheet, drawStation, FLASH_PALETTE, MM_SOUNDS } from './art';
 
 /*
  * The station's robots (docs/HEROES.md, Mega Man's mini game): Hopper, Turret and Drone, their
@@ -68,8 +68,8 @@ export function onScreen(world: World, e: Entity, margin = 0): boolean {
 
 /**
  * A station robot: hit points, Mega Man's buster and weapons hurt it, and it blows up in a small
- * explosion (no SMB-style flip) leaving one of Mega Man's drops now and then (his drop table, an
- * E-tank becoming a big health pellet: the mini game has no pause menu to use one from).
+ * explosion (no SMB-style flip) leaving one of Mega Man's drops now and then (his drop table; an
+ * E-tank is kept for the weapon screen).
  */
 export abstract class Robot extends Enemy {
   constructor(x: number, y: number, w: number, h: number, hp: number) {
@@ -101,8 +101,8 @@ export abstract class Robot extends Enemy {
 
   protected override onKilled(src: DamageSource, world: World): void {
     this.stunned = 0;
-    let kind: PickupKind | null = MEGAMAN.drop?.(world.rng, this) ?? null;
-    if (kind === 'e-tank') kind = 'health-large';
+    // (An E-tank stays one: the weapon screen on MENU uses it, as Mega Man 2's does.)
+    const kind: PickupKind | null = MEGAMAN.drop?.(world.rng, this) ?? null;
     if (kind) world.spawn(new Pickup(this.body.x + (this.body.w >> 1), this.body.y + this.body.h, kind));
     void src;
   }
@@ -183,6 +183,96 @@ export class Hopper extends Robot {
     this.fall(world);
     this.currentFrame = b.onGround ? 'hopper-0' : 'hopper-1';
     if (this.isBelowLevel()) this.destroy();
+  }
+}
+
+/* ---------- Met ---------- */
+
+/** Frames a Met stays under its hat before it may peek (and only with Mega Man near). */
+export const MET_HIDE = 70;
+/** Frames it takes to lift its hat, then the frames it stays up (it fires MET_FIRE_AT in). */
+export const MET_PEEK = 10;
+export const MET_UP = 40;
+const MET_FIRE_AT = 8;
+/** How near (px, centre to centre) Mega Man must be for a Met to peek. */
+export const MET_RANGE = 96;
+export const MET_HP = 1;
+/** Its shots: 1.5 px a frame, one level and two on a slant up and down (about 27°). */
+const MET_SHOT = 0x01800;
+const MET_SLANT = { vx: Math.round(MET_SHOT * 0.89), vy: Math.round(MET_SHOT * 0.45) };
+
+export type MetState = 'hide' | 'peek' | 'up';
+
+/**
+ * Mega Man 2's Met: a hard hat on the floor. Hidden, its hat turns every shot away (a dink); with
+ * Mega Man near it lifts the hat, fires a three-way spread at him (level, up and down a slant) and
+ * hides again. One hit while it is up.
+ */
+export class Met extends Robot {
+  readonly kind = 'met';
+  state: MetState = 'hide';
+  private t = 0;
+  constructor(x: number, y: number) {
+    super(x, y, 14, 14, MET_HP);
+    this.spriteOffsetX = 1;
+    this.spriteOffsetY = 2;
+    this.currentFrame = 'met-0';
+  }
+
+  override hit(src: DamageSource, world: World): Reaction {
+    if (this.state === 'hide' && src.kind !== 'star') {
+      world.audio.sfx(MM_SOUNDS.dink);
+      return 'immune';
+    }
+    return super.hit(src, world);
+  }
+
+  update(world: World): void {
+    this.tick();
+    this.fall(world);
+    if (!onScreen(world, this, -8)) {
+      this.state = 'hide';
+      this.t = 0;
+      this.currentFrame = 'met-0';
+      return;
+    }
+    const p = this.target(world);
+    const b = this.body;
+    const cx = b.x + (b.w >> 1);
+    this.facing = p.centerX < cx ? -1 : 1;
+    this.t++;
+    if (this.state === 'hide') {
+      if (this.t >= MET_HIDE && Math.abs(p.centerX - cx) <= px(MET_RANGE)) {
+        this.state = 'peek';
+        this.t = 0;
+      }
+    } else if (this.state === 'peek') {
+      if (this.t >= MET_PEEK) {
+        this.state = 'up';
+        this.t = 0;
+      }
+    } else {
+      if (this.t === MET_FIRE_AT) this.fire(world);
+      if (this.t >= MET_UP) {
+        this.state = 'hide';
+        this.t = 0;
+      }
+    }
+    this.currentFrame = this.state === 'hide' ? 'met-0' : 'met-1';
+  }
+
+  private fire(world: World): void {
+    const b = this.body;
+    const x = b.x + (b.w >> 1) - px(3);
+    const y = b.y + px(6) - px(3);
+    const f = this.facing;
+    for (const [vx, vy] of [
+      [MET_SHOT, 0],
+      [MET_SLANT.vx, -MET_SLANT.vy],
+      [MET_SLANT.vx, MET_SLANT.vy],
+    ] as const)
+      world.spawn(new EnemyShot(x, y, f * vx, vy, PELLET, this));
+    world.audio.sfx('fireball');
   }
 }
 
