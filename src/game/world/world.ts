@@ -61,6 +61,8 @@ import {
   type PieceFrame,
 } from '../entities/effects/effects';
 import { castleFlagStart, Firework, FIREWORK_FRAMES, FIREWORK_TILES } from '../entities/effects/firework';
+import { WandBreak, WAND_SCENE_FRAMES } from '../entities/effects/wand-break';
+import { WandPoof } from '../entities/effects/wand-poof';
 import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { shellKickSeqScore, stompScore } from '../rules/score';
 import type { GameContext, GameState } from '../context';
@@ -2444,6 +2446,35 @@ export class World {
     return this.bossPlayer?.def ?? null;
   }
 
+  /**
+   * Whether the axe here breaks the wand (docs/STORY.md 2.12): the campaign's SMB 8-4 only (its
+   * main level and its areas), never classic play and never the Lost Levels' 8-4.
+   */
+  private get wandScene(): boolean {
+    return this.storyMode && (this.level.parent ?? this.level.id) === '8-4';
+  }
+
+  /**
+   * The wand spins up out of the falling king's hand (or, if fireballs already beat him, from the
+   * bridge before the axe) to a spot over the lava, where it breaks and the rift opens.
+   */
+  private breakWand(bowser: Bowser | undefined, p: Player): void {
+    let handX: number;
+    let feet: number;
+    if (bowser) {
+      const b = bowser.body;
+      handX = toPx(b.x + (b.w >> 1)) + bowser.facing * 10;
+      feet = toPx(b.y + b.h);
+    } else {
+      handX = toPx(p.body.x) - 72;
+      feet = toPx(p.body.y + p.body.h) + 16;
+    }
+    // The rift opens over the lava in view: the hero at the axe sees only the bridge's last
+    // tiles, so a king further left sends his wand flying in from the screen's edge.
+    const riftX = Math.max(handX, this.camera.pxX + 44);
+    this.spawn(new WandBreak(handX, feet - 16, riftX, feet - 56));
+  }
+
   private updateBossClear(): void {
     const c = this.bossClear as NonNullable<typeof this.bossClear>;
     const p = this.bossPlayer ?? this.player;
@@ -2461,7 +2492,9 @@ export class World {
       }
       if (cut) this.audio.sfx('break');
     }
-    for (const e of this.entities) if (e instanceof Bowser) e.update(this);
+    for (const e of this.entities)
+      if (e instanceof Bowser || ((e instanceof WandPoof || e instanceof WandBreak) && e.alive))
+        e.update(this);
     // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
     const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);
     // No points: BowserAxe.as only calls breakBridgeStart/Inc/End (Bowser.as), never die(), and
@@ -2470,9 +2503,13 @@ export class World {
       bowser.fallDead(this);
       this.audio.sfx('bowser-fall');
     }
+    // The campaign's 8-4: as the king drops, his wand breaks over the lava (docs/STORY.md 2.12),
+    // and the walk waits for its pieces to swirl into the rift.
+    const wand = this.wandScene;
+    if (wand && c.t === 60) this.breakWand(bowser, p);
     if (c.t === 120) this.audio.playJingle('castle-clear');
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-    if (c.t > 150 && c.stop === undefined) {
+    if (c.t > (wand ? 60 + WAND_SCENE_FRAMES + 10 : 150) && c.stop === undefined) {
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;

@@ -273,6 +273,10 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
   },
 };
 
+/** Said once as the wand breaks over 8-4's lava (campaign; a scene without on-screen text). */
+export const WAND_BREAK_SAID =
+  "The wand spins out of Bowser's hand and breaks! Its glowing pieces swirl into a crack in the air.";
+
 /** The block the 8-4 credits add after THANKS FOR PLAYING (campaign): the false ending. */
 export const STORY_NOT_OVER: readonly string[] = ['', '...BUT THE STORY', "ISN'T OVER."];
 
