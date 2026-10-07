@@ -18,7 +18,12 @@ import { MEGAMAN } from '@game/characters/megaman';
 import { Bowser } from '@game/entities/enemies/bowser';
 import { Toad } from '@game/entities/objects/toad';
 import { Princess } from '@game/entities/objects/princess';
-import { WandBreak, WAND_CRACK_AT, WAND_FLASH_FRAMES } from '@game/entities/effects/wand-break';
+import {
+  WandBreak,
+  WAND_CRACK_AT,
+  WAND_FLASH_FRAMES,
+  WAND_SCENE_FRAMES,
+} from '@game/entities/effects/wand-break';
 import { campaignLevel } from '@game/level/campaign';
 import { CASTLE_PAGES, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
 import { CreditsScene, creditsLines, CREDITS } from '@game/scenes/credits';
@@ -99,6 +104,9 @@ function clearCastle(
   const texts: string[][] = [];
   const said: string[] = [];
   const frames: Drawn[] = [];
+  /** Per frame: the walking hero's x and the castle-clear clock (-1 before the axe). */
+  const xs: number[] = [];
+  const ts: number[] = [];
   let exitAt = -1;
   let placed = false;
   let wand: WandBreak | undefined;
@@ -130,10 +138,12 @@ function clearCastle(
     const d: Drawn = { rects: [], sprites: [] };
     world.render(recorder(d));
     frames.push(d);
+    xs.push(who.body.x);
+    ts.push(world.bossClear?.t ?? -1);
     const last = texts[texts.length - 1];
     if (world.castleText.join('|') !== (last ?? []).join('|')) texts.push([...world.castleText]);
   }
-  return { world, texts, said, sfx, exitAt, placed, wand, wandAt, frames };
+  return { world, texts, said, sfx, exitAt, placed, wand, wandAt, frames, xs, ts };
 }
 
 const PAGES = CASTLE_PAGES['8-4'] as { reveal: readonly string[]; news: readonly string[] };
@@ -174,6 +184,12 @@ describe('8-4: the wand breaks (campaign)', () => {
     const r = clearCastle(campaign84(), true);
     const p = r.world.player;
     expect(r.wand).toBeDefined();
+    // Still from the axe until the wand scene is over (wandAt + WAND_SCENE_FRAMES, plus a
+    // beat of 10 frames), walking from then on.
+    const end = r.wandAt + WAND_SCENE_FRAMES;
+    const still = r.xs[r.wandAt];
+    for (let f = r.wandAt; f <= end + 10; f++) expect(r.xs[f]).toBe(still);
+    expect(r.xs[end + 12]).toBeGreaterThan(still as number);
     // At the end the hero has walked to Toad as before.
     const toad = r.world.entities.find((e) => e instanceof Toad) as Toad;
     expect(p.body.x).toBeLessThan(toad.body.x);
@@ -186,6 +202,10 @@ describe('8-4: the wand breaks (campaign)', () => {
     expect(r.sfx).not.toContain('wand-crack');
     expect(r.said).toEqual([]);
     expect(r.texts.at(-1)).toEqual(['THANK YOU MARIO!', '', 'YOUR QUEST IS OVER.']);
+    // The walk starts at once as before: still through c.t 150, moving from c.t 151.
+    const at = (t: number) => r.ts.indexOf(t);
+    expect(r.xs[at(151)]).toBeGreaterThan(r.xs[at(150)] as number);
+    expect(r.xs[at(150)]).toBe(r.xs[at(60)]);
     for (const f of r.frames) expect(f.sprites.some((s) => s.endsWith('@wand'))).toBe(false);
   });
 

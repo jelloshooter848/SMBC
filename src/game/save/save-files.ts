@@ -12,6 +12,7 @@ import {
   type NextItem,
 } from '@game/bonus/items';
 import { CRYSTAL_BALL } from '@game/map/captives';
+import { FIRST_HERO } from '@game/story/beats';
 
 /**
  * Three campaign save files (world map progress plus the run: lives, score, coins, heroes and
@@ -146,8 +147,8 @@ export function migrateV1toV2(old: Record<string, unknown>): Record<string, unkn
   return out;
 }
 
-/** The hero every file starts with (never locked). */
-export const FIRST_HERO = 'mario';
+/** The hero every file starts with (never locked); defined in story/beats.ts, re-exported here. */
+export { FIRST_HERO };
 
 /** Known hero ids from `ids`, Mario first, each once (unknown ids and non-strings dropped). */
 export function freedHeroes(
