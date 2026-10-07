@@ -294,7 +294,10 @@ export class BrainTank extends Fixture {
     this.hooks.onBrain(this, world);
   }
 
-  /** Destroyed, the brain is dead and gone (from the start of a life after the bomb, too). */
+  /**
+   * Destroyed, the brain is dead and gone (from the start of a life after the bomb, too): on its
+   * next update it leaves its wreck.
+   */
   destroyed(): void {
     this.defeated = true;
     this.hits = BRAIN_HITS;
@@ -305,6 +308,12 @@ export class BrainTank extends Fixture {
     this.tickFlash();
     if (!this.defeated) {
       blockPlayers(world, this.body);
+      return;
+    }
+    // Done exploding: the tank gives way to its wreck, which no shot stops on.
+    if (this.boom === 0) {
+      world.spawn(new TankWreck(this.body.x, this.body.y));
+      this.destroy();
       return;
     }
     if (this.boom > 0) {
@@ -330,6 +339,22 @@ export class BrainTank extends Fixture {
     const pulse = view.reduceFlashing ? 0 : (view.frame >> 4) & 1;
     drawZebes(r, view.assets, `brain-${pulse}`, x + 8, y + 24, false, false, this.tint(view));
     drawZebes(r, view.assets, this.hits * 2 >= BRAIN_HITS ? 'tank-cracked' : 'tank', x, y);
+  }
+}
+
+/** What is left of the tank: glass on the floor, scenery behind Samus (no shot stops on it). */
+export class TankWreck extends Entity {
+  readonly kind = 'tank-wreck';
+  constructor(x: number, y: number) {
+    super(x, y, 48, 64);
+    this.layer = 'back';
+    this.despawnMargin = null;
+  }
+
+  update(): void {}
+
+  render(r: Renderer, view: View): void {
+    drawZebes(r, view.assets, 'tank-broken', this.screenX(view), this.screenY());
   }
 }
 

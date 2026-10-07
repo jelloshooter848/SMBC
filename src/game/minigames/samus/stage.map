@@ -100,7 +100,7 @@ cannon 52 47
 cannon 63 47
 cannon 69 47
 ;; Rinka spawners (a point in the floor or the ceiling).
-rinka 27 57
+rinka 25 46
 rinka 35 46
 rinka 57 57
 rinka 70 46
