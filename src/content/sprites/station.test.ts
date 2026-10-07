@@ -17,6 +17,8 @@ const STATION_FRAMES: Record<string, Size> = {
   'beam-2': [16, 32],
   'hopper-0': T16,
   'hopper-1': T16,
+  'met-0': T16,
+  'met-1': T16,
   'turret-0': T16,
   'turret-1': T16,
   'drone-0': T16,

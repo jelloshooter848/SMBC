@@ -1,10 +1,24 @@
-;; Mega Man's mini game (the station stage and Dark Mega Man's room): five screens of station
-;; corridor, then the boss room behind a two-tile shutter. stage.ts loads it with ?raw, so it is not
-;; in the level library, the dev level select or the campaign. The robots and the weapon capsule
-;; are the mini game's own entity types (World's `extraEntities`); `shutter` and `dark-megaman` are
-;; taken out of the map, and the scene places them itself. Column 80's doorway (rows 11-12) is the
-;; shutter, solid until it opens. scrollStop keeps the boss room out of sight until the shutter
-;; opens; the camera then scrolls over and locks on columns 80-95.
+;; Mega Man's mini game, Station Escape: laid out as Mega Man 2's stages go, in screens (16 x 15
+;; tiles) the camera moves between one at a time. stage.ts loads it with ?raw, so it is not in the
+;; level library, the dev level select or the campaign.
+;;
+;; The route: a run of five screens along the bottom (the weapon capsule halfway), then a shaft:
+;; the ladder at column 71 climbs two screens to a ledge, the ladder at 75 on up through the floor
+;; of the top run (three more screens), whose hole at 119-121 drops two screens down a chute into
+;; the landing room; then Mega Man 2's two boss shutters (columns 128 and 143, rows 41-42): a
+;; one-screen corridor and Dark Mega Man's room (143-158).
+;;
+;; `screen x y w=N` lines are the camera's sections (each 15 rows high, N columns wide, from
+;; column x, row y): it scrolls sideways inside one, and when Mega Man climbs off the top or falls
+;; off the bottom it flips a whole screen up or down to the next (scene.ts). The robots of a
+;; section are spawned fresh each time Mega Man enters it, as Mega Man 2's are. Past the first
+;; shutter the gates lock the camera (the corridor, then the room).
+;;
+;; Ladders are tiles: L (the ladder, `chain`, drawn as a ladder in the station theme) and E (a
+;; ladder's top in a floor, `cloud-ledge`: stood on from above, climbed through from below).
+;; The robots and the capsule are the mini game's own entity types (World's `extraEntities`);
+;; `screen`, `shutter` and `dark-megaman` are taken out of the map and handled by the scene. The
+;; shutters' doorways are solid until they open.
 id: mm-station
 name: STATION ESCAPE
 world: 3
@@ -12,68 +26,139 @@ stage: 1
 theme: station
 music: mm-station
 time: 400
-start: 2,12
+start: 2,42
 startMode: stand
-camera: scroll
+camera: free
+height: 45
+
+[legend]
+L chain
+E cloud-ledge
 
 [tiles]
-;; 0              16               32               48               64               80
-................ ................ ................ ................ ..........BB.... BBBBBBBBBBBBBBBB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-AAAAAAAAAAAAAAAA AAA...AAAAAAAAAA AAAAAAAAAAAAAAA. ..AAAAAA...AAAAA AAAAAAAAAABBAAAA BHHHHHHHHHHHHHHB
-HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHBBHHHH BHHHHHHHHHHHHHHB
-HHHHHHHHHHHHHHHH HHH...HHBBBHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
-HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
-HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
-HHHHHHHHHHBBHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
-################ ###...########## ###############. ..######...##### ################ ################
-################ ###...########## ###############. ..######...##### ################ ################
+;; 0              16               32               48               64               80               96               112              128              144
+................ ................ ................ ................ ................ ................ ........BB...... ................ ................ ............... ;; 0
+................ ................ ................ ................ ................ ................ ........BB...... ................ ................ ............... ;; 1
+................ ................ ................ ................ ................ ................ ........BB...... ................ ................ ............... ;; 2
+................ ................ ................ ................ ................ ................ ........BB...... ................ ................ ............... ;; 3
+................ ................ ................ ................ ................ ................ ........BB...... ................ ................ ............... ;; 4
+................ ................ ................ ................ ................ ................ ........BB...... ................ ................ ............... ;; 5
+................ ................ ................ ................ ................ ................ ........BB...... ................ ................ ............... ;; 6
+................ ................ ................ ................ BAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAABBAAAAAA AAAAAAAAAAAAAAAB ................ ............... ;; 7
+................ ................ ................ ................ BHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHBBHHHHHH HHHHHHHHHHHHHHHB ................ ............... ;; 8
+................ ................ ................ ................ BHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHB ................ ............... ;; 9
+................ ................ ................ ................ BHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHB ................ ............... ;; 10
+................ ................ ................ ................ BHHHHHHHHHHHHHHH HHHHHHHHHHBBHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHB ................ ............... ;; 11
+................ ................ ................ ................ BHHHHHHHHHHHHHHH HHHHHHHHHHBBHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHB ................ ............... ;; 12
+................ ................ ................ ................ ###########E#### ################ ################ #######HHH###### ................ ............... ;; 13
+................ ................ ................ ................ ###########L#### ################ ################ #######HHH###### ................ ............... ;; 14
+................ ................ ................ ................ BHHHHHHHHHHLHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 15
+................ ................ ................ ................ BHHHHHHHHHHLHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 16
+................ ................ ................ ................ BHHHHHHHHHHLHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 17
+................ ................ ................ ................ BHHHHHHHHHHLHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 18
+................ ................ ................ ................ BHHHHHHHHHHLHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 19
+................ ................ ................ ................ BHHHHHHHHHHLHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 20
+................ ................ ................ ................ BHHHHHHHHHHLHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 21
+................ ................ ................ ................ BBBBBBBEBBBBBBBB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 22
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 23
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 24
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 25
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 26
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 27
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 28
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ %%%%%%BHHHB%%%%% ................ ............... ;; 29
+................ ................ ................ ................ BBBBBBBLBBBBBBBB ................ ................ BBBBBBBHHHBBBBBB BBBBBBBBBBBBBBBB BBBBBBBBBBBBBBB ;; 30
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 31
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 32
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 33
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 34
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 35
+................ ................ ................ ................ BHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 36
+AAAAAAAAAAAAAAAA AAA...AAAAAAAAAA AAAAAAAAAAAAAAA. ..AAAAAA...AAAAA HHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 37
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 38
+HHHHHHHHHHHHHHHH HHH...HHBBBHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 39
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 40
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 41
+HHHHHHHHHHBBHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHLHHHHHHHB ................ ................ BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB ;; 42
+################ ###...########## ###############. ..######...##### ################ ................ ................ ################ ################ ############### ;; 43
+################ ###...########## ###############. ..######...##### ################ ................ ................ ################ ################ ############### ;; 44
 
 [entities]
-hopper 13 12
-drone 26 5
-turret 31 12
-capsule 36 10
-hopper 45 12
-drone 54 4
-drone 63 5
-hopper 64 12
-turret 68 12
-turret 74 9 mount=ceiling
-shutter 80 11
-dark-megaman 91 12
+screen 0 30 w=80
+screen 64 15 w=16
+screen 64 0 w=64
+screen 112 15 w=16
+screen 112 30 w=16
+
+;; The bottom run (the weapon capsule halfway) and the foot of the shaft.
+met 9 42
+hopper 13 42
+drone 26 35
+turret 31 42
+capsule 36 40
+hopper 45 42
+met 52 42
+drone 54 34
+drone 63 35
+met 77 42
+;; The shaft: a Met on the ledge, beside the second ladder.
+met 78 21
+;; The top run.
+hopper 86 12
+drone 93 5
+turret 99 12
+turret 104 9 mount=ceiling
+met 108 12
+hopper 114 12
+;; The landing room, the shutters and the boss.
+met 125 42
+shutter 128 41
+shutter 143 41
+dark-megaman 154 42
 
 ;; Station decor (the station sheet's window, console and girder), by top-left tile; drawn behind
 ;; the robots and Mega Man, in front of the plating.
-deco 3 8 kind=window
-deco 7 12 kind=console
-deco 29 8 kind=window
-deco 41 12 kind=console
-deco 37 8 kind=window
-deco 52 8 kind=window
-deco 61 12 kind=console
-deco 66 8 kind=window
-deco 86 3 kind=window
-deco 89 12 kind=console
-deco 81 2 kind=girder
-deco 82 2 kind=girder
-deco 83 2 kind=girder
-deco 84 2 kind=girder
-deco 85 2 kind=girder
-deco 86 2 kind=girder
-deco 87 2 kind=girder
-deco 88 2 kind=girder
-deco 89 2 kind=girder
-deco 90 2 kind=girder
-deco 91 2 kind=girder
-deco 92 2 kind=girder
-deco 93 2 kind=girder
-deco 94 2 kind=girder
-
-[zones]
-scrollStop 81
+deco 3 38 kind=window
+deco 7 42 kind=console
+deco 29 38 kind=window
+deco 41 42 kind=console
+deco 37 38 kind=window
+deco 52 38 kind=window
+deco 61 42 kind=console
+deco 67 33 kind=window
+deco 67 18 kind=window
+deco 82 8 kind=window
+deco 96 12 kind=console
+deco 98 8 kind=window
+deco 112 8 kind=window
+deco 115 34 kind=window
+deco 149 33 kind=window
+deco 152 42 kind=console
+deco 129 32 kind=girder
+deco 130 32 kind=girder
+deco 131 32 kind=girder
+deco 132 32 kind=girder
+deco 133 32 kind=girder
+deco 134 32 kind=girder
+deco 135 32 kind=girder
+deco 136 32 kind=girder
+deco 137 32 kind=girder
+deco 138 32 kind=girder
+deco 139 32 kind=girder
+deco 140 32 kind=girder
+deco 141 32 kind=girder
+deco 142 32 kind=girder
+deco 144 32 kind=girder
+deco 145 32 kind=girder
+deco 146 32 kind=girder
+deco 147 32 kind=girder
+deco 148 32 kind=girder
+deco 149 32 kind=girder
+deco 150 32 kind=girder
+deco 151 32 kind=girder
+deco 152 32 kind=girder
+deco 153 32 kind=girder
+deco 154 32 kind=girder
+deco 155 32 kind=girder
+deco 156 32 kind=girder
+deco 157 32 kind=girder

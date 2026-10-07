@@ -73,6 +73,8 @@ const tileFrames = [
   'bridge@station',
   'wall@station',
   'wall-top@station',
+  'chain@station',
+  'cloud-ledge@station',
   'ground@cavern',
   'castle-brick@cavern',
   'hard@cavern',

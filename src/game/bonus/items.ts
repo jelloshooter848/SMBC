@@ -1,4 +1,4 @@
-import { BONUS_KINDS } from './rules';
+import { BONUS_KINDS, boardFaces, NSPADE_BOARDS, takenCards } from './rules';
 
 /*
  * The SMB3-style item inventory: what it holds and the bonus fields of a save file (docs/BONUS.md).
@@ -46,6 +46,10 @@ export interface BonusState {
   inventory: ItemId[];
   /** Rotation: index into BONUS_KINDS of the next bonus game. */
   bonusNext: number;
+  /** The N-spade board in play (an index into NSPADE_BOARDS, wrapping). */
+  spadeBoard: number;
+  /** Its cards taken on earlier visits (whole pairs; cleared with the board). */
+  spadeTaken: number[];
   /** Dev mode's map menu "Item inventory": unlocks it while dev mode is on (never written to inventoryUnlocked). */
   devInventory: boolean;
   /**
@@ -71,7 +75,16 @@ export type BonusSaveFields = Omit<BonusState, 'devItems' | 'devNext'>;
 
 /** What a file without any of the fields has. */
 export function newBonusState(): BonusState {
-  return { inventory: [], bonusNext: 0, devInventory: false, itemsNext: [], devItems: [], devNext: [] };
+  return {
+    inventory: [],
+    bonusNext: 0,
+    spadeBoard: 0,
+    spadeTaken: [],
+    devInventory: false,
+    itemsNext: [],
+    devItems: [],
+    devNext: [],
+  };
 }
 
 /** Known item ids from `x` (anything else dropped), at most INVENTORY_MAX; [] when not a list. */
@@ -87,9 +100,13 @@ export function nextItems(x: unknown): NextItem[] {
 /** The bonus state stored on a save file (or any record), each field validated; missing = default. */
 export function bonusStateFrom(stored: Partial<Record<keyof BonusState, unknown>>): BonusState {
   const n = stored.bonusNext;
+  const b = stored.spadeBoard;
+  const board = typeof b === 'number' && Number.isInteger(b) && b >= 0 ? b % NSPADE_BOARDS.length : 0;
   return {
     inventory: inventoryItems(stored.inventory),
     bonusNext: typeof n === 'number' && Number.isInteger(n) && n >= 0 ? n % BONUS_KINDS.length : 0,
+    spadeBoard: board,
+    spadeTaken: takenCards(boardFaces(board), stored.spadeTaken),
     devInventory: stored.devInventory === true,
     itemsNext: nextItems(stored.itemsNext),
     devItems: [],
@@ -102,6 +119,8 @@ export function bonusSaveFields(s: BonusState): BonusSaveFields {
   return {
     inventory: s.inventory.slice(0, INVENTORY_MAX),
     bonusNext: s.bonusNext,
+    spadeBoard: s.spadeBoard,
+    spadeTaken: s.spadeTaken.slice(),
     devInventory: s.devInventory,
     itemsNext: s.itemsNext.slice(),
   };

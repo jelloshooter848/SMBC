@@ -46,6 +46,9 @@ const megamanFrames: Record<string, Size> = {
   'teleport-0': [16, 32],
   'climb-0': [16, 32],
   'climb-1': [16, 32],
+  // Station Escape's ladders (0.4.15): side-on shooting from one, and the climb over its top.
+  'climb-shoot': [24, 32],
+  'climb-top': [16, 32],
   'charge-0': [16, 32],
 };
 

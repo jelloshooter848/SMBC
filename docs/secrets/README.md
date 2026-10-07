@@ -9,7 +9,7 @@ Everything here is about the **campaign** (a save file played from the world map
 the story's partners and most of these hidden areas only exist there. Every screenshot was taken
 from the game itself.
 
-This is the second edition, for version 0.4.15 (the first, for 0.4.13, had every hidden hero but
+This is the second edition, for the release that adds Sophia III (the first, for 0.4.13, had every hidden hero but
 Sophia III).
 
 ## How secrets work

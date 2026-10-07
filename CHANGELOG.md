@@ -8,6 +8,34 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Station Escape (Mega Man) is rebuilt in Mega Man 2's style:
+  - Mega Man climbs ladders: he can shoot left or right from them, let go to drop, and climb over the top onto the
+    floor above.
+  - The stage is laid out in Mega Man 2's screens: a run, a shaft two screens up, a run along the top, a drop two
+    screens down, then the boss shutters. The screen flips up (climbing) or down (falling) between them.
+  - Robots come back when you return to their screen, as in Mega Man 2.
+  - New checkpoints at the top of the shaft and before the boss door.
+
+## [0.4.14] - 2026-10-07
+
+### Changed
+
+- Luigi's Mirror Race now runs over the full Lost Levels 1-1: piranha plants, Koopas and a Paratroopa, the poison
+  mushroom, both brick bridges, the staircase and the flag. It is eased for one life, and Luigi races like a player
+  (he waits for piranha plants and hops walls).
+- SMB3's status bar (world, P-meter, lives, score, coins, time and the card slots) now shows aboard Larry's airship, in
+  the Hammer Bro battle and in the bonus games.
+- The Toad House is a room you walk into: walk up to a chest and open it.
+- The N-Spade game uses a fixed set of boards, and the pairs you found stay gone until a board is cleared.
+- The Hammer Bros leave a treasure chest to open.
+- Station Escape (Mega Man): two boss shutters with a corridor between them, as in Mega Man 2; Mets that hide under
+  their helmets (shots dink off), peek out and fire a three-way spread; pausing opens Mega Man 2's weapon screen with
+  each weapon's energy, the E-tanks (use one to fill your life) and your lives; E-tanks are kept when you lose a life.
+
+## [0.4.13] - 2026-10-07
+
 ### Added
 
 - A secrets guide in docs/secrets/: every hidden hero, hidden area, secret exit and warp spot in the campaign, with
@@ -462,7 +490,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.14...HEAD
+[0.4.14]: https://github.com/jelloshooter848/SMBC/compare/v0.4.13...v0.4.14
+[0.4.13]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...v0.4.13
 [0.4.12]: https://github.com/jelloshooter848/SMBC/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...v0.4.10

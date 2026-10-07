@@ -4,7 +4,7 @@ import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { Game } from '../scenes/game';
 import { BONUS_MUSIC, BONUS_SFX, drawItem, drawSlotPiece, SLOT_H, SLOT_W } from './art';
-import { BonusScene, centred, fitLine, type BonusResult } from './common';
+import { BonusScene, centred, fitLine, HINT_Y, type BonusResult } from './common';
 import { SLOT_CELL, SLOT_LIVES, SLOT_STRIPS, SlotMachine, type SlotPicture } from './rules';
 
 /** The window's left edge and the reels' top; the strips show between REEL_LEFT and REEL_RIGHT. */
@@ -132,7 +132,7 @@ export class SlotsScene extends BonusScene {
     });
     if (!m.done) {
       const full = `${this.hint('STOP', 'jump')} THE ${['TOP', 'MIDDLE', 'BOTTOM'][m.next]} REEL`;
-      centred(r, font, fitLine(full, `STOP THE ${['TOP', 'MIDDLE', 'BOTTOM'][m.next]} REEL`), 216);
+      centred(r, font, fitLine(full, `STOP THE ${['TOP', 'MIDDLE', 'BOTTOM'][m.next]} REEL`), HINT_Y);
     }
   }
 }

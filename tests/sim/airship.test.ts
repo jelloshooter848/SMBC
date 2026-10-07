@@ -423,7 +423,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     expect(h.game.campaign).toBeNull();
   });
 
-  it('the HUD shows WORLD 4-2 aboard, whatever world was played last; it is put back after', () => {
+  it('the status bar shows WORLD 4 aboard, whatever world was played last; it is put back after', () => {
     const h = makeGame();
     h.game.deps.settings = { ...defaultSettings(), dev: true };
     h.game.showTitle();
@@ -436,10 +436,10 @@ describe("Dev → Mini games → Larry's airship", () => {
     const deck = h.top() as LevelScene;
     expect(deck.level.id).toBe(AIRSHIP_DECK);
     expect([h.game.state.world, h.game.state.stage]).toEqual([4, 2]);
-    expect(draw(deck).texts.map((t) => t.str)).toContain('4-2');
+    expect(draw(deck).texts.map((t) => t.str)).toContain('WORLD 4');
     rideToStern(h, deck);
     const room = h.top() as LevelScene;
-    expect(draw(room).texts.map((t) => t.str)).toContain('4-2');
+    expect(draw(room).texts.map((t) => t.str)).toContain('WORLD 4');
     h.tap('start');
     pick(h, 'Give up');
     expect((h.top() as DevMiniGameResultScene).result).toBe('quit');

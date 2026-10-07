@@ -7,7 +7,7 @@ import type { SpriteSheet } from '@engine/gfx/spritesheet';
  * content/music and content/sfx): the names Station Escape uses, in one place.
  */
 
-/** The stage loop, the boss loop, the victory jingle, a notch of the boss's bar, the beam, the capsule. */
+/** The stage loop, the boss loop, the victory jingle, a notch of the boss's bar, the beam, the capsule, the dink. */
 export const MM_SOUNDS = {
   stage: 'mm-station',
   boss: 'mm-boss',
@@ -15,6 +15,8 @@ export const MM_SOUNDS = {
   fill: 'boss-fill',
   beam: 'beam',
   capsule: 'capsule',
+  /** A shot bouncing off a Met's hard hat. */
+  dink: 'dink',
 } as const;
 
 /** Dark Mega Man's palette on Mega Man's sheet. */

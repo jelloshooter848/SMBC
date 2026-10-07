@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { SMB3_WORLD_SHIFT } from '@game/hud/smb3-status';
 import { getLevel } from '@content/levels';
 import { T } from '@game/level/tiles';
 import { mapPage } from '@content/worldmap';
@@ -11,7 +12,12 @@ import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { CardScene, MessageScene } from '@game/scenes/message';
 import { GameOverScene } from '@game/scenes/game-over';
 import { IntroScene } from '@game/scenes/intro';
-import { HammerBattleScene, BATTLE_WIN_DELAY } from '@game/scenes/hammer-battle';
+import {
+  HammerBattleScene,
+  BATTLE_CHEST_OPEN_FRAMES,
+  BATTLE_CHEST_X,
+  BATTLE_WIN_DELAY,
+} from '@game/scenes/hammer-battle';
 import { Larry } from '@game/entities/enemies/larry';
 import { HammerBro } from '@game/entities/enemies/hammer-bro';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
@@ -273,7 +279,8 @@ describe("the cabin's look (the SMB3 art)", () => {
     const [s] = larryAt();
     expect(s).toMatchObject({ key: 'smb3', frame: 'larry-0' });
     const b = larry.body;
-    expect(s!.y + 24).toBe((b.y + b.h) >> 8);
+    // The cabin is drawn up out of SMB3's status bar's way (hud/smb3-status.ts).
+    expect(s!.y + 24).toBe(((b.y + b.h) >> 8) - SMB3_WORLD_SHIFT);
     expect(s!.x + 8).toBe((b.x + (b.w >> 1)) >> 8);
     // A fireball: he flashes (the harness has reduce flashing on: blanched without blinking).
     larry.hit({ kind: 'fireball', amount: 1, owner: null, dirX: 1 }, level.world);
@@ -433,7 +440,17 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
     expect(bros).toHaveLength(2);
     battle.world.player.invuln = 100000;
     for (const b of bros) b.hit({ kind: 'fireball', amount: 1, owner: null, dirX: 1 }, battle.world);
-    h.idle(BATTLE_WIN_DELAY + 2);
+    // SMB3's treasure chest drops; the hero walks up to it and opens it.
+    h.until(() => battle.chest?.landed === true, BATTLE_WIN_DELAY + 200);
+    expect(h.top()).toBe(battle);
+    const p = battle.world.player.body;
+    const near = () => Math.abs(((p.x + p.w / 2) >> 8) - (BATTLE_CHEST_X + 8)) <= 6;
+    for (let i = 0; i < 600 && !near(); i++)
+      h.step([(p.x + p.w / 2) >> 8 < BATTLE_CHEST_X + 8 ? 'right' : 'left']);
+    expect(near()).toBe(true);
+    h.idle(2);
+    h.tap('attack');
+    h.idle(BATTLE_CHEST_OPEN_FRAMES + 2);
     expect(h.top()).toBeInstanceOf(CardScene);
     h.idle(32);
     h.tap('jump');

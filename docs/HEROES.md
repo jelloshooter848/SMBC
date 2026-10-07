@@ -78,7 +78,7 @@ Ryu waits in his hideout behind 6-2's first bonus room (`6-2-dojo`, an area of 6
 
 Bill waits in his jungle camp under 7-3 (`7-3-camp`, an area of 7-3: `parent: 7-3`, `time: inherit`), standing by the sandbags of his base under a searchlight (column 5, feet in row 12). In campaign play 7-3 is a Contra jungle stage: the same tiles, enemies, coins and collision in the `contra-jungle` theme and music, under a hanging jungle canopy and a black starry sky (no clouds, as NES Contra's), distant snow-capped mountains under the bridges, palms and a band of palms and undergrowth (`jungle-band`) along the ground (its campaign look, docs/WORLD_MAP.md "Campaign looks"). The girder bridge just past the checkpoint (columns 128-142, walled to the bottom by the pillars at 127 and 143) is marked: a red light blinks on its post and a coin arrow points down at it. A hero stepping on sets off a chain of explosions, Contra stage 1 style (`bridge-blast`, docs/WORLD_MAP.md "Exploding bridges"): segment after segment flashes and blows, at a pace a hero who keeps running just about outruns; whoever stops or walks falls through the gap, which a campaign-only `pit` turns into the drop into the camp (dropping in from above at column 2; co-op, both players). Anyone who ran across can still drop in on purpose; every other fall in 7-3 kills, and the bridge is whole again on any new visit. Outside the campaign 7-3 is exactly v0.4.8's (a plain bridge, no pit, its own look). In the camp a shallow river (one tile deep: a hop gets out) runs at the foot of a waterfall; past it, the cave mouth under the cliff (a side `pipe` at column 16) leads into **the waterfall climb** (`7-3-falls`, Contra stage 3 style: `camera: free`, 16 by 32 tiles): rock ledges three rows up and one tile apart beside the waterfall climb right to a jungle vine on the right wall, which rises nine rows to the ledges climbing left to a vine on the left wall; that one leads off the top of the screen into 7-3 at column 199, climbing up out of the jungle onto the tree platform past the bridge (a climb arrival). No ledge hangs over another's take-off, the floor catches every fall and walls close both sides, so nobody gets stuck. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing Red Falcon's (Super C): King Koopa's spell let the alien take his mind (`DIALOGUE.bill`). Art and sound (B3's): theme and music `contra-jungle` (7-3's look and the camp), theme `contra-falls` (the climb: its falling water slides down); decor `canopy-hang` (the ceiling, every 2 columns on row 0), `canopy`, `palm`, `mountain`, `sandbags`, `searchlight`; the `contra` sheet's `blast-bridge-0/1` (lamp lit, dark) and `boom-0..3`; sfx `bridge-boom` (rect, item-blast and `explosion` fallbacks without them). Tests: `tests/sim/bill-camp.test.ts` (7-3 outside the campaign tile for tile and in look; the campaign variant's collision unchanged; the look hook; the chain's pace and order; every hero, small and big, falls in standing still, outruns it running, drops in on purpose; co-op; every hero reaches Bill and the cave, climbs the falls from the pool and from every ledge, and lands in 7-3; the whole way through the Game).
 
-Sophia III waits in her garage under 8-4 (`8-4-garage`, an area of 8-4: `parent: 8-4`, `time: inherit`), the tank parked under a mutant-stained gateway (column 8, feet in row 12). The way in is campaign only (0.4.15, the owner's design): after the water section the hero comes up a pipe into `8-4-end`, whose next pipe (column 10) is the trap that leads back into the castle maze (8-4 at column 19). In campaign play a sleeping `pipe ... campaign` zone on the same mouth takes its place (docs/WORLD_MAP.md "Hidden paths and campaign pipes"), so that pipe leads instead to **Jason's secret area** (`8-4-jason`, one locked Underworld screen, music `bm-cutscene`): the hero rises out of a pipe at the left; **Jason** (Sophia's pilot on foot, a story partner: her sheet's side-view `jason-stand`, looking about for his frog) stands by it, and **Fred** sits on the edge of a pool at the right (columns 10-13, water over an open bottom). Talking to Jason (his three pages, docs/STORY.md 2.11), or coming within 2 tiles of Fred, sends Fred hopping into the pool and out of sight (`objects/fred.ts`; the `frog` croak; the announcer: "Fred dives into the pool. Follow him!"). The pool is a `pit` into **Fred's flooded tunnel** (`8-4-fred`, music `bm-area`): the hero drops in through a hole in its roof and swims as in 8-4's water (the map's `swim: true` header: docs/WORLD_MAP.md "Swimming in any theme"), murky Underworld water from the roof down, with Fred swimming on ahead (darting when the hero comes close, waiting when left behind) to a side pipe on the floor at the far end (column 36). Rows 8-12 are open from end to end, so every hero swims through, and Simon, who cannot steer once off the ground, walks the floor all the way. That pipe leads up into the garage (Fred rests there, hopping and croaking now and then); its other pipe (column 13) brings the hero back up out of 8-4-end's trap pipe, so 8-4 goes on from there as before: a secret detour, not a shortcut. The clock runs on throughout; nothing is recorded on the map. Outside the campaign 8-4-end is exactly v0.4.12's (the trap pipe as ever). Her lines: a tank can't talk, so the spell speaks through her computer: PILOT NOT FOUND, the Plutonium Boss has the wheel (`DIALOGUE.sophia`); the round is her mini game, Underworld. Tests: `tests/sim/sophia-garage.test.ts` (8-4-end outside the campaign tile for tile, its pipe still the trap for Mario and the tank; every hero, small and big, down the campaign pipe, through Jason's area into the pool, through the tunnel, past Sophia III and back up out of 8-4-end's pipe; Fred; co-op; the whole way through the Game with the clock carried; captive only in the campaign and until freed; her words; the map hint; her missed card, hint line and joined card; her Arena pad once met) and `tests/sim/partners.test.ts` (Jason).
+Sophia III waits in her garage under 8-4 (`8-4-garage`, an area of 8-4: `parent: 8-4`, `time: inherit`), the tank parked under a mutant-stained gateway (column 8, feet in row 12). The way in is campaign only (the owner's design): after the water section the hero comes up a pipe into `8-4-end`, whose next pipe (column 10) is the trap that leads back into the castle maze (8-4 at column 19). In campaign play a sleeping `pipe ... campaign` zone on the same mouth takes its place (docs/WORLD_MAP.md "Hidden paths and campaign pipes"), so that pipe leads instead to **Jason's secret area** (`8-4-jason`, one locked Underworld screen, music `bm-cutscene`): the hero rises out of a pipe at the left; **Jason** (Sophia's pilot on foot, a story partner: her sheet's side-view `jason-stand`, looking about for his frog) stands by it, and **Fred** sits on the edge of a pool at the right (columns 10-13, water over an open bottom). Talking to Jason (his three pages, docs/STORY.md 2.11), or coming within 2 tiles of Fred, sends Fred hopping into the pool and out of sight (`objects/fred.ts`; the `frog` croak; the announcer: "Fred dives into the pool. Follow him!"). The pool is a `pit` into **Fred's flooded tunnel** (`8-4-fred`, music `bm-area`): the hero drops in through a hole in its roof and swims as in 8-4's water (the map's `swim: true` header: docs/WORLD_MAP.md "Swimming in any theme"), murky Underworld water from the roof down, with Fred swimming on ahead (darting when the hero comes close, waiting when left behind) to a side pipe on the floor at the far end (column 36). Rows 8-12 are open from end to end, so every hero swims through, and Simon, who cannot steer once off the ground, walks the floor all the way. That pipe leads up into the garage (Fred rests there, hopping and croaking now and then); its other pipe (column 13) brings the hero back up out of 8-4-end's trap pipe, so 8-4 goes on from there as before: a secret detour, not a shortcut. The clock runs on throughout; nothing is recorded on the map. Outside the campaign 8-4-end is exactly v0.4.12's (the trap pipe as ever). Her lines: a tank can't talk, so the spell speaks through her computer: PILOT NOT FOUND, the Plutonium Boss has the wheel (`DIALOGUE.sophia`); the round is her mini game, Underworld. Tests: `tests/sim/sophia-garage.test.ts` (8-4-end outside the campaign tile for tile, its pipe still the trap for Mario and the tank; every hero, small and big, down the campaign pipe, through Jason's area into the pool, through the tunnel, past Sophia III and back up out of 8-4-end's pipe; Fred; co-op; the whole way through the Game with the clock carried; captive only in the campaign and until freed; her words; the map hint; her missed card, hint line and joined card; her Arena pad once met) and `tests/sim/partners.test.ts` (Jason).
 
 ## The map hint (`src/game/map/captives.ts`)
 
@@ -243,7 +243,12 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   level starts a run (`Game.airship`, an `AirshipRun`) and snapshots the run state as it was
   before (`snapshot()` from free-hero.ts: lives, power, hp, kit, score, coins, 4-2's checkpoint).
   Any other level, the map or the title ends the run. Dev select / `?level=` never start one.
-- **No clock aboard**: `LevelScene` sets the world's time to null (the HUD leaves it blank).
+- **No clock aboard**: `LevelScene` sets the world's time to null (the status bar leaves it blank).
+- **SMB3's status bar** (0.4.14, `hud/smb3-status.ts`): aboard (deck and room, any way in) the
+  level draws SMB3's bar along the bottom (WORLD, the P-meter, coins; the hero's badge and lives,
+  the score, the clock; three end-card slots) instead of the HUD across the top, and its world
+  32 px higher (`renderSmb3World`), so rows 2-14 fill the screen above the bar. The Hammer Bro
+  battle and the bonus games use the same bar.
 - **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
   restarts the deck as it was boarded, or Larry's room once it has been reached (dropping in from
   its ceiling pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
@@ -460,7 +465,7 @@ An NES Mega Man style stage on the space station above 3-1, played **as Mega Man
 fight with **Dark Mega Man**, the brainwashing's copy of him. It runs in a real `World` of its own
 (stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Mega Man with the
 helmet kit (`{ helmet: 1 }`: buster, charge shot, slide, and Rush Coil, which comes with the
-helmet), full 28 hit points, three lives, no clock, and a camera that scrolls both ways. Each
+helmet), full 28 hit points, three lives, no clock, and Mega Man 2's camera (screens, below). Each
 life starts with READY blinking on the empty start spot (the stage music already playing; the
 press that started the round never jumps), then Mega Man beams down onto it (World's `beam`
 arrival) and only then moves. The HUD is Mega Man 2's: bars only (`hud.ts`: the selected weapon's
@@ -472,36 +477,72 @@ score or lives.
   (an apex of about 3 tiles, 50 px, against the campaign's 4.3), a hit's push back with no upward
   pop (a jump stops rising), and shots (buster, charge shot) that pass through walls. Walking
   (1.375 px/f) already matched.
+- **Ladders** (0.4.15, `ladder.ts`, NES form only): ladder tiles are `chain` (the ladder) and
+  `cloud-ledge` (its top in a floor: one-way solid, stood on from above, climbed through from
+  below), drawn as a ladder in the station theme (`chain@station`, `cloud-ledge@station`). UP with
+  a ladder behind his middle takes hold (on the floor or catching it in the air), DOWN on a ladder's
+  top takes it down; he snaps to its centre and climbs at 0.75 px a frame, hanging still with
+  nothing held. LEFT / RIGHT only turn him; SHOOT fires that way (frame `climb-shoot`) and the
+  shot's pose holds him still. JUMP lets go (a drop, no jump up); a hit knocks him off. Down onto a
+  floor stands him there; down past a ladder's foot drops him. At the top the last 8 px show the
+  climb-over (`climb-top`), then he stands on the ladder's top. While he holds a ladder his Player
+  is `frozen` and the ladder code moves him (`scratch.ladder`, `scratch.ladderTop`).
+- **Screens** (0.4.15, Mega Man 2's camera; the map is `camera: free`, 45 rows, but the scene moves
+  the camera, never World): `screen x y w=N` lines in stage.map are the sections (15 rows from row
+  y, N columns from column x). Inside one the camera follows Mega Man sideways (80 px from the
+  left) within its columns; his middle going off its top or bottom onto another section starts a
+  flip: the station holds still while the camera moves a whole screen up or down in 60 frames
+  (4 px a frame) and he is nudged just inside the new one (still on his ladder, or still
+  falling). The last screen's robots, shots and drops vanish at the start of a flip and the new
+  screen's robots are spawned fresh at its end (World never spawns them: `isRobotSpawn`), so going
+  back to a screen brings its robots back, as in Mega Man 2. A beam down starts at the camera's
+  top (`World.alignBeam`).
 - **Lives** (`minigames/lives.ts`, `MiniLives`, on Bill's REST model): a life lost (orb burst,
   `WorldStart.deathStyle: 'orbs'`, the `mm-death` sound instead of Mario's jingle) restarts in a
-  new World at the last checkpoint: the stage start, column 40 (past the capsule), or the boss
-  door (column 77, reached at 76: through the shutter again, and his bar fills again). Full hit
+  new World at the last checkpoint: the stage start, column 40 (past the capsule), the top of the
+  shaft (column 77 of the top run, reached at 66 in its rows), or the boss door (the landing room
+  under the drop, column 116, reached on landing: through the shutters again, and his bar fills
+  again). Full hit
   points; the Saw Disc stays his with the energy it had (back on the buster), and the capsule
   stays gone. Losing the last life is GAME OVER (180 frames), then `fail`.
 
-- **The stage** (five screens, theme `station`: steel floor, bulkhead plating behind a corridor
-  band, space above, the station sheet's windows, consoles and girders as `deco` entities drawn in
-  front of the plating): floor, steps, three three-tile pits, and the robots (the station sheet's
+- **The stage** (0.4.15, laid out as Mega Man 2's stages go; theme `station`: steel floor,
+  bulkhead plating behind a corridor band, space above, the station sheet's windows, consoles and
+  girders as `deco` entities drawn in front of the plating): a run of five screens along the
+  bottom (floor, steps, three three-tile pits, the capsule halfway), a shaft at its end (the
+  ladder at column 71 climbs two screens through the ceiling to a ledge with a Met, the ladder at
+  75 on up through the floor of the top run), the top run (three more screens: a step, a pillar
+  with a ceiling turret), a hole at columns 119-121 that drops two screens down a chute into the
+  landing room (a Met), then the shutters. The robots (the station sheet's
   frames; they face left and are flipped to face right; a hit flashes them in `station-flash`), each a station `Robot` (an `Enemy` with hit points that blows up
-  in a small explosion and drops from Mega Man's own drop table, an E-tank turned into a big health
-  pellet since the round has no pause menu to use one from):
+  in a small explosion and drops from Mega Man's own drop table, an E-tank kept for the weapon
+  screen):
   **Hopper** (3 HP: crouches, then hops toward Mega Man, short and tall in turn),
+  **Met** (0.4.14, Mega Man 2's hard hat, 1 HP, six over the screens: hidden under its hat every shot
+  bounces off with a `dink`; with Mega Man within 96 px it lifts the hat after 70 frames, fires a
+  three-way spread at him, level and up and down a slant of about 27°, and hides again 40 frames
+  later; one hit while it is up; frames `met-0` hidden, `met-1` up),
   **Turret** (3 HP: on the floor, or hung upside down under a ceiling; shut, its armour turns
   shots away; it opens and fires a burst of three pellets aimed at Mega Man, a floor turret never
   aims down, a ceiling turret never up) and
   **Drone** (2 HP: sways in a sine while drifting over, dives straight down on Mega Man when he
-  stands below it, never at him mid-jump, and climbs back). Pellets take 2 hit points, a robot's
+  stands below it, never at him mid-jump, never below its screen's floor line, and climbs back).
+  Pellets take 2 hit points, a robot's
   touch Mega Man's usual 4.
 - **The weapon capsule** sits on the pillar halfway (on the path): touching it, or passing anywhere
   above it (a jump over the pillar cannot skip it; Rush Coil can), unlocks the **Saw Disc** (`weapons: 1`, full energy; no new weapon code). The station holds still for a second, the
   `capsule` sound plays and a banner (24 columns, clear of the bars) and the announcer say WEAPON
   switches to it, USE WEAPON fires it and a held direction aims it (`abilityHint`; a line falls back
   to the bare ability names when its keys don't fit).
-- **The boss gate**: column 80's doorway is a two-tile shutter (solid in the map, a `Shutter` drawn
-  over it). A `scrollStop` keeps the room out of sight. Mega Man touching it on the floor opens it;
-  the robots and shots vanish (a screen change), he walks through on his own while the camera
-  scrolls 4 px a frame onto the 16-wide room and locks; the shutter shuts behind him (solid again).
-  Dark Mega Man beams down, then his bar fills one segment every 3 frames with a `boss-fill` tick,
+- **The boss gate** (Mega Man 2's two shutters, 0.4.14): columns 128's and 143's doorways (rows
+  41-42, off the landing room) are two-tile shutters (solid in the map, a `Shutter` drawn over
+  each). The landing room's screen ends at the first, so the corridor stays out of sight. Mega Man
+  touching the first on the floor opens it; the robots and shots vanish (a screen change), he walks
+  through on his own while the camera scrolls 4 px a frame onto the one-screen corridor (columns
+  128-143, both shutters in sight) and locks; the shutter shuts behind him (solid again) and he
+  walks the corridor himself, the stage music still playing. The second shutter, at its end, does
+  the same into the 16-wide boss room (columns 143-158); the music stops there. Dark Mega Man beams
+  down, then his bar fills one segment every 3 frames with a `boss-fill` tick,
   NES style, while Mega Man waits (input ignored); the fight starts when it is full.
 - **Dark Mega Man** (`dark-megaman.ts`): Mega Man's body, moves (walk, jump, slide speeds from
   `MEGAMAN_PROFILE`) and sprites in palette `megaman-dark`; his shots are dark violet boxes.
@@ -517,7 +558,15 @@ score or lives.
 - **Outcomes**: beating him bursts him into Mega Man's death orbs (the `death-orb` frame, two rings
   of eight) with "DARK MEGA MAN IS BEATEN!", the victory jingle, Mega Man beams out, then `pass`.
   Mega Man at 0 hit points or in a pit costs a life; `fail` after GAME OVER. Menu
-  (`StationMenuScene`) Give up: `quit`. `done` is called once; `game.state` is never touched.
+  (`StationMenuScene`, from the weapon screen's MENU row) Give up: `quit`.
+- **The weapon screen** (0.4.14, `weapon-menu.ts`, `StationWeaponScene`): MENU opens Mega Man 2's
+  START screen in place of the menu: a dark blue panel with the weapons he carries (P, the Mega
+  Buster, whose bar shows his life as in Mega Man 2; the Saw Disc once taken; Rush Coil), each with
+  its energy as a row of 28 ticks, the E-tanks (`×n` and four boxes; OK there fills his life when
+  he has one and is not full; they last across lives), MEGA MAN ×lives, and a MENU row that opens
+  the round's menu (Continue goes straight back to play). Up / down choose (wrapping, announced
+  with the energy), OK or MENU on a weapon equips it and play goes on. The chosen label blinks
+  (held lit with reduce flashing). The campaign's Mega Man keeps the usual pause menu. `done` is called once; `game.state` is never touched.
 - Music `mm-station` on the stage and `mm-boss` from the boss's entrance, `castle-clear` for the
   win; sounds `boss-fill` (each bar notch), `beam` (his entrance, Mega Man's exit), `capsule`
   (`art.ts` names them all).
@@ -535,8 +584,9 @@ score or lives.
   (`DEATH_FRAMES`); `World.deathTime(p)` and `p.scratch.deathT` give a sprite the death's clock.
 - **World hook** `WorldStart.extraEntities(spawn, world)`: a mini game's own entity types without a
   case in `makeEntity`. Asked first for every spawn: an entity takes it, `null` drops it, `undefined`
-  leaves it to World's own types. The station's `hopper`, `turret` (`mount=ceiling`), `drone`
-  and `capsule` come through it (`stationEntities`).
+  leaves it to World's own types. The station's `capsule` and decor come through it
+  (`stationEntities`); its robots (`hopper`, `met`, `turret` with `mount=ceiling`, `drone`) are
+  dropped there (`null`) and spawned by the scene with their screens.
 
 Difficulty (a "cautious human" sim, `human-sim.test.ts`: `StationBot` with a 15-frame reaction
 delay, robots and shots misjudged by up to 6 px, pauses and jumps a little early; it knows the
@@ -548,6 +598,11 @@ edge, where a hit's push back, with no upward pop now, drops him in), with the S
 reaction (on the first life 100 / 100 / 98 / 98%); with the buster alone 100 / 100 / 98 / 95%
 (first life 95 / 85 / 57 / 43%). Hit points lost across lives: about 16-21
 with the saw, 20-44 without (most of it to Dark Mega Man).
+With the 0.4.15 layout (the bot climbs the ladder leading off the top of its screen, the nearest
+one at its own level first, shooting from a ladder only what a shot can hurt, and walks into holes
+with a floor below), with the saw 100% of 40 at every reaction (first life 88 / 95 / 65 / 88%);
+with the buster alone 100 / 100 / 98 / 95% (first life 65 / 55 / 40 / 20%). Hit points lost: about
+21-32 with the saw, 27-51 without.
 
 ## Samus's mini game: Zebes Escape (`src/game/minigames/samus/`)
 
@@ -1113,7 +1168,7 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
 To add a hero's training: a list in `LESSONS` (3-5 lessons, tested by
 `src/game/tutorial/lessons.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.
 
-## Sophia III in the campaign levels (0.4.13)
+## Sophia III in the campaign levels
 
 Sophia III's tank is wider than a tile (19 × 15.5), cannot stomp, and at Normal jumps about 4.5
 tiles high and 6 across, so the levels built for Mario need her own ways through:
@@ -1144,7 +1199,7 @@ Normal (by the sweep, which ran before the search kept the screen's left edge: r
 163, seven tiles over the floor; Mario gets there off the Paratroopas) is out of the tank's reach,
 and of Jason's hop even from the parked tank's roof. As Crusher the search finishes it, but 8-4 has
 no power-up, so a Normal Sophia who dies there cannot finish it until its variant is built (the
-owner's call: Normal Sophia's gaps ship as a known issue, fixed with the 0.4.16 variants). The Lost
+owner's call: Normal Sophia's gaps ship as a known issue, fixed with the variants in the Chapter 1 finishing pass). The Lost
 Levels: 25 of 52 at Normal; the rest below. "Hyper: yes" also means Crusher (which has the hover
 too); Crusher is searched only when Hyper fails. A number is the column where the search stopped.
 **Genuine** marks a level checked by hand that the tank and Jason cannot get through at that power;
@@ -1189,6 +1244,6 @@ left of the chamber at 224, then a scripted drop through the chamber and the hol
 | ll-13-3 | no     | yes      | yes      | 143: not checked by hand.                                                                                                                                                                                                    |
 | ll-13-4 | no     | yes      | yes      | 52: in the exit area, a 9-tile jump from the staircase to the pipe at 85. **Genuine.**                                                                                                                                       |
 
-For 0.4.16 (Sophia's level variants, the Sophia-only tiles of the original): 8-4 first (Chapter 1),
+For the Chapter 1 finishing pass (Sophia's level variants, the Sophia-only tiles of the original): 8-4 first (Chapter 1),
 then the Lost Levels marked genuine (2-4, 3-3, 4-3, 11-4, 13-4, likely 8-1 and 12-2), then the rest
 of the table once checked by hand. The variants can be checked with the same sweep.

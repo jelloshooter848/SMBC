@@ -25,6 +25,8 @@ export const sfx: Sfx[] = [
   { id: 'stomp', pulse: '@0 v10 q8 x1 p-7 o3 g32.', noise: 'v11 x1 l32 n9 n6' },
   // Shell kick: two falling clicks.
   { id: 'kick', pulse: '@1 v11 q8 x1 p-5 o4 a32 r64 p-5 o4 e32', noise: 'v8 x1 l32 n5' },
+  // A shot glancing off a hard hat: a thin, very short high tick and its echo.
+  { id: 'dink', pulse: '@0 v11 q8 x1 l64 o7 e p-2 o7 b32' },
   // Head bump on a block: dull and short.
   { id: 'bump', pulse: '@0 v10 q8 x1 p-3 o3 e16', noise: 'v9 x1 l32 n10' },
   // Brick break: noise burst with a crunch and a low pulse drop.
