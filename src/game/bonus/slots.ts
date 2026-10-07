@@ -61,6 +61,7 @@ export class SlotsScene extends BonusScene {
     const reel = m.next;
     const pic = m.stop();
     if (!pic) return;
+    this.played = true;
     this.sfx(BONUS_SFX.stop);
     this.say(`${THIRDS[reel]}: ${NAMES[pic]}.`);
     if (m.done) this.doneT = this.t;

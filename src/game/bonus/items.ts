@@ -30,15 +30,13 @@ export const ITEM_SPOKEN: Readonly<Record<ItemId, string>> = {
 
 /**
  * The bonus and inventory state of a campaign file, field for field as the save stores it
- * (`SaveFile` has each as an optional field; no format bump). `Game.bonus` carries it.
+ * (`SaveFile` has each as an optional field; no format bump). `Game.bonus` carries it. Whether the
+ * inventory is unlocked and the bonus spot open are `Game.inventoryUnlocked` / `Game.bonusOpen`
+ * (SaveFile's fields of the same names, the World 4 bonus spot's).
  */
 export interface BonusState {
   /** Item ids in the order won, at most INVENTORY_MAX. */
   inventory: ItemId[];
-  /** Set when Larry is beaten (L1): the map's Items menu appears. */
-  inventoryUnlocked: boolean;
-  /** The World 4 bonus spot can be played (L1 opens and spends it). */
-  bonusOpen: boolean;
   /** Rotation: index into BONUS_KINDS of the next bonus game. */
   bonusNext: number;
   /** Dev mode's map menu "Item inventory": unlocks it while dev mode is on (never written to inventoryUnlocked). */
@@ -51,8 +49,6 @@ export interface BonusState {
 export function newBonusState(): BonusState {
   return {
     inventory: [],
-    inventoryUnlocked: false,
-    bonusOpen: false,
     bonusNext: 0,
     devInventory: false,
     starNext: false,
@@ -69,8 +65,6 @@ export function bonusStateFrom(stored: Partial<Record<keyof BonusState, unknown>
   const n = stored.bonusNext;
   return {
     inventory: inventoryItems(stored.inventory),
-    inventoryUnlocked: stored.inventoryUnlocked === true,
-    bonusOpen: stored.bonusOpen === true,
     bonusNext: typeof n === 'number' && Number.isInteger(n) && n >= 0 ? n % 3 : 0,
     devInventory: stored.devInventory === true,
     starNext: stored.starNext === true,

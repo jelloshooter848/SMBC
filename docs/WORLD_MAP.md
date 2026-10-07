@@ -68,7 +68,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 | ----------------- | ----------------------------------------------------------------------------- |
 | `start`           | The page's arrival node. May also carry the warp fields or a `level` (below). |
 | `level`, `castle` | Enter `level` with JUMP. A castle clear opens the page(s) its exits lead to.  |
-| `bonus`           | Hidden until `unlock` (a secret key) is found.                                |
+| `bonus`           | Hidden until `unlock` (a secret key) is found. JUMP plays the bonus game.     |
 | `warp`            | JUMP warps to another page (see below).                                       |
 
 A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the file has that secret
@@ -167,7 +167,9 @@ different road with each, and **no ending opens every road leaving its level**.
 - **Old files**: nothing changes in the format. A file that cleared 1-2 through its pipe before
   0.5.0 has both `1-2` in `cleared` and `bonus-1` in `secrets`, so it keeps both roads; nothing
   re-locks.
-- Today only 1-2's campaign pipe is a secret exit (below). Every other warp pipe (SMB 4-2, the
+- Today 1-2's campaign pipe is a secret exit (below), and so is Larry Koopa's crystal ball in
+  4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
+  Bro" below). Every other warp pipe (SMB 4-2, the
   Lost Levels' warp zones, `workingWarps` / `warpsOpened`) still warps as in the original and
   clears nothing; the map's secret-exit look (`map/secret-exits.ts`) only marks levels that
   have another way out.
@@ -224,6 +226,45 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 - Dev select, `?level=` and custom play keep the classic three numbered pipes.
 - SMB 4-2's warp zones are unchanged (they still skip worlds); a `secret=` key on one is the hook
   for a future secret. Lost Levels warp zones (backward ones too) are unchanged.
+
+## The bonus spot and its Hammer Bro (World 4, 0.5.0)
+
+World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `unlock: 'larry'`,
+`guard: 'hammer-bro'`, its road from 4-2 tagged `exit: 'secret:larry'` (`world4.ts`).
+
+- **Found** with Larry Koopa's crystal ball in 4-2's airship (docs/HEROES.md): a secret exit of
+  4-2 that draws in only this road. 4-2's flagpole never opens it.
+- **The bonus** (`map/bonus-spot.ts`): standing on the open node the hint line shows the bonus
+  game's name (`BonusGame.label`) and JUMP (ENTER) calls `Game.openBonus({ page, node })`, which
+  pushes the bonus game's scene over the map. The scene calls `done('used')` once a round was
+  played (the bonus closes: `Game.bonusOpen = false`, saved at once) or `done('left')` (backed out,
+  still open); either way the map comes back with the hero on the node. The bonus games register
+  with `registerBonusGame({ label, icon, create })` (`icon`: the node's `sheet:frame`, e.g.
+  `smb3:node-toad-house`; the map's `map-node-bonus` dot while it is missing). The SMB3 bonus games
+  (Toad House, N-spade, spade game, in rotation) are registered (docs/BONUS.md); with none, a
+  placeholder card ("THE BONUS GAMES ARE COMING SOON!") stands in and counts as used.
+- **Used**: the node shows a spent dot, its hint line says `BEAT THE HAMMER BRO TO REOPEN`, JUMP
+  bumps, and a **Hammer Bro** (`map/hammer-bro.ts`, `MapGuard`) comes out on the road: on the road
+  tile farthest from the hero, then he wanders tile by tile (1 px/f, standing 50-100 frames
+  between steps) along the road between 4-2 (never on its node) and the bonus node. Drawn with the
+  SMB3 map frames `smb3:hammer-bro-map-0/1` (16×16), else the SMB Hammer Bro.
+- **Touching him** (the hero walking into him on the road, or him walking into the hero waiting on
+  the bonus node; not in the first 45 frames after the map shows) starts the **Hammer Bro battle**
+  (`scenes/hammer-battle.ts`, `Game.startHammerBattle`): one locked screen (`content/levels/
+hammer-battle.map`, outside the level library: floor, two brick rows at the SMB1 heights) with
+  two SMB1 Hammer Bros, no clock, the run's hero, power, lives and score. The hero's map place
+  stays the node it last stood on. Start pauses (Quit to map leaves it undecided).
+  - **Win** (both Hammer Bros gone, then a second): their hammers vanish, the `castle-clear`
+    jingle, the card "THE HAMMER BROS ARE BEATEN! / THE BONUS IS OPEN AGAIN." with the item they
+    leave (SMB3 style: a mushroom, fire flower or star into the inventory, docs/BONUS.md), then
+    `Game.hammerBattleWon`: `bonusOpen = true`, back to the map (saved). He comes back the next
+    time the bonus is used.
+  - **Lose** (the hero falls): `Game.hammerBattleLost`: a life lost as in SMB3, power back to the
+    start as after any death, back to the map with the Hammer Bro still there; no lives left is
+    GAME OVER (the campaign's continue).
+- **Save** (optional fields, no format change): `bonusOpen?: boolean` (missing: open) and
+  `inventoryUnlocked?: boolean` (missing: off, but on for a file with the secret `larry`).
+- Campaign only (the map is). Dev "Unlock all" does not show it (bonus nodes need their key).
 
 ## Teleport pads (level zone, 0.5.0)
 

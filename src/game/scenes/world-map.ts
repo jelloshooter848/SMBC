@@ -40,8 +40,13 @@ import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { InventoryScene } from '../bonus/inventory';
+// Registers the SMB3 bonus games on World 4's bonus spot (map/bonus-spot.ts).
+import '../bonus/spot';
 import { inventoryAvailable } from '../bonus/use';
 import { addItem, ITEM_IDS } from '../bonus/items';
+import { MapGuard, guardRoad } from '../map/hammer-bro';
+import { BONUS_CLOSED_HINT, BONUS_CLOSED_SAID, bonusGame } from '../map/bonus-spot';
+import { SMB3_SHEET, sheetWith } from '../art';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -70,6 +75,11 @@ export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
 export const HIDING_SHIMMER_FRAMES = 360;
 export const HIDING_GLOW_FRAMES = 30;
 /** A freed hero's 1-px dark outline: its silhouette drawn once each way, under it. */
+/**
+ * The map's Hammer Bro (map/hammer-bro.ts) does not start a battle for this many frames after the
+ * map shows or he comes out, so coming back from the bonus or a battle never lands straight in one.
+ */
+export const GUARD_GRACE_FRAMES = 45;
 const TROPHY_OUTLINE: readonly (readonly [number, number])[] = [
   [-1, 0],
   [1, 0],
@@ -137,7 +147,8 @@ interface HeroMark {
 /** What is drawn of a page for the current progress (rebuilt only when progress may change). */
 interface PageView {
   runs: DotRun[];
-  nodes: { node: MapNode; frame: string }[];
+  /** `sheet`: the frame's sheet when it is not the items sheet (the bonus spot's SMB3 icon). */
+  nodes: { node: MapNode; frame: string; sheet?: string }[];
   heroes: HeroMark[];
 }
 
@@ -261,6 +272,9 @@ export class WorldMapScene implements Scene {
   /** Freed heroes celebrating on this map: the frame their burst of hops began (map/trophy.ts). */
   private readonly trophyBursts = new Map<string, number>();
   private readonly scratchActor: MapActor = { type: '', x: 0, y: 0 };
+  /** The Hammer Bro wandering the road to a used bonus spot on this page, or null. */
+  guard: MapGuard | null = null;
+  private guardGrace = 0;
   private readonly header = {
     page: null as WorldMapPage | null,
     node: null as MapNode | null,
@@ -306,6 +320,7 @@ export class WorldMapScene implements Scene {
   enter(): void {
     this.game.ctx.audio.playMusic(this.page.music);
     this.views.clear();
+    this.refreshGuard();
     this.announceHere();
     this.game.addReveal(this.opts.reveal ?? []);
     this.takeReveal();
@@ -372,7 +387,11 @@ export class WorldMapScene implements Scene {
     const { paths, exits } = openPaths(this.progress, page, this.unlockAll);
     const nodes = page.nodes
       .filter((n) => isOpen(this.progress, page, n.id, this.unlockAll))
-      .map((n) => ({ node: n, frame: this.nodeFrame(page, n) }));
+      .map((n) => {
+        const frame = this.nodeFrame(page, n);
+        const c = frame.indexOf(':');
+        return c > 0 ? { node: n, sheet: frame.slice(0, c), frame: frame.slice(c + 1) } : { node: n, frame };
+      });
     v = {
       runs: [
         ...paths.map((p) => ({ id: pathId(p), dots: pathDots(p.points, true, true) })),
@@ -455,6 +474,9 @@ export class WorldMapScene implements Scene {
    */
   nodeLabel(n: MapNode): string {
     const label = spoken(this.page.label);
+    // The bonus spot (map/bonus-spot.ts): the bonus game's name while open.
+    if (n.kind === 'bonus')
+      return this.game.bonusOpen ? `${spoken(bonusGame().label(this.game))}, open` : BONUS_CLOSED_SAID;
     if (isWarpNode(n)) {
       const text = spoken(warpText(this.progress, n, this.unlockAll));
       return isWarpOpen(this.progress, n, this.unlockAll) ? `Warp, ${text}` : `${text}, locked`;
@@ -471,7 +493,6 @@ export class WorldMapScene implements Scene {
 
   private nodeLabelPlain(n: MapNode, label: string, state: string): string {
     if (n.kind === 'start' && !n.level) return `${label} start`;
-    if (n.kind === 'bonus') return `Bonus level, ${state}`;
     // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
     const stage = n.level?.split('-').pop();
     const lvl = stage ? `${label}-${stage}` : label;
@@ -494,6 +515,8 @@ export class WorldMapScene implements Scene {
     const n = this.warpHere();
     if (n) return warpText(this.progress, n, this.unlockAll);
     if (this.mode !== 'idle') return '';
+    const here = this.nodeById(this.node);
+    if (here?.kind === 'bonus') return this.game.bonusOpen ? bonusGame().label(this.game) : BONUS_CLOSED_HINT;
     return (
       exitHint(this.progress, this.page, this.node, this.unlockAll) || (this.hidingHere() ? HIDING_HINT : '')
     );
@@ -502,6 +525,7 @@ export class WorldMapScene implements Scene {
   update(input: InputFrame): void {
     this.t++;
     this.startTrophyBursts();
+    if (this.updateGuard()) return;
     switch (this.mode) {
       case 'reveal':
         this.updateReveal(input);
@@ -531,9 +555,13 @@ export class WorldMapScene implements Scene {
     const here = this.nodeById(this.node);
     const open = !!here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll);
     const warp = !!here && isWarpOpen(this.progress, here, this.unlockAll);
+    const bonus =
+      here?.kind === 'bonus' &&
+      this.game.bonusOpen &&
+      isOpen(this.progress, this.page, here.id, this.unlockAll);
     return {
       ...NO_TOUCH_BUTTONS,
-      jump: open ? 'ENTER' : warp ? 'WARP' : null,
+      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : null,
       start: 'MENU',
       special: inventoryAvailable(this.game) ? 'ITEMS' : null,
     };
@@ -616,6 +644,21 @@ export class WorldMapScene implements Scene {
       this.game.enterLevelFromMap(here.level);
       return;
     }
+    if (
+      input.pressed('jump') &&
+      here?.kind === 'bonus' &&
+      isOpen(this.progress, this.page, here.id, this.unlockAll)
+    ) {
+      if (this.game.bonusOpen) {
+        this.game.ctx.audio.sfx('coin');
+        this.game.openBonus({ page: this.page.id, node: here.id });
+      } else {
+        // Used: a bump, and why it is shut.
+        this.game.ctx.audio.sfx('bump');
+        this.say(BONUS_CLOSED_SAID);
+      }
+      return;
+    }
     if (input.pressed('jump') && here && isWarpNode(here)) {
       if (isWarpOpen(this.progress, here, this.unlockAll)) this.warp(here);
       else {
@@ -683,6 +726,7 @@ export class WorldMapScene implements Scene {
     };
     this.page = next;
     this.views.clear();
+    this.guard = null;
     this.mode = 'slide';
     this.takeReveal(); // hidden while sliding in, drawn in on arrival
   }
@@ -699,6 +743,7 @@ export class WorldMapScene implements Scene {
     this.views.clear();
     this.node = this.nodeById(s.node) ? s.node : (startNode(this.page)?.id ?? '');
     this.placeHero();
+    this.refreshGuard();
     if (this.page.music !== s.from.music) this.game.ctx.audio.playMusic(this.page.music);
     this.mode = this.revealQueue.length ? 'reveal' : 'idle';
     this.revealT = 0;
@@ -724,6 +769,7 @@ export class WorldMapScene implements Scene {
     this.fade = { from: this.page, t: 0, node: target ?? '' };
     this.page = next;
     this.views.clear();
+    this.guard = null;
     this.mode = 'fade';
     this.takeReveal(); // hidden while fading in, drawn in on arrival
   }
@@ -740,6 +786,7 @@ export class WorldMapScene implements Scene {
     this.views.clear();
     this.node = this.nodeById(f.node) ? f.node : (startNode(this.page)?.id ?? '');
     this.placeHero();
+    this.refreshGuard();
     if (this.page.music !== f.from.music) this.game.ctx.audio.playMusic(this.page.music);
     this.mode = this.revealQueue.length ? 'reveal' : 'idle';
     this.revealT = 0;
@@ -859,6 +906,7 @@ export class WorldMapScene implements Scene {
     const game = this.game;
     game.devUnlockAll = !game.devUnlockAll;
     this.views.clear();
+    this.refreshGuard();
     if (!game.devUnlockAll) {
       const prog = this.progress;
       if (!isPageOpen(prog, this.page.id)) {
@@ -913,6 +961,56 @@ export class WorldMapScene implements Scene {
       pages.findIndex((p) => p.id === here),
     );
     game.scenes.push(new WorldsMenu(game, items, () => game.scenes.pop(), start));
+  }
+
+  /**
+   * The Hammer Bro (campaign only): out on the road to a bonus node with `guard: 'hammer-bro'` while
+   * the bonus is used (Game.bonusOpen false) and the node is shown, on the road tile farthest from
+   * the hero (map/hammer-bro.ts).
+   */
+  private refreshGuard(): void {
+    this.guard = null;
+    if (!this.game.campaign || this.game.bonusOpen) return;
+    const n = this.page.nodes.find(
+      (x) => x.guard === 'hammer-bro' && isOpen(this.progress, this.page, x.id, this.unlockAll),
+    );
+    if (!n) return;
+    const road = guardRoad(this.page, n.id);
+    if (!road.length) return;
+    const here = this.nodeById(this.node);
+    this.guard = MapGuard.spawn(road, here ? [here.x, here.y] : [n.x, n.y], 0x5eed + this.t);
+    this.guardGrace = GUARD_GRACE_FRAMES;
+  }
+
+  /**
+   * The Hammer Bro wanders while the hero stands or walks; touching him (or him walking into the
+   * hero) starts the battle (Game.startHammerBattle). True when it did.
+   */
+  private updateGuard(): boolean {
+    const g = this.guard;
+    if (!g || (this.mode !== 'idle' && this.mode !== 'walk')) return false;
+    g.update();
+    if (this.guardGrace > 0) {
+      this.guardGrace--;
+      return false;
+    }
+    if (!g.touches(this.hx, this.hy)) return false;
+    this.guard = null;
+    this.game.ctx.audio.sfx('kick');
+    this.game.startHammerBattle();
+    return true;
+  }
+
+  /** The Hammer Bro, feet on the road like the hero's (the SMB3 map frames, else the SMB one). */
+  private drawGuard(r: Renderer, g: MapGuard): void {
+    const assets = this.game.ctx.assets;
+    const step = (this.t >> 4) & 1;
+    const own = `hammer-bro-map-${step}`;
+    const art = sheetWith(assets, SMB3_SHEET, own);
+    const sheet = art ?? assets.sheet('enemies');
+    const frame = art ? own : `hammer-bro-${step}`;
+    const h = sheet.frames.get(frame)?.h ?? 16;
+    r.sprite(sheet, frame, g.x, g.y + 10 - h, !g.facingLeft);
   }
 
   // ---------------------------------------------------------------- drawing
@@ -993,12 +1091,13 @@ export class WorldMapScene implements Scene {
     for (let i = 0; i < v.nodes.length; i++) {
       const nv = v.nodes[i] as PageView['nodes'][number];
       if (revealing && this.revealShown.has(nv.node.id)) continue;
-      r.sprite(items, nv.frame, ox + nv.node.x * 16, nv.node.y * 16);
+      r.sprite(nv.sheet ? assets.sheet(nv.sheet) : items, nv.frame, ox + nv.node.x * 16, nv.node.y * 16);
     }
     for (let i = 0; i < v.heroes.length; i++) {
       const m = v.heroes[i] as HeroMark;
       if (m.hint === 'trophy') this.drawHeroMark(r, page, m, ox);
     }
+    if (hero && this.guard) this.drawGuard(r, this.guard);
     if (hero && page.nodes.length) this.drawHeroes(r);
   }
 
@@ -1009,8 +1108,14 @@ export class WorldMapScene implements Scene {
       case 'start':
         if (n.level) return cleared ? 'map-node-cleared' : 'map-node-open';
         return 'map-node-start';
-      case 'bonus':
-        return cleared ? 'map-node-cleared' : 'map-node-bonus';
+      case 'bonus': {
+        // The bonus game's icon while open (its own sheet once the art lands), used: a spent dot.
+        if (!this.game.bonusOpen) return 'map-node-cleared';
+        const icon = bonusGame().icon(this.game);
+        const c = icon.indexOf(':');
+        const art = c > 0 && sheetWith(this.game.ctx.assets, icon.slice(0, c), icon.slice(c + 1));
+        return art ? icon : 'map-node-bonus';
+      }
       case 'castle':
         if (hasSecretExit(n.level)) return cleared ? 'map-castle-secret-cleared' : 'map-castle-secret';
         return cleared ? 'map-castle-cleared' : 'map-castle';

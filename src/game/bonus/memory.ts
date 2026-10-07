@@ -100,6 +100,7 @@ export class MemoryScene extends BonusScene {
       this.sfx(BONUS_SFX.miss);
       return;
     }
+    this.played = true;
     this.sfx(BONUS_SFX.flip);
     const face = (b.cards[i] as Card).face;
     if (res === 'first') {

@@ -8,7 +8,7 @@ import { MessageScene } from '@game/scenes/message';
 import { LINK } from '@game/characters/link';
 import { loadSave, migrateSave, newSave } from '@game/save/save-files';
 import type { Settings } from '@engine/save/settings';
-import type { SlotsScene } from '@game/bonus';
+import { SlotsScene } from '@game/bonus';
 import {
   INVENTORY_MAX,
   InventoryScene,
@@ -18,6 +18,7 @@ import {
   openNextBonus,
   ToadHouseScene,
   useInventoryItem,
+  awardHammerPrize,
   type BonusKind,
   type BonusResult,
 } from '@game/bonus';
@@ -88,7 +89,6 @@ describe('item inventory on the save file', () => {
     const m = migrateSave(JSON.parse(JSON.stringify(s)), 1) as SaveFile;
     expect(m.inventory).toEqual([]);
     expect(m.inventoryUnlocked).toBe(false);
-    expect(m.bonusOpen).toBe(false);
     expect(m.bonusNext).toBe(0);
     expect(m.devInventory).toBe(false);
     expect(m.starNext).toBe(false);
@@ -119,7 +119,7 @@ describe('item inventory on the save file', () => {
   it('opens with the file (Game.bonus) and is saved back by autosave', () => {
     const { h } = onMap({ inventory: ['flower'], inventoryUnlocked: true, bonusNext: 1 });
     expect(h.game.bonus.inventory).toEqual(['flower']);
-    expect(h.game.bonus.inventoryUnlocked).toBe(true);
+    expect(h.game.inventoryUnlocked).toBe(true);
     h.game.bonus.inventory.push('star');
     h.game.autosave();
     expect(loadSave(1)?.inventory).toEqual(['flower', 'star']);
@@ -337,7 +337,7 @@ describe('Toad House', () => {
     closeCard(h);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(ends).toEqual([
-      { kind: 'toad-house', prizes: [{ kind: 'item', item: house.chests[0] }], gaveUp: false },
+      { kind: 'toad-house', prizes: [{ kind: 'item', item: house.chests[0] }], gaveUp: false, played: true },
     ]);
     expect(h.audio.playMusic).toHaveBeenLastCalledWith('map');
   });
@@ -384,7 +384,7 @@ describe('Toad House', () => {
     h.tap('down');
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    expect(ends).toEqual([{ kind: 'toad-house', prizes: [], gaveUp: true }]);
+    expect(ends).toEqual([{ kind: 'toad-house', prizes: [], gaveUp: true, played: false }]);
   });
 });
 
@@ -498,18 +498,95 @@ describe('spade game', () => {
   });
 });
 
-describe('the bonus rotation', () => {
-  it('each opening plays the next game, saved on the file', () => {
-    const { h } = onMap({ inventoryUnlocked: true });
-    const kinds: string[] = [];
-    for (let i = 0; i < 4; i++) {
-      const s = openNextBonus(h.game, () => {}, { seed: i });
-      kinds.push(s instanceof ToadHouseScene ? 'toad-house' : s instanceof MemoryScene ? 'memory' : 'slots');
-      expect(loadSave(1)?.bonusNext).toBe((i + 1) % 3);
-      h.game.scenes.pop();
-    }
-    expect(kinds).toEqual(['toad-house', 'memory', 'slots', 'toad-house']);
+/** A file on World 4 standing on the bonus spot, Larry beaten (the crystal ball's secret). */
+const W3 = ['1-0', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4'];
+const onBonusSpot = (over: Partial<SaveFile> = {}) =>
+  onMap({
+    cleared: [...W3, '4-1'],
+    pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4'],
+    position: { page: 'smb-4', node: 'bonus-4' },
+    secrets: ['larry'],
+    ...over,
+  });
+
+/** Gives up from the open bonus game's menu. */
+function giveUp(h: H) {
+  h.tap('start');
+  h.idle(8);
+  h.tap('down');
+  h.tap('jump');
+}
+
+describe("World 4's bonus spot plays the bonus games in rotation", () => {
+  it('JUMP on the open node plays the next game; played, it is used and the rotation moves on', () => {
+    const { h } = onBonusSpot();
+    const map = h.top() as WorldMapScene;
+    expect(map.hintLine).toBe('TOAD HOUSE');
+    h.tap('jump');
+    const house = h.top() as ToadHouseScene;
+    expect(house).toBeInstanceOf(ToadHouseScene);
+    h.idle(25);
+    h.tap('jump'); // OPEN the middle chest
+    h.idle(OPEN_FRAMES + 65);
+    closeCard(h);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.game.bonusOpen).toBe(false);
+    expect(h.game.bonus.inventory).toEqual([house.chests[1]]);
+    expect(loadSave(1)?.bonusNext).toBe(1);
     expect(nextBonusKind(loadSave(1) as SaveFile)).toBe('memory');
+  });
+
+  it('the next visits are the N-spade, then the spade game, then the Toad House again', () => {
+    for (const [n, kind, scene] of [
+      [1, 'N-SPADE', MemoryScene],
+      [2, 'SPADE GAME', SlotsScene],
+      [3, 'TOAD HOUSE', ToadHouseScene],
+    ] as const) {
+      const { h } = onBonusSpot({ bonusNext: n % 3 });
+      expect((h.top() as WorldMapScene).hintLine).toBe(kind);
+      h.tap('jump');
+      expect(h.top()).toBeInstanceOf(scene);
+    }
+  });
+
+  it('giving up before any choice leaves it open, the same game next time; after a choice it is used', () => {
+    let { h } = onBonusSpot({ bonusNext: 2 });
+    h.tap('jump');
+    h.idle(25);
+    giveUp(h);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.game.bonusOpen).toBe(true);
+    expect(h.game.bonus.bonusNext).toBe(2);
+    ({ h } = onBonusSpot({ bonusNext: 2 }));
+    h.tap('jump');
+    h.idle(25);
+    h.tap('jump'); // the top reel stops
+    giveUp(h);
+    expect(h.game.bonusOpen).toBe(false);
+    expect(loadSave(1)?.bonusNext).toBe(0);
+  });
+
+  it('openNextBonus (outside the spot) also advances only once played', () => {
+    const { h } = onMap({ inventoryUnlocked: true });
+    openNextBonus(h.game, () => {}, { seed: 1 });
+    h.idle(25);
+    giveUp(h);
+    expect(h.game.bonus.bonusNext).toBe(0);
+    openNextBonus(h.game, () => {}, { seed: 1 });
+    h.idle(25);
+    h.tap('jump');
+    giveUp(h);
+    expect(loadSave(1)?.bonusNext).toBe(1);
+  });
+});
+
+describe('the Hammer Bro prize', () => {
+  it('awardHammerPrize gives a mushroom, flower or star into the inventory', () => {
+    const { h } = onMap({ inventoryUnlocked: true });
+    const out = awardHammerPrize(h.game, 4);
+    expect(out.stored).toBe(true);
+    expect(['mushroom', 'flower', 'star']).toContain(h.game.bonus.inventory[0]);
+    expect(loadSave(1)?.inventory).toHaveLength(1);
   });
 });
 

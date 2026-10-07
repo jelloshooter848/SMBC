@@ -20,6 +20,11 @@ export interface BonusResult {
   /** Every prize won, in order (empty: nothing). Already given: items in the inventory, lives and coins counted. */
   prizes: BonusPrize[];
   gaveUp: boolean;
+  /**
+   * A choice was made (a chest opened, a card turned, a reel stopped): the bonus counts as used,
+   * even when the player then gave up. False only for a Give up before any of that.
+   */
+  played: boolean;
 }
 
 /** Frames the game ignores input after it opens, so the press that opened it does nothing. */
@@ -44,6 +49,8 @@ export abstract class BonusScene implements Scene {
   /** The round is decided: the result card shows and OK ends it. */
   protected over: { lines: string[]; t: number } | null = null;
   private ended = false;
+  /** A choice was made (BonusResult.played). */
+  played = false;
 
   constructor(
     protected readonly game: Game,
@@ -138,7 +145,7 @@ export abstract class BonusScene implements Scene {
   private close(gaveUp: boolean): void {
     if (this.ended) return;
     this.ended = true;
-    this.onEnd({ kind: this.kind, prizes: this.prizes.slice(), gaveUp });
+    this.onEnd({ kind: this.kind, prizes: this.prizes.slice(), gaveUp, played: this.played });
   }
 
   render(r: Renderer): void {

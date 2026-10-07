@@ -48,8 +48,10 @@ export class DevBonusGamesScene extends MenuScene {
     const before = snapshot(saved);
     const bonus = game.bonus;
     const campaign = game.campaign;
+    const unlocked = game.inventoryUnlocked;
     game.campaign = null; // nothing it does can autosave
-    game.bonus = { ...newBonusState(), inventoryUnlocked: true };
+    game.bonus = newBonusState();
+    game.inventoryUnlocked = true;
     audio.resume();
     openBonusGame(
       game,
@@ -58,6 +60,7 @@ export class DevBonusGamesScene extends MenuScene {
         game.state = saved;
         Object.assign(saved, before);
         game.bonus = bonus;
+        game.inventoryUnlocked = unlocked;
         game.campaign = campaign;
         this.lastResult = result;
         const won = result.prizes.map(prizeText);

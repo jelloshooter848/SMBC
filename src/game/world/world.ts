@@ -58,6 +58,7 @@ import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
 import { Axe } from '../entities/objects/axe';
+import { Larry } from '../entities/enemies/larry';
 import { startHp, type CharacterDef } from '../characters/character';
 
 export type WorldEvent =
@@ -71,7 +72,12 @@ export type WorldEvent =
   /** A player pressed up next to a captive hero (campaign): the level starts the unlock flow. */
   | { type: 'talk'; hero: string; player: number }
   /** A player came within a captive's talking reach (TALK shows for them): announced. */
-  | { type: 'captive-near'; hero: string; player: number };
+  | { type: 'captive-near'; hero: string; player: number }
+  /**
+   * A player touched Larry Koopa's crystal ball (objects/crystal-ball.ts): the level shows its
+   * card and ends the area (campaign: 4-2's secret exit; else on to `next`).
+   */
+  | { type: 'crystal-ball'; player: number; next: string | null };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -549,6 +555,8 @@ export class World {
         );
       case 'axe':
         return new Axe(s.x, s.y);
+      case 'larry':
+        return new Larry(s.x, s.y, typeof s.props?.next === 'string' ? s.props.next : null);
       case 'lift-h':
       case 'lift-v':
       case 'lift-fall':
@@ -1367,6 +1375,13 @@ export class World {
         if (e instanceof Koopa && e.isStillShell) return this.kickShell(p, e);
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
         if (r === 'hurtAttacker') return this.hurtPlayer(p);
+        // A stomp on something that only shrugs it off (Larry Koopa in his shell): the player
+        // bounces off unhurt, and it neither scores nor counts as a stomp.
+        if (r === 'bounce') {
+          p.stompBounce();
+          this.audio.sfx('bump');
+          return;
+        }
         if (r !== 'immune') {
           this.scoreStomp(p, e);
           p.stompBounce();

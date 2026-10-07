@@ -2,29 +2,43 @@
 
 Beating Larry Koopa (World 4-2's airship) opens a World 4 bonus spot and the item inventory.
 The bonus spot plays one of three Super Mario Bros. 3 bonus games, rotating; their prizes go into
-the inventory, which the world map uses before a level. Code: `src/game/bonus/` (public API and
-the state in `index.ts`); the bonus node, its road, the Hammer Bro and when the spot is open
-belong to the World 4 / Larry work, which calls in here.
+the inventory, which the world map uses before a level. Code: `src/game/bonus/` (public API in
+`index.ts`). The bonus node, its road, the Hammer Bro and when the spot is open are the bonus
+spot's (`src/game/map/bonus-spot.ts`, docs/WORLD_MAP.md "The bonus spot and its Hammer Bro").
 
 ## The save fields (`SaveFile`, optional, no format bump)
 
-| Field               | Meaning                                                                 | Missing |
-| ------------------- | ----------------------------------------------------------------------- | ------- |
-| `inventory`         | item ids won, in order: `mushroom`, `flower`, `star`, `1up`; at most 12 | `[]`    |
-| `inventoryUnlocked` | set when Larry is beaten: the map's Items entry and ITEMS button appear | off     |
-| `bonusOpen`         | the bonus spot can be played (set and spent by the bonus node's code)   | off     |
-| `bonusNext`         | the rotation: 0 Toad House, 1 N-spade, 2 spade game                     | 0       |
-| `devInventory`      | dev mode's map menu "Item inventory"                                    | off     |
-| `starNext`          | a Starman used from the map waits for the start of the next level       | off     |
+| Field               | Meaning                                                                    | Missing               |
+| ------------------- | -------------------------------------------------------------------------- | --------------------- |
+| `inventoryUnlocked` | Larry's crystal ball taken: the map's Items entry and ITEMS button appear  | off (on with `larry`) |
+| `bonusOpen`         | the bonus spot can be played; closed once used, reopened by the Hammer Bro | open                  |
+| `inventory`         | item ids won, in order: `mushroom`, `flower`, `star`, `1up`; at most 12    | `[]`                  |
+| `bonusNext`         | the rotation: 0 Toad House, 1 N-spade, 2 spade game                        | 0                     |
+| `devInventory`      | dev mode's map menu "Item inventory"                                       | off                   |
+| `starNext`          | a Starman used from the map waits for the start of the next level          | off                   |
 
-Validation keeps known item ids only (at most 12) and each flag only when it is `true`.
-`Game.bonus` carries the fields (same names) for the open file; `openFile` loads them and
-`autosave` writes them. Outside campaign play `Game.bonus` is a fresh, empty state.
+`Game.inventoryUnlocked` and `Game.bonusOpen` carry the first two (the bonus spot's); `Game.bonus`
+carries the rest (same names; `BonusState` in `items.ts`). Validation keeps known item ids only (at
+most 12) and each flag only when it is `true`. `openFile` loads them and `autosave` writes them;
+outside campaign play `Game.bonus` is a fresh, empty state.
 
-## Opening a bonus game
+## The bonus spot
 
-- `openNextBonus(game, onDone)`: the bonus node's call. It plays the next game in the rotation,
-  advancing `bonusNext` and saving first, so giving up never rerolls the game.
+`src/game/bonus/spot.ts` registers `SMB3_BONUS` with the spot's `registerBonusGame` (the world map
+imports it). The open node's hint line and the announcer name the next game in the rotation
+(TOAD HOUSE, N-SPADE, SPADE GAME) and its map icon is `smb3:node-toad-house` or `smb3:node-spade`.
+JUMP on it plays that game over the map. Once any choice was made (a chest opened, a card turned,
+a reel stopped) the visit counts as used, even if the player then gives up: the rotation moves on
+and the spot closes until its Hammer Bro is beaten ('used'). Giving up before any choice leaves it
+open, with the same game next time ('left').
+
+**The Hammer Bro's prize**: beating the Hammer Bro battle also gives an item (SMB3 does): a
+mushroom, fire flower or star, weighted like a Toad House chest (`awardHammerPrize`), shown on the
+battle's win card and stored like any bonus prize.
+
+## Opening a bonus game elsewhere
+
+- `openNextBonus(game, onDone)`: the next game in the rotation, advanced (and saved) once played.
 - `openBonusGame(game, kind, onDone, { seed?, music? })`: one game of `kind` (`'toad-house'`,
   `'memory'`, `'slots'`) without touching the rotation. `seed` fixes the deal; `music` plays when it
   closes (default: the map page's music in campaign play).
@@ -32,13 +46,16 @@ Validation keeps known item ids only (at most 12) and each flag only when it is 
 - The scene is pushed over the map and pops itself (with any menu over it). `onDone(result)` then
   runs once: `result.prizes` lists what was won, **already given and saved** (items in the
   inventory, lives and coins counted); `result.gaveUp` is true when the player chose Give up from
-  its menu (prizes won before that are kept). Every ending counts as the bonus played.
-- Each game opens with its title and rules said by the announcer, ignores input for 20 frames
-  (the press that opened it), and ends on a result card closed with OK. START opens the menu
-  (Continue / Give up, plus the dev assists in dev mode). Prompts name abilities (OPEN, TURN,
-  STOP, OK) with the bound key after them, never bare button letters; the touch buttons say the
-  same. Nothing flashes: cursors are steady frames, and the only motion is the pointer's bob over
-  the chests (still with reduce flashing) and the reels.
+  its menu (prizes won before that are kept); `result.played` once any choice was made.
+
+## The games
+
+Each game opens with its title and rules said by the announcer, ignores input for 20 frames (the
+press that opened it), and ends on a result card at the bottom of the screen, closed with OK.
+START opens the menu (Continue / Give up, plus the dev assists in dev mode). Prompts name
+abilities (OPEN, TURN, STOP, OK) with the bound key after them, never bare button letters; the
+touch buttons say the same. Nothing flashes: cursors are steady frames, and the only motion is
+the pointer's bob over the chests (still with reduce flashing) and the reels.
 
 ### Toad House
 
@@ -71,11 +88,10 @@ stars the rarest (`SLOT_STRIPS`); the reels start from the seed. Music `bonus-ga
 
 ### Art
 
-From the `smb3` sheet when it is registered and has the frame: `chest-closed`, `chest-open`,
-`card-back`, `card-<face>` (16×24), `slot-<picture>-top|mid|bot` (32×16), `item-<id>` (16×16),
-`toad`. Until then each falls back to the built-in items art (the castle's Toad, the level's
-mushroom, flower, star, 1-up and coin) on simple shapes, so the games are playable without it.
-Unknown music or sound ids are silent (a sound only warns).
+The `smb3` sheet (`src/content/sprites/smb3.ts`): `chest-closed`, `chest-open`, `card-back`,
+`card-<face>` (16×24), `slot-<picture>-top|mid|bot` (32×16), `item-<id>` (16×16, also the
+inventory's icons), `node-toad-house` and `node-spade` (the map node). Toad is the items sheet's
+`toad`.
 
 ## The item inventory
 
@@ -123,4 +139,6 @@ banner says so.
 `src/game/bonus/rules.test.ts` (each game's rules from a seed, the weights, the rotation) and
 `tests/sim/bonus.test.ts` (the save fields, the panel locked and unlocked, each item for Mario and
 for Link, the star at the next level's start, the dev toggle and Give items, each game played
-through the scene, prizes, a full inventory, Give up, the rotation, Dev → Bonus games).
+through the scene, prizes, a full inventory, Give up, the bonus spot's rotation and used / left,
+the Hammer Bro prize, Dev → Bonus games); `tests/sim/larry.test.ts` checks the prize after a
+won Hammer Bro battle.

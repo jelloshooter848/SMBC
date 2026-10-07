@@ -73,6 +73,7 @@ export class ToadHouseScene extends BonusScene {
   open(index: number): void {
     if (this.opened) return;
     this.cursor = index;
+    this.played = true;
     this.opened = { index, t: this.t };
     this.sfx(BONUS_SFX.open);
     this.say(`Box ${index + 1}: ${ITEM_SPOKEN[this.chests[index] as ItemId]}!`);

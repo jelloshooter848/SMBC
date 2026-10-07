@@ -2,10 +2,11 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import type { CharacterDef } from '../characters/character';
 import type { LevelData } from '../level/schema';
 import { carriedKit } from '../entities/player';
-import { World } from '../world/world';
+import { freshSeed, World } from '../world/world';
 import type { Game } from '../scenes/game';
 import { addItem, ITEM_NAMES, ITEM_SPOKEN, takeItem, type ItemId } from './items';
-import type { BonusPrize } from './rules';
+import { Rng } from '@engine/rng';
+import { CHEST_WEIGHTS, rollWeighted, type BonusPrize } from './rules';
 
 /*
  * Using items and handing out bonus prizes (docs/BONUS.md). Mushrooms and fire flowers go through
@@ -18,7 +19,7 @@ export const MAX_LIVES = 99;
 
 /** Whether the file's inventory can be used: unlocked (Larry beaten), or dev mode's "Item inventory" on. */
 export function inventoryAvailable(game: Game): boolean {
-  return game.bonus.inventoryUnlocked || (game.devMode && game.bonus.devInventory);
+  return game.inventoryUnlocked || (game.devMode && game.bonus.devInventory);
 }
 
 /** A one-screen empty room: the world `onPowerUp` runs in when an item is used on the map. */
@@ -237,4 +238,12 @@ export function awardPrize(game: Game, prize: BonusPrize): AwardOutcome {
   }
   game.autosave();
   return out;
+}
+
+/**
+ * Beating the map's Hammer Bros (SMB3 gives an item for it): a mushroom, fire flower or star,
+ * weighted as a Toad House chest, given as a bonus prize (into the inventory, or used at once).
+ */
+export function awardHammerPrize(game: Game, seed = freshSeed()): AwardOutcome {
+  return awardPrize(game, { kind: 'item', item: rollWeighted(new Rng(seed), CHEST_WEIGHTS) });
 }

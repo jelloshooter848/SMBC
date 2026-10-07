@@ -205,7 +205,7 @@ function boot(): void {
   // over the title (the scene is window.__bonusGame, the game window.__game); the title follows.
   const bonus = import.meta.env.DEV ? params.get('bonus') : null;
   if (isBonusKind(bonus)) {
-    game.bonus.inventoryUnlocked = true;
+    game.inventoryUnlocked = true;
     const seed = Number(params.get('seed'));
     const scene = openBonusGame(
       game,
