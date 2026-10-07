@@ -26,14 +26,17 @@ describe('Zebes Escape: a cautious human (difficulty)', () => {
   it('a cautious first-timer (late reactions, misjudged take-offs, early jump releases, pauses) usually makes it, and not with ease', () => {
     const { rate, runs, median } = passRate(8);
     expect(rate).toBeGreaterThanOrEqual(7 / 8);
+    // Most make it on their first life (three lives are a cushion, not the plan).
+    const first = runs.filter((r) => r.result === 'pass' && r.livesLost === 0).length / runs.length;
+    expect(first).toBeGreaterThanOrEqual(0.7);
     // Tense: the clock is a real pressure, and the creatures cost energy.
     expect(median).toBeLessThan(35);
     expect(runs.reduce((a, r) => a + r.lost, 0) / runs.length).toBeGreaterThan(8);
   }, 300_000);
 
-  it('a clumsy player runs out of time now and then', () => {
-    const { rate } = passRate(8, CLUMSY);
-    expect(rate).toBeLessThan(1);
+  it('a clumsy player loses lives now and then (time or energy), but gets out in the end', () => {
+    const { rate, runs } = passRate(8, CLUMSY);
+    expect(runs.some((r) => r.livesLost > 0)).toBe(true);
     expect(rate).toBeGreaterThan(0);
   }, 300_000);
 
@@ -54,9 +57,10 @@ describe('Zebes Escape: a cautious human (difficulty)', () => {
           if (r.result !== 'pass')
             (fails[r.row > 44 ? 'pit' : `time/energy at x${r.x} row ${r.row}`] ??= []).push(i + 1);
         const lost = (runs.reduce((a, r) => a + r.lost, 0) / n).toFixed(1);
+        const first = runs.filter((r) => r.result === 'pass' && r.livesLost === 0).length;
         console.log(
-          `${name}: pass ${(rate * 100).toFixed(0)}% of ${n} (seconds left: median ${median}, lowest ${left[0]};`,
-          `energy lost ${lost})`,
+          `${name}: pass ${(rate * 100).toFixed(0)}% of ${n}, on the first life ${((first / n) * 100).toFixed(0)}%`,
+          `(seconds left: median ${median}, lowest ${left[0]}; energy lost ${lost})`,
           JSON.stringify(fails),
         );
       }

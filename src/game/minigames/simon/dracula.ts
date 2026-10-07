@@ -11,23 +11,25 @@ import { CV_SOUNDS, drawCrypt, hasCryptFrame, type Fallback } from './art';
 import { Burst, CvShot, type CvShotSpec } from './creatures';
 
 /*
- * Dracula, two phases on one life bar (docs/HEROES.md, Simon's mini game).
+ * Dracula, two forms, each with a full ENEMY bar, as in NES Castlevania (docs/HEROES.md, Simon's
+ * mini game).
  *
- * Phase 1, the Count (NES style): he is gone, appears at one of four spots in the throne room
- * (never right on Simon), opens his cape and throws a spread of three fireballs at Simon, lingers,
- * and vanishes. Only his HEAD can be hurt (a separate 16×16 hit box on top of his 20×42 body;
- * the body shrugs every hit off with a clink), and only while he stands there.
+ * Form 1, the Count: he is gone, appears at one of four spots in the throne room (never right on
+ * Simon), opens his cape and throws a spread of three fireballs at Simon, lingers, and vanishes.
+ * Only his HEAD can be hurt (a separate 16×16 hit box on top of his 20×42 body; the body shrugs
+ * every hit off with a clink), and only while he stands there. When his bar is empty his head
+ * flies off (`FlyingHead`) and the headless body bursts (the scene plays it).
  *
- * Phase 2, the beast: his phase-1 hit points gone, he rises as a giant winged beast (48×48,
- * hurt anywhere on its 36×40 body) and cycles walk → fire spit (three aimed fireballs) → walk →
- * spit → walk → crouch and leap at Simon → a landing stomp that sends a shock wave along the
- * floor both ways.
+ * Form 2, the beast: it drops into the room as the bar fills again, then leaps about the room
+ * (middling hops that land short of Simon; a high leap, which Simon can run under, when he is
+ * cornered or crouching) and now and then stops to spit a fan of three fireballs at him. Only
+ * its HEAD can be hurt by the whip and the dagger (`BeastHead`, at the front of the 36×40 body,
+ * over Simon's standing lash: jump and lash it); holy water burns it anywhere.
  */
 
-/** Hit points: the whole bar, the part phase 1 takes, the rest is the beast's. */
-export const BOSS_HP = 14;
-export const DRACULA_HP = 6;
-export const BEAST_HP = BOSS_HP - DRACULA_HP;
+/** Hit points of each form: the whip takes one a lash, the bar shows each as two segments. */
+export const DRACULA_HP = 8;
+export const BEAST_HP = 8;
 /** Frames he can't be hurt again after a hit (and flashes, not with reduce flashing). */
 export const BOSS_IFRAMES = 24;
 
@@ -65,9 +67,10 @@ export const FIREBALL: CvShotSpec = {
   fallback: ['#f83800', '#fca044'],
 };
 
-/** The bar both phases drain. */
+/** The ENEMY bar: the current form's hit points out of `max` (the beast's refill raises `hp`). */
 export class BossLife {
-  hp = BOSS_HP;
+  hp = DRACULA_HP;
+  max = DRACULA_HP;
   iframes = 0;
 }
 
@@ -149,11 +152,11 @@ export class Dracula extends Enemy {
   /** A hit on his head: one hit point a blow while he stands there, then a short grace. */
   headHit(src: DamageSource, world: World): Reaction {
     if (!this.hurtable || this.life.iframes > 0 || src.amount <= 0) return 'immune';
-    this.life.hp = Math.max(BEAST_HP, this.life.hp - src.amount);
+    this.life.hp = Math.max(0, this.life.hp - src.amount);
     this.life.iframes = BOSS_IFRAMES;
     this.flash = BOSS_IFRAMES;
     world.audio.sfx('hurt-enemy');
-    if (this.life.hp <= BEAST_HP) {
+    if (this.life.hp <= 0) {
       this.state = 'down';
       this.t = 0;
       for (const e of world.entities) if (e instanceof CvShot) e.destroy();
@@ -255,6 +258,18 @@ export class Dracula extends Enemy {
 
   override render(r: Renderer, view: View): void {
     if (this.state === 'gone') return;
+    if (this.state === 'down') {
+      // His head is gone (it flies off): the body stands headless until it bursts.
+      const x = toPx(this.body.x) - view.camX - 6;
+      const y = toPx(this.body.y) - 6;
+      const frame = 'dracula-headless';
+      const fb: Fallback = ['#202020', '#5c3c9c'];
+      // (without the art: the body's box under where the head was)
+      if (hasCryptFrame(view.assets, frame))
+        drawCrypt(r, view.assets, frame, x, y, 32, 48, fb, this.facing > 0);
+      else drawCrypt(r, view.assets, frame, x, y + 16, 32, 32, fb, this.facing > 0);
+      return;
+    }
     // Fading in: flickers until he is there (reduce flashing: hidden till then), then solid from
     // the frame he can touch Simon. Fading out: flickers (reduce flashing: gone at half way).
     if (this.state === 'appear' && !this.present) {
@@ -286,27 +301,73 @@ export class Dracula extends Enemy {
   }
 }
 
-/* ---------- Phase 2: the beast ---------- */
+/* ---------- Between the forms: the head flies off ---------- */
 
-export type BeastState = 'rise' | 'walk' | 'spit-wind' | 'spit' | 'crouch' | 'leap' | 'land' | 'down';
+/** Frames the flying head is drawn turned one way before it flips. */
+const HEAD_SPIN = 6;
+
+/** Dracula's head, flown off his shoulders when his first bar is empty: up and off the screen. */
+export class FlyingHead extends Entity {
+  readonly kind = 'dracula-flying-head';
+  age = 0;
+  constructor(x: number, y: number, dir: -1 | 1) {
+    super(x, y, 16, 16);
+    this.body.vx = dir * 0x00c00;
+    this.body.vy = -0x03800;
+    this.facing = dir;
+    this.layer = 'front';
+    this.despawnMargin = null;
+  }
+
+  update(): void {
+    this.age++;
+    const b = this.body;
+    b.vy += 0x00080;
+    b.x += velToSub(b.vx);
+    b.y += velToSub(b.vy);
+    if (b.y + b.h < px(-16) || this.age > 240) this.destroy();
+  }
+
+  render(r: Renderer, view: View): void {
+    const flip = Math.floor(this.age / HEAD_SPIN) % 2 === 0;
+    const x = toPx(this.body.x) - view.camX;
+    drawCrypt(r, view.assets, 'dracula-head', x, toPx(this.body.y), 16, 16, ['#fcfcfc', '#f8b8f8'], flip);
+  }
+}
+
+/* ---------- Form 2: the beast ---------- */
+
+export type BeastState = 'drop' | 'land' | 'stand' | 'spit-wind' | 'spit' | 'crouch' | 'leap' | 'down';
+export type BeastMove = 'spit' | 'leap' | 'high-leap';
 
 /** The beast's beats (frames). */
-export const RISE_FRAMES = 60;
-export const WALK_FRAMES = 70;
-export const SPIT_WIND = 26;
-export const SPIT_EVERY = 14;
-export const SPIT_COUNT = 3;
-export const CROUCH_FRAMES = 22;
-export const LAND_FRAMES = 40;
+export const LAND_FRAMES = 16;
+export const STAND_FRAMES = 60;
+export const SPIT_WIND = 40;
+export const SPIT_HOLD = 30;
+export const CROUCH_FRAMES = 20;
 export const BEAST_DOWN_FRAMES = 90;
-/** Walk speed, the leap's rise and gravity (velocity units). */
-export const BEAST_WALK = 0x00800;
-export const LEAP_VY = 0x05000;
+/** Middling hops between fans of fire. */
+export const LEAPS_PER_SPIT = 2;
+/** Gravity in its leaps and its drop, and the two leaps' take-off speeds (velocity units). */
 export const LEAP_GRAVITY = 0x00300;
-const LEAP_MAX_VX = 0x02800;
-/** Spit fireballs' speed and the shock wave's (velocity units). */
+/** About 2 tiles up: too low to run under. */
+export const LEAP_MID_VY = 0x03800;
+/** About 6 tiles up: Simon can run under it. */
+export const LEAP_HIGH_VY = 0x06000;
+export const LEAP_MAX_VX = 0x03000;
+/** A middling hop lands this far (px, centre to centre) short of Simon; too close, it hops back this far. */
+export const MID_GAP = 56;
+export const RETREAT_GAP = 104;
+/** Simon within this many px of a wall is cornered: the beast leaps high at him. */
+export const CORNER = 24;
+/** The fan: three fireballs this many radians apart, aimed at Simon, at this speed. */
+export const FAN = 0.35;
 export const SPIT_SPEED = 0x01400;
-export const WAVE_SPEED = 0x02000;
+/** The beast's body (px) and its head's box in it, facing left (mirrored facing right). */
+export const BEAST_W = 36;
+export const BEAST_H = 40;
+export const BEAST_HEAD = { x: 0, y: 2, w: 16, h: 16 } as const;
 
 export const BEAST_FIRE: CvShotSpec = {
   kind: 'beast-fire',
@@ -319,78 +380,97 @@ export const BEAST_FIRE: CvShotSpec = {
   fallback: ['#f83800', '#fcfc00'],
 };
 
-/** The landing's shock wave: runs along the floor until a wall. */
-export class ShockWave extends Entity {
-  readonly kind = 'shock-wave';
-  age = 0;
-  constructor(x: number, floorY: number, dir: -1 | 1) {
-    super(x, floorY - px(10), 10, 10);
-    this.body.vx = dir * WAVE_SPEED;
-    this.facing = dir;
-    this.layer = 'front';
-    this.despawnMargin = 16;
+/** The art's head sits higher in the leap frame and lower in the spit frame (px). */
+const HEAD_DY: Record<string, number> = { 'dracula-beast-1': -3, 'dracula-beast-2': 4 };
+
+/** The beast's head: the part the whip and the dagger can hurt. The beast moves it. */
+export class BeastHead extends Enemy {
+  readonly kind = 'beast-head';
+  constructor(readonly owner: Beast) {
+    super(owner.body.x, owner.body.y, BEAST_HEAD.w, BEAST_HEAD.h);
+    this.body.vx = 0;
+    this.stompable = false;
+    this.despawnMargin = null;
+    this.contactHurts = false;
   }
 
-  update(world: World): void {
-    this.age++;
-    const b = this.body;
-    moveX(b, world.map, velToSub(b.vx));
-    if (b.hitWall !== 0 || this.age > 180) return this.destroy();
-    for (const p of world.activePlayers()) {
-      const o =
-        b.x < p.body.x + p.body.w &&
-        p.body.x < b.x + b.w &&
-        b.y < p.body.y + p.body.h &&
-        p.body.y < b.y + b.h;
-      if (!o) continue;
-      if (p.dead || p.invulnerable || world.assist.invulnerable) continue;
-      world.hurtPlayer(p, b.vx > 0 ? 1 : -1);
-    }
+  override hit(src: DamageSource, world: World): Reaction {
+    return this.owner.headHit(src, world);
   }
 
-  render(r: Renderer, view: View): void {
-    const x = toPx(this.body.x) - view.camX - 3;
-    const f = `beast-fire-${(this.age >> 2) & 1}`;
-    drawCrypt(r, view.assets, f, x, toPx(this.body.y) - 6, 16, 16, ['#f83800', '#fca044']);
+  update(): void {
+    this.contactHurts = this.owner.solid;
   }
+
+  override render(): void {}
 }
 
+/** Holy water burns the beast anywhere (as in Castlevania); everything else only on the head. */
+const burnsAnywhere = (src: DamageSource): boolean =>
+  src.owner instanceof Entity && src.owner.kind === 'holy-water';
+
 /**
- * Dracula's beast form: rises where he fell, then walk → spit → walk → leap (a stomp and its shock
- * waves on landing) over and over. Hurt anywhere while not rising; `onDown` runs once when the
- * bar is empty.
+ * Dracula's beast form: drops in, then leaps about the room and stops now and then to spit a fan
+ * of fire (see the file's header). `onDown` runs once when its bar is empty.
  */
 export class Beast extends Enemy {
   readonly kind = 'beast';
-  state: BeastState = 'rise';
+  state: BeastState = 'drop';
   t = 0;
-  /** Moves done (walk/spit/walk/leap ...). */
-  step = 0;
-  spat = 0;
+  /** Hops since the last fan (it spits first, once it has landed). */
+  hops = LEAPS_PER_SPIT;
+  /** Its moves in order (tests). */
+  readonly attacks: BeastMove[] = [];
+  /** Where the current leap lands (sub-px, its centre). */
+  goal = 0;
+  readonly head: BeastHead;
   private flash = 0;
-  /** The order of its attacks (tests). */
-  readonly attacks: ('spit' | 'leap')[] = [];
 
   constructor(
     cx: number,
+    /** The top of its body when it starts to drop (sub-px). */
+    top: number,
     readonly floorY: number,
     readonly roomX: number,
     readonly life: BossLife,
     private readonly onDown: () => void,
   ) {
-    super(cx - px(18), px(floorY - 40), 36, 40);
+    super(cx - px(BEAST_W >> 1), top, BEAST_W, BEAST_H);
     this.body.vx = 0;
+    this.body.vy = 0;
     this.stompable = false;
     this.despawnMargin = null;
     this.vulnerability = {};
-    this.body.onGround = true;
+    this.contactHurts = false;
+    this.head = new BeastHead(this);
+    this.placeHead();
+  }
+
+  /** It touches Simon (not while dropping in or going down). */
+  get solid(): boolean {
+    return this.state !== 'drop' && this.state !== 'down';
   }
 
   get hurtable(): boolean {
-    return this.state !== 'rise' && this.state !== 'down';
+    return this.solid;
   }
 
+  get centerX(): number {
+    return this.body.x + (this.body.w >> 1);
+  }
+
+  /** The body: holy water burns it; a lash or a dagger only clinks off. */
   override hit(src: DamageSource, world: World): Reaction {
+    if (burnsAnywhere(src)) return this.hurt(src, world);
+    if (this.hurtable) world.audio.sfx('bump');
+    return 'immune';
+  }
+
+  headHit(src: DamageSource, world: World): Reaction {
+    return this.hurt(src, world);
+  }
+
+  private hurt(src: DamageSource, world: World): Reaction {
     if (!this.hurtable || this.life.iframes > 0 || src.amount <= 0) return 'immune';
     this.life.hp = Math.max(0, this.life.hp - src.amount);
     this.life.iframes = BOSS_IFRAMES;
@@ -399,7 +479,8 @@ export class Beast extends Enemy {
     if (this.life.hp <= 0) {
       this.go('down');
       this.body.vx = 0;
-      for (const e of world.entities) if (e instanceof CvShot || e instanceof ShockWave) e.destroy();
+      this.body.vy = 0;
+      for (const e of world.entities) if (e instanceof CvShot) e.destroy();
       this.onDown();
     }
     return 'hp';
@@ -410,123 +491,160 @@ export class Beast extends Enemy {
     this.t = 0;
   }
 
+  /** The room's floor span its centre may land on (sub-px). */
+  private span(): [number, number] {
+    const half = this.body.w >> 1;
+    return [tileToSub(this.roomX + 1) + half, tileToSub(this.roomX + 15) - half];
+  }
+
+  private placeHead(): void {
+    const b = this.body;
+    const dy = HEAD_DY[this.currentFrame] ?? 0;
+    const x = this.facing < 0 ? BEAST_HEAD.x : BEAST_W - BEAST_HEAD.x - BEAST_HEAD.w;
+    this.head.body.x = b.x + px(x);
+    this.head.body.y = b.y + px(BEAST_HEAD.y + dy);
+  }
+
   update(world: World): void {
     if (this.life.iframes > 0) this.life.iframes--;
     if (this.flash > 0) this.flash--;
     const p = world.nearestPlayer(this.body.x);
     const b = this.body;
-    const cx = b.x + (b.w >> 1);
     this.t++;
-    this.contactHurts = this.state !== 'rise' && this.state !== 'down';
-    if (this.state !== 'leap' && this.state !== 'down') this.facing = p.centerX < cx ? -1 : 1;
+    const grounded = this.state !== 'drop' && this.state !== 'leap' && this.state !== 'down';
+    if (grounded) this.facing = p.centerX < this.centerX ? -1 : 1;
     switch (this.state) {
-      case 'rise':
-        if (this.t >= RISE_FRAMES) this.go('walk');
-        break;
-      case 'walk':
-        b.vx = this.facing * BEAST_WALK;
-        moveX(b, world.map, velToSub(b.vx));
-        if (this.t >= WALK_FRAMES) {
-          b.vx = 0;
-          this.step++;
-          const leap = this.step % 3 === 0;
-          this.attacks.push(leap ? 'leap' : 'spit');
-          this.go(leap ? 'crouch' : 'spit-wind');
-          if (!leap) world.audio.sfx(CV_SOUNDS.roar);
-        }
-        break;
-      case 'spit-wind':
-        if (this.t >= SPIT_WIND) {
-          this.spat = 0;
-          this.go('spit');
-        }
-        break;
-      case 'spit':
-        if ((this.t - 1) % SPIT_EVERY === 0 && this.spat < SPIT_COUNT) {
-          this.spit(world, p);
-          this.spat++;
-        }
-        if (this.t >= SPIT_EVERY * SPIT_COUNT + 10) this.go('walk');
-        break;
-      case 'crouch':
-        if (this.t >= CROUCH_FRAMES) {
-          const air = (2 * LEAP_VY) / LEAP_GRAVITY;
-          const left = tileToSub(this.roomX + 1) + (b.w >> 1);
-          const right = tileToSub(this.roomX + 15) - (b.w >> 1);
-          const goal = Math.max(left, Math.min(right, p.centerX));
-          b.vx = Math.max(-LEAP_MAX_VX, Math.min(LEAP_MAX_VX, Math.round((goal - cx) / air) << 4));
-          b.vy = -LEAP_VY;
-          b.onGround = false;
-          this.go('leap');
-        }
-        break;
+      case 'drop':
       case 'leap':
         moveX(b, world.map, velToSub(b.vx));
         b.vy += LEAP_GRAVITY;
         moveY(b, world.map, velToSub(b.vy));
-        if (b.onGround) {
+        if (b.onGround && b.vy >= 0) {
           b.vx = 0;
           b.vy = 0;
           this.go('land');
-          this.stomp(world);
+          this.thud(world);
         }
         break;
       case 'land':
-        if (this.t >= LAND_FRAMES) this.go('walk');
+        if (this.t >= LAND_FRAMES) this.go('stand');
+        break;
+      case 'stand':
+        if (this.t >= STAND_FRAMES) {
+          if (this.hops >= LEAPS_PER_SPIT) {
+            this.hops = 0;
+            this.attacks.push('spit');
+            this.go('spit-wind');
+            world.audio.sfx(CV_SOUNDS.roar);
+          } else this.go('crouch');
+        }
+        break;
+      case 'spit-wind':
+        if (this.t >= SPIT_WIND) {
+          this.spit(world, p);
+          this.go('spit');
+        }
+        break;
+      case 'spit':
+        if (this.t >= SPIT_HOLD) this.go('stand');
+        break;
+      case 'crouch':
+        if (this.t >= CROUCH_FRAMES) this.leap(p);
         break;
       case 'down':
         if (this.t % 12 === 1 && this.t < BEAST_DOWN_FRAMES)
           world.spawn(new Burst(b.x + px((this.t * 7) % 36), b.y + px((this.t * 13) % 40)));
         break;
     }
+    this.contactHurts = this.solid;
     this.currentFrame =
-      this.state === 'leap'
+      this.state === 'leap' || this.state === 'drop'
         ? 'dracula-beast-1'
         : this.state === 'spit' || this.state === 'spit-wind'
           ? 'dracula-beast-2'
           : 'dracula-beast-0';
+    this.placeHead();
   }
 
+  /**
+   * Takes off. Simon cornered (or crouching): a high leap that lands on him, high enough to run
+   * under. Otherwise a middling hop that lands MID_GAP short of him, or back to RETREAT_GAP when it
+   * is there already (over him, high, when its back is to the wall).
+   */
+  private leap(p: Player): void {
+    const b = this.body;
+    const [lo, hi] = this.span();
+    const pcx = p.centerX;
+    const wallL = tileToSub(this.roomX + 1);
+    const wallR = tileToSub(this.roomX + 15);
+    const cornered = pcx - wallL < px(CORNER) || wallR - pcx < px(CORNER);
+    const clamp = (x: number) => Math.max(lo, Math.min(hi, x));
+    const dir = pcx < this.centerX ? -1 : 1;
+    let high = cornered || p.crouching;
+    let goal: number;
+    if (high) goal = clamp(pcx);
+    else {
+      goal = clamp(pcx - dir * px(MID_GAP));
+      if (Math.abs(goal - this.centerX) < px(24)) {
+        goal = clamp(pcx - dir * px(RETREAT_GAP));
+        if (Math.abs(goal - this.centerX) < px(24)) {
+          high = true;
+          goal = clamp(pcx + dir * px(MID_GAP));
+        }
+      }
+    }
+    const vy = high ? LEAP_HIGH_VY : LEAP_MID_VY;
+    const air = (2 * vy) / LEAP_GRAVITY;
+    this.goal = goal;
+    // (sub-px a frame to velocity units: × 16)
+    const vx = Math.round(((goal - this.centerX) / air) * 16);
+    b.vx = Math.max(-LEAP_MAX_VX, Math.min(LEAP_MAX_VX, vx));
+    b.vy = -vy;
+    b.onGround = false;
+    if (goal !== this.centerX) this.facing = goal < this.centerX ? -1 : 1;
+    this.hops++;
+    this.attacks.push(high ? 'high-leap' : 'leap');
+    this.go('leap');
+  }
+
+  /** The fan: three fireballs from its maw, the middle one at Simon. */
   private spit(world: World, p: Player): void {
     const b = this.body;
-    // From its mouth: the art's fire edge (rows 22-34 of the 48x48 frame drawn at (-6, -8)).
-    const mx = this.facing < 0 ? b.x : b.x + b.w;
-    const my = b.y + px(20);
-    const dx = p.centerX - mx;
-    const dy = p.body.y + (p.body.h >> 1) - my;
-    const len = Math.max(1, Math.hypot(dx, dy));
-    world.spawn(
-      new CvShot(
-        mx - px(6),
-        my - px(6),
-        Math.round((dx / len) * SPIT_SPEED),
-        Math.round((dy / len) * SPIT_SPEED),
-        BEAST_FIRE,
-        this,
-      ),
-    );
+    const mx = this.facing < 0 ? b.x + px(2) : b.x + b.w - px(2);
+    const my = b.y + px(22);
+    const a = Math.atan2(p.body.y + (p.body.h >> 1) - my, p.centerX - mx);
+    for (const k of [-1, 0, 1]) {
+      const ang = a + k * FAN;
+      world.spawn(
+        new CvShot(
+          mx - px(6),
+          my - px(6),
+          Math.round(Math.cos(ang) * SPIT_SPEED),
+          Math.round(Math.sin(ang) * SPIT_SPEED),
+          BEAST_FIRE,
+          this,
+        ),
+      );
+    }
     world.audio.sfx(CV_SOUNDS.fire);
   }
 
-  /** Landing: the floor shakes (not with reduce flashing) and a shock wave runs each way. */
-  private stomp(world: World): void {
-    const b = this.body;
-    if (!world.ctx.reduceFlashing) world.shake(12);
+  /** Landing: a thud, and the floor shakes (not with reduce flashing). */
+  private thud(world: World): void {
+    if (!world.ctx.reduceFlashing) world.shake(8);
     world.audio.sfx(CV_SOUNDS.stomp);
-    world.spawn(new ShockWave(b.x - px(10), b.y + b.h, -1));
-    world.spawn(new ShockWave(b.x + b.w, b.y + b.h, 1));
+  }
+
+  override destroy(): void {
+    super.destroy();
+    this.head.destroy();
   }
 
   override render(r: Renderer, view: View): void {
     const b = this.body;
     const x = toPx(b.x) - view.camX - 6;
-    // Crouching to leap: it sinks 2 px (the crouched idle frame, lower) as a warning.
+    // Crouching to leap: it sinks 2 px as a warning.
     const y = toPx(b.y) - 8 + (this.state === 'crouch' ? 2 : 0);
-    // Rising: it flickers in (reduce flashing: shown from halfway); beaten: it flickers out.
-    if (this.state === 'rise') {
-      const half = this.t >= RISE_FRAMES / 2;
-      if (view.reduceFlashing ? !half : !half && (this.t & 2) === 0) return;
-    }
     if (this.state === 'down') {
       if (this.t >= BEAST_DOWN_FRAMES) return;
       const late = this.t >= BEAST_DOWN_FRAMES / 2;

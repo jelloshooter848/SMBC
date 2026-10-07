@@ -2,7 +2,8 @@
 ;; two-tile door. stage.ts loads it with ?raw, so it is not in the level library, the dev level
 ;; select or the campaign. Rows 0-1 stay empty under the Castlevania HUD; below them the air is
 ;; the crypt's black-brick backdrop (`H`, not solid, under an `A` cornice on row 2) with a few
-;; open windows, stained glass and the throne.
+;; open windows and stained glass. Dracula's room has Castlevania's tall barred windows and his
+;; coffin on its stone dais.
 ;;
 ;; The route: the entrance hall (candles; one holds the dagger) -> stairs UP (18,12 rising right,
 ;; 5 tiles) onto the battlement walk (Medusa heads) -> stairs DOWN (50,12 rising left, 5 tiles)
@@ -73,12 +74,15 @@ door 96 11
 dracula 104 12
 
 [decor]
-;; Stained glass (32x48) and Dracula's throne (32x32), by their bottom-left tile, over the wall.
+;; Stained glass (32x48) by its bottom-left tile, over the wall. Dracula's room: two tall barred
+;; windows (32x96) and his coffin (32x16) on its dais (64x16), in the middle of the floor.
 crypt:stained-glass 10 7
 crypt:stained-glass 33 5
 crypt:stained-glass 60 7
-crypt:stained-glass 103 7
-crypt:throne 103 12
+crypt:barred-window 98 10
+crypt:barred-window 107 10
+crypt:dais 102 12
+crypt:coffin 103 11
 
 [zones]
 scrollStop 97

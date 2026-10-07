@@ -10,6 +10,32 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Hero tributes in the campaign: each freed hero's level takes on the look and music of their own game, coin heavens
+  included. 2-1 becomes a Zelda II field, 3-1 a Mega Man stage, 4-2 Metroid's Brinstar, 5-4 a Castlevania hall
+  and 6-2 a Ninja Gaiden city street. Layouts, enemies and physics are unchanged, the music plays for every hero,
+  and classic play keeps the original look.
+- 2-1's Top Secret Area route now works for Simon too: a one-way cloud ledge by the tower, and two cloud steps that
+  appear with the cloud path.
+
+### Changed
+
+- The mini games are truer to their heroes' own games:
+  - Their own HUDs: bars only for Mega Man, energy tanks and a missile count for Samus, Castlevania's three rows for
+    Simon, Ninja Gaiden's for Ryu, Zelda's for Link, and the SMB HUD for Luigi's race.
+  - Their own deaths: Mega Man bursts into orbs, Samus explodes, Simon collapses, Ryu falls.
+  - Their own starts: Mega Man beams in after READY, Samus materialises, Luigi's race opens on a WORLD 1-1 card,
+    and the hero drops into Larry's cabin from the ceiling.
+  - Three lives with checkpoints for Mega Man, Samus, Simon and Ryu; TRY AGAIN appears only on game over.
+  - Mini-game-only physics for Simon (rooted while whipping, the fixed knockback arc) and Mega Man.
+  - Samus's escape opens on "TIME BOMB SET / GET OUT FAST!" with a TIME counter.
+  - Link fires a sword beam at full hearts.
+  - Dracula's real second form: his head flies off, the beast drops in with a full bar, leaps and spits fire, and
+    only its head can be hurt. His room gets barred windows and a coffin on a dais.
+
+## [0.4.10] - 2026-10-07
+
+### Added
+
 - A secret in 2-1 (campaign): get over the flagpole without touching it (a hidden block lays a cloud
   path) and a Moblin in a cave past the castle shows you a secret path: "IT'S A SECRET TO
   EVERYBODY." It opens World 2's hidden spot, the Top Secret Area, with five ? blocks (two Fire
@@ -412,7 +438,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...HEAD
+[0.4.10]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/jelloshooter848/SMBC/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/jelloshooter848/SMBC/compare/v0.4.6...v0.4.7

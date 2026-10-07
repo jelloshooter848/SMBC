@@ -27,6 +27,7 @@ import {
   ZEBES_WALL_SHEET,
 } from './art';
 import { zebesDef, zebesPalettes } from '@content/sprites/zebes';
+import { fontTints } from '@content/sprites/font';
 import type { View } from '@game/entities/entity';
 import { escapeEntities, escapeStage, shipSpot } from './stage';
 import {
@@ -41,8 +42,12 @@ import {
   EscapeMenuScene,
   FINAL_TEMPO,
   LIFTOFF_FRAMES,
-  READY_FRAMES,
+  APPEAR_FRAMES,
+  drawMaterialise,
+  ESCAPE_START,
 } from './scene';
+import { GAME_OVER_FRAMES } from '../lives';
+import { energyReadout, HUD_X, TANK_BOX, TANKS_Y, TIME_PALETTES, timePalette, timeShown } from './hud';
 import {
   Ripper,
   Ship,
@@ -122,9 +127,9 @@ function drawn(e: { render(r: Renderer, v: View): void }, frame: number, reduceF
 }
 const ASSETS = recordingAssets();
 
-/** Past READY: Samus can move and the countdown runs. */
+/** Past her materialising: Samus can move and the countdown runs. */
 function ready(h: EscapeHarness): void {
-  h.step([], READY_FRAMES);
+  h.step([], APPEAR_FRAMES);
   expect(h.scene.phase).toBe('escape');
 }
 
@@ -174,17 +179,66 @@ describe('Zebes Escape: the mini game contract', () => {
     expect(escapeStage().music).toBe(ZEBES_SOUNDS.escape);
   });
 
-  it('draws the HUD (ZEBES, no score), the countdown in block digits and the banner', () => {
+  it("draws Metroid's HUD (tank boxes, EN, a 3-digit missile count; no name, place or score), TIME and the opener", () => {
     const h = escapeHarness({ assets: STUB_ASSETS });
     const r = new TextRenderer();
     ready(h);
     h.scene.render(r);
-    expect(r.texts).toContain('ZEBES');
-    expect(r.texts).toContain('ESCAPE!');
-    expect(r.texts.some((t) => /^\d{7}$/.test(t))).toBe(false);
-    expect(r.rects.filter(([, , w, hh, c]) => w === 4 && hh === 4 && c === '#fcfcfc').length).toBeGreaterThan(
-      10,
+    expect(r.texts).toEqual(['EN..30', '010', 'TIME 999', 'TIME BOMB SET', 'GET OUT FAST!']);
+    expect(r.texts.join(' ')).not.toMatch(/SAMUS|ZEBES|\d{7}/);
+    // One energy tank, full: a filled box.
+    const box = r.rects.filter(
+      ([x, y, w, hh]) => x === HUD_X + 16 && y === TANKS_Y && w === TANK_BOX && hh === TANK_BOX,
     );
+    expect(box).toHaveLength(1);
+  });
+
+  it('TIME turns red in the last ten seconds (pulsing, steady with reduce flashing) and grey while Infinite time holds it', () => {
+    expect(timePalette('plain', 0, false)).toBeUndefined();
+    expect(timePalette('held', 0, false)).toBe(TIME_PALETTES.held);
+    const final = (rf: boolean) => new Set([0, 8, 16, 24].map((t) => timePalette('final', t, rf)));
+    expect(final(true)).toEqual(new Set([TIME_PALETTES.red]));
+    expect(final(false)).toEqual(new Set([TIME_PALETTES.red, TIME_PALETTES.dark]));
+    for (const id of Object.values(TIME_PALETTES)) expect(Object.keys(fontTints)).toContain(id);
+    // In the scene: which font palette TIME is drawn in.
+    const timeSheet = (h: EscapeHarness) => {
+      const ids: string[] = [];
+      const r = Object.assign(new NullRenderer(), {
+        text(f: { id: string }, str: string): void {
+          if (str.startsWith('TIME ')) ids.push(f.id);
+        },
+      }) as unknown as Renderer;
+      h.scene.render(r);
+      return ids.at(-1);
+    };
+    const h = escapeHarness({ assets: recordingAssets(), countdown: 15 * 60 });
+    ready(h);
+    expect(timeSheet(h)).toBe('font');
+    h.step([], 6 * 60);
+    expect(timeSheet(h)).toBe(`font@${TIME_PALETTES.red}`);
+    h.game.ctx.assist.infiniteTime = true;
+    h.step();
+    expect(timeSheet(h)).toBe(`font@${TIME_PALETTES.held}`);
+  });
+
+  it('the energy readout and the TIME counter, as Metroid shows them', () => {
+    // 30 a tank: full tanks are boxes, EN shows what is in the tank in use.
+    expect(energyReadout(60, 1)).toEqual({ full: 1, shown: 30 });
+    expect(energyReadout(45, 1)).toEqual({ full: 1, shown: 15 });
+    expect(energyReadout(30, 1)).toEqual({ full: 0, shown: 30 });
+    expect(energyReadout(8, 1)).toEqual({ full: 0, shown: 8 });
+    expect(energyReadout(0, 1)).toEqual({ full: 0, shown: 0 });
+    // TIME runs 999 down to 0 over the real countdown.
+    expect(timeShown(COUNTDOWN_FRAMES, COUNTDOWN_FRAMES)).toBe(999);
+    expect(timeShown(COUNTDOWN_FRAMES / 2, COUNTDOWN_FRAMES)).toBe(500);
+    expect(timeShown(1, COUNTDOWN_FRAMES)).toBe(1);
+    expect(timeShown(0, COUNTDOWN_FRAMES)).toBe(0);
+    const h = escapeHarness();
+    ready(h);
+    expect(h.scene.time).toBe(999);
+    h.step([], 60 * 45);
+    expect(h.scene.time).toBeGreaterThanOrEqual(499);
+    expect(h.scene.time).toBeLessThanOrEqual(501);
   });
 });
 
@@ -239,26 +293,64 @@ describe('Zebes Escape: the stage', () => {
     expect(h.world.time).toBeNull();
   });
 
-  it('READY first: Samus cannot move and the countdown waits; then the escape music and the alarm', () => {
-    const h = escapeHarness();
-    const x = h.scene.player.body.x;
-    h.step(['right'], READY_FRAMES - 1);
-    expect(h.scene.phase).toBe('ready');
-    expect(h.scene.player.body.x).toBe(x);
+  it('no READY: Samus materialises to her start jingle; she cannot move and the clock waits; then the escape', () => {
+    const h = escapeHarness({ assets: STUB_ASSETS });
+    const p = h.scene.player;
+    const x = p.body.x;
+    expect(h.log.jingles).toEqual([ZEBES_SOUNDS.start]);
+    expect(p.hidden).toBe(true);
+    const r = new TextRenderer();
+    h.scene.render(r);
+    expect(r.texts).not.toContain('READY');
+    h.step(['right'], APPEAR_FRAMES - 1);
+    expect(h.scene.phase).toBe('appear');
+    expect(p.body.x).toBe(x);
     expect(h.scene.left).toBe(COUNTDOWN_FRAMES);
     expect(h.log.music).toEqual([]);
     h.step([], 1);
     expect(h.scene.phase).toBe('escape');
+    expect(p.hidden).toBe(false);
     expect(h.log.music).toEqual([ZEBES_SOUNDS.escape]);
     expect(h.log.sfx).toContain(ZEBES_SOUNDS.alarm);
-    expect(h.said.at(-1)).toBe(`Escape! ${COUNTDOWN_SECONDS} seconds.`);
+    expect(h.said.at(-1)).toBe(`Time bomb set! Get out fast! ${COUNTDOWN_SECONDS} seconds.`);
+    expect(h.scene.banner?.lines).toEqual(['TIME BOMB SET', 'GET OUT FAST!']);
+    expect(h.said[0]).toMatch(/Zebes escape.*3 lives/);
   });
 
-  it('READY already shows the statue, the alarm lights and the creatures, standing still', () => {
+  it('materialising: sparkles, then her outline, then Samus herself (sparkles hold still with reduce flashing)', () => {
+    const h = escapeHarness();
+    const p = h.scene.player;
+    const at = (t: number, rf: boolean) => {
+      const sprites: string[] = [];
+      const rects: string[] = [];
+      const r = {
+        ...new NullRenderer(),
+        rect: (x: number, y: number) => void rects.push(`${x},${y}`),
+        sprite: (sheet: { id: string }, f: string) => void sprites.push(`${sheet.id}:${f}`),
+      } as unknown as Renderer;
+      drawMaterialise(r, recordingAssets(), p, t, 0, 0, rf);
+      return { sprites, rects };
+    };
+    const early = at(10, true);
+    expect(early.sprites).toEqual([]);
+    expect(early.rects.length).toBeGreaterThan(0);
+    const mid = at(Math.round(APPEAR_FRAMES * 0.6), true);
+    expect(mid.sprites).toHaveLength(1);
+    expect(mid.sprites[0]).toMatch(/~rim/);
+    const late = at(APPEAR_FRAMES - 5, true);
+    expect(late.sprites).toHaveLength(1);
+    expect(late.sprites[0]).not.toMatch(/~rim/);
+    // Twinkling only without reduce flashing.
+    const counts = (rf: boolean) => new Set([13, 16, 19, 22].map((t) => at(t, rf).rects.join(' '))).size;
+    expect(counts(true)).toBe(1);
+    expect(counts(false)).toBeGreaterThan(1);
+  });
+
+  it('while Samus materialises the statue, the alarm lights and the creatures already show, standing still', () => {
     const h = escapeHarness({ assets: STUB_ASSETS });
     const decor = () => h.world.entities.filter((e): e is ZebesDecor => e instanceof ZebesDecor);
     const creatures = () => h.world.entities.filter((e) => e instanceof Zoomer || e instanceof Ripper);
-    expect(h.scene.phase).toBe('ready');
+    expect(h.scene.phase).toBe('appear');
     expect(decor().map((d) => d.name)).toEqual(expect.arrayContaining(['chozo', 'alarm']));
     expect(creatures().length).toBeGreaterThan(0);
     // ...and they are drawn.
@@ -274,8 +366,8 @@ describe('Zebes Escape: the stage', () => {
     expect(drawnKinds).toContain('zebes-decor');
     const at = () => creatures().map((e) => [e.body.x, e.body.y]);
     const before = at();
-    h.step([], READY_FRAMES - 1);
-    expect(h.scene.phase).toBe('ready');
+    h.step([], APPEAR_FRAMES - 1);
+    expect(h.scene.phase).toBe('appear');
     expect(at()).toEqual(before);
     h.step([], 30);
     expect(h.scene.phase).toBe('escape');
@@ -474,28 +566,47 @@ describe('Zebes Escape: the countdown', () => {
     ]);
   });
 
-  it('time out: the cavern blows up (a fade with reduce flashing), then fail, once', () => {
+  it('time out: the cavern blows up (a fade with reduce flashing) and costs a life; the next starts with the clock full', () => {
     const h = escapeHarness({ countdown: 120, keep: true });
     ready(h);
     clearCreatures(h);
     h.step([], 120);
     expect(h.scene.phase).toBe('boom');
     expect(h.log.sfx).toContain(ZEBES_SOUNDS.blast);
-    expect(h.said.at(-1)).toBe('Time is up. The cavern exploded. Try again.');
+    expect(h.said.at(-1)).toBe('Time is up. The cavern exploded. Samus is down! 2 lives left.');
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: null });
-    h.step([], BOOM_FRAMES - 1);
+    const first = h.world;
+    h.step([], BOOM_FRAMES);
     expect(h.results).toEqual([]);
-    h.step([], 2);
-    expect(h.results).toEqual(['fail']);
-    for (let i = 0; i < 300; i++) h.step(i % 7 === 0 ? ['start'] : []);
-    expect(h.results).toEqual(['fail']);
+    expect(h.scene.phase).toBe('appear');
+    expect(h.world).not.toBe(first);
+    expect(h.scene.left).toBe(120);
+    expect(h.log.jingles.filter((j) => j === ZEBES_SOUNDS.start)).toHaveLength(2);
     expect(h.tempo.at(-1)).toBe(1);
   });
 
-  it('standing still fails: the countdown runs out', () => {
+  it('time out on the last life: GAME OVER over the white, then fail, once', () => {
+    const h = escapeHarness({ countdown: 120, keep: true });
+    h.scene.lives.rest = 0;
+    ready(h);
+    clearCreatures(h);
+    h.step([], 120);
+    expect(h.said.at(-1)).toBe('Time is up. The cavern exploded. Samus is down! Game over.');
+    h.step([], BOOM_FRAMES);
+    expect(h.scene.phase).toBe('gameover');
+    expect(h.scene.banner?.lines).toEqual(['GAME OVER']);
+    h.step([], GAME_OVER_FRAMES - 2);
+    expect(h.results).toEqual([]);
+    h.step([], 4);
+    expect(h.results).toEqual(['fail']);
+    for (let i = 0; i < 300; i++) h.step(i % 7 === 0 ? ['start'] : []);
+    expect(h.results).toEqual(['fail']);
+  });
+
+  it('standing still fails: the countdown runs out on all three lives', () => {
     const h = escapeHarness();
-    for (let i = 0; i < COUNTDOWN_FRAMES + READY_FRAMES + BOOM_FRAMES + 10 && h.results.length === 0; i++)
-      h.step();
+    const life = COUNTDOWN_FRAMES + APPEAR_FRAMES + BOOM_FRAMES;
+    for (let i = 0; i < 3 * life + GAME_OVER_FRAMES + 10 && h.results.length === 0; i++) h.step();
     expect(h.results).toEqual(['fail']);
     expect(h.scene.player.dead).toBe(false);
   });
@@ -535,26 +646,69 @@ describe('Zebes Escape: outcomes', { timeout: 60_000 }, () => {
     expect(bot.visited.at(-1)).toBe('11:36');
   });
 
-  it('falling in the pit fails, under No damage too', () => {
+  it('falling in the pit costs a life, under No damage too; she materialises again at the start', () => {
     const h = escapeHarness();
     h.game.ctx.assist.invulnerable = true;
     ready(h);
     clearCreatures(h);
     warp(h, 19 * 16, 43);
-    for (let i = 0; i < 600 && h.results.length === 0; i++) h.step(['right']);
-    expect(h.results).toEqual(['fail']);
-    expect(h.said).toContain('Samus fell. Try again.');
+    for (let i = 0; i < 600 && h.scene.phase !== 'appear'; i++) h.step(['right']);
+    expect(h.said).toContain('Samus fell! 2 lives left.');
+    expect(h.scene.phase).toBe('appear');
+    expect(h.results).toEqual([]);
+    expect(Math.floor(h.scene.player.body.x / tileToSub(1))).toBe(ESCAPE_START.x);
   });
 
-  it('losing all energy fails', () => {
+  it('losing all energy: Samus explodes with her own sound (no Mario jingle) and loses a life; the last one fails', () => {
+    const h = escapeHarness();
+    h.scene.lives.rest = 1;
+    ready(h);
+    expect(h.world.deathStyle).toBe('explode');
+    const kill = () => {
+      const p = h.scene.player;
+      p.hp = 8;
+      h.world.spawn(new SkreeShard(p.body.x + (p.body.w >> 1), p.body.y + px(8), 0, 0));
+    };
+    kill();
+    for (let i = 0; i < 400 && h.scene.phase !== 'appear'; i++) h.step();
+    expect(h.said).toContain('Samus is down! Last life.');
+    expect(h.log.sfx).toContain('samus-death');
+    expect(h.log.jingles).not.toContain('death');
+    expect(h.scene.player.hp).toBe(ESCAPE_KIT.maxHp);
+    expect(h.scene.player.scratch.missiles).toBe(ESCAPE_KIT.missiles);
+    ready(h);
+    kill();
+    for (let i = 0; i < 600 && h.results.length === 0; i++) h.step();
+    expect(h.said).toContain('Samus is down! Game over.');
+    expect(h.results).toEqual(['fail']);
+  });
+
+  it('coming up into the middle corridor is the checkpoint: the next life starts there', () => {
     const h = escapeHarness();
     ready(h);
-    const p = h.scene.player;
-    p.hp = 8;
-    h.world.spawn(new SkreeShard(p.body.x + (p.body.w >> 1), p.body.y + px(8), 0, 0));
-    for (let i = 0; i < 400 && h.results.length === 0; i++) h.step();
-    expect(h.results).toEqual(['fail']);
-    expect(h.said).toContain('Samus is down. Try again.');
+    clearCreatures(h);
+    warp(h, 40 * 16, 19);
+    h.step([], 2);
+    expect(h.scene.lives.current.id).toBe('mid');
+    h.world.kill(h.scene.player);
+    for (let i = 0; i < 400 && h.scene.phase !== 'appear'; i++) h.step();
+    ready(h);
+    const b = h.scene.player.body;
+    expect(Math.floor(b.x / tileToSub(1))).toBe(35);
+    expect(Math.floor((b.y + b.h - 1) / tileToSub(1))).toBe(18);
+  });
+
+  it('dev assist Infinite lives: lives never run out', () => {
+    const h = escapeHarness();
+    h.game.ctx.assist.infiniteLives = true;
+    for (let n = 0; n < 4; n++) {
+      ready(h);
+      h.world.kill(h.scene.player);
+      for (let i = 0; i < 400 && h.scene.phase !== 'appear'; i++) h.step();
+      expect(h.scene.phase).toBe('appear');
+    }
+    expect(h.scene.lives.rest).toBe(2);
+    expect(h.results).toEqual([]);
   });
 
   it('the menu pauses the countdown, offers Continue and Give up (quit)', () => {
@@ -641,7 +795,7 @@ describe('Zebes Escape: outcomes', { timeout: 60_000 }, () => {
 });
 
 describe('Zebes Escape: screen and controls', () => {
-  it("labels the touch buttons as Samus's in a level while she runs (BOMB in the ball), only MENU at READY", () => {
+  it("labels the touch buttons as Samus's in a level while she runs (BOMB in the ball), only MENU while she materialises", () => {
     const h = escapeHarness();
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: 'MENU' });
     ready(h);
@@ -663,16 +817,16 @@ describe('Zebes Escape: screen and controls', () => {
       const out: string[] = [];
       const r = Object.assign(new NullRenderer(), {
         text(f: { id: string }, str: string): void {
-          if (str.startsWith('SAMUS')) out.push(f.id);
+          if (str.startsWith('EN')) out.push(f.id);
         },
       }) as unknown as Renderer;
       h.scene.render(r);
       return out;
     };
     expect(sheets()).toEqual(['font']);
-    // Hanging right under SAMUS (24, 8 on screen).
+    // Hanging right under EN (24, 24 on screen).
     const cam = h.world.camera;
-    h.world.spawn(new Skree(px(cam.pxX + 28), px(cam.pxY + 4)));
+    h.world.spawn(new Skree(px(cam.pxX + 28), px(cam.pxY + 20)));
     const drawn = sheets();
     expect(drawn.filter((s) => s.includes('silhouette'))).toHaveLength(4);
     expect(drawn.at(-1)).toBe('font');

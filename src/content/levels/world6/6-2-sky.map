@@ -9,6 +9,9 @@ start: 4,14
 startMode: climb
 camera: scroll
 parent: 6-2
+;; Campaign play only: the coin heaven above 6-2 shares its night-street look and music.
+campaignTheme: ninja-city
+campaignMusic: ng-city
 
 [tiles]
 ;; 0                16               32               48               64               80

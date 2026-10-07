@@ -34,6 +34,7 @@ const CRYPT_FRAMES: Record<string, Size> = {
   'dracula-cape-0': [32, 48],
   'dracula-cape-1': [32, 48],
   'dracula-head': T16,
+  'dracula-headless': [32, 48],
   'dracula-fireball-0': S8,
   'dracula-fireball-1': S8,
   'dracula-beast-0': [48, 48],
@@ -42,6 +43,8 @@ const CRYPT_FRAMES: Record<string, Size> = {
   'beast-fire-0': T16,
   'beast-fire-1': T16,
   throne: [32, 32],
+  'barred-window': [32, 96],
+  dais: [64, 16],
   'stair-r': T16,
   'stair-l': T16,
   'burst-0': T16,
@@ -111,6 +114,17 @@ describe('crypt sheet', () => {
     expect(same).toBeGreaterThan(200);
     expect(same).toBeLessThan(256);
     expect(count(cracked, '0')).toBeGreaterThan(count(wall, '0'));
+  });
+
+  it("Dracula headless is his cape frame with the head gone; the room's window and dais stand on their bottom row", () => {
+    const cape = rows('dracula-cape-0');
+    const headless = rows('dracula-headless');
+    expect(headless.slice(14)).toEqual(cape.slice(14));
+    for (const r of headless.slice(0, 6)) expect(r.slice(8, 24)).toBe('.'.repeat(16));
+    expect(opaque(headless)).toBeLessThan(opaque(cape));
+    for (const n of ['barred-window', 'dais']) expect(opaque(rows(n).slice(-1)), n).toBe(rows(n)[0]?.length);
+    // Iron bars over the night.
+    expect(count(rows('barred-window'), 'b')).toBeGreaterThan(count(rows('barred-window'), '0'));
   });
 
   it('animated pairs differ between frames', () => {

@@ -284,8 +284,12 @@ describe('the campaign look hook (LevelData.campaignLook)', () => {
     }).not.toThrow();
   });
 
-  it('only 7-3 has a campaign look so far', () => {
-    expect(levelIds().filter((id) => getLevel(id).campaignLook)).toEqual(['7-3']);
+  it("7-3 came first; 0.4.12's hero tributes and their coin heavens have looks too, nothing else", () => {
+    expect(
+      levelIds()
+        .filter((id) => getLevel(id).campaignLook)
+        .sort(),
+    ).toEqual(['2-1', '2-1-sky', '2-1-sky2', '3-1', '3-1-sky', '4-2', '5-4', '6-2', '6-2-sky', '7-3'].sort());
   });
 });
 

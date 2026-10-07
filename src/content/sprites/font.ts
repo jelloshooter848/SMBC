@@ -6,8 +6,16 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  *   0 shadow (black)   1 white   2 accent (heart red)   3 gold   4 gold shadow
  */
 export const fontPalette: string[] = [NES.black, NES.white, NES.redBright, NES.yellow, NES.brown];
-/** The HUD font in red (Zelda's -LIFE- on the Shadow Keep's HUD): the white strokes turned red. */
-export const fontRedPalette: string[] = [NES.black, NES.redBright, NES.redBright, NES.yellow, NES.brown];
+
+/**
+ * The font with its letters in another colour (Zebes Escape's TIME: red in the last ten seconds,
+ * pulsing to a dark red, and grey while the Infinite time assist holds the clock).
+ */
+export const fontTints: Record<string, string[]> = {
+  'font-red': [NES.black, NES.redBright, NES.redBright, NES.yellow, NES.brown],
+  'font-red-dark': [NES.black, NES.redDark, NES.redBright, NES.yellow, NES.brown],
+  'font-grey': [NES.black, NES.gray, NES.redBright, NES.yellow, NES.brown],
+};
 
 /**
  * Bold 8x8 pixel font: glyphs are 7px tall in rows 0-6 (row 7 is the line gap) and at most

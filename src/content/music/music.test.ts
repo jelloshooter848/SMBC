@@ -50,6 +50,15 @@ const SONG_IDS = [
   'contra-boss',
   'contra-lair',
   'contra-card',
+  // The mini game heroes' own start jingles.
+  'zebes-start',
+  // The campaign looks of 2-1, 3-1 and 4-2.
+  'zelda2-field',
+  'mm-stage-31',
+  'brinstar',
+  // The 0.4.12 restyles: 5-4 as Simon's castle hall, 6-2 as Ryu's city street.
+  'cv-hall',
+  'ng-city',
 ];
 
 const SFX_IDS = [
@@ -116,6 +125,11 @@ const SFX_IDS = [
   'spread',
   'laser',
   'konami',
+  // The mini game heroes' own deaths (WorldStart.deathStyle).
+  'mm-death',
+  'samus-death',
+  'cv-death',
+  'ng-death',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);
