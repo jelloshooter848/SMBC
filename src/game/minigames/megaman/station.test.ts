@@ -5,6 +5,7 @@ import { sfx } from '@content/sfx/sfx';
 import type { AssetRegistry } from '@engine/assets/registry';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { px, tileToSub, toPx } from '@engine/math/units';
+import { SCREEN_W } from '@engine/viewport';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { defaultSettings } from '@engine/save/settings';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
@@ -53,6 +54,7 @@ import {
   MET_UP,
   OrbBurst,
   SHOT_DAMAGE,
+  StationDecor,
   Turret,
   TURRET_BURST,
   TURRET_GAP,
@@ -1027,6 +1029,20 @@ describe("Station Escape: Mega Man 2's weapon screen (MENU)", () => {
 });
 
 describe('Station Escape: screen and controls', () => {
+  it("draws the first screen's decor from the very first frame (on READY, before the world steps)", () => {
+    const h = stationHarness();
+    const inView = () =>
+      h.world.entities.filter(
+        (e) => e instanceof StationDecor && e.alive && toPx(e.body.x) - h.world.camera.pxX < SCREEN_W,
+      ).length;
+    expect(h.scene.phase).toBe('ready');
+    expect(inView()).toBeGreaterThan(0);
+    // It is the same decor once play starts: none added late.
+    const first = inView();
+    ready(h);
+    expect(inView()).toBe(first);
+  });
+
   it("labels the touch buttons as Mega Man's in a level while he plays, only MENU in the cut-scenes, none once decided", () => {
     const h = stationHarness();
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: 'MENU' });
