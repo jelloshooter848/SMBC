@@ -62,4 +62,6 @@ export const SKY: Record<string, string> = {
   cavern: '#000818',
   // Larry's airship sails a dark night sky.
   airship: '#000040',
+  // The airship's open decks sail SMB3's lighter daylight blue.
+  'airship-deck': '#3cbcfc',
 };

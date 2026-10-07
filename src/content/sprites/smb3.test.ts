@@ -8,6 +8,8 @@ type Size = readonly [w: number, h: number];
 const T16: Size = [16, 16];
 const TALL: Size = [16, 24];
 const REEL: Size = [32, 16];
+const S8: Size = [8, 8];
+const MAP_SHIP: Size = [32, 16];
 
 // The frame contract Larry's airship, the bonus spot, the map and the inventory render against.
 const SMB3_FRAMES: Record<string, Size> = {
@@ -50,6 +52,40 @@ const SMB3_FRAMES: Record<string, Size> = {
   porthole: T16,
   pillar: T16,
   'ceiling-beam': T16,
+  // Larry's airship deck: cannons, Rocky Wrench, the hull's fittings, the anchor and its chain.
+  'cannon-r': T16,
+  'cannon-l': T16,
+  'cannon-ul': T16,
+  'cannon-ur': T16,
+  'cannon-dl': T16,
+  'cannon-dr': T16,
+  cannonball: T16,
+  'rocky-hide': T16,
+  'rocky-0': T16,
+  'rocky-1': T16,
+  'wrench-0': S8,
+  'wrench-1': S8,
+  'propeller-0': T16,
+  'propeller-1': T16,
+  'propeller-2': T16,
+  bolt: S8,
+  railing: T16,
+  anchor: [32, 32],
+  chain: T16,
+  // The crash on the World 4 map after Larry is beaten, and Toad building the bonus spot.
+  'map-airship-0': MAP_SHIP,
+  'map-airship-1': MAP_SHIP,
+  'map-airship-tilt': MAP_SHIP,
+  'map-wreck': MAP_SHIP,
+  'map-smoke-0': T16,
+  'map-smoke-1': T16,
+  'map-smoke-2': T16,
+  'toad-map-0': T16,
+  'toad-map-1': T16,
+  'toad-map-hammer-0': T16,
+  'toad-map-hammer-1': T16,
+  'map-dust-0': T16,
+  'map-dust-1': T16,
 };
 
 const rows = (name: string): readonly string[] => smb3Def.frames[name] as readonly string[];
@@ -220,5 +256,161 @@ describe('smb3 sheet', () => {
     expect(beam.join('')).not.toContain('.');
     // its edge bands (outline, lit top, shadowed underside) are solid rows that meet tile to tile
     for (const y of [0, 1, 2, 10, 11, 12, 13, 14, 15]) expect(new Set(beam[y]).size, `row ${y}`).toBe(1);
+  });
+});
+
+const flipX = (f: readonly string[]) => f.map((r) => [...r].reverse().join(''));
+const flipY = (f: readonly string[]) => [...f].reverse();
+/** Opaque mask: '#' where a pixel is drawn. */
+const mask = (f: readonly string[]) => f.map((r) => r.replace(/[^.]/g, '#'));
+const top = (f: readonly string[]) => f.findIndex((r) => /[^.]/.test(r));
+const clear = (f: readonly string[], x0: number, y0: number, x1: number, y1: number) =>
+  f
+    .slice(y0, y1 + 1)
+    .map((r) => r.slice(x0, x1 + 1))
+    .join('')
+    .replace(/\./g, '').length === 0;
+
+describe("smb3 sheet: Larry's airship deck", () => {
+  it('cannons point where they are named; the down ones hang from a ceiling', () => {
+    // one cannon drawn per angle, mirrored for the other side, flipped for the hanging ones
+    expect(rows('cannon-l')).toEqual(flipX(rows('cannon-r')));
+    expect(rows('cannon-ul')).toEqual(flipX(rows('cannon-ur')));
+    expect(rows('cannon-dr')).toEqual(flipY(rows('cannon-ur')));
+    expect(rows('cannon-dl')).toEqual(flipY(rows('cannon-ul')));
+    // standing cannons sit on their bottom row; hanging ones on their top row
+    for (const d of ['r', 'l', 'ul', 'ur']) expect(rows(`cannon-${d}`).at(-1), d).toMatch(/[^.]/);
+    for (const d of ['dl', 'dr']) expect(rows(`cannon-${d}`)[0], d).toMatch(/[^.]/);
+    // the muzzle reaches its edge or corner; the opposite corner stays clear
+    const r = rows('cannon-r');
+    expect(
+      r
+        .slice(4, 10)
+        .map((row) => row[15])
+        .join(''),
+    ).toMatch(/^[^.]+$/);
+    const ur = rows('cannon-ur');
+    expect(clear(ur, 13, 0, 15, 2)).toBe(false);
+    expect(clear(ur, 0, 0, 2, 2)).toBe(true);
+    // iron: black and greys, a dark bore, a light glint
+    for (const d of ['r', 'ur'])
+      expect(rows(`cannon-${d}`).join('').replace(/\./g, ''), d).toMatch(/^[0-4]+$/);
+  });
+
+  it('the cannonball is a dark round ball with a glint', () => {
+    const ball = rows('cannonball');
+    for (const [x, y] of [
+      [0, 0],
+      [15, 0],
+      [0, 15],
+      [15, 15],
+    ] as const)
+      expect(ball[y]?.[x]).toBe('.');
+    const px = ball.join('').replace(/\./g, '');
+    expect(px.replace(/[04]/g, '').length / px.length).toBeLessThan(0.25);
+    expect(px).toMatch(/[12]/);
+    expect(mask(ball)).toEqual(flipX(mask(ball)));
+  });
+
+  it('Rocky Wrench: a shut manhole, then peeking (facing left), then up to throw', () => {
+    const hide = rows('rocky-hide');
+    const peek = rows('rocky-0');
+    const up = rows('rocky-1');
+    for (const f of [hide, peek, up]) expect(f.at(-1)).toMatch(/[^.]/);
+    // shut: only the lid, low on the deck, no eyes
+    expect(top(hide)).toBeGreaterThanOrEqual(10);
+    expect(hide.join('')).not.toContain('1');
+    // peeking: the eyes show, on his left; throwing: he rises higher with the wrench in hand
+    expect(peek.join('')).toContain('1');
+    expect(top(peek)).toBeLessThan(top(hide));
+    expect(Math.min(...peek.map((r) => (r.includes('1') ? r.indexOf('1') : 99)))).toBeLessThan(8);
+    expect(top(up)).toBeLessThanOrEqual(top(peek));
+    expect(up).not.toEqual(peek);
+  });
+
+  it('the wrench spins in quarter turns', () => {
+    const w0 = rows('wrench-0');
+    const cw = w0[0]?.split('').map((_, x) =>
+      w0
+        .map((r) => r[x])
+        .reverse()
+        .join(''),
+    );
+    expect(rows('wrench-1')).toEqual(cw);
+    expect(w0.join('')).toMatch(/[23]/);
+  });
+
+  it('the propeller turns on a shaft coming out of the hull on its left', () => {
+    const p = [0, 1, 2].map((i) => rows(`propeller-${i}`));
+    expect(new Set(p.map((f) => f.join('/'))).size).toBe(3);
+    const shaft = (f: readonly string[]) => f.map((r) => r.slice(0, 4));
+    expect(shaft(p[1] as string[])).toEqual(shaft(p[0] as string[]));
+    expect(shaft(p[2] as string[])).toEqual(shaft(p[0] as string[]));
+    expect((p[0] as string[]).map((r) => r[0]).join('')).toMatch(/[^.]/);
+  });
+
+  it('decor: a round bolt, a railing that runs on sideways, an anchor and a climbable chain', () => {
+    const bolt = rows('bolt');
+    expect([bolt[0]?.[0], bolt[0]?.[7], bolt[7]?.[0], bolt[7]?.[7]]).toEqual(['.', '.', '.', '.']);
+    expect(bolt[3]?.[3]).not.toBe('.');
+    // the rail's top rows are solid edge to edge; posts stand on the bottom row with gaps between
+    const rail = rows('railing');
+    for (const y of [0, 1, 2, 3]) expect(rail[y], `rail row ${y}`).toMatch(/^[^.]+$/);
+    expect(rail.at(-1)).toMatch(/[^.]/);
+    expect(rail.at(-1)).toMatch(/\./);
+    // the anchor is symmetric, its ring at the top centre (where the chain hooks on), its arms
+    // resting on the ground
+    const anchor = rows('anchor');
+    expect(mask(anchor)).toEqual(flipX(mask(anchor)));
+    expect(anchor[0]?.slice(14, 18)).toMatch(/^[^.]+$/);
+    expect(anchor.at(-1)).toMatch(/[^.]/);
+    // the chain tiles vertically, unbroken, down the vine's centre line (between columns 7 and 8),
+    // symmetric about it
+    const chain = rows('chain');
+    expect(mask(chain)).toEqual(flipX(mask(chain)));
+    for (const [y, r] of chain.entries()) expect(r.slice(5, 11), `row ${y}`).toMatch(/[^.]/);
+    expect(chain[0]?.slice(6, 10)).toMatch(/^[^.]+$/);
+    expect(chain[15]?.slice(6, 10)).toMatch(/^[^.]+$/);
+    expect(chain.join('').replace(/\./g, '')).toMatch(/^[0-4]+$/);
+  });
+});
+
+describe('smb3 sheet: the airship crash on the World 4 map', () => {
+  it('the airship flies with a turning propeller, tips nose-down and lies wrecked', () => {
+    const fly = [rows('map-airship-0'), rows('map-airship-1')];
+    expect(fly[0]).not.toEqual(fly[1]);
+    // only the propeller turns: the two flying frames differ in a few pixels
+    const diff = (fly[0] as string[])
+      .join('')
+      .split('')
+      .filter((c, i) => c !== (fly[1] as string[]).join('')[i]).length;
+    expect(diff).toBeGreaterThan(0);
+    expect(diff).toBeLessThan(40);
+    expect(rows('map-airship-tilt')).not.toEqual(fly[0]);
+    // the wreck lies flat on the ground: its top rows are empty, its bottom row is not
+    const wreck = rows('map-wreck');
+    expect(top(wreck)).toBeGreaterThanOrEqual(4);
+    expect(wreck.at(-1)).toMatch(/[^.]/);
+    // tan deck wood and iron
+    for (const f of ['map-airship-0', 'map-wreck']) expect(rows(f).join(''), f).toMatch(/[rj]/);
+  });
+
+  it('smoke puffs and landing dust animate; Toad walks and hammers', () => {
+    const smoke = [0, 1, 2].map((i) => rows(`map-smoke-${i}`).join('/'));
+    expect(new Set(smoke).size).toBe(3);
+    expect(rows('map-dust-0')).not.toEqual(rows('map-dust-1'));
+    for (const i of [0, 1]) expect(top(rows(`map-dust-${i}`)), `dust ${i}`).toBeGreaterThanOrEqual(6);
+    for (const [a, b] of [
+      ['toad-map-0', 'toad-map-1'],
+      ['toad-map-hammer-0', 'toad-map-hammer-1'],
+    ] as const)
+      expect(rows(a), a).not.toEqual(rows(b));
+    for (const f of ['toad-map-0', 'toad-map-1', 'toad-map-hammer-0', 'toad-map-hammer-1']) {
+      // a white cap with red spots, standing on the bottom row
+      expect(rows(f).join(''), f).toContain('1');
+      expect(rows(f).join(''), f).toContain('d');
+      expect(rows(f).at(-1), f).toMatch(/[^.]/);
+    }
+    for (const f of ['toad-map-hammer-0', 'toad-map-hammer-1']) expect(rows(f).join(''), f).toContain('h');
   });
 });

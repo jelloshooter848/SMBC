@@ -31,7 +31,7 @@ describe("Larry's airship music", () => {
     for (const s of smb3Songs) expect(songs).toContain(s);
     for (const e of smb3Sfx) expect(sfx).toContain(e);
     expect(smb3Songs.map((s) => s.id)).toEqual(['airship', 'smb3-boss', 'toad-house', 'bonus-game']);
-    expect(smb3Sfx.map((s) => s.id)).toEqual(['card-flip', 'slot-stop', 'bonus-win', 'item-use']);
+    expect(smb3Sfx.map((s) => s.id)).toEqual(['card-flip', 'slot-stop', 'bonus-win', 'item-use', 'cannon']);
     // the airship theme plays its own tune by default
     expect(themeMusic('airship')).toBe('airship');
   });
@@ -86,5 +86,16 @@ describe("Larry's airship music", () => {
     }
     expect(length('bonus-win')).toBeGreaterThan(length('card-flip'));
     expect(length('bonus-win')).toBeGreaterThan(length('item-use'));
+  });
+
+  it("the airship's cannon booms: a deep falling thump under a roar, short enough to repeat", () => {
+    const boom = effect('cannon');
+    expect(boom.noise).toBeDefined();
+    expect(boom.triangle).toBeDefined();
+    expect(length('cannon')).toBeGreaterThan(length('stomp'));
+    expect(length('cannon')).toBeLessThanOrEqual(0.5);
+    expect(length('cannon')).toBeLessThan(length('bomb-blast'));
+    // low: the pulse thump starts below middle C
+    expect(notes(boom.pulse as string)[0]).toBeLessThan(60);
   });
 });
