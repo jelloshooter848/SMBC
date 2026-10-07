@@ -165,6 +165,56 @@ section below.
 After the crystal ball, every remaining shadow appears at once, so the per-hero cards are skipped and one card
 is shown instead (see 2.7).
 
+### 2.3a The fake Bowsers (worlds 1-7)
+
+As in SMB1, the "Bowsers" at the end of castles 1-4 to 7-4 are not the king. Our game already has their true forms
+(1-4 Goomba, 2-4 Koopa, 3-4 Buzzy Beetle, 4-4 Spiny, 5-4 Lakitu, 6-4 Blooper, 7-4 Hammer Bro). Today a player only
+sees the true form after a fireball kill, and nothing explains it. In our story they are **minions the king dressed
+in his own shape with the stolen wand**, so he never has to face Mario himself until 8-4. The owner wants this
+**apparent to the player**.
+
+What changes, in the campaign only (classic play keeps the NES behaviour):
+
+1. **A tell during the fight.** Every 4 s or so, the fake's disguise flickers for a few frames and the true creature's
+   silhouette shows through, with a soft wand sparkle. With reduce flashing on, use a steady faint outline instead of a
+   flicker. The real Bowser in 8-4 never flickers.
+2. **The disguise always comes off.** However he is beaten, by the axe and bridge or by fireballs, the disguise bursts
+   in a puff of wand sparkles with a "poof" sound. The true form drops into the lava, or flees off screen where there's
+   no lava. Every hero sees it, not only those who throw fireballs.
+3. **The castle names the creature.** Each X-4 castle's news is now two pages: first the reveal, then the story beat.
+   The lines are in each world's section below.
+4. **Toad explains it once on the map,** the first time the World 1 map shows after 1-4 is cleared:
+
+```text
+TOAD:
+
+DID YOU SEE THAT? THE KING
+USED THE WAND TO DRESS A
+GOOMBA UP AS HIMSELF!
+```
+
+```text
+TOAD:
+
+HE HIDES BEHIND STAND-INS.
+THE REAL ONE WON'T FACE
+YOU UNTIL HIS OWN LAND.
+```
+
+5. **8-4 is the real thing.** It has no flicker and no puff. On first entering the bridge room (campaign, NEW), Bowser
+   speaks in the prompt box before the fight:
+
+```text
+BOWSER: NO MORE STAND-INS,
+<HERO>. THIS TIME IT'S
+REALLY ME! BWA HA HA!
+```
+
+The 8-4 castle's first page then confirms it was real (2.12).
+
+**The Lost Kingdom** has its own fake Bowsers (Lost 1-4 to 7-4). The same tell and the same always-reveal apply there.
+Their castle lines (2.15) stay as written unless the owner wants a reveal page for them too.
+
 ### 2.4 World 1: Grass Land (Luigi)
 
 **Toad's world entry**: NEW card on the World 1 map. **WHEN:** back on the map after 1-0 is cleared (or skipped),
@@ -211,7 +261,13 @@ hero (below, 2.13).
 ```text
 THANK YOU <HERO>!
 
-THAT BOWSER WAS A FAKE!
+IT WAS A GOOMBA IN THE
+KING'S SHAPE! WAND MAGIC!
+```
+
+Then, 2 s later (second page, same box):
+
+```text
 THE REAL KING FLED EAST,
 WAND AND ALL.
 ```
@@ -288,6 +344,13 @@ THERE IS NO DOOR.
 ```text
 THANK YOU <HERO>!
 
+A KOOPA IN DISGUISE! THE
+KING SENDS STAND-INS.
+```
+
+Then, 2 s later (second page, same box):
+
+```text
 THE SPELL OVER THE SEA IS
 FADING. THE KING'S SHIPS
 SAILED FOR THE HILLS.
@@ -355,6 +418,13 @@ JUMPING. BUMP THE AIR!
 ```text
 THANK YOU <HERO>!
 
+A BUZZY BEETLE THIS TIME!
+STILL NOT THE REAL KING.
+```
+
+Then, 2 s later (second page, same box):
+
+```text
 A HERO CAME KNOCKING HERE,
 ASKING FOR THE PRINCESS.
 WE SAID NOTHING!
@@ -489,6 +559,13 @@ the Toad House's `PICK A BOX...`) need no change.
 ```text
 THANK YOU <HERO>!
 
+A SPINY IN A KING SUIT!
+OUCH. STILL A FAKE.
+```
+
+Then, 2 s later (second page, same box):
+
+```text
 THE KING WAVED THE WAND AT
 US, BUT IT ONLY FIZZLED!
 IT'S GETTING WEAKER.
@@ -591,6 +668,14 @@ wand", Simon's paragraph) should be updated with the code.
 ```text
 THANK YOU <HERO>!
 
+A LAKITU, OF ALL THINGS!
+THE KING HIDES BEHIND
+HIS OWN SHAPE.
+```
+
+Then, 2 s later (second page, same box):
+
+```text
 WE HEARD THE KING YELLING
 FROM THE TREETOPS: FIND
 HER! FIND HER NOW!
@@ -656,6 +741,14 @@ THE DOOR.
 ```text
 THANK YOU <HERO>!
 
+A BLOOPER?! IN A CASTLE?
+THE WAND'S TRICKS ARE
+GETTING SILLY.
+```
+
+Then, 2 s later (second page, same box):
+
+```text
 THE KING SLEEPS WITH THE
 WAND UNDER HIS PILLOW NOW.
 HE KNOWS YOU'RE COMING.
@@ -722,6 +815,14 @@ briefing (`RED FALCON'S ALIENS HAVE TAKEN BILL'S MIND...`) stays.
 ```text
 THANK YOU <HERO>!
 
+A HAMMER BRO! THE LAST
+FAKE. THE REAL KING
+WAITS IN HIS OWN LAND.
+```
+
+Then, 2 s later (second page, same box):
+
+```text
 THE WAND IS CRACKING! ALL
 THAT SPELL-WORK WORE IT
 THIN. HE'S GONE HOME.
@@ -826,6 +927,13 @@ Old: _THANK YOU MARIO! / YOUR QUEST IS OVER._
 ```text
 THANK YOU <HERO>!
 
+NO TRICK THIS TIME. THAT
+WAS THE REAL KING!
+```
+
+Then, 2 s later (second page, same box):
+
+```text
 BOWSER FELL... AND THE
 WAND BROKE! ITS PIECES
 FELL THROUGH A CRACK IN

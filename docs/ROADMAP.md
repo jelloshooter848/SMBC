@@ -60,6 +60,13 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
     at the kind of place, for example "a hunter of the night… probably down in some dungeon".
   - When a hero's shadow shows up on the map (a hero you passed without freeing), he lightly says it feels like we
     missed something.
+- **The fake Bowsers are the wand's disguises,** and the player should be able to see it. Castles 1-4 to 7-4 hold
+  minions the king dressed in his own shape:
+  - the disguise flickers during the fight;
+  - it always bursts on defeat, revealing the true form;
+  - each castle's Toad names the creature;
+  - Toad explains the trick once after 1-4;
+  - in 8-4 Bowser announces "NO MORE STAND-INS". See docs/STORY.md 2.3a.
 - **The castle messages are rewritten.** "Our princess is in another castle" no longer fits, because Peach is hiding
   rather than captured. Each castle gets its own story beat.
 - **Partner characters** for the other hidden heroes, like Jason for Sophia, who give clues about where to find them.
