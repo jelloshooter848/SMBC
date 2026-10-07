@@ -47,6 +47,11 @@ export class Camera {
   readonly free: boolean;
   /** Auto-scroll speed in subpixels per frame; 0 for every camera but an `auto` one. */
   readonly autoSpeed: number;
+  /**
+   * A room the camera keeps inside (subpixels, right and bottom exclusive), as in Metroid, where
+   * the screen never shows past a room's walls: a mini game sets it; null is the whole map.
+   */
+  room: { x0: number; y0: number; x1: number; y1: number } | null = null;
 
   constructor(
     levelWidthTiles: number,
@@ -86,16 +91,27 @@ export class Camera {
     else if ((this.allowLeftScroll || this.free) && playerX - this.x < this.pushX)
       this.x = playerX - this.pushX;
     this.x = clamp(this.x, 0, this.maxX);
-    if (!this.free || playerY === undefined) return;
-    if (playerY - this.y < this.pushTop) this.y = playerY - this.pushTop;
-    else if (playerY - this.y > this.pushBottom) this.y = playerY - this.pushBottom;
-    this.y = clamp(this.y, 0, this.maxY);
+    if (this.free && playerY !== undefined) {
+      if (playerY - this.y < this.pushTop) this.y = playerY - this.pushTop;
+      else if (playerY - this.y > this.pushBottom) this.y = playerY - this.pushBottom;
+      this.y = clamp(this.y, 0, this.maxY);
+    }
+    this.keepInRoom();
   }
 
   /** Jump the camera so the player is on screen (level start / pipe exit). */
   snapTo(playerX: number, playerY?: number): void {
     this.x = clamp(playerX - this.pushX, 0, this.maxX);
     if (this.free && playerY !== undefined) this.y = clamp(playerY - this.pushBottom, 0, this.maxY);
+    this.keepInRoom();
+  }
+
+  /** Inside the room, if one is set. */
+  private keepInRoom(): void {
+    const r = this.room;
+    if (!r) return;
+    this.x = clamp(this.x, r.x0, Math.max(r.x0, r.x1 - px(SCREEN_W)));
+    this.y = clamp(this.y, r.y0, Math.max(r.y0, r.y1 - px(SCREEN_H)));
   }
 
   get pxX(): number {

@@ -142,4 +142,6 @@ export const SKY: Record<string, string> = {
   'megaman-stage': '#000c38',
   // Brinstar (4-2's campaign look): Metroid's black behind the blue rock.
   brinstar: '#000000',
+  // Tourian (Samus's mini game): Metroid's black behind the machine panels.
+  tourian: '#000000',
 };

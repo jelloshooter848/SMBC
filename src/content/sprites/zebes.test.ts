@@ -21,6 +21,22 @@ const ZEBES_FRAMES: Record<string, Size> = {
   'skree-1': T16,
   'alarm-0': T16,
   'alarm-1': T16,
+  // Tourian (0.4.16).
+  'bubble-door-open': [16, 48],
+  'brain-0': [32, 32],
+  'brain-1': [32, 32],
+  tank: [48, 64],
+  'tank-cracked': [48, 64],
+  'tank-broken': [48, 64],
+  'zebetite-0': [16, 48],
+  'zebetite-1': [16, 48],
+  'zebetite-2': [16, 48],
+  'zebetite-3': [16, 48],
+  'cannon-0': T16,
+  'cannon-1': T16,
+  'cannon-2': T16,
+  'rinka-0': T16,
+  'rinka-1': T16,
 };
 
 const rows = (name: string): readonly string[] => zebesDef.frames[name] as readonly string[];
@@ -46,7 +62,7 @@ describe('zebes sheet', () => {
   it('is registered with its palettes, which share one index layout', () => {
     expect(SPRITES.zebes).toBe(zebesDef);
     expect(zebesDef.palette).toBe('zebes');
-    expect(Object.keys(zebesPalettes).sort()).toEqual(['zebes', 'zebes-flash']);
+    expect(Object.keys(zebesPalettes).sort()).toEqual(['zebes', 'zebes-flash', 'zebes-red']);
     expect(new Set(Object.values(zebesPalettes).map((p) => p.length)).size).toBe(1);
     for (const [name, p] of Object.entries(zebesPalettes)) expect(PALETTES.default[name]).toBe(p);
   });
@@ -71,7 +87,7 @@ describe('zebes sheet', () => {
   });
 
   it('animated pairs differ between frames', () => {
-    for (const n of ['chozo', 'zoomer', 'ripper', 'skree', 'alarm'])
+    for (const n of ['chozo', 'zoomer', 'ripper', 'skree', 'alarm', 'brain', 'rinka'])
       expect(rows(`${n}-0`), n).not.toEqual(rows(`${n}-1`));
   });
 

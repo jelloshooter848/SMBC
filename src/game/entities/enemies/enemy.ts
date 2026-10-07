@@ -28,6 +28,7 @@ export function enemyPalette(theme: Theme): string {
     case 'underground':
     case 'cavern':
     case 'brinstar':
+    case 'tourian':
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':
