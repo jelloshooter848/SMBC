@@ -56,6 +56,7 @@ import {
   type SaveFile,
   type SaveSlot,
 } from '@game/save/save-files';
+import { bonusSaveFields, bonusStateFrom, newBonusState, type BonusState } from '../bonus/items';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -128,6 +129,12 @@ export class Game {
   bonusOpen = true;
   /** The SMB3 item inventory is unlocked on the file (SaveFile.inventoryUnlocked; the crystal ball). */
   inventoryUnlocked = false;
+  /**
+   * The campaign file's item inventory, bonus rotation, dev "Item inventory" flag and waiting
+   * Starman (SaveFile's fields of the same names): src/game/bonus/index.ts. A fresh, empty one
+   * outside campaign play.
+   */
+  bonus: BonusState = newBonusState();
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -299,6 +306,7 @@ export class Game {
     this.devUnlockAll = false;
     this.endTutorial();
     this.devAllHeroes = false;
+    this.bonus = newBonusState();
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -405,6 +413,7 @@ export class Game {
       tutorials: this.tutorials.slice(),
       inventoryUnlocked: this.inventoryUnlocked,
       bonusOpen: this.bonusOpen,
+      ...bonusSaveFields(this.bonus),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -528,7 +537,10 @@ export class Game {
     this.scenes.push(bonusGame().create(this, spot, done));
   }
 
-  /** The bonus was played: closed until its Hammer Bro is beaten; saved at once. */
+  /**
+   * The bonus was played: closed until its Hammer Bro is beaten; saved at once. Safe to call again
+   * (the SMB3 bonus games call it at the first choice, and the end calls it once more).
+   */
   bonusUsed(): void {
     this.bonusOpen = false;
     this.autosave();
@@ -810,6 +822,7 @@ export class Game {
     this.freed = save.freed.slice();
     this.bonusOpen = save.bonusOpen !== false;
     this.inventoryUnlocked = save.inventoryUnlocked === true || save.secrets.includes(CRYSTAL_BALL);
+    this.bonus = bonusStateFrom(save);
     // Only heroes freed on this file, this session, get the map's burst of hops.
     this.celebrate.clear();
     // A hero the file has not freed (a hand-edited file, or one picked through "All heroes" with

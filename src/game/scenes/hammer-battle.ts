@@ -15,6 +15,8 @@ import { CardScene } from './message';
 import { PauseScene } from './pause';
 import { abilityHint } from './hints';
 import type { Game } from './game';
+import { awardHammerPrize } from '../bonus/use';
+import { fontText } from '../hud/text';
 
 /** Frames after the last Hammer Bro falls before the win card. */
 export const BATTLE_WIN_DELAY = 60;
@@ -92,9 +94,12 @@ export class HammerBattleScene implements Scene {
       if (e instanceof Projectile && e.owner instanceof HammerBro) e.destroy();
     game.ctx.audio.stopMusic();
     game.ctx.audio.playJingle('castle-clear');
-    game.deps.announcer?.say(`${BATTLE_WON_CARD.join(' ')} OK to continue.`);
+    // SMB3 gives an item for beating them: into the inventory (or used at once when it is full).
+    const prize = game.campaign ? awardHammerPrize(game) : null;
+    const card = [...BATTLE_WON_CARD, ...(prize ? ['', ...prize.lines.map(fontText)] : [])];
+    game.deps.announcer?.say(`${BATTLE_WON_CARD.join(' ')} ${prize ? `${prize.said} ` : ''}OK to continue.`);
     game.scenes.push(
-      new CardScene(game, BATTLE_WON_CARD, () => game.hammerBattleWon(), this.world, 1800, {
+      new CardScene(game, card, () => game.hammerBattleWon(), this.world, 1800, {
         panel: true,
         keys: ['start', 'attack', 'jump'],
         prompt: () => abilityHint(game, 'OK', 'jump'),

@@ -4,6 +4,13 @@ import { startHp, type CharacterDef } from '@game/characters/character';
 import { CHARACTERS } from '@game/characters/registry';
 import { newGameState, type GameState } from '@game/context';
 import { hasKey, loadJson, removeKey, saveJson } from '@engine/save/storage';
+import {
+  bonusSaveFields,
+  bonusStateFrom,
+  newBonusState,
+  type ItemId,
+  type NextItem,
+} from '@game/bonus/items';
 
 /**
  * Three campaign save files (world map progress plus the run: lives, score, coins, heroes and
@@ -68,6 +75,16 @@ export interface SaveFile extends MapProgress {
    * the Hammer Bro guarding its road is beaten (docs/WORLD_MAP.md).
    */
   bonusOpen?: boolean;
+  /*
+   * The SMB3 bonus games and item inventory (src/game/bonus, docs/BONUS.md), all optional (missing:
+   * empty / 0 / off, no format bump): item ids won (at most 12), the bonus rotation's next game,
+   * dev mode's "Item inventory" flag, and the items used from the map waiting for the start of the
+   * next level (at most one of each kind).
+   */
+  inventory?: ItemId[];
+  bonusNext?: number;
+  devInventory?: boolean;
+  itemsNext?: NextItem[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -190,6 +207,7 @@ export function newSave(
     tutorials: tutorialHeroes([character, character2], characters),
     inventoryUnlocked: false,
     bonusOpen: true,
+    ...bonusSaveFields(newBonusState()),
   };
 }
 
@@ -331,6 +349,7 @@ export function migrateSave(
     // Larry Koopa's crystal ball (secret 'larry') unlocks the inventory.
     inventoryUnlocked: stored.inventoryUnlocked === true || secrets.includes('larry'),
     bonusOpen: stored.bonusOpen !== false,
+    ...bonusSaveFields(bonusStateFrom(stored)),
   };
 }
 

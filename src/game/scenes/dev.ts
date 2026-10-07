@@ -1,6 +1,7 @@
 import { MenuScene } from './menu';
 import { DevLevelSelectScene } from './dev-level-select';
 import { DevMiniGamesScene } from './dev-minigames';
+import { DevBonusGamesScene } from '../bonus/dev';
 import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 
@@ -21,6 +22,11 @@ export class DevMenuScene extends MenuScene {
         label: 'Mini games',
         select: () => push(new DevMiniGamesScene(game, fromPause)),
         hint: "Play any hero's freeing mini game; nothing is saved",
+      },
+      {
+        label: 'Bonus games',
+        select: () => push(new DevBonusGamesScene(game, fromPause)),
+        hint: 'Toad House, N-spade and the spade game; nothing is saved',
       },
       {
         label: 'Assists',

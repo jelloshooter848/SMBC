@@ -16,6 +16,7 @@ import { HammerBro } from '@game/entities/enemies/hammer-bro';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { registerBonusGame, BONUS_CLOSED_HINT, type BonusOutcome } from '@game/map/bonus-spot';
+import { SMB3_BONUS } from '@game/bonus/spot';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
@@ -24,7 +25,7 @@ import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 // Hammer Bro"), played through the game's scenes on a campaign file.
 
 useStorage();
-afterEach(() => registerBonusGame(null));
+afterEach(() => registerBonusGame(SMB3_BONUS));
 
 const W3 = ['1-0', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4'];
 /** A file on World 4 with 4-1 cleared, standing on `node`. */
@@ -109,12 +110,13 @@ describe('the crystal ball (campaign)', () => {
     expect(map.revealing).toBe(true);
     h.until(() => !map.revealing, 600);
     expect(h.game.pendingReveal).toEqual([]);
+    // The SMB3 bonus games are registered (bonus/spot.ts): the rotation starts at the Toad House.
     expect(
       draw(map).sprites.some(
         (s) => s.x === 2 * 16 && s.y === 13 * 16 && s.key === 'smb3' && s.frame === 'node-toad-house',
       ),
     ).toBe(true);
-    expect(h.said.at(-1)).toMatch(/Bonus Game, open/);
+    expect(h.said.at(-1)).toMatch(/Toad House, open/);
   });
 
   it("4-2's right warp-zone pipe (the campaign's one pipe) lands in the cabin, rising out of its pipe", () => {
@@ -271,7 +273,8 @@ describe('crystal-ball hints on the map', () => {
 describe("World 4's bonus spot and its Hammer Bro", () => {
   const found = (over: Partial<SaveFile> = {}, at = 'bonus-4') => world4({ secrets: ['larry'], ...over }, at);
 
-  it('JUMP on the open node plays the bonus (a placeholder until the bonus games land), then it is used', () => {
+  it('JUMP on the open node plays the bonus (the placeholder when no bonus game is registered), then it is used', () => {
+    registerBonusGame(null);
     const { h, map } = onMap(found());
     expect(map().hintLine).toBe('BONUS GAME');
     expect(map().touchLabels().jump).toBe('ENTER');
@@ -364,6 +367,10 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
     expect(map).toBeInstanceOf(WorldMapScene);
     expect(h.game.bonusOpen).toBe(true);
     expect(loadSave(1)?.bonusOpen).toBe(true);
+    // SMB3's prize for beating them: an item in the inventory (docs/BONUS.md).
+    expect(h.game.bonus.inventory).toHaveLength(1);
+    expect(['mushroom', 'flower', 'star']).toContain(h.game.bonus.inventory[0]);
+    expect(loadSave(1)?.inventory).toEqual(h.game.bonus.inventory);
     expect(map.guard).toBeNull();
     expect(map.node).toBe('4-2');
   });

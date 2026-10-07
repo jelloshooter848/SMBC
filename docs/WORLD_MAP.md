@@ -267,7 +267,8 @@ World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `u
   played (the bonus closes: `Game.bonusOpen = false`, saved at once) or `done('left')` (backed out,
   still open); either way the map comes back with the hero on the node. The bonus games register
   with `registerBonusGame({ label, icon, create })` (`icon`: the node's `sheet:frame`, e.g.
-  `smb3:node-toad-house`; it must name an existing frame). Until they do, a
+  `smb3:node-toad-house`; it must name an existing frame). The SMB3 bonus games
+  (Toad House, N-spade, spade game, in rotation) are registered (docs/BONUS.md); with none, a
   placeholder card ("THE BONUS GAMES ARE COMING SOON!") stands in and counts as used.
 - **Used**: the node shows a spent dot, its hint line says `BEAT THE HAMMER BRO TO REOPEN`, JUMP
   bumps, and a **Hammer Bro** (`map/hammer-bro.ts`, `MapGuard`) comes out on the road: on the road
@@ -281,7 +282,8 @@ hammer-battle.map`, outside the level library: floor, two brick rows at the SMB1
   two SMB1 Hammer Bros, no clock, the run's hero, power, lives and score. The hero's map place
   stays the node it last stood on. Start pauses (Quit to map leaves it undecided).
   - **Win** (both Hammer Bros gone, then a second): their hammers vanish, the `castle-clear`
-    jingle, the card "THE HAMMER BROS ARE BEATEN! / THE BONUS IS OPEN AGAIN.", then
+    jingle, the card "THE HAMMER BROS ARE BEATEN! / THE BONUS IS OPEN AGAIN." with the item they
+    leave (SMB3 style: a mushroom, fire flower or star into the inventory, docs/BONUS.md), then
     `Game.hammerBattleWon`: `bonusOpen = true`, back to the map (saved). He comes back the next
     time the bonus is used.
   - **Lose** (the hero falls): `Game.hammerBattleLost`: a life lost as in SMB3, power back to the
