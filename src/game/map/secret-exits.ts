@@ -4,7 +4,7 @@ import type { LevelData } from '../level/schema';
 /**
  * Levels with more than one way out (Super Mario World's "secret exit" dots), found from the level
  * data: a main level counts when it, or one of its areas (levels whose `parent` leads to it), has
- * a warp zone, or a pipe, vine or pit that leads into another main level than its own and than
+ * a warp zone, or a pipe, vine, pit or teleport pad that leads into another main level than its own and than
  * the one its normal exit leads to. Pipes between a level's own areas (8-4's maze) don't count.
  * Ids are main level ids ('1-2', Lost Levels 'll-5-1'), as map nodes name them.
  */
@@ -51,7 +51,7 @@ export function secretExitsIn(levels: readonly LevelData[]): Set<string> {
     const next = exit?.kind === 'exit' ? exit.next : mains[mains.indexOf(main) + 1];
     const elsewhere = zones.some((z) => {
       if (z.kind === 'warp') return true;
-      if (z.kind !== 'pipe' && z.kind !== 'vine' && z.kind !== 'pit') return false;
+      if (z.kind !== 'pipe' && z.kind !== 'vine' && z.kind !== 'pit' && z.kind !== 'teleport') return false;
       const to = mainOf(z.target.level);
       return to !== main && to !== next;
     });

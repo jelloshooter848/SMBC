@@ -225,6 +225,32 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 - SMB 4-2's warp zones are unchanged (they still skip worlds); a `secret=` key on one is the hook
   for a future secret. Lost Levels warp zones (backward ones too) are unchanged.
 
+## Teleport pads (level zone, 0.5.0)
+
+Hidden areas can be joined by Mega Man style teleport pads as well as pipes, vines and pits. A pad
+is a `[zones]` line (`src/game/entities/objects/teleporter.ts`):
+
+```
+teleport x y -> level x y [exit=beam|fall] [block=bx,by]
+```
+
+- The pad lies on the floor of tile (x, y), 16×8 (`station:pad-0/1`).
+- **Standing on it** (on the ground, the body's centre over it) beams the player up: everyone
+  freezes, the rider is hidden, a `station:beam-*` streak gathers and rises off the screen (sfx
+  `beam`), then the level moves to `target` exactly like a pipe transfer (`pipe` event; the clock
+  carries over within a stage). Touch was picked over a button: Mega Man's teleporters work on
+  touch, and nothing has to be shown or learned. A pad never fires for a player who has not been
+  off it first, so arriving on one never sends you straight back.
+- `exit=beam` (default): the target starts in `beam` mode (also a level `startMode`): each
+  player's streak drops from above onto the start tile, then the hero appears. `exit=fall`: drops
+  in from the top like a pit (the space station's pads back to 3-1 use it, landing where the coin
+  heaven's drop does).
+- `block=bx,by`: the pad is hidden in that hidden teleporter block (tile `8`,
+  `T.HIDDEN_TELEPORTER`, content `teleporter`) until the block is bumped; it then rises out of the
+  floor with the power-up sound.
+- Pads count as ways out for the map's secret-exit look (`map/secret-exits.ts`) like pipes and
+  vines; the 3-1 pads stay within 3-1, so nothing changes there.
+
 ## Adding a page (checklist)
 
 1. Sketch it in its own file (Lost Levels: `src/content/worldmap/lost/llN.ts`), export a

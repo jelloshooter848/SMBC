@@ -59,6 +59,14 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
   ],
   // The spell holds Link inside his own mind: the Shadow Keep.
   link: (you) => ['THE SHADOW... HOLDS ME...', '', `${you}... FIGHT IT WITH ME,`, 'IN HERE.'],
+  // The brainwashing is a rogue program loose in his systems; it has built a dark copy of him.
+  megaman: (you) => [
+    'ERROR... ROGUE PROGRAM',
+    'IN MY SYSTEMS...',
+    'IT MADE A DARK COPY OF ME.',
+    '',
+    `${you}... HELP ME DELETE IT.`,
+  ],
 };
 
 /** The freed card's lines. */

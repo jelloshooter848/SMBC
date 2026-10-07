@@ -12,6 +12,7 @@ import {
 import { newMapProgress } from './rules';
 import { WORLD_1 } from '@content/worldmap/world1';
 import { WORLD_2 } from '@content/worldmap/world2';
+import { WORLD_3 } from '@content/worldmap/world3';
 
 /** A made-up level: only the id, the parent and the entities matter to the index. */
 const lvl = (id: string, entities: EntitySpawn[] = [], parent: string | null = null): LevelData =>
@@ -88,10 +89,22 @@ describe('hiddenHeroes (the bundled levels and map pages)', () => {
     expect(hiddenHeroesAt('smb-2', '2-1').map((h) => h.hero)).toEqual(['link']);
   });
 
+  it('Mega Man is hidden in World 3, node 3-1 (the space station above its coin heaven)', () => {
+    expect(hiddenHeroes()).toContainEqual({
+      hero: 'megaman',
+      level: '3-1-station',
+      main: '3-1',
+      page: 'smb-3',
+      node: '3-1',
+    });
+    expect(hiddenHeroesAt('smb-3', '3-1').map((h) => h.hero)).toEqual(['megaman']);
+  });
+
   it('other nodes hide no one', () => {
     expect(hiddenHeroesAt('smb-1', '1-2')).toEqual([]);
     expect(hiddenHeroesAt('smb-1', 'start')).toEqual([]);
     expect(hiddenHeroesAt('smb-2', '2-2')).toEqual([]);
+    expect(hiddenHeroesAt('smb-3', '3-2')).toEqual([]);
   });
 });
 
@@ -130,6 +143,15 @@ describe('heroSide: beside the node, clear of its roads', () => {
       heroSide(
         WORLD_2,
         WORLD_2.nodes.find((n) => n.id === '2-1')!,
+      ),
+    ).toBe(-1);
+  });
+
+  it('World 3 3-1: left (its roads leave right, up and down)', () => {
+    expect(
+      heroSide(
+        WORLD_3,
+        WORLD_3.nodes.find((n) => n.id === '3-1')!,
       ),
     ).toBe(-1);
   });
