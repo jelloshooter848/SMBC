@@ -28,7 +28,14 @@ import {
 import type { CharacterDef } from '../characters/character';
 import { pad } from '../hud/hud';
 import { hasSecretExit } from '../map/secret-exits';
-import { heroHint, heroSide, hiddenHeroesAt, type HeroHint } from '../map/captives';
+import {
+  CRYSTAL_BALL,
+  heroHint,
+  heroSide,
+  hiddenHeroes,
+  hiddenHeroesAt,
+  type HeroHint,
+} from '../map/captives';
 import { fxPalette, mapShadePalette } from '@content/sprites/palette-fx';
 import { trophyPose } from '../map/trophy';
 import { Player } from '../entities/player';
@@ -54,10 +61,8 @@ import {
   isBonusArea,
 } from '../map/bonus-spot';
 import { AirshipCrash, type CrashNames } from '../map/airship-crash';
-import { CRYSTAL_BALL } from '../map/captives';
 import { arenaPadHint, arenaPadSaid, arenaPadTouch, drawArenaPad, playArenaPad } from '../arena';
 import { dueScenes, missedHint, missedSaid, ToadGuide } from '../map/toad-guide';
-import { hiddenHeroes } from '../map/captives';
 import { storyOn } from '../story/beats';
 import { fontText } from '../hud/text';
 
@@ -439,13 +444,24 @@ export class WorldMapScene implements Scene {
     return true;
   }
 
-  /** Toad's scenes, page by page; when they are over, the reveal (afterStory). */
+  /**
+   * Toad's scenes, page by page; when the last page is over, the reveal (afterStory). Toad's walk
+   * back off goes on over the map after that (updateToadLeaving), so the hero is not held up.
+   */
   private updateStory(inputs: readonly InputFrame[]): void {
     const g = this.toad;
     if (g) g.update(inputs);
-    if (g && !g.done) return;
-    this.toad = null;
+    if (g && !g.done && !g.leaving) return;
+    if (g?.done) this.toad = null;
     this.afterStory();
+  }
+
+  /** Outside the `story` mode: Toad walking back off after his last page, until he is gone. */
+  private updateToadLeaving(): void {
+    const g = this.toad;
+    if (!g || this.mode === 'story') return;
+    g.update([]);
+    if (g.done) this.toad = null;
   }
 
   /**
@@ -735,6 +751,7 @@ export class WorldMapScene implements Scene {
   update(input: InputFrame, inputs: readonly InputFrame[] = [input]): void {
     this.t++;
     this.startTrophyBursts();
+    this.updateToadLeaving();
     if (this.updateGuard()) return;
     switch (this.mode) {
       case 'reveal':

@@ -26,7 +26,7 @@ export function talkToPartner(game: Game, level: LevelScene, who: string): void 
   if (!script) return;
   const world = level.world;
   const partner = world.entities.find((e): e is Partner => e instanceof Partner && e.alive && e.who === who);
-  playStoryCards(game, world, script.pages, () => level.resume(), {
+  playStoryCards(game, world, script.pages, () => level.resumePlay(), {
     onNext: (i) => {
       if (i === script.coinAfter) partner?.giveCoin(world);
     },

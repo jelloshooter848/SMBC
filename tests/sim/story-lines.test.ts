@@ -103,12 +103,15 @@ describe('1-0: Bowser’s shadow tease', () => {
     const { scene, state } = tease(h, start(h, '1-1'));
     h.idle(boxShows);
     expect(texts(h)).toEqual(expect.arrayContaining(linesOf(STORY_TEASE_PAGES[0]!)));
-    expect(h.said.at(-1)).toMatch(/^BOWSER: BWA HA HA! MY KOOPAS COULDN'T FIND THAT PRINCESS\. FINE!/);
+    // The same words as every story box: OK for the next page, BACK skips.
+    expect(h.said.at(-1)).toBe(
+      "BOWSER: BWA HA HA! MY KOOPAS COULDN'T FIND THAT PRINCESS. FINE! OK for more, BACK to skip.",
+    );
     h.idle(CARD_GUARD_FRAMES);
     h.tap('jump');
     expect(h.top()).toBe(scene);
     expect(texts(h)).toEqual(expect.arrayContaining(linesOf(STORY_TEASE_PAGES[1]!)));
-    expect(h.said.at(-1)).toMatch(/^THESE HEROES DON'T THINK/);
+    expect(h.said.at(-1)).toMatch(/^THESE HEROES DON'T THINK.* OK to continue\.$/);
     h.idle(CARD_GUARD_FRAMES);
     expect(state.ended).toBe(false);
     h.tap('jump');

@@ -60,8 +60,8 @@ export const beat = {
   arena: 'arena',
 } as const;
 
-/** The hero every file starts with (never a captive; save-files FIRST_HERO). */
-const FIRST_HERO = 'mario';
+/** The hero every file starts with (never a captive; the same as save-files FIRST_HERO, which imports this file). */
+export const FIRST_HERO = 'mario';
 
 /**
  * The beats that count as already seen on a file loaded without a story list (a save from

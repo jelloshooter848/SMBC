@@ -51,7 +51,7 @@ export function restyleDue(game: Game, level: LevelData): Page | null {
 export function playLevelBeat(game: Game, scene: LevelScene): boolean {
   if (!storyOn(game) || scene.world.inPipe) return false;
   const level = scene.level;
-  const resume = () => scene.resume();
+  const resume = () => scene.resumePlay();
   const restyle = restyleDue(game, level);
   if (restyle) {
     game.markSeen(beat.restyle(level.id));
