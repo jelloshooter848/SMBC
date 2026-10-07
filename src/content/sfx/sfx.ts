@@ -1,5 +1,6 @@
 import type { Sfx } from '@engine/audio/mml';
 import { smb3Sfx } from './smb3';
+import { castlevaniaSfx } from './castlevania';
 
 /**
  * Original sound effects. At the default 150 bpm one tick is ~8.3 ms, so l64 = 25 ms,
@@ -157,4 +158,6 @@ export const sfx: Sfx[] = [
   },
   // The bonus spot behind Larry's airship and the item inventory.
   ...smb3Sfx,
+  // Simon's crypt and his mini game.
+  ...castlevaniaSfx,
 ];

@@ -259,8 +259,14 @@ export class ShadowKeepScene implements Scene {
         this.music = null;
         this.game.ctx.audio.stopMusic();
         this.sfx('secret');
-        this.banner = { lines: ['THE SPELL BREAKS!'], until: Infinity, y: INTRO_Y };
-        this.say('The spell breaks! Link is free.');
+        // A round for fun (Game.inRound) frees nobody: no word of the spell.
+        if (this.game.inRound) {
+          this.banner = { lines: ['YOU ESCAPED THE KEEP!'], until: Infinity, y: INTRO_Y };
+          this.say('Link escaped the Shadow Keep!');
+        } else {
+          this.banner = { lines: ['THE SPELL BREAKS!'], until: Infinity, y: INTRO_Y };
+          this.say('The spell breaks! Link is free.');
+        }
         return;
     }
   }

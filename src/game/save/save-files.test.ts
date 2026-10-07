@@ -5,6 +5,7 @@ import {
   highestWorld,
   listSaves,
   loadSave,
+  metIds,
   migrateSave,
   migrateV1toV2,
   migrateV2toV3,
@@ -234,11 +235,11 @@ describe('save files', () => {
           'smb-3': '3-1',
           x: 'a',
           'smb-2': 7,
-          hub: 'warp-lost',
+          hub: 'warp-arena',
           1: '1-1',
         },
       }).lastNode,
-    ).toEqual({ 'smb-1': '1-2', 'smb-4': '4-1', hub: 'warp-lost' });
+    ).toEqual({ 'smb-1': '1-2', 'smb-4': '4-1', hub: 'warp-arena' });
     expect(put({ lastNode: ['1-1'] }).lastNode).toEqual({});
     expect(put({ lastNode: { 'smb-1': '' } }).lastNode).toEqual({});
   });
@@ -374,6 +375,55 @@ describe('save files', () => {
       '1-0',
       '1-1',
     ]);
+  });
+
+  it('a file from before the Lost Levels became the story (0.4.7) loads with nothing lost; no format bump', () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set(saveKey(1), JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1) as SaveFile;
+    };
+    // Mid-Lost-Levels, through the hub, standing on Lost 1's warp back to the hub (gone): its start.
+    const lost = ['ll-1-1', 'll-1-2', 'll-1-3', 'll-1-4', 'll-2-1'];
+    const mid = put({
+      gameCleared: true,
+      cleared: ['8-4', ...lost],
+      pages: ['smb-1', 'smb-8', 'hub', 'll-1', 'll-2'],
+      position: { page: 'll-1', node: 'hub' },
+      lastNode: { 'll-1': 'hub', 'll-2': 'll-2-1' },
+    });
+    expect(mid.v).toBe(SAVE_VERSION);
+    expect(mid).toMatchObject({ gameCleared: true, position: { page: 'll-1', node: 'start' } });
+    expect(mid.cleared).toEqual(['1-0', '8-4', ...lost]);
+    expect(mid.pages).toEqual(['smb-1', 'smb-8', 'hub', 'll-1', 'll-2']);
+    expect(mid.lastNode).toEqual({ 'll-2': 'll-2-1' });
+    // World 9 or A open by the old rules: kept. A hero on World 8's old pad to A stands at the
+    // castle it hung off; on A's old pipe back, at A's start.
+    const nine = ['ll-9', 'll-10'];
+    const pad = put({
+      cleared: ['ll-8-4'],
+      pages: ['smb-1', 'll-8', ...nine],
+      position: { page: 'll-8', node: 'warp-ll-10' },
+    });
+    expect(pad.pages).toEqual(['smb-1', 'll-8', ...nine]);
+    expect(pad.position).toEqual({ page: 'll-8', node: 'll-8-4' });
+    expect(
+      put({ pages: ['smb-1', 'll-10'], position: { page: 'll-10', node: 'warp-ll-8' } }).position,
+    ).toEqual({
+      page: 'll-10',
+      node: 'start',
+    });
+    // Any other node a page does not have: its start (a node that still exists is kept).
+    expect(put({ pages: ['smb-1', 'smb-2'], position: { page: 'smb-2', node: 'gone' } }).position).toEqual({
+      page: 'smb-2',
+      node: 'start',
+    });
+    expect(put({ pages: ['smb-1', 'll-8'], position: { page: 'll-8', node: 'll-8-3' } }).position.node).toBe(
+      'll-8-3',
+    );
+    // Beat SMB 8-4 without the new road's page: the map opens it (rules.openMetExits, drawn in
+    // when shown); loading changes nothing else.
+    const beat = put({ gameCleared: true, cleared: ['8-4'], pages: ['smb-1', 'smb-8'] });
+    expect(beat.pages).toEqual(['smb-1', 'smb-8']);
   });
 
   it('never throws when storage is unavailable', () => {
@@ -587,6 +637,49 @@ describe("Larry Koopa's crystal ball and World 4's bonus spot (optional fields, 
       inventoryUnlocked: false,
       bonusOpen: true,
     });
+  });
+
+  it("the Hammer Bro's bonusGuard: kept only while the bonus is used; missing, not out yet", () => {
+    expect(newSave(1, 'mario').bonusGuard).toBe(false);
+    expect(put({ bonusOpen: false })).toMatchObject({ bonusOpen: false, bonusGuard: false });
+    expect(put({ bonusOpen: false, bonusGuard: true })).toMatchObject({ bonusGuard: true });
+    expect(put({ bonusOpen: false, bonusGuard: 'yes' })).toMatchObject({ bonusGuard: false });
+    expect(put({ bonusGuard: true })).toMatchObject({ bonusOpen: true, bonusGuard: false });
+  });
+});
+
+describe('the heroes met (SaveFile.met, optional, 0.5.0: the Mini Game Arena)', () => {
+  const put = (over: Record<string, unknown>) => {
+    const { met: _m, ...base } = newSave(3, 'mario');
+    store.set('smbc.save.3', JSON.stringify({ ...base, ...over }));
+    return loadSave(3)!;
+  };
+
+  it('a new file has met only the heroes it was made with', () => {
+    expect(newSave(1, 'mario').met).toEqual(['mario']);
+    expect(newSave(1, 'mario', 'luigi').met).toEqual(['mario', 'luigi']);
+  });
+
+  it('an older file derives it from the freed heroes, and Larry from his crystal ball', () => {
+    expect(put({ freed: ['mario', 'link'] }).met).toEqual(['mario', 'link']);
+    expect(put({ freed: ['mario'], secrets: ['bonus-1', 'larry'] }).met).toEqual(['mario', 'larry']);
+  });
+
+  it('keeps the heroes talked to (known ids and Larry, each once), freed heroes always counted', () => {
+    expect(put({ met: ['samus', 'samus', 'nobody', 3, 'larry'], freed: ['mario', 'luigi'] }).met).toEqual([
+      'samus',
+      'larry',
+      'mario',
+      'luigi',
+    ]);
+    expect(put({ met: 'samus' }).met).toEqual(['mario']);
+    expect(metIds(['link', 'zelda'], ['mario'], true)).toEqual(['link', 'mario', 'larry']);
+  });
+
+  it('round-trips through storage', () => {
+    const s = { ...newSave(2, 'mario'), met: ['mario', 'megaman'] };
+    writeSave(s);
+    expect(loadSave(2)!.met).toEqual(['mario', 'megaman']);
   });
 });
 

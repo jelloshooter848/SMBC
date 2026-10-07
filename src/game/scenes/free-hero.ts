@@ -75,6 +75,15 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     'IT SET OFF THE COUNTDOWN.',
     `${you}... HELP ME ESCAPE!`,
   ],
+  // Larry's wand woke the curse Dracula left in him (Simon's Quest): he is Dracula's thrall.
+  simon: (you) => [
+    "LARRY'S WAND WOKE THE CURSE",
+    'DRACULA LEFT IN MY BLOOD.',
+    'NOW I AM HIS THRALL.',
+    '',
+    `${you}... TAKE MY WHIP.`,
+    'END HIM IN HIS CASTLE!',
+  ],
 };
 
 /** The freed card's lines (and so its announcement): the hero's full name, "MEGA MAN IS FREE!". */
@@ -112,6 +121,8 @@ export function talkToCaptive(
   const def = miniGameFor(heroId);
   const hero = game.deps.characters.find((c) => c.id === heroId);
   if (!def || !hero || game.freed.includes(heroId)) return;
+  // Talked to once: the hero's mini game is in the Mini Game Arena from now on (saved).
+  game.meet(heroId);
   const world = level.world;
   const audio = game.ctx.audio;
   const say = (lines: readonly string[]) => game.deps.announcer?.say(lines.filter(Boolean).join(' '));

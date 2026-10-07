@@ -8,7 +8,7 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { NullRenderer } from '@engine/gfx/renderer';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
-import { WorldMapScene, MAP_FADE_FRAMES } from '@game/scenes/world-map';
+import { WorldMapScene } from '@game/scenes/world-map';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { IntroScene } from '@game/scenes/intro';
@@ -20,26 +20,19 @@ import type { MenuItem } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { loadSave, newSave, writeSave, type SaveFile } from '@game/save/save-files';
-import {
-  exitId,
-  findLevelNode,
-  isOpen,
-  isPathOpen,
-  isWarpOpen,
-  LOST_NINE_LEVELS,
-  pathId,
-  revealId,
-  type Dir,
-} from '@game/map/rules';
+import { exitId, findLevelNode, isExitOpen, isOpen, isPathOpen, revealId, type Dir } from '@game/map/rules';
 import type { MapNode, PageId, WorldMapPage } from '@game/map/types';
 import type { WorldEvent } from '@game/world/world';
 import { loadProgress } from '@engine/save/progress';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 
-// The Lost Levels in campaign play (docs/WORLD_MAP.md): their levels are entered from their own
-// map pages like SMB's, clears draw the next road in, warp zones (backward ones too) open and
-// move to only their target page, and the three game ends (8-4, 9-4, D-4) come back to the map.
+// The Lost Levels in campaign play (docs/WORLD_MAP.md): the story's extension (0.4.7). SMB 8-4's
+// ending opens a road from World 8 to Lost World 1; their levels are entered from their own map
+// pages like SMB's, clears draw the next road in, each castle opens the next world in play order
+// (1-8, 9, A-D) whatever warps were taken, the warp zones (backward ones too) still open and move
+// to only their target page as on the NES, and the game ends (8-4, 9-4, D-4, the final ending)
+// come back to the map.
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -96,8 +89,6 @@ function makeGame() {
 type H = ReturnType<typeof makeGame>;
 
 const page = (id: PageId) => mapPage(id) as WorldMapPage;
-/** The warp node on page `id` that leads to page `to`. */
-const nodeOn = (id: PageId, to: PageId) => page(id).nodes.find((n) => n.to === to) as MapNode;
 const startOf = (id: PageId) => (page(id).nodes.find((n) => n.kind === 'start') as MapNode).id;
 /** The node a level sits on, by the level → page lookup. */
 function at(levelId: string): { page: PageId; node: string } {
@@ -174,6 +165,11 @@ function press(h: H, action: Action) {
   h.tap(action);
 }
 
+/** Opens the file in slot 1 as stored (loaded and brought up to date) and waits until it settles. */
+function openStored(h: H, _written: SaveFile) {
+  open(h, loadSave(1) as SaveFile);
+}
+
 /** Opens the file on the map and waits until it settles. */
 function open(h: H, save: SaveFile) {
   h.game.openFile(1, save);
@@ -193,18 +189,21 @@ const menuItem = (scene: unknown, label: string): MenuItem | undefined =>
   (scene as { items: MenuItem[] }).items.find((i) => i.label === label);
 
 describe('Lost Levels campaign: maps, clears and warps', () => {
-  it('hub → Lost 1 → enter 1-1 → its exit → the Lost 1 map with 1-2 open and saved', () => {
+  it("World 8's road → Lost 1 → enter 1-1 → its exit → the Lost 1 map with 1-2 open and saved", () => {
     const h = makeGame();
-    const pad = page('hub').nodes.find((n) => n.to === 'll-1') as MapNode;
+    const smb = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     open(
       h,
-      file({ cleared: ['1-1', '1-2'], pages: ['smb-1', 'hub'], position: { page: 'hub', node: pad.id } }),
+      file({
+        cleared: smb,
+        pages: [...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`), 'll-1'],
+        position: { page: 'smb-8', node: '8-4' },
+      }),
     );
-    h.tap('jump');
-    expect(h.map().mode).toBe('fade');
-    h.idle(MAP_FADE_FRAMES);
-    h.until(() => h.map().mode === 'idle', 800);
-    expect(h.map().page.id).toBe('ll-1');
+    h.tap('right');
+    expect(h.map().mode).toBe('walk');
+    h.until(() => h.map().page.id === 'll-1' && h.map().mode === 'idle', 2000);
+    expect(h.map().node).toBe('start');
 
     const one = at('ll-1-1');
     expect(one.page).toBe('ll-1');
@@ -288,155 +287,196 @@ describe('Lost Levels campaign: maps, clears and warps', () => {
   });
 });
 
-describe('Lost Levels campaign: the game ends and the unlocks (read from the file)', () => {
-  const NINE_HINT = (n: number) => `WORLD 9 - CLEAR 1-1 TO 8-4 ${n}/32`;
-  const warpA = () => page('ll-8').nodes.find((n) => n.to === 'll-10') as MapNode;
-  const nineExit = () => page('ll-8').exits.find((e) => e.to === 'll-9')!;
+describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and the roads", () => {
+  /** Main levels whose castle ends the game (`next=end`), with the end area to play. */
+  const END_AREAS: Record<string, string> = {
+    'll-8-4': 'll-8-4-end3',
+    'll-9-4': 'll-9-4',
+    'll-13-4': 'll-13-4-end',
+  };
+  const nextOf = (id: string) => {
+    const [, w, s] = /^ll-(\d+)-(\d)$/.exec(id) as RegExpExecArray;
+    return Number(s) < 4 ? `ll-${w}-${Number(s) + 1}` : `ll-${Number(w) + 1}-1`;
+  };
+  const SMB = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
+  const SMB_PAGES = [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`);
 
-  it('the first 8-4 clear opens the World A warp and draws its road in; World 9 stays shut', () => {
-    const h = makeGame();
-    const castle = at('ll-8-4');
-    const warp = warpA();
-    expect(warp.requires).toBe('llLetters');
-    expect(nineExit().requires).toBe('ll9');
-    open(h, fileAt('ll-8-4'));
-    expect(h.map().hintLine).toBe(NINE_HINT(3));
+  /** Walk to level `id`'s node on the page shown, play it and leave by its normal exit. */
+  function clear(h: H, id: string) {
+    walkTo(h, at(id).node);
     enterHere(h);
-    reachEnd(h, 'll-8-4-end3');
-    // Recorded and saved as the card shows; the NES progress store is left alone.
-    expect(loadSave(1)?.cleared).toContain('ll-8-4');
-    expect(loadProgress().lost).toEqual({ world9: false, letters: false, beaten: 0 });
-    press(h, 'attack');
-    expect(h.top()).toBeInstanceOf(MessageScene);
-    expect(h.said.at(-1)).toBe('WORLD A IS OPEN! WORLD 9 OPENS ONCE LOST 1-1 TO 8-4 ARE CLEARED (4/32).');
-    press(h, 'jump');
+    const end = END_AREAS[id];
+    if (!end) {
+      h.fire({ type: 'exit', next: nextOf(id) });
+      expect(h.top()).toBeInstanceOf(WorldMapScene);
+    } else {
+      reachEnd(h, end);
+      press(h, 'attack');
+      if (id === 'll-13-4') {
+        expect(h.top()).toBeInstanceOf(CreditsScene);
+        h.until(() => h.top() instanceof WorldMapScene, 8000);
+      }
+    }
+    expect(h.map().page.id).toBe(at(id).page);
+    h.until(() => h.map().mode === 'idle', 2000);
+    expect(h.game.mapProgress.cleared).toContain(id);
+  }
+  /** From the castle, walk off the page along its world exit to page `to`. */
+  function walkOn(h: H, to: PageId) {
+    const e = h.map().page.exits.find((x) => x.to === to);
+    expect(e, `a road on to ${to}`).toBeDefined();
+    walkTo(h, e!.from);
+    h.tap(dirOf(e!.points));
+    h.until(() => h.map().page.id === to && h.map().mode === 'idle', 2000);
+    expect(h.map().node).toBe(startOf(to));
+  }
+  /** Takes the warp zone pipe in `room` to `level` (the NES warp, kept in the campaign). */
+  function warpPipe(h: H, room: string, level: string) {
+    const pipe = getLevel(room).zones.find((z) => z.kind === 'pipe' && z.target.level === level);
+    expect(pipe, `${room} → ${level}`).toBeDefined();
+    h.game.startLevel(getLevel(room), { mode: 'stand' });
+    h.step();
+    h.fire({ type: 'pipe', target: (pipe as { target: { level: string; x: number; y: number } }).target });
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    expect(h.map().page.id).toBe('ll-8');
-    expect(h.map().node).toBe(castle.node);
-    expect(h.game.pendingReveal).toContain(revealId('ll-8', warp.id));
-    for (const p of page('ll-8').paths.filter((x) => x.to === warp.id || x.from === warp.id))
-      expect(h.game.pendingReveal).toContain(revealId('ll-8', pathId(p)));
-    expect(h.map().revealing).toBe(true);
     h.until(() => h.map().mode === 'idle', 2000);
-    expect(isWarpOpen(h.game.mapProgress, warp)).toBe(true);
-    expect(h.game.mapProgress.pages).not.toContain('ll-9');
-    // The castle's hint line counts toward World 9.
-    expect(h.map().hintLine).toBe(NINE_HINT(4));
-    expect(loadSave(1)?.position).toEqual({ page: 'll-8', node: castle.node });
-    // The warp leads to Lost A.
-    walkTo(h, warp.id);
-    expect(h.map().hintLine).toBe(warp.label);
-    h.tap('jump');
-    h.idle(MAP_FADE_FRAMES);
-    h.until(() => h.map().mode === 'idle', 800);
-    expect(h.map().page.id).toBe('ll-10');
-    expect(h.map().node).toBe(nodeOn('ll-10', 'll-8').id);
-    expect(loadSave(1)?.pages).toContain('ll-10');
-  });
+    expect(h.map().page.id).toBe(at(level).page);
+  }
 
-  it("World 8's pad → Lost A → A's portal → back on World 8's pad, both ways a fade", () => {
+  it('the story: SMB 8-4 → the road → Lost 1 → warps → Lost 8-4 → 9 → A → B → C → D-4, the final ending', () => {
     const h = makeGame();
-    const pad = warpA();
-    const eight = ['ll-8-1', 'll-8-2', 'll-8-3', 'll-8-4'];
-    open(h, file({ cleared: eight, pages: llPages(8), position: { page: 'll-8', node: pad.id } }));
-    expect(h.map().node).toBe(pad.id);
-    h.tap('jump');
-    expect(h.map().mode).toBe('fade');
-    h.idle(MAP_FADE_FRAMES);
-    h.until(() => h.map().mode === 'idle', 2000);
-    // Portals pair 1:1: the pad lands on A's pipe back to it.
-    const portal = page('ll-10').nodes.find((n) => n.kind === 'warp') as MapNode;
-    expect(portal.to).toBe('ll-8');
-    expect(h.map().page.id).toBe('ll-10');
-    expect(h.map().node).toBe(portal.id);
-    expect(h.map().hintLine).toBe('LOST WORLD 8');
-    // Off to the start and back, then through the pipe.
-    walkTo(h, startOf('ll-10'));
-    walkTo(h, portal.id);
-    h.tap('jump');
-    expect(h.map().mode).toBe('fade');
-    h.idle(MAP_FADE_FRAMES);
-    h.until(() => h.map().mode === 'idle', 800);
-    expect(h.map().page.id).toBe('ll-8');
-    expect(h.map().node).toBe(pad.id);
-    expect(h.map().hintLine).toBe(pad.label);
-    expect(loadSave(1)?.position).toEqual({ page: 'll-8', node: pad.id });
-    expect(h.game.mapLastNode['ll-10']).toBe(portal.id);
-  });
-
-  it('31 of 32 with 8-4 beaten: World 9 shut, the hint says 31/32; the 32nd clear opens it, drawn in', () => {
-    const h = makeGame();
-    const castle = at('ll-8-4');
-    const cleared = LOST_NINE_LEVELS.filter((id) => id !== 'll-3-2');
-    open(h, file({ cleared, pages: llPages(8), position: { page: 'll-8', node: castle.node } }));
-    expect(h.game.mapProgress.pages).not.toContain('ll-9');
-    expect(h.map().hintLine).toBe(NINE_HINT(31));
-    expect(h.said.some((t) => t.includes('31/32'))).toBe(true);
-
-    // The last one, far from World 8.
-    h.game.travelToPage('ll-3');
-    h.until(() => h.map().mode === 'idle', 800);
-    h.idle(8);
-    walkTo(h, at('ll-3-2').node);
-    enterHere(h);
-    h.fire({ type: 'exit', next: 'll-3-3' });
-    expect(h.map().page.id).toBe('ll-3');
-    expect(h.game.mapProgress.pages).toContain('ll-9');
-    // World 8's share waits for World 8.
-    expect(h.game.pendingReveal).toContain(revealId('ll-8', exitId(nineExit())));
-    expect(h.game.pendingReveal).toContain(revealId('ll-9', startOf('ll-9')));
-    h.until(() => h.map().mode === 'idle', 2000);
-    expect(loadSave(1)?.pages).toContain('ll-9');
-
-    h.game.travelToPage('ll-8');
-    expect(h.map().node).toBe(castle.node);
-    expect(h.map().revealing).toBe(true);
-    h.until(() => h.map().mode === 'idle', 2000);
-    expect(h.game.pendingReveal.filter((r) => r.startsWith('ll-8:'))).toEqual([]);
-    expect(h.map().hintLine).toBe('');
-    h.idle(8);
+    open(
+      h,
+      file({
+        cleared: SMB.filter((id) => id !== '8-4'),
+        gameCleared: false,
+        pages: SMB_PAGES,
+        position: { page: 'smb-8', node: '8-4' },
+      }),
+    );
+    const road = page('smb-8').exits.find((e) => e.to === 'll-1');
+    expect(road?.from).toBe('8-4');
+    expect(isExitOpen(h.game.mapProgress, page('smb-8'), road!)).toBe(false);
+    // Nothing leads on from World 8's castle yet.
     h.tap('right');
-    h.until(() => h.map().page.id === 'll-9' && h.map().mode === 'idle', 2000);
-  });
+    expect(h.map().page.id).toBe('smb-8');
 
-  it('8-4 as the 32nd clear opens World 9 at once and says so', () => {
-    const h = makeGame();
-    const cleared = LOST_NINE_LEVELS.filter((id) => id !== 'll-8-4');
-    open(h, fileAt('ll-8-4', { cleared }));
+    // SMB 8-4: "Your quest is over.", the credits, then World 8 with the road drawn in.
     enterHere(h);
-    reachEnd(h, 'll-8-4-end3');
-    press(h, 'attack');
-    expect(h.said.at(-1)).toBe('WORLD A IS OPEN! WORLD 9 IS OPEN!');
-    press(h, 'jump');
-    expect(h.game.pendingReveal).toContain(revealId('ll-8', exitId(nineExit())));
+    h.game.startLevel(getLevel('8-4-end'), { mode: 'stand' });
+    h.step();
+    h.fire({ type: 'exit', next: 'end' });
+    expect(h.top()).toBeInstanceOf(CreditsScene);
+    h.until(() => h.top() instanceof WorldMapScene, 8000);
+    expect(h.map().page.id).toBe('smb-8');
+    expect(h.map().node).toBe('8-4');
+    expect(h.game.pendingReveal).toContain(revealId('smb-8', exitId(road!)));
+    expect(h.map().revealing).toBe(true);
     h.until(() => h.map().mode === 'idle', 2000);
+    expect(isExitOpen(h.game.mapProgress, page('smb-8'), road!)).toBe(true);
+    expect(loadSave(1)).toMatchObject({ gameCleared: true, position: { page: 'smb-8', node: '8-4' } });
+    expect(loadSave(1)?.pages).toContain('ll-1');
+
+    // Walk the road to Lost World 1 (a slide), back to World 8 and on again.
+    walkOn(h, 'll-1');
+    expect(h.game.pendingReveal.filter((r) => r.startsWith('ll-1:'))).toEqual([]);
+    expect(isOpen(h.game.mapProgress, page('ll-1'), at('ll-1-1').node)).toBe(true);
+    h.tap('left');
+    h.until(() => h.map().page.id === 'smb-8' && h.map().mode === 'idle', 2000);
+    expect(h.map().node).toBe('8-4');
+    walkOn(h, 'll-1');
+
+    // Lost 1-1, then 1-2's warp zone (NES): on to World 3, skipping World 2.
+    clear(h, 'll-1-1');
+    walkTo(h, at('ll-1-2').node);
+    enterHere(h);
+    warpPipe(h, 'll-1-2-warp', 'll-3-1');
+    expect(h.game.state.warped).toBe(true);
+    for (const id of ['ll-3-1', 'll-3-2', 'll-3-3', 'll-3-4']) clear(h, id);
+    walkOn(h, 'll-4');
+    for (const id of ['ll-4-1', 'll-4-2', 'll-4-3', 'll-4-4']) clear(h, id);
+    walkOn(h, 'll-5');
+    clear(h, 'll-5-1');
+    // 5-2's warp zone: on to World 8, skipping 6 and 7.
+    walkTo(h, at('ll-5-2').node);
+    enterHere(h);
+    warpPipe(h, 'll-5-2-warp', 'll-8-1');
+    for (const id of ['ll-8-1', 'll-8-2', 'll-8-3']) clear(h, id);
+    // No pad to World A beside the keep any more, and no count toward World 9.
+    expect(page('ll-8').nodes.some((n) => n.kind === 'warp')).toBe(false);
+    walkTo(h, at('ll-8-4').node);
+    expect(h.map().hintLine).toBe('');
+
+    // Lost 8-4 (warped all the way): the NES card, then World 8 with the road to World 9 drawn in.
+    clear(h, 'll-8-4');
+    const p = h.game.mapProgress;
+    expect(p.pages).toContain('ll-9');
+    for (const skipped of ['ll-2', 'll-6', 'll-7', 'll-10']) expect(p.pages).not.toContain(skipped);
     expect(loadSave(1)?.pages).toContain('ll-9');
-    expect(loadProgress().lost.beaten).toBe(0);
+    walkOn(h, 'll-9');
+    for (const id of ['ll-9-1', 'll-9-2', 'll-9-3', 'll-9-4']) clear(h, id);
+    // 9-4 opens World A (the NES ended the game here).
+    expect(p.pages).toContain('ll-10');
+    walkOn(h, 'll-10');
+    for (const w of [10, 11, 12]) {
+      for (const s of [1, 2, 3, 4]) clear(h, `ll-${w}-${s}`);
+      walkOn(h, `ll-${w + 1}`);
+    }
+    for (const id of ['ll-13-1', 'll-13-2', 'll-13-3']) clear(h, id);
+    const pages = p.pages.slice();
+
+    // D-4: the final ending (the card, the credits), then World D's map; nothing more opens.
+    clear(h, 'll-13-4');
+    expect(h.map().node).toBe(at('ll-13-4').node);
+    expect(p.pages).toEqual(pages);
+    const saved = loadSave(1) as SaveFile;
+    expect(saved.cleared).toContain('ll-13-4');
+    expect(saved.position).toEqual(at('ll-13-4'));
+    expect(h.game.campaign).toEqual({ slot: 1 });
+    // The NES progress store is left alone.
+    expect(loadProgress().lost).toEqual({ world9: false, letters: false, beaten: 0 });
+  }, 120_000); // 33 levels played from the map
+
+  it('Lost 8-4: the NES card, then the World 8 map with the road to World 9 drawn in (warped or not)', () => {
+    for (const warped of [false, true]) {
+      const h = makeGame();
+      const castle = at('ll-8-4');
+      open(h, fileAt('ll-8-4'));
+      expect(h.map().hintLine).toBe('');
+      enterHere(h);
+      h.game.state.warped = warped;
+      reachEnd(h, 'll-8-4-end3');
+      expect((h.top() as CardScene).lines[2]).toBe('YOUR QUEST IS OVER.');
+      // Recorded and saved as the card shows.
+      expect(loadSave(1)?.cleared).toContain('ll-8-4');
+      expect(loadSave(1)?.pages).toContain('ll-9');
+      press(h, 'attack');
+      expect(h.top()).toBeInstanceOf(WorldMapScene);
+      expect(h.map().page.id).toBe('ll-8');
+      expect(h.map().node).toBe(castle.node);
+      const nine = page('ll-8').exits.find((e) => e.to === 'll-9')!;
+      expect(h.game.pendingReveal).toContain(revealId('ll-8', exitId(nine)));
+      expect(h.game.pendingReveal).not.toContain(revealId('ll-10', startOf('ll-10')));
+      h.until(() => h.map().mode === 'idle', 2000);
+      expect(h.game.mapProgress.pages).not.toContain('ll-10');
+      expect(loadProgress().lost.beaten).toBe(0);
+      h.tap('right');
+      h.until(() => h.map().page.id === 'll-9' && h.map().mode === 'idle', 2000);
+      store.clear();
+    }
   });
 
-  it('a warp zone taken on the way does not keep World 9 shut', () => {
+  it('replaying Lost 8-4 goes back to the map with nothing new', () => {
     const h = makeGame();
-    const cleared = LOST_NINE_LEVELS.filter((id) => id !== 'll-8-4');
-    open(h, fileAt('ll-8-4', { cleared }));
+    open(h, fileAt('ll-8-4', { cleared: ['ll-8-1', 'll-8-2', 'll-8-3', 'll-8-4'], pages: llPages(9) }));
     enterHere(h);
-    h.game.state.warped = true;
     reachEnd(h, 'll-8-4-end3');
     press(h, 'attack');
-    press(h, 'jump');
-    h.until(() => h.map().mode === 'idle', 2000);
-    expect(h.game.mapProgress.pages).toContain('ll-9');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.game.pendingReveal).toEqual([]);
+    expect(h.map().mode).toBe('idle');
   });
 
-  it('replaying 8-4 says what is open', () => {
-    const h = makeGame();
-    open(h, fileAt('ll-8-4', { cleared: [...LOST_NINE_LEVELS], pages: llPages(9) }));
-    enterHere(h);
-    reachEnd(h, 'll-8-4-end3');
-    press(h, 'attack');
-    expect(h.said.at(-1)).toBe('WORLD A IS OPEN. WORLD 9 IS OPEN.');
-  });
-
-  it('9-4: the card, then the Lost 9 map with the clear saved', () => {
+  it('9-4: the card, then the Lost 9 map with the road to World A drawn in and saved', () => {
     const h = makeGame();
     open(h, fileAt('ll-9-4', { pages: llPages(9) }));
     enterHere(h);
@@ -445,13 +485,22 @@ describe('Lost Levels campaign: the game ends and the unlocks (read from the fil
     press(h, 'attack');
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.map().page.id).toBe('ll-9');
-    h.until(() => h.map().mode === 'idle', 800);
+    const a = page('ll-9').exits.find((e) => e.to === 'll-10')!;
+    expect(h.game.pendingReveal).toContain(revealId('ll-9', exitId(a)));
+    h.until(() => h.map().mode === 'idle', 2000);
     expect(loadSave(1)?.cleared).toContain('ll-9-4');
+    expect(loadSave(1)?.pages).toContain('ll-10');
+    // A's start walks back to World 9's castle.
+    h.tap('right');
+    h.until(() => h.map().page.id === 'll-10' && h.map().mode === 'idle', 2000);
+    h.tap('left');
+    h.until(() => h.map().page.id === 'll-9' && h.map().mode === 'idle', 2000);
+    expect(h.map().node).toBe(at('ll-9-4').node);
   });
 
   it('D-4: the card, the credits, then the Lost D map with the clear saved', () => {
     const h = makeGame();
-    open(h, fileAt('ll-13-4', { pages: [...llPages(8), 'll-10', 'll-11', 'll-12', 'll-13'] }));
+    open(h, fileAt('ll-13-4', { pages: llPages(13) }));
     enterHere(h);
     reachEnd(h, 'll-13-4-end');
     expect(loadSave(1)?.cleared).toContain('ll-13-4');
@@ -468,6 +517,120 @@ describe('Lost Levels campaign: the game ends and the unlocks (read from the fil
     expect(h.game.campaign).toEqual({ slot: 1 });
   });
 });
+
+describe('Lost Levels campaign: files from before 0.4.7 load with nothing lost', () => {
+  it('a file that beat SMB 8-4 gets the road to Lost World 1, drawn in on World 8', () => {
+    const h = makeGame();
+    const smb = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
+    openStored(
+      h,
+      file({
+        cleared: smb,
+        gameCleared: true,
+        pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
+        position: { page: 'smb-8', node: '8-4' },
+      }),
+    );
+    expect(h.game.mapProgress.pages).toContain('ll-1');
+    expect(loadSave(1)?.pages).toContain('ll-1');
+    // World 8's share drawn in when the map first showed (open waited for idle); Lost 1's waits.
+    expect(h.game.pendingReveal.filter((r) => r.startsWith('smb-8:'))).toEqual([]);
+    expect(h.game.pendingReveal).toContain(revealId('ll-1', startOf('ll-1')));
+    h.tap('right');
+    h.until(() => h.map().page.id === 'll-1' && h.map().mode === 'idle', 2000);
+    expect(isOpen(h.game.mapProgress, page('ll-1'), at('ll-1-1').node)).toBe(true);
+  });
+
+  it("standing elsewhere, the road waits in World 8's share of the reveal", () => {
+    const h = makeGame();
+    const smb = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
+    h.game.openFile(
+      1,
+      file({ cleared: smb, pages: ['smb-1', 'smb-2', 'smb-8'], position: { page: 'smb-2', node: '2-1' } }),
+    );
+    expect(h.game.pendingReveal).toContain('smb-8:8-4>ll-1');
+    h.until(() => h.map().mode === 'idle', 800);
+    expect(loadSave(1)?.pendingReveal).toContain('smb-8:8-4>ll-1');
+  });
+
+  it('a file mid-Lost-Levels (reached through the hub) keeps every page and clear; Lost 1 walks back to World 8', () => {
+    const h = makeGame();
+    const smb = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
+    const lost = ['ll-1-1', 'll-1-2', 'll-1-3', 'll-1-4', 'll-2-1'];
+    const pages = [...new Set([...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`), ...llPages(2)])];
+    // Before 0.4.7 the hero could stand on Lost 1's warp back to the hub, which is gone.
+    openStored(h, file({ cleared: [...smb, ...lost], pages, position: { page: 'll-1', node: 'hub' } }));
+    expect(h.map().page.id).toBe('ll-1');
+    expect(h.map().node).toBe('start');
+    const p = h.game.mapProgress;
+    expect(p.cleared).toEqual(expect.arrayContaining([...smb, ...lost]));
+    expect([...p.pages].sort()).toEqual([...pages].sort());
+    expect(loadSave(1)?.position).toEqual({ page: 'll-1', node: 'start' });
+    // Lost 1's start walks back along the road to World 8's castle, and on again.
+    h.tap('left');
+    h.until(() => h.map().page.id === 'smb-8' && h.map().mode === 'idle', 2000);
+    expect(h.map().node).toBe('8-4');
+    h.tap('right');
+    h.until(() => h.map().page.id === 'll-1' && h.map().mode === 'idle', 2000);
+    // On to World 2 as before, where 2-1 is cleared and 2-2 open.
+    walkOn2(h);
+    expect(isOpen(p, page('ll-2'), at('ll-2-2').node)).toBe(true);
+  });
+
+  it('a file with World 9 open by the old 32-level rule, or World A by its pad, keeps them', () => {
+    const h = makeGame();
+    const nine = Array.from({ length: 32 }, (_, i) => `ll-${Math.floor(i / 4) + 1}-${(i % 4) + 1}`);
+    // World A opened through World 8's pad (8-4 beaten), World 9 through the 32 clears; the hero
+    // stood on A's pipe back to World 8, which is gone.
+    openStored(
+      h,
+      file({
+        cleared: [...nine, 'll-10-1'],
+        pages: [...llPages(9), 'll-10'],
+        position: { page: 'll-10', node: 'warp-ll-8' },
+      }),
+    );
+    expect(h.map().page.id).toBe('ll-10');
+    expect(h.map().node).toBe('start');
+    const p = h.game.mapProgress;
+    expect(p.pages).toEqual(expect.arrayContaining(['ll-9', 'll-10']));
+    expect(isOpen(p, page('ll-10'), at('ll-10-2').node)).toBe(true);
+    // World A without 9-4: nothing re-locks; the Worlds menu still reaches every open page.
+    expect(
+      h
+        .map()
+        .worldsMenuPages()
+        .map((x) => x.id),
+    ).toEqual(expect.arrayContaining(['ll-9', 'll-10']));
+  });
+
+  it("a file with only World A open (warped past 8, 8-4 beaten) gets World 9 too, and a hero on World 8's old pad stands at the castle", () => {
+    const h = makeGame();
+    const eight = ['ll-8-1', 'll-8-2', 'll-8-3', 'll-8-4'];
+    openStored(
+      h,
+      file({
+        cleared: eight,
+        pages: [...llPages(8), 'll-10'],
+        position: { page: 'll-8', node: 'warp-ll-10' },
+      }),
+    );
+    expect(h.map().page.id).toBe('ll-8');
+    expect(h.map().node).toBe(at('ll-8-4').node);
+    expect(h.game.mapProgress.pages).toContain('ll-9');
+    expect(h.game.mapProgress.pages).toContain('ll-10');
+    h.tap('right');
+    h.until(() => h.map().page.id === 'll-9' && h.map().mode === 'idle', 2000);
+  });
+});
+
+/** From Lost 1's start, walk to its castle and on along the road to World 2. */
+function walkOn2(h: H) {
+  walkTo(h, at('ll-1-4').node);
+  const e = page('ll-1').exits[0]!;
+  h.tap(dirOf(e.points));
+  h.until(() => h.map().page.id === 'll-2' && h.map().mode === 'idle', 2000);
+}
 
 describe('Lost Levels campaign: deaths and quitting', () => {
   function die(h: H) {

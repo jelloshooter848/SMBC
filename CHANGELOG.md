@@ -8,6 +8,26 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Simon is hidden under 5-4: ride the down lift past the bottom of the shaft into a secret dungeon,
+  break the cracked wall (small heroes can kick a Koopa shell into it) and take the stairs down to
+  his crypt. His mini game, Dracula's Castle, is a Castlevania-style stage with stairs, candles,
+  bats, Medusa heads and skeletons, ending in a two-phase fight with Dracula.
+- Castlevania-style stairs for levels (`stairs` entities), plus original crypt art and music.
+- The Mini Game Arena: the warp zone's first pad opens a stadium page with a pad for every mini
+  game, tutorial, Larry's airship and the bonus games you have found. Play them for fun; nothing
+  you do there changes your save.
+
+### Changed
+
+- The Lost Levels are now the rest of the story: beating 8-4 opens a road from World 8 to Lost
+  World 1, and the Lost worlds are played in order through D-4, the final ending. Their warp zones
+  still work as on the NES. Older saves keep their progress and get the new road.
+- The warp zone's Lost Levels pad is now the Mini Game Arena pad.
+- After a bonus game the Hammer Bro no longer appears at once: the spot stays closed until you play
+  a level, and then he guards the road. A fight only starts when you walk into him.
+
 ## [0.4.6] - 2026-10-06
 
 ### Added

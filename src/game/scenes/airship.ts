@@ -6,6 +6,7 @@ import type { MiniGameResult } from '../minigames';
 import { MiniGameMenuScene } from '../minigames/menu';
 import { MenuScene } from './menu';
 import { snapshot } from './free-hero';
+import { MET_LARRY } from '../save/save-files';
 
 /*
  * LARRY'S AIRSHIP CHALLENGE (docs/HEROES.md "Larry's airship"): the deck `4-2-airship` (an
@@ -102,6 +103,8 @@ export class AirshipRun {
 export function boardAirship(game: Game, level: string, start: LevelStart): void {
   if (!game.campaign || game.playtestDone) return;
   game.airship = new AirshipRun(level, start, game.state);
+  // The file has reached Larry's airship: the Mini Game Arena offers it from now on.
+  game.meet(MET_LARRY);
 }
 
 /** End the run and report it to a dev round; true when it was one. */

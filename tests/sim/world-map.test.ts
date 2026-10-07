@@ -172,6 +172,9 @@ describe('world map scene', () => {
     h.idle(8);
     const exit = page(1).exits[0] as WorldMapPage['exits'][number];
     expect(h.map().node).toBe(exit.from);
+    // The new place is saved once the slide is over (a file in play keeps it).
+    const saved: unknown[] = [];
+    vi.spyOn(h.game, 'autosave').mockImplementation(() => void saved.push({ ...prog.position }));
     h.tap(dirOf(exit.points));
     h.until(() => h.map().mode === 'slide', 400);
     h.idle(MAP_SLIDE_FRAMES - 1);
@@ -179,6 +182,7 @@ describe('world map scene', () => {
     expect(h.map().page.id).toBe('smb-2');
     expect(h.map().node).toBe('start');
     expect(prog.position).toEqual({ page: 'smb-2', node: 'start' });
+    expect(saved.at(-1)).toEqual({ page: 'smb-2', node: 'start' });
     expect(h.said).toContain(`World 2, ${page(2).title}. World 2 start`);
   });
 
@@ -474,8 +478,12 @@ describe('developer mode: unlock all on the map', () => {
     h.game.showMap();
     h.idle(8);
     expect(h.map().node).toBe('1-3');
-    // Unlock all opens the Warp Zone hub too.
-    expect(worldsListed(h)).toEqual([...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`), 'Warp Zone']);
+    // Unlock all opens the Lost Levels (the story's extension, listed with it) and the hub too.
+    expect(worldsListed(h)).toEqual([
+      ...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`),
+      ...['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D'].map((w) => `Lost ${w}`),
+      'Warp Zone',
+    ]);
 
     // Dev mode off: the row is gone and the map is back to normal, the hero on an open node.
     settings.dev = false;

@@ -11,6 +11,7 @@ import {
   type ItemId,
   type NextItem,
 } from '@game/bonus/items';
+import { CRYSTAL_BALL } from '@game/map/captives';
 
 /**
  * Three campaign save files (world map progress plus the run: lives, score, coins, heroes and
@@ -66,6 +67,13 @@ export interface SaveFile extends MapProgress {
    */
   tutorials?: string[];
   /**
+   * Who the file has met (0.4.7; the Mini Game Arena's "found" rule, src/game/arena): CharacterDef
+   * ids of heroes whose captive was talked to at least once (freed heroes count as met), plus
+   * 'larry' once Larry Koopa's airship was boarded. Missing in older files: derived on load from
+   * `freed` (and 'larry' from the secret `larry`). No format change.
+   */
+  met?: string[];
+  /**
    * The SMB3 item inventory is unlocked on this file (Larry Koopa's crystal ball, 4-2's airship).
    * Missing in older files: off, but a file that has the crystal ball's secret `larry` counts as on.
    */
@@ -75,6 +83,12 @@ export interface SaveFile extends MapProgress {
    * the Hammer Bro guarding its road is beaten (docs/WORLD_MAP.md).
    */
   bonusOpen?: boolean;
+  /**
+   * The used bonus spot's Hammer Bro is out guarding its road: set once a level is entered from
+   * the map after the bonus was used, cleared when he is beaten. Missing (older files): not out
+   * yet, so he comes out after the next level.
+   */
+  bonusGuard?: boolean;
   /*
    * The SMB3 bonus games and item inventory (src/game/bonus, docs/BONUS.md), all optional (missing:
    * empty / 0 / off, no format bump): item ids won (at most 12), the bonus rotation's next game,
@@ -147,6 +161,24 @@ export function tutorialHeroes(
   return [...new Set(ids.filter(known))];
 }
 
+/** Larry Koopa in `met`: his airship has been boarded on the file (src/game/arena). */
+export const MET_LARRY = 'larry';
+
+/**
+ * The file's `met` list (SaveFile.met): known hero ids and 'larry' from `ids`, each once, in
+ * order, then the freed heroes (always met), then 'larry' when `larrySecret` (his crystal ball).
+ */
+export function metIds(
+  ids: readonly unknown[],
+  freed: readonly string[],
+  larrySecret = false,
+  characters: readonly CharacterDef[] = CHARACTERS,
+): string[] {
+  const known = (id: unknown): id is string =>
+    typeof id === 'string' && (id === MET_LARRY || characters.some((c) => c.id === id));
+  return [...new Set([...ids.filter(known), ...freed, ...(larrySecret ? [MET_LARRY] : [])])];
+}
+
 /**
  * v2 → v3 (0.5.0, freeing the heroes): existing files are locked too, keeping Mario plus the
  * hero(es) they last used (`character`, `character2`).
@@ -205,8 +237,10 @@ export function newSave(
     devAllHeroes: false,
     freed: freedHeroes([character, character2], characters),
     tutorials: tutorialHeroes([character, character2], characters),
+    met: metIds([], freedHeroes([character, character2], characters), false, characters),
     inventoryUnlocked: false,
     bonusOpen: true,
+    bonusGuard: false,
     ...bonusSaveFields(newBonusState()),
   };
 }
@@ -243,6 +277,23 @@ function revealIds(x: unknown, pages: readonly PageId[]): string[] {
       return i > 0 && i < id.length - 1 && pages.includes(id.slice(0, i));
     });
   return [...new Set(ids)].slice(0, 64);
+}
+
+/**
+ * Map nodes a later build took away, '<page>:<node>' → the node of that page to stand on instead.
+ * 0.4.7 (the Lost Levels as the story's extension): Lost World 1's warp back to the hub and the
+ * World 8 ↔ A pads went; a hero left on World 8's pad stands at the castle it hung off.
+ */
+const REMOVED_NODES: Readonly<Record<string, string>> = {
+  'll-1:hub': 'start',
+  'll-8:warp-ll-10': 'll-8-4',
+  'll-10:warp-ll-8': 'start',
+};
+
+/** The node to stand on: `node` when page `page` has it, else its replacement or the start. */
+function placedNode(page: PageId, node: string): string {
+  if (mapPage(page)?.nodes.some((n) => n.id === node)) return node;
+  return REMOVED_NODES[`${page}:${node}`] ?? 'start';
 }
 
 /** World 1's page, where every file starts. */
@@ -302,7 +353,7 @@ export function migrateSave(
     [...MAP_PAGES].reverse().find((p) => p.group === 'smb' && pages.includes(p.id))?.id ?? d.position.page;
   const cleared = withTutorial(strs(stored.cleared, d.cleared));
   let position = pages.includes(posPage)
-    ? { page: posPage, node: str(pos.node, d.position.node) }
+    ? { page: posPage, node: placedNode(posPage, str(pos.node, d.position.node)) }
     : { page: furthest, node: 'start' };
   // Before 1-0, 1-1 was open on a new file: a file with no clears may stand there (or anywhere
   // past World 1's start), which is locked until 1-0 is cleared. Back to the start, on 1-0.
@@ -346,9 +397,12 @@ export function migrateSave(
       ...(Array.isArray(stored.tutorials) ? stored.tutorials : []),
       ...[stored.character, stored.character2].filter((id) => freed.includes(id as string)),
     ]),
+    // Talked-to captives; older files derive it from the freed heroes (and Larry from his secret).
+    met: metIds(Array.isArray(stored.met) ? stored.met : [], freed, secrets.includes(CRYSTAL_BALL)),
     // Larry Koopa's crystal ball (secret 'larry') unlocks the inventory.
     inventoryUnlocked: stored.inventoryUnlocked === true || secrets.includes('larry'),
     bonusOpen: stored.bonusOpen !== false,
+    bonusGuard: stored.bonusOpen === false && stored.bonusGuard === true,
     ...bonusSaveFields(bonusStateFrom(stored)),
   };
 }

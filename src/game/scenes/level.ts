@@ -13,6 +13,7 @@ import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
 import { talkToCaptive } from './free-hero';
+import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
@@ -40,6 +41,8 @@ export class LevelScene implements Scene {
   readonly debug = new DebugOverlay();
   private lastDebugToggle = { f1: false, f2: false };
   private started = false;
+  /** This level was an arena round's stage and its exit ended the round (arena/stage-round.ts). */
+  private roundOver = false;
   /** Back from scenes pushed over the level: the press that closed them must not jump. */
   private swallowJump = false;
   /** The stage tutorial played here (1-0 and its pipe room), else null. */
@@ -123,7 +126,12 @@ export class LevelScene implements Scene {
     this.world.update(inputs);
     this.syncState();
     this.tutorial?.update();
-    for (const ev of this.world.events.splice(0)) this.handle(ev);
+    for (const ev of this.world.events.splice(0)) {
+      this.handle(ev);
+      // An arena round ended here (its exit): this level is gone with it, so nothing more of it
+      // may act (a later event would play on over the arena's map).
+      if (this.roundOver && !this.game.scenes.find((s) => s === this)) break;
+    }
   }
 
   /** Player 1's hero decides the buttons: touch input only ever drives player 1. */
@@ -219,6 +227,8 @@ export class LevelScene implements Scene {
         game.state.checkpoint = null;
         game.state.time = null;
         if (game.playtestDone) game.playtestDone();
+        // A stage played as an arena round (arena/stage-round.ts): its exit passes the round.
+        else if (endStageRound(game, 'pass')) this.roundOver = true;
         else if (ev.next === 'end') game.showEnding(this.level.parent ?? this.level.id);
         // Campaign: the clear is recorded and the map shows what it opened (flagpole or castle).
         // Otherwise on to the next level; a castle's "another castle" news is shown in the

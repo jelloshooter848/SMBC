@@ -24,7 +24,9 @@ export type Theme =
   // Larry Koopa's airship behind 4-2's right-hand pipe: wooden decks and iron under a night sky.
   | 'airship'
   // The airship's open decks (4-2-airship, auto-scrolling): SMB3-style planks under a daylight sky.
-  | 'airship-deck';
+  | 'airship-deck'
+  // Simon's crypt under 5-4 and his mini game's castle: grey stone, night-blue brick, candlelight.
+  | 'crypt';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -47,6 +49,7 @@ export const THEMES: readonly Theme[] = [
   'cavern',
   'airship',
   'airship-deck',
+  'crypt',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -66,6 +69,7 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'station') return 'mm-station';
   if (theme === 'cavern') return 'cavern';
   if (theme === 'airship' || theme === 'airship-deck') return 'airship';
+  if (theme === 'crypt') return 'crypt';
   return 'overworld';
 }
 
@@ -115,6 +119,20 @@ export type Zone =
     }
   /** Falling out of the level at column >= x drops the player into `target` instead of killing them. */
   | { kind: 'pit'; x: number; target: { level: string; x: number; y: number } }
+  /**
+   * A lift shaft down into a hidden area (5-4's shaft into `5-4-dungeon`): a player riding a
+   * `lift-down` whose column lies within [x, x + w) is carried on down past the screen bottom
+   * and drops into `target` from above (a `fall` arrival). Falling into the shaft without the
+   * lift still kills. The lift's planks carry a faint skull mark (the hint). `campaign`: the
+   * zone sleeps (no descent, no mark) unless the campaign variant (level/campaign.ts) wakes it.
+   */
+  | {
+      kind: 'descent';
+      x: number;
+      w: number;
+      target: { level: string; x: number; y: number };
+      campaign?: boolean;
+    }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
   | { kind: 'cheeps'; x: number; w: number }
   /** Bullet Bills fly in from the screen edges while the player is within [x, x + w). */

@@ -30,6 +30,9 @@ const PULLY_FALL_MAX = vel((350 * HALF) / FPS);
 /** In castles (`level.levNum == 4`) elevators wrap at GLOB_STG_TOP + TILE_SIZE*2 (2 tiles). */
 const CASTLE_WRAP_Y = px(2 * 16);
 
+/** How far (px) a descent lift sinks past the screen bottom with its rider before it wraps. */
+const DESCENT_DEPTH = 64;
+
 /** Moving platforms. The surface is one-way: you land on it from above and it carries you. */
 export class Lift extends Entity {
   readonly kind: LiftKind;
@@ -52,6 +55,12 @@ export class Lift extends Entity {
   rider: Body | null = null;
   /** A `lift-right` cloud has been stepped on and is drifting. */
   moving = false;
+  /**
+   * A down lift in a live `descent` shaft (World sets it to the zone's target): with a rider it
+   * sinks on past the screen bottom instead of wrapping, carrying them down into that area, and
+   * its planks bear a faint skull mark (the hint).
+   */
+  descent: { level: string; x: number; y: number } | null = null;
 
   /**
    * Top-left corner at tile (tx, ty), moved by the map's pixel props `dx` / `dy`. The converter
@@ -116,7 +125,8 @@ export class Lift extends Entity {
         // PT_CONSTANT_FALL: past the bottom it reappears just above the top, or 2 tiles below
         // the top in castles.
         this.fy += Y_SPEED;
-        if (this.fy > px(SCREEN_H)) this.fy = castle ? CASTLE_WRAP_Y : -b.h;
+        if (this.fy > px(SCREEN_H + (this.descent && rodeLastFrame ? DESCENT_DEPTH : 0)))
+          this.fy = castle ? CASTLE_WRAP_Y : -b.h;
         b.y = Math.round(this.fy);
         break;
       case 'lift-right':
@@ -193,5 +203,18 @@ export class Lift extends Entity {
     // One 8 px plank per `len` segment, so the drawing is exactly the body's width (a len=3
     // lift is 24 px; whole 16 px platforms overhung it by 8 px).
     for (let i = 0; i < this.len; i++) r.sprite(sheet, 'plank', x + i * 8, y);
+    if (this.descent) drawSkullMark(r, x + ((this.len * 8) >> 1) - 2, y + 2);
   }
+}
+
+/**
+ * The descent lift's hint: a tiny dim skull (5×4 px) on the middle plank, bone grey so it only
+ * shows to someone looking.
+ */
+function drawSkullMark(r: Renderer, x: number, y: number): void {
+  const bone = '#a8a8a8';
+  r.rect(x, y, 5, 3, bone);
+  r.rect(x + 1, y + 3, 3, 1, bone);
+  r.rect(x + 1, y + 1, 1, 1, '#000000');
+  r.rect(x + 3, y + 1, 1, 1, '#000000');
 }

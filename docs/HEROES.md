@@ -68,6 +68,12 @@ Mega Man waits on the command deck of the space station above 3-1 (`3-1-station`
 
 Samus waits in her cavern under the 4-2 vine area (`4-2-cavern`, an area of 4-2: `parent: 4-2`, `time: inherit`), on the dais of the Chozo statue's chamber (column 41, feet in row 11, the statue `zebes:chozo-0` at 37). In campaign play the vine area's warp zone shows one unlabelled pipe (column 54) that drops the player into the cavern's entry shaft (docs/WORLD_MAP.md "Campaign warp zones"); outside the campaign it keeps its three warps. The cavern is short and Metroid-flavoured: blue rock, an entry chamber, a bubble door (`zebes:bubble-door` in a three-tile doorway), a low tunnel with a ledge, the statue's chamber (a ? block over the orb in the statue's hand), a second bubble door and a side pipe that brings the player up out of 4-2's pipe at column 72, the first pipe past the vine block (64,5), so nothing is skipped (the checkpoint at 98 still lies ahead). The clock runs on throughout. Every hero reaches Samus and crosses to the pipe (`tests/sim/samus-cavern.test.ts`); her lines before the round make the brainwashing a parasite feeding on her will the way a Metroid feeds, which set off a countdown (`DIALOGUE.samus`). Theme and music: `cavern` (the `zebes` sheet's statue faces right, toward Samus). World 4's tree left of 4-2 stands one tile out, clear of her map hint (she is drawn on the left: 4-2's roads leave right, up and down).
 
+Simon waits in his crypt under 5-4 (`5-4-crypt`, an area of 5-4: `parent: 5-4`, `time: inherit`), kneeling on the floor under the stained glass (column 11, feet in row 11). The way in is campaign only: 5-4's lift shaft (columns 84-91) has a sleeping `descent` zone the campaign variant wakes (docs/WORLD_MAP.md "Descent shafts"), so riding the down lift (column 89) on past the bottom of the shaft carries the player down, out of sight, and drops them into **the dungeon** (`5-4-dungeon`, one locked screen) from above at column 13. Falling into the shaft without the lift still kills. The hint is a faint bone-grey skull on the down lift's middle plank (campaign only). In the campaign the fire bar at (92, 10) is three balls short (3), so its tip clears the lift plus a tile of overhang each side: a rider whose body overlaps the lift at all, even hanging off either end, rides down unhurt; co-op riders all go down together. In the dungeon a single hard block (11,10) stands between the landing and a Koopa pacing up to a **cracked wall** (column 5, rows 8-10, tile `&`, `T.CRACKED`). Behind the wall, three steps lead down to a hole (columns 0-1) whose `pit` zone drops the player into the crypt's top-left landing; a castle-stone stair leads down to the floor, past Simon, to a dark doorway in the right wall (rows 10-11; a side `pipe` zone at column 16, just off the locked screen) that drops the player back into 5-4 at column 99, past the lift section (in co-op player 2 drops in 12 px to player 1's right, clear of the fire bar at (103, 11): see docs/WORLD_MAP.md "Co-op fall arrivals"). The clock runs on throughout; nothing is recorded on the map. Candles (`candle x y`, 8×16) in both rooms are snuffed for a coin by any attack, a kicked shell or a hero jumping into them. His lines make the brainwashing Dracula's curse, woken in his blood by Larry's wand (Simon's Quest): he is Dracula's thrall (`DIALOGUE.simon`). Tests: `tests/sim/simon-crypt.test.ts` (every hero rides down, breaks the wall, reaches Simon and gets back).
+
+- **The cracked wall** (`T.CRACKED`, a solid brick-kind block): it crumbles, with every cracked tile joined to it (one hit opens the whole doorway), to any hero attack: a melee hit (`Player.activeMelee`: sword, whip, Ryu's blade), any shot or thrown weapon a hero owns (`Projectile`), a kicked shell (which plows on through the opening instead of bouncing back), a blast (`World.explode`), or a head bump from a hero who breaks bricks (big Mario). A small hero's bump only jolts it (`World.crackWalls`, `World.strikeBlock`, `World.shatterWall`; the `whip-wall` sound once it exists, else `break`). It draws `crypt:wall-cracked` once that sheet exists, else the theme's castle brick with a dark crack.
+- **The Koopa** (`koopa-green 8 10 respawn=true`): small Mario and Luigi have no attack, so they stomp it and kick the shell into the wall. Kicked the wrong way, the shell bounces off the single block and comes back to the wall (a player standing between them is hit, as ever). A spawn with `respawn` is kept by a `Respawner` (`objects/crypt.ts`): a lost Koopa (killed, or fallen down the hole) walks back in at its spot 90 frames later, once no player stands there, for as long as a cracked wall stands.
+- **Art and sound** (S3's): theme and music `crypt` in both rooms; the `crypt` sheet's `wall-cracked`, `candle-0/1`, `rubble-0/1` (the wall's pieces, through `World.breakPieces`), decor `crypt:candelabra-0` (dungeon), `crypt:stained-glass` and `crypt:coffin` (crypt); sfx `whip-wall` and `candle`. Without the sheet the candles and crack fall back to rects and the rubble to the brick piece.
+
 ## The map hint (`src/game/map/captives.ts`)
 
 The world map hints at levels that still hide a hero, in three stages (campaign play only, read
@@ -183,7 +189,7 @@ ends.
   ducking) can it hurt or be hit (any attack, a stomp; 100 points).
 - **The room** (`src/content/levels/world4/4-2-larry.map`, parent 4-2): one locked screen,
   enclosed like SMB3's (the owner's reference, built to the SMB3 art's frames and mock), no sky. The
-  log back wall (`H`, not solid) fills the room, behind the HUD too, with two `smb3:porthole`
+  log back wall (`H`, not solid) fills the room (rows 0-1 under the HUD stay clear), with two `smb3:porthole`
   windows at (5,6) and (10,6). The ceiling row (row 2) and both edge columns (0 and 15) are solid
   (`%`) and covered by 16×16 smb3 decor, one per tile: `smb3:ceiling-beam` along row 2 (columns
   1-14) and `smb3:pillar` down columns 0 and 15 (rows 2-12). The floor is log posts: `#` the post
@@ -256,7 +262,9 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
 
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 
-Every step is a scene pushed over the paused level, so the level's clock and world stand still:
+Every step is a scene pushed over the paused level, so the level's clock and world stand still.
+Talking to the captive first marks the hero as **met** on the file (`SaveFile.met`, below), which
+puts its mini game in the Mini Game Arena:
 
 1. Dialogue cards in a box over the level. The hero says "...LUIGI SERVES KING KOOPA..." and then
    the challenge (per hero in `DIALOGUE`, with a generic line built from the title, wrapped to
@@ -275,6 +283,33 @@ Every step is a scene pushed over the paused level, so the level's clock and wor
    last card does not make the hero jump. The run's GameState is restored after each round, so
    a mini game cannot change lives, power or score.
 
+## Met heroes and the Mini Game Arena (0.4.7)
+
+- **`SaveFile.met?: string[]`** (optional, no format bump): hero ids whose captive was talked to at
+  least once (`Game.meet(id)` from `talkToCaptive`, saved at once), plus `'larry'` once Larry
+  Koopa's airship is boarded (`boardAirship`). Freed heroes always count as met. Older files derive
+  it on load from `freed` (and `'larry'` from the secret `larry`): `save-files.ts metIds`.
+- **The Mini Game Arena** (`src/game/arena/`, the `arena` map page off the Warp Zone hub's first
+  pad; docs/WORLD_MAP.md): one pad per game, built from the registries, so a new `MINIGAMES` entry
+  or a new hero with training lessons gets its pad by itself. Found rules: a hero's mini game once
+  the hero is met; 1-0 once cleared or skipped; a training room once the hero is in `tutorials` or
+  freed; Larry's airship once boarded (or beaten); the three bonus games once the bonus spot exists
+  (secret `larry`). Unfound games are dark "???" pads (the hero's black silhouette and a `?`) whose
+  hint line says what to find; JUMP bumps.
+- **A round** is Dev → Mini games' round (`scenes/dev-minigames.ts playRound`) over the map: no file
+  is open while it runs, and the run, freed and met heroes, training answers, map progress and
+  bonus state and items are put back after, so playing never changes progress, lives, items or
+  the save (`tests/sim/arena.test.ts` checks the file byte for byte for every game). Then the
+  same result card (PASS / FAIL / QUIT) and the map again, on that pad. The 1-0 pad plays the stage
+  as a round (`arena/stage-round.ts`, `Game.stageRound`): its exit passes, pause → Give up quits.
+  Training rooms pass when every lesson is done (Skip training quits); bonus games pass with a
+  prize; the airship passes with the crystal ball. No best results are kept.
+- **Words in a round** stay neutral (`Game.inRound`, set by `playRound`, so the arena and Dev →
+  Mini games alike): a mini game's Give up says "Ends the round" (not "Luigi stays brainwashed for
+  now"), a bonus prize says "YOU GOT A FIRE FLOWER! (JUST FOR FUN)" (nothing goes to the items),
+  and a win says nothing of a spell or curse breaking (Link: "YOU ESCAPED THE KEEP!"; Simon:
+  "DRACULA IS DEFEATED!" alone; Samus and Mega Man without "The spell ... breaks").
+
 ## The `MiniGameDef` contract (`src/game/minigames/types.ts`)
 
 ```ts
@@ -289,7 +324,7 @@ interface MiniGameDef {
 - `create` builds one round as a scene. The flow pushes it and pops it (along with any scenes
   the round pushed itself) when `done` is called. `done` must be called exactly once.
 - The round owns its music, touch labels and its own menu (Continue / Give up → `done('quit')`).
-- Register it in `MINIGAMES` (`src/game/minigames/index.ts`). The flow looks it up only through
+- Register it in `MINIGAMES` (`src/game/minigames/index.ts`); the Mini Game Arena gives it a pad. The flow looks it up only through
   `miniGameFor(hero)`, so a mini game folder can be replaced, for example by one in the hero's
   own game style, without touching the flow.
 
@@ -553,6 +588,87 @@ it escapes 100 / 97 / 90 / 93% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction
 slower reactions) and, rarely, the clock. A clumsier player (21 frames, 10 px, a quarter of jumps
 let go early) escapes 63% of the time, mostly losing to the clock in shaft 2. A sharp run leaves
 about 43 seconds.
+
+## Simon's mini game: Dracula's Castle (`src/game/minigames/simon/`)
+
+Simon is Dracula's thrall; the round is an NES Castlevania-style castle stage and Dracula's
+throne room, played **as Simon** with his own kit (no new weapon code): the chain whip (`whip: 1`)
+and five hearts; a candle in the entrance hall drops the **dagger** (`subs: 1`, a banner and the
+announcer say how to throw it; each throw takes a heart). It runs in a `World` of its own
+(stage.map with `?raw`, not in the level library) with a fresh GameState, one life, no level clock:
+the scene keeps its own **300-second clock** (held by the Infinite time assist; at 0 Simon falls).
+READY shows first. Theme `crypt` and the `crypt` sheet (`art.ts`: `drawCrypt` draws a crypt frame,
+or a plain box for one that does not exist; nothing throws).
+
+- **The stage** (112 columns; rows 0-1 stay empty under the HUD; below them every empty cell is
+  the crypt's black-brick `wall` backdrop under a `wall-top` cornice, with four open windows,
+  stained glass and Dracula's throne as decor): the entrance hall (candles, a bat),
+  **stairs up** (`stairs 18 12 len=5 dir=ur`) onto the battlement walk (a brick block from column
+  23, so the flight must be climbed; a roast candle at its start; Medusa heads), **stairs down** (`stairs 50 12 len=5 dir=ul`)
+  into the bone hall (two skeletons, a bat), the gallery (Medusa heads low), the **door**
+  (column 96, rows 11-12) and the 16-wide throne room (`scrollStop 97`: the camera locks there
+  as the door opens; Simon walks in, it shuts).
+- **Candles** (`candle x y [drop=heart|big|dagger|meat]`, 8x16, 4 px down in their tile so a
+  standing lash reaches them): harmless; the whip or a dagger snuffs one (sfx `candle`) and it
+  leaves a small heart (1), a big heart (5), the dagger or a **wall roast** (+8 hit points).
+- **Creatures** (stage-creature hits cost one bar of 16; Dracula's two): **bats** (`bat x y`)
+  roost until Simon is within 96 px, swoop to his head height and fly straight on, bobbing;
+  **Medusa heads** (`medusa x y len=N`: while Simon is in columns x..x+N-1, one every 220
+  frames, one at a time, from the edge he faces, a 16 px sine wave around row y at 0.625 px/f); both
+  **crumble when they strike** (no chain of hits as one drifts along with him). **Skeletons**
+  (`skeleton x y`, two lashes) pace by their post facing Simon and lob a bone in an arc timed to
+  land where he stood. A lash knocks bones and fireballs out of the air.
+- **The HUD** (`hud.ts`; no score, so its World has `scorePopups: false`: kills float no "200", as in Zebes and Station Escape): a black band with PLAYER and ENEMY bars (16 segments each), TIME, the
+  sub-weapon box and the hearts.
+- **Dracula** (`dracula.ts`), one ENEMY bar over two phases (`BOSS_HP` 14: 6 for the Count, 8
+  for the beast). **Phase 1, the Count** (music `cv-boss`): gone, appears (sfx `dracula-teleport`)
+  at one of four spots (never the last one, never within 48 px of Simon, preferring within 100),
+  opens his cape and 28 frames later throws a **three-fireball spread** from his low hand (level
+  at lash height, one rising over Simon, one dropping to the floor), lingers ~2 s, vanishes. Only
+  his **head** can be hurt (a separate 16x16 hit box over his 20x42 body; the body clinks), and
+  only while he stands there; 24 frames of grace after a hit. **Phase 2**: the transformation
+  (2 s, sfx `beast-roar`, no screen tint with reduce flashing), then the **beast** (48x48 art,
+  36x40 body, hurt anywhere; music `cv-beast`) rises and cycles walk → spit (three aimed
+  fireballs) → walk → spit → walk → crouch and **leap** at Simon → a landing stomp (a screen
+  shake, not with reduce flashing) with a **shock wave** running along the floor each way.
+- **Endings**: beating the beast passes (banner DRACULA IS DEFEATED! THE CURSE IS BROKEN., the
+  jingle, 5 s); losing every hit point, a pit or the clock fails; the menu's Give up quits
+  (`CastleMenuScene`, the shared MiniGameMenuScene with the dev assists). `done` is called once.
+
+Difficulty (`human-sim.test.ts`, `CastleBot`: it follows the route, lashes candles and whatever
+its prediction puts in the lash after the wind-up, keeps clear of Medusa heads until it can lash
+them, stands off while Dracula casts, lashes the level fireball, then steps in and jump-lashes his
+head on the way down; against the beast it throws daggers from a distance, flees its leaps and
+jumps its shock waves; `CV_SIM=30 pnpm vitest run simon/human-sim --silent=false` prints the
+report): a sharp run passes unhurt with ~250 s left. As a careful first-timer (sees things 15
+frames late, misjudges by up to 6 px and its jump-lash by up to 2 frames, pauses now and then,
+steps closer to a candle its lash fell short of, judges Dracula more closely after each hit or
+missed lash) it passes all 30 seeds at a 12, 15 and 18-frame reaction, losing 6-8 hit points a run
+(3-4 of them to Dracula) with a median of about 210 of the 300 seconds left; a clumsy player (21
+frames, 10 px, more pauses) passes 93%, losing 10.5 (7 to Dracula; the two misses are Dracula).
+The stage is gentle (one-bar creature hits, three roasts); the fight is the test.
+
+### Castlevania stairs (`src/game/entities/objects/stairs.ts`, any level)
+
+`stairs x y len=N dir=ur|ul [sheet=crypt]`: `x y` is the **bottom** step's tile (its foot stands
+on the floor of row y+1); `len` tiles of rise (two 8 px steps a tile); `ur` rises to the right
+(tiles (x+i, y-i)), `ul` to the left (tiles (x-i, y-i)). The top landing is the floor beside the
+top step (row y-len+1's top, from column x+len on, or up to column x-len), solid in the map. The
+steps are scenery (walked through until got on), drawn with the sheet's `stair-r` / `stair-l`
+frames (plain stone boxes until they exist). World builds every flight up front and never
+despawns them. **Getting on**: on the floor within 8 px of the foot, hold UP; within 8 px of the
+top, hold DOWN (`World.grabStairs`). **On them** (`Player.stairs`, `stairWalk`): UP or the way the
+flight rises climbs at 0.75 px/f along each axis, DOWN or the other way descends, nothing stands;
+no jumping or crouching; attacks work (the walk pauses while one swings); a hit never knocks the
+player off. Reaching the foot or the top steps off onto the floor (that end is locked for 8
+frames). Vines are never grabbed from stairs. The screen's edges (the camera's left edge, the
+co-op and auto-scroll right edge, the level's end) move a player along the flight instead of
+off it; the auto-scroll's pushing edge knocks a player off the stairs and pushes (or squashes)
+them like anyone else. Anything that moves players itself (a vine grab, pipes, transfers,
+teleports, a respawn, the castle maze's loops, the flagpole and the axe) takes them off the
+stairs first. Getting on calls the hero's `onGrabStairs` (Samus unrolls a morph ball; she never
+curls up on stairs), and on stairs Simon's UP + whip lashes (it throws the sub-weapon elsewhere).
+The touch JUMP button hides while player 1 is on stairs, whoever the hero (`levelTouchLabels`).
 
 ## Hero training (optional practice rooms)
 

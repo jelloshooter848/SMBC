@@ -27,6 +27,87 @@ export type DevRound = Pick<MiniGameDef, 'title' | 'create'> & { hero?: string; 
  * are put back as they were; the music that was playing comes back.
  */
 
+/**
+ * One round of `def` played over the scene on top (the dev list, the Mini Game Arena's map), for
+ * fun: nothing sticks. No file is open while it runs (`campaign` is null, so nothing can
+ * autosave), and when it ends the round's scenes go (down to that scene) and the run's state, the
+ * freed and met heroes, training answers, map progress, bonus state and items, the campaign and
+ * the music's tempo are put back as they were (its music stopped); then `ended(result)`. A round
+ * that throws while being built puts everything back the same way and rethrows.
+ */
+export function playRound(game: Game, def: DevRound, ended: (result: MiniGameResult) => void): void {
+  const base = game.scenes.top;
+  const audio = game.ctx.audio;
+  const saved = game.state;
+  const before = snapshot(saved);
+  const freed = game.freed.slice();
+  const met = game.met.slice();
+  const tutorials = game.tutorials.slice();
+  const celebrate = [...game.celebrate];
+  const campaign = game.campaign;
+  const progress = structuredClone(game.mapProgress);
+  const pendingReveal = game.pendingReveal.slice();
+  const lastNode = { ...game.mapLastNode };
+  const cutscene = game.mapCutscene;
+  const bonus = structuredClone(game.bonus);
+  const bonusOpen = game.bonusOpen;
+  const bonusGuard = game.bonusGuard;
+  const inventoryUnlocked = game.inventoryUnlocked;
+  const tutorialRun = game.tutorialRun;
+  const stageRound = game.stageRound;
+  const inRound = game.inRound;
+  game.inRound = true;
+  // No file is open for the round: nothing it does can autosave.
+  game.campaign = null;
+  // A pause menu below suspended the audio; the round has its own music.
+  audio.resume();
+  audio.setTempoScale(1);
+  audio.stopMusic();
+  /** Everything as it was before the round (its music stopped). */
+  const restore = () => {
+    game.state = saved;
+    Object.assign(saved, before);
+    game.freed = freed;
+    game.met = met;
+    game.tutorials = tutorials;
+    game.celebrate.clear();
+    for (const id of celebrate) game.celebrate.add(id);
+    game.campaign = campaign;
+    game.mapProgress = progress;
+    game.pendingReveal = pendingReveal;
+    game.mapLastNode = lastNode;
+    game.mapCutscene = cutscene;
+    game.bonus = bonus;
+    game.bonusOpen = bonusOpen;
+    game.bonusGuard = bonusGuard;
+    game.inventoryUnlocked = inventoryUnlocked;
+    game.tutorialRun = tutorialRun;
+    game.stageRound = stageRound;
+    game.inRound = inRound;
+    game.airship = null;
+    audio.setTempoScale(1);
+    audio.stopMusic();
+  };
+  let over = false;
+  const onDone = (result: MiniGameResult) => {
+    if (over) return;
+    over = true;
+    // The round and anything it left on top (its menu) go.
+    while (game.scenes.depth > 0 && game.scenes.top !== base) game.scenes.pop();
+    restore();
+    ended(result);
+  };
+  let scene: Scene;
+  try {
+    scene = def.create(game, onDone);
+  } catch (e) {
+    over = true;
+    restore();
+    throw e;
+  }
+  game.scenes.push(scene);
+}
+
 /** What the result card says for each ending. */
 export const RESULT_WORDS: Record<MiniGameResult, string> = { pass: 'PASS', fail: 'FAIL', quit: 'QUIT' };
 
@@ -68,57 +149,22 @@ export class DevMiniGamesScene extends MenuScene {
   /** One round of `def` over this list, then its result card; the game is left as it was. */
   play(def: DevRound): void {
     const game = this.game;
-    const audio = game.ctx.audio;
-    const saved = game.state;
-    const before = snapshot(saved);
-    const freed = game.freed.slice();
-    const celebrate = [...game.celebrate];
-    const campaign = game.campaign;
-    // No file is open for the round: nothing it does can autosave.
-    game.campaign = null;
-    // A pause menu below suspended the audio; the round has its own music.
-    audio.resume();
-    audio.setTempoScale(1);
-    audio.stopMusic();
-    /** Everything as it was before the round (its music stopped). */
-    const restore = () => {
-      game.state = saved;
-      Object.assign(saved, before);
-      game.freed = freed;
-      game.celebrate.clear();
-      for (const id of celebrate) game.celebrate.add(id);
-      game.campaign = campaign;
-      game.airship = null;
-      audio.setTempoScale(1);
-      audio.stopMusic();
-    };
-    let over = false;
-    const onDone = (result: MiniGameResult) => {
-      if (over) return;
-      over = true;
-      // The round and anything it left on top (its menu) go.
-      while (game.scenes.depth > 0 && game.scenes.top !== this) game.scenes.pop();
-      restore();
-      this.lastResult = result;
-      game.scenes.push(
-        new DevMiniGameResultScene(game, def, result, () => {
-          game.scenes.pop();
-          this.restoreMusic();
-          this.announce();
-        }),
-      );
-    };
-    let scene: Scene;
     try {
-      scene = def.create(game, onDone);
+      playRound(game, def, (result) => {
+        this.lastResult = result;
+        game.scenes.push(
+          new DevMiniGameResultScene(game, def, result, () => {
+            game.scenes.pop();
+            this.restoreMusic();
+            this.announce();
+          }),
+        );
+      });
     } catch (e) {
       // A round that cannot even start leaves nothing behind: the list, as it was, with its music.
-      over = true;
-      restore();
       this.restoreMusic();
       throw e;
     }
-    game.scenes.push(scene);
   }
 
   /** The music under the dev menu again: the level's (paused again under its pause menu), else the title's. */

@@ -1,7 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { MapActor, MapTheme, WorldMapPage } from '@game/map/types';
-import { WARP_SPACE, WATER_FRAMES } from '@content/sprites/map';
+import { ARENA_CROWD_FRAMES, ARENA_NIGHT, WARP_SPACE, WATER_FRAMES } from '@content/sprites/map';
 import { POND_CHARS } from './build';
 
 /*
@@ -27,9 +27,13 @@ import { POND_CHARS } from './build';
  *   A  crystal cluster (the Warp Zone's scenery)
  *   s x  twinkling stars     D moon     k small cloud
  *   a b d f / g i l m / p r t v  a round pond, 4×3 tiles, always written as this whole block
+ *   The Mini Game Arena (theme 'arena'; no water, so no autoShore):
+ *   F  the pitch (checkered floor)     M N  stands full of cheering fans (two crowds, out of step)
+ *   E  a team banner over the stands   B  the barrier wall (ad boards) along the pitch's far edge
+ *   w  bunting: a line of pennants waving in the sky above the stands
  *
  * Walkable (MAP_WALKABLE; every path tile must be one of these): # , * : o, all shores and
- * landings, = I, the mushroom caps ( O ), the treetops { - } and the gate G.
+ * landings, = I, the mushroom caps ( O ), the treetops { - }, the gate G and the pitch F.
  *
  * Pages keep tile rows 0-1 (under the engine's 24 px header) as plain sky.
  *
@@ -43,6 +47,9 @@ import { POND_CHARS } from './build';
  *   paratroopa {range, color}  bobs up and down    lakitu {range}  bobs on its cloud and drifts
  *   bullet {speed}  crosses the sky and wraps
  *   comet {speed, phase}  streaks across the sky, bobbing a little, and wraps
+ *   light-tower {phase}  the arena's floodlights, 16×48 standing on the box; a lamp glints now and then
+ *   scoreboard {phase}   the arena's scoreboard, 48×32 from the box's left edge, standing on its
+ *                        bottom (box rows y-16..y+16); its marquee bulbs slowly trade colours
  */
 
 interface TileDef {
@@ -118,6 +125,14 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   x: { frame: 'star', frames: 4, ticks: 36, phase: 2 },
   D: { frame: 'moon' },
   k: { frame: 'cloud' },
+  // The Mini Game Arena ('arena' theme). Two crowds (M, N) cheer in different patterns and out
+  // of step, so neighbouring stands never move together; the banner hangs over a cheering crowd.
+  F: { frame: 'arena-floor', walk: true },
+  M: { frame: 'arena-crowd-a', frames: ARENA_CROWD_FRAMES, ticks: 22 },
+  N: { frame: 'arena-crowd-b', frames: ARENA_CROWD_FRAMES, ticks: 26, phase: 2 },
+  E: { frame: 'arena-banner', frames: ARENA_CROWD_FRAMES, ticks: 26 },
+  B: { frame: 'arena-wall' },
+  w: { frame: 'arena-bunting', frames: 3, ticks: 14 },
   ...Object.fromEntries(POND_CHARS.split('').map((ch, i) => [ch, wet(`pond-${i}`)])),
 };
 
@@ -162,6 +177,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   coast: 'map-coast',
   bowser: 'map-bowser',
   warp: 'map-warp',
+  arena: 'map-arena',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -174,6 +190,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   coast: '#5c94fc',
   bowser: '#881400',
   warp: WARP_SPACE, // the same indigo as its void, so sky and void are one starfield
+  arena: ARENA_NIGHT, // a night match under the lights
 };
 
 /** Background colour behind the tiles. */
@@ -207,6 +224,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   coast: 'enemies-overworld',
   bowser: 'enemies-castle',
   warp: 'enemies-underground',
+  arena: 'enemies-overworld',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -218,6 +236,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   coast: 'enemies-water',
   bowser: 'enemies-castle',
   warp: 'enemies-water',
+  arena: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -229,6 +248,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   coast: 'decor-overworld',
   bowser: 'decor-gray',
   warp: 'decor-night',
+  arena: 'decor-night',
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
@@ -245,6 +265,8 @@ const KOOPA_FLY = ['koopa-fly-0', 'koopa-fly-1'] as const;
 const HAMMER_BRO = ['hammer-bro-0', 'hammer-bro-1'] as const;
 const LAKITU = ['lakitu-0', 'lakitu-1'] as const;
 const COMET = ['comet-0', 'comet-1'] as const;
+const TOWER = ['arena-tower-0', 'arena-tower-1'] as const;
+const SCOREBOARD = ['arena-scoreboard-0', 'arena-scoreboard-1'] as const;
 
 const num = (a: MapActor, key: string, fallback: number): number => {
   const v = a.props?.[key];
@@ -296,6 +318,8 @@ export const MAP_ACTOR_TYPES = [
   'paratroopa',
   'lakitu',
   'comet',
+  'light-tower',
+  'scoreboard',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -424,6 +448,21 @@ export function drawMapActor(
       r.sprite(map, COMET[(t >> 2) & 1] as string, cx, y + Math.sin(t / 50) * 2, speed < 0);
       return;
     }
+    case 'light-tower': {
+      // Steady lamps; one glints for a moment every few seconds.
+      const map = assets.sheet('map', MAP_PAL[page.theme]);
+      r.sprite(map, TOWER[t % 200 < 24 ? 1 : 0] as string, x, y - 32);
+      return;
+    }
+    case 'scoreboard':
+      // A slow marquee: the bulbs trade colours about twice a second, never a flash.
+      r.sprite(
+        assets.sheet('map', MAP_PAL[page.theme]),
+        SCOREBOARD[Math.floor(t / 32) % 2] as string,
+        x,
+        y - 16,
+      );
+      return;
     default:
       return;
   }
@@ -452,6 +491,10 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
       return [x, y, x + 8, y + 8];
     case 'flag':
       return [x, y, x + 16, y + 16];
+    case 'light-tower':
+      return [x, y - 32, x + 16, y + 16];
+    case 'scoreboard':
+      return [x, y - 16, x + 48, y + 16];
     case 'smoke':
       return [x - 3, y - 28, x + 11, y + 8];
     case 'bubble':

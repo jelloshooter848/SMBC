@@ -1,5 +1,6 @@
 import type { WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly } from './build';
+import { HUB_ARENA_PAD } from './arena';
 
 /*
  * The Warp Zone hub: the space between worlds, reached from World 1's warp spot. Violet
@@ -8,8 +9,11 @@ import { actor, autoShore, poly } from './build';
  * which is also the warp back (RETURN TO WORLD 1: a start node carrying `to`, so arriving never
  * warps and JUMP does); four pads sit one in each direction:
  *
- *   east   LOST LEVELS (after SMB 8-4 is beaten), paired 1:1 with Lost 1's warp back here
+ *   east   MINI GAME ARENA (0.4.7; always open), paired 1:1 with the arena's Return pad
  *   north, south, west   ??? (future secrets; `requires: 'never'`)
+ *
+ * The east pad led to the Lost Levels (after SMB 8-4) until 0.4.7; the Lost Levels are reached
+ * from World 8 now (docs/WORLD_MAP.md), and the pad is the arena's (src/content/worldmap/arena.ts).
  *
  * Room for more pads: the centre offers all four directions already, so new pads hang off the
  * north and south pads, west or east along their platforms: (4,3), (10,3), (4,13) and (10,13) are free
@@ -51,22 +55,19 @@ export const HUB_PAGE: WorldMapPage = {
     { id: 'start', kind: 'start', x: 7, y: 8, to: 'smb-1', toNode: 'bonus-1', label: 'RETURN TO WORLD 1' },
     mystery('warp-mystery-3', 1, 8),
     {
-      id: 'warp-lost',
+      id: HUB_ARENA_PAD,
       kind: 'warp',
       x: 13,
       y: 8,
-      to: 'll-1',
-      toNode: 'hub', // Lost 1's warp back here (HUB_WARP), which lands on this pad
-      requires: 'gameCleared',
-      label: 'LOST LEVELS',
-      hint: 'LOST LEVELS - BEAT 8-4 TO UNLOCK',
+      to: 'arena', // lands on the arena's Return pad (its start), which warps back here
+      label: 'MINI GAME ARENA',
     },
     mystery('warp-mystery-1', 7, 3),
     mystery('warp-mystery-2', 7, 13),
   ],
   paths: [
     { from: 'start', to: 'warp-mystery-3', points: poly([7, 8], [1, 8]) },
-    { from: 'start', to: 'warp-lost', points: poly([7, 8], [13, 8]) },
+    { from: 'start', to: HUB_ARENA_PAD, points: poly([7, 8], [13, 8]) },
     { from: 'start', to: 'warp-mystery-1', points: poly([7, 8], [7, 3]) },
     { from: 'start', to: 'warp-mystery-2', points: poly([7, 8], [7, 13]) },
   ],

@@ -121,6 +121,73 @@ const warpPadLocked = swapColors(
   { c: 'b', a: 'b', '1': '3', e: '0' },
 );
 
+/*
+ * Mini Game Arena pads (0.4.7): an emblem standing on a low round pad, outlined in black so it
+ * reads on the checkered pitch. A gold trophy on a red pad for a mini game, a signpost on a
+ * blue pad for a tutorial, a dim grey question mark on a dark pad for a game not found yet.
+ * The arena's Return pad is the hub's warp pad (`map-warp`).
+ */
+const arenaPad = (ring: string, rim: string, middle: string): string[] =>
+  [
+    '...0000000000...',
+    '.00RRRRRRRRRR00.',
+    '0RRrrrMMMMrrrRR0',
+    '0RRrrrMMMMrrrRR0',
+    '.00RRRRRRRRRR00.',
+    '...0000000000...',
+  ].map((row) => [...row].map((c) => ({ R: ring, r: rim, M: middle })[c] ?? c).join(''));
+
+/** A 10-row emblem, outlined in black, standing on a 6-row pad. */
+const onPad = (emblem: readonly string[], pad: readonly string[]): string[] => [...halo(emblem, '0'), ...pad];
+
+/** The pad alone, at the same place in its 16×16 frame: a hero stands on it (drawArenaPad). */
+const bare = (pad: readonly string[]): string[] => [
+  ...Array.from({ length: 10 }, () => '.'.repeat(16)),
+  ...pad,
+];
+
+/** A gold cup with two handles on a brown base. */
+const TROPHY = [
+  '................',
+  '...6555555559...',
+  '.66.65555559.99.',
+  '.6..65555559..9.',
+  '..666555555999..',
+  '.....655559.....',
+  '......6559......',
+  '.......59.......',
+  '.......59.......',
+  '.....999999.....',
+];
+
+/** A cream signboard pointing right, scribbled with brown text, on a brown post. */
+const SIGNPOST = [
+  '................',
+  '..3333333333....',
+  '..39993999333...',
+  '..333333333333..',
+  '..39399939933...',
+  '..3333333333....',
+  '.......99.......',
+  '.......99.......',
+  '.......99.......',
+  '.......99.......',
+];
+
+/** A grey question mark. */
+const QUESTION = [
+  '................',
+  '.....bbbbbb.....',
+  '....bb....bb....',
+  '..........bb....',
+  '.........bb.....',
+  '.......bbb......',
+  '.......bb.......',
+  '................',
+  '.......bb.......',
+  '................',
+];
+
 export const mapIconFrames: Record<string, readonly string[]> = {
   'map-node-open': nodeOpen,
   'map-node-cleared': swapColors(nodeOpen, { '5': '2', '6': 'd', '9': '8' }),
@@ -135,4 +202,10 @@ export const mapIconFrames: Record<string, readonly string[]> = {
   'map-warp': warpPad,
   'map-warp-locked': warpPadLocked,
   'map-path-dot': pathDot,
+  'map-arena-game': onPad(TROPHY, arenaPad('2', '8', '5')),
+  'map-arena-tutorial': onPad(SIGNPOST, arenaPad('e', 'a', '1')),
+  'map-arena-locked': onPad(QUESTION, arenaPad('b', '0', '0')),
+  'map-arena-game-plate': bare(arenaPad('2', '8', '5')),
+  'map-arena-tutorial-plate': bare(arenaPad('e', 'a', '1')),
+  'map-arena-locked-plate': bare(arenaPad('b', '0', '0')),
 };

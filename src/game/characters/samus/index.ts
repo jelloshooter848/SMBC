@@ -219,6 +219,12 @@ export const SAMUS: CharacterDef = {
       p.scratch.ball = 0;
       p.refitHitbox();
     },
+    // She takes Castlevania stairs standing too (no morph ball on them).
+    onGrabStairs(p) {
+      if (!inBall(p)) return;
+      p.scratch.ball = 0;
+      p.refitHitbox();
+    },
     update(p, input, world) {
       const b = p.body;
       cycleTool(p, input, tools(p), world);
@@ -227,7 +233,7 @@ export const SAMUS: CharacterDef = {
         return;
       }
       // Morph ball: down curls up, up stands (when there is room).
-      if (!inBall(p) && input.pressed('down') && b.onGround) {
+      if (!inBall(p) && input.pressed('down') && b.onGround && !p.stairs) {
         p.scratch.ball = 1;
         p.scratch.aimUp = 0;
         p.refitHitbox();

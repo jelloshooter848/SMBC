@@ -1,0 +1,84 @@
+;; Simon's mini game, Dracula's Castle: six screens of castle, then the throne room behind a
+;; two-tile door. stage.ts loads it with ?raw, so it is not in the level library, the dev level
+;; select or the campaign. Rows 0-1 stay empty under the Castlevania HUD; below them the air is
+;; the crypt's black-brick backdrop (`H`, not solid, under an `A` cornice on row 2) with a few
+;; open windows, stained glass and the throne.
+;;
+;; The route: the entrance hall (candles; one holds the dagger) -> stairs UP (18,12 rising right,
+;; 5 tiles) onto the battlement walk (Medusa heads) -> stairs DOWN (50,12 rising left, 5 tiles)
+;; into the bone hall (skeletons, a bat) -> the gallery (Medusa heads low) -> the
+;; door (96, rows 11-12) -> Dracula. The wall at column 23 means the first flight must be climbed.
+;; Candles, creatures and the Medusa heads' source are the mini game's own entity types (World's
+;; extraEntities, stage.ts); `stairs` is World's. `door` and `dracula` are taken out of the map
+;; and placed by the scene.
+id: cv-castle
+name: DRACULA'S CASTLE
+world: 5
+stage: 4
+theme: crypt
+music: cv-stage
+time: 300
+start: 2,12
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0              16               32               48               64               80               96
+................ ................ ................ ................ ................ ................ ................
+................ ................ ................ ................ ................ ................ ................
+AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA %%%%%%%%%%%%%%%%
+HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH %HHHHHHHHHHHHHH%
+HHHHH..HHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHH..HHHHHHHHHH HHHHHH..HHHHHHHH HHHHHH..HHHHHHHH %HHHHHHHHHHHHHH%
+HHHHH..HHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHH..HHHHHHHHHH HHHHHH..HHHHHHHH HHHHHH..HHHHHHHH %HHHHHHHHHHHHHH%
+HHHHH..HHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHH..HHHHHHHHHH HHHHHH..HHHHHHHH HHHHHH..HHHHHHHH %HHHHHHHHHHHHHH%
+HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH %HHHHHHHHHHHHHH%
+HHHHHHHHHHHHHHHH HHHHHHH%%%%%%%%% %%%%%%%%%%%%%%HH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH %HHHHHHHHHHHHHH%
+HHHHHHHHHHHHHHHH HHHHHHH%%%%%%%%% %%%%%%%%%%%%%%HH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH %HHHHHHHHHHHHHH%
+HHHHHHHHHHHHHHHH HHHHHHH%%%%%%%%% %%%%%%%%%%%%%%HH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH %HHHHHHHHHHHHHH%
+HHHHHHHHHHHHHHHH HHHHHHH%%%%%%%%% %%%%%%%%%%%%%%HH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH %HHHHHHHHHHHHHH%
+HHHHHHHHHHHHHHHH HHHHHHH%%%%%%%%% %%%%%%%%%%%%%%HH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH %HHHHHHHHHHHHHH%
+################ ################ ################ ################ ################ ################ ################
+################ ################ ################ ################ ################ ################ ################
+
+[entities]
+;; The entrance hall.
+candle 3 11
+candle 7 11 drop=dagger
+candle 11 11
+candle 15 11 drop=big
+stairs 18 12 len=5 dir=ur
+bat 13 5
+
+;; The battlement walk (floor row 8).
+medusa 25 6 len=20
+candle 28 6 drop=meat
+candle 34 6 drop=meat
+candle 41 6
+stairs 50 12 len=5 dir=ul
+
+;; The bone hall.
+candle 54 11 drop=meat
+bat 67 6
+skeleton 61 12
+candle 67 11
+skeleton 75 12
+candle 78 11 drop=big
+
+;; The gallery.
+medusa 82 11 len=13
+candle 84 11
+candle 91 11 drop=meat
+
+door 96 11
+dracula 104 12
+
+[decor]
+;; Stained glass (32x48) and Dracula's throne (32x32), by their bottom-left tile, over the wall.
+crypt:stained-glass 10 7
+crypt:stained-glass 33 5
+crypt:stained-glass 60 7
+crypt:stained-glass 103 7
+crypt:throne 103 12
+
+[zones]
+scrollStop 97

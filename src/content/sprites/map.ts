@@ -3,8 +3,8 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
- * themed world map pages and the Warp Zone hub. One frame set recolours into every theme through the `map-<theme>` palettes,
- * which all share these roles:
+ * themed world map pages, the Warp Zone hub and the Mini Game Arena. One frame set recolours
+ * into every theme through the `map-<theme>` palettes, which all share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
  *   4 sand main                5 sand dark         6 water dark        7 water main
@@ -75,6 +75,10 @@ export const WARP_SPACE = '#1c0858';
 const INDIGO = '#4428bc';
 const VIOLET = '#6844fc';
 const lava: [string, string] = [NES.lava, NES.lavaLight];
+/** The Mini Game Arena's night sky (and the page's sky colour). */
+export const ARENA_NIGHT = '#081848';
+/* The pitch's light green squares: NES 2C02 $2A, which the curated NES table doesn't name. */
+const PITCH_LIGHT = '#58d854';
 
 export const mapPalettes: Record<string, string[]> = {
   'map-grass': theme({
@@ -196,6 +200,24 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: stone,
     white: [NES.white, NES.lavender],
+  }),
+  /*
+   * The Mini Game Arena, a stadium at night: a checkered pitch in two greens (ground), grey
+   * concrete stands and steel light towers (rock), fans (wood: skin and hair) in red, yellow,
+   * cyan, blue and white shirts (accent, leaf, wall, white), blue ad boards (wall). There is no
+   * sea on this page; "water" is the night sky's colour in case one is ever drawn.
+   */
+  'map-arena': theme({
+    ground: [NES.greenDark, NES.green, PITCH_LIGHT],
+    sand: [NES.tan, NES.tanDark],
+    water: [ARENA_NIGHT, ARENA_NIGHT, NES.blueDark, NES.lavender],
+    rock: [NES.darkGray, NES.gray, NES.lightGray],
+    leaf: [NES.teal, NES.cyan, NES.skyLight],
+    wood: [NES.peach, NES.brownDark],
+    accent: [NES.redBright, NES.yellow, NES.redDark],
+    lava,
+    wall: [NES.blueMid, NES.blueLight, NES.blueDark],
+    white: [NES.white, NES.lightGray],
   }),
 };
 
@@ -852,6 +874,226 @@ const LAVA = (f: number): Rows => {
 };
 
 /* ------------------------------------------------------------------------------------------ */
+/* The Mini Game Arena (0.4.7): a stadium at night                                             */
+/* ------------------------------------------------------------------------------------------ */
+
+/*
+ * The arena page's own tiles. In the `map-arena` palette the ground roles are the pitch's two
+ * greens, rock is the stands' concrete and the light towers' steel, wood is the fans' skin and
+ * hair, and accent, leaf, wall and white are the shirts, banners, pennants and ad boards.
+ */
+
+/** The pitch: a checkerboard of 8-px squares (ground main and light), a speck or two in each. */
+const ARENA_FLOOR: Rows = (() => {
+  const a = ['22222222', '22222222', '22232222', '22222222', '22222222', '22222322', '22222222', '22222222'];
+  const b = ['33333333', '33333333', '33333333', '33323333', '33333333', '33333333', '32333333', '33333333'];
+  return [...a.map((r, y) => r + (b[y] as string)), ...b.map((r, y) => r + (a[y] as string))];
+})();
+
+/**
+ * One 8-px tier of the stands: four seated fans 4 px apart (hair, face, a shirt in one of
+ * `shirts`), the step's lit edge and face below. `offset` staggers the tier (wrapping, so the
+ * tile repeats seamlessly); the fans listed in `cheer` have both hands up.
+ */
+function crowdTier(shirts: string, offset: number, cheer: readonly number[]): Rows {
+  const rows = ['a', 'a', 'a', 'a', 'a', 'c', 'b', 'a'].map((c) => Array.from({ length: 16 }, () => c));
+  for (let k = 0; k < 4; k++) {
+    const x0 = offset + k * 4;
+    const s = shirts[k] as string;
+    const put = (dx: number, y: number, c: string) => {
+      (rows[y] as string[])[(x0 + dx) % 16] = c;
+    };
+    put(1, 0, 'h');
+    put(2, 0, 'h');
+    put(1, 1, 'g');
+    put(2, 1, 'g');
+    for (let y = 2; y < 5; y++) for (let dx = 0; dx < 4; dx++) put(dx, y, s);
+    if (cheer.includes(k)) {
+      put(0, 0, 'g');
+      put(3, 0, 'g');
+      put(0, 1, s);
+      put(3, 1, s);
+    }
+  }
+  return rows.map((r) => r.join(''));
+}
+
+/** The crowd's animation frames; in each a few fans (per tier: back row, front row) cheer. */
+export const ARENA_CROWD_FRAMES = 4;
+type Cheer = readonly [back: readonly number[], front: readonly number[]];
+const CROWD: Record<'a' | 'b', { shirts: readonly [string, string]; cheer: readonly Cheer[] }> = {
+  a: {
+    shirts: ['iejo', 'mjie'],
+    cheer: [
+      [[1], [2]],
+      [[3], []],
+      [[0], [3]],
+      [[], [0, 1]],
+    ],
+  },
+  b: {
+    shirts: ['joim', 'eomi'],
+    cheer: [
+      [[], [1]],
+      [[2], [3]],
+      [[0, 3], []],
+      [[1], [2]],
+    ],
+  },
+};
+const crowd = (v: 'a' | 'b', f: number): Rows => {
+  const { shirts, cheer } = CROWD[v];
+  const [back, front] = cheer[f % ARENA_CROWD_FRAMES] as Cheer;
+  return [...crowdTier(shirts[0], 0, back), ...crowdTier(shirts[1], 2, front)];
+};
+
+/** A team banner (12×15) hung over the stands from a rod; its tails swing with `sway` (0 or 1). */
+const banner = (sway: number): Rows =>
+  [
+    '0cccccccccc0',
+    '.0iiiiiiir0.',
+    '.0iiijiiir0.',
+    '.0iijjjiir0.',
+    '.0ijjjjjjr0.',
+    '.0iijjjiir0.',
+    '.0ijjijjir0.',
+    '.0iiiiiiir0.',
+    '.0ooooooor0.',
+    '.0iiiiiiir0.',
+    '.0iiiiiiir0.',
+    '.0iiir0iir0.',
+    '.0iir0.0ir0.',
+    '.0ir0...0r0.',
+    '.000.....00.',
+  ].map((r, y) => (y >= 9 && sway ? '.' + r.slice(0, -1) : r));
+
+/** The barrier between the stands and the pitch: a rail, red and blue ad boards, its shadow. */
+const ARENA_WALL = stamp(ARENA_FLOOR, [
+  '0000000000000000',
+  'nnnnnnnnnnnnnnnn',
+  'qqqqqqqqqqqqqqqq',
+  '0rrrrrrr0qqqqqqq',
+  '0iooiooi0mmmjmmm',
+  '0ioiioii0mmjjjmm',
+  '0iooiooi0mmmjmmm',
+  '0rrrrrrr0qqqqqqq',
+  '0000000000000000',
+  '1111111111111111',
+  '1.1.1.1.1.1.1.1.',
+]);
+
+/** Bunting: a sagging line of pennants on transparent sky; each tip swings with `w` (0-2). */
+const bunting = (w: number): Rows => {
+  const rows = fill('.').map((r) => r.split(''));
+  const ropeY = (x: number) => 3 + Math.round(2 * Math.sin((Math.PI * x) / 16));
+  for (let x = 0; x < 16; x++) (rows[ropeY(x)] as string[])[x] = 'c';
+  const colours = 'ijeo';
+  for (let k = 0; k < 4; k++) {
+    const x0 = k * 4;
+    const tip = [0, 1, -1][(w + k) % 3] as number;
+    const cells: [number, number][] = [
+      [0, 1],
+      [1, 1],
+      [2, 1],
+      [0, 2],
+      [1, 2],
+      [2, 2],
+      [1 + Math.min(0, tip), 3],
+      [1 + Math.max(0, tip), 3],
+      [1 + tip, 4],
+    ];
+    const top = ropeY(x0 + 1);
+    for (const [dx, dy] of cells) (rows[top + dy] as string[])[x0 + dx] = colours[k] as string;
+  }
+  return rows.map((r) => r.join(''));
+};
+
+/**
+ * A light tower, 16×48: a bank of six lamps on a lattice mast that widens to its foot;
+ * `glint` puts a small sparkle over the top lamps.
+ */
+const lightTower = (glint: boolean): Rows => {
+  const head = [
+    glint ? '........j.......' : '................',
+    glint ? '.......jojj.....' : '................',
+    '.0000000000000..',
+    '.0ooj0ooj0ooj0..',
+    '.0ojj0ojj0ojj0..',
+    '.0aaaaaaaaaaa0..',
+    '.0ooj0ooj0ooj0..',
+    '.0ojj0ojj0ojj0..',
+    '.0000000000000..',
+    '......0b0.......',
+  ];
+  const mast = Array.from({ length: 38 }, (_, i) => {
+    const half = 1 + Math.floor(i / 13);
+    const row = Array.from({ length: 16 }, () => '.');
+    const [l, r] = [7 - half, 7 + half];
+    for (let x = l; x <= r; x++) row[x] = i === 37 ? 'a' : (x + i) % 4 === 0 || (x - i) % 4 === 0 ? 'c' : '.';
+    if (i < 37) row[l] = row[r] = 'b';
+    return row.join('');
+  });
+  return [...head, ...mast];
+};
+
+/** The scoreboard's tiny font (3-4 px wide, 5 tall). */
+const BOARD_GLYPHS: Record<string, Rows> = {
+  A: ['.o.', 'o.o', 'ooo', 'o.o', 'o.o'],
+  R: ['oo.', 'o.o', 'oo.', 'o.o', 'o.o'],
+  E: ['ooo', 'o..', 'oo.', 'o..', 'ooo'],
+  N: ['o..o', 'oo.o', 'o.oo', 'o..o', 'o..o'],
+  '0': ['ooo', 'o.o', 'o.o', 'o.o', 'ooo'],
+  V: ['o.o', 'o.o', 'o.o', 'o.o', '.o.'],
+  S: ['ooo', 'o..', 'ooo', '..o', 'ooo'],
+  ' ': ['...', '...', '...', '...', '...'],
+};
+/** `text` in the board font, glyphs 1 px apart, each glyph in its colour from `colours`. */
+const boardText = (text: string, colours: string): Rows =>
+  Array.from({ length: 5 }, (_, y) =>
+    text
+      .split('')
+      .map((ch, i) => ((BOARD_GLYPHS[ch] as Rows)[y] as string).replace(/o/g, colours[i] as string))
+      .join('.'),
+  );
+
+/**
+ * The big scoreboard, 48×32: ARENA over a 00 VS 00 score on a black screen, framed by marquee
+ * bulbs that trade colours with `phase` (0 or 1), standing on two legs.
+ */
+const scoreboard = (phase: number): Rows => {
+  const W = 48;
+  const rows = Array.from({ length: 32 }, () => Array.from({ length: W }, () => '.'));
+  for (let y = 0; y < 24; y++)
+    for (let x = 0; x < W; x++) {
+      const edge = y === 0 || y === 23 || x === 0 || x === W - 1;
+      const frame = y <= 2 || y >= 21 || x <= 2 || x >= W - 3;
+      (rows[y] as string[])[x] = edge ? '0' : frame ? 'b' : '0';
+    }
+  // Bulbs every 3 px along the middle of the frame, alternating yellow and red.
+  const bulbs: [number, number][] = [];
+  for (let x = 1; x < W - 1; x += 3) bulbs.push([x, 1], [W - 1 - x, 22]);
+  for (let y = 4; y < 21; y += 3) bulbs.push([1, 24 - y], [W - 2, y]);
+  bulbs.forEach(([x, y], k) => ((rows[y] as string[])[x] = (k + phase) % 2 ? 'i' : 'j'));
+  const put = (text: Rows, dy: number) => {
+    const dx = Math.floor((W - (text[0] as string).length) / 2);
+    text.forEach((r, y) => {
+      for (let x = 0; x < r.length; x++)
+        if (r[x] !== '.') (rows[dy + y] as string[])[dx + x] = r[x] as string;
+    });
+  };
+  put(boardText('ARENA', 'jjjjj'), 5);
+  put(boardText('00 VS 00', 'ii.oo.ii'), 13);
+  for (const lx of [10, 34])
+    for (let y = 24; y < 32; y++) {
+      const row = rows[y] as string[];
+      row[lx] = row[lx + 3] = '0';
+      row[lx + 1] = 'c';
+      row[lx + 2] = 'b';
+    }
+  return rows.map((r) => r.join(''));
+};
+
+/* ------------------------------------------------------------------------------------------ */
 /* Actor frames                                                                                */
 /* ------------------------------------------------------------------------------------------ */
 
@@ -983,7 +1225,20 @@ const frames: Record<string, readonly string[]> = {
   'splash-1': SPLASH[1] as Rows,
   'comet-0': COMET[0] as Rows,
   'comet-1': COMET[1] as Rows,
+  'arena-floor': ARENA_FLOOR,
+  'arena-wall': ARENA_WALL,
+  'arena-tower-0': lightTower(false),
+  'arena-tower-1': lightTower(true),
+  'arena-scoreboard-0': scoreboard(0),
+  'arena-scoreboard-1': scoreboard(1),
 };
+for (let f = 0; f < ARENA_CROWD_FRAMES; f++) {
+  frames[`arena-crowd-a-${f}`] = crowd('a', f);
+  frames[`arena-crowd-b-${f}`] = crowd('b', f);
+  // The banner hangs over the stands, the crowd cheering on around it.
+  frames[`arena-banner-${f}`] = stamp(crowd('b', f), banner(f >> 1), 2, 0);
+}
+for (let w = 0; w < 3; w++) frames[`arena-bunting-${w}`] = bunting(w);
 for (let i = 0; i < 4; i++) {
   frames[`star-${i}`] = starTile([0, 1, 2, 1][i] as number, 7, 7);
   frames[`twinkle-${i}`] = twinkle([0, 1, 2, 1][i] as number);

@@ -14,31 +14,38 @@ export type MapTheme =
   | 'snow' // World 6
   | 'coast' // World 7
   | 'bowser' // World 8
-  | 'warp'; // Warp Zone hub
+  | 'warp' // Warp Zone hub
+  | 'arena'; // the Mini Game Arena
 
 /**
- * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone) and
- * 'll-1'..'ll-13' (Lost Levels worlds 1-8, 9 and A-D). Saved in files; never rename one.
+ * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),
+ * 'll-1'..'ll-13' (Lost Levels worlds 1-8, 9 and A-D) and 'arena' (the Mini Game Arena, off the
+ * hub). Saved in files; never rename one.
  */
 export type PageId = string;
 
 /**
- * The set of pages a page belongs to: page order (slides, the Worlds menu) and the start-node
- * "back" road only work within a group; travel between groups is by warp node (a fade).
+ * The set of pages a page belongs to (page order, the Worlds menu). 'smb' and 'll' are one story:
+ * SMB World 8's castle road leads on to Lost World 1 (a slide, and back from its start); other
+ * travel between groups is by warp node (a fade).
  */
-export type PageGroup = 'smb' | 'hub' | 'll';
+export type PageGroup = 'smb' | 'hub' | 'll' | 'arena';
 
 /**
  * Something that must hold for a warp node to work or a world exit to open:
  * - 'gameCleared': SMB 8-4 beaten on this file (MapProgress.gameCleared);
  * - 'secret:<key>': the file has found secret <key> (MapProgress.secrets);
- * - 'll9': the file has cleared all 32 Lost Levels main levels 1-1 to 8-4 (World 9);
- * - 'llLetters': the file has cleared Lost 8-4 (worlds A-D);
  * - 'never': not yet (a future secret).
+ * (0.4.7 dropped the Lost Levels' NES unlocks 'll9' and 'llLetters': in the campaign their worlds
+ * open in order, each castle opening the next, docs/WORLD_MAP.md.)
  */
-export type MapCondition = 'gameCleared' | 'll9' | 'llLetters' | 'never' | `secret:${string}`;
+export type MapCondition = 'gameCleared' | 'never' | `secret:${string}`;
 
-export type MapNodeKind = 'start' | 'level' | 'castle' | 'bonus' | 'warp';
+/**
+ * 'game': a pad of the Mini Game Arena (src/game/arena): JUMP plays one round of its `game`, for
+ * fun; nothing is saved. Walked to like any node.
+ */
+export type MapNodeKind = 'start' | 'level' | 'castle' | 'bonus' | 'warp' | 'game';
 
 export interface MapNode {
   id: string;
@@ -87,6 +94,8 @@ export interface MapNode {
    * opens the bonus again (World 4's bonus spot, docs/WORLD_MAP.md).
    */
   guard?: 'hammer-bro';
+  /** 'game' nodes: the arena game played there (src/game/arena ArenaGame.id, e.g. 'mini-luigi'). */
+  game?: string;
 }
 
 /**
@@ -109,18 +118,18 @@ export interface MapPath {
   points: [number, number][];
 }
 
-/** The road off the page to the next page of the same group, starting at a node (usually the castle). */
+/**
+ * The road off the page to the next page, starting at a node (usually the castle). Exits lead to
+ * a page of the same group, except SMB World 8's road on to Lost World 1 (the story goes on).
+ */
 export interface WorldExit {
   from: string;
   to: PageId;
   points: [number, number][];
   side: 'right' | 'left' | 'top';
-  /** Opens only while this holds too (e.g. Lost Levels 8 → 9: 'll9'). */
+  /** Opens only while this holds too (none does yet). */
   requires?: MapCondition;
-  /**
-   * The hint line while the hero stands on `from` and the exit is locked (at most 32 chars once
-   * '{n}' is filled in with the condition's count, rules.exitHint).
-   */
+  /** The hint line while the hero stands on `from` and the exit is locked (at most 32 chars). */
   hint?: string;
 }
 

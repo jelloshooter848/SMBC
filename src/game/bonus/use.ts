@@ -254,6 +254,20 @@ function addCoins(game: Game, n: number): void {
 export function awardPrize(game: Game, prize: BonusPrize): AwardOutcome {
   const s = game.state;
   let out: AwardOutcome;
+  if (game.inRound) {
+    // A round for fun (the arena, Dev → Mini games): everything is put back after, so nothing is
+    // said to be kept, added to the items or waiting for the next level.
+    const [line, said] =
+      prize.kind === 'lives'
+        ? [
+            prize.amount === 1 ? '1 UP!' : `${prize.amount} UP!`,
+            prize.amount === 1 ? 'One more life' : `${prize.amount} more lives`,
+          ]
+        : prize.kind === 'coins'
+          ? [`${prize.amount} COINS!`, `${prize.amount} coins`]
+          : [`YOU GOT A ${ITEM_NAMES[prize.item]}!`, `You got ${ITEM_SPOKEN[prize.item]}`];
+    return { lines: [line, '(JUST FOR FUN)'], said: `${said}, just for fun.`, stored: false };
+  }
   if (prize.kind === 'lives') {
     s.lives = Math.min(MAX_LIVES, s.lives + prize.amount);
     const n = prize.amount;

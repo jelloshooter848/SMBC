@@ -156,13 +156,16 @@ with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
 
 ### The Lost Levels
 
-All 13 worlds of _The Lost Levels_ (1–8, 9 and A–D, 52 levels) are in the game, for now
-reachable only from **Dev mode → Level select** (their ids start with `ll-`; the HUD shows worlds
-10–13 as A–D). They bring upside-down pipes with hanging Piranha Plants, poison mushrooms (they
-hurt like an enemy), green springboards that launch far higher, Hammer Bros that charge
-straight at you, fake Bowsers, Bloopers in the air, mid-screen Lakitus and warp pipes that send
-you backwards. As on the NES, 8-4 ends the game: a run that used no warp pipe continues
-into World 9, and every 8-4 clear counts a game beaten; Worlds A–D unlock after eight.
+All 13 worlds of _The Lost Levels_ (1–8, 9 and A–D, 52 levels) are in the game (their ids
+start with `ll-`; the HUD shows worlds 10–13 as A–D). They bring upside-down pipes with hanging
+Piranha Plants, poison mushrooms (they hurt like an enemy), green springboards that launch far
+higher, Hammer Bros that charge straight at you, fake Bowsers, Bloopers in the air, mid-screen
+Lakitus and warp pipes that send you backwards. On a save file they are the story's extension:
+after SMB 8-4's ending a road leads from World 8 to Lost World 1, and the Lost worlds open in
+order (1–8, 9, then A–D, each castle opening the next) whatever warp zones you took; D-4 is the
+final ending. From **Dev mode → Level select** they follow the NES rules: 8-4 ends the game, a
+run that used no warp pipe continues into World 9, and every 8-4 clear counts a game beaten;
+Worlds A–D unlock after eight.
 
 Settings persist in the browser.
 

@@ -25,8 +25,6 @@ import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId } from '../map/types';
 import {
   clearLevel,
-  conditionCount,
-  conditionMet,
   entryLevel,
   findLevelNode,
   secretExit,
@@ -43,7 +41,7 @@ import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot'
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
 import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship';
-import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
+import { isLostLevel } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import { levelTutorial, newTutorialRun, stageTutorial, type TutorialRun } from '../tutorial/stage-tutorial';
@@ -53,11 +51,13 @@ import {
   saveFromState,
   stateFromSave,
   tutorialHeroes,
+  metIds,
   writeSave,
   type SaveFile,
   type SaveSlot,
 } from '@game/save/save-files';
 import { bonusSaveFields, bonusStateFrom, newBonusState, type BonusState } from '../bonus/items';
+import type { StageRound } from '../arena/stage-round';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -101,6 +101,11 @@ export class Game {
   mapProgress: MapProgress = newMapProgress();
   /** The save file being played from the world map; null for every non-campaign start. */
   campaign: { slot: SaveSlot } | null = null;
+  /**
+   * A round played for fun is on (dev-minigames.ts playRound: the arena and Dev → Mini games):
+   * nothing it wins is kept and no hero is freed, so its words stay neutral (no campaign lines).
+   */
+  inRound = false;
   /** Larry's airship challenge in progress (scenes/airship.ts), else null. */
   airship: AirshipRun | null = null;
   /** The campaign's file as last written (the base `autosave` updates). */
@@ -132,10 +137,25 @@ export class Game {
   /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
   tutorials: string[] = [];
   /**
+   * Who the campaign's file has met (SaveFile.met): heroes whose captive was talked to, freed
+   * heroes, and 'larry' once his airship was boarded; the Mini Game Arena's "found" rule.
+   */
+  met: string[] = [];
+  /**
+   * A stage played as one round over another scene (the Mini Game Arena's 1-0: src/game/arena/
+   * stage-round.ts): its exit passes, Give up quits; level changes clear down to `base`. Else null.
+   */
+  stageRound: StageRound | null = null;
+  /**
    * World 4's bonus spot can be played (SaveFile.bonusOpen): closed once used, open again when its
    * Hammer Bro is beaten (map/bonus-spot.ts, map/hammer-bro.ts).
    */
   bonusOpen = true;
+  /**
+   * The used bonus spot's Hammer Bro is out on the map (SaveFile.bonusGuard): not right after the
+   * bonus is used, only once a level has been entered from the map since; off again when beaten.
+   */
+  bonusGuard = false;
   /** The SMB3 item inventory is unlocked on the file (SaveFile.inventoryUnlocked; the crystal ball). */
   inventoryUnlocked = false;
   /**
@@ -159,11 +179,13 @@ export class Game {
    * SMB (and custom levels): the castle has said "Your quest is over."; the credits roll over it
    * (ScreenManager.startMoveCreditsTmrHandler), then the title (restartGameTmrHandler ->
    * beatGame -> restartGame). In campaign mode, after the credits the clear is recorded, the file
-   * marked as cleared and saved, and the title follows (owner decision, 2026-10-05).
+   * marked as cleared and saved, and the World 8 map follows, where the road on to Lost World 1
+   * draws in (0.4.7: the Lost Levels are the story's extension; before, the title).
    *
-   * The Lost Levels follow the NES rules (owner decision, 2026-10-05): 8-4 counts a game beaten
-   * (worlds A-D open after 8) and, without warps, goes on to World 9; World 9 and D-4 end the game,
-   * D-4 with the credits (see showLostEnding).
+   * The Lost Levels (see showLostEnding): outside the campaign they follow the NES rules (8-4
+   * counts a game beaten and, without warps, goes on to World 9; World 9 and D-4 end the game);
+   * in the campaign 8-4 and 9-4 go back to the map, where the next world's road draws in, and
+   * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
     if (from.startsWith('ll-')) return this.showLostEnding(from);
@@ -175,8 +197,9 @@ export class Game {
   }
 
   /**
-   * The credits are over: campaign files record the clear and save, then the title (SMB 8-4) or
-   * the map page of the castle (Lost Levels D-4). Otherwise the title.
+   * The credits are over: campaign files record the clear and save, then the map page of the
+   * castle (SMB 8-4: World 8, its road on to Lost World 1 drawn in; Lost Levels D-4). Otherwise
+   * (and for a campaign level on no map page) the title.
    */
   private afterCredits(from: string): void {
     if (this.campaign) {
@@ -186,41 +209,37 @@ export class Game {
       if (!isLostLevel(from)) this.mapProgress.gameCleared = true;
       this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
       this.autosave();
-      if (isLostLevel(from)) return this.returnToMap();
+      if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
     this.showTitle();
   }
 
   /**
-   * The Lost Levels' game ends: 8-4 (on to World 9 without warps), 9-4 and D-4 (ll-13-4), each
-   * with the owner's card (the NES wording, 2026-10-06). The card is the castle's thanks: those
-   * castles say nothing themselves (World.updateBossClear), and the card is drawn where their
-   * text would be, over the level, with the HUD's score above it as in the SMB 8-4 ending.
-   * Start or B continues ("PUSH BUTTON B TO SELECT A WORLD": there is no world picker, so B
-   * goes on like Start). 8-4 then shows the games-beaten tally (and, warped, why World 9 stays
-   * shut) before World 9 or the title; 9-4 goes to the title; D-4 rolls the credits over the
-   * castle, scrolling the card away (the SMB 8-4 path), then the title.
+   * The Lost Levels' game ends: 8-4, 9-4 and D-4 (ll-13-4), each with the owner's card (the NES
+   * wording, 2026-10-06). The card is the castle's thanks: those castles say nothing themselves
+   * (World.updateBossClear), and the card is drawn where their text would be, over the level,
+   * with the HUD's score above it as in the SMB 8-4 ending. Start or B continues ("PUSH BUTTON B
+   * TO SELECT A WORLD": there is no world picker, so B goes on like Start). D-4 rolls the credits
+   * over the castle, scrolling the card away (the SMB 8-4 path).
    *
-   * Campaign play (a save file from the map, owner decision for 0.4.0) has its own unlock rules,
-   * read from the file alone (rules.conditionMet; the global NES progress store is left alone):
-   * World A opens once 8-4 is beaten ('llLetters'), World 9 once all 32 levels from 1-1 to 8-4
-   * are cleared ('ll9'). The clear is recorded on the castle's page (the level → page lookup)
-   * and saved as the card shows, and the end goes back to that page: 8-4 after a page saying
-   * what is open (the map then draws in the World A warp's road, and World 9's when it opened),
-   * 9-4 after the card, D-4 after the credits.
+   * Campaign play (a save file from the map): the story's extension (0.4.7). The clear is
+   * recorded on the castle's page (the level → page lookup) and saved as the card shows; the
+   * castle's exit opens the next world whatever warps were taken (8-4 → World 9, 9-4 → World A),
+   * and the end goes back to that page, where the road draws in: 8-4 and 9-4 after the card, D-4,
+   * the final ending, after the credits. The global NES progress store is left alone.
+   *
+   * Outside the campaign (dev select, ?level=) the NES rules: 8-4 then shows the games-beaten
+   * tally (and, warped, why World 9 stays shut) before World 9 or the title; 9-4 goes to the
+   * title; D-4 to the title after the credits.
    */
   private showLostEnding(from: string): void {
     const s = this.state;
     const campaign = this.campaign !== null;
-    const prog = this.mapProgress;
-    const firstClear = campaign && !prog.cleared.includes(from);
-    const nineBefore = campaign && conditionMet(prog, 'll9');
-    // Campaign: the clear first, so a condition the ending makes true opens with a draw-in.
-    const warpsBefore = campaign ? workingWarps(prog) : null;
     if (campaign) {
       s.checkpoint = null;
       s.time = null;
       this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
+      this.autosave();
     }
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
@@ -239,26 +258,7 @@ export class Game {
           ]
         : ['THANK YOU!'];
     let then: () => void;
-    if (from === 'll-8-4' && campaign) {
-      // What is open now ('!' when this clear opened it).
-      const page = [firstClear ? 'WORLD A IS OPEN!' : 'WORLD A IS OPEN.'];
-      if (!conditionMet(prog, 'll9'))
-        page.push('', 'WORLD 9 OPENS ONCE LOST 1-1', `TO 8-4 ARE CLEARED (${conditionCount(prog, 'll9')}).`);
-      else page.push(nineBefore ? 'WORLD 9 IS OPEN.' : 'WORLD 9 IS OPEN!');
-      then = () => {
-        this.deps.announcer?.say(page.filter(Boolean).join(' '));
-        this.scenes.clear();
-        this.scenes.push(
-          new MessageScene(
-            this,
-            [...page, '', fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`)],
-            () => this.returnToMap(),
-            1800,
-            ['start', 'attack', 'jump'], // as the card, plus A
-          ),
-        );
-      };
-    } else if (from === 'll-8-4') {
+    if (from === 'll-8-4' && !campaign) {
       const warped = s.warped;
       const before = loadProgress();
       const progress = recordLostGameBeaten(before, warped);
@@ -292,10 +292,6 @@ export class Game {
         this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
       };
     } else then = () => (campaign ? this.returnToMap() : this.showTitle());
-    if (warpsBefore) {
-      this.addReveal(warpsOpened(this.mapProgress, warpsBefore));
-      this.autosave();
-    }
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
@@ -353,6 +349,7 @@ export class Game {
       if (hero !== s.character) this.setHero(0, hero);
       if (hero2 && hero2 !== s.character2) this.setHero(1, hero2);
       s.checkpoint = null;
+      this.guardBonus();
       this.autosave();
       this.deps.ctx.audio.stopMusic();
       // Its intro when it has one, else its first area (Lost Levels 9-1 starts in ll-9-1-start).
@@ -364,6 +361,7 @@ export class Game {
     if (tutorial && tutorialHero) {
       // Saved as the file has it; the tutorial's hero plays, and the file's comes back after.
       s.checkpoint = null;
+      this.guardBonus();
       this.autosave();
       const heroes =
         s.character === tutorialHero
@@ -422,8 +420,10 @@ export class Game {
       devAllHeroes: this.devAllHeroes,
       freed: this.freed.slice(),
       tutorials: this.tutorials.slice(),
+      met: this.met.slice(),
       inventoryUnlocked: this.inventoryUnlocked,
       bonusOpen: this.bonusOpen,
+      bonusGuard: this.bonusGuard,
       ...bonusSaveFields(this.bonus),
     };
     this.campaignSave = save;
@@ -535,7 +535,8 @@ export class Game {
 
   /**
    * JUMP on the open bonus node: the bonus game's scene over the map (map/bonus-spot.ts). Played,
-   * it closes (bonusUsed: the Hammer Bro comes out); either way back to the map on the node.
+   * it closes (bonusUsed: spent, the Hammer Bro out after the next level); either way back to the
+   * map on the node.
    */
   openBonus(spot: BonusSpot): void {
     if (!this.bonusOpen) return;
@@ -556,11 +557,20 @@ export class Game {
    */
   bonusUsed(): void {
     this.bonusOpen = false;
+    this.bonusGuard = false;
     this.autosave();
   }
 
   /**
-   * The map's Hammer Bro touched the hero: the one-screen Hammer Bro battle (scenes/hammer-battle.ts)
+   * A level entered from the map: a used bonus spot's Hammer Bro comes out, there when the map
+   * comes back whatever the result (saved by the caller).
+   */
+  private guardBonus(): void {
+    if (!this.bonusOpen) this.bonusGuard = true;
+  }
+
+  /**
+   * The hero walked into the map's Hammer Bro: the one-screen Hammer Bro battle (scenes/hammer-battle.ts)
    * with the run as it is. The hero's map place stays the node it last stood on.
    */
   startHammerBattle(): void {
@@ -573,6 +583,7 @@ export class Game {
   /** The Hammer Bros are beaten: the bonus opens again, back to the map (saved). */
   hammerBattleWon(): void {
     this.bonusOpen = true;
+    this.bonusGuard = false;
     this.returnToMap();
   }
 
@@ -717,6 +728,16 @@ export class Game {
     this.autosave();
   }
 
+  /**
+   * Campaign: the file has met `id` (a captive talked to, or 'larry' on boarding his airship): the
+   * Mini Game Arena shows that game from now on. Saved at once the first time.
+   */
+  meet(id: string): void {
+    if (!this.campaign || this.met.includes(id)) return;
+    this.met.push(id);
+    this.autosave();
+  }
+
   /** The "<HERO> TRAINING?" question was answered (yes or no): never asked again; saved at once. */
   answerTraining(id: string): void {
     if (!this.tutorials.includes(id)) this.tutorials.push(id);
@@ -833,7 +854,9 @@ export class Game {
     this.devUnlockAll = save.devUnlockAll === true;
     this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
+    this.met = metIds(save.met ?? [], this.freed, save.secrets.includes(CRYSTAL_BALL));
     this.bonusOpen = save.bonusOpen !== false;
+    this.bonusGuard = !this.bonusOpen && save.bonusGuard === true;
     this.inventoryUnlocked = save.inventoryUnlocked === true || save.secrets.includes(CRYSTAL_BALL);
     this.bonus = bonusStateFrom(save);
     // Only heroes freed on this file, this session, get the map's burst of hops.
@@ -933,7 +956,7 @@ export class Game {
     this.state.stage = level.stage;
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
-    this.scenes.clear();
+    this.clearToRoundBase();
     this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
@@ -959,11 +982,19 @@ export class Game {
       this.airship = null;
     } else if (run) run.entered(level.id, start, this.state);
     else boardAirship(this, level.id, start);
-    const base = this.airship?.base;
+    this.clearToRoundBase();
+    this.scenes.push(this.levelScene(level, start));
+  }
+
+  /**
+   * Clears the scenes for a level: down to the scene a round is played over (a dev airship round's
+   * list, an arena round's map: AirshipRun.base, StageRound.base) while one runs, else all.
+   */
+  private clearToRoundBase(): void {
+    const base = this.airship?.base ?? this.stageRound?.base;
     if (base && this.scenes.find((s) => s === base))
       while (this.scenes.depth > 0 && this.scenes.top !== base) this.scenes.pop();
     else this.scenes.clear();
-    this.scenes.push(this.levelScene(level, start));
   }
 
   /** The scene for `level` (its campaign variant in campaign play), not yet pushed. */

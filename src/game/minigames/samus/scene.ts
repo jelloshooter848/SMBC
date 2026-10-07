@@ -100,6 +100,7 @@ export class EscapeScene implements Scene {
     this.left = opts.countdown ?? COUNTDOWN_FRAMES;
     this.world = new World(level, game.ctx, state, {
       seed: opts.seed ?? levelSeed(level),
+      scorePopups: false, // the HUD shows no score
       extraEntities: escapeEntities({ onShip: (ship) => this.boarded(ship) }),
     });
     this.world.time = null;
@@ -283,7 +284,8 @@ export class EscapeScene implements Scene {
     this.game.ctx.audio.playJingle(ZEBES_SOUNDS.victory);
     // Low on the screen, clear of the ship rising.
     this.banner = { lines: ['SAMUS ESCAPED!'], until: Infinity, y: 184 };
-    this.say(`Samus reached her ship with ${this.seconds} seconds to spare! The spell on Samus breaks.`);
+    const spell = this.game.inRound ? '' : ' The spell on Samus breaks.'; // none in a round for fun
+    this.say(`Samus reached her ship with ${this.seconds} seconds to spare!${spell}`);
   }
 
   /* ---------- The blast ---------- */

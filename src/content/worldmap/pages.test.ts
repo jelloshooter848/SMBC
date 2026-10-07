@@ -58,7 +58,7 @@ describe('world map pages', () => {
     // Node counts: start, 3 levels, the castle and the bonus slot on each.
     expect(SMB_PAGES.map((p) => p.nodes.length)).toEqual([6, 6, 6, 6, 6, 6, 6, 6]);
     expect(SMB_PAGES.map((p) => p.paths.length)).toEqual([5, 5, 5, 5, 5, 5, 5, 5]);
-    expect(SMB_PAGES.map((p) => p.exits.length)).toEqual([1, 1, 1, 1, 1, 1, 1, 0]);
+    expect(SMB_PAGES.map((p) => p.exits.length)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   describe.each(SMB_PAGES.map((p, i) => [i + 1, p] as const))('world %i', (w, page) => {
@@ -143,16 +143,14 @@ describe('world map pages', () => {
       }
     });
 
-    it(w < 8 ? 'leaves from the castle off the right edge to the next world' : 'ends at the castle', () => {
-      if (w === 8) {
-        expect(page.exits).toEqual([]);
-        return;
-      }
+    // World 8's road leads on to Lost World 1 (0.4.7: the Lost Levels are the story's extension).
+    it(`leaves from the castle off the right edge to ${w < 8 ? 'the next world' : 'Lost World 1'}`, () => {
       expect(page.exits).toHaveLength(1);
       const e = page.exits[0];
       if (!e) return;
       expect(e.from).toBe(`${w}-4`);
-      expect(e.to).toBe(`smb-${w + 1}`);
+      expect(e.to).toBe(w < 8 ? `smb-${w + 1}` : 'll-1');
+      expect(e.requires).toBeUndefined();
       const c = nodeAt(page, e.from);
       expect(e.points[0]).toEqual([c.x, c.y]);
       expectWalk(page, e.points, 'exit');
@@ -165,16 +163,19 @@ describe('world map pages', () => {
 });
 
 describe('page registry', () => {
-  it('lists SMB worlds, the hub, then the Lost Levels, each id once', () => {
+  it('lists SMB worlds, the hub, the Lost Levels, then the Mini Game Arena, each id once', () => {
     const ids = MAP_PAGES.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.slice(0, 9)).toEqual([...SMB_PAGES.map((p) => p.id), 'hub']);
-    for (const id of ids.slice(9)) expect(id).toMatch(/^ll-(\d|1[0-3])$/);
+    expect(ids.at(-1)).toBe('arena');
+    const lost = ids.slice(9, -1);
+    for (const id of lost) expect(id).toMatch(/^ll-(\d|1[0-3])$/);
     expect(ids).toContain('ll-1');
     expect(MAP_PAGES.map((p) => p.group)).toEqual([
       ...SMB_PAGES.map(() => 'smb'),
       'hub',
-      ...ids.slice(9).map(() => 'll'),
+      ...lost.map(() => 'll'),
+      'arena',
     ]);
   });
 
@@ -213,7 +214,7 @@ describe('page registry', () => {
         expect(back?.id, `${what} lands back on ${x.id}`).toBe(x.id);
         pairs++;
       }
-    expect(pairs).toBeGreaterThanOrEqual(6); // smb-1 spot / hub centre, hub pad / ll-1, ll-8 pad / ll-10
+    expect(pairs).toBeGreaterThanOrEqual(4); // smb-1 spot / hub centre, hub pad / arena
   });
 
   describe.each(MAP_PAGES.map((p) => [p.id, p] as const))('%s', (_, page) => {
@@ -265,7 +266,7 @@ describe('page registry', () => {
       }
     });
 
-    it('warps to registered pages and nodes; exits stay within the group', () => {
+    it("warps to registered pages and nodes; exits stay within the group but World 8's road on", () => {
       for (const n of page.nodes.filter(isWarpNode)) {
         const to = mapPage(n.to ?? '');
         expect(to, `${n.id} → ${n.to}`).toBeDefined();
@@ -279,7 +280,9 @@ describe('page registry', () => {
         expect(n.level).toBeUndefined();
       }
       for (const e of page.exits) {
-        expect(mapPage(e.to)?.group).toBe(page.group);
+        // The story goes on from SMB World 8 to Lost World 1; every other road stays in its group.
+        if (page.id === 'smb-8') expect(e.to).toBe('ll-1');
+        else expect(mapPage(e.to)?.group).toBe(page.group);
         const c = nodeAt(page, e.from);
         expect(e.points[0], `exit ${e.to} leaves from its node`).toEqual([c.x, c.y]);
         expectWalk(page, e.points, `exit ${e.to}`);

@@ -23,12 +23,17 @@ export function miniGameDevItems(game: Game): MenuItem[] {
   ];
 }
 
+/** Give up's hint in a round played for fun (Game.inRound), whatever the game. */
+export const ROUND_GIVE_UP_HINT = 'Ends the round';
+
 /**
- * A mini game's menu: Continue, Give up (`giveUp` ends the round as 'quit'; `giveUpHint` says
- * what that means) and, in dev mode, Assists. Pauses the audio while open, sounds like pause.
+ * A mini game's menu: Continue, Give up (`giveUp` ends the round as 'quit'; `campaignHint` says
+ * what that means in campaign play; in a round for fun, `ROUND_GIVE_UP_HINT`, since the hero may
+ * long be freed) and, in dev mode, Assists. Pauses the audio while open, sounds like pause.
  */
 export class MiniGameMenuScene extends MenuScene {
-  constructor(game: Game, title: string, giveUp: () => void, giveUpHint?: string) {
+  constructor(game: Game, title: string, giveUp: () => void, campaignHint?: string) {
+    const giveUpHint = game.inRound ? ROUND_GIVE_UP_HINT : campaignHint;
     super(
       game,
       title,

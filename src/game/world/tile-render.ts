@@ -4,6 +4,7 @@ import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { tileDef, T } from '../level/tiles';
 import type { View } from '../entities/entity';
 import type { TileMap } from './tilemap';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
 
 /** Draw the visible tile columns of a map for the current theme (shared by the game and the editor). */
 export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = false): void {
@@ -26,6 +27,10 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
         if (showHidden) r.rect(tx * TILE - camPx + 2, ty * TILE + 2, 12, 12, 'rgba(255,255,255,0.3)');
         continue;
       }
+      if (id === T.CRACKED) {
+        drawCracked(r, view, sheet, tx * TILE - camPx, ty * TILE);
+        continue;
+      }
       let name = def.name;
       if (def.block?.kind === 'question') name = `question-${anim === 2 ? 1 : anim}`;
       else if (def.block?.kind === 'brick') name = 'brick';
@@ -36,6 +41,29 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
       r.sprite(sheet, sheet.frames.has(themed) ? themed : name, tx * TILE - camPx, ty * TILE);
     }
   }
+}
+
+/**
+ * A cracked wall tile: the `crypt` sheet's `wall-cracked` once that art is registered, else the
+ * theme's castle brick with a dark crack zig-zagging across it.
+ */
+function drawCracked(r: Renderer, view: View, sheet: SpriteSheet, x: number, y: number): void {
+  if (view.assets.has('crypt')) {
+    const crypt = view.assets.sheet('crypt');
+    if (crypt.frames.has('wall-cracked')) {
+      r.sprite(crypt, 'wall-cracked', x, y);
+      return;
+    }
+  }
+  const themed = `castle-brick@${view.theme}`;
+  r.sprite(sheet, sheet.frames.has(themed) ? themed : 'castle-brick', x, y);
+  const crack = '#000000';
+  r.rect(x + 3, y + 1, 2, 4, crack);
+  r.rect(x + 5, y + 4, 2, 3, crack);
+  r.rect(x + 7, y + 6, 2, 4, crack);
+  r.rect(x + 9, y + 9, 2, 3, crack);
+  r.rect(x + 8, y + 12, 2, 4, crack);
+  r.rect(x + 10, y + 7, 4, 1, crack);
 }
 
 export const SKY: Record<string, string> = {
@@ -64,4 +92,6 @@ export const SKY: Record<string, string> = {
   airship: '#000040',
   // The airship's open decks sail SMB3's lighter daylight blue.
   'airship-deck': '#3cbcfc',
+  // Simon's crypt: the castle's black behind the night-blue brick.
+  crypt: '#000000',
 };

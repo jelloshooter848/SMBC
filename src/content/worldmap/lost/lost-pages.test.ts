@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { levelIds } from '@content/levels/index';
 import type { MapNode, WorldMapPage } from '@game/map/types';
+import { isWarpNode } from '@game/map/rules';
 import { MAP_PAL } from '../render';
 import { autoShore, sketchProblems } from '../build';
 import { mapPage, pagesInGroup } from '../index';
-import { HUB_WARP } from './build';
 import { LOST_PAGES } from './index';
 import { SKETCH_LL_1 } from './world1';
 import { SKETCH_LL_2 } from './world2';
@@ -23,9 +23,9 @@ import { SKETCH_LL_D } from './worldD';
 /*
  * The Lost Levels pages' own rules. The checks every registered page shares (tiles, nodes on
  * walkable tiles, reachable nodes, roads that never cross, actors, warp targets) are in
- * ../pages.test.ts; here: sketches, level nodes for exactly the world's four main levels, the
- * roads between worlds (9 behind 'll9', A behind 'llLetters'), World 1's warp back to the hub
- * (where the hub's Lost Levels pad lands) and World A's portal back to World 8's pad.
+ * ../pages.test.ts; here: sketches, level nodes for exactly the world's four main levels and
+ * the roads between worlds: the story's extension (0.4.7), SMB World 8's road on to World 1, then
+ * every castle opening the next world in play order (1-8, 9, A-D), no warp nodes at all.
  */
 
 const SKETCHES = [
@@ -67,85 +67,39 @@ describe('Lost Levels map pages', () => {
     expect(new Set(LOST_PAGES.map((p) => p.title)).size, 'titles are unique').toBe(13);
   });
 
-  it('chains 1-8 and A-D by castle exits, 8 -> 9 behind ll9 and 8 -> A by a letters warp', () => {
+  it('chains every world in play order by castle exits, 1-8, 9 and A-D, with no conditions', () => {
     const exits = LOST_PAGES.flatMap((p) =>
       p.exits.map((e) => `${p.id}>${e.to}${e.requires ? `?${e.requires}` : ''}`),
     );
-    expect(exits).toEqual([
-      'll-1>ll-2',
-      'll-2>ll-3',
-      'll-3>ll-4',
-      'll-4>ll-5',
-      'll-5>ll-6',
-      'll-6>ll-7',
-      'll-7>ll-8',
-      'll-8>ll-9?ll9',
-      'll-10>ll-11',
-      'll-11>ll-12',
-      'll-12>ll-13',
-    ]);
-    const warps = LOST_PAGES.flatMap((p) =>
-      p.nodes.filter((n) => n.kind === 'warp' && n.to !== 'hub').map((n) => `${p.id}>${n.to}?${n.requires}`),
+    expect(exits).toEqual(LOST_PAGES.slice(0, -1).map((p, i) => `${p.id}>ll-${i + 2}`));
+    for (const p of LOST_PAGES) for (const e of p.exits) expect(e.hint, `${p.id} exit hint`).toBeUndefined();
+    // World D ends at its castle: the final ending.
+    expect(mapPage('ll-13')?.exits).toEqual([]);
+  });
+
+  it("SMB World 8's castle road arrives at World 1's start, on its row", () => {
+    const eight = mapPage('smb-8') as WorldMapPage;
+    const road = eight.exits.find((e) => e.to === 'll-1');
+    expect(road).toMatchObject({ from: '8-4', side: 'right' });
+    expect(road?.requires).toBeUndefined();
+    expect(road?.points.at(-1)?.[1]).toBe(nodeAt(mapPage('ll-1') as WorldMapPage, 'start').y);
+    // The only road into the Lost Levels from another group.
+    const into = [...pagesInGroup('smb'), ...pagesInGroup('hub')].flatMap((p) =>
+      p.exits.filter((e) => e.to.startsWith('ll-')).map((e) => `${p.id}>${e.to}`),
     );
-    expect(warps).toEqual(['ll-8>ll-10?llLetters', 'll-10>ll-8?undefined']);
-    const letters = nodeAt(mapPage('ll-8') as WorldMapPage, 'warp-ll-10');
-    expect(letters.level).toBeUndefined();
-    expect(letters.hint).toBe('LOST A - BEAT LOST 8-4');
-    // World 9's exit says how far the file is while it is locked, within the hint line.
-    const nine = mapPage('ll-8')?.exits.find((e) => e.to === 'll-9');
-    expect(nine?.hint?.includes('{n}')).toBe(true);
-    expect(nine?.hint?.replace('{n}', '32/32').length).toBeLessThanOrEqual(32);
-    // It opens from the World 8 castle.
-    expect(mapPage('ll-8')?.paths.some((p) => p.from === 'll-8-4' && p.to === 'warp-ll-10')).toBe(true);
+    expect(into).toEqual(['smb-8>ll-1']);
   });
 
-  it('links to the hub only from World 1, where the hub pad lands', () => {
-    const toHub = LOST_PAGES.flatMap((p) =>
-      p.nodes.filter((n) => n.to === 'hub').map((n) => `${p.id}:${n.id}`),
-    );
-    expect(toHub).toEqual([`ll-1:${HUB_WARP}`]);
-    const one = mapPage('ll-1') as WorldMapPage;
-    const hub = nodeAt(one, HUB_WARP);
-    expect(hub.kind).toBe('warp');
-    expect(hub.requires).toBeUndefined();
-    expect(hub.level).toBeUndefined();
-    expect(one.paths.some((p) => p.to === HUB_WARP || p.from === HUB_WARP)).toBe(true);
-    // The hub's Lost Levels pad lands on World 1.
-    expect(
-      mapPage('hub')
-        ?.nodes.filter((n) => n.to?.startsWith('ll-'))
-        .map((n) => n.to),
-    ).toEqual(['ll-1']);
-  });
-
-  it("World A's portal goes back to World 8's pad that leads to A, always open", () => {
-    const a = mapPage('ll-10') as WorldMapPage;
-    const portals = a.nodes.filter((n) => n.kind === 'warp');
-    expect(portals.length).toBe(1);
-    const portal = portals[0] as MapNode;
-    expect(portal).toMatchObject({ to: 'll-8', toNode: 'warp-ll-10', label: 'LOST WORLD 8' });
-    expect(portal.requires).toBeUndefined();
-    expect(portal.hint).toBeUndefined();
-    expect(portal.label?.length).toBeLessThanOrEqual(32);
-    expect(a.paths.some((p) => p.to === portal.id || p.from === portal.id)).toBe(true);
-    // The pad it lands on is World 8's warp to A, which lands back on it (1:1).
-    expect(nodeAt(mapPage('ll-8') as WorldMapPage, 'warp-ll-10')).toMatchObject({
-      to: 'll-10',
-      toNode: portal.id,
-    });
-  });
-
-  it('has no other portals: 2-9 and B-D have no warp nodes but World 8’s pad to A', () => {
-    for (const p of LOST_PAGES.filter((q) => !['ll-1', 'll-10'].includes(q.id))) {
-      const warps = p.nodes.filter((n) => n.kind === 'warp' || n.to !== undefined).map((n) => n.id);
-      expect(warps, p.id).toEqual(p.id === 'll-8' ? ['warp-ll-10'] : []);
+  it('has no warp nodes: World 1 has no hub link, World 8 no pad to A, A no pipe back', () => {
+    // The hub's old Lost Levels pad is the Mini Game Arena's (0.4.7): nothing on the hub leads here.
+    expect(mapPage('hub')?.nodes.filter((n) => n.to?.startsWith('ll-'))).toEqual([]);
+    for (const p of LOST_PAGES) {
+      const warps = p.nodes.filter((n) => isWarpNode(n) || n.to !== undefined).map((n) => n.id);
+      expect(warps, p.id).toEqual([]);
+      expect(p.nodes.map((n) => n.id).sort(), p.id).toEqual(
+        ['start', ...[1, 2, 3, 4].map((s) => `${p.id}-${s}`)].sort(),
+      );
     }
-    // B, C and D chain on by castle exits alone.
-    for (const id of ['ll-11', 'll-12', 'll-13'])
-      expect(
-        (mapPage(id) as WorldMapPage).nodes.every((n) => n.kind !== 'warp'),
-        id,
-      ).toBe(true);
   });
 
   describe.each(LOST_PAGES.map((p, i) => [p.id, p, i + 1] as const))('%s', (_id, page, w) => {
@@ -192,7 +146,11 @@ describe('Lost Levels map pages', () => {
     });
 
     it('starts on the row where the previous world’s road arrives', () => {
-      const prev = LOST_PAGES.find((p) => p.exits.some((e) => e.to === page.id));
+      // World 1: SMB World 8's castle road.
+      const prev = (w === 1 ? [mapPage('smb-8') as WorldMapPage] : LOST_PAGES).find((p) =>
+        p.exits.some((e) => e.to === page.id),
+      );
+      expect(prev, 'a road arrives').toBeDefined();
       if (!prev) return;
       const exit = prev.exits.find((e) => e.to === page.id);
       expect(exit?.side).toBe('right');
@@ -206,7 +164,7 @@ describe('Lost Levels map pages', () => {
         expect(e.side).toBe('right');
         expect(e.points.at(-1)?.[0]).toBe(15);
       }
-      expect(page.exits.length).toBe([9, 13].includes(w) ? 0 : 1);
+      expect(page.exits.length).toBe(w === 13 ? 0 : 1);
     });
   });
 });
