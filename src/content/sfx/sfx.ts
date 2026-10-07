@@ -4,6 +4,7 @@ import { castlevaniaSfx } from './castlevania';
 import { ninjaSfx } from './ninja';
 import { contraSfx } from './contra';
 import { sophiaSfx } from './sophia';
+import { deathSfx } from './deaths';
 
 /**
  * Original sound effects. At the default 150 bpm one tick is ~8.3 ms, so l64 = 25 ms,
@@ -105,6 +106,13 @@ export const sfx: Sfx[] = [
   },
   // A sword thrust: a short hiss and a falling glint.
   { id: 'sword-stab', pulse: '@1 v10 q8 x1 p-12 o6 e32', noise: 'v9 x1 l64 n1 n2 l32 n3' },
+  // The sword beam thrown at full hearts: a bright rising sweep with a thin shimmer behind it.
+  {
+    id: 'sword-beam',
+    pulse: '@2 v10 q8 x0 l64 o5 c e g o6 c e g x1 p12 o7 c16',
+    pulse2: '@3 v5 q8 x1 l64 r64 o6 g o7 c e g',
+    noise: 'v6 x1 l64 n2 n1 n0',
+  },
   // A heavy door grinding open: a low rising rumble and a final thunk.
   {
     id: 'door-open',
@@ -169,4 +177,6 @@ export const sfx: Sfx[] = [
   ...contraSfx,
   // Sophia, Jason and the Underworld.
   ...sophiaSfx,
+  // The mini game heroes' own deaths (WorldStart.deathStyle).
+  ...deathSfx,
 ];

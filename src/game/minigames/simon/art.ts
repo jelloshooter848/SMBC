@@ -23,6 +23,8 @@ export const CV_SOUNDS = {
   bone: 'fireball',
   fire: 'fireball',
   stomp: 'cannon',
+  // The ENEMY bar filling again for the beast.
+  refill: 'boss-fill',
 } as const;
 
 /** The sheet and its hit-flash palette. */

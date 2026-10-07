@@ -116,6 +116,22 @@ describe('Safety floor: cells and the players’ view of the map', () => {
     expect(view.get(2, 13)).toBe(T.AIR);
   });
 
+  it('no floor above the screen: a column without a floor never reports row -1 as floor', () => {
+    // prettier-ignore
+    const lv = level([
+      '#####...####',
+      '#####...####',
+    ]);
+    const floor = new SafetyFloor(new TileMap(lv), lv);
+    const view = floor.view();
+    // Column 2 is solid ground (no floor there, rowAt = -1). An arrival dropping in at row 0
+    // must fall, not stand on an invisible floor one row above the screen.
+    expect(floor.rowAt(2)).toBe(-1);
+    expect(floor.at(2, -1)).toBe(false);
+    expect(view.collisionAt(2, -1)).not.toBe('top');
+    expect(floor.at(6, -1)).toBe(false);
+  });
+
   it('a lava pool: the rim floor above it, and lava itself solid from above', () => {
     // 1-4's first pool: castle floor (surface 10) both sides, lava at row 12, open below.
     // prettier-ignore

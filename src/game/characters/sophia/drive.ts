@@ -526,6 +526,23 @@ function noseDown(p: Player, st: SophiaState, map: TileMap): boolean {
   return true;
 }
 
+/**
+ * Falling in (start mode `fall`) where the drop is a one-tile gap (CharacterBehaviour.narrowFall):
+ * nose first from the start, centred on the gap's column; upright again below row `lip`.
+ */
+export function startNoseFall(p: Player, st: SophiaState, tx: number, lip: number): void {
+  const b = p.body;
+  const feet = b.y + b.h;
+  b.w = UH;
+  b.h = UW;
+  b.x = tileToSub(tx) + ((px(16) - UH) >> 1);
+  b.y = feet - UW;
+  st.surface = FLOOR;
+  st.turn = null;
+  st.nose = true;
+  st.noseLip = lip;
+}
+
 /** Falling nose first down a narrow gap; upright again once she lands with room for it. */
 function noseFrame(p: Player, st: SophiaState, map: TileMap): void {
   const b = p.body;

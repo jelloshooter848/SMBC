@@ -74,8 +74,8 @@ function drawCracked(r: Renderer, view: View, sheet: SpriteSheet, x: number, y: 
  */
 export const LIGHT_SKIES: ReadonlySet<string> = new Set(['smw-secret']);
 
-/** Themes whose black sky has stars in it (Bill's jungle, as NES Contra's first stage). */
-export const STARRY_SKIES: ReadonlySet<string> = new Set(['contra-jungle']);
+/** Themes whose dark sky has stars in it (Bill's jungle, as NES Contra's first stage; Mega Man's 3-1). */
+export const STARRY_SKIES: ReadonlySet<string> = new Set(['contra-jungle', 'megaman-stage']);
 
 /**
  * Sparse fixed stars over a starry theme's sky, in its upper half, drifting at an eighth of the
@@ -120,10 +120,14 @@ export const SKY: Record<string, string> = {
   'airship-deck': '#3cbcfc',
   // Simon's crypt: the castle's black behind the night-blue brick.
   crypt: '#000000',
+  // 5-4 as Simon's castle hall: black over the hall's wall (theme-backdrop.ts paints it).
+  castlevania: '#000000',
   // Ryu's dojo: dark between the beams and screens.
   dojo: '#000000',
   // Ryu's moonlit town: a deep violet night over the roofs.
   'ninja-night': '#100828',
+  // 6-2 as Ryu's city street: a black night over the far towers (theme-backdrop.ts).
+  'ninja-city': '#000000',
   // Bill's jungle: NES Contra's black night sky, sparse stars (STARRY_SKIES) over snow-capped peaks.
   'contra-jungle': '#000000',
   // The waterfall: darker still, the cliff's shadow.
@@ -136,4 +140,10 @@ export const SKY: Record<string, string> = {
   'bm-dungeon': '#000000',
   // The Top Secret Area: Super Mario World's pale cream behind the hills.
   'smw-secret': '#f8ecc0',
+  // Link's field (2-1's campaign look): Zelda II's softer periwinkle daylight.
+  zelda2: '#6888fc',
+  // Mega Man's night stage (3-1's campaign look): a deep navy with stars (STARRY_SKIES).
+  'megaman-stage': '#000c38',
+  // Brinstar (4-2's campaign look): Metroid's black behind the blue rock.
+  brinstar: '#000000',
 };

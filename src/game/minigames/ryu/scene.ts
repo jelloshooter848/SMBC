@@ -15,6 +15,7 @@ import type { Game } from '../../scenes/game';
 import { abilityHint, controlScheme } from '../../scenes/hints';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import { MiniGameMenuScene } from '../menu';
+import { GAME_OVER_FRAMES, lifeLostSaid, MiniLives, type MiniCheckpoint } from '../lives';
 import type { MiniGameResult } from '../types';
 import { drawBanner } from '../megaman/scene';
 import { drawNinja, hasNinjaFrame, NG_SOUNDS, STAGE_THEME } from './art';
@@ -22,6 +23,7 @@ import { Creature, NgShot } from './creatures';
 import { CLASH_AT, CUT_SAY, CUTSCENE_FRAMES, drawCutscene } from './cutscene';
 import { BAR_SEGMENTS, drawNgHud, HUD_H } from './hud';
 import { Afterimage, BossLife, INTRO_FRAMES, MASKED_HP, MaskedNinja } from './masked';
+import type { DuelLayout as Layout } from './stage';
 import { duelEntities, duelStage, type DuelLayout } from './stage';
 
 /** Frames READY shows before Ryu can move. */
@@ -78,7 +80,16 @@ export function bannerBox(
  */
 export const DUEL_KIT = { arts: 1, ninpo: 10, ninpoMax: 40, tool: 0 } as const;
 
-export type DuelPhase = 'cutscene' | 'ready' | 'stage' | 'gate' | 'intro' | 'fight' | 'won' | 'dead' | 'over';
+export type DuelPhase =
+  'cutscene' | 'ready' | 'stage' | 'gate' | 'intro' | 'fight' | 'won' | 'dead' | 'gameover' | 'over';
+
+/**
+ * Where a life starts (lives.ts, Ninja Gaiden's three lives): the street; the ground past the
+ * tower, before the pits; the rooftops before the arena's doorway, once Ryu has gone through it.
+ */
+export const DUEL_START: MiniCheckpoint = { id: 'start', x: 2, y: 12 };
+export const DUEL_MID: MiniCheckpoint = { id: 'mid', x: 66, y: 12, at: 66, rows: [11, 12] };
+export const DUEL_BOSS: MiniCheckpoint = { id: 'boss', x: 110, y: 12, at: Infinity };
 export type GateStep = 'walking' | 'closing';
 
 export interface DuelOptions {
@@ -96,12 +107,16 @@ const WALK_RIGHT: InputFrame = { ...NO_INPUT, held: (a) => a === 'right', dirX: 
  * Gaiden-style stage (stage.map) played as Ryu with his own kit, built around his wall cling:
  * walls to climb and kick between, lanterns holding spirit points, health and a ninpo art,
  * knife throwers, attack dogs and hawks (never near a pit). On the rooftop at the end the Masked
- * Ninja waits (masked.ts). Beating him passes; losing every hit point, a pit or the clock
- * running out fails; the menu's Give up quits. A World of its own with a fresh GameState runs
+ * Ninja waits (masked.ts). Beating him passes. Losing every hit point, a pit or the clock
+ * running out costs one of three lives (the next starts at the last checkpoint); with none left
+ * it is GAME OVER and the round fails. The menu's Give up quits. A World of its own with a fresh GameState runs
  * it, so the campaign is never touched.
  */
 export class DuelScene implements Scene {
-  readonly world: World;
+  /** This life's World (a new one at the checkpoint for each life). */
+  world: World;
+  /** Three lives and the checkpoint the next one starts from. */
+  readonly lives: MiniLives;
   readonly state: GameState;
   readonly layout: DuelLayout = duelStage();
   readonly life = new BossLife();
@@ -121,6 +136,7 @@ export class DuelScene implements Scene {
   clingTaught = false;
   private music: string | null = null;
   private timeSaid = false;
+  private readonly seed: number | undefined;
   /** The cutscene's skip prompt: "SKIP" with the JUMP key, as the touch button says. */
   private skipText = 'SKIP';
 
@@ -129,25 +145,45 @@ export class DuelScene implements Scene {
     private readonly done: (result: MiniGameResult) => void,
     opts: DuelOptions = {},
   ) {
-    const level = { ...this.layout.level, theme: STAGE_THEME } as typeof this.layout.level;
     const state = newGameState(RYU);
-    state.kit = { ...DUEL_KIT };
-    state.hp = MAX_HP;
-    state.lives = 1;
     state.world = 6;
     state.stage = 2;
     this.state = state;
-    this.world = new World(level, game.ctx, state, {
-      seed: opts.seed ?? levelSeed(level),
-      scorePopups: false, // the HUD shows no score
+    this.seed = opts.seed;
+    this.lives = new MiniLives({
+      start: DUEL_START,
+      checkpoints: [DUEL_MID, DUEL_BOSS],
+      infinite: () => game.ctx.assist.infiniteLives,
+    });
+    this.world = this.buildWorld();
+    if (opts.skipCutscene) this.setPhase('ready');
+  }
+
+  /**
+   * A life's World, at the current checkpoint: Ryu with every hit point and his start kit (as in
+   * Ninja Gaiden, a death loses the ninpo art he picked up); the lanterns and creatures back.
+   */
+  private buildWorld(): World {
+    const level = { ...this.layout.level, theme: STAGE_THEME } as Layout['level'];
+    const state = this.state;
+    state.kit = { ...DUEL_KIT };
+    state.hp = MAX_HP;
+    state.lives = this.lives.lives;
+    const { x, y } = this.lives.start;
+    const world = new World(level, this.game.ctx, state, {
+      x,
+      y,
+      seed: this.seed ?? levelSeed(level),
+      scorePopups: false, // Ninja Gaiden floats no points (the HUD keeps the score)
+      deathStyle: 'ninja',
       extraEntities: duelEntities({ onArt: (p) => this.gotArt(p) }, this.layout.pits),
     });
-    this.world.time = null;
-    this.world.camera.allowLeftScroll = true;
+    world.time = null;
+    world.camera.allowLeftScroll = true;
     const arenaX = this.layout.roomX * 16;
-    this.world.backdrop = (r) => drawNight(r, game.ctx.assets, this.world.camera.pxX, arenaX);
-    this.world.spawnInView();
-    if (opts.skipCutscene) this.setPhase('ready');
+    world.backdrop = (r) => drawNight(r, this.game.ctx.assets, world.camera.pxX, arenaX);
+    world.spawnInView();
+    return world;
   }
 
   get player(): Player {
@@ -239,7 +275,9 @@ export class DuelScene implements Scene {
   }
 
   private get menuOpen(): boolean {
-    return this.phase !== 'won' && this.phase !== 'dead' && this.phase !== 'over';
+    return (
+      this.phase !== 'won' && this.phase !== 'dead' && this.phase !== 'gameover' && this.phase !== 'over'
+    );
   }
 
   update(input: InputFrame): void {
@@ -277,6 +315,10 @@ export class DuelScene implements Scene {
       case 'stage':
         this.tickClock();
         this.step(input);
+        if (this.phase === 'stage' && !this.player.dead) {
+          const p = this.player;
+          this.lives.reach(p.centerX >> 12, (p.body.y + (p.body.h >> 1)) >> 12);
+        }
         if (!this.clingTaught && this.player.clinging) this.teachClimb();
         if (this.phase === 'stage' && this.atDoor()) this.openGate();
         return;
@@ -293,7 +335,38 @@ export class DuelScene implements Scene {
         return this.updateWon();
       case 'dead':
         return this.step(NO_INPUT);
+      case 'gameover':
+        if (this.phaseT >= GAME_OVER_FRAMES) this.finish('fail');
+        return;
     }
+  }
+
+  /** What the announcer says as Ryu loses this life (before the count drops): the lives left. */
+  private lifeLine(): string {
+    return lifeLostSaid('Ryu', this.lives.rest, this.game.ctx.assist.infiniteLives);
+  }
+
+  /**
+   * The death has played out: with a life left, the next one starts at the checkpoint (READY,
+   * a full clock, the Masked Ninja whole again); none left, GAME OVER, and then the round fails.
+   */
+  private lifeLost(): void {
+    const lost = this.lives.lose();
+    this.state.lives = Math.max(0, this.lives.lives);
+    if (lost === 'over') {
+      this.setPhase('gameover');
+      this.stopMusic();
+      return;
+    }
+    this.clock = 0;
+    this.timeSaid = false;
+    this.boss = null;
+    this.banner = null;
+    this.life.hp = MASKED_HP;
+    this.life.iframes = 0;
+    this.world = this.buildWorld();
+    this.setPhase('ready');
+    this.say('Ready!');
   }
 
   /** The clock (held by the Infinite time assist); at zero Ryu falls. */
@@ -308,11 +381,11 @@ export class DuelScene implements Scene {
       this.world.kill(this.player);
       this.setPhase('dead');
       this.music = null;
-      this.say('Time is up. Try again.');
+      this.say(`Time is up. ${this.lifeLine()}`);
     }
   }
 
-  /** One frame of the world; a death ends the round once its jingle has played. */
+  /** One frame of the world; a death costs a life once it has played out (lifeLost). */
   private step(input: InputFrame): void {
     this.world.update([input]);
     // Over the open rooftop the screen's top is a ceiling: Ryu can't climb out over a tower.
@@ -330,9 +403,9 @@ export class DuelScene implements Scene {
       this.setPhase('dead');
       this.music = null;
       const fell = toPx(this.player.body.y) > SCREEN_H;
-      this.say(fell ? 'Ryu fell. Try again.' : 'Ryu is down. Try again.');
+      this.say(fell ? `Ryu fell. ${this.lifeLine()}` : this.lifeLine());
     }
-    if (this.phase === 'dead' && died) this.finish('fail');
+    if (this.phase === 'dead' && died) this.lifeLost();
   }
 
   /* ---------- Banners ---------- */
@@ -431,6 +504,7 @@ export class DuelScene implements Scene {
   }
 
   private openGate(): void {
+    this.lives.set('boss');
     this.setPhase('gate');
     this.gate = 'walking';
     this.banner = null;
@@ -529,6 +603,9 @@ export class DuelScene implements Scene {
     const arts = Math.max(1, Math.min(NINPO_ARTS.length, p.scratch.arts ?? 1));
     const art = NINPO_ARTS[(p.scratch.tool ?? 0) % arts];
     drawNgHud(r, assets, {
+      score: this.state.score,
+      stage: `${this.state.world}-${this.state.stage}`,
+      lives: this.state.lives,
       hp: p.hp,
       maxHp: MAX_HP,
       enemy: this.enemyBar(),
@@ -538,6 +615,10 @@ export class DuelScene implements Scene {
     });
     if (this.phase === 'ready' && (this.game.ctx.reduceFlashing || ((this.phaseT >> 3) & 3) !== 3))
       r.text(font, 'READY', (SCREEN_W - 40) >> 1, 104);
+    if (this.phase === 'gameover') {
+      r.rect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H, '#000');
+      r.text(font, 'GAME OVER', (SCREEN_W - 72) >> 1, 112);
+    }
     const b = this.banner;
     if (b && this.t < b.until) drawBanner(r, font, b.lines, b.y);
   }

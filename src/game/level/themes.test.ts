@@ -57,14 +57,19 @@ describe('themes', () => {
       'airship',
       'airship-deck',
       'crypt',
+      'castlevania',
       'dojo',
       'ninja-night',
+      'ninja-city',
       'contra-jungle',
       'contra-falls',
       'alien-lair',
       'underworld',
       'bm-dungeon',
       'smw-secret',
+      'zelda2',
+      'megaman-stage',
+      'brinstar',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -107,14 +112,19 @@ describe('themes', () => {
       airship: 'airship',
       'airship-deck': 'airship',
       crypt: 'crypt',
+      castlevania: 'cv-hall',
       dojo: 'dojo',
       'ninja-night': 'ng-stage',
+      'ninja-city': 'ng-city',
       'contra-jungle': 'contra-jungle',
       'contra-falls': 'contra-jungle',
       'alien-lair': 'contra-lair',
       underworld: 'bm-area',
       'bm-dungeon': 'bm-dungeon',
       'smw-secret': 'top-secret',
+      zelda2: 'zelda2-field',
+      'megaman-stage': 'mm-stage-31',
+      brinstar: 'brinstar',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

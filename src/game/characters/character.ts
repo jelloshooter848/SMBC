@@ -91,6 +91,12 @@ export interface CharacterBehaviour {
   onLevelClear?(p: Player): void;
   /** A co-op player dropped back in (World.respawn): reset states the respawn doesn't know. */
   onRespawn?(p: Player, world: World): void;
+  /**
+   * A body wider than a tile falling in (start mode `fall`) where the drop is a one-tile gap
+   * (World.wideFall found no clear column): fit it through, centred on column `tx`, the gap's
+   * narrow part ending at row `lip` (Sophia III goes nose first).
+   */
+  narrowFall?(p: Player, tx: number, lip: number): void;
 }
 
 /** How a hero plays, shown on the "How to play" pages. Text is wrapped and upper-cased. */

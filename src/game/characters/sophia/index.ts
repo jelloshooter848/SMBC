@@ -31,7 +31,7 @@ import {
   TRIPLE_START,
   TURN_INSIDE,
 } from './profile';
-import { becomeUpright, driveSophia, hasHover, holdsAway } from './drive';
+import { becomeUpright, driveSophia, hasHover, holdsAway, startNoseFall } from './drive';
 import { CEIL, FLOOR, LEFT, RIGHT, SOUNDS, sophiaState, type SophiaState } from './state';
 import { CannonShot, HomingMissile, nearestHomingTarget, SOPHIA_SHEET, TripleMissile } from './weapons';
 import { board, hopOut, jasonSprite, jasonUpdate } from './jason';
@@ -441,6 +441,10 @@ export const SOPHIA: CharacterDef = {
     onLevelClear(p) {
       settle(p, sophiaState(p));
       for (const k of ['_jason', '_hover', '_wall', '_ceiling']) delete p.scratch[k];
+    },
+    narrowFall(p, tx, lip) {
+      // A one-tile drop into the area (4-2's cabin): nose first through it.
+      startNoseFall(p, sophiaState(p), tx, lip);
     },
     onRespawn(p) {
       const st = sophiaState(p);

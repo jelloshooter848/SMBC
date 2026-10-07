@@ -198,8 +198,10 @@ ends.
   (`%`) and covered by 16×16 smb3 decor, one per tile: `smb3:ceiling-beam` along row 2 (columns
   1-14) and `smb3:pillar` down columns 0 and 15 (rows 2-12). The floor is log posts: `#` the post
   tops on row 13, `%` the posts carrying on below on row 14, and one raised post with its top at
-  (7,12) and its post at (7,13). The hero rises out of the pipe in the floor at columns 2-3 (from
-  the deck's stern pipe); Larry starts on the floor at the right (`larry 12 12 next=4-3`: the
+  (7,12) and its post at (7,13). As in SMB3, the hero drops in from the ceiling (`startMode: fall`,
+  from the deck's stern pipe): out of a green pipe hanging from it at the left (`smb3:ceiling-pipe`
+  at (1,3), 40×32, its 32-px pipe 8 px in; decor drawn over the players, so he comes out of its
+  mouth), down the open ceiling over column 2 onto the floor; Larry starts on the floor at the right (`larry 12 12 next=4-3`: the
   tile his feet stand in; `next` is where the ball leads outside the campaign). Theme `airship`,
   music `smb3-boss`.
 - **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
@@ -240,8 +242,8 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   Any other level, the map or the title ends the run. Dev select / `?level=` never start one.
 - **No clock aboard**: `LevelScene` sets the world's time to null (the HUD leaves it blank).
 - **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
-  restarts the deck as it was boarded, or Larry's room once it has been reached (rising out of its
-  pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
+  restarts the deck as it was boarded, or Larry's room once it has been reached (dropping in from
+  its ceiling pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
   restores the pre-boarding snapshot and goes back to 4-2 at its last checkpoint (4-2's own respawn
   rules: its start without one, a fresh clock, the WORLD card; no hero select).
 - **MENU** aboard is `MiniGameMenuScene` titled LARRY'S AIRSHIP: Continue / Give up (= NO) and, in
@@ -356,8 +358,15 @@ Link (overhead, four-way walking on a half-tile grid, three hearts taken in halv
 with only his sword: a stab hits the whole tile in front of him plus 4 px to each side (and 6 px
 back into his own tile), is out for 12 of its 14 frames, and wins ties: a monster the blade
 touches is knocked back and does no touch damage that frame, so monsters coming in at an angle
-meet the blade (owner feedback: "attacking with the sword is flawed"). Items, Zelda style: an
-item box labelled ITEM beside the SWORD box on the HUD; SPECIAL uses the item in it, SELECT
+meet the blade (owner feedback: "attacking with the sword is flawed"). With every heart full a
+stab also throws a **sword beam** (`topdown/beam.ts`, as in Zelda; one on screen at a time, 3 px a
+frame [M]): it hurts the first monster it meets like the sword and bursts at walls into four
+pieces flying apart diagonally; it flickers through four tints (one steady tint with reduce
+flashing; sound `sword-beam`). The HUD is Zelda's (0.4.12 fidelity pass): LEVEL-1 over the map,
+the key and bomb counts in a column (bombs from the start, 0 until found; there are no rupees),
+the **B** box with the item in the slot and the **A** box with the sword (the letters are the
+HUD's art, an owner-approved exception; rules and instructions still name abilities), and
+-LIFE- in red over the hearts. Items, Zelda style: SPECIAL uses the item in the B box, SELECT
 switches items; touch labels SWORD, the item's name (BOOMERANG / BOMB, hidden while it can't be
 used), ITEM (with two items) and MENU. Walking into a chest opens it; Link holds the prize up for
 a moment while the room waits, with a banner and announcement saying how to use it (`item-get`).
@@ -380,11 +389,12 @@ axis), and its guard halves monsters' touch damage, never below half a heart; th
 "FACE ROCKS AND SPELLS TO BLOCK" / "MONSTERS HURT YOU LESS"),
 rock-spitters with a floor switch behind water (it opens the way on and shows a heart refill), the
 keeper (drifts across the top, glows, then fans three spells at Link; eight hits, a bomb counts
-two; its name shows between it and Link; its spells vanish when it falls) and the shining exit.
+two; no name on screen, as a Zelda boss has none; its spells vanish when it falls) and the
+shining exit.
 The cellar and the shrine are side rooms; only the shrine is hidden. Exit reached: `pass`; no
 hearts left: `fail` after the death spin; menu Give up: `quit`. Hearts, keys and items live in the
 keep, never in `game.state`. Music `dungeon` and `keeper`; sounds `secret` (also a wall breaking
-open), `sword-stab`, `door-open`, `key-get`, `item-get`, `boomerang`, `bomb-fuse`, `bomb-blast`,
+open), `sword-stab`, `sword-beam`, `door-open`, `key-get`, `item-get`, `boomerang`, `bomb-fuse`, `bomb-blast`,
 `select`. Dev mode's assists apply: **No damage** (`invulnerable`) keeps Link's hearts against
 monsters, rocks, spells and his own bombs (he is still knocked back), read each time he is hurt,
 so switching it mid-round counts at once; **slow motion** slows the whole loop, the keep
@@ -398,7 +408,9 @@ pnpm vitest run human-sim --silent=false` prints the report, with and without th
 knows the whole plan, so it measures combat difficulty, not puzzles or finding the way): before v2 it escaped
 40% of 30 seeds (70% at a 12-frame reaction, 27% at 18), mostly falling to the keeper. With v2
 and the magic shield 97-100% (about 1.8 of four hearts lost to the keeper); skipping the shrine
-93-100% (about 2.2 lost). The keeper got two more hit points to keep it a fight. The sim dodges
+93-100% (about 2.2 lost). The keeper got two more hit points to keep it a fight. With the sword
+beam (0.4.12, `KEEP_SIM=40`): with the shield 100% at every reaction (about 1.4-2.0 hearts lost
+to the keeper), without it 93-98% (about 2.1-2.4), the same band as before. The sim dodges
 spells rather than facing them, so a player who learns to block does better than it does.
 
 ### The top-down kit (`src/game/topdown/`)
@@ -429,7 +441,9 @@ Reusable for later top-down mini games; it knows no particular game.
   `world.grant(what)` gives anything; `noDamage` (a world option) keeps the hero's hearts.
 - `render.ts`, `hud.ts`, `frames.ts`: tiles drawn for the north wall are flipped for the south
   and rotated for the sides (`withSideFrames` derives `-side` and the doorway halves `-l`/`-r`
-  when the sheet is registered); the Zelda-style HUD (map, keys and ammo, item boxes, life).
+  when the sheet is registered); the Zelda-style HUD (the level over the map, keys and ammo,
+  lettered item boxes, -LIFE- in red over the hearts).
+- `beam.ts`: the sword beam (`swordBeam`, a world option, default off) and its burst.
 - `bot.ts`: a breadth-first-search player driven by a per-room plan (a list of steps, or a
   function of the world for rooms passed twice): fights (stunning with a boomerang it owns),
   pushes, opens chests, bombs walls. `CautiousBot` wraps it as a cautious first-time player for
@@ -441,8 +455,24 @@ An NES Mega Man style stage on the space station above 3-1, played **as Mega Man
 fight with **Dark Mega Man**, the brainwashing's copy of him. It runs in a real `World` of its own
 (stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Mega Man with the
 helmet kit (`{ helmet: 1 }`: buster, charge shot, slide, and Rush Coil, which comes with the
-helmet), full 28 hit points on the usual bar, one life, no clock, and a camera that scrolls both
-ways. READY shows first (Mega Man cannot move, the press that started the round never jumps).
+helmet), full 28 hit points, three lives, no clock, and a camera that scrolls both ways. Each
+life starts with READY blinking on the empty start spot (the stage music already playing; the
+press that started the round never jumps), then Mega Man beams down onto it (World's `beam`
+arrival) and only then moves. The HUD is Mega Man 2's: bars only (`hud.ts`: the selected weapon's
+energy at x 16 while a weapon is selected, life at x 24, the boss at x 40, tops at y 24), no name,
+score or lives.
+
+- **NES form** (`nes-form.ts`, `NES_MEGAMAN`; the campaign's `MEGAMAN` is untouched, as Bill's
+  Contra form in `bill/commando.ts`): Mega Man 2's jump, 4.87 px/f up under 0.25 px/f² either way
+  (an apex of about 3 tiles, 50 px, against the campaign's 4.3), a hit's push back with no upward
+  pop (a jump stops rising), and shots (buster, charge shot) that pass through walls. Walking
+  (1.375 px/f) already matched.
+- **Lives** (`minigames/lives.ts`, `MiniLives`, on Bill's REST model): a life lost (orb burst,
+  `WorldStart.deathStyle: 'orbs'`, the `mm-death` sound instead of Mario's jingle) restarts in a
+  new World at the last checkpoint: the stage start, column 40 (past the capsule), or the boss
+  door (column 77, reached at 76: through the shutter again, and his bar fills again). Full hit
+  points; the Saw Disc stays his with the energy it had (back on the buster), and the capsule
+  stays gone. Losing the last life is GAME OVER (180 frames), then `fail`.
 
 - **The stage** (five screens, theme `station`: steel floor, bulkhead plating behind a corridor
   band, space above, the station sheet's windows, consoles and girders as `deco` entities drawn in
@@ -481,16 +511,23 @@ ways. READY shows first (Mega Man cannot move, the press that started the round 
   invulnerability after a hit (flicker, not with reduce flashing).
 - **Outcomes**: beating him bursts him into Mega Man's death orbs (the `death-orb` frame, two rings
   of eight) with "DARK MEGA MAN IS BEATEN!", the victory jingle, Mega Man beams out, then `pass`.
-  Mega Man at 0 hit points or in a pit: `fail` once the death has played. Menu (`StationMenuScene`)
-  Give up: `quit`. `done` is called once; `game.state` is never touched.
+  Mega Man at 0 hit points or in a pit costs a life; `fail` after GAME OVER. Menu
+  (`StationMenuScene`) Give up: `quit`. `done` is called once; `game.state` is never touched.
 - Music `mm-station` on the stage and `mm-boss` from the boss's entrance, `castle-clear` for the
   win; sounds `boss-fill` (each bar notch), `beam` (his entrance, Mega Man's exit), `capsule`
   (`art.ts` names them all).
 - Touch labels: Mega Man's level labels while he plays (`levelTouchLabels`: JUMP, SHOOT, the
   weapon's name, WEAPON with two or more), only MENU while READY, the capsule, the gate and the
   entrance run, none once the round is decided. Dev assists: No damage keeps every hit point (a pit
-  still fails, as in a level, unless the Safety floor assist catches it). Dev: `?minigame=megaman` (the scene is `window.__miniGame`), or Dev →
+  still costs a life, as in a level, unless the Safety floor assist catches it); Infinite lives
+  keeps the count. Dev: `?minigame=megaman` (the scene is `window.__miniGame`), or Dev →
   Mini games.
+- **World hook** `WorldStart.deathStyle` (`world/death-style.ts`): `hop` (the default, Mario's
+  jingle and hop, unchanged), `orbs` (Mega Man), `explode` (Samus: flashes, steady with reduce
+  flashing, then her suit's pieces fly apart), `collapse` (Simon: no hop, he drops to the floor
+  and lies in his `die` frame) and `ninja` (Ryu: thrown up and back, then lies there). Each has its
+  own sound (`content/sfx/deaths.ts`; `WorldStart.deathSfx` overrides it) and length before `died`
+  (`DEATH_FRAMES`); `World.deathTime(p)` and `p.scratch.deathT` give a sprite the death's clock.
 - **World hook** `WorldStart.extraEntities(spawn, world)`: a mini game's own entity types without a
   case in `makeEntity`. Asked first for every spawn: an entity takes it, `null` drops it, `undefined`
   leaves it to World's own types. The station's `hopper`, `turret` (`mount=ceiling`), `drone`
@@ -500,10 +537,12 @@ Difficulty (a "cautious human" sim, `human-sim.test.ts`: `StationBot` with a 15-
 delay, robots and shots misjudged by up to 6 px, pauses and jumps a little early; it knows the
 plan, switches to the Saw Disc and fires it, jumps Dark Mega Man's shots; without the saw it uses
 charge shots from afar; `MM_SIM=30 pnpm vitest run megaman/human-sim --silent=false` prints the
-report): with the Saw Disc it wins 93 / 93 / 93 / 97% of 30 seeds at a 12 / 15 / 18 / 21-frame
-reaction, losing about 20-22 of 28 hit points in all (about 12 to Dark Mega Man; half the wins end
-on 8 or less). With the buster alone: 90 / 80 / 23 / 20%, so the weakness matters for slower
-players.
+report). With the NES form and three lives (0.4.12; the two floor turrets past pits and the
+hopper after the last pit moved two columns on, so a stop to wait for one is not at a pit's
+edge, where a hit's push back, with no upward pop now, drops him in), with the Saw Disc it wins 100% of 40 seeds at a 12 / 15 / 18 / 21-frame
+reaction (on the first life 100 / 100 / 98 / 98%); with the buster alone 100 / 100 / 98 / 95%
+(first life 95 / 85 / 57 / 43%). Hit points lost across lives: about 16-21
+with the saw, 20-44 without (most of it to Dark Mega Man).
 
 ## Samus's mini game: Zebes Escape (`src/game/minigames/samus/`)
 
@@ -511,8 +550,13 @@ The cavern under 4-2 starts to self-destruct, played **as Samus**: get from the 
 chamber to her ship before the countdown runs out. It runs in a real `World` of its own
 (stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Samus with a
 toned-down dev kit (`ESCAPE_KIT`: one energy tank, 60 energy, the Long Beam, ten missiles; the
-morph ball and its bombs are always hers; no Varia suit), one life, no level clock. READY shows
-first (Samus cannot move, the countdown waits, the press that started the round never jumps).
+morph ball and its bombs are always hers; no Varia suit), three lives, no level clock. No READY:
+each life starts with Samus materialising on her spot to her start jingle (`zebes-start`, 2.5 s:
+sparkles, her grey outline, then herself; the sparkles hold still with reduce flashing), while
+she cannot move and the clock waits (the press that started the round never jumps). The first
+life opens on TIME BOMB SET / GET OUT FAST!. The HUD is Metroid's (`hud.ts`): energy-tank boxes
+(filled while full) over `EN..nn` (the energy in the tank in use; 30 a tank), the missile icon
+with a 3-digit count, and the escape's TIME counter at the top middle; no name, place or score.
 
 - **The stage** (theme `cavern`, music `zebes-escape`; three screens wide and three high, the
   first map with `camera: free`, see below): the chamber (the `zebes` sheet's Chozo statue,
@@ -536,9 +580,8 @@ first (Samus cannot move, the countdown waits, the press that started the round 
   under a ceiling and drops on Samus passing within 40 px below, veering toward her, digs in for
   24 frames and bursts into four shards. A touch or a shard takes Samus's usual 8 energy
   (`World.hurtPlayer`: the no-damage assist, blinking and knockback as in a level).
-- **The countdown** (`COUNTDOWN_SECONDS`, 90): big block digits (rects, no sheet) at the top of
-  the HUD (`ZEBES` in the place slot, `EN` below the name), red in the last ten seconds (pulsing
-  between two reds, steady with reduce flashing). The announcer says "Escape! 90 seconds." and
+- **The countdown** (`COUNTDOWN_SECONDS`, 90): shown as TIME, 999 down to 0 mapped onto the 90
+  seconds (`timeShown`). The announcer says "Time bomb set! Get out fast! 90 seconds." and
   calls 60, 30 and 10 seconds. The `alarm` sound plays every 2 s and every half second in the last
   ten, when the music also speeds up (tempo 1.2; reset when the round ends). A red wash swells and
   fades over the cavern about once a second (twice in the last ten); with reduce flashing it is a
@@ -547,15 +590,20 @@ first (Samus cannot move, the countdown waits, the press that started the round 
   the creatures go, Samus hides inside, the ship lifts off (`beam` sound, the win jingle, "SAMUS
   ESCAPED!", the announcer gives the seconds to spare) and the round passes after 150 frames. The
   countdown reaching zero: the cavern blows up (the `explosion` sound; white and orange flicker
-  for 40 frames, then a fade to white; with reduce flashing only the fade) and the round fails
-  after 120 frames. A pit or losing all energy fails once the death has played. Menu
+  for 40 frames, then a fade to white; with reduce flashing only the fade) and a life is lost
+  after 120 frames. A pit or losing all energy (she explodes, `WorldStart.deathStyle: 'explode'`,
+  the `samus-death` sound) costs a life too. The next life starts in a new World at the last
+  checkpoint (the chamber, or the middle corridor once she comes up into it from shaft 1) with
+  the kit and the clock full again; losing the last is GAME OVER (180 frames), then `fail`. Menu
   (`EscapeMenuScene`, a `MiniGameMenuScene`; it pauses the countdown) Give up: `quit`. `done` is
-  called once; `game.state` is never touched.
+  called once; `game.state` is never touched. (NES Metroid has no lives, only continues; the
+  three lives follow the other World mini games.)
 - **Assists** (dev mode, from the menu): No damage keeps every point of energy (a pit still
-  fails; the Safety floor assist catches it). Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
+  costs a life; the Safety floor assist catches it). Infinite lives keeps the count. Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
   holds."); turned off, it runs on from there.
 - Touch labels: Samus's level labels while she runs (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
-  WEAPON; BOMB in the ball, no JUMP), only MENU while READY, none once the round is decided.
+  WEAPON; BOMB in the ball, no JUMP), only MENU while she materialises, none once a life or the
+  round is decided.
   Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Mini games.
 
 **The auto-scroll camera** (generic, `world/camera.ts`, SMB3's airships): a map's header
@@ -599,7 +647,9 @@ it escapes 100 / 97 / 90 / 93% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction
 28 / 22 / 20 / 22 seconds to spare (the closest 1-12 s); the misses are the pit (2 in 30 at the
 slower reactions) and, rarely, the clock. A clumsier player (21 frames, 10 px, a quarter of jumps
 let go early) escapes 63% of the time, mostly losing to the clock in shaft 2. A sharp run leaves
-about 43 seconds.
+about 43 seconds. With three lives (0.4.12) it escapes 100% at every reaction, on the first life
+93 / 97 / 97 / 97% (a median of 26-28 seconds to spare); the clumsier player 100%, 53% on the first
+life. Both sims also check that at least 70% of cautious runs win on the first life.
 
 ## Simon's mini game: Dracula's Castle (`src/game/minigames/simon/`)
 
@@ -607,14 +657,15 @@ Simon is Dracula's thrall; the round is an NES Castlevania-style castle stage an
 throne room, played **as Simon** with his own kit (no new weapon code): the chain whip (`whip: 1`)
 and five hearts; a candle in the entrance hall drops the **dagger** (`subs: 1`, a banner and the
 announcer say how to throw it; each throw takes a heart). It runs in a `World` of its own
-(stage.map with `?raw`, not in the level library) with a fresh GameState, one life, no level clock:
-the scene keeps its own **300-second clock** (held by the Infinite time assist; at 0 Simon falls).
+(stage.map with `?raw`, not in the level library) with a fresh GameState, three lives, no level
+clock: the scene keeps its own **300-second clock** (held by the Infinite time assist; at 0 Simon
+falls).
 READY shows first. Theme `crypt` and the `crypt` sheet (`art.ts`: `drawCrypt` draws a crypt frame,
 or a plain box for one that does not exist; nothing throws).
 
 - **The stage** (112 columns; rows 0-1 stay empty under the HUD; below them every empty cell is
   the crypt's black-brick `wall` backdrop under a `wall-top` cornice, with four open windows,
-  stained glass and Dracula's throne as decor): the entrance hall (candles, a bat),
+  stained glass, and in Dracula's room barred windows and his coffin on its dais, as decor): the entrance hall (candles, a bat),
   **stairs up** (`stairs 18 12 len=5 dir=ur`) onto the battlement walk (a brick block from column
   23, so the flight must be climbed; a roast candle at its start; Medusa heads), **stairs down** (`stairs 50 12 len=5 dir=ul`)
   into the bone hall (two skeletons, a bat), the gallery (Medusa heads low), the **door**
@@ -630,34 +681,61 @@ or a plain box for one that does not exist; nothing throws).
   **crumble when they strike** (no chain of hits as one drifts along with him). **Skeletons**
   (`skeleton x y`, two lashes) pace by their post facing Simon and lob a bone in an arc timed to
   land where he stood. A lash knocks bones and fireballs out of the air.
-- **The HUD** (`hud.ts`; no score, so its World has `scorePopups: false`: kills float no "200", as in Zebes and Station Escape): a black band with PLAYER and ENEMY bars (16 segments each), TIME, the
-  sub-weapon box and the hearts.
-- **Dracula** (`dracula.ts`), one ENEMY bar over two phases (`BOSS_HP` 14: 6 for the Count, 8
-  for the beast). **Phase 1, the Count** (music `cv-boss`): gone, appears (sfx `dracula-teleport`)
+- **The HUD** (`hud.ts`), Castlevania's three lines on a black band: SCORE-000000, TIME and
+  STAGE 18; PLAYER with its bar, the sub-weapon box (over the two lower lines) and the hearts;
+  ENEMY with its bar and P (lives). 16 segments a bar. Kills float no "200" (`scorePopups:
+false`); the score is on the HUD.
+- **Simon's Castlevania form** (`hunter.ts`, `SIMON_HUNTER`, this mini game only; the campaign's
+  `SIMON` is untouched and a test checks it): full walking speed (1 px/f) from the first frame
+  and a dead stop on release; a lash on the ground roots him (no walking, turning or jumping until
+  it is done; in the air the arc carries on); a hit turns him to face it and throws him back in a
+  fixed arc (1 px/f back, 2.75 px/f up: about 24 px high and 35 px long) with no control until he
+  lands (none on stairs). The jump is his committed arc, as before.
+- **Dracula** (`dracula.ts`), two forms, each with a full ENEMY bar (8 hit points each, two
+  segments a lash). **Phase 1, the Count** (music `cv-boss`): gone, appears (sfx `dracula-teleport`)
   at one of four spots (never the last one, never within 48 px of Simon, preferring within 100),
   opens his cape and 28 frames later throws a **three-fireball spread** from his low hand (level
   at lash height, one rising over Simon, one dropping to the floor), lingers ~2 s, vanishes. Only
   his **head** can be hurt (a separate 16x16 hit box over his 20x42 body; the body clinks), and
-  only while he stands there; 24 frames of grace after a hit. **Phase 2**: the transformation
-  (2 s, sfx `beast-roar`, no screen tint with reduce flashing), then the **beast** (48x48 art,
-  36x40 body, hurt anywhere; music `cv-beast`) rises and cycles walk → spit (three aimed
-  fireballs) → walk → spit → walk → crouch and **leap** at Simon → a landing stomp (a screen
-  shake, not with reduce flashing) with a **shock wave** running along the floor each way.
+  only while he stands there; 24 frames of grace after a hit. **Between the forms** (no screen
+  tint with reduce flashing): his bar empty, his **head flies off** (`FlyingHead`, sfx
+  `beast-roar`), the headless body (`dracula-headless`) stands 50 frames and bursts, and 80
+  frames in the **beast** drops in through the ceiling's line (music `cv-beast`) as the ENEMY
+  bar **fills again** (a hit point every 4 frames, sfx `boss-fill`); the fight goes on once it has
+  landed and the bar is full. **Phase 2, the beast** (48x48 art, 36x40 body): it spits first,
+  then two hops, a fan, two hops... A **hop** lands 56 px short of Simon (back to 104 px if it is
+  there already), too low to run under (about 33 px). Cornered (his centre within 24 px of a
+  wall) or crouching, it takes a **high leap** (about 96 px) that comes down on him, and he can
+  run under it. Its **fan** (after a 40-frame roar with its maw open) is three fireballs at once,
+  the middle one at Simon, 0.35 rad apart; a lash knocks them away. Only its **head** can be hurt
+  by the whip and the dagger (`BeastHead`, 16x16 at its front, above a standing lash: jump and
+  lash it); holy water burns it anywhere; the body clinks. No shock wave (Castlevania has none).
+  The room is dressed as Castlevania's: two tall barred windows and the coffin on its dais.
+- **Lives and death** (`minigames/lives.ts`): three lives (P-03 on the HUD). Simon dies
+  Castlevania's way (World `deathStyle: 'collapse'`, sfx `cv-death`, no Mario hop or jingle): he
+  drops and lies in his `die` frame. With a life left the next one starts at READY at the last
+  checkpoint, as a fresh World: the entrance hall, the bone hall (`CASTLE_MID`, once he is down
+  the second flight) or the door to Dracula's room (`CASTLE_BOSS`, once it has opened), with his
+  start kit (no dagger, five hearts), every hit point, a full clock and Dracula whole again.
+  Infinite lives (dev assist) keeps the count.
 - **Endings**: beating the beast passes (banner DRACULA IS DEFEATED! THE CURSE IS BROKEN., the
-  jingle, 5 s); losing every hit point, a pit or the clock fails; the menu's Give up quits
-  (`CastleMenuScene`, the shared MiniGameMenuScene with the dev assists). `done` is called once.
+  jingle, 5 s); losing the last life shows GAME OVER (`GAME_OVER_FRAMES`) and then fails (the
+  shared TRY AGAIN); the menu's Give up quits (`CastleMenuScene`, the shared MiniGameMenuScene
+  with the dev assists). `done` is called once.
 
 Difficulty (`human-sim.test.ts`, `CastleBot`: it follows the route, lashes candles and whatever
 its prediction puts in the lash after the wind-up, keeps clear of Medusa heads until it can lash
 them, stands off while Dracula casts, lashes the level fireball, then steps in and jump-lashes his
-head on the way down; against the beast it throws daggers from a distance, flees its leaps and
-jumps its shock waves; `CV_SIM=30 pnpm vitest run simon/human-sim --silent=false` prints the
-report): a sharp run passes unhurt with ~250 s left. As a careful first-timer (sees things 15
-frames late, misjudges by up to 6 px and its jump-lash by up to 2 frames, pauses now and then,
-steps closer to a candle its lash fell short of, judges Dracula more closely after each hit or
-missed lash) it passes all 30 seeds at a 12, 15 and 18-frame reaction, losing 6-8 hit points a run
-(3-4 of them to Dracula) with a median of about 210 of the 300 seconds left; a clumsy player (21
-frames, 10 px, more pauses) passes 93%, losing 10.5 (7 to Dracula; the two misses are Dracula).
+head on the way down; against the beast it reads where a leap will land off the arc it sees (with its misjudging), moves to lashing range of it (under
+a high one when the wall is too close), jumps and lashes its head as it lands, and backs off when
+its maw opens; `CV_SIM=30 pnpm vitest run simon/human-sim --silent=false` prints the report): a
+sharp run passes unhurt. As a careful first-timer (sees things 15 frames late, misjudges by up to 6
+px and its jump-lash by up to 2 frames, pauses now and then, steps closer to a candle its lash fell
+short of, judges Dracula more closely after each hit or missed lash) it passes all 30 seeds at a
+12, 15 and 18-frame reaction, losing 6-7 hit points a run (about 4 of them to Dracula) with a
+median of about 155 of the 300 seconds left; a clumsy player (21 frames, 10 px, more pauses)
+passes 87% with the three lives (57% on the first life; 0.6 lives lost a run; every game over is
+the beast).
 The stage is gentle (one-bar creature hits, three roasts); the fight is the test.
 
 ### Castlevania stairs (`src/game/entities/objects/stairs.ts`, any level)
@@ -688,7 +766,7 @@ Ryu is under the Masked Ninja's curse; the round is a Tecmo-style cutscene, a Ni
 stage and a duel with the Masked Ninja on a moonlit rooftop, played **as Ryu** with his own kit (no new weapon code): the
 sword, his wall cling and wall kick, and ninpo (`arts: 1`, the throwing star, 10 of 40 spirit
 points). It runs in a `World` of its own (stage.map with `?raw`, theme `ninja-night`) with a
-fresh GameState, one life and a **150-second clock** (held by the Infinite time assist). Art: the
+fresh GameState, three lives and a **150-second clock** (held by the Infinite time assist). Art: the
 `ninja` sheet (`art.ts drawNinja`; a missing frame or palette draws a plain box, nothing throws).
 
 - **The cutscene** (`cutscene.ts`, music `ng-cutscene`): letterboxed (40 px bars), a big moon over
@@ -723,8 +801,10 @@ fresh GameState, one life and a **150-second clock** (held by the Infinite time 
   swoop or glide once he is within 48 px of one (a knock carries him about 21 px). Nor does one
   turn on Ryu while he clings to a wall, and one mid-pass pulls up when he clings. Ryu's blade
   knocks any shot away within 8 px (`SHOT_SLACK`).
-- **The HUD** (`hud.ts`; no score, so `scorePopups: false`): TIMER, the NINJA and ENEMY bars (16
-  segments), the art in hand and NINPO.
+- **The HUD** (`hud.ts`), Ninja Gaiden's three lines: SCORE-000000 and STAGE-6-2; TIMER, the
+  ninpo box (the art in hand, over the two lower lines) and the NINJA bar; P (lives), the spirit
+  mark with the points and the ENEMY bar (16 segments each). Points float up nowhere
+  (`scorePopups: false`); the score is on the HUD.
 - **Banners** (the first cling's two lines, the art's for 2.5 s, the win's) sit in fixed slots
   (`BANNER_SLOTS`, from the strip under the HUD down to low over the street). One keeps its slot
   while it covers neither Ryu (16 px round him, plus where his rise or fall takes him in 12
@@ -746,8 +826,16 @@ fresh GameState, one life and a **150-second clock** (held by the Infinite time 
   **afterimage** (`ninja-ghost` palette) runs each dash and dive 14 frames behind him, hurting
   like him: a jump over the dash has to clear both. Touching him or it costs 2, whatever he is
   doing.
+- **Lives and death** (`minigames/lives.ts`): three lives (P-03 on the HUD). Ryu dies Ninja
+  Gaiden's way (World `deathStyle: 'ninja'`, sfx `ng-death`): thrown up and back, then he lies in
+  his `die` frame. With a life left the next one starts at READY at the last checkpoint, as a
+  fresh World: the street, the ground past the tower (`DUEL_MID`) or the rooftops before the
+  arena's doorway (`DUEL_BOSS`, once he has gone through), with every hit point, the start's
+  spirit points and only the start's art (as in Ninja Gaiden, a death loses the ninpo art he
+  picked up), a full clock and the Masked Ninja whole again. Infinite
+  lives (dev assist) keeps the count.
 - **Endings**: beating him passes (banner THE MASKED NINJA FALLS! THE CURSE IS BROKEN., only the
-  first line in a round for fun, the jingle, 5 s); losing every hit point, a pit or the clock
+  first line in a round for fun, the jingle, 5 s); losing the last life shows GAME OVER and then
   fails; the menu's Give up quits (`DuelMenuScene`, the shared MiniGameMenuScene with the dev
   assists), from the cutscene too. A trade (Ryu falling in the update that fells him) passes.
   `done` is called once.
@@ -763,8 +851,8 @@ glints, and slashes him while he stands or kneels; `RYU_SIM=30 pnpm vitest run r
 A careful first-timer (sees things 12-18 frames late, misjudges by up to 6 px, its jump timing by
 up to 2 frames, pauses now and then) passes 100% of 30 seeds with the windmill in hand, losing
 about 11-12 hit points (about 5 to the Masked Ninja); a clumsy player (21 frames, 10 px, more
-pauses) passes roughly 70-90% (80% of 30 seeds; a third before the bot took the windmill and the
-health lantern's drops).
+pauses) passes 100% of 30 seeds with the three lives (80% on the first life, as before the lives;
+0.2 lives lost a run).
 
 ## Bill's mini game: Jungle Assault (`src/game/minigames/bill/`)
 
@@ -910,14 +998,15 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
 To add a hero's training: a list in `LESSONS` (3-5 lessons, tested by
 `src/game/tutorial/lessons.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.
 
-## Sophia III in the campaign levels (0.4.11)
+## Sophia III in the campaign levels (0.4.12)
 
 Sophia III's tank is wider than a tile (19 × 15.5), cannot stomp, and at Normal jumps about 4.5
 tiles high and 6 across, so the levels built for Mario need her own ways through:
 
 - **Nose first down a one-tile hole** (down while driving over it, every power state): her turned
   15.5 × 19 box drops through, and she rights herself as soon as there is room: on the floor, on
-  a lift, or in the air where the shaft opens to one side (4-4's maze, castle drops).
+  a lift, or in the air where the shaft opens to one side (4-4's maze, castle drops). A fall into
+  an area down a one-tile gap (Larry's cabin) starts nose first too (`CharacterBehaviour.narrowFall`).
 - **Jason on foot** (EXIT, our design): 8 × 16, a hop of about three tiles (49 px with jump
   held), fits one-tile gaps and climbs ladders (an Underworld vine). The parked tank keeps the
   camera: the screen never scrolls past it (`camera.x <= tank.x - 32 px`, `Entity.anchorsCamera`),
@@ -934,7 +1023,7 @@ replays some of the routes it found on every test run. A level it cannot finish 
 that no route exists (it tries fixed moves from standing spots, and a block it reveals or a lift
 it rides is gone again at its next try), so the table says which places were checked by hand.
 
-**Results (2026-10-07, 0.4.11).** Super Mario Bros.: 32 of 33 levels (1-0 to 8-4) are
+**Results (2026-10-07, 0.4.12).** Super Mario Bros.: 32 of 33 levels (1-0 to 8-4) are
 finished at Normal. The one that is not is **8-4**: its hanging pipe (column 163, seven tiles over
 the floor; Mario gets there off the Paratroopas) is out of the tank's reach, and of Jason's hop
 even from the parked tank's roof. With Hyper's hover it is finished, but 8-4 has no power-up, so a

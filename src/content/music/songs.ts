@@ -4,6 +4,8 @@ import { castlevaniaSongs } from './castlevania';
 import { ninjaSongs } from './ninja';
 import { contraSongs } from './contra';
 import { sophiaSongs } from './sophia';
+import { heroJingles } from './hero-jingles';
+import { lookSongs } from './looks';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1104,4 +1106,8 @@ export const songs: Song[] = [
   ...contraSongs,
   // Sophia's Underworld and her mini game.
   ...sophiaSongs,
+  // The mini game heroes' own start jingles.
+  ...heroJingles,
+  // The campaign looks of 2-1, 3-1 and 4-2.
+  ...lookSongs,
 ];

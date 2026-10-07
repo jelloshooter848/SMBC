@@ -28,6 +28,7 @@ export function enemyPalette(theme: Theme): string {
     case 'underground':
     case 'cavern':
     case 'underworld':
+    case 'brinstar':
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':
@@ -37,6 +38,7 @@ export function enemyPalette(theme: Theme): string {
     case 'dojo':
     case 'alien-lair':
     case 'bm-dungeon':
+    case 'castlevania': // 5-4's castle hall is a castle still (Podoboos; Bowser's true form)
       return 'enemies-castle';
     case 'water':
       return 'enemies-water';

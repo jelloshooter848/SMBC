@@ -114,6 +114,16 @@ const linkTd = (tunic: string, shade: string, skin: string, hair: string, shield
   NES.blueLight,
 ];
 
+/** Link's tint with the blade recoloured: the sword beam's flicker (beam.ts). */
+function beamTint(glint: string, blade: string, shade: string, hilt: string): string[] {
+  const p = linkTd(NES.greenMid, NES.greenDark, NES.skin, NES.brown, NES.blueMid);
+  p[6] = glint;
+  p[7] = blade;
+  p[8] = shade;
+  p[9] = hilt;
+  return p;
+}
+
 export const linkTdPalettes: Record<string, string[]> = {
   'link-td': linkTd(NES.greenMid, NES.greenDark, NES.skin, NES.brown, NES.blueMid),
   // Hurt flash: alternated every few frames while Link is knocked back.
@@ -121,6 +131,13 @@ export const linkTdPalettes: Record<string, string[]> = {
   'link-td-hurt-1': linkTd(NES.redBright, NES.redDark, NES.tan, NES.redDark, NES.redBright),
   // Reduce flashing: one steady, paler tint held for the whole invulnerable time.
   'link-td-hurt-calm': linkTd(NES.greenLight, NES.green, NES.tan, NES.brownLight, NES.lavender),
+  // The sword beam (and its burst): the blade's colours flicker through four tints as it flies
+  // (glint, blade, grip / blade shade, hilt), and hold the first with reduce flashing.
+  'link-td-beam-0': beamTint(NES.white, NES.skyLight, NES.blueLight, NES.white),
+  'link-td-beam-1': beamTint(NES.yellowLight, NES.peach, NES.redBright, NES.yellow),
+  'link-td-beam-2': beamTint(NES.skyLight, NES.blueLight, NES.blueMid, NES.lavender),
+  'link-td-beam-3': beamTint(NES.white, NES.greenLight, NES.green, NES.yellowLight),
+  'link-td-beam-calm': beamTint(NES.white, NES.skyLight, NES.blueLight, NES.white),
 };
 
 /**
@@ -939,6 +956,19 @@ const SWORD_H = Array.from({ length: 8 }, (_, i) =>
   Array.from({ length: 16 }, (_, j) => (SWORD_V[15 - j] as string)[i]).join(''),
 );
 
+// A piece of a burst sword beam (8x8): a short blade shard pointing up-left, the way the
+// top-left piece flies; flipped for the other three.
+const BEAM_SHARD = [
+  '00......',
+  '0660....',
+  '06770...',
+  '.07780..',
+  '..07880.',
+  '...0880.',
+  '....00..',
+  '........',
+];
+
 /** A frame turned a quarter clockwise (square frames). */
 const turnCw = (rows: readonly string[]): string[] =>
   rows.map((_, y) => rows.map((_, x) => (rows[rows.length - 1 - x] as string)[y]).join(''));
@@ -1048,6 +1078,7 @@ export const linkTdDef: SpriteDef = {
     'attack-side': ATTACK_SIDE,
     'sword-v': SWORD_V,
     'sword-h': SWORD_H,
+    'beam-shard': BEAM_SHARD,
     'boomerang-0': BOOMERANG_SPIN[0] as string[],
     'boomerang-1': BOOMERANG_SPIN[1] as string[],
     'boomerang-2': BOOMERANG_SPIN[2] as string[],

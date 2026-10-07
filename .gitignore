@@ -12,4 +12,5 @@ user-packs/*
 tools/levelgen/source/
 
 # Agent worktrees and local Claude Code state
-.claude/
+.claude/*
+!.claude/settings.json
