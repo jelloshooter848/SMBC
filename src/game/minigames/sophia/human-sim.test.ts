@@ -13,6 +13,23 @@ describe('Underworld: a human with 3 lives (difficulty)', () => {
   // SOPHIA_SIM=30 pnpm vitest run sophia/human-sim --silent=false prints a fuller report.
   const n = Number(process.env.SOPHIA_SIM ?? 0);
 
+  it('a cautious first-timer (late reactions, misjudged positions, pauses) passes at least 85% of 30 seeds, and not unscathed', () => {
+    const { rate, runs } = passRate(30, CAUTIOUS);
+    expect(rate).toBeGreaterThanOrEqual(0.85);
+    // It plays it as a player would: every room, the cache behind the cracked wall included.
+    expect(runs.filter((r) => r.rooms.includes('cache')).length).toBeGreaterThanOrEqual(27);
+    expect(runs.reduce((a, r) => a + r.lost, 0) / runs.length).toBeGreaterThan(1);
+    // Nothing stuck: a run that does not pass ran out of lives.
+    expect(runs.filter((r) => r.result === 'timeout')).toEqual([]);
+  }, 600_000);
+
+  it('a clumsy player sometimes wins and sometimes loses every life (over 30 seeds)', () => {
+    const { rate, runs } = passRate(30, CLUMSY);
+    expect(rate).toBeGreaterThan(0);
+    expect(rate).toBeLessThan(1);
+    expect(runs.filter((r) => r.result === 'timeout')).toEqual([]);
+  }, 600_000);
+
   it.runIf(n > 0)(
     'reports the pass rates',
     () => {

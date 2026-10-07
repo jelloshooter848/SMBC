@@ -447,7 +447,7 @@ export class JasonBot {
 /** How a mutant is moving (px a frame), as a player reads it: only the bouncing core is quick. */
 function motion(f: TdEnemy): { vx: number; vy: number } {
   if (!(f instanceof PlutoniumBoss) || f.phase !== 'core' || f.burstT > 0) return { vx: 0, vy: 0 };
-  const s = f.angry ? 1.5 : 1;
+  const s = f.speed;
   return { vx: f.vx * s, vy: f.vy * s };
 }
 

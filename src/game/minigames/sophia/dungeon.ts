@@ -37,7 +37,6 @@ export const UNDERWORLD_ROOMS: readonly RoomDef[] = [
     id: 'gate',
     at: [1, 2],
     hint: 'Through the gateway, into the dungeon. Shoot the mutants; G capsules raise your gun.',
-    dark: true,
     map: [
       '################',
       '#..............#',
@@ -56,7 +55,6 @@ export const UNDERWORLD_ROOMS: readonly RoomDef[] = [
     id: 'hall',
     at: [2, 2],
     hint: 'Blobs and floating eyes. An eye glares before it spits.',
-    dark: true,
     map: [
       '#######OO#######',
       '#..............#',
@@ -75,7 +73,6 @@ export const UNDERWORLD_ROOMS: readonly RoomDef[] = [
     id: 'turrets',
     at: [2, 1],
     hint: 'Turrets round a pool. A turret fires when its barrel points at you.',
-    dark: true,
     map: [
       '################',
       '#..............#',
@@ -94,7 +91,6 @@ export const UNDERWORLD_ROOMS: readonly RoomDef[] = [
     id: 'crossing',
     at: [1, 1],
     hint: 'The statues point at a cracked wall. A grenade can break it.',
-    dark: true,
     map: [
       '#######OO#######',
       '#..............#',
@@ -113,7 +109,6 @@ export const UNDERWORLD_ROOMS: readonly RoomDef[] = [
     id: 'cache',
     at: [0, 1],
     hint: 'A hidden cache of capsules.',
-    dark: true,
     map: [
       '################',
       '#..............#',
@@ -132,7 +127,6 @@ export const UNDERWORLD_ROOMS: readonly RoomDef[] = [
     id: 'ante',
     at: [1, 0],
     hint: 'The boss door is to the east.',
-    dark: true,
     map: [
       '################',
       '#..............#',

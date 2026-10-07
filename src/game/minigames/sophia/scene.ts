@@ -19,6 +19,7 @@ import {
   DUNGEON_TILES,
   FALLBACK_TILES,
   FALLBACK_TILES_PALETTE,
+  DUNGEON_TILES_DARK,
   SOPHIA_SHEET,
   fontSheet,
   soundId,
@@ -109,7 +110,7 @@ export class UnderworldScene implements Scene {
     const own = assets.has(DUNGEON_TILES);
     const sheets: TdSheets = {
       tiles: own ? DUNGEON_TILES : FALLBACK_TILES,
-      tilesDark: own ? null : FALLBACK_TILES_PALETTE,
+      tilesDark: own ? DUNGEON_TILES_DARK : FALLBACK_TILES_PALETTE,
       hero: SOPHIA_SHEET,
       enemies: SOPHIA_SHEET,
     };

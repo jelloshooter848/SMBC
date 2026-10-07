@@ -1,10 +1,11 @@
 import type { Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { DIR_VEC, centre, dirToward, type Box, type Dir } from '../../topdown/geometry';
 import { TdEnemy, TdEntity, pickupSize } from '../../topdown/entity';
 import { Projectile } from '../../topdown/enemies';
 import type { TdView } from '../../topdown/view';
 import type { Mover, TopDownWorld } from '../../topdown/world';
-import { drawPiece, LOOK } from './art';
+import { drawPiece, HIT_PALETTE, LOOK } from './art';
 import { CAPSULE_LIFE, Capsule, type CapsuleKind } from './jason';
 
 /*
@@ -23,13 +24,18 @@ export class Boom extends TdEntity {
   }
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
     const k = Math.min(3, Math.floor(this.t / 5));
-    drawPiece(r, view.sheet(view.sheets.enemies), `boom-${k}`, ox + this.x, oy + this.y, 16, 16, LOOK.boom);
+    // (24×24 booms, centred on the 16-px cell it marks)
+    const sheet = view.sheet(view.sheets.enemies);
+    drawPiece(r, sheet, `boom-${k}`, ox + this.x - 4, oy + this.y - 4, 24, 24, LOOK.boom);
   }
 }
 
+/** The orbs' frames (shared with the boss's small shots). */
+export const ORB_FRAMES = ['boss-shot-0', 'boss-shot-1'] as const;
+
 /** A mutant's orb: a slow shot (no shield to stop it). */
 export class Orb extends Projectile {
-  constructor(x: number, y: number, vx: number, vy: number, frames: readonly string[] = ['orb-0', 'orb-1']) {
+  constructor(x: number, y: number, vx: number, vy: number, frames: readonly string[] = ORB_FRAMES) {
     super(x, y, vx, vy, null);
     this.blockable = false;
     this.frames = frames;
@@ -82,8 +88,13 @@ export abstract class Mutant extends TdEnemy {
     world.add(new Capsule(at.x, at.y, kind, CAPSULE_LIFE));
   }
 
-  protected blink(view: TdView): boolean {
-    return this.blinkHidden(view);
+  /**
+   * Its sheet: the white `sophia-hit` flash for a few frames after a hit (none with reduce
+   * flashing).
+   */
+  protected look(view: TdView): SpriteSheet | null {
+    const struck = this.invuln > 0 && !view.reduceFlashing;
+    return (struck ? view.sheet(view.sheets.enemies, HIT_PALETTE) : null) ?? view.sheet(view.sheets.enemies);
   }
 }
 
@@ -134,9 +145,8 @@ export class Blob extends Mutant {
   }
 
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    if (this.blink(view)) return;
     const f = this.resting ? 'blob-0' : `blob-${(this.t >> 3) & 1}`;
-    drawPiece(r, view.sheet(view.sheets.enemies), f, ox + this.x, oy + this.y, 16, 16, LOOK.blob);
+    drawPiece(r, this.look(view), f, ox + this.x, oy + this.y, 16, 16, LOOK.blob);
   }
 }
 
@@ -193,9 +203,8 @@ export class Eye extends Mutant {
   }
 
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    if (this.blink(view)) return;
     const f = this.glaring ? 'eye-1' : 'eye-0';
-    drawPiece(r, view.sheet(view.sheets.enemies), f, ox + this.x, oy + this.y, 16, 16, LOOK.eye);
+    drawPiece(r, this.look(view), f, ox + this.x, oy + this.y, 16, 16, LOOK.eye);
     if (this.glaring && !view.sheet(view.sheets.enemies)?.frames.has(f))
       r.rect(ox + this.x + 6, oy + this.y + 6, 4, 4, '#f83800');
   }
@@ -207,7 +216,7 @@ export class Eye extends Mutant {
 export const TURRET_TURN = 48;
 export const TURRET_AIM = 20;
 export const TURRET_ORB_SPEED = 2;
-/** The barrel's quarters, clockwise from up (its frames `turret-o-0..3`). */
+/** The barrel's quarters, clockwise from up. */
 const BARREL: readonly Dir[] = ['up', 'right', 'down', 'left'];
 
 /**
@@ -262,9 +271,9 @@ export class Turret extends Mutant {
   }
 
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    if (this.blink(view)) return;
-    const sheet = view.sheet(view.sheets.enemies);
-    const f = `turret-o-${this.barrel}`;
+    const sheet = this.look(view);
+    // (the sheet's `turret-o-k` aims k quarter turns clockwise from DOWN)
+    const f = `turret-o-${(this.barrel + 2) & 3}`;
     drawPiece(r, sheet, f, ox + this.x, oy + this.y, 16, 16, LOOK.turret);
     if (!sheet?.frames.has(f)) {
       const v = DIR_VEC[this.pointing];

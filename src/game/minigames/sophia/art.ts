@@ -25,18 +25,18 @@ export const BM_MUSIC = {
 const SOUNDS = {
   shot: ['jason-shot', 'buster'],
   grenade: ['grenade', 'bomb-blast'],
-  toss: ['grenade-toss', 'kick'],
+  toss: ['sophia-select', 'kick'],
   die: ['mutant-die', 'kick'],
   frog: ['frog', 'jump-small'],
   open: ['sophia-open', 'pipe'],
-  hurt: ['jason-hurt', 'hit'],
-  hit: ['hurt-enemy', 'hurt-enemy'],
+  hurt: ['sophia-hurt', 'hit'],
+  hit: ['sophia-hit-enemy', 'hurt-enemy'],
   clang: ['clang', 'bump'],
-  capsule: ['capsule', 'pickup'],
-  gunUp: ['gun-up', 'powerup'],
+  capsule: ['sophia-pickup', 'pickup'],
+  gunUp: ['powerup', 'powerup'],
   pow: ['powerup', 'powerup'],
-  enemyShot: ['boss-shot', 'beam'],
-  bossBoom: ['explosion', 'explosion'],
+  enemyShot: ['beam', 'beam'],
+  bossBoom: ['sophia-explode', 'explosion'],
   door: ['door-open', 'door-open'],
   secret: ['secret', 'secret'],
 } as const satisfies Record<string, readonly [string, string]>;
@@ -54,6 +54,8 @@ export function soundId(s: BmSound, known: ReadonlySet<string> = KNOWN_SFX): str
 export const SOPHIA_SHEET = 'sophia';
 /** The overhead dungeon's tile sheet, and what it falls back to (the Shadow Keep's, its dark palette). */
 export const DUNGEON_TILES = 'bm-dungeon';
+/** Its palette for the boss's chamber. */
+export const DUNGEON_TILES_DARK = 'bm-dungeon-dark';
 export const FALLBACK_TILES = 'dungeon';
 export const FALLBACK_TILES_PALETTE = 'dungeon-dark';
 /** The side-view theme of the cavern (and what it falls back to until registered). */
@@ -82,6 +84,10 @@ const NO_FONT: SpriteSheet = { id: 'missing-font', image: null, frames: new Map(
 export function fontSheet(assets: AssetRegistry): SpriteSheet {
   return safeSheet(assets, 'font') ?? NO_FONT;
 }
+
+/** A mutant or the boss struck (white), and the Plutonium Boss running hot. */
+export const HIT_PALETTE = 'sophia-hit';
+export const HOT_PALETTE = 'plutonium-hot';
 
 /** The `sophia` sheet, or null while it is not registered. */
 export function sophiaSheet(assets: AssetRegistry): SpriteSheet | null {

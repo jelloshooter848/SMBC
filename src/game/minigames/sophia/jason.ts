@@ -235,7 +235,8 @@ export class Jason extends TdHero {
     if (this.dying >= SPIN_FRAMES) {
       if (this.dead) return;
       const k = Math.min(3, (this.dying - SPIN_FRAMES) >> 3);
-      drawPiece(r, sheet, `boom-${k}`, x, y, 16, 16, LOOK.boom);
+      // (booms are 24×24, centred on him)
+      drawPiece(r, sheet, `boom-${k}`, x - 4, y - 4, 24, 24, LOOK.boom);
       return;
     }
     // Hurt: blinks (steady with reduce flashing).
@@ -255,6 +256,11 @@ export class Jason extends TdHero {
 }
 
 let volleyCount = 0;
+
+/** The shot's look by GUN level: the low pellet (1-3), the mid shot (4-6), the top ring (7-8). */
+export function shotTier(level: number): 0 | 1 | 2 {
+  return level >= 7 ? 2 : level >= 4 ? 1 : 0;
+}
 
 /**
  * One of Jason's shots: flies along his facing at SHOT_SPEED for its level's range, swinging
@@ -333,9 +339,13 @@ export class JasonShot extends TdEntity {
 
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
     const sheet = view.sheet(view.sheets.hero);
-    const lv = GUN_TABLE.indexOf(this.gun) + 1;
-    const f = this.gun.wave > 0 ? `wave-${(view.frame >> 2) & 1}` : `shot-${lv >= 3 ? 1 : 0}`;
-    drawPiece(r, sheet, f, ox + this.x, oy + this.y, this.w, this.h, this.gun.wave ? LOOK.wave : LOOK.shot);
+    const f = `gun-shot-${shotTier(GUN_TABLE.indexOf(this.gun) + 1)}`;
+    // (8×8 frames, centred on the shot; they face right)
+    if (sheet?.frames.has(f)) {
+      const x = ox + this.x + this.w / 2 - 4;
+      const y = oy + this.y + this.h / 2 - 4;
+      r.sprite(sheet, f, Math.round(x), Math.round(y), this.dir === 'left');
+    } else box(r, ox + this.x, oy + this.y, this.w, this.h, this.gun.wave ? LOOK.wave : LOOK.shot);
   }
 }
 
@@ -363,12 +373,12 @@ export class GrenadeBlast extends Explosion {
     const x = ox + this.cx - 16;
     const y = oy + this.cy - 16;
     if (sheet?.frames.has(`boom-${k}`)) {
-      // Four booms in a ring make the 32-px blast.
+      // Four 24×24 booms overlapping make the 40-px blast.
       for (const [dx, dy] of [
-        [0, 0],
-        [16, 0],
-        [0, 16],
-        [16, 16],
+        [-4, -4],
+        [12, -4],
+        [-4, 12],
+        [12, 12],
       ] as const)
         r.sprite(sheet, `boom-${k}`, x + dx, y + dy);
     } else box(r, x + 4 + k, y + 4 + k, 24 - 2 * k, 24 - 2 * k, LOOK.boom);

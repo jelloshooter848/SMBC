@@ -59,15 +59,17 @@ export function fredPose(t: number): { x: number; y: number; frame: string; size
     // Hops in: a little arc every 16 frames.
     const x = lerp(-16, CHEST_X - 18, t / TOUCH_AT);
     const hop = Math.round(Math.sin(((t % 16) / 16) * Math.PI) * 6);
-    return { x, y: ground - hop, frame: `fred-${(t >> 3) % 3}`, size: 16 };
+    return { x, y: ground - hop, frame: hop > 1 ? 'fred-1' : 'fred-0', size: 16 };
   }
   if (t < SWELL_AT) return { x: CHEST_X - 18, y: ground, frame: 'fred-0', size: 16 };
-  if (t < LEAP_AT) return { x: CHEST_X - 24, y: GROUND_Y - 24, frame: 'fred-big', size: 24 };
+  if (t < LEAP_AT) return { x: CHEST_X - 34, y: GROUND_Y - 32, frame: 'fred-big', size: 32 };
   if (t < DOWN_AT) {
+    // A big leap, then head first into the hole.
     const k = (t - LEAP_AT) / (DOWN_AT - LEAP_AT);
-    const x = lerp(CHEST_X - 24, HOLE_X + 4, k);
+    const x = lerp(CHEST_X - 26, HOLE_X + 16, k);
     const y = GROUND_Y - 24 - Math.round(Math.sin(k * Math.PI) * 48) + Math.round(k * k * 20);
-    return { x, y, frame: 'cut-fred-jump', size: 24 };
+    if (y + 16 > GROUND_Y + 6) return null; // gone down the hole
+    return { x, y, frame: k < 0.5 ? 'fred-1' : 'cut-fred-jump', size: 16 };
   }
   return null;
 }
@@ -79,10 +81,9 @@ export function jasonPose(t: number): { x: number; y: number } | null {
   if (t < JASON_JUMP_AT)
     return { x: lerp(-16, HOLE_X - 28, (t - JASON_AT) / (JASON_JUMP_AT - JASON_AT)), y: ground };
   const k = (t - JASON_JUMP_AT) / (JASON_GONE_AT - JASON_JUMP_AT);
-  return {
-    x: lerp(HOLE_X - 28, HOLE_X + 8, k),
-    y: ground - Math.round(Math.sin(k * Math.PI) * 24) + Math.round(k * k * 28),
-  };
+  const y = ground - Math.round(Math.sin(k * Math.PI) * 24) + Math.round(k * k * 28);
+  if (y + 24 > GROUND_Y + 6) return null; // gone down the hole
+  return { x: lerp(HOLE_X - 28, HOLE_X + 16, k), y };
 }
 
 /** Draws the cutscene at frame `t`. */
@@ -96,10 +97,10 @@ export function drawCutscene(r: Renderer, assets: AssetRegistry, t: number, redu
   r.rect(0, GROUND_Y, SCREEN_W, 3, '#007800');
   // The hole (its mouth in the ground).
   if (hasFrame(assets, 'cut-hole'))
-    drawSophia(r, assets, 'cut-hole', HOLE_X, GROUND_Y - 4, 32, 12, LOOK.hole);
+    drawSophia(r, assets, 'cut-hole', HOLE_X, GROUND_Y - 6, 48, 16, LOOK.hole);
   else {
-    r.rect(HOLE_X, GROUND_Y, 32, 6, '#000000');
-    r.rect(HOLE_X + 4, GROUND_Y + 6, 24, 4, '#000000');
+    r.rect(HOLE_X, GROUND_Y, 48, 6, '#000000');
+    r.rect(HOLE_X + 6, GROUND_Y + 6, 36, 4, '#000000');
   }
   // The chest: glowing once Fred has touched it (pulsing; steady with reduce flashing).
   const lit = t >= TOUCH_AT;
@@ -107,13 +108,13 @@ export function drawCutscene(r: Renderer, assets: AssetRegistry, t: number, redu
     const pulse = reduceFlashing ? 1 : ((t >> 3) & 1) + 1;
     r.rect(
       CHEST_X - 4 * pulse,
-      GROUND_Y - 16 - 4 * pulse,
-      24 + 8 * pulse,
-      16 + 4 * pulse,
+      GROUND_Y - 24 - 4 * pulse,
+      32 + 8 * pulse,
+      24 + 4 * pulse,
       'rgba(88,248,152,0.25)',
     );
   }
-  drawSophia(r, assets, 'cut-chest', CHEST_X, GROUND_Y - 16, 24, 16, LOOK.chest);
+  drawSophia(r, assets, 'cut-chest', CHEST_X, GROUND_Y - 24, 32, 24, LOOK.chest);
   // Fred, then Jason.
   const fred = fredPose(t);
   if (fred) {
@@ -122,8 +123,6 @@ export function drawCutscene(r: Renderer, assets: AssetRegistry, t: number, redu
   }
   const jason = jasonPose(t);
   if (jason) drawSophia(r, assets, 'cut-jason', jason.x, jason.y, 16, 24, LOOK.cutJason);
-  // The ground in front of the hole hides what falls into it.
-  r.rect(HOLE_X - 8, GROUND_Y + 10, 48, PIC_Y + PIC_H - GROUND_Y - 10, '#503000');
   // The letterbox and the lines.
   r.rect(0, 0, SCREEN_W, BAR_H, '#000');
   r.rect(0, SCREEN_H - BAR_H, SCREEN_W, BAR_H, '#000');

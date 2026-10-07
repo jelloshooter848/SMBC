@@ -9,6 +9,10 @@ import { READY_FRAMES } from './ryu/scene';
 import { jungleHarness, type JungleHarness } from './bill/harness';
 import { CARD_ANIM } from './bill/card';
 import { DEATH_FRAMES } from './bill/commando';
+import { SOPHIA_MINIGAME } from './sophia';
+import { underworldHarness, type UnderworldHarness } from './sophia/harness';
+import { CUTSCENE_FRAMES, JASON_AT, LEAP_AT, TOUCH_AT, cutLines } from './sophia/cutscene';
+import type { PlutoniumBoss } from './sophia/plutonium';
 
 // Mini games draw their rules cards and hint banners in the bitmap font, which silently drops
 // any character it has no glyph for (QA 0.4.8: the Shadow Duel card's semicolon vanished, so it
@@ -35,7 +39,7 @@ function missing(line: string): string[] {
 }
 
 /** Every string the scene draws in one frame. */
-function drawn(h: DuelHarness | JungleHarness): string[] {
+function drawn(h: DuelHarness | JungleHarness | UnderworldHarness): string[] {
   const out: string[] = [];
   const r: Renderer = Object.assign(new NullRenderer(), {
     text: (...args: Parameters<Renderer['text']>) => void out.push(args[1]),
@@ -83,6 +87,37 @@ describe('the bitmap font draws every mini game line', () => {
       h.step();
       lines.push(...(h.scene.banner?.lines ?? []), ...drawn(h));
       expect(lines.length).toBeGreaterThan(10);
+      const bad = lines.filter((l) => missing(l).length > 0);
+      expect(bad).toEqual([]);
+    });
+
+  for (const scheme of ['keyboard', 'touch'] as const)
+    it(`sophia (${scheme}): the title and rules, the cutscene, the HUD, the boss's name, the win banner and GAME OVER`, () => {
+      const lines: string[] = [SOPHIA_MINIGAME.title, ...SOPHIA_MINIGAME.rules];
+      for (const t of [0, TOUCH_AT, LEAP_AT, JASON_AT, CUTSCENE_FRAMES - 1]) lines.push(...cutLines(t));
+      const h = underworldHarness({ scheme, assets: STUB_ASSETS, keep: true });
+      h.step([], 5);
+      lines.push(...drawn(h));
+      h.tap('jump');
+      h.step([], 5);
+      lines.push(...drawn(h));
+      h.td.warpTo('boss', 16, 80);
+      h.step(['right'], 20);
+      lines.push(...drawn(h));
+      const boss = h.scene.boss as PlutoniumBoss;
+      boss.phase = 'core';
+      boss.hp = 1;
+      boss.hurt(h.td, 5, 'up');
+      h.step([], 100);
+      lines.push(...drawn(h));
+      const h2 = underworldHarness({ scheme, assets: STUB_ASSETS, keep: true, skipCutscene: true });
+      h2.scene.lives = 1;
+      h2.td.hero.hurt(h2.td, 99, 'down');
+      h2.step([], 200);
+      lines.push(...drawn(h2));
+      expect(lines).toEqual(
+        expect.arrayContaining(['GUN', 'POW', 'PLUTONIUM BOSS', 'THE PLUTONIUM BOSS FALLS!', 'GAME OVER']),
+      );
       const bad = lines.filter((l) => missing(l).length > 0);
       expect(bad).toEqual([]);
     });

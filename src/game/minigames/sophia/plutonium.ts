@@ -3,47 +3,55 @@ import { ROOM_H, ROOM_W, TILE, centre, type Box, type Dir } from '../../topdown/
 import { TdEnemy } from '../../topdown/entity';
 import type { TdView } from '../../topdown/view';
 import type { TopDownWorld } from '../../topdown/world';
-import { box, drawPiece, LOOK } from './art';
-import { Boom, Orb } from './mutants';
+import { box, drawPiece, HIT_PALETTE, HOT_PALETTE, LOOK } from './art';
+import { Boom, Orb, ORB_FRAMES } from './mutants';
 
 /*
  * The Plutonium Boss (an original design in NES Blaster Master style; overhead, owner decision):
  * the mutant heart of the Underworld's radiation, through which Bowser's spell reached Sophia.
- * Two phases, every beat on the fight's own clock (frames since it woke), so it plays the same
- * every round and can be learnt:
+ * 64×64, facing down at Jason. Two phases, every beat on the fight's own clock (frames since it
+ * woke), so it plays the same every round and can be learnt:
  *
- *   1. THE SHELL (48×48) drifts along the top of the room. Its core is shut (shots clang off) for
- *      SHUT frames, dripping two orbs straight down from its vents; it glows GLOW frames (the
- *      warning), opens with a ring of RING_SHOTS orbs, and stays open (it can be hurt) for OPEN
- *      frames, spitting one aimed orb halfway through. SHELL_HP.
- *   2. THE CORE (32×32): the shell bursts (BREAK_FRAMES of booms, nothing to fear, every orb
- *      gone) and the core bounces round the room on the diagonals, like the original's bosses.
- *      Every BURST_EVERY frames it stops and glows (BURST_GLOW frames), then fans FAN_SHOTS orbs at
- *      Jason. Below half it is quicker. Always open: CORE_HP.
+ *   1. THE SHELL (`boss-a-0/1`) drifts along the top of the room. Its vents are shut (shots clang
+ *      off) for SHUT frames while it drips two orbs straight down from them; it runs hot for GLOW
+ *      frames (the warning: the `plutonium-hot` palette), throws its vents open with a ring of
+ *      RING_SHOTS orbs and stays open (it can be hurt) for OPEN frames, spitting one big aimed orb
+ *      halfway through. SHELL_HP.
+ *   2. THE CORE (`boss-b-0/1`): the shell cracks (BREAK_FRAMES of booms, nothing to fear, every
+ *      orb gone) and the beating core bounces round the room on the diagonals, as the original's
+ *      bosses do. Every BURST_EVERY frames it stops and runs hot (BURST_GLOW frames), then fans
+ *      FAN_SHOTS orbs at Jason. Below half it is quicker and beats faster. Always open: CORE_HP.
  *
- * It sleeps until Jason has stepped into the room (the shutter closes behind him); its orbs
- * vanish when it falls.
+ * A hit flashes it white (`sophia-hit`; never with reduce flashing). It sleeps until Jason has
+ * stepped into the room (the shutter closes behind him); its orbs vanish when it falls.
  */
 
 export const SHELL_HP = 24;
 export const CORE_HP = 20;
+/** The boss's size (S3's frames). */
+export const BOSS_SIZE = 64;
 /** Phase 1's cycle: shut, glowing, open (frames). */
 export const SHUT = 120;
 export const GLOW = 30;
 export const OPEN = 96;
 export const CYCLE = SHUT + GLOW + OPEN;
-/** Frames of the cycle at which the vents drip, and the open core spits an aimed orb. */
+/** Frames of the cycle at which the vents drip, and the open shell spits its big aimed orb. */
 export const DRIP_AT: readonly number[] = [40, 90];
 export const AIM_AT = SHUT + GLOW + OPEN / 2;
 export const RING_SHOTS = 8;
 export const ORB_SPEED = 1.25;
 export const AIMED_SPEED = 1.5;
+/** The vents (x in the frame) the drips fall from, and their height. */
+export const VENTS: readonly number[] = [10, 46];
+export const VENT_Y = 56;
 /** Phase 1 drifts between these x (its left edge, room px). */
-export const DRIFT_MIN = 2 * TILE;
-export const DRIFT_MAX = ROOM_W - 2 * TILE - 48;
-/** Frames the shell takes to burst. */
+export const DRIFT_MIN = TILE;
+export const DRIFT_MAX = ROOM_W - TILE - BOSS_SIZE;
+/** Frames the shell takes to crack. */
 export const BREAK_FRAMES = 90;
-/** Phase 2: the fan's rhythm and shape. */
+/** Phase 2: its pace (px on each frame of a 4-frame pattern, calm and angry), the fan. */
+export const CORE_STEPS: readonly number[] = [1, 1, 1, 0];
+export const ANGRY_STEPS: readonly number[] = [1, 1, 1, 1];
 export const BURST_EVERY = 200;
 export const BURST_GLOW = 30;
 export const FAN_SHOTS = 5;
@@ -53,14 +61,20 @@ export const BOSS_INVULN = 12;
 
 export type BossPhase = 'asleep' | 'shell' | 'break' | 'core' | 'dead';
 
-/** The boss's orbs (its own frames). */
-const BOSS_ORB = ['boss-shot-0', 'boss-shot-1'] as const;
+/** The big aimed orb (16×16). */
+class BigOrb extends Orb {
+  constructor(cx: number, cy: number, vx: number, vy: number) {
+    super(cx - 8, cy - 8, vx, vy, ['boss-shot-big']);
+    this.w = 16;
+    this.h = 16;
+  }
+}
 
 export class PlutoniumBoss extends TdEnemy {
   readonly kind = 'plutonium';
   hp = SHELL_HP;
-  override w = 48;
-  override h = 48;
+  override w = BOSS_SIZE;
+  override h = BOSS_SIZE;
   override contact = 2;
   override knockable = false;
   override dropChance = 0;
@@ -74,10 +88,13 @@ export class PlutoniumBoss extends TdEnemy {
   vy = 1;
   /** Frames since its last hit (for the hit flash). */
   hitT = 99;
+  /** Frames into phase 2's glow before a fan (0: moving). */
+  burstT = 0;
 
+  /** What shots hit and what hurts Jason: the shell's body, then the core within the broken shell. */
   override hurtbox(): Box {
-    if (this.phase === 'core') return { x: this.x + 3, y: this.y + 3, w: 26, h: 26 };
-    return { x: this.x + 4, y: this.y + 6, w: 40, h: 38 };
+    if (this.phase === 'core') return { x: this.x + 12, y: this.y + 12, w: 40, h: 40 };
+    return { x: this.x + 6, y: this.y + 6, w: 52, h: 50 };
   }
 
   /** Where in phase 1's cycle it is. */
@@ -98,12 +115,15 @@ export class PlutoniumBoss extends TdEnemy {
     return false;
   }
 
-  /** Frames into phase 2's glow before a fan (0: moving). */
-  burstT = 0;
-
   /** Below half in phase 2: quicker. */
   get angry(): boolean {
     return this.phase === 'core' && this.hp <= CORE_HP / 2;
+  }
+
+  /** Its pace in phase 2 (px a frame, on average). */
+  get speed(): number {
+    const s = this.angry ? ANGRY_STEPS : CORE_STEPS;
+    return s.reduce((a, b) => a + b, 0) / s.length;
   }
 
   protected think(world: TopDownWorld): void {
@@ -119,7 +139,7 @@ export class PlutoniumBoss extends TdEnemy {
       case 'shell':
         return this.shell(world);
       case 'break':
-        return this.bursting(world);
+        return this.cracking(world);
       case 'core':
         return this.core(world);
     }
@@ -140,7 +160,8 @@ export class PlutoniumBoss extends TdEnemy {
         else if (this.x >= DRIFT_MAX) this.vx = -1;
       }
       if (DRIP_AT.includes(k)) {
-        for (const vent of [6, 34]) world.add(new Orb(this.x + vent, this.y + 40, 0, ORB_SPEED, BOSS_ORB));
+        for (const vent of VENTS)
+          world.add(new Orb(this.x + vent - 4, this.y + VENT_Y, 0, ORB_SPEED, ORB_FRAMES));
         world.emit({ type: 'boss-shot' });
       }
       return;
@@ -149,27 +170,29 @@ export class PlutoniumBoss extends TdEnemy {
       const c = this.middle();
       for (let i = 0; i < RING_SHOTS; i++) {
         const a = (i / RING_SHOTS) * 2 * Math.PI + Math.PI / RING_SHOTS;
-        world.add(new Orb(c.x - 4, c.y - 4, Math.cos(a) * ORB_SPEED, Math.sin(a) * ORB_SPEED, BOSS_ORB));
+        world.add(new Orb(c.x - 4, c.y - 4, Math.cos(a) * ORB_SPEED, Math.sin(a) * ORB_SPEED, ORB_FRAMES));
       }
       world.emit({ type: 'boss-open' });
     }
-    if (k === AIM_AT) this.aimed(world, 0, AIMED_SPEED);
+    if (k === AIM_AT) {
+      const c = this.middle();
+      const a = this.aimAt(world, c, 0);
+      world.add(new BigOrb(c.x, c.y, Math.cos(a) * AIMED_SPEED, Math.sin(a) * AIMED_SPEED));
+      world.emit({ type: 'boss-shot' });
+    }
   }
 
   private middle(): { x: number; y: number } {
     return centre(this.hurtbox());
   }
 
-  /** One orb at Jason, turned by `turn` radians. */
-  private aimed(world: TopDownWorld, turn: number, speed: number): void {
-    const c = this.middle();
+  /** The angle from `c` to Jason, turned by `turn` radians. */
+  private aimAt(world: TopDownWorld, c: { x: number; y: number }, turn: number): number {
     const to = centre(world.hero.hurtbox());
-    const a = Math.atan2(to.y - c.y, to.x - c.x) + turn;
-    world.add(new Orb(c.x - 4, c.y - 4, Math.cos(a) * speed, Math.sin(a) * speed, BOSS_ORB));
-    world.emit({ type: 'boss-shot' });
+    return Math.atan2(to.y - c.y, to.x - c.x) + turn;
   }
 
-  /** Phase 1 is beaten: the shell bursts; the core drops out of it. */
+  /** Phase 1 is beaten: the shell cracks; the core beats inside it. */
   private crack(world: TopDownWorld): void {
     this.setPhase('break');
     this.hp = CORE_HP;
@@ -179,20 +202,15 @@ export class PlutoniumBoss extends TdEnemy {
     world.emit({ type: 'boss-break' });
   }
 
-  private bursting(world: TopDownWorld): void {
+  private cracking(world: TopDownWorld): void {
     if (this.phaseT % 12 === 1) {
       const n = this.phaseT / 12;
-      world.add(new Boom(this.x + ((n * 19) % 32), this.y + ((n * 29) % 32)));
+      world.add(new Boom(this.x + 8 + ((n * 19) % 40), this.y + 8 + ((n * 29) % 40)));
       world.emit({ type: 'boss-boom' });
     }
     if (this.phaseT < BREAK_FRAMES) return;
-    // The core: 32×32, from the shell's middle, heading down and toward Jason.
-    const hero = world.hero;
-    this.x += 8;
-    this.y += 8;
-    this.w = 32;
-    this.h = 32;
-    this.vx = hero.x + 8 < this.x + 16 ? -1 : 1;
+    // Off it goes, down and toward Jason.
+    this.vx = world.hero.x + 8 < this.x + BOSS_SIZE / 2 ? -1 : 1;
     this.vy = 1;
     this.contact = 2;
     this.setPhase('core');
@@ -203,8 +221,13 @@ export class PlutoniumBoss extends TdEnemy {
     if (this.burstT > 0) {
       if (++this.burstT >= BURST_GLOW) {
         this.burstT = 0;
+        const c = this.middle();
         const half = (FAN_SHOTS - 1) / 2;
-        for (let i = 0; i < FAN_SHOTS; i++) this.aimed(world, (i - half) * FAN_SPREAD, ORB_SPEED);
+        for (let i = 0; i < FAN_SHOTS; i++) {
+          const a = this.aimAt(world, c, (i - half) * FAN_SPREAD);
+          world.add(new Orb(c.x - 4, c.y - 4, Math.cos(a) * ORB_SPEED, Math.sin(a) * ORB_SPEED, ORB_FRAMES));
+        }
+        world.emit({ type: 'boss-shot' });
       }
       return;
     }
@@ -212,8 +235,8 @@ export class PlutoniumBoss extends TdEnemy {
       this.burstT = 1;
       return;
     }
-    // Bounce on the diagonals inside the walls: a pixel a frame (one and a half when angry).
-    const steps = this.angry && (this.t & 1) === 0 ? 2 : 1;
+    // Bounce on the diagonals inside the walls.
+    const steps = (this.angry ? ANGRY_STEPS : CORE_STEPS)[this.t & 3] ?? 1;
     for (let i = 0; i < steps; i++) {
       this.x += this.vx;
       this.y += this.vy;
@@ -260,44 +283,45 @@ export class PlutoniumBoss extends TdEnemy {
     this.clearOrbs(world);
     world.emit({ type: 'kill', kind: this.kind });
     for (const [dx, dy] of [
-      [-8, -8],
-      [16, -8],
-      [-8, 16],
-      [16, 16],
-      [4, 4],
+      [8, 8],
+      [40, 8],
+      [8, 40],
+      [40, 40],
+      [24, 24],
     ] as const)
-      world.add(new Boom(this.x + 4 + dx, this.y + 4 + dy));
+      world.add(new Boom(this.x + dx, this.y + dy));
+  }
+
+  /** Its frame now: the shell shut or open, the core beating (faster when angry). */
+  frame(): string {
+    if (this.phase === 'core') return `boss-b-${(this.t >> (this.angry ? 3 : 4)) & 1}`;
+    return this.open || this.phase === 'break' ? 'boss-a-1' : 'boss-a-0';
   }
 
   render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.enemies);
     const x = ox + this.x;
     const y = oy + this.y;
-    // A hit flashes it for a few frames (never with reduce flashing).
+    const f = this.frame();
+    // A hit flashes it white for a few frames (never with reduce flashing); it runs hot before
+    // it opens or fans, and while its shell cracks.
     const flash = this.hitT < 4 && !view.reduceFlashing;
-    if (this.phase === 'core') {
-      const f = flash ? 'boss-core-hit' : this.glowing ? 'boss-core-1' : 'boss-core-0';
-      drawPiece(r, sheet, f, x, y, 32, 32, flash ? ['#fcfcfc', '#fcfcfc'] : LOOK.bossCore);
-      if (this.glowing && !sheet?.frames.has(f)) box(r, x + 8, y + 8, 16, 16, ['#fcfcfc', '#d8f878']);
+    const hot = this.glowing || this.phase === 'break';
+    const pal = flash ? HIT_PALETTE : hot ? HOT_PALETTE : undefined;
+    const sheet = (pal ? view.sheet(view.sheets.enemies, pal) : null) ?? view.sheet(view.sheets.enemies);
+    if (sheet?.frames.has(f)) {
+      drawPiece(r, sheet, f, x, y, BOSS_SIZE, BOSS_SIZE, LOOK.bossShell);
       return;
     }
-    const f = flash
-      ? 'boss-shell-hit'
-      : this.open
-        ? 'boss-shell-open'
-        : this.glowing
-          ? 'boss-shell-glow'
-          : 'boss-shell';
-    drawPiece(r, sheet, f, x, y, 48, 48, flash ? ['#fcfcfc', '#fcfcfc'] : LOOK.bossShell);
-    if (!sheet?.frames.has(f)) {
-      // The core in its middle: grey shut, glowing before it opens, green open.
-      const core = this.open
-        ? LOOK.bossCore
-        : this.glowing
-          ? (['#d8f878', '#fcfcfc'] as const)
+    // Boxes until the art is there: the shell (gone in phase 2) round the core.
+    if (this.phase !== 'core') box(r, x + 4, y + 4, 56, 56, flash ? ['#fcfcfc', '#fcfcfc'] : LOOK.bossShell);
+    const core = flash
+      ? (['#fcfcfc', '#fcfcfc'] as const)
+      : hot
+        ? (['#d8f878', '#fcfcfc'] as const)
+        : this.open
+          ? LOOK.bossCore
           : LOOK.bossCoreShut;
-      box(r, x + 16, y + 16, 16, 16, core);
-      if ((this.phase as BossPhase) === 'break') box(r, x + 12, y + 12, 24, 24, LOOK.boom);
-    }
+    const s = this.phase === 'core' ? 40 : 20;
+    box(r, x + 32 - s / 2, y + 32 - s / 2, s, s, core);
   }
 }
