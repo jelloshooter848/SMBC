@@ -8,9 +8,10 @@ import type { World } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
 
 /*
- * Random play (the 0.4.11 review's fuzz): Sophia III, with the Flower or the Mushroom, mashing
- * held inputs for a while in every bundled level. She must never end up inside solid tiles (a
- * quarter-pixel of slack each side) for 20 frames running. FUZZ_SEEDS=9 FUZZ_FRAMES=2000 widens it.
+ * Random play (the 0.4.11 review's fuzz): Sophia III at Normal and with the Flower or the
+ * Mushroom, mashing held inputs for a while in every bundled level. She must never end up inside
+ * solid tiles (a quarter-pixel of slack each side) for 20 frames running, nor sit nose down on
+ * the ground for two seconds (a notch she cannot get out of). FUZZ_SEEDS=9 FUZZ_FRAMES=2000 widens it.
  */
 
 const ACTS: Action[][] = [
@@ -48,6 +49,7 @@ export function fuzz(id: string, seed: number, frames: number, power: string): s
   let cur: Action[] = [];
   let left = 0;
   let inside = 0;
+  let noseDown = 0;
   let worst: string | null = null;
   runSim({
     level: getLevel(id),
@@ -67,10 +69,16 @@ export function fuzz(id: string, seed: number, frames: number, power: string): s
       const p = w.player;
       const st = sophiaState(p);
       const busy = w.inPipe || p.dead || p.frozen || p.hidden || st.turn !== null;
+      // Nose down on the ground with no way up (a closed notch) for two seconds: stranded.
+      noseDown = st.nose && p.body.onGround ? noseDown + 1 : 0;
+      if (noseDown === 120 && worst === null) {
+        const b = p.body;
+        worst = `${id}/${power}/s${seed} f${f} x=${(b.x / 4096).toFixed(2)} y=${(b.y / 4096).toFixed(2)} stuck nose down`;
+      }
       if (!busy && stuckIn(w)) {
         if (++inside === 20) {
           const b = p.body;
-          worst = `${id}/s${seed} f${f} x=${(b.x / 4096).toFixed(2)} y=${(b.y / 4096).toFixed(2)} w=${b.w / 256} surf=${st.surface}${st.jason ? ' jason' : ''}${st.nose ? ' nose' : ''}`;
+          worst = `${id}/${power}/s${seed} f${f} x=${(b.x / 4096).toFixed(2)} y=${(b.y / 4096).toFixed(2)} w=${b.w / 256} surf=${st.surface}${st.jason ? ' jason' : ''}${st.nose ? ' nose' : ''}`;
         }
       } else inside = 0;
       return f % 3 === 0 && cur.includes('jump') ? cur.filter((a) => a !== 'jump') : cur;
@@ -80,14 +88,17 @@ export function fuzz(id: string, seed: number, frames: number, power: string): s
 }
 
 describe('Sophia III never ends up inside solid tiles (random play, every level)', () => {
-  it('Crusher and Hyper, every bundled level', () => {
+  it('Normal, and Crusher or Hyper, every bundled level', () => {
     const seeds = Number(process.env.FUZZ_SEEDS ?? 1);
     const frames = Number(process.env.FUZZ_FRAMES ?? 1200);
     const bad: string[] = [];
     for (const id of levelIds())
       for (let seed = 1; seed <= seeds; seed++) {
-        const res = fuzz(id, seed, frames, seed % 3 === 0 ? 'big' : 'fire');
-        if (res) bad.push(res);
+        // Normal every time, and Crusher or Hyper in turn.
+        for (const power of ['small', seed % 3 === 0 ? 'big' : 'fire']) {
+          const res = fuzz(id, seed, frames, power);
+          if (res) bad.push(res);
+        }
       }
     expect(bad).toEqual([]);
   }, 1_000_000);

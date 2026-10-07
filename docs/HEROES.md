@@ -1026,16 +1026,24 @@ it rides is gone again at its next try), so the table says which places were che
 **Results (2026-10-07, 0.4.12).** Super Mario Bros.: 32 of 33 levels (1-0 to 8-4) are
 finished at Normal. The one that is not is **8-4**: its hanging pipe (column 163, seven tiles over
 the floor; Mario gets there off the Paratroopas) is out of the tank's reach, and of Jason's hop
-even from the parked tank's roof. With Hyper's hover it is finished, but 8-4 has no power-up, so a
-Normal Sophia who dies there cannot finish it until its variant is built. The Lost Levels: 25
+even from the parked tank's roof. As Crusher the search finishes it, but 8-4 has no power-up, so
+a Normal Sophia who dies there cannot finish it until its variant is built (the owner's call:
+Normal Sophia's gaps ship as a known issue, fixed with the 0.4.16 variants). The Lost Levels: 25
 of 52 at Normal; the rest below. "Hyper: yes" also means Crusher (which has the hover too); Crusher
 is searched only when Hyper fails. A number is the column where the search stopped. **Genuine**
 marks a level checked by hand that the tank and Jason cannot get through at that power; the
 others are where the search gave up and need a look when their variants are made.
 
+The sweep ran before the search kept the screen's left edge from one try to the next (it re-centred
+the camera at each spot, so a route could go back past an edge the screen had already scrolled
+by). Re-run with the edge kept: 7-4 is still finished at Normal; 4-4 is not found any more (the
+search only found the way that backtracked) but is finished at Normal by hand without going back
+past the edge (the scripted sim in `tests/sim/sophia.test.ts`); 8-4 is finished as Crusher, not
+found as Hyper. The other rows may be optimistic in the same way.
+
 | Level   | Normal | Hyper    | Crusher  | At Normal                                                                                                                                                                                                                    |
 | ------- | ------ | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 8-4     | no     | yes      | yes      | 163: the hanging pipe, 7 tiles over the floor (Mario bounces off the Paratroopas); out of the tank's and Jason's reach. **Genuine.**                                                                                         |
+| 8-4     | no     | no (206) | yes      | 163: the hanging pipe, 7 tiles over the floor (Mario bounces off the Paratroopas); out of the tank's and Jason's reach. **Genuine.**                                                                                         |
 | ll-1-2  | no     | yes      | yes      | 63: four falling lifts over a pit (67-91); not timed by the search.                                                                                                                                                          |
 | ll-2-2  | no     | yes      | yes      | 187: a 10-tile gap crossed on hidden blocks (185, 186); the search does not keep blocks it revealed.                                                                                                                         |
 | ll-2-4  | no     | no (30)  | yes      | 30: the way on is a one-tile shaft four tiles up (column 17); the tank does not fit, Jason hops three. Crusher climbs past it. **Genuine at Normal and Hyper.**                                                              |

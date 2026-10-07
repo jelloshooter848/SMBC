@@ -70,7 +70,7 @@ export const SOPHIA_GUIDE: CharacterGuide = {
     'Jump into a ceiling to grab it. Hold down to bump blocks instead.',
     'Under water, up and down steer freely. Hold jump to go faster.',
     'Jason is fragile: a fall of more than five blocks hurts him.',
-    'No hopping out on a moving lift or an auto-scrolling screen.',
+    'No EXIT on a lift, a spring or an auto-scrolling screen.',
   ],
   demo: ['idle', 'walk', 'jump', 'attack'],
 };

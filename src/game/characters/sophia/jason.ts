@@ -18,7 +18,7 @@ import {
   TANK_H,
   TANK_W,
 } from './profile';
-import { FLOOR, SOUNDS, type SophiaState } from './state';
+import { FLOOR, SOUNDS, sophiaState, type SophiaState } from './state';
 import { SOPHIA_SHEET } from './weapons';
 import { unstick } from './drive';
 
@@ -76,6 +76,12 @@ export class ParkedTank extends Entity {
   }
 
   update(world: World): void {
+    // Its hero gone (out of lives in co-op) or back in another tank: nothing to keep it, nor the
+    // camera on it.
+    if (this.owner.out || sophiaState(this.owner).jason?.tank !== this) {
+      this.alive = false;
+      return;
+    }
     const top = this.body.y;
     for (const p of world.activePlayers()) {
       const b = p.body;

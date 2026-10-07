@@ -341,7 +341,10 @@ export const SOPHIA: CharacterDef = {
       const up = holdsAway(p, input) && !(p.inWater && !p.body.onGround && st.surface === FLOOR);
       if (!up) st.raise = 0;
       if (st.turn) return; // inputs are locked through a turn (SO-8)
-      if (input.pressed('select') && hopOut(p, st, world)) return;
+      if (input.pressed('select')) {
+        if (hopOut(p, st, world)) return;
+        world.audio.sfx('bump'); // no hatch here (a lift, a spring, a scrolling screen, the air)
+      }
       if (input.pressed('attack')) fireCannon(p, st, world);
       if (up) st.raise = Math.min(st.raise + 1, CANNON_RAISE_FRAMES);
       if (input.pressed('special')) {

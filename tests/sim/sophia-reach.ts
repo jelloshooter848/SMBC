@@ -32,6 +32,8 @@ interface Spot {
   /** Jason's parked tank (subpixels). */
   tx: number;
   ty: number;
+  /** The camera's left edge (subpixels): it never scrolls back, so a spot carries it. */
+  cam: number;
   /** Loop checkpoints passed (World.loopChecks). */
   checks: string[];
   /** How we got here (for a replay or a report). */
@@ -274,7 +276,7 @@ function play(
           b.y = spot.form === 'jason' ? spot.ty : spot.y;
           b.vx = 0;
           b.vy = 0;
-          w.camera.snapTo(b.x, b.y);
+          w.camera.x = spot.cam;
           internals.loopPrevX = toPx(p.centerX);
           return spot.form === 'jason' ? [] : [];
         }
@@ -359,6 +361,7 @@ function play(
       y: p.body.y,
       tx: tank?.body.x ?? 0,
       ty: tank?.body.y ?? 0,
+      cam: w.camera.x,
       checks: [...(w as unknown as Internals).loopChecks].sort(),
     },
   };
@@ -400,7 +403,7 @@ export function reach(id: string, power = 'small', budget = 20000): ReachResult 
   const enter = (level: LevelData, start: WorldStart, path: string[]): ReachResult | null => {
     if (areas.has(`${level.id}@${start.x},${start.y}`)) return null;
     areas.add(`${level.id}@${start.x},${start.y}`);
-    const blank: Spot = { area: level.id, form: 'tank', x: 0, y: 0, tx: 0, ty: 0, checks: [], path };
+    const blank: Spot = { area: level.id, form: 'tank', x: 0, y: 0, tx: 0, ty: 0, cam: 0, checks: [], path };
     const o = play(blank, level, power, null, start);
     return handle(o, blank, `enter ${level.id}`);
   };
@@ -521,6 +524,7 @@ export function replay(
     y: 0,
     tx: 0,
     ty: 0,
+    cam: 0,
     checks: [],
     path: [],
   });

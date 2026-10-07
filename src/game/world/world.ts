@@ -531,8 +531,14 @@ export class World {
         this.fallingIn.add(p);
         // Co-op: player 2 drops in beside player 1 where that drop is clear (fallSpot).
         const first = this.players[0];
-        if (first) p.body.x = px(this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w));
-        else if (hb.w > 16) {
+        if (first) {
+          const x = this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w);
+          // No clear drop beside player 1 for a wide body (a one-tile gap): fit through it.
+          if (x === null && hb.w > 16 && def.behaviour.narrowFall) {
+            const tx = tileAt(first.body.x + (first.body.w >> 1));
+            def.behaviour.narrowFall(p, tx, this.gapLip(tx));
+          } else p.body.x = px(x ?? toPx(first.body.x) + 20);
+        } else if (hb.w > 16) {
           const x = this.wideFall(sx, p.body.x, p.body.w);
           if (x !== null) p.body.x = x;
           else def.behaviour.narrowFall?.(p, sx, this.gapLip(sx));
@@ -602,7 +608,7 @@ export class World {
       // column unless that clips a wall beside it; then flush with the column's clear side.
       // (A fall picks its column in wideFall; a pipe exit is two tiles wide; a vine is open air.)
       const standing = mode === 'stand' || mode === 'autowalk' || mode === 'spin' || mode === 'beam';
-      if (hb.w > 16 && standing && i === 0) {
+      if (hb.w > 16 && standing) {
         const b = p.body;
         const clear = (x: number) => {
           for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
@@ -610,7 +616,8 @@ export class World {
               if (this.map.isSolid(tx, ty)) return false;
           return true;
         };
-        const fit = [b.x, tileToSub(sx), tileToSub(sx + 1) - b.w].find(clear);
+        // Player 2 (beside player 1) tries its own spot first, then player 1's column.
+        const fit = [b.x, tileToSub(sx), tileToSub(sx + 1) - b.w, b.x - px(i * 20)].find(clear);
         if (fit !== undefined) b.x = fit;
       }
       this.players.push(p);
@@ -1163,10 +1170,14 @@ export class World {
     const lead = this.rightmost();
     if (this.camera.auto) this.autoScroll();
     else if (lead) {
+      const before = this.camera.x;
       this.camera.follow(lead.body.x, lead.body.y);
-      // Never past an anchor, with a little room behind it (a parked tank stays on screen).
+      // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
+      // held where it was, never pulled back (the screen does not scroll left), and a locked
+      // screen is left alone.
       const a = this.cameraAnchor();
-      if (a !== null && this.camera.x > a - px(ANCHOR_ROOM)) this.camera.x = Math.max(0, a - px(ANCHOR_ROOM));
+      if (a !== null && !this.camera.locked && this.camera.x > a - px(ANCHOR_ROOM))
+        this.camera.x = Math.max(before, a - px(ANCHOR_ROOM));
     }
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
@@ -2856,7 +2867,7 @@ export class World {
    * above the row player 1 lands on (a shaft's wall, a ceiling), and outside every fire bar's sweep
    * on the way down (5-4 at 99, back from the crypt: the bar at (103, 11)). 20 px right when none is.
    */
-  private fallSpot(x1: number, w1: number, w: number): number {
+  private fallSpot(x1: number, w1: number, w: number): number | null {
     const map = this.map;
     const groundRow = (x0: number, x1e: number) => {
       let row = map.height;
@@ -2880,7 +2891,7 @@ export class World {
       groundRow(x, x + w) >= floor &&
       !bars.some((b) => barSweepX(b.tx, b.n, x, x + w));
     for (const d of [20, 16, 12, -20, -16, -12, 8, -8, 4, -4, 0]) if (clear(x1 + d)) return x1 + d;
-    return x1 + 20;
+    return null;
   }
 
   /**

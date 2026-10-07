@@ -288,7 +288,7 @@ export function driveSophia(
     return true;
   }
   if (st.nose) {
-    noseFrame(p, st, map);
+    noseFrame(p, st, input, map);
     return true;
   }
   // 1. The squat: the take-off comes on its 4th frame, even off a ledge (SO-12).
@@ -511,6 +511,9 @@ function noseDown(p: Player, st: SophiaState, map: TileMap): boolean {
   // Her top stays where it is; the box reaches 3.5 px down into the hole.
   const y = b.y;
   if (boxBlocked(map, x, y, UH, UW)) return false;
+  // Only into a hole she comes out of: a pit, or a drop with room to right herself somewhere on
+  // the way down or at its bottom (a closed notch would hold her nose down for good).
+  if (!dropRights(map, col, row)) return false;
   b.x = x;
   b.y = y;
   b.w = UH;
@@ -544,7 +547,7 @@ export function startNoseFall(p: Player, st: SophiaState, tx: number, lip: numbe
 }
 
 /** Falling nose first down a narrow gap; upright again once she lands with room for it. */
-function noseFrame(p: Player, st: SophiaState, map: TileMap): void {
+function noseFrame(p: Player, st: SophiaState, input: InputFrame, map: TileMap): void {
   const b = p.body;
   b.vx = 0;
   // Standing already (on a tile, or carried by a lift last frame: a lift's carry runs after
@@ -561,15 +564,55 @@ function noseFrame(p: Player, st: SophiaState, map: TileMap): void {
   }
   b.vy = 0;
   if (rightHerself(b, st, map, true)) return;
+  // Stuck nose down with no room (a notch noseDown should have refused, or a lift's drop):
+  // jump or up puts her back upright on the lip she went in by.
+  if (input.pressed('jump') || input.pressed('up')) {
+    const feet = tileToSub(st.noseLip);
+    const cx = centreX(b);
+    const d = RIGHT_NUDGES.find((n) => !boxBlocked(map, cx - (UW >> 1) + px(n), feet - UH, UW, UH));
+    if (d !== undefined) {
+      b.x = cx - (UW >> 1) + px(d);
+      b.y = feet - UH;
+      b.w = UW;
+      b.h = UH;
+      st.nose = false;
+      b.onGround = true;
+      return;
+    }
+  }
   // No room to right herself yet: keep probing the ground (it may fall away).
   moveY(b, map, 1);
+}
+
+const RIGHT_NUDGES = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8];
+
+/** Room for her upright box, feet at `feet`, centred on `cx` give or take 8 px. */
+function uprightFits(map: TileMap, cx: number, feet: number): boolean {
+  return RIGHT_NUDGES.some((d) => !boxBlocked(map, cx - (UW >> 1) + px(d), feet - UH, UW, UH));
+}
+
+/**
+ * Whether a nose-first drop down column `col` from the hole in row `row` comes out: a pit (no
+ * floor below), or room to right herself in the air below the lip or where she lands.
+ */
+function dropRights(map: TileMap, col: number, row: number): boolean {
+  let floor = row;
+  while (floor < map.height && map.collisionAt(col, floor) === 'none') floor++;
+  if (floor >= map.height) return true;
+  const cx = tileToSub(col) + px(8);
+  const land = tileToSub(floor);
+  if (uprightFits(map, cx, land)) return true;
+  // In the air: once her turned box is wholly below the lip row.
+  for (let feet = tileToSub(row + 1) + UW; feet < land; feet += px(2))
+    if (uprightFits(map, cx, feet)) return true;
+  return false;
 }
 
 /** Upright again with her feet where they are, nudged up to 8 px either way to fit. */
 function rightHerself(b: Body, st: SophiaState, map: TileMap, grounded: boolean): boolean {
   const feet = b.y + b.h;
   const cx = centreX(b);
-  for (const d of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]) {
+  for (const d of RIGHT_NUDGES) {
     const x = cx - (UW >> 1) + px(d);
     if (boxBlocked(map, x, feet - UH, UW, UH)) continue;
     b.x = x;
