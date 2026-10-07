@@ -45,6 +45,16 @@ export const HAMMER_HITS = 3;
 /** The smb3 sheet, which holds every frame the cutscene draws. */
 const SHEET = 'smb3';
 
+/** What the narration names: the hero(es) jumping out, the bonus node built, the skip button. */
+export interface CrashNames {
+  /** 'Mario', or 'Mario and Luigi' in co-op. */
+  heroes: string;
+  /** The bonus game's spoken name ('Toad House'). */
+  bonus: string;
+  /** The skip hint's button, as abilityHint says it ('JUMP (Space)'). */
+  skip: string;
+}
+
 export interface CrashEvent {
   sfx?: string;
   say?: string;
@@ -105,12 +115,16 @@ export class AirshipCrash {
   }
 
   /** Steps one frame; the sounds and lines of the beats that start on it. */
-  update(heroName: string, bonusName: string): CrashEvent[] {
+  update(names: CrashNames): CrashEvent[] {
     const t = this.t++;
     const out: CrashEvent[] = [];
     const F = CRASH_FRAMES;
-    if (t === F.FLY) out.push({ say: "Larry's airship limps over World 4, smoking." });
-    if (t === F.JUMP) out.push({ sfx: 'kick', say: `${heroName} jumps out onto 4-2!` });
+    // The skip hint rides on the first line (a line of its own would be talked over at once).
+    if (t === F.FLY) out.push({ say: `Larry's airship limps over World 4, smoking. Skip: ${names.skip}.` });
+    if (t === F.JUMP) {
+      const verb = names.heroes.includes(' and ') ? 'jump' : 'jumps';
+      out.push({ sfx: 'kick', say: `${names.heroes} ${verb} out onto 4-2!` });
+    }
     if (t === F.LAND) out.push({ sfx: 'bump' });
     if (t === F.CRASH) out.push({ sfx: 'cannon', say: 'The airship crashes!' });
     if (t === F.TOAD) out.push({ say: 'Toad comes running with his hammer.' });
@@ -119,7 +133,7 @@ export class AirshipCrash {
       this.breakPlanks(t);
     }
     if (t === F.BUILD)
-      out.push({ sfx: 'powerup-appear', say: `Toad turns the wreck into the ${bonusName}!` });
+      out.push({ sfx: 'powerup-appear', say: `Toad turns the wreck into the ${names.bonus}!` });
     // Smoke: from the stern in flight, from the wreck until Toad has rebuilt it.
     const ship = this.ship();
     if (ship && t % 10 === 0) this.puffs.push({ x: ship.x + 24, y: ship.y - 6, t: 0 });

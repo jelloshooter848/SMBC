@@ -7,7 +7,7 @@ import { CRASH_FRAMES } from '@game/map/airship-crash';
 import { secretExit } from '@game/map/rules';
 import { CRYSTAL_BALL } from '@game/map/captives';
 import { getLevel } from '@content/levels';
-import type { SaveFile } from '@game/save/save-files';
+import { newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
 
 // The World 4 map's airship crash (owner decision 8:25 PM PDT, docs/WORLD_MAP.md): after Larry is
@@ -133,7 +133,13 @@ describe('the airship crash on the World 4 map', () => {
         h.said.some((t) => line.test(t)),
         String(line),
       ).toBe(true);
-    expect(h.said.some((t) => /^Skip: JUMP/.test(t))).toBe(true);
+    // One line opens it: the page's own line, the first beat and the skip hint together (said
+    // apart, the next frame's line would talk over them).
+    const first = h.said.find((t) => /limps over World 4/.test(t)) as string;
+    expect(first).toMatch(
+      /^World 4, MUSHROOM WOODS\. World 4-2, .*\. Larry's airship limps over World 4, smoking\. Skip: JUMP/,
+    );
+    expect(h.said.some((t) => /^Skip:/.test(t))).toBe(false);
     // Toad's house stands; now the road draws in, and the map ends as today's reveal does.
     expect(frame(map).sprites.some(TOAD_HOUSE)).toBe(true);
     expect(map.revealing).toBe(true);
@@ -142,6 +148,48 @@ describe('the airship crash on the World 4 map', () => {
     expect(endState(map)).toEqual(plainReveal());
     expect(map.node).toBe('4-2');
     expect(h.said.at(-1)).toMatch(/Toad House, open/);
+  });
+
+  it('co-op: neither hero is drawn aboard; both jump out and stand on 4-2', () => {
+    const h = makeGame();
+    h.game.deps.settings = { dev: false } as Settings;
+    writeSave({ ...newSave(1, 'mario', 'luigi'), ...world4(), freed: ['mario', 'luigi'] });
+    h.game.openFile(1);
+    h.idle(8);
+    const s = h.game.state;
+    expect(s.character2).not.toBeNull();
+    const map = takeBall(h);
+    expect(map.cutscene).toBe(true);
+    // Each hero's map sprite (its portrait sheet and palette), and where it stands.
+    const heroes = () => {
+      const { sprites } = frame(map);
+      return [s.character, s.character2!].map((c) =>
+        sprites.find(
+          (sp) =>
+            sp.key === h.game.ctx.assets.sheet(c.portrait.sheet, c.portrait.palette).id &&
+            sp.frame === c.portrait.frame,
+        ),
+      );
+    };
+    for (let f = 0; f < CRASH_FRAMES.JUMP - 1; f++) {
+      expect(heroes().filter(Boolean), `frame ${f}`).toEqual([]);
+      h.step();
+    }
+    while (
+      map.cutscene &&
+      h.game.scenes.top === map &&
+      (map as unknown as { crash: { scene: { t: number } } }).crash.scene.t <= CRASH_FRAMES.LAND
+    )
+      h.step();
+    const [a, b] = heroes();
+    expect(a && b).toBeTruthy();
+    // On the 4-2 node (64, 176): player one on it, player two a little behind (x - 7, y - 2).
+    const feet = (sp: { y: number }, c: typeof s.character) =>
+      sp.y +
+      (h.game.ctx.assets.sheet(c.portrait.sheet, c.portrait.palette).frames.get(c.portrait.frame)?.h ?? 16);
+    expect(feet(a!, s.character)).toBe(11 * 16 + 10);
+    expect(feet(b!, s.character2!)).toBe(11 * 16 + 8);
+    expect(h.said.some((t) => /Mario and Luigi jump out onto 4-2!/.test(t))).toBe(true);
   });
 
   it('JUMP skips straight to the end: road drawn, hero on 4-2, the bonus node shown', () => {

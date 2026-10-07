@@ -46,7 +46,7 @@ import { inventoryAvailable, shownItems } from '../bonus/use';
 import { giveDevItems } from '../bonus/items';
 import { MapGuard, guardRoad } from '../map/hammer-bro';
 import { BONUS_CLOSED_HINT, BONUS_CLOSED_SAID, bonusGame } from '../map/bonus-spot';
-import { AirshipCrash } from '../map/airship-crash';
+import { AirshipCrash, type CrashNames } from '../map/airship-crash';
 import { CRYSTAL_BALL } from '../map/captives';
 
 /** Hero walking speed on the map (px per frame). */
@@ -277,7 +277,13 @@ export class WorldMapScene implements Scene {
    * The airship's crash on World 4 (map/airship-crash.ts), playing before the reveal of the road
    * to the bonus spot it opened (`node`: that bonus node, hidden until Toad has built it).
    */
-  private crash: { scene: AirshipCrash; node: string } | null = null;
+  private crash: {
+    scene: AirshipCrash;
+    node: string;
+    names: CrashNames;
+    /** The page's line (announceHere), said ahead of the first narration line, not under it. */
+    lead: string;
+  } | null = null;
   /** The Hammer Bro wandering the road to a used bonus spot on this page, or null. */
   guard: MapGuard | null = null;
   private guardGrace = 0;
@@ -327,10 +333,10 @@ export class WorldMapScene implements Scene {
     this.game.ctx.audio.playMusic(this.page.music);
     this.views.clear();
     this.refreshGuard();
-    this.announceHere();
     this.game.addReveal(this.opts.reveal ?? []);
     this.takeReveal();
     if (this.startCrash()) return;
+    this.announceHere();
     const from = this.opts.slideFrom === undefined ? undefined : mapPage(this.opts.slideFrom);
     if (from && from !== this.page) {
       // A warp: slide in from the page warped from (fade in from another group); the reveal
@@ -381,9 +387,14 @@ export class WorldMapScene implements Scene {
     const bonus = this.page.nodes.find((n) => n.kind === 'bonus' && n.unlock === CRYSTAL_BALL);
     const here = this.nodeById(this.node);
     if (!this.game.campaign || !bonus || !here || !this.revealQueue.includes(bonus.id)) return false;
-    this.crash = { scene: new AirshipCrash(here, bonus), node: bonus.id };
+    const s = this.game.state;
+    const names: CrashNames = {
+      heroes: s.character2 ? `${s.character.name} and ${s.character2.name}` : s.character.name,
+      bonus: spoken(bonusGame().label(this.game)),
+      skip: abilityHint(this.game, 'JUMP', 'jump'),
+    };
+    this.crash = { scene: new AirshipCrash(here, bonus), node: bonus.id, names, lead: `${this.hereLine()}.` };
     this.mode = 'cutscene';
-    this.say(`Skip: ${abilityHint(this.game, 'JUMP', 'jump')}.`);
     return true;
   }
 
@@ -395,11 +406,11 @@ export class WorldMapScene implements Scene {
       this.finishReveal();
       return;
     }
-    const hero = this.game.state.character.name;
-    const bonus = spoken(bonusGame().label(this.game));
-    for (const ev of c.scene.update(hero, bonus)) {
+    for (const ev of c.scene.update(c.names)) {
       if (ev.sfx) this.game.ctx.audio.sfx(ev.sfx);
-      if (ev.say) this.say(ev.say);
+      if (!ev.say) continue;
+      this.say(c.lead ? `${c.lead} ${ev.say}` : ev.say);
+      c.lead = '';
     }
     if (c.scene.built) this.showBonus(c.node);
     if (!c.scene.done) return;
@@ -528,10 +539,14 @@ export class WorldMapScene implements Scene {
 
   /** The page's name and the node the hero stands on. */
   private announceHere(): void {
+    this.say(this.hereLine());
+  }
+
+  private hereLine(): string {
     const n = this.nodeById(this.node);
     const label = spoken(this.page.label);
     const page = label.toUpperCase() === this.page.title ? label : `${label}, ${this.page.title}`;
-    this.say(n ? `${page}. ${this.nodeLabel(n)}` : page);
+    return n ? `${page}. ${this.nodeLabel(n)}` : page;
   }
 
   /**

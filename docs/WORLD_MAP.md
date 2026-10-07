@@ -169,12 +169,11 @@ different road with each, and **no ending opens every road leaving its level**.
   re-locks.
 - Today 1-2's campaign pipe is a secret exit (below), and so is Larry Koopa's crystal ball in
   4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
-  Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each shows one pipe
-  into an area of 4-2 (below), an ordinary pipe that is no exit at all (no `target.secret`, no
-  road); the right one has an anchor chain instead, up to Larry's airship, where the crystal ball
-  is the exit. The Lost
-  Levels' warp zones (`workingWarps` / `warpsOpened`) still warp as in the original and clear
-  nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels that have another
+  Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each leads into an
+  area of 4-2 (below) and is no exit at all (no `target.secret`, no road). The vine area's shows
+  one ordinary pipe, down into Samus's cavern; the right one shows no pipe but Larry's anchor
+  chain, up to his airship, where the crystal ball is the exit. The Lost Levels' warp zones
+  (`workingWarps` / `warpsOpened`) still warp as in the original and clear nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels that have another
   way out; it reads the level data as it is, so 4-2 keeps its look (in the campaign its other way
   out is Larry's `secret:larry` road).
 

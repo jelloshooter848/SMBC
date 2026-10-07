@@ -133,6 +133,7 @@ describe('the crystal ball (campaign)', () => {
     h.until(() => !ship.world.arriving && ship.world.player.body.onGround, 900);
     expect(ship.world.time).toBeGreaterThan(250);
     expect(h.game.mapProgress.secrets).not.toContain('larry');
+    h.until(() => ship.world.entities.some((e) => e instanceof Larry), 30);
   });
 
   it('a file without the ball never shows the bonus node, even with 4-2 cleared', () => {

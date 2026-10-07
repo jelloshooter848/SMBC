@@ -112,9 +112,11 @@ reach it too).
   vine brick's, and the arrival's vine is a chain too (`WorldStart.chain`). **Arrival point**
   (`goto=4-2-airship,2,3,climb`): the chain rises from the screen bottom at **column 2** (faster
   than a beanstalk, 1.5 px/f) and the hero climbs it, through any hull in the way, until he can
-  step off to the right onto the **first solid tile in column 3 below row 3** (the bow deck), two
-  tiles above it (`arrivalVineTop` in `world/world.ts`; the classic sky-area vine, start row 14,
-  is unchanged). `World.arriving` is true until everyone is off it. Every hero climbs it and lands
+  step off to the right onto the **first solid tile in column 3 below row 3** (the bow deck). The
+  chain's top is two tiles above that tile only when that is higher than the classic arrival vine
+  (5 tiles up from the screen bottom); otherwise it stays at the classic height and the hero drops
+  onto the floor from there (`arrivalVineTop` in `world/world.ts` takes the higher of the two, so
+  the classic sky-area vine, start row 14, is unchanged). `World.arriving` is true until everyone is off it. Every hero climbs it and lands
   on the deck (`tests/sim/anchor-chain.test.ts`).
 - **The airship's crash on the map** (`map/airship-crash.ts`, the map's `cutscene` mode; campaign,
   the first time the ball is taken): after the crystal ball's card `Game.takeCrystalBall` sets
@@ -137,7 +139,9 @@ reach it too).
   (`%`) and covered by 16×16 smb3 decor, one per tile: `smb3:ceiling-beam` along row 2 (columns
   1-14) and `smb3:pillar` down columns 0 and 15 (rows 2-12). The floor is log posts: `#` the post
   tops on row 13, `%` the posts carrying on below on row 14, and one raised post with its top at
-  (7,12) and its post at (7,13). The hero rises out of the pipe in the floor at columns 2-3; Larry
+  (7,12) and its post at (7,13). The hero climbs in up the arrival chain at column 2 (behind the
+  back wall here) and drops onto the pipe top at column 3 (the pipe in the floor at columns 2-3
+  is scenery now); Larry
   starts on the floor at the right (`larry 12 12 next=4-3`: the tile his feet stand in; `next` is
   where the ball leads outside the campaign). Theme `airship`, music `smb3-boss`.
 - **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
