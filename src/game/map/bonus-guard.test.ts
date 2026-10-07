@@ -184,6 +184,37 @@ describe('the Hammer Bro never forces a fight', () => {
     h.walk('right');
     expect(h.map()).toBeInstanceOf(WorldMapScene);
     expect(h.map().node).toBe('4-2');
+    // Off his road: now he comes out.
+    expect(h.map().guard).not.toBeNull();
+  });
+
+  it('comes out after a level in another world, once the hero leaves the spent node', () => {
+    const h = setup(fileAt('bonus-4'));
+    useBonus(h);
+    // Through the Worlds menu to World 1, a level there, and back to World 4 (onto bonus-4).
+    h.game.travelToPage('smb-1');
+    h.idle(8);
+    expect(h.map().page.id).toBe('smb-1');
+    h.game.enterLevelFromMap('1-1');
+    const pick = h.game.scenes.top;
+    for (let i = 0; i < 200 && h.game.scenes.top === pick; i++) h.step(i % 2 ? [] : ['jump']);
+    h.game.returnToMap();
+    expect(h.game.bonusGuard).toBe(true);
+    h.game.travelToPage('smb-4');
+    h.idle(8);
+    expect(h.map().node).toBe('bonus-4');
+    expect(h.map().guard).toBeNull();
+    h.walk('right');
+    expect(h.map()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().node).toBe('4-2');
+    expect(h.map().guard).not.toBeNull();
+  });
+
+  it('walking down from 4-2 at once still meets him on the road: no slipping past', () => {
+    const h = setup(fileAt('4-2', { bonusOpen: false, bonusGuard: true }));
+    expect(h.map().guard).not.toBeNull();
+    h.walk('down');
+    expect(h.game.scenes.top).toBeInstanceOf(HammerBattleScene);
   });
 
   it('never walks onto the hero, however long the hero stands next to the road', () => {

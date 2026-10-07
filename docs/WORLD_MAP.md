@@ -298,15 +298,17 @@ World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `u
   (`map/hammer-bro.ts`, `MapGuard`) stands on the road: on the road tile farthest from the hero,
   then he wanders tile by tile (1 px/f, standing 50-100 frames between steps) along the road
   between 4-2 (never on its node) and the bonus node. He never steps onto the hero's tile or the
-  road the hero is walking (`MapGuard.update(blocked)`), and he stays away while the hero stands
-  on that road's node, so the way back is never blocked. Drawn with the SMB3 map frames
-  `smb3:hammer-bro-map-0/1` (16×16, facing left).
-- **Walking into him** (opt-in: only the hero walking into him on the road; he never walks into
-  the hero, and not in the first 45 frames after the map shows) starts the **Hammer Bro battle**
-  (`scenes/hammer-battle.ts`, `Game.startHammerBattle`): one locked screen (`content/levels/
-hammer-battle.map`, outside the level library: floor, two brick rows at the SMB1 heights) with
-  two SMB1 Hammer Bros, no clock, the run's hero, power, lives and score. The hero's map place
-  stays the node it last stood on. Start pauses (Quit to map leaves it undecided).
+  road the hero is walking (`MapGuard.update(blocked)`). While the hero stands on that road's node
+  (the spent bonus node, e.g. back there through the Worlds menu) he stays away, so the way back is
+  never blocked; he comes out as soon as the hero arrives at any other node. Drawn with the SMB3
+  map frames `smb3:hammer-bro-map-0/1` (16×16, facing left). For the first 45 frames after the map
+  shows or he comes out he stands still (`GUARD_GRACE_FRAMES`); it never delays a battle.
+- **Walking into him** (opt-in: only the hero walking into him on the road, at once, even right
+  after the map shows, so the hero cannot slip past him; he never walks into the hero) starts the
+  **Hammer Bro battle** (`scenes/hammer-battle.ts`, `Game.startHammerBattle`): one locked screen
+  (`content/levels/hammer-battle.map`, outside the level library: floor, two brick rows at the
+  SMB1 heights) with two SMB1 Hammer Bros, no clock, the run's hero, power, lives and score. The
+  hero's map place stays the node it last stood on. Start pauses (Quit to map leaves it undecided).
   - **Win** (both Hammer Bros gone, then a second): their hammers vanish, the `castle-clear`
     jingle, the card "THE HAMMER BROS ARE BEATEN! / THE BONUS IS OPEN AGAIN." with the item they
     leave (SMB3 style: a mushroom, fire flower or star into the inventory, docs/BONUS.md), then

@@ -82,8 +82,9 @@ export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
 export const HIDING_SHIMMER_FRAMES = 360;
 export const HIDING_GLOW_FRAMES = 30;
 /**
- * The map's Hammer Bro (map/hammer-bro.ts) does not start a battle for this many frames after the
- * map shows or he comes out, so coming back from the bonus or a battle never lands straight in one.
+ * The map's Hammer Bro (map/hammer-bro.ts) stands still for this many frames after the map shows
+ * or he comes out, before he starts to wander. It never delays a battle: walking into him starts
+ * one at once (he spawns on the road tile farthest from the hero, so it is always the hero's move).
  */
 export const GUARD_GRACE_FRAMES = 45;
 /** A freed hero's 1-px dark outline: its silhouette drawn once each way, under it. */
@@ -896,6 +897,8 @@ export class WorldMapScene implements Scene {
     this.mode = 'idle';
     this.placeHero();
     this.views.clear();
+    // Off the Hammer Bro's road node (where he holds back), he comes out now.
+    if (!this.guard) this.refreshGuard();
     const n = this.nodeById(nodeId);
     if (n) this.say(this.nodeLabel(n));
   }
@@ -1074,7 +1077,8 @@ export class WorldMapScene implements Scene {
    * The Hammer Bro (campaign only): out on the road to a bonus node with `guard: 'hammer-bro'` while
    * the bonus is used (Game.bonusOpen false), a level has been entered since (Game.bonusGuard) and
    * the node is shown, on the road tile farthest from the hero (map/hammer-bro.ts). Not while the
-   * hero stands on that road (its node), where he would block the only way back.
+   * hero stands on that road (its node), where he would block the only way back: he comes out
+   * when the hero arrives anywhere else (arrive), or the map shows, slides or fades in again.
    */
   private refreshGuard(): void {
     this.guard = null;
@@ -1106,11 +1110,9 @@ export class WorldMapScene implements Scene {
   private updateGuard(): boolean {
     const g = this.guard;
     if (!g || (this.mode !== 'idle' && this.mode !== 'walk')) return false;
-    g.update((x, y) => this.guardBlocked(x, y));
-    if (this.guardGrace > 0) {
-      this.guardGrace--;
-      return false;
-    }
+    // He waits out the grace before his first step; walking into him counts at once.
+    if (this.guardGrace > 0) this.guardGrace--;
+    else g.update((x, y) => this.guardBlocked(x, y));
     if (this.mode !== 'walk' || !g.touches(this.hx, this.hy)) return false;
     this.guard = null;
     this.game.ctx.audio.sfx('kick');
