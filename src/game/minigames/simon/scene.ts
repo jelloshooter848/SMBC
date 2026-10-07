@@ -306,7 +306,7 @@ export class CastleScene implements Scene {
     this.life.iframes = 0;
     ({ world: this.world, door: this.door } = this.buildWorld());
     this.setPhase('ready');
-    this.say(`${this.lives.lives === 1 ? 'Last life' : `${this.lives.lives} lives`}. Ready!`);
+    this.say('Ready!');
   }
 
   /** The clock (held by the Infinite time assist); at zero Simon falls. */
@@ -482,9 +482,12 @@ export class CastleScene implements Scene {
     }
   }
 
-  /** The bottom of the throne room's ceiling (px). */
+  /** The bottom of the throne room's ceiling (px): the first solid row over its middle. */
   get ceilingY(): number {
-    return 48;
+    const col = this.layout.roomX + 8;
+    for (let row = this.layout.boss.y; row > 0; row--)
+      if (this.world.map.isSolid(col, row - 1)) return row * 16;
+    return 0;
   }
 
   /* ---------- The end ---------- */

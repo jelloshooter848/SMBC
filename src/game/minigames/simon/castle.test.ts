@@ -649,6 +649,7 @@ describe("Dracula's Castle: endings, menu and assists", () => {
     expect(h.scene.player.hp).toBe(MAX_HP);
     expect(h.scene.seconds).toBe(TIME_LIMIT);
     expect(hud()).toContain('P-02');
+    expect(h.said.at(-1)).toBe('Ready!');
     // Back at the entrance hall.
     expect(toPx(h.scene.player.body.x) >> 4).toBe(CASTLE_START.x);
   });

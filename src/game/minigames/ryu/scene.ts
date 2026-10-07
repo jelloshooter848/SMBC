@@ -137,8 +137,6 @@ export class DuelScene implements Scene {
   private music: string | null = null;
   private timeSaid = false;
   private readonly seed: number | undefined;
-  /** Ninpo arts found so far (a new life keeps them). */
-  private arts: number = DUEL_KIT.arts;
   /** The cutscene's skip prompt: "SKIP" with the JUMP key, as the touch button says. */
   private skipText = 'SKIP';
 
@@ -162,13 +160,13 @@ export class DuelScene implements Scene {
   }
 
   /**
-   * A life's World, at the current checkpoint: Ryu with every hit point, the start's spirit
-   * points and the arts found so far; the lanterns and creatures back.
+   * A life's World, at the current checkpoint: Ryu with every hit point and his start kit (as in
+   * Ninja Gaiden, a death loses the ninpo art he picked up); the lanterns and creatures back.
    */
   private buildWorld(): World {
     const level = { ...this.layout.level, theme: STAGE_THEME } as Layout['level'];
     const state = this.state;
-    state.kit = { ...DUEL_KIT, arts: this.arts, tool: this.arts - 1 };
+    state.kit = { ...DUEL_KIT };
     state.hp = MAX_HP;
     state.lives = this.lives.lives;
     const { x, y } = this.lives.start;
@@ -368,7 +366,7 @@ export class DuelScene implements Scene {
     this.life.iframes = 0;
     this.world = this.buildWorld();
     this.setPhase('ready');
-    this.say(`${this.lives.lives === 1 ? 'Last life' : `${this.lives.lives} lives`}. Ready!`);
+    this.say('Ready!');
   }
 
   /** The clock (held by the Infinite time assist); at zero Ryu falls. */

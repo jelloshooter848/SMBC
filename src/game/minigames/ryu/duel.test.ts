@@ -58,6 +58,7 @@ import {
   DUEL_BOSS,
   DUEL_MID,
   DUEL_START,
+  DUEL_KIT,
   DuelMenuScene,
   READY_FRAMES,
   SKY_TOP,
@@ -614,7 +615,23 @@ describe('Shadow Duel: endings, menu and assists', () => {
     expect(h.scene.player.hp).toBe(MAX_HP);
     expect(h.scene.seconds).toBe(TIME_LIMIT);
     expect(hud()).toContain('P-02');
+    expect(h.said.at(-1)).toBe('Ready!');
     expect(toPx(h.scene.player.body.x) >> 4).toBe(DUEL_START.x);
+  });
+
+  it('a death loses the ninpo art he picked up (as in Ninja Gaiden): the next life has the start kit only', () => {
+    const h = round();
+    (h.scene as unknown as { gotArt(p: unknown): void }).gotArt(h.scene.player);
+    expect(h.scene.player.scratch.arts).toBe(2);
+    h.scene.player.hp = 1;
+    h.world.hurtPlayer(h.scene.player, 1);
+    h.step();
+    for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+    expect(h.scene.phase).toBe('ready');
+    const p = h.scene.player;
+    expect(p.scratch.arts).toBe(DUEL_KIT.arts);
+    expect(p.scratch.tool).toBe(DUEL_KIT.tool);
+    expect(p.scratch.ninpo).toBe(DUEL_KIT.ninpo);
   });
 
   it('checkpoints: past the tower, and the arena door once through it; the Masked Ninja is whole again; Infinite lives keeps the count', () => {

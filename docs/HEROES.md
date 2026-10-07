@@ -709,7 +709,7 @@ false`); the score is on the HUD.
 Difficulty (`human-sim.test.ts`, `CastleBot`: it follows the route, lashes candles and whatever
 its prediction puts in the lash after the wind-up, keeps clear of Medusa heads until it can lash
 them, stands off while Dracula casts, lashes the level fireball, then steps in and jump-lashes his
-head on the way down; against the beast it moves to lashing range of where a leap will land (under
+head on the way down; against the beast it reads where a leap will land off the arc it sees (with its misjudging), moves to lashing range of it (under
 a high one when the wall is too close), jumps and lashes its head as it lands, and backs off when
 its maw opens; `CV_SIM=30 pnpm vitest run simon/human-sim --silent=false` prints the report): a
 sharp run passes unhurt. As a careful first-timer (sees things 15 frames late, misjudges by up to 6
@@ -717,7 +717,7 @@ px and its jump-lash by up to 2 frames, pauses now and then, steps closer to a c
 short of, judges Dracula more closely after each hit or missed lash) it passes all 30 seeds at a
 12, 15 and 18-frame reaction, losing 6-7 hit points a run (about 4 of them to Dracula) with a
 median of about 155 of the 300 seconds left; a clumsy player (21 frames, 10 px, more pauses)
-passes 90% with the three lives (60% on the first life; 0.6 lives lost a run; every game over is
+passes 87% with the three lives (57% on the first life; 0.6 lives lost a run; every game over is
 the beast).
 The stage is gentle (one-bar creature hits, three roasts); the fight is the test.
 
@@ -814,7 +814,8 @@ fresh GameState, three lives and a **150-second clock** (held by the Infinite ti
   his `die` frame. With a life left the next one starts at READY at the last checkpoint, as a
   fresh World: the street, the ground past the tower (`DUEL_MID`) or the rooftops before the
   arena's doorway (`DUEL_BOSS`, once he has gone through), with every hit point, the start's
-  spirit points, the arts found so far, a full clock and the Masked Ninja whole again. Infinite
+  spirit points and only the start's art (as in Ninja Gaiden, a death loses the ninpo art he
+  picked up), a full clock and the Masked Ninja whole again. Infinite
   lives (dev assist) keeps the count.
 - **Endings**: beating him passes (banner THE MASKED NINJA FALLS! THE CURSE IS BROKEN., only the
   first line in a round for fun, the jingle, 5 s); losing the last life shows GAME OVER and then

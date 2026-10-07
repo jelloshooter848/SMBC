@@ -4,7 +4,7 @@ import { Rng } from '@engine/rng';
 import { Enemy } from '../../entities/enemies/enemy';
 import type { World } from '../../world/world';
 import { CvShot, MEDUSA_PERIOD, MEDUSA_WAVE, MedusaHead } from './creatures';
-import { Beast, BeastHead, CAST_FIRE_AT, Dracula, DraculaHead } from './dracula';
+import { Beast, BeastHead, CAST_FIRE_AT, Dracula, DraculaHead, LEAP_GRAVITY } from './dracula';
 import type { CastleScene } from './scene';
 
 /*
@@ -60,8 +60,6 @@ interface Seen {
   dy: number;
   /** A Medusa head's wave: its age and centre line (px), to read its path ahead. */
   wave: { age: number; baseY: number } | null;
-  /** The beast in a leap: where it will land (its centre, px), as a player reads the arc. */
-  goal: number | null;
 }
 
 /** Frames from pressing the whip to the lash being live (its wind-up). */
@@ -140,7 +138,6 @@ export class CastleBot {
         x,
         y,
         wave: e instanceof MedusaHead ? { age: e.age, baseY: toPx(e.baseY) + o.y } : null,
-        goal: e instanceof Beast && e.state === 'leap' ? toPx(e.goal) + o.x : null,
         dx: before ? x - before.x : 0,
         dy: before ? y - before.y : 0,
         w: toPx(e.body.w),
@@ -405,6 +402,19 @@ export class CastleBot {
     return held;
   }
 
+  /**
+   * Where a leaping (or dropping) beast comes down (its centre, px), read off the arc as a player
+   * would: from where it was seen and how it was moving then, under the leap's gravity, to the
+   * floor. What it sees carries its misjudging (`offset`), so the guess carries it too.
+   */
+  private landing(beast: Seen, floorY: number): number {
+    const g = LEAP_GRAVITY / 4096;
+    const drop = Math.max(0, floorY - (beast.y + beast.h));
+    // (y grows downward: drop = dy·t + g·t²/2)
+    const t = (-beast.dy + Math.sqrt(beast.dy * beast.dy + 2 * g * drop)) / g;
+    return beast.x + (beast.w >> 1) + beast.dx * t;
+  }
+
   /** Halves what is left of its misjudging (to a quarter); what it sees from now on is judged anew. */
   private learnMore(): void {
     this.learn = Math.max(0.25, this.learn * 0.5);
@@ -444,7 +454,7 @@ export class CastleBot {
     if (beast.state === 'leap' || beast.state === 'drop') {
       // Where it comes down: to lashing range of its head there, on this side of it (the other
       // side, under it, when the wall is too close), out from under it.
-      const land = beast.goal ?? bcx;
+      const land = this.landing(beast, scene.floorY);
       let side: -1 | 1 = m.cx < land ? -1 : 1;
       let want = land + side * (BEAST_REACH + 10);
       if (want < roomL + 8 || want > roomR - 8) {
