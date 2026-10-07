@@ -22,6 +22,13 @@ under `## [Unreleased]`.
   their helmets (shots dink off), peek out and fire a three-way spread; pausing opens Mega Man 2's weapon screen with
   each weapon's energy, the E-tanks (use one to fill your life) and your lives; E-tanks are kept when you lose a life.
 
+## [0.4.13] - 2026-10-07
+
+### Added
+
+- A secrets guide in docs/secrets/: every hidden hero, hidden area, secret exit and warp spot in the campaign, with
+  step-by-step screenshots (spoilers, for players who want the answers).
+
 ## [0.4.12] - 2026-10-07
 
 ### Added
@@ -471,7 +478,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.13...HEAD
+[0.4.13]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...v0.4.13
 [0.4.12]: https://github.com/jelloshooter848/SMBC/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...v0.4.10
