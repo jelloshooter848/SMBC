@@ -10,10 +10,11 @@ import { NES } from '@engine/gfx/palette';
  *
  * Conventions the game relies on:
  * - Creatures face LEFT (flip for right). Standing things (skeleton, Dracula, beast, candelabra,
- *   coffin, throne) stand on their bottom row; `bat-0` hangs from its top row; the wall candle's
+ *   coffin, throne, dais, barred-window) stand on their bottom row; `bat-0` hangs from its top row; the wall candle's
  *   bottom row is its wall bracket.
  * - `dracula-head` is exactly the 16x16 box at (8,0) of `dracula-cape-0/1`: draw it over the body
- *   in `crypt-flash` to flash only the head, or alone as its hitbox's art.
+ *   in `crypt-flash` to flash only the head, or alone as its hitbox's art. `dracula-headless` is
+ *   `dracula-cape-0` once the head has flown off (between his two forms).
  * - Animated pairs (`candle-*`, `candelabra-*`, `bat-1/2`, `medusa-*`, `skeleton-0/1`, fireballs)
  *   alternate every few frames.
  * - `stair-r` climbs to the right: its steps are the bottom-left and top-right 8x8 quarters (the
@@ -1015,6 +1016,96 @@ const door = [
   '1111111111111111',
 ];
 
+/* Dracula's body after his head has flown off (between his forms): `dracula-cape-0` with the head and hair gone, the high collar left standing. */
+const draculaHeadless = draculaCape0.map((row, y) =>
+  y < 6
+    ? row.slice(0, 8) + '.'.repeat(16) + row.slice(24)
+    : y < 14
+      ? row.slice(0, 10) + '.'.repeat(12) + row.slice(22)
+      : row,
+);
+
+/**
+ * A tall barred window of the throne room (32x96, standing on its bottom row): a stone frame with
+ * a round arch, the night behind four iron bars and three crossbars, a moonlit streak, a sill.
+ */
+function barredWindow(): string[] {
+  const w = 32;
+  const h = 96;
+  const out: string[] = [];
+  const cx = 15.5;
+  const r = 16;
+  for (let y = 0; y < h; y++) {
+    let row = '';
+    for (let x = 0; x < w; x++) {
+      // the sill
+      if (y >= h - 4) {
+        row += y === h - 4 ? '3' : y === h - 1 ? '1' : '2';
+        continue;
+      }
+      // the arch: a half circle over the shaft
+      const d = y < r ? Math.hypot(x - cx, y - r + 0.5) : Math.abs(x - cx) + 0.5;
+      if (d > r) {
+        row += '.';
+        continue;
+      }
+      if (d > r - 1) {
+        row += '0';
+        continue;
+      }
+      if (d > r - 4) {
+        // the frame: lit on the upper left, shadowed on the right
+        row += x < cx - 6 || (y < r - 4 && x < cx) ? '3' : x > cx + 6 ? '1' : '2';
+        continue;
+      }
+      if (d > r - 5) {
+        row += '0';
+        continue;
+      }
+      // iron: four bars and three crossbars (the crossbars stop short of the frame)
+      const bar = x === 8 || x === 13 || x === 18 || x === 23;
+      const cross = y === 40 || y === 60 || y === 80;
+      if (bar || cross) {
+        row += bar && (y % 20 === 0 || cross) ? 'a' : '0';
+        continue;
+      }
+      // the night, with a pale moonlit streak across it
+      const streak = (x + y) % 22 < 3 && y > 20;
+      row += streak ? 'c' : 'b';
+    }
+    out.push(row);
+  }
+  return out;
+}
+const barredWindowFrame = barredWindow();
+
+/**
+ * The stone dais Dracula's coffin rests on (64x16, standing on its bottom row): a narrower top
+ * step on a broad base, both of the crypt's stone with lit tops and shadowed fronts.
+ */
+function dais(): string[] {
+  const out: string[] = [];
+  for (let y = 0; y < 16; y++) {
+    const top = y < 8;
+    const x0 = top ? 8 : 0;
+    const x1 = top ? 56 : 64;
+    const yy = y % 8;
+    let row = '';
+    for (let x = 0; x < 64; x++) {
+      if (x < x0 || x >= x1) row += '.';
+      else if (yy === 0 || x === x0 || x === x1 - 1) row += '0';
+      else if (yy === 1) row += '3';
+      else if (yy === 7) row += '1';
+      // the blocks' joints
+      else if ((x - x0 + (yy > 3 ? 8 : 0)) % 16 === 0 || yy === 4) row += '1';
+      else row += '2';
+    }
+    out.push(row);
+  }
+  return out;
+}
+const daisFrame = dais();
+
 export const cryptDef: SpriteDef = {
   palette: 'crypt',
   frames: {
@@ -1041,6 +1132,7 @@ export const cryptDef: SpriteDef = {
     'dracula-cape-0': draculaCape0,
     'dracula-cape-1': draculaCape1,
     'dracula-head': draculaHead,
+    'dracula-headless': draculaHeadless,
     'dracula-fireball-0': draculaFireball0,
     'dracula-fireball-1': draculaFireball1,
     'dracula-beast-0': draculaBeast0,
@@ -1049,6 +1141,8 @@ export const cryptDef: SpriteDef = {
     'beast-fire-0': beastFire0,
     'beast-fire-1': beastFire1,
     throne: throne,
+    'barred-window': barredWindowFrame,
+    dais: daisFrame,
     'stair-r': stairR,
     'stair-l': stairL,
     'burst-0': burst0,

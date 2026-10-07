@@ -30,8 +30,9 @@ export const ZEBES_FRAMES = [
   'alarm-1',
 ] as const;
 
-/** The escape loop, the alarm, the win jingle, the ship's engines, the cavern's end. */
+/** Samus materialising, the escape loop, the alarm, the win jingle, the ship's engines, the cavern's end. */
 export const ZEBES_SOUNDS = {
+  start: 'zebes-start',
   escape: 'zebes-escape',
   alarm: 'alarm',
   victory: 'castle-clear',

@@ -31,11 +31,32 @@ import {
   SubWeaponItem,
 } from './creatures';
 import type { Dracula } from './dracula';
-import { Beast, BEAST_HP, BOSS_HP, CAST_FIRE_AT, DRACULA_HP, ShockWave, SPOT_CLEAR, SPOTS } from './dracula';
 import {
+  Beast,
+  BEAST_HP,
+  BEAST_W,
+  BeastHead,
+  CAST_FIRE_AT,
+  CORNER,
+  DRACULA_HP,
+  FlyingHead,
+  LEAP_HIGH_VY,
+  LEAP_MID_VY,
+  LEAPS_PER_SPIT,
+  SPOT_CLEAR,
+  SPOTS,
+} from './dracula';
+import { DEATH_FRAMES } from '@game/world/death-style';
+import { GAME_OVER_FRAMES } from '../lives';
+import {
+  CASTLE_BOSS,
+  CASTLE_MID,
+  CASTLE_START,
   CastleMenuScene,
   READY_FRAMES,
   TIME_LIMIT,
+  HEAD_OFF_FRAMES,
+  REFILL_EVERY,
   TRANSFORM_FRAMES,
   WIN_FRAMES,
   type CastleScene,
@@ -43,6 +64,8 @@ import {
 import { CastleBot, SHARP } from './bot';
 import { castleHarness, type CastleHarness } from './harness';
 import { ScorePopup } from '@game/entities/effects/effects';
+import { Projectile } from '@game/entities/projectiles/projectile';
+import { HOLY_FIRE } from '@game/characters/simon/weapons';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -94,6 +117,12 @@ function warp(h: CastleHarness, cx: number, feet = 208): void {
 /** Through the door and on until Dracula is in the room. */
 function toFight(h: CastleHarness): Dracula {
   ready(h);
+  return toFightFrom(h);
+}
+
+/** From the stage (after READY): through the door and on until Dracula is in the room. */
+function toFightFrom(h: CastleHarness): Dracula {
+  expect(h.scene.phase).toBe('stage');
   h.game.ctx.assist.invulnerable = true;
   warp(h, 1500);
   for (let i = 0; i < 1500 && h.scene.phase !== 'fight'; i++) h.step(['right']);
@@ -350,15 +379,15 @@ describe('Dracula, phase 1 (the Count)', () => {
     const sword = { kind: 'sword' as const, amount: 1, owner: null, dirX: 1 as const };
     while (d.state !== 'cast') h.step();
     expect(d.hit(sword, h.world)).toBe('immune');
-    expect(h.scene.life.hp).toBe(BOSS_HP);
+    expect(h.scene.life.hp).toBe(DRACULA_HP);
     expect(d.head.hit(sword, h.world)).toBe('hp');
-    expect(h.scene.life.hp).toBe(BOSS_HP - 1);
+    expect(h.scene.life.hp).toBe(DRACULA_HP - 1);
     // A short grace after a hit.
     expect(d.head.hit(sword, h.world)).toBe('immune');
     for (let i = 0; i < 400 && (d.state as string) !== 'vanish'; i++) h.step();
     h.scene.life.iframes = 0;
     expect(d.head.hit(sword, h.world)).toBe('immune');
-    expect(h.scene.life.hp).toBe(BOSS_HP - 1);
+    expect(h.scene.life.hp).toBe(DRACULA_HP - 1);
   });
 
   it('casts a spread of three fireballs from his low hand (level, rising, falling); a lash knocks them away', () => {
@@ -379,9 +408,10 @@ describe('Dracula, phase 1 (the Count)', () => {
     expect(shots.filter((s) => s.alive).length).toBe(0);
   });
 
-  it(`the enemy bar runs across both phases: ${DRACULA_HP} head hits, the beast form, then ${BEAST_HP} more`, () => {
+  it(`each form has its own full ENEMY bar: ${DRACULA_HP} head hits empty it, his head flies off, the body bursts, the beast drops in as it fills again`, () => {
     const h = castleHarness();
     const d = toFight(h);
+    h.game.ctx.assist.invulnerable = true;
     expect(h.scene.enemyBar()).toBe(16);
     const sword = { kind: 'sword' as const, amount: 1, owner: null, dirX: 1 as const };
     while (d.state !== 'cast') h.step();
@@ -389,59 +419,145 @@ describe('Dracula, phase 1 (the Count)', () => {
       h.scene.life.iframes = 0;
       d.state = 'linger';
       d.head.hit(sword, h.world);
+      // two segments a lash
+      if (k < DRACULA_HP - 1) expect(h.scene.enemyBar()).toBe(16 - 2 * (k + 1));
     }
-    expect(h.scene.life.hp).toBe(BEAST_HP);
+    expect(h.scene.life.hp).toBe(0);
+    expect(h.scene.enemyBar()).toBe(0);
     expect(h.scene.phase).toBe('transform');
-    expect(h.scene.enemyBar()).toBeLessThan(16);
-    expect(h.scene.enemyBar()).toBeGreaterThan(0);
-    h.step([], TRANSFORM_FRAMES);
-    expect(h.scene.phase).toBe('fight');
-    expect(h.scene.beast).toBeInstanceOf(Beast);
+    const head = the(h, FlyingHead)[0] as FlyingHead;
+    expect(head).toBeDefined();
+    const y0 = head.body.y;
+    expect(d.alive).toBe(true);
+    expect(d.state).toBe('down');
+    h.step([], 10);
+    expect(head.body.y).toBeLessThan(y0);
+    h.step([], HEAD_OFF_FRAMES - 10);
     expect(d.alive).toBe(false);
+    h.step([], TRANSFORM_FRAMES - HEAD_OFF_FRAMES);
+    const beast = h.scene.beast as Beast;
+    expect(beast).toBeInstanceOf(Beast);
+    expect(beast.state).toBe('drop');
+    expect(beast.hurtable).toBe(false);
     expect(h.log.music.at(-1)).toBe('cv-beast');
+    const bars: number[] = [];
+    let frames = 0;
+    for (; frames < 300 && h.scene.phase === 'transform'; frames++) {
+      h.step();
+      bars.push(h.scene.enemyBar());
+    }
+    expect(h.scene.phase).toBe('fight');
+    expect(beast.state).not.toBe('drop');
+    expect(h.scene.life.hp).toBe(BEAST_HP);
+    expect(h.scene.enemyBar()).toBe(16);
+    for (let i = 1; i < bars.length; i++) expect(bars[i]).toBeGreaterThanOrEqual(bars[i - 1] as number);
+    expect(frames).toBeGreaterThanOrEqual(BEAST_HP * REFILL_EVERY - REFILL_EVERY);
+    // It landed on the floor.
+    expect(toPx(beast.body.y + beast.body.h)).toBe(h.scene.floorY);
   });
 });
 
 describe('Dracula, phase 2 (the beast)', () => {
+  /** On to the beast, landed and fighting. */
   function toBeast(h: CastleHarness): Beast {
     const d = toFight(h);
     while (d.state !== 'cast') h.step();
-    h.scene.life.hp = BEAST_HP + 1;
+    h.scene.life.hp = 1;
     d.head.hit({ kind: 'sword', amount: 1, owner: null, dirX: 1 }, h.world);
-    h.step([], TRANSFORM_FRAMES);
+    const inv = h.game.ctx.assist.invulnerable;
+    h.game.ctx.assist.invulnerable = true;
+    for (let i = 0; i < 600 && h.scene.phase !== 'fight'; i++) h.step();
+    h.game.ctx.assist.invulnerable = inv;
+    expect(h.scene.phase).toBe('fight');
     return h.scene.beast as Beast;
   }
 
-  it('rises (not hurtable), then walks, spits, walks, spits, walks and leaps; the landing sends a shock wave each way', () => {
+  /** Simon's centre at `x` px from the throne room's left edge, on its floor. */
+  function inRoom(h: CastleHarness, x: number): void {
+    const b = h.scene.player.body;
+    b.x = px(h.scene.layout.roomX * 16 + x) - (b.w >> 1);
+    b.vx = 0;
+  }
+
+  it('hops about and stops to spit fans of three: spit, hop, hop, spit; no shock wave', () => {
     const h = castleHarness();
     const beast = toBeast(h);
     h.game.ctx.assist.invulnerable = true;
-    expect(beast.state).toBe('rise');
-    expect(beast.hit({ kind: 'sword', amount: 1, owner: null, dirX: 1 }, h.world)).toBe('immune');
-    const spawned: unknown[] = [];
+    const spawned: { e: unknown; t: number }[] = [];
     const spawn = h.world.spawn.bind(h.world);
     h.world.spawn = (e) => {
-      spawned.push(e);
+      spawned.push({ e, t: h.scene.t });
       spawn(e);
     };
-    for (let i = 0; i < 1500 && beast.attacks.length < 3; i++) h.step();
-    for (let i = 0; i < 200 && !spawned.some((e) => e instanceof ShockWave); i++) h.step();
-    const spits = spawned.filter((e) => e instanceof CvShot && e.kind === 'beast-fire').length;
-    const waves = spawned.filter((e): e is ShockWave => e instanceof ShockWave);
-    expect(beast.attacks.slice(0, 3)).toEqual(['spit', 'spit', 'leap']);
-    expect(spits).toBe(6);
-    expect(waves).toHaveLength(2);
-    const dirs = waves.map((w) => w.facing).sort();
-    expect(dirs).toEqual([-1, 1]);
+    for (let i = 0; i < 3000 && beast.attacks.length < 5; i++) {
+      inRoom(h, 128);
+      h.step();
+    }
+    expect(beast.attacks.slice(0, 5)).toEqual(['spit', 'leap', 'leap', 'spit', 'leap']);
+    const fire = spawned.filter(({ e }) => e instanceof CvShot && e.kind === 'beast-fire');
+    expect(fire).toHaveLength(2 * 3);
+    // Three at once, fanned (three different headings).
+    const first = fire.filter(({ t }) => t === fire[0]?.t).map(({ e }) => e as CvShot);
+    expect(first).toHaveLength(3);
+    expect(new Set(first.map((s) => Math.round(Math.atan2(s.body.vy, s.body.vx) * 10))).size).toBe(3);
+    expect(spawned.some(({ e }) => (e as { kind?: string }).kind === 'shock-wave')).toBe(false);
+    expect(LEAPS_PER_SPIT).toBe(2);
+  });
+
+  it('a middling hop is too low to run under; cornered (or crouching), it leaps high enough to', () => {
+    const apex = (cornered: boolean, crouch = false) => {
+      const h = castleHarness();
+      const beast = toBeast(h);
+      h.game.ctx.assist.invulnerable = true;
+      const n = beast.attacks.length;
+      let top = Infinity;
+      for (let i = 0; i < 3000; i++) {
+        inRoom(h, cornered ? CORNER - 16 : 128);
+        h.step(crouch ? ['down'] : []);
+        if (beast.attacks.length > n && beast.attacks.at(-1) !== 'spit') {
+          if (beast.state === 'leap') top = Math.min(top, beast.body.y + beast.body.h);
+          else if (top < Infinity) break;
+        }
+      }
+      return { kind: beast.attacks.at(-1), height: h.scene.floorY - toPx(top) };
+    };
+    const mid = apex(false);
+    expect(mid.kind).toBe('leap');
+    expect(mid.height).toBeLessThan(40);
+    const high = apex(true);
+    expect(high.kind).toBe('high-leap');
+    expect(high.height).toBeGreaterThan(80);
+    expect(apex(false, true).kind).toBe('high-leap');
+    expect(LEAP_HIGH_VY).toBeGreaterThan(LEAP_MID_VY);
+  });
+
+  it('only its head can be hurt by the whip (above a standing lash: jump); the body clinks; holy water burns it anywhere', () => {
+    const h = castleHarness();
+    const beast = toBeast(h);
+    const sword = { kind: 'sword' as const, amount: 1, owner: null, dirX: 1 as const };
+    expect(beast.hit(sword, h.world)).toBe('immune');
+    expect(h.scene.life.hp).toBe(BEAST_HP);
+    expect(beast.head).toBeInstanceOf(BeastHead);
+    expect(beast.head.hit(sword, h.world)).toBe('hp');
+    expect(h.scene.life.hp).toBe(BEAST_HP - 1);
+    h.scene.life.iframes = 0;
+    const p = h.scene.player;
+    const holy = new Projectile(beast.body.x, beast.body.y, 1, HOLY_FIRE, p);
+    expect(beast.hit({ kind: 'weapon', amount: 1, owner: holy, dirX: 1 }, h.world)).toBe('hp');
+    expect(h.scene.life.hp).toBe(BEAST_HP - 2);
+    // The head is at its front, above the height of a standing lash.
+    const hb = beast.head.body;
+    const front = beast.facing < 0 ? beast.body.x : beast.body.x + px(BEAST_W) - hb.w;
+    expect(hb.x).toBe(front);
+    expect(h.scene.floorY - toPx(hb.y + hb.h)).toBeGreaterThan(18);
   });
 
   it('beating the beast wins: banner, announcer, jingle, then pass (reported once)', () => {
     const h = castleHarness({ assets: STUB_ASSETS, keep: true });
     const beast = toBeast(h);
-    h.step([], 70);
     for (let k = 0; k < BEAST_HP; k++) {
       h.scene.life.iframes = 0;
-      beast.hit({ kind: 'sword', amount: 1, owner: null, dirX: 1 }, h.world);
+      beast.head.hit({ kind: 'sword', amount: 1, owner: null, dirX: 1 }, h.world);
     }
     expect(h.scene.phase).toBe('won');
     expect(h.scene.enemyBar()).toBe(0);
@@ -454,6 +570,16 @@ describe('Dracula, phase 2 (the beast)', () => {
     expect(h.results).toEqual(['pass']);
     h.step([], 300);
     expect(h.results).toEqual(['pass']);
+  });
+
+  it("the room: Castlevania's tall barred windows and the coffin on its dais (no throne)", () => {
+    const { level, roomX } = castleStage();
+    const room = level.decor.filter((d) => d.x >= roomX && d.x < roomX + 16).map((d) => d.kind);
+    expect(room.filter((k) => k === 'crypt:barred-window')).toHaveLength(2);
+    expect(room).toContain('crypt:dais');
+    expect(room).toContain('crypt:coffin');
+    expect(room).not.toContain('crypt:throne');
+    expect(room).not.toContain('crypt:stained-glass');
   });
 });
 
@@ -468,24 +594,112 @@ describe("Dracula's Castle: endings, menu and assists", () => {
     expect(h.game.state).toEqual(before);
   });
 
-  it('standing still fails: the clock runs out (reported once)', () => {
-    const h = castleHarness({ keep: true });
-    h.step([], READY_FRAMES + TIME_LIMIT * 60 + 260);
-    expect(h.said).toContain('Time is up. Try again.');
+  it('standing still on the last life fails: the clock runs out, GAME OVER, then fail (reported once)', () => {
+    const h = castleHarness({ keep: true, assets: STUB_ASSETS });
+    h.scene.lives.rest = 0;
+    h.step([], READY_FRAMES + TIME_LIMIT * 60 + DEATH_FRAMES.collapse + 10);
+    expect(h.said).toContain('Time is up. Simon is down! Game over.');
+    expect(h.scene.phase).toBe('gameover');
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('GAME OVER');
+    expect(r.texts).toContain('P-00');
+    expect(h.results).toEqual([]);
+    h.step([], GAME_OVER_FRAMES);
     expect(h.results).toEqual(['fail']);
     for (let i = 0; i < 300; i++) h.step(i % 7 === 0 ? ['start'] : []);
     expect(h.results).toEqual(['fail']);
     expect(h.game.scenes.top).toBe(h.scene);
   });
 
-  it('losing every hit point fails', () => {
+  it('losing every hit point on the last life fails', () => {
     const h = castleHarness();
     ready(h);
+    h.scene.lives.rest = 0;
     h.scene.player.hp = 2;
     h.world.hurtPlayer(h.scene.player, 1);
-    for (let i = 0; i < 400 && h.results.length === 0; i++) h.step();
+    h.step();
+    expect(h.said.at(-1)).toBe('Simon is down! Game over.');
+    for (let i = 0; i < 800 && h.results.length === 0; i++) h.step();
     expect(h.results).toEqual(['fail']);
-    expect(h.said.at(-1)).toBe('Simon is down. Try again.');
+  });
+
+  it("three lives (P-03): Simon collapses (Castlevania's death, its own sound), and the next life starts at READY with P-02", () => {
+    const h = castleHarness({ assets: STUB_ASSETS });
+    ready(h);
+    expect(h.scene.lives.lives).toBe(3);
+    const hud = () => {
+      const r = new TextRenderer();
+      h.game.scenes.render(r);
+      return r.texts;
+    };
+    expect(hud()).toContain('P-03');
+    const w0 = h.world;
+    expect(w0.deathStyle).toBe('collapse');
+    h.scene.player.hp = 2;
+    h.world.hurtPlayer(h.scene.player, 1);
+    h.step();
+    expect(h.said.at(-1)).toBe('Simon is down! 2 lives left.');
+    expect(h.log.jingles).not.toContain('death');
+    expect(h.log.sfx).toContain('cv-death');
+    for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+    expect(h.results).toEqual([]);
+    expect(h.scene.phase).toBe('ready');
+    expect(h.world).not.toBe(w0);
+    expect(h.scene.player.hp).toBe(MAX_HP);
+    expect(h.scene.seconds).toBe(TIME_LIMIT);
+    expect(hud()).toContain('P-02');
+    expect(h.said.at(-1)).toBe('Ready!');
+    // Back at the entrance hall.
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(CASTLE_START.x);
+  });
+
+  it('checkpoints: the bone hall once Simon is down there, the door once it has opened; Dracula is whole again', () => {
+    const h = castleHarness();
+    ready(h);
+    h.game.ctx.assist.invulnerable = true;
+    warp(h, CASTLE_MID.x * 16 + 24);
+    h.step([], 2);
+    expect(h.scene.lives.current.id).toBe('mid');
+    const kill = () => {
+      h.game.ctx.assist.invulnerable = false;
+      h.scene.player.hp = 1;
+      h.world.hurtPlayer(h.scene.player, 1);
+      h.step();
+      for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+      expect(h.scene.phase).toBe('ready');
+    };
+    kill();
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(CASTLE_MID.x);
+    h.step([], READY_FRAMES);
+    toFightFrom(h);
+    expect(h.scene.lives.current.id).toBe('boss');
+    h.scene.life.hp = 3;
+    kill();
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(CASTLE_BOSS.x);
+    expect(h.scene.dracula).toBeNull();
+    expect(h.scene.life.hp).toBe(DRACULA_HP);
+    expect(h.scene.lives.lives).toBe(1);
+    // In through the door again.
+    h.step([], READY_FRAMES);
+    toFightFrom(h);
+    expect(h.scene.enemyBar()).toBe(16);
+  });
+
+  it('Infinite lives (dev assist) keeps the count; no TRY AGAIN until the last life is gone', () => {
+    const h = castleHarness();
+    ready(h);
+    h.game.ctx.assist.infiniteLives = true;
+    for (let k = 0; k < 4; k++) {
+      h.scene.player.hp = 1;
+      h.world.hurtPlayer(h.scene.player, 1);
+      h.step();
+      for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+      expect(h.scene.phase).toBe('ready');
+      h.step([], READY_FRAMES);
+    }
+    expect(h.scene.lives.lives).toBe(3);
+    expect(h.results).toEqual([]);
   });
 
   it('the menu offers Continue and Give up (quit), from the stage and from the throne room', () => {
@@ -557,12 +771,15 @@ const BONE_SPEC = {
 };
 
 describe("Dracula's Castle: screen and controls", () => {
-  it('a kill scores no Mario-style point popup: the castle HUD has no score', () => {
-    const h = castleHarness();
+  it('a kill scores without a Mario-style point popup: the score is on the HUD', () => {
+    const h = castleHarness({ assets: STUB_ASSETS });
     ready(h);
     h.world.addScore(200, px(100), px(100));
     h.step();
     expect(h.world.entities.some((e) => e instanceof ScorePopup)).toBe(false);
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('SCORE-000200');
   });
 
   it("Simon's touch labels while he plays (WHIP), only MENU in the cut-scenes, none once decided", () => {
@@ -577,7 +794,7 @@ describe("Dracula's Castle: screen and controls", () => {
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: null });
   });
 
-  it('draws the Castlevania HUD (PLAYER, ENEMY, TIME, hearts) and a steady READY with reduce flashing', () => {
+  it('draws the 3-line Castlevania HUD (SCORE TIME STAGE / PLAYER, box, hearts / ENEMY, P) and a steady READY with reduce flashing', () => {
     const h = castleHarness({ assets: STUB_ASSETS });
     const reads: boolean[] = [];
     for (let i = 0; i < 40; i++) {
@@ -585,7 +802,13 @@ describe("Dracula's Castle: screen and controls", () => {
       h.game.scenes.render(r);
       reads.push(r.texts.includes('READY'));
       if (i === 0) {
-        expect(r.texts).toEqual(expect.arrayContaining(['PLAYER', 'ENEMY', 'TIME', '0300', '-05']));
+        expect(r.texts).toEqual(
+          expect.arrayContaining(['SCORE-000000', 'TIME', '0300', 'STAGE', '18', 'PLAYER', 'ENEMY', '-05']),
+        );
+        expect(r.texts.some((t) => /^P-0\d$/.test(t))).toBe(true);
+        // Three lines: score on top, then PLAYER, then ENEMY, all inside the band.
+        const box = r.rects.find(([, , w, hh, c]) => w === 28 && hh === 20 && c === '#f83800');
+        expect(box).toBeDefined();
       }
       h.step();
     }
