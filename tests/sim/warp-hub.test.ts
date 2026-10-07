@@ -23,6 +23,7 @@ import type { WorldMapPage } from '@game/map/types';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import type { Settings } from '@engine/save/settings';
+import { ALL_STORY } from './story-seen';
 
 // The 0.4.0 Warp Zone: in campaign play the 1-2 warp zone has one pipe, which records secret
 // bonus-1 and opens the road to World 1's warp spot; the spot warps to the hub, whose first pad
@@ -137,7 +138,8 @@ const pipesIn = (zones: Zone[], x0: number, x1: number) =>
   zones.filter((z): z is Zone & { kind: 'pipe' } => z.kind === 'pipe' && z.x >= x0 && z.x < x1);
 
 function file(over: Partial<SaveFile> = {}): SaveFile {
-  const s = { ...newSave(1, MARIO.id), ...over };
+  // Toad's map scenes (0.4.13) are seen: these tests are about the warps (toad-guide.test.ts).
+  const s = { ...newSave(1, MARIO.id), story: [...ALL_STORY], ...over };
   writeSave(s);
   return s;
 }

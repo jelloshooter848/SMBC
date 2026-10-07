@@ -46,6 +46,7 @@ import { DEFAULT_ASSIST, newGameState } from '@game/context';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { hudAreaLines } from '@game/hud/hud';
 import { LIGHT_SKIES } from '@game/world/tile-render';
+import { ALL_STORY } from './story-seen';
 
 // The Top Secret Area (owner design for 0.4.10, after Super Mario World's): in campaign play a
 // hidden block at the top of 2-1's last tower lays a cloud path toward the flagpole, so every hero
@@ -508,6 +509,7 @@ function onWorld2(h: H, over: Parameters<typeof file>[0] = {}) {
       cleared: ['1-0', '1-1', '1-2', '1-3', '1-4'],
       pages: ['smb-1', 'smb-2'],
       position: { page: 'smb-2', node: '2-1' },
+      story: [...ALL_STORY], // Toad's map scenes (0.4.13) are seen
       ...over,
     }),
   );

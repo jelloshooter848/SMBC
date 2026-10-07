@@ -24,6 +24,7 @@ import {
 import { SMB3_BONUS } from '@game/bonus/spot';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { draw, dropInAndClimb, file, makeGame, rideToStern, useStorage, type H } from './heroes-harness';
+import { ALL_STORY } from './story-seen';
 
 // Larry Koopa's airship (4-2), the crystal ball and World 4's bonus spot with its Hammer Bro
 // (docs/HEROES.md "Larry Koopa and the crystal ball", docs/WORLD_MAP.md "The bonus spot and its
@@ -47,7 +48,7 @@ const node = (id: string) => W4.nodes.find((n) => n.id === id) as MapNode;
 function onMap(over: Partial<SaveFile>): { h: H; map: () => WorldMapScene } {
   const h = makeGame();
   h.game.deps.settings = { dev: false } as Settings;
-  file(over);
+  file({ story: [...ALL_STORY], ...over }); // Toad's map scenes (0.4.13) are seen
   h.game.openFile(1);
   h.idle(8);
   expect(h.top()).toBeInstanceOf(WorldMapScene);
@@ -256,9 +257,10 @@ describe('crystal-ball hints on the map', () => {
     });
     const { sprites, texts } = draw(map());
     expect(sprites.some((s) => s.key === 'mario@luigi~shade-grass')).toBe(true);
-    expect(map().hintLine).toBe('SOMEONE IS HIDING IN THIS LEVEL');
-    expect(texts.map((t) => t.str)).toContain('SOMEONE IS HIDING IN THIS LEVEL');
-    expect(h.said.some((t) => t.includes('Someone is hiding in this level.'))).toBe(true);
+    // Toad's line for Luigi (0.4.13, story/script.ts MISSED_HINT).
+    expect(map().hintLine).toBe('TOAD: I HEAR A MUSTACHE SIGH...');
+    expect(texts.map((t) => t.str)).toContain('TOAD: I HEAR A MUSTACHE SIGH...');
+    expect(h.said.some((t) => t.includes('Toad: I hear a mustache sigh...'))).toBe(true);
   });
 
   it("Unlock all shows no silhouette on a node the file hasn't really reached", () => {

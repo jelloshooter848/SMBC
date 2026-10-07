@@ -8,6 +8,7 @@ import { CRYSTAL_BALL, heroHint, hiddenHeroes, type HiddenHero } from '@game/map
  *
  * Beat ids (plain strings, saved on the file, so never rename one):
  * - `enter:<page>`  Toad's world entry on first arrival ('enter:smb-3'), see beat.enter;
+ * - `enter:<page>:<hero>` the entry's pages about a hero added later ('enter:smb-8:sophia');
  * - `missed:<hero>` the "missed something" card when that hero's map silhouette first shows;
  * - `joined`        the generic hero-joined card (the first hero freed);
  * - `joined:<hero>` that hero's own joined card;
@@ -42,6 +43,8 @@ export function storyOn(game: StoryGame): boolean {
 export const beat = {
   /** Toad's world entry for map page `page` ('smb-1'..'smb-8'). */
   enter: (page: string) => `enter:${page}`,
+  /** The part of page `page`'s world entry about hero `hero` (script.ts ENTRY_NEEDS: 'enter:smb-8:sophia'). */
+  enterHero: (page: string, hero: string) => `enter:${page}:${hero}`,
   /** The "missed something" card for hero `hero`. */
   missed: (hero: string) => `missed:${hero}`,
   /** The generic hero-joined card (no argument), or hero `hero`'s own joined card. */
