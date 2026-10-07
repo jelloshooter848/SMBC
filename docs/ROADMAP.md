@@ -38,7 +38,15 @@ every reimagining of its mini games.
 
 Release numbers after 0.5.0 are proposals; the owner picks them.
 
-### Chapter 2: the Lost Kingdom (0.5.x, released as 0.6.0)
+### 0.5.1: Classic SMBC rules (right after 0.5.0, before any Lost Kingdom work)
+
+The 19 reports from PR #51 (bug-reports/2026-10-07-_classic_.md and the per-hero reports): a dev-mode toggle that
+plays the game like the original Crossover 3.1.21. It covers each hero's original physics and power states, enemy
+HP and armour, bricks and shots, and swimming. Outside the toggle nothing changes. The new-character builds in
+PR #51 (Sophia's spec is already used in 0.4.11; Bass, Proto Man, Pit, Vic Viper, the Warriors of Light, and the
+candidate list) are not part of 0.5.1.
+
+### Chapter 2: the Lost Kingdom (0.5.2 onward, released as 0.6.0)
 
 | Order | What                                                                                                                                                                                                                                                                                                                           |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -61,7 +69,6 @@ Release numbers after 0.5.0 are proposals; the owner picks them.
 
 ### Any time (not tied to a chapter)
 
-- **Classic SMBC rules:** the 19 reports from PR #51, a dev-mode toggle that plays like the original Crossover 3.1.21.
 - **New heroes** from PR #51's candidate list. Yoshi first: the Top Secret Area's egg will hatch him, as a rideable
   partner or a hero.
 
