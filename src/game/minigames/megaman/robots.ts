@@ -10,7 +10,7 @@ import type { Player } from '../../entities/player';
 import type { DamageSource, Reaction, Vulnerability } from '../../rules/damage';
 import type { World } from '../../world/world';
 import { MEGAMAN } from '../../characters/megaman';
-import { darkSheet, drawStation, trySheet } from './art';
+import { darkSheet, drawStation, FLASH_PALETTE } from './art';
 
 /*
  * The station's robots (docs/HEROES.md, Mega Man's mini game): Hopper, Turret and Drone, their
@@ -87,8 +87,10 @@ export abstract class Robot extends Enemy {
     return r;
   }
 
-  /** Frames of the white hit flash (drawn as a light box unless reduce flashing is on). */
+  /** Frames of the hit flash (the `station-flash` palette; not with reduce flashing). */
   protected flash = 0;
+  /** Drawn upside down (a turret hung under a ceiling). */
+  protected upsideDown = false;
 
   protected override flipOut(_src: DamageSource, world: World): void {
     const b = this.body;
@@ -114,12 +116,20 @@ export abstract class Robot extends Enemy {
     if (this.flash > 0) this.flash--;
   }
 
-  /** Draws the frame or, while the station art is missing, `fallback`; then the hit flash. */
-  protected draw(r: Renderer, view: View, frame: string, fallback: (x: number, y: number) => void): void {
+  /** Station robots face left: flipped when facing right; pale for a moment after a hit. */
+  override render(r: Renderer, view: View): void {
+    const palette = this.flash > 0 && !view.reduceFlashing ? FLASH_PALETTE : undefined;
     const x = this.screenX(view);
-    const y = this.screenY();
-    if (this.flash > 0 && !view.reduceFlashing && (view.frame & 2) === 0) return;
-    drawStation(r, view.assets, frame, x, y, this.facing > 0, () => fallback(x, y));
+    drawStation(
+      r,
+      view.assets,
+      this.currentFrame,
+      x,
+      this.screenY(),
+      this.facing > 0,
+      palette,
+      this.upsideDown,
+    );
   }
 }
 
@@ -174,18 +184,6 @@ export class Hopper extends Robot {
     this.currentFrame = b.onGround ? 'hopper-0' : 'hopper-1';
     if (this.isBelowLevel()) this.destroy();
   }
-
-  override render(r: Renderer, view: View): void {
-    const air = !this.body.onGround;
-    this.draw(r, view, this.currentFrame, (x, y) => {
-      const top = air ? y + 2 : y + 5;
-      r.rect(x + 2, top, 12, air ? 9 : 8, '#58d854');
-      r.rect(x + 3, top + 1, 10, 2, '#b8f818');
-      r.rect(x + (this.facing > 0 ? 9 : 4), top + 3, 3, 3, '#f83800');
-      r.rect(x + 3, top + (air ? 9 : 8), 3, air ? 7 : 3, '#7c7c7c');
-      r.rect(x + 10, top + (air ? 9 : 8), 3, air ? 7 : 3, '#7c7c7c');
-    });
-  }
 }
 
 /* ---------- Turret ---------- */
@@ -200,12 +198,12 @@ export const TURRET_HP = 3;
 /** Pellet speed (velocity units: 1.5 px a frame). */
 export const PELLET_SPEED = 0x01800;
 
-export type TurretMount = 'floor' | 'wall';
+export type TurretMount = 'floor' | 'ceiling';
 
 /**
- * A gun turret on the floor or hanging on a wall's side. Shut, its armour turns shots away; it
- * opens, fires a burst of three pellets at Mega Man and shuts again. A floor turret never aims
- * down; a wall turret aims anywhere on its open side.
+ * A gun turret on the floor, or hung upside down under a ceiling. Shut, its armour turns shots
+ * away; it opens, fires a burst of three pellets at Mega Man and shuts again. A floor turret never
+ * aims down, a ceiling turret never up.
  */
 export class Turret extends Robot {
   readonly kind = 'turret';
@@ -219,6 +217,7 @@ export class Turret extends Robot {
   ) {
     super(x, y, 16, 16, TURRET_HP);
     this.facing = side;
+    this.upsideDown = mount === 'ceiling';
     this.currentFrame = 'turret-0';
   }
 
@@ -242,7 +241,7 @@ export class Turret extends Robot {
     }
     const p = this.target(world);
     const b = this.body;
-    if (this.mount === 'floor') this.facing = p.centerX < b.x + (b.w >> 1) ? -1 : 1;
+    this.facing = p.centerX < b.x + (b.w >> 1) ? -1 : 1;
     this.t++;
     const fireAt = TURRET_SHUT + TURRET_OPEN;
     if (this.t >= fireAt && this.fired < TURRET_BURST && (this.t - fireAt) % TURRET_GAP === 0) {
@@ -259,32 +258,18 @@ export class Turret extends Robot {
   private fire(world: World, p: Player): void {
     const b = this.body;
     const cx = b.x + (b.w >> 1);
-    const cy = b.y + px(6);
+    const cy = this.mount === 'floor' ? b.y + px(6) : b.y + b.h - px(6);
     let dx = p.centerX - cx;
     let dy = p.body.y + (p.body.h >> 1) - cy;
-    // A floor turret aims no lower than level; a wall turret only out of its open side.
+    // A floor turret aims no lower than level, a ceiling turret no higher.
     if (this.mount === 'floor') dy = Math.min(dy, 0);
-    else if (Math.sign(dx) !== this.facing) dx = this.facing * Math.abs(dy) * 0.25 || this.facing;
+    else dy = Math.max(dy, 0);
+    if (dx === 0 && dy === 0) dx = this.facing;
     const len = Math.max(1, Math.hypot(dx, dy));
     const vx = Math.round((dx / len) * PELLET_SPEED);
     const vy = Math.round((dy / len) * PELLET_SPEED);
     world.spawn(new EnemyShot(cx - px(3), cy - px(3), vx, vy, PELLET, this));
     world.audio.sfx('fireball');
-  }
-
-  override render(r: Renderer, view: View): void {
-    const open = this.t >= TURRET_SHUT;
-    this.draw(r, view, this.currentFrame, (x, y) => {
-      if (this.mount === 'wall') {
-        const wx = this.facing < 0 ? x + 8 : x;
-        r.rect(wx, y + 1, 8, 14, '#7c7c7c');
-        r.rect(this.facing < 0 ? x + 2 : x + 8, y + 5, 6, 6, open ? '#f83800' : '#404040');
-      } else {
-        r.rect(x + 1, y + 10, 14, 6, '#7c7c7c');
-        r.rect(x + 3, y + (open ? 3 : 6), 10, open ? 8 : 5, '#bcbcbc');
-        if (open) r.rect(x + 6, y + 5, 4, 3, '#f83800');
-      }
-    });
   }
 }
 
@@ -354,17 +339,6 @@ export class Drone extends Robot {
       }
     }
     this.currentFrame = `drone-${(world.frame >> 2) & 1}`;
-  }
-
-  override render(r: Renderer, view: View): void {
-    const blade = (view.frame >> 2) & 1;
-    this.draw(r, view, this.currentFrame, (x, y) => {
-      r.rect(x + (blade ? 1 : 4), y, blade ? 14 : 8, 2, '#bcbcbc');
-      r.rect(x + 7, y + 2, 2, 2, '#7c7c7c');
-      r.rect(x + 2, y + 4, 12, 8, '#0078f8');
-      r.rect(x + (this.facing > 0 ? 9 : 4), y + 6, 3, 3, '#f8d878');
-      r.rect(x + 4, y + 12, 8, 2, '#3cbcfc');
-    });
   }
 }
 
@@ -436,12 +410,12 @@ export class EnemyShot extends Entity {
     const x = toPx(this.body.x) - view.camX;
     const y = toPx(this.body.y);
     const { w, h, frame, colors } = this.spec;
-    const fallback = () => {
+    // A station frame (8×8, centred on the body), or two boxes (Dark Mega Man's shots).
+    if (frame) drawStation(r, view.assets, frame, x - ((8 - w) >> 1), y - ((8 - h) >> 1));
+    else {
       r.rect(x, y, w, h, colors[0]);
       r.rect(x + 1, y + 1, Math.max(1, w - 2), Math.max(1, h - 2), colors[1]);
-    };
-    if (frame) drawStation(r, view.assets, frame, x - ((8 - w) >> 1), y - ((8 - h) >> 1), false, fallback);
-    else fallback();
+    }
   }
 }
 
@@ -477,12 +451,33 @@ export class WeaponCapsule extends Entity {
     const x = this.screenX(view);
     const y = this.screenY() + (view.reduceFlashing ? 0 : ((this.age >> 4) & 1) - 1);
     const glow = !view.reduceFlashing && ((this.age >> 3) & 1) === 1;
-    drawStation(r, view.assets, `capsule-${glow ? 1 : 0}`, x, y, false, () => {
-      r.rect(x + 2, y + 2, 12, 12, '#000');
-      r.rect(x + 3, y + 3, 10, 10, glow ? '#fcfcfc' : '#bcbcbc');
-      r.rect(x + 3, y + 7, 10, 2, '#0078f8');
-      r.rect(x + 6, y + 4, 4, 2, '#f83800');
-    });
+    drawStation(r, view.assets, `capsule-${glow ? 1 : 0}`, x, y);
+  }
+}
+
+/* ---------- Decor ---------- */
+
+/**
+ * Station decor (the station sheet's `window`, `console`, `girder`): in front of the bulkhead
+ * plating (tiles) and behind the robots and Mega Man; never collides.
+ */
+export class StationDecor extends Entity {
+  readonly kind = 'station-decor';
+  constructor(
+    readonly frame: string,
+    x: number,
+    y: number,
+  ) {
+    super(x, y, 16, 16);
+    this.despawnMargin = null;
+  }
+
+  update(): void {}
+
+  render(r: Renderer, view: View): void {
+    const x = this.screenX(view);
+    if (x < -64 || x > 272) return;
+    drawStation(r, view.assets, this.frame, x, this.screenY());
   }
 }
 
@@ -538,30 +533,21 @@ export class Shutter extends Entity {
     } else if (this.state === 'closing' && ++this.t >= SHUTTER_FRAMES) this.state = 'shut';
   }
 
-  /** How much of the shutter shows (px of its 32). */
+  /** Segments of the shutter showing (of 2): it opens and shuts a segment at a time, NES style. */
   get shown(): number {
-    if (this.state === 'shut') return 32;
+    if (this.state === 'shut') return 2;
     if (this.state === 'open') return 0;
-    const f = Math.round((this.t / SHUTTER_FRAMES) * 32);
-    return this.state === 'opening' ? 32 - f : f;
+    const half = this.t >= SHUTTER_FRAMES / 2;
+    return this.state === 'opening' ? (half ? 1 : 2) : half ? 2 : 1;
   }
 
   render(r: Renderer, view: View): void {
     const x = this.screenX(view);
     const y = this.screenY();
     const shown = this.shown;
-    // Cover the solid tiles under it whatever they look like, then the slats.
-    if (this.state !== 'open') r.rect(x, y, 16, 32, '#000');
-    for (let i = 0; i < 2; i++) {
-      const top = y + 32 - shown + i * 16;
-      if (top >= y + 32) continue;
-      drawStation(r, view.assets, 'shutter', x, top, false, () => {
-        const h = Math.min(16, y + 32 - top);
-        r.rect(x, top, 16, h, '#7c7c7c');
-        for (let s = 0; s < h; s += 4) r.rect(x, top + s, 16, 1, '#404040');
-        r.rect(x + 7, top, 2, h, '#bcbcbc');
-      });
-    }
+    // The segments still down sit at the bottom; above them the doorway is dark.
+    if (shown < 2 && this.state !== 'open') r.rect(x, y, 16, 32 - shown * 16, '#000');
+    for (let i = 0; i < shown; i++) drawStation(r, view.assets, 'shutter', x, y + 32 - (i + 1) * 16);
   }
 }
 
@@ -573,7 +559,7 @@ export const BURST_FRAMES = 90;
 /**
  * Mega Man's death burst (the classic ring of orbs): two rings of eight `death-orb`s (Mega Man's
  * sheet) flying out from a point, the inner ring at half speed; in Dark Mega Man's palette when
- * `dark`. Drawn as boxes while the sheet is missing.
+ * `dark`.
  */
 export class OrbBurst extends Entity {
   readonly kind = 'orb-burst';
@@ -608,16 +594,7 @@ export class OrbBurst extends Entity {
   }
 
   render(r: Renderer, view: View): void {
-    const sheet = this.dark ? darkSheet(view.assets) : trySheet(view.assets, 'megaman');
-    const big = view.reduceFlashing || ((this.age >> 2) & 1) === 0;
-    for (const o of this.orbs()) {
-      const x = o.x - view.camX - 4;
-      const y = o.y - 4;
-      if (sheet?.frames.has('death-orb')) r.sprite(sheet, 'death-orb', x, y);
-      else {
-        r.rect(x + (big ? 0 : 1), y + (big ? 0 : 1), big ? 8 : 6, big ? 8 : 6, '#6844fc');
-        r.rect(x + 2, y + 2, 4, 4, '#fcfcfc');
-      }
-    }
+    const sheet = this.dark ? darkSheet(view.assets) : view.assets.sheet('megaman');
+    for (const o of this.orbs()) r.sprite(sheet, 'death-orb', o.x - view.camX - 4, o.y - 4);
   }
 }

@@ -9,8 +9,8 @@ id: mm-station
 name: STATION ESCAPE
 world: 3
 stage: 1
-theme: castle
-music: castle
+theme: station
+music: mm-station
 time: 400
 start: 2,12
 startMode: stand
@@ -18,19 +18,19 @@ camera: scroll
 
 [tiles]
 ;; 0              16               32               48               64               80
-................ ................ ................ ................ ..........BB.... B..............B
-................ ................ ................ ................ ..........BB.... B..............B
-................ ................ ................ ................ ..........BB.... B..............B
-................ ................ ................ ................ ..........BB.... B..............B
-................ ................ ................ ................ ..........BB.... B..............B
-................ ................ ................ ................ ..........BB.... B..............B
-................ ................ ................ ................ ..........BB.... B..............B
-................ ................ ................ ................ ..........BB.... B..............B
-................ ................ ................ ................ ..........BB.... B..............B
-................ ........BBB..... ................ ................ ................ B..............B
-................ ................ ................ ................ ................ B..............B
-................ ................ ..BBBB.......... ................ ................ B..............B
-..........BB.... ................ ..BBBB.......... ................ ................ B..............B
+................ ................ ................ ................ ..........BB.... BBBBBBBBBBBBBBBB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+AAAAAAAAAAAAAAAA AAA...AAAAAAAAAA AAAAAAAAAAAAAAA. ..AAAAAA...AAAAA AAAAAAAAAABBAAAA BHHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHBBHHHH BHHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHBBBHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
+HHHHHHHHHHBBHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
 ################ ###...########## ###############. ..######...##### ################ ################
 ################ ###...########## ###############. ..######...##### ################ ################
 
@@ -44,9 +44,36 @@ drone 54 4
 drone 63 5
 hopper 62 12
 turret 66 12
-turret 73 8 mount=wall
+turret 74 9 mount=ceiling
 shutter 80 11
 dark-megaman 91 12
+
+;; Station decor (the station sheet's window, console and girder), by top-left tile; drawn behind
+;; the robots and Mega Man, in front of the plating.
+deco 3 8 kind=window
+deco 7 12 kind=console
+deco 29 8 kind=window
+deco 41 12 kind=console
+deco 37 8 kind=window
+deco 52 8 kind=window
+deco 61 12 kind=console
+deco 66 8 kind=window
+deco 86 3 kind=window
+deco 89 12 kind=console
+deco 81 2 kind=girder
+deco 82 2 kind=girder
+deco 83 2 kind=girder
+deco 84 2 kind=girder
+deco 85 2 kind=girder
+deco 86 2 kind=girder
+deco 87 2 kind=girder
+deco 88 2 kind=girder
+deco 89 2 kind=girder
+deco 90 2 kind=girder
+deco 91 2 kind=girder
+deco 92 2 kind=girder
+deco 93 2 kind=girder
+deco 94 2 kind=girder
 
 [zones]
 scrollStop 81

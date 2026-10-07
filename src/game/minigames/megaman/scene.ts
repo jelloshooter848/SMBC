@@ -17,7 +17,7 @@ import { drawHud } from '../../hud/hud';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import { MiniGameMenuScene } from '../menu';
 import type { MiniGameResult } from '../types';
-import { darkSheet, drawStation, MM_SOUNDS, trySheet } from './art';
+import { drawStation, MM_SOUNDS } from './art';
 import { BOSS_HP, DarkMegaMan } from './dark-megaman';
 import { EnemyShot, Robot, Shutter } from './robots';
 import { stationEntities, stationStage, type StationLayout } from './stage';
@@ -176,7 +176,7 @@ export class StationScene implements Scene {
         input.consumeJumpBuffer();
         if (this.phaseT >= READY_FRAMES) {
           this.setPhase('stage');
-          this.playMusic(MM_SOUNDS.stage());
+          this.playMusic(MM_SOUNDS.stage);
         }
         return;
       case 'item':
@@ -218,7 +218,7 @@ export class StationScene implements Scene {
   private gotSaw(p: Player): void {
     p.scratch.weapons = Math.max(1, p.scratch.weapons ?? 0);
     p.scratch.wsaw = WEAPON_ENERGY;
-    this.game.ctx.audio.sfx(MM_SOUNDS.capsule());
+    this.game.ctx.audio.sfx(MM_SOUNDS.capsule);
     const weapon = this.hint('WEAPON', 'select');
     const use = this.hint('USE WEAPON', 'special');
     // Each line with its key while that fits the banner, else the bare ability.
@@ -287,8 +287,8 @@ export class StationScene implements Scene {
   private startIntro(): void {
     this.setPhase('intro');
     this.bossBar = 0;
-    this.playMusic(MM_SOUNDS.boss());
-    this.game.ctx.audio.sfx(MM_SOUNDS.beam());
+    this.playMusic(MM_SOUNDS.boss);
+    this.game.ctx.audio.sfx(MM_SOUNDS.beam);
     this.say('Dark Mega Man!');
   }
 
@@ -309,7 +309,7 @@ export class StationScene implements Scene {
     if ((this.phaseT - BEAM_FRAMES - 10) % FILL_EVERY !== 0) return;
     if (this.bossBar < BOSS_HP) {
       this.bossBar++;
-      this.game.ctx.audio.sfx(MM_SOUNDS.fill());
+      this.game.ctx.audio.sfx(MM_SOUNDS.fill);
       return;
     }
     this.boss?.wake();
@@ -329,10 +329,10 @@ export class StationScene implements Scene {
 
   private updateWon(): void {
     if (this.phaseT < WIN_BEAM) this.step(NO_INPUT);
-    if (this.phaseT === WIN_JINGLE) this.game.ctx.audio.playJingle(MM_SOUNDS.victory());
+    if (this.phaseT === WIN_JINGLE) this.game.ctx.audio.playJingle(MM_SOUNDS.victory);
     if (this.phaseT === WIN_BEAM) {
       this.player.hidden = true;
-      this.game.ctx.audio.sfx(MM_SOUNDS.beam());
+      this.game.ctx.audio.sfx(MM_SOUNDS.beam);
     }
     if (this.phaseT >= WIN_FRAMES) this.finish('pass');
   }
@@ -378,7 +378,7 @@ export class StationScene implements Scene {
     const x = s.x - 2 - this.world.camera.pxX;
     const yEnd = s.y - 10;
     const y = Math.round(-32 + ((yEnd + 32) * this.phaseT) / BEAM_FRAMES);
-    this.drawBeam(r, x, y, darkSheet(this.game.ctx.assets));
+    this.drawBeam(r, x, y);
   }
 
   /** Mega Man beaming out, up off the screen. */
@@ -386,18 +386,12 @@ export class StationScene implements Scene {
     const b = this.player.body;
     const x = toPx(b.x) - 2 - this.world.camera.pxX;
     const y = toPx(b.y) - 10 - (this.phaseT - WIN_BEAM) * 8;
-    this.drawBeam(r, x, y, trySheet(this.game.ctx.assets, 'megaman'));
+    this.drawBeam(r, x, y);
   }
 
-  private drawBeam(r: Renderer, x: number, y: number, sheet: SpriteSheet | null): void {
-    const f = (this.t >> 2) % 3;
-    drawStation(r, this.game.ctx.assets, `beam-${f}`, x, y, false, () => {
-      if (sheet?.frames.has('teleport-0')) r.sprite(sheet, 'teleport-0', x, y);
-      else {
-        r.rect(x + 5, y, 6, 32, '#3cbcfc');
-        r.rect(x + 7, y, 2, 32, '#fcfcfc');
-      }
-    });
+  /** The teleport streak (station `beam-*`, 16×32) with its top at (x, y). */
+  private drawBeam(r: Renderer, x: number, y: number): void {
+    drawStation(r, this.game.ctx.assets, `beam-${(this.t >> 2) % 3}`, x, y);
   }
 }
 

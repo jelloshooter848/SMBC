@@ -233,13 +233,16 @@ helmet kit (`{ helmet: 1 }`: buster, charge shot, slide, and Rush Coil, which co
 helmet), full 28 hit points on the usual bar, one life, no clock, and a camera that scrolls both
 ways. READY shows first (Mega Man cannot move, the press that started the round never jumps).
 
-- **The stage** (five screens, theme `castle` until the `station` theme lands): floor, steps, three
-  three-tile pits, and the robots, each a station `Robot` (an `Enemy` with hit points that blows up
+- **The stage** (five screens, theme `station`: steel floor, bulkhead plating behind a corridor
+  band, space above, the station sheet's windows, consoles and girders as `deco` entities drawn in
+  front of the plating): floor, steps, three three-tile pits, and the robots (the station sheet's
+  frames; they face left and are flipped to face right; a hit flashes them in `station-flash`), each a station `Robot` (an `Enemy` with hit points that blows up
   in a small explosion and drops from Mega Man's own drop table, an E-tank turned into a big health
   pellet since the round has no pause menu to use one from):
   **Hopper** (3 HP: crouches, then hops toward Mega Man, short and tall in turn),
-  **Turret** (3 HP: on the floor or hung on a wall's side; shut, its armour turns shots away; it
-  opens and fires a burst of three pellets aimed at Mega Man, a floor turret never aims down) and
+  **Turret** (3 HP: on the floor, or hung upside down under a ceiling; shut, its armour turns
+  shots away; it opens and fires a burst of three pellets aimed at Mega Man, a floor turret never
+  aims down, a ceiling turret never up) and
   **Drone** (2 HP: sways in a sine while drifting over, dives straight down on Mega Man when he
   stands below it, never at him mid-jump, and climbs back). Pellets take 2 hit points, a robot's
   touch Mega Man's usual 4.
@@ -255,7 +258,7 @@ ways. READY shows first (Mega Man cannot move, the press that started the round 
   Dark Mega Man beams down, then his bar fills one segment every 3 frames with a `boss-fill` tick,
   NES style, while Mega Man waits (input ignored); the fight starts when it is full.
 - **Dark Mega Man** (`dark-megaman.ts`): Mega Man's body, moves (walk, jump, slide speeds from
-  `MEGAMAN_PROFILE`) and sprites in palette `megaman-dark` (until it exists, `megaman~brainwashed`).
+  `MEGAMAN_PROFILE`) and sprites in palette `megaman-dark`; his shots are dark violet boxes.
   28 HP shown as a third bar beside Mega Man's health and weapon bars (red). A seeded pattern
   (`BOSS_SEED`, it reads only the fight, so the same inputs replay the same fight; `log` records it):
   short stands between moves (his tell), runs toward or away, jumps, three-shot buster volleys, a
@@ -269,9 +272,9 @@ ways. READY shows first (Mega Man cannot move, the press that started the round 
   of eight) with "DARK MEGA MAN IS BEATEN!", the victory jingle, Mega Man beams out, then `pass`.
   Mega Man at 0 hit points or in a pit: `fail` once the death has played. Menu (`StationMenuScene`)
   Give up: `quit`. `done` is called once; `game.state` is never touched.
-- Music `mm-station` on the stage and `mm-boss` from the boss's entrance; sounds `boss-fill`, `beam`,
-  `capsule`. Until the station art and music land, `art.ts` falls back (rectangles for the station
-  frames, `castle` / `keeper` / `castle-clear` songs, `timer-tick` / `magic` / `item-get` sounds).
+- Music `mm-station` on the stage and `mm-boss` from the boss's entrance, `castle-clear` for the
+  win; sounds `boss-fill` (each bar notch), `beam` (his entrance, Mega Man's exit), `capsule`
+  (`art.ts` names them all).
 - Touch labels: Mega Man's level labels while he plays (`levelTouchLabels`: JUMP, SHOOT, the
   weapon's name, WEAPON with two or more), only MENU while READY, the capsule, the gate and the
   entrance run, none once the round is decided. Dev assists: No damage keeps every hit point (a pit
@@ -279,16 +282,16 @@ ways. READY shows first (Mega Man cannot move, the press that started the round 
   Mini games.
 - **World hook** `WorldStart.extraEntities(spawn, world)`: a mini game's own entity types without a
   case in `makeEntity`. Asked first for every spawn: an entity takes it, `null` drops it, `undefined`
-  leaves it to World's own types. The station's `hopper`, `turret` (`mount=wall`, `dir=1`), `drone`
+  leaves it to World's own types. The station's `hopper`, `turret` (`mount=ceiling`), `drone`
   and `capsule` come through it (`stationEntities`).
 
 Difficulty (a "cautious human" sim, `human-sim.test.ts`: `StationBot` with a 15-frame reaction
 delay, robots and shots misjudged by up to 6 px, pauses and jumps a little early; it knows the
 plan, switches to the Saw Disc and fires it, jumps Dark Mega Man's shots; without the saw it uses
 charge shots from afar; `MM_SIM=30 pnpm vitest run megaman/human-sim --silent=false` prints the
-report): with the Saw Disc it wins 100 / 97 / 93 / 90% of 30 seeds at a 12 / 15 / 18 / 21-frame
-reaction, losing about 19-22 of 28 hit points in all (11-13 to Dark Mega Man; a third of the wins
-end on 8 or less). With the buster alone: 97 / 90 / 27 / 13%, so the weakness matters for slower
+report): with the Saw Disc it wins 93 / 93 / 93 / 97% of 30 seeds at a 12 / 15 / 18 / 21-frame
+reaction, losing about 20-22 of 28 hit points in all (about 12 to Dark Mega Man; half the wins end
+on 8 or less). With the buster alone: 90 / 80 / 23 / 20%, so the weakness matters for slower
 players.
 
 ## Hero training (optional practice rooms)

@@ -3,7 +3,7 @@ import { parseTextMap } from '../../level/textmap';
 import type { EntitySpawn, LevelData } from '../../level/schema';
 import type { Entity } from '../../entities/entity';
 import type { Player } from '../../entities/player';
-import { Drone, Hopper, Turret, WeaponCapsule } from './robots';
+import { Drone, Hopper, StationDecor, Turret, WeaponCapsule } from './robots';
 import source from './stage.map?raw';
 
 /** Where the station's fixed pieces are (tiles). */
@@ -52,9 +52,10 @@ export interface StationHooks {
 }
 
 /**
- * World's `extraEntities` for the station: `hopper`, `turret` (`mount=wall` hangs it on a wall,
- * `dir=1` faces it right; a wall turret faces left by default), `drone` and `capsule`, each at the
- * tile its feet stand in (a drone's and a wall turret's top tile). Anything else is World's.
+ * World's `extraEntities` for the station: `hopper`, `turret` (`mount=ceiling` hangs it upside
+ * down under a ceiling), `drone` and `capsule`, each at the tile its feet stand in (a drone's and a
+ * ceiling turret's own tile), and `deco kind=window|console|girder`
+ * (station decor, by its top-left tile). Anything else is World's.
  */
 export function stationEntities(hooks: StationHooks): (s: EntitySpawn) => Entity | undefined {
   return (s) => {
@@ -64,12 +65,13 @@ export function stationEntities(hooks: StationHooks): (s: EntitySpawn) => Entity
       case 'hopper':
         return new Hopper(x + px(1), feet - px(14));
       case 'turret': {
-        const wall = s.props?.mount === 'wall';
-        const dir = Number(s.props?.dir ?? -1) < 0 ? -1 : 1;
-        return new Turret(x, wall ? tileToSub(s.y) : feet - px(16), wall ? 'wall' : 'floor', dir);
+        const ceiling = s.props?.mount === 'ceiling';
+        return new Turret(x, ceiling ? tileToSub(s.y) : feet - px(16), ceiling ? 'ceiling' : 'floor', -1);
       }
       case 'drone':
         return new Drone(x + px(1), tileToSub(s.y));
+      case 'deco':
+        return new StationDecor(String(s.props?.kind ?? 'girder'), x, tileToSub(s.y));
       case 'capsule':
         return new WeaponCapsule(x, feet - px(16), (p) => hooks.onCapsule(p));
       default:

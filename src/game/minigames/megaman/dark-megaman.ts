@@ -384,17 +384,15 @@ export class DarkMegaMan extends Enemy {
     const sheet = darkSheet(view.assets);
     const b = this.body;
     const sliding = this.state === 'slide';
-    const x = toPx(b.x) - view.camX - 2;
-    const y = toPx(b.y) - (sliding ? 20 : 10);
-    if (sheet) {
-      // A charge glows: Mega Man's charge palettes over the dark armour every few frames.
-      r.sprite(sheet, this.frame(), x, y, this.facing < 0);
-      if (this.state === 'charge' && !view.reduceFlashing && (view.frame & 4) === 0)
-        r.rect(toPx(b.x) - view.camX + (this.facing > 0 ? 12 : -4), toPx(b.y) + 8, 4, 4, '#f878f8');
-      return;
-    }
-    // No sheet at all (headless or a stub): a dark box with red eyes.
-    r.rect(toPx(b.x) - view.camX, toPx(b.y), toPx(b.w), toPx(b.h), '#24188c');
-    r.rect(toPx(b.x) - view.camX + (this.facing > 0 ? 7 : 2), toPx(b.y) + 4, 3, 2, '#f83800');
+    r.sprite(
+      sheet,
+      this.frame(),
+      toPx(b.x) - view.camX - 2,
+      toPx(b.y) - (sliding ? 20 : 10),
+      this.facing < 0,
+    );
+    // A charge glows at his arm cannon.
+    if (this.state === 'charge' && !view.reduceFlashing && (view.frame & 4) === 0)
+      r.rect(toPx(b.x) - view.camX + (this.facing > 0 ? 12 : -4), toPx(b.y) + 8, 4, 4, '#f878f8');
   }
 }

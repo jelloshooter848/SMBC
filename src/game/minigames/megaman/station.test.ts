@@ -18,7 +18,9 @@ import { MAX_HP, MEGAMAN } from '@game/characters/megaman';
 import { T } from '@game/level/tiles';
 import { miniGameFor } from '..';
 import { MEGAMAN_MINIGAME } from '.';
-import { MM_SOUNDS, songOr, sfxOr } from './art';
+import { DARK_PALETTE, FLASH_PALETTE, MM_SOUNDS } from './art';
+import { stationDef, stationPalettes } from '@content/sprites/station';
+import { megamanDef, megamanPalettes } from '@content/sprites/megaman';
 import { stationEntities, stationStage } from './stage';
 import {
   BANNER_COLS,
@@ -85,7 +87,7 @@ class TextRenderer implements Renderer {
   }
 }
 
-/** Sheets with no frames: everything draws its fallback boxes. */
+/** Sheets with no frames: drawing records only the boxes (bars, bands), so the text can be read back. */
 const STUB_ASSETS = {
   sheet: () => ({ id: 'stub', image: null, frames: new Map() }),
   has: () => false,
@@ -129,23 +131,34 @@ describe('Station Escape: the mini game contract', () => {
     expect(rules).not.toMatch(/\b[ABXYZC] BUTTON|\bPRESS [ABXYZC]\b/);
   });
 
-  it("uses the station's songs and sounds by name, falling back to ones that exist until they land", () => {
+  it("uses the station's songs, sounds, frames and palettes (they exist)", () => {
     const songIds = songs.map((s) => s.id);
     const sfxIds = sfx.map((s) => s.id);
-    for (const id of [MM_SOUNDS.stage(), MM_SOUNDS.boss(), MM_SOUNDS.victory()])
-      expect(songIds).toContain(id);
-    for (const id of [MM_SOUNDS.fill(), MM_SOUNDS.beam(), MM_SOUNDS.capsule()]) expect(sfxIds).toContain(id);
-    expect(songOr('no-such-song', 'castle')).toBe('castle');
-    expect(sfxOr('coin', 'bump')).toBe('coin');
-  });
-
-  it('draws without the station art: no sheet, no dark palette, no frames (fallback boxes)', () => {
-    const h = stationHarness({ assets: STUB_ASSETS });
-    const r = new TextRenderer();
-    const boss = toFight(h);
-    h.world.spawn(new OrbBurst(boss.body.x, boss.body.y, true));
-    expect(() => h.game.scenes.render(r)).not.toThrow();
-    expect(r.rects.length).toBeGreaterThan(50);
+    for (const id of [MM_SOUNDS.stage, MM_SOUNDS.boss, MM_SOUNDS.victory]) expect(songIds).toContain(id);
+    for (const id of [MM_SOUNDS.fill, MM_SOUNDS.beam, MM_SOUNDS.capsule]) expect(sfxIds).toContain(id);
+    for (const f of [
+      'hopper-0',
+      'hopper-1',
+      'turret-0',
+      'turret-1',
+      'drone-0',
+      'drone-1',
+      'pellet',
+      'capsule-0',
+      'capsule-1',
+      'shutter',
+      'beam-0',
+      'beam-1',
+      'beam-2',
+      'window',
+      'console',
+      'girder',
+    ])
+      expect(Object.keys(stationDef.frames)).toContain(f);
+    expect(Object.keys(stationPalettes)).toContain(FLASH_PALETTE);
+    expect(Object.keys(megamanPalettes)).toContain(DARK_PALETTE);
+    expect(Object.keys(megamanDef.frames)).toContain('death-orb');
+    expect(stationStage().level.theme).toBe('station');
   });
 });
 
@@ -174,7 +187,7 @@ describe('Station Escape: the stage', () => {
     expect(count('turret')).toBe(3);
     expect(count('drone')).toBe(3);
     expect(count('capsule')).toBe(1);
-    expect(level.entities.find((e) => e.props?.mount === 'wall')?.type).toBe('turret');
+    expect(level.entities.find((e) => e.props?.mount === 'ceiling')?.type).toBe('turret');
     // The camera stops at the shutter until it opens.
     expect(level.zones).toContainEqual({ kind: 'scrollStop', x: 81 });
   });
@@ -235,7 +248,7 @@ describe('Station Escape: the stage', () => {
     expect(h.log.music).toEqual([]);
     h.step(['right'], 10);
     expect(h.scene.player.body.x).toBeGreaterThan(x);
-    expect(h.log.music).toEqual([MM_SOUNDS.stage()]);
+    expect(h.log.music).toEqual([MM_SOUNDS.stage]);
     expect(h.said[0]).toMatch(/Station escape.*Dark Mega Man.*Ready!/);
   });
 });
@@ -357,7 +370,7 @@ describe('Station Escape: the weapon capsule', () => {
     expect(p.scratch.weapons).toBe(1);
     expect(MEGAMAN.tools?.(p).map((t) => t.id)).toContain('saw');
     expect(h.world.entities.some((e) => e instanceof WeaponCapsule && e.alive)).toBe(false);
-    expect(h.log.sfx).toContain(MM_SOUNDS.capsule());
+    expect(h.log.sfx).toContain(MM_SOUNDS.capsule);
     const lines = h.scene.banner?.lines ?? [];
     expect(lines[0]).toBe('YOU GOT SAW DISC!');
     expect(lines.join(' ')).toMatch(/WEAPON.*SWITCH/);
@@ -415,14 +428,14 @@ describe('Station Escape: the boss gate', () => {
     ready(h);
     warp(h, 1250);
     for (let i = 0; i < 500 && h.scene.phase !== 'intro'; i++) h.step(['right']);
-    expect(h.log.music.at(-1)).toBe(MM_SOUNDS.boss());
+    expect(h.log.music.at(-1)).toBe(MM_SOUNDS.boss);
     expect(h.said.at(-1)).toBe('Dark Mega Man!');
     const p = h.scene.player;
     const x = p.body.x;
     h.step(['left', 'attack'], BEAM_FRAMES);
     expect(h.scene.boss).toBeInstanceOf(DarkMegaMan);
     const bars: number[] = [];
-    const fills = () => h.log.sfx.filter((s) => s === MM_SOUNDS.fill()).length;
+    const fills = () => h.log.sfx.filter((s) => s === MM_SOUNDS.fill).length;
     const before = fills();
     for (let i = 0; i < 200 && h.scene.phase === 'intro'; i++) {
       h.step(['left', 'jump', 'attack']);
@@ -559,8 +572,8 @@ describe('Station Escape: outcomes', { timeout: 60_000 }, () => {
     const frames = h.play(new StationBot(SHARP));
     expect(h.results).toEqual(['pass']);
     expect(frames).toBeLessThan(4000);
-    expect(h.log.jingles).toContain(MM_SOUNDS.victory());
-    expect(h.log.sfx.filter((s) => s === MM_SOUNDS.beam()).length).toBeGreaterThanOrEqual(2);
+    expect(h.log.jingles).toContain(MM_SOUNDS.victory);
+    expect(h.log.sfx.filter((s) => s === MM_SOUNDS.beam).length).toBeGreaterThanOrEqual(2);
     expect(h.said).toContain('Dark Mega Man is beaten! The spell on Mega Man breaks.');
     for (let i = 0; i < 600; i++) h.step(i % 7 === 0 ? ['start'] : []);
     expect(h.results).toEqual(['pass']);
