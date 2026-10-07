@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.16] - 2026-10-07
+
 ### Changed
 
 - Escape the Shadow Keep (Link) is rebuilt as a true Zelda dungeon:
@@ -504,7 +506,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.15...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.16...HEAD
+[0.4.16]: https://github.com/jelloshooter848/SMBC/compare/v0.4.15...v0.4.16
 [0.4.15]: https://github.com/jelloshooter848/SMBC/compare/v0.4.14...v0.4.15
 [0.4.14]: https://github.com/jelloshooter848/SMBC/compare/v0.4.13...v0.4.14
 [0.4.13]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...v0.4.13
