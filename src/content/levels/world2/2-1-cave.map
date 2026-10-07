@@ -1,0 +1,39 @@
+id: 2-1-cave
+name: WORLD 2-1
+world: 2
+stage: 1
+theme: underground
+music: underground
+time: inherit
+start: 1,12
+startMode: stand
+camera: locked
+parent: 2-1
+
+;; The Moblin's hidden cave (0.4.10, campaign only): reached by jumping over 2-1's flagpole without
+;; touching it and walking on past the castle into the cave mouth at the level's end. The Moblin,
+;; between two fires as in a Zelda cave, is surprised to be found and tells his secret: the level
+;; ends with 2-1 cleared and World 2's Top Secret Area found (docs/WORLD_MAP.md).
+
+[tiles]
+;; 0
+................
+................
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+...............B
+...............B
+################
+################
+
+[entities]
+cave-fire 7 12
+moblin 9 12 secret=bonus-2 next=2-2-intro
+cave-fire 11 12

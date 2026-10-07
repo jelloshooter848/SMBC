@@ -14,6 +14,9 @@ export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star' | 'poison' | 'c
 /** The kinds that are the original's Mushroom (red, ST_GREEN and ST_POISON), with its gBounceHit. */
 const MUSHROOMS: ReadonlySet<PowerUpKind> = new Set(['mushroom', '1up', 'poison']);
 
+/** A hatched item's hop (PowerUp.hopOut), as a bumped mushroom's pop. */
+const HOP_VY = BUMP_POP_VY;
+
 /** An item rising out of a block, then behaving per kind. */
 export class PowerUp extends Entity {
   readonly kind = 'powerup';
@@ -32,6 +35,23 @@ export class PowerUp extends Entity {
     this.layer = 'back';
     this.spriteOffsetX = 2;
     this.body.vx = 0;
+  }
+
+  /**
+   * An item already out (no rise from a block) hopping up from feet at (`cx`, `feet`) (subpixels,
+   * its body centred on `cx`), then behaving per kind: the 1-up hatched from a Yoshi egg
+   * (objects/yoshi-egg.ts) hops out and runs off to the right like any mushroom.
+   */
+  static hopOut(cx: number, feet: number, item: PowerUpKind): PowerUp {
+    const p = new PowerUp(0, 0, item);
+    p.emerging = 0;
+    p.layer = 'main';
+    p.body.x = cx - (p.body.w >> 1);
+    p.body.y = feet - p.body.h;
+    p.body.vx = item === 'flower' || item === 'clock' ? 0 : 0x01000;
+    p.body.vy = -HOP_VY;
+    p.bounced = true;
+    return p;
   }
 
   /**

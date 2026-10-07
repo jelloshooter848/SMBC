@@ -9,6 +9,7 @@ import {
   rivets,
 } from './contra-tiles';
 import { bmDungeonTileFrames, sophiaTilePalettes, underworldFrames } from './sophia-tiles';
+import { smwSecretTileFrames, smwSecretTilePalette } from './top-secret';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -295,6 +296,8 @@ export const tilePalettes: Record<string, string[]> = {
   ...contraTilePalettes,
   // Sophia's Underworld cavern and the dungeon's metal (sophia-tiles.ts).
   ...sophiaTilePalettes,
+  /* The Top Secret Area (0.4.10): warm dirt under Super Mario World-style grass. */
+  'tiles-smw-secret': smwSecretTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2152,6 +2155,8 @@ export const tilesDef: SpriteDef = {
     ...themed(contraJungleFrames, 'contra-jungle'),
     ...themed(contraFallsFrames, 'contra-falls'),
     ...themed(alienLairFrames, 'alien-lair'),
+    // The Top Secret Area: grass-topped dirt and a used block of its own.
+    ...themed(smwSecretTileFrames, 'smw-secret'),
     // The jungle's `?` blocks are the SMB blocks with steel corner rivets; its coins and flagpole
     // are SMB's own, kept as they are so they read at a glance.
     'question-0@contra-jungle': rivets(question0),

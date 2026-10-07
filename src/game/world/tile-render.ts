@@ -68,6 +68,12 @@ function drawCracked(r: Renderer, view: View, sheet: SpriteSheet, x: number, y: 
   r.rect(x + 10, y + 7, 4, 1, crack);
 }
 
+/**
+ * Themes whose sky is so light the white HUD letters would sink into it: the HUD outlines every
+ * text in black there (HudOptions.outline). The Top Secret Area's cream.
+ */
+export const LIGHT_SKIES: ReadonlySet<string> = new Set(['smw-secret']);
+
 /** Themes whose black sky has stars in it (Bill's jungle, as NES Contra's first stage). */
 export const STARRY_SKIES: ReadonlySet<string> = new Set(['contra-jungle']);
 
@@ -128,4 +134,6 @@ export const SKY: Record<string, string> = {
   underworld: '#100400',
   // The overhead dungeon's metal: black between the walls.
   'bm-dungeon': '#000000',
+  // The Top Secret Area: Super Mario World's pale cream behind the hills.
+  'smw-secret': '#f8ecc0',
 };

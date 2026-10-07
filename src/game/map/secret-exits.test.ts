@@ -4,7 +4,7 @@ import { hasSecretExit, secretExitLevels, secretExitsIn } from './secret-exits';
 
 /** A made-up level: only the id, the parent and the zones matter to the rule. */
 const lvl = (id: string, zones: Zone[], parent: string | null = null): LevelData =>
-  ({ id, parent, zones }) as unknown as LevelData;
+  ({ id, parent, zones, entities: [] }) as unknown as LevelData;
 const pipe = (level: string): Zone => ({
   kind: 'pipe',
   x: 1,
@@ -65,8 +65,20 @@ describe('secretExitLevels', () => {
   const smb = () => [...secretExitLevels()].filter((id) => !id.startsWith('ll-')).sort();
   const lost = () => [...secretExitLevels()].filter((id) => id.startsWith('ll-')).sort();
 
-  it('SMB: 1-2 (warp zone) and 4-2 (two warp zones) only', () => {
-    expect(smb()).toEqual(['1-2', '4-2']);
+  it("SMB: 1-2 (warp zone), 2-1 (the Moblin's secret, 0.4.10) and 4-2 (two warp zones) only", () => {
+    expect(smb()).toEqual(['1-2', '2-1', '4-2']);
+  });
+
+  it("someone who ends an area with a secret (2-1's cave Moblin) counts for its main level", () => {
+    const moblin = {
+      ...lvl('1-1-cave', [], '1-1'),
+      entities: [{ type: 'moblin', x: 9, y: 12, props: { secret: 'k' } }],
+    };
+    expect([...world([], [moblin as LevelData])]).toEqual(['1-1']);
+  });
+
+  it("the way back to the map (MAP_EXIT, the Top Secret Area's pipe) is no exit", () => {
+    expect([...world([pipe('map')])]).toEqual([]);
   });
 
   it('Lost Levels: every level with a warp zone, in it or in one of its areas', () => {

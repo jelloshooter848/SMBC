@@ -8,6 +8,16 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- A secret in 2-1 (campaign): get over the flagpole without touching it (a hidden block lays a cloud
+  path) and a Moblin in a cave past the castle shows you a secret path: "IT'S A SECRET TO
+  EVERYBODY." It opens World 2's hidden spot, the Top Secret Area, with five ? blocks (two Fire
+  Flowers, a Yoshi egg that hatches a 1-up for now, two Mushrooms) that refill on every visit.
+- Dev mode: a Safety floor assist. Deadly pits get an invisible floor at the pit's rim and lava turns
+  solid, so testing a level can't end in a fall. Falls that lead somewhere (coin heavens, the 7-3
+  bridge, the 5-4 lift ride) still work.
+
 ## [0.4.9] - 2026-10-07
 
 ### Added

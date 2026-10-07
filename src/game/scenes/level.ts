@@ -2,10 +2,11 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { px } from '@engine/math/units';
-import type { LevelData } from '../level/schema';
+import { MAP_EXIT, type LevelData } from '../level/schema';
 import { freshSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
 import { drawHud } from '../hud/hud';
+import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
 import { startHp } from '../characters/character';
 import type { Game } from './game';
@@ -29,6 +30,20 @@ export const CRYSTAL_BALL_CARD: readonly string[] = [
   'WHERE YOUR FRIENDS',
   'ARE HIDDEN!',
 ];
+
+/**
+ * The Moblin's cards in 2-1's hidden cave (0.4.10, owner design), each line at most 28 columns
+ * (CARD_COLS), font characters only.
+ */
+export const MOBLIN_CARDS: readonly (readonly string[])[] = [
+  ['...!'],
+  ['YOU FOUND ME?!'],
+  ["I'LL SHOW YOU A SECRET", 'PATH... AS LONG AS YOU', "DON'T TELL ANYONE."],
+  ["IT'S A SECRET TO", 'EVERYBODY.'],
+];
+
+/** Said when a hidden path's block is bumped (World.layPath). */
+export const PATH_SAID = 'A path of clouds appears.';
 
 /** The clock to keep when moving between two areas: only within the same world and stage. */
 export function carryTime(from: LevelData, to: LevelData, time: number | null): number | undefined {
@@ -169,6 +184,12 @@ export class LevelScene implements Scene {
       case 'crystal-ball':
         this.takeCrystalBall(ev.next);
         break;
+      case 'moblin':
+        this.meetMoblin(ev.secret, ev.next);
+        break;
+      case 'path':
+        game.deps.announcer?.say(PATH_SAID);
+        break;
       case 'anchor':
         game.deps.announcer?.say(`${ANCHOR_SAID} Climb its chain: ${abilityHint(game, 'UP', 'up')}.`);
         break;
@@ -179,6 +200,15 @@ export class LevelScene implements Scene {
         break;
       }
       case 'pipe': {
+        // The way back to the map (the Top Secret Area's pipe): nothing is cleared.
+        if (ev.target.level === MAP_EXIT) {
+          game.state.checkpoint = null;
+          game.state.time = null;
+          if (game.playtestDone) game.playtestDone();
+          else if (game.campaign) game.returnToMap();
+          else game.showTitle();
+          break;
+        }
         // Campaign: a secret warp zone's one pipe (level/campaign.ts) ends the level on the map.
         if (ev.target.secret && game.campaign) {
           game.state.checkpoint = null;
@@ -318,6 +348,53 @@ export class LevelScene implements Scene {
     );
   }
 
+  /**
+   * The Moblin in 2-1's hidden cave saw a player (objects/moblin.ts): his cards over the frozen
+   * cave, one after another (each read out, OK to go on), the secret jingle on the last; then in
+   * the campaign the Top Secret exit (Game.campaignTopSecret: 2-1 cleared and `secret` found, so
+   * both roads draw in on the map). A play-test ends; elsewhere play goes on to `next`.
+   */
+  private meetMoblin(secret: string, next: string | null): void {
+    const game = this.game;
+    const audio = game.ctx.audio;
+    audio.stopMusic();
+    game.state.checkpoint = null;
+    game.state.time = null;
+    const end = () => {
+      if (game.playtestDone) game.playtestDone();
+      else if (game.campaign) game.campaignTopSecret(secret, this.level.id);
+      else if (next) game.goToLevel(next, { mode: 'stand' });
+      else game.showTitle();
+    };
+    const show = (i: number) => {
+      const lines = MOBLIN_CARDS[i] as readonly string[];
+      const last = i === MOBLIN_CARDS.length - 1;
+      if (last) audio.sfx('secret');
+      game.deps.announcer?.say(`${lines.join(' ')} ${last ? 'OK to continue.' : 'OK.'}`);
+      game.scenes.push(
+        new CardScene(
+          game,
+          lines,
+          () => {
+            game.scenes.pop();
+            if (last) end();
+            else show(i + 1);
+          },
+          this.world,
+          3600,
+          // In a box at the top, so the Moblin and his fires on the floor stay in view.
+          {
+            panel: true,
+            top: true,
+            keys: ['start', 'attack', 'jump'],
+            prompt: () => abilityHint(game, 'OK', 'jump'),
+          },
+        ),
+      );
+    };
+    show(0);
+  }
+
   private handleDebugKeys(): void {
     const keys = this.game.deps.debugKeys;
     if (!keys) return;
@@ -336,6 +413,9 @@ export class LevelScene implements Scene {
     const time = this.world.timeHidden ? null : this.world.time;
     drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players, {
       covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
+      // A fill-up spot (the Top Secret Area) shows its name instead of WORLD and TIME.
+      ...(this.level.bonus ? { area: this.level.name } : {}),
+      outline: LIGHT_SKIES.has(this.world.level.theme),
     });
     this.tutorial?.render(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
