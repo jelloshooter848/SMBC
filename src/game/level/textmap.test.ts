@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { parseTextMap, serializeTextMap, MapParseError } from './textmap';
-import { T } from './tiles';
+import { T, editorTiles, tileDef } from './tiles';
+import { getLevel } from '@content/levels';
+import { campaignLevel } from './campaign';
 
 const small = (rows: string[], extra = '') =>
   [
@@ -114,5 +116,38 @@ describe('textmap parser', () => {
     expect(again.entities).toEqual(lvl.entities);
     expect(again.zones).toEqual(lvl.zones);
     expect(again.decor).toEqual(lvl.decor);
+  });
+});
+
+describe('the editor palette and save files (0.4.12)', () => {
+  it('every tile the editor offers survives a save and reload', () => {
+    const ids = editorTiles();
+    expect(ids).not.toContain(T.AIR);
+    expect(ids).not.toContain(T.BUMPING);
+    // the one-way cloud ledge has no map character: only a campaign `ledge` zone or a `one-way`
+    // path lays it, so the editor does not offer it
+    expect(ids).not.toContain(T.CLOUD_LEDGE);
+    const width = ids.length;
+    const src = [
+      'id: palette',
+      'start: 0,12',
+      '[tiles]',
+      ...Array.from({ length: 15 }, () => '.'.repeat(width)),
+    ].join('\n');
+    const level = parseTextMap(src);
+    const tiles = new Uint16Array(level.tiles);
+    ids.forEach((id, x) => (tiles[5 * width + x] = id));
+    const back = parseTextMap(serializeTextMap({ ...level, tiles }));
+    ids.forEach((id, x) => expect(back.tiles[5 * width + x], tileDef(id).name).toBe(id));
+  });
+
+  it("a campaign variant's woken ledge writes back as the campaign zone that lays it", () => {
+    const camp = campaignLevel(getLevel('2-1'));
+    expect(camp.zones).toContainEqual({ kind: 'ledge', x: 188, y: 8, w: 2 });
+    const back = parseTextMap(serializeTextMap(camp), '2-1');
+    expect(back.zones).toContainEqual({ kind: 'ledge', x: 188, y: 8, w: 2, campaign: true });
+    // laid again when the written map is played in the campaign
+    const again = campaignLevel(back);
+    for (const x of [188, 189]) expect(again.tiles[8 * again.width + x]).toBe(T.CLOUD_LEDGE);
   });
 });

@@ -59,7 +59,8 @@ import { T, isSolid } from './tiles';
  * A `ledge` zone (always marked `campaign`; 2-1's step by its last tower, 0.4.12) is laid by the
  * campaign variant only: its tiles become one-way cloud (T.CLOUD_LEDGE), which a hero lands on
  * from above and passes through from below and the sides. Simon's fixed jump arc reaches the
- * hidden coin block and the tower top from it; a springboard's launch rises through it.
+ * hidden coin block's top from it (and the tower top from there); a springboard's launch rises
+ * through it.
  *
  * A level's campaign LOOK (`LevelData.campaignLook`: the map's `campaignTheme:` and
  * `campaignMusic:` headers and its `[campaign-decor]` section; 7-3 as a Contra jungle stage) is

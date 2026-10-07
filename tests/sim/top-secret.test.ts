@@ -80,7 +80,7 @@ const STEPS = [
   { x: 184, y: 9 },
 ];
 /** The one-way cloud ledge against the last tower (0.4.12, campaign only): Simon's way up. */
-const LEDGE = { x: 188, y: 6, w: 2 };
+const LEDGE = { x: 188, y: 8, w: 2 };
 const INTO_CAVE = { level: '2-1-cave', x: 1, y: 12 };
 const TSA = '2-top-secret';
 const heroes = CHARACTERS.map((c) => [c.name, c] as const);
@@ -349,7 +349,8 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
       // hidden coin block and the tower top, heading right (or standing, or from the bricks and
       // tower jumping back left), jumping at many moments, short and long; bouncing on the
       // springboard (jump pressed as it squashes) or not, and from the cloud ledge by the tower
-      // (0.4.12). Only a deliberate jump back up-left from the coin block (above) finds the block.
+      // (0.4.12: right, standing or back left, with the coin block hidden or shown). Only a
+      // deliberate jump back up-left from the coin block (above) finds the block.
       const coin = coinShown();
       const starts = [
         { name: 'ground 172', level: camp21(), at: { x: 172, y: 12 }, dirs: ['right'] },
@@ -357,8 +358,21 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
         { name: 'bricks', level: camp21(), at: { x: 185, y: 8 }, dirs: ['right', 'none', 'left'] },
         { name: 'coin block', level: coin, at: { x: 186, y: 4 }, dirs: ['right', 'none'] },
         { name: 'tower', level: camp21(), at: { x: 190, y: 2 }, dirs: ['right', 'none', 'left'] },
-        // 0.4.12: the one-way cloud ledge against the tower (Simon's step up).
-        { name: 'ledge', level: coin, at: { x: 188, y: 5 }, dirs: ['right', 'none'] },
+        // 0.4.12: the one-way cloud ledge against the tower (Simon's step up), both its tiles.
+        { name: 'ledge 188', level: camp21(), at: { x: 188, y: 7 }, dirs: ['right', 'none', 'left'] },
+        { name: 'ledge 189', level: camp21(), at: { x: 189, y: 7 }, dirs: ['right', 'none', 'left'] },
+        {
+          name: 'ledge 188 (coin shown)',
+          level: coin,
+          at: { x: 188, y: 7 },
+          dirs: ['right', 'none', 'left'],
+        },
+        {
+          name: 'ledge 189 (coin shown)',
+          level: coin,
+          at: { x: 189, y: 7 },
+          dirs: ['right', 'none', 'left'],
+        },
       ] as const;
       let tries = 0;
       const bumped: string[] = [];
@@ -460,10 +474,11 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
  * Simon's way to the secret (0.4.12, QA of 0.4.10): his committed, fixed-arc jump could bump the
  * hidden block from the hidden coin block but never get onto the tower top or the cloud path (his
  * jumps hit the tower's side; the springboard threw him into it), nor back up once the bump had
- * dropped him on the ground. Campaign 2-1 now has a one-way cloud ledge against the tower (a
- * `ledge` zone: he lands on it off the bricks or coming down from the springboard, and reaches the
- * coin block's top and the tower top from it; the springboard's launch rises through it), and the
- * bump first lays two one-way cloud steps back up to the bricks. Each hero's route below was found
+ * dropped him on the ground. Campaign 2-1 now has a one-way cloud ledge against the tower, a row
+ * over the bricks (a `ledge` zone: he hops onto it off the bricks or lands on it coming down from
+ * the springboard, whose launch rises through it, and jumps from it onto the coin block's top, and
+ * from there to the tower top), and the bump first lays two one-way cloud steps back up to the
+ * bricks. Each hero's route below was found
  * by searching the bot's moves (tests/sim/route-bot.ts) and is replayed from the ground by real
  * inputs: onto the bricks, bump the hidden coin block, onto its top (Simon: by the ledge), bump the
  * hidden block, back up to the tower top, then along the path, over the pole and into the cave.
@@ -539,14 +554,18 @@ const ROUTES: Readonly<Record<string, readonly Move[]>> = {
     { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
     { do: 'exit', jumpAt: 3170 },
   ],
+  // onto the bricks, bump the coin block, hop onto the ledge, onto the coin block's top, bump the
+  // hidden block (landing on the step beside the bricks), the ledge and the coin block's top
+  // again, the tower top, over the pole
   'simon full': [
     { do: 'hop', dir: 1, at: 2918 },
     { do: 'hop', dir: 0, at: 0, from: 2978 },
-    { do: 'hop', dir: 1, at: 2987, from: 2966 },
-    { do: 'hop', dir: -1, at: 3024, from: 3028 },
+    { do: 'hop', dir: 1, at: 2986, from: 2964 },
+    { do: 'hop', dir: -1, at: 3019, from: 3028 },
     { do: 'hop', dir: -1, at: 2965, from: 2984 },
-    { do: 'hop', dir: 1, at: 2987, from: 2966 },
-    { do: 'hop', dir: 1, at: 3006, from: 2997 },
+    { do: 'hop', dir: 1, at: 2986, from: 2964 },
+    { do: 'hop', dir: -1, at: 3019, from: 3028 },
+    { do: 'hop', dir: 1, at: 2987, from: 2978 },
     { do: 'exit', jumpAt: 3178 },
   ],
   'ryu full': [
