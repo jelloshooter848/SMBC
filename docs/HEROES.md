@@ -240,7 +240,12 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   level starts a run (`Game.airship`, an `AirshipRun`) and snapshots the run state as it was
   before (`snapshot()` from free-hero.ts: lives, power, hp, kit, score, coins, 4-2's checkpoint).
   Any other level, the map or the title ends the run. Dev select / `?level=` never start one.
-- **No clock aboard**: `LevelScene` sets the world's time to null (the HUD leaves it blank).
+- **No clock aboard**: `LevelScene` sets the world's time to null (the status bar leaves it blank).
+- **SMB3's status bar** (0.4.14, `hud/smb3-status.ts`): aboard (deck and room, any way in) the
+  level draws SMB3's bar along the bottom (WORLD, the P-meter, coins; the hero's badge and lives,
+  the score, the clock; three end-card slots) instead of the HUD across the top, and its world
+  32 px higher (`renderSmb3World`), so rows 2-14 fill the screen above the bar. The Hammer Bro
+  battle and the bonus games use the same bar.
 - **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
   restarts the deck as it was boarded, or Larry's room once it has been reached (dropping in from
   its ceiling pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)

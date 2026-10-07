@@ -100,6 +100,13 @@ star 5 (SMB3's 2-up, 3-up, 5-up); a mismatch wins nothing. One try. Each strip h
 stars the rarest (`SLOT_STRIPS`); the reels start from the seed. Music `bonus-game`; sounds
 `slot-stop`, `bonus-win`, `bump`.
 
+### The status bar
+
+Every bonus game draws SMB3's status bar (`hud/smb3-status.ts`, as Larry's airship and the Hammer
+Bro battle do) along the bottom 32 px: WORLD, the P-meter (empty here), coins, the hero's badge
+and lives, the score and no clock, and the three end-card slots. The games keep their hints,
+banners and result cards above it (`HINT_Y`, `STATUS_BAR_Y`).
+
 ### Art
 
 The `smb3` sheet (`src/content/sprites/smb3.ts`): `chest-closed`, `chest-open`, `card-back`,

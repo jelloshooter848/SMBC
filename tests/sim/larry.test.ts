@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { SMB3_WORLD_SHIFT } from '@game/hud/smb3-status';
 import { getLevel } from '@content/levels';
 import { T } from '@game/level/tiles';
 import { mapPage } from '@content/worldmap';
@@ -260,7 +261,8 @@ describe("the cabin's look (the SMB3 art)", () => {
     const [s] = larryAt();
     expect(s).toMatchObject({ key: 'smb3', frame: 'larry-0' });
     const b = larry.body;
-    expect(s!.y + 24).toBe((b.y + b.h) >> 8);
+    // The cabin is drawn up out of SMB3's status bar's way (hud/smb3-status.ts).
+    expect(s!.y + 24).toBe(((b.y + b.h) >> 8) - SMB3_WORLD_SHIFT);
     expect(s!.x + 8).toBe((b.x + (b.w >> 1)) >> 8);
     // A fireball: he flashes (the harness has reduce flashing on: blanched without blinking).
     larry.hit({ kind: 'fireball', amount: 1, owner: null, dirX: 1 }, level.world);

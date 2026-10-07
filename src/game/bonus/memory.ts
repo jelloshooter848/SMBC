@@ -4,7 +4,7 @@ import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { Game } from '../scenes/game';
 import { BONUS_MUSIC, BONUS_SFX, CARD_H, CARD_W, drawCard, drawItem } from './art';
-import { BonusScene, centred, fitLine, type BonusResult } from './common';
+import { BonusScene, centred, fitLine, HINT_Y, type BonusResult } from './common';
 import {
   cardPrize,
   MEMORY_COLS,
@@ -17,9 +17,9 @@ import {
 
 /** Grid layout: left edge, top, and the distance between cards. */
 export const GRID_X = 40;
-export const GRID_Y = 56;
+export const GRID_Y = 48;
 export const PITCH_X = 32;
-export const PITCH_Y = 36;
+export const PITCH_Y = 32;
 /** Frames a miss stays face up before turning back. */
 export const MISS_FRAMES = 50;
 
@@ -138,8 +138,8 @@ export class MemoryScene extends BonusScene {
     const font = assets.sheet('font');
     r.clear('#000');
     // A green felt table with a spade-red rim.
-    r.rect(16, 24, 224, 168, '#d82800');
-    r.rect(20, 28, 216, 160, '#00a800');
+    r.rect(16, 24, 224, 146, '#d82800');
+    r.rect(20, 28, 216, 138, '#00a800');
     centred(r, font, 'N-SPADE', 8);
     const b = this.board;
     const left = MEMORY_MISSES - b.misses;
@@ -163,15 +163,12 @@ export class MemoryScene extends BonusScene {
     // The prizes won so far, along the bottom of the table.
     b.found.forEach((f, i) => {
       const x = 28 + i * 20;
-      if (f === 'coin10' || f === 'coin20') drawCard(r, assets, f, x, 164 - 8);
-      else drawItem(r, assets, f, x, 164);
+      if (f === 'coin10' || f === 'coin20') drawCard(r, assets, f, x, 144 - 8);
+      else drawItem(r, assets, f, x, 144);
     });
     if (!this.over && !this.banner) {
       const full = `ARROWS MOVE  ${this.hint('TURN', 'jump')}`;
-      centred(r, font, fitLine(full, 'ARROWS MOVE  TURN'), 216);
-    } else if (!this.over) {
-      const full = this.hint('TURN', 'jump');
-      centred(r, font, full.length <= 30 ? full : 'TURN', 224);
+      centred(r, font, fitLine(full, 'ARROWS MOVE  TURN'), HINT_Y);
     }
   }
 }

@@ -9,7 +9,7 @@ import { freshSeed, World } from '../world/world';
 import { HammerBro } from '../entities/enemies/hammer-bro';
 import { Projectile } from '../entities/projectiles/projectile';
 import { carriedKit } from '../entities/player';
-import { drawHud } from '../hud/hud';
+import { drawSmb3Status, renderSmb3World, smb3Status } from '../hud/smb3-status';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 import { CardScene } from './message';
 import { PauseScene } from './pause';
@@ -126,10 +126,11 @@ export class HammerBattleScene implements Scene {
     return this.over ? NO_TOUCH_BUTTONS : levelTouchLabels(this.world.players[0], this.world);
   }
 
+  /** SMB3's look: the arena above SMB3's status bar (hud/smb3-status.ts), no HUD across the top. */
   render(r: Renderer): void {
-    this.world.render(r);
-    drawHud(r, this.game.ctx.assets, this.game.state, null, this.world.frame, this.world.players, {
-      covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
-    });
+    renderSmb3World(r, this.world);
+    const ctx = this.game.ctx;
+    const status = smb3Status(this.game.state, this.world.player, null);
+    drawSmb3Status(r, ctx.assets, status, this.world.frame, ctx.reduceFlashing);
   }
 }

@@ -5,7 +5,7 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { Game } from '../scenes/game';
 import { wrapText } from '../hud/text';
 import { BONUS_MUSIC, BONUS_SFX, drawChest, drawItem, drawToad } from './art';
-import { BonusScene, centred, drawTextBox, fitLine, type BonusResult } from './common';
+import { BonusScene, centred, drawTextBox, fitLine, HINT_Y, type BonusResult } from './common';
 import { dealChests } from './rules';
 import { ITEM_SPOKEN, type ItemId } from './items';
 
@@ -117,7 +117,7 @@ export class ToadHouseScene extends BonusScene {
       r.rect(x + 1, y + 2, 6, 2, '#fcfcfc');
       r.rect(x + 3, y + 4, 2, 2, '#fcfcfc');
       const full = `LEFT/RIGHT CHOOSE  ${this.hint('OPEN', 'jump')}`;
-      centred(r, font, fitLine(full, 'LEFT/RIGHT CHOOSE  OPEN'), 216);
+      centred(r, font, fitLine(full, 'LEFT/RIGHT CHOOSE  OPEN'), HINT_Y);
     }
   }
 }

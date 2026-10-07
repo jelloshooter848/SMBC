@@ -5,6 +5,7 @@ import { px } from '@engine/math/units';
 import { MAP_EXIT, type LevelData } from '../level/schema';
 import { freshSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
+import { drawSmb3Status, renderSmb3World, smb3Status } from '../hud/smb3-status';
 import { drawHud } from '../hud/hud';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
@@ -409,8 +410,17 @@ export class LevelScene implements Scene {
   }
 
   render(r: Renderer): void {
-    this.world.render(r);
     const time = this.world.timeHidden ? null : this.world.time;
+    // Larry's airship is SMB3's: its status bar along the bottom instead of the HUD on top.
+    if (isAirshipArea(this.level.id)) {
+      renderSmb3World(r, this.world);
+      const ctx = this.game.ctx;
+      const status = smb3Status(this.game.state, this.world.player, time);
+      drawSmb3Status(r, ctx.assets, status, this.world.frame, ctx.reduceFlashing);
+      this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
+      return;
+    }
+    this.world.render(r);
     drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players, {
       covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
       // A fill-up spot (the Top Secret Area) shows its name instead of WORLD and TIME.
