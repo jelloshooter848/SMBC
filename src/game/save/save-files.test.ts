@@ -589,6 +589,14 @@ describe("Larry Koopa's crystal ball and World 4's bonus spot (optional fields, 
       bonusOpen: true,
     });
   });
+
+  it("the Hammer Bro's bonusGuard: kept only while the bonus is used; missing, not out yet", () => {
+    expect(newSave(1, 'mario').bonusGuard).toBe(false);
+    expect(put({ bonusOpen: false })).toMatchObject({ bonusOpen: false, bonusGuard: false });
+    expect(put({ bonusOpen: false, bonusGuard: true })).toMatchObject({ bonusGuard: true });
+    expect(put({ bonusOpen: false, bonusGuard: 'yes' })).toMatchObject({ bonusGuard: false });
+    expect(put({ bonusGuard: true })).toMatchObject({ bonusOpen: true, bonusGuard: false });
+  });
 });
 
 describe('the heroes met (SaveFile.met, optional, 0.5.0: the Mini Game Arena)', () => {

@@ -51,6 +51,7 @@ export function playRound(game: Game, def: DevRound, ended: (result: MiniGameRes
   const cutscene = game.mapCutscene;
   const bonus = structuredClone(game.bonus);
   const bonusOpen = game.bonusOpen;
+  const bonusGuard = game.bonusGuard;
   const inventoryUnlocked = game.inventoryUnlocked;
   const tutorialRun = game.tutorialRun;
   const stageRound = game.stageRound;
@@ -76,6 +77,7 @@ export function playRound(game: Game, def: DevRound, ended: (result: MiniGameRes
     game.mapCutscene = cutscene;
     game.bonus = bonus;
     game.bonusOpen = bonusOpen;
+    game.bonusGuard = bonusGuard;
     game.inventoryUnlocked = inventoryUnlocked;
     game.tutorialRun = tutorialRun;
     game.stageRound = stageRound;

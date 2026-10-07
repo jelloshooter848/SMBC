@@ -83,6 +83,12 @@ export interface SaveFile extends MapProgress {
    * the Hammer Bro guarding its road is beaten (docs/WORLD_MAP.md).
    */
   bonusOpen?: boolean;
+  /**
+   * The used bonus spot's Hammer Bro is out guarding its road: set once a level is entered from
+   * the map after the bonus was used, cleared when he is beaten. Missing (older files): not out
+   * yet, so he comes out after the next level.
+   */
+  bonusGuard?: boolean;
   /*
    * The SMB3 bonus games and item inventory (src/game/bonus, docs/BONUS.md), all optional (missing:
    * empty / 0 / off, no format bump): item ids won (at most 12), the bonus rotation's next game,
@@ -234,6 +240,7 @@ export function newSave(
     met: metIds([], freedHeroes([character, character2], characters), false, characters),
     inventoryUnlocked: false,
     bonusOpen: true,
+    bonusGuard: false,
     ...bonusSaveFields(newBonusState()),
   };
 }
@@ -378,6 +385,7 @@ export function migrateSave(
     // Larry Koopa's crystal ball (secret 'larry') unlocks the inventory.
     inventoryUnlocked: stored.inventoryUnlocked === true || secrets.includes('larry'),
     bonusOpen: stored.bonusOpen !== false,
+    bonusGuard: stored.bonusOpen === false && stored.bonusGuard === true,
     ...bonusSaveFields(bonusStateFrom(stored)),
   };
 }
