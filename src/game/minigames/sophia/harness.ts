@@ -12,6 +12,7 @@ import { recordingAudio } from '../megaman/harness';
 import { SOPHIA_MINIGAME } from '.';
 import { UnderworldScene, type UnderworldOptions } from './scene';
 import { HumanJason, UNDERWORLD_PLAN, type HumanOptions } from './bot';
+import { TankBot, type TankOptions } from './tankbot';
 
 /*
  * Test support for Underworld (not shipped code paths): a real Game with the round pushed over a
@@ -76,10 +77,33 @@ export function underworldHarness(opts: HarnessOptions = {}) {
 
 export type UnderworldHarness = ReturnType<typeof underworldHarness>;
 
-/** One round played by a human-ish bot from the dungeon's first frame: how it ended and what it cost. */
-export function botRun(opts: Partial<HumanOptions> = {}, max = 30000) {
-  const h = underworldHarness({ seed: opts.seed ?? 1, skipCutscene: true });
+/** Which part of the round a run reached or ended in. */
+export type RoundPart = 'cavern' | 'dungeon' | 'boss' | 'end';
+
+/** The tank player that goes with a Jason profile: the same reactions, misjudging and pace. */
+export function tankFor(opts: Partial<HumanOptions>): Partial<TankOptions> {
+  const out: Partial<TankOptions> = { seed: opts.seed ?? 1 };
+  if (opts.reaction !== undefined) out.reaction = opts.reaction;
+  if (opts.aim !== undefined) out.misjudge = opts.aim + (opts.aim > 0 ? 2 : 0);
+  if (opts.tapEvery !== undefined) out.tapEvery = opts.tapEvery;
+  if (opts.hesitate !== undefined) out.hesitate = opts.hesitate;
+  if (opts.reaction === 0) out.margin = 14;
+  return out;
+}
+
+/**
+ * One round played by a human-ish player: the tank's cavern (TankBot), Jason's dungeon
+ * (HumanJason), the Plutonium Boss (TankBot), from the cavern's first frame (`full`) or the
+ * dungeon's (the round without its tank sections). How it ended and what it cost.
+ */
+export function botRun(opts: Partial<HumanOptions> = {}, max = 40000, full = true) {
+  const h = underworldHarness(
+    full
+      ? { seed: opts.seed ?? 1, startInArea: true }
+      : { seed: opts.seed ?? 1, skipCutscene: true, tankHero: null },
+  );
   const bot = new HumanJason(UNDERWORLD_PLAN, opts);
+  const tank = new TankBot(tankFor(opts));
   const td = h.td;
   const deaths: { room: string; doing: string }[] = [];
   const rooms = new Set<string>();
@@ -89,7 +113,36 @@ export function botRun(opts: Partial<HumanOptions> = {}, max = 30000) {
   let topGun = td.jason.gun;
   let gunAtBoss: number | null = null;
   let frames = 0;
+  let tankHits = 0;
+  let tankState = '';
+  const parts: Record<RoundPart, number> = { cavern: 0, dungeon: 0, boss: 0, end: 0 };
   for (; frames < max && h.results.length === 0; frames++) {
+    const s = h.scene;
+    const ph = s.phase;
+    if (ph === 'area' || ph === 'boss') {
+      const w = s.area;
+      if (!w) {
+        h.step();
+        continue;
+      }
+      const p = w.player;
+      const was = p.dead ? 'dead' : p.powerState;
+      h.step(tank.next(w, ph === 'boss' ? s.plutonium : null));
+      parts[ph === 'area' ? 'cavern' : 'boss']++;
+      const now = p.dead ? 'dead' : p.powerState;
+      if (now !== was && (now === 'dead' || (was === 'big' && now === 'small'))) {
+        tankHits++;
+        if (now === 'dead') deaths.push({ room: ph === 'area' ? 'cavern' : 'plutonium', doing: tank.doing });
+      }
+      tankState = now;
+      continue;
+    }
+    if (ph !== 'dungeon') {
+      h.step();
+      if (ph === 'won') parts.end++;
+      continue;
+    }
+    parts.dungeon++;
     const wasDying = td.hero.dying > 0;
     h.step(bot.next(td));
     rooms.add(td.room.id);
@@ -103,22 +156,44 @@ export function botRun(opts: Partial<HumanOptions> = {}, max = 30000) {
     topGun = Math.max(topGun, td.jason.gun);
     if (gunAtBoss === null && h.scene.guardian?.phase === 'shell') gunAtBoss = td.jason.gun;
   }
-  const boss = h.scene.guardian;
+  const guardian = h.scene.guardian;
+  const pluto = h.scene.plutonium;
+  const s = h.scene;
+  const where: RoundPart =
+    s.phase === 'won' || s.phase === 'over'
+      ? h.results[0] === 'pass'
+        ? 'end'
+        : s.plutonium
+          ? 'boss'
+          : s.area
+            ? 'cavern'
+            : 'dungeon'
+      : s.phase === 'area'
+        ? 'cavern'
+        : s.phase === 'boss'
+          ? 'boss'
+          : 'dungeon';
   return {
     result: h.results[0] ?? 'timeout',
-    phase: h.scene.phase,
+    phase: s.phase,
+    where,
     frames,
     seconds: Math.round(frames / 60),
+    parts,
     room: td.room.id,
     rooms: [...rooms],
     deaths,
     lost,
     bossLost,
+    tankHits,
+    tankState,
     topGun,
     gunAtBoss,
-    bossPhase: boss?.phase ?? null,
-    bossHp: boss?.hp ?? null,
-    lives: h.scene.lives,
+    bossPhase: guardian?.phase ?? null,
+    bossHp: guardian?.hp ?? null,
+    plutoPhase: pluto?.phase ?? null,
+    plutoHp: pluto?.hp ?? null,
+    lives: s.lives,
     doing: bot.doing,
   };
 }

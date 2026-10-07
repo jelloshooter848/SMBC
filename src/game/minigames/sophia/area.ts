@@ -5,7 +5,8 @@ import type { LevelData } from '../../level/schema';
 import type { CharacterDef } from '../../characters/character';
 import { CHARACTERS } from '../../characters/registry';
 import type { Player } from '../../entities/player';
-import { newGameState, type GameContext } from '../../context';
+import { newGameState, type GameContext, type GameState } from '../../context';
+import { sophiaState } from '../../characters/sophia/state';
 import { World } from '../../world/world';
 import { cavernEntities } from './cavern';
 import { PlutoniumBoss, type PlutoHooks } from './plutonium';
@@ -56,14 +57,32 @@ export function sophiaDef(characters: readonly CharacterDef[] = CHARACTERS): Cha
   return characters.find((c) => c.id === 'sophia') ?? null;
 }
 
-/**
- * Is the player on foot? Every hero but the tank is; Sophia is when Jason has hopped out
- * (S1's on-foot flag).
- */
+/** Is the player on foot? Every hero but the tank is; Sophia is when Jason has hopped out. */
 export function onFoot(p: Player): boolean {
   if (p.def.id !== 'sophia') return true;
-  const s = p.scratch as Record<string, number | undefined>;
-  return (s.jason ?? 0) > 0;
+  return sophiaState(p).jason !== null;
+}
+
+/**
+ * The tank's kit for the round, chosen so the lessons hold: Hyper (the Mushroom: the hover and
+ * the stronger cannon, and a hit to spare before Normal) with a rack of homing missiles for the
+ * Plutonium Boss's core; never Crusher (the Flower's wall climb would carry her past the cavern's
+ * lessons). Each section and each new life starts with it.
+ */
+export const TANK_POWER = 'big' as const;
+export const TANK_KIT: Readonly<Record<string, number>> = { hasHoming: 1, homing: 8 };
+
+/** One life's fresh state for the tank (or a stand-in) in a side-view section. */
+function tankState(hero: CharacterDef): GameState {
+  const state = newGameState(hero);
+  state.lives = 1;
+  state.world = 8;
+  state.stage = 4;
+  if (hero.id === 'sophia') {
+    state.powerState = TANK_POWER;
+    state.kit = { ...TANK_KIT };
+  }
+  return state;
 }
 
 /** Has the player walked into the gateway's doorway (on foot)? */
@@ -82,10 +101,7 @@ export interface AreaOptions {
 /** A World for the cavern, played as `hero` with one life's fresh state. */
 export function newArea(ctx: GameContext, hero: CharacterDef, opts: AreaOptions = {}): World {
   const layout = areaStage();
-  const state = newGameState(hero);
-  state.lives = 1;
-  state.world = 8;
-  state.stage = 4;
+  const state = tankState(hero);
   const world = new World(layout.level, ctx, state, {
     seed: opts.seed ?? 0x5091a,
     scorePopups: false,
@@ -120,10 +136,7 @@ export function newBossRoom(
   hooks: PlutoHooks = {},
   seed = 0x9107,
 ): { world: World; boss: PlutoniumBoss } {
-  const state = newGameState(hero);
-  state.lives = 1;
-  state.world = 8;
-  state.stage = 4;
+  const state = tankState(hero);
   const world = new World(bossStage(), ctx, state, { seed, scorePopups: false });
   world.time = null;
   world.camera.locked = true;

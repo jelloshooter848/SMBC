@@ -384,7 +384,7 @@ function drawn(h: ReturnType<typeof underworldHarness>): string[] {
 }
 
 describe('Underworld: the round', () => {
-  it('opens on the cutscene (skippable with JUMP or SHOOT, announced with how to skip), then the dungeon', () => {
+  it('opens on the cutscene (skippable with JUMP or SHOOT, announced with how to skip), then the tank’s cavern', () => {
     const h = underworldHarness({ keep: true });
     expect(h.scene.phase).toBe('cutscene');
     expect(h.said[0]).toMatch(/Fred.*chest.*hole/);
@@ -394,19 +394,25 @@ describe('Underworld: the round', () => {
     h.step([], 10);
     expect(drawn(h)).toEqual(expect.arrayContaining([expect.stringMatching(/^SKIP/)]));
     h.tap('attack');
-    expect(h.scene.phase).toBe('dungeon');
-    expect(h.log.music.at(-1)).toBe('bm-dungeon');
-    expect(h.said.at(-1)).toMatch(/SHOOT.*gun.*GRENADE/);
-    expect(h.scene.touchLabels()).toMatchObject({
+    expect(h.scene.phase).toBe('area');
+    expect(h.scene.area?.player.def.id).toBe('sophia');
+    expect(h.log.music.at(-1)).toBe('bm-area');
+    expect(h.scene.touchLabels()).toMatchObject({ attack: 'SHOOT', select: 'EXIT', start: 'MENU' });
+    // Untouched, the cutscene ends by itself.
+    const h2 = underworldHarness({ keep: true });
+    h2.step([], CUTSCENE_FRAMES);
+    expect(h2.scene.phase).toBe('area');
+    // In the dungeon: Jason's SHOOT and GRENADE.
+    const h3 = underworldHarness({ keep: true, skipCutscene: true });
+    expect(h3.scene.phase).toBe('dungeon');
+    expect(h3.log.music.at(-1)).toBe('bm-dungeon');
+    expect(h3.said.at(-1)).toMatch(/SHOOT.*gun.*GRENADE/);
+    expect(h3.scene.touchLabels()).toMatchObject({
       attack: 'SHOOT',
       special: 'GRENADE',
       start: 'MENU',
       jump: null,
     });
-    // Untouched, the cutscene ends by itself.
-    const h2 = underworldHarness({ keep: true });
-    h2.step([], CUTSCENE_FRAMES);
-    expect(h2.scene.phase).toBe('dungeon');
   });
 
   it('the cutscene: Fred hops to the chest, swells, leaps down the hole; Jason runs after him', () => {
@@ -529,24 +535,24 @@ describe('Underworld: the round', () => {
 
   it('draws without its art (boxes) and with reduce flashing, without throwing', () => {
     const h = underworldHarness({ keep: true });
-    for (let i = 0; i < CUTSCENE_FRAMES; i += 37) {
+    for (let i = 0; i + 37 < CUTSCENE_FRAMES; i += 37) {
       h.step([], 37);
       expect(() => drawn(h)).not.toThrow();
     }
-    h.tap('jump');
-    h.td.warpTo('guardian', TILE, 5 * TILE);
-    h.step(['right'], 60);
-    expect(() => drawn(h)).not.toThrow();
+    const d = underworldHarness({ keep: true, skipCutscene: true });
+    d.td.warpTo('guardian', TILE, 5 * TILE);
+    d.step(['right'], 60);
+    expect(() => drawn(d)).not.toThrow();
   });
 });
 
 describe('Underworld: the bot', () => {
-  it('a sharp player gets through the dungeon and beats the boss without dying', () => {
-    const r = botRun(SHARP);
+  it('a sharp player gets through the dungeon and past its guardian without dying', () => {
+    const r = botRun(SHARP, 40000, false);
     expect(r.result).toBe('pass');
     expect(r.deaths).toEqual([]);
     expect(r.rooms).toEqual(
-      expect.arrayContaining(['gate', 'hall', 'turrets', 'crossing', 'cache', 'ante', 'guardian']),
+      expect.arrayContaining(['gate', 'hall', 'turrets', 'crossing', 'cache', 'ante', 'guardian', 'exit']),
     );
   }, 60_000);
 

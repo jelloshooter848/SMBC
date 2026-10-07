@@ -10,7 +10,6 @@ import { jungleHarness, type JungleHarness } from './bill/harness';
 import { CARD_ANIM } from './bill/card';
 import { DEATH_FRAMES } from './bill/commando';
 import { SOPHIA_MINIGAME } from './sophia';
-import { MARIO } from '../characters/mario';
 import { underworldHarness, type UnderworldHarness } from './sophia/harness';
 import { CUTSCENE_FRAMES, JASON_AT, LEAP_AT, TOUCH_AT, cutLines } from './sophia/cutscene';
 import type { Guardian } from './sophia/guardian';
@@ -126,7 +125,6 @@ describe('the bitmap font draws every mini game line', () => {
         assets: STUB_ASSETS,
         keep: true,
         startInBoss: true,
-        tankHero: MARIO,
       });
       b.step([], 70);
       lines.push(...(b.scene.banner?.lines ?? []), ...drawn(b));

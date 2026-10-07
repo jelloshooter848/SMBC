@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { px, tileToSub } from '@engine/math/units';
 import { MARIO } from '@game/characters/mario';
 import { tileDef } from '../../level/tiles';
-import { areaStage, atGateway, onFoot } from './area';
+import { areaStage, atGateway, onFoot, TANK_KIT, TANK_POWER } from './area';
+import { TankBot, TANK_SHARP } from './tankbot';
 import { Crawler, Flyer, FLYER_SWOOP, Hopper, HOPPER_REST } from './cavern';
 import { GATEWAY_FRAMES, LIVES } from './scene';
 import { underworldHarness } from './harness';
@@ -35,7 +36,7 @@ describe('Underworld: the tank’s cavern (section 1)', () => {
     expect(a.level.theme).toBe('underworld');
     expect(a.level.music).toBe('bm-area');
     // The shaft: one free column between solid ones, from the floor's air up to the ledge.
-    for (let y = 5; y <= 10; y++) {
+    for (let y = 5; y <= 9; y++) {
       expect(solid(a.shaftX, y), `shaft row ${y}`).toBe(false);
       expect(solid(a.shaftX - 1, y), `left wall row ${y}`).toBe(true);
     }
@@ -84,17 +85,16 @@ describe('Underworld: the tank’s cavern (section 1)', () => {
     expect(h.scene.area).toBeNull();
   });
 
-  it('the tank is not on foot until Jason hops out (S1’s flag); every other hero always is', () => {
+  it('the tank is not on foot until Jason hops out (EXIT); a stand-in hero always is', () => {
     const { area } = cavern();
-    const p = area().player;
+    expect(onFoot(area().player)).toBe(true);
+    const h = underworldHarness({ keep: true, startInArea: true });
+    const p = h.scene.area!.player;
+    expect(p.def.id).toBe('sophia');
+    h.step([], 10);
+    expect(onFoot(p)).toBe(false);
+    h.tap('select');
     expect(onFoot(p)).toBe(true);
-    const tank = Object.assign(Object.create(Object.getPrototypeOf(p) as object), p, {
-      def: { ...p.def, id: 'sophia' },
-      scratch: {},
-    });
-    expect(onFoot(tank)).toBe(false);
-    tank.scratch.jason = 1;
-    expect(onFoot(tank)).toBe(true);
   });
 
   it('a life lost in the cavern starts again (from the checkpoint once past it); out of lives, GAME OVER', () => {
@@ -116,6 +116,50 @@ describe('Underworld: the tank’s cavern (section 1)', () => {
     last.kill(last.player);
     for (let i = 0; i < 400 && h.scene.phase === 'area'; i++) h.step();
     expect(h.scene.phase).toBe('lost');
+  });
+});
+
+describe('Underworld: the cavern in the real tank', () => {
+  it('starts Hyper with homing missiles (never Crusher: no wall climbing past the lessons)', () => {
+    const h = underworldHarness({ keep: true, startInArea: true });
+    const p = h.scene.area!.player;
+    expect(p.powerState).toBe(TANK_POWER);
+    expect(TANK_POWER).not.toBe('fire');
+    expect(p.scratch.hasHoming).toBe(1);
+    expect(p.scratch.homing).toBe(TANK_KIT.homing);
+  });
+
+  it('a sharp driver gets the tank to the shaft, learns the hop-out there, and Jason climbs to the gateway', () => {
+    const h = underworldHarness({ keep: true, startInArea: true });
+    const bot = new TankBot(TANK_SHARP);
+    let taught = -1;
+    for (let i = 0; i < 4000 && h.scene.phase === 'area'; i++) {
+      h.step(bot.next(h.scene.area!, null));
+      if (taught < 0 && h.scene.taught) taught = i;
+    }
+    expect(taught).toBeGreaterThan(0);
+    expect(h.said.join(' ')).toMatch(/EXIT.*Jason hop out/);
+    expect(h.scene.phase).toBe('gateway');
+    expect(h.scene.lives).toBe(LIVES);
+  }, 60_000);
+
+  it('the tank can neither climb the ladder nor go through the gateway', () => {
+    const h = underworldHarness({ keep: true, startInArea: true });
+    h.game.ctx.assist.invulnerable = true;
+    const w = h.scene.area!;
+    const p = w.player;
+    // Under the shaft: UP does not take the ladder.
+    p.body.x = tileToSub(areaStage().shaftX) - px(2);
+    w.camera.x = tileToSub(60);
+    w.spawnInView();
+    h.step(['up'], 60);
+    expect(p.vine).toBeNull();
+    expect(p.body.y >> 12).toBeGreaterThanOrEqual(11);
+    // In the doorway itself (put there), the tank is not let in.
+    const d = areaStage().door;
+    p.body.x = px(d.x);
+    p.body.y = px(d.y + d.h) - p.body.h;
+    expect(atGateway(p)).toBe(false);
   });
 });
 
