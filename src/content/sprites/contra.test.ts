@@ -52,6 +52,7 @@ const CONTRA_FRAMES: Record<string, Size> = {
   'defense-wall-top': BIG,
   'defense-wall-door': [32, 64],
   'defense-wall-broken': BIG,
+  'defense-wall-tower': [24, 40],
   'wall-cannon-0': [32, 16],
   'wall-cannon-1': [32, 16],
   'core-0': BIG,

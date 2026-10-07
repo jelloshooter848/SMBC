@@ -9,6 +9,7 @@ import {
   Pod,
   WallCannon,
   WallCore,
+  WallTowers,
   WallSniper,
   WIN_BOOM_FRAMES,
   WIN_BOOMS,
@@ -128,6 +129,7 @@ export class Jungle {
   /** What last hit Bill (tests and tuning). */
   lastHit = '';
   readonly wall = new DefenseWall();
+  readonly towers = new WallTowers(this.wall);
   readonly core = new WallCore();
   readonly cannons = [new WallCannon(0), new WallCannon(1)] as const;
   readonly sniper = new WallSniper();
@@ -153,7 +155,15 @@ export class Jungle {
     this.zones = [...this.stage.zones];
     this.zoneT = this.zones.map((z) => 60 + this.rng.int(z.every >> 1));
     for (const b of this.stage.bridges) this.things.push(new BlastBridge(b.col, b.len, b.row));
-    this.things.push(this.wall, this.core, ...this.cannons, this.sniper, this.heart, ...this.pods);
+    this.things.push(
+      this.wall,
+      this.towers,
+      this.core,
+      ...this.cannons,
+      this.sniper,
+      this.heart,
+      ...this.pods,
+    );
   }
 
   /* ---------- The map ---------- */

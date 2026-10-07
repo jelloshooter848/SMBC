@@ -189,8 +189,17 @@ describe('the campaign variant of 7-3', () => {
     expect(look?.decor?.filter((d) => d.kind === 'canopy-hang').map((d) => [d.x, d.y])).toEqual(
       Array.from({ length: 120 }, (_, i) => [i * 2, 0]),
     );
-    // The clouds stay (the theme draws them as night clouds).
-    expect(look?.decor?.filter((d) => d.kind.startsWith('cloud'))).toEqual(raw().decor);
+    // NES Contra's black night has no clouds: the jungle look leaves the level's clouds out.
+    expect(look?.decor?.filter((d) => d.kind.startsWith('cloud'))).toEqual([]);
+    // A band of palms and undergrowth along the ground and tree tops, each piece on solid ground
+    // (both its columns) with two clear rows over it.
+    const band = look?.decor?.filter((d) => d.kind.startsWith('jungle-band')) ?? [];
+    expect(band.length).toBeGreaterThan(10);
+    for (const d of band)
+      for (let c = 0; c < (d.kind === 'jungle-band' ? 2 : 1); c++) {
+        expect(tileDef(tile(raw(), d.x + c, d.y + 1) as number).collision, `band ${d.x + c}`).toBe('solid');
+        expect(tile(raw(), d.x + c, d.y), `band ${d.x + c}`).toBe(T.AIR);
+      }
     // Palms stand on ground (or a tree platform), the row below their foot solid.
     for (const d of look?.decor?.filter((x) => x.kind === 'palm') ?? [])
       expect(tileDef(tile(raw(), d.x + 1, d.y + 1) as number).collision, `palm ${d.x}`).toBe('solid');

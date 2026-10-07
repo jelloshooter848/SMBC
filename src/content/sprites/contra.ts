@@ -31,6 +31,7 @@ import { tilesDef } from './tiles';
  *   it (the sniper's ledge is its top 8 rows); `defense-wall-door` (32x64) is the door frame with
  *   the core's recess, `core-*` (32x32) drawn over its rows 16-47; `defense-wall-broken` (32x32)
  *   is a wrecked plate for after the blast. `wall-cannon-0/1` (32x16) point LEFT, 1 firing.
+ *   `defense-wall-tower` (24x40) is a gun tower standing on the crown, its barrel to the LEFT.
  * - `falcon-heart-0..2` (64x64) beats 0 → 1 → 2 → 1, centred; `pod-0` closed, `-1` open
  *   (spitting); `larva-0` crawls LEFT, `-1` is its leap.
  * - `bill-death-0..3` (32x32, Bill centred on column 16, feet on the bottom row) is the backward
@@ -665,6 +666,40 @@ const defenseWallBroken = draw(32, 32, (x, y) => {
   return plate(x, y);
 });
 
+/* A gun tower on the wall's crown (24x40): a plated block, a blue turret with a red sensor eye
+   and a barrel pointing left, an aerial with a red tip. Stands on its bottom row. */
+const defenseWallTower = draw(24, 40, (x, y) => {
+  // the aerial
+  if (y < 8) {
+    if (x !== 16) return '.';
+    return y < 2 ? '4' : '7';
+  }
+  // the turret: slanted shoulders, its eye, the barrel to the left
+  if (y < 24) {
+    if (y >= 12 && y <= 15 && x < 6) return y === 12 || y === 15 || x === 0 ? '0' : y === 13 ? '5' : '7';
+    const inset = Math.max(0, 11 - y);
+    const l = 5 + inset;
+    const r = 18 - inset;
+    if (x < l || x > r) return '.';
+    if (x === l || x === r || y === 8 + Math.max(0, 3 - (x - 5)) || y === 23) return '0';
+    const ex = x + 0.5 - 12;
+    const ey = y + 0.5 - 16;
+    const d = Math.hypot(ex, ey);
+    if (d < 1.4) return '6';
+    if (d < 2.6) return '4';
+    if (d < 3.4) return '0';
+    return x < l + 2 ? 'm' : y > 20 ? 'q' : '3';
+  }
+  // the plated block
+  if (x < 1 || x > 22) return '.';
+  if (y === 24 || x === 22 || y === 39) return '0';
+  if (x === 1) return '7';
+  if (y === 25) return '5';
+  if ((x === 4 || x === 19) && (y === 28 || y === 36)) return '5';
+  if (y >= 30 && y <= 33 && x >= 7 && x <= 16) return y === 30 ? '0' : y === 33 ? '7' : '8';
+  return 'q';
+});
+
 /* A wall cannon: a fat barrel jutting left from its mount, firing in frame 1. */
 const wallCannon = (firing: boolean): string[] =>
   draw(32, 16, (x, y) => {
@@ -916,6 +951,7 @@ export const contraDef: SpriteDef = {
     'defense-wall-top': defenseWallTop,
     'defense-wall-door': defenseWallDoor,
     'defense-wall-broken': defenseWallBroken,
+    'defense-wall-tower': defenseWallTower,
     'wall-cannon-0': wallCannon(false),
     'wall-cannon-1': wallCannon(true),
     'core-0': core(0),

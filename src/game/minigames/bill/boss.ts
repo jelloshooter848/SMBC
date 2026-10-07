@@ -95,6 +95,35 @@ export class DefenseWall extends Thing {
   }
 }
 
+/** The two gun towers on the wall's crown (x from the wall's face, px), as NES stage 1's. */
+export const TOWERS = [34, 66] as const;
+export const TOWER_H = 40;
+
+/** The gun towers on the crown: armour too (shots stop on them); they fall with the wall. */
+export class WallTowers extends Thing {
+  readonly kind = 'wall-towers';
+  constructor(private readonly wall: DefenseWall) {
+    super(WALL_X + 64, WALL_TOP + 6);
+    this.pinned = true;
+    this.shield = true;
+    this.back = true;
+  }
+  override hurtBox(): Box | null {
+    return this.wall.broken
+      ? null
+      : { x: WALL_X + TOWERS[0], y: this.y - TOWER_H, w: TOWERS[1] - TOWERS[0] + 24, h: TOWER_H };
+  }
+  update(): void {}
+  render(p: Paint): void {
+    if (this.wall.broken) return;
+    for (const dx of TOWERS) {
+      const x = WALL_X + dx - p.camX;
+      if (x > 256 || x < -24) continue;
+      drawContra(p.r, p.assets, 'defense-wall-tower', x, this.y - TOWER_H, 24, TOWER_H, LOOK.wall);
+    }
+  }
+}
+
 /** The glowing sensor core in the wall's door: destroy it and the wall falls. */
 export class WallCore extends Foe {
   readonly kind = 'core';

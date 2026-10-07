@@ -68,6 +68,24 @@ function drawCracked(r: Renderer, view: View, sheet: SpriteSheet, x: number, y: 
   r.rect(x + 10, y + 7, 4, 1, crack);
 }
 
+/** Themes whose black sky has stars in it (Bill's jungle, as NES Contra's first stage). */
+export const STARRY_SKIES: ReadonlySet<string> = new Set(['contra-jungle']);
+
+/**
+ * Sparse fixed stars over a starry theme's sky, in its upper half, drifting at an eighth of the
+ * camera's speed. They never twinkle (nothing flashes).
+ */
+export function drawStars(r: Renderer, camX: number): void {
+  const span = 512;
+  for (let i = 0; i < 36; i++) {
+    const sx = (i * 197 + ((i * i * 31) % 89)) % span;
+    const sy = 6 + ((i * 113 + 41) % 116);
+    const x = (((sx - (camX >> 3)) % span) + span) % span;
+    if (x >= SCREEN_W) continue;
+    r.rect(x, sy, 1, 1, i % 7 === 0 ? '#fcfcfc' : i % 3 === 0 ? '#bcbcbc' : '#7c7c7c');
+  }
+}
+
 export const SKY: Record<string, string> = {
   overworld: '#5c94fc',
   underground: '#000000',
@@ -100,8 +118,8 @@ export const SKY: Record<string, string> = {
   dojo: '#000000',
   // Ryu's moonlit town: a deep violet night over the roofs.
   'ninja-night': '#100828',
-  // Bill's jungle: a deep blue-black night over the canopy (palms and mountains stand against it).
-  'contra-jungle': '#081c40',
+  // Bill's jungle: NES Contra's black night sky, sparse stars (STARRY_SKIES) over snow-capped peaks.
+  'contra-jungle': '#000000',
   // The waterfall: darker still, the cliff's shadow.
   'contra-falls': '#000c20',
   // Red Falcon's lair: a dark blood red between the organic walls.

@@ -17,7 +17,8 @@ import {
 import { WADE_DEPTH, type Commando } from './commando';
 import type { Paint } from './foes';
 import type { Jungle } from './jungle';
-import { C, COLS, LAIR_COL, LAIR_CAM, ROWS, TILE, WATER_Y } from './stage';
+import { C, COLS, LAIR_COL, LAIR_CAM, ROWS, TILE, WALL_X, WATER_Y } from './stage';
+import { drawStars } from '../../world/tile-render';
 
 /*
  * Drawing a Jungle Assault frame: the jungle backdrop (or the lair's), the cells in the jungle
@@ -33,40 +34,73 @@ function inLair(camX: number): boolean {
   return camX + SCREEN_W > LAIR_CAM;
 }
 
-/** The jungle behind the stage: mountains far off, canopy and palms nearer (parallax). */
+/** The wall of trunks under a leafy canopy behind the later tiers (columns), as NES stage 1's. */
+export const TRUNKS_FROM = 112;
+
+/**
+ * The jungle behind the stage, as NES Contra's first stage: a black night with sparse stars,
+ * snow-capped mountains far off (a quarter of the scroll) over the open early jungle (the palms
+ * are the band along each cliff top, drawBand), then a wall of dark trunks under a leafy canopy
+ * behind the later tiers.
+ */
 export function drawBackdrop(r: Renderer, assets: AssetRegistry, camX: number): void {
-  r.clear(jungleSky());
   if (camX >= LAIR_CAM) {
     r.clear(lairSky());
     return;
   }
+  r.clear(jungleSky());
+  drawStars(r, camX);
   const decor = decorSheet(assets);
-  const has = (f: string) => decor?.frames.has(`${f}@${JUNGLE_THEME}`) || decor?.frames.has(f);
+  const has = (f: string) => !!decor && (decor.frames.has(`${f}@${JUNGLE_THEME}`) || decor.frames.has(f));
   const frame = (f: string) => (decor?.frames.has(`${f}@${JUNGLE_THEME}`) ? `${f}@${JUNGLE_THEME}` : f);
-  // Mountains (a quarter of the scroll).
+  const trunks = TRUNKS_FROM * TILE - camX;
   for (let i = -1; i < 6; i++) {
     const x = i * 64 - ((camX >> 2) % 64);
-    if (decor && has('mountain')) r.sprite(decor, frame('mountain'), x, 72);
+    if (x >= trunks) continue;
+    if (decor && has('mountain')) r.sprite(decor, frame('mountain'), x, 78);
     else {
-      r.rect(x + 8, 92, 48, 12, '#0c3018');
-      r.rect(x + 20, 80, 24, 12, '#0c3018');
+      r.rect(x + 8, 98, 48, 12, '#7c7c7c');
+      r.rect(x + 20, 86, 24, 12, '#bcbcbc');
     }
   }
-  // Canopy along the top and palms (half the scroll).
-  for (let i = -1; i < 10; i++) {
-    const x = i * 32 - ((camX >> 1) % 32);
-    if (decor && has('canopy')) r.sprite(decor, frame('canopy'), x, 0);
-    else r.rect(x, 0, 32, 10 + ((i * 7) & 7), '#0c2c10');
-  }
-  for (let i = -1; i < 5; i++) {
-    const wx = i * 96 - ((camX >> 1) % 96) + 24;
-    if (decor && has('palm')) r.sprite(decor, frame('palm'), wx, 56);
-    else {
-      r.rect(wx + 14, 64, 4, 40, '#1c3c10');
-      r.rect(wx + 2, 58, 28, 6, '#1c5c18');
+  // The trunks and their canopy scroll with the stage (they are the jungle itself), up to the wall.
+  for (let wx = TRUNKS_FROM * TILE; wx < WALL_X; wx += 32) {
+    const x = wx - camX;
+    if (x < -32 || x >= SCREEN_W) continue;
+    for (let y = 12; y < WATER_Y; y += 32) {
+      if (decor && has('jungle-trunks')) r.sprite(decor, frame('jungle-trunks'), x, y);
+      else for (let k = 2; k < 32; k += 9) r.rect(x + k, y, 4, 32, '#2c1c08');
     }
+    if (decor && has('canopy-hang')) r.sprite(decor, frame('canopy-hang'), x, 0);
+    else r.rect(x, 0, 32, 12, '#0c2c10');
   }
   if (inLair(camX)) r.rect(LAIR_CAM - camX, 0, SCREEN_W, 240, lairSky());
+}
+
+/** Whether the jungle band can stand on the cell at (col, row): a cliff top or bank, clear above. */
+function bandAt(j: Jungle, col: number, row: number): boolean {
+  const c = j.cell(col, row);
+  if (c !== C.LEDGE && !(c === C.BASE && col < 188)) return false;
+  return j.cell(col, row - 1) === C.AIR && j.cell(col, row - 2) === C.AIR;
+}
+
+/** NES stage 1's band of palms and undergrowth along the top of every cliff tier and bank. */
+export function drawBand(r: Renderer, assets: AssetRegistry, j: Jungle, camX: number): void {
+  const decor = decorSheet(assets);
+  const full = decor?.frames.has('jungle-band') ?? false;
+  const first = Math.max(0, (Math.floor(camX) >> 4) - 1);
+  const last = Math.min(COLS - 1, (Math.floor(camX) + SCREEN_W) >> 4);
+  for (let row = 2; row < ROWS; row++)
+    for (let col = first; col <= last; col++) {
+      if (!bandAt(j, col, row)) continue;
+      const x = col * TILE - Math.floor(camX);
+      const y = row * TILE - 32;
+      // a whole piece over an even column and its neighbour, a half piece where only one is left
+      const pair = col % 2 === 0 && col + 1 < COLS && bandAt(j, col + 1, row);
+      if (col % 2 === 1 && bandAt(j, col - 1, row) && col - 1 >= first) continue;
+      if (decor && full) r.sprite(decor, pair ? 'jungle-band' : 'jungle-band-half', x, y);
+      else r.rect(x, y + 12, pair ? 32 : 16, 20, '#0c4c10');
+    }
 }
 
 /** The tile frame a cell draws as (by the shared tile names), or null for none. */
@@ -251,6 +285,7 @@ export function drawMedals(r: Renderer, assets: AssetRegistry, rest: number, bac
 /** A whole frame of the stage (everything but the scene's texts). */
 export function drawJungle(p: Paint, j: Jungle): void {
   drawBackdrop(p.r, p.assets, p.camX);
+  drawBand(p.r, p.assets, j, p.camX);
   drawCells(p.r, p.assets, j, p.t, false);
   for (const t of j.things) if (t.alive && t.back) t.render(p, j);
   for (const t of j.things) if (t.alive && !t.back && t.kind !== 'boom') t.render(p, j);
