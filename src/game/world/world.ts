@@ -4,7 +4,7 @@ import { SCORE_MAX } from '../hud/hud';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
-import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
+import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
@@ -2606,7 +2606,15 @@ export class World {
   private catchFall(p: Player): boolean {
     if (!this.assist.safetyFloor) return false;
     const b = p.body;
-    const spot = this.safetyFloor.nearest(tileAt(b.x + (b.w >> 1)));
+    // On screen (the camera's edges would push him back into whatever is off it), else anywhere.
+    const tx = tileAt(b.x + (b.w >> 1));
+    const spot =
+      this.safetyFloor.nearest(
+        tx,
+        toPx(b.h),
+        tileAt(this.camera.x + TILE_SUB - 1),
+        tileAt(this.camera.right) - 1,
+      ) ?? this.safetyFloor.nearest(tx, toPx(b.h));
     if (!spot) return false;
     p.stairs = null;
     b.x = tileToSub(spot.tx) + ((tileToSub(1) - b.w) >> 1);

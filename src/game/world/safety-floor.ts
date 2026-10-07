@@ -126,16 +126,38 @@ export class SafetyFloor {
 
   /**
    * Where a hero in column `tx` who fell past the floor anyway (riding a sinking lift through it,
-   * or the assist switched on mid-fall) is put back: the nearest column with a floor (searching
-   * outward) and its row, or null when there is none.
+   * or the assist switched on mid-fall) is put back, searching outward over columns
+   * `minTx`..`maxTx` (the screen: off it, the camera would push him back into whatever is there):
+   * the nearest column with a floor and room above it for a body `heightPx` tall (no solid tile
+   * in the rows it would fill: one row, or two for a hero taller than a tile), so a big hero is
+   * never put inside the tiles over a floor (4-2-airship's hull over 23-33). With no such floor,
+   * the nearest column's highest spot he can stand on with that room (the airship's deck). Null
+   * when there is neither.
    */
-  nearest(tx: number): { tx: number; row: number } | null {
-    for (let d = 0; d < this.map.width; d++) {
-      for (const c of d ? [tx - d, tx + d] : [tx]) {
-        const row = this.rowAt(c);
-        if (row >= 0) return { tx: c, row };
-      }
+  nearest(
+    tx: number,
+    heightPx = 16,
+    minTx = 0,
+    maxTx = this.map.width - 1,
+  ): { tx: number; row: number } | null {
+    const rows = Math.max(1, Math.ceil(heightPx / 16));
+    const roomy = (c: number, row: number) => {
+      for (let r = row - rows; r < row; r++) if (this.map.isSolid(c, r)) return false;
+      return true;
+    };
+    const lo = Math.max(0, minTx);
+    const hi = Math.min(this.map.width - 1, maxTx);
+    const from = Math.max(lo, Math.min(hi, tx));
+    const cols: number[] = [];
+    for (let d = 0; d <= hi - lo; d++)
+      for (const c of d ? [from - d, from + d] : [from]) if (c >= lo && c <= hi) cols.push(c);
+    for (const c of cols) {
+      const row = this.rowAt(c);
+      if (row >= 0 && roomy(c, row)) return { tx: c, row };
     }
+    for (const c of cols)
+      for (let row = rows; row < this.map.height; row++)
+        if ((this.map.isSolid(c, row) || this.at(c, row)) && roomy(c, row)) return { tx: c, row };
     return null;
   }
 }

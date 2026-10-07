@@ -193,6 +193,46 @@ describe('pits: caught at the rim', () => {
     expect(p2.dead).toBe(false);
     expect(feetRow(p2)).toBe(13);
   });
+  it('a put-back never lands a big hero inside tiles (4-2-airship: the hull over the floor at 23-33)', () => {
+    const level = getLevel('4-2-airship');
+    let put = false;
+    let solidHit = false;
+    const r = runSim({
+      level,
+      character: MARIO,
+      state: { powerState: 'big' },
+      assist: SAFE,
+      script: none,
+      start: { x: 12, y: 8, mode: 'stand' },
+      maxFrames: 40,
+      controller: (w, f) => {
+        const b = w.player.body;
+        if (f === 5) {
+          // Out of the level under the hull, as a lift or a late switch-on would leave him.
+          b.x = px(28 * 16);
+          b.y = px(250);
+          b.vy = 0;
+        }
+        if (f > 5 && toPx(b.y) < 240) {
+          put = true;
+          for (let ty = toPx(b.y) >> 4; ty <= (toPx(b.y + b.h) - 1) >> 4; ty++)
+            for (let tx = toPx(b.x) >> 4; tx <= (toPx(b.x + b.w) - 1) >> 4; tx++)
+              if (w.map.isSolid(tx, ty)) solidHit = true;
+        }
+        return [];
+      },
+    });
+    expect(toPx(r.world.player.body.h)).toBeGreaterThan(16);
+    expect(r.world.player.dead).toBe(false);
+    expect(put).toBe(true);
+    expect(solidHit).toBe(false);
+    // Put back on screen (off it, the auto-scrolling camera's edges would push him into the hull).
+    expect(r.world.player.body.x).toBeGreaterThanOrEqual(r.world.camera.x);
+    expect(r.world.player.body.x + r.world.player.body.w).toBeLessThanOrEqual(r.world.camera.right);
+    // The floor right under the hull has no room for him.
+    expect(r.world.map.isSolid(28, 12)).toBe(true);
+    expect(r.world.safetyFloor.rowAt(28)).toBe(13);
+  });
 });
 
 describe('lava', () => {
@@ -419,9 +459,15 @@ describe('the dashed line (dev visual)', () => {
 });
 
 describe('the mini games built on World read the same assist', () => {
+  // Dracula's Castle has no deadly pit to drop into: only its world's assist is checked.
+  it("Dracula's Castle (Simon): its world's assist is the game's (no pits to catch)", () => {
+    const h = castleHarness();
+    expect(h.world.assist).toBe(h.game.ctx.assist);
+    expect(drops(h.world.level).filter((d) => d.kind === 'pit')).toEqual([]);
+  });
+
   const games = {
     'Shadow Duel (Ryu)': () => duelHarness({ skipCutscene: true }),
-    "Dracula's Castle (Simon)": () => castleHarness(),
     'Zebes Escape (Samus)': () => escapeHarness(),
     'Station Escape (Mega Man)': () => stationHarness(),
   };
@@ -430,10 +476,7 @@ describe('the mini games built on World read the same assist', () => {
       const h = make();
       expect(h.world.assist).toBe(h.game.ctx.assist);
       const spots = drops(h.world.level).filter((d) => d.kind === 'pit');
-      // A stage without a deadly pit (Dracula's Castle) has nothing to catch: no floor anywhere.
-      if (!spots.length)
-        for (let x = 0; x < h.world.level.width; x++)
-          expect(h.world.safetyFloor.rowAt(x), `${name} ${x}`).toBe(-1);
+      expect(spots.length, name).toBeGreaterThan(0);
       for (const d of spots) {
         for (const safetyFloor of [true, false]) {
           const g = make();

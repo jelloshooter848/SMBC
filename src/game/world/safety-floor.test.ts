@@ -180,7 +180,27 @@ describe('Safety floor: cells and the players’ view of the map', () => {
     expect(floor.nearest(6)).toEqual({ tx: 6, row: 13 });
     expect(floor.nearest(2)).toEqual({ tx: 5, row: 13 });
     expect(floor.nearest(11)).toEqual({ tx: 7, row: 13 });
-    const solid = level(['####', '####']);
-    expect(new SafetyFloor(new TileMap(solid), solid).nearest(1)).toBeNull();
+    // Searching only columns 7-11 (the screen): column 7, the nearest floor on it.
+    expect(floor.nearest(2, 16, 7, 11)).toEqual({ tx: 7, row: 13 });
+    // No floor on those columns at all: the highest spot to stand on there (the ground).
+    expect(floor.nearest(2, 16, 9, 11)).toEqual({ tx: 9, row: 13 });
+  });
+
+  it('nearest: skips floor with no room above it for the body (a hull just over the rim)', () => {
+    // Floor at row 13 over columns 2-10; a hull fills row 12 over 3-6, and row 11 over 2 and 7-8.
+    // prettier-ignore
+    const lv = level([
+      '..#....##....',
+      '...####......',
+      '##.........##',
+      '##.........##',
+    ]);
+    const floor = new SafetyFloor(new TileMap(lv), lv);
+    expect([2, 4, 9].map((x) => floor.rowAt(x))).toEqual([13, 13, 13]);
+    // A one-tile hero needs row 12 free: column 2, past the hull.
+    expect(floor.nearest(4, 16)).toEqual({ tx: 2, row: 13 });
+    // A taller one needs rows 11-12 free: column 9, past the overhang at 7-8.
+    expect(floor.nearest(4, 28)).toEqual({ tx: 9, row: 13 });
+    expect(floor.nearest(8, 32)).toEqual({ tx: 9, row: 13 });
   });
 });
