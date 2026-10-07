@@ -4,7 +4,7 @@ import { SCORE_MAX } from '../hud/hud';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
-import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
+import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
@@ -13,6 +13,7 @@ import { tileDef, T } from '../level/tiles';
 import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
 import { drawStars, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
+import { SafetyFloor } from './safety-floor';
 import { Player } from '../entities/player';
 import type { Entity } from '../entities/entity';
 import { type View } from '../entities/entity';
@@ -78,6 +79,8 @@ import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
 import { Axe } from '../entities/objects/axe';
+import { CaveFire, Moblin } from '../entities/objects/moblin';
+import { YoshiEgg } from '../entities/objects/yoshi-egg';
 import { Larry } from '../entities/enemies/larry';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
@@ -112,7 +115,14 @@ export type WorldEvent =
    */
   | { type: 'crystal-ball'; player: number; next: string | null }
   /** Larry's anchor smashed 4-2's warp-zone pipe (objects/anchor-drop.ts): the level announces it. */
-  | { type: 'anchor' };
+  | { type: 'anchor' }
+  /**
+   * A player came up to the Moblin in 2-1's hidden cave (objects/moblin.ts): the level plays his
+   * cards and ends (campaign: 2-1 cleared and the secret `secret` found; else on to `next`).
+   */
+  | { type: 'moblin'; player: number; secret: string; next: string | null }
+  /** A hidden path's block was bumped (World.layPath): its clouds are being laid. */
+  | { type: 'path' };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -181,6 +191,8 @@ export const freshSeed = (): number =>
  * (Character.as), with 2 Flash px to our px and 60 frames a second: 25/60 px per frame, in subpixels.
  */
 const PIPE_SPEED = px(25) / 60;
+/** The Safety floor assist's dashed line: faint, steady (nothing flashes). */
+const SAFETY_FLOOR_COLOR = 'rgba(255, 255, 255, 0.45)';
 /** The crypt's own sounds (S3's) once they exist; until then the plain brick break and none. */
 const hasSfx = (id: string): boolean => SFX_LIB.some((x) => x.id === id);
 const CRUMBLE_SFX = hasSfx('whip-wall') ? 'whip-wall' : 'break';
@@ -201,6 +213,8 @@ function heroShot(e: Entity): e is Projectile {
 
 /** Character.PIPE_LEV_TRANS_DELAY (500 ms): hidden in the pipe before the next area loads. */
 const PIPE_TRANSFER_DELAY_FRAMES = 30;
+/** Frames between two tiles of a hidden path appearing (World.layPath). */
+export const PATH_STEP_FRAMES = 6;
 /** Level.HW_ENEMY_REMOVAL_DIST = TILE_SIZE*6: enemies closer than this (px, horizontally) go. */
 const ENEMY_REMOVAL_PX = 6 * 16;
 /**
@@ -406,6 +420,9 @@ export class World {
   private readonly extraEntities: WorldStart['extraEntities'];
   /** Cracked-wall tiles still standing (T.CRACKED; crackWalls does nothing once none are left). */
   private cracked = 0;
+  /** The Safety floor assist's rims and the players' view of the map with it (made on first use). */
+  private safety: SafetyFloor | null = null;
+  private safetyView: TileMap | null = null;
   /** The live `descent` zones (a sleeping campaign one is left out): down-lift shafts. */
   private readonly descents: (Zone & { kind: 'descent' })[];
   /** Every `trick` zone's panel (a sleeping one too: it still turns for an arrival). */
@@ -452,7 +469,8 @@ export class World {
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
     this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
-    this.time = startTime(level, state, start);
+    // A fill-up spot off the map (the Top Secret Area) runs no clock.
+    this.time = level.bonus ? null : startTime(level, state, start);
     const sx = start.x ?? level.start.x;
     const sy = start.y ?? level.start.y;
     const mode = start.mode ?? level.startMode;
@@ -800,6 +818,20 @@ export class World {
       }
       case 'candle':
         return new Candle(s.x, s.y);
+      case 'moblin':
+        // He ends the level with his secret: without one (`secret=<key>`) he is left out (and the
+        // level library's tests reject such a map).
+        if (typeof s.props?.secret !== 'string' || !s.props.secret) {
+          console.warn('a moblin needs secret=<key>');
+          return null;
+        }
+        return new Moblin(s.x, s.y, s.props.secret, typeof s.props.next === 'string' ? s.props.next : null);
+      case 'cave-fire':
+        return new CaveFire(s.x, s.y);
+      case 'decor':
+        // Any decor kind as a spawned entity (`decor x y kind=items:cave-mouth`): a campaign-only
+        // piece of scenery (`campaign=true`) sleeps with the rest outside the campaign.
+        return typeof s.props?.kind === 'string' ? new Decoration(s.props.kind, s.x, s.y) : null;
       case 'decor-castle':
         return new Decoration('castle-small', s.x, s.y);
       case 'decor-castle-big':
@@ -1016,7 +1048,7 @@ export class World {
         p.anim = 'jump';
         return;
       }
-      p.update(input, this.map, this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
+      p.update(input, this.playerMap(p), this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
       // No attacks, tools or thrusts on a vine: every hero's checkState returns on ST_VINE (e.g.
       // Link.checkState on "vine", MarioBase.checkState) and pressAtkBtn / pressSpcBtn return there.
       if (p.vine) {
@@ -1074,6 +1106,7 @@ export class World {
       }
     if (!this.pipeAnim && !this.leaving && !this.trickSpin) this.checkTeleports();
     this.checkZones();
+    this.tickPath();
     this.checkLoops();
     this.flyingCheeps();
     this.flyingBullets();
@@ -1104,7 +1137,7 @@ export class World {
             (z.w === undefined || p.body.x < tileToSub(z.x + z.w)),
         );
         if (pit) this.transfer(pit.target, 'fall');
-        else this.kill(p);
+        else if (!this.catchFall(p)) this.kill(p);
       }
     }
     this.cull();
@@ -1584,6 +1617,22 @@ export class World {
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
         this.audio.sfx('vine');
         break;
+      case 'flower':
+      case 'mushroom':
+        // The Top Secret Area: always this item, whatever the hero's power (its onPowerUp gives
+        // the hero's own flower or mushroom power).
+        this.spawn(new PowerUp(tx, ty, content));
+        this.audio.sfx('powerup-appear');
+        this.feats.powerBlocks++;
+        break;
+      case 'egg':
+        // A Yoshi egg pops up, wobbles and hatches (objects/yoshi-egg.ts: a 1-up for now).
+        this.spawn(new YoshiEgg(tx, ty));
+        this.audio.sfx('powerup-appear');
+        break;
+      case 'path':
+        this.layPath(tx, ty);
+        break;
       case 'teleporter':
         // The pad hidden in this block rises out of the floor (its `teleport` zone's block=).
         for (const e of this.entities)
@@ -1596,6 +1645,43 @@ export class World {
         break;
     }
     this.bump(tx, ty, frame, restore);
+  }
+
+  /**
+   * A hidden path's block was bumped (a `path` zone whose `block` is this tile): its tiles are
+   * queued, left to right, and appear one every PATH_STEP_FRAMES as cloud blocks (tickPath), each
+   * with a soft pop. Only open air becomes cloud; a tile with a player in it waits for him to move.
+   */
+  private layPath(tx: number, ty: number): void {
+    for (const z of this.level.zones) {
+      if (z.kind !== 'path' || z.campaign || z.block.x !== tx || z.block.y !== ty) continue;
+      for (let k = 0; k < z.w; k++) this.pathQueue.push({ x: z.x + k, y: z.y });
+      this.pathT = 0;
+      this.audio.sfx('vine');
+      this.events.push({ type: 'path' });
+    }
+  }
+
+  /** Tiles of a bumped hidden path still to appear (layPath), in order. */
+  private pathQueue: { x: number; y: number }[] = [];
+  private pathT = 0;
+
+  /** The next tile of a hidden path appears (layPath) unless a player stands in its cell. */
+  private tickPath(): void {
+    const next = this.pathQueue[0];
+    if (!next || ++this.pathT < PATH_STEP_FRAMES) return;
+    const cell = { x: tileToSub(next.x), y: tileToSub(next.y), w: tileToSub(1), h: tileToSub(1) };
+    if (this.players.some((p) => !p.dead && !p.out && overlaps(p.body, cell))) return;
+    this.pathT = 0;
+    this.pathQueue.shift();
+    if (this.map.get(next.x, next.y) !== T.AIR) return;
+    this.map.set(next.x, next.y, T.CLOUD_BLOCK);
+    this.audio.sfx('coin');
+  }
+
+  /** Whether a bumped hidden path is still being laid (tests, the bots). */
+  get layingPath(): boolean {
+    return this.pathQueue.length > 0;
   }
 
   /**
@@ -1920,7 +2006,8 @@ export class World {
     const b = p.body;
     if (!b.onGround) return;
     for (const z of this.level.zones) {
-      if (z.kind !== 'pipe') continue;
+      // A sleeping pipe (`campaign`, woken only by the campaign variant) is no way in.
+      if (z.kind !== 'pipe' || z.campaign) continue;
       if (z.dir === 'down') {
         if (this.autoWalk) {
           if (b.x + b.w >= tileToSub(z.x) - px(1)) return this.enterPipe(p, z, 'down');
@@ -2451,6 +2538,7 @@ export class World {
     this.backdrop?.(screen);
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     renderTiles(r, view, this.map);
+    if (this.assist.safetyFloor) this.renderSafetyFloor(r, view);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);
     if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);
     this.renderBeam(r, view);
@@ -2570,6 +2658,76 @@ export class World {
       this.trickSpin = null;
       s.wall.spinT = null; // at rest again (on the room's own face)
       for (const p of this.players) p.frozen = false;
+    }
+  }
+
+  /* ---------- The Safety floor assist ---------- */
+
+  /** The Safety floor's rims for this level (AssistOptions.safetyFloor; worked out on first use). */
+  get safetyFloor(): SafetyFloor {
+    return (this.safety ??= new SafetyFloor(this.map, this.level));
+  }
+
+  /**
+   * The map `p` moves through: with the Safety floor on, one where every deadly pit has a one-way
+   * floor at its rim and lava is solid from above (read each frame, so toggling the assist
+   * mid-level takes effect at once). A hero riding a live descent lift (5-4's shaft into the
+   * dungeon) sees the plain map: that ride down leads somewhere.
+   */
+  private playerMap(p: Player): TileMap {
+    if (!this.assist.safetyFloor || this.descentLift(p)) return this.map;
+    return (this.safetyView ??= this.safetyFloor.view());
+  }
+
+  /**
+   * A fall out of the level with the Safety floor on that the floor did not catch (a sinking lift
+   * carried the hero through it, or the assist came on mid-fall): put him back on the nearest
+   * floor instead of killing him. False when the assist is off or the level has no floor.
+   */
+  private catchFall(p: Player): boolean {
+    if (!this.assist.safetyFloor) return false;
+    const b = p.body;
+    // On screen (the camera's edges would push him back into whatever is off it), else anywhere.
+    const tx = tileAt(b.x + (b.w >> 1));
+    const spot =
+      this.safetyFloor.nearest(
+        tx,
+        toPx(b.h),
+        tileAt(this.camera.x + TILE_SUB - 1),
+        tileAt(this.camera.right) - 1,
+      ) ?? this.safetyFloor.nearest(tx, toPx(b.h));
+    if (!spot) return false;
+    p.stairs = null;
+    b.x = tileToSub(spot.tx) + ((tileToSub(1) - b.w) >> 1);
+    b.y = tileToSub(spot.row) - b.h;
+    b.prevBottom = b.y + b.h;
+    b.vx = 0;
+    b.vy = 0;
+    b.onGround = true;
+    return true;
+  }
+
+  /** The Safety floor's dev visual: a faint dashed line along the floor and over open lava. */
+  private renderSafetyFloor(r: Renderer, view: View): void {
+    const floor = this.safetyFloor;
+    const camPx = view.camX;
+    const first = Math.max(0, camPx >> 4);
+    const last = Math.min(this.map.width - 1, (camPx + SCREEN_W) >> 4);
+    const dash = (tx: number, ty: number) => {
+      for (let x = 0; x < 16; x += 8) r.rect(tx * 16 - camPx + x + 2, ty * 16, 4, 1, SAFETY_FLOOR_COLOR);
+    };
+    for (let tx = first; tx <= last; tx++) {
+      const row = floor.rowAt(tx);
+      if (row >= 0) dash(tx, row);
+      // Lava's surface (the top tile of each pool), unless the rim floor already covers it.
+      for (let ty = 0; ty < this.map.height; ty++)
+        if (
+          this.map.get(tx, ty) === T.LAVA &&
+          this.map.get(tx, ty - 1) !== T.LAVA &&
+          (row < 0 || row > ty) &&
+          floor.at(tx, ty)
+        )
+          dash(tx, ty);
     }
   }
 
