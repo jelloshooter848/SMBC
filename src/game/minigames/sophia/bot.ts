@@ -1,6 +1,15 @@
 import type { Action } from '@engine/input/actions';
 import { Rng } from '@engine/rng';
-import { DIRS, DIR_VEC, ROOM_H, ROOM_W, boxesOverlap, type Box, type Dir, type Side } from '../../topdown/geometry';
+import {
+  DIRS,
+  DIR_VEC,
+  ROOM_H,
+  ROOM_W,
+  boxesOverlap,
+  type Box,
+  type Dir,
+  type Side,
+} from '../../topdown/geometry';
 import { TdEnemy, type TdEntity } from '../../topdown/entity';
 import { Projectile } from '../../topdown/enemies';
 import { Capsule, GrenadeBlast, Grenade, gunLevel, type UnderworldWorld } from './jason';
@@ -163,7 +172,9 @@ export class JasonBot {
       case 'grenade': {
         if (s.until(world)) return 'done';
         this.doing = 'grenade';
-        const out = world.entities.some((e) => (e instanceof Grenade || e instanceof GrenadeBlast) && !e.dead);
+        const out = world.entities.some(
+          (e) => (e instanceof Grenade || e instanceof GrenadeBlast) && !e.dead,
+        );
         if (out) return [];
         if (Math.abs(hero.x - s.from.x) > 1 || Math.abs(hero.y - s.from.y) > 1)
           return this.walkTo(world, (n) => n.x === s.from.x && n.y === s.from.y) ?? this.giveUp();
@@ -352,7 +363,9 @@ export class JasonBot {
       { x: lx, y: ly + NODE },
       { x: lx + NODE, y: ly + NODE },
     ];
-    near.sort((a, b) => Math.abs(a.x - h.x) + Math.abs(a.y - h.y) - (Math.abs(b.x - h.x) + Math.abs(b.y - h.y)));
+    near.sort(
+      (a, b) => Math.abs(a.x - h.x) + Math.abs(a.y - h.y) - (Math.abs(b.x - h.x) + Math.abs(b.y - h.y)),
+    );
     return near.find((n) => this.free(n)) ?? (near[0] as Node);
   }
 
@@ -492,7 +505,14 @@ export interface HumanOptions {
 
 export const SHARP: Partial<HumanOptions> = { reaction: 0, aim: 0, hesitate: 0, tapEvery: 6, margin: 10 };
 export const CAUTIOUS: Partial<HumanOptions> = {};
-export const CLUMSY: Partial<HumanOptions> = { reaction: 21, aim: 10, hesitate: 0.02, tapEvery: 12, margin: 6, lookAhead: 18 };
+export const CLUMSY: Partial<HumanOptions> = {
+  reaction: 21,
+  aim: 10,
+  hesitate: 0.02,
+  tapEvery: 12,
+  margin: 6,
+  lookAhead: 18,
+};
 
 export const HUMAN_DEFAULTS: Omit<HumanOptions, 'seed'> = {
   reaction: 15,
@@ -518,7 +538,10 @@ export class HumanJason {
   private room = '';
   private t = 0;
 
-  constructor(plans: Readonly<Record<string, JasonPlan>> = UNDERWORLD_PLAN, opts: Partial<HumanOptions> = {}) {
+  constructor(
+    plans: Readonly<Record<string, JasonPlan>> = UNDERWORLD_PLAN,
+    opts: Partial<HumanOptions> = {},
+  ) {
     this.opts = { seed: 1, ...HUMAN_DEFAULTS, ...opts };
     this.bot = new JasonBot(plans, {
       tapEvery: this.opts.tapEvery,

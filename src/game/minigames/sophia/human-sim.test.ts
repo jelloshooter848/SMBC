@@ -26,8 +26,11 @@ describe('Underworld: a human with 3 lives (difficulty)', () => {
       for (const [name, o] of profiles) {
         const { rate, runs } = passRate(n, o);
         const where: Record<string, number> = {};
-        for (const r of runs) for (const d of r.deaths) where[`${d.room}:${d.doing}`] = (where[`${d.room}:${d.doing}`] ?? 0) + 1;
-        const fails = runs.filter((r) => r.result !== 'pass').map((r) => `${r.result}@${r.room}/${r.bossPhase}:${r.bossHp}`);
+        for (const r of runs)
+          for (const d of r.deaths) where[`${d.room}:${d.doing}`] = (where[`${d.room}:${d.doing}`] ?? 0) + 1;
+        const fails = runs
+          .filter((r) => r.result !== 'pass')
+          .map((r) => `${r.result}@${r.room}/${r.bossPhase}:${r.bossHp}`);
         const secs = runs
           .filter((r) => r.result === 'pass')
           .map((r) => r.seconds)
