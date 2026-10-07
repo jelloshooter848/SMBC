@@ -2,8 +2,8 @@ id: 4-2-cavern
 name: WORLD 4-2
 world: 4
 stage: 2
-theme: underground
-music: underground
+theme: cavern
+music: cavern
 time: inherit
 start: 2,0
 startMode: fall
@@ -12,11 +12,10 @@ parent: 4-2
 
 ;; Samus's cavern under the 4-2 vine area (campaign only: the warp zone's one pipe leads down
 ;; here, level/campaign.ts). A short Metroid-flavoured run through blue rock: the entry shaft,
-;; a bubble door, a low tunnel, the Chozo statue's chamber (a ? block over the statue's hand)
+;; a bubble door, a low tunnel, the Chozo statue's chamber (a ? block over the orb in the statue's hand)
 ;; where captive Samus waits on the dais beside the statue, a second bubble door, and a side
 ;; pipe that brings the player up out of the 4-2 pipe at column 72, the first pipe past the vine
-;; block (64,5), so nothing is skipped. The clock runs on (time: inherit). Theme and music stay
-;; underground until the cavern theme lands.
+;; block (64,5), so nothing is skipped. The clock runs on (time: inherit).
 
 [tiles]
 ;; 0                16               32               48
@@ -28,7 +27,7 @@ parent: 4-2
 #...........#### ################ ##............## ##.............{
 #............### ################ ##............## ##.............{
 #.............## ................ ..............## ##.............{
-#.............## ................ .......M......## ##...$$$.......{
+#.............## ................ ......M.......## ##...$$$.......{
 #....$$$......## ....$$$$$$...... ..............## ##.............{
 #............... ...########..... ................ ...............{
 #............... ................ ................ .............())

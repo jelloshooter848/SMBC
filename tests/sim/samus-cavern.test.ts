@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
+import { PALETTES, SPRITES } from '@content/sprites';
+import { AssetRegistry } from '@engine/assets/registry';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -44,7 +46,8 @@ describe('4-2-cavern: the level', () => {
     expect([l.world, l.stage]).toEqual([4, 2]);
     expect(l.startMode).toBe('fall');
     expect(l.start).toEqual({ x: 2, y: 0 });
-    expect(['underground', 'cavern']).toContain(l.theme);
+    expect(l.theme).toBe('cavern');
+    expect(l.music).toBe('cavern');
   });
 
   it('landmarks: two bubble doors, the Chozo statue on the dais, Samus beside it', () => {
@@ -65,6 +68,16 @@ describe('4-2-cavern: the level', () => {
       expect(l.tiles[12 * l.width + x]).toBe(T.GROUND);
       expect(l.tiles[11 * l.width + x]).toBe(T.AIR);
     }
+  });
+
+  it("the zebes decor draws: the 32x32 statue and the 16x48 bubble doors are the sheet's frames", () => {
+    const assets = new AssetRegistry(PALETTES);
+    assets.defineAll(SPRITES);
+    const zebes = assets.sheet('zebes');
+    for (const d of cavern().decor.filter((x) => x.kind.startsWith('zebes:')))
+      expect(zebes.frames.get(d.kind.slice('zebes:'.length)), d.kind).toBeDefined();
+    expect(zebes.frames.get('chozo-0')).toMatchObject({ w: 32, h: 32 });
+    expect(zebes.frames.get('bubble-door')).toMatchObject({ w: 16, h: 48 });
   });
 
   it('its one way out is the side pipe at the end, up out of the 4-2 pipe at 72', () => {
@@ -113,7 +126,8 @@ describe('4-2-cavern: every hero gets through', () => {
           if (feetRow(w) === 12 && centerCol(w) >= SAMUS.x - 0.5) return [];
           // A fresh jump press every 20 frames while at the foot of the step, held through the hop.
           const b = w.player.body;
-          if (!b.onGround && centerCol(w) > 34.5 && centerCol(w) < 37) return ['right', 'jump'];
+          if (!b.onGround && centerCol(w) > 34.5 && centerCol(w) < 37 && feetRow(w) > 11.5)
+            return ['right', 'jump']; // a short hop: the step is one tile
           if (b.onGround && feetRow(w) === 13 && centerCol(w) > 34.5)
             return f % 20 < 14 ? ['right', 'jump'] : ['right'];
           return ['right'];
