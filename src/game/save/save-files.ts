@@ -11,6 +11,7 @@ import {
   type ItemId,
   type NextItem,
 } from '@game/bonus/items';
+import { CRYSTAL_BALL } from '@game/map/captives';
 
 /**
  * Three campaign save files (world map progress plus the run: lives, score, coins, heroes and
@@ -66,7 +67,7 @@ export interface SaveFile extends MapProgress {
    */
   tutorials?: string[];
   /**
-   * Who the file has met (0.5.0; the Mini Game Arena's "found" rule, src/game/arena): CharacterDef
+   * Who the file has met (0.4.7; the Mini Game Arena's "found" rule, src/game/arena): CharacterDef
    * ids of heroes whose captive was talked to at least once (freed heroes count as met), plus
    * 'larry' once Larry Koopa's airship was boarded. Missing in older files: derived on load from
    * `freed` (and 'larry' from the secret `larry`). No format change.
@@ -373,7 +374,7 @@ export function migrateSave(
       ...[stored.character, stored.character2].filter((id) => freed.includes(id as string)),
     ]),
     // Talked-to captives; older files derive it from the freed heroes (and Larry from his secret).
-    met: metIds(Array.isArray(stored.met) ? stored.met : [], freed, secrets.includes(MET_LARRY)),
+    met: metIds(Array.isArray(stored.met) ? stored.met : [], freed, secrets.includes(CRYSTAL_BALL)),
     // Larry Koopa's crystal ball (secret 'larry') unlocks the inventory.
     inventoryUnlocked: stored.inventoryUnlocked === true || secrets.includes('larry'),
     bonusOpen: stored.bonusOpen !== false,

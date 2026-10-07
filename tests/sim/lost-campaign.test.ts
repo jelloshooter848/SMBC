@@ -195,7 +195,7 @@ const menuItem = (scene: unknown, label: string): MenuItem | undefined =>
 describe('Lost Levels campaign: maps, clears and warps', () => {
   it('Lost 1 → enter 1-1 → its exit → the Lost 1 map with 1-2 open and saved', () => {
     const h = makeGame();
-    // (The hub's pad to Lost 1 is the Mini Game Arena's since 0.5.0.)
+    // (The hub's pad to Lost 1 is the Mini Game Arena's since 0.4.7.)
     open(
       h,
       file({

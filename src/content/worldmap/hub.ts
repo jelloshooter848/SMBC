@@ -9,10 +9,10 @@ import { HUB_ARENA_PAD } from './arena';
  * which is also the warp back (RETURN TO WORLD 1: a start node carrying `to`, so arriving never
  * warps and JUMP does); four pads sit one in each direction:
  *
- *   east   MINI GAME ARENA (0.5.0; always open), paired 1:1 with the arena's Return pad
+ *   east   MINI GAME ARENA (0.4.7; always open), paired 1:1 with the arena's Return pad
  *   north, south, west   ??? (future secrets; `requires: 'never'`)
  *
- * The east pad led to the Lost Levels (after SMB 8-4) until 0.5.0; the Lost Levels are reached
+ * The east pad led to the Lost Levels (after SMB 8-4) until 0.4.7; the Lost Levels are reached
  * from World 8 now (docs/WORLD_MAP.md), and the pad is the arena's (src/content/worldmap/arena.ts).
  *
  * Room for more pads: the centre offers all four directions already, so new pads hang off the

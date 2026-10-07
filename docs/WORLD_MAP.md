@@ -101,13 +101,13 @@ map hint"): on its right, or its left when a road leaves to the right; `heroSpot
 ### Warp nodes
 
 ```ts
-{ id: 'warp-lost', kind: 'warp', x: 13, y: 8,
-  to: 'll-1',               // target page id (must be registered)
-  toNode?: 'hub',           // arrival node there (default: its start node)
+{ id: 'warp-ll-10', kind: 'warp', x: 6, y: 7,
+  to: 'll-10',              // target page id (must be registered)
+  toNode?: 'warp-ll-8',     // arrival node there (default: its start node)
   oneWay?: true,            // optional: exempt from the 1:1 pairing
-  requires?: 'gameCleared', // MapCondition; absent = always works
-  label?: 'LOST LEVELS',    // hint line while open (default: the target page's title)
-  hint?: 'LOST LEVELS - BEAT 8-4 TO UNLOCK', // hint line while locked (needed with `requires`)
+  requires?: 'llLetters',   // MapCondition; absent = always works
+  label?: 'LOST WORLD A',   // hint line while open (default: the target page's title)
+  hint?: 'LOST A - BEAT LOST 8-4', // hint line while locked (needed with `requires`)
   unlock?: 'bonus-1' }      // optional: hidden until this secret is found
 ```
 
@@ -116,8 +116,8 @@ map hint"): on its right, or its left when a road leaves to the right; `heroSpot
   yet. Pads that never work (`requires: 'never'`) are exempt.
 - A warp node is shown and walkable whenever a road to it is open (like any node), even locked.
 - While the hero stands on it, the **hint line** (a black strip at the bottom of the map) shows
-  `label` when it works, `hint` when locked; the announcer says it ("Warp, Lost Levels" /
-  "Lost Levels - Beat 8-4 To Unlock, locked"). Keep both at most 32 chars.
+  `label` when it works, `hint` when locked; the announcer says it ("Warp, Mini Game Arena" /
+  "Lost A - Beat Lost 8-4, locked"). Keep both at most 32 chars.
 - JUMP on an open warp: the target page opens (`progress.pages`), the map **fades** there, the
   hero lands on `toNode`, and the file is saved. JUMP on a locked one: the bump sound, nothing
   else.
@@ -144,9 +144,9 @@ by their `unlock` key (World 1's warp spot) with their roads. Bonus nodes, and k
 have `requires: 'never'`, stay hidden until their secret is found. It writes nothing to the file: a warp
 that works only through Unlock all travels without opening its page (`rules.warpRecords`).
 
-## The Mini Game Arena (0.5.0)
+## The Mini Game Arena (0.4.7)
 
-The Warp Zone hub's first pad (east, `warp-arena`; the Lost Levels' pad until 0.5.0) leads to the
+The Warp Zone hub's first pad (east, `warp-arena`; the Lost Levels' pad until 0.4.7) leads to the
 `arena` page, open as soon as the hub is reachable (no `requires`). The arena
 (`src/content/worldmap/arena.ts`) is a stadium: the hero arrives on the Return pad in the middle of
 the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pads stand around it.
@@ -154,22 +154,27 @@ the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pad
 - **Pads** (`kind: 'game'`, id `pad-<game>`) are not written in the page: `src/game/arena` lists the
   games from the registries (MINIGAMES, Larry's airship, the bonus games, 1-0, the heroes with
   training lessons) and lays the page out with `installArenaGames` when it loads, so the arena
-  grows by itself. Slots, in fill order: the running track (20 slots two tiles apart, from the
-  bottom middle round to the right, each joined to the next; the ring closes when all 20 are
-  used; the Return pad's roads go down to the first and up to the eleventh), then 10 on the field
-  off the Return pad's left and right roads. 16 games use 16 slots today.
+  grows by itself. Slots, in fill order: a ring round the pitch (20 slots two tiles apart, from the
+  near side's middle round to the right, each joined to the next; the ring closes when all 20 are
+  used; the Return pad's roads go down to the first and up to the twelfth), then 5 across the
+  middle of the pitch off the Return pad's left and right roads. 16 games use 16 slots today.
 - Every pad and road of the arena is walkable as soon as the page is open (`rules.pathFromDone`:
   roads leaving a `game` node count as walked on an open page). Whether a game is **found** is the
   arena's own rule (docs/HEROES.md "Met heroes and the Mini Game Arena"); a dark pad shows the
-  hero's silhouette and `?`, its hint line says what to find (`??? - FIND THIS HERO FIRST`) and JUMP
+  hero's silhouette and `?`, its hint line says what to find (`??? - FIND THIS HERO FIRST`, `??? - FREE THIS HERO FIRST` for a training room) and JUMP
   bumps. On a found pad the hint line names the game, the touch JUMP says PLAY, and the announcer
   says "Mirror Race, Luigi. Jump to play, for fun."
 - A round is played over the map and nothing is saved (docs/HEROES.md); arriving and walking save
   the hero's place as on any page. The Worlds menu lists the arena on the hub and on the arena.
-- **Art** (placeholder until the arena's own): theme `grass`, music `map`, stands of castle wall.
-  `drawArenaPad` uses the map sheet's `arena-pad-mini`, `arena-pad-training`, `arena-pad-tutorial`,
-  `arena-pad-airship`, `arena-pad-bonus` and `arena-pad-locked` frames when the theme's sheet has
-  them, else items-sheet icons; heroes stand on their pads in their portrait frames.
+- **Art**: theme `arena` (a night match: `map-arena` palette, sky `ARENA_NIGHT`) and music `arena`.
+  The sketch (`SKETCH_ARENA`): bunting `w` on the sky (row 2), crowds `M`/`N` alternating with
+  banners `E` (rows 3-4), the barrier wall `B` (row 5), the walkable chequered pitch `F` (rows
+  6-13, every pad and road on it) and a crowd again (row 14). Actors: the `scoreboard` at (104,40),
+  `light-tower`s at (0,64) and (240,64), and fans' flags in the stands. Pads (`drawArenaPad`) are
+  items-sheet frames: `map-arena-game` (a trophy: mini games, the airship, bonus games),
+  `map-arena-tutorial` (a signpost: 1-0 and training) and `map-arena-locked` (the dark `?`), drawn
+  in front of what stands at the pad: the hero's portrait (a black silhouette until found), Larry,
+  or the bonus game's icon.
 
 ## Secret exits: each exit opens its own road (0.5.0)
 
@@ -223,9 +228,9 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 - Lost Levels pages unlock like SMB: levels open in order along the roads, a castle exit opens
   the next page. World 9: exit `ll-8-4 → ll-9` with `requires: 'll9'`. Worlds A-D: the warp node
   `warp-ll-10` on World 8, off the castle, with `requires: 'llLetters'` (A-D can open without
-  World 9); then castle exits `ll-10 → ll-11 → ll-12 → ll-13`. Only World 1 has a warp node
-  `hub` back to the Warp Zone (paired with the hub's Lost Levels pad); World A's pipe
-  `warp-ll-8` leads back to World 8's pad. Worlds 2-9 and B-D have no other portals.
+  World 9); then castle exits `ll-10 → ll-11 → ll-12 → ll-13`. The hub has no Lost Levels pad
+  since 0.4.7 (its first pad is the Mini Game Arena's); World A's pipe `warp-ll-8` leads back to
+  World 8's pad. Worlds 2-9 and B-D have no other portals.
 - Every condition reads the save file alone (campaign rules, owner decision for 0.4.0; the
   global NES progress store in `src/engine/save/progress.ts` is only for non-campaign play).
 - A condition can come true after its castle was cleared (World 9 when the 32nd of Lost 1-1 to
@@ -237,7 +242,7 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 - `MapProgress`: `cleared` (main level ids beaten through their **normal** exit, `1-0` included
   once the tutorial is cleared), `pages` (open page ids, `smb-1` always), `secrets` (keys found,
   secret exits included), `position: { page, node }`, `gameCleared`.
-- Reveal ids are page-qualified: `'<page>:<id>'` (`'hub:start>warp-lost'`, `'smb-1:1-4>smb-2'`); an
+- Reveal ids are page-qualified: `'<page>:<id>'` (`'hub:start>warp-arena'`, `'smb-1:1-4>smb-2'`); an
   exit's id is `'<from>><to page>'`. Each page draws in only its own when shown.
 - `rules.findSecret(progress, key)` records a secret and returns what it reveals;
   `rules.warpTo(progress, page)` opens a page (warp pipes, warp nodes).

@@ -92,6 +92,7 @@ describe('Mini Game Arena page', () => {
     const page = mapPage('arena') as WorldMapPage;
     expect(page).toBe(ARENA_PAGE);
     expect([page.group, page.label, page.title]).toEqual(['arena', 'ARENA', 'MINI GAME ARENA']);
+    expect([page.theme, page.music]).toEqual(['arena', 'arena']);
     expect(page.tiles).toEqual(SKETCH_ARENA);
     for (const row of page.tiles) {
       expect(row).toHaveLength(16);
@@ -102,7 +103,7 @@ describe('Mini Game Arena page', () => {
 
   it('arrives on the Return pad in the middle, which warps back to the hub pad that leads here', () => {
     const start = ARENA_PAGE.nodes.find((n) => n.kind === 'start');
-    expect(start).toMatchObject({ id: 'start', x: 8, y: 8, to: 'hub', toNode: HUB_ARENA_PAD });
+    expect(start).toMatchObject({ id: 'start', x: 7, y: 9, to: 'hub', toNode: HUB_ARENA_PAD });
     expect(start?.label).toBe('RETURN TO WARP ZONE');
     expect(isWarpNode(start!)).toBe(true);
     const pad = mapPage('hub')?.nodes.find((n) => n.id === HUB_ARENA_PAD);
@@ -119,7 +120,7 @@ describe('Mini Game Arena page', () => {
   });
 
   it('grows soundly for any number of games, up to every slot (the ring closes when full)', () => {
-    expect(ARENA_SLOTS.length).toBeGreaterThanOrEqual(28);
+    expect(ARENA_SLOTS.length).toBeGreaterThanOrEqual(24);
     for (let n = 0; n <= ARENA_SLOTS.length + 2; n++) {
       const games = Array.from({ length: n }, (_, i) => `g${i}`);
       const page = arenaPage(games);

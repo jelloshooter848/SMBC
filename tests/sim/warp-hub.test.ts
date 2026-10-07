@@ -26,7 +26,7 @@ import type { Settings } from '@engine/save/settings';
 
 // The 0.4.0 Warp Zone: in campaign play the 1-2 warp zone has one pipe, which records secret
 // bonus-1 and opens the road to World 1's warp spot; the spot warps to the hub, whose first pad
-// (the Lost Levels' until 0.5.0) leads to the Mini Game Arena, open from the start.
+// (the Lost Levels' until 0.4.7) leads to the Mini Game Arena, open from the start.
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -197,7 +197,7 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     // The centre is the warp back to World 1 (arriving did not warp).
     expect(h.map().hintLine).toBe('RETURN TO WORLD 1');
 
-    // The first pad: the Mini Game Arena, open as soon as the hub is (0.5.0).
+    // The first pad: the Mini Game Arena, open as soon as the hub is (0.4.7).
     walkTo(h, 'warp-arena');
     expect(h.map().hintLine).toBe('MINI GAME ARENA');
     h.step();

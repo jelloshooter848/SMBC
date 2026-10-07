@@ -54,7 +54,6 @@ import {
   stateFromSave,
   tutorialHeroes,
   metIds,
-  MET_LARRY,
   writeSave,
   type SaveFile,
   type SaveSlot,
@@ -857,7 +856,7 @@ export class Game {
     this.devUnlockAll = save.devUnlockAll === true;
     this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
-    this.met = metIds(save.met ?? [], this.freed, save.secrets.includes(MET_LARRY));
+    this.met = metIds(save.met ?? [], this.freed, save.secrets.includes(CRYSTAL_BALL));
     this.bonusOpen = save.bonusOpen !== false;
     this.inventoryUnlocked = save.inventoryUnlocked === true || save.secrets.includes(CRYSTAL_BALL);
     this.bonus = bonusStateFrom(save);

@@ -1,9 +1,8 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { arenaPadId, installArenaGames } from '@content/worldmap/arena';
-import { MAP_PAL } from '@content/worldmap/render';
 import { fxPalette } from '@content/sprites/palette-fx';
-import type { MapNode, WorldMapPage } from '../map/types';
+import type { MapNode } from '../map/types';
 import type { Game } from '../scenes/game';
 import { MINIGAMES } from '../minigames';
 import { CHARACTERS } from '../characters/registry';
@@ -20,7 +19,7 @@ import { DevMiniGameResultScene, playRound, type DevRound } from '../scenes/dev-
 import { TUTORIAL_ROUND } from './stage-round';
 
 /*
- * The MINI GAME ARENA (owner decision for 0.5.0; the page is src/content/worldmap/arena.ts): every
+ * The MINI GAME ARENA (owner decision for 0.4.7; the page is src/content/worldmap/arena.ts): every
  * game the file has found, one pad each, played "for fun" with JUMP. The list is built from the
  * registries, so it grows by itself:
  *
@@ -63,6 +62,7 @@ export interface ArenaGame {
 /** The locked pads' hint lines. */
 export const ARENA_LOCKED = {
   hero: '??? - FIND THIS HERO FIRST',
+  training: '??? - FREE THIS HERO FIRST',
   airship: "??? - FIND LARRY'S AIRSHIP FIRST",
   bonus: '??? - FIND THE BONUS SPOT FIRST',
   stage: `??? - PLAY ${TUTORIAL_LEVEL} FIRST`,
@@ -147,7 +147,7 @@ export function arenaGames(characters: readonly CharacterDef[] = CHARACTERS): Ar
         kind: 'training',
         title: `${c.hudName} TRAINING`.slice(0, 32),
         hero: c.id,
-        locked: ARENA_LOCKED.hero,
+        locked: ARENA_LOCKED.training,
         found: (game) => all(game) || game.tutorials.includes(c.id) || game.freed.includes(c.id),
         round: trainingRound(c),
       })),
@@ -227,72 +227,46 @@ export function playArenaPad(game: Game, n: MapNode, music: string, then: () => 
   return true;
 }
 
-/** Frame names the arena's own art may give the map sheet (theme palette); fallbacks otherwise. */
+/** The pads (items sheet, 16×16): a trophy for games, a signpost for tutorials, a dark '?'. */
 export const ARENA_PAD_FRAMES: Readonly<Record<ArenaKind | 'locked', string>> = {
-  mini: 'arena-pad-mini',
-  airship: 'arena-pad-airship',
-  bonus: 'arena-pad-bonus',
-  stage: 'arena-pad-tutorial',
-  training: 'arena-pad-training',
-  locked: 'arena-pad-locked',
-};
-
-/** Items-sheet stand-ins while the map sheet has no arena frames. */
-const FALLBACK: Readonly<Record<ArenaKind | 'locked', string>> = {
-  mini: 'map-warp',
-  airship: 'map-castle',
-  bonus: 'map-node-bonus',
-  stage: 'map-node-start',
-  training: 'map-node-open',
-  locked: 'map-warp-locked',
+  mini: 'map-arena-game',
+  airship: 'map-arena-game',
+  bonus: 'map-arena-game',
+  stage: 'map-arena-tutorial',
+  training: 'map-arena-tutorial',
+  locked: 'map-arena-locked',
 };
 
 /**
- * Draws pad `n` of `page` at its tile (shifted `ox`): the pad (the arena art's frame, else a map
- * icon), then what stands on it: the hero (in colour when found, a black silhouette when not),
- * Larry over his airship's pad, the bonus game's icon; a dark pad gets a '?' too. Never throws on
- * missing art: absent frames are skipped.
+ * Draws pad `n` at its tile (shifted `ox`): what stands at the pad first (the hero in colour when
+ * found, a black silhouette when not; Larry at his airship's pad; the bonus game's icon), then the
+ * pad in front of its feet: a trophy (games), a signpost (tutorials) or the dark '?' pad.
  */
-export function drawArenaPad(
-  r: Renderer,
-  game: Game,
-  page: WorldMapPage,
-  n: MapNode,
-  ox: number,
-  t: number,
-): void {
+export function drawArenaPad(r: Renderer, game: Game, n: MapNode, ox: number, t: number): void {
   const assets = game.ctx.assets;
   const g = arenaGameAt(n);
   const found = !!g && g.found(game);
   const x = ox + n.x * 16;
   const y = n.y * 16;
-  const key = found && g ? g.kind : 'locked';
-  const map = assets.sheet('map', MAP_PAL[page.theme]);
-  const own = ARENA_PAD_FRAMES[key];
-  if (map.frames.has(own)) r.sprite(map, own, x, y);
-  else r.sprite(assets.sheet('items'), FALLBACK[key], x, y);
-  if (!g) return;
-  if (found && g.kind === 'bonus') {
+  // Figures stand just behind the pad, their feet hidden by it.
+  const feet = y + 6;
+  if (g && found && g.kind === 'bonus') {
     const kind = g.id.slice('bonus-'.length) as BonusKind;
-    r.sprite(assets.sheet('smb3'), BONUS_FRAME[kind] ?? 'node-spade', x, y);
-    return;
-  }
-  if (found && g.kind === 'airship') {
+    r.sprite(assets.sheet('smb3'), BONUS_FRAME[kind] ?? 'node-spade', x, feet - 16);
+  } else if (g && found && g.kind === 'airship') {
     const smb3 = assets.sheet('smb3');
     const frame = (t >> 4) & 1 ? 'larry-1' : 'larry-0';
-    const h = smb3.frames.get(frame)?.h ?? 16;
-    r.sprite(smb3, frame, x, y + 10 - h);
-    return;
+    r.sprite(smb3, frame, x, feet - (smb3.frames.get(frame)?.h ?? 16));
+  } else if (g?.hero) {
+    const def = game.deps.characters.find((c) => c.id === g.hero);
+    if (def) {
+      const p = def.portrait;
+      const sheet = assets.sheet(p.sheet, found ? p.palette : fxPalette(p.palette, 'silhouette'));
+      const f = sheet.frames.get(p.frame);
+      const w = f?.w ?? 16;
+      // A training pad's hero faces left, a mini game's right.
+      r.sprite(sheet, p.frame, x + 8 - (w >> 1), feet - (f?.h ?? 16), g.kind === 'training');
+    }
   }
-  const def = g.hero ? game.deps.characters.find((c) => c.id === g.hero) : undefined;
-  if (def) {
-    const p = def.portrait;
-    const sheet = assets.sheet(p.sheet, found ? p.palette : fxPalette(p.palette, 'silhouette'));
-    const f = sheet.frames.get(p.frame);
-    const w = f?.w ?? 16;
-    const h = f?.h ?? 16;
-    // Feet on the pad, as the player's marker stands on a node; a training pad's hero faces left.
-    r.sprite(sheet, p.frame, x + 8 - (w >> 1), y + 10 - h, g.kind === 'training');
-  }
-  if (!found) r.text(assets.sheet('font'), '?', x + 4, y + 4);
+  r.sprite(assets.sheet('items'), ARENA_PAD_FRAMES[found && g ? g.kind : 'locked'], x, y);
 }

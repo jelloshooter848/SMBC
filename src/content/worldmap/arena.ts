@@ -2,93 +2,90 @@ import type { MapNode, MapPath, WorldMapPage } from '@game/map/types';
 import { actor, poly } from './build';
 
 /*
- * The MINI GAME ARENA (page 'arena', group 'arena'), reached from the Warp Zone hub's first pad:
- * a stadium where every game the file has found can be played for fun (src/game/arena). The hero
- * arrives on the middle of the field, on the Return pad (a start node carrying `to`, like the
- * hub's centre: arriving never warps, JUMP warps back to the hub's Arena pad).
+ * The MINI GAME ARENA (page 'arena', group 'arena', 0.4.7), reached from the Warp Zone hub's first
+ * pad: a stadium at night where every game the file has found can be played for fun
+ * (src/game/arena). Bunting over the stands, two rows of cheering crowds with banners, the barrier
+ * wall, and the chequered pitch below; the scoreboard and two light towers stand over the crowd.
+ * The hero arrives in the middle of the pitch, on the Return pad (a start node carrying `to`, like
+ * the hub's centre: arriving never warps, JUMP warps back to the hub's Arena pad).
  *
  * The pads are not written here: the game list comes from the registries (src/game/arena:
  * MINIGAMES, the heroes with training rooms, Larry's airship, the bonus games, 1-0), which
  * installs them with `installArenaGames`, so the arena grows by itself as games are added. Pad
  * slots, in fill order (ARENA_SLOTS):
  *
- *   - the running track around the field: 20 slots two tiles apart, from the bottom middle
- *     (8,12) round to the right, up, along the top and down the left side; each joined to the
- *     next, the ring closing once all 20 are used. The Return pad's roads go down to (8,12) and
- *     up to (8,4) (slot 10);
- *   - then 10 more on the field, off the Return pad's left and right roads (room to grow).
+ *   - a ring round the pitch: 20 slots two tiles apart (rows 6 and 12, columns 1 and 15), from
+ *     (7,12) on the near side round to the right, up, along the far side and down the left; each
+ *     joined to the next, the ring closing once all 20 are used. The Return pad's roads go down
+ *     to (7,12) and up to (7,6) (slot 11);
+ *   - then 5 more across the middle of the pitch, off the Return pad's left and right roads.
  *
- * A pad is a node `{ id: 'pad-<game>', kind: 'game', game: '<game>' }`. Games beyond the 30 slots
+ * A pad is a node `{ id: 'pad-<game>', kind: 'game', game: '<game>' }`. Games beyond the 25 slots
  * would be left out (arena.test.ts checks that every registered game has its slot).
  */
 export const SKETCH_ARENA = [
   '................',
   '................',
-  'VVVVVVVVVVVVVVVV',
-  'WWWWWWWWWWWWWWWW',
-  'WW:::::::::::::W',
-  'WW:,#######*#,:W',
-  'WW:#,#####,###:W',
-  'WW:####,######:W',
-  'WW:#*###,###*#:W',
-  'WW:######,####:W',
-  'WW:###,#####,#:W',
-  'WW:,#*#######,:W',
-  'WW:::::::::::::W',
-  'WWWWWWWWWWWWWWWW',
-  'VVVVVVVVVVVVVVVV',
+  'wwwwwwwwwwwwwwww',
+  'MNMNMEMNMNEMNMNM',
+  'NMNMNMNMNMNMNMNM',
+  'BBBBBBBBBBBBBBBB',
+  'FFFFFFFFFFFFFFFF',
+  'FFFFFFFFFFFFFFFF',
+  'FFFFFFFFFFFFFFFF',
+  'FFFFFFFFFFFFFFFF',
+  'FFFFFFFFFFFFFFFF',
+  'FFFFFFFFFFFFFFFF',
+  'FFFFFFFFFFFFFFFF',
+  'FFFFFFFFFFFFFFFF',
+  'MNMNMNMNMNMNMNMN',
 ];
 
 type Pt = [number, number];
 
-/** The Return pad (the page's start) in the middle of the field. */
-export const ARENA_CENTRE: Pt = [8, 8];
+/** The Return pad (the page's start) in the middle of the pitch. */
+export const ARENA_CENTRE: Pt = [7, 9];
 
 /** The hub's pad that leads here, and that the Return pad leads back to (portals pair 1:1). */
 export const HUB_ARENA_PAD = 'warp-arena';
 
-/** The running track's slots, in fill order: bottom middle, right, up, along the top, down the left. */
+/** The ring's slots, in fill order: near side from the middle, right, up, along the far side, down the left. */
 export const ARENA_RING: readonly Pt[] = [
-  [8, 12],
-  [10, 12],
-  [12, 12],
-  [14, 12],
-  [14, 10],
-  [14, 8],
-  [14, 6],
-  [14, 4],
-  [12, 4],
-  [10, 4],
-  [8, 4],
-  [6, 4],
-  [4, 4],
-  [2, 4],
-  [2, 6],
-  [2, 8],
-  [2, 10],
-  [2, 12],
-  [4, 12],
-  [6, 12],
+  [7, 12],
+  [9, 12],
+  [11, 12],
+  [13, 12],
+  [15, 12],
+  [15, 10],
+  [15, 8],
+  [15, 6],
+  [13, 6],
+  [11, 6],
+  [9, 6],
+  [7, 6],
+  [5, 6],
+  [3, 6],
+  [1, 6],
+  [1, 8],
+  [1, 10],
+  [1, 12],
+  [3, 12],
+  [5, 12],
 ];
 
-/** The ring slot the Return pad's upward road leads to (the top middle). */
-const RING_TOP = 10;
+/** The ring slot the Return pad's upward road leads to (the far side's middle). */
+const RING_TOP = 11;
 
 /**
- * The field's slots after the ring, left and right in turn, each with the slot (index into
+ * The pitch's slots after the ring, across its middle, each with the slot (index into
  * ARENA_SLOTS, or -1 for the Return pad) its road comes from.
  */
 const FIELD: readonly { at: Pt; from: number }[] = [
-  { at: [4, 8], from: -1 },
-  { at: [12, 8], from: -1 },
-  { at: [4, 6], from: 20 },
-  { at: [12, 6], from: 21 },
-  { at: [4, 10], from: 20 },
-  { at: [12, 10], from: 21 },
-  { at: [6, 6], from: 22 },
-  { at: [10, 6], from: 23 },
-  { at: [6, 10], from: 24 },
-  { at: [10, 10], from: 25 },
+  { at: [5, 9], from: -1 },
+  { at: [9, 9], from: -1 },
+  { at: [3, 9], from: 20 },
+  { at: [11, 9], from: 21 },
+  { at: [13, 9], from: 23 },
 ];
 
 /** Every pad slot, in fill order (the ring, then the field). */
@@ -146,21 +143,20 @@ export function arenaPage(games: readonly string[]): WorldMapPage {
     group: 'arena',
     label: 'ARENA',
     title: 'MINI GAME ARENA',
-    // Placeholder look until the arena's own theme and music land: a field and its stands.
-    theme: 'grass',
-    music: 'map',
+    theme: 'arena',
+    music: 'arena',
     tiles: SKETCH_ARENA.slice(),
     ...arenaLayout(games),
     exits: [],
     actors: [
-      actor('flag', 8, 32, { phase: 0 }),
-      actor('flag', 56, 32, { phase: 7 }),
-      actor('flag', 104, 32, { phase: 3 }),
-      actor('flag', 136, 32, { phase: 11 }),
-      actor('flag', 184, 32, { phase: 5 }),
-      actor('flag', 232, 32, { phase: 9 }),
-      actor('flag', 0, 112, { phase: 2 }),
-      actor('flag', 240, 112, { phase: 6 }),
+      actor('scoreboard', 104, 40, { phase: 0 }),
+      actor('light-tower', 0, 64, { phase: 0 }),
+      actor('light-tower', 240, 64, { phase: 100 }),
+      // Fans' flags waving in the stands.
+      actor('flag', 32, 56, { phase: 0 }),
+      actor('flag', 64, 48, { phase: 7 }),
+      actor('flag', 176, 48, { phase: 3 }),
+      actor('flag', 208, 56, { phase: 11 }),
     ],
   };
 }

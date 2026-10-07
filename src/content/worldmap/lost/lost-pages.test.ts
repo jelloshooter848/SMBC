@@ -110,7 +110,7 @@ describe('Lost Levels map pages', () => {
     expect(hub.requires).toBeUndefined();
     expect(hub.level).toBeUndefined();
     expect(one.paths.some((p) => p.to === HUB_WARP || p.from === HUB_WARP)).toBe(true);
-    // The hub's old Lost Levels pad is the Mini Game Arena's (0.5.0): nothing on the hub leads here.
+    // The hub's old Lost Levels pad is the Mini Game Arena's (0.4.7): nothing on the hub leads here.
     expect(mapPage('hub')?.nodes.filter((n) => n.to?.startsWith('ll-'))).toEqual([]);
     expect(hub.oneWay).toBe(true);
   });

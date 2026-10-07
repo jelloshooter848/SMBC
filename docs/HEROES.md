@@ -277,7 +277,7 @@ puts its mini game in the Mini Game Arena:
    last card does not make the hero jump. The run's GameState is restored after each round, so
    a mini game cannot change lives, power or score.
 
-## Met heroes and the Mini Game Arena (0.5.0)
+## Met heroes and the Mini Game Arena (0.4.7)
 
 - **`SaveFile.met?: string[]`** (optional, no format bump): hero ids whose captive was talked to at
   least once (`Game.meet(id)` from `talkToCaptive`, saved at once), plus `'larry'` once Larry

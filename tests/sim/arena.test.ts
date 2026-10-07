@@ -11,9 +11,10 @@ import type { MenuItem } from '@game/scenes/menu';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { isOpen, openPaths } from '@game/map/rules';
 import { loadSave, type SaveFile } from '@game/save/save-files';
+import { defaultSettings } from '@engine/save/settings';
 import { draw, file, intoBonus, makeGame, standByLuigi, store, useStorage, type H } from './heroes-harness';
 
-// The MINI GAME ARENA (0.5.0): the hub's first pad leads to it; one pad per game the registries
+// The MINI GAME ARENA (0.4.7): the hub's first pad leads to it; one pad per game the registries
 // list, found by the file's own progress (met heroes, 1-0, training answers, Larry's airship, the
 // bonus spot), played for fun with the Dev → Mini games round and result card, then back on the
 // pad. Nothing is ever saved by a round.
@@ -90,6 +91,27 @@ describe('the Warp Zone hub: the Arena pad', () => {
   });
 });
 
+describe('an old file standing on the Lost Levels pad', () => {
+  it('lands on the hub centre (the pad is the Arena pad now)', () => {
+    const h = makeGame();
+    h.game.openFile(
+      1,
+      file({
+        cleared: ['1-0', '1-1', '1-2'],
+        secrets: ['bonus-1'],
+        pages: ['smb-1', 'hub'],
+        position: { page: 'hub', node: 'warp-lost' },
+        lastNode: { hub: 'warp-lost' },
+      }),
+    );
+    h.idle(8);
+    expect([map(h).page.id, map(h).node]).toEqual(['hub', 'start']);
+    expect(map(h).hintLine).toBe('RETURN TO WORLD 1');
+    expect(loadSave(1)?.position).toEqual({ page: 'hub', node: 'start' });
+    expect(loadSave(1)?.lastNode.hub).toBe('start');
+  });
+});
+
 describe('the Mini Game Arena', () => {
   it('lists every hero mini game, the training rooms, 1-0, the airship and the bonus games', () => {
     const ids = ARENA_GAMES.map((g) => g.id);
@@ -161,11 +183,13 @@ describe('the Mini Game Arena', () => {
     expect(h.top()).toBe(map(h));
     expect(h.said.at(-1)).toBe('Locked. Find This Hero First.');
     expect(new Map(store)).toEqual(saves);
-    // Drawn dark: Luigi's black silhouette and a '?'.
+    // Drawn dark: Luigi's black silhouette behind the dark '?' pad.
     const d = draw(map(h));
     const p = pad('mini-luigi');
     expect(d.sprites.some((s) => s.key.includes('luigi~silhouette'))).toBe(true);
-    expect(d.texts.some((t) => t.str === '?' && t.x === p.x * 16 + 4 && t.y === p.y * 16 + 4)).toBe(true);
+    expect(
+      d.sprites.some((s) => s.frame === 'map-arena-locked' && s.x === p.x * 16 && s.y === p.y * 16),
+    ).toBe(true);
   });
 
   it('a late file: every game is found and shows in colour', () => {
@@ -174,7 +198,14 @@ describe('the Mini Game Arena', () => {
     expect(found(h)).toEqual(ARENA_GAMES.map((g) => g.id).sort());
     const d = draw(map(h));
     expect(d.sprites.some((s) => s.key.includes('~silhouette'))).toBe(false);
-    expect(d.texts.some((t) => t.str === '?')).toBe(false);
+    expect(d.sprites.some((s) => s.frame === 'map-arena-locked')).toBe(false);
+    // Trophies for the games, signposts for the tutorials.
+    const frameAt = (game: string) =>
+      d.sprites.find((s) => s.key === 'items' && s.x === pad(game).x * 16 && s.y === pad(game).y * 16)?.frame;
+    expect(frameAt('mini-luigi')).toBe('map-arena-game');
+    expect(frameAt('bonus-memory')).toBe('map-arena-game');
+    expect(frameAt('train-link')).toBe('map-arena-tutorial');
+    expect(frameAt('stage-1-0')).toBe('map-arena-tutorial');
     expect(d.sprites.some((s) => s.key === 'mario@luigi')).toBe(true);
   });
 
@@ -267,6 +298,51 @@ describe('the Mini Game Arena', () => {
     h.tap('jump');
     expect(h.top()).toBe(m);
     expect(h.game.state.lives).toBe(lives);
+    expect(new Map(store)).toEqual(saves);
+  });
+
+  it('developer Unlock all finds every game; a round leaves the file byte for byte', () => {
+    const h = makeGame();
+    h.game.deps.settings = { ...defaultSettings(), dev: true };
+    const m = onArena(h, { devUnlockAll: true }, arenaPadId('train-samus'));
+    expect(found(h)).toEqual(ARENA_GAMES.map((g) => g.id).sort());
+    expect(m.hintLine).toBe('SAMUS TRAINING');
+    const saves = new Map(store);
+    h.tap('jump');
+    quitRound(h, m);
+    h.idle(40);
+    h.tap('jump');
+    expect(h.top()).toBe(m);
+    expect(new Map(store)).toEqual(saves);
+    expect(h.game.freed).toEqual(['mario']);
+    expect(h.game.tutorials).toEqual(['mario']);
+  });
+
+  it('a training pad not found yet asks to free the hero', () => {
+    const h = makeGame();
+    onArena(h, {}, arenaPadId('train-link'));
+    expect(map(h).hintLine).toBe('??? - FREE THIS HERO FIRST');
+    expect(h.said.at(-1)).toContain('Locked. Free This Hero First.');
+  });
+
+  it("a co-op round (Larry's airship, two players) leaves player two's hero and hit points", () => {
+    const h = makeGame();
+    const m = onArena(h, { ...LATE, character2: 'link', hp2: 2, powerState2: 'full' }, arenaPadId('airship'));
+    const s = h.game.state;
+    expect([s.character2?.id, s.hp2, s.powerState2]).toEqual(['link', 2, 'full']);
+    const before = { ...s, kit: { ...s.kit }, kit2: { ...s.kit2 } };
+    const saves = new Map(store);
+    h.tap('jump');
+    expect(h.game.airship).not.toBeNull();
+    // Hurt player two aboard, then give up.
+    h.game.state.hp2 = 1;
+    quitRound(h, m);
+    h.idle(40);
+    h.tap('jump');
+    expect(h.top()).toBe(m);
+    expect(h.game.state).toBe(s);
+    expect([s.character2?.id, s.hp2, s.powerState2]).toEqual(['link', 2, 'full']);
+    expect({ ...s, kit: { ...s.kit }, kit2: { ...s.kit2 } }).toEqual(before);
     expect(new Map(store)).toEqual(saves);
   });
 

@@ -1190,7 +1190,7 @@ export class WorldMapScene implements Scene {
       const nv = v.nodes[i] as PageView['nodes'][number];
       if (revealing && this.revealShown.has(nv.node.id)) continue;
       if (nv.node.kind === 'game') {
-        drawArenaPad(r, this.game, page, nv.node, ox, this.t);
+        drawArenaPad(r, this.game, nv.node, ox, this.t);
         continue;
       }
       r.sprite(nv.sheet ? assets.sheet(nv.sheet) : items, nv.frame, ox + nv.node.x * 16, nv.node.y * 16);
