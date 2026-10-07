@@ -116,7 +116,7 @@ export class Fred extends Entity {
     this.t++;
     switch (this.state) {
       case 'sit': {
-        const talked = world.entities.some((e) => e instanceof Partner && e.talked);
+        const talked = world.entities.some((e) => e instanceof Partner && e.who === 'jason' && e.talked);
         if (talked || this.near(world, NEAR_PX)) this.startHop(world);
         break;
       }

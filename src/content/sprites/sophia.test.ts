@@ -5,7 +5,7 @@ import { PALETTES, SPRITES } from './index';
 import { sophiaDef, sophiaPalettes } from './sophia';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { dungeonDef } from './dungeon';
-import { SIDE_FRAMES, SPLIT_FRAMES } from '@game/topdown/frames';
+import { SIDE_FRAMES, SPLIT_FRAMES, THICK_SIDE_FRAMES } from '@game/topdown/frames';
 import { LADDER_SHEET, LADDER_THEMES } from '@game/entities/objects/vine';
 
 type Size = readonly [w: number, h: number];
@@ -374,8 +374,17 @@ describe('bm-dungeon sheet (the top-down kit)', () => {
   it("draws every frame Link's dungeon sheet draws for the kit, at its size", () => {
     validateDef('bm-dungeon', bmDungeonDef);
     const size = (f: readonly string[] | undefined) => [f?.[0]?.length, f?.length];
+    // Link's own frames: the thick Zelda walls of his rebuilt keep and his treasures.
+    const linkOnly = new Set<string>([
+      ...THICK_SIDE_FRAMES,
+      'exit-0-thick',
+      'exit-1-thick',
+      'map',
+      'compass',
+      'triforce',
+    ]);
     for (const [name, f] of Object.entries(dungeonDef.frames))
-      expect(size(bmDungeonDef.frames[name]), name).toEqual(size(f));
+      if (!linkOnly.has(name)) expect(size(bmDungeonDef.frames[name]), name).toEqual(size(f));
     for (const [name, f] of Object.entries(bmDungeonDef.frames)) {
       for (const r of f) expect(r.length, name).toBe(f[0]?.length);
       expect(f.join('').replace(/\./g, '').length, `${name} is not empty`).toBeGreaterThan(0);

@@ -31,7 +31,7 @@ const SPOTS = [
   { who: 'townsperson', level: '5-4', start: { mode: 'stand' } },
   { who: 'irene', level: '6-2', start: { mode: 'stand' } },
   { who: 'lance', level: '7-3', start: { mode: 'stand' } },
-  // Jason's secret area behind 8-4-end's trap pipe (0.4.15): up out of its pipe.
+  // Jason's secret area behind 8-4-end's trap pipe (0.4.18): up out of its pipe.
   { who: 'jason', level: '8-4-jason', start: { mode: 'pipe-exit', x: 1, y: 10, time: 300 } },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart }[];
 

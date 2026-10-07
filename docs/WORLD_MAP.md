@@ -524,14 +524,14 @@ pipe x y down -> map 0 0
 - **A `campaign` pipe** sleeps outside campaign play (no way in; a zone only, so the level's tiles
   are the same either way); the campaign variant wakes it. 2-1's way into the cave. A woken pipe
   on the same mouth as a live one (same column, row and direction) takes its place, the live
-  zone going (0.4.15): 8-4-end's trap pipe at column 10 (`pipe 10 11 down -> 8-4 19 10 exit=up`)
+  zone going (0.4.18): 8-4-end's trap pipe at column 10 (`pipe 10 11 down -> 8-4 19 10 exit=up`)
   has a `pipe 10 11 down -> 8-4-jason 1 10 exit=up campaign` on top of it, so in the campaign it
   leads to Jason's secret area (Sophia III's route, docs/HEROES.md) and everywhere else it is the
   trap pipe exactly as before.
 - **`-> map`** (`MAP_EXIT`): a pipe back to the world map (the Top Secret Area's). Nothing is
   cleared; it is no exit of a level for the map's secret-exit look.
 
-## Swimming in any theme (`swim: true`, 0.4.15)
+## Swimming in any theme (`swim: true`, 0.4.18)
 
 A map header `swim: true` (`LevelData.swim`) makes the player swim from the first row of wave
 tiles (`w`) down, as a water theme does (`isSwimLevel` in schema.ts: a water theme, or this

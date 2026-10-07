@@ -40,7 +40,7 @@ const HERO = '<HERO>';
 
 /**
  * Blocks of the shipped sections that are not in this build yet, matched by their first line.
- * None since 0.4.15: World 8's Sophia III (2.11, her partner Jason and her own lines) is built.
+ * None since 0.4.18: World 8's Sophia III (2.11, her partner Jason and her own lines) is built.
  */
 const NOT_BUILT: readonly string[] = [];
 
@@ -146,7 +146,7 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
     expect(now.length).toBeGreaterThan(90);
   });
 
-  it('the old text the doc quotes is gone from script.ts; every block is built (Sophia III since 0.4.15)', () => {
+  it('the old text the doc quotes is gone from script.ts; every block is built (Sophia III since 0.4.18)', () => {
     const old = blocks.filter((b) => b.old);
     expect(old.length).toBeGreaterThan(0);
     for (const b of old) expect(byText.has(key(b.lines)), key(b.lines)).toBe(false);

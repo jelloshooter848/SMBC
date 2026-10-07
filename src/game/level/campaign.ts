@@ -56,7 +56,7 @@ import { T, isSolid } from './tiles';
  * wakes them, and puts the path's hidden block (T.HIDDEN_PATH) in at its `block` tile. Nothing
  * else changes: the cave is an area of 2-1, where the Moblin ends the level (scenes/level.ts).
  * A woken pipe on the same mouth as a live one (same column, row and direction) takes its place,
- * the live one's zone going: 8-4-end's trap pipe at column 10 (owner decision for 0.4.15: Sophia's
+ * the live one's zone going: 8-4-end's trap pipe at column 10 (owner decision for 0.4.18: Sophia's
  * route) leads, in the campaign only, to Jason's secret area (8-4-jason) instead of back into the
  * castle maze; outside the campaign it is the trap pipe exactly as before.
  *

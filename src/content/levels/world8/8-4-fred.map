@@ -21,10 +21,11 @@ parent: 8-4
 ;; inherit).
 
 [tiles]
-;; Rows 0-1 stay clear under the HUD; row 2 is the roof, with the hole the hero drops in by.
+;; Row 2 is the roof, with the hole the hero drops in by (columns 3-6). Rows 0-1 are solid except
+;; above the hole, so a hero who can rise (Sophia's hover) can't climb out onto the roof under the HUD.
 ;; 0               16               32
-................ ................ ........
-................ ................ ........
+BBB....BBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBB
+BBB....BBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBB
 BBBwwwwBBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBB
 B..........BBB.. ...........BB... ....BBBB
 B...........B... ...........BB... ....BBBB

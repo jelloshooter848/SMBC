@@ -2,7 +2,7 @@
 
 Every story line the player will read, written out for the owner to review and edit before it was built.
 **Chapter 1 (sections 2.1-2.14) is built in 0.4.13**: its text lives in `src/game/story/script.ts`, word for word as
-here (a test, `script-doc.test.ts`, keeps the two the same; Sophia III's lines in 2.11 came with her route in 0.4.15), and
+here (a test, `script-doc.test.ts`, keeps the two the same; Sophia III's lines in 2.11 came with her route in 0.4.18), and
 docs/STORY_SYSTEM.md says how it is wired in. **The Lost Kingdom parts (2.15 on) are Chapter 2**, not built yet.
 
 **How to read this file**

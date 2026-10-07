@@ -29,7 +29,7 @@ import { captives, closeCards, draw, file, makeGame, useStorage, type H } from '
 import { sophiaDef } from '@content/sprites/sophia';
 import { ALL_STORY } from './story-seen';
 
-// Sophia III, the last hidden hero (owner design, 0.4.15, S4): in campaign play 8-4-end's trap pipe
+// Sophia III, the last hidden hero (owner design, 0.4.18, S4): in campaign play 8-4-end's trap pipe
 // (column 10), which classic play takes back into the castle maze (8-4 at 19), leads instead to
 // Jason's secret area (8-4-jason). Jason, her pilot, is calling his frog Fred, who dives into the
 // pool; the hero follows him down into a flooded tunnel (8-4-fred, swum as in 8-4's water) to the
@@ -322,6 +322,9 @@ describe("Fred's flooded tunnel (8-4-fred)", () => {
     expect(l.entities).toEqual([{ type: 'fred', x: 8, y: 11, props: { mode: 'swim', to: 35 } }]);
     // The hole in the roof the hero drops in by, over the arrival column.
     for (const x of [3, 4, 5, 6]) expect(tile(l, x, 2)).toBe(T.WATER);
+    // Above the roof only the hole's shaft is open, so a hovering hero can't walk the roof under the HUD.
+    for (let x = 0; x < l.width; x++)
+      for (const y of [0, 1]) expect(tile(l, x, y), `${x},${y}`).toBe(x >= 3 && x <= 6 ? T.AIR : T.HARD);
     // Rows 8-12 are open end to end (to the pipe), so every hero swims (or walks) through.
     for (let x = 1; x < 36; x++)
       for (let y = 8; y <= 12; y++) expect([T.AIR, T.COIN], `${x},${y}`).toContain(tile(l, x, y));
