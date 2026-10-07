@@ -47,8 +47,11 @@ export function aimedOrb(cx: number, cy: number, to: { x: number; y: number }, s
   return new Orb(cx - 4, cy - 4, Math.cos(a) * speed, Math.sin(a) * speed);
 }
 
+/** Frames a mutant can't be hurt again after a hit. */
+export const MUTANT_INVULN = 6;
+
 /** The chance a capsule is a G (the rest are P). */
-export const GUN_SHARE = 0.55;
+export const GUN_SHARE = 0.45;
 
 /**
  * A mutant: on death a boom, and maybe a capsule (its `capsuleChance`, then GUN_SHARE for a G),
@@ -57,6 +60,13 @@ export const GUN_SHARE = 0.55;
 export abstract class Mutant extends TdEnemy {
   override dropChance = 0;
   capsuleChance = 0.4;
+
+  /** Shots come in volleys: a mutant is untouchable only MUTANT_INVULN frames after a hit. */
+  override hurt(world: TopDownWorld, damage: number, dir: Dir): boolean {
+    const hit = super.hurt(world, damage, dir);
+    if (hit && !this.dead) this.invuln = Math.min(this.invuln, MUTANT_INVULN);
+    return hit;
+  }
 
   override die(world: TopDownWorld): void {
     this.dead = true;
@@ -90,7 +100,7 @@ export const BLOB_REST = 28;
 export class Blob extends Mutant {
   readonly kind = 'blob';
   hp = 2;
-  override capsuleChance = 0.35;
+  override capsuleChance = 0.25;
   t: number;
 
   constructor(x: number, y: number, phase = 0) {
@@ -147,7 +157,7 @@ export class Eye extends Mutant {
   readonly kind = 'eye';
   hp = 3;
   override mover: Mover = 'fly';
-  override capsuleChance = 0.5;
+  override capsuleChance = 0.4;
   t: number;
   private readonly homeX: number;
   private readonly homeY: number;
@@ -210,7 +220,7 @@ export class Turret extends Mutant {
   hp = 4;
   override knockable = false;
   override solid = true;
-  override capsuleChance = 0.6;
+  override capsuleChance = 0.5;
   /** The barrel's quarter (0 up, 1 right, 2 down, 3 left). */
   barrel: number;
   t = 0;

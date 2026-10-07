@@ -48,11 +48,11 @@ export const GUN_TABLE: readonly GunLevel[] = [
   { pellets: 1, wave: 0, range: 40, damage: 1, size: 4, through: false },
   { pellets: 1, wave: 0, range: 80, damage: 1, size: 4, through: false },
   { pellets: 2, wave: 0, range: 96, damage: 1, size: 4, through: false },
-  { pellets: 2, wave: 0, range: FULL, damage: 2, size: 4, through: false },
+  { pellets: 2, wave: 0, range: FULL, damage: 1, size: 4, through: false },
   { pellets: 1, wave: 8, range: FULL, damage: 2, size: 6, through: false },
-  { pellets: 1, wave: 12, range: FULL, damage: 3, size: 8, through: false },
-  { pellets: 2, wave: 12, range: FULL, damage: 3, size: 8, through: false },
-  { pellets: 2, wave: 16, range: FULL, damage: 4, size: 8, through: true },
+  { pellets: 1, wave: 12, range: FULL, damage: 2, size: 8, through: false },
+  { pellets: 2, wave: 12, range: FULL, damage: 2, size: 8, through: false },
+  { pellets: 2, wave: 16, range: FULL, damage: 3, size: 8, through: true },
 ];
 
 export function gunLevel(level: number): GunLevel {
@@ -322,7 +322,8 @@ export class JasonShot extends TdEntity {
   private hit(world: TopDownWorld): boolean {
     const me = this.body();
     for (const e of world.entities) {
-      if (!(e instanceof TdEnemy) || e.dead || !boxesOverlap(me, e.hurtbox())) continue;
+      // (a solid one, a turret, is hit anywhere on its body: the shot can't get past it)
+      if (!(e instanceof TdEnemy) || e.dead || !boxesOverlap(me, e.solid ? e.body() : e.hurtbox())) continue;
       e.hurt(world, this.damage, this.dir);
       this.dead = true;
       return true;

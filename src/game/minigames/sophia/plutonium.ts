@@ -25,8 +25,8 @@ import { Boom, Orb } from './mutants';
  * vanish when it falls.
  */
 
-export const SHELL_HP = 20;
-export const CORE_HP = 16;
+export const SHELL_HP = 24;
+export const CORE_HP = 20;
 /** Phase 1's cycle: shut, glowing, open (frames). */
 export const SHUT = 120;
 export const GLOW = 30;
@@ -37,7 +37,7 @@ export const DRIP_AT: readonly number[] = [40, 90];
 export const AIM_AT = SHUT + GLOW + OPEN / 2;
 export const RING_SHOTS = 8;
 export const ORB_SPEED = 1.25;
-export const AIMED_SPEED = 1.75;
+export const AIMED_SPEED = 1.5;
 /** Phase 1 drifts between these x (its left edge, room px). */
 export const DRIFT_MIN = 2 * TILE;
 export const DRIFT_MAX = ROOM_W - 2 * TILE - 48;
@@ -49,7 +49,7 @@ export const BURST_GLOW = 30;
 export const FAN_SHOTS = 5;
 export const FAN_SPREAD = 0.3;
 /** Frames it can't be hurt again after a hit (shots come in volleys). */
-export const BOSS_INVULN = 8;
+export const BOSS_INVULN = 12;
 
 export type BossPhase = 'asleep' | 'shell' | 'break' | 'core' | 'dead';
 

@@ -12,7 +12,7 @@ import {
 } from '../../topdown/geometry';
 import { TdEnemy, type TdEntity } from '../../topdown/entity';
 import { Projectile } from '../../topdown/enemies';
-import { Capsule, GrenadeBlast, Grenade, gunLevel, type UnderworldWorld } from './jason';
+import { Capsule, GrenadeBlast, Grenade, SHOT_SPEED, gunLevel, type UnderworldWorld } from './jason';
 import { PlutoniumBoss } from './plutonium';
 
 /*
@@ -249,7 +249,10 @@ export class JasonBot {
     const g = gunLevel(world.jason.gun);
     for (const f of foes) {
       const tb = f.hurtbox();
+      // The boss's shell only from below (out of its drift and under its open core).
+      const shell = f instanceof PlutoniumBoss && f.phase !== 'core';
       for (const d of DIRS) {
+        if (shell && d !== 'up') continue;
         const v = DIR_VEC[d];
         // The grid lines whose shot (from the hero's middle) crosses the mutant across the way.
         const across =
@@ -285,11 +288,16 @@ export class JasonBot {
   /** The way to face to hit `f` from (x, y) right now, or null. */
   private lineOfFire(world: UnderworldWorld, x: number, y: number, f: TdEnemy): Dir | null {
     const g = gunLevel(world.jason.gun);
-    const tb = f.hurtbox();
+    const now = f.hurtbox();
+    const m = motion(f);
     const cx = x + 8;
     const cy = y + 8;
     for (const d of DIRS) {
       const v = DIR_VEC[d];
+      // A moving target is led: where it will be when the shot gets there.
+      const far = Math.abs(v.dx !== 0 ? now.x + now.w / 2 - cx : now.y + now.h / 2 - cy);
+      const t = far / SHOT_SPEED;
+      const tb = { ...now, x: now.x + m.vx * t, y: now.y + m.vy * t };
       if (v.dx !== 0 && (cy < tb.y + 1 || cy > tb.y + tb.h - 1)) continue;
       if (v.dy !== 0 && (cx < tb.x + 1 || cx > tb.x + tb.w - 1)) continue;
       const start = v.dx !== 0 ? cx + v.dx * 6 : cy + v.dy * 6;
@@ -436,6 +444,13 @@ export class JasonBot {
   }
 }
 
+/** How a mutant is moving (px a frame), as a player reads it: only the bouncing core is quick. */
+function motion(f: TdEnemy): { vx: number; vy: number } {
+  if (!(f instanceof PlutoniumBoss) || f.phase !== 'core' || f.burstT > 0) return { vx: 0, vy: 0 };
+  const s = f.angry ? 1.5 : 1;
+  return { vx: f.vx * s, vy: f.vy * s };
+}
+
 function heroBox(n: Node): Box {
   return { x: n.x + 3, y: n.y + 2, w: 10, h: 13 };
 }
@@ -546,7 +561,8 @@ export class HumanJason {
     this.bot = new JasonBot(plans, {
       tapEvery: this.opts.tapEvery,
       margin: this.opts.margin,
-      lookAhead: this.opts.lookAhead,
+      // It sees each orb late, but sees which way it is going: it judges its path from there.
+      lookAhead: this.opts.lookAhead + this.opts.reaction,
     });
     this.rng = new Rng(Math.imul(this.opts.seed, 0x9e3779b1) >>> 0 || 1);
   }
