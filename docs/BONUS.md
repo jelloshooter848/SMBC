@@ -21,7 +21,8 @@ spot's (`src/game/map/bonus-spot.ts`, docs/WORLD_MAP.md "The bonus spot and its 
 carries the rest (same names; `BonusState` in `items.ts`). Validation keeps known item ids only (at
 most 12; `itemsNext`: mushroom, flower and star, each once, in that order) and each flag only when
 it is `true`. `openFile` loads them and `autosave` writes them; outside campaign play `Game.bonus`
-is a fresh, empty state. `Game.bonus.devItems` (dev mode's "Give items") is never saved.
+is a fresh, empty state. `Game.bonus.devItems` and `devNext` (dev mode's "Give items", given and
+held) are never saved.
 
 ## The bonus spot
 
@@ -140,9 +141,11 @@ already waiting, it is lost, and the banner says so.
   `inventoryUnlocked`; with dev mode off it has no effect.
 - Map menu **Give items**: one of each item, as room allows, into a dev list that is **never
   saved** (`Game.bonus.devItems`). It turns Item inventory on; the dev items show after the file's
-  own and can be used like them, only while dev mode and Item inventory are on (dev mode off: they
-  vanish). The file's items and the two lists together stay at 12: an item won pushes the last dev
-  item out.
+  own and can be used like them, only while dev mode and Item inventory are on. A used dev item
+  waits in its own unsaved list (`devNext`; one per kind across both lists) and is given at the
+  next level's start like the file's; one that would do nothing goes back to the dev list, never
+  into the file's inventory. Dev mode or the toggle off: both dev lists are cleared. The file's
+  items and the dev items together stay at 12: an item won pushes the last dev item out.
 - **Dev → Bonus games**: the three games from the dev menu; one game, then a card listing what it
   won, and back to the list. Nothing sticks: no file is written, the run and the bonus state are
   put back.
