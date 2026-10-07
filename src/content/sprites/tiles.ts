@@ -8,6 +8,9 @@ import {
   contraTilePalettes,
   rivets,
 } from './contra-tiles';
+import { zelda2TileFrames, zelda2TilePalette } from './zelda2-look';
+import { megamanTileFrames, megamanTilePalette } from './megaman-look';
+import { brinstarTileFrames, brinstarTilePalette } from './brinstar-look';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -292,6 +295,10 @@ export const tilePalettes: Record<string, string[]> = {
   ],
   // Bill's jungle under 7-3, his waterfall climb and Red Falcon's lair (contra-tiles.ts).
   ...contraTilePalettes,
+  // The campaign looks of 2-1, 3-1 and 4-2 (zelda2-look.ts, megaman-look.ts, brinstar-look.ts).
+  'tiles-zelda2': zelda2TilePalette,
+  'tiles-megaman-stage': megamanTilePalette,
+  'tiles-brinstar': brinstarTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2162,3 +2169,12 @@ export const tilesDef: SpriteDef = {
     'flag-ball@contra-jungle': flagBall,
   },
 };
+
+// The campaign looks of 2-1 (Zelda II field), 3-1 (Mega Man night stage) and 4-2 (Brinstar):
+// their own frames, and SMB's `?` blocks, coins and pipes kept or recoloured under their names.
+Object.assign(
+  tilesDef.frames,
+  zelda2TileFrames(tilesDef.frames),
+  megamanTileFrames(tilesDef.frames),
+  brinstarTileFrames(tilesDef.frames),
+);

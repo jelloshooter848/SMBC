@@ -50,6 +50,10 @@ const SONG_IDS = [
   'contra-boss',
   'contra-lair',
   'contra-card',
+  // The campaign looks of 2-1, 3-1 and 4-2.
+  'zelda2-field',
+  'mm-stage-31',
+  'brinstar',
 ];
 
 const SFX_IDS = [

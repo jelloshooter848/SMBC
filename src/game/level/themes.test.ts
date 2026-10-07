@@ -61,6 +61,9 @@ describe('themes', () => {
       'contra-jungle',
       'contra-falls',
       'alien-lair',
+      'zelda2',
+      'megaman-stage',
+      'brinstar',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -108,6 +111,9 @@ describe('themes', () => {
       'contra-jungle': 'contra-jungle',
       'contra-falls': 'contra-jungle',
       'alien-lair': 'contra-lair',
+      zelda2: 'zelda2-field',
+      'megaman-stage': 'mm-stage-31',
+      brinstar: 'brinstar',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
