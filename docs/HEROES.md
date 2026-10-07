@@ -443,11 +443,17 @@ out; `scroll:` without `camera: auto` and unknown `camera:` values are parse err
 only; `serializeTextMap` writes `scroll:` for auto maps only). The camera ignores the players and
 moves right at that speed (`Camera.scroll()`, called once per live `World.update` frame) until its
 end (a `scrollStop x` zone or the map's end; `Camera.autoDone`). Its left edge pushes every player
-along; one pushed into a solid tile (a pixel's grace on each side) is squashed and dies, whatever
-the assists, as in a pit. No one can run past its right edge. Spawning and despawning work as in
-any level (by the camera's edges). It holds whenever the world does: the pause menu (the scene is
-not updated), a death with no one left, pipes, growing/shrinking, a vine or pit transfer. Every
-other level is untouched (camera tests: no library level but the deck is `auto` or has a speed).
+along. Only a wall ahead squashes: a pushed player dies (whatever the assists, as in a pit) when the
+column under the body's leading (right) edge holds a solid tile between 4 px below its top and 4 px
+above its feet, in a row where the body was not already inside something solid before the push. So
+a ceiling a rising lift carries the hero into, a block grown into, the floor, a vine or a pipe being
+entered never kill at the edge. No one can run past its right edge. Spawning and despawning work as
+in any level (by the camera's edges). The scroll holds while the pause menu is open (the scene is
+not updated) and on every frame `World.update` returns early: a death with no one left, a pipe
+being entered or left, growing/shrinking, a teleport beam, a level clear; it also holds while a
+vine or pit transfer is leaving and while the players climb in on an arrival vine (`World.arriving`,
+an anchor chain too). Every other level is untouched (camera tests: no library level but the deck
+is `auto` or has a speed).
 
 **The vertical camera** (generic, `world/camera.ts`): a map's header `camera: free` with
 `height: N` (at least 15 rows; the text map then needs exactly N rows, and `serializeTextMap`

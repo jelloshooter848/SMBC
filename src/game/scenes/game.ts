@@ -42,8 +42,7 @@ import { CRYSTAL_BALL } from '../map/captives';
 import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
-import type { AirshipRun } from './airship';
-import { boardAirship, isAirshipArea } from './airship';
+import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship';
 import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
@@ -942,8 +941,15 @@ export class Game {
    * other level ends a run aboard. A dev airship round's levels replace each other over its list.
    */
   startLevel(level: LevelData, start: LevelStart): void {
-    if (!isAirshipArea(level.id)) this.airship = null;
-    else if (this.airship) this.airship.entered(level.id, start, this.state);
+    const run = this.airship;
+    if (!isAirshipArea(level.id)) {
+      // A dev round leaving the airship ends as QUIT (its own scenes go back to the dev list).
+      if (run?.onDone) {
+        endDev(this, 'quit');
+        return;
+      }
+      this.airship = null;
+    } else if (run) run.entered(level.id, start, this.state);
     else boardAirship(this, level.id, start);
     const base = this.airship?.base;
     if (base && this.scenes.find((s) => s === base))

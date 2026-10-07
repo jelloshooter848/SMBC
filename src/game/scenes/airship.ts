@@ -103,7 +103,7 @@ export function boardAirship(game: Game, level: string, start: LevelStart): void
 }
 
 /** End the run and report it to a dev round; true when it was one. */
-function endDev(game: Game, result: MiniGameResult): boolean {
+export function endDev(game: Game, result: MiniGameResult): boolean {
   const run = game.airship;
   if (!run?.onDone) return false;
   game.airship = null;

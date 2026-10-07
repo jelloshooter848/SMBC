@@ -231,3 +231,139 @@ describe('World with an auto-scroll camera', () => {
     expect(w.camera.auto).toBe(false);
   });
 });
+
+/**
+ * A 48-wide auto map drawn by `at(x, y)` (a tile char; null: air, or the floor on rows 13-14),
+ * with optional `[entities]` and `[zones]` lines.
+ */
+function drawnMap(
+  at: (x: number, y: number) => string | null,
+  opts: { scroll?: string; start?: string; entities?: string[]; zones?: string[] } = {},
+): string {
+  const lines = [
+    'id: 9-6',
+    'name: EDGE',
+    'theme: castle',
+    'time: 300',
+    `start: ${opts.start ?? '1,12'}`,
+    'camera: auto',
+    `scroll: ${opts.scroll ?? '0.5'}`,
+    '',
+    '[tiles]',
+  ];
+  for (let y = 0; y < 15; y++) {
+    let row = '';
+    for (let x = 0; x < 48; x++) row += at(x, y) ?? (y >= 13 ? '#' : '.');
+    lines.push(row);
+  }
+  if (opts.entities) lines.push('', '[entities]', ...opts.entities);
+  if (opts.zones) lines.push('', '[zones]', ...opts.zones);
+  return lines.join('\n');
+}
+
+/** A 2x2 pipe with its top-left tile at (px0, py0), drawn with the four chars of `tl tr bl br`. */
+const pipeAt =
+  (px0: number, py0: number, chars: string) =>
+  (x: number, y: number): string | null => {
+    const dx = x - px0;
+    const dy = y - py0;
+    if (dx < 0 || dx > 1 || dy < 0 || dy > 1) return null;
+    return chars[dy * 2 + dx] ?? null;
+  };
+
+describe('auto-scroll squashes only against a wall ahead (edge cases that must live)', () => {
+  it('a lift rising under an overhang while the edge pushes: alive', () => {
+    // A long overhang over the first 30 columns at row 7; a wide rising lift at the left edge.
+    const w = world(
+      drawnMap((x, y) => (y === 7 && x < 30 ? '#' : null), {
+        scroll: '0.25',
+        start: '0,11',
+        entities: ['lift-up 0 12 len=8'],
+      }),
+    );
+    let pushed = 0;
+    let underCeiling = 0;
+    for (let i = 0; i < 260; i++) {
+      w.update([]);
+      if (w.player.body.x <= w.camera.x + px(1)) pushed++;
+      if (toPx(w.player.body.y) < 8 * 16 + 4) underCeiling++;
+    }
+    expect(pushed).toBeGreaterThan(30);
+    expect(underCeiling).toBeGreaterThan(0);
+    expect(w.player.dead).toBe(false);
+  });
+
+  it('growing under a block at the edge: alive', () => {
+    // A row of blocks right over the small hero's head at the left edge.
+    const w = world(drawnMap((x, y) => (y === 11 && x < 6 ? '#' : null), { start: '0,12' }));
+    for (let i = 0; i < 20; i++) w.update([]);
+    w.player.def.behaviour.onPowerUp(w.player, 'mushroom', w);
+    for (let i = 0; i < 200; i++) w.update([]);
+    expect(w.player.powerState).toBe('big');
+    expect(w.player.dead).toBe(false);
+  });
+
+  it('climbing a vine at the edge: alive', () => {
+    const w = world(drawnMap(() => null, { start: '1,12', entities: ['vine 1 12 len=10'] }));
+    let climbed = 0;
+    for (let i = 0; i < 200; i++) {
+      w.update(held('up'));
+      if (w.player.vine) climbed++;
+    }
+    expect(climbed).toBeGreaterThan(20);
+    expect(w.player.dead).toBe(false);
+  });
+
+  it('a down pipe entered at the edge: in, no death', () => {
+    const w = world(
+      drawnMap(pipeAt(1, 11, '[]{}'), { scroll: '1', start: '1,10', zones: ['pipe 1 11 down -> 1-1 2 12'] }),
+    );
+    for (let i = 0; i < 20; i++) w.update([]);
+    let event = false;
+    for (let i = 0; i < 200 && !event; i++) {
+      w.update(held('down'));
+      event = w.events.some((e) => e.type === 'pipe');
+    }
+    expect(event).toBe(true);
+    expect(w.player.dead).toBe(false);
+  });
+
+  it('a side pipe entered with the edge right behind: in, no death', () => {
+    const w = world(
+      drawnMap(pipeAt(6, 11, '()<>'), { scroll: '1', start: '1,12', zones: ['pipe 6 12 right -> 1-1 2 12'] }),
+    );
+    let event = false;
+    for (let i = 0; i < 300 && !event; i++) {
+      // The edge catches up first, then the hero walks into the mouth with it right behind.
+      w.update(i < 40 ? [] : held('right'));
+      event = w.events.some((e) => e.type === 'pipe');
+    }
+    expect(event).toBe(true);
+    expect(w.player.dead).toBe(false);
+  });
+
+  it('still squashes against a wall ahead (the probe is the leading edge)', () => {
+    const w = world(drawnMap((x, y) => (x === 4 && y >= 9 ? '#' : null), { scroll: '1', start: '1,12' }));
+    for (let i = 0; i < 200 && !w.player.dead; i++) w.update([]);
+    expect(w.player.dead).toBe(true);
+  });
+});
+
+describe('auto-scroll holds during a vine arrival (an anchor chain into the bow)', () => {
+  it('no scroll while the players climb in; it starts once they are off', () => {
+    // The arrival vine rises from the screen bottom through a gap in the floor at column 2.
+    const map = drawnMap((x, y) => (x === 2 && y >= 13 ? '.' : null), { scroll: '1', start: '2,12' });
+    const w = new World(parseTextMap(map), ctx(), newGameState(MARIO), { mode: 'climb' });
+    expect(w.arriving).toBe(true);
+    let frames = 0;
+    for (; frames < 1000 && w.arriving; frames++) {
+      w.update([]);
+      if (w.arriving) expect(w.camera.x).toBe(0);
+    }
+    expect(frames).toBeGreaterThan(10);
+    expect(w.arriving).toBe(false);
+    for (let i = 0; i < 30; i++) w.update([]);
+    expect(w.camera.x).toBeGreaterThan(0);
+    expect(w.player.dead).toBe(false);
+  });
+});

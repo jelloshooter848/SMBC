@@ -171,7 +171,8 @@ different road with each, and **no ending opens every road leaving its level**.
   4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
   Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each shows one pipe
   into an area of 4-2 (below), an ordinary pipe that is no exit at all (no `target.secret`, no
-  road); the right one leads to Larry's cabin, where the crystal ball is the exit. The Lost
+  road); the right one leads onto Larry's airship deck, whose stern pipe leads to his room, where
+  the crystal ball is the exit. The Lost
   Levels' warp zones (`workingWarps` / `warpsOpened`) still warp as in the original and clear
   nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels that have another
   way out; it reads the level data as it is, so 4-2 keeps its look (in the campaign its other way

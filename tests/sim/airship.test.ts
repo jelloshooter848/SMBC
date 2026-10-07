@@ -16,7 +16,8 @@ import { AIRSHIP_DECK, AIRSHIP_ROOM } from '@game/scenes/airship';
 import { Larry } from '@game/entities/enemies/larry';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import type { SaveFile } from '@game/save/save-files';
-import { file, makeGame, rideToStern, useStorage, type H } from './heroes-harness';
+import { snapshot } from '@game/scenes/free-hero';
+import { file, makeGame, rideToStern, store, useStorage, type H } from './heroes-harness';
 
 // Larry's airship challenge (scenes/airship.ts, docs/HEROES.md "Larry's airship"): the
 // auto-scrolling deck `4-2-airship` and Larry's room `4-2-larry`, played with the current hero
@@ -351,6 +352,87 @@ describe("Dev → Mini games → Larry's airship", () => {
     pick(h, 'Give up');
     expect((h.top() as DevMiniGameResultScene).result).toBe('quit');
     expect(h.game.airship).toBeNull();
+  });
+
+  it('a round leaves the save storage and the game state exactly as they were', () => {
+    const h = makeGame();
+    h.game.deps.settings = { ...defaultSettings(), dev: true };
+    h.game.showTitle();
+    h.idle(8);
+    pick(h, 'Dev mode');
+    pick(h, 'Mini games');
+    const state = h.game.state;
+    const before = snapshot(state);
+    const stored = [...store.entries()];
+    pick(h, "Larry's airship");
+    const deck = h.top() as LevelScene;
+    // Things change aboard: points, coins, power, a life.
+    h.idle(30);
+    state.score += 777;
+    state.coins += 3;
+    state.lives += 1;
+    deck.world.player.powerState = 'fire';
+    h.step();
+    rideToStern(h, deck);
+    expect((h.top() as LevelScene).level.id).toBe(AIRSHIP_ROOM);
+    die(h, h.top() as LevelScene);
+    expect((h.top() as DevMiniGameResultScene).result).toBe('fail');
+    expect(h.game.state).toBe(state);
+    expect(snapshot(h.game.state)).toEqual(before);
+    expect([...store.entries()]).toEqual(stored);
+    expect(h.game.campaign).toBeNull();
+  });
+
+  it('leaving the airship for another level mid-round ends it as QUIT, back over the list', () => {
+    const { h, list } = fromTitle();
+    h.idle(10);
+    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+    const card = h.top() as DevMiniGameResultScene;
+    expect(card).toBeInstanceOf(DevMiniGameResultScene);
+    expect(card.result).toBe('quit');
+    expect(h.game.airship).toBeNull();
+    expect(h.game.scenes.find((s) => s === list)).toBe(list);
+    h.idle(40);
+    h.tap('jump');
+    expect(h.top()).toBe(list);
+  });
+});
+
+describe('the run ends whenever play leaves the airship', () => {
+  it('on the title, the map and a level outside the airship', () => {
+    for (const leave of ['title', 'map', 'level'] as const) {
+      const { h } = in42();
+      board(h);
+      expect(h.game.airship, leave).not.toBeNull();
+      if (leave === 'title') h.game.showTitle();
+      else if (leave === 'map') h.game.showMap();
+      else h.game.startLevel(getLevel('4-2'), { mode: 'stand' });
+      expect(h.game.airship, leave).toBeNull();
+    }
+  });
+
+  it('a room entered after the deck keeps the same run; only an airship area does', () => {
+    const { h } = in42();
+    board(h);
+    const run = h.game.airship;
+    h.game.startLevel(getLevel(AIRSHIP_ROOM), { x: 2, y: 12, mode: 'pipe-exit' });
+    expect(h.game.airship).toBe(run);
+    expect(run?.reachedRoom).toBe(true);
+  });
+});
+
+describe('TRY AGAIN? has no way back but its answers', () => {
+  it('BACK (attack / select) does nothing: the prompt stays until YES or NO', () => {
+    const { h } = in42();
+    die(h, board(h));
+    const menu = tryAgain(h);
+    h.idle(8);
+    h.tap('attack');
+    h.tap('select');
+    h.idle(30);
+    expect(h.top()).toBe(menu);
+    expect(h.game.airship).not.toBeNull();
+    expect(h.game.state.lives).toBe(4);
   });
 });
 

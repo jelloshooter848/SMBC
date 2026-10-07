@@ -860,27 +860,48 @@ export class World {
    * still (pause, a death with no one left, pipes, growing) never get here, so the scroll holds.
    */
   private autoScroll(): void {
-    if (this.leaving) return;
+    // A transfer under way, or the players still climbing in (a vine or anchor-chain arrival).
+    if (this.leaving || this.arriving) return;
     this.camera.scroll();
     for (const p of this.activePlayers()) {
       if (p.body.x >= this.camera.x || p.frozen || p.hidden) continue;
+      const blocked = this.solidRows(p);
       p.body.x = this.camera.x;
       if (p.body.vx < 0) p.body.vx = 0;
-      if (this.inWall(p)) this.kill(p);
+      if (this.squashed(p, blocked)) this.kill(p);
     }
   }
 
-  /** The player's body overlaps a solid tile (squashed by an auto-scroll edge). */
-  private inWall(p: Player): boolean {
+  /** The tile rows (of the side probe's span) in which the body already overlaps a solid tile. */
+  private solidRows(p: Player): Set<number> {
     const b = p.body;
-    // A pixel's grace on every side, so a body merely touching a floor, ceiling or wall is free.
-    const x0 = tileAt(b.x + px(1));
-    const x1 = tileAt(b.x + b.w - px(1) - 1);
-    const y0 = tileAt(b.y + px(1));
-    const y1 = tileAt(b.y + b.h - px(1) - 1);
-    for (let ty = Math.max(0, y0); ty <= y1; ty++)
-      for (let tx = x0; tx <= x1; tx++) if (this.map.isSolid(tx, ty)) return true;
+    const rows = new Set<number>();
+    for (let ty = tileAt(b.y + px(4)); ty <= tileAt(b.y + b.h - px(4)); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++)
+        if (this.map.isSolid(tx, ty)) {
+          rows.add(ty);
+          break;
+        }
+    return rows;
+  }
+
+  /**
+   * Pushed by the auto-scroll edge into a wall: a solid tile in the column under the body's
+   * leading (right) edge, between 4 px below its top and 4 px above its feet, in a row where the
+   * body was not already inside something solid before the push (a ceiling a lift carried it
+   * into, a block it grew into, a floor). Only a wall ahead squashes.
+   */
+  private squashed(p: Player, blocked: Set<number>): boolean {
+    const b = p.body;
+    const col = tileAt(b.x + b.w - 1);
+    for (let ty = tileAt(b.y + px(4)); ty <= tileAt(b.y + b.h - px(4)); ty++)
+      if (!blocked.has(ty) && this.map.isSolid(col, ty)) return true;
     return false;
+  }
+
+  /** The players are still arriving on the vine (a sky area's climb-in, an anchor chain). */
+  get arriving(): boolean {
+    return this.vineArrival !== null;
   }
 
   /** Up pressed by a player within a captive's reach: a `talk` event (one a frame). */

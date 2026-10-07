@@ -11,18 +11,11 @@ camera: auto
 scroll: 0.5
 parent: 4-2
 
-;; Larry Koopa's airship DECK, a PLACEHOLDER (A1) for A2's real SMB3-style layout: 40 columns of
-;; flat deck (A3's `airship-deck` tiles: `#` deck planking, `B` posts, `-` thin plank) under an auto-scrolling camera (`camera: auto`, `scroll: <px per frame>`, decimals
-;; fine; world/camera.ts). The screen moves right on its own; its left edge pushes the hero, a
-;; hero squashed between it and a wall dies, and no one can run past its right edge. It stops at
-;; the map's end (or a `scrollStop x` zone).
-;;
-;; The way on is the stern pipe, the pipe at columns 36-37 (top `[]` on row 11, body `{}` on
-;; row 12, standing on the deck): its zone `pipe 36 11 down -> 4-2-larry 2 12` drops the hero into
-;; Larry's room, rising out of the room's floor pipe (the room's startMode is pipe-exit). Keep that
-;; target when the deck is redrawn: the airship challenge (scenes/airship.ts) counts any arrival
-;; in `4-2-larry` as "reached the room". The campaign boards here at the start, `4-2-airship 2 12`
-;; (4-2.map's right warp zone `goto=`).
+;; Larry Koopa's airship DECK: a PLACEHOLDER (A1) until A2's real layout. 40 columns of flat
+;; deck under an auto-scrolling camera (`camera: auto`, `scroll: <px per frame>`; world/camera.ts).
+;; The stern pipe (columns 36-37, rows 11-12) drops into Larry's room: keep its zone
+;; `pipe 36 11 down -> 4-2-larry 2 12` (any arrival in 4-2-larry counts as reaching the room).
+;; The campaign boards at the start, `4-2-airship 2 12` (4-2.map's right warp zone `goto=`).
 [tiles]
 ................ ................ ........
 ................ ................ ........
