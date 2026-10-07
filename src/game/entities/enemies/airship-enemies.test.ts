@@ -14,7 +14,15 @@ import type { DamageSource, Reaction } from '../../rules/damage';
 import { BUSTER, CHARGED_BUSTER, FIREBALL, type ProjectileSpec } from '../projectiles/projectile';
 import { BEAMS, BEAM_NAMES } from '../../characters/samus/weapons';
 import { GUNS } from '../../characters/bill/weapons';
-import { BALL_DIAG_SPEED, BALL_SPEED, CANNON_DIRS, Cannon, Cannonball, type CannonDir } from './cannon';
+import {
+  BALL_DIAG_SPEED,
+  BALL_SPEED,
+  CANNON_DIRS,
+  CANNON_PERIOD,
+  Cannon,
+  Cannonball,
+  type CannonDir,
+} from './cannon';
 import { ROCKY_HIDE, RockyWrench, Wrench } from './rocky-wrench';
 
 // SMB3 airship enemies for Larry's airship deck (4-2-airship.map): cannons and their
@@ -102,6 +110,20 @@ describe('cannon', () => {
     const cannon = world.entities.find((e): e is Cannon => e instanceof Cannon);
     expect(cannon?.shots ?? 0).toBe(0);
     expect(balls(world)).toHaveLength(0);
+  });
+
+  it('a bad period= or delay= falls back to the defaults instead of firing every frame', () => {
+    const { world, park } = deck(['cannon 12 12 dir=l period=fast delay=soon']);
+    park(2, 2);
+    const cannon = world.entities.find((e): e is Cannon => e instanceof Cannon) as Cannon;
+    expect(cannon.period).toBe(CANNON_PERIOD);
+    expect(Number.isFinite(cannon.timer)).toBe(true);
+    park(2, CANNON_PERIOD * 2 + 30);
+    expect(cannon.shots).toBeLessThanOrEqual(3);
+    expect(cannon.shots).toBeGreaterThanOrEqual(1);
+    const odd = new Cannon(3, 4, 'r', Number.NaN, Number.NaN);
+    expect(odd.period).toBe(CANNON_PERIOD);
+    expect(Number.isFinite(odd.timer)).toBe(true);
   });
 
   it('staggers cannons without a delay by their position', () => {
@@ -247,6 +269,25 @@ describe('Rocky Wrench', () => {
     park(6, 300);
     expect(rocky(world).state).toBe('hide');
     expect(rocky(world).thrown).toBe(0);
+  });
+
+  it('never pops up under a hero jumping in place over its lid, however high', () => {
+    const { world, park, state } = deck(['rocky 6 12'], { invulnerable: false });
+    const p = world.player;
+    let top = Infinity;
+    for (let f = 0; f < 600; f++) {
+      // A high jump each time the hero lands (over 3 tiles up).
+      if (p.body.onGround) {
+        p.body.vy = -0x07000;
+        p.body.onGround = false;
+      }
+      park(6);
+      top = Math.min(top, toPx(p.body.y + p.body.h));
+      expect(rocky(world).state, `frame ${f}`).toBe('hide');
+    }
+    expect(13 * 16 - top).toBeGreaterThan(40); // well above the old 40 px bound
+    expect(rocky(world).thrown).toBe(0);
+    expect(state.powerState === 'big' && p.powerState === 'big').toBe(true);
   });
 
   it('a wrench hurts the hero', () => {

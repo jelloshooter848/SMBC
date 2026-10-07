@@ -613,8 +613,11 @@ export class World {
         return new Axe(s.x, s.y);
       case 'cannon': {
         const dir = s.props?.dir;
-        const period = Number(s.props?.period ?? CANNON_PERIOD);
-        const delay = s.props?.delay === undefined ? undefined : Number(s.props.delay);
+        // Anything but a number (`period=fast`) falls back to the default.
+        const p = Number(s.props?.period ?? CANNON_PERIOD);
+        const period = Number.isFinite(p) ? p : CANNON_PERIOD;
+        const d = Number(s.props?.delay);
+        const delay = Number.isFinite(d) ? d : undefined;
         return new Cannon(s.x, s.y, isCannonDir(dir) ? dir : 'l', period, delay);
       }
       case 'rocky':

@@ -112,6 +112,8 @@ export class Cannon extends Entity {
   /** Frames (on screen) to the next shot. */
   timer: number;
   shots = 0;
+  /** Its cell has been made solid (done on the first update, when the world is at hand). */
+  private placed = false;
 
   constructor(
     readonly tx: number,
@@ -122,15 +124,14 @@ export class Cannon extends Entity {
   ) {
     super(px(tx * 16), px(ty * 16), 16, 16);
     this.dir = dir;
-    this.period = Math.max(30, Math.round(period));
-    this.timer = delay ?? 30 + ((tx * 37 + ty * 53) % this.period);
+    // A bad `period=` / `delay=` (not a number) falls back to the defaults.
+    this.period = Math.max(30, Math.round(Number.isFinite(period) ? period : CANNON_PERIOD));
+    this.timer =
+      delay !== undefined && Number.isFinite(delay) ? delay : 30 + ((tx * 37 + ty * 53) % this.period);
     this.layer = 'back';
     this.despawnMargin = null;
     this.body.vx = 0;
   }
-
-  /** The cell is a block: make it solid if the map left it open (it stays invisible; we draw it). */
-  private placed = false;
 
   /** Where a new ball's centre starts: just out of the barrel. */
   muzzle(): { x: number; y: number } {

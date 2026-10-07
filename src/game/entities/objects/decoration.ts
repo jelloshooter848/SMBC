@@ -2,6 +2,9 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { px } from '@engine/math/units';
 import { Entity, type View } from '../entity';
 
+/** SMB3 airship propeller decor: it turns, cycling `smb3:propeller-0/1/2`. */
+const PROPELLER = 'smb3:propeller-0';
+
 /**
  * Background scenery anchored at its bottom-left tile. Castles can raise a flag at level end. A
  * `sheet:frame` kind (`station:window`) draws that frame of another sheet.
@@ -40,8 +43,6 @@ export class Decoration extends Entity {
     drawDecor(r, view, name, x, bottom);
   }
 }
-
-const PROPELLER = 'smb3:propeller-0';
 
 /** `sheet:frame` decor (`station:window`) hangs in front of the tiles; the classic decor behind them. */
 export const decorInFront = (kind: string): boolean => kind.includes(':');

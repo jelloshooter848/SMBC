@@ -161,14 +161,15 @@ ends.
   transcribed onto one 15-row screen, 98 columns. The bow (raised bow platform, the start and the
   anchor chain's step-off at column 3, over a stair-stepped prow), the fore deck (two `ul`
   cannons, a Rocky Wrench, a blaster step right against the tall 2×3 post), the long low middle
-  deck on two hull segments (a 2-wide gap, a tall blaster post whose bills fly over a standing
-  hero, a post, a mushroom ? block 5 rows up) under the plank overhang with two `dl` cannons and a
-  three-cannon turret, the thick block over the gateway, then the lower stern deck (a Rocky
+  deck on two hull segments (a 2-wide gap, a 3-tall blaster post at column 44 whose bills fly
+  over a standing hero, a post, a mushroom ? block 5 rows up) under the plank overhang with two
+  `dl` cannons and a three-cannon turret, the thick block over the gateway, then the lower stern deck (a Rocky
   Wrench), four 2-wide steps up to the railed stern deck with portholes and THE PIPE. Every pit is
   2 wide. `tests/sim/airship-deck.test.ts`: every hero crosses under the auto-scroll, and with
-  damage on every hero reaches the pipe (small Mario and Luigi unhit), also over 20 random blaster
-  timings; standing still, the scroll carries the hero off the bow and squashes them against the
-  first cannon (~12 s). The bot is `tests/sim/airship-bot.ts` (also `rideToStern`'s driver).
+  damage on every hero reaches the pipe (small Mario and Luigi unhit); over 20 random blaster
+  timings (10 seeds, each from a standing start and after 200 idle frames) small Mario, small
+  Luigi, Link and Mega Man each reach it at least 19 times of 20; standing still, the scroll
+  carries the hero off the bow and squashes them against the first cannon (~12 s). The bot is `tests/sim/airship-bot.ts` (also `rideToStern`'s driver).
 - **Cannons** (`cannon x y dir=r|l|ul|ur|dl|dr [period=150] [delay=]`, entities/enemies/cannon.ts):
   a solid block (its cell is made solid) that fires a cannonball out of its barrel every `period`
   frames while on screen (first shot staggered by position, or `delay`), with the `cannon` sfx; it

@@ -61,12 +61,14 @@ export const ROCKY_HIDE = 100;
 /** Pops up only for a player within this many px sideways... */
 const NEAR = px(128);
 /**
- * ...and never right under or beside a player near its manhole (no rising into them, no
- * point-blank wrench): it waits until they are this far away sideways.
+ * ...and never right under or beside a player over its manhole, at any height (no rising into
+ * them, no point-blank wrench): it waits until they are this far away sideways.
  */
 const TOO_CLOSE = px(32);
 
-const HIDDEN: Vulnerability = {};
+/** Down in the hole nothing reaches it; up, anything does (shared, never changed). */
+const HIDDEN: Vulnerability = Object.freeze({});
+const EXPOSED: Vulnerability = Object.freeze({ ...BASIC_VULNERABILITY });
 
 export class RockyWrench extends Enemy {
   readonly kind = 'rocky-wrench';
@@ -77,6 +79,8 @@ export class RockyWrench extends Enemy {
   private readonly deck: number;
   /** How far out of the hole (px, 0..16). */
   out = 0;
+  /** Whether it was exposed when last set (contact, stomps and hits follow it); null before the first. */
+  private wasExposed: boolean | null = null;
   thrown = 0;
 
   constructor(tx: number, ty: number) {
@@ -110,9 +114,11 @@ export class RockyWrench extends Enemy {
     this.out = Math.max(0, Math.min(RISE, n));
     this.body.y = this.deck - px(this.out);
     const exposed = this.exposed;
+    if (exposed === this.wasExposed) return;
+    this.wasExposed = exposed;
     this.contactHurts = exposed;
     this.stompable = exposed;
-    this.vulnerability = exposed ? { ...BASIC_VULNERABILITY } : HIDDEN;
+    this.vulnerability = exposed ? EXPOSED : HIDDEN;
   }
 
   private enter(s: RockyState): void {
@@ -131,14 +137,13 @@ export class RockyWrench extends Enemy {
         if (this.t < this.hideFor) return;
         if (b.x + b.w < cam.x || b.x > cam.right) return;
         const dx = Math.abs(pl.centerX - cx);
-        const tooClose = world
-          .activePlayers()
-          .some(
-            (p) =>
-              Math.abs(p.centerX - cx) < TOO_CLOSE &&
-              p.body.y + p.body.h <= this.deck + px(2) &&
-              p.body.y + p.body.h > this.deck - px(40),
-          );
+        // Never under or beside a hero over its lid, standing or jumping however high.
+        let tooClose = false;
+        for (const p of world.players) {
+          if (p.dead || p.out) continue;
+          if (Math.abs(p.centerX - cx) < TOO_CLOSE && p.body.y + p.body.h <= this.deck + px(2))
+            tooClose = true;
+        }
         if (pl.dead || pl.out || dx > NEAR || tooClose) return;
         this.enter('rise');
         return;

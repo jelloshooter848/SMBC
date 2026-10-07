@@ -18,25 +18,25 @@ parent: 4-2
 ;; 58 s from the bow to the stern) and stops at the stern.
 ;; - BOW (0-32): a raised bow platform (row 7, the start) over the stair-stepped prow, the fore
 ;;   deck (row 9) with two cannons aimed up-left (14, 22), a Rocky Wrench manhole (18), a short
-;;   post with a Bullet Bill blaster at its right end (28-30), right against the tall post (31-32,
-;;   3 high: a staircase, with no pocket between them to be trapped in)
-;;   where the deck steps down. A propeller turns under the prow's bottom hull (23).
+;;   post with a Bullet Bill blaster at its right end (28-30) right against the tall post (31-32,
+;;   3 high; together a staircase with no pocket to be trapped in) where the deck steps down. A
+;;   propeller turns under the prow's bottom hull (23).
 ;; - MIDDLE (33-70): the long low main deck (row 12) on two hull segments with a 2-wide gap
-;;   (50-51), a propeller behind each (49, 65); a tall blaster post (44, its Bullet Bills
-;;   flying just over a standing hero's head), a plain post (59) and a ?
-;;   block (55, row 7: 5 rows above the deck so a Bullet Bill can be jumped under it; mushroom,
-;;   or fire flower when big). Above it the plank overhang (row 3, 40-60)
-;;   with cannons hanging under it aimed down-left (43, 49), a three-cannon turret (56-57: left,
-;;   right and down-left; nothing fires down-right into the gateway's crossfire), and
-;;   at its right end the thick block (61-75, rows 3-5) over the metal gateway (61-68, not solid); iron struts (`t`) frame the
-;;   gateway.
-;; - STERN (71-97): the lower deck (row 13) with a Rocky Wrench (77, well clear of where the hero drops in) and a tall blaster post (80, its
-;;   Bullet Bills flying over a standing hero's head, like the one mid-ship), then four 2-wide steps up (83-90) to the high stern deck (row 8, 91-97): a railing,
-;;   portholes in the hull (`%`), a propeller under it, and THE PIPE (94) down into Larry's room
-;;   (4-2-larry).
+;;   (50-51), a propeller behind each (49, 65); a 3-tall blaster post (44, its Bullet Bills flying
+;;   just over a standing hero's head), a plain post (59) and a ? block (55, row 7: 5 rows above
+;;   the deck so a Bullet Bill can be jumped under it; mushroom, or fire flower when big). Above
+;;   it the plank overhang (row 3, 40-60) with cannons hanging under it aimed down-left (43, 49)
+;;   and a three-cannon turret (56-57: left, right and down-left, so nothing crosses fire over
+;;   the gap), and at its right end the thick block (61-75, rows 3-5) over the metal gateway
+;;   (61-68, not solid; iron struts `t` frame it).
+;; - STERN (71-97): the lower deck (row 13) with a Rocky Wrench (77, well clear of where the hero
+;;   drops in), then four 2-wide steps up (83-90) to the high stern deck (row 8, 91-97): a
+;;   railing, portholes in the hull (`%`), a propeller under it, and THE PIPE (94) down into
+;;   Larry's room (4-2-larry).
 ;; Cannon cells are solid (the cannon fills its own cell). Every gap is 2 wide and every step up
 ;; at most 2 tiles from where the hero can stand, except the tall post (3 above the fore deck,
-;; 2 above the blaster post next to it); tests/sim/airship-deck.test.ts runs every hero across.
+;; 2 above the blaster post next to it) and the 3-tall blaster post at 44 (3 above the main
+;; deck); tests/sim/airship-deck.test.ts runs every hero across.
 [tiles]
 ;; 0              16               32               48               64               80               96
 ................ ................ ................ ................ ................ ................ ..  ;; 0
