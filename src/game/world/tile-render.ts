@@ -32,7 +32,9 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
         continue;
       }
       let name = def.name;
-      if (def.block?.kind === 'question') name = `question-${anim === 2 ? 1 : anim}`;
+      // A trick wall's panel looks like the wall it stands in (World's TrickWall draws its spin).
+      if (id === T.TRICK) name = 'brick';
+      else if (def.block?.kind === 'question') name = `question-${anim === 2 ? 1 : anim}`;
       else if (def.block?.kind === 'brick') name = 'brick';
       else if (def.pickup === 'coin') name = `coin-${(view.frame >> 3) & 3}`;
       else if (id === T.LAVA) name = `lava-${(view.frame >> 4) & 1}`;

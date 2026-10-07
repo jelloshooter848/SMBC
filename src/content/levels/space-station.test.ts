@@ -40,8 +40,10 @@ describe('the hidden teleporter block tile', () => {
     expect(tileDef(T.HIDDEN_TELEPORTER).name).toBe('hidden-teleporter');
     expect(DEFAULT_LEGEND['8']).toBe(T.HIDDEN_TELEPORTER);
     // Appended, so saved custom levels (tile ids) keep their meaning.
-    expect(T.HIDDEN_TELEPORTER).toBe(TILES.length - 2); // the cracked wall (5-4's dungeon) came next
-    expect(T.CRACKED).toBe(TILES.length - 1);
+    // The cracked wall (5-4's dungeon) came next, then the trick wall (6-2's bonus room).
+    expect(T.HIDDEN_TELEPORTER).toBe(TILES.length - 3);
+    expect(T.CRACKED).toBe(TILES.length - 2);
+    expect(T.TRICK).toBe(TILES.length - 1);
     expect(T.HIDDEN_TELEPORTER).toBe(T.HIDDEN_VINE + 1);
   });
 });

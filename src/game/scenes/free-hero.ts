@@ -84,6 +84,14 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     `${you}... TAKE MY WHIP.`,
     'END HIM IN HIS CASTLE!',
   ],
+  // The Masked Ninja, a cursed rival, holds him under the curse of his mask: they duel by night.
+  ryu: (you) => [
+    'THE MASKED NINJA CURSED ME.',
+    'HIS MASK RULES MY BLADE.',
+    '',
+    `${you}... DUEL HIM UNDER`,
+    'THE MOON. CUT ME FREE!',
+  ],
 };
 
 /** The freed card's lines (and so its announcement): the hero's full name, "MEGA MAN IS FREE!". */
