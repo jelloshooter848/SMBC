@@ -18,6 +18,12 @@ under `## [Unreleased]`.
 - Trick walls for levels (`trick` zones), plus original Ninja Gaiden-style art and music (dojo and
   ninja-night looks).
 
+### Fixed
+
+- Holding left or right while dropping into a bonus room no longer lands the hero on top of the
+  room's wall: the hero falls straight until clear of the top rows.
+- The game font now has a semicolon.
+
 ## [0.4.7] - 2026-10-07
 
 ### Added
