@@ -49,8 +49,12 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
 - **The wand runs through the whole story.** It breaks when Bowser falls at 8-4, and its pieces fall through a rift
   into the Lost Kingdom (the Lost Levels). Mario follows. The Koopalings want the pieces too, which ties in idea 1
   below.
-- **Peach is found in the Lost Levels.** Where exactly is still to be decided. She then becomes a **playable hero**
-  who helps fight back. That is a new character kit and needs its own planning.
+- **Peach is found in the Lost Levels**, fairly early (open to adjusting). She then becomes a **playable hero** who
+  helps fight back.
+  - **When:** a later release, after the story batch, once work on the Lost Levels starts.
+  - **What exists:** PR #51 only lists her as a new-character candidate (`bug-reports/2026-10-07-classic-follow-ups.md`,
+    NC-1: SMB2 USA, pluck vegetables, pick up and throw enemies, float). It has no full build spec, so she needs one
+    written first.
 - **Toad is the guide on the world map.** He's a typical helper, and players meet him in 1-0.
 - **Toad's hints are part of the story, never obvious:**
   - When you enter a new world, Toad says who we're looking for. He describes the hero without naming them, and hints
@@ -141,6 +145,17 @@ hero, so she would be hidden there.
   - The mini game uses both of Blaster Master's modes: Sophia in side view, then Jason on foot in an overhead dungeon
     (reusing Link's top-down kit), ending with the overhead boss fight.
   - In the main game, **Jason can hop out of the tank**.
+- **Source spec:** `bug-reports/2026-10-07-sophia-build-classic-character.md` (from PR #51, FU-6) is a full build spec
+  for her, taken from the original Crossover 3.1.21. It covers:
+  - the wide tank (19 × 15.5 px), driving at 1.54 px/f;
+  - with the Flower, she climbs walls and ceilings;
+  - with the Mushroom, she hovers using an 8-cell bar;
+  - a 3-level cannon that breaks bricks, plus Triple and Homing missiles;
+  - thrust swimming, and her squat-then-constant-rise jump;
+  - Sophia-only map tiles.
+
+  In 3.1.21, Jason is only decoration. Our plan adds his on-foot hop-out, which goes beyond the original.
+
 - **Mini game:** in Blaster Master's style, as true to the real game as possible.
 - **Size:** this is the biggest of the three ideas, because it adds a full character kit as well as the usual
   hideout, mini game, art and music.
