@@ -41,7 +41,7 @@ hook built for 7-3 (`campaignTheme:`, `campaignMusic:`, `[campaign-decor]` in th
 
 ### A coherent story (0.4.13)
 
-One story runs from the start through 8-4, and explains why 8-4 leads on into the Lost Levels.
+One story runs from the start through 8-4, and explains why 8-4 leads on into the Lost Levels, where it ends.
 
 **Owner decisions:**
 
@@ -50,8 +50,15 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
   Koopas couldn't find her; the heroes don't think like Koopas). Mario's job is to find her first. Freeing a hero
   also cracks the wand further.
 - **The wand runs through the whole story.** It breaks when Bowser falls at 8-4, and its pieces fall through a rift
-  into the Lost Kingdom (the Lost Levels). Mario follows. The Koopalings want the pieces too, which ties in idea 1
-  below.
+  into the Lost Kingdom (the Lost Levels). Mario follows. The king keeps the star tip; the Koopalings take the six
+  other pieces.
+- **Two endings** (docs/STORY.md 2.15, 2.17, 2.18):
+  - **Main ending at Lost 8-4:** Bowser is beaten, the princess is safe, credits roll, but he escapes with the star
+    tip.
+  - **Side quest:** the Koopaling airships (idea 1 below), one per piece. Optional.
+  - **True ending:** all six pieces (campaign) open the way to the Far Lands, Lost A-D. At D-4 the wand is made
+    whole, the rift is sealed and Larry gets his wand back whole, with a lock on it. A shorter final credits roll.
+  - World 9 keeps the NES rule (a Lost 8-4 clear without warps); classic play keeps the NES rule for A-D.
 - **Peach is found in the Lost Levels**, at Lost 4-4 (Toadstool Grove), and leaves traces before that. She then becomes a **playable hero** who
   helps fight back.
   - **When:** a later release, after the story batch, once work on the Lost Levels starts.
@@ -64,8 +71,8 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
     at the kind of place, for example "a hunter of the night… probably down in some dungeon".
   - When a hero's shadow shows up on the map (a hero you passed without freeing), he lightly says it feels like we
     missed something.
-- **The fake Bowsers are the wand's disguises,** and the player should be able to see it. Castles 1-4 to 7-4 hold
-  minions the king dressed in his own shape:
+- **The fake Bowsers are the wand's disguises,** and the player should be able to see it. Castles 1-4 to 7-4 (and
+  Lost 1-4 to 7-4) hold minions the king dressed in his own shape:
   - the disguise flickers during the fight;
   - it always bursts on defeat, revealing the true form;
   - each castle's Toad names the creature;
@@ -83,8 +90,9 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
   - Bill: Lance.
 - **Process:** first draft every line in a story document (docs/STORY.md) for the owner to review and edit, then
   build. The owner reviewed the draft on 2026-10-07; the decisions (partners before the way in, Toad at the end of
-  8-4, credits at 8-4 as a false ending plus a short final roll, six wand pieces held by the Koopalings) are in
-  docs/STORY.md section 3.
+  8-4, credits at 8-4 as a false ending, a main ending at Lost 8-4, six wand pieces held by the Koopalings that
+  unlock the Far Lands and the true ending, reveal pages for the Lost castles' fakes too) are in docs/STORY.md
+  section 3.
 
 ## Ideas for later
 
@@ -96,6 +104,9 @@ Larry Koopa, reached through 4-2's warp zone, was the first of SMB3's seven Koop
 Wendy, Iggy, Roy, Lemmy and Ludwig. Each one would get an airship reached through a Lost Levels warp zone, the same
 way Larry's is reached in 4-2.
 
+- **Story role (decided):** the airships are an optional side quest that **gates the Far Lands (Lost A-D)** in the
+  campaign. Each returns one of the six wand pieces; all six open the way to A-D and the true ending (docs/STORY.md
+  2.15). So they should be built **before or with the story batch**, with a dev / Unlock-all bypass for the gate.
 - **Where:** the Lost Levels have 9 forward warp zones:
   - LL 1-2: three single-pipe warps, to worlds 2, 3 and 4;
   - LL 5-1: to world 6;
@@ -104,8 +115,8 @@ way Larry's is reached in 4-2.
   - LL A-3: to world C;
   - LL B-4: to world D.
 
-  Six of these would lead to a Koopaling. Which warp gets which Koopaling is still to be decided. The rest keep
-  their NES behaviour.
+  Decided: the six in Lost worlds 1-8 (1-2's three, 5-1 and 5-2's two) lead to a Koopaling. Which warp gets which
+  Koopaling is still to be decided. The A-D warps keep their NES behaviour.
 
 - **Fights:** each Koopaling fights as in SMB3. For example:
   - Wendy throws candy rings;
