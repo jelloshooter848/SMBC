@@ -1,0 +1,65 @@
+id: 7-3-camp
+name: WORLD 7-3
+world: 7
+stage: 3
+theme: contra-jungle
+time: inherit
+start: 2,0
+startMode: fall
+camera: locked
+parent: 7-3
+
+;; Bill Rizer's jungle camp under 7-3 (campaign only, docs/HEROES.md): one locked screen. The
+;; player drops in from the blown bridge's gap above (7-3's campaign `pit` at 128-142) onto the
+;; riverbank at the left; captive Bill stands by the sandbags of his base under a searchlight. A
+;; shallow river (columns 8-10, one tile deep: a hop gets out of it) runs at the foot of the
+;; waterfall; past it, the cave mouth under the cliff (rows 9-12) leads into the waterfall climb
+;; (7-3-falls), and the climb back out into 7-3 past the bridge. The clock runs on (time: inherit). Theme and music
+;; `contra-jungle` (B3's art; the music is the theme's).
+
+[tiles]
+;; Rows 0-1 stay clear (no tiles) under the HUD. The cliff (columns 11-16, rows 2-8) overhangs the
+;; cave mouth (rows 9-12); column 16 is the cave's back, just off the screen.
+;; 0               16
+.................
+.................
+.........ww######
+.........ww######
+.........ww######
+.........ww######
+.........ww######
+.........ww######
+.........ww######
+.........ww......
+.........ww......
+.........ww......
+.........ww......
+########www######
+#################
+
+[entities]
+;; Bill, his mind taken by Red Falcon (campaign only, until freed).
+captive 5 12 hero=bill
+
+[zones]
+;; Into the cave mouth: the foot of the waterfall climb.
+pipe 16 11 right -> 7-3-falls 1 29
+
+[decor]
+;; The jungle's hanging canopy for a ceiling; Bill's base: a searchlight, two sandbag walls (Bill
+;; beside them, its beam over him), a palm on the riverbank and jungle crowns on the cliff.
+canopy-hang 0 0
+canopy-hang 2 0
+canopy-hang 4 0
+canopy-hang 6 0
+canopy-hang 8 0
+canopy-hang 10 0
+canopy-hang 12 0
+canopy-hang 14 0
+canopy-hang 16 0
+sandbags 1 12
+sandbags 3 12
+searchlight 6 12
+palm 11 12
+canopy 12 1
+canopy 14 1

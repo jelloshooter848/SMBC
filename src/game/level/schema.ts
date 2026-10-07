@@ -137,8 +137,19 @@ export type Zone =
       target: { level: string; x: number; y: number; exitDir: 'beam' | 'fall' };
       block?: { x: number; y: number };
     }
-  /** Falling out of the level at column >= x drops the player into `target` instead of killing them. */
-  | { kind: 'pit'; x: number; target: { level: string; x: number; y: number } }
+  /**
+   * Falling out of the level at column >= x (with `w`, only within [x, x + w)) drops the player
+   * into `target` instead of killing them. `campaign`: the zone sleeps (a fall there kills as
+   * ever) unless the campaign variant (level/campaign.ts) wakes it: 7-3's exploding bridge into
+   * Bill's jungle camp.
+   */
+  | {
+      kind: 'pit';
+      x: number;
+      w?: number;
+      target: { level: string; x: number; y: number };
+      campaign?: boolean;
+    }
   /**
    * A lift shaft down into a hidden area (5-4's shaft into `5-4-dungeon`): a player riding a
    * `lift-down` whose column lies within [x, x + w) is carried on down past the screen bottom
@@ -275,6 +286,26 @@ export interface LevelData {
   scroll?: number;
   /** Level to respawn in after dying here (sub-areas point at their main level). */
   parent: string | null;
+  /**
+   * The level's campaign look (level/campaign.ts `applyLook`): campaign play shows it in this
+   * theme, music and decor instead; every tile, zone and entity stays. Other play never sees it.
+   */
+  campaignLook?: CampaignLook;
+}
+
+/**
+ * A campaign-only reskin of a level (the map's `campaignTheme:` / `campaignMusic:` headers and
+ * its `[campaign-decor]` section): 7-3 as a Contra jungle stage. Ids are kept as written, so a
+ * look can name a theme or song that is not registered yet: campaign play then keeps the level's
+ * own look (`applyLook`).
+ */
+export interface CampaignLook {
+  /** A Theme id; until it is registered the look is not applied at all. */
+  theme: string;
+  /** A song id; the level's own music plays until it is registered. */
+  music?: string;
+  /** Replaces the level's decor (left out: the decor stays). */
+  decor?: Decor[];
 }
 
 export function tileAtTiles(level: LevelData, tx: number, ty: number): number {
