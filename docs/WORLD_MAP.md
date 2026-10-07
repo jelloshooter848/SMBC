@@ -509,6 +509,71 @@ trick x y h -> level x y [exit=up] [campaign]
   pipe at 35 in 6-2, where the bonus room's own pipe leads, so the panel is one way and the bonus
   room (and its coins) is entered again only down the pipe at 19.
 
+## Exploding bridges and ranged pits (level entity and zone, 0.4.9)
+
+7-3's way into Bill Rizer's jungle camp (campaign only, docs/HEROES.md):
+
+```
+[entities]
+bridge-blast x y w=N campaign=true
+[zones]
+pit x -> level x y [w=N] [campaign]
+```
+
+- **Campaign-only entities**: any spawn with `campaign=true` sleeps outside campaign play (World
+  leaves it out of its spawns); the campaign variant (`level/campaign.ts`) drops the mark, so it
+  spawns. Nothing else of the level changes for it.
+- **`bridge-blast`** (`entities/objects/bridge-blast.ts`) marks the N bridge tiles (`-`) from
+  (x, y) rightward. At rest: the `contra` sheet's `blast-bridge-0/1` over its girders (the red
+  light blinking about once a second; steady with reduce flashing), or without the sheet a post
+  with a blinking red lamp on the tile before its left end. The campaign variant also lays a coin
+  arrow pointing down at its marked end (`blastArrow`: tip two tiles above the girders over its
+  second segment, a head of three and a shaft of two; open air only).
+- **The chain**: a hero standing on an intact segment sets it off, from the end it came on at
+  (the way it faces). The first segment blows `BLAST_DELAY` (36) frames after the step, then one
+  every `blastStep` frames: the chain runs at `BLAST_PACE` (0.8) of the slowest active hero's
+  top running speed (Mario's 8 frames a segment, Simon's 20). Each segment flashes for
+  `BLAST_FLASH` (16) frames first (a steady orange glow with reduce flashing), then its tile turns
+  to air with a 32x32 boom (`contra:boom-0..3`, else the items sheet's blast) and the
+  `bridge-boom` sound (else `explosion`). The booms hurt nobody. So a hero who keeps running
+  (from rest on the post) just about outruns it, every hero (tests: margins of 7-25 px); one who
+  walks (Mario, Luigi) or stops falls through. The bridge is whole again on any new visit (a
+  respawn, a re-entry: World copies the map's tiles).
+- **Ranged pits**: `w=N` limits a pit to columns x..x+N-1 (else, as before, every column from x
+  on); `campaign` makes it sleep outside campaign play like a descent (a fall there kills). 7-3
+  has `pit 128 -> 7-3-camp 2 0 w=15 campaign` under the bridge, whose gap is walled to the bottom
+  by the pillars at 127 and 143, so only a fall through the blown bridge reaches it; every other
+  fall in 7-3 still kills. A pit takes every player along (co-op fall arrival: `World.fallSpot`).
+
+## Campaign looks (`LevelData.campaignLook`, 0.4.9)
+
+A level can look different in campaign play only: the same tiles, zones, entities and collision
+in another theme, music and decor (7-3 as a Contra jungle stage; next 2-1, 3-1, 4-2, 5-4 and 6-2
+in their heroes' styles). In the map:
+
+```
+campaignTheme: contra-jungle
+campaignMusic: contra-jungle
+...
+[campaign-decor]
+canopy-hang 0 0
+cloud-2 3 3
+palm 1 12
+```
+
+- The headers and the section are parsed into `campaignLook: { theme, music?, decor? }` and
+  written back by `serializeTextMap`. `campaignMusic` or `[campaign-decor]` without
+  `campaignTheme` is a parse error.
+- `applyLook` (`level/campaign.ts`), called by `campaignLevel`: the theme replaces the level's,
+  `[campaign-decor]` (if given) replaces `[decor]`, and the music replaces the level's once that
+  song is registered. A look whose theme is not registered yet (`isTheme`) is left out entirely,
+  so a level can name its look before its art lands; nothing throws.
+- Outside the campaign (level select, `?level=`, the editor) the level is exactly its own. For
+  7-3 a test holds it to v0.4.8 tile for tile and in look (`tests/sim/fixtures/7-3-v0.4.8.map`).
+- A reskin's checklist: the theme (and its music) registered as for any theme; the two headers
+  and the decor in the level's map; a test like `tests/sim/bill-camp.test.ts` "outside the
+  campaign".
+
 ## Adding a page (checklist)
 
 1. Sketch it in its own file (Lost Levels: `src/content/worldmap/lost/llN.ts`), export a

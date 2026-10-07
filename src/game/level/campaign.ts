@@ -1,5 +1,7 @@
 import { levelIds } from '@content/levels';
+import { songs } from '@content/music/songs';
 import type { EntitySpawn, LevelData, Zone } from './schema';
+import { isTheme } from './schema';
 import { T, isSolid } from './tiles';
 
 /*
@@ -39,6 +41,20 @@ import { T, isSolid } from './tiles';
  * the trick wall (`N`, T.TRICK) and a coin arrow is laid pointing at its marked row (`trickArrow`),
  * so pushing into it flips the player through into the dojo (World.checkTricks). Likewise no
  * secret, no map road, the clock carries on.
+ *
+ * A `pit` zone marked `campaign` (7-3's exploding bridge, owner decision for 0.4.9: Bill's jungle
+ * camp) sleeps the same way: outside the campaign a fall there kills as anywhere. Its campaign
+ * variant wakes it, so falling through the gap the bridge leaves drops the player into the area.
+ * Likewise an ENTITY with `campaign=true` (`bridge-blast`) sleeps outside the campaign (World
+ * leaves it out) and the campaign variant drops the mark, so it spawns. A woken `bridge-blast`
+ * also gets a coin arrow pointing down at its marked end (`blastArrow`).
+ *
+ * A level's campaign LOOK (`LevelData.campaignLook`: the map's `campaignTheme:` and
+ * `campaignMusic:` headers and its `[campaign-decor]` section; 7-3 as a Contra jungle stage) is
+ * applied here too (`applyLook`): the same tiles, zones and entities in another theme, music and
+ * decor. A look whose theme is not registered yet is left out entirely, so a level can name its
+ * look before the art lands. The next reskins (2-1, 3-1, 4-2, 5-4, 6-2) need only their own
+ * headers and decor.
  */
 
 const PIPE_TILES = new Set<number>([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
@@ -61,6 +77,53 @@ export function trickArrow(z: Trick, side: 1 | -1): [number, number][] {
   return [at(2, m), at(3, m - 1), at(3, m), at(3, m + 1), at(4, m), at(5, m)];
 }
 type Warp = Zone & { kind: 'warp' };
+
+/**
+ * The coin arrow over a campaign `bridge-blast` (7-3's exploding bridge), as [x, y] tiles: a down
+ * arrow over its marked end (the bridge's first segment, beside the post with the red light), its
+ * tip two tiles above the girders, a shaft of two above the head of three. Only open-air tiles get
+ * a coin.
+ */
+export function blastArrow(b: EntitySpawn): [number, number][] {
+  const x = b.x + 1;
+  const y = b.y;
+  return [
+    [x, y - 5],
+    [x, y - 4],
+    [x - 1, y - 3],
+    [x, y - 3],
+    [x + 1, y - 3],
+    [x, y - 2],
+  ];
+}
+
+/** What the running game has registered, for a campaign look (`applyLook`). */
+export interface LookRegistry {
+  theme: (id: string) => boolean;
+  music: (id: string) => boolean;
+}
+
+let songIds: ReadonlySet<string> | undefined;
+/** The bundled themes (schema.ts THEMES) and songs (content/music). */
+export const REGISTERED: LookRegistry = {
+  theme: isTheme,
+  music: (id) => (songIds ??= new Set(songs.map((s) => s.id))).has(id),
+};
+
+/**
+ * `level` in its campaign look (LevelData.campaignLook), or `level` itself when it has none or
+ * its theme is not registered (yet): the theme, the decor (when the look has its own) and the
+ * music (once that song is registered; else the level's own plays on). Tiles, zones and
+ * entities are untouched, so the collision is the same.
+ */
+export function applyLook(level: LevelData, known: LookRegistry = REGISTERED): LevelData {
+  const look = level.campaignLook;
+  if (!look || !known.theme(look.theme) || !isTheme(look.theme)) return level;
+  const out: LevelData = { ...level, theme: look.theme };
+  if (look.music !== undefined && known.music(look.music)) out.music = look.music;
+  if (look.decor) out.decor = look.decor.map((d) => ({ ...d }));
+  return out;
+}
 
 let bundled: ReadonlySet<string> | undefined;
 /** Whether `id` is a bundled level (the default check for a warp zone's `goto`). */
@@ -85,12 +148,16 @@ export function campaignLevel(
   const variants = level.zones.filter(
     (z): z is Warp => z.kind === 'warp' && (!!z.secret || (!!z.goto && has(z.goto.level))),
   );
-  // A sleeping `descent` zone (5-4's down lift into Simon's dungeon) or `trick` zone (6-2's
-  // trick wall into Ryu's dojo) wakes in campaign play.
-  const sleeping = level.zones.some((z) => (z.kind === 'descent' || z.kind === 'trick') && z.campaign);
+  // A sleeping `descent` zone (5-4's down lift into Simon's dungeon), `trick` zone (6-2's trick
+  // wall into Ryu's dojo) or `pit` zone (7-3's exploding bridge into Bill's camp), and a sleeping
+  // entity (`campaign=true`), wake in campaign play.
+  const sleeping =
+    level.zones.some((z) => (z.kind === 'descent' || z.kind === 'trick' || z.kind === 'pit') && z.campaign) ||
+    level.entities.some((e) => e.props?.campaign === true);
+  const looked = applyLook(level);
   if (!variants.length && !sleeping) {
-    memo.set(level, level);
-    return level;
+    memo.set(level, looked);
+    return looked;
   }
   const tiles = new Uint16Array(level.tiles);
   const dropped = new Set<Zone>();
@@ -152,10 +219,18 @@ export function campaignLevel(
       if (x >= 0 && x < level.width && y >= 0 && y < level.height && tiles[i] === T.AIR) tiles[i] = T.COIN;
     }
   }
+  // Woken exploding bridges: a coin arrow points down at each one's marked end.
+  for (const e of level.entities) {
+    if (e.type !== 'bridge-blast' || e.props?.campaign !== true) continue;
+    for (const [x, y] of blastArrow(e)) {
+      const i = y * level.width + x;
+      if (x >= 0 && x < level.width && y >= 0 && y < level.height && tiles[i] === T.AIR) tiles[i] = T.COIN;
+    }
+  }
   const zones = level.zones
     .filter((z) => !dropped.has(z))
     .map((z): Zone => {
-      if ((z.kind === 'descent' || z.kind === 'trick') && z.campaign) {
+      if ((z.kind === 'descent' || z.kind === 'trick' || z.kind === 'pit') && z.campaign) {
         const live: Zone = { ...z };
         delete live.campaign;
         return live;
@@ -174,9 +249,15 @@ export function campaignLevel(
       return { ...z, target: { ...(w.goto as NonNullable<Warp['goto']>) } };
     })
     .concat(added.zones);
-  const out: LevelData = added.entities.length
-    ? { ...level, tiles, zones, entities: [...level.entities, ...added.entities] }
-    : { ...level, tiles, zones };
+  // Sleeping entities wake: the mark goes, so World spawns them.
+  const entities = level.entities
+    .map((e): EntitySpawn => {
+      if (e.props?.campaign !== true) return e;
+      const { campaign: _, ...props } = e.props;
+      return { ...e, props };
+    })
+    .concat(added.entities);
+  const out: LevelData = { ...looked, tiles, zones, entities };
   memo.set(level, out);
   return out;
 }

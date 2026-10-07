@@ -149,9 +149,14 @@ describe('Text maps: `height` and `camera: free`', () => {
     expect(serializeTextMap(normal)).not.toMatch(/^height:/m);
   });
 
-  it('every level in the library is one screen high with a horizontal camera', () => {
+  it('every level in the library is one screen high with a horizontal camera, but the 7-3 waterfall climb', () => {
     for (const id of levelIds()) {
       const l = getLevel(id);
+      // Bill's waterfall climb (0.4.9) is the one tall area: a free camera, two screens high.
+      if (id === '7-3-falls') {
+        expect([l.height, l.camera]).toEqual([32, 'free']);
+        continue;
+      }
       expect(l.height, id).toBe(15);
       expect(l.camera, id).not.toBe('free');
     }

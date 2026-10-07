@@ -1,5 +1,14 @@
 import { LEVEL_ROWS } from '../constants';
-import type { Decor, EntitySpawn, LevelData, PipeDir, Theme, TransferMode, Zone } from './schema';
+import type {
+  CampaignLook,
+  Decor,
+  EntitySpawn,
+  LevelData,
+  PipeDir,
+  Theme,
+  TransferMode,
+  Zone,
+} from './schema';
 import { CAMERA_MODES, isTheme, themeMusic, type CameraMode } from './schema';
 import { DEFAULT_AUTO_SCROLL } from '../world/camera';
 import { DEFAULT_LEGEND, T } from './tiles';
@@ -51,7 +60,11 @@ function parseProps(parts: string[]): Props {
  *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad),
  *                         `descent x w -> level x y [campaign]` (a down lift's shaft),
  *                         `trick x y h -> level x y [exit=up] [campaign]` (a trick wall's spinning panel)
+ *                         `pit x -> level x y [w=N] [campaign]` (`w`: only columns x..x+w-1)
  *   [decor]               `kind x y`
+ *   [campaign-decor]      `kind x y`: the decor of the level's campaign look, which also takes
+ *                         the headers `campaignTheme: <theme>` and `campaignMusic: <song>`
+ *                         (level/campaign.ts applyLook; other play keeps [decor])
  */
 export function parseTextMap(src: string, idHint = 'level'): LevelData {
   const header: Record<string, string> = {};
@@ -60,7 +73,9 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
   const entities: EntitySpawn[] = [];
   const zones: Zone[] = [];
   const decor: Decor[] = [];
-  let section: 'header' | 'legend' | 'tiles' | 'entities' | 'zones' | 'decor' = 'header';
+  const lookDecor: Decor[] = [];
+  let hasLookDecor = false;
+  let section: 'header' | 'legend' | 'tiles' | 'entities' | 'zones' | 'decor' | 'campaign-decor' = 'header';
 
   const lines = src.split(/\r?\n/);
   lines.forEach((raw, i) => {
@@ -71,7 +86,7 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     if (section !== 'tiles' && line.trimStart().startsWith('#')) return;
     const trimmed = line.trim();
     if (!trimmed) return;
-    const sec = /^\[(\w+)\]$/.exec(trimmed);
+    const sec = /^\[([\w-]+)\]$/.exec(trimmed);
     if (sec) {
       const name = sec[1];
       if (
@@ -79,11 +94,13 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
         name !== 'tiles' &&
         name !== 'entities' &&
         name !== 'zones' &&
-        name !== 'decor'
+        name !== 'decor' &&
+        name !== 'campaign-decor'
       ) {
         throw new MapParseError(`unknown section [${name}]`, lineNo);
       }
       section = name;
+      if (name === 'campaign-decor') hasLookDecor = true;
       return;
     }
     try {
@@ -120,10 +137,11 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
         case 'zones':
           zones.push(parseZone(trimmed));
           break;
-        case 'decor': {
+        case 'decor':
+        case 'campaign-decor': {
           const [kind, xs, ys] = trimmed.split(/\s+/);
           if (!kind || xs === undefined || ys === undefined) throw new Error('expected "kind x y"');
-          decor.push({ kind, x: Number(xs), y: Number(ys) });
+          (section === 'decor' ? decor : lookDecor).push({ kind, x: Number(xs), y: Number(ys) });
           break;
         }
       }
@@ -198,6 +216,16 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     parent: header.parent ?? null,
   };
   if (scroll !== undefined) level.scroll = scroll;
+  if (header.campaignMusic !== undefined && header.campaignTheme === undefined)
+    throw new MapParseError('"campaignMusic" needs "campaignTheme"', 0);
+  if (hasLookDecor && header.campaignTheme === undefined)
+    throw new MapParseError('[campaign-decor] needs "campaignTheme"', 0);
+  if (header.campaignTheme !== undefined) {
+    const look: CampaignLook = { theme: header.campaignTheme };
+    if (header.campaignMusic !== undefined) look.music = header.campaignMusic;
+    if (hasLookDecor) look.decor = lookDecor;
+    level.campaignLook = look;
+  }
   return level;
 }
 
@@ -262,11 +290,19 @@ function parseZone(line: string): Zone {
       return z;
     }
     case 'pit': {
-      // pit x -> level x y
-      const [, xs, arrow, level, tx, ty] = parts;
+      // pit x -> level x y [w=N] [campaign]
+      const [, xs, arrow, level, tx, ty, ...rest] = parts;
       if (arrow !== '->' || !level || tx === undefined || ty === undefined)
-        throw new Error('expected "pit x -> level x y"');
-      return { kind: 'pit', x: Number(xs), target: { level, x: Number(tx), y: Number(ty) } };
+        throw new Error('expected "pit x -> level x y [w=N] [campaign]"');
+      const z: Zone = { kind: 'pit', x: Number(xs), target: { level, x: Number(tx), y: Number(ty) } };
+      const w = parseProps(rest.filter((r) => r.includes('='))).w;
+      if (w !== undefined) {
+        if (typeof w !== 'number' || !Number.isInteger(w) || w < 1)
+          throw new Error('pit w must be a whole number of columns');
+        z.w = w;
+      }
+      if (rest.includes('campaign')) z.campaign = true;
+      return z;
     }
     case 'descent': {
       // descent x w -> level x y [campaign]
@@ -415,6 +451,10 @@ export function serializeTextMap(level: LevelData): string {
   );
   if (level.camera === 'auto') out.push(`scroll: ${level.scroll ?? DEFAULT_AUTO_SCROLL}`);
   if (level.height !== LEVEL_ROWS) out.push(`height: ${level.height}`);
+  if (level.campaignLook) {
+    out.push(`campaignTheme: ${level.campaignLook.theme}`);
+    if (level.campaignLook.music !== undefined) out.push(`campaignMusic: ${level.campaignLook.music}`);
+  }
   out.push('', '[tiles]');
   const markers = new Map<string, string>();
   for (const e of level.entities) {
@@ -451,6 +491,10 @@ export function serializeTextMap(level: LevelData): string {
     out.push('', '[decor]');
     for (const d of level.decor) out.push(`${d.kind} ${d.x} ${d.y}`);
   }
+  if (level.campaignLook?.decor) {
+    out.push('', '[campaign-decor]');
+    for (const d of level.campaignLook.decor) out.push(`${d.kind} ${d.x} ${d.y}`);
+  }
   return out.join('\n') + '\n';
 }
 
@@ -463,7 +507,9 @@ function serializeZone(z: Zone): string {
     case 'vine':
       return `vine ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
     case 'pit':
-      return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
+      return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}${z.w === undefined ? '' : ` w=${z.w}`}${
+        z.campaign ? ' campaign' : ''
+      }`;
     case 'descent':
       return `descent ${z.x} ${z.w} -> ${z.target.level} ${z.target.x} ${z.target.y}${z.campaign ? ' campaign' : ''}`;
     case 'trick':
