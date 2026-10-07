@@ -98,10 +98,30 @@ hidden blocks) and to look closely at the map for a level hiding someone missed.
 ## Larry Koopa and the crystal ball (4-2's airship, campaign)
 
 Story: Larry Koopa stole a magic wand, and its spell is what brainwashed the heroes. In the
-campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (pipe target
-`4-2-airship 2 12`, wired in `level/campaign.ts`; dev select and `?level=4-2-airship` reach it too).
+campaign, 4-2's right warp-zone pipe drops the hero onto his airship's deck `4-2-airship` (goto
+`4-2-airship,2,6,fall`, wired in `level/campaign.ts`); the deck's stern pipe leads down into his
+cabin `4-2-larry` (`4-2-larry 2 12`). Dev select and `?level=` reach both.
 
-- **The cabin** (`src/content/levels/world4/4-2-airship.map`, parent 4-2): one locked screen,
+- **The deck** (`src/content/levels/world4/4-2-airship.map`, parent 4-2, theme `airship-deck`,
+  music `airship`, `camera: auto` at `scroll: 0.375` px/f: about 58 s): SMB3 World 1's airship
+  transcribed onto one 15-row screen, 98 columns. The bow (raised bow platform, the start, over a
+  stair-stepped prow), the fore deck (two `ul` cannons, a Rocky Wrench, a blaster post, the tall
+  2×3 post), the long low middle deck on two hull segments (a 2-wide gap, a blaster post, a post,
+  a mushroom ? block) under the plank overhang with hanging `dl`/`dr` cannons and a four-cannon
+  turret, the thick block over the gateway, then the lower stern deck (Rocky Wrench, cannon,
+  blaster), four 2-wide steps up to the railed stern deck with portholes and THE PIPE. Every pit
+  is 2 wide; `tests/sim/airship-deck.test.ts` runs a simple bot across with every hero.
+- **Cannons** (`cannon x y dir=r|l|ul|ur|dl|dr [period=150] [delay=]`, entities/enemies/cannon.ts):
+  a solid block (its cell is made solid) that fires a cannonball out of its barrel every `period`
+  frames while on screen (first shot staggered by position, or `delay`), with the `cannon` sfx; it
+  holds a point-blank shot while a hero is at its muzzle. The ball flies straight through
+  everything (1 px/f, or 0.75 px/f per axis on a diagonal), hurts on contact, drops when stomped
+  (100 points) and, like a Bullet Bill, shrugs off fire, boomerangs and ice.
+- **Rocky Wrench** (`rocky x y`, entities/enemies/rocky-wrench.ts): hides in a manhole in the deck
+  under cell (x, y); pops up when a hero is within 8 tiles (never under one standing on its lid),
+  faces them, throws a wrench that flies flat at 1.25 px/f, and ducks back for ~1.7 s. Only while
+  at least half out can it hurt or be hit (any attack, a stomp; 100 points).
+- **The cabin** (`src/content/levels/world4/4-2-larry.map`, parent 4-2): one locked screen,
   enclosed like SMB3's (the owner's reference, built to the SMB3 art's frames and mock), no sky. The
   log back wall (`H`, not solid) fills the room, behind the HUD too, with two `smb3:porthole`
   windows at (5,6) and (10,6). The ceiling row (row 2) and both edge columns (0 and 15) are solid

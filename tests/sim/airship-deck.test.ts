@@ -38,6 +38,9 @@ const AUTO = autoScrolls();
  */
 function bot(): (w: World) => Action[] {
   let held = false;
+  let lastX = -1;
+  let still = 0;
+  let back = 0;
   return (w) => {
     const p = w.player;
     const b = p.body;
@@ -51,13 +54,29 @@ function bot(): (w: World) => Action[] {
       held = false;
       return ['down'];
     }
+    // Stuck at a wall (a committed jump that came up short): back off a little and try again.
+    still = left === lastX ? still + 1 : 0;
+    lastX = left;
+    if (still > 40) back = 16;
+    if (back > 0) {
+      back--;
+      held = false;
+      return ['left'];
+    }
     const out: Action[] = [];
     const past = left > pipeL + 4 && feet <= PIPE.y * 16 + 32;
     out.push(past ? 'left' : 'right');
     const dir = past ? -1 : 1;
     const ahead = (d: number) => Math.floor((dir > 0 ? right + d : left - d) / 16);
+    // A wall ahead: a low one (1 tile) is hopped up close, a taller one jumped at from further out.
+    const height = (x: number) => {
+      let n = 0;
+      while (n < 5 && w.map.isSolid(x, row - n)) n++;
+      return n;
+    };
     let wall = false;
-    for (const d of [2, 10, 18]) for (const y of [row, row - 1]) if (w.map.isSolid(ahead(d), y)) wall = true;
+    for (const d of [2, 10, 18]) if (height(ahead(d)) > 0 || w.map.isSolid(ahead(d), row - 1)) wall = true;
+    for (const d of [18, 26, 34]) if (height(ahead(d)) >= 2) wall = true;
     let pit = true;
     for (let y = row + 1; y < 15; y++) if (w.map.isSolid(ahead(6), y)) pit = false;
     const wantJump = wall || pit || (feet > PIPE.y * 16 && left > pipeL - 40 && !past);
@@ -91,8 +110,8 @@ function cross(c: CharacterDef, power: string, invulnerable: boolean, maxFrames 
 }
 
 describe('the airship deck layout (SMB3 World 1 airship)', () => {
-  it('is 96 columns, one screen tall, auto-scrolling, an area of 4-2 starting on the bow', () => {
-    expect(deck.width).toBe(96);
+  it('is 98 columns, one screen tall, auto-scrolling, an area of 4-2 starting on the bow', () => {
+    expect(deck.width).toBe(98);
     expect(deck.height).toBe(15);
     expect(deck.parent).toBe('4-2');
     expect(deck.music).toBe('airship');
@@ -119,17 +138,17 @@ describe('the airship deck layout (SMB3 World 1 airship)', () => {
     expect(t(33, 12)).toBe(T.GROUND);
     expect(t(33, 9)).toBe(T.AIR);
     // The ? block mid-ship, 4 rows above the deck.
-    expect(t(53, 8)).toBe(T.Q_POWERUP);
+    expect(t(55, 8)).toBe(T.Q_POWERUP);
     // The overhang and its hanging cannons.
     expect(t(45, 3)).toBe(T.BRIDGE);
     const hanging = deck.entities.filter((e) => e.type === 'cannon' && e.y <= 6);
     expect(hanging.length).toBeGreaterThanOrEqual(5);
     for (const c of hanging) expect(['dl', 'dr', 'l', 'r']).toContain(c.props?.dir);
     // Two Rocky Wrenches, one on the fore deck and one on the lower stern deck.
-    expect(deck.entities.filter((e) => e.type === 'rocky').map((e) => e.x)).toEqual([18, 75]);
+    expect(deck.entities.filter((e) => e.type === 'rocky').map((e) => e.x)).toEqual([18, 73]);
     // The stern pipe on the high stern deck.
-    expect(PIPE).toMatchObject({ x: 92, y: 6, dir: 'down', target: { level: '4-2-larry', x: 2, y: 12 } });
-    expect(t(92, 8)).toBe(T.GROUND);
+    expect(PIPE).toMatchObject({ x: 94, y: 6, dir: 'down', target: { level: '4-2-larry', x: 2, y: 12 } });
+    expect(t(94, 8)).toBe(T.GROUND);
   });
 
   it('every pit is at most 2 tiles wide', () => {
@@ -143,10 +162,18 @@ describe('the airship deck layout (SMB3 World 1 airship)', () => {
   });
 
   it('decorates the hull with SMB3 propellers, bolts, a railing and portholes on the stern', () => {
+    expect(deck.theme).toBe('airship-deck');
     const kinds = new Set(deck.decor.map((d) => d.kind));
-    for (const k of ['smb3:propeller-0', 'smb3:bolt', 'smb3:railing', 'smb3:porthole']) expect(kinds).toContain(k);
-    for (const d of deck.decor.filter((d) => d.kind === 'smb3:railing' || d.kind === 'smb3:porthole'))
-      expect(d.x).toBeGreaterThanOrEqual(89);
+    for (const k of ['smb3:propeller-0', 'smb3:bolt', 'smb3:railing']) expect(kinds).toContain(k);
+    for (const d of deck.decor.filter((d) => d.kind === 'smb3:railing'))
+      expect(d.x).toBeGreaterThanOrEqual(91);
+    // A propeller behind each hull section: its shaft (the frame's left edge) meets the hull.
+    for (const d of deck.decor.filter((d) => d.kind === 'smb3:propeller-0')) {
+      expect(t(d.x, d.y), `propeller ${d.x}`).toBe(T.AIR);
+      expect(t(d.x - 1, d.y), `hull left of ${d.x}`).not.toBe(T.AIR);
+    }
+    // Portholes (planking with a porthole) in the stern hull.
+    expect([t(92, 10), t(96, 10)]).toEqual([T.CASTLE_BRICK, T.CASTLE_BRICK]);
   });
 
   it('the cannons are solid blocks once spawned', () => {
@@ -180,17 +207,20 @@ describe('the auto-scroll', () => {
     expect(seconds).toBeLessThan(70);
   });
 
-  it.runIf(AUTO)('a hero who stands still is pushed off the bow and squashed against the first cannon', () => {
-    const r = runSim({
-      level: deck,
-      character: MARIO,
-      script: { steps: [{ frame: 0, hold: [] }] },
-      maxFrames: 60 * 30,
-    });
-    expect(r.outcome).toBe('died');
-    expect(r.playerX).toBeLessThan(14 * 16);
-    expect(r.world.entities.some((e) => e instanceof Cannonball || e instanceof RockyWrench)).toBeDefined();
-  });
+  it.runIf(AUTO)(
+    'a hero who stands still is pushed off the bow and squashed against the first cannon',
+    () => {
+      const r = runSim({
+        level: deck,
+        character: MARIO,
+        script: { steps: [{ frame: 0, hold: [] }] },
+        maxFrames: 60 * 30,
+      });
+      expect(r.outcome).toBe('died');
+      expect(r.playerX).toBeLessThan(14 * 16);
+      expect(r.world.entities.some((e) => e instanceof Cannonball || e instanceof RockyWrench)).toBeDefined();
+    },
+  );
 
   it.runIf(!AUTO)('(no auto-scroll yet) a hero who stands still stays on the bow', () => {
     const r = runSim({

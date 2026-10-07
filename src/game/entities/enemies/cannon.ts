@@ -72,7 +72,12 @@ export class Cannonball extends Enemy {
     b.x += velToSub(b.vx);
     b.y += velToSub(b.vy);
     const cam = world.camera;
-    if (b.x > cam.right + px(32) || b.x + b.w < cam.x - px(32) || b.y > px(this.levelHeightPx + 16) || b.y + b.h < -px(32))
+    if (
+      b.x > cam.right + px(32) ||
+      b.x + b.w < cam.x - px(32) ||
+      b.y > px(this.levelHeightPx + 16) ||
+      b.y + b.h < -px(32)
+    )
       this.destroy();
   }
 
@@ -83,7 +88,8 @@ export class Cannonball extends Enemy {
   }
 
   override render(r: Renderer, view: View): void {
-    if (view.assets.has(SMB3) && view.assets.sheet(SMB3).frames.has('cannonball')) return super.render(r, view);
+    if (view.assets.has(SMB3) && view.assets.sheet(SMB3).frames.has('cannonball'))
+      return super.render(r, view);
     // Until the art lands: a dark ball.
     const x = this.screenX(view);
     const y = this.screenY();

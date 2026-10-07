@@ -85,7 +85,7 @@ export class RockyWrench extends Enemy {
     this.fallsOffLedges = false;
     this.body.vx = 0;
     this.sheet = SMB3;
-    this.currentFrame = 'rocky-0';
+    this.currentFrame = 'rocky-1'; // the knocked-out corpse
     this.setOut(0);
   }
 
@@ -129,7 +129,12 @@ export class RockyWrench extends Enemy {
         const dx = Math.abs(pl.centerX - cx);
         const onLid = world
           .activePlayers()
-          .some((p) => Math.abs(p.centerX - cx) < ON_LID && p.body.y + p.body.h <= this.deck + px(2) && p.body.y + p.body.h > this.deck - px(40));
+          .some(
+            (p) =>
+              Math.abs(p.centerX - cx) < ON_LID &&
+              p.body.y + p.body.h <= this.deck + px(2) &&
+              p.body.y + p.body.h > this.deck - px(40),
+          );
         if (pl.dead || pl.out || dx > NEAR || onLid) return;
         this.enter('rise');
         return;
@@ -140,22 +145,17 @@ export class RockyWrench extends Enemy {
         break;
       case 'aim':
         this.facing = pl.centerX < cx ? -1 : 1;
-        this.currentFrame = 'rocky-0';
         if (this.t >= AIM) this.enter('throw');
         break;
       case 'throw':
         if (this.t === 1) {
-          this.currentFrame = 'rocky-1';
           const dir = this.facing;
           const x = dir < 0 ? b.x - px(6) : b.x + b.w - px(2);
           world.spawn(new Wrench(x, b.y + px(3), dir, WRENCH, this));
           world.audio.sfx('kick');
           this.thrown++;
         }
-        if (this.t >= THROW) {
-          this.currentFrame = 'rocky-0';
-          this.enter('wait');
-        }
+        if (this.t >= THROW) this.enter('wait');
         break;
       case 'wait':
         if (this.t >= WAIT) this.enter('duck');
@@ -176,22 +176,27 @@ export class RockyWrench extends Enemy {
     this.flipOut({ kind: 'stomp', amount: 1, owner: null, dirX: this.facing }, world, false);
   }
 
+  /**
+   * The smb3 frames stand on the deck (their bottom row is the deck top) and face left: the
+   * closed lid while hidden, peeking (`rocky-0`) on the way up and down, risen with the wrench
+   * (`rocky-1`) once (nearly) fully out.
+   */
   override render(r: Renderer, view: View): void {
     const x = toPx(this.body.x) - view.camX - this.spriteOffsetX;
     const deckY = toPx(this.deck);
+    const frame = this.out === 0 ? 'rocky-hide' : this.out >= 12 ? 'rocky-1' : 'rocky-0';
     const art = view.assets.has(SMB3) ? view.assets.sheet(SMB3) : null;
+    if (art?.frames.has(frame)) {
+      if (this.stunned > 0 && !view.reduceFlashing && (view.frame & 3) === 0) return;
+      r.sprite(art, frame, x, deckY - 16, this.facing > 0);
+      return;
+    }
+    // Without the art: a lid, or a brown mole with a lighter face (cut off by the deck).
     if (this.out === 0) {
-      // The closed manhole lid, sitting on the deck.
-      if (art?.frames.has('rocky-hide')) r.sprite(art, 'rocky-hide', x, deckY - 16);
-      else r.rect(x + 2, deckY - 3, 12, 3, '#606060');
+      r.rect(x + 2, deckY - 3, 12, 3, '#606060');
       return;
     }
     const y = toPx(this.body.y);
-    if (art?.frames.has(this.currentFrame)) {
-      r.sprite(art, this.currentFrame, x, y, this.facing > 0);
-      return;
-    }
-    // Until the art lands: a brown mole with a lighter face, cut off at the deck.
     const h = Math.min(16, deckY - y);
     r.rect(x + 2, y, 12, h, '#8b4513');
     r.rect(x + (this.facing > 0 ? 8 : 3), y + 3, 5, Math.min(5, h - 3), '#e0b080');

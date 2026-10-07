@@ -674,7 +674,8 @@ export class EditorScene implements Scene {
       if (x < -32 || x > SCREEN_W + 32) continue;
       // A cannon shows its barrel's direction (`dir=`).
       const frame = e.type === 'cannon' ? `cannon-${String(e.props?.dir ?? 'l')}` : spec?.frame;
-      const sheet = spec && frame && assets.has(spec.sheet) ? assets.sheet(spec.sheet, spec.palette?.(theme)) : null;
+      const sheet =
+        spec && frame && assets.has(spec.sheet) ? assets.sheet(spec.sheet, spec.palette?.(theme)) : null;
       const f = sheet && frame ? sheet.frames.get(frame) : undefined;
       if (spec && sheet && frame && f) {
         // Hanging things (flipY) dangle below their anchor tile; the rest stand on its bottom.

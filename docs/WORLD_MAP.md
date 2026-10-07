@@ -237,8 +237,8 @@ adds. Owner decision (0.5.0): all warp pipes go eventually.
 - **4-2 vine area** (`4-2-warp`, pipes 50/54/58): `goto=4-2-cavern,2,0`. Pipe 54 drops the
   player into Samus's cavern (docs/HEROES.md), whose side pipe brings them up out of 4-2's pipe
   at column 72, the first pipe past the vine block.
-- **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,12`, Larry Koopa's
-  airship cabin. Larry's road (`secret:larry`) is granted by beating him, not by the pipe.
+- **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,6,fall`, dropping
+  onto the bow of Larry Koopa's airship deck (whose stern pipe leads to his cabin `4-2-larry`). Larry's road (`secret:larry`) is granted by beating him, not by the pipe.
 
 ## The 1-2 secret (campaign only)
 

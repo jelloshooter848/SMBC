@@ -35,9 +35,13 @@ export class Decoration extends Entity {
       if (f)
         r.sprite(view.assets.sheet('items'), 'castle-flag', x + f.w / 2 - 8, bottom - f.h + 8 - this.flagT);
     }
-    drawDecor(r, view, this.name, x, bottom);
+    // SMB3 airship propellers turn: `smb3:propeller-0` cycles through its three frames.
+    const name = this.name === PROPELLER ? `smb3:propeller-${Math.floor(view.frame / 4) % 3}` : this.name;
+    drawDecor(r, view, name, x, bottom);
   }
 }
+
+const PROPELLER = 'smb3:propeller-0';
 
 /** `sheet:frame` decor (`station:window`) hangs in front of the tiles; the classic decor behind them. */
 export const decorInFront = (kind: string): boolean => kind.includes(':');
