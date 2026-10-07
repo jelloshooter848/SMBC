@@ -147,4 +147,11 @@ export const sfx: Sfx[] = [
     pulse: '@2 v11 q7 x0 l32 o5 d a o6 d f+ a r32 o5 a o6 d f+ a o7 d r32 o6 a o7 d f+ x1 a4',
     pulse2: '@1 v6 q7 x0 l32 r32 o5 d a o6 d f+ r32 o5 a o6 d f+ a r32 o6 a o7 d x1 f+4',
   },
+  // ZEBES ESCAPE's self-destruct klaxon: a harsh two-tone blare (0.8 s) over a sour second
+  // voice, fading on its last note so it can sound again straight away.
+  {
+    id: 'alarm',
+    pulse: '@1 v12 q7 x0 o5 a8 e8 a8 x1 e8',
+    pulse2: '@0 v7 q7 x0 o5 a+8 f8 a+8 x1 f8',
+  },
 ];

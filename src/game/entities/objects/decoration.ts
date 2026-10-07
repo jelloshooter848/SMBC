@@ -69,6 +69,7 @@ export function decorPalette(theme: string): string {
   )
     return 'decor-night';
   if (theme === 'snow') return 'decor-snow';
+  if (theme === 'cavern') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';
   if (theme === 'mushroom-red') return 'decor-mushroom-red';
   if (theme === 'water-gray') return 'decor-gray';

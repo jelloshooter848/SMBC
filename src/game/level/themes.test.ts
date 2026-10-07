@@ -44,6 +44,7 @@ describe('themes', () => {
       'snow',
       ...LOST_SKINS,
       'station',
+      'cavern',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -63,7 +64,7 @@ describe('themes', () => {
     expect(isTheme('lava-land')).toBe(false);
   });
 
-  it('defaults the music by what a theme skins: water, castle, the station or the overworld tune', () => {
+  it('defaults the music by what a theme skins: water, castle, the station, the cavern or the overworld tune', () => {
     const music = Object.fromEntries(THEMES.map((t) => [t, map([`theme: ${t}`]).music]));
     expect(music).toEqual({
       overworld: 'overworld',
@@ -82,6 +83,7 @@ describe('themes', () => {
       'mushroom-red': 'overworld',
       'castle-water': 'water',
       station: 'mm-station',
+      cavern: 'cavern',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -165,5 +167,48 @@ describe('themes', () => {
     expect(decorPalette('station')).toBe(decorPalette('castle'));
     expect(enemyPalette('station')).toBe(enemyPalette('castle'));
     expect(isWaterTheme('station')).toBe(false);
+  });
+
+  it("dresses Samus's cavern in bubbly blue rock: tiles, a near-black sky, rock scenery", () => {
+    const frames = tilesDef.frames;
+    // The tiles a cavern is built of are redrawn, not just recoloured.
+    for (const t of [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+    ]) {
+      expect(frames[`${t}@cavern`], t).toBeDefined();
+      expect(frames[`${t}@cavern`], t).not.toEqual(frames[t]);
+      expect(frames[`${t}@cavern`], t).not.toEqual(frames[`${t}@station`]);
+    }
+    // The bomb-able rock is not the plain rock: it shows its cracks.
+    expect(frames['brick@cavern']).not.toEqual(frames['ground@cavern']);
+    expect(frames['brick@cavern']).not.toEqual(frames['hard@cavern']);
+    // A near-black sky, darker than any lit theme but not the castle's pure black.
+    const sky = SKY.cavern as string;
+    expect(sky).not.toBe(SKY.castle);
+    const [r, g, b] = [1, 3, 5].map((k) => parseInt(sky.slice(k, k + 2), 16)) as [number, number, number];
+    expect(Math.max(r, g, b)).toBeLessThan(0x30);
+    // Blue rock: the block colours lean blue, unlike the underground's or the station's.
+    const tiles = PALETTES.default['tiles-cavern'] as string[];
+    for (const i of [2, 3]) {
+      const c = tiles[i] as string;
+      const [cr, , cb] = [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16)) as [number, number, number];
+      expect(cb, `index ${i} is blue`).toBeGreaterThan(cr * 2);
+    }
+    expect(tiles).not.toEqual(PALETTES.default['tiles-underground']);
+    expect(tiles).not.toEqual(PALETTES.default['tiles-station']);
+    // Bushes, hills and ruin pillars in rock colours; enemies in the underground's blue.
+    expect(decorPalette('cavern')).toBe('decor-cavern');
+    expect(PALETTES.default['decor-cavern']).not.toEqual(PALETTES.default['decor-night']);
+    expect(enemyPalette('cavern')).toBe(enemyPalette('underground'));
+    expect(isWaterTheme('cavern')).toBe(false);
   });
 });
