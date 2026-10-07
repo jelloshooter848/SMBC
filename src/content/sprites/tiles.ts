@@ -164,6 +164,22 @@ export const tilePalettes: Record<string, string[]> = {
     NES.skyLight,
     NES.lava,
   ],
+  /* The space station above 3-1: grey steel plating with blue light strips, teal-and-cyan
+     conduits where other themes have pipes, amber lamps where they have gold. */
+  'tiles-station': [
+    NES.black,
+    NES.darkGray,
+    NES.gray,
+    NES.lightGray,
+    NES.yellow,
+    NES.teal,
+    NES.cyan,
+    NES.yellowLight,
+    NES.white,
+    NES.blueMid,
+    NES.blueLight,
+    NES.lava,
+  ],
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -800,6 +816,143 @@ const groundClouds = [
   ...cloudPuff.map((r) => r.slice(4) + r + r.slice(0, 4)),
 ];
 
+/* ---------- the space station (`@station`) ---------- */
+
+/* Floor plating: a riveted steel plate with a recessed blue light strip; tiles both ways. */
+const groundStation = [
+  '3333333333333331',
+  '3222222222222221',
+  '3282222222222821',
+  '3222222222222221',
+  '3200000000000021',
+  '320aaaaaaaaaa021',
+  '3209999999999021',
+  '3233333333333321',
+  '3222222222222221',
+  '3222222222222221',
+  '3222222222222221',
+  '3222222222222221',
+  '3222222222222221',
+  '3282222222222821',
+  '3222222222222221',
+  '1111111111111111',
+];
+
+/* Wall plating: the same plate, plain. */
+const plateStation = groundStation.map((r, i) => (i >= 4 && i <= 7 ? '3222222222222221' : r));
+
+/* Hard block: a heavy plate with a sunken blue glass port. */
+const portGlass = [
+  'aa999999',
+  'a9999999',
+  '99999999',
+  '99999a99',
+  '9999a999',
+  '999a9999',
+  '99999999',
+  '99999999',
+];
+const hardStation = [
+  '3333333333333331',
+  '3222222222222221',
+  '3282222222222821',
+  '3220000000003221',
+  ...portGlass.map((g) => `3220${g}3221`),
+  '3220333333333221',
+  '3282222222222821',
+  '3222222222222221',
+  '1111111111111111',
+];
+
+/* Breakable panels: half-offset vented plates. */
+const ventPlate = [
+  '33333331',
+  '32222221',
+  '32000021',
+  '32333321',
+  '32000021',
+  '32333321',
+  '32222221',
+  '11111111',
+];
+const brickStation = [
+  ...ventPlate.map((r) => r + r),
+  ...ventPlate.map((r) => r.slice(4) + r + r.slice(0, 4)),
+];
+
+/* A spent block: a dark, bolted plate with a lit rim so it still reads on the bulkhead. */
+const usedStation = [
+  '0000000000000000',
+  '0222222222222220',
+  '0232111111112310',
+  ...Array.from({ length: 10 }, () => '0211111111111110'),
+  '0232111111112310',
+  '0211111111111110',
+  '0000000000000000',
+];
+
+/* An X brace between two chords, in a tile's colours (light, dark). */
+const xBrace = (light: string, dark: string): string[] =>
+  Array.from({ length: 8 }, (_, k) => {
+    const r = Array.from({ length: 16 }, () => '.');
+    for (const x of [2 * k, 15 - 2 * k]) r[x] = light;
+    for (const x of [2 * k + 1, 14 - 2 * k]) r[x] = dark;
+    return r.join('');
+  });
+
+/* Catwalk ledge (the platforms' top): a hazard-striped deck over an open truss. */
+const catwalkStation = [
+  '0000000000000000',
+  '3333333333333333',
+  '4400440044004400',
+  '0440044004400440',
+  '0044004400440044',
+  '1111111111111111',
+  '0000000000000000',
+  ...xBrace('2', '1'),
+  '0000000000000000',
+];
+
+/* The ledge's support (scenery): a ladder-like strut. */
+const strutStation = Array.from({ length: 16 }, (_, i) =>
+  i % 4 === 0 ? '....03333331....' : '....031..031....',
+);
+
+/* A grated catwalk on two hangers (the boss bridge). */
+const bridgeStation = [
+  '0000000000000000',
+  '3333333333333333',
+  '2020202020202020',
+  '2121212121212121',
+  '1111111111111111',
+  '0000000000000000',
+  '.12........12...',
+  '.12........12...',
+  '.00........00...',
+  ...Array.from({ length: 7 }, () => '................'),
+];
+
+/* Background bulkhead (scenery): big dark bevelled panels with corner rivets and a dim lamp. */
+const wallStation = [
+  '2222222222222220',
+  '2111111111111110',
+  '2121111111111210',
+  ...Array.from({ length: 4 }, () => '2111111111111110'),
+  '2111111111110010',
+  '2111111111109010',
+  ...Array.from({ length: 4 }, () => '2111111111111110'),
+  '2121111111111210',
+  '2111111111111110',
+  '0000000000000000',
+];
+const wallTopStation = [
+  '0000000000000000',
+  '6666666666666666',
+  '5555555555555555',
+  '0000000000000000',
+  ...wallStation.slice(4),
+];
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -857,5 +1010,16 @@ export const tilesDef: SpriteDef = {
     'tree-top@mushroom-red': mushroomTop,
     'tree-trunk@mushroom-red': mushroomStem,
     'ground@castle-water': groundCastle,
+    // The space station above 3-1 (Mega Man's stage).
+    'ground@station': groundStation,
+    'castle-brick@station': plateStation,
+    'hard@station': hardStation,
+    'brick@station': brickStation,
+    'used@station': usedStation,
+    'tree-top@station': catwalkStation,
+    'tree-trunk@station': strutStation,
+    'bridge@station': bridgeStation,
+    'wall@station': wallStation,
+    'wall-top@station': wallTopStation,
   },
 };

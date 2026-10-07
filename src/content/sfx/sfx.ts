@@ -130,4 +130,21 @@ export const sfx: Sfx[] = [
     pulse: '@2 v11 q7 x0 l32 o5 a o6 c+ e a r32 o6 e a o7 c+ r32 o6 b o7 d f+ x1 o7 a4',
     pulse2: '@2 v6 q7 x0 l32 r32 o5 a o6 c+ e a r32 o6 e a o7 c+ r32 o6 b o7 d x1 f+4',
   },
+  // Mega Man's station. One tick of a boss's life bar filling: a dry high blip (50 ms), played
+  // once per notch as the bar climbs.
+  { id: 'boss-fill', pulse: '@1 v9 q6 x1 o6 a64 r64' },
+  // Teleport beam: a bouncing climb that zips off the top, with a thin shimmer a step behind.
+  {
+    id: 'beam',
+    pulse: '@1 v11 q8 x0 l64 o4 c g o5 c g o6 c g o7 c x1 p-12 o7 c8',
+    pulse2: '@3 v6 q8 x1 l32 r32 p12 o5 c p12 o5 g p12 o6 c p12 o6 g',
+    noise: 'v5 x1 l32 r32 n0 n1 n0',
+  },
+  // A weapon capsule opened: two quick climbing bursts and a long top note, brighter than the
+  // keep's item fanfare.
+  {
+    id: 'capsule',
+    pulse: '@2 v11 q7 x0 l32 o5 d a o6 d f+ a r32 o5 a o6 d f+ a o7 d r32 o6 a o7 d f+ x1 a4',
+    pulse2: '@1 v6 q7 x0 l32 r32 o5 d a o6 d f+ r32 o5 a o6 d f+ a r32 o6 a o7 d x1 f+4',
+  },
 ];

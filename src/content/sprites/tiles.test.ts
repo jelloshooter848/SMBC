@@ -62,6 +62,16 @@ const tileFrames = [
   'tree-top@mushroom-red',
   'tree-trunk@mushroom-red',
   'ground@castle-water',
+  'ground@station',
+  'castle-brick@station',
+  'hard@station',
+  'brick@station',
+  'used@station',
+  'tree-top@station',
+  'tree-trunk@station',
+  'bridge@station',
+  'wall@station',
+  'wall-top@station',
 ];
 
 const fontGlyphs = [
@@ -300,6 +310,7 @@ describe('tile sprites', () => {
         'tiles-clouds',
         'tiles-overworld-water',
         'tiles-water-gray',
+        'tiles-station',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();

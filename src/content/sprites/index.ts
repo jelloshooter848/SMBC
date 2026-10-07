@@ -13,6 +13,7 @@ import { simonPalettes, simonDef } from './simon';
 import { ryuPalettes, ryuDef } from './ryu';
 import { billPalettes, billDef } from './bill';
 import { mapPalettes, mapDef } from './map';
+import { stationPalettes, stationDef } from './station';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -44,6 +45,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   dungeon: withSideFrames(dungeonDef),
   'link-td': linkTdDef,
   'dungeon-enemies': dungeonEnemiesDef,
+  station: stationDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -63,6 +65,7 @@ const defaults: Record<string, readonly string[]> = {
   ...dungeonPalettes,
   ...linkTdPalettes,
   ...dungeonEnemiesPalettes,
+  ...stationPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

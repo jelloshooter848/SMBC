@@ -43,6 +43,7 @@ describe('themes', () => {
       'treetop',
       'snow',
       ...LOST_SKINS,
+      'station',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -62,7 +63,7 @@ describe('themes', () => {
     expect(isTheme('lava-land')).toBe(false);
   });
 
-  it('defaults the music by what a theme skins: water, castle or the overworld tune', () => {
+  it('defaults the music by what a theme skins: water, castle, the station or the overworld tune', () => {
     const music = Object.fromEntries(THEMES.map((t) => [t, map([`theme: ${t}`]).music]));
     expect(music).toEqual({
       overworld: 'overworld',
@@ -80,6 +81,7 @@ describe('themes', () => {
       'castle-overworld': 'castle',
       'mushroom-red': 'overworld',
       'castle-water': 'water',
+      station: 'mm-station',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -137,5 +139,31 @@ describe('themes', () => {
     expect(SKY['castle-overworld']).toBe(SKY.overworld);
     expect(SKY['castle-overworld']).not.toBe(SKY.castle);
     expect(PALETTES.default['tiles-castle-overworld']).toEqual(PALETTES.default['tiles-overworld']);
+  });
+
+  it("dresses Mega Man's station in its own steel: tiles, sky, scenery and robots' fallbacks", () => {
+    const frames = tilesDef.frames;
+    // The tiles a platform stage stands on are redrawn, not just recoloured.
+    for (const t of [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+    ]) {
+      expect(frames[`${t}@station`], t).toBeDefined();
+      expect(frames[`${t}@station`], t).not.toEqual(frames[t]);
+    }
+    // Space is black; the plating has a palette of its own; dark-theme scenery and enemies.
+    expect(SKY.station).toBe('#000000');
+    expect(PALETTES.default['tiles-station']).not.toEqual(PALETTES.default['tiles-castle']);
+    expect(decorPalette('station')).toBe(decorPalette('castle'));
+    expect(enemyPalette('station')).toBe(enemyPalette('castle'));
+    expect(isWaterTheme('station')).toBe(false);
   });
 });
