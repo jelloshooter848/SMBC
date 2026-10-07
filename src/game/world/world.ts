@@ -4,7 +4,7 @@ import { SCORE_MAX } from '../hud/hud';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
-import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
+import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
@@ -13,6 +13,7 @@ import { tileDef, T } from '../level/tiles';
 import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
 import { drawStars, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
+import { SafetyFloor } from './safety-floor';
 import { Player } from '../entities/player';
 import type { Entity } from '../entities/entity';
 import { type View } from '../entities/entity';
@@ -181,6 +182,8 @@ export const freshSeed = (): number =>
  * (Character.as), with 2 Flash px to our px and 60 frames a second: 25/60 px per frame, in subpixels.
  */
 const PIPE_SPEED = px(25) / 60;
+/** The Safety floor assist's dashed line: faint, steady (nothing flashes). */
+const SAFETY_FLOOR_COLOR = 'rgba(255, 255, 255, 0.45)';
 /** The crypt's own sounds (S3's) once they exist; until then the plain brick break and none. */
 const hasSfx = (id: string): boolean => SFX_LIB.some((x) => x.id === id);
 const CRUMBLE_SFX = hasSfx('whip-wall') ? 'whip-wall' : 'break';
@@ -406,6 +409,9 @@ export class World {
   private readonly extraEntities: WorldStart['extraEntities'];
   /** Cracked-wall tiles still standing (T.CRACKED; crackWalls does nothing once none are left). */
   private cracked = 0;
+  /** The Safety floor assist's rims and the players' view of the map with it (made on first use). */
+  private safety: SafetyFloor | null = null;
+  private safetyView: TileMap | null = null;
   /** The live `descent` zones (a sleeping campaign one is left out): down-lift shafts. */
   private readonly descents: (Zone & { kind: 'descent' })[];
   /** Every `trick` zone's panel (a sleeping one too: it still turns for an arrival). */
@@ -1016,7 +1022,7 @@ export class World {
         p.anim = 'jump';
         return;
       }
-      p.update(input, this.map, this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
+      p.update(input, this.playerMap(p), this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
       // No attacks, tools or thrusts on a vine: every hero's checkState returns on ST_VINE (e.g.
       // Link.checkState on "vine", MarioBase.checkState) and pressAtkBtn / pressSpcBtn return there.
       if (p.vine) {
@@ -1104,7 +1110,7 @@ export class World {
             (z.w === undefined || p.body.x < tileToSub(z.x + z.w)),
         );
         if (pit) this.transfer(pit.target, 'fall');
-        else this.kill(p);
+        else if (!this.catchFall(p)) this.kill(p);
       }
     }
     this.cull();
@@ -2451,6 +2457,7 @@ export class World {
     this.backdrop?.(screen);
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     renderTiles(r, view, this.map);
+    if (this.assist.safetyFloor) this.renderSafetyFloor(r, view);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);
     if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);
     this.renderBeam(r, view);
@@ -2570,6 +2577,76 @@ export class World {
       this.trickSpin = null;
       s.wall.spinT = null; // at rest again (on the room's own face)
       for (const p of this.players) p.frozen = false;
+    }
+  }
+
+  /* ---------- The Safety floor assist ---------- */
+
+  /** The Safety floor's rims for this level (AssistOptions.safetyFloor; worked out on first use). */
+  get safetyFloor(): SafetyFloor {
+    return (this.safety ??= new SafetyFloor(this.map, this.level));
+  }
+
+  /**
+   * The map `p` moves through: with the Safety floor on, one where every deadly pit has a one-way
+   * floor at its rim and lava is solid from above (read each frame, so toggling the assist
+   * mid-level takes effect at once). A hero riding a live descent lift (5-4's shaft into the
+   * dungeon) sees the plain map: that ride down leads somewhere.
+   */
+  private playerMap(p: Player): TileMap {
+    if (!this.assist.safetyFloor || this.descentLift(p)) return this.map;
+    return (this.safetyView ??= this.safetyFloor.view());
+  }
+
+  /**
+   * A fall out of the level with the Safety floor on that the floor did not catch (a sinking lift
+   * carried the hero through it, or the assist came on mid-fall): put him back on the nearest
+   * floor instead of killing him. False when the assist is off or the level has no floor.
+   */
+  private catchFall(p: Player): boolean {
+    if (!this.assist.safetyFloor) return false;
+    const b = p.body;
+    // On screen (the camera's edges would push him back into whatever is off it), else anywhere.
+    const tx = tileAt(b.x + (b.w >> 1));
+    const spot =
+      this.safetyFloor.nearest(
+        tx,
+        toPx(b.h),
+        tileAt(this.camera.x + TILE_SUB - 1),
+        tileAt(this.camera.right) - 1,
+      ) ?? this.safetyFloor.nearest(tx, toPx(b.h));
+    if (!spot) return false;
+    p.stairs = null;
+    b.x = tileToSub(spot.tx) + ((tileToSub(1) - b.w) >> 1);
+    b.y = tileToSub(spot.row) - b.h;
+    b.prevBottom = b.y + b.h;
+    b.vx = 0;
+    b.vy = 0;
+    b.onGround = true;
+    return true;
+  }
+
+  /** The Safety floor's dev visual: a faint dashed line along the floor and over open lava. */
+  private renderSafetyFloor(r: Renderer, view: View): void {
+    const floor = this.safetyFloor;
+    const camPx = view.camX;
+    const first = Math.max(0, camPx >> 4);
+    const last = Math.min(this.map.width - 1, (camPx + SCREEN_W) >> 4);
+    const dash = (tx: number, ty: number) => {
+      for (let x = 0; x < 16; x += 8) r.rect(tx * 16 - camPx + x + 2, ty * 16, 4, 1, SAFETY_FLOOR_COLOR);
+    };
+    for (let tx = first; tx <= last; tx++) {
+      const row = floor.rowAt(tx);
+      if (row >= 0) dash(tx, row);
+      // Lava's surface (the top tile of each pool), unless the rim floor already covers it.
+      for (let ty = 0; ty < this.map.height; ty++)
+        if (
+          this.map.get(tx, ty) === T.LAVA &&
+          this.map.get(tx, ty - 1) !== T.LAVA &&
+          (row < 0 || row > ty) &&
+          floor.at(tx, ty)
+        )
+          dash(tx, ty);
     }
   }
 
