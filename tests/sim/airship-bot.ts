@@ -8,6 +8,7 @@ import { RockyWrench } from '@game/entities/enemies/rocky-wrench';
 import { BulletBill } from '@game/entities/enemies/bullet-bill';
 import { Enemy } from '@game/entities/enemies/enemy';
 import { Projectile } from '@game/entities/projectiles/projectile';
+import { pickJumpTier } from '@game/characters/profile';
 
 /*
  * A bot for Larry's airship deck (any `camera: auto` level ending in a down pipe), playing it
@@ -17,7 +18,8 @@ import { Projectile } from '@game/entities/projectiles/projectile';
  * stand, step back; the first that stays clear of every threat for the next ~40 frames wins.
  * When none does, it jumps a flat-flying shot as it arrives. Heroes who stomp jump onto a Rocky
  * Wrench that is up; the others swing or shoot at targets in front of them. On the stern deck
- * it hops onto the pipe and presses DOWN.
+ * it hops onto the pipe and presses DOWN. A hero whose jump is committed at takeoff (Simon) jumps
+ * a wall only once the arc clears it, and never jumps a shot onto the screen's left edge.
  */
 
 interface Box {
@@ -246,6 +248,43 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
       }
       return Infinity;
     };
+    const committed = p.def.movement.airControl === 'none';
+    /** Would a jump taken now, with no steering, get the feet over the wall ahead before its face? */
+    const clearsWall = (): boolean => {
+      let face = -1;
+      for (let d = 1; d <= 48 && face < 0; d++) {
+        const col = ahead(d);
+        if (height(col) > 0 || w.map.isSolid(col, row - 1)) face = col;
+      }
+      if (face < 0) return true;
+      const gap = dir > 0 ? face * 16 - right : left - (face + 1) * 16;
+      let n = 0;
+      while (n < 8 && w.map.isSolid(face, row - n)) n++;
+      const need = feet - (row - n + 1) * 16;
+      const jt = pickJumpTier(p.def.movement, b.vx);
+      let vx = (dir * b.vx) / 4096;
+      let vy = -jt.initial;
+      let rise = 0;
+      let moved = 0;
+      for (let t = 1; t <= 120; t++) {
+        rise -= vy / 4096;
+        vy += vy < 0 ? jt.holdGravity : jt.fallGravity;
+        if (rise < 0) return false;
+        moved += vx;
+        if (moved > gap) {
+          if (rise >= need) return true;
+          // Bumped the face: the arc goes on straight up from there.
+          moved = gap;
+          vx = 0;
+        }
+        // The screen's left edge pushes a hero going right along (into the face: squashed).
+        if (dir > 0 && camX + speed * t - left > moved) {
+          moved = camX + speed * t - left;
+          if (moved > gap) return rise >= need;
+        }
+      }
+      return false;
+    };
     const out: Action[] = [];
 
     // Swing or shoot at what is in front (heroes who stomp just stomp).
@@ -287,6 +326,9 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
         back = 14;
         return [dir > 0 ? 'left' : 'right', ...out];
       }
+      // A committed jump (Simon) at a wall: take off only once the arc clears its top, else walk
+      // on to gain speed (a jump made slowly, or still moving back after a back-off, hits its face).
+      if (wall && committed && !clearsWall()) return [go, ...out];
       if (wantJump) {
         held = true;
         airDir = go;
@@ -305,12 +347,23 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
     const soonest = Math.max(tStand, tBack);
     if (soonest <= 24) {
       // Jump only if that gets clear for longer (a jump into another shot is no better).
-      const tUp = jumpHit(0);
-      const tFwd = pit || wall ? 0 : jumpHit();
-      if (Math.max(tUp, tFwd) > soonest) {
+      // An unsteered jump keeps the takeoff speed (a committed arc, Simon's, has no other): judge
+      // that jump, and never take one that comes down against the screen's left edge (made while
+      // stepping back, it can carry the hero back over a cannon, to be pushed into it).
+      const vNow = b.vx / 4096;
+      const tUp = jumpHit(vNow);
+      const tFwd = pit || wall || committed ? 0 : jumpHit();
+      const air = ((tier?.initial ?? 0x04000) / (tier?.holdGravity ?? 0x00200)) * 2;
+      const upClear = left + vNow * air > camX + speed * air + 16;
+      if (tFwd > soonest && tFwd > tUp) {
         held = true;
-        airDir = tFwd > tUp ? go : null;
-        return airDir ? [airDir, 'jump', ...out] : ['jump', ...out];
+        airDir = go;
+        return [go, 'jump', ...out];
+      }
+      if (upClear && tUp > soonest) {
+        held = true;
+        airDir = null;
+        return ['jump', ...out];
       }
     }
     if (tBack > tStand && left > camX + 24) return ['left', ...out];

@@ -553,22 +553,33 @@ describe('TRY AGAIN? has no way back but its answers', () => {
   });
 });
 
+// The deck's shots vary with its world seed, so the ride is played on fixed seeds (devStart's
+// `seed`), each hero on every one. Besides an everyday seed, these once ended the bot's ride:
+// 3872769170: Simon (his jump committed at takeoff) jumped the 3-tall blaster post too slowly,
+//   bumped its face, and the screen's edge pushed him into it;
+// 1753536851 (Simon) and 3423891524 (Ryu): an unsteered jump over a Bullet Bill, made while
+//   stepping back, carried the hero back over the fore deck's cannon onto the screen's edge.
+const DECK_SEEDS = [1, 3872769170, 1753536851, 3423891524];
+
 describe('every hero rides the deck to the stern pipe', () => {
   for (const c of CHARACTERS) {
-    it(`${c.name}: stands on the scrolling deck and goes down the stern pipe into Larry's room`, () => {
-      const h = makeGame();
-      h.game.devStart(AIRSHIP_DECK, c, c.damage.kind === 'powerup' ? 'small' : 'full');
-      h.until(() => h.top() instanceof LevelScene, 400);
-      const deck = h.top() as LevelScene;
-      // Standing still, the left edge pushes the hero along the deck: alive, on the deck.
-      h.idle(200);
-      const p = deck.world.player;
-      expect(p.dead).toBe(false);
-      expect(p.body.onGround).toBe(true);
-      expect(p.body.x).toBeGreaterThanOrEqual(deck.world.camera.x);
-      expect(deck.world.camera.x).toBeGreaterThan(px(60)); // 200 frames at 0.375 px/f
-      rideToStern(h, deck);
-      expect((h.top() as LevelScene).level?.id).toBe(AIRSHIP_ROOM);
-    });
+    for (const seed of DECK_SEEDS) {
+      it(`${c.name}: stands on the scrolling deck and goes down the stern pipe into Larry's room (seed ${seed})`, () => {
+        const h = makeGame();
+        h.game.devStart(AIRSHIP_DECK, c, c.damage.kind === 'powerup' ? 'small' : 'full', false, seed);
+        h.until(() => h.top() instanceof LevelScene, 400);
+        const deck = h.top() as LevelScene;
+        // Standing still, the left edge pushes the hero along the deck: alive, on the deck.
+        h.idle(200);
+        const p = deck.world.player;
+        expect(p.dead).toBe(false);
+        expect(p.body.onGround).toBe(true);
+        expect(p.body.x).toBeGreaterThanOrEqual(deck.world.camera.x);
+        expect(deck.world.camera.x).toBeGreaterThan(px(60)); // 200 frames at 0.375 px/f
+        rideToStern(h, deck);
+        expect(p.dead).toBe(false);
+        expect((h.top() as LevelScene).level?.id).toBe(AIRSHIP_ROOM);
+      });
+    }
   }
 });
