@@ -756,6 +756,33 @@ export const songs: Song[] = [
   },
 
   {
+    id: 'triforce-get',
+    bpm: 150,
+    loop: false,
+    // A major, 3 bars: Link holds up the Triforce (keep.ts WIN_FRAMES, 5 s). The dungeon's A
+    // minor turns major: a climbing arpeggio, a stately step up to the high E, and a cadence
+    // home over a walking bass.
+    pulse1: `
+      @2 v12 q8 x0
+      o5 e8 a8 o6 c+8 e8 d4 c+8 o5 b8 ; bar 1  A  D E
+      o5 a8 b8 o6 c+8 d8 e4. f+8      ; bar 2  D  A
+      o6 d8 c+8 o5 b8 g+8 a2          ; bar 3  E  A
+    `,
+    pulse2: `
+      @1 v8 q8 x0
+      o5 c+8 e8 a8 o6 c+8 o5 b4 a8 g+8 ; bar 1
+      o5 f+8 g+8 a8 b8 o6 c+4. d8     ; bar 2
+      o5 b8 a8 g+8 e8 c+2             ; bar 3
+    `,
+    triangle: `
+      q8 x0
+      o3 a4 e4 d4 e4                  ; bar 1
+      o3 f+4 d4 a4 a4                 ; bar 2
+      o3 e4 e4 a2                     ; bar 3
+    `,
+  },
+
+  {
     id: 'mm-station',
     bpm: 156,
     loop: true,

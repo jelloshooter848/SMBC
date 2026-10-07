@@ -11,6 +11,7 @@ import {
   boxesOverlap,
   dirToward,
   type Box,
+  type Dir,
   type Side,
 } from './geometry';
 import { Chest, FloorSwitch, Pickup, PushBlock, TdEnemy, Torch, type TdEntity } from './entity';
@@ -112,6 +113,8 @@ export const DEFAULT_SPAWNERS: Readonly<Record<string, Spawner>> = {
   'heart-container': (w, s) =>
     w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x, s.y, 'heart-container'),
   refill: (w, s) => (w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x, s.y, 'refill')),
+  map: (w, s) => (w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x + 4, s.y, 'map')),
+  compass: (w, s) => (w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x, s.y, 'compass')),
   chest: (w, s) => {
     const chests = w.room.spawns.filter((c) => c.kind === 'chest');
     const contents = w.room.def.chests?.[chests.indexOf(s)] ?? 'heart';
@@ -179,7 +182,14 @@ export class TopDownWorld {
   readonly events: TdEvent[] = [];
   frame = 0;
   keys = 0;
+  /** The dungeon's treasures found: its map, its compass (and a game's own, e.g. a Triforce). */
+  readonly found = new Set<string>();
   transition: Transition | null = null;
+  /**
+   * After a slide the hero walks himself in through the doorway, as Link does in a Zelda
+   * dungeon: the way he walks and the spot just past the wall where he stops (pad ignored).
+   */
+  walkIn: { dir: Dir; x: number; y: number } | null = null;
   /** The hero has stepped in past the doorway: the room's shutters may close. */
   sealed = false;
   /** An exit tile was reached. */
@@ -318,7 +328,7 @@ export class TopDownWorld {
       const c = Math.max(0, Math.min(ROOM_COLS - 1, col));
       const r = Math.max(0, Math.min(ROOM_ROWS - 1, row));
       if ((c !== col) === (r !== row)) return true; // a corner beyond the room
-      return tileAt(this.room, c, r) !== 'door' || !this.doorOpen(sideOf(c, r) as Side);
+      return tileAt(this.room, c, r) !== 'door' || !this.doorOpen(sideOf(c, r, this.room.wall) as Side);
     }
     const t = tileAt(this.room, col, row) as TileKind;
     switch (t) {
@@ -338,7 +348,7 @@ export class TopDownWorld {
       case 'exit':
         return mover !== 'hero';
       case 'door':
-        return mover !== 'hero' || !this.doorOpen(sideOf(col, row) as Side);
+        return mover !== 'hero' || !this.doorOpen(sideOf(col, row, this.room.wall) as Side);
     }
   }
 
@@ -364,14 +374,15 @@ export class TopDownWorld {
 
   /**
    * A two-cell north or south doorway is drawn as one 16-px door centred across its cells: the
-   * outer 8 px of each cell are its jambs, solid to the hero.
+   * outer 8 px of each cell are its jambs, solid to the hero (all the way through the wall).
    */
   private inDoorJamb(box: Box): boolean {
+    const wall = this.room.wall * TILE;
     for (const side of ['n', 's'] as const) {
       const cells = this.room.doorCells[side];
       if (!cells || cells.length !== 2) continue;
-      const top = side === 'n' ? -Infinity : (ROOM_ROWS - 1) * TILE;
-      const bottom = side === 'n' ? TILE : Infinity;
+      const top = side === 'n' ? -Infinity : ROOM_H - wall;
+      const bottom = side === 'n' ? wall : Infinity;
       if (box.y + box.h <= top || box.y >= bottom) continue;
       const left = (cells[0] as number) * TILE;
       const right = left + 2 * TILE;
@@ -390,8 +401,9 @@ export class TopDownWorld {
     const cx = box.x + box.w / 2;
     const cy = box.y + box.h / 2;
     let best: { x: number; y: number; d: number } | null = null;
-    for (let row = 1; row < ROOM_ROWS - 1; row++)
-      for (let col = 1; col < ROOM_COLS - 1; col++) {
+    const wall = this.room.wall;
+    for (let row = wall; row < ROOM_ROWS - wall; row++)
+      for (let col = wall; col < ROOM_COLS - wall; col++) {
         const x = col * TILE + (TILE - box.w) / 2;
         const y = row * TILE + (TILE - box.h) / 2;
         if (this.blocked({ x, y, w: box.w, h: box.h }, 'hero')) continue;
@@ -427,7 +439,7 @@ export class TopDownWorld {
     for (let r = r0; r <= r1; r++)
       for (let c = c0; c <= c1; c++) {
         if (tileAt(this.room, c, r) !== 'door') continue;
-        const side = sideOf(c, r);
+        const side = sideOf(c, r, this.room.wall);
         if (!side || this.room.doors[side] !== 'locked' || this.state().unlocked.has(side)) continue;
         this.keys--;
         this.state().unlocked.add(side);
@@ -454,6 +466,27 @@ export class TopDownWorld {
     return shown;
   }
 
+  /** Is `box` on the room's floor (inside the wall band)? */
+  onFloor(box: Box): boolean {
+    return this.offFloor(box) === 0;
+  }
+
+  /** How far `box` reaches past the room's floor into the wall band (pixels, all sides summed). */
+  offFloor(box: Box): number {
+    const w = this.room.wall * TILE;
+    return (
+      Math.max(0, w - box.x) +
+      Math.max(0, w - box.y) +
+      Math.max(0, box.x + box.w - (ROOM_W - w)) +
+      Math.max(0, box.y + box.h - (ROOM_H - w))
+    );
+  }
+
+  /** Is the hero walking himself in from a doorway (the pad does nothing meanwhile)? */
+  get walkingIn(): boolean {
+    return this.walkIn !== null;
+  }
+
   update(input: InputFrame): void {
     this.frame++;
     if (this.transition) {
@@ -461,7 +494,10 @@ export class TopDownWorld {
       return;
     }
     const hero = this.hero;
-    hero.update(this, input);
+    if (this.walkIn) {
+      const w = this.walkIn;
+      if (!hero.walkInStep(this, w.dir, w.x, w.y) || hero.kbT > 0 || hero.dying) this.walkIn = null;
+    } else hero.update(this, input);
     if (hero.holdT > 0) return; // holding up a prize: the room waits
     for (const e of [...this.entities]) if (!e.dead) e.update(this);
     if (!hero.dying) this.contacts();
@@ -502,7 +538,8 @@ export class TopDownWorld {
 
   /**
    * Gives the hero something (see PickupKind): a heart, a key, a heart container (one more
-   * heart, all refilled), a refill, the shield, an item's ammo, or an item. Emits 'pickup'.
+   * heart, all refilled), a refill, the shield, the dungeon's map or compass (or a Triforce),
+   * an item's ammo, or an item. Emits 'pickup'.
    */
   grant(what: string): void {
     const hero = this.hero;
@@ -522,6 +559,11 @@ export class TopDownWorld {
         break;
       case 'shield':
         hero.shield = true;
+        break;
+      case 'map':
+      case 'compass':
+      case 'triforce':
+        this.found.add(what);
         break;
       default: {
         const ammo = Object.values(this.items).find((i) => i.ammo?.pickup === what);
@@ -588,7 +630,7 @@ export class TopDownWorld {
           st.blasted.add(`${col},${row}`);
           opened = true;
         } else if (t === 'door') {
-          const side = sideOf(col, row) as Side;
+          const side = sideOf(col, row, this.room.wall) as Side;
           if (this.room.doors[side] !== 'cracked' || st.blasted.has(side)) continue;
           st.blasted.add(side);
           const [gx, gy] = neighbourCell(this.room, side);
@@ -624,11 +666,7 @@ export class TopDownWorld {
       this.emit({ type: 'met', cond });
     }
     if (this.syncHidden()) this.emit({ type: 'reveal' });
-    if (!this.sealed) {
-      const f = this.hero.feet();
-      if (f.x >= TILE && f.y >= TILE && f.x + f.w <= ROOM_W - TILE && f.y + f.h <= ROOM_H - TILE)
-        this.sealed = true;
-    }
+    if (!this.sealed && this.onFloor(this.hero.feet())) this.sealed = true;
     const shut = this.shuttersShut();
     if (shut !== this.shutWas && Object.values(this.room.doors).includes('shutter'))
       this.emit({ type: 'shutters', open: !shut });
@@ -676,6 +714,17 @@ export class TopDownWorld {
     const frames = Math.round((v.dx !== 0 ? ROOM_W : ROOM_H) / SLIDE_SPEED);
     this.enterRoom(next);
     this.transition = { side, from, t: 0, frames };
+    // Then in past the wall: to the first floor tile.
+    const w = next.wall * TILE;
+    const to =
+      side === 'w'
+        ? { x: ROOM_W - w - TILE, y: hero.y }
+        : side === 'e'
+          ? { x: w, y: hero.y }
+          : side === 'n'
+            ? { x: hero.x, y: ROOM_H - w - TILE }
+            : { x: hero.x, y: w };
+    this.walkIn = { dir: SIDE_DIR[side], ...to };
   }
 
   /** Puts the hero straight into a room at (x, y), no slide (tests, dev tools). */
@@ -683,6 +732,7 @@ export class TopDownWorld {
     const room = this.dungeon.rooms.get(id);
     if (!room) throw new Error(`no room "${id}"`);
     this.transition = null;
+    this.walkIn = null;
     this.hero.x = x;
     this.hero.y = y;
     this.enterRoom(room);

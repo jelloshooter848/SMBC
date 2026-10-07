@@ -183,7 +183,7 @@ export type PickupKind = string;
 /** Small pickups are 8 px wide (a heart is 8×8); the rest fill a tile. */
 export function pickupSize(kind: PickupKind): { w: number; h: number } {
   if (kind === 'heart') return { w: 8, h: 8 };
-  if (kind === 'key' || kind === 'bombs') return { w: 8, h: 16 };
+  if (kind === 'key' || kind === 'bombs' || kind === 'map') return { w: 8, h: 16 };
   return { w: 16, h: 16 };
 }
 
@@ -199,7 +199,10 @@ export function pickupFrame(kind: PickupKind): string {
     case 'shield':
       return 'shield-pickup';
     case 'heart-container':
-      return 'heart-container';
+    case 'map':
+    case 'compass':
+    case 'triforce':
+      return kind;
     default:
       return `${kind}-icon`;
   }

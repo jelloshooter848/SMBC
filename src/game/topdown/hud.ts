@@ -16,7 +16,11 @@ export interface TdHudData {
     cols: number;
     rows: number;
     visited: readonly (readonly [number, number])[];
+    /** Every room, once the dungeon's map is found (else none). */
+    known: readonly (readonly [number, number])[];
     here: readonly [number, number];
+    /** The goal room, once the compass is found (else null). */
+    goal: readonly [number, number] | null;
   };
   /** The item boxes, left to right: each with its letter over it and its icon (tile sheet) or empty. */
   boxes: readonly { label: string; frame: string | null }[];
@@ -44,21 +48,30 @@ export function hudData(world: TopDownWorld, title: string, boxes: TdHudData['bo
       .filter((it) => it.ammo)
       .map((it) => ({ frame: it.icon, count: world.inv.count(it.id) })),
     map: {
-      cols: Math.max(4, d.cols),
-      rows: Math.max(4, d.rows),
+      cols: d.cols,
+      rows: d.rows,
       visited,
+      known: world.found.has('map') ? [...d.rooms.values()].map((r) => [r.gx, r.gy] as const) : [],
       here: [world.room.gx, world.room.gy],
+      goal: world.found.has('compass') ? goalOf(world) : null,
     },
     boxes,
   };
+}
+
+function goalOf(world: TopDownWorld): readonly [number, number] | null {
+  for (const r of world.dungeon.rooms.values()) if (r.def.goal) return [r.gx, r.gy];
+  return null;
 }
 
 /* Zelda 1's dungeon HUD laid on the 64-px band: the level over the map at the left, the counts
    column, the B and A boxes, and -LIFE- over the hearts at the right (x as Zelda's). */
 export const MAP_X = 16;
 export const MAP_Y = 20;
-const CELL_W = 16;
-const CELL_H = 8;
+/** Zelda's map: an 8×8 grid of 8×4 cells, each room a 7×3 block; the dungeon centred in it. */
+const MAP_CELLS = 8;
+const CELL_W = 8;
+const CELL_H = 4;
 /** The counts column (keys, then ammo), the right-hand item box, and the life meter. */
 export const COUNTERS_X = 88;
 const COUNTERS_Y = 20;
@@ -85,12 +98,24 @@ export function drawTdHud(r: Renderer, view: TdView, hud: TdHudData): void {
   const font = fontOf(view);
   const tiles = view.sheet(view.sheets.tiles);
   r.rect(0, 0, 256, HUD_H, '#000000');
-  // Level and map.
+  // Level and map: the rooms (all of them once the map is found), the compass's goal in red,
+  // the hero's room in green.
   r.text(font, hud.title, MAP_X, 8);
-  for (const [gx, gy] of hud.map.visited)
-    r.rect(MAP_X + gx * CELL_W + 1, MAP_Y + gy * CELL_H + 1, CELL_W - 2, CELL_H - 2, HUD_BLUE);
-  const [hx, hy] = hud.map.here;
-  r.rect(MAP_X + hx * CELL_W + CELL_W / 2 - 2, MAP_Y + hy * CELL_H + CELL_H / 2 - 2, 4, 4, '#00e800');
+  const m = hud.map;
+  const left = MAP_X + Math.floor((MAP_CELLS - Math.min(MAP_CELLS, m.cols)) / 2) * CELL_W;
+  const top = MAP_Y + Math.floor((MAP_CELLS - Math.min(MAP_CELLS, m.rows)) / 2) * CELL_H;
+  const drawn = new Set<string>();
+  for (const [gx, gy] of [...m.known, ...m.visited]) {
+    if (drawn.has(`${gx},${gy}`)) continue;
+    drawn.add(`${gx},${gy}`);
+    r.rect(left + gx * CELL_W, top + gy * CELL_H, CELL_W - 1, CELL_H - 1, HUD_BLUE);
+  }
+  const dot = ([gx, gy]: readonly [number, number], color: string) =>
+    r.rect(left + gx * CELL_W + 2, top + gy * CELL_H, 3, CELL_H - 1, color);
+  // The goal blinks slowly, as Zelda's does (steady with reduce flashing).
+  const blinkOn = view.reduceFlashing || ((view.frame >> 4) & 1) === 0;
+  if (m.goal && blinkOn && !(m.goal[0] === m.here[0] && m.goal[1] === m.here[1])) dot(m.goal, '#f83800');
+  dot(m.here, '#00e800');
   // Keys, then ammo.
   const counters = [{ frame: 'key', count: hud.keys }, ...hud.counters];
   counters.forEach((c, i) => {

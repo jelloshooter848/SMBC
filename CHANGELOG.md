@@ -8,6 +8,22 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.16] - 2026-10-07
+
+### Changed
+
+- Escape the Shadow Keep (Link) is rebuilt as a true Zelda dungeon:
+  - Thirteen rooms with thick brick walls around a smaller floor, doors centred in each wall, and Link walking himself
+    in through each door after the screen scrolls; shutters slam behind him.
+  - Find the dungeon's map to see every room on the minimap, and the compass to mark where the Triforce lies.
+  - Two keys for two locked doors; the first waits behind the bats beside the entrance.
+  - The Keeper now leaves a heart container when it falls, as a Zelda boss does.
+  - Beyond the Keeper lies a piece of the Triforce: Link holds it high to its own fanfare, every heart refilled, and
+    the spell breaks.
+  - A knockback no longer throws Link out of a room through a doorway.
+
+## [0.4.15] - 2026-10-07
+
 ### Changed
 
 - Station Escape (Mega Man) is rebuilt in Mega Man 2's style:
@@ -490,7 +506,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.14...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.16...HEAD
+[0.4.16]: https://github.com/jelloshooter848/SMBC/compare/v0.4.15...v0.4.16
+[0.4.15]: https://github.com/jelloshooter848/SMBC/compare/v0.4.14...v0.4.15
 [0.4.14]: https://github.com/jelloshooter848/SMBC/compare/v0.4.13...v0.4.14
 [0.4.13]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...v0.4.13
 [0.4.12]: https://github.com/jelloshooter848/SMBC/compare/v0.4.11...v0.4.12

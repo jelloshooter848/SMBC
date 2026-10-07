@@ -11,6 +11,7 @@ import {
 } from './dungeon';
 import { PALETTES, SPRITES } from './index';
 import { BEAM_PALETTES, BEAM_PALETTE_CALM } from '@game/topdown/beam';
+import { SIDE_FRAMES, THICK_SIDE_FRAMES } from '@game/topdown/frames';
 
 type Size = readonly [w: number, h: number];
 const T16: Size = [16, 16];
@@ -54,6 +55,17 @@ const DUNGEON_FRAMES: Record<string, Size> = {
   'bomb-pickup': V8,
   'boomerang-icon': V8,
   'bomb-icon': V8,
+  // 0.4.16: Zelda's 32×32 doors through the two-tile wall, the map, the compass and the Triforce.
+  'door-open-thick': [32, 32],
+  'door-locked-thick': [32, 32],
+  'door-shut-thick': [32, 32],
+  'wall-cracked-thick': [32, 32],
+  'wall-hole-thick': [32, 32],
+  'exit-0-thick': [32, 32],
+  'exit-1-thick': [32, 32],
+  map: V8,
+  compass: T16,
+  triforce: T16,
 };
 
 const LINK_TD_FRAMES: Record<string, Size> = {
@@ -95,6 +107,9 @@ const LINK_TD_FRAMES: Record<string, Size> = {
   'throw-down-ns': T16,
   'throw-up-ns': T16,
   'throw-side-ns': T16,
+  // Holding a prize up over his head with both hands (the item-get pose).
+  hold: T16,
+  'hold-ns': T16,
 };
 
 const ENEMY_FRAMES: Record<string, Size> = {
@@ -168,6 +183,11 @@ describe.each(SHEETS)('%s sheet', (id, def, frames, palettes) => {
 });
 
 describe('dungeon tiles', () => {
+  it('a sheet for two-tile walls: registered with every side frame, the 32-px doors included', () => {
+    for (const f of [...SIDE_FRAMES, ...THICK_SIDE_FRAMES])
+      expect(SPRITES.dungeon?.frames[`${f}-side`], f).toBeDefined();
+  });
+
   it('ships the boss-room variant with the same layout', () => {
     expect(Object.keys(dungeonPalettes).sort()).toEqual(['dungeon', 'dungeon-dark']);
   });
@@ -197,6 +217,13 @@ describe('dungeon tiles', () => {
       'wall-cracked',
       'wall-hole',
       'chest-open',
+      'door-open-thick',
+      'door-locked-thick',
+      'door-shut-thick',
+      'wall-cracked-thick',
+      'wall-hole-thick',
+      'exit-0-thick',
+      'exit-1-thick',
     ])
       expect(rows(dungeonDef, name).join(''), name).not.toContain('.');
   });
@@ -213,6 +240,31 @@ describe('dungeon tiles', () => {
     expect(rows(dungeonDef, 'door-open')[15]?.slice(4, 12)).toBe('00000000');
     expect(rows(dungeonDef, 'door-locked').join('')).toContain('d');
     expect(rows(dungeonDef, 'door-shut')).not.toEqual(rows(dungeonDef, 'door-open'));
+  });
+
+  it("Zelda's thick doors fill the two-tile north wall: brick above, the ledge row below, a 16-px way through to the floor", () => {
+    const wall = rows(dungeonDef, 'wall');
+    const wallTop = rows(dungeonDef, 'wall-top');
+    for (const door of [
+      'door-open-thick',
+      'door-locked-thick',
+      'door-shut-thick',
+      'exit-0-thick',
+      'exit-1-thick',
+    ]) {
+      const f = rows(dungeonDef, door);
+      expect(f[0]?.slice(0, 4), door).toBe(wall[0]?.slice(0, 4)); // outer brick at the corner
+      expect(f[31]?.slice(0, 4), door).toBe(wallTop[15]?.slice(0, 4)); // the ledge's last row
+      expect(f[31]?.slice(28), door).toBe(wallTop[15]?.slice(12));
+    }
+    expect(rows(dungeonDef, 'door-open-thick')[31]?.slice(8, 24)).toBe('0'.repeat(16));
+    expect(rows(dungeonDef, 'door-open-thick')[20]?.slice(8, 24)).toBe('0'.repeat(16));
+    expect(rows(dungeonDef, 'door-locked-thick').join('')).toContain('d');
+    expect(rows(dungeonDef, 'door-shut-thick')).not.toEqual(rows(dungeonDef, 'door-open-thick'));
+    expect(rows(dungeonDef, 'wall-hole-thick')[31]?.slice(10, 22)).toContain('0000');
+    expect(rows(dungeonDef, 'wall-cracked-thick').join('').split('0').length).toBeGreaterThan(
+      [...rows(dungeonDef, 'wall'), ...rows(dungeonDef, 'wall-top')].join('').split('0').length * 2 + 20,
+    );
   });
 
   it('the cracked wall is the north wall with a visible crack; the hole opens it to the floor', () => {
