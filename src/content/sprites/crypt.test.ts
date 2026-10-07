@@ -44,6 +44,10 @@ const CRYPT_FRAMES: Record<string, Size> = {
   throne: [32, 32],
   'stair-r': T16,
   'stair-l': T16,
+  'burst-0': T16,
+  'burst-1': T16,
+  meat: T16,
+  door: [16, 32],
 };
 
 const rows = (name: string): readonly string[] => cryptDef.frames[name] as readonly string[];
@@ -118,6 +122,7 @@ describe('crypt sheet', () => {
       ['skeleton-0', 'skeleton-1'],
       ['dracula-fireball-0', 'dracula-fireball-1'],
       ['beast-fire-0', 'beast-fire-1'],
+      ['burst-0', 'burst-1'],
       ['dracula-cape-0', 'dracula-cape-1'],
     ] as const)
       expect(rows(a), a).not.toEqual(rows(b));
@@ -139,6 +144,10 @@ describe('crypt sheet', () => {
       'dracula-beast-2',
       'throne',
       'stained-glass',
+      'burst-0',
+      'burst-1',
+      'meat',
+      'door',
     ])
       expect(rows(n).at(-1), n).toMatch(/[^.]/);
     expect(rows('bat-0')[0]).toMatch(/[^.]/);
@@ -195,5 +204,19 @@ describe('crypt sheet', () => {
       expect(rows(n).join(''), n).toMatch(/5/);
       expect(rows(n).join(''), n).toMatch(/4/);
     }
+  });
+
+  it('the death flame grows; the roast sits on a plate; the door fills its frame', () => {
+    expect(opaque(rows('burst-1'))).toBeGreaterThan(opaque(rows('burst-0')));
+    for (const n of ['burst-0', 'burst-1'])
+      expect(count(rows(n), '4567'), n).toBeGreaterThan(opaque(rows(n)) / 2);
+    // roast browns over a white-and-grey plate
+    expect(count(rows('meat'), '68')).toBeGreaterThan(40);
+    expect(rows('meat').slice(-4).join('')).toMatch(/4/);
+    // the door stands a full 16px wide on its sill, under a pointed arch
+    const door = rows('door');
+    expect(door.at(-1)).toMatch(/^[^.]{16}$/);
+    expect(door[0]).toMatch(/^\.+[^.]+\.+$/);
+    expect(count(door, '1a')).toBeGreaterThan(100);
   });
 });
