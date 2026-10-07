@@ -252,14 +252,24 @@ describe('themes', () => {
     expect(themeMusic('airship')).toBe('airship');
   });
 
-  it('the airship deck tiles seamlessly: plank seams and nails line up across tile edges', () => {
-    const ground = tilesDef.frames['ground@airship'] as readonly string[];
-    // each course ends in a black seam row, so stacked tiles keep the courses apart
-    expect(ground[7]).toMatch(/^0+$/);
-    expect(ground[15]).toMatch(/^0+$/);
-    // the background hull is dimmer than the deck: no lit wood tone on it
-    const wall = (tilesDef.frames['wall@airship'] as readonly string[]).join('');
-    expect(wall).not.toMatch(/3/);
-    expect((ground as string[]).join('')).toMatch(/3/);
+  it("Larry's cabin: a floor of log posts in front of a wall of horizontal logs", () => {
+    const frame = (name: string) => tilesDef.frames[name] as readonly string[];
+    const top = frame('ground@airship');
+    const body = frame('castle-brick@airship');
+    // the floor's top is a rounded cap: dark corners on the first row, a full post below it
+    expect(top[0]?.[0]).not.toBe('3');
+    expect(top[0]?.slice(4, 12)).toMatch(/^0+$/);
+    expect(top.join('')).not.toContain('.');
+    // below the cap the post carries straight on down into the post body (same columns), and the
+    // body tiles vertically: every row is one post, black-edged both sides
+    const strip = (rows: readonly string[]) => rows.map((r) => r.replace(/1/g, '2'));
+    expect(strip(top.slice(3))).toEqual(strip(body.slice(3, 16)));
+    for (const r of body) expect(r).toMatch(/^0[0-3]{14}0$/);
+    // the back wall: logs lying sideways, a black seam across the whole tile, never the lit tone
+    const wall = frame('wall@airship');
+    expect(wall[0]).toMatch(/^0+$/);
+    expect(wall.at(-1)).toMatch(/^0+$/);
+    expect(wall.join('')).not.toMatch(/[3.]/);
+    expect(top.join('')).toMatch(/3/);
   });
 });

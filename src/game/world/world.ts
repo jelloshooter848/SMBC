@@ -2,7 +2,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
 import { SCORE_MAX } from '../hud/hud';
 import { NO_INPUT } from '@engine/input/input-manager';
-import type { Renderer } from '@engine/gfx/renderer';
+import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
 import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
@@ -277,6 +277,10 @@ export class World {
   captives: CaptiveRules | null = null;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
   readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0 };
+  /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
+  private offsetRenderer: OffsetRenderer | null = null;
+  /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
+  readonly heightPx: number;
   /** WorldStart.extraEntities: a mini game's own entity types. */
   private readonly extraEntities: WorldStart['extraEntities'];
 
@@ -291,7 +295,11 @@ export class World {
     this.extraEntities = start.extraEntities;
     this.map = new TileMap(level);
     const stop = level.zones.find((z): z is Zone & { kind: 'scrollStop' } => z.kind === 'scrollStop');
-    this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked');
+    this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked', {
+      free: level.camera === 'free',
+      heightTiles: level.height,
+    });
+    this.heightPx = level.height * 16;
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
     this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
@@ -372,7 +380,7 @@ export class World {
     // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
     // the main area after it starts its own.
     if (this.autoWalk) this.time = null;
-    this.camera.snapTo(this.player.body.x);
+    this.camera.snapTo(this.player.body.x, this.player.body.y);
     if (start.clearEnemies) {
       // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
       // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
@@ -801,6 +809,7 @@ export class World {
         e.stunned--;
         continue;
       }
+      e.levelHeightPx = this.heightPx;
       e.update(this);
     }
     this.resolveLifts();
@@ -823,10 +832,10 @@ export class World {
     }
 
     const lead = this.rightmost();
-    if (lead) this.camera.follow(lead.body.x);
+    if (lead) this.camera.follow(lead.body.x, lead.body.y);
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
-      if (toPx(p.body.y) > SCREEN_H + 8 && !p.dead && !p.out && !this.leaving) {
+      if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
         const pit = this.level.zones.find(
           (z): z is Zone & { kind: 'pit' } => z.kind === 'pit' && p.body.x >= tileToSub(z.x),
         );
@@ -1495,7 +1504,7 @@ export class World {
     this.deathTimers.set(p, t);
     // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
     // has no hop: the original's Character.initiatePitDeath only starts the die timer.
-    if (t === 30 && toPx(p.body.y) <= SCREEN_H) p.body.vy = -0x04000;
+    if (t === 30 && toPx(p.body.y) <= this.heightPx) p.body.vy = -0x04000;
     if (t > 30) {
       p.body.vy += 0x00280;
       p.body.y += velToSub(p.body.vy);
@@ -2044,9 +2053,9 @@ export class World {
 
   /* ---------- Rendering ---------- */
 
-  render(r: Renderer): void {
+  render(screen: Renderer): void {
     const theme = this.level.theme;
-    r.clear(SKY[theme] ?? '#5c94fc');
+    screen.clear(SKY[theme] ?? '#5c94fc');
     const view: View = {
       camX: this.camera.pxX,
       frame: this.frame,
@@ -2054,8 +2063,18 @@ export class World {
       theme,
       reduceFlashing: this.ctx.reduceFlashing,
     };
+    // A free camera scrolls vertically too: the map is drawn moved up by its y (the backdrop and
+    // the castle text stay screen-fixed). Every other level draws straight to the screen.
+    let r = screen;
+    if (this.camera.free) {
+      view.camY = this.camera.pxY;
+      const o = (this.offsetRenderer ??= new OffsetRenderer(screen, 0, 0));
+      o.inner = screen;
+      o.dy = -view.camY;
+      r = o;
+    }
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
-    this.backdrop?.(r);
+    this.backdrop?.(screen);
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     renderTiles(r, view, this.map);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);
@@ -2063,7 +2082,7 @@ export class World {
     this.renderBeam(r, view);
     for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
     this.renderWarpText(r, view);
-    this.renderCastleText(r, view);
+    this.renderCastleText(screen, view);
   }
 
   private renderBeam(r: Renderer, view: View): void {

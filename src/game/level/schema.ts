@@ -176,7 +176,11 @@ export interface LevelData {
   /** Starting timer; null = inherit from the level that pipe-linked here (bonus rooms). */
   time: number | null;
   width: number;
-  height: 15;
+  /**
+   * Rows: 15 (one screen) for every level but a `camera: free` map's taller shafts (the map's
+   * `height: N` header).
+   */
+  height: number;
   /** Row-major tile ids. */
   tiles: Uint16Array;
   entities: EntitySpawn[];
@@ -186,8 +190,11 @@ export interface LevelData {
   start: { x: number; y: number };
   /** When set, the level starts with the "walk in from a pipe" animation (`beam`: beamed down onto a teleport pad). */
   startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb' | 'beam';
-  /** Camera behaviour: 'scroll' (default) or 'locked' (bonus rooms). */
-  camera: 'scroll' | 'locked';
+  /**
+   * Camera behaviour: 'scroll' (default), 'locked' (bonus rooms) or 'free' (scrolls both ways
+   * and follows the player up and down a map taller than a screen; world/camera.ts).
+   */
+  camera: 'scroll' | 'locked' | 'free';
   /** Level to respawn in after dying here (sub-areas point at their main level). */
   parent: string | null;
 }

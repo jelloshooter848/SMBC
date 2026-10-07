@@ -349,6 +349,84 @@ reaction, losing about 20-22 of 28 hit points in all (about 12 to Dark Mega Man;
 on 8 or less). With the buster alone: 90 / 80 / 23 / 20%, so the weakness matters for slower
 players.
 
+## Samus's mini game: Zebes Escape (`src/game/minigames/samus/`)
+
+The cavern under 4-2 starts to self-destruct, played **as Samus**: get from the Chozo statue's
+chamber to her ship before the countdown runs out. It runs in a real `World` of its own
+(stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Samus with a
+toned-down dev kit (`ESCAPE_KIT`: one energy tank, 60 energy, the Long Beam, ten missiles; the
+morph ball and its bombs are always hers; no Varia suit), one life, no level clock. READY shows
+first (Samus cannot move, the countdown waits, the press that started the round never jumps).
+
+- **The stage** (theme `cavern`, music `zebes-escape`; three screens wide and three high, the
+  first map with `camera: free`, see below): the chamber (the `zebes` sheet's Chozo statue,
+  facing right) at the bottom left; a corridor with a three-tile pit (out of the map's bottom) and
+  a **morph-ball tunnel** (a one-tile gap at the floor, with a bomb block inside); **shaft 1** up
+  the right side; the middle corridor left through a **bomb wall** (three bricks: a bomb opens
+  the bottom one, enough to roll under; a missile opens any); **shaft 2** up the left side (with
+  platforms back up from its floor); the top corridor right through a second tunnel; down into the
+  hangar and the **ship**. Shaft platforms step up three rows at a time, each beside the last and
+  never right above a take-off spot, so every climb is a jump beside a ledge and a drift onto it
+  (Samus's floaty jump; no wall jump). Bomb blocks are plain bricks (World's own blast and missile
+  rules), so nothing new opens them. Fourteen alarm lights (`alarm-0/1`) hang on the back wall.
+- **The creatures** (`creatures.ts`, an `Enemy` each through `extraEntities`; they face left in the
+  sheet and are flipped going right, flash in `zebes-flash` when hit (not with reduce flashing),
+  blow up in a small explosion, drop Samus's energy and missiles, and never despawn, since the
+  escape runs back left): **Zoomer** (2 HP) creeps round whatever it clings to, tile by tile:
+  floors, walls (its frames turned a quarter, `ZEBES_WALL_DEF`, made from the sheet at first use),
+  ceilings (upside down) and round both kinds of corner; the stage's two circle free platforms; one
+  that loses its surface falls and crawls on. **Ripper** flies straight wall to wall at one height;
+  beams glance off, a missile or a bomb stops it, the ice beam freezes it. **Skree** (1 HP) hangs
+  under a ceiling and drops on Samus passing within 40 px below, veering toward her, digs in for
+  24 frames and bursts into four shards. A touch or a shard takes Samus's usual 8 energy
+  (`World.hurtPlayer`: the no-damage assist, blinking and knockback as in a level).
+- **The countdown** (`COUNTDOWN_SECONDS`, 90): big block digits (rects, no sheet) at the top of
+  the HUD (`ZEBES` in the place slot, `EN` below the name), red in the last ten seconds (pulsing
+  between two reds, steady with reduce flashing). The announcer says "Escape! 90 seconds." and
+  calls 60, 30 and 10 seconds. The `alarm` sound plays every 2 s and every half second in the last
+  ten, when the music also speeds up (tempo 1.2; reset when the round ends). A red wash swells and
+  fades over the cavern about once a second (twice in the last ten); with reduce flashing it is a
+  steady light tint, and the alarm lights stay lit.
+- **Outcomes**: touching the ship (its hull, all but the wing tips) boards it: the countdown stops,
+  the creatures go, Samus hides inside, the ship lifts off (`beam` sound, the win jingle, "SAMUS
+  ESCAPED!", the announcer gives the seconds to spare) and the round passes after 150 frames. The
+  countdown reaching zero: the cavern blows up (the `explosion` sound; white and orange flicker
+  for 40 frames, then a fade to white; with reduce flashing only the fade) and the round fails
+  after 120 frames. A pit or losing all energy fails once the death has played. Menu
+  (`EscapeMenuScene`, a `MiniGameMenuScene`; it pauses the countdown) Give up: `quit`. `done` is
+  called once; `game.state` is never touched.
+- **Assists** (dev mode, from the menu): No damage keeps every point of energy (a pit still
+  fails). Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
+  holds."); turned off, it runs on from there.
+- Touch labels: Samus's level labels while she runs (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
+  WEAPON; BOMB in the ball, no JUMP), only MENU while READY, none once the round is decided.
+  Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Mini games.
+
+**The vertical camera** (generic, `world/camera.ts`): a map's header `camera: free` with
+`height: N` (at least 15 rows; the text map then needs exactly N rows, and `serializeTextMap`
+writes `height:` only when it is not 15) makes a camera that scrolls both ways sideways and follows
+the lead player up and down, keeping the body's top between screen y 72 and 128, clamped to the
+map. World draws the map through an `OffsetRenderer` (y minus the camera; only the rows on screen
+are drawn), while the backdrop and the castle text stay screen-fixed; a pit is the bottom of the
+map (`World.heightPx`), and entities fall out at the map's bottom (`Entity.levelHeightPx`, which
+World sets before each update). Every other level keeps `y = 0`, draws straight to the screen and
+dies at the first screen's bottom exactly as before (camera tests: every library level is one
+screen high with a horizontal camera, and a normal World hands entities the screen renderer
+itself). Spawning is still by column, so a tall map's creatures should keep `despawnMargin` null.
+
+Difficulty (a "cautious human" sim, `human-sim.test.ts`: `EscapeBot` knows the route as a table of
+surfaces and what to do from each, so a fall down a shaft just resumes from where it lands; it
+baits Skrees and shoots them once down, shoots Zoomers in line, waits for Rippers to clear a jump
+and for a Zoomer to leave the landing. As a careful first-timer it sees the creatures 15 frames
+late, misjudges take-off spots by up to 6 px (halving the error after a failed jump), lets go of
+12% of jumps early (a third of that at the pit) and pauses now and then;
+`ZEBES_SIM=30 pnpm vitest run samus/human-sim --silent=false` prints the report). With 90 seconds
+it escapes 100 / 97 / 90 / 93% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction, with a median of
+28 / 22 / 20 / 22 seconds to spare (the closest 1-12 s); the misses are the pit (2 in 30 at the
+slower reactions) and, rarely, the clock. A clumsier player (21 frames, 10 px, a quarter of jumps
+let go early) escapes 63% of the time, mostly losing to the clock in shaft 2. A sharp run leaves
+about 43 seconds.
+
 ## Hero training (optional practice rooms)
 
 Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:
