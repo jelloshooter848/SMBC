@@ -143,6 +143,25 @@ describe('Underworld: the cavern in the real tank', () => {
     expect(h.scene.lives).toBe(LIVES);
   }, 60_000);
 
+  it('a Hyper tank cannot jump and hover over the brick wall’s roof (under the HUD): the cannon must break it', () => {
+    const h = underworldHarness({ keep: true, startInArea: true });
+    h.game.ctx.assist.invulnerable = true;
+    const w = h.scene.area!;
+    const p = w.player;
+    p.body.x = tileToSub(19);
+    p.body.y = tileToSub(12) - p.body.h;
+    w.camera.x = tileToSub(10);
+    h.step([], 5);
+    let farthest = 0;
+    for (let i = 0; i < 600; i++) {
+      // Jump, then keep thrusting (the hover) while driving right; again whenever she lands.
+      h.step(i % 40 === 0 ? ['right'] : ['right', 'jump']);
+      farthest = Math.max(farthest, (p.body.x + p.body.w) >> 12);
+    }
+    expect(farthest).toBeLessThanOrEqual(26); // stopped at the bricks
+    for (let x = 16; x < 34; x++) expect(solid(x, 1), `roof row 1 col ${x}`).toBe(true);
+  });
+
   it('the tank can neither climb the ladder nor go through the gateway', () => {
     const h = underworldHarness({ keep: true, startInArea: true });
     h.game.ctx.assist.invulnerable = true;

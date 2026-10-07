@@ -89,6 +89,8 @@ export class TankBot {
   private lastTap = -100;
   private lastMissile = -100;
   private jumpHeld = false;
+  /** In the air over the ball (holds the jump and drives on until she lands). */
+  private vaulting = false;
   private still = 0;
   private lastX = 0;
   private pause = 0;
@@ -198,12 +200,22 @@ export class TankBot {
     // Shots seen (late), and where they will come down.
     const danger: { lo: number; hi: number }[] = [];
     let ballNear = false;
+    // The rolling ball's side is no place to dodge to (she jumps it where she is).
+    let ballAt = Infinity;
     for (const s of this.seen()) {
       if (!s.ref.alive) continue;
       if (s.shot === 'ball') {
         const gap = s.x - right;
+        if (gap > -s.w) ballAt = Math.min(ballAt, s.x + s.vx * this.opts.reaction);
         // (seen late: it is that much nearer now)
-        const near = gap + s.vx * this.opts.reaction;
+        // A human's timing is off by a few frames (a fresh slip per ball, as misjudged as a landing).
+        let slip = this.guess.get(s.ref);
+        if (slip === undefined) {
+          const j = Math.round(this.opts.misjudge / 2);
+          slip = this.rng.int(2 * j + 1) - j;
+          this.guess.set(s.ref, slip);
+        }
+        const near = gap + s.vx * (this.opts.reaction + slip);
         if (near < BALL_LEAD && near > -s.w) ballNear = true;
         continue;
       }
@@ -224,18 +236,21 @@ export class TankBot {
     }
     const w = right - left;
     const hit = (l: number) => danger.some((d) => l < d.hi && l + w > d.lo);
+    // Over the ball: on until it is behind her, then let go and come down.
+    if (!p.body.onGround && this.vaulting) return ballAt < Infinity ? ['jump', 'right'] : [];
     if (ballNear && p.body.onGround) {
       this.doing = 'jump';
       // A fresh press (let go the frame before).
       // (it comes faster than she can hang over it: jump INTO it, driving toward it)
       this.jumpHeld = !this.jumpHeld;
+      this.vaulting = true;
       return this.jumpHeld ? ['jump', 'right'] : ['right'];
     }
-    if (!p.body.onGround && this.jumpHeld) return ['jump', 'right'];
     this.jumpHeld = false;
+    this.vaulting = false;
     if (hit(left)) {
       // The nearest spot clear of everything coming down (the mass's side is the right).
-      const far = boss.phase === 'core' ? 220 : 150;
+      const far = Math.min(boss.phase === 'core' ? 220 : 150, ballAt - 24);
       let to: number | null = null;
       for (let d = 4; d < 220 && to === null; d += 4)
         for (const sgn of [-1, 1]) {
@@ -266,8 +281,8 @@ export class TankBot {
       return out;
     }
     this.doing = 'mass';
-    // Face the mass from the left of the chamber.
-    if (left > 64) return ['left'];
+    // Face the mass from the left of the chamber (not into where a glob comes down).
+    if (left > 64) return hit(left - 8) ? this.tap() : ['left'];
     if (p.facing < 0 || left < 32) return ['right'];
     return this.tap();
   }

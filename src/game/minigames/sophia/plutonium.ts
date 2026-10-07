@@ -14,9 +14,9 @@ import { box, HIT_PALETTE, HOT_PALETTE, LOOK, SOPHIA_SHEET, soundId, type Fallba
  * beat on the fight's own clock (frames since it woke), so it plays the same every round:
  *
  *   1. THE MASS (`pluto-a-0/1`, 64×64, MASS_HP): shut (shots clang off) for SHUT frames, lobbing
- *      a glob that lands where the tank stood (at LOB_AT); it runs hot for GLOW frames (the
+ *      globs that land where the tank stood (at LOB_AT); it runs hot for GLOW frames (the
  *      warning), then opens its maw: a ball of plutonium rolls out along the floor (jump it or
- *      hover over it) and the mass can be hurt for OPEN frames, lobbing once more.
+ *      hover over it) and the mass can be hurt for OPEN frames (no globs: the ball is enough).
  *   2. THE CORE (`pluto-b-0/1`, 32×32, CORE_HP): the mass bursts (BREAK_FRAMES of booms, every
  *      shot gone, nothing hurts), and the core rises and loops a slow figure of eight over the
  *      chamber's upper half (aim up, hover, or send missiles); every RAIN_EVERY frames it holds
@@ -37,9 +37,9 @@ export const GLOW = 30;
 export const OPEN = 90;
 export const CYCLE = SHUT + GLOW + OPEN;
 /** Frames of the cycle at which it lobs a glob. */
-export const LOB_AT: readonly number[] = [20, 80, SHUT + GLOW + 50];
+export const LOB_AT: readonly number[] = [20, 90];
 /** A glob's flight time (frames) and gravity (px/f²). */
-export const LOB_FRAMES = 60;
+export const LOB_FRAMES = 70;
 export const LOB_GRAVITY = 0.1;
 /** The rolling ball's pace (px a frame). */
 export const BALL_SPEED = 1.25;
@@ -49,7 +49,7 @@ export const BREAK_FRAMES = 90;
 export const LOOP_FRAMES = 360;
 export const ANGRY_LOOP_FRAMES = 240;
 export const LOOP_X = 112;
-export const LOOP_Y = 72;
+export const LOOP_Y = 84;
 export const LOOP_W = 72;
 export const LOOP_H = 20;
 /** Phase 2's rain. */
@@ -67,7 +67,10 @@ export type PlutoPhase = 'asleep' | 'mass' | 'break' | 'core' | 'dead';
 const SIZE = 64;
 const CORE = 32;
 
-/** Draws a frame of the sophia sheet (a palette when given and defined), or a box. */
+/**
+ * Draws a frame of the sophia sheet (a palette when given and defined), or a box. True when the
+ * frame itself was drawn.
+ */
 function drawPluto(
   r: Renderer,
   view: View,
@@ -79,7 +82,7 @@ function drawPluto(
   fallback: Fallback,
   palette?: string,
   alt?: string,
-): void {
+): boolean {
   const assets = view.assets;
   for (const f of alt ? [frame, alt] : [frame])
     try {
@@ -95,12 +98,13 @@ function drawPluto(
         const fw = sheet.frames.get(f)?.w ?? w;
         const fh = sheet.frames.get(f)?.h ?? h;
         r.sprite(sheet, f, Math.round(x + (w - fw) / 2), Math.round(y + (h - fh) / 2));
-        return;
+        return true;
       }
     } catch {
       break;
     }
   box(r, x, y, w, h, fallback);
+  return false;
 }
 
 /** What the boss throws: a lobbed glob, a rolling ball, a drop of rain. */
@@ -424,8 +428,8 @@ export class PlutoniumBoss extends Enemy {
     }
     const f = this.open || this.phase === 'break' ? 'pluto-a-1' : 'pluto-a-0';
     const look: Fallback = flash ? ['#fcfcfc', '#fcfcfc'] : hot ? ['#d8f878', '#58f898'] : LOOK.bossShell;
-    drawPluto(r, view, f, x, y, SIZE, SIZE, look, pal);
-    const fallbackCore = !view.assets.has(SOPHIA_SHEET);
-    if (fallbackCore) box(r, x + 6, y + 26, 20, 24, this.open ? LOOK.bossCore : LOOK.bossCoreShut);
+    // Until its frames are drawn: the box, with its core (shut grey, open green) in the maw.
+    if (!drawPluto(r, view, f, x, y, SIZE, SIZE, look, pal))
+      box(r, x + 6, y + 26, 20, 24, this.open ? LOOK.bossCore : LOOK.bossCoreShut);
   }
 }

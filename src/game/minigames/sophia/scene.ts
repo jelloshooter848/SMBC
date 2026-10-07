@@ -10,6 +10,7 @@ import { abilityHint } from '../../scenes/hints';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import type { World } from '../../world/world';
 import type { CharacterDef } from '../../characters/character';
+import type { Player } from '../../entities/player';
 import { MiniGameMenuScene } from '../menu';
 import type { MiniGameResult } from '../types';
 import { drawBanner } from '../megaman/scene';
@@ -395,11 +396,16 @@ export class UnderworldScene implements Scene {
   private startBoss(fresh = true): void {
     const hero = this.tankHero;
     if (!hero) return;
-    const { world, boss } = newBossRoom(this.game.ctx, hero, {
-      onWake: () => this.plutoWakes(),
-      onBreak: () => this.say('The mass bursts! Its core rises and loops over the chamber. Aim up!'),
-      onDown: () => this.bossDown(),
-    });
+    const { world, boss } = newBossRoom(
+      this.game.ctx,
+      hero,
+      {
+        onWake: () => this.plutoWakes(),
+        onBreak: () => this.say('The mass bursts! Its core rises and loops over the chamber. Aim up!'),
+        onDown: () => this.bossDown(),
+      },
+      this.areaSeed,
+    );
     this.area = world;
     this.plutonium = boss;
     this.stopMusic();
@@ -632,9 +638,7 @@ export class UnderworldScene implements Scene {
     }
     if (this.area && this.phase !== 'dungeon') {
       this.area.render(r);
-      r.rect(0, 0, SCREEN_W, 24, '#000000');
-      r.text(font, AREA_TITLE, 8, 8);
-      r.text(font, `REST ${Math.max(0, this.lives - 1)}`, SCREEN_W - 64, 8);
+      drawTankBar(r, font, assets, this.area.player, Math.max(0, this.lives - 1));
       // Into the gateway: the cavern fades out.
       if (this.phase === 'gateway')
         r.rect(
@@ -674,6 +678,53 @@ export class UnderworldScene implements Scene {
   }
 }
 
+/** The tank's bar: its power (Normal, Hyper, Crusher), cells lit up to it. */
+export const POW_CELLS = 3;
+export const POW_NAMES: Readonly<Record<string, string>> = { small: 'NORMAL', big: 'HYPER', fire: 'CRUSHER' };
+
+/**
+ * The bar over the tank's side-view parts, Blaster Master style: POW (the tank's power: Normal,
+ * Hyper, Crusher, shared with Jason on foot) and HOV (the hover gauge, S1's `meter`; empty while
+ * there is no hover or Jason is out), the missile in hand and its count (S1's `tools`), and REST.
+ */
+export function drawTankBar(
+  r: Renderer,
+  font: SpriteSheet,
+  assets: AssetRegistry,
+  p: Player,
+  rest: number,
+): void {
+  r.rect(0, 0, SCREEN_W, 24, '#000000');
+  const level = p.powerState === 'fire' ? 3 : p.powerState === 'big' ? 2 : 1;
+  r.text(font, 'POW', 8, 4);
+  for (let i = 0; i < POW_CELLS; i++) r.rect(36 + i * 10, 4, 8, 7, i < level ? '#f83800' : '#282828');
+  r.text(font, POW_NAMES[p.powerState] ?? '', 70, 4);
+  const m = p.def.meter?.(p) ?? null;
+  r.text(font, 'HOV', 8, 14);
+  const max = m?.max ?? 8;
+  const on = m ? Math.round((Math.max(0, Math.min(m.value, m.max)) / m.max) * max) : 0;
+  for (let i = 0; i < max; i++) r.rect(36 + i * 6, 15, 4, 6, i < on ? (m?.colour ?? '#e40058') : '#282828');
+  const tools = p.def.tools?.(p) ?? [];
+  const t = tools.length
+    ? tools[(((p.scratch.tool ?? 0) % tools.length) + tools.length) % tools.length]
+    : null;
+  if (t) {
+    const sheet = sophiaSheetOf(assets, t.sheet);
+    if (sheet?.frames.has(t.icon)) r.sprite(sheet, t.icon, 144, 4);
+    else r.rect(148, 8, 8, 8, '#f8b800');
+    if (t.count !== null) r.text(font, `×${String(t.count).padStart(2, '0')}`, 162, 8);
+  }
+  r.text(font, `REST ${rest}`, SCREEN_W - 64, 8);
+}
+
+function sophiaSheetOf(assets: AssetRegistry, id: string | undefined): SpriteSheet | null {
+  try {
+    return assets.has(id ?? 'items') ? assets.sheet(id ?? 'items') : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Section 4: Jason running back to the tank, its hatch open, on black (a short transition). */
 function drawReturn(r: Renderer, assets: AssetRegistry, font: SpriteSheet, t: number): void {
   r.clear('#000000');
@@ -681,7 +732,8 @@ function drawReturn(r: Renderer, assets: AssetRegistry, font: SpriteSheet, t: nu
   lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, 80 + i * 12));
   const ground = 168;
   r.rect(0, ground, SCREEN_W, 2, '#503000');
-  drawSophia(r, assets, 'open', 160, ground - 32, 32, 32, ['#545454', '#a4a4a4']);
+  // (the tank's 32-px frames stand on their row 23: S1's sheet convention)
+  drawSophia(r, assets, 'open', 160, ground - 24, 32, 32, ['#545454', '#a4a4a4']);
   // Jason runs in from the left and hops into the hatch.
   const k = Math.min(1, t / (RETURN_FRAMES * 0.6));
   if (k < 1) {

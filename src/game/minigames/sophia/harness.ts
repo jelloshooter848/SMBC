@@ -13,6 +13,7 @@ import { SOPHIA_MINIGAME } from '.';
 import { UnderworldScene, type UnderworldOptions } from './scene';
 import { HumanJason, UNDERWORLD_PLAN, type HumanOptions } from './bot';
 import { TankBot, type TankOptions } from './tankbot';
+import type { Player } from '@game/entities/player';
 
 /*
  * Test support for Underworld (not shipped code paths): a real Game with the round pushed over a
@@ -115,6 +116,8 @@ export function botRun(opts: Partial<HumanOptions> = {}, max = 40000, full = tru
   let frames = 0;
   let tankHits = 0;
   let tankState = '';
+  let lastP: Player | null = null;
+  let lastRank = 0;
   const parts: Record<RoundPart, number> = { cavern: 0, dungeon: 0, boss: 0, end: 0 };
   for (; frames < max && h.results.length === 0; frames++) {
     const s = h.scene;
@@ -125,16 +128,18 @@ export function botRun(opts: Partial<HumanOptions> = {}, max = 40000, full = tru
         h.step();
         continue;
       }
-      const p = w.player;
-      const was = p.dead ? 'dead' : p.powerState;
       h.step(tank.next(w, ph === 'boss' ? s.plutonium : null));
       parts[ph === 'area' ? 'cavern' : 'boss']++;
-      const now = p.dead ? 'dead' : p.powerState;
-      if (now !== was && (now === 'dead' || (was === 'big' && now === 'small'))) {
+      // The player now (a new one after a respawn: its first look starts the count afresh).
+      const p = s.area?.player ?? w.player;
+      const rank = p.dead ? -1 : p.powerState === 'fire' ? 2 : p.powerState === 'big' ? 1 : 0;
+      if (p === lastP && rank < lastRank) {
         tankHits++;
-        if (now === 'dead') deaths.push({ room: ph === 'area' ? 'cavern' : 'plutonium', doing: tank.doing });
+        if (rank < 0) deaths.push({ room: ph === 'area' ? 'cavern' : 'plutonium', doing: tank.doing });
       }
-      tankState = now;
+      lastP = p;
+      lastRank = rank;
+      tankState = p.dead ? 'dead' : p.powerState;
       continue;
     }
     if (ph !== 'dungeon') {

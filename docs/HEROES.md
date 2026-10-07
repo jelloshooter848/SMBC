@@ -885,7 +885,12 @@ round (Blaster Master's), the REST shown; one GAME OVER fails the round.
   turn at ledges (2 hits), **hoppers** crouch, then leap at the player within 96 px (2 hits),
   **flyers** bob, then swoop at the player within 112 px and climb back (1 hit); any attack hurts
   them, nothing stomps them, World's contact rules hurt the player. A life lost starts again at the
-  start, or at column 48 once passed.
+  start, or at column 48 once passed. Row 1 is the cavern's roof all along (row 0 is under the
+  HUD), so the tank can't jump and hover over a wall behind the HUD (tested).
+- **The tank's bar** (the side-view parts, Blaster Master's POW and HOV): POW, the tank's power
+  (Normal, Hyper, Crusher in three cells and by name; Jason on foot shares it), HOV, the hover
+  gauge (S1's `meter`; empty without the hover or while Jason is out), the missile in hand and its
+  count (S1's `tools`), and REST.
 - **2. Jason's overhead dungeon** (`dungeon.ts`, `jason.ts`, `mutants.ts`, music `bm-dungeon`) on
   the top-down kit: eight rooms on a 4×3 map, walked from the gateway up (the gateway room with a
   G capsule, the hall's blobs and eyes, the turrets round a pool, the crossing whose statues point
@@ -918,18 +923,20 @@ round (Blaster Master's), the REST shown; one GAME OVER fails the round.
 - **3. Back to the tank**: Jason runs back to Sophia (JASON RUNS BACK / TO SOPHIA..., the tank
   with its hatch open; 2 s), then the boss's chamber.
 - **4. The Plutonium Boss** (`plutonium.ts`, `boss.map`, music `bm-boss`; owner decision: side
-  view, in the tank, as in Blaster Master; an original design): one locked screen, two ledges to
-  jump or hover from. It wakes a moment after the tank arrives (PLUTONIUM BOSS, announced), then
-  on its own fight clock. **The mass** (`pluto-a-0/1`, 64×64 against the right wall, 30 hit
-  points): shut for 120 frames (shots do nothing), lobbing a glob that comes down where the tank
-  stood (60 frames in the air; a ledge stops it); it runs hot for 30, opens its maw and rolls a
+  view, in the tank, as in Blaster Master; an original design): one locked screen, open overhead
+  (the raised cannon reaches the core anywhere). It wakes a moment after the tank arrives
+  (PLUTONIUM BOSS, announced), then on its own fight clock. **The mass** (`pluto-a-0/1`, 64×64 against the right wall, 30 hit
+  points): shut for 120 frames (shots do nothing), lobbing two globs that come down where the
+  tank stood (70 frames in the air); it runs hot for 30, opens its maw and rolls a
   ball of plutonium along the floor (the tank jumps it driving into it: a standing jump can't hang
-  over it long enough), and can be hurt for 90 frames, lobbing once more. **The core**
+  over it long enough), and can be hurt for 90 frames (no globs then: the ball is enough; a third
+  lob over the ball took the cautious player under 85%). **The core**
   (`pluto-b-0/1`, 32×32, 24 hit points): the mass bursts (90 frames of booms, every shot gone,
-  nothing hurts) and the core loops a slow figure of eight over the upper half of the chamber
-  (aim up, hover, or send homing missiles); every 160 frames it holds still and runs hot for 30,
-  then rains three drops. Below half it loops faster. A hit flashes it white. A life lost here
-  starts the chamber again, the boss whole.
+  nothing hurts) and the core loops a slow figure of eight over the upper half of the chamber,
+  always clear of the ceiling (aim up, hover, or send homing missiles); every 160 frames it holds still and runs hot for 30,
+  then rains three drops. Below half it loops faster. A hit flashes it white. Until its frames
+  exist it is drawn as boxes, its core shut grey or open green in the maw. A life lost here starts
+  the chamber again, the boss whole, the tank with the round's kit.
 - **Endings**: the Plutonium Boss falls: THE PLUTONIUM BOSS FALLS! / THE SPELL ON SOPHIA BREAKS!
   (the first line only in a round for fun), the jingle, then `pass`; out of lives: GAME OVER, then
   `fail`; the menu (`UnderworldMenuScene`, the shared MiniGameMenuScene with the dev assists: No

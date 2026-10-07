@@ -13,7 +13,7 @@ import {
   SHUT,
   WAKE_AFTER,
 } from './plutonium';
-import { BOSS_FLOOR, bossStage } from './area';
+import { BOSS_FLOOR, bossStage, TANK_KIT, TANK_POWER } from './area';
 import { LIVES, WIN_FRAMES, WIN_JINGLE } from './scene';
 import { underworldHarness } from './harness';
 
@@ -28,8 +28,8 @@ beforeEach(() => {
 });
 
 /** The Plutonium Boss's chamber, in the tank. */
-function chamber(safe = true) {
-  const h = underworldHarness({ keep: true, startInBoss: true });
+function chamber(safe = true, seed?: number) {
+  const h = underworldHarness({ keep: true, startInBoss: true, ...(seed !== undefined ? { seed } : {}) });
   h.game.ctx.assist.invulnerable = safe;
   const world = () => h.scene.area as World;
   const boss = () => h.scene.plutonium as PlutoniumBoss;
@@ -144,9 +144,9 @@ describe('Underworld: the Plutonium Boss (side view, in the tank)', () => {
     expect(h.scene.phase).toBe('boss');
   });
 
-  it('keeps to its own fight clock: two fights play the same', () => {
-    const run = () => {
-      const { h, boss } = chamber();
+  it('keeps to its own fight clock: fights in worlds of different seeds play the same', () => {
+    const run = (seed: number) => {
+      const { h, boss } = chamber(true, seed);
       const out: string[] = [];
       for (let i = 0; i < CYCLE * 2; i++) {
         h.step();
@@ -156,13 +156,67 @@ describe('Underworld: the Plutonium Boss (side view, in the tank)', () => {
       }
       return out;
     };
-    expect(run()).toEqual(run());
+    expect(run(1)).toEqual(run(0x5eed));
   });
 
-  it('the tank can stand clear of it: the mass fills only the right of the chamber', () => {
+  it('a life lost in the chamber starts the next with the round’s kit: Hyper and 8 homing missiles', () => {
+    const { h, world } = chamber(false);
+    h.step([], WAKE_AFTER + 1);
+    const p = world().player;
+    expect(p.powerState).toBe(TANK_POWER);
+    // Spend missiles, take a hit (Hyper to Normal), then lose the life.
+    for (let i = 0; i < 3; i++) {
+      h.tap('special');
+      h.step([], 30);
+    }
+    expect(p.scratch.homing).toBeLessThan(TANK_KIT.homing as number);
+    world().hurtPlayer(p, 1);
+    expect(p.powerState).toBe('small');
+    p.invuln = 0;
+    world().hurtPlayer(p, 1);
+    expect(p.dead).toBe(true);
+    const old = world();
+    for (let i = 0; i < 400 && h.scene.area === old; i++) h.step();
+    const q = world().player;
+    expect(q).not.toBe(p);
+    expect(q.powerState).toBe(TANK_POWER);
+    expect(q.scratch.hasHoming).toBe(1);
+    expect(q.scratch.homing).toBe(TANK_KIT.homing);
+  });
+
+  it('the cannon, fired level from the floor, hits the open mass', () => {
     const { h, boss } = chamber();
-    const b = boss().body;
-    expect(toPx(b.x)).toBeGreaterThanOrEqual(160);
-    expect(h.scene.area!.player.body.x).toBeLessThan(b.x - px(64));
+    h.step([], WAKE_AFTER + 1);
+    boss().t = SHUT + GLOW; // open
+    const hp = boss().hp;
+    h.step(['right']); // facing it
+    for (let i = 0; i < 60; i++) h.step(i % 8 === 0 ? ['attack'] : []);
+    expect(boss().hp).toBeLessThan(hp);
+  });
+
+  it('the raised cannon hits the core over the tank', () => {
+    const { h, boss, world } = chamber();
+    h.step([], WAKE_AFTER + 1);
+    const b = boss();
+    b.phase = 'core';
+    b.hp = CORE_HP;
+    b.body.w = px(32);
+    b.body.h = px(32);
+    // Held over the tank (its own loop stopped for the test).
+    Object.assign(b, { update: () => undefined });
+    const p = world().player;
+    b.body.x = p.body.x + (p.body.w >> 1) - px(16);
+    b.body.y = px(96);
+    const reactions: string[] = [];
+    const hit = b.hit.bind(b);
+    b.hit = (src, w) => {
+      const r = hit(src, w);
+      reactions.push(r);
+      return r;
+    };
+    h.step(['up'], 12); // the cannon rises
+    for (let i = 0; i < 60; i++) h.step(i % 8 === 0 ? ['up', 'attack'] : ['up']);
+    expect(reactions).toContain('hp');
+    expect(b.hp).toBeLessThan(CORE_HP);
   });
 });

@@ -1,6 +1,7 @@
 ;; Sophia's mini game, Underworld, section 1: the tank's cavern (Blaster Master Area 1 style).
 ;; cavern.ts loads it with ?raw, so it is not in the level library, the dev level select or the
-;; campaign. Rows 0-1 stay clear under the HUD.
+;; campaign. Row 0 stays clear under the HUD; row 1 is the cavern's roof all along, so the tank can't
+;; jump and hover over a wall behind the HUD.
 ;;
 ;; The route: the cavern floor (a crawler) -> a step up and a wall of bricks under a low roof (the
 ;; cannon breaks it; a hopper, a crawler) -> ledges with flyers over them -> the open cavern (a
@@ -22,7 +23,7 @@ camera: scroll
 [tiles]
 ;; 0              16               32               48               64
 ................ ................ ................ ................ ................
-................ ................ ................ ................ ................
+BBBBBBBBBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB ........BBBBBB.. ................ ................ ..BBBBBBBBBBBBBB
 ................ ........BBBBBB.. ................ ................ ..BBBBBBBBBBBBBB
 ................ ........BBBBBB.. ................ ................ ..BBBBBBBBBBBBBB
