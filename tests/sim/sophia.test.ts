@@ -4,7 +4,7 @@ import { runSim } from '@game/sim/headless';
 import { SOPHIA } from '@game/characters/sophia';
 import { CannonShot, HomingMissile, SophiaBoom, TripleMissile } from '@game/characters/sophia/weapons';
 import { Corpse } from '@game/entities/effects/effects';
-import { sophiaState } from '@game/characters/sophia/state';
+import { sophiaState, CEIL, FLOOR, LEFT, RIGHT } from '@game/characters/sophia/state';
 import { Pickup } from '@game/entities/objects/pickup';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
@@ -587,5 +587,205 @@ describe('Sophia III: kills, deaths and the rest (SO-23, SO-34, SO-43)', () => {
     expect(r.world.player.dead).toBe(false);
     expect(r.world.player.body.onGround).toBe(true);
     expect(toPx(r.world.player.body.x)).toBeGreaterThan(8 * 16);
+  });
+});
+
+/** Solid hard blocks down column `x` from row `y0` to `y1` (into `rows`). */
+function column(x: number, y0: number, y1: number, rows: Record<number, string> = {}) {
+  for (let y = y0; y <= y1; y++) {
+    const r = rows[y] ?? '.'.repeat(W);
+    rows[y] = r.slice(0, x) + 'B' + r.slice(x + 1);
+  }
+  return rows;
+}
+
+describe('Sophia III: wall and ceiling climbing (SO-36, SO-37)', () => {
+  it('Crusher: right + up into a wall turns up it in 12 frames at full speed; at its top she wraps over in 14', () => {
+    const log: { f: number; s: number; turn: boolean; vy: number; y: number }[] = [];
+    const r = run(
+      field(column(8, 10, 12)),
+      (w, f) => {
+        const st = sophiaState(w.player);
+        log.push({ f, s: st.surface, turn: st.turn !== null, vy: w.player.body.vy, y: w.player.body.y });
+        return f > 2 ? ['right', 'up'] : [];
+      },
+      110,
+      { power: 'fire' },
+    );
+    const start = log.findIndex((l) => l.turn);
+    const end = log.findIndex((l, i) => i > start && !l.turn);
+    expect(end - start).toBe(12);
+    expect(log[end]?.s).toBe(RIGHT);
+    expect(log[end + 1]?.vy).toBe(-0x018ab);
+    // Over the top: the second turn (an outside corner) takes 14 frames and leaves her upright.
+    const s2 = log.findIndex((l, i) => i > end && l.turn);
+    const e2 = log.findIndex((l, i) => i > s2 && !l.turn);
+    expect(e2 - s2).toBe(14);
+    expect(log[e2]?.s).toBe(FLOOR);
+    expect(log.some((l) => l.s === FLOOR && !l.turn && l.y < px(10 * 16 - 15))).toBe(true);
+    expect(r.world.player.dead).toBe(false);
+  });
+
+  it('Hyper and Normal cannot climb: up into a wall just stops her', () => {
+    for (const power of ['small', 'big']) {
+      const r = run(field(column(8, 10, 12)), (_w, f) => (f > 2 ? ['right', 'up'] : []), 90, { power });
+      expect(sophiaState(r.world.player).surface, power).toBe(FLOOR);
+      expect(r.world.player.body.onGround).toBe(true);
+    }
+  });
+
+  it('coasting up to the top of the wall with nothing held, she stops at its edge', () => {
+    const r = run(
+      field(column(8, 10, 12)),
+      (w, f) => {
+        if (f < 3) return [];
+        const p = w.player;
+        if (sophiaState(p).surface === FLOOR) return ['right', 'up'];
+        // On the wall: up until just short of the top, then let go and roll into the edge.
+        return p.body.y > px(10 * 16 + 8) ? ['up'] : [];
+      },
+      140,
+      { power: 'fire' },
+    );
+    const st = sophiaState(r.world.player);
+    expect(st.surface).toBe(RIGHT);
+    expect(r.world.player.body.y).toBe(px(10 * 16));
+    expect(r.world.player.body.vy).toBe(0);
+  });
+
+  it('a wall jump between two walls 4 tiles apart grips the far wall', () => {
+    const r = run(
+      field(column(9, 3, 12, column(4, 3, 12)), 6),
+      (_w, f) => (f < 40 ? ['right', 'up'] : f === 40 ? ['jump'] : []),
+      90,
+      { power: 'fire' },
+    );
+    const st = sophiaState(r.world.player);
+    expect(st.surface).toBe(LEFT);
+    expect(st.attached).toBe(true);
+    expect(r.world.player.body.x).toBe(px(5 * 16));
+  });
+
+  it('down + jump lets go of a wall; she lands upright', () => {
+    const r = run(
+      field(column(8, 6, 12)),
+      (_w, f) => (f < 60 ? ['right', 'up'] : f === 70 ? ['right', 'jump'] : []),
+      140,
+      { power: 'fire' },
+    );
+    expect(sophiaState(r.world.player).surface).toBe(FLOOR);
+    expect(r.world.player.body.onGround).toBe(true);
+    expect(toPx(r.world.player.body.w)).toBe(19);
+  });
+
+  const ceiling = () => column(20, 8, 12, { 8: 'B'.repeat(21) + '.'.repeat(W - 21) });
+
+  it('a held jump under a ceiling grips it (no bump); she drives along it and turns down a wall', () => {
+    const surfaces = new Set<number>();
+    const r = run(
+      field(ceiling(), 4),
+      (w, f) => {
+        surfaces.add(sophiaState(w.player).surface);
+        if (f >= 5 && f < 30) return ['jump'];
+        return f >= 30 ? ['right'] : [];
+      },
+      240,
+      { power: 'fire' },
+    );
+    expect([...surfaces].sort()).toEqual([FLOOR, RIGHT, CEIL].sort());
+    expect(sophiaState(r.world.player).surface).toBe(RIGHT);
+  });
+
+  it('with down held the same jump bumps the block over her and falls back', () => {
+    let gripped = false;
+    const bricks = { 8: '='.repeat(21) + '.'.repeat(W - 21) };
+    const r = run(
+      field(bricks, 4),
+      (w, f) => {
+        if (sophiaState(w.player).surface === CEIL) gripped = true;
+        return f >= 5 && f < 30 ? ['jump', 'down'] : [];
+      },
+      80,
+      { power: 'fire' },
+    );
+    expect(gripped).toBe(false);
+    expect(r.world.player.body.onGround).toBe(true);
+    // A ceiling grip never bumps: the bricks over her were untouched by the gripping jump.
+    const g = run(field(bricks, 4), (_w, f) => (f >= 5 && f < 30 ? ['jump'] : []), 40, { power: 'fire' });
+    expect(sophiaState(g.world.player).surface).toBe(CEIL);
+    expect(g.world.entities.some((e) => e.kind === 'block-bump')).toBe(false);
+  });
+
+  it('down + forward off a ledge wraps down its face and back onto the floor below', () => {
+    const plat: Record<number, string> = {};
+    for (let y = 9; y <= 12; y++) plat[y] = 'B'.repeat(8) + '.'.repeat(W - 8);
+    const level = parseTextMap(
+      [
+        'id: t',
+        'time: 300',
+        'start: 2,8',
+        '',
+        '[tiles]',
+        ...Array.from({ length: 13 }, (_, y) => plat[y] ?? '.'.repeat(W)),
+        '#'.repeat(W),
+        '#'.repeat(W),
+      ].join('\n'),
+    );
+    const surfaces: number[] = [];
+    const r = run(
+      level,
+      (w, f) => {
+        const s = sophiaState(w.player).surface;
+        if (surfaces.at(-1) !== s) surfaces.push(s);
+        return f > 2 ? ['right', 'down'] : [];
+      },
+      150,
+      { power: 'fire' },
+    );
+    expect(surfaces).toEqual([FLOOR, LEFT, FLOOR]);
+    expect(toPx(r.world.player.body.y + r.world.player.body.h)).toBe(13 * 16);
+    expect(r.world.player.body.vx).toBeGreaterThan(0);
+  });
+
+  it('inputs are locked through a turn: no cannon shot fires', () => {
+    let fired = false;
+    run(
+      field(column(8, 10, 12)),
+      (w) => {
+        const st = sophiaState(w.player);
+        if (st.turn && w.entities.some((e) => e instanceof CannonShot)) fired = true;
+        return st.turn ? ['right', 'up', 'attack'] : ['right', 'up'];
+      },
+      90,
+      { power: 'fire' },
+    );
+    expect(fired).toBe(false);
+  });
+
+  it('a hit on a wall makes her let go (upright, falling), no push', () => {
+    const r = run(
+      field(column(8, 6, 12)),
+      (w, f) => {
+        if (f === 70) w.hurtPlayer(w.player, 1);
+        return f < 70 ? ['right', 'up'] : [];
+      },
+      72,
+      { power: 'fire' },
+    );
+    const p = r.world.player;
+    expect(sophiaState(p).surface).toBe(FLOOR);
+    expect(p.powerState).toBe('small');
+    expect(p.body.vx).toBe(0);
+  });
+
+  it('on a wall the sprite is turned a quarter (wheels toward the wall), upside down on a ceiling', () => {
+    const r = run(field(column(8, 6, 12)), (_w, f) => (f < 80 ? ['right', 'up'] : []), 80, { power: 'fire' });
+    const p = r.world.player;
+    const s = p.def.sprite(p, 0, true);
+    expect(s.rotate).toBe(270);
+    expect(s.flip).toBe(false); // nose up the wall
+    const c = run(field(ceiling(), 4), (_w, f) => (f >= 5 && f < 30 ? ['jump'] : []), 40, { power: 'fire' });
+    const q = c.world.player;
+    expect(q.def.sprite(q, 0, true)).toMatchObject({ flipY: true, rotate: 0 });
   });
 });
