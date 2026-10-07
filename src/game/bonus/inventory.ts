@@ -10,7 +10,7 @@ import { fontText, wrapText } from '../hud/text';
 import { BONUS_SFX, drawItem } from './art';
 import { fitLine } from './common';
 import { INVENTORY_MAX, ITEM_NAMES, type ItemId } from './items';
-import { inventoryAvailable, shownItems, useInventoryItem, type UseOutcome } from './use';
+import { heldItems, inventoryAvailable, shownItems, useInventoryItem, type UseOutcome } from './use';
 
 /** The panel across the bottom of the map. */
 export const PANEL_Y = 120;
@@ -139,7 +139,7 @@ export class InventoryScene implements Scene {
     r.rect(10, PANEL_Y + 2, SCREEN_W - 20, PANEL_H - 4, '#000');
     const title = fontText(`ITEMS - ${game.state.character.hudName}`);
     r.text(font, title, 16, PANEL_Y + 6);
-    const held = game.bonus.itemsNext;
+    const held = heldItems(game);
     if (held.length) {
       // Waiting for the next level: NEXT and their icons.
       const x0 = SCREEN_W - 16 - held.length * 18;

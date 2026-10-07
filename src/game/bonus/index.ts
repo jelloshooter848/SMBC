@@ -49,6 +49,7 @@ export type { BonusState, ItemId } from './items';
 export { INVENTORY_MAX, ITEM_IDS, ITEM_NAMES, newBonusState } from './items';
 export {
   applyHeldItems,
+  heldItems,
   awardHammerPrize,
   awardPrize,
   inventoryAvailable,

@@ -217,6 +217,24 @@ export const tilePalettes: Record<string, string[]> = {
     NES.lightGray,
     NES.lava,
   ],
+  /* The airship's open decks (4-2-airship): SMB3-style daylight planks, a step lighter than the
+     cabin's (orange-brown shade, light-wood main, tan lit edge), the same grey iron in the water
+     slots, and the deep brown of the hull's shadowed back in the lava slot (there is no lava
+     aboard). Green pipes and gold blocks stay as they are. */
+  'tiles-airship-deck': [
+    NES.black,
+    NES.orangeBrown,
+    NES.brownLight,
+    NES.tan,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.gray,
+    NES.lightGray,
+    NES.brownDark,
+  ],
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -1364,6 +1382,157 @@ const wallTopAirship = [
   ...wallAirship.slice(7),
 ];
 
+/* ---------- The airship's open decks (`@airship-deck`) ---------- */
+
+/*
+ * SMB3-style planking under a daylight sky. Every solid tile is built from 8px horizontal planks:
+ * a black seam, a tan lit edge, light wood with a little grain, an orange-brown shadow and iron
+ * rivets; the upper plank has a butt joint, the lower one runs on (so a deck reads as long boards,
+ * not bricks). Which tile is which on the deck:
+ *   `#` ground       deck and hull planking; tiles both ways (a deck, a hull, the stepped prow)
+ *   `%` castle-brick the same planking with a round iron-rimmed porthole (the stern's portholes)
+ *   `B` hard         a bolted wooden block (posts and crates: stack it for a tall post)
+ *   `=` brick        a breakable crate with a cross brace
+ *   `u` used         a spent block: a dark plank square with corner rivets
+ *   `-` bridge       a thin plank on air (the overhang's ceiling, narrow catwalks)
+ *   `T` tree-top     an iron-strapped ledge on two hangers
+ *   `t` tree-trunk   (scenery) an iron lattice strut, e.g. holding up a ledge
+ *   `H` wall         (scenery) the hull's shadowed back, in dark wood
+ *   `A` wall-top     (scenery) the bulwark's capping rail over that dark hull
+ *   `^` `|`          Bullet Bill blasters in black iron
+ */
+const groundDeck = [
+  '0000000000000000',
+  '3333333333303333',
+  '2222222222202222',
+  '222222222a90a922',
+  '2222222229009022',
+  '2221112222202222',
+  '2222212222202122',
+  '1111111111101111',
+  '0000000000000000',
+  '3333333333333333',
+  '2222222222222222',
+  '2a92222111122222',
+  '2902222222222222',
+  '2222222222222222',
+  '2222222222211122',
+  '1111111111111111',
+];
+
+/* A round porthole let into the planking: an iron rim (lit up-left, shadowed down-right) round
+   dark glass with a white glint. */
+const portholeDeck = groundDeck.map((r, y) =>
+  [...r]
+    .map((c, x) => {
+      const d = Math.hypot(x - 7.5, y - 7.5);
+      if (d < 3.4) return (x === 6 && y === 5) || (x === 5 && y === 6) ? '8' : '0';
+      if (d < 5) return x + y < 15 ? 'a' : '9';
+      return d < 5.9 ? '0' : c;
+    })
+    .join(''),
+);
+
+/* Hard block: a bolted wooden block of three upright boards in a black frame. */
+const hardDeck = [
+  '0000000000000000',
+  '0333333333333310',
+  '03a921222212a910',
+  '0390212222129010',
+  '0322212222122210',
+  '0322212222122210',
+  '0322212212122210',
+  '0322212222122210',
+  '0322212222122210',
+  '0322212222121210',
+  '0322212222122210',
+  '0322212222122210',
+  '03a921222212a910',
+  '0390212222129010',
+  '0311111111111110',
+  '0000000000000000',
+];
+
+/* Breakable crate: a two-tone board frame round a lit cross brace. */
+const brickDeck = Array.from({ length: 16 }, (_, y) =>
+  Array.from({ length: 16 }, (_, x) => {
+    if (x === 0 || y === 0 || x === 15 || y === 15) return '0';
+    if (x === 14 || y === 14) return '1';
+    if (x === 1 || y === 1) return '3';
+    if (x === 2 || y === 2 || x === 13 || y === 13) return '0';
+    const a = x - y;
+    const b = x + y - 15;
+    if (a === 0 || b === 0) return '3';
+    if (a === 1 || b === 1) return '1';
+    return (x * 7 + y * 3) % 11 === 0 ? '1' : '2';
+  }).join(''),
+);
+
+/* Spent block: a dark two-plank square, lit on its top and left, rivets in its corners. */
+const usedDeck = Array.from({ length: 16 }, (_, y) =>
+  Array.from({ length: 16 }, (_, x) => {
+    if (x === 0 || y === 0 || x === 15 || y === 15) return '0';
+    const rivet = (x === 3 || x === 12) && (y === 3 || y === 12);
+    if (rivet) return 'a';
+    if ((x === 4 || x === 13) && (y === 4 || y === 13)) return '0';
+    if (x === 1 || y === 1) return '1';
+    if (x === 14 || y === 14) return '0';
+    return y === 8 ? '0' : 'b';
+  }).join(''),
+);
+
+/* A thin plank on air, riveted at both ends. */
+const bridgeDeck = [
+  '0000000000000000',
+  '3333333333333333',
+  '22a92222222a9222',
+  '2290222122290222',
+  '2222222222222222',
+  '1111111111111111',
+  '0000000000000000',
+  ...Array.from({ length: 9 }, () => '................'),
+];
+
+/* Ledge: an iron strap across a plank, hung from two iron hangers. */
+const ledgeDeck = [
+  '0000000000000000',
+  'aaaaaaaaaaaaaaaa',
+  '9999999999999999',
+  '0000000000000000',
+  '3333333333333333',
+  '2222122222221222',
+  '1111111111111111',
+  '0000000000000000',
+  '..0a0......0a0..',
+  '..090......090..',
+  '..090......090..',
+  '..000......000..',
+  ...Array.from({ length: 4 }, () => '................'),
+];
+
+/* Scenery: a narrow iron lattice strut with a zigzag brace between its two rails. */
+const strutDeck = Array.from({ length: 16 }, (_, y) => {
+  const k = y % 8;
+  const brace = k < 4 ? k : 7 - k;
+  const inner = [...'....'];
+  inner[brace] = '9';
+  return `....0a${inner.join('')}90....`;
+});
+
+/* Scenery: the hull's shadowed back, the planking in the deep browns with dim rivets. */
+const wallDeck = swapColors(groundDeck, { '3': '1', '2': 'b', '1': 'b', a: '9', '9': '0' });
+const wallTopDeck = [
+  '0000000000000000',
+  '3333333333333333',
+  '2222222222222222',
+  '1111111111111111',
+  '0000000000000000',
+  ...wallDeck.slice(5),
+];
+
+/* Bullet Bill blasters in black iron with grey highlights, not wood. */
+const IRON = { '1': '0', '2': '9', '3': 'a' };
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -1454,5 +1623,18 @@ export const tilesDef: SpriteDef = {
     'bridge@airship': bridgeAirship,
     'wall@airship': wallAirship,
     'wall-top@airship': wallTopAirship,
+    // The airship's open decks (4-2-airship).
+    'ground@airship-deck': groundDeck,
+    'castle-brick@airship-deck': portholeDeck,
+    'hard@airship-deck': hardDeck,
+    'brick@airship-deck': brickDeck,
+    'used@airship-deck': usedDeck,
+    'tree-top@airship-deck': ledgeDeck,
+    'tree-trunk@airship-deck': strutDeck,
+    'bridge@airship-deck': bridgeDeck,
+    'wall@airship-deck': wallDeck,
+    'wall-top@airship-deck': wallTopDeck,
+    'blaster-top@airship-deck': swapColors(blasterTop, IRON),
+    'blaster-base@airship-deck': swapColors(blasterBase, IRON),
   },
 };

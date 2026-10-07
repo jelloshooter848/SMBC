@@ -49,10 +49,28 @@ export function devItemsShown(game: Game): boolean {
   return game.devMode && game.bonus.devInventory;
 }
 
+/**
+ * Dev items (given and held) vanish once dev mode or its "Item inventory" toggle is off. Called
+ * wherever they would be read.
+ */
+export function dropDevItemsIfOff(game: Game): void {
+  if (devItemsShown(game)) return;
+  game.bonus.devItems = [];
+  game.bonus.devNext = [];
+}
+
 /** The items the panel shows, in order: the file's, then (dev) the unsaved dev items. */
 export function shownItems(game: Game): ItemId[] {
+  dropDevItemsIfOff(game);
   const b = game.bonus;
-  return devItemsShown(game) ? [...b.inventory, ...b.devItems] : b.inventory;
+  return [...b.inventory, ...b.devItems];
+}
+
+/** Every item waiting for the next level (the file's and dev mode's), in giving order. */
+export function heldItems(game: Game): NextItem[] {
+  dropDevItemsIfOff(game);
+  const b = game.bonus;
+  return NEXT_ORDER.filter((k) => b.itemsNext.includes(k) || b.devNext.includes(k));
 }
 
 /** A hero's carried power, for the dry run. */
@@ -99,9 +117,9 @@ export interface UseOutcome {
  * flower or Starman is held for the start of the next level (`bonus.itemsNext`) and given there to
  * the hero who enters it (`applyHeldItems`), so picking another hero on the way keeps it; one of
  * each kind can wait. Refused, changing nothing, when one of its kind already waits (or lives are
- * full).
+ * full). `dev`: a dev mode item, held in the unsaved `devNext`.
  */
-export function useItem(game: Game, item: ItemId): UseOutcome {
+export function useItem(game: Game, item: ItemId, dev = false): UseOutcome {
   const name = ITEM_NAMES[item];
   if (item === '1up') {
     if (game.state.lives >= MAX_LIVES)
@@ -109,14 +127,16 @@ export function useItem(game: Game, item: ItemId): UseOutcome {
     game.state.lives++;
     return { ok: true, lines: ['1 UP!'], said: `One more life. ${game.state.lives} lives.` };
   }
-  const next = game.bonus.itemsNext;
-  if (next.includes(item))
+  const b = game.bonus;
+  if (heldItems(game).includes(item))
     return {
       ok: false,
       lines: [`A ${name} IS ALREADY`, 'WAITING FOR THE NEXT LEVEL.'],
       said: `${ITEM_SPOKEN[item]} is already waiting for the next level.`.replace(/^a /, 'A '),
     };
-  game.bonus.itemsNext = NEXT_ORDER.filter((k) => k === item || next.includes(k));
+  // A dev item waits in the unsaved dev list, a file's item in the saved one.
+  if (dev) b.devNext = NEXT_ORDER.filter((k) => k === item || b.devNext.includes(k));
+  else b.itemsNext = NEXT_ORDER.filter((k) => k === item || b.itemsNext.includes(k));
   return {
     ok: true,
     lines: [`${name} READY FOR THE`, 'START OF THE NEXT LEVEL!'],
@@ -133,11 +153,12 @@ export function useInventoryItem(game: Game, index: number): UseOutcome | null {
   if (!inventoryAvailable(game)) return null;
   const item = shownItems(game)[index];
   if (!item) return null;
-  const out = useItem(game, item);
+  const b = game.bonus;
+  const dev = index >= b.inventory.length;
+  const out = useItem(game, item, dev);
   if (out.ok) {
-    const b = game.bonus;
-    if (index < b.inventory.length) takeItem(b, index);
-    else b.devItems.splice(index - b.inventory.length, 1);
+    if (dev) b.devItems.splice(index - b.inventory.length, 1);
+    else takeItem(b, index);
     game.autosave();
   }
   return out;
@@ -150,6 +171,8 @@ export interface HeldOutcome {
   given: boolean;
   /** Back in the inventory (false when it was given, or the inventory was full and it was lost). */
   returned: boolean;
+  /** A dev mode item (from and back to the unsaved dev list). */
+  dev: boolean;
 }
 
 /**
@@ -160,23 +183,29 @@ export interface HeldOutcome {
  * would add are not kept. The run's power is updated and the file saved at once.
  */
 export function applyHeldItems(game: Game, world: World): HeldOutcome[] {
-  const held = game.bonus.itemsNext;
-  if (!game.campaign || game.tutorialRun || !held.length) return [];
+  if (!game.campaign || game.tutorialRun) return [];
+  const held = heldItems(game);
   const p = world.players[0];
-  if (!p) return [];
-  game.bonus.itemsNext = [];
+  if (!p || !held.length) return [];
+  const b = game.bonus;
+  const fromDev = new Set(b.devNext.filter((k) => !b.itemsNext.includes(k)));
+  b.itemsNext = [];
+  b.devNext = [];
   const score = game.state.score;
   const out: HeldOutcome[] = [];
   for (const item of held) {
+    const dev = fromDev.has(item);
     if (item !== 'star') {
       const hero = { def: p.def, power: p.powerState, hp: p.hp, kit: carriedKit(p) };
       if (!powerUpChanges(game, hero, item)) {
-        out.push({ item, given: false, returned: addItem(game.bonus, item) });
+        // Back where it came from: a dev item to the unsaved dev list, never the file's inventory.
+        const returned = dev ? (b.devItems.push(item), true) : addItem(b, item);
+        out.push({ item, given: false, returned, dev });
         continue;
       }
     }
     p.def.behaviour.onPowerUp(p, item, world);
-    out.push({ item, given: true, returned: false });
+    out.push({ item, given: true, returned: false, dev });
   }
   game.state.score = score; // items from the item box are not worth points
   const s = game.state;

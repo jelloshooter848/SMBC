@@ -36,7 +36,7 @@ export type NextItem = 'mushroom' | 'flower' | 'star';
 export const NEXT_ORDER: readonly NextItem[] = ['mushroom', 'flower', 'star'];
 
 /**
- * The bonus and inventory state of a campaign file: every field but `devItems` is saved, field for
+ * The bonus and inventory state of a campaign file: every field but `devItems` and `devNext` is saved, field for
  * field (`SaveFile` has each as an optional field; no format bump). `Game.bonus` carries it.
  * Whether the inventory is unlocked and the bonus spot open are `Game.inventoryUnlocked` /
  * `Game.bonusOpen` (SaveFile's fields of the same names, the World 4 bonus spot's).
@@ -59,14 +59,19 @@ export interface BonusState {
    * INVENTORY_MAX: a won item pushes the last one out.
    */
   devItems: ItemId[];
+  /**
+   * Dev items used from the map, held for the next level like `itemsNext` (never saved; one per
+   * kind across both lists). Cleared with the dev items when dev mode or the toggle goes off.
+   */
+  devNext: NextItem[];
 }
 
 /** The fields of BonusState a save file stores. */
-export type BonusSaveFields = Omit<BonusState, 'devItems'>;
+export type BonusSaveFields = Omit<BonusState, 'devItems' | 'devNext'>;
 
 /** What a file without any of the fields has. */
 export function newBonusState(): BonusState {
-  return { inventory: [], bonusNext: 0, devInventory: false, itemsNext: [], devItems: [] };
+  return { inventory: [], bonusNext: 0, devInventory: false, itemsNext: [], devItems: [], devNext: [] };
 }
 
 /** Known item ids from `x` (anything else dropped), at most INVENTORY_MAX; [] when not a list. */
@@ -88,6 +93,7 @@ export function bonusStateFrom(stored: Partial<Record<keyof BonusState, unknown>
     devInventory: stored.devInventory === true,
     itemsNext: nextItems(stored.itemsNext),
     devItems: [],
+    devNext: [],
   };
 }
 

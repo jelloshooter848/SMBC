@@ -46,6 +46,7 @@ describe('themes', () => {
       'station',
       'cavern',
       'airship',
+      'airship-deck',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -86,6 +87,7 @@ describe('themes', () => {
       station: 'mm-station',
       cavern: 'cavern',
       airship: 'airship',
+      'airship-deck': 'airship',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -271,5 +273,78 @@ describe('themes', () => {
     expect(wall.at(-1)).toMatch(/^0+$/);
     expect(wall.join('')).not.toMatch(/[3.]/);
     expect(top.join('')).toMatch(/3/);
+  });
+
+  it("sails Larry's airship deck under a daylight sky, in planks of its own", () => {
+    const frames = tilesDef.frames;
+    const frame = (name: string) => frames[name] as readonly string[];
+    for (const t of [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+      'blaster-top',
+      'blaster-base',
+    ]) {
+      expect(frames[`${t}@airship-deck`], t).toBeDefined();
+      expect(frames[`${t}@airship-deck`], t).not.toEqual(frames[t]);
+      expect(frames[`${t}@airship-deck`], t).not.toEqual(frames[`${t}@airship`]);
+    }
+    // The deck planks tile both ways: opaque, seams on the edge rows, the joints lined up so a
+    // tile's right column meets the next tile's left column like any other column of the plank.
+    const deck = frame('ground@airship-deck');
+    expect(deck.join('')).not.toContain('.');
+    expect(deck[0]).toMatch(/^0+$/);
+    expect(deck.at(-1)).not.toMatch(/0{16}/);
+    expect(deck.join('')).toMatch(/3/);
+    // `%` is the same planking with a round porthole: its edges are the plank's edges.
+    const port = frame('castle-brick@airship-deck');
+    const col = (rows: readonly string[], x: number) => rows.map((r) => r[x]).join('');
+    for (const x of [0, 15]) expect(col(port, x), `column ${x}`).toBe(col(deck, x));
+    for (const y of [0, 15]) expect(port[y], `row ${y}`).toBe(deck[y]);
+    expect(port.slice(5, 11).join('')).toMatch(/0{4}/);
+    // The hull behind (scenery) is darker than the deck: no lit or main wood, no holes.
+    const wall = frame('wall@airship-deck');
+    expect(wall.join('')).not.toMatch(/[23.]/);
+    expect(wall.join('')).toContain('b');
+    // The thin plank is a plank on air; the blaster is iron, not wood.
+    const plank = frame('bridge@airship-deck');
+    expect(plank.slice(8).join('')).toMatch(/^\.+$/);
+    for (const b of ['blaster-top', 'blaster-base'])
+      expect(frame(`${b}@airship-deck`).join(''), b).not.toMatch(/[123]/);
+    // A daylight sky, lighter than SMB1's overworld blue, nothing like the cabin's night.
+    const rgb = (hex: string) =>
+      [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
+    const sky = rgb(SKY['airship-deck'] as string);
+    expect(SKY['airship-deck']).not.toBe(SKY.overworld);
+    expect(Math.max(...sky)).toBe(sky[2]);
+    expect(sky[0] + sky[1] + sky[2]).toBeGreaterThan(rgb(SKY.overworld as string).reduce((a, b) => a + b));
+    // Warm wood (1-3), iron greys in the water slots (9, a), the dark hull in the lava slot (b).
+    const tiles = PALETTES.default['tiles-airship-deck'] as string[];
+    for (const other of ['tiles-overworld', 'tiles-airship', 'tiles-castle'])
+      expect(tiles, other).not.toEqual(PALETTES.default[other]);
+    for (const i of [1, 2, 3]) {
+      const [r, , b] = rgb(tiles[i] as string);
+      expect(r, `index ${i} is warm`).toBeGreaterThan(b);
+    }
+    for (const i of [9, 10]) {
+      const [r, g, b] = rgb(tiles[i] as string);
+      expect([g, b], `index ${i} is grey`).toEqual([r, r]);
+    }
+    const lum = (i: number) => rgb(tiles[i] as string).reduce((a, b) => a + b);
+    expect(lum(11)).toBeLessThan(lum(1));
+    expect(lum(1)).toBeLessThan(lum(2));
+    expect(lum(2)).toBeLessThan(lum(3));
+    // Daylight scenery (clouds) and enemies; no swimming; the airship's tune.
+    expect(decorPalette('airship-deck')).toBe(decorPalette('overworld'));
+    expect(enemyPalette('airship-deck')).toBe(enemyPalette('overworld'));
+    expect(isWaterTheme('airship-deck')).toBe(false);
+    expect(themeMusic('airship-deck')).toBe('airship');
   });
 });

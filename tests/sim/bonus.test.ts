@@ -16,6 +16,7 @@ import {
   nextBonusKind,
   openBonusGame,
   shownItems,
+  heldItems,
   awardPrize,
   ToadHouseScene,
   useInventoryItem,
@@ -330,7 +331,9 @@ describe('mushroom and flower for every hero', () => {
         const p = level.world.player;
         const changed =
           s.powerState !== before.power || s.hp !== before.hp || JSON.stringify(s.kit) !== before.kit;
-        expect(h.game.bonus.inventory).toEqual(changed ? [] : [item]);
+        // A fresh hero (starting power, no kit) always gains something from either.
+        expect(changed).toBe(true);
+        expect(h.game.bonus.inventory).toEqual([]);
         // What the player has is what the run carries (and the file saves).
         expect(s.powerState).toBe(p.powerState);
         expect(s.hp).toBe(p.hp);
@@ -400,12 +403,42 @@ describe('dev mode "Item inventory"', () => {
     for (let i = 0; i < 11; i++) h.tap('right');
     h.tap('jump');
     expect(inv.note?.ok).toBe(true);
-    expect(h.game.bonus.itemsNext).toEqual(['flower']);
+    // Held in the unsaved dev list: the file's held items stay empty.
+    expect(h.game.bonus.devNext).toEqual(['flower']);
+    expect(h.game.bonus.itemsNext).toEqual([]);
+    expect(heldItems(h.game)).toEqual(['flower']);
+    expect(loadSave(1)?.itemsNext).toEqual([]);
+    expect(JSON.stringify(loadSave(1))).not.toContain('devNext');
     expect(h.game.bonus.inventory).toHaveLength(10);
     expect(shownItems(h.game)).toHaveLength(11);
-    // Dev mode off: they vanish.
+    // Dev mode off: they vanish, the held one too.
     settings.dev = false;
     expect(shownItems(h.game)).toEqual(Array(10).fill('mushroom'));
+    expect(heldItems(h.game)).toEqual([]);
+    expect(h.game.bonus.devNext).toEqual([]);
+  });
+
+  it('a held dev item is given at the level start; a useless one goes back to the dev list, never the file', () => {
+    const { h } = onMap({ inventory: ['star'], powerState: 'fire', devInventory: true }, true);
+    giveDevItems(h.game.bonus); // mushroom, flower, star, 1-up after the file's star
+    expect(useInventoryItem(h.game, 1)?.ok).toBe(true); // the dev mushroom
+    expect(useInventoryItem(h.game, 2)?.ok).toBe(true); // the dev star (the flower moved up)
+    expect(loadSave(1)?.itemsNext).toEqual([]);
+    const p = startLevel(h).world.player;
+    expect(p.star).toBeGreaterThan(0); // the dev star was given
+    expect(h.game.state.powerState).toBe('fire');
+    expect(h.game.bonus.inventory).toEqual(['star']); // the file's inventory is unchanged
+    expect(loadSave(1)?.inventory).toEqual(['star']);
+    expect(h.game.bonus.devItems).toEqual(['flower', '1up', 'mushroom']); // the mushroom came back here
+    expect(loadSave(1)?.itemsNext).toEqual([]);
+  });
+
+  it('a dev item and a file item of the same kind: only one can wait', () => {
+    const { h } = onMap({ inventory: ['mushroom'], devInventory: true }, true);
+    giveDevItems(h.game.bonus);
+    expect(useInventoryItem(h.game, 0)?.ok).toBe(true); // the file's mushroom
+    expect(useInventoryItem(h.game, 0)?.ok).toBe(false); // the dev mushroom: one is waiting
+    expect(loadSave(1)?.itemsNext).toEqual(['mushroom']);
   });
 
   it('a won item pushes a dev item out when the two lists are full', () => {
