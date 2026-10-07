@@ -9,6 +9,7 @@ import { CRYSTAL_BALL } from '@game/map/captives';
 import { getLevel } from '@content/levels';
 import { newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
+import { ALL_STORY } from './story-seen';
 
 // The World 4 map's airship crash (owner decision 8:25 PM PDT, docs/WORLD_MAP.md): after Larry is
 // beaten and the crystal ball's card is dismissed, the airship flies in smoking and tips, the
@@ -23,6 +24,8 @@ const world4 = (over: Partial<SaveFile> = {}): Partial<SaveFile> => ({
   pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4'],
   position: { page: 'smb-4', node: '4-2' },
   lives: 4,
+  // Toad's map scenes (0.4.13; the crash's cards in toad-guide.test.ts) are seen.
+  story: [...ALL_STORY],
   ...over,
 });
 

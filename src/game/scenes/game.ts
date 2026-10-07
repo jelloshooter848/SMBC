@@ -20,7 +20,8 @@ import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { CardScene, MessageScene } from './message';
-import { CreditsScene } from './credits';
+import { CreditsScene, creditsLines } from './credits';
+import { STORY_NOT_OVER } from '../story/script';
 import { WorldMapScene, spoken, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId } from '../map/types';
 import {
@@ -37,6 +38,7 @@ import {
 } from '../map/rules';
 import { mapPage } from '@content/worldmap';
 import { CRYSTAL_BALL } from '../map/captives';
+import { seedSeen, storyOn } from '../story/beats';
 import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
@@ -164,6 +166,16 @@ export class Game {
    * outside campaign play.
    */
   bonus: BonusState = newBonusState();
+  /**
+   * The story beats seen on the campaign's file (SaveFile.story; ids from src/game/story/beats.ts),
+   * each once. See `seen` / `markSeen`; whether the story plays at all is beats.ts storyOn.
+   */
+  story: string[] = [];
+  /**
+   * Beats played while developer "Unlock all" is on (`mapUnlockAll`): they count as seen only
+   * while it stays on and are never saved, so with it off the scene plays for real (markSeen).
+   */
+  private storyUnsaved = new Set<string>();
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -192,8 +204,14 @@ export class Game {
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
     const head = world ? world.castleText.splice(0) : [];
-    this.deps.announcer?.say(`${head.filter(Boolean).join(' ')} Credits.`.trim());
-    this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
+    // The campaign's 8-4 is a false ending (docs/STORY.md 2.12): the credits say so at the end.
+    const story = storyOn(this) && from === '8-4';
+    // The story's castle pages were read out as they showed (World.updateBossClear), so its
+    // credits do not read the news a second time; classic play says the castle's lines here.
+    const lines = story ? '' : head.filter(Boolean).join(' ');
+    const said = story ? ` ${STORY_NOT_OVER.filter(Boolean).join(' ')}` : '';
+    this.deps.announcer?.say(`${lines} Credits.${said}`.trim());
+    this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world, creditsLines(story)));
   }
 
   /**
@@ -395,6 +413,30 @@ export class Game {
     );
   }
 
+  /** Story beat `id` (beats.ts) has played on this file. */
+  seen(id: string): boolean {
+    return this.story.includes(id) || (this.mapUnlockAll && this.storyUnsaved.has(id));
+  }
+
+  /**
+   * Records story beat `id` (beats.ts) as seen, once, and writes it to the file (campaign only):
+   * only the file's `story` list changes, so a beat mid-level never makes a save point of the
+   * run. While developer "Unlock all" is on, the scene may play but nothing is recorded on the
+   * file (it is kept aside until "Unlock all" is turned off, so it does not repeat meanwhile).
+   */
+  markSeen(id: string): void {
+    if (this.seen(id)) return;
+    if (this.mapUnlockAll) {
+      this.storyUnsaved.add(id);
+      return;
+    }
+    this.story.push(id);
+    const base = this.campaign ? this.campaignSave : null;
+    if (!base) return;
+    this.campaignSave = { ...base, story: this.story.slice() };
+    writeSave(this.campaignSave);
+  }
+
   /**
    * Writes the campaign's save file: the run (lives, score, coins, heroes, power) and the map
    * progress. Does nothing outside campaign mode (dev, ?level=, custom, shared, playtests).
@@ -425,6 +467,7 @@ export class Game {
       bonusOpen: this.bonusOpen,
       bonusGuard: this.bonusGuard,
       ...bonusSaveFields(this.bonus),
+      story: this.story.slice(),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -775,8 +818,11 @@ export class Game {
     this.scenes.push(new DevMenuScene(this));
   }
 
-  /** Developer level select: any level, character and power state, with 99 lives. */
-  devStart(levelId: string, character: CharacterDef, power: string, fullKit = false): void {
+  /**
+   * Developer level select: any level, character and power state, with 99 lives. `seed` fixes the
+   * level's world seed (tests); otherwise each visit gets a fresh one.
+   */
+  devStart(levelId: string, character: CharacterDef, power: string, fullKit = false, seed?: number): void {
     this.tutorialRun = null;
     this.state = newGameState(character);
     this.state.lives = 99;
@@ -790,7 +836,7 @@ export class Game {
     this.pendingLevel = null;
     this.quickRespawn = true;
     this.campaign = null;
-    this.goToLevel(levelId, { mode: 'stand' });
+    this.goToLevel(levelId, seed === undefined ? { mode: 'stand' } : { mode: 'stand', seed });
   }
 
   openEditor(initial?: { level: LevelData; name: string }): void {
@@ -893,6 +939,9 @@ export class Game {
       position: { page: save.position.page, node: save.position.node },
       gameCleared: save.gameCleared,
     };
+    // A file from before the story (or a test's file) counts what already happened as seen.
+    this.story = (save.story ?? seedSeen(this.mapProgress, this.freed)).slice();
+    this.storyUnsaved.clear();
     this.showMap(); // the map saves the file as it opens
   }
 

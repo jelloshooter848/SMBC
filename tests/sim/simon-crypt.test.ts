@@ -71,9 +71,11 @@ describe('the areas', () => {
     expect(descents(camp.zones)).toEqual([
       { kind: 'descent', x: 84, w: 8, target: { level: '5-4-dungeon', x: 13, y: 0 } },
     ]);
-    // Nothing else of 5-4 changes.
+    // Nothing else of 5-4 changes (but the townsperson at the start wakes: tests/sim/partners.test.ts).
     expect(camp.tiles).toEqual(raw.tiles);
-    expect(camp.entities).toEqual(raw.entities);
+    expect(camp.entities).toEqual(
+      raw.entities.map((e) => (e.type === 'partner' ? { ...e, props: { who: 'townsperson' } } : e)),
+    );
   });
 
   it('the descent zone parses and writes back the same', () => {
@@ -838,7 +840,7 @@ describe('captive Simon', () => {
     expect(hiddenHeroesAt('smb-5', '5-3')).toEqual([]);
   });
 
-  it("his words: Larry's wand woke Dracula's curse in him, he is Dracula's thrall; every line fits", () => {
+  it("his words: the stolen wand woke Dracula's curse in him, he is Dracula's thrall; every line fits", () => {
     const def: MiniGameDef = {
       hero: 'simon',
       title: 'DRACULA',
@@ -851,7 +853,8 @@ describe('captive Simon', () => {
       for (const page of pages)
         for (const line of page) expect(line.length, `${talker.id}: ${line}`).toBeLessThanOrEqual(CARD_COLS);
       const own = (pages[1] ?? []).join(' ');
-      expect(own).toContain("LARRY'S WAND");
+      expect(own).toContain('THE STOLEN WAND WOKE THE');
+      expect(own).not.toContain('LARRY');
       expect(own).toContain('DRACULA');
       expect(own).toContain('THRALL');
       expect(own).toContain(`${fontText(talker.name)}...`);

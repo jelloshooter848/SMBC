@@ -9,6 +9,9 @@ import { fontText, wrapText } from '../hud/text';
 import type { Lesson } from './stage-prompts';
 import type { StageTutorial, TutorialContext } from './stage-tutorial';
 import { ShadowTeaseScene } from './tease';
+import { storyOn } from '../story/beats';
+import { playStoryCards } from '../story/cards';
+import { STORY_TOAD_PAGES } from '../story/script';
 
 /*
  * Mario's tutorial stage 1-0 (owner brief, 0.5.0; the map: src/content/levels/world1/1-0.map).
@@ -141,13 +144,26 @@ function fit(lines: readonly string[]): string[] {
   return lines.flatMap((l) => (l.trim() === '' ? [''] : wrapText(l, CARD_COLS)));
 }
 
-/** Toad's pages one after another over the frozen level (CardScene panel, at the top), then `done`. */
+/**
+ * Toad's pages one after another over the frozen level (CardScene panel, at the top), then `done`.
+ * In the campaign, the story's greeting (docs/STORY.md 2.1, STORY_TOAD_PAGES) as every story card
+ * plays (story/cards.ts: OK or MENU the next page, BACK the rest; the music plays on). Else
+ * TOAD_PAGES, as before (any of OK, BACK, MENU turns a page; the level's music restarts after).
+ */
 function greet({ game, scene }: TutorialContext, done: () => void): void {
   game.ctx.audio.sfx('pause');
+  if (storyOn(game)) {
+    playStoryCards(game, scene.world, STORY_TOAD_PAGES, () => {
+      scene.resumePlay();
+      done();
+    });
+    return;
+  }
+  const pages = TOAD_PAGES;
   // Asked every frame: switching to the touch pad mid-dialogue drops the key ("OK (Z)" → "OK").
   const prompt = (): string => fontText(abilityHint(game, 'OK', 'jump'));
   const show = (i: number): void => {
-    const page = TOAD_PAGES[i];
+    const page = pages[i];
     if (!page) {
       scene.resume();
       done();

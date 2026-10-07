@@ -199,6 +199,8 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
   8-4, credits at 8-4 as a false ending, a main ending at Lost 8-4, six wand pieces held by the Koopalings that
   unlock the Far Lands and the true ending, reveal pages for the Lost castles' fakes too) are in docs/STORY.md
   section 3.
+- **Status:** Chapter 1 (docs/STORY.md 2.1-2.14) is built in 0.4.13 (docs/STORY_SYSTEM.md); Sophia III's lines are
+  added when she lands. The Lost Kingdom parts (2.15 on) are Chapter 2.
 
 ## Ideas for later
 

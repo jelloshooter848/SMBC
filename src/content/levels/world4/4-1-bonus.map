@@ -28,5 +28,9 @@ parent: 4-1
 ################
 ################
 
+[entities]
+;; Campaign only (0.4.13, docs/STORY.md 2.7): the bird statue beside where the heroes land.
+partner 2 12 who=chozo campaign=true
+
 [zones]
 pipe 13 12 right -> 4-1 163 10 exit=up

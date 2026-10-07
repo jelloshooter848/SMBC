@@ -13,6 +13,7 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { IntroScene } from '@game/scenes/intro';
 import { CardScene, MessageScene } from '@game/scenes/message';
+import { BowserSaysScene } from '@game/story/level-beats';
 import { CreditsScene } from '@game/scenes/credits';
 import { TitleScene } from '@game/scenes/title';
 import { GameOverScene, GAME_OVER_CARD_FRAMES } from '@game/scenes/game-over';
@@ -26,6 +27,7 @@ import type { WorldEvent } from '@game/world/world';
 import { loadProgress } from '@engine/save/progress';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import { ALL_STORY } from './story-seen';
 
 // The Lost Levels in campaign play (docs/WORLD_MAP.md): the story's extension (0.4.7). SMB 8-4's
 // ending opens a road from World 8 to Lost World 1; their levels are entered from their own map
@@ -100,7 +102,14 @@ function at(levelId: string): { page: PageId; node: string } {
 const llPages = (last: number) => ['smb-1', 'hub', ...Array.from({ length: last }, (_, i) => `ll-${i + 1}`)];
 
 function file(over: Partial<SaveFile> = {}): SaveFile {
-  const s = { ...newSave(1, MARIO.id), gameCleared: true, secrets: ['bonus-1'], ...over };
+  // Toad's map scenes (0.4.13; the rift in toad-guide.test.ts) are seen.
+  const s = {
+    ...newSave(1, MARIO.id),
+    gameCleared: true,
+    secrets: ['bonus-1'],
+    story: [...ALL_STORY],
+    ...over,
+  };
   writeSave(s);
   return s;
 }
@@ -364,6 +373,9 @@ describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and
     enterHere(h);
     h.game.startLevel(getLevel('8-4-end'), { mode: 'stand' });
     h.step();
+    // The real king's line plays once per file (story/level-beats.ts): this file has seen every
+    // story beat already, so he says nothing here.
+    expect(h.top()).not.toBeInstanceOf(BowserSaysScene);
     h.fire({ type: 'exit', next: 'end' });
     expect(h.top()).toBeInstanceOf(CreditsScene);
     h.until(() => h.top() instanceof WorldMapScene, 8000);
