@@ -24,7 +24,9 @@ export type Theme =
   // Larry Koopa's airship behind 4-2's right-hand pipe: wooden decks and iron under a night sky.
   | 'airship'
   // The airship's open decks (4-2-airship, auto-scrolling): SMB3-style planks under a daylight sky.
-  | 'airship-deck';
+  | 'airship-deck'
+  // Simon's crypt under 5-4 and his mini game's castle: grey stone, night-blue brick, candlelight.
+  | 'crypt';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -47,6 +49,7 @@ export const THEMES: readonly Theme[] = [
   'cavern',
   'airship',
   'airship-deck',
+  'crypt',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -66,6 +69,7 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'station') return 'mm-station';
   if (theme === 'cavern') return 'cavern';
   if (theme === 'airship' || theme === 'airship-deck') return 'airship';
+  if (theme === 'crypt') return 'crypt';
   return 'overworld';
 }
 

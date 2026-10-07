@@ -140,6 +140,9 @@ const itemFrames: Record<string, Size> = {
   'map-castle-secret-cleared': T16,
   'map-warp': T16,
   'map-warp-locked': T16,
+  'map-arena-game': T16,
+  'map-arena-tutorial': T16,
+  'map-arena-locked': T16,
   'map-path-dot': S8,
   mushroom: T16,
   '1up': T16,
@@ -348,6 +351,7 @@ describe('tile sprites', () => {
         'tiles-cavern',
         'tiles-airship',
         'tiles-airship-deck',
+        'tiles-crypt',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();

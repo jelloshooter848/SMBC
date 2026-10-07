@@ -92,4 +92,6 @@ export const SKY: Record<string, string> = {
   airship: '#000040',
   // The airship's open decks sail SMB3's lighter daylight blue.
   'airship-deck': '#3cbcfc',
+  // Simon's crypt: the castle's black behind the night-blue brick.
+  crypt: '#000000',
 };
