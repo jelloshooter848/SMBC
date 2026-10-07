@@ -526,7 +526,8 @@ charge shots from afar; `MM_SIM=30 pnpm vitest run megaman/human-sim --silent=fa
 report). With the NES form and three lives (0.4.12; the two floor turrets past pits and the
 hopper after the last pit moved two columns on, so a stop to wait for one is not at a pit's
 edge, where a hit's push back, with no upward pop now, drops him in), with the Saw Disc it wins 100% of 40 seeds at a 12 / 15 / 18 / 21-frame
-reaction; with the buster alone 100 / 100 / 98 / 95%. Hit points lost across lives: about 16-21
+reaction (on the first life 100 / 100 / 98 / 98%); with the buster alone 100 / 100 / 98 / 95%
+(first life 95 / 85 / 57 / 43%). Hit points lost across lives: about 16-21
 with the saw, 20-44 without (most of it to Dark Mega Man).
 
 ## Samus's mini game: Zebes Escape (`src/game/minigames/samus/`)
@@ -632,7 +633,9 @@ it escapes 100 / 97 / 90 / 93% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction
 28 / 22 / 20 / 22 seconds to spare (the closest 1-12 s); the misses are the pit (2 in 30 at the
 slower reactions) and, rarely, the clock. A clumsier player (21 frames, 10 px, a quarter of jumps
 let go early) escapes 63% of the time, mostly losing to the clock in shaft 2. A sharp run leaves
-about 43 seconds.
+about 43 seconds. With three lives (0.4.12) it escapes 100% at every reaction, on the first life
+93 / 97 / 97 / 97% (a median of 26-28 seconds to spare); the clumsier player 100%, 53% on the first
+life. Both sims also check that at least 70% of cautious runs win on the first life.
 
 ## Simon's mini game: Dracula's Castle (`src/game/minigames/simon/`)
 

@@ -72,10 +72,36 @@ export function drawEscapeHud(
   hudText(r, assets, missiles, HUD_X + 16, MISSILE_Y, covered);
 }
 
-/** The escape clock: TIME and its three digits, at the top middle. */
-export function drawTimeCounter(r: Renderer, assets: AssetRegistry, value: number, covered?: Covered): void {
+/** How the clock reads: plain, red in the last ten seconds, or grey while it holds. */
+export type TimeTint = 'plain' | 'final' | 'held';
+/** The font palettes (content/sprites/font.ts fontTints) for the clock's tints. */
+export const TIME_PALETTES = {
+  red: 'font-red',
+  dark: 'font-red-dark',
+  held: 'font-grey',
+} as const;
+
+/**
+ * The font palette the clock is drawn in at frame t: none when plain; red in the final stretch
+ * (pulsing to a dark red, steady with reduce flashing); grey while Infinite time holds it.
+ */
+export function timePalette(tint: TimeTint, t: number, reduceFlashing: boolean): string | undefined {
+  if (tint === 'held') return TIME_PALETTES.held;
+  if (tint === 'final')
+    return reduceFlashing || ((t >> 3) & 1) === 0 ? TIME_PALETTES.red : TIME_PALETTES.dark;
+  return undefined;
+}
+
+/** The escape clock: TIME and its three digits, at the top middle, in `palette` (timePalette). */
+export function drawTimeCounter(
+  r: Renderer,
+  assets: AssetRegistry,
+  value: number,
+  covered?: Covered,
+  palette?: string,
+): void {
   const text = `TIME ${String(value).padStart(3, '0')}`;
-  hudText(r, assets, text, (SCREEN_W - text.length * 8) >> 1, TIME_Y, covered);
+  hudText(r, assets, text, (SCREEN_W - text.length * 8) >> 1, TIME_Y, covered, palette);
 }
 
 /** The dark outline's offsets: the text's silhouette once each way, under it. */
@@ -94,10 +120,11 @@ function hudText(
   x: number,
   y: number,
   covered?: Covered,
+  palette?: string,
 ): void {
   if (covered?.(x, y, text.length * 8, 8)) {
     const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
     for (const [dx, dy] of OUTLINE) r.text(dark, text, x + dx, y + dy);
   }
-  r.text(assets.sheet('font'), text, x, y);
+  r.text(palette ? assets.sheet('font', palette) : assets.sheet('font'), text, x, y);
 }

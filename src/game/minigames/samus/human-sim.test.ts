@@ -26,6 +26,9 @@ describe('Zebes Escape: a cautious human (difficulty)', () => {
   it('a cautious first-timer (late reactions, misjudged take-offs, early jump releases, pauses) usually makes it, and not with ease', () => {
     const { rate, runs, median } = passRate(8);
     expect(rate).toBeGreaterThanOrEqual(7 / 8);
+    // Most make it on their first life (three lives are a cushion, not the plan).
+    const first = runs.filter((r) => r.result === 'pass' && r.livesLost === 0).length / runs.length;
+    expect(first).toBeGreaterThanOrEqual(0.7);
     // Tense: the clock is a real pressure, and the creatures cost energy.
     expect(median).toBeLessThan(35);
     expect(runs.reduce((a, r) => a + r.lost, 0) / runs.length).toBeGreaterThan(8);
