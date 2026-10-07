@@ -36,7 +36,11 @@ export type Theme =
   // Bill's waterfall climb out of the camp: wet rock ledges, falling water, mist.
   | 'contra-falls'
   // Red Falcon's lair (Bill's mini game): organic walls and floor.
-  | 'alien-lair';
+  | 'alien-lair'
+  // Sophia's Underworld (her garage, her mini game's cavern): rust rock, roots, slime, gateways.
+  | 'underworld'
+  // The overhead dungeon's metal seen from the side (the top-down kit draws the `bm-dungeon` sheet).
+  | 'bm-dungeon';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -65,6 +69,8 @@ export const THEMES: readonly Theme[] = [
   'contra-jungle',
   'contra-falls',
   'alien-lair',
+  'underworld',
+  'bm-dungeon',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -89,6 +95,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'ninja-night') return 'ng-stage';
   if (theme === 'contra-jungle' || theme === 'contra-falls') return 'contra-jungle';
   if (theme === 'alien-lair') return 'contra-lair';
+  if (theme === 'underworld') return 'bm-area';
+  if (theme === 'bm-dungeon') return 'bm-dungeon';
   return 'overworld';
 }
 
