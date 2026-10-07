@@ -193,6 +193,9 @@ export class LevelScene implements Scene {
       case 'path':
         game.deps.announcer?.say(PATH_SAID);
         break;
+      case 'say':
+        game.deps.announcer?.say(ev.text);
+        break;
       case 'anchor':
         game.deps.announcer?.say(`${ANCHOR_SAID} Climb its chain: ${abilityHint(game, 'UP', 'up')}.`);
         break;

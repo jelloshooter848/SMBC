@@ -903,6 +903,32 @@ const trueForm = (rows: readonly string[]): string[] => [
   ...blank(32, 24 - rows.length),
 ];
 
+/**
+ * A frame's outline: its opaque pixels that touch a clear one (or the edge), all in colour 1.
+ * The campaign's fake Bowsers wear their true form's outline with reduce flashing on, the steady
+ * stand-in for the tell's flicker (docs/STORY.md 2.3a).
+ */
+const outline = (rows: readonly string[]): string[] => {
+  const clear = (x: number, y: number) => (rows[y]?.[x] ?? '.') === '.';
+  return rows.map((row, y) =>
+    [...row]
+      .map((c, x) =>
+        c !== '.' && (clear(x - 1, y) || clear(x + 1, y) || clear(x, y - 1) || clear(x, y + 1)) ? '1' : '.',
+      )
+      .join(''),
+  );
+};
+
+const TRUE_FORMS = [TF_GOOMBA, TF_SHELL, TF_BUZZY_SHELL, TF_SPINY, TF_LAKITU, TF_BLOOPER, TF_HAMMER_BRO];
+
+/**
+ * How tall each true form is (`bowser-die-N`, N = 1..7; its rows start at row 8 of the king's
+ * 32-pixel box), so it can be drawn standing on his feet.
+ */
+export const TRUE_FORM_HEIGHT: Readonly<Record<number, number>> = Object.fromEntries(
+  TRUE_FORMS.map((rows, i) => [i + 1, rows.length]),
+);
+
 /* ------------------------------------------------------------------------------------------ */
 
 export const enemiesDef: SpriteDef = {
@@ -950,5 +976,7 @@ export const enemiesDef: SpriteDef = {
     'bowser-die-6': trueForm(TF_BLOOPER),
     'bowser-die-7': trueForm(TF_HAMMER_BRO),
     'bowser-die-8': king(KING_HEAD_OPEN, KING_LEGS_0),
+    // The true forms' outlines (the fakes' steady tell with reduce flashing on).
+    ...Object.fromEntries(TRUE_FORMS.map((rows, i) => [`bowser-ghost-${i + 1}`, outline(trueForm(rows))])),
   },
 };

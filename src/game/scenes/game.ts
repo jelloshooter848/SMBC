@@ -20,7 +20,8 @@ import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { CardScene, MessageScene } from './message';
-import { CreditsScene } from './credits';
+import { CreditsScene, creditsLines } from './credits';
+import { STORY_NOT_OVER } from '../story/script';
 import { WorldMapScene, spoken, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId } from '../map/types';
 import {
@@ -37,7 +38,7 @@ import {
 } from '../map/rules';
 import { mapPage } from '@content/worldmap';
 import { CRYSTAL_BALL } from '../map/captives';
-import { seedSeen } from '../story/beats';
+import { seedSeen, storyOn } from '../story/beats';
 import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
@@ -198,8 +199,11 @@ export class Game {
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
     const head = world ? world.castleText.splice(0) : [];
-    this.deps.announcer?.say(`${head.filter(Boolean).join(' ')} Credits.`.trim());
-    this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
+    // The campaign's 8-4 is a false ending (docs/STORY.md 2.12): the credits say so at the end.
+    const story = storyOn(this) && from === '8-4';
+    const said = story ? ` ${STORY_NOT_OVER.filter(Boolean).join(' ')}` : '';
+    this.deps.announcer?.say(`${head.filter(Boolean).join(' ')} Credits.${said}`.trim());
+    this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world, creditsLines(story)));
   }
 
   /**

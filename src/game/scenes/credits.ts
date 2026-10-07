@@ -6,6 +6,7 @@ import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { World } from '../world/world';
+import { STORY_NOT_OVER } from '../story/script';
 
 /** Our credits (the original's GameTextMessages.CREDITS_* credit its own team; these credit ours). */
 export const CREDITS: readonly string[] = [
@@ -42,6 +43,17 @@ export const CREDITS: readonly string[] = [
   '',
   '',
 ];
+/**
+ * The credits as they roll: the campaign's SMB 8-4 false ending (`story`, docs/STORY.md 2.12)
+ * adds "...BUT THE STORY ISN'T OVER." right after THANKS FOR PLAYING / SUPER MARIO BROS.
+ * CROSSOVER; everywhere else the plain CREDITS.
+ */
+export function creditsLines(story: boolean): readonly string[] {
+  if (!story) return CREDITS;
+  const at = CREDITS.indexOf('THANKS FOR PLAYING') + 2;
+  return [...CREDITS.slice(0, at), ...STORY_NOT_OVER, ...CREDITS.slice(at)];
+}
+
 /** The closing lines that stop mid-screen (GameTextMessages.CREDITS_TAIL's place). */
 export const CREDITS_TAIL: readonly string[] = ['SMB CROSSOVER', 'FAN REBUILD'];
 
@@ -75,6 +87,8 @@ export class CreditsScene implements Scene {
     private readonly head: readonly string[],
     private readonly onDone: () => void,
     world: World | null = null,
+    /** The lines that roll (creditsLines). */
+    readonly lines: readonly string[] = CREDITS,
   ) {
     this.translucent = world !== null;
     if (world) world.backdrop = (r) => this.draw(r);
@@ -87,7 +101,7 @@ export class CreditsScene implements Scene {
 
   /** Top y of the closing lines: right after the credits until it reaches mid-screen. */
   get tailY(): number {
-    const natural = SCREEN_H + CREDITS.length * LINE - this.scroll;
+    const natural = SCREEN_H + this.lines.length * LINE - this.scroll;
     return Math.max(natural, (SCREEN_H - CREDITS_TAIL.length * LINE) / 2);
   }
 
@@ -123,7 +137,7 @@ export class CreditsScene implements Scene {
       if (s && y >= TOP && y < SCREEN_H) r.text(font, s, (SCREEN_W - s.length * 8) >> 1, Math.round(y));
     };
     this.head.forEach((s, i) => line(s, 80 + i * 16 - this.scroll));
-    CREDITS.forEach((s, i) => line(s, SCREEN_H + i * LINE - this.scroll));
+    this.lines.forEach((s, i) => line(s, SCREEN_H + i * LINE - this.scroll));
     const tail = this.tailY;
     CREDITS_TAIL.forEach((s, i) => line(s, tail + i * LINE));
   }
