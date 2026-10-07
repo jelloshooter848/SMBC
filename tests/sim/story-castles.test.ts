@@ -293,30 +293,42 @@ describe('the tell', () => {
     expect(tells(load('world8/8-4-end.map', '8-4-end'), true).shown).toBe(0);
   });
 
-  /** What Bowser draws over `frames` frames, by frame name. */
-  function drawn(story: boolean, reduceFlashing: boolean) {
-    const r = tells(load('world1/1-4.map', '1-4'), story, 1);
+  /** What Bowser draws, frame by frame: `name@sheet` per sprite (the sheet id carries its palette). */
+  function drawnFrames(level: '1-4' | '8-4', story: boolean, reduceFlashing: boolean, frames = 520) {
+    const lv = level === '8-4' ? load('world8/8-4-end.map', '8-4-end') : load('world1/1-4.map', '1-4');
+    const r = tells(lv, story, 1);
     const b = r.bowser as Bowser;
     const assets = new AssetRegistry(PALETTES);
     assets.defineAll(SPRITES);
-    const frames = new Set<string>();
+    let cur: string[] = [];
     const rec: Renderer = {
       clear() {},
       rect() {},
       text() {},
       debugText() {},
       line() {},
-      sprite(_s: SpriteSheet, f: string) {
-        frames.add(f);
+      sprite(s: SpriteSheet, f: string) {
+        cur.push(`${f}@${s.id}`);
       },
     };
-    for (let i = 0; i < 260; i++) {
+    const out: { draws: string[]; window: boolean; showing: boolean }[] = [];
+    for (let i = 0; i < frames; i++) {
       b.update(r.world);
+      cur = [];
       const view: View = { camX: r.world.camera.x, frame: i, assets, theme: 'castle', reduceFlashing };
       b.render(rec, view);
+      out.push({ draws: cur, window: b.tellWindow, showing: b.tellShowing });
     }
-    return frames;
+    return out;
   }
+  /** What Bowser draws over a few hundred frames, by frame name. */
+  function drawn(story: boolean, reduceFlashing: boolean) {
+    return new Set(
+      drawnFrames('1-4', story, reduceFlashing, 260).flatMap((f) => f.draws.map((d) => d.split('@')[0] ?? d)),
+    );
+  }
+  const bright = (d: string) => d.startsWith('bowser-ghost-') && d.endsWith('~tell');
+  const king = (d: string) => /^bowser-[0-3]@/.test(d);
 
   it('flicker: the true form is drawn in its silhouette for a few frames', () => {
     const f = drawn(true, false);
@@ -324,10 +336,51 @@ describe('the tell', () => {
     expect(f.has('bowser-ghost-1')).toBe(false);
   });
 
-  it('reduce flashing: no flicker, a steady faint outline instead', () => {
-    const f = drawn(true, true);
-    expect(f.has('bowser-die-1')).toBe(false);
-    expect(f.has('bowser-ghost-1')).toBe(true);
+  it('reduce flashing: a steady bright outline over him for the tell window, never a flicker', () => {
+    const frames = drawnFrames('1-4', true, true);
+    const inWindow = frames.filter((f) => f.window);
+    const outside = frames.filter((f) => !f.window);
+    expect(inWindow.length).toBeGreaterThan(0);
+    expect(outside.length).toBeGreaterThan(inWindow.length);
+    // Every frame of the window: the king, then the bright true-form outline over him.
+    for (const f of inWindow) {
+      expect(f.draws.some(king)).toBe(true);
+      expect(f.draws.at(-1)).toMatch(/^bowser-ghost-1@.*~tell$/);
+      expect(f.draws.some((d) => d.startsWith('bowser-die-'))).toBe(false);
+    }
+    // Nothing alternates within the window (only the king's own walk frame may change).
+    const shapes = new Set(inWindow.map((f) => f.draws.map((d) => (king(d) ? 'king' : d)).join()));
+    expect(shapes.size).toBe(1);
+    // Outside the window: just the king, no outline (bright or faint).
+    for (const f of outside) expect(f.draws.every(king)).toBe(true);
+  });
+
+  it('reduce flashing off: the flicker is unchanged and the bright outline never drawn', () => {
+    const frames = drawnFrames('1-4', true, false);
+    for (const f of frames) {
+      expect(f.draws.some(bright)).toBe(false);
+      expect(f.draws.some((d) => d.startsWith('bowser-die-1@'))).toBe(f.showing);
+    }
+    // Within the window the flicker alternates between the king and his true form.
+    const win = frames.filter((f) => f.window);
+    expect(win.some((f) => f.showing)).toBe(true);
+    expect(win.some((f) => !f.showing)).toBe(true);
+  });
+
+  it("the bright outline is one full-contrast colour: none of the king's, not black", () => {
+    const pal = PALETTES.default['enemies-castle'] as readonly string[];
+    const fx = PALETTES.fx?.tell;
+    expect(fx).toBeDefined();
+    const out = new Set(fx?.([...pal]));
+    expect(out.size).toBe(1);
+    const [c] = [...out];
+    expect(pal).not.toContain(c);
+    expect(c).not.toBe('#000000');
+  });
+
+  it('the real 8-4 king never shows it', () => {
+    for (const rf of [true, false])
+      for (const f of drawnFrames('8-4', true, rf)) expect(f.draws.every(king)).toBe(true);
   });
 
   it('classic: only the king is drawn', () => {

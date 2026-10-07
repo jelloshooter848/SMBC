@@ -117,8 +117,9 @@ Beetle, Spiny, Lakitu, Blooper, Hammer Bro; 0 in World 8) is his disguise.
 
 - **The tell:** for the last 12 frames of every 240 (4 s) the disguise flickers, the true form's
   dark silhouette (rimmed so it reads on black) showing every other two frames, with a few wand
-  sparkles. With **reduce flashing** there is no flicker: a faint outline of the true form
-  (`bowser-ghost-N`) stays over him all the time.
+  sparkles. With **reduce flashing** there is no flicker: a solid 1 px outline of the true form
+  (`bowser-ghost-N`) in bright cyan (palette fx `tell`, NES $3C, in no enemy palette) is held
+  over him for those same 12 frames (`tellWindow`), steady, never blinking.
 - **The unmasking:** however he is beaten, the disguise bursts in a puff of wand sparkles with a
   "poof", and the true form falls in his place (`bowser-die-N`, palette `bowser-true-form` in
   castles).
