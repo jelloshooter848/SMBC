@@ -670,6 +670,71 @@ stairs first. Getting on calls the hero's `onGrabStairs` (Samus unrolls a morph 
 curls up on stairs), and on stairs Simon's UP + whip lashes (it throws the sub-weapon elsewhere).
 The touch JUMP button hides while player 1 is on stairs, whoever the hero (`levelTouchLabels`).
 
+## Ryu's mini game: Shadow Duel (`src/game/minigames/ryu/`)
+
+Ryu is under the Masked Ninja's curse; the round is a Tecmo-style cutscene, a Ninja Gaiden-style
+stage and the Masked Ninja's dojo, played **as Ryu** with his own kit (no new weapon code): the
+sword, his wall cling and wall kick, and ninpo (`arts: 1`, the throwing star, 10 of 40 spirit
+points). It runs in a `World` of its own (stage.map with `?raw`, theme `ninja-night`) with a
+fresh GameState, one life and a **150-second clock** (held by the Infinite time assist). Art: the
+`ninja` sheet (`art.ts drawNinja`; a missing frame or palette draws a plain box, nothing throws).
+
+- **The cutscene** (`cutscene.ts`, music `ng-cutscene`): letterboxed (40 px bars), a big moon over
+  tall grass; the two ninja run in, leap, clash in mid-air in front of the moon (sfx `clang`, the spark
+  `cut-clash`; a 3-frame white flash only without reduce flashing) and land back to back; the
+  lines come up under the picture. JUMP (OK) or SLASH skips it; the skipping press never makes
+  Ryu jump. Touch: SKIP and MENU. Then READY.
+- **The stage** (128 columns, rows 0-1 under the HUD; cling walls are `%`, the dressed stones): the
+  street (lanterns, a knife thrower), **building A** (columns 20-27, 7 tiles: too tall to jump;
+  climb its face), its roof, the ground (a dog, a hawk, a knife thrower), **the shaft** (a 5-tall
+  pillar at 50-51 and the 9-tall tower at 55-63, three tiles apart: up the pillar, then kicks
+  between the faces onto the tower), **two 2-wide pits** (70, 76; nothing hostile within ten
+  columns), the yard (a dog, a hawk, a thrower), **the last wall** (104-107, the art lantern on
+  top), the heal lantern, and the dojo's doorway (column 112, rows 10-12). Climbing is Ryu's own
+  kit: in the air, hold toward a wall to cling; JUMP kicks off it, and holding toward the wall
+  brings him back to it about 49 px higher.
+- **Lanterns** (`lantern x y [drop=ninpo|big|life|heal|art]`, hung in their tile, a 12x14 body):
+  harmless; the sword or an art breaks one: +5 or +10 spirit points, +4 hit points, two of those
+  (`heal`), or the next **ninpo art** (`art`: the windmill shuriken; a banner and the announcer
+  say how to change art; NINPO shows on touch from then on).
+- **Creatures** (2 hit points a hit): **knife throwers** (`thrower x y`, two hits) pace by their
+  post and, every 120 frames with Ryu in range, wind up for 20 frames and throw a flat knife at
+  chest height (crouch under it, jump it, or slash it away); **dogs** (`dog x y`, low: only a
+  crouching slash reaches one) wait until Ryu is within 136 px on their own level, bark for 18
+  frames and run straight at him; **hawks** (`hawk x y`) circle until he is within 112 px, cry
+  and hover (20 frames), swoop down to his chest height and glide level through where he stood
+  (a standing slash meets them), climb away and come again; they crumble when they strike.
+  **Fair play over pits**: a hawk never turns on Ryu within 80 px of a pit and pulls out of a cry,
+  swoop or glide once he is within 48 px of one (a knock carries him about 21 px). Ryu's blade
+  knocks any shot away within 8 px (`SHOT_SLACK`).
+- **The HUD** (`hud.ts`; no score, so `scorePopups: false`): TIMER, the NINJA and ENEMY bars (16
+  segments), the art in hand and NINPO.
+- **The Masked Ninja** (`masked.ts`, music `ng-boss`, 10 hit points; an original rival, never a
+  copy of Ryu: he neither slashes nor casts as Ryu does). His round: **stand** → **crouch** (30
+  frames: a dash is coming) → **dash** along the floor at Ryu and on to the wall behind him (jump
+  him) → **turn** at that wall → **run up** it → on the **wall**: three ninja stars, each aimed at
+  Ryu (slash them away, or keep moving) → **aim** (a steady glint at his mask, 20 frames) →
+  **dive** in a straight line at where Ryu stood → **recover**, kneeling where he landed → stand.
+  Blades clang off him while he dashes, runs up and dives; he can be hurt while he stands,
+  crouches, turns, clings to the wall (a jumping slash or an art), aims and kneels (20 frames of
+  grace after a hit). From 5 hit points down he is quicker (dash and dive, shorter rests) and his
+  **afterimage** (`ninja-ghost` palette) runs each dash and dive 14 frames behind him, hurting
+  like him: a jump over the dash has to clear both. Touching him costs 2.
+- **Endings**: beating him passes (banner THE MASKED NINJA FALLS! THE CURSE IS BROKEN., only the
+  first line in a round for fun, the jingle, 5 s); losing every hit point, a pit or the clock
+  fails; the menu's Give up quits (`DuelMenuScene`, the shared MiniGameMenuScene with the dev
+  assists), from the cutscene too. `done` is called once.
+
+Difficulty (`human-sim.test.ts`, `DuelBot`: it walks right, climbs every wall by clinging and
+kicking, jumps the pits and dogs, crouches under knives, slashes lanterns, throwers and hawks in
+reach; in the dojo it times its jump over each dash (for the afterimage too), waits well across
+the room slashing his stars while he is on the wall, walks on away from his wall when his mask
+glints, and slashes him while he stands or kneels; `RYU_SIM=30 pnpm vitest run ryu/human-sim
+--silent=false` prints the report): a sharp run passes unhurt with 110 of the 150 seconds left.
+A careful first-timer (sees things 12-18 frames late, misjudges by up to 6 px, its jump timing by
+up to 2 frames, pauses now and then) passes 97-100% of 30 seeds, losing about 8-9 hit points (4-5
+to the Masked Ninja); a clumsy player (21 frames, 10 px, more pauses) passes about a third.
+
 ## Hero training (optional practice rooms)
 
 Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:
