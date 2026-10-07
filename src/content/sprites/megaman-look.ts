@@ -20,9 +20,9 @@ import { draw, hash, themed, type Rows } from './look-art';
  * pipes' orange (the flagpole too), 8 white, 9/a water blue, b the mint light strip.
  *
  * Decor (palette `decor-megaman-stage`: 1-3 violets, 4-5 dim night clouds, 6-8 steel greys for a
- * castle that reads as a fortress, 9-a pipe orange):
- * - `tree-big@megaman-stage` (16x48): a pipe stack with a red beacon; `tree-small@megaman-stage`
- *   (16x32): a short vent pipe. Used for a level's trees.
+ * castle that reads as a fortress, 9-a amber lamps and windows):
+ * - `tree-big@megaman-stage` (16x48) and `tree-small@megaman-stage` (16x32): dark violet lattice
+ *   radio masts, background only (the solid pipes keep the orange). Used for a level's trees.
  * - `mm-skyline` (64x32): a row of dark factory blocks with lit windows, for the background.
  */
 
@@ -236,32 +236,30 @@ export function megamanTileFrames(base: Record<string, Rows>): Record<string, Ro
 
 /* ---------- decor ---------- */
 
-/** A vertical pipe of `h` rows on the decor sheet (9/a orange), ring joints every 8 rows. */
-const pipeColumn = (h: number, top: number): string[] =>
+/**
+ * A lattice radio mast in the background (dark violets 1-2, a single amber lamp pixel at its
+ * tip): legs tapering from 14 px wide at the foot to 3 px under the antenna, X-braced every
+ * six rows. Open between the struts, so the sky shows through; nothing like a solid pipe.
+ */
+const mast = (h: number): string[] =>
   draw(16, h, (x, y) => {
-    if (y < top) return '.';
-    const ly = y - top;
-    if (ly < 4) {
-      // the cap: wider, lit on its top row
-      if (x < 3 || x > 12) return '.';
-      if (ly === 0) return x === 3 || x === 12 ? '0' : 'a';
-      if (ly === 3) return '0';
-      return x === 3 || x === 12 ? '0' : x < 6 ? 'a' : '9';
-    }
-    if (x < 4 || x > 11) return '.';
-    if (x === 4 || x === 11) return '0';
-    if (ly % 8 === 7) return '0';
-    return x < 7 ? 'a' : '9';
+    const top = 4;
+    if (y < top) return x === 7 ? (y === 0 ? 'a' : '2') : '.';
+    const t = (y - top) / (h - top - 1);
+    const half = 1.5 + t * 5.5;
+    const l = Math.round(7.5 - half);
+    const r = Math.round(7.5 + half);
+    if (x === l || x === r) return '2';
+    if (x < l || x > r) return '.';
+    const seg = (y - top) % 6;
+    if (seg === 0) return '1';
+    const k = seg / 6;
+    if (x === Math.round(l + (r - l) * k) || x === Math.round(r - (r - l) * k)) return '1';
+    return '.';
   });
 
-/** The pipe stack: a beacon (8, its glass, in a black housing) on top of a tall pipe. */
-const beacon = draw(16, 6, (x, y) => {
-  if (x < 6 || x > 9 || y < 1) return '.';
-  return y === 1 || x === 6 || x === 9 ? '0' : '8';
-});
-const towerMM = pipeColumn(48, 6).map((r, y) => (y < 6 ? (beacon[y] as string) : r));
-
-const ventMM = pipeColumn(32, 0);
+const towerMM = mast(48);
+const ventMM = mast(32);
 
 /** Factory blocks of three heights, a lit window here and there, a flat foot. */
 const skyline = draw(64, 32, (x, y) => {

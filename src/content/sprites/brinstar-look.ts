@@ -20,7 +20,7 @@ import { draw, hash, themed, type Rows } from './look-art';
  * Decor (palette `decor-brinstar`: 1-3 blues, 4-5 white and grey, 6-8 greys for a castle, 9-a
  * orange):
  * - `brinstar-brush` (32x16): a clump of spiky blue brush, standing on its bottom row.
- * - `brinstar-column` (16x48): a pillar of bubble rock for the background.
+ * - `brinstar-column` (16x48): a darkened pillar of bubble rock for the background.
  */
 
 export const brinstarTilePalette: string[] = [
@@ -214,11 +214,15 @@ const brush = draw(32, 16, (x, y) => {
   return y >= 14 && x > 1 && x < 30 ? '1' : '.';
 });
 
-/** A pillar of the bubble rock: the rock's texture down a 12-wide shaft, its sides dark blue. */
+/**
+ * A pillar of the bubble rock, a shade darker than the solid rock (its bubbles in the dark blue,
+ * rims black) so it stays background: the texture down a 12-wide shaft, its sides dark blue.
+ */
 const column = draw(16, 48, (x, y) => {
   if (x < 2 || x > 13) return '.';
   if (x === 2 || x === 13) return '1';
-  return groundBrinstar[y % 16]?.[x] ?? '1';
+  const c = groundBrinstar[y % 16]?.[x] ?? '1';
+  return ({ '3': '2', '2': '1', '8': '2' } as Record<string, string>)[c] ?? c;
 });
 
 export const brinstarDecorFrames: Record<string, Rows> = {

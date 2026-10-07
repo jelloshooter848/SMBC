@@ -10,7 +10,7 @@ import { draw, hash, recolour, themed, type Rows } from './look-art';
  * - breakable bricks: palace bricks (magenta, pink-speckled), on SMB's brick courses so they still
  *   read as bricks; used blocks are the palace's plain ledge blocks.
  * - hard blocks (2-1's staircases): speckled grey field stones.
- * - pipes: the same pipes, of grey speckled stone (the field's standing stones).
+ * - pipes: the same pipes in smooth dressed grey stone, banded lengthwise like SMB's.
  * - `tree-top` / `tree-trunk`: a stone lintel on a standing stone; the bridge is a stone slab.
  * - `?` blocks, coins, the flagpole and cloud blocks: SMB's own frames, so they read at a glance.
  *
@@ -164,9 +164,11 @@ const bridgeZelda = draw(16, 16, (x, y) => {
 /** Palace masonry: the bricks again, darker (shade and mortar), a speckle of the brick colour. */
 const castleBrickZelda = speckle(recolour(brickBase, { '3': '2', '2': '1', '1': '0' }), '1', '2', 0.12, 23);
 
-/** A pipe of the field's grey stone: SMB's pipe shape and shading, speckled. */
-const stonePipe = (rows: Rows, seed: number): string[] =>
-  speckle(recolour(rows, { '5': '9', '6': 'a' }), '9', 'a', 0.16, seed);
+/**
+ * A pipe of smooth dressed stone: SMB's pipe shape with its lengthwise light bands in the greys,
+ * unspeckled, so a pipe never passes for the rough field stones of the hard blocks.
+ */
+const stonePipe = (rows: Rows): string[] => recolour(rows, { '5': '9', '6': 'a' });
 
 /**
  * The look's tile frames (registered in tiles.ts as `<tile>@zelda2`). `base` is the tile sheet's
@@ -185,14 +187,14 @@ export function zelda2TileFrames(base: Record<string, Rows>): Record<string, Row
       'tree-top': treeTopZelda,
       'tree-trunk': treeTrunkZelda,
       bridge: bridgeZelda,
-      'pipe-top-left': stonePipe(keep('pipe-top-left'), 31),
-      'pipe-top-right': stonePipe(keep('pipe-top-right'), 32),
-      'pipe-body-left': stonePipe(keep('pipe-body-left'), 33),
-      'pipe-body-right': stonePipe(keep('pipe-body-right'), 34),
-      'pipe-h-top-left': stonePipe(keep('pipe-h-top-left'), 35),
-      'pipe-h-top-right': stonePipe(keep('pipe-h-top-right'), 36),
-      'pipe-h-bottom-left': stonePipe(keep('pipe-h-bottom-left'), 37),
-      'pipe-h-bottom-right': stonePipe(keep('pipe-h-bottom-right'), 38),
+      'pipe-top-left': stonePipe(keep('pipe-top-left')),
+      'pipe-top-right': stonePipe(keep('pipe-top-right')),
+      'pipe-body-left': stonePipe(keep('pipe-body-left')),
+      'pipe-body-right': stonePipe(keep('pipe-body-right')),
+      'pipe-h-top-left': stonePipe(keep('pipe-h-top-left')),
+      'pipe-h-top-right': stonePipe(keep('pipe-h-top-right')),
+      'pipe-h-bottom-left': stonePipe(keep('pipe-h-bottom-left')),
+      'pipe-h-bottom-right': stonePipe(keep('pipe-h-bottom-right')),
       ...Object.fromEntries(
         [
           'question-0',

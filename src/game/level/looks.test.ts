@@ -149,6 +149,11 @@ describe('campaign looks: 2-1 Zelda II, 3-1 Mega Man, 4-2 Brinstar', () => {
     expect(frame('hard@zelda2').join('')).toMatch(/^[09a]+$/);
     for (const name of [...PIPE, ...PIPE_H])
       expect(frame(`${name}@zelda2`).join(''), name).toMatch(/^[09a.]+$/);
+    // the pipes are smooth dressed stone, banded lengthwise like SMB's (every row of a body tile
+    // alike), never the rough speckled stone of the hard blocks
+    for (const name of ['pipe-body-left', 'pipe-body-right'])
+      expect(new Set(frame(`${name}@zelda2`)).size, name).toBe(1);
+    expect(new Set(frame('hard@zelda2').slice(2, 14)).size).toBeGreaterThan(4);
     // the palace bricks lie in SMB's brick courses (the same mortar), magenta and pink
     const mortar = (rows: readonly string[]) => rows.map((r) => r.replace(/[^0]/g, '.'));
     expect(mortar(frame('brick@zelda2'))).toEqual(mortar(frame('brick')));
@@ -249,6 +254,24 @@ describe('campaign looks: 2-1 Zelda II, 3-1 Mega Man, 4-2 Brinstar', () => {
     const c = decorDef.frames['cloud-1@zelda2'] as readonly string[];
     expect(c.join('').replace(/\./g, '')).toMatch(/^[45]+$/);
     expect(c[13]?.replace(/^\.+|\.+$/g, '')).toMatch(/^(45|54)+4?5?$/);
+    // 3-1's masts stand in the background: dark violets, open lattice, one lamp pixel; never the
+    // solid pipes' orange
+    const mmDecor = PALETTES.default['decor-megaman-stage'] as string[];
+    const mmTiles = PALETTES.default['tiles-megaman-stage'] as string[];
+    for (const n of ['tree-big@megaman-stage', 'tree-small@megaman-stage']) {
+      const px = (decorDef.frames[n] as readonly string[]).join('');
+      expect(px, n).toMatch(/^[12a.]+$/);
+      expect(px.replace(/[^a]/g, ''), n).toHaveLength(1);
+      expect(px.replace(/[^.]/g, '').length, n).toBeGreaterThan(px.length / 2);
+      for (const i of [1, 2]) {
+        expect(mmDecor[i], n).not.toBe(mmTiles[5]);
+        const [r, , b] = rgb(mmDecor[i] as string);
+        expect(b, n).toBeGreaterThan(r); // violet, not orange
+        expect(lum(mmDecor[i] as string), n).toBeLessThan(lum(mmTiles[5] as string));
+      }
+    }
+    // Brinstar's pillar is a shade darker than the solid rock: no light bubble tones
+    expect((decorDef.frames['brinstar-column'] as readonly string[]).join('')).toMatch(/^[012.]+$/);
   });
 
   it.each(LOOKS)(
