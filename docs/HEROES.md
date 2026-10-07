@@ -198,8 +198,10 @@ ends.
   (`%`) and covered by 16×16 smb3 decor, one per tile: `smb3:ceiling-beam` along row 2 (columns
   1-14) and `smb3:pillar` down columns 0 and 15 (rows 2-12). The floor is log posts: `#` the post
   tops on row 13, `%` the posts carrying on below on row 14, and one raised post with its top at
-  (7,12) and its post at (7,13). The hero rises out of the pipe in the floor at columns 2-3 (from
-  the deck's stern pipe); Larry starts on the floor at the right (`larry 12 12 next=4-3`: the
+  (7,12) and its post at (7,13). As in SMB3, the hero drops in from the ceiling (`startMode: fall`,
+  from the deck's stern pipe): out of a green pipe hanging from it at the left (`smb3:ceiling-pipe`
+  at (1,3), 40×32, its 32-px pipe 8 px in; decor drawn over the players, so he comes out of its
+  mouth), down the open ceiling over column 2 onto the floor; Larry starts on the floor at the right (`larry 12 12 next=4-3`: the
   tile his feet stand in; `next` is where the ball leads outside the campaign). Theme `airship`,
   music `smb3-boss`.
 - **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
@@ -240,8 +242,8 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   Any other level, the map or the title ends the run. Dev select / `?level=` never start one.
 - **No clock aboard**: `LevelScene` sets the world's time to null (the HUD leaves it blank).
 - **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
-  restarts the deck as it was boarded, or Larry's room once it has been reached (rising out of its
-  pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
+  restarts the deck as it was boarded, or Larry's room once it has been reached (dropping in from
+  its ceiling pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
   restores the pre-boarding snapshot and goes back to 4-2 at its last checkpoint (4-2's own respawn
   rules: its start without one, a fresh clock, the WORLD card; no hero select).
 - **MENU** aboard is `MiniGameMenuScene` titled LARRY'S AIRSHIP: Continue / Give up (= NO) and, in
@@ -356,8 +358,15 @@ Link (overhead, four-way walking on a half-tile grid, three hearts taken in halv
 with only his sword: a stab hits the whole tile in front of him plus 4 px to each side (and 6 px
 back into his own tile), is out for 12 of its 14 frames, and wins ties: a monster the blade
 touches is knocked back and does no touch damage that frame, so monsters coming in at an angle
-meet the blade (owner feedback: "attacking with the sword is flawed"). Items, Zelda style: an
-item box labelled ITEM beside the SWORD box on the HUD; SPECIAL uses the item in it, SELECT
+meet the blade (owner feedback: "attacking with the sword is flawed"). With every heart full a
+stab also throws a **sword beam** (`topdown/beam.ts`, as in Zelda; one on screen at a time, 3 px a
+frame [M]): it hurts the first monster it meets like the sword and bursts at walls into four
+pieces flying apart diagonally; it flickers through four tints (one steady tint with reduce
+flashing; sound `sword-beam`). The HUD is Zelda's (0.4.12 fidelity pass): LEVEL-1 over the map,
+the key and bomb counts in a column (bombs from the start, 0 until found; there are no rupees),
+the **B** box with the item in the slot and the **A** box with the sword (the letters are the
+HUD's art, an owner-approved exception; rules and instructions still name abilities), and
+-LIFE- in red over the hearts. Items, Zelda style: SPECIAL uses the item in the B box, SELECT
 switches items; touch labels SWORD, the item's name (BOOMERANG / BOMB, hidden while it can't be
 used), ITEM (with two items) and MENU. Walking into a chest opens it; Link holds the prize up for
 a moment while the room waits, with a banner and announcement saying how to use it (`item-get`).
@@ -380,11 +389,12 @@ axis), and its guard halves monsters' touch damage, never below half a heart; th
 "FACE ROCKS AND SPELLS TO BLOCK" / "MONSTERS HURT YOU LESS"),
 rock-spitters with a floor switch behind water (it opens the way on and shows a heart refill), the
 keeper (drifts across the top, glows, then fans three spells at Link; eight hits, a bomb counts
-two; its name shows between it and Link; its spells vanish when it falls) and the shining exit.
+two; no name on screen, as a Zelda boss has none; its spells vanish when it falls) and the
+shining exit.
 The cellar and the shrine are side rooms; only the shrine is hidden. Exit reached: `pass`; no
 hearts left: `fail` after the death spin; menu Give up: `quit`. Hearts, keys and items live in the
 keep, never in `game.state`. Music `dungeon` and `keeper`; sounds `secret` (also a wall breaking
-open), `sword-stab`, `door-open`, `key-get`, `item-get`, `boomerang`, `bomb-fuse`, `bomb-blast`,
+open), `sword-stab`, `sword-beam`, `door-open`, `key-get`, `item-get`, `boomerang`, `bomb-fuse`, `bomb-blast`,
 `select`. Dev mode's assists apply: **No damage** (`invulnerable`) keeps Link's hearts against
 monsters, rocks, spells and his own bombs (he is still knocked back), read each time he is hurt,
 so switching it mid-round counts at once; **slow motion** slows the whole loop, the keep
@@ -398,7 +408,9 @@ pnpm vitest run human-sim --silent=false` prints the report, with and without th
 knows the whole plan, so it measures combat difficulty, not puzzles or finding the way): before v2 it escaped
 40% of 30 seeds (70% at a 12-frame reaction, 27% at 18), mostly falling to the keeper. With v2
 and the magic shield 97-100% (about 1.8 of four hearts lost to the keeper); skipping the shrine
-93-100% (about 2.2 lost). The keeper got two more hit points to keep it a fight. The sim dodges
+93-100% (about 2.2 lost). The keeper got two more hit points to keep it a fight. With the sword
+beam (0.4.12, `KEEP_SIM=40`): with the shield 100% at every reaction (about 1.4-2.0 hearts lost
+to the keeper), without it 93-98% (about 2.1-2.4), the same band as before. The sim dodges
 spells rather than facing them, so a player who learns to block does better than it does.
 
 ### The top-down kit (`src/game/topdown/`)
@@ -429,7 +441,9 @@ Reusable for later top-down mini games; it knows no particular game.
   `world.grant(what)` gives anything; `noDamage` (a world option) keeps the hero's hearts.
 - `render.ts`, `hud.ts`, `frames.ts`: tiles drawn for the north wall are flipped for the south
   and rotated for the sides (`withSideFrames` derives `-side` and the doorway halves `-l`/`-r`
-  when the sheet is registered); the Zelda-style HUD (map, keys and ammo, item boxes, life).
+  when the sheet is registered); the Zelda-style HUD (the level over the map, keys and ammo,
+  lettered item boxes, -LIFE- in red over the hearts).
+- `beam.ts`: the sword beam (`swordBeam`, a world option, default off) and its burst.
 - `bot.ts`: a breadth-first-search player driven by a per-room plan (a list of steps, or a
   function of the world for rooms passed twice): fights (stunning with a boomerang it owns),
   pushes, opens chests, bombs walls. `CautiousBot` wraps it as a cautious first-time player for

@@ -6,7 +6,7 @@ theme: airship
 music: smb3-boss
 time: inherit
 start: 2,12
-startMode: pipe-exit
+startMode: fall
 camera: locked
 parent: 4-2
 
@@ -15,8 +15,10 @@ parent: 4-2
 ;; with two porthole windows; a ceiling of beams across row 2 and a pillar down each edge column
 ;; (smb3 decor, 16x16, one per tile, drawn over solid `%` so the room stays closed); a floor of log
 ;; posts, `#` the post tops on row 13 and `%` the posts carrying on below, and one raised post at
-;; (7,12). The airship deck's stern pipe (`4-2-airship`) leads here (`4-2-larry 2 12`): the hero
-;; rises out of the pipe in the floor at the left. Larry hops at the
+;; (7,12). The airship deck's stern pipe (`4-2-airship`) leads here (`4-2-larry 2 12`): as in
+;; SMB3, the hero drops in out of a pipe hanging from the ceiling at the left (`smb3:ceiling-pipe`,
+;; drawn over the players so he comes out of it; the ceiling is open over column 2, the shaft he
+;; falls down, centred under the pipe's mouth). Larry hops at the
 ;; hero, fires wand blasts and spins in his shell when stomped; beaten, he drops the crystal ball,
 ;; whose touch is 4-2's secret exit `secret:larry` (docs/HEROES.md).
 [tiles]
@@ -24,7 +26,7 @@ parent: 4-2
 ;; 0
 ................
 ................
-%%%%%%%%%%%%%%%%
+%%H%%%%%%%%%%%%%
 %HHHHHHHHHHHHHH%
 %HHHHHHHHHHHHHH%
 %HHHHHHHHHHHHHH%
@@ -35,15 +37,14 @@ parent: 4-2
 %HHHHHHHHHHHHHH%
 %HHHHHHHHHHHHHH%
 %HHHHHH#HHHHHHH%
-##[]###%########
-%%{}%%%%%%%%%%%%
+#######%########
+%%%%%%%%%%%%%%%%
 
 [entities]
 larry 12 12 next=4-3
 
 [decor]
 smb3:ceiling-beam 1 2
-smb3:ceiling-beam 2 2
 smb3:ceiling-beam 3 2
 smb3:ceiling-beam 4 2
 smb3:ceiling-beam 5 2
@@ -80,3 +81,4 @@ smb3:pillar 15 11
 smb3:pillar 15 12
 smb3:porthole 5 6
 smb3:porthole 10 6
+smb3:ceiling-pipe 1 3

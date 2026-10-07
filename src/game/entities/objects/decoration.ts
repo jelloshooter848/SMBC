@@ -20,8 +20,9 @@ export class Decoration extends Entity {
   ) {
     super(px(tx * 16), px(ty * 16), 16, 16);
     // Scenery of another sheet (`station:window`) hangs on background wall tiles: drawn after
-    // the tiles, still behind the players. The classic decor stands behind the tiles.
-    this.layer = decorInFront(name) ? 'main' : 'back';
+    // the tiles, still behind the players. The classic decor stands behind the tiles. A pipe the
+    // players drop out of is drawn over them (decorOverPlayers).
+    this.layer = decorOverPlayers(name) ? 'front' : decorInFront(name) ? 'main' : 'back';
     this.despawnMargin = 192;
   }
   raiseFlag(): void {
@@ -46,6 +47,12 @@ export class Decoration extends Entity {
 
 /** `sheet:frame` decor (`station:window`) hangs in front of the tiles; the classic decor behind them. */
 export const decorInFront = (kind: string): boolean => kind.includes(':');
+
+/**
+ * Decor drawn over the players: the pipe in Larry's cabin ceiling (`smb3:ceiling-pipe`), so a
+ * hero dropping in comes out of its mouth instead of falling in front of it.
+ */
+export const decorOverPlayers = (kind: string): boolean => kind === 'smb3:ceiling-pipe';
 
 /**
  * Draw decor `kind` with its bottom-left at screen (x, bottom) (shared with the editor): a frame

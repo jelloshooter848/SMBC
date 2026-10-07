@@ -2,6 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import { DIRS, DIR_VEC, TILE, isHorizontal, mod, type Box, type Dir } from './geometry';
 import { Chest, PUSH_DELAY, PushBlock } from './entity';
+import { SwordBeam } from './beam';
 import { drawFrame, type TdView } from './view';
 import type { TopDownWorld } from './world';
 
@@ -63,7 +64,8 @@ const SPIN: readonly Dir[] = ['down', 'left', 'up', 'right'];
 
 /**
  * The top-down hero (Link in the Shadow Keep): four-way walking at 1.5 px/frame on a half-tile
- * grid, a sword stab in the facing direction (one at a time), the item in the slot on SPECIAL
+ * grid, a sword stab in the facing direction (one at a time; at full hearts, in a world with
+ * beams, it also throws a sword beam), the item in the slot on SPECIAL
  * (SELECT moves the slot), a shield once he has one that stops blockable shots coming at his
  * front while not stabbing and halves monsters' touch damage, hearts in halves, knockback with invulnerability after
  * a hit, and a death spin. Walking into a chest opens it; he holds the prize up for a moment.
@@ -127,6 +129,18 @@ export class TdHero {
     const e = ATTACK_FRAMES - this.attackT;
     if (e < SWORD_FIRST || e > SWORD_LAST) return null;
     return swordReach(this.x, this.y, this.facing);
+  }
+
+  /**
+   * Does a stab now also throw a sword beam (beam.ts)? In a world with beams, with every heart
+   * full and no beam of his already flying, as in Zelda.
+   */
+  beamReady(world: TopDownWorld): boolean {
+    return (
+      world.swordBeam &&
+      this.hp >= this.maxHp &&
+      !world.entities.some((e) => e instanceof SwordBeam && !e.dead)
+    );
   }
 
   /** Holds a chest's prize up (its frame) for HOLD_FRAMES; the room waits meanwhile. */
@@ -232,6 +246,11 @@ export class TdHero {
       this.attackT = ATTACK_FRAMES;
       this.pushT = 0;
       world.emit({ type: 'sword' });
+      if (this.beamReady(world)) {
+        const b = swordAt(this.x, this.y, this.facing);
+        world.add(new SwordBeam(b.x, b.y, this.facing));
+        world.emit({ type: 'beam' });
+      }
       return;
     }
     if (input.pressed('special') && world.useItem()) {

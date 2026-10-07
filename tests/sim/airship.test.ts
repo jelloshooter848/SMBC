@@ -141,7 +141,7 @@ describe("Larry's airship challenge (campaign)", () => {
     const room = h.top() as LevelScene;
     expect(room.level.id).toBe(AIRSHIP_ROOM);
     expect(h.game.airship?.reachedRoom).toBe(true);
-    h.until(() => !room.world.player.frozen, 200);
+    h.until(() => room.world.player.body.onGround, 200);
     die(h, room);
     pick(h, 'Yes');
     const again = h.top() as LevelScene;
@@ -149,8 +149,8 @@ describe("Larry's airship challenge (campaign)", () => {
     expect(again).not.toBe(room);
     expect(h.game.state.lives).toBe(4);
     expect(again.world.player.powerState).toBe('fire');
-    // Rising out of the room's pipe again, as when first arriving.
-    expect(again.world.player.frozen).toBe(true);
+    // Dropping in out of the room's ceiling pipe again, as when first arriving.
+    expect(again.world.player.body.y).toBeLessThan(0);
   });
 
   it('NO goes back to 4-2 at its last checkpoint with the run as it was before boarding, no life lost', () => {
