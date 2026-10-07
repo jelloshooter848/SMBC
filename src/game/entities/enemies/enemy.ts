@@ -13,7 +13,7 @@ import {
 } from '../../rules/damage';
 import { ENEMY_SCORES, killScore, type KillScores } from '../../rules/score';
 import { CORPSE_GRAVITY_DEFAULT, Corpse } from '../effects/effects';
-import { isWaterTheme, type Theme } from '../../level/schema';
+import { isSwimLevel, type Theme } from '../../level/schema';
 
 /**
  * A block bumped under a koopa or spiny pops it up (KoopaGreen.gBounceHit / Spiney.gBounceHit):
@@ -176,7 +176,7 @@ export abstract class Enemy extends Entity {
       this.destroy();
       return;
     }
-    const dir = !hop || isWaterTheme(world.level.theme) ? 0 : src.dirX;
+    const dir = !hop || isSwimLevel(world.level) ? 0 : src.dirX;
     const corpse = new Corpse(
       this.body.x,
       this.body.y,

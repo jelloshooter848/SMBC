@@ -480,4 +480,22 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
   },
+  // Sophia III's pilot, in his secret area behind 8-4-end's trap pipe (8-4-jason): talking to him
+  // sends Fred into the pool (objects/fred.ts).
+  jason: {
+    verb: 'TALK',
+    name: 'Jason',
+    pages: [
+      ['JASON:', '', 'FRED! FRED, COME BACK!', '...OH, HI. HAVE YOU SEEN', 'A FROG? GREEN, THIS BIG?'],
+      [
+        'JASON:',
+        '',
+        'HE JUMPED IN THE WATER AND',
+        'SWAM DOWN A CRACK. LAST',
+        'TIME HE DID THAT, I FOUND',
+        'A TANK.',
+      ],
+      ['JASON:', '', "MY TANK, SOPHIA! SHE'S DOWN", 'THERE TOO. FOLLOW FRED,', "PLEASE. I CAN'T SWIM."],
+    ],
+  },
 };

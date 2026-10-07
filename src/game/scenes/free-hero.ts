@@ -98,6 +98,14 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
     `${you}... HIT ITS BASE.`,
     'BLOW UP ITS HEART!',
   ],
+  // A tank can't talk: the spell speaks through her computer. The radiation of the Underworld
+  // carried it to her, and the Plutonium Boss has the wheel (docs/STORY.md 2.11).
+  sophia: (you) => [
+    'PILOT NOT FOUND. THE',
+    'PLUTONIUM BOSS HAS THE',
+    `WHEEL. ${you}...`,
+    'CLIMB IN. BLAST IT OUT!',
+  ],
 };
 
 /** The freed card's lines (and so its announcement): the hero's full name, "MEGA MAN IS FREE!". */

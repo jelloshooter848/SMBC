@@ -31,6 +31,8 @@ const SPOTS = [
   { who: 'townsperson', level: '5-4', start: { mode: 'stand' } },
   { who: 'irene', level: '6-2', start: { mode: 'stand' } },
   { who: 'lance', level: '7-3', start: { mode: 'stand' } },
+  // Jason's secret area behind 8-4-end's trap pipe (0.4.15): up out of its pipe.
+  { who: 'jason', level: '8-4-jason', start: { mode: 'pipe-exit', x: 1, y: 10, time: 300 } },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart }[];
 
 const runs = CHARACTERS.flatMap((c) =>
@@ -97,7 +99,8 @@ describe('partners: where they stand (campaign only)', () => {
   it.each(SPOTS)('$who stands in $level in the campaign, on open ground, clear of the tiles', (spot) => {
     const h = makeGame();
     const l = campaignIn(h, spot);
-    h.idle(2);
+    // (Up out of a pipe, the room's entities come once the hero is out.)
+    h.idle(spot.start.mode === 'pipe-exit' ? 120 : 2);
     const [it, ...more] = partners(l);
     expect(it?.who).toBe(spot.who);
     expect(more).toEqual([]);

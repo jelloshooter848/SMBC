@@ -522,9 +522,24 @@ pipe x y down -> map 0 0
   any hero to reach the hidden block from it. Ordinary flagpole runs end exactly as before
   (`tests/sim/top-secret.test.ts` replays every hero's whole way to the secret from the ground).
 - **A `campaign` pipe** sleeps outside campaign play (no way in; a zone only, so the level's tiles
-  are the same either way); the campaign variant wakes it. 2-1's way into the cave.
+  are the same either way); the campaign variant wakes it. 2-1's way into the cave. A woken pipe
+  on the same mouth as a live one (same column, row and direction) takes its place, the live
+  zone going (0.4.15): 8-4-end's trap pipe at column 10 (`pipe 10 11 down -> 8-4 19 10 exit=up`)
+  has a `pipe 10 11 down -> 8-4-jason 1 10 exit=up campaign` on top of it, so in the campaign it
+  leads to Jason's secret area (Sophia III's route, docs/HEROES.md) and everywhere else it is the
+  trap pipe exactly as before.
 - **`-> map`** (`MAP_EXIT`): a pipe back to the world map (the Top Secret Area's). Nothing is
   cleared; it is no exit of a level for the map's secret-exit look.
+
+## Swimming in any theme (`swim: true`, 0.4.15)
+
+A map header `swim: true` (`LevelData.swim`) makes the player swim from the first row of wave
+tiles (`w`) down, as a water theme does (`isSwimLevel` in schema.ts: a water theme, or this
+header), whatever the theme: Fred's flooded tunnel under 8-4 (`8-4-fred`) swims in the
+Underworld's look. Its water is drawn as a murky fill behind everything from the wave row down
+(`FLOODED` in world/tile-render.ts, per theme; the Underworld's teal), since the theme's sky is no
+water colour. Enemies hop as in a water level, and the Safety floor treats it as one. Only `true`
+is allowed; the header is written back by `serializeTextMap`.
 
 ## Teleport pads (level zone, 0.5.0)
 

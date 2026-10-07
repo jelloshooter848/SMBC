@@ -9,11 +9,12 @@ Everything here is about the **campaign** (a save file played from the world map
 the story's partners and most of these hidden areas only exist there. Every screenshot was taken
 from the game itself.
 
-This is the first edition, for version 0.4.13.
+This is the second edition, for version 0.4.15 (the first, for 0.4.13, had every hidden hero but
+Sophia III).
 
 ## How secrets work
 
-- **Hidden heroes.** You start with Mario only. Seven heroes from other games are hidden in the
+- **Hidden heroes.** You start with Mario only. Eight heroes from other games are hidden in the
   levels, brainwashed by Bowser's stolen wand. Walk up to one and **TALK** (press up next to them)
   to start a short mini game themed on that hero's own game. Win it and the hero is free: you can
   pick them from then on. Lose and you can try again, or walk away and come back later. Every hero
@@ -32,7 +33,7 @@ This is the first edition, for version 0.4.13.
   own road: the secret exit opens the secret road only, and the level still counts as cleared only
   when you finish it the normal way.
 - **Every hero can do every secret.** Each route in this guide has been played through with all
-  eight heroes, small and big. Where a hero needs a different trick, the entry says so.
+  nine heroes, small and big. Where a hero needs a different trick, the entry says so.
 
 ## Contents
 
@@ -62,7 +63,8 @@ This is the first edition, for version 0.4.13.
   - [Partner: Lance (7-3)](#partner-lance-7-3)
   - [Bill: the jungle camp under 7-3](#bill-the-jungle-camp-under-7-3)
 - [World 8](#world-8)
-  - [Sophia III](#sophia-iii)
+  - [Partner: Jason (8-4)](#partner-jason-8-4)
+  - [Sophia III: the garage under 8-4](#sophia-iii-the-garage-under-8-4)
   - [The road to the Lost Levels](#the-road-to-the-lost-levels)
 - [Secret exits on the map](#secret-exits-on-the-map)
 - [Lost Levels warp zones](#lost-levels-warp-zones)
@@ -512,9 +514,46 @@ screen: you come out on the tree platform past the bridge in 7-3.
 
 ## World 8
 
-### Sophia III
+### Partner: Jason (8-4)
 
-The eighth hidden hero, Sophia III, is coming in 0.4.15. This entry will be filled in then.
+Jason, Sophia III's pilot, is not at the start of 8-4: he is lost in a hidden cave behind its trap
+pipe (below). **TALK** to him there: he is looking for his frog, Fred.
+
+![Jason in his hidden cave under 8-4](img/8-jason-1.png)
+
+### Sophia III: the garage under 8-4
+
+|              |                                                                        |
+| ------------ | ---------------------------------------------------------------------- |
+| **What**     | Hidden hero: Sophia III (the tank)                                     |
+| **Where**    | World 8-4, down the trap pipe just after the water section             |
+| **Who can**  | Every hero. Simon walks along the floor of the flooded tunnel instead. |
+| **Map hint** | "A FROG CROAKED IN THERE"                                              |
+
+1. Get through 8-4 to its water section and swim to its pipe: you come up a pipe into the last
+   stretch of the castle. The **next pipe**, a few steps to the right, is the one everybody skips:
+   outside the campaign it only sends you back into the castle maze. Stand on it and go down it.
+
+   ![Mario on the trap pipe after 8-4's water section](img/8-sophia-1.png)
+
+2. In the campaign it leads to a hidden cave instead, where Jason is calling for Fred, who sits on
+   the edge of a pool. **TALK** to Jason (or just walk up to Fred): Fred hops into the pool and
+   dives out of sight.
+
+   ![Fred hops into the pool](img/8-sophia-2.png)
+
+3. Jump into the pool after him. You drop into a flooded tunnel: **SWIM** right, following Fred,
+   to the pipe on the floor at the far end, and walk into it.
+
+   ![Swimming after Fred in the flooded tunnel](img/8-sophia-3.png)
+
+4. The pipe leads up into Sophia III's garage. The tank waits under the gateway. **TALK** to her.
+
+   ![Mario beside Sophia III in her garage](img/8-sophia-4.png)
+
+**The way back.** The pipe at the right of the garage brings you back up out of the trap pipe in
+8-4, and the level goes on from there as before (the detour is a secret, not a shortcut). The
+clock keeps running all the way, so keep an eye on it.
 
 ### The road to the Lost Levels
 

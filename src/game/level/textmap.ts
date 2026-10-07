@@ -65,6 +65,8 @@ function parseProps(parts: string[]): Props {
  *                         `path x y w block=bx,by [one-way] [campaign]` (a hidden cloud path, World.layPath)
  *                         `ledge x y w campaign` (a one-way cloud ledge, laid in the campaign only)
  *   header `bonus: true`  a fill-up spot off the map (LevelData.bonus: no clock, no WORLD card)
+ *   header `swim: true`   the player swims from the first row of wave tiles down, in any theme
+ *                         (LevelData.swim; a water theme always swims)
  *   [decor]               `kind x y`
  *   [campaign-decor]      `kind x y`: the decor of the level's campaign look, which also takes
  *                         the headers `campaignTheme: <theme>` and `campaignMusic: <song>`
@@ -223,6 +225,10 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
   if (header.bonus !== undefined) {
     if (header.bonus !== 'true') throw new MapParseError('"bonus" must be "true"', 0);
     level.bonus = true;
+  }
+  if (header.swim !== undefined) {
+    if (header.swim !== 'true') throw new MapParseError('"swim" must be "true"', 0);
+    level.swim = true;
   }
   if (header.campaignMusic !== undefined && header.campaignTheme === undefined)
     throw new MapParseError('"campaignMusic" needs "campaignTheme"', 0);
@@ -500,6 +506,7 @@ export function serializeTextMap(level: LevelData): string {
   if (level.camera === 'auto') out.push(`scroll: ${level.scroll ?? DEFAULT_AUTO_SCROLL}`);
   if (level.height !== LEVEL_ROWS) out.push(`height: ${level.height}`);
   if (level.bonus) out.push('bonus: true');
+  if (level.swim) out.push('swim: true');
   if (level.campaignLook) {
     out.push(`campaignTheme: ${level.campaignLook.theme}`);
     if (level.campaignLook.music !== undefined) out.push(`campaignMusic: ${level.campaignLook.music}`);

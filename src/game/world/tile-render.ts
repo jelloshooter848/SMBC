@@ -92,6 +92,14 @@ export function drawStars(r: Renderer, camX: number): void {
   }
 }
 
+/**
+ * The water of a flooded area in a dry theme (a map's `swim: true`, LevelData.swim), filling the
+ * screen from the wave row down: the Underworld's murky teal (Fred's tunnel under 8-4), a shade
+ * of its tiles' water. A theme without its own takes the Underworld's.
+ */
+export const FLOODED_WATER = '#002c3c';
+export const FLOODED: Readonly<Record<string, string>> = { underworld: FLOODED_WATER };
+
 export const SKY: Record<string, string> = {
   overworld: '#5c94fc',
   underground: '#000000',

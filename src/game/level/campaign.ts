@@ -55,6 +55,10 @@ import { T, isSolid } from './tiles';
  * the level is exactly as it was (no hidden block, no way into the cave). The campaign variant
  * wakes them, and puts the path's hidden block (T.HIDDEN_PATH) in at its `block` tile. Nothing
  * else changes: the cave is an area of 2-1, where the Moblin ends the level (scenes/level.ts).
+ * A woken pipe on the same mouth as a live one (same column, row and direction) takes its place,
+ * the live one's zone going: 8-4-end's trap pipe at column 10 (owner decision for 0.4.15: Sophia's
+ * route) leads, in the campaign only, to Jason's secret area (8-4-jason) instead of back into the
+ * castle maze; outside the campaign it is the trap pipe exactly as before.
  *
  * A `ledge` zone (always marked `campaign`; 2-1's step by its last tower, 0.4.12) is laid by the
  * campaign variant only: its tiles become one-way cloud (T.CLOUD_LEDGE), which a hero lands on
@@ -179,6 +183,15 @@ export function campaignLevel(
   }
   const tiles = new Uint16Array(level.tiles);
   const dropped = new Set<Zone>();
+  // A woken pipe takes the place of a live one on the same mouth (8-4-end's trap pipe).
+  const wokenPipes = level.zones.filter((z): z is Pipe => z.kind === 'pipe' && z.campaign === true);
+  for (const z of level.zones)
+    if (
+      z.kind === 'pipe' &&
+      !z.campaign &&
+      wokenPipes.some((w) => w.x === z.x && w.y === z.y && w.dir === z.dir)
+    )
+      dropped.add(z);
   const kept = new Map<Pipe, Warp>();
   const added: { zones: Zone[]; entities: EntitySpawn[] } = { zones: [], entities: [] };
   /** Climb zones as shown: the dead pipe's label (classic look), or the stump only (gone). */

@@ -103,6 +103,14 @@ export const isWaterTheme = (theme: Theme): boolean =>
   theme === 'water' || theme === 'overworld-water' || theme === 'water-gray' || theme === 'castle-water';
 
 /**
+ * Whether the player swims in `level` (from its first row of wave tiles down): a swimming theme,
+ * or any theme with the map's `swim: true` header (LevelData.swim; Fred's flooded tunnel under
+ * 8-4, `8-4-fred`, in the Underworld's look).
+ */
+export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =>
+  level.swim === true || isWaterTheme(level.theme);
+
+/**
  * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
  * 5-4's campaign look (Simon's hall). Castle rules that key off the theme ask this, never the name.
  */
@@ -377,6 +385,12 @@ export interface LevelData {
    * leads back to the map. Every visit starts afresh, so its blocks are full again.
    */
   bonus?: boolean;
+  /**
+   * The player swims here although the theme is no water theme (the map's `swim: true` header):
+   * from the first row of wave tiles down, as in a water level (isSwimLevel). Fred's flooded
+   * tunnel under 8-4 (`8-4-fred`) swims in the Underworld's look.
+   */
+  swim?: boolean;
 }
 
 /**

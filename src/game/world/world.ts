@@ -8,10 +8,10 @@ import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/un
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
-import { isWaterTheme } from '../level/schema';
+import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
-import { drawStars, renderTiles, SKY, STARRY_SKIES } from './tile-render';
+import { drawStars, FLOODED, FLOODED_WATER, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
 import { SafetyFloor } from './safety-floor';
 import { Player } from '../entities/player';
@@ -32,6 +32,7 @@ import { BalanceLift } from '../entities/objects/balance-lift';
 import { Princess } from '../entities/objects/princess';
 import { Captive } from '../entities/objects/captive';
 import { Partner } from '../entities/objects/partner';
+import { Fred } from '../entities/objects/fred';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
@@ -657,8 +658,9 @@ export class World {
         return !enemy || (keepPiranhas && e instanceof Piranha);
       });
     }
-    // Water levels (any swimming theme): everything from the first row of wave tiles down is swimmable.
-    if (isWaterTheme(level.theme)) {
+    // Water levels (any swimming theme, or a map's `swim: true`): everything from the first row of
+    // wave tiles down is swimmable.
+    if (isSwimLevel(level)) {
       let row = 0;
       for (let ty = 0; ty < level.height && row === 0; ty++) {
         for (let tx = 0; tx < level.width; tx++) {
@@ -893,6 +895,9 @@ export class World {
         return new Moblin(s.x, s.y, s.props.secret, typeof s.props.next === 'string' ? s.props.next : null);
       case 'cave-fire':
         return new CaveFire(s.x, s.y);
+      case 'fred':
+        // Jason's frog on Sophia III's route under 8-4 (objects/fred.ts): scenery that leads.
+        return Fred.create(s.x, s.y, s.props);
       case 'decor':
         // Any decor kind as a spawned entity (`decor x y kind=items:cave-mouth`): a campaign-only
         // piece of scenery (`campaign=true`) sleeps with the rest outside the campaign.
@@ -1293,6 +1298,7 @@ export class World {
       );
       if (partner) {
         partner.prompt = false; // hidden under its pages; back on the next update in reach
+        partner.talked = true;
         this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }
@@ -2705,6 +2711,12 @@ export class World {
       o.inner = screen;
       o.dy = -(view.camY ?? 0) + shake;
       r = o;
+    }
+    // A flooded area in a dry theme (a map's `swim: true`: Fred's tunnel under 8-4): its murky
+    // water fills the screen from the wave row down, behind everything (FLOODED).
+    if (this.level.swim && !isWaterTheme(theme) && Number.isFinite(this.waterTop)) {
+      const top = toPx(this.waterTop) - 8;
+      r.rect(0, top, SCREEN_W, this.heightPx - top, FLOODED[theme] ?? FLOODED_WATER);
     }
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
     this.backdrop?.(screen);

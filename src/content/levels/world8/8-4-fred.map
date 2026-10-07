@@ -1,0 +1,53 @@
+id: 8-4-fred
+name: WORLD 8-4
+world: 8
+stage: 4
+theme: underworld
+music: bm-area
+swim: true
+time: inherit
+start: 4,0
+startMode: fall
+camera: scroll
+parent: 8-4
+
+;; Fred's flooded tunnel under 8-4 (campaign only, docs/HEROES.md): dropped into from Jason's pool
+;; (8-4-jason) through the hole in the roof at columns 3-6. It swims like 8-4's water (`swim: true`:
+;; from the wave tiles' row down) in the Underworld's look. Fred swims on ahead, staying in front
+;; of the hero, to the side pipe at the far end (column 36, on the floor), which leads up into
+;; Sophia III's garage (8-4-garage). No enemies, and rows 8-12 are open from end to end (the rocks
+;; hang above them), so the tank and every hero, small or big, swim through; a hero who cannot
+;; steer once off the ground (Simon) walks the floor all the way. The clock runs on (time:
+;; inherit).
+
+[tiles]
+;; Rows 0-1 stay clear under the HUD; row 2 is the roof, with the hole the hero drops in by.
+;; 0               16               32
+................ ................ ........
+................ ................ ........
+BBBwwwwBBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBB
+B..........BBB.. ...........BB... ....BBBB
+B...........B... ...........BB... ....BBBB
+B............... .....BB.....B... ....BBBB
+B............... .....BB......... ....BBBB
+B............... .....BB......... ....BBBB
+B............... ................ ....BBBB
+B.......$.$.$... ........$.$.$... ....BBBB
+B............... ................ ....BBBB
+B............... ................ ....(BBB
+B............... ................ ....<BBB
+################ ################ ########
+################ ################ ########
+
+[entities]
+;; Fred swims ahead of the hero to the pipe.
+fred 8 11 mode=swim to=35
+
+[zones]
+;; Up into Sophia III's garage.
+pipe 36 12 right -> 8-4-garage 1 10 exit=up
+
+[decor]
+roots 16 3
+roots 26 3
+bush-2 2 12

@@ -1,0 +1,52 @@
+id: 8-4-garage
+name: WORLD 8-4
+world: 8
+stage: 4
+theme: underworld
+music: bm-garage
+time: inherit
+start: 1,10
+startMode: pipe-exit
+camera: locked
+parent: 8-4
+
+;; Sophia III's garage under 8-4 (campaign only, docs/HEROES.md): one locked screen of the
+;; Underworld, up the pipe at the end of Fred's flooded tunnel (8-4-fred). Sophia III, the tank,
+;; waits under the gateway, her mind taken by the Plutonium Boss (campaign only, until freed: her
+;; mini game is Underworld); Fred rests beside her. The pipe at the right (column 13) brings the
+;; hero back up out of 8-4-end's trap pipe (column 10), so the level goes on from there as before:
+;; a secret detour, not a shortcut. The clock runs on (time: inherit). Music `bm-garage`.
+
+[tiles]
+;; Rows 0-1 stay clear under the HUD; row 2 is the cavern's roof.
+;; 0               16
+................
+................
+BBBBBBBBBBBBBBBB
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B..............B
+B[]..........[]B
+B{}..........{}B
+################
+################
+
+[entities]
+;; Sophia III, the tank (campaign only, until freed).
+captive 8 12 hero=sophia
+;; Fred found his way home.
+fred 5 12 mode=rest
+
+[zones]
+;; Back up into 8-4-end, out of its trap pipe.
+pipe 13 11 down -> 8-4-end 10 10 exit=up
+
+[decor]
+roots 3 3
+roots 11 3
+gateway 7 12
