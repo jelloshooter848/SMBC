@@ -71,7 +71,8 @@ Mega Man waits on the command deck of the space station above 3-1 (`3-1-station`
 The world map hints at levels that still hide a hero, in three stages (campaign play only, read
 from the file's `cleared` and `freed`):
 
-1. **Before the level's node is cleared:** nothing.
+1. **Before the level's node is cleared:** nothing (unless the file has Larry Koopa's crystal
+   ball, below: then the silhouette of stage 2 shows at once).
 2. **Cleared, the hero not freed yet:** the hero's idle sprite as a faint silhouette peeking from
    behind the node (drawn before the dot, so the dot hides part of it). Its colour is the page's
    ground shade lifted a little toward the ground colour (`<palette>~shade-<theme>`, `mapShadeFx`
@@ -91,6 +92,51 @@ a node can choose with `heroSpot: 'left' | 'right'` (`MapNode`). Dev mode's "All
 shows a trophy (it does not touch `freed`), and "Unlock all" shows no silhouette (it opens nodes
 without clearing them). Toad's greeting in 1-0 tells the player where heroes hide (pipes, vines,
 hidden blocks) and to look closely at the map for a level hiding someone missed.
+
+## Larry Koopa and the crystal ball (4-2's airship, campaign)
+
+Story: Larry Koopa stole a magic wand, and its spell is what brainwashed the heroes. In the
+campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (pipe target
+`4-2-airship 2 12`, wired in `level/campaign.ts`; dev select and `?level=4-2-airship` reach it too).
+
+- **The cabin** (`src/content/levels/world4/4-2-airship.map`, parent 4-2): one locked screen,
+  the hero rising out of a pipe at the left, Larry on the floor at the right (`larry 12 13
+next=4-3`: the tile his feet stand in; `next` is where the ball leads outside the campaign).
+  Theme `castle` and music `smb3-boss` (plays `castle` until written: `content/music/fallbacks.ts`)
+  until the SMB3 art's `airship` theme lands.
+- **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
+  hero (12 px high, 0.75 px/f across), a high jump now and then (30%, about 60 px; always when
+  the hero is within 24 px, so he jumps over), and after every two moves he stops, raises his wand
+  and fires a **wand blast** (`WandBlast`, a ring flying in a straight line at 1.5 px/f toward the
+  hero's middle where he was; through walls; at most two out; it hurts like any enemy shot).
+  **Hits**: 6 hit points in half-stomps. A **stomp** takes 2 and sends him into his **shell**: he
+  spins on the spot (24 frames), slides at the hero at 2 px/f bouncing off walls (80 frames), and
+  comes out (20 frames). In the shell nothing hurts him: a stomp bounces the hero off unhurt
+  (reaction `'bounce'`, which `World` now treats as a harmless bounce for stomps; no score), and
+  everything else is immune; the sliding shell hurts to touch. **Fireballs and the other heroes'
+  attacks** (sword, buster, weapons, bombs) take 1 each (2 for a heavy hit, amount 3 or more, like
+  Mega Man's charge shot), then he flashes for 40 frames, immune to attacks (a stomp still counts).
+  Boomerangs, ice, bumps and the star do nothing. So: three stomps, or six fireballs.
+- **Beaten**: his rings vanish, the music stops, "BWAH!" rises over him (5000 points), he holds
+  the hurt pose for half a second, then vanishes in a puff and flies off spinning in his shell.
+  The **crystal ball** (`objects/crystal-ball.ts`) drops where he was and lands on the floor.
+- **Touching the ball** (`crystal-ball` world event): the cabin freezes, the `castle-clear` jingle,
+  and the card "THE CRYSTAL BALL SHOWS / WHERE YOUR FRIENDS / ARE HIDDEN!" (`CRYSTAL_BALL_CARD`,
+  announced; OK goes on). Then, in the campaign, `Game.takeCrystalBall`: a **secret exit of 4-2**
+  (`rules.secretExit`, key `larry` = `CRYSTAL_BALL` in `map/captives.ts`): back on World 4 with the
+  hero on 4-2, only the road to the bonus spot drawn in (docs/WORLD_MAP.md "The bonus spot and its
+  Hammer Bro"); 4-2 is **not** cleared. The file's `inventoryUnlocked` is set (the SMB3 item
+  inventory; a file with `larry` in its secrets counts as unlocked). Outside the campaign play
+  goes on to `next` (4-3); an editor play-test ends.
+- **The crystal ball's hint**: from then on every hero not freed yet shows its silhouette by its
+  level's node (stage 2 above) even before that level is cleared, with the same announcer line and
+  hint line (`heroHint` in `map/captives.ts`). A node not on the map yet (its page not open)
+  still shows nothing.
+- **Art**: the SMB3 sheet `smb3` (frames `larry-0` standing / `larry-1` in the air and aiming,
+  `larry-hurt`, `larry-shell-0..3`, `wand-blast-0/1`, `crystal-ball`; Larry's frames face left
+  and are flipped to face right). Until it lands each piece draws a fallback (a green turtle with
+  blue hair and a wand, a two-tone ring, a pale blue ball): `sheetWith` in `src/game/art.ts`.
+  Flashing after a hit and the ring's colour swap are off with reduce flashing.
 
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 

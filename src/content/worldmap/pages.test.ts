@@ -94,7 +94,8 @@ describe('world map pages', () => {
       // World 1's slot is the warp spot to the hub (0.4.0); the others are still bonus slots.
       expect(bonus.kind).toBe(w === 1 ? 'warp' : 'bonus');
       if (w === 1) expect(bonus.to).toBe('hub');
-      expect(bonus.unlock).toBe(`bonus-${w}`);
+      // World 4's is the bonus spot Larry Koopa's crystal ball reveals (0.5.0).
+      expect(bonus.unlock).toBe(w === 4 ? 'larry' : `bonus-${w}`);
       expect(bonus.level).toBeUndefined();
       const spots = page.nodes.map((n) => key([n.x, n.y]));
       expect(new Set(spots).size, 'one node per tile').toBe(spots.length);

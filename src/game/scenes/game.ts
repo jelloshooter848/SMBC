@@ -38,6 +38,9 @@ import {
   warpTo,
 } from '../map/rules';
 import { mapPage } from '@content/worldmap';
+import { CRYSTAL_BALL } from '../map/captives';
+import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
+import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
 import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
 import { abilityHint } from './hints';
@@ -118,6 +121,13 @@ export class Game {
   tutorialRun: TutorialRun | null = null;
   /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
   tutorials: string[] = [];
+  /**
+   * World 4's bonus spot can be played (SaveFile.bonusOpen): closed once used, open again when its
+   * Hammer Bro is beaten (map/bonus-spot.ts, map/hammer-bro.ts).
+   */
+  bonusOpen = true;
+  /** The SMB3 item inventory is unlocked on the file (SaveFile.inventoryUnlocked; the crystal ball). */
+  inventoryUnlocked = false;
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -393,6 +403,8 @@ export class Game {
       devAllHeroes: this.devAllHeroes,
       freed: this.freed.slice(),
       tutorials: this.tutorials.slice(),
+      inventoryUnlocked: this.inventoryUnlocked,
+      bonusOpen: this.bonusOpen,
     };
     this.campaignSave = save;
     writeSave(save);
@@ -485,6 +497,81 @@ export class Game {
   campaignSecret(secret: string, levelId: string): void {
     if (!this.campaign) return;
     this.returnToMap(secretExit(this.mapProgress, levelId, secret, this.deps.getLevel));
+  }
+
+  /**
+   * Campaign: Larry Koopa's crystal ball taken (4-2's airship, after its card): a secret exit of
+   * 4-2 (rules.secretExit, key CRYSTAL_BALL), so only the road to World 4's bonus spot is drawn in
+   * and 4-2 is not cleared. From now on the map shows every hero not freed yet (map/captives.ts),
+   * and the item inventory is unlocked. Saved on the way back to the map.
+   */
+  takeCrystalBall(levelId: string): void {
+    if (!this.campaign) return;
+    this.inventoryUnlocked = true;
+    this.returnToMap(secretExit(this.mapProgress, levelId, CRYSTAL_BALL, this.deps.getLevel));
+  }
+
+  /**
+   * JUMP on the open bonus node: the bonus game's scene over the map (map/bonus-spot.ts). Played,
+   * it closes (bonusUsed: the Hammer Bro comes out); either way back to the map on the node.
+   */
+  openBonus(spot: BonusSpot): void {
+    if (!this.bonusOpen) return;
+    let finished = false;
+    const done = (outcome: BonusOutcome) => {
+      if (finished) return;
+      finished = true;
+      if (outcome === 'used') this.bonusUsed();
+      this.returnToMap();
+    };
+    this.deps.ctx.audio.stopMusic();
+    this.scenes.push(bonusGame().create(this, spot, done));
+  }
+
+  /** The bonus was played: closed until its Hammer Bro is beaten; saved at once. */
+  bonusUsed(): void {
+    this.bonusOpen = false;
+    this.autosave();
+  }
+
+  /**
+   * The map's Hammer Bro touched the hero: the one-screen Hammer Bro battle (scenes/hammer-battle.ts)
+   * with the run as it is. The hero's map place stays the node it last stood on.
+   */
+  startHammerBattle(): void {
+    this.deps.ctx.audio.stopMusic();
+    this.autosave();
+    this.scenes.clear();
+    this.scenes.push(new HammerBattleScene(this));
+  }
+
+  /** The Hammer Bros are beaten: the bonus opens again, back to the map (saved). */
+  hammerBattleWon(): void {
+    this.bonusOpen = true;
+    this.returnToMap();
+  }
+
+  /**
+   * The hero fell in the Hammer Bro battle: a life lost (SMB3), power back to the start as after
+   * any death, then the map (the Hammer Bro still there), or GAME OVER with no lives left.
+   */
+  hammerBattleLost(): void {
+    const s = this.state;
+    s.powerState = s.character.damage.kind === 'powerup' ? 'small' : 'full';
+    s.hp = startHp(s.character);
+    s.kit = {};
+    s.kit2 = {};
+    if (s.character2) {
+      s.powerState2 = s.character2.damage.kind === 'powerup' ? 'small' : 'full';
+      s.hp2 = startHp(s.character2);
+    }
+    if (!this.deps.ctx.assist.infiniteLives) s.lives--;
+    if (s.lives <= 0) {
+      s.lives = 0;
+      this.gameOver(null);
+      return;
+    }
+    this.returnToMap();
   }
 
   /**
@@ -721,6 +808,8 @@ export class Game {
     this.devUnlockAll = save.devUnlockAll === true;
     this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
+    this.bonusOpen = save.bonusOpen !== false;
+    this.inventoryUnlocked = save.inventoryUnlocked === true || save.secrets.includes(CRYSTAL_BALL);
     // Only heroes freed on this file, this session, get the map's burst of hops.
     this.celebrate.clear();
     // A hero the file has not freed (a hand-edited file, or one picked through "All heroes" with

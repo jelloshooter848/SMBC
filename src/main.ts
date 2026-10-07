@@ -200,6 +200,8 @@ function boot(): void {
     (window as unknown as { __miniGame?: unknown }).__miniGame = scene;
     game.scenes.push(scene);
   }
+  // Dev server only: the game object, for screenshots and poking at a running scene.
+  if (import.meta.env.DEV) (window as unknown as { __game?: unknown }).__game = game;
   loop.start();
   (window as unknown as { __bootDone?: () => void }).__bootDone?.();
 }

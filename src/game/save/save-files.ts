@@ -58,6 +58,16 @@ export interface SaveFile extends MapProgress {
    * file's current heroes (validation adds them, so players already using a hero aren't asked).
    */
   tutorials?: string[];
+  /**
+   * The SMB3 item inventory is unlocked on this file (Larry Koopa's crystal ball, 4-2's airship).
+   * Missing in older files: off, but a file that has the crystal ball's secret `larry` counts as on.
+   */
+  inventoryUnlocked?: boolean;
+  /**
+   * World 4's bonus spot can be played (missing: open). It closes once used, and opens again when
+   * the Hammer Bro guarding its road is beaten (docs/WORLD_MAP.md).
+   */
+  bonusOpen?: boolean;
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -178,6 +188,8 @@ export function newSave(
     devAllHeroes: false,
     freed: freedHeroes([character, character2], characters),
     tutorials: tutorialHeroes([character, character2], characters),
+    inventoryUnlocked: false,
+    bonusOpen: true,
   };
 }
 
@@ -285,6 +297,7 @@ export function migrateSave(
   )
     position = { page: FIRST_PAGE_ID, node: 'start' };
   const freed = Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed;
+  const secrets = strs(stored.secrets, d.secrets);
   return {
     ...d,
     v: current,
@@ -301,7 +314,7 @@ export function migrateSave(
     kit2: kit(stored.kit2),
     cleared,
     pages,
-    secrets: strs(stored.secrets, d.secrets),
+    secrets,
     position,
     gameCleared: stored.gameCleared === true,
     lastNode: lastNodes(stored.lastNode, pages),
@@ -315,6 +328,9 @@ export function migrateSave(
       ...(Array.isArray(stored.tutorials) ? stored.tutorials : []),
       ...[stored.character, stored.character2].filter((id) => freed.includes(id as string)),
     ]),
+    // Larry Koopa's crystal ball (secret 'larry') unlocks the inventory.
+    inventoryUnlocked: stored.inventoryUnlocked === true || secrets.includes('larry'),
+    bonusOpen: stored.bonusOpen !== false,
   };
 }
 

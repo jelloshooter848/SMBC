@@ -14,8 +14,18 @@ import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
 import { talkToCaptive } from './free-hero';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
+import { resolveSong } from '@content/music/fallbacks';
+import { CardScene } from './message';
+import { abilityHint } from './hints';
 
 export type LevelStart = WorldStart;
+
+/** The crystal ball's card (Larry Koopa's, 4-2's airship), at most 26 columns a line. */
+export const CRYSTAL_BALL_CARD: readonly string[] = [
+  'THE CRYSTAL BALL SHOWS',
+  'WHERE YOUR FRIENDS',
+  'ARE HIDDEN!',
+];
 
 /** The clock to keep when moving between two areas: only within the same world and stage. */
 export function carryTime(from: LevelData, to: LevelData, time: number | null): number | undefined {
@@ -64,7 +74,8 @@ export class LevelScene implements Scene {
         ? this.game.state.character.music
         : this.level.music;
     this.game.ctx.audio.setTempoScale(this.world.time !== null && this.world.time <= 100 ? 1.4 : 1);
-    this.game.ctx.audio.playMusic(music);
+    // A song not written yet (the SMB3 boss tune) plays its stand-in.
+    this.game.ctx.audio.playMusic(resolveSong(music));
   }
 
   /** Play on after scenes pushed over the level (a captive's unlock flow): music back on. */
@@ -130,6 +141,9 @@ export class LevelScene implements Scene {
         // A captive hero: the unlock flow plays over the paused level (scenes/free-hero.ts).
         if (game.campaign && !game.playtestDone)
           talkToCaptive(game, this, ev.hero, this.world.players[ev.player]?.def);
+        break;
+      case 'crystal-ball':
+        this.takeCrystalBall(ev.next);
         break;
       case 'captive-near': {
         const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
@@ -234,6 +248,36 @@ export class LevelScene implements Scene {
         break;
       }
     }
+  }
+
+  /**
+   * Larry Koopa's crystal ball touched (4-2's airship): its card over the frozen cabin, then, in
+   * the campaign, 4-2's secret exit (Game.takeCrystalBall: the hint for every hidden hero, the
+   * bonus road, the item inventory); a play-test ends; elsewhere play goes on to `next`.
+   */
+  private takeCrystalBall(next: string | null): void {
+    const game = this.game;
+    const audio = game.ctx.audio;
+    audio.stopMusic();
+    audio.playJingle('castle-clear');
+    game.state.checkpoint = null;
+    game.state.time = null;
+    game.deps.announcer?.say(`${CRYSTAL_BALL_CARD.join(' ')} OK to continue.`);
+    game.scenes.push(
+      new CardScene(
+        game,
+        CRYSTAL_BALL_CARD,
+        () => {
+          if (game.playtestDone) game.playtestDone();
+          else if (game.campaign) game.takeCrystalBall(this.level.id);
+          else if (next) game.goToLevel(next, { mode: 'stand' });
+          else game.showTitle();
+        },
+        this.world,
+        1800,
+        { panel: true, keys: ['start', 'attack', 'jump'], prompt: () => abilityHint(game, 'OK', 'jump') },
+      ),
+    );
   }
 
   private handleDebugKeys(): void {

@@ -81,6 +81,12 @@ export interface MapNode {
    * trophy stand on. Default: the right, or the left when a road leaves the node to the right.
    */
   heroSpot?: 'left' | 'right';
+  /**
+   * Bonus nodes: a wandering guard on the road to it (map/hammer-bro.ts). 'hammer-bro': once the
+   * bonus has been used, a Hammer Bro walks that road; touching him starts a battle whose win
+   * opens the bonus again (World 4's bonus spot, docs/WORLD_MAP.md).
+   */
+  guard?: 'hammer-bro';
 }
 
 /**

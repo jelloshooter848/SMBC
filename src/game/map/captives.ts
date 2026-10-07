@@ -70,12 +70,19 @@ export function hiddenHeroesAt(page: PageId, node: string): HiddenHero[] {
 }
 
 /**
+ * The secret key of Larry Koopa's crystal ball (4-2's airship): once the file has it, every hero
+ * not freed yet shows its silhouette by its level, even before that level is cleared.
+ */
+export const CRYSTAL_BALL = 'larry';
+
+/**
  * The hint stage for `h` on a file (campaign play): its trophy once the hero is freed (even if
- * the level was left without its clear), its silhouette once the level is cleared, else nothing.
+ * the level was left without its clear), its silhouette once the level is cleared (or at once with
+ * the crystal ball, CRYSTAL_BALL), else nothing.
  */
 export function heroHint(h: HiddenHero, progress: MapProgress, freed: readonly string[]): HeroHint {
   if (freed.includes(h.hero)) return 'trophy';
-  return progress.cleared.includes(h.main) ? 'silhouette' : 'none';
+  return progress.cleared.includes(h.main) || progress.secrets.includes(CRYSTAL_BALL) ? 'silhouette' : 'none';
 }
 
 /**
