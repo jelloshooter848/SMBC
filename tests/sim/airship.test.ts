@@ -10,6 +10,7 @@ import { WorldMapScene } from '@game/scenes/world-map';
 import { MenuScene, type MenuItem } from '@game/scenes/menu';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
+import { CharacterSelectScene } from '@game/scenes/character-select';
 import { MiniGameMenuScene } from '@game/minigames/menu';
 import { DevMiniGameResultScene, DevMiniGamesScene } from '@game/scenes/dev-minigames';
 import { AIRSHIP_DECK, AIRSHIP_ROOM } from '@game/scenes/airship';
@@ -17,7 +18,7 @@ import { Larry } from '@game/entities/enemies/larry';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import type { SaveFile } from '@game/save/save-files';
 import { snapshot } from '@game/scenes/free-hero';
-import { draw, file, makeGame, rideToStern, store, useStorage, type H } from './heroes-harness';
+import { draw, file, makeGame, offered, rideToStern, store, useStorage, type H } from './heroes-harness';
 
 // Larry's airship challenge (scenes/airship.ts, docs/HEROES.md "Larry's airship"): the
 // auto-scrolling deck `4-2-airship` and Larry's room `4-2-larry`, played with the current hero
@@ -41,6 +42,14 @@ const pick = (h: H, label: string) => {
   expect(row, label).toBeGreaterThanOrEqual(0);
   h.idle(8);
   for (let i = 0; i < row; i++) h.tap('down');
+  h.tap('jump');
+};
+
+/** Dev → Mini games → Larry's airship, then OK on the hero character select preselects. */
+const playAirship = (h: H) => {
+  pick(h, "Larry's airship");
+  expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+  h.idle(12);
   h.tap('jump');
 };
 
@@ -300,7 +309,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     pick(h, 'Mini games');
     const list = h.top() as DevMiniGamesScene;
     expect(list).toBeInstanceOf(DevMiniGamesScene);
-    pick(h, "Larry's airship");
+    playAirship(h);
     return { h, list };
   }
 
@@ -347,7 +356,13 @@ describe("Dev → Mini games → Larry's airship", () => {
     h.idle(40);
     h.tap('jump');
     expect(h.top()).toBe(list);
-    pick(h, "Larry's airship");
+    // The list's cursor is still on Larry's airship: OK, then OK on the hero.
+    h.idle(8);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    h.idle(12);
+    h.tap('jump');
+    expect((h.top() as LevelScene).level.id).toBe(AIRSHIP_DECK);
     h.idle(10);
     h.tap('start');
     pick(h, 'Give up');
@@ -365,7 +380,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     const state = h.game.state;
     const before = snapshot(state);
     const stored = [...store.entries()];
-    pick(h, "Larry's airship");
+    playAirship(h);
     const deck = h.top() as LevelScene;
     // Things change aboard: points, coins, power, a life.
     h.idle(30);
@@ -393,7 +408,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     pick(h, 'Mini games');
     h.game.state.world = 3;
     h.game.state.stage = 1;
-    pick(h, "Larry's airship");
+    playAirship(h);
     const deck = h.top() as LevelScene;
     expect(deck.level.id).toBe(AIRSHIP_DECK);
     expect([h.game.state.world, h.game.state.stage]).toEqual([4, 2]);
@@ -419,6 +434,63 @@ describe("Dev → Mini games → Larry's airship", () => {
     h.idle(40);
     h.tap('jump');
     expect(h.top()).toBe(list);
+  });
+
+  it('asks for a hero first (every hero, the current one preselected); Back is the list, nothing started', () => {
+    const h = makeGame();
+    h.game.deps.settings = { ...defaultSettings(), dev: true };
+    h.game.showTitle();
+    h.idle(8);
+    pick(h, 'Dev mode');
+    pick(h, 'Mini games');
+    const list = h.top() as DevMiniGamesScene;
+    const state = h.game.state;
+    const before = snapshot(state);
+    pick(h, "Larry's airship");
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.said.at(-1)).toMatch(new RegExp(`^Choose your hero\\. ${state.character.name}\\.`));
+    h.idle(12);
+    // Outside a campaign no hero is locked.
+    expect(new Set(offered(h)).size).toBe(CHARACTERS.length);
+    h.tap('attack');
+    expect(h.top()).toBe(list);
+    expect(h.said.at(-1)).toMatch(/^Larry's airship\. Deck and Larry's room with a hero you pick\./);
+    expect(h.game.airship).toBeNull();
+    expect(h.game.inRound).toBe(false);
+    expect(snapshot(h.game.state)).toEqual(before);
+  });
+
+  it('picking Link plays the round as Link; the run keeps its own hero, power and lives after', () => {
+    const h = makeGame();
+    h.game.deps.settings = { ...defaultSettings(), dev: true };
+    h.game.showTitle();
+    h.idle(8);
+    pick(h, 'Dev mode');
+    pick(h, 'Mini games');
+    const list = h.top() as DevMiniGamesScene;
+    const state = h.game.state;
+    state.powerState = 'fire';
+    const before = snapshot(state);
+    const hero = state.character.id;
+    expect(hero).not.toBe('link');
+    pick(h, "Larry's airship");
+    h.idle(12);
+    while (h.said.at(-1) !== 'Link') h.tap('right');
+    h.tap('jump');
+    const deck = h.top() as LevelScene;
+    expect(deck.level.id).toBe(AIRSHIP_DECK);
+    expect(deck.world.player.def.id).toBe('link');
+    expect(h.game.state.character.id).toBe('link');
+    h.idle(10);
+    h.tap('start');
+    pick(h, 'Give up');
+    expect((h.top() as DevMiniGameResultScene).result).toBe('quit');
+    h.idle(40);
+    h.tap('jump');
+    expect(h.top()).toBe(list);
+    expect(h.game.state).toBe(state);
+    expect([state.character.id, state.powerState]).toEqual([hero, 'fire']);
+    expect(snapshot(state)).toEqual(before);
   });
 });
 

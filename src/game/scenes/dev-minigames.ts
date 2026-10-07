@@ -12,12 +12,53 @@ import { cardContinues } from './message';
 import { snapshot } from './free-hero';
 import type { Game } from './game';
 import { AIRSHIP_CHALLENGE } from './airship';
+import { CharacterSelectScene } from './character-select';
+import type { CharacterDef } from '../characters/character';
 
 /**
  * One dev round: a hero's freeing mini game (MiniGameDef), or another challenge played the same
- * way (Larry's airship: `who` names it on the card instead of a hero).
+ * way (Larry's airship: `who` names it on the card instead of a hero). A round played as a hero
+ * of the player's choosing (Larry's airship) has `asHero`: character select comes first
+ * (pickRoundHero) and the round played is `asHero(picked)`.
  */
-export type DevRound = Pick<MiniGameDef, 'title' | 'create'> & { hero?: string; who?: string };
+export type DevRound = Pick<MiniGameDef, 'title' | 'create'> & {
+  hero?: string;
+  who?: string;
+  asHero?: (hero: CharacterDef) => DevRound;
+};
+
+/**
+ * Before a round of `def` (the scene on top stays below): character select for player one when
+ * the round is played as a picked hero (`asHero`), then `play(def.asHero(picked))`; Back pops the
+ * select and calls `back` with nothing started. Any other round is just `play(def)`. The select
+ * shows the heroes as everywhere else (locked captives on a campaign file are silhouettes; dev
+ * "All heroes" frees them) with the current hero preselected; it never asks about training (the
+ * round must not change the file), and player two keeps their hero.
+ */
+export function pickRoundHero(
+  game: Game,
+  def: DevRound,
+  play: (round: DevRound) => void,
+  back: () => void,
+): void {
+  const asHero = def.asHero;
+  if (!asHero) return play(def);
+  game.scenes.push(
+    new CharacterSelectScene(game, {
+      player: 0,
+      current: game.state.character,
+      onPick: (c) => {
+        game.scenes.pop();
+        play(asHero(c));
+      },
+      onCancel: () => {
+        game.scenes.pop();
+        back();
+      },
+      training: false,
+    }),
+  );
+}
 
 /*
  * Dev mode → Mini games: every hero's freeing mini game (MINIGAMES), played straight from the
@@ -138,16 +179,29 @@ export class DevMiniGamesScene extends MenuScene {
       })),
       {
         label: label(AIRSHIP_CHALLENGE.title),
-        value: () => game.state.character.name,
         select: () => this.play(AIRSHIP_CHALLENGE),
-        hint: "Deck and Larry's room with your hero. Plays one round; nothing is saved",
+        hint: "Deck and Larry's room with a hero you pick. Plays one round; nothing is saved",
       },
       { label: 'Back', select: () => game.scenes.pop() },
     ]);
   }
 
-  /** One round of `def` over this list, then its result card; the game is left as it was. */
+  /**
+   * One round of `def` over this list (after character select when it is played as a picked
+   * hero; Back from the select is the list again), then its result card; the game is left as it
+   * was.
+   */
   play(def: DevRound): void {
+    pickRoundHero(
+      this.game,
+      def,
+      (round) => this.playRound(round),
+      () => this.announce(),
+    );
+  }
+
+  /** One round of `def` over this list, then its result card. */
+  private playRound(def: DevRound): void {
     const game = this.game;
     try {
       playRound(game, def, (result) => {

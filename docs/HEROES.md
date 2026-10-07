@@ -248,9 +248,10 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   folded into the run's snapshots (`AirshipRun.itemsGiven`), so a retry or NO keeps them once.
 - **Beating Larry**: the crystal ball exactly as before. The run ends in the card's OK
   (`airshipWon`), then `Game.takeCrystalBall(levelId)` is the campaign's hand-off to the map.
-- **Dev → Mini games → "Larry's airship"** (`AIRSHIP_CHALLENGE`): deck + room as one round over the
-  dev list with the current hero; the ball is PASS, a death FAIL (no retry prompt), Give up QUIT,
-  then the dev result card; nothing is saved.
+- **Dev → Mini games → "Larry's airship"** (`AIRSHIP_CHALLENGE`): character select first (every
+  hero outside a campaign, the current one preselected; Back is the list), then deck + room as one
+  round over the dev list as the picked hero; the ball is PASS, a death FAIL (no retry prompt), Give
+  up QUIT, then the dev result card; nothing is saved.
 - **The crystal ball's hint**: from then on every hero not freed yet shows its silhouette by its
   level's node (stage 2 above) even before that level is cleared, with the same announcer line and
   hint line (`heroHint` in `map/captives.ts`). A node the file has not reached (its page not open, or
@@ -306,6 +307,13 @@ puts its mini game in the Mini Game Arena:
   as a round (`arena/stage-round.ts`, `Game.stageRound`): its exit passes, pause → Give up quits.
   Training rooms pass when every lesson is done (Skip training quits); bonus games pass with a
   prize; the airship passes with the crystal ball. No best results are kept.
+- **Larry's airship is played as a hero of your choosing**, the one arena game that is: its pad
+  opens character select first (`DevRound.asHero`, `pickRoundHero`; the file's freed heroes, the
+  others silhouettes, dev "All heroes" frees them; the current hero preselected; no training
+  question). Player one plays that round as the picked hero (keeping the current hero keeps its
+  power, another starts from its default), player two keeps theirs, and the file's own hero, power
+  and lives are put back after like everything else. Back is the arena again with nothing started.
+  Every other game starts at once.
 - **Words in a round** stay neutral (`Game.inRound`, set by `playRound`, so the arena and Dev →
   Mini games alike): a mini game's Give up says "Ends the round" (not "Luigi stays brainwashed for
   now"), a bonus prize says "YOU GOT A FIRE FLOWER! (JUST FOR FUN)" (nothing goes to the items),

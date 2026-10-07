@@ -33,6 +33,11 @@ export interface HeroPick {
    * pick (player two's) has it.
    */
   music?: string | undefined;
+  /**
+   * false: never ask about training on this pick (a round played for fun, which must not change
+   * the file's training answers). Default: the first pick of a freed hero asks (needsTraining).
+   */
+  training?: boolean;
 }
 
 export class CharacterSelectScene implements Scene {
@@ -153,7 +158,7 @@ export class CharacterSelectScene implements Scene {
         this.game.ctx.audio.sfx('coin');
         // Campaign: the first pick of a hero on the file asks about training first.
         const pick = this.pick;
-        if (needsTraining(this.game, c))
+        if (pick.training !== false && needsTraining(this.game, c))
           askTraining(this.game, c, pick.player, () => pick.onPick(c), pick.music);
         else pick.onPick(c);
       } else if (this.pick.onCancel && (pressed('select') || pressed('attack'))) {
