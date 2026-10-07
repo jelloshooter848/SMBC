@@ -8,6 +8,18 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Escape the Shadow Keep (Link) is rebuilt as a true Zelda dungeon:
+  - Thirteen rooms with thick brick walls around a smaller floor, doors centred in each wall, and Link walking himself
+    in through each door after the screen scrolls; shutters slam behind him.
+  - Find the dungeon's map to see every room on the minimap, and the compass to mark where the Triforce lies.
+  - Two keys for two locked doors; the first waits behind the bats beside the entrance.
+  - The Keeper now leaves a heart container when it falls, as a Zelda boss does.
+  - Beyond the Keeper lies a piece of the Triforce: Link holds it high to its own fanfare, every heart refilled, and
+    the spell breaks.
+  - A knockback no longer throws Link out of a room through a doorway.
+
 ## [0.4.15] - 2026-10-07
 
 ### Changed
