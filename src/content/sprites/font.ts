@@ -7,6 +7,24 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  */
 export const fontPalette: string[] = [NES.black, NES.white, NES.redBright, NES.yellow, NES.brown];
 
+/** Coloured text: the font with its white (role 1) swapped, asked for as `sheet('font', FONT_COLOURS.gold)`. */
+export const FONT_COLOURS = {
+  gold: 'font-gold',
+  grey: 'font-grey',
+  cyan: 'font-cyan',
+  black: 'font-black',
+} as const;
+export type FontColour = keyof typeof FONT_COLOURS;
+
+const tint = (c: string): string[] => fontPalette.map((x, i) => (i === 1 ? c : x));
+export const fontPalettes: Record<string, readonly string[]> = {
+  font: fontPalette,
+  [FONT_COLOURS.gold]: tint('#f8d878'),
+  [FONT_COLOURS.grey]: tint(NES.lightGray),
+  [FONT_COLOURS.cyan]: tint(NES.skyLight),
+  [FONT_COLOURS.black]: tint(NES.black),
+};
+
 /**
  * Bold 8x8 pixel font: glyphs are 7px tall in rows 0-6 (row 7 is the line gap) and at most
  * 7px wide (column 7 is the letter gap). Strokes are 2px thick for the NES look.

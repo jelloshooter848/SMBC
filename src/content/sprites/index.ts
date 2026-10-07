@@ -1,7 +1,7 @@
 import { NES, type PaletteBook } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { tilePalettes, tilesDef } from './tiles';
-import { fontPalette, fontDef } from './font';
+import { fontPalettes, fontDef } from './font';
 import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
@@ -27,6 +27,7 @@ import {
   linkTdDef,
   linkTdPalettes,
 } from './dungeon';
+import { titleLogoDef, titleLogoPalettes, titleRiftDef } from './title-logo';
 import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
 import { HERO_FX, mapShadeFx } from './palette-fx';
@@ -56,11 +57,13 @@ export const SPRITES: Record<string, SpriteDef> = {
   crypt: cryptDef,
   ninja: ninjaDef,
   contra: contraDef,
+  'title-logo': titleLogoDef,
+  'title-rift': titleRiftDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
   ...tilePalettes,
-  font: fontPalette,
+  ...fontPalettes,
   ...itemPalettes,
   ...decorPalettes,
   ...marioPalettes,
@@ -81,6 +84,7 @@ const defaults: Record<string, readonly string[]> = {
   ...cryptPalettes,
   ...ninjaPalettes,
   ...contraPalettes,
+  ...titleLogoPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
