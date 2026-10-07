@@ -16,7 +16,9 @@ export type Theme =
   | 'water-gray'
   | 'castle-overworld'
   | 'mushroom-red'
-  | 'castle-water';
+  | 'castle-water'
+  // Mega Man's space station above 3-1: steel plating against the black of space.
+  | 'station';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -35,6 +37,7 @@ export const THEMES: readonly Theme[] = [
   'castle-overworld',
   'mushroom-red',
   'castle-water',
+  'station',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -51,6 +54,7 @@ export function themeMusic(theme: Theme): string {
   if (isWaterTheme(theme)) return 'water';
   if (theme === 'castle' || theme === 'castle-overworld') return 'castle';
   if (theme === 'underground') return 'underground';
+  if (theme === 'station') return 'mm-station';
   return 'overworld';
 }
 

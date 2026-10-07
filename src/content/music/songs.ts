@@ -18,6 +18,13 @@ const SWING_FILL = 'v11 k12 r12 v6 h12 v10 s12 r12 v6 h12 v11 k12 r12 v6 h12 v10
 const DRIVE_BAR = 'v11 k8 v6 h8 v10 s8 v6 h8 v11 k8 k8 v10 s8 v6 h8';
 const DRIVE_FILL = 'v11 k8 v6 h8 v10 s8 v6 h8 v11 k8 k8 v10 s16 s16 s16 s16';
 
+// Mega Man's station: a straight rock bar with sixteenth-note hats, and its snare-roll fill.
+const ROBOT_BAR = 'v11 k8 v6 h16 h16 v10 s8 v6 h16 h16 v11 k8 v11 k8 v10 s8 v6 h16 h16';
+const ROBOT_FILL = 'v11 k8 v6 h16 h16 v10 s8 v6 h16 h16 v11 k8 v10 s16 s16 s16 s16 v12 s8';
+// The boss fight: kick and snare on every beat pair, hats crowding the gaps.
+const BOSS_BAR = '[v12 k8 v6 h16 h16 v11 s8 v6 h16 h16]2';
+const BOSS_FILL = 'v12 k8 v6 h16 h16 v11 s8 v6 h16 h16 v10 s16 s16 s16 s16 v11 s16 s16 v12 s16 s16';
+
 export const songs: Song[] = [
   {
     id: 'overworld',
@@ -735,6 +742,126 @@ export const songs: Song[] = [
     `,
     noise: `
       [${DRIVE_BAR}]7 ${DRIVE_FILL}   ; bars 1-8
+    `,
+  },
+
+  {
+    id: 'mm-station',
+    bpm: 156,
+    loop: true,
+    // D minor, 16 bars: Mega Man's space station. A racing sixteenth-note arpeggio riff up and
+    // down each chord (bars 1-4), a soaring melody over a rolling arpeggio underneath (bars 5-12),
+    // and the riff again climbing an octave into the turnaround (bars 13-16). Octave-jumping
+    // eighth-note bass and a straight rock beat with sixteenth hats drive it all the way.
+    pulse1: `
+      @1 v11 q7 x0
+      o5 d16 a16 o6 d16 o5 a16 f16 a16 o6 d16 f16 e16 d16 o5 a16 f16 d16 f16 a16 o6 d16 ; bar 1  Dm
+      o5 d16 f16 b-16 f16 d16 f16 b-16 o6 d16 c16 o5 b-16 f16 d16 o4 b-16 o5 d16 f16 b-16 ; bar 2  Bb
+      o5 e16 g16 o6 c16 o5 g16 e16 g16 o6 c16 e16 d16 c16 o5 g16 e16 c16 e16 g16 o6 c16 ; bar 3  C
+      o5 c+16 e16 a16 e16 c+16 e16 a16 o6 c+16 e16 c+16 o5 a16 e16 a8 o6 c+8 ; bar 4  A
+      @2 v12 q7
+      o5 a4 o6 d8 e8 f4 e8 d8         ; bar 5  Dm
+      o6 d8 c8 d4 o5 b-4 f4           ; bar 6  Bb
+      o5 g8 a8 b-8 o6 c8 d4 e8 c8     ; bar 7  C
+      o6 c+4 o5 a4 a8 b8 o6 c+8 e8    ; bar 8  A
+      o6 g4. f8 e8 d8 e8 f8           ; bar 9  Gm
+      o6 a4 f4 d4 f8 a8               ; bar 10 Dm
+      o6 b-4. a16 g16 f8 g8 a8 f8     ; bar 11 Bb
+      o6 g8 e8 c8 e8 g4 a4            ; bar 12 C A
+      @1 v11 q7
+      o5 g16 b-16 o6 d16 g16 d16 o5 b-16 g16 b-16 o6 d16 g16 b-16 g16 d16 o5 b-16 o6 d16 g16 ; bar 13 Gm
+      o5 a16 o6 c+16 e16 a16 e16 c+16 o5 a16 o6 c+16 e16 a16 o7 c+16 o6 a16 e16 c+16 e16 a16 ; bar 14 A
+      o6 d16 f16 b-16 f16 d16 f16 b-16 f16 e16 g16 o7 c16 o6 g16 e16 g16 o7 c16 o6 g16 ; bar 15 Bb C
+      o6 a16 e16 c+16 o5 a16 o6 c+16 e16 a16 o7 c+16 e8 r8 o6 a8 r8 ; bar 16 A
+    `,
+    pulse2: `
+      @2 v7 q7 x0
+      o4 f2 a2                        ; bar 1  long chord tones under the riff
+      o4 f2 d2                        ; bar 2
+      o4 e2 g2                        ; bar 3
+      o4 e2 c+2                       ; bar 4
+      @0 v6 q5
+      [o4 d16 f16 a16 f16]4           ; bar 5  Dm  rolling arpeggio under the melody
+      [o3 b-16 o4 d16 f16 d16]4       ; bar 6  Bb
+      [o4 c16 e16 g16 e16]4           ; bar 7  C
+      [o4 c+16 e16 a16 e16]4          ; bar 8  A
+      [o4 d16 g16 b-16 g16]4          ; bar 9  Gm
+      [o4 d16 f16 a16 f16]4           ; bar 10 Dm
+      [o4 d16 f16 b-16 f16]4          ; bar 11 Bb
+      [o4 c16 e16 g16 e16]2 [o4 c+16 e16 a16 e16]2 ; bar 12 C A
+      @2 v7 q7
+      o4 b-2 o5 d2                    ; bar 13 Gm
+      o4 a2 o5 c+2                    ; bar 14 A
+      o5 d4 f4 e4 g4                  ; bar 15 Bb C
+      o5 c+2 e4 r4                    ; bar 16 A
+    `,
+    triangle: `
+      q6
+      [o2 d8 o3 d8]4                  ; bar 1  Dm
+      [o1 b-8 o2 b-8]4                ; bar 2  Bb
+      [o2 c8 o3 c8]4                  ; bar 3  C
+      [o1 a8 o2 a8]4                  ; bar 4  A
+      [o2 d8 o3 d8]4                  ; bar 5
+      [o1 b-8 o2 b-8]4                ; bar 6
+      [o2 c8 o3 c8]4                  ; bar 7
+      [o1 a8 o2 a8]4                  ; bar 8
+      [o1 g8 o2 g8]4                  ; bar 9  Gm
+      [o2 d8 o3 d8]4                  ; bar 10 Dm
+      [o1 b-8 o2 b-8]4                ; bar 11 Bb
+      [o2 c8 o3 c8]2 [o1 a8 o2 a8]2   ; bar 12 C A
+      [o1 g8 o2 g8]4                  ; bar 13 Gm
+      [o1 a8 o2 a8]4                  ; bar 14 A
+      [o1 b-8 o2 b-8]2 [o2 c8 o3 c8]2 ; bar 15 Bb C
+      o1 a8 a8 o2 a8 o1 a8 o2 c+8 e8 g8 a8 ; bar 16 A
+    `,
+    noise: `
+      [${ROBOT_BAR}]7 ${ROBOT_FILL}   ; bars 1-8
+      [${ROBOT_BAR}]7 ${ROBOT_FILL}   ; bars 9-16
+    `,
+  },
+
+  {
+    id: 'mm-boss',
+    bpm: 176,
+    loop: true,
+    // C minor, 8 bars: the duel with Dark Mega Man. A stabbing lead that keeps leaning on the
+    // half steps around G, a flat-two lurch to D-flat in bar 7, a buzzing sixteenth ostinato and
+    // a pounding bass, then a G7 that throws it straight back to the top.
+    pulse1: `
+      @1 v11 q6 x0
+      o5 c8 r16 c16 d+8 c8 g8 f+8 g4  ; bar 1  Cm
+      o5 c8 r16 c16 d+8 f8 g8 a-8 g4  ; bar 2  Cm
+      o5 a-4 g8 f8 d+4 c8 d8          ; bar 3  Ab
+      o5 d4 o4 b4 o5 d4 g4            ; bar 4  G
+      o6 c8 r16 c16 o5 b8 o6 c8 d+8 d8 c8 o5 b8 ; bar 5  Cm
+      o6 c8 o5 g8 d+8 g8 o6 c4 d+4    ; bar 6  Cm
+      o6 d-4 c8 o5 b-8 a-4 f8 a-8     ; bar 7  Db
+      o5 g4 b4 o6 d8 f8 d8 o5 b8      ; bar 8  G7
+    `,
+    pulse2: `
+      @0 v6 q5 x0
+      [o4 c16 g16 o5 c16 o4 g16]4     ; bar 1  Cm
+      [o4 c16 g16 o5 c16 o4 g16]4     ; bar 2  Cm
+      [o4 c16 e-16 a-16 e-16]4        ; bar 3  Ab
+      [o3 b16 o4 d16 g16 d16]4        ; bar 4  G
+      [o4 c16 g16 o5 c16 o4 g16]4     ; bar 5  Cm
+      [o4 e-16 g16 o5 c16 o4 g16]4    ; bar 6  Cm
+      [o4 d-16 f16 a-16 f16]4         ; bar 7  Db
+      [o3 b16 o4 d16 f16 d16]4        ; bar 8  G7
+    `,
+    triangle: `
+      q6
+      [o2 c8 c8 o3 c8 o2 c8]2         ; bar 1
+      [o2 c8 c8 o3 c8 o2 c8]2         ; bar 2
+      [o1 a-8 a-8 o2 a-8 o1 a-8]2     ; bar 3
+      [o1 g8 g8 o2 g8 o1 g8]2         ; bar 4
+      [o2 c8 c8 o3 c8 o2 c8]2         ; bar 5
+      [o2 c8 c8 o3 c8 o2 c8]2         ; bar 6
+      [o2 d-8 d-8 o3 d-8 o2 d-8]2     ; bar 7
+      o1 g8 g8 o2 g8 o1 g8 b8 o2 d8 f8 g8 ; bar 8
+    `,
+    noise: `
+      [${BOSS_BAR}]7 ${BOSS_FILL}     ; bars 1-8
     `,
   },
 ];

@@ -10,6 +10,10 @@ import { flipH } from '@engine/gfx/pixelart';
  *   0 outline   1 light armour   2 dark armour (helmet, gloves, boots)   3 skin   4 white
  *   5 charge glow / muzzle flash
  */
+/** NES $04 and $03, the master palette's dark purple and deep indigo (not shared NES constants). */
+const SHADOW_PURPLE = '#940084';
+const SHADOW_INDIGO = '#4428bc';
+
 export const megamanPalettes: Record<string, string[]> = {
   megaman: [NES.black, NES.blueLight, NES.blueMid, NES.skin, NES.white, NES.yellow],
   // Colour cycle while a shot is charging: body brightens toward white and gold.
@@ -29,6 +33,10 @@ export const megamanPalettes: Record<string, string[]> = {
   'megaman-knuckle': [NES.black, NES.pink, NES.magenta, NES.skin, NES.white, NES.lavender],
   'megaman-bolt': [NES.black, NES.yellowLight, NES.peach, NES.skin, NES.white, NES.white],
   'megaman-rush': [NES.black, NES.redBright, NES.redDark, NES.skin, NES.white, NES.yellow],
+  // Dark Mega Man, the station's brainwashed copy: dark purple armour with a deep indigo helmet,
+  // gloves and boots, an ashen face, and red where the eye whites and the muzzle glint are, so
+  // every frame glares.
+  'megaman-dark': [NES.black, SHADOW_PURPLE, SHADOW_INDIGO, NES.lightGray, NES.redBright, NES.red],
 };
 
 /* ---------- composition helpers ---------- */
