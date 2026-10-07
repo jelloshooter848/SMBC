@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Luigi's Mirror Race now runs over the full Lost Levels 1-1: piranha plants, Koopas and a Paratroopa, the poison
+  mushroom, both brick bridges, the staircase and the flag. It is eased for one life, and Luigi races like a player
+  (he waits for piranha plants and hops walls).
+- SMB3's status bar (world, P-meter, lives, score, coins, time and the card slots) now shows aboard Larry's airship, in
+  the Hammer Bro battle and in the bonus games.
+- The Toad House is a room you walk into: walk up to a chest and open it.
+- The N-Spade game uses a fixed set of boards, and the pairs you found stay gone until a board is cleared.
+- The Hammer Bros leave a treasure chest to open.
+- Station Escape (Mega Man): two boss shutters with a corridor between them, as in Mega Man 2; Mets that hide under
+  their helmets (shots dink off), peek out and fire a three-way spread; pausing opens Mega Man 2's weapon screen with
+  each weapon's energy, the E-tanks (use one to fill your life) and your lives; E-tanks are kept when you lose a life.
+
 ## [0.4.12] - 2026-10-07
 
 ### Added
