@@ -8,14 +8,28 @@ import type { SpriteSheet } from './spritesheet';
 export interface Renderer {
   clear(color: string): void;
   rect(x: number, y: number, w: number, h: number, color: string): void;
-  /** Draw a named frame from a sprite sheet with its top-left at (x, y). */
-  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX?: boolean, flipY?: boolean): void;
+  /**
+   * Draw a named frame from a sprite sheet with its top-left at (x, y). `rotate` turns it a
+   * quarter turn clockwise per 90 after the flips; (x, y) is then the turned box's top-left.
+   */
+  sprite(
+    sheet: SpriteSheet,
+    frame: string,
+    x: number,
+    y: number,
+    flipX?: boolean,
+    flipY?: boolean,
+    rotate?: Rotation,
+  ): void;
   /** Draw text with the bitmap font; `font` is a sheet whose frames are single characters. */
   text(font: SpriteSheet, str: string, x: number, y: number): void;
   /** Debug-only text using the canvas font (not pixel-perfect). */
   debugText(str: string, x: number, y: number, color?: string): void;
   line(x1: number, y1: number, x2: number, y2: number, color: string): void;
 }
+
+/** Quarter turns clockwise (Renderer.sprite). */
+export type Rotation = 0 | 90 | 180 | 270;
 
 export class NullRenderer implements Renderer {
   clear(): void {}
@@ -43,8 +57,17 @@ export class OffsetRenderer implements Renderer {
   rect(x: number, y: number, w: number, h: number, color: string): void {
     this.inner.rect(x + this.dx, y + this.dy, w, h, color);
   }
-  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX?: boolean, flipY?: boolean): void {
-    this.inner.sprite(sheet, frame, x + this.dx, y + this.dy, flipX, flipY);
+  sprite(
+    sheet: SpriteSheet,
+    frame: string,
+    x: number,
+    y: number,
+    flipX?: boolean,
+    flipY?: boolean,
+    rotate?: Rotation,
+  ): void {
+    if (rotate) this.inner.sprite(sheet, frame, x + this.dx, y + this.dy, flipX, flipY, rotate);
+    else this.inner.sprite(sheet, frame, x + this.dx, y + this.dy, flipX, flipY);
   }
   text(font: SpriteSheet, str: string, x: number, y: number): void {
     this.inner.text(font, str, x + this.dx, y + this.dy);
@@ -71,11 +94,34 @@ export class CanvasRenderer implements Renderer {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(x | 0, y | 0, w | 0, h | 0);
   }
-  sprite(sheet: SpriteSheet, frame: string, x: number, y: number, flipX = false, flipY = false): void {
+  sprite(
+    sheet: SpriteSheet,
+    frame: string,
+    x: number,
+    y: number,
+    flipX = false,
+    flipY = false,
+    rotate: Rotation = 0,
+  ): void {
     const f = sheet.frames.get(frame);
     if (!f) return;
     const ctx = this.ctx;
-    if (flipX || flipY) {
+    if (rotate) {
+      // Move the origin to where the frame's top-left lands once turned, turn, then flip inside.
+      const x0 = x | 0;
+      const y0 = y | 0;
+      ctx.save();
+      if (rotate === 90) ctx.translate(x0 + f.h, y0);
+      else if (rotate === 180) ctx.translate(x0 + f.w, y0 + f.h);
+      else ctx.translate(x0, y0 + f.w);
+      ctx.rotate((rotate * Math.PI) / 180);
+      if (flipX || flipY) {
+        ctx.translate(flipX ? f.w : 0, flipY ? f.h : 0);
+        ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+      }
+      ctx.drawImage(sheet.image as CanvasImageSource, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
+      ctx.restore();
+    } else if (flipX || flipY) {
       ctx.save();
       ctx.translate((x | 0) + (flipX ? f.w : 0), (y | 0) + (flipY ? f.h : 0));
       ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);

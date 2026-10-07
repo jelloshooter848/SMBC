@@ -175,6 +175,7 @@ export class Player {
     if (this.frozen || this.dead) return;
     if (this.vine) return this.climb(input, map, audio);
     if (this.stairs) return this.stairWalk(input);
+    if (this.def.behaviour.drive?.(this, input, map, audio, onHeadBump)) return;
     const p = this.profile;
     const b = this.body;
     let dir = input.dirX;
@@ -602,6 +603,6 @@ export class Player {
   }
   /** Blink while invulnerable after a hit. */
   visible(frame: number): boolean {
-    return this.invuln === 0 || (frame & 2) === 0;
+    return this.invuln === 0 || this.def.noHurtBlink === true || (frame & 2) === 0;
   }
 }

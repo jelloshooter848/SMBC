@@ -133,8 +133,12 @@ describe('every fall arrival', () => {
           // His head reaches the room below the ceiling row: he never stood or clung up there.
           if (toPx(b.y) < FALL_IN_STEER_Y) bad.push(`${where}: stopped at y=${toPx(b.y)}`);
           if (inWall(w)) bad.push(`${where}: in a wall`);
-          // Until then he dropped straight down his start column.
-          if (toPx(b.x) !== startX(a.x, toPx(b.w))) bad.push(`${where}: drifted to x=${toPx(b.x)}`);
+          // Until then he dropped straight down his start column. A body wider than a tile
+          // (Sophia III's tank) may start flush with either side of it, clear of a wall beside it
+          // (World.wideFall).
+          const bw = toPx(b.w);
+          const ok = bw > 16 ? [startX(a.x, bw), a.x * 16, a.x * 16 + 16 - bw] : [startX(a.x, bw)];
+          if (!ok.includes(toPx(b.x))) bad.push(`${where}: drifted to x=${toPx(b.x)}`);
         }
     }
     expect(bad).toEqual([]);

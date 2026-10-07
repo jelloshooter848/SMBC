@@ -166,6 +166,12 @@ export abstract class Enemy extends Entity {
    * `hop` false it just drops from where it is, as after a `vx = 0; vy = 0` (Bloopa.stomp).
    */
   protected flipOut(src: DamageSource, world: World, hop = true): void {
+    // A shot with its own kill effect (Sophia III's explosion) shows that instead of the corpse.
+    const o = src.owner as { killEffect?: (world: World, e: Entity) => boolean } | null;
+    if (o && typeof o.killEffect === 'function' && o.killEffect(world, this)) {
+      this.destroy();
+      return;
+    }
     const dir = !hop || isWaterTheme(world.level.theme) ? 0 : src.dirX;
     const corpse = new Corpse(
       this.body.x,

@@ -10,6 +10,9 @@ import type { Projectile } from '../entities/projectiles/projectile';
 import type { Rng } from '@engine/rng';
 import type { ToolInfo } from './toolbelt';
 import type { TouchLabels } from '@engine/input/touch';
+import type { TileMap } from '../world/tilemap';
+import type { AudioSink } from '@engine/audio/audio-manager';
+import type { VineArt } from '../entities/objects/vine';
 
 export type DamageModel =
   | { kind: 'powerup'; states: readonly string[] }
@@ -29,6 +32,13 @@ export interface SpriteSpec {
   /** Draw offset from the hitbox top-left (sprites are usually larger than hitboxes). */
   offsetX: number;
   offsetY: number;
+  /** Also flipped top to bottom (Sophia III upside down on a ceiling). */
+  flipY?: boolean;
+  /**
+   * A quarter turn clockwise, after the flips (Sophia III on a wall: 90 has her wheels on the
+   * left). A turned sprite is drawn centred on the hitbox; `offsetX` / `offsetY` are ignored.
+   */
+  rotate?: 0 | 90 | 180 | 270;
 }
 
 export type HurtResult = 'dead' | 'hurt' | 'ignored';
@@ -41,8 +51,11 @@ export interface CharacterBehaviour {
   onPowerUp(p: Player, kind: Exclude<PowerUpKind, 'poison' | 'clock'>, world: World): void;
   /** The player ran into an enemy without stomping. Return damage to deal instead of getting hurt, or null. */
   contactDamage(p: Player, enemy: Enemy, world: World): DamageSource | null;
-  /** Apply a hit to the player (already past invulnerability/star checks). */
-  onHurt(p: Player, world: World): HurtResult;
+  /**
+   * Apply a hit to the player (already past invulnerability/star checks). `fromDir` is the way
+   * the hit pushes (+1: the source is on the left), as World.hurtPlayer was given it.
+   */
+  onHurt(p: Player, world: World, fromDir?: -1 | 1): HurtResult;
   /** The published melee hitbox connected with an enemy. */
   onMeleeHit?(p: Player, enemy: Enemy, world: World): void;
   /** Touched a dropped pickup. Return false to leave it lying there (already full). */
@@ -57,6 +70,27 @@ export interface CharacterBehaviour {
   onGrabStairs?(p: Player): void;
   /** Runs instead of `update` each frame on a vine (no attacks there): timers that keep running. */
   vineTick?(p: Player): void;
+  /**
+   * The hero's own movement code (Sophia III's driving): runs in Player.update in place of the
+   * shared walking, jumping and swimming (after the vine and stairs checks). Returns false to
+   * fall back to the shared code this frame (Jason on foot).
+   */
+  drive?(
+    p: Player,
+    input: InputFrame,
+    map: TileMap,
+    audio: AudioSink,
+    onHeadBump?: (tx: number, ty: number) => void,
+  ): boolean;
+  /** False to leave this vine (or ladder, chain) alone: a tank never grabs a ladder. */
+  canGrabVine?(p: Player, art: VineArt): boolean;
+  /**
+   * The player touched the flagpole or the castle axe: end states the clear sequence can't hold
+   * (Sophia III turns upright off a wall).
+   */
+  onLevelClear?(p: Player): void;
+  /** A co-op player dropped back in (World.respawn): reset states the respawn doesn't know. */
+  onRespawn?(p: Player, world: World): void;
 }
 
 /** How a hero plays, shown on the "How to play" pages. Text is wrapped and upper-cased. */
@@ -73,8 +107,8 @@ export interface CharacterGuide {
    */
   controls: { action: GuideAction; does: string; touch?: string; touchDoes?: string }[];
   powerups: { item: 'mushroom' | 'flower' | 'star' | 'drops'; does: string }[];
-  /** Tool belt entries (Select cycles, C uses). */
-  belt?: { name: string; icon: string; cost?: string; does: string }[];
+  /** Tool belt entries (Select cycles, C uses); `sheet` holds the icon (default `items`). */
+  belt?: { name: string; icon: string; sheet?: string; cost?: string; does: string }[];
   tips?: string[];
   /** Poses the live demo cycles through on the page. */
   demo: DemoPose[];
@@ -90,6 +124,7 @@ export type GuideAction =
   | 'up+attack'
   | 'down+attack'
   | 'down+jump'
+  | 'down+special'
   | 'attack (hold)';
 export type DemoPose = 'idle' | 'walk' | 'jump' | 'attack' | 'crouch' | 'special';
 
@@ -124,8 +159,13 @@ export interface CharacterDef {
   music?: string;
   /** Frame used on the character select / intro card. */
   portrait: { sheet: string; palette: string; frame: string };
-  /** What (if anything) a killed enemy drops for this character. */
-  drop?(rng: Rng, enemy: Enemy): PickupKind | null;
+  /** What (if anything) a killed enemy drops for this character (`killer`: the player who got it). */
+  drop?(rng: Rng, enemy: Enemy, killer?: Player): PickupKind | null;
+  /**
+   * No blinking while invulnerable after a hit (Player.visible): the hero shows it its own way
+   * (Sophia III's hull flashes through palettes).
+   */
+  noHurtBlink?: boolean;
   /** Tool belt entries (Select cycles, C uses). */
   tools?(p: Player): ToolInfo[];
   /** Secondary HUD meter (magic, weapon energy). */

@@ -64,6 +64,16 @@ export interface MoveYOptions {
   onHeadBump?: (tx: number, ty: number) => void;
   /** Ignore one-way ('top') tiles. */
   ignoreOneWay?: boolean;
+  /**
+   * A head bump strikes every block the head touches that frame, not only one (the original's
+   * `canHitMultipleBricks`: Sophia III's wide body). Default: one.
+   */
+  bumpAll?: boolean;
+  /**
+   * Free tiles needed beside a block (same row, on the slip side) before the head-bump corner
+   * slip nudges the body past it (HitTester.as: 2 for Sophia III's wide body). Default 1.
+   */
+  cornerFreeTiles?: 1 | 2;
 }
 
 export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}): void {
@@ -89,6 +99,7 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
   } else {
     const row = tileAt(b.y);
     const center = tileAt(b.x + (b.w >> 1));
+    const two = opts.cornerFreeTiles === 2;
     let bumpCol = -1;
     if (map.blocksFromBelow(center, row)) bumpCol = center;
     else if (map.blocksFromBelow(left, row)) {
@@ -96,6 +107,7 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
       if (
         overlap <= CORNER_NUDGE &&
         !map.blocksFromBelow(right, row) &&
+        !(two && (map.blocksFromBelow(left + 1, row) || map.blocksFromBelow(left + 2, row))) &&
         !map.isSolid(left + 1, tileAt(b.y + b.h - 1))
       ) {
         b.x += overlap; // slip past the corner
@@ -104,11 +116,22 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
       bumpCol = left;
     } else if (map.blocksFromBelow(right, row)) {
       const overlap = b.x + b.w - tileToSub(right);
-      if (overlap <= CORNER_NUDGE && !map.isSolid(right - 1, tileAt(b.y + b.h - 1))) {
+      if (
+        overlap <= CORNER_NUDGE &&
+        !(two && (map.blocksFromBelow(right - 1, row) || map.blocksFromBelow(right - 2, row))) &&
+        !map.isSolid(right - 1, tileAt(b.y + b.h - 1))
+      ) {
         b.x -= overlap;
         return;
       }
       bumpCol = right;
+    }
+    if (bumpCol >= 0 && opts.bumpAll) {
+      b.y = tileToSub(row + 1);
+      b.vy = 0;
+      b.hitHead = true;
+      for (let tx = left; tx <= right; tx++) if (map.blocksFromBelow(tx, row)) opts.onHeadBump?.(tx, row);
+      return;
     }
     if (bumpCol >= 0) {
       b.y = tileToSub(row + 1);

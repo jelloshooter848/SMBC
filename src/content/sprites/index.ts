@@ -19,6 +19,7 @@ import { smb3Palettes, smb3Def } from './smb3';
 import { cryptPalettes, cryptDef } from './crypt';
 import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
+import { sophiaPlaceholderPalettes, sophiaPlaceholderDef } from './sophia-placeholder';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -56,6 +57,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   crypt: cryptDef,
   ninja: ninjaDef,
   contra: contraDef,
+  // Placeholder until the Sophia III sheet lands (agent S3): same frame names and palettes.
+  sophia: sophiaPlaceholderDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -81,6 +84,7 @@ const defaults: Record<string, readonly string[]> = {
   ...cryptPalettes,
   ...ninjaPalettes,
   ...contraPalettes,
+  ...sophiaPlaceholderPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

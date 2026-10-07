@@ -487,7 +487,7 @@ export class World {
       const hb = def.hitbox(tmp);
       const feet = tileToSub(sy + 1);
       const p = new Player(
-        tileToSub(sx) + px((16 - hb.w) >> 1) + px(i * 20),
+        tileToSub(sx) + (px(16 - hb.w) >> 1) + px(i * 20),
         feet - px(hb.h),
         def,
         power,
@@ -502,6 +502,7 @@ export class World {
         // Co-op: player 2 drops in beside player 1 where that drop is clear (fallSpot).
         const first = this.players[0];
         if (first) p.body.x = px(this.fallSpot(toPx(first.body.x), toPx(first.body.w), hb.w));
+        else if (hb.w > 16) p.body.x = this.wideFall(sx, p.body.x, p.body.w);
       } else if (mode === 'climb') {
         // The original's vineStart (Level.as watchModeOverrideVine): the vine grows from the
         // screen bottom while the player is hidden (Vine.initiate → growFromStgBot), then
@@ -555,7 +556,7 @@ export class World {
         // hidden until the panel turns edge-on; player 2 a step further into the room.
         const wall = this.trickBeside(sx, sy);
         const side = wall?.side ?? 1;
-        p.body.x = tileToSub(sx) + px((16 - hb.w) >> 1) + side * px(i * 20);
+        p.body.x = tileToSub(sx) + (px(16 - hb.w) >> 1) + side * px(i * 20);
         p.facing = side;
         if (wall) {
           p.frozen = true;
@@ -854,7 +855,7 @@ export class World {
     if (o instanceof Player) killer = o;
     else if (o instanceof Projectile && o.owner instanceof Player) killer = o.owner;
     if (!killer) killer = this.nearestPlayer(e.body.x);
-    const kind = killer.def.drop?.(this.rng, e);
+    const kind = killer.def.drop?.(this.rng, e, killer);
     if (kind) this.spawn(new Pickup(e.body.x + (e.body.w >> 1), e.body.y + e.body.h, kind));
   }
 
@@ -1302,6 +1303,7 @@ export class World {
     if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
     for (const e of this.entities) {
       if (!(e instanceof Vine) || !e.alive || e.centerX === p.leftVine) continue;
+      if (p.def.behaviour.canGrabVine?.(p, e.art) === false) continue;
       const v = e.body;
       // Generous sideways reach (the original lets you grab from beside the block it grew from).
       const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);
@@ -1833,7 +1835,7 @@ export class World {
 
   hurtPlayer(p: Player, fromDir: -1 | 1 = 1): void {
     if (p.invulnerable || this.assist.invulnerable) return;
-    const result = p.def.behaviour.onHurt(p, this);
+    const result = p.def.behaviour.onHurt(p, this, fromDir);
     if (result === 'dead') this.kill(p);
     // On stairs a hit never knocks the player off (Castlevania's stairs keep you on them).
     else if (result === 'hurt' && p.def.damage.kind === 'hp' && p.def.damage.knockback && !p.stairs) {
@@ -1918,6 +1920,7 @@ export class World {
     p.body.vy = 0;
     this.deathTimers.delete(p);
     this.respawnTimers.set(p, COOP_RESPAWN_FRAMES);
+    p.def.behaviour.onRespawn?.(p, this);
   }
 
   /* ---------- Pipes & zones ---------- */
@@ -2159,6 +2162,7 @@ export class World {
       o.body.vy = 0;
       if (o !== p) o.hidden = true;
     }
+    p.def.behaviour.onLevelClear?.(p);
     p.body.x = tileToSub(pole.tx) - p.body.w + px(2);
     p.facing = 1;
     p.anim = 'climb';
@@ -2327,6 +2331,7 @@ export class World {
       o.anim = 'idle';
       if (o !== p) o.hidden = true;
     }
+    p.def.behaviour.onLevelClear?.(p);
     this.audio.stopMusic();
     this.bossClear = { t: 0 };
     this.bossPlayer = p;
@@ -2720,6 +2725,24 @@ export class World {
     return x1 + 20;
   }
 
+  /**
+   * A fall arrival for a body wider than a tile (Sophia III's tank): centred on column `tx` unless
+   * that clips a solid tile on the way down to the column's floor; then flush with the column's
+   * left or right side, whichever drops clear (the drops are laid out for one-tile heroes).
+   */
+  private wideFall(tx: number, x: number, w: number): number {
+    const map = this.map;
+    let floor = 0;
+    while (floor < map.height && !map.isSolid(tx, floor)) floor++;
+    const clear = (x0: number) => {
+      for (let c = tileAt(x0); c <= tileAt(x0 + w - 1); c++)
+        for (let ty = 0; ty < floor; ty++) if (map.isSolid(c, ty)) return false;
+      return true;
+    };
+    for (const c of [x, tileToSub(tx), tileToSub(tx + 1) - w]) if (clear(c)) return c;
+    return x;
+  }
+
   /** Whether a cracked wall still stands in this level. */
   crackedWalls(): boolean {
     return this.cracked > 0;
@@ -2862,8 +2885,19 @@ export class World {
     const sheet = view.assets.sheet(s.sheet, s.palette);
     const f = sheet.frames.get(s.frame);
     const w = f?.w ?? 16;
-    const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
-    r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+    if (s.rotate !== undefined || s.flipY) {
+      // Turned or upside down (Sophia III on a wall or ceiling): centred on the hitbox.
+      const h = f?.h ?? 16;
+      const side = s.rotate === 90 || s.rotate === 270;
+      const bw = side ? h : w;
+      const bh = side ? w : h;
+      const cx = toPx(p.body.x + (p.body.w >> 1)) - view.camX;
+      const cy = toPx(p.body.y + (p.body.h >> 1));
+      r.sprite(sheet, s.frame, cx - (bw >> 1), cy - (bh >> 1), s.flip, s.flipY, s.rotate ?? 0);
+    } else {
+      const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
+      r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+    }
     if (this.coop && p.index > 0 && !p.dead) {
       // Small "2" tag above player two so both players can tell who is who.
       r.text(view.assets.sheet('font'), '2', toPx(p.body.x) - view.camX + 2, toPx(p.body.y) - s.offsetY - 10);

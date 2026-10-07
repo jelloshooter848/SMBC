@@ -104,6 +104,9 @@ function policies(): Record<string, Policy> {
     },
     prone: () => ['down'],
     'jump-shoot': (p, f) => (p.body.onGround ? tapEvery(f, 'jump', 20) : tapEvery(f, 'attack', 4)),
+    // Sophia III (the shared 'missile' fires hers too)
+    cannon: (_p, f) => tapEvery(f, 'attack', 10),
+    hover: (p, f) => (p.body.onGround ? tapEvery(f, 'jump', 40) : f % 40 >= 12 ? ['jump'] : []),
   };
 }
 
@@ -332,6 +335,7 @@ const MOVE_LESSONS: Record<string, string[]> = {
   simon: ['crouch-whip', 'sub-weapon', 'committed-jump'],
   ryu: ['cling', 'wall-jump', 'ninpo'],
   bill: ['aim', 'prone', 'jump-shoot'],
+  sophia: ['hover', 'missile'],
 };
 
 /** Walk back and forth between the step and the dummy, tap-jump now and then, attack on the ground. */

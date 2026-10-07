@@ -45,7 +45,7 @@ const LATE: Partial<SaveFile> = {
   cleared: ['1-0', '1-1', '1-2', '4-1', '4-2'],
   secrets: ['bonus-1', 'larry'],
   pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4', 'hub', 'arena'],
-  freed: ['mario', 'luigi', 'link', 'megaman', 'samus', 'simon', 'ryu', 'bill'],
+  freed: ['mario', 'luigi', 'link', 'megaman', 'samus', 'simon', 'ryu', 'bill', 'sophia'],
 };
 
 /** File 1 open on the arena, the hero on `node`. */
@@ -510,7 +510,7 @@ describe("Larry's airship pad: character select first (the one arena game played
     h.tap('jump');
     const select = h.top() as CharacterSelectScene;
     expect(select).toBeInstanceOf(CharacterSelectScene);
-    expect(draw(select).texts.map((t) => t.str)).toContain('5 HEROES TO FIND');
+    expect(draw(select).texts.map((t) => t.str)).toContain('6 HEROES TO FIND');
     h.idle(12);
     expect(new Set(offered(h))).toEqual(new Set(['Mario', 'Link', 'Samus']));
   });

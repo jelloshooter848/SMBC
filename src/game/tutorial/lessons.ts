@@ -467,6 +467,30 @@ export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = {
       done: (t) => t.airShots > 0,
     },
   ],
+  sophia: [
+    {
+      id: 'cannon',
+      prompt: "[SHOOT:attack] THE DUMMY WITH SOPHIA'S CANNON. JUMP IS A SQUAT, THEN A HOP.",
+      done: (t) => t.dummyHits.has('sophia-cannon'),
+    },
+    {
+      id: 'hover',
+      prompt: 'HYPER POWER! [JUMP:jump], THEN PRESS AND HOLD JUMP AGAIN IN THE AIR TO HOVER.',
+      setup(room) {
+        const p = room.player;
+        if (p.powerState !== 'small') return;
+        p.powerState = 'big';
+        p.startTransition('grow');
+        room.world.audio.sfx('powerup');
+      },
+      done: (t) => t.seen.has('hover'),
+    },
+    {
+      id: 'missile',
+      prompt: '[MISSILE:special] FIRES THREE MISSILES. THEY FLY THROUGH WALLS.',
+      done: (t) => t.shotKinds.has('sophia-missile'),
+    },
+  ],
 };
 
 /** A hero's lessons; empty for Mario (his tutorial is stage 1-0) and heroes without a room. */

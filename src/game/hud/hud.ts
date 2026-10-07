@@ -101,7 +101,7 @@ export function drawHud(
       const i = (((player.scratch.tool ?? 0) % n) + n) % n;
       const t = tools[i];
       if (t) {
-        r.sprite(assets.sheet('items'), t.icon, 96, 24);
+        r.sprite(assets.sheet(t.sheet ?? 'items'), t.icon, 96, 24);
         if (t.count !== null) text(`×${pad(t.count, 2)}`, 105, 24);
       }
     }
