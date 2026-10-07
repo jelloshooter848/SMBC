@@ -37,6 +37,7 @@ import {
 } from '../map/rules';
 import { mapPage } from '@content/worldmap';
 import { CRYSTAL_BALL } from '../map/captives';
+import { seedSeen } from '../story/beats';
 import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
@@ -164,6 +165,11 @@ export class Game {
    * outside campaign play.
    */
   bonus: BonusState = newBonusState();
+  /**
+   * The story beats seen on the campaign's file (SaveFile.story; ids from src/game/story/beats.ts),
+   * each once. See `seen` / `markSeen`; whether the story plays at all is beats.ts storyOn.
+   */
+  story: string[] = [];
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -395,6 +401,18 @@ export class Game {
     );
   }
 
+  /** Story beat `id` (beats.ts) has played on this file. */
+  seen(id: string): boolean {
+    return this.story.includes(id);
+  }
+
+  /** Records story beat `id` (beats.ts) as seen, once, and saves the file (campaign only). */
+  markSeen(id: string): void {
+    if (this.seen(id)) return;
+    this.story.push(id);
+    this.autosave();
+  }
+
   /**
    * Writes the campaign's save file: the run (lives, score, coins, heroes, power) and the map
    * progress. Does nothing outside campaign mode (dev, ?level=, custom, shared, playtests).
@@ -425,6 +443,7 @@ export class Game {
       bonusOpen: this.bonusOpen,
       bonusGuard: this.bonusGuard,
       ...bonusSaveFields(this.bonus),
+      story: this.story.slice(),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -893,6 +912,8 @@ export class Game {
       position: { page: save.position.page, node: save.position.node },
       gameCleared: save.gameCleared,
     };
+    // A file from before the story (or a test's file) counts what already happened as seen.
+    this.story = (save.story ?? seedSeen(this.mapProgress, this.freed)).slice();
     this.showMap(); // the map saves the file as it opens
   }
 

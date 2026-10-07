@@ -7,7 +7,7 @@
  * - A castle page (World.castleText): at most CASTLE_COLS (26) columns.
  * - A hint line (the map's bottom strip): at most 32 columns.
  *
- * `<HERO>` is filled by the functions below; story.test.ts checks every page against the
+ * `<HERO>` is filled by the functions below; script.test.ts checks every page against the
  * longest name a hero can have (SOPHIA III).
  */
 

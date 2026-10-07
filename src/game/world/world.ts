@@ -406,6 +406,11 @@ export class World {
   readonly flagpole: Flagpole | null = null;
   /** Set by LevelScene in campaign play; see CaptiveRules. */
   captives: CaptiveRules | null = null;
+  /**
+   * The campaign's story plays here (set by LevelScene when story/beats.ts storyOn holds): off in
+   * classic, dev, arena and play-test levels, which keep their old text and behaviour.
+   */
+  storyMode = false;
   /** The exploding bridge's boom (entities/objects/bridge-blast.ts). */
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */

@@ -18,6 +18,7 @@ import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
+import { storyOn } from '../story/beats';
 import { abilityHint } from './hints';
 import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
 import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
@@ -77,6 +78,8 @@ export class LevelScene implements Scene {
         isFreed: (id) => game.freed.includes(id),
         hero: (id) => game.deps.characters.find((c) => c.id === id),
       };
+    // The campaign's story (src/game/story): entities and the world check it.
+    this.world.storyMode = storyOn(game);
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);
     if (this.tutorial) this.world.time = null;

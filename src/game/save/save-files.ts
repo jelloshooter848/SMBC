@@ -99,6 +99,12 @@ export interface SaveFile extends MapProgress {
   bonusNext?: number;
   devInventory?: boolean;
   itemsNext?: NextItem[];
+  /**
+   * The story beats this file has seen (0.4.13, src/game/story/beats.ts), each once. Missing in
+   * older files (and new ones until the first save): seeded on load from the file's progress
+   * (beats.ts seedSeen). No format change.
+   */
+  story?: string[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -253,6 +259,7 @@ const whole = (x: unknown, d: number, min: number, max = Number.MAX_SAFE_INTEGER
 const str = (x: unknown, d: string): string => (typeof x === 'string' ? x : d);
 const strs = (x: unknown, d: string[]): string[] =>
   Array.isArray(x) ? x.filter((e): e is string => typeof e === 'string') : d;
+const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((e) => typeof e === 'string');
 /** Page id → node id, for open pages only, and nodes the page has. */
 function lastNodes(x: unknown, pages: readonly PageId[]): Record<PageId, string> {
   const out: Record<PageId, string> = {};
@@ -404,6 +411,8 @@ export function migrateSave(
     bonusOpen: stored.bonusOpen !== false,
     bonusGuard: stored.bonusOpen === false && stored.bonusGuard === true,
     ...bonusSaveFields(bonusStateFrom(stored)),
+    // The seen story beats: kept only when well formed (else seeded on load, Game.openFile).
+    ...(isStrings(stored.story) ? { story: [...new Set(stored.story)] } : {}),
   };
 }
 
