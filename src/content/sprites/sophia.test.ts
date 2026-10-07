@@ -307,19 +307,22 @@ describe('sophia sheet', () => {
 });
 
 describe('bm-dungeon sheet (the top-down kit)', () => {
-  it("draws every tile frame Link's dungeon draws for the kit, at 16x16", () => {
+  it("draws every frame Link's dungeon sheet draws for the kit, at its size", () => {
     validateDef('bm-dungeon', bmDungeonDef);
-    const kit = Object.keys(dungeonDef.frames).filter(
-      (f) =>
-        (dungeonDef.frames[f] as readonly string[]).length === 16 &&
-        (dungeonDef.frames[f] as readonly string[])[0]?.length === 16 &&
-        !/heart|key|icon|pickup|container/.test(f),
-    );
-    for (const f of kit) expect(bmDungeonDef.frames[f], f).toBeDefined();
+    const size = (f: readonly string[] | undefined) => [f?.[0]?.length, f?.length];
+    for (const [name, f] of Object.entries(dungeonDef.frames))
+      expect(size(bmDungeonDef.frames[name]), name).toEqual(size(f));
     for (const [name, f] of Object.entries(bmDungeonDef.frames)) {
-      expect(f.length, name).toBe(16);
-      for (const r of f) expect(r.length, name).toBe(16);
+      for (const r of f) expect(r.length, name).toBe(f[0]?.length);
+      expect(f.join('').replace(/\./g, '').length, `${name} is not empty`).toBeGreaterThan(0);
     }
+    // a refill held up from a chest (pickupFrame's `refill-icon`) fills a tile
+    expect(size(bmDungeonDef.frames['refill-icon'])).toEqual([16, 16]);
+    // the life cells: full, half, spent
+    const red = (n: string) =>
+      (bmDungeonDef.frames[n] as readonly string[]).join('').replace(/[^a]/g, '').length;
+    expect(red('heart')).toBeGreaterThan(red('heart-half'));
+    expect(red('heart-half')).toBeGreaterThan(red('heart-empty'));
   });
 
   it('is registered with its side and split frames and two palettes of one layout', () => {

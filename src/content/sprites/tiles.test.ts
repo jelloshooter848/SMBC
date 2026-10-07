@@ -388,6 +388,14 @@ const decorFrames: Record<string, Size> = {
   // Sophia's Underworld.
   gateway: [32, 32],
   roots: [32, 16],
+  'hill-big@underworld': [80, 48],
+  'hill-small@underworld': [48, 32],
+  'bush-1@underworld': [32, 16],
+  'bush-2@underworld': [48, 16],
+  'bush-3@underworld': [64, 16],
+  'cloud-1@underworld': [32, 24],
+  'cloud-2@underworld': [48, 24],
+  'cloud-3@underworld': [64, 24],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {

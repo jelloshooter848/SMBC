@@ -195,11 +195,26 @@ const waterUw = (shift: number): string[] =>
     return hash(xx, y, 3) < 0.06 ? 'a' : '9';
   });
 
+/** A spent block: the slab gone dull and dark, its panel and bolts worn flat. */
+const usedUw = (() => {
+  const c = new Canvas(16, 16).rect(0, 0, 16, 16, '1');
+  c.hline(0, 15, 0, '2').vline(0, 0, 15, '2');
+  c.hline(0, 15, 15, '0').vline(15, 0, 15, '0');
+  for (const [x, y] of [
+    [2, 2],
+    [12, 2],
+    [2, 12],
+    [12, 12],
+  ] as const)
+    c.set(x, y, '0');
+  return c.rows();
+})();
+
 export const underworldFrames: Record<string, Rows> = {
   ground: groundUw,
   hard: hardUw,
   brick: brickUw,
-  used: recolour(hardUw, { '8': '1', '3': '2' }),
+  used: usedUw,
   'castle-brick': castleBrickUw,
   'tree-top': treeTopUw,
   'tree-trunk': treeTrunkUw,
@@ -299,6 +314,8 @@ export const bmDungeonTileFrames: Record<string, Rows> = {
  *   through, the tank's dead end), slime dripping from the keystone. Stands on its bottom row.
  * - `roots` (32x16): roots hanging from the cavern roof. Place it at row 0 (`roots x 0`): it
  *   covers the top tile row; its left and right edges join when placed every 2 columns.
+ * - `hill-*`, `bush-*`, `cloud-*@underworld`: a level's classic scenery under this theme, at the
+ *   same sizes: heaps of rock, stalagmite clusters, a dim drifting mist.
  * These frames are drawn for `decor-underworld` and only look right there.
  */
 export const underworldDecorPalette: string[] = [
@@ -366,4 +383,74 @@ const roots = draw(32, 16, (x, y) => {
   return '.';
 });
 
-export const underworldDecorFrames: Record<string, Rows> = { gateway, roots };
+/**
+ * A heap of cavern rock `w` x `h` (the Underworld's hills): a lumpy dome of rust stone, lit on
+ * its upper left, cracks and a root wandering across it.
+ */
+const mound = (w: number, h: number, seed: number): string[] => {
+  const c = new Canvas(w, h);
+  const cx = w / 2;
+  const rx = w / 2 - 1;
+  const ry = h - 1;
+  c.ellipse(cx, h, rx, ry, (x, y) => {
+    const n = hash(x, y, seed);
+    // lit along the rim on the upper left, a band a few pixels deep
+    const d = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - h) / ry) ** 2;
+    const lit = d > 0.68 && x + 0.5 < cx + rx * 0.15 && y < h * 0.8;
+    if (n < 0.05) return '6';
+    return lit ? (n < 0.15 ? '7' : '8') : n < 0.3 ? '6' : '7';
+  });
+  for (const k of [0.3, 0.65]) c.line(w * k, h * 0.45, w * k + 3, h - 2, '6');
+  for (let x = Math.round(w * 0.2); x < w * 0.8; x++) {
+    const y = Math.round(h * 0.55 + Math.sin(x / 3 + seed) * 1.5);
+    if (c.get(x, y) !== '.') c.set(x, y, 'a');
+  }
+  return c.outline('6').rows();
+};
+
+/** A cluster of stalagmites `w` wide on the floor (the Underworld's bushes), 16 tall. */
+const spikes = (w: number, seed: number): string[] => {
+  const c = new Canvas(w, 16);
+  const n = Math.round(w / 7);
+  for (let i = 0; i < n; i++) {
+    const x = ((i + 0.5) * w) / n + (hash(i, 0, seed) - 0.5) * 3;
+    const tall = 7 + Math.round(hash(i, 1, seed) * 8);
+    const half = 2.5 + hash(i, 2, seed) * 1.5;
+    c.poly(
+      [
+        [x - half, 16],
+        [x, 16 - tall],
+        [x + half, 16],
+      ],
+      '7',
+    );
+    c.line(x - half * 0.4, 16 - tall * 0.55, x, 16 - tall + 1, '8');
+  }
+  return c.outline('6').rows();
+};
+
+/** A drift of dim cave mist `w` wide (the Underworld's clouds), 24 tall like a cloud. */
+const mist = (w: number, seed: number): string[] =>
+  draw(w, 24, (x, y) => {
+    const band = Math.sin(x / 5 + seed) * 2 + Math.sin(x / 11 + seed * 2) * 2;
+    const d = Math.abs(y - 14 - band);
+    const edge = Math.min(x, w - 1 - x);
+    if (d > 4 || edge < 2 - d / 2) return '.';
+    if (d > 3) return hash(x, y, seed) < 0.5 ? '5' : '.';
+    return d < 1.5 && hash(x, y, seed + 1) < 0.25 ? '.' : '4';
+  });
+
+export const underworldDecorFrames: Record<string, Rows> = {
+  gateway,
+  roots,
+  // The classic scenery redrawn for the cavern (drawDecor looks up `<frame>@<theme>` first):
+  // hills become heaps of rock, bushes stalagmites, clouds a dim drifting mist.
+  'hill-big@underworld': mound(80, 48, 1),
+  'hill-small@underworld': mound(48, 32, 2),
+  'bush-1@underworld': spikes(32, 3),
+  'bush-2@underworld': spikes(48, 4),
+  'bush-3@underworld': spikes(64, 5),
+  'cloud-1@underworld': mist(32, 6),
+  'cloud-2@underworld': mist(48, 7),
+  'cloud-3@underworld': mist(64, 8),
+};

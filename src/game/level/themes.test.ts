@@ -733,6 +733,10 @@ describe('themes', () => {
       expect(r).toBeGreaterThan(b);
       expect(frame('ground@underworld').join('')).toContain('8');
       expect(frame('castle-brick@underworld').join('')).toMatch(/5/);
+      // a spent block reads as spent: darker than the bolted slab, its pale bolts gone
+      const shade = (f: readonly string[]) => [...f.join('')].filter((c) => c === '0' || c === '1').length;
+      expect(shade(frame('used@underworld'))).toBeGreaterThan(shade(frame('hard@underworld')) * 2);
+      expect(frame('used@underworld').join('')).not.toMatch(/[38]/);
       expect(lum(SKY.underworld as string)).toBeLessThan(0x40);
       expect(STARRY_SKIES.has('underworld')).toBe(false);
       expect(decorPalette('underworld')).toBe('decor-underworld');
@@ -766,6 +770,30 @@ describe('themes', () => {
       });
       drawDecor(r, view, 'gateway', 0, 192);
       expect(out[0]).toEqual({ sheet: 'decor@decor-underworld', frame: 'gateway' });
+      // the classic scenery is redrawn for the cavern at its own size: rock heaps, stalagmites,
+      // mist; none of it in the slime greens (no bright green hills underground)
+      for (const kind of [
+        'hill-big',
+        'hill-small',
+        'bush-1',
+        'bush-2',
+        'bush-3',
+        'cloud-1',
+        'cloud-2',
+        'cloud-3',
+      ]) {
+        const themed = decorDef.frames[`${kind}@underworld`] as readonly string[];
+        const plain = decorDef.frames[kind] as readonly string[];
+        expect([themed[0]?.length, themed.length], kind).toEqual([plain[0]?.length, plain.length]);
+        expect(themed.join(''), kind).not.toMatch(/[123]/);
+        out.length = 0;
+        drawDecor(r, view, kind, 0, 192);
+        expect(out[0]?.frame, kind).toBe(`${kind}@underworld`);
+      }
+      for (const kind of ['cloud-1', 'cloud-2', 'cloud-3'])
+        expect((decorDef.frames[`${kind}@underworld`] as readonly string[]).join(''), kind).toMatch(
+          /^[45.]+$/,
+        );
       // a beanstalk in the Underworld is a steel ladder; elsewhere it stays a beanstalk
       out.length = 0;
       new Vine(3, 10, 3).render(r, view);
