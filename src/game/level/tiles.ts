@@ -19,6 +19,15 @@ export type BlockContent =
   | 'clock'
   /** Reveals the teleport pad hidden in this block (a `teleport` zone with `block=x,y`). */
   | 'teleporter'
+  /**
+   * The Top Secret Area's blocks (0.4.10): always a fire flower, always a mushroom (each hero
+   * takes them as its own power, as from any block), or a Yoshi egg (entities/objects/yoshi-egg.ts).
+   */
+  | 'flower'
+  | 'mushroom'
+  | 'egg'
+  /** Lays the hidden path of the `path` zone whose `block=x,y` is this block (World.layPath). */
+  | 'path'
   | 'none';
 
 export interface TileDef {
@@ -122,6 +131,12 @@ export const T = {
    * panel always stands. Only its zone makes it spin.
    */
   TRICK: def('trick-wall', 'solid'),
+  /** The Top Secret Area's `?` blocks (0.4.10): a fire flower, a mushroom, a Yoshi egg. */
+  Q_FLOWER: def('question-flower', 'solid', { block: { kind: 'question', content: 'flower' } }),
+  Q_MUSHROOM: def('question-mushroom', 'solid', { block: { kind: 'question', content: 'mushroom' } }),
+  Q_EGG: def('question-egg', 'solid', { block: { kind: 'question', content: 'egg' } }),
+  /** An invisible block that lays a hidden cloud path (a `path` zone; 2-1's, campaign only). */
+  HIDDEN_PATH: def('hidden-path', 'none', { block: { kind: 'hidden', content: 'path' } }),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
@@ -151,6 +166,10 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   '6': T.HIDDEN_POISON,
   '7': T.HIDDEN_VINE,
   '8': T.HIDDEN_TELEPORTER,
+  '9': T.HIDDEN_PATH,
+  W: T.Q_FLOWER,
+  R: T.Q_MUSHROOM,
+  Y: T.Q_EGG,
   Q: T.Q_CLOCK,
   B: T.HARD,
   u: T.USED,

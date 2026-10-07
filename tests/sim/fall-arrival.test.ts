@@ -4,6 +4,7 @@ import { px, toPx } from '@engine/math/units';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import { campaignLevel } from '@game/level/campaign';
+import { MAP_EXIT } from '@game/level/schema';
 import type { LevelScene } from '@game/scenes/level';
 import { FALL_IN_STEER_Y } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
@@ -91,6 +92,8 @@ function fallArrivals(): { level: string; x: number; y: number }[] {
     for (const z of campaignLevel(l, () => true).zones) {
       if (!('target' in z) || !z.target) continue;
       const t = z.target as { level: string; x: number; y: number; exitDir?: string };
+      // The Top Secret Area's pipe leads back to the map, into no level.
+      if (t.level === MAP_EXIT) continue;
       const fall =
         z.kind === 'pit' || z.kind === 'descent'
           ? true
