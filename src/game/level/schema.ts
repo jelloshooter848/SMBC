@@ -18,7 +18,11 @@ export type Theme =
   | 'mushroom-red'
   | 'castle-water'
   // Mega Man's space station above 3-1: steel plating against the black of space.
-  | 'station';
+  | 'station'
+  // Samus's cavern below 4-2: bubbly blue rock in the dark.
+  | 'cavern'
+  // Larry Koopa's airship behind 4-2's right-hand pipe: wooden decks and iron under a night sky.
+  | 'airship';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -38,6 +42,8 @@ export const THEMES: readonly Theme[] = [
   'mushroom-red',
   'castle-water',
   'station',
+  'cavern',
+  'airship',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -55,6 +61,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'castle' || theme === 'castle-overworld') return 'castle';
   if (theme === 'underground') return 'underground';
   if (theme === 'station') return 'mm-station';
+  if (theme === 'cavern') return 'cavern';
+  if (theme === 'airship') return 'airship';
   return 'overworld';
 }
 
