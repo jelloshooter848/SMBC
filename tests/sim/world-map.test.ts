@@ -474,8 +474,12 @@ describe('developer mode: unlock all on the map', () => {
     h.game.showMap();
     h.idle(8);
     expect(h.map().node).toBe('1-3');
-    // Unlock all opens the Warp Zone hub too.
-    expect(worldsListed(h)).toEqual([...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`), 'Warp Zone']);
+    // Unlock all opens the Lost Levels (the story's extension, listed with it) and the hub too.
+    expect(worldsListed(h)).toEqual([
+      ...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`),
+      ...['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D'].map((w) => `Lost ${w}`),
+      'Warp Zone',
+    ]);
 
     // Dev mode off: the row is gone and the map is back to normal, the hero on an open node.
     settings.dev = false;

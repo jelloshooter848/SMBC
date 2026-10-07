@@ -245,6 +245,23 @@ function revealIds(x: unknown, pages: readonly PageId[]): string[] {
   return [...new Set(ids)].slice(0, 64);
 }
 
+/**
+ * Map nodes a later build took away, '<page>:<node>' → the node of that page to stand on instead.
+ * 0.4.7 (the Lost Levels as the story's extension): Lost World 1's warp back to the hub and the
+ * World 8 ↔ A pads went; a hero left on World 8's pad stands at the castle it hung off.
+ */
+const REMOVED_NODES: Readonly<Record<string, string>> = {
+  'll-1:hub': 'start',
+  'll-8:warp-ll-10': 'll-8-4',
+  'll-10:warp-ll-8': 'start',
+};
+
+/** The node to stand on: `node` when page `page` has it, else its replacement or the start. */
+function placedNode(page: PageId, node: string): string {
+  if (mapPage(page)?.nodes.some((n) => n.id === node)) return node;
+  return REMOVED_NODES[`${page}:${node}`] ?? 'start';
+}
+
 /** World 1's page, where every file starts. */
 const FIRST_PAGE_ID: PageId = 'smb-1';
 
@@ -302,7 +319,7 @@ export function migrateSave(
     [...MAP_PAGES].reverse().find((p) => p.group === 'smb' && pages.includes(p.id))?.id ?? d.position.page;
   const cleared = withTutorial(strs(stored.cleared, d.cleared));
   let position = pages.includes(posPage)
-    ? { page: posPage, node: str(pos.node, d.position.node) }
+    ? { page: posPage, node: placedNode(posPage, str(pos.node, d.position.node)) }
     : { page: furthest, node: 'start' };
   // Before 1-0, 1-1 was open on a new file: a file with no clears may stand there (or anywhere
   // past World 1's start), which is locked until 1-0 is cleared. Back to the start, on 1-0.

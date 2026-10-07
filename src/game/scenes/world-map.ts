@@ -4,7 +4,7 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import { MAP_PAGES, mapPage } from '@content/worldmap';
 import { drawMapActor, drawMapTile, mapSky } from '@content/worldmap/render';
-import type { MapActor, MapNode, MapProgress, PageId, WorldMapPage } from '../map/types';
+import type { MapActor, MapNode, MapProgress, PageGroup, PageId, WorldMapPage } from '../map/types';
 import {
   exitId,
   FIRST_PAGE,
@@ -1014,19 +1014,20 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * The pages the map menu "Worlds" lists, in play order: the open pages of the current group
-   * (SMB worlds, or Lost Levels worlds), plus the hub when it is open; on the hub, the open
-   * pages of every group.
+   * The pages the map menu "Worlds" lists, in play order: the open pages of the story (SMB
+   * worlds, then the Lost Levels worlds, its extension since 0.4.7), plus the hub when it is
+   * open; on the hub, the hub first.
    */
   worldsMenuPages(): WorldMapPage[] {
+    const story = (g: PageGroup) => g === 'smb' || g === 'll';
     const group = this.page.group;
+    const same = (p: WorldMapPage) => p.group === group || (story(p.group) && story(group));
     const open = MAP_PAGES.filter(
       (p) =>
-        (group === 'hub' || p.group === group || p.group === 'hub') &&
-        isPageOpen(this.progress, p.id, this.unlockAll),
+        (group === 'hub' || same(p) || p.group === 'hub') && isPageOpen(this.progress, p.id, this.unlockAll),
     );
-    // The current group first, then the Warp Zone, then the other groups (registry order).
-    const rank = (p: WorldMapPage) => (p.group === group ? 0 : p.group === 'hub' ? 1 : 2);
+    // The current group (the story counts as one) first, then the Warp Zone, then the others.
+    const rank = (p: WorldMapPage) => (same(p) ? 0 : p.group === 'hub' ? 1 : 2);
     return open.sort((a, b) => rank(a) - rank(b) || MAP_PAGES.indexOf(a) - MAP_PAGES.indexOf(b));
   }
 

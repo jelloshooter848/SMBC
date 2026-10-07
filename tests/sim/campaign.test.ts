@@ -666,8 +666,9 @@ describe('campaign: clears return to the map', () => {
   });
 
   // Owner decision (2026-10-05): after 8-4, "Your quest is over." and the credits, then the
-  // file is saved with 8-4 complete, then the title.
-  it("8-4's ending rolls the credits, then saves the file cleared and goes to the title", () => {
+  // file is saved with 8-4 complete. 0.4.7 (the Lost Levels are the story's extension): then the
+  // World 8 map, where the road on to Lost World 1 draws in (before, the title).
+  it("8-4's ending rolls the credits, saves the file cleared, then World 8's road to Lost 1 draws in", () => {
     const h = makeGame();
     const cleared = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     h.game.openFile(
@@ -678,6 +679,9 @@ describe('campaign: clears return to the map', () => {
         position: { page: 'smb-8', node: '8-4' },
       }),
     );
+    const road = page(8).exits.find((e) => e.to === 'll-1');
+    expect(road).toBeDefined();
+    expect(isExitOpen(h.game.mapProgress, page(8), road!)).toBe(false);
     enter(h, '8-4');
     play(h, '8-4-end');
     h.fire({ type: 'exit', next: 'end' });
@@ -685,12 +689,18 @@ describe('campaign: clears return to the map', () => {
     expect(loadSave(1)?.gameCleared).toBe(false);
     h.idle(60);
     h.tap('start'); // fast-forwards (the original's pause button during the credits)
-    h.until(() => h.top() instanceof TitleScene, 3000);
+    h.until(() => h.top() instanceof WorldMapScene, 3000);
     const saved = loadSave(1) as SaveFile;
     expect(saved.gameCleared).toBe(true);
     expect(saved.cleared).toContain('8-4');
-    expect(h.game.campaign).toBeNull();
-    // Reopening the file shows 8-4 completed.
+    expect(saved.pages).toContain('ll-1');
+    expect(h.game.campaign).toEqual({ slot: 1 });
+    expect(h.map().page.id).toBe('smb-8');
+    expect(h.map().node).toBe('8-4');
+    expect(h.game.pendingReveal).toContain('smb-8:8-4>ll-1');
+    h.until(() => h.map().mode === 'idle', 2000);
+    expect(isExitOpen(h.game.mapProgress, page(8), road!)).toBe(true);
+    // Reopening the file shows 8-4 completed, the road open.
     h.game.openFile(1);
     expect(h.map().page.id).toBe('smb-8');
     expect(isCleared(h.game.mapProgress, page(8), '8-4')).toBe(true);

@@ -25,8 +25,6 @@ import { WorldMapScene, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId } from '../map/types';
 import {
   clearLevel,
-  conditionCount,
-  conditionMet,
   entryLevel,
   findLevelNode,
   secretExit,
@@ -43,7 +41,7 @@ import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot'
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
 import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship';
-import { isLostLevel, warpsOpened, workingWarps } from '../level/lost-campaign';
+import { isLostLevel } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import { levelTutorial, newTutorialRun, stageTutorial, type TutorialRun } from '../tutorial/stage-tutorial';
@@ -159,11 +157,13 @@ export class Game {
    * SMB (and custom levels): the castle has said "Your quest is over."; the credits roll over it
    * (ScreenManager.startMoveCreditsTmrHandler), then the title (restartGameTmrHandler ->
    * beatGame -> restartGame). In campaign mode, after the credits the clear is recorded, the file
-   * marked as cleared and saved, and the title follows (owner decision, 2026-10-05).
+   * marked as cleared and saved, and the World 8 map follows, where the road on to Lost World 1
+   * draws in (0.4.7: the Lost Levels are the story's extension; before, the title).
    *
-   * The Lost Levels follow the NES rules (owner decision, 2026-10-05): 8-4 counts a game beaten
-   * (worlds A-D open after 8) and, without warps, goes on to World 9; World 9 and D-4 end the game,
-   * D-4 with the credits (see showLostEnding).
+   * The Lost Levels (see showLostEnding): outside the campaign they follow the NES rules (8-4
+   * counts a game beaten and, without warps, goes on to World 9; World 9 and D-4 end the game);
+   * in the campaign 8-4 and 9-4 go back to the map, where the next world's road draws in, and
+   * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
     if (from.startsWith('ll-')) return this.showLostEnding(from);
@@ -175,8 +175,9 @@ export class Game {
   }
 
   /**
-   * The credits are over: campaign files record the clear and save, then the title (SMB 8-4) or
-   * the map page of the castle (Lost Levels D-4). Otherwise the title.
+   * The credits are over: campaign files record the clear and save, then the map page of the
+   * castle (SMB 8-4: World 8, its road on to Lost World 1 drawn in; Lost Levels D-4). Otherwise
+   * (and for a campaign level on no map page) the title.
    */
   private afterCredits(from: string): void {
     if (this.campaign) {
@@ -186,41 +187,37 @@ export class Game {
       if (!isLostLevel(from)) this.mapProgress.gameCleared = true;
       this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
       this.autosave();
-      if (isLostLevel(from)) return this.returnToMap();
+      if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
     this.showTitle();
   }
 
   /**
-   * The Lost Levels' game ends: 8-4 (on to World 9 without warps), 9-4 and D-4 (ll-13-4), each
-   * with the owner's card (the NES wording, 2026-10-06). The card is the castle's thanks: those
-   * castles say nothing themselves (World.updateBossClear), and the card is drawn where their
-   * text would be, over the level, with the HUD's score above it as in the SMB 8-4 ending.
-   * Start or B continues ("PUSH BUTTON B TO SELECT A WORLD": there is no world picker, so B
-   * goes on like Start). 8-4 then shows the games-beaten tally (and, warped, why World 9 stays
-   * shut) before World 9 or the title; 9-4 goes to the title; D-4 rolls the credits over the
-   * castle, scrolling the card away (the SMB 8-4 path), then the title.
+   * The Lost Levels' game ends: 8-4, 9-4 and D-4 (ll-13-4), each with the owner's card (the NES
+   * wording, 2026-10-06). The card is the castle's thanks: those castles say nothing themselves
+   * (World.updateBossClear), and the card is drawn where their text would be, over the level,
+   * with the HUD's score above it as in the SMB 8-4 ending. Start or B continues ("PUSH BUTTON B
+   * TO SELECT A WORLD": there is no world picker, so B goes on like Start). D-4 rolls the credits
+   * over the castle, scrolling the card away (the SMB 8-4 path).
    *
-   * Campaign play (a save file from the map, owner decision for 0.4.0) has its own unlock rules,
-   * read from the file alone (rules.conditionMet; the global NES progress store is left alone):
-   * World A opens once 8-4 is beaten ('llLetters'), World 9 once all 32 levels from 1-1 to 8-4
-   * are cleared ('ll9'). The clear is recorded on the castle's page (the level → page lookup)
-   * and saved as the card shows, and the end goes back to that page: 8-4 after a page saying
-   * what is open (the map then draws in the World A warp's road, and World 9's when it opened),
-   * 9-4 after the card, D-4 after the credits.
+   * Campaign play (a save file from the map): the story's extension (0.4.7). The clear is
+   * recorded on the castle's page (the level → page lookup) and saved as the card shows; the
+   * castle's exit opens the next world whatever warps were taken (8-4 → World 9, 9-4 → World A),
+   * and the end goes back to that page, where the road draws in: 8-4 and 9-4 after the card, D-4,
+   * the final ending, after the credits. The global NES progress store is left alone.
+   *
+   * Outside the campaign (dev select, ?level=) the NES rules: 8-4 then shows the games-beaten
+   * tally (and, warped, why World 9 stays shut) before World 9 or the title; 9-4 goes to the
+   * title; D-4 to the title after the credits.
    */
   private showLostEnding(from: string): void {
     const s = this.state;
     const campaign = this.campaign !== null;
-    const prog = this.mapProgress;
-    const firstClear = campaign && !prog.cleared.includes(from);
-    const nineBefore = campaign && conditionMet(prog, 'll9');
-    // Campaign: the clear first, so a condition the ending makes true opens with a draw-in.
-    const warpsBefore = campaign ? workingWarps(prog) : null;
     if (campaign) {
       s.checkpoint = null;
       s.time = null;
       this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
+      this.autosave();
     }
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
@@ -239,26 +236,7 @@ export class Game {
           ]
         : ['THANK YOU!'];
     let then: () => void;
-    if (from === 'll-8-4' && campaign) {
-      // What is open now ('!' when this clear opened it).
-      const page = [firstClear ? 'WORLD A IS OPEN!' : 'WORLD A IS OPEN.'];
-      if (!conditionMet(prog, 'll9'))
-        page.push('', 'WORLD 9 OPENS ONCE LOST 1-1', `TO 8-4 ARE CLEARED (${conditionCount(prog, 'll9')}).`);
-      else page.push(nineBefore ? 'WORLD 9 IS OPEN.' : 'WORLD 9 IS OPEN!');
-      then = () => {
-        this.deps.announcer?.say(page.filter(Boolean).join(' '));
-        this.scenes.clear();
-        this.scenes.push(
-          new MessageScene(
-            this,
-            [...page, '', fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`)],
-            () => this.returnToMap(),
-            1800,
-            ['start', 'attack', 'jump'], // as the card, plus A
-          ),
-        );
-      };
-    } else if (from === 'll-8-4') {
+    if (from === 'll-8-4' && !campaign) {
       const warped = s.warped;
       const before = loadProgress();
       const progress = recordLostGameBeaten(before, warped);
@@ -292,10 +270,6 @@ export class Game {
         this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
       };
     } else then = () => (campaign ? this.returnToMap() : this.showTitle());
-    if (warpsBefore) {
-      this.addReveal(warpsOpened(this.mapProgress, warpsBefore));
-      this.autosave();
-    }
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');

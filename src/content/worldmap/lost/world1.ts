@@ -2,18 +2,22 @@ import { actor, autoShore, poly } from '../build';
 import type { WorldMapPage } from '@game/map/types';
 import { lostNodes, lostPageIds } from './build';
 
-/** Lost World 1, GREEN MEADOW: rolling hills round a quiet pond, a long beach to the south. */
+/**
+ * Lost World 1, GREEN MEADOW: rolling hills round a quiet pond, a long beach to the south. The
+ * road from SMB World 8's castle arrives at the start, and walking left off it goes back there
+ * (0.4.7; before, a warp node here led back to the Warp Zone hub).
+ */
 export const SKETCH_LL_1 = [
   '................',
   '................',
   'hhhhhhhhhhhhhhhh',
   '#T,#H##T,##HH#T#',
   '###,#T##,#T##H#,',
-  '#T#,#T#abdf####T',
+  '###,#T#abdf####T',
   '#,###*#gilm##H#,',
   '#T*T#,#prtv##T##',
   '##,T#*,T#####H#,',
-  '#P,##T#*,#T,###T',
+  '#T,##T#*,#T,###T',
   'T,#H#######H,#T#',
   '#T,#*T#,#T######',
   '################',
@@ -29,18 +33,16 @@ export const LL_1: WorldMapPage = {
   tiles: autoShore(SKETCH_LL_1),
   nodes: lostNodes(
     1,
-    [0, 4],
+    [0, 5],
     [
       [3, 6],
       [6, 10],
       [12, 5],
       [13, 11],
     ],
-    [1, 8],
   ),
   paths: [
-    { from: 'start', to: 'll-1-1', points: poly([0, 4], [2, 4], [2, 6], [3, 6]) },
-    { from: 'start', to: 'hub', points: poly([0, 4], [0, 8], [1, 8]) },
+    { from: 'start', to: 'll-1-1', points: poly([0, 5], [2, 5], [2, 6], [3, 6]) },
     { from: 'll-1-1', to: 'll-1-2', points: poly([3, 6], [4, 6], [4, 10], [6, 10]) },
     { from: 'll-1-2', to: 'll-1-3', points: poly([6, 10], [9, 10], [9, 8], [12, 8], [12, 5]) },
     { from: 'll-1-3', to: 'll-1-4', points: poly([12, 5], [14, 5], [14, 9], [13, 9], [13, 11]) },

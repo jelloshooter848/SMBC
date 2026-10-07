@@ -64,27 +64,6 @@ export function isPageOpen(
   return id === FIRST_PAGE || progress.pages.includes(id) || (unlockAll && registered(id, pages));
 }
 
-/**
- * The main levels whose clears open the Lost Levels' World 9 in campaign play ('ll9', owner
- * decision for 0.4.0): all 32 of Lost 1-1 to 8-4.
- */
-export const LOST_NINE_LEVELS: readonly string[] = Array.from(
-  { length: 32 },
-  (_, i) => `ll-${Math.floor(i / 4) + 1}-${(i % 4) + 1}`,
-);
-
-/** How many of LOST_NINE_LEVELS the file has cleared. */
-export function lostNineCleared(progress: MapProgress): number {
-  return LOST_NINE_LEVELS.filter((id) => progress.cleared.includes(id)).length;
-}
-
-/**
- * A condition's progress so far, for a hint's '{n}' ('ll9': '31/32'); '' for the others.
- */
-export function conditionCount(progress: MapProgress, cond: MapCondition | undefined): string {
-  return cond === 'll9' ? `${lostNineCleared(progress)}/${LOST_NINE_LEVELS.length}` : '';
-}
-
 /** Whether `cond` holds (no condition always does; 'never' never does, even with unlock all). */
 export function conditionMet(
   progress: MapProgress,
@@ -96,8 +75,6 @@ export function conditionMet(
   if (unlockAll) return true;
   if (cond === 'gameCleared') return progress.gameCleared === true;
   if (cond.startsWith('secret:')) return progress.secrets.includes(cond.slice('secret:'.length));
-  if (cond === 'll9') return lostNineCleared(progress) === LOST_NINE_LEVELS.length;
-  if (cond === 'llLetters') return progress.cleared.includes('ll-8-4');
   return false;
 }
 
@@ -254,8 +231,8 @@ export function isExitOpen(
 }
 
 /**
- * The hint line on node `nodeId` while a world exit leaving it with a `hint` is locked (its
- * '{n}' filled in by conditionCount: 'WORLD 9 - CLEAR 1-1 TO 8-4 31/32'); '' when there is none.
+ * The hint line on node `nodeId` while a world exit leaving it with a `hint` is locked; '' when
+ * there is none (no page has one since 0.4.7: the Lost Levels' World 9 hint went with 'll9').
  */
 export function exitHint(
   progress: MapProgress,
@@ -264,7 +241,7 @@ export function exitHint(
   unlockAll = false,
 ): string {
   const e = page.exits.find((x) => x.from === nodeId && x.hint && !isExitOpen(progress, page, x, unlockAll));
-  return e?.hint ? e.hint.replace('{n}', conditionCount(progress, e.requires)) : '';
+  return e?.hint ?? '';
 }
 
 /** The paths and world exits to draw. */
@@ -370,27 +347,26 @@ export function clearLevel(
     if (!at) return;
     progress.position = { page: at.page.id, node: at.node.id };
     if (at.node.kind !== 'castle') return;
-    // The castle's world exits lead on (World 8's castle has none: the ending follows).
+    // The castle's world exits lead on (SMB 8-4's road to Lost World 1, after its ending; Lost
+    // D-4 has none: the final ending).
     for (const e of at.page.exits)
       if (e.from === at.node.id && conditionMet(progress, e.requires)) openPage(progress, e.to);
   });
 }
 
 /**
- * Opens the pages of cleared castles' exits whose `requires` has come to hold since (the
- * Lost Levels' World 9 and A-D, opened by the global progress store). Returns the opened
- * `revealId`s. Game.showMap calls it each time the map is shown.
+ * Opens the pages of cleared castles' exits that are open now but whose page is not: an exit
+ * whose `requires` has come to hold since, or an exit an older file never had (0.4.7: SMB 8-4's
+ * road to Lost World 1, Lost 8-4's to World 9 and 9-4's to World A, which replaced the NES
+ * unlocks). Returns the opened `revealId`s, the exits first. Game.showMap calls it each time the
+ * map is shown, so an old file is brought up to date with the roads drawn in.
  */
 export function openMetExits(progress: MapProgress, pages: readonly WorldMapPage[] = MAP_PAGES): string[] {
   const due = pages.flatMap((page) =>
     isPageOpen(progress, page.id)
       ? page.exits
           .filter(
-            (e) =>
-              e.requires !== undefined &&
-              !progress.pages.includes(e.to) &&
-              isExitOpen(progress, page, e) &&
-              registered(e.to, pages),
+            (e) => !progress.pages.includes(e.to) && isExitOpen(progress, page, e) && registered(e.to, pages),
           )
           .map((e) => ({ e, rid: revealId(page.id, exitId(e)) }))
       : [],
@@ -479,8 +455,8 @@ const OPPOSITE: Record<Dir, Dir> = { left: 'right', right: 'left', up: 'down', d
 /**
  * The open path (either way along it) or world exit leaving `from` whose first step goes `dir`;
  * null when there is none. On a page's start, the way the page was entered leads back to the
- * previous page of the same group when its exit is open. Warp nodes are walked to and from like
- * any node; warping is a jump (WorldMapScene), not a step.
+ * page whose open exit leads here (any group: Lost World 1's start walks back to SMB World 8).
+ * Warp nodes are walked to and from like any node; warping is a jump (WorldMapScene), not a step.
  */
 export function nextStep(
   page: WorldMapPage,
@@ -509,7 +485,7 @@ export function nextStep(
   }
   if (node(page, from)?.kind === 'start') {
     for (const prev of pages) {
-      if (prev.id === page.id || prev.group !== page.group) continue;
+      if (prev.id === page.id) continue;
       const e = prev.exits.find((x) => x.to === page.id && isExitOpen(progress, prev, x, unlockAll));
       if (!e || OPPOSITE[SIDE_DIR[e.side]] !== dir) continue;
       const start = node(page, from) as MapNode;

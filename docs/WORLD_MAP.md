@@ -36,10 +36,13 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 - `label` (at most 10 chars, `A-Z 0-9 space`) shows at the header's top right; `title` (at most 20) at its top left. The announcer reads the label in title case ("Lost A") and the title.
 - **Order within a group is the registry order** (`MAP_PAGES`): it sets slide directions and
   the Worlds menu order. Put `LOST_PAGES` in play order: 1-8, 9, A-D.
-- Pages of one group are joined by world exits (a slide). Different groups are joined only by
-  warp nodes (a fade); a start node's "walk back" road works only within its group.
-- The Worlds menu lists the open pages of the current group plus the hub when open; on the hub
-  it lists the open pages of every group.
+- Pages of one group are joined by world exits (a slide). The one road between groups is SMB
+  World 8's castle exit to Lost World 1 (0.4.7: the Lost Levels are the story's extension), a
+  slide too; Lost World 1's start walks back along it. Other groups are joined only by warp nodes
+  (a fade). A start node's "walk back" road leads to the page whose open exit arrives there.
+- The Worlds menu lists the open pages of the story (the SMB worlds, then the Lost Levels worlds,
+  one list since 0.4.7) plus the hub when open; on the hub it lists the hub first, then the open
+  pages of every group.
 
 ## `WorldMapPage`
 
@@ -128,13 +131,15 @@ map hint"): on its right, or its left when a road leaves to the right; `heroSpot
 
 ### Conditions (`MapCondition`)
 
-| Value            | Holds when                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------- |
-| `'gameCleared'`  | SMB 8-4 beaten on this file (`SaveFile.gameCleared`, `MapProgress.gameCleared`)             |
-| `'secret:<key>'` | The file has found secret `<key>`                                                           |
-| `'ll9'`          | The file has cleared all 32 Lost Levels main levels `ll-1-1`..`ll-8-4` (`LOST_NINE_LEVELS`) |
-| `'llLetters'`    | The file has cleared Lost 8-4 (`ll-8-4`)                                                    |
-| `'never'`        | Never: a future secret ("??? - A FUTURE SECRET")                                            |
+| Value            | Holds when                                                                      |
+| ---------------- | ------------------------------------------------------------------------------- |
+| `'gameCleared'`  | SMB 8-4 beaten on this file (`SaveFile.gameCleared`, `MapProgress.gameCleared`) |
+| `'secret:<key>'` | The file has found secret `<key>`                                               |
+| `'never'`        | Never: a future secret ("??? - A FUTURE SECRET")                                |
+
+0.4.7 removed the Lost Levels' NES unlock conditions `'ll9'` (World 9: all 32 of Lost 1-1 to 8-4
+cleared) and `'llLetters'` (World A: Lost 8-4 beaten), with `LOST_NINE_LEVELS` and the exit hint's
+`{n}` count (`conditionCount`): in the campaign the Lost worlds now open in order (below).
 
 Developer mode's **Unlock all** treats every condition as met **except `'never'`**, opens every
 registered page (the hub included, so the Worlds menu lists it), and shows warp nodes hidden only
@@ -173,35 +178,60 @@ different road with each, and **no ending opens every road leaving its level**.
   area of 4-2 (below) and is no exit at all (no `target.secret`, no road). The vine area's shows
   one ordinary pipe, down into Samus's cavern; the right one shows a dead pipe until Larry's anchor
   crashes down on it, and its chain climbs up onto his airship deck, whose stern pipe leads to his
-  room, where the crystal ball is the exit. The Lost Levels' warp zones (`workingWarps` /
-  `warpsOpened`) still warp as in the original and clear nothing. The map's secret-exit look
+  room, where the crystal ball is the exit. The Lost Levels' warp zones
+  (`Game.campaignWarpToMap`) still warp as in the original and clear nothing. The map's secret-exit look
   (`map/secret-exits.ts`) only marks levels that have another way out; it reads the level data as
   it is, so 4-2 keeps its look (in the campaign its other way out is Larry's `secret:larry` road).
 
-## World exits and the Lost Levels unlocks
+## World exits and the Lost Levels as the story's extension (0.4.7)
 
 ```ts
-exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
-           hint?: 'WORLD 9 - CLEAR 1-1 TO 8-4 {n}' }]
+exits: [{ from: '8-4', to: 'll-1', side: 'right', points, requires?: MapCondition, hint?: '...' }]
 ```
 
-- An exit opens when its `from` node (a castle) is cleared **and** its `requires` holds. A
-  castle clear (`rules.clearLevel`) opens the target page of every exit whose condition holds.
-- Exits only lead to pages of the same group.
-- `hint` (optional): the hint line while the hero stands on `from` and the exit is locked;
-  `{n}` is filled in with the condition's count (`rules.conditionCount`: `'ll9'` → `31/32`). At
-  most 32 chars once filled in. The announcer adds it to the node's name (`rules.exitHint`).
-- Lost Levels pages unlock like SMB: levels open in order along the roads, a castle exit opens
-  the next page. World 9: exit `ll-8-4 → ll-9` with `requires: 'll9'`. Worlds A-D: the warp node
-  `warp-ll-10` on World 8, off the castle, with `requires: 'llLetters'` (A-D can open without
-  World 9); then castle exits `ll-10 → ll-11 → ll-12 → ll-13`. Only World 1 has a warp node
-  `hub` back to the Warp Zone (paired with the hub's Lost Levels pad); World A's pipe
-  `warp-ll-8` leads back to World 8's pad. Worlds 2-9 and B-D have no other portals.
-- Every condition reads the save file alone (campaign rules, owner decision for 0.4.0; the
-  global NES progress store in `src/engine/save/progress.ts` is only for non-campaign play).
-- A condition can come true after its castle was cleared (World 9 when the 32nd of Lost 1-1 to
-  8-4 is cleared, wherever it is). `rules.openMetExits(progress)` opens those pages and returns the ids to
-  draw in; `Game.showMap` calls it every time the map is shown, so nothing else is needed.
+- An exit opens when its `from` node (a castle) is cleared **and** its `requires` holds (no exit
+  has one today). A castle clear (`rules.clearLevel`) opens the target page of every exit whose
+  condition holds.
+- Exits lead to pages of the same group, except SMB World 8's road on to Lost World 1.
+- `hint` (optional): the hint line while the hero stands on `from` and the exit is locked; the
+  announcer adds it to the node's name (`rules.exitHint`). At most 32 chars. None has one today.
+
+**The Lost Levels are the story's extension** (owner decision for 0.4.7; before, a hub pad opened
+them after SMB 8-4 and they unlocked by the NES rules):
+
+- **SMB 8-4**: the castle's "Your quest is over.", the credits, then the clear is recorded (the
+  file's `gameCleared` set), saved, and the **World 8 map** follows (before: the title). World
+  8's castle (its gate opens east) has the exit `8-4 → ll-1`, so the road off the right edge
+  draws in there, and Lost World 1's start with its first road waits in Lost 1's share of the
+  reveal. Walking it slides to Lost World 1, arriving on its start (on the road's row); walking
+  left off that start goes back to World 8's castle. Lost World 1 has no warp node back to the
+  hub any more (its road replaced it).
+- **In order**: every Lost castle's exit opens the next page in play order, `ll-1 → … → ll-8 →
+ll-9 → ll-10 (A) → ll-11 → ll-12 → ll-13 (D)`, off the right edge, with no condition. World 9
+  opens with Lost 8-4's clear whatever warp zones were taken (the NES needed a warpless run of
+  1-1 to 8-4), World A with 9-4's (the NES opened A-D after eight games beaten, from World 8).
+  World 8's pad to A and A's pipe back are gone; no Lost page has a warp node.
+- **The endings** (campaign, `Game.showLostEnding`): Lost 8-4 shows the NES card ("THANK YOU
+  <HERO>! YOUR QUEST IS OVER. WE PRESENT YOU A NEW QUEST. …") and goes back to the World 8 map,
+  where World 9's road draws in; 9-4 its "THANK YOU!" card, then the World 9 map with A's road;
+  **D-4 is the final ending**: its card, the credits, then the World D map. The clear is saved as
+  the card shows. Outside the campaign (dev select, `?level=`) the Lost Levels keep the NES
+  rules (games-beaten tally, World 9 after a warpless run, A-D after eight games, the global
+  progress store); the campaign never touches that store.
+- **Warp zones** stay as on the NES (backward ones too): a warp pipe opens only its target page
+  and the map moves there; it clears nothing (`Game.campaignWarpToMap`).
+- **Old files** (no format change): every page a file had stays open, every clear kept.
+  `rules.openMetExits(progress)` opens the page of every cleared castle's exit that is not open
+  yet (not only exits whose `requires` came to hold) and returns the ids to draw in;
+  `Game.showMap` calls it every time the map is shown. So a file that beat SMB 8-4 gets Lost
+  World 1 and the road, drawn in on World 8 the first time it is shown; a file that beat Lost 8-4
+  with warps gets World 9; one that had World 9 (32 clears) or A (World 8's pad) keeps them (A
+  without 9-4 stays reachable through the Worlds menu). A hero saved on a node that is gone stands
+  on its page's start (`save-files.ts placedNode`): Lost 1's `hub` and A's `warp-ll-8` → start,
+  World 8's `warp-ll-10` → its castle `ll-8-4`. Stale reveal ids of gone nodes are dropped when
+  their page is shown.
+- Every condition reads the save file alone (campaign rules; the global NES progress store in
+  `src/engine/save/progress.ts` is only for non-campaign play).
 
 ## Progress, reveals and saves
 
@@ -345,6 +375,6 @@ teleport x y -> level x y [exit=beam|fall] [block=bx,by]
    rows 2-13, contiguous paths.
 2. Add it to its list in play order (`LOST_PAGES` in `lost/index.ts`; the hub is `HUB_PAGE`).
 3. Give castles their exits (with `requires` where the rules need one) and any warp nodes their
-   `to`/`toNode`/`requires`/`label`/`hint`. Only Lost World 1 has a warp back to the hub.
+   `to`/`toNode`/`requires`/`label`/`hint`. No Lost Levels page has a warp node (0.4.7).
 4. Run `pnpm test`: `src/content/worldmap/pages.test.ts` checks every registered page (ids,
-   labels, tiles, nodes, paths, warp targets, exits within the group).
+   labels, tiles, nodes, paths, warp targets, exits within the group but World 8's road on).

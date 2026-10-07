@@ -376,6 +376,55 @@ describe('save files', () => {
     ]);
   });
 
+  it('a file from before the Lost Levels became the story (0.4.7) loads with nothing lost; no format bump', () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set(saveKey(1), JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1) as SaveFile;
+    };
+    // Mid-Lost-Levels, through the hub, standing on Lost 1's warp back to the hub (gone): its start.
+    const lost = ['ll-1-1', 'll-1-2', 'll-1-3', 'll-1-4', 'll-2-1'];
+    const mid = put({
+      gameCleared: true,
+      cleared: ['8-4', ...lost],
+      pages: ['smb-1', 'smb-8', 'hub', 'll-1', 'll-2'],
+      position: { page: 'll-1', node: 'hub' },
+      lastNode: { 'll-1': 'hub', 'll-2': 'll-2-1' },
+    });
+    expect(mid.v).toBe(SAVE_VERSION);
+    expect(mid).toMatchObject({ gameCleared: true, position: { page: 'll-1', node: 'start' } });
+    expect(mid.cleared).toEqual(['1-0', '8-4', ...lost]);
+    expect(mid.pages).toEqual(['smb-1', 'smb-8', 'hub', 'll-1', 'll-2']);
+    expect(mid.lastNode).toEqual({ 'll-2': 'll-2-1' });
+    // World 9 or A open by the old rules: kept. A hero on World 8's old pad to A stands at the
+    // castle it hung off; on A's old pipe back, at A's start.
+    const nine = ['ll-9', 'll-10'];
+    const pad = put({
+      cleared: ['ll-8-4'],
+      pages: ['smb-1', 'll-8', ...nine],
+      position: { page: 'll-8', node: 'warp-ll-10' },
+    });
+    expect(pad.pages).toEqual(['smb-1', 'll-8', ...nine]);
+    expect(pad.position).toEqual({ page: 'll-8', node: 'll-8-4' });
+    expect(
+      put({ pages: ['smb-1', 'll-10'], position: { page: 'll-10', node: 'warp-ll-8' } }).position,
+    ).toEqual({
+      page: 'll-10',
+      node: 'start',
+    });
+    // Any other node a page does not have: its start (a node that still exists is kept).
+    expect(put({ pages: ['smb-1', 'smb-2'], position: { page: 'smb-2', node: 'gone' } }).position).toEqual({
+      page: 'smb-2',
+      node: 'start',
+    });
+    expect(put({ pages: ['smb-1', 'll-8'], position: { page: 'll-8', node: 'll-8-3' } }).position.node).toBe(
+      'll-8-3',
+    );
+    // Beat SMB 8-4 without the new road's page: the map opens it (rules.openMetExits, drawn in
+    // when shown); loading changes nothing else.
+    const beat = put({ gameCleared: true, cleared: ['8-4'], pages: ['smb-1', 'smb-8'] });
+    expect(beat.pages).toEqual(['smb-1', 'smb-8']);
+  });
+
   it('never throws when storage is unavailable', () => {
     (globalThis as { localStorage?: unknown }).localStorage = undefined;
     expect(loadSave(1)).toBeNull();

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { LevelData } from '../level/schema';
-import type { MapNode, MapPath, WorldMapPage } from './types';
+import type { MapCondition, MapNode, MapPath, WorldMapPage } from './types';
 import {
   clearLevel,
   entryLevel,
@@ -24,9 +24,7 @@ import {
   isWarpOpen,
   openMetExits,
   warpText,
-  conditionCount,
   exitHint,
-  LOST_NINE_LEVELS,
   warpRecords,
   pathExit,
   secretExit,
@@ -563,27 +561,23 @@ describe('pages, warp nodes and conditions', () => {
     [{ from: 'll-1-4', to: 'll-2', side: 'right', points: road(7) }],
   );
   const LL2 = mini('ll-2', 'll', ['ll-2-1']);
+  // The story's extension (0.4.7): SMB 8's castle road leads on to Lost 1 (across groups), and
+  // each Lost castle opens the next world, 8 -> 9 -> A included.
+  const W8 = mini('smb-8', 'smb', ['8-4'], [{ from: '8-4', to: 'll-1', side: 'right', points: road(3) }]);
   const LL8 = mini(
     'll-8',
     'll',
     ['ll-8-4'],
-    [
-      { from: 'll-8-4', to: 'll-9', side: 'right', requires: 'll9', points: road(3) },
-      {
-        from: 'll-8-4',
-        to: 'll-10',
-        side: 'top',
-        requires: 'llLetters',
-        points: [
-          [3, 7],
-          [3, 6],
-        ],
-      },
-    ],
+    [{ from: 'll-8-4', to: 'll-9', side: 'right', points: road(3) }],
   );
-  const LL9 = mini('ll-9', 'll', ['ll-9-1']);
+  const LL9 = mini(
+    'll-9',
+    'll',
+    ['ll-9-4'],
+    [{ from: 'll-9-4', to: 'll-10', side: 'right', points: road(3) }],
+  );
   const LL10 = mini('ll-10', 'll', ['ll-10-1']);
-  const ALL = [W1, P2, HUB, LL1, LL2, LL8, LL9, LL10];
+  const ALL = [W1, P2, W8, HUB, LL1, LL2, LL8, LL9, LL10];
   const getLevelAny = (id: string) => ({ id, parent: null }) as LevelData;
 
   const store = new Map<string, string>();
@@ -673,7 +667,7 @@ describe('pages, warp nodes and conditions', () => {
     expect(isWarpOpen(p, lost!, true, ALL)).toBe(true);
     expect(isWarpOpen(p, never!, true, ALL)).toBe(false);
     expect(isOpen(p, HUB, 'never', true)).toBe(true);
-    expect(conditionMet(p, 'll9', true)).toBe(true);
+    expect(conditionMet(p, 'gameCleared', true)).toBe(true);
     expect(conditionMet(p, 'never', true)).toBe(false);
   });
 
@@ -727,46 +721,34 @@ describe('pages, warp nodes and conditions', () => {
     expect(warpRecords(p, HUB, lost, ALL)).toBe(true);
   });
 
-  it('conditions read the file alone (gameCleared, secrets, Lost Levels clears)', () => {
+  it('conditions read the file alone (gameCleared, secrets); the NES Lost Levels unlocks are gone', () => {
     const p = newMapProgress();
     expect(conditionMet(p, undefined)).toBe(true);
-    for (const c of ['gameCleared', 'll9', 'llLetters', 'never', 'secret:x'] as const)
-      expect(conditionMet(p, c), c).toBe(false);
+    for (const c of ['gameCleared', 'never', 'secret:x'] as const) expect(conditionMet(p, c), c).toBe(false);
+    // The NES progress store does not count.
+    setLost({ world9: true, letters: true, beaten: 8 });
+    expect(conditionMet(p, 'gameCleared')).toBe(false);
     p.gameCleared = true;
     p.secrets.push('x');
     expect(conditionMet(p, 'gameCleared')).toBe(true);
     expect(conditionMet(p, 'secret:x')).toBe(true);
     expect(conditionMet(p, 'secret:y')).toBe(false);
-    // The NES progress store does not count.
-    setLost({ world9: true, letters: true, beaten: 8 });
-    expect(conditionMet(p, 'll9')).toBe(false);
-    expect(conditionMet(p, 'llLetters')).toBe(false);
-    // World A: Lost 8-4 beaten on the file; World 9: all 32 of 1-1 to 8-4.
-    p.cleared.push('ll-8-4');
-    expect(conditionMet(p, 'llLetters')).toBe(true);
-    expect(conditionMet(p, 'll9')).toBe(false);
-    expect(conditionCount(p, 'll9')).toBe('1/32');
-    p.cleared.push(
-      ...LOST_NINE_LEVELS.filter((id) => id !== 'll-8-4' && id !== 'll-1-1'),
-      'll-9-1',
-      'll-10-1',
-    );
-    expect(conditionCount(p, 'll9')).toBe('31/32');
-    expect(conditionMet(p, 'll9')).toBe(false);
-    p.cleared.push('ll-1-1');
-    expect(conditionMet(p, 'll9')).toBe(true);
-    expect(conditionCount(p, 'll9')).toBe('32/32');
-    expect(conditionCount(p, 'llLetters')).toBe('');
+    // 0.4.7: 'll9' and 'llLetters' are no conditions any more (an unknown one never holds).
+    for (const c of ['ll9', 'llLetters']) expect(conditionMet(p, c as MapCondition), c).toBe(false);
   });
 
-  it('a locked world exit with a hint shows it on its node, with the count filled in', () => {
+  it('a locked world exit with a hint shows it on its node', () => {
     const p = newMapProgress();
     p.pages.push('ll-8');
-    const page = { ...LL8, exits: LL8.exits.map((e) => (e.to === 'll-9' ? { ...e, hint: 'NINE {n}' } : e)) };
-    expect(exitHint(p, page, 'll-8-4')).toBe('NINE 0/32');
+    const page = {
+      ...LL8,
+      exits: LL8.exits.map((e) => ({ ...e, requires: 'secret:nine' as const, hint: 'NINE - FIND IT' })),
+    };
+    expect(exitHint(p, page, 'll-8-4')).toBe('NINE - FIND IT');
     expect(exitHint(p, page, 'start')).toBe('');
     expect(exitHint(p, page, 'll-8-4', true)).toBe(''); // unlock all: open
-    p.cleared.push(...LOST_NINE_LEVELS);
+    p.cleared.push('ll-8-4');
+    p.secrets.push('nine');
     expect(exitHint(p, page, 'll-8-4')).toBe('');
   });
 
@@ -793,23 +775,131 @@ describe('pages, warp nodes and conditions', () => {
   it('exits with requires open only while it holds, also after the castle was cleared', () => {
     const p = newMapProgress();
     p.pages.push('ll-8');
-    // 8-4 beaten: 'llLetters' holds at once, 'll9' (all 32 of 1-1 to 8-4) not yet.
-    const opened = clearLevel(p, 'll-8-4', getLevelAny, ALL);
-    expect(opened[0]).toBe('ll-8:ll-8-4>ll-10');
-    expect(opened).toContain('ll-10:start');
-    expect(p.pages).toEqual(['smb-1', 'll-8', 'll-10']);
-    expect(openPaths(p, LL8).exits.map((e) => e.to)).toEqual(['ll-10']);
-    expect(openMetExits(p, ALL)).toEqual([]);
-    // The other 31 cleared later, anywhere: World 9 opens the next time the map is shown.
-    p.cleared.push(...LOST_NINE_LEVELS.filter((id) => id !== 'll-8-4'));
-    expect(openPaths(p, LL8).exits.map((e) => e.to)).toEqual(['ll-9', 'll-10']);
-    expect(openMetExits(p, ALL)).toEqual([
+    const page = { ...LL8, exits: LL8.exits.map((e) => ({ ...e, requires: 'secret:nine' as const })) };
+    const pages = ALL.map((x) => (x.id === 'll-8' ? page : x));
+    expect(clearLevel(p, 'll-8-4', getLevelAny, pages)).toEqual([]);
+    expect(p.pages).toEqual(['smb-1', 'll-8']);
+    expect(openMetExits(p, pages)).toEqual([]);
+    // Found later, anywhere: World 9 opens the next time the map is shown.
+    p.secrets.push('nine');
+    expect(openPaths(p, page).exits.map((e) => e.to)).toEqual(['ll-9']);
+    expect(openMetExits(p, pages)).toEqual([
       'll-8:ll-8-4>ll-9',
       'll-9:start',
-      'll-9:start>ll-9-1',
-      'll-9:ll-9-1',
+      'll-9:start>ll-9-4',
+      'll-9:ll-9-4',
     ]);
-    expect(p.pages).toEqual(['smb-1', 'll-8', 'll-10', 'll-9']);
-    expect(openMetExits(p, ALL)).toEqual([]);
+    expect(p.pages).toEqual(['smb-1', 'll-8', 'll-9']);
+    expect(openMetExits(p, pages)).toEqual([]);
+  });
+});
+
+describe("the Lost Levels as the story's extension (0.4.7)", () => {
+  const getLevelAny = (id: string) => ({ id, parent: null }) as LevelData;
+  /** A page of one castle with a road on (or none), on row 7. */
+  function castlePage(id: string, group: WorldMapPage['group'], castle: string, to?: string): WorldMapPage {
+    return {
+      id,
+      group,
+      label: id.toUpperCase(),
+      title: 'TEST',
+      theme: 'grass',
+      music: 'map',
+      tiles: Array.from({ length: 15 }, () => '.'.repeat(16)),
+      nodes: [
+        { id: 'start', kind: 'start', x: 0, y: 7 },
+        { id: castle, kind: 'castle', level: castle, x: 3, y: 7 },
+      ],
+      paths: [
+        {
+          from: 'start',
+          to: castle,
+          points: [
+            [0, 7],
+            [1, 7],
+            [2, 7],
+            [3, 7],
+          ],
+        },
+      ],
+      exits: to
+        ? [
+            {
+              from: castle,
+              to,
+              side: 'right',
+              points: [
+                [3, 7],
+                [4, 7],
+              ],
+            },
+          ]
+        : [],
+      actors: [],
+    };
+  }
+  const STORY = [
+    castlePage('smb-8', 'smb', '8-4', 'll-1'),
+    castlePage('ll-1', 'll', 'll-1-4', 'll-8'),
+    castlePage('ll-8', 'll', 'll-8-4', 'll-9'),
+    castlePage('ll-9', 'll', 'll-9-4', 'll-10'),
+    castlePage('ll-10', 'll', 'll-10-4', 'll-13'),
+    castlePage('ll-13', 'll', 'll-13-4'),
+  ];
+  const at = (id: string) => STORY.find((x) => x.id === id) as WorldMapPage;
+
+  it('SMB 8-4 opens the road on to Lost World 1; its start walks back to World 8', () => {
+    const p = newMapProgress();
+    p.pages.push('smb-8');
+    expect(clearLevel(p, '8-4', getLevelAny, STORY)).toEqual([
+      'smb-8:8-4>ll-1',
+      'll-1:start',
+      'll-1:start>ll-1-4',
+      'll-1:ll-1-4',
+    ]);
+    const on = nextStep(at('smb-8'), p, '8-4', 'right', STORY);
+    expect(on?.kind === 'exit' ? on.exit.to : null).toBe('ll-1');
+    const back = nextStep(at('ll-1'), p, 'start', 'left', STORY);
+    expect(back?.kind === 'back' ? [back.page, back.node] : null).toEqual(['smb-8', '8-4']);
+  });
+
+  it('each Lost castle opens the next world in order, 8 -> 9 -> A, whatever was skipped', () => {
+    const p = newMapProgress();
+    // A file that warped from World 1 straight to World 8 (no 9 condition to meet).
+    p.pages.push('ll-1', 'll-8');
+    expect(clearLevel(p, 'll-8-4', getLevelAny, STORY)).toContain('ll-8:ll-8-4>ll-9');
+    expect(p.pages).toContain('ll-9');
+    expect(p.pages).not.toContain('ll-10');
+    expect(clearLevel(p, 'll-9-4', getLevelAny, STORY)).toContain('ll-9:ll-9-4>ll-10');
+    expect(p.pages).toContain('ll-10');
+    const back = nextStep(at('ll-10'), p, 'start', 'left', STORY);
+    expect(back?.kind === 'back' ? [back.page, back.node] : null).toEqual(['ll-9', 'll-9-4']);
+    // D-4, the final ending, opens nothing.
+    p.pages.push('ll-13');
+    expect(clearLevel(p, 'll-13-4', getLevelAny, STORY)).toEqual([]);
+  });
+
+  it('an older file gets the roads it never had, drawn in when the map is shown (openMetExits)', () => {
+    // Beat SMB 8-4 before 0.4.7 (and reached Lost 1 through the hub, or not).
+    const p = { ...newMapProgress(), pages: ['smb-1', 'smb-8'], cleared: ['8-4'], gameCleared: true };
+    expect(openMetExits(p, STORY)).toEqual([
+      'smb-8:8-4>ll-1',
+      'll-1:start',
+      'll-1:start>ll-1-4',
+      'll-1:ll-1-4',
+    ]);
+    expect(p.pages).toEqual(['smb-1', 'smb-8', 'll-1']);
+    expect(openMetExits(p, STORY)).toEqual([]);
+    // Beat Lost 8-4 with warps (World 9 was shut): World 9 opens; A was open through the pad.
+    const q = { ...newMapProgress(), pages: ['smb-1', 'll-8', 'll-10'], cleared: ['ll-8-4'] };
+    expect(openMetExits(q, STORY)).toEqual([
+      'll-8:ll-8-4>ll-9',
+      'll-9:start',
+      'll-9:start>ll-9-4',
+      'll-9:ll-9-4',
+    ]);
+    expect(q.pages).toEqual(['smb-1', 'll-8', 'll-10', 'll-9']);
+    // Nothing is taken away: A stays open without 9-4.
+    expect(isPageOpen(q, 'll-10')).toBe(true);
   });
 });

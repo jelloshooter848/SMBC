@@ -222,17 +222,14 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     h.game.mapProgress.gameCleared = true;
     expect(h.map().hintLine).toBe('LOST LEVELS');
     warp(h, 'll-1');
-    // Portals pair 1:1: the pad lands on Lost 1's warp back to the hub, which lands on the pad.
-    expect(h.map().node).toBe('hub');
-    expect(loadSave(1)).toMatchObject({ gameCleared: true, position: { page: 'll-1', node: 'hub' } });
+    // Lost 1's warp back to the hub is gone (0.4.7: its road leads back to SMB World 8 instead),
+    // so the pad lands on Lost 1's start until it becomes the Mini Game Arena pad.
+    expect(h.map().node).toBe('start');
+    expect(loadSave(1)).toMatchObject({ gameCleared: true, position: { page: 'll-1', node: 'start' } });
     expect(loadSave(1)?.pages).toEqual(['smb-1', 'hub', 'll-1']);
-    expect(loadSave(1)?.lastNode).toMatchObject({ 'smb-1': 'bonus-1', hub: 'warp-lost', 'll-1': 'hub' });
+    expect(loadSave(1)?.lastNode).toMatchObject({ 'smb-1': 'bonus-1', hub: 'warp-lost', 'll-1': 'start' });
     h.step();
     expect(h.r.texts.some((t) => t.s === 'LOST 1')).toBe(true);
-    expect(h.map().hintLine).toBe('RETURN TO WARP ZONE');
-    warp(h, 'hub');
-    expect(h.map().node).toBe('warp-lost');
-    expect(loadSave(1)?.position).toEqual({ page: 'hub', node: 'warp-lost' });
   });
 
   it("the hub's centre warps back to World 1's warp spot, which warps to the hub again", () => {
@@ -257,17 +254,19 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(worldsMenu(h)).toEqual({ labels: ['Warp Zone', 'World 1'], cursor: 0 });
   });
 
-  it('the Worlds menu: current group first, then the Warp Zone, then other groups; cursor on HERE', () => {
+  it('the Worlds menu: the story (SMB then Lost) first, then the Warp Zone; on the hub, the hub first', () => {
     const h = makeGame();
     const pages = ['smb-1', 'smb-2', 'smb-3', 'hub', 'll-1', 'll-2'];
     h.game.openFile(1, file({ pages, position: { page: 'smb-2', node: 'start' } }));
     h.idle(8);
-    expect(worldsMenu(h)).toEqual({ labels: ['World 1', 'World 2', 'World 3', 'Warp Zone'], cursor: 1 });
+    // The Lost Levels are the story's extension (0.4.7): listed with the SMB worlds.
+    const story = ['World 1', 'World 2', 'World 3', 'Lost 1', 'Lost 2'];
+    expect(worldsMenu(h)).toEqual({ labels: [...story, 'Warp Zone'], cursor: 1 });
     h.game.scenes.pop();
     h.game.scenes.pop();
     h.game.travelToPage('ll-2');
     h.idle(8);
-    expect(worldsMenu(h)).toEqual({ labels: ['Lost 1', 'Lost 2', 'Warp Zone'], cursor: 1 });
+    expect(worldsMenu(h)).toEqual({ labels: [...story, 'Warp Zone'], cursor: 4 });
     h.game.scenes.pop();
     h.game.scenes.pop();
     h.game.travelToPage('hub');

@@ -112,11 +112,10 @@ describe('secret-exit level nodes', () => {
     expect(h.frameAt('4-3')).toBe('map-node-open');
   });
 
-  it('Lost Levels: 1-2 is marked; the hub warp pad is not', () => {
+  it('Lost Levels: 1-2 is marked, 1-1 is not', () => {
     const h = onMap('ll-1');
     expect(h.frameAt('ll-1-2')).toBe('map-node-secret');
     expect(h.frameAt('ll-1-1')).toBe('map-node-open');
-    expect(h.frameAt('hub')).toMatch(/^map-warp/);
   });
 
   it('Lost B-4, a castle with a warp zone, uses the secret-exit castle, open and cleared', () => {
