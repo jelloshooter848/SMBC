@@ -8,7 +8,7 @@ import { mapIconFrames } from './map-icons';
 type Size = readonly [w: number, h: number];
 const T16: Size = [16, 16];
 
-const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser', 'warp'];
+const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser', 'warp', 'arena'];
 
 const tileFrames = [
   'ground',
@@ -39,6 +39,11 @@ const tileFrames = [
   'moon',
   'cloud',
   ...[0, 1, 2, 3].flatMap((i) => [`star-${i}`, `lava-${i}`]),
+  // The Mini Game Arena.
+  'arena-floor',
+  'arena-wall',
+  ...[0, 1, 2, 3].flatMap((f) => [`arena-crowd-a-${f}`, `arena-crowd-b-${f}`, `arena-banner-${f}`]),
+  ...[0, 1, 2].map((w) => `arena-bunting-${w}`),
   ...Array.from({ length: WATER_FRAMES }, (_, f) => [
     `water-${f}`,
     `surf-${f}`,
@@ -71,6 +76,10 @@ const actorFrames: Record<string, Size> = {
   'splash-1': [16, 8],
   'comet-0': [16, 8],
   'comet-1': [16, 8],
+  'arena-tower-0': [16, 48],
+  'arena-tower-1': [16, 48],
+  'arena-scoreboard-0': [48, 32],
+  'arena-scoreboard-1': [48, 32],
 };
 
 function expectFrame(name: string, [w, h]: Size): void {

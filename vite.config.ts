@@ -73,5 +73,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    // The level and map sims take a second or two each alone, far longer on a busy machine.
+    testTimeout: 30_000,
   },
 });

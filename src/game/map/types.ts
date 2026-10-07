@@ -14,7 +14,8 @@ export type MapTheme =
   | 'snow' // World 6
   | 'coast' // World 7
   | 'bowser' // World 8
-  | 'warp'; // Warp Zone hub
+  | 'warp' // Warp Zone hub
+  | 'arena'; // the Mini Game Arena
 
 /**
  * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),
