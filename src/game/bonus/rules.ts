@@ -99,19 +99,75 @@ export function shuffle<T>(rng: Rng, items: readonly T[]): T[] {
   return out;
 }
 
+/**
+ * The N-spade's boards (SMB3 deals a fixed set of boards in turn, not a shuffle): 3 rows of 6, M
+ * mushroom, F fire flower, S star, U 1-up, C 10 coins, D 20 coins. Our own layouts. A board stays
+ * as it was left: the pairs found stay gone on the next visit until the board is cleared, then
+ * the next board comes (after the last, the first again).
+ */
+export const NSPADE_BOARDS: readonly (readonly string[])[] = [
+  ['FUCDFU', 'MMUFSC', 'UMFDMS'],
+  ['MFFCUC', 'FDSFMU', 'MUMSDU'],
+  ['DUSFUM', 'FMUCMF', 'MSCUFD'],
+  ['SFUMUF', 'DMFCSU', 'FMDMCU'],
+  ['UFDMFS', 'FUFCMS', 'MDUUCM'],
+  ['FDDFUF', 'MSMUCM', 'CUSUMF'],
+  ['FUMFCU', 'DMMCFU', 'FMSDSU'],
+  ['FFUFDM', 'MSCFUS', 'DUMUCM'],
+];
+
+const BOARD_FACES: Readonly<Record<string, CardFace>> = {
+  M: 'mushroom',
+  F: 'flower',
+  S: 'star',
+  U: '1up',
+  C: 'coin10',
+  D: 'coin20',
+};
+
+/** Board `n`'s 18 faces, row by row (n wraps round the set). */
+export function boardFaces(n: number): CardFace[] {
+  const len = NSPADE_BOARDS.length;
+  const rows = NSPADE_BOARDS[((Math.floor(n) % len) + len) % len] as readonly string[];
+  return rows
+    .join('')
+    .split('')
+    .map((ch) => BOARD_FACES[ch] as CardFace);
+}
+
+/**
+ * The cards of a board with `faces` taken on earlier visits, from `x` (a save file's): known
+ * places, each once, in order, and only whole pairs of each face (a lone card of a face is
+ * dropped with the last of its kind).
+ */
+export function takenCards(faces: readonly CardFace[], x: unknown): number[] {
+  if (!Array.isArray(x)) return [];
+  const ok = [...new Set(x)].filter(
+    (i): i is number => typeof i === 'number' && Number.isInteger(i) && i >= 0 && i < faces.length,
+  );
+  const byFace = new Map<CardFace, number[]>();
+  for (const i of ok) byFace.set(faces[i] as CardFace, [...(byFace.get(faces[i] as CardFace) ?? []), i]);
+  const keep = new Set<number>();
+  for (const idx of byFace.values()) for (const i of idx.slice(0, idx.length - (idx.length % 2))) keep.add(i);
+  return ok.filter((i) => keep.has(i)).sort((a, b) => a - b);
+}
+
 export interface Card {
   face: CardFace;
   /** Face up (a matched card, or one of the two being looked at). */
   up: boolean;
   matched: boolean;
+  /** Taken on an earlier visit: no longer on the board. */
+  gone: boolean;
 }
 
 export type FlipResult = 'first' | 'match' | 'miss' | 'invalid';
 
 /**
- * The N-spade board: 18 cards face down (3 rows of 6, row by row), two flipped at a time. A
- * matching pair stays up and wins its prize; a miss stays up until `hideMiss` (the scene shows it
- * for a moment). Two misses, or every pair found, end it.
+ * The N-spade board: one of NSPADE_BOARDS (3 rows of 6, row by row), less the cards taken on
+ * earlier visits, face down, two flipped at a time. A matching pair stays up and wins its prize; a
+ * miss stays up until `hideMiss` (the scene shows it for a moment). Two misses, or the board
+ * cleared, end it.
  */
 export class MemoryGame {
   readonly cards: Card[];
@@ -122,23 +178,32 @@ export class MemoryGame {
   first: number | null = null;
   /** The two cards of a miss still showing, or null. */
   missed: [number, number] | null = null;
+  /** The two cards of the last pair found, or null. */
+  lastPair: [number, number] | null = null;
 
-  constructor(rng: Rng) {
-    this.cards = shuffle(rng, [...MEMORY_PAIRS, ...MEMORY_PAIRS]).map((face) => ({
-      face,
-      up: false,
-      matched: false,
-    }));
+  constructor(faces: readonly CardFace[], taken: readonly number[] = []) {
+    const gone = new Set(takenCards(faces, taken));
+    this.cards = faces.map((face, i) => ({ face, up: false, matched: gone.has(i), gone: gone.has(i) }));
+  }
+
+  /** Cards still on the board, not yet matched. */
+  get left(): number {
+    return this.cards.filter((c) => !c.matched).length;
+  }
+
+  /** Every card is matched (on this visit or earlier ones). */
+  get cleared(): boolean {
+    return this.left === 0;
   }
 
   get over(): boolean {
-    return this.misses >= MEMORY_MISSES || this.found.length === MEMORY_PAIRS.length;
+    return this.misses >= MEMORY_MISSES || this.cleared;
   }
 
   /** Whether card `i` can be turned now. */
   canFlip(i: number): boolean {
     const c = this.cards[i];
-    return !!c && !c.up && !this.over && this.missed === null;
+    return !!c && !c.up && !c.gone && !this.over && this.missed === null;
   }
 
   /** Turns card `i`: the first of a pair, the second (match or miss), or invalid (face up, game over, a miss showing). */
@@ -156,6 +221,7 @@ export class MemoryGame {
     if (a.face === c.face) {
       a.matched = c.matched = true;
       this.found.push(c.face);
+      this.lastPair = [Math.min(j, i), Math.max(j, i)];
       return 'match';
     }
     this.misses++;

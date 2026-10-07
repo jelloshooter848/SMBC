@@ -30,7 +30,7 @@ import { CHEST_X, OPEN_FRAMES } from '@game/bonus/toad-house';
 import { toPx } from '@engine/math/units';
 import { RESULT_DELAY } from '@game/bonus/slots';
 import { MISS_FRAMES } from '@game/bonus/memory';
-import { SLOT_CELL, SLOT_STRIPS, type CardFace } from '@game/bonus/rules';
+import { boardFaces, SLOT_CELL, SLOT_STRIPS, type CardFace } from '@game/bonus/rules';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { SCREEN_W } from '@engine/viewport';
 import { CHARACTERS } from '@game/characters/registry';
@@ -638,6 +638,82 @@ describe('N-spade', () => {
       { kind: 'item', item: 'star' },
     ]);
     expect(loadSave(1)?.coins).toBe(10);
+  });
+
+  it("deals the file's board, not a shuffle: the first board on a new file, whatever the seed", () => {
+    const { h } = onMap({ inventoryUnlocked: true });
+    for (const seed of [1, 99]) {
+      const m = bonus(h, 'memory', seed).scene as MemoryScene;
+      expect(m.board.cards.map((c) => c.face)).toEqual(boardFaces(0));
+      h.game.scenes.pop();
+    }
+  });
+
+  it('the board stays as left: pairs found are gone next visit (saved), until it is cleared; then the next board', () => {
+    const { h } = onMap({ inventoryUnlocked: true });
+    let m = bonus(h, 'memory', 1).scene as MemoryScene;
+    const [s1, s2] = cardsOf(m, 'star');
+    turnCard(h, m, s1 as number);
+    turnCard(h, m, s2 as number);
+    expect(h.game.bonus.spadeTaken).toEqual([s1, s2]);
+    expect(loadSave(1)?.spadeTaken).toEqual([s1, s2]);
+    expect(loadSave(1)?.spadeBoard).toBe(0);
+    // Two misses end this visit.
+    const [ma] = cardsOf(m, 'mushroom');
+    const [fa] = cardsOf(m, 'flower');
+    for (let k = 0; k < 2; k++) {
+      turnCard(h, m, ma as number);
+      turnCard(h, m, fa as number);
+      h.idle(MISS_FRAMES + 2);
+    }
+    expect(m.board.over).toBe(true);
+    closeCard(h);
+    // The next visit: the stars are gone, the rest face down where they were.
+    m = bonus(h, 'memory', 2).scene as MemoryScene;
+    expect(m.board.cards[s1 as number]?.gone).toBe(true);
+    expect(m.board.cards[s2 as number]?.gone).toBe(true);
+    expect(m.board.left).toBe(16);
+    expect(m.board.canFlip(s1 as number)).toBe(false);
+    // Clear the rest: the next board comes, nothing taken on it.
+    for (const f of new Set(m.board.cards.filter((c) => !c.gone).map((c) => c.face))) {
+      const idx = cardsOf(m, f).filter((i) => !m.board.cards[i]?.gone);
+      for (let k = 0; k < idx.length; k += 2) {
+        turnCard(h, m, idx[k] as number);
+        turnCard(h, m, idx[k + 1] as number);
+      }
+    }
+    expect(m.board.cleared).toBe(true);
+    expect(h.game.bonus.spadeBoard).toBe(1);
+    expect(h.game.bonus.spadeTaken).toEqual([]);
+    expect(loadSave(1)?.spadeBoard).toBe(1);
+    closeCard(h);
+    m = bonus(h, 'memory', 3).scene as MemoryScene;
+    expect(m.board.cards.map((c) => c.face)).toEqual(boardFaces(1));
+  });
+
+  it("a round for fun (the arena, Dev → Mini games) leaves the file's board as it was", () => {
+    const { h } = onMap({ inventoryUnlocked: true });
+    h.game.inRound = true;
+    const m = bonus(h, 'memory', 1).scene as MemoryScene;
+    const [s1, s2] = cardsOf(m, 'star');
+    turnCard(h, m, s1 as number);
+    turnCard(h, m, s2 as number);
+    expect(m.prizes).toHaveLength(1);
+    expect(h.game.bonus.spadeTaken).toEqual([]);
+    expect(h.game.bonus.spadeBoard).toBe(0);
+  });
+
+  it('a file from before the fixed boards opens on the first board, nothing taken', () => {
+    const raw = { ...newSave(1, 'mario') } as Record<string, unknown>;
+    delete raw.spadeBoard;
+    delete raw.spadeTaken;
+    const m = migrateSave(JSON.parse(JSON.stringify(raw)), 1) as SaveFile;
+    expect([m.spadeBoard, m.spadeTaken]).toEqual([0, []]);
+    const bad = migrateSave(
+      JSON.parse(JSON.stringify({ ...raw, spadeBoard: 2.5, spadeTaken: [3, 'x', 99] })),
+      1,
+    ) as SaveFile;
+    expect([bad.spadeBoard, bad.spadeTaken]).toEqual([0, []]);
   });
 
   it('a 20-coin pair over 100 coins makes a life', () => {

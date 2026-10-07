@@ -97,6 +97,12 @@ export interface SaveFile extends MapProgress {
    */
   inventory?: ItemId[];
   bonusNext?: number;
+  /**
+   * The N-spade's board in play and its cards taken on earlier visits (0.4.14, optional: missing,
+   * the first board with nothing taken; bonus/rules.ts NSPADE_BOARDS, takenCards).
+   */
+  spadeBoard?: number;
+  spadeTaken?: number[];
   devInventory?: boolean;
   itemsNext?: NextItem[];
 }

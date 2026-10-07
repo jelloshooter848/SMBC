@@ -20,6 +20,8 @@ docs/WORLD_MAP.md "The Top Secret Area".
 | `bonusGuard`        | the used spot's Hammer Bro is out (after the next level entered)           | not out               |
 | `inventory`         | item ids won, in order: `mushroom`, `flower`, `star`, `1up`; at most 12    | `[]`                  |
 | `bonusNext`         | the rotation: 0 Toad House, 1 N-spade, 2 spade game                        | 0                     |
+| `spadeBoard`        | the N-spade board in play (an index into `NSPADE_BOARDS`, 0.4.14)          | 0 (the first)         |
+| `spadeTaken`        | its cards taken on earlier visits, whole pairs only (0.4.14)               | `[]`                  |
 | `devInventory`      | dev mode's map menu "Item inventory"                                       | off                   |
 | `itemsNext`         | items used from the map, waiting for the next level's start (one per kind) | `[]`                  |
 
@@ -86,13 +88,17 @@ Chests are rolled from the seed as the house opens, each on its own: mushroom 50
 ### N-spade (memory match)
 
 18 cards face down in 3 rows of 6 on a green table: nine pairs, two each of mushroom, fire flower
-and 1-up, one each of star, 10 coins and 20 coins (`MEMORY_PAIRS`), shuffled from the seed. The
+and 1-up, one each of star, 10 coins and 20 coins (`MEMORY_PAIRS`). As in SMB3 the boards are a
+fixed set dealt in turn, not a shuffle: `NSPADE_BOARDS` (rules.ts, eight layouts of our own), the
+file's `spadeBoard`. A board stays as it was left: the pairs found stay gone on the next visit
+(`spadeTaken`, saved with each pair's prize) until every pair on it is found; then the next board
+comes (after the last, the first again). A round for fun plays the file's board and changes
+nothing. The
 arrows move a cursor (it wraps; the announcer says the row, card and what is face up there), TURN
 turns a card. Two at a time: a matching pair stays up and wins its prize at once (items to the
 inventory, a 1-up a life, coins added with 100 making a life); a miss shows both for 50 frames and
-turns them back. Two misses end it (the second stays up), as does finding every pair. "MISSES
-LEFT" shows at the top, the prizes won along the bottom. A fresh board each time (SMB3 kept the
-board between visits; one game per visit here). Music `bonus-game`; sounds `card-flip`, `bonus-win`,
+turns them back. Two misses end it (the second stays up), as does clearing the board. "MISSES
+LEFT" shows at the top, the prizes won along the bottom. Music `bonus-game`; sounds `card-flip`, `bonus-win`,
 `bump`.
 
 ### Spade game (slots)
