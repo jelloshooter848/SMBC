@@ -6,15 +6,14 @@ here.
 
 ## Planned
 
-| Order | What                                                                                                                                                                                                                                                                                                                                                                                              | Status                         |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| 1     | **0.4.9: Bill under 7-3** (Contra look for 7-3, the exploding bridge, the jungle camp, the Jungle Assault mini game) and the Arena airship hero pick                                                                                                                                                                                                                                              | Built; browser QA, then the PR |
-| 2     | **0.4.10: "Safety floor" dev assist** (deadly pits get an invisible floor at the pit's rim and lava turns solid, dev mode only) **and the Top Secret Area** (jump over 2-1's flagpole in the campaign to find a Moblin, "IT'S A SECRET TO EVERYBODY", who opens World 2's hidden spot: five ? blocks, with two Fire Flowers, a Yoshi egg that gives a 1-up until Yoshi exists, and two Mushrooms) | Being built                    |
-| 3     | **0.4.11: Sophia III**: build her as a new playable hero and make her unlockable in World 8 (see idea 3 below)                                                                                                                                                                                                                                                                                    | Next, the owner's priority     |
-| 4     | **0.4.12: Level restyles**: each earlier hero's level takes on their game's look in the campaign (see below)                                                                                                                                                                                                                                                                                      | Planned                        |
-| 5     | **0.4.13: A coherent story** from 1-0 through 8-4 and on into the Lost Levels: a map guide, hint characters for each secret hero, castle messages rewritten (see below)                                                                                                                                                                                                                           | Brainstorming                  |
-| 6     | **Mini game fidelity pass**: compare the older mini games with their real NES games, using the owner's reference screenshots                                                                                                                                                                                                                                                                      | With the restyles              |
-| 7     | **Classic SMBC rules** (the 19 reports from PR #51), plus an automated tile-by-tile check of our levels against the NES maps                                                                                                                                                                                                                                                                      | After the restyles             |
+| Order | What                                                                                                                                                                                                                                                                                                                                                                                              | Status                     |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| 1     | **0.4.10: "Safety floor" dev assist** (deadly pits get an invisible floor at the pit's rim and lava turns solid, dev mode only) **and the Top Secret Area** (jump over 2-1's flagpole in the campaign to find a Moblin, "IT'S A SECRET TO EVERYBODY", who opens World 2's hidden spot: five ? blocks, with two Fire Flowers, a Yoshi egg that gives a 1-up until Yoshi exists, and two Mushrooms) | Being built                |
+| 2     | **0.4.11: Sophia III**: build her as a new playable hero and make her unlockable in World 8 (see idea 3 below)                                                                                                                                                                                                                                                                                    | Next, the owner's priority |
+| 3     | **0.4.12: Level restyles**: each earlier hero's level takes on their game's look in the campaign (see below)                                                                                                                                                                                                                                                                                      | Planned                    |
+| 4     | **0.4.13: A coherent story** from 1-0 through 8-4 and on into the Lost Levels: a map guide, hint characters for each secret hero, castle messages rewritten (see below)                                                                                                                                                                                                                           | Brainstorming              |
+| 5     | **Mini game fidelity pass**: compare the older mini games with their real NES games, using the owner's reference screenshots                                                                                                                                                                                                                                                                      | With the restyles          |
+| 6     | **Classic SMBC rules** (the 19 reports from PR #51), plus an automated tile-by-tile check of our levels against the NES maps                                                                                                                                                                                                                                                                      | After the restyles         |
 
 ### Level restyles (campaign only)
 
@@ -44,12 +43,13 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
 **Owner decisions:**
 
 - **Premise:** Princess Peach is in hiding. King Koopa stole Larry's magic wand and used it to pull heroes from other
-  worlds into the Mushroom Kingdom and brainwash them, so they would hunt for Peach and he could kidnap her. Mario's
-  job is to find her first.
+  worlds into the Mushroom Kingdom and brainwash them, so they would hunt for Peach and he could kidnap her (his
+  Koopas couldn't find her; the heroes don't think like Koopas). Mario's job is to find her first. Freeing a hero
+  also cracks the wand further.
 - **The wand runs through the whole story.** It breaks when Bowser falls at 8-4, and its pieces fall through a rift
   into the Lost Kingdom (the Lost Levels). Mario follows. The Koopalings want the pieces too, which ties in idea 1
   below.
-- **Peach is found in the Lost Levels**, fairly early (open to adjusting). She then becomes a **playable hero** who
+- **Peach is found in the Lost Levels**, at Lost 4-4 (Toadstool Grove), and leaves traces before that. She then becomes a **playable hero** who
   helps fight back.
   - **When:** a later release, after the story batch, once work on the Lost Levels starts.
   - **What exists:** PR #51 only lists her as a new-character candidate (`bug-reports/2026-10-07-classic-follow-ups.md`,
@@ -61,6 +61,13 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
     at the kind of place, for example "a hunter of the night… probably down in some dungeon".
   - When a hero's shadow shows up on the map (a hero you passed without freeing), he lightly says it feels like we
     missed something.
+- **The fake Bowsers are the wand's disguises,** and the player should be able to see it. Castles 1-4 to 7-4 hold
+  minions the king dressed in his own shape:
+  - the disguise flickers during the fight;
+  - it always bursts on defeat, revealing the true form;
+  - each castle's Toad names the creature;
+  - Toad explains the trick once after 1-4;
+  - in 8-4 Bowser announces "NO MORE STAND-INS". See docs/STORY.md 2.3a.
 - **The castle messages are rewritten.** "Our princess is in another castle" no longer fits, because Peach is hiding
   rather than captured. Each castle gets its own story beat.
 - **Partner characters** for the other hidden heroes, like Jason for Sophia, who give clues about where to find them.
@@ -72,7 +79,9 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
   - Ryu: Irene Lew;
   - Bill: Lance.
 - **Process:** first draft every line in a story document (docs/STORY.md) for the owner to review and edit, then
-  build.
+  build. The owner reviewed the draft on 2026-10-07; the decisions (partners before the way in, Toad at the end of
+  8-4, credits at 8-4 as a false ending plus a short final roll, six wand pieces held by the Koopalings) are in
+  docs/STORY.md section 3.
 
 ## Ideas for later
 

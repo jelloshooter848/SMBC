@@ -8,6 +8,12 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Dev mode: a Safety floor assist. Deadly pits get an invisible floor at the pit's rim and lava turns
+  solid, so testing a level can't end in a fall. Falls that lead somewhere (coin heavens, the 7-3
+  bridge, the 5-4 lift ride) still work.
+
 ## [0.4.9] - 2026-10-07
 
 ### Added
