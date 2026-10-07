@@ -50,6 +50,8 @@ const SONG_IDS = [
   'contra-boss',
   'contra-lair',
   'contra-card',
+  // The mini game heroes' own start jingles.
+  'zebes-start',
 ];
 
 const SFX_IDS = [
@@ -116,6 +118,11 @@ const SFX_IDS = [
   'spread',
   'laser',
   'konami',
+  // The mini game heroes' own deaths (WorldStart.deathStyle).
+  'mm-death',
+  'samus-death',
+  'cv-death',
+  'ng-death',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

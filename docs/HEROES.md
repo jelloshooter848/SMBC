@@ -441,8 +441,24 @@ An NES Mega Man style stage on the space station above 3-1, played **as Mega Man
 fight with **Dark Mega Man**, the brainwashing's copy of him. It runs in a real `World` of its own
 (stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Mega Man with the
 helmet kit (`{ helmet: 1 }`: buster, charge shot, slide, and Rush Coil, which comes with the
-helmet), full 28 hit points on the usual bar, one life, no clock, and a camera that scrolls both
-ways. READY shows first (Mega Man cannot move, the press that started the round never jumps).
+helmet), full 28 hit points, three lives, no clock, and a camera that scrolls both ways. Each
+life starts with READY blinking on the empty start spot (the stage music already playing; the
+press that started the round never jumps), then Mega Man beams down onto it (World's `beam`
+arrival) and only then moves. The HUD is Mega Man 2's: bars only (`hud.ts`: the selected weapon's
+energy at x 16 while a weapon is selected, life at x 24, the boss at x 40, tops at y 24), no name,
+score or lives.
+
+- **NES form** (`nes-form.ts`, `NES_MEGAMAN`; the campaign's `MEGAMAN` is untouched, as Bill's
+  Contra form in `bill/commando.ts`): Mega Man 2's jump, 4.87 px/f up under 0.25 px/f² either way
+  (an apex of about 3 tiles, 50 px, against the campaign's 4.3), a hit's push back with no upward
+  pop (a jump stops rising), and shots (buster, charge shot) that pass through walls. Walking
+  (1.375 px/f) already matched.
+- **Lives** (`minigames/lives.ts`, `MiniLives`, on Bill's REST model): a life lost (orb burst,
+  `WorldStart.deathStyle: 'orbs'`, the `mm-death` sound instead of Mario's jingle) restarts in a
+  new World at the last checkpoint: the stage start, column 40 (past the capsule), or the boss
+  door (column 77, reached at 76: through the shutter again, and his bar fills again). Full hit
+  points; the Saw Disc stays his with the energy it had (back on the buster), and the capsule
+  stays gone. Losing the last life is GAME OVER (180 frames), then `fail`.
 
 - **The stage** (five screens, theme `station`: steel floor, bulkhead plating behind a corridor
   band, space above, the station sheet's windows, consoles and girders as `deco` entities drawn in
@@ -481,16 +497,23 @@ ways. READY shows first (Mega Man cannot move, the press that started the round 
   invulnerability after a hit (flicker, not with reduce flashing).
 - **Outcomes**: beating him bursts him into Mega Man's death orbs (the `death-orb` frame, two rings
   of eight) with "DARK MEGA MAN IS BEATEN!", the victory jingle, Mega Man beams out, then `pass`.
-  Mega Man at 0 hit points or in a pit: `fail` once the death has played. Menu (`StationMenuScene`)
-  Give up: `quit`. `done` is called once; `game.state` is never touched.
+  Mega Man at 0 hit points or in a pit costs a life; `fail` after GAME OVER. Menu
+  (`StationMenuScene`) Give up: `quit`. `done` is called once; `game.state` is never touched.
 - Music `mm-station` on the stage and `mm-boss` from the boss's entrance, `castle-clear` for the
   win; sounds `boss-fill` (each bar notch), `beam` (his entrance, Mega Man's exit), `capsule`
   (`art.ts` names them all).
 - Touch labels: Mega Man's level labels while he plays (`levelTouchLabels`: JUMP, SHOOT, the
   weapon's name, WEAPON with two or more), only MENU while READY, the capsule, the gate and the
   entrance run, none once the round is decided. Dev assists: No damage keeps every hit point (a pit
-  still fails, as in a level, unless the Safety floor assist catches it). Dev: `?minigame=megaman` (the scene is `window.__miniGame`), or Dev →
+  still costs a life, as in a level, unless the Safety floor assist catches it); Infinite lives
+  keeps the count. Dev: `?minigame=megaman` (the scene is `window.__miniGame`), or Dev →
   Mini games.
+- **World hook** `WorldStart.deathStyle` (`world/death-style.ts`): `hop` (the default, Mario's
+  jingle and hop, unchanged), `orbs` (Mega Man), `explode` (Samus: flashes, steady with reduce
+  flashing, then her suit's pieces fly apart), `collapse` (Simon: no hop, he drops to the floor
+  and lies in his `die` frame) and `ninja` (Ryu: thrown up and back, then lies there). Each has its
+  own sound (`content/sfx/deaths.ts`; `WorldStart.deathSfx` overrides it) and length before `died`
+  (`DEATH_FRAMES`); `World.deathTime(p)` and `p.scratch.deathT` give a sprite the death's clock.
 - **World hook** `WorldStart.extraEntities(spawn, world)`: a mini game's own entity types without a
   case in `makeEntity`. Asked first for every spawn: an entity takes it, `null` drops it, `undefined`
   leaves it to World's own types. The station's `hopper`, `turret` (`mount=ceiling`), `drone`
@@ -500,10 +523,11 @@ Difficulty (a "cautious human" sim, `human-sim.test.ts`: `StationBot` with a 15-
 delay, robots and shots misjudged by up to 6 px, pauses and jumps a little early; it knows the
 plan, switches to the Saw Disc and fires it, jumps Dark Mega Man's shots; without the saw it uses
 charge shots from afar; `MM_SIM=30 pnpm vitest run megaman/human-sim --silent=false` prints the
-report): with the Saw Disc it wins 93 / 93 / 93 / 97% of 30 seeds at a 12 / 15 / 18 / 21-frame
-reaction, losing about 20-22 of 28 hit points in all (about 12 to Dark Mega Man; half the wins end
-on 8 or less). With the buster alone: 90 / 80 / 23 / 20%, so the weakness matters for slower
-players.
+report). With the NES form and three lives (0.4.12; the two floor turrets past pits and the
+hopper after the last pit moved two columns on, so a stop to wait for one is not at a pit's
+edge, where a hit's push back, with no upward pop now, drops him in), with the Saw Disc it wins 100% of 40 seeds at a 12 / 15 / 18 / 21-frame
+reaction; with the buster alone 100 / 100 / 98 / 95%. Hit points lost across lives: about 16-21
+with the saw, 20-44 without (most of it to Dark Mega Man).
 
 ## Samus's mini game: Zebes Escape (`src/game/minigames/samus/`)
 
@@ -511,8 +535,13 @@ The cavern under 4-2 starts to self-destruct, played **as Samus**: get from the 
 chamber to her ship before the countdown runs out. It runs in a real `World` of its own
 (stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Samus with a
 toned-down dev kit (`ESCAPE_KIT`: one energy tank, 60 energy, the Long Beam, ten missiles; the
-morph ball and its bombs are always hers; no Varia suit), one life, no level clock. READY shows
-first (Samus cannot move, the countdown waits, the press that started the round never jumps).
+morph ball and its bombs are always hers; no Varia suit), three lives, no level clock. No READY:
+each life starts with Samus materialising on her spot to her start jingle (`zebes-start`, 2.5 s:
+sparkles, her grey outline, then herself; the sparkles hold still with reduce flashing), while
+she cannot move and the clock waits (the press that started the round never jumps). The first
+life opens on TIME BOMB SET / GET OUT FAST!. The HUD is Metroid's (`hud.ts`): energy-tank boxes
+(filled while full) over `EN..nn` (the energy in the tank in use; 30 a tank), the missile icon
+with a 3-digit count, and the escape's TIME counter at the top middle; no name, place or score.
 
 - **The stage** (theme `cavern`, music `zebes-escape`; three screens wide and three high, the
   first map with `camera: free`, see below): the chamber (the `zebes` sheet's Chozo statue,
@@ -536,9 +565,8 @@ first (Samus cannot move, the countdown waits, the press that started the round 
   under a ceiling and drops on Samus passing within 40 px below, veering toward her, digs in for
   24 frames and bursts into four shards. A touch or a shard takes Samus's usual 8 energy
   (`World.hurtPlayer`: the no-damage assist, blinking and knockback as in a level).
-- **The countdown** (`COUNTDOWN_SECONDS`, 90): big block digits (rects, no sheet) at the top of
-  the HUD (`ZEBES` in the place slot, `EN` below the name), red in the last ten seconds (pulsing
-  between two reds, steady with reduce flashing). The announcer says "Escape! 90 seconds." and
+- **The countdown** (`COUNTDOWN_SECONDS`, 90): shown as TIME, 999 down to 0 mapped onto the 90
+  seconds (`timeShown`). The announcer says "Time bomb set! Get out fast! 90 seconds." and
   calls 60, 30 and 10 seconds. The `alarm` sound plays every 2 s and every half second in the last
   ten, when the music also speeds up (tempo 1.2; reset when the round ends). A red wash swells and
   fades over the cavern about once a second (twice in the last ten); with reduce flashing it is a
@@ -547,15 +575,20 @@ first (Samus cannot move, the countdown waits, the press that started the round 
   the creatures go, Samus hides inside, the ship lifts off (`beam` sound, the win jingle, "SAMUS
   ESCAPED!", the announcer gives the seconds to spare) and the round passes after 150 frames. The
   countdown reaching zero: the cavern blows up (the `explosion` sound; white and orange flicker
-  for 40 frames, then a fade to white; with reduce flashing only the fade) and the round fails
-  after 120 frames. A pit or losing all energy fails once the death has played. Menu
+  for 40 frames, then a fade to white; with reduce flashing only the fade) and a life is lost
+  after 120 frames. A pit or losing all energy (she explodes, `WorldStart.deathStyle: 'explode'`,
+  the `samus-death` sound) costs a life too. The next life starts in a new World at the last
+  checkpoint (the chamber, or the middle corridor once she comes up into it from shaft 1) with
+  the kit and the clock full again; losing the last is GAME OVER (180 frames), then `fail`. Menu
   (`EscapeMenuScene`, a `MiniGameMenuScene`; it pauses the countdown) Give up: `quit`. `done` is
-  called once; `game.state` is never touched.
+  called once; `game.state` is never touched. (NES Metroid has no lives, only continues; the
+  three lives follow the other World mini games.)
 - **Assists** (dev mode, from the menu): No damage keeps every point of energy (a pit still
-  fails; the Safety floor assist catches it). Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
+  costs a life; the Safety floor assist catches it). Infinite lives keeps the count. Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
   holds."); turned off, it runs on from there.
 - Touch labels: Samus's level labels while she runs (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
-  WEAPON; BOMB in the ball, no JUMP), only MENU while READY, none once the round is decided.
+  WEAPON; BOMB in the ball, no JUMP), only MENU while she materialises, none once a life or the
+  round is decided.
   Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Mini games.
 
 **The auto-scroll camera** (generic, `world/camera.ts`, SMB3's airships): a map's header
