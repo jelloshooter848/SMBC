@@ -102,8 +102,8 @@ campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (p
 - **The cabin** (`src/content/levels/world4/4-2-airship.map`, parent 4-2): one locked screen,
   the hero rising out of a pipe at the left, Larry on the floor at the right (`larry 12 13
 next=4-3`: the tile his feet stand in; `next` is where the ball leads outside the campaign).
-  Theme `castle` and music `smb3-boss` (plays `castle` until written: `content/music/fallbacks.ts`)
-  until the SMB3 art's `airship` theme lands.
+  Theme `airship` (an iron hull, `%`, round a plank deck, `#`, under a night sky) and music
+  `smb3-boss`.
 - **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
   hero (12 px high, 0.75 px/f across), a high jump now and then (30%, about 60 px; always when
   the hero is within 24 px, so he jumps over), and after every two moves he stops, raises his wand
@@ -115,7 +115,7 @@ next=4-3`: the tile his feet stand in; `next` is where the ball leads outside th
   (reaction `'bounce'`, which `World` now treats as a harmless bounce for stomps; no score), and
   everything else is immune; the sliding shell hurts to touch. **Fireballs and the other heroes'
   attacks** (sword, buster, weapons, bombs) take 1 each (2 for a heavy hit, amount 3 or more, like
-  Mega Man's charge shot), then he flashes for 40 frames, immune to attacks (a stomp still counts).
+  Mega Man's charge shot), then he flashes for 40 frames (`smb3-flash`), immune to attacks (a stomp still counts).
   Boomerangs, ice, bumps and the star do nothing. So: three stomps, or six fireballs.
 - **Beaten**: his rings vanish, the music stops, "BWAH!" rises over him (5000 points), he holds
   the hurt pose for half a second, then vanishes in a puff and flies off spinning in his shell.
@@ -132,11 +132,12 @@ next=4-3`: the tile his feet stand in; `next` is where the ball leads outside th
   level's node (stage 2 above) even before that level is cleared, with the same announcer line and
   hint line (`heroHint` in `map/captives.ts`). A node not on the map yet (its page not open)
   still shows nothing.
-- **Art**: the SMB3 sheet `smb3` (frames `larry-0` standing / `larry-1` in the air and aiming,
-  `larry-hurt`, `larry-shell-0..3`, `wand-blast-0/1`, `crystal-ball`; Larry's frames face left
-  and are flipped to face right). Until it lands each piece draws a fallback (a green turtle with
-  blue hair and a wand, a two-tone ring, a pale blue ball): `sheetWith` in `src/game/art.ts`.
-  Flashing after a hit and the ring's colour swap are off with reduce flashing.
+- **Art** (the SMB3 sheet `smb3`, `content/sprites/smb3.ts`): Larry's frames face left (flipped to
+  face right) and are bottom-anchored, drawn bottom-centred on his body: `larry-0` standing and
+  aiming, `larry-1` in the air (feet tucked up, wand raised), `larry-hurt` (no wand) for the first
+  10 frames after a stomp and while beaten, `larry-shell-0..3` spinning. A hit flash blinks him in
+  the `smb3-flash` palette; with reduce flashing he stays in it, without blinking, for the flash
+  time. `wand-blast-0/1` and `crystal-ball` (bottom-centred on its body).
 
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 

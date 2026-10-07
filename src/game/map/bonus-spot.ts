@@ -33,10 +33,7 @@ export interface BonusGame {
    * at most 32 chars, A-Z 0-9 space and - ! ').
    */
   label(game: Game): string;
-  /**
-   * The node's map icon as `sheet:frame` (16×16, e.g. 'smb3:node-toad-house'); the map falls back
-   * to its own bonus dot while the sheet or frame is missing.
-   */
+  /** The node's map icon as `sheet:frame` (16×16, an existing frame: 'smb3:node-toad-house'). */
   icon(game: Game): string;
   /** One visit; `done` must be called exactly once. */
   create(game: Game, spot: BonusSpot, done: (outcome: BonusOutcome) => void): Scene;

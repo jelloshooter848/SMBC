@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
+import { T } from '@game/level/tiles';
 import { mapPage } from '@content/worldmap';
 import { px } from '@engine/math/units';
 import type { Settings } from '@engine/save/settings';
@@ -109,7 +110,9 @@ describe('the crystal ball (campaign)', () => {
     h.until(() => !map.revealing, 600);
     expect(h.game.pendingReveal).toEqual([]);
     expect(
-      draw(map).sprites.some((s) => s.x === 2 * 16 && s.y === 13 * 16 && s.frame === 'map-node-bonus'),
+      draw(map).sprites.some(
+        (s) => s.x === 2 * 16 && s.y === 13 * 16 && s.key === 'smb3' && s.frame === 'node-toad-house',
+      ),
     ).toBe(true);
     expect(h.said.at(-1)).toMatch(/Bonus Game, open/);
   });
@@ -136,6 +139,53 @@ describe('the crystal ball (campaign)', () => {
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(IntroScene);
     expect(h.game.state.stage).toBe(3);
+  });
+});
+
+describe("the cabin's look (the SMB3 art)", () => {
+  it('is an airship playing the SMB3 boss tune', () => {
+    const l = getLevel('4-2-airship');
+    expect(l.theme).toBe('airship');
+    expect(l.music).toBe('smb3-boss');
+  });
+
+  it('is enclosed like the SMB3 cabin: ceiling, thick pillars, log wall, post floor, one raised post', () => {
+    const l = getLevel('4-2-airship');
+    const t = (x: number, y: number) => l.tiles[y * l.width + x];
+    expect(l.width).toBe(16);
+    // No sky anywhere below the HUD: hull, the log back wall, posts or the pipe.
+    for (let y = 2; y < 15; y++) for (let x = 0; x < 16; x++) expect(t(x, y), `${x},${y}`).not.toBe(T.AIR);
+    for (let x = 0; x < 16; x++) expect(t(x, 2)).toBe(T.CASTLE_BRICK);
+    for (let y = 2; y < 15; y++)
+      for (const x of [0, 1, 14, 15]) expect(t(x, y), `pillar ${x},${y}`).toBe(T.CASTLE_BRICK);
+    for (let y = 3; y < 12; y++) for (let x = 2; x < 14; x++) expect(t(x, y)).toBe(T.WALL);
+    for (let x = 4; x < 14; x++) expect(t(x, 13)).toBe(T.GROUND);
+    expect(t(7, 12)).toBe(T.GROUND); // the raised post
+    expect([t(2, 13), t(3, 13)]).toEqual([T.PIPE_TL, T.PIPE_TR]); // the arrival pipe, `4-2-airship 2 12`
+    expect(l.decor.filter((d) => d.kind === 'smb3:porthole')).toHaveLength(2);
+    expect(l.decor.filter((d) => d.kind === 'smb3:pillar')).toHaveLength(2);
+  });
+
+  it('draws Larry from the smb3 sheet, bottom-centred, facing the hero; a hit flashes smb3-flash', () => {
+    const { h } = onMap(world4());
+    const { level, larry } = intoAirship(h);
+    h.idle(4);
+    const larryAt = () => draw(level).sprites.filter((s) => /^larry-/.test(s.frame));
+    const [s] = larryAt();
+    expect(s).toMatchObject({ key: 'smb3', frame: 'larry-0' });
+    const b = larry.body;
+    expect(s!.y + 24).toBe((b.y + b.h) >> 8);
+    expect(s!.x + 8).toBe((b.x + (b.w >> 1)) >> 8);
+    // A fireball: he flashes (the harness has reduce flashing on: blanched without blinking).
+    larry.hit({ kind: 'fireball', amount: 1, owner: null, dirX: 1 }, level.world);
+    expect(larryAt()[0]?.key).toBe('smb3@smb3-flash');
+    // A stomp: the flinch (no wand), then the spinning shell.
+    h.until(() => larry.invuln === 0 && larry.body.onGround, 200);
+    larry.hit({ kind: 'stomp', amount: 1, owner: null, dirX: 1 }, level.world);
+    h.step();
+    expect(larryAt()[0]?.frame).toBe('larry-hurt');
+    h.idle(12);
+    expect(larryAt()[0]?.frame).toMatch(/^larry-shell-[0-3]$/);
   });
 });
 
@@ -177,8 +227,12 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
     expect(loadSave(1)?.bonusOpen).toBe(false);
     expect(map().node).toBe('bonus-4');
     expect(map().hintLine).toBe(BONUS_CLOSED_HINT);
-    // Used: no way in, and the Hammer Bro is out on the road, as far from the hero as can be.
+    // Used: no way in, and the Hammer Bro is out on the road, as far from the hero as can be,
+    // drawn with the SMB3 map frames.
     expect(map().guard?.tile).toEqual([4, 12]);
+    expect(draw(map()).sprites.some((s) => s.key === 'smb3' && /^hammer-bro-map-[01]$/.test(s.frame))).toBe(
+      true,
+    );
     h.idle(10);
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(WorldMapScene);

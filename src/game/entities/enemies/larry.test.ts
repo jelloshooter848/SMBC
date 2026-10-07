@@ -59,7 +59,7 @@ describe('Larry Koopa', () => {
     const { larry, step } = cabin();
     expect(larry).toBeInstanceOf(Larry);
     step(20);
-    expect(toPx(larry.body.y + larry.body.h)).toBe(14 * 16);
+    expect(toPx(larry.body.y + larry.body.h)).toBe(13 * 16);
     expect(toPx(larry.body.x)).toBeGreaterThan(10 * 16);
     expect(larry.facing).toBe(-1);
     expect(larry.hp).toBe(LARRY_HP);
@@ -197,7 +197,7 @@ describe('Larry Koopa', () => {
     until(step, () => !larry.alive, 300);
     const ball = world.entities.find((e): e is CrystalBall => e instanceof CrystalBall) as CrystalBall;
     until(step, () => ball.body.onGround, 200);
-    expect(toPx(ball.body.y + ball.body.h)).toBe(14 * 16);
+    expect(toPx(ball.body.y + ball.body.h)).toBe(13 * 16);
     world.events.splice(0);
     const p = world.player;
     p.body.x = ball.body.x;

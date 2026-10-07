@@ -40,7 +40,6 @@ import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { MapGuard, guardRoad } from '../map/hammer-bro';
 import { BONUS_CLOSED_HINT, BONUS_CLOSED_SAID, bonusGame } from '../map/bonus-spot';
-import { SMB3_SHEET, sheetWith } from '../art';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -924,14 +923,10 @@ export class WorldMapScene implements Scene {
     return true;
   }
 
-  /** The Hammer Bro, feet on the road like the hero's (the SMB3 map frames, else the SMB one). */
+  /** The Hammer Bro (the smb3 sheet's map frames, facing left), feet on the road like the hero's. */
   private drawGuard(r: Renderer, g: MapGuard): void {
-    const assets = this.game.ctx.assets;
-    const step = (this.t >> 4) & 1;
-    const own = `hammer-bro-map-${step}`;
-    const art = sheetWith(assets, SMB3_SHEET, own);
-    const sheet = art ?? assets.sheet('enemies');
-    const frame = art ? own : `hammer-bro-${step}`;
+    const sheet = this.game.ctx.assets.sheet('smb3');
+    const frame = `hammer-bro-map-${(this.t >> 4) & 1}`;
     const h = sheet.frames.get(frame)?.h ?? 16;
     r.sprite(sheet, frame, g.x, g.y + 10 - h, !g.facingLeft);
   }
@@ -1032,12 +1027,8 @@ export class WorldMapScene implements Scene {
         if (n.level) return cleared ? 'map-node-cleared' : 'map-node-open';
         return 'map-node-start';
       case 'bonus': {
-        // The bonus game's icon while open (its own sheet once the art lands), used: a spent dot.
-        if (!this.game.bonusOpen) return 'map-node-cleared';
-        const icon = bonusGame().icon(this.game);
-        const c = icon.indexOf(':');
-        const art = c > 0 && sheetWith(this.game.ctx.assets, icon.slice(0, c), icon.slice(c + 1));
-        return art ? icon : 'map-node-bonus';
+        // The bonus game's icon (`sheet:frame`) while open; used, a spent dot.
+        return this.game.bonusOpen ? bonusGame().icon(this.game) : 'map-node-cleared';
       }
       case 'castle':
         if (hasSecretExit(n.level)) return cleared ? 'map-castle-secret-cleared' : 'map-castle-secret';

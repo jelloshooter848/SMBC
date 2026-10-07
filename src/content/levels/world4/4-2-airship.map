@@ -2,7 +2,7 @@ id: 4-2-airship
 name: WORLD 4-2
 world: 4
 stage: 2
-theme: castle
+theme: airship
 music: smb3-boss
 time: inherit
 start: 2,12
@@ -10,28 +10,38 @@ startMode: pipe-exit
 camera: locked
 parent: 4-2
 
-;; Larry Koopa's airship cabin (0.5.0, SMB3 style): in the campaign 4-2's right warp-zone pipe leads
-;; here (`4-2-airship 2 12`, level/campaign.ts), rising out of the pipe at the left. One screen: Larry
-;; hops at the hero, fires wand blasts and spins in his shell when stomped; beaten, he drops the
-;; crystal ball, whose touch is 4-2's secret exit `secret:larry` (docs/HEROES.md). Theme `castle`
-;; and music `smb3-boss` (falls back to `castle`) until the SMB3 art lands (`airship`).
+;; Larry Koopa's airship cabin (0.5.0, SMB3 style, after the owner's reference of SMB3's cabin):
+;; enclosed, no sky. A hull ceiling across the top (`%`), thick hull pillars two tiles wide at the
+;; left and right, the log back wall (`H`, not solid) with two porthole windows, a floor of log
+;; posts (`#`) and one raised post. In the campaign 4-2's right warp-zone pipe leads here
+;; (`4-2-airship 2 12`, level/campaign.ts): the hero rises out of the pipe in the floor at the left.
+;; Larry hops at the hero, fires wand blasts and spins in his shell when stomped; beaten, he drops
+;; the crystal ball, whose touch is 4-2's secret exit `secret:larry` (docs/HEROES.md).
+;; Decor from the smb3 sheet: `porthole` (bottom-left tile) and `pillar` (each pillar's
+;; bottom-left tile, on the floor row's top; a frame drawn over the two hull columns).
 [tiles]
 ;; 0
 ................
 ................
 %%%%%%%%%%%%%%%%
-%..............%
-%..............%
-%..............%
-%..............%
-%..............%
-%..............%
-%..............%
-%..............%
-%..............%
-%..............%
-%.[]...........%
-%%{}%%%%%%%%%%%%
+%%HHHHHHHHHHHH%%
+%%HHHHHHHHHHHH%%
+%%HHHHHHHHHHHH%%
+%%HHHHHHHHHHHH%%
+%%HHHHHHHHHHHH%%
+%%HHHHHHHHHHHH%%
+%%HHHHHHHHHHHH%%
+%%HHHHHHHHHHHH%%
+%%HHHHHHHHHHHH%%
+%%HHHHH#HHHHHH%%
+%%[]##########%%
+%%{}##########%%
 
 [entities]
-larry 12 13 next=4-3
+larry 12 12 next=4-3
+
+[decor]
+smb3:porthole 5 6
+smb3:porthole 10 6
+smb3:pillar 0 12
+smb3:pillar 14 12

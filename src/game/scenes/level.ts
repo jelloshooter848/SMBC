@@ -14,7 +14,6 @@ import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
 import { talkToCaptive } from './free-hero';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
-import { resolveSong } from '@content/music/fallbacks';
 import { CardScene } from './message';
 import { abilityHint } from './hints';
 
@@ -74,8 +73,7 @@ export class LevelScene implements Scene {
         ? this.game.state.character.music
         : this.level.music;
     this.game.ctx.audio.setTempoScale(this.world.time !== null && this.world.time <= 100 ? 1.4 : 1);
-    // A song not written yet (the SMB3 boss tune) plays its stand-in.
-    this.game.ctx.audio.playMusic(resolveSong(music));
+    this.game.ctx.audio.playMusic(music);
   }
 
   /** Play on after scenes pushed over the level (a captive's unlock flow): music back on. */

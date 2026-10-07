@@ -10,7 +10,6 @@ import { Projectile, type ProjectileSpec } from '../projectiles/projectile';
 import { ScorePopup } from '../effects/effects';
 import { FreedPuff } from '../objects/captive';
 import { CrystalBall } from '../objects/crystal-ball';
-import { SMB3_SHEET, sheetWith } from '../../art';
 
 /*
  * Larry Koopa, the Koopaling of 4-2's airship cabin (SMB3 style, owner decision for 0.5.0; his
@@ -25,6 +24,9 @@ import { SMB3_SHEET, sheetWith } from '../../art';
  * short flash between hits. Beaten, he cries "BWAH!", vanishes in a puff and flies off, and the
  * crystal ball drops where he stood (objects/crystal-ball.ts).
  */
+
+/** The SMB3 art's sheet (content/sprites/smb3.ts). */
+const SMB3 = 'smb3';
 
 /** Hit points in half-stomps: three stomps (or six fireballs). */
 export const LARRY_HP = 6;
@@ -48,6 +50,8 @@ const AIM_FIRE = 24;
 const AIM_FRAMES = 36;
 /** Shell: spin on the spot, slide at 2 px/f, then stand up again. */
 const SPIN_FRAMES = 24;
+/** The first frames of the spin show him flinching from the stomp (`larry-hurt`). */
+const STOMP_FLINCH_FRAMES = 10;
 const SLIDE_FRAMES = 80;
 const SLIDE_VX = 0x02000;
 const OUT_FRAMES = 20;
@@ -76,7 +80,7 @@ export const WAND_BLAST: ProjectileSpec = {
   lifetime: 360,
   w: 10,
   h: 10,
-  sheet: SMB3_SHEET,
+  sheet: SMB3,
   frames: ['wand-blast-0', 'wand-blast-1'],
   frameRate: 6,
 };
@@ -100,27 +104,10 @@ export class WandBlast extends Projectile {
     if (this.body.y + this.body.h < -px(16)) this.destroy();
   }
 
+  /** The 16×16 ring centred on its 10×10 body. */
   override render(r: Renderer, view: View): void {
     const frame = WAND_BLAST.frames[Math.floor(this.age / WAND_BLAST.frameRate) & 1] as string;
-    const x = toPx(this.body.x) - view.camX;
-    const y = toPx(this.body.y);
-    const sheet = sheetWith(view.assets, SMB3_SHEET, frame);
-    if (sheet) {
-      r.sprite(sheet, frame, x - 3, y - 3);
-      return;
-    }
-    // Until the SMB3 art lands: a two-tone ring, its colours trading places (not with reduce flashing).
-    const swap = !view.reduceFlashing && (Math.floor(this.age / WAND_BLAST.frameRate) & 1) === 1;
-    const a = swap ? '#3cbcfc' : '#fcfcfc';
-    const b = swap ? '#fcfcfc' : '#3cbcfc';
-    r.rect(x + 3, y, 4, 1, a);
-    r.rect(x + 3, y + 9, 4, 1, a);
-    r.rect(x, y + 3, 1, 4, a);
-    r.rect(x + 9, y + 3, 1, 4, a);
-    r.rect(x + 1, y + 1, 2, 2, b);
-    r.rect(x + 7, y + 1, 2, 2, b);
-    r.rect(x + 1, y + 7, 2, 2, b);
-    r.rect(x + 7, y + 7, 2, 2, b);
+    r.sprite(view.assets.sheet(SMB3), frame, toPx(this.body.x) - view.camX - 3, toPx(this.body.y) - 3);
   }
 }
 
@@ -149,8 +136,6 @@ export class Larry extends Enemy {
     super(px(tx * 16 + 1), px((ty + 1) * 16 - STAND_H), 14, STAND_H);
     this.hp = LARRY_HP;
     this.scores = LARRY_SCORES;
-    this.spriteOffsetX = 1;
-    this.spriteOffsetY = 2;
     this.despawnMargin = null;
     this.body.vx = 0;
     this.next = next;
@@ -337,66 +322,40 @@ export class Larry extends Enemy {
     world.audio.sfx('fireball');
   }
 
+  /**
+   * The smb3 sheet's frames (they face left and are bottom-anchored): `larry-0` standing (and
+   * aiming), `larry-1` in the air (feet tucked up, wand raised), `larry-hurt` flinching with the
+   * wand knocked away (the first moments after a stomp, and beaten), `larry-shell-0..3` spinning.
+   */
   private frameName(frame: number): string {
     switch (this.state) {
       case 'spin':
+        return this.t <= STOMP_FLINCH_FRAMES ? 'larry-hurt' : `larry-shell-${(frame >> 2) & 3}`;
       case 'slide':
         return `larry-shell-${(frame >> 2) & 3}`;
       case 'beaten':
         return 'larry-hurt';
       case 'aim':
-        return 'larry-1';
+        return 'larry-0';
       default:
-        if (this.invuln > 0) return 'larry-hurt';
         return this.body.onGround ? 'larry-0' : 'larry-1';
     }
   }
 
+  /**
+   * Drawn bottom-centred on his body. After a hit he flashes in `smb3-flash` (every few frames;
+   * with reduce flashing he stays blanched, without blinking, until the flash time is over).
+   */
   override render(r: Renderer, view: View): void {
-    // Flashing after a hit (with reduce flashing he shows the hurt pose instead).
-    if (this.invuln > 0 && !view.reduceFlashing && (view.frame & 4) !== 0) return;
     const frame = this.state === 'fly' ? `larry-shell-${(view.frame >> 1) & 3}` : this.currentFrame;
-    const shell = frame.startsWith('larry-shell');
-    const x = this.screenX(view);
-    const y = this.screenY();
-    const flip = this.facing > 0;
-    const art = sheetWith(view.assets, SMB3_SHEET, frame);
-    if (art) {
-      r.sprite(art, frame, x, y, flip);
-      return;
-    }
-    this.renderFallback(r, view, frame, shell, x, y, flip);
-  }
-
-  /** Until the SMB3 art lands: a green turtle with a shock of blue hair and a wand. */
-  private renderFallback(
-    r: Renderer,
-    view: View,
-    frame: string,
-    shell: boolean,
-    x: number,
-    y: number,
-    flip: boolean,
-  ): void {
-    if (!view.assets.has('enemies')) return;
-    const sheet = view.assets.sheet('enemies', 'koopa-green');
-    if (shell) {
-      r.sprite(sheet, (view.frame >> 2) & 1 ? 'shell-wiggle' : 'shell', x, y, flip);
-      return;
-    }
-    r.sprite(sheet, frame === 'larry-0' ? 'koopa-0' : 'koopa-1', x, y, flip);
-    // Hair: a blue tuft on the head.
-    const hx = flip ? x + 9 : x + 3;
-    r.rect(hx, y - 1, 4, 3, '#3cbcfc');
-    // The wand: held forward, raised over his head while aiming.
-    const front = flip ? x + 15 : x;
-    if (this.state === 'aim') {
-      r.rect(front, y - 6, 1, 9, '#fcfcfc');
-      r.rect(front - 1, y - 9, 3, 3, '#f8d878');
-    } else {
-      r.rect(flip ? front : front - 6, y + 12, 7, 1, '#fcfcfc');
-      r.rect(flip ? front + 6 : front - 8, y + 11, 3, 3, '#f8d878');
-    }
+    const flash = this.invuln > 0 && (view.reduceFlashing || (view.frame & 4) !== 0);
+    const sheet = view.assets.sheet(SMB3, flash ? 'smb3-flash' : undefined);
+    const f = sheet.frames.get(frame);
+    const w = f?.w ?? 16;
+    const h = f?.h ?? 24;
+    const b = this.body;
+    const x = toPx(b.x + (b.w >> 1)) - view.camX - (w >> 1);
+    r.sprite(sheet, frame, x, toPx(b.y + b.h) - h, this.facing > 0);
   }
 }
 

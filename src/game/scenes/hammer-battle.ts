@@ -2,7 +2,6 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
-import { resolveSong } from '@content/music/fallbacks';
 import source from '@content/levels/hammer-battle.map?raw';
 import { parseTextMap } from '../level/textmap';
 import type { LevelData } from '../level/schema';
@@ -57,7 +56,7 @@ export class HammerBattleScene implements Scene {
 
   enter(): void {
     this.game.ctx.audio.setTempoScale(1);
-    this.game.ctx.audio.playMusic(resolveSong(this.world.level.music));
+    this.game.ctx.audio.playMusic(this.world.level.music);
     this.game.deps.announcer?.say('Hammer Bro battle! Beat the Hammer Bros.');
   }
 
