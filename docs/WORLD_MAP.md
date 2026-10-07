@@ -451,6 +451,12 @@ descent x w -> level x y [campaign]
   the level, no solid tile in its columns above the row player 1 lands on, outside every fire
   bar's sweep. So the dungeon's and crypt's arrivals stay in their open shafts (16 px right), and
   5-4 at 99 from the crypt lands 12 px right, clear of the bar at (103, 11).
+- **The straight drop** (every `fall` arrival, 0.4.8): each hero drops straight down his start
+  column; left and right do nothing until his head is below row 2 (`FALL_IN_STEER_Y`, the
+  ceiling row under the HUD) or he lands. Steering from the first frame (left still held from
+  walking back onto 6-2's pipe at 19) used to drift him over a bonus room's left wall and land
+  him on its top, above the room. `tests/sim/fall-arrival.test.ts` drops every hero into every
+  fall arrival steering each way.
 
 ## Trick walls (level zone, 0.4.8)
 

@@ -74,7 +74,7 @@ Simon waits in his crypt under 5-4 (`5-4-crypt`, an area of 5-4: `parent: 5-4`, 
 - **The Koopa** (`koopa-green 8 10 respawn=true`): small Mario and Luigi have no attack, so they stomp it and kick the shell into the wall. Kicked the wrong way, the shell bounces off the single block and comes back to the wall (a player standing between them is hit, as ever). A spawn with `respawn` is kept by a `Respawner` (`objects/crypt.ts`): a lost Koopa (killed, or fallen down the hole) walks back in at its spot 90 frames later, once no player stands there, for as long as a cracked wall stands.
 - **Art and sound** (S3's): theme and music `crypt` in both rooms; the `crypt` sheet's `wall-cracked`, `candle-0/1`, `rubble-0/1` (the wall's pieces, through `World.breakPieces`), decor `crypt:candelabra-0` (dungeon), `crypt:stained-glass` and `crypt:coffin` (crypt); sfx `whip-wall` and `candle`. Without the sheet the candles and crack fall back to rects and the rubble to the brick piece.
 
-Ryu waits in his hideout behind 6-2's first bonus room (`6-2-dojo`, an area of 6-2: `parent: 6-2`, `time: inherit`), kneeling on the dojo's floor (column 5, feet in row 12) under the moon window. The way in is campaign only: in campaign play the bonus room under the pipe at 19 (`6-2-bonus`) has a **ninja trick wall** in its left wall (column 0, rows 10-12), its middle tile cracked with a shuriken stuck in it, and a coin arrow pointing at it (outside the campaign the room is exactly as it was: plain bricks, no arrow). Pushing into it for about a second (every hero: just walking into it; Ryu clinging to it and Samus rolling into it in her morph ball count too) spins the panel and flips the player through into the dojo, stepping out beside the dojo's own panel in its right wall (column 15, rows 10-12). Pushing into that one flips him out into 6-2 itself, rising out of the pipe at 35 where the bonus room's pipe leads, so the trick wall is one way and the bonus room's coins are not restocked by going round. A short push does nothing (docs/WORLD_MAP.md "Trick walls"). In co-op both players go through together and step out inside the dojo, player 2 further in. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing the curse of the Masked Ninja, a cursed masked rival whose mask rules Ryu's blade; the round is their duel under the moon (`DIALOGUE.ryu`). Art and sound (R3's): theme and music `dojo`; the `ninja` sheet's `trick-wall-0..3`, `trick-wall-back`, `trick-wall-cracked` and `shuriken-mark` for the panel, decor `ninja:moon-window`, `ninja:lantern-0` and four `ninja:shoji` screens in the shoji band; sfx `panel-spin`. Tests: `tests/sim/ryu-dojo.test.ts` (every hero pushes through, small and big; Ryu's cling, Samus's ball; a short push does nothing; campaign only, the room otherwise v0.4.7's; one way; co-op; every hero reaches Ryu and gets out into 6-2).
+Ryu waits in his hideout behind 6-2's first bonus room (`6-2-dojo`, an area of 6-2: `parent: 6-2`, `time: inherit`), standing on the dojo's floor (column 5, feet in row 12) under the moon window. The way in is campaign only: in campaign play the bonus room under the pipe at 19 (`6-2-bonus`) has a **ninja trick wall** in its left wall (column 0, rows 10-12), its middle tile cracked with a shuriken stuck in it, and a coin arrow pointing at it (outside the campaign the room is exactly as it was: plain bricks, no arrow). Pushing into it for about a second (every hero: just walking into it; Ryu clinging to it and Samus rolling into it in her morph ball count too) spins the panel and flips the player through into the dojo, stepping out beside the dojo's own panel in its right wall (column 15, rows 10-12). Pushing into that one flips him out into 6-2 itself, rising out of the pipe at 35 where the bonus room's pipe leads, so the trick wall is one way and the bonus room's coins are not restocked by going round. A short push does nothing (docs/WORLD_MAP.md "Trick walls"). In co-op both players go through together and step out inside the dojo, player 2 further in. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing the curse of the Masked Ninja, a cursed masked rival whose mask rules Ryu's blade; the round is their duel under the moon (`DIALOGUE.ryu`). Art and sound (R3's): theme and music `dojo`; the `ninja` sheet's `trick-wall-0..3`, `trick-wall-back`, `trick-wall-cracked` and `shuriken-mark` for the panel, decor `ninja:moon-window`, two `ninja:lantern-0` and two `ninja:shoji` screens (columns 1 and 12); sfx `panel-spin`. Tests: `tests/sim/ryu-dojo.test.ts` (every hero pushes through, small and big; Ryu's cling, Samus's ball; a short push does nothing; campaign only, the room otherwise v0.4.7's; one way; co-op; every hero reaches Ryu and gets out into 6-2).
 
 ## The map hint (`src/game/map/captives.ts`)
 
@@ -715,6 +715,11 @@ fresh GameState, one life and a **150-second clock** (held by the Infinite time 
   knocks any shot away within 8 px (`SHOT_SLACK`).
 - **The HUD** (`hud.ts`; no score, so `scorePopups: false`): TIMER, the NINJA and ENEMY bars (16
   segments), the art in hand and NINPO.
+- **Banners** (the first cling's two lines, the art's for 2.5 s, the win's) sit in fixed slots
+  (`BANNER_SLOTS`, from the strip under the HUD down to low over the street). One keeps its slot
+  while it covers neither Ryu (16 px round him, plus where his rise or fall takes him in 12
+  frames) nor a lantern, drop, creature or the Masked Ninja, and otherwise moves to the first
+  clear slot, so it never creeps and moves about once as he climbs through it.
 - **The rooftop arena** (columns 112-127; the camera locks there as the doorway shuts behind
   Ryu): open night sky with the big `ninja:cut-moon` hanging over it, as in the cutscene, a tiled
   rooftop floor, and an 11-tile dressed-stone tower on each side (his wall run, Ryu's cling). The
@@ -739,13 +744,17 @@ fresh GameState, one life and a **150-second clock** (held by the Infinite time 
 
 Difficulty (`human-sim.test.ts`, `DuelBot`: it walks right, climbs every wall by clinging and
 kicking, jumps the pits and dogs, crouches under knives, slashes lanterns, throwers and hawks in
-reach; on the rooftop it times its jump over each dash (for the afterimage too), waits well across
+reach, turns back for a lantern it just passed (the art lantern on the last wall, the health
+lantern at its foot, braking in the air to land short of it) and picks up what they leave close
+by, the windmill included; on the rooftop it times its jump over each dash (for the afterimage too), waits well across
 the room slashing his stars while he is on the wall, walks on away from his wall when his mask
 glints, and slashes him while he stands or kneels; `RYU_SIM=30 pnpm vitest run ryu/human-sim
---silent=false` prints the report): a sharp run passes unhurt with 110 of the 150 seconds left.
+--silent=false` prints the report): a sharp run passes unhurt with 99 of the 150 seconds left.
 A careful first-timer (sees things 12-18 frames late, misjudges by up to 6 px, its jump timing by
-up to 2 frames, pauses now and then) passes 97-100% of 30 seeds, losing about 8-9 hit points (4-5
-to the Masked Ninja); a clumsy player (21 frames, 10 px, more pauses) passes about a third.
+up to 2 frames, pauses now and then) passes 100% of 30 seeds with the windmill in hand, losing
+about 11-12 hit points (about 5 to the Masked Ninja); a clumsy player (21 frames, 10 px, more
+pauses) passes roughly 70-90% (80% of 30 seeds; a third before the bot took the windmill and the
+health lantern's drops).
 
 ## Hero training (optional practice rooms)
 

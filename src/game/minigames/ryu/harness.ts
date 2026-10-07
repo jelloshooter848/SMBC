@@ -5,13 +5,16 @@ import type { Action } from '@engine/input/actions';
 import type { Scene } from '@engine/scene';
 import type { Announcer } from '@engine/a11y/announcer';
 import { ScriptedInput } from '@game/sim/headless';
-import { Game } from '@game/scenes/game';
+import { Game, type ControlScheme } from '@game/scenes/game';
 import { CHARACTERS } from '@game/characters/registry';
 import type { MiniGameResult } from '../types';
 import { recordingAudio } from '../megaman/harness';
 import { RYU_MINIGAME } from '.';
 import { DuelScene, type DuelOptions } from './scene';
 import { DuelBot, type CautiousOptions } from './bot';
+import { ArtScroll } from './creatures';
+import { Pickup } from '../../entities/objects/pickup';
+import { toPx } from '@engine/math/units';
 
 /*
  * Test support for Shadow Duel (not shipped code paths): a real Game with the round pushed over a
@@ -23,6 +26,8 @@ export interface HarnessOptions extends DuelOptions {
   keep?: boolean;
   assets?: AssetRegistry;
   reduceFlashing?: boolean;
+  /** The controls in use (Game deps.controlScheme); the keyboard by default. */
+  scheme?: ControlScheme;
 }
 
 export function duelHarness(opts: HarnessOptions = {}) {
@@ -38,6 +43,7 @@ export function duelHarness(opts: HarnessOptions = {}) {
     getLevel,
     characters: CHARACTERS,
     announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
+    ...(opts.scheme ? { controlScheme: () => opts.scheme as ControlScheme } : {}),
   });
   const below: Scene = { update() {}, render() {} };
   game.scenes.push(below);
@@ -75,6 +81,13 @@ export type DuelHarness = ReturnType<typeof duelHarness>;
 export function botRun(opts: Partial<CautiousOptions> = {}, max = 30000) {
   const h = duelHarness({ seed: opts.seed ?? 1, skipCutscene: true });
   const bot = new DuelBot(opts);
+  // The lanterns it broke, by tile column (each leaves a drop: a pickup or the art's scroll).
+  const broke = new Set<number>();
+  const spawn = h.world.spawn.bind(h.world);
+  h.world.spawn = (e) => {
+    if (e instanceof Pickup || e instanceof ArtScroll) broke.add(toPx(e.body.x + (e.body.w >> 1)) >> 4);
+    return spawn(e);
+  };
   let lost = 0;
   let bossLost = 0;
   let hp = h.scene.player.hp;
@@ -102,5 +115,8 @@ export function botRun(opts: Partial<CautiousOptions> = {}, max = 30000) {
     row: (p.body.y + p.body.h) >> 12,
     fell: p.dead && p.body.y >> 8 > 240,
     reached: [...bot.reached],
+    /** Arts in hand at the end (2: it took the windmill from the art lantern). */
+    arts: p.scratch.arts ?? 1,
+    broke: [...broke].sort((a, b) => a - b),
   };
 }
