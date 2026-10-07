@@ -677,6 +677,29 @@ const ceilingBeam = [
   '0000000000000000',
 ];
 
+/* A green pipe hanging from the cabin's ceiling (40x32): its body in the ceiling row, its rim
+   one tile below with the opening facing down, the hero's way in. The pipe is 32 px wide and
+   starts 8 px in, so on column 1 it is centred on column 2's middle, where a dropped-in hero
+   falls. The same green and shading as the level's pipes (tiles.ts), rim upside down. */
+const ceilingPipe = (() => {
+  const pad = '........';
+  const body = Array.from({ length: 16 }, () => pad + '..06655555665555' + '55556655550050..');
+  const rimL = [
+    '0000000000000000',
+    '0666666666666666',
+    ...Array.from({ length: 13 }, () => '0665555555665555'),
+    '0000000000000000',
+  ];
+  const rimR = [
+    '0000000000000000',
+    '6666666666666660',
+    ...Array.from({ length: 13 }, () => '5555665555550050'),
+    '0000000000000000',
+  ];
+  const rim = rimL.map((l, y) => pad + l + rimR[y]).reverse();
+  return [...body, ...rim];
+})();
+
 /* ------------------------------------------------------------------------------------------ */
 /* The airship's deck: cannons, cannonball, Rocky Wrench, propeller, fittings, anchor, chain   */
 /* ------------------------------------------------------------------------------------------ */
@@ -1160,6 +1183,7 @@ export const smb3Def: SpriteDef = {
     porthole,
     pillar,
     'ceiling-beam': ceilingBeam,
+    'ceiling-pipe': ceilingPipe,
     'cannon-r': cannonR,
     'cannon-l': mirrorX(cannonR),
     'cannon-ur': cannonUR,

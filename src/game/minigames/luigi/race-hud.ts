@@ -3,13 +3,10 @@ import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { SCREEN_W } from '@engine/viewport';
 
 /**
- * Chunky 5×7 glyphs for the countdown ("3", "2", "1", "GO!"), drawn with rectangles so they can
- * be big without a scaled font. Original shapes.
+ * Chunky 5×7 glyphs for the start's "GO!", drawn with rectangles so they can be big without a
+ * scaled font. Original shapes.
  */
 const GLYPHS: Record<string, readonly string[]> = {
-  '3': ['#####', '....#', '...#.', '..##.', '....#', '#...#', '.###.'],
-  '2': ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'],
-  '1': ['..#..', '.##..', '#.#..', '..#..', '..#..', '..#..', '#####'],
   G: ['.###.', '#...#', '#....', '#.###', '#...#', '#...#', '.####'],
   O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
   '!': ['..#..', '..#..', '..#..', '..#..', '..#..', '.....', '..#..'],
@@ -19,7 +16,7 @@ const SCALE = 4;
 const GLYPH_W = 5 * SCALE;
 const GAP = SCALE * 2;
 
-/** Big countdown text centred on (cx, y): a dark drop shadow under each cell, then the colour. */
+/** Big text ("GO!") centred on (cx, y): a dark drop shadow under each cell, then the colour. */
 export function drawBigText(r: Renderer, text: string, cx: number, y: number, color: string): void {
   const w = text.length * GLYPH_W + (text.length - 1) * GAP;
   let x = Math.round(cx - w / 2);
@@ -55,10 +52,11 @@ const TRACK_X0 = 48;
 const TRACK_X1 = 192;
 /** The flag stands clear of the track's end, so a marker at 100% never covers it. */
 const FLAG_X = TRACK_X1 + 7;
-const TRACK_Y = 18;
+/** Under the SMB HUD's two rows (y 8-23): Mario's marker clears them, the rival's hangs below. */
+export const TRACK_Y = 40;
 
 /**
- * The race track along the top: start to flag, Mario's marker above the line and the rival's
+ * The race track under the HUD: start to flag, Mario's marker above the line and the rival's
  * below, each placed by how far along the course (0..1) the racer is.
  */
 export function drawTrack(r: Renderer, font: SpriteSheet, mario: number, rival: number): void {
@@ -83,7 +81,7 @@ function marker(r: Renderer, font: SpriteSheet, letter: string, cx: number, y: n
  * player always knows where he is.
  */
 export function drawOffscreenArrow(r: Renderer, font: SpriteSheet, side: -1 | 1, y: number): void {
-  const yy = Math.max(40, Math.min(200, y));
+  const yy = Math.max(TRACK_Y + 16, Math.min(200, y));
   const tipX = side > 0 ? SCREEN_W - 3 : 2;
   for (let i = 0; i < 5; i++) {
     const x = side > 0 ? tipX - i : tipX + i;
@@ -93,10 +91,4 @@ export function drawOffscreenArrow(r: Renderer, font: SpriteSheet, side: -1 | 1,
   const lx = side > 0 ? tipX - 8 - label.length * 8 : tipX + 8;
   r.rect(lx - 1, yy - 1, label.length * 8 + 2, 10, 'rgba(0,0,0,0.6)');
   r.text(font, label, lx, yy);
-}
-
-/** Race time as seconds with tenths ("12.3"). */
-export function raceClock(frames: number): string {
-  const tenths = Math.floor(frames / 6);
-  return `${Math.floor(tenths / 10)}.${tenths % 10}`;
 }
