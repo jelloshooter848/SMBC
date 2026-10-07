@@ -8,6 +8,21 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- The Chapter 1 story (campaign). Toad opens the game in 1-0 and Bowser teases the stolen heroes. Toad guides you on the
+  world map: each world's welcome, riddle hints for the heroes still missing, and the big moments (the airship crash,
+  the rift). Each freed hero gets a first card, and Simon tells of the stolen wand.
+- Six partners to talk to along the way, one per hero's level, with original art.
+- The castle scenes are rewritten: the fake Bowsers in 1-4 to 7-4 give themselves away with a flicker during the fight
+  (a steady outline with reduce flashing on) and show their true form when beaten, and each castle has two pages of
+  news.
+- 8-4's finale: Bowser's line, the wand breaking into a rift over the lava, Toad in place of the princess, a new credits
+  ending, and the road into the Lost Kingdom.
+- Remarks when you first see a restyled level, and Larry's and the crystal ball's pages.
+- Each story scene plays once per save file (Larry's once per run); OK reads on, BACK skips the rest. Classic play
+  keeps the original text.
+
 ## [0.4.11] - 2026-10-07
 
 ### Added
