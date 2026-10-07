@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { LevelScene } from '@game/scenes/level';
 import { WorldMapScene } from '@game/scenes/world-map';
-import { CardScene } from '@game/scenes/message';
+import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
+import type { Settings } from '@engine/save/settings';
 import { loadSave, migrateSave, newSave, saveKey } from '@game/save/save-files';
 import { playStoryCards } from '@game/story/cards';
-import { seedSeen } from '@game/story/beats';
-import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
+import { beat, seedSeen } from '@game/story/beats';
+import { BowserSaysScene, BRIDGE_ROOM } from '@game/story/level-beats';
+import { FAKES_PAGES, RESTYLE_PAGES } from '@game/story/script';
+import { closeCards, draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // The story foundation (0.4.13, src/game/story): the seen-beats list on the save file, the
 // multi-page story cards, and World.storyMode (campaign only).
@@ -179,5 +182,110 @@ describe('playStoryCards', () => {
     const c = new CardScene(h.game, ['A'], () => {}, null, 1800, { panel: true });
     expect(c.translucent).toBe(false);
     expect(c.touchLabels().attack).toBe('OK');
+  });
+});
+
+describe('developer "Unlock all": story scenes play but are never recorded', () => {
+  /** A campaign file with dev mode on and the file's "Unlock all" set. */
+  function devFile(over: Parameters<typeof file>[0] = {}): H {
+    const h = makeGame();
+    h.game.deps.settings = { dev: true } as Settings;
+    file({ story: [], devUnlockAll: true, ...over });
+    h.game.openFile(1);
+    h.idle(4);
+    return h;
+  }
+  const into = (h: H, id: string) => {
+    h.game.startLevel(getLevel(id), { mode: 'stand' });
+    h.step();
+  };
+
+  it('level beats (7-3, 8-4): play, nothing marked; once Unlock all is off they play for real', () => {
+    const h = devFile();
+    expect(h.game.mapUnlockAll).toBe(true);
+    into(h, '7-3');
+    expect((h.top() as CardScene).lines).toEqual(RESTYLE_PAGES['7-3']);
+    closeCards(h);
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    into(h, BRIDGE_ROOM);
+    expect(h.top()).toBeInstanceOf(BowserSaysScene);
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    // Nothing in the game's list, nothing on the file...
+    expect(h.game.story).not.toContain(beat.restyle('7-3'));
+    expect(h.game.story).not.toContain(beat.bowser84);
+    h.game.autosave();
+    expect(loadSave(1)?.story).toEqual([]);
+    // ...and not again while Unlock all stays on (no loop over the level).
+    into(h, '7-3');
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    // Unlock all off: the beat plays for real, and is saved.
+    h.game.devUnlockAll = false;
+    into(h, '7-3');
+    expect((h.top() as CardScene).lines).toEqual(RESTYLE_PAGES['7-3']);
+    closeCards(h);
+    expect(loadSave(1)?.story).toEqual([beat.restyle('7-3')]);
+  });
+
+  it("a map beat (Toad's fake Bowsers after 1-4): plays, nothing marked; then for real", () => {
+    const story = ['enter:smb-1', 'enter:smb-2', 'missed:luigi'];
+    const h = devFile({
+      cleared: ['1-0', '1-1', '1-2', '1-3', '1-4'],
+      pages: ['smb-1', 'smb-2'],
+      position: { page: 'smb-1', node: '1-4' },
+      story,
+    });
+    const map = () => h.top() as WorldMapScene;
+    expect(map().story).toBe(true);
+    h.until(() => map().toad?.lines != null, 300);
+    expect(map().toad?.lines).toEqual(FAKES_PAGES[0]);
+    closeMapBox(h);
+    expect(h.game.story).not.toContain(beat.fakes);
+    expect(loadSave(1)?.story).toEqual(story);
+    // Shown again while Unlock all is on: not repeated.
+    h.game.showMap();
+    h.step();
+    expect(map().story).toBe(false);
+    // Unlock all off: Toad tells it for real, once.
+    h.game.devUnlockAll = false;
+    h.game.showMap();
+    h.step();
+    expect(map().story).toBe(true);
+    closeMapBox(h);
+    expect(loadSave(1)?.story).toContain(beat.fakes);
+  });
+});
+
+/** Presses OK on every page of Toad's map box until the map leaves its story mode. */
+function closeMapBox(h: H): void {
+  const map = () => h.top() as WorldMapScene;
+  for (let i = 0; i < 20 && map().mode === 'story'; i++) {
+    h.until(() => map().toad?.lines != null || map().mode !== 'story', 600);
+    if (map().mode !== 'story') break;
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('jump');
+  }
+  expect(map().mode).not.toBe('story');
+}
+
+describe('markSeen mid-level writes only the story list', () => {
+  it('coins, score and power changed in the level stay as last saved; the beat is on the file', () => {
+    const h = makeGame();
+    file({ story: [], coins: 7, score: 1200 });
+    h.game.openFile(1);
+    h.idle(4);
+    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+    h.step();
+    const st = h.game.state;
+    st.coins = 42;
+    st.score = 99999;
+    st.powerState = 'fire';
+    h.game.markSeen(beat.hub);
+    const saved = loadSave(1)!;
+    expect(saved.story).toEqual([beat.hub]);
+    expect(saved.coins).toBe(7);
+    expect(saved.score).toBe(1200);
+    expect(saved.powerState).toBe('small');
   });
 });

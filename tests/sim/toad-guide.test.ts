@@ -253,3 +253,49 @@ describe("Toad's map scenes", () => {
     expect(g.top()).not.toBeInstanceOf(LevelScene);
   });
 });
+
+describe("Toad's map scenes: after the last page", () => {
+  /** World 1 after 1-4 with only the fake Bowsers due (a major scene: Toad walks in), no reveal. */
+  const fakesOnly = (over: Partial<SaveFile> = {}) =>
+    open({
+      cleared: W1,
+      pages: ['smb-1', 'smb-2'],
+      position: { page: 'smb-1', node: '1-4' },
+      story: ['enter:smb-1', 'enter:smb-2', 'missed:luigi'],
+      ...over,
+    });
+
+  it('Toad walks off while the map is already the player’s: the hero can move at once', () => {
+    const h = fakesOnly();
+    expect(readAll(h)).toEqual(FAKES_PAGES);
+    // The frame the last page closes, the map is idle, Toad still on stage walking off.
+    expect(map(h).mode).toBe('idle');
+    const off = toadSprite(h);
+    expect(off).toBeDefined();
+    h.idle(6); // the map's idle settle
+    expect(toadSprite(h)!.x).toBeLessThan(off!.x);
+    // The hero walks while Toad is still going.
+    for (const d of ['left', 'up', 'down', 'right'] as const) if (map(h).mode === 'idle') h.tap(d);
+    expect(map(h).mode).toBe('walk');
+    expect(toadSprite(h)).toBeDefined();
+    h.until(() => toadSprite(h) === undefined, 300);
+    expect(map(h).toad).toBeNull();
+  });
+
+  it('co-op: player 2 pressing OK turns the pages of Toad’s box', () => {
+    const h = fakesOnly({
+      character2: 'luigi',
+      freed: ['mario', 'luigi'],
+      story: ['enter:smb-1', 'enter:smb-2', 'joined', 'joined:luigi'],
+    });
+    expect(h.game.state.character2?.id).toBe('luigi');
+    h.until(() => map(h).toad?.lines != null, 300);
+    expect(map(h).toad?.lines).toEqual(FAKES_PAGES[0]);
+    h.idle(31);
+    h.tap('jump', 1);
+    expect(map(h).toad?.lines).toEqual(FAKES_PAGES[1]);
+    h.idle(31);
+    h.tap('start', 1);
+    expect(map(h).mode).not.toBe('story');
+  });
+});

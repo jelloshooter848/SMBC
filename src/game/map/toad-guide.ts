@@ -3,8 +3,8 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
-import { beat } from '../story/beats';
-import { STORY_CARD_TIMEOUT } from '../story/cards';
+import { beat, FIRST_HERO } from '../story/beats';
+import { pageSaid, STORY_CARD_TIMEOUT } from '../story/cards';
 import {
   ALL_FREED_AFTER,
   ALL_FREED_BEFORE,
@@ -62,9 +62,6 @@ export interface GuideInput {
   /** The airship crash cutscene has just played on this page. */
   crash?: boolean;
 }
-
-/** The hero every file starts with (never a captive). */
-const FIRST_HERO = 'mario';
 
 /**
  * The scenes due on the page shown, in play order: the major scene (the crash, the rift, the
@@ -189,6 +186,14 @@ export class ToadGuide {
     return this.phase === 'done';
   }
 
+  /**
+   * Every page is over and Toad is walking back off: the map is the player's again while he goes
+   * (the map keeps updating and drawing him until he is off stage, `done`).
+   */
+  get leaving(): boolean {
+    return this.phase === 'out';
+  }
+
   /** The lines in the box now, or null while none shows (Toad walking). */
   get lines(): Page | null {
     if (this.phase !== 'page') return null;
@@ -242,8 +247,7 @@ export class ToadGuide {
     const s = this.scenes[this.scene] as ToadScene;
     const page = s.pages[this.page] as Page;
     const last = this.page === s.pages.length - 1;
-    const text = page.filter((l) => l !== '').join(' ');
-    this.hooks.say(`${text} ${last ? 'OK to continue.' : 'OK for more, BACK to skip.'}`);
+    this.hooks.say(pageSaid(page, last));
   }
 
   update(inputs: readonly InputFrame[]): void {

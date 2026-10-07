@@ -1,7 +1,9 @@
-# Story script (draft for 0.4.13)
+# Story script (0.4.13)
 
-Every story line the player will read, written out for the owner to review and edit **before** anything is built.
-Nothing here is in the game yet. When a line is approved, it can be pasted into the code as it stands.
+Every story line the player will read, written out for the owner to review and edit before it was built.
+**Chapter 1 (sections 2.1-2.14) is built in 0.4.13**: its text lives in `src/game/story/script.ts`, word for word as
+here (a test, `script-doc.test.ts`, keeps the two the same; Sophia III's lines in 2.11 are added when she lands), and
+docs/STORY_SYSTEM.md says how it is wired in. **The Lost Kingdom parts (2.15 on) are Chapter 2**, not built yet.
 
 **How to read this file**
 

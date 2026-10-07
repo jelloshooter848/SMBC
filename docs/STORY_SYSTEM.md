@@ -3,7 +3,13 @@
 How the Chapter 1 story (docs/STORY.md, 1-0 to 8-4 and the hand-off to Lost World 1) is wired
 into the game. docs/STORY.md is the script and the decisions; this file is the code. Every line
 of text lives in `src/game/story/script.ts` (checked by `script.test.ts`: box widths, font
-characters); nothing else types story text.
+characters); nothing else types story text. `script-doc.test.ts` reads docs/STORY.md's text blocks
+for the shipped sections (2.1-2.14) and checks them against script.ts both ways, so the script
+and the doc cannot drift apart (edit both together).
+
+Every story box is announced the same way, by `pageSaid` (story/cards.ts): the page's lines, then
+"OK for more, BACK to skip." (or "OK to continue." on the last page). Story cards, Toad's map box
+and 1-0's shadow tease all use it.
 
 ## Files
 
@@ -33,8 +39,17 @@ from `storyOn`. Every story hook checks one of the two first.
 
 A **beat** is a story scene that plays once per file. Its id (a plain string, `beat.enter('smb-3')`
 → `'enter:smb-3'`; the list is at the top of beats.ts) goes into `Game.story` when it plays:
-`game.seen(id)` asks, `game.markSeen(id)` adds it once and autosaves. Ids are saved, so never
-rename one.
+`game.seen(id)` asks, `game.markSeen(id)` adds it once and writes it to the file. Ids are saved, so
+never rename one.
+
+- **Only the list is written.** `markSeen` updates the stored campaign file's `story` field and
+  writes that, nothing else: a beat seen mid-level (a partner, a restyle remark, Bowser in 8-4)
+  never turns the run's power, coins or score into a new save point. The next full `autosave`
+  (a level's end, the map) saves the rest as before.
+- **Developer "Unlock all"** (`game.mapUnlockAll`): story scenes may play, but `markSeen` never
+  records anything on the file, for map and level beats alike (Toad's map scenes included). The
+  ids played meanwhile are kept aside in memory, so a scene does not repeat while Unlock all
+  stays on; once it is off, each beat plays for real and is saved.
 
 The list is saved as `SaveFile.story?: string[]`: optional, no format bump, no migration (a patch
 change by docs/RELEASING.md). A file without it (from before 0.4.13, or a test's file) is seeded on
@@ -56,13 +71,20 @@ story is a later release).
   entry on first arrival (World 1's only once 1-0 is cleared), missed heroes (a shadow's first
   showing; after the crystal ball only marked, the crash's card stands in), then the hub / arena
   extras.
+- **All heroes freed** (`all-freed`) counts the hidden heroes the game has: a hidden hero whose
+  character is not registered (Sophia III, not in every build) is left out, so in a build without
+  her it fires once the 7 others are freed. It is a beat like any other: once seen it does not
+  play again when Sophia lands later (World 8's entry has its own guard, `ENTRY_NEEDS`, below;
+  this card has none).
 - **The box:** at the top of the map (`TOAD_BOX_Y` = 28, under the header bar), white-rimmed
   black, the lines centred, the OK prompt after `CARD_GUARD_FRAMES`. OK (jump) or MENU goes on;
   **BACK** (attack) skips the rest of that scene (the next scene still plays). Each page is
   announced; it goes on by itself after a minute.
 - **Toad walks in** (his `smb3:toad-map-0/1` frames, 2 px a frame from off the left edge to 20 px
   left of the hero) only for the major scenes: the World 1 entry after 1-0, the fake Bowsers
-  (after 1-4), the crash and the rift. He stays until the last scene and walks back off.
+  (after 1-4), the crash and the rift. He stays until the last scene and walks back off; that
+  walk-off plays over the map once it is already the player's (the reveal draws in, the hero can
+  move: `ToadGuide.leaving`), so nobody waits for him to leave.
 - Every scene's beat ids are marked seen as it starts, so leaving mid-scene never replays it.
 - **World 8's guard:** pages 2-3 of World 8's entry are about Sophia III, who is not in every
   build. `ENTRY_NEEDS` keeps them back until her character is registered; they then play once as a
@@ -75,7 +97,10 @@ story is a later release).
 plays over the frozen level with `playStoryCards` (top box; OK next, BACK skips the rest):
 Toad's restyle remark on a restyled level's first start (`restyle:<id>`, only while its campaign
 look is on), Larry in `4-2-larry` (every run, not on TRY AGAIN), and Bowser's "no more stand-ins"
-on first entering `8-4-end` (`bowser-8-4`, in the prompt box with his laugh). 1-0's greeting and
+on first entering `8-4-end` (`bowser-8-4`, in the prompt box with his laugh). When the scene
+closes, play goes on with `LevelScene.resumePlay`: the music is never stopped or restarted (only
+the closing press is kept from making the hero jump). `resume` (music back on) is for the captive
+flow, whose mini game changes the music. 1-0's greeting and
 the shadow tease swap in `STORY_TOAD_PAGES` / `STORY_TEASE_PAGES` under `storyOn`.
 
 ## Partners
@@ -86,7 +111,8 @@ They spawn only while the story plays (`World.storyMode`); `campaign=true` also 
 outside the campaign. Scenery like a captive: no collision, never despawn. A player on the ground
 within `TALK_REACH_PX` on the same floor sees TALK (the statue: READ) with an up arrow, announced
 once on arrival; up talks (`partner` event → `talkToPartner`), and the pages can be read again any
-time.
+time. Any player can talk (in co-op, player 2 too); the pages close back into play with
+`resumePlay`, the music untouched.
 
 | `who`         | Level and spot           | For   |
 | ------------- | ------------------------ | ----- |
@@ -108,12 +134,18 @@ In the campaign every SMB castle (looked up by `level.parent ?? level.id`, so `8
 **page 1** (the reveal of the fake's true form; at 8-4 that the king was real) at 2 s and **page 2**
 (the story news) at 4 s, each replacing the last under the thanks and each announced; the exit
 follows at 7.5 s (450 frames). Castle pages are at most 26 columns. The Lost castles keep their
-NES text.
+NES text: their reveal pages (docs/STORY.md 2.15) are Chapter 2, though their fakes already
+unmask (below).
 
 ## The fake Bowsers (`bowser.ts`)
 
-In worlds 1-7 the campaign's Bowser is a fake: `trueFormOf(world)` (1..7: Goomba, Koopa, Buzzy
-Beetle, Spiny, Lakitu, Blooper, Hammer Bro; 0 in World 8) is his disguise.
+In the campaign the Bowser of castles 1-4 to 7-4 is a fake, and so is the Lost Kingdom's from Lost
+1-4 to 7-4 (owner-approved, docs/STORY.md 2.3a): `trueFormOf(world)` (by world number, 1..7:
+Goomba, Koopa, Buzzy Beetle, Spiny, Lakitu, Blooper, Hammer Bro; 0 in World 8 and the Lost
+Kingdom's later worlds) is his disguise, with the same tell and unmasking as below. The Lost
+castles' reveal pages stay Chapter 2. The later Lost fakes (Lost 8, 9, A-4 to C-4, D) have no true
+form yet: the new forms in 2.3a's table (Bullet Bill, Cheep Cheep, ...) are not built, so until
+then their die frame is the king and they neither tell nor unmask.
 
 - **The tell:** for the last 12 frames of every 240 (4 s) the disguise flickers, the true form's
   dark silhouette (rimmed so it reads on black) showing every other two frames, with a few wand

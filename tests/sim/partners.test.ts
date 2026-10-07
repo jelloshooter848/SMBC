@@ -8,6 +8,7 @@ import { CaveFire } from '@game/entities/objects/moblin';
 import { Decoration } from '@game/entities/objects/decoration';
 import { CoinPop } from '@game/entities/effects/effects';
 import { LevelScene } from '@game/scenes/level';
+import type { Player } from '@game/entities/player';
 import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import { beat } from '@game/story/beats';
 import { PARTNERS, type Page } from '@game/story/script';
@@ -49,8 +50,9 @@ function campaignIn(
   spot: (typeof SPOTS)[number],
   c: CharacterDef = MARIO,
   power = 'small',
+  over: Parameters<typeof file>[0] = {},
 ): LevelScene {
-  file();
+  file(over);
   h.game.openFile(1);
   // Toad's remarks on a restyled level's first start are another story; seen already here.
   for (const s of SPOTS) h.game.markSeen(beat.restyle(s.level.replace(/-bonus$/, '')));
@@ -271,5 +273,67 @@ describe("partners: the old man's coin", () => {
       expect(h.top()).toBe(l);
       expect(h.game.state.coins, spot.who).toBe(coins);
     }
+  });
+});
+
+describe('partners: the music plays on', () => {
+  it("closing a partner's pages (OK through them, or BACK) never stops or restarts the music", () => {
+    const h = makeGame();
+    const l = campaignIn(h, SPOTS[1]);
+    walkUp(h, l);
+    h.audio.stopMusic.mockClear();
+    h.audio.playMusic.mockClear();
+    h.tap('up');
+    for (const _ of PARTNERS['dr-light']!.pages) press(h, 'jump');
+    expect(h.top()).toBe(l);
+    h.idle(2);
+    h.tap('up');
+    press(h, 'attack');
+    expect(h.top()).toBe(l);
+    h.idle(10);
+    expect(h.audio.stopMusic).not.toHaveBeenCalled();
+    expect(h.audio.playMusic).not.toHaveBeenCalled();
+    // The press that closed the card does not make the hero jump.
+    expect(l.world.player.body.onGround).toBe(true);
+  });
+
+  it("closing a restyled level's remark never stops or restarts the music", () => {
+    const h = makeGame();
+    file({ story: [] });
+    h.game.openFile(1);
+    h.idle(4);
+    h.game.startLevel(getLevel('7-3'), { mode: 'stand' });
+    h.step();
+    expect(h.top()).toBeInstanceOf(CardScene);
+    h.audio.stopMusic.mockClear();
+    h.audio.playMusic.mockClear();
+    press(h, 'jump');
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    h.idle(10);
+    expect(h.audio.stopMusic).not.toHaveBeenCalled();
+    expect(h.audio.playMusic).not.toHaveBeenCalled();
+  });
+});
+
+describe('partners: co-op', () => {
+  it('player 2 talking to a partner opens its pages, and player 2 turns them', () => {
+    const h = makeGame();
+    const l = campaignIn(h, SPOTS[4], MARIO, 'small', { character2: 'luigi' });
+    expect(l.world.players).toHaveLength(2);
+    walkUp(h, l);
+    const [p1, p2] = l.world.players as [Player, Player];
+    p2.body.x = p1.body.x;
+    p2.body.y = p1.body.y;
+    h.until(() => p2.body.onGround && partners(l)[0]!.inReach(p2), 60);
+    h.tap('up', 1);
+    expect(h.top()).toBeInstanceOf(CardScene);
+    const pages = PARTNERS.irene!.pages;
+    expect(h.said.at(-1)?.startsWith(said(pages[0]!))).toBe(true);
+    h.idle(CARD_GUARD_FRAMES + 2);
+    h.tap('jump', 1);
+    expect(h.said.at(-1)?.startsWith(said(pages[1]!))).toBe(true);
+    h.idle(CARD_GUARD_FRAMES + 2);
+    h.tap('jump', 1);
+    expect(h.top()).toBe(l);
   });
 });

@@ -4,6 +4,16 @@ import { abilityHint } from '@game/scenes/hints';
 import type { World } from '@game/world/world';
 import type { Page } from './script';
 
+/**
+ * What the announcer says for a story page: its lines (blank ones left out), then what to press,
+ * "OK to continue." on the last page, else "OK for more, BACK to skip." (every story box: cards,
+ * Toad's map box, 1-0's tease).
+ */
+export function pageSaid(page: readonly string[], last: boolean): string {
+  const text = page.filter((l) => l !== '').join(' ');
+  return `${text} ${last ? 'OK to continue.' : 'OK for more, BACK to skip.'}`;
+}
+
 /** Frames a story page waits before going on by itself (a minute). */
 export const STORY_CARD_TIMEOUT = 3600;
 
@@ -42,8 +52,7 @@ export function playStoryCards(
       game.scenes.pop();
       done();
     };
-    const text = page.filter((l) => l !== '').join(' ');
-    game.deps.announcer?.say(`${text} ${last ? 'OK to continue.' : 'OK for more, BACK to skip.'}`);
+    game.deps.announcer?.say(pageSaid(page, last));
     game.scenes.push(
       new CardScene(
         game,

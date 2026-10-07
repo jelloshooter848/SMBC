@@ -18,6 +18,7 @@ import { drawPromptBox, wrapPrompt } from './stage-prompts';
 import type { Action } from '@engine/input/actions';
 import { storyOn } from '../story/beats';
 import { STORY_TEASE_PAGES } from '../story/script';
+import { pageSaid } from '../story/cards';
 
 /** Pixels a frame the shadow hero runs. */
 const RUN_SPEED = 3;
@@ -107,8 +108,7 @@ export class ShadowTeaseScene implements Scene {
 
   /** What the announcer reads for the campaign's page `i`. */
   private said(i: number): string {
-    const last = i === (this.pages?.length ?? 0) - 1;
-    return `${this.pages?.[i]?.join(' ') ?? ''} ${last ? 'OK to continue.' : 'OK for more.'}`;
+    return pageSaid(this.pages?.[i] ?? [], i === (this.pages?.length ?? 0) - 1);
   }
 
   /** The campaign's two pages (see the class comment). */

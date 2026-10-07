@@ -171,6 +171,11 @@ export class Game {
    * each once. See `seen` / `markSeen`; whether the story plays at all is beats.ts storyOn.
    */
   story: string[] = [];
+  /**
+   * Beats played while developer "Unlock all" is on (`mapUnlockAll`): they count as seen only
+   * while it stays on and are never saved, so with it off the scene plays for real (markSeen).
+   */
+  private storyUnsaved = new Set<string>();
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -407,14 +412,26 @@ export class Game {
 
   /** Story beat `id` (beats.ts) has played on this file. */
   seen(id: string): boolean {
-    return this.story.includes(id);
+    return this.story.includes(id) || (this.mapUnlockAll && this.storyUnsaved.has(id));
   }
 
-  /** Records story beat `id` (beats.ts) as seen, once, and saves the file (campaign only). */
+  /**
+   * Records story beat `id` (beats.ts) as seen, once, and writes it to the file (campaign only):
+   * only the file's `story` list changes, so a beat mid-level never makes a save point of the
+   * run. While developer "Unlock all" is on, the scene may play but nothing is recorded on the
+   * file (it is kept aside until "Unlock all" is turned off, so it does not repeat meanwhile).
+   */
   markSeen(id: string): void {
     if (this.seen(id)) return;
+    if (this.mapUnlockAll) {
+      this.storyUnsaved.add(id);
+      return;
+    }
     this.story.push(id);
-    this.autosave();
+    const base = this.campaign ? this.campaignSave : null;
+    if (!base) return;
+    this.campaignSave = { ...base, story: this.story.slice() };
+    writeSave(this.campaignSave);
   }
 
   /**
@@ -921,6 +938,7 @@ export class Game {
     };
     // A file from before the story (or a test's file) counts what already happened as seen.
     this.story = (save.story ?? seedSeen(this.mapProgress, this.freed)).slice();
+    this.storyUnsaved.clear();
     this.showMap(); // the map saves the file as it opens
   }
 

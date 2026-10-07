@@ -128,6 +128,15 @@ export class LevelScene implements Scene {
     this.swallowJump = true;
   }
 
+  /**
+   * Play on after a story card over the level (a partner's pages, a restyle remark, Larry,
+   * Bowser in 8-4): the music never stopped, so it plays on untouched; only the press that
+   * closed the card is kept from making the hero jump.
+   */
+  resumePlay(): void {
+    this.swallowJump = true;
+  }
+
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     if (this.swallowJump) {
       this.swallowJump = false;
