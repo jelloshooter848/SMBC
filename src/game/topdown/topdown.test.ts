@@ -19,7 +19,7 @@ import {
   swordAt,
 } from './hero';
 import { ROOM_H, ROOM_W, TILE, boxesOverlap } from './geometry';
-import { rotateCcw, withSideFrames } from './frames';
+import { SIDE_FRAMES, THICK_SIDE_FRAMES, rotateCcw, withSideFrames } from './frames';
 import { drawTdHud, hudData } from './hud';
 import { DEFAULT_SHEETS, type TdView } from './view';
 import { drawRoomTiles } from './render';
@@ -776,6 +776,17 @@ describe('top-down kit: enemies', () => {
 });
 
 describe('top-down kit: drawing helpers', () => {
+  it("the 32-px door frames are derived only for a sheet that draws them (one-tile-wall sheets don't)", () => {
+    expect(SIDE_FRAMES).not.toContain('door-open-thick');
+    expect(THICK_SIDE_FRAMES).toContain('door-open-thick');
+    const thin = withSideFrames({ palette: 'p', frames: { wall: ['12'], 'door-open': ['11'] } });
+    expect(thin.frames['door-open-side']).toBeDefined();
+    expect(thin.frames['wall-side']).toBeDefined();
+    expect(thin.frames['door-open-thick-side']).toBeUndefined();
+    const thick = withSideFrames({ palette: 'p', frames: { 'door-open-thick': ['12', '34'] } });
+    expect(thick.frames['door-open-thick-side']).toEqual(['24', '13']);
+  });
+
   it('rotates a north frame to face west (top edge becomes the left edge)', () => {
     expect(rotateCcw(['12', '34'])).toEqual(['24', '13']);
     const def = withSideFrames({
@@ -947,6 +958,19 @@ describe("top-down kit: Zelda's rooms (2-tile walls, a 12×7 floor)", () => {
     expect(world.room.id).toBe('west');
     expect(world.transition).toBeNull();
     expect(hero.x).toBe(ROOM_W - 3 * TILE + 1); // feet flush with the floor's edge
+  });
+
+  it('a hit while he is still walking in from the doorway never sends him back to the room he left', () => {
+    const { world, pad, hero } = setup(thickRooms('O', 'O'));
+    pad.until(['right'], () => world.room.id === 'east');
+    pad.until([], () => !world.transition);
+    pad.until([], () => hero.x >= TILE, 60); // the last 16 px of the walk in
+    expect(world.onFloor(hero.feet())).toBe(false);
+    hero.hurt(world, 1, 'left'); // knocked back toward the doorway he came through
+    pad.step([], 30);
+    expect(world.room.id).toBe('east');
+    expect(world.transition).toBeNull();
+    expect(hero.x).toBeGreaterThanOrEqual(TILE);
   });
 
   it('the shutters slam behind him once he has walked in', () => {

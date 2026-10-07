@@ -468,8 +468,18 @@ export class TopDownWorld {
 
   /** Is `box` on the room's floor (inside the wall band)? */
   onFloor(box: Box): boolean {
+    return this.offFloor(box) === 0;
+  }
+
+  /** How far `box` reaches past the room's floor into the wall band (pixels, all sides summed). */
+  offFloor(box: Box): number {
     const w = this.room.wall * TILE;
-    return box.x >= w && box.y >= w && box.x + box.w <= ROOM_W - w && box.y + box.h <= ROOM_H - w;
+    return (
+      Math.max(0, w - box.x) +
+      Math.max(0, w - box.y) +
+      Math.max(0, box.x + box.w - (ROOM_W - w)) +
+      Math.max(0, box.y + box.h - (ROOM_H - w))
+    );
   }
 
   /** Is the hero walking himself in from a doorway (the pad does nothing meanwhile)? */

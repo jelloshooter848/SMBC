@@ -242,10 +242,12 @@ export class TdHero {
     if (this.kbT > 0) {
       this.kbT--;
       const v = DIR_VEC[this.kbDir];
-      // Knocked about the floor only: never back out through a doorway (as in Zelda).
+      // Knocked about the floor only, never back out through a doorway (as in Zelda): on the
+      // floor he stays on it; still in a doorway, only a step toward the floor is taken.
       for (let i = 0; i < KNOCK_PX; i++) {
-        const inside = world.onFloor(this.feet());
-        if (inside && !world.onFloor(this.feet(this.x + v.dx, this.y + v.dy))) break;
+        const now = world.offFloor(this.feet());
+        const next = world.offFloor(this.feet(this.x + v.dx, this.y + v.dy));
+        if (next > 0 && next >= now) break;
         if (!this.moveBy(world, v.dx, v.dy, false)) break;
       }
       return;
