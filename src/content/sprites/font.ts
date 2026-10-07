@@ -6,8 +6,6 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  *   0 shadow (black)   1 white   2 accent (heart red)   3 gold   4 gold shadow
  */
 export const fontPalette: string[] = [NES.black, NES.white, NES.redBright, NES.yellow, NES.brown];
-/** The HUD font in red (Zelda's -LIFE- on the Shadow Keep's HUD): the white strokes turned red. */
-export const fontRedPalette: string[] = [NES.black, NES.redBright, NES.redBright, NES.yellow, NES.brown];
 
 /**
  * The font with its letters in another colour (Zebes Escape's TIME: red in the last ten seconds,
