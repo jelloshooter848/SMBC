@@ -3,7 +3,8 @@ import { getLevel } from '@content/levels';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
-import { campaignLevel, ANCHOR_DECOR } from '@game/level/campaign';
+import { LUIGI } from '@game/characters/luigi';
+import { campaignLevel } from '@game/level/campaign';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuScene } from '@game/scenes/menu';
 import { Vine } from '@game/entities/objects/vine';
@@ -30,7 +31,7 @@ import {
 // and stands on the floor, Larry's anchor crashes down from above the screen, smashes the pipe and
 // leaves its chain, which climbs to Larry's airship (`4-2-airship`), arriving up a chain at the
 // bow: the chain at column 2, the hero stepping off onto the deck in column 3. After Larry is
-// beaten only the smashed pipe's stump is left.
+// beaten the room is sealed (no pipe, the ceiling gap closed): nobody can drop in.
 
 useStorage();
 
@@ -77,7 +78,7 @@ describe('the campaign variant of 4-2', () => {
     // The ceiling is whole; no chain and no anchor yet, only the drop waiting for the hero.
     expect(at(214, 2)).not.toBe(T.AIR);
     expect(l.entities.some((e) => e.type === 'chain')).toBe(false);
-    expect(l.decor.some((d) => d.kind === ANCHOR_DECOR)).toBe(false);
+    expect(l.decor.some((d) => d.kind === 'smb3:anchor')).toBe(false);
     expect(l.entities.filter((e) => e.type === 'anchor-drop')).toEqual([
       { type: 'anchor-drop', x: 214, y: 12, props: { len: 14, pipe: 10, holes: '2', room: '208,224' } },
     ]);
@@ -139,7 +140,7 @@ describe('the campaign variant of 4-2', () => {
     // About a second from the landing to the anchor at rest.
     expect(resting - landed).toBeGreaterThan(30);
     expect(resting - landed).toBeLessThan(90);
-    expect(r.events).toContainEqual({ type: 'say', text: ANCHOR_SAID });
+    expect(r.events).toContainEqual({ type: 'anchor' });
     expect(r.outcome).toBe('pipe');
     expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({
       target: { ...ARRIVAL, exitDir: 'climb', chain: true },
@@ -178,6 +179,66 @@ describe('the campaign variant of 4-2', () => {
       until: (w) => toPx(w.player.centerX) >> 4 >= 217,
     });
     expect(walk.outcome).toBe('stopped');
+  });
+
+  it('a restart after the smash shows the whole pipe again and a waiting drop', () => {
+    const smashed = runSim({
+      level: camp(),
+      character: MARIO,
+      script: none,
+      start: { x: 212, y: 12, mode: 'stand', time: 300 },
+      maxFrames: 300,
+      until: (w) => drop(w)?.phase === 'rest',
+    });
+    expect(smashed.outcome).toBe('stopped');
+    expect(pipeTiles(smashed.world)).toEqual(Array(6).fill(T.AIR));
+    // The level data is untouched (each world copies its tiles), and a new visit starts over.
+    const l = camp();
+    const at = (x: number, y: number) => l.tiles[y * l.width + x];
+    expect([10, 11, 12].flatMap((y) => [at(214, y), at(215, y)])).toEqual(PIPE);
+    const again = runSim({
+      level: camp(),
+      character: MARIO,
+      script: none,
+      start: { x: 200, y: 1, mode: 'stand', time: 300 },
+      maxFrames: 400,
+      controller: () => ['right'],
+      until: (w) => toPx(w.player.centerX) >> 4 >= 212,
+    });
+    expect(again.outcome).toBe('stopped');
+    expect(pipeTiles(again.world)).toEqual(PIPE);
+    expect(drop(again.world)?.phase).toBe('wait');
+    expect(chainOf(again.world)).toBeUndefined();
+  });
+
+  it('co-op: player two on the ceiling over the anchor when it breaks through: nobody dies, the chain climbs', () => {
+    let p2Fell = false;
+    const r = runSim({
+      level: camp(),
+      character: MARIO,
+      state: { character2: LUIGI, powerState2: 'small', hp2: 1 },
+      script: none,
+      start: { x: 213, y: 12, mode: 'stand', time: 300 },
+      maxFrames: 1500,
+      controller: (w, f) => {
+        const p2 = w.players[1]!;
+        // Player two waits on the ceiling, right over the anchor's column.
+        if (f === 1) {
+          p2.body.x = px(ANCHOR_COL * 16 + 2);
+          p2.body.y = px(2 * 16) - p2.body.h;
+          p2.body.vy = 0;
+        }
+        if (toPx(p2.body.y) > 3 * 16) p2Fell = true;
+        return drop(w)?.phase === 'rest' && f > 120 ? toChain(w) : [];
+      },
+    });
+    const [p1, p2] = r.world.players;
+    expect(p1!.dead || p2!.dead).toBe(false);
+    expect(r.events.some((e) => e.type === 'died')).toBe(false);
+    // The brick under him broke: he dropped into the room (onto the anchor's spot) unharmed.
+    expect(p2Fell).toBe(true);
+    expect(r.outcome).toBe('pipe');
+    expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: { ...ARRIVAL, chain: true } });
   });
 
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
@@ -254,7 +315,8 @@ describe('the drop in the game', () => {
         h.step();
         if (w.shakeY !== 0) n++;
       }
-      expect(h.said).toContain(ANCHOR_SAID);
+      // The line says the chain is there to climb, naming the ability.
+      expect(h.said).toContain(`${ANCHOR_SAID} Climb its chain: UP.`);
       return n;
     };
     expect(shakes(true)).toBe(0);
@@ -297,38 +359,66 @@ describe('the drop in the game', () => {
 });
 
 describe('after Larry is beaten (the airship crashed on the map)', () => {
-  it('the room shows only the smashed stump: no anchor, no chain, no warp, no text', () => {
+  it('the room is sealed: no pipe, the ceiling gap closed; no anchor, no chain, no warp, no text', () => {
+    const base = getLevel('4-2');
     const l = camp(['larry']);
     const at = (x: number, y: number) => l.tiles[y * l.width + x];
-    expect([at(214, 10), at(215, 10), at(214, 11), at(215, 11)]).toEqual([T.AIR, T.AIR, T.AIR, T.AIR]);
-    expect([at(214, 12), at(215, 12)]).toEqual([T.PIPE_BL, T.PIPE_BR]);
+    for (const y of [10, 11, 12]) expect([at(214, y), at(215, y)]).toEqual([T.AIR, T.AIR]);
+    // The gap the room is entered by (220-221 on row 2) is closed with the ceiling's own brick.
+    expect(base.tiles[2 * base.width + ROOM_GAP]).toBe(T.AIR);
+    const brick = base.tiles[2 * base.width + 214];
+    for (let x = 208; x < 224; x++) expect(at(x, 2), `column ${x}`).toBe(brick);
+    // Its left wall rises to the top of the screen, and the camera stops there.
+    expect([at(208, 0), at(208, 1)]).toEqual([brick, brick]);
+    expect(l.zones).toContainEqual({ kind: 'scrollStop', x: 208 });
+    expect(camp().zones.some((z) => z.kind === 'scrollStop')).toBe(false);
     expect(l.zones.filter((z) => (z.kind === 'pipe' || z.kind === 'vine') && z.x >= 208)).toEqual([]);
     expect(l.entities.some((e) => e.type === 'anchor-drop' || e.type === 'chain')).toBe(false);
     const warp = l.zones.find((z): z is Zone & { kind: 'warp' } => z.kind === 'warp');
     expect(warp?.worlds).toEqual([]);
     expect(warp?.text).toBeUndefined();
     expect(warp?.labelAt).toBeUndefined();
-    // Not the same cached variant as before Larry.
+    // Cached on its own: not the variant before Larry.
     expect(camp(['larry'])).toBe(l);
     expect(camp()).not.toBe(l);
   });
 
-  it('in the game: dropping in brings no anchor, and the stump never warps', () => {
+  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
+    '%s walking the ceiling over it cannot fall in and is not stuck',
+    (_name, c) => {
+      // Right along the ceiling as far as it goes (the wall at the screen's edge), then back left.
+      let deepest = 0;
+      let furthest = 0;
+      const r = runSim({
+        level: camp(['larry']),
+        character: c,
+        state: { secrets: ['larry'] } as never,
+        script: none,
+        start: { x: 200, y: 1, mode: 'stand', time: 300 },
+        maxFrames: 900,
+        controller: (w, f) => {
+          deepest = Math.max(deepest, toPx(w.player.body.y + w.player.body.h));
+          furthest = Math.max(furthest, toPx(w.player.body.x + w.player.body.w));
+          return f < 300 ? ['right'] : ['left'];
+        },
+        until: (w, f) => f > 300 && toPx(w.player.centerX) >> 4 <= 200,
+      });
+      expect(r.outcome, c.name).toBe('stopped');
+      expect(deepest, `${c.name} stayed on the ceiling`).toBeLessThanOrEqual(2 * 16);
+      expect(furthest, `${c.name} stopped at the wall`).toBeLessThanOrEqual(208 * 16);
+      expect(r.world.player.dead).toBe(false);
+    },
+  );
+
+  it('in the game: walking over the room brings no anchor and nothing to say', () => {
     const h = makeGame();
     const main = in42(h, ['larry']);
     const w = main.world;
-    w.player.body.x = px(ROOM_GAP * 16 - 14);
-    w.player.body.y = px(32) - w.player.body.h;
-    for (let f = 0; f < 200; f++) h.step(f < 20 ? ['right'] : []);
+    for (let f = 0; f < 200; f++) h.step(['right']);
+    expect(toPx(w.player.body.y + w.player.body.h)).toBe(2 * 16);
     expect(drop(w)).toBeUndefined();
     expect(chainOf(w)).toBeUndefined();
-    expect(h.said).not.toContain(ANCHOR_SAID);
-    // Onto the stump and down: nothing.
-    w.player.body.x = px(214 * 16 + 2);
-    w.player.body.y = px(12 * 16) - w.player.body.h;
-    for (let f = 0; f < 120; f++) h.step(['down']);
-    expect(h.top()).toBe(main);
-    for (let f = 0; f < 120; f++) h.step(['up']);
+    expect(h.said.some((t) => t.startsWith(ANCHOR_SAID))).toBe(false);
     expect(h.top()).toBe(main);
   });
 });
@@ -337,7 +427,7 @@ describe('outside the campaign', () => {
   it('4-2 keeps the classic warp zone: the pipe to 5-1, no anchor, no chain', () => {
     const l = getLevel('4-2');
     expect(l.entities.some((e) => e.type === 'chain' || e.type === 'anchor-drop')).toBe(false);
-    expect(l.decor.some((d) => d.kind === ANCHOR_DECOR)).toBe(false);
+    expect(l.decor.some((d) => d.kind === 'smb3:anchor')).toBe(false);
     expect(l.zones).toContainEqual({
       kind: 'pipe',
       x: 214,

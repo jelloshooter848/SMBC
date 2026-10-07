@@ -114,18 +114,24 @@ ends.
   on the room's floor (row 13, columns 208-223; not on the pipe, not on the ceiling) the anchor
   shows at the top 20 frames later and falls (4 px/f gaining 0.5 up to 10), trailing its chain,
   breaks the ceiling brick in its column (brick pieces, `break`), smashes the pipe (its tiles gone
-  in pipe-green chunks, the `cannon` boom and a `break`, a 16-frame screen shake that reduce
-  flashing skips, the 5 and the welcome text gone, the announcer: "An anchor crashes down and
-  smashes the pipe!") and rests on the floor: about a second in all. Nothing of it is solid or
-  hurts; the players keep control. It plays on every visit (each new 4-2 world).
+  in `pipe-piece` chunks of the items sheet, through `World.breakPieces` like a broken brick; the
+  `cannon` boom and a `break`, a 16-frame screen shake that reduce flashing skips, the 5 and the
+  welcome text gone, the announcer: "An anchor crashes down and smashes the pipe! Climb its
+  chain: UP." with the UP ability's key as other prompts give it) and rests on the floor: about
+  a second in all. Nothing of it is solid or hurts; the players keep control (a player on the
+  ceiling over it just drops into the room). It plays on every visit (each new 4-2 world starts
+  from the level's own tiles: the whole pipe and a waiting drop).
 - **After Larry is beaten** (`until=larry` on the warp zone and `larry` in the file's secrets: the
-  airship has crashed on the map) the room shows only the smashed pipe's stump (its bottom row): no
-  anchor, no chain, no warp, no text.
+  airship has crashed on the map) the room is **sealed**: no pipe, the ceiling gap it is entered
+  by (columns 220-221) closed with the ceiling's brick, its left wall (column 208) raised to the
+  top of the screen and the camera stopped there (a `scrollStop` at 208), so a hero walking the
+  ceiling stops at the screen's edge and walks back; no anchor, no chain, no warp, no text.
 - **The anchor chain**: the anchor is `smb3:anchor` (32×32, its ring under the chain, drawn at x =
   column×16 − 8, standing on the floor); the chain is a placed `Vine` drawn in `smb3:chain` links
   (`VineArt` in `entities/objects/vine.ts`, theme-free; also a `chain x y len=N` map entity),
-  standing on the floor at column 214 and reaching a tile above the screen. A `vine` zone on its foot (column 214, row 12) links its top to the airship like a
-  vine brick's, and the arrival's vine is a chain too (`WorldStart.chain`). **Arrival point**
+  standing on the floor at column 214 and reaching a tile above the screen. A `vine` zone on its
+  foot (column 214, row 12) links its top to the airship like a vine brick's, and the arrival's
+  vine is a chain too (`WorldStart.chain`). **Arrival point**
   (`goto=4-2-airship,2,3,climb`): the chain rises from the screen bottom at **column 2** (faster
   than a beanstalk, 1.5 px/f) and the hero climbs it, through any hull in the way, until he can
   step off to the right onto the **first solid tile in column 3 below row 3** (the bow deck). The
@@ -162,8 +168,9 @@ ends.
   1-14) and `smb3:pillar` down columns 0 and 15 (rows 2-12). The floor is log posts: `#` the post
   tops on row 13, `%` the posts carrying on below on row 14, and one raised post with its top at
   (7,12) and its post at (7,13). The hero rises out of the pipe in the floor at columns 2-3 (from
-  the deck's stern pipe); Larry starts on the floor at the right (`larry 12 12 next=4-3`: the tile his feet stand in; `next` is
-  where the ball leads outside the campaign). Theme `airship`, music `smb3-boss`.
+  the deck's stern pipe); Larry starts on the floor at the right (`larry 12 12 next=4-3`: the
+  tile his feet stand in; `next` is where the ball leads outside the campaign). Theme `airship`,
+  music `smb3-boss`.
 - **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
   hero (12 px high, 0.75 px/f across), a high jump now and then (30%, about 60 px; always when
   the hero is within 24 px, so he jumps over), and after every two moves he stops, raises his wand

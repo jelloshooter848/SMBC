@@ -25,7 +25,8 @@ import { T, isSolid } from './tiles';
  *   chain's foot links its top to `goto` (a climb arrival in chain art: world/world.ts). See
  *   `anchorDrop`.
  *   With `until=<secret>` and that secret on the file (`larry`: the airship has crashed on the
- *   map), the room shows only the smashed pipe's stump: no anchor, no chain, no warp, no text.
+ *   map) the room is sealed instead: its pipe is gone and the gap in its ceiling is closed, so
+ *   nobody can drop into a room with no way out (no anchor, no chain, no warp, no text).
  */
 
 const PIPE_TILES = new Set<number>([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
@@ -95,7 +96,7 @@ export function campaignLevel(
     }
     if (chain && keep && w.goto) {
       if (gone(w)) {
-        stump(level, tiles, keep);
+        added.zones.push(...sealRoom(level, tiles, keep, w));
         const bare: Warp = { ...w, worlds: [] };
         delete bare.text;
         climbs.set(w, bare);
@@ -135,9 +136,6 @@ export function campaignLevel(
   memo.set(level, out);
   return out;
 }
-
-/** The anchor's art (smb3 sheet, 32x32): centred on the chain, resting on the floor. */
-export const ANCHOR_DECOR = 'smb3:anchor';
 
 /** The rows of a pipe standing at (`p.x`, mouth row `p.y`), top down, while they are pipe tiles. */
 function pipeRows(level: LevelData, tiles: Uint16Array, p: Pipe): number[] {
@@ -184,11 +182,27 @@ function anchorDrop(
   };
 }
 
-/** The smashed pipe's stump once the airship has crashed: only the bottom row of the pipe. */
-function stump(level: LevelData, tiles: Uint16Array, p: Pipe): void {
-  const rows = pipeRows(level, tiles, p);
-  for (const y of rows.slice(0, -1)) {
+/**
+ * Once the airship has crashed: the climb zone's room is sealed, so nobody can drop into a room
+ * with no way out, nor get stuck on top of it. Its pipe goes (nobody sees it); the ceiling over it
+ * (the solid row in the pipe's column above the mouth: 4-2's row 2) is closed across the zone's
+ * columns with that row's own tile, closing the gap the room is entered by; the zone's left wall
+ * rises to the top of the screen with the same tile; and the camera stops at that wall (a
+ * `scrollStop` at the zone's column, unless the level has one), so the walk along the ceiling ends
+ * at the screen's right edge and leads back the way it came.
+ */
+function sealRoom(level: LevelData, tiles: Uint16Array, p: Pipe, w: Warp): Zone[] {
+  for (const y of pipeRows(level, tiles, p)) {
     tiles[y * level.width + p.x] = T.AIR;
     tiles[y * level.width + p.x + 1] = T.AIR;
   }
+  for (let r = p.y - 1; r >= 0; r--) {
+    const roof = tiles[r * level.width + p.x] as number;
+    if (!isSolid(roof)) continue;
+    for (let x = w.x; x < Math.min(level.width, w.x + w.w); x++)
+      if (!isSolid(tiles[r * level.width + x] as number)) tiles[r * level.width + x] = roof;
+    for (let y = 0; y < r; y++) tiles[y * level.width + w.x] = roof;
+    break;
+  }
+  return level.zones.some((z) => z.kind === 'scrollStop') ? [] : [{ kind: 'scrollStop', x: w.x }];
 }

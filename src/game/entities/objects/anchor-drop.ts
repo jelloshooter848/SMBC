@@ -4,7 +4,6 @@ import { Entity, type View } from '../entity';
 import type { EntitySpawn } from '../../level/schema';
 import { T } from '../../level/tiles';
 import type { World } from '../../world/world';
-import { BrickPiece } from '../effects/effects';
 import { CHAIN_FRAME, CHAIN_SHEET, Vine } from './vine';
 
 /** Frames between a player landing on the room's floor and the anchor showing at the top. */
@@ -15,11 +14,10 @@ const FALL_GAIN = 0.5;
 const FALL_MAX = 10;
 /** Frames the screen shakes after the crash (none with reduce flashing). */
 export const ANCHOR_SHAKE_FRAMES = 16;
-/** The announcer's line at the crash. */
+/** The announcer's line at the crash (LevelScene adds the climb prompt). */
 export const ANCHOR_SAID = 'An anchor crashes down and smashes the pipe!';
-/** Pipe-green chunks (the brick pieces' fall, drawn as pipe). */
-const PIPE_GREEN = '#00a800';
-const PIPE_DARK = '#005800';
+/** The anchor's frame in the smb3 sheet (32x32, its ring at the top centre). */
+export const ANCHOR_FRAME = 'anchor';
 const PIPE_TILES = new Set<number>([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
 
 type Phase = 'wait' | 'warn' | 'fall' | 'rest';
@@ -118,7 +116,7 @@ export class AnchorDrop extends Entity {
     for (const r of this.holes) {
       if (bottom >= r * 16 && world.map.get(this.tx, r) !== T.AIR) {
         world.map.set(this.tx, r, T.AIR);
-        this.pieces(world, this.tx, r, false);
+        world.breakPieces(this.tx, r);
         world.audio.sfx('break');
       }
     }
@@ -136,24 +134,13 @@ export class AnchorDrop extends Entity {
       for (let y = this.pipeRow; y <= this.foot; y++) {
         if (!PIPE_TILES.has(world.map.get(x, y))) continue;
         world.map.set(x, y, T.AIR);
-        this.pieces(world, x, y, true);
+        world.breakPieces(x, y, 'pipe-piece');
       }
     world.audio.sfx('cannon');
     world.audio.sfx('break');
     world.shake(ANCHOR_SHAKE_FRAMES);
     world.smashWarpAt(this.tx);
-    world.events.push({ type: 'say', text: ANCHOR_SAID });
-  }
-
-  /** Tile (x, y) in four pieces, as a broken brick (pipe-green chunks for the pipe). */
-  private pieces(world: World, x: number, y: number, pipe: boolean): void {
-    const cx = px(x * 16 + 4);
-    const cy = px(y * 16 + 4);
-    const color = pipe ? { fill: PIPE_GREEN, edge: PIPE_DARK } : undefined;
-    world.spawn(new BrickPiece(cx, cy, -0x01000, -0x05000, color));
-    world.spawn(new BrickPiece(cx + px(8), cy, 0x01000, -0x05000, color));
-    world.spawn(new BrickPiece(cx, cy + px(8), -0x01000, -0x03000, color));
-    world.spawn(new BrickPiece(cx + px(8), cy + px(8), 0x01000, -0x03000, color));
+    world.events.push({ type: 'anchor' });
   }
 
   render(r: Renderer, view: View): void {
@@ -163,6 +150,6 @@ export class AnchorDrop extends Entity {
     // Falling, it trails its chain from above the screen; at rest the Vine draws the chain.
     if (this.phase === 'fall')
       for (let y = Math.round(this.top) - 16; y > -32; y -= 16) r.sprite(sheet, CHAIN_FRAME, x + 8, y);
-    r.sprite(sheet, 'anchor', x, Math.round(this.top));
+    r.sprite(sheet, ANCHOR_FRAME, x, Math.round(this.top));
   }
 }

@@ -90,8 +90,8 @@ export type WorldEvent =
    * card and ends the area (campaign: 4-2's secret exit; else on to `next`).
    */
   | { type: 'crystal-ball'; player: number; next: string | null }
-  /** A line for the announcer (the anchor crashing into 4-2's warp zone). */
-  | { type: 'say'; text: string };
+  /** Larry's anchor smashed 4-2's warp-zone pipe (objects/anchor-drop.ts): the level announces it. */
+  | { type: 'anchor' };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -1270,12 +1270,7 @@ export class World {
     if (kind === 'brick' && content === 'none') {
       if (breakBricks) {
         this.map.set(tx, ty, T.AIR);
-        const cx = tileToSub(tx) + px(4);
-        const cy = tileToSub(ty) + px(4);
-        this.spawn(new BrickPiece(cx, cy, -0x01000, -0x05000));
-        this.spawn(new BrickPiece(cx + px(8), cy, 0x01000, -0x05000));
-        this.spawn(new BrickPiece(cx, cy + px(8), -0x01000, -0x03000));
-        this.spawn(new BrickPiece(cx + px(8), cy + px(8), 0x01000, -0x03000));
+        this.breakPieces(tx, ty);
         this.addScore(50);
         this.audio.sfx('break');
         this.feats.bricks++;
@@ -2212,6 +2207,16 @@ export class World {
         drawBeam(r, view, s.x, s.top, s.landed >= 0);
       }
     }
+  }
+
+  /** Tile (tx, ty) flying apart in four pieces, as a broken brick (`pipe-piece`: a smashed pipe). */
+  breakPieces(tx: number, ty: number, frame: 'brick-piece' | 'pipe-piece' = 'brick-piece'): void {
+    const cx = tileToSub(tx) + px(4);
+    const cy = tileToSub(ty) + px(4);
+    this.spawn(new BrickPiece(cx, cy, -0x01000, -0x05000, frame));
+    this.spawn(new BrickPiece(cx + px(8), cy, 0x01000, -0x05000, frame));
+    this.spawn(new BrickPiece(cx, cy + px(8), -0x01000, -0x03000, frame));
+    this.spawn(new BrickPiece(cx + px(8), cy + px(8), 0x01000, -0x03000, frame));
   }
 
   /** Shake the screen for `frames` (drawn only without reduce flashing). */

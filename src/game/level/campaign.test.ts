@@ -95,15 +95,15 @@ describe('4-2 (the right warp zone): campaign variant', () => {
     expect(l.entities.filter((e) => e.type !== 'anchor-drop')).toEqual(base.entities);
   });
 
-  it('with `larry` on the file: the smashed stump only (no drop, no vine, no pipe, no text)', () => {
-    const l = campaignLevel(getLevel('4-2'), withAirship, ['larry']);
+  it('with `larry` on the file: the room sealed (no drop, no vine, no pipe, no text)', () => {
+    const base = getLevel('4-2');
+    const l = campaignLevel(base, withAirship, ['larry']);
     expect(pipesIn(l, 208, 224)).toEqual([]);
-    expect([tile(l, 214, 10), tile(l, 214, 11), tile(l, 214, 12), tile(l, 215, 12)]).toEqual([
-      T.AIR,
-      T.AIR,
-      T.PIPE_BL,
-      T.PIPE_BR,
-    ]);
+    for (const y of [10, 11, 12]) expect([tile(l, 214, y), tile(l, 215, y)]).toEqual([T.AIR, T.AIR]);
+    // The ceiling gap closed, the left wall up to the top, the camera stopped at it.
+    expect([tile(l, 220, 2), tile(l, 221, 2)]).toEqual([tile(base, 214, 2), tile(base, 214, 2)]);
+    expect(tile(l, 208, 0)).toBe(tile(base, 214, 2));
+    expect(l.zones).toContainEqual({ kind: 'scrollStop', x: 208 });
     expect(l.entities.some((e) => e.type === 'anchor-drop')).toBe(false);
     expect(l.zones.some((z) => z.kind === 'vine' && z.x >= 208)).toBe(false);
     expect(warp(l)?.worlds).toEqual([]);
