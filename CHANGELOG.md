@@ -10,6 +10,14 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Dev mode: a Safety floor assist. Deadly pits get an invisible floor at the pit's rim and lava turns
+  solid, so testing a level can't end in a fall. Falls that lead somewhere (coin heavens, the 7-3
+  bridge, the 5-4 lift ride) still work.
+
+## [0.4.9] - 2026-10-07
+
+### Added
+
 - Bill is hidden under 7-3. In the campaign, 7-3 now looks like a Contra jungle stage (same layout).
   One steel bridge with a blinking red light, marked by an arrow of coins, blows up piece by piece
   when you step on it. Fall through it to reach Bill's jungle camp, then climb the waterfall back
@@ -400,7 +408,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...HEAD
+[0.4.9]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/jelloshooter848/SMBC/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/jelloshooter848/SMBC/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/jelloshooter848/SMBC/compare/v0.4.5...v0.4.6

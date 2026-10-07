@@ -22,6 +22,8 @@ export interface AssistSettings {
   infiniteTime: boolean;
   coyoteFrames: number;
   fireRevertsToBig: boolean;
+  /** An invisible floor over deadly pits and lava (AssistOptions.safetyFloor). */
+  safetyFloor: boolean;
   /** 1 = normal, 2 = half speed (one physics step every other frame). */
   slowMotion: 1 | 2;
 }
@@ -71,6 +73,7 @@ export function defaultSettings(): Settings {
       infiniteTime: false,
       coyoteFrames: 0,
       fireRevertsToBig: false,
+      safetyFloor: false,
       slowMotion: 1,
     },
     packs: [],
