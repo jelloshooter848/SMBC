@@ -27,6 +27,7 @@ import {
   ZEBES_WALL_SHEET,
 } from './art';
 import { zebesDef, zebesPalettes } from '@content/sprites/zebes';
+import { fontTints } from '@content/sprites/font';
 import type { View } from '@game/entities/entity';
 import { escapeEntities, escapeStage, shipSpot } from './stage';
 import {
@@ -46,7 +47,7 @@ import {
   ESCAPE_START,
 } from './scene';
 import { GAME_OVER_FRAMES } from '../lives';
-import { energyReadout, HUD_X, TANK_BOX, TANKS_Y, timeShown } from './hud';
+import { energyReadout, HUD_X, TANK_BOX, TANKS_Y, TIME_PALETTES, timePalette, timeShown } from './hud';
 import {
   Ripper,
   Ship,
@@ -126,7 +127,7 @@ function drawn(e: { render(r: Renderer, v: View): void }, frame: number, reduceF
 }
 const ASSETS = recordingAssets();
 
-/** Past READY: Samus can move and the countdown runs. */
+/** Past her materialising: Samus can move and the countdown runs. */
 function ready(h: EscapeHarness): void {
   h.step([], APPEAR_FRAMES);
   expect(h.scene.phase).toBe('escape');
@@ -190,6 +191,34 @@ describe('Zebes Escape: the mini game contract', () => {
       ([x, y, w, hh]) => x === HUD_X + 16 && y === TANKS_Y && w === TANK_BOX && hh === TANK_BOX,
     );
     expect(box).toHaveLength(1);
+  });
+
+  it('TIME turns red in the last ten seconds (pulsing, steady with reduce flashing) and grey while Infinite time holds it', () => {
+    expect(timePalette('plain', 0, false)).toBeUndefined();
+    expect(timePalette('held', 0, false)).toBe(TIME_PALETTES.held);
+    const final = (rf: boolean) => new Set([0, 8, 16, 24].map((t) => timePalette('final', t, rf)));
+    expect(final(true)).toEqual(new Set([TIME_PALETTES.red]));
+    expect(final(false)).toEqual(new Set([TIME_PALETTES.red, TIME_PALETTES.dark]));
+    for (const id of Object.values(TIME_PALETTES)) expect(Object.keys(fontTints)).toContain(id);
+    // In the scene: which font palette TIME is drawn in.
+    const timeSheet = (h: EscapeHarness) => {
+      const ids: string[] = [];
+      const r = Object.assign(new NullRenderer(), {
+        text(f: { id: string }, str: string): void {
+          if (str.startsWith('TIME ')) ids.push(f.id);
+        },
+      }) as unknown as Renderer;
+      h.scene.render(r);
+      return ids.at(-1);
+    };
+    const h = escapeHarness({ assets: recordingAssets(), countdown: 15 * 60 });
+    ready(h);
+    expect(timeSheet(h)).toBe('font');
+    h.step([], 6 * 60);
+    expect(timeSheet(h)).toBe(`font@${TIME_PALETTES.red}`);
+    h.game.ctx.assist.infiniteTime = true;
+    h.step();
+    expect(timeSheet(h)).toBe(`font@${TIME_PALETTES.held}`);
   });
 
   it('the energy readout and the TIME counter, as Metroid shows them', () => {
@@ -317,7 +346,7 @@ describe('Zebes Escape: the stage', () => {
     expect(counts(false)).toBeGreaterThan(1);
   });
 
-  it('READY already shows the statue, the alarm lights and the creatures, standing still', () => {
+  it('while Samus materialises the statue, the alarm lights and the creatures already show, standing still', () => {
     const h = escapeHarness({ assets: STUB_ASSETS });
     const decor = () => h.world.entities.filter((e): e is ZebesDecor => e instanceof ZebesDecor);
     const creatures = () => h.world.entities.filter((e) => e instanceof Zoomer || e instanceof Ripper);
@@ -544,7 +573,7 @@ describe('Zebes Escape: the countdown', () => {
     h.step([], 120);
     expect(h.scene.phase).toBe('boom');
     expect(h.log.sfx).toContain(ZEBES_SOUNDS.blast);
-    expect(h.said.at(-1)).toBe('Time is up. The cavern exploded. 2 lives left.');
+    expect(h.said.at(-1)).toBe('Time is up. The cavern exploded. Samus is down! 2 lives left.');
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: null });
     const first = h.world;
     h.step([], BOOM_FRAMES);
@@ -562,7 +591,7 @@ describe('Zebes Escape: the countdown', () => {
     ready(h);
     clearCreatures(h);
     h.step([], 120);
-    expect(h.said.at(-1)).toBe('Time is up. The cavern exploded. Game over.');
+    expect(h.said.at(-1)).toBe('Time is up. The cavern exploded. Samus is down! Game over.');
     h.step([], BOOM_FRAMES);
     expect(h.scene.phase).toBe('gameover');
     expect(h.scene.banner?.lines).toEqual(['GAME OVER']);
@@ -766,7 +795,7 @@ describe('Zebes Escape: outcomes', { timeout: 60_000 }, () => {
 });
 
 describe('Zebes Escape: screen and controls', () => {
-  it("labels the touch buttons as Samus's in a level while she runs (BOMB in the ball), only MENU at READY", () => {
+  it("labels the touch buttons as Samus's in a level while she runs (BOMB in the ball), only MENU while she materialises", () => {
     const h = escapeHarness();
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: 'MENU' });
     ready(h);

@@ -16,6 +16,9 @@ describe('Station Escape: a cautious human (difficulty)', () => {
   it('a cautious first-timer (late reactions, misjudged distances, pauses) usually wins, and not unscathed', () => {
     const { rate, runs } = cautiousPassRate(6);
     expect(rate).toBeGreaterThanOrEqual(5 / 6);
+    // Most make it on their first life (three lives are a cushion, not the plan).
+    const first = runs.filter((r) => r.result === 'pass' && r.livesLost === 0).length / runs.length;
+    expect(first).toBeGreaterThanOrEqual(0.7);
     // Some effort: the stage and Dark Mega Man still cost hit points.
     const avg = (k: 'lost' | 'bossLost') => runs.reduce((a, r) => a + r[k], 0) / runs.length;
     expect(avg('lost')).toBeGreaterThan(8);

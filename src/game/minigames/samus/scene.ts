@@ -19,7 +19,7 @@ import { GAME_OVER_FRAMES, lifeLostSaid, MiniLives, type LifeLost, type MiniChec
 import type { MiniGameResult } from '../types';
 import { ZEBES_SOUNDS } from './art';
 import { Creature, SkreeShard, type Ship } from './creatures';
-import { drawEscapeHud, drawTimeCounter, timeShown, TIME_MAX } from './hud';
+import { drawEscapeHud, drawTimeCounter, timePalette, timeShown, TIME_MAX } from './hud';
 import { escapeEntities, escapeStage } from './stage';
 
 /**
@@ -402,16 +402,9 @@ export class EscapeScene implements Scene {
     this.game.ctx.audio.sfx(ZEBES_SOUNDS.blast);
     this.blasted = true;
     this.lost = this.lives.lose();
-    const left = this.lives.lives;
-    const infinite = this.game.ctx.assist.infiniteLives;
-    const after = infinite
-      ? ''
-      : left <= 0
-        ? ' Game over.'
-        : left === 1
-          ? ' Last life.'
-          : ` ${left} lives left.`;
-    this.say(`Time is up. The cavern exploded.${after}`);
+    // The cause, then the lives as every other lost life says them.
+    const what = lifeLostSaid('Samus', this.lives.lives, this.game.ctx.assist.infiniteLives);
+    this.say(`Time is up. The cavern exploded. ${what}`);
   }
 
   /** The round is over: report it once. */
@@ -439,7 +432,10 @@ export class EscapeScene implements Scene {
     // Metroid's HUD: energy tanks, EN, missiles; and the escape's TIME counter.
     const covered = (x: number, y: number, w: number, h: number) => this.world.spriteIn(x, y, w, h);
     drawEscapeHud(r, ctx.assets, this.player, covered);
-    drawTimeCounter(r, ctx.assets, this.phase === 'appear' ? TIME_MAX : this.time, covered);
+    const final = this.phase === 'escape' && this.seconds <= FINAL_SECONDS;
+    const tint = this.held ? 'held' : final ? 'final' : 'plain';
+    const palette = timePalette(tint, this.t, ctx.reduceFlashing);
+    drawTimeCounter(r, ctx.assets, this.phase === 'appear' ? TIME_MAX : this.time, covered, palette);
     const b = this.banner;
     if (b && this.t < b.until) drawBanner(r, font, b.lines, b.y);
   }
