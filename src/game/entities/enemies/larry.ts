@@ -153,8 +153,8 @@ export class Larry extends Enemy {
   /**
    * Stomps take STOMP_DAMAGE and send him into his shell; in the shell a stomp only bounces the
    * hero off ('bounce') and everything else is 'immune'. Fire, swords, shots, weapons and bombs
-   * take 1 (2 when heavy), then he flashes for LARRY_FLASH_FRAMES. Boomerangs, ice, bumps and the
-   * like do nothing.
+   * take 1 (2 when heavy), and so does Samus's Ice Beam (it can't freeze him), then he flashes for
+   * LARRY_FLASH_FRAMES. Boomerangs, bumps and the like do nothing.
    */
   override hit(src: DamageSource, world: World): Reaction {
     if (this.defeated) return 'immune';
@@ -369,6 +369,9 @@ export function larryDamage(src: DamageSource): number {
     case 'bomb':
     case 'shell':
       return src.amount >= 3 ? 2 : 1;
+    // Samus's Ice Beam: it cannot freeze him, but it hurts like a fireball.
+    case 'ice':
+      return 1;
     default:
       return 0;
   }

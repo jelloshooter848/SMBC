@@ -102,14 +102,15 @@ campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (p
 `4-2-airship 2 12`, wired in `level/campaign.ts`; dev select and `?level=4-2-airship` reach it too).
 
 - **The cabin** (`src/content/levels/world4/4-2-airship.map`, parent 4-2): one locked screen,
-  enclosed like SMB3's (the owner's reference), no sky: a hull ceiling across row 2 (`%`), thick
-  hull pillars two tiles wide at the left and right edges, the log back wall (`H`, not solid) with
-  two porthole windows, a floor of log posts (`#`, top at row 13) and one raised post (7,12). The
-  hero rises out of the pipe in the floor at columns 2-3; Larry starts on the floor at the right
-  (`larry 12 12 next=4-3`: the tile his feet stand in; `next` is where the ball leads outside the
-  campaign). Decor from the smb3 sheet: `smb3:porthole` at (5,6) and (10,6), `smb3:pillar` at (0,12)
-  and (14,12) (bottom-left tiles; a frame not drawn yet draws nothing). Theme `airship`, music
-  `smb3-boss`.
+  enclosed like SMB3's (the owner's reference, built to the SMB3 art's frames and mock), no sky. The
+  log back wall (`H`, not solid) fills the room, behind the HUD too, with two `smb3:porthole`
+  windows at (5,6) and (10,6). The ceiling row (row 2) and both edge columns (0 and 15) are solid
+  (`%`) and covered by 16×16 smb3 decor, one per tile: `smb3:ceiling-beam` along row 2 (columns
+  1-14) and `smb3:pillar` down columns 0 and 15 (rows 2-12). The floor is log posts: `#` the post
+  tops on row 13, `%` the posts carrying on below on row 14, and one raised post with its top at
+  (7,12) and its post at (7,13). The hero rises out of the pipe in the floor at columns 2-3; Larry
+  starts on the floor at the right (`larry 12 12 next=4-3`: the tile his feet stand in; `next` is
+  where the ball leads outside the campaign). Theme `airship`, music `smb3-boss`.
 - **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
   hero (12 px high, 0.75 px/f across), a high jump now and then (30%, about 60 px; always when
   the hero is within 24 px, so he jumps over), and after every two moves he stops, raises his wand
@@ -120,9 +121,11 @@ campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (p
   comes out (20 frames). In the shell nothing hurts him: a stomp bounces the hero off unhurt
   (reaction `'bounce'`, which `World` now treats as a harmless bounce for stomps; no score), and
   everything else is immune; the sliding shell hurts to touch. **Fireballs and the other heroes'
-  attacks** (sword, buster, weapons, bombs) take 1 each (2 for a heavy hit, amount 3 or more, like
-  Mega Man's charge shot), then he flashes for 40 frames (`smb3-flash`), immune to attacks (a stomp still counts).
-  Boomerangs, ice, bumps and the star do nothing. So: three stomps, or six fireballs.
+  attacks** (sword, whip and every melee hit, buster, weapons, bombs, and Samus's Ice Beam, which
+  can't freeze him) take 1 each (2 for a heavy hit, amount 3 or more, like Mega Man's charge shot),
+  then he flashes for 40 frames (`smb3-flash`), immune to attacks (a stomp still counts).
+  Boomerangs, bumps and the star do nothing. So: three stomps, or six fireballs. Every hero's main
+  attack hurts him (a table test over the roster, `larry.test.ts`).
 - **Beaten**: his rings vanish, the music stops, "BWAH!" rises over him (5000 points), he holds
   the hurt pose for half a second, then vanishes in a puff and flies off spinning in his shell.
   The **crystal ball** (`objects/crystal-ball.ts`) drops where he was and lands on the floor.
@@ -136,8 +139,8 @@ campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (p
   goes on to `next` (4-3); an editor play-test ends.
 - **The crystal ball's hint**: from then on every hero not freed yet shows its silhouette by its
   level's node (stage 2 above) even before that level is cleared, with the same announcer line and
-  hint line (`heroHint` in `map/captives.ts`). A node not on the map yet (its page not open)
-  still shows nothing.
+  hint line (`heroHint` in `map/captives.ts`). A node the file has not reached (its page not open, or
+  open only through developer "Unlock all") still shows nothing.
 - **Art** (the SMB3 sheet `smb3`, `content/sprites/smb3.ts`): Larry's frames face left (flipped to
   face right) and are bottom-anchored, drawn bottom-centred on his body: `larry-0` standing and
   aiming, `larry-1` in the air (feet tucked up, wand raised), `larry-hurt` (no wand) for the first

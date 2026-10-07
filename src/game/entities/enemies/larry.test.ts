@@ -9,7 +9,11 @@ import { DEFAULT_ASSIST, newGameState } from '../../context';
 import { MARIO } from '../../characters/mario';
 import type { DamageSource } from '../../rules/damage';
 import { CrystalBall } from '../objects/crystal-ball';
-import { LARRY_HP, Larry, STOMP_DAMAGE, WandBlast } from './larry';
+import { LARRY_HP, Larry, STOMP_DAMAGE, WandBlast, larryDamage } from './larry';
+import { CHARACTERS } from '../../characters/registry';
+import { BUSTER, CHARGED_BUSTER, FIREBALL, type ProjectileSpec } from '../projectiles/projectile';
+import { BEAMS, BEAM_NAMES } from '../../characters/samus/weapons';
+import { GUNS } from '../../characters/bill/weapons';
 
 // Larry Koopa in 4-2's airship cabin (docs/HEROES.md "Larry Koopa and the crystal ball"): hops at
 // the hero, now and then a high jump, wand blasts flying straight at where the hero was; three
@@ -206,5 +210,44 @@ describe('Larry Koopa', () => {
     expect(world.events).toContainEqual({ type: 'crystal-ball', player: 0, next: '4-3' });
     step(5);
     expect(world.events.filter((e) => e.type === 'crystal-ball')).toHaveLength(1);
+  });
+});
+
+describe("every hero's main attack hurts Larry (larryDamage)", () => {
+  /** Every melee hit (sword, whip, ...) reaches enemies as a 'sword' hit (World.collisions). */
+  const MELEE = 'melee';
+  /** Each hero's main attack: its primary shots (each power level), or its melee. */
+  const MAIN: Record<string, readonly (ProjectileSpec | typeof MELEE)[]> = {
+    mario: [FIREBALL],
+    luigi: [FIREBALL],
+    link: [MELEE],
+    megaman: [BUSTER, CHARGED_BUSTER],
+    samus: BEAMS, // Power, Long, Ice and Wave Beam
+    simon: [MELEE],
+    ryu: [MELEE],
+    bill: GUNS.map((g) => g.spec),
+  };
+
+  it('covers the whole roster', () => {
+    expect(Object.keys(MAIN).sort()).toEqual(CHARACTERS.map((c) => c.id).sort());
+  });
+
+  for (const c of CHARACTERS)
+    it(`${c.name}`, () => {
+      (MAIN[c.id] ?? []).forEach((a, i) => {
+        const hit: DamageSource =
+          a === MELEE ? src('sword') : { kind: a.damage, amount: a.amount, owner: null, dirX: 1 };
+        const what = a === MELEE ? 'melee' : c.id === 'samus' ? BEAM_NAMES[i] : a.kind;
+        expect(larryDamage(hit), `${c.id} ${what}`).toBeGreaterThan(0);
+      });
+    });
+
+  it("Samus's Ice Beam takes 1 and never freezes him", () => {
+    const { world, larry } = cabin();
+    const ice = BEAMS[2] as ProjectileSpec;
+    expect(ice.damage).toBe('ice');
+    expect(larry.hit({ kind: 'ice', amount: ice.amount, owner: null, dirX: 1 }, world)).toBe('hp');
+    expect(larry.hp).toBe(LARRY_HP - 1);
+    expect(larry.stunned).toBe(0);
   });
 });

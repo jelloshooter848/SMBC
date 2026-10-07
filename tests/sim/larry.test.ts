@@ -168,21 +168,37 @@ describe("the cabin's look (the SMB3 art)", () => {
     expect(l.music).toBe('smb3-boss');
   });
 
-  it('is enclosed like the SMB3 cabin: ceiling, thick pillars, log wall, post floor, one raised post', () => {
+  it("is enclosed like the SMB3 cabin, built for the SMB3 art's frames", () => {
     const l = getLevel('4-2-airship');
     const t = (x: number, y: number) => l.tiles[y * l.width + x];
+    const at = (kind: string) =>
+      l.decor
+        .filter((d) => d.kind === kind)
+        .map((d) => `${d.x},${d.y}`)
+        .sort();
+    const cells = (xs: number[], ys: number[]) => xs.flatMap((x) => ys.map((y) => `${x},${y}`)).sort();
+    const span = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
     expect(l.width).toBe(16);
-    // No sky anywhere below the HUD: hull, the log back wall, posts or the pipe.
-    for (let y = 2; y < 15; y++) for (let x = 0; x < 16; x++) expect(t(x, y), `${x},${y}`).not.toBe(T.AIR);
+    // No sky at all: the log back wall even behind the HUD, solid hull, posts or the pipe.
+    for (let y = 0; y < 15; y++) for (let x = 0; x < 16; x++) expect(t(x, y), `${x},${y}`).not.toBe(T.AIR);
+    for (let y = 3; y < 12; y++) for (let x = 1; x < 15; x++) expect(t(x, y), `${x},${y}`).toBe(T.WALL);
+    // The ceiling row and both edge columns are solid, each tile covered by its 16x16 decor: a
+    // ceiling beam along row 2, a pillar per row down columns 0 and 15.
     for (let x = 0; x < 16; x++) expect(t(x, 2)).toBe(T.CASTLE_BRICK);
-    for (let y = 2; y < 15; y++)
-      for (const x of [0, 1, 14, 15]) expect(t(x, y), `pillar ${x},${y}`).toBe(T.CASTLE_BRICK);
-    for (let y = 3; y < 12; y++) for (let x = 2; x < 14; x++) expect(t(x, y)).toBe(T.WALL);
-    for (let x = 4; x < 14; x++) expect(t(x, 13)).toBe(T.GROUND);
-    expect(t(7, 12)).toBe(T.GROUND); // the raised post
-    expect([t(2, 13), t(3, 13)]).toEqual([T.PIPE_TL, T.PIPE_TR]); // the arrival pipe, `4-2-airship 2 12`
-    expect(l.decor.filter((d) => d.kind === 'smb3:porthole')).toHaveLength(2);
-    expect(l.decor.filter((d) => d.kind === 'smb3:pillar')).toHaveLength(2);
+    for (let y = 2; y < 13; y++)
+      for (const x of [0, 15]) expect(t(x, y), `edge ${x},${y}`).toBe(T.CASTLE_BRICK);
+    expect(at('smb3:ceiling-beam')).toEqual(cells(span(1, 14), [2]));
+    expect(at('smb3:pillar')).toEqual(cells([0, 15], span(2, 12)));
+    expect(at('smb3:porthole')).toEqual(['10,6', '5,6']);
+    // The floor: post tops (`#`) on row 13, the posts going on (`%`) on row 14; the raised post's
+    // top at (7,12) with its post under it; the arrival pipe, `4-2-airship 2 12`, in the floor.
+    for (const x of span(0, 15)) {
+      if (x === 2 || x === 3) continue;
+      expect(t(x, 13), `top ${x}`).toBe(x === 7 ? T.CASTLE_BRICK : T.GROUND);
+      expect(t(x, 14), `post ${x}`).toBe(T.CASTLE_BRICK);
+    }
+    expect(t(7, 12)).toBe(T.GROUND);
+    expect([t(2, 13), t(3, 13), t(2, 14), t(3, 14)]).toEqual([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
   });
 
   it('draws Larry from the smb3 sheet, bottom-centred, facing the hero; a hit flashes smb3-flash', () => {
@@ -221,6 +237,29 @@ describe('crystal-ball hints on the map', () => {
     expect(map().hintLine).toBe('SOMEONE IS HIDING IN THIS LEVEL');
     expect(texts.map((t) => t.str)).toContain('SOMEONE IS HIDING IN THIS LEVEL');
     expect(h.said.some((t) => t.includes('Someone is hiding in this level.'))).toBe(true);
+  });
+
+  it("Unlock all shows no silhouette on a node the file hasn't really reached", () => {
+    const h = makeGame();
+    h.game.deps.settings = { dev: true } as Settings;
+    file({
+      cleared: ['1-0'],
+      secrets: ['larry'],
+      devUnlockAll: true,
+      position: { page: 'smb-1', node: '1-1' },
+    });
+    h.game.openFile(1);
+    h.idle(8);
+    // 1-1 is open on the file itself: Luigi's silhouette.
+    expect(draw(h.top() as WorldMapScene).sprites.some((s) => s.key === 'mario@luigi~shade-grass')).toBe(
+      true,
+    );
+    // World 2 is open only through Unlock all: no Link by 2-1.
+    h.game.travelToPage('smb-2');
+    h.idle(8);
+    const map = h.top() as WorldMapScene;
+    expect(map.page.id).toBe('smb-2');
+    expect(draw(map).sprites.some((s) => s.key.includes('~shade-'))).toBe(false);
   });
 
   it('without the ball, nothing before the clear', () => {

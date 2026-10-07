@@ -67,12 +67,12 @@ export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
 /** The hidden hero's slow shimmer: one cycle, and the frames of it the faint glow shade shows. */
 export const HIDING_SHIMMER_FRAMES = 360;
 export const HIDING_GLOW_FRAMES = 30;
-/** A freed hero's 1-px dark outline: its silhouette drawn once each way, under it. */
 /**
  * The map's Hammer Bro (map/hammer-bro.ts) does not start a battle for this many frames after the
  * map shows or he comes out, so coming back from the bonus or a battle never lands straight in one.
  */
 export const GUARD_GRACE_FRAMES = 45;
+/** A freed hero's 1-px dark outline: its silhouette drawn once each way, under it. */
 const TROPHY_OUTLINE: readonly (readonly [number, number])[] = [
   [-1, 0],
   [1, 0],
@@ -396,6 +396,9 @@ export class WorldMapScene implements Scene {
       const hint = heroHint(h, this.progress, this.game.freed);
       const def = this.game.deps.characters.find((c) => c.id === h.hero);
       if (hint === 'none' || !def) continue;
+      // A silhouette (the crystal ball's hint before a clear) only on a node the file has really
+      // reached: never one shown only through developer "Unlock all".
+      if (hint === 'silhouette' && !isOpen(this.progress, page, node.id)) continue;
       // The silhouette peeks out from behind the dot (half of it hidden); the trophy stands just
       // clear of it, feet on the ground beside it as the player's marker stands on the node.
       const out0 = hint === 'silhouette' ? 9 : 17;
