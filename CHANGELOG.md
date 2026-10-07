@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.12] - 2026-10-07
+
 ### Added
 
 - The Chapter 1 story (campaign). Toad opens the game in 1-0 and Bowser teases the stolen heroes. Toad guides you on the
@@ -455,7 +457,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.11...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...HEAD
+[0.4.12]: https://github.com/jelloshooter848/SMBC/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...v0.4.9
