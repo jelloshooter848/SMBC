@@ -60,7 +60,7 @@ export const beat = {
   arena: 'arena',
 } as const;
 
-/** The hero every file starts with (never a captive; the same as save-files FIRST_HERO, which imports this file). */
+/** The hero every file starts with (never a captive). The one definition: save-files imports and re-exports it. */
 export const FIRST_HERO = 'mario';
 
 /**
