@@ -27,6 +27,8 @@ const SONG_IDS = [
   // Samus's cavern below 4-2 and ZEBES ESCAPE.
   'cavern',
   'zebes-escape',
+  // The Mini Game Arena.
+  'arena',
   // Larry Koopa's airship and the bonus spot behind it.
   'airship',
   'smb3-boss',
@@ -299,5 +301,32 @@ describe("Samus's cavern music", () => {
     // It ends silent or decaying, so a repeat starts clean.
     const last = t.events.at(-1);
     expect(last?.note === null || last?.decay === true).toBe(true);
+  });
+});
+
+describe('the Mini Game Arena music', () => {
+  const song = (id: string) => compileSong(songs.find((s) => s.id === id) as (typeof songs)[number]);
+  const tracks = (id: string) => song(id).tracks as Record<string, Track>;
+  const notes = (t: Track) => t.events.flatMap((e) => (e.note === null ? [] : [e.note]));
+
+  it('is an upbeat loop of whole bars, livelier than the world map, with drums all the way', () => {
+    const arena = song('arena');
+    expect(arena.loop).toBe(true);
+    expect(arena.bpm).toBeGreaterThan(song('map').bpm);
+    expect(arena.length).toBe(PPQ * 4 * 16);
+    expect(seconds(arena.length, arena.bpm)).toBeGreaterThanOrEqual(20);
+    // A beat on every quarter at least: the drums never drop out.
+    expect(notes(tracks('arena').noise as Track).length).toBeGreaterThanOrEqual(arena.length / PPQ);
+  });
+
+  it('opens with a fanfare: the lead leaps up the D major chord', () => {
+    const lead = notes(tracks('arena').pulse1 as Track);
+    const [d, fs, a, d2] = lead as [number, number, number, number];
+    expect([fs - d, a - d, d2 - d]).toEqual([4, 7, 12]);
+  });
+
+  it('ends on the dominant (A), so the loop lands back home on D', () => {
+    const lead = notes(tracks('arena').pulse1 as Track);
+    expect(((lead.at(-1) as number) - (lead[0] as number)) % 12).toBe(7);
   });
 });

@@ -973,6 +973,79 @@ export const songs: Song[] = [
       [${ESCAPE_BAR}]7 ${ESCAPE_FILL} ; bars 1-8
     `,
   },
+  {
+    id: 'arena',
+    bpm: 152,
+    loop: true,
+    // D major, 16 bars: the Mini Game Arena, a stadium fanfare. A (bars 1-8) is the brass call:
+    // the lead leaps up the D chord and answers itself; B (bars 9-16) turns to B minor and climbs
+    // back, ending on A so the loop lands on D again. Pulse2 pumps off-beat chord stabs like a
+    // pep band's horns, the bass bounces in octaves, and the drums drive straight eighths with a
+    // snare roll every fourth bar.
+    pulse1: `
+      @2 v12 q6 x0
+      o5 d8 f+8 a8 o6 d8 r8 o5 a8 o6 d4    ; bar 1  D
+      o6 d8. c+16 o5 b8 g8 b4 r4           ; bar 2  G
+      o5 a8 a8 a8 f+8 a8 o6 d8 f+8 e8      ; bar 3  D
+      o6 e4. c+8 o5 a4 r4                  ; bar 4  A
+      o5 d8 f+8 a8 o6 d8 r8 o5 a8 o6 d8 f+8 ; bar 5  D
+      o6 g4 f+8 e8 d4 o5 b4                ; bar 6  G
+      o5 b8 o6 c+8 d8 e8 c+8 o5 a8 b8 o6 c+8 ; bar 7  Em A
+      o6 d4 o5 a8 f+8 d4 r4                ; bar 8  D
+      o5 f+8 f+8 r8 f+8 b8 a8 f+8 d8       ; bar 9  Bm
+      o5 g4 b8 o6 d8 g4 f+8 e8             ; bar 10 G
+      o6 f+8 e8 d8 o5 a8 f+8 a8 o6 d8 e8   ; bar 11 D
+      o6 c+4 o5 a4 e4 r4                   ; bar 12 A
+      o5 b8 b8 r8 b8 o6 d8 c+8 o5 b8 a8    ; bar 13 Bm
+      o5 g8 a8 b8 o6 d8 g4 f+4             ; bar 14 G
+      o6 e8 d8 c+8 o5 b8 o6 c+8 d8 e8 f+8  ; bar 15 Em A  the climb
+      o6 e4 c+16 d16 e8 a4 r4              ; bar 16 A   and the leap home
+    `,
+    pulse2: `
+      @1 v8 q4 x0
+      r8 o4 f+8 r8 a8 r8 f+8 r8 a8         ; bar 1  D
+      r8 o4 g8 r8 b8 r8 g8 r8 b8           ; bar 2  G
+      r8 o4 f+8 r8 a8 r8 f+8 r8 a8         ; bar 3  D
+      r8 o4 e8 r8 a8 r8 c+8 r8 e8          ; bar 4  A
+      r8 o4 f+8 r8 a8 r8 f+8 r8 a8         ; bar 5  D
+      r8 o4 g8 r8 b8 r8 g8 r8 b8           ; bar 6  G
+      r8 o4 g8 r8 b8 r8 e8 r8 a8           ; bar 7  Em A
+      o4 f+8 a8 o5 d8 o4 a8 f+4 r4         ; bar 8  D  a horn hit
+      r8 o4 d8 r8 f+8 r8 d8 r8 f+8         ; bar 9  Bm
+      r8 o4 d8 r8 g8 r8 d8 r8 g8           ; bar 10 G
+      r8 o4 f+8 r8 a8 r8 f+8 r8 a8         ; bar 11 D
+      r8 o4 e8 r8 a8 r8 c+8 r8 e8          ; bar 12 A
+      r8 o4 d8 r8 f+8 r8 d8 r8 f+8         ; bar 13 Bm
+      r8 o4 d8 r8 g8 r8 d8 r8 g8           ; bar 14 G
+      r8 o4 g8 r8 b8 r8 a8 r8 o5 c+8       ; bar 15 Em A
+      o4 a4 a16 b16 o5 c+8 e4 r4           ; bar 16 A  the horns follow the leap
+    `,
+    triangle: `
+      q6
+      [o2 d8 o3 d8]4                       ; bar 1  D
+      [o2 g8 o3 g8]4                       ; bar 2  G
+      [o2 d8 o3 d8]4                       ; bar 3  D
+      [o2 a8 o3 a8]4                       ; bar 4  A
+      [o2 d8 o3 d8]4                       ; bar 5  D
+      [o2 g8 o3 g8]4                       ; bar 6  G
+      o2 e8 o3 e8 o2 e8 o3 e8 o2 a8 o3 a8 o2 a8 o3 c+8 ; bar 7  Em A
+      o3 d4 o2 a8 f+8 d4 r4                ; bar 8  D
+      [o2 b8 o3 b8]4                       ; bar 9  Bm
+      [o2 g8 o3 g8]4                       ; bar 10 G
+      [o2 d8 o3 d8]4                       ; bar 11 D
+      [o2 a8 o3 a8]4                       ; bar 12 A
+      [o2 b8 o3 b8]4                       ; bar 13 Bm
+      [o2 g8 o3 g8]4                       ; bar 14 G
+      o2 e8 o3 e8 o2 e8 o3 e8 o2 a8 o3 a8 o2 a8 b8 ; bar 15 Em A
+      o3 c+4 r8 o2 a8 o3 a4 r4             ; bar 16 A
+    `,
+    noise: `
+      [${DRIVE_BAR}]3 ${DRIVE_FILL}        ; bars 1-4
+      [${DRIVE_BAR}]3 ${DRIVE_FILL}        ; bars 5-8
+      [${DRIVE_BAR}]3 ${DRIVE_FILL}        ; bars 9-12
+      [${DRIVE_BAR}]3 ${DRIVE_FILL}        ; bars 13-16
+    `,
+  },
   // Larry Koopa's airship, his duel and the bonus spot behind it.
   ...smb3Songs,
 ];
