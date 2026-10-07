@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-10-06
+
 ### Added
 
 - Link's Shadow Keep, round two: a boomerang (stuns monsters, fetches pickups) and bombs from
@@ -293,7 +295,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/jelloshooter848/SMBC/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/jelloshooter848/SMBC/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/jelloshooter848/SMBC/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/jelloshooter848/SMBC/compare/v0.4.0...v0.4.1
