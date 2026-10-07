@@ -798,8 +798,11 @@ export class Game {
     this.scenes.push(new DevMenuScene(this));
   }
 
-  /** Developer level select: any level, character and power state, with 99 lives. */
-  devStart(levelId: string, character: CharacterDef, power: string, fullKit = false): void {
+  /**
+   * Developer level select: any level, character and power state, with 99 lives. `seed` fixes the
+   * level's world seed (tests); otherwise each visit gets a fresh one.
+   */
+  devStart(levelId: string, character: CharacterDef, power: string, fullKit = false, seed?: number): void {
     this.tutorialRun = null;
     this.state = newGameState(character);
     this.state.lives = 99;
@@ -813,7 +816,7 @@ export class Game {
     this.pendingLevel = null;
     this.quickRespawn = true;
     this.campaign = null;
-    this.goToLevel(levelId, { mode: 'stand' });
+    this.goToLevel(levelId, seed === undefined ? { mode: 'stand' } : { mode: 'stand', seed });
   }
 
   openEditor(initial?: { level: LevelData; name: string }): void {
