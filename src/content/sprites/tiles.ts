@@ -925,6 +925,29 @@ const cloudLedge = [
   '..aaaa....aaaa..',
   '................',
 ];
+/*
+ * A one-way cloud ledge (T.CLOUD_LEDGE, 2-1's step by its last tower in the campaign): a thin
+ * strip of two puffs on the tile's top half, open below, so it reads as a ledge to land on that a
+ * jump from under it passes through. The cloud block's roles (8 cloud, a its rim).
+ */
+const cloudLedgeThin = [
+  '..aaaa....aaaa..',
+  '.a8888a..a8888a.',
+  'a888888aa888888a',
+  '8888888888888888',
+  '88a8888888a88888',
+  '8888888888888888',
+  'a888888aa888888a',
+  '.a8888a..a8888a.',
+  '..aaaa....aaaa..',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+];
 const cloudWisp = Array.from({ length: 16 }, (_, i) => (i % 8 < 4 ? '......a88a......' : '.....a88a.......'));
 
 /* Cloud bank: the sky levels' ground, quilted puffs in two half-offset courses. */
@@ -2082,6 +2105,7 @@ export const tilesDef: SpriteDef = {
     'water-0': water0,
     'water-1': water1,
     'cloud-block': cloudBlock,
+    'cloud-ledge': cloudLedgeThin,
     'blaster-top': blasterTop,
     'blaster-base': blasterBase,
     wall: brick,

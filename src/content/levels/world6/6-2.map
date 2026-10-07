@@ -8,6 +8,13 @@ time: 400
 start: 2,12
 startMode: stand
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook): Ryu's tribute, 6-2 as a city street at night:
+;; the same tiles, enemies, coins and collision in the `ninja-city` theme (the far city painted
+;; behind it: world/theme-backdrop.ts) and music, its hills, bushes and clouds as shop fronts,
+;; walls, railings and night clouds, with street lamps ([campaign-decor]). Elsewhere (level
+;; select, ?level=6-2) it looks as it always did.
+campaignTheme: ninja-city
+campaignMusic: ng-city
 
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224
@@ -113,3 +120,63 @@ bush-2 215 12
 cloud-3 219 3
 cloud-2 228 2
 bush-3 233 12
+
+[campaign-decor]
+;; The street: the level's own hills, bushes and clouds (drawn as shop fronts, brick walls,
+;; railings and night clouds), and street lamps along the pavement.
+hill-big 0 12
+cloud-1 8 3
+bush-3 11 12
+hill-small 16 12
+cloud-1 19 2
+bush-2 23 12
+cloud-3 27 3
+cloud-2 36 2
+bush-3 41 12
+hill-big 48 12
+cloud-1 56 3
+bush-3 59 12
+hill-small 64 12
+cloud-1 67 2
+bush-2 71 12
+cloud-3 75 3
+cloud-2 84 2
+bush-3 89 12
+hill-big 96 12
+cloud-1 104 3
+bush-3 107 12
+hill-small 112 12
+cloud-1 115 2
+cloud-3 123 3
+cloud-2 132 2
+bush-3 137 12
+hill-big 144 12
+cloud-1 152 3
+bush-3 155 12
+hill-small 160 12
+cloud-1 163 2
+bush-2 167 12
+cloud-3 171 3
+cloud-2 180 2
+bush-3 185 12
+hill-big 192 12
+cloud-1 200 3
+hill-small 208 12
+cloud-1 211 2
+bush-2 215 12
+cloud-3 219 3
+cloud-2 228 2
+bush-3 233 12
+ng-lamp 9 12
+ng-lamp 22 12
+ng-lamp 34 12
+ng-lamp 45 12
+ng-lamp 58 12
+ng-lamp 70 12
+ng-lamp 86 12
+ng-lamp 104 12
+ng-lamp 118 12
+ng-lamp 134 12
+ng-lamp 165 12
+ng-lamp 177 12
+ng-lamp 198 12

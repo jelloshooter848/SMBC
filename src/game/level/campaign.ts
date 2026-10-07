@@ -56,6 +56,11 @@ import { T, isSolid } from './tiles';
  * wakes them, and puts the path's hidden block (T.HIDDEN_PATH) in at its `block` tile. Nothing
  * else changes: the cave is an area of 2-1, where the Moblin ends the level (scenes/level.ts).
  *
+ * A `ledge` zone (always marked `campaign`; 2-1's step by its last tower, 0.4.12) is laid by the
+ * campaign variant only: its tiles become one-way cloud (T.CLOUD_LEDGE), which a hero lands on
+ * from above and passes through from below and the sides. Simon's fixed jump arc reaches the
+ * hidden coin block and the tower top from it; a springboard's launch rises through it.
+ *
  * A level's campaign LOOK (`LevelData.campaignLook`: the map's `campaignTheme:` and
  * `campaignMusic:` headers and its `[campaign-decor]` section; 7-3 as a Contra jungle stage) is
  * applied here too (`applyLook`): the same tiles, zones and entities in another theme, music and
@@ -236,6 +241,15 @@ export function campaignLevel(
     const { x, y } = z.block;
     if (x >= 0 && x < level.width && y >= 0 && y < level.height) tiles[y * level.width + x] = T.HIDDEN_PATH;
   }
+  // Woken cloud ledges (2-1's step by its last tower): their one-way cloud goes into open air.
+  for (const z of level.zones) {
+    if (z.kind !== 'ledge' || !z.campaign) continue;
+    for (let x = z.x; x < z.x + z.w; x++) {
+      const i = z.y * level.width + x;
+      if (x >= 0 && x < level.width && z.y >= 0 && z.y < level.height && tiles[i] === T.AIR)
+        tiles[i] = T.CLOUD_LEDGE;
+    }
+  }
   // Woken exploding bridges: a coin arrow points down at each one's marked end.
   for (const e of level.entities) {
     if (e.type !== 'bridge-blast' || e.props?.campaign !== true) continue;
@@ -286,7 +300,8 @@ function isSleepingZone(z: Zone): boolean {
       z.kind === 'trick' ||
       z.kind === 'pit' ||
       z.kind === 'pipe' ||
-      z.kind === 'path') &&
+      z.kind === 'path' ||
+      z.kind === 'ledge') &&
     z.campaign === true
   );
 }

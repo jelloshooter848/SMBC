@@ -9,6 +9,9 @@ start: 4,14
 startMode: climb
 camera: scroll
 parent: 2-1
+;; Campaign play only: the coin heaven above 2-1 shares its Zelda II look and music.
+campaignTheme: zelda2
+campaignMusic: zelda2-field
 
 [tiles]
 ;; 0                16               32               48               64

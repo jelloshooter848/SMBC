@@ -45,6 +45,7 @@ const tileFrames = [
   'water-0',
   'water-1',
   'cloud-block',
+  'cloud-ledge',
   'blaster-top',
   'blaster-base',
   'wall',

@@ -8,6 +8,12 @@ time: 300
 start: 1,6
 startMode: stand
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook): Simon's tribute, 5-4 as a gothic castle hall:
+;; the same tiles, enemies, fire bars, lava and collision in the `castlevania` theme (the hall's
+;; wall, windows and columns painted behind it: world/theme-backdrop.ts) and music, with candles
+;; on its floors ([campaign-decor]). Elsewhere (level select, ?level=5-4) it looks as it always did.
+campaignTheme: castlevania
+campaignMusic: cv-hall
 
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144
@@ -60,3 +66,13 @@ exit 152 next=6-1
 ;; shaft carries the player down into Simon's dungeon; falling in without the lift still kills.
 descent 84 8 -> 5-4-dungeon 13 0 campaign
 bowser-fire 87
+
+[campaign-decor]
+;; The hall: candles on stands along the floors, clear of the fire bars' pivots (the wall,
+;; windows and columns are painted behind the level by world/theme-backdrop.ts).
+cv-candle 37 12
+cv-candle 77 12
+cv-candle 99 12
+cv-candle 107 12
+cv-candle 146 12
+cv-candle 157 12

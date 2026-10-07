@@ -8,6 +8,13 @@ time: 400
 start: 1,3
 startMode: fall
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook): Samus's tribute, 4-2's underground as
+;; Metroid's Brinstar: the same tiles, enemies, coins and collision in the `brinstar` theme and
+;; music, with brush and rock pillars ([campaign-decor]; the warp room is left bare for Larry's
+;; anchor). Its overworld ends (4-2-intro, 4-2-exit), the vine's warp room and the bonus room
+;; keep their own looks. Elsewhere (level select, ?level=4-2) it looks as it always did.
+campaignTheme: brinstar
+campaignMusic: brinstar
 
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208
@@ -61,3 +68,26 @@ pipe 214 10 down -> 5-1 2 12
 ;; `larry` on the file (the airship crashed) only the pipe's stump is left. Other play keeps the
 ;; warp to 5-1.
 warp 208 16 worlds=5 text=WELCOME_TO_WARP_ZONE! goto=4-2-airship,2,3,climb until=larry
+
+[campaign-decor]
+;; Brinstar: spiky brush on the floor and dark rock pillars behind (none in the warp room).
+brinstar-brush 3 12
+brinstar-brush 23 12
+brinstar-brush 50 12
+brinstar-brush 66 12
+brinstar-brush 92 12
+brinstar-brush 99 12
+brinstar-brush 120 12
+brinstar-brush 135 12
+brinstar-brush 148 12
+brinstar-brush 163 12
+brinstar-brush 169 12
+brinstar-column 9 12
+brinstar-column 29 12
+brinstar-column 53 12
+brinstar-column 70 12
+brinstar-column 95 12
+brinstar-column 130 12
+brinstar-column 141 12
+brinstar-column 151 12
+brinstar-column 179 12

@@ -1650,21 +1650,27 @@ export class World {
 
   /**
    * A hidden path's block was bumped (a `path` zone whose `block` is this tile): its tiles are
-   * queued, left to right, and appear one every PATH_STEP_FRAMES as cloud blocks (tickPath), each
-   * with a soft pop. Only open air becomes cloud; a tile with a player in it waits for him to move.
+   * queued, left to right, and appear one every PATH_STEP_FRAMES as cloud blocks (one-way cloud
+   * ledges for a `oneWay` path; tickPath), each with a soft pop. Only open air becomes cloud; a
+   * tile with a player in it waits for him to move.
    */
   private layPath(tx: number, ty: number): void {
+    // Every path zone the block names is laid, in map order (2-1's steps back up, then its path).
+    let laid = false;
     for (const z of this.level.zones) {
       if (z.kind !== 'path' || z.campaign || z.block.x !== tx || z.block.y !== ty) continue;
-      for (let k = 0; k < z.w; k++) this.pathQueue.push({ x: z.x + k, y: z.y });
-      this.pathT = 0;
-      this.audio.sfx('vine');
-      this.events.push({ type: 'path' });
+      const tile = z.oneWay ? T.CLOUD_LEDGE : T.CLOUD_BLOCK;
+      for (let k = 0; k < z.w; k++) this.pathQueue.push({ x: z.x + k, y: z.y, tile });
+      laid = true;
     }
+    if (!laid) return;
+    this.pathT = 0;
+    this.audio.sfx('vine');
+    this.events.push({ type: 'path' });
   }
 
   /** Tiles of a bumped hidden path still to appear (layPath), in order. */
-  private pathQueue: { x: number; y: number }[] = [];
+  private pathQueue: { x: number; y: number; tile: number }[] = [];
   private pathT = 0;
 
   /** The next tile of a hidden path appears (layPath) unless a player stands in its cell. */
@@ -1676,7 +1682,7 @@ export class World {
     this.pathT = 0;
     this.pathQueue.shift();
     if (this.map.get(next.x, next.y) !== T.AIR) return;
-    this.map.set(next.x, next.y, T.CLOUD_BLOCK);
+    this.map.set(next.x, next.y, next.tile);
     this.audio.sfx('coin');
   }
 
