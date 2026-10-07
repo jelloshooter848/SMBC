@@ -10,6 +10,7 @@ import type { Lesson } from './stage-prompts';
 import type { StageTutorial, TutorialContext } from './stage-tutorial';
 import { ShadowTeaseScene } from './tease';
 import { storyOn } from '../story/beats';
+import { playStoryCards } from '../story/cards';
 import { STORY_TOAD_PAGES } from '../story/script';
 
 /*
@@ -144,12 +145,21 @@ function fit(lines: readonly string[]): string[] {
 }
 
 /**
- * Toad's pages one after another over the frozen level (CardScene panel, at the top), then `done`:
- * the story's greeting in the campaign (docs/STORY.md 2.1, STORY_TOAD_PAGES), else TOAD_PAGES.
+ * Toad's pages one after another over the frozen level (CardScene panel, at the top), then `done`.
+ * In the campaign, the story's greeting (docs/STORY.md 2.1, STORY_TOAD_PAGES) as every story card
+ * plays (story/cards.ts: OK or MENU the next page, BACK the rest; the music plays on). Else
+ * TOAD_PAGES, as before (any of OK, BACK, MENU turns a page; the level's music restarts after).
  */
 function greet({ game, scene }: TutorialContext, done: () => void): void {
-  const pages = storyOn(game) ? STORY_TOAD_PAGES : TOAD_PAGES;
   game.ctx.audio.sfx('pause');
+  if (storyOn(game)) {
+    playStoryCards(game, scene.world, STORY_TOAD_PAGES, () => {
+      scene.resumePlay();
+      done();
+    });
+    return;
+  }
+  const pages = TOAD_PAGES;
   // Asked every frame: switching to the touch pad mid-dialogue drops the key ("OK (Z)" → "OK").
   const prompt = (): string => fontText(abilityHint(game, 'OK', 'jump'));
   const show = (i: number): void => {

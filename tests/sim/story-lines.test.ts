@@ -13,6 +13,7 @@ import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import { fontText, wrapText } from '@game/hud/text';
 import { loadSave } from '@game/save/save-files';
 import { beat } from '@game/story/beats';
+import { pageSaid } from '@game/story/cards';
 import { BowserSaysScene, BRIDGE_ROOM, inCampaignLook } from '@game/story/level-beats';
 import {
   LARRY_PAGES,
@@ -74,13 +75,69 @@ describe('1-0: Toad’s greeting', () => {
       expect(h.said.some((t) => t.startsWith(page.filter(Boolean).join(' ')))).toBe(true);
   });
 
+  it('campaign: each page is read out as every story card is (OK for more, BACK to skip)', () => {
+    const h = campaign();
+    enter10(h);
+    expect(closeCards(h)).toEqual(STORY_TOAD_PAGES);
+    STORY_TOAD_PAGES.forEach((page, i) =>
+      expect(h.said).toContain(pageSaid(page, i === STORY_TOAD_PAGES.length - 1)),
+    );
+  });
+
+  it('campaign: BACK on page 1 closes the rest of the greeting; on to the lessons', () => {
+    const h = campaign();
+    enter10(h);
+    expect((h.top() as CardScene).lines).toEqual(STORY_TOAD_PAGES[0]);
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    h.idle(4);
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    expect(h.said.some((t) => t.startsWith(STORY_TOAD_PAGES[1]!.filter(Boolean).join(' ')))).toBe(false);
+    expect(h.said.at(-1)).toMatch(/HOLD RIGHT TO WALK/);
+  });
+
+  it('campaign: OK and MENU turn the pages; the music plays on when the greeting closes', () => {
+    const h = campaign();
+    enter10(h);
+    h.audio.stopMusic.mockClear();
+    h.audio.playMusic.mockClear();
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('start');
+    expect((h.top() as CardScene).lines).toEqual(STORY_TOAD_PAGES[1]);
+    closeCards(h);
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    h.idle(4);
+    expect(h.audio.stopMusic).not.toHaveBeenCalled();
+    expect(h.audio.playMusic).not.toHaveBeenCalled();
+  });
+
   it('outside the campaign the old five pages show, unchanged', () => {
     const h = makeGame();
     h.game.newGame(MARIO, '1-0');
     h.until(() => h.top() instanceof CardScene, 400);
     const fit = (p: readonly string[]) => p.flatMap((l) => (l.trim() === '' ? [''] : wrapText(l, CARD_COLS)));
+    h.audio.stopMusic.mockClear();
+    h.audio.playMusic.mockClear();
+    const said = h.said.length;
     expect(closeCards(h)).toEqual(TOAD_PAGES.map(fit));
     expect(h.said.some((t) => /BOWSER HAS BRAINWASHED THE HEROES/.test(t))).toBe(true);
+    // Its own words ("OK to continue." on every page), and the level's music restarts after.
+    expect(h.said.slice(said - 1, said + 4).every((t) => t.endsWith(' OK to continue.'))).toBe(true);
+    expect(h.audio.stopMusic).toHaveBeenCalled();
+    expect(h.audio.playMusic).toHaveBeenCalled();
+  });
+
+  it('outside the campaign BACK still turns one page only', () => {
+    const h = makeGame();
+    h.game.newGame(MARIO, '1-0');
+    h.until(() => h.top() instanceof CardScene, 400);
+    const first = [...(h.top() as CardScene).lines];
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(CardScene);
+    expect((h.top() as CardScene).lines).not.toEqual(first);
+    expect((h.top() as CardScene).lines.join(' ')).toMatch(/BRAINWASHED/);
   });
 });
 

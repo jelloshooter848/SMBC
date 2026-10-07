@@ -9,7 +9,7 @@ and the doc cannot drift apart (edit both together).
 
 Every story box is announced the same way, by `pageSaid` (story/cards.ts): the page's lines, then
 "OK for more, BACK to skip." (or "OK to continue." on the last page). Story cards, Toad's map box
-and 1-0's shadow tease all use it.
+1-0's greeting (campaign) and 1-0's shadow tease all use it.
 
 ## Files
 
@@ -90,6 +90,8 @@ story is a later release).
   build. `ENTRY_NEEDS` keeps them back until her character is registered; they then play once as a
   beat of their own (`enter:smb-8:sophia`), while the rest of the entry plays as usual.
 - Missed heroes also get a hint line while the hero stands by their shadow (`missedHint`).
+  When the map opens on that node with the hero's missed card due, the page's line (which says
+  the hint) waits until Toad's scenes are over, so his card is announced first.
 
 ## Scenes inside a level (`story/level-beats.ts`)
 
@@ -100,8 +102,10 @@ look is on), Larry in `4-2-larry` (every run, not on TRY AGAIN), and Bowser's "n
 on first entering `8-4-end` (`bowser-8-4`, in the prompt box with his laugh). When the scene
 closes, play goes on with `LevelScene.resumePlay`: the music is never stopped or restarted (only
 the closing press is kept from making the hero jump). `resume` (music back on) is for the captive
-flow, whose mini game changes the music. 1-0's greeting and
-the shadow tease swap in `STORY_TOAD_PAGES` / `STORY_TEASE_PAGES` under `storyOn`.
+flow, whose mini game changes the music. Under `storyOn`, 1-0's greeting plays
+`STORY_TOAD_PAGES` with `playStoryCards` (then `resumePlay`) and the shadow tease swaps in
+`STORY_TEASE_PAGES`; outside the campaign the greeting keeps `TOAD_PAGES`, its own keys and
+words, and `resume`.
 
 ## Partners
 

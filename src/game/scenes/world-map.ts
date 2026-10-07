@@ -62,8 +62,8 @@ import {
 } from '../map/bonus-spot';
 import { AirshipCrash, type CrashNames } from '../map/airship-crash';
 import { arenaPadHint, arenaPadSaid, arenaPadTouch, drawArenaPad, playArenaPad } from '../arena';
-import { dueScenes, missedHint, missedSaid, ToadGuide } from '../map/toad-guide';
-import { storyOn } from '../story/beats';
+import { dueScenes, missedHint, missedSaid, ToadGuide, type ToadScene } from '../map/toad-guide';
+import { beat, storyOn } from '../story/beats';
 import { fontText } from '../hud/text';
 
 /** Hero walking speed on the map (px per frame). */
@@ -307,6 +307,8 @@ export class WorldMapScene implements Scene {
   } | null = null;
   /** Toad's story scenes playing over the map (the `story` mode), or null. */
   toad: ToadGuide | null = null;
+  /** The page's line (announceHere) waits for Toad's scenes: a missed card is due here. */
+  private hereHeld = false;
   /** The Hammer Bro wandering the road to a used bonus spot on this page, or null. */
   guard: MapGuard | null = null;
   private guardGrace = 0;
@@ -359,7 +361,10 @@ export class WorldMapScene implements Scene {
     this.game.addReveal(this.opts.reveal ?? []);
     this.takeReveal();
     if (this.startCrash()) return;
-    this.announceHere();
+    // A missed hero's card due by the node the hero stands on: Toad's card is said first, the
+    // node's line (its hint is about that hero) once his scenes are over (afterStory).
+    this.hereHeld = this.missedCardHere();
+    if (!this.hereHeld) this.announceHere();
     const from = this.opts.slideFrom === undefined ? undefined : mapPage(this.opts.slideFrom);
     if (from && from !== this.page) {
       // A warp: slide in from the page warped from (fade in from another group); the reveal
@@ -388,6 +393,10 @@ export class WorldMapScene implements Scene {
 
   /** After Toad's scenes (or with none): the reveal, else the map is the player's (saved). */
   private afterStory(): void {
+    if (this.hereHeld) {
+      this.hereHeld = false;
+      this.announceHere();
+    }
     this.revealT = 0;
     if (this.revealQueue.length) this.mode = 'reveal';
     else if (this.revealTaken.length) this.finishReveal();
@@ -404,31 +413,7 @@ export class WorldMapScene implements Scene {
    */
   private startStory(crash: boolean): boolean {
     const game = this.game;
-    // Not on a page shown only through developer "Unlock all".
-    if (!storyOn(game) || !this.page.nodes.length || !isPageOpen(this.progress, this.page.id)) return false;
-    const chars = game.deps.characters.map((c) => c.id);
-    const ball = this.progress.secrets.includes(CRYSTAL_BALL);
-    const cleared = this.progress.cleared;
-    const shadows = this.view(this.page)
-      .heroes.filter((m) => m.hint === 'silhouette')
-      .map((m) => m.def.id)
-      .filter(
-        (id) =>
-          ball ||
-          hiddenHeroes().some((h) => h.hero === id && h.page === this.page.id && cleared.includes(h.main)),
-      );
-    const hidden = [...new Set(hiddenHeroes().map((h) => h.hero))].filter((id) => chars.includes(id));
-    const scenes = dueScenes({
-      page: this.page.id,
-      seen: (id) => game.seen(id),
-      progress: this.progress,
-      freed: game.freed,
-      heroes: chars,
-      hidden,
-      shadows: [...new Set(shadows)],
-      hero: fontText(game.state.character.name),
-      crash,
-    });
+    const scenes = this.storyScenes(crash);
     if (!scenes.length) return false;
     // Toad stands just left of the hero, or right of him when the hero is at the left edge
     // (World 1's start), so he never covers the hero.
@@ -442,6 +427,47 @@ export class WorldMapScene implements Scene {
     this.toad = guide;
     this.mode = 'story';
     return true;
+  }
+
+  /** A missed hero's card (with pages) is due for a shadow by the node the hero stands on. */
+  private missedCardHere(): boolean {
+    const n = this.nodeById(this.node);
+    if (!n) return false;
+    const here = this.view(this.page)
+      .heroes.filter((m) => m.node === n && m.hint === 'silhouette')
+      .map((m) => beat.missed(m.def.id));
+    if (!here.length) return false;
+    return this.storyScenes(false).some((s) => s.pages.length > 0 && s.ids.some((id) => here.includes(id)));
+  }
+
+  /** Toad's scenes due on this page now (none outside the story, or on a page not open). Pure. */
+  private storyScenes(crash: boolean): ToadScene[] {
+    const game = this.game;
+    // Not on a page shown only through developer "Unlock all".
+    if (!storyOn(game) || !this.page.nodes.length || !isPageOpen(this.progress, this.page.id)) return [];
+    const chars = game.deps.characters.map((c) => c.id);
+    const ball = this.progress.secrets.includes(CRYSTAL_BALL);
+    const cleared = this.progress.cleared;
+    const shadows = this.view(this.page)
+      .heroes.filter((m) => m.hint === 'silhouette')
+      .map((m) => m.def.id)
+      .filter(
+        (id) =>
+          ball ||
+          hiddenHeroes().some((h) => h.hero === id && h.page === this.page.id && cleared.includes(h.main)),
+      );
+    const hidden = [...new Set(hiddenHeroes().map((h) => h.hero))].filter((id) => chars.includes(id));
+    return dueScenes({
+      page: this.page.id,
+      seen: (id) => game.seen(id),
+      progress: this.progress,
+      freed: game.freed,
+      heroes: chars,
+      hidden,
+      shadows: [...new Set(shadows)],
+      hero: fontText(game.state.character.name),
+      crash,
+    });
   }
 
   /**
