@@ -2,6 +2,7 @@ import { NES } from '@engine/gfx/palette';
 import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
+import { underworldDecorFrames, underworldDecorPalette } from './sophia-tiles';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -111,6 +112,8 @@ export const decorPalettes: Record<string, string[]> = {
   ],
   // Bill's jungle: dark canopy greens, distant mountain blues, concrete greys, palm bark (contra-decor.ts).
   'decor-jungle': jungleDecorPalette,
+  // Sophia's Underworld: slime greens, cave mist, rust rock, pale roots (sophia-tiles.ts).
+  'decor-underworld': underworldDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -670,5 +673,7 @@ export const decorDef: SpriteDef = {
     'ruin-temple': ruinTemple,
     // Bill's jungle: palms, canopy, mountains, sandbags, a searchlight; clouds become canopy.
     ...jungleDecorFrames,
+    // Sophia's Underworld: the gateway Jason walks through, roots hanging from the roof.
+    ...underworldDecorFrames,
   },
 };

@@ -101,8 +101,11 @@ export function drawHud(
       const i = (((player.scratch.tool ?? 0) % n) + n) % n;
       const t = tools[i];
       if (t) {
-        r.sprite(assets.sheet(t.sheet ?? 'items'), t.icon, 96, 24);
-        if (t.count !== null) text(`×${pad(t.count, 2)}`, 105, 24);
+        const sheet = assets.sheet(t.sheet ?? 'items');
+        r.sprite(sheet, t.icon, 96, 24);
+        // The count after the icon (8 px on the items sheet; a hero's own icon may be wider).
+        const iw = sheet.frames?.get(t.icon)?.w ?? 8;
+        if (t.count !== null) text(`×${pad(t.count, 2)}`, 97 + iw, 24);
       }
     }
     const extra = state.character.hudExtra?.(player);

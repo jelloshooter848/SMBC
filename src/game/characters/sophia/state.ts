@@ -66,6 +66,8 @@ export interface SophiaState {
   raise: number;
   /** The world's water line (World.waterTop), kept from the last behaviour update. */
   waterTop: number;
+  /** The level's height in px (World.heightPx): below it a death is a fall, with no explosion. */
+  levelH: number;
   /** The frame (view) her death explosion started, for the sprite. */
   boomFrom: number;
   /**
@@ -111,6 +113,7 @@ export function sophiaState(p: Player): SophiaState {
       fillT: 0,
       raise: 0,
       waterTop: Infinity,
+      levelH: 240,
       boomFrom: -1,
       roll: 0,
       vineBox: false,

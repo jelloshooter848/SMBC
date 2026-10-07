@@ -27,6 +27,7 @@ import {
   TRIPLE_MAX,
   TRIPLE_REPEAT,
   TRIPLE_START,
+  TURN_INSIDE,
 } from './profile';
 import { becomeUpright, driveSophia, hasHover, holdsAway } from './drive';
 import { CEIL, FLOOR, LEFT, RIGHT, SOUNDS, sophiaState, type SophiaState } from './state';
@@ -181,10 +182,16 @@ const HULL: Record<string, string> = { small: 'sophia', big: 'sophia-hyper', fir
 
 function tankFrame(p: Player, st: SophiaState): string {
   const b = p.body;
-  if (st.surface === FLOOR && !st.turn) {
+  const t = st.turn;
+  if (t) {
+    // A corner: the 45-degree frame, nose toward the new surface, drawn with the old surface's
+    // turn for the first half and the new one's after the midpoint (SO-51, SO-M2).
+    const inside = t.frames === TURN_INSIDE;
+    return (st.surface === t.to) === inside ? 'tilt-down' : 'tilt-up';
+  }
+  if (st.surface === FLOOR) {
     if (st.hovering) return `hover-${(st.roll >> 1) & 1}`;
-    if (!b.onGround && p.inWater) return `swim-${(st.roll >> 2) & 1}`;
-    if (!b.onGround) return 'jump';
+    if (!b.onGround && !p.inWater) return 'jump';
   }
   if (st.raise >= CANNON_RAISE_FRAMES) return 'aim-up';
   if (st.raise > 0) return 'aim-diag';
@@ -202,12 +209,13 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     const old = p.powerState === 'fire' ? 'sophia-hyper' : 'sophia';
     if (!reduceFlashing && (p.transition.t >> 2) & 1) palette = old;
   } else if (p.star > 0) palette = `sophia-star-${reduceFlashing ? 0 : (frame >> 1) & 3}`;
-  else if (p.invuln > 0) palette = `sophia-hurt-${reduceFlashing ? 1 : (frame >> 1) % 3}`;
+  // Hit flashes: the hull cycles three colours every 2 frames (SO-23); steady with reduce flashing.
+  else if (p.invuln > 0) palette = `sophia-flash-${reduceFlashing ? 1 : (frame >> 1) % 3}`;
   if (p.dead) {
     if (st.boomFrom < 0) st.boomFrom = frame;
     const t = frame - st.boomFrom;
-    // Her explosion replaces the tank; a pit death shows nothing.
-    const name = t < 16 && p.body.y < px(240) ? `boom-${t >> 2}` : 'none';
+    // She blows up (4 frames, 4 each) and is gone; a pit death shows nothing.
+    const name = t < 16 && p.body.y < px(st.levelH) ? `die-${t >> 2}` : 'none';
     return { sheet: SOPHIA_SHEET, palette, frame: name, flip: false, offsetX: 0, offsetY: 0, rotate: 0 };
   }
   st.boomFrom = -1;
@@ -274,7 +282,8 @@ export const SOPHIA: CharacterDef = {
   drop(rng, _enemy, killer) {
     // SO-25: a 25% roll, only while she owns a missile weapon; the item is ammo for it.
     if (!killer || !(killer.scratch.hasTriple || killer.scratch.hasHoming)) return null;
-    return rng.int(4) === 0 ? 'missile-pack' : null;
+    if (rng.int(4) !== 0) return null;
+    return activeTool(killer, tools(killer))?.id === 'homing' ? 'homing-ammo' : 'triple-ammo';
   },
   guide: SOPHIA_GUIDE,
   touchLabels(p) {
@@ -291,6 +300,7 @@ export const SOPHIA: CharacterDef = {
     update(p: Player, input: InputFrame, world: World) {
       const st = sophiaState(p);
       st.waterTop = world.waterTop;
+      st.levelH = world.heightPx;
       if (p.transition) return;
       // The cannon rises while "up" (away from the surface) is held; not off the floor in water.
       // A shot fires up once "up" has been held for 9 frames before it (SO-28).
@@ -346,8 +356,13 @@ export const SOPHIA: CharacterDef = {
       }
     },
     onPickup(p, kind, world) {
-      if (kind !== 'missile-pack') return false;
-      if (!addAmmo(p, TRIPLE_DROP, HOMING_DROP)) return false;
+      if (kind === 'triple-ammo') {
+        if (!p.scratch.hasTriple || (p.scratch.triple ?? 0) >= TRIPLE_MAX) return false;
+        p.scratch.triple = Math.min(TRIPLE_MAX, (p.scratch.triple ?? 0) + TRIPLE_DROP);
+      } else if (kind === 'homing-ammo') {
+        if (!p.scratch.hasHoming || (p.scratch.homing ?? 0) >= HOMING_MAX) return false;
+        p.scratch.homing = Math.min(HOMING_MAX, (p.scratch.homing ?? 0) + HOMING_DROP);
+      } else return false;
       world.audio.sfx(SOUNDS.pickup);
       return true;
     },

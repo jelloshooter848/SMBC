@@ -504,6 +504,9 @@ export class EditorScene implements Scene {
       'mountain',
       'sandbags',
       'searchlight',
+      // Sophia's Underworld (drawn for its decor palette)
+      'gateway',
+      'roots',
     ]) {
       decor.appendChild(this.brushButton({ kind: 'decor', name: d, label: d }, d));
     }

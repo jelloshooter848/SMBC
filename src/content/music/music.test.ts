@@ -50,6 +50,12 @@ const SONG_IDS = [
   'contra-boss',
   'contra-lair',
   'contra-card',
+  // Sophia's Underworld and her mini game.
+  'bm-area',
+  'bm-dungeon',
+  'bm-boss',
+  'bm-garage',
+  'bm-cutscene',
 ];
 
 const SFX_IDS = [
@@ -116,6 +122,27 @@ const SFX_IDS = [
   'spread',
   'laser',
   'konami',
+  // Sophia, Jason and the Underworld.
+  'sophia-jump',
+  'sophia-land',
+  'sophia-cannon',
+  'sophia-shoot-normal',
+  'sophia-shoot-hyper',
+  'sophia-shoot-crusher',
+  'sophia-missile',
+  'sophia-explode',
+  'sophia-hit-enemy',
+  'sophia-kill',
+  'sophia-hover',
+  'sophia-open',
+  'sophia-hurt',
+  'sophia-die',
+  'sophia-select',
+  'sophia-pickup',
+  'jason-shot',
+  'grenade',
+  'mutant-die',
+  'frog',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

@@ -8,6 +8,7 @@ import {
   contraTilePalettes,
   rivets,
 } from './contra-tiles';
+import { bmDungeonTileFrames, sophiaTilePalettes, underworldFrames } from './sophia-tiles';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -292,6 +293,8 @@ export const tilePalettes: Record<string, string[]> = {
   ],
   // Bill's jungle under 7-3, his waterfall climb and Red Falcon's lair (contra-tiles.ts).
   ...contraTilePalettes,
+  // Sophia's Underworld cavern and the dungeon's metal (sophia-tiles.ts).
+  ...sophiaTilePalettes,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2160,5 +2163,9 @@ export const tilesDef: SpriteDef = {
     'coin-3@contra-jungle': coin3,
     'flag-shaft@contra-jungle': flagShaft,
     'flag-ball@contra-jungle': flagBall,
+    // Sophia's Underworld (her garage and the mini game's cavern) and the dungeon's metal; their
+    // `?` blocks, coins, pipes and flagpole are SMB's own.
+    ...themed(underworldFrames, 'underworld'),
+    ...themed(bmDungeonTileFrames, 'bm-dungeon'),
   },
 };

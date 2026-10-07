@@ -21,6 +21,11 @@ export const SOPHIA_GUIDE: CharacterGuide = {
       does: 'Fire three missiles. They fly through walls and pierce armour.',
     },
     {
+      action: 'down+special',
+      touch: 'MISSILE',
+      does: 'With both missiles: switch between them.',
+    },
+    {
       action: 'up',
       does: 'With the wall climb, drive into a wall to climb it. On walls the keys follow the wall.',
     },
@@ -43,6 +48,13 @@ export const SOPHIA_GUIDE: CharacterGuide = {
       sheet: 'sophia',
       cost: '3 ammo',
       does: 'Three missiles that fly through walls and break bricks.',
+    },
+    {
+      name: 'Homing missile',
+      icon: 'icon-homing',
+      sheet: 'sophia',
+      cost: '1 ammo',
+      does: 'Seeks the nearest enemy that is not armoured or on fire.',
     },
   ],
   tips: [

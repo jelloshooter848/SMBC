@@ -119,8 +119,12 @@ export class SophiaBoom extends Entity {
     }
   }
   render(r: Renderer, view: View): void {
-    const f = Math.min(3, Math.floor((this.t * 4) / this.frames));
-    r.sprite(view.assets.sheet(SOPHIA_SHEET), `boom-${f}`, toPx(this.body.x) - view.camX, toPx(this.body.y));
+    const name = `boom-${Math.min(3, Math.floor((this.t * 4) / this.frames))}`;
+    const sheet = view.assets.sheet(SOPHIA_SHEET);
+    const fr = sheet.frames.get(name);
+    const cx = toPx(this.body.x) + 8 - view.camX;
+    const cy = toPx(this.body.y) + 8;
+    r.sprite(sheet, name, cx - ((fr?.w ?? 16) >> 1), cy - ((fr?.h ?? 16) >> 1));
   }
 }
 

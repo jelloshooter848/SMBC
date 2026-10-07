@@ -152,6 +152,23 @@ const tileFrames = [
   'coin-3@contra-jungle',
   'flag-shaft@contra-jungle',
   'flag-ball@contra-jungle',
+  // Sophia's Underworld and the dungeon's metal.
+  ...['underworld', 'bm-dungeon'].flatMap((t) =>
+    [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+      'water-0',
+      'water-1',
+    ].map((n) => `${n}@${t}`),
+  ),
 ];
 
 const fontGlyphs = [
@@ -368,6 +385,17 @@ const decorFrames: Record<string, Size> = {
   'cloud-1@contra-jungle': [32, 16],
   'cloud-2@contra-jungle': [48, 16],
   'cloud-3@contra-jungle': [64, 16],
+  // Sophia's Underworld.
+  gateway: [32, 32],
+  roots: [32, 16],
+  'hill-big@underworld': [80, 48],
+  'hill-small@underworld': [48, 32],
+  'bush-1@underworld': [32, 16],
+  'bush-2@underworld': [48, 16],
+  'bush-3@underworld': [64, 16],
+  'cloud-1@underworld': [32, 24],
+  'cloud-2@underworld': [48, 24],
+  'cloud-3@underworld': [64, 24],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -416,6 +444,8 @@ describe('tile sprites', () => {
         'tiles-contra-jungle',
         'tiles-contra-falls',
         'tiles-alien-lair',
+        'tiles-underworld',
+        'tiles-bm-dungeon',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -487,6 +517,7 @@ describe('decor sprites', () => {
         'decor-gray',
         'decor-cavern',
         'decor-jungle',
+        'decor-underworld',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);
