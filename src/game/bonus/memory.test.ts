@@ -3,7 +3,7 @@ import { getLevel } from '@content/levels';
 import type { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { ActionState, NO_INPUT } from '@engine/input/input-manager';
-import type { Action } from '@engine/input/bindings';
+import type { Action } from '@engine/input/actions';
 import { DEFAULT_ASSIST } from '../context';
 import { Game } from '../scenes/game';
 import { CHARACTERS } from '../characters/registry';
