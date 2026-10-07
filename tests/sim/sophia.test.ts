@@ -9,6 +9,7 @@ import { Pickup } from '@game/entities/objects/pickup';
 import { ParkedTank } from '@game/characters/sophia/jason';
 import { getLevel } from '@content/levels';
 import { MARIO } from '@game/characters/mario';
+import { continuous } from './sophia-reach';
 import { Enemy } from '@game/entities/enemies/enemy';
 import type { Player } from '@game/entities/player';
 import { Goomba } from '@game/entities/enemies/goomba';
@@ -988,6 +989,10 @@ const insideSolid = (w: World) => {
   return false;
 };
 
+/** 4-4 from its start to the floor left of the chamber (219-221, row 9): found by sophia-reach. */
+const ROUTE_4_4_TO_220 =
+  'enter 4-4 | tank@0,6 run-right | tank@6,9 jump-right | tank@13,9 jump-right | tank@18,5 edge-right | tank@27,5 run-right | tank@31,5 run-right | tank@35,5 edge-right | tank@49,5 edge-right | tank@128,5 edge-right | tank@140,9 long-right | tank@150,12 edge-right | tank@153,9 long-right | tank@156,9 jump-right | tank@158,6 hop-right | tank@162,5 edge-right | tank@166,5 edge-right | tank@172,5 edge-right | tank@176,5 edge-right | tank@190,5 edge-right | tank@205,5 edge-right | tank@214,12 edge-right | tank@217,9 walk-right';
+
 describe('Sophia III: the 0.4.11 review', () => {
   const calm = (w: World) => {
     for (const e of w.entities) if (e instanceof Enemy) e.alive = false;
@@ -1188,9 +1193,11 @@ describe('Sophia III: the 0.4.11 review', () => {
     expect(toPx(b.y + b.h)).toBe(160); // down the hole in row 6, on the floor of row 10
     expect(toPx(b.w)).toBe(19); // upright again
     expect(sophiaState(nose.world.player).nose).toBe(false);
-    // The way on is the hole at 224 (the upper way loops back): from the left, onto the blocks at
-    // 224-226, down the two-tile gap at 227 into the chamber, back left to the hole (the screen
-    // has not passed it: no backtracking past its edge), nose first down it, and on to the axe.
+    // The way on is the hole at 224 (the upper way loops back). From the level's start, by a route
+    // the search found (played as one run), to the floor left of the chamber; then onto the blocks
+    // at 224-226, down the two-tile gap at 227 into the chamber, back left to the hole (the screen
+    // has not passed it: never back past its edge), nose first down it, and on to the axe.
+    const route = continuous('small', ROUTE_4_4_TO_220.split(' | '));
     const plan: [Action[], number][] = [
       [[], 20],
       [['right', 'jump'], 50],
@@ -1205,23 +1212,34 @@ describe('Sophia III: the 0.4.11 review', () => {
     const ends = plan.reduce<number[]>((a, [, n]) => [...a, (a.at(-1) ?? 0) + n], []);
     let edge = 0;
     let wentBack = false;
+    let from = -1;
+    let at = -1;
     const r = runSim({
       level: getLevel('4-4'),
       character: SOPHIA,
       script: { steps: [] },
-      maxFrames: 2000,
+      maxFrames: 6000,
       assist: { invulnerable: true, infiniteTime: true },
-      start: { x: 220, y: 9, mode: 'stand' },
       until: (w) => w.bossClear !== null,
       controller: (w, f) => {
         calm(w);
-        if (w.camera.x < edge) wentBack = true;
+        // The screen never scrolls back (a loop's jump of a whole stretch aside).
+        if (w.camera.x < edge && edge - w.camera.x < px(64)) wentBack = true;
         edge = w.camera.x;
-        const k = ends.findIndex((e) => f < e);
+        if (!route.done()) return route.controller(w);
+        // Out from under the block at 218-219 (row 8) first: no headroom to jump there.
+        if (from < 0 && toPx(w.player.body.x) < 3518) return ['right'];
+        if (from < 0) {
+          from = f;
+          at = toPx(w.player.body.x);
+        }
+        const k = ends.findIndex((e) => f - from < e);
         if (k >= 0) return plan[k]![0];
         return f % 40 < 25 ? ['right', 'jump'] : ['right'];
       },
     });
+    expect(Math.floor(at / 16)).toBeGreaterThanOrEqual(219);
+    expect(Math.floor(at / 16)).toBeLessThanOrEqual(221);
     expect(wentBack).toBe(false);
     expect(r.world.player.powerState).toBe('small');
     expect(r.world.bossClear).not.toBeNull();
