@@ -43,12 +43,13 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
 **Owner decisions:**
 
 - **Premise:** Princess Peach is in hiding. King Koopa stole Larry's magic wand and used it to pull heroes from other
-  worlds into the Mushroom Kingdom and brainwash them, so they would hunt for Peach and he could kidnap her. Mario's
-  job is to find her first.
+  worlds into the Mushroom Kingdom and brainwash them, so they would hunt for Peach and he could kidnap her (his
+  Koopas couldn't find her; the heroes don't think like Koopas). Mario's job is to find her first. Freeing a hero
+  also cracks the wand further.
 - **The wand runs through the whole story.** It breaks when Bowser falls at 8-4, and its pieces fall through a rift
   into the Lost Kingdom (the Lost Levels). Mario follows. The Koopalings want the pieces too, which ties in idea 1
   below.
-- **Peach is found in the Lost Levels**, fairly early (open to adjusting). She then becomes a **playable hero** who
+- **Peach is found in the Lost Levels**, at Lost 4-4 (Toadstool Grove), and leaves traces before that. She then becomes a **playable hero** who
   helps fight back.
   - **When:** a later release, after the story batch, once work on the Lost Levels starts.
   - **What exists:** PR #51 only lists her as a new-character candidate (`bug-reports/2026-10-07-classic-follow-ups.md`,
@@ -78,7 +79,9 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
   - Ryu: Irene Lew;
   - Bill: Lance.
 - **Process:** first draft every line in a story document (docs/STORY.md) for the owner to review and edit, then
-  build.
+  build. The owner reviewed the draft on 2026-10-07; the decisions (partners before the way in, Toad at the end of
+  8-4, credits at 8-4 as a false ending plus a short final roll, six wand pieces held by the Koopalings) are in
+  docs/STORY.md section 3.
 
 ## Ideas for later
 
