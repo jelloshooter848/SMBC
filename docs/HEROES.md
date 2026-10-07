@@ -241,7 +241,12 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   level starts a run (`Game.airship`, an `AirshipRun`) and snapshots the run state as it was
   before (`snapshot()` from free-hero.ts: lives, power, hp, kit, score, coins, 4-2's checkpoint).
   Any other level, the map or the title ends the run. Dev select / `?level=` never start one.
-- **No clock aboard**: `LevelScene` sets the world's time to null (the HUD leaves it blank).
+- **No clock aboard**: `LevelScene` sets the world's time to null (the status bar leaves it blank).
+- **SMB3's status bar** (0.4.14, `hud/smb3-status.ts`): aboard (deck and room, any way in) the
+  level draws SMB3's bar along the bottom (WORLD, the P-meter, coins; the hero's badge and lives,
+  the score, the clock; three end-card slots) instead of the HUD across the top, and its world
+  32 px higher (`renderSmb3World`), so rows 2-14 fill the screen above the bar. The Hammer Bro
+  battle and the bonus games use the same bar.
 - **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
   restarts the deck as it was boarded, or Larry's room once it has been reached (dropping in from
   its ceiling pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
@@ -479,9 +484,13 @@ score or lives.
   band, space above, the station sheet's windows, consoles and girders as `deco` entities drawn in
   front of the plating): floor, steps, three three-tile pits, and the robots (the station sheet's
   frames; they face left and are flipped to face right; a hit flashes them in `station-flash`), each a station `Robot` (an `Enemy` with hit points that blows up
-  in a small explosion and drops from Mega Man's own drop table, an E-tank turned into a big health
-  pellet since the round has no pause menu to use one from):
+  in a small explosion and drops from Mega Man's own drop table, an E-tank kept for the weapon
+  screen):
   **Hopper** (3 HP: crouches, then hops toward Mega Man, short and tall in turn),
+  **Met** (0.4.14, Mega Man 2's hard hat, 1 HP, three on the floors: hidden under its hat every shot
+  bounces off with a `dink`; with Mega Man within 96 px it lifts the hat after 70 frames, fires a
+  three-way spread at him, level and up and down a slant of about 27°, and hides again 40 frames
+  later; one hit while it is up; frames `met-0` hidden, `met-1` up),
   **Turret** (3 HP: on the floor, or hung upside down under a ceiling; shut, its armour turns
   shots away; it opens and fires a burst of three pellets aimed at Mega Man, a floor turret never
   aims down, a ceiling turret never up) and
@@ -493,11 +502,14 @@ score or lives.
   `capsule` sound plays and a banner (24 columns, clear of the bars) and the announcer say WEAPON
   switches to it, USE WEAPON fires it and a held direction aims it (`abilityHint`; a line falls back
   to the bare ability names when its keys don't fit).
-- **The boss gate**: column 80's doorway is a two-tile shutter (solid in the map, a `Shutter` drawn
-  over it). A `scrollStop` keeps the room out of sight. Mega Man touching it on the floor opens it;
-  the robots and shots vanish (a screen change), he walks through on his own while the camera
-  scrolls 4 px a frame onto the 16-wide room and locks; the shutter shuts behind him (solid again).
-  Dark Mega Man beams down, then his bar fills one segment every 3 frames with a `boss-fill` tick,
+- **The boss gate** (Mega Man 2's two shutters, 0.4.14): columns 80's and 95's doorways are
+  two-tile shutters (solid in the map, a `Shutter` drawn over each). A `scrollStop` keeps the
+  corridor out of sight. Mega Man touching the first on the floor opens it; the robots and shots
+  vanish (a screen change), he walks through on his own while the camera scrolls 4 px a frame onto
+  the one-screen corridor (columns 80-95, both shutters in sight) and locks; the shutter shuts behind him (solid again) and
+  he walks the corridor himself, the stage music still playing. The second shutter, at its end, does
+  the same into the 16-wide boss room (columns 95-110); the music stops there. Dark Mega Man beams
+  down, then his bar fills one segment every 3 frames with a `boss-fill` tick,
   NES style, while Mega Man waits (input ignored); the fight starts when it is full.
 - **Dark Mega Man** (`dark-megaman.ts`): Mega Man's body, moves (walk, jump, slide speeds from
   `MEGAMAN_PROFILE`) and sprites in palette `megaman-dark`; his shots are dark violet boxes.
@@ -513,7 +525,15 @@ score or lives.
 - **Outcomes**: beating him bursts him into Mega Man's death orbs (the `death-orb` frame, two rings
   of eight) with "DARK MEGA MAN IS BEATEN!", the victory jingle, Mega Man beams out, then `pass`.
   Mega Man at 0 hit points or in a pit costs a life; `fail` after GAME OVER. Menu
-  (`StationMenuScene`) Give up: `quit`. `done` is called once; `game.state` is never touched.
+  (`StationMenuScene`, from the weapon screen's MENU row) Give up: `quit`.
+- **The weapon screen** (0.4.14, `weapon-menu.ts`, `StationWeaponScene`): MENU opens Mega Man 2's
+  START screen in place of the menu: a dark blue panel with the weapons he carries (P, the Mega
+  Buster, whose bar shows his life as in Mega Man 2; the Saw Disc once taken; Rush Coil), each with
+  its energy as a row of 28 ticks, the E-tanks (`×n` and four boxes; OK there fills his life when
+  he has one and is not full; they last across lives), MEGA MAN ×lives, and a MENU row that opens
+  the round's menu (Continue goes straight back to play). Up / down choose (wrapping, announced
+  with the energy), OK or MENU on a weapon equips it and play goes on. The chosen label blinks
+  (held lit with reduce flashing). The campaign's Mega Man keeps the usual pause menu. `done` is called once; `game.state` is never touched.
 - Music `mm-station` on the stage and `mm-boss` from the boss's entrance, `castle-clear` for the
   win; sounds `boss-fill` (each bar notch), `beam` (his entrance, Mega Man's exit), `capsule`
   (`art.ts` names them all).

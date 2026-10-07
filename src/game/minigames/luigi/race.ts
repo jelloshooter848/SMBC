@@ -18,6 +18,7 @@ import { worldLabel } from '../../hud/world-label';
 import { TIMER_FRAMES } from '../../constants';
 import { LUIGI_ROUTE, poleOf, raceCourse } from './course';
 import { RivalLuigi } from './rival';
+import { Piranha } from '../../entities/enemies/piranha';
 import { drawBanner, drawBigText, drawOffscreenArrow, drawTrack } from './race-hud';
 
 /**
@@ -67,6 +68,7 @@ export class MirrorRaceScene implements Scene {
     this.world.time = null; // no clock: the race is against Luigi
     // Luigi starts a tile behind Mario, so both show at the line.
     this.rival = new RivalLuigi(level, LUIGI, LUIGI_ROUTE, px(level.start.x * 16 - 16), pole);
+    this.rival.plantUp = (x0, x1, feet) => plantUp(this.world, x0, x1, feet);
     this.world.backdrop = (r) => this.rival.render(r, this.view());
     this.start = toPx(this.world.player.body.x);
     this.goal = pole.x;
@@ -252,6 +254,22 @@ export class MirrorRaceScene implements Scene {
       drawBanner(r, font, 'LUIGI WINS!', 72);
     }
   }
+}
+
+/**
+ * Whether a piranha plant of `world` is out of its pipe anywhere over px [x0, x1) (the stretch
+ * ahead of a racer whose front is at x0), with its pipe's mouth no more than a jump (4 tiles)
+ * above `feet` (px). A pipe the racer is already over (x0 inside it) does not count.
+ */
+export function plantUp(world: World, x0: number, x1: number, feet: number): boolean {
+  return world.entities.some((e) => {
+    if (!(e instanceof Piranha) || !e.alive || e.body.h <= 0) return false;
+    if (toPx(e.body.y + e.body.h) < feet - 64) return false;
+    // The plant's body sits 10 px into its 32 px pipe (piranha.ts).
+    const left = toPx(e.body.x) - 10;
+    if (x0 > left && x0 <= left + 32) return false;
+    return left < x1 && left + 32 > x0;
+  });
 }
 
 /**

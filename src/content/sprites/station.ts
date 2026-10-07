@@ -434,6 +434,47 @@ const girder = [
   ...chord,
 ];
 
+/**
+ * Mega Man 2's Met (Station Escape's hard hat), facing LEFT: `met-0` hidden under its yellow hat
+ * on the floor, `met-1` with the hat lifted, its eyes and feet showing. Original art.
+ */
+const met0 = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.....000000.....',
+  '...00bbbaaa00...',
+  '..0bbaaaaaaaa0..',
+  '..0baaa0caaaa0..',
+  '.0baaa0ccc0aaa0.',
+  '.0aaaaa0c0aaaa0.',
+  '0000000000000000',
+  '0aaaaaaaaaaaaaa0',
+];
+const met1 = [
+  '................',
+  '................',
+  '.....000000.....',
+  '...00bbbaaa00...',
+  '..0bbaaaaaaaa0..',
+  '..0baaa0caaaa0..',
+  '.0baaa0ccc0aaa0.',
+  '.0aaaaa0c0aaaa0.',
+  '0000000000000000',
+  '0aaaaaaaaaaaaaa0',
+  '.00000000000000.',
+  '..0440440000....',
+  '..0440440000....',
+  '..0000000000....',
+  '...0220..0220...',
+  '..00000..00000..',
+];
+
 export const stationDef: SpriteDef = {
   palette: 'station',
   frames: {
@@ -444,6 +485,8 @@ export const stationDef: SpriteDef = {
     'beam-2': beam2,
     'hopper-0': hopper0,
     'hopper-1': hopper1,
+    'met-0': met0,
+    'met-1': met1,
     'turret-0': turret0,
     'turret-1': turret1,
     'drone-0': drone0,

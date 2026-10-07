@@ -7,6 +7,11 @@ import {
   dealChests,
   MEMORY_PAIRS,
   MemoryGame,
+  MEMORY_COLS,
+  MEMORY_ROWS,
+  NSPADE_BOARDS,
+  boardFaces,
+  takenCards,
   nextBonusKind,
   rollWeighted,
   SLOT_CELL,
@@ -60,22 +65,62 @@ function where(g: MemoryGame): Map<CardFace, number[]> {
 }
 
 describe('N-spade memory match', () => {
-  it('deals 18 cards (9 pairs) from the seed, the same seed the same layout', () => {
-    const g = new MemoryGame(new Rng(3));
-    expect(g.cards).toHaveLength(18);
+  it('has a fixed set of boards, dealt in order: each 18 cards, the nine pairs, our own layouts', () => {
+    expect(NSPADE_BOARDS.length).toBeGreaterThanOrEqual(4);
     expect(MEMORY_PAIRS).toHaveLength(9);
-    const faces = g.cards.map((c) => c.face);
-    expect(new MemoryGame(new Rng(3)).cards.map((c) => c.face)).toEqual(faces);
-    expect(new MemoryGame(new Rng(4)).cards.map((c) => c.face)).not.toEqual(faces);
-    for (const f of new Set(MEMORY_PAIRS)) {
-      const pairs = MEMORY_PAIRS.filter((p) => p === f).length;
-      expect(faces.filter((x) => x === f)).toHaveLength(pairs * 2);
+    const layouts = new Set<string>();
+    NSPADE_BOARDS.forEach((_, n) => {
+      const faces = boardFaces(n);
+      expect(faces).toHaveLength(MEMORY_COLS * MEMORY_ROWS);
+      for (const f of new Set(MEMORY_PAIRS)) {
+        const pairs = MEMORY_PAIRS.filter((p) => p === f).length;
+        expect(faces.filter((x) => x === f)).toHaveLength(pairs * 2);
+      }
+      layouts.add(faces.join());
+    });
+    expect(layouts.size).toBe(NSPADE_BOARDS.length);
+    // After the last board, the first again.
+    expect(boardFaces(NSPADE_BOARDS.length)).toEqual(boardFaces(0));
+    const g = new MemoryGame(boardFaces(2));
+    expect(g.cards.map((c) => c.face)).toEqual(boardFaces(2));
+    expect(g.cards.every((c) => !c.up && !c.gone)).toBe(true);
+  });
+
+  it('cards taken on an earlier visit are gone: they cannot be turned, and the rest clear the board', () => {
+    const faces = boardFaces(0);
+    const at = (f: CardFace) => faces.flatMap((x, i) => (x === f ? [i] : []));
+    const [s1, s2] = at('star') as [number, number];
+    const g = new MemoryGame(faces, [s1, s2]);
+    expect(g.cards[s1]?.gone).toBe(true);
+    expect(g.flip(s1)).toBe('invalid');
+    expect(g.left).toBe(16);
+    for (const f of new Set(faces)) {
+      if (f === 'star') continue;
+      const idx = at(f);
+      for (let k = 0; k < idx.length; k += 2) {
+        g.flip(idx[k] as number);
+        expect(g.flip(idx[k + 1] as number)).toBe('match');
+        expect(g.lastPair).toEqual([idx[k], idx[k + 1]]);
+      }
     }
-    expect(g.cards.every((c) => !c.up)).toBe(true);
+    expect(g.found).toHaveLength(8);
+    expect(g.cleared).toBe(true);
+    expect(g.over).toBe(true);
+  });
+
+  it('keeps only taken cards that make whole pairs on that board (anything else from a file is dropped)', () => {
+    const faces = boardFaces(1);
+    const at = (f: CardFace) => faces.flatMap((x, i) => (x === f ? [i] : []));
+    const [c1, c2] = at('coin10') as [number, number];
+    const [u1] = at('1up') as [number];
+    expect(takenCards(faces, [c2, c1])).toEqual([c1, c2]);
+    expect(takenCards(faces, [c1, c2, u1])).toEqual([c1, c2]); // a lone 1-up: not a pair
+    expect(takenCards(faces, [c1, c1, c2, 99, -1, 'x', 2.5])).toEqual([c1, c2]);
+    expect(takenCards(faces, 'nope')).toEqual([]);
   });
 
   it('a matching pair stays up and is found; a miss shows until hidden, then turns back', () => {
-    const g = new MemoryGame(new Rng(9));
+    const g = new MemoryGame(boardFaces(4));
     const w = where(g);
     const [a, b] = w.get('star') as number[];
     expect(g.flip(a as number)).toBe('first');
@@ -96,7 +141,7 @@ describe('N-spade memory match', () => {
   });
 
   it('two misses end it (the second miss stays up); nothing can be turned after', () => {
-    const g = new MemoryGame(new Rng(9));
+    const g = new MemoryGame(boardFaces(4));
     const w = where(g);
     const m = w.get('mushroom') as number[];
     const f = w.get('flower') as number[];
@@ -112,7 +157,7 @@ describe('N-spade memory match', () => {
   });
 
   it('finding every pair ends it too', () => {
-    const g = new MemoryGame(new Rng(1));
+    const g = new MemoryGame(boardFaces(1));
     const seen = new Set<CardFace>();
     for (const [face, idx] of where(g)) {
       for (let k = 0; k < idx.length; k += 2) {

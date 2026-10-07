@@ -4,22 +4,24 @@ import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { Game } from '../scenes/game';
 import { BONUS_MUSIC, BONUS_SFX, CARD_H, CARD_W, drawCard, drawItem } from './art';
-import { BonusScene, centred, fitLine, type BonusResult } from './common';
+import { BonusScene, centred, fitLine, HINT_Y, type BonusResult } from './common';
 import {
+  boardFaces,
   cardPrize,
   MEMORY_COLS,
   MEMORY_MISSES,
   MEMORY_ROWS,
   MemoryGame,
+  NSPADE_BOARDS,
   type Card,
   type CardFace,
 } from './rules';
 
 /** Grid layout: left edge, top, and the distance between cards. */
 export const GRID_X = 40;
-export const GRID_Y = 56;
+export const GRID_Y = 48;
 export const PITCH_X = 32;
-export const PITCH_Y = 36;
+export const PITCH_Y = 32;
 /** Frames a miss stays face up before turning back. */
 export const MISS_FRAMES = 50;
 
@@ -33,9 +35,12 @@ const FACE_NAMES: Readonly<Record<CardFace, string>> = {
 };
 
 /**
- * SMB3's N-spade: 18 cards face down in 3 rows of 6. Move the cursor and TURN two at a time; a
- * matching pair wins its prize (items to the inventory, 1-ups and coins at once). Two misses end
- * it, as does finding every pair.
+ * SMB3's N-spade: the file's board (one of a fixed set dealt in turn, rules.ts NSPADE_BOARDS), 3
+ * rows of 6 face down, less the pairs found on earlier visits. Move the cursor and TURN two at a
+ * time; a matching pair wins its prize (items to the inventory, 1-ups and coins at once) and stays
+ * gone on the next visit (Game.bonus.spadeTaken, saved), until the board is cleared and the next
+ * one comes. Two misses end it, as does clearing the board. A round for fun leaves the file's
+ * board as it was.
  */
 export class MemoryScene extends BonusScene {
   protected music = BONUS_MUSIC.game;
@@ -47,7 +52,8 @@ export class MemoryScene extends BonusScene {
 
   constructor(game: Game, seed: number, onEnd: (r: BonusResult) => void) {
     super(game, 'memory', seed, onEnd);
-    this.board = new MemoryGame(this.rng);
+    const b = game.bonus;
+    this.board = new MemoryGame(boardFaces(b.spadeBoard), b.spadeTaken);
   }
 
   get cursor(): number {
@@ -59,12 +65,12 @@ export class MemoryScene extends BonusScene {
   }
 
   protected intro(): string {
-    return `18 cards. Turn two at a time to find a pair; a pair wins its prize. Two misses end the game. Arrows move, ${this.hint('turn', 'jump')} turns a card. ${this.where()}`;
+    return `${this.board.left} cards. Turn two at a time to find a pair; a pair wins its prize. Two misses end the game. Arrows move, ${this.hint('turn', 'jump')} turns a card. ${this.where()}`;
   }
 
   private where(): string {
     const c = this.board.cards[this.cursor] as Card;
-    const state = c.up ? FACE_NAMES[c.face] : 'face down';
+    const state = c.gone ? 'gone' : c.up ? FACE_NAMES[c.face] : 'face down';
     return `Row ${this.row + 1}, card ${this.col + 1}, ${state}.`;
   }
 
@@ -113,6 +119,7 @@ export class MemoryScene extends BonusScene {
     }
     if (res === 'match') {
       this.sfx(BONUS_SFX.win);
+      this.keepPair();
       this.award(cardPrize(face));
       if (b.over) this.decide();
       return;
@@ -122,12 +129,26 @@ export class MemoryScene extends BonusScene {
     this.missT = this.t;
   }
 
+  /**
+   * The pair just found stays gone on the next visit; a cleared board gives way to the next one.
+   * Saved with the prize (awardPrize saves). Not in a round for fun.
+   */
+  private keepPair(): void {
+    const pair = this.board.lastPair;
+    if (this.game.inRound || !pair) return;
+    const b = this.game.bonus;
+    if (this.board.cleared) {
+      b.spadeBoard = (b.spadeBoard + 1) % NSPADE_BOARDS.length;
+      b.spadeTaken = [];
+    } else b.spadeTaken = [...b.spadeTaken, ...pair].sort((x, y) => x - y);
+  }
+
   private decide(): void {
     const n = this.prizes.length;
     this.finish(
       n === 0
         ? ['NO PAIRS THIS TIME.']
-        : this.board.found.length === 9
+        : this.board.cleared
           ? ['EVERY PAIR FOUND!', `${n} PRIZES WON.`]
           : [n === 1 ? '1 PAIR FOUND.' : `${n} PAIRS FOUND.`],
     );
@@ -138,13 +159,15 @@ export class MemoryScene extends BonusScene {
     const font = assets.sheet('font');
     r.clear('#000');
     // A green felt table with a spade-red rim.
-    r.rect(16, 24, 224, 168, '#d82800');
-    r.rect(20, 28, 216, 160, '#00a800');
+    r.rect(16, 24, 224, 146, '#d82800');
+    r.rect(20, 28, 216, 138, '#00a800');
     centred(r, font, 'N-SPADE', 8);
     const b = this.board;
     const left = MEMORY_MISSES - b.misses;
     centred(r, font, `MISSES LEFT ${left}`, 36);
     b.cards.forEach((c, i) => {
+      // A pair found on an earlier visit is gone from the board.
+      if (c.gone) return;
       const x = GRID_X + (i % MEMORY_COLS) * PITCH_X;
       const y = GRID_Y + Math.floor(i / MEMORY_COLS) * PITCH_Y;
       drawCard(r, assets, c.up ? c.face : null, x, y);
@@ -163,15 +186,12 @@ export class MemoryScene extends BonusScene {
     // The prizes won so far, along the bottom of the table.
     b.found.forEach((f, i) => {
       const x = 28 + i * 20;
-      if (f === 'coin10' || f === 'coin20') drawCard(r, assets, f, x, 164 - 8);
-      else drawItem(r, assets, f, x, 164);
+      if (f === 'coin10' || f === 'coin20') drawCard(r, assets, f, x, 144 - 8);
+      else drawItem(r, assets, f, x, 144);
     });
     if (!this.over && !this.banner) {
       const full = `ARROWS MOVE  ${this.hint('TURN', 'jump')}`;
-      centred(r, font, fitLine(full, 'ARROWS MOVE  TURN'), 216);
-    } else if (!this.over) {
-      const full = this.hint('TURN', 'jump');
-      centred(r, font, full.length <= 30 ? full : 'TURN', 224);
+      centred(r, font, fitLine(full, 'ARROWS MOVE  TURN'), HINT_Y);
     }
   }
 }

@@ -39,6 +39,17 @@ export class RouteInput implements InputFrame {
 
   constructor(private readonly route: Route) {}
 
+  /** px of the body's left edge at which the route's next jump goes (null once all are done). */
+  get nextJumpAt(): number | null {
+    return this.route.jumps[this.next]?.at ?? null;
+  }
+
+  /** Jump at the next chance, held `hold` frames, outside the route (a hop up a wall he ran into). */
+  hop(hold: number): void {
+    this.hopHold = hold;
+  }
+  private hopHold = 0;
+
   /** Work out this frame's buttons from where `p` is. */
   step(p: Player): void {
     const b = p.body;
@@ -61,6 +72,11 @@ export class RouteInput implements InputFrame {
     const jump = this.route.jumps[this.next];
     if (this.holdLeft > 0) {
       this.holdLeft--;
+      held.push('jump');
+    } else if (this.hopHold > 0 && b.onGround && !this.prev.has('jump')) {
+      this.holdLeft = this.hopHold - 1;
+      this.hopHold = 0;
+      this.buffered = true;
       held.push('jump');
     } else if (jump && b.onGround && x >= jump.at && !this.prev.has('jump')) {
       // A new press: the player takes off this frame (the jump buffer is that one press).
@@ -95,6 +111,22 @@ export class RouteInput implements InputFrame {
 /** Brainwashed Luigi's palette (content/sprites/mario.ts): his own sprites in a dark purple suit. */
 const MIRROR_PALETTES = { normal: 'luigi-mirror', fire: 'luigi-mirror', star: 'mario-star' } as const;
 
+/** px he keeps between himself and a pipe whose plant is up, and how far on a jump would take him. */
+const PLANT_MARGIN = 12;
+const PLANT_JUMP = 96;
+/** px past his front he looks for a pit's edge to jump from. */
+const PIT_LOOK = 4;
+
+/** Holding right, run and jump (no new press): carrying a jump through to its landing. */
+const HOLD_ON: InputFrame = {
+  ...NO_INPUT,
+  held: (a: Action) => a === 'right' || a === 'run' || a === 'jump',
+  dirX: 1,
+};
+
+/** Holding back: a skid to a stop. */
+const HOLD_BACK: InputFrame = { ...NO_INPUT, held: (a: Action) => a === 'left', dirX: -1 };
+
 /** Frames per px the rival slides down the pole once there. */
 const POLE_SLIDE = 2;
 
@@ -113,9 +145,20 @@ export class RivalLuigi {
   finishedAt: number | null = null;
   /**
    * The race was decided another way: he lets go of every button and his physics coast him to
-   * a stop (landing first if mid-jump); no route, no finish.
+   * a stop (landing first if mid-jump, holding on through it); no route, no finish.
    */
   stopped = false;
+  /**
+   * Whether a piranha plant is up anywhere over px [x0, x1) within his reach from feet at `feet`
+   * px (the race's world tells him). He is
+   * not hurt by one, but he races like a player: he stops short of a pipe while its plant is up
+   * and goes on once it is down.
+   */
+  plantUp: ((x0: number, x1: number, feet: number) => boolean) | null = null;
+  /** Frames he has stood against something without waiting or pausing. */
+  private blocked = 0;
+  /** Frames he spent waiting for plants (tests). */
+  waited = 0;
 
   constructor(
     level: LevelData,
@@ -147,17 +190,31 @@ export class RivalLuigi {
     const p = this.player;
     if (this.finished) return this.slide();
     if (this.stopped) {
-      if (toPx(p.body.y) < SCREEN_H + 64) p.update(NO_INPUT, this.map, NULL_AUDIO);
+      // Mid-jump he holds on until he lands (not dropping into a pit he was clearing).
+      if (toPx(p.body.y) < SCREEN_H + 64)
+        p.update(p.body.onGround ? NO_INPUT : HOLD_ON, this.map, NULL_AUDIO);
       return;
     }
     this.frames++;
-    this.input.step(p);
-    p.update(this.input, this.map, NULL_AUDIO);
+    if (this.waitForPlant()) {
+      this.waited++;
+      p.update(p.body.vx > 0 ? HOLD_BACK : NO_INPUT, this.map, NULL_AUDIO);
+    } else {
+      // Run into a wall (after waiting for a plant, short of his jump): hop up it. At the edge of
+      // a pit with no route jump left to clear it (a plant wait threw him off it): jump it.
+      if (p.body.onGround && p.body.vx === 0 && this.input.pauseLeft === 0 && ++this.blocked > 8) {
+        this.blocked = 0;
+        this.input.hop(20);
+      } else if (p.body.vx !== 0) this.blocked = 0;
+      if (p.body.onGround && p.body.vx > 0 && this.pitAhead()) this.input.hop(20);
+      this.input.step(p);
+      p.update(this.input, this.map, NULL_AUDIO);
+    }
     // At a pause, once stopped, he turns to stare back at Mario.
     if (this.input.pauseLeft > 0 && p.body.vx === 0) p.facing = -1;
-    // Grabbing the pole: the shaft's 2 px column, anywhere along it.
+    // Grabbing the pole: the shaft's 2 px column, anywhere along it (not from down a pit).
     const b = p.body;
-    if (b.x + b.w >= px(this.pole.x)) {
+    if (b.x + b.w >= px(this.pole.x) && b.y < px(this.pole.baseY)) {
       this.finishedAt = this.frames;
       p.frozen = true;
       p.body.vx = 0;
@@ -166,6 +223,42 @@ export class RivalLuigi {
       p.anim = 'climb';
       p.facing = 1;
     }
+  }
+
+  /**
+   * On the ground with a plant up within his stopping distance (a skid) and a little more, or
+   * within a jump's reach when his route jumps now.
+   */
+  private waitForPlant(): boolean {
+    const b = this.player.body;
+    if (!this.plantUp || !b.onGround) return false;
+    const front = toPx(b.x + b.w);
+    const v = Math.max(0, b.vx) / 4096;
+    const skid = this.player.profile.skidDecel / 4096;
+    const jumping = (this.input.nextJumpAt ?? Infinity) <= toPx(b.x);
+    // (Once stopped he keeps a little more room, so a skid back does not set him off again.)
+    const reach = jumping ? PLANT_JUMP : Math.max((v * v) / (2 * skid) + PLANT_MARGIN, 2 * PLANT_MARGIN);
+    return this.plantUp(front, front + reach, toPx(b.y + b.h));
+  }
+
+  /**
+   * At an edge (no floor at his feet just past his front) with a pit there or a few columns on
+   * (no floor at all down a column), as off a ledge over the ground just short of a pit.
+   */
+  private pitAhead(): boolean {
+    const b = this.player.body;
+    const col = Math.floor((toPx(b.x + b.w) + PIT_LOOK) / 16);
+    const feet = Math.floor(toPx(b.y + b.h) / 16);
+    const floor = (c: number, from: number, to: number) => {
+      for (let row = from; row < to; row++) {
+        const k = this.map.collisionAt(c, row);
+        if (k === 'solid' || k === 'top') return true;
+      }
+      return false;
+    };
+    if (floor(col, feet, feet + 1)) return false;
+    for (let c = col; c < col + 4; c++) if (!floor(c, feet, this.map.height)) return true;
+    return false;
   }
 
   /** Down the pole after the win. */

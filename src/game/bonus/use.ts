@@ -312,5 +312,10 @@ export function awardPrize(game: Game, prize: BonusPrize): AwardOutcome {
  * weighted as a Toad House chest, given as a bonus prize (into the inventory, or used at once).
  */
 export function awardHammerPrize(game: Game, seed = freshSeed()): AwardOutcome {
-  return awardPrize(game, { kind: 'item', item: rollWeighted(new Rng(seed), CHEST_WEIGHTS) });
+  return awardPrize(game, { kind: 'item', item: hammerPrizeItem(seed) });
+}
+
+/** The item beating the Hammer Bros gives for `seed` (in the chest they leave). */
+export function hammerPrizeItem(seed: number): ItemId {
+  return rollWeighted(new Rng(seed), CHEST_WEIGHTS);
 }

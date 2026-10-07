@@ -1,10 +1,12 @@
 ;; Mega Man's mini game (the station stage and Dark Mega Man's room): five screens of station
-;; corridor, then the boss room behind a two-tile shutter. stage.ts loads it with ?raw, so it is not
+;; corridor, then a short corridor and the boss room, each behind a two-tile shutter (Mega Man 2's
+;; two boss shutters). stage.ts loads it with ?raw, so it is not
 ;; in the level library, the dev level select or the campaign. The robots and the weapon capsule
 ;; are the mini game's own entity types (World's `extraEntities`); `shutter` and `dark-megaman` are
-;; taken out of the map, and the scene places them itself. Column 80's doorway (rows 11-12) is the
-;; shutter, solid until it opens. scrollStop keeps the boss room out of sight until the shutter
-;; opens; the camera then scrolls over and locks on columns 80-95.
+;; taken out of the map, and the scene places them itself. Columns 80's and 95's doorways (rows
+;; 11-12) are the shutters, solid until they open. scrollStop keeps the corridor out of sight until
+;; the first shutter opens; the camera then scrolls over and locks on columns 80-95 (both shutters
+;; in sight), and at the second on the boss room, columns 95-110.
 id: mm-station
 name: STATION ESCAPE
 world: 3
@@ -17,36 +19,40 @@ startMode: stand
 camera: scroll
 
 [tiles]
-;; 0              16               32               48               64               80
-................ ................ ................ ................ ..........BB.... BBBBBBBBBBBBBBBB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
-AAAAAAAAAAAAAAAA AAA...AAAAAAAAAA AAAAAAAAAAAAAAA. ..AAAAAA...AAAAA AAAAAAAAAABBAAAA BHHHHHHHHHHHHHHB
-HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHBBHHHH BHHHHHHHHHHHHHHB
-HHHHHHHHHHHHHHHH HHH...HHBBBHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
-HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
-HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
-HHHHHHHHHHBBHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
-################ ###...########## ###############. ..######...##### ################ ################
-################ ###...########## ###############. ..######...##### ################ ################
+;; 0                16               32               48               64               80               96
+................ ................ ................ ................ ..........BB.... BBBBBBBBBBBBBBBB BBBBBBBBBBBBBBB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+AAAAAAAAAAAAAAAA AAA...AAAAAAAAAA AAAAAAAAAAAAAAA. ..AAAAAA...AAAAA AAAAAAAAAABBAAAA BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHBBHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHBBBHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+HHHHHHHHHHBBHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB HHHHHHHHHHHHHHB
+################ ###...########## ###############. ..######...##### ################ ################ ###############
+################ ###...########## ###############. ..######...##### ################ ################ ###############
 
 [entities]
+met 9 12
 hopper 13 12
 drone 26 5
 turret 31 12
 capsule 36 10
 hopper 45 12
+met 52 12
 drone 54 4
 drone 63 5
 hopper 64 12
 turret 68 12
+met 72 12
 turret 74 9 mount=ceiling
 shutter 80 11
-dark-megaman 91 12
+shutter 95 11
+dark-megaman 106 12
 
 ;; Station decor (the station sheet's window, console and girder), by top-left tile; drawn behind
 ;; the robots and Mega Man, in front of the plating.
@@ -58,21 +64,35 @@ deco 37 8 kind=window
 deco 52 8 kind=window
 deco 61 12 kind=console
 deco 66 8 kind=window
-deco 86 3 kind=window
-deco 89 12 kind=console
+deco 101 3 kind=window
+deco 104 12 kind=console
+deco 96 2 kind=girder
 deco 81 2 kind=girder
+deco 97 2 kind=girder
 deco 82 2 kind=girder
+deco 98 2 kind=girder
 deco 83 2 kind=girder
+deco 99 2 kind=girder
 deco 84 2 kind=girder
+deco 100 2 kind=girder
 deco 85 2 kind=girder
+deco 101 2 kind=girder
 deco 86 2 kind=girder
+deco 102 2 kind=girder
 deco 87 2 kind=girder
+deco 103 2 kind=girder
 deco 88 2 kind=girder
+deco 104 2 kind=girder
 deco 89 2 kind=girder
+deco 105 2 kind=girder
 deco 90 2 kind=girder
+deco 106 2 kind=girder
 deco 91 2 kind=girder
+deco 107 2 kind=girder
 deco 92 2 kind=girder
+deco 108 2 kind=girder
 deco 93 2 kind=girder
+deco 109 2 kind=girder
 deco 94 2 kind=girder
 
 [zones]

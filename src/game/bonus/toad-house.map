@@ -1,0 +1,32 @@
+;; SMB3's Toad House (bonus/toad-house.ts): one dark room the hero walks into from the left, a
+;; wooden floor, a log wall on the right. Toad and the three chests are the scene's to draw (they
+;; are not solid). Rows 0-1 go up off the top: the room is drawn above SMB3's status bar
+;; (hud/smb3-status.ts). toad-house.ts loads it with ?raw, so it is not in the level library.
+id: toad-house
+name: TOAD HOUSE
+world: 4
+stage: 2
+theme: airship
+music: toad-house
+time: 300
+start: 0,12
+startMode: stand
+camera: locked
+
+[tiles]
+;; 0
+...............%
+...............%
+...............%
+...............%
+...............%
+...............%
+...............%
+...............%
+...............%
+...............%
+...............%
+...............%
+...............%
+###############%
+%%%%%%%%%%%%%%%%
