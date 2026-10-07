@@ -8,10 +8,19 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { World } from '../world/world';
 import { STORY_NOT_OVER } from '../story/script';
 
+/**
+ * Our game's name as the credits print it: in full (the roll's first lines and its thanks) and
+ * short (the closing lines). The original's name, in the INSPIRED BY lines, is not ours and stays.
+ * TODO(0.5.0): the rebrand to SMB Crossover REMIX (docs/ROADMAP.md, "The rebrand") changes these
+ * two, e.g. 'SUPER MARIO BROS. CROSSOVER:' / 'REMIX' and 'SMB CROSSOVER' / 'REMIX', with its
+ * "MADE BY" credit; the title screen's session owns the rename strings.
+ */
+export const CREDITS_NAME: readonly string[] = ['SUPER MARIO BROS. CROSSOVER', 'FAN REBUILD'];
+export const CREDITS_SHORT_NAME: readonly string[] = ['SMB CROSSOVER', 'FAN REBUILD'];
+
 /** Our credits (the original's GameTextMessages.CREDITS_* credit its own team; these credit ours). */
 export const CREDITS: readonly string[] = [
-  'SUPER MARIO BROS. CROSSOVER',
-  'FAN REBUILD',
+  ...CREDITS_NAME,
   '',
   '',
   'INSPIRED BY THE 2010 FLASH GAME',
@@ -39,23 +48,23 @@ export const CREDITS: readonly string[] = [
   'GAMEPLAY STYLES.',
   '',
   'THANKS FOR PLAYING',
-  'SUPER MARIO BROS. CROSSOVER',
+  ...CREDITS_NAME,
   '',
   '',
 ];
 /**
  * The credits as they roll: the campaign's SMB 8-4 false ending (`story`, docs/STORY.md 2.12)
- * adds "...BUT THE STORY ISN'T OVER." right after THANKS FOR PLAYING / SUPER MARIO BROS.
- * CROSSOVER; everywhere else the plain CREDITS.
+ * adds "END OF CHAPTER 1" and "...BUT THE STORY ISN'T OVER." right after THANKS FOR PLAYING and
+ * our name; everywhere else the plain CREDITS.
  */
 export function creditsLines(story: boolean): readonly string[] {
   if (!story) return CREDITS;
-  const at = CREDITS.indexOf('THANKS FOR PLAYING') + 2;
+  const at = CREDITS.indexOf('THANKS FOR PLAYING') + 1 + CREDITS_NAME.length;
   return [...CREDITS.slice(0, at), ...STORY_NOT_OVER, ...CREDITS.slice(at)];
 }
 
 /** The closing lines that stop mid-screen (GameTextMessages.CREDITS_TAIL's place). */
-export const CREDITS_TAIL: readonly string[] = ['SMB CROSSOVER', 'FAN REBUILD'];
+export const CREDITS_TAIL: readonly string[] = CREDITS_SHORT_NAME;
 
 /** ScreenManager.CREDITS_SPEED = 40 Flash px/s: 20 px/s here, at 60 frames a second. */
 const SPEED = 20 / 60;

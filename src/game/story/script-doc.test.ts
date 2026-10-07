@@ -110,10 +110,7 @@ function scriptPages(): Map<string, Page> {
     add(`CASTLE_PAGES.${id}.news`, c.news);
   }
   // The credits' block, without the blank line that parts it from THANKS FOR PLAYING.
-  add(
-    'STORY_NOT_OVER',
-    STORY_NOT_OVER.filter((l) => l !== ''),
-  );
+  add('STORY_NOT_OVER', STORY_NOT_OVER.slice(1));
   list('riftPages', riftPages(HERO));
   // Every hero's first card (CAPTIVE_HUNT), shown with Luigi's name; Simon's curse (SIMON_CURSE)
   // with what follows it in his card, without the speaker.
