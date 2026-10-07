@@ -46,20 +46,12 @@ koopa-para-green 169 12
 koopa-para-green 171 12
 piranha 176 10
 decor-castle 204 12
-;; Campaign only (0.4.10): past the castle, the rocky mouth of the Moblin's hidden cave.
-decor 220 12 kind=items:cave-mouth campaign=true
 
 [zones]
 checkpoint 98 12
 exit 200 next=2-2-intro
 vine 83 5 -> 2-1-sky 4 14
 pipe 103 9 down -> 2-1-bonus 1 0 exit=none
-;; Campaign only (0.4.10, the Top Secret Area): a hidden block high over the bricks, found by jumping
-;; back up-left off the hidden coin block (186,5), lays a cloud path from the last tower toward the
-;; flagpole; jump over the pole without touching it and walk on past the
-;; castle into the cave at the level's end (2-1-cave, where the Moblin tells his secret).
-path 192 3 7 block=184,0 campaign
-pipe 224 11 right -> 2-1-cave 1 12 campaign
 
 [decor]
 cloud-2 0 3

@@ -4,6 +4,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
 import { castlevaniaDecorFrames, castlevaniaDecorPalette } from './castlevania-look';
 import { ninjaCityDecorFrames, ninjaCityDecorPalette } from './ninja-city-look';
+import { smwDecorFrames, smwDecorPalette } from './top-secret';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -117,6 +118,8 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-ninja-city': ninjaCityDecorPalette,
   // Bill's jungle: dark canopy greens, distant mountain blues, concrete greys, palm bark (contra-decor.ts).
   'decor-jungle': jungleDecorPalette,
+  /* The Top Secret Area: Super Mario World greens, white sparkles. */
+  'decor-smw': smwDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -679,5 +682,7 @@ export const decorDef: SpriteDef = {
     // The 0.4.12 restyles: Simon's castle hall (5-4) and Ryu's city street (6-2).
     ...castlevaniaDecorFrames,
     ...ninjaCityDecorFrames,
+    // The Top Secret Area: a big sparkly hill, a small one, bushes.
+    ...smwDecorFrames,
   },
 };

@@ -49,6 +49,13 @@ import { T, isSolid } from './tiles';
  * leaves it out) and the campaign variant drops the mark, so it spawns. A woken `bridge-blast`
  * also gets a coin arrow pointing down at its marked end (`blastArrow`).
  *
+ * A `pipe` zone marked `campaign` (2-1's way into the Moblin's cave past its castle, owner decision
+ * for 0.4.10: the Top Secret Area) sleeps the same way, and a `path` zone marked `campaign` (2-1's
+ * hidden cloud path from the top of its last tower toward the flagpole) too: outside the campaign
+ * the level is exactly as it was (no hidden block, no way into the cave). The campaign variant
+ * wakes them, and puts the path's hidden block (T.HIDDEN_PATH) in at its `block` tile. Nothing
+ * else changes: the cave is an area of 2-1, where the Moblin ends the level (scenes/level.ts).
+ *
  * A level's campaign LOOK (`LevelData.campaignLook`: the map's `campaignTheme:` and
  * `campaignMusic:` headers and its `[campaign-decor]` section; 7-3 as a Contra jungle stage) is
  * applied here too (`applyLook`): the same tiles, zones and entities in another theme, music and
@@ -157,8 +164,7 @@ export function campaignLevel(
   // wall into Ryu's dojo) or `pit` zone (7-3's exploding bridge into Bill's camp), and a sleeping
   // entity (`campaign=true`), wake in campaign play.
   const sleeping =
-    level.zones.some((z) => (z.kind === 'descent' || z.kind === 'trick' || z.kind === 'pit') && z.campaign) ||
-    level.entities.some((e) => e.props?.campaign === true);
+    level.zones.some((z) => isSleepingZone(z)) || level.entities.some((e) => e.props?.campaign === true);
   const looked = applyLook(level);
   if (!variants.length && !sleeping) {
     memo.set(level, looked);
@@ -224,6 +230,12 @@ export function campaignLevel(
       if (x >= 0 && x < level.width && y >= 0 && y < level.height && tiles[i] === T.AIR) tiles[i] = T.COIN;
     }
   }
+  // Woken hidden paths: their hidden block goes in.
+  for (const z of level.zones) {
+    if (z.kind !== 'path' || !z.campaign) continue;
+    const { x, y } = z.block;
+    if (x >= 0 && x < level.width && y >= 0 && y < level.height) tiles[y * level.width + x] = T.HIDDEN_PATH;
+  }
   // Woken exploding bridges: a coin arrow points down at each one's marked end.
   for (const e of level.entities) {
     if (e.type !== 'bridge-blast' || e.props?.campaign !== true) continue;
@@ -235,9 +247,9 @@ export function campaignLevel(
   const zones = level.zones
     .filter((z) => !dropped.has(z))
     .map((z): Zone => {
-      if ((z.kind === 'descent' || z.kind === 'trick' || z.kind === 'pit') && z.campaign) {
+      if (isSleepingZone(z)) {
         const live: Zone = { ...z };
-        delete live.campaign;
+        delete (live as { campaign?: boolean }).campaign;
         return live;
       }
       if (z.kind === 'warp' && variants.includes(z)) {
@@ -265,6 +277,18 @@ export function campaignLevel(
   const out: LevelData = { ...looked, tiles, zones, entities };
   memo.set(level, out);
   return out;
+}
+
+/** A zone that sleeps outside campaign play (its `campaign` mark), woken by campaignLevel. */
+function isSleepingZone(z: Zone): boolean {
+  return (
+    (z.kind === 'descent' ||
+      z.kind === 'trick' ||
+      z.kind === 'pit' ||
+      z.kind === 'pipe' ||
+      z.kind === 'path') &&
+    z.campaign === true
+  );
 }
 
 /** The rows of a pipe standing at (`p.x`, mouth row `p.y`), top down, while they are pipe tiles. */

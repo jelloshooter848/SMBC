@@ -42,7 +42,10 @@ export type Theme =
   // Bill's waterfall climb out of the camp: wet rock ledges, falling water, mist.
   | 'contra-falls'
   // Red Falcon's lair (Bill's mini game): organic walls and floor.
-  | 'alien-lair';
+  | 'alien-lair'
+  // The Top Secret Area behind World 2's hidden bonus spot (0.4.10), in a Super Mario World look:
+  // grass-topped dirt, green bush hills and a big sparkly hill under a cream sky.
+  | 'smw-secret';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -73,6 +76,7 @@ export const THEMES: readonly Theme[] = [
   'contra-jungle',
   'contra-falls',
   'alien-lair',
+  'smw-secret',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -86,6 +90,7 @@ export const isWaterTheme = (theme: Theme): boolean =>
 
 /** The music an area of this theme plays when its map names none. */
 export function themeMusic(theme: Theme): string {
+  if (theme === 'smw-secret') return 'top-secret';
   if (isWaterTheme(theme)) return 'water';
   if (theme === 'castle' || theme === 'castle-overworld') return 'castle';
   if (theme === 'underground') return 'underground';
@@ -131,6 +136,12 @@ export type Zone =
        * pipe: taking it records that secret on the map instead of entering `level`.
        */
       target: { level: string; x: number; y: number; exitDir?: TransferMode; secret?: string };
+      /**
+       * The pipe sleeps (no way in) unless the campaign variant (level/campaign.ts) wakes it: 2-1's
+       * way into the Moblin's cave past its castle (0.4.10). A sleeping pipe is drawn by nothing:
+       * it is a zone only, so its level's tiles are the same either way.
+       */
+      campaign?: boolean;
     }
   /** A vine brick at (x, y): climbing its vine off the top of the screen leads to `target` (climb mode). */
   | { kind: 'vine'; x: number; y: number; target: { level: string; x: number; y: number } }
@@ -189,6 +200,20 @@ export type Zone =
       y: number;
       h: number;
       target: { level: string; x: number; y: number; exitDir?: 'up' };
+      campaign?: boolean;
+    }
+  /**
+   * A hidden path (2-1's cloud path, 0.4.10): the `w` tiles from (x, y) rightward appear one by one
+   * as cloud blocks once the hidden path block at `block` (tile `9`, T.HIDDEN_PATH) is bumped
+   * (World.layPath). `campaign`: the zone sleeps (no block, no path) unless the campaign variant
+   * (level/campaign.ts) wakes it, which also puts the hidden block in.
+   */
+  | {
+      kind: 'path';
+      x: number;
+      y: number;
+      w: number;
+      block: { x: number; y: number };
       campaign?: boolean;
     }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
@@ -301,7 +326,20 @@ export interface LevelData {
    * theme, music and decor instead; every tile, zone and entity stays. Other play never sees it.
    */
   campaignLook?: CampaignLook;
+  /**
+   * A fill-up spot entered from a map node (the map's `bonus: true` header; the Top Secret Area,
+   * 0.4.10): no clock and no WORLD card, nothing to clear; its exit pipe (`-> map`, MAP_EXIT)
+   * leads back to the map. Every visit starts afresh, so its blocks are full again.
+   */
+  bonus?: boolean;
 }
+
+/**
+ * A pipe target that is no level: the way back to the world map (the Top Secret Area's pipe).
+ * In campaign play LevelScene returns to the map without clearing anything; elsewhere it ends
+ * the play-test or goes back to the title.
+ */
+export const MAP_EXIT = 'map';
 
 /**
  * A campaign-only reskin of a level (the map's `campaignTheme:` / `campaignMusic:` headers and

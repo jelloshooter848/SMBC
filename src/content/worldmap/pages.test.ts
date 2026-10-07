@@ -96,7 +96,8 @@ describe('world map pages', () => {
       if (w === 1) expect(bonus.to).toBe('hub');
       // World 4's is the bonus spot Larry Koopa's crystal ball reveals (0.5.0).
       expect(bonus.unlock).toBe(w === 4 ? 'larry' : `bonus-${w}`);
-      expect(bonus.level).toBeUndefined();
+      // World 2's is the Top Secret Area (0.4.10): a bonus node leading into its level.
+      expect(bonus.level).toBe(w === 2 ? '2-top-secret' : undefined);
       const spots = page.nodes.map((n) => key([n.x, n.y]));
       expect(new Set(spots).size, 'one node per tile').toBe(spots.length);
       for (const n of page.nodes) expectWalk(page, [[n.x, n.y]], `node ${n.id}`);

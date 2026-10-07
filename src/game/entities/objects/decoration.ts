@@ -85,6 +85,7 @@ export function decorPalette(theme: string): string {
   if (theme === 'contra-jungle' || theme === 'contra-falls') return 'decor-jungle';
   if (theme === 'castlevania') return 'decor-castlevania';
   if (theme === 'ninja-city') return 'decor-ninja-city';
+  if (theme === 'smw-secret') return 'decor-smw';
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';

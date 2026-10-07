@@ -63,6 +63,7 @@ describe('themes', () => {
       'contra-jungle',
       'contra-falls',
       'alien-lair',
+      'smw-secret',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -112,6 +113,7 @@ describe('themes', () => {
       'contra-jungle': 'contra-jungle',
       'contra-falls': 'contra-jungle',
       'alien-lair': 'contra-lair',
+      'smw-secret': 'top-secret',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -485,6 +487,36 @@ describe('themes', () => {
     for (const t of ['dojo', 'ninja-night'] as Theme[]) expect(isWaterTheme(t)).toBe(false);
     expect(themeMusic('dojo')).toBe('dojo');
     expect(themeMusic('ninja-night')).toBe('ng-stage');
+  });
+
+  it('the Top Secret Area: grass-topped dirt under a cream sky, green hills that sparkle, its own tune', () => {
+    const frames = tilesDef.frames;
+    const frame = (name: string) => frames[name] as readonly string[];
+    for (const t of ['ground', 'tree-top', 'used']) {
+      expect(frames[`${t}@smw-secret`], t).toBeDefined();
+      expect(frames[`${t}@smw-secret`], t).not.toEqual(frames[t]);
+    }
+    // The dirt fills its tile; the grass stands on the dirt (blade tips only open on top).
+    expect(frame('ground@smw-secret').join('')).toMatch(/^[123]+$/);
+    for (const row of frame('tree-top@smw-secret').slice(1)) expect(row).not.toContain('.');
+    expect(frame('tree-top@smw-secret').slice(7)).toEqual(frame('ground@smw-secret').slice(7));
+    // A pale cream sky, lighter than any other; gold ? blocks and green pipes as everywhere.
+    const rgb = (hex: string) =>
+      [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
+    const [r, g, b] = rgb(SKY['smw-secret'] as string);
+    expect(r).toBeGreaterThan(0xe0);
+    expect(g).toBeGreaterThan(0xd0);
+    expect(b).toBeLessThan(g);
+    const tiles = PALETTES.default['tiles-smw-secret'] as string[];
+    for (const i of [4, 5, 6, 7]) expect(tiles[i], `${i}`).toBe(PALETTES.default['tiles-overworld']?.[i]);
+    // Its own decor palette and frames; overworld enemies; no swimming; the Top Secret tune.
+    expect(decorPalette('smw-secret')).toBe('decor-smw');
+    for (const n of ['smw-hill-big', 'smw-hill-small', 'smw-bush'])
+      expect(decorDef.frames[n], n).toBeDefined();
+    expect((decorDef.frames['smw-hill-big'] as string[]).join('')).toContain('4'); // its sparkles
+    expect(enemyPalette('smw-secret')).toBe(enemyPalette('overworld'));
+    expect(isWaterTheme('smw-secret')).toBe(false);
+    expect(themeMusic('smw-secret')).toBe('top-secret');
   });
 
   describe("Bill's jungle, waterfall and Red Falcon's lair", () => {

@@ -80,6 +80,8 @@ import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
 import { Axe } from '../entities/objects/axe';
+import { CaveFire, Moblin } from '../entities/objects/moblin';
+import { YoshiEgg } from '../entities/objects/yoshi-egg';
 import { Larry } from '../entities/enemies/larry';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
@@ -114,7 +116,14 @@ export type WorldEvent =
    */
   | { type: 'crystal-ball'; player: number; next: string | null }
   /** Larry's anchor smashed 4-2's warp-zone pipe (objects/anchor-drop.ts): the level announces it. */
-  | { type: 'anchor' };
+  | { type: 'anchor' }
+  /**
+   * A player came up to the Moblin in 2-1's hidden cave (objects/moblin.ts): the level plays his
+   * cards and ends (campaign: 2-1 cleared and the secret `secret` found; else on to `next`).
+   */
+  | { type: 'moblin'; player: number; secret: string; next: string | null }
+  /** A hidden path's block was bumped (World.layPath): its clouds are being laid. */
+  | { type: 'path' };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -205,6 +214,8 @@ function heroShot(e: Entity): e is Projectile {
 
 /** Character.PIPE_LEV_TRANS_DELAY (500 ms): hidden in the pipe before the next area loads. */
 const PIPE_TRANSFER_DELAY_FRAMES = 30;
+/** Frames between two tiles of a hidden path appearing (World.layPath). */
+export const PATH_STEP_FRAMES = 6;
 /** Level.HW_ENEMY_REMOVAL_DIST = TILE_SIZE*6: enemies closer than this (px, horizontally) go. */
 const ENEMY_REMOVAL_PX = 6 * 16;
 /**
@@ -459,7 +470,8 @@ export class World {
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
     this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
-    this.time = startTime(level, state, start);
+    // A fill-up spot off the map (the Top Secret Area) runs no clock.
+    this.time = level.bonus ? null : startTime(level, state, start);
     const sx = start.x ?? level.start.x;
     const sy = start.y ?? level.start.y;
     const mode = start.mode ?? level.startMode;
@@ -807,6 +819,20 @@ export class World {
       }
       case 'candle':
         return new Candle(s.x, s.y);
+      case 'moblin':
+        // He ends the level with his secret: without one (`secret=<key>`) he is left out (and the
+        // level library's tests reject such a map).
+        if (typeof s.props?.secret !== 'string' || !s.props.secret) {
+          console.warn('a moblin needs secret=<key>');
+          return null;
+        }
+        return new Moblin(s.x, s.y, s.props.secret, typeof s.props.next === 'string' ? s.props.next : null);
+      case 'cave-fire':
+        return new CaveFire(s.x, s.y);
+      case 'decor':
+        // Any decor kind as a spawned entity (`decor x y kind=items:cave-mouth`): a campaign-only
+        // piece of scenery (`campaign=true`) sleeps with the rest outside the campaign.
+        return typeof s.props?.kind === 'string' ? new Decoration(s.props.kind, s.x, s.y) : null;
       case 'decor-castle':
         return new Decoration('castle-small', s.x, s.y);
       case 'decor-castle-big':
@@ -1081,6 +1107,7 @@ export class World {
       }
     if (!this.pipeAnim && !this.leaving && !this.trickSpin) this.checkTeleports();
     this.checkZones();
+    this.tickPath();
     this.checkLoops();
     this.flyingCheeps();
     this.flyingBullets();
@@ -1591,6 +1618,22 @@ export class World {
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
         this.audio.sfx('vine');
         break;
+      case 'flower':
+      case 'mushroom':
+        // The Top Secret Area: always this item, whatever the hero's power (its onPowerUp gives
+        // the hero's own flower or mushroom power).
+        this.spawn(new PowerUp(tx, ty, content));
+        this.audio.sfx('powerup-appear');
+        this.feats.powerBlocks++;
+        break;
+      case 'egg':
+        // A Yoshi egg pops up, wobbles and hatches (objects/yoshi-egg.ts: a 1-up for now).
+        this.spawn(new YoshiEgg(tx, ty));
+        this.audio.sfx('powerup-appear');
+        break;
+      case 'path':
+        this.layPath(tx, ty);
+        break;
       case 'teleporter':
         // The pad hidden in this block rises out of the floor (its `teleport` zone's block=).
         for (const e of this.entities)
@@ -1603,6 +1646,43 @@ export class World {
         break;
     }
     this.bump(tx, ty, frame, restore);
+  }
+
+  /**
+   * A hidden path's block was bumped (a `path` zone whose `block` is this tile): its tiles are
+   * queued, left to right, and appear one every PATH_STEP_FRAMES as cloud blocks (tickPath), each
+   * with a soft pop. Only open air becomes cloud; a tile with a player in it waits for him to move.
+   */
+  private layPath(tx: number, ty: number): void {
+    for (const z of this.level.zones) {
+      if (z.kind !== 'path' || z.campaign || z.block.x !== tx || z.block.y !== ty) continue;
+      for (let k = 0; k < z.w; k++) this.pathQueue.push({ x: z.x + k, y: z.y });
+      this.pathT = 0;
+      this.audio.sfx('vine');
+      this.events.push({ type: 'path' });
+    }
+  }
+
+  /** Tiles of a bumped hidden path still to appear (layPath), in order. */
+  private pathQueue: { x: number; y: number }[] = [];
+  private pathT = 0;
+
+  /** The next tile of a hidden path appears (layPath) unless a player stands in its cell. */
+  private tickPath(): void {
+    const next = this.pathQueue[0];
+    if (!next || ++this.pathT < PATH_STEP_FRAMES) return;
+    const cell = { x: tileToSub(next.x), y: tileToSub(next.y), w: tileToSub(1), h: tileToSub(1) };
+    if (this.players.some((p) => !p.dead && !p.out && overlaps(p.body, cell))) return;
+    this.pathT = 0;
+    this.pathQueue.shift();
+    if (this.map.get(next.x, next.y) !== T.AIR) return;
+    this.map.set(next.x, next.y, T.CLOUD_BLOCK);
+    this.audio.sfx('coin');
+  }
+
+  /** Whether a bumped hidden path is still being laid (tests, the bots). */
+  get layingPath(): boolean {
+    return this.pathQueue.length > 0;
   }
 
   /**
@@ -1927,7 +2007,8 @@ export class World {
     const b = p.body;
     if (!b.onGround) return;
     for (const z of this.level.zones) {
-      if (z.kind !== 'pipe') continue;
+      // A sleeping pipe (`campaign`, woken only by the campaign variant) is no way in.
+      if (z.kind !== 'pipe' || z.campaign) continue;
       if (z.dir === 'down') {
         if (this.autoWalk) {
           if (b.x + b.w >= tileToSub(z.x) - px(1)) return this.enterPipe(p, z, 'down');
