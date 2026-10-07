@@ -530,15 +530,21 @@ pit x -> level x y [w=N] [campaign]
   arrow pointing down at its marked end (`blastArrow`: a shaft of two, then a head of five, three
   and one, tip two tiles above the girders over its third segment; open air only).
 - **The chain**: a hero standing on an intact segment sets it off, from the end it came on at
-  (the end of the half it stands on, whichever way it faces). The first segment blows `BLAST_DELAY` (36) frames after the step, then one
-  every `blastStep` frames: the chain runs at `BLAST_PACE` (0.8) of the slowest active hero's
-  top running speed (Mario's 8 frames a segment, Simon's 20). Each segment flashes for
-  `BLAST_FLASH` (16) frames first (a steady orange glow with reduce flashing), then its tile turns
-  to air with a 32x32 boom (`contra:boom-0..3`, else the items sheet's blast) and the
-  `bridge-boom` sound (else `explosion`). The booms hurt nobody. So a hero who keeps running
-  (from rest on the post) just about outruns it, every hero (tests: margins of 7-25 px); one who
-  walks (Mario, Luigi) or stops falls through. The bridge is whole again on any new visit (a
-  respawn, a re-entry: World copies the map's tiles).
+  (the end of the half it stands on, whichever way it faces). It chases a ghost (`blastTimes`): a
+  hero with the slowest active hero's movement (the one whose ghost takes longest to cross) sets
+  off from that end at the moment of the step, as fast as the hero who stepped on (else from
+  rest), speeds up by its run (or walk) acceleration to its top speed and holds it; each segment
+  blows the first frame the ghost is `BLAST_LEAD` (28) px past its far end. From rest that is
+  Mario's first blast 39 frames after the step and then one about every 6.2 frames (his top
+  speed), Simon's 48 and every 16; a hero already at full tilt gets no wind-up. Each segment
+  flashes for `BLAST_FLASH` (16) frames first (a steady orange glow with reduce flashing), then
+  its tile turns to air with a 32x32 boom (`contra:boom-0..3`, else the items sheet's blast) and
+  the `bridge-boom` sound (else `explosion`). The booms hurt nobody. So a hero who runs flat out
+  from rest on the post just about outruns it, every hero, small or big, with 16-18 px between its
+  heels and the gap at every blast (tests: 8-25 px; QA of 0.4.9 found the first pacing, 0.8 of
+  top speed after a fixed 36 frames, left 40-80 px by the far pillar); one who walks (Mario,
+  Luigi), stops or takes a hit's knockback falls through. The bridge is whole again on any new
+  visit (a respawn, a re-entry: World copies the map's tiles).
 - **Ranged pits**: `w=N` limits a pit to columns x..x+N-1 (else, as before, every column from x
   on); `campaign` makes it sleep outside campaign play like a descent (a fall there kills). 7-3
   has `pit 128 -> 7-3-camp 2 0 w=15 campaign` under the bridge, whose gap is walled to the bottom

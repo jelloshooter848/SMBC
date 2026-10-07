@@ -28,13 +28,8 @@ import { NullRenderer } from '@engine/gfx/renderer';
 import { px, toPx } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
-import {
-  BLAST_DELAY,
-  BLAST_PACE,
-  BridgeBlast,
-  BridgeBoom,
-  blastStep,
-} from '@game/entities/objects/bridge-blast';
+import { BLAST_LEAD, BridgeBlast, BridgeBoom, blastTimes } from '@game/entities/objects/bridge-blast';
+import { jungleDecorFrames } from '@content/sprites/contra-decor';
 import { captives, file, makeGame, useStorage, type H } from './heroes-harness';
 import { FALLS, ROUTE, fallsBot, standingOn, walkRight, type Ledge } from './falls-bot';
 
@@ -347,38 +342,61 @@ describe('the pit zone: a column range, campaign only', () => {
   });
 });
 
-/** Runs right from rest on the pillar at 127 until clear of the bridge (on or past the pillar at 143). */
+/**
+ * Runs right from rest on the pillar at 127 until clear of the bridge (on or past the pillar at
+ * 143). `gaps()`: at each blast while the hero is still on the bridge, the px between its heels
+ * (its body's left edge) and the blown gap's far end (how much to spare).
+ */
 function outrun(c: (typeof CHARACTERS)[number], power: string, hold: Action[]) {
   let fell = false;
+  const gaps: number[] = [];
+  let seen = 0;
   return {
     r: runSim({
       level: camp7(),
       character: c,
       state: { powerState: power },
+      // The Paratroopa over the bridge is not what this is about (a hit's knockback costs the run).
+      assist: { invulnerable: true },
       script: none,
       start: ON_PILLAR,
       maxFrames: 600,
       controller: (w, f) => {
-        if (toPx(w.player.body.y) > BRIDGE.y * 16) fell = true;
+        const p = w.player.body;
+        if (toPx(p.y) > BRIDGE.y * 16) fell = true;
+        const b = blast(w);
+        if (b && b.blown > seen && p.onGround && toPx(p.x) < (BRIDGE.x + BRIDGE.w) * 16)
+          gaps.push(toPx(p.x) - (BRIDGE.x + b.blown) * 16);
+        seen = b?.blown ?? 0;
         return f < 5 ? [] : hold;
       },
       until: (w) => toPx(w.player.body.x) >= (BRIDGE.x + BRIDGE.w) * 16 && w.player.body.onGround,
     }),
     fell: () => fell,
+    gaps: () => gaps,
   };
 }
 
 describe('the exploding bridge (campaign)', () => {
-  it('the chain runs at BLAST_PACE of the slowest hero, the first blast BLAST_DELAY frames after the step', () => {
-    expect(BLAST_PACE).toBeLessThan(1);
+  it('the chain chases a ghost of the hero: up to its top speed, BLAST_LEAD px behind', () => {
     for (const c of CHARACTERS) {
-      const step = blastStep(c.movement.maxRun);
-      // Never faster than the pace: a hero at top speed gains on it.
-      expect((16 / step) * 4096, c.name).toBeLessThanOrEqual(BLAST_PACE * c.movement.maxRun + 1);
-      expect((16 / (step - 1)) * 4096, c.name).toBeGreaterThan(BLAST_PACE * c.movement.maxRun);
+      const m = c.movement;
+      const times = blastTimes(m, BRIDGE.w);
+      expect(times, c.name).toHaveLength(BRIDGE.w);
+      for (let k = 1; k < times.length; k++) expect(times[k], c.name).toBeGreaterThan(times[k - 1] as number);
+      // Once up to speed, a segment every 16 px of the hero's top speed (whole frames).
+      const top = m.canRun ? m.maxRun : m.maxWalk;
+      const last = (times[14] as number) - (times[9] as number);
+      expect(Math.abs(last - (5 * 16 * 4096) / top), c.name).toBeLessThanOrEqual(1);
+      // Already at top speed when stepping on: no wind-up, that pace from the first segment.
+      const flying = blastTimes(m, BRIDGE.w, top);
+      expect(flying[0], c.name).toBe(Math.ceil(((16 + BLAST_LEAD) * 4096) / top));
+      expect(flying[14], c.name).toBeLessThanOrEqual(times[14] as number);
     }
-    expect(blastStep(MARIO.movement.maxRun)).toBe(8);
-    expect(blastStep(SIMON.movement.maxRun)).toBe(20);
+    expect(blastTimes(MARIO.movement, BRIDGE.w)).toEqual([
+      39, 46, 52, 59, 65, 71, 77, 84, 90, 96, 102, 109, 115, 121, 127,
+    ]);
+    expect(blastTimes(SIMON.movement, BRIDGE.w)).toEqual(Array.from({ length: 15 }, (_, k) => 48 + 16 * k));
     const r = runSim({
       level: camp7(),
       character: MARIO,
@@ -399,12 +417,13 @@ describe('the exploding bridge (campaign)', () => {
     });
     expect(r.outcome).toBe('stopped');
     const b = blast(r.world) as BridgeBlast;
-    expect(b.step).toBe(8);
+    // Mario stood still: the chain chases his ghost from rest.
+    expect(b.times).toEqual(blastTimes(MARIO.movement, BRIDGE.w));
     expect(b.dir).toBe(1);
     expect([0, 1, 14].map((k) => [b.column(k), b.blowAt(k)])).toEqual([
-      [128, BLAST_DELAY],
-      [129, BLAST_DELAY + 8],
-      [142, BLAST_DELAY + 14 * 8],
+      [128, 39],
+      [129, 46],
+      [142, 127],
     ]);
     expect(bridgeCells(r.world).every((t) => t === T.AIR)).toBe(true);
   });
@@ -426,17 +445,24 @@ describe('the exploding bridge (campaign)', () => {
     }
   });
 
-  it.each(heroes)('%s, running from rest on the pillar at 127, just about outruns the chain', (_n, c) => {
-    for (const power of powers) {
-      const { r, fell } = outrun(c, power, ['right', 'run']);
-      expect(r.outcome, `${c.name} ${power}`).toBe('stopped');
-      expect(fell(), `${c.name} ${power}`).toBe(false);
-      const b = blast(r.world) as BridgeBlast;
-      expect(b.state, c.name).toBe('blowing');
-      // Close behind: the chain has blown most of the bridge already.
-      expect(b.blown, c.name).toBeGreaterThan(BRIDGE.w / 2);
-    }
-  });
+  it.each(heroes)(
+    '%s, running from rest on the pillar at 127, just about outruns the chain (8-25 px to spare)',
+    (_n, c) => {
+      for (const power of powers) {
+        const { r, fell, gaps } = outrun(c, power, ['right', 'run']);
+        expect(r.outcome, `${c.name} ${power}`).toBe('stopped');
+        expect(fell(), `${c.name} ${power}`).toBe(false);
+        const b = blast(r.world) as BridgeBlast;
+        expect(b.state, c.name).toBe('blowing');
+        // Hard on its heels the whole way, at every blast (QA 0.4.9: the old pacing left 40-80 px
+        // by the far pillar).
+        expect(gaps().length, `${c.name} ${power}`).toBeGreaterThanOrEqual(BRIDGE.w - 2);
+        expect(Math.min(...gaps()), `${c.name} ${power}`).toBeGreaterThanOrEqual(8);
+        expect(Math.max(...gaps()), `${c.name} ${power}`).toBeLessThanOrEqual(25);
+        expect(b.blown, c.name).toBeGreaterThanOrEqual(BRIDGE.w - 2);
+      }
+    },
+  );
 
   it.each([MARIO, LUIGI].map((c) => [c.name, c] as const))(
     '%s walking (not running) is caught and drops into the camp',
@@ -521,7 +547,7 @@ describe('the exploding bridge (campaign)', () => {
       maxFrames: 400,
     });
     expect(r.world.players).toHaveLength(2);
-    expect(blast(r.world)?.step).toBe(blastStep(SIMON.movement.maxRun));
+    expect(blast(r.world)?.times).toEqual(blastTimes(SIMON.movement, BRIDGE.w));
     expect(r.outcome).toBe('pipe');
     expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: INTO_CAMP });
     expect(r.world.players.every((p) => !p.dead)).toBe(true);
@@ -920,6 +946,36 @@ describe('the bundled areas', () => {
     const jungle = new Set(['canopy', 'canopy-hang', 'palm', 'mountain', 'sandbags', 'searchlight']);
     for (const id of ['7-3-camp', '7-3-falls'])
       for (const d of getLevel(id).decor) expect(jungle.has(d.kind), `${id} ${d.kind}`).toBe(true);
+  });
+
+  it("nothing busy behind the HUD's rows (y < 32): only the hanging canopy, its leaves above the letters", () => {
+    // QA 0.4.9: the camp's cliff-top crowns sat behind the TIME digits.
+    for (const l of [camp7(), getLevel('7-3-camp'), getLevel('7-3-falls')])
+      for (const d of l.decor) {
+        if (d.kind === 'canopy-hang') {
+          expect(d.y, `${l.id} canopy-hang ${d.x}`).toBe(0);
+          continue;
+        }
+        const h = jungleDecorFrames[d.kind]?.length;
+        expect(h, `${l.id} ${d.kind}`).toBeDefined();
+        expect((d.y + 1) * 16 - (h as number), `${l.id} ${d.kind} ${d.x},${d.y}`).toBeGreaterThanOrEqual(32);
+      }
+    expect(getLevel('7-3-camp').decor.filter((d) => d.kind === 'canopy')).toEqual([
+      { kind: 'canopy', x: 12, y: 2 },
+      { kind: 'canopy', x: 14, y: 2 },
+    ]);
+    for (const x of [11, 12, 13, 14, 15]) {
+      expect(tile(getLevel('7-3-camp'), x, 2), `${x}`).toBe(T.AIR);
+      expect(tileDef(tile(getLevel('7-3-camp'), x, 3) as number).collision, `${x}`).toBe('solid');
+    }
+    // The ceiling's leaves end above the HUD's first row of letters (y 8); below that only its three
+    // vines hang, in the darker greens (not the bright one).
+    const hang = jungleDecorFrames['canopy-hang'] as readonly string[];
+    for (let y = 8; y < hang.length; y++) {
+      const row = hang[y] as string;
+      expect(row.replace(/\./g, '').length, `row ${y}`).toBeLessThanOrEqual(3);
+      expect(row, `row ${y}`).toMatch(/^[.12]+$/);
+    }
   });
 
   it('every level reached on the way has its own data (no dangling link)', () => {
