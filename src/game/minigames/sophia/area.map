@@ -1,0 +1,66 @@
+;; Sophia's mini game, Underworld, section 1: the tank's cavern (Blaster Master Area 1 style).
+;; cavern.ts loads it with ?raw, so it is not in the level library, the dev level select or the
+;; campaign. Rows 0-1 stay clear under the HUD.
+;;
+;; The route: the cavern floor (a crawler) -> a step up and a wall of bricks under a low roof (the
+;; cannon breaks it; a hopper, a crawler) -> ledges with flyers over them -> the open cavern (a
+;; hopper, a crawler, a flyer) -> the gateway's shaft: a ladder (vine) up a shaft one tile wide
+;; (68-70), too narrow for the tank, to the ledge (rows 5-6, columns 70-79, under a rock ceiling)
+;; where the gateway stands (76-77). Only Jason on foot gets there: hop out, climb, walk in.
+;; Mutants are the mini game's own entity types (World's extraEntities, cavern.ts).
+id: bm-underworld
+name: UNDERWORLD
+world: 8
+stage: 4
+theme: underworld
+music: bm-area
+time: 300
+start: 2,12
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0              16               32               48               64
+................ ................ ................ ................ ................
+................ ................ ................ ................ ................
+BBBBBBBBBBBBBBBB ........BBBBBB.. ................ ................ ..BBBBBBBBBBBBBB
+................ ........BBBBBB.. ................ ................ ..BBBBBBBBBBBBBB
+................ ........BBBBBB.. ................ ................ ..BBBBBBBBBBBBBB
+................ ........BBBBBB.. ................ ................ ....B...........
+................ ........BBBBBB.. ................ ................ ....B...........
+................ ........BBBBBB.. ................ ................ ....B.BBBBBBBBBB
+................ ..........==.... ..............BB ................ ....B.BBBBBBBBBB
+................ ..........==.... ................ ................ ....B.BBBBBBBBBB
+................ ..........==.... ........BBBBBB.. ................ ....B.BBBBBBBBBB
+................ ..........==.... ................ ................ ......BBBBBBBBBB
+................ ..############## ##.............. ................ ......BBBBBBBBBB
+################ ################ ################ ################ ################
+################ ################ ################ ################ ################
+
+[entities]
+;; The cavern floor.
+crawler 12 12
+
+;; The step and the brick wall.
+hopper 21 11
+crawler 31 11
+
+;; The ledges.
+flyer 36 6
+crawler 42 9
+
+;; The open cavern.
+flyer 50 6
+hopper 56 12
+crawler 60 12
+flyer 63 6
+
+;; The gateway's ladder, up the shaft.
+vine 69 12 len=8
+
+[decor]
+roots 2 3
+roots 10 3
+roots 24 8
+roots 72 5
+gateway 76 5

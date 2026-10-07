@@ -6,7 +6,9 @@ import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_W } from '@engine/viewport';
 import type { Game } from '../../scenes/game';
 import { abilityHint } from '../../scenes/hints';
-import { NO_TOUCH_BUTTONS } from '../../touch-labels';
+import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
+import type { World } from '../../world/world';
+import type { CharacterDef } from '../../characters/character';
 import { MiniGameMenuScene } from '../menu';
 import type { MiniGameResult } from '../types';
 import { drawBanner } from '../megaman/scene';
@@ -26,6 +28,7 @@ import {
   type BmSound,
 } from './art';
 import { CUT_SAY, CUTSCENE_FRAMES, drawCutscene } from './cutscene';
+import { areaStage, atGateway, newArea, onFoot, sophiaDef } from './area';
 import { newUnderworld } from './dungeon';
 import { drawBmHud } from './hud';
 import type { UnderworldWorld } from './jason';
@@ -50,13 +53,31 @@ export const BOSS_BANNER_FRAMES = 100;
 /** The area's name on the HUD. */
 export const AREA_TITLE = 'UNDERWORLD';
 
-export type UnderworldPhase = 'cutscene' | 'dungeon' | 'won' | 'lost' | 'over';
+export type UnderworldPhase = 'cutscene' | 'area' | 'gateway' | 'dungeon' | 'won' | 'lost' | 'over';
+
+/** Frames of the walk into the gateway (the cavern fades out) before the dungeon. */
+export const GATEWAY_FRAMES = 60;
+/** Frames the hop-out lesson's banner stays up. */
+export const TEACH_FRAMES = 300;
+/**
+ * The action EXIT (Jason hopping out of the tank, and back in) is on: S1's choice, on the
+ * special/select side.
+ */
+export const EXIT_ACTION = 'select' as const;
 
 export interface UnderworldOptions {
   /** The dungeon's seed (capsule drops). */
   seed?: number;
-  /** Start in the dungeon, without the cutscene (tests). */
+  /** Start in the dungeon, without the cutscene or the cavern (tests). */
   skipCutscene?: boolean;
+  /** Start in the tank's cavern, without the cutscene (tests). */
+  startInArea?: boolean;
+  /**
+   * The hero the cavern (section 1) is played as: Sophia once S1's def is registered (the
+   * default); a stand-in in tests; null leaves the cavern out (the round goes from the cutscene
+   * straight to the gateway).
+   */
+  areaHero?: CharacterDef | null;
 }
 
 /** Where Jason came into the room he is in (a new life starts there). */
@@ -92,6 +113,13 @@ export class UnderworldScene implements Scene {
   private winT = -1;
   private readonly view: TdView;
   private skipText = 'SKIP';
+  /** The cavern's hero (null: no cavern), its World while it is played, and how far it got. */
+  readonly areaHero: CharacterDef | null;
+  area: World | null = null;
+  private areaSeed: number;
+  private farthest = 0;
+  /** The hop-out lesson has shown. */
+  taught = false;
 
   constructor(
     private readonly game: Game,
@@ -123,7 +151,10 @@ export class UnderworldScene implements Scene {
       sheets,
       sheet: sheetLookup(assets),
     };
+    this.areaHero = opts.areaHero === undefined ? sophiaDef() : opts.areaHero;
+    this.areaSeed = opts.seed ?? 0x5091a;
     if (opts.skipCutscene) this.phase = 'dungeon';
+    else if (opts.startInArea && this.areaHero) this.phase = 'area';
   }
 
   get jason() {
@@ -141,7 +172,8 @@ export class UnderworldScene implements Scene {
     if (this.phase === 'cutscene') {
       this.playMusic(BM_MUSIC.cutscene);
       this.say(`Underworld. ${CUT_SAY} ${this.hint('JUMP', 'jump')} skips.`);
-    } else this.startDungeon();
+    } else if (this.phase === 'area') this.startArea();
+    else this.startDungeon();
   }
 
   exit(): void {
@@ -179,6 +211,11 @@ export class UnderworldScene implements Scene {
   /** SKIP in the cutscene; SHOOT and GRENADE while Jason is up; MENU while the menu opens. */
   touchLabels(): TouchLabels {
     if (this.phase === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP', start: 'MENU' };
+    if (this.phase === 'area' && this.area) {
+      const p = this.area.player;
+      if (p.dead) return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
+      return { ...levelTouchLabels(p, this.area), start: 'MENU' };
+    }
     if (this.phase !== 'dungeon') return { ...NO_TOUCH_BUTTONS };
     const h = this.td.hero;
     if (h.dying || h.dead) return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
@@ -186,7 +223,7 @@ export class UnderworldScene implements Scene {
   }
 
   private get menuOpens(): boolean {
-    return this.phase === 'cutscene' || this.phase === 'dungeon';
+    return this.phase === 'cutscene' || this.phase === 'area' || this.phase === 'dungeon';
   }
 
   update(input: InputFrame): void {
@@ -203,6 +240,21 @@ export class UnderworldScene implements Scene {
         if (this.skipped || this.phaseT >= CUTSCENE_FRAMES) {
           input.consumeJumpBuffer();
           this.stopMusic();
+          if (this.areaHero) {
+            this.setPhase('area');
+            this.startArea();
+          } else {
+            this.setPhase('dungeon');
+            this.startDungeon();
+          }
+        }
+        return;
+      case 'area':
+        return this.updateArea(input);
+      case 'gateway':
+        if (this.area) this.stepArea(NO_INPUT);
+        if (this.phaseT >= GATEWAY_FRAMES) {
+          this.area = null;
           this.setPhase('dungeon');
           this.startDungeon();
         }
@@ -215,6 +267,90 @@ export class UnderworldScene implements Scene {
         if (this.phaseT >= GAME_OVER_FRAMES) this.finish('fail');
         return;
     }
+  }
+
+  /* ---------- The cavern (section 1) ---------- */
+
+  /** A World for the cavern; after a lost life, from the checkpoint once it was passed. */
+  private startArea(fresh = true): void {
+    const hero = this.areaHero;
+    if (!hero) return;
+    const layout = areaStage();
+    const from = this.farthest >= layout.checkpointX ? layout.checkpointX : undefined;
+    this.area = newArea(this.game.ctx, hero, {
+      seed: this.areaSeed,
+      ...(from !== undefined ? { fromX: from } : {}),
+    });
+    this.playMusic(BM_MUSIC.area);
+    if (!fresh) return;
+    this.say(
+      `Sophia the Third, into the cavern! ${this.hint('SHOOT', 'attack')} fires the cannon; it breaks bricks. Find the gateway: only Jason on foot can go in. ${this.hint('MENU', 'start')} for the menu.`,
+    );
+  }
+
+  private stepArea(input: InputFrame): boolean {
+    const w = this.area as World;
+    w.update([input]);
+    let died = false;
+    for (const e of w.events) if (e.type === 'died') died = true;
+    w.events.length = 0;
+    return died;
+  }
+
+  private updateArea(input: InputFrame): void {
+    const w = this.area;
+    if (!w) return;
+    const died = this.stepArea(input);
+    const p = w.player;
+    const layout = areaStage();
+    const col = p.body.x >> 12;
+    if (!p.dead) this.farthest = Math.max(this.farthest, col);
+    if (!this.taught && !p.dead && col >= layout.teachX && !onFoot(p)) this.teachHopOut();
+    if (atGateway(p, layout)) {
+      this.setPhase('gateway');
+      this.banner = null;
+      this.stopMusic();
+      this.sfx('door');
+      this.say('Jason walks into the gateway.');
+      return;
+    }
+    if (died) this.areaLifeLost();
+  }
+
+  /** The tank reaches the shaft: how Jason hops out, once. */
+  private teachHopOut(): void {
+    this.taught = true;
+    const exit = this.hint('EXIT', EXIT_ACTION);
+    const line = `${exit}: JASON HOPS OUT`;
+    this.banner = {
+      lines: ['ONLY JASON FITS THE SHAFT.', line.length <= 26 ? line : 'EXIT: JASON HOPS OUT'],
+      until: this.t + TEACH_FRAMES,
+      y: 40,
+    };
+    this.say(`The tank can't fit up the shaft. ${exit} lets Jason hop out; climb the ladder to the gateway.`);
+  }
+
+  /** A life lost in the cavern: the next one from the start or the checkpoint, or GAME OVER. */
+  private areaLifeLost(): void {
+    const infinite = this.game.ctx.assist.infiniteLives;
+    if (!infinite) this.lives--;
+    if (this.lives <= 0) {
+      this.setPhase('lost');
+      this.stopMusic();
+      this.banner = { lines: ['GAME OVER'], until: Infinity, y: 112 };
+      this.say('Game over. Try again.');
+      return;
+    }
+    this.music = null;
+    this.startArea(false);
+    const left = this.lives - 1;
+    this.say(
+      infinite
+        ? 'Sophia is back.'
+        : left === 0
+          ? 'Down! Last life.'
+          : `Down! ${left} ${left === 1 ? 'life' : 'lives'} left.`,
+    );
   }
 
   /* ---------- The dungeon ---------- */
@@ -386,6 +522,24 @@ export class UnderworldScene implements Scene {
       drawCutscene(r, assets, this.phaseT, this.game.ctx.reduceFlashing);
       const skip = this.skipText;
       r.text(font, skip, SCREEN_W - 8 - skip.length * 8, 16);
+      return;
+    }
+    if (this.area && this.phase !== 'dungeon' && this.phase !== 'won') {
+      this.area.render(r);
+      r.rect(0, 0, SCREEN_W, 24, '#000000');
+      r.text(font, AREA_TITLE, 8, 8);
+      r.text(font, `REST ${Math.max(0, this.lives - 1)}`, SCREEN_W - 64, 8);
+      // Into the gateway: the cavern fades out.
+      if (this.phase === 'gateway')
+        r.rect(
+          0,
+          24,
+          SCREEN_W,
+          216,
+          `rgba(0,0,0,${Math.min(1, this.phaseT / (GATEWAY_FRAMES - 10)).toFixed(2)})`,
+        );
+      const b = this.banner;
+      if (b && this.t < b.until) drawBanner(r, font, b.lines, b.y);
       return;
     }
     r.clear('#000000');

@@ -49,7 +49,11 @@ export function underworldHarness(opts: HarnessOptions = {}) {
     results.push(r);
     if (!opts.keep) game.scenes.pop();
   };
-  const custom = opts.seed !== undefined || opts.skipCutscene !== undefined;
+  const custom =
+    opts.seed !== undefined ||
+    opts.skipCutscene !== undefined ||
+    opts.startInArea !== undefined ||
+    opts.areaHero !== undefined;
   const scene = custom
     ? new UnderworldScene(game, done, opts)
     : (SOPHIA_MINIGAME.create(game, done) as UnderworldScene);
