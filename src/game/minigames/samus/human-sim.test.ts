@@ -20,7 +20,7 @@ describe('Zebes Escape: a cautious human (difficulty)', () => {
   it('a sharp player gets out with time to spare', () => {
     const r = botRun(SHARP);
     expect(r.result).toBe('pass');
-    expect(r.secondsLeft).toBeGreaterThan(35);
+    expect(r.secondsLeft).toBeGreaterThan(25);
   }, 60_000);
 
   it('a cautious first-timer (late reactions, misjudged take-offs, early jump releases, pauses) usually makes it, and not with ease', () => {
@@ -54,8 +54,7 @@ describe('Zebes Escape: a cautious human (difficulty)', () => {
         const { rate, runs, left, median } = passRate(n, o);
         const fails: Record<string, number[]> = {};
         for (const [i, r] of runs.entries())
-          if (r.result !== 'pass')
-            (fails[r.row > 44 ? 'pit' : `time/energy at x${r.x} row ${r.row}`] ??= []).push(i + 1);
+          if (r.result !== 'pass') (fails[`time/energy at x${r.x} row ${r.row}`] ??= []).push(i + 1);
         const lost = (runs.reduce((a, r) => a + r.lost, 0) / n).toFixed(1);
         const first = runs.filter((r) => r.result === 'pass' && r.livesLost === 0).length;
         console.log(

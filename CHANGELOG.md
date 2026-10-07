@@ -8,6 +8,18 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Zebes Escape (Samus) now ends like Metroid: fight through Tourian to the brain in its glass tank, then climb the
+  escape shaft to the surface before the time bomb goes off. There is no ship any more.
+  - Bubble doors between the rooms: SHOOT one open and walk through, and the screen scrolls on to the next room. The
+    red door takes five MISSILES.
+  - Barriers guard the brain and grow back if you leave them; only MISSILES break them, and only MISSILES hurt the
+    brain. Ceiling cannons and Rinkas defend the chamber.
+  - TIME BOMB SET and the TIME counter now start when the brain falls; a life lost after that starts at the foot of
+    the shaft with the clock full. Reach the surface for a short ending under the stars.
+  - New Tourian art and music. With reduce flashing on, the escape alarm is a steady tint.
+
 ## [0.4.16] - 2026-10-07
 
 ### Changed
