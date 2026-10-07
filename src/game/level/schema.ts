@@ -26,7 +26,11 @@ export type Theme =
   // The airship's open decks (4-2-airship, auto-scrolling): SMB3-style planks under a daylight sky.
   | 'airship-deck'
   // Simon's crypt under 5-4 and his mini game's castle: grey stone, night-blue brick, candlelight.
-  | 'crypt';
+  | 'crypt'
+  // Ryu's hideout under 6-2: a night dojo of dark lacquered wood, shoji and lanterns.
+  | 'dojo'
+  // Ryu's mini game outdoors: a moonlit town of grey stone, tiled roofs and lit windows.
+  | 'ninja-night';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -50,6 +54,8 @@ export const THEMES: readonly Theme[] = [
   'airship',
   'airship-deck',
   'crypt',
+  'dojo',
+  'ninja-night',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -70,6 +76,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'cavern') return 'cavern';
   if (theme === 'airship' || theme === 'airship-deck') return 'airship';
   if (theme === 'crypt') return 'crypt';
+  if (theme === 'dojo') return 'dojo';
+  if (theme === 'ninja-night') return 'ng-stage';
   return 'overworld';
 }
 
@@ -85,9 +93,10 @@ export type PipeDir = 'down' | 'up' | 'left' | 'right';
 
 /**
  * How the player arrives in a linked area: rising from a pipe, dropping in, climbing a vine,
- * beamed down by a teleport pad (`beam`), or placed.
+ * beamed down by a teleport pad (`beam`), flipped through a trick wall's spinning panel
+ * (`spin`), or placed.
  */
-export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam';
+export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam' | 'spin';
 
 export type Zone =
   | {
@@ -131,6 +140,23 @@ export type Zone =
       x: number;
       w: number;
       target: { level: string; x: number; y: number };
+      campaign?: boolean;
+    }
+  /**
+   * A ninja trick wall (6-2's bonus room into Ryu's dojo): the panel of `h` tiles from (x, y)
+   * down, in a wall (tile `N`, T.TRICK). A player pushing into its open side for TRICK_PUSH_FRAMES
+   * (about a second) spins the panel and is flipped through into `target`: a `spin` arrival (the
+   * panel there spins and the players step out beside it), or with `exitDir: 'up'` rising out of
+   * the pipe at the target (the dojo's way back into 6-2). `campaign`: the zone sleeps (its panel
+   * a plain brick wall: no tile `N`, no mark, no spin) unless the campaign variant
+   * (level/campaign.ts) wakes it, which also makes its panel `N` and lays a coin arrow at it.
+   */
+  | {
+      kind: 'trick';
+      x: number;
+      y: number;
+      h: number;
+      target: { level: string; x: number; y: number; exitDir?: 'up' };
       campaign?: boolean;
     }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
@@ -224,7 +250,7 @@ export interface LevelData {
   /** Player start, tile coords (feet on the tile below `y`). */
   start: { x: number; y: number };
   /** When set, the level starts with the "walk in from a pipe" animation (`beam`: beamed down onto a teleport pad). */
-  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb' | 'beam';
+  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb' | 'beam' | 'spin';
   /**
    * Camera behaviour: 'scroll' (default), 'locked' (bonus rooms), 'free' (scrolls both ways
    * and follows the player up and down a map taller than a screen) or 'auto' (SMB3 airships:

@@ -73,7 +73,9 @@ export function decorPalette(theme: string): string {
     theme === 'castle-water' ||
     theme === 'station' ||
     theme === 'airship' ||
-    theme === 'crypt'
+    theme === 'crypt' ||
+    theme === 'dojo' ||
+    theme === 'ninja-night'
   )
     return 'decor-night';
   if (theme === 'snow') return 'decor-snow';

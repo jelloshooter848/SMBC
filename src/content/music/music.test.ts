@@ -39,6 +39,11 @@ const SONG_IDS = [
   'cv-stage',
   'cv-boss',
   'cv-beast',
+  // Ryu's hideout under 6-2 and his mini game.
+  'dojo',
+  'ng-stage',
+  'ng-boss',
+  'ng-cutscene',
 ];
 
 const SFX_IDS = [
@@ -93,6 +98,11 @@ const SFX_IDS = [
   'candle',
   'dracula-teleport',
   'beast-roar',
+  // Ryu's hideout and his mini game.
+  'panel-spin',
+  'slash',
+  'hawk',
+  'clang',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

@@ -49,7 +49,8 @@ function parseProps(parts: string[]): Props {
  *                         `text x y triggerX "..."`,
  *                         `bowser-fire x`, `vine x y -> level x y`, `pit x -> level x y`,
  *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad),
- *                         `descent x w -> level x y [campaign]` (a down lift's shaft)
+ *                         `descent x w -> level x y [campaign]` (a down lift's shaft),
+ *                         `trick x y h -> level x y [exit=up] [campaign]` (a trick wall's spinning panel)
  *   [decor]               `kind x y`
  */
 export function parseTextMap(src: string, idHint = 'level'): LevelData {
@@ -281,6 +282,34 @@ function parseZone(line: string): Zone {
       if (rest.includes('campaign')) z.campaign = true;
       return z;
     }
+    case 'trick': {
+      // trick x y h -> level x y [exit=up] [campaign]
+      const [, xs, ys, hs, arrow, level, tx, ty, ...rest] = parts;
+      if (
+        arrow !== '->' ||
+        !level ||
+        xs === undefined ||
+        ys === undefined ||
+        hs === undefined ||
+        tx === undefined ||
+        ty === undefined
+      )
+        throw new Error('expected "trick x y h -> level x y [exit=up] [campaign]"');
+      const z: Zone = {
+        kind: 'trick',
+        x: Number(xs),
+        y: Number(ys),
+        h: Number(hs),
+        target: { level, x: Number(tx), y: Number(ty) },
+      };
+      const exit = parseProps(rest.filter((r) => r.includes('='))).exit;
+      if (exit !== undefined) {
+        if (exit !== 'up') throw new Error('trick exit must be up');
+        z.target.exitDir = 'up';
+      }
+      if (rest.includes('campaign')) z.campaign = true;
+      return z;
+    }
     case 'cheeps':
       return { kind: 'cheeps', x: Number(parts[1]), w: Number(parts[2]) };
     case 'bullets':
@@ -437,6 +466,10 @@ function serializeZone(z: Zone): string {
       return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
     case 'descent':
       return `descent ${z.x} ${z.w} -> ${z.target.level} ${z.target.x} ${z.target.y}${z.campaign ? ' campaign' : ''}`;
+    case 'trick':
+      return `trick ${z.x} ${z.y} ${z.h} -> ${z.target.level} ${z.target.x} ${z.target.y}${
+        z.target.exitDir ? ` exit=${z.target.exitDir}` : ''
+      }${z.campaign ? ' campaign' : ''}`;
     case 'teleport':
       return `teleport ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}${
         z.target.exitDir === 'beam' ? '' : ` exit=${z.target.exitDir}`

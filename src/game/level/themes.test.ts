@@ -48,6 +48,8 @@ describe('themes', () => {
       'airship',
       'airship-deck',
       'crypt',
+      'dojo',
+      'ninja-night',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -90,6 +92,8 @@ describe('themes', () => {
       airship: 'airship',
       'airship-deck': 'airship',
       crypt: 'crypt',
+      dojo: 'dojo',
+      'ninja-night': 'ng-stage',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -394,5 +398,74 @@ describe('themes', () => {
     expect(enemyPalette('crypt')).toBe(enemyPalette('castle'));
     expect(isWaterTheme('crypt')).toBe(false);
     expect(themeMusic('crypt')).toBe('crypt');
+  });
+
+  it("builds Ryu's dojo of dark lacquered wood and shoji, and his moonlit town of grey stone", () => {
+    const frames = tilesDef.frames;
+    const frame = (name: string) => frames[name] as readonly string[];
+    const dojoTiles = [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+    ];
+    for (const t of dojoTiles) {
+      expect(frames[`${t}@dojo`], t).toBeDefined();
+      expect(frames[`${t}@dojo`], t).not.toEqual(frames[t]);
+      for (const other of ['station', 'cavern', 'airship', 'crypt'])
+        expect(frames[`${t}@dojo`], `${t} vs ${other}`).not.toEqual(frames[`${t}@${other}`]);
+    }
+    for (const t of ['ground', 'hard', 'castle-brick', 'tree-top', 'tree-trunk', 'wall', 'wall-top']) {
+      expect(frames[`${t}@ninja-night`], t).toBeDefined();
+      expect(frames[`${t}@ninja-night`], t).not.toEqual(frames[`${t}@dojo`]);
+    }
+    // Solid wood and stone are opaque in the block indices; the backdrops are lattice and paper,
+    // or the town's dark wall with one lit window (gold light).
+    for (const t of ['ground', 'castle-brick', 'brick', 'hard'])
+      expect(frame(`${t}@dojo`).join(''), t).toMatch(/^[0-3]+$/);
+    // (the town's breakable bricks and bridges are the plain ones in its stone colours)
+    for (const t of ['ground', 'castle-brick', 'hard'])
+      expect(frame(`${t}@ninja-night`).join(''), t).toMatch(/^[0-3]+$/);
+    expect(frame('wall@dojo').join('')).toMatch(/^[19a]+$/);
+    expect(frame('wall-top@dojo').slice(4)).toEqual(frame('wall@dojo').slice(4));
+    expect(frame('wall@ninja-night').join('')).toMatch(/^[079a]+$/);
+    expect(frame('wall@ninja-night').join('')).toMatch(/7/);
+    expect(frame('wall-top@ninja-night').slice(8)).toEqual(frame('wall@ninja-night').slice(8));
+    // The floor boards run across: every board's top row is lit.
+    expect(frame('ground@dojo').filter((r) => /^[03]+$/.test(r)).length).toBe(4);
+    const rgb = (hex: string) =>
+      [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
+    // Wood: the block tones are warm (red over blue) and darken in order; the paper is lighter.
+    const dojo = PALETTES.default['tiles-dojo'] as string[];
+    const lum = (p: string[], i: number) => rgb(p[i] as string).reduce((a, b) => a + b);
+    for (const i of [1, 2, 3]) {
+      const [r, , b] = rgb(dojo[i] as string);
+      expect(r, `dojo ${i} is warm`).toBeGreaterThan(b);
+    }
+    expect(lum(dojo, 1)).toBeLessThan(lum(dojo, 2));
+    expect(lum(dojo, 2)).toBeLessThan(lum(dojo, 3));
+    expect(lum(dojo, 9)).toBeGreaterThan(lum(dojo, 3));
+    expect(dojo).not.toEqual(PALETTES.default['tiles-airship']);
+    // The town: grey stone with indigo shadows under a violet night, its far walls darker still.
+    const town = PALETTES.default['tiles-ninja-night'] as string[];
+    const [r1, g1, b1] = rgb(town[1] as string);
+    expect(b1).toBeGreaterThan(r1 + g1);
+    expect(lum(town, 9)).toBeLessThan(lum(town, 1));
+    expect(lum(town, 9)).toBeGreaterThan(lum([SKY['ninja-night'] as string], 0));
+    expect(SKY.dojo).toBe(SKY.castle);
+    // Night scenery for both; castle enemies indoors; no swimming; their own tunes.
+    expect(decorPalette('dojo')).toBe(decorPalette('night'));
+    expect(decorPalette('ninja-night')).toBe(decorPalette('night'));
+    expect(enemyPalette('dojo')).toBe(enemyPalette('castle'));
+    expect(enemyPalette('ninja-night')).toBe(enemyPalette('night'));
+    for (const t of ['dojo', 'ninja-night'] as Theme[]) expect(isWaterTheme(t)).toBe(false);
+    expect(themeMusic('dojo')).toBe('dojo');
+    expect(themeMusic('ninja-night')).toBe('ng-stage');
   });
 });

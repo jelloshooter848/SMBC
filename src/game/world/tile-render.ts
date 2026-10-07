@@ -32,7 +32,9 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
         continue;
       }
       let name = def.name;
-      if (def.block?.kind === 'question') name = `question-${anim === 2 ? 1 : anim}`;
+      // A trick wall's panel looks like the wall it stands in (World's TrickWall draws its spin).
+      if (id === T.TRICK) name = 'brick';
+      else if (def.block?.kind === 'question') name = `question-${anim === 2 ? 1 : anim}`;
       else if (def.block?.kind === 'brick') name = 'brick';
       else if (def.pickup === 'coin') name = `coin-${(view.frame >> 3) & 3}`;
       else if (id === T.LAVA) name = `lava-${(view.frame >> 4) & 1}`;
@@ -94,4 +96,8 @@ export const SKY: Record<string, string> = {
   'airship-deck': '#3cbcfc',
   // Simon's crypt: the castle's black behind the night-blue brick.
   crypt: '#000000',
+  // Ryu's dojo: dark between the beams and screens.
+  dojo: '#000000',
+  // Ryu's moonlit town: a deep violet night over the roofs.
+  'ninja-night': '#100828',
 };

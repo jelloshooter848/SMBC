@@ -8,6 +8,22 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Ryu is hidden in 6-2: in the first underground bonus room, a few coins point at a section of the
+  wall marked with a stuck shuriken. Push into it and the panel spins you through to his night
+  dojo. His mini game, Shadow Duel, opens with a moonlit duel cutscene, then a Ninja Gaiden-style
+  climb through a moonlit town (wall cling, lanterns, knife throwers, dogs and hawks) to a rooftop
+  duel with the Masked Ninja.
+- Trick walls for levels (`trick` zones), plus original Ninja Gaiden-style art and music (dojo and
+  ninja-night looks).
+
+### Fixed
+
+- Holding left or right while dropping into a bonus room no longer lands the hero on top of the
+  room's wall: the hero falls straight until clear of the top rows.
+- The game font now has a semicolon.
+
 ## [0.4.7] - 2026-10-07
 
 ### Added

@@ -32,6 +32,13 @@ import { T, isSolid } from './tiles';
  * dungeon) sleeps outside the campaign; its campaign variant wakes it, so riding the down lift
  * past the screen bottom carries the player down into the area below. Like a `goto`, it is an
  * ordinary way into an area of the same level: no secret, no map road, the clock carries on.
+ *
+ * A `trick` zone marked `campaign` (6-2's bonus room, owner decision for 0.4.8: Ryu's dojo) sleeps
+ * the same way: outside the campaign the room is exactly as it was (its panel plain brick, which
+ * bombs break as ever, and no coin arrow). The campaign variant wakes it: its panel's tiles become
+ * the trick wall (`N`, T.TRICK) and a coin arrow is laid pointing at its marked row (`trickArrow`),
+ * so pushing into it flips the player through into the dojo (World.checkTricks). Likewise no
+ * secret, no map road, the clock carries on.
  */
 
 const PIPE_TILES = new Set<number>([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
@@ -40,6 +47,19 @@ const cache = new WeakMap<LevelData, LevelData>();
 const cacheGone = new WeakMap<LevelData, LevelData>();
 
 type Pipe = Zone & { kind: 'pipe' };
+type Trick = Zone & { kind: 'trick' };
+
+/**
+ * The coin arrow a campaign trick wall gets, as [x, y] tiles: pointing at the panel's marked row
+ * (its middle, TrickWall.markRow) from the room side, tip two tiles out, a shaft of three behind it
+ * and a coin above and below the shaft's first (a `<` for a panel in a left wall). `side`: 1 when
+ * the room lies right of the panel. Only tiles that are open air get a coin.
+ */
+export function trickArrow(z: Trick, side: 1 | -1): [number, number][] {
+  const m = z.y + (z.h >> 1);
+  const at = (dx: number, y: number): [number, number] => [z.x + side * dx, y];
+  return [at(2, m), at(3, m - 1), at(3, m), at(3, m + 1), at(4, m), at(5, m)];
+}
 type Warp = Zone & { kind: 'warp' };
 
 let bundled: ReadonlySet<string> | undefined;
@@ -65,8 +85,9 @@ export function campaignLevel(
   const variants = level.zones.filter(
     (z): z is Warp => z.kind === 'warp' && (!!z.secret || (!!z.goto && has(z.goto.level))),
   );
-  // A sleeping `descent` zone (5-4's down lift into Simon's dungeon) wakes in campaign play.
-  const sleeping = level.zones.some((z) => z.kind === 'descent' && z.campaign);
+  // A sleeping `descent` zone (5-4's down lift into Simon's dungeon) or `trick` zone (6-2's
+  // trick wall into Ryu's dojo) wakes in campaign play.
+  const sleeping = level.zones.some((z) => (z.kind === 'descent' || z.kind === 'trick') && z.campaign);
   if (!variants.length && !sleeping) {
     memo.set(level, level);
     return level;
@@ -120,10 +141,21 @@ export function campaignLevel(
       });
     }
   }
+  // Woken trick walls: the panel turns to trick-wall tiles, and its coin arrow is laid.
+  for (const z of level.zones) {
+    if (z.kind !== 'trick' || !z.campaign) continue;
+    for (let y = z.y; y < z.y + z.h; y++) tiles[y * level.width + z.x] = T.TRICK;
+    const bottom = (z.y + z.h - 1) * level.width;
+    const side = isSolid(tiles[bottom + z.x + 1] as number) ? -1 : 1;
+    for (const [x, y] of trickArrow(z, side)) {
+      const i = y * level.width + x;
+      if (x >= 0 && x < level.width && y >= 0 && y < level.height && tiles[i] === T.AIR) tiles[i] = T.COIN;
+    }
+  }
   const zones = level.zones
     .filter((z) => !dropped.has(z))
     .map((z): Zone => {
-      if (z.kind === 'descent' && z.campaign) {
+      if ((z.kind === 'descent' || z.kind === 'trick') && z.campaign) {
         const live: Zone = { ...z };
         delete live.campaign;
         return live;
