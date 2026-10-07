@@ -257,6 +257,22 @@ describe('the areas', () => {
       expect(isSolid(tile(l, 15, y) as number), `right ${y}`).toBe(true);
     }
     for (let x = 0; x < 16; x++) expect(isSolid(tile(l, x, 13) as number), `floor ${x}`).toBe(true);
+    // Inside, everything is open: the lintel, the shoji and the pillars are scenery.
+    for (let y = 3; y < 13; y++)
+      for (let x = 1; x < 15; x++) expect(isSolid(tile(l, x, y) as number), `inside ${x},${y}`).toBe(false);
+  });
+
+  it('the dojo looks wooden: timber walls and beam, a lintel over shoji paper walls, two pillars', () => {
+    const l = dojo();
+    for (let x = 0; x < 16; x++) expect(tile(l, x, 2), `beam ${x}`).toBe(T.CASTLE_BRICK);
+    for (let y = 3; y < 13; y++) {
+      expect(tile(l, 0, y), `left ${y}`).toBe(T.CASTLE_BRICK);
+      if (y < 10) expect(tile(l, 15, y), `right ${y}`).toBe(T.CASTLE_BRICK);
+    }
+    for (let x = 1; x < 15; x++) expect(tile(l, x, 3), `lintel ${x}`).toBe(T.WALL_TOP);
+    for (let y = 4; y < 13; y++)
+      for (let x = 1; x < 15; x++)
+        expect(tile(l, x, y), `${x},${y}`).toBe(x === 4 || x === 11 ? T.TREE_TRUNK : T.WALL);
   });
 });
 

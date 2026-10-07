@@ -20,21 +20,23 @@ parent: 6-2
 ;; `ninja:shoji` screens in front), paper lanterns and the round moon window (`ninja` sheet).
 
 [tiles]
-;; Rows 0-1 stay clear (no tiles, black) under the HUD; the room's ceiling beam is row 2.
+;; Rows 0-1 stay clear (no tiles, black) under the HUD. Timber boards (`%`) make the ceiling beam
+;; (row 2) and the walls; a lintel (`A`) runs under the beam over shoji paper walls (`H`) from
+;; row 4 down to the floor, with two round pillars (`t`, scenery) at columns 4 and 11.
 ;; 0             15
 ................
 ................
-================
-=..............=
-=..............=
-=..............=
-=..............=
-=..............=
-=AAAAAAAAAAAAAA=
-=HHHHHHHHHHHHHH=
-=HHHHHHHHHHHHHHN
-=HHHHHHHHHHHHHHN
-=HHHHHHHHHHHHHHN
+%%%%%%%%%%%%%%%%
+%AAAAAAAAAAAAAA%
+%HHHtHHHHHHtHHH%
+%HHHtHHHHHHtHHH%
+%HHHtHHHHHHtHHH%
+%HHHtHHHHHHtHHH%
+%HHHtHHHHHHtHHH%
+%HHHtHHHHHHtHHH%
+%HHHtHHHHHHtHHHN
+%HHHtHHHHHHtHHHN
+%HHHtHHHHHHtHHHN
 ################
 ################
 
@@ -48,8 +50,6 @@ trick 15 10 3 -> 6-2 35 10 exit=up
 [decor]
 ninja:moon-window 6 6
 ninja:shoji 1 12
-ninja:shoji 3 12
-ninja:shoji 9 12
-ninja:shoji 11 12
+ninja:shoji 12 12
 ninja:lantern-0 2 4
 ninja:lantern-0 12 4
