@@ -68,6 +68,7 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
   let back = 0;
   let attackT = 0;
   let pushing = false;
+  let downT = 0;
   const step = (a: Action[]): Action[] => {
     pushing = a.includes('right') || a.includes('left');
     return a;
@@ -164,7 +165,13 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
     airDir = null;
 
     // On the pipe's top, over its middle: down.
-    if (stern && Math.abs(feet - pipeTop) <= 1 && left >= pipeL && right <= pipeL + 32) return ['down'];
+    // (Now and then UP instead: Samus's DOWN can roll her into the Morph Ball, UP stands her up.)
+    if (stern && Math.abs(feet - pipeTop) <= 1 && right > pipeL && left < pipeL + 32) {
+      // On the pipe's top: shuffle in over its middle (with a pixel to spare), then down.
+      const mid = (b.x + b.w / 2) / 256 - (pipeL + 16);
+      if (left < pipeL + 2 || right > pipeL + 30) return [mid > 0 ? 'left' : 'right'];
+      return ++downT % 40 < 32 ? ['down'] : ['up'];
+    }
 
     // Stuck at a wall (a committed jump that came up short): back off a little and try again.
     if (still > 40) back = 16;
@@ -188,14 +195,32 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
     let pit = true;
     for (let y = row + 1; y < 15; y++) if (w.map.isSolid(ahead(6), y)) pit = false;
     const toPipe = stern !== undefined && feet > pipeTop && left > pipeL - 40 && !past;
+    // Standing still near a gap's edge while still sliding toward it (Luigi's slippery feet):
+    // brake against the slide.
+    const gapNear = [6, 14, 22].some((d) => {
+      for (let y = row + 1; y < 15; y++) if (w.map.isSolid(ahead(d), y)) return false;
+      return true;
+    });
+    const hold = (): Action[] => (gapNear && dir * b.vx > 0 ? [dir > 0 ? 'left' : 'right', ...out] : out);
 
     // Threat look-ahead for walking on, standing, stepping back.
     const ts = threats(w);
     // Walking speed over the next second: from the current speed up toward the walk cap.
     const walk = (Math.abs(b.vx) / 4096 + p.def.movement.maxWalk / 4096) / 2;
+    // Walls stop a walk: how far can the hero go that way (px)?
+    const reach = (v: number): number => {
+      if (v === 0) return 0;
+      for (let d = 1; d <= LOOK * 2; d++) {
+        const edge = v > 0 ? right + d : left - d;
+        const col = Math.floor(edge / 16);
+        if (w.map.isSolid(col, row) || (feet - top > 16 && w.map.isSolid(col, row - 1))) return d - 1;
+      }
+      return LOOK * 2;
+    };
     const firstHit = (v: number): number => {
+      const far = reach(v);
       for (let t = 1; t <= LOOK; t++) {
-        let x = left + v * t;
+        let x = left + Math.sign(v) * Math.min(Math.abs(v) * t, far);
         x = Math.max(x, camX + speed * t);
         const me = { x, y: top, w: right - left, h: feet - top };
         for (const th of ts) {
@@ -253,8 +278,8 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
     const wantJump = wall || pit || toPipe;
     const walkOn = (pressed = false): Action[] => {
       // A pit's far side must be on screen before the jump, and the jump's arc clear.
-      if (pit && right + 48 > camX + SCREEN_W) return out;
-      if (wantJump && !pressed && jumpHit() !== Infinity && left > camX + 12) return out;
+      if (pit && right + 48 > camX + SCREEN_W) return hold();
+      if (wantJump && !pressed && jumpHit() !== Infinity && left > camX + 12) return hold();
       // A gap wants a run-up (Simon's jump is committed at takeoff): from a near standstill at
       // the edge, step back first.
       const cap = p.def.movement.maxWalk;
@@ -272,13 +297,13 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
     if (roomAhead && tOn === Infinity) return walkOn();
     // The left edge is closing in with a wall ahead: get over it, whatever is flying.
     if (wall && left < camX + 40) return walkOn(true);
-    if (tStand === Infinity) return out;
+    if (tStand === Infinity) return hold();
     // Something is coming: get out of its way, ahead (even near the edge) or back.
     if (tOn === Infinity && !pit && !wall) return [go, ...out];
     if (tBack === Infinity && left > camX + 24) return ['left', ...out];
     // Nowhere to stand clear: jump what comes, as late as is safe.
     const soonest = Math.max(tStand, tBack);
-    if (soonest <= 14) {
+    if (soonest <= 24) {
       // Jump only if that gets clear for longer (a jump into another shot is no better).
       const tUp = jumpHit(0);
       const tFwd = pit || wall ? 0 : jumpHit();
@@ -289,6 +314,6 @@ export function airshipBot(opts: AirshipBotOptions = {}): (w: World) => Action[]
       }
     }
     if (tBack > tStand && left > camX + 24) return ['left', ...out];
-    return out;
+    return hold();
   }
 }

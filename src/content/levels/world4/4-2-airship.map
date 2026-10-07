@@ -18,7 +18,8 @@ parent: 4-2
 ;; 58 s from the bow to the stern) and stops at the stern.
 ;; - BOW (0-32): a raised bow platform (row 7, the start) over the stair-stepped prow, the fore
 ;;   deck (row 9) with two cannons aimed up-left (14, 22), a Rocky Wrench manhole (18), a short
-;;   post with a Bullet Bill blaster at its right end (26-28) and the tall post (31-32, 3 high)
+;;   post with a Bullet Bill blaster at its right end (28-30), right against the tall post (31-32,
+;;   3 high: a staircase, with no pocket between them to be trapped in)
 ;;   where the deck steps down. A propeller turns under the prow's bottom hull (23).
 ;; - MIDDLE (33-70): the long low main deck (row 12) on two hull segments with a 2-wide gap
 ;;   (50-51), a propeller behind each (49, 65); a tall blaster post (44, its Bullet Bills
@@ -27,10 +28,10 @@ parent: 4-2
 ;;   or fire flower when big). Above it the plank overhang (row 3, 40-60)
 ;;   with cannons hanging under it aimed down-left (43, 49), a three-cannon turret (56-57: left,
 ;;   right and down-left; nothing fires down-right into the gateway's crossfire), and
-;;   at its right end the thick block (61-75, rows 3-5) over the metal gateway (61-68, not solid)
-;;   with one more cannon hanging under it (72); iron struts (`t`) frame the gateway.
-;; - STERN (71-97): the lower deck (row 13) with a cannon where it drops from the main deck (71),
-;;   a Rocky Wrench (74) and a blaster (80), then four 2-wide steps up (83-90) to the high stern deck (row 8, 91-97): a railing,
+;;   at its right end the thick block (61-75, rows 3-5) over the metal gateway (61-68, not solid); iron struts (`t`) frame the
+;;   gateway.
+;; - STERN (71-97): the lower deck (row 13) with a Rocky Wrench (77, well clear of where the hero drops in) and a tall blaster post (80, its
+;;   Bullet Bills flying over a standing hero's head, like the one mid-ship), then four 2-wide steps up (83-90) to the high stern deck (row 8, 91-97): a railing,
 ;;   portholes in the hull (`%`), a propeller under it, and THE PIPE (94) down into Larry's room
 ;;   (4-2-larry).
 ;; Cannon cells are solid (the cannon fills its own cell). Every gap is 2 wide and every step up
@@ -46,11 +47,11 @@ parent: 4-2
 ................ ................ ................ .............### ############.... ................ ..  ;; 5
 ................ ...............B B............... .............t.. ....t........... ..............[] ..  ;; 6
 ##########...... ...............B B............... .......M.....t.. ....t........... ..............{} ..  ;; 7
-.#########...... ..........BB^..B B............... .............t.. ....t........... ...........##### ##  ;; 8
+.#########...... ............BB^B B............... .............t.. ....t........... ...........##### ##  ;; 8
 ..############## ################ #...........^... .............t.. ....t........... .........####### ##  ;; 9
 ...############# ################ #...........|... ...........B.t.. ....t........... .......#####%### %#  ;; 10
-....############ ################ #...........|... ...........B.t.. ....t........... ^....########### ##  ;; 11
-......########## ################ ################ ##..############ #######......... |..############# ##  ;; 12
+....############ ################ #...........|... ...........B.t.. ....t........... .....########### ##  ;; 11
+......########## ################ ################ ##..############ #######......... ...############# ##  ;; 12
 ........######## #######......... ..############## #....########### #......######### ###########..... ..  ;; 13
 ................ ................ ................ ................ .......######### ###########..... ..  ;; 14
 
@@ -63,9 +64,7 @@ cannon 49 4 dir=dl
 cannon 56 4 dir=l period=200
 cannon 57 4 dir=r period=200
 cannon 56 5 dir=dl period=200
-cannon 72 6 dir=dl
-cannon 71 12 dir=ul
-rocky 74 12
+rocky 77 12
 
 [zones]
 pipe 94 6 down -> 4-2-larry 2 12

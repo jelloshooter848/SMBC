@@ -71,7 +71,7 @@ describe('the airship deck layout (SMB3 World 1 airship)', () => {
     expect(hanging.length).toBeGreaterThanOrEqual(5);
     for (const c of hanging) expect(['dl', 'dr', 'l', 'r']).toContain(c.props?.dir);
     // Two Rocky Wrenches, one on the fore deck and one on the lower stern deck.
-    expect(deck.entities.filter((e) => e.type === 'rocky').map((e) => e.x)).toEqual([18, 74]);
+    expect(deck.entities.filter((e) => e.type === 'rocky').map((e) => e.x)).toEqual([18, 77]);
     // The stern pipe on the high stern deck.
     expect(PIPE).toMatchObject({ x: 94, y: 6, dir: 'down', target: { level: '4-2-larry', x: 2, y: 12 } });
     expect(t(94, 8)).toBe(T.GROUND);
@@ -155,14 +155,43 @@ describe('every hero survives the deck with damage on', () => {
               return f < idle ? [] : a;
             },
           });
-          // The one run the bot loses: Samus from a standing start dies on the lower stern deck,
-          // where her beam passes just under a Bullet Bill and the bot won't jump it (a player
-          // jumps it, or shoots it from a jump; the run 200 frames later goes through).
-          const botLoses = c.id === 'samus' && idle === 0;
-          expect(r.outcome, `${c.id} ${power} at x=${r.playerX}`).toBe(botLoses ? 'died' : 'pipe');
+          expect(r.outcome, `${c.id} ${power} at x=${r.playerX}`).toBe('pipe');
           if (c.id === 'mario' || c.id === 'luigi')
             expect(hits, `${c.id} ${power} hits`).toBeLessThanOrEqual(power === 'small' ? 0 : 1);
         });
+});
+
+/*
+ * The Bullet Bill blasters fire on random timers (the game seeds each visit afresh), so the
+ * same bot over ten other seeds and both start timings: the heroes who die in one hit (small
+ * Mario and Luigi), Link and Mega Man must reach the pipe nearly every time.
+ */
+describe('fair over random blaster timings (damage on)', () => {
+  const cases: [CharacterDef, string][] = [
+    [MARIO, 'small'],
+    [CHARACTERS.find((c) => c.id === 'luigi') as CharacterDef, 'small'],
+    [CHARACTERS.find((c) => c.id === 'link') as CharacterDef, 'full'],
+    [CHARACTERS.find((c) => c.id === 'megaman') as CharacterDef, 'full'],
+  ];
+  for (const [c, power] of cases)
+    it(`${c.name} (${power}): at least 19 of 20 runs`, () => {
+      let wins = 0;
+      for (let seed = 1; seed <= 10; seed++)
+        for (const idle of [0, 200]) {
+          const bot = airshipBot();
+          const r = runSim({
+            level: deck,
+            character: c,
+            state: { powerState: power },
+            script: { steps: [] },
+            maxFrames: 60 * 120,
+            seed: seed * 7777,
+            controller: (w, f) => (f < idle ? [] : bot(w)),
+          });
+          if (r.outcome === 'pipe') wins++;
+        }
+      expect(wins).toBeGreaterThanOrEqual(19);
+    });
 });
 
 describe('the auto-scroll', () => {

@@ -158,13 +158,17 @@ ends.
 
 - **The deck** (`src/content/levels/world4/4-2-airship.map`, parent 4-2, theme `airship-deck`,
   music `airship`, `camera: auto` at `scroll: 0.375` px/f: about 58 s): SMB3 World 1's airship
-  transcribed onto one 15-row screen, 98 columns. The bow (raised bow platform, the start, over a
-  stair-stepped prow), the fore deck (two `ul` cannons, a Rocky Wrench, a blaster post, the tall
-  2×3 post), the long low middle deck on two hull segments (a 2-wide gap, a blaster post, a post,
-  a mushroom ? block) under the plank overhang with hanging `dl`/`dr` cannons and a four-cannon
-  turret, the thick block over the gateway, then the lower stern deck (Rocky Wrench, cannon,
-  blaster), four 2-wide steps up to the railed stern deck with portholes and THE PIPE. Every pit
-  is 2 wide; `tests/sim/airship-deck.test.ts` runs a simple bot across with every hero.
+  transcribed onto one 15-row screen, 98 columns. The bow (raised bow platform, the start and the
+  anchor chain's step-off at column 3, over a stair-stepped prow), the fore deck (two `ul`
+  cannons, a Rocky Wrench, a blaster step right against the tall 2×3 post), the long low middle
+  deck on two hull segments (a 2-wide gap, a tall blaster post whose bills fly over a standing
+  hero, a post, a mushroom ? block 5 rows up) under the plank overhang with two `dl` cannons and a
+  three-cannon turret, the thick block over the gateway, then the lower stern deck (a Rocky
+  Wrench), four 2-wide steps up to the railed stern deck with portholes and THE PIPE. Every pit is
+  2 wide. `tests/sim/airship-deck.test.ts`: every hero crosses under the auto-scroll, and with
+  damage on every hero reaches the pipe (small Mario and Luigi unhit), also over 20 random blaster
+  timings; standing still, the scroll carries the hero off the bow and squashes them against the
+  first cannon (~12 s). The bot is `tests/sim/airship-bot.ts` (also `rideToStern`'s driver).
 - **Cannons** (`cannon x y dir=r|l|ul|ur|dl|dr [period=150] [delay=]`, entities/enemies/cannon.ts):
   a solid block (its cell is made solid) that fires a cannonball out of its barrel every `period`
   frames while on screen (first shot staggered by position, or `delay`), with the `cannon` sfx; it
@@ -172,9 +176,10 @@ ends.
   everything (1 px/f, or 0.75 px/f per axis on a diagonal), hurts on contact, drops when stomped
   (100 points) and, like a Bullet Bill, shrugs off fire, boomerangs and ice.
 - **Rocky Wrench** (`rocky x y`, entities/enemies/rocky-wrench.ts): hides in a manhole in the deck
-  under cell (x, y); pops up when a hero is within 8 tiles (never under one standing on its lid),
-  faces them, throws a wrench that flies flat at 1.25 px/f, and ducks back for ~1.7 s. Only while
-  at least half out can it hurt or be hit (any attack, a stomp; 100 points).
+  under cell (x, y); pops up when a hero is within 8 tiles (never within 2 tiles of one, so it
+  never rises into a hero nor throws point-blank), faces them, throws a wrench that flies flat at
+  1.25 px/f, and ducks back for ~1.7 s. Only while up (half out on the way up, until it starts
+  ducking) can it hurt or be hit (any attack, a stomp; 100 points).
 - **The room** (`src/content/levels/world4/4-2-larry.map`, parent 4-2): one locked screen,
   enclosed like SMB3's (the owner's reference, built to the SMB3 art's frames and mock), no sky. The
   log back wall (`H`, not solid) fills the room, behind the HUD too, with two `smb3:porthole`
