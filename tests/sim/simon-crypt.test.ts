@@ -71,9 +71,11 @@ describe('the areas', () => {
     expect(descents(camp.zones)).toEqual([
       { kind: 'descent', x: 84, w: 8, target: { level: '5-4-dungeon', x: 13, y: 0 } },
     ]);
-    // Nothing else of 5-4 changes.
+    // Nothing else of 5-4 changes (but the townsperson at the start wakes: tests/sim/partners.test.ts).
     expect(camp.tiles).toEqual(raw.tiles);
-    expect(camp.entities).toEqual(raw.entities);
+    expect(camp.entities).toEqual(
+      raw.entities.map((e) => (e.type === 'partner' ? { ...e, props: { who: 'townsperson' } } : e)),
+    );
   });
 
   it('the descent zone parses and writes back the same', () => {

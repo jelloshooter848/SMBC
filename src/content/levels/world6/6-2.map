@@ -29,6 +29,8 @@ camera: scroll
 
 [entities]
 decor-castle 0 12
+;; Campaign only (0.4.13, docs/STORY.md 2.9): Irene on the ground before the first pipe.
+partner 7 12 who=irene campaign=true
 piranha 19 9
 piranha 28 9
 piranha 32 6

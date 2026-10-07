@@ -22,6 +22,7 @@ import { storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { playLevelBeat } from '../story/level-beats';
 import { STORY_CRYSTAL_BALL_PAGES } from '../story/script';
+import { partnerNearSaid, talkToPartner } from '../story/partners';
 import { abilityHint } from './hints';
 import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
 import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
@@ -191,6 +192,13 @@ export class LevelScene implements Scene {
         // A captive hero: the unlock flow plays over the paused level (scenes/free-hero.ts).
         if (game.campaign && !game.playtestDone)
           talkToCaptive(game, this, ev.hero, this.world.players[ev.player]?.def);
+        break;
+      case 'partner':
+        // A story partner: its pages over the frozen level, then play on (story/partners.ts).
+        if (this.world.storyMode) talkToPartner(game, this, ev.who);
+        break;
+      case 'partner-near':
+        game.deps.announcer?.say(partnerNearSaid(ev.who, ev.player, this.world.coop));
         break;
       case 'crystal-ball':
         this.takeCrystalBall(ev.next);
