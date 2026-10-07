@@ -51,6 +51,7 @@ import {
   BONUS_SPENT_HINT,
   BONUS_SPENT_SAID,
   bonusGame,
+  isBonusArea,
 } from '../map/bonus-spot';
 import { AirshipCrash, type CrashNames } from '../map/airship-crash';
 import { CRYSTAL_BALL } from '../map/captives';
@@ -567,6 +568,8 @@ export class WorldMapScene implements Scene {
     const label = spoken(this.page.label);
     // A Mini Game Arena pad (src/game/arena): its game, or why it is still dark.
     if (n.kind === 'game') return arenaPadSaid(this.game, n, abilityHint(this.game, 'JUMP', 'jump'));
+    // A bonus node leading into a level (World 2's Top Secret Area): its label; always open.
+    if (isBonusArea(n)) return `${spoken(n.label ?? 'Bonus')}, open`;
     // The bonus spot (map/bonus-spot.ts): the bonus game's name while open.
     if (n.kind === 'bonus')
       return this.game.bonusOpen ? `${spoken(bonusGame().label(this.game))}, open` : this.bonusShutSaid();
@@ -609,6 +612,7 @@ export class WorldMapScene implements Scene {
     if (n) return warpText(this.progress, n, this.unlockAll);
     if (this.mode !== 'idle') return '';
     const here = this.nodeById(this.node);
+    if (here && isBonusArea(here)) return here.label ?? '';
     if (here?.kind === 'bonus')
       return this.game.bonusOpen
         ? bonusGame().label(this.game)
@@ -659,6 +663,7 @@ export class WorldMapScene implements Scene {
     const warp = !!here && isWarpOpen(this.progress, here, this.unlockAll);
     const bonus =
       here?.kind === 'bonus' &&
+      !isBonusArea(here) &&
       this.game.bonusOpen &&
       isOpen(this.progress, this.page, here.id, this.unlockAll);
     return {
@@ -1247,6 +1252,8 @@ export class WorldMapScene implements Scene {
         if (n.level) return cleared ? 'map-node-cleared' : 'map-node-open';
         return 'map-node-start';
       case 'bonus': {
+        // A bonus node into a level (the Top Secret Area): its own green dot with a sparkle.
+        if (isBonusArea(n)) return 'map-node-tsa';
         // The bonus game's icon (`sheet:frame`) while open; used, a spent dot.
         return this.game.bonusOpen ? bonusGame().icon(this.game) : 'map-node-cleared';
       }

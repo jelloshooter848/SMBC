@@ -53,7 +53,8 @@ function parseProps(parts: string[]): Props {
  *                         stripped, so rows can be written as space-separated 16-column screens
  *   [entities]            `type x y key=val ...` (`dx=` / `dy=`: a pixel nudge off the tile,
  *                         e.g. the original's half-tile shiftRight / shiftUp)
- *   [zones]               `pipe x y dir -> level x y [exit=dir]`, `exit x next=id`,
+ *   [zones]               `pipe x y dir -> level x y [exit=dir] [campaign]` (`-> map 0 0`: back to
+ *                         the world map, MAP_EXIT), `exit x next=id`,
  *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key] [goto=level,x,y[,exit]] [until=secret]`,
  *                         `text x y triggerX "..."`,
  *                         `bowser-fire x`, `vine x y -> level x y`, `pit x -> level x y`,
@@ -61,6 +62,8 @@ function parseProps(parts: string[]): Props {
  *                         `descent x w -> level x y [campaign]` (a down lift's shaft),
  *                         `trick x y h -> level x y [exit=up] [campaign]` (a trick wall's spinning panel)
  *                         `pit x -> level x y [w=N] [campaign]` (`w`: only columns x..x+w-1)
+ *                         `path x y w block=bx,by [campaign]` (a hidden cloud path, World.layPath)
+ *   header `bonus: true`  a fill-up spot off the map (LevelData.bonus: no clock, no WORLD card)
  *   [decor]               `kind x y`
  *   [campaign-decor]      `kind x y`: the decor of the level's campaign look, which also takes
  *                         the headers `campaignTheme: <theme>` and `campaignMusic: <song>`
@@ -216,6 +219,10 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     parent: header.parent ?? null,
   };
   if (scroll !== undefined) level.scroll = scroll;
+  if (header.bonus !== undefined) {
+    if (header.bonus !== 'true') throw new MapParseError('"bonus" must be "true"', 0);
+    level.bonus = true;
+  }
   if (header.campaignMusic !== undefined && header.campaignTheme === undefined)
     throw new MapParseError('"campaignMusic" needs "campaignTheme"', 0);
   if (hasLookDecor && header.campaignTheme === undefined)
@@ -245,14 +252,16 @@ function parseZone(line: string): Zone {
       if (arrow !== '->' || !level || tx === undefined || ty === undefined || !isPipeDir(dir)) {
         throw new Error('expected "pipe x y dir -> level x y [exit=dir]"');
       }
-      const props = parseProps(rest);
+      const props = parseProps(rest.filter((r) => r !== 'campaign'));
       const target: { level: string; x: number; y: number; exitDir?: TransferMode } = {
         level,
         x: Number(tx),
         y: Number(ty),
       };
       if (props.exit !== undefined) target.exitDir = String(props.exit) as TransferMode;
-      return { kind: 'pipe', x: Number(xs), y: Number(ys), dir, target };
+      const z: Zone = { kind: 'pipe', x: Number(xs), y: Number(ys), dir, target };
+      if (rest.includes('campaign')) z.campaign = true;
+      return z;
     }
     case 'vine': {
       // vine x y -> level x y
@@ -343,6 +352,31 @@ function parseZone(line: string): Zone {
         if (exit !== 'up') throw new Error('trick exit must be up');
         z.target.exitDir = 'up';
       }
+      if (rest.includes('campaign')) z.campaign = true;
+      return z;
+    }
+    case 'path': {
+      // path x y w block=bx,by [campaign]
+      const [, xs, ys, ws, ...rest] = parts;
+      const block = parseProps(rest.filter((r) => r.includes('='))).block;
+      const [bx, by] = String(block ?? '')
+        .split(',')
+        .map(Number);
+      if (
+        !/^\d+$/.test(xs ?? '') ||
+        !/^\d+$/.test(ys ?? '') ||
+        !/^\d+$/.test(ws ?? '') ||
+        !Number.isInteger(bx) ||
+        !Number.isInteger(by)
+      )
+        throw new Error('expected "path x y w block=bx,by [campaign]"');
+      const z: Zone = {
+        kind: 'path',
+        x: Number(xs),
+        y: Number(ys),
+        w: Number(ws),
+        block: { x: bx as number, y: by as number },
+      };
       if (rest.includes('campaign')) z.campaign = true;
       return z;
     }
@@ -451,6 +485,7 @@ export function serializeTextMap(level: LevelData): string {
   );
   if (level.camera === 'auto') out.push(`scroll: ${level.scroll ?? DEFAULT_AUTO_SCROLL}`);
   if (level.height !== LEVEL_ROWS) out.push(`height: ${level.height}`);
+  if (level.bonus) out.push('bonus: true');
   if (level.campaignLook) {
     out.push(`campaignTheme: ${level.campaignLook.theme}`);
     if (level.campaignLook.music !== undefined) out.push(`campaignMusic: ${level.campaignLook.music}`);
@@ -501,7 +536,11 @@ export function serializeTextMap(level: LevelData): string {
 function serializeZone(z: Zone): string {
   switch (z.kind) {
     case 'pipe':
-      return `pipe ${z.x} ${z.y} ${z.dir} -> ${z.target.level} ${z.target.x} ${z.target.y}${z.target.exitDir ? ` exit=${z.target.exitDir}` : ''}`;
+      return `pipe ${z.x} ${z.y} ${z.dir} -> ${z.target.level} ${z.target.x} ${z.target.y}${z.target.exitDir ? ` exit=${z.target.exitDir}` : ''}${
+        z.campaign ? ' campaign' : ''
+      }`;
+    case 'path':
+      return `path ${z.x} ${z.y} ${z.w} block=${z.block.x},${z.block.y}${z.campaign ? ' campaign' : ''}`;
     case 'exit':
       return `exit ${z.x} next=${z.next}`;
     case 'vine':

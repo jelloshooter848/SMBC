@@ -29,8 +29,11 @@ hook built for 7-3 (`campaignTheme:`, `campaignMusic:`, `[campaign-decor]` in th
 | 6-2   | Ryu      | Ninja Gaiden           |
 | 7-3   | Bill     | Contra (done in 0.4.9) |
 
-1-1 stays as it is, since Luigi is from Mario's own world. Two things to keep in mind:
+1-1 stays as it is, since Luigi is from Mario's own world. Three things to keep in mind:
 
+- 2-1's restyle must keep its 0.4.10 secret: the hidden block high over the bricks before the last
+  tower, the cloud path, the cave mouth past the castle and the Moblin's cave (docs/WORLD_MAP.md
+  "The Top Secret Area").
 - A theme drives some gameplay: a water theme turns on swimming, and a hero's own music only plays on the
   `overworld` theme. No restyle may use a water theme.
 - Open question: once the hero is freed, does the level keep its look? The current lean is yes, because it marks
@@ -177,6 +180,14 @@ hero, so she would be hidden there.
 - A Toad House you walk into, fixed N-Spade boards, and a chest after the Hammer Bro fight.
 - Link: a Triforce ending, and rooms rebuilt with 2-tile walls and 12×7 floors.
 - Samus: blue doors with room transitions, and a Tourian finale.
+
+### Yoshi hatches from the Top Secret Area's egg
+
+World 2's Top Secret Area (0.4.10) has a Yoshi egg block. Yoshi is not in the game yet, so its egg
+always hatches a 1-up, as Super Mario World's does when Yoshi is already with you. Once Yoshi is
+unlocked (a later release: a rideable partner or a hero), the egg hatches **Yoshi** instead. The
+hook is ready: `yoshiUnlocked(world)` and `hatch()` in `src/game/entities/objects/yoshi-egg.ts`
+(`TODO(yoshi)`): read the unlock from the save file there and let him out.
 
 ### Uses for the warp hub's "???" pads
 

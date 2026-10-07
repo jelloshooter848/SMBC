@@ -1,4 +1,4 @@
-import type { WorldMapPage } from '@game/map/types';
+import type { MapNode, WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
 /** World 2, SEA SIDE: sandy islands and palms, bridges over the sea, 2-2 out on an islet. */
@@ -38,7 +38,13 @@ export const WORLD_2: WorldMapPage = {
       [13, 4],
     ],
     [8, 4],
-  ),
+  )
+    // The bonus slot is the Top Secret Area (0.4.10): found by jumping over 2-1's flagpole and
+    // walking on past the castle into the Moblin's cave (secret 'bonus-2', which also clears 2-1).
+    // JUMP on it enters its level, every time: a fill-up spot (docs/WORLD_MAP.md).
+    .map((n): MapNode =>
+      n.kind === 'bonus' ? { ...n, level: '2-top-secret', label: 'TOP SECRET AREA' } : n,
+    ),
   paths: [
     { from: 'start', to: '2-1', points: poly([0, 10], [1, 10], [1, 8], [3, 8], [3, 6]) },
     { from: '2-1', to: '2-2', points: poly([3, 6], [5, 6], [5, 11], [8, 11]) },

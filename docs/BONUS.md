@@ -6,6 +6,11 @@ the inventory, which the world map uses before a level. Code: `src/game/bonus/` 
 `index.ts`). The bonus node, its road, the Hammer Bro and when the spot is open are the bonus
 spot's (`src/game/map/bonus-spot.ts`, docs/WORLD_MAP.md "The bonus spot and its Hammer Bro").
 
+World 2 has a bonus node of another kind: the **Top Secret Area** (0.4.10), a level behind its
+node (`isBonusArea`) rather than a bonus game: five `?` blocks (fire flower x2, a Yoshi egg that
+hatches a 1-up, mushroom x2), full on every visit, no rotation, no Hammer Bro and nothing saved. See
+docs/WORLD_MAP.md "The Top Secret Area".
+
 ## The save fields (`SaveFile`, optional, no format bump)
 
 | Field               | Meaning                                                                    | Missing               |
