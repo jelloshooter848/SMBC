@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RESTYLES_SEEN } from './story-seen';
 import { getLevel, levelIds } from '@content/levels';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
@@ -759,7 +760,12 @@ describe('co-op arrivals', () => {
 
 /** File 1 open on World 5, then 5-4 from the map's flow (campaign variant), on the down lift. */
 function onTheLift(h: H): LevelScene {
-  file({ cleared: ['1-0', '5-3'], pages: ['smb-1', 'smb-5'], position: { page: 'smb-5', node: '5-4' } });
+  file({
+    story: [...RESTYLES_SEEN],
+    cleared: ['1-0', '5-3'],
+    pages: ['smb-1', 'smb-5'],
+    position: { page: 'smb-5', node: '5-4' },
+  });
   h.game.openFile(1);
   expect(h.top()).toBeInstanceOf(WorldMapScene);
   h.game.startLevel(getLevel('5-4'), { x: 89, y: 2, mode: 'stand', time: 250 });

@@ -9,6 +9,9 @@ import { CHARACTERS } from '@game/characters/registry';
  */
 const heroes = [...new Set([...Object.keys(MISSED_PAGES), ...CHARACTERS.map((c) => c.id)])];
 
+/** The campaign looks' one-time remarks, for tests that enter a restyled level for something else. */
+export const RESTYLES_SEEN: readonly string[] = Object.keys(RESTYLE_PAGES).map((id) => beat.restyle(id));
+
 export const ALL_STORY: readonly string[] = [
   ...Object.keys(WORLD_ENTRY).map((p) => beat.enter(p)),
   beat.enterHero('smb-8', 'sophia'),

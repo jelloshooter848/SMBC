@@ -35,7 +35,7 @@ import {
   useStorage,
   type H,
 } from './heroes-harness';
-import { ALL_STORY } from './story-seen';
+import { ALL_STORY, RESTYLES_SEEN } from './story-seen';
 
 // Larry Koopa's airship (4-2), the crystal ball and World 4's bonus spot with its Hammer Bro
 // (docs/HEROES.md "Larry Koopa and the crystal ball", docs/WORLD_MAP.md "The bonus spot and its
@@ -72,12 +72,11 @@ function onMap(over: Partial<SaveFile>): { h: H; map: () => WorldMapScene } {
 /** Into Larry's room as from the airship deck's stern pipe; Larry is found once spawned. */
 function intoAirship(h: H): { level: LevelScene; larry: Larry } {
   h.game.startLevel(getLevel('4-2-larry'), { mode: 'fall', x: 2, y: 12, time: 300 });
-  h.step();
+  // Dropping in from the ceiling pipe, Larry has his say first (campaign, story/level-beats.ts).
+  h.until(() => h.top() instanceof CardScene, 200);
+  expect(closeCards(h)).toEqual(LARRY_PAGES);
   const level = h.top() as LevelScene;
   expect(level).toBeInstanceOf(LevelScene);
-  // Out of the pipe, Larry has his say first (campaign, story/level-beats.ts).
-  h.until(() => h.top() !== level, 200);
-  expect(closeCards(h)).toEqual(LARRY_PAGES);
   h.until(() => level.world.entities.some((e) => e instanceof Larry), 120);
   const larry = level.world.entities.find((e): e is Larry => e instanceof Larry) as Larry;
   return { level, larry };
@@ -164,14 +163,14 @@ describe('the crystal ball (campaign)', () => {
     // Down out of the pipe in the ceiling onto the floor (row 13), still no clock.
     const p = cabin.world.player;
     expect(p.body.y).toBeLessThan(0);
+    // Larry's cards (campaign) come first, over the frozen room, then the drop and the fight.
+    h.until(() => h.top() instanceof CardScene, 30);
+    expect(closeCards(h)).toEqual(LARRY_PAGES);
     h.until(() => p.body.onGround, 200);
     expect((p.body.y + p.body.h) >> 8).toBe(13 * 16);
     expect(p.centerX >> 8).toBe(CEILING_PIPE_MID);
     expect(cabin.world.time).toBeNull();
     expect(h.game.airship?.reachedRoom).toBe(true);
-    // Larry's cards (campaign) come as the level goes on, then the fight.
-    h.step();
-    expect(closeCards(h)).toEqual(LARRY_PAGES);
     h.until(() => cabin.world.entities.some((e) => e instanceof Larry), 30);
   });
 
@@ -309,6 +308,7 @@ describe('crystal-ball hints on the map', () => {
     const h = makeGame();
     h.game.deps.settings = { dev: true } as Settings;
     file({
+      story: [...RESTYLES_SEEN],
       cleared: ['1-0'],
       secrets: ['larry'],
       devUnlockAll: true,
