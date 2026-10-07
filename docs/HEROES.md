@@ -764,6 +764,79 @@ about 11-12 hit points (about 5 to the Masked Ninja); a clumsy player (21 frames
 pauses) passes roughly 70-90% (80% of 30 seeds; a third before the bot took the windmill and the
 health lantern's drops).
 
+## Bill's mini game: Jungle Assault (`src/game/minigames/bill/`)
+
+Red Falcon's aliens have taken Bill's mind; the round is an NES Contra stage 1-style run-and-gun
+played **as Bill in Contra form**, a mini-game-only variant (`commando.ts`; his main-game kit in
+`characters/bill` is untouched). It runs its own simulation (`jungle.ts`, seeded and
+deterministic, no `World`: Contra's ground is one-way floors and a river, not SMB tiles), with a
+fresh state, so lives, score and power in the campaign are never touched. Art: B3's `contra` sheet
+and the `contra-jungle` / `alien-lair` themes (`art.ts`: a missing sheet, frame, palette, theme or
+sound draws a box, falls back to the overworld/castle tiles or a stock sound; nothing throws).
+
+- **The stage card** (`card.ts`, sting `contra-card`): the island map with the route drawn dot by
+  dot, 1P / REST 2, STAGE 1 / JUNGLE and a typed briefing. JUMP skips the drawing (SKIP), then
+  starts (OK); it starts by itself after 20 s. **The Konami code** on the card (UP UP DOWN DOWN
+  LEFT RIGHT LEFT RIGHT, FIRE, JUMP: the title's `CheatCode` sequence, its own instance) gives 30
+  lives (REST 29, sfx `konami`, announced); its last JUMP does not start the stage. Keys, pad and
+  touch send the same actions; FIRE stays on the touch pad (blank) for it. It works only on the
+  card; the title's developer code never fires here and never carries in.
+- **Contra rules**: 3 lives (the medals top left are Contra's REST, the lives in reserve, at most 4
+  drawn), **one hit kills**: the backward death flip (`bill-death-0..3`), then the next life drops
+  in from the top of the screen 48 px in from the left with ~2 s of blinking invulnerability
+  (steady with reduce flashing). Out of lives: GAME OVER (3 s), then `fail`. The scroll is
+  right-only; Bill starts the stage dropping in.
+- **Bill in Contra form**: walks 1 px/f; a fixed somersault jump (40 px apex, small round hit box,
+  steered at walking pace in the air, no momentum); aim: standing ahead / straight up (UP) /
+  up-diagonals (UP + direction, running), running with DOWN the down-diagonals, DOWN alone prone
+  (shots low along the floor), all eight in the air. Every grass ledge and bridge is one-way: jump
+  up through it, **DOWN + JUMP** drops through (not through a bank or the base floor). In the
+  river he wades head-and-gun high, cannot jump, shoots ahead/up/up-diagonally, **DOWN ducks
+  under** (no bullet reaches him; no shooting) and climbs out walking into a bank.
+- **Falcons** from flying capsules (sine flight in from the left) and pillbox sensors (shut 90,
+  half 10, open 80 frames; only open can be hit, 5 hits): **M** auto fire while FIRE is held, **S**
+  five-way spread, **L** one beam (a new one replaces it), **F** a corkscrewing fireball, **R**
+  faster shots and presses (kept with the gun), **B** a 16 s barrier (touching soldiers or larvae
+  fells them). M S L F replace the gun; **death loses the weapon** (default gun, no R, no B). The
+  default gun: a shot a press, four on screen.
+- **Foes** (`foes.ts`, original designs; they face left in the sheet): running soldiers from the
+  screen edge (`SoldierZone`s; some from the left), who hop down at a ledge end and drown in the
+  river; riflemen standing and in bushes (they pop up to fire; no point-blank shots); rotating wall
+  guns (open once in view, turn one 30° step every 8 frames toward Bill, 12 steps, fire when on
+  him; 8 hits); pop-up cannons (hatch, rise, fire left / 30° / 60° up; 8 hits); **exploding
+  bridges** (`BlastBridge`: once Bill steps on, a segment every 16 frames flashes 12 frames then
+  blows; a running Bill just outruns it; falling lands in the river).
+- **The stage** (`stage.ts`, built from spans; 224 columns): the drop zone, bridge 1, the first
+  pillbox (on the lower ledge: drop through to it), bridge 2, tiers down to the river and a crag
+  with a wall gun, the bank and up, riflemen and a bush sniper, the second river, the spread gun's
+  pillbox, the last ledges (a wall gun, a cannon, the barrier capsule), the base floor. Every
+  stretch of river ends at a bank.
+- **Boss, two phases** (`boss.ts`, on the fight's own clock: the same every round). The **defense
+  wall** (camera locked at column 192, music `contra-boss`): two wall cannons lob shells to land
+  where Bill stands (every 96 frames each, by turns), a sniper on its crown fires at him (every 110),
+  the core glows in the door (24 hits; it beats slowly, steady with reduce flashing). The core
+  destroyed, the wall blows apart (2 s of booms), and Bill walks on through it, a short drop into
+  **Red Falcon's lair** (camera locked again, music `contra-lair`): the heart beats in the back wall
+  (48 hits), two mouths overhead open by turns and spit larvae (at most 3) that crawl at Bill and
+  leap when near (prone shots meet them).
+- **Endings**: the heart bursts: a chain of booms over the lair (a soft flash only without reduce
+  flashing), the banner RED FALCON'S HEART BURSTS! BILL'S MIND IS HIS OWN! (the first line only in a
+  round for fun), the jingle, then `pass`. The menu (`JungleMenuScene`, the shared
+  MiniGameMenuScene with the dev assists: No damage, Infinite lives) gives Give up = `quit`. `done`
+  is called once. No score (no popups: the HUD is the medals).
+- **Touch**: card SKIP/OK, a blank FIRE (for the code), MENU; in play JUMP (hidden in the river),
+  the gun's name (FIRE, M-GUN, SPREAD, LASER, FIREBALL; hidden under water), MENU; nothing while
+  Bill is down or once the round is decided.
+
+Difficulty (`human-sim.test.ts`, `JungleBot`: it runs the route, jumps gaps and up tiers, wades the
+river, shoots whatever Contra's aims line up with, stops for guns, capsules and pillboxes, drops
+through a ledge to the first pillbox, goes back or down for falcons, keeps the spread gun, and
+dodges by lying flat, jumping, stepping back or ducking under; at the wall it shoots the core while
+dodging, in the lair it lies flat for larvae; `BILL_SIM=1 pnpm vitest run bill/human-sim
+--silent=false` prints the report): over 30 seeds a sharp run passes 100% (~91 s); a careful
+first-timer (15-frame reactions, 6 px misjudging, pauses) passes 90% (100% at 12 frames, 83% at
+18), a clumsy one (21 frames, 10 px, more pauses) 47%.
+
 ## Hero training (optional practice rooms)
 
 Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:
