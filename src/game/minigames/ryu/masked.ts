@@ -11,7 +11,7 @@ import { bladeReaches, Burst, hurtRyu, NgShot, type NgShotSpec } from './creatur
 
 /*
  * The Masked Ninja (docs/HEROES.md, Ryu's mini game): a cursed rival in a demon mask, fought in
- * his dojo (16 columns, walls both sides). Not a copy of Ryu: he never slashes or casts as Ryu
+ * the rooftop arena (16 columns between two tall stone towers). Not a copy of Ryu: he never slashes or casts as Ryu
  * does. His round:
  *
  *   stand (he can be hurt) -> crouch (the telegraph: a dash is coming; he can be hurt)
@@ -54,17 +54,16 @@ export const STAR_SPEED = 0x03000;
 export const WALL_HEIGHT = 72;
 /** The afterimage's lag behind him (frames). */
 export const AFTERIMAGE_LAG = 14;
-/** Contact hits: his dash, run and dive take 3; touching him otherwise 2. */
-export const STRIKE_DAMAGE = 2;
+/** Touching him (or his afterimage), whatever he is doing, costs this many hit points. */
 export const TOUCH_DAMAGE = 2;
+/** How many of his moves `moves` keeps (the first ones; tests). */
+export const MOVES_KEPT = 32;
 
 export type MaskedState =
   'intro' | 'stand' | 'crouch' | 'dash' | 'turn' | 'climb' | 'wall' | 'aim' | 'dive' | 'recover' | 'down';
 
 /** The states in which a blade or an art hurts him (the rest clang off). */
 const HURTABLE: ReadonlySet<MaskedState> = new Set(['stand', 'crouch', 'turn', 'wall', 'aim', 'recover']);
-/** The states in which he strikes hard (STRIKE_DAMAGE). */
-const STRIKING: ReadonlySet<MaskedState> = new Set(['dash', 'climb', 'dive']);
 
 export const NINJA_STAR: NgShotSpec = {
   kind: 'ninja-star',
@@ -84,14 +83,14 @@ export class BossLife {
 const TRAIL = 32;
 
 /**
- * The Masked Ninja. `roomX` is the dojo's left wall column (16 columns, walls on both ends),
+ * The Masked Ninja. `roomX` is the arena's left tower column (16 columns, a tower on each end),
  * `floorY` the floor's top (px). `onDown` runs once when his hit points are gone.
  */
 export class MaskedNinja extends Enemy {
   readonly kind = 'masked-ninja';
   state: MaskedState = 'intro';
   t = 0;
-  /** Moves made, in order (tests). */
+  /** His first MOVES_KEPT moves, in order (tests). */
   readonly moves: MaskedState[] = [];
   /** Where the dive is headed (subpixels: the centre x on the floor). */
   diveX = 0;
@@ -128,7 +127,7 @@ export class MaskedNinja extends Enemy {
     this.trailY.fill(this.body.y);
   }
 
-  /** The dojo's inner walls (subpixels): the left wall's right face, the right wall's left face. */
+  /** The arena's inner faces (subpixels): the left tower's right face, the right tower's left face. */
   get left(): number {
     return tileToSub(this.roomX + 1);
   }
@@ -159,7 +158,7 @@ export class MaskedNinja extends Enemy {
   private set(s: MaskedState): void {
     this.state = s;
     this.t = 0;
-    if (s !== 'intro' && s !== 'down') this.moves.push(s);
+    if (s !== 'intro' && s !== 'down' && this.moves.length < MOVES_KEPT) this.moves.push(s);
   }
 
   override hit(src: DamageSource, world: World): Reaction {
@@ -304,12 +303,7 @@ export class MaskedNinja extends Enemy {
     if (p.dead || p.out || !overlaps(b, p.body)) return;
     // His blade-on-blade: a slash that meets him while he can be hurt does not hurt Ryu back.
     if (this.hurtable && bladeReaches(p, b)) return;
-    hurtRyu(
-      world,
-      p,
-      STRIKING.has(this.state) ? STRIKE_DAMAGE : TOUCH_DAMAGE,
-      b.x + (b.w >> 1) < p.centerX ? 1 : -1,
-    );
+    hurtRyu(world, p, TOUCH_DAMAGE, b.x + (b.w >> 1) < p.centerX ? 1 : -1);
   }
 
   private frameName(): string {

@@ -11,7 +11,7 @@ import type { DuelScene } from './scene';
  * A player for Shadow Duel, for tests and difficulty tuning (docs/HEROES.md): it walks the stage
  * right, climbs every wall by clinging and kicking off it (holding toward the wall), jumps the
  * pits, slashes lanterns, throwers and hawks in reach, crouches under knives, jumps dogs, and in
- * the dojo jumps the Masked Ninja's dashes, keeps moving while he throws stars and dives, and
+ * the rooftop arena jumps the Masked Ninja's dashes, keeps moving while he throws stars and dives, and
  * slashes him while he stands or kneels.
  *
  * With `CautiousOptions` it plays like a careful first-timer: it sees things `reaction` frames

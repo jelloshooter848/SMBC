@@ -1,5 +1,5 @@
-;; Ryu's mini game, Shadow Duel: seven screens of a moonlit ninja stage, then the Masked Ninja's
-;; dojo. stage.ts loads it with ?raw, so it is not in the level library, the dev level select or
+;; Ryu's mini game, Shadow Duel: seven screens of a moonlit ninja town, then the Masked Ninja's
+;; rooftop arena. stage.ts loads it with ?raw, so it is not in the level library, the dev level select or
 ;; the campaign. Rows 0-1 stay empty under the Ninja Gaiden HUD.
 ;;
 ;; The route, built around Ryu's wall cling (hold toward a wall in the air to cling, JUMP to kick
@@ -8,9 +8,10 @@
 ;;   its left face) -> its roof, a drop to the ground (a dog, a hawk, a knife thrower) -> the
 ;;   shaft: a 5-high pillar (50-51) and the 9-high tower (55-63) three tiles apart: climb the
 ;;   pillar, then kick between the two faces up onto the tower -> the drop to the pits (two
-;;   2-wide pits at 70 and 76, nothing hostile within ten tiles of them) -> the yard (a hawk,
-;;   a knife thrower, a dog) -> the last wall (104-107, the art lantern on top) -> the dojo
-;;   (columns 112-127: its left wall's doorway, rows 10-12, shuts behind Ryu).
+;;   2-wide pits at 70 and 76, nothing hostile within ten tiles of them) -> the yard (a dog,
+;;   a hawk, a knife thrower) -> the last wall (104-107, the art lantern on top) -> the rooftops
+;;   (`T`, from 108) -> the arena (columns 112-127): open sky between two 11-tile stone towers
+;;   (112, 127) to cling to; the left tower's doorway (rows 10-12) shuts behind Ryu.
 ;; Lanterns, creatures and the boss are the mini game's own entity types (World's extraEntities,
 ;; stage.ts); `masked` is taken out of the map and placed by the scene.
 id: ng-shadow-duel
@@ -28,19 +29,19 @@ camera: scroll
 ;; 0              16               32               48               64               80               96               112
 ................ ................ ................ ................ ................ ................ ................ ................
 ................ ................ ................ ................ ................ ................ ................ ................
-................ ................ ................ ................ ................ ................ ................ %%%%%%%%%%%%%%%%
-................ ................ ................ ................ ................ ................ ................ %HHHHHHHHHHHHHH%
-................ ................ ................ .......%%%%%%%%% ................ ................ ................ %HHHHHHHHHHHHHH%
-................ ................ ................ .......%%%%%%%%% ................ ................ ................ %HHHHHHHHHHHHHH%
-................ ....%%%%%%%%.... ................ .......%%%%%%%%% ................ ................ ........%%%%.... %HHHHHHHHHHHHHH%
-.AAAAAAAAAAAA... ....%%%%%%%%.... ................ .......%%%%%%%%% ...............A AAAAAAAAAAAAAAAA AAAAAAA.%%%%.... %HHHHHHHHHHHHHH%
-.HHHHHHHHHHHH... ....%%%%%%%%.AAA AAAAAAAAAAAAAAAA ..%%...%%%%%%%%% ..AAAA.........H HHHHHHHHHHHHHHHH HHHHHHH.%%%%AAAA %HHHHHHHHHHHHHH%
-.HHHHHHHHHHHH... ....%%%%%%%%.HHH HHHHHHHHHHHHHHHH ..%%...%%%%%%%%% ..HHHH..AAAA...H HHHHHHHHHHHHHHHH HHHHHHH.%%%%HHHH %HHHHHHHHHHHHHH%
-.HHHHHHHHHHHH... ....%%%%%%%%.HHH HHHHHHHHHHHHHHHH ..%%...%%%%%%%%% ..HHHH..HHHH...H HHHHHHHHHHHHHHHH HHHHHHH.%%%%HHHH .HHHHHHHHHHHHHH%
-.HHHHHHHHHHHH... ....%%%%%%%%.HHH HHHHHHHHHHHHHHHH ..%%...%%%%%%%%% ..HHHH..HHHH...H HHHHHHHHHHHHHHHH HHHHHHH.%%%%HHHH .HHHHHHHHHHHHHH%
-.HHHHHHHHHHHH... ....%%%%%%%%.HHH HHHHHHHHHHHHHHHH ..%%...%%%%%%%%% ..HHHH..HHHH...H HHHHHHHHHHHHHHHH HHHHHHH.%%%%HHHH .HHHHHHHHHHHHHH%
-################ ################ ################ ################ ######..####..## ################ ################ ################
-################ ################ ################ ################ ######..####..## ################ ################ ################
+................ ................ ................ ................ ................ ................ ................ %..............%
+................ ................ ................ ................ ................ ................ ................ %..............%
+................ ................ ................ .......%%%%%%%%% ................ ................ ................ %..............%
+................ ................ ................ .......%%%%%%%%% ................ ................ ................ %..............%
+................ ....%%%%%%%%.... ................ .......%%%%%%%%% ................ ................ ........%%%%.... %..............%
+.AAAAAAAAAAAA... ....%%%%%%%%.... ................ .......%%%%%%%%% ...............A AAAAAAAAAAAAAAAA AAAAAAA.%%%%.... %..............%
+.HHHHHHHHHHHH... ....%%%%%%%%.AAA AAAAAAAAAAAAAAAA ..%%...%%%%%%%%% ..AAAA.........H HHHHHHHHHHHHHHHH HHHHHHH.%%%%AAAA %..............%
+.HHHHHHHHHHHH... ....%%%%%%%%.HHH HHHHHHHHHHHHHHHH ..%%...%%%%%%%%% ..HHHH..AAAA...H HHHHHHHHHHHHHHHH HHHHHHH.%%%%HHHH %..............%
+.HHHHHHHHHHHH... ....%%%%%%%%.HHH HHHHHHHHHHHHHHHH ..%%...%%%%%%%%% ..HHHH..HHHH...H HHHHHHHHHHHHHHHH HHHHHHH.%%%%HHHH ...............%
+.HHHHHHHHHHHH... ....%%%%%%%%.HHH HHHHHHHHHHHHHHHH ..%%...%%%%%%%%% ..HHHH..HHHH...H HHHHHHHHHHHHHHHH HHHHHHH.%%%%HHHH ...............%
+.HHHHHHHHHHHH... ....%%%%%%%%.HHH HHHHHHHHHHHHHHHH ..%%...%%%%%%%%% ..HHHH..HHHH...H HHHHHHHHHHHHHHHH HHHHHHH.%%%%HHHH ...............%
+################ ################ ################ ################ ######..####..## ################ ############TTTT TTTTTTTTTTTTTTTT
+################ ################ ################ ################ ######..####..## ################ ############TTTT TTTTTTTTTTTTTTTT
 
 [entities]
 ;; The street.

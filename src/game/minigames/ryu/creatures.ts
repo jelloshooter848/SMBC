@@ -537,7 +537,8 @@ export class Hawk extends Creature {
     const b = this.body;
     const p = world.player;
     const cx = b.x + (b.w >> 1);
-    const nearPit = pitNear(this.pits, p.centerX, HAWK_PIT_CLEAR);
+    // (near a pit, or clinging to a wall: it holds off; a knock off a wall is no fair fight)
+    const nearPit = p.clinging || pitNear(this.pits, p.centerX, HAWK_PIT_CLEAR);
     switch (this.state) {
       case 'circle': {
         const a = (this.t * 2 * Math.PI) / HAWK_CIRCLE_PERIOD;
@@ -548,6 +549,7 @@ export class Hawk extends Creature {
         if (
           this.rest === 0 &&
           !p.dead &&
+          !p.clinging &&
           onScreen(world, this, -8) &&
           Math.abs(p.centerX - cx) <= px(HAWK_WAKE) &&
           !pitNear(this.pits, p.centerX, HAWK_PIT_WAKE)

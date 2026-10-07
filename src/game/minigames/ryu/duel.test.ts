@@ -33,9 +33,22 @@ import {
   THROWER_WIND,
 } from './creatures';
 import type { MaskedNinja } from './masked';
-import { AFTERIMAGE_LAG, MASKED_HP, PHASE_TWO_HP, STAR_AT } from './masked';
-import { CLASH_AT, CUTSCENE_FRAMES } from './cutscene';
-import { DuelMenuScene, READY_FRAMES, TIME_LIMIT, WIN_FRAMES } from './scene';
+import {
+  AFTERIMAGE_LAG,
+  DASH_SPEED,
+  DASH_SPEED_2,
+  DIVE_SPEED,
+  DIVE_SPEED_2,
+  MASKED_HP,
+  MOVES_KEPT,
+  PHASE_TWO_HP,
+  RECOVER_FRAMES,
+  STAND_FRAMES,
+  STAR_AT,
+} from './masked';
+import { T } from '@game/level/tiles';
+import { BAR_H, CLASH_AT, CUTSCENE_FRAMES } from './cutscene';
+import { DuelMenuScene, READY_FRAMES, SKY_TOP, TIME_LIMIT, WIN_FRAMES } from './scene';
 import { DuelBot, SHARP } from './bot';
 import { duelHarness, type DuelHarness } from './harness';
 
@@ -663,5 +676,231 @@ describe('Shadow Duel: screen and controls', () => {
     expect(h.said.some((s) => s.startsWith('The Masked Ninja!'))).toBe(true);
     expect(toPx(h.scene.player.body.x)).toBeGreaterThan((roomX + 1) * 16);
     expect(tileToSub(roomX)).toBe(h.world.camera.x);
+  });
+});
+
+describe('Shadow Duel: review follow-ups', () => {
+  it('ability names: CAST throws an art, NINPO changes art (announcer and banner); the climb is taught as on the rules card', () => {
+    const h = duelHarness({ assets: STUB_ASSETS, skipCutscene: true });
+    expect(h.said.at(-1)).toMatch(/CAST casts a ninpo art/);
+    expect(h.said.at(-1)).toMatch(
+      /Hold toward a wall in the air to cling; keep holding and tap JUMP to climb\./,
+    );
+    expect(RYU_MINIGAME.rules.join(' ')).toContain(
+      'HOLD TOWARD A WALL IN THE AIR TO CLING; KEEP HOLDING AND TAP JUMP TO CLIMB.',
+    );
+    h.step([], READY_FRAMES);
+    const p = h.scene.player;
+    h.world.spawn(
+      new ArtScroll(p.centerX, p.body.y + p.body.h, (q) =>
+        (h.scene as unknown as { gotArt(q: unknown): void }).gotArt(q),
+      ),
+    );
+    h.step([], 20);
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('NINPO: CHANGE ART');
+    expect(r.texts.join(' ')).not.toMatch(/TOOLS/);
+    expect(h.said.at(-1)).toMatch(/NINPO changes art/);
+  });
+
+  it('the first cling (building A) shows how to climb on, once', () => {
+    const h = round({ assets: STUB_ASSETS });
+    h.game.ctx.assist.invulnerable = true;
+    const p = h.scene.player;
+    warp(h, 310);
+    h.step(['right', 'jump']);
+    for (let i = 0; i < 20 && !p.clinging; i++) h.step(['right']);
+    expect(p.clinging).toBe(true);
+    h.step(['right']);
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('CLINGING! KEEP HOLDING');
+    expect(r.texts).toContain('TAP JUMP TO CLIMB.');
+    const said = h.said.filter((s) => s.startsWith('Clinging!')).length;
+    expect(said).toBe(1);
+    h.step([], 60);
+    warp(h, 310);
+    h.step(['right', 'jump']);
+    for (let i = 0; i < 20 && !p.clinging; i++) h.step(['right']);
+    expect(p.clinging).toBe(true);
+    expect(h.said.filter((s) => s.startsWith('Clinging!')).length).toBe(1);
+  });
+
+  it('the cutscene SKIP prompt sits in the top letterbox bar, clear of the lines', () => {
+    const h = duelHarness({ assets: STUB_ASSETS });
+    h.step([], 300);
+    const at: [string, number, number][] = [];
+    const r = new TextRenderer();
+    r.text = (...args: Parameters<Renderer['text']>) => void at.push([args[1], args[2], args[3]]);
+    h.game.scenes.render(r);
+    const skip = at.find(([t]) => t === 'SKIP');
+    expect(skip?.[2]).toBeLessThan(BAR_H - 8);
+    expect((skip?.[1] ?? 0) + 4 * 8).toBeLessThanOrEqual(256);
+    for (const [t, , y] of at) if (t !== 'SKIP') expect(y).toBeGreaterThanOrEqual(240 - BAR_H);
+  });
+
+  it('a trade (Ryu falls in the update that fells the Masked Ninja) passes', () => {
+    const h = round({ keep: true });
+    const boss = toFight(h);
+    until(h, boss, 'stand');
+    const p = h.scene.player;
+    h.scene.life.hp = 1;
+    boss.hit(SWORD, h.world);
+    expect(h.scene.phase).toBe('won');
+    p.hp = 1;
+    p.invuln = 0;
+    h.world.hurtPlayer(p, 1);
+    expect(p.dead).toBe(true);
+    h.step([], WIN_FRAMES + 300);
+    expect(h.results).toEqual(['pass']);
+  });
+
+  it('his moves list is capped (it does not grow for the whole fight)', () => {
+    const h = round();
+    const boss = toFight(h);
+    h.game.ctx.assist.invulnerable = true;
+    for (let i = 0; i < 8000; i++) h.step();
+    expect(boss.moves.length).toBe(MOVES_KEPT);
+  });
+
+  it('the afterimage follows his dive too, and it hurts', () => {
+    const h = round();
+    const boss = toFight(h);
+    h.game.ctx.assist.invulnerable = true;
+    h.scene.life.hp = PHASE_TWO_HP;
+    until(h, boss, 'dive');
+    const xs: [number, number][] = [];
+    for (let i = 0; i < 20 && boss.state === 'dive'; i++) {
+      xs.push([boss.body.x, boss.body.y]);
+      h.step();
+    }
+    expect(boss.afterimage.active).toBe(true);
+    const [gx, gy] = xs[xs.length - AFTERIMAGE_LAG] as [number, number];
+    expect([boss.afterimage.body.x, boss.afterimage.body.y]).toEqual([gx, gy]);
+    // Ryu standing in its way is hurt by it (2).
+    h.game.ctx.assist.invulnerable = false;
+    const p = h.scene.player;
+    p.invuln = 0;
+    const g = boss.afterimage.body;
+    p.body.x = g.x;
+    p.body.y = g.y;
+    const hp = p.hp;
+    boss.afterimage.update(h.world);
+    expect(p.hp).toBe(hp - 2);
+  });
+
+  it('in his second manner he dashes and dives faster and rests less', () => {
+    const timing = (two: boolean) => {
+      const h = round();
+      const boss = toFight(h);
+      h.game.ctx.assist.invulnerable = true;
+      if (two) h.scene.life.hp = PHASE_TWO_HP;
+      until(h, boss, 'recover');
+      let recover = 0;
+      while (boss.state === 'recover') {
+        recover++;
+        h.step();
+      }
+      let stand = 0;
+      while (boss.state === 'stand') {
+        stand++;
+        h.step();
+      }
+      until(h, boss, 'dash');
+      const x0 = boss.body.x;
+      h.step();
+      const dash = Math.abs(boss.body.x - x0);
+      until(h, boss, 'dive');
+      const d0 = { x: boss.body.x, y: boss.body.y };
+      h.step();
+      const dive = Math.hypot(boss.body.x - d0.x, boss.body.y - d0.y);
+      return { recover, stand, dash, dive };
+    };
+    const one = timing(false);
+    const two = timing(true);
+    expect(one.dash).toBe(DASH_SPEED >> 4);
+    expect(two.dash).toBe(DASH_SPEED_2 >> 4);
+    expect(two.dive).toBeGreaterThan(one.dive);
+    expect(Math.abs(one.dive - (DIVE_SPEED >> 4))).toBeLessThanOrEqual(2);
+    expect(Math.abs(two.dive - (DIVE_SPEED_2 >> 4))).toBeLessThanOrEqual(2);
+    expect(one.stand).toBe(STAND_FRAMES);
+    expect(two.stand).toBe(STAND_FRAMES - 12);
+    expect(one.recover).toBe(RECOVER_FRAMES);
+    expect(two.recover).toBe(RECOVER_FRAMES - 16);
+  });
+
+  it('the dive lands where Ryu stood when it began (diveX)', () => {
+    const h = round();
+    const boss = toFight(h);
+    h.game.ctx.assist.invulnerable = true;
+    until(h, boss, 'dive');
+    const at = boss.diveX;
+    until(h, boss, 'recover');
+    expect(Math.abs(boss.centerX - at)).toBeLessThanOrEqual(px(3));
+  });
+
+  it('the art lantern on the last wall (a real drop=art lantern) gives the windmill', () => {
+    const h = round({ assets: STUB_ASSETS });
+    const p = h.scene.player;
+    const art = the(h, Lantern).find((l) => l.drop === 'art');
+    expect(art).toBeUndefined(); // not spawned until the camera reaches it
+    warp(h, 104 * 16 + 4, 96);
+    h.step();
+    const lantern = the(h, Lantern).find((l) => l.drop === 'art') as Lantern;
+    expect(lantern).toBeDefined();
+    p.facing = 1;
+    warp(h, toPx(lantern.body.x) - 12, 96);
+    h.tap('attack');
+    h.step([], 4);
+    expect(lantern.alive).toBe(false);
+    const scroll = the(h, ArtScroll)[0] as ArtScroll;
+    expect(scroll).toBeDefined();
+    for (let i = 0; i < 60 && scroll.alive; i++) h.step(['right']);
+    expect(p.scratch.arts).toBe(2);
+    expect(h.scene.touchLabels().select).toBe('NINPO');
+  });
+
+  it('hawks leave a clinging Ryu alone: none wakes, and one mid-pass pulls up when he clings', () => {
+    const h = round();
+    for (const t of the(h, KnifeThrower)) t.destroy();
+    const p = h.scene.player;
+    warp(h, 140);
+    const hawk = new Hawk(px(220), px(70), []);
+    h.world.spawn(hawk);
+    p.clinging = true;
+    const cling = () => {
+      p.clinging = true;
+    };
+    for (let i = 0; i < 60; i++) {
+      hawk.update(h.world);
+      cling();
+    }
+    expect(hawk.state).toBe('circle');
+    p.clinging = false;
+    for (let i = 0; i < 80 && hawk.state !== 'swoop'; i++) h.step();
+    expect(hawk.state).toBe('swoop');
+    p.clinging = true;
+    hawk.update(h.world);
+    expect(hawk.state).toBe('rise');
+  });
+
+  it('the rooftop arena: open sky (no backdrop wall, no ceiling), rooftop floor, a stone tower each side; the screen top caps Ryu there', () => {
+    const { level, roomX } = duelStage();
+    const at = (x: number, y: number) => level.tiles[y * level.width + x];
+    for (let x = roomX + 1; x < roomX + 15; x++) {
+      for (let y = 0; y < 13; y++) expect(at(x, y)).toBe(T.AIR);
+      expect(at(x, 13)).toBe(T.TREE_TOP);
+    }
+    for (let y = 2; y < 13; y++) expect(at(roomX + 15, y)).toBe(T.CASTLE_BRICK);
+    for (let y = 2; y < 10; y++) expect(at(roomX, y)).toBe(T.CASTLE_BRICK);
+    const h = round();
+    toFight(h);
+    const b = h.scene.player.body;
+    b.y = px(4);
+    b.vy = -0x04000;
+    b.onGround = false;
+    h.step();
+    expect(b.y).toBeGreaterThanOrEqual(px(SKY_TOP));
   });
 });

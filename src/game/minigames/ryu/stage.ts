@@ -11,12 +11,12 @@ import source from './stage.map?raw';
 export interface DuelLayout {
   /** The stage without its `masked` line (the scene places the boss). */
   level: LevelData;
-  /** The dojo's first column (its left wall): the camera locks there (16 columns wide). */
+  /** The rooftop arena's first column (its left tower): the camera locks there (16 columns wide). */
   roomX: number;
-  /** The doorway in the dojo's left wall: rows `doorY`..`doorY + doorH - 1`, open until Ryu is in. */
+  /** The doorway in the arena's left tower: rows `doorY`..`doorY + doorH - 1`, open until Ryu is in. */
   doorY: number;
   doorH: number;
-  /** The tile the Masked Ninja's feet stand in (marks the dojo's floor). */
+  /** The tile the Masked Ninja's feet stand in (marks the arena's floor). */
   boss: { x: number; y: number };
   /** Columns of the floor row with no ground under them (the pits). */
   pits: readonly number[];
@@ -33,7 +33,7 @@ export function duelStage(): DuelLayout {
   const raw = parseTextMap(source, 'ng-shadow-duel');
   const boss = raw.entities.find((s) => s.type === 'masked');
   if (!boss) throw new Error('ng-shadow-duel: no masked');
-  // The dojo: the last 16 columns. Its left wall's doorway is the run of air on that column.
+  // The arena: the last 16 columns. Its left tower's doorway is the run of air on that column.
   const roomX = raw.width - 16;
   const solid = (x: number, y: number) => tileDef(raw.tiles[y * raw.width + x] ?? 0).collision === 'solid';
   let doorY = -1;

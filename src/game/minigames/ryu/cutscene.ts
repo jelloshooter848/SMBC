@@ -30,7 +30,7 @@ export const FLASH_FRAMES = 3;
 export const CUT_BEATS: readonly { at: number; lines: readonly string[] }[] = [
   { at: 0, lines: ['A MOONLIT FIELD.'] },
   { at: LAND_AT, lines: ['TWO NINJA. ONE STROKE.'] },
-  { at: 280, lines: ['THE MASKED NINJA WAITS', 'IN HIS DOJO BEYOND...'] },
+  { at: 280, lines: ['THE MASKED NINJA WAITS', 'ON THE ROOFTOPS...'] },
 ];
 
 /** The lines showing at frame `t`: the latest beat's. */
