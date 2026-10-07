@@ -1,7 +1,7 @@
 # Super Mario Bros. Crossover: REMIX
 
 **SMBC REMIX** (SMB Crossover REMIX) is an unofficial browser remake of _Super Mario Bros.
-Crossover_ by Exploding Rabbit.
+Crossover_ by Exploding Rabbit, made by jelloshooter848.
 
 **▶ Play it in your browser: https://jelloshooter848.github.io/SMBC/** (latest release; see
 [CHANGELOG.md](CHANGELOG.md) for what's new).

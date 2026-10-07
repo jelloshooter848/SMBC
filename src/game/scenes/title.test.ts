@@ -8,6 +8,7 @@ import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import type { Settings } from '@engine/save/settings';
 import { ScriptedInput } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import type { CharacterDef } from '@game/characters/character';
@@ -16,6 +17,7 @@ import { Game } from './game';
 import { TitleScene } from './title';
 import { FileSelectScene } from './file-select';
 import { PauseScene } from './pause';
+import { DEV_CODE } from './cheat';
 import { heroRow, titleFreed, TITLE_TIMING } from './title-anim';
 
 const store = new Map<string, string>();
@@ -86,12 +88,27 @@ describe('title hero row', () => {
   });
 
   it('picks up a newly registered hero automatically (as a silhouette until freed)', () => {
-    const chars = [...CHARACTERS, fakeHero('sophia')];
+    const chars = [...CHARACTERS, fakeHero('newhero')];
     const row = heroRow(chars, ['mario']);
     expect(row).toHaveLength(chars.length);
     expect(row.at(-1)).toMatchObject({ freed: false });
+    expect(row.at(-1)?.def.id).toBe('newhero');
+    expect(heroRow(chars, ['mario', 'newhero']).at(-1)?.freed).toBe(true);
+  });
+
+  it('has Mario and all eight heroes to free, Sophia III last, spaced inside the screen', () => {
+    const row = heroRow(
+      CHARACTERS,
+      CHARACTERS.map((c) => c.id),
+    );
+    expect(row).toHaveLength(9);
     expect(row.at(-1)?.def.id).toBe('sophia');
-    expect(heroRow(chars, ['mario', 'sophia']).at(-1)?.freed).toBe(true);
+    expect(row.every((h) => h.freed)).toBe(true);
+    for (const h of row) {
+      expect(h.x).toBeGreaterThanOrEqual(16);
+      expect(h.x).toBeLessThanOrEqual(240);
+    }
+    expect(heroRow(CHARACTERS, ['mario']).filter((h) => h.freed)).toHaveLength(1);
   });
 
   it('with no save file only Mario is freed; else the most advanced file is shown', () => {
@@ -141,6 +158,22 @@ describe('title text', () => {
     expect(last).toContain('REMIX');
     expect(last).toContain('Exploding Rabbit');
     expect(last).toContain('Start game');
+  });
+});
+
+describe('title dev code', () => {
+  it('still unlocks developer mode on the finished title, landing on Dev mode', () => {
+    const h = makeGame();
+    const settings = { dev: false } as Settings;
+    (h.game.deps as { settings?: unknown }).settings = settings;
+    h.game.showTitle();
+    h.idle(TITLE_TIMING.dropEnd + 10);
+    const title = h.game.scenes.top as TitleScene;
+    for (const a of DEV_CODE) h.tap(a);
+    expect(settings.dev).toBe(true);
+    expect(h.game.scenes.top).toBe(title);
+    expect(h.said.at(-1)).toBe('Developer mode unlocked.');
+    expect(texts(title).map((x) => x.str)).toContain('DEV MODE');
   });
 });
 
