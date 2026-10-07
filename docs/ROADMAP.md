@@ -23,20 +23,20 @@ When the whole game is finished, the owner may call it **1.0.0** (docs/RELEASING
 **Rule (owner):** everything planned that touches the Mushroom Kingdom (Chapter 1) ships before 0.5.0, including
 every reimagining of its mini games.
 
-**Order (owner):** Sophia and the hero tributes ship in whichever order they are ready; the first
-one out takes the next number. The Chapter 1 story (0.4.12) is built without waiting for Sophia; her lines are added
-when she lands.
+**Order (owner):** releases ship in whichever order they are ready; the first one out takes the next number. Sophia's
+story lines are added when she lands.
 
 | Order | Release    | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Status                                                                |
 | ----- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | 1     | **0.4.10** | **"Safety floor" dev assist** (deadly pits get an invisible floor at the pit's rim and lava turns solid, dev mode only) and **the Top Secret Area** (jump over 2-1's flagpole in the campaign to find a Moblin, "IT'S A SECRET TO EVERYBODY", who opens World 2's hidden spot: two Fire Flowers, a Yoshi egg that gives a 1-up until Yoshi exists, two Mushrooms)                                                                                                                                                                                                           | **Released** (Oct 7)                                                  |
 | 2     | **0.4.11** | **Hero tributes.** **Level restyles:** each hero's level takes on their game's look in the campaign, coin heavens included (see below). **Mini game fidelity pass:** authentic HUDs (Link's B and A item boxes allowed as HUD art), each hero's own death, proper starts (Mega Man beams in, Samus materialises), Samus's "TIME BOMB SET" escape timer, Link's sword beam, mini-game-only authentic physics, Larry's cabin entered from the ceiling, lives and checkpoints, Dracula's real second form                                                                      | **Released** (Oct 7)                                                  |
-| 3     | **0.4.12** | **The Chapter 1 story** (see below): Toad as the map guide with riddle hints, a partner for each hero, the rewritten castle scenes with the fake Bowsers revealed, Peach's off-screen clues, the restyle remarks, Bowser's "NO MORE STAND-INS" in 8-4, the wand breaking, the false ending and the road into the Lost Kingdom                                                                                                                                                                                                                                               | Built, reviewed and QA'd; the PR now                                  |
-| 4     | **0.4.13** | **Sophia III**, the 8th hidden hero: a playable tank Jason can hop out of, found through 8-4's trap pipe (Jason looking for his frog Fred). Mini game "Underworld": tank cavern, Jason's overhead dungeon and its guardian, then the Plutonium Boss as a side-view tank fight (see idea 3 below)                                                                                                                                                                                                                                                                            | Art and mini game done; character fixes finishing; the 8-4 route next |
-| 5     | **0.4.14** | **Mini game rebuilds, part 1** (from the fidelity audit): Luigi's race course rebuilt as a Lost Levels 1-1 (piranha plants, Koopas and Paratroopas, a poison mushroom, the end staircase); an **SMB3 status bar** for the airship, Larry's cabin and the bonus games; a **Toad House you walk into**, fixed N-Spade boards, and a chest after the Hammer Bro fight; **Mega Man**: two boss shutters, a Met enemy and a START weapon menu                                                                                                                                    | Planned                                                               |
-| 6     | **0.4.15** | **Mini game rebuilds, part 2:** **Mega Man**'s stage rebuilt with ladders and vertical screens; **Link**: rooms rebuilt with 2-tile walls and 12×7 floors, and a Triforce ending; **Samus**: blue doors with room transitions, and a Tourian finale (Mother Brain, then the escape up the shaft)                                                                                                                                                                                                                                                                            | Planned                                                               |
-| 7     | **0.4.16** | **Chapter 1 finishing pass.** Sophia's level variants (the Sophia-only tiles from the original, e.g. 4-4's drops, deferred from 0.4.13); the tile-by-tile check of SMB 1-1 to 8-4 against the owner's NES maps (owner's rule: fix clear mistakes of ours; where Crossover deliberately differs from the NES, keep Crossover and list it; anything ambiguous goes to the owner to decide); a full playthrough of 1-0 to 8-4 with every hero, on desktop and phone, fixing what it finds; the 8-4 credits marked as the end of Chapter 1                                      | Planned                                                               |
-| 8     | **0.5.0**  | **Chapter 1 release and the rebrand.** The project becomes **SMB Crossover REMIX** ("Super Mario Bros. Crossover: REMIX"): a nod to Jay Pavlina's original while saying it's a different project. A **stylized title screen** (an original logo with REMIX, livelier menu art and motion), "MADE BY JELLOSHOOTER848", and "BASED ON SUPER MARIO BROS. CROSSOVER BY EXPLODING RABBIT". The name changes everywhere (title screen, page title, README, release zip, credits). README and in-game notes for Chapter 1, final checks. The Lost Levels stay playable as they are | Planned (details to agree, see below)                                 |
+| 3     | **0.4.12** | **The Chapter 1 story** (see below): Toad as the map guide with riddle hints, a partner for each hero, the rewritten castle scenes with the fake Bowsers revealed, Peach's off-screen clues, the restyle remarks, Bowser's "NO MORE STAND-INS" in 8-4, the wand breaking, the false ending and the road into the Lost Kingdom                                                                                                                                                                                                                                               | **Released** (Oct 7)                                                  |
+| 4     | **0.4.13** | **The secrets guide** (docs/secrets/, see below): every secret in the game with step-by-step screenshots: the hidden heroes, hidden areas, secret exits, warp spots, the bonus road and the partners                                                                                                                                                                                                                                                                                                                                                                        | Being written                                                         |
+| 5     | **0.4.14** | **Mini game rebuilds, part 1** (from the fidelity audit): Luigi's race course rebuilt as a Lost Levels 1-1 (piranha plants, Koopas and Paratroopas, a poison mushroom, the end staircase); an **SMB3 status bar** for the airship, Larry's cabin and the bonus games; a **Toad House you walk into**, fixed N-Spade boards, and a chest after the Hammer Bro fight; **Mega Man**: two boss shutters, a Met enemy and a START weapon menu                                                                                                                                    | Built; review and QA now                                              |
+| 6     | **0.4.15** | **Sophia III**, the 8th hidden hero: a playable tank Jason can hop out of, found through 8-4's trap pipe (Jason looking for his frog Fred). Mini game "Underworld": tank cavern, Jason's overhead dungeon and its guardian, then the Plutonium Boss as a side-view tank fight (see idea 3 below)                                                                                                                                                                                                                                                                            | Art and mini game done; character fixes finishing; the 8-4 route next |
+| 7     | **0.4.16** | **Mini game rebuilds, part 2:** **Mega Man**'s stage rebuilt with ladders and vertical screens; **Link**: rooms rebuilt with 2-tile walls and 12×7 floors, and a Triforce ending; **Samus**: blue doors with room transitions, and a Tourian finale (Mother Brain, then the escape up the shaft)                                                                                                                                                                                                                                                                            | Being built (Mega Man, Link and Samus in parallel)                    |
+| 8     | **0.4.17** | **Chapter 1 finishing pass.** Sophia's level variants (the Sophia-only tiles from the original, e.g. 4-4's drops, deferred from 0.4.15); the tile-by-tile check of SMB 1-1 to 8-4 against the owner's NES maps (owner's rule: fix clear mistakes of ours; where Crossover deliberately differs from the NES, keep Crossover and list it; anything ambiguous goes to the owner to decide); a full playthrough of 1-0 to 8-4 with every hero, on desktop and phone, fixing what it finds; the 8-4 credits marked as the end of Chapter 1                                      | Planned                                                               |
+| 9     | **0.5.0**  | **Chapter 1 release and the rebrand.** The project becomes **SMB Crossover REMIX** ("Super Mario Bros. Crossover: REMIX"): a nod to Jay Pavlina's original while saying it's a different project. A **stylized title screen** (an original logo with REMIX, livelier menu art and motion), "MADE BY JELLOSHOOTER848", and "BASED ON SUPER MARIO BROS. CROSSOVER BY EXPLODING RABBIT". The name changes everywhere (title screen, page title, README, release zip, credits). README and in-game notes for Chapter 1, final checks. The Lost Levels stay playable as they are | Planned (details to agree, see below)                                 |
 
 ### The secrets guide (docs/secrets/: being made now, first edition with the next release, then updated with every release)
 
@@ -62,7 +62,7 @@ Release numbers after 0.5.0 are proposals; the owner picks them.
 The 19 reports from PR #51 (bug-reports/2026-10-07-_classic_.md and the per-hero reports): a dev-mode toggle that
 plays the game like the original Crossover 3.1.21. It covers each hero's original physics and power states, enemy
 HP and armour, bricks and shots, and swimming. Outside the toggle nothing changes. The new-character builds in
-PR #51 (Sophia's spec is already used in 0.4.13; Bass, Proto Man, Pit, Vic Viper, the Warriors of Light, and the
+PR #51 (Sophia's spec is already used in 0.4.15; Bass, Proto Man, Pit, Vic Viper, the Warriors of Light, and the
 candidate list) are not part of 0.5.1.
 
 ### Chapter 2: the Lost Kingdom (0.5.2 onward, released as 0.6.0)
@@ -145,7 +145,7 @@ hook built for 7-3 (`campaignTheme:`, `campaignMusic:`, `[campaign-decor]` in th
 - Decided: the look's own music plays there for every hero. The coin heavens above these levels share the look;
   bonus rooms and water areas keep their own.
 
-### A coherent story (0.4.13 for Chapter 1; the Lost Kingdom parts in Chapter 2)
+### A coherent story (0.4.12 for Chapter 1; the Lost Kingdom parts in Chapter 2)
 
 One story runs from the start through 8-4, and explains why 8-4 leads on into the Lost Levels, where it ends.
 
@@ -199,7 +199,7 @@ One story runs from the start through 8-4, and explains why 8-4 leads on into th
   8-4, credits at 8-4 as a false ending, a main ending at Lost 8-4, six wand pieces held by the Koopalings that
   unlock the Far Lands and the true ending, reveal pages for the Lost castles' fakes too) are in docs/STORY.md
   section 3.
-- **Status:** Chapter 1 (docs/STORY.md 2.1-2.14) is built in 0.4.13 (docs/STORY_SYSTEM.md); Sophia III's lines are
+- **Status:** Chapter 1 (docs/STORY.md 2.1-2.14) is built in 0.4.12 (docs/STORY_SYSTEM.md); Sophia III's lines are
   added when she lands. The Lost Kingdom parts (2.15 on) are Chapter 2.
 
 ## Ideas for later
@@ -249,7 +249,7 @@ Keep the joke, with a payoff:
 - Getting through it gives a big reward.
 - Failing it costs nothing: you go back out to the level.
 
-### 3. Sophia III, the last original hero (0.4.13, Chapter 1)
+### 3. Sophia III, the last original hero (0.4.15, Chapter 1)
 
 The original Crossover's cast was Mario, Luigi, Link, Mega Man, Samus, Simon, Bill, Ryu and Sophia III. Sophia III,
 the tank from Blaster Master, is the only one we haven't made. World 8 is also the only SMB world without a hidden
@@ -291,7 +291,7 @@ hero, so she would be hidden there.
 - **Size:** this is the biggest of the three ideas, because it adds a full character kit as well as the usual
   hideout, mini game, art and music.
 
-### Bigger mini game rebuilds (from the fidelity audit; all in Chapter 1: 0.4.14 and 0.4.15)
+### Bigger mini game rebuilds (from the fidelity audit; all in Chapter 1: 0.4.14 and 0.4.16)
 
 - Luigi's race course rebuilt with Lost Levels pieces (piranha plants, Koopas, a poison mushroom, the end staircase).
 - An SMB3 status bar for the airship, the cabin and the bonus games.
