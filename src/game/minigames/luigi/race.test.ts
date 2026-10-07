@@ -16,7 +16,7 @@ import { CHARACTERS } from '@game/characters/registry';
 import { LUIGI } from '@game/characters/luigi';
 import type { MiniGameResult } from '../types';
 import { LUIGI_MINIGAME } from '.';
-import { COUNT_FRAMES, GO_FRAME, RaceMenuScene, type MirrorRaceScene } from './race';
+import { CARD_FRAMES, GO_FRAME, RaceMenuScene, type MirrorRaceScene } from './race';
 import { LUIGI_ROUTE, poleOf, raceCourse } from './course';
 import { RivalLuigi, RouteInput, type Route } from './rival';
 import { defaultSettings } from '@engine/save/settings';
@@ -163,18 +163,27 @@ describe('Mirror Race: the course and the rival', () => {
 });
 
 describe('Mirror Race: outcomes', () => {
-  it('counts down 3 2 1 before anyone moves', () => {
+  it('opens on the black WORLD 1-1 card, then shows the course a moment, and nobody moves before GO', () => {
     const h = setup(FAST);
     const x0 = h.scene.world.player.body.x;
     const l0 = h.scene.rival.player.body.x;
-    for (let i = 0; i < GO_FRAME - 1; i++) h.step(['right', 'run']);
-    expect(h.scene.phase).toBe('countdown');
+    expect(h.scene.phase).toBe('card');
+    for (let i = 0; i < CARD_FRAMES - 1; i++) h.step(['right', 'run']);
+    expect(h.scene.phase).toBe('card');
+    h.step(['right', 'run']);
+    expect(h.scene.phase).toBe('ready');
+    for (let i = CARD_FRAMES; i < GO_FRAME - 1; i++) h.step(['right', 'run']);
+    expect(h.scene.phase).toBe('ready');
     expect(h.scene.world.player.body.x).toBe(x0);
     expect(h.scene.rival.player.body.x).toBe(l0);
     for (let i = 0; i < 30; i++) h.step();
     expect(h.scene.phase).toBe('race');
     expect(h.scene.world.player.body.x).toBeGreaterThan(x0);
-    expect(COUNT_FRAMES * 3).toBe(GO_FRAME);
+    // A short beat on the course before GO, so nobody starts blind off the black card.
+    expect(GO_FRAME - CARD_FRAMES).toBeGreaterThanOrEqual(20);
+    expect(GO_FRAME - CARD_FRAMES).toBeLessThanOrEqual(60);
+    expect(h.said[0]).toMatch(/^World 1-1\./);
+    expect(h.said).toContain('Go!');
   });
 
   it('a fast run beats Luigi to the flag: pass', () => {
@@ -348,12 +357,45 @@ describe('Mirror Race: outcomes', () => {
 });
 
 describe('Mirror Race: screen', () => {
-  it('draws the countdown, the track and clock, the off-screen arrow and the result banner', () => {
+  it("draws the WORLD 1-1 card with the HUD and Mario's lives, and no 3-2-1 countdown", () => {
     const h = setup(null, { stubAssets: true });
     const r = new TextRenderer();
     h.game.scenes.render(r);
+    expect(r.texts).toEqual(expect.arrayContaining(['MARIO ', 'WORLD', '1-1', 'TIME', '400', 'WORLD 1-1']));
+    expect(r.texts).toContain(`×  ${h.scene.world.state.lives}`);
+    for (const n of ['3', '2', '1']) expect(r.texts).not.toContain(n);
+    for (let i = 0; i < CARD_FRAMES; i++) h.step();
+    r.texts = [];
+    h.game.scenes.render(r);
     expect(r.texts).toContain('RACE LUIGI TO THE FLAG!');
-    expect(r.texts).toContain('0.0');
+    expect(r.texts).not.toContain('WORLD 1-1');
+  });
+
+  it('races under the SMB HUD (name, score, coins, WORLD, a TIME that runs down), the track bar under it', () => {
+    const h = setup(null, { stubAssets: true });
+    const rects: { y: number; h: number }[] = [];
+    const r = new TextRenderer();
+    (r as Renderer).rect = (_x, y, _w, hh) => void rects.push({ y, h: hh });
+    for (let i = 0; i < GO_FRAME + 60 * 10; i++) h.step(['right']);
+    r.texts = [];
+    h.game.scenes.render(r);
+    expect(r.texts).toEqual(expect.arrayContaining(['MARIO ', 'WORLD', '1-1', 'TIME']));
+    expect(r.texts.some((t) => /^\d{7}$/.test(t))).toBe(true);
+    expect(r.texts.some((t) => t.startsWith('$×'))).toBe(true);
+    // Ten seconds of racing: the clock is down from 400 at the level's pace.
+    const time = Number(r.texts.find((t) => /^\d{3}$/.test(t)));
+    expect(time).toBeLessThan(400);
+    expect(time).toBeGreaterThan(370);
+    // No race clock in seconds and tenths any more.
+    expect(r.texts.some((t) => /^\d+\.\d$/.test(t))).toBe(false);
+    // The track (its white line, a 1-px rect) runs under the HUD's two rows.
+    const line = rects.find((b) => b.h === 1);
+    expect(line?.y).toBeGreaterThan(24);
+  });
+
+  it('draws the track, the off-screen arrow and the result banner', () => {
+    const h = setup(null, { stubAssets: true });
+    const r = new TextRenderer();
     // Mario stands still; Luigi runs off the right of the screen, then wins.
     let arrow = false;
     let banner = false;
@@ -368,8 +410,11 @@ describe('Mirror Race: screen', () => {
     expect(banner).toBe(true);
   });
 
-  it('labels the touch buttons as in a level while racing, and none once decided', () => {
+  it('labels only MENU on the card, the buttons as in a level from the course on, and none once decided', () => {
     const h = setup(PIT);
+    expect(h.scene.touchLabels().jump).toBeNull();
+    expect(h.scene.touchLabels().start).toBe('MENU');
+    for (let i = 0; i < CARD_FRAMES; i++) h.step();
     expect(h.scene.touchLabels().jump).toBe('JUMP');
     expect(h.scene.touchLabels().start).toBe('MENU');
     for (let i = 0; i < 2000 && !h.scene.world.player.dead; i++) h.step();

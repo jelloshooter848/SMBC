@@ -38,6 +38,7 @@ export type Mover = 'hero' | 'walk' | 'fly' | 'shot' | 'block';
 
 export type TdEvent =
   | { type: 'sword' }
+  | { type: 'beam' }
   | { type: 'hit'; kind: string }
   | { type: 'kill'; kind: string }
   | { type: 'hurt'; hp: number }
@@ -144,6 +145,8 @@ export interface TdWorldOptions {
   shield?: boolean;
   /** Asked whenever the hero is hurt: true keeps his hearts (a no-damage assist). */
   noDamage?: () => boolean;
+  /** Does a stab at full hearts also throw a sword beam (beam.ts; default no)? */
+  swordBeam?: boolean;
 }
 
 /**
@@ -169,6 +172,8 @@ export class TopDownWorld {
   readonly inv: Inventory;
   /** True keeps the hero's hearts when he is hurt (asked each time, so it can change mid-run). */
   readonly noDamage: () => boolean;
+  /** A stab at full hearts also throws a sword beam (TdHero.beamReady). */
+  readonly swordBeam: boolean;
   room: Room;
   entities: TdEntity[] = [];
   readonly events: TdEvent[] = [];
@@ -195,6 +200,7 @@ export class TopDownWorld {
     this.items = opts.items ?? DEFAULT_ITEMS;
     this.inv = new Inventory(this.items);
     this.noDamage = opts.noDamage ?? (() => false);
+    this.swordBeam = opts.swordBeam ?? false;
     const start = dungeon.rooms.get(dungeon.startRoom) as Room;
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
     this.hero = new TdHero(at.x, at.y, opts.maxHp);
