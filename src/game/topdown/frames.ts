@@ -18,12 +18,19 @@ export function rotateCcw(rows: readonly string[]): string[] {
 
 /** North-edge frames the top-down renderer also needs for the west edge (east is that, mirrored). */
 export const SIDE_FRAMES = [
+  'wall',
   'wall-top',
   'door-open',
   'door-locked',
   'door-shut',
   'wall-cracked',
   'wall-hole',
+  // Zelda's 32×32 doors through a two-tile wall.
+  'door-open-thick',
+  'door-locked-thick',
+  'door-shut-thick',
+  'wall-cracked-thick',
+  'wall-hole-thick',
 ] as const;
 
 /**
