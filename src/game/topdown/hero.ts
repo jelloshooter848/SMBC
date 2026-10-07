@@ -242,7 +242,12 @@ export class TdHero {
     if (this.kbT > 0) {
       this.kbT--;
       const v = DIR_VEC[this.kbDir];
-      this.moveBy(world, v.dx * KNOCK_PX, v.dy * KNOCK_PX, false);
+      // Knocked about the floor only: never back out through a doorway (as in Zelda).
+      for (let i = 0; i < KNOCK_PX; i++) {
+        const inside = world.onFloor(this.feet());
+        if (inside && !world.onFloor(this.feet(this.x + v.dx, this.y + v.dy))) break;
+        if (!this.moveBy(world, v.dx, v.dy, false)) break;
+      }
       return;
     }
     if (this.holdT > 0) {

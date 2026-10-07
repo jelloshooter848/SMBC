@@ -466,6 +466,12 @@ export class TopDownWorld {
     return shown;
   }
 
+  /** Is `box` on the room's floor (inside the wall band)? */
+  onFloor(box: Box): boolean {
+    const w = this.room.wall * TILE;
+    return box.x >= w && box.y >= w && box.x + box.w <= ROOM_W - w && box.y + box.h <= ROOM_H - w;
+  }
+
   /** Is the hero walking himself in from a doorway (the pad does nothing meanwhile)? */
   get walkingIn(): boolean {
     return this.walkIn !== null;
@@ -650,11 +656,7 @@ export class TopDownWorld {
       this.emit({ type: 'met', cond });
     }
     if (this.syncHidden()) this.emit({ type: 'reveal' });
-    if (!this.sealed) {
-      const f = this.hero.feet();
-      const w = this.room.wall * TILE;
-      if (f.x >= w && f.y >= w && f.x + f.w <= ROOM_W - w && f.y + f.h <= ROOM_H - w) this.sealed = true;
-    }
+    if (!this.sealed && this.onFloor(this.hero.feet())) this.sealed = true;
     const shut = this.shuttersShut();
     if (shut !== this.shutWas && Object.values(this.room.doors).includes('shutter'))
       this.emit({ type: 'shutters', open: !shut });

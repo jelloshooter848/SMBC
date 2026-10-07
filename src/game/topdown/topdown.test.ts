@@ -843,12 +843,28 @@ describe("top-down kit: Zelda's rooms (2-tile walls, a 12×7 floor)", () => {
   /** Both cells of a doorway through the wall (n/s: two columns × two rows; e/w: one row × two). */
   const door = (side: 'n' | 's' | 'e' | 'w', ch: string): [number, number, string][] =>
     side === 'n'
-      ? [[7, 0, ch], [8, 0, ch], [7, 1, ch], [8, 1, ch]]
+      ? [
+          [7, 0, ch],
+          [8, 0, ch],
+          [7, 1, ch],
+          [8, 1, ch],
+        ]
       : side === 's'
-        ? [[7, 9, ch], [8, 9, ch], [7, 10, ch], [8, 10, ch]]
+        ? [
+            [7, 9, ch],
+            [8, 9, ch],
+            [7, 10, ch],
+            [8, 10, ch],
+          ]
         : side === 'w'
-          ? [[0, 5, ch], [1, 5, ch]]
-          : [[14, 5, ch], [15, 5, ch]];
+          ? [
+              [0, 5, ch],
+              [1, 5, ch],
+            ]
+          : [
+              [14, 5, ch],
+              [15, 5, ch],
+            ];
   const opts = { wall: 2 };
 
   it('parses a room with walls two tiles thick: doors run through both, a 12×7 floor inside', () => {
@@ -867,14 +883,26 @@ describe("top-down kit: Zelda's rooms (2-tile walls, a 12×7 floor)", () => {
   });
 
   it.each([
-    ['a door only through the outer row', thick([[7, 0, 'O'], [8, 0, 'O']]), /through the whole wall/],
+    [
+      'a door only through the outer row',
+      thick([
+        [7, 0, 'O'],
+        [8, 0, 'O'],
+      ]),
+      /through the whole wall/,
+    ],
     ['a hole in the inner wall row', thick([[5, 1, '.']]), /border must be wall/],
     ['a door in the corner', thick([[1, 1, 'O']]), /must be on an edge/],
   ])('rejects %s', (_name, rows, msg) => {
     expect(() => parseRoom(room('bad', [0, 0], rows), {}, 2)).toThrow(msg);
   });
 
-  function thickRooms(westDoor: string, eastDoor: string, eastOpts: Partial<RoomDef> = {}, east: [number, number, string][] = []) {
+  function thickRooms(
+    westDoor: string,
+    eastDoor: string,
+    eastOpts: Partial<RoomDef> = {},
+    east: [number, number, string][] = [],
+  ) {
     return buildDungeon(
       [
         room('west', [0, 0], thick([[7, 5, '@'], ...door('e', westDoor)])),
@@ -910,6 +938,17 @@ describe("top-down kit: Zelda's rooms (2-tile walls, a 12×7 floor)", () => {
     expect(hero.x).toBeLessThan(2 * TILE);
   });
 
+  it("a knockback never throws him out through a doorway: he stops at the floor's edge", () => {
+    const { world, pad, hero } = setup(thickRooms('O', 'O'));
+    hero.x = ROOM_W - 4 * TILE; // two tiles short of the east doorway, in line with it
+    hero.y = 5 * TILE;
+    hero.hurt(world, 1, 'right');
+    pad.step([], 20);
+    expect(world.room.id).toBe('west');
+    expect(world.transition).toBeNull();
+    expect(hero.x).toBe(ROOM_W - 3 * TILE + 1); // feet flush with the floor's edge
+  });
+
   it('the shutters slam behind him once he has walked in', () => {
     const { world, pad } = setup(thickRooms('O', 'X', { shutters: 'clear' }, [[10, 5, 'n']]));
     const events: TdEvent[] = [];
@@ -923,7 +962,16 @@ describe("top-down kit: Zelda's rooms (2-tile walls, a 12×7 floor)", () => {
   it('draws the wall band as brick with a ledge row facing the floor, mitred corners and 32-px doors', () => {
     const calls: [string, number, number][] = [];
     const frames = new Map<string, { x: number; y: number; w: number; h: number }>();
-    for (const f of ['wall', 'wall-top', 'wall-top-side', 'wall-corner', 'floor', 'door-open-thick', 'door-locked-thick-side'])
+    for (const f of [
+      'wall',
+      'wall-side',
+      'wall-top',
+      'wall-top-side',
+      'wall-corner',
+      'floor',
+      'door-open-thick',
+      'door-locked-thick-side',
+    ])
       frames.set(f, { x: 0, y: 0, w: 16, h: 16 });
     const sheet: SpriteSheet = { id: 's', image: null, frames };
     const none = new NullRenderer();
@@ -945,6 +993,8 @@ describe("top-down kit: Zelda's rooms (2-tile walls, a 12×7 floor)", () => {
     expect(at(16, 80)).toEqual(['wall-corner']);
     expect(at(0, 64)).toEqual(['wall']);
     expect(at(16, 96)).toEqual(['wall-top-side']);
+    expect(at(0, 96)).toEqual(['wall-side']); // the side band's bricks run the same way throughout
+    expect(at(240, 96)).toEqual(['wall-side']);
     expect(at(112, 64)).toContain('door-open-thick'); // one 32×32 door over the doorway
     expect(at(0, 64 + 72)).toContain('door-locked-thick-side'); // centred on row 5
     expect(calls.filter((c) => c[0] === 'door-open-thick').length).toBe(1);
@@ -955,9 +1005,34 @@ describe("top-down kit: the dungeon's map and compass", () => {
   /** West (start, a map and a compass on the floor), east, and a goal room north of east. */
   const threeRooms = () =>
     buildDungeon([
-      room('west', [0, 1], map([[7, 5, '@'], [15, 5, 'O'], [9, 5, 'm'], [9, 7, 'v']])),
-      room('east', [1, 1], map([[0, 5, 'O'], [7, 0, 'O'], [8, 0, 'O']])),
-      room('goal', [1, 0], map([[7, 10, 'O'], [8, 10, 'O']]), { goal: true }),
+      room(
+        'west',
+        [0, 1],
+        map([
+          [7, 5, '@'],
+          [15, 5, 'O'],
+          [9, 5, 'm'],
+          [9, 7, 'v'],
+        ]),
+      ),
+      room(
+        'east',
+        [1, 1],
+        map([
+          [0, 5, 'O'],
+          [7, 0, 'O'],
+          [8, 0, 'O'],
+        ]),
+      ),
+      room(
+        'goal',
+        [1, 0],
+        map([
+          [7, 10, 'O'],
+          [8, 10, 'O'],
+        ]),
+        { goal: true },
+      ),
     ]);
 
   it('without the map the minimap shows the rooms seen; the map shows them all; the compass marks the goal', () => {

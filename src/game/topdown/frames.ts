@@ -18,6 +18,7 @@ export function rotateCcw(rows: readonly string[]): string[] {
 
 /** North-edge frames the top-down renderer also needs for the west edge (east is that, mirrored). */
 export const SIDE_FRAMES = [
+  'wall',
   'wall-top',
   'door-open',
   'door-locked',

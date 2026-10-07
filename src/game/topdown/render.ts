@@ -41,7 +41,8 @@ const DOOR_FRAME: Record<DoorLook, keyof typeof PLACEHOLDER> = {
 /**
  * Draws one room's tiles with its top-left at (ox, oy). The wall band's row (or column) facing the
  * floor uses `wall-top` (north, flipped for south) and `wall-top-side` (west, flipped for east),
- * its inner corners `wall-corner`; the rest of a thick band, and inner walls, plain `wall`. In a
+ * its inner corners `wall-corner`; the rest of a thick band plain `wall` (`wall-side` down the
+ * east and west), as are inner walls. In a
  * room with one-tile walls doors are drawn for the north edge and flipped for the south; east and
  * west use the `-side` frames (made by rotation, frames.ts), and a two-cell doorway (and exit)
  * draws one 16-px door centred across its cells, from the `-l` / `-r` halves (frames.ts). Through
@@ -59,7 +60,15 @@ export function drawRoomTiles(
 ): void {
   const pal = room.def.dark && view.sheets.tilesDark ? view.sheets.tilesDark : undefined;
   const sheet = view.sheet(view.sheets.tiles, pal);
-  const put = (frame: string, x: number, y: number, fallback: string, fx = false, fy = false, size = TILE) => {
+  const put = (
+    frame: string,
+    x: number,
+    y: number,
+    fallback: string,
+    fx = false,
+    fy = false,
+    size = TILE,
+  ) => {
     if (sheet?.frames.has(frame)) r.sprite(sheet, frame, x, y, fx, fy);
     else r.rect(x, y, size, size, fallback);
   };
@@ -75,8 +84,10 @@ export function drawRoomTiles(
       const bottom = row >= ROOM_ROWS - wall;
       if (dx === wall - 1 && dy === wall - 1) put('wall-corner', x, y, PLACEHOLDER.wall, right, bottom);
       else put('wall', x, y, PLACEHOLDER.wall);
-    } else if (wallDepth(col, row, side) < wall - 1) put('wall', x, y, PLACEHOLDER.wall);
-    else if (side === 'n' || side === 's') put('wall-top', x, y, PLACEHOLDER.wall, false, side === 's');
+    } else if (wallDepth(col, row, side) < wall - 1) {
+      if (side === 'n' || side === 's') put('wall', x, y, PLACEHOLDER.wall);
+      else put('wall-side', x, y, PLACEHOLDER.wall, side === 'e');
+    } else if (side === 'n' || side === 's') put('wall-top', x, y, PLACEHOLDER.wall, false, side === 's');
     else put('wall-top-side', x, y, PLACEHOLDER.wall, side === 'e');
   };
   const exitLook = () => (view.reduceFlashing ? 'exit-0' : `exit-${(view.frame >> 4) & 1}`);

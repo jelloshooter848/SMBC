@@ -239,7 +239,13 @@ describe('dungeon tiles', () => {
   it("Zelda's thick doors fill the two-tile north wall: brick above, the ledge row below, a 16-px way through to the floor", () => {
     const wall = rows(dungeonDef, 'wall');
     const wallTop = rows(dungeonDef, 'wall-top');
-    for (const door of ['door-open-thick', 'door-locked-thick', 'door-shut-thick', 'exit-0-thick', 'exit-1-thick']) {
+    for (const door of [
+      'door-open-thick',
+      'door-locked-thick',
+      'door-shut-thick',
+      'exit-0-thick',
+      'exit-1-thick',
+    ]) {
       const f = rows(dungeonDef, door);
       expect(f[0]?.slice(0, 4), door).toBe(wall[0]?.slice(0, 4)); // outer brick at the corner
       expect(f[31]?.slice(0, 4), door).toBe(wallTop[15]?.slice(0, 4)); // the ledge's last row

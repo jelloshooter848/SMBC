@@ -202,7 +202,9 @@ export function parseRoom(
     for (const along of doorCells[side] ?? [])
       for (let d = 0; d < wall; d++)
         if (!doorAt.has(`${side}:${d}:${along}`))
-          throw new Error(`room "${def.id}": the ${side} doorway must go through the whole wall (${wall} tiles)`);
+          throw new Error(
+            `room "${def.id}": the ${side} doorway must go through the whole wall (${wall} tiles)`,
+          );
   if (Object.values(doors).includes('shutter') && !def.shutters)
     throw new Error(`room "${def.id}": shutter doors need a \`shutters\` condition`);
   const chests = spawns.filter((s) => s.kind === 'chest').length;
