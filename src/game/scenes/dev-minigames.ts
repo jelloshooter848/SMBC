@@ -132,7 +132,7 @@ export class DevMiniGameResultScene implements Scene {
     private readonly next: () => void,
   ) {
     const hero = game.deps.characters.find((c) => c.id === def.hero);
-    this.lines = [fontText(def.title), fontText(hero?.hudName ?? def.hero), '', RESULT_WORDS[result]];
+    this.lines = [fontText(def.title), fontText(hero?.name ?? def.hero), '', RESULT_WORDS[result]];
   }
 
   enter(): void {

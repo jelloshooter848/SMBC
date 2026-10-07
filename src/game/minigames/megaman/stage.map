@@ -1,0 +1,79 @@
+;; Mega Man's mini game (the station stage and Dark Mega Man's room): five screens of station
+;; corridor, then the boss room behind a two-tile shutter. stage.ts loads it with ?raw, so it is not
+;; in the level library, the dev level select or the campaign. The robots and the weapon capsule
+;; are the mini game's own entity types (World's `extraEntities`); `shutter` and `dark-megaman` are
+;; taken out of the map, and the scene places them itself. Column 80's doorway (rows 11-12) is the
+;; shutter, solid until it opens. scrollStop keeps the boss room out of sight until the shutter
+;; opens; the camera then scrolls over and locks on columns 80-95.
+id: mm-station
+name: STATION ESCAPE
+world: 3
+stage: 1
+theme: station
+music: mm-station
+time: 400
+start: 2,12
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0              16               32               48               64               80
+................ ................ ................ ................ ..........BB.... BBBBBBBBBBBBBBBB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+................ ................ ................ ................ ..........BB.... BHHHHHHHHHHHHHHB
+AAAAAAAAAAAAAAAA AAA...AAAAAAAAAA AAAAAAAAAAAAAAA. ..AAAAAA...AAAAA AAAAAAAAAABBAAAA BHHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHBBHHHH BHHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHBBBHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHHHHHHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
+HHHHHHHHHHHHHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
+HHHHHHHHHHBBHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHHHHHH BHHHHHHHHHHHHHHB
+################ ###...########## ###############. ..######...##### ################ ################
+################ ###...########## ###############. ..######...##### ################ ################
+
+[entities]
+hopper 13 12
+drone 26 5
+turret 29 12
+capsule 36 10
+hopper 45 12
+drone 54 4
+drone 63 5
+hopper 62 12
+turret 66 12
+turret 74 9 mount=ceiling
+shutter 80 11
+dark-megaman 91 12
+
+;; Station decor (the station sheet's window, console and girder), by top-left tile; drawn behind
+;; the robots and Mega Man, in front of the plating.
+deco 3 8 kind=window
+deco 7 12 kind=console
+deco 29 8 kind=window
+deco 41 12 kind=console
+deco 37 8 kind=window
+deco 52 8 kind=window
+deco 61 12 kind=console
+deco 66 8 kind=window
+deco 86 3 kind=window
+deco 89 12 kind=console
+deco 81 2 kind=girder
+deco 82 2 kind=girder
+deco 83 2 kind=girder
+deco 84 2 kind=girder
+deco 85 2 kind=girder
+deco 86 2 kind=girder
+deco 87 2 kind=girder
+deco 88 2 kind=girder
+deco 89 2 kind=girder
+deco 90 2 kind=girder
+deco 91 2 kind=girder
+deco 92 2 kind=girder
+deco 93 2 kind=girder
+deco 94 2 kind=girder
+
+[zones]
+scrollStop 81

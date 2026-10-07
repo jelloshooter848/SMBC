@@ -11,7 +11,7 @@ import { TileMap } from '../world/tilemap';
 import { renderTiles, SKY } from '../world/tile-render';
 import { customLevelId, loadLibrary, saveLibrary } from '../level/library';
 import { enemyPalette } from '../entities/enemies/enemy';
-import { decorPalette } from '../entities/objects/decoration';
+import { decorInFront, drawDecor } from '../entities/objects/decoration';
 import type { View } from '../entities/entity';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
@@ -657,12 +657,12 @@ export class EditorScene implements Scene {
     const theme = this.level.theme;
     r.clear(SKY[theme] ?? '#5c94fc');
     const view: View = { camX: this.camX, frame: this.frame, assets, theme, reduceFlashing: true };
-    const decorSheet = assets.sheet('decor', decorPalette(theme));
-    for (const d of this.level.decor) {
-      const f = decorSheet.frames.get(d.kind);
-      if (f) r.sprite(decorSheet, d.kind, d.x * 16 - this.camX, (d.y + 1) * 16 - f.h);
+    // Decor as the game draws it (Decoration): `sheet:frame` decor in front of the tiles.
+    for (const front of [false, true]) {
+      if (front) renderTiles(r, view, this.map, true);
+      for (const d of this.level.decor)
+        if (decorInFront(d.kind) === front) drawDecor(r, view, d.kind, d.x * 16 - this.camX, (d.y + 1) * 16);
     }
-    renderTiles(r, view, this.map, true);
     for (const e of this.level.entities) {
       const spec = ENTITY_FRAMES[redPiranhaKey(e) ?? e.type];
       const x = e.x * 16 - this.camX;

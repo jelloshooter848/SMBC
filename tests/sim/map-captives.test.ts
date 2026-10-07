@@ -14,7 +14,8 @@ import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 // The world map's hint for levels that hide a brainwashed hero (docs/HEROES.md "The map hint"):
 // nothing before the level is cleared, a faint silhouette peeking from behind the node once it
 // is cleared while the hero is still a captive, and the hero beside the node in full colour once
-// freed. Luigi hides in 1-1 (its bonus room), Link in 2-1 (its sky ruins).
+// freed. Luigi hides in 1-1 (its bonus room), Link in 2-1 (its sky ruins), Mega Man in 3-1 (the
+// space station above its coin heaven).
 
 useStorage();
 
@@ -57,6 +58,20 @@ const CASES: Case[] = [
     node: '2-1',
     before: { cleared: W1_CLEAR, pages: ['smb-1', 'smb-2'], position: { page: 'smb-2', node: '2-1' } },
     level: '2-1',
+    side: -1,
+  },
+  {
+    hero: 'megaman',
+    colour: 'megaman@megaman',
+    shade: 'megaman@megaman~shade-night',
+    page: 'smb-3',
+    node: '3-1',
+    before: {
+      cleared: [...W1_CLEAR, '2-1', '2-2', '2-3', '2-4'],
+      pages: ['smb-1', 'smb-2', 'smb-3'],
+      position: { page: 'smb-3', node: '3-1' },
+    },
+    level: '3-1',
     side: -1,
   },
 ];
@@ -118,7 +133,7 @@ describe('map hint for hidden heroes: the three stages', () => {
         expect(map.hintLine).toBe(HINT_LINE);
         expect(s.texts.map((t) => t.str)).toContain(HINT_LINE);
         // It never says where in the level.
-        expect(h.said.join(' ')).not.toMatch(/bonus|pipe|vine|sky|ruins/i);
+        expect(h.said.join(' ')).not.toMatch(/bonus|pipe|vine|sky|ruins|station|teleport/i);
       });
 
       it('3. freed: the hero stands beside the node in full colour, no hint line', () => {

@@ -64,6 +64,8 @@ it for every hero but Ryu, who climbs walls instead (`tests/sim/heroes.test.ts` 
 
 Link waits beside the temple doorway of the 2-1 sky ruins (`2-1-sky2`, column 30 on the cloud floor; TALK shows against the sky there), reached by the hidden vine block (`7` in maps) over the middle cloud platform past the end of the 2-1 coin heaven; the drop at the ruins' right end lands in 2-1 at column 162 like the coin heaven's (`tests/sim/heroes-link-sky.test.ts`, `tests/sim/sky-ruins.test.ts`).
 
+Mega Man waits on the command deck of the space station above 3-1 (`3-1-station`, column 38 on the floor, under the big window). Past the end of the 3-1 coin heaven (`3-1-sky`) a coin trail hops over two small cloud platforms to a hidden teleporter block (`8` in maps, at 91,7 over the second platform); bumped, it reveals a teleport pad that rises out of the platform two tiles to its right (93,10). Standing on the pad beams the hero up (hidden, a `station:beam-*` streak rises, sfx `beam`) and down onto the station's arrival pad; the clock runs on. The return pad just past Mega Man (column 44), and the arrival pad once stepped off, beam the hero back down into 3-1 at column 162, dropping in like the coin heaven's own drop. The pads are `teleport` zones (docs/WORLD_MAP.md "Teleport pads"). Every hero reaches the pad and crosses the station (`tests/sim/space-station.test.ts`); his lines before the round make the brainwashing a rogue program in his systems that built a dark copy of him (`DIALOGUE.megaman`).
+
 ## The map hint (`src/game/map/captives.ts`)
 
 The world map hints at levels that still hide a hero, in three stages (campaign play only, read
@@ -102,7 +104,7 @@ Every step is a scene pushed over the paused level, so the level's clock and wor
 2. A rules card: `MiniGameDef.title` and `rules`. It waits for OK; it never starts the round by
    itself.
 3. One round: `def.create(game, done)` is pushed.
-   - `pass`: the "LUIGI IS FREE!" card. The hero is added to `freed` and saved at once, and
+   - `pass`: the "LUIGI IS FREE!" card (the hero's full name: "MEGA MAN IS FREE!"). The hero is added to `freed` and saved at once, and
      the captive leaves in a puff. Then back to the level.
    - `fail`: TRY AGAIN? YES starts a fresh round (a new `create`), NO goes back with the captive
      still there.
@@ -223,6 +225,76 @@ Reusable for later top-down mini games; it knows no particular game.
   function of the world for rooms passed twice): fights (stunning with a boomerang it owns),
   pushes, opens chests, bombs walls. `CautiousBot` wraps it as a cautious first-time player for
   difficulty tuning.
+
+## Mega Man's mini game: Station Escape (`src/game/minigames/megaman/`)
+
+An NES Mega Man style stage on the space station above 3-1, played **as Mega Man**, ending in a
+fight with **Dark Mega Man**, the brainwashing's copy of him. It runs in a real `World` of its own
+(stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Mega Man with the
+helmet kit (`{ helmet: 1 }`: buster, charge shot, slide, and Rush Coil, which comes with the
+helmet), full 28 hit points on the usual bar, one life, no clock, and a camera that scrolls both
+ways. READY shows first (Mega Man cannot move, the press that started the round never jumps).
+
+- **The stage** (five screens, theme `station`: steel floor, bulkhead plating behind a corridor
+  band, space above, the station sheet's windows, consoles and girders as `deco` entities drawn in
+  front of the plating): floor, steps, three three-tile pits, and the robots (the station sheet's
+  frames; they face left and are flipped to face right; a hit flashes them in `station-flash`), each a station `Robot` (an `Enemy` with hit points that blows up
+  in a small explosion and drops from Mega Man's own drop table, an E-tank turned into a big health
+  pellet since the round has no pause menu to use one from):
+  **Hopper** (3 HP: crouches, then hops toward Mega Man, short and tall in turn),
+  **Turret** (3 HP: on the floor, or hung upside down under a ceiling; shut, its armour turns
+  shots away; it opens and fires a burst of three pellets aimed at Mega Man, a floor turret never
+  aims down, a ceiling turret never up) and
+  **Drone** (2 HP: sways in a sine while drifting over, dives straight down on Mega Man when he
+  stands below it, never at him mid-jump, and climbs back). Pellets take 2 hit points, a robot's
+  touch Mega Man's usual 4.
+- **The weapon capsule** sits on the pillar halfway (on the path): touching it, or passing anywhere
+  above it (a jump over the pillar cannot skip it; Rush Coil can), unlocks the **Saw Disc** (`weapons: 1`, full energy; no new weapon code). The station holds still for a second, the
+  `capsule` sound plays and a banner (24 columns, clear of the bars) and the announcer say WEAPON
+  switches to it, USE WEAPON fires it and a held direction aims it (`abilityHint`; a line falls back
+  to the bare ability names when its keys don't fit).
+- **The boss gate**: column 80's doorway is a two-tile shutter (solid in the map, a `Shutter` drawn
+  over it). A `scrollStop` keeps the room out of sight. Mega Man touching it on the floor opens it;
+  the robots and shots vanish (a screen change), he walks through on his own while the camera
+  scrolls 4 px a frame onto the 16-wide room and locks; the shutter shuts behind him (solid again).
+  Dark Mega Man beams down, then his bar fills one segment every 3 frames with a `boss-fill` tick,
+  NES style, while Mega Man waits (input ignored); the fight starts when it is full.
+- **Dark Mega Man** (`dark-megaman.ts`): Mega Man's body, moves (walk, jump, slide speeds from
+  `MEGAMAN_PROFILE`) and sprites in palette `megaman-dark`; his shots are dark violet boxes.
+  28 HP shown as a third bar beside Mega Man's health and weapon bars (red). A seeded pattern
+  (`BOSS_SEED`, it reads only the fight, so the same inputs replay the same fight; `log` records it):
+  short stands between moves (his tell), runs toward or away, jumps, three-shot buster volleys, a
+  charge shot when Mega Man is far; reflexes: he may jump a buster shot coming at him (30%, a charge
+  shot 60%, each judged once, then not again for 70 frames; never the Saw Disc) and may slide under
+  Mega Man jumping close (50%). He hurts like Mega Man is hurt: touch 4, buster shot 2, charge shot
+  6 (`hurtHero`: the no-damage assist, blinking and knockback as `World.hurtPlayer`). He takes the
+  buster (2), the charge shot (4) and the Saw Disc (3, his weakness), with 20 frames of
+  invulnerability after a hit (flicker, not with reduce flashing).
+- **Outcomes**: beating him bursts him into Mega Man's death orbs (the `death-orb` frame, two rings
+  of eight) with "DARK MEGA MAN IS BEATEN!", the victory jingle, Mega Man beams out, then `pass`.
+  Mega Man at 0 hit points or in a pit: `fail` once the death has played. Menu (`StationMenuScene`)
+  Give up: `quit`. `done` is called once; `game.state` is never touched.
+- Music `mm-station` on the stage and `mm-boss` from the boss's entrance, `castle-clear` for the
+  win; sounds `boss-fill` (each bar notch), `beam` (his entrance, Mega Man's exit), `capsule`
+  (`art.ts` names them all).
+- Touch labels: Mega Man's level labels while he plays (`levelTouchLabels`: JUMP, SHOOT, the
+  weapon's name, WEAPON with two or more), only MENU while READY, the capsule, the gate and the
+  entrance run, none once the round is decided. Dev assists: No damage keeps every hit point (a pit
+  still fails, as in a level). Dev: `?minigame=megaman` (the scene is `window.__miniGame`), or Dev →
+  Mini games.
+- **World hook** `WorldStart.extraEntities(spawn, world)`: a mini game's own entity types without a
+  case in `makeEntity`. Asked first for every spawn: an entity takes it, `null` drops it, `undefined`
+  leaves it to World's own types. The station's `hopper`, `turret` (`mount=ceiling`), `drone`
+  and `capsule` come through it (`stationEntities`).
+
+Difficulty (a "cautious human" sim, `human-sim.test.ts`: `StationBot` with a 15-frame reaction
+delay, robots and shots misjudged by up to 6 px, pauses and jumps a little early; it knows the
+plan, switches to the Saw Disc and fires it, jumps Dark Mega Man's shots; without the saw it uses
+charge shots from afar; `MM_SIM=30 pnpm vitest run megaman/human-sim --silent=false` prints the
+report): with the Saw Disc it wins 93 / 93 / 93 / 97% of 30 seeds at a 12 / 15 / 18 / 21-frame
+reaction, losing about 20-22 of 28 hit points in all (about 12 to Dark Mega Man; half the wins end
+on 8 or less). With the buster alone: 90 / 80 / 23 / 20%, so the weakness matters for slower
+players.
 
 ## Hero training (optional practice rooms)
 

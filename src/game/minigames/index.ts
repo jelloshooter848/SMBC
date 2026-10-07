@@ -1,6 +1,7 @@
 import type { MiniGameDef } from './types';
 import { LUIGI_MINIGAME } from './luigi';
 import { LINK_MINIGAME } from './link';
+import { MEGAMAN_MINIGAME } from './megaman';
 
 export type { MiniGameDef, MiniGameResult } from './types';
 
@@ -8,6 +9,7 @@ export type { MiniGameDef, MiniGameResult } from './types';
 export const MINIGAMES: Readonly<Record<string, MiniGameDef>> = {
   luigi: LUIGI_MINIGAME,
   link: LINK_MINIGAME,
+  megaman: MEGAMAN_MINIGAME,
 };
 
 export function miniGameFor(hero: string): MiniGameDef | null {

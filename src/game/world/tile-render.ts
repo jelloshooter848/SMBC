@@ -51,4 +51,6 @@ export const SKY: Record<string, string> = {
   'mushroom-red': '#5c94fc',
   // A swim through a castle keeps the castle's darkness.
   'castle-water': '#000000',
+  // The station hangs in space: black behind the plating.
+  station: '#000000',
 };

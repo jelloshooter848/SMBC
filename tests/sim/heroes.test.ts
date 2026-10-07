@@ -6,7 +6,8 @@ import { FileSelectScene } from '@game/scenes/file-select';
 import { CardScene, MessageScene } from '@game/scenes/message';
 import { MenuScene } from '@game/scenes/menu';
 import { WorldMapScene } from '@game/scenes/world-map';
-import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
+import { captiveDialogue, CARD_COLS, freedCard } from '@game/scenes/free-hero';
+import { fontText } from '@game/hud/text';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
@@ -513,5 +514,17 @@ describe('the unlock flow, in detail', () => {
     const pages = captiveDialogue(SAMUS, def, MARIO);
     for (const page of pages) for (const line of page) expect(line.length).toBeLessThanOrEqual(CARD_COLS);
     expect(pages.flat().join(' ')).toContain('CHOZO');
+  });
+
+  it("the freed card names the hero in full (MEGA MAN, not the HUD's MEGA), every line fitting the box", () => {
+    for (const hero of CHARACTERS) {
+      const lines = freedCard(hero);
+      expect(lines[0]).toBe(`${fontText(hero.name)} IS FREE!`);
+      for (const line of lines) expect(line.length).toBeLessThanOrEqual(CARD_COLS);
+    }
+    const megaman = CHARACTERS.find((c) => c.id === 'megaman');
+    if (!megaman) throw new Error('no Mega Man');
+    expect(freedCard(megaman)[0]).toBe('MEGA MAN IS FREE!');
+    expect(freedCard(megaman)).toContain('MEGA MAN JOINS YOUR TEAM.');
   });
 });

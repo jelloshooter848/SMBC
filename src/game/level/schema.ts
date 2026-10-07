@@ -16,7 +16,9 @@ export type Theme =
   | 'water-gray'
   | 'castle-overworld'
   | 'mushroom-red'
-  | 'castle-water';
+  | 'castle-water'
+  // Mega Man's space station above 3-1: steel plating against the black of space.
+  | 'station';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -35,6 +37,7 @@ export const THEMES: readonly Theme[] = [
   'castle-overworld',
   'mushroom-red',
   'castle-water',
+  'station',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -51,6 +54,7 @@ export function themeMusic(theme: Theme): string {
   if (isWaterTheme(theme)) return 'water';
   if (theme === 'castle' || theme === 'castle-overworld') return 'castle';
   if (theme === 'underground') return 'underground';
+  if (theme === 'station') return 'mm-station';
   return 'overworld';
 }
 
@@ -64,8 +68,11 @@ export interface EntitySpawn {
 
 export type PipeDir = 'down' | 'up' | 'left' | 'right';
 
-/** How the player arrives in a linked area: rising from a pipe, dropping in, climbing a vine, or placed. */
-export type TransferMode = PipeDir | 'none' | 'climb' | 'fall';
+/**
+ * How the player arrives in a linked area: rising from a pipe, dropping in, climbing a vine,
+ * beamed down by a teleport pad (`beam`), or placed.
+ */
+export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam';
 
 export type Zone =
   | {
@@ -82,6 +89,19 @@ export type Zone =
     }
   /** A vine brick at (x, y): climbing its vine off the top of the screen leads to `target` (climb mode). */
   | { kind: 'vine'; x: number; y: number; target: { level: string; x: number; y: number } }
+  /**
+   * A teleport pad lying in tile (x, y) (on the floor of the tile below): a player who stands on
+   * it is beamed up and arrives in `target` (`exitDir`: 'beam' by default, beamed down; 'fall'
+   * drops in from the top like a pit). `block`: the pad is hidden in that hidden teleporter block
+   * (tile `8`) until the block is bumped. See entities/objects/teleporter.ts.
+   */
+  | {
+      kind: 'teleport';
+      x: number;
+      y: number;
+      target: { level: string; x: number; y: number; exitDir: 'beam' | 'fall' };
+      block?: { x: number; y: number };
+    }
   /** Falling out of the level at column >= x drops the player into `target` instead of killing them. */
   | { kind: 'pit'; x: number; target: { level: string; x: number; y: number } }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
@@ -122,7 +142,7 @@ export type Zone =
   | { kind: 'text'; x: number; y: number; text: string; triggerX: number };
 
 export interface Decor {
-  kind: string; // hill-big, hill-small, bush-1, bush-3, cloud-1, cloud-3, tree-big, tree-small, fence, castle-small, castle-big, ruin-pillar, ruin-pillar-broken, ruin-statue, ruin-temple
+  kind: string; // hill-big, hill-small, bush-1, bush-3, cloud-1, cloud-3, tree-big, tree-small, fence, castle-small, castle-big, ruin-pillar, ruin-pillar-broken, ruin-statue, ruin-temple, or `sheet:frame` from another sheet (station:window)
   x: number;
   y: number;
 }
@@ -146,8 +166,8 @@ export interface LevelData {
   decor: Decor[];
   /** Player start, tile coords (feet on the tile below `y`). */
   start: { x: number; y: number };
-  /** When set, the level starts with the "walk in from a pipe" animation. */
-  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb';
+  /** When set, the level starts with the "walk in from a pipe" animation (`beam`: beamed down onto a teleport pad). */
+  startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb' | 'beam';
   /** Camera behaviour: 'scroll' (default) or 'locked' (bonus rooms). */
   camera: 'scroll' | 'locked';
   /** Level to respawn in after dying here (sub-areas point at their main level). */

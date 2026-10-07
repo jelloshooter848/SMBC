@@ -39,8 +39,8 @@ function fit(lines: readonly string[]): string[] {
  * talk. Every line fits the box (a long mini game title wraps).
  */
 export function captiveDialogue(hero: CharacterDef, def: MiniGameDef, player: CharacterDef): string[][] {
-  const name = fontText(hero.hudName);
-  const you = fontText(player.hudName);
+  const name = fontText(hero.name);
+  const you = fontText(player.name);
   const lines = DIALOGUE[hero.id]?.(you) ?? [
     'NO ONE PASSES HERE.',
     `BEAT ME AT THE ${def.title}, IF YOU DARE!`,
@@ -59,11 +59,19 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
   ],
   // The spell holds Link inside his own mind: the Shadow Keep.
   link: (you) => ['THE SHADOW... HOLDS ME...', '', `${you}... FIGHT IT WITH ME,`, 'IN HERE.'],
+  // The brainwashing is a rogue program loose in his systems; it has built a dark copy of him.
+  megaman: (you) => [
+    'ERROR... ROGUE PROGRAM',
+    'IN MY SYSTEMS...',
+    'IT MADE A DARK COPY OF ME.',
+    '',
+    `${you}... HELP ME DELETE IT.`,
+  ],
 };
 
-/** The freed card's lines. */
+/** The freed card's lines (and so its announcement): the hero's full name, "MEGA MAN IS FREE!". */
 export function freedCard(hero: CharacterDef): string[] {
-  const name = fontText(hero.hudName);
+  const name = fontText(hero.name);
   return fit([
     `${name} IS FREE!`,
     '',

@@ -21,6 +21,9 @@ const SONG_IDS = [
   'credits',
   'dungeon',
   'keeper',
+  // Mega Man's station.
+  'mm-station',
+  'mm-boss',
 ];
 
 const SFX_IDS = [
@@ -59,6 +62,10 @@ const SFX_IDS = [
   'bomb-fuse',
   'bomb-blast',
   'item-get',
+  // Mega Man's station.
+  'boss-fill',
+  'beam',
+  'capsule',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);
@@ -187,5 +194,50 @@ describe('Shadow Keep item sounds', () => {
       .filter((n): n is number => n !== null);
     expect(notes.at(-1)).toBe(Math.max(...notes));
     expect(length('item-get')).toBeGreaterThan(length('key-get'));
+  });
+});
+
+describe("Mega Man's station music", () => {
+  const song = (id: string) => compileSong(songs.find((s) => s.id === id) as (typeof songs)[number]);
+  const effect = (id: string) => sfx.find((s) => s.id === id) as Sfx;
+  const length = (id: string) => {
+    const e = effect(id);
+    const lens = (['pulse', 'pulse2', 'triangle', 'noise'] as const).flatMap((k) => {
+      const src = e[k];
+      const kind = k === 'pulse2' ? 'pulse' : k;
+      return typeof src === 'string' ? [seconds(parseMml(src, kind).length, e.bpm ?? 150)] : [];
+    });
+    return Math.max(...lens);
+  };
+  const notes = (src: string) =>
+    parseMml(src, 'pulse')
+      .events.map((e) => e.note)
+      .filter((n): n is number => n !== null);
+
+  it('the stage theme is fast with a sixteenth-note lead; the boss loop is faster and shorter', () => {
+    const stage = song('mm-station');
+    const boss = song('mm-boss');
+    expect(stage.loop && boss.loop).toBe(true);
+    expect(stage.bpm).toBeGreaterThanOrEqual(150);
+    expect(boss.bpm).toBeGreaterThan(stage.bpm);
+    expect(seconds(boss.length, boss.bpm)).toBeLessThan(seconds(stage.length, stage.bpm));
+    for (const s of [stage, boss]) expect(s.length % (PPQ * 4)).toBe(0);
+    // An arpeggiated lead: most of the stage lead's notes are sixteenths.
+    const lead = (stage.tracks as Record<string, Track>).pulse1 as Track;
+    const sounding = lead.events.filter((e) => e.note !== null);
+    const sixteenths = sounding.filter((e) => e.len === PPQ / 4).length;
+    expect(sixteenths / sounding.length).toBeGreaterThan(0.5);
+  });
+
+  it('the life-bar tick is short enough to repeat once per notch', () => {
+    expect(length('boss-fill')).toBeLessThanOrEqual(0.08);
+  });
+
+  it('the teleport beam climbs and the capsule fanfare rings out on its top note', () => {
+    const beam = notes(effect('beam').pulse as string);
+    expect(beam.at(-1)).toBe(Math.max(...beam));
+    const capsule = notes(effect('capsule').pulse as string);
+    expect(capsule.at(-1)).toBe(Math.max(...capsule));
+    expect(length('capsule')).toBeGreaterThan(length('beam'));
   });
 });

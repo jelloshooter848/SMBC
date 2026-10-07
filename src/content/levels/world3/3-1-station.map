@@ -1,0 +1,60 @@
+id: 3-1-station
+name: WORLD 3-1
+world: 3
+stage: 1
+theme: station
+time: inherit
+start: 3,12
+startMode: beam
+camera: scroll
+parent: 3-1
+
+;; A space station high above the 3-1 coin heaven, reached by the teleport pad hidden in a block
+;; past the end of its clouds (3-1-sky). The player beams down onto the arrival pad; captive
+;; Mega Man waits on the command deck under the big window (Earth below the stars), and the
+;; return pad just past him beams the player back down into 3-1 at column 162, where the coin
+;; heaven's drop lands (the arrival pad goes there too, once stepped off).
+
+[tiles]
+;; 0                16               32
+................ ................ ................
+................ ................ ................
+################ ################ ################
+#AAAAAAAAAAAAAAA BAAAAAAAAAAAAAAA BAAAAAAAAAAAAAA#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH BHHHHHHHHHHHHHHH BHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH HHHHBBBBBBHHHHHH HHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHH#
+#HHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHH#
+#HHHHHHHHHHHBBHH HHHHHHHHHHHHHHBB HHHHHHHHHHHHHHH#
+################ ################ ################
+################ ################ ################
+
+[entities]
+;; Mega Man, brainwashed by a rogue program, on the command deck (campaign only, until freed:
+;; docs/HEROES.md)
+captive 38 12 hero=megaman
+
+[zones]
+teleport 3 12 -> 3-1 162 0 exit=fall
+teleport 44 12 -> 3-1 162 0 exit=fall
+
+[decor]
+station:window 4 7
+station:girder 11 3
+station:girder 11 4
+station:girder 11 5
+station:console 7 12
+station:window 21 7
+station:girder 28 3
+station:girder 28 4
+station:girder 28 5
+station:console 33 12
+station:window 37 8
+station:girder 43 3
+station:girder 43 4
+station:girder 43 5
+station:console 41 12

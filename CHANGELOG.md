@@ -8,6 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Mega Man is hidden above 3-1's coin heaven: follow the coins past the end of the clouds, bump the
+  hidden block and step on the teleporter to beam up to a space station. His mini game, Station
+  Escape, is a Mega Man-style stage (robots, the Saw Disc capsule, a boss gate with a filling life
+  bar) ending in a fight with Dark Mega Man.
+- A new space station look (tiles, decor, robots) with original Mega Man-style music.
+- Teleport pads for levels (`teleport` zones) and decor from other sprite sheets (`sheet:frame`).
+
+### Changed
+
+- The freed-hero card uses the hero's full name ("MEGA MAN IS FREE!").
+
 ## [0.4.4] - 2026-10-06
 
 ### Added
