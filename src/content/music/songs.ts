@@ -3,6 +3,7 @@ import { smb3Songs } from './smb3';
 import { castlevaniaSongs } from './castlevania';
 import { ninjaSongs } from './ninja';
 import { contraSongs } from './contra';
+import { sophiaSongs } from './sophia';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1057,4 +1058,6 @@ export const songs: Song[] = [
   ...ninjaSongs,
   // Bill's jungle under 7-3 and his mini game.
   ...contraSongs,
+  // Sophia's Underworld and her mini game.
+  ...sophiaSongs,
 ];

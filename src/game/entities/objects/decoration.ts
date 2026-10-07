@@ -79,9 +79,11 @@ export function decorPalette(theme: string): string {
     theme === 'crypt' ||
     theme === 'dojo' ||
     theme === 'ninja-night' ||
-    theme === 'alien-lair'
+    theme === 'alien-lair' ||
+    theme === 'bm-dungeon'
   )
     return 'decor-night';
+  if (theme === 'underworld') return 'decor-underworld';
   if (theme === 'contra-jungle' || theme === 'contra-falls') return 'decor-jungle';
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern') return 'decor-cavern';
