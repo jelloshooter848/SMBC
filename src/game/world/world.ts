@@ -65,6 +65,7 @@ import { shellKickSeqScore, stompScore } from '../rules/score';
 import type { GameContext, GameState } from '../context';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
+import { drawThemeBackdrop } from './theme-backdrop';
 import { Lift } from '../entities/objects/lift';
 import { Candle, Respawner } from '../entities/objects/crypt';
 import {
@@ -2442,6 +2443,8 @@ export class World {
       theme,
       reduceFlashing: this.ctx.reduceFlashing,
     };
+    // A restyled theme's hall or skyline behind everything (theme-backdrop.ts).
+    drawThemeBackdrop(screen, view);
     // A free camera scrolls vertically too: the map is drawn moved up by its y (the backdrop and
     // the castle text stay screen-fixed). Every other level draws straight to the screen.
     let r = screen;

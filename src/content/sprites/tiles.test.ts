@@ -416,6 +416,9 @@ describe('tile sprites', () => {
         'tiles-contra-jungle',
         'tiles-contra-falls',
         'tiles-alien-lair',
+        // the 0.4.12 restyles of 5-4 and 6-2
+        'tiles-castlevania',
+        'tiles-ninja-city',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -487,6 +490,9 @@ describe('decor sprites', () => {
         'decor-gray',
         'decor-cavern',
         'decor-jungle',
+        // the 0.4.12 restyles of 5-4 and 6-2
+        'decor-castlevania',
+        'decor-ninja-city',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

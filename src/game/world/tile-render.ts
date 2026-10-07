@@ -114,10 +114,14 @@ export const SKY: Record<string, string> = {
   'airship-deck': '#3cbcfc',
   // Simon's crypt: the castle's black behind the night-blue brick.
   crypt: '#000000',
+  // 5-4 as Simon's castle hall: black over the hall's wall (theme-backdrop.ts paints it).
+  castlevania: '#000000',
   // Ryu's dojo: dark between the beams and screens.
   dojo: '#000000',
   // Ryu's moonlit town: a deep violet night over the roofs.
   'ninja-night': '#100828',
+  // 6-2 as Ryu's city street: a black night over the far towers (theme-backdrop.ts).
+  'ninja-city': '#000000',
   // Bill's jungle: NES Contra's black night sky, sparse stars (STARRY_SKIES) over snow-capped peaks.
   'contra-jungle': '#000000',
   // The waterfall: darker still, the cliff's shadow.

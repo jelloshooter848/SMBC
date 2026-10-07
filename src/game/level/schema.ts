@@ -27,10 +27,16 @@ export type Theme =
   | 'airship-deck'
   // Simon's crypt under 5-4 and his mini game's castle: grey stone, night-blue brick, candlelight.
   | 'crypt'
+  // 5-4's campaign look (0.4.12): Simon's castle hall, orange stone blocks before a grey brick wall.
+  // Castle gameplay keys off what it draws (lava, fire bars, Bowser, the axe), not the theme; its
+  // enemies take the castle's palette (enemyPalette) and hammer bros its solid floors.
+  | 'castlevania'
   // Ryu's hideout under 6-2: a night dojo of dark lacquered wood, shoji and lanterns.
   | 'dojo'
   // Ryu's mini game outdoors: a moonlit town of grey stone, tiled roofs and lit windows.
   | 'ninja-night'
+  // 6-2's campaign look (0.4.12): Ryu's city street at night, pavement, red brick, a far skyline.
+  | 'ninja-city'
   // Bill's jungle (7-3's campaign look, his camp, his mini game): rock, girders, palms, a river.
   | 'contra-jungle'
   // Bill's waterfall climb out of the camp: wet rock ledges, falling water, mist.
@@ -60,8 +66,10 @@ export const THEMES: readonly Theme[] = [
   'airship',
   'airship-deck',
   'crypt',
+  'castlevania',
   'dojo',
   'ninja-night',
+  'ninja-city',
   'contra-jungle',
   'contra-falls',
   'alien-lair',
@@ -87,6 +95,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'crypt') return 'crypt';
   if (theme === 'dojo') return 'dojo';
   if (theme === 'ninja-night') return 'ng-stage';
+  if (theme === 'castlevania') return 'cv-hall';
+  if (theme === 'ninja-city') return 'ng-city';
   if (theme === 'contra-jungle' || theme === 'contra-falls') return 'contra-jungle';
   if (theme === 'alien-lair') return 'contra-lair';
   return 'overworld';
