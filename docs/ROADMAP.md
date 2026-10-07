@@ -39,14 +39,36 @@ hook built for 7-3 (`campaignTheme:`, `campaignMusic:`, `[campaign-decor]` in th
 
 ### A coherent story (0.4.13)
 
-The owner wants one story that runs from the start through 8-4, and explains why 8-4 leads on into the Lost Levels.
+One story runs from the start through 8-4, and explains why 8-4 leads on into the Lost Levels.
 
-- **A guide on the world map** walks you through it, gives hints, and comments when you clear a level whose hidden hero
-  you missed.
-- **Partner characters** (like Jason for Sophia) for the other hidden heroes, who give hints about where to find them.
-- **The castle messages are rewritten.** "Our princess is in another castle" no longer fits this story, so each
-  castle gets its own story beat.
-- **Process:** first draft every line in a story document for the owner to review, then build.
+**Owner decisions:**
+
+- **Premise:** Princess Peach is in hiding. King Koopa stole Larry's magic wand and used it to pull heroes from other
+  worlds into the Mushroom Kingdom and brainwash them, so they would hunt for Peach and he could kidnap her. Mario's
+  job is to find her first.
+- **The wand runs through the whole story.** It breaks when Bowser falls at 8-4, and its pieces fall through a rift
+  into the Lost Kingdom (the Lost Levels). Mario follows. The Koopalings want the pieces too, which ties in idea 1
+  below.
+- **Peach is found in the Lost Levels.** Where exactly is still to be decided. She then becomes a **playable hero**
+  who helps fight back. That is a new character kit and needs its own planning.
+- **Toad is the guide on the world map.** He's a typical helper, and players meet him in 1-0.
+- **Toad's hints are part of the story, never obvious:**
+  - When you enter a new world, Toad says who we're looking for. He describes the hero without naming them, and hints
+    at the kind of place, for example "a hunter of the night… probably down in some dungeon".
+  - When a hero's shadow shows up on the map (a hero you passed without freeing), he lightly says it feels like we
+    missed something.
+- **The castle messages are rewritten.** "Our princess is in another castle" no longer fits, because Peach is hiding
+  rather than captured. Each castle gets its own story beat.
+- **Partner characters** for the other hidden heroes, like Jason for Sophia, who give clues about where to find them.
+  Proposed partners:
+  - Link: the old man in the cave;
+  - Mega Man: Dr. Light;
+  - Samus: a Chozo statue;
+  - Simon: a Castlevania II townsperson;
+  - Ryu: Irene Lew;
+  - Bill: Lance.
+- **Process:** first draft every line in a story document (docs/STORY.md) for the owner to review and edit, then
+  build.
 
 ## Ideas for later
 
