@@ -527,8 +527,8 @@ pit x -> level x y [w=N] [campaign]
   (x, y) rightward. At rest: the `contra` sheet's `blast-bridge-0/1` over its girders (the red
   light blinking about once a second; steady with reduce flashing), or without the sheet a post
   with a blinking red lamp on the tile before its left end. The campaign variant also lays a coin
-  arrow pointing down at its marked end (`blastArrow`: tip two tiles above the girders over its
-  second segment, a head of three and a shaft of two; open air only).
+  arrow pointing down at its marked end (`blastArrow`: a shaft of two, then a head of five, three
+  and one, tip two tiles above the girders over its third segment; open air only).
 - **The chain**: a hero standing on an intact segment sets it off, from the end it came on at
   (the end of the half it stands on, whichever way it faces). The first segment blows `BLAST_DELAY` (36) frames after the step, then one
   every `blastStep` frames: the chain runs at `BLAST_PACE` (0.8) of the slowest active hero's

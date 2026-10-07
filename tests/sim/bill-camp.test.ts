@@ -146,12 +146,17 @@ describe('the campaign variant of 7-3', () => {
     ]);
     const arrow = blastArrow({ type: 'bridge-blast', x: 128, y: 10 });
     expect(arrow).toEqual([
-      [129, 5],
+      [130, 4],
+      [130, 5],
+      [128, 6],
       [129, 6],
-      [128, 7],
+      [130, 6],
+      [131, 6],
+      [132, 6],
       [129, 7],
       [130, 7],
-      [129, 8],
+      [131, 7],
+      [130, 8],
     ]);
     const changed: [number, number][] = [];
     for (let y = 0; y < l.height; y++)
