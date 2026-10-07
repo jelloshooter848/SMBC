@@ -26,6 +26,8 @@ under `## [Unreleased]`.
 - Known issue: with only her Normal power, Sophia can't finish 8-4, 3-3, 4-3 and some Lost Levels yet. Level variants
   for her come with the finishing pass.
 
+## [0.4.17] - 2026-10-07
+
 ### Changed
 
 - Zebes Escape (Samus) now ends like Metroid: fight through Tourian to the brain in its glass tank, then climb the
@@ -536,7 +538,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.16...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.17...HEAD
+[0.4.17]: https://github.com/jelloshooter848/SMBC/compare/v0.4.16...v0.4.17
 [0.4.16]: https://github.com/jelloshooter848/SMBC/compare/v0.4.15...v0.4.16
 [0.4.15]: https://github.com/jelloshooter848/SMBC/compare/v0.4.14...v0.4.15
 [0.4.14]: https://github.com/jelloshooter848/SMBC/compare/v0.4.13...v0.4.14
