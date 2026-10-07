@@ -43,7 +43,9 @@ import type { Action } from '@engine/input/actions';
 import type { CharacterDef } from '@game/characters/character';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
-import { file, makeGame, useStorage, type H } from './heroes-harness';
+import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
+import { hudAreaLines } from '@game/hud/hud';
+import { LIGHT_SKIES } from '@game/world/tile-render';
 
 // The Top Secret Area (owner design for 0.4.10, after Super Mario World's): in campaign play a
 // hidden block at the top of 2-1's last tower lays a cloud path toward the flagpole, so every hero
@@ -64,7 +66,11 @@ const tile = (l: { tiles: Uint16Array; width: number }, x: number, y: number) =>
 /** The pole: column 200, its ball on row 2; the last tower: columns 190-191, its top on row 3. */
 const POLE_X = 200;
 const ON_TOWER = { x: 190, y: 2, mode: 'stand' as const, time: 300 };
-const HIDDEN = { x: 190, y: 0 };
+/** The hidden block: high over the bricks (185-186, row 9), left of 2-1's hidden coin block (186,5). */
+const HIDDEN = { x: 184, y: 0 };
+/** Standing on the hidden coin block (once bumped: 2-1's ordinary way up the last tower). */
+const ON_COIN_BLOCK = { x: 186, y: 4, mode: 'stand' as const, time: 300 };
+const COIN_BLOCK = { x: 186, y: 5 };
 const PATH = { x: 192, y: 3, w: 7 };
 const INTO_CAVE = { level: '2-1-cave', x: 1, y: 12 };
 const TSA = '2-top-secret';
@@ -169,10 +175,19 @@ function overThePole(level: LevelData, c: CharacterDef, power: string): boolean 
   return false;
 }
 
+/** Campaign 2-1 with its hidden coin block already bumped (a used block), as on the way up. */
+function coinShown(): LevelData {
+  const l = camp21();
+  const tiles = new Uint16Array(l.tiles);
+  tiles[COIN_BLOCK.y * l.width + COIN_BLOCK.x] = T.USED;
+  return { ...l, tiles };
+}
+
 /**
- * The bot, for each player on his own: jump straight up on the tower (player 1 under the hidden
- * block), wait for the path, then run right along it and jump off its far end, holding right on
- * past the castle into the cave mouth. Returns how it ended and whether anyone touched the pole.
+ * The bot, for each player on his own, from the top of the tower once the hidden block has been
+ * bumped (it is found elsewhere, below): wait for the path, then run right along it and jump off
+ * its far end, holding right on past the castle into the cave mouth. Returns how it ended and
+ * whether anyone touched the pole.
  */
 function secretRoute(c: CharacterDef, power: string, players = 1) {
   const state = {
@@ -191,7 +206,8 @@ function secretRoute(c: CharacterDef, power: string, players = 1) {
     state,
     { ...ON_TOWER },
   );
-  const bots = w.players.map(() => ({ phase: 'bump' as 'bump' | 'wait' | 'run' | 'jump', at: -1 }));
+  w.strikeBlock(HIDDEN.x, HIDDEN.y, w.player, false);
+  const bots = w.players.map(() => ({ phase: 'wait' as 'wait' | 'run' | 'jump', at: -1 }));
   const inputs = w.players.map(() => new ScriptedInput({ steps: [] }));
   const events: WorldEvent[] = [];
   let touched = false;
@@ -199,10 +215,7 @@ function secretRoute(c: CharacterDef, power: string, players = 1) {
     w.players.forEach((p, i) => {
       const bot = bots[i] as (typeof bots)[number];
       let hold: Action[] = [];
-      if (bot.phase === 'bump') {
-        if (w.map.get(HIDDEN.x, HIDDEN.y) !== T.HIDDEN_PATH) bot.phase = 'wait';
-        else hold = f % 40 < 20 ? ['jump'] : [];
-      } else if (bot.phase === 'wait') {
+      if (bot.phase === 'wait') {
         if (!w.layingPath && p.body.onGround) bot.phase = 'run';
       } else {
         hold = ['right', 'run'];
@@ -240,13 +253,19 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
   });
 
   it('bumping the hidden block lays seven cloud blocks toward the pole, one by one, and says so', () => {
+    // Small Mario on the hidden coin block walks left and jumps up-left at its edge.
     const r = runSim({
-      level: camp21(),
+      level: coinShown(),
       character: MARIO,
-      script: { steps: [{ frame: 5, hold: ['jump'] }] },
-      start: ON_TOWER,
+      script: {
+        steps: [
+          { frame: 0, hold: ['left'] },
+          { frame: 18, hold: ['left', 'jump'] },
+        ],
+      },
+      start: ON_COIN_BLOCK,
       until: (w) => w.layingPath,
-      maxFrames: 60,
+      maxFrames: 80,
     });
     expect(r.outcome).toBe('stopped');
     expect(r.events).toContainEqual({ type: 'path' });
@@ -264,6 +283,96 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
     // The pole's column stays clear: the path ends two tiles short of it.
     expect(PATH.x + PATH.w).toBe(POLE_X - 1);
     expect(PATH_SAID).toMatch(/path/);
+  });
+
+  it.each(runs)(
+    '%s can find it: from the hidden coin block, a jump back up-left bumps it',
+    (_n, c, power) => {
+      // Walk left off the coin block's top and jump at some moment: one of them bumps it (each
+      // hero's walk and jump differ, so the moment does), and the path starts.
+      const hits: number[] = [];
+      for (let j = 0; j <= 40; j += 2) {
+        const r = runSim({
+          level: coinShown(),
+          character: c,
+          state: { powerState: power },
+          script: {
+            steps: [
+              { frame: 0, hold: ['left'] },
+              { frame: j, hold: ['left', 'jump'] },
+            ],
+          },
+          start: ON_COIN_BLOCK,
+          until: (w) => w.layingPath,
+          maxFrames: 120,
+        });
+        if (r.outcome === 'stopped') hits.push(j);
+      }
+      expect(hits.length).toBeGreaterThan(0);
+    },
+  );
+
+  it.each(runs)(
+    '%s: ordinary play never bumps it (ground, springboard, bricks, coin block, tower)',
+    (name, c, power) => {
+      // Every hero, small and big: runs and walks from the last stretch of ground, the bricks, the
+      // hidden coin block and the tower top, heading right (or standing, or from the bricks and
+      // tower jumping back left), jumping at many moments, short and long; bouncing on the
+      // springboard (jump pressed as it squashes) or not. Only a deliberate jump back up-left from
+      // the coin block (above) finds the block.
+      const coin = coinShown();
+      const starts = [
+        { name: 'ground 172', level: camp21(), at: { x: 172, y: 12 }, dirs: ['right'] },
+        { name: 'ground 180', level: camp21(), at: { x: 180, y: 12 }, dirs: ['right'] },
+        { name: 'bricks', level: camp21(), at: { x: 185, y: 8 }, dirs: ['right', 'none', 'left'] },
+        { name: 'coin block', level: coin, at: { x: 186, y: 4 }, dirs: ['right', 'none'] },
+        { name: 'tower', level: camp21(), at: { x: 190, y: 2 }, dirs: ['right', 'none', 'left'] },
+      ] as const;
+      let tries = 0;
+      const bumped: string[] = [];
+      for (const s of starts)
+        for (const dir of s.dirs)
+          for (const run of [true, false])
+            for (let j = 0; j <= 84; j += 12)
+              for (const hold of [8, 40])
+                for (const spring of dir === 'right' ? [false, true] : [false]) {
+                  tries++;
+                  let hit = false;
+                  runSim({
+                    level: s.level,
+                    character: c,
+                    assist: { invulnerable: true },
+                    state: { powerState: power },
+                    script: { steps: [] },
+                    start: { ...s.at, mode: 'stand', time: 300 },
+                    maxFrames: 260,
+                    controller: (w, f) => {
+                      const h: Action[] = dir === 'none' ? [] : [dir];
+                      if (run) h.push('run');
+                      if (f >= j && f < j + hold) h.push('jump');
+                      // On the springboard (column 188): jump as it squashes, for the high bounce.
+                      if (spring && Math.abs(toPx(w.player.body.x) - 188 * 16) < 24 && f % 2 === 0)
+                        h.push('jump');
+                      return h;
+                    },
+                    until: (w) => {
+                      hit ||= w.map.get(HIDDEN.x, HIDDEN.y) !== T.HIDDEN_PATH;
+                      return hit || !!w.flagGrabbedBy || toPx(w.player.body.x) > 3230;
+                    },
+                  });
+                  if (hit)
+                    bumped.push(
+                      `${name} from ${s.name} ${dir} run=${run} jump@${j}+${hold} spring=${spring}`,
+                    );
+                }
+      expect(tries).toBeGreaterThan(400);
+      expect(bumped).toEqual([]);
+    },
+  );
+
+  it('2-1 has the hidden coin block the way up uses, and the springboard', () => {
+    expect(tile(raw(), COIN_BLOCK.x, COIN_BLOCK.y)).toBe(T.HIDDEN_COIN);
+    expect(raw().entities).toContainEqual({ type: 'spring', x: 188, y: 12 });
   });
 
   it('before the path, only Luigi can jump over the pole from the tower (measured, v0.4.9)', () => {
@@ -769,5 +878,44 @@ describe('save files never break', () => {
       position: { page: 'smb-2', node: 'bonus-2' },
     });
     expect(map(h3).node).toBe('bonus-2');
+  });
+});
+
+describe('review fixes (0.4.10)', () => {
+  it('a Moblin without a secret is left out (he would end the level with none); every bundled one has one', () => {
+    const l = getLevel('2-1-cave');
+    const bare: LevelData = {
+      ...l,
+      entities: l.entities.map((e) => (e.type === 'moblin' ? { ...e, props: { next: '2-2-intro' } } : e)),
+    };
+    const r = runSim({ level: bare, character: MARIO, script: { steps: [] }, maxFrames: 5 });
+    expect(r.world.entities.some((e) => e instanceof Moblin)).toBe(false);
+    for (const id of levelIds())
+      for (const e of getLevel(id).entities)
+        if (e.type === 'moblin')
+          expect(typeof e.props?.secret === 'string' && e.props.secret !== '', id).toBe(true);
+  });
+
+  it("the Top Secret Area's HUD names it instead of WORLD 2-1, shows no TIME, and outlines its text on the cream sky", () => {
+    expect(hudAreaLines('TOP SECRET AREA')).toEqual(['TOP SECRET', 'AREA']);
+    expect(hudAreaLines('BONUS')).toEqual(['BONUS', '']);
+    expect(LIGHT_SKIES.has('smw-secret')).toBe(true);
+    expect(LIGHT_SKIES.has('overworld')).toBe(false);
+    const h = makeGame();
+    h.game.devStart(TSA, MARIO, 'small');
+    h.until(() => h.top() instanceof LevelScene, 400);
+    const strs = draw(h.top() as LevelScene).texts.map((t) => t.str);
+    expect(strs).toContain('TOP SECRET');
+    expect(strs).toContain('AREA');
+    expect(strs).not.toContain('WORLD');
+    expect(strs).not.toContain('TIME');
+    // Each text is drawn five times: four dark outline passes, then the white letters.
+    expect(strs.filter((t) => t === 'TOP SECRET')).toHaveLength(5);
+    // A level with a normal sky keeps the plain HUD.
+    const h2 = makeGame();
+    h2.game.devStart('2-1', MARIO, 'small');
+    h2.until(() => h2.top() instanceof LevelScene, 400);
+    const plain = draw(h2.top() as LevelScene).texts.map((t) => t.str);
+    expect(plain.filter((t) => t === 'WORLD')).toHaveLength(1);
   });
 });

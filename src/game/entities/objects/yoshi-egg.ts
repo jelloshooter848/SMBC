@@ -33,11 +33,26 @@ export function yoshiUnlocked(_world: World): boolean {
  * The hook for a later release: when `yoshiUnlocked(world)`, spawn Yoshi here instead (TODO above).
  */
 export function hatch(world: World, cx: number, feet: number): Entity {
-  // TODO(yoshi): if (yoshiUnlocked(world)) return world.spawn(new Yoshi(...)) once he exists.
+  if (yoshiUnlocked(world)) return hatchYoshi(world, cx, feet);
+  return hatchOneUp(world, cx, feet);
+}
+
+/** A 1-up mushroom hops out of the egg and runs off (Super Mario World's egg with Yoshi along). */
+function hatchOneUp(world: World, cx: number, feet: number): Entity {
   const out = PowerUp.hopOut(cx, feet, '1up');
   world.spawn(out);
   world.audio.sfx('powerup-appear');
   return out;
+}
+
+/**
+ * Yoshi out of his egg, once he is unlocked.
+ *
+ * TODO(yoshi): spawn Yoshi here (`world.spawn(new Yoshi(cx, feet))`) once he exists. Until then
+ * (yoshiUnlocked is always false, so this never runs) the 1-up stands in.
+ */
+function hatchYoshi(world: World, cx: number, feet: number): Entity {
+  return hatchOneUp(world, cx, feet);
 }
 
 /**

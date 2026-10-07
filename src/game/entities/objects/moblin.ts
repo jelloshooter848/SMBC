@@ -11,7 +11,8 @@ export const MOBLIN_STARTLE_FRAMES = 30;
 /**
  * The friendly Moblin hiding in 2-1's cave past its castle (`moblin x y secret=bonus-2
  * next=2-2-intro`, 0.4.10; docs/WORLD_MAP.md "The Top Secret Area"). A Zelda-style pig-faced
- * spearman in original art, 16x24, standing on the tile below (x, y), facing the way in. He
+ * brute in original art, 24x32 (about big Mario's height), his feet on the tile below (x, y), his
+ * body centred on column x, facing the way in. He
  * breathes slowly (`moblin-0/1`); the first time a player on the ground comes within reach he
  * jumps with surprise (`moblin-surprised`), everyone stops where they are, and a moment later he
  * raises one `moblin` event: the level plays his cards and ends (scenes/level.ts; campaign: 2-1
@@ -33,7 +34,7 @@ export class Moblin extends Entity {
     readonly secret: string,
     readonly next: string | null,
   ) {
-    super(px(tx * 16), px((ty + 1) * 16 - 24), 16, 24);
+    super(px(tx * 16 - 4), px((ty + 1) * 16 - 32), 24, 32);
     this.layer = 'back';
     this.despawnMargin = null;
     this.facing = -1;
@@ -46,7 +47,7 @@ export class Moblin extends Entity {
 
   update(world: World): void {
     this.t++;
-    const cx = toPx(this.body.x) + 8;
+    const cx = toPx(this.body.x) + 12;
     if (this.startled < 0) {
       const players = world.activePlayers();
       const p = players.find((q) => q.body.onGround && Math.abs(toPx(q.centerX) - cx) <= MOBLIN_REACH_PX);
@@ -76,7 +77,7 @@ export class Moblin extends Entity {
     let lift = 0;
     if (this.startled >= 0) {
       frame = 'moblin-surprised';
-      // A little jump of surprise: up 4 px and back down over his first 12 frames.
+      // A little jump of surprise: up 6 px and back down over his first 12 frames.
       if (this.startled < 12) lift = this.startled < 6 ? this.startled : 12 - this.startled;
     }
     // The frames face LEFT; flipped when he turns to a player on his right.

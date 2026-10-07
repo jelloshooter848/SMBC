@@ -68,6 +68,12 @@ function drawCracked(r: Renderer, view: View, sheet: SpriteSheet, x: number, y: 
   r.rect(x + 10, y + 7, 4, 1, crack);
 }
 
+/**
+ * Themes whose sky is so light the white HUD letters would sink into it: the HUD outlines every
+ * text in black there (HudOptions.outline). The Top Secret Area's cream.
+ */
+export const LIGHT_SKIES: ReadonlySet<string> = new Set(['smw-secret']);
+
 /** Themes whose black sky has stars in it (Bill's jungle, as NES Contra's first stage). */
 export const STARRY_SKIES: ReadonlySet<string> = new Set(['contra-jungle']);
 

@@ -6,6 +6,7 @@ import { MAP_EXIT, type LevelData } from '../level/schema';
 import { freshSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
 import { drawHud } from '../hud/hud';
+import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
 import { startHp } from '../characters/character';
 import type { Game } from './game';
@@ -412,6 +413,9 @@ export class LevelScene implements Scene {
     const time = this.world.timeHidden ? null : this.world.time;
     drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players, {
       covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
+      // A fill-up spot (the Top Secret Area) shows its name instead of WORLD and TIME.
+      ...(this.level.bonus ? { area: this.level.name } : {}),
+      outline: LIGHT_SKIES.has(this.world.level.theme),
     });
     this.tutorial?.render(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);

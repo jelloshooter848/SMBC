@@ -412,9 +412,18 @@ can be touched from the far side too, by walking back left into it).
   walking jump off its edge: **only Luigi** (small and big). Mario fell 5 px short; everyone else
   further (Simon's committed jump carries him 58 px).
 - **The hidden block** (so every hero can, once they think to look): a `path` zone, `path 192 3 7
-block=190,0 campaign`. In the campaign a hidden block (tile `9`, T.HIDDEN_PATH, invisible and
-  bumpable only from below, like every hidden block) sits on row 0 above the tower's **left** column;
-  jumping straight up there bumps it. It turns into a used block and lays a **cloud path**: seven
+block=184,0 campaign`. In the campaign a hidden block (tile `9`, T.HIDDEN_PATH, invisible and
+  bumpable only from below, like every hidden block) sits on row 0 over column 184: high above the
+  bricks (185-186, row 9), up and **left** of 2-1's hidden coin block (186,5), the one the way up
+  the tower uses. Standing on that coin block, a hero who walks back off its left edge and jumps
+  up-left bumps it; every hero can (each at his own moment, `tests/sim/top-secret.test.ts`), and
+  the springboard (188) takes him back up to the tower. Ordinary play never touches it: a probe
+  test drives every hero, small and big, from the ground, the bricks, the coin block and the tower
+  top, heading right (or standing, or jumping back left off the bricks or the tower), jumping at
+  many moments, short and long, with and without the springboard's high bounce (about 480 runs a
+  hero): nothing bumps it. (0.4.10's review: a first spot over the tower itself was bumped by
+  ordinary springboard approaches, which cut the hero's jump at the pole.) It turns into a used
+  block and lays a **cloud path**: seven
   cloud blocks (T.CLOUD_BLOCK) on row 3, columns 192-198, level with the tower top, one every
   `PATH_STEP_FRAMES` (6) with a pop (`World.layPath`; the announcer says "A path of clouds
   appears."). The path stops a tile short of the pole's column. Every hero runs along it and jumps
@@ -427,7 +436,9 @@ block=190,0 campaign`. In the campaign a hidden block (tile `9`, T.HIDDEN_PATH, 
 **The Moblin's cave** (`2-1-cave`, an area of 2-1: parent `2-1`, the clock carries on): one locked
 screen, dark rock (the `underground` theme), two fires (`cave-fire`, entities/objects/moblin.ts) and
 between them a friendly **Moblin** (`moblin 9 12 secret=bonus-2 next=2-2-intro`, Zelda-style, original
-art, 16x24: `items:moblin-0/1` breathing, `items:moblin-surprised`). When a player on the ground comes
+art, 24x32, about big Mario's height: a pig-faced brute with heavy jowls, a pale snout with two
+nostrils and a thick spear; `items:moblin-0/1` breathing, `items:moblin-surprised`; a `moblin` with
+no `secret=` is left out, so no empty secret is ever recorded). When a player on the ground comes
 within 56 px he jumps with surprise, everyone stops, and his cards play over the cave (a box at the
 top, each read out, OK = JUMP to go on): `...!` / `YOU FOUND ME?!` / `I'LL SHOW YOU A SECRET PATH...
 AS LONG AS YOU DON'T TELL ANYONE.` / `IT'S A SECRET TO EVERYBODY.` (the `secret` jingle). Then:
@@ -451,7 +462,9 @@ there and no save field is added.
 
 **The Top Secret Area** (`2-top-secret.map`, header `bonus: true`: `LevelData.bonus`, a fill-up
 spot: no clock, no WORLD card; it is entered straight from character select, the announcer says
-"Top Secret Area."): one locked screen in the `smw-secret` theme, five `?` blocks in a row on row 9,
+"Top Secret Area."; its HUD shows the area's name, `TOP SECRET` / `AREA`, where WORLD 2-1 would
+be, and no TIME, HudOptions.area; on its light sky every HUD text has a dark outline, `LIGHT_SKIES`
+and HudOptions.outline): one locked screen in the `smw-secret` theme, five `?` blocks in a row on row 9,
 columns 6-10:
 
 | Block      | Tile (map char)  | Gives                                                             |

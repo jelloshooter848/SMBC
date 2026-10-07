@@ -819,12 +819,13 @@ export class World {
       case 'candle':
         return new Candle(s.x, s.y);
       case 'moblin':
-        return new Moblin(
-          s.x,
-          s.y,
-          String(s.props?.secret ?? ''),
-          typeof s.props?.next === 'string' ? s.props.next : null,
-        );
+        // He ends the level with his secret: without one (`secret=<key>`) he is left out (and the
+        // level library's tests reject such a map).
+        if (typeof s.props?.secret !== 'string' || !s.props.secret) {
+          console.warn('a moblin needs secret=<key>');
+          return null;
+        }
+        return new Moblin(s.x, s.y, s.props.secret, typeof s.props.next === 'string' ? s.props.next : null);
       case 'cave-fire':
         return new CaveFire(s.x, s.y);
       case 'decor':
