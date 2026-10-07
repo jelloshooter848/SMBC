@@ -4,6 +4,7 @@ import { px, tileAt, toPx } from '@engine/math/units';
 import { T } from '../../level/tiles';
 import { Entity, type View } from '../entity';
 import type { Player } from '../player';
+import type { MovementProfile } from '../../characters/profile';
 import type { World } from '../../world/world';
 
 /*
@@ -11,29 +12,51 @@ import type { World } from '../../world/world';
  * camp; docs/HEROES.md). `bridge-blast x y w=N campaign=true` marks the N bridge tiles from (x, y)
  * rightward: steel girders with a blinking red light on the post at their end. When a hero steps
  * onto them they blow up segment by segment, as the bridges of Contra's first stage do: from the
- * end the hero came on at (BLAST_DELAY frames after the step), each segment flashes for BLAST_FLASH
- * frames, then explodes (a boom and its sound) and is gone (open air). The chain runs at BLAST_PACE of the slowest hero's top
- * running speed, so a hero who keeps running just about outruns it; one who stops falls through
- * the gap, which a campaign `pit` zone over the bridge's columns turns into the drop into the camp.
+ * end the hero came on at, each segment flashes for BLAST_FLASH frames, then explodes (a boom and
+ * its sound) and is gone (open air). The chain chases a ghost: a hero with the slowest active
+ * hero's movement setting off at the moment of the step (as fast as the hero who stepped on, else
+ * from rest), at that hero's top speed once up to it (`blastTimes`); each segment blows once the
+ * ghost is BLAST_LEAD px past its far end. So
+ * a hero who runs flat out from rest on the post just about outruns it (8-25 px to spare, every
+ * hero); one who walks or stops falls through the gap, which a campaign `pit` zone over the
+ * bridge's columns turns into the drop into the camp.
  * The bridge is whole again whenever the level is entered again (a respawn, a re-entry): the map's
  * tiles are copied fresh for every World.
  */
 
-/** Frames from a hero stepping on to the first segment's blast (the first one's warning). */
-export const BLAST_DELAY = 36;
+/**
+ * How far (px) the chain's ghost runs past a segment's far end before that segment blows. A hero
+ * stepping on from rest stands about 11 px behind the bridge's end, so the chain keeps roughly
+ * BLAST_LEAD - 11 px behind its heels the whole way across (QA 0.4.9: the old 0.8-pace chain left
+ * 40-80 px by the far pillar).
+ */
+export const BLAST_LEAD = 28;
 /** Frames a segment flashes before it blows. */
 export const BLAST_FLASH = 16;
-/** The chain's speed as a share of the slowest hero's top running speed: just about outrun. */
-export const BLAST_PACE = 0.8;
 /** Frames the boom sprite shows (four frames of the explosion). */
 export const BOOM_FRAMES = 20;
 /** The `contra` sheet (B3's art): `blast-bridge-0..1`, `boom-0..3`; rect and item fallbacks without it. */
 export const CONTRA_SHEET = 'contra';
 
-/** Frames between two segments' blasts for a hero whose top speed is `maxRun` (1/4096 px a frame). */
-export function blastStep(maxRun: number): number {
-  const v = (BLAST_PACE * maxRun) / 4096;
-  return Math.max(1, Math.ceil(16 / Math.max(v, 0.25)));
+/**
+ * The frames (from the step) the bridge's `n` segments blow, in chain order, for a hero with
+ * movement `m` stepping on at `speed` (|vx|, 1/4096 px a frame): a ghost of that hero runs on from
+ * the bridge's end at that speed, or from rest (its first step at `minWalk`), speeding up by
+ * `runAccel` (`walkAccel` for heroes who cannot run) to its top speed (Mega Man straight at his),
+ * and each segment blows the first frame the ghost is BLAST_LEAD px past its far end.
+ */
+export function blastTimes(m: MovementProfile, n: number, speed = 0): number[] {
+  const top = m.canRun ? m.maxRun : m.maxWalk;
+  const accel = m.canRun ? m.runAccel : m.walkAccel;
+  const out: number[] = [];
+  let v = Math.min(top, Math.abs(speed));
+  let g = 0;
+  for (let t = 1; out.length < n; t++) {
+    v = m.instantAccel ? top : v === 0 ? Math.max(1, m.minWalk) : Math.min(top, v + accel);
+    g += v;
+    while (out.length < n && g >= (16 * (out.length + 1) + BLAST_LEAD) * 4096) out.push(t);
+  }
+  return out;
 }
 
 /** Whether the `contra` sheet is registered and has `frame`. */
@@ -59,8 +82,8 @@ export class BridgeBlast extends Entity {
   t = 0;
   /** Which way the chain runs: 1 from the left end (a hero coming from the left), -1 from the right. */
   dir: 1 | -1 = 1;
-  /** Frames between two segments' blasts (blastStep of the slowest hero on the level). */
-  step = 0;
+  /** The frame (since the chain started) each segment blows, in chain order (blastTimes). */
+  times: number[] = [];
   /** Segments blown so far, in chain order. */
   blown = 0;
 
@@ -80,7 +103,7 @@ export class BridgeBlast extends Entity {
 
   /** The frame (since the chain started) the k-th segment in chain order blows. */
   blowAt(k: number): number {
-    return BLAST_DELAY + k * this.step;
+    return this.times[k] ?? Infinity;
   }
 
   /** A hero standing on an intact segment of this bridge. */
@@ -94,14 +117,19 @@ export class BridgeBlast extends Entity {
 
   /**
    * Starts the chain from the end `p` came on at: the end of the half of the bridge it stands on
-   * (whichever way it faces: a hero may land facing back), paced for the slowest hero.
+   * (whichever way it faces: a hero may land facing back), paced for the slowest hero: the one
+   * whose ghost takes longest to cross.
    */
   private trigger(world: World, p: Player): void {
     this.state = 'blowing';
     this.t = 0;
     this.dir = toPx(p.centerX) < this.tx * 16 + (this.w * 16) / 2 ? 1 : -1;
-    const slowest = Math.min(...world.activePlayers().map((o) => o.profile.maxRun));
-    this.step = blastStep(slowest);
+    const last = (t: number[]) => t[t.length - 1] ?? 0;
+    this.times = [];
+    for (const o of world.activePlayers()) {
+      const times = blastTimes(o.profile, this.w, o === p ? o.body.vx : 0);
+      if (this.times.length === 0 || last(times) > last(this.times)) this.times = times;
+    }
   }
 
   update(world: World): void {
