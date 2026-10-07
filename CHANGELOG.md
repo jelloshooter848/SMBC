@@ -8,6 +8,11 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- A secrets guide in docs/secrets/: every hidden hero, hidden area, secret exit and warp spot in the campaign, with
+  step-by-step screenshots (spoilers, for players who want the answers).
+
 ## [0.4.12] - 2026-10-07
 
 ### Added
