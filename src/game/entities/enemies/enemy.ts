@@ -27,6 +27,7 @@ export function enemyPalette(theme: Theme): string {
   switch (theme) {
     case 'underground':
     case 'cavern':
+    case 'brinstar':
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':

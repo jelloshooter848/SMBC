@@ -3,6 +3,9 @@ import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
 import { smwDecorFrames, smwDecorPalette } from './top-secret';
+import { zelda2DecorFrames, zelda2DecorPalette } from './zelda2-look';
+import { megamanDecorFrames, megamanDecorPalette } from './megaman-look';
+import { brinstarDecorFrames, brinstarDecorPalette } from './brinstar-look';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -114,6 +117,10 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-jungle': jungleDecorPalette,
   /* The Top Secret Area: Super Mario World greens, white sparkles. */
   'decor-smw': smwDecorPalette,
+  // The campaign looks of 2-1, 3-1 and 4-2.
+  'decor-zelda2': zelda2DecorPalette,
+  'decor-megaman-stage': megamanDecorPalette,
+  'decor-brinstar': brinstarDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -675,5 +682,9 @@ export const decorDef: SpriteDef = {
     ...jungleDecorFrames,
     // The Top Secret Area: a big sparkly hill, a small one, bushes.
     ...smwDecorFrames,
+    // The campaign looks of 2-1, 3-1 and 4-2: forest trees, clouds, pipe stacks, brush.
+    ...zelda2DecorFrames,
+    ...megamanDecorFrames,
+    ...brinstarDecorFrames,
   },
 };

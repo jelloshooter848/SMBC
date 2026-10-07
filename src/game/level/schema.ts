@@ -39,7 +39,12 @@ export type Theme =
   | 'alien-lair'
   // The Top Secret Area behind World 2's hidden bonus spot (0.4.10), in a Super Mario World look:
   // grass-topped dirt, green bush hills and a big sparkly hill under a cream sky.
-  | 'smw-secret';
+  | 'smw-secret'
+  // Campaign looks (0.4.12): 2-1 as a Zelda II field, 3-1 as a Mega Man night stage, 4-2 as
+  // Metroid's Brinstar.
+  | 'zelda2'
+  | 'megaman-stage'
+  | 'brinstar';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -69,6 +74,9 @@ export const THEMES: readonly Theme[] = [
   'contra-falls',
   'alien-lair',
   'smw-secret',
+  'zelda2',
+  'megaman-stage',
+  'brinstar',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -94,6 +102,9 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'ninja-night') return 'ng-stage';
   if (theme === 'contra-jungle' || theme === 'contra-falls') return 'contra-jungle';
   if (theme === 'alien-lair') return 'contra-lair';
+  if (theme === 'zelda2') return 'zelda2-field';
+  if (theme === 'megaman-stage') return 'mm-stage-31';
+  if (theme === 'brinstar') return 'brinstar';
   return 'overworld';
 }
 
