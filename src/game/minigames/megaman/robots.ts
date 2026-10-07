@@ -422,7 +422,8 @@ export class EnemyShot extends Entity {
 /* ---------- The weapon capsule ---------- */
 
 /**
- * The weapon capsule: hovers over its spot with a small bob; Mega Man touching it calls `onTake`
+ * The weapon capsule: hovers over its spot with a small bob; Mega Man touching it, or passing
+ * anywhere above it (so a jump over the pillar cannot skip it), calls `onTake`
  * (the scene unlocks the Saw Disc and shows how to use it) and it is gone.
  */
 export class WeaponCapsule extends Entity {
@@ -439,8 +440,11 @@ export class WeaponCapsule extends Entity {
 
   update(world: World): void {
     this.age++;
+    // Its columns from the top of the screen down to its base: a jump over it still takes it.
+    const b = this.body;
+    const reach = { x: b.x, y: 0, w: b.w, h: b.y + b.h };
     for (const p of world.activePlayers()) {
-      if (!overlaps(this.body, p.body)) continue;
+      if (!overlaps(reach, p.body)) continue;
       this.destroy();
       this.onTake(p);
       return;

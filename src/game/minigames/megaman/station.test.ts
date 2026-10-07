@@ -9,6 +9,8 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { defaultSettings } from '@engine/save/settings';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
 import { World } from '@game/world/world';
+import type { EntitySpawn } from '@game/level/schema';
+import type { Entity } from '@game/entities/entity';
 import type { MenuItem } from '@game/scenes/menu';
 import { AssistOptionsScene } from '@game/scenes/options';
 import { Goomba } from '@game/entities/enemies/goomba';
@@ -211,23 +213,28 @@ describe('Station Escape: the stage', () => {
       ...stationStage().level,
       entities: [
         { type: 'hopper', x: 4, y: 12 },
-        { type: 'nothing', x: 5, y: 12 },
         { type: 'goomba', x: 6, y: 12 },
       ],
     };
-    const world = new World(
-      level,
-      { assets: STUB_ASSETS, audio: NULL_AUDIO, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
-      newGameState(MEGAMAN),
-      {
-        extraEntities: (s) =>
-          s.type === 'nothing' ? null : stationEntities({ onCapsule: () => undefined })(s),
-      },
-    );
-    world.update([]);
-    expect(world.entities.some((e) => e instanceof Hopper)).toBe(true);
-    expect(world.entities.some((e) => e instanceof Goomba)).toBe(true);
-    expect(world.entities.filter((e) => e.kind === 'nothing')).toHaveLength(0);
+    const station = stationEntities({ onCapsule: () => undefined });
+    const run = (hook: (s: EntitySpawn) => Entity | null | undefined) => {
+      const world = new World(
+        level,
+        { assets: STUB_ASSETS, audio: NULL_AUDIO, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
+        newGameState(MEGAMAN),
+        { extraEntities: hook },
+      );
+      world.update([]);
+      return world;
+    };
+    // null for a type World knows: dropped, no Goomba.
+    const dropped = run((s) => (s.type === 'goomba' ? null : station(s)));
+    expect(dropped.entities.some((e) => e instanceof Hopper)).toBe(true);
+    expect(dropped.entities.some((e) => e instanceof Goomba)).toBe(false);
+    // undefined: World makes it as usual.
+    const kept = run(station);
+    expect(kept.entities.some((e) => e instanceof Hopper)).toBe(true);
+    expect(kept.entities.some((e) => e instanceof Goomba)).toBe(true);
   });
 
   it('Mega Man plays with the helmet kit: buster, charge shot, slide, full health; no weapons yet', () => {
@@ -389,6 +396,38 @@ describe('Station Escape: the weapon capsule', () => {
     h.tap('special');
     expect(h.world.entities.some((e) => e instanceof Projectile && e.kind === 'saw')).toBe(true);
   });
+});
+
+describe('Station Escape: the capsule cannot be skipped', { timeout: 60_000 }, () => {
+  it.each([8, 12, 20, 40])(
+    'bunny-hopping right over the pillar (jump held %i frames) still takes the Saw Disc, from any take-off',
+    (hold) => {
+      for (const start of [360, 400, 430, 460, 490, 520]) {
+        const h = stationHarness();
+        h.game.ctx.assist.invulnerable = true; // no knockback: only the hops decide
+        ready(h);
+        warp(h, start);
+        const p = h.scene.player;
+        // Jump again the moment he lands (letting go for a frame first, so it is a new press).
+        let held = 0;
+        let was = false;
+        for (let i = 0; i < 600 && toPx(p.body.x) < 700 && !p.dead; i++) {
+          if (h.scene.phase !== 'stage') {
+            h.step();
+            continue;
+          }
+          if (held === 0 && p.body.onGround && !was) held = hold;
+          was = held > 0;
+          h.step(was ? ['right', 'jump'] : ['right']);
+          if (held > 0) held--;
+        }
+        expect(toPx(p.body.x), `hold ${hold} from x ${start} got past the pillar`).toBeGreaterThanOrEqual(
+          600,
+        );
+        expect(p.scratch.weapons ?? 0, `hold ${hold} from x ${start}`).toBe(1);
+      }
+    },
+  );
 });
 
 describe('Station Escape: the boss gate', () => {
@@ -734,6 +773,37 @@ describe('Station Escape: screen and controls', () => {
     r.texts = [];
     h.game.scenes.render(r);
     expect(r.texts).toContain('DARK MEGA MAN IS BEATEN!');
+  });
+
+  it("Dark Mega Man's hit invulnerability: drawn every frame with reduce flashing, flickering without", () => {
+    const drawn = (reduceFlashing: boolean) => {
+      const sheets = {
+        sheet: (id: string, palette?: string) => ({
+          id: `${id}@${palette ?? ''}`,
+          image: null,
+          frames: new Map(),
+        }),
+        has: () => true,
+      } as unknown as AssetRegistry;
+      const h = stationHarness({ assets: sheets });
+      h.game.ctx.reduceFlashing = reduceFlashing;
+      const boss = toFight(h);
+      h.game.ctx.assist.invulnerable = true;
+      boss.hit({ kind: 'buster', amount: 1, owner: null, dirX: 1 }, h.world);
+      expect(boss.iframes).toBeGreaterThan(8);
+      const shown: boolean[] = [];
+      for (let i = 0; i < 8; i++) {
+        const ids: string[] = [];
+        const r = new TextRenderer();
+        (r as unknown as { sprite: Renderer['sprite'] }).sprite = (sheet) => void ids.push(sheet.id);
+        h.game.scenes.render(r);
+        shown.push(ids.includes(`megaman@${DARK_PALETTE}`));
+        h.step();
+      }
+      return shown;
+    };
+    expect(drawn(true).every(Boolean)).toBe(true);
+    expect(drawn(false).some((s) => !s)).toBe(true);
   });
 
   it('the boss bar shows his hit points in the fight', () => {

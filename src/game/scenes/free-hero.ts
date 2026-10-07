@@ -69,9 +69,9 @@ const DIALOGUE: Record<string, (you: string) => string[]> = {
   ],
 };
 
-/** The freed card's lines. */
+/** The freed card's lines (and so its announcement): the hero's full name, "MEGA MAN IS FREE!". */
 export function freedCard(hero: CharacterDef): string[] {
-  const name = fontText(hero.hudName);
+  const name = fontText(hero.name);
   return fit([
     `${name} IS FREE!`,
     '',

@@ -104,7 +104,7 @@ Every step is a scene pushed over the paused level, so the level's clock and wor
 2. A rules card: `MiniGameDef.title` and `rules`. It waits for OK; it never starts the round by
    itself.
 3. One round: `def.create(game, done)` is pushed.
-   - `pass`: the "LUIGI IS FREE!" card. The hero is added to `freed` and saved at once, and
+   - `pass`: the "LUIGI IS FREE!" card (the hero's full name: "MEGA MAN IS FREE!"). The hero is added to `freed` and saved at once, and
      the captive leaves in a puff. Then back to the level.
    - `fail`: TRY AGAIN? YES starts a fresh round (a new `create`), NO goes back with the captive
      still there.
@@ -248,8 +248,8 @@ ways. READY shows first (Mega Man cannot move, the press that started the round 
   **Drone** (2 HP: sways in a sine while drifting over, dives straight down on Mega Man when he
   stands below it, never at him mid-jump, and climbs back). Pellets take 2 hit points, a robot's
   touch Mega Man's usual 4.
-- **The weapon capsule** sits on the pillar halfway (on the path): touching it unlocks the **Saw
-  Disc** (`weapons: 1`, full energy; no new weapon code). The station holds still for a second, the
+- **The weapon capsule** sits on the pillar halfway (on the path): touching it, or passing anywhere
+  above it (a jump over the pillar cannot skip it; Rush Coil can), unlocks the **Saw Disc** (`weapons: 1`, full energy; no new weapon code). The station holds still for a second, the
   `capsule` sound plays and a banner (24 columns, clear of the bars) and the announcer say WEAPON
   switches to it, USE WEAPON fires it and a held direction aims it (`abilityHint`; a line falls back
   to the bare ability names when its keys don't fit).
