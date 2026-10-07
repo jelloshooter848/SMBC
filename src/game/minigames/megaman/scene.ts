@@ -363,7 +363,10 @@ export class StationScene implements Scene {
     const font = assets.sheet('font');
     if (this.phase === 'intro' && this.phaseT < BEAM_FRAMES) this.drawBossBeam(r);
     if (this.phase === 'won' && this.phaseT >= WIN_BEAM) this.drawHeroBeam(r);
-    drawHud(r, assets, this.state, null, this.world.frame, this.world.players, { place: 'STATION' });
+    drawHud(r, assets, this.state, null, this.world.frame, this.world.players, {
+      place: 'STATION',
+      covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
+    });
     const bar = this.bossBarValue();
     if (bar !== null) drawBossBar(r, bar);
     if (this.phase === 'ready' && (this.game.ctx.reduceFlashing || ((this.phaseT >> 3) & 3) !== 3))

@@ -44,6 +44,9 @@ describe('themes', () => {
       'snow',
       ...LOST_SKINS,
       'station',
+      'cavern',
+      'airship',
+      'airship-deck',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -63,7 +66,7 @@ describe('themes', () => {
     expect(isTheme('lava-land')).toBe(false);
   });
 
-  it('defaults the music by what a theme skins: water, castle, the station or the overworld tune', () => {
+  it('defaults the music by what a theme skins: water, castle, the station, the cavern or the overworld tune', () => {
     const music = Object.fromEntries(THEMES.map((t) => [t, map([`theme: ${t}`]).music]));
     expect(music).toEqual({
       overworld: 'overworld',
@@ -82,6 +85,9 @@ describe('themes', () => {
       'mushroom-red': 'overworld',
       'castle-water': 'water',
       station: 'mm-station',
+      cavern: 'cavern',
+      airship: 'airship',
+      'airship-deck': 'airship',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -165,5 +171,180 @@ describe('themes', () => {
     expect(decorPalette('station')).toBe(decorPalette('castle'));
     expect(enemyPalette('station')).toBe(enemyPalette('castle'));
     expect(isWaterTheme('station')).toBe(false);
+  });
+
+  it("dresses Samus's cavern in bubbly blue rock: tiles, a near-black sky, rock scenery", () => {
+    const frames = tilesDef.frames;
+    // The tiles a cavern is built of are redrawn, not just recoloured.
+    for (const t of [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+    ]) {
+      expect(frames[`${t}@cavern`], t).toBeDefined();
+      expect(frames[`${t}@cavern`], t).not.toEqual(frames[t]);
+      expect(frames[`${t}@cavern`], t).not.toEqual(frames[`${t}@station`]);
+    }
+    // The bomb-able rock is not the plain rock: it shows its cracks.
+    expect(frames['brick@cavern']).not.toEqual(frames['ground@cavern']);
+    expect(frames['brick@cavern']).not.toEqual(frames['hard@cavern']);
+    // A near-black sky, darker than any lit theme but not the castle's pure black.
+    const sky = SKY.cavern as string;
+    expect(sky).not.toBe(SKY.castle);
+    const [r, g, b] = [1, 3, 5].map((k) => parseInt(sky.slice(k, k + 2), 16)) as [number, number, number];
+    expect(Math.max(r, g, b)).toBeLessThan(0x30);
+    // Blue rock: the block colours lean blue, unlike the underground's or the station's.
+    const tiles = PALETTES.default['tiles-cavern'] as string[];
+    for (const i of [2, 3]) {
+      const c = tiles[i] as string;
+      const [cr, , cb] = [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16)) as [number, number, number];
+      expect(cb, `index ${i} is blue`).toBeGreaterThan(cr * 2);
+    }
+    expect(tiles).not.toEqual(PALETTES.default['tiles-underground']);
+    expect(tiles).not.toEqual(PALETTES.default['tiles-station']);
+    // Bushes, hills and ruin pillars in rock colours; enemies in the underground's blue.
+    expect(decorPalette('cavern')).toBe('decor-cavern');
+    expect(PALETTES.default['decor-cavern']).not.toEqual(PALETTES.default['decor-night']);
+    expect(enemyPalette('cavern')).toBe(enemyPalette('underground'));
+    expect(isWaterTheme('cavern')).toBe(false);
+  });
+
+  it("builds Larry's airship from its own planks and iron under a night sky", () => {
+    const frames = tilesDef.frames;
+    for (const t of [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+    ]) {
+      expect(frames[`${t}@airship`], t).toBeDefined();
+      expect(frames[`${t}@airship`], t).not.toEqual(frames[t]);
+      expect(frames[`${t}@airship`], t).not.toEqual(frames[`${t}@station`]);
+    }
+    // A dark navy night: darker than the overworld's blue, not the castle's or space's black.
+    expect(SKY.airship).not.toBe(SKY.overworld);
+    expect(SKY.airship).not.toBe('#000000');
+    const [r, g, b] = [1, 3, 5].map((k) => parseInt((SKY.airship as string).slice(k, k + 2), 16)) as [
+      number,
+      number,
+      number,
+    ];
+    expect(b).toBeGreaterThan(r + g);
+    expect(r + g + b).toBeLessThan(0x80);
+    // Wood and iron of its own; dark-theme scenery and enemies; no swimming; its own tune.
+    const tiles = PALETTES.default['tiles-airship'];
+    for (const other of ['tiles-overworld', 'tiles-castle', 'tiles-station'])
+      expect(tiles, other).not.toEqual(PALETTES.default[other]);
+    expect(decorPalette('airship')).toBe(decorPalette('castle'));
+    expect(enemyPalette('airship')).toBe(enemyPalette('castle'));
+    expect(isWaterTheme('airship')).toBe(false);
+    expect(themeMusic('airship')).toBe('airship');
+  });
+
+  it("Larry's cabin: a floor of log posts in front of a wall of horizontal logs", () => {
+    const frame = (name: string) => tilesDef.frames[name] as readonly string[];
+    const top = frame('ground@airship');
+    const body = frame('castle-brick@airship');
+    // the floor's top is a rounded cap: dark corners on the first row, a full post below it
+    expect(top[0]?.[0]).not.toBe('3');
+    expect(top[0]?.slice(4, 12)).toMatch(/^0+$/);
+    expect(top.join('')).not.toContain('.');
+    // below the cap the post carries straight on down into the post body (same columns), and the
+    // body tiles vertically: every row is one post, black-edged both sides
+    const strip = (rows: readonly string[]) => rows.map((r) => r.replace(/1/g, '2'));
+    expect(strip(top.slice(3))).toEqual(strip(body.slice(3, 16)));
+    for (const r of body) expect(r).toMatch(/^0[0-3]{14}0$/);
+    // the back wall: logs lying sideways, a black seam across the whole tile, never the lit tone
+    const wall = frame('wall@airship');
+    expect(wall[0]).toMatch(/^0+$/);
+    expect(wall.at(-1)).toMatch(/^0+$/);
+    expect(wall.join('')).not.toMatch(/[3.]/);
+    expect(top.join('')).toMatch(/3/);
+  });
+
+  it("sails Larry's airship deck under a daylight sky, in planks of its own", () => {
+    const frames = tilesDef.frames;
+    const frame = (name: string) => frames[name] as readonly string[];
+    for (const t of [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+      'blaster-top',
+      'blaster-base',
+    ]) {
+      expect(frames[`${t}@airship-deck`], t).toBeDefined();
+      expect(frames[`${t}@airship-deck`], t).not.toEqual(frames[t]);
+      expect(frames[`${t}@airship-deck`], t).not.toEqual(frames[`${t}@airship`]);
+    }
+    // The deck planks tile both ways: opaque, seams on the edge rows, the joints lined up so a
+    // tile's right column meets the next tile's left column like any other column of the plank.
+    const deck = frame('ground@airship-deck');
+    expect(deck.join('')).not.toContain('.');
+    expect(deck[0]).toMatch(/^0+$/);
+    expect(deck.at(-1)).not.toMatch(/0{16}/);
+    expect(deck.join('')).toMatch(/3/);
+    // `%` is the same planking with a round porthole: its edges are the plank's edges.
+    const port = frame('castle-brick@airship-deck');
+    const col = (rows: readonly string[], x: number) => rows.map((r) => r[x]).join('');
+    for (const x of [0, 15]) expect(col(port, x), `column ${x}`).toBe(col(deck, x));
+    for (const y of [0, 15]) expect(port[y], `row ${y}`).toBe(deck[y]);
+    expect(port.slice(5, 11).join('')).toMatch(/0{4}/);
+    // The hull behind (scenery) is darker than the deck: no lit or main wood, no holes.
+    const wall = frame('wall@airship-deck');
+    expect(wall.join('')).not.toMatch(/[23.]/);
+    expect(wall.join('')).toContain('b');
+    // The thin plank is a plank on air; the blaster is iron, not wood.
+    const plank = frame('bridge@airship-deck');
+    expect(plank.slice(8).join('')).toMatch(/^\.+$/);
+    for (const b of ['blaster-top', 'blaster-base'])
+      expect(frame(`${b}@airship-deck`).join(''), b).not.toMatch(/[123]/);
+    // A daylight sky, lighter than SMB1's overworld blue, nothing like the cabin's night.
+    const rgb = (hex: string) =>
+      [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
+    const sky = rgb(SKY['airship-deck'] as string);
+    expect(SKY['airship-deck']).not.toBe(SKY.overworld);
+    expect(Math.max(...sky)).toBe(sky[2]);
+    expect(sky[0] + sky[1] + sky[2]).toBeGreaterThan(rgb(SKY.overworld as string).reduce((a, b) => a + b));
+    // Warm wood (1-3), iron greys in the water slots (9, a), the dark hull in the lava slot (b).
+    const tiles = PALETTES.default['tiles-airship-deck'] as string[];
+    for (const other of ['tiles-overworld', 'tiles-airship', 'tiles-castle'])
+      expect(tiles, other).not.toEqual(PALETTES.default[other]);
+    for (const i of [1, 2, 3]) {
+      const [r, , b] = rgb(tiles[i] as string);
+      expect(r, `index ${i} is warm`).toBeGreaterThan(b);
+    }
+    for (const i of [9, 10]) {
+      const [r, g, b] = rgb(tiles[i] as string);
+      expect([g, b], `index ${i} is grey`).toEqual([r, r]);
+    }
+    const lum = (i: number) => rgb(tiles[i] as string).reduce((a, b) => a + b);
+    expect(lum(11)).toBeLessThan(lum(1));
+    expect(lum(1)).toBeLessThan(lum(2));
+    expect(lum(2)).toBeLessThan(lum(3));
+    // Daylight scenery (clouds) and enemies; no swimming; the airship's tune.
+    expect(decorPalette('airship-deck')).toBe(decorPalette('overworld'));
+    expect(enemyPalette('airship-deck')).toBe(enemyPalette('overworld'));
+    expect(isWaterTheme('airship-deck')).toBe(false);
+    expect(themeMusic('airship-deck')).toBe('airship');
   });
 });

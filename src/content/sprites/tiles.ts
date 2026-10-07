@@ -2,6 +2,10 @@ import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { swapColors } from '@engine/gfx/pixelart';
 
+/** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
+export const DEEP_TEAL = '#004058';
+export const ROCK_BLUE = '#0078f8';
+
 /**
  * Tile palettes. Every theme palette has the same 12 entries with the same roles, so one
  * frame recolours correctly in every theme:
@@ -179,6 +183,57 @@ export const tilePalettes: Record<string, string[]> = {
     NES.blueMid,
     NES.blueLight,
     NES.lava,
+  ],
+  /* Samus's cavern below 4-2: azure bubble rock shaded into a deep teal, pale-blue highlights,
+     green pipes and gold coins kept so Mario's things still read. */
+  'tiles-cavern': [
+    NES.black,
+    DEEP_TEAL,
+    ROCK_BLUE,
+    NES.blueLight,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.blueMid,
+    NES.skyLight,
+    NES.lava,
+  ],
+  /* Larry Koopa's airship (4-2): a log cabin in warm wood (tan post faces, red-brown logs) with
+     grey iron plates and bolts. The airship has no water, so the water slots hold the iron's grey
+     and its light edge. */
+  'tiles-airship': [
+    NES.black,
+    NES.brownDark,
+    NES.orangeBrown,
+    NES.brownLight,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.gray,
+    NES.lightGray,
+    NES.lava,
+  ],
+  /* The airship's open decks (4-2-airship): SMB3-style daylight planks, a step lighter than the
+     cabin's (orange-brown shade, light-wood main, tan lit edge), the same grey iron in the water
+     slots, and the deep brown of the hull's shadowed back in the lava slot (there is no lava
+     aboard). Green pipes and gold blocks stay as they are. */
+  'tiles-airship-deck': [
+    NES.black,
+    NES.orangeBrown,
+    NES.brownLight,
+    NES.tan,
+    NES.yellow,
+    NES.green,
+    NES.greenPipe,
+    NES.yellowLight,
+    NES.white,
+    NES.gray,
+    NES.lightGray,
+    NES.brownDark,
   ],
 };
 
@@ -953,6 +1008,531 @@ const wallTopStation = [
   ...wallStation.slice(4),
 ];
 
+/* ---------- Samus's cavern (`@cavern`) ---------- */
+
+/* Floor rock: a heap of round bubbles, lit from the top left, packed so the tile repeats both ways. */
+const groundCavern = [
+  '0223311000233210',
+  '2833322102832221',
+  '2333222102322221',
+  '3332222111222211',
+  '3322221111222111',
+  '1222211100121110',
+  '1222111112221102',
+  '2111113223332123',
+  '2101112283322212',
+  '1222111333222221',
+  '2833222332222211',
+  '2332221322222111',
+  '2322221122221110',
+  '1222211112211110',
+  '1222111011111100',
+  '0111110000002000',
+];
+
+/* Hard block: a bevelled rock block with one big bubble boss sunk in a groove. */
+const hardCavern = [
+  '3333333333333331',
+  '3222222222222221',
+  '3222221111222221',
+  '3222122221112221',
+  '3221223332111221',
+  '3222283322211221',
+  '3212333222221121',
+  '3212332222211121',
+  '3212322222111121',
+  '3211222221111121',
+  '3221122211111221',
+  '3221112111111221',
+  '3222111111112221',
+  '3222221111222221',
+  '3222222222222221',
+  '1111111111111111',
+];
+
+/* Bomb-able rock: the same bevelled block split by black cracks into loose chunks. */
+const brickCavern = [
+  '0000000000000000',
+  '0333333310333310',
+  '0322222101222210',
+  '0322222100111100',
+  '0322221031000010',
+  '0321111032333310',
+  '0110000122222210',
+  '0003331012221110',
+  '0332222101110000',
+  '0322222210003310',
+  '0321122103332210',
+  '0110011103222210',
+  '0003100032222210',
+  '0332231012222210',
+  '0111111101111110',
+  '0000000000000000',
+];
+
+/* A spent block: the hard block's bevel around a bubble gone dark. */
+const usedCavern = [
+  '3333333333333331',
+  '3222222222222221',
+  '3222221111222221',
+  '3222111110012221',
+  '3221112221001221',
+  '3221132211100221',
+  '3211222111110121',
+  '3211221111100121',
+  '3211211111000121',
+  '3210111110000121',
+  '3220011100000221',
+  '3221001000001221',
+  '3222100000012221',
+  '3222221111222221',
+  '3222222222222221',
+  '1111111111111111',
+];
+
+/* Cut stone: rough rock blocks in running courses (castle bricks in a cavern). */
+const castleBrickCavern = [
+  '3333331033333310',
+  '3222221032222210',
+  '3222221032222210',
+  '3222221032222210',
+  '3222221032222210',
+  '3222221032222210',
+  '1111111011111110',
+  '0000000000000000',
+  '3310333333103310',
+  '3210322222103210',
+  '3210322222103210',
+  '3210322222103210',
+  '3210322222103210',
+  '3210322222103210',
+  '1110111111101110',
+  '0000000000000000',
+];
+
+/* Rock ledge (the platforms' top): bubbly rock with drips hanging under it; repeats sideways. */
+const ledgeCavern = [
+  '1221102221122331',
+  '1832213332228322',
+  '3322228322233222',
+  '3222213222212222',
+  '2222132222112221',
+  '1221112221111211',
+  '0111322211132110',
+  '0002222111222100',
+  '0001221100122100',
+  '0000111000111100',
+  '..010...01110...',
+  '...0.....111....',
+  '.........010....',
+  '..........0.....',
+  '................',
+  '................',
+];
+
+/* The ledge's support (scenery): a column of stacked bubbles; repeats downwards. */
+const pillarCavern = [
+  '...0112221210...',
+  '...0132211110...',
+  '...0222111110...',
+  '...0221111100...',
+  '...0211111000...',
+  '...0111110000...',
+  '...0011100000...',
+  '...0201000000...',
+  '...0112221000...',
+  '...0132211100...',
+  '...0222111110...',
+  '...0221111100...',
+  '...0211111000...',
+  '...0111110000...',
+  '...0011100000...',
+  '...0001000020...',
+];
+
+/* Background rock (scenery): the bubble heap in the dark teal of the cave's depths. */
+const wallCavern = [
+  '1111110110111000',
+  '1211111001111101',
+  '1111111112111110',
+  '1111111011111111',
+  '1111110011111110',
+  '1111100011111100',
+  '0111000001111000',
+  '0010001111110000',
+  '1000011111100011',
+  '1101121111110111',
+  '1111111111110121',
+  '1111111111100111',
+  '1100111111001111',
+  '1000111110000111',
+  '0000011100000011',
+  '0011101110000000',
+];
+
+/* The background rock's lumpy top edge. */
+const wallTopCavern = [
+  '................',
+  '................',
+  '..00....000.....',
+  '.0110..01110....',
+  '0111100011110.00',
+  '1111100011111000',
+  '0111000001111000',
+  '0010001111110000',
+  '1000011111100011',
+  '1101121111110111',
+  '1111111111110121',
+  '1111111111100111',
+  '1100111111001111',
+  '1000111110000111',
+  '0000011100000011',
+  '0011101110000000',
+];
+
+/* A thin rock span with drips (the bridge). */
+const bridgeCavern = [
+  '0023310000233100',
+  '0283221002832210',
+  '2232221322322213',
+  '2222213222222132',
+  '2112112221121122',
+  '1101101211011012',
+  '.010...0..0110..',
+  '..0........10...',
+  '...........0....',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+];
+
+/* ---------- Larry Koopa's airship (`@airship`) ---------- */
+
+/*
+ * The cabin floor is a row of upright log posts, one to a tile: a black edge, a lit left side, two
+ * grain lines running down and a shadowed right side. `ground` is the top of the row (a rounded
+ * cap, dark gaps either side of it); `castle-brick` is a post carrying on down, so a floor or a
+ * raised step is `ground` on top of `castle-brick`.
+ */
+const POST_CAP = ['1100000000000011', '1033333333332201', '0333333333332210'];
+/** Post body rows; `knots` darken one grain line on the given rows. */
+const postBody = (length: number, knots: readonly (readonly [x: number, y: number])[]): string[] =>
+  Array.from({ length }, (_, y) => {
+    const r = [...'0333233332332210'];
+    for (const [x, ky] of knots) if (ky === y) r[x] = '1';
+    return r.join('');
+  });
+
+/* Floor: the rounded top of a log post. */
+const groundAirship = [
+  ...POST_CAP,
+  ...postBody(13, [
+    [4, 5],
+    [4, 6],
+    [9, 10],
+  ]),
+];
+
+/* Floor below the top, and raised steps: the post carrying straight on down. */
+const hullAirship = postBody(16, [
+  [9, 2],
+  [9, 3],
+  [4, 11],
+]);
+
+/* An iron strap riveted across a plank face (the ledges' cap). */
+const strapAirship = ['0000000000000000', 'aaaaaaaaaaaaaaaa', '9989999999989999', '9909999999909999'];
+
+/* Hard block: a bevelled iron plate with a bolt in each corner and a sunken panel. */
+const hardAirship = [
+  '8aaaaaaaaaaaaaa9',
+  ...[
+    '99999999999999',
+    '98a999999998a9',
+    '9a099999999a09',
+    '99999999999999',
+    '99000000000a99',
+    '99099999999a99',
+    '99099999999a99',
+    '99099999999a99',
+    '990aaaaaaaaa99',
+    '99999999999999',
+    '98a999999998a9',
+    '9a099999999a09',
+    '99999999999999',
+    '99999999999999',
+  ].map((mid) => `a${mid}0`),
+  '9000000000000000',
+];
+
+/* Breakable wooden block: a bevelled block with a sunken inner square, like turned hardwood. */
+const brickAirship = [
+  '3333333333333331',
+  '3222222222222210',
+  '3222222222222210',
+  '3221111111113210',
+  '3221222222223210',
+  '3221222122223210',
+  '3221221212223210',
+  '3221222122223210',
+  '3221222222223210',
+  '3221222222223210',
+  '3221222222223210',
+  '3221333333333210',
+  '3222222222222210',
+  '3222222222222210',
+  '3111111111111110',
+  '1000000000000000',
+];
+
+/* A spent block: dark scorched planks in an iron frame, nailed shut. */
+const usedAirship = [
+  '0000000000000000',
+  ...[
+    'aaaaaaaaaaaa',
+    '111111111111',
+    '181111111181',
+    '101111111101',
+    '111111111111',
+    '111111111111',
+    '000000000000',
+    '111111111111',
+    '111111111111',
+    '111111111111',
+    '181111111181',
+    '101111111101',
+    '111111111111',
+  ].map((mid) => `0a${mid}90`),
+  '0999999999999990',
+  '0000000000000000',
+];
+
+/* Platform ledge: an iron-capped deck plank on two wooden brackets. */
+const ledgeAirship = [
+  ...strapAirship,
+  '0000000000000000',
+  '3333333333333333',
+  '2222122222222122',
+  '2222222221222222',
+  '1111111111111111',
+  '0000000000000000',
+  '.0310......0310.',
+  '..030......030..',
+  '..0310....0310..',
+  '...030....030...',
+  '...0310..0310...',
+  '....00....00....',
+];
+
+/* The ledge's support (scenery): a stout wooden mast with iron hoops. */
+const mastAirship = Array.from({ length: 16 }, (_, i) =>
+  i % 8 === 3 || i % 8 === 5 ? '....00000000....' : i % 8 === 4 ? '....0aaaa990....' : '.....032210.....',
+);
+
+/* A gangplank on rope hangers (the boss bridge). */
+const bridgeAirship = [
+  '0000000000000000',
+  '3333333333333333',
+  '2222222a22222220',
+  '2212222022122220',
+  '2222222222222220',
+  '1111111111111110',
+  '0000000000000000',
+  '.33........33...',
+  '.03........03...',
+  '.33........33...',
+  '.00........00...',
+  ...Array.from({ length: 5 }, () => '................'),
+];
+
+/* Background (scenery): the cabin's back wall, one round horizontal log to a tile between black
+   seams: a thin lit band along its crown over dark grained wood. Drawn in the dark wood tones only,
+   so it sits well back behind the tan posts and never reads as solid. */
+const wallAirship = [
+  '0000000000000000',
+  '1111111111111111',
+  '2222222222222222',
+  '1212222221222212',
+  '1111111111111111',
+  '1111111111111111',
+  '1111111111111111',
+  '1111111111122211',
+  '1111111111111111',
+  '1111111111111111',
+  '1112221111111111',
+  '1111111111111111',
+  '1111111111111111',
+  '1111111111111111',
+  '0000000000000000',
+  '0000000000000000',
+];
+/* The top of the bulwark: a capping rail on stubby iron posts over the inboard planks. */
+const wallTopAirship = [
+  '0000000000000000',
+  '3333333333333333',
+  '2222222222222222',
+  '0000000000000000',
+  '.0a0.......0a0..',
+  '.090.......090..',
+  '.090.......090..',
+  ...wallAirship.slice(7),
+];
+
+/* ---------- The airship's open decks (`@airship-deck`) ---------- */
+
+/*
+ * SMB3-style planking under a daylight sky. Every solid tile is built from 8px horizontal planks:
+ * a black seam, a tan lit edge, light wood with a little grain, an orange-brown shadow and iron
+ * rivets; the upper plank has a butt joint, the lower one runs on (so a deck reads as long boards,
+ * not bricks). Which tile is which on the deck:
+ *   `#` ground       deck and hull planking; tiles both ways (a deck, a hull, the stepped prow)
+ *   `%` castle-brick the same planking with a round iron-rimmed porthole (the stern's portholes)
+ *   `B` hard         a bolted wooden block (posts and crates: stack it for a tall post)
+ *   `=` brick        a breakable crate with a cross brace
+ *   `u` used         a spent block: a dark plank square with corner rivets
+ *   `-` bridge       a thin plank on air (the overhang's ceiling, narrow catwalks)
+ *   `T` tree-top     an iron-strapped ledge on two hangers
+ *   `t` tree-trunk   (scenery) an iron lattice strut, e.g. holding up a ledge
+ *   `H` wall         (scenery) the hull's shadowed back, in dark wood
+ *   `A` wall-top     (scenery) the bulwark's capping rail over that dark hull
+ *   `^` `|`          Bullet Bill blasters in black iron
+ */
+const groundDeck = [
+  '0000000000000000',
+  '3333333333303333',
+  '2222222222202222',
+  '222222222a90a922',
+  '2222222229009022',
+  '2221112222202222',
+  '2222212222202122',
+  '1111111111101111',
+  '0000000000000000',
+  '3333333333333333',
+  '2222222222222222',
+  '2a92222111122222',
+  '2902222222222222',
+  '2222222222222222',
+  '2222222222211122',
+  '1111111111111111',
+];
+
+/* A round porthole let into the planking: an iron rim (lit up-left, shadowed down-right) round
+   dark glass with a white glint. */
+const portholeDeck = groundDeck.map((r, y) =>
+  [...r]
+    .map((c, x) => {
+      const d = Math.hypot(x - 7.5, y - 7.5);
+      if (d < 3.4) return (x === 6 && y === 5) || (x === 5 && y === 6) ? '8' : '0';
+      if (d < 5) return x + y < 15 ? 'a' : '9';
+      return d < 5.9 ? '0' : c;
+    })
+    .join(''),
+);
+
+/* Hard block: a bolted wooden block of three upright boards in a black frame. */
+const hardDeck = [
+  '0000000000000000',
+  '0333333333333310',
+  '03a921222212a910',
+  '0390212222129010',
+  '0322212222122210',
+  '0322212222122210',
+  '0322212212122210',
+  '0322212222122210',
+  '0322212222122210',
+  '0322212222121210',
+  '0322212222122210',
+  '0322212222122210',
+  '03a921222212a910',
+  '0390212222129010',
+  '0311111111111110',
+  '0000000000000000',
+];
+
+/* Breakable crate: a two-tone board frame round a lit cross brace. */
+const brickDeck = Array.from({ length: 16 }, (_, y) =>
+  Array.from({ length: 16 }, (_, x) => {
+    if (x === 0 || y === 0 || x === 15 || y === 15) return '0';
+    if (x === 14 || y === 14) return '1';
+    if (x === 1 || y === 1) return '3';
+    if (x === 2 || y === 2 || x === 13 || y === 13) return '0';
+    const a = x - y;
+    const b = x + y - 15;
+    if (a === 0 || b === 0) return '3';
+    if (a === 1 || b === 1) return '1';
+    return (x * 7 + y * 3) % 11 === 0 ? '1' : '2';
+  }).join(''),
+);
+
+/* Spent block: a dark two-plank square, lit on its top and left, rivets in its corners. */
+const usedDeck = Array.from({ length: 16 }, (_, y) =>
+  Array.from({ length: 16 }, (_, x) => {
+    if (x === 0 || y === 0 || x === 15 || y === 15) return '0';
+    const rivet = (x === 3 || x === 12) && (y === 3 || y === 12);
+    if (rivet) return 'a';
+    if ((x === 4 || x === 13) && (y === 4 || y === 13)) return '0';
+    if (x === 1 || y === 1) return '1';
+    if (x === 14 || y === 14) return '0';
+    return y === 8 ? '0' : 'b';
+  }).join(''),
+);
+
+/* A thin plank on air, riveted at both ends. */
+const bridgeDeck = [
+  '0000000000000000',
+  '3333333333333333',
+  '22a92222222a9222',
+  '2290222122290222',
+  '2222222222222222',
+  '1111111111111111',
+  '0000000000000000',
+  ...Array.from({ length: 9 }, () => '................'),
+];
+
+/* Ledge: an iron strap across a plank, hung from two iron hangers. */
+const ledgeDeck = [
+  '0000000000000000',
+  'aaaaaaaaaaaaaaaa',
+  '9999999999999999',
+  '0000000000000000',
+  '3333333333333333',
+  '2222122222221222',
+  '1111111111111111',
+  '0000000000000000',
+  '..0a0......0a0..',
+  '..090......090..',
+  '..090......090..',
+  '..000......000..',
+  ...Array.from({ length: 4 }, () => '................'),
+];
+
+/* Scenery: a narrow iron lattice strut with a zigzag brace between its two rails. */
+const strutDeck = Array.from({ length: 16 }, (_, y) => {
+  const k = y % 8;
+  const brace = k < 4 ? k : 7 - k;
+  const inner = [...'....'];
+  inner[brace] = '9';
+  return `....0a${inner.join('')}90....`;
+});
+
+/* Scenery: the hull's shadowed back, the planking in the deep browns with dim rivets. */
+const wallDeck = swapColors(groundDeck, { '3': '1', '2': 'b', '1': 'b', a: '9', '9': '0' });
+const wallTopDeck = [
+  '0000000000000000',
+  '3333333333333333',
+  '2222222222222222',
+  '1111111111111111',
+  '0000000000000000',
+  ...wallDeck.slice(5),
+];
+
+/* Bullet Bill blasters in black iron with grey highlights, not wood. */
+const IRON = { '1': '0', '2': '9', '3': 'a' };
+
 export const tilesDef: SpriteDef = {
   palette: 'tiles-overworld',
   frames: {
@@ -1021,5 +1601,40 @@ export const tilesDef: SpriteDef = {
     'bridge@station': bridgeStation,
     'wall@station': wallStation,
     'wall-top@station': wallTopStation,
+    // Samus's cavern below 4-2.
+    'ground@cavern': groundCavern,
+    'castle-brick@cavern': castleBrickCavern,
+    'hard@cavern': hardCavern,
+    'brick@cavern': brickCavern,
+    'used@cavern': usedCavern,
+    'tree-top@cavern': ledgeCavern,
+    'tree-trunk@cavern': pillarCavern,
+    'bridge@cavern': bridgeCavern,
+    'wall@cavern': wallCavern,
+    'wall-top@cavern': wallTopCavern,
+    // Larry Koopa's airship (behind 4-2's right-hand pipe).
+    'ground@airship': groundAirship,
+    'castle-brick@airship': hullAirship,
+    'hard@airship': hardAirship,
+    'brick@airship': brickAirship,
+    'used@airship': usedAirship,
+    'tree-top@airship': ledgeAirship,
+    'tree-trunk@airship': mastAirship,
+    'bridge@airship': bridgeAirship,
+    'wall@airship': wallAirship,
+    'wall-top@airship': wallTopAirship,
+    // The airship's open decks (4-2-airship).
+    'ground@airship-deck': groundDeck,
+    'castle-brick@airship-deck': portholeDeck,
+    'hard@airship-deck': hardDeck,
+    'brick@airship-deck': brickDeck,
+    'used@airship-deck': usedDeck,
+    'tree-top@airship-deck': ledgeDeck,
+    'tree-trunk@airship-deck': strutDeck,
+    'bridge@airship-deck': bridgeDeck,
+    'wall@airship-deck': wallDeck,
+    'wall-top@airship-deck': wallTopDeck,
+    'blaster-top@airship-deck': swapColors(blasterTop, IRON),
+    'blaster-base@airship-deck': swapColors(blasterBase, IRON),
   },
 };

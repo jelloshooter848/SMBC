@@ -8,6 +8,33 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Samus is hidden in 4-2: up the vine, the warp zone's single pipe drops into a Metroid-style
+  cavern with a Chozo statue. Her mini game, Zebes Escape, is a race up vertical shafts against a
+  self-destruct countdown, with morph-ball tunnels, bomb walls and her ship at the top.
+- Larry Koopa's airship: in 4-2's other warp zone an anchor crashes down and smashes the pipe; climb
+  its chain onto an auto-scrolling SMB3-style airship (cannons, Rocky Wrenches, Bullet Bills) and
+  take the stern pipe down to Larry's cabin. Dying aboard never costs a life: try again, or give up
+  and go back to 4-2. Beating Larry gives the crystal ball.
+- The crystal ball shows every hidden hero's silhouette on the map, opens a road on World 4 and
+  unlocks the item inventory. A cutscene shows the airship crash on the map and Toad building a
+  bonus spot from the wreck.
+- SMB3 bonus games at the new spot, in rotation: Toad House, N-Spade card match and the spade slot
+  game. Each is one go; a wandering Hammer Bro guards the road, and beating him reopens the bonus
+  and gives an item.
+- An SMB3-style item inventory on the world map: mushrooms, fire flowers, stars and 1-ups are kept
+  on the save file and given to the hero at the start of the next level. Dev mode can unlock it
+  and hand out items without touching the save.
+- An auto-scrolling camera (`camera: auto`) and a vertical camera (`camera: free`) for levels.
+- New cavern, airship and airship-deck looks with original Metroid- and SMB3-style art and music.
+- Dev → Mini games lists Zebes Escape and Larry's airship.
+
+### Changed
+
+- In the campaign, 4-2's warp zones no longer skip worlds; they lead to Samus's cavern and Larry's
+  airship instead. Play outside the campaign keeps the original warps.
+
 ## [0.4.5] - 2026-10-06
 
 ### Added

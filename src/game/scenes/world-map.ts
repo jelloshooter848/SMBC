@@ -34,10 +34,20 @@ import { trophyPose } from '../map/trophy';
 import { Player } from '../entities/player';
 import { startHp } from '../characters/character';
 import { MenuScene, type MenuItem } from './menu';
+import { abilityHint } from './hints';
 import { OptionsScene } from './options';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
+import { InventoryScene } from '../bonus/inventory';
+// Registers the SMB3 bonus games on World 4's bonus spot (map/bonus-spot.ts).
+import '../bonus/spot';
+import { inventoryAvailable, shownItems } from '../bonus/use';
+import { giveDevItems } from '../bonus/items';
+import { MapGuard, guardRoad } from '../map/hammer-bro';
+import { BONUS_CLOSED_HINT, BONUS_CLOSED_SAID, bonusGame } from '../map/bonus-spot';
+import { AirshipCrash, type CrashNames } from '../map/airship-crash';
+import { CRYSTAL_BALL } from '../map/captives';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -65,6 +75,11 @@ export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
 /** The hidden hero's slow shimmer: one cycle, and the frames of it the faint glow shade shows. */
 export const HIDING_SHIMMER_FRAMES = 360;
 export const HIDING_GLOW_FRAMES = 30;
+/**
+ * The map's Hammer Bro (map/hammer-bro.ts) does not start a battle for this many frames after the
+ * map shows or he comes out, so coming back from the bonus or a battle never lands straight in one.
+ */
+export const GUARD_GRACE_FRAMES = 45;
 /** A freed hero's 1-px dark outline: its silhouette drawn once each way, under it. */
 const TROPHY_OUTLINE: readonly (readonly [number, number])[] = [
   [-1, 0],
@@ -86,7 +101,7 @@ export interface WorldMapOptions {
   slideFrom?: PageId;
 }
 
-type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade';
+type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade' | 'cutscene';
 
 /** 'WORLD 1' → 'World 1', 'LOST LEVELS - BEAT 8-4 TO UNLOCK' → 'Lost Levels - Beat 8-4 To Unlock'. */
 export function spoken(text: string): string {
@@ -133,7 +148,8 @@ interface HeroMark {
 /** What is drawn of a page for the current progress (rebuilt only when progress may change). */
 interface PageView {
   runs: DotRun[];
-  nodes: { node: MapNode; frame: string }[];
+  /** `sheet`: the frame's sheet when it is not the items sheet (the bonus spot's SMB3 icon). */
+  nodes: { node: MapNode; frame: string; sheet?: string }[];
   heroes: HeroMark[];
 }
 
@@ -153,6 +169,20 @@ export class WorldsMenu extends MenuScene {
   /** The highlighted entry. */
   get cursor(): number {
     return this.index;
+  }
+}
+
+/** The map menu (MAP): rows can be rebuilt in place (a dev toggle adds or removes Items). */
+export class MapMenu extends MenuScene {
+  constructor(game: Game, items: MenuItem[], onBack: () => void) {
+    super(game, 'MAP', items, onBack, true);
+  }
+
+  /** Replaces the rows, keeping the cursor on the row labelled `label`. */
+  rebuild(items: MenuItem[], label: string): void {
+    this.setItems(items);
+    const i = items.findIndex((it) => it.label === label);
+    if (i >= 0) this.index = i;
   }
 }
 
@@ -243,6 +273,20 @@ export class WorldMapScene implements Scene {
   /** Freed heroes celebrating on this map: the frame their burst of hops began (map/trophy.ts). */
   private readonly trophyBursts = new Map<string, number>();
   private readonly scratchActor: MapActor = { type: '', x: 0, y: 0 };
+  /**
+   * The airship's crash on World 4 (map/airship-crash.ts), playing before the reveal of the road
+   * to the bonus spot it opened (`node`: that bonus node, hidden until Toad has built it).
+   */
+  private crash: {
+    scene: AirshipCrash;
+    node: string;
+    names: CrashNames;
+    /** The page's line (announceHere), said ahead of the first narration line, not under it. */
+    lead: string;
+  } | null = null;
+  /** The Hammer Bro wandering the road to a used bonus spot on this page, or null. */
+  guard: MapGuard | null = null;
+  private guardGrace = 0;
   private readonly header = {
     page: null as WorldMapPage | null,
     node: null as MapNode | null,
@@ -288,9 +332,11 @@ export class WorldMapScene implements Scene {
   enter(): void {
     this.game.ctx.audio.playMusic(this.page.music);
     this.views.clear();
-    this.announceHere();
+    this.refreshGuard();
     this.game.addReveal(this.opts.reveal ?? []);
     this.takeReveal();
+    if (this.startCrash()) return;
+    this.announceHere();
     const from = this.opts.slideFrom === undefined ? undefined : mapPage(this.opts.slideFrom);
     if (from && from !== this.page) {
       // A warp: slide in from the page warped from (fade in from another group); the reveal
@@ -330,6 +376,69 @@ export class WorldMapScene implements Scene {
     });
   }
 
+  /**
+   * The crystal ball's crash cutscene (Game.mapCutscene, set when the ball is taken; consumed here
+   * whether or not it plays): on the page whose bonus node the ball opens, while that node and its
+   * road wait in the reveal. It runs as the `cutscene` mode, then the reveal draws the road.
+   */
+  private startCrash(): boolean {
+    if (this.game.mapCutscene !== 'airship-crash') return false;
+    this.game.mapCutscene = null;
+    const bonus = this.page.nodes.find((n) => n.kind === 'bonus' && n.unlock === CRYSTAL_BALL);
+    const here = this.nodeById(this.node);
+    if (!this.game.campaign || !bonus || !here || !this.revealQueue.includes(bonus.id)) return false;
+    const s = this.game.state;
+    const names: CrashNames = {
+      heroes: s.character2 ? `${s.character.name} and ${s.character2.name}` : s.character.name,
+      bonus: spoken(bonusGame().label(this.game)),
+      skip: abilityHint(this.game, 'JUMP', 'jump'),
+    };
+    this.crash = { scene: new AirshipCrash(here, bonus), node: bonus.id, names, lead: `${this.hereLine()}.` };
+    this.mode = 'cutscene';
+    return true;
+  }
+
+  /** The crash cutscene's frame; JUMP (or MENU) skips straight to its end and the road drawn. */
+  private updateCrash(input: InputFrame): void {
+    const c = this.crash as NonNullable<typeof this.crash>;
+    if (this.t > 1 && (input.pressed('jump') || input.pressed('start'))) {
+      this.endCrash();
+      this.finishReveal();
+      return;
+    }
+    for (const ev of c.scene.update(c.names)) {
+      if (ev.sfx) this.game.ctx.audio.sfx(ev.sfx);
+      if (!ev.say) continue;
+      this.say(c.lead ? `${c.lead} ${ev.say}` : ev.say);
+      c.lead = '';
+    }
+    if (c.scene.built) this.showBonus(c.node);
+    if (!c.scene.done) return;
+    this.endCrash();
+    this.mode = 'reveal';
+    this.revealT = 0;
+    if (!this.revealQueue.length) this.finishReveal();
+  }
+
+  /** The bonus node built by Toad: out of the reveal (drawn from now on, still announced). */
+  private showBonus(id: string): void {
+    this.revealShown.delete(id);
+    this.revealQueue = this.revealQueue.filter((q) => q !== id);
+  }
+
+  private endCrash(): void {
+    const c = this.crash;
+    if (!c) return;
+    this.crash = null;
+    this.showBonus(c.node);
+    this.mode = 'reveal';
+  }
+
+  /** True while the airship's crash cutscene plays. */
+  get cutscene(): boolean {
+    return this.crash !== null;
+  }
+
   private nodeById(id: string): MapNode | undefined {
     return this.page.nodes.find((n) => n.id === id);
   }
@@ -354,7 +463,11 @@ export class WorldMapScene implements Scene {
     const { paths, exits } = openPaths(this.progress, page, this.unlockAll);
     const nodes = page.nodes
       .filter((n) => isOpen(this.progress, page, n.id, this.unlockAll))
-      .map((n) => ({ node: n, frame: this.nodeFrame(page, n) }));
+      .map((n) => {
+        const frame = this.nodeFrame(page, n);
+        const c = frame.indexOf(':');
+        return c > 0 ? { node: n, sheet: frame.slice(0, c), frame: frame.slice(c + 1) } : { node: n, frame };
+      });
     v = {
       runs: [
         ...paths.map((p) => ({ id: pathId(p), dots: pathDots(p.points, true, true) })),
@@ -380,6 +493,9 @@ export class WorldMapScene implements Scene {
       const hint = heroHint(h, this.progress, this.game.freed);
       const def = this.game.deps.characters.find((c) => c.id === h.hero);
       if (hint === 'none' || !def) continue;
+      // A silhouette (the crystal ball's hint before a clear) only on a node the file has really
+      // reached: never one shown only through developer "Unlock all".
+      if (hint === 'silhouette' && !isOpen(this.progress, page, node.id)) continue;
       // The silhouette peeks out from behind the dot (half of it hidden); the trophy stands just
       // clear of it, feet on the ground beside it as the player's marker stands on the node.
       const out0 = hint === 'silhouette' ? 9 : 17;
@@ -423,10 +539,14 @@ export class WorldMapScene implements Scene {
 
   /** The page's name and the node the hero stands on. */
   private announceHere(): void {
+    this.say(this.hereLine());
+  }
+
+  private hereLine(): string {
     const n = this.nodeById(this.node);
     const label = spoken(this.page.label);
     const page = label.toUpperCase() === this.page.title ? label : `${label}, ${this.page.title}`;
-    this.say(n ? `${page}. ${this.nodeLabel(n)}` : page);
+    return n ? `${page}. ${this.nodeLabel(n)}` : page;
   }
 
   /**
@@ -437,6 +557,9 @@ export class WorldMapScene implements Scene {
    */
   nodeLabel(n: MapNode): string {
     const label = spoken(this.page.label);
+    // The bonus spot (map/bonus-spot.ts): the bonus game's name while open.
+    if (n.kind === 'bonus')
+      return this.game.bonusOpen ? `${spoken(bonusGame().label(this.game))}, open` : BONUS_CLOSED_SAID;
     if (isWarpNode(n)) {
       const text = spoken(warpText(this.progress, n, this.unlockAll));
       return isWarpOpen(this.progress, n, this.unlockAll) ? `Warp, ${text}` : `${text}, locked`;
@@ -453,7 +576,6 @@ export class WorldMapScene implements Scene {
 
   private nodeLabelPlain(n: MapNode, label: string, state: string): string {
     if (n.kind === 'start' && !n.level) return `${label} start`;
-    if (n.kind === 'bonus') return `Bonus level, ${state}`;
     // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
     const stage = n.level?.split('-').pop();
     const lvl = stage ? `${label}-${stage}` : label;
@@ -476,6 +598,8 @@ export class WorldMapScene implements Scene {
     const n = this.warpHere();
     if (n) return warpText(this.progress, n, this.unlockAll);
     if (this.mode !== 'idle') return '';
+    const here = this.nodeById(this.node);
+    if (here?.kind === 'bonus') return this.game.bonusOpen ? bonusGame().label(this.game) : BONUS_CLOSED_HINT;
     return (
       exitHint(this.progress, this.page, this.node, this.unlockAll) || (this.hidingHere() ? HIDING_HINT : '')
     );
@@ -484,9 +608,13 @@ export class WorldMapScene implements Scene {
   update(input: InputFrame): void {
     this.t++;
     this.startTrophyBursts();
+    if (this.updateGuard()) return;
     switch (this.mode) {
       case 'reveal':
         this.updateReveal(input);
+        return;
+      case 'cutscene':
+        this.updateCrash(input);
         return;
       case 'walk':
         this.updateWalk();
@@ -508,12 +636,21 @@ export class WorldMapScene implements Scene {
    * while walking, sliding or fading.
    */
   touchLabels(): TouchLabels {
-    if (this.mode === 'reveal') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
+    if (this.mode === 'reveal' || this.mode === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
     if (this.mode !== 'idle') return NO_TOUCH_BUTTONS;
     const here = this.nodeById(this.node);
     const open = !!here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll);
     const warp = !!here && isWarpOpen(this.progress, here, this.unlockAll);
-    return { ...NO_TOUCH_BUTTONS, jump: open ? 'ENTER' : warp ? 'WARP' : null, start: 'MENU' };
+    const bonus =
+      here?.kind === 'bonus' &&
+      this.game.bonusOpen &&
+      isOpen(this.progress, this.page, here.id, this.unlockAll);
+    return {
+      ...NO_TOUCH_BUTTONS,
+      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : null,
+      start: 'MENU',
+      special: inventoryAvailable(this.game) ? 'ITEMS' : null,
+    };
   }
 
   private updateReveal(input: InputFrame): void {
@@ -570,9 +707,9 @@ export class WorldMapScene implements Scene {
     this.game.autosave();
   }
 
-  /** True while a reveal is still drawing in. */
+  /** True while a reveal is still drawing in (the crash cutscene before it included). */
   get revealing(): boolean {
-    return this.mode === 'reveal';
+    return this.mode === 'reveal' || this.mode === 'cutscene';
   }
 
   private updateIdle(input: InputFrame): void {
@@ -583,9 +720,29 @@ export class WorldMapScene implements Scene {
       this.openPause();
       return;
     }
+    // The ITEMS button (SMB3's item box), once the inventory is unlocked.
+    if (input.pressed('special') && inventoryAvailable(this.game)) {
+      this.openItems();
+      return;
+    }
     if (input.pressed('jump') && here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll)) {
       this.game.ctx.audio.sfx('coin');
       this.game.enterLevelFromMap(here.level);
+      return;
+    }
+    if (
+      input.pressed('jump') &&
+      here?.kind === 'bonus' &&
+      isOpen(this.progress, this.page, here.id, this.unlockAll)
+    ) {
+      if (this.game.bonusOpen) {
+        this.game.ctx.audio.sfx('coin');
+        this.game.openBonus({ page: this.page.id, node: here.id });
+      } else {
+        // Used: a bump, and why it is shut.
+        this.game.ctx.audio.sfx('bump');
+        this.say(BONUS_CLOSED_SAID);
+      }
       return;
     }
     if (input.pressed('jump') && here && isWarpNode(here)) {
@@ -655,6 +812,7 @@ export class WorldMapScene implements Scene {
     };
     this.page = next;
     this.views.clear();
+    this.guard = null;
     this.mode = 'slide';
     this.takeReveal(); // hidden while sliding in, drawn in on arrival
   }
@@ -671,6 +829,7 @@ export class WorldMapScene implements Scene {
     this.views.clear();
     this.node = this.nodeById(s.node) ? s.node : (startNode(this.page)?.id ?? '');
     this.placeHero();
+    this.refreshGuard();
     if (this.page.music !== s.from.music) this.game.ctx.audio.playMusic(this.page.music);
     this.mode = this.revealQueue.length ? 'reveal' : 'idle';
     this.revealT = 0;
@@ -696,6 +855,7 @@ export class WorldMapScene implements Scene {
     this.fade = { from: this.page, t: 0, node: target ?? '' };
     this.page = next;
     this.views.clear();
+    this.guard = null;
     this.mode = 'fade';
     this.takeReveal(); // hidden while fading in, drawn in on arrival
   }
@@ -712,6 +872,7 @@ export class WorldMapScene implements Scene {
     this.views.clear();
     this.node = this.nodeById(f.node) ? f.node : (startNode(this.page)?.id ?? '');
     this.placeHero();
+    this.refreshGuard();
     if (this.page.music !== f.from.music) this.game.ctx.audio.playMusic(this.page.music);
     this.mode = this.revealQueue.length ? 'reveal' : 'idle';
     this.revealT = 0;
@@ -732,36 +893,60 @@ export class WorldMapScene implements Scene {
     const game = this.game;
     game.ctx.audio.sfx('pause');
     const pop = () => game.scenes.pop();
-    game.scenes.push(
-      new MenuScene(
-        game,
-        'MAP',
-        [
-          { label: 'Continue', select: pop },
-          { label: 'Worlds', select: () => this.openWorlds() },
-          { label: 'Save and quit', select: () => game.saveAndQuit() },
-          { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, pop, true)) },
-          ...(game.devMode
-            ? [
-                {
-                  label: 'All heroes',
-                  value: () => (game.devAllHeroes ? 'on' : 'off'),
-                  adjust: () => this.toggleAllHeroes(),
-                  hint: 'Developer mode: every hero can be picked, none freed',
-                },
-                {
-                  label: 'Unlock all',
-                  value: () => (game.devUnlockAll ? 'on' : 'off'),
-                  adjust: () => this.toggleUnlockAll(),
-                  hint: 'Developer mode: every level on the map open',
-                },
-              ]
-            : []),
-        ],
-        pop,
-        true,
-      ),
-    );
+    const items = (): MenuItem[] => [
+      { label: 'Continue', select: pop },
+      ...(inventoryAvailable(game)
+        ? [
+            {
+              label: 'Items',
+              value: () => String(shownItems(game).length),
+              select: () => {
+                pop();
+                this.openItems();
+              },
+              hint: `Use an item before entering a level. Also on ${abilityHint(game, 'ITEMS', 'special')}`,
+            },
+          ]
+        : []),
+      { label: 'Worlds', select: () => this.openWorlds() },
+      { label: 'Save and quit', select: () => game.saveAndQuit() },
+      { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, pop, true)) },
+      ...(game.devMode
+        ? [
+            {
+              label: 'Item inventory',
+              value: () => (game.bonus.devInventory ? 'on' : 'off'),
+              adjust: () => {
+                this.toggleInventory();
+                menu.rebuild(items(), 'Item inventory');
+              },
+              hint: 'Developer mode: the item inventory unlocked before Larry is beaten',
+            },
+            {
+              label: 'Give items',
+              select: () => {
+                this.giveItems();
+                menu.rebuild(items(), 'Give items');
+              },
+              hint: 'Developer mode: one of each item, never saved; turns Item inventory on',
+            },
+            {
+              label: 'All heroes',
+              value: () => (game.devAllHeroes ? 'on' : 'off'),
+              adjust: () => this.toggleAllHeroes(),
+              hint: 'Developer mode: every hero can be picked, none freed',
+            },
+            {
+              label: 'Unlock all',
+              value: () => (game.devUnlockAll ? 'on' : 'off'),
+              adjust: () => this.toggleUnlockAll(),
+              hint: 'Developer mode: every level on the map open',
+            },
+          ]
+        : []),
+    ];
+    const menu = new MapMenu(game, items(), pop);
+    game.scenes.push(menu);
   }
 
   /**
@@ -776,6 +961,34 @@ export class WorldMapScene implements Scene {
     game.autosave();
   }
 
+  /** The ITEMS panel over the map (the inventory). */
+  private openItems(): void {
+    this.game.scenes.push(new InventoryScene(this.game));
+  }
+
+  /**
+   * Map menu "Item inventory" (dev mode only): flips the file's dev flag and saves. It never writes
+   * `inventoryUnlocked`; the open map menu is rebuilt with or without its Items row.
+   */
+  private toggleInventory(): void {
+    const game = this.game;
+    game.bonus.devInventory = !game.bonus.devInventory;
+    game.autosave();
+  }
+
+  /**
+   * Map menu "Give items" (dev mode only): one of each item, as room allows, into the dev list
+   * (`bonus.devItems`): never saved, shown only while dev mode and "Item inventory" are on (this
+   * turns it on). The file's own items and progress are not touched.
+   */
+  private giveItems(): void {
+    const game = this.game;
+    const added = giveDevItems(game.bonus);
+    game.bonus.devInventory = true;
+    game.ctx.audio.sfx(added ? 'powerup' : 'bump');
+    this.say(added ? `${added} dev items added. They are never saved.` : 'The inventory is full.');
+  }
+
   /**
    * Map menu "Unlock all" (dev mode only): flips the file's flag and saves. Turning it off puts a
    * hero standing somewhere locked back on the start of its world, or of the furthest open world.
@@ -784,6 +997,7 @@ export class WorldMapScene implements Scene {
     const game = this.game;
     game.devUnlockAll = !game.devUnlockAll;
     this.views.clear();
+    this.refreshGuard();
     if (!game.devUnlockAll) {
       const prog = this.progress;
       if (!isPageOpen(prog, this.page.id)) {
@@ -838,6 +1052,52 @@ export class WorldMapScene implements Scene {
       pages.findIndex((p) => p.id === here),
     );
     game.scenes.push(new WorldsMenu(game, items, () => game.scenes.pop(), start));
+  }
+
+  /**
+   * The Hammer Bro (campaign only): out on the road to a bonus node with `guard: 'hammer-bro'` while
+   * the bonus is used (Game.bonusOpen false) and the node is shown, on the road tile farthest from
+   * the hero (map/hammer-bro.ts).
+   */
+  private refreshGuard(): void {
+    this.guard = null;
+    if (!this.game.campaign || this.game.bonusOpen) return;
+    const n = this.page.nodes.find(
+      (x) => x.guard === 'hammer-bro' && isOpen(this.progress, this.page, x.id, this.unlockAll),
+    );
+    if (!n) return;
+    const road = guardRoad(this.page, n.id);
+    if (!road.length) return;
+    const here = this.nodeById(this.node);
+    this.guard = MapGuard.spawn(road, here ? [here.x, here.y] : [n.x, n.y], 0x5eed + this.t);
+    this.guardGrace = GUARD_GRACE_FRAMES;
+  }
+
+  /**
+   * The Hammer Bro wanders while the hero stands or walks; touching him (or him walking into the
+   * hero) starts the battle (Game.startHammerBattle). True when it did.
+   */
+  private updateGuard(): boolean {
+    const g = this.guard;
+    if (!g || (this.mode !== 'idle' && this.mode !== 'walk')) return false;
+    g.update();
+    if (this.guardGrace > 0) {
+      this.guardGrace--;
+      return false;
+    }
+    if (!g.touches(this.hx, this.hy)) return false;
+    this.guard = null;
+    this.game.ctx.audio.sfx('kick');
+    this.game.startHammerBattle();
+    return true;
+  }
+
+  /** The Hammer Bro (the smb3 sheet's map frames, facing left), feet on the road like the hero's. */
+  private drawGuard(r: Renderer, g: MapGuard): void {
+    const sheet = this.game.ctx.assets.sheet('smb3');
+    const frame = `hammer-bro-map-${(this.t >> 4) & 1}`;
+    const h = sheet.frames.get(frame)?.h ?? 16;
+    r.sprite(sheet, frame, g.x, g.y + 10 - h, !g.facingLeft);
   }
 
   // ---------------------------------------------------------------- drawing
@@ -918,13 +1178,20 @@ export class WorldMapScene implements Scene {
     for (let i = 0; i < v.nodes.length; i++) {
       const nv = v.nodes[i] as PageView['nodes'][number];
       if (revealing && this.revealShown.has(nv.node.id)) continue;
-      r.sprite(items, nv.frame, ox + nv.node.x * 16, nv.node.y * 16);
+      r.sprite(nv.sheet ? assets.sheet(nv.sheet) : items, nv.frame, ox + nv.node.x * 16, nv.node.y * 16);
     }
     for (let i = 0; i < v.heroes.length; i++) {
       const m = v.heroes[i] as HeroMark;
       if (m.hint === 'trophy') this.drawHeroMark(r, page, m, ox);
     }
-    if (hero && page.nodes.length) this.drawHeroes(r);
+    if (hero && this.guard) this.drawGuard(r, this.guard);
+    const crash = hero ? this.crash?.scene : undefined;
+    if (crash) {
+      // The hero is aboard until he jumps out; then on his way down to (and standing on) 4-2.
+      const at = crash.heroAt();
+      if (at) this.drawHeroes(r, at.x, at.y);
+      crash.draw(r, this.game.ctx.assets, this.game.ctx.reduceFlashing);
+    } else if (hero && page.nodes.length) this.drawHeroes(r);
   }
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {
@@ -934,8 +1201,10 @@ export class WorldMapScene implements Scene {
       case 'start':
         if (n.level) return cleared ? 'map-node-cleared' : 'map-node-open';
         return 'map-node-start';
-      case 'bonus':
-        return cleared ? 'map-node-cleared' : 'map-node-bonus';
+      case 'bonus': {
+        // The bonus game's icon (`sheet:frame`) while open; used, a spent dot.
+        return this.game.bonusOpen ? bonusGame().icon(this.game) : 'map-node-cleared';
+      }
       case 'castle':
         if (hasSecretExit(n.level)) return cleared ? 'map-castle-secret-cleared' : 'map-castle-secret';
         return cleared ? 'map-castle-cleared' : 'map-castle';
@@ -1027,11 +1296,11 @@ export class WorldMapScene implements Scene {
     return out;
   }
 
-  private drawHeroes(r: Renderer): void {
+  private drawHeroes(r: Renderer, x = this.hx, y = this.hy): void {
     const s = this.game.state;
     // Player two a little behind and to the side.
-    if (s.character2) this.drawHero(r, s.character2, this.hx - 7, this.hy - 2);
-    this.drawHero(r, s.character, this.hx, this.hy);
+    if (s.character2) this.drawHero(r, s.character2, x - 7, y - 2);
+    this.drawHero(r, s.character, x, y);
   }
 
   private framesFor(c: CharacterDef): HeroFrames {

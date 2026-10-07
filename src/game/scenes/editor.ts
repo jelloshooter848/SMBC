@@ -71,6 +71,9 @@ const ENTITY_FRAMES: Record<
   star: { sheet: 'items', frame: 'star-0' },
   '1up': { sheet: 'items', frame: '1up' },
   'decor-castle': { sheet: 'decor', frame: 'castle-small' },
+  // SMB3 airship (4-2-airship): frames on the smb3 sheet; a pink box until they are drawn.
+  cannon: { sheet: 'smb3', frame: 'cannon-l' },
+  rocky: { sheet: 'smb3', frame: 'rocky-0' },
 };
 
 /** A red piranha plant is a `piranha`/`piranha-down` with `red=1`: its brush and frame key. */
@@ -448,6 +451,8 @@ export class EditorScene implements Scene {
       'spiny',
       'lakitu',
       'bullet-bill',
+      'cannon',
+      'rocky',
       'balance',
       'spring',
       'spring-green',
@@ -667,12 +672,15 @@ export class EditorScene implements Scene {
       const spec = ENTITY_FRAMES[redPiranhaKey(e) ?? e.type];
       const x = e.x * 16 - this.camX;
       if (x < -32 || x > SCREEN_W + 32) continue;
-      if (spec) {
-        const sheet = assets.sheet(spec.sheet, spec.palette?.(theme));
-        const f = sheet.frames.get(spec.frame);
+      // A cannon shows its barrel's direction (`dir=`).
+      const frame = e.type === 'cannon' ? `cannon-${String(e.props?.dir ?? 'l')}` : spec?.frame;
+      const sheet =
+        spec && frame && assets.has(spec.sheet) ? assets.sheet(spec.sheet, spec.palette?.(theme)) : null;
+      const f = sheet && frame ? sheet.frames.get(frame) : undefined;
+      if (spec && sheet && frame && f) {
         // Hanging things (flipY) dangle below their anchor tile; the rest stand on its bottom.
-        if (spec.flipY) r.sprite(sheet, spec.frame, x + 8, (e.y + 1) * 16, false, true);
-        else r.sprite(sheet, spec.frame, x, (e.y + 1) * 16 - (f?.h ?? 16));
+        if (spec.flipY) r.sprite(sheet, frame, x + 8, (e.y + 1) * 16, false, true);
+        else r.sprite(sheet, frame, x, (e.y + 1) * 16 - f.h);
       } else r.rect(x + 2, e.y * 16 + 2, 12, 12, '#f0f');
     }
     for (const z of this.level.zones) {

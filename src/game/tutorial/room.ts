@@ -443,7 +443,10 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
   render(r: Renderer): void {
     this.world.render(r);
     const assets = this.game.ctx.assets;
-    drawHud(r, assets, this.state, null, this.world.frame, this.world.players, { place: 'TRAINING' });
+    drawHud(r, assets, this.state, null, this.world.frame, this.world.players, {
+      place: 'TRAINING',
+      covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
+    });
     const font = assets.sheet('font');
     const tick = this.phase === 'good' || this.phase === 'ready' || this.phase === 'over';
     const bottom = drawRoomBox(r, font, this.promptLines(), tick ? 2 : -1);

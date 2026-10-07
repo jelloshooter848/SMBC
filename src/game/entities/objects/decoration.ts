@@ -2,6 +2,9 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { px } from '@engine/math/units';
 import { Entity, type View } from '../entity';
 
+/** SMB3 airship propeller decor: it turns, cycling `smb3:propeller-0/1/2`. */
+const PROPELLER = 'smb3:propeller-0';
+
 /**
  * Background scenery anchored at its bottom-left tile. Castles can raise a flag at level end. A
  * `sheet:frame` kind (`station:window`) draws that frame of another sheet.
@@ -35,7 +38,9 @@ export class Decoration extends Entity {
       if (f)
         r.sprite(view.assets.sheet('items'), 'castle-flag', x + f.w / 2 - 8, bottom - f.h + 8 - this.flagT);
     }
-    drawDecor(r, view, this.name, x, bottom);
+    // SMB3 airship propellers turn: `smb3:propeller-0` cycles through its three frames.
+    const name = this.name === PROPELLER ? `smb3:propeller-${Math.floor(view.frame / 4) % 3}` : this.name;
+    drawDecor(r, view, name, x, bottom);
   }
 }
 
@@ -45,10 +50,11 @@ export const decorInFront = (kind: string): boolean => kind.includes(':');
 /**
  * Draw decor `kind` with its bottom-left at screen (x, bottom) (shared with the editor): a frame
  * of the `decor` sheet in the theme's palette, or for `sheet:frame` that frame of another sheet
- * in its own palette. An unknown frame draws nothing.
+ * in its own palette. An unknown frame, or a sheet not registered (yet), draws nothing.
  */
 export function drawDecor(r: Renderer, view: View, kind: string, x: number, bottom: number): void {
   const colon = kind.indexOf(':');
+  if (colon > 0 && !view.assets.has(kind.slice(0, colon))) return;
   const sheet =
     colon > 0
       ? view.assets.sheet(kind.slice(0, colon))
@@ -65,10 +71,12 @@ export function decorPalette(theme: string): string {
     theme === 'underground' ||
     theme === 'castle' ||
     theme === 'castle-water' ||
-    theme === 'station'
+    theme === 'station' ||
+    theme === 'airship'
   )
     return 'decor-night';
   if (theme === 'snow') return 'decor-snow';
+  if (theme === 'cavern') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';
   if (theme === 'mushroom-red') return 'decor-mushroom-red';
   if (theme === 'water-gray') return 'decor-gray';

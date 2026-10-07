@@ -210,6 +210,18 @@ const axe0 = [
   '......0000......',
 ];
 
+/* A chunk of a smashed pipe (4-2's anchor drop): green with a dark outline and a shine. */
+const pipePiece = [
+  '.00000..',
+  '0414440.',
+  '0414440.',
+  '0444440.',
+  '0444440.',
+  '.04440..',
+  '..000...',
+  '........',
+];
+
 const brickPiece = [
   '.00000..',
   '0339990.',
@@ -1796,6 +1808,7 @@ export const itemsDef: SpriteDef = {
     'axe-1': swapColors(axe0, { '1': 'b' }),
     'axe-2': swapColors(axe0, { b: '1' }),
     'brick-piece': brickPiece,
+    'pipe-piece': pipePiece,
     'fireball-0': fireball0,
     'fireball-1': flipH(fireball0),
     'fireball-2': vflip(flipH(fireball0)),

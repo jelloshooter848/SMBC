@@ -66,12 +66,15 @@ Link waits beside the temple doorway of the 2-1 sky ruins (`2-1-sky2`, column 30
 
 Mega Man waits on the command deck of the space station above 3-1 (`3-1-station`, column 38 on the floor, under the big window). Past the end of the 3-1 coin heaven (`3-1-sky`) a coin trail hops over two small cloud platforms to a hidden teleporter block (`8` in maps, at 91,7 over the second platform); bumped, it reveals a teleport pad that rises out of the platform two tiles to its right (93,10). Standing on the pad beams the hero up (hidden, a `station:beam-*` streak rises, sfx `beam`) and down onto the station's arrival pad; the clock runs on. The return pad just past Mega Man (column 44), and the arrival pad once stepped off, beam the hero back down into 3-1 at column 162, dropping in like the coin heaven's own drop. The pads are `teleport` zones (docs/WORLD_MAP.md "Teleport pads"). Every hero reaches the pad and crosses the station (`tests/sim/space-station.test.ts`); his lines before the round make the brainwashing a rogue program in his systems that built a dark copy of him (`DIALOGUE.megaman`).
 
+Samus waits in her cavern under the 4-2 vine area (`4-2-cavern`, an area of 4-2: `parent: 4-2`, `time: inherit`), on the dais of the Chozo statue's chamber (column 41, feet in row 11, the statue `zebes:chozo-0` at 37). In campaign play the vine area's warp zone shows one unlabelled pipe (column 54) that drops the player into the cavern's entry shaft (docs/WORLD_MAP.md "Campaign warp zones"); outside the campaign it keeps its three warps. The cavern is short and Metroid-flavoured: blue rock, an entry chamber, a bubble door (`zebes:bubble-door` in a three-tile doorway), a low tunnel with a ledge, the statue's chamber (a ? block over the orb in the statue's hand), a second bubble door and a side pipe that brings the player up out of 4-2's pipe at column 72, the first pipe past the vine block (64,5), so nothing is skipped (the checkpoint at 98 still lies ahead). The clock runs on throughout. Every hero reaches Samus and crosses to the pipe (`tests/sim/samus-cavern.test.ts`); her lines before the round make the brainwashing a parasite feeding on her will the way a Metroid feeds, which set off a countdown (`DIALOGUE.samus`). Theme and music: `cavern` (the `zebes` sheet's statue faces right, toward Samus). World 4's tree left of 4-2 stands one tile out, clear of her map hint (she is drawn on the left: 4-2's roads leave right, up and down).
+
 ## The map hint (`src/game/map/captives.ts`)
 
 The world map hints at levels that still hide a hero, in three stages (campaign play only, read
 from the file's `cleared` and `freed`):
 
-1. **Before the level's node is cleared:** nothing.
+1. **Before the level's node is cleared:** nothing (unless the file has Larry Koopa's crystal
+   ball, below: then the silhouette of stage 2 shows at once).
 2. **Cleared, the hero not freed yet:** the hero's idle sprite as a faint silhouette peeking from
    behind the node (drawn before the dot, so the dot hides part of it). Its colour is the page's
    ground shade lifted a little toward the ground colour (`<palette>~shade-<theme>`, `mapShadeFx`
@@ -91,6 +94,165 @@ a node can choose with `heroSpot: 'left' | 'right'` (`MapNode`). Dev mode's "All
 shows a trophy (it does not touch `freed`), and "Unlock all" shows no silhouette (it opens nodes
 without clearing them). Toad's greeting in 1-0 tells the player where heroes hide (pipes, vines,
 hidden blocks) and to look closely at the map for a level hiding someone missed.
+
+## Larry Koopa and the crystal ball (4-2's airship, campaign)
+
+Story: Larry Koopa stole a magic wand, and its spell is what brainwashed the heroes. In the
+campaign, 4-2's right warp zone first looks classic (WELCOME TO WARP ZONE!, the pipe and its 5,
+though the pipe is dead), until the hero drops in and lands: then his **anchor** crashes down,
+smashes the pipe and rests on the floor, its **chain** rising through the ceiling off the top of
+the screen. Climbed (vine mechanics) to the top,
+it leads aboard his airship: the auto-scrolling **deck** `4-2-airship`, arriving up the chain at
+the bow (wired in `level/campaign.ts`; docs/WORLD_MAP.md "Campaign warp zones"), whose stern
+pipe drops into **Larry's room** `4-2-larry` (`pipe x y down -> 4-2-larry 2 12`). Dev select and
+`?level=` reach both as plain levels. See "Larry's airship challenge" below for how a run aboard
+ends.
+
+- **The anchor's drop** (`entities/objects/anchor-drop.ts`, an `anchor-drop` spawn built by
+  `level/campaign.ts`): the room shows the classic warp zone, but its pipe (column 214) is no pipe
+  zone, so it never warps (its 5 is drawn through the warp zone's `labelAt`). Once a player stands
+  on the room's floor (row 13, columns 208-223; not on the pipe, not on the ceiling) the anchor
+  shows at the top 20 frames later and falls (4 px/f gaining 0.5 up to 10), trailing its chain,
+  breaks the ceiling brick in its column (brick pieces, `break`), smashes the pipe (its tiles gone
+  in `pipe-piece` chunks of the items sheet, through `World.breakPieces` like a broken brick; the
+  `cannon` boom and a `break`, a 16-frame screen shake that reduce flashing skips, the 5 and the
+  welcome text gone, the announcer: "An anchor crashes down and smashes the pipe! Climb its
+  chain: UP." with the UP ability's key as other prompts give it) and rests on the floor: about
+  a second in all. Nothing of it is solid or hurts; the players keep control (a player on the
+  ceiling over it just drops into the room). It plays on every visit (each new 4-2 world starts
+  from the level's own tiles: the whole pipe and a waiting drop).
+- **After Larry is beaten** (`until=larry` on the warp zone and `larry` in the file's secrets: the
+  airship has crashed on the map) the room is **sealed**: no pipe, the ceiling gap it is entered
+  by (columns 220-221) closed with the ceiling's brick, its left wall (column 208) raised to the
+  top of the screen and the camera stopped there (a `scrollStop` at 208), so a hero walking the
+  ceiling stops at the screen's edge and walks back; no anchor, no chain, no warp, no text.
+- **The anchor chain**: the anchor is `smb3:anchor` (32×32, its ring under the chain, drawn at x =
+  column×16 − 8, standing on the floor); the chain is a placed `Vine` drawn in `smb3:chain` links
+  (`VineArt` in `entities/objects/vine.ts`, theme-free; also a `chain x y len=N` map entity),
+  standing on the floor at column 214 and reaching a tile above the screen. A `vine` zone on its
+  foot (column 214, row 12) links its top to the airship like a vine brick's, and the arrival's
+  vine is a chain too (`WorldStart.chain`). **Arrival point**
+  (`goto=4-2-airship,2,3,climb`): the chain rises from the screen bottom at **column 2** (faster
+  than a beanstalk, 1.5 px/f) and the hero climbs it, through any hull in the way, until he can
+  step off to the right onto the **first solid tile in column 3 below row 3** (the bow deck). The
+  chain's top is two tiles above that tile only when that is higher than the classic arrival vine
+  (5 tiles up from the screen bottom); otherwise it stays at the classic height and the hero drops
+  onto the floor from there (`arrivalVineTop` in `world/world.ts` takes the higher of the two, so
+  the classic sky-area vine, start row 14, is unchanged). `World.arriving` is true until everyone
+  is off it (the deck's auto-scroll waits for it). The airship run boards with this start, so TRY
+  AGAIN? YES climbs the chain again. Every hero drops in, climbs it and lands on the deck
+  (`tests/sim/anchor-chain.test.ts`).
+- **The airship's crash on the map** (`map/airship-crash.ts`, the map's `cutscene` mode; campaign,
+  the first time the ball is taken): after the crystal ball's card `Game.takeCrystalBall` sets
+  `Game.mapCutscene = 'airship-crash'` (never saved), and World 4's map plays it before the reveal
+  of the bonus road: the airship (smb3 `map-airship-0/1`, 32×16, bow left) flies in from the right
+  smoking (`map-smoke-0/1/2`) and hovers over 4-2, tips bow-down (`map-airship-tilt`); the hero
+  jumps out in an arc and lands on 4-2 (`map-dust-0/1`); the ship dives onto the bonus spot and
+  crashes (`cannon` boom, `map-wreck`, dust, smoke); Toad walks in from the left (`toad-map-0/1`),
+  hammers three blows facing right (`toad-map-hammer-0/1`, planks fly), the wreck becomes the bonus
+  node, Toad waves and walks off (6.5 s, `CRASH_FRAMES`); then the road draws in as before. The
+  announcer narrates each beat. JUMP (or MENU) skips to the end: the road drawn, the hero on 4-2,
+  the node shown. With reduce flashing the crash has no white flash. It never replays (a reload
+  mid-way only draws the road; taking the ball again plays nothing) and nothing plays without
+  beating Larry (`tests/sim/airship-crash.test.ts`).
+
+- **The deck** (`src/content/levels/world4/4-2-airship.map`, parent 4-2, theme `airship-deck`,
+  music `airship`, `camera: auto` at `scroll: 0.375` px/f: about 58 s): SMB3 World 1's airship
+  transcribed onto one 15-row screen, 98 columns. The bow (raised bow platform, the start and the
+  anchor chain's step-off at column 3, over a stair-stepped prow), the fore deck (two `ul`
+  cannons, a Rocky Wrench, a blaster step right against the tall 2×3 post), the long low middle
+  deck on two hull segments (a 2-wide gap, a 3-tall blaster post at column 44 whose bills fly
+  over a standing hero, a post, a mushroom ? block 5 rows up) under the plank overhang with two
+  `dl` cannons and a three-cannon turret, the thick block over the gateway, then the lower stern deck (a Rocky
+  Wrench), four 2-wide steps up to the railed stern deck with portholes and THE PIPE. Every pit is
+  2 wide. `tests/sim/airship-deck.test.ts`: every hero crosses under the auto-scroll, and with
+  damage on every hero reaches the pipe (small Mario and Luigi unhit); over 20 random blaster
+  timings (10 seeds, each from a standing start and after 200 idle frames) small Mario, small
+  Luigi, Link and Mega Man each reach it at least 19 times of 20; standing still, the scroll
+  carries the hero off the bow and squashes them against the first cannon (~12 s). The bot is `tests/sim/airship-bot.ts` (also `rideToStern`'s driver).
+- **Cannons** (`cannon x y dir=r|l|ul|ur|dl|dr [period=150] [delay=]`, entities/enemies/cannon.ts):
+  a solid block (its cell is made solid) that fires a cannonball out of its barrel every `period`
+  frames while on screen (first shot staggered by position, or `delay`), with the `cannon` sfx; it
+  holds a point-blank shot while a hero is at its muzzle. The ball flies straight through
+  everything (1 px/f, or 0.75 px/f per axis on a diagonal), hurts on contact, drops when stomped
+  (100 points) and, like a Bullet Bill, shrugs off fire, boomerangs and ice.
+- **Rocky Wrench** (`rocky x y`, entities/enemies/rocky-wrench.ts): hides in a manhole in the deck
+  under cell (x, y); pops up when a hero is within 8 tiles (never within 2 tiles of one, so it
+  never rises into a hero nor throws point-blank), faces them, throws a wrench that flies flat at
+  1.25 px/f, and ducks back for ~1.7 s. Only while up (half out on the way up, until it starts
+  ducking) can it hurt or be hit (any attack, a stomp; 100 points).
+- **The room** (`src/content/levels/world4/4-2-larry.map`, parent 4-2): one locked screen,
+  enclosed like SMB3's (the owner's reference, built to the SMB3 art's frames and mock), no sky. The
+  log back wall (`H`, not solid) fills the room, behind the HUD too, with two `smb3:porthole`
+  windows at (5,6) and (10,6). The ceiling row (row 2) and both edge columns (0 and 15) are solid
+  (`%`) and covered by 16×16 smb3 decor, one per tile: `smb3:ceiling-beam` along row 2 (columns
+  1-14) and `smb3:pillar` down columns 0 and 15 (rows 2-12). The floor is log posts: `#` the post
+  tops on row 13, `%` the posts carrying on below on row 14, and one raised post with its top at
+  (7,12) and its post at (7,13). The hero rises out of the pipe in the floor at columns 2-3 (from
+  the deck's stern pipe); Larry starts on the floor at the right (`larry 12 12 next=4-3`: the
+  tile his feet stand in; `next` is where the ball leads outside the campaign). Theme `airship`,
+  music `smb3-boss`.
+- **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
+  hero (12 px high, 0.75 px/f across), a high jump now and then (30%, about 60 px; always when
+  the hero is within 24 px, so he jumps over), and after every two moves he stops, raises his wand
+  and fires a **wand blast** (`WandBlast`, a ring flying in a straight line at 1.5 px/f toward the
+  hero's middle where he was; through walls; at most two out; it hurts like any enemy shot).
+  **Hits**: 6 hit points in half-stomps. A **stomp** takes 2 and sends him into his **shell**: he
+  spins on the spot (24 frames), slides at the hero at 2 px/f bouncing off walls (80 frames), and
+  comes out (20 frames). In the shell nothing hurts him: a stomp bounces the hero off unhurt
+  (reaction `'bounce'`, which `World` now treats as a harmless bounce for stomps; no score), and
+  everything else is immune; the sliding shell hurts to touch. **Fireballs and the other heroes'
+  attacks** (sword, whip and every melee hit, buster, weapons, bombs, and Samus's Ice Beam, which
+  can't freeze him) take 1 each (2 for a heavy hit, amount 3 or more, like Mega Man's charge shot),
+  then he flashes for 40 frames (`smb3-flash`), immune to attacks (a stomp still counts).
+  Boomerangs, bumps and the star do nothing. So: three stomps, or six fireballs. Every hero's main
+  attack hurts him (a table test over the roster, `larry.test.ts`).
+- **Beaten**: his rings vanish, the music stops, "BWAH!" rises over him (5000 points), he holds
+  the hurt pose for half a second, then vanishes in a puff and flies off spinning in his shell.
+  The **crystal ball** (`objects/crystal-ball.ts`) drops where he was and lands on the floor.
+- **Touching the ball** (`crystal-ball` world event): the cabin freezes, the `castle-clear` jingle,
+  and the card "THE CRYSTAL BALL SHOWS / WHERE YOUR FRIENDS / ARE HIDDEN!" (`CRYSTAL_BALL_CARD`,
+  announced; OK goes on). Then, in the campaign, `Game.takeCrystalBall`: a **secret exit of 4-2**
+  (`rules.secretExit`, key `larry` = `CRYSTAL_BALL` in `map/captives.ts`): back on World 4 with the
+  hero on 4-2, only the road to the bonus spot drawn in (docs/WORLD_MAP.md "The bonus spot and its
+  Hammer Bro"); 4-2 is **not** cleared. The file's `inventoryUnlocked` is set (the SMB3 item
+  inventory; a file with `larry` in its secrets counts as unlocked). Outside the campaign play
+  goes on to `next` (4-3); an editor play-test ends.
+
+### Larry's airship challenge (`scenes/airship.ts`)
+
+The deck and the room play with the current hero(es) as real levels, but end like a mini game
+round. Co-op works (both players board; a partner's respawn aboard is free).
+
+- **Boarding** (campaign only): `Game.startLevel` into `4-2-airship` or `4-2-larry` from any other
+  level starts a run (`Game.airship`, an `AirshipRun`) and snapshots the run state as it was
+  before (`snapshot()` from free-hero.ts: lives, power, hp, kit, score, coins, 4-2's checkpoint).
+  Any other level, the map or the title ends the run. Dev select / `?level=` never start one.
+- **No clock aboard**: `LevelScene` sets the world's time to null (the HUD leaves it blank).
+- **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
+  restarts the deck as it was boarded, or Larry's room once it has been reached (rising out of its
+  pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
+  restores the pre-boarding snapshot and goes back to 4-2 at its last checkpoint (4-2's own respawn
+  rules: its start without one, a fresh clock, the WORLD card; no hero select).
+- **MENU** aboard is `MiniGameMenuScene` titled LARRY'S AIRSHIP: Continue / Give up (= NO) and, in
+  dev mode, Assists.
+- **Held items** (mushroom/flower/Starman used on the map) given at an airship area's start are
+  folded into the run's snapshots (`AirshipRun.itemsGiven`), so a retry or NO keeps them once.
+- **Beating Larry**: the crystal ball exactly as before. The run ends in the card's OK
+  (`airshipWon`), then `Game.takeCrystalBall(levelId)` is the campaign's hand-off to the map.
+- **Dev → Mini games → "Larry's airship"** (`AIRSHIP_CHALLENGE`): deck + room as one round over the
+  dev list with the current hero; the ball is PASS, a death FAIL (no retry prompt), Give up QUIT,
+  then the dev result card; nothing is saved.
+- **The crystal ball's hint**: from then on every hero not freed yet shows its silhouette by its
+  level's node (stage 2 above) even before that level is cleared, with the same announcer line and
+  hint line (`heroHint` in `map/captives.ts`). A node the file has not reached (its page not open, or
+  open only through developer "Unlock all") still shows nothing.
+- **Art** (the SMB3 sheet `smb3`, `content/sprites/smb3.ts`): Larry's frames face left (flipped to
+  face right) and are bottom-anchored, drawn bottom-centred on his body: `larry-0` standing and
+  aiming, `larry-1` in the air (feet tucked up, wand raised), `larry-hurt` (no wand) for the first
+  10 frames after a stomp and while beaten, `larry-shell-0..3` spinning. A hit flash blinks him in
+  the `smb3-flash` palette; with reduce flashing he stays in it, without blinking, for the flash
+  time. `wand-blast-0/1` and `crystal-ball` (bottom-centred on its body).
 
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 
@@ -295,6 +457,102 @@ report): with the Saw Disc it wins 93 / 93 / 93 / 97% of 30 seeds at a 12 / 15 /
 reaction, losing about 20-22 of 28 hit points in all (about 12 to Dark Mega Man; half the wins end
 on 8 or less). With the buster alone: 90 / 80 / 23 / 20%, so the weakness matters for slower
 players.
+
+## Samus's mini game: Zebes Escape (`src/game/minigames/samus/`)
+
+The cavern under 4-2 starts to self-destruct, played **as Samus**: get from the Chozo statue's
+chamber to her ship before the countdown runs out. It runs in a real `World` of its own
+(stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Samus with a
+toned-down dev kit (`ESCAPE_KIT`: one energy tank, 60 energy, the Long Beam, ten missiles; the
+morph ball and its bombs are always hers; no Varia suit), one life, no level clock. READY shows
+first (Samus cannot move, the countdown waits, the press that started the round never jumps).
+
+- **The stage** (theme `cavern`, music `zebes-escape`; three screens wide and three high, the
+  first map with `camera: free`, see below): the chamber (the `zebes` sheet's Chozo statue,
+  facing right) at the bottom left; a corridor with a three-tile pit (out of the map's bottom) and
+  a **morph-ball tunnel** (a one-tile gap at the floor, with a bomb block inside); **shaft 1** up
+  the right side; the middle corridor left through a **bomb wall** (three bricks: a bomb opens
+  the bottom one, enough to roll under; a missile opens any); **shaft 2** up the left side (with
+  platforms back up from its floor); the top corridor right through a second tunnel; down into the
+  hangar and the **ship**. Shaft platforms step up three rows at a time, each beside the last and
+  never right above a take-off spot, so every climb is a jump beside a ledge and a drift onto it
+  (Samus's floaty jump; no wall jump). Bomb blocks are plain bricks (World's own blast and missile
+  rules), so nothing new opens them. Fourteen alarm lights (`alarm-0/1`) hang on the back wall.
+- **The creatures** (`creatures.ts`, an `Enemy` each through `extraEntities`; they face left in the
+  sheet and are flipped going right, flash in `zebes-flash` when hit (not with reduce flashing),
+  blow up in a small explosion, drop Samus's energy and missiles, and never despawn, since the
+  escape runs back left): **Zoomer** (2 HP) creeps round whatever it clings to, tile by tile:
+  floors, walls (its frames turned a quarter, `ZEBES_WALL_DEF`, made from the sheet at first use),
+  ceilings (upside down) and round both kinds of corner; the stage's two circle free platforms; one
+  that loses its surface falls and crawls on. **Ripper** flies straight wall to wall at one height;
+  beams glance off, a missile or a bomb stops it, the ice beam freezes it. **Skree** (1 HP) hangs
+  under a ceiling and drops on Samus passing within 40 px below, veering toward her, digs in for
+  24 frames and bursts into four shards. A touch or a shard takes Samus's usual 8 energy
+  (`World.hurtPlayer`: the no-damage assist, blinking and knockback as in a level).
+- **The countdown** (`COUNTDOWN_SECONDS`, 90): big block digits (rects, no sheet) at the top of
+  the HUD (`ZEBES` in the place slot, `EN` below the name), red in the last ten seconds (pulsing
+  between two reds, steady with reduce flashing). The announcer says "Escape! 90 seconds." and
+  calls 60, 30 and 10 seconds. The `alarm` sound plays every 2 s and every half second in the last
+  ten, when the music also speeds up (tempo 1.2; reset when the round ends). A red wash swells and
+  fades over the cavern about once a second (twice in the last ten); with reduce flashing it is a
+  steady light tint, and the alarm lights stay lit.
+- **Outcomes**: touching the ship (its hull, all but the wing tips) boards it: the countdown stops,
+  the creatures go, Samus hides inside, the ship lifts off (`beam` sound, the win jingle, "SAMUS
+  ESCAPED!", the announcer gives the seconds to spare) and the round passes after 150 frames. The
+  countdown reaching zero: the cavern blows up (the `explosion` sound; white and orange flicker
+  for 40 frames, then a fade to white; with reduce flashing only the fade) and the round fails
+  after 120 frames. A pit or losing all energy fails once the death has played. Menu
+  (`EscapeMenuScene`, a `MiniGameMenuScene`; it pauses the countdown) Give up: `quit`. `done` is
+  called once; `game.state` is never touched.
+- **Assists** (dev mode, from the menu): No damage keeps every point of energy (a pit still
+  fails). Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
+  holds."); turned off, it runs on from there.
+- Touch labels: Samus's level labels while she runs (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
+  WEAPON; BOMB in the ball, no JUMP), only MENU while READY, none once the round is decided.
+  Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Mini games.
+
+**The auto-scroll camera** (generic, `world/camera.ts`, SMB3's airships): a map's header
+`camera: auto` with `scroll: <px per frame>` (decimals fine, above 0 and at most 16; 0.5 when left
+out; `scroll:` without `camera: auto` and unknown `camera:` values are parse errors; one screen high
+only; `serializeTextMap` writes `scroll:` for auto maps only). The camera ignores the players and
+moves right at that speed (`Camera.scroll()`, called once per live `World.update` frame) until its
+end (a `scrollStop x` zone or the map's end; `Camera.autoDone`). Its left edge pushes every player
+along. Only a wall ahead squashes: a pushed player dies (whatever the assists, as in a pit) when the
+column under the body's leading (right) edge holds a solid tile between 4 px below its top and 4 px
+above its feet, in a row where the body was not already inside something solid before the push. So
+a ceiling a rising lift carries the hero into, a block grown into, the floor, a vine or a pipe being
+entered never kill at the edge. No one can run past its right edge. Spawning and despawning work as
+in any level (by the camera's edges). The scroll holds while the pause menu is open (the scene is
+not updated) and on every frame `World.update` returns early: a death with no one left, a pipe
+being entered or left, growing/shrinking, a teleport beam, a level clear; it also holds while a
+vine or pit transfer is leaving and while the players climb in on an arrival vine (`World.arriving`,
+an anchor chain too). Every other level is untouched (camera tests: no library level but the deck
+is `auto` or has a speed).
+
+**The vertical camera** (generic, `world/camera.ts`): a map's header `camera: free` with
+`height: N` (at least 15 rows; the text map then needs exactly N rows, and `serializeTextMap`
+writes `height:` only when it is not 15) makes a camera that scrolls both ways sideways and follows
+the lead player up and down, keeping the body's top between screen y 72 and 128, clamped to the
+map. World draws the map through an `OffsetRenderer` (y minus the camera; only the rows on screen
+are drawn), while the backdrop and the castle text stay screen-fixed; a pit is the bottom of the
+map (`World.heightPx`), and entities fall out at the map's bottom (`Entity.levelHeightPx`, which
+World sets before each update). Every other level keeps `y = 0`, draws straight to the screen and
+dies at the first screen's bottom exactly as before (camera tests: every library level is one
+screen high with a horizontal camera, and a normal World hands entities the screen renderer
+itself). Spawning is still by column, so a tall map's creatures should keep `despawnMargin` null.
+
+Difficulty (a "cautious human" sim, `human-sim.test.ts`: `EscapeBot` knows the route as a table of
+surfaces and what to do from each, so a fall down a shaft just resumes from where it lands; it
+baits Skrees and shoots them once down, shoots Zoomers in line, waits for Rippers to clear a jump
+and for a Zoomer to leave the landing. As a careful first-timer it sees the creatures 15 frames
+late, misjudges take-off spots by up to 6 px (halving the error after a failed jump), lets go of
+12% of jumps early (a third of that at the pit) and pauses now and then;
+`ZEBES_SIM=30 pnpm vitest run samus/human-sim --silent=false` prints the report). With 90 seconds
+it escapes 100 / 97 / 90 / 93% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction, with a median of
+28 / 22 / 20 / 22 seconds to spare (the closest 1-12 s); the misses are the pit (2 in 30 at the
+slower reactions) and, rarely, the clock. A clumsier player (21 frames, 10 px, a quarter of jumps
+let go early) escapes 63% of the time, mostly losing to the clock in shaft 2. A sharp run leaves
+about 43 seconds.
 
 ## Hero training (optional practice rooms)
 

@@ -1,4 +1,5 @@
 import type { Song } from '@engine/audio/mml';
+import { smb3Songs } from './smb3';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -24,6 +25,10 @@ const ROBOT_FILL = 'v11 k8 v6 h16 h16 v10 s8 v6 h16 h16 v11 k8 v10 s16 s16 s16 s
 // The boss fight: kick and snare on every beat pair, hats crowding the gaps.
 const BOSS_BAR = '[v12 k8 v6 h16 h16 v11 s8 v6 h16 h16]2';
 const BOSS_FILL = 'v12 k8 v6 h16 h16 v11 s8 v6 h16 h16 v10 s16 s16 s16 s16 v11 s16 s16 v12 s16 s16';
+
+// ZEBES ESCAPE: kick and snare with sixteenth hats and a double kick, and a snare-run fill.
+const ESCAPE_BAR = 'v11 k8 v6 h16 h16 v10 s8 v6 h16 h16 v11 k8 k16 k16 v10 s8 v6 h16 h16';
+const ESCAPE_FILL = 'v11 k8 v6 h16 h16 v10 s8 v6 h16 h16 v10 s16 s16 s16 s16 v12 s16 s16 s16 s16';
 
 export const songs: Song[] = [
   {
@@ -864,4 +869,110 @@ export const songs: Song[] = [
       [${BOSS_BAR}]7 ${BOSS_FILL}     ; bars 1-8
     `,
   },
+
+  {
+    id: 'cavern',
+    bpm: 96,
+    loop: true,
+    // E Phrygian, 16 bars: Samus's cavern below 4-2. A lone, slow lead that waits a bar before
+    // it speaks, leans on the flat second (F) and sinks through a flat-five B-flat in bars 10 and
+    // 15; a soft rippling arpeggio of eighths under it like water in the rock, low droning
+    // whole-note roots, and only a faint drip of percussion.
+    pulse1: `
+      @2 v9 q8 x0
+      r1                              ; bar 1  Em  (the lead waits)
+      r2 o4 b4 o5 c4                  ; bar 2  F
+      o4 b1                           ; bar 3  Em
+      o4 a2 g4 f4                     ; bar 4  Dm
+      o4 e1                           ; bar 5  Em
+      r2 o4 e4 g4                     ; bar 6  Em
+      o4 b2 o5 c2                     ; bar 7  C
+      o5 d2. c4                       ; bar 8  Dm
+      o4 b1                           ; bar 9  Em
+      o4 b-2 a2                       ; bar 10 Bb
+      o4 g2. f4                       ; bar 11 Dm
+      o4 e1                           ; bar 12 Em
+      o5 e2 d2                        ; bar 13 Am
+      o5 c2 o4 b4 a4                  ; bar 14 F
+      o4 b-2. a4                      ; bar 15 Bb
+      o4 e1                           ; bar 16 Em
+    `,
+    pulse2: `
+      @0 v5 q5 x1
+      o3 e8 b8 o4 e8 g8 b8 g8 e8 o3 b8 ; bar 1  Em
+      o3 f8 o4 c8 f8 a8 o5 c8 o4 a8 f8 c8 ; bar 2  F
+      o3 e8 b8 o4 e8 g8 b8 g8 e8 o3 b8 ; bar 3  Em
+      o3 d8 a8 o4 d8 f8 a8 f8 d8 o3 a8 ; bar 4  Dm
+      o3 e8 b8 o4 e8 g8 b8 g8 e8 o3 b8 ; bar 5  Em
+      o3 e8 b8 o4 e8 g8 b8 g8 e8 o3 b8 ; bar 6  Em
+      o3 c8 g8 o4 c8 e8 g8 e8 c8 o3 g8 ; bar 7  C
+      o3 d8 a8 o4 d8 f8 a8 f8 d8 o3 a8 ; bar 8  Dm
+      o3 e8 b8 o4 e8 g8 b8 g8 e8 o3 b8 ; bar 9  Em
+      o2 b-8 o3 f8 b-8 o4 d8 f8 d8 o3 b-8 f8 ; bar 10 Bb
+      o3 d8 a8 o4 d8 f8 a8 f8 d8 o3 a8 ; bar 11 Dm
+      o3 e8 b8 o4 e8 g8 b8 g8 e8 o3 b8 ; bar 12 Em
+      o3 a8 o4 e8 a8 o5 c8 e8 c8 o4 a8 e8 ; bar 13 Am
+      o3 f8 o4 c8 f8 a8 o5 c8 o4 a8 f8 c8 ; bar 14 F
+      o2 b-8 o3 f8 b-8 o4 d8 f8 d8 o3 b-8 f8 ; bar 15 Bb
+      o3 e8 b8 o4 e8 g8 b8 g8 e8 o3 b8 ; bar 16 Em
+    `,
+    triangle: `
+      q8
+      o2 e1 f1 e1 d1                  ; bars 1-4   long droning roots
+      o2 e1 e1 c1 d1                  ; bars 5-8
+      o2 e1 o1 b-1 o2 d1 e1           ; bars 9-12
+      o1 a1 o2 f1 o1 b-1 o2 e1        ; bars 13-16
+    `,
+    noise: `
+      [v3 h4 r4 r4 v2 h8 r8]16        ; a slow drip in the dark
+    `,
+  },
+
+  {
+    id: 'zebes-escape',
+    bpm: 172,
+    loop: true,
+    // A minor, 8 bars: ZEBES ESCAPE, the run for the ship before the self-destruct. Racing
+    // sixteenth-note arpeggios that climb (bars 1-4) and then tumble (bars 5-8), an insistent
+    // repeated-note lead that keeps snapping up a fourth, a pumping octave bass and a hard
+    // beat, turning on an E chord that throws it straight back to the top.
+    pulse1: `
+      @1 v11 q6 x0
+      o5 a8 a8 e8 a8 o6 c8 o5 b8 a8 e8 ; bar 1  Am
+      o5 f8 f8 c8 f8 a8 g8 f8 c8      ; bar 2  F
+      o5 g8 g8 d8 g8 b8 a8 g8 d8      ; bar 3  G
+      o5 g+4 e4 b4 g+4                ; bar 4  E
+      o6 c8 o5 b8 a8 o6 c8 e4 d8 c8   ; bar 5  Am
+      o6 c8 o5 a8 f8 a8 o6 c4 o5 b-8 a8 ; bar 6  F
+      o5 a8 f8 d8 f8 a4 o6 d4         ; bar 7  Dm
+      o5 b8 g+8 e8 g+8 b8 o6 d8 e8 g+8 ; bar 8  E
+    `,
+    pulse2: `
+      @2 v7 q6 x0
+      [o4 a16 o5 c16 e16 a16]4        ; bar 1  Am  climbing
+      [o4 f16 a16 o5 c16 f16]4        ; bar 2  F
+      [o4 g16 b16 o5 d16 g16]4        ; bar 3  G
+      [o4 e16 g+16 b16 o5 e16]4       ; bar 4  E
+      [o5 a16 e16 c16 o4 a16]4        ; bar 5  Am  tumbling
+      [o5 f16 c16 o4 a16 f16]4        ; bar 6  F
+      [o5 d16 o4 a16 f16 d16]4        ; bar 7  Dm
+      [o4 e16 g+16 b16 o5 d16]2 [o5 e16 d16 o4 b16 g+16]2 ; bar 8  E
+    `,
+    triangle: `
+      q6
+      [o2 a8 o3 a8]4                  ; bar 1
+      [o2 f8 o3 f8]4                  ; bar 2
+      [o2 g8 o3 g8]4                  ; bar 3
+      [o2 e8 o3 e8]4                  ; bar 4
+      [o2 a8 o3 a8]4                  ; bar 5
+      [o2 f8 o3 f8]4                  ; bar 6
+      [o2 d8 o3 d8]4                  ; bar 7
+      o2 e8 o3 e8 o2 e8 o3 e8 o2 g+8 b8 o3 d8 e8 ; bar 8
+    `,
+    noise: `
+      [${ESCAPE_BAR}]7 ${ESCAPE_FILL} ; bars 1-8
+    `,
+  },
+  // Larry Koopa's airship, his duel and the bonus spot behind it.
+  ...smb3Songs,
 ];

@@ -53,7 +53,14 @@ export class CoinPop extends Entity {
 /** Brick fragment flying off a broken brick. */
 export class BrickPiece extends Entity {
   readonly kind = 'brick-piece';
-  constructor(x: number, y: number, vx: number, vy: number) {
+  /** `frame`: the items sheet's piece to draw ('pipe-piece': the anchor's smashed pipe). */
+  constructor(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    private readonly frame: 'brick-piece' | 'pipe-piece' = 'brick-piece',
+  ) {
     super(x, y, 8, 8);
     this.layer = 'front';
     this.body.vx = vx;
@@ -67,7 +74,7 @@ export class BrickPiece extends Entity {
     if (this.isBelowLevel()) this.destroy();
   }
   render(r: Renderer, view: View): void {
-    r.sprite(view.assets.sheet('items'), 'brick-piece', toPx(this.body.x) - view.camX, toPx(this.body.y));
+    r.sprite(view.assets.sheet('items'), this.frame, toPx(this.body.x) - view.camX, toPx(this.body.y));
   }
 }
 

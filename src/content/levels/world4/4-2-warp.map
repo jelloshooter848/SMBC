@@ -35,9 +35,10 @@ vine 4 14 len=8
 pipe 50 10 down -> 8-1 2 12
 pipe 54 10 down -> 7-1 2 12
 pipe 58 10 down -> 6-1 2 12
-;; Kept as in SMB (it still skips worlds in campaign play). Future secret hook: a `secret=`
-;; key here would turn it into a map secret like 1-2's (level/campaign.ts).
-warp 48 16 worlds=8,7,6 text=WELCOME_TO_WARP_ZONE!
+;; Campaign play: one unlabelled pipe (the middle one), no welcome text, leading down into
+;; Samus's cavern (an area of 4-2: no map road, the clock runs on; level/campaign.ts). Other
+;; play keeps the three warps.
+warp 48 16 worlds=8,7,6 text=WELCOME_TO_WARP_ZONE! goto=4-2-cavern,2,0
 
 [decor]
 cloud-2 3 3

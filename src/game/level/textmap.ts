@@ -1,6 +1,7 @@
 import { LEVEL_ROWS } from '../constants';
 import type { Decor, EntitySpawn, LevelData, PipeDir, Theme, TransferMode, Zone } from './schema';
-import { isTheme, themeMusic } from './schema';
+import { CAMERA_MODES, isTheme, themeMusic, type CameraMode } from './schema';
+import { DEFAULT_AUTO_SCROLL } from '../world/camera';
 import { DEFAULT_LEGEND, T } from './tiles';
 
 export class MapParseError extends Error {
@@ -34,14 +35,17 @@ function parseProps(parts: string[]): Props {
 /**
  * Parses the hand-authored `.map` format:
  *
- *   key: value            header lines (id, name, theme, music, time, start, width...)
+ *   key: value            header lines (id, name, theme, music, time, start, width...;
+ *                         `camera: scroll|locked|free|auto`, and with `auto` an optional
+ *                         `scroll: <px per frame>`, decimals fine, default 0.5)
  *   [legend]              optional overrides: `X tile-name` or `X @entity`
- *   [tiles]               15 rows; spaces and `;;` comments are stripped, so rows can be
- *                         written as space-separated 16-column screens
+ *   [tiles]               15 rows (or the header's `height: N`, at least 15, for a
+ *                         `camera: free` map with shafts); spaces and `;;` comments are
+ *                         stripped, so rows can be written as space-separated 16-column screens
  *   [entities]            `type x y key=val ...` (`dx=` / `dy=`: a pixel nudge off the tile,
  *                         e.g. the original's half-tile shiftRight / shiftUp)
  *   [zones]               `pipe x y dir -> level x y [exit=dir]`, `exit x next=id`,
- *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key]`,
+ *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key] [goto=level,x,y[,exit]] [until=secret]`,
  *                         `text x y triggerX "..."`,
  *                         `bowser-fire x`, `vine x y -> level x y`, `pit x -> level x y`,
  *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad)
@@ -126,14 +130,30 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     }
   });
 
-  if (rows.length !== LEVEL_ROWS) {
+  const height = header.height === undefined ? LEVEL_ROWS : Number(header.height);
+  if (!Number.isInteger(height) || height < LEVEL_ROWS)
+    throw new MapParseError(`height must be a whole number of at least ${LEVEL_ROWS} rows`, 0);
+  // Only a free camera can show more than one screen of rows.
+  if (height > LEVEL_ROWS && header.camera !== 'free')
+    throw new MapParseError(`height ${height} needs "camera: free" (only it scrolls vertically)`, 0);
+  const camera = (header.camera ?? 'scroll') as CameraMode;
+  if (!CAMERA_MODES.includes(camera))
+    throw new MapParseError(`unknown camera "${camera}" (${CAMERA_MODES.join(', ')})`, 0);
+  let scroll: number | undefined;
+  if (header.scroll !== undefined) {
+    if (camera !== 'auto') throw new MapParseError(`"scroll" needs "camera: auto"`, 0);
+    scroll = Number(header.scroll);
+    if (!/^\d*\.?\d+$/.test(header.scroll) || !(scroll > 0) || scroll > 16)
+      throw new MapParseError(`scroll must be a speed in px per frame above 0 (at most 16)`, 0);
+  } else if (camera === 'auto') scroll = DEFAULT_AUTO_SCROLL;
+  if (rows.length !== height) {
     throw new MapParseError(
-      `expected ${LEVEL_ROWS} tile rows, got ${rows.length}`,
+      `expected ${height} tile rows, got ${rows.length}`,
       rows[rows.length - 1]?.line ?? 0,
     );
   }
   const width = (rows[0] as { text: string }).text.length;
-  const tiles = new Uint16Array(width * LEVEL_ROWS);
+  const tiles = new Uint16Array(width * height);
   rows.forEach((row, y) => {
     if (row.text.length !== width) {
       throw new MapParseError(`row ${y} has ${row.text.length} columns, expected ${width}`, row.line);
@@ -165,16 +185,17 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     music: header.music ?? themeMusic(theme),
     time: timeRaw === 'inherit' || timeRaw === 'null' ? null : Number(timeRaw),
     width,
-    height: 15,
+    height,
     tiles,
     entities,
     zones,
     decor,
     start: { x: start[0], y: start[1] },
     startMode: (header.startMode as LevelData['startMode']) ?? 'stand',
-    camera: (header.camera as LevelData['camera']) ?? 'scroll',
+    camera,
     parent: header.parent ?? null,
   };
+  if (scroll !== undefined) level.scroll = scroll;
   return level;
 }
 
@@ -302,6 +323,15 @@ function parseZone(line: string): Zone {
       const z: Zone = { kind: 'warp', x: Number(xs), w: Number(ws), worlds };
       if (typeof props.text === 'string') z.text = props.text.replace(/_/g, ' ');
       if (typeof props.secret === 'string') z.secret = props.secret;
+      if (typeof props.until === 'string') z.until = props.until;
+      if (props.goto !== undefined) {
+        // goto=level,x,y[,exitDir]: the campaign's one pipe leads there (level/campaign.ts).
+        const [level, gx, gy, exit] = String(props.goto).split(',');
+        if (!level || !/^\d+$/.test(gx ?? '') || !/^\d+$/.test(gy ?? ''))
+          throw new Error('warp goto must be "level,x,y[,exit]"');
+        z.goto = { level, x: Number(gx), y: Number(gy) };
+        if (exit) z.goto.exitDir = exit as TransferMode;
+      }
       return z;
     }
     case 'text': {
@@ -339,6 +369,8 @@ export function serializeTextMap(level: LevelData): string {
     `startMode: ${level.startMode}`,
     `camera: ${level.camera}`,
   );
+  if (level.camera === 'auto') out.push(`scroll: ${level.scroll ?? DEFAULT_AUTO_SCROLL}`);
+  if (level.height !== LEVEL_ROWS) out.push(`height: ${level.height}`);
   out.push('', '[tiles]');
   const markers = new Map<string, string>();
   for (const e of level.entities) {
@@ -409,7 +441,11 @@ function serializeZone(z: Zone): string {
     case 'warp':
       return `warp ${z.x} ${z.w} worlds=${z.worlds.join(',')}${z.text ? ` text=${z.text.replace(/ /g, '_')}` : ''}${
         z.secret ? ` secret=${z.secret}` : ''
-      }`;
+      }${
+        z.goto
+          ? ` goto=${[z.goto.level, z.goto.x, z.goto.y, ...(z.goto.exitDir ? [z.goto.exitDir] : [])].join(',')}`
+          : ''
+      }${z.until ? ` until=${z.until}` : ''}`;
     case 'text':
       return `text ${z.x} ${z.y} ${z.triggerX} "${z.text}"`;
   }

@@ -14,8 +14,20 @@ import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
 import { talkToCaptive } from './free-hero';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
+import { applyHeldItems } from '../bonus/use';
+import { CardScene } from './message';
+import { abilityHint } from './hints';
+import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
+import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
 
 export type LevelStart = WorldStart;
+
+/** The crystal ball's card (Larry Koopa's, 4-2's airship), at most 26 columns a line. */
+export const CRYSTAL_BALL_CARD: readonly string[] = [
+  'THE CRYSTAL BALL SHOWS',
+  'WHERE YOUR FRIENDS',
+  'ARE HIDDEN!',
+];
 
 /** The clock to keep when moving between two areas: only within the same world and stage. */
 export function carryTime(from: LevelData, to: LevelData, time: number | null): number | undefined {
@@ -50,11 +62,25 @@ export class LevelScene implements Scene {
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);
     if (this.tutorial) this.world.time = null;
+    // Larry's airship challenge (scenes/airship.ts): no clock aboard, and co-op respawns are free.
+    if (this.airship) {
+      this.world.time = null;
+      this.world.livesFree = true;
+    }
+  }
+
+  /** The airship challenge this level is part of (deck or room, while a run is on), else null. */
+  get airship(): AirshipRun | null {
+    return isAirshipArea(this.level.id) ? this.game.airship : null;
   }
 
   enter(): void {
     this.playMusic();
     this.started = true;
+    // Items used from the map (mushroom, flower, Starman) go to the hero who entered.
+    const held = applyHeldItems(this.game, this.world);
+    // Aboard Larry's airship a retry or NO restores the run: it keeps what they gave, once.
+    if (held.some((o) => o.given)) this.airship?.itemsGiven(this.game.state);
   }
 
   /** The level's music (the hero's own overworld theme when it has one), at the clock's tempo. */
@@ -89,7 +115,8 @@ export class LevelScene implements Scene {
       return;
     }
     if (inputs.some((f) => f.pressed('start')) && this.world.activePlayers().length > 0 && this.started) {
-      this.game.scenes.push(new PauseScene(this.game, this.world));
+      // Aboard Larry's airship MENU is Continue / Give up, as in a mini game.
+      this.game.scenes.push(this.airship ? airshipMenu(this.game) : new PauseScene(this.game, this.world));
       return;
     }
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
@@ -130,6 +157,12 @@ export class LevelScene implements Scene {
         // A captive hero: the unlock flow plays over the paused level (scenes/free-hero.ts).
         if (game.campaign && !game.playtestDone)
           talkToCaptive(game, this, ev.hero, this.world.players[ev.player]?.def);
+        break;
+      case 'crystal-ball':
+        this.takeCrystalBall(ev.next);
+        break;
+      case 'anchor':
+        game.deps.announcer?.say(`${ANCHOR_SAID} Climb its chain: ${abilityHint(game, 'UP', 'up')}.`);
         break;
       case 'captive-near': {
         const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
@@ -176,6 +209,7 @@ export class LevelScene implements Scene {
         if (target.time === null) game.state.time = this.world.time;
         const time = carryTime(this.level, target, this.world.time);
         if (time !== undefined) start.time = time;
+        if (exitDir === 'climb' && ev.target.chain) start.chain = true;
         // Level.changePlayerLoc (pipe and pit arrivals) ends with destroyNearbyEnemies(true).
         if (exitDir !== 'climb') start.clearEnemies = 'keep-piranhas';
         game.startLevel(target, start);
@@ -195,6 +229,11 @@ export class LevelScene implements Scene {
       case 'died': {
         if (game.playtestDone) {
           game.playtestDone();
+          return;
+        }
+        // Aboard Larry's airship a death costs no life: TRY AGAIN? YES / NO (scenes/airship.ts).
+        if (this.airship) {
+          airshipDied(game);
           return;
         }
         const s = game.state;
@@ -236,6 +275,39 @@ export class LevelScene implements Scene {
     }
   }
 
+  /**
+   * Larry Koopa's crystal ball touched (4-2's airship): its card over the frozen cabin, then, in
+   * the campaign, 4-2's secret exit (Game.takeCrystalBall: the hint for every hidden hero, the
+   * bonus road, the item inventory); a play-test ends; elsewhere play goes on to `next`.
+   */
+  private takeCrystalBall(next: string | null): void {
+    const game = this.game;
+    const audio = game.ctx.audio;
+    audio.stopMusic();
+    audio.playJingle('castle-clear');
+    game.state.checkpoint = null;
+    game.state.time = null;
+    game.deps.announcer?.say(`${CRYSTAL_BALL_CARD.join(' ')} OK to continue.`);
+    game.scenes.push(
+      new CardScene(
+        game,
+        CRYSTAL_BALL_CARD,
+        () => {
+          // A run aboard ends here (a dev round passes and goes to its result card).
+          if (this.airship && airshipWon(game)) return;
+          if (game.playtestDone) game.playtestDone();
+          // The campaign's hand-off back to the map (Game.takeCrystalBall).
+          else if (game.campaign) game.takeCrystalBall(this.level.id);
+          else if (next) game.goToLevel(next, { mode: 'stand' });
+          else game.showTitle();
+        },
+        this.world,
+        1800,
+        { panel: true, keys: ['start', 'attack', 'jump'], prompt: () => abilityHint(game, 'OK', 'jump') },
+      ),
+    );
+  }
+
   private handleDebugKeys(): void {
     const keys = this.game.deps.debugKeys;
     if (!keys) return;
@@ -252,7 +324,9 @@ export class LevelScene implements Scene {
   render(r: Renderer): void {
     this.world.render(r);
     const time = this.world.timeHidden ? null : this.world.time;
-    drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players);
+    drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players, {
+      covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
+    });
     this.tutorial?.render(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
   }

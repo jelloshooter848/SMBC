@@ -1,6 +1,6 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { TILE } from '@engine/math/units';
-import { SCREEN_W } from '@engine/viewport';
+import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { tileDef, T } from '../level/tiles';
 import type { View } from '../entities/entity';
 import type { TileMap } from './tilemap';
@@ -12,7 +12,12 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
   const first = Math.max(0, camPx >> 4);
   const last = Math.min(map.width - 1, (camPx + SCREEN_W) >> 4);
   const anim = (view.frame >> 3) % 3;
-  for (let ty = 0; ty < map.height; ty++) {
+  // A vertically scrolling view draws only the rows on screen (in map coordinates: the caller's
+  // renderer is offset by the camera's y).
+  const top = view.camY === undefined ? 0 : Math.max(0, view.camY >> 4);
+  const bottom =
+    view.camY === undefined ? map.height - 1 : Math.min(map.height - 1, (view.camY + SCREEN_H) >> 4);
+  for (let ty = top; ty <= bottom; ty++) {
     for (let tx = first; tx <= last; tx++) {
       const id = map.get(tx, ty);
       if (id === T.AIR || id === T.BUMPING) continue;
@@ -53,4 +58,10 @@ export const SKY: Record<string, string> = {
   'castle-water': '#000000',
   // The station hangs in space: black behind the plating.
   station: '#000000',
+  // Samus's cavern: a near-black blue, just off the castle's black, behind the rock.
+  cavern: '#000818',
+  // Larry's airship sails a dark night sky.
+  airship: '#000040',
+  // The airship's open decks sail SMB3's lighter daylight blue.
+  'airship-deck': '#3cbcfc',
 };

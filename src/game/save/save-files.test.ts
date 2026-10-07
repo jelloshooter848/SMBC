@@ -562,6 +562,34 @@ describe('migration v2 → v3 (freed heroes, 0.5.0)', () => {
   });
 });
 
+describe("Larry Koopa's crystal ball and World 4's bonus spot (optional fields, 0.5.0)", () => {
+  const put = (over: Record<string, unknown>) => {
+    const { inventoryUnlocked: _i, bonusOpen: _b, ...base } = newSave(3, 'mario');
+    store.set('smbc.save.3', JSON.stringify({ ...base, ...over }));
+    return loadSave(3)!;
+  };
+
+  it('a new file: inventory locked, bonus open', () => {
+    expect(newSave(1, 'mario')).toMatchObject({ inventoryUnlocked: false, bonusOpen: true });
+  });
+
+  it('missing in an older file: inventory locked (unless it has the crystal ball), bonus open', () => {
+    expect(put({})).toMatchObject({ inventoryUnlocked: false, bonusOpen: true });
+    expect(put({ secrets: ['larry'] })).toMatchObject({ inventoryUnlocked: true, bonusOpen: true });
+  });
+
+  it('keeps what was stored; anything but false keeps the bonus open', () => {
+    expect(put({ inventoryUnlocked: true, bonusOpen: false })).toMatchObject({
+      inventoryUnlocked: true,
+      bonusOpen: false,
+    });
+    expect(put({ inventoryUnlocked: 'yes', bonusOpen: 0 })).toMatchObject({
+      inventoryUnlocked: false,
+      bonusOpen: true,
+    });
+  });
+});
+
 describe('save file ↔ game state', () => {
   it('round-trips heroes, lives, score, coins and power', () => {
     const save = newSave(1, 'mario', 'link');

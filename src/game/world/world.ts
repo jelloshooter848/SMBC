@@ -2,7 +2,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
 import { SCORE_MAX } from '../hud/hud';
 import { NO_INPUT } from '@engine/input/input-manager';
-import type { Renderer } from '@engine/gfx/renderer';
+import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
 import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
@@ -10,7 +10,7 @@ import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
 import { isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
-import { Camera } from './camera';
+import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
 import { renderTiles, SKY } from './tile-render';
 import { TileMap } from './tilemap';
 import { Player } from '../entities/player';
@@ -33,6 +33,7 @@ import { Captive } from '../entities/objects/captive';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
+import { AnchorDrop } from '../entities/objects/anchor-drop';
 import {
   BEAM_GATHER_FRAMES,
   BEAM_H,
@@ -58,10 +59,24 @@ import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
 import { Axe } from '../entities/objects/axe';
+import { Larry } from '../entities/enemies/larry';
+import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
+import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 
 export type WorldEvent =
-  | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode; secret?: string } }
+  /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
+  | {
+      type: 'pipe';
+      target: {
+        level: string;
+        x: number;
+        y: number;
+        exitDir?: TransferMode;
+        secret?: string;
+        chain?: boolean;
+      };
+    }
   | { type: 'exit'; next: string }
   /** `player`: index of the player whose death ended the attempt (they pick the next hero). */
   | { type: 'died'; player?: number }
@@ -71,7 +86,14 @@ export type WorldEvent =
   /** A player pressed up next to a captive hero (campaign): the level starts the unlock flow. */
   | { type: 'talk'; hero: string; player: number }
   /** A player came within a captive's talking reach (TALK shows for them): announced. */
-  | { type: 'captive-near'; hero: string; player: number };
+  | { type: 'captive-near'; hero: string; player: number }
+  /**
+   * A player touched Larry Koopa's crystal ball (objects/crystal-ball.ts): the level shows its
+   * card and ends the area (campaign: 4-2's secret exit; else on to `next`).
+   */
+  | { type: 'crystal-ball'; player: number; next: string | null }
+  /** Larry's anchor smashed 4-2's warp-zone pipe (objects/anchor-drop.ts): the level announces it. */
+  | { type: 'anchor' };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -118,6 +140,8 @@ export interface WorldStart {
    * mini game handles some other way), undefined leaves it to the built-in types.
    */
   extraEntities?: (s: EntitySpawn, world: World) => Entity | null | undefined;
+  /** A `climb` arrival up an anchor chain (4-2's anchor to Larry's airship): the vine is a chain. */
+  chain?: boolean;
 }
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
@@ -143,6 +167,21 @@ const ENEMY_REMOVAL_PX = 6 * 16;
  */
 const ARRIVAL_VINE_TILES = 5;
 const ARRIVAL_VINE_RISE = 0.5;
+/** An anchor chain's arrival rises faster (it may reach a deck high up the screen). */
+const ARRIVAL_CHAIN_RISE = 1.5;
+
+/**
+ * px: the top of a climb arrival's vine at column `x` (the start's x; it rises from the screen
+ * bottom). The classic sky-area vine reaches 5 tiles up (Vine.growFromStgBot). A start row `y`
+ * above that (a deck: 4-2's airship bow) makes it reach the ground the player steps off onto:
+ * the first solid tile in column x + 1 below row y, with two tiles of headroom over it (every
+ * hero stands at most 24 px tall), so he steps off above that floor and drops onto it.
+ */
+export function arrivalVineTop(map: TileMap, x: number, y: number, heightTiles: number): number {
+  const classic = SCREEN_H - ARRIVAL_VINE_TILES * 16;
+  for (let r = y + 1; r < heightTiles; r++) if (map.isSolid(x + 1, r)) return Math.min(classic, r * 16 - 32);
+  return classic;
+}
 /** Synthetic input for the vine arrival (Character.climbVineStarter sets upBtn). */
 const AUTO_CLIMB_INPUT: InputFrame = {
   held: (a) => a === 'up',
@@ -255,6 +294,10 @@ export class World {
   private vineArrival: Vine | null = null;
   /** The HUD leaves the time blank (the vine arrival's watch mode: Level.as tsTxt.hideTime). */
   timeHidden = false;
+  /** Frames of screen shake left (the anchor's crash); never drawn with reduce flashing. */
+  shakeFrames = 0;
+  /** Warp zones whose pipe the anchor smashed: their number and welcome text are gone. */
+  private readonly smashedWarps = new Set<Zone>();
   private readonly deathTimers = new Map<Player, number>();
   private readonly respawnTimers = new Map<Player, number>();
   private checkpointSent = false;
@@ -271,6 +314,12 @@ export class World {
   captives: CaptiveRules | null = null;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
   readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0 };
+  /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
+  private offsetRenderer: OffsetRenderer | null = null;
+  /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
+  readonly heightPx: number;
+  /** Co-op respawns cost no shared life (Larry's airship challenge: deaths there are free). */
+  livesFree = false;
   /** WorldStart.extraEntities: a mini game's own entity types. */
   private readonly extraEntities: WorldStart['extraEntities'];
 
@@ -285,7 +334,12 @@ export class World {
     this.extraEntities = start.extraEntities;
     this.map = new TileMap(level);
     const stop = level.zones.find((z): z is Zone & { kind: 'scrollStop' } => z.kind === 'scrollStop');
-    this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked');
+    this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked', {
+      free: level.camera === 'free',
+      heightTiles: level.height,
+      ...(level.camera === 'auto' ? { autoScroll: level.scroll ?? DEFAULT_AUTO_SCROLL } : {}),
+    });
+    this.heightPx = level.height * 16;
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
     this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
@@ -298,7 +352,7 @@ export class World {
     // vine at the start column with the arrival vine (below).
     this.spawns = level.entities
       .map((e) => Cheep.placeSwimmer(e, this.rng))
-      .filter((e) => !(mode === 'climb' && e.type === 'vine' && e.x === sx))
+      .filter((e) => !(mode === 'climb' && (e.type === 'vine' || e.type === 'chain') && e.x === sx))
       .sort((a, b) => a.x - b.x);
     this.bowserFire = BowserFire.forLevel(level);
     const defs: [CharacterDef, string, number][] = [[state.character, state.powerState, state.hp]];
@@ -323,16 +377,21 @@ export class World {
         // screen bottom while the player is hidden (Vine.initiate → growFromStgBot), then
         // Character.climbVineStarter puts him on it with his head at the screen bottom
         // (ny = GLOB_STG_BOT + height) and holds up; updateVineArrival steps him off at the top.
+        // A start row above the classic vine's top (a deck) makes it taller (arrivalVineTop);
+        // it passes through any hull below that deck (`through`: the climb ignores tiles).
         if (!this.vineArrival) {
-          this.vineArrival = new Vine(sx, SCREEN_H / 16 - 1, ARRIVAL_VINE_TILES);
-          this.vineArrival.growFromBase(ARRIVAL_VINE_RISE);
+          const top = arrivalVineTop(this.map, sx, sy, level.height);
+          const rows = (SCREEN_H - top) >> 4;
+          const art = start.chain ? 'chain' : 'vine';
+          this.vineArrival = new Vine(sx, SCREEN_H / 16 - 1, rows, null, art);
+          this.vineArrival.growFromBase(start.chain ? ARRIVAL_CHAIN_RISE : ARRIVAL_VINE_RISE);
           this.entities.push(this.vineArrival);
         }
         const vine = this.vineArrival;
         def.behaviour.onGrabVine?.(p); // a carried morph ball unrolls before the height is used
         const h = p.body.h;
         // `bottom` leaves room for the body below the base: he starts there and climbs up.
-        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + toPx(h) };
+        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + toPx(h), through: true };
         p.body.x = vine.centerX - (p.body.w >> 1);
         p.body.y = px(vine.basePx);
         p.anim = 'climb';
@@ -366,7 +425,7 @@ export class World {
     // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
     // the main area after it starts its own.
     if (this.autoWalk) this.time = null;
-    this.camera.snapTo(this.player.body.x);
+    this.camera.snapTo(this.player.body.x, this.player.body.y);
     if (start.clearEnemies) {
       // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
       // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
@@ -465,6 +524,14 @@ export class World {
     this.entities.push(e);
   }
 
+  /**
+   * Spawns the map's entities within reach of the camera now, without stepping the world: a mini
+   * game shows its props and creatures on a READY screen, still, before its first frame.
+   */
+  spawnInView(): void {
+    this.spawnPending();
+  }
+
   private spawnPending(): void {
     const limit = this.camera.right + px(SPAWN_MARGIN_PX);
     while (this.spawnIndex < this.spawns.length) {
@@ -535,8 +602,11 @@ export class World {
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
+      case 'anchor-drop':
+        return new AnchorDrop(s.x, s.y, s.props);
       case 'vine':
-        return new Vine(s.x, s.y, Number(s.props?.len ?? 8));
+      case 'chain':
+        return new Vine(s.x, s.y, Number(s.props?.len ?? 8), null, s.type === 'chain' ? 'chain' : 'vine');
       case 'firebar':
       case 'firebar-ccw':
         return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
@@ -549,6 +619,19 @@ export class World {
         );
       case 'axe':
         return new Axe(s.x, s.y);
+      case 'cannon': {
+        const dir = s.props?.dir;
+        // Anything but a number (`period=fast`) falls back to the default.
+        const p = Number(s.props?.period ?? CANNON_PERIOD);
+        const period = Number.isFinite(p) ? p : CANNON_PERIOD;
+        const d = Number(s.props?.delay);
+        const delay = Number.isFinite(d) ? d : undefined;
+        return new Cannon(s.x, s.y, isCannonDir(dir) ? dir : 'l', period, delay);
+      }
+      case 'rocky':
+        return new RockyWrench(s.x, s.y);
+      case 'larry':
+        return new Larry(s.x, s.y, typeof s.props?.next === 'string' ? s.props.next : null);
       case 'lift-h':
       case 'lift-v':
       case 'lift-fall':
@@ -718,6 +801,7 @@ export class World {
 
   update(inputs: InputFrame[]): void {
     this.frame++;
+    if (this.shakeFrames > 0) this.shakeFrames--;
 
     // Growth/shrink pauses the world (SMB1 does too).
     let transitioning = false;
@@ -781,8 +865,11 @@ export class World {
         if (p.body.vx < 0) p.body.vx = 0;
       }
       const rightEdge = Math.min(tileToSub(this.level.width), this.camera.x + px(SCREEN_W));
-      if (p.body.x + p.body.w > rightEdge && this.coop && p !== this.rightmost())
+      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right).
+      if (p.body.x + p.body.w > rightEdge && (this.camera.auto || (this.coop && p !== this.rightmost()))) {
         p.body.x = rightEdge - p.body.w;
+        if (this.camera.auto && p.body.vx > 0) p.body.vx = 0;
+      }
       if (p.body.x + p.body.w > tileToSub(this.level.width))
         p.body.x = tileToSub(this.level.width) - p.body.w;
     });
@@ -793,6 +880,7 @@ export class World {
         e.stunned--;
         continue;
       }
+      e.levelHeightPx = this.heightPx;
       e.update(this);
     }
     this.resolveLifts();
@@ -815,10 +903,11 @@ export class World {
     }
 
     const lead = this.rightmost();
-    if (lead) this.camera.follow(lead.body.x);
+    if (this.camera.auto) this.autoScroll();
+    else if (lead) this.camera.follow(lead.body.x, lead.body.y);
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
-      if (toPx(p.body.y) > SCREEN_H + 8 && !p.dead && !p.out && !this.leaving) {
+      if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
         const pit = this.level.zones.find(
           (z): z is Zone & { kind: 'pit' } => z.kind === 'pit' && p.body.x >= tileToSub(z.x),
         );
@@ -827,6 +916,57 @@ export class World {
       }
     }
     this.cull();
+  }
+
+  /**
+   * An auto-scroll frame (`camera: auto`): the camera moves on, and its left edge pushes every
+   * player it catches. One pushed into a solid wall is squashed between the two and dies, as in
+   * SMB3 (whatever the assists: there is no way out, as with a pit). The frames the world stands
+   * still (pause, a death with no one left, pipes, growing) never get here, so the scroll holds.
+   */
+  private autoScroll(): void {
+    // A transfer under way, or the players still climbing in (a vine or anchor-chain arrival).
+    if (this.leaving || this.arriving) return;
+    this.camera.scroll();
+    for (const p of this.activePlayers()) {
+      if (p.body.x >= this.camera.x || p.frozen || p.hidden) continue;
+      const blocked = this.solidRows(p);
+      p.body.x = this.camera.x;
+      if (p.body.vx < 0) p.body.vx = 0;
+      if (this.squashed(p, blocked)) this.kill(p);
+    }
+  }
+
+  /** The tile rows (of the side probe's span) in which the body already overlaps a solid tile. */
+  private solidRows(p: Player): Set<number> {
+    const b = p.body;
+    const rows = new Set<number>();
+    for (let ty = tileAt(b.y + px(4)); ty <= tileAt(b.y + b.h - px(4)); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++)
+        if (this.map.isSolid(tx, ty)) {
+          rows.add(ty);
+          break;
+        }
+    return rows;
+  }
+
+  /**
+   * Pushed by the auto-scroll edge into a wall: a solid tile in the column under the body's
+   * leading (right) edge, between 4 px below its top and 4 px above its feet, in a row where the
+   * body was not already inside something solid before the push (a ceiling a lift carried it
+   * into, a block it grew into, a floor). Only a wall ahead squashes.
+   */
+  private squashed(p: Player, blocked: Set<number>): boolean {
+    const b = p.body;
+    const col = tileAt(b.x + b.w - 1);
+    for (let ty = tileAt(b.y + px(4)); ty <= tileAt(b.y + b.h - px(4)); ty++)
+      if (!blocked.has(ty) && this.map.isSolid(col, ty)) return true;
+    return false;
+  }
+
+  /** The players are still arriving on the vine (a sky area's climb-in, an anchor chain). */
+  get arriving(): boolean {
+    return this.vineArrival !== null;
   }
 
   /** Up pressed by a player within a captive's reach: a `talk` event (one a frame). */
@@ -920,7 +1060,11 @@ export class World {
   }
 
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
-  private transfer(target: { level: string; x: number; y: number }, mode: 'climb' | 'fall'): void {
+  private transfer(
+    target: { level: string; x: number; y: number },
+    mode: 'climb' | 'fall',
+    chain = false,
+  ): void {
     if (this.leaving) return;
     this.leaving = true;
     for (const o of this.players) {
@@ -928,7 +1072,7 @@ export class World {
       o.body.vx = 0;
       o.body.vy = 0;
     }
-    this.events.push({ type: 'pipe', target: { ...target, exitDir: mode } });
+    this.events.push({ type: 'pipe', target: { ...target, exitDir: mode, ...(chain ? { chain } : {}) } });
   }
 
   /** Touching a vine while airborne (or pressing up beside it) grabs it; off the top is the sky link. */
@@ -936,11 +1080,13 @@ export class World {
     const b = p.body;
     if (p.vine) {
       if (b.y + b.h <= 0) {
-        const z = this.level.zones.find(
-          (v): v is Zone & { kind: 'vine' } =>
-            v.kind === 'vine' && this.vineBlockAt(v.x, v.y)?.centerX === p.vine?.x,
-        );
-        if (z) this.transfer(z.target, 'climb');
+        let on: Vine | undefined;
+        const z = this.level.zones.find((v): v is Zone & { kind: 'vine' } => {
+          if (v.kind !== 'vine') return false;
+          on = this.vineBlockAt(v.x, v.y) ?? this.placedVineAt(v.x, v.y);
+          return on?.centerX === p.vine?.x;
+        });
+        if (z) this.transfer(z.target, 'climb', on?.art === 'chain');
         else b.y = -b.h; // nowhere to go: hang at the top
       }
       return;
@@ -971,6 +1117,13 @@ export class World {
   private vineBlockAt(tx: number, ty: number): Vine | undefined {
     return this.entities.find(
       (e): e is Vine => e instanceof Vine && e.alive && e.fromBlock?.tx === tx && e.fromBlock.ty === ty,
+    );
+  }
+
+  /** A placed vine or chain (`vine`/`chain x y`) standing on row `ty` of column `tx`. */
+  private placedVineAt(tx: number, ty: number): Vine | undefined {
+    return this.entities.find(
+      (e): e is Vine => e instanceof Vine && e.alive && !e.fromBlock && e.tx === tx && e.footRow === ty,
     );
   }
 
@@ -1138,12 +1291,7 @@ export class World {
     if (kind === 'brick' && content === 'none') {
       if (breakBricks) {
         this.map.set(tx, ty, T.AIR);
-        const cx = tileToSub(tx) + px(4);
-        const cy = tileToSub(ty) + px(4);
-        this.spawn(new BrickPiece(cx, cy, -0x01000, -0x05000));
-        this.spawn(new BrickPiece(cx + px(8), cy, 0x01000, -0x05000));
-        this.spawn(new BrickPiece(cx, cy + px(8), -0x01000, -0x03000));
-        this.spawn(new BrickPiece(cx + px(8), cy + px(8), 0x01000, -0x03000));
+        this.breakPieces(tx, ty);
         this.addScore(50);
         this.audio.sfx('break');
         this.feats.bricks++;
@@ -1367,6 +1515,13 @@ export class World {
         if (e instanceof Koopa && e.isStillShell) return this.kickShell(p, e);
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
         if (r === 'hurtAttacker') return this.hurtPlayer(p);
+        // A stomp on something that only shrugs it off (Larry Koopa in his shell): the player
+        // bounces off unhurt, and it neither scores nor counts as a stomp.
+        if (r === 'bounce') {
+          p.stompBounce();
+          this.audio.sfx('bump');
+          return;
+        }
         if (r !== 'immune') {
           this.scoreStomp(p, e);
           p.stompBounce();
@@ -1480,7 +1635,7 @@ export class World {
     this.deathTimers.set(p, t);
     // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
     // has no hop: the original's Character.initiatePitDeath only starts the die timer.
-    if (t === 30 && toPx(p.body.y) <= SCREEN_H) p.body.vy = -0x04000;
+    if (t === 30 && toPx(p.body.y) <= this.heightPx) p.body.vy = -0x04000;
     if (t > 30) {
       p.body.vy += 0x00280;
       p.body.y += velToSub(p.body.vy);
@@ -1491,8 +1646,9 @@ export class World {
         return;
       }
       const others = this.activePlayers();
-      if (others.length && (this.state.lives > 0 || this.assist.infiniteLives)) {
-        if (!this.assist.infiniteLives) this.state.lives--;
+      const free = this.assist.infiniteLives || this.livesFree;
+      if (others.length && (this.state.lives > 0 || free)) {
+        if (!free) this.state.lives--;
         this.respawn(p, others[0] as Player);
       } else {
         p.out = true;
@@ -2029,9 +2185,9 @@ export class World {
 
   /* ---------- Rendering ---------- */
 
-  render(r: Renderer): void {
+  render(screen: Renderer): void {
     const theme = this.level.theme;
-    r.clear(SKY[theme] ?? '#5c94fc');
+    screen.clear(SKY[theme] ?? '#5c94fc');
     const view: View = {
       camX: this.camera.pxX,
       frame: this.frame,
@@ -2039,8 +2195,19 @@ export class World {
       theme,
       reduceFlashing: this.ctx.reduceFlashing,
     };
+    // A free camera scrolls vertically too: the map is drawn moved up by its y (the backdrop and
+    // the castle text stay screen-fixed). Every other level draws straight to the screen.
+    let r = screen;
+    const shake = this.shakeY;
+    if (this.camera.free || shake) {
+      if (this.camera.free) view.camY = this.camera.pxY;
+      const o = (this.offsetRenderer ??= new OffsetRenderer(screen, 0, 0));
+      o.inner = screen;
+      o.dy = -(view.camY ?? 0) + shake;
+      r = o;
+    }
     for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
-    this.backdrop?.(r);
+    this.backdrop?.(screen);
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     renderTiles(r, view, this.map);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);
@@ -2048,7 +2215,34 @@ export class World {
     this.renderBeam(r, view);
     for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
     this.renderWarpText(r, view);
-    this.renderCastleText(r, view);
+    this.renderCastleText(screen, view);
+  }
+
+  /**
+   * Whether an entity or a player is drawn into the screen box (x, y, w, h) (screen px; each
+   * sprite taken as its body widened by its sprite offset, 8 px at least): the HUD outlines the
+   * text a sprite passes under (HudOptions.covered).
+   */
+  spriteIn(x: number, y: number, w: number, h: number): boolean {
+    const camX = this.camera.pxX;
+    const camY = this.camera.free ? this.camera.pxY : 0;
+    const hits = (bx: number, by: number, bw: number, bh: number) =>
+      bx < x + w && x < bx + bw && by < y + h && y < by + bh;
+    for (const e of this.entities) {
+      if (!e.alive) continue;
+      const b = e.body;
+      const ex = toPx(b.x) - camX - e.spriteOffsetX;
+      const ey = toPx(b.y) - camY - e.spriteOffsetY;
+      const ew = Math.max(8, toPx(b.w) + 2 * e.spriteOffsetX);
+      const eh = Math.max(8, toPx(b.h) + e.spriteOffsetY);
+      if (hits(ex, ey, ew, eh)) return true;
+    }
+    for (const p of this.players) {
+      if (p.hidden || p.out) continue;
+      const b = p.body;
+      if (hits(toPx(b.x) - camX, toPx(b.y) - camY, toPx(b.w), toPx(b.h))) return true;
+    }
+    return false;
   }
 
   private renderBeam(r: Renderer, view: View): void {
@@ -2063,16 +2257,46 @@ export class World {
     }
   }
 
+  /** Tile (tx, ty) flying apart in four pieces, as a broken brick (`pipe-piece`: a smashed pipe). */
+  breakPieces(tx: number, ty: number, frame: 'brick-piece' | 'pipe-piece' = 'brick-piece'): void {
+    const cx = tileToSub(tx) + px(4);
+    const cy = tileToSub(ty) + px(4);
+    this.spawn(new BrickPiece(cx, cy, -0x01000, -0x05000, frame));
+    this.spawn(new BrickPiece(cx + px(8), cy, 0x01000, -0x05000, frame));
+    this.spawn(new BrickPiece(cx, cy + px(8), -0x01000, -0x03000, frame));
+    this.spawn(new BrickPiece(cx + px(8), cy + px(8), 0x01000, -0x03000, frame));
+  }
+
+  /** Shake the screen for `frames` (drawn only without reduce flashing). */
+  shake(frames: number): void {
+    this.shakeFrames = Math.max(this.shakeFrames, frames);
+  }
+
+  /** The warp zone over column `tx` loses its world numbers and welcome text (pipe smashed). */
+  smashWarpAt(tx: number): void {
+    for (const z of this.level.zones)
+      if (z.kind === 'warp' && tx >= z.x && tx < z.x + z.w) this.smashedWarps.add(z);
+  }
+
+  /** The screen's vertical offset this frame (a shake), 0 with reduce flashing. */
+  get shakeY(): number {
+    if (this.shakeFrames <= 0 || this.ctx.reduceFlashing) return 0;
+    return (this.shakeFrames >> 1) & 1 ? 2 : -2;
+  }
+
   private renderWarpText(r: Renderer, view: View): void {
     for (const z of this.level.zones) {
-      if (z.kind !== 'warp') continue;
+      if (z.kind !== 'warp' || this.smashedWarps.has(z)) continue;
       const x0 = z.x * 16 - view.camX;
       if (x0 > SCREEN_W || x0 + z.w * 16 < 0) continue;
       const font = view.assets.sheet('font');
       if (z.text) r.text(font, z.text, Math.max(8, x0 + 8), 72);
-      const pipes = this.level.zones.filter(
-        (p): p is Zone & { kind: 'pipe' } => p.kind === 'pipe' && p.x >= z.x && p.x < z.x + z.w,
-      );
+      // The campaign's dead pipe (labelAt) keeps its number until the anchor smashes it.
+      const pipes =
+        z.labelAt ??
+        this.level.zones.filter(
+          (p): p is Zone & { kind: 'pipe' } => p.kind === 'pipe' && p.x >= z.x && p.x < z.x + z.w,
+        );
       pipes.forEach((p, i) => {
         const w = z.worlds[i];
         if (w !== undefined) r.text(font, worldLabel(w), p.x * 16 + 12 - view.camX, p.y * 16 - 16);

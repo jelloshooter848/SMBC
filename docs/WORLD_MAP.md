@@ -68,7 +68,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 | ----------------- | ----------------------------------------------------------------------------- |
 | `start`           | The page's arrival node. May also carry the warp fields or a `level` (below). |
 | `level`, `castle` | Enter `level` with JUMP. A castle clear opens the page(s) its exits lead to.  |
-| `bonus`           | Hidden until `unlock` (a secret key) is found.                                |
+| `bonus`           | Hidden until `unlock` (a secret key) is found. JUMP plays the bonus game.     |
 | `warp`            | JUMP warps to another page (see below).                                       |
 
 A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the file has that secret
@@ -167,10 +167,16 @@ different road with each, and **no ending opens every road leaving its level**.
 - **Old files**: nothing changes in the format. A file that cleared 1-2 through its pipe before
   0.5.0 has both `1-2` in `cleared` and `bonus-1` in `secrets`, so it keeps both roads; nothing
   re-locks.
-- Today only 1-2's campaign pipe is a secret exit (below). Every other warp pipe (SMB 4-2, the
-  Lost Levels' warp zones, `workingWarps` / `warpsOpened`) still warps as in the original and
-  clears nothing; the map's secret-exit look (`map/secret-exits.ts`) only marks levels that
-  have another way out.
+- Today 1-2's campaign pipe is a secret exit (below), and so is Larry Koopa's crystal ball in
+  4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
+  Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each leads into an
+  area of 4-2 (below) and is no exit at all (no `target.secret`, no road). The vine area's shows
+  one ordinary pipe, down into Samus's cavern; the right one shows a dead pipe until Larry's anchor
+  crashes down on it, and its chain climbs up onto his airship deck, whose stern pipe leads to his
+  room, where the crystal ball is the exit. The Lost Levels' warp zones (`workingWarps` /
+  `warpsOpened`) still warp as in the original and clear nothing. The map's secret-exit look
+  (`map/secret-exits.ts`) only marks levels that have another way out; it reads the level data as
+  it is, so 4-2 keeps its look (in the campaign its other way out is Larry's `secret:larry` road).
 
 ## World exits and the Lost Levels unlocks
 
@@ -211,6 +217,46 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
   `pendingReveal` ids. Loading keeps only registered page ids. Any later change to the stored
   format appends a migration (docs/RELEASING.md).
 
+## Campaign warp zones (`level/campaign.ts`)
+
+`Game.startLevel` plays a campaign variant of a level while a save file is played from the map
+(`campaignLevel`); dev select, `?level=`, custom and shared levels keep the level as it is. A
+warp zone (`warp x w worlds=..`) may carry one of two campaign keys, and then shows **one pipe**:
+the middle pipe of the zone stays, the others are taken out of the room (their pipe tiles and
+pipe zones), and the world numbers go (but a climb zone's, below).
+
+| Key                             | The one pipe                                                                                                                      | Text                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `secret=<key>`                  | Records `<key>` as a secret exit and returns to the map (`target.secret` → `Game.campaignSecret`)                                 | stays                 |
+| `goto=<level>,<x>,<y>[,<exit>]` | Leads into `<level>` at (x, y) like any pipe (`exit` as a pipe's `exit=`); no secret, no map road                                 | goes                  |
+| `goto=…,climb`                  | Dead (solid, no pipe zone; its world number stays) until the anchor smashes it; the anchor's chain then climbs to `<level>`       | stays until the smash |
+| `until=<secret>` (with `climb`) | With `<secret>` on the file: no pipe at all, the room sealed (ceiling gap closed, left wall to the top, the camera stopped at it) | goes                  |
+
+A `goto` with exit `climb` shows **no working pipe**: the other pipes of the room go, and the
+middle one stands dead (solid, no pipe zone); its world number and the welcome text stay, drawn
+through the zone's `labelAt`, until a player stands on the room's floor. Then an anchor crashes
+down on it (an `anchor-drop` entity): the pipe is smashed, the number and text go, and the anchor
+rests on the floor with its chain (climbed like a vine) rising off the top of the screen through
+the hole it broke above. Climbing off its top arrives in `<level>` up a chain at column x,
+landing on the first solid tile in column x + 1 below row y. With `until=<secret>` and that
+secret on the file the room is sealed instead: no pipe, the ceiling gap closed, the zone's left
+wall raised to the top of the screen and a `scrollStop` there (unless the level has one), so
+nobody can drop in or get stuck on top (docs/HEROES.md "The anchor's drop").
+
+`goto` is meant for an area of the same level (same world and stage, `parent` leading back), so
+the clock carries over (`carryTime`) and nothing on the map changes. A `goto` whose level is not
+in the library (yet) leaves the warp zone as it is, so a branch can name an area another branch
+adds. Owner decision (0.5.0): all warp pipes go eventually.
+
+- **4-2 vine area** (`4-2-warp`, pipes 50/54/58): `goto=4-2-cavern,2,0`. Pipe 54 drops the
+  player into Samus's cavern (docs/HEROES.md), whose side pipe brings them up out of 4-2's pipe
+  at column 72, the first pipe past the vine block.
+- **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,3,climb until=larry`,
+  Larry Koopa's anchor crashing onto the pipe at column 214, its chain up to the bow of his
+  airship deck (whose stern pipe leads into his room `4-2-larry`; docs/HEROES.md). Larry's road
+  (`secret:larry`) is granted by beating him, not by the chain; the first time, World 4's map
+  plays the airship's crash before drawing it in. After that the room is sealed.
+
 ## The 1-2 secret (campaign only)
 
 - `1-2.map`'s warp zone carries `secret=bonus-1`. In campaign play (`Game.startLevel` with a file
@@ -222,8 +268,49 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
   warp node to `hub`, hidden by `unlock: 'bonus-1'`. Until 0.4.0 the road came from 1-1: loading
   renames a pending reveal of the old road id `smb-1:1-1>bonus-1` (save-files.ts).
 - Dev select, `?level=` and custom play keep the classic three numbered pipes.
-- SMB 4-2's warp zones are unchanged (they still skip worlds); a `secret=` key on one is the hook
-  for a future secret. Lost Levels warp zones (backward ones too) are unchanged.
+- SMB 4-2's warp zones lead into areas of 4-2 in campaign play (`goto`, above). Lost Levels warp
+  zones (backward ones too) are unchanged.
+
+## The bonus spot and its Hammer Bro (World 4, 0.5.0)
+
+World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `unlock: 'larry'`,
+`guard: 'hammer-bro'`, its road from 4-2 tagged `exit: 'secret:larry'` (`world4.ts`).
+
+- **Found** with Larry Koopa's crystal ball in 4-2's airship (docs/HEROES.md): a secret exit of
+  4-2 that draws in only this road. 4-2's flagpole never opens it. The first time, the map's
+  airship-crash cutscene plays first (`map/airship-crash.ts`): the ship crashes on this spot and
+  Toad hammers the wreck into the node, which shows from then on; the road then draws in.
+- **The bonus** (`map/bonus-spot.ts`): standing on the open node the hint line shows the bonus
+  game's name (`BonusGame.label`) and JUMP (ENTER) calls `Game.openBonus({ page, node })`, which
+  pushes the bonus game's scene over the map. The scene calls `done('used')` once a round was
+  played (the bonus closes: `Game.bonusOpen = false`, saved at once) or `done('left')` (backed out,
+  still open); either way the map comes back with the hero on the node. The bonus games register
+  with `registerBonusGame({ label, icon, create })` (`icon`: the node's `sheet:frame`, e.g.
+  `smb3:node-toad-house`; it must name an existing frame). The SMB3 bonus games
+  (Toad House, N-spade, spade game, in rotation) are registered (docs/BONUS.md); with none, a
+  placeholder card ("THE BONUS GAMES ARE COMING SOON!") stands in and counts as used.
+- **Used**: the node shows a spent dot, its hint line says `BEAT THE HAMMER BRO TO REOPEN`, JUMP
+  bumps, and a **Hammer Bro** (`map/hammer-bro.ts`, `MapGuard`) comes out on the road: on the road
+  tile farthest from the hero, then he wanders tile by tile (1 px/f, standing 50-100 frames
+  between steps) along the road between 4-2 (never on its node) and the bonus node. Drawn with the
+  SMB3 map frames `smb3:hammer-bro-map-0/1` (16×16, facing left).
+- **Touching him** (the hero walking into him on the road, or him walking into the hero waiting on
+  the bonus node; not in the first 45 frames after the map shows) starts the **Hammer Bro battle**
+  (`scenes/hammer-battle.ts`, `Game.startHammerBattle`): one locked screen (`content/levels/
+hammer-battle.map`, outside the level library: floor, two brick rows at the SMB1 heights) with
+  two SMB1 Hammer Bros, no clock, the run's hero, power, lives and score. The hero's map place
+  stays the node it last stood on. Start pauses (Quit to map leaves it undecided).
+  - **Win** (both Hammer Bros gone, then a second): their hammers vanish, the `castle-clear`
+    jingle, the card "THE HAMMER BROS ARE BEATEN! / THE BONUS IS OPEN AGAIN." with the item they
+    leave (SMB3 style: a mushroom, fire flower or star into the inventory, docs/BONUS.md), then
+    `Game.hammerBattleWon`: `bonusOpen = true`, back to the map (saved). He comes back the next
+    time the bonus is used.
+  - **Lose** (the hero falls): `Game.hammerBattleLost`: a life lost as in SMB3, power back to the
+    start as after any death, back to the map with the Hammer Bro still there; no lives left is
+    GAME OVER (the campaign's continue).
+- **Save** (optional fields, no format change): `bonusOpen?: boolean` (missing: open) and
+  `inventoryUnlocked?: boolean` (missing: off, but on for a file with the secret `larry`).
+- Campaign only (the map is). Dev "Unlock all" does not show it (bonus nodes need their key).
 
 ## Teleport pads (level zone, 0.5.0)
 

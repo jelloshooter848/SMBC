@@ -1,0 +1,35 @@
+id: hammer-battle
+name: HAMMER BRO
+world: 4
+stage: 2
+theme: overworld
+music: smb3-boss
+time: inherit
+start: 2,12
+startMode: stand
+camera: locked
+
+;; The Hammer Bro battle off World 4's map (0.5.0, SMB3 style): one screen, two brick rows at the
+;; SMB1 heights the Hammer Bros jump between, two of them on the lower row. scenes/hammer-battle.ts
+;; loads it with ?raw, so it is not in the level library, the dev level select or the campaign.
+[tiles]
+;; 0
+................
+................
+B..............B
+B..............B
+B..............B
+B.....====.....B
+B..............B
+B..............B
+B..............B
+B..==========..B
+B..............B
+B..............B
+B..............B
+################
+################
+
+[entities]
+hammer-bro 5 8
+hammer-bro 10 8

@@ -18,7 +18,13 @@ export type Theme =
   | 'mushroom-red'
   | 'castle-water'
   // Mega Man's space station above 3-1: steel plating against the black of space.
-  | 'station';
+  | 'station'
+  // Samus's cavern below 4-2: bubbly blue rock in the dark.
+  | 'cavern'
+  // Larry Koopa's airship behind 4-2's right-hand pipe: wooden decks and iron under a night sky.
+  | 'airship'
+  // The airship's open decks (4-2-airship, auto-scrolling): SMB3-style planks under a daylight sky.
+  | 'airship-deck';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -38,6 +44,9 @@ export const THEMES: readonly Theme[] = [
   'mushroom-red',
   'castle-water',
   'station',
+  'cavern',
+  'airship',
+  'airship-deck',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -55,6 +64,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'castle' || theme === 'castle-overworld') return 'castle';
   if (theme === 'underground') return 'underground';
   if (theme === 'station') return 'mm-station';
+  if (theme === 'cavern') return 'cavern';
+  if (theme === 'airship' || theme === 'airship-deck') return 'airship';
   return 'overworld';
 }
 
@@ -130,11 +141,31 @@ export type Zone =
       need: 'all' | 'any';
     }
   /**
-   * A warp zone: the pipes inside [x, x + w) are labelled with `worlds` in order. `secret`: in
-   * campaign play the room shows only its middle pipe, unlabelled, which records this map
-   * secret instead of warping (level/campaign.ts; 1-2: 'bonus-1').
+   * A warp zone: the pipes inside [x, x + w) are labelled with `worlds` in order. Campaign
+   * variants (level/campaign.ts): `secret`: the room shows only its middle pipe, unlabelled,
+   * which records this map secret instead of warping (1-2: 'bonus-1'); `goto`: the room shows
+   * only its middle pipe, with no labels and no text, leading into `goto` instead (an area of the
+   * level, so no map road comes of it; 4-2's two zones). Other play keeps the warps.
    */
-  | { kind: 'warp'; x: number; w: number; worlds: number[]; text?: string; secret?: string }
+  | {
+      kind: 'warp';
+      x: number;
+      w: number;
+      worlds: number[];
+      text?: string;
+      secret?: string;
+      goto?: { level: string; x: number; y: number; exitDir?: TransferMode };
+      /**
+       * A climb `goto` (an anchor chain) works until the file has this map secret (`larry`):
+       * then the room shows only the smashed pipe's stump (level/campaign.ts).
+       */
+      until?: string;
+      /**
+       * Set only by the campaign variant: pipe mouths whose world numbers are drawn though they
+       * are no pipe zones (the climb zone's dead pipe, before the anchor smashes it).
+       */
+      labelAt?: { x: number; y: number }[];
+    }
   /** `y`: the midpoint's row; the respawn stands on the bottom of it (row 12 when left out). */
   | { kind: 'checkpoint'; x: number; y?: number }
   | { kind: 'exit'; x: number; next: string }
@@ -147,6 +178,10 @@ export interface Decor {
   y: number;
 }
 
+/** A map's `camera:` header. */
+export type CameraMode = 'scroll' | 'locked' | 'free' | 'auto';
+export const CAMERA_MODES: readonly CameraMode[] = ['scroll', 'locked', 'free', 'auto'];
+
 export interface LevelData {
   schema: 1;
   id: string;
@@ -158,7 +193,11 @@ export interface LevelData {
   /** Starting timer; null = inherit from the level that pipe-linked here (bonus rooms). */
   time: number | null;
   width: number;
-  height: 15;
+  /**
+   * Rows: 15 (one screen) for every level but a `camera: free` map's taller shafts (the map's
+   * `height: N` header).
+   */
+  height: number;
   /** Row-major tile ids. */
   tiles: Uint16Array;
   entities: EntitySpawn[];
@@ -168,8 +207,17 @@ export interface LevelData {
   start: { x: number; y: number };
   /** When set, the level starts with the "walk in from a pipe" animation (`beam`: beamed down onto a teleport pad). */
   startMode: 'stand' | 'pipe-exit' | 'fall' | 'autowalk' | 'climb' | 'beam';
-  /** Camera behaviour: 'scroll' (default) or 'locked' (bonus rooms). */
-  camera: 'scroll' | 'locked';
+  /**
+   * Camera behaviour: 'scroll' (default), 'locked' (bonus rooms), 'free' (scrolls both ways
+   * and follows the player up and down a map taller than a screen) or 'auto' (SMB3 airships:
+   * moves right on its own at `scroll` px per frame, pushing the players; world/camera.ts).
+   */
+  camera: CameraMode;
+  /**
+   * An `auto` camera's speed in px per frame (the map's `scroll:` header; decimals are fine).
+   * Set only on `camera: auto` maps.
+   */
+  scroll?: number;
   /** Level to respawn in after dying here (sub-areas point at their main level). */
   parent: string | null;
 }

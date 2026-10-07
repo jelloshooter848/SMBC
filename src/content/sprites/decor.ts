@@ -1,4 +1,5 @@
 import { NES } from '@engine/gfx/palette';
+import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
@@ -91,6 +92,21 @@ export const decorPalettes: Record<string, string[]> = {
     NES.lightGray,
     NES.darkGray,
     NES.gray,
+  ],
+  /* Samus's cavern: hills and bushes heaped of the blue rock, ruin pillars of pale blue stone
+     with teal moss, castles of teal stone. */
+  'decor-cavern': [
+    NES.black,
+    DEEP_TEAL,
+    ROCK_BLUE,
+    NES.blueLight,
+    NES.skyLight,
+    ROCK_BLUE,
+    DEEP_TEAL,
+    NES.teal,
+    NES.cyan,
+    DEEP_TEAL,
+    NES.teal,
   ],
 };
 

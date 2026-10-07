@@ -18,6 +18,7 @@ import { Captive } from '@game/entities/objects/captive';
 import { newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import { airshipBot } from './airship-bot';
 
 /** Shared setup for the freeing-the-heroes sims (heroes.test.ts, heroes-race.test.ts). */
 
@@ -145,4 +146,50 @@ export function talkIntoMiniGame(h: H, l: LevelScene) {
   expect(round).not.toBeInstanceOf(MessageScene);
   expect(round).not.toBe(l);
   return round;
+}
+
+/**
+ * Larry's airship deck (any `camera: auto` level with a down pipe): play it like a player (the
+ * airship bot, tests/sim/airship-bot.ts: on with the scrolling screen, jumping walls and pits,
+ * dodging shots, onto the stern pipe and DOWN), unhurtable. Returns once the deck is left (or
+ * after `max` frames).
+ */
+export function rideToStern(h: H, deck: LevelScene, max = 6000): void {
+  const bot = airshipBot();
+  // A flow helper: the ride is made with the hero unhurtable, so every test reaches the room
+  // the same way (pits and squashes still count). airship-deck.test.ts plays it with damage on.
+  const assist = deck.world.assist;
+  const was = assist.invulnerable;
+  assist.invulnerable = true;
+  try {
+    for (let f = 0; f < max && h.top() === deck; f++) h.step(bot(deck.world));
+  } finally {
+    assist.invulnerable = was;
+  }
+}
+
+/** 4-2's hidden right zone: the dead pipe's (and the anchor chain's) column, and the ceiling gap. */
+export const ANCHOR_COL = 214;
+export const ROOM_GAP = 220;
+
+/**
+ * Campaign 4-2 (already the top LevelScene): put the hero on the ceiling beside its gap, walk into
+ * the gap and drop into the hidden right zone, wait for the anchor to crash down, then walk to
+ * its chain and climb it off the top of the screen. Returns once the level has changed.
+ */
+export function dropInAndClimb(h: H, level: LevelScene, max = 1500): void {
+  const w = level.world;
+  const p = w.player;
+  p.body.x = px(ROOM_GAP * 16 - 14);
+  p.body.y = px(2 * 16) - p.body.h;
+  p.body.vy = 0;
+  const chainX = px(ANCHOR_COL * 16 + 8);
+  for (let f = 0; f < max && h.top() === level; f++) {
+    const chain = w.entities.some((e) => e.kind === 'vine' && e.alive);
+    if (!chain) h.step(f < 20 ? ['right'] : []);
+    else if (p.vine) h.step(['up']);
+    else if (p.centerX > chainX + px(4)) h.step(['left', 'up']);
+    else if (p.centerX < chainX - px(4)) h.step(['right', 'up']);
+    else h.step(['up']);
+  }
 }

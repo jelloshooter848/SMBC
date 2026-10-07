@@ -15,7 +15,7 @@ import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 // nothing before the level is cleared, a faint silhouette peeking from behind the node once it
 // is cleared while the hero is still a captive, and the hero beside the node in full colour once
 // freed. Luigi hides in 1-1 (its bonus room), Link in 2-1 (its sky ruins), Mega Man in 3-1 (the
-// space station above its coin heaven).
+// space station above its coin heaven), Samus in 4-2 (her cavern under the vine area).
 
 useStorage();
 
@@ -72,6 +72,20 @@ const CASES: Case[] = [
       position: { page: 'smb-3', node: '3-1' },
     },
     level: '3-1',
+    side: -1,
+  },
+  {
+    hero: 'samus',
+    colour: 'samus@samus',
+    shade: 'samus@samus~shade-mushroom',
+    page: 'smb-4',
+    node: '4-2',
+    before: {
+      cleared: [...W1_CLEAR, '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1'],
+      pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4'],
+      position: { page: 'smb-4', node: '4-2' },
+    },
+    level: '4-2',
     side: -1,
   },
 ];
