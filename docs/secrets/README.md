@@ -9,7 +9,7 @@ Everything here is about the **campaign** (a save file played from the world map
 the story's partners and most of these hidden areas only exist there. Every screenshot was taken
 from the game itself.
 
-This is the first edition, for version 0.4.12.
+This is the first edition, for version 0.4.13.
 
 ## How secrets work
 
@@ -514,7 +514,7 @@ screen: you come out on the tree platform past the bridge in 7-3.
 
 ### Sophia III
 
-The eighth hidden hero, Sophia III, is coming in 0.4.13. This entry will be filled in then.
+The eighth hidden hero, Sophia III, is coming in 0.4.15. This entry will be filled in then.
 
 ### The road to the Lost Levels
 
