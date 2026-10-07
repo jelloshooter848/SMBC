@@ -16,6 +16,7 @@ import { NES } from '@engine/gfx/palette';
  * - `canopy-hang` (32x16): the foliage ceiling, its top row solid leaves, leaf tips and vines
  *   hanging down. Place it at row 0 (`canopy-hang x 0`: anchored bottom-left like all decor, so
  *   it covers the top tile row) every 2 columns: its left and right edges join into one ceiling.
+ *   Its leaves stay in the top 8 px (above the HUD's letters); only dark vines hang lower.
  * - `mountain` (64x32): a distant ridge of snow-capped peaks. Needs ground (or the screen's
  *   bottom) under it.
  * - `jungle-band` (32x32) / `jungle-band-half` (its left 16 columns): palms and undergrowth along
@@ -99,13 +100,16 @@ const canopyClump = (w: number, seed: number): string[] => {
 const canopy = canopyClump(32, 1);
 
 /* The foliage ceiling: a solid band of dark leaves, ragged tips and a few vines hanging from it.
-   Periodic in x (32 px), so a row of them joins up. */
+   Periodic in x (32 px), so a row of them joins up. It hangs behind the HUD (row 0): the leaves end
+   above its letters (rows 0-7), and below them only the vines hang, dark green, so the score, coins,
+   world and time read clearly over them (QA 0.4.9). */
 const canopyHang = ((): string[] => {
-  const tip = (x: number) => 4 + Math.round(3 * Math.abs(Math.sin((x * Math.PI) / 8)) + hash(x, 0, 21) * 2);
+  const tip = (x: number) => 3 + Math.round(2 * Math.abs(Math.sin((x * Math.PI) / 8)) + hash(x, 0, 21) * 2);
   const vine = (x: number) => x === 5 || x === 19 || x === 27;
   return draw(32, 16, (x, y) => {
     const len = tip(x);
-    if (vine(x) && y <= 14) return y % 3 === 1 ? '3' : '2';
+    if (vine(x) && y <= len) return y % 3 === 1 ? '3' : '2';
+    if (vine(x) && y <= 14) return y % 3 === 1 ? '2' : '1';
     if (y > len) return '.';
     if (y === len) return '0';
     if (y === len - 1) return hash(x, y, 22) < 0.5 ? '2' : '1';

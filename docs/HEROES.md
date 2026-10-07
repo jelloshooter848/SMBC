@@ -489,7 +489,7 @@ ways. READY shows first (Mega Man cannot move, the press that started the round 
 - Touch labels: Mega Man's level labels while he plays (`levelTouchLabels`: JUMP, SHOOT, the
   weapon's name, WEAPON with two or more), only MENU while READY, the capsule, the gate and the
   entrance run, none once the round is decided. Dev assists: No damage keeps every hit point (a pit
-  still fails, as in a level). Dev: `?minigame=megaman` (the scene is `window.__miniGame`), or Dev →
+  still fails, as in a level, unless the Safety floor assist catches it). Dev: `?minigame=megaman` (the scene is `window.__miniGame`), or Dev →
   Mini games.
 - **World hook** `WorldStart.extraEntities(spawn, world)`: a mini game's own entity types without a
   case in `makeEntity`. Asked first for every spawn: an entity takes it, `null` drops it, `undefined`
@@ -552,7 +552,7 @@ first (Samus cannot move, the countdown waits, the press that started the round 
   (`EscapeMenuScene`, a `MiniGameMenuScene`; it pauses the countdown) Give up: `quit`. `done` is
   called once; `game.state` is never touched.
 - **Assists** (dev mode, from the menu): No damage keeps every point of energy (a pit still
-  fails). Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
+  fails; the Safety floor assist catches it). Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
   holds."); turned off, it runs on from there.
 - Touch labels: Samus's level labels while she runs (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
   WEAPON; BOMB in the ball, no JUMP), only MENU while READY, none once the round is decided.

@@ -25,6 +25,18 @@ describe('settings', () => {
     expect(loadSettings()).toEqual(defaultSettings());
   });
 
+  it('Safety floor assist: off by default, off for files saved before it, kept once set', () => {
+    expect(defaultSettings().assist.safetyFloor).toBe(false);
+    const old = defaultSettings() as unknown as { assist: Record<string, unknown> };
+    delete old.assist.safetyFloor;
+    store.set(SETTINGS_KEY, JSON.stringify(old));
+    expect(loadSettings().assist.safetyFloor).toBe(false);
+    const on = defaultSettings();
+    on.assist.safetyFloor = true;
+    saveSettings(on);
+    expect(loadSettings().assist.safetyFloor).toBe(true);
+  });
+
   it('key hints: off by default, off for files saved before the option, kept once set', () => {
     expect(defaultSettings().input.keyHints).toBe(false);
     const old = defaultSettings() as unknown as { input: Record<string, unknown> };
