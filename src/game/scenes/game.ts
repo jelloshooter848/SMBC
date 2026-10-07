@@ -136,6 +136,11 @@ export class Game {
    * Hammer Bro is beaten (map/bonus-spot.ts, map/hammer-bro.ts).
    */
   bonusOpen = true;
+  /**
+   * The used bonus spot's Hammer Bro is out on the map (SaveFile.bonusGuard): not right after the
+   * bonus is used, only once a level has been entered from the map since; off again when beaten.
+   */
+  bonusGuard = false;
   /** The SMB3 item inventory is unlocked on the file (SaveFile.inventoryUnlocked; the crystal ball). */
   inventoryUnlocked = false;
   /**
@@ -353,6 +358,7 @@ export class Game {
       if (hero !== s.character) this.setHero(0, hero);
       if (hero2 && hero2 !== s.character2) this.setHero(1, hero2);
       s.checkpoint = null;
+      this.guardBonus();
       this.autosave();
       this.deps.ctx.audio.stopMusic();
       // Its intro when it has one, else its first area (Lost Levels 9-1 starts in ll-9-1-start).
@@ -364,6 +370,7 @@ export class Game {
     if (tutorial && tutorialHero) {
       // Saved as the file has it; the tutorial's hero plays, and the file's comes back after.
       s.checkpoint = null;
+      this.guardBonus();
       this.autosave();
       const heroes =
         s.character === tutorialHero
@@ -424,6 +431,7 @@ export class Game {
       tutorials: this.tutorials.slice(),
       inventoryUnlocked: this.inventoryUnlocked,
       bonusOpen: this.bonusOpen,
+      bonusGuard: this.bonusGuard,
       ...bonusSaveFields(this.bonus),
     };
     this.campaignSave = save;
@@ -535,7 +543,8 @@ export class Game {
 
   /**
    * JUMP on the open bonus node: the bonus game's scene over the map (map/bonus-spot.ts). Played,
-   * it closes (bonusUsed: the Hammer Bro comes out); either way back to the map on the node.
+   * it closes (bonusUsed: spent, the Hammer Bro out after the next level); either way back to the
+   * map on the node.
    */
   openBonus(spot: BonusSpot): void {
     if (!this.bonusOpen) return;
@@ -556,11 +565,20 @@ export class Game {
    */
   bonusUsed(): void {
     this.bonusOpen = false;
+    this.bonusGuard = false;
     this.autosave();
   }
 
   /**
-   * The map's Hammer Bro touched the hero: the one-screen Hammer Bro battle (scenes/hammer-battle.ts)
+   * A level entered from the map: a used bonus spot's Hammer Bro comes out, there when the map
+   * comes back whatever the result (saved by the caller).
+   */
+  private guardBonus(): void {
+    if (!this.bonusOpen) this.bonusGuard = true;
+  }
+
+  /**
+   * The hero walked into the map's Hammer Bro: the one-screen Hammer Bro battle (scenes/hammer-battle.ts)
    * with the run as it is. The hero's map place stays the node it last stood on.
    */
   startHammerBattle(): void {
@@ -573,6 +591,7 @@ export class Game {
   /** The Hammer Bros are beaten: the bonus opens again, back to the map (saved). */
   hammerBattleWon(): void {
     this.bonusOpen = true;
+    this.bonusGuard = false;
     this.returnToMap();
   }
 
@@ -834,6 +853,7 @@ export class Game {
     this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
     this.bonusOpen = save.bonusOpen !== false;
+    this.bonusGuard = !this.bonusOpen && save.bonusGuard === true;
     this.inventoryUnlocked = save.inventoryUnlocked === true || save.secrets.includes(CRYSTAL_BALL);
     this.bonus = bonusStateFrom(save);
     // Only heroes freed on this file, this session, get the map's burst of hops.

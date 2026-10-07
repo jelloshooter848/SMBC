@@ -15,7 +15,12 @@ import { Larry } from '@game/entities/enemies/larry';
 import { HammerBro } from '@game/entities/enemies/hammer-bro';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import { loadSave, type SaveFile } from '@game/save/save-files';
-import { registerBonusGame, BONUS_CLOSED_HINT, type BonusOutcome } from '@game/map/bonus-spot';
+import {
+  registerBonusGame,
+  BONUS_CLOSED_HINT,
+  BONUS_SPENT_HINT,
+  type BonusOutcome,
+} from '@game/map/bonus-spot';
 import { SMB3_BONUS } from '@game/bonus/spot';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { draw, dropInAndClimb, file, makeGame, rideToStern, useStorage, type H } from './heroes-harness';
@@ -300,13 +305,10 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
     expect(h.game.bonusOpen).toBe(false);
     expect(loadSave(1)?.bonusOpen).toBe(false);
     expect(map().node).toBe('bonus-4');
-    expect(map().hintLine).toBe(BONUS_CLOSED_HINT);
-    // Used: no way in, and the Hammer Bro is out on the road, as far from the hero as can be,
-    // drawn with the SMB3 map frames.
-    expect(map().guard?.tile).toEqual([4, 12]);
-    expect(draw(map()).sprites.some((s) => s.key === 'smb3' && /^hammer-bro-map-[01]$/.test(s.frame))).toBe(
-      true,
-    );
+    // Used: no way in, and no Hammer Bro yet (he comes out after the next level).
+    expect(map().hintLine).toBe(BONUS_SPENT_HINT);
+    expect(h.game.bonusGuard).toBe(false);
+    expect(map().guard).toBeNull();
     h.idle(10);
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(WorldMapScene);
@@ -339,22 +341,35 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
     expect(h.game.bonusOpen).toBe(false);
   });
 
-  it('the Hammer Bro wanders the road and walks into a hero waiting on the bonus node: battle', () => {
-    const { h, map } = onMap(found({ bonusOpen: false }));
+  it('once out, the Hammer Bro wanders the road but never walks into the hero: no forced battle', () => {
+    const { h, map } = onMap(found({ bonusOpen: false, bonusGuard: true }, '4-2'));
+    expect(map().hintLine).not.toBe(BONUS_SPENT_HINT);
     const g = map().guard;
     expect(g).not.toBeNull();
+    // Drawn with the SMB3 map frames.
+    expect(draw(map()).sprites.some((s) => s.key === 'smb3' && /^hammer-bro-map-[01]$/.test(s.frame))).toBe(
+      true,
+    );
     const seen = new Set<string>();
-    h.until(() => {
+    for (let i = 0; i < 1500; i++) {
+      h.step();
+      expect(h.top()).toBeInstanceOf(WorldMapScene);
       const gg = map().guard;
       if (gg) seen.add(gg.tile.join(','));
-      return h.top() instanceof HammerBattleScene;
-    }, 6000);
+    }
     expect(seen.size).toBeGreaterThan(1);
-    expect(h.game.mapProgress.position).toEqual({ page: 'smb-4', node: 'bonus-4' });
   });
 
-  it('walking into him on the road starts the battle too', () => {
-    const { h, map } = onMap(found({ bonusOpen: false }, '4-2'));
+  it("on the used node once he is out, the hint says to beat him and he keeps off the hero's road", () => {
+    const { h, map } = onMap(found({ bonusOpen: false, bonusGuard: true }));
+    expect(map().hintLine).toBe(BONUS_CLOSED_HINT);
+    expect(map().guard).toBeNull();
+    h.idle(GUARD_GRACE_FRAMES);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+  });
+
+  it('walking into him on the road starts the battle', () => {
+    const { h, map } = onMap(found({ bonusOpen: false, bonusGuard: true }, '4-2'));
     // He starts on the bonus node, far from the hero; the hero sets off down the road.
     expect(map().guard?.tile).toEqual([2, 13]);
     h.idle(GUARD_GRACE_FRAMES);
@@ -364,7 +379,7 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
   });
 
   it('winning the battle opens the bonus again, and the Hammer Bro is gone', () => {
-    const { h } = onMap(found({ bonusOpen: false }, '4-2'));
+    const { h } = onMap(found({ bonusOpen: false, bonusGuard: true }, '4-2'));
     h.game.startHammerBattle();
     const battle = h.top() as HammerBattleScene;
     h.idle(3);
@@ -380,6 +395,7 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
     expect(map).toBeInstanceOf(WorldMapScene);
     expect(h.game.bonusOpen).toBe(true);
     expect(loadSave(1)?.bonusOpen).toBe(true);
+    expect(h.game.bonusGuard).toBe(false);
     // SMB3's prize for beating them: an item in the inventory (docs/BONUS.md).
     expect(h.game.bonus.inventory).toHaveLength(1);
     expect(['mushroom', 'flower', 'star']).toContain(h.game.bonus.inventory[0]);
@@ -389,7 +405,7 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
   });
 
   it('losing the battle costs a life and goes back to the map, the Hammer Bro still there', () => {
-    const { h } = onMap(found({ bonusOpen: false }, '4-2'));
+    const { h } = onMap(found({ bonusOpen: false, bonusGuard: true }, '4-2'));
     h.game.startHammerBattle();
     const battle = h.top() as HammerBattleScene;
     h.idle(3);

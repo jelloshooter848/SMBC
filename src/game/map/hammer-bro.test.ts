@@ -52,4 +52,25 @@ describe('MapGuard', () => {
     expect(g.touches(2 * 16 + 10, 13 * 16)).toBe(true);
     expect(g.touches(4 * 16, 11 * 16)).toBe(false);
   });
+
+  it("never steps onto a blocked tile (the hero's tile and road)", () => {
+    // The hero stands on the road's middle tile: the guard, spawned at the far end, never
+    // reaches it or passes it, and is never even half on it.
+    for (const seed of [1, 2, 3, 7, 99]) {
+      const g = MapGuard.spawn(road, [3, 13], seed);
+      const blocked = (x: number, y: number) => x === 3 && y === 13;
+      for (let i = 0; i < GUARD_STEP_FRAMES * 60; i++) {
+        g.update(blocked);
+        expect(Math.abs(g.x - 3 * 16) >= 16 || Math.abs(g.y - 13 * 16) >= 16).toBe(true);
+        expect(g.tile).not.toEqual([3, 13]);
+      }
+    }
+  });
+
+  it('stands still when every neighbour on the road is blocked', () => {
+    const g = MapGuard.spawn(road, [4, 11], 1);
+    const start = [g.x, g.y];
+    for (let i = 0; i < GUARD_STEP_FRAMES * 20; i++) g.update(() => true);
+    expect([g.x, g.y]).toEqual(start);
+  });
 });
