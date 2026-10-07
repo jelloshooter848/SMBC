@@ -23,6 +23,21 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * - Cabin decor (drawn in front of the airship's background logs): `porthole` is a framed dark
  *   window, `pillar` a thick upright post that tiles vertically, `ceiling-beam` a heavy beam that
  *   tiles sideways. Their wood matches the airship tiles' tan and red-brown.
+ * - The airship deck (4-2-airship; its tiles are `<tile>@airship-deck`). `cannon-<dir>` is named for
+ *   where the muzzle points: `r`/`l` and `ur`/`ul` stand on their bottom row, `dr`/`dl` hang from
+ *   their top row under a deck; the muzzle ends at the frame's edge (r: right edge, rows 2-11) or
+ *   corner (ur: the top-right corner). `cannonball` is a 13px ball centred in its 16x16.
+ *   `rocky-hide` (shut lid), `rocky-0` (peek), `rocky-1` (up, wrench raised) face LEFT and stand on
+ *   the deck (bottom row = the deck's top). `wrench-0/1` alternate as quarter turns.
+ *   `propeller-0..2` turn in order; the shaft enters from the LEFT edge (the hull's side), so it
+ *   points right/backward toward the stern; flip for the other way. `bolt` and `railing` are decor
+ *   (railing tiles sideways, posts every 8px). `anchor` (32x32) has its chain ring at the top
+ *   centre (x 14-17); `chain` tiles vertically and is centred on the vine line (x 7|8), so a vine
+ *   drawn with it lines up with the anchor placed 8px left of the chain's tile.
+ * - The World 4 crash: `map-airship-0/1` (32x16, bow LEFT, the stern screw turning),
+ *   `map-airship-tilt` (bow 4px down), `map-wreck` (lying on its bottom row), `map-smoke-0..2`
+ *   (puff, billow, wisps), `map-dust-0/1` (on the ground), `toad-map-0/1` (walking, facing the
+ *   viewer), `toad-map-hammer-0/1` (mallet raised, mallet down; he faces RIGHT).
  */
 
 /* ------------------------------------------------------------------------------------------ */
@@ -662,6 +677,447 @@ const ceilingBeam = [
   '0000000000000000',
 ];
 
+/* ------------------------------------------------------------------------------------------ */
+/* The airship's deck: cannons, cannonball, Rocky Wrench, propeller, fittings, anchor, chain   */
+/* ------------------------------------------------------------------------------------------ */
+
+const mirrorX = (f: readonly string[]): string[] => f.map((r) => [...r].reverse().join(''));
+const mirrorY = (f: readonly string[]): string[] => [...f].reverse();
+/** A quarter turn clockwise. */
+const turnCw = (f: readonly string[]): string[] =>
+  [...(f[0] ?? '')].map((_, x) =>
+    f
+      .map((r) => r[x])
+      .reverse()
+      .join(''),
+  );
+/** A bar of half-width `hw` from (x0, y0) to (x1, y1), its ends squared off. */
+const bar =
+  (x0: number, y0: number, x1: number, y1: number, hw: number): Test =>
+  (x, y) => {
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const len = Math.hypot(dx, dy);
+    const px = x + 0.5 - x0;
+    const py = y + 0.5 - y0;
+    const t = (px * dx + py * dy) / len;
+    const n = (px * dy - py * dx) / len;
+    return t >= 0 && t <= len && Math.abs(n) <= hw;
+  };
+/** Which side of the line from (x0, y0) to (x1, y1) a pixel is on (> 0: to its left, on screen). */
+const side = (x0: number, y0: number, x1: number, y1: number) => (x: number, y: number) =>
+  (x + 0.5 - x0) * (y1 - y0) - (y + 0.5 - y0) * (x1 - x0);
+
+/* Cannons (16x16): black iron barrels with a grey lit edge and a thicker muzzle band, on an iron
+   mount. `cannon-r` lies on a carriage, `cannon-ur` angles up out of a squat dome; the others are
+   these mirrored (left) or flipped upside down (the down cannons hang under a deck, mount on
+   top). */
+const cannonR = (() => {
+  const g = grid(16, 16);
+  blob(g, box(2, 12, 13, 15), '4', { light: [(_, y) => y === 13, '3'] });
+  put(g, 4, 14, '2');
+  put(g, 11, 14, '2');
+  blob(g, or(ellipse(4.5, 6.5, 4.5, 4.6), box(4, 2, 14, 11)), '4', {
+    light: [(_, y) => y === 3 || y === 4, '3'],
+    shade: [(_, y) => y === 10, '0'],
+  });
+  blob(g, box(12, 1, 15, 12), '4', { light: [(x, y) => x === 13 && y > 1 && y < 11, '3'] });
+  put(g, 5, 3, '2');
+  put(g, 6, 3, '2');
+  put(g, 1, 6, '3');
+  return rows(g);
+})();
+const cannonUR = (() => {
+  const g = grid(16, 16);
+  // the barrel first, so the mount sits in front of its breech
+  const toLine = side(4, 12.5, 14, 2.5);
+  const n = (x: number, y: number) => toLine(x, y) / Math.hypot(10, 10);
+  blob(g, bar(4, 12.5, 13.4, 3.1, 4), '4', { light: [(x, y) => n(x, y) > 1 && n(x, y) < 2.6, '3'] });
+  blob(g, bar(10.6, 5.9, 16, 0.5, 4.8), '4', { light: [(x, y) => n(x, y) > 1.6 && n(x, y) < 3.4, '3'] });
+  put(g, 14, 1, '0');
+  put(g, 13, 2, '0');
+  put(g, 15, 2, '0');
+  put(g, 13, 0, '0');
+  blob(g, and(ellipse(7, 16.5, 7, 6.5), box(0, 10, 15, 15)), '4', {
+    light: [ellipse(5, 12.5, 2.4, 1.4), '3'],
+  });
+  put(g, 4, 12, '2');
+  rect(g, 0, 15, 15, 1, '0');
+  return rows(g);
+})();
+
+/* A cannonball: a black-iron sphere, lit up-left with a white glint. */
+const cannonball = (() => {
+  const g = grid(16, 16);
+  blob(g, ellipse(8, 8, 6.5, 6.5), '4', {
+    shade: [(x, y) => !ellipse(7, 7, 6.2, 6.2)(x, y), '0'],
+    light: [ellipse(6, 6, 2, 1.6), '3'],
+  });
+  put(g, 5, 5, '1');
+  put(g, 6, 5, '2');
+  put(g, 5, 6, '2');
+  return rows(g);
+})();
+
+/* The thrown wrench (8x8), spinning in quarter turns: an open jaw on a short handle. */
+const wrench0 = (() => {
+  const g = grid(8, 8);
+  const shape: [number, number, string][] = [
+    [5, 1, '2'],
+    [7, 1, '2'],
+    [5, 2, '2'],
+    [6, 2, '2'],
+    [7, 2, '3'],
+    [4, 3, '2'],
+    [5, 3, '3'],
+    [3, 4, '2'],
+    [4, 4, '3'],
+    [2, 5, '2'],
+    [3, 5, '3'],
+    [1, 6, '2'],
+    [2, 6, '3'],
+  ];
+  for (const [x, y, c] of shape) put(g, x, y, c);
+  const solid = (x: number, y: number) => shape.some(([sx, sy]) => sx === x && sy === y);
+  for (let y = 0; y < 8; y++)
+    for (let x = 0; x < 8; x++)
+      if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1)))
+        put(g, x, y, '0');
+  return rows(g);
+})();
+
+/* Rocky Wrench (16x16, faces left, bottom row = the deck's surface): a mole in a manhole. Shut,
+   only the round iron lid shows; then he peeks out (big eyes); then he rises with a wrench. */
+const manhole = (g: Grid, lid: boolean): void => {
+  if (lid) {
+    blob(g, ellipse(8, 13.5, 7.5, 2.5), '3', { light: [(_, y) => y <= 12, '2'] });
+    put(g, 5, 13, '4');
+    put(g, 10, 13, '4');
+    put(g, 7, 14, '4');
+    put(g, 8, 14, '4');
+  } else {
+    blob(g, ellipse(8, 14, 7.5, 2), '0', { line: '' });
+    for (let x = 1; x <= 14; x++) put(g, x, 15, '3');
+    put(g, 0, 14, '3');
+    put(g, 15, 14, '3');
+  }
+};
+const rockyHead = (g: Grid, cx: number, cy: number): void => {
+  // brown fur, a tan snout pointing left, big white eyes looking left
+  blob(g, and(ellipse(cx, cy, 5.5, 5), box(0, 0, 15, 14)), 'h', {
+    shade: [(x, y) => x >= cx + 2.5 || y >= cy + 3, 'i'],
+  });
+  blob(g, ellipse(cx - 4.5, cy + 1.5, 3.2, 2), '8', { shade: [(_, y) => y >= cy + 2, '9'] });
+  put(g, Math.max(0, Math.round(cx - 7.5)), Math.round(cy + 1), 'k');
+  for (const ex of [cx - 3.5, cx - 0.5]) {
+    rect(g, ex, cy - 3, 2, 3, '1');
+    put(g, ex, cy - 2, '0');
+    put(g, ex, cy - 1, '0');
+  }
+};
+const rockyHide = (() => {
+  const g = grid(16, 16);
+  manhole(g, true);
+  return rows(g);
+})();
+const rocky0 = (() => {
+  const g = grid(16, 16);
+  rockyHead(g, 8.5, 10);
+  manhole(g, false);
+  return rows(g);
+})();
+const rocky1 = (() => {
+  const g = grid(16, 16);
+  // his body out of the hole, one arm raised behind him with the wrench
+  blob(g, box(3, 10, 12, 14), 'h', { shade: [(x) => x >= 10, 'i'] });
+  blob(g, ellipse(7, 11.5, 2.4, 2), '8', { line: '' });
+  blob(g, bar(11, 11, 12.5, 5.5, 1.3), 'h', { shade: [(x) => x >= 12, 'i'] });
+  rockyHead(g, 6.5, 7);
+  paint(g, 9, -2, wrench0);
+  blob(g, ellipse(11.5, 5.5, 1.4, 1.4), '8');
+  manhole(g, false);
+  return rows(g);
+})();
+
+/* A propeller under the hull (16x16): its shaft comes out of the hull on the left, the blades
+   spin round it seen from the side (long, turning, edge-on). */
+const propeller = (f: number): string[] => {
+  const g = grid(16, 16);
+  blob(g, box(0, 6, 9, 9), '3', { light: [(_, y) => y === 7, '2'], shade: [(_, y) => y === 8, '4'] });
+  const blades = [ellipse(10, 8, 2.6, 8), ellipse(10, 8, 3.8, 5.6), ellipse(10, 8, 1.7, 3.6)][f] as Test;
+  blob(g, blades, '2', { shade: [(x, y) => (f === 1 ? y >= 8 : x >= 10), '3'] });
+  blob(g, ellipse(13.5, 8, 2.5, 2.2), '3', { light: [(_, y) => y <= 7, '2'] });
+  blob(g, ellipse(10, 8, 2, 2), '4');
+  return rows(g);
+};
+
+/* A round bolt head (8x8): lit up-left, a dark slot across it. */
+const bolt = (() => {
+  const g = grid(8, 8);
+  blob(g, ellipse(4, 4, 3.7, 3.7), '3', { light: [ellipse(3, 3, 2, 1.6), '2'] });
+  for (const [x, y] of [
+    [2, 5],
+    [3, 4],
+    [4, 3],
+    [5, 2],
+  ] as const)
+    put(g, x, y, '4');
+  return rows(g);
+})();
+
+/* The stern railing (16x16, tiles sideways): a capping rail on turned balusters every 8px, in the
+   deck's wood (tan lit edge, light wood, orange-brown shade). */
+const railing = Array.from({ length: 16 }, (_, y) => {
+  if (y === 0 || y === 4) return '0'.repeat(16);
+  if (y < 4) return ['8', 'r', 'j'][y - 1]?.repeat(16) ?? '';
+  const bulge = y === 9 || y === 10;
+  const post = bulge ? '08rrj0' : y === 15 ? '0jjjj0' : '.08rj0';
+  return `.${post}..${post}.`.slice(0, 16).padEnd(16, '.');
+});
+
+/* The anchor (32x32): an iron ring at the top centre (the chain hooks on there), a stock across
+   the shank, and two curved arms ending in flukes, resting on the ground. */
+const anchor = (() => {
+  const g = grid(32, 32);
+  const lit: [Test, string] = [(x) => x <= 14, '2'];
+  const dark: [Test, string] = [(x) => x >= 18, '4'];
+  // the arms: a thick arc from fluke to fluke
+  const arc = and(
+    ellipse(16, 18, 13.5, 13.6),
+    (x, y) => !ellipse(16, 18, 10, 10.2)(x, y),
+    box(0, 19, 31, 31),
+  );
+  const flukes = or(
+    poly([
+      [1, 22],
+      [2.5, 14],
+      [8, 21],
+    ]),
+    poly([
+      [31, 22],
+      [29.5, 14],
+      [24, 21],
+    ]),
+  );
+  blob(g, or(arc, flukes), '3', {
+    light: [(x, y) => ellipse(16, 18, 11.2, 11.3)(x, y) || (flukes(x, y) && y <= 17), '2'],
+    shade: [(x, y) => !ellipse(16, 18, 12.4, 12.5)(x, y) && y >= 24, '4'],
+  });
+  // the shank down to the crown, and the stock with round ends
+  blob(g, box(14, 6, 17, 29), '3', { light: [(x) => x === 15, '2'], shade: [(x) => x === 17, '4'] });
+  blob(g, or(box(7, 9, 24, 11), ellipse(7, 10, 2, 2), ellipse(25, 10, 2, 2)), '3', {
+    light: [(_, y) => y <= 9, '2'],
+    shade: [(_, y) => y >= 11, '4'],
+  });
+  // the ring
+  blob(
+    g,
+    and(ellipse(16, 3.5, 4, 3.5), (x, y) => !ellipse(16, 3.5, 1.6, 1.4)(x, y)),
+    '3',
+    {
+      light: lit,
+      shade: dark,
+    },
+  );
+  return rows(g);
+})();
+
+/* The anchor's chain (16x16, tiles vertically): a face-on link threaded on an edge-on one, down the
+   middle of the tile (the vine's centre line, columns 7 and 8). */
+const chain = (() => {
+  const g = grid(16, 16);
+  // the edge-on link, wrapping round the tile edge into the next tile's ring
+  for (const y of [11, 12, 13, 14, 15, 0, 1, 2, 3]) {
+    put(g, 6, y, '0');
+    put(g, 7, y, '2');
+    put(g, 8, y, '3');
+    put(g, 9, y, '0');
+  }
+  put(g, 7, 3, '0');
+  put(g, 8, 3, '0');
+  const ring = and(ellipse(8, 6, 5, 6), (x, y) => !ellipse(8, 6, 1.6, 2.8)(x, y));
+  blob(g, ring, '3', { light: [(x, y) => x <= 6 && y <= 8, '2'], shade: [(x, y) => y >= 9 || x >= 10, '4'] });
+  // threaded: the edge-on link passes in front of the ring's lower rim
+  for (let y = 9; y <= 11; y++) {
+    put(g, 7, y, '2');
+    put(g, 8, y, '3');
+  }
+  return rows(g);
+})();
+
+/* ------------------------------------------------------------------------------------------ */
+/* The crash on the World 4 map: the airship, its wreck, smoke, dust, Toad the builder          */
+/* ------------------------------------------------------------------------------------------ */
+
+/* The airship at map scale (32x16, bow on the LEFT like the deck level): a wooden hull with a row
+   of portholes, a red-flagged mast, a cannon on the bow, and a propeller under the stern that
+   turns between the two frames. */
+const mapAirship = (f: number): string[] => {
+  const g = grid(32, 16);
+  // mast and flag
+  rect(g, 19, 0, 1, 6, 'i');
+  paint(g, 20, 0, ['0000.', 'ddde0', 'dde0.', '000..']);
+  // bow cannon
+  blob(g, bar(6, 5, 9.5, 1.6, 1.4), '4');
+  // hull
+  const hull = poly([
+    [0, 3],
+    [3, 5],
+    [31, 5],
+    [31, 8],
+    [28, 11],
+    [8, 11],
+    [2, 7],
+  ]);
+  blob(g, hull, 'r', { light: [(_, y) => y === 6, '8'], shade: [(_, y) => y >= 9, 'j'] });
+  for (const x of [11, 16, 21, 26]) put(g, x, 8, '0');
+  rect(g, 3, 5, 28, 1, '0');
+  // the propeller under the stern
+  rect(g, 25, 11, 1, 2, '0');
+  rect(g, 24, 13, 4, 1, '3');
+  if (f === 0) {
+    paint(g, 27, 10, ['020', '020', '000', '020', '030', '000']);
+  } else {
+    paint(g, 26, 12, ['00000', '22023', '00000']);
+  }
+  return rows(g);
+};
+/* Nose-down: the flying frame sheared so the bow drops 4px while the stern stays put. */
+const mapAirshipTilt = (() => {
+  const src = mapAirship(0);
+  return Array.from({ length: 16 }, (_, y) =>
+    Array.from({ length: 32 }, (_, x) => src[y - Math.round(((31 - x) * 4) / 31)]?.[x] ?? '.').join(''),
+  );
+})();
+/* The wreck: the hull broken in two on the ground, loose planks, the mast down, the screw bent. */
+const mapWreck = (() => {
+  const g = grid(32, 16);
+  const shade: [Test, string] = [(_, y) => y >= 13, 'j'];
+  blob(
+    g,
+    poly([
+      [0, 11],
+      [3, 9],
+      [12, 9],
+      [14, 11],
+      [12, 12],
+      [14, 14],
+      [11, 16],
+      [3, 16],
+    ]),
+    'r',
+    { light: [(_, y) => y === 10, '8'], shade },
+  );
+  blob(
+    g,
+    poly([
+      [17, 10],
+      [20, 8],
+      [31, 9],
+      [31, 16],
+      [19, 16],
+      [21, 13],
+    ]),
+    'r',
+    { light: [(_, y) => y === 9, '8'], shade },
+  );
+  put(g, 6, 13, '0');
+  put(g, 25, 12, '0');
+  put(g, 28, 12, '0');
+  // planks and the fallen mast
+  rect(g, 13, 14, 5, 1, 'j');
+  rect(g, 12, 15, 6, 1, '0');
+  rect(g, 15, 6, 1, 4, 'i');
+  rect(g, 16, 5, 1, 2, 'i');
+  paint(g, 17, 4, ['dd0', 'd0.']);
+  // the bent screw sticking up
+  paint(g, 29, 5, ['020', '.02', '.20', '030']);
+  return rows(g);
+})();
+
+/* Smoke (16x16): a small puff, a billowing cluster, then wisps breaking up. */
+const mapSmoke = (f: number): string[] => {
+  const g = grid(16, 16);
+  const puffs: [number, number, number][][] = [
+    [[8, 10, 3.6]],
+    [
+      [5.5, 10.5, 4],
+      [10.5, 10.5, 4],
+      [8, 6.5, 4],
+    ],
+    [
+      [3.5, 12, 2.2],
+      [12, 10.5, 2.6],
+      [7, 3.5, 2.4],
+      [9, 13.5, 1.5],
+    ],
+  ];
+  // one billowing outline, white, each puff shaded grey on its lower right; the last frame thins
+  // to grey wisps
+  const ps = puffs[f] ?? [];
+  const lit = or(...ps.map(([x, y, r]) => ellipse(x - r * 0.25, y - r * 0.25, r * 0.8, r * 0.8)));
+  blob(g, or(...ps.map(([x, y, r]) => ellipse(x, y, r, r))), f === 2 ? '2' : '1', {
+    shade: [(x, y) => !lit(x, y), f === 2 ? '3' : '2'],
+    line: f === 2 ? '3' : '0',
+  });
+  return rows(g);
+};
+/* Landing dust (16x16, on the ground): two puffs kicked out, then spread wider and thinning. */
+const mapDust = (f: number): string[] => {
+  const g = grid(16, 16);
+  const ps: [number, number, number][] =
+    f === 0
+      ? [
+          [4, 13, 2.6],
+          [12, 13, 2.6],
+        ]
+      : [
+          [2.5, 12, 2.2],
+          [13.5, 12, 2.2],
+          [6, 14, 1.4],
+          [10, 14, 1.4],
+        ];
+  blob(g, or(...ps.map(([x, y, r]) => ellipse(x, y, r, r))), '8', {
+    shade: [(_, y) => y >= 13, '9'],
+    line: f === 0 ? '0' : 'a',
+  });
+  return rows(g);
+};
+
+/* Toad on the map (16x16, Hammer Bro scale): a white cap with red spots, a tan face, a blue vest,
+   brown shoes. Walking he faces the viewer and steps; hammering he faces RIGHT (flip for left)
+   with a builder's mallet raised high, then brought down. */
+const toadMap = (step: number, hammer: number): string[] => {
+  const g = grid(16, 16);
+  const f = step;
+  blob(g, box(3, 13 - (f ? 1 : 0), 6, 15 - (f ? 1 : 0)), 'i');
+  blob(g, box(9, 13 - (f ? 0 : 1), 12, 15 - (f ? 0 : 1)), 'i');
+  blob(g, ellipse(8, 11, 4.4, 2.8), 'c', { shade: [(x) => x >= 11, 'p'] });
+  blob(g, ellipse(8, 11.2, 1.6, 2), '1', { line: '' });
+  blob(g, ellipse(8, 8, 3.6, 2.6), '8', { shade: [(_, y) => y >= 9, '9'] });
+  const lookRight = hammer >= 0;
+  put(g, lookRight ? 8 : 6, 8, '0');
+  put(g, lookRight ? 10 : 9, 8, '0');
+  blob(g, and(ellipse(8, 6, 7.6, 5.6), box(0, 0, 15, 6)), '1', {
+    shade: [(_, y) => y >= 6, '2'],
+  });
+  blob(g, ellipse(8, 2.6, 2, 1.6), 'd', { line: '' });
+  blob(g, ellipse(2.8, 4.8, 1.2, 1.5), 'd', { line: '' });
+  blob(g, ellipse(13.2, 4.8, 1.2, 1.5), 'd', { line: '' });
+  if (hammer === 0) {
+    // mallet raised over his shoulder
+    for (let y = 3; y <= 9; y++) put(g, 13, y, 'h');
+    paint(g, 11, 0, ['00000', '0rrj0', '00000']);
+    blob(g, ellipse(13, 10, 1.3, 1.3), '8');
+  } else if (hammer === 1) {
+    // mallet swung down onto the ground in front of him
+    for (let x = 11; x <= 13; x++) put(g, x, 11, 'h');
+    paint(g, 13, 10, ['000', '0r0', '0r0', '0j0', '000']);
+    blob(g, ellipse(11, 11, 1.3, 1.3), '8');
+  }
+  return rows(g);
+};
+
 const slotFrames: Record<string, string[]> = {};
 for (const [name, pic] of [
   ['mushroom', slotMushroom],
@@ -704,5 +1160,37 @@ export const smb3Def: SpriteDef = {
     porthole,
     pillar,
     'ceiling-beam': ceilingBeam,
+    'cannon-r': cannonR,
+    'cannon-l': mirrorX(cannonR),
+    'cannon-ur': cannonUR,
+    'cannon-ul': mirrorX(cannonUR),
+    'cannon-dr': mirrorY(cannonUR),
+    'cannon-dl': mirrorY(mirrorX(cannonUR)),
+    cannonball,
+    'rocky-hide': rockyHide,
+    'rocky-0': rocky0,
+    'rocky-1': rocky1,
+    'wrench-0': wrench0,
+    'wrench-1': turnCw(wrench0),
+    'propeller-0': propeller(0),
+    'propeller-1': propeller(1),
+    'propeller-2': propeller(2),
+    bolt,
+    railing,
+    anchor,
+    chain,
+    'map-airship-0': mapAirship(0),
+    'map-airship-1': mapAirship(1),
+    'map-airship-tilt': mapAirshipTilt,
+    'map-wreck': mapWreck,
+    'map-smoke-0': mapSmoke(0),
+    'map-smoke-1': mapSmoke(1),
+    'map-smoke-2': mapSmoke(2),
+    'toad-map-0': toadMap(0, -1),
+    'toad-map-1': toadMap(1, -1),
+    'toad-map-hammer-0': toadMap(0, 0),
+    'toad-map-hammer-1': toadMap(0, 1),
+    'map-dust-0': mapDust(0),
+    'map-dust-1': mapDust(1),
   },
 };
