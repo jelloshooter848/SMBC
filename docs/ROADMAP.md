@@ -90,8 +90,17 @@ candidate list) are not part of 0.5.1.
 - **Credits on the title screen:** "MADE BY JELLOSHOOTER848", and a line such as "BASED ON SUPER MARIO BROS.
   CROSSOVER BY EXPLODING RABBIT". The full credits roll and the README say the same, alongside the existing
   "unaffiliated fan project, original art and music" notice.
-- **Stylized title screen:** an original logo with a REMIX badge, livelier menu styling and motion. All art and music
-  stay original. An art agent is mocking up three directions for the owner to choose from.
+- **Stylized title screen (owner's pick, 2026-10-07): mockup A with mockup C's rift as the intro.**
+  - **A:** a gold block "CROSSOVER" logo with a small "SMB" tag and a tilted red "REMIX" stamp, over a Mushroom
+    Kingdom scene. Freed heroes stand on the ground in colour; unfound ones are "?" silhouettes, so the row doubles as
+    a progress display. The menu, "CHAPTER 1", the version, "MADE BY JELLOSHOOTER848", the "BASED ON ... EXPLODING
+    RABBIT" credit and "UNOFFICIAL FAN PROJECT" are all on screen.
+  - **Intro, from C:** the wand's bolt tears a rift open, then the logo and the heroes drop out of it onto the field.
+  - Built from the game's own sprites and font, with new gold/red font palettes; all art and music stay original.
+  - **Kept for later:** mockup B (an SMB3 curtain stage with the heroes as the cast) and the rest of C (the rift with a
+    shard of each hero's world) are saved for possible future major releases, such as a Chapter 2 or Chapter 3 title.
+    The mockups and the scripts that draw them are backed up on the `claude/wip-orchestrator-notes` branch
+    (`title-mockups/`).
 - **Where the name changes:** title screen, `index.html` title and description, `package.json` description, README,
   release notes and the release zip's name, and the credits.
 
