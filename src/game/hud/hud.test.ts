@@ -9,6 +9,8 @@ import { runSim } from '../sim/headless';
 import { CHARACTERS } from '../characters/registry';
 import type { CharacterDef } from '../characters/character';
 import { drawHud } from './hud';
+import { Goomba } from '../entities/enemies/goomba';
+import { px } from '@engine/math/units';
 
 const level = parseTextMap(
   readFileSync(join(import.meta.dirname, '../../content/levels/world1/1-1.map'), 'utf8'),
@@ -85,5 +87,61 @@ describe('HUD', () => {
     const coins = boxes.find((b) => b.what.startsWith('$')) as Box;
     expect(coins.y).toBe(score.y);
     expect(coins.x - (score.x + score.w)).toBeGreaterThanOrEqual(16);
+  });
+});
+
+describe('HUD on top of sprites', () => {
+  /** Draws the HUD with `covered` and records each text run with the sheet it used. */
+  function runs(covered?: (x: number, y: number, w: number, h: number) => boolean) {
+    const w = runSim({
+      level,
+      character: CHARACTERS[0] as CharacterDef,
+      script: { steps: [{ frame: 0, hold: [] }] },
+      maxFrames: 1,
+    }).world;
+    const out: { sheet: string; str: string; x: number; y: number }[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      text(f: SpriteSheet, str: string, x: number, y: number): void {
+        out.push({ sheet: f.id, str, x, y });
+      },
+    });
+    const assets = {
+      sheet: (id: string, palette?: string) => ({ id: palette ? `${id}@${palette}` : id }),
+    } as unknown as AssetRegistry;
+    drawHud(r, assets, w.state, 400, 0, w.players, covered ? { covered } : {});
+    return { out, world: w };
+  }
+
+  it('with nothing under it, each text is drawn once, plain (normal levels look the same)', () => {
+    const { out } = runs(() => false);
+    expect(out.every((o) => o.sheet === 'font')).toBe(true);
+    expect(runs().out).toEqual(out);
+  });
+
+  it('a sprite under a text: that text gets a dark 1-px outline drawn first; the rest stay plain', () => {
+    // Something under WORLD (144, 8) only.
+    const { out } = runs((x, y, w, h) => x < 152 && 144 < x + w && y < 16 && 8 < y + h);
+    const dark = out.filter((o) => o.sheet !== 'font');
+    expect(dark.map((o) => o.str)).toEqual(['WORLD', 'WORLD', 'WORLD', 'WORLD']);
+    expect(dark.every((o) => o.sheet === 'font@font~silhouette')).toBe(true);
+    expect(dark.map((o) => [o.x - 144, o.y - 8])).toEqual(
+      expect.arrayContaining([
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ]),
+    );
+    const plain = out.findIndex((o) => o.str === 'WORLD' && o.sheet === 'font');
+    expect(plain).toBeGreaterThan(out.findIndex((o) => o.str === 'WORLD' && o.sheet !== 'font'));
+    expect(out.filter((o) => o.str === 'MARIO ' && o.sheet !== 'font')).toEqual([]);
+  });
+
+  it("World.spriteIn finds an entity's sprite in a screen box (the HUD's rows), not elsewhere", () => {
+    const { world } = runs();
+    // A Goomba right under WORLD on screen.
+    world.spawn(new Goomba(px(world.camera.pxX + 146), px(6)));
+    expect(world.spriteIn(144, 8, 40, 8)).toBe(true);
+    expect(world.spriteIn(24, 8, 48, 8)).toBe(false);
   });
 });

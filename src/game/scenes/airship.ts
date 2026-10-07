@@ -190,7 +190,13 @@ export const AIRSHIP_CHALLENGE = {
   who: 'LARRY KOOPA',
   create(game: Game, done: (result: MiniGameResult) => void): Scene {
     const start: LevelStart = { mode: 'stand' };
+    const deck = game.deps.getLevel(AIRSHIP_DECK);
+    // The HUD's WORLD is the airship's (4-2), not the last world played; the round's restore
+    // puts the run's own back (DevMiniGamesScene.play). Set before the run snapshots the state,
+    // so a retry keeps it too.
+    game.state.world = deck.world;
+    game.state.stage = deck.stage;
     game.airship = new AirshipRun(AIRSHIP_DECK, start, game.state, done, game.scenes.top ?? null);
-    return game.levelScene(game.deps.getLevel(AIRSHIP_DECK), start);
+    return game.levelScene(deck, start);
   },
 };

@@ -114,6 +114,8 @@ export class WandBlast extends Projectile {
 export type LarryState = 'wait' | 'hop' | 'jump' | 'aim' | 'spin' | 'slide' | 'out' | 'beaten' | 'fly';
 
 const STAND_H = 22;
+/** How far over his top "BWAH!" starts: clear of the beating stomp's points (8 px over him). */
+const BWAH_RISE = 24;
 const SHELL_H = 14;
 
 export class Larry extends Enemy {
@@ -189,7 +191,9 @@ export class Larry extends Enemy {
     world.audio.stopMusic();
     world.audio.sfx('bowser-fall');
     world.addScore(BEATEN_POINTS);
-    world.spawn(new ScorePopup(this.body.x - px(4), this.body.y - px(10), 'BWAH!'));
+    // A row above where the stomp's points rise (World.scoreStomp puts them 8 px over him), so the
+    // two never overlap as they float up together.
+    world.spawn(new ScorePopup(this.body.x - px(4), this.body.y - px(BWAH_RISE), 'BWAH!'));
   }
 
   private enter(s: LarryState): void {

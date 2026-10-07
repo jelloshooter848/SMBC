@@ -254,6 +254,34 @@ describe('Zebes Escape: the stage', () => {
     expect(h.said.at(-1)).toBe(`Escape! ${COUNTDOWN_SECONDS} seconds.`);
   });
 
+  it('READY already shows the statue, the alarm lights and the creatures, standing still', () => {
+    const h = escapeHarness({ assets: STUB_ASSETS });
+    const decor = () => h.world.entities.filter((e): e is ZebesDecor => e instanceof ZebesDecor);
+    const creatures = () => h.world.entities.filter((e) => e instanceof Zoomer || e instanceof Ripper);
+    expect(h.scene.phase).toBe('ready');
+    expect(decor().map((d) => d.name)).toEqual(expect.arrayContaining(['chozo', 'alarm']));
+    expect(creatures().length).toBeGreaterThan(0);
+    // ...and they are drawn.
+    const drawnKinds = new Set<string>();
+    for (const e of h.world.entities) {
+      const render = e.render.bind(e);
+      e.render = (r, v) => {
+        drawnKinds.add(e.kind);
+        render(r, v);
+      };
+    }
+    h.scene.render(new TextRenderer());
+    expect(drawnKinds).toContain('zebes-decor');
+    const at = () => creatures().map((e) => [e.body.x, e.body.y]);
+    const before = at();
+    h.step([], READY_FRAMES - 1);
+    expect(h.scene.phase).toBe('ready');
+    expect(at()).toEqual(before);
+    h.step([], 30);
+    expect(h.scene.phase).toBe('escape');
+    expect(at()).not.toEqual(before);
+  });
+
   it('the camera climbs with Samus up a shaft and follows her back down', () => {
     const h = escapeHarness();
     ready(h);
@@ -627,6 +655,27 @@ describe('Zebes Escape: screen and controls', () => {
     h.step([], 5);
     h.tap('down');
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: 'BOMB' });
+  });
+
+  it('a Skree under the HUD: the HUD text over it gets its dark outline (the HUD stays on top)', () => {
+    const h = escapeHarness({ assets: recordingAssets() });
+    const sheets = (): string[] => {
+      const out: string[] = [];
+      const r = Object.assign(new NullRenderer(), {
+        text(f: { id: string }, str: string): void {
+          if (str.startsWith('SAMUS')) out.push(f.id);
+        },
+      }) as unknown as Renderer;
+      h.scene.render(r);
+      return out;
+    };
+    expect(sheets()).toEqual(['font']);
+    // Hanging right under SAMUS (24, 8 on screen).
+    const cam = h.world.camera;
+    h.world.spawn(new Skree(px(cam.pxX + 28), px(cam.pxY + 4)));
+    const drawn = sheets();
+    expect(drawn.filter((s) => s.includes('silhouette'))).toHaveLength(4);
+    expect(drawn.at(-1)).toBe('font');
   });
 
   it('the alarm wash swells and fades, but holds steady with reduce flashing', () => {

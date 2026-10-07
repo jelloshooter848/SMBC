@@ -17,7 +17,7 @@ import { Larry } from '@game/entities/enemies/larry';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import type { SaveFile } from '@game/save/save-files';
 import { snapshot } from '@game/scenes/free-hero';
-import { file, makeGame, rideToStern, store, useStorage, type H } from './heroes-harness';
+import { draw, file, makeGame, rideToStern, store, useStorage, type H } from './heroes-harness';
 
 // Larry's airship challenge (scenes/airship.ts, docs/HEROES.md "Larry's airship"): the
 // auto-scrolling deck `4-2-airship` and Larry's room `4-2-larry`, played with the current hero
@@ -382,6 +382,29 @@ describe("Dev → Mini games → Larry's airship", () => {
     expect(snapshot(h.game.state)).toEqual(before);
     expect([...store.entries()]).toEqual(stored);
     expect(h.game.campaign).toBeNull();
+  });
+
+  it('the HUD shows WORLD 4-2 aboard, whatever world was played last; it is put back after', () => {
+    const h = makeGame();
+    h.game.deps.settings = { ...defaultSettings(), dev: true };
+    h.game.showTitle();
+    h.idle(8);
+    pick(h, 'Dev mode');
+    pick(h, 'Mini games');
+    h.game.state.world = 3;
+    h.game.state.stage = 1;
+    pick(h, "Larry's airship");
+    const deck = h.top() as LevelScene;
+    expect(deck.level.id).toBe(AIRSHIP_DECK);
+    expect([h.game.state.world, h.game.state.stage]).toEqual([4, 2]);
+    expect(draw(deck).texts.map((t) => t.str)).toContain('4-2');
+    rideToStern(h, deck);
+    const room = h.top() as LevelScene;
+    expect(draw(room).texts.map((t) => t.str)).toContain('4-2');
+    h.tap('start');
+    pick(h, 'Give up');
+    expect((h.top() as DevMiniGameResultScene).result).toBe('quit');
+    expect([h.game.state.world, h.game.state.stage]).toEqual([3, 1]);
   });
 
   it('leaving the airship for another level mid-round ends it as QUIT, back over the list', () => {

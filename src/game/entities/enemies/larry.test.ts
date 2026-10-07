@@ -189,6 +189,39 @@ describe('Larry Koopa', () => {
     expect(larry.hit(src('bump'), world)).toBe('immune');
   });
 
+  it("the beating stomp's points and his BWAH! never overlap (by the left wall too)", () => {
+    const { world, step, larry } = cabin();
+    until(step, () => !larry.inShell && larry.body.onGround);
+    larry.hp = STOMP_DAMAGE;
+    // Up against the cabin's left wall.
+    larry.body.x = px(16 + 1);
+    const p = world.player;
+    p.body.x = larry.body.x;
+    p.body.y = larry.body.y - p.body.h - px(2);
+    p.body.vy = 0x02000;
+    until(step, () => larry.defeated, 30);
+    type Pop = { text: string; alive: boolean; body: { x: number; y: number } };
+    const pops = () => world.entities.filter((e) => e.kind === 'score-popup' && e.alive) as unknown as Pop[];
+    const box = (e: Pop) => ({
+      x: toPx(e.body.x),
+      y: toPx(e.body.y),
+      w: e.text.length * 8,
+      h: 8,
+    });
+    const overlap = (a: ReturnType<typeof box>, b: ReturnType<typeof box>) =>
+      a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+    for (let f = 0; f < 40; f++) {
+      const bwah = pops().find((e) => e.text === 'BWAH!');
+      const points = pops().find((e) => /^\d+$/.test(e.text));
+      if (f === 0) {
+        expect(bwah).toBeDefined();
+        expect(points).toBeDefined();
+      }
+      if (bwah && points) expect(overlap(box(bwah), box(points)), `frame ${f}`).toBe(false);
+      step();
+    }
+  });
+
   it('beaten, he says BWAH!, leaves, and drops the crystal ball; touching it raises crystal-ball', () => {
     const { world, step, larry } = cabin();
     for (let n = 0; n < 3; n++) {

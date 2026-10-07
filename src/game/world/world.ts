@@ -524,6 +524,14 @@ export class World {
     this.entities.push(e);
   }
 
+  /**
+   * Spawns the map's entities within reach of the camera now, without stepping the world: a mini
+   * game shows its props and creatures on a READY screen, still, before its first frame.
+   */
+  spawnInView(): void {
+    this.spawnPending();
+  }
+
   private spawnPending(): void {
     const limit = this.camera.right + px(SPAWN_MARGIN_PX);
     while (this.spawnIndex < this.spawns.length) {
@@ -2208,6 +2216,33 @@ export class World {
     for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
     this.renderWarpText(r, view);
     this.renderCastleText(screen, view);
+  }
+
+  /**
+   * Whether an entity or a player is drawn into the screen box (x, y, w, h) (screen px; each
+   * sprite taken as its body widened by its sprite offset, 8 px at least): the HUD outlines the
+   * text a sprite passes under (HudOptions.covered).
+   */
+  spriteIn(x: number, y: number, w: number, h: number): boolean {
+    const camX = this.camera.pxX;
+    const camY = this.camera.free ? this.camera.pxY : 0;
+    const hits = (bx: number, by: number, bw: number, bh: number) =>
+      bx < x + w && x < bx + bw && by < y + h && y < by + bh;
+    for (const e of this.entities) {
+      if (!e.alive) continue;
+      const b = e.body;
+      const ex = toPx(b.x) - camX - e.spriteOffsetX;
+      const ey = toPx(b.y) - camY - e.spriteOffsetY;
+      const ew = Math.max(8, toPx(b.w) + 2 * e.spriteOffsetX);
+      const eh = Math.max(8, toPx(b.h) + e.spriteOffsetY);
+      if (hits(ex, ey, ew, eh)) return true;
+    }
+    for (const p of this.players) {
+      if (p.hidden || p.out) continue;
+      const b = p.body;
+      if (hits(toPx(b.x) - camX, toPx(b.y) - camY, toPx(b.w), toPx(b.h))) return true;
+    }
+    return false;
   }
 
   private renderBeam(r: Renderer, view: View): void {

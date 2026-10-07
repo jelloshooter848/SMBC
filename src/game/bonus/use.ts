@@ -2,6 +2,7 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import type { CharacterDef } from '../characters/character';
 import type { LevelData } from '../level/schema';
 import { carriedKit } from '../entities/player';
+import { ScorePopup } from '../entities/effects/effects';
 import { freshSeed, World } from '../world/world';
 import type { Game } from '../scenes/game';
 import { addItem, ITEM_NAMES, ITEM_SPOKEN, NEXT_ORDER, takeItem, type ItemId, type NextItem } from './items';
@@ -180,7 +181,7 @@ export interface HeldOutcome {
  * used from the map go to player 1's hero, the one who actually enters, through its own
  * `onPowerUp`: mushroom, then flower, then Starman (music too). A mushroom or flower that would do
  * nothing for this hero goes back into the inventory (lost only if that is full). The points they
- * would add are not kept. The run's power is updated and the file saved at once.
+ * would add are not kept, nor shown. The run's power is updated and the file saved at once.
  */
 export function applyHeldItems(game: Game, world: World): HeldOutcome[] {
   if (!game.campaign || game.tutorialRun) return [];
@@ -192,6 +193,7 @@ export function applyHeldItems(game: Game, world: World): HeldOutcome[] {
   b.itemsNext = [];
   b.devNext = [];
   const score = game.state.score;
+  const spawned = world.entities.length;
   const out: HeldOutcome[] = [];
   for (const item of held) {
     const dev = fromDev.has(item);
@@ -207,7 +209,9 @@ export function applyHeldItems(game: Game, world: World): HeldOutcome[] {
     p.def.behaviour.onPowerUp(p, item, world);
     out.push({ item, given: true, returned: false, dev });
   }
-  game.state.score = score; // items from the item box are not worth points
+  // Items from the item box are not worth points: neither the score nor its pop-ups stay.
+  game.state.score = score;
+  for (const e of world.entities.slice(spawned)) if (e instanceof ScorePopup) e.destroy();
   const s = game.state;
   s.powerState = p.powerState;
   s.hp = p.hp;

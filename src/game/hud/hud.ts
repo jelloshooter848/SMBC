@@ -1,4 +1,5 @@
 import type { Renderer } from '@engine/gfx/renderer';
+import { fxPalette } from '@content/sprites/palette-fx';
 import { worldLabel } from './world-label';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { GameState } from '../context';
@@ -18,7 +19,21 @@ export interface HudOptions {
    * coin counter are left out too (a practice room has no run to count).
    */
   place?: string;
+  /**
+   * Whether a sprite of the world reaches a screen box (World.spriteIn). The HUD is drawn after
+   * the world, but its letters are open strokes: a text with a sprite under it gets a 1-px dark
+   * outline, so it still reads on top. Without one (or with nothing under it), plain text.
+   */
+  covered?: (x: number, y: number, w: number, h: number) => boolean;
 }
+
+/** The dark outline's offsets: the text's silhouette once each way, under it. */
+const OUTLINE: readonly (readonly [number, number])[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
 
 /** SMB1-style two-row HUD across the top of the screen, plus HP for hit-point characters. */
 export function drawHud(
@@ -32,31 +47,40 @@ export function drawHud(
 ): void {
   const player = players[0] ?? null;
   const font = assets.sheet('font');
+  const covered = opts.covered;
+  /** A HUD text; outlined in black when a sprite is under it. */
+  const text = (str: string, x: number, y: number): void => {
+    if (covered?.(x, y, str.length * 8, 8)) {
+      const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
+      for (const [dx, dy] of OUTLINE) r.text(dark, str, x + dx, y + dy);
+    }
+    r.text(font, str, x, y);
+  };
   const name = state.character.hudName.slice(0, 6).padEnd(6);
-  r.text(font, name, 24, 8);
+  text(name, 24, 8);
   // A 7-digit score (World.addScore caps it at SCORE_MAX). The coin counter sits 16 px after it,
   // as in the original's TopScreenText (SCORE_TXT_PNT, COIN_SYMBOL_PNT).
   if (opts.place !== undefined) {
-    r.text(font, opts.place, 232 - opts.place.length * 8, 8);
+    text(opts.place, 232 - opts.place.length * 8, 8);
   } else {
-    r.text(font, pad(state.score, 7), 24, 16);
-    r.text(font, `$×${pad(state.coins, 2)}`, 96, 16);
-    r.text(font, 'WORLD', 144, 8);
-    r.text(font, `${worldLabel(state.world)}-${state.stage}`, 152, 16);
-    r.text(font, 'TIME', 200, 8);
-    if (time !== null) r.text(font, pad(time, 3), 208, 16);
+    text(pad(state.score, 7), 24, 16);
+    text(`$×${pad(state.coins, 2)}`, 96, 16);
+    text('WORLD', 144, 8);
+    text(`${worldLabel(state.world)}-${state.stage}`, 152, 16);
+    text('TIME', 200, 8);
+    if (time !== null) text(pad(time, 3), 208, 16);
   }
   const dmg = state.character.damage;
   if (dmg.kind === 'hp' && player) {
     if (dmg.hudStyle === 'number') {
-      r.text(font, `EN${pad(player.hp, 2)}`, 24, 24);
+      text(`EN${pad(player.hp, 2)}`, 24, 24);
     } else if (dmg.hudStyle === 'hearts') {
       const full = Math.floor(player.hp / 2);
       const half = player.hp % 2;
       const total = Math.ceil((player.scratch.maxHp ?? dmg.max) / 2);
       let s = '';
       for (let i = 0; i < total; i++) s += i < full ? 'h' : i === full && half ? 'f' : 'e';
-      r.text(font, s, 24, 24);
+      text(s, 24, 24);
     } else {
       // Mega Man style vertical bar: 28 segments, 2 px each, at the left edge.
       const x = 8;
@@ -78,11 +102,11 @@ export function drawHud(
       const t = tools[i];
       if (t) {
         r.sprite(assets.sheet('items'), t.icon, 96, 24);
-        if (t.count !== null) r.text(font, `×${pad(t.count, 2)}`, 105, 24);
+        if (t.count !== null) text(`×${pad(t.count, 2)}`, 105, 24);
       }
     }
     const extra = state.character.hudExtra?.(player);
-    if (extra) r.text(font, extra, dmg.kind === 'hp' && dmg.hudStyle === 'number' ? 64 : 24, 24);
+    if (extra) text(extra, dmg.kind === 'hp' && dmg.hudStyle === 'number' ? 64 : 24, 24);
     const m = state.character.meter?.(player);
     if (m && dmg.kind === 'hp' && dmg.hudStyle === 'bar') {
       // Weapon energy: a second vertical bar beside the health bar.
@@ -97,7 +121,7 @@ export function drawHud(
         r.rect(x, y0 + (segs - 1 - i) * 2 + 1, 6, 1, on ? m.colour : '#202020');
       }
     } else if (m) {
-      r.text(font, m.label, 24, 33);
+      text(m.label, 24, 33);
       r.rect(32, 34, 34, 5, '#fcfcfc'); // white frame so the bar reads against the sky
       r.rect(33, 35, 32, 3, '#202020');
       const w = Math.round((Math.max(0, Math.min(m.value, m.max)) / m.max) * 32);
@@ -108,16 +132,16 @@ export function drawHud(
   const p2 = players[1];
   if (p2 && state.character2) {
     const d2 = state.character2.damage;
-    r.text(font, state.character2.hudName.slice(0, 6), 144, 24);
+    text(state.character2.hudName.slice(0, 6), 144, 24);
     if (d2.kind === 'hp' && d2.hudStyle === 'hearts') {
       const full = Math.floor(p2.hp / 2);
       const half = p2.hp % 2;
       const total = Math.ceil((p2.scratch.maxHp ?? d2.max) / 2);
       let s = '';
       for (let i = 0; i < total; i++) s += i < full ? 'h' : i === full && half ? 'f' : 'e';
-      r.text(font, s, 144, 32);
+      text(s, 144, 32);
     } else if (d2.kind === 'hp' && d2.hudStyle === 'number') {
-      r.text(font, `EN${pad(p2.hp, 2)}`, 144, 32);
+      text(`EN${pad(p2.hp, 2)}`, 144, 32);
     } else if (d2.kind === 'hp') {
       const x = 242;
       const y0 = 40;
@@ -128,9 +152,9 @@ export function drawHud(
         r.rect(x, y0 + (d2.max - 1 - i) * 2 + 1, 6, 1, filled ? '#f8d878' : '#202020');
       }
     }
-    if (p2.out) r.text(font, 'OUT', 200, 24);
+    if (p2.out) text('OUT', 200, 24);
   }
   // Blink the timer label when low.
   if (opts.place === undefined && time !== null && time <= 100 && (frame >> 4) % 2 === 0)
-    r.text(font, 'TIME', 200, 8);
+    text('TIME', 200, 8);
 }

@@ -103,6 +103,9 @@ export class EscapeScene implements Scene {
       extraEntities: escapeEntities({ onShip: (ship) => this.boarded(ship) }),
     });
     this.world.time = null;
+    // The statue, the alarm lights and the creatures show on READY already; the world does not
+    // step until the countdown starts, so they stay still till then.
+    this.world.spawnInView();
   }
 
   get player(): Player {
@@ -310,7 +313,10 @@ export class EscapeScene implements Scene {
     if (this.phase === 'escape' || this.phase === 'ready')
       drawAlarmTint(r, this.t, this.seconds, ctx.reduceFlashing);
     if (this.phase === 'boom') drawBlast(r, this.phaseT, ctx.reduceFlashing);
-    drawHud(r, ctx.assets, this.state, null, this.world.frame, this.world.players, { place: 'ZEBES' });
+    drawHud(r, ctx.assets, this.state, null, this.world.frame, this.world.players, {
+      place: 'ZEBES',
+      covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
+    });
     drawCountdown(r, this.seconds, this.held, this.t, ctx.reduceFlashing);
     if (this.phase === 'ready' && (ctx.reduceFlashing || ((this.phaseT >> 3) & 3) !== 3))
       r.text(font, 'READY', (SCREEN_W - 40) >> 1, 104);

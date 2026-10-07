@@ -324,7 +324,9 @@ export class LevelScene implements Scene {
   render(r: Renderer): void {
     this.world.render(r);
     const time = this.world.timeHidden ? null : this.world.time;
-    drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players);
+    drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players, {
+      covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
+    });
     this.tutorial?.render(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
   }

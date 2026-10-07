@@ -128,6 +128,8 @@ export class HammerBattleScene implements Scene {
 
   render(r: Renderer): void {
     this.world.render(r);
-    drawHud(r, this.game.ctx.assets, this.game.state, null, this.world.frame, this.world.players);
+    drawHud(r, this.game.ctx.assets, this.game.state, null, this.world.frame, this.world.players, {
+      covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
+    });
   }
 }

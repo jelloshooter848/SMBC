@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { LevelScene } from '@game/scenes/level';
+import { ScorePopup } from '@game/entities/effects/effects';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { DevMenuScene } from '@game/scenes/dev';
@@ -29,7 +30,8 @@ import { OPEN_FRAMES } from '@game/bonus/toad-house';
 import { RESULT_DELAY } from '@game/bonus/slots';
 import { MISS_FRAMES } from '@game/bonus/memory';
 import { SLOT_CELL, SLOT_STRIPS, type CardFace } from '@game/bonus/rules';
-import { file, makeGame, useStorage, type H } from './heroes-harness';
+import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
+import { SCREEN_W } from '@engine/viewport';
 import { CHARACTERS } from '@game/characters/registry';
 import { carriedKit } from '@game/entities/player';
 import { giveDevItems } from '@game/bonus/items';
@@ -156,6 +158,17 @@ describe('the map ITEMS panel', () => {
     expect(h.top()).toBe(map);
   });
 
+  it('empty: names where items come from (the bonus spot and Hammer Bros), inside the panel', () => {
+    const { h } = onMap({ inventoryUnlocked: true });
+    const inv = openItems(h);
+    const lines = draw(inv).texts.filter((t) => t.y > 150 && t.y < 200);
+    const copy = lines.map((t) => t.str).join(' ');
+    expect(copy).toBe('NO ITEMS. WIN THEM AT THE BONUS SPOT AND FROM HAMMER BROS.');
+    // Inside the panel's black inner box (x 10 .. SCREEN_W - 10).
+    for (const l of lines) expect(l.x + l.str.length * 8, l.str).toBeLessThanOrEqual(SCREEN_W - 10);
+    expect(h.said.at(-1)).toMatch(/No items\. Win them at the bonus spot and from Hammer Bros\./);
+  });
+
   it("names abilities and the hero's own effect", () => {
     const { h } = onMap({ inventory: ['flower'], inventoryUnlocked: true }, false, 'link');
     const inv = openItems(h);
@@ -200,6 +213,20 @@ describe('using items (Mario, a power-up hero)', () => {
     useFromPanel(h, 0);
     expect(h.game.bonus.itemsNext).toEqual(['mushroom', 'flower']);
     expect(startLevel(h).world.player.powerState).toBe('fire');
+  });
+
+  it('held items show no points pop-up at the start (they are not worth points): mushroom, flower, star', () => {
+    const { h } = onMap({ inventory: ['mushroom', 'flower', 'star'], inventoryUnlocked: true });
+    useFromPanel(h, 0);
+    useFromPanel(h, 0);
+    useFromPanel(h, 0);
+    expect(h.game.bonus.itemsNext).toEqual(['mushroom', 'flower', 'star']);
+    const score = h.game.state.score;
+    const level = startLevel(h);
+    expect(level.world.player.powerState).toBe('fire');
+    expect(level.world.player.star).toBeGreaterThan(0);
+    expect(h.game.state.score).toBe(score);
+    expect(level.world.entities.filter((e) => e instanceof ScorePopup && e.alive)).toEqual([]);
   });
 
   it('one of each kind can wait: a second mushroom is refused and kept', () => {

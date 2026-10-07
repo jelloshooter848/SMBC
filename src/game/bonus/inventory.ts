@@ -64,7 +64,7 @@ export class InventoryScene implements Scene {
     const back = abilityHint(this.game, 'back', 'attack');
     const text = item
       ? `${head}${this.cursor + 1}: ${ITEM_NAMES[item].toLowerCase()}. ${itemDoes(this.game, item)}${item === '1up' ? '' : ' Given at the start of the next level.'} ${use} to use it, ${back} to close.`
-      : `${head}No items yet. Toad Houses and spade games give them. ${back} to close.`;
+      : `${head}No items. Win them at the bonus spot and from Hammer Bros. ${back} to close.`;
     this.game.deps.announcer?.say(text);
   }
 
@@ -174,7 +174,7 @@ export class InventoryScene implements Scene {
         ...wrapText(itemDoes(game, item), 28).slice(0, 3),
         ...(item === '1up' ? [] : [HELD_NOTE]),
       ];
-    else lines = ['NO ITEMS YET.', 'TOAD HOUSES AND SPADE', 'GAMES GIVE THEM.'];
+    else lines = ['NO ITEMS.', 'WIN THEM AT THE BONUS SPOT', 'AND FROM HAMMER BROS.'];
     lines.forEach((l, i) => r.text(font, l, 16, SLOTS_Y + 24 + i * 10));
     const prompt = this.note
       ? fontText(`PRESS ${abilityHint(game, 'OK', 'jump')}`)
