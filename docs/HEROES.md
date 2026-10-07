@@ -64,6 +64,8 @@ it for every hero but Ryu, who climbs walls instead (`tests/sim/heroes.test.ts` 
 
 Link waits beside the temple doorway of the 2-1 sky ruins (`2-1-sky2`, column 30 on the cloud floor; TALK shows against the sky there), reached by the hidden vine block (`7` in maps) over the middle cloud platform past the end of the 2-1 coin heaven; the drop at the ruins' right end lands in 2-1 at column 162 like the coin heaven's (`tests/sim/heroes-link-sky.test.ts`, `tests/sim/sky-ruins.test.ts`).
 
+Mega Man waits on the command deck of the space station above 3-1 (`3-1-station`, column 38 on the floor, under the big window). Past the end of the 3-1 coin heaven (`3-1-sky`) a coin trail hops over two small cloud platforms to a hidden teleporter block (`8` in maps, at 91,7 over the second platform); bumped, it reveals a teleport pad that rises out of the platform two tiles to its right (93,10). Standing on the pad beams the hero up (hidden, a `station:beam-*` streak rises, sfx `beam`) and down onto the station's arrival pad; the clock runs on. The return pad just past Mega Man (column 44), and the arrival pad once stepped off, beam the hero back down into 3-1 at column 162, dropping in like the coin heaven's own drop. The pads are `teleport` zones (docs/WORLD_MAP.md "Teleport pads"). Every hero reaches the pad and crosses the station (`tests/sim/space-station.test.ts`); his lines before the round make the brainwashing a rogue program in his systems that built a dark copy of him (`DIALOGUE.megaman`).
+
 ## The map hint (`src/game/map/captives.ts`)
 
 The world map hints at levels that still hide a hero, in three stages (campaign play only, read

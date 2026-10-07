@@ -158,7 +158,7 @@ describe('World 3: balance lifts', () => {
 
 describe('World 3 areas', () => {
   it('every area loads and runs', () => {
-    for (const id of ['3-1', '3-1-bonus', '3-1-sky', '3-2', '3-3', '3-4']) {
+    for (const id of ['3-1', '3-1-bonus', '3-1-sky', '3-1-station', '3-2', '3-3', '3-4']) {
       const r = runSim({ level: level(id), character: MARIO, script: none, maxFrames: 60 });
       expect(r.frames).toBe(60);
     }

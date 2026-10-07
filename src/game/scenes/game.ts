@@ -810,8 +810,9 @@ export class Game {
       return;
     }
     // An intro area (TYPE="intro" with gameStateWatch) and a vine area (vineStart) always open
-    // with their scripted watch-mode start, whatever start the caller asked for.
-    if (level.startMode === 'autowalk' || level.startMode === 'climb')
+    // with their scripted watch-mode start, whatever start the caller asked for; so does an area
+    // beamed down into (a teleport pad's arrival, the 3-1 space station).
+    if (level.startMode === 'autowalk' || level.startMode === 'climb' || level.startMode === 'beam')
       start = { ...start, mode: level.startMode };
     this.state.world = level.world;
     this.state.stage = level.stage;

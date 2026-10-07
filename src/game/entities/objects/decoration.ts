@@ -2,7 +2,10 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { px } from '@engine/math/units';
 import { Entity, type View } from '../entity';
 
-/** Background scenery anchored at its bottom-left tile. Castles can raise a flag at level end. */
+/**
+ * Background scenery anchored at its bottom-left tile. Castles can raise a flag at level end. A
+ * `sheet:frame` kind (`station:window`) draws that frame of another sheet.
+ */
 export class Decoration extends Entity {
   readonly kind = 'decor';
   private flag = false;
@@ -23,6 +26,18 @@ export class Decoration extends Entity {
     if (this.flag && this.flagT < 24) this.flagT++;
   }
   render(r: Renderer, view: View): void {
+    // `sheet:frame` decor comes from another sheet in its own palette (`station:window`); it
+    // is left out while that sheet or frame is missing.
+    const colon = this.name.indexOf(':');
+    if (colon > 0) {
+      const id = this.name.slice(0, colon);
+      const frame = this.name.slice(colon + 1);
+      if (!view.assets.has(id)) return;
+      const other = view.assets.sheet(id);
+      const f = other.frames.get(frame);
+      if (f) r.sprite(other, frame, this.screenX(view), this.screenY() + 16 - f.h);
+      return;
+    }
     const sheet = view.assets.sheet('decor', decorPalette(view.theme));
     const f = sheet.frames.get(this.name);
     if (!f) return;

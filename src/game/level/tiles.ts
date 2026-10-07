@@ -9,7 +9,17 @@ export type Collision = 'none' | 'solid' | 'top';
  * Levels Clock (+100 time); its block then holds a coin (see T.Q_CLOCK).
  */
 export type BlockContent =
-  'coin' | 'powerup' | '1up' | 'star' | 'coins10' | 'vine' | 'poison' | 'clock' | 'none';
+  | 'coin'
+  | 'powerup'
+  | '1up'
+  | 'star'
+  | 'coins10'
+  | 'vine'
+  | 'poison'
+  | 'clock'
+  /** Reveals the teleport pad hidden in this block (a `teleport` zone with `block=x,y`). */
+  | 'teleporter'
+  | 'none';
 
 export interface TileDef {
   readonly id: number;
@@ -97,6 +107,8 @@ export const T = {
   Q_CLOCK: def('question-clock', 'solid', { block: { kind: 'question', content: 'clock' } }),
   /** An invisible block holding a vine (the 2-1 coin heaven's way up to the sky ruins). */
   HIDDEN_VINE: def('hidden-vine', 'none', { block: { kind: 'hidden', content: 'vine' } }),
+  /** An invisible block hiding a teleport pad (the 3-1 coin heaven's way up to the space station). */
+  HIDDEN_TELEPORTER: def('hidden-teleporter', 'none', { block: { kind: 'hidden', content: 'teleporter' } }),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
@@ -125,6 +137,7 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   '5': T.BRICK_POISON,
   '6': T.HIDDEN_POISON,
   '7': T.HIDDEN_VINE,
+  '8': T.HIDDEN_TELEPORTER,
   Q: T.Q_CLOCK,
   B: T.HARD,
   u: T.USED,

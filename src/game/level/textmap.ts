@@ -43,7 +43,8 @@ function parseProps(parts: string[]): Props {
  *   [zones]               `pipe x y dir -> level x y [exit=dir]`, `exit x next=id`,
  *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key]`,
  *                         `text x y triggerX "..."`,
- *                         `bowser-fire x`
+ *                         `bowser-fire x`, `vine x y -> level x y`, `pit x -> level x y`,
+ *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad)
  *   [decor]               `kind x y`
  */
 export function parseTextMap(src: string, idHint = 'level'): LevelData {
@@ -209,6 +210,34 @@ function parseZone(line: string): Zone {
         throw new Error('expected "vine x y -> level x y"');
       return { kind: 'vine', x: Number(xs), y: Number(ys), target: { level, x: Number(tx), y: Number(ty) } };
     }
+    case 'teleport': {
+      // teleport x y -> level x y [exit=beam|fall] [block=bx,by]
+      const [, xs, ys, arrow, level, tx, ty, ...rest] = parts;
+      if (
+        arrow !== '->' ||
+        !level ||
+        xs === undefined ||
+        ys === undefined ||
+        tx === undefined ||
+        ty === undefined
+      )
+        throw new Error('expected "teleport x y -> level x y [exit=beam|fall] [block=x,y]"');
+      const props = parseProps(rest);
+      const exit = props.exit ?? 'beam';
+      if (exit !== 'beam' && exit !== 'fall') throw new Error('teleport exit must be beam or fall');
+      const z: Zone = {
+        kind: 'teleport',
+        x: Number(xs),
+        y: Number(ys),
+        target: { level, x: Number(tx), y: Number(ty), exitDir: exit },
+      };
+      if (props.block !== undefined) {
+        const [bx, by] = String(props.block).split(',').map(Number);
+        if (!Number.isInteger(bx) || !Number.isInteger(by)) throw new Error('teleport block must be "x,y"');
+        z.block = { x: bx as number, y: by as number };
+      }
+      return z;
+    }
     case 'pit': {
       // pit x -> level x y
       const [, xs, arrow, level, tx, ty] = parts;
@@ -359,6 +388,10 @@ function serializeZone(z: Zone): string {
       return `vine ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
     case 'pit':
       return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
+    case 'teleport':
+      return `teleport ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}${
+        z.target.exitDir === 'beam' ? '' : ` exit=${z.target.exitDir}`
+      }${z.block ? ` block=${z.block.x},${z.block.y}` : ''}`;
     case 'cheeps':
       return `cheeps ${z.x} ${z.w}`;
     case 'bullets':

@@ -33,6 +33,15 @@ import { Captive } from '../entities/objects/captive';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
+import {
+  BEAM_GATHER_FRAMES,
+  BEAM_H,
+  BEAM_HOLD_FRAMES,
+  BEAM_SPEED,
+  drawBeam,
+  TeleportPad,
+  type TeleportZone,
+} from '../entities/objects/teleporter';
 import { PowerUp } from '../entities/objects/powerup';
 import { Pickup } from '../entities/objects/pickup';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
@@ -154,6 +163,20 @@ type PipeAnim = {
   hold: number | null;
   target: WorldEvent & { type: 'pipe' };
 };
+/**
+ * A teleport pad's beam (entities/objects/teleporter.ts). `up`: the rider is hidden, the streak
+ * gathers where he stood, rises off the top of the screen, and `target` is raised after a short
+ * hold. `down` (a `beam` arrival): each player's streak drops from above the screen onto his start
+ * spot, gathers, and he appears (player 2 a little later).
+ */
+type BeamAnim = {
+  dir: 'up' | 'down';
+  t: number;
+  streaks: { player: Player; x: number; top: number; floor: number; delay: number; landed: number }[];
+  target?: WorldEvent & { type: 'pipe' };
+};
+/** Player 2's beam-down starts this many frames after player 1's. */
+const BEAM_P2_DELAY = 12;
 
 /** Synthetic input for auto-walk intros: hold right; the pipe check triggers on touch. */
 const AUTO_WALK_INPUT: InputFrame = {
@@ -220,6 +243,8 @@ export class World {
   private pipeAnim: PipeAnim | null = null;
   /** Rising out of a pipe; `feet` is the subpixel y of the pipe top, where the rise ends. */
   private pipeExit: { t: number; feet: number } | null = null;
+  /** A teleport pad's beam up, or the beam-down arrival (`beam` start mode). */
+  private beam: BeamAnim | null = null;
   /** The vine grown for a sky-area arrival while the players climb it on their own. */
   private vineArrival: Vine | null = null;
   /** The HUD leaves the time blank (the vine arrival's watch mode: Level.as tsTxt.hideTime). */
@@ -313,6 +338,19 @@ export class World {
         p.frozen = true;
         if (i > 0) p.hidden = true;
         this.pipeExit = { t: 0, feet };
+      } else if (mode === 'beam') {
+        // Beamed down (a teleport pad's arrival): hidden until the streak lands on the spot.
+        p.frozen = true;
+        p.hidden = true;
+        this.beam ??= { dir: 'down', t: 0, streaks: [] };
+        this.beam.streaks.push({
+          player: p,
+          x: toPx(p.centerX),
+          top: -BEAM_H,
+          floor: toPx(feet),
+          delay: i * BEAM_P2_DELAY,
+          landed: -1,
+        });
       } else if (mode === 'autowalk') this.autoWalk = true;
       this.players.push(p);
     });
@@ -370,6 +408,12 @@ export class World {
       }
     }
     for (const d of level.decor) this.entities.push(new Decoration(d.kind, d.x, d.y));
+    // Teleport pads; one hidden in a hidden teleporter block waits for the bump.
+    for (const z of level.zones) {
+      if (z.kind !== 'teleport') continue;
+      const hidden = !!z.block && tileDef(this.map.get(z.block.x, z.block.y)).block?.content === 'teleporter';
+      this.entities.push(new TeleportPad(z, hidden));
+    }
   }
 
   /** The player who touched the flagpole (its level-clear sequence is running), else null. */
@@ -678,6 +722,7 @@ export class World {
     }
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
+    if (this.beam) return this.updateBeam();
     if (this.leaving) return;
 
     for (const p of this.players) if (p.dead) this.updateDeath(p);
@@ -748,6 +793,7 @@ export class World {
       this.checkPipes(p, this.autoWalk ? AUTO_WALK_INPUT : (inputs[i] ?? NO_INPUT));
       if (this.pipeAnim) break;
     }
+    if (!this.pipeAnim && !this.leaving) this.checkTeleports();
     this.checkZones();
     this.checkLoops();
     this.flyingCheeps();
@@ -1145,6 +1191,14 @@ export class World {
       case 'vine':
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
         this.audio.sfx('vine');
+        break;
+      case 'teleporter':
+        // The pad hidden in this block rises out of the floor (its `teleport` zone's block=).
+        for (const e of this.entities)
+          if (e instanceof TeleportPad && e.zone.block?.x === tx && e.zone.block.y === ty && !e.shown) {
+            e.reveal();
+            this.audio.sfx('powerup-appear');
+          }
         break;
       case 'none':
         break;
@@ -1579,6 +1633,97 @@ export class World {
     return this.pipeAnim !== null || this.pipeExit !== null;
   }
 
+  /** A teleport pad's beam is playing (up or down). */
+  get beaming(): boolean {
+    return this.beam !== null;
+  }
+
+  /** The teleport pads of this level (shown or still hidden). */
+  get pads(): TeleportPad[] {
+    return this.entities.filter((e): e is TeleportPad => e instanceof TeleportPad && e.alive);
+  }
+
+  /** A player standing on an armed pad is beamed up (everyone freezes, as for a pipe). */
+  private checkTeleports(): void {
+    const players = this.activePlayers();
+    for (const pad of this.pads) {
+      const p = pad.rider(players);
+      if (p) return this.beamUp(p, pad.zone);
+    }
+  }
+
+  private beamUp(p: Player, z: TeleportZone): void {
+    for (const o of this.players) {
+      o.frozen = true;
+      o.body.vx = 0;
+      o.body.vy = 0;
+      o.anim = 'idle';
+      o.hidden = true;
+    }
+    this.audio.sfx('beam');
+    const floor = toPx(p.body.y + p.body.h);
+    this.beam = {
+      dir: 'up',
+      t: 0,
+      // Centred on the pad, as Mega Man's teleporters line him up.
+      streaks: [{ player: p, x: z.x * 16 + 8, top: floor - BEAM_H, floor, delay: 0, landed: 0 }],
+      target: { type: 'pipe', target: { ...z.target } },
+    };
+  }
+
+  /**
+   * The beam (see BeamAnim). Up: BEAM_GATHER_FRAMES gathered, then rising at BEAM_SPEED until off
+   * the top, then BEAM_HOLD_FRAMES before the transfer. Down: from above the screen to the spot
+   * at BEAM_SPEED, gathered for BEAM_GATHER_FRAMES, then the hero appears; play resumes once all
+   * are in.
+   */
+  private updateBeam(): void {
+    const a = this.beam as BeamAnim;
+    a.t++;
+    if (a.dir === 'up') {
+      const s = a.streaks[0];
+      if (!s) return;
+      if (a.t <= BEAM_GATHER_FRAMES) return;
+      if (s.top + BEAM_H >= 0) s.top -= BEAM_SPEED;
+      else if (++s.landed >= BEAM_HOLD_FRAMES) {
+        // Gone: on to the target, as a pipe would (LevelScene carries the clock within a stage).
+        this.beam = null;
+        this.leaving = true;
+        if (a.target) this.events.push(a.target);
+      }
+      return;
+    }
+    let busy = false;
+    for (const s of a.streaks) {
+      const p = s.player;
+      if (a.t <= s.delay || p.dead || p.out) {
+        busy ||= a.t <= s.delay;
+        continue;
+      }
+      if (s.landed < 0) {
+        s.top = Math.min(s.floor - BEAM_H, s.top + BEAM_SPEED);
+        if (s.top >= s.floor - BEAM_H) {
+          s.landed = 0;
+          this.audio.sfx('beam');
+        }
+        busy = true;
+      } else if (s.landed < BEAM_GATHER_FRAMES) {
+        s.landed++;
+        busy = true;
+      } else if (p.hidden) {
+        p.hidden = false;
+      }
+    }
+    if (!busy) {
+      this.beam = null;
+      for (const p of this.players) {
+        p.frozen = false;
+        p.body.vy = 0;
+        p.body.onGround = true;
+      }
+    }
+  }
+
   private checkZones(): void {
     for (const z of this.level.zones) {
       if (
@@ -1889,9 +2034,22 @@ export class World {
     renderTiles(r, view, this.map);
     for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);
     if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);
+    this.renderBeam(r, view);
     for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
     this.renderWarpText(r, view);
     this.renderCastleText(r, view);
+  }
+
+  private renderBeam(r: Renderer, view: View): void {
+    const a = this.beam;
+    if (!a) return;
+    for (const s of a.streaks) {
+      if (a.dir === 'up') {
+        if (s.top + BEAM_H >= 0) drawBeam(r, view, s.x, s.top, a.t <= BEAM_GATHER_FRAMES);
+      } else if (a.t > s.delay && s.landed < BEAM_GATHER_FRAMES && !s.player.dead) {
+        drawBeam(r, view, s.x, s.top, s.landed >= 0);
+      }
+    }
   }
 
   private renderWarpText(r: Renderer, view: View): void {
