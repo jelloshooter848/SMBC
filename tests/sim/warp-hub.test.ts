@@ -414,7 +414,7 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(lvl).toBe(getLevel('1-2'));
   });
 
-  it('the 4-2 warp zones still skip worlds in campaign play', () => {
+  it('the 4-2 vine area shows one pipe in campaign play, into the cavern, with no labels (0.5.0)', () => {
     const h = makeGame();
     h.game.openFile(
       1,
@@ -423,8 +423,9 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     h.idle(8);
     h.game.startLevel(getLevel('4-2-warp'), { mode: 'stand' });
     h.step();
-    expect(pipesIn(h.level().level.zones, 48, 64)).toHaveLength(3);
-    expect(h.level().level).toBe(getLevel('4-2-warp'));
+    const pipes = pipesIn(h.level().level.zones, 48, 64);
+    expect(pipes.map((p) => [p.x, p.target])).toEqual([[54, { level: '4-2-cavern', x: 2, y: 0 }]]);
+    expect(h.level().level).not.toBe(getLevel('4-2-warp'));
   });
 
   it('developer unlock all opens the hub and its pads, except the mystery ones', () => {
@@ -503,25 +504,25 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(loadSave(1)?.secrets).toEqual([]);
   });
 
-  it('a warp zone pipe in a 4-2 sub-area opens World 8 on the map (its page found through 4-2)', () => {
+  it('a warp zone pipe in a sub-area opens its world on the map (its page found through the main level)', () => {
+    // Lost 5-2's vine area: its one warp pipe leads to Lost 8-1 (SMB 4-2's became areas in 0.5.0).
     const h = makeGame();
     h.game.openFile(
       1,
       file({
-        cleared: ['1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1'],
-        pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4'],
-        position: { page: 'smb-4', node: '4-2' },
+        cleared: ['ll-1-1', 'll-5-1'],
+        pages: ['smb-1', 'll-1', 'll-5'],
+        position: { page: 'll-5', node: 'll-5-2' },
       }),
     );
     h.idle(8);
-    // Standing on the first warp pipe of the vine area above 4-2 (it leads to 8-1).
-    h.game.startLevel(getLevel('4-2-warp'), { x: 50, y: 9, mode: 'stand' });
+    h.game.startLevel(getLevel('ll-5-2-warp'), { x: 54, y: 9, mode: 'stand' });
     h.step();
     h.until(() => h.top() instanceof WorldMapScene, 300, ['down']);
-    expect(h.map().page.id).toBe('smb-8');
-    expect(h.game.mapProgress.pages).toContain('smb-8');
-    expect(h.game.mapProgress.pages).not.toContain('smb-5');
-    expect(loadSave(1)?.pages).toContain('smb-8');
-    expect(h.game.mapProgress.cleared).not.toContain('4-2');
+    expect(h.map().page.id).toBe('ll-8');
+    expect(h.game.mapProgress.pages).toContain('ll-8');
+    expect(h.game.mapProgress.pages).not.toContain('ll-6');
+    expect(loadSave(1)?.pages).toContain('ll-8');
+    expect(h.game.mapProgress.cleared).not.toContain('ll-5-2');
   });
 });
