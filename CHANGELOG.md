@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.9] - 2026-10-07
+
 ### Added
 
 - Bill is hidden under 7-3. In the campaign, 7-3 now looks like a Contra jungle stage (same layout).
@@ -400,7 +402,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...HEAD
+[0.4.9]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/jelloshooter848/SMBC/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/jelloshooter848/SMBC/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/jelloshooter848/SMBC/compare/v0.4.5...v0.4.6
