@@ -253,6 +253,7 @@ export class AssistOptionsScene extends MenuScene {
       toggle('Inf. time', 'infiniteTime'),
       toggle('No damage', 'invulnerable'),
       toggle('Fire keeps big', 'fireRevertsToBig', 'Losing fire power keeps you big'),
+      toggle('Safety floor', 'safetyFloor', 'Pits and lava catch you'),
       {
         label: 'Coyote time',
         value: () => `${a.coyoteFrames}f`,

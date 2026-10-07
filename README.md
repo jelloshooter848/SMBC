@@ -149,7 +149,12 @@ with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
 - **Level select**: any built-in or custom level, any character, starting power, a full kit
   (all tools, ammo and magic) and 99 lives.
 - **Assists** (active only while dev mode is on): scroll back, infinite lives, infinite time, no
-  damage, keep big when losing fire, coyote time, half-speed slow motion.
+  damage, keep big when losing fire, **safety floor**, coyote time, half-speed slow motion.
+  **Safety floor** catches every deadly fall on an invisible one-way floor at the pit's rim (the
+  lower of the two sides' ground, or the ground row over a wide void), shown as a faint dashed
+  line, and makes lava solid from above; falls that lead somewhere (coin heavens, 7-3's bridge
+  into Bill's camp, 5-4's lift down to Simon's dungeon) still lead there. Handy for bug-testing
+  levels; enemies, fire bars and Podoboos still hurt (that is No damage).
 - **Unlock all** (map menu, per save file, active only while dev mode is on): every world, level
   and road on the world map open, without marking anything cleared.
 - **Dev mode off** hides it again.

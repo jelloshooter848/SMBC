@@ -11,6 +11,11 @@ export interface AssistOptions {
   coyoteFrames: number;
   /** When hurt as Fire Mario, drop to Big instead of Small. */
   fireRevertsToBig: boolean;
+  /**
+   * Safety floor: an invisible one-way floor at the rim of every deadly pit, and lava solid from
+   * above (world/safety-floor.ts). Falls that lead somewhere still fall.
+   */
+  safetyFloor: boolean;
 }
 
 export const DEFAULT_ASSIST: AssistOptions = {
@@ -20,6 +25,7 @@ export const DEFAULT_ASSIST: AssistOptions = {
   infiniteTime: false,
   coyoteFrames: 0,
   fireRevertsToBig: false,
+  safetyFloor: false,
 };
 
 /** Shared services every scene and the world can reach. */
