@@ -3,7 +3,7 @@ import type { Game } from '../scenes/game';
 import { MessageScene } from '../scenes/message';
 import { fontText } from '../hud/text';
 import { abilityHint } from '../scenes/hints';
-import type { PageId } from './types';
+import type { MapNode, PageId } from './types';
 
 /*
  * The hook between the world map's bonus spot (World 4's, revealed by Larry Koopa's crystal ball;
@@ -19,6 +19,15 @@ import type { PageId } from './types';
  * Until a bonus game registers itself (`registerBonusGame`), a placeholder card stands in and
  * counts as used, so the Hammer Bro loop can be played.
  */
+
+/**
+ * A bonus node that leads into a level instead (it carries `level`: World 2's Top Secret Area,
+ * 0.4.10): hidden by its key like any bonus node; once shown JUMP enters its level, every time,
+ * with no bonus game, no `bonusOpen` and no Hammer Bro. Its `label` is its hint line and name.
+ */
+export function isBonusArea(n: MapNode): boolean {
+  return n.kind === 'bonus' && n.level !== undefined;
+}
 
 /** Where the bonus was entered from (the node's page and id). */
 export interface BonusSpot {

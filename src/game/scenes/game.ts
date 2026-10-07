@@ -21,7 +21,7 @@ import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene } from './credits';
-import { WorldMapScene, type WorldMapOptions } from './world-map';
+import { WorldMapScene, spoken, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId } from '../map/types';
 import {
   clearLevel,
@@ -520,6 +520,20 @@ export class Game {
   }
 
   /**
+   * Campaign: the Moblin's secret in 2-1's hidden cave (0.4.10, owner design; the cave is reached
+   * only by jumping over 2-1's flagpole without touching it). Unlike a plain secret exit it does
+   * both: `levelId`'s level counts as cleared (its normal roads open, as a flagpole clear opens
+   * them) AND `secret` is found (rules.secretExit: the road to World 2's hidden bonus spot, the
+   * Top Secret Area). Both are drawn in on the way back to the map, which saves.
+   */
+  campaignTopSecret(secret: string, levelId: string): void {
+    if (!this.campaign) return;
+    const cleared = clearLevel(this.mapProgress, levelId, this.deps.getLevel);
+    const found = secretExit(this.mapProgress, levelId, secret, this.deps.getLevel);
+    this.returnToMap([...cleared, ...found]);
+  }
+
+  /**
    * Campaign: Larry Koopa's crystal ball taken (4-2's airship, after its card): a secret exit of
    * 4-2 (rules.secretExit, key CRYSTAL_BALL), so only the road to World 4's bonus spot is drawn in
    * and 4-2 is not cleared. From now on the map shows every hero not freed yet (map/captives.ts),
@@ -957,6 +971,13 @@ export class Game {
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
     this.clearToRoundBase();
+    // A fill-up spot off the map (the Top Secret Area): no WORLD card, no clock; straight in.
+    if (level.bonus) {
+      this.endTutorial();
+      this.deps.announcer?.say(`${spoken(level.name)}.`);
+      this.startLevel(level, start);
+      return;
+    }
     this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).

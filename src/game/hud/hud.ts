@@ -25,6 +25,25 @@ export interface HudOptions {
    * outline, so it still reads on top. Without one (or with nothing under it), plain text.
    */
   covered?: (x: number, y: number, w: number, h: number) => boolean;
+  /**
+   * An area's name (the Top Secret Area, a `bonus: true` level) shown in the WORLD column instead
+   * of the world and stage, on two rows if need be (HUD_AREA_COLS a row); the TIME column is left
+   * out (such an area has no clock). The score and coins stay.
+   */
+  area?: string;
+  /** Every text gets the dark outline (a light sky behind the white letters: the Top Secret Area). */
+  outline?: boolean;
+}
+
+/** Columns the WORLD column has for an area's name (HudOptions.area), from x 144 to the edge. */
+export const HUD_AREA_COLS = 11;
+
+/** An area's name in at most two HUD rows of HUD_AREA_COLS, broken at a space. */
+export function hudAreaLines(name: string): [string, string] {
+  if (name.length <= HUD_AREA_COLS) return [name, ''];
+  const cut = name.lastIndexOf(' ', HUD_AREA_COLS);
+  if (cut <= 0) return [name.slice(0, HUD_AREA_COLS), name.slice(HUD_AREA_COLS, 2 * HUD_AREA_COLS)];
+  return [name.slice(0, cut), name.slice(cut + 1, cut + 1 + HUD_AREA_COLS)];
 }
 
 /** The dark outline's offsets: the text's silhouette once each way, under it. */
@@ -48,9 +67,9 @@ export function drawHud(
   const player = players[0] ?? null;
   const font = assets.sheet('font');
   const covered = opts.covered;
-  /** A HUD text; outlined in black when a sprite is under it. */
+  /** A HUD text; outlined in black when a sprite is under it (or always, on a light sky). */
   const text = (str: string, x: number, y: number): void => {
-    if (covered?.(x, y, str.length * 8, 8)) {
+    if (opts.outline || covered?.(x, y, str.length * 8, 8)) {
       const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
       for (const [dx, dy] of OUTLINE) r.text(dark, str, x + dx, y + dy);
     }
@@ -65,10 +84,17 @@ export function drawHud(
   } else {
     text(pad(state.score, 7), 24, 16);
     text(`$×${pad(state.coins, 2)}`, 96, 16);
-    text('WORLD', 144, 8);
-    text(`${worldLabel(state.world)}-${state.stage}`, 152, 16);
-    text('TIME', 200, 8);
-    if (time !== null) text(pad(time, 3), 208, 16);
+    if (opts.area !== undefined) {
+      // The area's name, its second row centred under the first; no clock, so no TIME.
+      const [a, b] = hudAreaLines(opts.area);
+      text(a, 144, 8);
+      if (b) text(b, 144 + (((a.length - b.length) * 8) >> 1), 16);
+    } else {
+      text('WORLD', 144, 8);
+      text(`${worldLabel(state.world)}-${state.stage}`, 152, 16);
+      text('TIME', 200, 8);
+      if (time !== null) text(pad(time, 3), 208, 16);
+    }
   }
   const dmg = state.character.damage;
   if (dmg.kind === 'hp' && player) {

@@ -1050,6 +1050,50 @@ export const songs: Song[] = [
       [${DRIVE_BAR}]3 ${DRIVE_FILL}        ; bars 13-16
     `,
   },
+  {
+    id: 'top-secret',
+    bpm: 132,
+    loop: true,
+    // G major, 8 bars: World 2's Top Secret Area (0.4.10), a sunny little hillside tune. The lead
+    // strolls up the G chord and back, pulse2 plucks off-beat chord tones, the bass walks in
+    // quarters and the drums keep a light step. Original, like everything here.
+    pulse1: `
+      @2 v11 q6 x0
+      o5 g8 b8 o6 d8 o5 b8 g4 d4           ; bar 1 G
+      o5 e8 g8 o6 c8 o5 g8 e4 r4           ; bar 2 C
+      o5 f+8 a8 o6 d8 c8 o5 b8 a8 g8 f+8   ; bar 3 D
+      o5 g4. d8 g2                         ; bar 4 G
+      o5 e8 g8 b8 o6 e8 d4 o5 b4           ; bar 5 Em
+      o5 c8 e8 g8 o6 c8 o5 b4 a4           ; bar 6 C
+      o5 a8 b8 o6 c8 d8 e8 d8 c8 o5 a8     ; bar 7 D
+      o5 b4 a8 f+8 g2                      ; bar 8 G
+    `,
+    pulse2: `
+      @1 v7 q4 x0
+      r8 o4 b8 r8 o5 d8 r8 o4 b8 r8 o5 d8  ; bar 1 G
+      r8 o4 g8 r8 o5 c8 r8 o4 g8 r8 o5 c8  ; bar 2 C
+      r8 o4 a8 r8 o5 d8 r8 o4 a8 r8 o5 c8  ; bar 3 D
+      r8 o4 b8 r8 o5 d8 r8 o4 b8 r8 o5 d8  ; bar 4 G
+      r8 o4 g8 r8 b8 r8 g8 r8 b8           ; bar 5 Em
+      r8 o4 g8 r8 o5 c8 r8 o4 e8 r8 g8     ; bar 6 C
+      r8 o4 f+8 r8 a8 r8 f+8 r8 a8         ; bar 7 D
+      o4 g4 d4 g2                          ; bar 8 G
+    `,
+    triangle: `
+      q6
+      o2 g4 o3 d4 o2 g4 o3 d4              ; bar 1 G
+      o2 c4 g4 c4 g4                       ; bar 2 C
+      o2 d4 a4 o3 d4 o2 a4                 ; bar 3 D
+      o2 g4 o3 d4 o2 g2                    ; bar 4 G
+      o2 e4 b4 e4 b4                       ; bar 5 Em
+      o2 c4 g4 c4 g4                       ; bar 6 C
+      o2 d4 f+4 a4 f+4                     ; bar 7 D
+      o2 g4 d4 g2                          ; bar 8 G
+    `,
+    noise: `
+      [v9 k8 v5 h8 v8 s8 v5 h8 v9 k8 v5 h8 v8 s8 v5 h8]8 ; bars 1-8
+    `,
+  },
   // Larry Koopa's airship, his duel and the bonus spot behind it.
   ...smb3Songs,
   // Simon's crypt under 5-4 and his mini game's castle.

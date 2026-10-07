@@ -2,6 +2,7 @@ import { NES } from '@engine/gfx/palette';
 import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
+import { smwDecorFrames, smwDecorPalette } from './top-secret';
 import { zelda2DecorFrames, zelda2DecorPalette } from './zelda2-look';
 import { megamanDecorFrames, megamanDecorPalette } from './megaman-look';
 import { brinstarDecorFrames, brinstarDecorPalette } from './brinstar-look';
@@ -114,6 +115,8 @@ export const decorPalettes: Record<string, string[]> = {
   ],
   // Bill's jungle: dark canopy greens, distant mountain blues, concrete greys, palm bark (contra-decor.ts).
   'decor-jungle': jungleDecorPalette,
+  /* The Top Secret Area: Super Mario World greens, white sparkles. */
+  'decor-smw': smwDecorPalette,
   // The campaign looks of 2-1, 3-1 and 4-2.
   'decor-zelda2': zelda2DecorPalette,
   'decor-megaman-stage': megamanDecorPalette,
@@ -677,6 +680,8 @@ export const decorDef: SpriteDef = {
     'ruin-temple': ruinTemple,
     // Bill's jungle: palms, canopy, mountains, sandbags, a searchlight; clouds become canopy.
     ...jungleDecorFrames,
+    // The Top Secret Area: a big sparkly hill, a small one, bushes.
+    ...smwDecorFrames,
     // The campaign looks of 2-1, 3-1 and 4-2: forest trees, clouds, pipe stacks, brush.
     ...zelda2DecorFrames,
     ...megamanDecorFrames,

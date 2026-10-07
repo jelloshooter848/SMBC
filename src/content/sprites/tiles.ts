@@ -8,6 +8,7 @@ import {
   contraTilePalettes,
   rivets,
 } from './contra-tiles';
+import { smwSecretTileFrames, smwSecretTilePalette } from './top-secret';
 import { zelda2TileFrames, zelda2TilePalette } from './zelda2-look';
 import { megamanTileFrames, megamanTilePalette } from './megaman-look';
 import { brinstarTileFrames, brinstarTilePalette } from './brinstar-look';
@@ -295,6 +296,8 @@ export const tilePalettes: Record<string, string[]> = {
   ],
   // Bill's jungle under 7-3, his waterfall climb and Red Falcon's lair (contra-tiles.ts).
   ...contraTilePalettes,
+  /* The Top Secret Area (0.4.10): warm dirt under Super Mario World-style grass. */
+  'tiles-smw-secret': smwSecretTilePalette,
   // The campaign looks of 2-1, 3-1 and 4-2 (zelda2-look.ts, megaman-look.ts, brinstar-look.ts).
   'tiles-zelda2': zelda2TilePalette,
   'tiles-megaman-stage': megamanTilePalette,
@@ -2156,6 +2159,8 @@ export const tilesDef: SpriteDef = {
     ...themed(contraJungleFrames, 'contra-jungle'),
     ...themed(contraFallsFrames, 'contra-falls'),
     ...themed(alienLairFrames, 'alien-lair'),
+    // The Top Secret Area: grass-topped dirt and a used block of its own.
+    ...themed(smwSecretTileFrames, 'smw-secret'),
     // The jungle's `?` blocks are the SMB blocks with steel corner rivets; its coins and flagpole
     // are SMB's own, kept as they are so they read at a glance.
     'question-0@contra-jungle': rivets(question0),

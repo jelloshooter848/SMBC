@@ -12,7 +12,7 @@ Read it before adding or changing a page.
 | `src/game/map/rules.ts`                                                               | Open/locked rules, clears, warps, conditions, d-pad steps                           | engine (H0)                                          |
 | `src/game/scenes/world-map.ts`                                                        | Drawing, walking, slides, fades, warp jumps, the hint line, the Worlds menu         | engine (H0)                                          |
 | `src/game/save/save-files.ts`                                                         | Save format v2 (`pages`, `position.page`), migration from v1                        | engine (H0)                                          |
-| `src/game/level/campaign.ts`                                                          | Campaign-only level variants (the 1-2 warp zone's one pipe)                         | engine (H0)                                          |
+| `src/game/level/campaign.ts`                                                          | Campaign-only level variants (the 1-2 warp zone's one pipe, 2-1's cave)             | engine (H0)                                          |
 | `src/content/worldmap/index.ts`                                                       | The page registry (`MAP_PAGES`, `mapPage`, `pagesInGroup`, `levelPage`, `isPageId`) | engine (H0)                                          |
 | `src/content/worldmap/world1.ts` .. `world8.ts`                                       | The 8 SMB pages                                                                     | SMB (unchanged in 0.4.0 but for World 1's warp spot) |
 | `src/content/worldmap/hub.ts` (`HUB_PAGE`)                                            | The Warp Zone hub page                                                              | **hub art agent**                                    |
@@ -68,13 +68,13 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 
 ## Nodes
 
-| kind              | Meaning                                                                       |
-| ----------------- | ----------------------------------------------------------------------------- |
-| `start`           | The page's arrival node. May also carry the warp fields or a `level` (below). |
-| `level`, `castle` | Enter `level` with JUMP. A castle clear opens the page(s) its exits lead to.  |
-| `bonus`           | Hidden until `unlock` (a secret key) is found. JUMP plays the bonus game.     |
-| `warp`            | JUMP warps to another page (see below).                                       |
-| `game`            | A Mini Game Arena pad (`game`: its arena game id). JUMP plays one round.      |
+| kind              | Meaning                                                                                                                          |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `start`           | The page's arrival node. May also carry the warp fields or a `level` (below).                                                    |
+| `level`, `castle` | Enter `level` with JUMP. A castle clear opens the page(s) its exits lead to.                                                     |
+| `bonus`           | Hidden until `unlock` (a secret key) is found. JUMP plays the bonus game (with a `level`: enters it, World 2's Top Secret Area). |
+| `warp`            | JUMP warps to another page (see below).                                                                                          |
+| `game`            | A Mini Game Arena pad (`game`: its arena game id). JUMP plays one round.                                                         |
 
 A node with `unlock: '<key>'` (any kind) is hidden, with its road, until the file has that secret
 (`MapProgress.secrets`). Bonus nodes always need one.
@@ -212,6 +212,8 @@ different road with each, and **no ending opens every road leaving its level**.
 - **Old files**: nothing changes in the format. A file that cleared 1-2 through its pipe before
   0.5.0 has both `1-2` in `cleared` and `bonus-1` in `secrets`, so it keeps both roads; nothing
   re-locks.
+- **One exception** (0.4.10): the Moblin in 2-1's hidden cave both clears 2-1 and finds `bonus-2`,
+  opening both roads ("The Top Secret Area" below).
 - Today 1-2's campaign pipe is a secret exit (below), and so is Larry Koopa's crystal ball in
   4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
   Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each leads into an
@@ -393,6 +395,123 @@ World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `u
   out yet, so an older file's comes out after its next level) and `inventoryUnlocked?: boolean`
   (missing: off, but on for a file with the secret `larry`).
 - Campaign only (the map is). Dev "Unlock all" does not show it (bonus nodes need their key).
+
+## The Top Secret Area (World 2, 0.4.10)
+
+Owner design, after Super Mario World's "Top Secret Area". Campaign only.
+
+**The way in: over 2-1's flagpole.** A hero who gets past 2-1's flagpole **without touching it**
+(jumping over it) can walk on past the castle into a cave mouth at the level's end (columns
+220-223, `decor 220 12 kind=items:cave-mouth campaign=true`), whose `pipe 224 11 right -> 2-1-cave
+1 12 campaign` (a right-hand pipe zone at the level's right edge: walking into the mouth enters it)
+leads into the Moblin's cave. Touching the pole still ends the level the normal way (and the pole
+can be touched from the far side too, by walking back left into it).
+
+- **Who could jump the pole in v0.4.9**: measured from the top of the last tower (columns 190-191,
+  its top on row 3, nine tiles left of the pole at 200, ball on row 2), with every running or
+  walking jump off its edge: **only Luigi** (small and big). Mario fell 5 px short; everyone else
+  further (Simon's committed jump carries him 58 px).
+- **The hidden block** (so every hero can, once they think to look): a `path` zone, `path 192 3 7
+block=184,0 campaign`. In the campaign a hidden block (tile `9`, T.HIDDEN_PATH, invisible and
+  bumpable only from below, like every hidden block) sits on row 0 over column 184: high above the
+  bricks (185-186, row 9), up and **left** of 2-1's hidden coin block (186,5), the one the way up
+  the tower uses. Standing on that coin block, a hero who walks back off its left edge and jumps
+  up-left bumps it; every hero can (each at his own moment, `tests/sim/top-secret.test.ts`), and
+  the springboard (188) takes him back up to the tower. Ordinary play never touches it: a probe
+  test drives every hero, small and big, from the ground, the bricks, the coin block and the tower
+  top, heading right (or standing, or jumping back left off the bricks or the tower), jumping at
+  many moments, short and long, with and without the springboard's high bounce (about 480 runs a
+  hero): nothing bumps it. (0.4.10's review: a first spot over the tower itself was bumped by
+  ordinary springboard approaches, which cut the hero's jump at the pole.) It turns into a used
+  block and lays a **cloud path**: seven
+  cloud blocks (T.CLOUD_BLOCK) on row 3, columns 192-198, level with the tower top, one every
+  `PATH_STEP_FRAMES` (6) with a pop (`World.layPath`; the announcer says "A path of clouds
+  appears."). The path stops a tile short of the pole's column. Every hero runs along it and jumps
+  off its far end clear over the ball, Simon included (a running jump from its last tile), small
+  and big; `tests/sim/top-secret.test.ts` drives each one. A single block could not do it: a jump
+  off a block near the tower still has to carry the hero 135 px past the pole above row 2.
+- Outside the campaign 2-1 is v0.4.9's tile for tile (`tests/sim/fixtures/2-1-v0.4.9.map`): no
+  hidden block, no path, no cave mouth, no way in.
+
+**The Moblin's cave** (`2-1-cave`, an area of 2-1: parent `2-1`, the clock carries on): one locked
+screen, dark rock (the `underground` theme), two fires (`cave-fire`, entities/objects/moblin.ts) and
+between them a friendly **Moblin** (`moblin 9 12 secret=bonus-2 next=2-2-intro`, Zelda-style, original
+art, 24x32, about big Mario's height: a pig-faced brute with heavy jowls, a pale snout with two
+nostrils and a thick spear; `items:moblin-0/1` breathing, `items:moblin-surprised`; a `moblin` with
+no `secret=` is left out, so no empty secret is ever recorded). When a player on the ground comes
+within 56 px he jumps with surprise, everyone stops, and his cards play over the cave (a box at the
+top, each read out, OK = JUMP to go on): `...!` / `YOU FOUND ME?!` / `I'LL SHOW YOU A SECRET PATH...
+AS LONG AS YOU DON'T TELL ANYONE.` / `IT'S A SECRET TO EVERYBODY.` (the `secret` jingle). Then:
+
+- **Campaign** (`Game.campaignTopSecret`): **2-1 counts as cleared** (`clearLevel`: its normal road
+  to 2-2) **and** the secret `bonus-2` is found (`secretExit`: the road to the bonus node). This is
+  the one exit that opens both (owner decision); the map draws both roads in, like the 1-2 warp
+  spot's (`pendingReveal` `smb-2:2-1>2-2`, `smb-2:2-2`, `smb-2:2-1>bonus-2`, `smb-2:bonus-2`), and
+  2-1 reads "World 2-1, cleared, secret exit found". 2-1 shows the secret-exit dot from the start:
+  `map/secret-exits.ts` counts an area entity with a `secret` prop (the Moblin) as a way out.
+- Elsewhere (level select, `?level=2-1-cave`) play goes on to `next` (2-2); a play-test ends.
+
+**The map node**: World 2's reserved bonus slot `bonus-2` at (8,4) (`world2.ts`), still `kind:
+'bonus'`, `unlock: 'bonus-2'`, now with `level: '2-top-secret'` and `label: 'TOP SECRET AREA'`. A bonus
+node with a `level` is a **bonus area** (`map/bonus-spot.ts isBonusArea`): hidden until its key like
+any bonus node (also with dev Unlock all), then always open: no bonus game, no `bonusOpen`, no Hammer
+Bro. Its icon is `items:map-node-tsa` (the green bonus dot with a gold sparkle), the hint line and
+the announcer say "TOP SECRET AREA" ("Top Secret Area, open"), the touch JUMP says ENTER, and JUMP
+enters its level through character select, like a level node, every time. Nothing is ever cleared
+there and no save field is added.
+
+**The Top Secret Area** (`2-top-secret.map`, header `bonus: true`: `LevelData.bonus`, a fill-up
+spot: no clock, no WORLD card; it is entered straight from character select, the announcer says
+"Top Secret Area."; its HUD shows the area's name, `TOP SECRET` / `AREA`, where WORLD 2-1 would
+be, and no TIME, HudOptions.area; on its light sky every HUD text has a dark outline, `LIGHT_SKIES`
+and HudOptions.outline): one locked screen in the `smw-secret` theme, five `?` blocks in a row on row 9,
+columns 6-10:
+
+| Block      | Tile (map char)  | Gives                                                             |
+| ---------- | ---------------- | ----------------------------------------------------------------- |
+| 6, 7       | `W` T.Q_FLOWER   | a fire flower, whatever the power (each hero takes it as its own) |
+| 8 (centre) | `Y` T.Q_EGG      | a Yoshi egg (`entities/objects/yoshi-egg.ts`)                     |
+| 9, 10      | `R` T.Q_MUSHROOM | a mushroom, whatever the power                                    |
+
+The egg rises out of its block (32 frames), sits on it wobbling (48 frames, `items:yoshi-egg-l/r`,
+quickening), cracks (16 frames, `yoshi-egg-crack`) and bursts in four bits of shell; then `hatch()`
+lets out what it holds. Yoshi is not in the game yet, so a **1-up hops out** (as in Super Mario World
+when Yoshi is already with you; `PowerUp.hopOut`). The hook for a later release:
+`yoshiUnlocked(world)` (always false today, a `TODO(yoshi)`) and `hatch` (docs/ROADMAP.md).
+
+The blocks are full again on every visit (each visit is a new World from the map's tiles). Its pipe
+(`pipe 13 11 down -> map 0 0`, `MAP_EXIT`: a pipe target that is no level) goes back to the map: in
+the campaign `Game.returnToMap()` with the hero still on `bonus-2` and nothing cleared; elsewhere a
+play-test ends or the title follows. Co-op: both players come along; each block gives its item to
+whoever takes it.
+
+**Art** (all original, `src/content/sprites/top-secret.ts`): the `smw-secret` theme (tile palette
+`tiles-smw-secret`, grass-topped dirt `tree-top@smw-secret` over `ground@smw-secret`, `used@smw-secret`;
+sky `#f8ecc0`; decor palette `decor-smw` with `smw-hill-big` (the big sparkly hill), `smw-hill-small`
+and `smw-bush`; music `top-secret`, an 8-bar G-major loop in `songs.ts`), and on the items sheet the
+Yoshi egg frames, `egg-shell`, the Moblin, `cave-fire-0/1` (flickering slower with reduce flashing),
+`cave-mouth` and `map-node-tsa`. The hills' sparkles never twinkle.
+
+**Toad** has no map voice yet (the story batch, 0.4.13, adds it). A suggested line for the node:
+"SOMETHING TELLS ME THIS SPOT WAS MEANT TO STAY A SECRET..."
+
+## Hidden paths and campaign pipes (level zones, 0.4.10)
+
+```
+path x y w block=bx,by [campaign]
+pipe x y dir -> level x y [exit=dir] [campaign]
+pipe x y down -> map 0 0
+```
+
+- **`path`**: the `w` tiles from (x, y) rightward appear one by one as cloud blocks, left to right,
+  once the hidden path block at (bx, by) (tile `9`, T.HIDDEN_PATH, content `path`) is bumped
+  (`World.layPath`, one every `PATH_STEP_FRAMES`, only on open air; a tile with a player in it waits
+  for him). `campaign`: the zone sleeps (no block, no path) outside campaign play; the campaign
+  variant wakes it and puts the hidden block in at (bx, by). 2-1's (above).
+- **A `campaign` pipe** sleeps outside campaign play (no way in; a zone only, so the level's tiles
+  are the same either way); the campaign variant wakes it. 2-1's way into the cave.
+- **`-> map`** (`MAP_EXIT`): a pipe back to the world map (the Top Secret Area's). Nothing is
+  cleared; it is no exit of a level for the map's secret-exit look.
 
 ## Teleport pads (level zone, 0.5.0)
 

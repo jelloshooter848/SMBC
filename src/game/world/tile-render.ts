@@ -68,6 +68,12 @@ function drawCracked(r: Renderer, view: View, sheet: SpriteSheet, x: number, y: 
   r.rect(x + 10, y + 7, 4, 1, crack);
 }
 
+/**
+ * Themes whose sky is so light the white HUD letters would sink into it: the HUD outlines every
+ * text in black there (HudOptions.outline). The Top Secret Area's cream.
+ */
+export const LIGHT_SKIES: ReadonlySet<string> = new Set(['smw-secret']);
+
 /** Themes whose dark sky has stars in it (Bill's jungle, as NES Contra's first stage; Mega Man's 3-1). */
 export const STARRY_SKIES: ReadonlySet<string> = new Set(['contra-jungle', 'megaman-stage']);
 
@@ -124,6 +130,8 @@ export const SKY: Record<string, string> = {
   'contra-falls': '#000c20',
   // Red Falcon's lair: a dark blood red between the organic walls.
   'alien-lair': '#200010',
+  // The Top Secret Area: Super Mario World's pale cream behind the hills.
+  'smw-secret': '#f8ecc0',
   // Link's field (2-1's campaign look): Zelda II's softer periwinkle daylight.
   zelda2: '#6888fc',
   // Mega Man's night stage (3-1's campaign look): a deep navy with stars (STARRY_SKIES).
