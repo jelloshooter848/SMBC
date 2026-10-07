@@ -22,15 +22,16 @@ parent: 6-2
 =...=======...C{
 =..............{
 =..............{
-N..$...........{
-N.$$$$.......())
-N..$.........<>>
+=..............{
+=............())
+=............<>>
 ################
 ################
 
 [zones]
 pipe 13 12 right -> 6-2 35 10 exit=up
-;; Ryu's trick wall (campaign only, docs/HEROES.md): the panel in the left wall (rows 10-12, tile
-;; N) that the coin arrow points at. Pushing into it for about a second flips the player through
-;; into his dojo; outside the campaign it is a plain wall.
+;; Ryu's trick wall (campaign only, docs/HEROES.md): the panel in the left wall (rows 10-12).
+;; The campaign variant makes those bricks the trick wall (N) and lays a coin arrow pointing at its
+;; middle row; pushing into it for about a second flips the player through into his dojo (one way:
+;; the dojo's panel leads back up into 6-2). Outside the campaign the room is as it always was.
 trick 0 10 3 -> 6-2-dojo 14 12 campaign

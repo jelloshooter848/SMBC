@@ -2,8 +2,8 @@ id: 6-2-dojo
 name: WORLD 6-2
 world: 6
 stage: 2
-theme: castle
-music: underground
+theme: dojo
+music: dojo
 time: inherit
 start: 14,12
 startMode: spin
@@ -13,10 +13,11 @@ parent: 6-2
 ;; Ryu's hideout behind the trick wall of 6-2's first bonus room (campaign only, docs/HEROES.md):
 ;; a night dojo, one locked screen. The player is flipped in through the trick panel in the right
 ;; wall (column 15, rows 10-12) and steps out beside it at column 14; captive Ryu kneels on the
-;; floor at column 5 under the moon window. Pushing into the same panel flips the player back
-;; into the bonus room beside its own panel (column 1), the clock running on throughout.
-;; Until R3's `dojo` theme lands it borrows the castle's; its `ninja` decor draws once that sheet
-;; exists.
+;; floor at column 5 under the moon window. Pushing into the same panel flips the player out
+;; into 6-2 itself, rising out of the pipe the bonus room's own pipe leads to (35, 10), so the
+;; bonus room is entered again only down the pipe at 19. The clock runs on throughout.
+;; Theme and music `dojo`: wooden beams and floor, a shoji band (the `wall` rows, with
+;; `ninja:shoji` screens in front), paper lanterns and the round moon window (`ninja` sheet).
 
 [tiles]
 ;; Rows 0-1 stay clear (no tiles, black) under the HUD; the room's ceiling beam is row 2.
@@ -42,9 +43,13 @@ parent: 6-2
 captive 5 12 hero=ryu
 
 [zones]
-trick 15 10 3 -> 6-2-bonus 1 12
+trick 15 10 3 -> 6-2 35 10 exit=up
 
 [decor]
 ninja:moon-window 6 6
+ninja:shoji 1 12
+ninja:shoji 3 12
+ninja:shoji 9 12
+ninja:shoji 11 12
 ninja:lantern-0 2 4
 ninja:lantern-0 12 4

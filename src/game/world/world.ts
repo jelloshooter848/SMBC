@@ -1022,9 +1022,14 @@ export class World {
       this.checkPipes(p, this.autoWalk ? AUTO_WALK_INPUT : (inputs[i] ?? NO_INPUT));
       if (this.pipeAnim) break;
     }
-    if (!this.pipeAnim && !this.leaving)
-      for (const [i, p] of this.players.entries()) {
-        if (p.dead || p.out) continue;
+    if (this.tricks.length && !this.pipeAnim && !this.leaving)
+      for (let i = 0; i < this.players.length; i++) {
+        const p = this.players[i] as Player;
+        // A player who is down (or out) starts any push over.
+        if (p.dead || p.out) {
+          this.trickPush.delete(p);
+          continue;
+        }
         this.checkTricks(p, inputs[i] ?? NO_INPUT);
         if (this.trickSpin) break;
       }
@@ -1210,7 +1215,7 @@ export class World {
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
   private transfer(
     target: { level: string; x: number; y: number },
-    mode: 'climb' | 'fall' | 'spin',
+    mode: 'climb' | 'fall' | 'spin' | 'up',
     chain = false,
   ): void {
     if (this.leaving) return;
@@ -2474,9 +2479,13 @@ export class World {
    * others hidden, as for a pipe) and the pusher goes through with it.
    */
   private checkTricks(p: Player, input: InputFrame): void {
-    if (!this.tricks.length) return;
-    const free = !p.frozen && !p.hidden && !p.vine && !p.stairs;
-    const wall = free ? this.tricks.find((w) => w.live && w.pushedBy(p, input)) : undefined;
+    let wall: TrickWall | null = null;
+    if (!p.frozen && !p.hidden && !p.vine && !p.stairs)
+      for (const w of this.tricks)
+        if (w.live && w.pushedBy(p, input)) {
+          wall = w;
+          break;
+        }
     const n = wall ? (this.trickPush.get(p) ?? 0) + 1 : 0;
     this.trickPush.set(p, n);
     if (!wall || n < TRICK_PUSH_FRAMES) return;
@@ -2496,19 +2505,24 @@ export class World {
     const s = this.trickSpin as NonNullable<typeof this.trickSpin>;
     s.t++;
     if (s.t === 1) this.audio.sfx(SPIN_SFX);
-    s.wall.spinT = s.t <= TRICK_SPIN_FRAMES ? s.t : null;
+    s.wall.spinDir = s.dir;
+    // Leaving, the panel keeps showing its far face through the hold, until the level changes.
+    s.wall.spinT = s.t <= TRICK_SPIN_FRAMES || s.dir === 'out' ? Math.min(s.t, TRICK_SPIN_FRAMES) : null;
     const edgeOn = s.t === TRICK_SPIN_FRAMES >> 1;
     if (s.dir === 'out') {
       if (edgeOn) for (const p of this.players) p.hidden = true;
       if (s.t >= TRICK_SPIN_FRAMES + TRICK_HOLD_FRAMES) {
         this.trickSpin = null;
-        this.transfer(s.wall.zone.target, 'spin');
+        // On into the target: a spin arrival, or rising out of its pipe (`exit=up`).
+        const to = s.wall.zone.target;
+        this.transfer(to, to.exitDir ?? 'spin');
       }
       return;
     }
     if (edgeOn) for (const p of this.players) if (!p.dead && !p.out) p.hidden = false;
     if (s.t >= TRICK_SPIN_FRAMES) {
       this.trickSpin = null;
+      s.wall.spinT = null; // at rest again (on the room's own face)
       for (const p of this.players) p.frozen = false;
     }
   }

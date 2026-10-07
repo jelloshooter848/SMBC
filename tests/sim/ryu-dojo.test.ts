@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getLevel } from '@content/levels';
+import { getLevel, levelIds } from '@content/levels';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
+import { LUIGI } from '@game/characters/luigi';
 import { RYU } from '@game/characters/ryu';
 import { SAMUS } from '@game/characters/samus';
 import { carryTime, LevelScene } from '@game/scenes/level';
@@ -14,7 +15,15 @@ import { px, toPx } from '@engine/math/units';
 import type { World } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
 import type { LevelData, Zone } from '@game/level/schema';
-import { TRICK_HOLD_FRAMES, TRICK_PUSH_FRAMES, TRICK_SPIN_FRAMES } from '@game/entities/objects/trick-wall';
+import {
+  SPIN_SEQUENCE,
+  spinFrame,
+  TRICK_HOLD_FRAMES,
+  TRICK_PUSH_FRAMES,
+  TRICK_SPIN_FRAMES,
+} from '@game/entities/objects/trick-wall';
+import { ninjaDef } from '@content/sprites/ninja';
+import { tilesDef } from '@content/sprites/tiles';
 import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
 import { fontText } from '@game/hud/text';
 import { hiddenHeroes, hiddenHeroesAt } from '@game/map/captives';
@@ -33,8 +42,49 @@ const bonus = () => getLevel('6-2-bonus');
 const campBonus = () => campaignLevel(bonus());
 const dojo = () => getLevel('6-2-dojo');
 const INTO_DOJO = { level: '6-2-dojo', x: 14, y: 12, exitDir: 'spin' };
-const BACK_TO_BONUS = { level: '6-2-bonus', x: 1, y: 12, exitDir: 'spin' };
-const OUT_TO_6_2 = { level: '6-2', x: 35, y: 10, exitDir: 'up' };
+const OUT_TO_6_2 = { level: '6-2', x: 35, y: 10, exitDir: 'up' as const };
+/** The campaign's coin arrow, pointing at the panel's middle row (11). */
+const ARROW = [
+  [2, 11],
+  [3, 10],
+  [3, 11],
+  [3, 12],
+  [4, 11],
+  [5, 11],
+] as const;
+/** 6-2-bonus as v0.4.7 shipped it (bd860e9), before the trick wall. */
+const BONUS_0_4_7 = `id: 6-2-bonus
+name: WORLD 6-2
+world: 6
+stage: 2
+theme: underground
+music: underground
+time: inherit
+start: 1,0
+startMode: fall
+camera: locked
+parent: 6-2
+
+[tiles]
+................
+................
+=...=======....{
+=.........=....{
+=.........=....{
+=....$$$$$=....{
+=...=$$$$$===..{
+=...=======...C{
+=..............{
+=..............{
+=..............{
+=............())
+=............<>>
+################
+################
+
+[zones]
+pipe 13 12 right -> 6-2 35 10 exit=up
+`;
 /** The bonus room's panel: column 0, rows 10-12. The dojo's: column 15, rows 10-12. */
 const PANEL = { x: 0, rows: [10, 11, 12] };
 const DOJO_PANEL = { x: 15, rows: [10, 11, 12] };
@@ -71,29 +121,65 @@ describe('the areas', () => {
     expect(tricks(raw.zones)).toEqual([
       { kind: 'trick', x: 0, y: 10, h: 3, target: { level: '6-2-dojo', x: 14, y: 12 }, campaign: true },
     ]);
-    for (const y of PANEL.rows) expect(tile(raw, PANEL.x, y)).toBe(T.TRICK);
-    // The rest of the left wall is brick, as before.
-    for (let y = 2; y < 10; y++) expect(tile(raw, PANEL.x, y)).toBe(T.BRICK);
+    // Outside the campaign the whole left wall is plain brick.
+    for (let y = 2; y < 13; y++) expect(tile(raw, PANEL.x, y)).toBe(T.BRICK);
     const camp = campaignLevel(raw, () => true);
     expect(tricks(camp.zones)).toEqual([
       { kind: 'trick', x: 0, y: 10, h: 3, target: { level: '6-2-dojo', x: 14, y: 12 } },
     ]);
-    expect(camp.tiles).toEqual(raw.tiles);
+    // The campaign: the panel turns to trick-wall tiles and the coin arrow is laid; nothing else.
+    for (const y of PANEL.rows) expect(tile(camp, PANEL.x, y)).toBe(T.TRICK);
+    const changed: string[] = [];
+    for (let i = 0; i < raw.tiles.length; i++)
+      if (camp.tiles[i] !== raw.tiles[i]) changed.push(`${i % raw.width},${Math.floor(i / raw.width)}`);
+    expect(changed.sort()).toEqual(['0,10', '0,11', '0,12', ...ARROW.map(([x, y]) => `${x},${y}`)].sort());
     expect(camp.entities).toEqual(raw.entities);
   });
 
-  it('a coin arrow points at the panel: its tip (2, 11) level with the panel’s middle row', () => {
-    const l = bonus();
-    for (const [x, y] of [
-      [2, 11],
-      [3, 10],
-      [3, 11],
-      [3, 12],
-      [4, 11],
-      [5, 11],
-    ] as const)
-      expect(tile(l, x, y), `${x},${y}`).toBe(T.COIN);
+  it('6-2-bonus outside the campaign is exactly v0.4.7’s room (tiles, entities, decor, other zones)', () => {
+    const raw = bonus();
+    const old = parseTextMap(BONUS_0_4_7, '6-2-bonus');
+    expect(raw.tiles).toEqual(old.tiles);
+    expect([raw.width, raw.height, raw.theme, raw.music, raw.time, raw.startMode]).toEqual([
+      old.width,
+      old.height,
+      old.theme,
+      old.music,
+      old.time,
+      old.startMode,
+    ]);
+    expect(raw.start).toEqual(old.start);
+    expect(raw.entities).toEqual(old.entities);
+    expect(raw.decor).toEqual(old.decor);
+    expect(raw.zones.filter((z) => z.kind !== 'trick')).toEqual(old.zones);
+    // In play: no mark, and a bomb blast breaks its bricks as ever.
+    const w = runSim({
+      level: raw,
+      character: SAMUS,
+      script: none,
+      start: { x: 3, y: 12, mode: 'stand' },
+      maxFrames: 2,
+    }).world;
+    expect(w.trickWalls.map((t) => t.live)).toEqual([false]);
+    w.explode(px(8), px(11 * 16 + 8), 12, null, { hurtsPlayers: false });
+    expect(w.map.get(PANEL.x, 11)).toBe(T.AIR);
+  });
+
+  it('the campaign’s coin arrow points at the panel: its tip (2, 11) level with the panel’s middle row', () => {
+    const l = campBonus();
+    for (const [x, y] of ARROW) expect(tile(l, x, y), `${x},${y}`).toBe(T.COIN);
     expect(tile(l, 1, 11)).toBe(T.AIR);
+    for (const [x, y] of ARROW) expect(tile(bonus(), x, y), `plain ${x},${y}`).toBe(T.AIR);
+  });
+
+  it('one way: the dojo leads back into 6-2 itself, so the bonus room is entered only down the pipe at 19', () => {
+    const into: string[] = [];
+    for (const id of levelIds())
+      for (const z of campaignLevel(getLevel(id)).zones)
+        if ('target' in z && z.target && (z.target as { level: string }).level === '6-2-bonus')
+          into.push(`${id} ${z.kind} ${'x' in z ? z.x : ''}`);
+    expect(into).toEqual(['6-2 pipe 19']);
+    expect(tricks(dojo().zones).map((z) => z.target)).toEqual([OUT_TO_6_2]);
   });
 
   it('the trick zone parses and writes back the same', () => {
@@ -109,12 +195,12 @@ describe('the areas', () => {
       ...Array.from({ length: 15 }, () => '................'),
       '[zones]',
       'trick 0 10 3 -> t-dojo 14 12 campaign',
-      'trick 15 9 2 -> t 1 12',
+      'trick 15 9 2 -> t 1 12 exit=up',
     ].join('\n');
     const l = parseTextMap(src);
     expect(tricks(l.zones)).toEqual([
       { kind: 'trick', x: 0, y: 10, h: 3, target: { level: 't-dojo', x: 14, y: 12 }, campaign: true },
-      { kind: 'trick', x: 15, y: 9, h: 2, target: { level: 't', x: 1, y: 12 } },
+      { kind: 'trick', x: 15, y: 9, h: 2, target: { level: 't', x: 1, y: 12, exitDir: 'up' } },
     ]);
     expect(tricks(parseTextMap(serializeTextMap(l)).zones)).toEqual(tricks(l.zones));
   });
@@ -135,7 +221,7 @@ describe('the areas', () => {
     for (const y of PANEL.rows) expect(w.map.get(PANEL.x, y)).toBe(T.TRICK);
   });
 
-  it('the dojo is an area of 6-2 that keeps the clock, entered by a spin beside its own panel', () => {
+  it('the dojo is an area of 6-2 that keeps the clock, entered by a spin, left up 6-2’s pipe', () => {
     const l = dojo();
     expect(l.parent).toBe('6-2');
     expect(l.time).toBeNull();
@@ -145,16 +231,16 @@ describe('the areas', () => {
     expect(l.start).toEqual({ x: 14, y: 12 });
     expect(l.width).toBe(16);
     for (const y of DOJO_PANEL.rows) expect(tile(l, DOJO_PANEL.x, y)).toBe(T.TRICK);
-    // Always awake: the way back works whoever got in.
-    expect(tricks(l.zones)).toEqual([
-      { kind: 'trick', x: 15, y: 10, h: 3, target: { level: '6-2-bonus', x: 1, y: 12 } },
-    ]);
+    // Always awake (the way out works whoever got in): out into 6-2, rising out of the pipe at 35
+    // that the bonus room's own pipe leads to.
+    expect(tricks(l.zones)).toEqual([{ kind: 'trick', x: 15, y: 10, h: 3, target: OUT_TO_6_2 }]);
+    expect(bonus().zones).toContainEqual({ kind: 'pipe', x: 13, y: 12, dir: 'right', target: OUT_TO_6_2 });
     expect(l.zones.filter((z) => z.kind !== 'trick')).toEqual([]);
     expect(l.entities).toContainEqual({ type: 'captive', x: RYU_AT.x, y: RYU_AT.y, props: { hero: 'ryu' } });
     expect(isSolid(tile(l, RYU_AT.x, RYU_AT.y + 1) as number)).toBe(true);
     expect(carryTime(getLevel('6-2'), bonus(), 250)).toBe(250);
     expect(carryTime(bonus(), l, 240)).toBe(240);
-    expect(carryTime(l, bonus(), 230)).toBe(230);
+    expect(carryTime(l, getLevel('6-2'), 230)).toBe(230);
   });
 
   it.each(['6-2-dojo', '6-2-bonus'])('%s keeps rows 0-1 clear under the HUD: no tiles', (id) => {
@@ -319,13 +405,82 @@ describe('pushing into the panel (campaign)', () => {
       },
     });
     const half = TRICK_SPIN_FRAMES >> 1;
-    expect(seen.length).toBe(TRICK_SPIN_FRAMES);
     for (const s of seen) expect(s.hidden, `t ${s.t}`).toBe((s.t as number) >= half);
-    expect(seen.map((s) => s.t)).toEqual(Array.from({ length: TRICK_SPIN_FRAMES }, (_, i) => i + 1));
+    // The half turn, then its far face held until the level changes.
+    expect(seen.map((s) => s.t)).toEqual([
+      ...Array.from({ length: TRICK_SPIN_FRAMES }, (_, i) => i + 1),
+      ...Array.from({ length: seen.length - TRICK_SPIN_FRAMES }, () => TRICK_SPIN_FRAMES),
+    ]);
+    expect(seen.length).toBeGreaterThanOrEqual(SPIN_OUT - 1);
+  });
+});
+
+describe('the half turn’s frames (R3’s ninja sheet)', () => {
+  const run = (dir: 'out' | 'in', dojoSide: boolean) =>
+    Array.from({ length: TRICK_SPIN_FRAMES }, (_, i) => spinFrame(i + 1, dir, dojoSide)).filter(
+      (f, i, all) => all[i - 1] !== f,
+    );
+  const forward = ['trick-wall-0', 'trick-wall-1', 'trick-wall-2', 'trick-wall-3', 'trick-wall-back'];
+
+  it('leaving the bonus room: 0 → 1 → 2 (edge-on) → 3 → back; leaving the dojo, the reverse', () => {
+    expect([...SPIN_SEQUENCE]).toEqual(forward);
+    expect(run('out', false)).toEqual(forward);
+    expect(run('out', true)).toEqual([...forward].reverse());
+  });
+
+  it("arriving, it turns the other way and settles on the room's own face (no snap)", () => {
+    expect(run('in', true)).toEqual(forward); // into the dojo: ends on the wooden back
+    expect(run('in', false)).toEqual([...forward].reverse()); // into the bonus room: ends on brick
+  });
+
+  it('the hero goes through while the panel is edge-on', () => {
+    for (const [dir, side] of [
+      ['out', false],
+      ['out', true],
+      ['in', false],
+      ['in', true],
+    ] as const)
+      expect(spinFrame(TRICK_SPIN_FRAMES >> 1, dir, side)).toBe('trick-wall-2');
+  });
+
+  it('every frame exists in the ninja sheet as a full tile, with the cracked tile and the shuriken', () => {
+    for (const f of [...forward, 'trick-wall-cracked']) {
+      const rows = ninjaDef.frames[f] as readonly string[];
+      expect(rows, f).toHaveLength(16);
+      for (const r of rows) expect(r, f).toHaveLength(16);
+    }
+    expect(ninjaDef.frames['shuriken-mark']).toHaveLength(8);
+    // The resting brick face is the bonus room's brick.
+    expect(ninjaDef.frames['trick-wall-0']).toEqual(tilesDef.frames['brick@underground']);
   });
 });
 
 describe('co-op', () => {
+  it('a player who goes down (or out) mid-push starts over: no stale count spins the panel', () => {
+    const w = runSim({
+      level: campBonus(),
+      character: MARIO,
+      state: { character2: LUIGI, powerState2: 'small', hp2: 0 },
+      script: none,
+      start: { x: 1, y: 12, mode: 'stand', time: 250 },
+      maxFrames: 2,
+    }).world;
+    const [p1, p2] = w.players as [World['player'], World['player']];
+    p1.body.x = px(96);
+    p2.body.x = px(16);
+    const pushing = [held([]), held(['left'])];
+    for (let f = 0; f < TRICK_PUSH_FRAMES - 10; f++) w.update(pushing);
+    expect(w.spinning).toBe(false);
+    // Out for a frame (a co-op death, waiting to drop back in), then pushing again.
+    p2.out = true;
+    w.update(pushing);
+    p2.out = false;
+    for (let f = 0; f < 15; f++) w.update(pushing);
+    expect(w.spinning).toBe(false);
+    for (let f = 0; f < TRICK_PUSH_FRAMES - 15 && !w.spinning; f++) w.update(pushing);
+    expect(w.spinning).toBe(true);
+  });
+
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
     'either player (P2: %s) pushing alone takes both through; nobody is left behind',
     (_n, c) => {
@@ -350,12 +505,9 @@ describe('co-op', () => {
   );
 
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
-    'arriving with player 2 (%s): both step out inside the room, P2 further in, on the floor, free to move',
+    'arriving with player 2 (%s): both step out inside the dojo, P2 further in, on the floor, free to move',
     (_n, c) => {
-      for (const [name, level, x, side] of [
-        ['dojo', dojo(), 14, -1],
-        ['bonus room', campBonus(), 1, 1],
-      ] as const) {
+      for (const [name, level, x, side] of [['dojo', dojo(), 14, -1]] as const) {
         for (const power of ['small', 'big'] as const) {
           const r = runSim({
             level,
@@ -406,6 +558,7 @@ function held(actions: Action[]) {
 describe('the spin arrival', () => {
   it('the players are hidden and frozen until the panel turns edge-on, and move once it is shut', () => {
     const log: { hidden: boolean; frozen: boolean; spin: boolean }[] = [];
+    const spinTs: (number | null)[] = [];
     runSim({
       level: dojo(),
       character: MARIO,
@@ -414,6 +567,7 @@ describe('the spin arrival', () => {
       maxFrames: TRICK_SPIN_FRAMES + 10,
       controller: (w) => {
         log.push({ hidden: w.player.hidden, frozen: w.player.frozen, spin: w.spinning });
+        spinTs.push(w.trickWalls[0]?.spinT ?? null);
         return ['left'];
       },
     });
@@ -424,6 +578,9 @@ describe('the spin arrival', () => {
     expect(log[half]?.hidden).toBe(false);
     expect(log[half]?.frozen).toBe(true);
     expect(log[TRICK_SPIN_FRAMES]).toEqual({ hidden: false, frozen: false, spin: false });
+    // The panel is at rest again: its tiles (and its mark) show, no spin frame left over.
+    expect(spinTs[TRICK_SPIN_FRAMES - 1]).toBe(TRICK_SPIN_FRAMES - 1);
+    expect(spinTs[TRICK_SPIN_FRAMES]).toBeNull();
   });
 
   it('arriving does not spin the panel straight back: walking on into the room', () => {
@@ -442,7 +599,7 @@ describe('the spin arrival', () => {
 
 describe('every hero gets to Ryu and back out of 6-2', () => {
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
-    '%s: into the dojo, over to Ryu, back through the panel, out of the bonus room’s pipe',
+    '%s: into the dojo, over to Ryu, back through the panel and up out of 6-2’s pipe at 35',
     (_n, c) => {
       // In: from where the pipe drops him in (column 1), push into the panel.
       const a = runSim({
@@ -473,19 +630,21 @@ describe('every hero gets to Ryu and back out of 6-2', () => {
       });
       expect(reached, `${c.name} stood beside Ryu`).toBe(true);
       expect(d.outcome, c.name).toBe('pipe');
-      expect(d.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: BACK_TO_BONUS });
+      expect(d.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: OUT_TO_6_2 });
       expect(d.world.time).toBeLessThanOrEqual(240);
-      // Back in the bonus room beside its panel: walk right to the pipe, out into 6-2.
+      // Out in 6-2: risen out of the pipe at 35 (where the bonus room's pipe leads), standing on it.
       const b = runSim({
-        level: campBonus(),
+        level: campaignLevel(getLevel('6-2')),
         character: c,
         script: none,
-        start: { x: 1, y: 12, mode: 'spin', time: 220 },
-        maxFrames: 900,
-        controller: (w) => (w.player.body.onGround ? ['right'] : []),
+        start: { x: 35, y: 10, mode: 'pipe-exit', time: 220, clearEnemies: 'keep-piranhas' },
+        maxFrames: 150,
       });
-      expect(b.outcome, c.name).toBe('pipe');
-      expect(b.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: OUT_TO_6_2 });
+      expect(b.outcome, c.name).toBe('timeout');
+      expect(b.world.player.dead).toBe(false);
+      expect(b.world.player.body.onGround).toBe(true);
+      expect(toPx(b.world.player.body.y + b.world.player.body.h)).toBe(11 * 16); // the pipe's top
+      expect(Math.floor(toPx(b.world.player.centerX) / 16)).toBe(36);
     },
   );
 });
@@ -503,7 +662,7 @@ function intoBonus(h: H): LevelScene {
 const levelId = (h: H) => (h.top() as LevelScene).level?.id;
 
 describe('the whole way in campaign play', () => {
-  it('bonus room → dojo → bonus room → 6-2: the clock carries over, no secret and no clear recorded', () => {
+  it('bonus room → dojo → 6-2 (up its pipe at 35): the clock carries over, no secret and no clear recorded', () => {
     const h = makeGame();
     const l = intoBonus(h);
     expect(tricks(l.level.zones)[0]?.campaign).toBeUndefined();
@@ -520,13 +679,14 @@ describe('the whole way in campaign play', () => {
     h.idle(TRICK_SPIN_FRAMES + 2);
     expect(captives(h.top() as LevelScene).map((x) => x.hero.id)).toEqual(['ryu']);
     for (let f = 0; f < 900 && levelId(h) === '6-2-dojo'; f++) h.step(['right']);
-    expect(levelId(h)).toBe('6-2-bonus');
-    const back = (h.top() as LevelScene).world;
-    expect(back.time).toBeLessThanOrEqual(inDojo.time as number);
-    for (let f = 0; f < 900 && levelId(h) === '6-2-bonus'; f++) h.step(['right']);
     expect(levelId(h)).toBe('6-2');
     const main = (h.top() as LevelScene).world;
-    expect(main.time).toBeLessThanOrEqual(back.time as number);
+    expect(main.time).toBeLessThanOrEqual(inDojo.time as number);
+    h.idle(90);
+    // Risen out of the pipe at 35, past the bonus room's pipe at 19: going back in means walking
+    // back to 19 and down it.
+    expect(Math.floor(toPx(main.player.centerX) / 16)).toBe(36);
+    expect(main.player.body.onGround).toBe(true);
     expect(main.time).toBeGreaterThan(arrived - 60);
     expect(h.game.mapProgress.secrets).toEqual([]);
     expect(h.game.mapProgress.cleared).not.toContain('6-2');
