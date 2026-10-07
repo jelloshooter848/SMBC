@@ -425,7 +425,9 @@ export class WorldMapScene implements Scene {
       crash,
     });
     if (!scenes.length) return false;
-    const stand = { x: Math.max(4, this.hx - 20), y: this.hy - 6 };
+    // Toad stands just left of the hero, or right of him when the hero is at the left edge
+    // (World 1's start), so he never covers the hero.
+    const stand = { x: this.hx - 20 >= 4 ? this.hx - 20 : this.hx + 20, y: this.hy - 6 };
     const guide = new ToadGuide(scenes, stand, {
       markSeen: (id) => game.markSeen(id),
       say: (text) => this.say(text),
