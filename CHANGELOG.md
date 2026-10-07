@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.10] - 2026-10-07
+
 ### Added
 
 - A secret in 2-1 (campaign): get over the flagpole without touching it (a hidden block lays a cloud
@@ -412,7 +414,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...HEAD
+[0.4.10]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/jelloshooter848/SMBC/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/jelloshooter848/SMBC/compare/v0.4.6...v0.4.7
