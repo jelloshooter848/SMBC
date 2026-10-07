@@ -109,6 +109,13 @@ export const T = {
   HIDDEN_VINE: def('hidden-vine', 'none', { block: { kind: 'hidden', content: 'vine' } }),
   /** An invisible block hiding a teleport pad (the 3-1 coin heaven's way up to the space station). */
   HIDDEN_TELEPORTER: def('hidden-teleporter', 'none', { block: { kind: 'hidden', content: 'teleporter' } }),
+  /**
+   * A cracked wall (5-4's dungeon, `&` in maps): solid, and it crumbles (with every cracked tile
+   * joined to it) to any hero attack: a melee hit, a shot, a kicked shell or a blast
+   * (World.crackWalls), or a head bump from a hero who breaks bricks. A small hero's bump only
+   * jolts it.
+   */
+  CRACKED: def('wall-cracked', 'solid', { block: { kind: 'brick', content: 'none' } }),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
@@ -169,6 +176,7 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
   '|': T.BLASTER_BASE,
   A: T.WALL_TOP,
   H: T.WALL,
+  '&': T.CRACKED,
   // entity markers
   g: '@goomba',
   k: '@koopa-green',

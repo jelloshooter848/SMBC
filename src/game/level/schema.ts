@@ -119,6 +119,20 @@ export type Zone =
     }
   /** Falling out of the level at column >= x drops the player into `target` instead of killing them. */
   | { kind: 'pit'; x: number; target: { level: string; x: number; y: number } }
+  /**
+   * A lift shaft down into a hidden area (5-4's shaft into `5-4-dungeon`): a player riding a
+   * `lift-down` whose column lies within [x, x + w) is carried on down past the screen bottom
+   * and drops into `target` from above (a `fall` arrival). Falling into the shaft without the
+   * lift still kills. The lift's planks carry a faint skull mark (the hint). `campaign`: the
+   * zone sleeps (no descent, no mark) unless the campaign variant (level/campaign.ts) wakes it.
+   */
+  | {
+      kind: 'descent';
+      x: number;
+      w: number;
+      target: { level: string; x: number; y: number };
+      campaign?: boolean;
+    }
   /** Flying Cheep Cheeps leap from below while the player is within [x, x + w). */
   | { kind: 'cheeps'; x: number; w: number }
   /** Bullet Bills fly in from the screen edges while the player is within [x, x + w). */

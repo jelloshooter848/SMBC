@@ -51,6 +51,13 @@ export class CoinPop extends Entity {
 }
 
 /** Brick fragment flying off a broken brick. */
+/**
+ * A broken piece's frame: the items sheet's 'brick-piece' / 'pipe-piece', or a `sheet:frame` of
+ * another sheet ('crypt:rubble-0', the cracked wall's rubble); a sheet not registered draws the
+ * brick piece.
+ */
+export type PieceFrame = 'brick-piece' | 'pipe-piece' | `${string}:${string}`;
+
 export class BrickPiece extends Entity {
   readonly kind = 'brick-piece';
   /** `frame`: the items sheet's piece to draw ('pipe-piece': the anchor's smashed pipe). */
@@ -59,7 +66,7 @@ export class BrickPiece extends Entity {
     y: number,
     vx: number,
     vy: number,
-    private readonly frame: 'brick-piece' | 'pipe-piece' = 'brick-piece',
+    private readonly frame: PieceFrame = 'brick-piece',
   ) {
     super(x, y, 8, 8);
     this.layer = 'front';
@@ -74,7 +81,20 @@ export class BrickPiece extends Entity {
     if (this.isBelowLevel()) this.destroy();
   }
   render(r: Renderer, view: View): void {
-    r.sprite(view.assets.sheet('items'), this.frame, toPx(this.body.x) - view.camX, toPx(this.body.y));
+    const x = toPx(this.body.x) - view.camX;
+    const y = toPx(this.body.y);
+    const colon = this.frame.indexOf(':');
+    if (colon > 0) {
+      const id = this.frame.slice(0, colon);
+      const frame = this.frame.slice(colon + 1);
+      if (view.assets.has(id) && view.assets.sheet(id).frames.has(frame)) {
+        r.sprite(view.assets.sheet(id), frame, x, y);
+        return;
+      }
+      r.sprite(view.assets.sheet('items'), 'brick-piece', x, y);
+      return;
+    }
+    r.sprite(view.assets.sheet('items'), this.frame, x, y);
   }
 }
 
