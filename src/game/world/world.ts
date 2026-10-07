@@ -85,6 +85,7 @@ import { Larry } from '../entities/enemies/larry';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
+import { CASTLE_PAGES } from '../story/script';
 
 export type WorldEvent =
   /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
@@ -122,7 +123,9 @@ export type WorldEvent =
    */
   | { type: 'moblin'; player: number; secret: string; next: string | null }
   /** A hidden path's block was bumped (World.layPath): its clouds are being laid. */
-  | { type: 'path' };
+  | { type: 'path' }
+  /** A line for the screen reader (the campaign's castle pages): the level announces it. */
+  | { type: 'say'; text: string };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -2446,7 +2449,7 @@ export class World {
     // No points: BowserAxe.as only calls breakBridgeStart/Inc/End (Bowser.as), never die(), and
     // the fall below the screen (AnimatedObject.checkDosSides -> destroy) scores nothing either.
     if (bowser && c.t === 60) {
-      bowser.fallDead();
+      bowser.fallDead(this);
       this.audio.sfx('bowser-fall');
     }
     if (c.t === 120) this.audio.playJingle('castle-clear');
@@ -2486,6 +2489,22 @@ export class World {
       return;
     }
     if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
+    // The campaign's castles (docs/STORY.md 2.4-2.12) tell their own news in two pages instead:
+    // the fake Bowser's true form, then 2 s later the story, each read out; the exit waits 3.5 s
+    // after the second. The Lost castles keep the NES text (their story is Chapter 2).
+    const pages = this.storyMode ? CASTLE_PAGES[this.level.parent ?? this.level.id] : undefined;
+    if (pages) {
+      const page = s === 120 ? pages.reveal : s === 240 ? pages.news : null;
+      if (page) {
+        this.castleText = [`THANK YOU ${p.def.hudName}!`, '', ...page];
+        this.events.push({ type: 'say', text: [this.castleText[0], ...page].join(' ') });
+      }
+      if (s >= 450) {
+        this.events.push({ type: 'exit', next });
+        c.t = -100000;
+      }
+      return;
+    }
     if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
     if (s === 120 && next === 'end') this.castleText.push('', 'YOUR QUEST IS OVER.');
     if (s >= (next === 'end' ? 270 : 330)) {
