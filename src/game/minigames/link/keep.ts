@@ -20,18 +20,16 @@ import { keepDungeon } from './dungeon';
 
 /** The keep's fixed seed: every round plays the same way for the same inputs. */
 export const KEEP_SEED = 0x11c4;
+/** The keep's number on the HUD ("LEVEL-1" over the map, as a Zelda dungeon's). */
+export const KEEP_LEVEL = 1;
 /** Frames the wake-up line stays on screen (Link can already move). */
 export const INTRO_FRAMES = 200;
 /** Frames of "THE SPELL BREAKS!" before the round passes. */
 export const WIN_FRAMES = 150;
 /** Frames after the death spin and puff before the round fails. */
 export const FAIL_DELAY = 30;
-/** Frames a short banner (the keeper's name) stays up. */
-const BANNER_FRAMES = 80;
 /** Frames a chest's banner (what Link found and how to use it) stays up. */
 export const ITEM_BANNER_FRAMES = 150;
-/** Screen y of the keeper's name: below the keeper, above Link at the door. */
-export const KEEPER_BANNER_Y = HUD_H + 86;
 /** Screen y of the intro line. */
 const INTRO_Y = 112;
 
@@ -74,6 +72,7 @@ export class ShadowKeepScene implements Scene {
       spawners: { keeper: (_w, s) => new Keeper(s.x, s.y) },
       items: DEFAULT_ITEMS,
       shield: false,
+      swordBeam: true,
       noDamage: () => game.ctx.assist.invulnerable,
     });
     this.world.events.length = 0; // the first room's arrival is announced in enter()
@@ -173,6 +172,8 @@ export class ShadowKeepScene implements Scene {
     switch (e.type) {
       case 'sword':
         return this.sfx('sword-stab');
+      case 'beam':
+        return this.sfx('sword-beam');
       case 'hit':
         return this.sfx('hurt-enemy');
       case 'kill':
@@ -243,7 +244,7 @@ export class ShadowKeepScene implements Scene {
         this.banner = null;
         return this.updateMusic();
       case 'keeper-wakes':
-        this.banner = { lines: ['THE KEEPER'], until: this.t + BANNER_FRAMES, y: KEEPER_BANNER_Y };
+        // No name on screen (a Zelda boss has none): its music says it is awake.
         this.updateMusic();
         return;
       case 'dying':
@@ -282,13 +283,15 @@ export class ShadowKeepScene implements Scene {
   render(r: Renderer): void {
     r.clear('#000000');
     renderWorld(r, this.view, this.world);
+    // Zelda's HUD: the level over the map, and the B box (the item in the slot) beside the A
+    // box (the sword). B and A are the HUD's own art here, never instruction text (owner's call).
     const item = this.world.inv.current;
     drawTdHud(
       r,
       this.view,
-      hudData(this.world, 'SHADOW KEEP', [
-        { label: 'ITEM', frame: item?.icon ?? null },
-        { label: 'SWORD', frame: 'sword-icon' },
+      hudData(this.world, `LEVEL-${KEEP_LEVEL}`, [
+        { label: 'B', frame: item?.icon ?? null },
+        { label: 'A', frame: 'sword-icon' },
       ]),
     );
     const b = this.banner;

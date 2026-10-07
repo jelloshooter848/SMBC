@@ -11,6 +11,7 @@ import type { MiniGameResult } from '../types';
 import { recordingAudio } from '../megaman/harness';
 import { SAMUS_MINIGAME } from '.';
 import { EscapeScene, type EscapeOptions } from './scene';
+import { MINI_LIVES } from '../lives';
 import { EscapeBot, type CautiousOptions } from './bot';
 
 /*
@@ -76,13 +77,28 @@ export function escapeHarness(opts: HarnessOptions = {}) {
     for (; i < max && results.length === 0; i++) step(bot.next(scene));
     return i;
   };
-  return { game, scene, below, results, said, log, tempo, step, tap, play, world: scene.world };
+  return {
+    game,
+    scene,
+    below,
+    results,
+    said,
+    log,
+    tempo,
+    step,
+    tap,
+    play,
+    /** The life in play's World (a new one after each lost life). */
+    get world() {
+      return scene.world;
+    },
+  };
 }
 
 export type EscapeHarness = ReturnType<typeof escapeHarness>;
 
 /** One round played by a bot: how it ended, the time left and what it cost. */
-export function botRun(opts: Partial<CautiousOptions> = {}, max = 12000) {
+export function botRun(opts: Partial<CautiousOptions> = {}, max = 30000) {
   const h = escapeHarness();
   const bot = new EscapeBot(opts);
   let lost = 0;
@@ -100,6 +116,8 @@ export function botRun(opts: Partial<CautiousOptions> = {}, max = 12000) {
     phase: h.scene.phase,
     frames,
     secondsLeft: h.scene.seconds,
+    /** Lives lost on the way (3 on a game over). */
+    livesLost: MINI_LIVES - h.scene.lives.lives,
     hp,
     lost,
     x: p.body.x >> 12,

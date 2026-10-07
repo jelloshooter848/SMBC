@@ -62,7 +62,8 @@ function parseProps(parts: string[]): Props {
  *                         `descent x w -> level x y [campaign]` (a down lift's shaft),
  *                         `trick x y h -> level x y [exit=up] [campaign]` (a trick wall's spinning panel)
  *                         `pit x -> level x y [w=N] [campaign]` (`w`: only columns x..x+w-1)
- *                         `path x y w block=bx,by [campaign]` (a hidden cloud path, World.layPath)
+ *                         `path x y w block=bx,by [one-way] [campaign]` (a hidden cloud path, World.layPath)
+ *                         `ledge x y w campaign` (a one-way cloud ledge, laid in the campaign only)
  *   header `bonus: true`  a fill-up spot off the map (LevelData.bonus: no clock, no WORLD card)
  *   [decor]               `kind x y`
  *   [campaign-decor]      `kind x y`: the decor of the level's campaign look, which also takes
@@ -356,7 +357,7 @@ function parseZone(line: string): Zone {
       return z;
     }
     case 'path': {
-      // path x y w block=bx,by [campaign]
+      // path x y w block=bx,by [one-way] [campaign]
       const [, xs, ys, ws, ...rest] = parts;
       const block = parseProps(rest.filter((r) => r.includes('='))).block;
       const [bx, by] = String(block ?? '')
@@ -369,7 +370,7 @@ function parseZone(line: string): Zone {
         !Number.isInteger(bx) ||
         !Number.isInteger(by)
       )
-        throw new Error('expected "path x y w block=bx,by [campaign]"');
+        throw new Error('expected "path x y w block=bx,by [one-way] [campaign]"');
       const z: Zone = {
         kind: 'path',
         x: Number(xs),
@@ -377,8 +378,21 @@ function parseZone(line: string): Zone {
         w: Number(ws),
         block: { x: bx as number, y: by as number },
       };
+      if (rest.includes('one-way')) z.oneWay = true;
       if (rest.includes('campaign')) z.campaign = true;
       return z;
+    }
+    case 'ledge': {
+      // ledge x y w campaign
+      const [, xs, ys, ws, ...rest] = parts;
+      if (
+        !/^\d+$/.test(xs ?? '') ||
+        !/^\d+$/.test(ys ?? '') ||
+        !/^[1-9]\d*$/.test(ws ?? '') ||
+        rest.join(' ') !== 'campaign'
+      )
+        throw new Error('expected "ledge x y w campaign"');
+      return { kind: 'ledge', x: Number(xs), y: Number(ys), w: Number(ws), campaign: true };
     }
     case 'cheeps':
       return { kind: 'cheeps', x: Number(parts[1]), w: Number(parts[2]) };
@@ -540,7 +554,13 @@ function serializeZone(z: Zone): string {
         z.campaign ? ' campaign' : ''
       }`;
     case 'path':
-      return `path ${z.x} ${z.y} ${z.w} block=${z.block.x},${z.block.y}${z.campaign ? ' campaign' : ''}`;
+      return `path ${z.x} ${z.y} ${z.w} block=${z.block.x},${z.block.y}${z.oneWay ? ' one-way' : ''}${
+        z.campaign ? ' campaign' : ''
+      }`;
+    case 'ledge':
+      // Always `campaign` (the only way a map holds one): a campaign variant's woken ledge (its
+      // tiles laid, which a map cannot write) is written back as the sleeping zone that lays them.
+      return `ledge ${z.x} ${z.y} ${z.w} campaign`;
     case 'exit':
       return `exit ${z.x} next=${z.next}`;
     case 'vine':

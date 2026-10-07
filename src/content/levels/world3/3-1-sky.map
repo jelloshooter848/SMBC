@@ -9,6 +9,9 @@ start: 4,14
 startMode: climb
 camera: scroll
 parent: 3-1
+;; Campaign play only: the coin heaven above 3-1 shares its Mega Man look and music.
+campaignTheme: megaman-stage
+campaignMusic: mm-stage-31
 
 ;; Past the end of the clouds a coin trail hops over two small cloud platforms to a hidden block
 ;; (`8`, over the second platform) holding a teleport pad: bumped, the pad rises out of the

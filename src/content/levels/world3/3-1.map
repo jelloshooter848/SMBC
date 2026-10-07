@@ -8,6 +8,12 @@ time: 400
 start: 2,12
 startMode: stand
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook): Mega Man's tribute, 3-1 as a robot master's
+;; night stage: the same tiles, enemies, coins and collision in the `megaman-stage` theme and
+;; music, its trees as radio masts, with factory blocks along the ground ([campaign-decor]).
+;; Elsewhere (level select, ?level=3-1) it looks as it always did.
+campaignTheme: megaman-stage
+campaignMusic: mm-stage-31
 
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208
@@ -102,3 +108,65 @@ cloud-1 210 3
 tree-big 213 12
 tree-small 215 12
 tree-small 216 12
+
+[campaign-decor]
+;; The night stage: the level's own trees and clouds (drawn as radio masts and dim clouds), and
+;; factory blocks with lit windows along open stretches of ground.
+cloud-2 0 3
+tree-small 11 12
+tree-big 13 12
+cloud-1 18 3
+tree-big 21 12
+tree-small 23 12
+tree-small 24 12
+cloud-1 27 2
+cloud-2 30 3
+tree-small 40 12
+tree-big 43 12
+cloud-1 45 2
+cloud-2 48 3
+tree-small 59 12
+tree-big 61 12
+cloud-1 66 3
+tree-big 69 12
+tree-small 71 12
+tree-small 72 12
+cloud-1 75 2
+cloud-2 78 3
+tree-big 91 12
+cloud-1 93 2
+cloud-2 96 3
+tree-small 107 12
+tree-big 109 12
+cloud-1 114 3
+tree-big 117 12
+tree-small 119 12
+tree-small 120 12
+cloud-1 123 2
+cloud-2 126 3
+tree-small 136 12
+cloud-1 141 2
+cloud-2 144 3
+tree-small 155 12
+tree-big 157 12
+cloud-1 162 3
+tree-big 165 12
+tree-small 167 12
+tree-small 168 12
+cloud-1 171 2
+cloud-2 174 3
+cloud-1 189 2
+cloud-2 192 3
+tree-small 203 12
+tree-big 205 12
+cloud-1 210 3
+tree-big 213 12
+tree-small 215 12
+tree-small 216 12
+mm-skyline 3 12
+mm-skyline 25 12
+mm-skyline 49 12
+mm-skyline 94 12
+mm-skyline 110 12
+mm-skyline 145 12
+mm-skyline 158 12

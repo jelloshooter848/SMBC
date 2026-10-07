@@ -45,6 +45,7 @@ const tileFrames = [
   'water-0',
   'water-1',
   'cloud-block',
+  'cloud-ledge',
   'blaster-top',
   'blaster-base',
   'wall',
@@ -389,6 +390,18 @@ const decorFrames: Record<string, Size> = {
   'cloud-1@contra-jungle': [32, 16],
   'cloud-2@contra-jungle': [48, 16],
   'cloud-3@contra-jungle': [64, 16],
+  // The campaign looks of 2-1, 3-1 and 4-2.
+  'cloud-1@zelda2': [32, 16],
+  'cloud-2@zelda2': [48, 16],
+  'cloud-3@zelda2': [64, 16],
+  'tree-big@zelda2': [16, 48],
+  'tree-small@zelda2': [16, 32],
+  henge: [48, 32],
+  'tree-big@megaman-stage': [16, 48],
+  'tree-small@megaman-stage': [16, 32],
+  'mm-skyline': [64, 32],
+  'brinstar-brush': [32, 16],
+  'brinstar-column': [16, 48],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -438,6 +451,12 @@ describe('tile sprites', () => {
         'tiles-smw-secret',
         'tiles-contra-falls',
         'tiles-alien-lair',
+        'tiles-zelda2',
+        'tiles-megaman-stage',
+        'tiles-brinstar',
+        // the 0.4.12 restyles of 5-4 and 6-2
+        'tiles-castlevania',
+        'tiles-ninja-city',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -509,7 +528,13 @@ describe('decor sprites', () => {
         'decor-gray',
         'decor-cavern',
         'decor-jungle',
+        // the 0.4.12 restyles of 5-4 and 6-2
+        'decor-castlevania',
+        'decor-ninja-city',
         'decor-smw',
+        'decor-zelda2',
+        'decor-megaman-stage',
+        'decor-brinstar',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

@@ -13,13 +13,20 @@ import type { Game } from '../../scenes/game';
 import { MiniGameMenuScene } from '../menu';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import type { MiniGameResult } from '../types';
+import { drawHud } from '../../hud/hud';
+import { worldLabel } from '../../hud/world-label';
+import { TIMER_FRAMES } from '../../constants';
 import { LUIGI_ROUTE, poleOf, raceCourse } from './course';
 import { RivalLuigi } from './rival';
-import { drawBanner, drawBigText, drawOffscreenArrow, drawTrack, raceClock } from './race-hud';
+import { drawBanner, drawBigText, drawOffscreenArrow, drawTrack } from './race-hud';
 
-/** Frames each of "3", "2", "1" stays up; the race starts on GO, which stays up a little longer. */
-export const COUNT_FRAMES = 60;
-export const GO_FRAME = COUNT_FRAMES * 3;
+/**
+ * The start, as a level's: the black WORLD 1-1 card with the lives (as long as the game's own
+ * card, scenes/intro.ts), then the course for a short beat under the race's banner so nobody
+ * starts blind, then GO! and both racers are off at once. GO stays up a little into the race.
+ */
+export const CARD_FRAMES = 120;
+export const GO_FRAME = CARD_FRAMES + 36;
 const GO_SHOWN = 50;
 /** After the rival takes the flag: his slide down the pole and the banner, then the round ends. */
 export const LOST_FRAMES = 150;
@@ -28,7 +35,7 @@ const WIN_MAX_FRAMES = 600;
 /** The race music: the overworld theme, a little faster. */
 const RACE_TEMPO = 1.15;
 
-export type RacePhase = 'countdown' | 'race' | 'won' | 'lost' | 'dead' | 'over';
+export type RacePhase = 'card' | 'ready' | 'race' | 'won' | 'lost' | 'dead' | 'over';
 
 /**
  * Luigi's Mirror Race: Mario against brainwashed Luigi, a ghost racer (rival.ts), over a short
@@ -39,7 +46,7 @@ export type RacePhase = 'countdown' | 'race' | 'won' | 'lost' | 'dead' | 'over';
 export class MirrorRaceScene implements Scene {
   readonly world: World;
   readonly rival: RivalLuigi;
-  phase: RacePhase = 'countdown';
+  phase: RacePhase = 'card';
   /** Frames since the scene started, and frames of racing (the clock). */
   private t = 0;
   raceFrames = 0;
@@ -77,6 +84,22 @@ export class MirrorRaceScene implements Scene {
 
   enter(): void {
     this.game.ctx.audio.stopMusic();
+    const s = this.world.state;
+    this.game.deps.announcer?.say(`World ${worldLabel(s.world)}-${s.stage}. Race Luigi to the flag!`);
+  }
+
+  /**
+   * The lives on the card: the campaign's when raced from a save file (the player's own count),
+   * else the round's (a round for fun, the dev menu).
+   */
+  private cardLives(): number {
+    const g = this.game;
+    return g.campaign && !g.inRound ? g.state.lives : this.world.state.lives;
+  }
+
+  /** Before GO: the card, then the course held still. */
+  private get starting(): boolean {
+    return this.phase === 'card' || this.phase === 'ready';
   }
 
   exit(): void {
@@ -84,19 +107,20 @@ export class MirrorRaceScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
-    if (this.phase === 'countdown' || this.phase === 'race')
+    if (this.phase === 'card') return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
+    if (this.phase === 'ready' || this.phase === 'race')
       return levelTouchLabels(this.world.players[0], this.world);
     return { ...NO_TOUCH_BUTTONS };
   }
 
   update(input: InputFrame): void {
     if (this.phase === 'over') return;
-    if ((this.phase === 'countdown' || this.phase === 'race') && input.pressed('start')) {
+    if ((this.starting || this.phase === 'race') && input.pressed('start')) {
       this.game.scenes.push(new RaceMenuScene(this.game, () => this.finish('quit')));
       return;
     }
     this.t++;
-    if (this.phase === 'countdown') return this.countdown();
+    if (this.starting) return this.countdown();
     if (this.phase === 'lost') {
       this.rival.update();
       if (++this.endT >= LOST_FRAMES) this.finish('fail');
@@ -122,10 +146,7 @@ export class MirrorRaceScene implements Scene {
   private countdown(): void {
     const audio = this.game.ctx.audio;
     const say = (s: string) => this.game.deps.announcer?.say(s);
-    if (this.t === 1 || this.t === COUNT_FRAMES + 1 || this.t === COUNT_FRAMES * 2 + 1) {
-      audio.sfx('timer-tick');
-      say(String(3 - Math.floor((this.t - 1) / COUNT_FRAMES)));
-    }
+    if (this.t >= CARD_FRAMES) this.phase = 'ready';
     if (this.t >= GO_FRAME) {
       this.phase = 'race';
       audio.sfx('coin');
@@ -173,13 +194,47 @@ export class MirrorRaceScene implements Scene {
     return (x + w - this.start) / (this.goal - this.start);
   }
 
+  /** The HUD's TIME: the course's clock running down at a level's pace while the race is on. */
+  private time(): number {
+    // Infinite time holds the clock, as a level's World.tickTimer does.
+    if (this.game.ctx.assist.infiniteTime) return this.world.level.time ?? 400;
+    return Math.max(0, (this.world.level.time ?? 400) - Math.floor(this.raceFrames / TIMER_FRAMES));
+  }
+
+  /** The SMB HUD across the top: the race's own name, score and coins, WORLD 1-1 and TIME. */
+  private drawHud(r: Renderer, onCourse: boolean): void {
+    const w = this.world;
+    // The card hides TIME's digits under infinite time (scenes/intro.ts).
+    const time = !onCourse && this.game.ctx.assist.infiniteTime ? null : this.time();
+    const opts = onCourse
+      ? { covered: (x: number, y: number, ww: number, h: number) => w.spriteIn(x, y, ww, h) }
+      : {};
+    drawHud(r, this.game.ctx.assets, w.state, time, w.frame, onCourse ? w.players : [], opts);
+  }
+
+  /** The black card before the race (scenes/intro.ts's): the HUD, WORLD 1-1, Mario and his lives. */
+  private renderCard(r: Renderer): void {
+    r.clear('#000');
+    this.drawHud(r, false);
+    const assets = this.game.ctx.assets;
+    const font = assets.sheet('font');
+    const s = this.world.state;
+    r.text(font, `WORLD ${worldLabel(s.world)}-${s.stage}`, 88, 80);
+    const c = s.character;
+    const sheet = assets.sheet(c.portrait.sheet, c.portrait.palette);
+    const f = sheet.frames.get(c.portrait.frame);
+    r.sprite(sheet, c.portrait.frame, 96, 112 - (f?.h ?? 16) + 16);
+    r.text(font, `×  ${this.cardLives()}`, 120, 120);
+  }
+
   render(r: Renderer): void {
+    if (this.phase === 'card') return this.renderCard(r);
     this.world.render(r);
+    this.drawHud(r, true);
     const font = this.game.ctx.assets.sheet('font');
     const m = this.world.player.body;
     const l = this.rival.player.body;
     drawTrack(r, font, this.progress(toPx(m.x), toPx(m.w)), this.progress(toPx(l.x), toPx(l.w)));
-    r.text(font, raceClock(this.raceFrames), 208, 14);
     // Where the rival is when the screen doesn't show him.
     const sx = toPx(l.x) - this.world.camera.pxX;
     const sy = toPx(l.y);
@@ -187,9 +242,7 @@ export class MirrorRaceScene implements Scene {
       if (sx > SCREEN_W) drawOffscreenArrow(r, font, 1, sy);
       else if (sx + toPx(l.w) < 0) drawOffscreenArrow(r, font, -1, sy);
     }
-    if (this.phase === 'countdown') {
-      const n = 3 - Math.floor(this.t / COUNT_FRAMES);
-      drawBigText(r, String(Math.max(1, n)), SCREEN_W / 2, 72, '#fcfcfc');
+    if (this.phase === 'ready') {
       drawBanner(r, font, 'RACE LUIGI TO THE FLAG!', 120);
     } else if (this.phase === 'race' && this.t - GO_FRAME < GO_SHOWN) {
       drawBigText(r, 'GO!', SCREEN_W / 2, 72, '#f8b800');

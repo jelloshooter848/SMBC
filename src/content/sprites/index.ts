@@ -1,7 +1,7 @@
 import { NES, type PaletteBook } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { tilePalettes, tilesDef } from './tiles';
-import { fontPalette, fontDef } from './font';
+import { fontPalette, fontDef, fontTints } from './font';
 import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
@@ -61,6 +61,7 @@ export const SPRITES: Record<string, SpriteDef> = {
 const defaults: Record<string, readonly string[]> = {
   ...tilePalettes,
   font: fontPalette,
+  ...fontTints,
   ...itemPalettes,
   ...decorPalettes,
   ...marioPalettes,

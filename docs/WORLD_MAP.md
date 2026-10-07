@@ -498,7 +498,8 @@ Yoshi egg frames, `egg-shell`, the Moblin, `cave-fire-0/1` (flickering slower wi
 ## Hidden paths and campaign pipes (level zones, 0.4.10)
 
 ```
-path x y w block=bx,by [campaign]
+path x y w block=bx,by [one-way] [campaign]
+ledge x y w campaign
 pipe x y dir -> level x y [exit=dir] [campaign]
 pipe x y down -> map 0 0
 ```
@@ -507,7 +508,19 @@ pipe x y down -> map 0 0
   once the hidden path block at (bx, by) (tile `9`, T.HIDDEN_PATH, content `path`) is bumped
   (`World.layPath`, one every `PATH_STEP_FRAMES`, only on open air; a tile with a player in it waits
   for him). `campaign`: the zone sleeps (no block, no path) outside campaign play; the campaign
-  variant wakes it and puts the hidden block in at (bx, by). 2-1's (above).
+  variant wakes it and puts the hidden block in at (bx, by). 2-1's (above). Several `path` zones
+  may name the same block: all are laid, in map order, with one announcement. `one-way`: its tiles
+  are laid as one-way cloud ledges (T.CLOUD_LEDGE) instead of cloud blocks (0.4.12: 2-1's two steps
+  back up to the bricks, laid before the path, so a hero dropped on the ground by the bump climbs
+  back up; a jump from under them passes through).
+- **`ledge`** (0.4.12): the `w` tiles from (x, y) rightward become one-way cloud ledges
+  (T.CLOUD_LEDGE: stood on from above, passed through from below and from the sides) in campaign
+  play only; `campaign` is required and the classic level is untouched. 2-1's ledge against its
+  last tower (188-189, row 8, a row over the bricks) is Simon's way up: his committed jump lands
+  on it off the bricks or coming down from the springboard (whose launch rises through it), and
+  from it he reaches the hidden coin block's top, and from there the tower top. It is too low for
+  any hero to reach the hidden block from it. Ordinary flagpole runs end exactly as before
+  (`tests/sim/top-secret.test.ts` replays every hero's whole way to the secret from the ground).
 - **A `campaign` pipe** sleeps outside campaign play (no way in; a zone only, so the level's tiles
   are the same either way); the campaign variant wakes it. 2-1's way into the cave.
 - **`-> map`** (`MAP_EXIT`): a pipe back to the world map (the Top Secret Area's). Nothing is
@@ -673,8 +686,16 @@ pit x -> level x y [w=N] [campaign]
 ## Campaign looks (`LevelData.campaignLook`, 0.4.9)
 
 A level can look different in campaign play only: the same tiles, zones, entities and collision
-in another theme, music and decor (7-3 as a Contra jungle stage; next 2-1, 3-1, 4-2, 5-4 and 6-2
-in their heroes' styles). In the map:
+in another theme, music and decor (7-3 as a Contra jungle stage; since 0.4.12 the hero tributes:
+2-1 as a Zelda II field `zelda2`, 3-1 as a Mega Man night stage `megaman-stage`, 4-2 as Metroid's
+Brinstar `brinstar`, 5-4 as a Castlevania hall `castlevania`, 6-2 as a Ninja Gaiden city street
+`ninja-city`, each with its own music; 1-1 stays as it is). The coin heavens above them (2-1-sky,
+2-1-sky2, 3-1-sky, 6-2-sky) share the look; bonus rooms, water areas and the other areas keep
+their own. A look stays after the hero is freed, and its music plays for every hero (a hero's own
+overworld tune, `levelMusic` in `scenes/level.ts`, plays only in a plain `overworld` area). No
+look is a water theme, and every rule that keys off the theme (`isWaterTheme`, `isCastleTheme`,
+`hasSolidFloors`, `enemyPalette`) answers as for the classic level
+(`src/content/levels/campaign-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle

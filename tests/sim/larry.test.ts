@@ -14,6 +14,7 @@ import { HammerBattleScene, BATTLE_WIN_DELAY } from '@game/scenes/hammer-battle'
 import { Larry } from '@game/entities/enemies/larry';
 import { HammerBro } from '@game/entities/enemies/hammer-bro';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
+import { Decoration } from '@game/entities/objects/decoration';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import {
   registerBonusGame,
@@ -31,6 +32,9 @@ import { draw, dropInAndClimb, file, makeGame, rideToStern, useStorage, type H }
 
 useStorage();
 afterEach(() => registerBonusGame(SMB3_BONUS));
+
+/** The middle of the cabin's ceiling pipe (px): `smb3:ceiling-pipe` at column 1, its 32-px pipe 8 px in. */
+const CEILING_PIPE_MID = 16 + 8 + 16;
 
 const W3 = ['1-0', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4'];
 /** A file on World 4 with 4-1 cleared, standing on `node`. */
@@ -56,7 +60,7 @@ function onMap(over: Partial<SaveFile>): { h: H; map: () => WorldMapScene } {
 
 /** Into Larry's room as from the airship deck's stern pipe; Larry is found once spawned. */
 function intoAirship(h: H): { level: LevelScene; larry: Larry } {
-  h.game.startLevel(getLevel('4-2-larry'), { mode: 'pipe-exit', x: 2, y: 12, time: 300 });
+  h.game.startLevel(getLevel('4-2-larry'), { mode: 'fall', x: 2, y: 12, time: 300 });
   h.step();
   const level = h.top() as LevelScene;
   expect(level).toBeInstanceOf(LevelScene);
@@ -146,11 +150,12 @@ describe('the crystal ball (campaign)', () => {
     rideToStern(h, deck);
     const cabin = h.top() as LevelScene;
     expect(cabin.level.id).toBe('4-2-larry');
-    // Out of the pipe at columns 2-3 onto its top (row 13), still no clock.
-    h.until(() => !cabin.world.player.frozen, 200);
+    // Down out of the pipe in the ceiling onto the floor (row 13), still no clock.
     const p = cabin.world.player;
+    expect(p.body.y).toBeLessThan(0);
+    h.until(() => p.body.onGround, 200);
     expect((p.body.y + p.body.h) >> 8).toBe(13 * 16);
-    expect(p.centerX >> 8).toBe(3 * 16); // the middle of the 2-wide pipe
+    expect(p.centerX >> 8).toBe(CEILING_PIPE_MID);
     expect(cabin.world.time).toBeNull();
     expect(h.game.airship?.reachedRoom).toBe(true);
     h.until(() => cabin.world.entities.some((e) => e instanceof Larry), 30);
@@ -206,21 +211,45 @@ describe("the cabin's look (the SMB3 art)", () => {
     for (let y = 3; y < 12; y++) for (let x = 1; x < 15; x++) expect(t(x, y), `${x},${y}`).toBe(T.WALL);
     // The ceiling row and both edge columns are solid, each tile covered by its 16x16 decor: a
     // ceiling beam along row 2, a pillar per row down columns 0 and 15.
-    for (let x = 0; x < 16; x++) expect(t(x, 2)).toBe(T.CASTLE_BRICK);
+    // Over column 2 the ceiling is open (the back wall, not solid): the shaft the hero drops
+    // down, under the pipe.
+    for (let x = 0; x < 16; x++) expect(t(x, 2)).toBe(x === 2 ? T.WALL : T.CASTLE_BRICK);
     for (let y = 2; y < 13; y++)
       for (const x of [0, 15]) expect(t(x, y), `edge ${x},${y}`).toBe(T.CASTLE_BRICK);
-    expect(at('smb3:ceiling-beam')).toEqual(cells(span(1, 14), [2]));
+    expect(at('smb3:ceiling-beam')).toEqual(cells([1, ...span(3, 14)], [2]));
+    expect(at('smb3:ceiling-pipe')).toEqual(['1,3']);
     expect(at('smb3:pillar')).toEqual(cells([0, 15], span(2, 12)));
     expect(at('smb3:porthole')).toEqual(['10,6', '5,6']);
-    // The floor: post tops (`#`) on row 13, the posts going on (`%`) on row 14; the raised post's
-    // top at (7,12) with its post under it; the arrival pipe (the deck's stern pipe leads to `4-2-larry 2 12`) in the floor.
+    // The floor: post tops (`#`) on row 13, the posts going on (`%`) on row 14, all the way
+    // across (no pipe in it: the hero comes down from the ceiling); the raised post's top at
+    // (7,12) with its post under it.
     for (const x of span(0, 15)) {
-      if (x === 2 || x === 3) continue;
       expect(t(x, 13), `top ${x}`).toBe(x === 7 ? T.CASTLE_BRICK : T.GROUND);
       expect(t(x, 14), `post ${x}`).toBe(T.CASTLE_BRICK);
     }
     expect(t(7, 12)).toBe(T.GROUND);
-    expect([t(2, 13), t(3, 13), t(2, 14), t(3, 14)]).toEqual([T.PIPE_TL, T.PIPE_TR, T.PIPE_BL, T.PIPE_BR]);
+  });
+
+  it("drops the hero in out of a pipe in the ceiling, as SMB3's cabins do (not up out of the floor)", () => {
+    const l = getLevel('4-2-larry');
+    expect(l.startMode).toBe('fall');
+    expect(l.start).toEqual({ x: 2, y: 12 });
+    const h = makeGame();
+    // As from the deck's stern pipe (its link names no way out: the room's own start mode).
+    h.game.startLevel(l, { x: 2, y: 12, time: 300 });
+    h.step();
+    const cabin = h.top() as LevelScene;
+    expect(cabin.level.id).toBe('4-2-larry');
+    const p = cabin.world.player;
+    // Above the room, inside the pipe: the pipe is drawn over the players, so he comes out of it.
+    expect(p.body.y).toBeLessThan(0);
+    const pipe = cabin.world.entities.find((e) => e instanceof Decoration && e.name === 'smb3:ceiling-pipe');
+    expect(pipe?.layer).toBe('front');
+    // Centred under the pipe's mouth, falling straight down onto the floor (row 13).
+    expect(p.centerX >> 8).toBe(CEILING_PIPE_MID);
+    h.until(() => p.body.onGround, 120);
+    expect((p.body.y + p.body.h) >> 8).toBe(13 * 16);
+    expect(p.centerX >> 8).toBe(CEILING_PIPE_MID);
   });
 
   it('draws Larry from the smb3 sheet, bottom-centred, facing the hero; a hit flashes smb3-flash', () => {

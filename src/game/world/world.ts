@@ -65,6 +65,7 @@ import { shellKickSeqScore, stompScore } from '../rules/score';
 import type { GameContext, GameState } from '../context';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
+import { drawThemeBackdrop } from './theme-backdrop';
 import { Lift } from '../entities/objects/lift';
 import { Candle, Respawner } from '../entities/objects/crypt';
 import {
@@ -78,6 +79,7 @@ import { sfx as SFX_LIB } from '@content/sfx/sfx';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
+import { DEATH_FRAMES, DEATH_SFX, renderDeath, startDeath, stepDeath, type DeathStyle } from './death-style';
 import { Axe } from '../entities/objects/axe';
 import { CaveFire, Moblin } from '../entities/objects/moblin';
 import { YoshiEgg } from '../entities/objects/yoshi-egg';
@@ -176,6 +178,14 @@ export interface WorldStart {
    * whose HUD shows no score: Dracula's Castle, Zebes Escape, Station Escape). 1UP still shows.
    */
   scorePopups?: boolean;
+  /**
+   * How a hero dies here (death-style.ts): `hop` (the default) is Mario's jingle and hop, as
+   * always; a mini game picks its hero's own NES death (`orbs` Mega Man, `explode` Samus,
+   * `collapse` Simon, `ninja` Ryu), each with its own sound. `died` is raised at the end of it.
+   */
+  deathStyle?: DeathStyle;
+  /** The sound a non-hop death makes, in place of its style's own (DEATH_SFX). */
+  deathSfx?: string;
 }
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
@@ -418,6 +428,9 @@ export class World {
   livesFree = false;
   /** WorldStart.extraEntities: a mini game's own entity types. */
   private readonly extraEntities: WorldStart['extraEntities'];
+  /** WorldStart.deathStyle: how a hero dies here (`hop`, Mario's, unless a mini game picks one). */
+  readonly deathStyle: DeathStyle;
+  private readonly deathSfx: string | null;
   /** Cracked-wall tiles still standing (T.CRACKED; crackWalls does nothing once none are left). */
   private cracked = 0;
   /** The Safety floor assist's rims and the players' view of the map with it (made on first use). */
@@ -445,6 +458,8 @@ export class World {
     this.audio = ctx.audio;
     this.assist = ctx.assist;
     this.extraEntities = start.extraEntities;
+    this.deathStyle = start.deathStyle ?? 'hop';
+    this.deathSfx = this.deathStyle === 'hop' ? null : (start.deathSfx ?? DEATH_SFX[this.deathStyle]);
     this.scorePopups = start.scorePopups ?? true;
     this.map = new TileMap(level);
     for (const id of level.tiles) if (id === T.CRACKED) this.cracked++;
@@ -1649,21 +1664,27 @@ export class World {
 
   /**
    * A hidden path's block was bumped (a `path` zone whose `block` is this tile): its tiles are
-   * queued, left to right, and appear one every PATH_STEP_FRAMES as cloud blocks (tickPath), each
-   * with a soft pop. Only open air becomes cloud; a tile with a player in it waits for him to move.
+   * queued, left to right, and appear one every PATH_STEP_FRAMES as cloud blocks (one-way cloud
+   * ledges for a `oneWay` path; tickPath), each with a soft pop. Only open air becomes cloud; a
+   * tile with a player in it waits for him to move.
    */
   private layPath(tx: number, ty: number): void {
+    // Every path zone the block names is laid, in map order (2-1's steps back up, then its path).
+    let laid = false;
     for (const z of this.level.zones) {
       if (z.kind !== 'path' || z.campaign || z.block.x !== tx || z.block.y !== ty) continue;
-      for (let k = 0; k < z.w; k++) this.pathQueue.push({ x: z.x + k, y: z.y });
-      this.pathT = 0;
-      this.audio.sfx('vine');
-      this.events.push({ type: 'path' });
+      const tile = z.oneWay ? T.CLOUD_LEDGE : T.CLOUD_BLOCK;
+      for (let k = 0; k < z.w; k++) this.pathQueue.push({ x: z.x + k, y: z.y, tile });
+      laid = true;
     }
+    if (!laid) return;
+    this.pathT = 0;
+    this.audio.sfx('vine');
+    this.events.push({ type: 'path' });
   }
 
   /** Tiles of a bumped hidden path still to appear (layPath), in order. */
-  private pathQueue: { x: number; y: number }[] = [];
+  private pathQueue: { x: number; y: number; tile: number }[] = [];
   private pathT = 0;
 
   /** The next tile of a hidden path appears (layPath) unless a player stands in its cell. */
@@ -1675,7 +1696,7 @@ export class World {
     this.pathT = 0;
     this.pathQueue.shift();
     if (this.map.get(next.x, next.y) !== T.AIR) return;
-    this.map.set(next.x, next.y, T.CLOUD_BLOCK);
+    this.map.set(next.x, next.y, next.tile);
     this.audio.sfx('coin');
   }
 
@@ -1945,23 +1966,41 @@ export class World {
     p.star = 0;
     p.activeMelee = null;
     this.deathTimers.set(p, 0);
+    if (this.deathSfx) {
+      // A mini game's own death (WorldStart.deathStyle): its sound, and the music stops.
+      startDeath(this.deathStyle, p);
+      if (this.activePlayers().length === 0) {
+        this.audio.setTempoScale(1);
+        this.audio.stopMusic();
+      }
+      this.audio.sfx(this.deathSfx);
+      return;
+    }
     if (this.activePlayers().length === 0) {
       this.audio.setTempoScale(1);
       this.audio.playJingle('death');
     } else this.audio.sfx('hit');
   }
 
+  /** Frames since `p` died (null while alive): a death style's clock (death-style.ts). */
+  deathTime(p: Player): number | null {
+    return p.dead ? (this.deathTimers.get(p) ?? null) : null;
+  }
+
   private updateDeath(p: Player): void {
     const t = (this.deathTimers.get(p) ?? 0) + 1;
     this.deathTimers.set(p, t);
-    // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
-    // has no hop: the original's Character.initiatePitDeath only starts the die timer.
-    if (t === 30 && toPx(p.body.y) <= this.heightPx) p.body.vy = -0x04000;
-    if (t > 30) {
-      p.body.vy += 0x00280;
-      p.body.y += velToSub(p.body.vy);
+    if (this.deathStyle !== 'hop') stepDeath(this.deathStyle, p, t, this.map, this.heightPx);
+    else {
+      // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
+      // has no hop: the original's Character.initiatePitDeath only starts the die timer.
+      if (t === 30 && toPx(p.body.y) <= this.heightPx) p.body.vy = -0x04000;
+      if (t > 30) {
+        p.body.vy += 0x00280;
+        p.body.y += velToSub(p.body.vy);
+      }
     }
-    if (t === 200) {
+    if (t === DEATH_FRAMES[this.deathStyle]) {
       if (!this.coop) {
         this.events.push({ type: 'died', player: 0 });
         return;
@@ -2523,6 +2562,8 @@ export class World {
       theme,
       reduceFlashing: this.ctx.reduceFlashing,
     };
+    // A restyled theme's hall or skyline behind everything (theme-backdrop.ts).
+    drawThemeBackdrop(screen, view);
     // A free camera scrolls vertically too: the map is drawn moved up by its y (the backdrop and
     // the castle text stay screen-fixed). Every other level draws straight to the screen.
     let r = screen;
@@ -2938,7 +2979,17 @@ export class World {
 
   private renderPlayer(r: Renderer, view: View, p: Player): void {
     if (p.hidden || p.out) return;
+    if (p.dead && this.deathStyle !== 'hop') {
+      const t = this.deathTimers.get(p) ?? 0;
+      const draw = () => this.drawPlayer(r, view, p);
+      if (renderDeath(this.deathStyle, r, view, p, t, this.heightPx, draw)) return;
+      return draw();
+    }
     if (!p.visible(view.frame)) return;
+    this.drawPlayer(r, view, p);
+  }
+
+  private drawPlayer(r: Renderer, view: View, p: Player): void {
     const s = p.def.sprite(p, view.frame, view.reduceFlashing);
     const sheet = view.assets.sheet(s.sheet, s.palette);
     const f = sheet.frames.get(s.frame);

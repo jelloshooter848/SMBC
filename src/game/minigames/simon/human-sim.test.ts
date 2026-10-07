@@ -29,10 +29,11 @@ describe("Dracula's Castle: a cautious human (difficulty)", () => {
     expect(runs.reduce((a, r) => a + r.lost, 0) / runs.length).toBeGreaterThan(4);
   }, 300_000);
 
-  it('a clumsy player gets through now and then, and falls short now and then', () => {
-    const { rate } = passRate(8, CLUMSY);
+  it('a clumsy player gets through now and then, and loses lives on the way now and then', () => {
+    const { rate, runs } = passRate(8, CLUMSY);
     expect(rate).toBeGreaterThan(0);
-    expect(rate).toBeLessThan(1);
+    expect(runs.some((r) => r.deaths > 0)).toBe(true);
+    expect(runs.some((r) => r.result === 'pass' && r.deaths === 0)).toBe(true);
   }, 300_000);
 
   it.runIf(n > 0)(
@@ -51,10 +52,12 @@ describe("Dracula's Castle: a cautious human (difficulty)", () => {
           if (r.result !== 'pass')
             (fails[r.bossHp === null ? `stage x${r.x}` : `boss at ${r.bossHp}`] ??= []).push(i + 1);
         const lost = (runs.reduce((a, r) => a + r.lost, 0) / n).toFixed(1);
+        const deaths = (runs.reduce((a, r) => a + r.deaths, 0) / n).toFixed(2);
+        const clean = runs.filter((r) => r.result === 'pass' && r.deaths === 0).length;
         const boss = (runs.reduce((a, r) => a + r.bossLost, 0) / n).toFixed(1);
         const left = runs.map((r) => r.secondsLeft).sort((a, b) => a - b);
         console.log(
-          `${name}: pass ${(rate * 100).toFixed(0)}% of ${n} (HP lost ${lost}, to Dracula ${boss};`,
+          `${name}: pass ${(rate * 100).toFixed(0)}% of ${n}, ${((clean / n) * 100).toFixed(0)}% on the first life (lives lost ${deaths}; HP lost ${lost}, to Dracula ${boss};`,
           `seconds left: median ${left[left.length >> 1]}, lowest ${left[0]})`,
           JSON.stringify(fails),
         );

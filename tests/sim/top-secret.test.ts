@@ -46,6 +46,7 @@ import { DEFAULT_ASSIST, newGameState } from '@game/context';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { hudAreaLines } from '@game/hud/hud';
 import { LIGHT_SKIES } from '@game/world/tile-render';
+import { runRoute, type Move } from './route-bot';
 
 // The Top Secret Area (owner design for 0.4.10, after Super Mario World's): in campaign play a
 // hidden block at the top of 2-1's last tower lays a cloud path toward the flagpole, so every hero
@@ -72,6 +73,13 @@ const HIDDEN = { x: 184, y: 0 };
 const ON_COIN_BLOCK = { x: 186, y: 4, mode: 'stand' as const, time: 300 };
 const COIN_BLOCK = { x: 186, y: 5 };
 const PATH = { x: 192, y: 3, w: 7 };
+/** The two cloud steps back up to the bricks the same bump lays first (0.4.12). */
+const STEPS = [
+  { x: 183, y: 10 },
+  { x: 184, y: 9 },
+];
+/** The one-way cloud ledge against the last tower (0.4.12, campaign only): Simon's way up. */
+const LEDGE = { x: 188, y: 8, w: 2 };
 const INTO_CAVE = { level: '2-1-cave', x: 1, y: 12 };
 const TSA = '2-top-secret';
 const heroes = CHARACTERS.map((c) => [c.name, c] as const);
@@ -96,7 +104,8 @@ describe('2-1 outside the campaign is v0.4.9 tile for tile', () => {
       old.camera,
     ]);
     expect(l.decor).toEqual(old.decor);
-    expect(l.campaignLook).toBeUndefined();
+    // 0.4.12: a campaign look (Link's Zelda II field) that only campaign play applies.
+    expect(l.campaignLook).toMatchObject({ theme: 'zelda2', music: 'zelda2-field' });
     expect(l.zones.filter((z) => !sleeps(z))).toEqual(old.zones);
     expect(l.entities.filter((e) => e.props?.campaign !== true)).toEqual(old.entities);
     // What sleeps: the cave mouth, the hidden path and the way into the cave.
@@ -104,11 +113,14 @@ describe('2-1 outside the campaign is v0.4.9 tile for tile', () => {
       { type: 'decor', x: 220, y: 12, props: { kind: 'items:cave-mouth', campaign: true } },
     ]);
     expect(l.zones.filter(sleeps)).toEqual([
+      ...STEPS.map((p) => ({ kind: 'path', ...p, w: 1, block: HIDDEN, oneWay: true, campaign: true })),
       { kind: 'path', ...PATH, block: HIDDEN, campaign: true },
+      { kind: 'ledge', ...LEDGE, campaign: true },
       { kind: 'pipe', x: 224, y: 11, dir: 'right', target: INTO_CAVE, campaign: true },
     ]);
-    // The tower top has no hidden block at all.
+    // The tower top has no hidden block at all, and no cloud ledge stands by the tower.
     expect(tile(l, HIDDEN.x, HIDDEN.y)).toBe(T.AIR);
+    for (let k = 0; k < LEDGE.w; k++) expect(tile(l, LEDGE.x + k, LEDGE.y)).toBe(T.AIR);
     // And its campaign-only zones write back as they read.
     expect(parseTextMap(serializeTextMap(l), '2-1').zones).toEqual(l.zones);
   });
@@ -246,13 +258,16 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
     expect(l.zones).toContainEqual({ kind: 'pipe', x: 224, y: 11, dir: 'right', target: INTO_CAVE });
     expect(l.zones.some(sleeps)).toBe(false);
     expect(l.entities).toContainEqual({ type: 'decor', x: 220, y: 12, props: { kind: 'items:cave-mouth' } });
+    // The one-way cloud ledge by the tower (0.4.12) is laid.
+    expect(l.zones).toContainEqual({ kind: 'ledge', ...LEDGE });
+    for (let k = 0; k < LEDGE.w; k++) expect(tile(l, LEDGE.x + k, LEDGE.y)).toBe(T.CLOUD_LEDGE);
     // Every other tile is 2-1's own: the flagpole, the tower, the castle.
     let diff = 0;
     for (let i = 0; i < l.tiles.length; i++) if (l.tiles[i] !== raw().tiles[i]) diff++;
-    expect(diff).toBe(1);
+    expect(diff).toBe(1 + LEDGE.w);
   });
 
-  it('bumping the hidden block lays seven cloud blocks toward the pole, one by one, and says so', () => {
+  it('bumping the hidden block lays two steps back up, then seven cloud blocks toward the pole, one by one, and says so once', () => {
     // Small Mario on the hidden coin block walks left and jumps up-left at its edge.
     const r = runSim({
       level: coinShown(),
@@ -268,18 +283,27 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
       maxFrames: 80,
     });
     expect(r.outcome).toBe('stopped');
-    expect(r.events).toContainEqual({ type: 'path' });
+    expect(r.events.filter((e) => e.type === 'path')).toEqual([{ type: 'path' }]);
     const w = r.world;
     expect(w.map.get(HIDDEN.x, HIDDEN.y)).not.toBe(T.HIDDEN_PATH); // shown (bumping, then used)
     expect(w.layingPath).toBe(true);
-    const laid = () => Array.from({ length: PATH.w }, (_, k) => w.map.get(PATH.x + k, PATH.y));
-    expect(laid().every((t) => t === T.AIR)).toBe(true);
-    for (let i = 0; i < PATH_STEP_FRAMES; i++) w.update([]);
-    expect(laid().filter((t) => t === T.CLOUD_BLOCK)).toHaveLength(1);
-    for (let i = 0; i < PATH_STEP_FRAMES * PATH.w; i++) w.update([]);
-    expect(laid().every((t) => t === T.CLOUD_BLOCK)).toBe(true);
+    const cells = [...STEPS, ...Array.from({ length: PATH.w }, (_, k) => ({ x: PATH.x + k, y: PATH.y }))];
+    expect(cells.every((c) => w.map.get(c.x, c.y) === T.AIR)).toBe(true);
+    // Each cell's frame of appearance: in order, steps first, at least PATH_STEP_FRAMES apart.
+    const at: number[] = cells.map(() => -1);
+    for (let f = 1; f <= 600 && w.layingPath; f++) {
+      w.update([]);
+      cells.forEach((c, i) => {
+        if (at[i] === -1 && w.map.get(c.x, c.y) === (i < STEPS.length ? T.CLOUD_LEDGE : T.CLOUD_BLOCK))
+          at[i] = f;
+      });
+    }
     expect(w.layingPath).toBe(false);
+    expect(at.every((f) => f > 0)).toBe(true);
+    for (let i = 1; i < at.length; i++) expect(at[i]! - at[i - 1]!).toBeGreaterThanOrEqual(PATH_STEP_FRAMES);
+    expect(at[0]).toBeGreaterThanOrEqual(PATH_STEP_FRAMES - 1); // the bump's own frame counts
     expect(w.map.get(HIDDEN.x, HIDDEN.y)).toBe(T.USED);
+    expect(w.events.filter((e) => e.type === 'path')).toEqual([]);
     // The pole's column stays clear: the path ends two tiles short of it.
     expect(PATH.x + PATH.w).toBe(POLE_X - 1);
     expect(PATH_SAID).toMatch(/path/);
@@ -313,13 +337,14 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
   );
 
   it.each(runs)(
-    '%s: ordinary play never bumps it (ground, springboard, bricks, coin block, tower)',
+    '%s: ordinary play never bumps it (ground, springboard, bricks, coin block, tower, ledge)',
     (name, c, power) => {
       // Every hero, small and big: runs and walks from the last stretch of ground, the bricks, the
       // hidden coin block and the tower top, heading right (or standing, or from the bricks and
       // tower jumping back left), jumping at many moments, short and long; bouncing on the
-      // springboard (jump pressed as it squashes) or not. Only a deliberate jump back up-left from
-      // the coin block (above) finds the block.
+      // springboard (jump pressed as it squashes) or not, and from the cloud ledge by the tower
+      // (0.4.12: right, standing or back left, with the coin block hidden or shown). Only a
+      // deliberate jump back up-left from the coin block (above) finds the block.
       const coin = coinShown();
       const starts = [
         { name: 'ground 172', level: camp21(), at: { x: 172, y: 12 }, dirs: ['right'] },
@@ -327,6 +352,21 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
         { name: 'bricks', level: camp21(), at: { x: 185, y: 8 }, dirs: ['right', 'none', 'left'] },
         { name: 'coin block', level: coin, at: { x: 186, y: 4 }, dirs: ['right', 'none'] },
         { name: 'tower', level: camp21(), at: { x: 190, y: 2 }, dirs: ['right', 'none', 'left'] },
+        // 0.4.12: the one-way cloud ledge against the tower (Simon's step up), both its tiles.
+        { name: 'ledge 188', level: camp21(), at: { x: 188, y: 7 }, dirs: ['right', 'none', 'left'] },
+        { name: 'ledge 189', level: camp21(), at: { x: 189, y: 7 }, dirs: ['right', 'none', 'left'] },
+        {
+          name: 'ledge 188 (coin shown)',
+          level: coin,
+          at: { x: 188, y: 7 },
+          dirs: ['right', 'none', 'left'],
+        },
+        {
+          name: 'ledge 189 (coin shown)',
+          level: coin,
+          at: { x: 189, y: 7 },
+          dirs: ['right', 'none', 'left'],
+        },
       ] as const;
       let tries = 0;
       const bumped: string[] = [];
@@ -422,6 +462,239 @@ describe('campaign 2-1: the hidden block, the cloud path and the jump over the p
     expect(hasSecretExit('2-1')).toBe(true);
     expect(hasSecretExit(TSA)).toBe(false);
   });
+});
+
+/*
+ * Simon's way to the secret (0.4.12, QA of 0.4.10): his committed, fixed-arc jump could bump the
+ * hidden block from the hidden coin block but never get onto the tower top or the cloud path (his
+ * jumps hit the tower's side; the springboard threw him into it), nor back up once the bump had
+ * dropped him on the ground. Campaign 2-1 now has a one-way cloud ledge against the tower, a row
+ * over the bricks (a `ledge` zone: he hops onto it off the bricks or lands on it coming down from
+ * the springboard, whose launch rises through it, and jumps from it onto the coin block's top, and
+ * from there to the tower top), and the bump first lays two one-way cloud steps back up to the
+ * bricks. Each hero's route below was found
+ * by searching the bot's moves (tests/sim/route-bot.ts) and is replayed from the ground by real
+ * inputs: onto the bricks, bump the hidden coin block, onto its top (Simon: by the ledge), bump the
+ * hidden block, back up to the tower top, then along the path, over the pole and into the cave.
+ */
+const ROUTES: Readonly<Record<string, readonly Move[]>> = {
+  'mario small': [
+    { do: 'hop', dir: 1, at: 2916, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2964, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2970, from: 2984 },
+    { do: 'hop', dir: 1, at: 2930, from: 2916, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2962, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
+    { do: 'exit', jumpAt: 3170 },
+  ],
+  'mario big': [
+    { do: 'hop', dir: 1, at: 2920 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2964, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2968, from: 2984 },
+    { do: 'hop', dir: 1, at: 2922, from: 2916, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2962, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
+    { do: 'exit', jumpAt: 3170 },
+  ],
+  'luigi small': [
+    { do: 'hop', dir: 1, at: 2924 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2962, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2968, from: 2984 },
+    { do: 'hop', dir: 1, at: 2936, from: 2916, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2960, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
+    { do: 'exit', jumpAt: 3170 },
+  ],
+  'luigi big': [
+    { do: 'hop', dir: 1, at: 2926 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2962, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2966, from: 2984 },
+    { do: 'hop', dir: 1, at: 2922, from: 2920, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2960, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
+    { do: 'exit', jumpAt: 3170 },
+  ],
+  'link full': [
+    { do: 'hop', dir: 1, at: 2918, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2968, from: 2984 },
+    { do: 'hop', dir: 1, at: 2916, from: 2908, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2985, from: 2978 },
+    { do: 'exit', jumpAt: 3170 },
+  ],
+  'megaman full': [
+    { do: 'hop', dir: 1, at: 2920, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2967, from: 2984 },
+    { do: 'hop', dir: 1, at: 2910, from: 2908, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
+    { do: 'exit', jumpAt: 3174 },
+  ],
+  'samus full': [
+    { do: 'hop', dir: 1, at: 2918, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2967, from: 2984 },
+    { do: 'hop', dir: 1, at: 2912, from: 2908, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
+    { do: 'exit', jumpAt: 3170 },
+  ],
+  // onto the bricks, bump the coin block, hop onto the ledge, onto the coin block's top, bump the
+  // hidden block (landing on the step beside the bricks), the ledge and the coin block's top
+  // again, the tower top, over the pole
+  'simon full': [
+    { do: 'hop', dir: 1, at: 2918 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 1, at: 2986, from: 2964 },
+    { do: 'hop', dir: -1, at: 3019, from: 3028 },
+    { do: 'hop', dir: -1, at: 2965, from: 2984 },
+    { do: 'hop', dir: 1, at: 2986, from: 2964 },
+    { do: 'hop', dir: -1, at: 3019, from: 3028 },
+    { do: 'hop', dir: 1, at: 2987, from: 2978 },
+    { do: 'exit', jumpAt: 3178 },
+  ],
+  'ryu full': [
+    { do: 'hop', dir: 1, at: 2908 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2967, from: 2984 },
+    { do: 'hop', dir: 1, at: 2912, from: 2908, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2985, from: 2978 },
+    { do: 'exit', jumpAt: 3170 },
+  ],
+  'bill full': [
+    { do: 'hop', dir: 1, at: 2918, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2978 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: -1, at: 2967, from: 2984 },
+    { do: 'hop', dir: 1, at: 2910, from: 2908, steer: 2962, over: 144 },
+    { do: 'hop', dir: 0, at: 0, from: 2958, steer: 2978, over: 80 },
+    { do: 'hop', dir: 1, at: 2986, from: 2978, steer: 3048, over: 48 },
+    { do: 'exit', jumpAt: 3170 },
+  ],
+};
+const FROM_GROUND = { x: 180, y: 12 };
+
+describe("campaign 2-1: every hero's whole way to the secret from the ground (0.4.12)", () => {
+  it('the ledge and the steps are campaign-only zones that write back as they read', () => {
+    const zones = raw().zones.filter((z) => z.kind === 'ledge' || (z.kind === 'path' && z.oneWay));
+    expect(zones).toEqual([
+      ...STEPS.map((p) => ({ kind: 'path', ...p, w: 1, block: HIDDEN, oneWay: true, campaign: true })),
+      { kind: 'ledge', ...LEDGE, campaign: true },
+    ]);
+    expect(parseTextMap(serializeTextMap(raw()), '2-1').zones).toEqual(raw().zones);
+    expect(() => parseTextMap('id: x\n[tiles]\n' + '.'.repeat(16) + '\n[zones]\nledge 1 2 3\n')).toThrow(
+      /ledge x y w campaign/,
+    );
+  });
+
+  it.each(runs)(
+    '%s: from the ground, by real inputs, into the cave without touching the pole',
+    (n, c, power) => {
+      const key = `${c.id} ${power}`;
+      const moves = ROUTES[key] as readonly Move[];
+      expect(moves, key).toBeDefined();
+      let bumpedBy = -1;
+      const r = runRoute({
+        level: camp21(),
+        character: c,
+        power,
+        start: FROM_GROUND,
+        moves,
+        onFrame: (w) => {
+          if (bumpedBy < 0 && w.map.get(HIDDEN.x, HIDDEN.y) !== T.HIDDEN_PATH)
+            bumpedBy = toPx(w.player.body.x);
+        },
+      });
+      expect(r.sim.events.at(0)).not.toEqual({ type: 'path' });
+      expect(bumpedBy, n).toBeGreaterThan(0);
+      expect(r.touchedPole, n).toBe(false);
+      expect(r.sim.outcome, n).toBe('pipe');
+      expect(r.sim.events.at(-1)).toEqual({ type: 'pipe', target: INTO_CAVE });
+      // the route started on the ground and climbed (no placing on the tower)
+      expect(
+        r.stands.some(([, feet]) => feet === 48),
+        n,
+      ).toBe(true);
+      if (c === SIMON)
+        expect(
+          r.stands.some(([, feet]) => feet === LEDGE.y * 16),
+          'Simon uses the ledge',
+        ).toBe(true);
+    },
+  );
+
+  it("without the ledge, Simon's jumps off the bricks never land on the hidden coin block", () => {
+    // Off the bricks (the coin block overhangs them) every jump right or straight up falls short.
+    const noLedge = (() => {
+      const l = coinShown();
+      const tiles = new Uint16Array(l.tiles);
+      for (let k = 0; k < LEDGE.w; k++) tiles[LEDGE.y * l.width + LEDGE.x + k] = T.AIR;
+      return { ...l, tiles };
+    })();
+    const hops: Move[] = [
+      ...Array.from({ length: 28 }, (_, k): Move => ({ do: 'hop', dir: 1, at: 2964 + k, from: 2962 })),
+      ...Array.from({ length: 15 }, (_, k): Move => ({ do: 'hop', dir: 0, at: 0, from: 2962 + 2 * k })),
+    ];
+    for (const hop of hops) {
+      const r = runRoute({
+        level: noLedge,
+        character: SIMON,
+        power: 'full',
+        start: { x: 185, y: 8 },
+        moves: [hop],
+        maxFrames: 400,
+      });
+      expect(r.done, JSON.stringify(hop)).toBe(1);
+      expect(r.stands.at(-1)?.[1], JSON.stringify(hop)).not.toBe(80);
+    }
+  });
+
+  it.each(runs)(
+    '%s: an ordinary flagpole run ends the same with the ledge, and never bumps the hidden block',
+    (n, c, power) => {
+      // Run (or walk) right from the last stretch of ground, jump at many points, bounce on the
+      // springboard (jump pressed as it squashes for the high launch) or not, and hold on right:
+      // the ledge changes nothing (the launch rises through it) and the block stays hidden.
+      for (const boost of [true, false])
+        for (const run of [true, false])
+          for (let jx = 2930; jx <= 2996; jx += 6) {
+            const res = [raw(), camp21()].map((level, i) => {
+              let jumped = -1;
+              const r = runSim({
+                level,
+                character: c,
+                assist: { invulnerable: true },
+                state: { powerState: power },
+                script: { steps: [] },
+                start: { x: 178, y: 12, mode: 'stand', time: 300 },
+                maxFrames: 700,
+                controller: (w, f) => {
+                  const h: Action[] = run ? ['right', 'run'] : ['right'];
+                  const x = toPx(w.player.body.x);
+                  if (jumped < 0 && x >= jx) jumped = f;
+                  if (jumped >= 0 && f - jumped < 30) h.push('jump');
+                  if (boost && Math.abs(x - 188 * 16) < 24 && f % 2 === 0) h.push('jump');
+                  return h;
+                },
+              });
+              if (i === 1) expect(r.world.map.get(HIDDEN.x, HIDDEN.y), n).toBe(T.HIDDEN_PATH);
+              return `${r.outcome} ${r.score} ${JSON.stringify(r.events.at(-1))}`;
+            });
+            expect(res[1], `${n} boost=${boost} run=${run} jump at ${jx}`).toBe(res[0]);
+          }
+    },
+  );
 });
 
 const moblinOf = (w: World) => w.entities.find((e): e is Moblin => e instanceof Moblin);
