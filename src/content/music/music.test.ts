@@ -34,6 +34,11 @@ const SONG_IDS = [
   'smb3-boss',
   'toad-house',
   'bonus-game',
+  // Simon's crypt under 5-4 and his mini game.
+  'crypt',
+  'cv-stage',
+  'cv-boss',
+  'cv-beast',
 ];
 
 const SFX_IDS = [
@@ -83,6 +88,11 @@ const SFX_IDS = [
   'slot-stop',
   'bonus-win',
   'item-use',
+  // Simon's crypt and his mini game.
+  'whip-wall',
+  'candle',
+  'dracula-teleport',
+  'beast-roar',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

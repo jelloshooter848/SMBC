@@ -351,6 +351,7 @@ describe('tile sprites', () => {
         'tiles-cavern',
         'tiles-airship',
         'tiles-airship-deck',
+        'tiles-crypt',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
