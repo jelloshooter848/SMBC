@@ -59,6 +59,8 @@ const SONG_IDS = [
   // The 0.4.12 restyles: 5-4 as Simon's castle hall, 6-2 as Ryu's city street.
   'cv-hall',
   'ng-city',
+  // Tourian, before the escape (ZEBES ESCAPE, 0.4.16).
+  'tourian',
 ];
 
 const SFX_IDS = [
@@ -323,6 +325,19 @@ describe("Samus's cavern music", () => {
     // Sparse percussion, if any: at most one hit a beat.
     const noise = tracks('cavern').noise;
     if (noise) expect(sounding(noise).length).toBeLessThanOrEqual(cave.length / PPQ);
+  });
+
+  it("Tourian is slow and uneasy: a slower tempo than the escape, a heartbeat bass, the lead's long notes", () => {
+    const t = song('tourian');
+    const run = song('zebes-escape');
+    expect(t.loop).toBe(true);
+    expect(t.bpm).toBeLessThan(run.bpm);
+    expect(t.length % (PPQ * 4)).toBe(0);
+    const lead = sounding(tracks('tourian').pulse1 as Track);
+    expect(lead.reduce((a, e) => a + e.len, 0) / lead.length).toBeGreaterThanOrEqual(PPQ);
+    // The bass beats in pairs (two eighths, then a rest).
+    const bass = sounding(tracks('tourian').triangle as Track);
+    expect(bass.every((e) => e.len === PPQ / 2)).toBe(true);
   });
 
   it('the escape is urgent: fast, a shorter loop, and racing sixteenth-note arpeggios', () => {

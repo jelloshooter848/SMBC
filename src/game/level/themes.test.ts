@@ -67,6 +67,7 @@ describe('themes', () => {
       'zelda2',
       'megaman-stage',
       'brinstar',
+      'tourian',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -120,6 +121,7 @@ describe('themes', () => {
       zelda2: 'zelda2-field',
       'megaman-stage': 'mm-stage-31',
       brinstar: 'brinstar',
+      tourian: 'tourian',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

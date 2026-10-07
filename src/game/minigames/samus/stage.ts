@@ -1,9 +1,9 @@
-import { px, tileToSub } from '@engine/math/units';
+import { tileToSub } from '@engine/math/units';
 import { parseTextMap } from '../../level/textmap';
 import type { EntitySpawn, LevelData } from '../../level/schema';
 import type { Entity } from '../../entities/entity';
-import type { World } from '../../world/world';
-import { Ripper, Ship, Skree, ZebesDecor, Zoomer } from './creatures';
+import { ZebesDecor } from './creatures';
+import { BrainTank, Cannon, Door, RinkaSpawner, Zebetite, type TourianHooks } from './tourian';
 import source from './stage.map?raw';
 
 let parsed: LevelData | null = null;
@@ -17,45 +17,62 @@ export function escapeStage(): LevelData {
   return parsed;
 }
 
-/** The ship's spawn (tiles: its left column and the row its feet stand in). */
-export function shipSpot(): { x: number; y: number } {
-  const s = escapeStage().entities.find((e) => e.type === 'ship');
-  if (!s) throw new Error('zebes-escape: no ship');
-  return { x: s.x, y: s.y };
+export type RoomId = 'corridor' | 'hall' | 'brain' | 'shaft';
+
+/** A room of the map (tiles, inclusive): the camera keeps inside the one Samus is in. */
+export interface Room {
+  id: RoomId;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
 }
 
-/** The scene's side of the stage's entities. */
-export interface EscapeHooks {
-  /** Samus touched the ship's hatch. */
-  onShip(ship: Ship, world: World): void;
+/** Tourian's rooms (stage.map), in the order Samus goes through them. */
+export const ROOMS: readonly Room[] = [
+  { id: 'corridor', x0: 0, y0: 45, x1: 31, y1: 59 },
+  { id: 'hall', x0: 32, y0: 45, x1: 47, y1: 59 },
+  { id: 'brain', x0: 48, y0: 45, x1: 79, y1: 59 },
+  { id: 'shaft', x0: 80, y0: 0, x1: 95, y1: 59 },
+];
+
+/** The room tile (tx, ty) is in, or null (the rock between rooms). */
+export function roomAt(tx: number, ty: number): Room | null {
+  return ROOMS.find((r) => tx >= r.x0 && tx <= r.x1 && ty >= r.y0 && ty <= r.y1) ?? null;
 }
+
+/** A room's bounds in subpixels (right and bottom exclusive), for the camera. */
+export function roomBounds(r: Room): { x0: number; y0: number; x1: number; y1: number } {
+  return { x0: tileToSub(r.x0), y0: tileToSub(r.y0), x1: tileToSub(r.x1 + 1), y1: tileToSub(r.y1 + 1) };
+}
+
+/** The row Samus stands on at the surface: standing on it (or above) ends the round. */
+export const SURFACE_ROW = 3;
 
 /**
- * World's `extraEntities` for the cavern: `zoomer [dir=±1]` (in the tile it starts in, on the
- * floor below it), `ripper [dir=±1]` (its 8-px body at the top of that row), `skree` (hanging in
- * the tile under a ceiling), `ship` (its left tile and the row its feet stand in) and
- * `deco kind=chozo|alarm|door` (by its top-left tile). Anything else is World's.
+ * World's `extraEntities` for Tourian: `door color=blue|red` (by its top tile), `zebetite` (by its
+ * top tile), `brain` (the tank, by its top-left tile), `cannon` (by its tile under the ceiling),
+ * `rinka` (a spawner, by its tile) and `deco kind=alarm` (by its top-left tile). Anything else is
+ * World's.
  */
-export function escapeEntities(hooks: EscapeHooks): (s: EntitySpawn) => Entity | undefined {
+export function escapeEntities(hooks: TourianHooks): (s: EntitySpawn) => Entity | undefined {
+  const doors = new Map<string, Door>();
   return (s) => {
-    const x = tileToSub(s.x);
-    const y = tileToSub(s.y);
-    const dir = Number(s.props?.dir ?? -1) < 0 ? -1 : 1;
     switch (s.type) {
-      case 'zoomer':
-        return new Zoomer(s.x, s.y, dir);
-      case 'ripper':
-        return new Ripper(x, y, dir);
-      case 'skree':
-        return new Skree(x, y);
-      case 'ship': {
-        const ship: Ship = new Ship(x, tileToSub(s.y + 1) - px(32), (w) => hooks.onShip(ship, w));
-        return ship;
-      }
+      case 'door':
+        return new Door(s.x, s.y, s.props?.color === 'red' ? 'red' : 'blue', hooks, doors);
+      case 'zebetite':
+        return new Zebetite(s.x, s.y);
+      case 'brain':
+        return new BrainTank(s.x, s.y, hooks);
+      case 'cannon':
+        return new Cannon(s.x, s.y, hooks);
+      case 'rinka':
+        return new RinkaSpawner(s.x, s.y, hooks);
       case 'deco': {
         const kind = String(s.props?.kind ?? 'alarm');
         if (kind !== 'chozo' && kind !== 'alarm' && kind !== 'door') return undefined;
-        return new ZebesDecor(kind, x, y);
+        return new ZebesDecor(kind, tileToSub(s.x), tileToSub(s.y));
       }
       default:
         return undefined;
