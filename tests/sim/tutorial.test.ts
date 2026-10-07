@@ -28,6 +28,7 @@ import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
 import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
+import { ALL_STORY } from './story-seen';
 
 // Mario's tutorial stage 1-0 (0.5.0): World 1's start node, where a new file begins; 1-1 opens
 // once it is cleared (or skipped). Toad tells the story, the lessons follow one by one in a
@@ -340,7 +341,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
 
   it('Pause → Skip tutorial counts 1-0 cleared and opens 1-1 on the map', () => {
     const h = makeGame();
-    file();
+    file({ story: [...ALL_STORY] }); // Toad's World 1 entry: toad-guide.test.ts
     h.game.openFile(1);
     enter10(h);
     skipGreeting(h);

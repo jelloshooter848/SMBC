@@ -30,6 +30,7 @@ import type { WorldEvent } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import type { Settings } from '@engine/save/settings';
+import { ALL_STORY, seeAllStory } from './story-seen';
 
 // Campaign mode: levels picked on the world map return to it when cleared, warps open their
 // target world, game over continues on the map, and the save file follows along. Every other
@@ -102,7 +103,8 @@ function file(
   c1 = MARIO.id,
   c2: string | null = null,
 ): SaveFile {
-  const s = { ...newSave(slot, c1, c2), ...over };
+  // Toad's map scenes (0.4.13) are seen: these tests are about the map and the levels.
+  const s = { ...newSave(slot, c1, c2), story: [...ALL_STORY], ...over };
   writeSave(s);
   // As loaded (a file with clears counts the tutorial, 1-0, as cleared).
   return loadSave(slot) ?? s;
@@ -113,6 +115,7 @@ function file(
  * back on the map once 1-1 is drawn in.
  */
 function pastTutorial(h: H) {
+  seeAllStory(h.game); // Toad's World 1 entry after 1-0 is tested in toad-guide.test.ts
   expect(h.map().node).toBe('start');
   h.idle(8);
   h.tap('jump');
@@ -180,6 +183,7 @@ function newFileFromTitle(h: H) {
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);
   h.tap('jump');
+  seeAllStory(h.game); // Toad's map scenes are tested in toad-guide.test.ts
 }
 
 /** A two-player file as 0.2.x created it (Mario and Luigi, 5 lives), opened from the title. */

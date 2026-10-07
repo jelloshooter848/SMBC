@@ -150,7 +150,7 @@ export const WORLD_ENTRY: Readonly<Record<string, readonly Page[]>> = {
       "DON'T. HE'D KNOW WHICH.",
     ),
   ],
-  // World 8's hero (Sophia III) and her pilot: shown only once she is in the game (beats.ts).
+  // Pages 2-3, World 8's hero (Sophia III) and her pilot: only once she is in the game (ENTRY_NEEDS).
   'smb-8': [
     toad("BOWSER'S LAND. HE'S IN", 'HERE SOMEWHERE WITH THE', "WAND. AND HE'S NOT HAPPY."),
     toad("THE LAST ONE WE SEEK ISN'T", "A PERSON AT ALL. IT'S A...", 'TANK? A TANK THAT JUMPS?'),
@@ -169,8 +169,16 @@ export const WORLD_ENTRY: Readonly<Record<string, readonly Page[]>> = {
   ],
 };
 
-/** The hero a world entry is about: the entry needs that hero in the game (World 8's Sophia). */
-export const ENTRY_NEEDS: Readonly<Record<string, string>> = { 'smb-8': 'sophia' };
+/**
+ * The pages of a world entry that are about a hero who may not be in the game yet (World 8's
+ * Sophia III and her pilot, pages 2-3 by index): shown only once that character is registered,
+ * as a beat of their own (beats.ts beat.enterHero), so a file that reached the world before she
+ * landed still hears them later, once. The rest of the entry (World 8: Bowser's land and the
+ * turnip, Peach's clue) always plays.
+ */
+export const ENTRY_NEEDS: Readonly<Record<string, { hero: string; pages: readonly number[] }>> = {
+  'smb-8': { hero: 'sophia', pages: [1, 2] },
+};
 
 /** Toad's "missed something" card, by hero id: the first time that hero's shadow shows. */
 export const MISSED_PAGES: Readonly<Record<string, Page>> = {

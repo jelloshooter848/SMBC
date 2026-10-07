@@ -9,6 +9,8 @@ import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { CHARACTERS } from '@game/characters/registry';
 import { TROPHY_BURST_HOPS, TROPHY_HOP_EVERY, TROPHY_HOP_PX } from '@game/map/trophy';
+import { MISSED_HINT } from '@game/story/script';
+import { missedSaid } from '@game/map/toad-guide';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
 // The world map's hint for levels that hide a brainwashed hero (docs/HEROES.md "The map hint"):
@@ -19,8 +21,9 @@ import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
 useStorage();
 
-const HIDING = 'Someone is hiding in this level.';
-const HINT_LINE = 'SOMEONE IS HIDING IN THIS LEVEL';
+// 0.4.13: the campaign's story says Toad's line for each hero (story/script.ts MISSED_HINT).
+const said = (hero: string) => missedSaid(hero) as string;
+const HIDING = said('luigi');
 
 const W1_CLEAR = ['1-0', '1-1', '1-2', '1-3', '1-4'];
 
@@ -125,7 +128,7 @@ describe('map hint for hidden heroes: the three stages', () => {
         expect(s.nodeAt).toBeGreaterThanOrEqual(0);
         expect(s.sprites.some((x) => x.key.includes(`~shade-`))).toBe(false);
         expect(s.trophy).toBe(-1);
-        expect(h.said.join(' ')).not.toMatch(/hiding/i);
+        expect(h.said.join(' ')).not.toMatch(/hiding|toad:/i);
         expect(map.hintLine).toBe('');
       });
 
@@ -143,11 +146,12 @@ describe('map hint for hidden heroes: the three stages', () => {
         // Partly behind the node: it overlaps the node's tile.
         expect(Math.abs(sx - s.n.x * 16)).toBeLessThan(16);
         // Standing on the node: the announcer adds the line, the hint line shows it.
-        expect(h.said.some((t) => t.includes(HIDING))).toBe(true);
-        expect(map.hintLine).toBe(HINT_LINE);
-        expect(s.texts.map((t) => t.str)).toContain(HINT_LINE);
-        // It never says where in the level.
-        expect(h.said.join(' ')).not.toMatch(/bonus|pipe|vine|sky|ruins|station|teleport/i);
+        expect(h.said.some((t) => t.includes(said(c.hero)))).toBe(true);
+        expect(map.hintLine).toBe(MISSED_HINT[c.hero]);
+        expect(s.texts.map((t) => t.str)).toContain(MISSED_HINT[c.hero]);
+        // Beyond Toad's hint, it never says where in the level.
+        const rest = h.said.join(' ').replace(said(c.hero), '');
+        expect(rest).not.toMatch(/bonus|pipe|vine|sky|ruins|station|teleport/i);
       });
 
       it('3. freed: the hero stands beside the node in full colour, no hint line', () => {
@@ -163,7 +167,7 @@ describe('map hint for hidden heroes: the three stages', () => {
         const tx = s.sprites[s.trophy]!.x;
         if (c.side === 1) expect(tx).toBeGreaterThan(s.n.x * 16);
         else expect(tx).toBeLessThan(s.n.x * 16);
-        expect(h.said.join(' ')).not.toMatch(/hiding/i);
+        expect(h.said.join(' ')).not.toMatch(/hiding|toad:/i);
         expect(map.hintLine).toBe('');
       });
     });
@@ -175,7 +179,7 @@ describe('map hint for hidden heroes: the three stages', () => {
     h.said.length = 0;
     h.tap('up'); // 1-1 → 1-2
     h.until(() => map.node === '1-2' && map.hintLine === '' && h.said.length > 0, 300);
-    expect(h.said.join(' ')).not.toMatch(/hiding/i);
+    expect(h.said.join(' ')).not.toMatch(/hiding|toad:/i);
     // Back: said again on arrival.
     h.tap('left'); // the road leaves 1-2 to the left
     h.until(() => map.node === '1-1' && h.said.some((t) => t.includes(HIDING)), 300);
@@ -427,6 +431,6 @@ describe('map hint: dev toggles and campaign only', () => {
     expect(h.game.campaign).toBeNull();
     const s = hintSprites(map, CASES[0]!);
     expect(s.shade).toBe(-1);
-    expect(h.said.join(' ')).not.toMatch(/hiding/i);
+    expect(h.said.join(' ')).not.toMatch(/hiding|toad:/i);
   });
 });
