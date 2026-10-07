@@ -11,6 +11,7 @@ import {
 } from './dungeon';
 import { PALETTES, SPRITES } from './index';
 import { BEAM_PALETTES, BEAM_PALETTE_CALM } from '@game/topdown/beam';
+import { SIDE_FRAMES, THICK_SIDE_FRAMES } from '@game/topdown/frames';
 
 type Size = readonly [w: number, h: number];
 const T16: Size = [16, 16];
@@ -182,6 +183,11 @@ describe.each(SHEETS)('%s sheet', (id, def, frames, palettes) => {
 });
 
 describe('dungeon tiles', () => {
+  it('a sheet for two-tile walls: registered with every side frame, the 32-px doors included', () => {
+    for (const f of [...SIDE_FRAMES, ...THICK_SIDE_FRAMES])
+      expect(SPRITES.dungeon?.frames[`${f}-side`], f).toBeDefined();
+  });
+
   it('ships the boss-room variant with the same layout', () => {
     expect(Object.keys(dungeonPalettes).sort()).toEqual(['dungeon', 'dungeon-dark']);
   });
