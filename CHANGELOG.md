@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-10-07
+
 ### Added
 
 - Simon is hidden under 5-4: ride the down lift past the bottom of the shaft into a secret dungeon,
@@ -359,7 +361,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/jelloshooter848/SMBC/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/jelloshooter848/SMBC/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/jelloshooter848/SMBC/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/jelloshooter848/SMBC/compare/v0.4.3...v0.4.4
