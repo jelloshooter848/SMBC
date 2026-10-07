@@ -117,6 +117,39 @@ describe("Toad's map scenes", () => {
     expect(map(h).hintLine).toBe('TOAD: I HEAR A MUSTACHE SIGH...');
   });
 
+  it("at a missed hero's shadow: Toad's card is said first, the node's line (with his hint) after it", () => {
+    const h = open({ cleared: ['1-0'], position: { page: 'smb-1', node: '1-1' }, story: ['enter:smb-1'] });
+    const before = h.said.length;
+    h.game.levelCleared('1-1');
+    expect(map(h).toad?.lines).toEqual(MISSED_PAGES.luigi);
+    const during = h.said.slice(before);
+    // While the box shows, nothing said yet carries the hint; the card is the first map line.
+    expect(during.some((t) => /mustache/i.test(t))).toBe(false);
+    expect(during.findIndex((t) => t.startsWith('TOAD: HUH. 1-1 FEELS'))).toBeGreaterThanOrEqual(0);
+    readAll(h);
+    h.until(() => map(h).mode === 'idle', 600);
+    const all = h.said.slice(before);
+    const card = all.findIndex((t) => t.startsWith('TOAD: HUH. 1-1 FEELS'));
+    const here = all.filter(
+      (t) => t.includes('World 1-1, cleared') && /Toad: I hear a mustache sigh/.test(t),
+    );
+    expect(here).toHaveLength(1);
+    expect(all.indexOf(here[0]!)).toBeGreaterThan(card);
+  });
+
+  it('a story scene elsewhere (no missed card here): the node line is still said on arrival, first', () => {
+    const h = open({ cleared: ['1-0'], position: { page: 'smb-1', node: 'start' }, story: [] });
+    // The World 1 entry plays (Toad walks in); the page's line was said ahead of it, as before.
+    h.until(() => map(h).toad?.lines != null, 300);
+    const idx = h.said.findIndex((t) => t.startsWith('World 1'));
+    const card = h.said.findIndex((t) => t.startsWith('TOAD: FIRST, WHO ARE WE LOOKING'));
+    expect(idx).toBeGreaterThanOrEqual(0);
+    expect(card).toBeGreaterThan(idx);
+    readAll(h);
+    h.until(() => map(h).mode === 'idle', 600);
+    expect(h.said.filter((t) => t.startsWith('World 1')).length).toBe(1);
+  });
+
   it('the play order when several are due: fakes (walking in), joined, entry; BACK closes one scene', () => {
     const h = open({
       cleared: W1,
