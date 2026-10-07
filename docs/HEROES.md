@@ -547,62 +547,76 @@ with the saw, 20-44 without (most of it to Dark Mega Man).
 
 ## Samus's mini game: Zebes Escape (`src/game/minigames/samus/`)
 
-The cavern under 4-2 starts to self-destruct, played **as Samus**: get from the Chozo statue's
-chamber to her ship before the countdown runs out. It runs in a real `World` of its own
-(stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Samus with a
-toned-down dev kit (`ESCAPE_KIT`: one energy tank, 60 energy, the Long Beam, ten missiles; the
-morph ball and its bombs are always hers; no Varia suit), three lives, no level clock. No READY:
-each life starts with Samus materialising on her spot to her start jingle (`zebes-start`, 2.5 s:
-sparkles, her grey outline, then herself; the sparkles hold still with reduce flashing), while
-she cannot move and the clock waits (the press that started the round never jumps). The first
-life opens on TIME BOMB SET / GET OUT FAST!. The HUD is Metroid's (`hud.ts`): energy-tank boxes
+The NES Metroid's ending, played **as Samus** (0.4.16): fight through Tourian to the brain,
+destroy it, and climb out to the surface before the time bomb goes off. It runs in a real `World`
+of its own (stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Samus
+with a toned-down dev kit (`ESCAPE_KIT`: one energy tank, 60 energy, the Long Beam, thirty
+missiles, enough for the red door, the barriers and the brain (23); the morph ball and its bombs
+are always hers; no Varia suit), three lives, no level clock. No READY: each life starts with
+Samus materialising on her spot to her start jingle (`zebes-start`, 2.5 s: sparkles, her grey
+outline, then herself; the sparkles hold still with reduce flashing), while she cannot move (the
+press that started the round never jumps). The HUD is Metroid's (`hud.ts`): energy-tank boxes
 (filled while full) over `EN..nn` (the energy in the tank in use; 30 a tank), the missile icon
-with a 3-digit count, and the escape's TIME counter at the top middle; no name, place or score.
+with a 3-digit count, and once the bomb is set the escape's TIME counter at the top middle; no
+name, place or score. All the art is original (`tourian-look.ts`, `tourian-zebes.ts`), as is the
+`tourian` music (MML); the escape keeps `zebes-escape`.
 
-- **The stage** (theme `cavern`, music `zebes-escape`; three screens wide and three high, the
-  first map with `camera: free`, see below): the chamber (the `zebes` sheet's Chozo statue,
-  facing right) at the bottom left; a corridor with a three-tile pit (out of the map's bottom) and
-  a **morph-ball tunnel** (a one-tile gap at the floor, with a bomb block inside); **shaft 1** up
-  the right side; the middle corridor left through a **bomb wall** (three bricks: a bomb opens
-  the bottom one, enough to roll under; a missile opens any); **shaft 2** up the left side (with
-  platforms back up from its floor); the top corridor right through a second tunnel; down into the
-  hangar and the **ship**. Shaft platforms step up three rows at a time, each beside the last and
-  never right above a take-off spot, so every climb is a jump beside a ledge and a drift onto it
-  (Samus's floaty jump; no wall jump). Bomb blocks are plain bricks (World's own blast and missile
-  rules), so nothing new opens them. Fourteen alarm lights (`alarm-0/1`) hang on the back wall.
-- **The creatures** (`creatures.ts`, an `Enemy` each through `extraEntities`; they face left in the
-  sheet and are flipped going right, flash in `zebes-flash` when hit (not with reduce flashing),
-  blow up in a small explosion, drop Samus's energy and missiles, and never despawn, since the
-  escape runs back left): **Zoomer** (2 HP) creeps round whatever it clings to, tile by tile:
-  floors, walls (its frames turned a quarter, `ZEBES_WALL_DEF`, made from the sheet at first use),
-  ceilings (upside down) and round both kinds of corner; the stage's two circle free platforms; one
-  that loses its surface falls and crawls on. **Ripper** flies straight wall to wall at one height;
-  beams glance off, a missile or a bomb stops it, the ice beam freezes it. **Skree** (1 HP) hangs
-  under a ceiling and drops on Samus passing within 40 px below, veering toward her, digs in for
-  24 frames and bursts into four shards. A touch or a shard takes Samus's usual 8 energy
-  (`World.hurtPlayer`: the no-damage assist, blinking and knockback as in a level).
-- **The countdown** (`COUNTDOWN_SECONDS`, 90): shown as TIME, 999 down to 0 mapped onto the 90
-  seconds (`timeShown`). The announcer says "Time bomb set! Get out fast! 90 seconds." and
-  calls 60, 30 and 10 seconds. The `alarm` sound plays every 2 s and every half second in the last
+- **The stage** (theme `tourian`: bolted green machine panels, ribbed tube platforms, cracked
+  panels for bomb blocks; six screens wide and four high, `camera: free`) is four **rooms**
+  (`stage.ts ROOMS`), each a whole number of screens; the camera keeps inside the one Samus is in
+  (`Camera.room`), as Metroid's screens never show past a room's walls. The **corridor** (two
+  screens): the start, a step, a wall with a **morph-ball tunnel** at the floor (a bomb block
+  inside), a cannon and a Rinka spawner. The **hall** (one screen): a cannon, a Rinka spawner and
+  the **red door**. The **brain's chamber** (two screens): three **barriers** in the gaps under
+  walls hung from the ceiling, cannons, Rinkas, and the **brain's tank** under a wall (the door to
+  the shaft is behind it). The **escape shaft** (one screen wide, four high): tube platforms three
+  rows apart, each beside the last and never right above a take-off spot, up to the **surface**
+  (row 3, a mouth onto the open sky); alarm lights (`alarm-0/1`) on its walls. No pits.
+- **Doors** (`Door`, 16x48, in pairs in the wall gaps between rooms): a closed bubble is a wall.
+  A blue one opens to any shot (beam, missile or bomb); the red one takes five missiles (beams
+  glance off; the NES Metroid's red doors take five) and is a plain door from then on. Open, it
+  shuts again after 4 s unless Samus is in it; walking in starts the **scroll**: the world holds
+  still while the camera slides to the next room over 64 frames (a screen at 4 px a frame) and
+  Samus moves through the tube; the bubble she came through shuts, and the one behind her shuts
+  20 frames after she clears it. Going through the red door is a checkpoint.
+- **Barriers** (`Zebetite`, 16x48, original art): a wall to Samus until broken; only missiles
+  wear one down (four, a stage of damage each, drawn thinner and darker); left alone for 150
+  frames it grows back a stage. **The brain** (`BrainTank`, 48x64: an original brain, no face, in
+  a glass tank): a wall while it lives; beams glance off; six missiles (the glass cracks at
+  three) destroy it in a string of explosions, leaving glass on the floor and the way open.
+- **The guards** act only while Samus is in their room (and stop once the bomb is set):
+  **cannons** (`Cannon`, under the ceiling, indestructible) fire every 90 frames, turning their
+  barrel down-left, down, down-right, down; a shot is gone on the rock or out of its room.
+  **Rinkas** (`Rinka`, from a `RinkaSpawner` in the rock): a ring comes out, pauses 8 frames and
+  flies straight at where Samus was, through the rock, until it leaves the room; one beam shot
+  downs it (it may drop energy or missiles); the spawner sends the next 90 frames after. A touch
+  or a shot takes Samus's usual 8 energy (`World.hurtPlayer`: the no-damage assist, blinking and
+  knockback as in a level).
+- **The bomb and the countdown** (`COUNTDOWN_SECONDS`, 60): destroying the brain sets the time
+  bomb: TIME BOMB SET / GET OUT FAST!, "Time bomb set! Get out fast! 60 seconds.", the escape
+  music and the alarm. TIME runs 999 down to 0 over the 60 seconds (`timeShown`); the announcer
+  calls 30 and 10 seconds. The `alarm` sound plays every 2 s and every half second in the last
   ten, when the music also speeds up (tempo 1.2; reset when the round ends). A red wash swells and
-  fades over the cavern about once a second (twice in the last ten); with reduce flashing it is a
-  steady light tint, and the alarm lights stay lit.
-- **Outcomes**: touching the ship (its hull, all but the wing tips) boards it: the countdown stops,
-  the creatures go, Samus hides inside, the ship lifts off (`beam` sound, the win jingle, "SAMUS
-  ESCAPED!", the announcer gives the seconds to spare) and the round passes after 150 frames. The
-  countdown reaching zero: the cavern blows up (the `explosion` sound; white and orange flicker
-  for 40 frames, then a fade to white; with reduce flashing only the fade) and a life is lost
-  after 120 frames. A pit or losing all energy (she explodes, `WorldStart.deathStyle: 'explode'`,
-  the `samus-death` sound) costs a life too. The next life starts in a new World at the last
-  checkpoint (the chamber, or the middle corridor once she comes up into it from shaft 1) with
-  the kit and the clock full again; losing the last is GAME OVER (180 frames), then `fail`. Menu
-  (`EscapeMenuScene`, a `MiniGameMenuScene`; it pauses the countdown) Give up: `quit`. `done` is
-  called once; `game.state` is never touched. (NES Metroid has no lives, only continues; the
-  three lives follow the other World mini games.)
-- **Assists** (dev mode, from the menu): No damage keeps every point of energy (a pit still
-  costs a life; the Safety floor assist catches it). Infinite lives keeps the count. Infinite time holds the countdown where it is (said once: "Infinite time: the countdown
-  holds."); turned off, it runs on from there.
-- Touch labels: Samus's level labels while she runs (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
+  fades about once a second (twice in the last ten); with reduce flashing it is a steady light
+  tint, and the alarm lights stay lit. Nothing of this runs before the bomb.
+- **Outcomes**: standing on the surface ends the round: the countdown stops, Samus stands still,
+  stars come out over the sky and a column of light rises from the shaft (it pulses; a steady
+  swell with reduce flashing), "SAMUS ESCAPED!" and the win jingle, the announcer gives the
+  seconds to spare, and the round passes after 240 frames (no ship: the NES escape ends on the
+  surface). The countdown reaching zero: Tourian blows up (the `explosion` sound; white and orange
+  flicker for 40 frames, then a fade to white; with reduce flashing only the fade) and a life is
+  lost after 120 frames. Losing all energy (she explodes, `WorldStart.deathStyle: 'explode'`, the
+  `samus-death` sound) costs a life too. The next life starts in a new World at the last
+  checkpoint with the kit full: the start, the brain's chamber (after the red door), or once the
+  bomb is set the foot of the shaft, with the clock full again and the brain still dead. Losing
+  the last is GAME OVER (180 frames), then `fail`. Menu (`EscapeMenuScene`, a
+  `MiniGameMenuScene`; it pauses everything) Give up: `quit`. `done` is called once; `game.state`
+  is never touched. (NES Metroid has no lives, only continues; the three lives follow the other
+  World mini games.)
+- **Assists** (dev mode, from the menu): No damage keeps every point of energy. Infinite lives
+  keeps the count. Infinite time holds the countdown where it is (said once: "Infinite time: the
+  countdown holds."); turned off, it runs on from there.
+- Touch labels: Samus's level labels while she plays (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
   WEAPON; BOMB in the ball, no JUMP), only MENU while she materialises, none once a life or the
   round is decided.
   Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Mini games.
@@ -636,21 +650,22 @@ World sets before each update). Every other level keeps `y = 0`, draws straight 
 dies at the first screen's bottom exactly as before (camera tests: every library level is one
 screen high with a horizontal camera, and a normal World hands entities the screen renderer
 itself). Spawning is still by column, so a tall map's creatures should keep `despawnMargin` null.
+A scene can also set `Camera.room` (subpixel bounds): the camera then keeps inside that room
+whatever it follows (Zebes Escape's rooms); null, the default, is the whole map.
 
 Difficulty (a "cautious human" sim, `human-sim.test.ts`: `EscapeBot` knows the route as a table of
-surfaces and what to do from each, so a fall down a shaft just resumes from where it lands; it
-baits Skrees and shoots them once down, shoots Zoomers in line, waits for Rippers to clear a jump
-and for a Zoomer to leave the landing. As a careful first-timer it sees the creatures 15 frames
-late, misjudges take-off spots by up to 6 px (halving the error after a failed jump), lets go of
-12% of jumps early (a third of that at the pit) and pauses now and then;
-`ZEBES_SIM=30 pnpm vitest run samus/human-sim --silent=false` prints the report). With 90 seconds
-it escapes 100 / 97 / 90 / 93% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction, with a median of
-28 / 22 / 20 / 22 seconds to spare (the closest 1-12 s); the misses are the pit (2 in 30 at the
-slower reactions) and, rarely, the clock. A clumsier player (21 frames, 10 px, a quarter of jumps
-let go early) escapes 63% of the time, mostly losing to the clock in shaft 2. A sharp run leaves
-about 43 seconds. With three lives (0.4.12) it escapes 100% at every reaction, on the first life
-93 / 97 / 97 / 97% (a median of 26-28 seconds to spare); the clumsier player 100%, 53% on the first
-life. Both sims also check that at least 70% of cautious runs win on the first life.
+surfaces and what to do from each (walk, roll and bomb a tunnel, shoot a door open and walk
+through, missiles into a barrier or the brain, climb), so a fall down the shaft just resumes from
+where it lands; it shoots Rinkas that come level with it or straight above. As a careful
+first-timer it sees the Rinkas 15 frames late, misjudges take-off spots by up to 6 px (halving the
+error after a failed jump), lets go of 12% of jumps early and pauses now and then;
+`ZEBES_SIM=30 pnpm vitest run samus/human-sim --silent=false` prints the report). With the 60-second
+escape and three lives it gets out 100% of 30 seeds at a 12 / 15 / 18 / 21-frame reaction, 97% on
+the first life, with a median of 24-29 seconds to spare (the closest 3-11 s), losing about 44
+energy on the way (the brain's chamber is where lives go). A clumsier player (21 frames, 10 px, a
+quarter of jumps let go early) gets out 100%, 53% on the first life, with a median of 15 seconds.
+A sharp run leaves about 34 seconds. Both sims also check that at least 70% of cautious runs win
+on the first life.
 
 ## Simon's mini game: Dracula's Castle (`src/game/minigames/simon/`)
 

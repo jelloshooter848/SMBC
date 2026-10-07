@@ -9,8 +9,8 @@ import { draw, hash, type Rows } from './look-art';
  * - `brain-0/1` (32x32): a lobed brain, lit up-left, its folds dark red; frame 1 swells a pixel
  *   (the pulse). No face, no eye.
  * - `tank`, `tank-cracked`, `tank-broken` (48x64): the glass case on its base, the brain shows
- *   through (transparent glass with streaks); cracked after half the hits; broken is the base
- *   with glass stumps.
+ *   through (transparent glass with streaks); cracked after half the hits; broken is glass and
+ *   metal scattered low on the floor (nothing to stand on or walk into).
  * - `zebetite-0..3` (16x48): the barrier column of stacked pods, thinner and darker with each
  *   stage of damage.
  * - `cannon-0/1/2` (16x16): a ceiling mount whose barrel points down-left, down, down-right.
@@ -79,11 +79,16 @@ const tankAt = (x: number, y: number, crack: boolean): string => {
 };
 const tank = draw(48, 64, (x, y) => tankAt(x, y, false));
 const tankCracked = draw(48, 64, (x, y) => tankAt(x, y, true));
-/** Broken: the base, the cap gone, jagged glass stumps along the base. */
+/** Broken: nothing stands; glass and bits of the cap lie scattered on the floor (rows 59-63). */
 const tankBroken = draw(48, 64, (x, y) => {
-  if (y >= 56) return tankAt(x, y, false);
-  const stump = 50 + Math.round(hash(x, 0, 3) * 5);
-  if (y >= stump && (x <= 2 || x >= 45 || hash(x, 1, 5) < 0.45)) return y === stump ? '8' : '7';
+  if (y < 59) return '.';
+  const h = hash(x, y, 5);
+  const pile = 63 - Math.round(Math.abs(Math.sin(x * 0.45)) * 4);
+  if (y < pile) return '.';
+  if (y === 63) return h < 0.5 ? '1' : '2';
+  if (h < 0.25) return '8';
+  if (h < 0.5) return '7';
+  if (h < 0.7) return '2';
   return '.';
 });
 

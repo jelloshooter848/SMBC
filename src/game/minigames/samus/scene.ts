@@ -673,10 +673,13 @@ export function drawEnding(r: Renderer, t: number, camY: number, reduceFlashing:
     const [x, y] = STARS[i] as readonly [number, number];
     if (y < sky) r.rect(x, y, 1, 1, i % 5 === 0 ? '#fcfcfc' : '#a4e4fc');
   }
-  // The glow out of the mouth (x 83-89 of the shaft: screen px 48-128).
+  // A column of light out of the mouth (x 83-89 of the shaft: screen px 48-160), fading upward.
   const k = Math.min(1, t / (ENDING_FRAMES * 0.6));
   const pulse = reduceFlashing ? 1 : 0.75 + 0.25 * Math.sin(t / 5);
-  r.rect(48, sky, 64, 6, `rgba(252,160,68,${(0.5 * k * pulse).toFixed(3)})`);
+  for (let y = 0; y < sky; y += 4) {
+    const a = 0.45 * k * pulse * (y / sky);
+    r.rect(48, y, 112, Math.min(4, sky - y), `rgba(252,216,168,${a.toFixed(3)})`);
+  }
 }
 
 /** Lines of the bitmap font on a dark band, centred, the first at `y`. */
