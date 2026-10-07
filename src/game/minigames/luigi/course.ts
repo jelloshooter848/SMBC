@@ -31,24 +31,29 @@ export function poleOf(level: LevelData): { x: number; baseY: number } {
 }
 
 /**
- * Brainwashed Luigi's way to the flag, starting a tile behind Mario. He is not quite himself: he
- * stands dazed for a moment at GO and his top running speed is held to 2 px a frame (Mario's is
- * 2.56), so he reaches the pole about 11.8 s after GO. A fast run by Mario (about 8.9 s) or a
- * good one with a stumble wins by one to three seconds; a walk (about 14.7 s) loses. Jump points
- * are px of his body's left edge, found with a search over the course and checked by
- * race.test.ts. // TUNED
+ * Brainwashed Luigi's way to the flag, starting a tile behind Mario. He is not quite himself: his
+ * top running speed is held to 1.5 px a frame (Mario's is 2.56), and he stands dazed a moment at
+ * GO and twice more along the way (on the open ground before the second tall pipe, and before the
+ * last pipe), staring back at Mario. Like a player he stops short of a pipe while its piranha plant
+ * is up (rival.ts). A sharp run beats him by about four seconds; a careful one with waits at the
+ * plants and a stumble or two still wins (human-sim.test.ts). Jump points are px of his body's left
+ * edge, found with a search over the course and checked by race.test.ts. // TUNED
  */
 export const LUIGI_ROUTE: Route = {
-  maxRun: 0x02000,
-  pauses: [{ at: 0, frames: 24 }],
+  maxRun: 0x01800,
+  pauses: [
+    { at: 0, frames: 24 },
+    { at: 700, frames: 90 },
+    { at: 1290, frames: 90 },
+  ],
   jumps: [
-    { at: 224, hold: 20 }, // onto the low pipe
-    { at: 322, hold: 20 }, // off it, over the first pit
-    { at: 520, hold: 20 }, // a hop onto the pyramid
-    { at: 528, hold: 20 }, // over the pit between its halves
-    { at: 766, hold: 20 }, // onto the tall pipe
-    { at: 914, hold: 20 }, // over the wide pit
-    { at: 1138, hold: 20 }, // up the end stairs
-    { at: 1210, hold: 20 }, // over the last pit to the pole
+    { at: 560, hold: 20 }, // onto the tall pipe
+    { at: 944, hold: 20 }, // onto the second tall pipe
+    { at: 1118, hold: 20 }, // over the pit past the ? blocks
+    { at: 1268, hold: 20 }, // onto the low pipe
+    { at: 1436, hold: 20 }, // up the staircase
+    { at: 1438, hold: 20 },
+    { at: 1440, hold: 20 },
+    { at: 1616, hold: 20 }, // off its top to the pole
   ],
 };

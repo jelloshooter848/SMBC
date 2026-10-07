@@ -16,13 +16,24 @@ import { CHARACTERS } from '@game/characters/registry';
 import { LUIGI } from '@game/characters/luigi';
 import type { MiniGameResult } from '../types';
 import { LUIGI_MINIGAME } from '.';
-import { CARD_FRAMES, GO_FRAME, RaceMenuScene, type MirrorRaceScene } from './race';
+import { CARD_FRAMES, GO_FRAME, plantUp, RaceMenuScene, type MirrorRaceScene } from './race';
 import { LUIGI_ROUTE, poleOf, raceCourse } from './course';
-import { RivalLuigi, RouteInput, type Route } from './rival';
+import { RivalLuigi, type Route } from './rival';
 import { defaultSettings } from '@engine/save/settings';
 import type { MenuItem } from '@game/scenes/menu';
 import { AssistOptionsScene } from '@game/scenes/options';
 import { Goomba } from '@game/entities/enemies/goomba';
+import { Enemy } from '@game/entities/enemies/enemy';
+import { Piranha } from '@game/entities/enemies/piranha';
+import { parseTextMap } from '@game/level/textmap';
+import { T } from '@game/level/tiles';
+import { levelSeed, World } from '@game/world/world';
+import { newGameState } from '@game/context';
+import { MARIO } from '@game/characters/mario';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { RaceBot, SHARP, CAUTIOUS } from './bot';
+import { raceRun } from './sim';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -34,29 +45,26 @@ beforeEach(() => {
   };
 });
 
-/** Mario's fast run: holds run the whole way, jumping at these points (px of his left edge). */
-const FAST: Route = {
-  jumps: [270, 380, 520, 610, 755, 940, 1130, 1210].map((at) => ({ at, hold: 20 })),
-};
-/** The same run with a stumble: he stops for over a second on the first screen. */
-const STUMBLE: Route = { ...FAST, pauses: [{ at: 100, frames: 75 }] };
-/** A cautious walk (never runs), hopping each obstacle. */
-const WALK: Route = {
-  walks: [[0, 2000]],
-  jumps: [280, 395, 540, 590, 618, 788, 855, 950, 1140, 1190].map((at) => ({ at, hold: 20 })),
-};
-/** Runs, clears the low pipe, and then never jumps again: into the first pit. */
-const PIT: Route = { jumps: [{ at: 270, hold: 20 }] };
+/** The first pit (px): the one past the ? blocks. */
+const PIT_X = 1152;
 
-/** Plays `route` (as Mario) while also pressing any extra actions the test asks for. */
+/**
+ * Plays as Mario: the race bot (bot.ts) once the race is on, if given one, while also pressing any
+ * extra actions the test asks for.
+ */
 class Driver implements InputFrame {
-  private readonly route: RouteInput | null;
+  private readonly bot: RaceBot | null;
+  private readonly route: ScriptedInput | null;
   private readonly extra = new ScriptedInput({ steps: [] });
-  constructor(route: Route | null) {
-    this.route = route ? new RouteInput(route) : null;
+  constructor(bot: RaceBot | null) {
+    this.bot = bot;
+    this.route = bot ? new ScriptedInput({ steps: [] }) : null;
   }
   step(scene: MirrorRaceScene, extra: Action[]): void {
-    this.route?.step(scene.world.player);
+    if (this.bot && this.route) {
+      this.route.setHeld(scene.phase === 'race' ? this.bot.step(scene.world) : []);
+      this.route.next();
+    }
     this.extra.setHeld(extra);
     this.extra.next();
   }
@@ -70,14 +78,14 @@ class Driver implements InputFrame {
     return (this.route?.released(a) ?? false) || this.extra.released(a);
   }
   bufferedJump(w: number): boolean {
-    return (this.route?.bufferedJump() ?? false) || this.extra.bufferedJump(w);
+    return (this.route?.bufferedJump(w) ?? false) || this.extra.bufferedJump(w);
   }
   consumeJumpBuffer(): void {
     this.route?.consumeJumpBuffer();
     this.extra.consumeJumpBuffer();
   }
   get dirX(): -1 | 0 | 1 {
-    return this.route ? this.route.dirX : this.extra.dirX;
+    return this.route && this.route.dirX !== 0 ? this.route.dirX : this.extra.dirX;
   }
 }
 
@@ -99,13 +107,18 @@ class TextRenderer implements Renderer {
  * A real Game with the race pushed over a stand-in level scene, as the unlock flow does; `done`
  * records each result and pops the race (the flow's job) unless `keep` is set.
  */
-function setup(route: Route | null, opts: { keep?: boolean; stubAssets?: boolean } = {}) {
+function setup(bot: RaceBot | null, opts: { keep?: boolean; stubAssets?: boolean; noDamage?: boolean } = {}) {
   const assets = opts.stubAssets
     ? ({ sheet: () => ({ id: 'stub', image: null, frames: new Map() }) } as unknown as AssetRegistry)
     : new AssetRegistry({ default: {} });
   const said: string[] = [];
   const game = new Game({
-    ctx: { assets, audio: NULL_AUDIO, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
+    ctx: {
+      assets,
+      audio: NULL_AUDIO,
+      assist: { ...DEFAULT_ASSIST, invulnerable: !!opts.noDamage },
+      reduceFlashing: true,
+    },
     getLevel,
     characters: CHARACTERS,
     announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
@@ -118,7 +131,7 @@ function setup(route: Route | null, opts: { keep?: boolean; stubAssets?: boolean
     if (!opts.keep) game.scenes.pop();
   }) as MirrorRaceScene;
   game.scenes.push(scene);
-  const input = new Driver(route);
+  const input = new Driver(bot);
   const step = (extra: Action[] = []) => {
     input.step(scene, extra);
     game.scenes.update([input]);
@@ -131,16 +144,32 @@ function setup(route: Route | null, opts: { keep?: boolean; stubAssets?: boolean
   const play = (max = 2000) => {
     for (let i = 0; i < max && results.length === 0; i++) step();
   };
-  return { game, scene, below, results, said, step, tap, play };
+  /** Once the race is on, puts Mario on the ground just short of the first pit and runs him in. */
+  const intoPit = () => {
+    while (scene.phase !== 'race') step();
+    const b = scene.world.player.body;
+    b.x = px(PIT_X - 40);
+    b.y = px(208) - b.h;
+    scene.world.camera.snapTo(b.x);
+    for (let i = 0; i < 2000 && results.length === 0; i++) step(['right', 'run']);
+  };
+  return { game, scene, below, results, said, step, tap, play, intoPit };
 }
 
-/** Luigi's finishing time on his own (frames after GO). */
-function rivalTime(): number {
+/** Luigi's finishing time on his own, with no plant up anywhere (frames after GO). */
+function rivalTime(route: Route = LUIGI_ROUTE): number {
   const level = raceCourse();
-  const r = new RivalLuigi(level, LUIGI, LUIGI_ROUTE, px(level.start.x * 16 - 16), poleOf(level));
-  for (let f = 0; f < 2000 && !r.finished; f++) r.update();
+  const r = new RivalLuigi(level, LUIGI, route, px(level.start.x * 16 - 16), poleOf(level));
+  for (let f = 0; f < 3000 && !r.finished; f++) r.update();
   return r.finishedAt ?? Infinity;
 }
+
+/** A level's tiles, row by row, as the map's glyphs would give them (ids). */
+const ll11 = () =>
+  parseTextMap(
+    readFileSync(join(import.meta.dirname, '../../../content/levels/lost/world1/ll-1-1.map'), 'utf8'),
+    'll-1-1',
+  );
 
 describe('Mirror Race: the course and the rival', () => {
   it('keeps the course out of the level library (dev level select, campaign)', () => {
@@ -156,15 +185,96 @@ describe('Mirror Race: the course and the rival', () => {
 
   it("Luigi's route reaches the pole on its own, the same way every time", () => {
     const t = rivalTime();
-    expect(t).toBeGreaterThan(660);
-    expect(t).toBeLessThan(740);
+    expect(t).toBeGreaterThan(1300);
+    expect(t).toBeLessThan(1420);
     expect(rivalTime()).toBe(t);
+  });
+
+  it("is The Lost Levels' 1-1 (ll-1-1.map): its first 53 columns, then its last 76, tile for tile", () => {
+    const race = raceCourse();
+    const lost = ll11();
+    expect(race.width).toBe(53 + 76);
+    // Enemies drawn into the tiles are spawns, not tiles; compare the solid layout.
+    for (let y = 0; y < race.height; y++)
+      for (let x = 0; x < race.width; x++) {
+        const lx = x < 53 ? x : x + lost.width - race.width;
+        expect(race.tiles[y * race.width + x], `${x},${y}`).toBe(lost.tiles[y * lost.width + lx]);
+      }
+  });
+
+  it('has the 1-1 pieces: plants in its pipes, a Paratroopa and a Koopa, the poison mushroom, the staircase and the flag', () => {
+    const race = raceCourse();
+    const at = (x: number, y: number) => race.tiles[y * race.width + x];
+    const plants = race.entities.filter((e) => e.type === 'piranha');
+    expect(plants.length).toBeGreaterThanOrEqual(4);
+    for (const p of plants) expect([T.PIPE_TL, T.PIPE_H_TL]).toContain(at(p.x, p.y));
+    const kinds = race.entities.map((e) => e.type);
+    expect(kinds).toContain('koopa-para-green');
+    expect(kinds.some((k) => k === 'koopa-green' || k === 'koopa-red')).toBe(true);
+    expect(race.tiles).toContain(T.Q_POISON);
+    // The staircase: eight hard-block steps up, just before the pole.
+    const pole = poleOf(race);
+    const col = Math.floor(pole.x / 16);
+    let top = Infinity;
+    for (let x = col - 12; x < col; x++)
+      for (let y = 0; y < race.height; y++) if (at(x, y) === T.HARD) top = Math.min(top, y);
+    expect(top).toBeLessThanOrEqual(12 - 7);
+    expect(race.zones.some((z) => z.kind === 'exit')).toBe(true);
+  });
+
+  it('Luigi stops short of a pipe while its plant is up, then goes on once it is down', () => {
+    const level = raceCourse();
+    const r = new RivalLuigi(level, LUIGI, LUIGI_ROUTE, px(level.start.x * 16 - 16), poleOf(level));
+    let up = true;
+    // A plant up over the tall pipe (px 624-655) for the first 600 frames.
+    r.plantUp = (x0, x1) => up && x0 < 656 && x1 > 624;
+    for (let f = 0; f < 600; f++) r.update();
+    expect(r.x + toPx(r.player.body.w)).toBeLessThan(624);
+    expect(r.x).toBeGreaterThan(520);
+    expect(r.player.body.vx).toBe(0);
+    expect(r.waited).toBeGreaterThan(100);
+    up = false;
+    for (let f = 0; f < 3000 && !r.finished; f++) r.update();
+    expect(r.finished).toBe(true);
+  });
+
+  it('Luigi hops up a wall he runs into short of a route jump (after waiting for a plant)', () => {
+    const level = raceCourse();
+    // No jump for the tall pipe: he runs into it, stands a moment, and hops up.
+    const route = { ...LUIGI_ROUTE, jumps: LUIGI_ROUTE.jumps.slice(1) };
+    const r = new RivalLuigi(level, LUIGI, route, px(level.start.x * 16 - 16), poleOf(level));
+    for (let f = 0; f < 600; f++) r.update();
+    expect(r.x).toBeGreaterThan(660);
+    expect(rivalTime(route)).toBeLessThan(Infinity);
+  });
+
+  it("finds the race's plants that are up over a stretch, within a jump's reach", () => {
+    const level = raceCourse();
+    const w = new World(
+      level,
+      {
+        assets: new AssetRegistry({ default: {} }),
+        audio: NULL_AUDIO,
+        assist: { ...DEFAULT_ASSIST },
+        reduceFlashing: true,
+      },
+      newGameState(MARIO),
+      { seed: levelSeed(level) },
+    );
+    const plant = new Piranha(39, 9); // the tall pipe's, px 624-655, its mouth at 144
+    w.entities.push(plant);
+    expect(plantUp(w, 600, 700, 208)).toBe(false); // in its pipe
+    for (let f = 0; f < 60; f++) plant.update(w);
+    expect(plant.body.h).toBeGreaterThan(0);
+    expect(plantUp(w, 600, 700, 208)).toBe(true);
+    expect(plantUp(w, 656, 700, 208)).toBe(false); // past it
+    expect(plantUp(w, 600, 700, 240)).toBe(false); // too far below to reach it
   });
 });
 
 describe('Mirror Race: outcomes', () => {
   it('opens on the black WORLD 1-1 card, then shows the course a moment, and nobody moves before GO', () => {
-    const h = setup(FAST);
+    const h = setup(null);
     const x0 = h.scene.world.player.body.x;
     const l0 = h.scene.rival.player.body.x;
     expect(h.scene.phase).toBe('card');
@@ -176,7 +286,7 @@ describe('Mirror Race: outcomes', () => {
     expect(h.scene.phase).toBe('ready');
     expect(h.scene.world.player.body.x).toBe(x0);
     expect(h.scene.rival.player.body.x).toBe(l0);
-    for (let i = 0; i < 30; i++) h.step();
+    for (let i = 0; i < 30; i++) h.step(['right', 'run']);
     expect(h.scene.phase).toBe('race');
     expect(h.scene.world.player.body.x).toBeGreaterThan(x0);
     // A short beat on the course before GO, so nobody starts blind off the black card.
@@ -186,36 +296,27 @@ describe('Mirror Race: outcomes', () => {
     expect(h.said).toContain('Go!');
   });
 
-  it('a fast run beats Luigi to the flag: pass', () => {
-    const h = setup(FAST);
-    let wonAt = -1;
-    for (let i = 0; i < 2000 && h.results.length === 0; i++) {
-      h.step();
-      if (wonAt < 0 && h.scene.phase === 'won') wonAt = h.scene.raceFrames;
-    }
+  it('a sharp run beats Luigi to the flag by over a second and a half: pass', () => {
+    const h = setup(new RaceBot(SHARP));
+    h.play();
     expect(h.results).toEqual(['pass']);
     expect(h.scene.rival.finished).toBe(false);
-    // Well ahead: more than a second and a half.
-    expect(rivalTime() - wonAt).toBeGreaterThan(90);
     expect(h.game.scenes.top).toBe(h.below);
+    // Luigi raced on (as if Mario had not won) takes the flag well after.
+    const run = raceRun({ ...SHARP, rivalOn: true });
+    expect(run.result).toBe('pass');
+    expect((run.luigiAt ?? 0) - (run.marioAt ?? Infinity)).toBeGreaterThan(90);
   });
 
-  it('a good run with a stumble still wins, by one to two seconds', () => {
-    const h = setup(STUMBLE);
-    let wonAt = -1;
-    for (let i = 0; i < 2000 && h.results.length === 0; i++) {
-      h.step();
-      if (wonAt < 0 && h.scene.phase === 'won') wonAt = h.scene.raceFrames;
-    }
-    expect(h.results).toEqual(['pass']);
-    const margin = rivalTime() - wonAt;
-    expect(margin).toBeGreaterThanOrEqual(60);
-    expect(margin).toBeLessThanOrEqual(120);
+  it('a careful run, waiting at plants that are up, still wins', () => {
+    const run = raceRun({ ...CAUTIOUS, rivalOn: true });
+    expect(run.result).toBe('pass');
+    expect(run.waited).toBeGreaterThan(60);
   });
 
-  it('a cautious walk loses: Luigi takes the flag first, fail', () => {
-    const h = setup(WALK);
-    h.play();
+  it('standing still loses (with No damage, so nothing kills him): Luigi takes the flag, fail', () => {
+    const h = setup(null, { noDamage: true });
+    h.play(4000);
     expect(h.results).toEqual(['fail']);
     expect(h.scene.rival.finished).toBe(true);
     expect(h.scene.world.player.dead).toBe(false);
@@ -223,8 +324,8 @@ describe('Mirror Race: outcomes', () => {
   });
 
   it('falling in a pit fails (after the death), before Luigi finishes', () => {
-    const h = setup(PIT);
-    h.play();
+    const h = setup(null);
+    h.intoPit();
     expect(h.results).toEqual(['fail']);
     expect(h.scene.world.player.dead).toBe(true);
     expect(toPx(h.scene.world.player.body.y)).toBeGreaterThan(240);
@@ -233,16 +334,25 @@ describe('Mirror Race: outcomes', () => {
   });
 
   it('once Mario wins, Luigi lets go and coasts to a stop on the ground (no mid-air freeze)', () => {
-    const h = setup(FAST, { keep: true });
-    for (let i = 0; i < 2000 && h.scene.phase !== 'won'; i++) h.step();
+    const h = setup(new RaceBot(SHARP), { keep: true });
+    for (let i = 0; i < 3000 && h.scene.phase !== 'won'; i++) h.step();
     const l = h.scene.rival.player.body;
-    const at = { x: l.x, y: l.y };
     h.play();
     expect(h.results).toEqual(['pass']);
     expect(l.onGround).toBe(true);
     expect(l.vx).toBe(0);
-    expect(l.x !== at.x || l.y !== at.y).toBe(true);
     expect(h.scene.rival.finished).toBe(false);
+    // Stopped mid-jump over a pit, he holds on through the jump and lands past it.
+    const level = raceCourse();
+    const r = new RivalLuigi(level, LUIGI, LUIGI_ROUTE, px(level.start.x * 16 - 16), poleOf(level));
+    for (let f = 0; f < 3000 && !(r.x > PIT_X - 24 && !r.player.body.onGround); f++) r.update();
+    const x0 = r.x;
+    r.stopped = true;
+    for (let f = 0; f < 300; f++) r.update();
+    expect(r.player.body.onGround).toBe(true);
+    expect(r.player.body.vx).toBe(0);
+    expect(r.x).toBeGreaterThan(x0);
+    expect(toPx(r.player.body.y)).toBeLessThan(208);
   });
 
   it('the menu offers Continue (the race resumes where it was) and Give up (quit)', () => {
@@ -297,9 +407,8 @@ describe('Mirror Race: outcomes', () => {
     const safe = touch(true);
     expect(safe.scene.world.player.dead).toBe(false);
     expect(safe.scene.phase).toBe('race');
-    const pit = setup(PIT);
-    pit.game.ctx.assist.invulnerable = true;
-    pit.play();
+    const pit = setup(null, { noDamage: true });
+    pit.intoPit();
     expect(pit.results).toEqual(['fail']);
     expect(pit.said).toContain('Mario fell. Try again.');
   });
@@ -316,12 +425,16 @@ describe('Mirror Race: outcomes', () => {
   });
 
   it.each([
-    ['pass', FAST],
-    ['fail', WALK],
-    ['fail', PIT],
-  ] as const)('calls done exactly once (%s), however long the scene is left running', (want, route) => {
-    const h = setup(route, { keep: true });
-    h.play();
+    ['pass', () => setup(new RaceBot(SHARP), { keep: true }), (h: ReturnType<typeof setup>) => h.play(3000)],
+    [
+      'fail',
+      () => setup(null, { keep: true, noDamage: true }),
+      (h: ReturnType<typeof setup>) => h.play(4000),
+    ],
+    ['fail', () => setup(null, { keep: true }), (h: ReturnType<typeof setup>) => h.intoPit()],
+  ] as const)('calls done exactly once (%s), however long the scene is left running', (want, make, run) => {
+    const h = make();
+    run(h);
     expect(h.results).toEqual([want]);
     // Left on top (the flow is slow to pop it), with the menu button pressed now and then.
     for (let i = 0; i < 1000; i++) h.step(i % 7 === 0 ? ['start'] : []);
@@ -332,7 +445,11 @@ describe('Mirror Race: outcomes', () => {
   it('the rival never touches or hurts Mario: standing still, he runs through and wins', () => {
     const h = setup(null);
     let crossed = false;
-    for (let i = 0; i < 2000 && h.results.length === 0; i++) {
+    for (let i = 0; i < 4000 && h.results.length === 0; i++) {
+      // The course's own enemies would get Mario first: clear them away.
+      const w = h.scene.world;
+      for (let k = w.entities.length - 1; k >= 0; k--)
+        if (w.entities[k] instanceof Enemy) w.entities.splice(k, 1);
       h.step();
       const m = h.scene.world.player;
       if (overlaps(m.body, h.scene.rival.player.body)) crossed = true;
@@ -346,10 +463,10 @@ describe('Mirror Race: outcomes', () => {
   });
 
   it("leaves the campaign's state alone (score, coins, lives, power, hero)", () => {
-    const h = setup(FAST);
+    const h = setup(new RaceBot(SHARP));
     const s = h.game.state;
     const before = { ...s };
-    h.play();
+    h.play(3000);
     expect(h.results).toEqual(['pass']);
     expect(h.scene.world.state.score).toBeGreaterThan(0); // the flag's points went to the race
     expect(s).toEqual(before);
@@ -372,7 +489,7 @@ describe('Mirror Race: screen', () => {
   });
 
   it('races under the SMB HUD (name, score, coins, WORLD, a TIME that runs down), the track bar under it', () => {
-    const h = setup(null, { stubAssets: true });
+    const h = setup(null, { stubAssets: true, noDamage: true });
     const rects: { y: number; h: number }[] = [];
     const r = new TextRenderer();
     (r as Renderer).rect = (_x, y, _w, hh) => void rects.push({ y, h: hh });
@@ -414,12 +531,12 @@ describe('Mirror Race: screen', () => {
   });
 
   it('draws the track, the off-screen arrow and the result banner', () => {
-    const h = setup(null, { stubAssets: true });
+    const h = setup(null, { stubAssets: true, noDamage: true });
     const r = new TextRenderer();
     // Mario stands still; Luigi runs off the right of the screen, then wins.
     let arrow = false;
     let banner = false;
-    for (let i = 0; i < 2000 && h.results.length === 0; i++) {
+    for (let i = 0; i < 4000 && h.results.length === 0; i++) {
       h.step();
       r.texts = [];
       h.game.scenes.render(r);
@@ -431,13 +548,13 @@ describe('Mirror Race: screen', () => {
   });
 
   it('labels only MENU on the card, the buttons as in a level from the course on, and none once decided', () => {
-    const h = setup(PIT);
+    const h = setup(null, { keep: true });
     expect(h.scene.touchLabels().jump).toBeNull();
     expect(h.scene.touchLabels().start).toBe('MENU');
     for (let i = 0; i < CARD_FRAMES; i++) h.step();
     expect(h.scene.touchLabels().jump).toBe('JUMP');
     expect(h.scene.touchLabels().start).toBe('MENU');
-    for (let i = 0; i < 2000 && !h.scene.world.player.dead; i++) h.step();
+    h.intoPit();
     expect(h.scene.touchLabels().jump).toBeNull();
     expect(h.scene.touchLabels().start).toBeNull();
   });
