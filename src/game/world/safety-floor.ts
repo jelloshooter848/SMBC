@@ -106,7 +106,8 @@ export class SafetyFloor {
   at(tx: number, ty: number): boolean {
     if (tx < 0 || tx >= this.map.width || this.transfer[tx]) return false;
     if (this.map.get(tx, ty) === T.LAVA) return true;
-    return ty === this.rowAt(tx);
+    // rowAt's -1 means "no floor", never the row above the screen.
+    return ty >= 0 && ty === this.rowAt(tx);
   }
 
   /**
