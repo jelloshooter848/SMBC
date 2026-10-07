@@ -253,3 +253,29 @@ describe('the short logo', () => {
     expect(frames).toContain('title-logo/smbc-line');
   });
 });
+
+describe('intro layering', () => {
+  it('keeps the logo readable: heroes flying out of the rift pass behind the letters', () => {
+    const h = makeGame({ intro: true });
+    h.game.showTitle();
+    const title = h.game.scenes.top as TitleScene;
+    const heroSheets = new Set(CHARACTERS.map((c) => c.portrait.sheet));
+    let checked = 0;
+    for (let i = 0; i < 300; i++) {
+      h.step();
+      const calls: string[] = [];
+      const r: Renderer = Object.assign(new NullRenderer(), {
+        sprite(sheet: SpriteSheet, frame: string): void {
+          calls.push(`${sheet.id}/${frame}`);
+        },
+      });
+      title.render(r);
+      const lastHero = calls.reduce((last, c, k) => (heroSheets.has(c.split('/')[0]!) ? k : last), -1);
+      const firstLetter = calls.findIndex((c) => c.startsWith('title-logo/cross-'));
+      if (lastHero < 0 || firstLetter < 0) continue;
+      expect(lastHero, `frame ${i}`).toBeLessThan(firstLetter);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+});

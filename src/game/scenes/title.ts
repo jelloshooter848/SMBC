@@ -469,8 +469,9 @@ export class TitleScene extends MenuScene {
         );
       this.bolt(r);
     }
-    this.logo(r, dy);
+    // Heroes first: those flying out of the rift pass behind the logo, which stays readable.
     this.heroesDraw(r, dy);
+    this.logo(r, dy);
     if (this.phase === 'rift' && t < T.fadeFrom) {
       if (this.boltFlash()) r.rect(0, 0, 256, 240, '#fcfcfc');
       return; // the menu and credits appear with the field
