@@ -1,100 +1,229 @@
 import type { Renderer } from '@engine/gfx/renderer';
-import { ROOM_H, ROOM_W, TILE, centre, type Box, type Dir } from '../../topdown/geometry';
-import { TdEnemy } from '../../topdown/entity';
-import type { TdView } from '../../topdown/view';
-import type { TopDownWorld } from '../../topdown/world';
-import { box, drawPiece, HIT_PALETTE, HOT_PALETTE, LOOK } from './art';
-import { Boom, Orb, ORB_FRAMES } from './mutants';
+import { overlaps } from '@engine/math/aabb';
+import { px, toPx } from '@engine/math/units';
+import { Entity, type View } from '../../entities/entity';
+import { Enemy } from '../../entities/enemies/enemy';
+import type { DamageSource, Reaction } from '../../rules/damage';
+import type { World } from '../../world/world';
+import { box, HIT_PALETTE, HOT_PALETTE, LOOK, SOPHIA_SHEET, soundId, type Fallback } from './art';
 
 /*
- * The Plutonium Boss (an original design in NES Blaster Master style; overhead, owner decision):
- * the mutant heart of the Underworld's radiation, through which Bowser's spell reached Sophia.
- * 64×64, facing down at Jason. Two phases, every beat on the fight's own clock (frames since it
- * woke), so it plays the same every round and can be learnt:
+ * The Plutonium Boss, side view, fought by Sophia III in the tank (owner decision: as in Blaster
+ * Master, whose final boss it is). An original design in that style: a mound of glowing mutant
+ * matter filling the right of its chamber, then the core that was inside it. Two phases, every
+ * beat on the fight's own clock (frames since it woke), so it plays the same every round:
  *
- *   1. THE SHELL (`boss-a-0/1`) drifts along the top of the room. Its vents are shut (shots clang
- *      off) for SHUT frames while it drips two orbs straight down from them; it runs hot for GLOW
- *      frames (the warning: the `plutonium-hot` palette), throws its vents open with a ring of
- *      RING_SHOTS orbs and stays open (it can be hurt) for OPEN frames, spitting one big aimed orb
- *      halfway through. SHELL_HP.
- *   2. THE CORE (`boss-b-0/1`): the shell cracks (BREAK_FRAMES of booms, nothing to fear, every
- *      orb gone) and the beating core bounces round the room on the diagonals, as the original's
- *      bosses do. Every BURST_EVERY frames it stops and runs hot (BURST_GLOW frames), then fans
- *      FAN_SHOTS orbs at Jason. Below half it is quicker and beats faster. Always open: CORE_HP.
+ *   1. THE MASS (`pluto-a-0/1`, 64×64, MASS_HP): shut (shots clang off) for SHUT frames, lobbing
+ *      a glob that lands where the tank stood (at LOB_AT); it runs hot for GLOW frames (the
+ *      warning), then opens its maw: a ball of plutonium rolls out along the floor (jump it or
+ *      hover over it) and the mass can be hurt for OPEN frames, lobbing once more.
+ *   2. THE CORE (`pluto-b-0/1`, 32×32, CORE_HP): the mass bursts (BREAK_FRAMES of booms, every
+ *      shot gone, nothing hurts), and the core rises and loops a slow figure of eight over the
+ *      chamber's upper half (aim up, hover, or send missiles); every RAIN_EVERY frames it holds
+ *      still and runs hot (RAIN_GLOW frames), then rains RAIN_DROPS drops. Below half it loops
+ *      faster. Always open.
  *
- * A hit flashes it white (`sophia-hit`; never with reduce flashing). It sleeps until Jason has
- * stepped into the room (the shutter closes behind him); its orbs vanish when it falls.
+ * Any attack of the tank's (or Jason's) hurts it; it can't be stomped; touching it hurts. A hit
+ * flashes it white (`sophia-hit`, never with reduce flashing).
  */
 
-export const SHELL_HP = 24;
-export const CORE_HP = 20;
-/** The boss's size (S3's frames). */
-export const BOSS_SIZE = 64;
-/** Phase 1's cycle: shut, glowing, open (frames). */
+export const MASS_HP = 30;
+export const CORE_HP = 24;
+/** Frames before it wakes (its name comes up), from the player's arrival. */
+export const WAKE_AFTER = 60;
+/** Phase 1's cycle. */
 export const SHUT = 120;
 export const GLOW = 30;
-export const OPEN = 96;
+export const OPEN = 90;
 export const CYCLE = SHUT + GLOW + OPEN;
-/** Frames of the cycle at which the vents drip, and the open shell spits its big aimed orb. */
-export const DRIP_AT: readonly number[] = [40, 90];
-export const AIM_AT = SHUT + GLOW + OPEN / 2;
-export const RING_SHOTS = 8;
-export const ORB_SPEED = 1.25;
-export const AIMED_SPEED = 1.5;
-/** The vents (x in the frame) the drips fall from, and their height. */
-export const VENTS: readonly number[] = [10, 46];
-export const VENT_Y = 56;
-/** Phase 1 drifts between these x (its left edge, room px). */
-export const DRIFT_MIN = TILE;
-export const DRIFT_MAX = ROOM_W - TILE - BOSS_SIZE;
-/** Frames the shell takes to crack. */
+/** Frames of the cycle at which it lobs a glob. */
+export const LOB_AT: readonly number[] = [20, 80, SHUT + GLOW + 50];
+/** A glob's flight time (frames) and gravity (px/f²). */
+export const LOB_FRAMES = 60;
+export const LOB_GRAVITY = 0.1;
+/** The rolling ball's pace (px a frame). */
+export const BALL_SPEED = 1.25;
+/** Frames the mass takes to burst. */
 export const BREAK_FRAMES = 90;
-/** Phase 2: its pace (px on each frame of a 4-frame pattern, calm and angry), the fan. */
-export const CORE_STEPS: readonly number[] = [1, 1, 1, 0];
-export const ANGRY_STEPS: readonly number[] = [1, 1, 1, 1];
-export const BURST_EVERY = 200;
-export const BURST_GLOW = 30;
-export const FAN_SHOTS = 5;
-export const FAN_SPREAD = 0.3;
-/** Frames it can't be hurt again after a hit (shots come in volleys). */
-export const BOSS_INVULN = 12;
+/** Phase 2: the loop (frames for one figure of eight, calm and angry), its middle and reach (px, room). */
+export const LOOP_FRAMES = 360;
+export const ANGRY_LOOP_FRAMES = 240;
+export const LOOP_X = 112;
+export const LOOP_Y = 72;
+export const LOOP_W = 72;
+export const LOOP_H = 20;
+/** Phase 2's rain. */
+export const RAIN_EVERY = 160;
+export const RAIN_GLOW = 30;
+export const RAIN_DROPS = 3;
+export const DROP_SPEED = 1.5;
+/** Frames it can't be hurt again after a hit (shots come in bursts). */
+export const PLUTO_INVULN = 8;
+/** Hit points a hit takes: an attack's own amount, at least 1. */
+export const STAR_DAMAGE = 4;
 
-export type BossPhase = 'asleep' | 'shell' | 'break' | 'core' | 'dead';
+export type PlutoPhase = 'asleep' | 'mass' | 'break' | 'core' | 'dead';
 
-/** The big aimed orb (16×16). */
-class BigOrb extends Orb {
-  constructor(cx: number, cy: number, vx: number, vy: number) {
-    super(cx - 8, cy - 8, vx, vy, ['boss-shot-big']);
-    this.w = 16;
-    this.h = 16;
+const SIZE = 64;
+const CORE = 32;
+
+/** Draws a frame of the sophia sheet (a palette when given and defined), or a box. */
+function drawPluto(
+  r: Renderer,
+  view: View,
+  frame: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fallback: Fallback,
+  palette?: string,
+  alt?: string,
+): void {
+  const assets = view.assets;
+  for (const f of alt ? [frame, alt] : [frame])
+    try {
+      if (!assets.has(SOPHIA_SHEET)) break;
+      let sheet = assets.sheet(SOPHIA_SHEET);
+      if (palette)
+        try {
+          sheet = assets.sheet(SOPHIA_SHEET, palette);
+        } catch {
+          // no such palette yet: plain
+        }
+      if (sheet.frames.has(f)) {
+        const fw = sheet.frames.get(f)?.w ?? w;
+        const fh = sheet.frames.get(f)?.h ?? h;
+        r.sprite(sheet, f, Math.round(x + (w - fw) / 2), Math.round(y + (h - fh) / 2));
+        return;
+      }
+    } catch {
+      break;
+    }
+  box(r, x, y, w, h, fallback);
+}
+
+/** What the boss throws: a lobbed glob, a rolling ball, a drop of rain. */
+export type PlutoShotKind = 'glob' | 'ball' | 'drop';
+
+/** One of the boss's shots: hurts the player on touch; walls and the floor stop it (a ball rolls on). */
+export class PlutoShot extends Entity {
+  readonly kind: string;
+  age = 0;
+  private fx: number;
+  private fy: number;
+  constructor(
+    x: number,
+    y: number,
+    public vx: number,
+    public vy: number,
+    readonly shot: PlutoShotKind,
+    readonly gravity = 0,
+  ) {
+    const size = shot === 'ball' ? 14 : shot === 'glob' ? 10 : 6;
+    super(px(Math.round(x)), px(Math.round(y)), size, size);
+    this.fx = x;
+    this.fy = y;
+    this.kind = `pluto-${shot}`;
+    this.layer = 'front';
+    this.despawnMargin = 32;
+  }
+
+  update(world: World): void {
+    this.age++;
+    this.vy += this.gravity;
+    this.fx += this.vx;
+    this.fy += this.vy;
+    const b = this.body;
+    b.x = px(Math.round(this.fx));
+    b.y = px(Math.round(this.fy));
+    const cx = (b.x + (b.w >> 1)) >> 12;
+    const cy = (b.y + (b.h >> 1)) >> 12;
+    const foot = (b.y + b.h) >> 12;
+    if (this.shot === 'ball') {
+      // Rolls along the floor; a wall ends it.
+      if (world.map.isSolid(this.vx < 0 ? b.x >> 12 : (b.x + b.w) >> 12, cy)) return this.destroy();
+    } else if (world.map.isSolid(cx, foot) || world.map.isSolid(cx, cy) || toPx(b.y) > 240) {
+      if (this.shot === 'glob') world.spawn(new PlutoBoom(b.x + (b.w >> 1), b.y + (b.h >> 1)));
+      return this.destroy();
+    }
+    const p = world.player;
+    if (p.dead || p.out || !overlaps(b, p.body)) return;
+    world.hurtPlayer(p, this.vx > 0 ? 1 : -1);
+    if (this.shot !== 'ball') this.destroy();
+  }
+
+  render(r: Renderer, view: View): void {
+    const x = toPx(this.body.x) - view.camX;
+    const y = toPx(this.body.y);
+    const k = view.reduceFlashing ? 0 : (this.age >> 3) & 1;
+    if (this.shot === 'ball')
+      drawPluto(r, view, `pluto-ball-${k}`, x - 1, y - 1, 16, 16, LOOK.bossCore, undefined, 'boss-shot-big');
+    else if (this.shot === 'glob')
+      drawPluto(r, view, 'pluto-glob', x - 3, y - 3, 16, 16, LOOK.orb, undefined, 'boss-shot-big');
+    else drawPluto(r, view, 'pluto-drop', x - 1, y - 1, 8, 8, LOOK.orb, undefined, `boss-shot-${k}`);
   }
 }
 
-export class PlutoniumBoss extends TdEnemy {
-  readonly kind = 'plutonium';
-  hp = SHELL_HP;
-  override w = BOSS_SIZE;
-  override h = BOSS_SIZE;
-  override contact = 2;
-  override knockable = false;
-  override dropChance = 0;
-  override mover = 'fly' as const;
-  phase: BossPhase = 'asleep';
-  /** The fight's clock: frames since it woke. */
-  t = 0;
-  /** Frames into the current phase. */
-  phaseT = 0;
-  vx = 1;
-  vy = 1;
-  /** Frames since its last hit (for the hit flash). */
-  hitT = 99;
-  /** Frames into phase 2's glow before a fan (0: moving). */
-  burstT = 0;
+/** A boom (24×24) where a glob burst or the boss broke up. */
+export class PlutoBoom extends Entity {
+  readonly kind = 'pluto-boom';
+  age = 0;
+  constructor(cx: number, cy: number) {
+    super(cx - px(12), cy - px(12), 24, 24);
+    this.layer = 'front';
+  }
+  update(): void {
+    if (++this.age >= 20) this.destroy();
+  }
+  render(r: Renderer, view: View): void {
+    const k = Math.min(3, this.age >> 2);
+    drawPluto(r, view, `boom-${k}`, toPx(this.body.x) - view.camX, toPx(this.body.y), 24, 24, LOOK.boom);
+  }
+}
 
-  /** What shots hit and what hurts Jason: the shell's body, then the core within the broken shell. */
-  override hurtbox(): Box {
-    if (this.phase === 'core') return { x: this.x + 12, y: this.y + 12, w: 40, h: 40 };
-    return { x: this.x + 6, y: this.y + 6, w: 52, h: 50 };
+export interface PlutoHooks {
+  /** It woke (its name comes up). */
+  onWake?(): void;
+  /** Phase 1 is beaten: the mass bursts. */
+  onBreak?(): void;
+  /** It fell. */
+  onDown?(): void;
+}
+
+/**
+ * The Plutonium Boss. `right` and `floor` (px) are the chamber's inner right wall and its floor:
+ * the mass stands against the wall on the floor.
+ */
+export class PlutoniumBoss extends Enemy {
+  readonly kind = 'plutonium-boss';
+  phase: PlutoPhase = 'asleep';
+  /** The fight's clock: frames since it woke; frames into the phase. */
+  t = 0;
+  phaseT = 0;
+  /** Frames since the player arrived (it wakes at WAKE_AFTER). */
+  private idle = 0;
+  invuln = 0;
+  hitT = 99;
+  /** Frames into phase 2's glow before the rain (0: looping). */
+  rainT = 0;
+  private loop = 0;
+  private clangT = 0;
+
+  constructor(
+    readonly right: number,
+    readonly floor: number,
+    private readonly hooks: PlutoHooks = {},
+  ) {
+    super(px(right - SIZE), px(floor - SIZE), SIZE, SIZE);
+    this.hp = MASS_HP;
+    this.stompable = false;
+    this.contactHurts = true;
+    this.fallsOffLedges = false;
+    this.despawnMargin = null;
+    this.body.vx = 0;
+    this.facing = -1;
+    this.layer = 'main';
   }
 
   /** Where in phase 1's cycle it is. */
@@ -102,226 +231,201 @@ export class PlutoniumBoss extends TdEnemy {
     return this.t % CYCLE;
   }
 
-  /** Can it be hurt right now? */
+  /** Can it be hurt now? */
   get open(): boolean {
     if (this.phase === 'core') return true;
-    return this.phase === 'shell' && this.cycle >= SHUT + GLOW;
+    return this.phase === 'mass' && this.cycle >= SHUT + GLOW;
   }
 
-  /** The warning glow (phase 1 before opening; phase 2 before a fan). */
+  /** Its warning glow (before it opens; before the rain). */
   get glowing(): boolean {
-    if (this.phase === 'shell') return this.cycle >= SHUT && this.cycle < SHUT + GLOW;
-    if (this.phase === 'core') return this.burstT > 0;
+    if (this.phase === 'mass') return this.cycle >= SHUT && this.cycle < SHUT + GLOW;
+    if (this.phase === 'core') return this.rainT > 0;
     return false;
   }
 
-  /** Below half in phase 2: quicker. */
   get angry(): boolean {
     return this.phase === 'core' && this.hp <= CORE_HP / 2;
   }
 
-  /** Its pace in phase 2 (px a frame, on average). */
-  get speed(): number {
-    const s = this.angry ? ANGRY_STEPS : CORE_STEPS;
-    return s.reduce((a, b) => a + b, 0) / s.length;
-  }
-
-  protected think(world: TopDownWorld): void {
-    this.hitT++;
-    if (this.phase === 'asleep') {
-      if (!world.sealed) return;
-      this.setPhase('shell');
-      world.emit({ type: 'boss-wakes' });
-    }
-    this.t++;
-    this.phaseT++;
-    switch (this.phase) {
-      case 'shell':
-        return this.shell(world);
-      case 'break':
-        return this.cracking(world);
-      case 'core':
-        return this.core(world);
-    }
-  }
-
-  private setPhase(p: BossPhase): void {
+  private setPhase(p: PlutoPhase): void {
     this.phase = p;
     this.phaseT = 0;
   }
 
-  private shell(world: TopDownWorld): void {
-    const k = this.cycle;
-    if (k < SHUT) {
-      // Drift half a pixel a frame, turning at the ends.
-      if ((this.t & 1) === 0) {
-        this.x += this.vx;
-        if (this.x <= DRIFT_MIN) this.vx = 1;
-        else if (this.x >= DRIFT_MAX) this.vx = -1;
-      }
-      if (DRIP_AT.includes(k)) {
-        for (const vent of VENTS)
-          world.add(new Orb(this.x + vent - 4, this.y + VENT_Y, 0, ORB_SPEED, ORB_FRAMES));
-        world.emit({ type: 'boss-shot' });
-      }
-      return;
+  update(world: World): void {
+    this.hitT++;
+    if (this.invuln > 0) this.invuln--;
+    if (this.clangT > 0) this.clangT--;
+    if (this.phase === 'dead') return;
+    if (this.phase === 'asleep') {
+      if (++this.idle < WAKE_AFTER) return;
+      this.setPhase('mass');
+      this.hooks.onWake?.();
     }
-    if (k === SHUT + GLOW) {
-      const c = this.middle();
-      for (let i = 0; i < RING_SHOTS; i++) {
-        const a = (i / RING_SHOTS) * 2 * Math.PI + Math.PI / RING_SHOTS;
-        world.add(new Orb(c.x - 4, c.y - 4, Math.cos(a) * ORB_SPEED, Math.sin(a) * ORB_SPEED, ORB_FRAMES));
-      }
-      world.emit({ type: 'boss-open' });
-    }
-    if (k === AIM_AT) {
-      const c = this.middle();
-      const a = this.aimAt(world, c, 0);
-      world.add(new BigOrb(c.x, c.y, Math.cos(a) * AIMED_SPEED, Math.sin(a) * AIMED_SPEED));
-      world.emit({ type: 'boss-shot' });
-    }
+    this.t++;
+    this.phaseT++;
+    if (this.phase === 'mass') this.mass(world);
+    else if (this.phase === 'break') this.bursting(world);
+    else if (this.phase === 'core') this.core(world);
   }
 
   private middle(): { x: number; y: number } {
-    return centre(this.hurtbox());
+    const b = this.body;
+    return { x: toPx(b.x + (b.w >> 1)), y: toPx(b.y + (b.h >> 1)) };
   }
 
-  /** The angle from `c` to Jason, turned by `turn` radians. */
-  private aimAt(world: TopDownWorld, c: { x: number; y: number }, turn: number): number {
-    const to = centre(world.hero.hurtbox());
-    return Math.atan2(to.y - c.y, to.x - c.x) + turn;
+  private mass(world: World): void {
+    const k = this.cycle;
+    if (LOB_AT.includes(k)) this.lob(world);
+    if (k === SHUT + GLOW) {
+      // The maw opens: a ball rolls out along the floor.
+      const b = this.body;
+      world.spawn(new PlutoShot(toPx(b.x) - 14, this.floor - 14, -BALL_SPEED, 0, 'ball'));
+      world.audio.sfx(soundId('enemyShot'));
+    }
   }
 
-  /** Phase 1 is beaten: the shell cracks; the core beats inside it. */
-  private crack(world: TopDownWorld): void {
+  /** A glob from its top, landing where the player stands (LOB_FRAMES later). */
+  private lob(world: World): void {
+    const b = this.body;
+    const x0 = toPx(b.x) + 8;
+    const y0 = toPx(b.y) + 12;
+    const p = world.player;
+    const tx = toPx(p.body.x + (p.body.w >> 1)) - 5;
+    const ty = this.floor - 10;
+    const T = LOB_FRAMES;
+    const vx = (tx - x0) / T;
+    const vy = (ty - y0 - 0.5 * LOB_GRAVITY * T * T) / T;
+    world.spawn(new PlutoShot(x0, y0, vx, vy, 'glob', LOB_GRAVITY));
+    world.audio.sfx(soundId('enemyShot'));
+  }
+
+  /** Phase 1 beaten: the mass bursts. */
+  private crack(world: World): void {
     this.setPhase('break');
     this.hp = CORE_HP;
-    this.contact = 0;
-    this.invuln = 0;
-    this.clearOrbs(world);
-    world.emit({ type: 'boss-break' });
+    this.contactHurts = false;
+    for (const e of world.entities) if (e instanceof PlutoShot) e.destroy();
+    this.hooks.onBreak?.();
   }
 
-  private cracking(world: TopDownWorld): void {
+  private bursting(world: World): void {
+    const b = this.body;
     if (this.phaseT % 12 === 1) {
       const n = this.phaseT / 12;
-      world.add(new Boom(this.x + 8 + ((n * 19) % 40), this.y + 8 + ((n * 29) % 40)));
-      world.emit({ type: 'boss-boom' });
+      world.spawn(new PlutoBoom(b.x + px(8 + ((n * 19) % 48)), b.y + px(8 + ((n * 29) % 48))));
+      world.audio.sfx(soundId('bossBoom'));
     }
     if (this.phaseT < BREAK_FRAMES) return;
-    // Off it goes, down and toward Jason.
-    this.vx = world.hero.x + 8 < this.x + BOSS_SIZE / 2 ? -1 : 1;
-    this.vy = 1;
-    this.contact = 2;
+    // The core rises out of the middle of what is left.
+    const c = this.middle();
+    b.x = px(c.x - CORE / 2);
+    b.y = px(c.y - CORE / 2);
+    b.w = px(CORE);
+    b.h = px(CORE);
+    this.contactHurts = true;
+    this.loop = Math.PI / 2; // starting at the loop's right end
     this.setPhase('core');
-    world.emit({ type: 'boss-core' });
   }
 
-  private core(world: TopDownWorld): void {
-    if (this.burstT > 0) {
-      if (++this.burstT >= BURST_GLOW) {
-        this.burstT = 0;
+  private core(world: World): void {
+    const b = this.body;
+    if (this.rainT > 0) {
+      if (++this.rainT >= RAIN_GLOW) {
+        this.rainT = 0;
         const c = this.middle();
-        const half = (FAN_SHOTS - 1) / 2;
-        for (let i = 0; i < FAN_SHOTS; i++) {
-          const a = this.aimAt(world, c, (i - half) * FAN_SPREAD);
-          world.add(new Orb(c.x - 4, c.y - 4, Math.cos(a) * ORB_SPEED, Math.sin(a) * ORB_SPEED, ORB_FRAMES));
-        }
-        world.emit({ type: 'boss-shot' });
+        const half = (RAIN_DROPS - 1) / 2;
+        for (let i = 0; i < RAIN_DROPS; i++)
+          world.spawn(new PlutoShot(c.x - 3, c.y + 12, (i - half) * 0.5, DROP_SPEED, 'drop'));
+        world.audio.sfx(soundId('enemyShot'));
       }
       return;
     }
-    if (this.phaseT % BURST_EVERY === 0) {
-      this.burstT = 1;
+    if (this.phaseT % RAIN_EVERY === 0) {
+      this.rainT = 1;
       return;
     }
-    // Bounce on the diagonals inside the walls.
-    const steps = (this.angry ? ANGRY_STEPS : CORE_STEPS)[this.t & 3] ?? 1;
-    for (let i = 0; i < steps; i++) {
-      this.x += this.vx;
-      this.y += this.vy;
-      if (this.x <= TILE) this.vx = 1;
-      else if (this.x + this.w >= ROOM_W - TILE) this.vx = -1;
-      if (this.y <= TILE) this.vy = 1;
-      else if (this.y + this.h >= ROOM_H - TILE) this.vy = -1;
-    }
+    // A slow figure of eight over the upper half; the core moves toward its point on it.
+    this.loop += (2 * Math.PI) / (this.angry ? ANGRY_LOOP_FRAMES : LOOP_FRAMES);
+    const tx = LOOP_X + Math.sin(this.loop) * LOOP_W;
+    const ty = LOOP_Y + Math.sin(2 * this.loop) * LOOP_H;
+    const cx = toPx(b.x) + CORE / 2;
+    const cy = toPx(b.y) + CORE / 2;
+    const step = (to: number, from: number) => Math.max(-2, Math.min(2, to - from));
+    b.x += px(step(Math.round(tx), cx));
+    b.y += px(step(Math.round(ty), cy));
   }
 
-  private clearOrbs(world: TopDownWorld): void {
-    for (const e of world.entities) if (e instanceof Orb) e.dead = true;
-  }
-
-  override hurt(world: TopDownWorld, damage: number, dir: Dir): boolean {
-    if (this.phase === 'asleep' || this.phase === 'break' || this.phase === 'dead') return false;
+  override hit(src: DamageSource, world: World): Reaction {
+    if (src.kind === 'stomp' || src.kind === 'bump') return 'immune';
+    if (this.phase === 'asleep' || this.phase === 'break' || this.phase === 'dead') return 'immune';
+    if (this.invuln > 0) return 'immune';
     if (!this.open) {
-      if (this.invuln === 0) {
-        this.invuln = BOSS_INVULN;
-        world.emit({ type: 'clang' });
+      if (this.clangT === 0) {
+        this.clangT = 12;
+        world.audio.sfx(soundId('clang'));
       }
-      return false;
+      return 'immune';
     }
-    const hit = super.hurt(world, damage, dir);
-    if (hit) {
-      this.hitT = 0;
-      // (the hit that cracks the shell leaves the core free to be hurt once it is out)
-      if (!this.dead && (this.phase as BossPhase) !== 'break') this.invuln = BOSS_INVULN;
-    }
-    return hit;
-  }
-
-  override stunFor(): number {
-    return 0;
-  }
-
-  override die(world: TopDownWorld): void {
-    if (this.phase === 'shell') {
+    this.hp -= src.kind === 'star' ? STAR_DAMAGE : Math.max(1, src.amount);
+    this.hitT = 0;
+    this.invuln = PLUTO_INVULN;
+    world.audio.sfx(soundId('hit'));
+    if (this.hp > 0) return 'hp';
+    if (this.phase === 'mass') {
       this.crack(world);
-      return;
+      return 'hp';
     }
+    this.goDown(world, src);
+    return 'kill';
+  }
+
+  /** It falls: a burst of booms, its shots gone. */
+  private goDown(world: World, src: DamageSource): void {
     this.phase = 'dead';
-    this.dead = true;
-    this.clearOrbs(world);
-    world.emit({ type: 'kill', kind: this.kind });
+    const b = this.body;
     for (const [dx, dy] of [
+      [0, 0],
+      [16, 0],
+      [0, 16],
+      [16, 16],
       [8, 8],
-      [40, 8],
-      [8, 40],
-      [40, 40],
-      [24, 24],
     ] as const)
-      world.add(new Boom(this.x + dx, this.y + dy));
+      world.spawn(new PlutoBoom(b.x + px(dx + 4), b.y + px(dy + 4)));
+    for (const e of world.entities) if (e instanceof PlutoShot) e.destroy();
+    world.audio.sfx(soundId('bossBoom'));
+    world.enemyKilled(this, src);
+    this.destroy();
+    this.hooks.onDown?.();
   }
 
-  /** Its frame now: the shell shut or open, the core beating (faster when angry). */
-  frame(): string {
-    if (this.phase === 'core') return `boss-b-${(this.t >> (this.angry ? 3 : 4)) & 1}`;
-    return this.open || this.phase === 'break' ? 'boss-a-1' : 'boss-a-0';
-  }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const x = ox + this.x;
-    const y = oy + this.y;
-    const f = this.frame();
-    // A hit flashes it white for a few frames (never with reduce flashing); it runs hot before
-    // it opens or fans, and while its shell cracks.
+  override render(r: Renderer, view: View): void {
+    if (this.phase === 'asleep' && this.idle < WAKE_AFTER / 2) return; // it rises into view
+    const x = toPx(this.body.x) - view.camX;
+    const y = toPx(this.body.y);
     const flash = this.hitT < 4 && !view.reduceFlashing;
     const hot = this.glowing || this.phase === 'break';
     const pal = flash ? HIT_PALETTE : hot ? HOT_PALETTE : undefined;
-    const sheet = (pal ? view.sheet(view.sheets.enemies, pal) : null) ?? view.sheet(view.sheets.enemies);
-    if (sheet?.frames.has(f)) {
-      drawPiece(r, sheet, f, x, y, BOSS_SIZE, BOSS_SIZE, LOOK.bossShell);
+    if (this.phase === 'core') {
+      const beat = (this.t >> (this.angry ? 3 : 4)) & 1;
+      drawPluto(
+        r,
+        view,
+        `pluto-b-${beat}`,
+        x,
+        y,
+        CORE,
+        CORE,
+        flash ? ['#fcfcfc', '#fcfcfc'] : LOOK.bossCore,
+        pal,
+      );
       return;
     }
-    // Boxes until the art is there: the shell (gone in phase 2) round the core.
-    if (this.phase !== 'core') box(r, x + 4, y + 4, 56, 56, flash ? ['#fcfcfc', '#fcfcfc'] : LOOK.bossShell);
-    const core = flash
-      ? (['#fcfcfc', '#fcfcfc'] as const)
-      : hot
-        ? (['#d8f878', '#fcfcfc'] as const)
-        : this.open
-          ? LOOK.bossCore
-          : LOOK.bossCoreShut;
-    const s = this.phase === 'core' ? 40 : 20;
-    box(r, x + 32 - s / 2, y + 32 - s / 2, s, s, core);
+    const f = this.open || this.phase === 'break' ? 'pluto-a-1' : 'pluto-a-0';
+    const look: Fallback = flash ? ['#fcfcfc', '#fcfcfc'] : hot ? ['#d8f878', '#58f898'] : LOOK.bossShell;
+    drawPluto(r, view, f, x, y, SIZE, SIZE, look, pal);
+    const fallbackCore = !view.assets.has(SOPHIA_SHEET);
+    if (fallbackCore) box(r, x + 6, y + 26, 20, 24, this.open ? LOOK.bossCore : LOOK.bossCoreShut);
   }
 }

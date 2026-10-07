@@ -8,12 +8,15 @@ import type { Player } from '../../entities/player';
 import { newGameState, type GameContext } from '../../context';
 import { World } from '../../world/world';
 import { cavernEntities } from './cavern';
+import { PlutoniumBoss, type PlutoHooks } from './plutonium';
 import source from './area.map?raw';
+import bossSource from './boss.map?raw';
 
 /*
- * Section 1, the tank's cavern (area.map): Sophia III in side view on S1's real character def,
- * in a World of its own with a fresh GameState (the campaign is never touched). It ends at the
- * gateway on a ledge only Jason on foot reaches (a ladder up a shaft one tile wide).
+ * The tank's two side-view sections, each played on S1's real character def in a World of its
+ * own with a fresh GameState (the campaign is never touched): section 1, the cavern (area.map),
+ * which ends at the gateway only Jason on foot goes through; and section 5, the Plutonium Boss's
+ * chamber (boss.map).
  */
 
 /** Where the cavern's fixed pieces are. */
@@ -92,4 +95,40 @@ export function newArea(ctx: GameContext, hero: CharacterDef, opts: AreaOptions 
   world.time = null;
   world.spawnInView();
   return world;
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Section 5: the Plutonium Boss's chamber                                                      */
+/* ------------------------------------------------------------------------------------------ */
+
+let bossParsed: LevelData | null = null;
+
+/** The boss's chamber (boss.map), parsed once: one locked screen. */
+export function bossStage(): LevelData {
+  bossParsed ??= parseTextMap(bossSource, 'bm-plutonium');
+  return bossParsed;
+}
+
+/** The chamber's inner right wall and its floor (px): where the mass stands. */
+export const BOSS_RIGHT = 15 * 16;
+export const BOSS_FLOOR = 13 * 16;
+
+/** A World for the boss's chamber, played as `hero` with one life's fresh state, the boss in it. */
+export function newBossRoom(
+  ctx: GameContext,
+  hero: CharacterDef,
+  hooks: PlutoHooks = {},
+  seed = 0x9107,
+): { world: World; boss: PlutoniumBoss } {
+  const state = newGameState(hero);
+  state.lives = 1;
+  state.world = 8;
+  state.stage = 4;
+  const world = new World(bossStage(), ctx, state, { seed, scorePopups: false });
+  world.time = null;
+  world.camera.locked = true;
+  const boss = new PlutoniumBoss(BOSS_RIGHT, BOSS_FLOOR, hooks);
+  world.spawn(boss);
+  world.spawnInView();
+  return { world, boss };
 }

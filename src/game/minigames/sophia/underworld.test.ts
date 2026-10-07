@@ -24,8 +24,16 @@ import {
   type UnderworldWorld,
 } from './jason';
 import { Blob, EYE_EVERY, EYE_GLARE, Eye, Orb, TURRET_AIM, TURRET_TURN, Turret } from './mutants';
-import { BREAK_FRAMES, CORE_HP, CYCLE, GLOW, PlutoniumBoss, SHELL_HP, SHUT } from './plutonium';
-import { GAME_OVER_FRAMES, LIVES, RESPAWN_DELAY, UnderworldMenuScene, WIN_FRAMES, WIN_JINGLE } from './scene';
+import { BREAK_FRAMES, CORE_HP, CYCLE, GLOW, Guardian, SHELL_HP, SHUT } from './guardian';
+import {
+  GAME_OVER_FRAMES,
+  LIVES,
+  RESPAWN_DELAY,
+  RETURN_FRAMES,
+  UnderworldMenuScene,
+  WIN_FRAMES,
+  WIN_JINGLE,
+} from './scene';
 import { JasonBot, UNDERWORLD_PLAN } from './bot';
 import { botRun, underworldHarness } from './harness';
 import { SHARP } from './bot';
@@ -269,23 +277,23 @@ describe('Underworld: the mutants', () => {
 });
 
 describe('Underworld: the dungeon', () => {
-  it('seven rooms from the gateway to the boss door; the cache is behind a cracked wall; only the boss room seals', () => {
+  it('eight rooms from the gateway to the way out; the cache is behind a cracked wall; only the guardian’s room seals', () => {
     const w = newUnderworld();
     expect(w.dungeon.rooms.size).toBe(UNDERWORLD_ROOMS.length);
     expect(w.room.id).toBe('gate');
     expect(w.dungeon.rooms.get('crossing')?.doors.w).toBe('cracked');
     const shutters = [...w.dungeon.rooms.values()].filter((r) => Object.values(r.doors).includes('shutter'));
-    expect(shutters.map((r) => r.id)).toEqual(['boss']);
-    expect(w.dungeon.rooms.get('boss')?.spawns.some((s) => s.kind === 'plutonium')).toBe(true);
+    expect(shutters.map((r) => r.id)).toEqual(['guardian']);
+    expect(w.dungeon.rooms.get('guardian')?.spawns.some((s) => s.kind === 'guardian')).toBe(true);
     expect(w.inv.current?.id).toBe('grenade');
   });
 });
 
-describe('Underworld: the Plutonium Boss', () => {
+describe('Underworld: the dungeon’s guardian', () => {
   function boss() {
     const { w, step, jason } = world();
-    w.warpTo('boss', TILE, 5 * TILE);
-    const b = w.entities.find((e): e is PlutoniumBoss => e instanceof PlutoniumBoss) as PlutoniumBoss;
+    w.warpTo('guardian', TILE, 5 * TILE);
+    const b = w.entities.find((e): e is Guardian => e instanceof Guardian) as Guardian;
     return { w, step, jason, b };
   }
 
@@ -342,20 +350,20 @@ describe('Underworld: the Plutonium Boss', () => {
     b.hurt(w, 1, 'up');
     ev.push(...w.events.splice(0));
     expect(b.dead).toBe(true);
-    expect(ev.some((e) => e.type === 'kill' && e.kind === 'plutonium')).toBe(true);
+    expect(ev.some((e) => e.type === 'kill' && e.kind === 'guardian')).toBe(true);
   });
 
   it('keeps to its own fight clock: two fights with different dice play the same', () => {
     const run = (seed: number) => {
       const w = newUnderworld({ seed });
-      w.warpTo('boss', TILE, 5 * TILE);
+      w.warpTo('guardian', TILE, 5 * TILE);
       const input = new ScriptedInput({ steps: [] });
       const trace: string[] = [];
       for (let i = 0; i < CYCLE * 2; i++) {
         input.setHeld(i < 20 ? ['right'] : []);
         input.next();
         w.update(input);
-        const b = w.entities.find((e) => e instanceof PlutoniumBoss) as PlutoniumBoss;
+        const b = w.entities.find((e) => e instanceof Guardian) as Guardian;
         w.hero.invuln = 99;
         trace.push(`${b.x},${b.y},${w.entities.filter((e) => e instanceof Orb).length}`);
       }
@@ -469,24 +477,44 @@ describe('Underworld: the round', () => {
     expect(h.scene.phase).toBe('dungeon');
   });
 
-  it('the boss falls: the banner (no word of the spell in a round for fun), the jingle, then pass', () => {
+  it('the guardian falls: its banner, the doors open, and the way out east leads Jason back to the tank', () => {
+    const h = underworldHarness({ keep: true, skipCutscene: true, tankHero: null });
+    h.td.warpTo('guardian', TILE, 5 * TILE);
+    h.step(['right'], 20);
+    expect(h.log.music.at(-1)).toBe('bm-boss');
+    expect(drawn(h)).toContain('THE GUARDIAN');
+    expect(h.said.at(-1)).toMatch(/guardian/);
+    expect(h.td.doorOpen('e')).toBe(false);
+    const g = h.scene.guardian as Guardian;
+    g.phase = 'core';
+    g.hp = 1;
+    g.hurt(h.td, 5, 'up');
+    h.step([], 5);
+    expect(drawn(h)).toContain('THE GUARDIAN FALLS!');
+    expect(h.said.join(' ')).toMatch(/way back to Sophia is open/);
+    expect(h.log.music.at(-1)).toBe('bm-dungeon');
+    expect(h.td.doorOpen('e')).toBe(true);
+    expect(h.scene.phase).toBe('dungeon');
+    // The corridor up to the way out.
+    h.td.warpTo('exit', 7.5 * TILE, 2 * TILE);
+    h.step(['up'], 40);
+    expect(h.scene.phase).toBe('return');
+    expect(drawn(h)).toEqual(expect.arrayContaining(['JASON RUNS BACK']));
+    expect(h.scene.touchLabels().attack ?? null).toBeNull();
+  });
+
+  it('without the tank (no Sophia def yet) the round passes once Jason is back with Sophia (no spell words for fun)', () => {
     for (const fun of [false, true]) {
-      const h = underworldHarness({ keep: true, skipCutscene: true });
+      const h = underworldHarness({ keep: true, skipCutscene: true, tankHero: null });
       h.game.inRound = fun;
-      h.td.warpTo('boss', TILE, 5 * TILE);
-      h.step(['right'], 20);
-      expect(h.log.music.at(-1)).toBe('bm-boss');
-      expect(drawn(h)).toContain('PLUTONIUM BOSS');
-      const b = h.scene.boss as PlutoniumBoss;
-      b.phase = 'core';
-      b.hp = 1;
-      b.hurt(h.td, 5, 'up');
-      h.step([], WIN_JINGLE + 1);
+      h.td.warpTo('exit', 7.5 * TILE, 2 * TILE);
+      h.step(['up'], 40);
+      h.step([], RETURN_FRAMES + WIN_JINGLE + 1);
+      expect(h.scene.phase).toBe('won');
       expect(h.log.jingles).toContain('castle-clear');
       const lines = drawn(h);
-      expect(lines).toContain('THE PLUTONIUM BOSS FALLS!');
+      expect(lines).toContain('JASON IS BACK WITH SOPHIA!');
       expect(lines.includes('THE SPELL ON SOPHIA BREAKS!')).toBe(!fun);
-      expect(h.scene.touchLabels().attack ?? null).toBeNull();
       h.step([], WIN_FRAMES);
       expect(h.results).toEqual(['pass']);
     }
@@ -506,7 +534,7 @@ describe('Underworld: the round', () => {
       expect(() => drawn(h)).not.toThrow();
     }
     h.tap('jump');
-    h.td.warpTo('boss', TILE, 5 * TILE);
+    h.td.warpTo('guardian', TILE, 5 * TILE);
     h.step(['right'], 60);
     expect(() => drawn(h)).not.toThrow();
   });
@@ -518,7 +546,7 @@ describe('Underworld: the bot', () => {
     expect(r.result).toBe('pass');
     expect(r.deaths).toEqual([]);
     expect(r.rooms).toEqual(
-      expect.arrayContaining(['gate', 'hall', 'turrets', 'crossing', 'cache', 'ante', 'boss']),
+      expect.arrayContaining(['gate', 'hall', 'turrets', 'crossing', 'cache', 'ante', 'guardian']),
     );
   }, 60_000);
 

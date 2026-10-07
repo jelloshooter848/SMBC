@@ -53,7 +53,8 @@ export function underworldHarness(opts: HarnessOptions = {}) {
     opts.seed !== undefined ||
     opts.skipCutscene !== undefined ||
     opts.startInArea !== undefined ||
-    opts.areaHero !== undefined;
+    opts.startInBoss !== undefined ||
+    opts.tankHero !== undefined;
   const scene = custom
     ? new UnderworldScene(game, done, opts)
     : (SOPHIA_MINIGAME.create(game, done) as UnderworldScene);
@@ -96,13 +97,13 @@ export function botRun(opts: Partial<HumanOptions> = {}, max = 30000) {
     const now = td.hero.hp;
     if (now < hp) {
       lost += hp - now;
-      if (td.room.id === 'boss') bossLost += hp - now;
+      if (td.room.id === 'guardian') bossLost += hp - now;
     }
     hp = now;
     topGun = Math.max(topGun, td.jason.gun);
-    if (gunAtBoss === null && h.scene.boss?.phase === 'shell') gunAtBoss = td.jason.gun;
+    if (gunAtBoss === null && h.scene.guardian?.phase === 'shell') gunAtBoss = td.jason.gun;
   }
-  const boss = h.scene.boss;
+  const boss = h.scene.guardian;
   return {
     result: h.results[0] ?? 'timeout',
     phase: h.scene.phase,

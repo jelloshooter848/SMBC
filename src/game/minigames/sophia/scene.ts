@@ -1,6 +1,7 @@
 import type { Scene } from '@engine/scene';
 import { NO_INPUT, type InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
+import type { AssetRegistry } from '@engine/assets/registry';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_W } from '@engine/viewport';
@@ -18,6 +19,7 @@ import { HUD_H, type Dir } from '../../topdown/geometry';
 import type { TdEvent } from '../../topdown/world';
 import {
   BM_MUSIC,
+  drawSophia,
   DUNGEON_TILES,
   FALLBACK_TILES,
   FALLBACK_TILES_PALETTE,
@@ -28,11 +30,12 @@ import {
   type BmSound,
 } from './art';
 import { CUT_SAY, CUTSCENE_FRAMES, drawCutscene } from './cutscene';
-import { areaStage, atGateway, newArea, onFoot, sophiaDef } from './area';
+import { areaStage, atGateway, newArea, newBossRoom, onFoot, sophiaDef } from './area';
+import type { PlutoniumBoss } from './plutonium';
 import { newUnderworld } from './dungeon';
 import { drawBmHud } from './hud';
 import type { UnderworldWorld } from './jason';
-import { PlutoniumBoss } from './plutonium';
+import { Guardian } from './guardian';
 
 /** Lives for a round (Blaster Master's three). */
 export const LIVES = 3;
@@ -42,18 +45,22 @@ export const RESPAWN_DELAY = 30;
 export const RESPAWN_INVULN = 120;
 /** GAME OVER shows this long before the round fails. */
 export const GAME_OVER_FRAMES = 180;
-/** After the Plutonium Boss falls: the banner, the jingle, then the round passes. */
+/** After the last boss falls: the banner, the jingle, then the round passes. */
 export const WIN_BANNER_AT = 60;
 export const WIN_JINGLE = 90;
 export const WIN_FRAMES = 330;
 /** Frames the dungeon's first banner stays up. */
 export const DUNGEON_BANNER_FRAMES = 180;
-/** Frames the boss's name stays up. */
+/** Frames a boss's name stays up, and the guardian's fall. */
 export const BOSS_BANNER_FRAMES = 100;
+export const GUARDIAN_DOWN_FRAMES = 150;
+/** Frames of Jason's run back to the tank (section 4) before the Plutonium Boss. */
+export const RETURN_FRAMES = 120;
 /** The area's name on the HUD. */
 export const AREA_TITLE = 'UNDERWORLD';
 
-export type UnderworldPhase = 'cutscene' | 'area' | 'gateway' | 'dungeon' | 'won' | 'lost' | 'over';
+export type UnderworldPhase =
+  'cutscene' | 'area' | 'gateway' | 'dungeon' | 'return' | 'boss' | 'won' | 'lost' | 'over';
 
 /** Frames of the walk into the gateway (the cavern fades out) before the dungeon. */
 export const GATEWAY_FRAMES = 60;
@@ -72,12 +79,14 @@ export interface UnderworldOptions {
   skipCutscene?: boolean;
   /** Start in the tank's cavern, without the cutscene (tests). */
   startInArea?: boolean;
+  /** Start in the Plutonium Boss's chamber (tests). */
+  startInBoss?: boolean;
   /**
-   * The hero the cavern (section 1) is played as: Sophia once S1's def is registered (the
-   * default); a stand-in in tests; null leaves the cavern out (the round goes from the cutscene
-   * straight to the gateway).
+   * The hero the tank's sections (the cavern, the Plutonium Boss) are played as: Sophia once
+   * S1's def is registered (the default); a stand-in in tests; null leaves them out (the round
+   * goes from the cutscene to the gateway, and passes once Jason is back at the tank).
    */
-  areaHero?: CharacterDef | null;
+  tankHero?: CharacterDef | null;
 }
 
 /** Where Jason came into the room he is in (a new life starts there). */
@@ -89,12 +98,17 @@ interface Entry {
 }
 
 /**
- * Sophia's mini game, Underworld: Blaster Master's opening in brief (Fred, the glowing chest and
- * the hole; skippable), then Jason on foot through the gateway into an overhead dungeon on the
- * top-down kit (dungeon.ts, jason.ts, mutants.ts) with the original's GUN meter, grenades and
- * POW, ending with the Plutonium Boss (plutonium.ts). Three lives. Beating the boss passes;
- * losing every life fails (GAME OVER); the menu's Give up quits. Everything lives in the round,
- * so the campaign's state is never touched.
+ * Sophia's mini game, Underworld, Blaster Master in brief:
+ *   1. the opening (Fred, the glowing chest and the hole; skippable);
+ *   2. the tank's cavern in side view (area.ts, cavern.ts), ending at a gateway only Jason on
+ *      foot goes through;
+ *   3. Jason's overhead dungeon on the top-down kit (dungeon.ts, jason.ts, mutants.ts) with the
+ *      original's GUN meter, grenades and POW, and its guardian (guardian.ts);
+ *   4. Jason's run back to the tank;
+ *   5. the Plutonium Boss in side view, fought in the tank (plutonium.ts).
+ * Three lives across the round. Beating the Plutonium Boss passes; losing every life fails
+ * (GAME OVER); the menu's Give up quits. Everything lives in the round, so the campaign's state is
+ * never touched.
  */
 export class UnderworldScene implements Scene {
   readonly td: UnderworldWorld;
@@ -113,9 +127,11 @@ export class UnderworldScene implements Scene {
   private winT = -1;
   private readonly view: TdView;
   private skipText = 'SKIP';
-  /** The cavern's hero (null: no cavern), its World while it is played, and how far it got. */
-  readonly areaHero: CharacterDef | null;
+  /** The tank's hero (null: no tank sections), and the side-view World played (cavern or boss). */
+  readonly tankHero: CharacterDef | null;
   area: World | null = null;
+  /** The Plutonium Boss, once its chamber is reached. */
+  plutonium: PlutoniumBoss | null = null;
   private areaSeed: number;
   private farthest = 0;
   /** The hop-out lesson has shown. */
@@ -151,19 +167,20 @@ export class UnderworldScene implements Scene {
       sheets,
       sheet: sheetLookup(assets),
     };
-    this.areaHero = opts.areaHero === undefined ? sophiaDef() : opts.areaHero;
+    this.tankHero = opts.tankHero === undefined ? sophiaDef() : opts.tankHero;
     this.areaSeed = opts.seed ?? 0x5091a;
     if (opts.skipCutscene) this.phase = 'dungeon';
-    else if (opts.startInArea && this.areaHero) this.phase = 'area';
+    else if (opts.startInArea && this.tankHero) this.phase = 'area';
+    else if (opts.startInBoss && this.tankHero) this.phase = 'boss';
   }
 
   get jason() {
     return this.td.jason;
   }
 
-  /** The boss, while its room is on screen. */
-  get boss(): PlutoniumBoss | null {
-    return this.td.entities.find((e): e is PlutoniumBoss => e instanceof PlutoniumBoss) ?? null;
+  /** The dungeon's guardian, while its room is on screen. */
+  get guardian(): Guardian | null {
+    return this.td.entities.find((e): e is Guardian => e instanceof Guardian) ?? null;
   }
 
   enter(): void {
@@ -173,6 +190,7 @@ export class UnderworldScene implements Scene {
       this.playMusic(BM_MUSIC.cutscene);
       this.say(`Underworld. ${CUT_SAY} ${this.hint('JUMP', 'jump')} skips.`);
     } else if (this.phase === 'area') this.startArea();
+    else if (this.phase === 'boss') this.startBoss();
     else this.startDungeon();
   }
 
@@ -211,7 +229,7 @@ export class UnderworldScene implements Scene {
   /** SKIP in the cutscene; SHOOT and GRENADE while Jason is up; MENU while the menu opens. */
   touchLabels(): TouchLabels {
     if (this.phase === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP', start: 'MENU' };
-    if (this.phase === 'area' && this.area) {
+    if ((this.phase === 'area' || this.phase === 'boss') && this.area) {
       const p = this.area.player;
       if (p.dead) return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
       return { ...levelTouchLabels(p, this.area), start: 'MENU' };
@@ -223,7 +241,9 @@ export class UnderworldScene implements Scene {
   }
 
   private get menuOpens(): boolean {
-    return this.phase === 'cutscene' || this.phase === 'area' || this.phase === 'dungeon';
+    return (
+      this.phase === 'cutscene' || this.phase === 'area' || this.phase === 'dungeon' || this.phase === 'boss'
+    );
   }
 
   update(input: InputFrame): void {
@@ -240,7 +260,7 @@ export class UnderworldScene implements Scene {
         if (this.skipped || this.phaseT >= CUTSCENE_FRAMES) {
           input.consumeJumpBuffer();
           this.stopMusic();
-          if (this.areaHero) {
+          if (this.tankHero) {
             this.setPhase('area');
             this.startArea();
           } else {
@@ -261,6 +281,16 @@ export class UnderworldScene implements Scene {
         return;
       case 'dungeon':
         return this.updateDungeon(input);
+      case 'return':
+        if (this.phaseT >= RETURN_FRAMES) {
+          if (this.tankHero) {
+            this.setPhase('boss');
+            this.startBoss();
+          } else this.allDone();
+        }
+        return;
+      case 'boss':
+        return this.updateBoss(input);
       case 'won':
         return this.updateWon();
       case 'lost':
@@ -273,7 +303,7 @@ export class UnderworldScene implements Scene {
 
   /** A World for the cavern; after a lost life, from the checkpoint once it was passed. */
   private startArea(fresh = true): void {
-    const hero = this.areaHero;
+    const hero = this.tankHero;
     if (!hero) return;
     const layout = areaStage();
     const from = this.farthest >= layout.checkpointX ? layout.checkpointX : undefined;
@@ -314,7 +344,7 @@ export class UnderworldScene implements Scene {
       this.say('Jason walks into the gateway.');
       return;
     }
-    if (died) this.areaLifeLost();
+    if (died) this.sideLifeLost();
   }
 
   /** The tank nears the gateway: only Jason goes in, and how he hops out, once. */
@@ -332,8 +362,11 @@ export class UnderworldScene implements Scene {
     );
   }
 
-  /** A life lost in the cavern: the next one from the start or the checkpoint, or GAME OVER. */
-  private areaLifeLost(): void {
+  /**
+   * A life lost in the tank: the next one from the cavern's start or checkpoint, or at the door
+   * of the Plutonium Boss's chamber (the boss whole again); or GAME OVER.
+   */
+  private sideLifeLost(): void {
     const infinite = this.game.ctx.assist.infiniteLives;
     if (!infinite) this.lives--;
     if (this.lives <= 0) {
@@ -344,7 +377,8 @@ export class UnderworldScene implements Scene {
       return;
     }
     this.music = null;
-    this.startArea(false);
+    if (this.phase === 'boss') this.startBoss(false);
+    else this.startArea(false);
     const left = this.lives - 1;
     this.say(
       infinite
@@ -353,6 +387,37 @@ export class UnderworldScene implements Scene {
           ? 'Down! Last life.'
           : `Down! ${left} ${left === 1 ? 'life' : 'lives'} left.`,
     );
+  }
+
+  /* ---------- The Plutonium Boss (section 5) ---------- */
+
+  /** The chamber, the boss asleep at the right; it wakes after a moment. */
+  private startBoss(fresh = true): void {
+    const hero = this.tankHero;
+    if (!hero) return;
+    const { world, boss } = newBossRoom(this.game.ctx, hero, {
+      onWake: () => this.plutoWakes(),
+      onBreak: () => this.say('The mass bursts! Its core rises and loops over the chamber. Aim up!'),
+      onDown: () => this.bossDown(),
+    });
+    this.area = world;
+    this.plutonium = boss;
+    this.stopMusic();
+    if (fresh) this.say('Jason is back in Sophia. Something stirs in the dark...');
+  }
+
+  private plutoWakes(): void {
+    this.banner = { lines: ['PLUTONIUM BOSS'], until: this.t + BOSS_BANNER_FRAMES, y: 48 };
+    this.playMusic(BM_MUSIC.boss);
+    this.say(
+      `The Plutonium Boss! It lobs plutonium where you stand. When it glows it opens and rolls a ball along the floor: jump it, and shoot its open maw with ${this.hint('SHOOT', 'attack')}.`,
+    );
+  }
+
+  private updateBoss(input: InputFrame): void {
+    if (!this.area) return;
+    const died = this.stepArea(input);
+    if (this.phase === 'boss' && died) this.sideLifeLost();
   }
 
   /* ---------- The dungeon ---------- */
@@ -367,11 +432,11 @@ export class UnderworldScene implements Scene {
     const shoot = this.hint('SHOOT', 'attack');
     const grenade = this.hint('GRENADE', 'special');
     this.say(
-      `Jason enters the dungeon. ${shoot} fires his gun; every hit he takes lowers the gun a level, and G capsules raise it. ${grenade} throws a grenade. P capsules restore power. Find the Plutonium Boss! ${this.hint('MENU', 'start')} for the menu.`,
+      `Jason enters the dungeon. ${shoot} fires his gun; every hit he takes lowers the gun a level, and G capsules raise it. ${grenade} throws a grenade. P capsules restore power. Get past the guardian, back to Sophia! ${this.hint('MENU', 'start')} for the menu.`,
     );
   }
 
-  /** The room's music: the boss's while it lives, the dungeon's everywhere else. */
+  /** The room's music: the boss loop while the guardian lives, the dungeon's everywhere else. */
   private updateMusic(): void {
     if (this.phase !== 'dungeon' || this.td.hero.dying) return;
     const boss = this.td.room.def.music === 'boss' && !this.td.state().met.has('clear') && this.td.sealed;
@@ -405,7 +470,7 @@ export class UnderworldScene implements Scene {
         return this.sfx('enemyShot');
       case 'kill':
         this.sfx('die');
-        if (e.kind === 'plutonium') this.bossDown();
+        if (e.kind === 'guardian') this.guardianDown();
         return;
       case 'hurt':
         return this.sfx('hurt');
@@ -432,15 +497,17 @@ export class UnderworldScene implements Scene {
         if (this.banner && this.banner.until !== Infinity) this.banner = null;
         return this.updateMusic();
       case 'boss-wakes':
-        this.banner = { lines: ['PLUTONIUM BOSS'], until: this.t + BOSS_BANNER_FRAMES, y: HUD_H + 120 };
+        this.banner = { lines: ['THE GUARDIAN'], until: this.t + BOSS_BANNER_FRAMES, y: HUD_H + 120 };
         this.playMusic(BM_MUSIC.boss);
         this.say(
-          'The Plutonium Boss! Its core is shut; it glows, then opens with a ring of orbs. Shoot the open core.',
+          "The dungeon's guardian! Its vents are shut; it glows, then opens with a ring of orbs. Shoot it while it is open.",
         );
         return;
       case 'boss-break':
-        this.say('The shell bursts! The core breaks free and bounces round the room.');
+        this.say('The shell cracks! Its core bounces round the room.');
         return;
+      case 'exit':
+        return this.startReturn();
       case 'boss-boom':
         return this.sfx('bossBoom');
       case 'dying':
@@ -478,29 +545,62 @@ export class UnderworldScene implements Scene {
     );
   }
 
+  /* ---------- The guardian falls; back to the tank (section 4) ---------- */
+
+  private guardianDown(): void {
+    this.banner = {
+      lines: ['THE GUARDIAN FALLS!'],
+      until: this.t + GUARDIAN_DOWN_FRAMES,
+      y: HUD_H + 40,
+    };
+    this.sfx('secret');
+    this.say('The guardian falls! The way back to Sophia is open, to the east.');
+    this.updateMusic();
+  }
+
+  /** Jason takes the way out: his run back to the tank. */
+  private startReturn(): void {
+    this.setPhase('return');
+    this.banner = null;
+    this.stopMusic();
+    this.sfx('open');
+    this.say('Jason runs back to Sophia and climbs in.');
+  }
+
   /* ---------- The end ---------- */
 
+  /** The Plutonium Boss falls. */
   private bossDown(): void {
     this.setPhase('won');
     this.winT = 0;
     this.stopMusic();
   }
 
+  /** Without the tank's sections (no Sophia def yet): the round ends with Jason back at the tank. */
+  private allDone(): void {
+    this.area = null;
+    this.setPhase('won');
+    this.winT = 0;
+  }
+
   private updateWon(): void {
-    this.td.update(NO_INPUT);
-    this.td.events.length = 0;
+    if (this.area) this.stepArea(NO_INPUT);
+    else {
+      this.td.update(NO_INPUT);
+      this.td.events.length = 0;
+    }
     this.winT++;
     if (this.winT === WIN_BANNER_AT) {
       // A round for fun (Game.inRound) frees nobody: no word of the spell.
       const fun = this.game.inRound;
+      const first = this.plutonium ? 'THE PLUTONIUM BOSS FALLS!' : 'JASON IS BACK WITH SOPHIA!';
       this.banner = {
-        lines: fun
-          ? ['THE PLUTONIUM BOSS FALLS!']
-          : ['THE PLUTONIUM BOSS FALLS!', 'THE SPELL ON SOPHIA BREAKS!'],
+        lines: fun ? [first] : [first, 'THE SPELL ON SOPHIA BREAKS!'],
         until: Infinity,
-        y: HUD_H + 40,
+        y: this.area ? 72 : HUD_H + 40,
       };
-      this.say(fun ? 'The Plutonium Boss falls!' : 'The Plutonium Boss falls! The spell on Sophia breaks.');
+      const said = this.plutonium ? 'The Plutonium Boss falls!' : 'Jason is back with Sophia!';
+      this.say(fun ? said : `${said} The spell on Sophia breaks.`);
     }
     if (this.winT === WIN_JINGLE) this.game.ctx.audio.playJingle(BM_MUSIC.victory);
     if (this.winT >= WIN_FRAMES) this.finish('pass');
@@ -526,7 +626,11 @@ export class UnderworldScene implements Scene {
       r.text(font, skip, SCREEN_W - 8 - skip.length * 8, 16);
       return;
     }
-    if (this.area && this.phase !== 'dungeon' && this.phase !== 'won') {
+    if (this.phase === 'return') {
+      drawReturn(r, assets, font, this.phaseT);
+      return;
+    }
+    if (this.area && this.phase !== 'dungeon') {
       this.area.render(r);
       r.rect(0, 0, SCREEN_W, 24, '#000000');
       r.text(font, AREA_TITLE, 8, 8);
@@ -567,6 +671,22 @@ export class UnderworldScene implements Scene {
       title: AREA_TITLE,
       map: { cols: d.cols, rows: d.rows, visited, here: [td.room.gx, td.room.gy] },
     });
+  }
+}
+
+/** Section 4: Jason running back to the tank, its hatch open, on black (a short transition). */
+function drawReturn(r: Renderer, assets: AssetRegistry, font: SpriteSheet, t: number): void {
+  r.clear('#000000');
+  const lines = ['JASON RUNS BACK', 'TO SOPHIA...'];
+  lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, 80 + i * 12));
+  const ground = 168;
+  r.rect(0, ground, SCREEN_W, 2, '#503000');
+  drawSophia(r, assets, 'open', 160, ground - 32, 32, 32, ['#545454', '#a4a4a4']);
+  // Jason runs in from the left and hops into the hatch.
+  const k = Math.min(1, t / (RETURN_FRAMES * 0.6));
+  if (k < 1) {
+    const x = Math.round(16 + (160 - 16) * k);
+    drawSophia(r, assets, `jason-walk-${(t >> 3) % 3}`, x, ground - 16, 16, 16, ['#0058f8', '#fcfcfc']);
   }
 }
 

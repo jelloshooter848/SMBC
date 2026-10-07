@@ -13,7 +13,7 @@ import {
 import { TdEnemy, type TdEntity } from '../../topdown/entity';
 import { Projectile } from '../../topdown/enemies';
 import { Capsule, GrenadeBlast, Grenade, SHOT_SPEED, gunLevel, type UnderworldWorld } from './jason';
-import { PlutoniumBoss } from './plutonium';
+import { Guardian } from './guardian';
 
 /*
  * A player for the dungeon (tests and tuning): it walks an 8-px grid by breadth-first search,
@@ -250,7 +250,7 @@ export class JasonBot {
     for (const f of foes) {
       const tb = f.hurtbox();
       // The boss's shell only from below (out of its drift and under its open core).
-      const shell = f instanceof PlutoniumBoss && f.phase !== 'core';
+      const shell = f instanceof Guardian && f.phase !== 'core';
       for (const d of DIRS) {
         if (shell && d !== 'up') continue;
         const v = DIR_VEC[d];
@@ -349,7 +349,7 @@ export class JasonBot {
         const b = e.hurtbox();
         for (let t = 0; t <= this.opts.lookAhead; t += 3)
           if (boxesOverlap({ x: b.x + e.vx * t, y: b.y + e.vy * t, w: b.w, h: b.h }, hb)) return true;
-      } else if (e instanceof PlutoniumBoss && e.phase === 'core') {
+      } else if (e instanceof Guardian && e.phase === 'core') {
         const b = grow(e.hurtbox(), 6);
         for (let t = 0; t <= 24; t += 4)
           if (boxesOverlap({ x: b.x + e.vx * t, y: b.y + e.vy * t, w: b.w, h: b.h }, hb)) return true;
@@ -446,7 +446,7 @@ export class JasonBot {
 
 /** How a mutant is moving (px a frame), as a player reads it: only the bouncing core is quick. */
 function motion(f: TdEnemy): { vx: number; vy: number } {
-  if (!(f instanceof PlutoniumBoss) || f.phase !== 'core' || f.burstT > 0) return { vx: 0, vy: 0 };
+  if (!(f instanceof Guardian) || f.phase !== 'core' || f.burstT > 0) return { vx: 0, vy: 0 };
   const s = f.speed;
   return { vx: f.vx * s, vy: f.vy * s };
 }
@@ -476,7 +476,7 @@ function range8(a: number, b: number): number[] {
 
 /**
  * A full run of the dungeon: the gateway room, the hall, the turrets, the crossing (a grenade at
- * its cracked wall; the cache's capsules), the antechamber, the boss.
+ * its cracked wall; the cache's capsules), the antechamber, the guardian, the way out.
  */
 export const UNDERWORLD_PLAN: Readonly<Record<string, JasonPlan>> = {
   gate: [{ do: 'collect' }, { do: 'fight' }, { do: 'collect' }, { do: 'leave', side: 'e' }],
@@ -493,7 +493,8 @@ export const UNDERWORLD_PLAN: Readonly<Record<string, JasonPlan>> = {
         ],
   cache: [{ do: 'collect' }, { do: 'leave', side: 'e' }],
   ante: [{ do: 'collect' }, { do: 'leave', side: 'e' }],
-  boss: [{ do: 'goto', x: 32, y: 80 }, { do: 'fight' }],
+  guardian: [{ do: 'goto', x: 32, y: 80 }, { do: 'fight' }, { do: 'collect' }, { do: 'leave', side: 'e' }],
+  exit: [{ do: 'leave', side: 'n' }],
 };
 
 /* ------------------------------------------------------------------------------------------ */

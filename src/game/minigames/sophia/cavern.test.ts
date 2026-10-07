@@ -19,7 +19,7 @@ beforeEach(() => {
 
 /** The cavern played as a stand-in hero (Mario) until S1's Sophia is registered. */
 function cavern() {
-  const h = underworldHarness({ keep: true, startInArea: true, areaHero: MARIO });
+  const h = underworldHarness({ keep: true, startInArea: true, tankHero: MARIO });
   const area = () => h.scene.area!;
   return { h, area };
 }
@@ -51,14 +51,14 @@ describe('Underworld: the tank’s cavern (section 1)', () => {
   });
 
   it('starts the cavern after the cutscene when there is a hero for it, with its music and words', () => {
-    const h = underworldHarness({ keep: true, areaHero: MARIO });
+    const h = underworldHarness({ keep: true, tankHero: MARIO });
     h.tap('jump');
     expect(h.scene.phase).toBe('area');
     expect(h.log.music.at(-1)).toBe('bm-area');
     expect(h.said.at(-1)).toMatch(/cannon.*gateway.*Jason on foot/);
     expect(h.scene.touchLabels().start).toBe('MENU');
     // Without one (S1's Sophia not registered), straight to the dungeon.
-    const h2 = underworldHarness({ keep: true, areaHero: null });
+    const h2 = underworldHarness({ keep: true, tankHero: null });
     h2.tap('jump');
     expect(h2.scene.phase).toBe('dungeon');
   });
