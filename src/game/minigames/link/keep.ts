@@ -13,7 +13,8 @@ import { TopDownWorld, type TdEvent } from '../../topdown/world';
 import { renderWorld } from '../../topdown/render';
 import { drawTdHud, hudData } from '../../topdown/hud';
 import { DEFAULT_SHEETS, fontOf, sheetLookup, type TdView } from '../../topdown/view';
-import { HUD_H } from '../../topdown/geometry';
+import { HUD_H, TILE } from '../../topdown/geometry';
+import { Pickup } from '../../topdown/entity';
 import { DEFAULT_ITEMS } from '../../topdown/items';
 import { Keeper } from './keeper';
 import { keepDungeon } from './dungeon';
@@ -24,8 +25,11 @@ export const KEEP_SEED = 0x11c4;
 export const KEEP_LEVEL = 1;
 /** Frames the wake-up line stays on screen (Link can already move). */
 export const INTRO_FRAMES = 200;
-/** Frames of "THE SPELL BREAKS!" before the round passes. */
-export const WIN_FRAMES = 150;
+/**
+ * Frames Link holds the Triforce up (its fanfare, 'triforce-get', plays meanwhile, with "THE
+ * SPELL BREAKS!" over it) before the round passes.
+ */
+export const WIN_FRAMES = 300;
 /** Frames after the death spin and puff before the round fails. */
 export const FAIL_DELAY = 30;
 /** Frames a chest's banner (what Link found and how to use it) stays up. */
@@ -69,7 +73,12 @@ export class ShadowKeepScene implements Scene {
     // (dev mode) is read each time he is hurt, so turning it on mid-round counts at once.
     this.world = new TopDownWorld(keepDungeon(), {
       seed: opts.seed ?? KEEP_SEED,
-      spawners: { keeper: (_w, s) => new Keeper(s.x, s.y) },
+      spawners: {
+        keeper: (_w, s) => new Keeper(s.x, s.y),
+        // The shard, centred between its tile and the one to its left (the room's middle).
+        triforce: (w, s) =>
+          w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x - TILE / 2, s.y, 'triforce'),
+      },
       items: DEFAULT_ITEMS,
       shield: false,
       swordBeam: true,
@@ -180,7 +189,7 @@ export class ShadowKeepScene implements Scene {
         this.sfx('kick');
         if (e.kind === 'keeper') {
           this.sfx('secret');
-          this.say('The keeper falls! The way out is open.');
+          this.say('The keeper falls! The north door opens.');
           this.updateMusic(); // back to the dungeon loop
         }
         return;
@@ -204,7 +213,14 @@ export class ShadowKeepScene implements Scene {
         } else if (e.kind === 'bombs') {
           this.sfx('pickup');
           this.say(`Bombs! ${world.inv.count('bomb')}`);
-        } else if (e.kind === 'heart') this.sfx('pickup');
+        } else if (e.kind === 'map') {
+          this.sfx('key-get');
+          this.say('The map! Every room of the keep is on it.');
+        } else if (e.kind === 'compass') {
+          this.sfx('key-get');
+          this.say('The compass! It marks where the Triforce lies.');
+        } else if (e.kind === 'triforce') this.win();
+        else if (e.kind === 'heart') this.sfx('pickup');
         return; // a chest's prize has its own fanfare
       case 'chest':
         this.sfx('item-get');
@@ -236,9 +252,7 @@ export class ShadowKeepScene implements Scene {
         this.sfx('door-open');
         return this.say(e.open ? 'The doors open.' : 'The doors slam shut!');
       case 'reveal':
-        return this.say(
-          world.room.spawns.some((s) => s.kind === 'key') ? 'A key appears!' : 'Something appears!',
-        );
+        return this.say(revealLine(world.room.spawns.map((s) => s.kind)));
       case 'room':
         if (e.first && world.room.def.hint) this.say(world.room.def.hint);
         this.banner = null;
@@ -254,21 +268,29 @@ export class ShadowKeepScene implements Scene {
         this.game.ctx.audio.stopMusic();
         this.say('Link fell.'); // the flow asks "Try again?"
         return;
-      case 'exit':
-        this.phase = 'won';
-        this.endT = 0;
-        this.music = null;
-        this.game.ctx.audio.stopMusic();
-        this.sfx('secret');
-        // A round for fun (Game.inRound) frees nobody: no word of the spell.
-        if (this.game.inRound) {
-          this.banner = { lines: ['YOU ESCAPED THE KEEP!'], until: Infinity, y: INTRO_Y };
-          this.say('Link escaped the Shadow Keep!');
-        } else {
-          this.banner = { lines: ['THE SPELL BREAKS!'], until: Infinity, y: INTRO_Y };
-          this.say('The spell breaks! Link is free.');
-        }
-        return;
+    }
+  }
+
+  /**
+   * The Triforce is Link's: he holds it up over his head with both hands to its fanfare, every
+   * heart refilled, as in Zelda (no flash: the room stays as it is), then the round passes.
+   */
+  private win(): void {
+    const w = this.world;
+    this.phase = 'won';
+    this.endT = 0;
+    this.music = null;
+    w.hero.heal(w.hero.maxHp);
+    w.hero.holdUp('triforce');
+    this.game.ctx.audio.stopMusic();
+    this.game.ctx.audio.playMusic('triforce-get');
+    // A round for fun (Game.inRound) frees nobody: no word of the spell.
+    if (this.game.inRound) {
+      this.banner = { lines: ['YOU GOT THE TRIFORCE!'], until: Infinity, y: HUD_H + 16 };
+      this.say('Link holds up the Triforce! He escaped the Shadow Keep.');
+    } else {
+      this.banner = { lines: ['THE SPELL BREAKS!'], until: Infinity, y: HUD_H + 16 };
+      this.say('Link holds up the Triforce! The spell breaks. Link is free.');
     }
   }
 
@@ -297,6 +319,15 @@ export class ShadowKeepScene implements Scene {
     const b = this.banner;
     if (b && this.t < b.until) drawBanner(r, fontOf(this.view), b.lines, b.y);
   }
+}
+
+/** What a room's hidden prize is, said as it appears. */
+function revealLine(kinds: readonly string[]): string {
+  if (kinds.includes('key')) return 'A key appears!';
+  if (kinds.includes('heart-container')) return 'A heart container appears!';
+  if (kinds.includes('map')) return 'A map appears!';
+  if (kinds.includes('compass')) return 'A compass appears!';
+  return 'Something appears!';
 }
 
 /** Lines of the bitmap font on a dark band, centred, the first at `y`. */

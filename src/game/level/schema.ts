@@ -54,7 +54,9 @@ export type Theme =
   // Metroid's Brinstar.
   | 'zelda2'
   | 'megaman-stage'
-  | 'brinstar';
+  | 'brinstar'
+  // Tourian (Samus's mini game, ZEBES ESCAPE): green machine panels and tubes in the dark.
+  | 'tourian';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -91,6 +93,7 @@ export const THEMES: readonly Theme[] = [
   'zelda2',
   'megaman-stage',
   'brinstar',
+  'tourian',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -146,6 +149,7 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'zelda2') return 'zelda2-field';
   if (theme === 'megaman-stage') return 'mm-stage-31';
   if (theme === 'brinstar') return 'brinstar';
+  if (theme === 'tourian') return 'tourian';
   return 'overworld';
 }
 

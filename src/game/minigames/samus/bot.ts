@@ -3,19 +3,20 @@ import { toPx } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { T } from '../../level/tiles';
 import type { World } from '../../world/world';
-import { Ripper, Skree, Zoomer } from './creatures';
+import { BrainTank, Door, Rinka, Zebetite } from './tourian';
 import type { EscapeScene } from './scene';
 
 /*
  * A player for Zebes Escape, for tests and difficulty tuning (docs/HEROES.md). It knows the route
- * as a table of the surfaces Samus can stand on and what to do from each: walk on, jump the pit,
- * curl into the ball and bomb the block in a tunnel, or climb to the next platform (walk to the
- * edge beside it, jump, drift on once the head is above the platform's underside). Falling back
- * down a shaft just lands it on an earlier surface, so it carries on from there. On the way it
- * shoots creatures at body height, waits for Rippers to clear the jump, and stays out from under a
- * Zoomer on the next platform. With `CautiousOptions` it plays like a careful first-timer: it sees
- * the creatures `reaction` frames late, misjudges its take-off spot by up to `error` px, now and
- * then stops for a moment, and sometimes lets go of a jump too early.
+ * as a table of the surfaces Samus can stand on and what to do from each: walk on, curl into the
+ * ball and bomb the block in a tunnel, shoot a door open and walk through it (missiles for the
+ * red one), break a barrier or the brain with missiles, or climb to the next platform (walk to
+ * the edge beside it, jump, drift on once the head is above the platform's underside). Falling
+ * back down the shaft just lands it on an earlier surface, so it carries on from there. On the
+ * way it shoots the Rinkas that come level with it (or straight above it). With
+ * `CautiousOptions` it plays like a careful first-timer: it sees the Rinkas `reaction` frames
+ * late, misjudges its take-off spot by up to `error` px, now and then stops for a moment, and
+ * sometimes lets go of a jump too early.
  */
 
 export interface CautiousOptions {
@@ -60,59 +61,79 @@ export type Plan =
       block: { x: number; y: number } | null;
       out: number;
     }
-  /** Walk to column `x` (off a ledge, to the ship). */
-  | { kind: 'walk'; x: number };
+  /** Walk to column `x` (off a ledge). */
+  | { kind: 'walk'; x: number }
+  /** Shoot the door in column `x` open (missiles for a red one) and walk through it. */
+  | { kind: 'door'; x: number; dir: -1 | 1 }
+  /** Break the barrier in column `x` with missiles, then walk on. */
+  | { kind: 'barrier'; x: number }
+  /** Destroy the brain (its tank's left column `x`) with missiles, then walk on. */
+  | { kind: 'brain'; x: number };
 
 const S = (row: number, x0: number, x1: number): Surface => ({ row, x0, x1 });
 
+/** A climb up from `at` onto `to` (to the right for dir 1). */
+const up = (at: Surface, to: Surface, dir: -1 | 1) => ({
+  at,
+  plans: [{ plan: { kind: 'climb' as const, to, dir } }],
+});
+
+/** The escape shaft's platforms, bottom to top (stage.map), ending on the surface. */
+const SHAFT: readonly Surface[] = [
+  S(57, 81, 94),
+  S(54, 85, 88),
+  S(51, 90, 93),
+  S(48, 85, 88),
+  S(45, 81, 84),
+  S(42, 86, 89),
+  S(39, 91, 94),
+  S(36, 86, 89),
+  S(33, 81, 84),
+  S(30, 85, 88),
+  S(27, 90, 93),
+  S(24, 85, 88),
+  S(21, 81, 84),
+  S(18, 86, 89),
+  S(15, 91, 94),
+  S(12, 86, 89),
+  S(9, 81, 84),
+  S(6, 85, 88),
+  S(3, 90, 94),
+];
+
 /**
- * The route through stage.map: for each surface, the plans by column (the first whose `upTo`
+ * The route through stage.map: for each surface, the plans by column (the first whose `until`
  * column the centre has not passed, scanning in the direction of travel).
  */
 export const ROUTE: { at: Surface; plans: { until?: number; plan: Plan }[] }[] = [
-  // The chamber and the corridor: the pit, then the morph-ball tunnel with its bomb block.
-  { at: S(43, 1, 19), plans: [{ plan: { kind: 'leap', land: 23 } }] },
+  // The corridor: a step, the morph-ball wall (its bomb block), the door to the hall.
+  up(S(57, 1, 8), S(55, 9, 10), 1),
+  { at: S(55, 9, 10), plans: [{ plan: { kind: 'walk', x: 12 } }] },
   {
-    at: S(43, 23, 46),
+    at: S(57, 11, 30),
     plans: [
-      { until: 30, plan: { kind: 'tunnel', start: 25, end: 28, dir: 1, block: { x: 27, y: 42 }, out: 30 } },
-      { plan: { kind: 'climb', to: S(40, 37, 41), dir: 1 } },
+      { until: 24, plan: { kind: 'tunnel', start: 19, end: 23, dir: 1, block: { x: 22, y: 56 }, out: 24 } },
+      { plan: { kind: 'door', x: 31, dir: 1 } },
     ],
   },
-  // Shaft 1.
-  { at: S(40, 37, 41), plans: [{ plan: { kind: 'climb', to: S(37, 42, 45), dir: 1 } }] },
-  { at: S(37, 42, 45), plans: [{ plan: { kind: 'climb', to: S(34, 36, 39), dir: -1 } }] },
-  { at: S(34, 36, 39), plans: [{ plan: { kind: 'climb', to: S(31, 33, 35), dir: -1 } }] },
-  { at: S(31, 33, 35), plans: [{ plan: { kind: 'climb', to: S(28, 37, 41), dir: 1 } }] },
-  { at: S(28, 37, 41), plans: [{ plan: { kind: 'climb', to: S(25, 43, 46), dir: 1 } }] },
-  { at: S(25, 43, 46), plans: [{ plan: { kind: 'climb', to: S(22, 37, 40), dir: -1 } }] },
-  { at: S(22, 37, 40), plans: [{ plan: { kind: 'climb', to: S(19, 10, 36), dir: -1 } }] },
-  // The middle corridor (its bomb wall) and the ledge into shaft 2.
+  // The hall and its red door.
+  { at: S(57, 33, 46), plans: [{ plan: { kind: 'door', x: 47, dir: 1 } }] },
+  // The brain's chamber: three barriers, the brain, the door to the shaft behind it.
   {
-    at: S(19, 10, 36),
+    at: S(57, 49, 78),
     plans: [
-      { until: 23, plan: { kind: 'tunnel', start: 26, end: 24, dir: -1, block: { x: 24, y: 18 }, out: 22 } },
-      { plan: { kind: 'climb', to: S(16, 5, 8), dir: -1 } },
+      { until: 55, plan: { kind: 'barrier', x: 55 } },
+      { until: 60, plan: { kind: 'barrier', x: 60 } },
+      { until: 65, plan: { kind: 'barrier', x: 65 } },
+      { until: 72, plan: { kind: 'brain', x: 72 } },
+      { plan: { kind: 'door', x: 79, dir: 1 } },
     ],
   },
-  // Shaft 2.
-  { at: S(16, 5, 8), plans: [{ plan: { kind: 'climb', to: S(13, 1, 3), dir: -1 } }] },
-  { at: S(13, 1, 3), plans: [{ plan: { kind: 'climb', to: S(10, 6, 9), dir: 1 } }] },
-  { at: S(10, 6, 9), plans: [{ plan: { kind: 'climb', to: S(7, 11, 13), dir: 1 } }] },
-  { at: S(7, 11, 13), plans: [{ plan: { kind: 'climb', to: S(4, 12, 35), dir: 1 } }] },
-  // Shaft 2's floor and the way back up to the ledge.
-  { at: S(28, 1, 14), plans: [{ plan: { kind: 'climb', to: S(25, 2, 5), dir: -1 } }] },
-  { at: S(25, 2, 5), plans: [{ plan: { kind: 'climb', to: S(22, 7, 9), dir: 1 } }] },
-  { at: S(22, 7, 9), plans: [{ plan: { kind: 'climb', to: S(19, 10, 36), dir: 1 } }] },
-  // The top corridor (its morph-ball tunnel), down into the hangar, to the ship.
-  {
-    at: S(4, 12, 35),
-    plans: [
-      { until: 27, plan: { kind: 'tunnel', start: 21, end: 25, dir: 1, block: null, out: 27 } },
-      { plan: { kind: 'walk', x: 38 } },
-    ],
-  },
-  { at: S(11, 36, 46), plans: [{ plan: { kind: 'walk', x: 43 } }] },
+  // The escape shaft, platform by platform (the next is beside, never right above).
+  ...SHAFT.slice(0, -1).map((at, i) => {
+    const to = SHAFT[i + 1] as Surface;
+    return up(at, to, to.x0 + to.x1 > at.x0 + at.x1 || at.row === 57 ? 1 : -1);
+  }),
 ];
 
 interface Seen {
@@ -122,8 +143,6 @@ interface Seen {
   y: number;
   w: number;
   h: number;
-  vx: number;
-  state: string;
 }
 
 interface Me {
@@ -137,6 +156,12 @@ interface Me {
   ball: boolean;
   vy: number;
 }
+
+/** Frames between the bot's beam shots and its missiles. */
+const SHOT_EVERY = 10;
+const MISSILE_EVERY = 18;
+/** How far (px, centre to the target's near face) it stands to shoot a door, a barrier or the tank. */
+const SHOOT_FROM = 40;
 
 export class EscapeBot {
   private readonly opts: CautiousOptions;
@@ -158,8 +183,6 @@ export class EscapeBot {
   private lastSurface = '';
   /** Frames spent (stuck) on the current surface. */
   private onSurface = 0;
-  /** Which way the route goes from here (for baiting Skrees ahead). */
-  private heading: -1 | 0 | 1 = 1;
   /** Surfaces landed on, in order (for the tests). */
   readonly visited: string[] = [];
 
@@ -177,11 +200,11 @@ export class EscapeBot {
     return o;
   }
 
-  /** The creatures, as the bot judges them now (`reaction` frames late). */
+  /** The Rinkas, as the bot judges them now (`reaction` frames late). */
   private look(world: World): Seen[] {
     const now: Seen[] = [];
     for (const e of world.entities) {
-      if (!e.alive || !(e instanceof Zoomer || e instanceof Ripper || e instanceof Skree)) continue;
+      if (!e.alive || !(e instanceof Rinka)) continue;
       const o = this.offset(e.id);
       now.push({
         id: e.id,
@@ -190,8 +213,6 @@ export class EscapeBot {
         y: toPx(e.body.y),
         w: toPx(e.body.w),
         h: toPx(e.body.h),
-        vx: e.body.vx,
-        state: e instanceof Skree ? e.state : e instanceof Zoomer ? e.surface : '',
       });
     }
     this.history.push(now);
@@ -222,7 +243,7 @@ export class EscapeBot {
         ? this.jump !== null && this.jump.t > 0
           ? true
           : !this.prevHeld.has('jump')
-        : a === 'left' || a === 'right' || !this.prevHeld.has(a),
+        : a === 'left' || a === 'right' || a === 'up' || !this.prevHeld.has(a),
     );
     this.prevHeld = new Set(out);
     return out;
@@ -232,7 +253,7 @@ export class EscapeBot {
     const world = scene.world;
     const seen = this.look(world);
     const p = scene.player;
-    if (p.dead || scene.phase !== 'escape') {
+    if (p.dead || (scene.phase !== 'tourian' && scene.phase !== 'escape') || scene.transition) {
       this.jump = null;
       return [];
     }
@@ -248,7 +269,7 @@ export class EscapeBot {
       ball: (p.scratch.ball ?? 0) > 0,
       vy: b.vy,
     };
-    if (this.jump) return this.flying(me, seen);
+    if (this.jump) return this.flying(me);
     if (!me.onGround) return [];
     const feetRow = me.feet >> 4;
     const here = EscapeBot.planFor(feetRow, me.cx >> 4);
@@ -273,16 +294,7 @@ export class EscapeBot {
       return [];
     }
     if (!here) return me.ball ? ['up'] : [];
-    // Creatures first: shoot what is in line, wait out what is in the way.
-    const plan0 = here.plan;
-    this.heading =
-      plan0.kind === 'climb' || plan0.kind === 'tunnel'
-        ? plan0.dir
-        : plan0.kind === 'leap'
-          ? 1
-          : plan0.x * 16 + 8 > me.cx
-            ? 1
-            : -1;
+    // Rinkas first: shoot what comes level (or from straight above).
     if (!me.ball) {
       const fight = this.fight(scene, me, seen);
       if (fight) return fight;
@@ -301,7 +313,17 @@ export class EscapeBot {
       case 'tunnel':
         return this.tunnel(world, me, plan);
       case 'climb':
-        return this.climb(me, here.at, plan, seen);
+        return this.climb(me, here.at, plan);
+      case 'door':
+        return this.door(scene, me, plan);
+      case 'barrier': {
+        const z = world.entities.find((e) => e.alive && e instanceof Zebetite && e.body.x >> 12 === plan.x);
+        return z ? this.blast(scene, me, plan.x * 16, 1) : ['right'];
+      }
+      case 'brain': {
+        const brain = world.entities.find((e): e is BrainTank => e instanceof BrainTank);
+        return brain && !brain.defeated ? this.blast(scene, me, plan.x * 16, 1) : ['right'];
+      }
     }
   }
 
@@ -324,7 +346,7 @@ export class EscapeBot {
   }
 
   /** In the air on a jump: hold it, drift toward the landing once the head clears its underside. */
-  private flying(me: Me, _seen: Seen[]): Action[] {
+  private flying(me: Me): Action[] {
     const j = this.jump as NonNullable<typeof this.jump>;
     j.t++;
     if (j.t > 2 && me.onGround) {
@@ -352,84 +374,85 @@ export class EscapeBot {
     return held;
   }
 
-  /** A climb: walk to the take-off spot beside the platform, wait for the way to clear, jump. */
-  private climb(me: Me, at: Surface, plan: Plan & { kind: 'climb' }, seen: Seen[]): Action[] {
+  /** A climb: walk to the take-off spot beside the platform, jump. */
+  private climb(me: Me, at: Surface, plan: Plan & { kind: 'climb' }): Action[] {
     const to = plan.to;
     const curL = at.x0 * 16;
     const curR = (at.x1 + 1) * 16;
-    const takeoff =
+    const aim =
       plan.dir > 0
         ? Math.min(to.x0 * 16 - 10, curR - 6) + this.miss
         : Math.max((to.x1 + 1) * 16 + 10, curL + 6) - this.miss;
+    // However badly judged, a spot it can stand on (a wall may end the surface).
+    const takeoff = Math.max(curL + 6, Math.min(curR - 6, aim));
     if (Math.abs(takeoff - me.cx) > 3) return this.walkTo(me, takeoff, 3);
-    if (this.blocked(me, to, takeoff, seen)) {
-      // Waiting: if this drags on (the bot was misled), go anyway.
-      if (this.onSurface < 600) return [];
-    }
     return this.startJump(plan, plan.dir);
   }
 
-  /** A Ripper about to cross the jump, or a Zoomer on the landing: wait. */
-  private blocked(me: Me, to: Surface, takeoff: number, seen: Seen[]): boolean {
-    const top = to.row * 16 - 24 - 10;
-    const bottom = me.feet;
-    const land = (to.x0 * 16 + to.x1 * 16 + 16) >> 1;
-    const lo = Math.min(takeoff, land) - 24;
-    const hi = Math.max(takeoff, land) + 24;
-    for (const s of seen) {
-      if (s.kind === 'ripper') {
-        if (s.y + s.h < top || s.y > bottom) continue;
-        // Where it will be over the next 50 frames (it flies straight).
-        const v = (s.vx / 4096) * 50;
-        const a = Math.min(s.x, s.x + v);
-        const z = Math.max(s.x + s.w, s.x + s.w + v);
-        if (z > lo && a < hi) return true;
-      }
-      if (s.kind === 'zoomer') {
-        const zx = s.x + 8;
-        const onTop = s.y + s.h <= to.row * 16 + 2 && s.y + s.h >= to.row * 16 - 18;
-        if (onTop && zx > to.x0 * 16 - 24 && zx < (to.x1 + 1) * 16 + 24) return true;
-      }
-    }
-    return false;
-  }
-
   /**
-   * Shoot creatures at body height close ahead (a Zoomer coming, a Skree landed). A Skree hanging
-   * just ahead is baited: edge in until it lets go, then back off and shoot it once it is down.
+   * Shoot a Rinka coming level with Samus (turning to it), or one straight above her (aiming up).
+   * One that is not yet in line is left alone.
    */
   private fight(scene: EscapeScene, me: Me, seen: Seen[]): Action[] | null {
     const p = scene.player;
     for (const s of seen) {
-      if (s.kind !== 'skree' || s.state === 'hang' || s.y + s.h > me.y - 8) continue;
-      // Diving at us from above: get out from under it.
       const dx = s.x + (s.w >> 1) - me.cx;
-      if (Math.abs(dx) < 28) return [dx < 0 ? 'right' : 'left'];
+      const level = s.y + s.h > me.y + 2 && s.y < me.feet - 4;
+      if (level && Math.abs(dx) < 96) {
+        const toward: -1 | 1 = dx < 0 ? -1 : 1;
+        if (p.facing !== toward) return [toward < 0 ? 'left' : 'right'];
+        if (this.frame - this.lastShot >= SHOT_EVERY) {
+          this.lastShot = this.frame;
+          return ['attack'];
+        }
+        return [];
+      }
+      const above = s.y + s.h <= me.y && me.y - s.y < 96 && Math.abs(dx) < 10;
+      if (above) {
+        if (this.frame - this.lastShot >= SHOT_EVERY) {
+          this.lastShot = this.frame;
+          return ['up', 'attack'];
+        }
+        return ['up'];
+      }
     }
-    for (const s of seen) {
-      if (s.kind !== 'skree' || s.state !== 'hang') continue;
-      const dx = s.x + (s.w >> 1) - me.cx;
-      const above = s.y < me.y && me.y - s.y < 150;
-      if (!above || Math.abs(dx) > 52 || Math.sign(dx) !== this.heading) continue;
-      // Edge in to bait it (it drops at 40 px).
-      return this.frame % 2 === 0 ? [dx > 0 ? 'right' : 'left'] : [];
+    return null;
+  }
+
+  /**
+   * Missiles into a barrier or the tank whose near face is at `face` px (approached going `dir`):
+   * stand SHOOT_FROM px off it, face it, fire.
+   */
+  private blast(scene: EscapeScene, me: Me, face: number, dir: -1 | 1): Action[] {
+    const want = face - dir * SHOOT_FROM;
+    if (dir > 0 ? me.cx < want - 8 : me.cx > want + 8) return this.walkTo(me, want, 6);
+    const p = scene.player;
+    if (p.facing !== dir) return [dir > 0 ? 'right' : 'left'];
+    if (this.frame - this.lastShot >= MISSILE_EVERY) {
+      this.lastShot = this.frame;
+      return ['special'];
     }
-    for (const s of seen) {
-      const level = s.y + s.h > me.y + 4 && s.y < me.feet - 2;
-      if (!level) continue;
-      const dx = s.x + (s.w >> 1) - me.cx;
-      if (Math.abs(dx) > 72) continue;
-      if (s.kind === 'ripper') continue; // beams glance off
-      if (s.kind === 'skree' && s.state === 'hang') continue;
-      const toward: -1 | 1 = dx < 0 ? -1 : 1;
-      if (p.facing !== toward) return [toward < 0 ? 'left' : 'right'];
-      if (this.frame - this.lastShot >= 8) {
+    return [];
+  }
+
+  /** A door: shoot it open (a red one with missiles), then walk through. */
+  private door(scene: EscapeScene, me: Me, plan: Plan & { kind: 'door' }): Action[] {
+    const dir = plan.dir;
+    const key: Action = dir > 0 ? 'right' : 'left';
+    const door = scene.world.entities.find((e): e is Door => e instanceof Door && e.tx === plan.x);
+    if (!door || door.open) return [key];
+    const face = dir > 0 ? plan.x * 16 : (plan.x + 1) * 16;
+    if (door.color === 'blue') {
+      // A beam reaches it from anywhere: on, shooting.
+      const p = scene.player;
+      if (p.facing !== dir) return [key];
+      if (this.frame - this.lastShot >= SHOT_EVERY) {
         this.lastShot = this.frame;
         return ['attack'];
       }
-      return [];
+      return dir > 0 ? (me.cx < face - SHOOT_FROM ? [key] : []) : me.cx > face + SHOOT_FROM ? [key] : [];
     }
-    return null;
+    return this.blast(scene, me, face, dir);
   }
 
   /** Through a tunnel: curl up at its mouth, roll in, bomb the block, roll out and stand. */

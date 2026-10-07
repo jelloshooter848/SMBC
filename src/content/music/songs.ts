@@ -757,6 +757,33 @@ export const songs: Song[] = [
   },
 
   {
+    id: 'triforce-get',
+    bpm: 150,
+    loop: false,
+    // A major, 3 bars: Link holds up the Triforce (keep.ts WIN_FRAMES, 5 s). The dungeon's A
+    // minor turns major: a climbing arpeggio, a stately step up to the high E, and a cadence
+    // home over a walking bass.
+    pulse1: `
+      @2 v12 q8 x0
+      o5 e8 a8 o6 c+8 e8 d4 c+8 o5 b8 ; bar 1  A  D E
+      o5 a8 b8 o6 c+8 d8 e4. f+8      ; bar 2  D  A
+      o6 d8 c+8 o5 b8 g+8 a2          ; bar 3  E  A
+    `,
+    pulse2: `
+      @1 v8 q8 x0
+      o5 c+8 e8 a8 o6 c+8 o5 b4 a8 g+8 ; bar 1
+      o5 f+8 g+8 a8 b8 o6 c+4. d8     ; bar 2
+      o5 b8 a8 g+8 e8 c+2             ; bar 3
+    `,
+    triangle: `
+      q8 x0
+      o3 a4 e4 d4 e4                  ; bar 1
+      o3 f+4 d4 a4 a4                 ; bar 2
+      o3 e4 e4 a2                     ; bar 3
+    `,
+  },
+
+  {
     id: 'mm-station',
     bpm: 156,
     loop: true,
@@ -977,6 +1004,42 @@ export const songs: Song[] = [
     `,
     noise: `
       [${ESCAPE_BAR}]7 ${ESCAPE_FILL} ; bars 1-8
+    `,
+  },
+  {
+    id: 'tourian',
+    bpm: 112,
+    loop: true,
+    // D minor, 8 bars: TOURIAN, the machine halls before the brain (ZEBES ESCAPE). A slow lead
+    // that leans on half steps and falls a tritone, a ticking eighth-note machine figure under it,
+    // and a heartbeat in the bass: two beats and a long rest. Nothing resolves; the loop turns on
+    // the same unsettled D.
+    pulse1: `
+      @1 v9 q7 x0
+      o5 d2 c+4 d4                    ; bar 1  Dm
+      o5 g+2. r4                      ; bar 2  (the tritone)
+      o5 f2 e4 f4                     ; bar 3  Bb
+      o5 b2. r4                       ; bar 4
+      o6 d4 c+4 c4 o5 b4              ; bar 5  sinking
+      o5 b-4 a4 g+4 g4                ; bar 6
+      o5 f+4 g4 g+4 a4                ; bar 7  creeping back up
+      o5 a+2 a2                       ; bar 8  A
+    `,
+    pulse2: `
+      @2 v5 q4 x0
+      [o3 d8 a8 o4 d8 o3 a8]4         ; bars 1-2
+      [o3 d8 a+8 o4 d8 o3 a+8]4       ; bars 3-4
+      [o3 c+8 g+8 o4 c+8 o3 g+8]4     ; bars 5-6
+      [o3 d8 a8 o4 d8 o3 a8]4         ; bars 7-8
+    `,
+    triangle: `
+      q8
+      [o2 d8 d8 r4 r2]4               ; bars 1-4  the heartbeat
+      [o2 c+8 c+8 r4 r2]2             ; bars 5-6
+      [o2 d8 d8 r4 r2]2               ; bars 7-8
+    `,
+    noise: `
+      [v4 k4 r4 r4 v2 h4]8            ; bars 1-8
     `,
   },
   {

@@ -24,7 +24,7 @@ When the whole game is finished, the owner may call it **1.0.0** (docs/RELEASING
 every reimagining of its mini games.
 
 **Order (owner):** releases ship in whichever order they are ready; the first one out takes the next number.
-The part 2 rebuilds ship one hero at a time as each is ready (Mega Man first, as 0.4.15), and Sophia takes the next
+The part 2 rebuilds ship one hero at a time as each is ready (Mega Man as 0.4.15, Link as 0.4.16, Samus next), and Sophia takes the next
 number free when she is ready. Sophia's story lines are added when she lands.
 
 | Order | Release     | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Status                                                         |

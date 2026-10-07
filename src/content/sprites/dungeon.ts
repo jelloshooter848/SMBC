@@ -572,6 +572,161 @@ const CHEST_OPEN = paste(FLOOR, [
   '..000000000000..',
 ]);
 
+/* ---------- 0.4.16: Zelda's doors through a two-tile wall (32x32, north wall) ---------- */
+
+/** The north wall band two tiles thick: a row of brick over the row with the ledge. */
+const BAND = [...WALL, ...WALL_TOP].map((r) => r + r);
+
+/** A 32x32 frame from a function of each pixel; '.' keeps the band. */
+const over32 = (base: readonly string[], f: (x: number, y: number) => string): string[] =>
+  base.map((row, y) => Array.from(row, (ch, x) => (f(x, y) === '.' ? ch : f(x, y))).join(''));
+
+/**
+ * Where a pixel sits in the doorway's arch: its distance out from the opening's middle (round at
+ * the top, straight sides below). The opening (<= 8) is 16 px wide and runs down to the floor.
+ */
+const archD = (x: number, y: number): number => {
+  const dx = Math.abs(x + 0.5 - 16);
+  return y >= 12 ? dx : Math.hypot(dx, 12 - (y + 0.5));
+};
+const inArch = (x: number, y: number) => archD(x, y) <= 8;
+
+/** The open doorway: a two-ring stone arch round a dark way through the wall. */
+const DOOR_OPEN_THICK = over32(BAND, (x, y) => {
+  const d = archD(x, y);
+  if (d <= 8) return '0';
+  if (d <= 9) return '8';
+  if (d <= 10.5) return '9';
+  if (d <= 11.5 && y < 12) return '0';
+  return '.';
+});
+
+/** Locked: a plank door filling the arch, iron bands, and a gold lock plate with its keyhole. */
+const DOOR_LOCKED_THICK = over32(DOOR_OPEN_THICK, (x, y) => {
+  if (!inArch(x, y) || y < 4) return '.';
+  const plate = x >= 12 && x <= 19 && y >= 15 && y <= 23;
+  if (plate) {
+    if (x === 12 || x === 19 || y === 15 || y === 23) return 'b';
+    const hole = (x >= 15 && x <= 16 && y >= 17 && y <= 21) || (y === 18 && x >= 14 && x <= 17);
+    return hole ? '0' : 'd';
+  }
+  if (y === 10 || y === 26) return '8'; // iron bands
+  if (Math.abs(x + 0.5 - 16) >= 7.5) return 'b';
+  return (x - 8) % 4 === 3 ? 'b' : 'a';
+});
+
+/** Shut: an iron grille dropped across the dark opening. */
+const DOOR_SHUT_THICK = over32(DOOR_OPEN_THICK, (x, y) => {
+  if (!inArch(x, y) || y < 5) return '.';
+  if ((y - 6) % 7 === 0) return '9';
+  if ((y - 6) % 7 === 1) return '8';
+  if ((x - 9) % 4 === 0) return '9';
+  if ((x - 9) % 4 === 1) return '8';
+  return '.';
+});
+
+/** The way out: the arch brimming with light (two shimmer frames). */
+const exitThick = (phase: number): string[] =>
+  over32(DOOR_OPEN_THICK, (x, y) => {
+    const d = archD(x, y);
+    if (d > 8) return d <= 9 ? 'f' : '.';
+    if (d > 7) return '5';
+    const spark = (x * 7 + y * 3 + phase * 5) % 23 === 0;
+    return spark ? 'f' : '6';
+  });
+
+/** A jagged crack down a column of the wall, from (x0, y0) to y1, drifting by `drift`. */
+const crackPath = (x0: number, y0: number, y1: number, drift: readonly number[]) => {
+  const px = new Set<string>();
+  let x = x0;
+  for (let y = y0; y <= y1; y++) {
+    x += drift[(y - y0) % drift.length] as number;
+    px.add(`${x},${y}`);
+    px.add(`${x + 1},${y}`);
+  }
+  return px;
+};
+const CRACKS = [
+  crackPath(15, 2, 30, [0, 1, 0, -1, -1, 0, 1, 0, 1, -1]),
+  crackPath(9, 8, 26, [1, 0, -1, 0, 0, -1, 1]),
+  crackPath(22, 6, 28, [0, -1, 1, 1, 0, -1, 0, 1]),
+];
+/** The bombable wall: three jagged cracks through the brick, chips lit along their edges. */
+const WALL_CRACKED_THICK = over32(BAND, (x, y) => {
+  if (CRACKS.some((c) => c.has(`${x},${y}`))) return '0';
+  if (CRACKS.some((c) => c.has(`${x - 1},${y - 1}`))) return '2';
+  // A crumbled hollow where the cracks meet.
+  if (Math.hypot(x - 15.5, y - 16.5) < 3) return '0';
+  return '.';
+});
+
+/** The blown-open wall: a ragged hole through both rows down to the floor, rubble at its feet. */
+const WALL_HOLE_THICK = over32(BAND, (x, y) => {
+  const rag = [0, 1, -1, 1, 0, -1, 0, 1][(y + x) % 8] as number;
+  const d = archD(x, y) + rag * 0.6;
+  if (y >= 29 && (x === 6 || x === 7 || x === 24 || x === 25)) return y === 29 ? '2' : '1';
+  if (d <= 8.5) return '0';
+  if (d <= 9.5) return '2';
+  return '.';
+});
+
+/* ---------- 0.4.16: the map, the compass and the Triforce ---------- */
+
+// The dungeon map: a rolled parchment with the rooms sketched on it.
+const MAP = [
+  '........',
+  '.000000.',
+  '0ffffff0',
+  '0f5555d0',
+  '0f5005d0',
+  '0f5555d0',
+  '0f5050d0',
+  '0f5555d0',
+  '0f0055d0',
+  '0f5555d0',
+  '0f5505d0',
+  '0f5555d0',
+  '0ffffff0',
+  '0dddddd0',
+  '.000000.',
+  '........',
+];
+
+// The compass: a round gold case, its needle pointing north (red) and south.
+const COMPASS = [
+  '................',
+  '.....000000.....',
+  '...00dddddd00...',
+  '..0ddffffffdd0..',
+  '.0dff666666ffd0.',
+  '.0df666ee666fd0.',
+  '0df6666ee6666fd0',
+  '0df666eeee666fd0',
+  '0df66660066666d0',
+  '0df666699666fdd0',
+  '0df666699666fd0.',
+  '.0df66699666fd0.',
+  '.0ddff6666ffdd0.',
+  '..00ddddddddd0..',
+  '....000000000...',
+  '................',
+];
+
+// A shard of the Triforce: a golden triangle, lit along its left face, shaded along its base.
+const TRIFORCE = Array.from({ length: 16 }, (_, y) =>
+  Array.from({ length: 16 }, (_, x) => {
+    if (y < 1 || y > 14) return '.';
+    const half = (y - 1) * 0.55 + 0.5; // the half-width at this row
+    const dx = x + 0.5 - 8;
+    if (Math.abs(dx) > half + 1) return '.';
+    if (Math.abs(dx) > half || y === 14) return '0';
+    if (y === 13) return 'c';
+    if (dx < -half + 1.6) return 'f';
+    if (dx > half - 1.4) return 'c';
+    return 'd';
+  }).join(''),
+);
+
 /* ---------- HUD icons and pickups ---------- */
 
 const KEY = [
@@ -773,6 +928,16 @@ export const dungeonDef: SpriteDef = {
     'bomb-pickup': BOMB_PICKUP,
     'boomerang-icon': BOOMERANG_ICON,
     'bomb-icon': BOMB_ICON,
+    'door-open-thick': DOOR_OPEN_THICK,
+    'door-locked-thick': DOOR_LOCKED_THICK,
+    'door-shut-thick': DOOR_SHUT_THICK,
+    'wall-cracked-thick': WALL_CRACKED_THICK,
+    'wall-hole-thick': WALL_HOLE_THICK,
+    'exit-0-thick': exitThick(0),
+    'exit-1-thick': exitThick(1),
+    map: MAP,
+    compass: COMPASS,
+    triforce: TRIFORCE,
   },
 };
 
@@ -931,6 +1096,32 @@ const THROW_SIDE_NS = [
   '..0000....0000..',
 ];
 const THROW_SIDE = paste(THROW_SIDE_NS, SHIELD_BACK, 1, 9);
+
+// Holding a prize up (the item-get pose): facing the viewer, both arms straight up beside the
+// head, hands open at the top where the prize rests.
+const ARM_UP = ['.0.', '030', '030', '010', '010', '010', '010', '020', '020', '020', '0.0'];
+const HOLD_NS = paste(
+  paste(
+    [
+      ...HEAD_DOWN,
+      '...0211111120...',
+      '...0211111120...',
+      '...0211111120...',
+      '...0555995550...',
+      '...0211111120...',
+      '...0550..0550...',
+      '...0000..0000...',
+    ],
+    ARM_UP,
+    1,
+    0,
+  ),
+  ARM_UP,
+  12,
+  0,
+);
+// With the shield: slung on his back, its rim showing at his side.
+const HOLD = paste(HOLD_NS, ['00', 'a0', 'b0', 'a0', '00'], 14, 10);
 
 // Sword blade pointing up: white edge, grey spine, gold guard, brown grip, gold pommel.
 const SWORD_V = [
@@ -1104,6 +1295,8 @@ export const linkTdDef: SpriteDef = {
     'throw-down-ns': THROW_DOWN_NS,
     'throw-up-ns': THROW_UP_NS,
     'throw-side-ns': THROW_SIDE_NS,
+    hold: HOLD,
+    'hold-ns': HOLD_NS,
   },
 };
 

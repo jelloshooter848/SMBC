@@ -489,6 +489,8 @@ describe('tile sprites', () => {
         // the 0.4.12 restyles of 5-4 and 6-2
         'tiles-castlevania',
         'tiles-ninja-city',
+        // Tourian, Samus's mini game (0.4.16)
+        'tiles-tourian',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();

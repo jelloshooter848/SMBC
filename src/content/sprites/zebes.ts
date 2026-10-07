@@ -1,5 +1,6 @@
 import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
+import { openDoor, tourianFrames } from './tourian-zebes';
 
 /**
  * Samus's cavern below 4-2 and ZEBES ESCAPE: the bird-like statue that holds a hero's orb, the
@@ -52,6 +53,10 @@ export const zebesPalettes: Record<string, string[]> = {
   zebes: zebesBase(),
   // A creature struck by a shot: every colour but the outline flashes pale for a frame or two.
   'zebes-flash': zebesBase().map((c, i) => (i === 0 ? c : i % 2 ? NES.white : NES.lightGray)),
+  // A red door (it takes missiles): the door's blues turned to reds.
+  'zebes-red': zebesBase().map((c, i) =>
+    i === 5 ? NES.redDark : i === 6 ? NES.redBright : i === 7 ? NES.peach : i === 8 ? NES.tan : c,
+  ),
 };
 
 /* The bird-like statue, seated on its plinth facing right, an orb cupped in its hands; the orb dim. */
@@ -383,5 +388,8 @@ export const zebesDef: SpriteDef = {
     'skree-1': skree1,
     'alarm-0': alarm0,
     'alarm-1': alarm1,
+    'bubble-door-open': openDoor(bubbleDoor),
+    // Tourian (ZEBES ESCAPE): the brain and its tank, the barriers, cannons and Rinkas.
+    ...tourianFrames,
   },
 };

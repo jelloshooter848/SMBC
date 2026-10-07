@@ -15,6 +15,7 @@ import { smwSecretTileFrames, smwSecretTilePalette } from './top-secret';
 import { zelda2TileFrames, zelda2TilePalette } from './zelda2-look';
 import { megamanTileFrames, megamanTilePalette } from './megaman-look';
 import { brinstarTileFrames, brinstarTilePalette } from './brinstar-look';
+import { tourianTileFrames, tourianTilePalette } from './tourian-look';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -310,6 +311,8 @@ export const tilePalettes: Record<string, string[]> = {
   'tiles-zelda2': zelda2TilePalette,
   'tiles-megaman-stage': megamanTilePalette,
   'tiles-brinstar': brinstarTilePalette,
+  // Tourian, Samus's mini game ZEBES ESCAPE (tourian-look.ts).
+  'tiles-tourian': tourianTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2299,4 +2302,5 @@ Object.assign(
   zelda2TileFrames(tilesDef.frames),
   megamanTileFrames(tilesDef.frames),
   brinstarTileFrames(tilesDef.frames),
+  tourianTileFrames(),
 );

@@ -43,12 +43,20 @@ export type BotStep =
 
 export type BotPlan = readonly BotStep[] | ((w: TopDownWorld) => readonly BotStep[]);
 
-const INSIDE: Record<Side, { x: number; y: number; dir: Dir }> = {
-  n: { x: 7.5 * TILE, y: TILE, dir: 'up' },
-  s: { x: 7.5 * TILE, y: ROOM_H - 2 * TILE, dir: 'down' },
-  w: { x: TILE, y: 5 * TILE, dir: 'left' },
-  e: { x: ROOM_W - 2 * TILE, y: 5 * TILE, dir: 'right' },
-};
+/** Where to line up to leave by `side`: the floor just inside its doorway (walls `wall` thick). */
+function inside(side: Side, wall: number): { x: number; y: number; dir: Dir } {
+  const w = wall * TILE;
+  switch (side) {
+    case 'n':
+      return { x: 7.5 * TILE, y: w, dir: 'up' };
+    case 's':
+      return { x: 7.5 * TILE, y: ROOM_H - w - TILE, dir: 'down' };
+    case 'w':
+      return { x: w, y: 5 * TILE, dir: 'left' };
+    case 'e':
+      return { x: ROOM_W - w - TILE, y: 5 * TILE, dir: 'right' };
+  }
+}
 
 interface Node {
   x: number;
@@ -170,7 +178,7 @@ export class TopDownBot {
         return this.selectItem(world, 'bomb') ?? this.tap('special');
       }
       case 'leave': {
-        const at = INSIDE[s.side];
+        const at = inside(s.side, world.room.wall);
         const lined = s.side === 'n' || s.side === 's' ? hero.x === at.x : hero.y === at.y;
         const past = DIR_VEC[at.dir];
         const beyond = past.dx !== 0 ? (hero.x - at.x) * past.dx >= 0 : (hero.y - at.y) * past.dy >= 0;
