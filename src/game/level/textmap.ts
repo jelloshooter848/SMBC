@@ -1,6 +1,7 @@
 import { LEVEL_ROWS } from '../constants';
 import type { Decor, EntitySpawn, LevelData, PipeDir, Theme, TransferMode, Zone } from './schema';
-import { isTheme, themeMusic } from './schema';
+import { CAMERA_MODES, isTheme, themeMusic, type CameraMode } from './schema';
+import { DEFAULT_AUTO_SCROLL } from '../world/camera';
 import { DEFAULT_LEGEND, T } from './tiles';
 
 export class MapParseError extends Error {
@@ -34,7 +35,9 @@ function parseProps(parts: string[]): Props {
 /**
  * Parses the hand-authored `.map` format:
  *
- *   key: value            header lines (id, name, theme, music, time, start, width...)
+ *   key: value            header lines (id, name, theme, music, time, start, width...;
+ *                         `camera: scroll|locked|free|auto`, and with `auto` an optional
+ *                         `scroll: <px per frame>`, decimals fine, default 0.5)
  *   [legend]              optional overrides: `X tile-name` or `X @entity`
  *   [tiles]               15 rows (or the header's `height: N`, at least 15, for a
  *                         `camera: free` map with shafts); spaces and `;;` comments are
@@ -133,6 +136,16 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
   // Only a free camera can show more than one screen of rows.
   if (height > LEVEL_ROWS && header.camera !== 'free')
     throw new MapParseError(`height ${height} needs "camera: free" (only it scrolls vertically)`, 0);
+  const camera = (header.camera ?? 'scroll') as CameraMode;
+  if (!CAMERA_MODES.includes(camera))
+    throw new MapParseError(`unknown camera "${camera}" (${CAMERA_MODES.join(', ')})`, 0);
+  let scroll: number | undefined;
+  if (header.scroll !== undefined) {
+    if (camera !== 'auto') throw new MapParseError(`"scroll" needs "camera: auto"`, 0);
+    scroll = Number(header.scroll);
+    if (!/^\d*\.?\d+$/.test(header.scroll) || !(scroll > 0) || scroll > 16)
+      throw new MapParseError(`scroll must be a speed in px per frame above 0 (at most 16)`, 0);
+  } else if (camera === 'auto') scroll = DEFAULT_AUTO_SCROLL;
   if (rows.length !== height) {
     throw new MapParseError(
       `expected ${height} tile rows, got ${rows.length}`,
@@ -179,9 +192,10 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     decor,
     start: { x: start[0], y: start[1] },
     startMode: (header.startMode as LevelData['startMode']) ?? 'stand',
-    camera: (header.camera as LevelData['camera']) ?? 'scroll',
+    camera,
     parent: header.parent ?? null,
   };
+  if (scroll !== undefined) level.scroll = scroll;
   return level;
 }
 
@@ -354,6 +368,7 @@ export function serializeTextMap(level: LevelData): string {
     `startMode: ${level.startMode}`,
     `camera: ${level.camera}`,
   );
+  if (level.camera === 'auto') out.push(`scroll: ${level.scroll ?? DEFAULT_AUTO_SCROLL}`);
   if (level.height !== LEVEL_ROWS) out.push(`height: ${level.height}`);
   out.push('', '[tiles]');
   const markers = new Map<string, string>();

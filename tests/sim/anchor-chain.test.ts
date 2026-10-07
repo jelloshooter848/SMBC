@@ -4,6 +4,7 @@ import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import { campaignLevel, ANCHOR_DECOR } from '@game/level/campaign';
 import { LevelScene } from '@game/scenes/level';
+import type { MenuScene } from '@game/scenes/menu';
 import { Vine } from '@game/entities/objects/vine';
 import { px, toPx } from '@engine/math/units';
 import type { World } from '@game/world/world';
@@ -24,6 +25,7 @@ const camp = () => campaignLevel(getLevel('4-2'), withAirship);
 /** The chain's column and foot row (the pipe stood at 214-215; the floor is row 13). */
 const CHAIN = { x: 214, y: 12 };
 const ARRIVAL = { level: '4-2-airship', x: 2, y: 3 };
+const ARRIVAL_AT = { x: ARRIVAL.x, y: ARRIVAL.y };
 
 /** The hero's body overlaps no solid tile. */
 function clear(w: World): boolean {
@@ -103,7 +105,7 @@ describe('the anchor chain in 4-2 (campaign)', () => {
     },
   );
 
-  it('the whole way in the game: 4-2 → up the chain → the airship, the clock carried on', () => {
+  it('the whole way in the game: 4-2 → up the chain → the airship run; a retry climbs it again', () => {
     const h = makeGame();
     file({ cleared: ['1-0', '4-1'], pages: ['smb-1', 'smb-4'], position: { page: 'smb-4', node: '4-2' } });
     h.game.openFile(1);
@@ -120,11 +122,31 @@ describe('the anchor chain in 4-2 (campaign)', () => {
     const ship = h.top() as LevelScene;
     expect(ship).toBeInstanceOf(LevelScene);
     expect(ship.level.id).toBe('4-2-airship');
-    expect(ship.world.time).toBeGreaterThan(250);
+    // The airship run starts on boarding (the clock held), its retry point the chain arrival.
+    expect(h.game.airship).not.toBeNull();
+    expect(h.game.airship?.retryAt.start).toEqual({ ...ARRIVAL_AT, mode: 'climb', chain: true });
+    expect(ship.world.time).toBeNull();
+    // The auto-scroll waits while the hero is still on the arrival chain.
     h.until(() => !ship.world.arriving && ship.world.player.body.onGround, 900);
+    expect(ship.world.camera.x).toBeLessThan(px(16));
+    expect(Math.floor(toPx(ship.world.player.centerX) / 16)).toBe(ARRIVAL.x + 1);
     expect(h.game.mapProgress.secrets).not.toContain('larry');
-    // Drawn without throwing, with or without the chain frame in the smb3 sheet.
     expect(() => draw(ship)).not.toThrow();
+    // A death aboard: TRY AGAIN? YES climbs the chain again.
+    ship.world.kill(ship.world.player);
+    h.until(() => h.top() !== ship, 400);
+    expect((h.top() as MenuScene).title).toBe('TRY AGAIN?');
+    h.idle(8);
+    h.tap('jump');
+    const again = h.top() as LevelScene;
+    expect(again).toBeInstanceOf(LevelScene);
+    expect(again).not.toBe(ship);
+    expect(again.level.id).toBe('4-2-airship');
+    expect(again.world.arriving).toBe(true);
+    const chain = again.world.entities.find((e): e is Vine => e instanceof Vine && e.tx === ARRIVAL.x);
+    expect(chain?.art).toBe('chain');
+    h.until(() => !again.world.arriving && again.world.player.body.onGround, 900);
+    expect(Math.floor(toPx(again.world.player.centerX) / 16)).toBe(ARRIVAL.x + 1);
   });
 });
 

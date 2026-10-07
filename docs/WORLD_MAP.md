@@ -172,10 +172,11 @@ different road with each, and **no ending opens every road leaving its level**.
   Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each leads into an
   area of 4-2 (below) and is no exit at all (no `target.secret`, no road). The vine area's shows
   one ordinary pipe, down into Samus's cavern; the right one shows no pipe but Larry's anchor
-  chain, up to his airship, where the crystal ball is the exit. The Lost Levels' warp zones
-  (`workingWarps` / `warpsOpened`) still warp as in the original and clear nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels that have another
-  way out; it reads the level data as it is, so 4-2 keeps its look (in the campaign its other way
-  out is Larry's `secret:larry` road).
+  chain, up onto his airship deck, whose stern pipe leads to his room, where the crystal ball is
+  the exit. The Lost Levels' warp zones (`workingWarps` / `warpsOpened`) still warp as in the
+  original and clear nothing. The map's secret-exit look (`map/secret-exits.ts`) only marks levels
+  that have another way out; it reads the level data as it is, so 4-2 keeps its look (in the
+  campaign its other way out is Larry's `secret:larry` road).
 
 ## World exits and the Lost Levels unlocks
 
@@ -244,9 +245,9 @@ adds. Owner decision (0.5.0): all warp pipes go eventually.
   player into Samus's cavern (docs/HEROES.md), whose side pipe brings them up out of 4-2's pipe
   at column 72, the first pipe past the vine block.
 - **4-2 right zone** (`4-2.map`, warp at 208, pipe 214): `goto=4-2-airship,2,3,climb`, Larry
-  Koopa's anchor chain at column 214 up to his airship's bow. Larry's road (`secret:larry`) is
-  granted by beating him, not by the chain; the first time, World 4's map plays the airship's
-  crash before drawing it in (docs/HEROES.md).
+  Koopa's anchor chain at column 214 up to the bow of his airship deck (whose stern pipe leads into
+  his room `4-2-larry`; docs/HEROES.md). Larry's road (`secret:larry`) is granted by beating him,
+  not by the chain; the first time, World 4's map plays the airship's crash before drawing it in.
 
 ## The 1-2 secret (campaign only)
 

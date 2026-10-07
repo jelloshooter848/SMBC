@@ -100,9 +100,11 @@ hidden blocks) and to look closely at the map for a level hiding someone missed.
 Story: Larry Koopa stole a magic wand, and its spell is what brainwashed the heroes. In the
 campaign, 4-2's right warp zone has no pipe: his **anchor** rests on the floor there and its
 **chain** rises through the ceiling off the top of the screen. Climbed (vine mechanics) to the top,
-it leads to his airship `4-2-airship`, arriving up the chain at the bow (wired in
-`level/campaign.ts`; docs/WORLD_MAP.md "Campaign warp zones"; dev select and `?level=4-2-airship`
-reach it too).
+it leads aboard his airship: the auto-scrolling **deck** `4-2-airship`, arriving up the chain at
+the bow (wired in `level/campaign.ts`; docs/WORLD_MAP.md "Campaign warp zones"), whose stern
+pipe drops into **Larry's room** `4-2-larry` (`pipe x y down -> 4-2-larry 2 12`). Dev select and
+`?level=` reach both as plain levels. See "Larry's airship challenge" below for how a run aboard
+ends.
 
 - **The anchor chain**: the anchor is the decor `smb3:anchor` (32×32, its ring under the chain,
   drawn at x = column×16 − 8, standing on the floor); the chain is a `chain x y len=N` entity, a
@@ -116,7 +118,8 @@ reach it too).
   chain's top is two tiles above that tile only when that is higher than the classic arrival vine
   (5 tiles up from the screen bottom); otherwise it stays at the classic height and the hero drops
   onto the floor from there (`arrivalVineTop` in `world/world.ts` takes the higher of the two, so
-  the classic sky-area vine, start row 14, is unchanged). `World.arriving` is true until everyone is off it. Every hero climbs it and lands
+  the classic sky-area vine, start row 14, is unchanged). `World.arriving` is true until everyone is off it (the deck's auto-scroll waits for it). The
+  airship run boards with this start, so TRY AGAIN? YES climbs the chain again. Every hero climbs it and lands
   on the deck (`tests/sim/anchor-chain.test.ts`).
 - **The airship's crash on the map** (`map/airship-crash.ts`, the map's `cutscene` mode; campaign,
   the first time the ball is taken): after the crystal ball's card `Game.takeCrystalBall` sets
@@ -132,17 +135,19 @@ reach it too).
   mid-way only draws the road; taking the ball again plays nothing) and nothing plays without
   beating Larry (`tests/sim/airship-crash.test.ts`).
 
-- **The cabin** (`src/content/levels/world4/4-2-airship.map`, parent 4-2): one locked screen,
+- **The deck** (`src/content/levels/world4/4-2-airship.map`, parent 4-2, theme `airship-deck`,
+  music `airship`, `camera: auto` + `scroll: 0.5`): for now a PLACEHOLDER (40 columns of flat
+  deck, start at column 2, the stern pipe at columns 36-37 on rows 11-12); A2's SMB3-style layout
+  replaces it. Keep the stern pipe's zone pointing at `4-2-larry 2 12`.
+- **The room** (`src/content/levels/world4/4-2-larry.map`, parent 4-2): one locked screen,
   enclosed like SMB3's (the owner's reference, built to the SMB3 art's frames and mock), no sky. The
   log back wall (`H`, not solid) fills the room, behind the HUD too, with two `smb3:porthole`
   windows at (5,6) and (10,6). The ceiling row (row 2) and both edge columns (0 and 15) are solid
   (`%`) and covered by 16×16 smb3 decor, one per tile: `smb3:ceiling-beam` along row 2 (columns
   1-14) and `smb3:pillar` down columns 0 and 15 (rows 2-12). The floor is log posts: `#` the post
   tops on row 13, `%` the posts carrying on below on row 14, and one raised post with its top at
-  (7,12) and its post at (7,13). The hero climbs in up the arrival chain at column 2 (behind the
-  back wall here) and drops onto the pipe top at column 3 (the pipe in the floor at columns 2-3
-  is scenery now); Larry
-  starts on the floor at the right (`larry 12 12 next=4-3`: the tile his feet stand in; `next` is
+  (7,12) and its post at (7,13). The hero rises out of the pipe in the floor at columns 2-3 (from
+  the deck's stern pipe); Larry starts on the floor at the right (`larry 12 12 next=4-3`: the tile his feet stand in; `next` is
   where the ball leads outside the campaign). Theme `airship`, music `smb3-boss`.
 - **Larry** (`src/game/entities/enemies/larry.ts`, an `Enemy`): a second's wait, then hops at the
   hero (12 px high, 0.75 px/f across), a high jump now and then (30%, about 60 px; always when
@@ -170,6 +175,31 @@ reach it too).
   Hammer Bro"); 4-2 is **not** cleared. The file's `inventoryUnlocked` is set (the SMB3 item
   inventory; a file with `larry` in its secrets counts as unlocked). Outside the campaign play
   goes on to `next` (4-3); an editor play-test ends.
+
+### Larry's airship challenge (`scenes/airship.ts`)
+
+The deck and the room play with the current hero(es) as real levels, but end like a mini game
+round. Co-op works (both players board; a partner's respawn aboard is free).
+
+- **Boarding** (campaign only): `Game.startLevel` into `4-2-airship` or `4-2-larry` from any other
+  level starts a run (`Game.airship`, an `AirshipRun`) and snapshots the run state as it was
+  before (`snapshot()` from free-hero.ts: lives, power, hp, kit, score, coins, 4-2's checkpoint).
+  Any other level, the map or the title ends the run. Dev select / `?level=` never start one.
+- **No clock aboard**: `LevelScene` sets the world's time to null (the HUD leaves it blank).
+- **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
+  restarts the deck as it was boarded, or Larry's room once it has been reached (rising out of its
+  pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
+  restores the pre-boarding snapshot and goes back to 4-2 at its last checkpoint (4-2's own respawn
+  rules: its start without one, a fresh clock, the WORLD card; no hero select).
+- **MENU** aboard is `MiniGameMenuScene` titled LARRY'S AIRSHIP: Continue / Give up (= NO) and, in
+  dev mode, Assists.
+- **Held items** (mushroom/flower/Starman used on the map) given at an airship area's start are
+  folded into the run's snapshots (`AirshipRun.itemsGiven`), so a retry or NO keeps them once.
+- **Beating Larry**: the crystal ball exactly as before. The run ends in the card's OK
+  (`airshipWon`), then `Game.takeCrystalBall(levelId)` is the campaign's hand-off to the map.
+- **Dev → Mini games → "Larry's airship"** (`AIRSHIP_CHALLENGE`): deck + room as one round over the
+  dev list with the current hero; the ball is PASS, a death FAIL (no retry prompt), Give up QUIT,
+  then the dev result card; nothing is saved.
 - **The crystal ball's hint**: from then on every hero not freed yet shows its silhouette by its
   level's node (stage 2 above) even before that level is cleared, with the same announcer line and
   hint line (`heroHint` in `map/captives.ts`). A node the file has not reached (its page not open, or
@@ -437,6 +467,24 @@ first (Samus cannot move, the countdown waits, the press that started the round 
 - Touch labels: Samus's level labels while she runs (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
   WEAPON; BOMB in the ball, no JUMP), only MENU while READY, none once the round is decided.
   Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Mini games.
+
+**The auto-scroll camera** (generic, `world/camera.ts`, SMB3's airships): a map's header
+`camera: auto` with `scroll: <px per frame>` (decimals fine, above 0 and at most 16; 0.5 when left
+out; `scroll:` without `camera: auto` and unknown `camera:` values are parse errors; one screen high
+only; `serializeTextMap` writes `scroll:` for auto maps only). The camera ignores the players and
+moves right at that speed (`Camera.scroll()`, called once per live `World.update` frame) until its
+end (a `scrollStop x` zone or the map's end; `Camera.autoDone`). Its left edge pushes every player
+along. Only a wall ahead squashes: a pushed player dies (whatever the assists, as in a pit) when the
+column under the body's leading (right) edge holds a solid tile between 4 px below its top and 4 px
+above its feet, in a row where the body was not already inside something solid before the push. So
+a ceiling a rising lift carries the hero into, a block grown into, the floor, a vine or a pipe being
+entered never kill at the edge. No one can run past its right edge. Spawning and despawning work as
+in any level (by the camera's edges). The scroll holds while the pause menu is open (the scene is
+not updated) and on every frame `World.update` returns early: a death with no one left, a pipe
+being entered or left, growing/shrinking, a teleport beam, a level clear; it also holds while a
+vine or pit transfer is leaving and while the players climb in on an arrival vine (`World.arriving`,
+an anchor chain too). Every other level is untouched (camera tests: no library level but the deck
+is `auto` or has a speed).
 
 **The vertical camera** (generic, `world/camera.ts`): a map's header `camera: free` with
 `height: N` (at least 15 rows; the text map then needs exactly N rows, and `serializeTextMap`

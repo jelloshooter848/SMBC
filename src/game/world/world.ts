@@ -10,7 +10,7 @@ import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
 import { isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
-import { Camera } from './camera';
+import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
 import { renderTiles, SKY } from './tile-render';
 import { TileMap } from './tilemap';
 import { Player } from '../entities/player';
@@ -309,6 +309,8 @@ export class World {
   private offsetRenderer: OffsetRenderer | null = null;
   /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
   readonly heightPx: number;
+  /** Co-op respawns cost no shared life (Larry's airship challenge: deaths there are free). */
+  livesFree = false;
   /** WorldStart.extraEntities: a mini game's own entity types. */
   private readonly extraEntities: WorldStart['extraEntities'];
 
@@ -326,6 +328,7 @@ export class World {
     this.camera = new Camera(level.width, stop ? stop.x : null, level.camera === 'locked', {
       free: level.camera === 'free',
       heightTiles: level.height,
+      ...(level.camera === 'auto' ? { autoScroll: level.scroll ?? DEFAULT_AUTO_SCROLL } : {}),
     });
     this.heightPx = level.height * 16;
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
@@ -831,8 +834,11 @@ export class World {
         if (p.body.vx < 0) p.body.vx = 0;
       }
       const rightEdge = Math.min(tileToSub(this.level.width), this.camera.x + px(SCREEN_W));
-      if (p.body.x + p.body.w > rightEdge && this.coop && p !== this.rightmost())
+      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right).
+      if (p.body.x + p.body.w > rightEdge && (this.camera.auto || (this.coop && p !== this.rightmost()))) {
         p.body.x = rightEdge - p.body.w;
+        if (this.camera.auto && p.body.vx > 0) p.body.vx = 0;
+      }
       if (p.body.x + p.body.w > tileToSub(this.level.width))
         p.body.x = tileToSub(this.level.width) - p.body.w;
     });
@@ -866,7 +872,8 @@ export class World {
     }
 
     const lead = this.rightmost();
-    if (lead) this.camera.follow(lead.body.x, lead.body.y);
+    if (this.camera.auto) this.autoScroll();
+    else if (lead) this.camera.follow(lead.body.x, lead.body.y);
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
       if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
@@ -878,6 +885,57 @@ export class World {
       }
     }
     this.cull();
+  }
+
+  /**
+   * An auto-scroll frame (`camera: auto`): the camera moves on, and its left edge pushes every
+   * player it catches. One pushed into a solid wall is squashed between the two and dies, as in
+   * SMB3 (whatever the assists: there is no way out, as with a pit). The frames the world stands
+   * still (pause, a death with no one left, pipes, growing) never get here, so the scroll holds.
+   */
+  private autoScroll(): void {
+    // A transfer under way, or the players still climbing in (a vine or anchor-chain arrival).
+    if (this.leaving || this.arriving) return;
+    this.camera.scroll();
+    for (const p of this.activePlayers()) {
+      if (p.body.x >= this.camera.x || p.frozen || p.hidden) continue;
+      const blocked = this.solidRows(p);
+      p.body.x = this.camera.x;
+      if (p.body.vx < 0) p.body.vx = 0;
+      if (this.squashed(p, blocked)) this.kill(p);
+    }
+  }
+
+  /** The tile rows (of the side probe's span) in which the body already overlaps a solid tile. */
+  private solidRows(p: Player): Set<number> {
+    const b = p.body;
+    const rows = new Set<number>();
+    for (let ty = tileAt(b.y + px(4)); ty <= tileAt(b.y + b.h - px(4)); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++)
+        if (this.map.isSolid(tx, ty)) {
+          rows.add(ty);
+          break;
+        }
+    return rows;
+  }
+
+  /**
+   * Pushed by the auto-scroll edge into a wall: a solid tile in the column under the body's
+   * leading (right) edge, between 4 px below its top and 4 px above its feet, in a row where the
+   * body was not already inside something solid before the push (a ceiling a lift carried it
+   * into, a block it grew into, a floor). Only a wall ahead squashes.
+   */
+  private squashed(p: Player, blocked: Set<number>): boolean {
+    const b = p.body;
+    const col = tileAt(b.x + b.w - 1);
+    for (let ty = tileAt(b.y + px(4)); ty <= tileAt(b.y + b.h - px(4)); ty++)
+      if (!blocked.has(ty) && this.map.isSolid(col, ty)) return true;
+    return false;
+  }
+
+  /** The players are still arriving on the vine (a sky area's climb-in, an anchor chain). */
+  get arriving(): boolean {
+    return this.vineArrival !== null;
   }
 
   /** Up pressed by a player within a captive's reach: a `talk` event (one a frame). */
@@ -968,11 +1026,6 @@ export class World {
       this.vineArrival = null;
       this.timeHidden = false;
     }
-  }
-
-  /** A climb arrival is under way (the vine still growing or someone still on it). */
-  get arriving(): boolean {
-    return this.vineArrival !== null;
   }
 
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
@@ -1567,8 +1620,9 @@ export class World {
         return;
       }
       const others = this.activePlayers();
-      if (others.length && (this.state.lives > 0 || this.assist.infiniteLives)) {
-        if (!this.assist.infiniteLives) this.state.lives--;
+      const free = this.assist.infiniteLives || this.livesFree;
+      if (others.length && (this.state.lives > 0 || free)) {
+        if (!free) this.state.lives--;
         this.respawn(p, others[0] as Player);
       } else {
         p.out = true;
