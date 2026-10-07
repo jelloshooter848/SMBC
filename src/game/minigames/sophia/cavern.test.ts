@@ -30,7 +30,7 @@ const solid = (x: number, y: number) => {
 };
 
 describe('Underworld: the tank’s cavern (section 1)', () => {
-  it('ends at the gateway on a ledge reached only up a shaft one tile wide (too narrow for the 19-px tank)', () => {
+  it('ends at the gateway on a roofed ledge, reached up a ladder in a shaft one tile wide', () => {
     const a = areaStage();
     expect(a.level.theme).toBe('underworld');
     expect(a.level.music).toBe('bm-area');

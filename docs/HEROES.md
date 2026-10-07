@@ -870,9 +870,10 @@ the REST shown; one GAME OVER fails the round.
   S1's real `SOPHIA` def in a World of its own with a fresh GameState (the campaign is never
   touched), five screens of cavern: a crawler, a step and a wall of bricks under a low roof (the
   cannon breaks it), ledges with flyers, the open cavern (a hopper, a crawler, a flyer), then the
-  gateway's shaft: a ladder up a shaft one tile wide (too narrow for the 19-px tank) to a roofed
-  ledge where the `gateway` stands. Reaching the shaft in the tank shows, once, ONLY JASON FITS THE
-  SHAFT / EXIT: JASON HOPS OUT (announced). Jason on foot walking into the doorway (12×20 at the
+  gateway's shaft: a ladder up a shaft one tile wide (only Jason, or the tank turned nose up on
+  the ladder, fits) to a roofed ledge where the `gateway` stands; the tank can't go through a
+  gateway (Blaster Master's rule). Nearing it in the tank shows, once, GATEWAYS ARE FOR JASON. /
+  EXIT: JASON HOPS OUT (announced). Jason on foot walking into the doorway (12×20 at the
   bottom of the 32×32 decor) goes in: the cavern fades, then the dungeon. Mutants (side view, face
   left): **crawlers** creep along the floor and turn at ledges (2 hits), **hoppers** crouch, then
   leap at the player within 96 px (2 hits), **flyers** bob, then swoop at the player within 112 px

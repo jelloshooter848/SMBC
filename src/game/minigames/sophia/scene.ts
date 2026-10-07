@@ -317,17 +317,19 @@ export class UnderworldScene implements Scene {
     if (died) this.areaLifeLost();
   }
 
-  /** The tank reaches the shaft: how Jason hops out, once. */
+  /** The tank nears the gateway: only Jason goes in, and how he hops out, once. */
   private teachHopOut(): void {
     this.taught = true;
     const exit = this.hint('EXIT', EXIT_ACTION);
     const line = `${exit}: JASON HOPS OUT`;
     this.banner = {
-      lines: ['ONLY JASON FITS THE SHAFT.', line.length <= 26 ? line : 'EXIT: JASON HOPS OUT'],
+      lines: ['GATEWAYS ARE FOR JASON.', line.length <= 26 ? line : 'EXIT: JASON HOPS OUT'],
       until: this.t + TEACH_FRAMES,
       y: 40,
     };
-    this.say(`The tank can't fit up the shaft. ${exit} lets Jason hop out; climb the ladder to the gateway.`);
+    this.say(
+      `The gateway is for Jason on foot; the tank can't go in. ${exit} lets Jason hop out. Climb the ladder up the shaft to the gateway.`,
+    );
   }
 
   /** A life lost in the cavern: the next one from the start or the checkpoint, or GAME OVER. */
