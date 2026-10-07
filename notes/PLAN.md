@@ -11,6 +11,48 @@
   - S2 waits on S1's def for the tank section; tell S2 when S1 has merged.
 - **0.4.13 story:** STORY.md script agent running (scratchpad: none, writes docs/STORY.md).
 
+## Separate sessions (other machines)
+- **0.4.13 story build:** session_01XQfydteGJKAYoJQGdUsjbh, started 12:17 PM PDT.
+  - Base: claude/admiring-galileo-quy3ri. Outcome branch: claude/wip-0.4.13-story.
+  - Scope: Chapter 1 only, with Sophia's lines guarded until she lands.
+  - It does not report back on its own: check it during the 15-minute updates with get_session / list_events
+    (status_bucket) and git ls-remote. Send it merge instructions with send_message when the base moves.
+
+## Owner decisions, about 12:35 PM PDT Oct 7
+- Sophia (0.4.11) and hero tributes (0.4.12) ship in whichever order is ready first.
+- The story build (0.4.13) starts without waiting for Sophia; her lines are added later. Hold the start until a couple
+  of the running agents finish, because of machine load (full tests take ~25 min).
+- Chapter plan: 0.5.0 is Chapter 1 plus the rebrand "SMB Crossover REMIX". 0.4.14 and 0.4.15 are the mini game
+  rebuilds, 0.4.16 the finishing pass. 0.5.1 is the Classic rules. Chapter 2 is released as 0.6.0, Chapter 3 as 0.7.0.
+- Owner updates every 15 minutes, in Pacific time, with time remaining; the gates for releases not yet started.
+
+## Owner decisions, about 12:30 PM PDT Oct 7
+- The Koopaling airships become their own release, 0.4.14. They unlock Lost Worlds A–D and the true ending.
+- Restyled levels keep their look after the hero is freed. Toad remarks on the change on the first visit
+  (STORY.md 2.3b).
+- The restyle's own music plays for every hero.
+- The coin heavens above restyled levels share the look (2-1-sky, 2-1-sky2, 3-1-sky, 6-2-sky). Bonus rooms and
+  water areas keep their own look.
+- The Plutonium Boss is a side-view tank fight. The overhead fight becomes the dungeon guardian.
+- The main story ends at Lost 8-4. The six pieces unlock A–D, and D-4 is the true ending. World 9 keeps the NES rule.
+- The Lost castles' fake Bowsers get reveal pages.
+
+## In flight (about 11:00 AM PDT Oct 7)
+- **0.4.9:** released and live.
+- **0.4.10:** Safety floor merged into the branch (bc0014e), CHANGELOG done. The Top Secret Area is built (3bd5fcd on
+  worktree-agent-a24fe51564b732b3c, wip branch claude/wip-0.4.10-top-secret-area) and IN REVIEW. Then: merge, browser
+  QA of both, CHANGELOG, then the 0.4.10 PR.
+- **0.4.11 Sophia:**
+  - S3 art is done and reviewed (b38c6dc, claude/wip-0.4.11-sophia-art).
+  - S1 (character) and S2 (mini game) are running. S2 must fix the boss frame names and set tilesDark.
+  - S4 (8-4 route) comes after 0.4.10 merges.
+- **0.4.12 restyles**, started at the owner's request:
+  - fidelity audit (read-only, report in scratchpad/fidelity-audit/REPORT.md);
+  - RA art for 2-1 zelda2, 3-1 megaman-stage, 4-2 brinstar (claude/wip-0.4.12-restyle-art-a);
+  - RB art for 5-4 castlevania, 6-2 ninja-city (claude/wip-0.4.12-restyle-art-b);
+  - map edits only after 0.4.10 merges.
+- **0.4.13 story:** a revision agent is applying the owner's review notes to docs/STORY.md.
+
 ## Release order (owner, 9:10 AM PDT Oct 7)
 - 0.4.9: Bill.
 - 0.4.10: the Safety floor tool.
