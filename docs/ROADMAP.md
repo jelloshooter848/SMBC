@@ -38,6 +38,21 @@ when she lands.
 | 7     | **0.4.16** | **Chapter 1 finishing pass.** Sophia's level variants (the Sophia-only tiles from the original, e.g. 4-4's drops, deferred from 0.4.11); the tile-by-tile check of SMB 1-1 to 8-4 against the owner's NES maps (owner's rule: fix clear mistakes of ours; where Crossover deliberately differs from the NES, keep Crossover and list it; anything ambiguous goes to the owner to decide); a full playthrough of 1-0 to 8-4 with every hero, on desktop and phone, fixing what it finds; the 8-4 credits marked as the end of Chapter 1                                      | Planned                                                                                  |
 | 8     | **0.5.0**  | **Chapter 1 release and the rebrand.** The project becomes **SMB Crossover REMIX** ("Super Mario Bros. Crossover: REMIX"): a nod to Jay Pavlina's original while saying it's a different project. A **stylized title screen** (an original logo with REMIX, livelier menu art and motion), "MADE BY JELLOSHOOTER848", and "BASED ON SUPER MARIO BROS. CROSSOVER BY EXPLODING RABBIT". The name changes everywhere (title screen, page title, README, release zip, credits). README and in-game notes for Chapter 1, final checks. The Lost Levels stay playable as they are | Planned (details to agree, see below)                                                    |
 
+### The secrets guide (docs/secrets/, starts right after 0.4.12, then updated with every release)
+
+A folder that documents every secret in the game, with screenshots, so players who want the answers can find them
+(the owner's call: anyone who wants the challenge won't look).
+
+- **What it covers:** every level with a secret. That means the hidden heroes and how to reach them, the hidden areas
+  (the coin-heaven extras, the dungeon, the dojo, the camp, the airship, the Top Secret Area), the secret exits and
+  warp spots, the bonus road, and the story's partners. Each entry gives the level, what's there, and the steps
+  to get in, with screenshots of each step.
+- **How it's made:** an agent captures the screenshots with scripted runs of the routes the tests already use (dev
+  mode only for setup), so the set matches the current build. The repo's no-binaries check gets an exception for
+  `docs/secrets/` only. The screenshots are of our own original art.
+- **Later:** lay it out like an old tips-and-tricks magazine (an original look and name, not any real magazine's
+  branding).
+
 ## After Chapter 1: what's already planned
 
 Release numbers after 0.5.0 are proposals; the owner picks them.
