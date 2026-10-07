@@ -1,6 +1,15 @@
 import { MAP_PAGES } from '@content/worldmap';
 import type { LevelData } from '../level/schema';
-import type { MapCondition, MapNode, MapPath, MapProgress, PageId, WorldExit, WorldMapPage } from './types';
+import type {
+  MapCondition,
+  MapNode,
+  MapPath,
+  MapProgress,
+  PageId,
+  PathExit,
+  WorldExit,
+  WorldMapPage,
+} from './types';
 
 /*
  * World map rules (pure apart from the documented in-place updates of `progress`; every
@@ -161,17 +170,44 @@ export function warpText(
 }
 
 /**
- * A path counts as walked once its `from` node is cleared, is the start of an open page (a start
- * carrying a level, World 1's 1-0, once that level is cleared), or is a found warp node that works.
+ * The exit of `p.from`'s level that opens road `p` (Super Mario World style, 0.5.0): its `exit`
+ * when set; otherwise 'secret:<key>' when the node it leads to is hidden by `unlock: '<key>'` (the
+ * secret exit records that key), else 'normal' (the level's clear).
+ */
+export function pathExit(page: WorldMapPage, p: MapPath): PathExit {
+  if (p.exit) return p.exit;
+  const key = node(page, p.to)?.unlock;
+  return key ? `secret:${key}` : 'normal';
+}
+
+/**
+ * A path counts as walked once its `from` node is done: a start of an open page (a start carrying
+ * a level, World 1's 1-0, once that level is cleared), a found warp node that works, or a level
+ * left by the road's exit (pathExit): its normal clear, or, for a secret road, the secret's key
+ * found while the level is reached (open). A secret exit never opens the normal roads, and the
+ * normal exit never a secret road.
  */
 function pathFromDone(progress: MapProgress, page: WorldMapPage, p: MapPath): boolean {
   const from = node(page, p.from);
   if (!from) return false;
-  if (from.kind === 'start')
-    return isPageOpen(progress, page.id) && (!from.level || isCleared(progress, page, p.from));
+  if (from.kind === 'start' && !from.level) return isPageOpen(progress, page.id);
   if (from.kind === 'warp')
     return isPageOpen(progress, page.id) && keyFound(progress, from) && conditionMet(progress, from.requires);
-  return isCleared(progress, page, p.from);
+  const exit = from.level ? pathExit(page, p) : 'normal';
+  if (exit === 'normal') return isCleared(progress, page, p.from);
+  return conditionMet(progress, exit) && isOpen(progress, page, p.from);
+}
+
+/**
+ * Whether a secret exit of node `nodeId`'s level has been taken: a secret road leaving it is
+ * walked (the announcer's "secret exit found").
+ */
+export function secretExitTaken(progress: MapProgress, page: WorldMapPage, nodeId: string): boolean {
+  const n = node(page, nodeId);
+  if (!n?.level) return false;
+  return page.paths.some(
+    (p) => p.from === nodeId && pathExit(page, p) !== 'normal' && pathFromDone(progress, page, p),
+  );
 }
 
 /**
@@ -387,6 +423,26 @@ export function findSecret(
 ): string[] {
   return openedBy(pages, progress, () => {
     if (!progress.secrets.includes(key)) progress.secrets.push(key);
+  });
+}
+
+/**
+ * A level left by a secret exit (Super Mario World style; the 1-2 warp zone's campaign pipe):
+ * records secret `key` and puts the hero on the level's node, which does NOT count as cleared
+ * (only its roads tied to that secret open, pathExit; the normal roads wait for the normal clear,
+ * clearLevel). Returns the opened `revealId`s.
+ */
+export function secretExit(
+  progress: MapProgress,
+  levelId: string,
+  key: string,
+  getLevel: GetLevel,
+  pages: readonly WorldMapPage[] = MAP_PAGES,
+): string[] {
+  const at = findLevelNode(mainLevel(levelId, getLevel), pages);
+  return openedBy(pages, progress, () => {
+    if (!progress.secrets.includes(key)) progress.secrets.push(key);
+    if (at) progress.position = { page: at.page.id, node: at.node.id };
   });
 }
 

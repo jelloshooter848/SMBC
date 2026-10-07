@@ -27,7 +27,7 @@ import { MARIO_LESSONS, MARIO_TUTORIAL, TOAD_PAGES } from '@game/tutorial/mario-
 import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
-import { makeGame, store, useStorage, file, type H } from './heroes-harness';
+import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
 
 // Mario's tutorial stage 1-0 (0.5.0): World 1's start node, where a new file begins; 1-1 opens
 // once it is cleared (or skipped). Toad tells the story, the lessons follow one by one in a
@@ -571,8 +571,14 @@ describe('the prompts name abilities, never buttons', () => {
     const touch = prompts('touch');
     const keys = prompts('keyboard');
     const run = MARIO_LESSONS.findIndex((l) => l.id === 'run');
-    expect(touch[run]?.join(' ')).toBe('HOLD RUN TO RUN, THEN JUMP OVER THE GAP.');
+    // On touch the run lesson says how the pad runs: a push far to the side (or the RUN button).
+    expect(touch[run]?.join(' ')).toBe(
+      'TO RUN, PUSH THE D-PAD FAR TO THE SIDE OR HOLD RUN. THEN JUMP OVER THE GAP.',
+    );
+    expect(touch[run]?.length).toBeLessThanOrEqual(3);
     expect(keys[run]?.join(' ')).toBe('HOLD RUN (X) TO RUN, THEN JUMP (Z) OVER THE GAP.');
+    expect(prompts('gamepad')[run]?.join(' ')).not.toContain('D-PAD');
+    for (const l of MARIO_LESSONS) if (l.id !== 'run') expect(l.touchText, l.id).toBeUndefined();
     for (const lines of [...touch, ...keys]) {
       for (const l of lines) {
         expect(l, l).not.toMatch(LETTER);
@@ -581,6 +587,28 @@ describe('the prompts name abilities, never buttons', () => {
     }
     for (const l of MARIO_LESSONS) expect(plainText(l.text)).not.toMatch(LETTER);
     for (const l of [...TOAD_PAGES.flat(), ...TEASE_LINES]) expect(l).not.toMatch(LETTER);
+  });
+
+  it("Toad's OK prompt follows the controls in use, even mid-dialogue", () => {
+    const h = makeGame();
+    let scheme: ControlScheme = 'keyboard';
+    Object.assign(h.game.deps, { settings: defaultSettings(), controlScheme: () => scheme });
+    h.game.devStart('1-0', MARIO, 'small');
+    h.until(() => h.top() instanceof CardScene, 300);
+    h.idle(40);
+    const texts = () => draw(h.top() as CardScene).texts.map((t) => t.str);
+    expect(texts()).toContain('OK (Z)');
+    scheme = 'touch';
+    expect(texts()).toContain('OK');
+    expect(texts()).not.toContain('OK (Z)');
+  });
+
+  it('wrapPrompt keeps punctuation after a key on the key ("RUN (X)," not "RUN (X) ,")', () => {
+    expect(wrapPrompt('HOLD RIGHT AND RUN (X), LET GO BEFORE THE GAP AND WATCH LUIGI SLIDE!', 25)).toEqual([
+      'HOLD RIGHT AND RUN (X),',
+      'LET GO BEFORE THE GAP AND',
+      'WATCH LUIGI SLIDE!',
+    ]);
   });
 
   it('wrapPrompt keeps an ability with its key on one line', () => {

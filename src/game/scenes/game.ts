@@ -29,7 +29,7 @@ import {
   conditionMet,
   entryLevel,
   findLevelNode,
-  findSecret,
+  secretExit,
   isOpen,
   isPageOpen,
   mainLevel,
@@ -284,6 +284,7 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
+    this.celebrate.clear();
     this.pendingReveal = [];
     this.devUnlockAll = false;
     this.endTutorial();
@@ -476,15 +477,14 @@ export class Game {
 
   /**
    * Campaign: a secret pipe (a warp zone with `secret`, see level/campaign.ts) taken in level
-   * `levelId`: the level counts as cleared, the secret is recorded, and back on the map what
-   * that opened is drawn in (the 1-2 pipe: the road from 1-1 to World 1's warp spot).
+   * `levelId`: a secret exit, Super Mario World style (rules.secretExit). The secret is recorded
+   * and back on the map only the road tied to it is drawn in (the 1-2 pipe: the road from 1-2 to
+   * World 1's warp spot). The level does not count as cleared: its normal roads (1-2 to 1-3) open
+   * with its normal exit.
    */
   campaignSecret(secret: string, levelId: string): void {
     if (!this.campaign) return;
-    const p = this.mapProgress;
-    const reveal = clearLevel(p, levelId, this.deps.getLevel);
-    reveal.push(...findSecret(p, secret));
-    this.returnToMap(reveal);
+    this.returnToMap(secretExit(this.mapProgress, levelId, secret, this.deps.getLevel));
   }
 
   /**
@@ -590,9 +590,18 @@ export class Game {
     return chars.find((c) => c.id === FIRST_HERO) ?? (chars[0] as CharacterDef);
   }
 
+  /**
+   * Heroes freed this session whose trophy the world map has not shown yet: it greets each with
+   * a burst of happy hops (map/trophy.ts), once.
+   */
+  readonly celebrate = new Set<string>();
+
   /** A mini game was passed: hero `id` joins the file's roster, saved at once. */
   freeHero(id: string): void {
-    if (!this.freed.includes(id)) this.freed.push(id);
+    if (!this.freed.includes(id)) {
+      this.freed.push(id);
+      this.celebrate.add(id);
+    }
     this.autosave();
   }
 
@@ -712,6 +721,8 @@ export class Game {
     this.devUnlockAll = save.devUnlockAll === true;
     this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
+    // Only heroes freed on this file, this session, get the map's burst of hops.
+    this.celebrate.clear();
     // A hero the file has not freed (a hand-edited file, or one picked through "All heroes" with
     // dev mode since off) gives way to Mario.
     this.dropLockedHeroes();

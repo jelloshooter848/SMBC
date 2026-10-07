@@ -4,19 +4,22 @@ import { buildDungeon, type Dungeon, type LegendEntry, type RoomDef } from '../.
 export const KEEP_LEGEND: Readonly<Record<string, LegendEntry>> = { M: { tile: 'floor', spawn: 'keeper' } };
 
 /**
- * The Shadow Keep: the spell's prison in Link's mind, eight rooms on a 4×4 map, walked from the
+ * The Shadow Keep: the spell's prison in Link's mind, eleven rooms on a 4×4 map, walked from the
  * bottom up (legend in topdown/room.ts):
  *
  *        col 0      col 1      col 2      col 3
- *   row 0                     [keeper]--[exit]
- *                                |
+ *   row 0 [shrine]::[armory]   [keeper]--[exit]
+ *                      |          |
  *   row 1 [knights]==[shutters]-[switch]
  *            |
- *   row 2 [blocks]---[bats]
+ *   row 2 [blocks]---[bats]----[cellar]
  *                      |
  *   row 3            [start]
  *
- * (== is the locked door; the key appears in the knights' room once they are gone.)
+ * == is the locked door (the key appears in the knights' room once they are gone); :: is the
+ * cracked wall a bomb opens. Link starts with only his sword: the boomerang is in the cellar's
+ * chest, a heart container appears in the shutters room once it is clear, the bombs are in the
+ * armory's chest beside the cracked wall, and the shield waits in the secret shrine behind it.
  */
 export const KEEP_ROOMS: readonly RoomDef[] = [
   {
@@ -47,12 +50,31 @@ export const KEEP_ROOMS: readonly RoomDef[] = [
       '#..b........b..#',
       '#..............#',
       '#.....S..S.....#',
-      'O..............#',
+      'O..............O',
       '#.....S..S.....#',
       '#..............#',
       '#....b....b....#',
       '#..............#',
       '#######OO#######',
+    ],
+  },
+  {
+    id: 'cellar',
+    at: [2, 2],
+    chests: ['boomerang'],
+    hint: 'A chest! Walk into it to open it.',
+    map: [
+      '################',
+      '#..............#',
+      '#.T..........T.#',
+      '#..............#',
+      '#..........S.S.#',
+      'O....n......c..#',
+      '#..........S.S.#',
+      '#..............#',
+      '#.T..........T.#',
+      '#..............#',
+      '################',
     ],
   },
   {
@@ -97,17 +119,56 @@ export const KEEP_ROOMS: readonly RoomDef[] = [
     id: 'shutters',
     at: [1, 1],
     shutters: 'clear',
-    hint: 'The far door stays shut until every monster is gone.',
+    reveal: 'clear',
+    hint: 'The far doors stay shut until every monster is gone.',
     map: [
-      '################',
+      '#######XX#######',
       '#..............#',
       '#..b.......b...#',
       '#..............#',
       '#....n....n....#',
-      'L..............X',
+      'L.......H......X',
       '#..............#',
       '#....S....S....#',
       '#..b...........#',
+      '#..............#',
+      '################',
+    ],
+  },
+  {
+    id: 'armory',
+    at: [1, 0],
+    chests: ['bomb'],
+    hint: 'Another chest. The statues point at the west wall. It looks cracked.',
+    map: [
+      '################',
+      '#..............#',
+      '#..............#',
+      '#....S.........#',
+      '#...S..........#',
+      'C..S.......c...#',
+      '#...S..........#',
+      '#....S.........#',
+      '#..n.......n...#',
+      '#..............#',
+      '#######OO#######',
+    ],
+  },
+  {
+    id: 'shrine',
+    at: [0, 0],
+    chests: ['shield'],
+    hint: 'A secret room! Something waits in the chest.',
+    map: [
+      '################',
+      '#..............#',
+      '#.T..........T.#',
+      '#..............#',
+      '#..............#',
+      '#.......c......C',
+      '#..............#',
+      '#..............#',
+      '#.T..........T.#',
       '#..............#',
       '################',
     ],
@@ -117,7 +178,7 @@ export const KEEP_ROOMS: readonly RoomDef[] = [
     at: [2, 1],
     shutters: 'switches',
     reveal: 'switches',
-    hint: 'Rock-spitters. Your shield stops rocks from the front. A floor switch hides behind the water.',
+    hint: "Rock-spitters: step out of a rock's path, or face it with a shield. A floor switch hides behind the water.",
     map: [
       '#######XX#######',
       '#..............#',
@@ -127,7 +188,7 @@ export const KEEP_ROOMS: readonly RoomDef[] = [
       'O....~....~....#',
       '#....~~..~~....#',
       '#..............#',
-      '#.r.........H..#',
+      '#.r.........f..#',
       '#..............#',
       '################',
     ],

@@ -418,3 +418,17 @@ describe("the heroes' standout moves really are measured as the lessons say", ()
     expect(coast(MARIO)).toBeLessThan(LUIGI_COAST_PX);
   });
 });
+
+describe('the skip hint', () => {
+  it('sits on the prompt box, clear of the floor and the gap', () => {
+    for (const id of ['luigi', 'link', 'megaman']) {
+      const { h, scene } = room(id);
+      h.step();
+      const skip = draw(scene).texts.find((t) => t.str.endsWith('TO SKIP'));
+      expect(skip, id).toBeDefined();
+      // Well above the room's ledge and floor: on the box's bottom edge, under the HUD.
+      expect(skip && skip.y + 8, id).toBeLessThanOrEqual(practiceRoom().geometry.ledgeTop);
+      expect(skip && skip.y, id).toBeGreaterThan(44);
+    }
+  });
+});

@@ -60,6 +60,11 @@ export interface TrainingLesson {
    * `abilityHint` ("SHOOT (X)" with keys, "SHOOT" on touch); `promptText` gives the bare label.
    */
   prompt: string;
+  /**
+   * The prompt on touch, when the touch controls do it differently (running: push the d-pad
+   * far to the side); absent: `prompt`.
+   */
+  touchPrompt?: string;
   /** True once the player has done it (since the lesson came up: the tracker is reset). */
   done(t: MoveStats): boolean;
   /** Runs when the lesson comes up (gives the room's kit, e.g. Luigi's fire flower). */
@@ -83,6 +88,12 @@ export class MoveStats {
   maxCoast = 0;
   /** Longest such glide that began faster than walking speed: a stop from a run (px). */
   maxRunCoast = 0;
+  /**
+   * Longest stop from a run as it would carry on open floor (px): the glide so far plus what its
+   * speed still carries. Counted once it has glided GLIDE_SEEN_PX, so a glide the gap or a wall
+   * cuts short still shows how far it was going.
+   */
+  maxRunGlide = 0;
   /** Attacks started (melee swings, shots, throws). */
   attacks = 0;
   crouched = false;
@@ -138,6 +149,7 @@ export class MoveStats {
     this.maxSpeed = 0;
     this.maxCoast = 0;
     this.maxRunCoast = 0;
+    this.maxRunGlide = 0;
     this.attacks = 0;
     this.crouched = false;
     this.crouchAttacks = 0;
@@ -201,7 +213,14 @@ export class MoveStats {
         if (this.coast === 0) this.coastFast = Math.abs(b.vx) > p.profile.maxWalk;
         this.coast += Math.abs(b.vx) / 4096;
         this.maxCoast = Math.max(this.maxCoast, this.coast);
-        if (this.coastFast) this.maxRunCoast = Math.max(this.maxRunCoast, this.coast);
+        if (this.coastFast) {
+          this.maxRunCoast = Math.max(this.maxRunCoast, this.coast);
+          // Where it would stop on open floor: covered so far plus v² / 2·decel still to come.
+          const v = Math.abs(b.vx) / 4096;
+          const decel = p.profile.releaseDecel / 4096;
+          if (this.coast >= GLIDE_SEEN_PX && decel > 0)
+            this.maxRunGlide = Math.max(this.maxRunGlide, this.coast + (v * v) / (2 * decel));
+        }
       } else this.coast = 0;
     } else this.coast = 0;
     this.wasOnGround = b.onGround;
@@ -266,6 +285,15 @@ const any = (set: ReadonlySet<string>, kinds: readonly string[]) => kinds.some((
 export const LUIGI_HIGH_JUMP_PX = 72;
 /** Luigi glides at least this far after letting go from a run (Mario stops well short). */
 export const LUIGI_COAST_PX = 48;
+/**
+ * A stop from a run that would carry Luigi this far on open floor also counts: further than
+ * Mario's longest (about 64 px from full speed), so it still means "Luigi slides further". The
+ * room is short: from a real run Luigi glides 100+ px, so a glide the gap cuts short counts by
+ * where it was going (MoveStats.maxRunGlide).
+ */
+export const LUIGI_SLIDE_PX = 72;
+/** A glide counts toward `maxRunGlide` once it has carried this far (px): the slide is seen. */
+export const GLIDE_SEEN_PX = 6;
 
 /** Each hero's lessons: the 3-5 things that make them different from Mario. */
 export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = {
@@ -277,8 +305,9 @@ export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = {
     },
     {
       id: 'slippery-stop',
-      prompt: '[RUN:attack], THEN LET GO. LUIGI SLIDES A LONG WAY BEFORE HE STOPS.',
-      done: (t) => t.maxRunCoast >= LUIGI_COAST_PX,
+      prompt: 'HOLD RIGHT AND [RUN:attack], LET GO BEFORE THE GAP AND WATCH LUIGI SLIDE!',
+      touchPrompt: 'PUSH THE D-PAD FAR RIGHT OR HOLD [RUN:attack] TO RUN. LET GO BEFORE THE GAP!',
+      done: (t) => t.maxRunCoast >= LUIGI_COAST_PX || t.maxRunGlide >= LUIGI_SLIDE_PX,
     },
     {
       id: 'fireball',

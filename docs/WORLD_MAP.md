@@ -142,6 +142,36 @@ by their `unlock` key (World 1's warp spot) with their roads. Bonus nodes, and k
 have `requires: 'never'`, stay hidden until their secret is found. It writes nothing to the file: a warp
 that works only through Unlock all travels without opening its page (`rules.warpRecords`).
 
+## Secret exits: each exit opens its own road (0.5.0)
+
+Super Mario World style (owner decision, 2026-10-06): a level with more than one ending opens a
+different road with each, and **no ending opens every road leaving its level**.
+
+- Every road (`MapPath`) leaving a node with a `level` belongs to one exit of that level
+  (`rules.pathExit`): `exit: 'normal'` or `exit: 'secret:<key>'`. Without an explicit `exit` it is
+  derived: `'secret:<key>'` when the road's `to` node is hidden by `unlock: '<key>'`, else
+  `'normal'`. Only set `exit` when the derived one is wrong (none do yet).
+- A **normal** road opens when the level is cleared (its flagpole or castle: `clearLevel`, which
+  adds it to `cleared`). A **secret** road opens when its key is found while its level is
+  reached (open): `rules.secretExit(progress, level, key)` records the key and puts the hero on
+  the level's node, and does **not** add the level to `cleared`. A secret road also needs its `to`
+  node's key, as before, so the normal exit never shows it.
+- World exits (`WorldExit`, castle to next page) are always the castle's normal exit.
+- Roads leaving a start node (World 1's 1-0 included) or a warp node are unaffected.
+- **Map look**: a level beaten only through a secret exit is not cleared: it keeps the open
+  look of its kind (a secret-exit level's pink dot, `map-node-secret`), its secret road shows
+  where it went, and the announcer says "World 1-2, open, secret exit found"
+  (`rules.secretExitTaken`; "..., cleared, secret exit found" once both are beaten). The
+  file's level counter (`clearedMainLevels`, n/32) counts normal clears only, and a hidden
+  hero's silhouette (map/captives.ts) still waits for the normal clear.
+- **Old files**: nothing changes in the format. A file that cleared 1-2 through its pipe before
+  0.5.0 has both `1-2` in `cleared` and `bonus-1` in `secrets`, so it keeps both roads; nothing
+  re-locks.
+- Today only 1-2's campaign pipe is a secret exit (below). Every other warp pipe (SMB 4-2, the
+  Lost Levels' warp zones, `workingWarps` / `warpsOpened`) still warps as in the original and
+  clears nothing; the map's secret-exit look (`map/secret-exits.ts`) only marks levels that
+  have another way out.
+
 ## World exits and the Lost Levels unlocks
 
 ```ts
@@ -169,8 +199,9 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 
 ## Progress, reveals and saves
 
-- `MapProgress`: `cleared` (main level ids, `1-0` included once the tutorial is cleared), `pages` (open page ids, `smb-1` always),
-  `secrets`, `position: { page, node }`, `gameCleared`.
+- `MapProgress`: `cleared` (main level ids beaten through their **normal** exit, `1-0` included
+  once the tutorial is cleared), `pages` (open page ids, `smb-1` always), `secrets` (keys found,
+  secret exits included), `position: { page, node }`, `gameCleared`.
 - Reveal ids are page-qualified: `'<page>:<id>'` (`'hub:start>warp-lost'`, `'smb-1:1-4>smb-2'`); an
   exit's id is `'<from>><to page>'`. Each page draws in only its own when shown.
 - `rules.findSecret(progress, key)` records a secret and returns what it reveals;
@@ -184,9 +215,11 @@ exits: [{ from: 'll-8-4', to: 'll-9', side: 'right', points, requires?: 'll9',
 
 - `1-2.map`'s warp zone carries `secret=bonus-1`. In campaign play (`Game.startLevel` with a file
   open) `level/campaign.ts` keeps only the middle pipe, unlabelled, removes the other two, and
-  marks the pipe with the secret. Taking it clears 1-2, records `bonus-1`, returns to the World 1
-  map and draws in the road from 1-2 to World 1's warp spot (the old bonus slot, now at (5,11), a
-  warp node to `hub`, hidden by `unlock: 'bonus-1'`). Until 0.4.0 the road came from 1-1: loading
+  marks the pipe with the secret. Taking it is 1-2's secret exit (`Game.campaignSecret` →
+  `rules.secretExit`, 0.5.0): it records `bonus-1` **without clearing 1-2**, returns to the World 1
+  map and draws in only the road from 1-2 to World 1's warp spot; the road to 1-3 opens when 1-2 is
+  beaten at its flagpole (before 0.5.0 the pipe also cleared 1-2). The warp spot is the old bonus slot, now at (5,11), a
+  warp node to `hub`, hidden by `unlock: 'bonus-1'`. Until 0.4.0 the road came from 1-1: loading
   renames a pending reveal of the old road id `smb-1:1-1>bonus-1` (save-files.ts).
 - Dev select, `?level=` and custom play keep the classic three numbered pipes.
 - SMB 4-2's warp zones are unchanged (they still skip worlds); a `secret=` key on one is the hook

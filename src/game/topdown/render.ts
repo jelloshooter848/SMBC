@@ -2,13 +2,20 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { DIR_VEC, HUD_H, ROOM_COLS, ROOM_H, ROOM_ROWS, ROOM_W, SIDE_DIR, TILE, type Side } from './geometry';
 import { sideOf, tileAt, type Room, type TileKind } from './room';
 import type { TdView } from './view';
+import type { TdEnemy } from './entity';
 import type { TopDownWorld } from './world';
 
 /** Flat colours used when the tile art is missing. */
-const PLACEHOLDER: Record<TileKind | 'door-open' | 'door-locked' | 'door-shut', string> = {
+const PLACEHOLDER: Record<
+  TileKind | 'door-open' | 'door-locked' | 'door-shut' | 'wall-cracked' | 'wall-hole',
+  string
+> = {
   floor: '#183c5c',
   'floor-alt': '#1c4870',
   wall: '#0c2440',
+  cracked: '#24405c',
+  'wall-cracked': '#24405c',
+  'wall-hole': '#000000',
   block: '#4878a8',
   statue: '#7c7c7c',
   water: '#0058f8',
@@ -20,7 +27,16 @@ const PLACEHOLDER: Record<TileKind | 'door-open' | 'door-locked' | 'door-shut', 
   'door-shut': '#5c5c5c',
 };
 
-type DoorLook = 'open' | 'locked' | 'shut';
+type DoorLook = 'open' | 'locked' | 'shut' | 'cracked' | 'hole';
+
+/** The frame of a doorway as it looks now (a cracked one is a wall frame, not a door). */
+const DOOR_FRAME: Record<DoorLook, keyof typeof PLACEHOLDER> = {
+  open: 'door-open',
+  locked: 'door-locked',
+  shut: 'door-shut',
+  cracked: 'wall-cracked',
+  hole: 'wall-hole',
+};
 
 /**
  * Draws one room's tiles with its top-left at (ox, oy). Edge walls use `wall-top` (north, flipped
@@ -36,6 +52,7 @@ export function drawRoomTiles(
   door: (side: Side) => DoorLook,
   ox: number,
   oy: number,
+  blasted: (cell: string) => boolean = () => false,
 ): void {
   const pal = room.def.dark && view.sheets.tilesDark ? view.sheets.tilesDark : undefined;
   const sheet = view.sheet(view.sheets.tiles, pal);
@@ -64,7 +81,7 @@ export function drawRoomTiles(
         }
         case 'door': {
           const s = side as Side;
-          const name = `door-${door(s)}` as const;
+          const name = DOOR_FRAME[door(s)];
           const cells = room.doorCells[s] ?? [];
           if (s === 'e' || s === 'w') put(`${name}-side`, x, y, PLACEHOLDER[name], s === 'e');
           else if (cells.length === 2)
@@ -79,6 +96,11 @@ export function drawRoomTiles(
           put(pair ? `${f}-${pair}` : f, x, y, PLACEHOLDER.exit, false, side === 's');
           break;
         }
+        case 'cracked':
+          // An inner cracked wall: the crack until a blast, then floor.
+          if (blasted(`${col},${row}`)) put('floor', x, y, PLACEHOLDER.floor);
+          else put('wall-cracked', x, y, PLACEHOLDER.cracked);
+          break;
         default:
           put(t, x, y, PLACEHOLDER[t]);
       }
@@ -88,6 +110,7 @@ export function drawRoomTiles(
 /** How a doorway of the room on screen looks right now. */
 function liveDoor(world: TopDownWorld, side: Side): DoorLook {
   const kind = world.room.doors[side];
+  if (kind === 'cracked') return world.doorOpen(side) ? 'hole' : 'cracked';
   if (kind === 'locked' && !world.doorOpen(side)) return 'locked';
   if (kind === 'shutter' && !world.doorOpen(side)) return 'shut';
   return 'open';
@@ -97,6 +120,7 @@ function liveDoor(world: TopDownWorld, side: Side): DoorLook {
 function pastDoor(world: TopDownWorld, room: Room, side: Side, left: Side): DoorLook {
   const kind = room.doors[side];
   const st = world.state(room.id);
+  if (kind === 'cracked') return st.blasted.has(side) ? 'hole' : 'cracked';
   if (kind === 'locked' && !st.unlocked.has(side)) return 'locked';
   if (kind === 'shutter' && side !== left && room.def.shutters && !st.met.has(room.def.shutters))
     return 'shut';
@@ -130,15 +154,41 @@ export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld): voi
       (s) => pastDoor(world, tr.from, s, tr.side),
       -v.dx * shift,
       HUD_H - v.dy * shift,
+      (c) => world.state(tr.from.id).blasted.has(c),
     );
     ox = v.dx * (span - shift);
     oy = HUD_H + v.dy * (span - shift);
   }
-  drawRoomTiles(r, view, world.room, (s) => liveDoor(world, s), ox, oy);
+  drawRoomTiles(
+    r,
+    view,
+    world.room,
+    (s) => liveDoor(world, s),
+    ox,
+    oy,
+    (c) => world.state().blasted.has(c),
+  );
   const byLayer = (l: number) => world.entities.filter((e) => e.layer === l && !e.dead);
   for (const e of byLayer(0)) e.render(r, view, ox, oy);
   for (const e of byLayer(1)) e.render(r, view, ox, oy);
+  for (const e of world.enemies()) if (e.stunT > 0) drawStunned(r, view, e, ox, oy);
   world.hero.render(r, view, ox, oy);
   for (const e of byLayer(2)) e.render(r, view, ox, oy);
   for (const e of byLayer(3)) e.render(r, view, ox, oy);
+}
+
+/**
+ * Two little stars circling over a stunned monster's head (standing still with reduce
+ * flashing), so a stun reads at a glance.
+ */
+export function drawStunned(r: Renderer, view: TdView, e: TdEnemy, ox: number, oy: number): void {
+  const cx = ox + e.x + e.w / 2;
+  const cy = oy + e.y - 3;
+  const a = view.reduceFlashing ? 0 : (view.frame / 8) % (2 * Math.PI);
+  for (const k of [0, Math.PI]) {
+    const x = Math.round(cx + Math.cos(a + k) * 6) - 1;
+    const y = Math.round(cy + Math.sin(a + k) * 2) - 1;
+    r.rect(x, y, 3, 1, '#f8d878');
+    r.rect(x + 1, y - 1, 1, 3, '#f8d878');
+  }
 }

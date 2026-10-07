@@ -21,6 +21,11 @@ export interface Lesson {
   id: string;
   /** The advice, with ability tokens `[NAME:action]` (e.g. `HOLD [RUN:attack]`). */
   text: string;
+  /**
+   * The advice on touch, when the touch controls do it differently (running: push the d-pad far
+   * to the side); absent: `text`.
+   */
+  touchText?: string;
   /** Column (tile) where the lesson starts: a respawn while it is current stands here. */
   at: number;
   /** Row the respawn stands on (feet on the tile below it; default 12). */
@@ -127,7 +132,8 @@ export const PROMPT_COLS = 28;
  * SHIFT)") stays on one line.
  */
 export function wrapPrompt(text: string, cols = PROMPT_COLS): string[] {
-  const words = fontText(text).match(/[^\s(]+(?:\s\([^)]*\))?|\([^)]*\)/g) ?? [];
+  // A word, with its key in brackets and any punctuation after them ("RUN (X),") kept together.
+  const words = fontText(text).match(/[^\s(]+(?:\s\([^)]*\)[^\s(]*)?|\([^)]*\)[^\s(]*/g) ?? [];
   const lines: string[] = [];
   let line = '';
   for (const w of words) {

@@ -15,7 +15,7 @@ import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
-import { loadSave, newSave, writeSave, type SaveFile } from '@game/save/save-files';
+import { clearedMainLevels, loadSave, newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import { isOpen, isWarpOpen, type Dir } from '@game/map/rules';
 import { T } from '@game/level/tiles';
 import type { Zone } from '@game/level/schema';
@@ -130,6 +130,9 @@ function worldsMenu(h: H): { labels: string[]; cursor: number } {
   };
 }
 
+/** What the announcer says for World 1's 1-2 node. */
+const label12 = (h: H) => h.map().nodeLabel(mapPage('smb-1')!.nodes.find((n) => n.id === '1-2')!);
+
 const pipesIn = (zones: Zone[], x0: number, x1: number) =>
   zones.filter((z): z is Zone & { kind: 'pipe' } => z.kind === 'pipe' && z.x >= x0 && z.x < x1);
 
@@ -159,23 +162,23 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     expect(h.r.texts.some((t) => t.s === 'WELCOME TO WARP ZONE!')).toBe(true);
     expect(h.r.texts.some((t) => /^[1-8]$/.test(t.s) && t.y < 160)).toBe(false);
 
-    // Down the pipe: 1-2 counts as cleared, the secret is kept, and the map draws in the road
-    // from 1-2 to the warp spot.
+    // Down the pipe (a secret exit, Super Mario World style): the secret is kept and the map
+    // draws in only the road from 1-2 to the warp spot. 1-2 is not cleared, so 1-3 stays locked.
     h.until(() => h.top() instanceof WorldMapScene, 300, ['down']);
     const prog = h.game.mapProgress;
-    expect(prog.cleared).toEqual(['1-1', '1-2']);
+    expect(prog.cleared).toEqual(['1-1']);
     expect(prog.secrets).toEqual(['bonus-1']);
-    expect(h.game.pendingReveal).toEqual(
-      expect.arrayContaining(['smb-1:1-2>1-3', 'smb-1:1-3', 'smb-1:1-2>bonus-1', 'smb-1:bonus-1']),
-    );
+    expect(h.game.pendingReveal).toEqual(['smb-1:1-2>bonus-1', 'smb-1:bonus-1']);
     expect(h.map().page.id).toBe('smb-1');
     expect(h.map().revealing).toBe(true);
     // Loaded, a file with clears counts the tutorial (1-0) as cleared too.
-    expect(loadSave(1)).toMatchObject({ cleared: ['1-0', '1-1', '1-2'], secrets: ['bonus-1'] });
+    expect(loadSave(1)).toMatchObject({ cleared: ['1-0', '1-1'], secrets: ['bonus-1'] });
     h.until(() => h.map().mode === 'idle', 800);
     expect(h.map().node).toBe('1-2');
     const w1 = mapPage('smb-1') as WorldMapPage;
     expect(isOpen(prog, w1, 'bonus-1')).toBe(true);
+    expect(isOpen(prog, w1, '1-3')).toBe(false);
+    expect(label12(h)).toBe('World 1-2, open, secret exit found');
 
     // Walk to the warp spot, straight from 1-2: the hint line names where it goes.
     walkTo(h, 'bonus-1');
@@ -317,6 +320,84 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     h.until(() => h.map().mode === 'idle', 800);
     expect(h.game.mapProgress.secrets).toEqual([]);
     expect(isOpen(h.game.mapProgress, mapPage('smb-1')!, 'bonus-1')).toBe(false);
+  });
+
+  /** Takes 1-2's campaign warp-zone pipe (its secret exit) and waits for the map to settle. */
+  function secretPipe(h: H) {
+    h.game.startLevel(getLevel('1-2'), { x: 182, y: 9, mode: 'stand' });
+    h.step();
+    h.until(() => h.top() instanceof WorldMapScene, 300, ['down']);
+    h.until(() => h.map().mode === 'idle', 800);
+  }
+
+  /** Beats 1-2 the normal way (its flagpole) and waits for the map to settle. */
+  function flagpole(h: H) {
+    h.game.startLevel(getLevel('1-2-exit'), { mode: 'stand' });
+    h.step();
+    h.level().world.events.push({ type: 'exit', next: '1-3' });
+    h.step();
+    h.until(() => h.top() instanceof WorldMapScene, 300);
+  }
+
+  it('secret exit first, then the flagpole: each opens only its own road', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
+    h.idle(8);
+    const w1 = mapPage('smb-1') as WorldMapPage;
+    secretPipe(h);
+    const prog = h.game.mapProgress;
+    expect(isOpen(prog, w1, '1-3')).toBe(false);
+    expect(clearedMainLevels(prog)).toBe(1);
+    // The map counter counts normal clears only.
+    expect(clearedMainLevels(loadSave(1)!)).toBe(1);
+    // No road toward 1-3 to walk on.
+    h.tap('right');
+    h.idle(4);
+    expect(h.map().node).toBe('1-2');
+
+    flagpole(h);
+    expect(prog.cleared).toEqual(['1-1', '1-2']);
+    expect(h.game.pendingReveal).toEqual(['smb-1:1-2>1-3', 'smb-1:1-3']);
+    expect(h.map().revealing).toBe(true);
+    h.until(() => h.map().mode === 'idle', 800);
+    expect(isOpen(prog, w1, '1-3')).toBe(true);
+    expect(isOpen(prog, w1, 'bonus-1')).toBe(true);
+    expect(clearedMainLevels(prog)).toBe(2);
+    expect(label12(h)).toBe('World 1-2, cleared, secret exit found');
+  });
+
+  it('flagpole first, then the secret exit: the warp spot road draws in alone', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ cleared: ['1-1'], position: { page: 'smb-1', node: '1-2' } }));
+    h.idle(8);
+    flagpole(h);
+    expect(h.game.pendingReveal).toEqual(['smb-1:1-2>1-3', 'smb-1:1-3']);
+    h.until(() => h.map().mode === 'idle', 800);
+    expect(label12(h)).toBe('World 1-2, cleared, secret exit');
+    h.game.startLevel(getLevel('1-2'), { x: 182, y: 9, mode: 'stand' });
+    h.step();
+    h.until(() => h.top() instanceof WorldMapScene, 300, ['down']);
+    expect(h.game.pendingReveal).toEqual(['smb-1:1-2>bonus-1', 'smb-1:bonus-1']);
+    h.until(() => h.map().mode === 'idle', 800);
+    const prog = h.game.mapProgress;
+    expect(prog.cleared).toEqual(['1-1', '1-2']);
+    expect(prog.secrets).toEqual(['bonus-1']);
+    expect(isOpen(prog, mapPage('smb-1')!, 'bonus-1')).toBe(true);
+    expect(isOpen(prog, mapPage('smb-1')!, '1-3')).toBe(true);
+  });
+
+  it('an old file with 1-2 cleared through the pipe keeps both roads', () => {
+    const h = makeGame();
+    h.game.openFile(
+      1,
+      file({ cleared: ['1-1', '1-2'], secrets: ['bonus-1'], position: { page: 'smb-1', node: '1-2' } }),
+    );
+    h.idle(8);
+    const prog = h.game.mapProgress;
+    expect(prog.cleared).toContain('1-2');
+    expect(isOpen(prog, mapPage('smb-1')!, '1-3')).toBe(true);
+    expect(isOpen(prog, mapPage('smb-1')!, 'bonus-1')).toBe(true);
+    expect(clearedMainLevels(prog)).toBe(2);
   });
 
   it('outside campaign play the 1-2 warp zone keeps its three numbered pipes', () => {

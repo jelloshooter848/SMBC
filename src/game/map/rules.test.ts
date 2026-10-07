@@ -28,6 +28,9 @@ import {
   exitHint,
   LOST_NINE_LEVELS,
   warpRecords,
+  pathExit,
+  secretExit,
+  secretExitTaken,
 } from './rules';
 import { saveProgress, type Progress } from '@engine/save/progress';
 
@@ -218,7 +221,7 @@ describe('map rules', () => {
     p.secrets.push('key-1');
     expect(isOpen(p, P1, 'bonus-1')).toBe(true);
     expect(openPaths(p, P1).paths.map(pathId)).toContain('1-2>bonus-1');
-    // The key alone is not enough: the path's start must be cleared.
+    // The key alone is not enough: the path's start must be reached (secret exits, below).
     const q = newMapProgress();
     q.secrets.push('key-1');
     expect(isOpen(q, P1, 'bonus-1')).toBe(false);
@@ -227,6 +230,96 @@ describe('map rules', () => {
   it('entryLevel starts at the intro when there is one', () => {
     expect(entryLevel('1-2', getLevel)).toBe('1-2-intro');
     expect(entryLevel('1-1', getLevel)).toBe('1-1');
+  });
+});
+
+describe('secret exits (Super Mario World style: each exit opens its own road)', () => {
+  const ids = (p: ReturnType<typeof newMapProgress>) => openPaths(p, P1).paths.map(pathId);
+  const reached12 = () => {
+    const p = newMapProgress();
+    clearLevel(p, '1-1', getLevel, PAGES);
+    return p;
+  };
+
+  it("a road to a node hidden by a key is that secret's road; the others are the normal exit's", () => {
+    const road = (from: string, to: string) => P1.paths.find((x) => x.from === from && x.to === to)!;
+    expect(pathExit(P1, road('1-2', 'bonus-1'))).toBe('secret:key-1');
+    expect(pathExit(P1, road('1-2', '1-3'))).toBe('normal');
+    expect(pathExit(P1, road('start', '1-1'))).toBe('normal');
+    // An explicit `exit` wins over the derived one.
+    expect(pathExit(P1, { ...road('1-2', '1-3'), exit: 'secret:other' })).toBe('secret:other');
+    expect(pathExit(P1, { ...road('1-2', 'bonus-1'), exit: 'normal' })).toBe('normal');
+  });
+
+  it('the secret exit opens only its road: the next level stays locked and the level is not cleared', () => {
+    const p = reached12();
+    expect(secretExit(p, '1-2-exit', 'key-1', getLevel, PAGES)).toEqual([
+      'smb-1:1-2>bonus-1',
+      'smb-1:bonus-1',
+    ]);
+    expect(p.cleared).toEqual(['1-1']);
+    expect(p.secrets).toEqual(['key-1']);
+    expect(p.position).toEqual({ page: 'smb-1', node: '1-2' });
+    expect(isCleared(p, P1, '1-2')).toBe(false);
+    expect(isOpen(p, P1, 'bonus-1')).toBe(true);
+    expect(isOpen(p, P1, '1-3')).toBe(false);
+    expect(ids(p)).toEqual(['start>1-1', '1-1>1-2', '1-2>bonus-1']);
+    expect(secretExitTaken(p, P1, '1-2')).toBe(true);
+    expect(secretExitTaken(p, P1, '1-1')).toBe(false);
+    // Taken again: nothing new.
+    expect(secretExit(p, '1-2', 'key-1', getLevel, PAGES)).toEqual([]);
+  });
+
+  it('then the normal exit opens the next level (and only that)', () => {
+    const p = reached12();
+    secretExit(p, '1-2', 'key-1', getLevel, PAGES);
+    expect(clearLevel(p, '1-2', getLevel, PAGES)).toEqual(['smb-1:1-2>1-3', 'smb-1:1-3']);
+    expect(p.cleared).toEqual(['1-1', '1-2']);
+    expect(isOpen(p, P1, '1-3')).toBe(true);
+    expect(isOpen(p, P1, 'bonus-1')).toBe(true);
+  });
+
+  it('the other order works too: the normal exit never opens the secret road', () => {
+    const p = reached12();
+    expect(clearLevel(p, '1-2', getLevel, PAGES)).toEqual(['smb-1:1-2>1-3', 'smb-1:1-3']);
+    expect(isOpen(p, P1, 'bonus-1')).toBe(false);
+    expect(secretExitTaken(p, P1, '1-2')).toBe(false);
+    expect(secretExit(p, '1-2', 'key-1', getLevel, PAGES)).toEqual(['smb-1:1-2>bonus-1', 'smb-1:bonus-1']);
+    expect(p.cleared).toEqual(['1-1', '1-2']);
+    expect(ids(p)).toEqual(['start>1-1', '1-1>1-2', '1-2>1-3', '1-2>bonus-1']);
+  });
+
+  it('a secret road needs its level reached: a key found elsewhere shows nothing yet', () => {
+    const p = newMapProgress();
+    expect(
+      secretExit(p, 'nowhere', 'key-1', () => ({ id: 'nowhere', parent: null }) as LevelData, PAGES),
+    ).toEqual([]);
+    expect(p.position).toEqual({ page: 'smb-1', node: 'start' });
+    expect(isOpen(p, P1, 'bonus-1')).toBe(false);
+    clearLevel(p, '1-1', getLevel, PAGES);
+    expect(isOpen(p, P1, 'bonus-1')).toBe(true);
+  });
+
+  it('an old file with the level cleared and the secret found keeps both roads', () => {
+    const p = {
+      ...newMapProgress(),
+      cleared: ['1-1', '1-2'],
+      secrets: ['key-1'],
+      position: { page: 'smb-1', node: '1-2' },
+    };
+    expect(ids(p)).toEqual(['start>1-1', '1-1>1-2', '1-2>1-3', '1-2>bonus-1']);
+    expect(isOpen(p, P1, '1-3')).toBe(true);
+    expect(isOpen(p, P1, 'bonus-1')).toBe(true);
+  });
+
+  it("a castle's world exit is its normal exit's", () => {
+    const page: WorldMapPage = {
+      ...P1,
+      paths: [...P1.paths, { from: '1-4', to: 'bonus-1', points: P1.paths[0]!.points }],
+    };
+    const p = { ...newMapProgress(), cleared: ['1-1', '1-2', '1-3'], secrets: ['key-1'] };
+    expect(isOpen(p, page, 'bonus-1')).toBe(true);
+    expect(isExitOpen(p, page, page.exits[0]!)).toBe(false);
   });
 });
 

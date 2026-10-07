@@ -10,7 +10,7 @@ import { MARIO } from '../../characters/mario';
 import { LUIGI } from '../../characters/luigi';
 import type { View } from '../../entities/entity';
 import type { Game } from '../../scenes/game';
-import { MenuScene } from '../../scenes/menu';
+import { MiniGameMenuScene } from '../menu';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import type { MiniGameResult } from '../types';
 import { LUIGI_ROUTE, poleOf, raceCourse } from './course';
@@ -201,35 +201,13 @@ export class MirrorRaceScene implements Scene {
   }
 }
 
-/** The race's own menu: Continue, or Give up (ends the round as 'quit'). Pauses the music. */
-export class RaceMenuScene extends MenuScene {
+/**
+ * The race's own menu: Continue, or Give up (ends the round as 'quit'), and in dev mode the
+ * assists (No damage: enemies cannot hurt Mario, a pit still ends the race, as in a level).
+ * Pauses the music.
+ */
+export class RaceMenuScene extends MiniGameMenuScene {
   constructor(game: Game, giveUp: () => void) {
-    super(
-      game,
-      'MIRROR RACE',
-      [
-        { label: 'Continue', select: () => game.scenes.pop() },
-        {
-          label: 'Give up',
-          select: () => {
-            game.scenes.pop();
-            giveUp();
-          },
-          hint: 'Luigi stays brainwashed for now; you can race him again later',
-        },
-      ],
-      () => game.scenes.pop(),
-      true,
-    );
-  }
-
-  override enter(): void {
-    this.game.ctx.audio.sfx('pause');
-    this.game.ctx.audio.pause();
-    super.enter();
-  }
-
-  exit(): void {
-    this.game.ctx.audio.resume();
+    super(game, 'MIRROR RACE', giveUp, 'Luigi stays brainwashed for now; you can race him again later');
   }
 }
