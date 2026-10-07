@@ -100,4 +100,10 @@ export const SKY: Record<string, string> = {
   dojo: '#000000',
   // Ryu's moonlit town: a deep violet night over the roofs.
   'ninja-night': '#100828',
+  // Bill's jungle: a deep blue-black night over the canopy (palms and mountains stand against it).
+  'contra-jungle': '#081c40',
+  // The waterfall: darker still, the cliff's shadow.
+  'contra-falls': '#000c20',
+  // Red Falcon's lair: a dark blood red between the organic walls.
+  'alien-lair': '#200010',
 };

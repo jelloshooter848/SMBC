@@ -59,7 +59,10 @@ export function drawDecor(r: Renderer, view: View, kind: string, x: number, bott
     colon > 0
       ? view.assets.sheet(kind.slice(0, colon))
       : view.assets.sheet('decor', decorPalette(view.theme));
-  const frame = colon > 0 ? kind.slice(colon + 1) : kind;
+  const plain = colon > 0 ? kind.slice(colon + 1) : kind;
+  // A theme can redraw the classic decor (`cloud-1@contra-jungle` is jungle canopy).
+  const themed = colon > 0 ? '' : `${plain}@${view.theme}`;
+  const frame = themed && sheet.frames.has(themed) ? themed : plain;
   const f = sheet.frames.get(frame);
   if (f) r.sprite(sheet, frame, x, bottom - f.h);
 }
@@ -75,9 +78,11 @@ export function decorPalette(theme: string): string {
     theme === 'airship' ||
     theme === 'crypt' ||
     theme === 'dojo' ||
-    theme === 'ninja-night'
+    theme === 'ninja-night' ||
+    theme === 'alien-lair'
   )
     return 'decor-night';
+  if (theme === 'contra-jungle' || theme === 'contra-falls') return 'decor-jungle';
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';
