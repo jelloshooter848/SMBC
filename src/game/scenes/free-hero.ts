@@ -39,8 +39,8 @@ function fit(lines: readonly string[]): string[] {
  * talk. Every line fits the box (a long mini game title wraps).
  */
 export function captiveDialogue(hero: CharacterDef, def: MiniGameDef, player: CharacterDef): string[][] {
-  const name = fontText(hero.hudName);
-  const you = fontText(player.hudName);
+  const name = fontText(hero.name);
+  const you = fontText(player.name);
   const lines = DIALOGUE[hero.id]?.(you) ?? [
     'NO ONE PASSES HERE.',
     `BEAT ME AT THE ${def.title}, IF YOU DARE!`,

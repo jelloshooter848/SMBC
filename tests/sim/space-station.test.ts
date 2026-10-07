@@ -447,7 +447,7 @@ describe("Mega Man's words before the round", () => {
         for (const line of page) expect(line.length, `${talker.id}: ${line}`).toBeLessThanOrEqual(CARD_COLS);
       const own = (pages[1] ?? []).join(' ');
       expect(own).toContain('ROGUE PROGRAM');
-      expect(own).toContain(`${fontText(talker.hudName)}...`);
+      expect(own).toContain(`${fontText(talker.name)}...`);
       expect(own).not.toContain('NO ONE PASSES HERE.'); // his own lines, not the generic ones
       expect(pages[0]?.join(' ')).toContain('SERVES');
     }
