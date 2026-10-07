@@ -289,6 +289,16 @@ export function riftPages(hero: string): Page[] {
 
 /* ---------------------------------------------------------------- 2.13 / 2.14: the heroes */
 
+/** What every hero's first card adds after "...<HERO> SERVES / KING KOOPA..." (free-hero.ts). */
+export const CAPTIVE_HUNT: Page = ['...MUST FIND', 'THE PRINCESS...'];
+
+/** Simon's curse (2.8, `DIALOGUE.simon` in free-hero.ts): the stolen wand, no longer Larry's. */
+export const SIMON_CURSE: Page = [
+  'THE STOLEN WAND WOKE THE',
+  'CURSE DRACULA LEFT IN MY',
+  'BLOOD. NOW I AM HIS THRALL.',
+];
+
 /** Toad's generic hero-joined card: its first page (the crack) is left out once 8-4 is beaten. */
 export const JOINED_CRACK: Page = toad(
   'ANOTHER HERO SET FREE! AND',

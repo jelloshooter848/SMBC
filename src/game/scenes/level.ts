@@ -19,13 +19,19 @@ import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
 import { storyOn } from '../story/beats';
+import { playStoryCards } from '../story/cards';
+import { playLevelBeat } from '../story/level-beats';
+import { STORY_CRYSTAL_BALL_PAGES } from '../story/script';
 import { abilityHint } from './hints';
 import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
 import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
 
 export type LevelStart = WorldStart;
 
-/** The crystal ball's card (Larry Koopa's, 4-2's airship), at most 26 columns a line. */
+/**
+ * The crystal ball's card (Larry Koopa's, 4-2's airship), at most 26 columns a line; the
+ * campaign's story shows STORY_CRYSTAL_BALL_PAGES instead.
+ */
 export const CRYSTAL_BALL_CARD: readonly string[] = [
   'THE CRYSTAL BALL SHOWS',
   'WHERE YOUR FRIENDS',
@@ -126,6 +132,8 @@ export class LevelScene implements Scene {
       this.swallowJump = false;
       for (const f of inputs) f.consumeJumpBuffer();
     }
+    // The campaign's story scenes in a level (a restyle's remark, Larry, Bowser in 8-4).
+    if (playLevelBeat(this.game, this)) return;
     this.handleDebugKeys();
     if (this.debug.freeCamera) {
       const keys = this.game.deps.debugKeys;
@@ -330,24 +338,25 @@ export class LevelScene implements Scene {
     audio.playJingle('castle-clear');
     game.state.checkpoint = null;
     game.state.time = null;
+    const done = () => {
+      // A run aboard ends here (a dev round passes and goes to its result card).
+      if (this.airship && airshipWon(game)) return;
+      if (game.playtestDone) game.playtestDone();
+      // The campaign's hand-off back to the map (Game.takeCrystalBall).
+      else if (game.campaign) game.takeCrystalBall(this.level.id);
+      else if (next) game.goToLevel(next, { mode: 'stand' });
+      else game.showTitle();
+    };
+    // The campaign's story: two pages (docs/STORY.md 2.7), in the same place as the old card.
+    if (storyOn(game))
+      return playStoryCards(game, this.world, STORY_CRYSTAL_BALL_PAGES, done, { bottom: true });
     game.deps.announcer?.say(`${CRYSTAL_BALL_CARD.join(' ')} OK to continue.`);
     game.scenes.push(
-      new CardScene(
-        game,
-        CRYSTAL_BALL_CARD,
-        () => {
-          // A run aboard ends here (a dev round passes and goes to its result card).
-          if (this.airship && airshipWon(game)) return;
-          if (game.playtestDone) game.playtestDone();
-          // The campaign's hand-off back to the map (Game.takeCrystalBall).
-          else if (game.campaign) game.takeCrystalBall(this.level.id);
-          else if (next) game.goToLevel(next, { mode: 'stand' });
-          else game.showTitle();
-        },
-        this.world,
-        1800,
-        { panel: true, keys: ['start', 'attack', 'jump'], prompt: () => abilityHint(game, 'OK', 'jump') },
-      ),
+      new CardScene(game, CRYSTAL_BALL_CARD, done, this.world, 1800, {
+        panel: true,
+        keys: ['start', 'attack', 'jump'],
+        prompt: () => abilityHint(game, 'OK', 'jump'),
+      }),
     );
   }
 

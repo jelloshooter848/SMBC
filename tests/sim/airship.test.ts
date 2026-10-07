@@ -3,8 +3,9 @@ import { getLevel } from '@content/levels';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { px } from '@engine/math/units';
 import { CHARACTERS } from '@game/characters/registry';
-import { LevelScene, CRYSTAL_BALL_CARD } from '@game/scenes/level';
-import type { CardScene } from '@game/scenes/message';
+import { LevelScene } from '@game/scenes/level';
+import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
+import { CardScene } from '@game/scenes/message';
 import { IntroScene } from '@game/scenes/intro';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { MenuScene, type MenuItem } from '@game/scenes/menu';
@@ -18,7 +19,17 @@ import { Larry } from '@game/entities/enemies/larry';
 import { CrystalBall } from '@game/entities/objects/crystal-ball';
 import type { SaveFile } from '@game/save/save-files';
 import { snapshot } from '@game/scenes/free-hero';
-import { draw, file, makeGame, offered, rideToStern, store, useStorage, type H } from './heroes-harness';
+import {
+  closeCards,
+  draw,
+  file,
+  makeGame,
+  offered,
+  rideToStern,
+  store,
+  useStorage,
+  type H,
+} from './heroes-harness';
 
 // Larry's airship challenge (scenes/airship.ts, docs/HEROES.md "Larry's airship"): the
 // auto-scrolling deck `4-2-airship` and Larry's room `4-2-larry`, played with the current hero
@@ -142,6 +153,9 @@ describe("Larry's airship challenge (campaign)", () => {
     expect(room.level.id).toBe(AIRSHIP_ROOM);
     expect(h.game.airship?.reachedRoom).toBe(true);
     h.until(() => !room.world.player.frozen, 200);
+    // Out of the pipe Larry has his say (campaign story, once a run).
+    h.step();
+    expect(closeCards(h)).toEqual(LARRY_PAGES);
     die(h, room);
     pick(h, 'Yes');
     const again = h.top() as LevelScene;
@@ -151,6 +165,10 @@ describe("Larry's airship challenge (campaign)", () => {
     expect(again.world.player.powerState).toBe('fire');
     // Rising out of the room's pipe again, as when first arriving.
     expect(again.world.player.frozen).toBe(true);
+    // ...but straight into the fight: Larry does not speak again on TRY AGAIN.
+    h.until(() => !again.world.player.frozen, 200);
+    h.idle(30);
+    expect(h.top()).toBe(again);
   });
 
   it('NO goes back to 4-2 at its last checkpoint with the run as it was before boarding, no life lost', () => {
@@ -226,6 +244,9 @@ describe("Larry's airship challenge (campaign)", () => {
     const { h } = in42();
     rideToStern(h, board(h));
     const room = h.top() as LevelScene;
+    h.until(() => !room.world.player.frozen, 200);
+    h.step();
+    expect(closeCards(h)).toEqual(LARRY_PAGES);
     h.until(() => room.world.entities.some((e) => e instanceof Larry), 200);
     const larry = room.world.entities.find((e): e is Larry => e instanceof Larry) as Larry;
     room.world.player.invuln = 100000;
@@ -239,9 +260,9 @@ describe("Larry's airship challenge (campaign)", () => {
     p.body.x = ball.body.x;
     p.body.y = ball.body.y + ball.body.h - p.body.h;
     h.step();
-    expect((h.top() as CardScene).lines).toEqual(CRYSTAL_BALL_CARD);
-    h.idle(32);
-    h.tap('jump');
+    // The campaign's crystal ball: two pages (docs/STORY.md 2.7).
+    expect(h.top()).toBeInstanceOf(CardScene);
+    expect(closeCards(h)).toEqual(STORY_CRYSTAL_BALL_PAGES);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.game.airship).toBeNull();
     expect(h.game.mapProgress.secrets).toContain('larry');

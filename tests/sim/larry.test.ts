@@ -6,7 +6,8 @@ import { px } from '@engine/math/units';
 import type { Settings } from '@engine/save/settings';
 import type { Scene } from '@engine/scene';
 import { WorldMapScene, GUARD_GRACE_FRAMES } from '@game/scenes/world-map';
-import { LevelScene, CRYSTAL_BALL_CARD } from '@game/scenes/level';
+import { LevelScene } from '@game/scenes/level';
+import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { CardScene, MessageScene } from '@game/scenes/message';
 import { GameOverScene } from '@game/scenes/game-over';
 import { IntroScene } from '@game/scenes/intro';
@@ -23,7 +24,16 @@ import {
 } from '@game/map/bonus-spot';
 import { SMB3_BONUS } from '@game/bonus/spot';
 import type { MapNode, WorldMapPage } from '@game/map/types';
-import { draw, dropInAndClimb, file, makeGame, rideToStern, useStorage, type H } from './heroes-harness';
+import {
+  closeCards,
+  draw,
+  dropInAndClimb,
+  file,
+  makeGame,
+  rideToStern,
+  useStorage,
+  type H,
+} from './heroes-harness';
 
 // Larry Koopa's airship (4-2), the crystal ball and World 4's bonus spot with its Hammer Bro
 // (docs/HEROES.md "Larry Koopa and the crystal ball", docs/WORLD_MAP.md "The bonus spot and its
@@ -60,6 +70,9 @@ function intoAirship(h: H): { level: LevelScene; larry: Larry } {
   h.step();
   const level = h.top() as LevelScene;
   expect(level).toBeInstanceOf(LevelScene);
+  // Out of the pipe, Larry has his say first (campaign, story/level-beats.ts).
+  h.until(() => h.top() !== level, 200);
+  expect(closeCards(h)).toEqual(LARRY_PAGES);
   h.until(() => level.world.entities.some((e) => e instanceof Larry), 120);
   const larry = level.world.entities.find((e): e is Larry => e instanceof Larry) as Larry;
   return { level, larry };
@@ -91,14 +104,11 @@ describe('the crystal ball (campaign)', () => {
     const { level, larry } = intoAirship(h);
     beatLarry(h, level, larry);
     touchBall(h, level);
-    const card = h.top() as CardScene;
-    expect(card).toBeInstanceOf(CardScene);
-    expect(card.lines).toEqual(CRYSTAL_BALL_CARD);
-    expect(h.said.some((t) => t.startsWith('THE CRYSTAL BALL SHOWS WHERE YOUR FRIENDS ARE HIDDEN!'))).toBe(
-      true,
-    );
-    h.idle(32);
-    h.tap('jump');
+    // The campaign's story: the two pages of docs/STORY.md 2.7 (CRYSTAL_BALL_CARD outside it).
+    expect(h.top()).toBeInstanceOf(CardScene);
+    expect(closeCards(h)).toEqual(STORY_CRYSTAL_BALL_PAGES);
+    expect(h.said.some((t) => t.startsWith('LARRY DROPPED HIS CRYSTAL BALL!'))).toBe(true);
+    expect(h.said.some((t) => t.startsWith('...SO IT SHOWS WHERE YOUR FRIENDS ARE HIDDEN!'))).toBe(true);
     const map = h.top() as WorldMapScene;
     expect(map).toBeInstanceOf(WorldMapScene);
     expect(map.page.id).toBe('smb-4');
@@ -153,6 +163,9 @@ describe('the crystal ball (campaign)', () => {
     expect(p.centerX >> 8).toBe(3 * 16); // the middle of the 2-wide pipe
     expect(cabin.world.time).toBeNull();
     expect(h.game.airship?.reachedRoom).toBe(true);
+    // Larry's cards (campaign) come as the level goes on, then the fight.
+    h.step();
+    expect(closeCards(h)).toEqual(LARRY_PAGES);
     h.until(() => cabin.world.entities.some((e) => e instanceof Larry), 30);
   });
 

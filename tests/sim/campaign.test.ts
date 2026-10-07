@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CARD_GUARD_FRAMES } from '@game/scenes/message';
+import { BowserSaysScene } from '@game/story/level-beats';
 import { getLevel } from '@content/levels';
 import { mapPage } from '@content/worldmap';
 import { PALETTES, SPRITES } from '@content/sprites';
@@ -684,6 +686,10 @@ describe('campaign: clears return to the map', () => {
     expect(isExitOpen(h.game.mapProgress, page(8), road!)).toBe(false);
     enter(h, '8-4');
     play(h, '8-4-end');
+    // The real king speaks first, once per file (story/level-beats.ts); OK closes it.
+    expect(h.top()).toBeInstanceOf(BowserSaysScene);
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('jump');
     h.fire({ type: 'exit', next: 'end' });
     expect(h.top()).toBeInstanceOf(CreditsScene);
     expect(loadSave(1)?.gameCleared).toBe(false);

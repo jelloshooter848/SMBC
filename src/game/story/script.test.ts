@@ -5,6 +5,7 @@ import {
   ALL_FREED_AFTER,
   ALL_FREED_BEFORE,
   ARENA_PAGE,
+  CAPTIVE_HUNT,
   CASTLE_COLS,
   CASTLE_PAGES,
   CRASH_PAGES,
@@ -21,6 +22,7 @@ import {
   PARTNERS,
   RESTYLE_PAGES,
   riftPages,
+  SIMON_CURSE,
   STORY_CRYSTAL_BALL_PAGES,
   STORY_NOT_OVER,
   STORY_TEASE_PAGES,
@@ -58,6 +60,8 @@ const cards: [string, Page][] = [
   ['hub', HUB_PAGE],
   ['arena', ARENA_PAGE],
   ['not over', STORY_NOT_OVER],
+  ['captive hunt', ['SOPHIA III:', '', '...SOPHIA III SERVES', 'KING KOOPA...', ...CAPTIVE_HUNT]],
+  ['simon curse', SIMON_CURSE],
   ...Object.entries(PARTNERS).flatMap(([k, s]) => s.pages.map((p, i): [string, Page] => [`${k} ${i}`, p])),
 ];
 
