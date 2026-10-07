@@ -94,4 +94,8 @@ export const SKY: Record<string, string> = {
   'airship-deck': '#3cbcfc',
   // Simon's crypt: the castle's black behind the night-blue brick.
   crypt: '#000000',
+  // Ryu's dojo: dark between the beams and screens.
+  dojo: '#000000',
+  // Ryu's moonlit town: a deep violet night over the roofs.
+  'ninja-night': '#100828',
 };
