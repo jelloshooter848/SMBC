@@ -473,6 +473,30 @@ describe('the exploding bridge (campaign)', () => {
     },
   );
 
+  it('a hero who lands facing backwards still sets the chain off from the end of its half', () => {
+    for (const [x, facing, dir, first] of [
+      [130, -1, 1, 128],
+      [140, 1, -1, 142],
+    ] as const) {
+      const r = runSim({
+        level: camp7(),
+        character: MARIO,
+        script: none,
+        start: { x, y: 9, mode: 'stand', time: 300 },
+        maxFrames: 10,
+        controller: (w) => {
+          w.player.facing = facing;
+          return [];
+        },
+        until: (w) => blast(w)?.state === 'blowing',
+      });
+      const b = blast(r.world) as BridgeBlast;
+      expect(r.world.player.facing).toBe(facing);
+      expect(b.dir, `${x}`).toBe(dir);
+      expect(b.column(0), `${x}`).toBe(first);
+    }
+  });
+
   it('co-op: the chain is paced for the slower hero, and both players drop into the camp', () => {
     const r = runSim({
       level: camp7(),

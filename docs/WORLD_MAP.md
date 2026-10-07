@@ -530,7 +530,7 @@ pit x -> level x y [w=N] [campaign]
   arrow pointing down at its marked end (`blastArrow`: tip two tiles above the girders over its
   second segment, a head of three and a shaft of two; open air only).
 - **The chain**: a hero standing on an intact segment sets it off, from the end it came on at
-  (the way it faces). The first segment blows `BLAST_DELAY` (36) frames after the step, then one
+  (the end of the half it stands on, whichever way it faces). The first segment blows `BLAST_DELAY` (36) frames after the step, then one
   every `blastStep` frames: the chain runs at `BLAST_PACE` (0.8) of the slowest active hero's
   top running speed (Mario's 8 frames a segment, Simon's 20). Each segment flashes for
   `BLAST_FLASH` (16) frames first (a steady orange glow with reduce flashing), then its tile turns

@@ -80,9 +80,9 @@ type Warp = Zone & { kind: 'warp' };
 
 /**
  * The coin arrow over a campaign `bridge-blast` (7-3's exploding bridge), as [x, y] tiles: a down
- * arrow over its marked end (the bridge's first segment, beside the post with the red light), its
- * tip two tiles above the girders, a shaft of two above the head of three. Only open-air tiles get
- * a coin.
+ * arrow centred over the bridge's second segment, near its marked left end (the post with the red
+ * light): its tip two tiles above the girders, a head of three under a shaft of two. Only open-air
+ * tiles get a coin.
  */
 export function blastArrow(b: EntitySpawn): [number, number][] {
   const x = b.x + 1;

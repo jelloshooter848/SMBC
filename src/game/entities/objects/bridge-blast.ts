@@ -92,11 +92,14 @@ export class BridgeBlast extends Entity {
     return false;
   }
 
-  /** Starts the chain from the end `p` came on at (the way it faces), paced for the slowest hero. */
+  /**
+   * Starts the chain from the end `p` came on at: the end of the half of the bridge it stands on
+   * (whichever way it faces: a hero may land facing back), paced for the slowest hero.
+   */
   private trigger(world: World, p: Player): void {
     this.state = 'blowing';
     this.t = 0;
-    this.dir = p.facing;
+    this.dir = toPx(p.centerX) < this.tx * 16 + (this.w * 16) / 2 ? 1 : -1;
     const slowest = Math.min(...world.activePlayers().map((o) => o.profile.maxRun));
     this.step = blastStep(slowest);
   }
