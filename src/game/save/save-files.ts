@@ -4,6 +4,7 @@ import { startHp, type CharacterDef } from '@game/characters/character';
 import { CHARACTERS } from '@game/characters/registry';
 import { newGameState, type GameState } from '@game/context';
 import { hasKey, loadJson, removeKey, saveJson } from '@engine/save/storage';
+import { bonusSaveFields, bonusStateFrom, newBonusState, type ItemId } from '@game/bonus/items';
 
 /**
  * Three campaign save files (world map progress plus the run: lives, score, coins, heroes and
@@ -58,6 +59,18 @@ export interface SaveFile extends MapProgress {
    * file's current heroes (validation adds them, so players already using a hero aren't asked).
    */
   tutorials?: string[];
+  /*
+   * The SMB3 bonus games and item inventory (src/game/bonus, docs/BONUS.md), all optional (missing:
+   * empty / off / 0, no format bump): item ids won (at most 12), the inventory unlocked (Larry
+   * beaten), the World 4 bonus spot playable, the rotation's next game, dev mode's "Item inventory"
+   * flag, and a Starman used from the map waiting for the next level.
+   */
+  inventory?: ItemId[];
+  inventoryUnlocked?: boolean;
+  bonusOpen?: boolean;
+  bonusNext?: number;
+  devInventory?: boolean;
+  starNext?: boolean;
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -178,6 +191,7 @@ export function newSave(
     devAllHeroes: false,
     freed: freedHeroes([character, character2], characters),
     tutorials: tutorialHeroes([character, character2], characters),
+    ...bonusSaveFields(newBonusState()),
   };
 }
 
@@ -315,6 +329,7 @@ export function migrateSave(
       ...(Array.isArray(stored.tutorials) ? stored.tutorials : []),
       ...[stored.character, stored.character2].filter((id) => freed.includes(id as string)),
     ]),
+    ...bonusSaveFields(bonusStateFrom(stored)),
   };
 }
 

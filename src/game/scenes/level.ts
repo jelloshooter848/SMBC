@@ -14,6 +14,7 @@ import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels } from '../touch-labels';
 import { talkToCaptive } from './free-hero';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
+import { applyStarAtStart } from '../bonus/use';
 
 export type LevelStart = WorldStart;
 
@@ -55,6 +56,8 @@ export class LevelScene implements Scene {
   enter(): void {
     this.playMusic();
     this.started = true;
+    // A Starman used from the map's Items: star power (and its music) from the first frame.
+    applyStarAtStart(this.game, this.world);
   }
 
   /** The level's music (the hero's own overworld theme when it has one), at the clock's tempo. */

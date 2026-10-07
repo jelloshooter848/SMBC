@@ -34,10 +34,14 @@ import { trophyPose } from '../map/trophy';
 import { Player } from '../entities/player';
 import { startHp } from '../characters/character';
 import { MenuScene, type MenuItem } from './menu';
+import { abilityHint } from './hints';
 import { OptionsScene } from './options';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
+import { InventoryScene } from '../bonus/inventory';
+import { inventoryAvailable } from '../bonus/use';
+import { addItem, ITEM_IDS } from '../bonus/items';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -153,6 +157,20 @@ export class WorldsMenu extends MenuScene {
   /** The highlighted entry. */
   get cursor(): number {
     return this.index;
+  }
+}
+
+/** The map menu (MAP): rows can be rebuilt in place (a dev toggle adds or removes Items). */
+export class MapMenu extends MenuScene {
+  constructor(game: Game, items: MenuItem[], onBack: () => void) {
+    super(game, 'MAP', items, onBack, true);
+  }
+
+  /** Replaces the rows, keeping the cursor on the row labelled `label`. */
+  rebuild(items: MenuItem[], label: string): void {
+    this.setItems(items);
+    const i = items.findIndex((it) => it.label === label);
+    if (i >= 0) this.index = i;
   }
 }
 
@@ -513,7 +531,12 @@ export class WorldMapScene implements Scene {
     const here = this.nodeById(this.node);
     const open = !!here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll);
     const warp = !!here && isWarpOpen(this.progress, here, this.unlockAll);
-    return { ...NO_TOUCH_BUTTONS, jump: open ? 'ENTER' : warp ? 'WARP' : null, start: 'MENU' };
+    return {
+      ...NO_TOUCH_BUTTONS,
+      jump: open ? 'ENTER' : warp ? 'WARP' : null,
+      start: 'MENU',
+      special: inventoryAvailable(this.game) ? 'ITEMS' : null,
+    };
   }
 
   private updateReveal(input: InputFrame): void {
@@ -581,6 +604,11 @@ export class WorldMapScene implements Scene {
     // Start and select open the map menu (as start pauses a level); only jump enters a level.
     if (input.pressed('start') || input.pressed('select')) {
       this.openPause();
+      return;
+    }
+    // The ITEMS button (SMB3's item box), once the inventory is unlocked.
+    if (input.pressed('special') && inventoryAvailable(this.game)) {
+      this.openItems();
       return;
     }
     if (input.pressed('jump') && here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll)) {
@@ -732,36 +760,57 @@ export class WorldMapScene implements Scene {
     const game = this.game;
     game.ctx.audio.sfx('pause');
     const pop = () => game.scenes.pop();
-    game.scenes.push(
-      new MenuScene(
-        game,
-        'MAP',
-        [
-          { label: 'Continue', select: pop },
-          { label: 'Worlds', select: () => this.openWorlds() },
-          { label: 'Save and quit', select: () => game.saveAndQuit() },
-          { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, pop, true)) },
-          ...(game.devMode
-            ? [
-                {
-                  label: 'All heroes',
-                  value: () => (game.devAllHeroes ? 'on' : 'off'),
-                  adjust: () => this.toggleAllHeroes(),
-                  hint: 'Developer mode: every hero can be picked, none freed',
-                },
-                {
-                  label: 'Unlock all',
-                  value: () => (game.devUnlockAll ? 'on' : 'off'),
-                  adjust: () => this.toggleUnlockAll(),
-                  hint: 'Developer mode: every level on the map open',
-                },
-              ]
-            : []),
-        ],
-        pop,
-        true,
-      ),
-    );
+    const items = (): MenuItem[] => [
+      { label: 'Continue', select: pop },
+      ...(inventoryAvailable(game)
+        ? [
+            {
+              label: 'Items',
+              value: () => String(game.bonus.inventory.length),
+              select: () => {
+                pop();
+                this.openItems();
+              },
+              hint: `Use an item before entering a level. Also on ${abilityHint(game, 'ITEMS', 'special')}`,
+            },
+          ]
+        : []),
+      { label: 'Worlds', select: () => this.openWorlds() },
+      { label: 'Save and quit', select: () => game.saveAndQuit() },
+      { label: 'Options', select: () => game.scenes.push(new OptionsScene(game, pop, true)) },
+      ...(game.devMode
+        ? [
+            {
+              label: 'Item inventory',
+              value: () => (game.bonus.devInventory ? 'on' : 'off'),
+              adjust: () => {
+                this.toggleInventory();
+                menu.rebuild(items(), 'Item inventory');
+              },
+              hint: 'Developer mode: the item inventory unlocked before Larry is beaten',
+            },
+            {
+              label: 'Give items',
+              select: () => this.giveItems(),
+              hint: 'Developer mode: one of each item into the inventory',
+            },
+            {
+              label: 'All heroes',
+              value: () => (game.devAllHeroes ? 'on' : 'off'),
+              adjust: () => this.toggleAllHeroes(),
+              hint: 'Developer mode: every hero can be picked, none freed',
+            },
+            {
+              label: 'Unlock all',
+              value: () => (game.devUnlockAll ? 'on' : 'off'),
+              adjust: () => this.toggleUnlockAll(),
+              hint: 'Developer mode: every level on the map open',
+            },
+          ]
+        : []),
+    ];
+    const menu = new MapMenu(game, items(), pop);
+    game.scenes.push(menu);
   }
 
   /**
@@ -773,6 +822,32 @@ export class WorldMapScene implements Scene {
     game.devAllHeroes = !game.devAllHeroes;
     if (!game.devAllHeroes) game.dropLockedHeroes();
     this.views.clear();
+    game.autosave();
+  }
+
+  /** The ITEMS panel over the map (the inventory). */
+  private openItems(): void {
+    this.game.scenes.push(new InventoryScene(this.game));
+  }
+
+  /**
+   * Map menu "Item inventory" (dev mode only): flips the file's dev flag and saves. It never writes
+   * `inventoryUnlocked`; the map menu rebuilds when next opened, with or without its Items entry.
+   */
+  private toggleInventory(): void {
+    const game = this.game;
+    game.bonus.devInventory = !game.bonus.devInventory;
+    game.autosave();
+  }
+
+  /** Map menu "Give items" (dev mode only): one of each item, as room allows; saved. */
+  private giveItems(): void {
+    const game = this.game;
+    const added = ITEM_IDS.filter((id) => addItem(game.bonus, id)).length;
+    game.ctx.audio.sfx(added ? 'powerup' : 'bump');
+    this.say(
+      added ? `${added} items added. ${game.bonus.inventory.length} items.` : 'The inventory is full.',
+    );
     game.autosave();
   }
 

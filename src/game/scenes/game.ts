@@ -53,6 +53,7 @@ import {
   type SaveFile,
   type SaveSlot,
 } from '@game/save/save-files';
+import { bonusSaveFields, bonusStateFrom, newBonusState, type BonusState } from '../bonus/items';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -118,6 +119,11 @@ export class Game {
   tutorialRun: TutorialRun | null = null;
   /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
   tutorials: string[] = [];
+  /**
+   * The campaign file's SMB3 bonus games and item inventory (SaveFile's bonus fields, same names):
+   * src/game/bonus/index.ts. A fresh, empty one outside campaign play.
+   */
+  bonus: BonusState = newBonusState();
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -289,6 +295,7 @@ export class Game {
     this.devUnlockAll = false;
     this.endTutorial();
     this.devAllHeroes = false;
+    this.bonus = newBonusState();
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -393,6 +400,7 @@ export class Game {
       devAllHeroes: this.devAllHeroes,
       freed: this.freed.slice(),
       tutorials: this.tutorials.slice(),
+      ...bonusSaveFields(this.bonus),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -721,6 +729,7 @@ export class Game {
     this.devUnlockAll = save.devUnlockAll === true;
     this.devAllHeroes = save.devAllHeroes === true;
     this.freed = save.freed.slice();
+    this.bonus = bonusStateFrom(save);
     // Only heroes freed on this file, this session, get the map's burst of hops.
     this.celebrate.clear();
     // A hero the file has not freed (a hand-edited file, or one picked through "All heroes" with

@@ -23,6 +23,7 @@ import { CHARACTERS } from '@game/characters/registry';
 import { DEFAULT_ASSIST } from '@game/context';
 import { MENU_TOUCH_LABELS } from '@game/touch-labels';
 import { miniGameFor } from '@game/minigames';
+import { isBonusKind, openBonusGame } from '@game/bonus';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
@@ -200,6 +201,24 @@ function boot(): void {
     (window as unknown as { __miniGame?: unknown }).__miniGame = scene;
     game.scenes.push(scene);
   }
+  // Dev server only: `?bonus=toad-house|memory|slots` (optionally `&seed=N`) plays that bonus game
+  // over the title (the scene is window.__bonusGame, the game window.__game); the title follows.
+  const bonus = import.meta.env.DEV ? params.get('bonus') : null;
+  if (isBonusKind(bonus)) {
+    game.bonus.inventoryUnlocked = true;
+    const seed = Number(params.get('seed'));
+    const scene = openBonusGame(
+      game,
+      bonus,
+      (result) => {
+        console.info(`[dev] bonus ${bonus}: ${JSON.stringify(result.prizes)}`);
+        game.showTitle();
+      },
+      Number.isFinite(seed) && params.has('seed') ? { seed } : {},
+    );
+    (window as unknown as { __bonusGame?: unknown }).__bonusGame = scene;
+  }
+  if (import.meta.env.DEV) (window as unknown as { __game?: unknown }).__game = game;
   loop.start();
   (window as unknown as { __bootDone?: () => void }).__bootDone?.();
 }
