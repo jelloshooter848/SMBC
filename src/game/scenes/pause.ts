@@ -5,6 +5,7 @@ import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
 import type { TouchLabels } from '@engine/input/touch';
+import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchMode } from '@engine/save/settings';
 import { nextTouchMode } from '@engine/input/touch-logic';
 import { trainFromPause, trainingOffered } from '../tutorial/training';
@@ -19,6 +20,12 @@ export class PauseScene extends MenuScene {
   ) {
     super(game, 'PAUSE', [], null, true);
     this.rebuild();
+  }
+
+  /** The menu, with the short SMBC REMIX logo in the panel's bottom right corner. */
+  override render(r: Renderer): void {
+    super.render(r);
+    r.sprite(this.game.ctx.assets.sheet('title-logo'), 'smbc-line', 146, 200);
   }
 
   private rebuild(): void {
