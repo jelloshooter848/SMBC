@@ -483,7 +483,7 @@ export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = {
         p.startTransition('grow');
         room.world.audio.sfx('powerup');
       },
-      done: (t) => t.seen.has('hover'),
+      done: (t) => t.seen.has('_hover'),
     },
     {
       id: 'missile',
@@ -500,12 +500,12 @@ export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = {
         p.startTransition('grow');
         room.world.audio.sfx('powerup');
       },
-      done: (t) => t.seen.has('wall'),
+      done: (t) => t.seen.has('_wall'),
     },
     {
       id: 'jason',
       prompt: '[EXIT:select] AND JASON HOPS OUT ON FOOT. UP BY THE TANK GETS HIM BACK IN.',
-      done: (t) => t.seen.has('jason'),
+      done: (t) => t.seen.has('_jason'),
     },
   ],
 };

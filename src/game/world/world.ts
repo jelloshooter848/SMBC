@@ -318,6 +318,9 @@ export const TALLY_PER_FRAME = 2;
 /** Points per TIME unit left (ScoreValue.TIME_REMAINING). */
 const TIME_POINTS = 50;
 
+/** px the camera keeps behind a camera anchor (Entity.anchorsCamera: a parked tank). */
+const ANCHOR_ROOM = 32;
+
 /** No hero's body is wider than a tile (characters' hitboxes; simon-crypt.test.ts checks). */
 const MAX_HERO_W = 16;
 
@@ -576,6 +579,21 @@ export class World {
           this.trickSpin ??= { wall, dir: 'in', t: 0 };
         }
       } else if (mode === 'autowalk') this.autoWalk = true;
+      // A body wider than a tile standing at its start (Sophia III's tank): centred on the start
+      // column unless that clips a wall beside it; then flush with the column's clear side.
+      // (A fall picks its column in wideFall; a pipe exit is two tiles wide; a vine is open air.)
+      const standing = mode === 'stand' || mode === 'autowalk' || mode === 'spin' || mode === 'beam';
+      if (hb.w > 16 && standing && i === 0) {
+        const b = p.body;
+        const clear = (x: number) => {
+          for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+            for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++)
+              if (this.map.isSolid(tx, ty)) return false;
+          return true;
+        };
+        const fit = [b.x, tileToSub(sx), tileToSub(sx + 1) - b.w].find(clear);
+        if (fit !== undefined) b.x = fit;
+      }
       this.players.push(p);
     });
     // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
@@ -1022,6 +1040,7 @@ export class World {
     this.spawnPending();
     if (this.vineArrival) this.updateVineArrival();
 
+    const anchor = this.cameraAnchor();
     this.players.forEach((p, i) => {
       if (p.dead || p.out) return;
       const respawn = this.respawnTimers.get(p);
@@ -1063,12 +1082,18 @@ export class World {
       if (p.body.x < this.camera.x) {
         this.placeX(p, this.camera.x);
         if (p.body.vx < 0) p.body.vx = 0;
+        this.unsqueeze(p);
       }
       const rightEdge = Math.min(tileToSub(this.level.width), this.camera.x + px(SCREEN_W));
-      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right).
-      if (p.body.x + p.body.w > rightEdge && (this.camera.auto || (this.coop && p !== this.rightmost()))) {
+      // An auto-scroll screen holds everyone inside it (SMB3: no running ahead off the right), and
+      // so does a camera held back by an anchor (a parked tank).
+      if (
+        p.body.x + p.body.w > rightEdge &&
+        (this.camera.auto || anchor !== null || (this.coop && p !== this.rightmost()))
+      ) {
         this.placeX(p, rightEdge - p.body.w);
         if (this.camera.auto && p.body.vx > 0) p.body.vx = 0;
+        this.unsqueeze(p);
       }
       if (p.body.x + p.body.w > tileToSub(this.level.width))
         this.placeX(p, tileToSub(this.level.width) - p.body.w);
@@ -1118,7 +1143,12 @@ export class World {
 
     const lead = this.rightmost();
     if (this.camera.auto) this.autoScroll();
-    else if (lead) this.camera.follow(lead.body.x, lead.body.y);
+    else if (lead) {
+      this.camera.follow(lead.body.x, lead.body.y);
+      // Never past an anchor, with a little room behind it (a parked tank stays on screen).
+      const a = this.cameraAnchor();
+      if (a !== null && this.camera.x > a - px(ANCHOR_ROOM)) this.camera.x = Math.max(0, a - px(ANCHOR_ROOM));
+    }
     for (const p of this.players) {
       if (p.star === 1) this.audio.playMusic(this.level.music);
       if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
@@ -1245,6 +1275,8 @@ export class World {
         p.stairs = null;
         p.body.x += dx;
       }
+      // A camera anchor (a parked tank) goes round the loop with them.
+      for (const e of this.entities) if (e.alive && e.anchorsCamera) e.body.x += dx;
       this.camera.x = Math.max(0, Math.min(this.camera.maxX, this.camera.x + dx));
       this.loopPrevX = cur + toPx(dx);
       this.loopChecks.clear();
@@ -2821,6 +2853,39 @@ export class World {
       return true;
     };
     for (const c of [x, tileToSub(tx), tileToSub(tx + 1) - w]) if (clear(c)) return c;
+    return x;
+  }
+
+  /**
+   * A screen edge pushed the player back into a wall: that undoes a head-bump corner slip (the
+   * body slipped sideways past a block's corner, the edge put it back under the block), so
+   * undo this frame's move up or down too, as the bump it should have been.
+   */
+  private unsqueeze(p: Player): void {
+    const b = p.body;
+    if (p.stairs || p.vine || !this.overlapsSolid(b)) return;
+    const y = b.prevBottom - b.h;
+    if (y === b.y || this.overlapsSolid({ x: b.x, y, w: b.w, h: b.h })) return;
+    b.y = y;
+    if (b.vy < 0) b.vy = 0;
+  }
+
+  /** Whether a box overlaps a solid tile. */
+  private overlapsSolid(b: { x: number; y: number; w: number; h: number }): boolean {
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++) if (this.map.isSolid(tx, ty)) return true;
+    return false;
+  }
+
+  /**
+   * The left edge (subpixels) of the left-most live camera anchor (Entity.anchorsCamera), or null.
+   * None once the level is won (flagpole or axe): the walk to the castle goes on past it.
+   */
+  cameraAnchor(): number | null {
+    if (this.clear || this.bossClear) return null;
+    let x: number | null = null;
+    for (const e of this.entities)
+      if (e.alive && e.anchorsCamera && (x === null || e.body.x < x)) x = e.body.x;
     return x;
   }
 

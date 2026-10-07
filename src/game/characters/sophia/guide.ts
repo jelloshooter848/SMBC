@@ -29,12 +29,15 @@ export const SOPHIA_GUIDE: CharacterGuide = {
       action: 'up',
       does: 'With the wall climb, drive into a wall to climb it. On walls the keys follow the wall.',
     },
-    { action: 'down', does: 'With the wall climb, drive off a ledge to wrap down its side.' },
+    {
+      action: 'down',
+      does: 'Drive over a one-block hole: nose first down it. With the wall climb, drive off a ledge to wrap down its side.',
+    },
     { action: 'down+jump', does: 'On a wall or ceiling: let go.' },
     {
       action: 'select',
       touch: 'EXIT',
-      does: 'On the floor: Jason hops out on foot. He fits small gaps and climbs ladders. Up or EXIT at the tank: back in.',
+      does: 'On solid ground: Jason hops out on foot. He jumps three blocks, fits small gaps and climbs ladders, but the screen stays with the tank. Up or EXIT at the tank: back in.',
     },
   ],
   powerups: [
@@ -67,6 +70,7 @@ export const SOPHIA_GUIDE: CharacterGuide = {
     'Jump into a ceiling to grab it. Hold down to bump blocks instead.',
     'Under water, up and down steer freely. Hold jump to go faster.',
     'Jason is fragile: a fall of more than five blocks hurts him.',
+    'No hopping out on a moving lift or an auto-scrolling screen.',
   ],
   demo: ['idle', 'walk', 'jump', 'attack'],
 };

@@ -100,6 +100,13 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
     const row = tileAt(b.y);
     const center = tileAt(b.x + (b.w >> 1));
     const two = opts.cornerFreeTiles === 2;
+    /** A wide body slips only where its shifted box is clear in every row it covers. */
+    const clearAt = (x: number): boolean => {
+      if (!two) return true;
+      for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+        for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++) if (map.isSolid(tx, ty)) return false;
+      return true;
+    };
     let bumpCol = -1;
     if (map.blocksFromBelow(center, row)) bumpCol = center;
     else if (map.blocksFromBelow(left, row)) {
@@ -108,7 +115,8 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
         overlap <= CORNER_NUDGE &&
         !map.blocksFromBelow(right, row) &&
         !(two && (map.blocksFromBelow(left + 1, row) || map.blocksFromBelow(left + 2, row))) &&
-        !map.isSolid(left + 1, tileAt(b.y + b.h - 1))
+        !map.isSolid(left + 1, tileAt(b.y + b.h - 1)) &&
+        clearAt(b.x + overlap)
       ) {
         b.x += overlap; // slip past the corner
         return;
@@ -119,7 +127,8 @@ export function moveY(b: Body, map: TileMap, dy: number, opts: MoveYOptions = {}
       if (
         overlap <= CORNER_NUDGE &&
         !(two && (map.blocksFromBelow(right - 1, row) || map.blocksFromBelow(right - 2, row))) &&
-        !map.isSolid(right - 1, tileAt(b.y + b.h - 1))
+        !map.isSolid(right - 1, tileAt(b.y + b.h - 1)) &&
+        clearAt(b.x - overlap)
       ) {
         b.x -= overlap;
         return;

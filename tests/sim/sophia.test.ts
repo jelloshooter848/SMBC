@@ -7,7 +7,9 @@ import { Corpse } from '@game/entities/effects/effects';
 import { sophiaState, CEIL, FLOOR, LEFT, RIGHT } from '@game/characters/sophia/state';
 import { Pickup } from '@game/entities/objects/pickup';
 import { ParkedTank } from '@game/characters/sophia/jason';
-import { MARIO } from '@game/characters/mario';
+import { getLevel } from '@content/levels';
+import { Enemy } from '@game/entities/enemies/enemy';
+import type { Player } from '@game/entities/player';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
 import { BulletBill } from '@game/entities/enemies/bullet-bill';
@@ -943,7 +945,8 @@ describe('Jason on foot (our design)', () => {
     expect(hit('small').dead).toBe(true);
   });
 
-  it('co-op: one Sophia hops out, the other keeps driving; a respawn puts her back in the tank', () => {
+  it('co-op: one Sophia hops out, the other stays a tank; a respawn puts her back in the tank', () => {
+    let seen: { aJason: boolean; aW: number; bJason: boolean; bW: number; tanks: number } | null = null;
     const r = runSim({
       level: field(),
       character: SOPHIA,
@@ -951,15 +954,343 @@ describe('Jason on foot (our design)', () => {
       script: { steps: [] },
       maxFrames: 400,
       controller: (w, f) => {
-        if (f === 30) w.kill(w.players[0] as never);
+        const [a, b] = w.players as [Player, Player];
+        if (f === 20)
+          seen = {
+            aJason: sophiaState(a).jason !== null,
+            aW: toPx(a.body.w),
+            bJason: sophiaState(b).jason !== null,
+            bW: toPx(b.body.w),
+            tanks: w.entities.filter((e) => e instanceof ParkedTank && e.alive).length,
+          };
+        if (f === 30) w.kill(a);
         return f === 3 ? ['select'] : [];
       },
     });
-    const [a, b] = r.world.players as [never, never];
+    expect(seen).toEqual({ aJason: true, aW: 8, bJason: false, bW: 19, tanks: 1 });
+    const [a, b] = r.world.players as [Player, Player];
     expect(sophiaState(b).jason).toBeNull();
     expect(sophiaState(a).jason).toBeNull(); // respawned in the tank
+    expect(toPx(a.body.w)).toBe(19);
     expect(r.world.entities.some((e) => e instanceof ParkedTank && e.alive)).toBe(false);
-    expect(MARIO).toBeDefined();
+  });
+});
+
+const insideSolid = (w: World) => {
+  const b = w.player.body;
+  for (let ty = Math.floor((b.y + 64) / 4096); ty <= Math.floor((b.y + b.h - 65) / 4096); ty++)
+    for (let tx = Math.floor((b.x + 64) / 4096); tx <= Math.floor((b.x + b.w - 65) / 4096); tx++)
+      if (w.map.isSolid(tx, ty)) return true;
+  return false;
+};
+
+describe('Sophia III: the 0.4.11 review', () => {
+  const calm = (w: World) => {
+    for (const e of w.entities) if (e instanceof Enemy) e.alive = false;
+  };
+
+  it('Jason’s held hop clears about three tiles (49 px), a tap about one', () => {
+    const peak = (hold: number) => {
+      let top = Infinity;
+      let y0 = 0;
+      run(
+        field(),
+        (w, f) => {
+          const b = w.player.body;
+          if (f === 30) y0 = b.y + b.h;
+          if (f > 30) top = Math.min(top, b.y + b.h);
+          if (f === 3) return ['select'];
+          return f > 30 && f <= 30 + hold ? ['jump'] : [];
+        },
+        120,
+      );
+      return toPx(y0 - top);
+    };
+    expect(peak(60)).toBeGreaterThanOrEqual(46);
+    expect(peak(60)).toBeLessThan(56);
+    expect(peak(1)).toBeLessThan(26);
+  });
+
+  it('down over a one-tile hole: the tank goes nose first down it and lands upright below', () => {
+    const shelf = '#'.repeat(12) + '.' + '#'.repeat(W - 13);
+    const fixed = parseTextMap(
+      [
+        'id: t',
+        'time: 300',
+        'start: 4,7',
+        '',
+        '[tiles]',
+        ...Array.from({ length: 13 }, (_, y) => (y === 8 ? shelf : '.'.repeat(W))),
+        '#'.repeat(W),
+        '#'.repeat(W),
+      ].join('\n'),
+    );
+    let wasNose = false;
+    let stuck = 0;
+    const r = run(
+      fixed,
+      (w, f) => {
+        if (sophiaState(w.player).nose) wasNose = true;
+        if (insideSolid(w)) stuck++;
+        return f > 10 && f < 160 ? ['right', 'down'] : [];
+      },
+      260,
+    );
+    const b = r.world.player.body;
+    expect(wasNose).toBe(true);
+    expect(stuck).toBe(0);
+    expect(toPx(b.y + b.h)).toBe(208);
+    expect(toPx(b.w)).toBe(19);
+    // Without down the tank drives straight over the same hole.
+    const over = run(fixed, (_w, f) => (f > 10 && f < 160 ? ['right'] : []), 200);
+    expect(toPx(over.world.player.body.y + over.world.player.body.h)).toBe(128);
+  });
+
+  it('nose first down a shaft that opens to one side: she rights herself in the air and lands', () => {
+    const rows = Array.from({ length: 15 }, (_, y) => {
+      if (y === 6) return '#'.repeat(12) + '.' + '#'.repeat(W - 13);
+      if (y >= 7 && y <= 9) return '.'.repeat(11) + '#' + '.'.repeat(W - 12);
+      if (y >= 10) return '.'.repeat(11) + '#.' + '#'.repeat(W - 13);
+      return '.'.repeat(W);
+    });
+    const r = run(map(rows, ['start: 9,5']), (_w, f) => (f > 10 && f < 60 ? ['right', 'down'] : []), 160);
+    const b = r.world.player.body;
+    expect(r.world.player.dead).toBe(false);
+    expect(toPx(b.w)).toBe(19);
+    expect(toPx(b.y + b.h)).toBe(160);
+  });
+
+  it('nose first down a one-tile shaft onto a lift: she rights herself on the lift', () => {
+    const shelf = '#'.repeat(12) + '.' + '#'.repeat(W - 13);
+    const rows = Array.from({ length: 15 }, (_, y) => (y === 6 ? shelf : '.'.repeat(W)));
+    let upright = 0;
+    run(
+      map(rows, ['start: 9,5'], ['lift-fall 11 10 len=6']),
+      (w, f) => {
+        const b = w.player.body;
+        if (toPx(b.w) === 19 && b.onGround && toPx(b.y + b.h) > 160) upright++;
+        return f > 10 && f < 60 ? ['right', 'down'] : [];
+      },
+      140,
+    );
+    expect(upright).toBeGreaterThan(10);
+  });
+
+  it.each(['small', 'fire'])('%s: a one-tile step never leaves her inside the floor', (power) => {
+    for (const startX of [2, 6, 8]) {
+      let stuck = 0;
+      const step = '.'.repeat(12) + '#'.repeat(W - 12);
+      const r = run(
+        field({ 12: step }, startX),
+        (w, f) => {
+          if (insideSolid(w)) stuck++;
+          if (f > 120 && f < 140) return ['left'];
+          return f > 5 ? (f % 50 < 30 ? ['right'] : ['right', 'up']) : [];
+        },
+        240,
+        { power },
+      );
+      expect(stuck).toBe(0);
+      const b = r.world.player.body;
+      expect(toPx(b.y + b.h) === 192 || toPx(b.y + b.h) === 208).toBe(true);
+    }
+  });
+
+  it('4-4 at Normal: nose first down the one-tile hole, then through to the axe', () => {
+    // The 4-4 maze's one-tile drops (cols 233 and 224) are the only way on; the tank is wider.
+    const nose = runSim({
+      level: getLevel('4-4'),
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 200,
+      assist: { invulnerable: true, infiniteTime: true },
+      start: { x: 229, y: 5, mode: 'stand' },
+      controller: (w, f) => {
+        calm(w);
+        return f > 20 ? ['right', 'down'] : [];
+      },
+    });
+    const b = nose.world.player.body;
+    expect(toPx(b.y + b.h)).toBe(160); // down the hole in row 6, on the floor of row 10
+    expect(toPx(b.w)).toBe(19); // upright again
+    expect(sophiaState(nose.world.player).nose).toBe(false);
+    const r = runSim({
+      level: getLevel('4-4'),
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 1500,
+      assist: { invulnerable: true, infiniteTime: true },
+      start: { x: 224, y: 9, mode: 'stand' },
+      until: (w) => w.bossClear !== null,
+      controller: (w, f) => {
+        calm(w);
+        if (f < 20) return [];
+        if (f < 60) return ['right', 'down'];
+        return f % 40 < 25 ? ['right', 'jump'] : ['right'];
+      },
+    });
+    expect(r.world.player.powerState).toBe('small');
+    expect(r.world.bossClear).not.toBeNull();
+  });
+});
+
+describe('Jason: the parked tank keeps the camera (0.4.11 review)', () => {
+  const calm = (w: World) => {
+    for (const e of w.entities) if (e instanceof Enemy) e.alive = false;
+  };
+
+  it('1-1: walking away, Jason is held at the right edge and the tank never leaves the screen', () => {
+    let worst = -Infinity;
+    let outAt = -1;
+    const r = runSim({
+      level: getLevel('1-1'),
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 900,
+      assist: { invulnerable: true, infiniteTime: true },
+      controller: (w, f) => {
+        calm(w);
+        const t = tank(w);
+        if (t) worst = Math.max(worst, w.camera.x - t.body.x);
+        else if (outAt < 0 && w.player.body.onGround && toPx(w.camera.x) > 120) {
+          outAt = f;
+          return ['select'];
+        }
+        if (outAt < 0) return f % 40 < 25 ? ['right', 'jump'] : ['right'];
+        return f > outAt + 30 ? (f % 40 < 25 ? ['right', 'jump'] : ['right']) : [];
+      },
+    });
+    const w = r.world;
+    const t = tank(w) as ParkedTank;
+    expect(sophiaState(w.player).jason).not.toBeNull();
+    expect(outAt).toBeGreaterThan(0);
+    expect(worst).toBeLessThanOrEqual(-px(32));
+    expect(w.camera.x).toBeLessThanOrEqual(t.body.x - px(32));
+    expect(w.player.body.x + w.player.body.w).toBeLessThanOrEqual(w.camera.right);
+    expect(toPx(w.player.body.x + w.player.body.w - w.camera.right)).toBeGreaterThan(-4); // pressed to it
+  });
+
+  it('co-op: both players are held on the parked tank’s screen', () => {
+    const r = runSim({
+      level: getLevel('1-1'),
+      character: SOPHIA,
+      state: { character2: SOPHIA, powerState2: 'small', hp2: 0, lives: 3 },
+      script: { steps: [] },
+      maxFrames: 700,
+      assist: { invulnerable: true, infiniteTime: true },
+      controller: (w, f) => {
+        calm(w);
+        if (f === 5) return ['select'];
+        return f > 40 ? (f % 30 < 20 ? ['right', 'jump'] : ['right']) : [];
+      },
+    });
+    const w = r.world;
+    const t = tank(w) as ParkedTank;
+    expect(t).toBeDefined();
+    expect(w.camera.x).toBeLessThanOrEqual(t.body.x);
+    for (const p of w.players) expect(p.body.x + p.body.w).toBeLessThanOrEqual(w.camera.right);
+  });
+
+  it('the screen edge never squeezes Jason up into a hanging pipe (8-4)', () => {
+    let onPipe = 0;
+    let inside = 0;
+    runSim({
+      level: getLevel('8-4'),
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 400,
+      assist: { invulnerable: true, infiniteTime: true },
+      start: { x: 166, y: 12, mode: 'stand' },
+      controller: (w, f) => {
+        calm(w);
+        // The screen's left edge 5 px short of the pipe hanging over the floor (rows 6-9).
+        if (f === 1) w.camera.x = px(163 * 16 - 5);
+        const b = w.player.body;
+        if (b.onGround && toPx(b.y + b.h) <= 160 && toPx(b.x + b.w) <= 165 * 16) onPipe++;
+        if (insideSolid(w)) inside++;
+        if (f === 10) return ['select'];
+        if (f < 40) return [];
+        return f % 40 < 30 ? ['left', 'jump'] : ['left'];
+      },
+    });
+    expect(inside).toBe(0);
+    expect(onPipe).toBe(0); // never standing in or on the pipe
+  });
+
+  it('EXIT is refused on an auto-scrolling airship', () => {
+    const r = runSim({
+      level: getLevel('4-2-airship'),
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 200,
+      assist: { invulnerable: true, infiniteTime: true },
+      controller: (w, f) => {
+        calm(w);
+        return f % 20 === 10 && w.player.body.onGround ? ['select'] : [];
+      },
+    });
+    expect(r.world.camera.auto).toBe(true);
+    expect(sophiaState(r.world.player).jason).toBeNull();
+    expect(tank(r.world)).toBeUndefined();
+  });
+
+  it('EXIT is refused while riding a lift', () => {
+    const pit = '#'.repeat(8) + '.'.repeat(24) + '#'.repeat(W - 32);
+    const rows = Array.from({ length: 15 }, (_, y) => (y >= 13 ? pit : '.'.repeat(W)));
+    let rode = 0;
+    const r = run(
+      map(rows, ['start: 20,11'], ['lift-h 19 12 len=4']),
+      (w, f) => {
+        const b = w.player.body;
+        if (b.onGround && toPx(b.y + b.h) < 13 * 16 && !w.player.dead) rode++;
+        return rode > 5 && f % 6 === 0 ? ['select'] : [];
+      },
+      200,
+    );
+    expect(rode).toBeGreaterThan(100);
+    expect(sophiaState(r.world.player).jason).toBeNull();
+    expect(tank(r.world)).toBeUndefined();
+  });
+
+  it('flagpole: Jason on foot can touch the pole and the level clears', () => {
+    let out = false;
+    const r = runSim({
+      level: getLevel('1-1'),
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 1000,
+      assist: { invulnerable: true },
+      start: { x: 190, y: 12, mode: 'stand' },
+      controller: (w, f) => {
+        calm(w);
+        if (f === 5) return ['select'];
+        if (f > 6 && f < 30 && sophiaState(w.player).jason) out = true;
+        return f > 30 && !w.flagGrabbedBy ? (f % 30 < 15 ? ['right', 'jump'] : ['right']) : [];
+      },
+    });
+    expect(out).toBe(true);
+    expect(r.outcome).toBe('cleared');
+  });
+
+  it('axe: Jason on foot can reach the axe and Bowser’s bridge falls', () => {
+    let out = false;
+    const r = runSim({
+      level: getLevel('1-4'),
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 400,
+      assist: { invulnerable: true, infiniteTime: true },
+      start: { x: 138, y: 8, mode: 'stand' },
+      until: (w) => w.bossClear !== null,
+      controller: (w, f) => {
+        calm(w);
+        if (f === 20) return ['select'];
+        if (f > 6 && sophiaState(w.player).jason) out = true;
+        return f > 30 ? (f % 30 < 15 ? ['right', 'jump'] : ['right']) : [];
+      },
+    });
+    expect(out).toBe(true);
+    expect(r.world.bossClear).not.toBeNull();
   });
 });
 

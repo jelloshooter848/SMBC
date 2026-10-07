@@ -75,6 +75,29 @@ function boxBlocked(map: TileMap, x: number, y: number, w: number, h: number): b
   return false;
 }
 
+/**
+ * Out of solid tiles she was put into from outside her own moves (the screen's left edge pushing
+ * a wide body into a corner, as the camera never scrolls back): the nearest clear spot, down
+ * first (she was rising), then up, then sideways. Returns whether she was stuck.
+ */
+export function unstick(b: Body, map: TileMap): boolean {
+  if (!boxBlocked(map, b.x, b.y, b.w, b.h)) return false;
+  for (let d = 1; d <= 16; d++)
+    for (const [dx, dy] of [
+      [0, d],
+      [0, -d],
+      [d, 0],
+      [-d, 0],
+    ] as const)
+      if (!boxBlocked(map, b.x + px(dx), b.y + px(dy), b.w, b.h)) {
+        b.x += px(dx);
+        b.y += px(dy);
+        if (dy > 0 && b.vy < 0) b.vy = 0;
+        return true;
+      }
+  return true;
+}
+
 /** Box size for a surface: turned on a wall. */
 const dims = (s: Surface): [number, number] => (s === LEFT || s === RIGHT ? [UH, UW] : [UW, UH]);
 
@@ -113,6 +136,16 @@ export function becomeUpright(p: Player, st: SophiaState): void {
     if (hit) {
       x += px(hit[0]);
       y += px(hit[1]);
+    } else if (b.w === UH) {
+      // No room to right herself (a one-tile shaft): she falls nose first, turned, until there is.
+      st.surface = FLOOR;
+      st.attached = false;
+      st.turn = null;
+      st.push = null;
+      st.nose = true;
+      st.noseLip = tileAt(b.y) - 1;
+      b.onGround = false;
+      return;
     }
   }
   b.w = UW;
@@ -254,6 +287,10 @@ export function driveSophia(
     turnFrame(p, st);
     return true;
   }
+  if (st.nose) {
+    noseFrame(p, st, map);
+    return true;
+  }
   // 1. The squat: the take-off comes on its 4th frame, even off a ledge (SO-12).
   const tookOff = st.squat > 0 && --st.squat === 0;
   if (tookOff) takeoff(p, st, input, audio);
@@ -287,6 +324,7 @@ function upright(
   onHeadBump?: (tx: number, ty: number) => void,
 ): void {
   const b = p.body;
+  unstick(b, map);
   const c = controls(FLOOR, input);
   const water = p.inWater;
   const grounded = b.onGround;
@@ -317,6 +355,9 @@ function upright(
     st.coasting = false;
     p.launched = false;
   }
+
+  // Down over a one-tile hole: nose first into it (every power state).
+  if (grounded && !st.push && st.squat === 0 && c.into && !c.away && noseDown(p, st, map)) return;
 
   // Wall Climb from the floor: an inside turn up a wall ahead, or round a ledge (SO-36).
   if (grounded && !st.push && st.squat === 0 && hasClimb(p) && startFloorTurn(p, st, c, map)) return;
@@ -382,6 +423,8 @@ function upright(
 
   // 6. Move: x, then y; her head strikes every block it touches (SO-17, SO-42).
   const vyBefore = b.vy;
+  const x0 = b.x;
+  const y0 = b.y;
   moveX(b, map, velToSub(b.vx));
   const struck: [number, number][] = [];
   moveY(b, map, velToSub(b.vy) + sink, {
@@ -389,6 +432,15 @@ function upright(
     cornerFreeTiles: 2,
     onHeadBump: (tx, ty) => struck.push([tx, ty]),
   });
+  // A safety net: never end a move inside solid tiles (a corner slip at the edge of a gap).
+  if (boxBlocked(map, b.x, b.y, b.w, b.h) && !boxBlocked(map, x0, y0, b.w, b.h)) {
+    if (!boxBlocked(map, b.x, y0, b.w, b.h)) b.y = y0;
+    else {
+      b.x = x0;
+      b.y = y0;
+    }
+    if (b.vy < 0) b.vy = 0;
+  }
   if (b.hitHead) {
     if (canGrip(p, st, input, map, struck, vyBefore)) {
       st.surface = CEIL;
@@ -439,6 +491,79 @@ function canGrip(
   if (!hasClimb(p) || vy >= 0 || input.held('down') || st.engaged) return false;
   if (p.inWater && !st.push) return false;
   return struck.some(([tx, ty]) => climbable(map, tx, ty) && ty < map.height - 1);
+}
+
+/**
+ * Down held over a one-tile hole in the floor (her centre over it): she tips nose first into it,
+ * her box turned (15.5 wide fits the hole), and falls. The original widens such drops for her
+ * in its level data (SO-45 to SO-48, WideCharacter); this is our stand-in until those variants
+ * are built, so every power state can take the one-tile drops (4-4's maze, the Lost Levels'
+ * castles).
+ */
+function noseDown(p: Player, st: SophiaState, map: TileMap): boolean {
+  const b = p.body;
+  const feet = b.y + b.h;
+  const row = tileAt(feet);
+  const col = tileAt(centreX(b));
+  const open = (tx: number, ty: number) => map.inBounds(tx, ty) && map.collisionAt(tx, ty) === 'none';
+  if (!open(col, row) || !map.isSolid(col - 1, row) || !map.isSolid(col + 1, row)) return false;
+  const x = tileToSub(col) + ((px(16) - UH) >> 1);
+  // Her top stays where it is; the box reaches 3.5 px down into the hole.
+  const y = b.y;
+  if (boxBlocked(map, x, y, UH, UW)) return false;
+  b.x = x;
+  b.y = y;
+  b.w = UH;
+  b.h = UW;
+  b.vx = 0;
+  b.vy = 0;
+  b.onGround = false;
+  st.nose = true;
+  st.noseLip = row;
+  st.engaged = false;
+  st.hovering = false;
+  st.coasting = false;
+  return true;
+}
+
+/** Falling nose first down a narrow gap; upright again once she lands with room for it. */
+function noseFrame(p: Player, st: SophiaState, map: TileMap): void {
+  const b = p.body;
+  b.vx = 0;
+  // Standing already (on a tile, or carried by a lift last frame: a lift's carry runs after
+  // her move, so it never shows inside moveY): try to right herself first.
+  if (!b.onGround) {
+    b.vy = Math.min(FALL_MAX, b.vy + GRAVITY);
+    moveY(b, map, velToSub(b.vy));
+    // Falling clear of the hole into open space (a drop into a room, or a shaft that opens to
+    // one side): upright again in the air, and on down from there.
+    if (!b.onGround) {
+      if (tileAt(b.y) > st.noseLip) rightHerself(b, st, map, false);
+      return;
+    }
+  }
+  b.vy = 0;
+  if (rightHerself(b, st, map, true)) return;
+  // No room to right herself yet: keep probing the ground (it may fall away).
+  moveY(b, map, 1);
+}
+
+/** Upright again with her feet where they are, nudged up to 8 px either way to fit. */
+function rightHerself(b: Body, st: SophiaState, map: TileMap, grounded: boolean): boolean {
+  const feet = b.y + b.h;
+  const cx = centreX(b);
+  for (const d of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]) {
+    const x = cx - (UW >> 1) + px(d);
+    if (boxBlocked(map, x, feet - UH, UW, UH)) continue;
+    b.x = x;
+    b.y = feet - UH;
+    b.w = UW;
+    b.h = UH;
+    st.nose = false;
+    b.onGround = grounded;
+    return true;
+  }
+  return false;
 }
 
 /** Start a turn: the centres are subpixels, `dir` the heading on the new surface. */
@@ -517,7 +642,8 @@ function startFloorTurn(p: Player, st: SophiaState, c: Controls, map: TileMap): 
     // Up a wall: a solid tile in her row within 12 px ahead of her centre, room above the cell
     // in front of it.
     const wcol = tileAt(cx + f * px(TURN_REACH));
-    if (!climbable(map, wcol, row)) return false;
+    // The wall must be at least as tall as her box on it (two tiles): a one-tile step is no wall.
+    if (!climbable(map, wcol, row) || !climbable(map, wcol, row - 1)) return false;
     if (map.isSolid(wcol - f, row - 1)) return false;
     const face = f > 0 ? tileToSub(wcol) : tileToSub(wcol + 1);
     const to = f > 0 ? RIGHT : LEFT;
@@ -667,9 +793,14 @@ function wall(p: Player, st: SophiaState, input: InputFrame, map: TileMap): void
     const edge = edgeAhead(map, wcol, true, d < 0 ? b.y + b.h - 1 : b.y, front, d);
     const dy = velToSub(b.vy);
     if (edge !== null && (d < 0 ? b.y + dy <= edge : b.y + b.h + dy >= edge)) {
-      // Clamp to the edge, then wrap round it (forward held) or stop there.
-      if (d < 0) b.y = edge;
-      else b.y = edge - b.h;
+      // Clamp to the edge, then wrap round it (forward held) or stop there. A box already past
+      // an edge it cannot be put back at (it would sink into a floor or ceiling) lets go.
+      const y = d < 0 ? edge : edge - b.h;
+      if (boxBlocked(map, b.x, y, b.w, b.h)) {
+        becomeUpright(p, st);
+        return;
+      }
+      b.y = y;
       b.vy = 0;
       if (fwd && (d < 0 || hasClimb(p))) {
         const into = left ? -1 : 1;
@@ -730,8 +861,12 @@ function ceiling(p: Player, st: SophiaState, input: InputFrame, map: TileMap): v
     const edge = edgeAhead(map, crow, false, d > 0 ? b.x : b.x + b.w - 1, front, d);
     const dx = velToSub(b.vx);
     if (edge !== null && (d > 0 ? b.x + b.w + dx >= edge : b.x + dx <= edge)) {
-      if (d > 0) b.x = edge - b.w;
-      else b.x = edge;
+      const x = d > 0 ? edge - b.w : edge;
+      if (boxBlocked(map, x, b.y, b.w, b.h)) {
+        becomeUpright(p, st);
+        return;
+      }
+      b.x = x;
       b.vx = 0;
       if (fwd) {
         const to = d > 0 ? LEFT : RIGHT;

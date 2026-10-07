@@ -3,6 +3,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import { px, tileAt, toPx } from '@engine/math/units';
 import { overlaps } from '@engine/math/aabb';
 import { Entity, type View } from '../../entities/entity';
+import { groundBelow } from '../../entities/body';
 import { Projectile, type ProjectileSpec } from '../../entities/projectiles/projectile';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
@@ -19,6 +20,7 @@ import {
 } from './profile';
 import { FLOOR, SOUNDS, type SophiaState } from './state';
 import { SOPHIA_SHEET } from './weapons';
+import { unstick } from './drive';
 
 /*
  * Jason on foot (our own design; in the original Crossover he only hops out on the select
@@ -68,6 +70,8 @@ export class ParkedTank extends Entity {
   ) {
     super(x, y, TANK_W, TANK_H);
     this.despawnMargin = null;
+    // Jason can't wander off and strand it: the screen stays on the tank.
+    this.anchorsCamera = true;
     this.layer = 'main';
   }
 
@@ -114,8 +118,13 @@ function roomAbove(world: World, p: Player): boolean {
 /** EXIT on the floor: the hatch opens and Jason hops out on top of the parked tank. */
 export function hopOut(p: Player, st: SophiaState, world: World): boolean {
   const b = p.body;
-  if (st.jason || st.surface !== FLOOR || st.turn || st.squat > 0 || st.push || !b.onGround) return false;
+  if (st.jason || st.nose || st.surface !== FLOOR || st.turn || st.squat > 0 || st.push || !b.onGround)
+    return false;
   if (p.vine || p.stairs || !roomAbove(world, p)) return false;
+  // Not on an auto-scrolling screen (it would carry the tank off), and only on solid ground: not
+  // riding a lift or a spring, which would leave the tank hanging. A locked one-screen room is
+  // fine: the tank can never leave it.
+  if (world.camera.auto || !groundBelow(b, world.map)) return false;
   const tank = new ParkedTank(b.x, b.y, p, p.facing);
   world.spawn(tank);
   const cx = b.x + (b.w >> 1);
@@ -165,6 +174,8 @@ export function jasonUpdate(p: Player, st: SophiaState, input: InputFrame, world
   if (!j) return;
   const b = p.body;
   if (j.lock > 0) j.lock--;
+  // The screen's edge can push him into a wall's corner (the camera never scrolls back).
+  if (!p.vine) unstick(b, world.map);
   if (!j.tank.alive) {
     // Should never happen; fall back into the tank where he stands.
     board(p, st, null);

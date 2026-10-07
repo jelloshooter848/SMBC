@@ -17,10 +17,13 @@ import { placeOnStairs, STAIR_LOCK, STAIR_SPEED, type StairLine, type StairRide 
 const DEFAULT_SWIM: SwimProfile = { stroke: 0x01800, gravity: 0x00100, sinkMax: 0x02155 };
 const CLIMB_SPEED = 0x00100; // 1 px/f in subpixels
 
-/** The part of a player's scratch state that follows them to the next level (not per-swing hit marks). */
+/**
+ * The part of a player's scratch state that follows them to the next level: not per-swing hit
+ * marks (`hit…`), nor a hero's transient flags (`_…`, e.g. Sophia III's `_jason`, `_hover`).
+ */
 export function carriedKit(p: Player): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const [k, v] of Object.entries(p.scratch)) if (!k.startsWith('hit')) out[k] = v;
+  for (const [k, v] of Object.entries(p.scratch)) if (!k.startsWith('hit') && !k.startsWith('_')) out[k] = v;
   return out;
 }
 

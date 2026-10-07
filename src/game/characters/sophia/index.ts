@@ -166,7 +166,10 @@ function addAmmo(p: Player, triple: number, homing: number): boolean {
   return true;
 }
 
-/** A transient scratch flag: 1 while `on`, removed otherwise (so it never travels in the kit). */
+/**
+ * A transient scratch flag (`_…`, which carriedKit leaves out): 1 while `on`, else removed. The
+ * training tracker reads them (MoveStats.seen).
+ */
 function flag(p: Player, key: string, on: boolean): void {
   if (on) p.scratch[key] = 1;
   else delete p.scratch[key];
@@ -249,6 +252,12 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     offsetY: TANK_OY,
     rotate: 0,
   };
+  // Nose first down a one-tile hole.
+  if (st.nose) {
+    spec.frame = 'jump';
+    spec.rotate = 90;
+    return spec;
+  }
   // On a vine she is drawn nose up (SO-43); her box stays upright.
   if (p.vine) {
     spec.rotate = 270;
@@ -287,7 +296,7 @@ export const SOPHIA: CharacterDef = {
   hitbox(p) {
     const st = sophiaState(p);
     if (st.jason) return { w: JASON_W, h: JASON_H };
-    const turned = st.surface === LEFT || st.surface === RIGHT || st.vineBox || p.vine !== null;
+    const turned = st.surface === LEFT || st.surface === RIGHT || st.vineBox || st.nose || p.vine !== null;
     return turned ? { w: TANK_H, h: TANK_W } : { w: TANK_W, h: TANK_H };
   },
   sprite,
@@ -324,7 +333,7 @@ export const SOPHIA: CharacterDef = {
       const st = sophiaState(p);
       st.waterTop = world.waterTop;
       st.levelH = world.heightPx;
-      flag(p, 'jason', st.jason !== null);
+      flag(p, '_jason', st.jason !== null);
       if (st.jason) return jasonUpdate(p, st, input, world);
       if (p.transition) return;
       // The cannon rises while "up" (away from the surface) is held; not off the floor in water.
@@ -344,9 +353,9 @@ export const SOPHIA: CharacterDef = {
       }
       if (st.hovering && world.frame % 8 === 0) world.audio.sfx(SOUNDS.hover);
       // Shown to the training tracker (MoveStats.seen); gone again when it ends.
-      flag(p, 'hover', st.hovering);
-      flag(p, 'wall', (st.surface === LEFT || st.surface === RIGHT) && st.wallFromFloor);
-      flag(p, 'ceiling', st.surface === CEIL);
+      flag(p, '_hover', st.hovering);
+      flag(p, '_wall', (st.surface === LEFT || st.surface === RIGHT) && st.wallFromFloor);
+      flag(p, '_ceiling', st.surface === CEIL);
     },
     onPowerUp(p, kind, world) {
       const st = sophiaState(p);
@@ -431,11 +440,13 @@ export const SOPHIA: CharacterDef = {
     },
     onLevelClear(p) {
       settle(p, sophiaState(p));
+      for (const k of ['_jason', '_hover', '_wall', '_ceiling']) delete p.scratch[k];
     },
     onRespawn(p) {
       const st = sophiaState(p);
       // Dropped back in the tank: the parked one goes.
       board(p, st, null);
+      st.nose = false;
       settle(p, st);
       st.cells = HOVER_CELLS;
       p.refitHitbox();

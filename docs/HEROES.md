@@ -905,6 +905,76 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
 | Simon    | whip, crouch whip, sub-weapon (THROW), the committed jump over the gap                      |
 | Ryu      | sword slash, wall cling, wall jump, ninpo (CAST)                                            |
 | Bill     | shoot, 8-way aim (three directions), prone, jump and shoot                                  |
+| Sophia   | cannon, hover (the lesson gives Hyper), missiles, wall climb (gives Crusher), Jason (EXIT)  |
 
 To add a hero's training: a list in `LESSONS` (3-5 lessons, tested by
 `src/game/tutorial/lessons.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.
+
+## Sophia III in the campaign levels (0.4.11)
+
+Sophia III's tank is wider than a tile (19 × 15.5), cannot stomp, and at Normal jumps about 4.5
+tiles high and 6 across, so the levels built for Mario need her own ways through:
+
+- **Nose first down a one-tile hole** (down while driving over it, every power state): her turned
+  15.5 × 19 box drops through, and she rights herself as soon as there is room: on the floor, on
+  a lift, or in the air where the shaft opens to one side (4-4's maze, castle drops).
+- **Jason on foot** (EXIT, our design): 8 × 16, a hop of about three tiles (49 px with jump
+  held), fits one-tile gaps and climbs ladders (an Underworld vine). The parked tank keeps the
+  camera: the screen never scrolls past it (`camera.x <= tank.x - 32 px`, `Entity.anchorsCamera`),
+  he is held at the right edge like a co-op partner, and EXIT is refused on an auto-scrolling
+  screen and anywhere but solid ground (a lift, a spring). A pipe takes him on with the tank into
+  the next area; the flagpole and the axe work on foot (the anchor lets go once the level is won).
+- **Hyper's hover** and **Crusher's wall and ceiling climbing**.
+
+The completability sweep (`tests/sim/sophia-reach.ts`) searches each level with the real game
+(enemies removed, invulnerable, endless time) for a route at Normal, then Hyper, then Crusher:
+`SOPHIA_SWEEP=1 POWERS=small,big,fire pnpm vitest run tests/sim/sophia-sweep.test.ts`
+(about half an hour split over four runs with `GROUP=<file>`). `tests/sim/sophia-routes.test.ts`
+replays some of the routes it found on every test run. A level it cannot finish is not proof
+that no route exists (it tries fixed moves from standing spots, and a block it reveals or a lift
+it rides is gone again at its next try), so the table says which places were checked by hand.
+
+**Results (2026-10-07, 0.4.11).** Super Mario Bros.: 32 of 33 levels (1-0 to 8-4) are
+finished at Normal. The one that is not is **8-4**: its hanging pipe (column 163, seven tiles over
+the floor; Mario gets there off the Paratroopas) is out of the tank's reach, and of Jason's hop
+even from the parked tank's roof. With Hyper's hover it is finished, but 8-4 has no power-up, so a
+Normal Sophia who dies there cannot finish it until its variant is built. The Lost Levels: 25
+of 52 at Normal; the rest below. "Hyper: yes" also means Crusher (which has the hover too); Crusher
+is searched only when Hyper fails. A number is the column where the search stopped. **Genuine**
+marks a level checked by hand that the tank and Jason cannot get through at that power; the
+others are where the search gave up and need a look when their variants are made.
+
+| Level   | Normal | Hyper    | Crusher  | At Normal                                                                                                                                                                                                                    |
+| ------- | ------ | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 8-4     | no     | yes      | yes      | 163: the hanging pipe, 7 tiles over the floor (Mario bounces off the Paratroopas); out of the tank's and Jason's reach. **Genuine.**                                                                                         |
+| ll-1-2  | no     | yes      | yes      | 63: four falling lifts over a pit (67-91); not timed by the search.                                                                                                                                                          |
+| ll-2-2  | no     | yes      | yes      | 187: a 10-tile gap crossed on hidden blocks (185, 186); the search does not keep blocks it revealed.                                                                                                                         |
+| ll-2-4  | no     | no (30)  | yes      | 30: the way on is a one-tile shaft four tiles up (column 17); the tank does not fit, Jason hops three. Crusher climbs past it. **Genuine at Normal and Hyper.**                                                              |
+| ll-3-3  | no     | yes      | yes      | 15: the first platform is five tiles up (80 px); the tank jumps 72. **Genuine.**                                                                                                                                             |
+| ll-3-4  | no     | no (126) | yes      | 126: not checked by hand.                                                                                                                                                                                                    |
+| ll-4-1  | no     | yes      | yes      | 73: an 11-tile gap with a springboard at its edge; the search does not time a spring boost.                                                                                                                                  |
+| ll-4-2  | no     | yes      | yes      | 116: not checked by hand.                                                                                                                                                                                                    |
+| ll-4-3  | no     | yes      | yes      | 15: an 8-tile gap at the same height (the tank clears about 7, checked by hand). **Genuine.**                                                                                                                                |
+| ll-4-4  | no     | no (94)  | yes      | 94: not checked by hand.                                                                                                                                                                                                     |
+| ll-5-1  | no     | yes      | yes      | 133: not checked by hand.                                                                                                                                                                                                    |
+| ll-6-1  | no     | yes      | yes      | 79: a pipe seven tiles tall, climbed from a hidden block beside it; done by hand at Normal (the search does not keep revealed blocks). Finishable.                                                                           |
+| ll-6-3  | no     | yes      | yes      | 192: not checked by hand.                                                                                                                                                                                                    |
+| ll-7-1  | no     | yes      | yes      | 31: not checked by hand.                                                                                                                                                                                                     |
+| ll-7-2  | no     | yes      | yes      | 127: not checked by hand.                                                                                                                                                                                                    |
+| ll-7-3  | no     | no (22)  | no (22)  | 22: green super springs; by hand a flight braked in the air lands on the next tree. Not followed further.                                                                                                                    |
+| ll-8-1  | no     | yes      | yes      | 74: an 11-tile gap Mario crosses on Paratroopas. **Likely genuine** (she cannot stomp).                                                                                                                                      |
+| ll-8-2  | no     | no (174) | no (175) | 104: the level goes on by a vine out of a block (127) to the warp area; the search found no way to it at any power.                                                                                                          |
+| ll-8-3  | no     | no (183) | no (183) | 26: lifts and long gaps; at Hyper it stops at 183, a 29-tile gap with balance lifts before the exit.                                                                                                                         |
+| ll-8-4  | no     | yes      | yes      | 48: pipes over lava, 4 to 7 tiles apart; not checked by hand.                                                                                                                                                                |
+| ll-11-3 | no     | no (20)  | no (20)  | 20: lifts out of a 6-tile gap two tiles up from the start; not timed by the search.                                                                                                                                          |
+| ll-11-4 | no     | no (63)  | no (63)  | 63: a one-tile shaft up from a moving lift over lava (column 68); the tank does not fit and Jason cannot get out on a lift. **Genuine at Normal and Hyper**; Crusher would have to climb the wall from the lift (not found). |
+| ll-12-1 | no     | yes      | yes      | 144: not checked by hand.                                                                                                                                                                                                    |
+| ll-12-2 | no     | yes      | yes      | 21: an 8-tile gap from the block at 19-21 to the platform at 30. **Likely genuine.**                                                                                                                                         |
+| ll-12-3 | no     | no (22)  | no (22)  | 22: green super springs, as 7-3.                                                                                                                                                                                             |
+| ll-13-1 | no     | yes      | yes      | 31: from the ledge at row 6 to the staircase at 37; done by hand at Normal. Finishable.                                                                                                                                      |
+| ll-13-3 | no     | yes      | yes      | 143: not checked by hand.                                                                                                                                                                                                    |
+| ll-13-4 | no     | yes      | yes      | 52: in the exit area, a 9-tile jump from the staircase to the pipe at 85. **Genuine.**                                                                                                                                       |
+
+For 0.4.16 (Sophia's level variants, the Sophia-only tiles of the original): 8-4 first (Chapter 1),
+then the Lost Levels marked genuine (2-4, 3-3, 4-3, 11-4, 13-4, likely 8-1 and 12-2), then the rest
+of the table once checked by hand. The variants can be checked with the same sweep.
