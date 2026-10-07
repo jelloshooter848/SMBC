@@ -164,8 +164,8 @@ export const JASON_PROFILE: MovementProfile = {
   maxWalk: 0x00e00, // 0.875 px/f
   maxRun: 0x00e00,
   skidTurnaround: 0x00400,
-  // A low hop: about 30 px with jump held, 20 px tapped.
-  jump: [{ maxVx: Infinity, initial: 0x03000, holdGravity: 0x00200, fallGravity: 0x00500 }],
+  // A low hop: about 2.5 tiles with jump held (onto a two-tile pipe), one tapped.
+  jump: [{ maxVx: Infinity, initial: 0x03400, holdGravity: 0x00200, fallGravity: 0x00500 }],
   maxFall: 0x04000,
   fallReset: 0x04000,
   runTimerFrames: 0,

@@ -1303,7 +1303,7 @@ export class World {
     if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
     for (const e of this.entities) {
       if (!(e instanceof Vine) || !e.alive || e.centerX === p.leftVine) continue;
-      if (p.def.behaviour.canGrabVine?.(p, e.art) === false) continue;
+      if (p.def.behaviour.canGrabVine?.(p, e.art, this) === false) continue;
       const v = e.body;
       // Generous sideways reach (the original lets you grab from beside the block it grew from).
       const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);

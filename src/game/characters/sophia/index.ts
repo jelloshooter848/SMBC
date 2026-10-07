@@ -15,6 +15,8 @@ import {
   HOVER_CELLS,
   HURT_INVULN,
   HURT_PUSH_SLOW,
+  JASON_H,
+  JASON_W,
   MAX_CANNON_SHOTS,
   MAX_HOMING_OUT,
   MISSILE_SIDE,
@@ -32,6 +34,8 @@ import {
 import { becomeUpright, driveSophia, hasHover, holdsAway } from './drive';
 import { CEIL, FLOOR, LEFT, RIGHT, SOUNDS, sophiaState, type SophiaState } from './state';
 import { CannonShot, HomingMissile, nearestHomingTarget, SOPHIA_SHEET, TripleMissile } from './weapons';
+import { board, hopOut, jasonSprite, jasonUpdate } from './jason';
+import { LADDER_THEMES } from '../../entities/objects/vine';
 
 /*
  * Sophia III, the tank from Blaster Master (bug-reports/2026-10-07-sophia-build-classic-
@@ -203,6 +207,7 @@ function tankFrame(p: Player, st: SophiaState): string {
 
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const st = sophiaState(p);
+  if (st.jason) return jasonSprite(p, frame, reduceFlashing);
   let palette = HULL[p.powerState] ?? 'sophia';
   if (p.transition) {
     // The power-up freeze: the hull flickers between the old colour and the new one.
@@ -266,16 +271,17 @@ export const SOPHIA: CharacterDef = {
   canBreakBricks: () => false,
   hitbox(p) {
     const st = sophiaState(p);
+    if (st.jason) return { w: JASON_W, h: JASON_H };
     const turned = st.surface === LEFT || st.surface === RIGHT || st.vineBox || p.vine !== null;
     return turned ? { w: TANK_H, h: TANK_W } : { w: TANK_W, h: TANK_H };
   },
   sprite,
   blockPowerUp: (p) => (p.powerState === 'small' ? 'mushroom' : 'flower'),
-  jumpSfx: () => SOUNDS.jump,
+  jumpSfx: (p) => (sophiaState(p).jason ? SOUNDS.jasonJump : SOUNDS.jump),
   portrait: { sheet: SOPHIA_SHEET, palette: 'sophia', frame: 'idle' },
   tools,
   meter(p) {
-    if (!hasHover(p)) return null;
+    if (!hasHover(p) || sophiaState(p).jason) return null;
     return { value: sophiaState(p).cells, max: HOVER_CELLS, colour: '#e40058', label: 'H' };
   },
   devKit: () => ({ hasTriple: 1, triple: TRIPLE_MAX, hasHoming: 1, homing: HOMING_MAX }),
@@ -287,12 +293,14 @@ export const SOPHIA: CharacterDef = {
   },
   guide: SOPHIA_GUIDE,
   touchLabels(p) {
+    // On foot Jason has his gun and EXIT (back in beside the tank); no missiles.
+    if (sophiaState(p).jason) return { attack: 'SHOOT', special: null, select: 'EXIT' };
     const t = activeTool(p, tools(p));
     return {
       attack: 'SHOOT',
       special: t && t.usable ? (t.id === 'homing' ? 'HOMING' : 'MISSILE') : null,
-      // The missiles switch with down + special, not Select.
-      select: null,
+      // Select is EXIT, as in Blaster Master (the missiles switch with down + special).
+      select: 'EXIT',
     };
   },
   behaviour: {
@@ -301,12 +309,15 @@ export const SOPHIA: CharacterDef = {
       const st = sophiaState(p);
       st.waterTop = world.waterTop;
       st.levelH = world.heightPx;
+      flag(p, 'jason', st.jason !== null);
+      if (st.jason) return jasonUpdate(p, st, input, world);
       if (p.transition) return;
       // The cannon rises while "up" (away from the surface) is held; not off the floor in water.
       // A shot fires up once "up" has been held for 9 frames before it (SO-28).
       const up = holdsAway(p, input) && !(p.inWater && !p.body.onGround && st.surface === FLOOR);
       if (!up) st.raise = 0;
       if (st.turn) return; // inputs are locked through a turn (SO-8)
+      if (input.pressed('select') && hopOut(p, st, world)) return;
       if (input.pressed('attack')) fireCannon(p, st, world);
       if (up) st.raise = Math.min(st.raise + 1, CANNON_RAISE_FRAMES);
       if (input.pressed('special')) {
@@ -319,7 +330,8 @@ export const SOPHIA: CharacterDef = {
       if (st.hovering && world.frame % 8 === 0) world.audio.sfx(SOUNDS.hover);
       // Shown to the training tracker (MoveStats.seen); gone again when it ends.
       flag(p, 'hover', st.hovering);
-      flag(p, 'climb', st.surface !== FLOOR);
+      flag(p, 'wall', (st.surface === LEFT || st.surface === RIGHT) && st.wallFromFloor);
+      flag(p, 'ceiling', st.surface === CEIL);
     },
     onPowerUp(p, kind, world) {
       const st = sophiaState(p);
@@ -374,16 +386,26 @@ export const SOPHIA: CharacterDef = {
       const st = sophiaState(p);
       // Lose Everything: straight to Normal; the missiles and their ammo are kept (SO-23).
       p.powerState = p.powerState === 'fire' && world.assist.fireRevertsToBig ? 'big' : 'small';
+      p.invuln = HURT_INVULN;
+      world.audio.sfx(SOUNDS.hurt);
+      if (st.jason) {
+        // Jason out of the tank shares the hero's power: the same hit, a small knock back.
+        p.body.vx = fromDir * 0x00800;
+        return 'hurt';
+      }
       const onSurface = st.surface !== FLOOR || st.turn !== null;
       settle(p, st);
       // On a wall or ceiling she lets go instead of being pushed.
       if (!onSurface) p.body.vx = fromDir * (p.body.vx === 0 ? DRIVE_MAX : HURT_PUSH_SLOW);
-      p.invuln = HURT_INVULN;
-      world.audio.sfx(SOUNDS.hurt);
       return 'hurt';
+    },
+    canGrabVine(p, _art, world) {
+      // A ladder (a vine in the Underworld's look) is for Jason on foot, never the tank.
+      return sophiaState(p).jason !== null || !LADDER_THEMES.has(world.level.theme);
     },
     onGrabVine(p) {
       const st = sophiaState(p);
+      if (st.jason) return;
       settle(p, st);
       // Nose up on the vine: the turned box (keeping her feet), which fits its one-tile holes.
       st.vineBox = true;
@@ -397,6 +419,8 @@ export const SOPHIA: CharacterDef = {
     },
     onRespawn(p) {
       const st = sophiaState(p);
+      // Dropped back in the tank: the parked one goes.
+      board(p, st, null);
       settle(p, st);
       st.cells = HOVER_CELLS;
       p.refitHitbox();

@@ -115,16 +115,16 @@ const TABLE: [CharacterDef, string, Setup, string][] = [
   [BILL, 'spread', { kit: { guns: 4, tool: 2 } }, 'JUMP SHOOT SPREAD MENU WEAPON'],
   [BILL, 'laser', { kit: { guns: 4, tool: 3 } }, 'JUMP SHOOT LASER MENU WEAPON'],
   [BILL, 'flame thrower', { kit: { guns: 4, tool: 4 } }, 'JUMP SHOOT FLAME MENU WEAPON'],
-  [SOPHIA, 'no missiles', {}, 'JUMP SHOOT - MENU -'],
+  [SOPHIA, 'no missiles', {}, 'JUMP SHOOT - MENU EXIT'],
   [
     SOPHIA,
     'triple missile',
     { power: 'fire', kit: { hasTriple: 1, triple: 9 } },
-    'JUMP SHOOT MISSILE MENU -',
+    'JUMP SHOOT MISSILE MENU EXIT',
   ],
-  [SOPHIA, 'triple missile, empty', { kit: { hasTriple: 1, triple: 2 } }, 'JUMP SHOOT - MENU -'],
-  [SOPHIA, 'homing missile selected', { kit: { ...SOPHIA_ALL, tool: 1 } }, 'JUMP SHOOT HOMING MENU -'],
-  [SOPHIA, 'swimming', { water: true }, 'SWIM SHOOT - MENU -'],
+  [SOPHIA, 'triple missile, empty', { kit: { hasTriple: 1, triple: 2 } }, 'JUMP SHOOT - MENU EXIT'],
+  [SOPHIA, 'homing missile selected', { kit: { ...SOPHIA_ALL, tool: 1 } }, 'JUMP SHOOT HOMING MENU EXIT'],
+  [SOPHIA, 'swimming', { water: true }, 'SWIM SHOOT - MENU EXIT'],
 ];
 
 describe('touch labels in a level', () => {

@@ -6,6 +6,8 @@ import { CannonShot, HomingMissile, SophiaBoom, TripleMissile } from '@game/char
 import { Corpse } from '@game/entities/effects/effects';
 import { sophiaState, CEIL, FLOOR, LEFT, RIGHT } from '@game/characters/sophia/state';
 import { Pickup } from '@game/entities/objects/pickup';
+import { ParkedTank } from '@game/characters/sophia/jason';
+import { MARIO } from '@game/characters/mario';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
 import { BulletBill } from '@game/entities/enemies/bullet-bill';
@@ -787,5 +789,219 @@ describe('Sophia III: wall and ceiling climbing (SO-36, SO-37)', () => {
     const c = run(field(ceiling(), 4), (_w, f) => (f >= 5 && f < 30 ? ['jump'] : []), 40, { power: 'fire' });
     const q = c.world.player;
     expect(q.def.sprite(q, 0, true)).toMatchObject({ flipY: true, rotate: 0 });
+  });
+});
+
+/** A map from rows of tiles (15 rows), with optional header lines and entities. */
+function map(rows: string[], header: string[] = [], entities: string[] = []) {
+  return parseTextMap(
+    [
+      'id: t',
+      'time: 300',
+      ...header,
+      '',
+      '[tiles]',
+      ...rows,
+      ...(entities.length ? ['', '[entities]', ...entities] : []),
+    ].join('\n'),
+  );
+}
+const tank = (w: World) => w.entities.find((e): e is ParkedTank => e instanceof ParkedTank && e.alive);
+
+describe('Jason on foot (our design)', () => {
+  it('EXIT on the floor: Jason (8 x 16) hops out on top of the parked tank, which stays put', () => {
+    let landedOnTank = false;
+    const r = run(
+      field(),
+      (w, f) => {
+        const t = tank(w);
+        const b = w.player.body;
+        if (t && b.onGround && b.y + b.h === t.body.y) landedOnTank = true;
+        return f === 5 ? ['select'] : [];
+      },
+      60,
+    );
+    const p = r.world.player;
+    expect(sophiaState(p).jason).not.toBeNull();
+    expect([toPx(p.body.w), toPx(p.body.h)]).toEqual([8, 16]);
+    expect(tank(r.world)).toBeDefined();
+    expect(landedOnTank).toBe(true);
+    expect(p.def.sprite(p, 0, true).frame).toMatch(/^jason-/);
+    expect(p.def.meter?.(p) ?? null).toBeNull();
+  });
+
+  it('he fits a one-tile hole the tank drives over, and climbs back in with UP', () => {
+    // A ledge on row 9 with a one-tile hole at column 8; the floor below on row 13.
+    const ledge = '#'.repeat(8) + '.' + '#'.repeat(W - 9);
+    const rows = [
+      ...Array.from({ length: 9 }, () => '.'.repeat(W)),
+      ledge,
+      ...Array.from({ length: 3 }, () => '.'.repeat(W)),
+      '#'.repeat(W),
+      '#'.repeat(W),
+    ];
+    const level = map(rows, ['start: 4,8']);
+    // The tank drives straight over the hole.
+    const tankRun = run(level, () => ['right'], 60);
+    expect(toPx(tankRun.world.player.body.y + tankRun.world.player.body.h)).toBe(9 * 16);
+    // Jason drops through it to the floor below (4 tiles: no harm).
+    const r = run(
+      level,
+      (w, f) => {
+        if (f === 3) return ['select'];
+        return f > 30 && sophiaState(w.player).jason && w.player.body.y < px(9 * 16) ? ['right'] : [];
+      },
+      200,
+      { power: 'big' },
+    );
+    const p = r.world.player;
+    expect(toPx(p.body.y + p.body.h)).toBe(13 * 16);
+    expect(p.powerState).toBe('big');
+    // Back in: beside the tank on the floor, UP.
+    const back = run(
+      field(),
+      (_w, f) => {
+        // Out, off the tank to its right, then back to it on the floor and UP.
+        if (f === 3) return ['select'];
+        if (f > 40 && f < 75) return ['right'];
+        if (f >= 85 && f < 110) return ['left'];
+        return f === 115 ? ['up'] : [];
+      },
+      120,
+    );
+    const q = back.world.player;
+    expect(sophiaState(q).jason).toBeNull();
+    expect(toPx(q.body.w)).toBe(19);
+    expect(tank(back.world)).toBeUndefined();
+  });
+
+  it('a fall of more than five tiles hurts him; four does not', () => {
+    const drop = (row: number) => {
+      const rows = Array.from({ length: 15 }, (_, y) =>
+        y === row ? '#'.repeat(6) + '.'.repeat(W - 6) : y >= 13 ? '#'.repeat(W) : '.'.repeat(W),
+      );
+      return run(
+        map(rows, [`start: 2,${row - 1}`]),
+        (w, f) => (f === 3 ? ['select'] : f > 30 && w.player.body.onGround ? ['right'] : []),
+        200,
+        { power: 'big' },
+      ).world.player;
+    };
+    expect(drop(9).powerState).toBe('big'); // 4 tiles
+    expect(drop(6).powerState).toBe('small'); // 7 tiles
+  });
+
+  it('his gun reaches a few tiles: a Goomba close by falls, one far off does not', () => {
+    const shoot = (dist: number) => {
+      let g: Goomba | null = null;
+      run(
+        field(),
+        (w, f) => {
+          // Out, then off the tank's right side onto the floor, facing right.
+          if (f === 80) {
+            const b = w.player.body;
+            g = new Goomba(b.x + px(dist), b.y + b.h - px(14));
+            w.spawn(g);
+          }
+          if (g) g.body.vx = 0;
+          if (f === 3) return ['select'];
+          if (f > 30 && f < 70) return ['right'];
+          return f === 84 ? ['attack'] : [];
+        },
+        140,
+      );
+      return (g as unknown as Goomba).alive;
+    };
+    expect(shoot(40)).toBe(false);
+    expect(shoot(150)).toBe(true);
+  });
+
+  it('a ladder (a vine in the Underworld) is for Jason: the tank never grabs it', () => {
+    const rows = Array.from({ length: 15 }, (_, y) => (y >= 13 ? '#'.repeat(W) : '.'.repeat(W)));
+    const level = map(rows, ['start: 4,12', 'theme: underworld'], ['vine 5 12 len=6']);
+    const t = run(level, (_w, f) => (f > 2 ? ['up'] : []), 60);
+    expect(t.world.player.vine).toBeNull();
+    const j = run(level, (_w, f) => (f === 3 ? ['select'] : f > 30 ? ['up'] : []), 60);
+    expect(j.world.player.vine).not.toBeNull();
+    // Elsewhere the tank climbs vines as in the original (nose up).
+    const v = run(map(rows, ['start: 4,12'], ['vine 5 12 len=6']), (_w, f) => (f > 2 ? ['up'] : []), 60);
+    expect(v.world.player.vine).not.toBeNull();
+  });
+
+  it('a hit on Jason costs the hero power like a hit on the tank; at Normal it is a life', () => {
+    const hit = (power: string) =>
+      run(
+        field(),
+        (w, f) => {
+          if (f === 40) w.hurtPlayer(w.player, 1);
+          return f === 3 ? ['select'] : [];
+        },
+        50,
+        { power },
+      ).world.player;
+    expect(hit('fire').powerState).toBe('small');
+    expect(hit('small').dead).toBe(true);
+  });
+
+  it('co-op: one Sophia hops out, the other keeps driving; a respawn puts her back in the tank', () => {
+    const r = runSim({
+      level: field(),
+      character: SOPHIA,
+      state: { character2: SOPHIA, powerState2: 'small', hp2: 0, lives: 3 },
+      script: { steps: [] },
+      maxFrames: 400,
+      controller: (w, f) => {
+        if (f === 30) w.kill(w.players[0] as never);
+        return f === 3 ? ['select'] : [];
+      },
+    });
+    const [a, b] = r.world.players as [never, never];
+    expect(sophiaState(b).jason).toBeNull();
+    expect(sophiaState(a).jason).toBeNull(); // respawned in the tank
+    expect(r.world.entities.some((e) => e instanceof ParkedTank && e.alive)).toBe(false);
+    expect(MARIO).toBeDefined();
+  });
+});
+
+describe('Jason: continuity', () => {
+  it('touch: SHOOT and EXIT on foot, no missiles', () => {
+    const r = run(field(), (_w, f) => (f === 3 ? ['select'] : []), 20, { kit: { hasTriple: 1, triple: 9 } });
+    const p = r.world.player;
+    expect(p.def.touchLabels?.(p, r.world)).toEqual({ attack: 'SHOOT', special: null, select: 'EXIT' });
+  });
+
+  it('he goes down a pipe as any hero does (the next area starts with him back in the tank)', () => {
+    const rows = Array.from({ length: 15 }, (_, y) =>
+      y === 11 ? at(10, '[]') : y === 12 ? at(10, '{}') : y >= 13 ? '#'.repeat(W) : '.'.repeat(W),
+    );
+    const level = map(rows, ['start: 7,12'], []);
+    const withPipe = parseTextMap(
+      [
+        'id: t',
+        'time: 300',
+        'start: 7,12',
+        '',
+        '[tiles]',
+        ...rows,
+        '',
+        '[zones]',
+        'pipe 10 11 down -> t 2 12',
+      ].join('\n'),
+    );
+    expect(level.zones.length).toBe(0);
+    const r = run(
+      withPipe,
+      (w, f) => {
+        if (f === 3) return ['select'];
+        const b = w.player.body;
+        if (f < 30) return [];
+        // Onto the pipe (its middle at 176 px), then down.
+        if (b.y + b.h > px(11 * 16)) return f % 20 < 10 ? ['right', 'jump'] : ['right'];
+        const cx = toPx(b.x + (b.w >> 1));
+        return cx < 174 ? ['right'] : cx > 178 ? ['left'] : ['down'];
+      },
+      400,
+    );
+    expect(r.outcome).toBe('pipe');
   });
 });

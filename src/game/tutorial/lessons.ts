@@ -490,6 +490,23 @@ export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = {
       prompt: '[MISSILE:special] FIRES THREE MISSILES. THEY FLY THROUGH WALLS.',
       done: (t) => t.shotKinds.has('sophia-missile'),
     },
+    {
+      id: 'wall-climb',
+      prompt: 'CRUSHER POWER! HOLD UP AND DRIVE INTO THE TALL WALL TO CLIMB IT.',
+      setup(room) {
+        const p = room.player;
+        if (p.powerState === 'fire') return;
+        p.powerState = 'fire';
+        p.startTransition('grow');
+        room.world.audio.sfx('powerup');
+      },
+      done: (t) => t.seen.has('wall'),
+    },
+    {
+      id: 'jason',
+      prompt: '[EXIT:select] AND JASON HOPS OUT ON FOOT. UP BY THE TANK GETS HIM BACK IN.',
+      done: (t) => t.seen.has('jason'),
+    },
   ],
 };
 

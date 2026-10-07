@@ -83,7 +83,7 @@ export interface CharacterBehaviour {
     onHeadBump?: (tx: number, ty: number) => void,
   ): boolean;
   /** False to leave this vine (or ladder, chain) alone: a tank never grabs a ladder. */
-  canGrabVine?(p: Player, art: VineArt): boolean;
+  canGrabVine?(p: Player, art: VineArt, world: World): boolean;
   /**
    * The player touched the flagpole or the castle axe: end states the clear sequence can't hold
    * (Sophia III turns upright off a wall).

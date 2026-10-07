@@ -25,7 +25,8 @@ export interface Turn {
   /** Heading along the new surface (+1: right or down) and the speed she leaves the turn at. */
   dir: -1 | 1;
   speed: number;
-  /** Turning back upright onto the floor (the box swaps at the midpoint). */
+  /** The surface it started from. */
+  from: Surface;
 }
 
 /**
@@ -75,6 +76,8 @@ export interface SophiaState {
    * 15.5 × 19, which fits the one-tile holes vines and chains climb through.
    */
   vineBox: boolean;
+  /** On a wall she drove up from the floor (the training room's wall climb, not a ceiling's end). */
+  wallFromFloor: boolean;
   /** Frames the drive animation has run (wheels). */
   roll: number;
   /** Jason on foot: the parked tank (jason.ts). */
@@ -117,6 +120,7 @@ export function sophiaState(p: Player): SophiaState {
       boomFrom: -1,
       roll: 0,
       vineBox: false,
+      wallFromFloor: false,
       jason: null,
     };
     STATES.set(p, s);

@@ -31,6 +31,11 @@ export const SOPHIA_GUIDE: CharacterGuide = {
     },
     { action: 'down', does: 'With the wall climb, drive off a ledge to wrap down its side.' },
     { action: 'down+jump', does: 'On a wall or ceiling: let go.' },
+    {
+      action: 'select',
+      touch: 'EXIT',
+      does: 'On the floor: Jason hops out on foot. He fits small gaps and climbs ladders. Up or EXIT at the tank: back in.',
+    },
   ],
   powerups: [
     { item: 'mushroom', does: 'Hyper cannon and the hover. A hit takes everything back.' },
@@ -61,6 +66,7 @@ export const SOPHIA_GUIDE: CharacterGuide = {
     'She cannot stomp. Shoot enemies instead.',
     'Jump into a ceiling to grab it. Hold down to bump blocks instead.',
     'Under water, up and down steer freely. Hold jump to go faster.',
+    'Jason is fragile: a fall of more than five blocks hurts him.',
   ],
   demo: ['idle', 'walk', 'jump', 'attack'],
 };
