@@ -226,8 +226,23 @@ The 8-4 castle's first page then confirms it was real (2.12).
 **The Lost Kingdom** has its own fake Bowsers (Lost 1-4 to 7-4). The same tell and the same always-reveal apply there,
 and (decided) their castles get a reveal page too: page 1 names the creature, page 2 is the story line (2.15). The
 code gives them the same true forms as worlds 1-7 (`bowser-die-N` by world number, in `bowser.ts`): Lost 1-4 Goomba,
-2-4 Koopa, 3-4 Buzzy Beetle, 4-4 Spiny, 5-4 Lakitu, 6-4 Blooper, 7-4 Hammer Bro. The Bowsers at Lost A-4 to C-4 have
-no true form of their own (from world 8 on the die frame is the king himself), so those castles keep one page.
+2-4 Koopa, 3-4 Buzzy Beetle, 4-4 Spiny, 5-4 Lakitu, 6-4 Blooper, 7-4 Hammer Bro.
+
+From world 8 on the code's die frame is the king himself, so the later fakes have no true form today. DECIDED (owner,
+Oct 7): **they get true forms too**, with the same tell and the same always-reveal. These are new die frames, one per
+world:
+
+| Where                                       | True form        |
+| ------------------------------------------- | ---------------- |
+| Lost 8 (the stand-ins before the real king) | Bullet Bill      |
+| Lost 9                                      | Cheep Cheep      |
+| Lost A-4                                    | Podoboo          |
+| Lost B-4                                    | Red Paratroopa   |
+| Lost C-4                                    | Piranha Plant    |
+| Lost D (the stand-ins before the real king) | Green Paratroopa |
+
+The creature picks are a first proposal; the owner can swap any of them. The real king at Lost 8-4 and D-4 never
+reveals anything. A-4 to C-4 now get two pages like the other fake castles: page 1 the reveal, page 2 the story line.
 
 ### 2.3b Restyled levels: "why does it look so different here?"
 
@@ -1477,7 +1492,7 @@ THIS ENDS NOW!
 **The Lost castles' news**: the Lost castles 1-4 to 7-4 and A-4 to C-4 say `BUT OUR PRINCESS IS IN ANOTHER
 CASTLE!` too today (`World.updateBossClear`), so they get lines of their own. Lost 1-4 to 7-4 have a fake Bowser,
 so, as in worlds 1-7, page 1 names its true form (2.3a) and page 2, 2 s later in the same box, is the story line.
-A-4 to C-4 have no fake and keep one page.
+A-4 to C-4 now have fakes too (2.3a, decided Oct 7), so they get the same two pages: the reveal, then the line below.
 
 Lost 1-4 (a Goomba):
 
@@ -1913,4 +1928,5 @@ Settled after the review (the two questions that were still open):
     without warps), and classic play keeps the NES rule for A-D (2.15).
 14. **The Lost castles' fake Bowsers** (2.3a): DECIDED: **a reveal page too**, as in worlds 1-7. Lost 1-4 to 7-4 get
     two pages each, the reveal first (Goomba, Koopa, Buzzy Beetle, Spiny, Lakitu, Blooper, Hammer Bro, as in the
-    code), then their story line. A-4 to C-4 have no fake, so they keep one page (2.15).
+    code), then their story line. UPDATED Oct 7: the later fakes get true forms too (Lost 8 and D's stand-ins,
+    Lost 9, A-4 to C-4; the table in 2.3a), so A-4 to C-4 get two pages as well. The real king never reveals.
