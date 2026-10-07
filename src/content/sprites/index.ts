@@ -19,6 +19,8 @@ import { smb3Palettes, smb3Def } from './smb3';
 import { cryptPalettes, cryptDef } from './crypt';
 import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
+import { partnersPalettes, partnersDef } from './partners';
+import { wandPalettes, wandDef } from './wand';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -56,6 +58,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   crypt: cryptDef,
   ninja: ninjaDef,
   contra: contraDef,
+  partners: partnersDef,
+  wand: wandDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -82,6 +86,8 @@ const defaults: Record<string, readonly string[]> = {
   ...cryptPalettes,
   ...ninjaPalettes,
   ...contraPalettes,
+  ...partnersPalettes,
+  ...wandPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

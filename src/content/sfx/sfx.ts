@@ -59,6 +59,22 @@ export const sfx: Sfx[] = [
     pulse: '@3 v12 q6 x1 l16 p-3 o3 a r16 p-3 o3 g r16 p-5 o3 f8',
     noise: 'v7 x1 l16 n11 r16 n11 r16 l8 n12',
   },
+  // The fake king's disguise bursting (campaign, docs/STORY.md 2.3a): a soft breathy puff under a
+  // quick tumbling chime of wand sparkles, ending on a high twinkle (about 400 ms).
+  {
+    id: 'poof',
+    pulse: '@2 v9 q8 x0 l64 o7 g e c o6 a f d x1 o7 c16',
+    pulse2: '@0 v6 q8 x0 l64 r64 o6 b g e c o5 a f x1 o6 g16',
+    noise: 'v10 x1 l32 n1 n2 l16 n4 l8 n6',
+  },
+  // The wand cracking over 8-4's lava (campaign, docs/STORY.md 2.12): a sharp snap, a glassy
+  // tumble of falling notes, and a low hum sliding down as the crack opens (about 600 ms).
+  {
+    id: 'wand-crack',
+    pulse: '@1 v10 q8 x0 l64 o7 a e c o6 g e c x1 p-12 o5 e8',
+    pulse2: '@2 v6 q8 x0 l64 r32 o7 g d o6 b f# d x1 o4 a8',
+    noise: 'v12 x1 l64 n0 n1 l32 n3 l8 n9',
+  },
   // Noise whoosh.
   { id: 'bowser-flame', noise: 'v11 x1 l16 n1 n2 n3 l8 n5' },
   // Firework pop.

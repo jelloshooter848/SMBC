@@ -59,7 +59,8 @@ import { T, isSolid } from './tiles';
  * A `ledge` zone (always marked `campaign`; 2-1's step by its last tower, 0.4.12) is laid by the
  * campaign variant only: its tiles become one-way cloud (T.CLOUD_LEDGE), which a hero lands on
  * from above and passes through from below and the sides. Simon's fixed jump arc reaches the
- * hidden coin block and the tower top from it; a springboard's launch rises through it.
+ * hidden coin block's top from it (and the tower top from there); a springboard's launch rises
+ * through it.
  *
  * A level's campaign LOOK (`LevelData.campaignLook`: the map's `campaignTheme:` and
  * `campaignMusic:` headers and its `[campaign-decor]` section; 7-3 as a Contra jungle stage) is
@@ -152,10 +153,11 @@ const isBundled = (id: string): boolean => (bundled ??= new Set(levelIds())).has
  * map secrets (a climb zone's `until`).
  */
 export function campaignLevel(
-  level: LevelData,
+  given: LevelData,
   has: (id: string) => boolean = isBundled,
   secrets: readonly string[] = [],
 ): LevelData {
+  const level = toadAt84(given);
   const gone = (w: Warp) => !!w.until && secrets.includes(w.until);
   const anyGone = level.zones.some((z) => z.kind === 'warp' && gone(z));
   // Cached for the bundled library only (a test's own `has` gets a fresh variant).
@@ -290,6 +292,27 @@ export function campaignLevel(
     .concat(added.entities);
   const out: LevelData = { ...looked, tiles, zones, entities };
   memo.set(level, out);
+  return out;
+}
+
+const toads = new WeakMap<LevelData, LevelData>();
+
+/**
+ * SMB 8-4 in the campaign: Toad, who came to cheer, stands where the princess waits (she is in
+ * hiding; docs/STORY.md 2.12). The map file and every other play keep the princess; the Lost
+ * Levels' castles are left alone.
+ */
+function toadAt84(level: LevelData): LevelData {
+  if ((level.parent ?? level.id) !== '8-4' || !level.entities.some((e) => e.type === 'princess'))
+    return level;
+  let out = toads.get(level);
+  if (!out) {
+    out = {
+      ...level,
+      entities: level.entities.map((e): EntitySpawn => (e.type === 'princess' ? { ...e, type: 'toad' } : e)),
+    };
+    toads.set(level, out);
+  }
   return out;
 }
 

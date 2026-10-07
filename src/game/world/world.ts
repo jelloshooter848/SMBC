@@ -31,6 +31,7 @@ import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bu
 import { BalanceLift } from '../entities/objects/balance-lift';
 import { Princess } from '../entities/objects/princess';
 import { Captive } from '../entities/objects/captive';
+import { Partner } from '../entities/objects/partner';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
@@ -60,6 +61,8 @@ import {
   type PieceFrame,
 } from '../entities/effects/effects';
 import { castleFlagStart, Firework, FIREWORK_FRAMES, FIREWORK_TILES } from '../entities/effects/firework';
+import { WandBreak, WAND_SCENE_FRAMES } from '../entities/effects/wand-break';
+import { WandPoof } from '../entities/effects/wand-poof';
 import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { shellKickSeqScore, stompScore } from '../rules/score';
 import type { GameContext, GameState } from '../context';
@@ -87,6 +90,7 @@ import { Larry } from '../entities/enemies/larry';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
+import { CASTLE_PAGES } from '../story/script';
 
 export type WorldEvent =
   /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
@@ -111,6 +115,10 @@ export type WorldEvent =
   | { type: 'talk'; hero: string; player: number }
   /** A player came within a captive's talking reach (TALK shows for them): announced. */
   | { type: 'captive-near'; hero: string; player: number }
+  /** A player pressed up next to a partner (campaign story): the level plays its pages. */
+  | { type: 'partner'; who: string; player: number }
+  /** A player came within a partner's reach (TALK or READ shows for them): announced. */
+  | { type: 'partner-near'; who: string; player: number }
   /**
    * A player touched Larry Koopa's crystal ball (objects/crystal-ball.ts): the level shows its
    * card and ends the area (campaign: 4-2's secret exit; else on to `next`).
@@ -124,7 +132,9 @@ export type WorldEvent =
    */
   | { type: 'moblin'; player: number; secret: string; next: string | null }
   /** A hidden path's block was bumped (World.layPath): its clouds are being laid. */
-  | { type: 'path' };
+  | { type: 'path' }
+  /** A line for the screen reader (the campaign's castle pages): the level announces it. */
+  | { type: 'say'; text: string };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -416,6 +426,11 @@ export class World {
   readonly flagpole: Flagpole | null = null;
   /** Set by LevelScene in campaign play; see CaptiveRules. */
   captives: CaptiveRules | null = null;
+  /**
+   * The campaign's story plays here (set by LevelScene when story/beats.ts storyOn holds): off in
+   * classic, dev, arena and play-test levels, which keep their old text and behaviour.
+   */
+  storyMode = false;
   /** The exploding bridge's boom (entities/objects/bridge-blast.ts). */
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
@@ -774,6 +789,11 @@ export class World {
         if (!hero || this.captives?.isFreed(id)) return null;
         return new Captive(s.x, s.y, hero);
       }
+      case 'partner':
+        // A campaign story partner (`partner x y who=<id>`): only while the story plays.
+        return this.storyMode
+          ? Partner.create(s.x, s.y, String(s.props?.who ?? ''), Number(s.props?.dx ?? 0))
+          : null;
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
@@ -1212,7 +1232,7 @@ export class World {
     return this.vineArrival !== null;
   }
 
-  /** Up pressed by a player within a captive's reach: a `talk` event (one a frame). */
+  /** Up pressed by a player within a captive's reach: a `talk` event; a partner's: a `partner` event (one a frame). */
   private checkTalk(inputs: InputFrame[]): void {
     for (const [i, p] of this.players.entries()) {
       if (!(inputs[i] ?? NO_INPUT).pressed('up') || p.vine) continue;
@@ -1220,6 +1240,14 @@ export class World {
       if (c) {
         c.prompt = false; // hidden under the dialogue; back on the next update in reach
         this.events.push({ type: 'talk', hero: c.hero.id, player: i });
+        return;
+      }
+      const partner = this.entities.find(
+        (e): e is Partner => e instanceof Partner && e.alive && e.inReach(p),
+      );
+      if (partner) {
+        partner.prompt = false; // hidden under its pages; back on the next update in reach
+        this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }
     }
@@ -2457,6 +2485,35 @@ export class World {
     return this.bossPlayer?.def ?? null;
   }
 
+  /**
+   * Whether the axe here breaks the wand (docs/STORY.md 2.12): the campaign's SMB 8-4 only (its
+   * main level and its areas), never classic play and never the Lost Levels' 8-4.
+   */
+  private get wandScene(): boolean {
+    return this.storyMode && (this.level.parent ?? this.level.id) === '8-4';
+  }
+
+  /**
+   * The wand spins up out of the falling king's hand (or, if fireballs already beat him, from the
+   * bridge before the axe) to a spot over the lava, where it breaks and the rift opens.
+   */
+  private breakWand(bowser: Bowser | undefined, p: Player): void {
+    let handX: number;
+    let feet: number;
+    if (bowser) {
+      const b = bowser.body;
+      handX = toPx(b.x + (b.w >> 1)) + bowser.facing * 10;
+      feet = toPx(b.y + b.h);
+    } else {
+      handX = toPx(p.body.x) - 72;
+      feet = toPx(p.body.y + p.body.h) + 16;
+    }
+    // The rift opens over the lava in view: the hero at the axe sees only the bridge's last
+    // tiles, so a king further left sends his wand flying in from the screen's edge.
+    const riftX = Math.max(handX, this.camera.pxX + 44);
+    this.spawn(new WandBreak(handX, feet - 16, riftX, feet - 56));
+  }
+
   private updateBossClear(): void {
     const c = this.bossClear as NonNullable<typeof this.bossClear>;
     const p = this.bossPlayer ?? this.player;
@@ -2474,18 +2531,24 @@ export class World {
       }
       if (cut) this.audio.sfx('break');
     }
-    for (const e of this.entities) if (e instanceof Bowser) e.update(this);
+    for (const e of this.entities)
+      if (e instanceof Bowser || ((e instanceof WandPoof || e instanceof WandBreak) && e.alive))
+        e.update(this);
     // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
     const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);
     // No points: BowserAxe.as only calls breakBridgeStart/Inc/End (Bowser.as), never die(), and
     // the fall below the screen (AnimatedObject.checkDosSides -> destroy) scores nothing either.
     if (bowser && c.t === 60) {
-      bowser.fallDead();
+      bowser.fallDead(this);
       this.audio.sfx('bowser-fall');
     }
+    // The campaign's 8-4: as the king drops, his wand breaks over the lava (docs/STORY.md 2.12),
+    // and the walk waits for its pieces to swirl into the rift.
+    const wand = this.wandScene;
+    if (wand && c.t === 60) this.breakWand(bowser, p);
     if (c.t === 120) this.audio.playJingle('castle-clear');
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-    if (c.t > 150 && c.stop === undefined) {
+    if (c.t > (wand ? 60 + WAND_SCENE_FRAMES + 10 : 150) && c.stop === undefined) {
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;
@@ -2520,6 +2583,22 @@ export class World {
       return;
     }
     if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
+    // The campaign's castles (docs/STORY.md 2.4-2.12) tell their own news in two pages instead:
+    // the fake Bowser's true form, then 2 s later the story, each read out; the exit waits 3.5 s
+    // after the second. The Lost castles keep the NES text (their story is Chapter 2).
+    const pages = this.storyMode ? CASTLE_PAGES[this.level.parent ?? this.level.id] : undefined;
+    if (pages) {
+      const page = s === 120 ? pages.reveal : s === 240 ? pages.news : null;
+      if (page) {
+        this.castleText = [`THANK YOU ${p.def.hudName}!`, '', ...page];
+        this.events.push({ type: 'say', text: [this.castleText[0], ...page].join(' ') });
+      }
+      if (s >= 450) {
+        this.events.push({ type: 'exit', next });
+        c.t = -100000;
+      }
+      return;
+    }
     if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
     if (s === 120 && next === 'end') this.castleText.push('', 'YOUR QUEST IS OVER.');
     if (s >= (next === 'end' ? 270 : 330)) {

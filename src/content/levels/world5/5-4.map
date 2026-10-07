@@ -34,6 +34,8 @@ BBBBB........... ..%%.......%%... .....%%%%%%%%%%% %B%%%%%%%%%%%B%% %%%%%%%%%B..
 %%%%%%%%%%%%%%%% ................ %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%........%%%% %%%%%%%%%%%%%..% %..%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
+;; Campaign only (0.4.13, docs/STORY.md 2.8): a townsperson on the safe floor at the start.
+partner 10 9 who=townsperson campaign=true
 podoboo 16 12
 podoboo 20 12
 firebar 23 7 len=12

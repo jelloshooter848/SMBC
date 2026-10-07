@@ -7,7 +7,8 @@ import { px } from '@engine/math/units';
 import type { Settings } from '@engine/save/settings';
 import type { Scene } from '@engine/scene';
 import { WorldMapScene, GUARD_GRACE_FRAMES } from '@game/scenes/world-map';
-import { LevelScene, CRYSTAL_BALL_CARD } from '@game/scenes/level';
+import { LevelScene } from '@game/scenes/level';
+import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { CardScene, MessageScene } from '@game/scenes/message';
 import { GameOverScene } from '@game/scenes/game-over';
 import { IntroScene } from '@game/scenes/intro';
@@ -30,7 +31,17 @@ import {
 } from '@game/map/bonus-spot';
 import { SMB3_BONUS } from '@game/bonus/spot';
 import type { MapNode, WorldMapPage } from '@game/map/types';
-import { draw, dropInAndClimb, file, makeGame, rideToStern, useStorage, type H } from './heroes-harness';
+import {
+  closeCards,
+  draw,
+  dropInAndClimb,
+  file,
+  makeGame,
+  rideToStern,
+  useStorage,
+  type H,
+} from './heroes-harness';
+import { ALL_STORY, RESTYLES_SEEN } from './story-seen';
 
 // Larry Koopa's airship (4-2), the crystal ball and World 4's bonus spot with its Hammer Bro
 // (docs/HEROES.md "Larry Koopa and the crystal ball", docs/WORLD_MAP.md "The bonus spot and its
@@ -57,7 +68,7 @@ const node = (id: string) => W4.nodes.find((n) => n.id === id) as MapNode;
 function onMap(over: Partial<SaveFile>): { h: H; map: () => WorldMapScene } {
   const h = makeGame();
   h.game.deps.settings = { dev: false } as Settings;
-  file(over);
+  file({ story: [...ALL_STORY], ...over }); // Toad's map scenes (0.4.13) are seen
   h.game.openFile(1);
   h.idle(8);
   expect(h.top()).toBeInstanceOf(WorldMapScene);
@@ -67,7 +78,9 @@ function onMap(over: Partial<SaveFile>): { h: H; map: () => WorldMapScene } {
 /** Into Larry's room as from the airship deck's stern pipe; Larry is found once spawned. */
 function intoAirship(h: H): { level: LevelScene; larry: Larry } {
   h.game.startLevel(getLevel('4-2-larry'), { mode: 'fall', x: 2, y: 12, time: 300 });
-  h.step();
+  // Dropping in from the ceiling pipe, Larry has his say first (campaign, story/level-beats.ts).
+  h.until(() => h.top() instanceof CardScene, 200);
+  expect(closeCards(h)).toEqual(LARRY_PAGES);
   const level = h.top() as LevelScene;
   expect(level).toBeInstanceOf(LevelScene);
   h.until(() => level.world.entities.some((e) => e instanceof Larry), 120);
@@ -101,14 +114,11 @@ describe('the crystal ball (campaign)', () => {
     const { level, larry } = intoAirship(h);
     beatLarry(h, level, larry);
     touchBall(h, level);
-    const card = h.top() as CardScene;
-    expect(card).toBeInstanceOf(CardScene);
-    expect(card.lines).toEqual(CRYSTAL_BALL_CARD);
-    expect(h.said.some((t) => t.startsWith('THE CRYSTAL BALL SHOWS WHERE YOUR FRIENDS ARE HIDDEN!'))).toBe(
-      true,
-    );
-    h.idle(32);
-    h.tap('jump');
+    // The campaign's story: the two pages of docs/STORY.md 2.7 (CRYSTAL_BALL_CARD outside it).
+    expect(h.top()).toBeInstanceOf(CardScene);
+    expect(closeCards(h)).toEqual(STORY_CRYSTAL_BALL_PAGES);
+    expect(h.said.some((t) => t.startsWith('LARRY DROPPED HIS CRYSTAL BALL!'))).toBe(true);
+    expect(h.said.some((t) => t.startsWith('...SO IT SHOWS WHERE YOUR FRIENDS ARE HIDDEN!'))).toBe(true);
     const map = h.top() as WorldMapScene;
     expect(map).toBeInstanceOf(WorldMapScene);
     expect(map.page.id).toBe('smb-4');
@@ -159,6 +169,9 @@ describe('the crystal ball (campaign)', () => {
     // Down out of the pipe in the ceiling onto the floor (row 13), still no clock.
     const p = cabin.world.player;
     expect(p.body.y).toBeLessThan(0);
+    // Larry's cards (campaign) come first, over the frozen room, then the drop and the fight.
+    h.until(() => h.top() instanceof CardScene, 30);
+    expect(closeCards(h)).toEqual(LARRY_PAGES);
     h.until(() => p.body.onGround, 200);
     expect((p.body.y + p.body.h) >> 8).toBe(13 * 16);
     expect(p.centerX >> 8).toBe(CEILING_PIPE_MID);
@@ -292,15 +305,17 @@ describe('crystal-ball hints on the map', () => {
     });
     const { sprites, texts } = draw(map());
     expect(sprites.some((s) => s.key === 'mario@luigi~shade-grass')).toBe(true);
-    expect(map().hintLine).toBe('SOMEONE IS HIDING IN THIS LEVEL');
-    expect(texts.map((t) => t.str)).toContain('SOMEONE IS HIDING IN THIS LEVEL');
-    expect(h.said.some((t) => t.includes('Someone is hiding in this level.'))).toBe(true);
+    // Toad's line for Luigi (0.4.13, story/script.ts MISSED_HINT).
+    expect(map().hintLine).toBe('TOAD: I HEAR A MUSTACHE SIGH...');
+    expect(texts.map((t) => t.str)).toContain('TOAD: I HEAR A MUSTACHE SIGH...');
+    expect(h.said.some((t) => t.includes('Toad: I hear a mustache sigh...'))).toBe(true);
   });
 
   it("Unlock all shows no silhouette on a node the file hasn't really reached", () => {
     const h = makeGame();
     h.game.deps.settings = { dev: true } as Settings;
     file({
+      story: [...RESTYLES_SEEN],
       cleared: ['1-0'],
       secrets: ['larry'],
       devUnlockAll: true,

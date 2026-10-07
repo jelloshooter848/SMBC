@@ -8,6 +8,25 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.12] - 2026-10-07
+
+### Added
+
+- The Chapter 1 story (campaign). Toad opens the game in 1-0 and Bowser teases the stolen heroes. Toad guides you on the
+  world map: each world's welcome, riddle hints for the heroes still missing, and the big moments (the airship crash,
+  the rift). Each freed hero gets a first card, and Simon tells of the stolen wand.
+- Six partners to talk to along the way, one per hero's level, with original art.
+- The castle scenes are rewritten: the fake Bowsers in 1-4 to 7-4 give themselves away with a flicker during the fight
+  (a steady outline with reduce flashing on) and show their true form when beaten, and each castle has two pages of
+  news.
+- 8-4's finale: Bowser's line, the wand breaking into a rift over the lava, Toad in place of the princess, a new credits
+  ending, and the road into the Lost Kingdom.
+- Remarks when you first see a restyled level, and Larry's and the crystal ball's pages.
+- Each story scene plays once per save file (Larry's once per run); OK reads on, BACK skips the rest. Classic play
+  keeps the original text.
+
+## [0.4.11] - 2026-10-07
+
 ### Added
 
 - Hero tributes in the campaign: each freed hero's level takes on the look and music of their own game, coin heavens
@@ -438,7 +457,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...HEAD
+[0.4.12]: https://github.com/jelloshooter848/SMBC/compare/v0.4.11...v0.4.12
+[0.4.11]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/jelloshooter848/SMBC/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/jelloshooter848/SMBC/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/jelloshooter848/SMBC/compare/v0.4.7...v0.4.8

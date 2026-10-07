@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RESTYLES_SEEN } from './story-seen';
 import { getLevel } from '@content/levels';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
@@ -283,6 +284,7 @@ describe('the campaign variant of 4-2', () => {
 /** A campaign game on 4-2 (file 1 on World 4), with the hero placed by the caller. */
 function in42(h: H, secrets: string[] = []): LevelScene {
   file({
+    story: [...RESTYLES_SEEN],
     cleared: ['1-0', '4-1'],
     pages: ['smb-1', 'smb-4'],
     position: { page: 'smb-4', node: '4-2' },

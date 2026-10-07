@@ -28,6 +28,7 @@ import {
   useStorage,
   type H,
 } from './heroes-harness';
+import { ALL_STORY } from './story-seen';
 
 // The MINI GAME ARENA (0.4.7): the hub's first pad leads to it; one pad per game the registries
 // list, found by the file's own progress (met heroes, 1-0, training answers, Larry's airship, the
@@ -110,6 +111,7 @@ describe('the Warp Zone hub: the Arena pad', () => {
         secrets: ['bonus-1'],
         pages: ['smb-1', 'hub'],
         position: { page: 'hub', node: 'warp-arena' },
+        story: [...ALL_STORY], // Toad's first-visit line: toad-guide.test.ts
       }),
     );
     h.idle(8);
