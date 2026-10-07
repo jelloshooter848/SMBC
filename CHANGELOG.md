@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.14] - 2026-10-07
+
 ### Changed
 
 - Luigi's Mirror Race now runs over the full Lost Levels 1-1: piranha plants, Koopas and a Paratroopa, the poison
@@ -478,7 +480,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.13...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.14...HEAD
+[0.4.14]: https://github.com/jelloshooter848/SMBC/compare/v0.4.13...v0.4.14
 [0.4.13]: https://github.com/jelloshooter848/SMBC/compare/v0.4.12...v0.4.13
 [0.4.12]: https://github.com/jelloshooter848/SMBC/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/jelloshooter848/SMBC/compare/v0.4.10...v0.4.11
