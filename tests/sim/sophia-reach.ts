@@ -394,7 +394,13 @@ const keyOf = (s: Omit<Spot, 'path'>) =>
  * Can Sophia III (in `power`, with Jason) finish level `id` from its start? `budget` caps the
  * number of moves played.
  */
-export function reach(id: string, power = 'small', budget = 20000): ReachResult {
+export function reach(
+  id: string,
+  power = 'small',
+  budget = 20000,
+  /** Stop at the first spot this accepts (how: 'goal') instead of the level's end. */
+  goal?: (s: Omit<Spot, 'path'>) => boolean,
+): ReachResult {
   const main = getLevel(id);
   const seen = new Set<string>();
   const queue: Spot[] = [];
@@ -439,6 +445,8 @@ export function reach(id: string, power = 'small', budget = 20000): ReachResult 
       return enter(level, { x: o.target.x, y: o.target.y, mode }, path);
     }
     if (o.kind === 'stand' && o.spot) {
+      if (goal?.(o.spot))
+        return { done: true, how: 'goal', spots: seen.size, areas: [...areas], furthest, path };
       const k = keyOf(o.spot);
       if (seen.has(k)) return null;
       seen.add(k);
@@ -559,4 +567,41 @@ export function replay(
     o = play(blank(level.id), level, power, null, areaStart(level, o.target));
   }
   return { done: o.kind === 'done', how: o.how ?? null, at: 'end' };
+}
+
+/**
+ * A found route played as one continuous run (one World, as a player would): each step's move,
+ * then nothing held until she stands still again. Steps riding lifts are not supported. Use its
+ * `controller` in runSim; `done` is true once the last step has settled.
+ */
+export function continuous(power: string, path: string[]) {
+  const steps = path.filter((s) => !s.startsWith('enter '));
+  let i = 0;
+  let move: Move | null = null;
+  let t = 0;
+  let still = 0;
+  return {
+    done: () => i >= steps.length,
+    controller(w: World): Action[] {
+      calm(w);
+      const step = steps[i];
+      if (step === undefined) return [];
+      if (!move) {
+        const m = /^(tank|jason)@-?\d+,-?\d+ (\S+)$/.exec(step);
+        if (!m) throw new Error(`not a continuous step: ${step}`);
+        const form: Form = sophiaState(w.player).jason ? 'jason' : 'tank';
+        move = moves(form, power, /water/.test(w.level.theme), true).find((x) => x.name === m[2]) ?? null;
+        if (!move) throw new Error(`no move: ${step}`);
+        t = 0;
+        still = 0;
+      }
+      if (t++ < move.frames) return move.act(w, t);
+      still = settled(w) ? still + 1 : 0;
+      if (still >= 3) {
+        i++;
+        move = null;
+      }
+      return [];
+    },
+  };
 }
