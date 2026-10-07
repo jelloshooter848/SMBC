@@ -8,6 +8,16 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Station Escape (Mega Man) is rebuilt in Mega Man 2's style:
+  - Mega Man climbs ladders: he can shoot left or right from them, let go to drop, and climb over the top onto the
+    floor above.
+  - The stage is laid out in Mega Man 2's screens: a run, a shaft two screens up, a run along the top, a drop two
+    screens down, then the boss shutters. The screen flips up (climbing) or down (falling) between them.
+  - Robots come back when you return to their screen, as in Mega Man 2.
+  - New checkpoints at the top of the shaft and before the boss door.
+
 ## [0.4.14] - 2026-10-07
 
 ### Changed

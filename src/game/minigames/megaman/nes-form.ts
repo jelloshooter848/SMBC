@@ -2,6 +2,7 @@ import type { CharacterDef, DamageModel } from '../../characters/character';
 import type { MovementProfile } from '../../characters/profile';
 import { MEGAMAN, MEGAMAN_PROFILE } from '../../characters/megaman';
 import { Projectile, type ProjectileSpec } from '../../entities/projectiles/projectile';
+import { climbingOver, ladderStep, onLadder } from './ladder';
 
 /*
  * Mega Man in NES form, for Station Escape only (as bill/commando.ts is Bill's Contra form): the
@@ -20,6 +21,8 @@ import { Projectile, type ProjectileSpec } from '../../entities/projectiles/proj
  *   then the usual blinking.
  * - His shots (buster, charge shot; the Saw Disc already did) pass through walls and floors, as
  *   every Mega Man weapon does on the NES.
+ * - Mega Man 2's ladders (ladder.ts): climbing, shooting from them, letting go, the climb over
+ *   the top, with their frames (climbing from behind, side-on shooting, the climb-over).
  */
 
 /** Jump speed (vel units: 4.87 px/f) and gravity (0.25 px/f²). */
@@ -52,9 +55,17 @@ export const NES_MEGAMAN: CharacterDef = {
   ...MEGAMAN,
   movement: NES_MEGAMAN_PROFILE,
   damage: { ...campaignDamage, knockback: { ...NES_KNOCKBACK } },
+  sprite(p, frame, reduceFlashing) {
+    const s = MEGAMAN.sprite(p, frame, reduceFlashing);
+    if (!onLadder(p) || p.dead) return s;
+    // On a ladder: side-on while a shot's pose lasts, else from behind (the climb-over at the top).
+    if (p.attackTimer > 0) return { ...s, frame: 'climb-shoot', flip: p.facing < 0 };
+    return { ...s, frame: climbingOver(p) ? 'climb-top' : `climb-${p.walkFrame & 1}`, flip: false };
+  },
   behaviour: {
     ...MEGAMAN.behaviour,
     update(p, input, world) {
+      ladderStep(p, input, world);
       const from = world.entities.length;
       MEGAMAN.behaviour.update?.(p, input, world);
       // The shots he fired this frame, again with the same place and speed, passing through walls.
