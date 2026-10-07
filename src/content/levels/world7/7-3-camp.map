@@ -18,12 +18,13 @@ parent: 7-3
 ;; `contra-jungle` (B3's art; the music is the theme's).
 
 [tiles]
-;; Rows 0-1 stay clear (no tiles) under the HUD. The cliff (columns 11-16, rows 2-8) overhangs the
-;; cave mouth (rows 9-12); column 16 is the cave's back, just off the screen.
+;; Rows 0-1 stay clear (no tiles) under the HUD. The cliff (columns 11-16, rows 3-8) overhangs the
+;; cave mouth (rows 9-12); column 16 is the cave's back, just off the screen. Its top is a row
+;; below the HUD's, so the jungle crowns on it (row 2) sit clear of the score and time.
 ;; 0               16
 .................
 .................
-.........ww######
+.........ww......
 .........ww######
 .........ww######
 .........ww######
@@ -47,7 +48,8 @@ pipe 16 11 right -> 7-3-falls 1 29
 
 [decor]
 ;; The jungle's hanging canopy for a ceiling; Bill's base: a searchlight, two sandbag walls (Bill
-;; beside them, its beam over him), a palm on the riverbank and jungle crowns on the cliff.
+;; beside them, its beam over him), a palm on the riverbank and jungle crowns on the cliff (below
+;; the HUD's rows: nothing but the canopy's dark vines hangs behind its letters).
 canopy-hang 0 0
 canopy-hang 2 0
 canopy-hang 4 0
@@ -61,5 +63,5 @@ sandbags 1 12
 sandbags 3 12
 searchlight 6 12
 palm 11 12
-canopy 12 1
-canopy 14 1
+canopy 12 2
+canopy 14 2
