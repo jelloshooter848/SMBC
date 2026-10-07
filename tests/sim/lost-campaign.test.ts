@@ -12,7 +12,7 @@ import { WorldMapScene } from '@game/scenes/world-map';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { IntroScene } from '@game/scenes/intro';
-import { CardScene, CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
+import { CardScene, MessageScene } from '@game/scenes/message';
 import { BowserSaysScene } from '@game/story/level-beats';
 import { CreditsScene } from '@game/scenes/credits';
 import { TitleScene } from '@game/scenes/title';
@@ -373,10 +373,9 @@ describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and
     enterHere(h);
     h.game.startLevel(getLevel('8-4-end'), { mode: 'stand' });
     h.step();
-    // The real king speaks first, once per file (story/level-beats.ts); OK closes it.
-    expect(h.top()).toBeInstanceOf(BowserSaysScene);
-    h.idle(CARD_GUARD_FRAMES + 1);
-    h.tap('jump');
+    // The real king's line plays once per file (story/level-beats.ts): this file has seen every
+    // story beat already, so he says nothing here.
+    expect(h.top()).not.toBeInstanceOf(BowserSaysScene);
     h.fire({ type: 'exit', next: 'end' });
     expect(h.top()).toBeInstanceOf(CreditsScene);
     h.until(() => h.top() instanceof WorldMapScene, 8000);
