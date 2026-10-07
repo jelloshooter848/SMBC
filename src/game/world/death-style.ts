@@ -67,7 +67,10 @@ const PIECES: readonly (readonly [number, number])[] = [
 ];
 const PIECE_COLOURS = ['#d82800', '#fc9838', '#fcfcfc', '#80d010'] as const;
 /** `explode`: the pieces' gravity (px a frame, each frame). */
-const PIECE_GRAVITY = 0.15;
+const PIECE_GRAVITY = 0.1;
+/** `explode`: the pieces' speed (a share of PIECES' px a frame) and size (px). */
+const PIECE_SPEED = 0.6;
+export const PIECE_SIZE = 5;
 /** `ninja`: the throw (vel units: up, back) and gravity for the arc. */
 export const NINJA_THROW_VY = 0x03000;
 export const NINJA_THROW_VX = 0x01000;
@@ -182,8 +185,8 @@ export function piecePositions(p: Player, t: number): { x: number; y: number; co
   const cx = toPx(b.x + (b.w >> 1));
   const cy = toPx(b.y + (b.h >> 1));
   return PIECES.map(([vx, vy], i) => ({
-    x: cx + Math.round(vx * age),
-    y: cy + Math.round(vy * age + (PIECE_GRAVITY * age * age) / 2),
+    x: cx - (PIECE_SIZE >> 1) + Math.round(vx * PIECE_SPEED * age),
+    y: cy - (PIECE_SIZE >> 1) + Math.round(vy * PIECE_SPEED * age + (PIECE_GRAVITY * age * age) / 2),
     colour: PIECE_COLOURS[i % PIECE_COLOURS.length] as string,
   }));
 }
@@ -228,6 +231,7 @@ export function renderDeath(
     if (view.reduceFlashing || ((t >> 1) & 1) === 0) drawHero();
     return true;
   }
-  for (const piece of piecePositions(p, t)) r.rect(piece.x - view.camX, piece.y, 3, 3, piece.colour);
+  for (const piece of piecePositions(p, t))
+    r.rect(piece.x - view.camX, piece.y, PIECE_SIZE, PIECE_SIZE, piece.colour);
   return true;
 }

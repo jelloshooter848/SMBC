@@ -40,12 +40,11 @@ describe('Shadow Duel: a cautious human (difficulty)', () => {
     expect(runs.reduce((a, r) => a + r.lost, 0) / runs.length).toBeGreaterThan(4);
   }, 300_000);
 
-  it('a clumsy player usually gets through, and falls short now and then', () => {
+  it('a clumsy player usually gets through, and loses lives on the way now and then', () => {
     const n = 24;
-    const { rate } = passRate(n, CLUMSY);
-    const fails = Math.round((1 - rate) * n);
+    const { rate, runs } = passRate(n, CLUMSY);
     expect(rate).toBeGreaterThanOrEqual(1 / 2);
-    expect(fails).toBeGreaterThanOrEqual(2);
+    expect(runs.filter((r) => r.deaths > 0).length).toBeGreaterThanOrEqual(2);
   }, 600_000);
 
   it.runIf(n > 0)(
@@ -71,8 +70,10 @@ describe('Shadow Duel: a cautious human (difficulty)', () => {
         const left = runs.map((r) => r.secondsLeft).sort((a, b) => a - b);
         const art = runs.filter((r) => r.arts === 2).length;
         const heal = runs.filter((r) => r.broke.includes(HEAL_LANTERN)).length;
+        const deaths = (runs.reduce((a, r) => a + r.deaths, 0) / n).toFixed(2);
+        const clean = runs.filter((r) => r.result === 'pass' && r.deaths === 0).length;
         console.log(
-          `${name}: pass ${(rate * 100).toFixed(0)}% of ${n} (HP lost ${lost}, to the Masked Ninja ${boss};`,
+          `${name}: pass ${(rate * 100).toFixed(0)}% of ${n}, ${((clean / n) * 100).toFixed(0)}% on the first life (lives lost ${deaths}; HP lost ${lost}, to the Masked Ninja ${boss};`,
           `seconds left: median ${left[left.length >> 1]}, lowest ${left[0]}; windmill ${art}, health lantern ${heal})`,
           JSON.stringify(fails),
         );

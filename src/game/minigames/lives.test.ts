@@ -16,8 +16,11 @@ describe("MiniLives (the World mini games' lives and checkpoints)", () => {
     expect(l.rest).toBe(1);
     expect(l.lose()).toBe('retry');
     expect(l.rest).toBe(0);
+    expect(l.lives).toBe(1);
     expect(l.lose()).toBe('over');
     expect(l.rest).toBe(0);
+    expect(l.over).toBe(true);
+    expect(l.lives).toBe(0);
   });
 
   it('Infinite lives (the dev assist, read at each death) never runs out or counts down', () => {

@@ -13,11 +13,12 @@ import type { Game } from '../../scenes/game';
 import { abilityHint } from '../../scenes/hints';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import { MiniGameMenuScene } from '../menu';
+import { GAME_OVER_FRAMES, lifeLostSaid, MiniLives, type MiniCheckpoint } from '../lives';
 import type { MiniGameResult } from '../types';
 import { drawBanner } from '../megaman/scene';
 import { CV_SOUNDS, STAGE_THEME } from './art';
 import { CastleDoor, Creature, CvShot, MedusaSpawner } from './creatures';
-import { Beast, BEAST_H, BEAST_HP, BossLife, Dracula, FlyingHead, SPOTS } from './dracula';
+import { Beast, BEAST_H, BEAST_HP, BossLife, Dracula, DRACULA_HP, FlyingHead, SPOTS } from './dracula';
 import { Burst } from './creatures';
 import { BAR_SEGMENTS, drawCastleHud, HUD_H } from './hud';
 import { hunterInput, SIMON_HUNTER } from './hunter';
@@ -53,7 +54,15 @@ export const CASTLE_STAGE = 18;
 export const CASTLE_KIT = { whip: 1, subs: 0, multi: 1, hearts: 5 } as const;
 
 export type CastlePhase =
-  'ready' | 'stage' | 'gate' | 'intro' | 'fight' | 'transform' | 'won' | 'dead' | 'over';
+  'ready' | 'stage' | 'gate' | 'intro' | 'fight' | 'transform' | 'won' | 'dead' | 'gameover' | 'over';
+
+/**
+ * Where a life starts (lives.ts, Castlevania's three lives): the entrance hall; the bone hall,
+ * once Simon is down the second flight of stairs; the door to Dracula's room, once it has opened.
+ */
+export const CASTLE_START: MiniCheckpoint = { id: 'start', x: 2, y: 12 };
+export const CASTLE_MID: MiniCheckpoint = { id: 'mid', x: 53, y: 12, at: 53, rows: [11, 12] };
+export const CASTLE_BOSS: MiniCheckpoint = { id: 'boss', x: 93, y: 12, at: Infinity };
 export type GateStep = 'opening' | 'walking' | 'closing';
 
 export interface CastleOptions {
@@ -71,15 +80,20 @@ const WALK_RIGHT: InputFrame = { ...NO_INPUT, held: (a) => a === 'right', dirX: 
  * Castlevania stairs, bats, Medusa heads and bone-throwing skeletons. Behind the door at the end
  * Dracula waits in two forms, each with a full ENEMY bar: the Count (teleports, a three-fireball
  * spread, only his head can be hurt), then, his head flown off, the beast (leaps about the room
- * and spits fans of fire; again only its head can be hurt). Beating the beast passes; losing every hit point, a pit or the clock running out fails; the menu's Give
- * up quits. A World of its own with a fresh GameState runs it, so the campaign is never touched.
+ * and spits fans of fire; again only its head can be hurt). Beating the beast passes. Losing
+ * every hit point, a pit or the clock running out costs one of three lives (the next starts at
+ * the last checkpoint); with none left it is GAME OVER and the round fails. The menu's Give up
+ * quits. A World of its own with a fresh GameState runs it, so the campaign is never touched.
  */
 export class CastleScene implements Scene {
-  readonly world: World;
+  /** This life's World (a new one at the checkpoint for each life). */
+  world: World;
   readonly state: GameState;
   readonly layout: CastleLayout = castleStage();
-  readonly door: CastleDoor;
+  door: CastleDoor;
   readonly life = new BossLife();
+  /** Three lives and the checkpoint the next one starts from. */
+  readonly lives: MiniLives;
   phase: CastlePhase = 'ready';
   gate: GateStep = 'opening';
   /** Frames since the scene started, and in the current phase. */
@@ -92,6 +106,7 @@ export class CastleScene implements Scene {
   banner: { lines: string[]; until: number; y: number } | null = null;
   private music: string | null = null;
   private readonly bossSeed: number;
+  private readonly seed: number | undefined;
   private timeSaid = false;
 
   constructor(
@@ -99,27 +114,47 @@ export class CastleScene implements Scene {
     private readonly done: (result: MiniGameResult) => void,
     opts: CastleOptions = {},
   ) {
-    const level = { ...this.layout.level, theme: STAGE_THEME } as typeof this.layout.level;
     const state = newGameState(SIMON_HUNTER);
-    state.kit = { ...CASTLE_KIT };
-    state.hp = MAX_HP;
-    state.lives = 1;
     state.world = 5;
     state.stage = 4;
     this.state = state;
     this.bossSeed = opts.bossSeed ?? 5;
-    this.world = new World(level, game.ctx, state, {
-      seed: opts.seed ?? levelSeed(level),
+    this.seed = opts.seed;
+    this.lives = new MiniLives({
+      start: CASTLE_START,
+      checkpoints: [CASTLE_MID, CASTLE_BOSS],
+      infinite: () => game.ctx.assist.infiniteLives,
+    });
+    ({ world: this.world, door: this.door } = this.buildWorld());
+  }
+
+  /**
+   * A life's World, at the current checkpoint: Simon with his start kit (Castlevania takes the
+   * sub-weapon and the hearts with a life) and every hit point, the candles and creatures back.
+   */
+  private buildWorld(): { world: World; door: CastleDoor } {
+    const level = { ...this.layout.level, theme: STAGE_THEME } as typeof this.layout.level;
+    const state = this.state;
+    state.kit = { ...CASTLE_KIT };
+    state.hp = MAX_HP;
+    state.lives = this.lives.lives;
+    const { x, y } = this.lives.start;
+    const world = new World(level, this.game.ctx, state, {
+      x,
+      y,
+      seed: this.seed ?? levelSeed(level),
       scorePopups: false, // Castlevania floats no points (the HUD keeps the score)
+      deathStyle: 'collapse',
       extraEntities: castleEntities({ onSubWeapon: (p) => this.gotDagger(p) }),
     });
-    this.world.time = null;
-    this.world.camera.allowLeftScroll = true;
+    world.time = null;
+    world.camera.allowLeftScroll = true;
     const d = this.layout.door;
-    this.door = new CastleDoor(d.x, d.y, T.CASTLE_BRICK, T.AIR);
-    this.world.spawn(this.door);
+    const door = new CastleDoor(d.x, d.y, T.CASTLE_BRICK, T.AIR);
+    world.spawn(door);
     // The candles show on READY already; the world does not step until then.
-    this.world.spawnInView();
+    world.spawnInView();
+    return { world, door };
   }
 
   get player(): Player {
@@ -189,7 +224,9 @@ export class CastleScene implements Scene {
   }
 
   private get menuOpen(): boolean {
-    return this.phase !== 'won' && this.phase !== 'dead' && this.phase !== 'over';
+    return (
+      this.phase !== 'won' && this.phase !== 'dead' && this.phase !== 'gameover' && this.phase !== 'over'
+    );
   }
 
   update(input: InputFrame): void {
@@ -211,6 +248,7 @@ export class CastleScene implements Scene {
       case 'stage':
         this.tickClock();
         this.step(input);
+        if (this.phase === 'stage') this.reachCheckpoint();
         if (this.phase === 'stage' && this.atDoor()) this.openGate();
         return;
       case 'gate':
@@ -228,7 +266,47 @@ export class CastleScene implements Scene {
         return this.updateWon();
       case 'dead':
         return this.step(NO_INPUT);
+      case 'gameover':
+        if (this.phaseT >= GAME_OVER_FRAMES) this.finish('fail');
+        return;
     }
+  }
+
+  /** The bone hall's checkpoint, once Simon is down there. */
+  private reachCheckpoint(): void {
+    const p = this.player;
+    if (p.dead) return;
+    this.lives.reach(p.centerX >> 12, (p.body.y + (p.body.h >> 1)) >> 12);
+  }
+
+  /** What the announcer says as Simon loses this life (before the count drops): the lives left. */
+  private lifeLine(): string {
+    return lifeLostSaid('Simon', this.lives.rest, this.game.ctx.assist.infiniteLives);
+  }
+
+  /**
+   * The death has played out: with a life left, the next one starts at the checkpoint (READY,
+   * a full clock, Dracula's bars full again); none left, GAME OVER, and then the round fails.
+   */
+  private lifeLost(): void {
+    const lost = this.lives.lose();
+    this.state.lives = Math.max(0, this.lives.lives);
+    if (lost === 'over') {
+      this.setPhase('gameover');
+      this.stopMusic();
+      return;
+    }
+    this.clock = 0;
+    this.timeSaid = false;
+    this.dracula = null;
+    this.beast = null;
+    this.banner = null;
+    this.life.hp = DRACULA_HP;
+    this.life.max = DRACULA_HP;
+    this.life.iframes = 0;
+    ({ world: this.world, door: this.door } = this.buildWorld());
+    this.setPhase('ready');
+    this.say(`${this.lives.lives === 1 ? 'Last life' : `${this.lives.lives} lives`}. Ready!`);
   }
 
   /** The clock (held by the Infinite time assist); at zero Simon falls. */
@@ -243,11 +321,11 @@ export class CastleScene implements Scene {
       this.world.kill(this.player);
       this.setPhase('dead');
       this.music = null;
-      this.say('Time is up. Try again.');
+      this.say(`Time is up. ${this.lifeLine()}`);
     }
   }
 
-  /** One frame of the world; a death ends the round once its jingle has played. */
+  /** One frame of the world; a death costs a life once it has played out (lifeLost). */
   private step(input: InputFrame): void {
     this.world.update([hunterInput(this.player, input)]);
     const events = this.world.events.splice(0);
@@ -255,9 +333,9 @@ export class CastleScene implements Scene {
       this.setPhase('dead');
       this.music = null;
       const fell = toPx(this.player.body.y) > SCREEN_H;
-      this.say(fell ? 'Simon fell. Try again.' : 'Simon is down. Try again.');
+      this.say(fell ? `Simon fell. ${this.lifeLine()}` : this.lifeLine());
     }
-    if (this.phase === 'dead' && events.some((e) => e.type === 'died')) this.finish('fail');
+    if (this.phase === 'dead' && events.some((e) => e.type === 'died')) this.lifeLost();
   }
 
   /* ---------- The dagger ---------- */
@@ -287,6 +365,7 @@ export class CastleScene implements Scene {
   }
 
   private openGate(): void {
+    this.lives.set('boss');
     this.setPhase('gate');
     this.gate = 'opening';
     this.banner = null;
@@ -470,6 +549,10 @@ export class CastleScene implements Scene {
     });
     if (this.phase === 'ready' && (this.game.ctx.reduceFlashing || ((this.phaseT >> 3) & 3) !== 3))
       r.text(font, 'READY', (SCREEN_W - 40) >> 1, 104);
+    if (this.phase === 'gameover') {
+      r.rect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H, '#000');
+      r.text(font, 'GAME OVER', (SCREEN_W - 72) >> 1, 112);
+    }
     const b = this.banner;
     if (b && this.t < b.until) drawBanner(r, font, b.lines, b.y);
   }

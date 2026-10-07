@@ -46,7 +46,12 @@ import {
   SPOT_CLEAR,
   SPOTS,
 } from './dracula';
+import { DEATH_FRAMES } from '@game/world/death-style';
+import { GAME_OVER_FRAMES } from '../lives';
 import {
+  CASTLE_BOSS,
+  CASTLE_MID,
+  CASTLE_START,
   CastleMenuScene,
   READY_FRAMES,
   TIME_LIMIT,
@@ -112,6 +117,12 @@ function warp(h: CastleHarness, cx: number, feet = 208): void {
 /** Through the door and on until Dracula is in the room. */
 function toFight(h: CastleHarness): Dracula {
   ready(h);
+  return toFightFrom(h);
+}
+
+/** From the stage (after READY): through the door and on until Dracula is in the room. */
+function toFightFrom(h: CastleHarness): Dracula {
+  expect(h.scene.phase).toBe('stage');
   h.game.ctx.assist.invulnerable = true;
   warp(h, 1500);
   for (let i = 0; i < 1500 && h.scene.phase !== 'fight'; i++) h.step(['right']);
@@ -583,24 +594,111 @@ describe("Dracula's Castle: endings, menu and assists", () => {
     expect(h.game.state).toEqual(before);
   });
 
-  it('standing still fails: the clock runs out (reported once)', () => {
-    const h = castleHarness({ keep: true });
-    h.step([], READY_FRAMES + TIME_LIMIT * 60 + 260);
-    expect(h.said).toContain('Time is up. Try again.');
+  it('standing still on the last life fails: the clock runs out, GAME OVER, then fail (reported once)', () => {
+    const h = castleHarness({ keep: true, assets: STUB_ASSETS });
+    h.scene.lives.rest = 0;
+    h.step([], READY_FRAMES + TIME_LIMIT * 60 + DEATH_FRAMES.collapse + 10);
+    expect(h.said).toContain('Time is up. Simon is down! Game over.');
+    expect(h.scene.phase).toBe('gameover');
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('GAME OVER');
+    expect(r.texts).toContain('P-00');
+    expect(h.results).toEqual([]);
+    h.step([], GAME_OVER_FRAMES);
     expect(h.results).toEqual(['fail']);
     for (let i = 0; i < 300; i++) h.step(i % 7 === 0 ? ['start'] : []);
     expect(h.results).toEqual(['fail']);
     expect(h.game.scenes.top).toBe(h.scene);
   });
 
-  it('losing every hit point fails', () => {
+  it('losing every hit point on the last life fails', () => {
     const h = castleHarness();
     ready(h);
+    h.scene.lives.rest = 0;
     h.scene.player.hp = 2;
     h.world.hurtPlayer(h.scene.player, 1);
-    for (let i = 0; i < 400 && h.results.length === 0; i++) h.step();
+    h.step();
+    expect(h.said.at(-1)).toBe('Simon is down! Game over.');
+    for (let i = 0; i < 800 && h.results.length === 0; i++) h.step();
     expect(h.results).toEqual(['fail']);
-    expect(h.said.at(-1)).toBe('Simon is down. Try again.');
+  });
+
+  it("three lives (P-03): Simon collapses (Castlevania's death, its own sound), and the next life starts at READY with P-02", () => {
+    const h = castleHarness({ assets: STUB_ASSETS });
+    ready(h);
+    expect(h.scene.lives.lives).toBe(3);
+    const hud = () => {
+      const r = new TextRenderer();
+      h.game.scenes.render(r);
+      return r.texts;
+    };
+    expect(hud()).toContain('P-03');
+    const w0 = h.world;
+    expect(w0.deathStyle).toBe('collapse');
+    h.scene.player.hp = 2;
+    h.world.hurtPlayer(h.scene.player, 1);
+    h.step();
+    expect(h.said.at(-1)).toBe('Simon is down! 2 lives left.');
+    expect(h.log.jingles).not.toContain('death');
+    expect(h.log.sfx).toContain('cv-death');
+    for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+    expect(h.results).toEqual([]);
+    expect(h.scene.phase).toBe('ready');
+    expect(h.world).not.toBe(w0);
+    expect(h.scene.player.hp).toBe(MAX_HP);
+    expect(h.scene.seconds).toBe(TIME_LIMIT);
+    expect(hud()).toContain('P-02');
+    // Back at the entrance hall.
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(CASTLE_START.x);
+  });
+
+  it('checkpoints: the bone hall once Simon is down there, the door once it has opened; Dracula is whole again', () => {
+    const h = castleHarness();
+    ready(h);
+    h.game.ctx.assist.invulnerable = true;
+    warp(h, CASTLE_MID.x * 16 + 24);
+    h.step([], 2);
+    expect(h.scene.lives.current.id).toBe('mid');
+    const kill = () => {
+      h.game.ctx.assist.invulnerable = false;
+      h.scene.player.hp = 1;
+      h.world.hurtPlayer(h.scene.player, 1);
+      h.step();
+      for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+      expect(h.scene.phase).toBe('ready');
+    };
+    kill();
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(CASTLE_MID.x);
+    h.step([], READY_FRAMES);
+    toFightFrom(h);
+    expect(h.scene.lives.current.id).toBe('boss');
+    h.scene.life.hp = 3;
+    kill();
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(CASTLE_BOSS.x);
+    expect(h.scene.dracula).toBeNull();
+    expect(h.scene.life.hp).toBe(DRACULA_HP);
+    expect(h.scene.lives.lives).toBe(1);
+    // In through the door again.
+    h.step([], READY_FRAMES);
+    toFightFrom(h);
+    expect(h.scene.enemyBar()).toBe(16);
+  });
+
+  it('Infinite lives (dev assist) keeps the count; no TRY AGAIN until the last life is gone', () => {
+    const h = castleHarness();
+    ready(h);
+    h.game.ctx.assist.infiniteLives = true;
+    for (let k = 0; k < 4; k++) {
+      h.scene.player.hp = 1;
+      h.world.hurtPlayer(h.scene.player, 1);
+      h.step();
+      for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+      expect(h.scene.phase).toBe('ready');
+      h.step([], READY_FRAMES);
+    }
+    expect(h.scene.lives.lives).toBe(3);
+    expect(h.results).toEqual([]);
   });
 
   it('the menu offers Continue and Give up (quit), from the stage and from the throne room', () => {

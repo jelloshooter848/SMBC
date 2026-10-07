@@ -48,11 +48,16 @@ import {
 } from './masked';
 import { T } from '@game/level/tiles';
 import { BAR_H, CLASH_AT, CUTSCENE_FRAMES } from './cutscene';
+import { DEATH_FRAMES } from '@game/world/death-style';
+import { GAME_OVER_FRAMES } from '../lives';
 import {
   ART_BANNER_FRAMES,
   BANNER_AVOIDS,
   BANNER_SLOTS,
   bannerBox,
+  DUEL_BOSS,
+  DUEL_MID,
+  DUEL_START,
   DuelMenuScene,
   READY_FRAMES,
   SKY_TOP,
@@ -554,28 +559,92 @@ describe('Shadow Duel: endings, menu and assists', () => {
     expect(h.game.state).toEqual(before);
   }, 60_000);
 
-  it('standing still fails: the clock runs out (reported once)', () => {
-    const h = duelHarness({ keep: true, skipCutscene: true });
-    h.step([], READY_FRAMES + TIME_LIMIT * 60 + 260);
-    expect(h.said).toContain('Time is up. Try again.');
+  it('standing still on the last life fails: the clock runs out, GAME OVER, then fail (reported once)', () => {
+    const h = duelHarness({ keep: true, skipCutscene: true, assets: STUB_ASSETS });
+    h.scene.lives.rest = 0;
+    h.step([], READY_FRAMES + TIME_LIMIT * 60 + DEATH_FRAMES.ninja + 10);
+    expect(h.said).toContain('Time is up. Ryu is down! Game over.');
+    expect(h.scene.phase).toBe('gameover');
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('GAME OVER');
+    expect(h.results).toEqual([]);
+    h.step([], GAME_OVER_FRAMES);
     expect(h.results).toEqual(['fail']);
     for (let i = 0; i < 300; i++) h.step(i % 7 === 0 ? ['start'] : []);
     expect(h.results).toEqual(['fail']);
     expect(h.game.scenes.top).toBe(h.scene);
   });
 
-  it('losing every hit point fails; so does a pit', () => {
+  it('losing every hit point on the last life fails; so does a pit', () => {
     const h = round();
+    h.scene.lives.rest = 0;
     h.scene.player.hp = 2;
     h.world.hurtPlayer(h.scene.player, 1);
-    for (let i = 0; i < 400 && h.results.length === 0; i++) h.step();
+    for (let i = 0; i < 800 && h.results.length === 0; i++) h.step();
     expect(h.results).toEqual(['fail']);
-    expect(h.said.at(-1)).toBe('Ryu is down. Try again.');
+    expect(h.said).toContain('Ryu is down! Game over.');
     const h2 = round();
+    h2.scene.lives.rest = 0;
     warp(h2, 70 * 16 + 16);
-    for (let i = 0; i < 400 && h2.results.length === 0; i++) h2.step();
+    for (let i = 0; i < 800 && h2.results.length === 0; i++) h2.step();
     expect(h2.results).toEqual(['fail']);
-    expect(h2.said.at(-1)).toBe('Ryu fell. Try again.');
+    expect(h2.said).toContain('Ryu fell. Ryu is down! Game over.');
+  });
+
+  it("three lives (P-03): Ryu's own death (thrown back, its own sound), then READY at the checkpoint with P-02", () => {
+    const h = round({ assets: STUB_ASSETS });
+    const hud = () => {
+      const r = new TextRenderer();
+      h.game.scenes.render(r);
+      return r.texts;
+    };
+    expect(hud()).toContain('P-03');
+    const w0 = h.world;
+    expect(w0.deathStyle).toBe('ninja');
+    h.scene.player.hp = 1;
+    h.world.hurtPlayer(h.scene.player, 1);
+    h.step();
+    expect(h.said.at(-1)).toBe('Ryu is down! 2 lives left.');
+    expect(h.log.jingles).not.toContain('death');
+    expect(h.log.sfx).toContain('ng-death');
+    for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+    expect(h.scene.phase).toBe('ready');
+    expect(h.world).not.toBe(w0);
+    expect(h.scene.player.hp).toBe(MAX_HP);
+    expect(h.scene.seconds).toBe(TIME_LIMIT);
+    expect(hud()).toContain('P-02');
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(DUEL_START.x);
+  });
+
+  it('checkpoints: past the tower, and the arena door once through it; the Masked Ninja is whole again; Infinite lives keeps the count', () => {
+    const h = round();
+    h.game.ctx.assist.invulnerable = true;
+    warp(h, DUEL_MID.x * 16 + 24);
+    h.step([], 2);
+    expect(h.scene.lives.current.id).toBe('mid');
+    const kill = () => {
+      h.game.ctx.assist.invulnerable = false;
+      h.scene.player.hp = 1;
+      h.world.hurtPlayer(h.scene.player, 1);
+      h.step();
+      for (let i = 0; i < 400 && h.scene.phase === 'dead'; i++) h.step();
+      expect(h.scene.phase).toBe('ready');
+    };
+    kill();
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(DUEL_MID.x);
+    h.step([], READY_FRAMES);
+    toFight(h);
+    expect(h.scene.lives.current.id).toBe('boss');
+    h.scene.life.hp = 2;
+    h.game.ctx.assist.infiniteLives = true;
+    kill();
+    expect(h.scene.lives.lives).toBe(2);
+    expect(toPx(h.scene.player.body.x) >> 4).toBe(DUEL_BOSS.x);
+    expect(h.scene.boss).toBeNull();
+    h.step([], READY_FRAMES);
+    toFight(h);
+    expect(h.scene.enemyBar()).toBe(16);
   });
 
   it('the menu offers Continue and Give up (quit), from the cutscene, the stage and the dojo', () => {

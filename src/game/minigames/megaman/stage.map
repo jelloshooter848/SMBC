@@ -37,13 +37,13 @@ HHHHHHHHHHBBHHHH HHH...HHHHHHHHHH HHBBBBHHHHHHHHH. ..HHHHHH...HHHHH HHHHHHHHHHHH
 [entities]
 hopper 13 12
 drone 26 5
-turret 29 12
+turret 31 12
 capsule 36 10
 hopper 45 12
 drone 54 4
 drone 63 5
-hopper 62 12
-turret 66 12
+hopper 64 12
+turret 68 12
 turret 74 9 mount=ceiling
 shutter 80 11
 dark-megaman 91 12

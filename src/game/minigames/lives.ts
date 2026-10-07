@@ -60,9 +60,12 @@ export class MiniLives {
     this.checkpoints = opts.checkpoints ?? [];
   }
 
-  /** Lives counting the one in play. */
+  /** The last life was lost (GAME OVER). */
+  over = false;
+
+  /** Lives left counting the one in play (or the next one to start); 0 once the game is over. */
   get lives(): number {
-    return this.rest + 1;
+    return this.over ? 0 : this.rest + 1;
   }
 
   /** The start tile of the next life (WorldStart.x / y). */
@@ -99,18 +102,21 @@ export class MiniLives {
    */
   lose(): LifeLost {
     if (this.infinite()) return 'retry';
-    if (this.rest <= 0) return 'over';
+    if (this.rest <= 0) {
+      this.over = true;
+      return 'over';
+    }
     this.rest--;
     return 'retry';
   }
 }
 
 /**
- * What the announcer says when `hero` loses a life (`rest`: the lives left in reserve after it),
- * as Bill's scene words it; GAME OVER has its own line.
+ * What the announcer says when `hero` loses a life (`left`: the lives left after it, counting
+ * the next one, MiniLives.lives; 0 is GAME OVER), as Bill's scene words it.
  */
-export function lifeLostSaid(hero: string, rest: number, infinite: boolean): string {
+export function lifeLostSaid(hero: string, left: number, infinite: boolean): string {
   if (infinite) return `${hero} is down!`;
-  if (rest <= 0) return `${hero} is down! Game over.`;
-  return rest === 1 ? `${hero} is down! Last life.` : `${hero} is down! ${rest} lives left.`;
+  if (left <= 0) return `${hero} is down! Game over.`;
+  return left === 1 ? `${hero} is down! Last life.` : `${hero} is down! ${left} lives left.`;
 }
