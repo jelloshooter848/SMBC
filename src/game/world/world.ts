@@ -31,6 +31,7 @@ import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bu
 import { BalanceLift } from '../entities/objects/balance-lift';
 import { Princess } from '../entities/objects/princess';
 import { Captive } from '../entities/objects/captive';
+import { Partner } from '../entities/objects/partner';
 import { Toad } from '../entities/objects/toad';
 import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
@@ -109,6 +110,10 @@ export type WorldEvent =
   | { type: 'talk'; hero: string; player: number }
   /** A player came within a captive's talking reach (TALK shows for them): announced. */
   | { type: 'captive-near'; hero: string; player: number }
+  /** A player pressed up next to a partner (campaign story): the level plays its pages. */
+  | { type: 'partner'; who: string; player: number }
+  /** A player came within a partner's reach (TALK or READ shows for them): announced. */
+  | { type: 'partner-near'; who: string; player: number }
   /**
    * A player touched Larry Koopa's crystal ball (objects/crystal-ball.ts): the level shows its
    * card and ends the area (campaign: 4-2's secret exit; else on to `next`).
@@ -764,6 +769,11 @@ export class World {
         if (!hero || this.captives?.isFreed(id)) return null;
         return new Captive(s.x, s.y, hero);
       }
+      case 'partner':
+        // A campaign story partner (`partner x y who=<id>`): only while the story plays.
+        return this.storyMode
+          ? Partner.create(s.x, s.y, String(s.props?.who ?? ''), Number(s.props?.dx ?? 0))
+          : null;
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
@@ -1202,7 +1212,7 @@ export class World {
     return this.vineArrival !== null;
   }
 
-  /** Up pressed by a player within a captive's reach: a `talk` event (one a frame). */
+  /** Up pressed by a player within a captive's reach: a `talk` event; a partner's: a `partner` event (one a frame). */
   private checkTalk(inputs: InputFrame[]): void {
     for (const [i, p] of this.players.entries()) {
       if (!(inputs[i] ?? NO_INPUT).pressed('up') || p.vine) continue;
@@ -1210,6 +1220,14 @@ export class World {
       if (c) {
         c.prompt = false; // hidden under the dialogue; back on the next update in reach
         this.events.push({ type: 'talk', hero: c.hero.id, player: i });
+        return;
+      }
+      const partner = this.entities.find(
+        (e): e is Partner => e instanceof Partner && e.alive && e.inReach(p),
+      );
+      if (partner) {
+        partner.prompt = false; // hidden under its pages; back on the next update in reach
+        this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }
     }

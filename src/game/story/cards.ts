@@ -12,6 +12,8 @@ export interface StoryCardOptions {
   bottom?: boolean;
   /** Frames each page waits before going on by itself (default STORY_CARD_TIMEOUT). */
   timeout?: number;
+  /** Runs when page `i` is closed with OK (not when BACK skips the rest), before what follows. */
+  onNext?: (i: number) => void;
 }
 
 /**
@@ -47,11 +49,10 @@ export function playStoryCards(
         game,
         page,
         () => {
-          if (last) close();
-          else {
-            game.scenes.pop();
-            show(i + 1);
-          }
+          game.scenes.pop();
+          opts.onNext?.(i);
+          if (last) done();
+          else show(i + 1);
         },
         world,
         opts.timeout ?? STORY_CARD_TIMEOUT,
