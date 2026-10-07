@@ -8,6 +8,11 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Larry's Airship in the Mini Game Arena (and Dev → Mini games) now opens character select so
+  you can pick which freed hero to play the round as; the save's hero is unchanged.
+
 ## [0.4.8] - 2026-10-07
 
 ### Added
