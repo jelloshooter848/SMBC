@@ -90,7 +90,7 @@ export function letGoLadder(p: Player): void {
 }
 
 /**
- * One frame of ladders for `p` (after Player.update, before his shots): taking hold, climbing,
+ * One frame of ladders for `p` (run before the kit's update, from nes-form.ts): taking hold, climbing,
  * letting go. Returns whether he is on a ladder now.
  */
 export function ladderStep(p: Player, input: InputFrame, world: World): boolean {

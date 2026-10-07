@@ -24,6 +24,7 @@ import { NES_MEGAMAN } from './nes-form';
 import { EnemyShot, Robot, Shutter } from './robots';
 import { Pickup } from '../../entities/objects/pickup';
 import { StationWeaponScene } from './weapon-menu';
+import { onLadder } from './ladder';
 import {
   isRobotSpawn,
   screenAt,
@@ -274,13 +275,14 @@ export class StationScene implements Scene {
     const top = tileToSub(s.y);
     const bottom = tileToSub(s.y + SCREEN_ROWS);
     const col = tileAt(b.x + (b.w >> 1));
-    const next =
-      mid < top
-        ? screenAt(this.layout.screens, col, s.y - 1)
-        : mid >= bottom
-          ? screenAt(this.layout.screens, col, s.y + SCREEN_ROWS)
-          : -1;
-    if (next >= 0) return this.startScroll(next, mid < top ? -1 : 1);
+    // As in Mega Man 2, only climbing a ladder scrolls up; falling off the bottom scrolls down.
+    const up = mid < top && onLadder(p);
+    const next = up
+      ? screenAt(this.layout.screens, col, s.y - 1)
+      : mid >= bottom
+        ? screenAt(this.layout.screens, col, s.y + SCREEN_ROWS)
+        : -1;
+    if (next >= 0) return this.startScroll(next, up ? -1 : 1);
     const at = this.cameraFor(this.screen);
     this.world.camera.x = at.x;
     this.world.camera.y = at.y;

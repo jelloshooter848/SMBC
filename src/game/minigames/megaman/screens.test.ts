@@ -310,6 +310,20 @@ describe("Station Escape: screens (Mega Man 2's camera)", () => {
     expect(kinds).toEqual(['met@78']);
   });
 
+  it('only climbing scrolls up: off his ladder, his middle above the screen top flips nothing (as in Mega Man 2)', () => {
+    const h = stationHarness();
+    ready(h);
+    place(h, 71, 42);
+    const b = h.scene.player.body;
+    // Mid-jump just above the shaft screen's top edge, not on a ladder.
+    b.y = tileToSub(30) - (b.h >> 1) - px(2);
+    b.vy = 0;
+    b.onGround = false;
+    h.step();
+    expect(h.scene.phase).toBe('stage');
+    expect(h.scene.screen).toBe(0);
+  });
+
   it('climbing back down flips the screen down, and the screen below has its robots again', () => {
     const h = stationHarness();
     ready(h);
