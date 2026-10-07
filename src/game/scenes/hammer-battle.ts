@@ -89,7 +89,8 @@ export class HammerBattleScene implements Scene {
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     if (this.over) return;
-    if (inputs.some((f) => f.pressed('start')) && this.world.activePlayers().length > 0) {
+    // No pause once the chest is down: quitting then would lose the prize already won.
+    if (!this.chest && inputs.some((f) => f.pressed('start')) && this.world.activePlayers().length > 0) {
       this.game.scenes.push(new PauseScene(this.game));
       return;
     }

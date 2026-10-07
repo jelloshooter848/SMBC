@@ -206,8 +206,10 @@ describe('Mirror Race: the course and the rival', () => {
           expect(a, `${x},${y}`).toBe(b);
           continue;
         }
-        // Enemy glyphs are spawns, not tiles: both read as air there; the bricks really go.
+        // Enemy glyphs are spawns, not tiles: both read as air there; the bricks really go. A listed
+        // tile 'from' is what Lost Levels 1-1 really has there (so no coin is lost unlisted).
         if (c.from === '=') expect([glyph(b), glyph(a)]).toEqual(['=', '.']);
+        else if (c.from === '.') expect(glyph(b), `${x},${y}`).toBe('.');
       }
     // Each listed enemy glyph change is a spawn moved or gone.
     const at = (l: typeof race, x: number, y: number) => l.entities.some((e) => e.x === x && e.y === y);

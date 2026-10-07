@@ -23,7 +23,7 @@ export function raceCourse(): LevelData {
  * - The two bricks at the end of the low brick row over the first stairs (68-69, row 5) are gone:
  *   they made the jump from the bricks beyond the first pit up onto the brick bridge over the wide
  *   pit a 7 px window; without them it is 43 px. The Goomba that walked on them starts on the rest
- *   of the row (69 → 64).
+ *   of the row (69 → 66).
  * - Enemies drawn into the tiles: the Goomba by the third ground pipe (46), the Koopa on the ?
  *   blocks under the bridge (88, row 8), the two Koopas before the second bridge (115, 118), the
  *   Koopa on the pipe after it (143), and the red Koopas under the ? row with the floating pipe
@@ -34,7 +34,7 @@ export const RACE_TILE_CHANGES: readonly (readonly [number, number, string, stri
   [68, 5, '=', '.'],
   [69, 5, '=', '.'],
   [69, 4, 'g', '.'],
-  [64, 4, '.', 'g'],
+  [66, 4, '.', 'g'],
   [46, 12, 'g', '.'],
   [88, 8, 'k', '.'],
   [115, 12, 'k', '.'],

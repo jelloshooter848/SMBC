@@ -92,6 +92,15 @@ describe("the Hammer Bros' treasure chest", () => {
     expect(h.game.scenes.top).toBe(h.battle);
   });
 
+  it('once the chest has dropped, pausing is off, so quitting cannot lose the prize', () => {
+    const h = beaten();
+    for (let i = 0; i < BATTLE_WIN_DELAY + 2; i++) h.step();
+    expect(h.battle.chest).not.toBeNull();
+    h.step(['start']);
+    h.step();
+    expect(h.game.scenes.top).toBe(h.battle);
+  });
+
   it('OPEN away from it does nothing; by it OPEN is offered and opens it; its item rises, then the win card', () => {
     const h = beaten();
     for (let i = 0; i < BATTLE_WIN_DELAY + 120; i++) h.step();
