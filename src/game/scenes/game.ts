@@ -109,6 +109,12 @@ export class Game {
    * own when the hero first arrives there (SaveFile.pendingReveal).
    */
   pendingReveal: string[] = [];
+  /**
+   * A one-time map cutscene to play before the next map's reveal: 'airship-crash' (Larry's
+   * airship crashing on World 4's bonus spot, map/airship-crash.ts), set when the crystal ball is
+   * taken. Never saved: it plays once, and a reload only draws the reveal.
+   */
+  mapCutscene: 'airship-crash' | null = null;
   /** The file's developer "Unlock all" map flag (SaveFile.devUnlockAll); see `mapUnlockAll`. */
   devUnlockAll = false;
   /** The file's developer "All heroes" flag (SaveFile.devAllHeroes); see `heroLocked`. */
@@ -517,6 +523,8 @@ export class Game {
   takeCrystalBall(levelId: string): void {
     if (!this.campaign) return;
     this.inventoryUnlocked = true;
+    // The first time only: World 4's map plays the airship's crash before the road draws in.
+    if (!this.mapProgress.secrets.includes(CRYSTAL_BALL)) this.mapCutscene = 'airship-crash';
     this.returnToMap(secretExit(this.mapProgress, levelId, CRYSTAL_BALL, this.deps.getLevel));
   }
 

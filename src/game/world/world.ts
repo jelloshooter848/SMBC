@@ -62,7 +62,18 @@ import { Larry } from '../entities/enemies/larry';
 import { startHp, type CharacterDef } from '../characters/character';
 
 export type WorldEvent =
-  | { type: 'pipe'; target: { level: string; x: number; y: number; exitDir?: TransferMode; secret?: string } }
+  /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
+  | {
+      type: 'pipe';
+      target: {
+        level: string;
+        x: number;
+        y: number;
+        exitDir?: TransferMode;
+        secret?: string;
+        chain?: boolean;
+      };
+    }
   | { type: 'exit'; next: string }
   /** `player`: index of the player whose death ended the attempt (they pick the next hero). */
   | { type: 'died'; player?: number }
@@ -124,6 +135,8 @@ export interface WorldStart {
    * mini game handles some other way), undefined leaves it to the built-in types.
    */
   extraEntities?: (s: EntitySpawn, world: World) => Entity | null | undefined;
+  /** A `climb` arrival up an anchor chain (4-2's anchor to Larry's airship): the vine is a chain. */
+  chain?: boolean;
 }
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
@@ -149,6 +162,21 @@ const ENEMY_REMOVAL_PX = 6 * 16;
  */
 const ARRIVAL_VINE_TILES = 5;
 const ARRIVAL_VINE_RISE = 0.5;
+/** An anchor chain's arrival rises faster (it may reach a deck high up the screen). */
+const ARRIVAL_CHAIN_RISE = 1.5;
+
+/**
+ * px: the top of a climb arrival's vine at column `x` (the start's x; it rises from the screen
+ * bottom). The classic sky-area vine reaches 5 tiles up (Vine.growFromStgBot). A start row `y`
+ * above that (a deck: 4-2's airship bow) makes it reach the ground the player steps off onto:
+ * the first solid tile in column x + 1 below row y, with two tiles of headroom over it (every
+ * hero stands at most 24 px tall), so he steps off above that floor and drops onto it.
+ */
+export function arrivalVineTop(map: TileMap, x: number, y: number, heightTiles: number): number {
+  const classic = SCREEN_H - ARRIVAL_VINE_TILES * 16;
+  for (let r = y + 1; r < heightTiles; r++) if (map.isSolid(x + 1, r)) return Math.min(classic, r * 16 - 32);
+  return classic;
+}
 /** Synthetic input for the vine arrival (Character.climbVineStarter sets upBtn). */
 const AUTO_CLIMB_INPUT: InputFrame = {
   held: (a) => a === 'up',
@@ -312,7 +340,7 @@ export class World {
     // vine at the start column with the arrival vine (below).
     this.spawns = level.entities
       .map((e) => Cheep.placeSwimmer(e, this.rng))
-      .filter((e) => !(mode === 'climb' && e.type === 'vine' && e.x === sx))
+      .filter((e) => !(mode === 'climb' && (e.type === 'vine' || e.type === 'chain') && e.x === sx))
       .sort((a, b) => a.x - b.x);
     this.bowserFire = BowserFire.forLevel(level);
     const defs: [CharacterDef, string, number][] = [[state.character, state.powerState, state.hp]];
@@ -337,16 +365,21 @@ export class World {
         // screen bottom while the player is hidden (Vine.initiate → growFromStgBot), then
         // Character.climbVineStarter puts him on it with his head at the screen bottom
         // (ny = GLOB_STG_BOT + height) and holds up; updateVineArrival steps him off at the top.
+        // A start row above the classic vine's top (a deck) makes it taller (arrivalVineTop);
+        // it passes through any hull below that deck (`through`: the climb ignores tiles).
         if (!this.vineArrival) {
-          this.vineArrival = new Vine(sx, SCREEN_H / 16 - 1, ARRIVAL_VINE_TILES);
-          this.vineArrival.growFromBase(ARRIVAL_VINE_RISE);
+          const top = arrivalVineTop(this.map, sx, sy, level.height);
+          const rows = (SCREEN_H - top) >> 4;
+          const art = start.chain ? 'chain' : 'vine';
+          this.vineArrival = new Vine(sx, SCREEN_H / 16 - 1, rows, null, art);
+          this.vineArrival.growFromBase(start.chain ? ARRIVAL_CHAIN_RISE : ARRIVAL_VINE_RISE);
           this.entities.push(this.vineArrival);
         }
         const vine = this.vineArrival;
         def.behaviour.onGrabVine?.(p); // a carried morph ball unrolls before the height is used
         const h = p.body.h;
         // `bottom` leaves room for the body below the base: he starts there and climbs up.
-        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + toPx(h) };
+        p.vine = { x: vine.centerX, top: vine.topPx, bottom: vine.basePx + toPx(h), through: true };
         p.body.x = vine.centerX - (p.body.w >> 1);
         p.body.y = px(vine.basePx);
         p.anim = 'climb';
@@ -550,7 +583,8 @@ export class World {
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
       case 'vine':
-        return new Vine(s.x, s.y, Number(s.props?.len ?? 8));
+      case 'chain':
+        return new Vine(s.x, s.y, Number(s.props?.len ?? 8), null, s.type === 'chain' ? 'chain' : 'vine');
       case 'firebar':
       case 'firebar-ccw':
         return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
@@ -936,8 +970,17 @@ export class World {
     }
   }
 
+  /** A climb arrival is under way (the vine still growing or someone still on it). */
+  get arriving(): boolean {
+    return this.vineArrival !== null;
+  }
+
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
-  private transfer(target: { level: string; x: number; y: number }, mode: 'climb' | 'fall'): void {
+  private transfer(
+    target: { level: string; x: number; y: number },
+    mode: 'climb' | 'fall',
+    chain = false,
+  ): void {
     if (this.leaving) return;
     this.leaving = true;
     for (const o of this.players) {
@@ -945,7 +988,7 @@ export class World {
       o.body.vx = 0;
       o.body.vy = 0;
     }
-    this.events.push({ type: 'pipe', target: { ...target, exitDir: mode } });
+    this.events.push({ type: 'pipe', target: { ...target, exitDir: mode, ...(chain ? { chain } : {}) } });
   }
 
   /** Touching a vine while airborne (or pressing up beside it) grabs it; off the top is the sky link. */
@@ -953,11 +996,13 @@ export class World {
     const b = p.body;
     if (p.vine) {
       if (b.y + b.h <= 0) {
-        const z = this.level.zones.find(
-          (v): v is Zone & { kind: 'vine' } =>
-            v.kind === 'vine' && this.vineBlockAt(v.x, v.y)?.centerX === p.vine?.x,
-        );
-        if (z) this.transfer(z.target, 'climb');
+        let on: Vine | undefined;
+        const z = this.level.zones.find((v): v is Zone & { kind: 'vine' } => {
+          if (v.kind !== 'vine') return false;
+          on = this.vineBlockAt(v.x, v.y) ?? this.placedVineAt(v.x, v.y);
+          return on?.centerX === p.vine?.x;
+        });
+        if (z) this.transfer(z.target, 'climb', on?.art === 'chain');
         else b.y = -b.h; // nowhere to go: hang at the top
       }
       return;
@@ -988,6 +1033,13 @@ export class World {
   private vineBlockAt(tx: number, ty: number): Vine | undefined {
     return this.entities.find(
       (e): e is Vine => e instanceof Vine && e.alive && e.fromBlock?.tx === tx && e.fromBlock.ty === ty,
+    );
+  }
+
+  /** A placed vine or chain (`vine`/`chain x y`) standing on row `ty` of column `tx`. */
+  private placedVineAt(tx: number, ty: number): Vine | undefined {
+    return this.entities.find(
+      (e): e is Vine => e instanceof Vine && e.alive && !e.fromBlock && e.tx === tx && e.footRow === ty,
     );
   }
 

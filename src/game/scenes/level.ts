@@ -191,6 +191,7 @@ export class LevelScene implements Scene {
         if (target.time === null) game.state.time = this.world.time;
         const time = carryTime(this.level, target, this.world.time);
         if (time !== undefined) start.time = time;
+        if (exitDir === 'climb' && ev.target.chain) start.chain = true;
         // Level.changePlayerLoc (pipe and pit arrivals) ends with destroyNearbyEnemies(true).
         if (exitDir !== 'climb') start.clearEnemies = 'keep-piranhas';
         game.startLevel(target, start);

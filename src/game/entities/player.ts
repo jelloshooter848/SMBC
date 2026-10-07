@@ -85,8 +85,11 @@ export class Player {
   fallSpeed = 0;
   /** Set by the world each frame: the body's centre is under the water line (swim physics). */
   inWater = false;
-  /** Holding a vine: its centre line (subpixels) and the px span that can be climbed. */
-  vine: { x: number; top: number; bottom: number } | null = null;
+  /**
+   * Holding a vine: its centre line (subpixels) and the px span that can be climbed. `through`:
+   * a climb arrival's vine, climbed through any tiles in the way (a hull under a deck).
+   */
+  vine: { x: number; top: number; bottom: number; through?: boolean } | null = null;
   /** Frames after letting go of a vine during which it cannot be grabbed again. */
   vineLock = 0;
   /**
@@ -369,6 +372,11 @@ export class Player {
     if (dy < 0 && b.y + dy < px(v.top) && v.top > -16) dy = Math.min(0, px(v.top) - b.y);
     b.vy = 0;
     this.fallSpeed = 0;
+    if (v.through) {
+      b.y += dy;
+      b.onGround = false;
+      return;
+    }
     moveY(b, map, dy);
     if (b.onGround) {
       // Climbed down onto the ground.

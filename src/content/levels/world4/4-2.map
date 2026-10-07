@@ -53,7 +53,9 @@ vine 64 5 -> 4-2-warp 4 14
 pipe 84 10 down -> 4-2-bonus 1 0 exit=none
 pipe 187 9 right -> 4-2-exit 3 10 exit=up
 pipe 214 10 down -> 5-1 2 12
-;; Campaign play: the one pipe, unlabelled and with no welcome text, leads into Larry Koopa's
-;; airship cabin (an area of 4-2: no map road of its own; level/campaign.ts). Other play keeps
-;; the warp to 5-1.
-warp 208 16 worlds=5 text=WELCOME_TO_WARP_ZONE! goto=4-2-airship,2,12
+;; Campaign play (owner decision 8:25 PM): no pipe. Larry Koopa's anchor rests on the floor where
+;; the pipe stood and its chain rises through the ceiling off the top of the screen; climbing it
+;; arrives on the airship's bow (`4-2-airship`, the chain at column 2, landing on the deck in
+;; column 3; an area of 4-2: no map road of its own; level/campaign.ts). Other play keeps the
+;; warp to 5-1.
+warp 208 16 worlds=5 text=WELCOME_TO_WARP_ZONE! goto=4-2-airship,2,3,climb

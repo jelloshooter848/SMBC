@@ -215,10 +215,11 @@ describe('the whole way in campaign play: vine area → cavern → 4-2', () => {
     expect(h.game.mapProgress.secrets).toEqual([]);
   });
 
-  it('the 4-2 warp pipe (the right zone) is not a secret exit either: no secret on its pipe', () => {
+  it('the 4-2 right zone is not a secret exit either: no pipe, its anchor chain climbs to the airship', () => {
     const l = campaignLevel(getLevel('4-2'), () => true);
-    const p = pipes(l.zones).find((z) => z.x === 214);
-    expect(p?.target).toEqual({ level: '4-2-airship', x: 2, y: 12 });
+    expect(pipes(l.zones).find((z) => z.x === 214)).toBeUndefined();
+    const v = l.zones.find((z) => z.kind === 'vine' && z.x === 214);
+    expect(v).toEqual({ kind: 'vine', x: 214, y: 12, target: { level: '4-2-airship', x: 2, y: 3 } });
   });
 });
 

@@ -98,8 +98,37 @@ hidden blocks) and to look closely at the map for a level hiding someone missed.
 ## Larry Koopa and the crystal ball (4-2's airship, campaign)
 
 Story: Larry Koopa stole a magic wand, and its spell is what brainwashed the heroes. In the
-campaign, 4-2's right warp-zone pipe leads to his airship cabin `4-2-airship` (pipe target
-`4-2-airship 2 12`, wired in `level/campaign.ts`; dev select and `?level=4-2-airship` reach it too).
+campaign, 4-2's right warp zone has no pipe: his **anchor** rests on the floor there and its
+**chain** rises through the ceiling off the top of the screen. Climbed (vine mechanics) to the top,
+it leads to his airship `4-2-airship`, arriving up the chain at the bow (wired in
+`level/campaign.ts`; docs/WORLD_MAP.md "Campaign warp zones"; dev select and `?level=4-2-airship`
+reach it too).
+
+- **The anchor chain**: the anchor is the decor `smb3:anchor` (32×32, its ring under the chain,
+  drawn at x = column×16 − 8, standing on the floor); the chain is a `chain x y len=N` entity, a
+  placed `Vine` drawn in `smb3:chain` links (`VineArt` in `entities/objects/vine.ts`, theme-free),
+  standing on the floor at column 214 and reaching a tile above the screen; the ceiling brick over
+  it is opened. A `vine` zone on its foot (column 214, row 12) links its top to the airship like a
+  vine brick's, and the arrival's vine is a chain too (`WorldStart.chain`). **Arrival point**
+  (`goto=4-2-airship,2,3,climb`): the chain rises from the screen bottom at **column 2** (faster
+  than a beanstalk, 1.5 px/f) and the hero climbs it, through any hull in the way, until he can
+  step off to the right onto the **first solid tile in column 3 below row 3** (the bow deck), two
+  tiles above it (`arrivalVineTop` in `world/world.ts`; the classic sky-area vine, start row 14,
+  is unchanged). `World.arriving` is true until everyone is off it. Every hero climbs it and lands
+  on the deck (`tests/sim/anchor-chain.test.ts`).
+- **The airship's crash on the map** (`map/airship-crash.ts`, the map's `cutscene` mode; campaign,
+  the first time the ball is taken): after the crystal ball's card `Game.takeCrystalBall` sets
+  `Game.mapCutscene = 'airship-crash'` (never saved), and World 4's map plays it before the reveal
+  of the bonus road: the airship (smb3 `map-airship-0/1`, 32×16, bow left) flies in from the right
+  smoking (`map-smoke-0/1/2`) and hovers over 4-2, tips bow-down (`map-airship-tilt`); the hero
+  jumps out in an arc and lands on 4-2 (`map-dust-0/1`); the ship dives onto the bonus spot and
+  crashes (`cannon` boom, `map-wreck`, dust, smoke); Toad walks in from the left (`toad-map-0/1`),
+  hammers three blows facing right (`toad-map-hammer-0/1`, planks fly), the wreck becomes the bonus
+  node, Toad waves and walks off (6.5 s, `CRASH_FRAMES`); then the road draws in as before. The
+  announcer narrates each beat. JUMP (or MENU) skips to the end: the road drawn, the hero on 4-2,
+  the node shown. With reduce flashing the crash has no white flash. It never replays (a reload
+  mid-way only draws the road; taking the ball again plays nothing) and nothing plays without
+  beating Larry (`tests/sim/airship-crash.test.ts`).
 
 - **The cabin** (`src/content/levels/world4/4-2-airship.map`, parent 4-2): one locked screen,
   enclosed like SMB3's (the owner's reference, built to the SMB3 art's frames and mock), no sky. The
