@@ -12,12 +12,13 @@ spot's (`src/game/map/bonus-spot.ts`, docs/WORLD_MAP.md "The bonus spot and its 
 | ------------------- | -------------------------------------------------------------------------- | --------------------- |
 | `inventoryUnlocked` | Larry's crystal ball taken: the map's Items entry and ITEMS button appear  | off (on with `larry`) |
 | `bonusOpen`         | the bonus spot can be played; closed once used, reopened by the Hammer Bro | open                  |
+| `bonusGuard`        | the used spot's Hammer Bro is out (after the next level entered)           | not out               |
 | `inventory`         | item ids won, in order: `mushroom`, `flower`, `star`, `1up`; at most 12    | `[]`                  |
 | `bonusNext`         | the rotation: 0 Toad House, 1 N-spade, 2 spade game                        | 0                     |
 | `devInventory`      | dev mode's map menu "Item inventory"                                       | off                   |
 | `itemsNext`         | items used from the map, waiting for the next level's start (one per kind) | `[]`                  |
 
-`Game.inventoryUnlocked` and `Game.bonusOpen` carry the first two (the bonus spot's); `Game.bonus`
+`Game.inventoryUnlocked`, `Game.bonusOpen` and `Game.bonusGuard` carry the first three (the bonus spot's); `Game.bonus`
 carries the rest (same names; `BonusState` in `items.ts`). Validation keeps known item ids only (at
 most 12; `itemsNext`: mushroom, flower and star, each once, in that order) and each flag only when
 it is `true`. `openFile` loads them and `autosave` writes them; outside campaign play `Game.bonus`
@@ -34,7 +35,8 @@ reel stopped) uses the visit at once, before any prize is given: the rotation mo
 closes (`Game.bonusUsed`, saved there), so reloading the page cannot replay it; prizes are saved as
 they are won. The end then reports 'used' and goes back to the map (`bonusUsed` again changes
 nothing). Giving up before any choice reports 'left': still open, the same game next time. The
-spot reopens when its Hammer Bro is beaten.
+spent spot has no guard until a level is entered from the map; then its Hammer Bro comes out, and
+the spot reopens when he is beaten.
 
 **The Hammer Bro's prize**: beating the Hammer Bro battle also gives an item (SMB3 does): a
 mushroom, fire flower or star, weighted like a Toad House chest (`awardHammerPrize`), shown on the

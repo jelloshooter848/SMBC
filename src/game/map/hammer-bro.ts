@@ -3,10 +3,11 @@ import type { WorldMapPage } from './types';
 
 /*
  * The wandering Hammer Bro of World 4's bonus spot (SMB3 style; docs/WORLD_MAP.md "The bonus spot
- * and its Hammer Bro"). Once the bonus has been used he walks the road to the bonus node, tile by
- * tile, never onto the level node the road starts from; touching him (or him walking into the
- * hero) starts the Hammer Bro battle (scenes/hammer-battle.ts). Pure: the map scene steps and
- * draws him.
+ * and its Hammer Bro"). Once the bonus has been used and a level played since, he walks the road
+ * to the bonus node, tile by tile, never onto the level node the road starts from nor onto a
+ * tile the map blocks (the hero's tile and the road the hero is walking). Only the hero walking
+ * into him starts the Hammer Bro battle (scenes/hammer-battle.ts); he never walks into the hero.
+ * Pure: the map scene steps and draws him.
  */
 
 /** Walking speed between two road tiles (px per frame). */
@@ -74,8 +75,12 @@ export class MapGuard {
     return this.x !== tx * 16 || this.y !== ty * 16;
   }
 
-  /** One frame: walk to the next tile, or stand and then pick a neighbour along the road. */
-  update(): void {
+  /**
+   * One frame: walk to the next tile, or stand and then pick a neighbour along the road. He never
+   * picks a tile `blocked` says no to (the hero's tile and path); with both neighbours blocked he
+   * stands where he is.
+   */
+  update(blocked: (x: number, y: number) => boolean = () => false): void {
     const [tx, ty] = this.tile;
     const dx = tx * 16 - this.x;
     const dy = ty * 16 - this.y;
@@ -89,8 +94,14 @@ export class MapGuard {
     this.wait = GUARD_STEP_FRAMES + this.rng.int(GUARD_STEP_FRAMES);
     const last = this.road.length - 1;
     if (last <= 0) return;
-    const dir = this.at === 0 ? 1 : this.at === last ? -1 : this.rng.chance(0.5) ? 1 : -1;
-    this.at += dir;
+    const first = this.at === 0 ? 1 : this.at === last ? -1 : this.rng.chance(0.5) ? 1 : -1;
+    for (const dir of [first, -first]) {
+      const to = this.at + dir;
+      const t = this.road[to];
+      if (!t || blocked(t[0], t[1])) continue;
+      this.at = to;
+      return;
+    }
   }
 
   /** The hero standing or walking at (hx, hy) (its tile position, px) touches him. */
