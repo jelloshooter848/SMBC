@@ -133,8 +133,9 @@ export const nightCloudBlock = (base: Rows): string[] =>
 
 /*
  * Roles: 0 black; 1-3 concrete greys (dark, mid, light); 4-5 the far city's indigo (body, lit
- * edge; also the night clouds); 6-8 red brick (dark, main, light); 9 a lit window; a a red sign.
- * The classic castle's brick slots (6-8) are the red brick, so the end castle is brick too.
+ * edge; also the night clouds); 6-8 red brick (dark, main, light), a shade darker and browner
+ * than the tiles' brick so the facades stand back as scenery; 9 a lit window; a a red sign.
+ * The classic castle's brick slots (6-8) are the same brick, so the end castle is brick too.
  */
 export const ninjaCityDecorPalette: string[] = [
   NES.black,
@@ -143,9 +144,9 @@ export const ninjaCityDecorPalette: string[] = [
   NES.lightGray,
   '#180c50',
   '#2c1878',
+  NES.brownDark,
   '#881400',
-  NES.orangeBrown,
-  NES.orange,
+  NES.redDark,
   NES.yellowLight,
   NES.red,
 ];
@@ -158,11 +159,11 @@ const brickAt = (x: number, y: number): string => {
   return y % 4 === 0 ? '8' : y % 4 === 2 ? '6' : '7';
 };
 
-/* A red-brick shop front: a grey cornice, two dark upper windows, a lit shop window and a sign. */
+/* A dark red-brick shop front: a grey cornice, two dark upper windows, a dim shop window and a sign. */
 const shopFront = draw(80, 48, (x, y) => {
   if (x === 0 || x === 79) return '0';
   // cornice
-  if (y < 6) return y === 0 || y === 5 ? '0' : y === 1 ? '3' : y === 4 ? '1' : '2';
+  if (y < 6) return y === 0 || y === 5 ? '0' : y === 1 ? '2' : '1';
   // upper windows
   for (const wx of [12, 52])
     if (x >= wx && x < wx + 16 && y >= 10 && y < 22) {
@@ -177,7 +178,7 @@ const shopFront = draw(80, 48, (x, y) => {
     if (y === 31 || x === 10 || x === 69 || x === 50 || x === 51) return '1';
     if (x > 51) return y > 33 ? '0' : '1';
     if (x === 30) return '1';
-    return y > 44 ? '1' : (x + y) % 9 === 0 ? '3' : '9';
+    return y > 44 ? '1' : (x + y) % 9 === 0 ? '9' : y < 36 ? '5' : '4';
   }
   return brickAt(x, y);
 });

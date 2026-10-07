@@ -14,7 +14,7 @@ import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { View } from '../entities/entity';
 import { T, tileDef } from './tiles';
 import { parseTextMap } from './textmap';
-import { isWaterTheme, themeMusic, type Theme } from './schema';
+import { THEMES, hasSolidFloors, isCastleTheme, isWaterTheme, themeMusic, type Theme } from './schema';
 import { SKY } from '../world/tile-render';
 import { decorPalette, drawDecor } from '../entities/objects/decoration';
 import { enemyPalette } from '../entities/enemies/enemy';
@@ -73,6 +73,9 @@ function drawn(theme: Theme, draw: (r: NullRenderer, view: View) => void, camX =
   draw(r, view);
   return out;
 }
+
+const lum = (hex: string) =>
+  [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)).reduce((a, b) => a + b, 0);
 
 const bars = (c: ReturnType<typeof compileSong>) => c.length / (PPQ * 4);
 const pitchClasses = (t: Track) => new Set(t.events.flatMap((e) => (e.note === null ? [] : [e.note % 12])));
@@ -160,6 +163,24 @@ describe("5-4 as Simon's castle hall (`castlevania`)", () => {
     expect(drawn('castle', drawThemeBackdrop)).toEqual([]);
   });
 
+  it("the hall's columns and window surrounds stay in the wall's dark greys, never the stone blocks' grey", () => {
+    const decor = PALETTES.default['decor-castlevania'] as string[];
+    const tiles = PALETTES.default['tiles-castlevania'] as string[];
+    const colours = (n: string, allowed: RegExp) => {
+      const px = (decorDef.frames[n] as readonly string[]).join('').replace(/\./g, '');
+      expect(px, n).toMatch(allowed);
+      return new Set([...px].map((c) => decor[parseInt(c, 16)]));
+    };
+    const stone = [tiles[8], tiles[9]]; // the hard blocks' lit and main grey
+    for (const n of ['cv-pillar', 'cv-pillar-cap'])
+      for (const c of colours(n, /^[012]+$/)) expect(stone, `${n} ${c}`).not.toContain(c);
+    for (const c of colours('cv-window', /^[01245]+$/)) expect(stone, `cv-window ${c}`).not.toContain(c);
+    // the column has no seams across it: every row of the shaft is the same
+    expect(new Set(decorDef.frames['cv-pillar']).size).toBe(1);
+    // and is darker than the hard blocks' face
+    expect(lum(decor[2] as string)).toBeLessThan(lum(tiles[9] as string));
+  });
+
   it('decor for the level to place: a candle on its stand, the hall pieces', () => {
     const decor = (n: string) => decorDef.frames[n] as readonly string[];
     expect([decor('cv-candle')[0]?.length, decor('cv-candle').length]).toEqual([16, 32]);
@@ -245,6 +266,22 @@ describe("6-2 as Ryu's city street (`ninja-city`)", () => {
     expect(PALETTES.default['decor-ninja-city']).toHaveLength(11);
   });
 
+  it("the facades' brick stands back: darker than the street's brick tiles", () => {
+    const decor = PALETTES.default['decor-ninja-city'] as string[];
+    const tiles = PALETTES.default['tiles-ninja-city'] as string[];
+    // decor brick roles 6-8 (dark, main, light) against the tiles' brick (9 dark, b main, a light)
+    for (const [d, t] of [
+      [6, 9],
+      [7, 0xb],
+      [8, 0xa],
+    ] as const)
+      expect(lum(decor[d] as string), `decor ${d}`).toBeLessThan(lum(tiles[t] as string));
+    // the shop front has no light grey or bright lit pane bigger than a glint
+    const shop = (decorDef.frames['hill-big@ninja-city'] as readonly string[]).join('');
+    expect(shop).not.toContain('3');
+    expect(shop.replace(/[^9]/g, '').length).toBeLessThan(shop.length / 40);
+  });
+
   it("dresses 6-2's own decor as the street: shop fronts, walls, railings, night clouds; the castle stays", () => {
     const kinds = new Set(load('world6/6-2.map').decor.map((d) => d.kind));
     expect([...kinds].sort()).toEqual([
@@ -321,5 +358,24 @@ describe('the restyles’ music', () => {
       const theirs = compileSong(songs.find((s) => s.id === other)!);
       expect(lead(mine).events.map((e) => e.note)).not.toEqual(lead(theirs).events.map((e) => e.note));
     }
+  });
+});
+
+describe('castle and solid-floor theme families', () => {
+  it("the castle family is the castles, their Lost Levels skins and 5-4's hall", () => {
+    expect(THEMES.filter(isCastleTheme)).toEqual([
+      'castle',
+      'castle-overworld',
+      'castle-water',
+      'castlevania',
+    ]);
+  });
+
+  it("Hammer Bros' solid floors are unchanged for every existing theme, and hold in the hall", () => {
+    // the rule hammer-bro.ts used before the helper
+    for (const t of THEMES) expect(hasSolidFloors(t), t).toBe(t === 'underground' || t.startsWith('castle'));
+    expect(hasSolidFloors('castlevania')).toBe(true);
+    expect(hasSolidFloors('ninja-city')).toBe(false);
+    expect(hasSolidFloors('cavern')).toBe(false);
   });
 });

@@ -8,7 +8,8 @@ import type { View } from '../entities/entity';
  * no decor of its own for it. Each is made of decor-sheet frames in the theme's decor palette.
  *
  * - `castlevania` (5-4 as Simon's castle hall): the hall's grey brick wall from below the HUD's
- *   band down, scrolling with the level, a stone column every 256 px and two tall arched windows
+ *   band down, scrolling with the level, a dim stone column every 256 px (in the wall's own dark greys, so it never reads as
+ *   solid stone) and two tall arched windows
  *   between each pair.
  * - `ninja-city` (6-2 as Ryu's city street): the far city's towers along the street, at half the
  *   camera's speed, under the black night.
@@ -18,6 +19,10 @@ import type { View } from '../entities/entity';
 export const HALL_TOP = 32;
 /** Columns and windows repeat every this many px of the level. */
 export const HALL_PERIOD = 256;
+/** The arched windows' left edges within each period. */
+export const HALL_WINDOWS: readonly number[] = [80, 176];
+/** The column's left edge within each period. */
+export const HALL_PILLAR = 16;
 /** The far city stands on the street's top (6-2's ground, row 13). */
 export const SKYLINE_BOTTOM = 13 * 16;
 
@@ -31,8 +36,8 @@ function castleHall(r: Renderer, view: View): void {
     for (let y = HALL_TOP; y < SCREEN_H; y += 32) r.sprite(sheet, 'cv-wall', x, y);
   const first = Math.floor((cam - 64) / HALL_PERIOD) * HALL_PERIOD;
   for (let base = first; base < cam + SCREEN_W + 64; base += HALL_PERIOD) {
-    for (const wx of [80, 176]) r.sprite(sheet, 'cv-window', base + wx - cam, HALL_TOP + 56);
-    const px = base + 16 - cam;
+    for (const wx of HALL_WINDOWS) r.sprite(sheet, 'cv-window', base + wx - cam, HALL_TOP + 56);
+    const px = base + HALL_PILLAR - cam;
     for (let y = HALL_TOP + 16; y < SCREEN_H; y += 32) r.sprite(sheet, 'cv-pillar', px, y);
     r.sprite(sheet, 'cv-pillar-cap', px, HALL_TOP);
   }
@@ -52,10 +57,10 @@ const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
 };
 
 /** Whether a theme paints a backdrop. */
-export const hasThemeBackdrop = (theme: string): boolean => theme in BACKDROPS;
+export const hasThemeBackdrop = (theme: string): boolean => Object.hasOwn(BACKDROPS, theme);
 
 /** Paint the view's theme backdrop (nothing for a theme without one). */
 export function drawThemeBackdrop(r: Renderer, view: View): void {
-  const paint = BACKDROPS[view.theme];
+  const paint = hasThemeBackdrop(view.theme) ? BACKDROPS[view.theme] : undefined;
   if (paint && view.assets.has('decor')) paint(r, view);
 }

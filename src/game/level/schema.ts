@@ -88,6 +88,19 @@ export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).
 export const isWaterTheme = (theme: Theme): boolean =>
   theme === 'water' || theme === 'overworld-water' || theme === 'water-gray' || theme === 'castle-water';
 
+/**
+ * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
+ * 5-4's campaign look (Simon's hall). Castle rules that key off the theme ask this, never the name.
+ */
+export const isCastleTheme = (theme: Theme): boolean =>
+  theme === 'castle' || theme === 'castle-overworld' || theme === 'castle-water' || theme === 'castlevania';
+
+/**
+ * The original's `cannotPassThroughGround`: underground and castle areas, where a Hammer Bro's
+ * jumps go only straight up and down (no hopping through the floors). Samus's cavern is not one.
+ */
+export const hasSolidFloors = (theme: Theme): boolean => theme === 'underground' || isCastleTheme(theme);
+
 /** The music an area of this theme plays when its map names none. */
 export function themeMusic(theme: Theme): string {
   if (theme === 'smw-secret') return 'top-secret';

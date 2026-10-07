@@ -12,7 +12,7 @@ import { NES } from '@engine/gfx/palette';
  * Decor (`decor-castlevania` palette, registered in decor.ts):
  * - `cv-wall` (32x32): the hall's grey brick wall; tiles both ways.
  * - `cv-window` (32x48): a tall arched window, night blue behind iron bars.
- * - `cv-pillar` (32x32): a stone column's shaft; tiles vertically. `cv-pillar-cap` (32x16) its
+ * - `cv-pillar` (32x32): a stone column's shaft, in the wall's dark greys; tiles vertically. `cv-pillar-cap` (32x16) its
  *   capital, for the shaft's top.
  * - `cv-candle` (16x32): a tall candle on a wall stand; place it on a floor (it stands on its
  *   bottom row) or anywhere on the wall.
@@ -195,16 +195,19 @@ const cvWall = draw(32, 32, (x, y) => {
   return '1';
 });
 
-/* A tall arched window: a stone surround, night blue panes behind two iron bars, a moonlit sill. */
+/*
+ * A tall arched window: a dim stone surround, night blue panes behind two iron bars, a moonlit
+ * streak; the surround and sill in the wall's own dark greys.
+ */
 const cvWindow = draw(32, 48, (x, y) => {
   const cx = 15.5;
   const dx = Math.abs(x - cx);
   // the arch: a half disc of radius 14 on a 28-wide shaft, the surround 2 px outside the panes
   const archY = 16;
   const inside = (r: number) => (y < archY ? Math.hypot(dx, archY - y) <= r : dx <= r);
-  if (y >= 44) return y === 44 ? '3' : y === 47 ? '0' : '2';
+  if (y >= 44) return y === 44 ? '2' : y === 47 ? '0' : '1';
   if (!inside(14)) return '.';
-  if (!inside(12)) return y < archY ? (x < cx ? '3' : '2') : x < cx ? '3' : '2';
+  if (!inside(12)) return x < cx ? '2' : '1';
   if (!inside(11)) return '0';
   if (Math.abs(x - 10.5) < 1 || Math.abs(x - 20.5) < 1) return '0';
   if (y === 28) return '0';
@@ -212,37 +215,38 @@ const cvWindow = draw(32, 48, (x, y) => {
   return '4';
 });
 
-/* A stone column's shaft: lit left, shaded right, a black band every 16 px. Tiles vertically. */
-const cvPillar = draw(32, 32, (x, y) => {
+/*
+ * A stone column's shaft, deep in the wall's shadow: its dark grey (1) with a dimly lit strip
+ * (2) and black fluting, no seams across it, so it never reads as stacked solid blocks (the
+ * hard blocks' grey stays the level's own). Tiles vertically.
+ */
+const cvPillar = draw(32, 32, (x) => {
   if (x < 2 || x > 29) return '.';
   if (x === 2 || x === 29) return '0';
-  if (y % 16 === 15) return '0';
-  if (y % 16 === 0) return '3';
-  if (x < 8) return '3';
-  if (x > 23) return '1';
-  if (x % 6 === 2) return '1';
-  return '2';
+  if (x >= 5 && x < 8) return '2';
+  if (x % 6 === 2) return '0';
+  return '1';
 });
 
-/* The column's capital: a wider stepped block over the shaft. */
+/* The column's capital: a wider stepped moulding over the shaft, in the same dark greys. */
 const cvPillarCap = [
   '00000000000000000000000000000000',
-  '03333333333333333333333333333320',
   '02222222222222222222222222222210',
   '01111111111111111111111111111110',
+  '01111111111111111111111111111100',
   '00000000000000000000000000000000',
-  '..0333333333333333333333333220..',
-  '..0222222222222222222222222210..',
+  '..0222222222222222222222222110..',
   '..0111111111111111111111111110..',
   '..0000000000000000000000000000..',
-  '..0333332222222222222222221110..',
-  '..0333332222222222222222221110..',
-  '..0333332212222221222222121110..',
-  '..0333332212222221222222121110..',
-  '..0333332212222221222222121110..',
-  '..0333332222222222222222221110..',
-  '..0000000000000000000000000000..',
-];
+  '..0111122201111110111111010110..',
+  '..0111122201111110111111010110..',
+  '..0111122201111110111111010110..',
+  '..0111122201111110111111010110..',
+  '..0111122201111110111111010110..',
+  '..0111122201111110111111010110..',
+  '..0111122201111110111111010110..',
+  '..0111122201111110111111010110..',
+]; // its bottom rows run on into the shaft below
 
 /* A tall candle on a brass stand, its flame flickering left. */
 const cvCandle = [
