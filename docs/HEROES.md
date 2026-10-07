@@ -461,7 +461,7 @@ An NES Mega Man style stage on the space station above 3-1, played **as Mega Man
 fight with **Dark Mega Man**, the brainwashing's copy of him. It runs in a real `World` of its own
 (stage.map, loaded with `?raw`, not in the level library) with a fresh GameState: Mega Man with the
 helmet kit (`{ helmet: 1 }`: buster, charge shot, slide, and Rush Coil, which comes with the
-helmet), full 28 hit points, three lives, no clock, and a camera that scrolls both ways. Each
+helmet), full 28 hit points, three lives, no clock, and Mega Man 2's camera (screens, below). Each
 life starts with READY blinking on the empty start spot (the stage music already playing; the
 press that started the round never jumps), then Mega Man beams down onto it (World's `beam`
 arrival) and only then moves. The HUD is Mega Man 2's: bars only (`hud.ts`: the selected weapon's
@@ -473,21 +473,48 @@ score or lives.
   (an apex of about 3 tiles, 50 px, against the campaign's 4.3), a hit's push back with no upward
   pop (a jump stops rising), and shots (buster, charge shot) that pass through walls. Walking
   (1.375 px/f) already matched.
+- **Ladders** (0.4.15, `ladder.ts`, NES form only): ladder tiles are `chain` (the ladder) and
+  `cloud-ledge` (its top in a floor: one-way solid, stood on from above, climbed through from
+  below), drawn as a ladder in the station theme (`chain@station`, `cloud-ledge@station`). UP with
+  a ladder behind his middle takes hold (on the floor or catching it in the air), DOWN on a ladder's
+  top takes it down; he snaps to its centre and climbs at 0.75 px a frame, hanging still with
+  nothing held. LEFT / RIGHT only turn him; SHOOT fires that way (frame `climb-shoot`) and the
+  shot's pose holds him still. JUMP lets go (a drop, no jump up); a hit knocks him off. Down onto a
+  floor stands him there; down past a ladder's foot drops him. At the top the last 8 px show the
+  climb-over (`climb-top`), then he stands on the ladder's top. While he holds a ladder his Player
+  is `frozen` and the ladder code moves him (`scratch.ladder`, `scratch.ladderTop`).
+- **Screens** (0.4.15, Mega Man 2's camera; the map is `camera: free`, 45 rows, but the scene moves
+  the camera, never World): `screen x y w=N` lines in stage.map are the sections (15 rows from row
+  y, N columns from column x). Inside one the camera follows Mega Man sideways (80 px from the
+  left) within its columns; his middle going off its top or bottom onto another section starts a
+  flip: the station holds still while the camera moves a whole screen up or down in 60 frames
+  (4 px a frame) and he is nudged just inside the new one (still on his ladder, or still
+  falling). The last screen's robots, shots and drops vanish at the start of a flip and the new
+  screen's robots are spawned fresh at its end (World never spawns them: `isRobotSpawn`), so going
+  back to a screen brings its robots back, as in Mega Man 2. A beam down starts at the camera's
+  top (`World.alignBeam`).
 - **Lives** (`minigames/lives.ts`, `MiniLives`, on Bill's REST model): a life lost (orb burst,
   `WorldStart.deathStyle: 'orbs'`, the `mm-death` sound instead of Mario's jingle) restarts in a
-  new World at the last checkpoint: the stage start, column 40 (past the capsule), or the boss
-  door (column 77, reached at 76: through the shutter again, and his bar fills again). Full hit
+  new World at the last checkpoint: the stage start, column 40 (past the capsule), the top of the
+  shaft (column 77 of the top run, reached at 66 in its rows), or the boss door (the landing room
+  under the drop, column 116, reached on landing: through the shutters again, and his bar fills
+  again). Full hit
   points; the Saw Disc stays his with the energy it had (back on the buster), and the capsule
   stays gone. Losing the last life is GAME OVER (180 frames), then `fail`.
 
-- **The stage** (five screens, theme `station`: steel floor, bulkhead plating behind a corridor
-  band, space above, the station sheet's windows, consoles and girders as `deco` entities drawn in
-  front of the plating): floor, steps, three three-tile pits, and the robots (the station sheet's
+- **The stage** (0.4.15, laid out as Mega Man 2's stages go; theme `station`: steel floor,
+  bulkhead plating behind a corridor band, space above, the station sheet's windows, consoles and
+  girders as `deco` entities drawn in front of the plating): a run of five screens along the
+  bottom (floor, steps, three three-tile pits, the capsule halfway), a shaft at its end (the
+  ladder at column 71 climbs two screens through the ceiling to a ledge with a Met, the ladder at
+  75 on up through the floor of the top run), the top run (three more screens: a step, a pillar
+  with a ceiling turret), a hole at columns 119-121 that drops two screens down a chute into the
+  landing room (a Met), then the shutters. The robots (the station sheet's
   frames; they face left and are flipped to face right; a hit flashes them in `station-flash`), each a station `Robot` (an `Enemy` with hit points that blows up
   in a small explosion and drops from Mega Man's own drop table, an E-tank kept for the weapon
   screen):
   **Hopper** (3 HP: crouches, then hops toward Mega Man, short and tall in turn),
-  **Met** (0.4.14, Mega Man 2's hard hat, 1 HP, three on the floors: hidden under its hat every shot
+  **Met** (0.4.14, Mega Man 2's hard hat, 1 HP, six over the screens: hidden under its hat every shot
   bounces off with a `dink`; with Mega Man within 96 px it lifts the hat after 70 frames, fires a
   three-way spread at him, level and up and down a slant of about 27°, and hides again 40 frames
   later; one hit while it is up; frames `met-0` hidden, `met-1` up),
@@ -495,20 +522,22 @@ score or lives.
   shots away; it opens and fires a burst of three pellets aimed at Mega Man, a floor turret never
   aims down, a ceiling turret never up) and
   **Drone** (2 HP: sways in a sine while drifting over, dives straight down on Mega Man when he
-  stands below it, never at him mid-jump, and climbs back). Pellets take 2 hit points, a robot's
+  stands below it, never at him mid-jump, never below its screen's floor line, and climbs back).
+  Pellets take 2 hit points, a robot's
   touch Mega Man's usual 4.
 - **The weapon capsule** sits on the pillar halfway (on the path): touching it, or passing anywhere
   above it (a jump over the pillar cannot skip it; Rush Coil can), unlocks the **Saw Disc** (`weapons: 1`, full energy; no new weapon code). The station holds still for a second, the
   `capsule` sound plays and a banner (24 columns, clear of the bars) and the announcer say WEAPON
   switches to it, USE WEAPON fires it and a held direction aims it (`abilityHint`; a line falls back
   to the bare ability names when its keys don't fit).
-- **The boss gate** (Mega Man 2's two shutters, 0.4.14): columns 80's and 95's doorways are
-  two-tile shutters (solid in the map, a `Shutter` drawn over each). A `scrollStop` keeps the
-  corridor out of sight. Mega Man touching the first on the floor opens it; the robots and shots
-  vanish (a screen change), he walks through on his own while the camera scrolls 4 px a frame onto
-  the one-screen corridor (columns 80-95, both shutters in sight) and locks; the shutter shuts behind him (solid again) and
-  he walks the corridor himself, the stage music still playing. The second shutter, at its end, does
-  the same into the 16-wide boss room (columns 95-110); the music stops there. Dark Mega Man beams
+- **The boss gate** (Mega Man 2's two shutters, 0.4.14): columns 128's and 143's doorways (rows
+  41-42, off the landing room) are two-tile shutters (solid in the map, a `Shutter` drawn over
+  each). The landing room's screen ends at the first, so the corridor stays out of sight. Mega Man
+  touching the first on the floor opens it; the robots and shots vanish (a screen change), he walks
+  through on his own while the camera scrolls 4 px a frame onto the one-screen corridor (columns
+  128-143, both shutters in sight) and locks; the shutter shuts behind him (solid again) and he
+  walks the corridor himself, the stage music still playing. The second shutter, at its end, does
+  the same into the 16-wide boss room (columns 143-158); the music stops there. Dark Mega Man beams
   down, then his bar fills one segment every 3 frames with a `boss-fill` tick,
   NES style, while Mega Man waits (input ignored); the fight starts when it is full.
 - **Dark Mega Man** (`dark-megaman.ts`): Mega Man's body, moves (walk, jump, slide speeds from
@@ -551,8 +580,9 @@ score or lives.
   (`DEATH_FRAMES`); `World.deathTime(p)` and `p.scratch.deathT` give a sprite the death's clock.
 - **World hook** `WorldStart.extraEntities(spawn, world)`: a mini game's own entity types without a
   case in `makeEntity`. Asked first for every spawn: an entity takes it, `null` drops it, `undefined`
-  leaves it to World's own types. The station's `hopper`, `turret` (`mount=ceiling`), `drone`
-  and `capsule` come through it (`stationEntities`).
+  leaves it to World's own types. The station's `capsule` and decor come through it
+  (`stationEntities`); its robots (`hopper`, `met`, `turret` with `mount=ceiling`, `drone`) are
+  dropped there (`null`) and spawned by the scene with their screens.
 
 Difficulty (a "cautious human" sim, `human-sim.test.ts`: `StationBot` with a 15-frame reaction
 delay, robots and shots misjudged by up to 6 px, pauses and jumps a little early; it knows the
@@ -564,6 +594,11 @@ edge, where a hit's push back, with no upward pop now, drops him in), with the S
 reaction (on the first life 100 / 100 / 98 / 98%); with the buster alone 100 / 100 / 98 / 95%
 (first life 95 / 85 / 57 / 43%). Hit points lost across lives: about 16-21
 with the saw, 20-44 without (most of it to Dark Mega Man).
+With the 0.4.15 layout (the bot climbs the ladder leading off the top of its screen, the nearest
+one at its own level first, shooting from a ladder only what a shot can hurt, and walks into holes
+with a floor below), with the saw 100% of 40 at every reaction (first life 88 / 95 / 65 / 88%);
+with the buster alone 100 / 100 / 98 / 95% (first life 65 / 55 / 40 / 20%). Hit points lost: about
+21-32 with the saw, 27-51 without.
 
 ## Samus's mini game: Zebes Escape (`src/game/minigames/samus/`)
 

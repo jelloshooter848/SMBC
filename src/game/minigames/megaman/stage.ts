@@ -6,10 +6,25 @@ import type { Player } from '../../entities/player';
 import { Drone, Hopper, Met, StationDecor, Turret, WeaponCapsule } from './robots';
 import source from './stage.map?raw';
 
+/**
+ * One of the camera's sections (tiles): 15 rows from row `y`, `w` columns from column `x`. The
+ * camera scrolls sideways inside one and flips a screen up or down between them (Mega Man 2).
+ */
+export interface StationScreen {
+  x: number;
+  y: number;
+  w: number;
+}
+
+/** Rows in a screen. */
+export const SCREEN_ROWS = 15;
+
 /** Where the station's fixed pieces are (tiles). */
 export interface StationLayout {
-  /** The stage without its `shutter` and `dark-megaman` lines (the scene places those). */
+  /** The stage without its `screen`, `shutter` and `dark-megaman` lines (the scene uses those). */
   level: LevelData;
+  /** The camera's sections, in the map's order (the route's). */
+  screens: readonly StationScreen[];
   /**
    * The two boss shutters' top tiles (each two tiles high), left to right, as in Mega Man 2: the
    * first into a short corridor, the second into the boss room.
@@ -24,6 +39,16 @@ export interface StationLayout {
 }
 
 let parsed: StationLayout | null = null;
+
+/** The section holding tile (tx, ty), if any (the first that does). */
+export function screenAt(screens: readonly StationScreen[], tx: number, ty: number): number {
+  return screens.findIndex((s) => tx >= s.x && tx < s.x + s.w && ty >= s.y && ty < s.y + SCREEN_ROWS);
+}
+
+/** Is a spawn one of the robots (spawned per section by the scene, not by World)? */
+export function isRobotSpawn(s: EntitySpawn): boolean {
+  return s.type === 'hopper' || s.type === 'met' || s.type === 'turret' || s.type === 'drone';
+}
 
 /**
  * The station stage (stage.map), parsed once. Like the Mirror Race's course it lives outside the
@@ -43,11 +68,14 @@ export function stationStage(): StationLayout {
     .sort((a, b) => a.x - b.x);
   if (shutters.length !== 2) throw new Error('mm-station: two shutters expected');
   const [first, second] = shutters as [{ x: number; y: number }, { x: number; y: number }];
+  const screens = raw.entities
+    .filter((e) => e.type === 'screen')
+    .map((e) => ({ x: e.x, y: e.y, w: Number(e.props?.w ?? 16) }));
+  if (screens.length === 0) throw new Error('mm-station: no screens');
+  const placed = new Set(['screen', 'shutter', 'dark-megaman']);
   parsed = {
-    level: {
-      ...raw,
-      entities: raw.entities.filter((e) => e.type !== 'shutter' && e.type !== 'dark-megaman'),
-    },
+    level: { ...raw, entities: raw.entities.filter((e) => !placed.has(e.type)) },
+    screens,
     shutters,
     boss: find('dark-megaman'),
     corridorX: first.x,

@@ -611,6 +611,7 @@ export class World {
     // the main area after it starts its own.
     if (this.autoWalk) this.time = null;
     this.camera.snapTo(this.player.body.x, this.player.body.y);
+    this.alignBeam();
     if (start.clearEnemies) {
       // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
       // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
@@ -2189,6 +2190,15 @@ export class World {
 
   get inPipe(): boolean {
     return this.pipeAnim !== null || this.pipeExit !== null;
+  }
+
+  /**
+   * A beam down still on its way starts just above the camera's top (a tall map's lower screens
+   * too). A scene that moves the camera itself after the start calls it again.
+   */
+  alignBeam(): void {
+    if (this.beam?.dir !== 'down') return;
+    for (const s of this.beam.streaks) if (s.landed < 0) s.top = this.camera.pxY - BEAM_H;
   }
 
   /** A teleport pad's beam is playing (up or down). */

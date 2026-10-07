@@ -292,6 +292,38 @@ const climb0 = [
 
 const climb1 = flipH(climb0);
 
+// On a ladder, side-on to shoot (Mega Man 2): the cannon out, the back boot up on a rung.
+const legsLadder = [
+  '.....01100110...',
+  '.....0220.0220..',
+  '....02220.0220..',
+  '....00000.02220.',
+  '..........02220.',
+  '..........00000.',
+];
+const climbShoot = shooting(24, legsLadder);
+
+// Climbing over a ladder's top, seen from behind: hunched, both hands on the floor above, knees
+// bent under him.
+const climbTop = [
+  ...blank(W, 17),
+  '.....000000.....',
+  '....02222220....',
+  '...0222222220...',
+  '..022222222220..',
+  '..002222222200..',
+  '.00110222201100.',
+  '.02110000001120.',
+  '.02011111111020.',
+  '.00011111111000.',
+  '...0111111110...',
+  '...0222222220...',
+  '..022220022220..',
+  '..022200002220..',
+  '..022200002220..',
+  '..000000000000..',
+];
+
 export const megamanDef: SpriteDef = {
   palette: 'megaman',
   frames: {
@@ -312,6 +344,8 @@ export const megamanDef: SpriteDef = {
     'teleport-0': teleport0,
     'climb-0': climb0,
     'climb-1': climb1,
+    'climb-shoot': climbShoot,
+    'climb-top': climbTop,
     'charge-0': charge0,
   },
 };
