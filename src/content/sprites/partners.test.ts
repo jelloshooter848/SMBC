@@ -4,6 +4,7 @@ import { rasterizeToBuffer, validateDef } from '@engine/gfx/pixelart';
 import { PARTNERS } from '@game/story/script';
 import { PALETTES, SPRITES } from './index';
 import { partnersDef, partnersPalettes } from './partners';
+import { sophiaDef } from './sophia';
 
 type Size = readonly [w: number, h: number];
 
@@ -42,8 +43,10 @@ describe('partners sheet', () => {
     }
   });
 
-  it('draws every partner of the script', () => {
-    expect(Object.keys(SIZES).sort()).toEqual(Object.keys(PARTNERS).sort());
+  it("draws every partner of the script (Jason from Sophia III's sheet: her side-view pilot)", () => {
+    expect([...Object.keys(SIZES), 'jason'].sort()).toEqual(Object.keys(PARTNERS).sort());
+    const jason = sophiaDef.frames['jason-stand'] as readonly string[];
+    expect([jason[0]?.length, jason.length]).toEqual([16, 16]);
   });
 
   it('is registered with its palette', () => {
