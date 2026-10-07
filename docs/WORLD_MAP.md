@@ -368,8 +368,11 @@ descent x w -> level x y [campaign]
   (`level/campaign.ts`) wakes it. Like a warp zone's `goto`, it leads into an area of the same
   level: no secret, no map road, no clear.
 - 5-4: `descent 84 8 -> 5-4-dungeon 13 0 campaign` (the open shaft, columns 84-91; its down
-  lifts run in column 89). The fire bar at (92, 10) sweeps the down lift's right end on the way
-  down: ride on its left side.
+  lifts run in column 89). While a descent zone is live, a fire bar whose tip would sweep one of
+  its down lifts loses balls until it clears the lift (`World.descentBarLen`): 5-4's at (92, 10)
+  is 5 long in the campaign, 6 elsewhere, so a rider anywhere on the lift rides down unhurt.
+- Every rider counts: two co-op players on the lift both go down (the check is the geometry,
+  feet on the lift's top, not `Lift.rider`, which holds only the last body carried).
 
 ## Adding a page (checklist)
 

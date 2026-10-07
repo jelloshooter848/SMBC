@@ -2,8 +2,8 @@ id: 5-4-crypt
 name: WORLD 5-4
 world: 5
 stage: 4
-theme: castle
-music: castle
+theme: crypt
+music: crypt
 time: inherit
 start: 1,0
 startMode: fall
@@ -40,7 +40,7 @@ parent: 5-4
 captive 11 11 hero=simon
 candle 9 8
 candle 14 8
-candle 4 4
+candle 3 5
 
 [zones]
 pipe 16 10 right -> 5-4 99 0 exit=fall

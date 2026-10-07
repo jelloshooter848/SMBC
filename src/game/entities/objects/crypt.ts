@@ -15,6 +15,9 @@ export function cryptFrame(assets: AssetRegistry, frame: string): boolean {
   return assets.has('crypt') && assets.sheet('crypt').frames.has(frame);
 }
 
+/** The candle's two flicker frames (no string built each frame). */
+const CANDLE_FRAMES = ['candle-0', 'candle-1'] as const;
+
 /**
  * A wall candle (`candle x y`, 8×16, standing on the bottom of tile (x, y), centred in it). Any
  * hero attack (a melee hit, a shot, a kicked shell) or a hero jumping into it snuffs it: a coin
@@ -39,7 +42,7 @@ export class Candle extends Entity {
     const x = toPx(this.body.x) - view.camX;
     const y = toPx(this.body.y);
     const flick = (view.frame >> 3) & 1;
-    const frame = `candle-${flick}`;
+    const frame = CANDLE_FRAMES[flick] as string;
     if (cryptFrame(view.assets, frame)) {
       r.sprite(view.assets.sheet('crypt'), frame, x, y);
       return;

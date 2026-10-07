@@ -2,8 +2,8 @@ id: 5-4-dungeon
 name: WORLD 5-4
 world: 5
 stage: 4
-theme: castle
-music: castle
+theme: crypt
+music: crypt
 time: inherit
 start: 13,0
 startMode: fall

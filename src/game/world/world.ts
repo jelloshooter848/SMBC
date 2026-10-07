@@ -47,7 +47,15 @@ import { PowerUp } from '../entities/objects/powerup';
 import { Pickup } from '../entities/objects/pickup';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
-import { BlockBump, BrickPiece, CoinPop, Corpse, Explosion, ScorePopup } from '../entities/effects/effects';
+import {
+  BlockBump,
+  BrickPiece,
+  CoinPop,
+  Corpse,
+  Explosion,
+  ScorePopup,
+  type PieceFrame,
+} from '../entities/effects/effects';
 import { castleFlagStart, Firework, FIREWORK_FRAMES, FIREWORK_TILES } from '../entities/effects/firework';
 import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { shellKickSeqScore, stompScore } from '../rules/score';
@@ -163,6 +171,15 @@ const PIPE_SPEED = px(25) / 60;
 const hasSfx = (id: string): boolean => SFX_LIB.some((x) => x.id === id);
 const CRUMBLE_SFX = hasSfx('whip-wall') ? 'whip-wall' : 'break';
 const CANDLE_SFX = hasSfx('candle') ? 'candle' : null;
+/** The cracked wall's rubble (the `crypt` sheet's; BrickPiece falls back to the brick piece). */
+const RUBBLE: readonly PieceFrame[] = ['crypt:rubble-0', 'crypt:rubble-1'];
+
+/** A hero's attack in flight: a shot or thrown weapon a player owns (or a hero shot's own shot). */
+function heroShot(e: Entity): e is Projectile {
+  if (!(e instanceof Projectile)) return false;
+  const o = e.owner;
+  return o instanceof Player || (o instanceof Projectile && o.owner instanceof Player);
+}
 
 /** Character.PIPE_LEV_TRANS_DELAY (500 ms): hidden in the pipe before the next area loads. */
 const PIPE_TRANSFER_DELAY_FRAMES = 30;
@@ -629,7 +646,12 @@ export class World {
         return new Vine(s.x, s.y, Number(s.props?.len ?? 8), null, s.type === 'chain' ? 'chain' : 'vine');
       case 'firebar':
       case 'firebar-ccw':
-        return new Firebar(s.x, s.y, s.type === 'firebar-ccw' ? -1 : 1, Number(s.props?.len ?? 6));
+        return new Firebar(
+          s.x,
+          s.y,
+          s.type === 'firebar-ccw' ? -1 : 1,
+          this.descentBarLen(s.x, Number(s.props?.len ?? 6)),
+        );
       case 'bowser':
         return new Bowser(
           s.x,
@@ -2304,9 +2326,39 @@ export class World {
   /** The descent-shaft lift carrying `p` this frame (World.descents; Lift.descent), else null. */
   private descentLift(p: Player): Lift | null {
     if (!this.descents.length) return null;
-    for (const e of this.entities)
-      if (e instanceof Lift && e.alive && e.descent && e.ridden && e.rider === p.body) return e;
+    // Every rider counts (co-op: Lift.rider holds only the last one it carried): a ridden lift
+    // under the body, its feet on the lift's top.
+    const b = p.body;
+    for (const e of this.entities) {
+      if (!(e instanceof Lift) || !e.alive || !e.descent || !e.ridden) continue;
+      const l = e.body;
+      if (b.x < l.x + l.w && b.x + b.w > l.x && Math.abs(b.y + b.h - l.y) <= px(1)) return e;
+    }
     return null;
+  }
+
+  /**
+   * A fire bar sweeping a live descent shaft's down lift (5-4's at (92, 10) in the campaign) loses
+   * balls until its tip clears the lift's span, so a rider standing on the lift is never hit on
+   * the long ride down. Other bars, and every bar outside the campaign, keep their length.
+   */
+  private descentBarLen(tx: number, len: number): number {
+    if (!this.descents.length) return len;
+    const spans = this.level.entities
+      .filter((e) => e.type === 'lift-down' && this.descents.some((z) => e.x >= z.x && e.x < z.x + z.w))
+      .map((e) => {
+        const x = e.x * 16 + Number(e.props?.dx ?? 0);
+        return { x0: x, x1: x + Number(e.props?.len ?? 3) * 8 };
+      });
+    // Ball i's hit box: x = tx * 16 + 4 ± i * 8, plus 1..7 (Firebar.ballPos and its 6 px box).
+    const reaches = (n: number) =>
+      spans.some(({ x0, x1 }) => {
+        const r = (n - 1) * 8;
+        return tx * 16 + 4 - r + 1 < x1 && tx * 16 + 4 + r + 7 > x0;
+      });
+    let n = len;
+    while (n > 1 && reaches(n)) n--;
+    return n;
   }
 
   /** Whether a cracked wall still stands in this level. */
@@ -2326,7 +2378,7 @@ export class World {
       if (this.map.get(x, y) !== T.CRACKED) continue;
       this.map.set(x, y, T.AIR);
       this.cracked--;
-      this.breakPieces(x, y);
+      this.breakPieces(x, y, RUBBLE[(x + y) & 1]);
       todo.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
     }
     this.addScore(50);
@@ -2361,9 +2413,9 @@ export class World {
       if (at) this.shatterWall(at[0], at[1]);
     }
     for (const e of this.entities) {
-      if (e instanceof Projectile) {
-        const o = e.owner;
-        if (!(o instanceof Player || (o instanceof Projectile && o.owner instanceof Player))) continue;
+      // Not filtered on `alive`: a shot that hit the wall died in its own update this frame, before
+      // this check, and is only culled at the end of the frame; it must still break the wall.
+      if (heroShot(e)) {
         const at = this.crackedIn(grow(e.body));
         if (at) this.shatterWall(at[0], at[1]);
       } else if (e instanceof Koopa && e.alive && e.isMovingShell) {
@@ -2387,10 +2439,7 @@ export class World {
         ) ||
         this.entities.some(
           (e) =>
-            e.alive &&
-            ((e instanceof Projectile && (e.owner instanceof Player || e.owner instanceof Projectile)) ||
-              (e instanceof Koopa && e.isMovingShell)) &&
-            overlaps(e.body, c.body),
+            e.alive && (heroShot(e) || (e instanceof Koopa && e.isMovingShell)) && overlaps(e.body, c.body),
         );
       if (!hit) continue;
       c.snuff();
@@ -2401,7 +2450,7 @@ export class World {
   }
 
   /** Tile (tx, ty) flying apart in four pieces, as a broken brick (`pipe-piece`: a smashed pipe). */
-  breakPieces(tx: number, ty: number, frame: 'brick-piece' | 'pipe-piece' = 'brick-piece'): void {
+  breakPieces(tx: number, ty: number, frame: PieceFrame = 'brick-piece'): void {
     const cx = tileToSub(tx) + px(4);
     const cy = tileToSub(ty) + px(4);
     this.spawn(new BrickPiece(cx, cy, -0x01000, -0x05000, frame));

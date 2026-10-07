@@ -5,6 +5,8 @@ import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { SIMON } from '@game/characters/simon';
+import { MEGAMAN } from '@game/characters/megaman';
+import { Firebar } from '@game/entities/enemies/firebar';
 import { carryTime, LevelScene } from '@game/scenes/level';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { campaignLevel } from '@game/level/campaign';
@@ -165,6 +167,84 @@ describe('the down lift into the dungeon (campaign)', () => {
       // Carried down: the rider sank out of sight below the screen on the lift.
       expect(toPx(r.world.player.body.y)).toBeGreaterThan(240);
       expect(r.world.player.dead).toBe(false);
+    },
+  );
+
+  it('co-op: two riders on the down lift both go down into the dungeon, nobody hurt', () => {
+    let lift: Lift | undefined;
+    const r = runSim({
+      level: campaignLevel(getLevel('5-4')),
+      character: MARIO,
+      state: { character2: LUIGI, powerState2: 'small', hp2: 0 },
+      script: none,
+      start: { x: 89, y: 2, mode: 'stand', time: 250 },
+      maxFrames: 600,
+      controller: (w, f) => {
+        if (f === 1) {
+          // Both on the lift's left side (clear of the fire bar), side by side.
+          lift = w.entities.find(
+            (e): e is Lift => e instanceof Lift && e.kind === 'lift-down' && toPx(e.body.y) < 100,
+          );
+          const l = lift as Lift;
+          w.players.forEach((p, i) => {
+            p.body.x = l.body.x - px(4) + px(i * 8);
+            p.body.y = l.body.y - p.body.h;
+            p.body.vy = 0;
+          });
+        }
+        return [];
+      },
+    });
+    expect(r.world.players).toHaveLength(2);
+    expect(r.outcome).toBe('pipe');
+    expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: INTO_DUNGEON });
+    expect(r.events.some((e) => e.type === 'died')).toBe(false);
+    for (const p of r.world.players) {
+      expect(p.dead).toBe(false);
+      expect(p.powerState).toBe('small');
+      expect(toPx(p.body.y)).toBeGreaterThan(240);
+    }
+  });
+
+  it('the fire bar at (92, 10) is one ball short in the campaign, so its tip clears the lift; other bars and plain 5-4 keep theirs', () => {
+    const bars = (level: ReturnType<typeof getLevel>) =>
+      runSim({ level, character: MARIO, script: none, start: { x: 89, y: 2, mode: 'stand' }, maxFrames: 2 })
+        .world.entities.filter((e): e is Firebar => e instanceof Firebar)
+        .map((b) => [toPx(b.body.x) >> 4, toPx(b.body.y) >> 4, b.len]);
+    const plain = bars(getLevel('5-4'));
+    const camp = bars(campaignLevel(getLevel('5-4')));
+    expect(plain).toContainEqual([92, 10, 6]);
+    expect(camp).toContainEqual([92, 10, 5]);
+    expect(camp.filter(([x]) => x !== 92)).toEqual(plain.filter(([x]) => x !== 92));
+  });
+
+  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
+    '%s standing in the middle of the lift is never hit, whatever the bar phase (16 phases)',
+    (_n, c) => {
+      const TURN = 65536;
+      for (let k = 0; k < 16; k++) {
+        let hurt = false;
+        const r = runSim({
+          level: campaignLevel(getLevel('5-4')),
+          character: c,
+          script: none,
+          start: { x: 89, y: 2, mode: 'stand', time: 250 },
+          maxFrames: 600,
+          controller: (w, f) => {
+            if (f === 0)
+              for (const e of w.entities)
+                if (e instanceof Firebar && toPx(e.body.x) >> 4 === 92) e.angle = (k * TURN) / 16;
+            const p = w.player;
+            if (p.invuln > 0 || p.dead) hurt = true;
+            return [];
+          },
+        });
+        const p = r.world.player;
+        // Centred: the rider's middle is the lift's middle (column 89's, the lift drawn 4 px left).
+        expect(toPx(p.centerX), `${c.name} phase ${k}`).toBe(89 * 16 + 8);
+        expect(r.outcome, `${c.name} phase ${k}`).toBe('pipe');
+        expect(hurt, `${c.name} phase ${k}`).toBe(false);
+      }
     },
   );
 
@@ -393,6 +473,26 @@ describe('candles give coins', () => {
     expect(c.alive).toBe(false);
     expect(w.state.coins).toBe(coins + 1);
   });
+
+  it.each([SIMON, MEGAMAN].map((c) => [c.name, c] as const))(
+    "%s's attack from the crypt's landing snuffs the candle at (3, 5) without touching it",
+    (_n, c) => {
+      const r = runSim({
+        level: crypt(),
+        character: c,
+        script: none,
+        start: { x: 2, y: 5, mode: 'stand' },
+        maxFrames: 120,
+        controller: (_w, f) => (f < 20 ? [] : f % 8 < 4 ? ['attack'] : []),
+        until: (w) => !w.entities.some((e) => e instanceof Candle && e.alive && toPx(e.body.x) >> 4 === 3),
+      });
+      expect(r.outcome, c.name).toBe('stopped');
+      const p = r.world.player.body;
+      // Still on the landing, well short of the candle: the whip or the shot did it.
+      expect(toPx(p.x + p.w)).toBeLessThan(3 * 16 + 4);
+      expect(r.world.state.coins).toBe(1);
+    },
+  );
 });
 
 /**
