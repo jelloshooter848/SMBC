@@ -1,4 +1,5 @@
 import type { Song } from '@engine/audio/mml';
+import { smb3Songs } from './smb3';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -864,4 +865,6 @@ export const songs: Song[] = [
       [${BOSS_BAR}]7 ${BOSS_FILL}     ; bars 1-8
     `,
   },
+  // Larry Koopa's airship, his duel and the bonus spot behind it.
+  ...smb3Songs,
 ];

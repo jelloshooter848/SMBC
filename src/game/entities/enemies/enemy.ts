@@ -30,6 +30,7 @@ export function enemyPalette(theme: Theme): string {
     case 'castle':
     case 'castle-water':
     case 'station':
+    case 'airship':
       return 'enemies-castle';
     case 'water':
       return 'enemies-water';

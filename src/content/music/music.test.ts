@@ -24,6 +24,11 @@ const SONG_IDS = [
   // Mega Man's station.
   'mm-station',
   'mm-boss',
+  // Larry Koopa's airship and the bonus spot behind it.
+  'airship',
+  'smb3-boss',
+  'toad-house',
+  'bonus-game',
 ];
 
 const SFX_IDS = [
@@ -66,6 +71,11 @@ const SFX_IDS = [
   'boss-fill',
   'beam',
   'capsule',
+  // The bonus spot behind Larry's airship and the item inventory.
+  'card-flip',
+  'slot-stop',
+  'bonus-win',
+  'item-use',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

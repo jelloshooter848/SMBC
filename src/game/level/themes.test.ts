@@ -44,6 +44,7 @@ describe('themes', () => {
       'snow',
       ...LOST_SKINS,
       'station',
+      'airship',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -82,6 +83,7 @@ describe('themes', () => {
       'mushroom-red': 'overworld',
       'castle-water': 'water',
       station: 'mm-station',
+      airship: 'airship',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
@@ -165,5 +167,54 @@ describe('themes', () => {
     expect(decorPalette('station')).toBe(decorPalette('castle'));
     expect(enemyPalette('station')).toBe(enemyPalette('castle'));
     expect(isWaterTheme('station')).toBe(false);
+  });
+
+  it("builds Larry's airship from its own planks and iron under a night sky", () => {
+    const frames = tilesDef.frames;
+    for (const t of [
+      'ground',
+      'hard',
+      'brick',
+      'used',
+      'castle-brick',
+      'tree-top',
+      'tree-trunk',
+      'bridge',
+      'wall',
+      'wall-top',
+    ]) {
+      expect(frames[`${t}@airship`], t).toBeDefined();
+      expect(frames[`${t}@airship`], t).not.toEqual(frames[t]);
+      expect(frames[`${t}@airship`], t).not.toEqual(frames[`${t}@station`]);
+    }
+    // A dark navy night: darker than the overworld's blue, not the castle's or space's black.
+    expect(SKY.airship).not.toBe(SKY.overworld);
+    expect(SKY.airship).not.toBe('#000000');
+    const [r, g, b] = [1, 3, 5].map((k) => parseInt((SKY.airship as string).slice(k, k + 2), 16)) as [
+      number,
+      number,
+      number,
+    ];
+    expect(b).toBeGreaterThan(r + g);
+    expect(r + g + b).toBeLessThan(0x80);
+    // Wood and iron of its own; dark-theme scenery and enemies; no swimming; its own tune.
+    const tiles = PALETTES.default['tiles-airship'];
+    for (const other of ['tiles-overworld', 'tiles-castle', 'tiles-station'])
+      expect(tiles, other).not.toEqual(PALETTES.default[other]);
+    expect(decorPalette('airship')).toBe(decorPalette('castle'));
+    expect(enemyPalette('airship')).toBe(enemyPalette('castle'));
+    expect(isWaterTheme('airship')).toBe(false);
+    expect(themeMusic('airship')).toBe('airship');
+  });
+
+  it('the airship deck tiles seamlessly: plank seams and nails line up across tile edges', () => {
+    const ground = tilesDef.frames['ground@airship'] as readonly string[];
+    // each course ends in a black seam row, so stacked tiles keep the courses apart
+    expect(ground[7]).toMatch(/^0+$/);
+    expect(ground[15]).toMatch(/^0+$/);
+    // the background hull is dimmer than the deck: no lit wood tone on it
+    const wall = (tilesDef.frames['wall@airship'] as readonly string[]).join('');
+    expect(wall).not.toMatch(/3/);
+    expect((ground as string[]).join('')).toMatch(/3/);
   });
 });

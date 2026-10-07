@@ -53,4 +53,6 @@ export const SKY: Record<string, string> = {
   'castle-water': '#000000',
   // The station hangs in space: black behind the plating.
   station: '#000000',
+  // Larry's airship sails a dark night sky.
+  airship: '#000040',
 };
