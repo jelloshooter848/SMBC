@@ -14,7 +14,9 @@ import { BAR_SEGMENTS, LIFE_COLOUR } from './hud';
  * Station Escape's weapon screen, as Mega Man 2's START screen: the weapons Mega Man has in this
  * round, each with its energy bar (P, the Mega Buster, shows his life, as in Mega Man 2), the
  * E-tanks (choosing them fills his life), his lives, and a row for the round's menu (Continue /
- * Give up). Up and down choose (it wraps), OK or MENU on a weapon equips it and play goes on.
+ * Give up). Up and down choose (it wraps), OK on a weapon equips it and play goes on. MENU closes
+ * the screen from any row, as START does in Mega Man 2 (on a weapon it takes that weapon; on the
+ * E-tank or MENU rows it keeps the weapon in hand): it never uses a tank or opens the round's menu.
  * Layout and colours are from memory of the NES screen; the art is plain boxes and text.
  */
 
@@ -78,7 +80,7 @@ export class StationWeaponScene implements Scene {
     audio.sfx('pause');
     audio.pause();
     this.say(
-      `Weapons. ${this.rowSaid(this.rows[this.cursor] as WeaponRow)}. Up and down to choose, ${abilityHint(this.game, 'OK', 'jump')} to take it.`,
+      `Weapons. ${this.rowSaid(this.rows[this.cursor] as WeaponRow)}. Up and down to choose, ${abilityHint(this.game, 'OK', 'jump')} to take it, ${abilityHint(this.game, 'MENU', 'start')} to go back.`,
     );
   }
 
@@ -107,7 +109,7 @@ export class StationWeaponScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
-    return { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'OK' };
+    return { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'BACK' };
   }
 
   update(input: InputFrame): void {
@@ -119,7 +121,19 @@ export class StationWeaponScene implements Scene {
       this.say(this.rowSaid(this.rows[this.cursor] as WeaponRow));
       return;
     }
-    if (input.pressed('jump') || input.pressed('start')) this.choose();
+    if (input.pressed('start')) this.close();
+    else if (input.pressed('jump')) this.choose();
+  }
+
+  /** MENU (Mega Man 2's START): back to play, taking the weapon under the cursor if it is one. */
+  close(): void {
+    const r = this.rows[this.cursor] as WeaponRow;
+    if (r.kind === 'weapon') this.host.player.scratch.tool = r.tool;
+    this.game.scenes.pop();
+    const held = this.rows.find(
+      (row) => row.kind === 'weapon' && row.tool === (this.host.player.scratch.tool ?? 0),
+    );
+    this.say(held ? `${this.rowSaid(held).split(',')[0]}.` : 'Back to play.');
   }
 
   /** OK on the row under the cursor. */
