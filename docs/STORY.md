@@ -21,8 +21,8 @@ Nothing here is in the game yet. When a line is approved, it can be pasted into 
 - Lines never name a button, only abilities (`OK`, `JUMP`), as everywhere else in the game.
 - Each script block says **WHERE** it shows (the scene or file it would replace or add) and **WHEN** (the
   trigger). Blocks marked **NEW** need a small amount of new code; blocks marked **REPLACES** are text swaps.
-- The owner reviewed this draft on 2026-10-07. The decisions are listed at the end (section 3), with the few
-  questions still open.
+- The owner reviewed this draft on 2026-10-07. The decisions are listed at the end (section 3); none are still
+  open.
 
 ## 1. The story in short
 
@@ -42,22 +42,26 @@ along, and now the wand's pieces, the Koopalings and Bowser are heading straight
 
 ### Beat outline
 
-| Part            | What happens                                                                                                                                                                                                                                                                                                                                                                            |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1-0             | Toad meets Mario: the stolen wand, strange heroes under the king's spell, Peach gone with her note. A hero's shadow dashes past; Bowser laughs and says why: his Koopas couldn't find her, so heroes who don't think like Koopas will.                                                                                                                                                  |
-| Worlds 1-7      | On each new world Toad says who we are looking for (never by name) and hints at the kind of place. Partners give clues. Each freed hero cracks the wand a little more. Each castle's Toad has news: the spell lifting, the wand weakening, Bowser fleeing east, and signs that Peach is a step ahead of everyone (a fake map signed - P at 3-4, villagers got out just in time at 5-4). |
-| 4-2             | Larry Koopa, angry: the king took his wand and left him a spare. He's helping the hunt to get it back. Beaten, he drops his crystal ball, which sees wherever the wand's spell is at work: the hidden heroes.                                                                                                                                                                           |
-| World 8         | Bowser's Land. The last hero is a tank; her pilot Jason is lost in 8-4, taking the pipe everyone else skips. Toad finds a pulled-up turnip he can't explain.                                                                                                                                                                                                                            |
-| 8-4             | Bowser falls. The wand flies from his hand and breaks; its pieces fall through a crack in the world. Toad stands at the end. Credits, as a false ending (`...BUT THE STORY ISN'T OVER.`). Back on the World 8 map Toad works out Peach's note: she is in the Lost Kingdom, and the road on to Lost World 1 draws in.                                                                    |
-| Lost Kingdom    | Everything looks like home, only meaner. Clues that someone is hiding (more pulled-up turnips, a very tall Toad). The wand broke into six pieces and the star tip: each Koopaling but Larry (Morton, Wendy, Iggy, Roy, Lemmy, Ludwig) grabs a piece and flies off in an airship; the king keeps the star tip.                                                                           |
-| Finding Peach   | **Later release.** Decided: at the end of Lost 4-4 (Toadstool Grove), the castle's "Toad" pulls off its cap: it's Peach, hiding among the Toads. She stops hiding and joins the team.                                                                                                                                                                                                   |
-| Lost 8-4 to D-4 | Bowser has taped the star tip to a stick and calls it a wand; beaten at Lost 8-4 he flees over the Farewell Sea with it. Across the Far Lands (A-D) to the Last Glacier, where the wand is made whole, the rift is sealed and Larry gets his wand back, with a lock on it. A shorter final credits roll.                                                                                |
+| Part          | What happens                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1-0           | Toad meets Mario: the stolen wand, strange heroes under the king's spell, Peach gone with her note. A hero's shadow dashes past; Bowser laughs and says why: his Koopas couldn't find her, so heroes who don't think like Koopas will.                                                                                                                                                  |
+| Worlds 1-7    | On each new world Toad says who we are looking for (never by name) and hints at the kind of place. Partners give clues. Each freed hero cracks the wand a little more. Each castle's Toad has news: the spell lifting, the wand weakening, Bowser fleeing east, and signs that Peach is a step ahead of everyone (a fake map signed - P at 3-4, villagers got out just in time at 5-4). |
+| 4-2           | Larry Koopa, angry: the king took his wand and left him a spare. He's helping the hunt to get it back. Beaten, he drops his crystal ball, which sees wherever the wand's spell is at work: the hidden heroes.                                                                                                                                                                           |
+| World 8       | Bowser's Land. The last hero is a tank; her pilot Jason is lost in 8-4, taking the pipe everyone else skips. Toad finds a pulled-up turnip he can't explain.                                                                                                                                                                                                                            |
+| 8-4           | Bowser falls. The wand flies from his hand and breaks; its pieces fall through a crack in the world. Toad stands at the end. Credits, as a false ending (`...BUT THE STORY ISN'T OVER.`). Back on the World 8 map Toad works out Peach's note: she is in the Lost Kingdom, and the road on to Lost World 1 draws in.                                                                    |
+| Lost Kingdom  | Everything looks like home, only meaner. Clues that someone is hiding (more pulled-up turnips, a very tall Toad). The wand broke into six pieces and the star tip: each Koopaling but Larry (Morton, Wendy, Iggy, Roy, Lemmy, Ludwig) grabs a piece and flies off in an airship; the king keeps the star tip, the wand's heart.                                                         |
+| Finding Peach | **Later release.** Decided: at the end of Lost 4-4 (Toadstool Grove), the castle's "Toad" pulls off its cap: it's Peach, hiding among the Toads. She stops hiding and joins the team.                                                                                                                                                                                                   |
+| Lost 8-4      | **The main ending.** Bowser has taped the star tip to a stick and calls it a wand. Beaten at Lost 8-4, he escapes over the Farewell Sea with the star tip, but the princess is safe and the heroes stay. Credits roll (`THE END. / ...OR IS IT?`). World 9 opens by the NES rule (a Lost 8-4 clear without warps).                                                                      |
+| Airships      | **Optional side quest.** Six Koopaling airships, one behind each forward warp zone in Lost worlds 1-8 (Lost 1-2 three, 5-1 one, 5-2 two). Each returns one wand piece. Toad hints that the pieces matter: put the wand back together and we could follow the king.                                                                                                                      |
+| Lost A to D-4 | **The true ending, unlocked by all six pieces** (campaign). The rebuilt wand opens the way to the Far Lands (A-D); chase Bowser to the Last Glacier for the star tip. At D-4 the wand is made whole, the rift is sealed and Larry gets his wand back whole, with a lock on it. A shorter final credits roll (`...FOR REAL THIS TIME.`). Classic play keeps the NES unlock rule for A-D. |
 
 ### Story beat tiers
 
 - **Tier 1, mandatory scenes** (they always play, as story scenes): the 1-0 opening, Bowser's shadow tease, Larry
   in 4-2, the crystal ball, the 8-4 wand break (with Toad working out the note), the Lost Kingdom reveal, Peach's
-  discovery, the late-Lost escalation (Bowser back at Lost 8, his flight over the Farewell Sea) and the final ending.
+  discovery, Bowser back at Lost 8, and the main ending at Lost 8-4 (with his escape and the star-tip tease).
+- **Optional:** the Koopaling airships and the six wand pieces they hold. The main story never needs them; all six
+  unlock the Far Lands (A-D), whose chapter ends in the true ending at Lost D-4 (a mandatory scene once unlocked).
 - **Everything else** (world entries, missed-hero lines, partners, castle news, Toad's reactions, the extras) plays
   **once per file** and is quick to skip: one press of `OK` per page, and (NEW) `BACK` closes the rest of that
   scene's pages.
@@ -219,8 +223,88 @@ REALLY ME! BWA HA HA!
 
 The 8-4 castle's first page then confirms it was real (2.12).
 
-**The Lost Kingdom** has its own fake Bowsers (Lost 1-4 to 7-4). The same tell and the same always-reveal apply there.
-Their castle lines (2.15) stay as written unless the owner wants a reveal page for them too.
+**The Lost Kingdom** has its own fake Bowsers (Lost 1-4 to 7-4). The same tell and the same always-reveal apply there,
+and (decided) their castles get a reveal page too: page 1 names the creature, page 2 is the story line (2.15). The
+code gives them the same true forms as worlds 1-7 (`bowser-die-N` by world number, in `bowser.ts`): Lost 1-4 Goomba,
+2-4 Koopa, 3-4 Buzzy Beetle, 4-4 Spiny, 5-4 Lakitu, 6-4 Blooper, 7-4 Hammer Bro. The Bowsers at Lost A-4 to C-4 have
+no true form of their own (from world 8 on the die frame is the king himself), so those castles keep one page.
+
+### 2.3b Restyled levels: "why does it look so different here?"
+
+From 0.4.9 (7-3) and 0.4.12 (2-1, 3-1, 4-2, 5-4, 6-2), the level where a hero hides takes on their game's look in
+the campaign. **The story reason:** when the wand pulled a hero into the Mushroom Kingdom, it dragged a bit of their
+world along, and that bit reshaped the level they hide in. The look **stays after the hero is freed**, as a souvenir
+of where they were found (owner decision). The level's look music plays there for every hero; it is effectively the
+hero's level.
+
+**WHEN:** the first time the player starts that level on a file (campaign), Toad's box shows one card before play.
+It is a light, story-flavoured hint that someone from another world is near; it never names them.
+
+```text
+TOAD:
+
+WHY DOES SEA SIDE LOOK SO
+DIFFERENT HERE? STONE
+RUINS? SOMEONE BROUGHT A
+BIT OF THEIR WORLD ALONG.
+```
+
+(2-1, Zelda II look)
+
+```text
+TOAD:
+
+WHY DOES NIGHT HILLS LOOK
+LIKE A FACTORY HERE? ALL
+BOLTS AND PIPES. SOMEBODY
+BROUGHT THEIR WORLD ALONG.
+```
+
+(3-1, Mega Man look)
+
+```text
+TOAD:
+
+MUSHROOM WOODS, BUT BLUE
+AND BUBBLY DOWN HERE? IT
+FEELS LIKE ANOTHER PLANET.
+```
+
+(4-2, Metroid look)
+
+```text
+TOAD:
+
+WHY DOES THIS CASTLE LOOK
+SO... OLD? CANDLES, STONE,
+AND I SWEAR SOMETHING JUST
+MOVED IN THAT WINDOW.
+```
+
+(5-4, Castlevania look)
+
+```text
+TOAD:
+
+SNOW NIGHT HAS STREETS
+NOW? SHOP FRONTS, LAMPS...
+SOMEONE'S WORLD HAS
+BLED INTO THIS ONE.
+```
+
+(6-2, Ninja Gaiden look)
+
+```text
+TOAD:
+
+CANNON COAST TURNED INTO A
+JUNGLE?! AND WHAT'S WITH
+THAT BRIDGE'S RED LIGHT?
+```
+
+(7-3, Contra look, already in the game since 0.4.9; this card is added with the story batch)
+
+The coin heavens above these levels share the look (owner decision); bonus rooms and water areas keep their own.
 
 ### 2.4 World 1: Grass Land (Luigi)
 
@@ -1220,8 +1304,47 @@ LET'S FIND BOTH!
 
 **The wand's pieces** (decided): it broke into **six pieces and the star tip**. Each Koopaling but Larry (the
 wand's owner) grabs one piece and flies off with it in an airship: Morton, Wendy, Iggy, Roy, Lemmy and Ludwig. The
-king keeps the star tip. The lines below only say what Toad and the castles see, so they hold whether or not the
-Koopaling airships (ROADMAP idea 1) are built yet.
+king keeps the star tip, the wand's heart.
+
+- **The main story** needs no piece: it ends at Lost 8-4, when Bowser is beaten and escapes with the star tip
+  (below).
+- **The side quest:** six Koopaling airships (ROADMAP idea 1), one behind each forward warp zone in Lost worlds 1-8
+  (Lost 1-2 three, Lost 5-1 one, Lost 5-2 two). Each airship beaten returns its Koopaling's piece. They are never
+  needed to go on.
+- **The true-ending chapter:** with all six pieces (campaign only), the rebuilt wand opens the way to the Far Lands,
+  Lost worlds A-D, to chase Bowser for the star tip. At D-4 the wand is made whole (2.18). Classic play keeps the NES
+  rule for A-D, and World 9 keeps the NES rule everywhere (it opens after a Lost 8-4 clear without warps).
+
+**A piece won back** (NEW cards on the map, the first time it shows after an airship is beaten). The first piece:
+
+```text
+TOAD:
+
+A PIECE OF THE WAND! PUT
+ALL SIX BACK TOGETHER AND
+WE COULD FOLLOW THE KING
+ANYWHERE.
+```
+
+The sixth piece, before Lost 8-4 is cleared:
+
+```text
+TOAD:
+
+THAT'S ALL SIX! THE WAND
+IS ALMOST WHOLE. ONLY THE
+STAR TIP IS MISSING.
+```
+
+The sixth piece, after Lost 8-4 (the road on to Lost World A then draws in):
+
+```text
+TOAD:
+
+THAT'S ALL SIX! THE WAND
+CAN OPEN THE WAY TO THE
+FAR LANDS. AFTER HIM!
+```
 
 **Lost worlds 2-D: Toad's world entries** (one card each, first arrival; kept light). Lost 2 and 4 carry the
 clues that Peach is near (she grows turnips and throws them, as in SMB2; Toad found the first turnip in World 8);
@@ -1244,7 +1367,7 @@ TOAD:
 
 AIRSHIPS OVERHEAD! THE
 KOOPALINGS ARE HUNTING
-FOR THE PIECES TOO.
+THE WAND'S PIECES.
 ```
 
 Lost 4, Toadstool Grove:
@@ -1303,10 +1426,12 @@ Lost 9, Farewell Sea:
 ```text
 TOAD:
 
-HE FLED OVER THE SEA WITH
-THE LAST PIECE. I CAN'T
+THE FAREWELL SEA. THE KING
+FLED OVER IT. I CAN'T
 SWIM, SO... YOU FIRST.
 ```
+
+Lost A to D are the true-ending chapter (only with all six pieces, in the campaign).
 
 Lost A, Spore Forest:
 
@@ -1350,73 +1475,113 @@ THIS ENDS NOW!
 ```
 
 **The Lost castles' news**: the Lost castles 1-4 to 7-4 and A-4 to C-4 say `BUT OUR PRINCESS IS IN ANOTHER
-CASTLE!` too today (`World.updateBossClear`), so they get lines of their own:
+CASTLE!` too today (`World.updateBossClear`), so they get lines of their own. Lost 1-4 to 7-4 have a fake Bowser,
+so, as in worlds 1-7, page 1 names its true form (2.3a) and page 2, 2 s later in the same box, is the story line.
+A-4 to C-4 have no fake and keep one page.
 
-Lost 1-4:
+Lost 1-4 (a Goomba):
 
 ```text
 THANK YOU <HERO>!
 
+ANOTHER GOOMBA IN A KING
+SUIT! THE STAR TIP STILL
+HAS SOME MAGIC IN IT.
+```
+
+```text
 A KOOPALING GRABBED A
 PIECE OF THE WAND AND
 FLEW OFF IN AN AIRSHIP!
 ```
 
-Lost 2-4:
+Lost 2-4 (a Koopa):
 
 ```text
 THANK YOU <HERO>!
 
+A KOOPA IN THE KING'S
+SHAPE. HE NEVER RUNS OUT
+OF STAND-INS.
+```
+
+```text
 SOMEONE LEFT US A BASKET
 OF TURNIPS. THE NOTE SAYS:
 EAT YOUR GREENS. - P
 ```
 
-Lost 3-4:
+Lost 3-4 (a Buzzy Beetle):
 
 ```text
 THANK YOU <HERO>!
 
+A BUZZY BEETLE! DOWN HERE
+EVEN THE FAKES ARE MEANER.
+```
+
+```text
 THE KOOPALINGS ARE ALL
 OVER THE KINGDOM. SIX OF
 THEM, SIX PIECES.
 ```
 
-Lost 4-4 (until Peach is built; then her discovery scene, 2.16, replaces it):
+Lost 4-4 (a Spiny; page 2 until Peach is built, then her discovery scene, 2.16, replaces it):
 
 ```text
 THANK YOU <HERO>!
 
+A SPINY AGAIN! STILL
+PRICKLY, STILL A FAKE.
+```
+
+```text
 A VERY TALL TOAD WAS JUST
 HERE. SHE SAID TO TELL
 YOU: SEE YOU SOON!
 ```
 
-Lost 5-4:
+Lost 5-4 (a Lakitu):
 
 ```text
 THANK YOU <HERO>!
 
+A LAKITU IN A KING SUIT!
+SO WHO'S UP THERE THROWING
+THE SPINIES?
+```
+
+```text
 THE KING WANTS HIS KIDS'
 PIECES. HE WANTS HIS
 WAND BACK. WELL, LARRY'S.
 ```
 
-Lost 6-4:
+Lost 6-4 (a Blooper):
 
 ```text
 THANK YOU <HERO>!
 
+ANOTHER BLOOPER! IT LEFT
+INK ALL OVER THE BRIDGE.
+```
+
+```text
 THE FAKE KINGS KEEP
 GETTING BETTER. THAT ONE
 EVEN HAD THE EYEBROWS.
 ```
 
-Lost 7-4:
+Lost 7-4 (a Hammer Bro):
 
 ```text
 THANK YOU <HERO>!
 
+A HAMMER BRO! HE KEPT HIS
+HAMMERS UNDER THE SUIT.
+```
+
+```text
 THE KING WENT TO HIS DARK
 CITADEL, WITH THE STAR
 TIP AND A ROLL OF TAPE.
@@ -1451,30 +1616,6 @@ ONE CASTLE LEFT. HE IS
 WAITING ON THE GLACIER.
 ```
 
-**Lost 8-4 ending**: REPLACES the Lost 8-4 card in `Game.showLostEnding` (decided: campaign only; outside the
-campaign the NES card and tally stay).
-
-Old: _THANK YOU <HERO>! / YOUR QUEST IS OVER. / WE PRESENT YOU A NEW QUEST. / PUSH BUTTON B / TO SELECT A
-WORLD_ (the NES wording, chosen by the owner on 2026-10-06; it stays in classic play).
-
-```text
-THANK YOU <HERO>!
-
-BOWSER FLED OVER THE
-FAREWELL SEA WITH THE
-WAND'S STAR TIP!
-```
-
-**Lost 9-4 ending**: REPLACES the `THANK YOU!` card (campaign only).
-
-```text
-THANK YOU <HERO>!
-
-THE SEA IS CROSSED. PAST
-IT LIE THE FAR LANDS,
-WHERE NO MAP GOES.
-```
-
 ### 2.16 Peach (for a later release)
 
 These scenes are **for the release that makes Peach playable**, not 0.4.13. Until then, the clues in 2.15 point
@@ -1485,8 +1626,8 @@ Toad cap, hiding among the Toads. It is the fourth of thirteen Lost worlds: earl
 learned the Lost Kingdom, and the world's own name sets it up. Clues on World 8 and Lost 2 (turnips) and Lost 4 (a
 very tall Toad).
 
-**Her discovery scene** (castle end, NEW): the castle's thanks as usual, then the "Toad" pulls off its cap, and
-the cards play in the box over the room.
+**Her discovery scene** (castle end, NEW): the castle's thanks and the Spiny reveal page as usual, then the "Toad"
+pulls off its cap, and the cards play in the box over the room.
 
 ```text
 THANK YOU <HERO>!
@@ -1546,7 +1687,135 @@ PRINCESS! YOU'RE SAFE!
 THE WAY. IT'S FRAMED.
 ```
 
-### 2.17 The final ending: Lost D-4
+### 2.17 The main ending: Lost 8-4
+
+Beating Bowser at Lost 8-4 **ends the main story**: the princess is safe and the heroes stay. But he escapes with
+the star tip, so it isn't quite over.
+
+**The scene** (NEW, stage directions): the axe, the bridge falls as now. Bowser doesn't reach the lava: the star tip
+on his stick flashes gold and he blinks away in a puff of wand sparkles, like the fakes' but gold (no flash with
+reduce flashing).
+
+**The castle card**: REPLACES the Lost 8-4 card in `Game.showLostEnding` (decided: campaign only; outside the
+campaign the NES card and tally stay). Two pages; page 1 has two versions, by whether Peach is in the game yet.
+
+Old: _THANK YOU <HERO>! / YOUR QUEST IS OVER. / WE PRESENT YOU A NEW QUEST. / PUSH BUTTON B / TO SELECT A
+WORLD_ (the NES wording, chosen by the owner on 2026-10-06; it stays in classic play).
+
+With Peach (later release):
+
+```text
+THANK YOU <HERO>!
+
+BOWSER IS BEATEN, AND THE
+PRINCESS IS SAFE AT LAST!
+```
+
+Until then (0.4.13):
+
+```text
+THANK YOU <HERO>!
+
+BOWSER IS BEATEN! THE
+KINGDOM IS SAFE... FOR
+NOW.
+```
+
+Then, 2 s later (second page, same box):
+
+```text
+BUT HE GOT AWAY OVER THE
+FAREWELL SEA, WITH THE
+WAND'S STAR TIP!
+```
+
+**The credits** (decided, NEW): the full roll, as at 8-4, in the campaign only. Its last page gets this closing
+block instead of 8-4's `...BUT THE STORY ISN'T OVER.`:
+
+```text
+THE END.
+...OR IS IT?
+```
+
+**Toad's epilogue** (Lost World 8 map, after the credits): NEW cards.
+
+```text
+TOAD:
+
+THE HEROES CAN GO HOME
+ANY TIME... BUT NOBODY
+IS PACKING. I THINK THEY
+LIKE IT HERE.
+```
+
+Until Peach is in the game:
+
+```text
+TOAD:
+
+AND A VERY TALL TOAD SENT
+WORD: THANK YOU. SHE'LL
+COME HOME SOON.
+```
+
+With Peach (later release), she says it herself:
+
+```text
+PEACH:
+
+THANK YOU, <HERO>. I CAN
+STOP HIDING NOW. ...I'LL
+MISS THE TURNIPS, THOUGH.
+```
+
+Then the tease, which points at the side quest (2.15):
+
+```text
+TOAD:
+
+BUT THE KING STILL HAS THE
+STAR TIP. IF WE PUT THE
+WAND BACK TOGETHER, WE
+COULD FOLLOW HIM...
+```
+
+If some pieces are still missing:
+
+```text
+TOAD:
+
+THE KOOPALINGS HAVE THE
+OTHER SIX PIECES. THEIR
+AIRSHIPS HIDE PAST THE
+WARP PIPES, LIKE LARRY'S.
+```
+
+If all six are already found (the road on to Lost World A then draws in):
+
+```text
+TOAD:
+
+...AND WE HAVE ALL SIX
+PIECES! THE WAND CAN OPEN
+THE WAY. TO THE FAR LANDS!
+```
+
+**World 9** opens by the NES rule (a Lost 8-4 clear without warps); it is an extra, not part of either ending.
+**Lost 9-4 ending**: REPLACES the `THANK YOU!` card (campaign only).
+
+```text
+THANK YOU <HERO>!
+
+THE SEA IS CROSSED. THE
+FAR LANDS LIE PAST IT,
+BUT ONLY THE WAND CAN
+OPEN THE WAY.
+```
+
+### 2.18 The true ending: Lost D-4
+
+Only reached with all six pieces (2.15): the rebuilt wand opened the way to the Far Lands, and at the Last Glacier
+the king is beaten for the star tip.
 
 **The castle card**: REPLACES the D-4 card in `Game.showLostEnding` (campaign only). Two versions, by whether
 Peach is in the game yet.
@@ -1572,8 +1841,8 @@ THE KINGDOM IS SAFE.
 ```
 
 **The final credits** (decided, NEW): a **shorter roll** over it than at 8-4, in the campaign only: the first
-credits page, the legal page and `THANKS FOR PLAYING`, then this closing block (the answer to 8-4's
-`...BUT THE STORY ISN'T OVER.`):
+credits page, the legal page and `THANKS FOR PLAYING`, then this closing block (the answer to Lost 8-4's
+`...OR IS IT?`):
 
 ```text
 THE END.
@@ -1586,28 +1855,9 @@ THE END.
 TOAD:
 
 LARRY GOT HIS WAND BACK,
-AND A LOCK FOR IT. THE
-KING HAS TO SAY SORRY TO
-EVERY HERO. IN PERSON.
-```
-
-```text
-TOAD:
-
-THE HEROES CAN GO HOME
-ANY TIME... BUT NOBODY
-IS PACKING. I THINK THEY
-LIKE IT HERE.
-```
-
-Until Peach is in the game, this card goes between those two:
-
-```text
-TOAD:
-
-AND A VERY TALL TOAD SENT
-WORD: THANK YOU. SHE'LL
-COME HOME SOON.
+WHOLE, AND A LOCK FOR IT.
+THE KING HAS TO SAY SORRY
+TO EVERY HERO. IN PERSON.
 ```
 
 The last card:
@@ -1622,8 +1872,8 @@ WANTS CAKE?
 
 ## 3. The owner's decisions (review of 2026-10-07)
 
-All twelve questions of the first draft are decided. The story is not to be rewritten: keep its shape, its jokes
-and its references to the heroes' games.
+All fourteen questions are decided (twelve from the first draft, two settled afterwards). The story is not to be
+rewritten: keep its shape, its jokes and its references to the heroes' games.
 
 1. **Which Lost world for Peach?** DECIDED: **Lost 4-4**, Toadstool Grove, disguised as a tall Toad (2.16). Lost 2-4
    is too early, right after the 8-4 reveal.
@@ -1632,11 +1882,13 @@ and its references to the heroes' games.
 3. **How direct should partners be?** DECIDED: **one step clearer than Toad**: Toad hints, a partner says what to
    try. The old man, the Chozo statue, Irene and Lance were made a little clearer.
 4. **Who stands at the end of 8-4?** DECIDED: **Toad** (campaign only), so nothing suggests Peach is found (2.12).
-5. **The Lost 8-4 card**: DECIDED: **replace the NES wording in the campaign**; classic play keeps it (2.15).
-6. **The 8-4 credits**: DECIDED: **keep them at 8-4** as a false ending with `...BUT THE STORY ISN'T OVER.`, and add
-   a **shorter final credits roll** after Lost D-4 (2.17).
+5. **The Lost 8-4 card**: DECIDED: **replace the NES wording in the campaign**; classic play keeps it (2.17).
+6. **The 8-4 credits**: DECIDED: **keep them at 8-4** as a false ending with `...BUT THE STORY ISN'T OVER.`, roll
+   them again at Lost 8-4, the main ending (`THE END. / ...OR IS IT?`), and add a **shorter final credits roll**
+   after Lost D-4, the true ending (2.17, 2.18).
 7. **The wand's pieces and the Koopalings**: DECIDED: **six pieces, one per Koopaling** (Morton, Wendy, Iggy, Roy,
-   Lemmy, Ludwig; Larry owns the wand), plus the **star tip, which the king keeps** (2.15).
+   Lemmy, Ludwig; Larry owns the wand), plus the **star tip, which the king keeps** (2.15). See 13 for what the
+   story needs of them.
 8. **Freed heroes and the wand**: DECIDED: **both** weaken it. Every freed hero's spell snaps back into the wand
    (Toad's reactions, 2.14); the castles keep blaming overuse, so the story holds if a player frees nobody.
 9. **Tone**: DECIDED: **keep all the jokes** and the references to the heroes' games; they fit the NES vibe.
@@ -1650,10 +1902,15 @@ Koopas"), so Toad's opening says less (2.1, 2.2); Peach leaves three traces befo
 away where she is (castles 3-4 and 5-4, Toad's World 8 entry); and a short tier list says which scenes are
 mandatory (section 1, Story beat tiers).
 
-### Still open
+Settled after the review (the two questions that were still open):
 
-1. **Winning the pieces back.** The D-4 card says the wand is whole again. With the Koopaling airships (ROADMAP
-   idea 1), beating each Koopaling wins back their piece. Until the airships are built, should the pieces come back
-   some other way (say, one dropped at each of six Lost castles), or is it enough that the ending says so?
-2. **The Lost castles' fake Bowsers** (2.3a): do the Lost 1-4 to 7-4 castles get a reveal page too (then two pages
-   each, as in worlds 1-7), or keep the single page they have?
+13. **Winning the pieces back.** DECIDED: **the six pieces unlock the Far Lands.** The main story ends at **Lost
+    8-4**: Bowser is beaten, the princess is safe and credits roll, but he escapes with the star tip (2.17). The six
+    Koopaling airships, one behind each forward warp zone in Lost worlds 1-8 (Lost 1-2 three, 5-1, 5-2 two), are an
+    **optional side quest**; each returns one piece, and Toad hints that the pieces matter. **All six** (campaign
+    only) open the way to Lost A-D, the **true-ending chapter**: at D-4 the wand is made whole, the rift is sealed
+    and Larry gets his wand back whole, with a lock on it (2.18). World 9 keeps the NES rule (a Lost 8-4 clear
+    without warps), and classic play keeps the NES rule for A-D (2.15).
+14. **The Lost castles' fake Bowsers** (2.3a): DECIDED: **a reveal page too**, as in worlds 1-7. Lost 1-4 to 7-4 get
+    two pages each, the reveal first (Goomba, Koopa, Buzzy Beetle, Spiny, Lakitu, Blooper, Hammer Bro, as in the
+    code), then their story line. A-4 to C-4 have no fake, so they keep one page (2.15).
