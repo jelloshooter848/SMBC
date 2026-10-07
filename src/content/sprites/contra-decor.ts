@@ -2,17 +2,25 @@ import { NES } from '@engine/gfx/palette';
 
 /**
  * Bill's jungle scenery on the decor sheet (registered in decor.ts), drawn in palette
- * `decor-jungle` (the decor sheet's roles: 1-3 greens, 4-5 the cloud slots, here distant
- * mountain blues, 6 dark brown, 7-8 the castle's brick, here concrete greys, 9-a wood, here palm
- * bark and sandbag canvas). Original art in the spirit of an NES jungle stage; the shapes are
- * computed from discs and curves.
+ * `decor-jungle` (the decor sheet's roles: 1-3 greens, 4-5 the cloud slots, here night blues for
+ * mountains and clouds, 6 dark brown, 7-8 the castle's brick, here concrete greys, 9-a wood, here
+ * olive drab and khaki for palm bark and sandbag canvas). Original art in the spirit of an NES
+ * jungle stage; the shapes are computed from discs and curves.
  *
- * - `palm` (32x48): a leaning palm, its foot at the bottom centre.
- * - `canopy` (32x16): a clump of jungle crowns; `cloud-1/2/3@contra-jungle` are canopies 32, 48
- *   and 64 wide, so a level's clouds turn into canopy under the jungle theme.
- * - `mountain` (64x32): a distant ridge of two peaks.
- * - `sandbags` (32x16): a low wall of stacked bags.
+ * These frames are drawn for `decor-jungle` (themes `contra-jungle` and `contra-falls`) and only
+ * look right there: in another theme's decor palette the same indices give daylight cloud
+ * whites and castle bricks. Place them in jungle levels only.
+ *
+ * - `palm` (32x48): a palm, its foot at the bottom centre. Needs ground under it.
+ * - `canopy` (32x16): a clump of jungle crowns (for a cliff top or a ledge, not open sky).
+ * - `canopy-hang` (32x16): the foliage ceiling, its top row solid leaves, leaf tips and vines
+ *   hanging down. Place it at row 0 (`canopy-hang x 0`: anchored bottom-left like all decor, so
+ *   it covers the top tile row) every 2 columns: its left and right edges join into one ceiling.
+ * - `mountain` (64x32): a distant ridge of peaks. Needs ground (or the screen's bottom) under it.
+ * - `sandbags` (32x16): a low wall of olive canvas bags, background only.
  * - `searchlight` (32x48): a lamp on a tripod, its beam slanting up and to the left.
+ * - `cloud-1/2/3@contra-jungle` (32, 48, 64 x16): low dim night clouds; drawDecor uses them for a
+ *   level's `cloud-*` under the jungle theme, so the sky keeps its clouds, darkened.
  * Each stands on its bottom row (decor is anchored bottom-left).
  */
 
@@ -26,8 +34,9 @@ export const jungleDecorPalette: string[] = [
   NES.brownDark,
   NES.gray,
   NES.lightGray,
-  NES.brown,
-  NES.tanDark,
+  // olive drab and khaki: canvas and bark, dim so they stay behind the rock and bricks
+  '#4c5018',
+  '#7c7c3c',
 ];
 
 type Rows = readonly string[];
@@ -84,6 +93,42 @@ const canopyClump = (w: number, seed: number): string[] => {
 };
 
 const canopy = canopyClump(32, 1);
+
+/* The foliage ceiling: a solid band of dark leaves, ragged tips and a few vines hanging from it.
+   Periodic in x (32 px), so a row of them joins up. */
+const canopyHang = ((): string[] => {
+  const tip = (x: number) => 4 + Math.round(3 * Math.abs(Math.sin((x * Math.PI) / 8)) + hash(x, 0, 21) * 2);
+  const vine = (x: number) => x === 5 || x === 19 || x === 27;
+  return draw(32, 16, (x, y) => {
+    const len = tip(x);
+    if (vine(x) && y <= 14) return y % 3 === 1 ? '3' : '2';
+    if (y > len) return '.';
+    if (y === len) return '0';
+    if (y === len - 1) return hash(x, y, 22) < 0.5 ? '2' : '1';
+    return hash(x, y, 23) < 0.15 ? '2' : '1';
+  });
+})();
+
+/* A low night cloud (`w` wide): dim navy with a lighter rim on top, a flat bottom, a star or two
+   in the sky round it. */
+const nightCloud = (w: number, seed: number): string[] => {
+  const n = Math.max(2, Math.round(w / 12));
+  const bumps = Array.from({ length: n }, (_, i) => {
+    const cx = 6 + ((w - 12) * (i + 0.5)) / n + (hash(i, 0, seed) - 0.5) * 3;
+    const r = 3.5 + hash(i, 2, seed) * 2.5;
+    return [cx, 12 - r * 0.6, r] as const;
+  });
+  return draw(w, 16, (x, y) => {
+    const inside = (xx: number, yy: number) =>
+      yy <= 12 &&
+      yy >= 0 &&
+      (bumps.some(([cx, cy, r]) => Math.hypot(xx + 0.5 - cx, (yy + 0.5 - cy) * 1.3) < r) ||
+        (yy >= 10 && xx >= 3 && xx < w - 3));
+    if (inside(x, y)) return inside(x, y - 1) ? '5' : '4';
+    if (y < 6 && hash(x, y, seed + 9) < 0.006) return '8';
+    return '.';
+  });
+};
 
 /** Stamp filled discs along a quadratic curve from (x0,y0) via (cx,cy) to (x1,y1), tapering. */
 function stroke(
@@ -198,7 +243,7 @@ const mountain = ((): string[] => {
   });
 })();
 
-/* Sandbags: three courses of plump bags, staggered. */
+/* Sandbags: three courses of plump olive canvas bags, staggered, dark seams between. */
 const sandbags = draw(32, 16, (x, y) => {
   const course = y < 6 ? 0 : y < 11 ? 1 : 2;
   const top = [1, 6, 11][course] as number;
@@ -210,10 +255,10 @@ const sandbags = draw(32, 16, (x, y) => {
   if (by < 0 || by >= 5) return '.';
   // a plump bag: an ellipse in its 8x5 cell, lit on top, a dark seam where bags meet
   const d = Math.hypot((bx + 0.5 - 4) / 4.1, (by + 0.5 - 2.5) / 2.7);
-  if (d > 1) return course === 0 ? '.' : '6';
+  if (d > 1) return course === 0 ? '.' : '0';
   if (d > 0.82) return '0';
   if (by === 1 && bx > 1 && bx < 6) return 'a';
-  return by >= 3 && bx > 3 ? '6' : '9';
+  return by >= 3 ? '1' : '9';
 });
 
 /* The searchlight: a tripod, a lamp drum tilted up-left, a dotted beam slanting into the sky. */
@@ -244,10 +289,11 @@ const searchlight = draw(32, 48, (x, y) => {
 export const jungleDecorFrames: Record<string, Rows> = {
   palm,
   canopy,
+  'canopy-hang': canopyHang,
   mountain,
   sandbags,
   searchlight,
-  'cloud-1@contra-jungle': canopy,
-  'cloud-2@contra-jungle': canopyClump(48, 2),
-  'cloud-3@contra-jungle': canopyClump(64, 3),
+  'cloud-1@contra-jungle': nightCloud(32, 1),
+  'cloud-2@contra-jungle': nightCloud(48, 2),
+  'cloud-3@contra-jungle': nightCloud(64, 3),
 };

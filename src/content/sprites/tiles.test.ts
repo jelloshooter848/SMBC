@@ -358,6 +358,7 @@ const decorFrames: Record<string, Size> = {
   // Bill's jungle.
   palm: [32, 48],
   canopy: [32, 16],
+  'canopy-hang': [32, 16],
   mountain: [64, 32],
   sandbags: [32, 16],
   searchlight: [32, 48],

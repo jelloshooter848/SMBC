@@ -610,9 +610,42 @@ describe('themes', () => {
       expect(themeMusic('alien-lair')).toBe('contra-lair');
     });
 
-    it("the jungle's clouds are canopy; palms, mountains, sandbags and a searchlight stand by", () => {
-      for (const n of ['palm', 'canopy', 'mountain', 'sandbags', 'searchlight'])
+    it("the jungle's clouds are dim night clouds; palms, canopy, mountains, sandbags and a searchlight stand by", () => {
+      for (const n of ['palm', 'canopy', 'canopy-hang', 'mountain', 'sandbags', 'searchlight'])
         expect(decorDef.frames[n], n).toBeDefined();
+      const decorFrame = (n: string) => decorDef.frames[n] as readonly string[];
+      const dark = PALETTES.default['decor-jungle'] as string[];
+      for (const [n, w] of [
+        ['cloud-1@contra-jungle', 32],
+        ['cloud-2@contra-jungle', 48],
+        ['cloud-3@contra-jungle', 64],
+      ] as const) {
+        const f = decorFrame(n);
+        expect([f[0]?.length, f.length], n).toEqual([w, 16]);
+        // mostly the dim navy body (5), a lighter rim (4), a star pixel or two (8); no greens
+        const px = f.join('').replace(/\./g, '');
+        expect(px, n).toMatch(/^[458]+$/);
+        expect(px.replace(/[^5]/g, '').length, n).toBeGreaterThan(px.length / 2);
+        // a flat bottom: the cloud's lowest row is one unbroken run
+        expect(f[12]?.replace(/^\.+|\.+$/g, ''), n).toMatch(/^5+$/);
+        expect(f.slice(13).join(''), n).toMatch(/^\.+$/);
+      }
+      // the cloud body is low contrast against the night sky
+      const lum = (hex: string) => rgb(hex).reduce((x, y) => x + y);
+      expect(Math.abs(lum(dark[5] as string) - lum(SKY['contra-jungle'] as string))).toBeLessThan(0x80);
+      // the foliage ceiling: a solid top row, leaves hanging down, its edges joining up
+      const hang = decorFrame('canopy-hang');
+      expect(hang[0]).toMatch(/^[0-3]{32}$/);
+      expect(hang.at(-1)).toContain('.');
+      // the sandbags are olive canvas, nothing like the jungle's rock and brick
+      const bags = decorFrame('sandbags').join('').replace(/\./g, '');
+      expect(bags).toMatch(/^[019a]+$/);
+      const rock = PALETTES.default['tiles-contra-jungle'] as string[];
+      for (const i of [9, 10])
+        for (const j of [1, 2, 3]) expect(dark[i], `${i} vs rock ${j}`).not.toBe(rock[j]);
+      const [r, g, b] = rgb(dark[9] as string);
+      expect(Math.abs(r - g)).toBeLessThan(0x10); // olive: red and green level, little blue
+      expect(b).toBeLessThan(r);
       const assets = new AssetRegistry(PALETTES);
       assets.defineAll(SPRITES);
       const drawn = (theme: Theme, kind: string) => {
