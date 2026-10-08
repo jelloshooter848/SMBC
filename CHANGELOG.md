@@ -8,6 +8,13 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Sophia III gets the original Crossover's own pieces for her in SMB 2-3, 3-3, 3-4, 4-2, 4-3, 4-4, 6-2, 6-3, 7-1, 7-3,
+  8-1, 8-2 and 8-4-end (wider trees, filled lava, extra ground, a mushroom, a red spring and wider maze drops), in
+  classic play and the campaign.
+- Sophia III gets the original's step-fall lift by the flagpole in every SMB and Lost Levels area that has one.
+
 ## [0.4.31] - 2026-10-08
 
 ### Changed
