@@ -1,13 +1,13 @@
-# Hero power-ups (0.4.33 design draft)
+# Hero power-ups (0.4.33 design)
 
 Every hero gets their own items from the power blocks: their own grow item in place of the mushroom,
 and their own power items (beams, weapons, sub-weapons, spells, guns) in place of the fire flower, each placed by
-design, block by block. This file is the design for the owner to approve **before anything is built**; nothing
-here exists in the game yet. It ends with the open questions (section 12).
+design, block by block. The owner approved this design on Oct 8 with the decisions in section 12, and 0.4.33
+builds it (campaign only).
 
 **How to read this file**
 
-- **Today** means the game as it is on `main` (0.4.31). **NEW** marks what this release adds or changes.
+- **Today** means the game before 0.4.33 (`main` at 0.4.32). **NEW** marks what this release adds or changes.
 - Item names are written as the game shows them; item ids (`ice-beam`) are what `.map` files and save files use.
 - Each hero's section (section 5) is self-contained: grow item, starting kit, power items, default power, what a
   hit takes, what is odd today, and what Crossover did.
@@ -23,10 +23,10 @@ here exists in the game yet. It ends with the open questions (section 12).
 | 2. Power slot         | Each hero has a list of distinct **power items**, each with its own name, sprite, effect and pickup sound. No tiers, no mapping between heroes.              |
 | 3. Placed, not random | Each power block in a level has a fixed **entry** per hero saying what it gives that hero, the same on every playthrough. SMB's rule stays: small gets grow. |
 | 4. Per-hero inventory | Each hero has their own SMB3 item inventory. Prizes go to the hero being played.                                                                             |
-| 5. Co-op              | A block's item belongs to whoever bumped it; if the other player grabs it, it becomes the grabber's entry for that block.                                    |
+| 5. Co-op              | Paused (new two-player files are off). Notes for its return: a block's item belongs to whoever bumped it; a grab by the other player re-rolls it for them.   |
 | 6. Classic play       | Outside the campaign everyone keeps the mushroom and the fire flower, as today.                                                                              |
-| 7. Losing powers      | A hit takes what it takes today, per hero (section 7).                                                                                                       |
-| 8. Training           | The training rework (0.4.34) shows each unlock with the real item (section 10).                                                                              |
+| 7. Losing powers      | A hit takes what it takes today, per hero; a death wipes the played hero's found items (section 7). Each hero's kit is saved on its own.                     |
+| 8. Training           | The training rework (0.4.34) shows each unlock with the real item, never where it is found (section 10).                                                     |
 | 9. Art and sound      | Every new sprite and sound is original, in each hero's game style (section 11).                                                                              |
 
 ## 2. Words used
@@ -46,19 +46,19 @@ here exists in the game yet. It ends with the open questions (section 12).
 SMB's rule stays for every hero: **a small hero bumping any power block gets their grow item**, whatever the
 block's entry. "Small" per hero:
 
-| Hero         | Small means                                        |
-| ------------ | -------------------------------------------------- |
-| Mario, Luigi | power state `small`                                |
-| Sophia III   | power state `small` (her Normal)                   |
-| Link         | no heart container (3 hearts)                      |
-| Mega Man     | no helmet                                          |
-| Samus        | no energy tank (30 energy)                         |
-| Simon        | no pot roast (NEW: a 10-point health bar, see 5.5) |
-| Ryu          | no medicine (NEW: a 10-point health bar, see 5.6)  |
-| Bill         | no medal (3 hits)                                  |
+| Hero         | Small means                               |
+| ------------ | ----------------------------------------- |
+| Mario, Luigi | power state `small`                       |
+| Sophia III   | power state `small` (her Normal)          |
+| Link         | no heart container (3 hearts)             |
+| Mega Man     | no helmet                                 |
+| Samus        | no energy tank (30 energy, no reserve)    |
+| Simon        | no pot roast (NEW: a 10-point health bar) |
+| Ryu          | no medicine (NEW: a 10-point health bar)  |
+| Bill         | no medal (3 hits)                         |
 
-Hit-point heroes never lose their grow item to a hit (section 7), so they are small only on a fresh start (and after
-a death, depending on open question Q1). Mario, Luigi and Sophia III become small again with hits, as today.
+Hit-point heroes never lose their grow item to a hit (section 7), so they are small only on a fresh start and after
+a death (decision 1). Mario, Luigi and Sophia III become small again with hits, as today.
 
 ## 3. Power blocks and the `[hero-items]` section
 
@@ -103,31 +103,33 @@ zones). One line per block; a hero not named on a line gets their default power 
    it today). That player is the block's **owner**. A block opened with no player behind it belongs to player 1.
 2. The item is worked out for the owner's hero: small → grow item; else the block's entry, or the default power.
    It rises out of the block with SMB's `powerup-appear` (the block is SMB's) but in **the item's own sprite**.
-3. It moves as the mushroom (slides) or the flower (stays) does today: grow items and stacking items slide, the
-   rest stay put. (Open question Q9.)
+3. It stays put on the block like the flower, so none is lost down a pit (decision 9). Only Mario and Luigi's
+   Super Mushroom keeps SMB's slide.
 4. **Taking it**: the item's own pickup sound, 1000 points, the effect. The first time a hero takes an item they
    do not own, its name shows for two seconds under the HUD and the announcer reads it with its one-line
    description ("Ice Beam: it freezes what it hits."). An owned item gives its refill or points and the hero's
    refill sound.
-5. **Co-op**: if the other player touches it first, it is worked out again for **their** hero, from the same block's
-   entry (small → their grow item), and its sprite changes in their hands. The rising sprite always shows the
-   owner's item.
+5. **Co-op** (paused in 0.4.33, new two-player files are off; a note for its return): if the other player touches
+   it first, it is worked out again for **their** hero, from the same block's entry (small → their grow item), and
+   its sprite changes in their hands. The rising sprite always shows the owner's item. In 0.4.33 an older
+   two-player file's item is worked out for whoever takes it, from the same entry.
 
 ## 4. Default power and "owned again", all heroes
 
 | Hero         | Grow item       | Default power (no entry) | An owned power item gives                         | An owned grow item gives          |
 | ------------ | --------------- | ------------------------ | ------------------------------------------------- | --------------------------------- |
 | Mario, Luigi | Super Mushroom  | Fire Flower              | 1000 points (SMB)                                 | 1000 points (SMB)                 |
-| Link         | Heart Container | Boomerang                | full hearts and magic, bombs topped up            | full hearts and magic             |
+| Link         | Heart Container | Bomb Bag                 | full hearts and magic, bombs topped up            | full hearts and magic             |
 | Mega Man     | Helmet          | Saw Disc                 | full health and all weapon energy                 | full health and all weapon energy |
-| Samus        | Energy Tank     | Missiles                 | full energy and 10 missiles                       | full energy                       |
+| Samus        | Energy Tank     | Missiles                 | full energy and 10 missiles                       | full energy (bar and tanks)       |
 | Simon        | Pot Roast       | Chain Whip               | 10 hearts (sub-weapon ammo) and full health       | full health                       |
 | Ryu          | Medicine        | Throwing Star            | full ninpo and full health                        | full health                       |
 | Bill         | Medal           | Machine Gun (M)          | full health (his hits)                            | full health                       |
 | Sophia III   | Power Capsule   | Crusher                  | missile ammo (12 triple, 4 homing) and full hover | a full hover bar                  |
 
 The default power is each hero's **first** power item, so a blank block is a second chance at the start of the kit
-and then a refill. Sophia's is the Crusher because a hit takes it (as Mario's flower).
+and then a refill. Link starts with his Boomerang (decision 5), so his is the next item, the Bomb Bag. Sophia's is
+the Crusher because a hit takes it (as Mario's flower).
 
 ## 5. The heroes
 
@@ -137,8 +139,8 @@ and then a refill. Sophia's is the Crusher because a hit takes it (as Mario's fl
 - **Placement**: SMB's exactly. Every SMB power block gives the mushroom when small and the flower when big, so
   their entries are all the default: no `mario=` or `luigi=` lines are needed anywhere.
 - **Hit**: fire → small (with the assist "fire reverts to big": fire → big), big → small, small dies. Unchanged.
-- **Later**: the feather and the Tanooki leaf join the power list (open question Q11). Their blocks then need
-  `mario=` / `luigi=` entries; a block without one stays the Fire Flower.
+- **Later**: the feather and the Tanooki leaf (TBD, not in 0.4.33; decision 11). Their blocks will need `mario=` /
+  `luigi=` entries; a block without one stays the Fire Flower.
 - **Art and sound**: none new (the items sheet's `mushroom` and `flower-0/1`, sfx `powerup`).
 
 ### 5.2 Link
@@ -147,13 +149,12 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 
 - **Grow**: Heart Container (`heart-container`): one more heart (+2 hit points), full heal. Stacks: 3 hearts → 8
   (five containers, `MAX_HEARTS`). **Today** the mushroom also gives the white tunic; NEW: that is the Blue Ring.
-- **Starting kit** (NEW): sword, shield, down-thrust and up-thrust. **Today** Link starts with all five belt tools
-  (boomerang, bombs and the three spells) and a full magic meter; under this design they are found. The magic
-  meter shows once he has a spell.
+- **Starting kit** (NEW): sword, shield, down-thrust and up-thrust, and the Boomerang on his belt (decision 5).
+  **Today** Link starts with all five belt tools (boomerang, bombs and the three spells) and a full magic meter;
+  in the campaign he now finds the bombs and spells. The magic meter shows once he has a spell.
 
 | Item          | Id              | What it does (our code)                                                 | Owned again        |
 | ------------- | --------------- | ----------------------------------------------------------------------- | ------------------ |
-| Boomerang     | `boomerang`     | The belt's boomerang: stuns, fetches coins and items                    | refill             |
 | Bomb Bag      | `bomb-bag`      | Bombs on the belt, with 4 bombs (carries 8; drops refill them)          | bombs to 8, refill |
 | Shield Spell  | `shield-spell`  | The belt's Shield spell (8 magic: every other hit glances off for 10 s) | refill             |
 | Jump Spell    | `jump-spell`    | The belt's Jump spell (8 magic: higher jumps for 10 s)                  | refill             |
@@ -161,11 +162,12 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 | Fire Spell    | `fire-spell`    | The belt's Fire spell (4 magic: the next swing fires a beam)            | refill             |
 | Magical Sword | `magical-sword` | Today's red tunic: the sword fires a beam while hearts are full         | refill             |
 
-- **Default**: Boomerang. **Drops** (bombs, magic jars, half hearts) as today, but bombs drop only once he has
-  the Bomb Bag (NEW).
+- **Default**: Bomb Bag (the Boomerang is in his starting kit). **Drops** (bombs, magic jars, half hearts) as
+  today, but bombs drop only once he has the Bomb Bag and magic jars only once he has a spell (NEW).
 - **Hit**: half a heart (1 hit point); with the Blue Ring or the Shield spell every other hit glances off. Nothing
   is lost. Unchanged.
-- **Flags**: the starting belt shrinks (open question Q5); the Blue Ring palette is today's white tunic (`link-white`).
+- **Flags**: the starting belt shrinks to the Boomerang (decision 5); the Blue Ring palette is today's white tunic
+  (`link-white`).
 - **Crossover** had the Magic Boomerang, Bow, Red Ring, Magical Sword, Bomb Bag and Quiver, never losing the bow,
   bombs and sword.
 
@@ -191,8 +193,12 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 
 ### 5.4 Samus
 
-- **Grow**: Energy Tank (`energy-tank`): +30 energy, full energy. Stacks: 30 → 90 (two tanks, `MAX_TANKS`; open
-  question Q6 asks for more). **Today** the first mushroom gives the Varia Suit; NEW: Varia is a power item.
+- **Grow**: Energy Tank (`energy-tank`): one more reserve tank, full energy. Stacks: up to **six tanks** (NES
+  Metroid style, decision 6), shown as small boxes above her EN number. Her EN bar holds 30; each tank is a
+  **10-energy reserve** that refills the bar when it runs out, so six tanks give 90 in all, today's maximum (two
+  30-energy tanks): she stays as tough as today against SMB enemies (11 plain hits at most, 22 with the Varia Suit)
+  and each grow block is still an upgrade until the sixth. **Today** the first mushroom gives the Varia Suit; NEW:
+  Varia is a power item.
 - **Starting kit**: the Power Beam (short range), aiming up, the Morph Ball and its bombs (as today).
 
 | Item       | Id           | What it does (our code)                                                      | Owned again          |
@@ -206,10 +212,9 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 - **Default**: Missiles.
 - **Beams as items** (NEW): today the beam is a tier (`scratch.beam` 0-3: Power, Long, Ice, Wave), so Ice brings
   full range and Wave drops the freeze. As items: the Long Beam gives range to whichever beam is in use; Ice and
-  Wave are both kept and WEAPON cycles beam, Ice, Wave and missiles. Open question Q7 offers Metroid's rule instead
-  (Ice and Wave replace each other).
-- **Drops**: missile packs drop only once she has Missiles (**today** they drop from the start, so missiles come at
-  random).
+  Wave are both kept and WEAPON cycles beam, Ice, Wave and missiles (decision 7).
+- **Drops**: missile packs drop only once she owns Missiles (decision 8; **today** they drop from the start, so
+  missiles come at random).
 - **Hit**: 8 energy (4 with the Varia Suit). Nothing is lost. Unchanged.
 - **Later**: Screw Attack, High Jump Boots, Missile Tanks (not in our code; Crossover had them).
 - **Crossover** never lost the missiles and morph ball; the Long Beam was its mushroom.
@@ -217,8 +222,8 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 ### 5.5 Simon
 
 - **Grow**: Pot Roast (`pot-roast`): the health bar grows from 10 to 16 and fills. Single; owned again it fills
-  the bar (the wall meat's own job). **NEW**: small Simon has a 10-point bar (five hits); **today** he always has
-  16 and no grow item (open question Q4).
+  the bar (the wall meat's own job). **NEW** (decision 4): small Simon has a 10-point bar (five hits); **today** he
+  always has 16 and no grow item.
 - **Starting kit**: the leather whip, 5 hearts.
 
 | Item         | Id             | What it does (our code)                               | Owned again        |
@@ -243,7 +248,7 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 ### 5.6 Ryu
 
 - **Grow**: Medicine (`medicine`, Ninja Gaiden's restorative medicine): the health bar grows from 10 to 16 and
-  fills. Single; owned again it fills the bar. **NEW** as for Simon (open question Q4).
+  fills. Single; owned again it fills the bar. **NEW** as for Simon (decision 4).
 - **Starting kit**: the Dragon Sword, wall cling and wall jump, a 40-point ninpo meter (it shows once he has an art).
 
 | Item           | Id              | What it does (our code)                             | Owned again      |
@@ -271,9 +276,9 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 | Spread Gun  | `spread-gun`  | Falcon **S**: five shots in a fan   | full health |
 
 - **Default**: Machine Gun. A new gun becomes the selected one, as today.
-- **Drops**: **today** the rare `capsule` drop unlocks the next gun at random; NEW: it is a health pickup (open
-  question Q8).
-- **Hit**: 1 hit. Nothing is lost. Unchanged (in Contra a death takes the gun; see Q1).
+- **Drops**: **today** the rare `capsule` drop unlocks the next gun at random; NEW: it is a health pickup
+  (decision 8).
+- **Hit**: 1 hit. Nothing is lost. Unchanged (a death wipes his guns, as today; in Contra a death takes the gun).
 - **Later**: Rapid Bullets (R) and Barrier (B) (not in our code).
 - **Crossover** kept only the rapid-fire upgrades on death.
 
@@ -285,15 +290,20 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 
 | Item           | Id               | What it does (our code)                                                           | Owned again  |
 | -------------- | ---------------- | --------------------------------------------------------------------------------- | ------------ |
-| Crusher        | `crusher`        | Hyper → Crusher: the Crusher cannon, wall and ceiling climbing                    | missile ammo |
+| Crusher        | `crusher`        | Hyper → Crusher: the Crusher cannon                                               | missile ammo |
+| Wall Climb     | `wall-climb`     | Drives up walls (NEW: split from the Crusher, decision 10)                        | missile ammo |
+| Ceiling Climb  | `ceiling-climb`  | Drives along ceilings (NEW: split from the Crusher)                               | missile ammo |
 | Triple Missile | `triple-missile` | Three missiles through walls (9 to start, holds 60); **today** comes with Crusher | missile ammo |
 | Homing Missile | `homing-missile` | Seeks enemies (3 to start, holds 20); **today** never given in the campaign       | missile ammo |
 
 - **Default**: Crusher. Like Mario's flower, a small (Normal) Sophia gets the capsule first, then the Crusher.
+- **Climbing** needs the Hyper hull or better plus the climb item. A Hyper Sophia bumping a Wall or Ceiling Climb
+  block takes it and stays Hyper.
 - **Hit**: Hyper or Crusher → Normal ("Lose Everything", SO-23; with the assist "fire reverts to big", Crusher →
-  Hyper); missiles and their ammo are kept; Normal dies. Unchanged.
+  Hyper); a hit to Normal also takes both climbs; missiles and their ammo are kept; Normal dies.
 - **Flags**: the Homing Missile is unobtainable in the campaign today (only her mini game's `TANK_KIT` has it).
-  Blaster Master's separate Wall 1 / Wall 2 could split from the Crusher (open question Q10).
+  Blaster Master's Wall 1 / Wall 2 are split from the Crusher as Wall Climb and Ceiling Climb (decision 10). In
+  classic play the flower still gives all three at once, as today.
 - **Crossover** had Hover, Crusher, Wall Climb and Ceiling Climb, never losing the missiles.
 
 ## 6. First-pass placement plan (SMB Worlds 1-8)
@@ -311,22 +321,24 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
   missed) comes again.
 - **Freed late**: a hero is freed in their own world (Luigi 1-1, Link 2-1, Mega Man 3-1, Samus 4-2, Simon 5-4,
   Ryu 6-2, Bill 7-3, Sophia III 8-4), so on the first pass they meet only their own world's blocks and later
-  ones. Open question Q2 proposes an **arrival kit**: the items placed for them in the earlier worlds.
+  ones. There is no arrival kit (decision 2): a hero always starts with their basic kit the first time they are
+  played, and every world's blocks hold their items, the earlier worlds included, so replaying those levels with
+  them collects them.
 
 ### 6.2 New items per world
 
 The grow item also comes at every world's first block and every castle.
 
-| World | Link                     | Mega Man             | Samus               | Simon              | Ryu                          | Bill        | Sophia III     |
-| ----- | ------------------------ | -------------------- | ------------------- | ------------------ | ---------------------------- | ----------- | -------------- |
-| 1     | Boomerang, Bomb Bag      | Saw Disc, Leaf Guard | Long Beam, Missiles | Chain Whip, Dagger | Throwing Star, Ninpo Scroll  | Machine Gun | Crusher        |
-| 2     | Shield Spell, Jump Spell | Rush Coil            | Ice Beam            | Holy Water, Axe    | Windmill Star                | -           | Triple Missile |
-| 3     | Blue Ring                | Flame Wave           | -                   | Morning Star       | -                            | Laser       | -              |
-| 4     | Fire Spell               | Homing Knuckle       | Varia Suit          | Cross, Double Shot | Fire Wheel, Ninpo Scroll     | -           | -              |
-| 5     | Magical Sword            | -                    | -                   | Stopwatch          | -                            | Flame Gun   | Homing Missile |
-| 6     | -                        | Bolt                 | Wave Beam           | Triple Shot        | Jump and Slash, Ninpo Scroll | -           | -              |
-| 7     | -                        | -                    | -                   | -                  | -                            | Spread Gun  | -              |
-| 8     | -                        | -                    | -                   | -                  | -                            | -           | -              |
+| World | Link                     | Mega Man             | Samus               | Simon              | Ryu                          | Bill        | Sophia III                 |
+| ----- | ------------------------ | -------------------- | ------------------- | ------------------ | ---------------------------- | ----------- | -------------------------- |
+| 1     | Bomb Bag                 | Saw Disc, Leaf Guard | Long Beam, Missiles | Chain Whip, Dagger | Throwing Star, Ninpo Scroll  | Machine Gun | Crusher                    |
+| 2     | Shield Spell, Jump Spell | Rush Coil            | Ice Beam            | Holy Water, Axe    | Windmill Star                | -           | Triple Missile, Wall Climb |
+| 3     | Blue Ring                | Flame Wave           | -                   | Morning Star       | -                            | Laser       | -                          |
+| 4     | Fire Spell               | Homing Knuckle       | Varia Suit          | Cross, Double Shot | Fire Wheel, Ninpo Scroll     | -           | Ceiling Climb              |
+| 5     | Magical Sword            | -                    | -                   | Stopwatch          | -                            | Flame Gun   | Homing Missile             |
+| 6     | -                        | Bolt                 | Wave Beam           | Triple Shot        | Jump and Slash, Ninpo Scroll | -           | -                          |
+| 7     | -                        | -                    | -                   | -                  | -                            | Spread Gun  | -                          |
+| 8     | -                        | -                    | -                   | -                  | -                            | -           | -                          |
 
 ### 6.3 Block by block
 
@@ -336,86 +348,86 @@ _Italics_ are the hero's default power: no entry is written for it. Blocks are `
 
 **World 1**
 
-| Block               | Link        | Mega Man | Samus      | Simon   | Ryu       | Bill | Sophia    |
-| ------------------- | ----------- | -------- | ---------- | ------- | --------- | ---- | --------- |
-| 1-1 (21,9) ?        | Grow        | Grow     | Grow       | Grow    | Grow      | Grow | _Crusher_ |
-| 1-1 (78,9) ?        | _Boomerang_ | _Saw_    | Long Beam  | _Chain_ | _T. Star_ | _M_  | _Crusher_ |
-| 1-1 (109,5) ?       | Bomb Bag    | Leaf     | _Missiles_ | Dagger  | _T. Star_ | _M_  | _Crusher_ |
-| 1-2 (10,9) ?        | _Boomerang_ | _Saw_    | Long Beam  | _Chain_ | _T. Star_ | _M_  | _Crusher_ |
-| 1-2 (69,8) brick    | Bomb Bag    | Leaf     | _Missiles_ | Dagger  | Scroll    | _M_  | _Crusher_ |
-| 1-2 (150,8) brick   | _Boomerang_ | _Saw_    | Long Beam  | Dagger  | _T. Star_ | _M_  | _Crusher_ |
-| 1-3 (59,10) ?       | Bomb Bag    | Leaf     | _Missiles_ | _Chain_ | _T. Star_ | _M_  | _Crusher_ |
-| 1-4 (30,6) ? castle | Grow        | Grow     | Grow       | Grow    | Grow      | Grow | _Crusher_ |
+| Block               | Link       | Mega Man | Samus      | Simon   | Ryu       | Bill | Sophia    |
+| ------------------- | ---------- | -------- | ---------- | ------- | --------- | ---- | --------- |
+| 1-1 (21,9) ?        | Grow       | Grow     | Grow       | Grow    | Grow      | Grow | _Crusher_ |
+| 1-1 (78,9) ?        | _Bomb Bag_ | _Saw_    | Long Beam  | _Chain_ | _T. Star_ | _M_  | _Crusher_ |
+| 1-1 (109,5) ?       | _Bomb Bag_ | Leaf     | _Missiles_ | Dagger  | _T. Star_ | _M_  | _Crusher_ |
+| 1-2 (10,9) ?        | _Bomb Bag_ | _Saw_    | Long Beam  | _Chain_ | _T. Star_ | _M_  | _Crusher_ |
+| 1-2 (69,8) brick    | _Bomb Bag_ | Leaf     | _Missiles_ | Dagger  | Scroll    | _M_  | _Crusher_ |
+| 1-2 (150,8) brick   | _Bomb Bag_ | _Saw_    | Long Beam  | Dagger  | _T. Star_ | _M_  | _Crusher_ |
+| 1-3 (59,10) ?       | _Bomb Bag_ | Leaf     | _Missiles_ | _Chain_ | _T. Star_ | _M_  | _Crusher_ |
+| 1-4 (30,6) ? castle | Grow       | Grow     | Grow       | Grow    | Grow      | Grow | _Crusher_ |
 
 **World 2** (Link's)
 
-| Block               | Link         | Mega Man | Samus      | Simon      | Ryu       | Bill | Sophia    |
-| ------------------- | ------------ | -------- | ---------- | ---------- | --------- | ---- | --------- |
-| 2-1 (16,9) brick    | Grow         | Grow     | Grow       | Grow       | Grow      | Grow | _Crusher_ |
-| 2-1 (53,9) ?        | Shield Spell | Rush     | Ice Beam   | Holy Water | Windmill  | _M_  | _Crusher_ |
-| 2-1 (125,5) brick   | Jump Spell   | _Saw_    | _Missiles_ | Axe        | _T. Star_ | _M_  | Triple M. |
-| 2-1 (172,5) brick   | Shield Spell | Rush     | Ice Beam   | Holy Water | Windmill  | _M_  | _Crusher_ |
-| 2-3 (102,5) ?       | Jump Spell   | Leaf     | Long Beam  | Axe        | _T. Star_ | _M_  | Triple M. |
-| 2-4 (23,3) ? castle | Grow         | Grow     | Grow       | Grow       | Grow      | Grow | _Crusher_ |
+| Block               | Link         | Mega Man | Samus      | Simon      | Ryu       | Bill | Sophia     |
+| ------------------- | ------------ | -------- | ---------- | ---------- | --------- | ---- | ---------- |
+| 2-1 (16,9) brick    | Grow         | Grow     | Grow       | Grow       | Grow      | Grow | _Crusher_  |
+| 2-1 (53,9) ?        | Shield Spell | Rush     | Ice Beam   | Holy Water | Windmill  | _M_  | _Crusher_  |
+| 2-1 (125,5) brick   | Jump Spell   | _Saw_    | _Missiles_ | Axe        | _T. Star_ | _M_  | Triple M.  |
+| 2-1 (172,5) brick   | Shield Spell | Rush     | Ice Beam   | Holy Water | Windmill  | _M_  | Wall Climb |
+| 2-3 (102,5) ?       | Jump Spell   | Leaf     | Long Beam  | Axe        | _T. Star_ | _M_  | Triple M.  |
+| 2-4 (23,3) ? castle | Grow         | Grow     | Grow       | Grow       | Grow      | Grow | _Crusher_  |
 
 **World 3** (Mega Man's)
 
-| Block                           | Link         | Mega Man | Samus      | Simon        | Ryu       | Bill | Sophia    |
-| ------------------------------- | ------------ | -------- | ---------- | ------------ | --------- | ---- | --------- |
-| 3-1 (22,8) ?                    | Grow         | Grow     | Grow       | Grow         | Grow      | Grow | _Crusher_ |
-| 3-1 (117,5) ?                   | Blue Ring    | Flame    | Ice Beam   | Morning Star | Windmill  | L    | Triple M. |
-| 3-1 (156,9) ?                   | Jump Spell   | Rush     | _Missiles_ | Holy Water   | _T. Star_ | _M_  | _Crusher_ |
-| 3-1-bonus (5,5) brick, off path | Bomb Bag     | Flame    | _Missiles_ | Axe          | Windmill  | L    | _Crusher_ |
-| 3-2 (60,6) ?                    | Blue Ring    | _Saw_    | Long Beam  | Morning Star | _T. Star_ | _M_  | Triple M. |
-| 3-3 (49,3) ?                    | Shield Spell | Flame    | Ice Beam   | _Chain_      | Windmill  | L    | _Crusher_ |
-| 3-4 (43,9) ? castle             | Grow         | Grow     | Grow       | Grow         | Grow      | Grow | _Crusher_ |
+| Block                           | Link         | Mega Man | Samus      | Simon        | Ryu       | Bill | Sophia     |
+| ------------------------------- | ------------ | -------- | ---------- | ------------ | --------- | ---- | ---------- |
+| 3-1 (22,8) ?                    | Grow         | Grow     | Grow       | Grow         | Grow      | Grow | _Crusher_  |
+| 3-1 (117,5) ?                   | Blue Ring    | Flame    | Ice Beam   | Morning Star | Windmill  | L    | Triple M.  |
+| 3-1 (156,9) ?                   | Jump Spell   | Rush     | _Missiles_ | Holy Water   | _T. Star_ | _M_  | Wall Climb |
+| 3-1-bonus (5,5) brick, off path | _Bomb Bag_   | Flame    | _Missiles_ | Axe          | Windmill  | L    | _Crusher_  |
+| 3-2 (60,6) ?                    | Blue Ring    | _Saw_    | Long Beam  | Morning Star | _T. Star_ | _M_  | Triple M.  |
+| 3-3 (49,3) ?                    | Shield Spell | Flame    | Ice Beam   | _Chain_      | Windmill  | L    | Wall Climb |
+| 3-4 (43,9) ? castle             | Grow         | Grow     | Grow       | Grow         | Grow      | Grow | _Crusher_  |
 
 **World 4** (Samus's)
 
-| Block                            | Link         | Mega Man | Samus      | Simon        | Ryu        | Bill | Sophia    |
-| -------------------------------- | ------------ | -------- | ---------- | ------------ | ---------- | ---- | --------- |
-| 4-1 (25,9) ?                     | Grow         | Grow     | Grow       | Grow         | Grow       | Grow | _Crusher_ |
-| 4-1 (148,9) ?                    | Fire Spell   | Knuckle  | Varia Suit | Cross        | Fire Wheel | L    | _Crusher_ |
-| 4-1-bonus (13,9) brick, off path | Bomb Bag     | Leaf     | _Missiles_ | Dagger       | Scroll     | _M_  | Triple M. |
-| 4-2 (28,9) brick                 | Shield Spell | Knuckle  | Varia Suit | Double Shot  | Fire Wheel | L    | _Crusher_ |
-| 4-2 (55,9) ?                     | Fire Spell   | Flame    | _Missiles_ | Cross        | _T. Star_  | _M_  | Triple M. |
-| 4-2 (120,5) brick                | Blue Ring    | Rush     | Ice Beam   | Morning Star | Windmill   | _M_  | _Crusher_ |
-| 4-2 (161,9) brick                | Jump Spell   | Knuckle  | Varia Suit | Double Shot  | Fire Wheel | L    | _Crusher_ |
-| 4-2-cavern (38,8) ?, off path    | Bomb Bag     | _Saw_    | Varia Suit | Axe          | Fire Wheel | _M_  | _Crusher_ |
-| 4-2-airship (55,7) ?, off path   | Fire Spell   | Knuckle  | _Missiles_ | Cross        | Fire Wheel | _M_  | _Crusher_ |
-| 4-3 (43,2) ?                     | _Boomerang_  | Flame    | Long Beam  | Double Shot  | _T. Star_  | L    | _Crusher_ |
+| Block                            | Link         | Mega Man | Samus      | Simon        | Ryu        | Bill | Sophia        |
+| -------------------------------- | ------------ | -------- | ---------- | ------------ | ---------- | ---- | ------------- |
+| 4-1 (25,9) ?                     | Grow         | Grow     | Grow       | Grow         | Grow       | Grow | _Crusher_     |
+| 4-1 (148,9) ?                    | Fire Spell   | Knuckle  | Varia Suit | Cross        | Fire Wheel | L    | Ceiling Climb |
+| 4-1-bonus (13,9) brick, off path | _Bomb Bag_   | Leaf     | _Missiles_ | Dagger       | Scroll     | _M_  | Triple M.     |
+| 4-2 (28,9) brick                 | Shield Spell | Knuckle  | Varia Suit | Double Shot  | Fire Wheel | L    | _Crusher_     |
+| 4-2 (55,9) ?                     | Fire Spell   | Flame    | _Missiles_ | Cross        | _T. Star_  | _M_  | Triple M.     |
+| 4-2 (120,5) brick                | Blue Ring    | Rush     | Ice Beam   | Morning Star | Windmill   | _M_  | Wall Climb    |
+| 4-2 (161,9) brick                | Jump Spell   | Knuckle  | Varia Suit | Double Shot  | Fire Wheel | L    | Ceiling Climb |
+| 4-2-cavern (38,8) ?, off path    | _Bomb Bag_   | _Saw_    | Varia Suit | Axe          | Fire Wheel | _M_  | _Crusher_     |
+| 4-2-airship (55,7) ?, off path   | Fire Spell   | Knuckle  | _Missiles_ | Cross        | Fire Wheel | _M_  | _Crusher_     |
+| 4-3 (43,2) ?                     | _Bomb Bag_   | Flame    | Long Beam  | Double Shot  | _T. Star_  | L    | Ceiling Climb |
 
 The cavern is Samus's own side area (she is captive there, so it is for the others the first time); the airship
 block is kept only if the run aboard is won or YES is taken (a NO restores the pre-boarding snapshot, as today).
 
 **World 5** (Simon's)
 
-| Block               | Link          | Mega Man | Samus      | Simon      | Ryu        | Bill | Sophia    |
-| ------------------- | ------------- | -------- | ---------- | ---------- | ---------- | ---- | --------- |
-| 5-2 (34,5) brick    | Grow          | Grow     | Grow       | Grow       | Grow       | Grow | _Crusher_ |
-| 5-2 (142,11) brick  | Magical Sword | Knuckle  | _Missiles_ | Stopwatch  | Fire Wheel | F    | Homing    |
-| 5-2 (168,9) brick   | Fire Spell    | Rush     | Varia Suit | Holy Water | Windmill   | L    | _Crusher_ |
-| 5-3 (59,10) ?       | Magical Sword | Leaf     | Ice Beam   | Stopwatch  | _T. Star_  | F    | Homing    |
-| 5-4 (23,3) ? castle | Grow          | Grow     | Grow       | Grow       | Grow       | Grow | _Crusher_ |
+| Block               | Link          | Mega Man | Samus      | Simon      | Ryu        | Bill | Sophia        |
+| ------------------- | ------------- | -------- | ---------- | ---------- | ---------- | ---- | ------------- |
+| 5-2 (34,5) brick    | Grow          | Grow     | Grow       | Grow       | Grow       | Grow | _Crusher_     |
+| 5-2 (142,11) brick  | Magical Sword | Knuckle  | _Missiles_ | Stopwatch  | Fire Wheel | F    | Homing        |
+| 5-2 (168,9) brick   | Fire Spell    | Rush     | Varia Suit | Holy Water | Windmill   | L    | Ceiling Climb |
+| 5-3 (59,10) ?       | Magical Sword | Leaf     | Ice Beam   | Stopwatch  | _T. Star_  | F    | Homing        |
+| 5-4 (23,3) ? castle | Grow          | Grow     | Grow       | Grow       | Grow       | Grow | _Crusher_     |
 
 **World 6** (Ryu's)
 
-| Block                             | Link          | Mega Man | Samus      | Simon       | Ryu            | Bill | Sophia    |
-| --------------------------------- | ------------- | -------- | ---------- | ----------- | -------------- | ---- | --------- |
-| 6-1 (36,5) brick                  | Grow          | Grow     | Grow       | Grow        | Grow           | Grow | _Crusher_ |
-| 6-1 (130,8) ?                     | Magical Sword | Bolt     | Wave Beam  | Triple Shot | Jump and Slash | F    | _Crusher_ |
-| 6-2 (52,9) brick                  | Blue Ring     | Flame    | _Missiles_ | Cross       | Scroll         | L    | Homing    |
-| 6-2-bonus2 (13,9) brick, off path | Bomb Bag      | Bolt     | Wave Beam  | Double Shot | Jump and Slash | F    | _Crusher_ |
-| 6-3 (55,3) ?                      | Shield Spell  | Bolt     | Wave Beam  | Triple Shot | Jump and Slash | _M_  | _Crusher_ |
-| 6-4 (30,6) ? castle               | Grow          | Grow     | Grow       | Grow        | Grow           | Grow | _Crusher_ |
+| Block                             | Link          | Mega Man | Samus      | Simon       | Ryu            | Bill | Sophia        |
+| --------------------------------- | ------------- | -------- | ---------- | ----------- | -------------- | ---- | ------------- |
+| 6-1 (36,5) brick                  | Grow          | Grow     | Grow       | Grow        | Grow           | Grow | _Crusher_     |
+| 6-1 (130,8) ?                     | Magical Sword | Bolt     | Wave Beam  | Triple Shot | Jump and Slash | F    | Wall Climb    |
+| 6-2 (52,9) brick                  | Blue Ring     | Flame    | _Missiles_ | Cross       | Scroll         | L    | Homing        |
+| 6-2-bonus2 (13,9) brick, off path | _Bomb Bag_    | Bolt     | Wave Beam  | Double Shot | Jump and Slash | F    | _Crusher_     |
+| 6-3 (55,3) ?                      | Shield Spell  | Bolt     | Wave Beam  | Triple Shot | Jump and Slash | _M_  | Ceiling Climb |
+| 6-4 (30,6) ? castle               | Grow          | Grow     | Grow       | Grow        | Grow           | Grow | _Crusher_     |
 
 **World 7** (Bill's)
 
-| Block             | Link          | Mega Man | Samus      | Simon       | Ryu            | Bill | Sophia    |
-| ----------------- | ------------- | -------- | ---------- | ----------- | -------------- | ---- | --------- |
-| 7-1 (27,5) brick  | Grow          | Grow     | Grow       | Grow        | Grow           | Grow | _Crusher_ |
-| 7-1 (151,2) brick | Magical Sword | Bolt     | Wave Beam  | Triple Shot | Jump and Slash | S    | _Crusher_ |
-| 7-3 (102,5) ?     | Fire Spell    | Knuckle  | _Missiles_ | Stopwatch   | Fire Wheel     | S    | Triple M. |
+| Block             | Link          | Mega Man | Samus      | Simon       | Ryu            | Bill | Sophia     |
+| ----------------- | ------------- | -------- | ---------- | ----------- | -------------- | ---- | ---------- |
+| 7-1 (27,5) brick  | Grow          | Grow     | Grow       | Grow        | Grow           | Grow | _Crusher_  |
+| 7-1 (151,2) brick | Magical Sword | Bolt     | Wave Beam  | Triple Shot | Jump and Slash | S    | Wall Climb |
+| 7-3 (102,5) ?     | Fire Spell    | Knuckle  | _Missiles_ | Stopwatch   | Fire Wheel     | S    | Triple M.  |
 
 **World 8** (Sophia III's)
 
@@ -423,11 +435,11 @@ block is kept only if the run aboard is won or YES is taken (a NO restores the p
 | ----------------- | ------------- | -------- | ---------- | ------------ | -------------- | ---- | --------- |
 | 8-2 (100,9) brick | Grow          | Grow     | Grow       | Grow         | Grow           | Grow | _Crusher_ |
 | 8-3 (66,5) brick  | Magical Sword | Bolt     | Wave Beam  | Morning Star | Jump and Slash | S    | Homing    |
-| 8-3 (116,5) brick | Bomb Bag      | Flame    | _Missiles_ | Triple Shot  | Scroll         | F    | Triple M. |
+| 8-3 (116,5) brick | _Bomb Bag_    | Flame    | _Missiles_ | Triple Shot  | Scroll         | F    | Triple M. |
 
-Copies per item (the "at least twice" rule): Link 4-8 each, Mega Man 5-7, Samus 5-6 (Missiles is also her
-default), Simon 3-4 (Chain Whip also by default), Ryu: Windmill 7, Fire Wheel 7, Jump and Slash 5, Scroll 4 (three
-count, the fourth is a refill), Bill: Laser 9, Flame Gun 5, Spread Gun 3, Sophia: Triple 8, Homing 4.
+Copies per item (the "at least twice" rule): the counts are kept by a test (`src/game/items/placement.test.ts`)
+and listed in the 0.4.33 notes. The Bomb Bag (Link's default) and Missiles (Samus's) come from every block without
+an entry for them; Scrolls past the third are refills.
 
 ### 6.4 Not placed in 0.4.33
 
@@ -437,33 +449,35 @@ count, the fourth is a refill), Bill: Laser 9, Flame Gun 5, Spread Gun 3, Sophia
 
 ## 7. Losing powers
 
-Each hero keeps today's rules for a hit (decision 7). For reference, and for what the owner should look at:
+Each hero keeps today's rules for a hit (decision 7) and for a death (decision 1): a death wipes the played hero's
+found items, back to their basic kit.
 
-| Hero         | A hit takes                                                                                | A death takes (today) |
-| ------------ | ------------------------------------------------------------------------------------------ | --------------------- |
-| Mario, Luigi | fire → small (assist: → big); big → small; small dies                                      | everything            |
-| Sophia III   | Hyper or Crusher → Normal (assist: Crusher → Hyper); missiles kept; Normal dies            | everything            |
-| Link         | 1 hit point (half a heart); with the Blue Ring or Shield spell every other hit glances off | everything            |
-| Mega Man     | 4 of 28 health                                                                             | everything            |
-| Samus        | 8 energy, 4 with the Varia Suit                                                            | everything            |
-| Simon        | 2 health                                                                                   | everything            |
-| Ryu          | 2 health                                                                                   | everything            |
-| Bill         | 1 hit                                                                                      | everything            |
+| Hero         | A hit takes                                                                                 | A death takes |
+| ------------ | ------------------------------------------------------------------------------------------- | ------------- |
+| Mario, Luigi | fire → small (assist: → big); big → small; small dies                                       | everything    |
+| Sophia III   | Hyper or Crusher → Normal (assist: Crusher → Hyper); climbs too; missiles kept; Normal dies | everything    |
+| Link         | 1 hit point (half a heart); with the Blue Ring or Shield spell every other hit glances off  | everything    |
+| Mega Man     | 4 of 28 health                                                                              | everything    |
+| Samus        | 8 energy, 4 with the Varia Suit                                                             | everything    |
+| Simon        | 2 health                                                                                    | everything    |
+| Ryu          | 2 health                                                                                    | everything    |
+| Bill         | 1 hit                                                                                       | everything    |
 
-**Flagged for the owner:**
+**Notes:**
 
-1. **A death wipes the whole kit**, every hero (`LevelScene`'s `died`: `s.kit = {}`; the Hammer Bro battle the
-   same). With kits placed across eight worlds, a Mega Man who dies in 6-1 keeps none of his weapons and finds only
-   what Worlds 6-8 still place. Crossover never took weapons, sub-weapons or arts away. See Q1.
-2. **Switching heroes wipes the kit** (`Game.setHero` gives the new hero `kit = {}`), so going back to a hero
-   finds them bare. Per-hero inventories (decision 4) suggest per-hero kits too. See Q3.
+1. **A death wipes the played hero's kit** (`LevelScene`'s `died`: `s.kit = {}`; the Hammer Bro battle the
+   same), as today (decision 1). Every world places every hero's items, so a replay finds them again (decision 2).
+   Only the hero who died loses anything: the other heroes' saved kits stay.
+2. **Each hero's kit is saved on its own** (decision 3, `heroKits`): switching heroes keeps the old hero's power,
+   hit points and kit for their return, and the new hero comes back as they were left (their basic kit the first
+   time).
 3. **Nothing but a death ever takes a hit-point hero's items**, so their "small" (grow first) only matters on a
    fresh start: fine, but worth knowing.
 4. **Random unlocks today** that would bypass placement: Bill's `capsule` drop (next gun), Samus's missile packs
-   (missiles before the Missiles item). See 5.4 and Q8.
+   (missiles before the Missiles item). Both fixed in the campaign (decision 8, sections 5.4 and 5.7).
 5. **Unobtainable today**: Sophia III's Homing Missile in the campaign.
 6. **Mixed bundles today**: Link's heart container brings the white tunic; Mega Man's helmet brings Rush; Sophia's
-   first Crusher brings the triple missile. This design splits each.
+   first Crusher brings the triple missile and both climbs. This design splits each.
 
 ## 8. Per-hero item inventory
 
@@ -471,8 +485,9 @@ Each hero keeps today's rules for a hit (decision 7). For reference, and for wha
 
 - **Each hero has their own inventory** of 12 slots (NEW; today one shared list). The panel (map menu Items, the
   ITEMS button) shows **player 1's hero's** inventory, titled with the hero's name, every item in that hero's art
-  and words ("ENERGY TANK: +30 ENERGY. GIVEN AT THE NEXT LEVEL."). No sharing, nothing greyed out: everything in a
-  hero's inventory works for that hero. In co-op, SELECT on the panel switches to player 2's hero (Q12).
+  and words ("ENERGY TANK: ONE MORE RESERVE TANK. GIVEN AT THE NEXT LEVEL."). No sharing, nothing greyed out:
+  everything in a hero's inventory works for that hero. Co-op is paused, so there is no player-2 inventory in
+  0.4.33 (decision 12; a note for its return: SELECT on the panel would switch to player 2's hero).
 - **Items an inventory holds**: the hero's grow item, their default power, Starman and the 1-up. The prize kinds
   stay SMB3's (`mushroom`, `flower`, `star`, `1up`) and become the hero's own when won: **mushroom → grow item**,
   **flower → default power**. Starman and the 1-up stay as they are for everyone.
@@ -498,20 +513,23 @@ names the hero's own item ("YOU GOT AN ENERGY TANK! ADDED TO SAMUS'S ITEMS (2)")
 
 New optional fields, no format bump (as the bonus fields did):
 
-| Field           | Meaning                                                        | Missing                           |
-| --------------- | -------------------------------------------------------------- | --------------------------------- |
-| `heroInventory` | hero id → item ids won, in order, at most 12 each              | migrated from `inventory` (below) |
-| `heroItemsNext` | hero id → items held for that hero's next level (one per kind) | migrated from `itemsNext`         |
+| Field           | Meaning                                                                          | Missing                           |
+| --------------- | -------------------------------------------------------------------------------- | --------------------------------- |
+| `heroInventory` | hero id → prize kinds won (`mushroom`, `flower`, `star`, `1up`), at most 12 each | migrated from `inventory` (below) |
+| `heroItemsNext` | hero id → prizes held for that hero's next level (one per kind)                  | migrated from `itemsNext`         |
+| `heroKits`      | hero id → power state, hit points and kit of a hero not being played             | `{}` (each hero fresh)            |
 
-- **Migration**: a file with the old `inventory` / `itemsNext` and no `heroInventory` gives them to the file's
-  **main hero**, `SaveFile.character` (player 1's hero, the one on the file card), converting `mushroom` to that
-  hero's grow item and `flower` to their default power. A main hero that is not freed (a hand-edited file) falls
-  back to Mario. The old fields are dropped on the next write. Q13 offers Mario always instead.
-- **Validation**: known hero ids only, each hero's own item ids only, at most 12 each; held items one per kind.
-- **Kits** (only if Q1 / Q3 are taken): `heroKits`, hero id → power state, hit points and kit, so each hero's found
-  items stay with them. Today's tier keys convert to items in their old order (Mega Man `weapons: 3` → Saw Disc,
-  Leaf Guard, Flame Wave; Samus `beam: 2` → Long and Ice; Simon `subs`, `whip`, `multi`; Ryu `arts`, `ninpoMax` →
-  scrolls; Bill `guns`; Link's `tunic` → Blue Ring, `beam` → Magical Sword, and the five tools he has today kept).
+- **Prize kinds**: an inventory keeps SMB3's kinds and shows and gives them as the hero's own (`mushroom` → grow
+  item, `flower` → default power), so nothing converts when a prize changes hands.
+- **Migration** (decision 13): a file with the old `inventory` / `itemsNext` and no `heroInventory` gives them to
+  **Mario**, whoever the file's hero is. The old fields are dropped on the next write.
+- **Validation**: known hero ids only, prize kinds only, at most 12 each; held items one per kind.
+- **Kits** (decisions 1 and 3): `heroKits` keeps each hero's power state, hit points and kit while another hero
+  plays; the played hero's own stay in `powerState`, `hp` and `kit` as today. Today's tier keys convert to items in
+  their old order when a file is read (Mega Man `weapons: 3` → Saw Disc, Leaf Guard, Flame Wave, and the helmet's
+  Rush; Samus `beam: 2` → Long and Ice, `tanks` → reserve tanks; Simon `subs`, `whip`, `multi`; Ryu `arts`,
+  `ninpoMax` → scrolls; Bill `guns`; Link's `tunic` → Blue Ring, `beam` → Magical Sword, and the five tools he
+  has today kept; Sophia's Crusher keeps both climbs).
 - **Dev mode**: Give items fills the current hero's dev list; it is still never saved.
 
 ## 9. Classic play
@@ -534,7 +552,7 @@ release, adds hero items:
   item's own sprite rises, its pickup sound plays and its name shows, exactly as in a level; the lesson then
   starts. A preview lends the item this way too, and the room's snapshot gives it back afterwards, as today.
 - **The chapter card** shows the items of its lessons in their pickup sprites, found ones in full colour, previews
-  marked (PREVIEW) (optionally "FOUND IN WORLD 4", from the placement; Q14).
+  marked (PREVIEW). Previews never say where an item is found (decision 14).
 - **The guide pages** ("How to play") list the hero's grow and power items with their sprites in place of today's
   mushroom and flower rows (campaign; classic keeps today's rows).
 
@@ -545,21 +563,22 @@ drawn rising from the block, lying in the level, in the inventory panel and on t
 everywhere). **Sounds** are one short pickup cue per item (about a second, so play is not held up), in the hero's
 game's sound; one shared motif per hero with a different ending per item keeps the cost down.
 
-| Hero         | New pickup sprites                                                                                                                                   | New pickup sounds |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| Mario, Luigi | none                                                                                                                                                 | none              |
-| Link         | `heart-container`, `boomerang`, `bomb-bag`, `blue-ring`, `magical-sword`, `shield-spell`, `jump-spell`, `fire-spell` (spells: a glowing scroll each) | 8                 |
-| Mega Man     | `helmet`, `saw-disc`, `leaf-guard`, `rush-coil`, `flame-wave`, `homing-knuckle`, `bolt` (weapons: a capsule in the weapon's colours)                 | 7                 |
-| Samus        | `energy-tank`, `missiles`, `long-beam`, `ice-beam`, `varia-suit`, `wave-beam` (item spheres)                                                         | 6                 |
-| Simon        | `pot-roast`, `chain-whip`, `morning-star`, `dagger`, `holy-water`, `axe`, `cross`, `double-shot`, `stopwatch`, `triple-shot`                         | 10                |
-| Ryu          | `medicine`, `throwing-star`, `ninpo-scroll`, `windmill`, `fire-wheel`, `jump-slash`                                                                  | 6                 |
-| Bill         | `medal`, `falcon-m`, `falcon-l`, `falcon-f`, `falcon-s`                                                                                              | 5                 |
-| Sophia III   | `power-capsule`, `crusher`, `triple-missile`, `homing-missile`                                                                                       | 4                 |
-| **Total**    | **46 sprites**                                                                                                                                       | **46 sounds**     |
+| Hero         | New pickup sprites                                                                                                                      | New pickup sounds |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Mario, Luigi | none                                                                                                                                    | none              |
+| Link         | `heart-container`, `bomb-bag`, `blue-ring`, `magical-sword`, `shield-spell`, `jump-spell`, `fire-spell` (spells: a glowing scroll each) | 7                 |
+| Mega Man     | `helmet`, `saw-disc`, `leaf-guard`, `rush-coil`, `flame-wave`, `homing-knuckle`, `bolt` (weapons: a capsule in the weapon's colours)    | 7                 |
+| Samus        | `energy-tank`, `missiles`, `long-beam`, `ice-beam`, `varia-suit`, `wave-beam` (item spheres)                                            | 6                 |
+| Simon        | `pot-roast`, `chain-whip`, `morning-star`, `dagger`, `holy-water`, `axe`, `cross`, `double-shot`, `stopwatch`, `triple-shot`            | 10                |
+| Ryu          | `medicine`, `throwing-star`, `ninpo-scroll`, `windmill`, `fire-wheel`, `jump-slash`                                                     | 6                 |
+| Bill         | `medal`, `falcon-m`, `falcon-l`, `falcon-f`, `falcon-s`                                                                                 | 5                 |
+| Sophia III   | `power-capsule`, `crusher`, `wall-climb`, `ceiling-climb`, `triple-missile`, `homing-missile`                                           | 6                 |
+| **Total**    | **47 sprites**                                                                                                                          | **47 sounds**     |
 
 Also:
 
-- **HUD icons** (8 × 8, belt): Samus `icon-ice-beam` and `icon-wave-beam` (if Ice and Wave are on the belt, Q7);
+- **HUD**: Samus's reserve tanks as small boxes above her EN number (decision 6).
+- **HUD icons** (8 × 8, belt): Samus `icon-ice-beam` and `icon-wave-beam` (Ice and Wave are both on the belt);
   Simon's double / triple badges `icon-double`, `icon-triple` (Castlevania's II / III; optional). Every other belt
   icon exists.
 - **Refill sounds**: reuse what each hero has (`boss-fill` for Mega Man, `sophia-pickup`, `pickup`, Mario's
@@ -568,41 +587,33 @@ Also:
   weapon palettes, Simon's whips and Sophia's states all exist).
 - **Inventory and bonus games**: no new art (the panel draws the pickup frames; SMB3's cards and reels stay).
 
-## 12. Open questions for the owner
+## 12. Decisions (owner, Oct 8)
 
-The rest of this file calls them Q1 to Q15. Each recommendation is what the doc assumes until answered.
+The owner's answers to the draft's fifteen open questions. The sections above already follow them.
 
-1. **Death.** Today a death wipes every hero's whole kit. Recommended: a death takes what a hit can take plus a
-   grow item that hits can take (Mario, Luigi and Sophia III restart small / Normal, as SMB); every **power item**
-   found stays with the hero (Crossover's never-lose), and hit-point heroes keep their grow items too. Or keep
-   today's wipe (found items come back from the blocks ahead, or by replaying a level).
-2. **Arrival kit.** A hero freed in World N has missed Worlds 1 to N-1. Recommended: they join with the items placed
-   for them there (Link: Boomerang, Bomb Bag, two heart containers; Mega Man: Helmet, Saw Disc, Leaf Guard, Rush
-   Coil; Samus: two tanks, Long Beam, Missiles, Ice Beam; Simon: Pot Roast, Chain Whip, Dagger, Holy Water, Axe,
-   Morning Star, Cross, Double Shot; Ryu: Medicine, Throwing Star, two Ninpo Scrolls, Windmill Star, Fire Wheel;
-   Bill: two medals, Machine Gun, Laser, Flame Gun; Sophia III: Triple and Homing Missiles). Or they start bare
-   and replay earlier worlds for them.
-3. **Per-hero kits.** Today switching heroes wipes the kit. Recommended: each hero's kit is saved with them
-   (`heroKits`), so switching back finds them as they were.
-4. **Simon and Ryu's grow items.** Neither has a grow item today. Proposed: a 10-point bar while small, the Pot
-   Roast / Medicine grows it to today's 16. This makes a fresh Simon or Ryu weaker than today (5 hits, not 8).
-   Or keep 16 and make the grow item a full heal only (then they are never small).
-5. **Link's starting belt.** Today Link starts with all five tools; under this design he finds them. Keep, or start
-   him with the Boomerang?
-6. **Samus's tanks.** Two tanks (90 energy) as today, or more (Metroid had six)? More tanks would turn more grow
-   blocks from refills into upgrades.
-7. **Ice and Wave.** Both kept and switched with WEAPON (proposed), or Metroid's rule (the newer replaces the older)?
-8. **Random drops.** Bill's capsule drop becomes a health pickup and Samus's missile packs drop only with Missiles:
-   agreed?
-9. **Moving items.** Grow and stacking items slide like the mushroom; the rest stay like the flower. Or every hero
-   item stays put, so none is lost down a pit?
-10. **Sophia III's walls.** Keep the Crusher as one item (cannon and wall and ceiling climbing), or split it into
-    Crusher, Wall Climb and Ceiling Climb as Blaster Master did (a hit would still take all three)?
-11. **Mario's later powers.** Feather and Tanooki leaf: in which release, and do they take SMB's flower blocks in the
-    later worlds, or new blocks?
-12. **Co-op inventory.** Player 2's hero's inventory on the same panel (SELECT switches), or not reachable from the
-    map in co-op?
-13. **Migration.** The shared inventory goes to the file's current hero (proposed), or always to Mario?
-14. **Spoilers.** Should the training's preview say where an item is found ("FOUND IN WORLD 4")?
-15. **Names.** The item names above (Blue Ring and Magical Sword for today's tunics, Medal, Medicine, Power Capsule)
-    are proposals; any to change?
+1. **Death:** today's rule stays. A death wipes the hero's found power items; hits take what they take today.
+2. **First play:** a hero always starts with their basic kit the first time they are played, even if they are
+   freed in a late world. Their items are placed in every world's blocks, the earlier worlds included, so replaying
+   those levels with them collects them. No arrival kit.
+3. **Per-hero kits:** each hero's kit is saved separately (`heroKits`), so switching heroes no longer wipes it.
+   With decision 1, a death still wipes that hero's found items.
+4. **Simon and Ryu:** they start with a 10-point health bar, and their grow item (Pot Roast, Medicine) takes it
+   to 16.
+5. **Link:** he always starts with the Boomerang, as now, and finds his other items. His default power is
+   therefore the next item, the Bomb Bag.
+6. **Samus:** more Energy Tanks, NES Metroid style: up to six tanks, shown as small boxes above her EN number, each
+   a reserve that refills the bar when it runs out. Chosen per-tank energy: **10** (the bar holds 30), so six tanks
+   reach today's maximum of 90 and she stays as tough as today against SMB enemies.
+7. **Samus's beams:** Ice and Wave are both kept and switched with WEAPON, not replaced.
+8. **Random drops:** Bill's random falcon-capsule drop becomes a health pickup; Samus's missile-pack drops appear
+   only once she owns Missiles.
+9. **Pickups don't move:** every hero item stays put like the flower; none slides like the mushroom. The grow
+   items count as items too; only Mario and Luigi's Super Mushroom keeps SMB's slide.
+10. **Sophia's Crusher** is split into Crusher, Wall Climb and Ceiling Climb, as in Blaster Master. Both climbs are
+    in her item list (5.8) and the placement plan (6).
+11. **Feather and Tanooki leaf:** TBD; not in 0.4.33.
+12. **Co-op:** new two-player files are paused (`file-select.ts`). The co-op rules above stay as notes for when
+    co-op returns; there is no player-2 inventory in 0.4.33.
+13. **Old saves:** the shared inventory moves to Mario.
+14. **Training:** previews don't say where an item is found.
+15. **Item names:** approved.
