@@ -150,12 +150,12 @@ and **TALK**. He gives you a coin, then tells you how to find Link.
 
 ### Link: the sky ruins above 2-1
 
-|              |                                                    |
-| ------------ | -------------------------------------------------- |
-| **What**     | Hidden hero: Link                                  |
-| **Where**    | World 2-1, above the coin heaven, in the sky ruins |
-| **Who can**  | Every hero                                         |
-| **Map hint** | "SOMETHING UP THERE HUMS..."                       |
+|              |                                                     |
+| ------------ | --------------------------------------------------- |
+| **What**     | Hidden hero: Link                                   |
+| **Where**    | World 2-1, above the coin heaven, in the sky palace |
+| **Who can**  | Every hero                                          |
+| **Map hint** | "SOMETHING UP THERE HUMS..."                        |
 
 1. In 2-1, a row of five bricks floats high above two groups of ? blocks. Its middle brick hides
    a vine: **JUMP** from the ? blocks to the left of it, drifting right, to bump it, then climb the
@@ -169,12 +169,14 @@ and **TALK**. He gives you a coin, then tells you how to find Link.
 
    ![The hidden block over the middle cloud, with its vine](img/2-link-2.png)
 
-3. You arrive in the sky ruins, a fallen temple on the clouds. Link stands beside the temple's
-   doorway. **TALK** to him.
+3. You arrive in Link's sky palace on the clouds. Hop across the floating palace blocks to the
+   great gate, go into the hall and **JUMP** over the gap in its floor. Link stands on the altar
+   in the middle of the hall, under the gold crest: climb its steps and **TALK** to him.
 
-   ![Mario beside Link at the temple doorway](img/2-link-3.png)
+   ![Mario beside Link on the altar in the sky palace](img/2-link-3.png)
 
-Walk on to the right end of the ruins and drop off the edge to land back in 2-1.
+Walk on through the hall and out onto the balcony, then drop off its edge to land back in 2-1.
+A fall anywhere in the palace lands you back in 2-1 too.
 
 ### The Top Secret Area (2-1)
 

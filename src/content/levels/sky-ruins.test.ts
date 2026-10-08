@@ -123,7 +123,7 @@ describe("2-1 sky palace (2-1-sky2): Link's palace on the clouds above the coin 
     }
     for (let y = 4; y <= 8; y++) expect(tile(l, 52, y), `above Link ${y}`).toBe(T.AIR);
     const look = l.campaignLook?.decor ?? [];
-    expect(look).toContainEqual({ kind: 'zelda2-sky:crest', x: 50, y: 6 });
+    expect(look).toContainEqual({ kind: 'zelda2-sky:crest', x: 50, y: 5 });
     expect(look).toContainEqual({ kind: 'zelda2-sky:statue', x: 47, y: 11 });
     expect(look).toContainEqual({ kind: 'zelda2-sky:statue-r', x: 56, y: 11 });
   });

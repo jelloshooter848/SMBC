@@ -22,7 +22,7 @@ import { draw, hash, type Rows } from './look-art';
  *   dark doorway between them (the players walk through it, in front).
  * - `statue` (16x48): a stone knight with spear and shield on a plinth, facing right; `statue-r`
  *   its mirror. They flank the altar.
- * - `crest` (64x48): the triad crest over Link: three gold triangles (a tall one between two
+ * - `crest` (64x32): the triad crest over Link: three gold triangles (a tall one between two
  *   small ones) on a gold-rimmed plaque, wings of gold either side. An original emblem.
  * - `banner` (16x48): a red banner with a gold triangle, hung from the ceiling.
  * - `curtain` (32x16): the palace's red drapes along the ceiling, gold fringe; tiles sideways.
@@ -122,11 +122,14 @@ const column = (h: number, broken: boolean, seed: number): string[] =>
 
 /* ---------- the gate ---------- */
 
-/** A small gold triangle with its tip at (tx, ty), `h` tall: lit left, shaded right. */
-const triangle = (x: number, y: number, tx: number, ty: number, h: number): string | null => {
+/**
+ * A gold triangle with its tip at (tx, ty), `h` tall, widening by `k` px a row each side: lit left,
+ * shaded right and along its base.
+ */
+const triangle = (x: number, y: number, tx: number, ty: number, h: number, k = 1): string | null => {
   const dy = y - ty;
   if (dy < 0 || dy >= h) return null;
-  const half = dy;
+  const half = Math.round(dy * k);
   const dx = x - tx;
   if (dx < -half || dx > half) return null;
   if (dy === h - 1) return 'a';
@@ -145,7 +148,8 @@ const gate = draw(80, 144, (x, y) => {
   for (const [x0, x1, y0, y1] of steps) {
     if (x >= x0 && x < x1 && y >= y0 && y < y1) {
       // the triad on the middle step: one tall triangle between two small ones
-      const tri = triangle(x, y, 39, 13, 10) ?? triangle(x, y, 29, 17, 6) ?? triangle(x, y, 50, 17, 6);
+      const tri =
+        triangle(x, y, 40, 13, 10, 0.6) ?? triangle(x, y, 31, 17, 6, 0.6) ?? triangle(x, y, 49, 17, 6, 0.6);
       if (y0 === 12 && tri) return tri;
       if (y === y1 - 1) return '1';
       if (y === y0) return '3';
@@ -219,29 +223,27 @@ const statue = draw(16, 48, (x, y) => {
   return '.';
 });
 
-const crest = draw(64, 48, (x, y) => {
+const crest = draw(64, 32, (x, y) => {
   // wings: feathered gold sweeps from the plaque's sides
-  const plaque = x >= 16 && x < 48 && y >= 6;
-  if (!plaque) {
+  if (x < 16 || x >= 48) {
     const side = x < 16 ? 15 - x : x - 48;
-    if (side < 0) return '.';
-    const top = 8 + side * 0.6;
-    const bottom = 30 - side * 0.5;
+    const top = 2 + side * 0.5;
+    const bottom = 21 - side * 0.45;
     if (y < top || y > bottom) return '.';
     const feather = Math.floor((y - top) / 4);
     if ((y - top) % 4 === 3) return 'a';
     return feather === 0 ? '9' : '8';
   }
   // the plaque: a pointed shield, gold rim, dark magenta field
-  const ly = y - 6;
-  const inset = ly > 26 ? ly - 26 : 0;
+  const inset = y > 20 ? y - 20 : 0;
   if (x < 16 + inset || x > 47 - inset) return '.';
-  const rim = x <= 17 + inset || x >= 46 - inset || ly <= 1 || ly >= 40;
+  const rim = x <= 17 + inset || x >= 46 - inset || y <= 1 || y >= 30;
   if (rim) return x < 32 ? '9' : 'a';
   // the triad: a tall triangle between two small ones, on a gold bar
-  const tri = triangle(x, y, 31, 10, 18) ?? triangle(x, y, 23, 18, 10) ?? triangle(x, y, 40, 18, 10);
+  const tri =
+    triangle(x, y, 32, 3, 15, 0.4) ?? triangle(x, y, 21, 9, 9, 0.45) ?? triangle(x, y, 43, 9, 9, 0.45);
   if (tri) return tri;
-  if (y === 29 || y === 30) return y === 29 ? '8' : 'a';
+  if (y === 19 || y === 20) return y === 19 ? '8' : 'a';
   return hash(x, y, 81) < 0.08 ? '2' : '1';
 });
 

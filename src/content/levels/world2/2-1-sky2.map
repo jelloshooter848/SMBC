@@ -125,7 +125,7 @@ zelda2-sky:curtain 62 4
 ;; The altar: banners and the triad crest over Link, knight statues and braziers flanking it.
 zelda2-sky:banner 48 6
 zelda2-sky:banner 55 6
-zelda2-sky:crest 50 6
+zelda2-sky:crest 50 5
 zelda2-sky:statue 47 11
 zelda2-sky:statue-r 56 11
 zelda2-sky:brazier 44 11
