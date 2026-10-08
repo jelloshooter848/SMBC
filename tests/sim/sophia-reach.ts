@@ -561,6 +561,8 @@ export function replay(
   power: string,
   path: string[],
   log?: (step: string, o: Outcome) => void,
+  /** Where the route starts instead of the level's start (reach()'s `from`). */
+  from?: WorldStart,
 ): { done: boolean; how: string | null; at: string; stand?: { area: string; col: number } } {
   const main = getLevel(id);
   const blank = (area: string): Spot => ({
@@ -574,7 +576,7 @@ export function replay(
     checks: [],
     path: [],
   });
-  let o = play(blank(main.id), main, power, null, { mode: main.startMode });
+  let o = play(blank(main.id), main, power, null, from ?? { mode: main.startMode });
   for (const step of path) {
     if (step.startsWith('enter ')) continue;
     // Through pipes into the next area first.
