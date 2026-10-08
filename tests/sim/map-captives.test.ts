@@ -8,7 +8,13 @@ import type { Settings } from '@engine/save/settings';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { CHARACTERS } from '@game/characters/registry';
-import { TROPHY_BURST_HOPS, TROPHY_HOP_EVERY, TROPHY_HOP_PX } from '@game/map/trophy';
+import {
+  PEDESTAL_STONE,
+  TROPHY_BURST_HOPS,
+  TROPHY_HOP_EVERY,
+  TROPHY_HOP_PX,
+  TROPHY_SCALE,
+} from '@game/map/trophy';
 import { MISSED_HINT } from '@game/story/script';
 import { missedSaid } from '@game/map/toad-guide';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
@@ -202,7 +208,9 @@ describe('map hint for hidden heroes: the three stages', () => {
       frames.add(t.frame);
     }
     const rest = Math.max(...ys);
-    // About 8 px up, in Luigi's jump frame (his CharacterDef sprite in the air), then back down.
+    // A small hop (TROPHY_HOP_PX, 4 px: the statue is half size), in Luigi's jump frame (his
+    // CharacterDef sprite in the air), then back down.
+    expect(TROPHY_HOP_PX).toBe(4);
     expect(rest - Math.min(...ys)).toBe(TROPHY_HOP_PX);
     expect(frames).toEqual(new Set(['small-idle', 'small-jump']));
     // Two hops in two cycles, mostly at rest.
@@ -217,6 +225,63 @@ describe('map hint for hidden heroes: the three stages', () => {
       pos.add(`${s.sprites[s.shade]!.x},${s.sprites[s.shade]!.y}`);
     }
     expect(pos.size).toBe(1);
+  });
+});
+
+describe('the trophy reads as a statue, not a second player (owner note 13)', () => {
+  /** Every sprite (with its scale) and rect drawn for one frame. */
+  const frame = (map: WorldMapScene) => {
+    const sprites: { key: string; frame: string; x: number; y: number; scale: number }[] = [];
+    const rects: { x: number; y: number; w: number; h: number; c: string }[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      sprite(s: SpriteSheet, f: string, x: number, y: number, ...rest: unknown[]): void {
+        sprites.push({ key: s.id, frame: f, x, y, scale: (rest[3] as number | undefined) ?? 1 });
+      },
+      rect(x: number, y: number, w: number, h: number, c: string): void {
+        rects.push({ x, y, w, h, c });
+      },
+    });
+    map.render(r);
+    return { sprites, rects };
+  };
+  const freedFile = {
+    cleared: ['1-0', '1-1'],
+    position: { page: 'smb-1', node: '1-1' },
+    freed: ['mario', 'luigi'],
+  };
+
+  it('Luigi is drawn at half size on a small stone pedestal; the player stays full size', () => {
+    const { map } = onMap(freedFile);
+    const { sprites, rects } = frame(map);
+    const statue = sprites.find((s) => s.key === 'mario@luigi')!;
+    expect(statue.scale).toBe(TROPHY_SCALE);
+    expect(TROPHY_SCALE).toBe(0.5);
+    const player = sprites.find((s) => s.key === 'mario@mario')!;
+    expect(player.scale).toBe(1);
+    // The pedestal: stone rects right under the statue's feet (Luigi's 16 px portrait at half: 8).
+    const feet = statue.y + 8;
+    const stone = rects.filter((b) => (PEDESTAL_STONE as readonly string[]).includes(b.c));
+    expect(stone.length).toBeGreaterThan(0);
+    expect(Math.min(...stone.map((b) => b.y))).toBe(feet);
+    const left = Math.min(...stone.map((b) => b.x));
+    const right = Math.max(...stone.map((b) => b.x + b.w));
+    expect(right - left).toBeLessThanOrEqual(14);
+    expect(left).toBeLessThanOrEqual(statue.x);
+    expect(right).toBeGreaterThanOrEqual(statue.x + 8);
+  });
+
+  it("the statue and its pedestal stay clear of the player's marker", () => {
+    const { map } = onMap(freedFile);
+    const { sprites, rects } = frame(map);
+    const player = sprites.find((s) => s.key === 'mario@mario')!;
+    const stone = rects.filter((b) => (PEDESTAL_STONE as readonly string[]).includes(b.c));
+    const statue = sprites.find((s) => s.key === 'mario@luigi')!;
+    const boxes = [...stone, { x: statue.x - 1, y: statue.y - 1, w: 10, h: 10 }];
+    for (const b of boxes) {
+      // The player's marker is 16 px wide from player.x.
+      const apart = b.x + b.w <= player.x - 2 || b.x >= player.x + 16 + 2;
+      expect(apart).toBe(true);
+    }
   });
 });
 

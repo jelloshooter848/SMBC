@@ -790,16 +790,18 @@ export class World {
     switch (s.type) {
       case 'goomba':
         return new Goomba(x + px(2), y + px(2));
+      // Feet on the spawn tile's bottom: the 16 px box (KOOPA_H) fills the tile; the sprite
+      // reaches 8 px above it as before.
       case 'koopa-green':
-        return new Koopa(x + px(2), y - px(6), 'green');
+        return new Koopa(x + px(2), y, 'green');
       case 'koopa-red':
-        return new Koopa(x + px(2), y - px(6), 'red');
+        return new Koopa(x + px(2), y, 'red');
       case 'koopa-para-green':
-        return new Koopa(x + px(2), y - px(6), 'green', true);
+        return new Koopa(x + px(2), y, 'green', true);
       case 'koopa-para-red':
-        return new Koopa(x + px(2), y - px(6), 'red', true);
+        return new Koopa(x + px(2), y, 'red', true);
       case 'koopa-para-green-h':
-        return new Koopa(x + px(2), y - px(6), 'green', true, true);
+        return new Koopa(x + px(2), y, 'green', true, true);
       case 'piranha':
         return new Piranha(s.x, s.y, false, !!s.props?.red);
       case 'piranha-down':
