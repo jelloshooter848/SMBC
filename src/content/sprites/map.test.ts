@@ -8,7 +8,19 @@ import { mapIconFrames } from './map-icons';
 type Size = readonly [w: number, h: number];
 const T16: Size = [16, 16];
 
-const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser', 'warp', 'arena'];
+const THEMES = [
+  'grass',
+  'sea',
+  'night',
+  'mushroom',
+  'sky',
+  'snow',
+  'coast',
+  'bowser',
+  'warp',
+  'arena',
+  'hyrule',
+];
 
 const tileFrames = [
   'ground',
@@ -44,6 +56,16 @@ const tileFrames = [
   'arena-wall',
   ...[0, 1, 2, 3].flatMap((f) => [`arena-crowd-a-${f}`, `arena-crowd-b-${f}`, `arena-banner-${f}`]),
   ...[0, 1, 2].map((w) => `arena-bunting-${w}`),
+  // Hyrule (World 2, 0.4.24).
+  'forest',
+  'palace-roof-left',
+  'palace-roof-mid',
+  'palace-roof-right',
+  'palace-left',
+  'palace-door',
+  'palace-right',
+  'ruins',
+  'graves',
   ...Array.from({ length: WATER_FRAMES }, (_, f) => [
     `water-${f}`,
     `surf-${f}`,
@@ -80,6 +102,13 @@ const actorFrames: Record<string, Size> = {
   'arena-tower-1': [16, 48],
   'arena-scoreboard-0': [48, 32],
   'arena-scoreboard-1': [48, 32],
+  // Hyrule's critters (World 2, 0.4.24).
+  'blob-0': T16,
+  'blob-1': T16,
+  'fairy-0': T16,
+  'fairy-1': T16,
+  'zora-0': T16,
+  'zora-1': T16,
 };
 
 function expectFrame(name: string, [w, h]: Size): void {

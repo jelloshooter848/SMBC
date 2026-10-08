@@ -13,6 +13,10 @@ import type { View } from '../entities/entity';
  *   between each pair.
  * - `ninja-city` (6-2 as Ryu's city street): the far city's towers along the street, at half the
  *   camera's speed, under the black night.
+ * - `zelda2-palace` (2-4 as Link's palace, 0.4.24): the hall's dim brick wall from below the HUD's
+ *   band down, scrolling with the level, a red curtain every PALACE_CURTAIN_PERIOD px hanging from
+ *   the wall's top (behind the ceiling where it is thick); the knight statues are the level's own
+ *   decor.
  */
 
 /** The black band left at the top for the HUD (a vampire-hunting stage keeps its HUD on black). */
@@ -51,9 +55,24 @@ function citySkyline(r: Renderer, view: View): void {
   for (let x = -wrap(view.camX >> 1, f.w); x < SCREEN_W; x += f.w) r.sprite(sheet, 'ng-skyline', x, top);
 }
 
+/** 2-4's palace curtains repeat every this many px of the level. */
+export const PALACE_CURTAIN_PERIOD = 192;
+
+function palaceHall(r: Renderer, view: View): void {
+  const sheet = view.assets.sheet('decor', 'decor-zelda2-palace');
+  if (!sheet.frames.has('z2-palace-wall')) return;
+  const cam = view.camX;
+  for (let x = -wrap(cam, 32); x < SCREEN_W; x += 32)
+    for (let y = HALL_TOP; y < SCREEN_H; y += 32) r.sprite(sheet, 'z2-palace-wall', x, y);
+  const first = Math.floor((cam - 64) / PALACE_CURTAIN_PERIOD) * PALACE_CURTAIN_PERIOD;
+  for (let base = first; base < cam + SCREEN_W + 64; base += PALACE_CURTAIN_PERIOD)
+    r.sprite(sheet, 'z2-curtain', base + 80 - cam, HALL_TOP);
+}
+
 const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   castlevania: castleHall,
   'ninja-city': citySkyline,
+  'zelda2-palace': palaceHall,
 };
 
 /** Whether a theme paints a backdrop. */

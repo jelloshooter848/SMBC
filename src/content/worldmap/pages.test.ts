@@ -15,7 +15,8 @@ import { SKETCH_7 } from './world7';
 import { SKETCH_8 } from './world8';
 
 const SKETCHES = [SKETCH_1, SKETCH_2, SKETCH_3, SKETCH_4, SKETCH_5, SKETCH_6, SKETCH_7, SKETCH_8];
-const THEMES = ['grass', 'sea', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser'];
+// World 2 is Link's Hyrule since 0.4.24 (it was SEA SIDE).
+const THEMES = ['grass', 'hyrule', 'night', 'mushroom', 'sky', 'snow', 'coast', 'bowser'];
 
 /** Tile rows the engine's header bar covers (24 px): background only. */
 const HEADER_ROWS = 2;

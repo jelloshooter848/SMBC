@@ -9,6 +9,12 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.24): Hyrule's field (2-1's Zelda II look): its bridges are stone slabs,
+;; its treetop platforms stone lintels on standing stones, its clouds flat. Elsewhere (level
+;; select, ?level=2-3) it looks as it always did.
+campaignTheme: zelda2
+campaignMusic: zelda2-field
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................
@@ -72,3 +78,53 @@ cloud-1 220 11
 cloud-1 227 7
 cloud-1 230 6
 cloud-1 238 11
+
+[campaign-decor]
+;; Far mountains in the haze behind the bridges, the level's clouds (drawn flat, Zelda II's)
+;; and the field's forest before the flagpole.
+z2-far-peaks 12 14
+z2-far-peaks 40 14
+z2-far-peaks 66 14
+z2-far-peaks 94 14
+z2-far-peaks 120 14
+z2-far-peaks 148 14
+z2-far-peaks 174 14
+z2-far-peaks 200 14
+cloud-2 3 3
+cloud-1 9 7
+cloud-2 18 2
+cloud-1 28 11
+cloud-1 35 7
+cloud-1 38 6
+cloud-1 46 11
+cloud-2 51 3
+cloud-1 57 7
+cloud-2 66 2
+cloud-1 76 11
+cloud-1 83 7
+cloud-1 86 6
+cloud-1 94 11
+cloud-2 99 3
+cloud-1 105 7
+cloud-2 114 2
+cloud-1 124 11
+cloud-1 131 7
+cloud-1 134 6
+cloud-1 142 11
+cloud-2 147 3
+cloud-1 153 7
+cloud-2 162 2
+cloud-1 172 11
+cloud-1 179 7
+cloud-1 182 6
+cloud-1 190 11
+cloud-2 195 3
+cloud-1 201 7
+cloud-2 210 2
+cloud-1 220 11
+cloud-1 227 7
+cloud-1 230 6
+cloud-1 238 11
+tree-small 218 12
+tree-big 220 12
+tree-small 222 12

@@ -96,6 +96,9 @@ export function decorPalette(theme: string): string {
   if (theme === 'ninja-city') return 'decor-ninja-city';
   if (theme === 'smw-secret') return 'decor-smw';
   if (theme === 'zelda2' || theme === 'megaman-stage' || theme === 'brinstar') return `decor-${theme}`;
+  // World 2 as Hyrule (0.4.24): the lake, the palace and the cave.
+  if (theme === 'zelda2-water' || theme === 'zelda2-palace' || theme === 'zelda2-cave')
+    return `decor-${theme}`;
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern' || theme === 'tourian') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';

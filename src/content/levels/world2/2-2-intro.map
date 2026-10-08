@@ -10,6 +10,11 @@ startMode: autowalk
 camera: locked
 parent: 2-2
 
+;; Campaign play only (0.4.24): Hyrule's field (2-1's Zelda II look) on the shore of the lake 2-2
+;; swims through. Elsewhere it looks as it always did.
+campaignTheme: zelda2
+campaignMusic: zelda2-field
+
 [tiles]
 ;; 0
 ................
@@ -37,3 +42,11 @@ pipe 10 12 right -> 2-2 2 1 exit=none
 [decor]
 cloud-2 3 3
 cloud-1 9 7
+
+[campaign-decor]
+;; The field's forest and flat clouds by the pipe down into the lake.
+cloud-2 3 3
+cloud-1 9 7
+tree-small 5 12
+tree-big 7 12
+tree-small 8 12
