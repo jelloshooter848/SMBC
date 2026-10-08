@@ -1,10 +1,13 @@
-# Super Mario Bros. Crossover (browser rebuild)
+# Super Mario Bros. Crossover: REMIX
+
+**SMBC REMIX** (SMB Crossover REMIX) is an unofficial browser remake of _Super Mario Bros.
+Crossover_ by Exploding Rabbit, made by jelloshooter848.
 
 **▶ Play it in your browser: https://jelloshooter848.github.io/SMBC/** (latest release; see
 [CHANGELOG.md](CHANGELOG.md) for what's new).
 
 A from-scratch, browser-based reimplementation inspired by the 2010 Flash fan game
-_Super Mario Bros. Crossover_: play the Super Mario Bros. levels as characters from other
+_Super Mario Bros. Crossover_ by Exploding Rabbit: play the Super Mario Bros. levels as characters from other
 NES-era games, each with their own mechanics. Flash is gone; this runs anywhere a modern
 browser does, including phones, and deploys as static files.
 
