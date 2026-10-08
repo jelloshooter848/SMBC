@@ -3,6 +3,7 @@ import { PALETTE_MODES, resolvePalette } from '@engine/gfx/palette';
 import { rasterizeToBuffer, validateDef } from '@engine/gfx/pixelart';
 import { PALETTES, SPRITES } from './index';
 import { wandDef, wandPalettes } from './wand';
+import { storyDef, storyPalettes } from './story';
 
 type Size = readonly [w: number, h: number];
 
@@ -46,6 +47,31 @@ describe('wand sheet', () => {
     const crack = (n: string) => rows(n).map((r) => r.replace(/[19]/g, '.').replace(/[^.]/g, '#'));
     expect(crack('rift-0')).toEqual(crack('rift-1'));
     expect(rows('rift-0')).not.toEqual(rows('rift-1'));
+  });
+
+  it("is the star wand of Bowser's spell (story sheet `star-wand-0`), not Larry's orb wand", () => {
+    // 0.4.31: the wand that breaks at 8-4 is the one he cast the spell with in 1-0 and waves at
+    // the gate scenes: a five-pointed star on a brown rod, in the same colours.
+    const colours = (f: readonly string[], pal: readonly string[]) =>
+      new Set([...f.join('')].filter((c) => c !== '.').map((c) => pal[parseInt(c, 36)]));
+    const star = colours(storyDef.frames['star-wand-0'] as string[], storyPalettes.story as string[]);
+    const wand = wandPalettes.wand as string[];
+    for (const name of ['wand-0', 'wand-1', 'wand-2', 'wand-3', 'wand-crack']) {
+      const used = colours(rows(name), wand);
+      used.delete(wand[1]); // the crack's white
+      for (const c of used) expect(star.has(c), `${name}: ${c}`).toBe(true);
+      // no pink orb
+      expect(used.has(wand[5]), name).toBe(false);
+    }
+    // upright, the star's points: its top point on the middle column, its two arms level
+    const up = rows('wand-0');
+    const top = up.findIndex((r) => /[23]/.test(r));
+    expect(up[top]!.match(/[23]/g)!.length).toBeLessThanOrEqual(2);
+    expect(Math.abs(up[top]!.search(/[23]/) - 9.5)).toBeLessThanOrEqual(1);
+    const arms = up.map((r) => (r.match(/[23]/g) ?? []).length);
+    expect(Math.max(...arms)).toBeGreaterThanOrEqual(7);
+    // the pieces it breaks into are bits of the star and the rod, in the lavender glow
+    for (const name of ['piece-0', 'piece-1', 'piece-2']) expect(rows(name).join(''), name).not.toMatch(/[56]/);
   });
 
   it('is registered with its palette and renders in every colour mode', () => {

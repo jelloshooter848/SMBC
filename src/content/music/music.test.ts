@@ -90,6 +90,11 @@ const SONG_IDS = [
   // World 7 as Bill's world (0.4.30): 7-1's snowfield, 7-2's jungle river.
   'contra-snow',
   'contra-river',
+  // World 8 as Sophia's world (0.4.31): 8-2's techno castle, 8-3's ice.
+  'bm-techno',
+  'bm-ice',
+  // The new file's opening scene (0.4.31; it borrowed the toad house's tune before).
+  'opening',
 ];
 
 const SFX_IDS = [
@@ -184,6 +189,9 @@ const SFX_IDS = [
   'ng-death',
   // The title screen's REMIX stamp.
   'stamp',
+  // Chapter 1 polish (0.4.31): the spell's windows, Luigi's flinch in 1-1.
+  'spell-window',
+  'flinch',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

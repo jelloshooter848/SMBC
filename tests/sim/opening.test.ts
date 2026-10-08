@@ -37,7 +37,9 @@ describe('the opening (a new file)', () => {
     expect(h.top()).toBeInstanceOf(OpeningScene);
     expect(h.game.seen(beat.opening)).toBe(true);
     expect(loadSave(1)?.story).toContain(beat.opening);
-    expect(h.audio.playMusic).toHaveBeenCalledWith('toad-house');
+    // its own short opening song (0.4.31; it borrowed the toad house's before)
+    expect(h.audio.playMusic).toHaveBeenCalledWith('opening');
+    expect(h.audio.playMusic).not.toHaveBeenCalledWith('toad-house');
     // Toad runs out with the note; then the caption, which waits.
     h.until(() => scene(h).lines !== null, OPENING_TIMING.captionAt + 5);
     expect(scene(h).lines).toEqual(OPENING_CAPTION);
