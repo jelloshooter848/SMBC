@@ -10,6 +10,19 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- World 6 is now Ryu's world (campaign only; classic play keeps SMB's 6-1 to 6-4):
+  - The World 6 map page is DRAGON VALLEY (it was SNOW NIGHT), a night valley under a full moon with the Hayabusa
+    village and dojo, a bamboo forest, the night city's rooftops and neon, snowy passes and the demon temple over 6-4.
+    Hawks, a rooftop-leaping ninja and a masked ninja's silhouette are about.
+  - 6-1 is a moonlit bamboo field, 6-2's coin rooms the city's sewers, its water area a night harbour (every hero still
+    swims there), 6-3 a snowy mountain pass and 6-4 the demon temple, Jaquio's lair. 6-2 keeps its night city and
+    Ryu's dojo its own look; the trick panel into the dojo still blends into the sewer wall.
+  - Three new original songs: the sewers, the harbour and the mountain pass.
+
+## [0.4.28] - 2026-10-08
+
+### Changed
+
 - World 5 is now Simon's world, Transylvania (campaign only; classic play keeps SMB's 5-1 to 5-4):
   - The World 5 map page is TRANSYLVANIA (it was SKY TREES), a Castlevania-style night map with a village, graves, a
     dead forest, a moonlit lake, the clock tower and Dracula's castle by 5-4. Bats, Medusa heads and ravens fly over
@@ -721,7 +734,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.27...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.28...HEAD
+[0.4.28]: https://github.com/jelloshooter848/SMBC/compare/v0.4.27...v0.4.28
 [0.4.27]: https://github.com/jelloshooter848/SMBC/compare/v0.4.26...v0.4.27
 [0.4.26]: https://github.com/jelloshooter848/SMBC/compare/v0.4.25...v0.4.26
 [0.4.25]: https://github.com/jelloshooter848/SMBC/compare/v0.4.24...v0.4.25
