@@ -8,8 +8,6 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
-## [0.4.26] - 2026-10-08
-
 ### Changed
 
 - World 4 is now Samus's world, Zebes (campaign only; classic play keeps SMB's 4-1 to 4-4):
@@ -23,6 +21,8 @@ under `## [Unreleased]`.
 ### Fixed
 
 - The airship crash's opening line no longer doubles a full stop.
+
+## [0.4.26] - 2026-10-08
 
 ### Changed
 
