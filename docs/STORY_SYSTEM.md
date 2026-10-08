@@ -118,22 +118,40 @@ once on arrival; up talks (`partner` event → `talkToPartner`), and the pages c
 time. Any player can talk (in co-op, player 2 too); the pages close back into play with
 `resumePlay`, the music untouched.
 
-| `who`         | Level and spot           | For        |
-| ------------- | ------------------------ | ---------- |
-| `old-man`     | 2-1 (8, 12), `dx=8`      | Link       |
-| `dr-light`    | 3-1's bonus room (4, 12) | Mega       |
-| `chozo`       | 4-1's bonus room (2, 12) | Samus      |
-| `townsperson` | 5-4 (10, 9)              | Simon      |
-| `irene`       | 6-2 (7, 12)              | Ryu        |
-| `lance`       | 7-3 (5, 12)              | Bill       |
-| `jason`       | 8-4-jason (5, 12)        | Sophia III |
+| `who`         | Level and spot                                      | For        |
+| ------------- | --------------------------------------------------- | ---------- |
+| `villager`    | 1-1 (55, 12), before the bonus pipe (57)            | Luigi      |
+| `pipe-keeper` | 1-2 (177, 12), the warp zone's floor left of pipes  | (none)     |
+| `old-man`     | 2-1 (80, 12), `dx=8`, before the vine block (83)    | Link       |
+| `fairy`       | 2-1-sky (7, 12), by the vine the heroes climb in on | Link       |
+| `dr-light`    | 3-1 (124, 12), before the spring and vine (131)     | Mega       |
+| `chozo`       | 4-2 (65, 12), past the lift's pit, by the vine (64) | Samus      |
+| `townsperson` | 5-4 (10, 9)                                         | Simon      |
+| `irene`       | 6-2 (7, 12)                                         | Ryu        |
+| `lance`       | 7-3 (5, 12)                                         | Bill       |
+| `fred`        | 8-4-end (8, 12), by the trap pipe (10)              | Sophia III |
+| `jason`       | 8-4-jason (5, 12)                                   | Sophia III |
 
-The old man gives one coin after his first page (`coinAfter`, once a visit). The statue's eyes
-glow slowly, held dim with reduce flashing. Art: `src/content/sprites/partners.ts` (`<who>-0`,
-`<who>-1`), but Jason is drawn from Sophia III's sheet (`jason-stand`, `BORROWED` in
-`objects/partner.ts`), facing the heroes and now and then looking round at the pool. A partner
-talked to is marked (`Partner.talked`): talking to Jason sends his frog Fred into the pool, the way
-on to Sophia III (`objects/fred.ts`, docs/HEROES.md).
+A hint NPC names its hero (`PartnerScript.hero`); once that hero is freed on the file it says its
+one `after` page instead (`partnerPages`), and one without an `after` page is gone (`partnerGone`:
+Fred, home with Jason). The old man gives one coin after his first page (`coinAfter`, once a
+visit, only while Link is still to be found). The statue's eyes glow slowly, held dim with reduce
+flashing. The fairy floats over her spot (`FLOAT` in `objects/partner.ts`: drawn higher, bobbing,
+her `-1` frame a wing beat); her talking reach is the ground under her. Art:
+`src/content/sprites/partners.ts` (`<who>-0`, `<who>-1`; the villager and the pipe keeper are
+Toad's 16x24, the fairy 16x16), but Jason and Fred are drawn from Sophia III's sheet
+(`jason-stand`, `fred-0`; `BORROWED` in `objects/partner.ts`), facing the heroes and now and then
+looking round (Jason at the pool, Fred at the pipe). A partner talked to is marked
+(`Partner.talked`): talking to Jason sends his frog Fred into the pool, the way on to Sophia III
+(`objects/fred.ts`, docs/HEROES.md).
+
+## The freed talks (`scenes/free-hero.ts`)
+
+When a round is passed the hero is freed and saved at once, then talks over the level, still
+standing there: `freedTalk(id, <the talker's full name>)` (script.ts `FREED_TALKS`, docs/STORY.md
+2.4-2.11) through `playStoryCards` (OK next page, BACK skips the rest, every page announced). The
+player who talked speaks the `<HERO>:` pages. Then the hero leaves in a puff and the freed card
+shows, as before. The talk plays once: the hero is gone afterwards.
 
 ## Castle pages (`World.updateBossClear`)
 
