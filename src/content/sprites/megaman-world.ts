@@ -313,14 +313,17 @@ export const megamanAirDecorPalette: string[] = [
   NES.lightGray,
 ];
 
-/** The fortress's: 1-3 the machinery wall's dim teal, 4-5 the skulls' bone, 9-a their eyes' red. */
+/**
+ * The fortress's: 1-3 the machinery wall's dim teal, 4-5 the skulls' dim bone (darker than the
+ * solid panels' teal, so the backdrop never reads as a block), 9-a their eyes' red.
+ */
 export const megamanFortressDecorPalette: string[] = [
   NES.black,
   '#001818',
   '#002c2c',
   '#004848',
-  '#6c6c6c',
-  '#a8a8a8',
+  '#444444',
+  '#545454',
   NES.darkGray,
   NES.gray,
   NES.lightGray,
@@ -386,14 +389,16 @@ const fortressWall = draw(32, 32, (x, y) => {
   return '2';
 });
 
-/** A skull plate (32x32) on the fortress wall: an original skull, its eyes a dim, steady red. */
+/**
+ * A skull (32x32) on the fortress wall: an original skull in dim bone, outlined, its eyes a dim,
+ * steady red. No plate round it, so it reads as the wall's, never a block to stand on.
+ */
 const skullPlate = draw(32, 32, (x, y) => {
   const dx = x - 15.5;
-  // the plate
-  if (x < 2 || x > 29 || y < 2 || y > 29) return x === 1 || y === 1 || x === 30 || y === 30 ? '0' : '.';
   const head = Math.hypot(dx / 10.5, (y - 13) / 10);
   const jaw = y >= 19 && y <= 26 && Math.abs(dx) <= 7;
-  if (head > 1 && !jaw) return x === 2 || y === 2 ? '7' : x === 29 || y === 29 ? '0' : '6';
+  if (head > 1.12 && !jaw) return '.';
+  if ((head > 1 && !jaw) || (jaw && y > 21 && Math.abs(dx) >= 6.5)) return '0';
   // eyes: two round sockets, a dim red light in each
   for (const ex of [-4.5, 4.5]) {
     const e = Math.hypot(dx - ex, y - 13);

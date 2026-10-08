@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { PALETTES, SPRITES } from '@content/sprites';
 import { tilesDef } from '@content/sprites/tiles';
+import { megamanWorldDecorFrames } from '@content/sprites/megaman-world';
 import { songs } from '@content/music/songs';
 import { megamanWorldSongs } from '@content/music/megaman-world';
 import { compileSong, type Track } from '@engine/audio/mml';
@@ -202,6 +203,29 @@ describe("3-4: Wily's fortress (megaman-fortress)", () => {
     for (const d of drawn) expect(d.startsWith('decor@decor-megaman-fortress'), d).toBe(true);
     const tiles = PALETTES.default['tiles-megaman-fortress'] as string[];
     expect(tiles[11]).toBe((PALETTES.default['tiles-castle'] as string[])[11]);
+  });
+
+  it('its backdrop never reads as a solid block: a bare skull, all of it darker than the panels', () => {
+    const skull = megamanWorldDecorFrames['mmf-skull'] as readonly string[];
+    // no square plate round it: the corners are the wall behind
+    for (const [x, y] of [
+      [1, 1],
+      [30, 1],
+      [1, 30],
+      [30, 30],
+      [3, 3],
+      [28, 28],
+    ] as const)
+      expect(skull[y]![x], `${x},${y}`).toBe('.');
+    // every colour the wall and the skull use is darker than the solid panels' main teal
+    const decor = PALETTES.default['decor-megaman-fortress'] as string[];
+    const panel = lum((PALETTES.default['tiles-megaman-fortress'] as string[])[2]!);
+    const ROLES = '0123456789ab';
+    for (const name of ['mmf-skull', 'mmf-wall'])
+      for (const ch of new Set(
+        (megamanWorldDecorFrames[name] as readonly string[]).join('').replace(/\./g, ''),
+      ))
+        expect(lum(decor[ROLES.indexOf(ch)]!), `${name} '${ch}'`).toBeLessThan(panel);
   });
 });
 
