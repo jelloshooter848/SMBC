@@ -206,6 +206,8 @@ describe("Toad's map scenes", () => {
     expect(h.top()).toBeInstanceOf(CreditsScene);
     h.idle(60);
     h.tap('start');
+    h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
+    h.tap('jump'); // the closing lines wait for OK
     h.until(() => h.top() instanceof WorldMapScene, 3000);
     expect(map(h).page.id).toBe('smb-8');
     expect(h.game.pendingReveal).toContain('smb-8:8-4>ll-1');

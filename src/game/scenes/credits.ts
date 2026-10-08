@@ -115,7 +115,7 @@ export class CreditsScene implements Scene {
   }
 
   /** The closing lines stand still and OK goes on. */
-  private get waiting(): boolean {
+  get waiting(): boolean {
     return this.hold !== null && this.hold > CARD_GUARD_FRAMES;
   }
 

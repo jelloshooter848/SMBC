@@ -23,7 +23,14 @@ export interface MiniGameDef {
   /**
    * Builds one round as a scene the flow pushes over the level. The scene calls `done` exactly
    * once; the flow pops it. It owns its own menu (the menu button offers Continue / Give up →
-   * `done('quit')`), music and touch labels.
+   * `done('quit')`), music and touch labels. `opts.retry`: the round is a TRY AGAIN after a
+   * fail (the Mirror Race then skips its lives card: the race has no lives).
    */
-  create(game: Game, done: (result: MiniGameResult) => void): Scene;
+  create(game: Game, done: (result: MiniGameResult) => void, opts?: MiniGameRoundOptions): Scene;
+}
+
+/** How a round is started (MiniGameDef.create). */
+export interface MiniGameRoundOptions {
+  /** A TRY AGAIN after a failed round. */
+  retry?: boolean;
 }

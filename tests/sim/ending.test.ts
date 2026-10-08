@@ -121,7 +121,7 @@ describe('the credits roll', () => {
     expect(credits).toBeInstanceOf(CreditsScene);
     expect((credits as CreditsScene).translucent).toBe(true);
     expect(level.world.castleText).toEqual([]); // handed to the credits
-    expect(h.said.at(-1)).toContain('YOUR QUEST IS OVER.');
+    expect(h.said.at(-1)).toBe('Credits.'); // the castle reads its lines as they show
     for (let i = 0; i < 5000; i++) h.step();
     expect(h.top()).toBe(credits); // the closing lines wait for OK
     h.step(['jump']);
@@ -350,15 +350,18 @@ describe('Lost Levels endings (NES rules)', () => {
       ['ll-8-4', MessageScene],
       ['ll-9-4', TitleScene],
       ['ll-13-4', CreditsScene],
-    ] as const)('left alone, the %s card stays up; a key goes on (text waits, owner note 4)', (from, after) => {
-      const h = makeGame();
-      h.game.newGame(MARIO, from);
-      h.game.showEnding(from);
-      for (let i = 0; i < 10_000; i++) h.step();
-      expect(h.top()).toBeInstanceOf(CardScene);
-      h.step(['attack']);
-      expect(h.top()).toBeInstanceOf(after);
-    });
+    ] as const)(
+      'left alone, the %s card stays up; a key goes on (text waits, owner note 4)',
+      (from, after) => {
+        const h = makeGame();
+        h.game.newGame(MARIO, from);
+        h.game.showEnding(from);
+        for (let i = 0; i < 10_000; i++) h.step();
+        expect(h.top()).toBeInstanceOf(CardScene);
+        h.step(['attack']);
+        expect(h.top()).toBeInstanceOf(after);
+      },
+    );
 
     it('left alone, the tally page stays up too', () => {
       const h = at('tally');

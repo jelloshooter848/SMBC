@@ -214,11 +214,10 @@ export class Game {
     const head = world ? world.castleText.splice(0) : [];
     // The campaign's 8-4 is a false ending (docs/STORY.md 2.12): the credits say so at the end.
     const story = storyOn(this) && from === '8-4';
-    // The story's castle pages were read out as they showed (World.updateBossClear), so its
-    // credits do not read the news a second time; classic play says the castle's lines here.
-    const lines = story ? '' : head.filter(Boolean).join(' ');
+    // The castle's lines were read out as they showed (World.updateBossClear), so the credits
+    // do not read them a second time.
     const said = story ? ` ${STORY_NOT_OVER.filter(Boolean).join(' ')}` : '';
-    this.deps.announcer?.say(`${lines} Credits.${said}`.trim());
+    this.deps.announcer?.say(`Credits.${said}`);
     this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world, creditsLines(story)));
   }
 

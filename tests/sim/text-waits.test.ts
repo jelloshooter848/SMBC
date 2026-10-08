@@ -104,11 +104,15 @@ describe('cards and boxes wait for a key', () => {
   it("Toad's map box waits on each page", () => {
     const said: string[] = [];
     const scenes: ToadScene[] = [{ ids: ['x'], pages: [['ONE'], ['TWO']], walk: false }];
-    const guide = new ToadGuide(scenes, { x: 0, y: 0 }, {
-      markSeen: () => {},
-      say: (t) => said.push(t),
-      prompt: () => 'OK',
-    });
+    const guide = new ToadGuide(
+      scenes,
+      { x: 0, y: 0 },
+      {
+        markSeen: () => {},
+        say: (t) => said.push(t),
+        prompt: () => 'OK',
+      },
+    );
     const input = new ScriptedInput({ steps: [] });
     const run = (n: number, hold: Action[] = []) => {
       for (let i = 0; i < n; i++) {

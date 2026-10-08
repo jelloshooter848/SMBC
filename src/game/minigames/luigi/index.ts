@@ -10,7 +10,7 @@ export const LUIGI_MINIGAME: MiniGameDef = {
   hero: 'luigi',
   title: 'MIRROR RACE',
   rules: ['RACE LUIGI TO THE FLAG!', 'RUN AND JUMP.', "DON'T FALL IN A PIT!"],
-  create(game, done): Scene {
-    return new MirrorRaceScene(game, done);
+  create(game, done, opts): Scene {
+    return new MirrorRaceScene(game, done, opts?.retry === true);
   },
 };

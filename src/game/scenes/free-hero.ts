@@ -187,22 +187,26 @@ export function talkToCaptive(
     );
   };
 
-  const round = () => {
+  const round = (retry = false) => {
     const saved = game.state;
     const before = snapshot(saved);
     audio.stopMusic();
     let over = false;
-    const scene = def.create(game, (result: MiniGameResult) => {
-      if (over) return;
-      over = true;
-      // The round's own scenes (its menu) go with it; the run is as the level left it.
-      while (game.scenes.depth > 0 && game.scenes.top !== level) {
-        if (game.scenes.pop() === scene) break;
-      }
-      game.state = saved;
-      Object.assign(saved, before);
-      ended(result);
-    });
+    const scene = def.create(
+      game,
+      (result: MiniGameResult) => {
+        if (over) return;
+        over = true;
+        // The round's own scenes (its menu) go with it; the run is as the level left it.
+        while (game.scenes.depth > 0 && game.scenes.top !== level) {
+          if (game.scenes.pop() === scene) break;
+        }
+        game.state = saved;
+        Object.assign(saved, before);
+        ended(result);
+      },
+      { retry },
+    );
     game.scenes.push(scene);
   };
 
@@ -224,7 +228,7 @@ export function talkToCaptive(
               label: 'Yes',
               select: () => {
                 game.scenes.pop();
-                round();
+                round(true);
               },
             },
             { label: 'No', select: back },

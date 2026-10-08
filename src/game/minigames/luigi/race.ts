@@ -25,6 +25,7 @@ import { drawBanner, drawBigText, drawOffscreenArrow, drawTrack } from './race-h
  * The start, as a level's: the black WORLD 1-1 card with the lives (as long as the game's own
  * card, scenes/intro.ts), then the course for a short beat under the race's banner so nobody
  * starts blind, then GO! and both racers are off at once. GO stays up a little into the race.
+ * A TRY AGAIN skips the card (the race has no lives to show) and starts at the banner.
  */
 export const CARD_FRAMES = 120;
 export const GO_FRAME = CARD_FRAMES + 36;
@@ -59,6 +60,8 @@ export class MirrorRaceScene implements Scene {
   constructor(
     private readonly game: Game,
     private readonly done: (result: MiniGameResult) => void,
+    /** A TRY AGAIN after a fail: no lives card, straight to the course under the banner. */
+    private readonly retry = false,
   ) {
     const level = raceCourse();
     const pole = poleOf(level);
@@ -70,8 +73,15 @@ export class MirrorRaceScene implements Scene {
     this.rival = new RivalLuigi(level, LUIGI, LUIGI_ROUTE, px(level.start.x * 16 - 16), pole);
     this.rival.plantUp = (x0, x1, feet) => plantUp(this.world, x0, x1, feet);
     this.world.backdrop = (r) => this.rival.render(r, this.view());
+    // The course's props and creatures in view from the first frame (the start castle, the
+    // Paratroopa at column 16), so nothing pops in at GO.
+    this.world.spawnInView();
     this.start = toPx(this.world.player.body.x);
     this.goal = pole.x;
+    if (retry) {
+      this.phase = 'ready';
+      this.t = CARD_FRAMES;
+    }
   }
 
   private view(): View {
@@ -87,7 +97,8 @@ export class MirrorRaceScene implements Scene {
   enter(): void {
     this.game.ctx.audio.stopMusic();
     const s = this.world.state;
-    this.game.deps.announcer?.say(`World ${worldLabel(s.world)}-${s.stage}. Race Luigi to the flag!`);
+    const world = this.retry ? '' : `World ${worldLabel(s.world)}-${s.stage}. `;
+    this.game.deps.announcer?.say(`${world}Race Luigi to the flag!`);
   }
 
   /**

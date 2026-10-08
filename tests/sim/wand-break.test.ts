@@ -114,6 +114,8 @@ function clearCastle(
   const who = world.players[opts.who ?? 0];
   if (!who) throw new Error('no such player');
   for (let f = 0; f < 2000 && exitAt < 0; f++) {
+    // OK while the castle's text waits (it never moves on by itself).
+    for (const i of inputs) i.setHeld(world.castleWaiting && f % 2 === 0 ? ['jump'] : []);
     const b = world.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);
     if (!placed && b) {
       placed = true;
@@ -163,8 +165,8 @@ describe('8-4: the wand breaks (campaign)', () => {
     // Announced once, before the castle pages.
     expect(r.said).toEqual([
       WAND_BREAK_SAID,
-      ['THANK YOU MARIO!', ...PAGES.reveal].join(' '),
-      ['THANK YOU MARIO!', ...PAGES.news].join(' '),
+      ['THANK YOU MARIO!', ...PAGES.reveal, 'OK to continue.'].join(' '),
+      ['THANK YOU MARIO!', ...PAGES.news, 'OK to continue.'].join(' '),
     ]);
     expect(r.texts).toEqual([
       ['THANK YOU MARIO!'],
@@ -196,11 +198,11 @@ describe('8-4: the wand breaks (campaign)', () => {
     expect(p.body.x).toBeGreaterThan(toad.body.x - px(48));
   });
 
-  it('classic 8-4: no wand, no rift, nothing said, the princess and the NES text', () => {
+  it('classic 8-4: no wand, no rift, only the NES text said, the princess', () => {
     const r = clearCastle(end84(), false);
     expect(r.wand).toBeUndefined();
     expect(r.sfx).not.toContain('wand-crack');
-    expect(r.said).toEqual([]);
+    expect(r.said).toEqual(['THANK YOU MARIO! YOUR QUEST IS OVER. OK to continue.']);
     expect(r.texts.at(-1)).toEqual(['THANK YOU MARIO!', '', 'YOUR QUEST IS OVER.']);
     // The walk starts at once as before: still through c.t 150, moving from c.t 151.
     const at = (t: number) => r.ts.indexOf(t);
@@ -270,7 +272,10 @@ describe('8-4: the wand breaks (campaign)', () => {
     const thanks = `THANK YOU ${MEGAMAN.hudName}!`;
     expect(thanks).toBe('THANK YOU MEGA!');
     expect(r.texts).toEqual([[thanks], [thanks, '', ...PAGES.reveal], [thanks, '', ...PAGES.news]]);
-    expect(r.said.slice(1)).toEqual([[thanks, ...PAGES.reveal].join(' '), [thanks, ...PAGES.news].join(' ')]);
+    expect(r.said.slice(1)).toEqual([
+      [thanks, ...PAGES.reveal, 'OK to continue.'].join(' '),
+      [thanks, ...PAGES.news, 'OK to continue.'].join(' '),
+    ]);
   });
 });
 
@@ -293,7 +298,8 @@ function axeToCredits(h: H): string[][] {
   p.vy = 0;
   const texts: string[][] = [];
   for (let i = 0; i < 2000 && !(h.top() instanceof CreditsScene); i++) {
-    h.step();
+    // OK while the castle's text waits (it never moves on by itself).
+    h.step(h.top() instanceof LevelScene && worldOf(h).castleWaiting && i % 2 === 0 ? ['jump'] : []);
     const t = h.top() instanceof LevelScene ? worldOf(h).castleText : null;
     if (t && t.length && t.join('|') !== (texts.at(-1) ?? []).join('|')) texts.push([...t]);
   }
@@ -332,10 +338,10 @@ describe('8-4 in the game: the wand, the castle pages, then the credits', () => 
       ['THANK YOU MARIO!', '', ...PAGES.news],
     ]);
     const said = h.said.slice(from);
-    const news = ['THANK YOU MARIO!', ...PAGES.news].join(' ');
+    const news = ['THANK YOU MARIO!', ...PAGES.news, 'OK to continue.'].join(' ');
     expect(said).toEqual([
       WAND_BREAK_SAID,
-      ['THANK YOU MARIO!', ...PAGES.reveal].join(' '),
+      ['THANK YOU MARIO!', ...PAGES.reveal, 'OK to continue.'].join(' '),
       news,
       `Credits. ${STORY_NOT_OVER.filter(Boolean).join(' ')}`,
     ]);
@@ -345,7 +351,7 @@ describe('8-4 in the game: the wand, the castle pages, then the credits', () => 
     expect(credits.lines).toEqual(creditsLines(true));
   });
 
-  it('classic: no wand, the NES text, and the credits read the castle lines as before', () => {
+  it('classic: no wand, the NES text read out once, then the credits', () => {
     const h = makeGame();
     h.game.newGame(MARIO, '8-4-end');
     h.until(() => h.top() instanceof LevelScene, 400);
@@ -354,7 +360,8 @@ describe('8-4 in the game: the wand, the castle pages, then the credits', () => 
     const from = h.said.length;
     axeToCredits(h);
     expect(w.entities.some((e) => e instanceof WandBreak)).toBe(false);
-    expect(h.said.slice(from)).toEqual(['THANK YOU MARIO! YOUR QUEST IS OVER. Credits.']);
+    // The castle reads its lines as they show (with what to press), the credits do not again.
+    expect(h.said.slice(from)).toEqual(['THANK YOU MARIO! YOUR QUEST IS OVER. OK to continue.', 'Credits.']);
     expect((h.top() as CreditsScene).lines).toEqual(CREDITS);
   });
 });
