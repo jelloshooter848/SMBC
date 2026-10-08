@@ -11,8 +11,8 @@ import type { Player } from '@game/entities/player';
  * out: the side pipe or the exit line), then follows it:
  *
  * - toward the next few cells of the route, left or right;
- * - a swimmer (a stroke on jump: Mario, Luigi, Bill, Link, Simon, Ryu, and Sophia III's own
- *   water drive) taps jump while the route is above the feet, and otherwise lets the hero sink;
+ * - a swimmer (a stroke on jump: Mario, Luigi, Bill, Link, Simon, Ryu) taps jump while the route
+ *   is above the feet, and otherwise lets the hero sink;
  * - a seabed walker (Mega Man, Samus) jumps off the floor when the route climbs, holding jump
  *   until the feet are above the route (their jump cuts on release), or pushes off again over
  *   bottomless water. Their route prefers cells near a floor to jump from.
@@ -77,7 +77,8 @@ export function planRoute(w: World, p: Player): Cell[] {
   while (open.length) {
     // A small binary-heap-free Dijkstra: take the cheapest (the grids are small).
     let bi = 0;
-    for (let i = 1; i < open.length; i++) if ((open[i] as [number, number])[0] < (open[bi] as [number, number])[0]) bi = i;
+    for (let i = 1; i < open.length; i++)
+      if ((open[i] as [number, number])[0] < (open[bi] as [number, number])[0]) bi = i;
     const [d, k] = open.splice(bi, 1)[0] as [number, number];
     if (d > (dist[k] as number)) continue;
     const c = k % W;
@@ -109,7 +110,7 @@ export function planRoute(w: World, p: Player): Cell[] {
   return out.reverse();
 }
 
-export function waterBot(index = 0, debug?: (s: string) => void): (w: World) => Action[] {
+export function waterBot(index = 0): (w: World) => Action[] {
   let route: Cell[] = [];
   let planH = 0;
   let at = 0;
@@ -177,10 +178,11 @@ export function waterBot(index = 0, debug?: (s: string) => void): (w: World) => 
       // Dropping in at the start: no steering until below the fall-in line (World.fallingIn).
     } else if (p.inWater && p.profile.swim?.mode === 'seabed') {
       // The highest the route goes over the next few columns: jump high enough to clear it.
+      // (Up to where the route first goes down again: a climb past a ceiling waits for it.)
       let need = targetFeet;
-      for (let i = at; i < Math.min(route.length, at + 16); i++) {
+      for (let i = at + 1; i < Math.min(route.length, at + 16); i++) {
         const n = route[i] as Cell;
-        if (Math.abs(n.c - here.c) > 3) break;
+        if (Math.abs(n.c - here.c) > 1 || n.r > (route[i - 1] as Cell).r) break;
         need = Math.min(need, (n.r + planH) * 16);
       }
       if (rising) {
@@ -188,24 +190,25 @@ export function waterBot(index = 0, debug?: (s: string) => void): (w: World) => 
         risen++;
         rising = risen < 4 || (b.vy < 0 && feet > need - 6);
         jump = rising;
-      } else if (!prevJump && (b.onGround || b.vy >= 0) && (feet > need + 4 || (b.onGround && b.hitWall !== 0))) {
+      } else if (
+        !prevJump &&
+        (b.onGround || b.vy >= 0) &&
+        (feet > need + 4 || (b.onGround && b.hitWall !== 0))
+      ) {
         jump = true;
         rising = true;
         risen = 0;
       }
-    } else if (p.inWater && p.def.behaviour.drive) {
-      // Sophia III's water drive: "up" alone thrusts her up; let go and she sinks.
-      if (feet > targetFeet + 2) keys.push('up');
     } else if (p.inWater) {
       // Stroke once the feet sink a little below the route, never below the floor under it.
       let floor = targetFeet;
-      for (let y = t.r + planH; y < w.map.height && !solidAt(w.map, t.c, y) && floor < targetFeet + 32; y++) floor += 16;
+      for (let y = t.r + planH; y < w.map.height && !solidAt(w.map, t.c, y) && floor < targetFeet + 32; y++)
+        floor += 16;
       jump = !last && feet > Math.min(floor - 4, targetFeet + 10) && w.frame % 6 === 0;
     } else {
       // Out of the water (a jump or stroke breaking the surface, a dry ledge): jump at walls.
       jump = b.onGround && !prevJump && b.hitWall !== 0;
     }
-    debug?.(`at${at}/${route.length} t${t.c},${t.r} rising${rising}`);
     prevJump = jump;
     if (jump) keys.push('jump');
     return keys;

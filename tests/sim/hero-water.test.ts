@@ -9,7 +9,7 @@ import { Projectile } from '@game/entities/projectiles/projectile';
 import { levelTouchLabels } from '@game/touch-labels';
 import type { Action } from '@engine/input/actions';
 import type { World } from '@game/world/world';
-import { toPx } from '@engine/math/units';
+import { px, toPx } from '@engine/math/units';
 
 // 0.4.25 (owner note 25): every hero meets water the way their own game does. Mega Man and Samus
 // walk the seabed with floaty high jumps and no stroke (Bubble Man's stage, Metroid's liquids);
@@ -104,11 +104,39 @@ describe('Mega Man and Samus walk the seabed (no stroke)', () => {
       (_w, f) => (f % 10 === 0 ? ['right', 'attack'] : ['right']),
       (w) => {
         if (w.player.body.onGround) maxVx = Math.max(maxVx, Math.abs(w.player.body.vx));
-        shots = Math.max(shots, w.entities.filter((e) => e instanceof Projectile && e.owner === w.player).length);
+        shots = Math.max(
+          shots,
+          w.entities.filter((e) => e instanceof Projectile && e.owner === w.player).length,
+        );
       },
     );
     expect(maxVx).toBe(def.movement.maxWalk);
     expect(shots).toBeGreaterThan(0);
+  });
+
+  // World 9-2's first stretch is 44 tiles of water with no floor at all: over bottomless water a
+  // seabed walker may push off again once sinking, or no way across would be left.
+  it.each(SEABED)('%s: pushes off again over bottomless water (World 9-2)', (id) => {
+    let rose = false;
+    runSim({
+      level: getLevel('ll-9-2'),
+      character: hero(id),
+      script: none,
+      maxFrames: 60,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        const b = w.player.body;
+        if (f === 0) {
+          b.x = px(30 * 16);
+          b.y = px(6 * 16);
+          b.vy = 0;
+          b.onGround = false;
+        }
+        if (f > 31 && b.vy < 0) rose = true;
+        return f >= 30 && f < 50 ? ['jump'] : [];
+      },
+    });
+    expect(rose).toBe(true);
   });
 
   it.each(SEABED)('%s: the touch jump button still says JUMP under water', (id) => {
@@ -166,6 +194,33 @@ describe('Bill, Link, Simon and Ryu swim with a stroke of their own', () => {
       },
     );
     expect(x1 - x0).toBeGreaterThan(30);
+  });
+
+  it('Ryu does not cling to walls while swimming (he strokes along them)', () => {
+    let clung = false;
+    let touched = false;
+    runSim({
+      level: getLevel('2-2'),
+      character: hero('ryu'),
+      script: none,
+      maxFrames: 30,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        const b = w.player.body;
+        if (f === 0) {
+          // Mid-water, just left of the wall at column 11 (rows 10-12).
+          b.x = px(11 * 16) - b.w - px(1);
+          b.y = px(150);
+          b.vy = 0;
+          b.onGround = false;
+        }
+        if (f > 2 && b.hitWall === 1) touched = true;
+        if (w.player.clinging) clung = true;
+        return ['right'];
+      },
+    });
+    expect(touched).toBe(true);
+    expect(clung).toBe(false);
   });
 
   it('Bill fires while swimming, forward and up but never down', () => {
