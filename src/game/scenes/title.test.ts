@@ -141,14 +141,29 @@ describe('title text', () => {
       'MADE BY JELLOSHOOTER848',
       'BASED ON SUPER MARIO BROS.',
       'CROSSOVER BY EXPLODING RABBIT',
-      'UNOFFICIAL FAN PROJECT',
+      'PRE-RELEASE',
     ])
       expect(t).toContain(s);
+    expect(t).not.toContain('UNOFFICIAL FAN PROJECT');
     expect(t).not.toContain('DEV MODE');
     const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
     const version = `V${__APP_VERSION__}`.toUpperCase();
     expect(version.startsWith(`V${pkg.version}`)).toBe(true);
     expect(t).toContain(version);
+  });
+
+  it('puts PRE-RELEASE bottom left with the build version on the same line', () => {
+    const h = makeGame();
+    h.game.showTitle();
+    h.idle(TITLE_TIMING.dropEnd + 10);
+    const all = texts(h.game.scenes.top as TitleScene);
+    // Shadowed text draws twice (shadow first): the last draw is the text itself.
+    const footer = all.filter((x) => x.str === 'PRE-RELEASE').at(-1);
+    const version = all.filter((x) => x.str === `V${__APP_VERSION__}`.toUpperCase()).at(-1);
+    expect(footer).toMatchObject({ x: 4, y: 228 });
+    // Release and dev builds (V0.4.19-DEV.ABC1234) both fit beside the short footer.
+    expect(version?.y).toBe(228);
+    expect((version?.x ?? 0) > 4 + 'PRE-RELEASE'.length * 8).toBe(true);
   });
 
   it('announces the screen and the highlighted entry', () => {
@@ -157,6 +172,8 @@ describe('title text', () => {
     const last = h.said.at(-1) ?? '';
     expect(last).toContain('REMIX');
     expect(last).toContain('Exploding Rabbit');
+    expect(last).toContain('Pre-release.');
+    expect(last).not.toContain('Unofficial fan project');
     expect(last).toContain('Start game');
     // Mario starts free: a new save has none of the eight heroes to find yet.
     expect(last).toContain('0 of 8 heroes freed.');

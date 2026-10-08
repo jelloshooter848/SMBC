@@ -331,6 +331,22 @@ describe('save files', () => {
     expect(put({ devAllHeroes: true }).freed).toEqual(['mario']);
   });
 
+  it('keeps the developer "Chapter 2 gate" lift only when it is true (missing: closed)', () => {
+    const put = (o: Record<string, unknown>) => {
+      store.set('smbc.save.1', JSON.stringify({ ...newSave(1, 'mario'), ...o }));
+      return loadSave(1)!;
+    };
+    expect(newSave(1, 'mario').devGateOpen).toBe(false);
+    const { devGateOpen: _, ...old } = newSave(1, 'mario');
+    store.set('smbc.save.1', JSON.stringify(old));
+    expect(loadSave(1)!.devGateOpen).toBe(false);
+    expect(loadSave(1)!.v).toBe(SAVE_VERSION);
+    expect(put({ devGateOpen: true }).devGateOpen).toBe(true);
+    for (const bad of ['true', 1, null, {}]) expect(put({ devGateOpen: bad }).devGateOpen).toBe(false);
+    // Opening it opens nothing in the file itself.
+    expect(put({ devGateOpen: true }).pages).toEqual(['smb-1']);
+  });
+
   it('counts main levels cleared and the highest world', () => {
     const s = newSave(1, 'mario');
     s.cleared = ['1-1', '1-2', '1-2', '8-4', 'll-1-1', 'custom-x', '9-1'];

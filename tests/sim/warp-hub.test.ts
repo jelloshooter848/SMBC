@@ -492,7 +492,7 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
     h.idle(8);
     expect(h.map().node).toBe('bonus-1');
     h.tap('select');
-    (h.top() as unknown as { items: MenuItem[] }).items.at(-1)?.adjust?.(-1);
+    (h.top() as unknown as { items: MenuItem[] }).items.find((i) => i.label === 'Unlock all')?.adjust?.(-1);
     expect(h.game.devUnlockAll).toBe(false);
     h.game.scenes.pop();
     expect(isOpen(h.game.mapProgress, mapPage('smb-1')!, 'bonus-1', h.game.mapUnlockAll)).toBe(false);
@@ -503,10 +503,13 @@ describe('campaign: the 1-2 warp zone secret and the Warp Zone hub', () => {
 
   it('a warp zone pipe in a sub-area opens its world on the map (its page found through the main level)', () => {
     // Lost 5-2's vine area: its one warp pipe leads to Lost 8-1 (SMB 4-2's became areas in 0.5.0).
+    // The Chapter 2 gate is lifted (dev mode's map menu row) so the Lost level can be played.
     const h = makeGame();
+    h.game.deps.settings = { dev: true } as Settings;
     h.game.openFile(
       1,
       file({
+        devGateOpen: true,
         cleared: ['ll-1-1', 'll-5-1'],
         pages: ['smb-1', 'll-1', 'll-5'],
         position: { page: 'll-5', node: 'll-5-2' },

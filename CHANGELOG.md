@@ -8,6 +8,21 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.20] - 2026-10-07
+
+### Added
+
+- The Lost Kingdom is sealed until Chapter 2. The campaign still plays through 8-4, the credits and onto Lost World 1's
+  map, but entering any Lost Kingdom level (Lost 1-1 to 8-4, World 9, A–D) shows "THE PATH IS BLOCKED!" over the map.
+  Nothing outside the campaign is affected (the dev level select, shared levels and the Mini Game Arena still go
+  anywhere).
+- Dev mode: the map menu has a "Chapter 2 gate: closed / open" row, saved per file, to play the Lost Kingdom in the
+  campaign.
+
+### Changed
+
+- The title screen's footer now reads PRE-RELEASE.
+
 ## [0.4.19] - 2026-10-07
 
 ### Changed
@@ -554,7 +569,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.19...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.20...HEAD
+[0.4.20]: https://github.com/jelloshooter848/SMBC/compare/v0.4.19...v0.4.20
 [0.4.19]: https://github.com/jelloshooter848/SMBC/compare/v0.4.18...v0.4.19
 [0.4.18]: https://github.com/jelloshooter848/SMBC/compare/v0.4.17...v0.4.18
 [0.4.17]: https://github.com/jelloshooter848/SMBC/compare/v0.4.16...v0.4.17

@@ -32,7 +32,7 @@ import {
 export const TITLE_NAME = 'Super Mario Bros. Crossover: REMIX';
 const MADE = 'MADE BY JELLOSHOOTER848';
 const BASED = ['BASED ON SUPER MARIO BROS.', 'CROSSOVER BY EXPLODING RABBIT'];
-const FAN = 'UNOFFICIAL FAN PROJECT';
+const FOOTER = 'PRE-RELEASE';
 const CHAPTER = 'CHAPTER 1';
 
 /** Where the logo pieces rest. */
@@ -146,7 +146,7 @@ export class TitleScene extends MenuScene {
       [
         `${TITLE_NAME}. Chapter 1.`,
         `${freed} of ${toFind.length} heroes freed.`,
-        'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit. Unofficial fan project.',
+        'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit. Pre-release.',
         `Version ${__APP_VERSION__}.`,
         this.phase === 'rift' ? 'Press any button to skip the intro.' : '',
         it ? `${it.label}${it.hint ? `. ${it.hint}` : ''}` : '',
@@ -454,10 +454,11 @@ export class TitleScene extends MenuScene {
     this.ctext(r, MADE, 148 + dy, 'gold', true);
     this.ctext(r, BASED[0] as string, 160 + dy);
     this.ctext(r, BASED[1] as string, 169 + dy);
-    this.text(r, FAN, 4, 228 + dy, undefined, true);
-    // A long dev build version gets its own line (it would run into the fan notice).
+    this.text(r, FOOTER, 4, 228 + dy, undefined, true);
+    // The version shares the footer line (release and V0.4.19-DEV.ABC1234 builds fit); only an
+    // unusually long build string moves up a line rather than running into the footer.
     const v = this.version;
-    const vy = FAN.length + 1 + v.length > 31 ? 214 : 228;
+    const vy = FOOTER.length + 1 + v.length > 31 ? 214 : 228;
     this.text(r, v, 252 - (v.length * 8 - 1), vy + dy, undefined, true);
     if (this.unlockedFlash > 0 && (this.calm || (this.unlockedFlash >> 3) % 2 === 0))
       this.ctext(r, 'DEV MODE UNLOCKED', 140 + dy, 'gold', true);
