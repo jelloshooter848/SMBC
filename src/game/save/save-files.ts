@@ -375,9 +375,11 @@ function heroKits(x: unknown, played: readonly string[]): Record<string, HeroPow
       continue;
     const k = campaignKit(id, kit(v.kit), v.powerState);
     const start = heroStart(c);
+    // No hit points (an odd file): the basic kit's, so the hero never comes back already beaten.
+    const hp = num(v.hp, start.hp);
     out[id] = {
       powerState: v.powerState,
-      hp: c.damage.kind === 'hp' ? capHp(c, num(v.hp, start.hp), k) : 0,
+      hp: c.damage.kind === 'hp' ? capHp(c, hp > 0 ? hp : start.hp, k) : 0,
       kit: k,
     };
   }
