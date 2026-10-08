@@ -206,10 +206,16 @@ export const RYU: CharacterDef = {
         p.scratch.spin = 0;
         return;
       }
-      // Wall cling: airborne, pressing into a wall. Landing or letting go releases it.
+      // Wall cling: airborne, pressing into a wall. Landing or letting go releases it. Not while
+      // swimming (0.4.25): under water he strokes along the wall instead.
       const dir = input.dirX;
       p.clinging =
-        !b.onGround && p.clingLock === 0 && dir !== 0 && b.hitWall === dir && (p.scratch.spin ?? 0) === 0;
+        !b.onGround &&
+        !p.inWater &&
+        p.clingLock === 0 &&
+        dir !== 0 &&
+        b.hitWall === dir &&
+        (p.scratch.spin ?? 0) === 0;
       if (p.clinging && dir !== 0) p.facing = dir;
       // Jump-and-slash: the whole body is a blade while spinning.
       const spin = p.scratch.spin ?? 0;
