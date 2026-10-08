@@ -1079,7 +1079,7 @@ THE WORLD!
 
 **The credits** roll over it as now (`CreditsScene`). Decided: they stay at 8-4 as a **false ending**; the player
 should feel the game is over. In the campaign, the last credits page at 8-4 gets one more line block after
-`THANKS FOR PLAYING / SUPER MARIO BROS. CROSSOVER / FAN REBUILD`, marking the end of Chapter 1:
+`THANKS FOR PLAYING / SUPER MARIO BROS. CROSSOVER / REMIX`, marking the end of Chapter 1:
 
 ```text
 END OF CHAPTER 1

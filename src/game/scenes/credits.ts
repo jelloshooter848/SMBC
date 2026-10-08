@@ -8,40 +8,37 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { World } from '../world/world';
 import { STORY_NOT_OVER } from '../story/script';
 
-/**
- * Our game's name as the credits print it: in full (the roll's first lines and its thanks) and
- * short (the closing lines). The original's name, in the INSPIRED BY lines, is not ours and stays.
- * TODO(0.5.0): the rebrand to SMB Crossover REMIX (docs/ROADMAP.md, "The rebrand") changes these
- * two, e.g. 'SUPER MARIO BROS. CROSSOVER:' / 'REMIX' and 'SMB CROSSOVER' / 'REMIX', with its
- * "MADE BY" credit; the title screen's session owns the rename strings.
- */
-export const CREDITS_NAME: readonly string[] = ['SUPER MARIO BROS. CROSSOVER', 'FAN REBUILD'];
-export const CREDITS_SHORT_NAME: readonly string[] = ['SMB CROSSOVER', 'FAN REBUILD'];
+/** The game's name on two lines ("Super Mario Bros. Crossover: REMIX" is too wide for one). */
+export const CREDITS_NAME: readonly string[] = ['SUPER MARIO BROS. CROSSOVER', 'REMIX'];
+/** Its short form, for the closing lines. */
+export const CREDITS_SHORT_NAME: readonly string[] = ['SMB CROSSOVER', 'REMIX'];
 
 /** Our credits (the original's GameTextMessages.CREDITS_* credit its own team; these credit ours). */
 export const CREDITS: readonly string[] = [
   ...CREDITS_NAME,
   '',
   '',
-  'INSPIRED BY THE 2010 FLASH GAME',
+  'MADE BY JELLOSHOOTER848',
+  '',
+  'BASED ON THE 2010 FLASH GAME',
   'SUPER MARIO BROS. CROSSOVER',
   'BY JAY PAVLINA',
   'AND EXPLODING RABBIT',
   '',
-  'BASED ON THE GAME',
+  'ITSELF BASED ON THE GAME',
   'SUPER MARIO BROS.',
   '(1985, NINTENDO)',
   '',
   'PROGRAMMING, LEVELS,',
   'ART AND MUSIC',
-  'SMBC CONTRIBUTORS',
+  'SMBC REMIX CONTRIBUTORS',
   '',
   'EVERY SPRITE AND TILE IS',
   'ORIGINAL PIXEL ART.',
   'EVERY SONG IS ORIGINAL',
   'CHIPTUNE.',
   '',
-  'AN UNAFFILIATED FAN PROJECT.',
+  'AN UNOFFICIAL FAN PROJECT.',
   'ALL TRADEMARKS BELONG TO',
   'THEIR RESPECTIVE HOLDERS.',
   'CHARACTER NAMES ONLY DESCRIBE',
@@ -54,8 +51,8 @@ export const CREDITS: readonly string[] = [
 ];
 /**
  * The credits as they roll: the campaign's SMB 8-4 false ending (`story`, docs/STORY.md 2.12)
- * adds "END OF CHAPTER 1" and "...BUT THE STORY ISN'T OVER." right after THANKS FOR PLAYING and
- * our name; everywhere else the plain CREDITS.
+ * adds "END OF CHAPTER 1" and "...BUT THE STORY ISN'T OVER." (STORY_NOT_OVER) right after
+ * THANKS FOR PLAYING / SUPER MARIO BROS. CROSSOVER / REMIX; everywhere else the plain CREDITS.
  */
 export function creditsLines(story: boolean): readonly string[] {
   if (!story) return CREDITS;

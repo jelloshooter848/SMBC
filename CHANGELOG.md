@@ -8,6 +8,18 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- The game is now **Super Mario Bros. Crossover: REMIX** (SMBC REMIX). This release is a public test of the rebrand
+  ahead of the official 0.5.0 Chapter 1 release.
+  - New title screen: a block CROSSOVER logo with an SMB tag and a REMIX stamp over the Mushroom Kingdom, "CHAPTER 1",
+    the version, and credits to jelloshooter848 and to Super Mario Bros. Crossover by Exploding Rabbit.
+  - The heroes you have freed stand on the title in colour; the rest are "?" silhouettes.
+  - The first title of a session opens with the rift intro: the wand's bolt tears the sky open and the logo and heroes
+    fly out. Any button skips it, and Reduce flashing turns off its flash, shake and flicker.
+  - A remixed title theme; the pause screen carries the SMBC REMIX logo.
+  - The page title, README and credits carry the new name.
+
 ## [0.4.18] - 2026-10-07
 
 ### Added

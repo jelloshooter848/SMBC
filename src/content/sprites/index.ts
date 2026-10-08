@@ -1,7 +1,7 @@
 import { NES, type PaletteBook } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { tilePalettes, tilesDef } from './tiles';
-import { fontPalette, fontDef, fontTints } from './font';
+import { fontPalettes, fontDef, fontTints } from './font';
 import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
@@ -31,6 +31,7 @@ import {
   linkTdDef,
   linkTdPalettes,
 } from './dungeon';
+import { titleLogoDef, titleLogoPalettes, titleRiftDef } from './title-logo';
 import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
 import { HERO_FX, mapShadeFx } from './palette-fx';
@@ -79,6 +80,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   crypt: cryptDef,
   ninja: ninjaDef,
   contra: contraDef,
+  'title-logo': titleLogoDef,
+  'title-rift': titleRiftDef,
   sophia: sophiaSheet,
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
@@ -88,7 +91,7 @@ export const SPRITES: Record<string, SpriteDef> = {
 
 const defaults: Record<string, readonly string[]> = {
   ...tilePalettes,
-  font: fontPalette,
+  ...fontPalettes,
   ...fontTints,
   ...itemPalettes,
   ...decorPalettes,
@@ -110,6 +113,7 @@ const defaults: Record<string, readonly string[]> = {
   ...cryptPalettes,
   ...ninjaPalettes,
   ...contraPalettes,
+  ...titleLogoPalettes,
   ...sophiaPalettes,
   ...bmDungeonPalettes,
   ...partnersPalettes,
