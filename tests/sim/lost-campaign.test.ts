@@ -113,6 +113,8 @@ function file(over: Partial<SaveFile> = {}): SaveFile {
     gameCleared: true,
     secrets: ['bonus-1'],
     story: [...ALL_STORY],
+    // Sophia III freed: the rift on to Lost World 1 waits for her (0.4.23).
+    freed: ['mario', 'sophia'],
     ...over,
   };
   writeSave(s);

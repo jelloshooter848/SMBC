@@ -21,7 +21,14 @@ import { hiddenHeroes, hiddenHeroesAt } from '@game/map/captives';
 import { MINIGAMES, type MiniGameDef } from '@game/minigames';
 import { arenaGames, metHero } from '@game/arena';
 import { beat } from '@game/story/beats';
-import { JOINED_PAGES, MISSED_HINT, MISSED_PAGES, PARTNERS, riftPages, type Page } from '@game/story/script';
+import {
+  JOINED_PAGES,
+  MISSED_PAGES,
+  PARTNERS,
+  RIFT_SEALED_PAGES,
+  sealedHint,
+  type Page,
+} from '@game/story/script';
 import { CreditsScene } from '@game/scenes/credits';
 import { px, toPx } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
@@ -649,9 +656,13 @@ describe('captive Sophia III', () => {
 });
 
 describe("Sophia III's story lines play now that she hides in 8-4", () => {
-  it('missed: after the 8-4 credits, the rift, then the frog on 8-4; the hint line at her shadow', () => {
+  it('missed: after the 8-4 credits, the rift still shut (0.4.23), then the frog on 8-4; the sealed hint', () => {
     const h = makeGame();
-    world8({ story: ALL_STORY.filter((id) => id !== beat.rift && id !== beat.missed('sophia')) });
+    world8({
+      story: ALL_STORY.filter(
+        (id) => id !== beat.rift && id !== beat.missed('sophia') && id !== beat.sealed('smb-8'),
+      ),
+    });
     h.game.openFile(1);
     h.step();
     h.game.showEnding('8-4');
@@ -671,10 +682,10 @@ describe("Sophia III's story lines play now that she hides in 8-4", () => {
       h.idle(31);
       h.tap('jump');
     }
-    expect(read).toEqual([...riftPages('MARIO'), MISSED_PAGES.sophia as Page].map((p) => [...p]));
+    expect(read).toEqual([MISSED_PAGES.sophia as Page, ...RIFT_SEALED_PAGES].map((p) => [...p]));
     expect(h.game.seen(beat.missed('sophia'))).toBe(true);
     h.until(() => map.mode === 'idle', 600);
-    expect(map.hintLine).toBe(MISSED_HINT.sophia);
+    expect(map.hintLine).toBe(sealedHint('SOPHIA III'));
   });
 
   it('joined: the first map after she is freed, Jason, Fred and the honk', () => {

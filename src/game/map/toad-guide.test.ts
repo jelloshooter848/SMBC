@@ -112,10 +112,23 @@ describe('dueScenes', () => {
   it('the crash, the rift, the extras', () => {
     const crash = dueScenes(input({ page: 'smb-4', crash: true, story: ['enter:smb-4'] }));
     expect(crash).toEqual([{ ids: [beat.crash], pages: [...CRASH_PAGES], walk: true }]);
-    const rift = dueScenes(
-      input({ page: 'smb-8', hero: 'MEGA MAN', story: ['enter:smb-8'], prog: { gameCleared: true } }),
-    );
-    expect(rift).toEqual([{ ids: [beat.rift], pages: riftPages('MEGA MAN'), walk: true }]);
+    const rift = (freed: string[]) =>
+      dueScenes(
+        input({
+          page: 'smb-8',
+          hero: 'MEGA MAN',
+          freed,
+          story: ['enter:smb-8'],
+          prog: { gameCleared: true },
+        }),
+      );
+    // The rift waits for Sophia III (0.4.23).
+    expect(rift(['mario', 'sophia'])[0]).toEqual({
+      ids: [beat.rift],
+      pages: riftPages('MEGA MAN'),
+      walk: true,
+    });
+    expect(rift(['mario']).map((s) => s.ids)).not.toContainEqual([beat.rift]);
     expect(dueScenes(input({ page: 'hub' }))).toEqual([{ ids: [beat.hub], pages: [HUB_PAGE], walk: false }]);
     expect(dueScenes(input({ page: 'arena' }))).toEqual([
       { ids: [beat.arena], pages: [ARENA_PAGE], walk: false },

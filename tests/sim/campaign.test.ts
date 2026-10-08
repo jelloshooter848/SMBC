@@ -521,7 +521,15 @@ describe('campaign: clears return to the map', () => {
 
   it('the castle (Toad) clear of 1-4 opens World 2 and shows World 1 drawing in the exit', () => {
     const h = makeGame();
-    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3'], position: { page: 'smb-1', node: '1-4' } }));
+    // Luigi freed: World 1's gate opens with the castle (0.4.23).
+    h.game.openFile(
+      1,
+      file({
+        cleared: ['1-1', '1-2', '1-3'],
+        freed: ['mario', 'luigi'],
+        position: { page: 'smb-1', node: '1-4' },
+      }),
+    );
     enter(h, '1-4');
     h.fire({ type: 'exit', next: '2-1' });
     const m = h.map();
@@ -681,6 +689,8 @@ describe('campaign: clears return to the map', () => {
       file({
         cleared: cleared.filter((id) => id !== '8-4'),
         pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
+        // Sophia III freed: the rift opens with the credits (0.4.23).
+        freed: ['mario', 'sophia'],
         position: { page: 'smb-8', node: '8-4' },
       }),
     );
@@ -720,7 +730,15 @@ describe('campaign: clears return to the map', () => {
 
 describe('campaign: other worlds draw in on arrival', () => {
   function clearCastle(h: H) {
-    h.game.openFile(1, file({ cleared: ['1-1', '1-2', '1-3'], position: { page: 'smb-1', node: '1-4' } }));
+    // Luigi freed: World 1's gate opens with the castle (0.4.23).
+    h.game.openFile(
+      1,
+      file({
+        cleared: ['1-1', '1-2', '1-3'],
+        freed: ['mario', 'luigi'],
+        position: { page: 'smb-1', node: '1-4' },
+      }),
+    );
     enter(h, '1-4');
     h.fire({ type: 'exit', next: '2-1' });
     h.until(() => h.map().mode === 'idle');
