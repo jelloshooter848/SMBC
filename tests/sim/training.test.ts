@@ -322,7 +322,7 @@ describe('the basic kit and chapters', () => {
     pick(h, 1);
     choose(h, 'Yes');
     const room = h.top() as PracticeRoomScene;
-    expect(room.chapters.map((c) => c.id)).toEqual(['moves', 'fire']);
+    expect(room.chapters.map((c) => c.id)).toEqual(['moves', 'power']);
     h.idle(4);
     h.tap('start');
     choose(h, 'Skip chapter');

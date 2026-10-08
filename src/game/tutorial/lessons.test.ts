@@ -40,7 +40,7 @@ function vocabulary(id: string): string[] {
  * blasts the dummy).
  */
 const KIT: Record<string, string[]> = {
-  luigi: ['high-jump', 'slippery-stop', 'fireball'],
+  luigi: ['high-jump', 'slippery-stop', 'mushroom', 'fireball'],
   link: [
     'sword',
     'down-thrust',
@@ -91,10 +91,33 @@ const KIT: Record<string, string[]> = {
     'chain-whip',
     'morning-star',
     'double-shot',
+    'pot-roast',
+    'triple-shot',
   ],
-  ryu: ['slash', 'cling', 'wall-jump', 'throwing-star', 'windmill', 'fire-wheel', 'jump-slash'],
-  bill: ['shoot', 'aim', 'prone', 'jump-shoot', 'mg', 'spread', 'laser', 'flame-gun', 'swim-shoot'],
-  sophia: ['drive-jump', 'cannon', 'cannon-up', 'hover', 'missile', 'homing', 'wall-climb', 'jason'],
+  ryu: [
+    'slash',
+    'cling',
+    'wall-jump',
+    'medicine',
+    'throwing-star',
+    'ninpo-scroll',
+    'windmill',
+    'fire-wheel',
+    'jump-slash',
+  ],
+  bill: ['shoot', 'aim', 'prone', 'jump-shoot', 'medal', 'mg', 'spread', 'laser', 'flame-gun', 'swim-shoot'],
+  sophia: [
+    'drive-jump',
+    'cannon',
+    'cannon-up',
+    'jason',
+    'hover',
+    'crusher',
+    'missile',
+    'wall-climb',
+    'ceiling-climb',
+    'homing',
+  ],
 };
 
 describe('hero lessons', () => {
