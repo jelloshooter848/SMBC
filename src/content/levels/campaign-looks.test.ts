@@ -65,6 +65,13 @@ const RESTYLES: Readonly<Record<string, { theme: Theme; music: string; hero: str
   '4-2-bonus': { theme: 'brinstar', music: 'brinstar', hero: 'samus' },
   '4-3': { theme: 'norfair', music: 'norfair', hero: 'samus' },
   '4-4': { theme: 'tourian-lair', music: 'tourian', hero: 'samus' },
+  // World 5 as Simon's world, Transylvania (0.4.28).
+  '5-1': { theme: 'cv-gate', music: 'cv-hall', hero: 'simon' },
+  '5-1-bonus': { theme: 'cv-catacomb', music: 'crypt', hero: 'simon' },
+  '5-2': { theme: 'cv-town', music: 'cv-town', hero: 'simon' },
+  '5-2-sky': { theme: 'cv-storm', music: 'cv-town', hero: 'simon' },
+  '5-2-water': { theme: 'cv-lake', music: 'cv-lake', hero: 'simon' },
+  '5-3': { theme: 'cv-clock', music: 'cv-stage', hero: 'simon' },
   '5-4': { theme: 'castlevania', music: 'cv-hall', hero: 'simon' },
   '6-2': { theme: 'ninja-city', music: 'ng-city', hero: 'ryu' },
   '6-2-sky': { theme: 'ninja-city', music: 'ng-city', hero: 'ryu' },

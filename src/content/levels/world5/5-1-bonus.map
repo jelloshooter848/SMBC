@@ -10,6 +10,12 @@ startMode: fall
 camera: locked
 parent: 5-1
 
+;; Campaign play only (0.4.28): 5-1's coin room is the catacombs (`cv-catacomb`, the underground
+;; still): dark earth stone and an ossuary's skull bricks, to the crypt's tune. Elsewhere (level
+;; select, ?level=5-1) it looks as it always did.
+campaignTheme: cv-catacomb
+campaignMusic: crypt
+
 [tiles]
 ;; 0
 ................

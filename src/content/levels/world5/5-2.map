@@ -9,6 +9,13 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.28): a Simon's Quest-style town street at night (`cv-town`): cobbles,
+;; red house brick and grey stone, rooftops, chimneys and a church spire with lit windows painted
+;; behind; its trees are street lamps and shop signs, its Bullet Bill blasters black iron. Elsewhere
+;; (level select, ?level=5-2) it looks as it always did.
+campaignTheme: cv-town
+campaignMusic: cv-town
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

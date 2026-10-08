@@ -1,7 +1,14 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { MapActor, MapTheme, WorldMapPage } from '@game/map/types';
-import { ARENA_CROWD_FRAMES, ARENA_NIGHT, WARP_SPACE, WATER_FRAMES, ZEBES_NIGHT } from '@content/sprites/map';
+import {
+  ARENA_CROWD_FRAMES,
+  ARENA_NIGHT,
+  TRANSYLVANIA_NIGHT,
+  WARP_SPACE,
+  WATER_FRAMES,
+  ZEBES_NIGHT,
+} from '@content/sprites/map';
 import { POND_CHARS } from './build';
 
 /*
@@ -40,6 +47,10 @@ import { POND_CHARS } from './build';
  *   Planet Zebes (theme 'zebes', World 4 since 0.4.27; its sea and its pond are lava):
  *   Λ  rock spires    ψ  alien plant    χ  Chozo statue    « »  Samus's gunship (left, right)
  *   ┌ ┬ ┐  Tourian's glass dome (left, middle, right) over  └ ┴ ┘  its base and gate
+ *   Transylvania (theme 'transylvania', World 5 since 0.4.28; its trees T are dead trees, its graves
+ *   J Hyrule's, its sea a moonlit lake):
+ *   Ħ  village house    Ω  the clock tower's clock over  ║  its base
+ *   ╔ ╦ ╗  Dracula's castle's towers (left, middle, right) over  ╚ ╩ ╝  its walls and gate on the crag
  *
  * Walkable (MAP_WALKABLE; every path tile must be one of these): # , * : o, all shores and
  * landings, = I, the mushroom caps ( O ), the treetops { - }, the gate G and the pitch F.
@@ -70,6 +81,10 @@ import { POND_CHARS } from './build';
  *   zoomer {size, speed, phase}  Zebes: crawls clockwise round the edges of the `size` px rock
  *                        whose top-left is (x, y), turned to cling to each side
  *   metroid {phase}      Zebes: floats in a slow loop, its membrane pulsing
+ *   bat {phase}          Transylvania: flaps round a small figure-eight (Simon's crypt's bat)
+ *   medusa {speed, amp, phase}  Transylvania: a Medusa head drifting across the page in a wave
+ *                        `amp` px high, wrapping round (Simon's crypt's)
+ *   raven {range, speed, phase}  Transylvania: flies back and forth over `range` px, flapping
  */
 
 interface TileDef {
@@ -188,6 +203,17 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   '└': { frame: 'dome-left' },
   '┴': { frame: 'dome-gate' },
   '┘': { frame: 'dome-right' },
+  // Transylvania (World 5): the village's houses, the clock tower (its clock over its base) and
+  // Dracula's castle on its crag (its towers over its walls and gate).
+  Ħ: { frame: 'house' },
+  Ω: { frame: 'clock-tower-top' },
+  '║': { frame: 'clock-tower' },
+  '╔': { frame: 'drac-top-left' },
+  '╦': { frame: 'drac-top-mid' },
+  '╗': { frame: 'drac-top-right' },
+  '╚': { frame: 'drac-left' },
+  '╩': { frame: 'drac-gate' },
+  '╝': { frame: 'drac-right' },
   ...Object.fromEntries(POND_CHARS.split('').map((ch, i) => [ch, wet(`pond-${i}`)])),
 };
 
@@ -236,6 +262,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   hyrule: 'map-hyrule',
   megaman: 'map-megaman',
   zebes: 'map-zebes',
+  transylvania: 'map-transylvania',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -252,6 +279,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   hyrule: '#6888fc', // Zelda II's periwinkle daylight (2-1's field)
   megaman: '#0c1040', // Mega City's night over the skyline
   zebes: ZEBES_NIGHT, // Zebes's deep violet night
+  transylvania: TRANSYLVANIA_NIGHT, // Transylvania's moonlit night
 };
 
 /** Background colour behind the tiles. */
@@ -273,9 +301,13 @@ export function drawMapTile(
   if (f) r.sprite(assets.sheet('map', MAP_PAL[page.theme]), f, x, y);
 }
 
-/** A theme's own frames for shared legend tiles: Mega City's crystals are Flash Man's blue. */
+/**
+ * A theme's own frames for shared legend tiles: Mega City's crystals are Flash Man's blue,
+ * Transylvania's trees dead trees.
+ */
 const THEME_TILE_FRAMES: Readonly<Partial<Record<MapTheme, Readonly<Record<string, string>>>>> = {
   megaman: { crystal: 'crystal-flash' },
+  transylvania: { tree: 'dead-tree' },
 };
 
 /** The frame tile `ch` of `page` draws (its theme's own, if it has one); '' for none. */
@@ -300,6 +332,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   hyrule: 'enemies-overworld',
   megaman: 'enemies-overworld',
   zebes: 'enemies-overworld',
+  transylvania: 'enemies-overworld',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -315,6 +348,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   hyrule: 'enemies-water',
   megaman: 'enemies-water',
   zebes: 'enemies-water',
+  transylvania: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -330,6 +364,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   hyrule: 'decor-zelda2', // Zelda II's flat clouds (CLOUD_ZELDA2)
   megaman: 'decor-megaman-stage', // the night stage's dim clouds
   zebes: 'decor-crateria', // the surface's storm clouds
+  transylvania: 'decor-cv-gate', // the gate's dim night clouds
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
@@ -348,6 +383,9 @@ const ZOOMER = ['zoomer-0', 'zoomer-1'] as const;
 const METROID = ['metroid-0', 'metroid-1'] as const;
 /** Quarter turns for a Zoomer on the top, right, bottom and left sides of its rock. */
 const CLING = [0, 90, 180, 270] as const;
+const BAT = ['bat-1', 'bat-2'] as const;
+const MEDUSA = ['medusa-0', 'medusa-1'] as const;
+const RAVEN = ['raven-0', 'raven-1'] as const;
 const CHEEP = ['cheep-0', 'cheep-1'] as const;
 const SPLASH = ['splash-0', 'splash-1'] as const;
 const PODOBOO = ['podoboo-0', 'podoboo-1'] as const;
@@ -427,6 +465,10 @@ export const MAP_ACTOR_TYPES = [
   'ripper',
   'zoomer',
   'metroid',
+  // Transylvania (World 5).
+  'bat',
+  'medusa',
+  'raven',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -651,6 +693,30 @@ export function drawMapActor(
       r.sprite(assets.sheet('map', MAP_PAL[page.theme]), METROID[Math.floor(t / 24) & 1] as string, mx, my);
       return;
     }
+    case 'bat': {
+      // A small figure-eight, wings beating every 6 frames; it faces the way it flies.
+      const bx = x + Math.round(Math.sin(t / 40) * 12);
+      const by = y + Math.round(Math.sin(t / 20) * 6);
+      const right = Math.cos(t / 40) > 0;
+      r.sprite(assets.sheet('crypt', 'crypt'), BAT[Math.floor(t / 6) & 1] as string, bx, by, right);
+      return;
+    }
+    case 'medusa': {
+      // Medusa heads drift across in a wave and come round again, their snakes writhing.
+      const speed = num(actor, 'speed', -0.4);
+      const ox = pageOffset(page, actor);
+      const mx = ox + wrapX(x - ox + t * speed, 16);
+      const my = y + Math.round(Math.sin(t / 24) * num(actor, 'amp', 10));
+      r.sprite(assets.sheet('crypt', 'crypt'), MEDUSA[(t >> 4) & 1] as string, mx, my, speed > 0);
+      return;
+    }
+    case 'raven': {
+      // Ravens face left; flipped on the way back.
+      const p = pace(t, num(actor, 'range', 48), num(actor, 'speed', 0.35));
+      const sheet = assets.sheet('map', MAP_PAL[page.theme]);
+      r.sprite(sheet, RAVEN[(t >> 3) & 1] as string, x + Math.abs(p), y, p > 0);
+      return;
+    }
     default:
       return;
   }
@@ -717,6 +783,14 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
     }
     case 'metroid':
       return [x - 14, y - 4, x + 30, y + 20];
+    case 'bat':
+      return [x - 12, y - 6, x + 28, y + 22];
+    case 'medusa': {
+      const amp = num(a, 'amp', 10);
+      return [0, y - amp, 256, y + 16 + amp];
+    }
+    case 'raven':
+      return [x, y, x + num(a, 'range', 48) + 16, y + 16];
     default:
       return [x, y, x + 16, y + 16];
   }

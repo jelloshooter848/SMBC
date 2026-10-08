@@ -84,6 +84,14 @@ describe('themes', () => {
       'crateria',
       'norfair',
       'tourian-lair',
+      // World 5 as Simon's world, Transylvania (0.4.28): 5-1, its bonus room, 5-2, its coin heaven
+      // and water area, 5-3
+      'cv-gate',
+      'cv-catacomb',
+      'cv-town',
+      'cv-storm',
+      'cv-lake',
+      'cv-clock',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -150,6 +158,12 @@ describe('themes', () => {
       crateria: 'crateria',
       norfair: 'norfair',
       'tourian-lair': 'tourian',
+      'cv-gate': 'cv-hall',
+      'cv-catacomb': 'crypt',
+      'cv-town': 'cv-town',
+      'cv-storm': 'cv-town',
+      'cv-lake': 'cv-lake',
+      'cv-clock': 'cv-stage',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

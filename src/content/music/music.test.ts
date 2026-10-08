@@ -80,6 +80,9 @@ const SONG_IDS = [
   // World 4 as Samus's world, Zebes (0.4.27): the planet's surface, 4-3's Norfair.
   'crateria',
   'norfair',
+  // World 5 as Simon's world, Transylvania (0.4.28): 5-2's town, its underground lake.
+  'cv-town',
+  'cv-lake',
 ];
 
 const SFX_IDS = [

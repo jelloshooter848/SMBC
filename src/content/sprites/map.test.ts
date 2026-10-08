@@ -22,6 +22,7 @@ const THEMES = [
   'hyrule',
   'megaman',
   'zebes',
+  'transylvania',
 ];
 
 const tileFrames = [
@@ -92,6 +93,17 @@ const tileFrames = [
   'dome-left',
   'dome-gate',
   'dome-right',
+  // Simon's Transylvania (World 5, 0.4.28).
+  'dead-tree',
+  'house',
+  'clock-tower-top',
+  'clock-tower',
+  'drac-top-left',
+  'drac-top-mid',
+  'drac-top-right',
+  'drac-left',
+  'drac-gate',
+  'drac-right',
   ...Array.from({ length: WATER_FRAMES }, (_, f) => [
     `water-${f}`,
     `surf-${f}`,
@@ -143,6 +155,9 @@ const actorFrames: Record<string, Size> = {
   // Zebes's Metroid (World 4, 0.4.27; its Rippers and Zoomers are the zebes sheet's).
   'metroid-0': T16,
   'metroid-1': T16,
+  // Transylvania's ravens (World 5, 0.4.28; its bats and Medusa heads are Simon's crypt's).
+  'raven-0': T16,
+  'raven-1': T16,
 };
 
 function expectFrame(name: string, [w, h]: Size): void {

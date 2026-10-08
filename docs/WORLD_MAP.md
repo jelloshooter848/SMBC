@@ -772,16 +772,32 @@ bubble platforms on hot stalks under a dark red sky the lifts' planks and ropes 
 against) and 4-4 Tourian, Mother Brain's lair (`tourian-lair`, dim machinery and glass tubes
 painted behind; ZEBES ESCAPE's own `tourian` stays out of the castle family), the surface and
 Norfair with new music and 4-4 with ZEBES ESCAPE's `tourian` (art
-`src/content/sprites/zebes-world.ts`, music `src/content/music/zebes-world.ts`). A look stays after the hero is freed, and
+`src/content/sprites/zebes-world.ts`, music `src/content/music/zebes-world.ts`). Since 0.4.28
+World 5 is Simon's world, Transylvania: its map page is TRANSYLVANIA (`MapTheme` `transylvania`:
+a night moor under the moon, a village by the start, graves, dead trees, a river and a moonlit
+lake under SKY TREES' bridges, the clock tower by 5-3 and Dracula's castle on its crag right
+under 5-4; bats, Medusa heads drifting in waves and ravens for critters; every node, road, the
+seal and the start's local as before), 5-4 keeps its castle hall (`castlevania`, `cv-hall`) and
+Simon's dungeon and crypt their `crypt`; 5-1 is the castle's courtyard gate (`cv-gate`: the
+courtyard wall and Dracula's castle painted behind, statues and torch braziers for its trees,
+black iron Bullet Bill blasters; 5-4's `cv-hall` tune), its bonus room the catacombs
+(`cv-catacomb`, the underground still; the `crypt` tune), 5-2 a Simon's Quest-style town street
+(`cv-town`: rooftops painted behind, street lamps and shop signs; new `cv-town` tune), its coin
+heaven a stormy night over the castle (`cv-storm`, the town's palette, storm clouds to stand on,
+lightning never with reduce flashing), its water area the underground lake (`cv-lake`: mossy
+stones, sewer grates, murky green water; it swims by its map's `swim: true`; new `cv-lake` tune)
+and 5-3 the clock tower (`cv-clock`: beams on timber scaffolds, a clock face and gears painted
+behind; Simon's `cv-stage` tune) (art `src/content/sprites/transylvania.ts`, music
+`src/content/music/transylvania.ts`). A look stays after the hero is freed, and
 its music plays for every hero (a hero's own overworld tune, `levelMusic` in `scenes/level.ts`,
 plays only in a plain `overworld` area). No look is a water theme, and every rule that keys off
-the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake swims by its
-map's `swim: true`, "Swimming in any theme", which changes nothing in its classic water theme),
+the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake and 5-2-water's underground lake swim by their
+maps' `swim: true`, "Swimming in any theme", which changes nothing in their classic water theme),
 the castle family (`isCastleTheme`: `zelda2-palace`, `megaman-fortress` and `tourian-lair` are in
 it, so 2-4's, 3-4's and 4-4's Bowser, axe, bridge and unmask are SMB's), `hasSolidFloors`
-(`zelda2-cave`, `megaman-metal` and `brinstar` as the underground) and `enemyPalette`
+(`zelda2-cave`, `megaman-metal`, `brinstar` and `cv-catacomb` as the underground) and `enemyPalette`
 (`src/content/levels/campaign-looks.test.ts`, `hyrule-looks.test.ts`, `megaman-looks.test.ts`,
-`zebes-looks.test.ts`). In the map:
+`zebes-looks.test.ts`, `transylvania-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle

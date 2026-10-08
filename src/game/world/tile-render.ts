@@ -75,7 +75,14 @@ function drawCracked(r: Renderer, view: View, sheet: SpriteSheet, x: number, y: 
 export const LIGHT_SKIES: ReadonlySet<string> = new Set(['smw-secret']);
 
 /** Themes whose dark sky has stars in it (Bill's jungle, as NES Contra's first stage; Mega Man's 3-1). */
-export const STARRY_SKIES: ReadonlySet<string> = new Set(['contra-jungle', 'megaman-stage']);
+export const STARRY_SKIES: ReadonlySet<string> = new Set([
+  'contra-jungle',
+  'megaman-stage',
+  // World 5 as Simon's world (0.4.28): the gate, the town and the clock tower's night.
+  'cv-gate',
+  'cv-town',
+  'cv-clock',
+]);
 
 /**
  * Sparse fixed stars over a starry theme's sky, in its upper half, drifting at an eighth of the
@@ -102,6 +109,8 @@ export const FLOODED: Readonly<Record<string, string>> = {
   underworld: FLOODED_WATER,
   // 2-2 as Hyrule's lake (0.4.24): its waves' own deep blue (zelda2-hyrule.ts HYRULE_LAKE).
   'zelda2-water': '#1838a0',
+  // 5-2's water area as the underground lake (0.4.28): its waves' murky green (transylvania.ts CV_LAKE_WATER).
+  'cv-lake': '#1c4c28',
 };
 
 export const SKY: Record<string, string> = {
@@ -178,4 +187,13 @@ export const SKY: Record<string, string> = {
   crateria: '#18183c',
   norfair: '#300808',
   'tourian-lair': '#000000',
+  // World 5 as Simon's world, Transylvania (0.4.28): starry night blues over the gate, the town and
+  // the clock tower (the lifts' planks stand out against it), a storm's slate over the coin heaven,
+  // the catacombs and the underground lake in the dark (only the band above its waves shows it).
+  'cv-gate': '#0c0c28',
+  'cv-catacomb': '#000000',
+  'cv-town': '#100c2c',
+  'cv-storm': '#0c1020',
+  'cv-lake': '#000000',
+  'cv-clock': '#08081c',
 };

@@ -451,6 +451,18 @@ const decorFrames: Record<string, Size> = {
   // World 4 as Samus's world, Zebes (0.4.27).
   'zt-wall': [32, 32],
   'zt-tube': [32, 64],
+  // World 5 as Simon's world, Transylvania (0.4.28).
+  'cvg-castle': [128, 64],
+  'cvg-wall': [64, 48],
+  'tree-big@cv-gate': [16, 48],
+  'tree-small@cv-gate': [16, 32],
+  'cvt-roofs': [128, 48],
+  'tree-big@cv-town': [16, 48],
+  'tree-small@cv-town': [16, 32],
+  'cvs-castle': [96, 64],
+  'cvs-bolt': [16, 64],
+  'cvc-clock': [64, 64],
+  'cvc-gear': [32, 32],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -523,6 +535,13 @@ describe('tile sprites', () => {
         'tiles-crateria',
         'tiles-norfair',
         'tiles-tourian-lair',
+        // World 5 as Simon's world, Transylvania (0.4.28)
+        'tiles-cv-gate',
+        'tiles-cv-catacomb',
+        'tiles-cv-town',
+        'tiles-cv-storm',
+        'tiles-cv-lake',
+        'tiles-cv-clock',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -615,6 +634,13 @@ describe('decor sprites', () => {
         'decor-crateria',
         'decor-norfair',
         'decor-tourian-lair',
+        // World 5 as Simon's world, Transylvania (0.4.28)
+        'decor-cv-gate',
+        'decor-cv-catacomb',
+        'decor-cv-town',
+        'decor-cv-storm',
+        'decor-cv-lake',
+        'decor-cv-clock',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

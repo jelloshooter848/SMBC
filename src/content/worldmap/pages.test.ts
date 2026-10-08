@@ -18,7 +18,8 @@ const SKETCHES = [SKETCH_1, SKETCH_2, SKETCH_3, SKETCH_4, SKETCH_5, SKETCH_6, SK
 // World 2 is Link's Hyrule since 0.4.24 (it was SEA SIDE).
 // World 3 is Mega Man's MEGA CITY since 0.4.26 (it was NIGHT HILLS).
 // World 4 is Samus's PLANET ZEBES since 0.4.27 (it was MUSHROOM WOODS).
-const THEMES = ['grass', 'hyrule', 'megaman', 'zebes', 'sky', 'snow', 'coast', 'bowser'];
+// World 5 is Simon's TRANSYLVANIA since 0.4.28 (it was SKY TREES).
+const THEMES = ['grass', 'hyrule', 'megaman', 'zebes', 'transylvania', 'snow', 'coast', 'bowser'];
 
 /** Tile rows the engine's header bar covers (24 px): background only. */
 const HEADER_ROWS = 2;

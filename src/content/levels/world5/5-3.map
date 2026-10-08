@@ -9,6 +9,13 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.28): the clock tower (`cv-clock`): its treetops wooden beams on the
+;; tower's timber scaffolds, oak plank floors, brass-bound crates, dim clock faces and gears painted
+;; behind under a starry night that the lifts' cream planks stand out against; it plays Simon's
+;; castle stage tune. Elsewhere (level select, ?level=5-3) it looks as it always did.
+campaignTheme: cv-clock
+campaignMusic: cv-stage
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

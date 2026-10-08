@@ -8,6 +8,17 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- World 5 is now Simon's world, Transylvania (campaign only; classic play keeps SMB's 5-1 to 5-4):
+  - The World 5 map page is TRANSYLVANIA (it was SKY TREES), a Castlevania-style night map with a village, graves, a
+    dead forest, a moonlit lake, the clock tower and Dracula's castle by 5-4. Bats, Medusa heads and ravens fly over
+    it.
+  - 5-1 is the castle's courtyard gate and its bonus room the catacombs. 5-2 is a night town with a stormy coin
+    heaven over the castle, 5-2's water area an underground lake (every hero still swims there), and 5-3 the clock
+    tower. 5-4 keeps its castle hall; Simon's dungeon and crypt are unchanged.
+  - Two new original Castlevania-style songs: the town and the underground lake.
+
 ## [0.4.27] - 2026-10-08
 
 ### Changed

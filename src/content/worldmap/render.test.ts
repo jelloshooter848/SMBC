@@ -69,7 +69,7 @@ describe('map rendering', () => {
 
   it('walkable tiles are ground-like, never water, walls or scenery', () => {
     for (const ch of '#,*:o=I(O){-}G87923146qezc[]nuF') expect(MAP_WALKABLE.has(ch), ch).toBe(true);
-    for (const ch of '.~L%TYHS^RCKhj!|WVPXAsxDkabdfgilmprtvMNEBw5ZJ<U>Q@y0&$"+?/;_`Λψχ«»┌┬┐└┴┘')
+    for (const ch of '.~L%TYHS^RCKhj!|WVPXAsxDkabdfgilmprtvMNEBw5ZJ<U>Q@y0&$"+?/;_`Λψχ«»┌┬┐└┴┘ĦΩ║╔╦╗╚╩╝')
       expect(MAP_WALKABLE.has(ch), ch).toBe(false);
   });
 
@@ -120,8 +120,9 @@ describe('map rendering', () => {
   it('wraps drifting actors with the page while it slides', () => {
     const assets = registry();
     const page = MAP_PAGES[4];
-    const bullet = page?.actors.find((a) => a.type === 'bullet');
-    if (!page || !bullet) throw new Error('world 5 has bullets');
+    // World 5's Medusa heads drift and wrap as its Bullet Bills did before it was Transylvania (0.4.28).
+    const bullet = page?.actors.find((a) => a.type === 'medusa');
+    if (!page || !bullet) throw new Error('world 5 has Medusa heads');
     const at = (a: MapActor) => {
       const r = new CheckingRenderer();
       drawMapActor(r, assets, page, a, 500);
