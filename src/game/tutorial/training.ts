@@ -4,7 +4,8 @@ import { MenuScene } from '../scenes/menu';
 import { snapshot } from '../scenes/free-hero';
 import { fontText } from '../hud/text';
 import { FIRST_HERO } from '../save/save-files';
-import { lessonsFor } from './lessons';
+import { lessonsFor, type RunKit } from './lessons';
+import { newGameState, type GameState } from '../context';
 import { MergedInput, PracticeRoomScene, type TrainingResult } from './room';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
@@ -78,6 +79,19 @@ export class TrainingQuestionScene extends MenuScene {
 }
 
 /**
+ * What `player` has unlocked as `hero` in the run (`state`): its carried kit and power, or a fresh
+ * hero's (nothing yet) when it plays someone else (the first pick of a hero), so the room marks
+ * lessons for kit not unlocked yet (PREVIEW).
+ */
+export function runKit(state: GameState, hero: CharacterDef, player: number): RunKit {
+  const plays = player === 0 ? state.character : state.character2;
+  if (plays?.id !== hero.id) return { kit: {}, power: newGameState(hero).powerState };
+  return player === 0
+    ? { kit: { ...state.kit }, power: state.powerState }
+    : { kit: { ...state.kit2 }, power: state.powerState2 };
+}
+
+/**
  * Play the practice room for `hero` (player `player`'s input drives it), then `after`. The run's
  * GameState is restored afterwards, so the room cannot change lives, score or power.
  */
@@ -87,6 +101,7 @@ export function runTraining(game: Game, hero: CharacterDef, player: number, afte
   let over = false;
   const room = new PracticeRoomScene(game, hero, {
     player,
+    run: runKit(saved, hero, player),
     onEnd: (_result: TrainingResult) => {
       if (over) return;
       over = true;

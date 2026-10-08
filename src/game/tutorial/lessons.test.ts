@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../characters/registry';
 import { fontText } from '../hud/text';
 import { wrapPrompt } from './stage-prompts';
-import { LESSONS, lessonsFor, promptActions, promptText } from './lessons';
+import { chaptersFor, isPreview, LESSONS, lessonsFor, PREVIEW, promptActions, promptText } from './lessons';
+import { WEAPONS } from '../characters/megaman/weapons';
+import { SUB_WEAPONS } from '../characters/simon/weapons';
+import { NINPO_ARTS } from '../characters/ryu/weapons';
+import { GUNS } from '../characters/bill/weapons';
 
 /** Actions a prompt token may name: the face buttons (directions are written plainly). */
 const BUTTONS = ['jump', 'attack', 'special', 'select'];
@@ -29,17 +33,65 @@ function vocabulary(id: string): string[] {
   return [...words];
 }
 
+/**
+ * Each hero's whole kit (owner note 24), as its code has it: one lesson per piece. Left out because
+ * the campaign code has no such thing: Bill's R and B capsules (only in his mini game, Jungle
+ * Assault), Link's cracked-block bombing (a cracked wall crumbles to any attack: the bomb lesson
+ * blasts the dummy).
+ */
+const KIT: Record<string, string[]> = {
+  luigi: ['high-jump', 'slippery-stop', 'fireball'],
+  link: ['sword', 'down-thrust', 'up-thrust', 'shield', 'boomerang', 'bomb', 'jump-spell', 'shield-spell', 'fire-spell', 'swim'],
+  megaman: ['shoot', 'charge', 'slide', 'rush', 'weapon', 'saw', 'leaf', 'flame', 'knuckle', 'bolt', 'seabed-jump'],
+  samus: ['shoot', 'aim-up', 'long-beam', 'ice-beam', 'wave-beam', 'missile', 'missile-switch', 'morph-ball', 'bomb', 'bomb-jump'],
+  simon: ['whip', 'crouch-whip', 'committed-jump', 'dagger', 'hand-axe', 'holy-water', 'cross', 'stopwatch', 'hearts', 'chain-whip', 'morning-star', 'double-shot'],
+  ryu: ['slash', 'cling', 'wall-jump', 'throwing-star', 'windmill', 'fire-wheel', 'jump-slash'],
+  bill: ['shoot', 'aim', 'prone', 'jump-shoot', 'mg', 'spread', 'laser', 'flame-gun', 'swim-shoot'],
+  sophia: ['drive-jump', 'cannon', 'cannon-up', 'hover', 'missile', 'homing', 'wall-climb', 'jason'],
+};
+
 describe('hero lessons', () => {
-  it('every hero but Mario has 3 to 5 lessons; Mario has none (his tutorial is 1-0)', () => {
+  it('every hero but Mario has a lesson for every piece of its kit; Mario has none (his tutorial is 1-0)', () => {
     for (const c of CHARACTERS) {
-      const n = lessonsFor(c.id).length;
-      if (c.id === 'mario') expect(n).toBe(0);
-      else {
-        expect(n, c.id).toBeGreaterThanOrEqual(3);
-        expect(n, c.id).toBeLessThanOrEqual(5);
-      }
+      const ids = lessonsFor(c.id).map((l) => l.id);
+      if (c.id === 'mario') expect(ids).toEqual([]);
+      else for (const piece of KIT[c.id] ?? ['?']) expect(ids, c.id).toContain(piece);
     }
     expect(Object.keys(LESSONS).every((id) => CHARACTERS.some((c) => c.id === id))).toBe(true);
+    // The kit's own lists: every Mega Man weapon, Simon sub-weapon, Ryu art and Bill gun.
+    expect(lessonsFor('megaman').map((l) => l.id)).toEqual(expect.arrayContaining(WEAPONS.map((w) => w.id)));
+    expect(lessonsFor('simon').map((l) => l.id)).toEqual(expect.arrayContaining(SUB_WEAPONS.map((w) => w.id)));
+    expect(lessonsFor('ryu').map((l) => l.id)).toEqual(expect.arrayContaining(NINPO_ARTS.map((a) => (a.id === 'slash' ? 'jump-slash' : a.id))));
+    expect(lessonsFor('bill').map((l) => l.id)).toEqual(expect.arrayContaining(GUNS.slice(1).map((g) => g.id)));
+  });
+
+  it('lessons come in short chapters: 1 to 6 lessons each, titled to fit the heading', () => {
+    for (const c of CHARACTERS.filter((x) => x.id !== 'mario')) {
+      const chapters = chaptersFor(c.id);
+      expect(chapters.length, c.id).toBeGreaterThan(0);
+      expect(new Set(chapters.map((ch) => ch.id)).size).toBe(chapters.length);
+      for (const ch of chapters) {
+        expect(ch.lessons.length, `${c.id} ${ch.id}`).toBeGreaterThanOrEqual(1);
+        expect(ch.lessons.length, `${c.id} ${ch.id}`).toBeLessThanOrEqual(6);
+        const head = `${c.hudName} ${ch.title} ${ch.lessons.length}/${ch.lessons.length}`;
+        expect(head.length, head).toBeLessThanOrEqual(ROOM_COLS);
+        expect(fontText(head)).toBe(head);
+      }
+      expect(chapters.flatMap((ch) => ch.lessons)).toEqual(lessonsFor(c.id));
+    }
+  });
+
+  it('a lesson for kit the run lacks is a preview; with the kit, or outside a run, it is not', () => {
+    const ice = lessonsFor('samus').find((l) => l.id === 'ice-beam');
+    const shoot = lessonsFor('samus').find((l) => l.id === 'shoot');
+    if (!ice || !shoot) throw new Error('missing');
+    expect(isPreview(ice, { kit: {}, power: 'full' })).toBe(true);
+    expect(isPreview(ice, { kit: { beam: 2 }, power: 'full' })).toBe(false);
+    expect(isPreview(ice)).toBe(false);
+    expect(isPreview(shoot, { kit: {}, power: 'full' })).toBe(false);
+    const fire = lessonsFor('luigi').find((l) => l.id === 'fireball');
+    expect(fire && isPreview(fire, { kit: {}, power: 'big' })).toBe(true);
+    expect(fire && isPreview(fire, { kit: {}, power: 'fire' })).toBe(false);
   });
 
   it.each(CHARACTERS.filter((c) => c.id !== 'mario').map((c) => [c.id]))(
@@ -47,13 +99,15 @@ describe('hero lessons', () => {
     (id) => {
       const lessons = lessonsFor(id);
       expect(new Set(lessons.map((l) => l.id)).size).toBe(lessons.length);
+      const marked = new Set(lessons.filter((l) => l.unlocked).map((l) => l.id));
       const vocab = vocabulary(id);
       const prompts = lessons.flatMap((l) =>
         [l.prompt, l.touchPrompt].flatMap((prompt) => (prompt ? [{ id: l.id, prompt }] : [])),
       );
       for (const l of prompts) {
-        // Bare: each [LABEL:action] token as its label (the box falls back to this).
-        const bare = promptText(l.prompt);
+        // Bare: each [LABEL:action] token as its label (the box falls back to this), with the
+        // (PREVIEW) mark when the lesson can be one.
+        const bare = (marked.has(l.id) ? PREVIEW : '') + promptText(l.prompt);
         expect(fontText(bare), l.id).toBe(bare);
         const lines = wrapPrompt(bare, ROOM_COLS);
         expect(lines.length, l.id).toBeLessThanOrEqual(ROOM_LINES);
