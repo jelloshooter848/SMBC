@@ -429,7 +429,7 @@ function drawWindow(
       }
     if (since >= T2.windowOpen) r.sprite(sheet, s.frame, hx, feetY, s.flip);
     // Half hidden: a dim veil over the hero once it stands there.
-    if (fall >= 1) r.rect(hx - 2, feetY - 2, fw + 4, fh + 2, 'rgba(0,0,0,0.35)');
+    if (fall >= 1) r.rect(hx - 2, feetY - 2, fw + 4, fh + 2, 'rgba(0,0,0,0.5)');
   }
   // The vignette: dark bands round the inside edges, darker at the rim.
   for (const [d, a] of [

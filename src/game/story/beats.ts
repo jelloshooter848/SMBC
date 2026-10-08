@@ -89,6 +89,9 @@ export function seedSeen(progress: MapProgress, freed: readonly string[]): strin
  *
  * - `opening` and `spell` once the file has cleared anything (1-0 first of all);
  * - `luigi-runs` once 1-1 is cleared or Luigi is freed.
+ *
+ * Every other 0.4.23 beat (the freeing talks, the gates, the welcomes, the castle remarks) adds its
+ * own rule here too, so an older file's list is brought up to date with it.
  */
 export function seedNew(progress: MapProgress, freed: readonly string[]): string[] {
   const out: string[] = [];

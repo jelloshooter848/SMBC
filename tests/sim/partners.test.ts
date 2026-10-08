@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { CHARACTERS } from '@game/characters/registry';
+import { beat } from '@game/story/beats';
 import { MARIO } from '@game/characters/mario';
 import { startHp, type CharacterDef } from '@game/characters/character';
 import { Partner } from '@game/entities/objects/partner';
@@ -55,6 +56,8 @@ function campaignIn(
 ): LevelScene {
   file(over);
   h.game.openFile(1);
+  // 1-1's opening beat (Luigi running off, story/luigi-runs.ts) is another story; seen already here.
+  h.game.markSeen(beat.luigiRuns);
   const st = h.game.state;
   st.character = c;
   st.powerState = power as typeof st.powerState;
