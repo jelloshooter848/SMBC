@@ -24,7 +24,7 @@ export const SKETCH_5 = [
   'T#T#~~#J#J#Ω####', // the clock tower by 5-3...
   '#T##~~##J##║#╔╦╗', // ...and Dracula's castle on its crag right under 5-4
   'T#T#~~#J#T##T╚╩╝',
-  '#T##~~##T#T##^^^',
+  '#T##~~##T#T#####',
 ];
 
 export const WORLD_5: WorldMapPage = {
