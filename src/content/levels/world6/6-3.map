@@ -9,6 +9,13 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.29): a snowy mountain pass at night (`ng-pass`): its treetops are
+;; snow-capped rock ledges on frozen cliffs, its floor frozen rock, its bricks ice; snowy peaks are
+;; painted behind under the full moon, a dark sky the lifts' cream planks and the balance lifts'
+;; ropes stand out against. Elsewhere (level select, ?level=6-3) it looks as it always did.
+campaignTheme: ng-pass
+campaignMusic: ng-pass
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

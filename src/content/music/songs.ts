@@ -10,6 +10,7 @@ import { zelda2Songs } from './zelda2';
 import { megamanWorldSongs } from './megaman-world';
 import { zebesWorldSongs } from './zebes-world';
 import { transylvaniaSongs } from './transylvania';
+import { ninjaWorldSongs } from './ninja-world';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1221,4 +1222,6 @@ export const songs: Song[] = [
   ...zebesWorldSongs,
   // World 5 as Simon's world, Transylvania (0.4.28): 5-2's town, its underground lake.
   ...transylvaniaSongs,
+  // World 6 as Ryu's world (0.4.29): 6-2's sewers and harbour, 6-3's mountain pass.
+  ...ninjaWorldSongs,
 ];

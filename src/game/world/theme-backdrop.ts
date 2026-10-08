@@ -34,6 +34,12 @@ import type { View } from '../entities/entity';
  *     a bolt of lightning (LIGHTNING_PERIOD; never with reduce flashing).
  *   - `cv-clock` (5-3): the clock tower's dim clock faces every CLOCK_PERIOD px and gears between,
  *     at half the camera's speed.
+ * - World 6 as Ryu's world (0.4.29):
+ *   - `ng-field` (6-1): the full moon (NG_MOON_X, NG_MOON_Y, fixed on the screen), far peaks at a
+ *     quarter of the camera's speed and a bamboo grove at half its speed, standing on GATE_BOTTOM.
+ *   - `ng-pass` (6-3): the moon over snowy peaks at a quarter of the camera's speed.
+ *   - `ng-temple` (6-4, the demon temple): a carved wall from below the HUD's band down, scrolling
+ *     with the level, a demon-headed pillar every TEMPLE_PILLAR_PERIOD px.
  */
 
 /** The black band left at the top for the HUD (a vampire-hunting stage keeps its HUD on black). */
@@ -193,6 +199,39 @@ function cvClock(r: Renderer, view: View): void {
   }
 }
 
+/** World 6's full moon, fixed on the screen (over the field and the pass). */
+export const NG_MOON_X = 40;
+export const NG_MOON_Y = 40;
+/** 6-4's demon pillars repeat every this many px of the level. */
+export const TEMPLE_PILLAR_PERIOD = 224;
+
+function ngMoon(r: Renderer, view: View, palette: string): void {
+  const sheet = view.assets.sheet('decor', palette);
+  if (sheet.frames.has('ng-moon')) r.sprite(sheet, 'ng-moon', NG_MOON_X, NG_MOON_Y);
+}
+
+function ngField(r: Renderer, view: View): void {
+  ngMoon(r, view, 'decor-ng-field');
+  strip(r, view, 'decor-ng-field', 'ngf-peaks', 2, GATE_BOTTOM - 32);
+  strip(r, view, 'decor-ng-field', 'ngf-bamboo', 1, GATE_BOTTOM);
+}
+
+function ngPass(r: Renderer, view: View): void {
+  ngMoon(r, view, 'decor-ng-pass');
+  strip(r, view, 'decor-ng-pass', 'ngp-peaks', 2, SCREEN_H);
+}
+
+function ngTemple(r: Renderer, view: View): void {
+  const sheet = view.assets.sheet('decor', 'decor-ng-temple');
+  if (!sheet.frames.has('ngt-wall')) return;
+  const cam = view.camX;
+  for (let x = -wrap(cam, 64); x < SCREEN_W; x += 64)
+    for (let y = HALL_TOP; y < SCREEN_H; y += 64) r.sprite(sheet, 'ngt-wall', x, y);
+  const first = Math.floor((cam - 64) / TEMPLE_PILLAR_PERIOD) * TEMPLE_PILLAR_PERIOD;
+  for (let base = first; base < cam + SCREEN_W + 64; base += TEMPLE_PILLAR_PERIOD)
+    r.sprite(sheet, 'ngt-pillar', base + 16 - cam, HALL_TOP + 16);
+}
+
 const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   castlevania: castleHall,
   'ninja-city': citySkyline,
@@ -208,6 +247,10 @@ const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   'cv-town': cvTown,
   'cv-storm': cvStorm,
   'cv-clock': cvClock,
+  // World 6 as Ryu's world (0.4.29).
+  'ng-field': ngField,
+  'ng-pass': ngPass,
+  'ng-temple': ngTemple,
 };
 
 /** Whether a theme paints a backdrop. */

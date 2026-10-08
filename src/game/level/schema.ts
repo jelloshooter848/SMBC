@@ -85,7 +85,16 @@ export type Theme =
   | 'cv-town'
   | 'cv-storm'
   | 'cv-lake'
-  | 'cv-clock';
+  | 'cv-clock'
+  // World 6 as Ryu's world (0.4.29, campaign looks): 6-1 as a moonlit bamboo field, 6-2's coin
+  // rooms as the city's sewers (the underground still), its water area as a night harbour (it swims
+  // by its map's `swim: true`; no restyle is a water theme), 6-3 as a snowy mountain pass and 6-4 as
+  // the demon temple, Jaquio's lair (in the castle family).
+  | 'ng-field'
+  | 'ng-sewer'
+  | 'ng-harbor'
+  | 'ng-pass'
+  | 'ng-temple';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -139,6 +148,11 @@ export const THEMES: readonly Theme[] = [
   'cv-storm',
   'cv-lake',
   'cv-clock',
+  'ng-field',
+  'ng-sewer',
+  'ng-harbor',
+  'ng-pass',
+  'ng-temple',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -161,8 +175,8 @@ export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =
 /**
  * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
  * the campaign looks of 5-4 (Simon's hall), 2-4 (Link's palace, 0.4.24), 3-4 (Wily's fortress,
- * 0.4.26) and 4-4 (Tourian, Mother Brain's lair, 0.4.27). Castle rules that key
- * off the theme ask this, never the name.
+ * 0.4.26), 4-4 (Tourian, Mother Brain's lair, 0.4.27) and 6-4 (the demon temple,
+ * Jaquio's lair, 0.4.29). Castle rules that key off the theme ask this, never the name.
  */
 export const isCastleTheme = (theme: Theme): boolean =>
   theme === 'castle' ||
@@ -171,7 +185,8 @@ export const isCastleTheme = (theme: Theme): boolean =>
   theme === 'castlevania' ||
   theme === 'zelda2-palace' ||
   theme === 'megaman-fortress' ||
-  theme === 'tourian-lair';
+  theme === 'tourian-lair' ||
+  theme === 'ng-temple';
 
 /**
  * The original's `cannotPassThroughGround`: underground and castle areas, where a Hammer Bro's
@@ -186,6 +201,7 @@ export const hasSolidFloors = (theme: Theme): boolean =>
   theme === 'zelda2-cave' ||
   theme === 'megaman-metal' ||
   theme === 'cv-catacomb' ||
+  theme === 'ng-sewer' ||
   isCastleTheme(theme);
 
 /** The music an area of this theme plays when its map names none. */
@@ -231,6 +247,13 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'cv-town' || theme === 'cv-storm') return 'cv-town';
   if (theme === 'cv-lake') return 'cv-lake';
   if (theme === 'cv-clock') return 'cv-stage';
+  // World 6 as Ryu's world (0.4.29): the field plays Ryu's stage tune and the temple the Masked
+  // Ninja's; the sewers, the harbour and the pass have their own tunes (music/ninja-world.ts).
+  if (theme === 'ng-field') return 'ng-stage';
+  if (theme === 'ng-sewer') return 'ng-sewer';
+  if (theme === 'ng-harbor') return 'ng-harbor';
+  if (theme === 'ng-pass') return 'ng-pass';
+  if (theme === 'ng-temple') return 'ng-boss';
   return 'overworld';
 }
 

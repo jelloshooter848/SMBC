@@ -82,6 +82,9 @@ export const STARRY_SKIES: ReadonlySet<string> = new Set([
   'cv-gate',
   'cv-town',
   'cv-clock',
+  // World 6 as Ryu's world (0.4.29): the bamboo field's and the mountain pass's night.
+  'ng-field',
+  'ng-pass',
 ]);
 
 /**
@@ -111,6 +114,8 @@ export const FLOODED: Readonly<Record<string, string>> = {
   'zelda2-water': '#1838a0',
   // 5-2's water area as the underground lake (0.4.28): its waves' murky green (transylvania.ts CV_LAKE_WATER).
   'cv-lake': '#1c4c28',
+  // 6-2's water area as the night harbour (0.4.29): its waves' dark blue (ninja-world.ts NG_HARBOR_WATER).
+  'ng-harbor': '#102c74',
 };
 
 export const SKY: Record<string, string> = {
@@ -196,4 +201,12 @@ export const SKY: Record<string, string> = {
   'cv-storm': '#0c1020',
   'cv-lake': '#000000',
   'cv-clock': '#08081c',
+  // World 6 as Ryu's world (0.4.29): starry night blues over the bamboo field and the mountain pass
+  // (the lifts' planks and the balance ropes stand out against it), the sewers in the dark, the
+  // harbour's night over its waves, the demon temple black over its carved wall.
+  'ng-field': '#0c1028',
+  'ng-sewer': '#000000',
+  'ng-harbor': '#080c1c',
+  'ng-pass': '#101830',
+  'ng-temple': '#000000',
 };

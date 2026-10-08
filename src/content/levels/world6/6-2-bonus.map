@@ -10,6 +10,12 @@ startMode: fall
 camera: locked
 parent: 6-2
 
+;; Campaign play only (0.4.29): 6-2's coin room is the city's sewers (`ng-sewer`, the
+;; underground still): grimy concrete with slime along its seams, sewer brick and riveted steel, to
+;; its own sneaking tune. Elsewhere (level select, ?level=6-2) it looks as it always did.
+campaignTheme: ng-sewer
+campaignMusic: ng-sewer
+
 [tiles]
 ;; 0
 ................

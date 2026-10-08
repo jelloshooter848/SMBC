@@ -99,9 +99,9 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
 goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
 never leave. The map titles: World 2's page is HYRULE since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since
-0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since 0.4.27 (it was MUSHROOM WOODS) and World 5's TRANSYLVANIA
-since 0.4.28 (it was SKY TREES); the other pages (SNOW NIGHT...) keep their names for now and are renamed as their
-worlds are themed (see the open questions).
+0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since 0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA
+since 0.4.28 (it was SKY TREES) and World 6's DRAGON VALLEY since 0.4.29 (it was SNOW NIGHT); the other pages (CANNON
+COAST...) keep their names for now and are renamed as their worlds are themed (see the open questions).
 
 ## 2. The scripts, in game order
 
@@ -167,8 +167,12 @@ the castle pages, Larry's crystal ball and crash cards, the rift pages.
    (0.4.28): its page is TRANSYLVANIA (it was SKY TREES), a Castlevania-style night map with a village, a graveyard,
    a dead forest, a moonlit lake, the clock tower by 5-3 and Dracula's castle on its crag under 5-4, and its levels
    wear Castlevania-style looks (the courtyard gate, the catacombs, the town, the storm, the underground lake, the
-   clock tower; 5-4 keeps its castle hall). The other pages keep their names (SNOW NIGHT...) and look until their
-   worlds are themed, and are renamed as they are.
+   clock tower; 5-4 keeps its castle hall). World 6 followed (0.4.29): its page is DRAGON VALLEY (it was SNOW
+   NIGHT), a ninja game's night map under a full moon with the Hayabusa village and its dojo by the start, a bamboo
+   forest, the night city's rooftops and neon by 6-2, snowy mountain passes and the demon temple, Jaquio's fortress,
+   over 6-4, and its levels wear ninja-game looks (a moonlit bamboo field, the city's sewers, a night harbour, a
+   snowy mountain pass, the demon temple; 6-2 keeps its night city and Ryu's dojo its own). The other pages keep
+   their names (CANNON COAST...) and look until their worlds are themed, and are renamed as they are.
 3. **World 8's gate.** The draft makes the road into the rift wait for Sophia III too (the same rule as every
    world; Toad's reminder after the credits). Or should the rift open on 8-4 alone, with Sophia III optional?
 4. **The player's hero talks** (Mario in 1-1, `<HERO>:` in Luigi's and Link's talks, the castle remarks). All are

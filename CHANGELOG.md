@@ -8,6 +8,17 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- World 6 is now Ryu's world (campaign only; classic play keeps SMB's 6-1 to 6-4):
+  - The World 6 map page is DRAGON VALLEY (it was SNOW NIGHT), a night valley under a full moon with the Hayabusa
+    village and dojo, a bamboo forest, the night city's rooftops and neon, snowy passes and the demon temple over 6-4.
+    Hawks, a rooftop-leaping ninja and a masked ninja's silhouette are about.
+  - 6-1 is a moonlit bamboo field, 6-2's coin rooms the city's sewers, its water area a night harbour (every hero still
+    swims there), 6-3 a snowy mountain pass and 6-4 the demon temple, Jaquio's lair. 6-2 keeps its night city and
+    Ryu's dojo its own look; the trick panel into the dojo still blends into the sewer wall.
+  - Three new original songs: the sewers, the harbour and the mountain pass.
+
 ## [0.4.28] - 2026-10-08
 
 ### Changed

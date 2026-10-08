@@ -1,31 +1,39 @@
 import type { WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
-/** World 6, SNOW NIGHT: snowy pines and peaks around a dark lake under a starry sky. */
+/**
+ * World 6, DRAGON VALLEY (0.4.29, owner notes 5, 18 and 21: each world is themed after the hero
+ * freed there; World 6 is Ryu's): a ninja game's night map under a full moon. The Hayabusa
+ * village and its dojo stand by the start, a bamboo forest runs round 6-1, the night city's
+ * rooftops and neon signs crowd round 6-2, snowy mountain passes rise round 6-3 (SNOW NIGHT's snow,
+ * kept) and the demon temple, Jaquio's fortress, looms over 6-4. Every node and road is where
+ * SNOW NIGHT had them. On this page T is bamboo, Ħ a village house, 0 the city's rooftops and D the
+ * full moon (render.ts THEME_TILE_FRAMES).
+ */
 export const SKETCH_6 = [
   '................',
   '................',
-  '.s...x..D...s..x',
-  'jjhjjjjhjjjhjjjj',
-  'ST^o#######TS^^T',
-  'T^ST#oTSoT#oT^So',
-  '^SoT#########S##',
-  'To###,SoT,#T#o#T',
-  'ST#o#Tabdf#S#T#S',
-  'oS#T#ogilm#o###T',
-  'T^#o#Sprtv#T#SoS',
-  '###T##ToS##S#T^o',
-  'SoTS#########oTS',
-  '^TSo^T,oT^o^TSoT',
-  'So^T,o^TSoT^,oT^',
+  '.s..x....D...s.x', // the full moon over the city
+  'hhhh0¤¤##0jjj▛▀▜', // the skyline, open behind Ryu's silhouette by 6-2; the temple's roofs...
+  'TTTT#######^S▙▄▟', // ...over its walls and gate, right above 6-4
+  'TTTT#0¤#00#S^###',
+  'TTTT############',
+  'TT###TT¤0¤,S#o#S', // the bamboo forest round 6-1
+  'TT#T#Tabdf#S#^#S',
+  'TT#T,Tgilm#S###^', // a moonlit pond
+  'ĦT#,#Tprtv#^#So^',
+  '###Ħ⌐¬,T##S^#S^o', // the Hayabusa village and its dojo by the start
+  'Ħ#Ħ,#########oS^',
+  'Ħ,ĦTT,T,S^o^S^oS',
+  ',Ħ,TTT,T^So^S^o^',
 ];
 
 export const WORLD_6: WorldMapPage = {
   id: 'smb-6',
   group: 'smb',
   label: 'WORLD 6',
-  title: 'SNOW NIGHT',
-  theme: 'snow',
+  title: 'DRAGON VALLEY',
+  theme: 'ninja',
   music: 'map',
   tiles: autoShore(SKETCH_6),
   nodes: worldNodes(
@@ -47,14 +55,15 @@ export const WORLD_6: WorldMapPage = {
     { from: '6-3', to: 'bonus-6', points: poly([12, 9], [12, 12], [10, 12]) },
   ],
   exits: [{ from: '6-4', to: 'smb-7', side: 'right', points: poly([14, 6], [15, 6]), gate: 'ryu' }],
+  // Ryu's world's creatures: hawks wheeling over the skyline and the snowy passes, a ninja leaping
+  // from rooftop to rooftop along the city's skyline and the masked ninja's silhouette watching
+  // from the temple's roof; a few stars twinkle by the moon.
   actors: [
     actor('star', 40, 28, { phase: 20 }),
-    actor('star', 104, 36, { phase: 80 }),
-    actor('star', 170, 26, { phase: 140 }),
-    actor('star', 226, 38, { phase: 60 }),
-    actor('cloud', 120, 24, { size: 2, speed: 0.05 }),
-    actor('koopa', 208, 208, { range: 12, speed: 0.15 }),
-    actor('bubble', 128, 150, { height: 14 }),
-    actor('cheep', 104, 160, { range: 24, height: 20, period: 220 }),
+    actor('star', 184, 30, { phase: 90 }),
+    actor('hawk', 8, 24, { range: 48, period: 420 }),
+    actor('hawk', 136, 208, { range: 88, period: 480, phase: 100 }),
+    actor('ninja', 64, 37, { range: 32, period: 150, height: 13 }),
+    actor('masked-ninja', 210, 50, {}),
   ],
 };

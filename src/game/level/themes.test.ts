@@ -92,6 +92,12 @@ describe('themes', () => {
       'cv-storm',
       'cv-lake',
       'cv-clock',
+      // World 6 as Ryu's world (0.4.29): 6-1, 6-2's coin rooms and water area, 6-3, 6-4
+      'ng-field',
+      'ng-sewer',
+      'ng-harbor',
+      'ng-pass',
+      'ng-temple',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -164,6 +170,11 @@ describe('themes', () => {
       'cv-storm': 'cv-town',
       'cv-lake': 'cv-lake',
       'cv-clock': 'cv-stage',
+      'ng-field': 'ng-stage',
+      'ng-sewer': 'ng-sewer',
+      'ng-harbor': 'ng-harbor',
+      'ng-pass': 'ng-pass',
+      'ng-temple': 'ng-boss',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

@@ -9,6 +9,14 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (level/campaign.ts applyLook, 0.4.29): World 6 is Ryu's world, and 6-1 is
+;; a moonlit field at the edge of a bamboo forest (`ng-field`), a ninja game's opening act: dark
+;; earth, bundles of cut bamboo and mossy stone under a starry night, the full moon, far peaks and a
+;; bamboo grove painted behind (world/theme-backdrop.ts); its trees are bamboo clumps and stone
+;; lanterns. It plays Ryu's stage tune. Elsewhere (level select, ?level=6-1) it looks as it always did.
+campaignTheme: ng-field
+campaignMusic: ng-stage
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

@@ -83,6 +83,10 @@ const SONG_IDS = [
   // World 5 as Simon's world, Transylvania (0.4.28): 5-2's town, its underground lake.
   'cv-town',
   'cv-lake',
+  // World 6 as Ryu's world (0.4.29): 6-2's sewers and harbour, 6-3's mountain pass.
+  'ng-sewer',
+  'ng-harbor',
+  'ng-pass',
 ];
 
 const SFX_IDS = [

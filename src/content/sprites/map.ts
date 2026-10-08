@@ -4,7 +4,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
  * themed world map pages (World 2's Hyrule since 0.4.24, World 3's Mega City since 0.4.26, World
- * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
+ * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28, World 6's Dragon Valley since 0.4.29), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
  * share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
@@ -91,6 +91,8 @@ const MEGA_CITY_LIGHT = '#5070a8';
 export const ZEBES_NIGHT = '#100820';
 /** Transylvania's moonlit night over the page (World 5 since 0.4.28). */
 export const TRANSYLVANIA_NIGHT = '#0c0a24';
+/** DRAGON VALLEY's night under the full moon (World 6 since 0.4.29). */
+export const NINJA_NIGHT = '#0c1030';
 
 export const mapPalettes: Record<string, string[]> = {
   'map-grass': theme({
@@ -303,6 +305,24 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: ['#585468', '#8c88a0', '#2c2838'],
     white: ['#e8e8f0', '#a8a8c0'],
+  }),
+  /*
+   * DRAGON VALLEY (World 6 since 0.4.29, Ryu's world): a ninja game's night map of dark valley
+   * grass (ground), blue-grey mountains (rock), bamboo greens (leaf), a moonlit pond (water), timber
+   * (wood), neon and temple crimson with the moon's and the windows' gold (accent), the city's and
+   * the temple's dark stone (wall) and the passes' snow (white).
+   */
+  'map-ninja': theme({
+    ground: ['#141c1c', '#24302c', '#3c4c44'],
+    sand: ['#6c6050', '#4c4438'],
+    water: ['#081030', '#142464', '#4c6cb8', '#b0c4f0'],
+    rock: ['#282840', '#4c4c68', '#7c7c9c'],
+    leaf: ['#0c2c18', '#1c6430', '#5ca850'],
+    wood: ['#8c5c34', '#5c3820'],
+    accent: ['#e02840', '#fce490', '#801028'],
+    lava,
+    wall: ['#3c3c58', '#6c6c90', '#1c1c30'],
+    white: ['#e8eef8', '#a8b4cc'],
   }),
 };
 
@@ -1989,6 +2009,245 @@ const raven = (up: boolean): Rows =>
 const RAVEN = [raven(true), raven(false)];
 
 /* ------------------------------------------------------------------------------------------ */
+/* DRAGON VALLEY (World 6, 0.4.29): bamboo, the village and its dojo, the night city, the      */
+/* demon temple, the full moon, leaping ninjas and the masked ninja's silhouette               */
+/* ------------------------------------------------------------------------------------------ */
+
+/** A stand of bamboo: three green stalks with their nodes, sprays of narrow leaves up top. */
+const BAMBOO = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    for (const [sx, top] of [
+      [2, 1],
+      [7, 0],
+      [12, 2],
+    ] as const) {
+      if (y < top || y > 14) continue;
+      if (x === sx || x === sx + 1) {
+        if ((y + sx) % 5 === 0) return 'd';
+        return x === sx ? 'f' : 'e';
+      }
+      if (y < top + 6 && Math.abs(x - sx - 0.5) < 4 && (x + y + sx) % 4 === 0) return 'e';
+    }
+    if (y === 15 && x > 0 && x < 15) return '1';
+    return '.';
+  }),
+);
+
+/** A village house (minka): a dark tiled roof, white plaster walls framed in timber, lit shoji. */
+const MINKA = stamp(GROUND, [
+  '................',
+  '.......00.......',
+  '.....00qq00.....',
+  '...00qqnnqq00...',
+  '..0qqqqqqqqqq0..',
+  '.0nqqqqqqqqqqn0.',
+  '0nnnnnnnnnnnnnn0',
+  '0000000000000000',
+  '.0hoooohooooh0..',
+  '.0hojjohojjoh0..',
+  '.0hojjohojjoh0..',
+  '.0hoooohooooh0..',
+  '.0hgggghg00gh0..',
+  '.0hgggghg00gh0..',
+  '.00000000000000.',
+  '..111111111111..',
+]);
+
+/** The night city's rooftops: two dark towers, their windows lit, a red neon strip on one. */
+const NG_ROOFTOPS = stamp(GROUND, [
+  '................',
+  '..0000..........',
+  '..0nm0..........',
+  '.0nmmq0...00000.',
+  '.0njmq0...0nmm0.',
+  '.0nmmq0..0nmmmq0',
+  '.0njjq0..0njmjq0',
+  '.0nmmq0..0nmmmq0',
+  '.0iiii0..0njmjq0',
+  '.0nmmq0..0nmmmq0',
+  '.0njmq0..0njmjq0',
+  '.0nmmq0..0nmmmq0',
+  '.0nmjq0..0nm0mq0',
+  '.0nm0q0..0nm0mq0',
+  '.0000000.0000000',
+  '..11111...11111.',
+]);
+
+/** A tower with a tall neon sign down its side: red strokes on black, the windows lit. */
+const NEON_TOWER = stamp(GROUND, [
+  '.....00.........',
+  '.....0n0........',
+  '....0nmq0.......',
+  '..000nmq00000...',
+  '..0i0njq0nmq0...',
+  '..0r0nmq0njq0...',
+  '..0i0njq0nmq0...',
+  '..0i0nmq0nmq0...',
+  '..0r0njq0njq0...',
+  '..0i0nmq0nmq0...',
+  '..0i0njq0nmq0...',
+  '..0r0nmq0njq0...',
+  '..000nmq0nmq0...',
+  '....0n00q0mq0...',
+  '....000000000...',
+  '.....11111111...',
+]);
+
+/** The full moon: a pale gold disc, its seas a shade darker. */
+const FULL_MOON = paint(16, 16, (x, y) => {
+  const d = Math.hypot(x - 7.5, y - 7.5);
+  if (d > 7) return '.';
+  if (Math.hypot(x - 5, y - 5) < 1.8 || Math.hypot(x - 10, y - 9) < 2.2 || Math.hypot(x - 6, y - 11) < 1.2)
+    return 'p';
+  return 'j';
+});
+
+/**
+ * The Hayabusa dojo (two tiles wide): a long timber hall under a sweeping dark roof with upturned
+ * eaves, its shoji lit, a red banner by the door.
+ */
+const DOJO: Rows = stamp(
+  groundUnder(32, 16),
+  paint(32, 16, (x, y) => {
+    // the roof: a ridge, sweeping eaves turned up at both ends
+    if (y <= 5) {
+      const half = 6 + y * 2.2;
+      const dx = Math.abs(x - 15.5);
+      if (y === 0) return dx < 5 ? '0' : '.';
+      if (dx > half + 0.5) return y === 5 && dx < half + 2 ? '0' : '.';
+      if (dx > half - 0.5) return '0';
+      return y === 1 ? 'n' : y % 2 ? 'q' : 'm';
+    }
+    if (y === 6) return x >= 2 && x <= 29 ? '0' : '.';
+    if (x < 3 || x > 28) return y === 15 && x > 1 && x < 30 ? '1' : '.';
+    if (y === 15) return '1';
+    if (y === 14) return '0';
+    if (x === 3 || x === 28) return '0';
+    // the door, a banner beside it
+    if (x >= 14 && x <= 17 && y >= 9) return x === 14 || x === 17 ? 'h' : '0';
+    if ((x === 11 || x === 20) && y >= 8 && y <= 12) return 'i';
+    if (x % 5 === 3) return 'h';
+    return y >= 8 && y <= 11 ? 'j' : 'g';
+  }),
+);
+
+/**
+ * The demon temple, Jaquio's fortress (three tiles wide, two tall): a pagoda of crimson roofs with
+ * upturned eaves over dark stone walls, a horned demon's face over its gate, its eyes burning gold.
+ */
+const TEMPLE: Rows = stamp(
+  groundUnder(48, 32),
+  paint(48, 32, (x, y) => {
+    const dx = Math.abs(x - 23.5);
+    // the spire
+    if (y < 4) return dx < 0.6 + y * 0.3 ? (y === 0 ? 'j' : 'r') : '.';
+    // three tiers of roof, each over its storey
+    for (const [top, half] of [
+      [4, 7],
+      [10, 13],
+      [17, 20],
+    ] as const) {
+      if (y >= top && y < top + 3) {
+        const w = half + (y - top) * 1.5;
+        if (dx > w + 0.5) return y === top + 2 && dx < w + 2.5 ? '0' : '.';
+        if (y === top + 2) return '0';
+        return dx > w - 0.5 ? '0' : y === top ? 'r' : 'i';
+      }
+      if (y >= top + 3 && y < top + 6 && top < 17) {
+        const w = half - 2;
+        if (dx > w + 0.5) return '.';
+        if (dx > w - 0.5) return '0';
+        return y - top === 4 && Math.round(dx) % 3 === 1 ? 'j' : 'q';
+      }
+    }
+    // the ground storey: walls and the demon gate
+    if (y >= 20 && y < 31) {
+      if (dx > 18.5) return '.';
+      if (dx > 17.5 || y === 30) return '0';
+      if (dx < 6) {
+        // the demon's face over the gate: horns, eyes, a fanged maw that is the doorway
+        if (y === 20 || y === 21) return Math.abs(dx - 4) < 1 ? 'n' : 'q';
+        if (y === 22) return Math.abs(dx - 2.5) < 1 ? 'j' : 'q';
+        if (y >= 24) return dx < 3.5 ? (y === 24 && Math.round(dx) % 2 === 0 ? 'o' : '0') : 'q';
+        return 'q';
+      }
+      return Math.round(x) % 6 === 0 ? 'q' : y === 21 ? 'n' : 'm';
+    }
+    if (y === 31) return dx < 19 ? 'a' : '.';
+    return '.';
+  }),
+);
+
+/** A ninja (a dark silhouette, his headband's tails red), facing right: crouched on a roof, or leaping. */
+const NINJA_CROUCH: Rows = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '......000.......',
+  '.i...0qqq0......',
+  '..ii0qqjq0......',
+  '...00qqqq0......',
+  '....0qqqq00.....',
+  '...0qqqqqqq0....',
+  '..0qqq0qqqqq0...',
+  '..0qq00qqq0q0...',
+  '...00.0qq00q0...',
+  '.....0qq0.0qq0..',
+  '....0qqq0..0qq0.',
+  '....00000..0000.',
+];
+const NINJA_LEAP: Rows = [
+  '................',
+  '................',
+  '.........000....',
+  '.ii.....0qqq0...',
+  '...iiii0qqjq0...',
+  '.......0qqqq0...',
+  '..00000qqqq0....',
+  '.0qqqqqqqqqq00..',
+  '0qq00qqqqqqqqq0.',
+  '.00..0qqqqq000..',
+  '....0qqq0qq0....',
+  '...0qq0..0qq0...',
+  '..0qq0....0qq0..',
+  '..000......000..',
+  '................',
+  '................',
+];
+
+/**
+ * The masked ninja's silhouette (an original rival, not Ryu): a dark figure standing on a height,
+ * horns on his mask, eyes burning red, his long scarf streaming behind him.
+ */
+const masked = (wave: number): Rows => {
+  const scarf = [
+    ['iii.', 'r.ii', '...r'],
+    ['ii..', '.iii', 'r..r'],
+  ][wave] as string[];
+  return [
+    '................',
+    '.....0....0.....',
+    '.....00..00.....',
+    '......0000......',
+    `.....0qiqi0${scarf[0]}.`,
+    `.....0qqqq0${scarf[1]}.`,
+    `......0qq0${scarf[2]}..`,
+    '.....0qqqq0.....',
+    '....0qqqqqq0....',
+    '....0q0qq0q0....',
+    '....0q0qq0q0....',
+    '.....00qq00.....',
+    '......0qq0......',
+    '.....0q00q0.....',
+    '.....0q00q0.....',
+    '.....00..00.....',
+  ];
+};
+const MASKED = [masked(0), masked(1)];
+
+/* ------------------------------------------------------------------------------------------ */
 
 const frames: Record<string, readonly string[]> = {
   ground: GROUND,
@@ -2100,6 +2359,27 @@ const frames: Record<string, readonly string[]> = {
   'drac-right': cut(DRACULA, 2, 1),
   'raven-0': RAVEN[0] as Rows,
   'raven-1': RAVEN[1] as Rows,
+  // DRAGON VALLEY (World 6): bamboo (the tree tile's own frame on this page), the Hayabusa
+  // village's houses (the house tile's) and dojo, the night city's rooftops (the city tile's) and
+  // neon towers, the full moon (the moon tile's), the demon temple (its roofs over its walls and
+  // gate), leaping ninjas and the masked ninja's silhouette (its hawks are the ninja sheet's).
+  bamboo: BAMBOO,
+  minka: MINKA,
+  'ng-rooftops': NG_ROOFTOPS,
+  'neon-tower': NEON_TOWER,
+  'full-moon': FULL_MOON,
+  'dojo-left': cut(DOJO, 0, 0),
+  'dojo-right': cut(DOJO, 1, 0),
+  'temple-top-left': cut(TEMPLE, 0, 0),
+  'temple-top-mid': cut(TEMPLE, 1, 0),
+  'temple-top-right': cut(TEMPLE, 2, 0),
+  'temple-left': cut(TEMPLE, 0, 1),
+  'temple-gate': cut(TEMPLE, 1, 1),
+  'temple-right': cut(TEMPLE, 2, 1),
+  'ninja-crouch': NINJA_CROUCH,
+  'ninja-leap': NINJA_LEAP,
+  'masked-0': MASKED[0] as Rows,
+  'masked-1': MASKED[1] as Rows,
 };
 for (let f = 0; f < ARENA_CROWD_FRAMES; f++) {
   frames[`arena-crowd-a-${f}`] = crowd('a', f);

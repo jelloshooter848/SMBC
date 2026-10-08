@@ -73,6 +73,13 @@ const RESTYLES: Readonly<Record<string, { theme: Theme; music: string; hero: str
   '5-2-water': { theme: 'cv-lake', music: 'cv-lake', hero: 'simon' },
   '5-3': { theme: 'cv-clock', music: 'cv-stage', hero: 'simon' },
   '5-4': { theme: 'castlevania', music: 'cv-hall', hero: 'simon' },
+  // World 6 as Ryu's world (0.4.29); 6-2 and its coin heaven keep the 0.4.12 night city.
+  '6-1': { theme: 'ng-field', music: 'ng-stage', hero: 'ryu' },
+  '6-2-bonus': { theme: 'ng-sewer', music: 'ng-sewer', hero: 'ryu' },
+  '6-2-bonus2': { theme: 'ng-sewer', music: 'ng-sewer', hero: 'ryu' },
+  '6-2-water': { theme: 'ng-harbor', music: 'ng-harbor', hero: 'ryu' },
+  '6-3': { theme: 'ng-pass', music: 'ng-pass', hero: 'ryu' },
+  '6-4': { theme: 'ng-temple', music: 'ng-boss', hero: 'ryu' },
   '6-2': { theme: 'ninja-city', music: 'ng-city', hero: 'ryu' },
   '6-2-sky': { theme: 'ninja-city', music: 'ng-city', hero: 'ryu' },
   // 7-3's Contra jungle came first (0.4.9), the model for the others.
@@ -196,9 +203,7 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
       '4-2-larry',
       '5-4-crypt',
       '5-4-dungeon',
-      '6-2-bonus',
-      '6-2-bonus2',
-      '6-2-water',
+      // (6-2's coin rooms and water area take World 6 looks since 0.4.29; Ryu's dojo keeps its own)
       '6-2-dojo',
       '1-1',
     ];
