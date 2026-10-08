@@ -23,17 +23,36 @@ import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
 useStorage();
 
-/** Where each partner stands, and how the heroes arrive there (the pipe rooms: falling in). */
+/**
+ * Where each partner stands, and how the heroes arrive there (0.4.23: next to the hint NPC, the
+ * enemies near it cleared, so every hero gets there; Jason's room: up out of its pipe).
+ */
+const near = (x: number) => ({ mode: 'stand', x, y: 12, clearEnemies: 'all' }) as const;
 const SPOTS = [
-  { who: 'old-man', level: '2-1', start: { mode: 'stand' } },
-  { who: 'dr-light', level: '3-1-bonus', start: { mode: 'fall', x: 1, y: 0, time: 300 } },
-  { who: 'chozo', level: '4-1-bonus', start: { mode: 'fall', x: 1, y: 0, time: 300 } },
-  { who: 'townsperson', level: '5-4', start: { mode: 'stand' } },
-  { who: 'irene', level: '6-2', start: { mode: 'stand' } },
-  { who: 'lance', level: '7-3', start: { mode: 'stand' } },
+  { who: 'villager', level: '1-1', start: near(52), col: 55 },
+  // The warp zone's one free floor tile left of the pipes (178-186), walled in by bricks at 176.
+  { who: 'pipe-keeper', level: '1-2', start: near(177), col: 177 },
+  { who: 'old-man', level: '2-1', start: near(77), col: 80.5 },
+  { who: 'fairy', level: '2-1-sky', start: near(10), col: 7 },
+  // On the ground before the spring (126) and the vine block (131); 128-131 is a pit.
+  { who: 'dr-light', level: '3-1', start: near(121), col: 124 },
+  // Over the pit (57-62) on the lift, on the ground just past the vine block (64).
+  { who: 'chozo', level: '4-2', start: near(68), col: 65 },
+  { who: 'townsperson', level: '5-4', start: { mode: 'stand' }, col: 10 },
+  { who: 'irene', level: '6-2', start: { mode: 'stand' }, col: 7 },
+  { who: 'lance', level: '7-3', start: { mode: 'stand' }, col: 5 },
+  // Fred by 8-4-end's trap pipe (10), up out of the pipe at 3.
+  {
+    who: 'fred',
+    level: '8-4-end',
+    start: { mode: 'pipe-exit', x: 3, y: 10, time: 300, clearEnemies: 'all' },
+    col: 8,
+  },
   // Jason's secret area behind 8-4-end's trap pipe (0.4.18): up out of its pipe.
-  { who: 'jason', level: '8-4-jason', start: { mode: 'pipe-exit', x: 1, y: 10, time: 300 } },
-] as const satisfies readonly { who: string; level: string; start: WorldStart }[];
+  { who: 'jason', level: '8-4-jason', start: { mode: 'pipe-exit', x: 1, y: 10, time: 300 }, col: 5 },
+] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
+
+const spotOf = (who: string) => SPOTS.find((s) => s.who === who) as (typeof SPOTS)[number];
 
 const runs = CHARACTERS.flatMap((c) =>
   (c.damage.kind === 'powerup' ? ['small', 'big'] : ['full']).map((p) => [`${c.name} ${p}`, c, p] as const),
@@ -49,7 +68,7 @@ const partners = (l: LevelScene) =>
 /** Campaign file 1, hero `c` at `power`, into `spot`'s level as play reaches it. */
 function campaignIn(
   h: H,
-  spot: (typeof SPOTS)[number],
+  spot: { level: string; start: WorldStart },
   c: CharacterDef = MARIO,
   power = 'small',
   over: Parameters<typeof file>[0] = {},
@@ -58,6 +77,8 @@ function campaignIn(
   h.game.openFile(1);
   // Toad's remarks on a restyled level's first start are another story; seen already here.
   for (const s of SPOTS) h.game.markSeen(beat.restyle(s.level.replace(/-bonus$/, '')));
+  // Bowser in 8-4-end's bridge room (Fred's trap pipe is in it) is another story too.
+  h.game.markSeen(beat.bowser84);
   const st = h.game.state;
   st.character = c;
   st.powerState = power as typeof st.powerState;
@@ -104,6 +125,7 @@ describe('partners: where they stand (campaign only)', () => {
     const [it, ...more] = partners(l);
     expect(it?.who).toBe(spot.who);
     expect(more).toEqual([]);
+    expect((it!.body.x + (it!.body.w >> 1)) / px(16) - 0.5, 'column').toBe(spot.col);
     // Feet on the floor; nothing solid where it stands.
     const map = l.world.map;
     const tx0 = Math.floor(it!.body.x / px(16));
@@ -127,16 +149,16 @@ describe('partners: where they stand (campaign only)', () => {
     expect(l.world.entities.some((e) => e instanceof Decoration && e.name === 'partners:cave')).toBe(false);
   });
 
-  it("2-1: the old man's cave doorway and its two fires, in the campaign only", () => {
+  it("2-1: the old man's cave doorway and its two fires, by the vine, in the campaign only", () => {
     const h = makeGame();
-    const l = campaignIn(h, SPOTS[0]);
+    const l = campaignIn(h, spotOf('old-man'));
     h.idle(2);
     const cave = l.world.entities.find((e) => e instanceof Decoration && e.name === 'partners:cave');
     const fires = l.world.entities.filter((e) => e instanceof CaveFire);
     expect(cave).toBeDefined();
-    expect(fires.map((f) => f.body.x / px(16))).toEqual([7, 10]);
+    expect(fires.map((f) => f.body.x / px(16))).toEqual([79, 82]);
     const man = partners(l)[0] as Partner;
-    // He stands in the doorway's middle, between the fires, before the first tree (column 11).
+    // 0.4.23: by the vine block (83), in the doorway's middle, between the fires.
     expect(man.body.x + (man.body.w >> 1)).toBe(cave!.body.x + px(16));
     const classic = makeGame();
     classic.game.newGame(MARIO, '2-1');
@@ -190,7 +212,7 @@ describe('partners: the pages', () => {
 
   it('BACK on the first page skips the rest', () => {
     const h = makeGame();
-    const l = campaignIn(h, SPOTS[1]);
+    const l = campaignIn(h, spotOf('dr-light'));
     walkUp(h, l);
     h.tap('up');
     press(h, 'attack');
@@ -205,14 +227,14 @@ describe('partners: the pages', () => {
 
   it('the statue reads: READ over it in reach, said as "Up to read."; the others say TALK', () => {
     const h = makeGame();
-    const l = campaignIn(h, SPOTS[2]);
+    const l = campaignIn(h, spotOf('chozo'));
     walkUp(h, l);
     const texts = draw(l).texts.map((t) => t.str);
     expect(texts).toContain('READ');
     expect(texts).not.toContain('TALK');
     expect(h.said).toContain('An old bird statue. Up to read.');
     const h2 = makeGame();
-    const l2 = campaignIn(h2, SPOTS[4]);
+    const l2 = campaignIn(h2, spotOf('irene'));
     walkUp(h2, l2);
     expect(draw(l2).texts.map((t) => t.str)).toContain('TALK');
     expect(h2.said).toContain('Irene. Up to talk.');
@@ -220,7 +242,7 @@ describe('partners: the pages', () => {
 
   it('out of reach, no word shows over a partner', () => {
     const h = makeGame();
-    const l = campaignIn(h, SPOTS[0]);
+    const l = campaignIn(h, spotOf('old-man'));
     h.idle(2);
     expect(draw(l).texts.map((t) => t.str)).not.toContain('TALK');
   });
@@ -229,7 +251,7 @@ describe('partners: the pages', () => {
 describe("partners: the old man's coin", () => {
   it('pops out over him after page 1, once a visit: not again on a second talk', () => {
     const h = makeGame();
-    const l = campaignIn(h, SPOTS[0]);
+    const l = campaignIn(h, spotOf('old-man'));
     const man = walkUp(h, l);
     expect(h.game.state.coins).toBe(0);
     h.tap('up');
@@ -253,7 +275,7 @@ describe("partners: the old man's coin", () => {
 
   it('BACK on page 1 gives none; the next talk gives it', () => {
     const h = makeGame();
-    const l = campaignIn(h, SPOTS[0]);
+    const l = campaignIn(h, spotOf('old-man'));
     walkUp(h, l);
     h.tap('up');
     press(h, 'attack');
@@ -266,7 +288,7 @@ describe("partners: the old man's coin", () => {
   });
 
   it('no other partner gives a coin', () => {
-    for (const spot of SPOTS.slice(1)) {
+    for (const spot of SPOTS.filter((s) => s.who !== 'old-man')) {
       const h = makeGame();
       const l = campaignIn(h, spot);
       walkUp(h, l);
@@ -282,7 +304,7 @@ describe("partners: the old man's coin", () => {
 describe('partners: the music plays on', () => {
   it("closing a partner's pages (OK through them, or BACK) never stops or restarts the music", () => {
     const h = makeGame();
-    const l = campaignIn(h, SPOTS[1]);
+    const l = campaignIn(h, spotOf('dr-light'));
     walkUp(h, l);
     h.audio.stopMusic.mockClear();
     h.audio.playMusic.mockClear();
@@ -321,7 +343,7 @@ describe('partners: the music plays on', () => {
 describe('partners: co-op', () => {
   it('player 2 talking to a partner opens its pages, and player 2 turns them', () => {
     const h = makeGame();
-    const l = campaignIn(h, SPOTS[4], MARIO, 'small', { character2: 'luigi' });
+    const l = campaignIn(h, spotOf('irene'), MARIO, 'small', { character2: 'luigi' });
     expect(l.world.players).toHaveLength(2);
     walkUp(h, l);
     const [p1, p2] = l.world.players as [Player, Player];
@@ -338,5 +360,105 @@ describe('partners: co-op', () => {
     h.idle(CARD_GUARD_FRAMES + 2);
     h.tap('jump', 1);
     expect(h.top()).toBe(l);
+  });
+});
+
+describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () => {
+  const hinting = SPOTS.filter((s) => PARTNERS[s.who]?.after);
+
+  it.each(hinting)('$who says its one after page instead, and again on a second talk', (spot) => {
+    const script = PARTNERS[spot.who]!;
+    const h = makeGame();
+    const l = campaignIn(h, spot, MARIO, 'small', { freed: ['mario', script.hero!] });
+    walkUp(h, l);
+    h.tap('up');
+    expect(h.top()).toBeInstanceOf(CardScene);
+    expect(h.said.at(-1)).toBe(`${said(script.after![0]!)} OK to continue.`);
+    press(h, 'jump');
+    expect(h.top()).toBe(l);
+    expect(h.said.some((s) => s.startsWith(said(script.pages[0]!)))).toBe(false);
+    h.idle(2);
+    h.tap('up');
+    expect(h.said.at(-1)?.startsWith(said(script.after![0]!))).toBe(true);
+  });
+
+  it('the old man gives no coin once Link is free', () => {
+    const h = makeGame();
+    const l = campaignIn(h, spotOf('old-man'), MARIO, 'small', { freed: ['mario', 'link'] });
+    walkUp(h, l);
+    h.tap('up');
+    press(h, 'jump');
+    expect(h.top()).toBe(l);
+    h.idle(20);
+    expect(h.game.state.coins).toBe(0);
+    expect(l.world.entities.some((e) => e instanceof CoinPop)).toBe(false);
+  });
+
+  it("another hero's freeing changes nothing: the villager still tells of Luigi", () => {
+    const h = makeGame();
+    const l = campaignIn(h, spotOf('villager'), MARIO, 'small', { freed: ['mario', 'link'] });
+    walkUp(h, l);
+    h.tap('up');
+    expect(h.said.at(-1)?.startsWith(said(PARTNERS.villager!.pages[0]!))).toBe(true);
+  });
+
+  it('Fred has gone home from the trap pipe once Sophia III is free; Jason stays', () => {
+    const h = makeGame();
+    const l = campaignIn(h, spotOf('fred'), MARIO, 'small', { freed: ['mario', 'sophia'] });
+    h.idle(120);
+    expect(partners(l)).toEqual([]);
+    const h2 = makeGame();
+    const l2 = campaignIn(h2, spotOf('jason'), MARIO, 'small', { freed: ['mario', 'sophia'] });
+    h2.idle(120);
+    expect(partners(l2).map((p) => p.who)).toEqual(['jason']);
+  });
+});
+
+describe('partners: who moved, and how they look (0.4.23)', () => {
+  it.each([
+    ['dr-light', '3-1-bonus'],
+    ['chozo', '4-1-bonus'],
+  ])('%s is no longer in %s', (_who, level) => {
+    const h = makeGame();
+    const l = campaignIn(h, { level, start: { mode: 'fall', x: 1, y: 0, time: 300 } });
+    h.idle(4);
+    expect(partners(l)).toEqual([]);
+  });
+
+  it('the fairy greets the heroes as they climb into 2-1-sky: in reach once they step off the vine', () => {
+    const h = makeGame();
+    const l = campaignIn(h, { level: '2-1-sky', start: { mode: 'climb' } });
+    const fairy = walkUp(h, l, 600);
+    expect(fairy.who).toBe('fairy');
+  });
+
+  it('the fairy floats over her spot and bobs; the others stand on theirs', () => {
+    const h = makeGame();
+    const l = campaignIn(h, spotOf('fairy'));
+    h.idle(2);
+    const fairy = partners(l)[0]!;
+    const ys = new Set<number>();
+    for (let i = 0; i < 60; i++) {
+      h.step();
+      const s = draw(l).sprites.find((d) => d.frame.startsWith('fairy-'));
+      expect(s).toBeDefined();
+      expect(s!.y).toBeLessThan(fairy.body.y / px(1) - 8);
+      ys.add(s!.y);
+    }
+    expect(ys.size).toBeGreaterThan(1);
+    const h2 = makeGame();
+    const l2 = campaignIn(h2, spotOf('villager'));
+    h2.idle(2);
+    const v = partners(l2)[0]!;
+    const s2 = draw(l2).sprites.find((d) => d.frame.startsWith('villager-'));
+    expect(s2?.y).toBe(v.body.y / px(1));
+  });
+
+  it("Fred sits by the trap pipe, drawn from Sophia III's sheet", () => {
+    const h = makeGame();
+    const l = campaignIn(h, spotOf('fred'));
+    h.idle(120);
+    const s = draw(l).sprites.find((d) => d.frame === 'fred-0');
+    expect(s?.key).toBe('sophia');
   });
 });

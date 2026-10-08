@@ -49,6 +49,9 @@ koopa-para-green 165 12
 koopa-para-green 168 11
 koopa-para-green 171 12
 decor-castle 204 12
+;; Campaign only (0.4.23, docs/STORY.md 2.6): Dr. Light, moved up from the pipe room, on the
+;; ground before the spring (126) and the vine block (131); 128-131 is a pit.
+partner 124 12 who=dr-light campaign=true
 
 [zones]
 checkpoint 98 12

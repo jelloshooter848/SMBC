@@ -840,9 +840,12 @@ export class World {
         return new Captive(s.x, s.y, hero);
       }
       case 'partner':
-        // A campaign story partner (`partner x y who=<id>`): only while the story plays.
+        // A campaign story partner (`partner x y who=<id>`): only while the story plays (and
+        // not once it has left: Fred, after Sophia III is freed).
         return this.storyMode
-          ? Partner.create(s.x, s.y, String(s.props?.who ?? ''), Number(s.props?.dx ?? 0))
+          ? Partner.create(s.x, s.y, String(s.props?.who ?? ''), Number(s.props?.dx ?? 0), (id) =>
+              Boolean(this.captives?.isFreed(id)),
+            )
           : null;
       case 'spring':
       case 'spring-green':

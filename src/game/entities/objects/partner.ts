@@ -6,7 +6,7 @@ import { Entity, type View } from '../entity';
 import type { Player } from '../player';
 import { CoinPop } from '../effects/effects';
 import { TALK_REACH_PX } from './captive';
-import { PARTNERS, type PartnerScript } from '../../story/script';
+import { PARTNERS, partnerGone, type PartnerScript } from '../../story/script';
 import type { World } from '../../world/world';
 
 /** The blink: frames per cycle, and how many of them show the `-1` frame (the statue's glow). */
@@ -16,6 +16,14 @@ const GLOW_FRAMES = 96;
 /** Jason looks about for Fred: frames per cycle, and how many of them he looks the other way. */
 const LOOK_FRAMES = 160;
 const LOOK_BACK = 48;
+/**
+ * Partners that float (the fairy in 2-1-sky): drawn `lift` px above their spot, bobbing `bob` px
+ * up and down once every `period` frames, their wings beating (the `-1` frame) every `beat`
+ * frames. Their spot (and so the talking reach) is the ground under them.
+ */
+const FLOAT: Readonly<Record<string, { lift: number; bob: number; period: number; beat: number }>> = {
+  fairy: { lift: 14, bob: 3, period: 96, beat: 8 },
+};
 
 /**
  * Partners drawn from a hero's own sheet instead of `partners` (both frames the same picture):
@@ -24,6 +32,9 @@ const LOOK_BACK = 48;
  */
 const BORROWED: Readonly<Record<string, { sheet: string; frame: string; rows: readonly string[] }>> = {
   jason: { sheet: 'sophia', frame: 'jason-stand', rows: sophiaDef.frames['jason-stand'] ?? [] },
+  // Fred, by 8-4-end's trap pipe (0.4.23): her sheet's sitting frog, looking at the heroes coming
+  // from the left and now and then down the pipe to his right.
+  fred: { sheet: 'sophia', frame: 'fred-0', rows: sophiaDef.frames['fred-0'] ?? [] },
 };
 
 /** The idle frame's rows of partner `who` (its own sheet's `<who>-0`, or a borrowed one). */
@@ -66,10 +77,20 @@ export class Partner extends Entity {
     this.despawnMargin = null;
   }
 
-  /** The partner `who` at (tx, ty), `dx` px right, or null for one the script does not know. */
-  static create(tx: number, ty: number, who: string, dx = 0): Partner | null {
+  /**
+   * The partner `who` at (tx, ty), `dx` px right, or null for one the script does not know, or
+   * one gone once its hero is freed on the file (`isFreed`; Fred, home with Jason).
+   */
+  static create(
+    tx: number,
+    ty: number,
+    who: string,
+    dx = 0,
+    isFreed: (hero: string) => boolean = () => false,
+  ): Partner | null {
     const script = PARTNERS[who];
-    return script && idleRows(who)?.length ? new Partner(tx, ty, who, script, dx) : null;
+    if (!script || partnerGone(script, script.hero && isFreed(script.hero) ? [script.hero] : [])) return null;
+    return idleRows(who)?.length ? new Partner(tx, ty, who, script, dx) : null;
   }
 
   private get centerX(): number {
@@ -106,12 +127,19 @@ export class Partner extends Entity {
 
   render(r: Renderer, view: View): void {
     // A blink now and then; the statue's eyes glow brighter slowly (held dim with reduce flashing).
-    const alt =
-      this.who === 'chozo'
+    const float = FLOAT[this.who];
+    const alt = float
+      ? Math.floor(this.t / float.beat) % 2 === 1
+      : this.who === 'chozo'
         ? !view.reduceFlashing && this.t % GLOW_FRAMES >= GLOW_FRAMES / 2
         : this.t % BLINK_FRAMES >= BLINK_FRAMES - BLINK_SHUT;
     const x = toPx(this.body.x) - view.camX;
-    const top = toPx(this.body.y);
+    // A floating partner hangs over its spot, bobbing gently (a slow sine, whole pixels).
+    const top = float
+      ? toPx(this.body.y) -
+        float.lift -
+        Math.round(Math.sin((this.t / float.period) * 2 * Math.PI) * float.bob)
+      : toPx(this.body.y);
     const borrowed = BORROWED[this.who];
     if (borrowed)
       r.sprite(
