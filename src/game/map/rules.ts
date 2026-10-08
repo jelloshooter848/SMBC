@@ -325,6 +325,32 @@ export function findLevelNode(
   return null;
 }
 
+/**
+ * The Chapter 2 gate (docs/WORLD_MAP.md "The Chapter 2 gate"): while Chapter 1 is what ships, the
+ * campaign goes as far as the Lost Kingdom's map pages, but none of its levels can be entered from
+ * the map. The whole gate hangs on this one constant: set it false (or delete it and the
+ * `chapterGated` checks) when Chapter 2 is released.
+ */
+export const CHAPTER_GATE = true;
+
+/**
+ * Whether campaign play may not enter `levelId` (a main level or a sub-area) yet: Chapter 2
+ * content, i.e. a Lost Kingdom level ('ll-…': Lost 1-1 to 8-4, World 9 and A-D) or any level on
+ * a page of the Lost Kingdom's group (the Koopaling airships, Chapter 2 side quest, will sit
+ * behind its warp zones; Larry's airship, '4-2-airship' / '4-2-larry', is Chapter 1 and stays
+ * open). `open` is developer mode's lift (Game.chapterGateOpen). Callers check campaign play
+ * themselves: the dev select, `?level=`, custom and shared levels and the arena are never gated.
+ */
+export function chapterGated(
+  levelId: string,
+  open: boolean,
+  pages: readonly WorldMapPage[] = MAP_PAGES,
+  gate: boolean = CHAPTER_GATE,
+): boolean {
+  if (!gate || open) return false;
+  return levelId.startsWith('ll-') || findLevelNode(levelId, pages)?.page.group === 'll';
+}
+
 function openPage(progress: MapProgress, id: PageId): void {
   if (!progress.pages.includes(id)) progress.pages.push(id);
 }

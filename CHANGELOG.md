@@ -8,6 +8,35 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.20] - 2026-10-07
+
+### Added
+
+- The Lost Kingdom is sealed until Chapter 2. The campaign still plays through 8-4, the credits and onto Lost World 1's
+  map, but entering any Lost Kingdom level (Lost 1-1 to 8-4, World 9, A–D) shows "THE PATH IS BLOCKED!" over the map.
+  Nothing outside the campaign is affected (the dev level select, shared levels and the Mini Game Arena still go
+  anywhere).
+- Dev mode: the map menu has a "Chapter 2 gate: closed / open" row, saved per file, to play the Lost Kingdom in the
+  campaign.
+
+### Changed
+
+- The title screen's footer now reads PRE-RELEASE.
+
+## [0.4.19] - 2026-10-07
+
+### Changed
+
+- The game is now **Super Mario Bros. Crossover: REMIX** (SMBC REMIX). This release is a public test of the rebrand
+  ahead of the official 0.5.0 Chapter 1 release.
+  - New title screen: a block CROSSOVER logo with an SMB tag and a REMIX stamp over the Mushroom Kingdom, "CHAPTER 1",
+    the version, and credits to jelloshooter848 and to Super Mario Bros. Crossover by Exploding Rabbit.
+  - The heroes you have freed stand on the title in colour; the rest are "?" silhouettes.
+  - The first title of a session opens with the rift intro: the wand's bolt tears the sky open and the logo and heroes
+    fly out. Any button skips it, and Reduce flashing turns off its flash, shake and flicker.
+  - A remixed title theme; the pause screen carries the SMBC REMIX logo.
+  - The page title, README and credits carry the new name.
+
 ## [0.4.18] - 2026-10-07
 
 ### Added
@@ -540,7 +569,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.18...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.20...HEAD
+[0.4.20]: https://github.com/jelloshooter848/SMBC/compare/v0.4.19...v0.4.20
+[0.4.19]: https://github.com/jelloshooter848/SMBC/compare/v0.4.18...v0.4.19
 [0.4.18]: https://github.com/jelloshooter848/SMBC/compare/v0.4.17...v0.4.18
 [0.4.17]: https://github.com/jelloshooter848/SMBC/compare/v0.4.16...v0.4.17
 [0.4.16]: https://github.com/jelloshooter848/SMBC/compare/v0.4.15...v0.4.16

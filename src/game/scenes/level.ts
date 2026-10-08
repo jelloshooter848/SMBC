@@ -5,7 +5,13 @@ import { px } from '@engine/math/units';
 import { MAP_EXIT, type LevelData } from '../level/schema';
 import { freshSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
-import { drawSmb3Status, renderSmb3World, smb3Status } from '../hud/smb3-status';
+import {
+  drawSmb3Status,
+  renderSmb3World,
+  SMB3_WORLD_SHIFT,
+  smb3Status,
+  STATUS_BAR_Y,
+} from '../hud/smb3-status';
 import { drawHud } from '../hud/hud';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
@@ -455,7 +461,10 @@ export class LevelScene implements Scene {
       const ctx = this.game.ctx;
       const status = smb3Status(this.game.state, this.world.player, time);
       drawSmb3Status(r, ctx.assets, status, this.world.frame, ctx.reduceFlashing);
-      this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
+      this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0, {
+        shiftY: SMB3_WORLD_SHIFT,
+        bottom: STATUS_BAR_Y,
+      });
       return;
     }
     this.world.render(r);

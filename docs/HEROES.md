@@ -565,7 +565,9 @@ score or lives.
   its energy as a row of 28 ticks, the E-tanks (`×n` and four boxes; OK there fills his life when
   he has one and is not full; they last across lives), MEGA MAN ×lives, and a MENU row that opens
   the round's menu (Continue goes straight back to play). Up / down choose (wrapping, announced
-  with the energy), OK or MENU on a weapon equips it and play goes on. The chosen label blinks
+  with the energy), OK on a weapon equips it and play goes on. MENU closes the screen from any row
+  as START does in Mega Man 2 (taking the weapon under the cursor; never using a tank or opening
+  the round's menu, which replaces the screen rather than stacking over it). The chosen label blinks
   (held lit with reduce flashing). The campaign's Mega Man keeps the usual pause menu. `done` is called once; `game.state` is never touched.
 - Music `mm-station` on the stage and `mm-boss` from the boss's entrance, `castle-clear` for the
   win; sounds `boss-fill` (each bar notch), `beam` (his entrance, Mega Man's exit), `capsule`

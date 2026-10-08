@@ -8,54 +8,60 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { World } from '../world/world';
 import { STORY_NOT_OVER } from '../story/script';
 
+/** The game's name on two lines ("Super Mario Bros. Crossover: REMIX" is too wide for one). */
+export const CREDITS_NAME: readonly string[] = ['SUPER MARIO BROS. CROSSOVER', 'REMIX'];
+/** Its short form, for the closing lines. */
+export const CREDITS_SHORT_NAME: readonly string[] = ['SMB CROSSOVER', 'REMIX'];
+
 /** Our credits (the original's GameTextMessages.CREDITS_* credit its own team; these credit ours). */
 export const CREDITS: readonly string[] = [
-  'SUPER MARIO BROS. CROSSOVER',
-  'FAN REBUILD',
+  ...CREDITS_NAME,
   '',
   '',
-  'INSPIRED BY THE 2010 FLASH GAME',
+  'MADE BY JELLOSHOOTER848',
+  '',
+  'BASED ON THE 2010 FLASH GAME',
   'SUPER MARIO BROS. CROSSOVER',
   'BY JAY PAVLINA',
   'AND EXPLODING RABBIT',
   '',
-  'BASED ON THE GAME',
+  'ITSELF BASED ON THE GAME',
   'SUPER MARIO BROS.',
   '(1985, NINTENDO)',
   '',
   'PROGRAMMING, LEVELS,',
   'ART AND MUSIC',
-  'SMBC CONTRIBUTORS',
+  'SMBC REMIX CONTRIBUTORS',
   '',
   'EVERY SPRITE AND TILE IS',
   'ORIGINAL PIXEL ART.',
   'EVERY SONG IS ORIGINAL',
   'CHIPTUNE.',
   '',
-  'AN UNAFFILIATED FAN PROJECT.',
+  'AN UNOFFICIAL FAN PROJECT.',
   'ALL TRADEMARKS BELONG TO',
   'THEIR RESPECTIVE HOLDERS.',
   'CHARACTER NAMES ONLY DESCRIBE',
   'GAMEPLAY STYLES.',
   '',
   'THANKS FOR PLAYING',
-  'SUPER MARIO BROS. CROSSOVER',
+  ...CREDITS_NAME,
   '',
   '',
 ];
 /**
  * The credits as they roll: the campaign's SMB 8-4 false ending (`story`, docs/STORY.md 2.12)
- * adds "...BUT THE STORY ISN'T OVER." right after THANKS FOR PLAYING / SUPER MARIO BROS.
- * CROSSOVER; everywhere else the plain CREDITS.
+ * adds "END OF CHAPTER 1" and "...BUT THE STORY ISN'T OVER." (STORY_NOT_OVER) right after
+ * THANKS FOR PLAYING / SUPER MARIO BROS. CROSSOVER / REMIX; everywhere else the plain CREDITS.
  */
 export function creditsLines(story: boolean): readonly string[] {
   if (!story) return CREDITS;
-  const at = CREDITS.indexOf('THANKS FOR PLAYING') + 2;
+  const at = CREDITS.indexOf('THANKS FOR PLAYING') + 1 + CREDITS_NAME.length;
   return [...CREDITS.slice(0, at), ...STORY_NOT_OVER, ...CREDITS.slice(at)];
 }
 
 /** The closing lines that stop mid-screen (GameTextMessages.CREDITS_TAIL's place). */
-export const CREDITS_TAIL: readonly string[] = ['SMB CROSSOVER', 'FAN REBUILD'];
+export const CREDITS_TAIL: readonly string[] = CREDITS_SHORT_NAME;
 
 /** ScreenManager.CREDITS_SPEED = 40 Flash px/s: 20 px/s here, at 60 frames a second. */
 const SPEED = 20 / 60;

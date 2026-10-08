@@ -7,6 +7,25 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  */
 export const fontPalette: string[] = [NES.black, NES.white, NES.redBright, NES.yellow, NES.brown];
 
+/** Coloured text: the font with its white (role 1) swapped, asked for as `sheet('font', FONT_COLOURS.gold)`. */
+export const FONT_COLOURS = {
+  gold: 'font-gold',
+  // Not 'font-grey': that id is Zebes Escape's darker held-clock grey (fontTints below).
+  grey: 'font-silver',
+  cyan: 'font-cyan',
+  black: 'font-black',
+} as const;
+export type FontColour = keyof typeof FONT_COLOURS;
+
+const tint = (c: string): string[] => fontPalette.map((x, i) => (i === 1 ? c : x));
+export const fontPalettes: Record<string, readonly string[]> = {
+  font: fontPalette,
+  [FONT_COLOURS.gold]: tint('#f8d878'),
+  [FONT_COLOURS.grey]: tint(NES.lightGray),
+  [FONT_COLOURS.cyan]: tint(NES.skyLight),
+  [FONT_COLOURS.black]: tint(NES.black),
+};
+
 /**
  * The font with its letters in another colour (Zebes Escape's TIME: red in the last ten seconds,
  * pulsing to a dark red, and grey while the Infinite time assist holds the clock).

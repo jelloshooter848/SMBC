@@ -5,6 +5,7 @@ import { sfx } from '@content/sfx/sfx';
 import type { AssetRegistry } from '@engine/assets/registry';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { px, tileToSub, toPx } from '@engine/math/units';
+import { SCREEN_W } from '@engine/viewport';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { defaultSettings } from '@engine/save/settings';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
@@ -53,6 +54,7 @@ import {
   MET_UP,
   OrbBurst,
   SHOT_DAMAGE,
+  StationDecor,
   Turret,
   TURRET_BURST,
   TURRET_GAP,
@@ -987,9 +989,60 @@ describe("Station Escape: Mega Man 2's weapon screen (MENU)", () => {
     for (let i = 0; i < 2000 && h.scene.phase !== 'ready'; i++) h.step();
     expect(h.scene.player.scratch.etanks).toBe(1);
   });
+
+  it('START closes it from any row, as in Mega Man 2 (no E-tank used, no menu stacked over it)', () => {
+    const h = stationHarness();
+    ready(h);
+    const p = h.scene.player;
+    p.scratch.weapons = 1;
+    p.scratch.wsaw = 20;
+    p.scratch.etanks = 2;
+    p.hp = 10;
+    const depth = h.game.scenes.depth;
+    // On the E-tank row: START closes, the tank stays.
+    h.tap('start');
+    let w = h.game.scenes.top as StationWeaponScene;
+    while (w.rows[w.cursor]?.kind !== 'etank') h.tap('down');
+    h.tap('start');
+    expect(h.game.scenes.top).toBe(h.scene);
+    expect(p.scratch.etanks).toBe(2);
+    expect(p.hp).toBe(10);
+    // On the MENU row: START closes too, the round's menu does not open.
+    h.tap('start');
+    w = h.game.scenes.top as StationWeaponScene;
+    while (w.rows[w.cursor]?.kind !== 'options') h.tap('down');
+    h.tap('start');
+    expect(h.game.scenes.top).toBe(h.scene);
+    expect(h.game.scenes.depth).toBe(depth);
+    // On a weapon: START takes it, as OK does.
+    h.tap('start');
+    expect(h.game.scenes.top).toBeInstanceOf(StationWeaponScene);
+    h.tap('down');
+    h.tap('start');
+    expect(h.game.scenes.top).toBe(h.scene);
+    expect(p.scratch.tool).toBe(1);
+    // The round's menu (from the MENU row) replaces the screen, never stacks over it.
+    openMenu(h);
+    expect(h.game.scenes.depth).toBe(depth + 1);
+    expect(h.game.scenes.find((s) => s instanceof StationWeaponScene)).toBeUndefined();
+  });
 });
 
 describe('Station Escape: screen and controls', () => {
+  it("draws the first screen's decor from the very first frame (on READY, before the world steps)", () => {
+    const h = stationHarness();
+    const inView = () =>
+      h.world.entities.filter(
+        (e) => e instanceof StationDecor && e.alive && toPx(e.body.x) - h.world.camera.pxX < SCREEN_W,
+      ).length;
+    expect(h.scene.phase).toBe('ready');
+    expect(inView()).toBeGreaterThan(0);
+    // It is the same decor once play starts: none added late.
+    const first = inView();
+    ready(h);
+    expect(inView()).toBe(first);
+  });
+
   it("labels the touch buttons as Mega Man's in a level while he plays, only MENU in the cut-scenes, none once decided", () => {
     const h = stationHarness();
     expect(h.scene.touchLabels()).toMatchObject({ jump: null, attack: null, start: 'MENU' });

@@ -453,11 +453,14 @@ describe('developer mode: unlock all on the map', () => {
     h.idle(8);
     walkTo(h, '1-1');
     let menu = openMenu(h);
-    expect(labels(menu).at(-1)).toBe('Unlock all');
-    expect(items(menu).at(-1)?.value?.()).toBe('off');
+    // The last rows: "Unlock all", then the Chapter 2 gate (tests/sim/chapter-gate.test.ts).
+    expect(labels(menu).slice(-2)).toEqual(['Unlock all', 'Chapter 2 gate']);
+    const unlock = () => items(menu).find((i) => i.label === 'Unlock all');
+    expect(unlock()?.value?.()).toBe('off');
     h.tap('up'); // wraps to the last row
+    h.tap('up');
     h.tap('right');
-    expect(items(menu).at(-1)?.value?.()).toBe('on');
+    expect(unlock()?.value?.()).toBe('on');
     expect(h.said.at(-1)).toMatch(/^Unlock all: on\./);
     expect(loadSave(1)?.devUnlockAll).toBe(true);
     h.tap('attack'); // back to the map
@@ -512,12 +515,15 @@ describe('developer mode: unlock all on the map', () => {
     h.game.openFile(1, newSave(1, 'mario'));
     h.idle(8);
     const menu = openMenu(h);
-    items(menu).at(-1)?.adjust?.(1);
+    items(menu)
+      .find((i) => i.label === 'Unlock all')
+      ?.adjust?.(1);
     h.game.travelToPage('smb-5');
     expect(h.map().page.id).toBe('smb-5');
     expect(isPageOpen(h.game.mapProgress, 'smb-5')).toBe(false);
     h.idle(8);
     const again = openMenu(h);
+    h.tap('up'); // wraps to the last row (the Chapter 2 gate), then up to Unlock all
     h.tap('up');
     h.tap('jump'); // confirm toggles too
     expect(h.game.devUnlockAll).toBe(false);

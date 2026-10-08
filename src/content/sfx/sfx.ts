@@ -41,6 +41,14 @@ export const sfx: Sfx[] = [
   },
   // Descending pulse in two octave slides; also the shrink sound when hurt.
   { id: 'pipe', pulse: '@1 v11 q8 x1 p-12 o5 e8 p-12 o4 e8' },
+  // The title's REMIX stamp landing: a short record scratch (noise sweeping up and back, a
+  // pulse sliding up then down), then a drum stinger (a crash with a low thump).
+  {
+    id: 'stamp',
+    pulse: '@3 v9 q8 x0 p10 o3 e32 p-12 o4 d32 r16 @0 v12 x1 p-5 o3 c8',
+    noise: 'v12 x0 l64 n3 n6 n9 n6 n3 n6 n9 n12 v15 x1 l8 n13',
+    triangle: 'r8 q8 x1 p-7 o2 c8',
+  },
   // Five quick happy notes.
   { id: '1up', pulse: '@2 v12 q7 x0 l32 o6 e g o7 c e x1 g16' },
   // Short blip sliding down.

@@ -97,7 +97,9 @@ file's `spadeBoard`. A board stays as it was left: the pairs found stay gone on 
 (`spadeTaken`, saved with each pair's prize) until every pair on it is found; then the next board
 comes (after the last, the first again). A round for fun plays the file's board and changes
 nothing. The
-arrows move a cursor (it wraps; the announcer says the row, card and what is face up there), TURN
+arrows move a cursor (it wraps and passes over the pairs already taken, this visit or earlier ones;
+up or down with nothing else left in that column goes to the nearest card in the next row; the
+announcer says the row, card and what is face up there), TURN
 turns a card. Two at a time: a matching pair stays up and wins its prize at once (items to the
 inventory, a 1-up a life, coins added with 100 making a life); a miss shows both for 50 frames and
 turns them back. Two misses end it (the second stays up), as does clearing the board. "MISSES

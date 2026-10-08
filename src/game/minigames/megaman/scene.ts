@@ -221,8 +221,8 @@ export class StationScene implements Scene {
   /* ---------- Screens ---------- */
 
   /**
-   * Puts the camera on the screen Mega Man is in (a life's start; tests that move him) and spawns
-   * its robots fresh; a beam down starts at that screen's top.
+   * Puts the camera on the screen Mega Man is in (a life's start; tests that move him), spawns
+   * its robots fresh and the map's decor in view; a beam down starts at that screen's top.
    */
   enterScreen(): void {
     const b = this.player.body;
@@ -233,6 +233,9 @@ export class StationScene implements Scene {
     const at = this.cameraFor(this.screen);
     cam.x = at.x;
     cam.y = at.y;
+    // The decor (and the capsule) in view from the first frame: World spawns only as it steps,
+    // and READY holds it still.
+    this.world.spawnInView();
     this.world.alignBeam();
   }
 
