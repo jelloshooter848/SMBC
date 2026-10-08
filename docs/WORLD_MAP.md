@@ -751,14 +751,24 @@ curtains painted behind it, `world/theme-backdrop.ts`), 2-1's bonus room and the
 Hyrule cave (`zelda2-cave`), each with its own music (art `src/content/sprites/zelda2-hyrule.ts`,
 music `src/content/music/zelda2.ts`), and 2-1-sky2 is Link's sky palace (its own `zelda2-sky`
 sheet, `src/content/sprites/zelda2-sky.ts`, placed as `zelda2-sky:<piece>` decor behind the
-tiles); World 2's Top Secret Area keeps its own look. A look stays after the hero is freed, and
+tiles); World 2's Top Secret Area keeps its own look. Since 0.4.26 World 3 is Mega Man's world
+whole: its map page is MEGA CITY (`MapTheme` `megaman`: Dr. Light's lab by the start, city
+blocks, Metal Man's gearworks, Wood Man's forest, Flash Man's crystals and Wily's skull fortress
+over 3-4, Mets and propeller bots for critters), 3-1 and 3-1-sky keep the night stage and
+3-1-station its own steel, 3-1's bonus room is a Metal Man-style factory (`megaman-metal`, the
+station's `mm-station` tune), 3-2 a Wood Man-style forest (`megaman-wood`, a forest painted
+behind it), 3-3 Air Man-style cloud platforms on steel pylons (`megaman-air`, under a deep blue
+the lifts' planks and ropes stand out against) and 3-4 Wily's fortress (`megaman-fortress`,
+machinery and skull plates painted behind it), the last three with new music (art
+`src/content/sprites/megaman-world.ts`, music `src/content/music/megaman-world.ts`). A look stays after the hero is freed, and
 its music plays for every hero (a hero's own overworld tune, `levelMusic` in `scenes/level.ts`,
 plays only in a plain `overworld` area). No look is a water theme, and every rule that keys off
 the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake swims by its
 map's `swim: true`, "Swimming in any theme", which changes nothing in its classic water theme),
-the castle family (`isCastleTheme`: `zelda2-palace` is in it, so 2-4's Bowser, axe, bridge and
-unmask are SMB's), `hasSolidFloors` (`zelda2-cave` as the underground) and `enemyPalette`
-(`src/content/levels/campaign-looks.test.ts`, `hyrule-looks.test.ts`). In the map:
+the castle family (`isCastleTheme`: `zelda2-palace` and `megaman-fortress` are in it, so 2-4's
+and 3-4's Bowser, axe, bridge and unmask are SMB's), `hasSolidFloors` (`zelda2-cave` and
+`megaman-metal` as the underground) and `enemyPalette` (`src/content/levels/campaign-looks.test.ts`,
+`hyrule-looks.test.ts`, `megaman-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle

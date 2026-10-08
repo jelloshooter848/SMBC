@@ -10,6 +10,13 @@ startMode: fall
 camera: locked
 parent: 3-1
 
+;; Campaign play only (level/campaign.ts applyLook, 0.4.26): World 3 is Mega Man's world, and this
+;; coin room under 3-1 is a Metal Man-style factory: a conveyor-belt floor, braced crates for its
+;; bricks, the space station's grey steel pipes and big gears on the back wall. It plays the
+;; station's tune. Elsewhere (level select, ?level=3-1-bonus) it looks as it always did.
+campaignTheme: megaman-metal
+campaignMusic: mm-station
+
 [tiles]
 ;; 0
 ................
@@ -32,3 +39,10 @@ parent: 3-1
 
 [zones]
 pipe 13 12 right -> 3-1 67 10 exit=up
+
+[campaign-decor]
+;; Gears turning on the factory's back wall, behind the crates and coins.
+mm-gear 1 4
+mm-gear 12 4
+mm-gear 1 11
+mm-gear 7 11

@@ -9,6 +9,13 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.26): Air Man-style sky (`megaman-air`): its treetops are cloud platforms
+;; on steel pylons, its floor steel decking, under a deep daylight blue that its lifts' planks and
+;; the balance lifts' ropes and pulleys stand out against. Elsewhere (level select, ?level=3-3) it
+;; looks as it always did.
+campaignTheme: megaman-air
+campaignMusic: mm-air
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

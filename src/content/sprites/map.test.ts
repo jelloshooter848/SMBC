@@ -20,6 +20,7 @@ const THEMES = [
   'warp',
   'arena',
   'hyrule',
+  'megaman',
 ];
 
 const tileFrames = [
@@ -66,6 +67,18 @@ const tileFrames = [
   'palace-right',
   'ruins',
   'graves',
+  // Mega Man's world (World 3, 0.4.26).
+  'city',
+  'lab-left',
+  'lab-right',
+  'gears',
+  'crystal-flash', // Flash Man's blue crystals
+  'wily-top-left',
+  'wily-top-mid',
+  'wily-top-right',
+  'wily-left',
+  'wily-gate',
+  'wily-right',
   ...Array.from({ length: WATER_FRAMES }, (_, f) => [
     `water-${f}`,
     `surf-${f}`,
@@ -109,6 +122,11 @@ const actorFrames: Record<string, Size> = {
   'fairy-1': T16,
   'zora-0': T16,
   'zora-1': T16,
+  // Mega Man's robots (World 3, 0.4.26).
+  'met-0': T16,
+  'met-1': T16,
+  'copter-0': T16,
+  'copter-1': T16,
 };
 
 function expectFrame(name: string, [w, h]: Size): void {

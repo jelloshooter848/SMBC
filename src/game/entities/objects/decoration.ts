@@ -103,6 +103,8 @@ export function decorPalette(theme: string): string {
   // World 2 as Hyrule (0.4.24): the lake, the palace and the cave.
   if (theme === 'zelda2-water' || theme === 'zelda2-palace' || theme === 'zelda2-cave')
     return `decor-${theme}`;
+  // World 3 as Mega Man's world (0.4.26): the factory, the forest, the sky and Wily's fortress.
+  if (theme.startsWith('megaman-') && theme !== 'megaman-stage') return `decor-${theme}`;
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern' || theme === 'tourian') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';

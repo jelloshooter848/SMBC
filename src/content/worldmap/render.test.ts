@@ -53,7 +53,7 @@ describe('map rendering', () => {
     const page = MAP_PAGES[0];
     if (!page) throw new Error('no pages');
     drawMapTile(r, registry(), page, '.', 0, 0, 0);
-    drawMapTile(r, registry(), page, '?', 0, 0, 0);
+    drawMapTile(r, registry(), page, '¤', 0, 0, 0); // ('?' is Wily's fortress since 0.4.26)
     expect(r.drawn).toEqual([]);
   });
 
@@ -69,7 +69,7 @@ describe('map rendering', () => {
 
   it('walkable tiles are ground-like, never water, walls or scenery', () => {
     for (const ch of '#,*:o=I(O){-}G87923146qezc[]nuF') expect(MAP_WALKABLE.has(ch), ch).toBe(true);
-    for (const ch of '.~L%TYHS^RCKhj!|WVPXAsxDkabdfgilmprtvMNEBw5ZJ<U>Q@y')
+    for (const ch of '.~L%TYHS^RCKhj!|WVPXAsxDkabdfgilmprtvMNEBw5ZJ<U>Q@y0&$"+?/;_`')
       expect(MAP_WALKABLE.has(ch), ch).toBe(false);
   });
 

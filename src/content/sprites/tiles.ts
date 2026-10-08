@@ -24,6 +24,16 @@ import {
   zelda2WaterTileFrames,
   zelda2WaterTilePalette,
 } from './zelda2-hyrule';
+import {
+  megamanAirTileFrames,
+  megamanAirTilePalette,
+  megamanFortressTileFrames,
+  megamanFortressTilePalette,
+  megamanMetalTileFrames,
+  megamanMetalTilePalette,
+  megamanWoodTileFrames,
+  megamanWoodTilePalette,
+} from './megaman-world';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -325,6 +335,11 @@ export const tilePalettes: Record<string, string[]> = {
   'tiles-zelda2-water': zelda2WaterTilePalette,
   'tiles-zelda2-palace': zelda2PalaceTilePalette,
   'tiles-zelda2-cave': zelda2CaveTilePalette,
+  // World 3 as Mega Man's world (0.4.26): 3-1's bonus room, 3-2, 3-3, 3-4 (megaman-world.ts).
+  'tiles-megaman-metal': megamanMetalTilePalette,
+  'tiles-megaman-wood': megamanWoodTilePalette,
+  'tiles-megaman-air': megamanAirTilePalette,
+  'tiles-megaman-fortress': megamanFortressTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2323,4 +2338,13 @@ Object.assign(
   zelda2WaterTileFrames(tilesDef.frames),
   zelda2PalaceTileFrames(),
   zelda2CaveTileFrames(tilesDef.frames),
+);
+
+// World 3 as Mega Man's world (0.4.26): 3-1's bonus room, 3-2, 3-3 and 3-4 (megaman-world.ts).
+Object.assign(
+  tilesDef.frames,
+  megamanMetalTileFrames(tilesDef.frames),
+  megamanWoodTileFrames(),
+  megamanAirTileFrames(),
+  megamanFortressTileFrames(),
 );

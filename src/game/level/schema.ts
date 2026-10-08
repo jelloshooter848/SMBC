@@ -62,7 +62,14 @@ export type Theme =
   // 2-1's bonus room and the Moblin's cave as a Hyrule cave (the underground still).
   | 'zelda2-water'
   | 'zelda2-palace'
-  | 'zelda2-cave';
+  | 'zelda2-cave'
+  // World 3 as Mega Man's world (0.4.26, campaign looks): 3-1's bonus room as a Metal Man-style
+  // factory (the underground still), 3-2 as a Wood Man-style forest, 3-3 as Air Man-style cloud
+  // platforms and 3-4 as Wily's fortress (a castle still).
+  | 'megaman-metal'
+  | 'megaman-wood'
+  | 'megaman-air'
+  | 'megaman-fortress';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -103,6 +110,10 @@ export const THEMES: readonly Theme[] = [
   'zelda2-water',
   'zelda2-palace',
   'zelda2-cave',
+  'megaman-metal',
+  'megaman-wood',
+  'megaman-air',
+  'megaman-fortress',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -124,7 +135,8 @@ export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =
 
 /**
  * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
- * the campaign looks of 5-4 (Simon's hall) and 2-4 (Link's palace, 0.4.24). Castle rules that key
+ * the campaign looks of 5-4 (Simon's hall), 2-4 (Link's palace, 0.4.24) and 3-4 (Wily's fortress,
+ * 0.4.26). Castle rules that key
  * off the theme ask this, never the name.
  */
 export const isCastleTheme = (theme: Theme): boolean =>
@@ -132,16 +144,22 @@ export const isCastleTheme = (theme: Theme): boolean =>
   theme === 'castle-overworld' ||
   theme === 'castle-water' ||
   theme === 'castlevania' ||
-  theme === 'zelda2-palace';
+  theme === 'zelda2-palace' ||
+  theme === 'megaman-fortress';
 
 /**
  * The original's `cannotPassThroughGround`: underground and castle areas, where a Hammer Bro's
  * jumps go only straight up and down (no hopping through the floors), and 4-2's campaign look
  * (Brinstar), which is 4-2's underground still, and the Hyrule cave (2-1's bonus room and the
- * Moblin's cave, 0.4.24). Samus's cavern is not one.
+ * Moblin's cave, 0.4.24) and the Metal Man-style factory (3-1's bonus room, 0.4.26). Samus's cavern
+ * is not one.
  */
 export const hasSolidFloors = (theme: Theme): boolean =>
-  theme === 'underground' || theme === 'brinstar' || theme === 'zelda2-cave' || isCastleTheme(theme);
+  theme === 'underground' ||
+  theme === 'brinstar' ||
+  theme === 'zelda2-cave' ||
+  theme === 'megaman-metal' ||
+  isCastleTheme(theme);
 
 /** The music an area of this theme plays when its map names none. */
 export function themeMusic(theme: Theme): string {
@@ -167,6 +185,12 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'tourian') return 'tourian';
   // World 2 as Hyrule (0.4.24): each look has its own tune of the same name.
   if (theme === 'zelda2-water' || theme === 'zelda2-palace' || theme === 'zelda2-cave') return theme;
+  // World 3 as Mega Man's world (0.4.26): the factory plays the space station's tune; the forest,
+  // the sky and Wily's fortress have their own (music/megaman-world.ts).
+  if (theme === 'megaman-metal') return 'mm-station';
+  if (theme === 'megaman-wood') return 'mm-wood';
+  if (theme === 'megaman-air') return 'mm-air';
+  if (theme === 'megaman-fortress') return 'mm-wily';
   return 'overworld';
 }
 

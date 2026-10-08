@@ -165,4 +165,11 @@ export const SKY: Record<string, string> = {
   'zelda2-water': '#6888fc',
   'zelda2-palace': '#000000',
   'zelda2-cave': '#000000',
+  // World 3 as Mega Man's world (0.4.26): 3-1's bonus room in the factory's dark, 3-2's forest
+  // in a deep green gloom, 3-3 under Air Man's deep daylight blue (the lifts' planks and the
+  // balance lifts' ropes stand out against it), 3-4's fortress in the dark.
+  'megaman-metal': '#000000',
+  'megaman-wood': '#001800',
+  'megaman-air': '#2858d8',
+  'megaman-fortress': '#000000',
 };

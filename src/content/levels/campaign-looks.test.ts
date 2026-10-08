@@ -50,6 +50,11 @@ const RESTYLES: Readonly<Record<string, { theme: Theme; music: string; hero: str
   '2-4': { theme: 'zelda2-palace', music: 'zelda2-palace', hero: 'link' },
   '3-1': { theme: 'megaman-stage', music: 'mm-stage-31', hero: 'megaman' },
   '3-1-sky': { theme: 'megaman-stage', music: 'mm-stage-31', hero: 'megaman' },
+  // World 3 as Mega Man's world (0.4.26).
+  '3-1-bonus': { theme: 'megaman-metal', music: 'mm-station', hero: 'megaman' },
+  '3-2': { theme: 'megaman-wood', music: 'mm-wood', hero: 'megaman' },
+  '3-3': { theme: 'megaman-air', music: 'mm-air', hero: 'megaman' },
+  '3-4': { theme: 'megaman-fortress', music: 'mm-wily', hero: 'megaman' },
   '4-2': { theme: 'brinstar', music: 'brinstar', hero: 'samus' },
   '5-4': { theme: 'castlevania', music: 'cv-hall', hero: 'simon' },
   '6-2': { theme: 'ninja-city', music: 'ng-city', hero: 'ryu' },
@@ -166,7 +171,7 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
       // (World 2's bonus room and the Moblin's cave take Hyrule's cave look since 0.4.24; its Top
       // Secret Area keeps its own)
       '2-top-secret',
-      '3-1-bonus',
+      // (3-1's bonus room is a Metal Man-style factory since 0.4.26; the space station keeps its own)
       '3-1-station',
       '4-2-intro',
       '4-2-exit',

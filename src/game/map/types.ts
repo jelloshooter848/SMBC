@@ -8,7 +8,7 @@
 export type MapTheme =
   | 'grass' // World 1
   | 'sea' // the Lost Levels' sea worlds (World 2's until 0.4.24)
-  | 'night' // World 3
+  | 'night' // World 3's until 0.4.26; the Lost Levels' night worlds
   | 'mushroom' // World 4
   | 'sky' // World 5
   | 'snow' // World 6
@@ -16,7 +16,8 @@ export type MapTheme =
   | 'bowser' // World 8
   | 'warp' // Warp Zone hub
   | 'arena' // the Mini Game Arena
-  | 'hyrule'; // World 2 since 0.4.24: Link's Hyrule
+  | 'hyrule' // World 2 since 0.4.24: Link's Hyrule
+  | 'megaman'; // World 3 since 0.4.26: Mega Man's MEGA CITY
 
 /**
  * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),

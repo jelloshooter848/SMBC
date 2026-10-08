@@ -13,6 +13,8 @@ const INLAND = new Set([
   ...[',', '*', ':', 'o', 'T', 'Y', 'H', 'S', '^', 'R', 'P', 'X', '(', 'O', ')', '!', 'A'],
   // Hyrule (World 2): forest, the palace, ruins and graves.
   ...['5', '<', 'U', '>', 'Q', '@', 'y', 'Z', 'J'],
+  // Mega City (World 3): city blocks, the lab, gearworks and Wily's fortress.
+  ...['0', '&', '$', '"', '+', '?', '/', ';', '_', '`'],
 ]);
 
 /** The round pond's tiles, row by row (4 wide, 3 tall); a sketch writes the whole block. */

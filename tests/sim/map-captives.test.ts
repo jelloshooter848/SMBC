@@ -70,7 +70,7 @@ const CASES: Case[] = [
   {
     hero: 'megaman',
     colour: 'megaman@megaman',
-    shade: 'megaman@megaman~shade-night',
+    shade: 'megaman@megaman~shade-megaman', // World 3 is Mega Man's since 0.4.26
     page: 'smb-3',
     node: '3-1',
     before: {
