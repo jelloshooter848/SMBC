@@ -1273,7 +1273,7 @@ describe('Sophia III: the 0.4.11 review', () => {
     let from = -1;
     let at = -1;
     const r = runSim({
-      // As she plays it: with the original's pieces for her (0.4.33: the drops at 160 and 224 two
+      // As she plays it: with the original's pieces for her (0.4.32: the drops at 160 and 224 two
       // wide, so she may drop through without the nose-first turn).
       level: heroVariant(getLevel('4-4'), [SOPHIA.id], false),
       character: SOPHIA,
