@@ -11,7 +11,6 @@ import {
   ARENA_PAGE,
   CRASH_PAGES,
   ENTRY_NEEDS,
-  FAKES_PAGES,
   HUB_PAGE,
   JOINED_CRACK,
   JOINED_GENERIC,
@@ -81,7 +80,6 @@ export function dueScenes(g: GuideInput): ToadScene[] {
   // The major scenes.
   if (g.crash && !g.seen(beat.crash)) add([beat.crash], [...CRASH_PAGES], true);
   if (page === 'smb-8' && p.gameCleared === true) add([beat.rift], riftPages(g.hero), true);
-  if (page === 'smb-1' && p.cleared.includes('1-4')) add([beat.fakes], [...FAKES_PAGES], true);
   // A hero joined: the generic card first (once per file), then each hero's own.
   const cracked = p.gameCleared === true;
   const generic = (): Page[] => (cracked ? [JOINED_GENERIC] : [JOINED_CRACK, JOINED_GENERIC]);

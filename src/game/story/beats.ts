@@ -18,7 +18,11 @@ import { CRYSTAL_BALL, heroHint, hiddenHeroes, type HiddenHero } from '@game/map
  * - `rift`          Toad works out Peach's note after the 8-4 credits;
  * - `restyle:<level>` Toad's remark on a restyled level's first start ('restyle:2-1');
  * - `bowser-8-4`    Bowser's "no more stand-ins" on first entering 8-4's bridge room;
- * - `hub` / `arena` the first visit to the Warp Zone hub / the Mini Game Arena.
+ * - `hub` / `arena` the first visit to the Warp Zone hub / the Mini Game Arena;
+ * - `gate:<page>`   (0.4.23) the world gate out of page `page` broke: Bowser's cutaway and Toad;
+ * - `sealed:<page>` (0.4.23) Toad's reminder while that road is sealed ('sealed:smb-8': the rift);
+ * - `welcome:<page>` (0.4.23) the local's welcome on the first arrival on page `page` (worlds 2-8);
+ * - `remark:<level>` (0.4.23) the hero's remark at castle `level`'s axe ('remark:1-4').
  */
 
 /** What storyOn reads from the game (the Game class satisfies it). */
@@ -58,6 +62,14 @@ export const beat = {
   bowser84: 'bowser-8-4',
   hub: 'hub',
   arena: 'arena',
+  /** The world gate out of page `page` ('smb-1'..'smb-7') broke: Bowser's cutaway, the seal, Toad. */
+  gate: (page: string) => `gate:${page}`,
+  /** Toad's reminder while page `page`'s road on is sealed ('sealed:smb-8': the rift waits for Sophia III). */
+  sealed: (page: string) => `sealed:${page}`,
+  /** The local's welcome, the first arrival on page `page` ('smb-2'..'smb-8'). */
+  welcome: (page: string) => `welcome:${page}`,
+  /** The hero's remark at castle `level`'s axe ('1-4'..'7-4'). */
+  remark: (level: string) => `remark:${level}`,
 } as const;
 
 /** The hero every file starts with (never a captive). The one definition: save-files imports and re-exports it. */
@@ -74,7 +86,10 @@ export const FIRST_HERO = 'mario';
  * - `missed:<id>` for every hidden hero whose map silhouette shows (map/captives heroHint);
  * - `crash` with the crystal ball's secret; `all-freed` when every hidden hero is freed;
  * - `rift` and `bowser-8-4` once 8-4 is beaten (gameCleared, or 8-4 cleared);
- * - `hub` / `arena` when those pages are open.
+ * - `hub` / `arena` when those pages are open;
+ * - (0.4.23) `gate:<page>` and `sealed:<page>` for every SMB page whose road on has led somewhere
+ *   already (the next page open), `welcome:<page>` for every open page of worlds 2-8, and
+ *   `remark:<id>` for every castle cleared.
  */
 export function seedSeen(
   progress: MapProgress,
@@ -95,5 +110,20 @@ export function seedSeen(
   for (const id of cleared) out.push(beat.restyle(id));
   if (progress.pages.includes('hub')) out.push(beat.hub);
   if (progress.pages.includes('arena')) out.push(beat.arena);
+  out.push(...seedSeenS3(progress));
   return [...new Set(out)];
+}
+
+/** S3's part of seedSeen (0.4.23): the gates, the welcomes and the castle remarks already past. */
+export function seedSeenS3(progress: MapProgress): string[] {
+  const out: string[] = [];
+  const open = progress.pages;
+  for (let n = 1; n <= 8; n++) {
+    const page = `smb-${n}`;
+    const next = n < 8 ? `smb-${n + 1}` : 'll-1';
+    if (open.includes(next)) out.push(beat.gate(page), beat.sealed(page));
+    if (n >= 2 && open.includes(page)) out.push(beat.welcome(page));
+    if (n <= 7 && progress.cleared.includes(`${n}-4`)) out.push(beat.remark(`${n}-4`));
+  }
+  return out;
 }

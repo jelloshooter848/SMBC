@@ -6,7 +6,6 @@ import {
   ALL_FREED_BEFORE,
   ARENA_PAGE,
   CRASH_PAGES,
-  FAKES_PAGES,
   HINT_COLS,
   HUB_PAGE,
   JOINED_CRACK,
@@ -69,12 +68,8 @@ describe('dueScenes', () => {
     ]);
   });
 
-  it('the fake Bowsers: once, on World 1 after 1-4, walking in', () => {
-    const s = dueScenes(input({ prog: { cleared: ['1-0', '1-4'] }, story: [beat.enter('smb-1')] }));
-    expect(s).toEqual([{ ids: [beat.fakes], pages: [...FAKES_PAGES], walk: true }]);
-    expect(
-      dueScenes(input({ page: 'smb-2', prog: { cleared: ['1-0', '1-4'] }, story: ['enter:smb-2'] })),
-    ).toEqual([]);
+  it('the fake Bowsers: no map card after 1-4 any more (castle 1-4 says it, 0.4.23)', () => {
+    expect(dueScenes(input({ prog: { cleared: ['1-0', '1-4'] }, story: [beat.enter('smb-1')] }))).toEqual([]);
   });
 
   it('heroes joined: the generic card first (once), then each own card; crack page gone after 8-4', () => {
@@ -135,7 +130,6 @@ describe('dueScenes', () => {
       shadows: ['luigi'],
     });
     expect(ids(g)).toEqual([
-      beat.fakes,
       beat.joined(),
       ...HIDDEN.map((h) => beat.joined(h)),
       beat.allFreed,

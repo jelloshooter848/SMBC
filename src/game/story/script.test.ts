@@ -9,7 +9,6 @@ import {
   CASTLE_COLS,
   CASTLE_PAGES,
   CRASH_PAGES,
-  FAKES_PAGES,
   HINT_COLS,
   HUB_PAGE,
   JOINED_CRACK,
@@ -42,7 +41,6 @@ const CASTLE_LINES = 4;
 const cards: [string, Page][] = [
   ...STORY_TOAD_PAGES.map((p, i): [string, Page] => [`toad ${i}`, p]),
   ...STORY_TEASE_PAGES.map((p, i): [string, Page] => [`tease ${i}`, p]),
-  ...FAKES_PAGES.map((p, i): [string, Page] => [`fakes ${i}`, p]),
   ['no more stand-ins', noMoreStandIns(LONGEST)],
   ...Object.entries(RESTYLE_PAGES).map(([k, p]): [string, Page] => [`restyle ${k}`, p]),
   ...Object.entries(WORLD_ENTRY).flatMap(([k, ps]) =>

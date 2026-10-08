@@ -26,6 +26,13 @@ export const ALL_STORY: readonly string[] = [
   beat.bowser84,
   beat.hub,
   beat.arena,
+  // S3 (0.4.23): the world gates, their reminders, the welcomes and the castle remarks.
+  ...[1, 2, 3, 4, 5, 6, 7, 8].flatMap((n) => [
+    beat.gate(`smb-${n}`),
+    beat.sealed(`smb-${n}`),
+    beat.welcome(`smb-${n}`),
+  ]),
+  ...[1, 2, 3, 4, 5, 6, 7].map((n) => beat.remark(`${n}-4`)),
 ];
 
 /** Marks every story beat seen on the open file (saved the next time the game saves). */

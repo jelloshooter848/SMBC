@@ -10,8 +10,14 @@ import {
   ALL_FREED_BEFORE,
   ARENA_PAGE,
   CASTLE_PAGES,
+  castleRemark,
+  gateScript,
+  REMARK_CASTLES,
+  RIFT_SEALED_PAGES,
+  sealedHint,
+  WELCOMES,
+  welcomeHint,
   CRASH_PAGES,
-  FAKES_PAGES,
   HUB_PAGE,
   JOINED_CRACK,
   JOINED_GENERIC,
@@ -96,7 +102,6 @@ function scriptPages(): Map<string, Page> {
   const list = (name: string, pages: readonly Page[]) => pages.forEach((p, i) => add(`${name}[${i}]`, p));
   list('STORY_TOAD_PAGES', STORY_TOAD_PAGES);
   list('STORY_TEASE_PAGES', STORY_TEASE_PAGES);
-  list('FAKES_PAGES', FAKES_PAGES);
   add('noMoreStandIns', noMoreStandIns(HERO));
   for (const [id, page] of Object.entries(RESTYLE_PAGES)) add(`RESTYLE_PAGES.${id}`, page);
   for (const [id, pages] of Object.entries(WORLD_ENTRY)) list(`WORLD_ENTRY.${id}`, pages);
@@ -126,6 +131,17 @@ function scriptPages(): Map<string, Page> {
   add('HUB_PAGE', HUB_PAGE);
   add('ARENA_PAGE', ARENA_PAGE);
   for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}`, p.pages);
+  // S3 (0.4.23): the castle remarks, the world gates, the rift's reminder and the welcomes.
+  for (const id of REMARK_CASTLES) add(`castleRemark.${id}`, castleRemark(id, HERO) as Page);
+  for (let w = 1; w <= 7; w++) {
+    const g = gateScript(w, HERO);
+    if (!g) continue;
+    list(`gateScript.${w}.reminder`, g.reminder);
+    list(`gateScript.${w}.bowser`, g.bowser);
+    list(`gateScript.${w}.toad`, g.toad);
+  }
+  list('RIFT_SEALED_PAGES', RIFT_SEALED_PAGES);
+  for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}`, w.pages);
   return out;
 }
 
@@ -158,6 +174,17 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
     const inDoc = new Set(blocks.map((b) => key(b.lines)));
     const missing = [...pages].filter(([, page]) => !inDoc.has(key(page))).map(([name]) => name);
     expect(missing).toEqual([]);
+  });
+
+  it("the gates' and welcomes' hint lines (`hint line ...`) are script.ts's, and back (S3)", () => {
+    const md = readFileSync(resolve(__dirname, '../../../docs/STORY.md'), 'utf8');
+    const shipped = md.slice(md.indexOf('\n### 2.1 '), md.indexOf('\n### 2.15 '));
+    const doc = [...shipped.matchAll(/[Hh]int line(?: on [^:`]+:)?\s+`((?:SEALED|TALK)[^`]+)`/g)].map(
+      (m) => m[1] as string,
+    );
+    const names = ['LUIGI', 'LINK', 'MEGA MAN', 'SAMUS', 'SIMON', 'RYU', 'BILL', 'SOPHIA III'];
+    const ours = [...names.map(sealedHint), ...Object.values(WELCOMES).map((w) => welcomeHint(w.local))];
+    expect([...new Set(doc)].sort()).toEqual(ours.sort());
   });
 
   it("every hint line of the doc is one of script.ts's, and back", () => {
