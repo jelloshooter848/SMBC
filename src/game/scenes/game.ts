@@ -22,7 +22,7 @@ import { loadLibrary, customLevelId } from '../level/library';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene, creditsLines } from './credits';
 import { STORY_NOT_OVER } from '../story/script';
-import { WorldMapScene, spoken, type WorldMapOptions } from './world-map';
+import { WorldMapScene, showChapterGate, spoken, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId } from '../map/types';
 import {
   clearLevel,
@@ -35,6 +35,7 @@ import {
   newMapProgress,
   openMetExits,
   warpTo,
+  chapterGated,
 } from '../map/rules';
 import { mapPage } from '@content/worldmap';
 import { CRYSTAL_BALL } from '../map/captives';
@@ -133,6 +134,8 @@ export class Game {
   devUnlockAll = false;
   /** The file's developer "All heroes" flag (SaveFile.devAllHeroes); see `heroLocked`. */
   devAllHeroes = false;
+  /** The file's developer "Chapter 2 gate: open" flag (SaveFile.devGateOpen); see `chapterGateOpen`. */
+  devGateOpen = false;
   /** Heroes freed on the campaign's file (SaveFile.freed); see `heroLocked`. */
   freed: string[] = [FIRST_HERO];
   /**
@@ -464,6 +467,7 @@ export class Game {
       pendingReveal: this.pendingReveal.slice(),
       devUnlockAll: this.devUnlockAll,
       devAllHeroes: this.devAllHeroes,
+      devGateOpen: this.devGateOpen,
       freed: this.freed.slice(),
       tutorials: this.tutorials.slice(),
       met: this.met.slice(),
@@ -818,6 +822,32 @@ export class Game {
     return this.devMode && this.devUnlockAll;
   }
 
+  /** The Chapter 2 gate's dev lift: the file's "Chapter 2 gate: open" flag, only while dev mode is on. */
+  get chapterGateOpen(): boolean {
+    return this.devMode && this.devGateOpen;
+  }
+
+  /**
+   * Whether campaign play may not enter `levelId` yet (rules.chapterGated: Chapter 2, the Lost
+   * Kingdom, unless dev mode lifts the gate). Always false outside the campaign (dev select,
+   * `?level=`, custom and shared levels, play-tests); arena rounds are never Lost levels.
+   */
+  chapterBlocked(levelId: string): boolean {
+    return this.campaign !== null && chapterGated(levelId, this.chapterGateOpen);
+  }
+
+  /**
+   * A campaign level start that reached Chapter 2 content without the map's gate (none should:
+   * the map is the only way into a Lost level, rules.chapterGated): back to the map, where the
+   * gate's card shows. The run's checkpoint and clock go, as for a quit to the map.
+   */
+  private chapterGateBack(): void {
+    this.state.checkpoint = null;
+    this.state.time = null;
+    this.showMap();
+    showChapterGate(this);
+  }
+
   showDevMenu(): void {
     this.scenes.push(new DevMenuScene(this));
   }
@@ -917,6 +947,7 @@ export class Game {
     this.mapLastNode = { ...save.lastNode };
     this.devUnlockAll = save.devUnlockAll === true;
     this.devAllHeroes = save.devAllHeroes === true;
+    this.devGateOpen = save.devGateOpen === true;
     this.freed = save.freed.slice();
     this.met = metIds(save.met ?? [], this.freed, save.secrets.includes(CRYSTAL_BALL));
     this.bonusOpen = save.bonusOpen !== false;
@@ -991,6 +1022,7 @@ export class Game {
 
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */
   goToLevel(levelId: string, start: LevelStart): void {
+    if (this.chapterBlocked(levelId)) return this.chapterGateBack();
     let level: LevelData;
     try {
       level = this.sharedLevel?.id === levelId ? this.sharedLevel : this.deps.getLevel(levelId);
@@ -1046,6 +1078,7 @@ export class Game {
    * other level ends a run aboard. A dev airship round's levels replace each other over its list.
    */
   startLevel(level: LevelData, start: LevelStart): void {
+    if (this.chapterBlocked(level.id)) return this.chapterGateBack();
     const run = this.airship;
     if (!isAirshipArea(level.id)) {
       // A dev round leaving the airship ends as QUIT (its own scenes go back to the dev list).

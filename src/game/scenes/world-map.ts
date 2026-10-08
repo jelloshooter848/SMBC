@@ -65,6 +65,8 @@ import { arenaPadHint, arenaPadSaid, arenaPadTouch, drawArenaPad, playArenaPad }
 import { dueScenes, missedHint, missedSaid, ToadGuide, type ToadScene } from '../map/toad-guide';
 import { beat, storyOn } from '../story/beats';
 import { fontText } from '../hud/text';
+import { CardScene } from './message';
+import { pageSaid } from '../story/cards';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -123,6 +125,35 @@ export interface WorldMapOptions {
 
 /** `story`: Toad's box at the top of the map (map/toad-guide.ts), before the page's reveal. */
 type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade' | 'cutscene' | 'story';
+
+/**
+ * The Chapter 2 gate's card (rules.chapterGated): shown over the map instead of starting a Lost
+ * Kingdom level. Lines fit the card box (at most 28 chars).
+ */
+export const CHAPTER_GATE_CARD: readonly string[] = [
+  'THE PATH IS BLOCKED!',
+  'A STRANGE FORCE SEALS THE',
+  'WAY INTO THE LOST KINGDOM.',
+  'COME BACK IN CHAPTER 2!',
+];
+
+/**
+ * The gate's card in a box over the map (which stays beneath; the hero stays on the node), read
+ * out; OK (JUMP), MENU or BACK closes it. Nothing is saved.
+ */
+export function showChapterGate(game: Game): void {
+  game.ctx.audio.sfx('bump');
+  game.deps.announcer?.say(pageSaid(CHAPTER_GATE_CARD, true));
+  game.scenes.push(
+    new CardScene(game, CHAPTER_GATE_CARD, () => game.scenes.pop(), null, 1800, {
+      panel: true,
+      overlay: true,
+      top: true,
+      keys: ['jump', 'start', 'attack'],
+      prompt: () => abilityHint(game, 'OK', 'jump'),
+    }),
+  );
+}
 
 /** 'WORLD 1' → 'World 1', 'LOST LEVELS - BEAT 8-4 TO UNLOCK' → 'Lost Levels - Beat 8-4 To Unlock'. */
 export function spoken(text: string): string {
@@ -915,6 +946,11 @@ export class WorldMapScene implements Scene {
       return;
     }
     if (input.pressed('jump') && here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll)) {
+      // The one way into a level from the map: Chapter 2's levels are sealed for now (the card).
+      if (this.game.chapterBlocked(here.level)) {
+        showChapterGate(this.game);
+        return;
+      }
       this.game.ctx.audio.sfx('coin');
       this.game.enterLevelFromMap(here.level);
       return;
@@ -1136,6 +1172,12 @@ export class WorldMapScene implements Scene {
               adjust: () => this.toggleUnlockAll(),
               hint: 'Developer mode: every level on the map open',
             },
+            {
+              label: 'Chapter 2 gate',
+              value: () => (game.devGateOpen ? 'open' : 'closed'),
+              adjust: () => this.toggleChapterGate(),
+              hint: 'Developer mode: open lets the Lost Kingdom levels be entered',
+            },
           ]
         : []),
     ];
@@ -1152,6 +1194,16 @@ export class WorldMapScene implements Scene {
     game.devAllHeroes = !game.devAllHeroes;
     if (!game.devAllHeroes) game.dropLockedHeroes();
     this.views.clear();
+    game.autosave();
+  }
+
+  /**
+   * Map menu "Chapter 2 gate" (dev mode only): flips the file's flag and saves. Open, the campaign
+   * enters Lost Kingdom levels as before the gate (rules.chapterGated); nothing else changes.
+   */
+  private toggleChapterGate(): void {
+    const game = this.game;
+    game.devGateOpen = !game.devGateOpen;
     game.autosave();
   }
 

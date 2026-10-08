@@ -158,8 +158,8 @@ describe('title text', () => {
     h.idle(TITLE_TIMING.dropEnd + 10);
     const all = texts(h.game.scenes.top as TitleScene);
     // Shadowed text draws twice (shadow first): the last draw is the text itself.
-    const footer = all.findLast((x) => x.str === 'PRE-RELEASE');
-    const version = all.findLast((x) => x.str === `V${__APP_VERSION__}`.toUpperCase());
+    const footer = all.filter((x) => x.str === 'PRE-RELEASE').at(-1);
+    const version = all.filter((x) => x.str === `V${__APP_VERSION__}`.toUpperCase()).at(-1);
     expect(footer).toMatchObject({ x: 4, y: 228 });
     // Release and dev builds (V0.4.19-DEV.ABC1234) both fit beside the short footer.
     expect(version?.y).toBe(228);
