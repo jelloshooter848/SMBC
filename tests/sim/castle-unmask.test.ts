@@ -118,6 +118,18 @@ describe('beaten with weapons (campaign castles 1-4 to 7-4)', () => {
     expect(sfx.filter((s) => s === 'poof').length).toBe(poofs);
   });
 
+  it('beaten from the foot of the bridge, the axe not spawned yet: the scene still plays to the axe', () => {
+    const { world, input, b } = castle('world1/1-4.map', '1-4', true, 13);
+    const axeAlive = () => world.entities.some((e) => e.kind === 'axe' && e.alive);
+    expect(axeAlive()).toBe(false); // off the screen's edge: not spawned
+    kill(b, world);
+    expect(world.unmask?.kind).toBe('killed');
+    expect(b.alive).toBe(true);
+    expect(world.entities.some((e) => e instanceof Corpse)).toBe(false);
+    for (let i = 0; i < 900 && !world.bossClear; i++) step(world, input);
+    expect(world.bossClear).not.toBeNull();
+  });
+
   it('a shot that lands after the hero died: no scene (no one to run to the axe), the death goes on', () => {
     const { world, input, b } = castle('world1/1-4.map', '1-4', true, 9);
     world.kill(world.player);

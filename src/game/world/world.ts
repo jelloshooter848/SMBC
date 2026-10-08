@@ -778,7 +778,11 @@ export class World {
   }
 
   private spawnPending(): void {
-    const limit = this.camera.right + px(SPAWN_MARGIN_PX);
+    this.spawnUpTo(this.camera.right + px(SPAWN_MARGIN_PX));
+  }
+
+  /** Spawns the map's entities not spawned yet whose column starts at or before `limit` (sub-px). */
+  private spawnUpTo(limit: number): void {
     while (this.spawnIndex < this.spawns.length) {
       const s = this.spawns[this.spawnIndex] as EntitySpawn;
       if (tileToSub(s.x) > limit) break;
@@ -2658,6 +2662,11 @@ export class World {
    */
   unmaskOnKill(b: Bowser): boolean {
     const level = this.unmaskCastle(b);
+    if (!level || this.unmask || this.bossClear) return false;
+    // Beaten from the foot of the bridge, the axe is often still past the screen's edge (not
+    // spawned): bring the map's entities in up to it, so the hero can run there.
+    const at = this.level.entities.find((e) => e.type === 'axe');
+    if (at && !this.entities.some((e) => e instanceof Axe)) this.spawnUpTo(tileToSub(at.x));
     const axe = this.entities.find((e): e is Axe => e instanceof Axe && e.alive);
     // A shot that lands after the hero died: no one runs to the axe (the death goes on, as before).
     const hero = axe ? this.nearestTo(axe) : null;
