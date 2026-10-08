@@ -44,6 +44,7 @@ export function enemyPalette(theme: Theme): string {
     case 'castlevania': // 5-4's castle hall is a castle still (Podoboos; Bowser's true form)
     case 'zelda2-palace': // and so is 2-4's palace (0.4.24)
     case 'megaman-fortress': // and 3-4 as Wily's fortress (0.4.26)
+    case 'tourian-lair': // and 4-4 as Tourian, Mother Brain's lair (0.4.27)
       return 'enemies-castle';
     case 'water':
     case 'zelda2-water': // 2-2's lake keeps the water's fish and squids (0.4.24)

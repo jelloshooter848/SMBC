@@ -9,6 +9,13 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.27): Norfair (`norfair`): red bubble rock, hot pipe sections for its hard
+;; blocks, its giant mushrooms bubble platforms on hot stalks, under a dark red sky that the
+;; lifts' cream planks and the balance lifts' ropes and pulleys stand out against. Elsewhere
+;; (level select, ?level=4-3) it looks as it always did.
+campaignTheme: norfair
+campaignMusic: norfair
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

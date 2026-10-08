@@ -288,10 +288,12 @@ describe('the campaign look hook (LevelData.campaignLook)', () => {
     }).not.toThrow();
   });
 
-  it("7-3 came first; 0.4.12's hero tributes and their coin heavens have looks too, World 2's Hyrule (0.4.24) and World 3's Mega Man looks (0.4.26), nothing else", () => {
+  it("7-3 came first; 0.4.12's hero tributes and their coin heavens have looks too, World 2's Hyrule (0.4.24), World 3's Mega Man looks (0.4.26) and World 4's Zebes looks (0.4.27), nothing else", () => {
     const hyrule = ['2-1-bonus', '2-1-cave', '2-2-intro', '2-2', '2-2-exit', '2-3', '2-4'];
     // World 3 as Mega Man's world (0.4.26).
     const megaman = ['3-1-bonus', '3-2', '3-3', '3-4'];
+    // World 4 as Samus's world, Zebes (0.4.27).
+    const zebes = ['4-1', '4-1-bonus', '4-2-intro', '4-2-exit', '4-2-warp', '4-2-bonus', '4-3', '4-4'];
     expect(
       levelIds()
         .filter((id) => getLevel(id).campaignLook)
@@ -310,6 +312,7 @@ describe('the campaign look hook (LevelData.campaignLook)', () => {
         '7-3',
         ...hyrule,
         ...megaman,
+        ...zebes,
       ].sort(),
     );
   });

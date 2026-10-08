@@ -760,15 +760,28 @@ station's `mm-station` tune), 3-2 a Wood Man-style forest (`megaman-wood`, a for
 behind it), 3-3 Air Man-style cloud platforms on steel pylons (`megaman-air`, under a deep blue
 the lifts' planks and ropes stand out against) and 3-4 Wily's fortress (`megaman-fortress`,
 machinery and skull plates painted behind it), the last three with new music (art
-`src/content/sprites/megaman-world.ts`, music `src/content/music/megaman-world.ts`). A look stays after the hero is freed, and
+`src/content/sprites/megaman-world.ts`, music `src/content/music/megaman-world.ts`). Since 0.4.27
+World 4 is Samus's world, Zebes: its map page is PLANET ZEBES (`MapTheme` `zebes`: mauve crags,
+rock spires and alien plants, a lava lake and a lava pool, Samus's gunship landed by the start, a
+Chozo statue beside 4-2 and Tourian's glass dome over 4-4; Zoomers crawling round the spires,
+Rippers and a Metroid for critters; the airship's crash site, Larry's road and the Hammer Bro as
+before), 4-2 keeps Brinstar, Samus's cavern its own rock and Larry's airship its SMB3 look; 4-1,
+4-2's way in and out and the vine's warp room are Zebes's surface (`crateria`, far spires painted
+behind), the bonus rooms Brinstar (`brinstar`), 4-3 Norfair (`norfair`: bubble rock, hot pipes,
+bubble platforms on hot stalks under a dark red sky the lifts' planks and ropes stand out
+against) and 4-4 Tourian, Mother Brain's lair (`tourian-lair`, dim machinery and glass tubes
+painted behind; ZEBES ESCAPE's own `tourian` stays out of the castle family), the surface and
+Norfair with new music and 4-4 with ZEBES ESCAPE's `tourian` (art
+`src/content/sprites/zebes-world.ts`, music `src/content/music/zebes-world.ts`). A look stays after the hero is freed, and
 its music plays for every hero (a hero's own overworld tune, `levelMusic` in `scenes/level.ts`,
 plays only in a plain `overworld` area). No look is a water theme, and every rule that keys off
 the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake swims by its
 map's `swim: true`, "Swimming in any theme", which changes nothing in its classic water theme),
-the castle family (`isCastleTheme`: `zelda2-palace` and `megaman-fortress` are in it, so 2-4's
-and 3-4's Bowser, axe, bridge and unmask are SMB's), `hasSolidFloors` (`zelda2-cave` and
-`megaman-metal` as the underground) and `enemyPalette` (`src/content/levels/campaign-looks.test.ts`,
-`hyrule-looks.test.ts`, `megaman-looks.test.ts`). In the map:
+the castle family (`isCastleTheme`: `zelda2-palace`, `megaman-fortress` and `tourian-lair` are in
+it, so 2-4's, 3-4's and 4-4's Bowser, axe, bridge and unmask are SMB's), `hasSolidFloors`
+(`zelda2-cave`, `megaman-metal` and `brinstar` as the underground) and `enemyPalette`
+(`src/content/levels/campaign-looks.test.ts`, `hyrule-looks.test.ts`, `megaman-looks.test.ts`,
+`zebes-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle

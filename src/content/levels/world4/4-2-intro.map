@@ -10,6 +10,11 @@ startMode: autowalk
 camera: locked
 parent: 4-2
 
+;; Campaign play only (0.4.27): 4-2's way in is Zebes's surface (`crateria`, as 4-1) before the
+;; pipe down into Brinstar. Elsewhere (level select, ?level=4-2) it looks as it always did.
+campaignTheme: crateria
+campaignMusic: crateria
+
 [tiles]
 ;; 0
 ................

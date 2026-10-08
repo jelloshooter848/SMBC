@@ -3,8 +3,8 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
- * themed world map pages (World 2's Hyrule since 0.4.24, World 3's Mega City since 0.4.26), the
- * Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
+ * themed world map pages (World 2's Hyrule since 0.4.24, World 3's Mega City since 0.4.26, World
+ * 4's Planet Zebes since 0.4.27), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
  * share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
@@ -87,6 +87,8 @@ const HYRULE_FOREST = '#007800';
 const MEGA_CITY_DARK = '#1c2c5c';
 const MEGA_CITY = '#30487c';
 const MEGA_CITY_LIGHT = '#5070a8';
+/** Planet Zebes's night sky over the page (World 4 since 0.4.27). */
+export const ZEBES_NIGHT = '#100820';
 
 export const mapPalettes: Record<string, string[]> = {
   'map-grass': theme({
@@ -262,6 +264,25 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: stone,
     white: [NES.white, NES.lightGray],
+  }),
+  /*
+   * Planet Zebes (World 4 since 0.4.27, Samus's world): a Metroid-style planet map of mauve crag
+   * rock (ground), violet-grey rock spires (rock), teal alien plants and the Metroid's membrane
+   * (leaf), lava for its sea and its pools (water: the pond is a lava lake), the gunship's tan
+   * hull (sand), Tourian's steel (wall) and glass (white), the Chozo's orb and the Metroid's
+   * nuclei in red and gold (accent).
+   */
+  'map-zebes': theme({
+    ground: ['#3c1c34', '#6c3c58', '#9c6c84'],
+    sand: ['#d8a070', '#8c5c48'],
+    water: ['#881400', '#d82800', '#fc7400', '#fcd8a8'],
+    rock: ['#2c2440', '#5c4c78', '#9488b4'],
+    leaf: ['#005848', '#00a888', '#80f0c8'],
+    wood: [NES.brownLight, NES.orangeBrown],
+    accent: [NES.redBright, NES.yellow, NES.redDark],
+    lava,
+    wall: ['#7c8494', '#b8c0d0', '#3c4250'],
+    white: [NES.white, '#c0b0d0'],
   }),
 };
 
@@ -1628,6 +1649,158 @@ const copter = (rotor: string): Rows => [
 const COPTER = [copter('..000000000000..'), copter('.....000000.....')];
 
 /* ------------------------------------------------------------------------------------------ */
+/* Planet Zebes (World 4, 0.4.27): spires, alien plants, the Chozo, the gunship, Tourian, Metroid */
+/* ------------------------------------------------------------------------------------------ */
+
+/** Rock spires: a tall needle of violet rock and a stubby one, lit on the left, shadows at the foot. */
+const SPIRE = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    for (const [cx, top, k] of [
+      [6, 0, 0.36],
+      [12, 7, 0.5],
+    ] as const) {
+      if (y < top) continue;
+      const half = 0.6 + (y - top) * k;
+      const dx = x - cx;
+      if (Math.abs(dx) > half + 1) continue;
+      if (Math.abs(dx) > half || y === 15) return '0';
+      return dx < -half * 0.3 ? 'c' : dx > half * 0.5 ? 'a' : 'b';
+    }
+    return y === 15 && x > 1 && x < 15 ? '1' : '.';
+  }),
+);
+
+/** An alien plant: three fronds curling out of a bulb, their tips glowing gold. */
+const ALIEN_PLANT = stamp(GROUND, [
+  '..j..........j..',
+  '.0f0...j....0f0.',
+  '..0e0.0f0..0e0..',
+  '...0e00e0.0e0...',
+  '....0e0e00e0....',
+  '.....0eeee0.....',
+  '......0ee0......',
+  '.....0feed0.....',
+  '....0feeedd0....',
+  '....0eeeddd0....',
+  '.....0dddd0.....',
+  '......0000......',
+  '................',
+  '................',
+  '................',
+  '................',
+]);
+
+/** A Chozo statue: a bird-like figure seated on its plinth, facing left, an orb in its hands. */
+const CHOZO = stamp(GROUND, [
+  '.......000......',
+  '......0cbb0.....',
+  '....00cbbbb0....',
+  '...0ijcb0bb0....',
+  '..0iijbbbbb0....',
+  '..0riicbbbba0...',
+  '...00rcbbbbba0..',
+  '.....0cbbbbbba0.',
+  '....0cbbbbbbbba0',
+  '....0cbb00bbbba0',
+  '...0cbb0..0bbba0',
+  '..00000....0000.',
+  '.0cccccccccccc0.',
+  '.0bbbbbbbbbbbb0.',
+  '.0aaaaaaaaaaaa0.',
+  '..111111111111..',
+]);
+
+/**
+ * Samus's gunship (two tiles wide) landed on its pad: a domed hull with a teal canopy, swept
+ * engine pods at either end, gold lights and landing legs.
+ */
+const SHIP: Rows = stamp(
+  groundUnder(32, 16),
+  paint(32, 16, (x, y) => {
+    const dx = x - 15.5;
+    // the pad
+    if (y >= 14) return Math.abs(dx) < 14 ? (y === 14 ? '1' : '0') : '.';
+    // the canopy
+    const c = Math.hypot(dx / 5, (y - 4) / 3.2);
+    if (y <= 5 && c <= 1) return c > 0.8 ? '0' : dx < -1 && y < 4 ? 'f' : 'e';
+    // the hull
+    const h = Math.hypot(dx / 11.5, (y - 7.5) / 3.6);
+    if (h <= 1) {
+      if (h > 0.86) return '0';
+      if (y === 7 && Math.abs(dx) > 3 && Math.abs(dx) < 9 && Math.round(dx) % 2 === 0) return 'j';
+      return y < 7 ? '4' : '5';
+    }
+    // the engine pods
+    for (const px of [2.5, 28.5]) {
+      const e = Math.hypot((x - px) / 2.6, (y - 9) / 2.2);
+      if (e <= 1) return e > 0.7 ? '0' : y < 9 ? '4' : 'i';
+    }
+    // the legs
+    if ((x === 9 || x === 22) && y >= 10) return '0';
+    return '.';
+  }),
+);
+
+/**
+ * Tourian's glass dome (three tiles wide, two tall): a ribbed glass dome on a steel base, a dim
+ * brain floating inside, the gate in the middle of the base and steady red lights either side.
+ */
+const DOME: Rows = stamp(
+  groundUnder(48, 32),
+  paint(48, 32, (x, y) => {
+    const dx = x - 23.5;
+    if (y <= 17) {
+      const d = Math.hypot(dx / 21.5, (y - 17) / 15.5);
+      if (d > 1) return '.';
+      if (d > 0.93) return '0';
+      // the brain inside
+      const b = Math.hypot(dx / 6.5, (y - 11) / 4.5);
+      if (b <= 1) return b > 0.82 ? 'r' : (Math.round(dx) + y) % 4 === 0 ? 'r' : 'i';
+      if (y >= 15 && Math.abs(dx) <= 2) return 'q'; // its stem
+      if (Math.round(dx) % 8 === 0) return 'p'; // the ribs
+      return dx < -6 && y < 11 && (x + y) % 5 === 0 ? 'o' : '.';
+    }
+    if (x < 1 || x > 46) return '.';
+    if (y === 18 || y === 31 || x === 1 || x === 46) return '0';
+    if (y === 19) return 'n';
+    if (Math.abs(dx) <= 4.5 && y >= 23) return Math.abs(dx) > 3.5 || y === 23 ? 'q' : '0'; // the gate
+    if ((x === 10 || x === 37) && y === 24) return 'k';
+    return y % 4 === 1 || x % 12 === 6 ? 'q' : 'm';
+  }),
+);
+
+/**
+ * A Metroid: a jelly membrane over three red nuclei, its fangs below; frame 1 swells a pixel
+ * and opens its fangs (the pulse; a shape change, never a flash).
+ */
+const metroid = (swell: number): Rows =>
+  paint(16, 16, (x, y) => {
+    const dx = x - 7.5;
+    const m = Math.hypot(dx / (7 + swell * 0.5), (y - 6) / (5 + swell));
+    if (m <= 1) {
+      if (m > 0.86) return '0';
+      for (const [nx, ny] of [
+        [-3, 6],
+        [3, 6],
+        [0, 8],
+      ] as const) {
+        const n = Math.hypot(dx - nx, y - ny);
+        if (n < 1) return 'r';
+        if (n < 2) return 'i';
+      }
+      return dx < -2 && y < 5 ? 'f' : 'e';
+    }
+    // the fangs: two pairs, spread wider in frame 1
+    const fy = 11 + swell;
+    if (y >= fy && y <= fy + 2)
+      for (const fx of [-4 - swell, -2, 2, 4 + swell])
+        if (Math.round(dx) === fx) return y === fy + 2 ? '0' : 'o';
+    return '.';
+  });
+const METROID = [metroid(0), metroid(1)];
+
+/* ------------------------------------------------------------------------------------------ */
 
 const frames: Record<string, readonly string[]> = {
   ground: GROUND,
@@ -1708,6 +1881,22 @@ const frames: Record<string, readonly string[]> = {
   'met-1': MET[1] as Rows,
   'copter-0': COPTER[0] as Rows,
   'copter-1': COPTER[1] as Rows,
+  // Planet Zebes (World 4): rock spires, alien plants, the Chozo statue, Samus's gunship,
+  // Tourian's glass dome (its glass, then its base and gate) and the Metroid (its Rippers and
+  // Zoomers are the zebes sheet's own).
+  spire: SPIRE,
+  'alien-plant': ALIEN_PLANT,
+  chozo: CHOZO,
+  'ship-left': cut(SHIP, 0, 0),
+  'ship-right': cut(SHIP, 1, 0),
+  'dome-top-left': cut(DOME, 0, 0),
+  'dome-top-mid': cut(DOME, 1, 0),
+  'dome-top-right': cut(DOME, 2, 0),
+  'dome-left': cut(DOME, 0, 1),
+  'dome-gate': cut(DOME, 1, 1),
+  'dome-right': cut(DOME, 2, 1),
+  'metroid-0': METROID[0] as Rows,
+  'metroid-1': METROID[1] as Rows,
 };
 for (let f = 0; f < ARENA_CROWD_FRAMES; f++) {
   frames[`arena-crowd-a-${f}`] = crowd('a', f);

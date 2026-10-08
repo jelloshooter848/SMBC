@@ -105,3 +105,15 @@ export function tourianTileFrames(): Record<string, Rows> {
     'tourian',
   );
 }
+
+/**
+ * Tourian's shapes, for 4-4's campaign look as Mother Brain's lair (zebes-world.ts, 0.4.27), which
+ * draws them in its own palette (the same slot roles).
+ */
+export const tourianArt = {
+  panel: groundTourian,
+  tube: hardTourian,
+  cracked: brickTourian,
+  spent: usedTourian,
+  grille: grilleTourian,
+} as const;

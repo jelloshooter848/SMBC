@@ -9,6 +9,14 @@ start: 1,6
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.27): Tourian, Mother Brain's lair (`tourian-lair`, in the castle
+;; family, so Bowser, the axe, the bridge, the unmask and the castle remark are SMB's): ZEBES
+;; ESCAPE's green machine panels and tubes in the dark, a grate bridge and a red cable over SMB's
+;; lava, dim machinery and glass tubes painted behind (world/theme-backdrop.ts). It plays ZEBES
+;; ESCAPE's Tourian tune. Elsewhere (level select, ?level=4-4) it looks as it always did.
+campaignTheme: tourian-lair
+campaignMusic: tourian
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224              240              256              272              288              304
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

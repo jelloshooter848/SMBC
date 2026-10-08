@@ -105,6 +105,8 @@ export function decorPalette(theme: string): string {
     return `decor-${theme}`;
   // World 3 as Mega Man's world (0.4.26): the factory, the forest, the sky and Wily's fortress.
   if (theme.startsWith('megaman-') && theme !== 'megaman-stage') return `decor-${theme}`;
+  // World 4 as Samus's world, Zebes (0.4.27): the surface, Norfair and Mother Brain's lair.
+  if (theme === 'crateria' || theme === 'norfair' || theme === 'tourian-lair') return `decor-${theme}`;
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern' || theme === 'tourian') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';

@@ -10,6 +10,11 @@ startMode: fall
 camera: locked
 parent: 4-2
 
+;; Campaign play only (0.4.27): 4-2's coin room is Brinstar too (4-2's look and tune). Elsewhere
+;; (level select, ?level=4-2) it looks as it always did.
+campaignTheme: brinstar
+campaignMusic: brinstar
+
 [tiles]
 ;; 0
 ................

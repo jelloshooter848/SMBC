@@ -11,8 +11,10 @@ camera: scroll
 ;; Campaign play only (level/campaign.ts applyLook): Samus's tribute, 4-2's underground as
 ;; Metroid's Brinstar: the same tiles, enemies, coins and collision in the `brinstar` theme and
 ;; music, with brush and rock pillars ([campaign-decor]; the warp room is left bare for Larry's
-;; anchor). Its overworld ends (4-2-intro, 4-2-exit), the vine's warp room and the bonus room
-;; keep their own looks. Elsewhere (level select, ?level=4-2) it looks as it always did.
+;; anchor). Since 0.4.27 (World 4 as Zebes) its overworld ends (4-2-intro, 4-2-exit) and the
+;; vine's warp room are Zebes's surface (`crateria`) and its bonus room Brinstar too; Samus's
+;; cavern and Larry's airship keep their own looks. Elsewhere (level select, ?level=4-2) it looks
+;; as it always did.
 campaignTheme: brinstar
 campaignMusic: brinstar
 

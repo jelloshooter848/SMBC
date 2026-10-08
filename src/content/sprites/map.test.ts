@@ -21,6 +21,7 @@ const THEMES = [
   'arena',
   'hyrule',
   'megaman',
+  'zebes',
 ];
 
 const tileFrames = [
@@ -79,6 +80,18 @@ const tileFrames = [
   'wily-left',
   'wily-gate',
   'wily-right',
+  // Samus's Zebes (World 4, 0.4.27).
+  'spire',
+  'alien-plant',
+  'chozo',
+  'ship-left',
+  'ship-right',
+  'dome-top-left',
+  'dome-top-mid',
+  'dome-top-right',
+  'dome-left',
+  'dome-gate',
+  'dome-right',
   ...Array.from({ length: WATER_FRAMES }, (_, f) => [
     `water-${f}`,
     `surf-${f}`,
@@ -127,6 +140,9 @@ const actorFrames: Record<string, Size> = {
   'met-1': T16,
   'copter-0': T16,
   'copter-1': T16,
+  // Zebes's Metroid (World 4, 0.4.27; its Rippers and Zoomers are the zebes sheet's).
+  'metroid-0': T16,
+  'metroid-1': T16,
 };
 
 function expectFrame(name: string, [w, h]: Size): void {

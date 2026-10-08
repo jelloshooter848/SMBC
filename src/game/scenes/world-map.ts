@@ -637,7 +637,12 @@ export class WorldMapScene implements Scene {
       bonus: spoken(bonusGame().label(this.game)),
       skip: abilityHint(this.game, 'JUMP', 'jump'),
     };
-    this.crash = { scene: new AirshipCrash(here, bonus), node: bonus.id, names, lead: `${this.hereLine()}.` };
+    this.crash = {
+      scene: new AirshipCrash(here, bonus),
+      node: bonus.id,
+      names,
+      lead: `${this.hereLine().replace(/\.$/, '')}.`,
+    };
     this.mode = 'cutscene';
     return true;
   }

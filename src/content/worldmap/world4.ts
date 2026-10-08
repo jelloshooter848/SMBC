@@ -1,31 +1,38 @@
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
-/** World 4, MUSHROOM WOODS: giant red mushrooms among orange trees, a round pond, Lakitu overhead. */
+/**
+ * World 4, PLANET ZEBES (0.4.27, owner notes 5, 18 and 21: each world is themed after the hero
+ * freed there; World 4 is Samus's): a Metroid-style planet map. Samus's gunship stands landed
+ * by the start, rock spires and alien plants cover the mauve crags, lava pools and a lava lake
+ * steam, a Chozo statue sits beside 4-2 and Tourian's glass dome rises over the castle. Every
+ * node and road is where MUSHROOM WOODS had them, the airship's crash site (the bonus spot) on
+ * plain ground.
+ */
 export const SKETCH_4 = [
   '................',
   '................',
   'hhhhhhhhhhhhhhhh',
-  '###(O)#######T,#',
-  'T#,#!###abdf##T#',
-  '##T,#*##gilm####',
-  '###T*,##prtv#,T#',
-  'T,############*,',
-  '#T,*#,T##T#,###T',
-  '#(O)##,#####T#,#',
-  ',#!##T*#,T#,##T#',
-  '#,T######(O)###,', // the tree left of 4-2 stands one tile out, clear of Samus's map hint
-  '#T,##,T*##!#,T##',
-  'T#####(O),#T(O)#',
-  ',T#*,##!#T,##!#T',
+  '#######Λ#ψ#Λ┌┬┐Λ', // Tourian's glass dome...
+  'Λ#«»#ψ##abdf└┴┘#', // ...over its gate, 4-4's castle node below; the gunship by the start
+  '###ψ###Λgilm####',
+  '####Λ###prtv#ψ##', // the lava lake (no spire under the seal at 15,6)
+  'Λ##ψ#####Λ####Λ#', // a Zoomer's spire by the lava lake
+  '#ψ###Λ####ψ###Λ#',
+  'Λ#####ψ#####Λ##ψ',
+  '#ψ###χ##Λ#####Λ#', // the Chozo statue beside 4-2 (plain ground left of 4-2: Samus's map hint)
+  'Λ#############ψ#',
+  '#####ψ##LL##Λ#ψ#', // a lava pool
+  'ψ#####Λ#LL#Λ#ψ#Λ', // and another's by the pool
+  '#Λ##ψ#########Λ#',
 ];
 
 export const WORLD_4: WorldMapPage = {
   id: 'smb-4',
   group: 'smb',
   label: 'WORLD 4',
-  title: 'MUSHROOM WOODS',
-  theme: 'mushroom',
+  title: 'PLANET ZEBES',
+  theme: 'zebes',
   music: 'map',
   tiles: autoShore(SKETCH_4),
   // The bonus spot (0.5.0): found with Larry Koopa's crystal ball in 4-2's airship (secret
@@ -49,13 +56,13 @@ export const WORLD_4: WorldMapPage = {
     { from: '4-2', to: 'bonus-4', exit: 'secret:larry', points: poly([4, 11], [4, 13], [2, 13]) },
   ],
   exits: [{ from: '4-4', to: 'smb-5', side: 'right', points: poly([13, 5], [15, 5]), gate: 'samus' }],
+  // Zebes's creatures: Zoomers crawling round the spires, Rippers gliding, a Metroid by Tourian.
   actors: [
-    actor('lakitu', 120, 32, { range: 80 }),
-    actor('cloud', 10, 20, { size: 2, speed: 0.1 }),
-    actor('cloud', 200, 18, { size: 1, speed: 0.07 }),
-    actor('goomba', 176, 224, { range: 16 }),
-    actor('goomba', 32, 224, { range: 12, phase: 60 }),
-    actor('koopa', 32, 128, { range: 12, color: 'red' }),
-    actor('bubble', 156, 90, { height: 14 }),
+    actor('cloud', 72, 18, { size: 1, speed: 0.05 }),
+    actor('zoomer', 144, 112, { size: 16, speed: 0.25 }),
+    actor('zoomer', 176, 208, { size: 16, speed: 0.2, phase: 140 }),
+    actor('ripper', 16, 32, { range: 64, speed: 0.3 }),
+    actor('ripper', 96, 224, { range: 64, speed: 0.25, phase: 90 }),
+    actor('metroid', 150, 38, { phase: 0 }),
   ],
 };

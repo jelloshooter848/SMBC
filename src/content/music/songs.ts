@@ -8,6 +8,7 @@ import { heroJingles } from './hero-jingles';
 import { lookSongs } from './looks';
 import { zelda2Songs } from './zelda2';
 import { megamanWorldSongs } from './megaman-world';
+import { zebesWorldSongs } from './zebes-world';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1215,4 +1216,6 @@ export const songs: Song[] = [
   ...zelda2Songs,
   // World 3 as Mega Man's world (0.4.26): 3-2's forest, 3-3's sky, 3-4's fortress.
   ...megamanWorldSongs,
+  // World 4 as Samus's world, Zebes (0.4.27): the planet's surface, 4-3's Norfair.
+  ...zebesWorldSongs,
 ];
