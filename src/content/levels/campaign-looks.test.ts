@@ -91,6 +91,12 @@ const RESTYLES: Readonly<Record<string, { theme: Theme; music: string; hero: str
   '7-2': { theme: 'contra-river', music: 'contra-river', hero: 'bill' },
   '7-2-exit': { theme: 'contra-shore', music: 'contra-jungle', hero: 'bill' },
   '7-4': { theme: 'contra-lair', music: 'contra-lair', hero: 'bill' },
+  // World 8 as Sophia's world (0.4.31); 8-4 is Bowser's real castle and keeps SMB's look.
+  '8-1': { theme: 'bm-forest', music: 'bm-area', hero: 'sophia' },
+  '8-1-bonus': { theme: 'bm-vault', music: 'bm-dungeon', hero: 'sophia' },
+  '8-2': { theme: 'bm-techno', music: 'bm-techno', hero: 'sophia' },
+  '8-2-bonus': { theme: 'bm-vault', music: 'bm-dungeon', hero: 'sophia' },
+  '8-3': { theme: 'bm-ice', music: 'bm-ice', hero: 'sophia' },
 };
 const IDS = Object.keys(RESTYLES);
 
@@ -216,6 +222,14 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
       // their own)
       '7-3-camp',
       '7-3-falls',
+      // (World 8's 8-1 to 8-3 take Blaster Master looks since 0.4.31; Bowser's castle, its water
+      // room and Sophia's underworld areas keep their own)
+      '8-4',
+      '8-4-end',
+      '8-4-water',
+      '8-4-jason',
+      '8-4-fred',
+      '8-4-garage',
       '1-1',
     ];
     for (const id of own) {

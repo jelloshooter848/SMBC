@@ -92,6 +92,17 @@ export const sfx: Sfx[] = [
     pulse2: '@1 v6 q8 x0 l64 r64 o7 b g e c o6 b g x1 o7 c16',
     noise: 'v12 x1 l64 n0 n1 l32 n2 l16 n5',
   },
+  // One of the eight windows of Bowser's spell opening (1-0, campaign, docs/STORY.md 2.2): a glassy
+  // shimmer rising through a B major chord, an echo a beat behind, a breath of hiss (about 350 ms).
+  {
+    id: 'spell-window',
+    pulse: '@2 v10 q8 x0 l64 o5 b o6 d+ f+ b o7 d+ x1 p5 o7 f+16',
+    pulse2: '@1 v5 q8 x0 l64 r64 o5 f+ b o6 d+ f+ x1 p-3 o6 b16',
+    noise: 'v5 x1 l32 n1 n2',
+  },
+  // Luigi's flinch in 1-1 (campaign, docs/STORY.md 2.4): a startled yip, a quick bend up and a
+  // little drop (about 100 ms).
+  { id: 'flinch', pulse: '@1 v11 q8 x1 p7 o5 e32 r64 p-5 o5 b32', noise: 'v6 x1 l64 n2' },
   // Noise whoosh.
   { id: 'bowser-flame', noise: 'v11 x1 l16 n1 n2 n3 l8 n5' },
   // Firework pop.

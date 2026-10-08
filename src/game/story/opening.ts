@@ -132,7 +132,7 @@ export class OpeningScene implements Scene {
   }
 
   enter(): void {
-    this.game.ctx.audio.playMusic('toad-house');
+    this.game.ctx.audio.playMusic('opening');
     this.game.deps.announcer?.say(
       "Peach's castle at dawn. Mario stands in the courtyard. Toad runs out of the castle waving a sheet of paper.",
     );

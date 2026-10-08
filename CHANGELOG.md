@@ -8,6 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- World 8 is now Sophia's world (campaign only; classic play keeps SMB's 8-1 to 8-4):
+  - The World 8 map page is BOWSER'S UNDERWORLD (it was BOWSER'S LAND): Blaster Master's Underworld has broken into
+    Bowser's land, with a radioactive pit, cavern mouths, stone ruins, a gnarled forest, Sophia's garage and mutants.
+    Bowser's castle and the lava stay at 8-4.
+  - 8-1 is the Underworld's forest and stone ruins, 8-2 the techno castle, 8-3 the frozen ruins, and the coin rooms
+    Jason's dungeon seen from the side. 8-4 stays Bowser's own castle, with the ending unchanged.
+  - Two new original Blaster Master-style songs: the techno castle and the ice.
+- The wand that breaks at 8-4 is now the star wand Bowser casts his spell with.
+- The opening has its own song, and the spell's windows and Luigi's flinch in 1-1 have their own sounds (they
+  borrowed the Toad House music, the coin chime and the small jump).
+
 ## [0.4.30] - 2026-10-08
 
 ### Changed

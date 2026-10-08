@@ -10,6 +10,11 @@ startMode: fall
 camera: locked
 parent: 8-2
 
+;; Campaign play only (0.4.31): 8-2's coin room, Jason's dungeon in side view (`bm-vault`), as
+;; 8-1's. Elsewhere (level select, ?level=8-2) it looks as it always did.
+campaignTheme: bm-vault
+campaignMusic: bm-dungeon
+
 [tiles]
 ;; 0
 ................

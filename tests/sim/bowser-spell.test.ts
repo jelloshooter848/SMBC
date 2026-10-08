@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { LevelScene } from '@game/scenes/level';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { PauseScene } from '@game/scenes/pause';
@@ -103,6 +103,20 @@ describe("Bowser's spell (campaign)", () => {
     h.idle(20);
     expect(spell(h).lines).toEqual(BOWSER_SPELL_LAST);
     expect(h.said.at(-1)).toBe(pageSaid(BOWSER_SPELL_LAST, true));
+  });
+
+  it('each window opens with its own magic spell-window sound (0.4.31), not a coin chime', () => {
+    const h = in10();
+    const sfx = vi.spyOn(h.audio, 'sfx');
+    playBeat(h);
+    h.until(() => spell(h).lines !== null, 200);
+    for (let i = 0; i < BOWSER_SPELL_PAGES.length; i++) ok(h);
+    h.until(() => spell(h).windows, 200);
+    sfx.mockClear();
+    h.idle(WINDOWS_END + 5);
+    const played = sfx.mock.calls.map((c) => c[0]);
+    expect(played.filter((id) => id === 'spell-window')).toHaveLength(SPELL_WINDOWS.length);
+    expect(played).not.toContain('coin');
   });
 
   it('OK while the windows open skips to the last page; OK ends it: a puff, the music back', () => {

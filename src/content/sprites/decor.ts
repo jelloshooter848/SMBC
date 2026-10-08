@@ -53,6 +53,13 @@ import {
   contraLairDecorPalette,
   contraWorldDecorFrames,
 } from './contra-world';
+import {
+  bmForestDecorPalette,
+  bmTechnoDecorPalette,
+  bmIceDecorPalette,
+  bmVaultDecorPalette,
+  blasterWorldDecorFrames,
+} from './blaster-world';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -206,6 +213,11 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-contra-shore': contraShoreDecorPalette,
   'decor-contra-river': contraRiverDecorPalette,
   'decor-contra-lair': contraLairDecorPalette,
+  // World 8 as Sophia's world (0.4.31) (blaster-world.ts).
+  'decor-bm-forest': bmForestDecorPalette,
+  'decor-bm-techno': bmTechnoDecorPalette,
+  'decor-bm-ice': bmIceDecorPalette,
+  'decor-bm-vault': bmVaultDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -788,5 +800,7 @@ export const decorDef: SpriteDef = {
     ...ninjaWorldDecorFrames,
     // World 7 as Bill's world (0.4.30): the backdrops, snowy pines and firs.
     ...contraWorldDecorFrames,
+    // World 8 as Sophia's world (0.4.31): the backdrops, gnarled and frozen trees.
+    ...blasterWorldDecorFrames,
   },
 };

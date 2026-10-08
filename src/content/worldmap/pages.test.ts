@@ -21,7 +21,8 @@ const SKETCHES = [SKETCH_1, SKETCH_2, SKETCH_3, SKETCH_4, SKETCH_5, SKETCH_6, SK
 // World 5 is Simon's TRANSYLVANIA since 0.4.28 (it was SKY TREES).
 // World 6 is Ryu's DRAGON VALLEY since 0.4.29 (it was SNOW NIGHT).
 // World 7 is Bill's GALUGA ISLAND since 0.4.30 (it was CANNON COAST).
-const THEMES = ['grass', 'hyrule', 'megaman', 'zebes', 'transylvania', 'ninja', 'contra', 'bowser'];
+// World 8 is Sophia's BOWSER'S UNDERWORLD since 0.4.31 (it was BOWSER'S LAND).
+const THEMES = ['grass', 'hyrule', 'megaman', 'zebes', 'transylvania', 'ninja', 'contra', 'blaster'];
 
 /** Tile rows the engine's header bar covers (24 px): background only. */
 const HEADER_ROWS = 2;

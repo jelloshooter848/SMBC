@@ -481,6 +481,16 @@ const decorFrames: Record<string, Size> = {
   'csh-jungle': [64, 48],
   'cl-wall': [64, 64],
   'cl-heart': [64, 64],
+  // World 8 as Sophia's world (0.4.31).
+  'bmf-forest': [64, 48],
+  'bmf-ruins': [96, 48],
+  'tree-big@bm-forest': [16, 48],
+  'tree-small@bm-forest': [16, 32],
+  'bmt-castle': [128, 64],
+  'bmi-peaks': [128, 64],
+  'tree-big@bm-ice': [16, 48],
+  'tree-small@bm-ice': [16, 32],
+  'bmv-wall': [64, 64],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -572,6 +582,11 @@ describe('tile sprites', () => {
         'tiles-contra-shore',
         'tiles-contra-river',
         'tiles-contra-lair',
+        // World 8 as Sophia's world (0.4.31)
+        'tiles-bm-forest',
+        'tiles-bm-techno',
+        'tiles-bm-ice',
+        'tiles-bm-vault',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -683,6 +698,11 @@ describe('decor sprites', () => {
         'decor-contra-shore',
         'decor-contra-river',
         'decor-contra-lair',
+        // World 8 as Sophia's world (0.4.31)
+        'decor-bm-forest',
+        'decor-bm-techno',
+        'decor-bm-ice',
+        'decor-bm-vault',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

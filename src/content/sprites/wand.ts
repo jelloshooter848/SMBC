@@ -2,13 +2,14 @@ import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
- * The wand breaking at the end of 8-4 (campaign, docs/STORY.md 2.12): the king's stolen wand (the
- * same gold rod and pink orb Larry carries, smb3.ts), the glowing pieces it breaks into, and the
- * jagged crack in the air they fall through. Original 8-bit art generated here as text rows;
+ * The wand breaking at the end of 8-4 (campaign, docs/STORY.md 2.12): the king's stolen star wand
+ * (since 0.4.31 the same five-pointed gold star on a brown rod he casts the spell with in 1-0 and
+ * waves in the gate scenes, the `story` sheet's `star-wand-0`), the glowing pieces it breaks into,
+ * and the jagged crack in the air they fall through. Original 8-bit art generated here as text rows;
  * nothing is traced.
  *
  * Conventions the scene (story/wand-break.ts) relies on:
- * - `wand-0..3` (20x20) are the spin, the orb pointing up, up-right, right and down-right, the
+ * - `wand-0..3` (20x20) are the spin, the star pointing up, up-right, right and down-right, the
  *   wand's middle on the frame's centre; the other four directions are the same frames drawn
  *   flipped both ways. `wand-crack` is `wand-0` with a white crack down it, and `wand-glow` the
  *   cracked wand held in a white rim (the steady highlight that stands in for the flash when
@@ -65,11 +66,26 @@ const outline = (g: Grid, c: string): void => {
 
 const WAND = 20;
 
-/** The wand turned `step` eighths of a turn clockwise from orb-up (0..3). */
+/** The star's centre along the wand (px from the wand's middle), and its points' reach. */
+const STAR_AT = 3.6;
+const STAR_OUT = 5.2;
+const STAR_IN = 2.2;
+
+/** How far the star reaches at angle `th` from its top point (a five-pointed star's outline). */
+const starReach = (th: number): number => {
+  const k = (((th / ((2 * Math.PI) / 5)) % 1) + 1) % 1; // 0 at a point, 0.5 between two
+  const f = Math.abs(k - 0.5) * 2; // 1 at a point, 0 in the notch
+  return STAR_IN + (STAR_OUT - STAR_IN) * f;
+};
+
+/**
+ * The star wand turned `step` eighths of a turn clockwise from star-up (0..3): the story sheet's
+ * star (pale gold face, gold rim) on its brown rod.
+ */
 const wandGrid = (step: number): Grid => {
   const g = grid(WAND, WAND);
   const t = (step * Math.PI) / 4;
-  // d points from the middle to the orb, n across the rod (its lit side negative).
+  // d points from the middle to the star, n across the rod.
   const dx = Math.sin(t);
   const dy = -Math.cos(t);
   for (let y = 0; y < WAND; y++)
@@ -78,13 +94,10 @@ const wandGrid = (step: number): Grid => {
       const py = y + 0.5 - WAND / 2;
       const a = px * dx + py * dy;
       const b = -px * dy + py * dx;
-      const orb = (a - 4) * (a - 4) + b * b;
-      if (orb <= 2.9 * 2.9) {
-        // The orb: pink, a white glint up-left, magenta underneath.
-        const glint = (a - 5) * (a - 5) + (b + 1) * (b + 1) <= 0.8;
-        put(g, x, y, glint ? '1' : a < 2.6 ? '6' : '5');
-      } else if (a >= 0.6 && a <= 1.6 && Math.abs(b) <= 1.7) put(g, x, y, '2');
-      else if (a >= -7 && a < 0.6 && Math.abs(b) <= 1) put(g, x, y, a < -5.5 ? '4' : b < 0 ? '3' : '2');
+      const r = Math.hypot(a - STAR_AT, b);
+      const reach = starReach(Math.atan2(b, a - STAR_AT));
+      if (r <= reach) put(g, x, y, r > reach - 1.1 || r > 3.2 ? '2' : '3');
+      else if (a >= -8 && a < STAR_AT - 1 && Math.abs(b) <= 0.75) put(g, x, y, '4');
     }
   return g;
 };
@@ -94,7 +107,7 @@ const wandFrame = (step: number): string[] => {
   return rows(g);
 };
 
-/** The upright wand with a white crack zigzagging down the orb and the rod. */
+/** The upright wand with a white crack zigzagging down the star and the rod. */
 const crackedGrid = (): Grid => {
   const g = wandGrid(0);
   const crack: [number, number][] = [
@@ -125,14 +138,14 @@ const wandGlow = (() => {
   return rows(g);
 })();
 
-// The pieces: an orb chip, a bit of the rod and a splinter, each glowing lavender.
+// The pieces: a point of the star, a bit of the rod and a gold splinter, each glowing lavender.
 const piece0 = [
   '........',
   '...77...',
-  '..7517..',
-  '.755557.',
-  '.765567.',
-  '..7667..',
+  '..7327..',
+  '.733227.',
+  '.723327.',
+  '..7227..',
   '...77...',
   '........',
 ];
@@ -150,9 +163,9 @@ const piece2 = [
   '........',
   '...7....',
   '..717...',
-  '.71517..',
-  '..7157..',
-  '...717..',
+  '.71327..',
+  '..7237..',
+  '...727..',
   '....7...',
   '........',
 ];

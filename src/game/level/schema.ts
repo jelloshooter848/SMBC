@@ -104,7 +104,14 @@ export type Theme =
   | 'contra-base'
   | 'contra-shore'
   | 'contra-river'
-  | 'contra-lair';
+  | 'contra-lair'
+  // World 8 as Sophia's world (0.4.31, campaign looks): 8-1 as the Underworld's forest and stone
+  // ruins, 8-2 as the techno castle, 8-3 as the frozen ruins and both coin rooms as Jason's on-foot
+  // dungeon in side view (the underground still). 8-4 is Bowser's real castle and keeps SMB's look.
+  | 'bm-forest'
+  | 'bm-techno'
+  | 'bm-ice'
+  | 'bm-vault';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -168,6 +175,10 @@ export const THEMES: readonly Theme[] = [
   'contra-shore',
   'contra-river',
   'contra-lair',
+  'bm-forest',
+  'bm-techno',
+  'bm-ice',
+  'bm-vault',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -219,6 +230,7 @@ export const hasSolidFloors = (theme: Theme): boolean =>
   theme === 'cv-catacomb' ||
   theme === 'ng-sewer' ||
   theme === 'contra-base' ||
+  theme === 'bm-vault' ||
   isCastleTheme(theme);
 
 /** The music an area of this theme plays when its map names none. */
@@ -279,6 +291,12 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'contra-shore') return 'contra-jungle';
   if (theme === 'contra-river') return 'contra-river';
   if (theme === 'contra-lair') return 'contra-lair';
+  // World 8 as Sophia's world (0.4.31): the forest plays the Underworld's area tune and the coin
+  // rooms the dungeon's; the techno castle and the ice have their own (music/blaster-world.ts).
+  if (theme === 'bm-forest') return 'bm-area';
+  if (theme === 'bm-techno') return 'bm-techno';
+  if (theme === 'bm-ice') return 'bm-ice';
+  if (theme === 'bm-vault') return 'bm-dungeon';
   return 'overworld';
 }
 

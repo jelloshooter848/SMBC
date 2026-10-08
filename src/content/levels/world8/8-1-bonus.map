@@ -10,6 +10,13 @@ startMode: fall
 camera: locked
 parent: 8-1
 
+;; Campaign play only (0.4.31): 8-1's coin room is Jason's on-foot dungeon seen from the side
+;; (`bm-vault`, the underground still): the overhead dungeon's steel plates, grilles and riveted
+;; blocks before a wall of panels and a vent grille, to the dungeon's tune. Elsewhere (level
+;; select, ?level=8-1) it looks as it always did.
+campaignTheme: bm-vault
+campaignMusic: bm-dungeon
+
 [tiles]
 ;; 0
 ................

@@ -76,7 +76,7 @@ export class LuigiRunsScene implements Scene {
     if (this.t === T.lookAt) pose.facing = -1;
     if (this.t === T.flinchAt) {
       pose.facing = 1;
-      this.game.ctx.audio.sfx('jump-small');
+      this.game.ctx.audio.sfx('flinch');
     }
     if (this.t >= T.runAt) {
       pose.anim = 'walk';

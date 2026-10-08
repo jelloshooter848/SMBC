@@ -35,6 +35,7 @@ export function enemyPalette(theme: Theme): string {
     case 'cv-catacomb': // 5-1's bonus room as the catacombs (0.4.28)
     case 'ng-sewer': // 6-2's coin rooms as the city's sewers (0.4.29)
     case 'contra-base': // 7-1's bonus room as the enemy base's corridors (0.4.30)
+    case 'bm-vault': // 8-1's and 8-2's coin rooms as Jason's dungeon (0.4.31)
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':

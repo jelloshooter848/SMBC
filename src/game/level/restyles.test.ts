@@ -398,7 +398,9 @@ describe('castle and solid-floor theme families', () => {
           t === 'ng-sewer' ||
           // World 7 (0.4.30): 7-4's alien lair is a castle, 7-1's bonus room (the base) the underground
           t === 'contra-lair' ||
-          t === 'contra-base',
+          t === 'contra-base' ||
+          // World 8 (0.4.31): the coin rooms (Jason's dungeon) the underground
+          t === 'bm-vault',
       );
     expect(hasSolidFloors('castlevania')).toBe(true);
     expect(hasSolidFloors('brinstar')).toBe(true);

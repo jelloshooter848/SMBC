@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getLevel } from '@content/levels';
 import { LevelScene } from '@game/scenes/level';
 import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
@@ -44,6 +44,21 @@ describe('1-1: Luigi runs', () => {
     expect((h.top() as CardScene).lines).toEqual(LUIGI_RUNS_PAGE);
     expect(closeCards(h)).toEqual([LUIGI_RUNS_PAGE]);
     expect(h.top()).toBe(level);
+  });
+
+  it('Luigi flinches with a surprise sound of his own (0.4.31), not a jump', () => {
+    const h = makeGame();
+    const sfx = vi.spyOn(h.audio, 'sfx');
+    file({ cleared: ['1-0'], story: ALL_STORY.filter((id) => id !== beat.luigiRuns) });
+    h.game.openFile(1);
+    h.idle(4);
+    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+    h.step();
+    expect(h.top()).toBeInstanceOf(LuigiRunsScene);
+    h.until(() => h.top() instanceof CardScene, 400);
+    const played = sfx.mock.calls.map((c) => c[0]);
+    expect(played).toContain('flinch');
+    expect(played).not.toContain('jump-small');
   });
 
   it('once per file; not once Luigi is freed; not outside the campaign; not in 1-1’s sub-areas', () => {

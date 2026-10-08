@@ -9,6 +9,13 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.31): the frozen ruins (`bm-ice`, the ice area): packed ice, iced stone,
+;; the Hammer Bros' castle walls iced in SMB's outline, ice spires painted behind under a starry
+;; night, its trees frozen pines. It plays its own ice tune. Elsewhere (level select, ?level=8-3)
+;; it looks as it always did.
+campaignTheme: bm-ice
+campaignMusic: bm-ice
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

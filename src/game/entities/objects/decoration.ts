@@ -120,6 +120,9 @@ export function decorPalette(theme: string): string {
     theme === 'contra-lair'
   )
     return `decor-${theme}`;
+  // World 8 as Sophia's world (0.4.31): the forest, the techno castle, the ice and the dungeon.
+  if (theme === 'bm-forest' || theme === 'bm-techno' || theme === 'bm-ice' || theme === 'bm-vault')
+    return `decor-${theme}`;
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern' || theme === 'tourian') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';

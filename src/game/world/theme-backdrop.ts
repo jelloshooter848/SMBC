@@ -47,6 +47,12 @@ import type { View } from '../entities/entity';
  *   - `contra-shore` (7-2's way in and out): the jungle's palms and ferns at half the camera's speed.
  *   - `contra-lair` (7-4, Red Falcon's lair): the ribbed organic wall from below the HUD's band down,
  *     with the level, the great heart every LAIR_HEART_PERIOD px.
+ * - World 8 as Sophia's world (0.4.31); nothing in these blinks or pulses:
+ *   - `bm-forest` (8-1): the far forest at a quarter of the camera's speed, 16 px up, the stone
+ *     ruins at half its speed, standing on GATE_BOTTOM.
+ *   - `bm-techno` (8-2): the techno castle's machine towers at half the camera's speed.
+ *   - `bm-ice` (8-3): ice spires at a quarter of the camera's speed.
+ *   - `bm-vault` (the coin rooms): the dungeon wall from below the HUD's band down, with the level.
  */
 
 /** The black band left at the top for the HUD (a vampire-hunting stage keeps its HUD on black). */
@@ -273,6 +279,23 @@ function contraLair(r: Renderer, view: View): void {
     r.sprite(sheet, 'cl-heart', base + 96 - cam, HALL_TOP + 40);
 }
 
+function bmForest(r: Renderer, view: View): void {
+  strip(r, view, 'decor-bm-forest', 'bmf-forest', 2, GATE_BOTTOM - 16);
+  strip(r, view, 'decor-bm-forest', 'bmf-ruins', 1, GATE_BOTTOM);
+}
+
+function bmTechno(r: Renderer, view: View): void {
+  strip(r, view, 'decor-bm-techno', 'bmt-castle', 1, GATE_BOTTOM);
+}
+
+function bmIce(r: Renderer, view: View): void {
+  strip(r, view, 'decor-bm-ice', 'bmi-peaks', 2, GATE_BOTTOM);
+}
+
+function bmVault(r: Renderer, view: View): void {
+  wall64(r, view, 'decor-bm-vault', 'bmv-wall');
+}
+
 const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   castlevania: castleHall,
   'ninja-city': citySkyline,
@@ -297,6 +320,11 @@ const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   'contra-base': contraBase,
   'contra-shore': contraShore,
   'contra-lair': contraLair,
+  // World 8 as Sophia's world (0.4.31).
+  'bm-forest': bmForest,
+  'bm-techno': bmTechno,
+  'bm-ice': bmIce,
+  'bm-vault': bmVault,
 };
 
 /** Whether a theme paints a backdrop. */
