@@ -118,6 +118,26 @@ export function localNode(progress: MapProgress, page: WorldMapPage): MapNode | 
   return start && isOpen(progress, page, start.id) ? start : null;
 }
 
+/**
+ * The column a world's local stands in, counted from its start node, where the default (the next
+ * column) has a tree or a rock in the way (World 3: a tree just below the road).
+ */
+const LOCAL_COLUMN: Readonly<Record<string, number>> = { 'smb-3': 2 };
+
+/**
+ * Where page `page`'s local is drawn (its 16x20 sprite's top-left, px), or null without one:
+ * beside the start node, down and to the right, its head just under the road on (every start
+ * node is at the page's left edge, its road leaving to the right). That keeps it in full view of
+ * any hero standing on the node, Sophia III's tank included, and off the roads and the nodes
+ * (tests/sim/world-gates.test.ts checks every world with every hero).
+ */
+export function localSpot(page: WorldMapPage): { x: number; y: number } | null {
+  if (!welcomeOf(page.id)) return null;
+  const start = page.nodes.find((n) => n.kind === 'start');
+  if (!start) return null;
+  return { x: (start.x + (LOCAL_COLUMN[page.id] ?? 1)) * 16, y: start.y * 16 + 12 };
+}
+
 /** The hint line on a start node with a local ('TALK TO THE HEALER'), or ''. */
 export function localHint(page: string): string {
   const w = welcomeOf(page);

@@ -74,6 +74,7 @@ import {
   gateScenes,
   localHint,
   localNode,
+  localSpot,
   sealedExit,
   smbWorld,
   welcomeOf,
@@ -1610,17 +1611,12 @@ export class WorldMapScene implements Scene {
       if (smbWorld(page.id) === 8) drawCrack(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
       else drawSeal(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
     }
-    const start = localNode(this.progress, page);
     const who = LOCAL_SPRITES[page.id];
-    if (!start || !who) return;
-    // One tile up from the node (no road leaves a start that way), feet on that tile's ground line.
+    const spot = localNode(this.progress, page) ? localSpot(page) : null;
+    if (!spot || !who) return;
+    // Beside the start node, clear of the hero standing there (map/world-gate.ts localSpot).
     const blink = this.t % 200 < 8 ? 1 : 0;
-    r.sprite(
-      this.game.ctx.assets.sheet('locals'),
-      `${who}-${blink}`,
-      ox + start.x * 16,
-      start.y * 16 - 16 + 10 - 20,
-    );
+    r.sprite(this.game.ctx.assets.sheet('locals'), `${who}-${blink}`, ox + spot.x, spot.y);
   }
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {

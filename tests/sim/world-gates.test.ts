@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Settings } from '@engine/save/settings';
-import { WorldMapScene } from '@game/scenes/world-map';
+import { MAP_HEADER_H, MAP_HINT_Y, WorldMapScene } from '@game/scenes/world-map';
 import { CreditsScene } from '@game/scenes/credits';
 import { CHARACTERS } from '@game/characters/registry';
 import { loadSave, type SaveFile } from '@game/save/save-files';
@@ -158,6 +158,52 @@ describe('the welcomes (0.4.23)', () => {
   it('World 1 has no local', () => {
     const h = open({ cleared: ['1-0'], story: [...ALL_STORY] });
     expect(draw(map(h)).sprites.some((s) => s.key === 'locals')).toBe(false);
+  });
+
+  // Every world's local stands fully in view beside any hero on its start node: clear of the
+  // hero, the roads, the nodes and anything else on the map, off the header and the hint line,
+  // and on open ground (no tree, rock or palm behind it).
+  const OPEN_GROUND = /^map-[a-z]+:(ground|tuft|flowers-\d|drift|shore-[ns]-\d)$/;
+  it.each([2, 3, 4, 5, 6, 7, 8])('World %i: the local is clear of every hero on the start node', (n) => {
+    for (const c of CHARACTERS) {
+      const h = open({
+        character: c.id,
+        cleared: ['1-0'],
+        freed: ALL,
+        pages: [1, 2, 3, 4, 5, 6, 7, 8].map((k) => `smb-${k}`),
+        position: { page: `smb-${n}`, node: 'start' },
+        story: [...ALL_STORY],
+      });
+      h.idle(5);
+      const assets = h.game.ctx.assets;
+      const boxes = draw(map(h)).sprites.map((s) => {
+        const f = assets.sheet(s.key).frames.get(s.frame);
+        return { ...s, w: f?.w ?? 0, h: f?.h ?? 0 };
+      });
+      const local = boxes.find((s) => s.key === 'locals');
+      if (!local) throw new Error(`World ${n}: no local drawn`);
+      const hits = (b: (typeof boxes)[0]) =>
+        local.x < b.x + b.w && b.x < local.x + local.w && local.y < b.y + b.h && b.y < local.y + local.h;
+      const where = `World ${n} with ${c.id}`;
+      expect(local.y, where).toBeGreaterThanOrEqual(MAP_HEADER_H);
+      expect(local.y + local.h, where).toBeLessThanOrEqual(MAP_HINT_Y);
+      // The hero marker (its portrait), the roads' dots, the nodes, the hero marks, the seal.
+      const others = boxes.filter(
+        (s) => s !== local && !s.key.startsWith('map@') && !/^(enemies|decor)/.test(s.key),
+      );
+      expect(
+        others.some((s) => s.key.startsWith(c.portrait.sheet)),
+        where,
+      ).toBe(true);
+      expect(
+        others.filter(hits).map((s) => `${s.key}:${s.frame}`),
+        where,
+      ).toEqual([]);
+      const ground = boxes
+        .filter((s) => s.key.startsWith('map@') && hits(s))
+        .map((s) => `${s.key.slice(4)}:${s.frame}`);
+      for (const t of ground) expect(t, where).toMatch(OPEN_GROUND);
+    }
   });
 });
 
