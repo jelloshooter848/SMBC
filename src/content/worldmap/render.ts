@@ -4,6 +4,7 @@ import type { MapActor, MapTheme, WorldMapPage } from '@game/map/types';
 import {
   ARENA_CROWD_FRAMES,
   ARENA_NIGHT,
+  NINJA_NIGHT,
   TRANSYLVANIA_NIGHT,
   WARP_SPACE,
   WATER_FRAMES,
@@ -51,6 +52,10 @@ import { POND_CHARS } from './build';
  *   J Hyrule's, its sea a moonlit lake):
  *   Ħ  village house    Ω  the clock tower's clock over  ║  its base
  *   ╔ ╦ ╗  Dracula's castle's towers (left, middle, right) over  ╚ ╩ ╝  its walls and gate on the crag
+ *   DRAGON VALLEY (theme 'ninja', World 6 since 0.4.29; its trees T are bamboo, its houses Ħ the
+ *   Hayabusa village's, its city blocks 0 the night city's rooftops, its moon D full):
+ *   ¤  a tower with a neon sign    ⌐ ¬  the Hayabusa dojo (left, right)
+ *   ▛ ▀ ▜  the demon temple's roofs (left, middle, right) over  ▙ ▄ ▟  its walls and demon gate
  *
  * Walkable (MAP_WALKABLE; every path tile must be one of these): # , * : o, all shores and
  * landings, = I, the mushroom caps ( O ), the treetops { - }, the gate G and the pitch F.
@@ -85,6 +90,12 @@ import { POND_CHARS } from './build';
  *   medusa {speed, amp, phase}  Transylvania: a Medusa head drifting across the page in a wave
  *                        `amp` px high, wrapping round (Simon's crypt's)
  *   raven {range, speed, phase}  Transylvania: flies back and forth over `range` px, flapping
+ *   hawk {range, period, phase}  DRAGON VALLEY: wheels round an oval `range` px wide, flapping (Ryu's
+ *                        mini game's hawk, the ninja sheet's)
+ *   ninja {range, period, height, phase}  DRAGON VALLEY: crouches on a rooftop, leaps `range` px to
+ *                        the next in an arc `height` px high, crouches, and leaps back
+ *   masked-ninja {phase} DRAGON VALLEY: the masked ninja's silhouette standing watch, his scarf
+ *                        streaming
  */
 
 interface TileDef {
@@ -214,6 +225,17 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   '╚': { frame: 'drac-left' },
   '╩': { frame: 'drac-gate' },
   '╝': { frame: 'drac-right' },
+  // DRAGON VALLEY (World 6): neon towers, the Hayabusa dojo and the demon temple (its roofs over
+  // its walls and gate).
+  '¤': { frame: 'neon-tower' },
+  '⌐': { frame: 'dojo-left' },
+  '¬': { frame: 'dojo-right' },
+  '▛': { frame: 'temple-top-left' },
+  '▀': { frame: 'temple-top-mid' },
+  '▜': { frame: 'temple-top-right' },
+  '▙': { frame: 'temple-left' },
+  '▄': { frame: 'temple-gate' },
+  '▟': { frame: 'temple-right' },
   ...Object.fromEntries(POND_CHARS.split('').map((ch, i) => [ch, wet(`pond-${i}`)])),
 };
 
@@ -263,6 +285,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   megaman: 'map-megaman',
   zebes: 'map-zebes',
   transylvania: 'map-transylvania',
+  ninja: 'map-ninja',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -280,6 +303,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   megaman: '#0c1040', // Mega City's night over the skyline
   zebes: ZEBES_NIGHT, // Zebes's deep violet night
   transylvania: TRANSYLVANIA_NIGHT, // Transylvania's moonlit night
+  ninja: NINJA_NIGHT, // DRAGON VALLEY's night under the full moon
 };
 
 /** Background colour behind the tiles. */
@@ -303,11 +327,13 @@ export function drawMapTile(
 
 /**
  * A theme's own frames for shared legend tiles: Mega City's crystals are Flash Man's blue,
- * Transylvania's trees dead trees.
+ * Transylvania's trees dead trees, DRAGON VALLEY's bamboo (its houses the Hayabusa village's, its
+ * city blocks the night city's rooftops, its moon full).
  */
 const THEME_TILE_FRAMES: Readonly<Partial<Record<MapTheme, Readonly<Record<string, string>>>>> = {
   megaman: { crystal: 'crystal-flash' },
   transylvania: { tree: 'dead-tree' },
+  ninja: { tree: 'bamboo', house: 'minka', city: 'ng-rooftops', moon: 'full-moon' },
 };
 
 /** The frame tile `ch` of `page` draws (its theme's own, if it has one); '' for none. */
@@ -333,6 +359,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   megaman: 'enemies-overworld',
   zebes: 'enemies-overworld',
   transylvania: 'enemies-overworld',
+  ninja: 'enemies-overworld',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -349,6 +376,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   megaman: 'enemies-water',
   zebes: 'enemies-water',
   transylvania: 'enemies-water',
+  ninja: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -365,6 +393,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   megaman: 'decor-megaman-stage', // the night stage's dim clouds
   zebes: 'decor-crateria', // the surface's storm clouds
   transylvania: 'decor-cv-gate', // the gate's dim night clouds
+  ninja: 'decor-ng-field', // the bamboo field's dim night clouds
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
@@ -383,9 +412,13 @@ const ZOOMER = ['zoomer-0', 'zoomer-1'] as const;
 const METROID = ['metroid-0', 'metroid-1'] as const;
 /** Quarter turns for a Zoomer on the top, right, bottom and left sides of its rock. */
 const CLING = [0, 90, 180, 270] as const;
+/** The share of each half cycle a leaping ninja spends crouched on a roof. */
+const LEAP_CROUCH = 0.6;
 const BAT = ['bat-1', 'bat-2'] as const;
 const MEDUSA = ['medusa-0', 'medusa-1'] as const;
 const RAVEN = ['raven-0', 'raven-1'] as const;
+const HAWK = ['hawk-0', 'hawk-1'] as const;
+const MASKED = ['masked-0', 'masked-1'] as const;
 const CHEEP = ['cheep-0', 'cheep-1'] as const;
 const SPLASH = ['splash-0', 'splash-1'] as const;
 const PODOBOO = ['podoboo-0', 'podoboo-1'] as const;
@@ -469,6 +502,10 @@ export const MAP_ACTOR_TYPES = [
   'bat',
   'medusa',
   'raven',
+  // DRAGON VALLEY (World 6).
+  'hawk',
+  'ninja',
+  'masked-ninja',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -717,6 +754,39 @@ export function drawMapActor(
       r.sprite(sheet, RAVEN[(t >> 3) & 1] as string, x + Math.abs(p), y, p > 0);
       return;
     }
+    case 'hawk': {
+      // Round an oval, wings beating every 8 frames; Ryu's hawk faces left, flipped heading right.
+      const half = num(actor, 'range', 64) / 2;
+      const a = ((t % num(actor, 'period', 400)) / num(actor, 'period', 400)) * Math.PI * 2;
+      const hx = x + Math.round(half + Math.cos(a) * half);
+      const hy = y + 8 + Math.round(Math.sin(a) * 8);
+      if (!assets.has('ninja')) return;
+      r.sprite(assets.sheet('ninja'), HAWK[(t >> 3) & 1] as string, hx, hy, Math.sin(a) < 0);
+      return;
+    }
+    case 'ninja': {
+      // Crouched on a roof for most of each half cycle, then a leap in an arc to the other roof.
+      const half = Math.max(2, num(actor, 'period', 150));
+      const range = num(actor, 'range', 48);
+      const u = t % (2 * half);
+      const back = u >= half;
+      const k = (u % half) / half;
+      const sheet = assets.sheet('map', MAP_PAL[page.theme]);
+      if (k < LEAP_CROUCH) {
+        r.sprite(sheet, 'ninja-crouch', back ? x + range : x, y, back);
+        return;
+      }
+      const f = (k - LEAP_CROUCH) / (1 - LEAP_CROUCH);
+      const nx = x + Math.round((back ? 1 - f : f) * range);
+      const ny = y - Math.round(Math.sin(f * Math.PI) * num(actor, 'height', 16));
+      r.sprite(sheet, 'ninja-leap', nx, ny, back);
+      return;
+    }
+    case 'masked-ninja': {
+      // He stands still; only his scarf streams.
+      r.sprite(assets.sheet('map', MAP_PAL[page.theme]), MASKED[Math.floor(t / 20) & 1] as string, x, y);
+      return;
+    }
     default:
       return;
   }
@@ -791,6 +861,10 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
     }
     case 'raven':
       return [x, y, x + num(a, 'range', 48) + 16, y + 16];
+    case 'hawk':
+      return [x, y, x + num(a, 'range', 64) + 16, y + 32];
+    case 'ninja':
+      return [x, y - num(a, 'height', 16), x + num(a, 'range', 48) + 16, y + 16];
     default:
       return [x, y, x + 16, y + 16];
   }

@@ -100,7 +100,10 @@ describe('World 6: DRAGON VALLEY', () => {
     const c2 = node('6-2');
     for (let i = 0; i < all.length; i++)
       if (all[i] === '0' || all[i] === '¤')
-        expect(Math.abs((i % 16) - c2.x) + Math.abs(Math.floor(i / 16) - c2.y), `city ${i}`).toBeLessThanOrEqual(5);
+        expect(
+          Math.abs((i % 16) - c2.x) + Math.abs(Math.floor(i / 16) - c2.y),
+          `city ${i}`,
+        ).toBeLessThanOrEqual(5);
     // the demon temple stands over 6-4: its roofs over its walls and gate
     const c4 = node('6-4');
     const temple = all.indexOf('▛▀▜');
@@ -142,7 +145,8 @@ describe('World 6: DRAGON VALLEY', () => {
     const hawk = WORLD_6.actors.find((x) => x.type === 'hawk')!;
     const [x0, y0, x1, y1] = mapActorBounds(hawk);
     const d = drawn(hawk, 1200);
-    expect(new Set(d.map((s) => s.f))).toEqual(new Set(['map@map-ninja hawk-0', 'map@map-ninja hawk-1']));
+    // Ryu's hawk (the ninja sheet's, his mini game's)
+    expect(new Set(d.map((s) => s.f))).toEqual(new Set(['ninja hawk-0', 'ninja hawk-1']));
     for (const s of d)
       expect(s.x >= x0 && s.x + 16 <= x1 && s.y >= y0 && s.y + 16 <= y1, `${s.x},${s.y}`).toBe(true);
   });
@@ -151,7 +155,9 @@ describe('World 6: DRAGON VALLEY', () => {
     const ninja = WORLD_6.actors.find((x) => x.type === 'ninja')!;
     const [x0, y0, x1, y1] = mapActorBounds(ninja);
     const d = drawn(ninja, 1200);
-    expect(new Set(d.map((s) => s.f))).toEqual(new Set(['map@map-ninja ninja-crouch', 'map@map-ninja ninja-leap']));
+    expect(new Set(d.map((s) => s.f))).toEqual(
+      new Set(['map@map-ninja ninja-crouch', 'map@map-ninja ninja-leap']),
+    );
     const ys = d.map((s) => s.y);
     expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThanOrEqual(12); // an arc, not a line
     for (const s of d)

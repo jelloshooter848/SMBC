@@ -179,7 +179,9 @@ export function ngFieldTileFrames(base: Record<string, Rows>): Record<string, Ro
 
 /** Grimy concrete slabs, slime (slot 9/a) creeping along their seams. */
 const sewerSlab = courses(16, '3', '2', '1', 211).map((r, y) =>
-  [...r].map((c, x) => (y % 8 === 6 && hash(x, y, 213) < 0.5 ? (hash(x, y, 214) < 0.3 ? 'a' : '9') : c)).join(''),
+  [...r]
+    .map((c, x) => (y % 8 === 6 && hash(x, y, 213) < 0.5 ? (hash(x, y, 214) < 0.3 ? 'a' : '9') : c))
+    .join(''),
 );
 
 /** Riveted steel (the hard blocks): a plate with a rivet in each corner and a cross brace. */

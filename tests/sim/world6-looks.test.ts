@@ -150,7 +150,7 @@ describe("6-4 as the demon temple: the fake Bowser's unmask and the castle remar
     world.camera.snapTo(p.x);
     step();
     expect(world.unmask?.kind).toBe('axe');
-    expect(b.standing).toBe(4);
+    expect(b.standing).toBe(6); // World 6's true form
     expect(sfx).toContain('poof');
     step(60);
     expect(calls.map((c) => c.level)).toEqual(['6-4']);

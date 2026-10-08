@@ -788,16 +788,34 @@ lightning never with reduce flashing), its water area the underground lake (`cv-
 stones, sewer grates, murky green water; it swims by its map's `swim: true`; new `cv-lake` tune)
 and 5-3 the clock tower (`cv-clock`: beams on timber scaffolds, a clock face and gears painted
 behind; Simon's `cv-stage` tune) (art `src/content/sprites/transylvania.ts`, music
-`src/content/music/transylvania.ts`). A look stays after the hero is freed, and
+`src/content/music/transylvania.ts`). Since 0.4.29 World 6 is Ryu's world: its map page is DRAGON
+VALLEY (`MapTheme` `ninja`: a night valley under a full moon, the Hayabusa village and its dojo by
+the start, a bamboo forest round 6-1, the night city's rooftops and neon signs by 6-2, SNOW NIGHT's
+snowy passes round 6-3 and the demon temple, Jaquio's fortress, over 6-4; hawks, a ninja leaping
+between the rooftops and the masked ninja's silhouette for critters; every node, road, the seal,
+the start's local and Ryu's silhouette as before). 6-2 and its coin heaven keep their night city
+(`ninja-city`, `ng-city`) and Ryu's dojo its `dojo`; 6-1 is a moonlit bamboo field (`ng-field`:
+the full moon, far peaks and a bamboo grove painted behind, bamboo clumps and stone lanterns for
+its trees; Ryu's `ng-stage` tune), 6-2's coin rooms the city's sewers (`ng-sewer`, the underground
+still; its brick SMB's underground brick in sewer colours, so Ryu's trick panel in 6-2-bonus, drawn
+in palette `ninja-ng-sewer`, still cannot be told from the wall; new `ng-sewer` tune), its water
+area a night harbour (`ng-harbor`: quay stone, cargo crates, dark blue water; it swims by its map's
+`swim: true`; new `ng-harbor` tune), 6-3 a snowy mountain pass (`ng-pass`: snow-capped rock ledges
+on frozen cliffs for its treetops, snowy peaks painted behind under the moon, a dark sky the lifts
+and ropes stand out against; new `ng-pass` tune) and 6-4 the demon temple, Jaquio's lair
+(`ng-temple`, in the castle family: a carved wall and demon-headed pillars painted behind; the
+Masked Ninja's `ng-boss` tune) (art `src/content/sprites/ninja-world.ts`, music
+`src/content/music/ninja-world.ts`). A look stays after the hero is freed, and
 its music plays for every hero (a hero's own overworld tune, `levelMusic` in `scenes/level.ts`,
 plays only in a plain `overworld` area). No look is a water theme, and every rule that keys off
-the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake and 5-2-water's underground lake swim by their
+the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake, 5-2-water's underground lake and 6-2-water's harbour swim by their
 maps' `swim: true`, "Swimming in any theme", which changes nothing in their classic water theme),
-the castle family (`isCastleTheme`: `zelda2-palace`, `megaman-fortress` and `tourian-lair` are in
-it, so 2-4's, 3-4's and 4-4's Bowser, axe, bridge and unmask are SMB's), `hasSolidFloors`
-(`zelda2-cave`, `megaman-metal`, `brinstar` and `cv-catacomb` as the underground) and `enemyPalette`
+the castle family (`isCastleTheme`: `zelda2-palace`, `megaman-fortress`, `tourian-lair` and
+`ng-temple` are in it, so 2-4's, 3-4's, 4-4's and 6-4's Bowser, axe, bridge and unmask are SMB's),
+`hasSolidFloors` (`zelda2-cave`, `megaman-metal`, `brinstar`, `cv-catacomb` and `ng-sewer` as the
+underground) and `enemyPalette`
 (`src/content/levels/campaign-looks.test.ts`, `hyrule-looks.test.ts`, `megaman-looks.test.ts`,
-`zebes-looks.test.ts`, `transylvania-looks.test.ts`). In the map:
+`zebes-looks.test.ts`, `transylvania-looks.test.ts`, `ninja-world-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle

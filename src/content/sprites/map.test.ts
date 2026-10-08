@@ -173,9 +173,7 @@ const actorFrames: Record<string, Size> = {
   // Transylvania's ravens (World 5, 0.4.28; its bats and Medusa heads are Simon's crypt's).
   'raven-0': T16,
   'raven-1': T16,
-  // DRAGON VALLEY's hawks, leaping ninjas and masked ninja (World 6, 0.4.29).
-  'hawk-0': T16,
-  'hawk-1': T16,
+  // DRAGON VALLEY's leaping ninjas and masked ninja (its hawks are the ninja sheet's) (World 6, 0.4.29).
   'ninja-crouch': T16,
   'ninja-leap': T16,
   'masked-0': T16,

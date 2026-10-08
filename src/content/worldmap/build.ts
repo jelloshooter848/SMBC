@@ -19,6 +19,8 @@ const INLAND = new Set([
   ...['Λ', 'ψ', 'χ', '«', '»', '┌', '┬', '┐', '└', '┴', '┘'],
   // Transylvania (World 5): the village, the clock tower and Dracula's castle.
   ...['Ħ', 'Ω', '║', '╔', '╦', '╗', '╚', '╩', '╝'],
+  // DRAGON VALLEY (World 6): neon towers, the dojo and the demon temple.
+  ...['¤', '⌐', '¬', '▛', '▀', '▜', '▙', '▄', '▟'],
 ]);
 
 /** The round pond's tiles, row by row (4 wide, 3 tall); a sketch writes the whole block. */

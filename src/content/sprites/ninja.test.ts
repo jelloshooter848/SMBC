@@ -78,7 +78,12 @@ describe('ninja sheet', () => {
     expect(SPRITES.ninja).toBe(ninjaDef);
     expect(ninjaDef.palette).toBe('ninja');
     // 'ninja-ng-sewer': the trick panel in 6-2-bonus's sewer brick (World 6 as Ryu's world, 0.4.29)
-    expect(Object.keys(ninjaPalettes).sort()).toEqual(['ninja', 'ninja-flash', 'ninja-ghost', 'ninja-ng-sewer']);
+    expect(Object.keys(ninjaPalettes).sort()).toEqual([
+      'ninja',
+      'ninja-flash',
+      'ninja-ghost',
+      'ninja-ng-sewer',
+    ]);
     expect(new Set(Object.values(ninjaPalettes).map((p) => p.length)).size).toBe(1);
     for (const [name, p] of Object.entries(ninjaPalettes)) expect(PALETTES.default[name]).toBe(p);
   });

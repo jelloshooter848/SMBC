@@ -158,7 +158,10 @@ describe('6-1: a moonlit bamboo field (ng-field)', () => {
     expect(hasThemeBackdrop('ng-field')).toBe(true);
     const drawn = backdrop('ng-field', 400);
     for (const f of ['ng-moon', 'ngf-peaks', 'ngf-bamboo'])
-      expect(drawn.some((d) => d.endsWith(` ${f}`)), f).toBe(true);
+      expect(
+        drawn.some((d) => d.endsWith(` ${f}`)),
+        f,
+      ).toBe(true);
     for (const d of drawn) expect(d.startsWith('decor@decor-ng-field'), d).toBe(true);
   });
 
