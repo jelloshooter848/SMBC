@@ -463,6 +463,15 @@ const decorFrames: Record<string, Size> = {
   'cvs-bolt': [16, 64],
   'cvc-clock': [64, 64],
   'cvc-gear': [32, 32],
+  // World 6 as Ryu's world (0.4.29).
+  'ng-moon': [32, 32],
+  'ngf-peaks': [128, 48],
+  'ngf-bamboo': [64, 64],
+  'tree-big@ng-field': [16, 48],
+  'tree-small@ng-field': [16, 32],
+  'ngp-peaks': [128, 64],
+  'ngt-wall': [64, 64],
+  'ngt-pillar': [32, 128],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -542,6 +551,12 @@ describe('tile sprites', () => {
         'tiles-cv-storm',
         'tiles-cv-lake',
         'tiles-cv-clock',
+        // World 6 as Ryu's world (0.4.29)
+        'tiles-ng-field',
+        'tiles-ng-sewer',
+        'tiles-ng-harbor',
+        'tiles-ng-pass',
+        'tiles-ng-temple',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -641,6 +656,12 @@ describe('decor sprites', () => {
         'decor-cv-storm',
         'decor-cv-lake',
         'decor-cv-clock',
+        // World 6 as Ryu's world (0.4.29)
+        'decor-ng-field',
+        'decor-ng-sewer',
+        'decor-ng-harbor',
+        'decor-ng-pass',
+        'decor-ng-temple',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

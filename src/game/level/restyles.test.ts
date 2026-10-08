@@ -390,7 +390,10 @@ describe('castle and solid-floor theme families', () => {
           // World 4 (0.4.27): 4-4's Tourian is a castle
           t === 'tourian-lair' ||
           // World 5 (0.4.28): 5-1's bonus room, the catacombs, is the underground
-          t === 'cv-catacomb',
+          t === 'cv-catacomb' ||
+          // World 6 (0.4.29): 6-4's demon temple is a castle, 6-2's coin rooms (the sewers) the underground
+          t === 'ng-temple' ||
+          t === 'ng-sewer',
       );
     expect(hasSolidFloors('castlevania')).toBe(true);
     expect(hasSolidFloors('brinstar')).toBe(true);
