@@ -68,6 +68,9 @@ const calm = (w: World) => {
   for (const e of w.entities) if (e instanceof Enemy) e.alive = false;
 };
 
+/** Riding a springboard (not a lift: the ride moves leave it alone). */
+const onSpring = (w: World) => w.entities.some((e) => e instanceof Spring && e.ridBy(w.player));
+
 type Internals = { loopChecks: Set<string>; loopPrevX: number | null };
 
 /** A move that lets go of everything once it has been in the air and landed again. */
@@ -125,8 +128,7 @@ function moves(form: Form, power: string, water: boolean, spring = false): Move[
           act: (w, f) => {
             const p = w.player;
             if (done) return [];
-            const on = w.entities.some((e) => e instanceof Spring && e.ridBy(p));
-            if (on) {
+            if (onSpring(w)) {
               rode = true;
               return f % 2 === 0 ? ['jump'] : [];
             }
@@ -330,7 +332,7 @@ function play(
       if (phase === 'move' && move) {
         // Landed on a lift mid-move: the ride (if any) takes over at once (a falling lift).
         const lb = p.body;
-        if (t > 4 && lb.onGround && !groundBelow(lb, w.map) && !p.vine) {
+        if (t > 4 && lb.onGround && !groundBelow(lb, w.map) && !p.vine && !onSpring(w)) {
           liftSeen = true;
           if (ride) phase = 'settle';
         }
@@ -348,7 +350,7 @@ function play(
         if (rideJump < 10 || (!b.onGround && rideJump < 150)) return [ride.dir, 'jump'];
         rideJump = 0;
       }
-      if (b.onGround && !groundBelow(b, w.map) && !p.vine) {
+      if (b.onGround && !groundBelow(b, w.map) && !p.vine && !onSpring(w)) {
         liftSeen = true;
         onLift++;
         if (ride && rides < 8 && onLift >= ride.wait) {
@@ -433,6 +435,8 @@ export function reach(
   budget = 20000,
   /** Stop at the first spot this accepts (how: 'goal') instead of the level's end. */
   goal?: (s: Omit<Spot, 'path'>) => boolean,
+  /** Search from here instead of the level's start (past a stretch a scripted sim got through). */
+  from?: WorldStart,
 ): ReachResult {
   const main = getLevel(id);
   const seen = new Set<string>();
@@ -488,7 +492,7 @@ export function reach(
     }
     return null;
   };
-  const first = enter(main, { mode: main.startMode }, []);
+  const first = enter(main, from ?? { mode: main.startMode }, []);
   if (first) return first;
   let played = 0;
   while (queue.length && played < budget) {

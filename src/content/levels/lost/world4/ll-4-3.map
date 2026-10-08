@@ -81,6 +81,13 @@ cloud-1 195 3
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): the ground two tiles longer and
 ;; the first platform two wider (the 8-tile gap is past Normal Sophia III's ~7; docs/HEROES.md).
+;; With every other piece the original lays for her in this area (but the flagpole's lift).
+128 5 BB
+175 5 B
+69 9 TTTT
+170 9 B
+70 10 tt *5
 16 13 ## *2
 22 13 TT
+148 13 B
 23 14 tt

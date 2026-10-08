@@ -161,12 +161,25 @@ cloud-1 411 2
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): the pillars after the staircase
 ;; moved closer together (gaps of 8 and 9 tiles are past Normal Sophia III's ~7; docs/HEROES.md).
+;; With every other piece the original lays for her in this area (but the flagpole's lift).
 136 5 BBB *8
 140 5 ...BBB *8
 150 5 B *8
 153 5 .. *10
 157 5 BBB *8
+284 5 BBBB *8
+101 8 ..
+317 8 .
+101 9 []
+317 9 2
+272 12 .
+274 12 B
+32 13 # *2
 136 13 ### *2
 140 13 ...### *2
 150 13 # *2
 157 13 ### *2
+273 13 ## *2
+284 13 #### *2
+- piranha 101 8
++ piranha 101 9 red=1
