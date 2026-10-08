@@ -120,5 +120,5 @@ cloud-3 219 3
 + koopa-para-red 80 9
 + koopa-para-red 84 9 dx=8
 + koopa-para-red 129 11 dy=-8
-;; The flagpole's step-fall lift (WideCharacter): a two-tile lift by the pole that drops once stood on.
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
 + lift-fall 210 4 len=2 dx=8

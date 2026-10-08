@@ -1294,10 +1294,11 @@ any player is that hero, so a co-op partner plays it too.
   `WideCharacter` (wide heroes), and loses the ones those hide. In a level that needed one, the
   section holds all of the original's pieces for her in that area: its walls, lowered blocks,
   extra ground, springs and lifts. Since 0.4.33 it also holds the flagpole's step-fall lift
-  (`+ lift-fall <x> 4 len=2`, a `StepFall` platform shown to wide heroes five columns left of
-  the pole; it drops once she stands on it), in every SMB and Lost Levels area the original has
-  one (60 areas). `tools/levelgen` still converts the maps for the classic hero, so the
-  pieces were taken from the same data with her visibility.
+  (`+ lift-fall <x> 4 len=2`, row 5 in 7-1 and ll-9-3: a one-tile `StepFall` platform shown to
+  heroes who jump short, `charHorz`, five columns left of the pole; it drops once she stands on
+  it), in every SMB and Lost Levels area where the original has one at Normal (59 areas).
+  `tools/levelgen` still converts the maps for the classic hero, so the pieces were taken from
+  the same data with her visibility.
 
 Tests: `src/game/level/variants.test.ts` (parse, serialize, laying) and
 `tests/sim/sophia-variants.test.ts`. The second file covers the game laying the variant (both
@@ -1334,9 +1335,9 @@ original has them (the SMB rows of the table below), with the flagpole's step-fa
 area that has one. The sweep still finishes each of them at Normal (below). Not laid: the
 original's bushes at 6-2 (119-121), decor that a variant cannot hold, and the Lost Levels pieces
 outside the table (ll-1-3, ll-1-4, ll-2-1, ll-2-3, ll-3-1, ll-3-2, ll-4-4, ll-5-2 to ll-5-4,
-ll-6-2, ll-6-4, ll-7-4, ll-8-2-warp, ll-9-1, ll-9-3, ll-9-4, ll-10-1, ll-10-3, ll-10-4, ll-11-1,
-ll-11-2, ll-12-4, ll-13-1 to ll-13-3, ll-13-4-end: a later follow-up). Only their flagpole lifts
-are laid.
+ll-5-2-warp, ll-6-2, ll-6-4, ll-7-4, ll-8-2-warp, ll-9-1, ll-9-3, ll-9-4, ll-10-1, ll-10-3,
+ll-10-4, ll-11-1, ll-11-2, ll-12-4, ll-13-1 to ll-13-3, ll-13-4-end: a later follow-up). Where those have a
+flagpole, only its lift is laid.
 
 | Level   | Variant                                                                    | At Normal                | How                                                                                                                   |
 | ------- | -------------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |

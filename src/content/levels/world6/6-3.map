@@ -83,6 +83,6 @@ cloud-1 153 7
 
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): a red spring at 124 (row 12);
-;; and the flagpole's step-fall lift (WideCharacter). Every piece the original lays for her here.
+;; and the flagpole's step-fall lift (charHorz). Every piece the original lays for her here.
 124 12 s
 + lift-fall 162 4 len=2 dx=8

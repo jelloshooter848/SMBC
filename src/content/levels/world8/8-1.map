@@ -171,7 +171,7 @@ tree-big 397 12
 
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): ground in the gaps at 221, 226 and 314;
-;; and the flagpole's step-fall lift (WideCharacter). Every piece the original lays for her here.
+;; and the flagpole's step-fall lift (charHorz). Every piece the original lays for her here.
 221 13 # *2
 226 13 # *2
 314 13 # *2

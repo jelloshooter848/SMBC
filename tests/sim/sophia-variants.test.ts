@@ -76,9 +76,9 @@ const SMB_PIECES: [string, number, number, string][] = [
 ];
 
 /**
- * The original's step-fall lift by the flagpole (a `StepFall` platform shown to wide heroes,
- * `WideCharacter`: 2 tiles, five columns left of the pole), `map x y`, in every SMB and Lost
- * Levels area the original has one (0.4.33).
+ * The original's step-fall lift by the flagpole (a `StepFall` platform shown to heroes who jump
+ * short, `charHorz`: one tile wide, five columns left of the pole), `map x y`, in every SMB and
+ * Lost Levels area the original has one at Normal (0.4.33).
  */
 const FLAG_LIFTS = [
   '1-1 193 4',

@@ -103,7 +103,7 @@ tree-big 205 12
 
 [variant sophia classic]
 ;; The original's pieces for heroes who jump low (charVert): the brick row at 27-29 a row lower (row 6);
-;; and the flagpole's step-fall lift (WideCharacter). Every piece the original lays for her here.
+;; and the flagpole's step-fall lift (charHorz). Every piece the original lays for her here.
 27 5 ...
 27 6 P==
 + lift-fall 174 5 len=2 dx=8 dy=-8

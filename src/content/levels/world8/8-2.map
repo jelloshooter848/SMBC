@@ -116,6 +116,6 @@ cloud-1 237 2
 
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): ground in the gap at 149;
-;; and the flagpole's step-fall lift (WideCharacter). Every piece the original lays for her here.
+;; and the flagpole's step-fall lift (charHorz). Every piece the original lays for her here.
 149 13 # *2
 + lift-fall 211 4 len=2 dx=8

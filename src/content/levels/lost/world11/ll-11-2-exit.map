@@ -48,5 +48,5 @@ cloud-1 29 2
 cloud-2 32 3
 
 [variant sophia classic]
-;; The flagpole's step-fall lift (WideCharacter): a two-tile lift by the pole that drops once stood on.
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
 + lift-fall 23 4 len=2 dx=8

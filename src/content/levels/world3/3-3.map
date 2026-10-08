@@ -81,7 +81,7 @@ cloud-1 172 11
 
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): the low tree at 30-32 two tiles wider (33-34);
-;; and the flagpole's step-fall lift (WideCharacter). Every piece the original lays for her here.
+;; and the flagpole's step-fall lift (charHorz). Every piece the original lays for her here.
 33 13 TT
 32 14 tt
 + lift-fall 146 4 len=2 dx=8

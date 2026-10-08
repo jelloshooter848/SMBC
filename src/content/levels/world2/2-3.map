@@ -131,7 +131,7 @@ tree-small 222 12
 
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): the first tree at 112-118 a tile wider (111);
-;; and the flagpole's step-fall lift (WideCharacter). Every piece the original lays for her here.
+;; and the flagpole's step-fall lift (charHorz). Every piece the original lays for her here.
 111 13 T
 112 14 t
 + lift-fall 220 4 len=2 dx=8
