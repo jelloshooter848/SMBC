@@ -1284,7 +1284,793 @@ BRR. I HEAR BATS. AND
 ORGAN MUSIC.
 ```
 
-### 2.8 (being rewritten)
+### 2.8 World 5: Transylvania (Simon)
+
+**The welcome: a merchant.** A hooded Simon's Quest merchant with a sack, beside World 5's start node. Hint line
+`TALK TO THE MERCHANT`.
+
+```text
+MERCHANT:
+
+WELCOME, STRANGER, TO
+TRANSYLVANIA. A FOUL SPELL
+CARRIED OUR WHOLE COUNTRY
+HERE. EVEN THE NIGHTS.
+```
+
+```text
+MERCHANT:
+
+OUR HERO SIMON HAS BEEN
+BRAINWASHED BY SOMEONE.
+PLEASE HELP!
+```
+
+```text
+MERCHANT:
+
+HE WAS LAST SEEN IN THE
+OLD CASTLE, 5-4. A
+TOWNSPERSON WAITS AT ITS
+GATE.
+```
+
+```text
+MERCHANT:
+
+WANT TO BUY A WHITE
+CRYSTAL? ...NO? NOBODY
+EVER DOES.
+```
+
+**Hint NPC: the townsperson.** KEEP, on the safe floor at the start of 5-4, before the lift at column 84.
+
+```text
+TOWNSPERSON:
+
+WHAT A HORRIBLE NIGHT TO
+HAVE A CURSE.
+```
+
+```text
+TOWNSPERSON:
+
+RIDE THE MOVING FLOOR DOWN,
+PAST WHERE FLOORS SHOULD
+END. OR DON'T. I'M JUST A
+TOWNSPERSON.
+```
+
+```text
+TOWNSPERSON:
+
+AND HIT THE CRACKED WALL
+WITH YOUR HEAD TO MAKE A
+HOLE. TRUST ME.
+```
+
+(The last line is a Simon's Quest joke that happens to be true here: big Mario's head bump does break the cracked
+wall.) After Simon is freed:
+
+```text
+TOWNSPERSON:
+
+THE HUNTER IS FREE! WHAT A
+WONDERFUL NIGHT TO HAVE NO
+CURSE.
+```
+
+**Simon, captive:** KEEP, with the stolen wand in his curse (already built):
+
+```text
+THE STOLEN WAND WOKE THE
+CURSE DRACULA LEFT IN MY
+BLOOD. NOW I AM HIS THRALL.
+
+<HERO>... TAKE MY WHIP.
+END HIM IN HIS CASTLE!
+```
+
+**Simon, freed.** NEW. Under the curse he hunted the princess himself, and learned she is no damsel: she warns
+villages and lays false trails (it backs up castle 3-4's map and castle 5-4's empty village).
+
+```text
+SIMON:
+
+THE CURSE IS LIFTED. MY
+BLOOD RUNS CLEAN AGAIN. I
+AM IN YOUR DEBT, <HERO>.
+```
+
+```text
+SIMON:
+
+UNDER THE CURSE, I HUNTED
+YOUR PRINCESS. EVERY TRAIL
+WENT COLD. EVERY ONE.
+```
+
+```text
+SIMON:
+
+SHE WARNS VILLAGES BEFORE
+THE KOOPAS COME. SHE LAYS
+FALSE TRACKS. NO HUNTER
+COULD CATCH HER.
+```
+
+```text
+SIMON:
+
+YOUR PRINCESS IS NO DAMSEL.
+BUT WE SHOULD FIND HER
+BEFORE THE KING DOES. LEAD
+ON.
+```
+
+**Castle 5-4** (a Lakitu). The hero's remark:
+
+```text
+<HERO>:
+
+A LAKITU?! WITHOUT ITS
+CLOUD IT LOOKS SO SMALL.
+```
+
+The castle's pages (REPLACES `CASTLE_PAGES['5-4']`; page 2 KEEP, Peach's clue 2):
+
+```text
+THANK YOU <HERO>!
+
+A LAKITU, OF ALL THINGS!
+UNDER THE SPELL LIKE THE
+REST.
+```
+
+```text
+THE KOOPAS STORMED OUR
+VILLAGE, BUT IT WAS EMPTY.
+SOMEONE GOT US ALL OUT
+JUST BEFORE THEY CAME.
+```
+
+**The gate, World 5 to 6.** The reminder (hint line `SEALED - FREE SIMON FIRST`):
+
+```text
+TOAD:
+
+STILL SEALED. THE VAMPIRE
+HUNTER! THE TOWNSPERSON AT
+THE GATE OF 5-4 SAID
+SOMETHING ABOUT A LIFT...
+```
+
+The gate scene. Bowser's cutaway: he turns the wand in his claws and finds **a crack** running up the rod, glowing.
+
+```text
+BOWSER:
+
+IS THAT... A CRACK? THAT'S
+A CRACK! WHO PUT A CRACK IN
+MY WAND?!
+```
+
+```text
+BOWSER:
+
+...NOBODY TELL LARRY.
+```
+
+```text
+TOAD:
+
+FIVE SEALS DOWN! THEY BREAK
+EASIER EVERY TIME. HE'S
+RUNNING OUT OF MAGIC!
+```
+
+```text
+TOAD:
+
+THE NEXT WORLD IS OPEN. IT'S
+SNOWING THERE, AND I SAW A
+SHADOW ON A ROOFTOP...
+```
+
+### 2.9 World 6: a ninja village (Ryu)
+
+**The welcome: the village elder.** An old ninja in a grey hood with a walking stick, beside World 6's start node.
+Hint line `TALK TO THE ELDER`.
+
+```text
+ELDER:
+
+WELCOME TO OUR NINJA
+VILLAGE. A DARK SPELL
+BROUGHT IT HERE, SNOW AND
+ALL.
+```
+
+```text
+ELDER:
+
+OUR YOUNG MASTER RYU HAS
+BEEN BRAINWASHED BY
+SOMEONE. PLEASE HELP!
+```
+
+```text
+ELDER:
+
+HE WAS LAST SEEN IN THE
+CITY STREETS OF 6-2. AN
+AMERICAN AGENT IS ON HIS
+TRAIL.
+```
+
+```text
+ELDER:
+
+A NINJA IS SEEN ONLY IF HE
+WISHES TO BE. DO NOT LOOK
+FOR HIM. LOOK FOR WHAT
+HIDES HIM.
+```
+
+**Hint NPC: Irene Lew.** KEEP, on the ground at the start of 6-2, before the first pipe (column 19), the pipe down
+to the room with the trick wall.
+
+```text
+IRENE:
+
+AGENT IRENE LEW, CIA.
+I'M TRACKING A NINJA. HE
+WENT DOWN THE FIRST PIPE
+ON THIS ROAD...
+```
+
+```text
+IRENE:
+
+...AND NEVER CAME OUT.
+NINJAS. THEY NEVER USE
+THE DOOR. LEAN ON THE
+LEFT WALL DOWN THERE.
+```
+
+After Ryu is freed:
+
+```text
+IRENE:
+
+YOU FOUND HIM! HE THANKED
+ME, THEN VANISHED. NINJAS.
+```
+
+**Ryu, captive:** KEEP (the Masked Ninja's curse; the Masked Ninja stays an original villain).
+
+**Ryu, freed.** NEW. He saw the king's plan (no stand-ins left; he will fight in his own castle) and, once, the
+princess (Peach clue: she is that good).
+
+```text
+RYU:
+
+THE MASK IS BROKEN. MY
+BLADE IS MY OWN AGAIN.
+```
+
+```text
+RYU:
+
+I SAW THE KING'S PLAN WHILE
+I SERVED HIM. HIS STAND-INS
+ARE NEARLY SPENT.
+```
+
+```text
+RYU:
+
+WHEN THE LAST ONE FALLS, HE
+WILL HIDE IN HIS OWN
+CASTLE AND FIGHT YOU
+HIMSELF.
+```
+
+```text
+RYU:
+
+AND I SAW YOUR PRINCESS
+ONCE, ON A ROOFTOP. SHE SAW
+ME TOO, AND VANISHED.
+LIKE A NINJA.
+```
+
+**Castle 6-4** (a Blooper). The hero's remark:
+
+```text
+<HERO>:
+
+A BLOOPER?! IN A CASTLE?
+HOW IS IT EVEN BREATHING?
+```
+
+The castle's pages (REPLACES `CASTLE_PAGES['6-4']`; page 2 KEEP):
+
+```text
+THANK YOU <HERO>!
+
+A BLOOPER?! THE WAND'S
+TRICKS ARE GETTING SILLY.
+```
+
+```text
+THE KING SLEEPS WITH THE
+WAND UNDER HIS PILLOW NOW.
+HE KNOWS YOU'RE COMING.
+```
+
+**The gate, World 6 to 7.** The reminder (hint line `SEALED - FREE RYU FIRST`):
+
+```text
+TOAD:
+
+STILL SEALED. WE NEED THE
+NINJA. THAT AGENT AT THE
+START OF 6-2 WAS TRACKING
+HIM!
+```
+
+The gate scene. Bowser's cutaway: the wand **bucks** in his hand and a blast blows the throne to pieces under him;
+he lands on his shell.
+
+```text
+BOWSER:
+
+WHOA! WHOA! THE WAND JUST
+BLASTED MY THRONE TO BITS!
+```
+
+```text
+BOWSER:
+
+GRR! FINE! WHO NEEDS A
+THRONE? KOOPAS! DOUBLE THE
+GUARDS!
+```
+
+```text
+TOAD:
+
+SIX SEALS! I COULD HEAR
+THAT ONE CRACK FROM HERE.
+```
+
+```text
+TOAD:
+
+THE NEXT WORLD IS OPEN. A
+JUNGLE... AND EXPLOSIONS.
+LOTS OF EXPLOSIONS.
+```
+
+### 2.10 World 7: the front (Bill)
+
+**The welcome: a sergeant.** A soldier in a helmet with a radio on his back, beside World 7's start node. Hint line
+`TALK TO THE SERGEANT`.
+
+```text
+SERGEANT:
+
+WELCOME TO THE FRONT,
+SOLDIER. SOME SPELL DROPPED
+OUR WHOLE JUNGLE HERE,
+ALIENS AND ALL.
+```
+
+```text
+SERGEANT:
+
+OUR BEST MAN, BILL, HAS
+BEEN BRAINWASHED BY
+SOMEONE. PLEASE HELP!
+```
+
+```text
+SERGEANT:
+
+HE WAS LAST SEEN AT 7-3.
+HIS PARTNER LANCE IS
+WAITING THERE. MOVE OUT!
+```
+
+**Hint NPC: Lance.** KEEP, in the jungle at the start of 7-3, well before the marked bridge at column 128.
+
+```text
+LANCE:
+
+SEEN MY PARTNER? WE CAME
+TO STOP AN ALIEN. NOW HE
+WORKS FOR IT.
+```
+
+```text
+LANCE:
+
+LAST I SAW, HE WAS ON THE
+BRIDGE BY THE RED LIGHT. IT
+BLEW UP UNDER HIM. HE DIDN'T
+RUN. HE NEVER RUNS.
+```
+
+After Bill is freed:
+
+```text
+LANCE:
+
+THANKS FOR BRINGING MY
+PARTNER BACK. I OWE YOU A
+SPREAD GUN.
+```
+
+**Bill, captive:** KEEP (Red Falcon, `KING KOOPA'S SPELL LET THE ALIEN TAKE MY MIND`, and the Jungle Assault
+briefing).
+
+**Bill, freed.** NEW. The soldier's report: the wand is about to go, and one world is left.
+
+```text
+BILL:
+
+ALIEN'S OUT OF MY HEAD.
+FEELS GOOD. THANKS,
+<HERO>.
+```
+
+```text
+BILL:
+
+INTEL: THE KING'S WAND HAS
+MORE CRACKS THAN MY OLD
+HELMET. IT'S ABOUT TO GO.
+```
+
+```text
+BILL:
+
+ONE WORLD LEFT. ONE HERO
+LEFT. THEN WE HIT THE
+KING'S BASE. LOCK AND
+LOAD!
+```
+
+**Castle 7-4** (a Hammer Bro). The hero's remark:
+
+```text
+<HERO>:
+
+A HAMMER BRO! THE LAST
+FAKE. THE REAL KING MUST
+BE CLOSE.
+```
+
+The castle's pages (REPLACES `CASTLE_PAGES['7-4']`; the old page 2, the wand cracking, is the gates' now):
+
+```text
+THANK YOU <HERO>!
+
+A HAMMER BRO UNDER THE
+SPELL. THAT WAS HIS LAST
+STAND-IN!
+```
+
+```text
+THE KOOPAS ARE ALL RUNNING
+HOME. THE KING CALLED THEM
+BACK TO GUARD HIS CASTLE.
+```
+
+**The gate, World 7 to 8.** The reminder (hint line `SEALED - FREE BILL FIRST`):
+
+```text
+TOAD:
+
+STILL SEALED. WE NEED THE
+SOLDIER. HIS PARTNER LANCE
+IS WAITING AT THE START OF
+7-3.
+```
+
+The gate scene. Bowser's cutaway: the wand **shakes wildly**, throwing sparks everywhere; Bowser holds it with both
+claws and stands up, furious. His challenge leads to `NO MORE STAND-INS` in 8-4.
+
+```text
+BOWSER:
+
+THE WAND IS SHAKING! I CAN
+BARELY HOLD IT!
+```
+
+```text
+BOWSER:
+
+ENOUGH! IF YOU WANT
+SOMETHING DONE RIGHT, DO
+IT YOURSELF.
+```
+
+```text
+BOWSER:
+
+COME TO MY CASTLE,
+<HERO>. I'LL BE WAITING!
+BWA HA HA!
+```
+
+```text
+TOAD:
+
+THE LAST SEAL! THE ROAD
+GOES STRAIGHT INTO
+BOWSER'S OWN LAND.
+```
+
+```text
+TOAD:
+
+THIS IS IT, <HERO>!
+LET'S FINISH THIS!
+```
+
+### 2.11 World 8: the Underworld (Sophia III)
+
+**The welcome: a miner.** An old miner with a lamp on his helmet and a pickaxe, beside World 8's start node. It
+carries Toad's old World 8 lines: the tank, her lost pilot, and Peach's clue 3 (the turnip). Hint line
+`TALK TO THE MINER`.
+
+```text
+MINER:
+
+WELCOME TO THE UNDERWORLD,
+STRANGER. MUTANTS DOWN
+BELOW, AND NOW A SPIKY KING
+UPSTAIRS. LOVELY.
+```
+
+```text
+MINER:
+
+OUR HERO IS A TANK CALLED
+SOPHIA. SOMEONE BRAINWASHED
+HER, AND HER PILOT IS LOST.
+PLEASE HELP!
+```
+
+```text
+MINER:
+
+THE BOY WENT INTO THE KING'S
+CASTLE, 8-4, AFTER HIS FROG.
+THAT FROG TAKES THE PIPES
+NOBODY ELSE DOES.
+```
+
+```text
+MINER:
+
+ODD THING... SOMEONE PULLED
+UP A TURNIP RIGHT HERE. WHO
+GROWS TURNIPS NEXT TO LAVA?
+```
+
+(Peach clue 3. Nobody can explain it; it points at her SMB2 kit and the Lost Kingdom's turnips.)
+
+**Hint NPC: Fred, by the trap pipe.** NEW partner (`fred`). Fred the frog sits beside **8-4-end's trap pipe
+(column 10)**, the one that leads down to Jason's secret area in the campaign. He can't talk, so his second page is
+a caption. (Fred appears in Jason's area too, by the pool: the frog gets around.)
+
+```text
+FRED:
+
+RIBBIT.
+```
+
+```text
+THE FROG LOOKS AT YOU,
+THEN DOWN THE PIPE. THEN
+AT YOU AGAIN.
+```
+
+After Sophia III is freed, Fred is gone from the pipe (he is home).
+
+**Hint NPC: Jason.** KEEP, in the hidden Underworld area behind the trap pipe. Talking to him starts the follow-Fred
+swim.
+
+```text
+JASON:
+
+FRED! FRED, COME BACK!
+...OH, HI. HAVE YOU SEEN
+A FROG? GREEN, THIS BIG?
+```
+
+```text
+JASON:
+
+HE JUMPED IN THE WATER AND
+SWAM DOWN A CRACK. LAST
+TIME HE DID THAT, I FOUND
+A TANK.
+```
+
+```text
+JASON:
+
+MY TANK, SOPHIA! SHE'S DOWN
+THERE TOO. FOLLOW FRED,
+PLEASE. I CAN'T SWIM.
+```
+
+After Sophia III is freed:
+
+```text
+JASON:
+
+SOPHIA'S BACK, FRED'S BACK.
+BEST DAY EVER! THANK YOU!
+```
+
+**Sophia III, captive:** KEEP (the shared first card, then the brainwashing speaking through her computer):
+
+```text
+SOPHIA III:
+
+PILOT NOT FOUND. THE
+PLUTONIUM BOSS HAS THE
+WHEEL. <HERO>...
+CLIMB IN. BLAST IT OUT!
+```
+
+**Sophia III, freed.** NEW. Her computer finds her pilot, then a tear in space under the castle that the wand holds
+shut, and a land beyond it with no Koopas at all (which Toad puts together with the note at the rift).
+
+```text
+SOPHIA III:
+
+SYSTEM REBOOT... PILOT
+FOUND. HELLO, JASON.
+```
+
+```text
+JASON:
+
+SOPHIA! YOU'RE OKAY! AND
+YOU... THANKS, <HERO>.
+```
+
+```text
+SOPHIA III:
+
+ALERT. SCAN SHOWS A TEAR
+IN SPACE UNDER THIS
+CASTLE. THE KING'S WAND IS
+HOLDING IT SHUT.
+```
+
+```text
+SOPHIA III:
+
+BEYOND IT: A LAND NO MAP
+SHOWS. NO KOOPA SIGNALS
+THERE. NONE.
+```
+
+```text
+JASON:
+
+WE'RE WITH YOU. CLIMB IN
+ANY TIME!
+```
+
+### 2.12 World 8-4: Bowser falls, the wand breaks, the rift
+
+**The scene** (KEEP, as built): the axe, the bridge falls, Bowser falls. As he drops, the wand spins up out of his
+hand, cracks with a white flash (no flash with reduce flashing), and breaks into glowing pieces. A jagged,
+shimmering crack opens in the air over the lava; the pieces swirl into it and it stays open, humming. The hero
+walks on. Said: _The wand spins out of Bowser's hand and breaks! Its glowing pieces swirl into a crack in the air._
+
+**Who stands at the end:** KEEP. In the campaign, our Toad stands at `8-4-end` column 57 in place of the princess.
+
+**Castle 8-4** (KEEP):
+
+```text
+THANK YOU <HERO>!
+
+NO TRICK THIS TIME. THAT
+WAS THE REAL KING!
+```
+
+Then, 2 s later (second page, same box):
+
+```text
+BOWSER FELL... AND THE
+WAND BROKE! ITS PIECES
+FELL THROUGH A CRACK IN
+THE WORLD!
+```
+
+**The credits** (KEEP): they roll over it as a **false ending**; in the campaign the last credits page gets this
+block after `THANKS FOR PLAYING / SUPER MARIO BROS. CROSSOVER / REMIX`:
+
+```text
+END OF CHAPTER 1
+
+...BUT THE STORY
+ISN'T OVER.
+```
+
+**The rift is World 8's gate.** The same rule as every world: the road on to Lost World 1 needs 8-4 cleared **and**
+Sophia III freed. The story reason is hers: the last spell still running holds the crack shut.
+
+- **Sophia III not freed yet** (a reminder, Toad's box). **Trigger:** the first time the World 8 map shows after
+  the credits with Sophia III still captive. Hint line on 8-4: `SEALED - FREE SOPHIA III FIRST`.
+
+```text
+TOAD:
+
+THE KING IS BEATEN, BUT
+THAT CRACK IS TOO SMALL TO
+GO THROUGH. SOMETHING'S
+HOLDING IT SHUT...
+```
+
+```text
+TOAD:
+
+THE LAST SPELL! THE TANK IS
+STILL UNDER IT. HER PILOT IS
+LOST SOMEWHERE IN 8-4.
+```
+
+- **Toad works out the note** (a major scene: Toad walks in). **Trigger:** the first time the World 8 map shows
+  with 8-4 cleared and Sophia III freed: right after the credits if she was freed first, or the next time the map
+  shows after she is freed (then the crack is first seen tearing wide open on the 8-4 node, a shimmer and a hum,
+  as her spell snaps back). The road on to Lost World 1 draws in after it. REPLACES `riftPages` (pages 2-3 new;
+  "sniffed" went with the old 1-0 tease, and the note's "old friends" is new).
+
+```text
+TOAD:
+
+THAT CRACK LEADS TO THE
+LOST KINGDOM! NOBODY GOES
+THERE. NOBODY EVER LOOKS
+THERE...
+```
+
+```text
+TOAD:
+
+...WAIT. WHERE NO KOOPA
+WOULD EVER LOOK. THAT'S
+WHERE SHE WENT, <HERO>!
+```
+
+```text
+TOAD:
+
+OLD FRIENDS, SHE WROTE...
+WHO COULD SHE KNOW IN THE
+LOST KINGDOM?
+```
+
+```text
+TOAD:
+
+BUT THE WAND'S PIECES FELL
+IN THERE TOO, AND THE
+KOOPALINGS WILL GO AFTER
+THEM. LET'S HURRY!
+```
+
+### 2.13 (being rewritten)
 
 ### 2.15 The Lost Kingdom
 
