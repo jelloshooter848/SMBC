@@ -1,12 +1,14 @@
 import type { Action } from '@engine/input/actions';
 import { px, tileAt, tileToSub, toPx } from '@engine/math/units';
-import { getLevel } from '@content/levels';
+import { getLevel as bundled } from '@content/levels';
+import { heroVariant } from '@game/level/variants';
 import { runSim } from '@game/sim/headless';
 import { SOPHIA } from '@game/characters/sophia';
 import { sophiaState } from '@game/characters/sophia/state';
 import { ParkedTank } from '@game/characters/sophia/jason';
 import { groundBelow } from '@game/entities/body';
 import { Enemy } from '@game/entities/enemies/enemy';
+import { Spring } from '@game/entities/objects/spring';
 import type { LevelData } from '@game/level/schema';
 import type { World, WorldStart } from '@game/world/world';
 
@@ -19,9 +21,13 @@ import type { World, WorldStart } from '@game/world/world';
  * stands still again on solid ground. Pipes and vines into other areas are followed; a flagpole,
  * the castle axe, the level's exit or a warp to another level ends the search. The maze loops'
  * checkpoints travel with each spot. It answers "can she finish it", not "how hard is it".
+ * Every level is searched with her campaign variant laid (`[variant sophia]`: level/variants.ts).
  */
 
 type Form = 'tank' | 'jason';
+
+/** A level as campaign play gives it to Sophia III: with her variant's steps (level/variants.ts). */
+const getLevel = (id: string): LevelData => heroVariant(bundled(id), [SOPHIA.id], true);
 
 interface Spot {
   area: string;
@@ -84,6 +90,8 @@ function moves(form: Form, power: string, water: boolean, spring = false): Move[
   for (const d of ['right', 'left'] as const) {
     hold(`walk-${d}`, [d], 14);
     hold(`run-${d}`, [d], 40);
+    // Off a ledge with the direction held until she lands (a drop that steers in under a ledge).
+    jumpy(`drive-${d}`, 200, () => [d]);
     // Jumps: held all the way, or tapped, the direction held all the way.
     jumpy(`jump-${d}`, 90, (_w, f) => (f < 70 ? [d, 'jump'] : [d]));
     jumpy(`hop-${d}`, 60, (_w, f) => (f < 2 ? [d, 'jump'] : [d]));
@@ -104,6 +112,31 @@ function moves(form: Form, power: string, water: boolean, spring = false): Move[
           // Not let go on landing: the spring's bounce is a landing too.
           act: (_w, f) => (f < k ? [d, 'jump'] : [o, 'jump']),
         });
+    // Hop onto a spring and press jump on it (the boosted launch needs a fresh press there), then
+    // rise straight up for `k` frames and steer `d` until she lands (`k` 0: steered all the way).
+    if (spring)
+      for (const k of [0, 20, 40, 60, 90]) {
+        let rode = false;
+        let up = -1;
+        let done = false;
+        out.push({
+          name: `boost${k}-${d}`,
+          frames: 360,
+          act: (w, f) => {
+            const p = w.player;
+            if (done) return [];
+            const on = w.entities.some((e) => e instanceof Spring && e.ridBy(p));
+            if (on) {
+              rode = true;
+              return f % 2 === 0 ? ['jump'] : [];
+            }
+            if (!rode) return f < 3 ? [d, 'jump'] : p.body.onGround && f > 6 ? ((done = true), []) : [d];
+            if (up < 0) up = f;
+            if (p.body.onGround && f - up > 4) return ((done = true), []);
+            return f - up < k ? ['jump'] : [d, 'jump'];
+          },
+        });
+      }
     // Drive to the edge (no floor under her middle), then a held jump; and the same from a
     // run-up (backing off first).
     for (const back of [0, 30]) {

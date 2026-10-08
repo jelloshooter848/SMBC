@@ -98,3 +98,24 @@ bush-3 203 12
 cloud-1 211 2
 bush-2 215 12
 cloud-3 219 3
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump short or low (charHorz, charVert): a red spring
+;; on a block in each long gap (Mario crosses them on the Paratroopas, which the tank cannot
+;; stomp), the Paratroopas moved to suit (docs/HEROES.md).
+78 13 s
+82 13 s
+127 13 s
+131 13 s
+78 14 B
+82 14 B
+127 14 B
+131 14 B
+- koopa-para-red 78 11
+- koopa-para-red 81 10
+- koopa-para-red 84 10
+- koopa-para-red 131 11
++ koopa-para-red 75 9 dx=8
++ koopa-para-red 80 9
++ koopa-para-red 84 9 dx=8
++ koopa-para-red 129 11 dy=-8

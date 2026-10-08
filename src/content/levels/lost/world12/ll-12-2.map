@@ -76,3 +76,8 @@ cloud-1 182 6
 cloud-1 190 11
 cloud-2 195 3
 cloud-1 201 7
+
+[variant sophia classic]
+;; The original's piece for heroes who jump short (charHorz): a bridge in the 8-tile gap
+;; between the bridge at 19-21 and the platform at 30 (docs/HEROES.md).
+24 11 ---

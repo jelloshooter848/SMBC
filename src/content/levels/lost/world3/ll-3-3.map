@@ -80,3 +80,10 @@ cloud-1 172 11
 cloud-1 179 7
 cloud-1 182 6
 cloud-2 195 3
+
+[variant sophia classic]
+;; The original's piece for heroes who jump low (charVert): the first platform two rows lower
+;; (five tiles up is out of Normal Sophia III's reach; docs/HEROES.md).
+13 8 ...
+14 9 .
+13 10 TTT

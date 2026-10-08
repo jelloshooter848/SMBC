@@ -52,3 +52,13 @@ pipe 97 10 down -> ll-11-4 19 10 exit=up
 pipe 129 10 down -> ll-11-4 19 10 exit=up
 pipe 161 10 down -> ll-11-4 19 10 exit=up
 pipe 193 10 down -> ll-11-4-exit 3 10 exit=up
+
+[variant sophia classic]
+;; The original's pieces for wide heroes (WideCharacter): the one-tile shafts at 64 and 68 up
+;; from the lift over the lava are two tiles wide for the tank (docs/HEROES.md).
+63 6 . *7
+69 6 . *7
+63 13 ~
+69 13 ~
+63 14 .
+69 14 .
