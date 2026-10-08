@@ -261,8 +261,8 @@ describe('castle pages wait for a key per page, then exit', () => {
   });
 });
 
-describe('the training room: cards, GOOD! and READY! wait for a key', () => {
-  it('a chapter card, a GOOD! and READY! each stay up with no input, and go on with a key', () => {
+describe('the training room: cards and READY! wait for a key; GOOD! is a tick that never waits', () => {
+  it('a chapter card and READY! stay up with no input and go on with a key; GOOD! sits by the next prompt', () => {
     const h = makeGame();
     const ends: string[] = [];
     const room = new PracticeRoomScene(h.game, LUIGI, { onEnd: (r) => ends.push(r) });
@@ -271,23 +271,32 @@ describe('the training room: cards, GOOD! and READY! wait for a key', () => {
     expect(room.phase).toBe('chapter');
     h.tap('jump');
     expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'high-jump']);
-    // The lesson is done: GOOD! stays up (the hero still moves) until a key, never on a timer.
+    expect(room.promptLines()).not.toContain('GOOD!');
+    // The lesson is done: the next prompt comes up at once, with GOOD! and a tick by it.
     room.tracker.maxJumpHeight = LUIGI_HIGH_JUMP_PX;
     h.step();
-    expect(room.phase).toBe('good');
-    expect(h.said.at(-1)).toMatch(/^Good!/);
-    h.idle(LONG);
-    expect([room.phase, room.lesson?.id]).toEqual(['good', 'high-jump']);
-    expect(room.promptLines()).toContain('GOOD!');
-    h.tap('attack');
     expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'slippery-stop']);
-    // The last lesson's GOOD! waits too, then the next chapter's card, then READY!.
-    room.startLesson(room.lessons.length - 1);
+    expect(room.ticked).toEqual(['high-jump']);
+    expect(h.said.at(-1)).toMatch(/^Good! Hold right/);
+    expect(room.promptLines()).toContain('GOOD!');
+    // Nothing moves on by itself, and the tick stays (no timer).
+    h.idle(LONG);
+    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'slippery-stop']);
+    expect(room.promptLines()).toContain('GOOD!');
+    // The chapter's last lesson: GOOD! on the next chapter's card, which waits for a key.
+    room.tracker.maxRunCoast = 999;
+    h.step();
+    expect(room.phase).toBe('chapter');
+    expect(room.promptLines()).toContain('GOOD!');
+    expect(h.said.at(-1)).toMatch(/^Good! Chapter 2/);
+    h.idle(LONG);
+    expect(room.phase).toBe('chapter');
+    h.tap('jump');
+    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'fireball']);
+    // Still ticked until this lesson is done.
+    expect(room.promptLines()).toContain('GOOD!');
     room.tracker.dummyHits.add('fireball');
     h.step();
-    h.idle(LONG);
-    expect(room.phase).toBe('good');
-    h.tap('jump');
     expect(room.phase).toBe('ready');
     h.idle(LONG);
     expect(ends).toEqual([]);
@@ -295,16 +304,17 @@ describe('the training room: cards, GOOD! and READY! wait for a key', () => {
     expect(ends).toEqual(['done']);
   });
 
-  it('a key pressed with GOOD! just up (within the card guard) does not skip it', () => {
+  it('a key pressed as the last lesson ticks (within the card guard) does not skip READY!', () => {
     const h = makeGame();
     const room = new PracticeRoomScene(h.game, LUIGI, { onEnd: () => {} });
     h.game.scenes.push(room);
     h.idle(CARD_GUARD_FRAMES + 1);
     h.tap('jump');
-    room.tracker.maxJumpHeight = LUIGI_HIGH_JUMP_PX;
+    room.startLesson(room.lessons.length - 1);
+    room.tracker.dummyHits.add('fireball');
     h.step();
-    expect(room.phase).toBe('good');
+    expect(room.phase).toBe('ready');
     h.tap('jump');
-    expect(room.phase).toBe('good');
+    expect(room.phase).toBe('ready');
   });
 });

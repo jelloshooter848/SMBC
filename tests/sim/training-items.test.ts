@@ -96,13 +96,14 @@ describe("a lesson's item", () => {
     const spot = r.scene.itemSpot();
     expect(toPx(item!.body.y + item!.body.h)).toBe((spot.y + 1) * 16);
     r.h.idle(30);
-    expect(r.scene.phase).toBe('lesson');
+    expect(r.scene.ticked).toEqual([]);
     expect(r.scene.tracker.taken.size).toBe(0);
     walkToItem(r);
     expect(pickups(r.scene)).toHaveLength(0);
     expect(has(r.scene.player, 'long-beam')).toBe(true);
     r.h.step();
-    expect(r.scene.phase).toBe('good');
+    expect(r.scene.ticked).toEqual(['long']);
+    expect(r.scene.phase).toBe('ready');
     // The item's name and what it does are read out.
     expect(r.h.said.some((t) => /^Long Beam: /.test(t))).toBe(true);
   });
@@ -126,13 +127,13 @@ describe("a lesson's item", () => {
     });
     const r = room('samus');
     for (let i = 0; i < 40; i++) r.h.step(i % 8 < 2 ? ['attack'] : []);
-    expect(r.scene.phase).toBe('lesson');
+    expect(r.scene.ticked).toEqual([]);
     walkToItem(r);
     r.h.step();
     expect(attacks).toBe(0);
-    expect(r.scene.phase).toBe('lesson');
-    for (let i = 0; i < 20 && r.scene.phase === 'lesson'; i++) r.h.step(i % 8 < 2 ? ['attack'] : []);
-    expect(r.scene.phase).toBe('good');
+    expect(r.scene.ticked).toEqual([]);
+    for (let i = 0; i < 20 && !r.scene.ticked.length; i++) r.h.step(i % 8 < 2 ? ['attack'] : []);
+    expect(r.scene.ticked).toEqual(['long']);
   });
 
   it("Mario's and Luigi's items are SMB's mushroom and flower, standing still", () => {
@@ -160,7 +161,11 @@ describe("a lesson's item", () => {
     walkToItem(r);
     r.h.idle(40);
     expect(r.scene.player.powerState).toBe('big');
-    expect(r.scene.phase).toBe('good');
+    expect(r.scene.ticked).toEqual(['grow']);
+    // Next, the flower stands where the mushroom stood.
+    const [f] = pickups(r.scene);
+    expect(f).toBeInstanceOf(PowerUp);
+    expect((f as PowerUp).item).toBe('flower');
   });
 
   it('a hero who has the item already needs no grab', () => {
@@ -180,7 +185,9 @@ describe("a lesson's item", () => {
     const r = room('megaman');
     walkToItem(r);
     r.h.step();
-    expect(r.scene.phase).toBe('good');
+    // The second lesson's helmet is owned already: nothing placed, and it ticks at once.
+    r.h.step();
+    expect(r.scene.ticked).toEqual(['helmet', 'again']);
   });
 });
 

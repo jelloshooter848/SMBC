@@ -23,17 +23,32 @@ import type { MoveStats } from '../lessons';
  */
 export type ItemId = string;
 
-/** `[LABEL:action]`: a button's ability in a prompt. */
-const TOKEN = /\[([^:\]]+):(\w+)\]/g;
+/**
+ * `[LABEL:action]`: a button's ability in a prompt; `[LABEL:action:TOUCH]` also names what the
+ * touch button says for it (its caption: BOOMERANG, SAW, AXE...), shown instead on touch.
+ */
+const TOKEN = /\[([^:\]]+):(\w+)(?::([^\]]+))?\]/g;
 
 /**
  * A prompt's text: each `[LABEL:action]` through `hint` (the room passes `abilityHint`), or the
- * bare label without one.
+ * bare label without one. On `touch` a token's touch caption replaces its label (owner pick,
+ * 0.4.34: touch prompts name the tool or weapon as its button does; keys and pads keep the
+ * ability names).
  */
-export function promptText(prompt: string, hint?: (label: string, action: Action) => string): string {
-  return prompt.replace(TOKEN, (_m, label: string, action: string) =>
-    hint ? hint(label, action as Action) : label,
-  );
+export function promptText(
+  prompt: string,
+  hint?: (label: string, action: Action) => string,
+  touch = false,
+): string {
+  return prompt.replace(TOKEN, (_m, label: string, action: string, caption?: string) => {
+    const name = touch && caption ? caption : label;
+    return hint ? hint(name, action as Action) : name;
+  });
+}
+
+/** The labels a touch player would read for a prompt's tokens (their captions where given). */
+export function touchNames(prompt: string): string[] {
+  return [...prompt.matchAll(TOKEN)].map((m) => m[3] ?? (m[1] as string));
 }
 
 /** The actions named by a prompt's `[LABEL:action]` tokens. */
@@ -106,13 +121,13 @@ export interface TrainingLesson {
   /** Where the room places `item` (a tile; its feet on the tile's bottom). */
   itemAt?: TileSpot;
   /**
-   * @deprecated The old (PREVIEW) marking, read only while a hero's training has `fullKit`.
-   * Lessons now place their item instead.
+   * @deprecated The old (PREVIEW) marking: never read any more (training starts from the basic
+   * kit and lessons place their items). Left only so unconverted lessons still compile.
    */
   unlocked?(run: RunKit): boolean;
 }
 
-/** The run's kit for one hero (the old PREVIEW marking; training no longer reads it). */
+/** @deprecated The run's kit for one hero (the old PREVIEW marking; training no longer reads it). */
 export interface RunKit {
   kit: Readonly<Record<string, number>>;
   /** The carried power state ('small', 'big', 'fire', 'full'...). */
@@ -135,19 +150,11 @@ export interface TrainingChapter {
 export interface HeroTraining {
   chapters: readonly TrainingChapter[];
   /**
-   * @deprecated The pre-0.4.34 room: the hero's whole kit from `devKit` (and the PREVIEW marks)
-   * instead of the basic kit and placed items. Only for a hero whose lessons aren't converted yet.
+   * @deprecated The pre-0.4.34 room: the hero's whole kit from `devKit` instead of the basic kit
+   * and placed items. Only for a hero whose lessons aren't converted yet.
    */
   fullKit?: boolean;
 }
-
-/** @deprecated A lesson for kit the run has not unlocked yet (the old PREVIEW marking). */
-export function isPreview(lesson: TrainingLesson, run?: RunKit): boolean {
-  return !!run && !!lesson.unlocked && !lesson.unlocked(run);
-}
-
-/** @deprecated The prompt's mark on a preview lesson. */
-export const PREVIEW = '(PREVIEW) ';
 
 /** @deprecated A run kit's key (the old `unlocked` checks). */
 export const k = (run: RunKit, key: string): number => run.kit[key] ?? 0;

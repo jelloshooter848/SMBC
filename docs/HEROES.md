@@ -1217,10 +1217,13 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
   `practice-water.map` (`swim: true` from the wave row down: Link and Bill swim, Mega Man walks the
   seabed). The dummy (`dummy x y` in each map; `TargetDummy` never moves or hurts, pops after three
   hits and comes back; `Enemy.practiceTarget`, so Sophia III's homing missile seeks it) stands in
-  each. The room runs in a World of its own with a fresh GameState for the hero and its full kit
-  (`devKit`: Mega Man's helmet, Samus's missiles, Simon's sub-weapons...); ammo and magic are
-  topped up at each lesson; what the hero carries (power, health, kit) goes on into the next
-  chapter's room. The run's GameState is snapshotted and restored around it (as the mini games
+  each. The room runs in a World of its own with a fresh GameState for the hero and its **basic
+  kit** (0.4.34, owner decision: `heroStart`, the campaign's first kit: Link's Boomerang, Simon's
+  and Ryu's 10-point bars, small Luigi), whatever the run holds; the lessons' power-ups build it
+  up. Ammo and magic are topped up at each lesson to the most the hero has had in the room; what
+  the hero carries (power, health, kit) goes on into the next chapter's room. (A hero whose
+  training still says `fullKit` gets the old whole kit from `devKit`: only until its lessons are
+  converted.) The run's GameState is snapshotted and restored around it (as the mini games
   do), so lives, score, power and kit are never touched. Hit points stay topped up, so nothing in
   the room can end it. The HUD shows TRAINING where WORLD and TIME go, and no score or coins
   (`drawHud`'s `place` option).
@@ -1229,12 +1232,19 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
   (`<HERO> TRAINING`, `CHAPTER 2/4`, its title, ANY BUTTON TO START), announced with its lesson
   count; it holds the room still and waits for a button (after `CARD_GUARD_FRAMES`). The heading
   over a lesson is `<HERO> <CHAPTER> 2/5`. After the last chapter READY! also waits for a button.
-  No text moves on by itself: a prompt goes only when the player does the thing or skips, and
-  GOOD! (with ANY BUTTON TO GO ON; the hero still moves) waits for a button after the guard too,
-  then the next prompt or card comes up (tests/sim/text-waits.test.ts). MENU in the room: Continue / Skip chapter (on
-  to the next card, or READY! after the last; the room then ends as skipped) / Skip training.
-- **Lessons** (`lessons.ts`). `TrainingLesson { id, prompt, done(tracker), setup?(room),
-unlocked?(run) }`; `lessonsFor(id)` is every chapter's lessons in order. `MoveStats` watches the
+  No text moves on by itself: a prompt goes only when the player does the thing or skips. A done
+  lesson plays a sound and the next prompt (or card, or READY!) comes up at once, announced after
+  "Good!", with a static green tick and GOOD! under its heading (0.4.34, owner pick 1); no timer:
+  the tick stays until that lesson is done too (tests/sim/text-waits.test.ts). MENU in the room:
+  Continue / Skip chapter (on to the next card, or READY! after the last; the skipped chapter's
+  items go to the hero quietly so the kit builds as it would have; the room then ends as skipped)
+  / Skip training.
+- **Lessons** (0.4.34: one module per hero, `src/game/tutorial/lessons/<hero>.ts`, exporting its
+  `HeroTraining { chapters }`; shared types and builders in `lessons/common.ts`; `lessons.ts`
+  holds the `TRAINING` registry and the tracker and re-exports both). `TrainingLesson { id,
+prompt, touchPrompt?, done(tracker), setup?(room), item?, itemAt? }`, built with `lesson(id,
+prompt, done, more)` or `itemLesson(id, item, prompt, done, more)`; `lessonsFor(id)` is every
+  chapter's lessons in order. `MoveStats` watches the
   player and world each frame (jumps and their height, the highest point, ground speed and glide,
   attacks, shots by kind, direction and selected tool, shots in flight at once, charge shots,
   slides, the tunnel, crouching, tool changes, ammo or magic spent per tool, wall cling and wall
@@ -1243,18 +1253,27 @@ unlocked?(run) }`; `lessonsFor(id)` is every chapter's lessons in order. `MoveSt
   the Wave Beam, `far` from FAR_HIT_PX away). The tracker is reset when a lesson or a card comes
   up, so each is done while its prompt shows. Prompts name abilities as the guide and touch
   buttons do (never button letters); a button's ability is written `[SHOOT:attack]` and shown
-  through `abilityHint` ("SHOOT (X)" with keys or a pad, "SHOOT" on touch), falling back to the
-  bare names when that would not fit 3 lines of 25 columns (`promptText`). They come one at a
-  time in a centred box under the HUD (`drawRoomBox`), announced; each ticks off with a sound and
-  GOOD!. Walking, jumping and the basic attack never tick a move lesson (tested per hero).
-- **Unlocks (PREVIEW).** `runTraining` passes the training player's kit in the run (`runKit`: the
-  carried kit and power when that player plays this hero, else a fresh hero's: nothing yet). A
-  lesson whose `unlocked(run)` is false still runs, with the kit lent in the room, and its prompt
-  starts "(PREVIEW)" (prompts are tested to fit with the mark). The Arena's training rooms pass
-  no run, so nothing is marked there. The order never changes, so the room from the pause menu
-  plays the same lessons in the same order. Owner decision pending: hide locked kit instead.
+  through `abilityHint` ("SHOOT (X)" with keys or a pad), falling back to the bare names when
+  that would not fit 3 lines of 25 columns (`promptText`). On touch a token shows its touch
+  caption, `[USE TOOL:special:BOOMERANG]` → BOOMERANG, so the prompt names the tool or weapon as
+  its button does (0.4.34, owner pick 2; keys and pads keep the ability names; converted heroes
+  are tested never to say USE TOOL, USE WEAPON, THROW or CAST on touch). They come one at a time
+  in a centred box under the HUD (`drawRoomBox`), announced. Walking, jumping and the basic
+  attack never tick a move lesson (tested per hero).
+- **Power-ups** (0.4.34, owner decision: show how each power is unlocked). A lesson's `item` (a
+  docs/POWERUPS.md id from `items/catalog.ts`) is placed in the room when the lesson comes up
+  (`PracticeRoom.placeItem`: the real `HeroItem` pickup, already out of its block, or SMB's
+  mushroom or flower standing still for Mario and Luigi) at `itemAt` or the room's item spot (on
+  the floor two tiles ahead of the start, or one behind it if the hero stands nearer). Taking it
+  is the world's own (`World.takeHeroItem`: effect, sound, caption, and its name and what it does
+  read out). The lesson counts only after the grab: the tracker starts afresh at it
+  (`MoveStats.grabbed`, `taken`), so `done` measures the use. An item that falls out of the room
+  comes back; an item the hero has already needs no grab. No (PREVIEW), no lent kit, and the
+  run's kit is never read: the order never changes, so the room from the pause menu and the
+  Arena play the same lessons in the same order. The run's GameState is restored afterwards as
+  before.
 
-| Hero     | Chapters and lessons (PREVIEW until unlocked: in brackets)                                                                                                                     |
+| Hero     | Chapters and lessons (before the 0.4.34 item lessons; in brackets: kit that came from items)                                                                                   |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Luigi    | Moves: high jump, slippery stop. Fire: [fireball] (gives fire)                                                                                                                 |
 | Link     | Sword: sword, down-thrust, up-thrust, shield. Tools (gear): boomerang, bomb. Magic: jump, shield and fire spells. Water: swim                                                  |
@@ -1269,8 +1288,9 @@ Not in the training because the campaign code has no such kit: Bill's R and B ca
 his mini game, Jungle Assault). Link's bomb lesson blasts the dummy rather than a cracked wall (a
 cracked wall crumbles to any attack, so it would not show the bomb).
 
-To add a hero's training: chapters in `CHAPTERS` (a lesson for every kit piece, tested by
-`src/game/tutorial/lessons.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.
+To add a hero's training: a `lessons/<hero>.ts` module in `TRAINING` (a lesson for every kit
+piece, and an item lesson for each power-up, tested by `src/game/tutorial/lessons.test.ts` and
+`tests/sim/training-items.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.
 
 ## Sophia III in the campaign levels
 

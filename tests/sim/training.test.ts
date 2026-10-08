@@ -11,9 +11,10 @@ import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
 import { SAMUS } from '@game/characters/samus';
 import { heroStart } from '@game/items/heroes';
+import { carriedKit } from '@game/entities/player';
 import { loadSave, migrateSave, newSave } from '@game/save/save-files';
 import { CARD_GUARD_FRAMES, PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
-import { lessonsFor, PREVIEW } from '@game/tutorial/lessons';
+import { lessonsFor, TRAINING, type HeroTraining } from '@game/tutorial/lessons';
 import { TrainingQuestionScene } from '@game/tutorial/training';
 import type { TargetDummy } from '@game/tutorial/dummy';
 import type { Settings } from '@engine/save/settings';
@@ -248,26 +249,45 @@ describe('training and the dev "All heroes" toggle', () => {
   });
 });
 
-describe('the whole kit, previews and chapters', () => {
-  it("a first pick's lessons for kit not unlocked yet say (PREVIEW); the kit is lent, then the run's comes back", () => {
-    const h = makeGame();
-    file({ freed: ['mario', 'samus'] });
-    h.game.openFile(1);
-    pick(h, 1);
-    choose(h, 'Yes');
-    const room = h.top() as PracticeRoomScene;
-    expect(room.hero).toBe(SAMUS);
-    // A fresh Samus: no beam upgrades yet. The plain beam is hers; the Long Beam is a preview, lent.
-    room.startLesson(0);
-    expect(room.promptWrapped().join(' ')).not.toContain('(PREVIEW)');
-    room.startLesson(lessonsFor('samus').findIndex((l) => l.id === 'long-beam'));
-    expect(room.promptWrapped().join(' ').startsWith(PREVIEW.trim())).toBe(true);
-    expect(h.said.at(-1)).toMatch(/^\(preview\) long beam/i);
-    expect(room.player.scratch.beam).toBe(1);
-    skip(h);
-    h.until(() => h.top() instanceof LevelScene);
-    expect(h.game.state.character).toBe(SAMUS);
-    expect(h.game.state.kit).toEqual(heroStart(SAMUS).kit);
+describe('the basic kit and chapters', () => {
+  it('the room starts from the basic kit whatever the run holds, with no (PREVIEW); the run gets its own back', () => {
+    // Samus's lessons as converted ones (no `fullKit`): the room gives her the basic kit.
+    const all = TRAINING as Record<string, HeroTraining>;
+    const before = all.samus as HeroTraining;
+    all.samus = { chapters: before.chapters };
+    try {
+      const h = makeGame();
+      file({ freed: ['mario', 'samus'], tutorials: ['mario', 'samus'] }, SAMUS.id);
+      h.game.openFile(1);
+      pick(h, 0);
+      h.until(() => h.top() instanceof LevelScene);
+      h.idle(30);
+      // The run has found the Long Beam and the Missiles.
+      const level = h.top() as LevelScene;
+      Object.assign(level.world.player.scratch, { 'has-long-beam': 1, 'has-missiles': 1, missiles: 7 });
+      h.tap('start');
+      choose(h, 'Training');
+      const room = h.top() as PracticeRoomScene;
+      const kit = { ...h.game.state.kit };
+      expect(room.player.scratch).toMatchObject(heroStart(SAMUS).kit);
+      expect(room.player.scratch['has-long-beam']).toBeUndefined();
+      expect(room.player.scratch['has-missiles']).toBeUndefined();
+      for (let i = 0; i < room.lessons.length; i++) {
+        room.startLesson(i);
+        expect(room.promptWrapped().join(' ')).not.toContain('PREVIEW');
+        expect(h.said.at(-1)).not.toMatch(/preview/i);
+      }
+      skip(h);
+      // The run's own kit, as the level's hero carries it.
+      expect({ ...kit, ...h.game.state.kit }).toEqual(carriedKit(level.world.player));
+      expect(level.world.player.scratch).toMatchObject({
+        'has-long-beam': 1,
+        'has-missiles': 1,
+        missiles: 7,
+      });
+    } finally {
+      all.samus = before;
+    }
   });
 
   it('from pause the lessons come in the same order, and the run keeps its own kit', () => {

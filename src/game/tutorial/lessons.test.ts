@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../characters/registry';
 import { fontText } from '../hud/text';
 import { wrapPrompt } from './stage-prompts';
-import { chaptersFor, isPreview, LESSONS, lessonsFor, PREVIEW, promptActions, promptText } from './lessons';
+import { chaptersFor, LESSONS, lessonsFor, promptActions, promptText, touchNames, TRAINING } from './lessons';
 import { WEAPONS } from '../characters/megaman/weapons';
 import { SUB_WEAPONS } from '../characters/simon/weapons';
 import { NINPO_ARTS } from '../characters/ryu/weapons';
@@ -134,37 +134,25 @@ describe('hero lessons', () => {
     }
   });
 
-  it('a lesson for kit the run lacks is a preview; with the kit, or outside a run, it is not', () => {
-    const ice = lessonsFor('samus').find((l) => l.id === 'ice-beam');
-    const shoot = lessonsFor('samus').find((l) => l.id === 'shoot');
-    if (!ice || !shoot) throw new Error('missing');
-    expect(isPreview(ice, { kit: {}, power: 'full' })).toBe(true);
-    expect(isPreview(ice, { kit: { beam: 2 }, power: 'full' })).toBe(false);
-    expect(isPreview(ice)).toBe(false);
-    expect(isPreview(shoot, { kit: {}, power: 'full' })).toBe(false);
-    const fire = lessonsFor('luigi').find((l) => l.id === 'fireball');
-    expect(fire && isPreview(fire, { kit: {}, power: 'big' })).toBe(true);
-    expect(fire && isPreview(fire, { kit: {}, power: 'fire' })).toBe(false);
-  });
-
   it.each(CHARACTERS.filter((c) => c.id !== 'mario').map((c) => [c.id]))(
     '%s: prompts fit the box, name abilities and never button letters',
     (id) => {
       const lessons = lessonsFor(id);
       expect(new Set(lessons.map((l) => l.id)).size).toBe(lessons.length);
-      const marked = new Set(lessons.filter((l) => l.unlocked).map((l) => l.id));
       const vocab = vocabulary(id);
       const prompts = lessons.flatMap((l) =>
         [l.prompt, l.touchPrompt].flatMap((prompt) => (prompt ? [{ id: l.id, prompt }] : [])),
       );
       for (const l of prompts) {
-        // Bare: each [LABEL:action] token as its label (the box falls back to this), with the
-        // (PREVIEW) mark when the lesson can be one.
-        const bare = (marked.has(l.id) ? PREVIEW : '') + promptText(l.prompt);
-        expect(fontText(bare), l.id).toBe(bare);
-        const lines = wrapPrompt(bare, ROOM_COLS);
-        expect(lines.length, l.id).toBeLessThanOrEqual(ROOM_LINES);
-        for (const line of lines) expect(line.length).toBeLessThanOrEqual(ROOM_COLS);
+        // Bare: each [LABEL:action] token as its label (the box falls back to this), and as touch
+        // shows it (its caption).
+        const bare = promptText(l.prompt);
+        for (const text of [bare, promptText(l.prompt, undefined, true)]) {
+          expect(fontText(text), l.id).toBe(text);
+          const lines = wrapPrompt(text, ROOM_COLS);
+          expect(lines.length, l.id).toBeLessThanOrEqual(ROOM_LINES);
+          for (const line of lines) expect(line.length).toBeLessThanOrEqual(ROOM_COLS);
+        }
         expect(ROOM_COLS).toBeLessThanOrEqual(28);
         expect(bare, l.id).not.toMatch(LETTER);
         expect(bare, l.id).not.toMatch(PROSE);
@@ -185,5 +173,24 @@ describe('prompt tokens', () => {
       'HOLD SHOOT (ATTACK), THEN JUMP (JUMP).',
     );
     expect(promptActions(p)).toEqual(['attack', 'jump']);
+  });
+
+  it('[LABEL:action:CAPTION]: keys and pads keep the ability, touch shows the button caption', () => {
+    const p = '[USE TOOL:special:BOOMERANG] THROWS IT. [TOOLS:select] PICKS ANOTHER.';
+    expect(promptText(p)).toBe('USE TOOL THROWS IT. TOOLS PICKS ANOTHER.');
+    expect(promptText(p, (l) => `${l} (C)`)).toBe('USE TOOL (C) THROWS IT. TOOLS (C) PICKS ANOTHER.');
+    expect(promptText(p, undefined, true)).toBe('BOOMERANG THROWS IT. TOOLS PICKS ANOTHER.');
+    expect(promptActions(p)).toEqual(['special', 'select']);
+    expect(touchNames(p)).toEqual(['BOOMERANG', 'TOOLS']);
+  });
+
+  it("converted heroes' touch prompts name the tool or weapon, never USE TOOL, USE WEAPON, THROW or CAST", () => {
+    const generic = ['USE TOOL', 'USE WEAPON', 'THROW', 'CAST'];
+    for (const [hero, t] of Object.entries(TRAINING)) {
+      if (t.fullKit) continue;
+      for (const l of t.chapters.flatMap((c) => c.lessons))
+        for (const name of touchNames(l.touchPrompt ?? l.prompt))
+          expect(generic, `${hero}:${l.id}`).not.toContain(name);
+    }
   });
 });

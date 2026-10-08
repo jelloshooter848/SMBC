@@ -70,7 +70,7 @@ function attempt(style: Style, letGo: number): { passed: boolean; fell: boolean 
     h.step(act);
     if (toPx(scene.player.centerX) < start - 8) fell = true; // put back at the start
   }
-  return { passed: scene.phase === 'good', fell };
+  return { passed: scene.ticked.includes('slippery-stop'), fell };
 }
 
 describe("Luigi's slippery stop (training 2/3) passes on the first honest attempt", () => {
@@ -120,7 +120,7 @@ describe("Luigi's slippery stop (training 2/3) passes on the first honest attemp
     const finished = [120, 130, 140, 150, 160].filter((x) => {
       const { h, scene } = lesson2();
       let off = false;
-      // While the lesson is up (GOOD! waits for a button with the hero still moving).
+      // While the lesson is up (its chapter's next card comes up once it is done).
       for (let i = 0; i < 240 && scene.phase === 'lesson'; i++) {
         if (toPx(scene.player.centerX) >= x) off = true;
         h.step(off ? [] : ['right', 'attack']);
