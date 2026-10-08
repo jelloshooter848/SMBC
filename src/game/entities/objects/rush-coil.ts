@@ -26,6 +26,11 @@ export class RushCoil extends Entity {
     this.layer = 'back';
   }
 
+  /** It has just launched someone (the spring is up). */
+  get springing(): boolean {
+    return this.sprung > 0;
+  }
+
   update(world: World): void {
     if (this.sprung > 0) {
       if (--this.sprung === 0) this.destroy();

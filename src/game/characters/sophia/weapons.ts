@@ -293,7 +293,13 @@ export class TripleMissile extends Projectile {
 /** An enemy a Homing Missile may lock on to: hittable, not armoured, not fire (SO-31). */
 export function homingTarget(e: Enemy): boolean {
   const v = e.vulnerability.fireball;
-  return e.alive && e.contactHurts && v !== undefined && v !== 'immune' && v !== 'hurtAttacker';
+  return (
+    e.alive &&
+    (e.contactHurts || e.practiceTarget) &&
+    v !== undefined &&
+    v !== 'immune' &&
+    v !== 'hurtAttacker'
+  );
 }
 
 /** The nearest such enemy on screen. */

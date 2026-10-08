@@ -319,7 +319,7 @@ puts its mini game in the Mini Game Arena:
   the save (`tests/sim/arena.test.ts` checks the file byte for byte for every game). Then the
   same result card (PASS / FAIL / QUIT) and the map again, on that pad. The 1-0 pad plays the stage
   as a round (`arena/stage-round.ts`, `Game.stageRound`): its exit passes, pause → Give up quits.
-  Training rooms pass when every lesson is done (Skip training quits); bonus games pass with a
+  Training rooms pass when every lesson is done (Skip training or a skipped chapter quits); bonus games pass with a
   prize; the airship passes with the crystal ball. No best results are kept.
 - **Larry's airship is played as a hero of your choosing**, the one arena game that is: its pad
   opens character select first (`DevRound.asHero`, `pickRoundHero`; the file's freed heroes, the
@@ -1240,43 +1240,91 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
 - **Pause → Training.** In a campaign level the pause menu offers Training (one entry per hero
   in co-op, Mario excluded). The room plays over the paused level; afterwards the pause menu
   closes and the level goes on as it was left (its clock stood still, its music restarts).
-- **The room.** `src/content/levels/practice.map`, one locked screen loaded with `?raw` (kept out
-  of the level library and the dev select): a floor, a step up to a high ledge, a brick row with a
-  ? block, a target dummy (`dummy x y` in the map; `TargetDummy` never moves or hurts, pops after
-  three hits and comes back), a gap (falling in puts the hero back at the start) and a tall wall to
-  cling to. It runs in a World of its own with a fresh GameState for the hero and its full kit
-  (`devKit`: Mega Man's helmet, Samus's missiles, Simon's sub-weapons...), and the run's GameState
-  is snapshotted and restored around it (as the mini games do), so lives, score and power are never
-  touched. Hit points stay topped up, so nothing in the room can end it. The HUD shows TRAINING
-  where WORLD and TIME go, and no score or coins (`drawHud`'s `place` option).
-- **Lessons** (`lessons.ts`). `TrainingLesson { id, prompt, done(tracker), setup?(room) }` per hero in
-  `LESSONS`; `MoveStats` watches the player and world each frame (jumps and their height,
-  ground speed and glide, attacks, shots by kind and direction, charge shots, slides, crouching,
-  tool changes, wall cling and wall jumps, scratch flags like the morph ball, bombs, shield blocks,
-  gap crossings, and how the dummy was hit). The tracker is reset when a lesson comes up, so each
-  is done while its prompt shows. Prompts name abilities as the guide and touch buttons do (never
-  button letters); a button's ability is written `[SHOOT:attack]` and shown through `abilityHint`
-  ("SHOOT (X)" with keys or a pad, "SHOOT" on touch), falling back to the bare names when that
-  would not fit 3 lines of 25 columns (`promptText`). They come one at a time in a centred box
-  under the HUD (`drawRoomBox`: the stage tutorials' `drawPromptBox` from `stage-prompts.ts`,
-  24 px margins, with a green tick), announced; each ticks off with a sound and GOOD!, and after
-  the last READY! ends the room. MENU in the room: Continue / Skip training. Walking, jumping and
-  the basic attack never tick a move lesson (tested per hero): Luigi's stop counts only from a run,
-  Bill's aim counts once per shot (a Spread fan is one direction) and needs two aimed directions.
+- **The rooms.** Three one-screen maps, locked and loaded with `?raw` (kept out of the level
+  library and the dev select), each built afresh when its chapter starts (`practiceRoom(id)`):
+  `practice.map` (a floor, a step up to a high ledge, a brick row with a ? block, a target dummy, a
+  gap where falling in puts the hero back at the start, and a tall wall to cling to);
+  `practice-gear.map` (a ledge for the Rush Coil to aim at, and a wall from the ceiling down with a
+  one-tile tunnel under it for the slide and the morph ball: `RoomGeometry.tunnel`); and
+  `practice-water.map` (`swim: true` from the wave row down: Link and Bill swim, Mega Man walks the
+  seabed). The dummy (`dummy x y` in each map; `TargetDummy` never moves or hurts, pops after three
+  hits and comes back; `Enemy.practiceTarget`, so Sophia III's homing missile seeks it) stands in
+  each. The room runs in a World of its own with a fresh GameState for the hero and its **basic
+  kit** (0.4.34, owner decision: `heroStart`, the campaign's first kit: Link's Boomerang, Simon's
+  and Ryu's 10-point bars, small Luigi), whatever the run holds; the lessons' power-ups build it
+  up. Ammo and magic (and Mega Man's weapon energy) are topped up at each lesson to the most the
+  hero has had in the room, and again mid-lesson whenever a tool on the belt runs dry, so the
+  player can never be stuck short of what a lesson needs (not in a lesson about running out,
+  `spends`: Simon's hearts). What the hero carries (power, health, kit) goes on into the next
+  chapter's room, but not what was in progress (`ROOM_TRANSIENT`: Samus's morph ball, Link's
+  running spells, a charge or throw). The run's GameState is snapshotted and restored around it (as the mini games
+  do), so lives, score, power and kit are never touched. Hit points stay topped up, so nothing in
+  the room can end it. The HUD shows TRAINING where WORLD and TIME go, and no score or coins
+  (`drawHud`'s `place` option).
+- **Chapters** (0.4.32, owner note 24: the whole kit, not 3-5 basics). `CHAPTERS` in `lessons.ts`:
+  per hero, short chapters (1-6 lessons) each in one room. A chapter opens with a card
+  (`<HERO> TRAINING`, `CHAPTER 2/4`, its title, ANY BUTTON TO START), announced with its lesson
+  count; it holds the room still and waits for a button (after `CARD_GUARD_FRAMES`). The heading
+  over a lesson is `<HERO> <CHAPTER> 2/5`. After the last chapter READY! also waits for a button.
+  No text moves on by itself: a prompt goes only when the player does the thing or skips. A done
+  lesson plays a sound and the next prompt (or card, or READY!) comes up at once, announced after
+  "Good!", with a static green tick and GOOD! under its heading (0.4.34, owner pick 1); no timer:
+  the tick stays until that lesson is done too (tests/sim/text-waits.test.ts). MENU in the room:
+  Continue / Skip chapter (on to the next card, or READY! after the last; the skipped chapter's
+  items go to the hero quietly so the kit builds as it would have; the room then ends as skipped)
+  / Skip training.
+- **Lessons** (0.4.34: one module per hero, `src/game/tutorial/lessons/<hero>.ts`, exporting its
+  `HeroTraining { chapters }`; shared types and builders in `lessons/common.ts`; `lessons.ts`
+  holds the `TRAINING` registry and the tracker and re-exports both). `TrainingLesson { id,
+prompt, touchPrompt?, done(tracker), setup?(room), item?, itemAt?, spends? }`, built with
+  `lesson(id, prompt, done, more)` or `itemLesson(id, item, prompt, done, more)`; `lessonsFor(id)`
+  is every chapter's lessons in order. `MoveStats` watches the
+  player and world each frame (jumps and their height, the highest point, ground speed and glide,
+  attacks, shots by kind, direction and selected tool, shots in flight at once, charge shots,
+  slides, the tunnel, crouching, tool changes, ammo or magic spent per tool, wall cling and wall
+  jumps, bomb jumps, scratch flags like the morph ball and a sprung Rush Coil, bombs, shield
+  blocks, hits taken (`hurt`), gap crossings, and how the dummy was hit: the damage kind, the shot's kind, `wave` for
+  the Wave Beam, `far` from FAR_HIT_PX away). The tracker is reset when a lesson or a card comes
+  up, so each is done while its prompt shows. Prompts name abilities as the guide and touch
+  buttons do (never button letters); a button's ability is written `[SHOOT:attack]` and shown
+  through `abilityHint` ("SHOOT (X)" with keys or a pad), falling back to the bare names when
+  that would not fit 3 lines of 25 columns (`promptText`). On touch a token shows its touch
+  caption, `[USE TOOL:special:BOOMERANG]` → BOOMERANG, so the prompt names the tool or weapon as
+  its button does (0.4.34, owner pick 2; keys and pads keep the ability names; every hero is
+  tested never to say USE TOOL, USE WEAPON, THROW or CAST on touch). They come one at a time
+  in a centred box under the HUD (`drawRoomBox`), announced. Walking, jumping and the basic
+  attack never tick a move lesson (tested per hero).
+- **Power-ups** (0.4.34, owner decision: show how each power is unlocked). A lesson's `item` (a
+  docs/POWERUPS.md id from `items/catalog.ts`) is placed in the room when the lesson comes up
+  (`PracticeRoom.placeItem`: the real `HeroItem` pickup, already out of its block, or SMB's
+  mushroom or flower standing still for Mario and Luigi) at `itemAt` or the room's item spot (on
+  the floor two tiles ahead of the start, or one behind it if the hero stands nearer). Taking it
+  is the world's own (`World.takeHeroItem`: effect, sound, caption, and its name and what it does
+  read out). The lesson counts only after the grab: the tracker starts afresh at it
+  (`MoveStats.grabbed`, `taken`), so `done` measures the use. An item that falls out of the room
+  comes back; an item the hero has already needs no grab. No (PREVIEW), no lent kit, and the
+  run's kit is never read: the order never changes, so the room from the pause menu and the
+  Arena play the same lessons in the same order. The run's GameState is restored afterwards as
+  before.
 
-| Hero     | Lessons                                                                                     |
-| -------- | ------------------------------------------------------------------------------------------- |
-| Luigi    | high jump, slippery stop, fireball (the lesson gives fire power)                            |
-| Link     | sword, down-thrust, up-thrust, shield blocks the dummy's shot, boomerang (USE TOOL / TOOLS) |
-| Mega Man | buster, slide, charge shot, special weapon (WEAPON, USE WEAPON)                             |
-| Samus    | beam, aim up, morph ball, bomb, missile                                                     |
-| Simon    | whip, crouch whip, sub-weapon (THROW), the committed jump over the gap                      |
-| Ryu      | sword slash, wall cling, wall jump, ninpo (CAST)                                            |
-| Bill     | shoot, 8-way aim (three directions), prone, jump and shoot                                  |
-| Sophia   | cannon, hover (the lesson gives Hyper), missiles, wall climb (gives Crusher), Jason (EXIT)  |
+| Hero     | Chapters and lessons (0.4.34; in brackets: the power-up the lesson places, grabbed before use)                                                                                                           |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Link     | Sword: sword, down-thrust, up-thrust, shield. Tools (gear): boomerang, [Heart Container], [Bomb Bag] bomb. Magic: [Shield, Jump spells], [Blue Ring], [Fire spell], [Magical Sword]. Water: swim         |
+| Mega Man | Basics (gear): buster, [Helmet] charge, slide. Weapons (gear): [Saw], [Leaf], [Rush Coil]. More weapons: [Flame], [Knuckle], [Bolt]. Water: seabed jump                                                  |
+| Samus    | Basics (gear): beam, [Energy Tank], aim up, morph ball, bomb, bomb jump. Missiles: [Missiles], switch. Beams (gear): [Long Beam], [Ice Beam], [Varia Suit], [Wave Beam]                                  |
+| Simon    | Whip: whip, crouch-whip, committed jump. Power-ups: [Pot Roast], [Chain Whip], [Dagger], hearts, [Holy Water], [Axe]. More power-ups: [Morning Star], [Cross], [Double Shot], [Stopwatch], [Triple Shot] |
+| Ryu      | Sword: slash, cling, wall jump. Ninpo: [Medicine], [Throwing Star], [Ninpo Scroll], [Windmill], [Fire Wheel], [Jump and Slash]                                                                           |
+| Bill     | Aim: shoot, aim, prone, jump-shoot. Guns: [Medal], [Machine Gun], [Laser], [Flame Gun], [Spread Gun]. Water: swim-shoot                                                                                  |
+| Sophia   | Drive: drive-jump, cannon, cannon-up, Jason (out and back in). Power-ups: [Power Capsule] hover, [Crusher], [Triple Missile], [Wall Climb]. More power-ups: [Ceiling Climb], [Homing Missile]            |
+| Luigi    | Moves: high jump, slippery stop. Power-ups: [Mushroom], [Fire Flower]                                                                                                                                    |
 
-To add a hero's training: a list in `LESSONS` (3-5 lessons, tested by
-`src/game/tutorial/lessons.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.
+Not in the training because the campaign code has no such kit: Bill's R and B capsules (only in
+his mini game, Jungle Assault). Link's bomb lesson blasts the dummy rather than a cracked wall (a
+cracked wall crumbles to any attack, so it would not show the bomb).
+
+To add a hero's training: a `lessons/<hero>.ts` module in `TRAINING` (a lesson for every kit
+piece, and an item lesson for each power-up, tested by `src/game/tutorial/lessons.test.ts` and
+`tests/sim/training-items.test.ts`) and a scripted run in `tests/sim/training-room.test.ts`.
 
 ## Sophia III in the campaign levels
 

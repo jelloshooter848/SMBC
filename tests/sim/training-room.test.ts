@@ -1,124 +1,50 @@
 import { describe, expect, it } from 'vitest';
 import type { Action } from '@engine/input/actions';
-import { toPx } from '@engine/math/units';
+import { px, toPx } from '@engine/math/units';
 import type { Scene } from '@engine/scene';
 import { CHARACTERS } from '@game/characters/registry';
 import { LUIGI } from '@game/characters/luigi';
 import { MARIO } from '@game/characters/mario';
 import type { Player } from '@game/entities/player';
-import { lessonsFor, LUIGI_HIGH_JUMP_PX, LUIGI_COAST_PX } from '@game/tutorial/lessons';
+import { lessonsFor, LUIGI_HIGH_JUMP_PX, LUIGI_COAST_PX, SEABED_JUMP_PX } from '@game/tutorial/lessons';
 import {
+  CARD_GUARD_FRAMES,
   PracticeRoomScene,
   practiceRoom,
   ROOM_LINES,
   TrainingMenuScene,
   type TrainingResult,
 } from '@game/tutorial/room';
+import { chaptersFor } from '@game/tutorial/lessons';
 import { defaultSettings } from '@engine/save/settings';
 import type { TargetDummy } from '@game/tutorial/dummy';
 import { runSim } from '@game/sim/headless';
 import { getLevel } from '@content/levels';
+import { applyItem } from '@game/items/heroes';
 import { draw, makeGame, useStorage } from './heroes-harness';
+import { tcPolicies } from './training-tc';
+import { tbPolicies } from './training-tb';
 
 useStorage();
 
-/** What a scripted player does for one lesson: held actions from the player and frames since it began. */
-type Policy = (p: Player, f: number) => Action[];
+/**
+ * What a scripted player does for one lesson: held actions from the player, the frames since it
+ * began, and the room.
+ */
+type Policy = (p: Player, f: number, s: PracticeRoomScene) => Action[];
 
 const cx = (p: Player) => toPx(p.centerX);
 const tapEvery = (f: number, a: Action, n = 8): Action[] => (f % n < 2 ? [a] : []);
-/** Walk until the centre is near `x` px (within 3 px), then nothing. */
-const goTo = (p: Player, x: number): Action[] => (cx(p) < x - 3 ? ['right'] : cx(p) > x + 3 ? ['left'] : []);
 
-/** The dummy's left edge is at 146 px, the bricks span 80-128, the gap 176-208, the wall is at 240. */
+/** Every hero's scripted players, keyed `<hero>:<lesson id>` (training-tb.ts, training-tc.ts). */
 function policies(): Record<string, Policy> {
-  let released = false;
-  let backed = false;
-  let wasClose = false;
-  return {
-    // Luigi
-    'high-jump': (p, f) => (Math.abs(cx(p) - 140) > 3 ? goTo(p, 140) : f % 60 < 45 ? ['jump'] : []),
-    'slippery-stop': (p) => {
-      if (!backed) {
-        backed = cx(p) <= 72;
-        return ['left'];
-      }
-      if (!released && cx(p) >= 112) released = true;
-      return released ? [] : ['right', 'attack'];
-    },
-    fireball: (_p, f) => (f < 60 ? [] : tapEvery(f, 'attack', 12)),
-    // Link (and the shared ones)
-    sword: (p, f) => (cx(p) < 128 ? goTo(p, 130) : tapEvery(f, 'attack', 16)),
-    'down-thrust': (p, f) => {
-      const b = p.body;
-      if (b.onGround) {
-        if (cx(p) > 124) return ['left'];
-        return cx(p) < 118 ? ['right'] : f % 6 < 3 ? ['right', 'jump'] : [];
-      }
-      const hold: Action[] = cx(p) < 152 ? ['right'] : [];
-      return b.vy > 0 ? [...hold, 'down'] : [...hold, 'jump'];
-    },
-    'up-thrust': (p, f) => (Math.abs(cx(p) - 104) > 3 ? goTo(p, 104) : f % 30 < 15 ? ['jump', 'up'] : ['up']),
-    shield: (p) => goTo(p, 100),
-    boomerang: (_p, f) => tapEvery(f, 'special', 20),
-    // Mega Man
-    shoot: (_p, f) => tapEvery(f, 'attack', 10),
-    slide: (_p, f) => (f % 20 < 2 ? ['down', 'jump'] : ['down']),
-    charge: (_p, f) => (f % 70 < 55 ? ['attack'] : []),
-    weapon: (_p, f) => (f === 2 ? ['select'] : f > 10 ? tapEvery(f, 'special', 20) : []),
-    // Samus
-    'aim-up': (_p, f) => ['up', ...tapEvery(f, 'attack', 10)],
-    'morph-ball': (_p, f) => tapEvery(f, 'down', 10),
-    bomb: (_p, f) => tapEvery(f, 'attack', 10),
-    missile: (_p, f) => (f < 10 ? tapEvery(f, 'up', 4) : tapEvery(f, 'special', 10)),
-    // Simon
-    whip: (p, f) => (cx(p) < 116 ? goTo(p, 118) : tapEvery(f, 'attack', 30)),
-    'crouch-whip': (_p, f) => ['down', ...tapEvery(f, 'attack', 30)],
-    'sub-weapon': (_p, f) => tapEvery(f, 'special', 20),
-    'committed-jump': (p, f) =>
-      p.body.onGround && cx(p) < 208
-        ? cx(p) < 160
-          ? ['right']
-          : f % 4 < 2
-            ? ['right', 'jump']
-            : ['right']
-        : [],
-    // Ryu
-    slash: (p, f) => (cx(p) < 126 ? goTo(p, 128) : tapEvery(f, 'attack', 14)),
-    cling: (p, f) =>
-      p.body.onGround && cx(p) >= 160 ? (f % 4 < 2 ? ['right', 'jump'] : ['right']) : ['right'],
-    'wall-jump': (p, f) => {
-      if (p.clinging) {
-        const go: Action[] = wasClose ? ['right', 'jump'] : ['right'];
-        wasClose = !wasClose;
-        return go;
-      }
-      return p.body.onGround && cx(p) >= 160 ? (f % 4 < 2 ? ['right', 'jump'] : ['right']) : ['right'];
-    },
-    ninpo: (_p, f) => tapEvery(f, 'special', 20),
-    // Bill
-    aim: (_p, f) => {
-      const k = Math.floor(f / 20) % 3;
-      const hold: Action[] = k === 0 ? [] : k === 1 ? ['up'] : ['up', 'right'];
-      return [...hold, ...tapEvery(f, 'attack', 10)];
-    },
-    prone: () => ['down'],
-    'jump-shoot': (p, f) => (p.body.onGround ? tapEvery(f, 'jump', 20) : tapEvery(f, 'attack', 4)),
-    // Sophia III (the shared 'missile' fires hers too)
-    cannon: (_p, f) => tapEvery(f, 'attack', 10),
-    hover: (p, f) => (p.body.onGround ? tapEvery(f, 'jump', 40) : f % 40 >= 12 ? ['jump'] : []),
-    // Over the gap with a held jump, then up the tall wall.
-    'wall-climb': (p, f) => {
-      if (!p.body.onGround) return ['right', 'up', 'jump'];
-      return cx(p) > 150 && cx(p) < 176 && f % 2 ? ['right', 'up', 'jump'] : ['right', 'up'];
-    },
-    // Off the wall first (into it + jump lets go; her wall pose is under a tile wide), then
-    // EXIT on the floor.
-    jason: (p, f) => {
-      if (p.body.onGround) return f % 10 === 0 ? ['select'] : [];
-      return p.body.w < 16 * 256 && f % 2 ? ['right', 'jump'] : [];
-    },
-  };
+  return { ...tbPolicies(), ...tcPolicies() };
+}
+
+/** Wait out a card (a chapter's or READY!) and press on. */
+function pressOn(h: { idle(n: number): void; tap(a: Action): void }): void {
+  h.idle(CARD_GUARD_FRAMES + 1);
+  h.tap('jump');
 }
 
 /** The room for `heroId` pushed over a stand-in scene, as the training flow does. */
@@ -138,26 +64,40 @@ function room(heroId: string) {
   return { h, scene, results, below };
 }
 
-/** Plays the room with the scripted policies; returns the lessons in the order they were ticked. */
-function play(heroId: string, max = 4000) {
+/**
+ * Plays the room with the scripted policies, pressing on at each card; returns the lessons in the
+ * order they were ticked and the chapters' cards in the order they came.
+ */
+function play(heroId: string, max = 12000) {
   const r = room(heroId);
   const pol = policies();
   const ticked: string[] = [];
+  const cards: number[] = [];
   let lesson = r.scene.lesson?.id;
   let since = 0;
+  let phase = '';
   for (let i = 0; i < max && r.results.length === 0; i++) {
     const id = r.scene.lesson?.id;
-    if (id !== lesson) {
+    if (id !== lesson || r.scene.phase !== phase) {
+      if (r.scene.phase === 'chapter' && phase !== 'chapter') cards.push(r.scene.chapter);
       lesson = id;
+      phase = r.scene.phase;
       since = 0;
     }
-    const act =
-      r.scene.phase === 'lesson' && id ? (pol[id]?.(r.scene.player, since) ?? []) : ([] as Action[]);
-    if (r.scene.phase === 'good' && lesson && ticked.at(-1) !== lesson) ticked.push(lesson);
+    const policy = id ? pol[`${heroId}:${id}`] : undefined;
+    const card = r.scene.phase === 'chapter' || r.scene.phase === 'ready';
+    const act = card
+      ? since > CARD_GUARD_FRAMES && since % 4 === 0
+        ? (['jump'] as Action[])
+        : []
+      : r.scene.phase === 'lesson' && policy
+        ? policy(r.scene.player, since, r.scene)
+        : ([] as Action[]);
     r.h.step(act);
     since++;
   }
-  return { ...r, ticked };
+  ticked.push(...r.scene.ticked);
+  return { ...r, ticked, cards };
 }
 
 describe('the practice room', () => {
@@ -170,6 +110,16 @@ describe('the practice room', () => {
     expect(geometry.floorTop).toBe(208);
     expect(geometry.ledgeTop).toBe(128);
     expect(geometry.gap).toEqual({ x0: 176, x1: 208 });
+    expect(geometry.tunnel.x1).toBeLessThanOrEqual(geometry.tunnel.x0);
+    // The gear screen: a high ledge for the Rush Coil, a one-tile tunnel under a wall; the water
+    // screen swims.
+    const gear = practiceRoom('gear');
+    expect(gear.level.width).toBe(16);
+    expect(gear.geometry.ledgeTop).toBe(128);
+    expect(gear.geometry.tunnel).toEqual({ x0: 192, x1: 224 });
+    const water = practiceRoom('water');
+    expect(water.level.swim).toBe(true);
+    expect(water.level.camera).toBe('locked');
   });
 
   it.each(CHARACTERS.filter((c) => c.id !== 'mario').map((c) => [c.id]))(
@@ -177,34 +127,46 @@ describe('the practice room', () => {
     (id) => {
       const r = play(id);
       expect(r.ticked).toEqual(lessonsFor(id).map((l) => l.id));
+      expect(r.cards).toEqual(chaptersFor(id).map((_c, i) => i));
       expect(r.results).toEqual(['done']);
       expect(r.h.game.scenes.top).toBe(r.below);
-      expect(r.h.said.some((t) => /^Ready!/.test(t))).toBe(true);
+      expect(r.h.said.some((t) => /^(Good! )?Ready!/.test(t))).toBe(true);
     },
   );
 
-  it('shows one prompt at a time in a box near the top, announced, and ticks it off with GOOD!', () => {
+  it('shows one prompt at a time in a box near the top, announced, and ticks it off with GOOD! by the next', () => {
     const { h, scene } = room('link');
     h.step();
+    // The first chapter's card waits for a button.
+    expect(scene.phase).toBe('chapter');
+    expect(draw(scene).texts.map((t) => t.str)).toEqual(
+      expect.arrayContaining(['LINK TRAINING', 'CHAPTER 1/4', 'SWORD', 'ANY BUTTON TO START']),
+    );
+    expect(h.said.at(-1)).toMatch(
+      /^Link training\. .*Chapter 1 of 4: Sword\. 4 lessons\. Any button to start\.$/,
+    );
+    h.idle(200);
+    expect(scene.phase).toBe('chapter');
+    pressOn(h);
     const first = lessonsFor('link')[0];
     const { texts } = draw(scene);
-    expect(texts.some((t) => t.str === 'LINK TRAINING 1/5')).toBe(true);
+    expect(texts.some((t) => t.str === 'LINK SWORD 1/4')).toBe(true);
     expect(texts.some((t) => t.str === 'SWING YOUR SWORD AT THE')).toBe(true);
     expect(texts.filter((t) => t.y >= 36 && t.y < 80).length).toBeGreaterThan(1);
-    expect(h.said.some((t) => /Link training\. .*Swing your sword at the dummy\./.test(t))).toBe(true);
+    expect(h.said.at(-1)).toMatch(/^Swing your sword .*at the dummy\./);
     expect(first?.id).toBe('sword');
-    // The sword connects: GOOD! and a sound, then the next prompt.
+    expect(draw(scene).texts.some((t) => t.str === 'GOOD!')).toBe(false);
+    // The sword connects: a sound, and the next prompt at once with GOOD! by it.
     scene.tracker.hitDummy(['sword', 'melee']);
     h.step();
-    expect(scene.phase).toBe('good');
-    expect(draw(scene).texts.some((t) => t.str === 'GOOD!')).toBe(true);
-    expect(h.said.at(-1)).toBe('Good!');
-    h.idle(60);
-    expect(scene.lesson?.id).toBe('down-thrust');
-    expect(h.said.at(-1)).toMatch(/^Jump over the dummy/);
+    expect([scene.phase, scene.lesson?.id]).toEqual(['lesson', 'down-thrust']);
+    const after = draw(scene).texts;
+    expect(after.some((t) => t.str === 'GOOD!')).toBe(true);
+    expect(after.some((t) => t.str === 'LINK SWORD 2/4')).toBe(true);
+    expect(h.said.at(-1)).toMatch(/^Good! Jump over the dummy/);
   });
 
-  it('MENU: Continue goes back to the room; Skip training ends it', () => {
+  it('MENU: Continue goes back to the room; Skip chapter goes on to the next; Skip training ends it', () => {
     const { h, scene, results, below } = room('samus');
     h.idle(4);
     h.tap('start');
@@ -212,8 +174,27 @@ describe('the practice room', () => {
     h.idle(8);
     h.tap('jump'); // Continue
     expect(h.game.scenes.top).toBe(scene);
+    // Skip chapter, from the card or mid-lesson: the next chapter's card, in its own room.
+    pressOn(h);
+    expect(scene.phase).toBe('lesson');
     h.tap('start');
     h.idle(8);
+    h.tap('down');
+    expect(h.said.at(-1)).toMatch(/^Skip chapter/);
+    h.tap('jump');
+    expect(h.game.scenes.top).toBe(scene);
+    expect([scene.phase, scene.chapter, scene.lesson?.id]).toEqual(['chapter', 1, 'missile']);
+    expect(h.said.at(-1)).toMatch(/^Chapter 2 of 3: Missiles\./);
+    h.tap('start');
+    h.idle(8);
+    h.tap('down');
+    h.tap('jump'); // Skip chapter again: the morph ball's gear screen
+    expect([scene.phase, scene.chapter]).toEqual(['chapter', 2]);
+    expect(scene.world.level.id).toBe('practice-gear');
+    expect(results).toEqual([]);
+    h.tap('start');
+    h.idle(8);
+    h.tap('down');
     h.tap('down');
     expect(h.said.at(-1)).toMatch(/^Skip training/);
     h.tap('jump');
@@ -223,7 +204,7 @@ describe('the practice room', () => {
 
   it('is safe: the gap puts the hero back at the start, hits never stick, the dummy comes back', () => {
     const { h, scene } = room('link');
-    h.step();
+    pressOn(h);
     const p = scene.player;
     p.body.x = 184 * 256;
     p.body.y = 150 * 256;
@@ -233,7 +214,7 @@ describe('the practice room', () => {
     // Hurt: health is topped up again at once.
     scene.world.hurtPlayer(p);
     h.step();
-    expect(p.hp).toBe(p.scratch.maxHp);
+    expect(p.hp).toBe(p.scratch.maxHp ?? 6); // Link's basic kit: 3 hearts
     // The dummy pops after three hits and stands up again.
     const d = scene.dummy as TargetDummy;
     for (let i = 0; i < 3; i++) d.hit({ kind: 'bomb', amount: 1, owner: null, dirX: 1 }, scene.world);
@@ -251,13 +232,14 @@ describe('the practice room', () => {
 
   it("Link's shield lesson: the dummy shoots, and a shot on the shield counts while a hit does not", () => {
     const { h, scene } = room('link');
-    h.step();
-    while (scene.lesson?.id !== 'shield') {
+    pressOn(h);
+    for (let i = 0; i < 2000 && scene.lesson?.id !== 'shield'; i++) {
       scene.tracker.hitDummy(['sword', 'melee', 'down-thrust']);
       scene.tracker.observe(scene.player, scene.world);
       (scene.tracker as unknown as { seen: Set<string> }).seen.add('upThrust');
       h.step();
     }
+    expect(scene.lesson?.id).toBe('shield');
     expect(scene.dummyShoots).toBe(true);
     // Facing away: the shot gets through (blinking), nothing counts.
     for (let i = 0; i < 6; i++) h.step(['left']);
@@ -268,8 +250,8 @@ describe('the practice room', () => {
     // (The hit knocked him back onto the step, above the shots: walk off it, toward the dummy.)
     for (let i = 0; i < 90 && cx(scene.player) < 96; i++) h.step(['right']);
     expect(scene.player.facing).toBe(1);
-    h.until(() => scene.phase === 'good', 300);
-    expect(scene.tracker.blocked).toBe(1);
+    h.until(() => scene.ticked.includes('shield'), 300);
+    expect(scene.ticked).toContain('shield');
   });
 
   it('the HUD names the place instead of WORLD and TIME, with no score or coins', () => {
@@ -284,9 +266,9 @@ describe('the practice room', () => {
   it('the prompt box is centred, and prompts show the keys (bare names on touch, or when too long)', () => {
     const { h, scene } = room('link');
     h.game.deps.settings = defaultSettings();
-    h.step();
+    pressOn(h);
     const { texts } = draw(scene);
-    const heading = texts.find((t) => t.str === 'LINK TRAINING 1/5');
+    const heading = texts.find((t) => t.str === 'LINK SWORD 1/4');
     expect(heading).toBeDefined();
     expect(heading && heading.x + (heading.str.length * 8) / 2).toBe(128);
     expect(scene.promptWrapped().join(' ')).toBe('SWING YOUR SWORD (X) AT THE DUMMY.');
@@ -307,21 +289,23 @@ describe('the practice room', () => {
 
   it("Link's shield lesson works standing right next to the dummy too", () => {
     const { h, scene } = room('link');
-    h.step();
+    pressOn(h);
     scene.startLesson(3);
     expect(scene.lesson?.id).toBe('shield');
     for (let i = 0; i < 120 && cx(scene.player) < 134; i++) h.step(['right']);
-    h.until(() => scene.phase === 'good', 200);
-    expect(scene.tracker.blocked).toBe(1);
+    h.until(() => scene.ticked.includes('shield'), 200);
+    expect(scene.ticked).toContain('shield');
   });
 
   it("Bill's spread fan counts as one direction: aiming is what counts", () => {
     const { h, scene } = room('bill');
-    h.step();
+    pressOn(h);
     scene.startLesson(1);
-    scene.player.scratch.tool = 2; // the spread gun
+    // The Spread Gun found (the room starts from the rifle alone), in hand.
+    Object.assign(scene.player.scratch, { 'has-spread-gun': 1, tool: 1 });
     for (let i = 0; i < 120; i++) h.step(i % 12 < 2 ? ['attack'] : []);
     expect(scene.tracker.shots).toBeGreaterThan(5);
+    expect([...scene.tracker.shotKinds]).toEqual(['spread']);
     expect([...scene.tracker.shotDirs]).toEqual(['1,0']);
     expect(scene.phase).toBe('lesson');
   });
@@ -340,13 +324,13 @@ describe('the practice room', () => {
  */
 const MOVE_LESSONS: Record<string, string[]> = {
   luigi: ['high-jump', 'slippery-stop'],
-  link: ['down-thrust', 'up-thrust', 'boomerang'],
-  megaman: ['slide', 'charge', 'weapon'],
-  samus: ['aim-up', 'morph-ball', 'bomb', 'missile'],
-  simon: ['crouch-whip', 'sub-weapon', 'committed-jump'],
-  ryu: ['cling', 'wall-jump', 'ninpo'],
+  link: ['down-thrust', 'up-thrust', 'boomerang', 'shield-spell'],
+  megaman: ['slide', 'charge', 'saw', 'rush'],
+  samus: ['aim-up', 'morph-ball', 'bomb', 'missile', 'long-beam'],
+  simon: ['crouch-whip', 'dagger', 'committed-jump', 'stopwatch'],
+  ryu: ['cling', 'wall-jump', 'throwing-star', 'jump-slash'],
   bill: ['aim', 'prone', 'jump-shoot'],
-  sophia: ['hover', 'missile', 'wall-climb', 'jason'],
+  sophia: ['hover', 'missile', 'wall-climb', 'jason', 'cannon-up'],
 };
 
 /** Walk back and forth between the step and the dummy, tap-jump now and then, attack on the ground. */
@@ -368,7 +352,7 @@ describe('walking, jumping and the basic attack never tick a move lesson', () =>
     expect(moves.every((m) => lessonsFor(id).some((l) => l.id === m))).toBe(true);
     for (const m of moves) {
       const { h, scene } = room(id);
-      h.step();
+      pressOn(h);
       scene.startLesson(lessonsFor(id).findIndex((l) => l.id === m));
       const dir = { d: 1 as 1 | -1 };
       for (let f = 0; f < 600; f++) h.step(unrelated(scene.player, f, dir));
@@ -437,16 +421,111 @@ describe("the heroes' standout moves really are measured as the lessons say", ()
   });
 });
 
+describe('the kit lessons measure the real thing', () => {
+  it("Samus's long-range hit needs the Long Beam: the Power Beam fizzles short from the far left", () => {
+    for (const beam of [0, 1]) {
+      const { h, scene } = room('samus');
+      pressOn(h);
+      // With the Long Beam already hers (as if grabbed), or without it (it stays where it is put).
+      scene.player.scratch['has-long-beam'] = beam;
+      scene.startLesson(lessonsFor('samus').findIndex((l) => l.id === 'long-beam'));
+      const p = scene.player;
+      for (let f = 0; f < 240 && !scene.ticked.includes('long-beam'); f++)
+        h.step(cx(p) > 20 ? ['left'] : p.facing < 0 ? ['right'] : tapEvery(f, 'attack', 10));
+      expect(scene.ticked.includes('long-beam'), `beam ${beam}`).toBe(!!beam);
+      if (!beam) expect(scene.tracker.shots).toBeGreaterThan(3);
+    }
+  });
+
+  it("Mega Man's jump on land stays under SEABED_JUMP_PX; off the seabed it clears it", () => {
+    const { h, scene } = room('megaman');
+    pressOn(h);
+    // In the gear screen's open floor (the Rush lesson: a jump alone does not tick it).
+    scene.startLesson(lessonsFor('megaman').findIndex((l) => l.id === 'rush'));
+    for (let f = 0; f < 120; f++) h.step(f < 60 ? ['jump'] : []);
+    expect(scene.tracker.maxJumpHeight).toBeGreaterThan(32);
+    expect(scene.tracker.maxJumpHeight).toBeLessThan(SEABED_JUMP_PX);
+    scene.startLesson(lessonsFor('megaman').findIndex((l) => l.id === 'seabed-jump'));
+    expect(scene.world.level.id).toBe('practice-water');
+    for (let f = 0; f < 200 && scene.phase === 'lesson'; f++) h.step(['jump']);
+    expect(scene.ticked).toContain('seabed-jump');
+  });
+
+  it('sliding and rolling count only through the low wall', () => {
+    const { h, scene } = room('megaman');
+    pressOn(h);
+    scene.startLesson(lessonsFor('megaman').findIndex((l) => l.id === 'slide'));
+    // Sliding the other way, along the open floor.
+    for (let f = 0; f < 120; f++) h.step(f < 4 ? ['left'] : f % 20 < 2 ? ['down', 'jump'] : ['down']);
+    expect(scene.tracker.slid).toBe(true);
+    expect(scene.phase).toBe('lesson');
+  });
+});
+
 describe('the skip hint', () => {
   it('sits on the prompt box, clear of the floor and the gap', () => {
     for (const id of ['luigi', 'link', 'megaman']) {
       const { h, scene } = room(id);
-      h.step();
+      pressOn(h);
       const skip = draw(scene).texts.find((t) => t.str.endsWith('TO SKIP'));
       expect(skip, id).toBeDefined();
       // Well above the room's ledge and floor: on the box's bottom edge, under the HUD.
       expect(skip && skip.y + 8, id).toBeLessThanOrEqual(practiceRoom().geometry.ledgeTop);
       expect(skip && skip.y, id).toBeGreaterThan(44);
     }
+  });
+});
+
+describe('the room looks after the kit between lessons and rooms', () => {
+  const at = (heroId: string, id: string) => lessonsFor(heroId).findIndex((l) => l.id === id);
+
+  it("a new chapter's room drops what was in progress (Samus's ball, Link's spells) but keeps the kit", () => {
+    const s = room('samus');
+    pressOn(s.h);
+    const p = s.scene.player;
+    Object.assign(p.scratch, { ball: 1, tanks: 1 });
+    p.refitHitbox();
+    s.scene.skipChapter();
+    expect(s.scene.chapter).toBe(1);
+    expect(s.scene.player.scratch.ball ?? 0).toBe(0);
+    expect(s.scene.player.scratch.tanks).toBeGreaterThanOrEqual(1);
+    expect(s.scene.player.body.h).toBeGreaterThan(16 * 256);
+    const l = room('link');
+    pressOn(l.h);
+    Object.assign(l.scene.player.scratch, { jumpSpell: 300, fireSpell: 1 });
+    l.scene.skipChapter();
+    expect([l.scene.player.scratch.jumpSpell ?? 0, l.scene.player.scratch.fireSpell ?? 0]).toEqual([0, 0]);
+  });
+
+  it('tops ammo up mid-lesson once a tool runs dry, except in a lesson about running out', () => {
+    const { h, scene } = room('samus');
+    pressOn(h);
+    applyItem(scene.player, 'missiles');
+    const full = scene.player.scratch.missiles ?? 0;
+    expect(full).toBeGreaterThan(0);
+    scene.startLesson(at('samus', 'missile-switch'));
+    scene.player.scratch.missiles = 0;
+    h.step([]);
+    expect(scene.player.scratch.missiles).toBe(full);
+    // Simon's hearts lesson is about running them out: no top-up, and it ticks.
+    const simon = room('simon');
+    pressOn(simon.h);
+    applyItem(simon.scene.player, 'dagger');
+    simon.scene.startLesson(at('simon', 'hearts'));
+    simon.scene.player.scratch.hearts = 0;
+    simon.h.step([]);
+    expect(simon.scene.ticked).toContain('hearts');
+  });
+
+  it("counts the hero's hits as `hurt`, not the gap's put-back", () => {
+    const { h, scene } = room('samus');
+    pressOn(h);
+    scene.startLesson(at('samus', 'varia-suit'));
+    const p = scene.player;
+    p.body.y = px(400);
+    h.step([]);
+    expect(scene.tracker.hurt).toBe(0);
+    for (let f = 0; f < 400 && scene.tracker.hurt === 0; f++) h.step([]);
+    expect(scene.tracker.hurt).toBeGreaterThan(0);
   });
 });

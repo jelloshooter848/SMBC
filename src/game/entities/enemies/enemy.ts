@@ -68,6 +68,11 @@ export abstract class Enemy extends Entity {
   vulnerability: Vulnerability = { ...BASIC_VULNERABILITY };
   /** Touching this enemy (other than a stomp) hurts the player. */
   contactHurts = true;
+  /**
+   * A practice target (the training room's dummy): harmless to touch, yet seeking shots (Sophia
+   * III's homing missile) still pick it.
+   */
+  practiceTarget = false;
   /** Can the player stomp this (false for things that are "not standing on anything" like fire bars). */
   stompable = true;
   /** Points by how it dies (the original's ScoreValue.as `<NAME>_STOMP/_ATTACK/_STAR/_BELOW`). */

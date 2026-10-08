@@ -78,8 +78,9 @@ export class TrainingQuestionScene extends MenuScene {
 }
 
 /**
- * Play the practice room for `hero` (player `player`'s input drives it), then `after`. The run's
- * GameState is restored afterwards, so the room cannot change lives, score or power.
+ * Play the practice room for `hero` (player `player`'s input drives it), then `after`. The room
+ * starts from the hero's basic kit whatever the run holds, and the run's GameState is restored
+ * afterwards, so the room cannot change lives, score, power or kit.
  */
 export function runTraining(game: Game, hero: CharacterDef, player: number, after: () => void): void {
   const saved = game.state;
