@@ -284,7 +284,7 @@ describe('the practice room', () => {
     // screen swims.
     const gear = practiceRoom('gear');
     expect(gear.level.width).toBe(16);
-    expect(gear.geometry.ledgeTop).toBe(64);
+    expect(gear.geometry.ledgeTop).toBe(128);
     expect(gear.geometry.tunnel).toEqual({ x0: 192, x1: 224 });
     const water = practiceRoom('water');
     expect(water.level.swim).toBe(true);

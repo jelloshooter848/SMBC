@@ -1212,7 +1212,7 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
   library and the dev select), each built afresh when its chapter starts (`practiceRoom(id)`):
   `practice.map` (a floor, a step up to a high ledge, a brick row with a ? block, a target dummy, a
   gap where falling in puts the hero back at the start, and a tall wall to cling to);
-  `practice-gear.map` (a higher ledge for the Rush Coil, and a wall from the ceiling down with a
+  `practice-gear.map` (a ledge for the Rush Coil to aim at, and a wall from the ceiling down with a
   one-tile tunnel under it for the slide and the morph ball: `RoomGeometry.tunnel`); and
   `practice-water.map` (`swim: true` from the wave row down: Link and Bill swim, Mega Man walks the
   seabed). The dummy (`dummy x y` in each map; `TargetDummy` never moves or hurts, pops after three

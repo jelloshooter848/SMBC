@@ -355,8 +355,8 @@ export const GLIDE_SEEN_PX = 6;
 export const SEABED_JUMP_PX = 112;
 /** A hit on the dummy from this far (px, the hero's front edge to the dummy) is a long-range hit. */
 export const FAR_HIT_PX = 96;
-/** Swimming up until the feet are this high (px from the top) reaches the surface. */
-export const SURFACE_PX = 80;
+/** Swimming up until the feet are this far over the floor (px) clears the dummy's head. */
+export const SWIM_UP_PX = 48;
 
 /** The run's kit for one hero: what the training player has unlocked outside the room. */
 export interface RunKit {
@@ -557,8 +557,8 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
       lessons: [
         lesson(
           'swim',
-          'IN WATER [SWIM:jump] STROKES UP. SWIM UP TO THE SURFACE!',
-          (t) => t.topReached <= SURFACE_PX,
+          'IN WATER [SWIM:jump] STROKES UP. SWIM UP ABOVE THE DUMMY!',
+          (t) => t.topReached <= t.room.floorTop - SWIM_UP_PX,
         ),
       ],
     },
