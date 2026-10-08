@@ -97,3 +97,15 @@ cloud-1 246 6
 cloud-1 254 11
 cloud-2 259 3
 cloud-1 265 7
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump low (charVert): a hidden block a step under each
+;; raised pipe (51 and 115, the way on; five tiles over the lift is past Normal Sophia III's
+;; reach) and the power-up block a row lower. Every piece the original lays for her here (but
+;; the flagpole's lift).
+32 5 .
+96 5 .
+28 6 M
+92 6 M
+53 7 2
+117 7 2
