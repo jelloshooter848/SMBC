@@ -23,6 +23,8 @@ const INLAND = new Set([
   ...['¤', '⌐', '¬', '▛', '▀', '▜', '▙', '▄', '▟'],
   // GALUGA ISLAND (World 7): the energy zone's pylons, the enemy base and Red Falcon's lair.
   ...['Ж', 'Γ', 'Π', 'Δ', 'Σ', 'Ξ', 'Φ', '◤', '◆', '◥', '◣', '●', '◢'],
+  // BOWSER'S UNDERWORLD (World 8): the radioactive pit, cavern mouths, ruins and Sophia's garage.
+  ...['╭', '╮', '╰', '╯', '∩', 'Ш', '⌂'],
 ]);
 
 /** The round pond's tiles, row by row (4 wide, 3 tall); a sketch writes the whole block. */

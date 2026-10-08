@@ -4,7 +4,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
  * themed world map pages (World 2's Hyrule since 0.4.24, World 3's Mega City since 0.4.26, World
- * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28, World 6's Dragon Valley since 0.4.29, World 7's Galuga Island since 0.4.30), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
+ * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28, World 6's Dragon Valley since 0.4.29, World 7's Galuga Island since 0.4.30, World 8's Bowser's Underworld since 0.4.31), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
  * share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
@@ -95,6 +95,8 @@ export const TRANSYLVANIA_NIGHT = '#0c0a24';
 export const NINJA_NIGHT = '#0c1030';
 /** GALUGA ISLAND's night over the jungle (World 7 since 0.4.30). */
 export const CONTRA_NIGHT = '#080c24';
+/** BOWSER'S UNDERWORLD's sky: Bowser's red gone dim over the Underworld (World 8 since 0.4.31). */
+export const BLASTER_SKY = '#300810';
 
 export const mapPalettes: Record<string, string[]> = {
   'map-grass': theme({
@@ -343,6 +345,24 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: ['#4c5868', '#8c98a8', '#242c38'],
     white: ['#f0f4fc', '#b0bccc'],
+  }),
+  /*
+   * BOWSER'S UNDERWORLD (World 8 since 0.4.31, Sophia's world): Blaster Master's Underworld broken
+   * into Bowser's land. The Underworld's dark earth (ground) and rust rock (rock), its forest and
+   * the radioactive pit's green glow (leaf), Bowser's lava sea kept (water), his castle's and the
+   * ruins' grey stone (wall) and his flags' red and gold (accent).
+   */
+  'map-blaster': theme({
+    ground: ['#1c1410', '#3c2c20', '#5c4830'],
+    sand: [NES.gray, NES.darkGray],
+    water: [NES.redDark, NES.lava, NES.lavaLight, NES.yellowLight],
+    rock: ['#180c08', '#4c2c1c', '#8c5c38'],
+    leaf: ['#08200c', '#1c5c1c', '#58a830'],
+    wood: [NES.brownLight, NES.orangeBrown],
+    accent: [NES.redBright, NES.yellow, NES.redDark],
+    lava,
+    wall: [NES.darkGray, NES.gray, NES.black],
+    white: [NES.lightGray, NES.gray],
   }),
 };
 
@@ -2478,6 +2498,92 @@ const CHOPPER = [chopper('.00000000000000.'), chopper('.....000000.....')];
 
 /* ------------------------------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------------------------------ */
+/* BOWSER'S UNDERWORLD (World 8, 0.4.31): the Underworld's gnarled forest, the radioactive pit  */
+/* Jason fell through, cavern mouths, stone ruins and Sophia's garage (its critters are the     */
+/* mutants of the `sophia` sheet)                                                              */
+/* ------------------------------------------------------------------------------------------ */
+
+/** A gnarled tree (the tree tile's own frame on this page): a twisted trunk, a ragged dark crown. */
+const BM_TREE = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    const cx = 7.5 + Math.sin(y / 2.5) * 1.2;
+    if (y >= 9 && y <= 14 && Math.abs(x - cx) < 1.3) return x < cx ? 'g' : 'h';
+    if (y === 15 && x > 3 && x < 12) return x === 4 || x === 11 ? 'h' : '1';
+    const d = Math.hypot((x - 7.5) / 7, (y - 5.5) / 5.5);
+    const ragged = (x * 7 + y * 3) % 5 === 0 ? 0.88 : 1;
+    if (d > ragged) return '.';
+    if (d > 0.8 || (x + y) % 6 === 0) return 'd';
+    return y < 4 && x < 8 ? 'f' : 'e';
+  }),
+);
+
+/**
+ * The radioactive pit Jason fell through (2x2 tiles): a ragged hole in the earth, its rim of
+ * broken rock, and deep down a pool of green ooze glowing (steady, never pulsing).
+ */
+const PIT: Rows = stamp(
+  groundUnder(32, 32),
+  paint(32, 32, (x, y) => {
+    const d = Math.hypot((x - 15.5) / 14, (y - 16) / 12);
+    const wob = ((x * 5 + y * 3) % 7) / 40;
+    if (d > 1 + wob) return '.';
+    if (d > 0.82 + wob) return y < 16 ? 'c' : 'b';
+    if (d > 0.7) return y < 14 ? 'a' : '0';
+    // the glow down in the dark: the ooze, its light washing the far wall
+    const g = Math.hypot((x - 15.5) / 8, (y - 20) / 4);
+    if (g < 0.55) return 'f';
+    if (g < 1) return 'e';
+    if (g < 1.5 && y > 15) return 'd';
+    return '0';
+  }),
+);
+
+/** A cavern mouth: a hump of rust rock, its arch dark, a few stones at its foot. */
+const CAVE_MOUTH = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    const d = Math.hypot((x - 7.5) / 7.5, (y - 15) / 12);
+    if (d > 1) return y === 15 && (x === 1 || x === 14) ? 'b' : '.';
+    const arch = Math.hypot((x - 7.5) / 3.6, (y - 15) / 6.5);
+    if (arch < 1) return arch > 0.82 ? 'a' : '0';
+    if (d > 0.86) return '0';
+    return x < 6 && y < 10 ? 'c' : (x + y) % 5 === 0 ? 'a' : 'b';
+  }),
+);
+
+/** Stone ruins: a broken pillar and a stub of wall, a fallen block before them. */
+const RUIN = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    // the pillar, snapped off at a slant
+    if (x >= 2 && x <= 6 && y >= 2 + Math.max(0, 4 - x) && y <= 14)
+      return x === 2 ? 'n' : x === 6 ? 'q' : 'm';
+    // the wall stub: two courses, its top broken
+    if (x >= 8 && x <= 14 && y >= (x % 3 === 0 ? 7 : 8) && y <= 14)
+      return y === 11 || x === 14 ? 'q' : y === 8 || y === 12 ? 'n' : 'm';
+    if (y === 15 && x >= 1 && x <= 14) return '0';
+    return '.';
+  }),
+);
+
+/**
+ * Sophia's garage: a low bunker of grey stone half sunk in the earth, its shutter door down, a
+ * steady amber lamp over it.
+ */
+const GARAGE = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    if (y === 3 && x >= 7 && x <= 8) return 'j'; // the lamp, never blinking
+    const d = Math.hypot((x - 7.5) / 7.5, (y - 15) / 11);
+    if (d > 1) return '.';
+    if (d > 0.88) return '0';
+    if (x >= 4 && x <= 11 && y >= 8) return x === 4 || x === 11 || y === 8 ? '0' : y % 2 === 0 ? 'q' : 'm';
+    return x < 7 && y < 9 ? 'n' : 'm';
+  }),
+);
+
 const frames: Record<string, readonly string[]> = {
   ground: GROUND,
   tuft: TUFTS,
@@ -2636,6 +2742,16 @@ const frames: Record<string, readonly string[]> = {
   'soldier-1': SOLDIER[1] as Rows,
   'chopper-0': CHOPPER[0] as Rows,
   'chopper-1': CHOPPER[1] as Rows,
+  // BOWSER'S UNDERWORLD (World 8): gnarled trees (the tree tile's own frame on this page), the
+  // radioactive pit (2x2), cavern mouths, stone ruins and Sophia's garage.
+  'bm-tree': BM_TREE,
+  'pit-0': cut(PIT, 0, 0),
+  'pit-1': cut(PIT, 1, 0),
+  'pit-2': cut(PIT, 0, 1),
+  'pit-3': cut(PIT, 1, 1),
+  'cave-mouth': CAVE_MOUTH,
+  ruin: RUIN,
+  garage: GARAGE,
 };
 for (let f = 0; f < ARENA_CROWD_FRAMES; f++) {
   frames[`arena-crowd-a-${f}`] = crowd('a', f);

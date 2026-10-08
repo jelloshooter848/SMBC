@@ -824,7 +824,26 @@ riverbed rock, green water; it swims by its map's `swim: true`; new `contra-rive
 Red Falcon's alien lair (`contra-lair`, in the castle family: Bill's mini game's flesh, bone and egg
 clutches over SMB's lava, a spine bridge, ribbed walls and the lair's great heart painted behind,
 still; Red Falcon's `contra-lair` tune; the mini game's own `alien-lair` is no castle) (art
-`src/content/sprites/contra-world.ts`, music `src/content/music/contra-world.ts`). A look stays after the hero is freed, and
+`src/content/sprites/contra-world.ts`, music `src/content/music/contra-world.ts`). Since 0.4.31
+World 8 is Sophia's world: its map page is BOWSER'S UNDERWORLD (`MapTheme` `blaster`: Blaster
+Master's Underworld broken into Bowser's land; his castle, its flags and the lava sea with its
+podoboos stay at 8-4, and the rest is the Underworld's surface, its gnarled forest (T), stone ruins
+(Ш), cavern mouths (∩), the radioactive pit Jason fell through by 8-1 (╭╮ over ╰╯, its ooze
+glowing steadily) and Sophia's garage below the castle (⌂); the `sophia` sheet's mutants hop and
+flit about, nothing on the page blinking; every node, road, the seal, the start's local and its
+turnip clue, Sophia's silhouette by 8-4 and the road on to Lost World 1 as before). 8-1 is the
+Underworld's first area (`bm-forest`: mossy stone ruins over forest earth, a far forest and broken
+columns and arches painted behind under a starry night, gnarled trees; Sophia's `bm-area` march),
+8-2 the techno castle (`bm-techno`: machine panels with circuit traces, deck plates, its blasters
+machine cannons with a warning stripe, still SMB's shape and badge; the castle's machine towers
+painted behind, nothing blinking; new `bm-techno` tune), 8-3 the frozen ruins of the ice area
+(`bm-ice`: packed ice, iced stone, the Hammer Bros' castle walls iced in SMB's outline, its blasters
+rimed, ice spires painted behind under a starry night, frozen pines; new `bm-ice` tune) and both
+coin rooms Jason's on-foot dungeon seen from the side (`bm-vault`, the underground still: the
+overhead dungeon's steel plates, grilles and riveted blocks, a wall of panels and a vent grille
+behind; the `bm-dungeon` tune). 8-4 and 8-4-end are Bowser's real castle and Chapter 1's finale and
+keep SMB's castle; 8-4-water keeps SMB's water and 8-4-jason, -fred and -garage their `underworld`
+(art `src/content/sprites/blaster-world.ts`, music `src/content/music/blaster-world.ts`). A look stays after the hero is freed, and
 its music plays for every hero (a hero's own overworld tune, `levelMusic` in `scenes/level.ts`,
 plays only in a plain `overworld` area). No look is a water theme, and every rule that keys off
 the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake, 5-2-water's underground lake, 6-2-water's harbour and 7-2's river swim by their
@@ -832,11 +851,11 @@ maps' `swim: true`, "Swimming in any theme", which changes nothing in their clas
 the castle family (`isCastleTheme`: `zelda2-palace`, `megaman-fortress`, `tourian-lair`,
 `ng-temple` and `contra-lair` are in it, so 2-4's, 3-4's, 4-4's, 6-4's and 7-4's Bowser, axe, bridge
 and unmask are SMB's, and 7-4's maze loops as ever), `hasSolidFloors` (`zelda2-cave`,
-`megaman-metal`, `brinstar`, `cv-catacomb`, `ng-sewer` and `contra-base` as the underground) and
+`megaman-metal`, `brinstar`, `cv-catacomb`, `ng-sewer`, `contra-base` and `bm-vault` as the underground) and
 `enemyPalette`
 (`src/content/levels/campaign-looks.test.ts`, `hyrule-looks.test.ts`, `megaman-looks.test.ts`,
 `zebes-looks.test.ts`, `transylvania-looks.test.ts`, `ninja-world-looks.test.ts`,
-`contra-world-looks.test.ts`). In the map:
+`contra-world-looks.test.ts`, `blaster-world-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle

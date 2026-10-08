@@ -13,7 +13,7 @@ export type MapTheme =
   | 'sky' // World 5's until 0.4.28; the Lost Levels' sky worlds
   | 'snow' // World 6's until 0.4.29; the Lost Levels' snow worlds
   | 'coast' // World 7's until 0.4.30
-  | 'bowser' // World 8
+  | 'bowser' // World 8's until 0.4.31; the Lost Levels' World 8
   | 'warp' // Warp Zone hub
   | 'arena' // the Mini Game Arena
   | 'hyrule' // World 2 since 0.4.24: Link's Hyrule
@@ -21,7 +21,8 @@ export type MapTheme =
   | 'zebes' // World 4 since 0.4.27: Samus's PLANET ZEBES
   | 'transylvania' // World 5 since 0.4.28: Simon's TRANSYLVANIA
   | 'ninja' // World 6 since 0.4.29: Ryu's DRAGON VALLEY
-  | 'contra'; // World 7 since 0.4.30: Bill's GALUGA ISLAND
+  | 'contra' // World 7 since 0.4.30: Bill's GALUGA ISLAND
+  | 'blaster'; // World 8 since 0.4.31: Sophia's BOWSER'S UNDERWORLD
 
 /**
  * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),

@@ -25,6 +25,7 @@ const THEMES = [
   'transylvania',
   'ninja',
   'contra',
+  'blaster',
 ];
 
 const tileFrames = [
@@ -138,6 +139,15 @@ const tileFrames = [
   'lair-left',
   'lair-maw',
   'lair-right',
+  // BOWSER'S UNDERWORLD (World 8, 0.4.31).
+  'bm-tree',
+  'pit-0',
+  'pit-1',
+  'pit-2',
+  'pit-3',
+  'cave-mouth',
+  'ruin',
+  'garage',
   ...Array.from({ length: WATER_FRAMES }, (_, f) => [
     `water-${f}`,
     `surf-${f}`,

@@ -4,6 +4,7 @@ import type { MapActor, MapTheme, WorldMapPage } from '@game/map/types';
 import {
   ARENA_CROWD_FRAMES,
   ARENA_NIGHT,
+  BLASTER_SKY,
   CONTRA_NIGHT,
   NINJA_NIGHT,
   TRANSYLVANIA_NIGHT,
@@ -62,6 +63,10 @@ import { POND_CHARS } from './build';
  *   ≡  the waterfall (falling into the river below it)    Ж  an energy zone pylon
  *   Γ Π Δ  the enemy base's battlements, turrets and sensor dome over  Σ Ξ Φ  its wall and gate
  *   ◤ ◆ ◥  Red Falcon's lair's horns (left, middle, right) over  ◣ ● ◢  its flesh and maw
+ *   BOWSER'S UNDERWORLD (theme 'blaster', World 8 since 0.4.31; its trees T are the Underworld's
+ *   gnarled trees, its sea Bowser's lava, his castle W V G as ever):
+ *   ╭ ╮ ╰ ╯  the radioactive pit Jason fell through (a 2x2 block)    ∩  a cavern mouth
+ *   Ш  stone ruins    ⌂  Sophia's garage
  *
  * Walkable (MAP_WALKABLE; every path tile must be one of these): # , * : o, all shores and
  * landings, = I, the mushroom caps ( O ), the treetops { - }, the gate G and the pitch F.
@@ -107,6 +112,10 @@ import { POND_CHARS } from './build';
  *   soldier {range, speed}  GALUGA ISLAND: an enemy soldier running back and forth over `range` px
  *   chopper {speed}      GALUGA ISLAND: a helicopter crossing the sky and wrapping round, its rotor
  *                        turning (a whirr, never a flash)
+ *   mutant-hopper {range, period}  BOWSER'S UNDERWORLD: a mutant hopping back and forth over
+ *                        `range` px, a hop every `period` frames (the `sophia` sheet's hopper)
+ *   mutant-flyer {speed, amp, phase}  BOWSER'S UNDERWORLD: a mutant fly crossing the page in a
+ *                        wave `amp` px high, wrapping round (the `sophia` sheet's flyer)
  */
 
 interface TileDef {
@@ -263,6 +272,14 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   '◣': { frame: 'lair-left' },
   '●': { frame: 'lair-maw' },
   '◢': { frame: 'lair-right' },
+  // BOWSER'S UNDERWORLD (World 8): the radioactive pit, cavern mouths, ruins and Sophia's garage.
+  '╭': { frame: 'pit-0' },
+  '╮': { frame: 'pit-1' },
+  '╰': { frame: 'pit-2' },
+  '╯': { frame: 'pit-3' },
+  '∩': { frame: 'cave-mouth' },
+  Ш: { frame: 'ruin' },
+  '⌂': { frame: 'garage' },
   ...Object.fromEntries(POND_CHARS.split('').map((ch, i) => [ch, wet(`pond-${i}`)])),
 };
 
@@ -314,6 +331,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   transylvania: 'map-transylvania',
   ninja: 'map-ninja',
   contra: 'map-contra',
+  blaster: 'map-blaster',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -333,6 +351,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   transylvania: TRANSYLVANIA_NIGHT, // Transylvania's moonlit night
   ninja: NINJA_NIGHT, // DRAGON VALLEY's night under the full moon
   contra: CONTRA_NIGHT, // GALUGA ISLAND's night over the jungle
+  blaster: BLASTER_SKY, // BOWSER'S UNDERWORLD: Bowser's red sky gone dim
 };
 
 /** Background colour behind the tiles. */
@@ -365,6 +384,7 @@ const THEME_TILE_FRAMES: Readonly<Partial<Record<MapTheme, Readonly<Record<strin
   transylvania: { tree: 'dead-tree' },
   ninja: { tree: 'bamboo', house: 'minka', city: 'ng-rooftops', moon: 'full-moon' },
   contra: { tree: 'jungle', blaster: 'pillbox' },
+  blaster: { tree: 'bm-tree' },
 };
 
 /** The frame tile `ch` of `page` draws (its theme's own, if it has one); '' for none. */
@@ -392,6 +412,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   transylvania: 'enemies-overworld',
   ninja: 'enemies-overworld',
   contra: 'enemies-overworld',
+  blaster: 'enemies-castle',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -410,6 +431,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   transylvania: 'enemies-water',
   ninja: 'enemies-water',
   contra: 'enemies-water',
+  blaster: 'enemies-castle',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -428,6 +450,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   transylvania: 'decor-cv-gate', // the gate's dim night clouds
   ninja: 'decor-ng-field', // the bamboo field's dim night clouds
   contra: 'decor-contra-shore', // the jungle shore's dim night clouds
+  blaster: 'decor-gray', // Bowser's ash clouds
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
@@ -547,6 +570,9 @@ export const MAP_ACTOR_TYPES = [
   'capsule',
   'soldier',
   'chopper',
+  // BOWSER'S UNDERWORLD (World 8).
+  'mutant-hopper',
+  'mutant-flyer',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -852,6 +878,33 @@ export function drawMapActor(
       r.sprite(assets.sheet('map', MAP_PAL[page.theme]), CHOPPER[(t >> 2) & 1] as string, hx, y, speed < 0);
       return;
     }
+    case 'mutant-hopper': {
+      // Hops along its beat and back: a hop in an arc each `period` frames, crouched between.
+      const period = Math.max(16, num(actor, 'period', 48));
+      const p = pace(t, num(actor, 'range', 32), num(actor, 'speed', 0.3));
+      const k = (t % period) / period;
+      const air = k < 0.5;
+      const hy = air ? Math.round(Math.sin(k * 2 * Math.PI) * 6) : 0;
+      if (!assets.has('sophia')) return;
+      r.sprite(
+        assets.sheet('sophia'),
+        air ? 'hopper-1' : 'hopper-0',
+        x + Math.round(Math.abs(p)),
+        y - hy,
+        p < 0,
+      );
+      return;
+    }
+    case 'mutant-flyer': {
+      // Crosses in a wave and comes round again, its wings beating every 6 frames.
+      const speed = num(actor, 'speed', 0.4);
+      const ox = pageOffset(page, actor);
+      const fx = ox + wrapX(x - ox + t * speed, 16);
+      const fy = y + Math.round(Math.sin((t + num(actor, 'phase', 0)) / 24) * num(actor, 'amp', 6));
+      if (!assets.has('sophia')) return;
+      r.sprite(assets.sheet('sophia'), Math.floor(t / 6) & 1 ? 'flyer-1' : 'flyer-0', fx, fy, speed < 0);
+      return;
+    }
     default:
       return;
   }
@@ -936,6 +989,10 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
       return [x, y, x + num(a, 'range', 32) + 16, y + 16];
     case 'chopper':
       return [0, y, 256, y + 16];
+    case 'mutant-hopper':
+      return [x, y - 6, x + num(a, 'range', 32) + 16, y + 16];
+    case 'mutant-flyer':
+      return [0, y - num(a, 'amp', 6), 256, y + 16 + num(a, 'amp', 6)];
     default:
       return [x, y, x + 16, y + 16];
   }

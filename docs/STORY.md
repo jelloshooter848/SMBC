@@ -100,9 +100,9 @@ Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zo
 goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
 never leave. The map titles: World 2's page is HYRULE since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since
 0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since 0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA
-since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since 0.4.29 (it was SNOW NIGHT) and World 7's GALUGA
-ISLAND since 0.4.30 (it was CANNON COAST); the other page (World 8's) keeps its name for now and is renamed when its
-world is themed (see the open questions).
+since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since 0.4.29 (it was SNOW NIGHT), World 7's GALUGA
+ISLAND since 0.4.30 (it was CANNON COAST) and World 8's BOWSER'S UNDERWORLD since 0.4.31 (it was BOWSER'S LAND):
+every SMB world is themed now (see the open questions).
 
 ## 2. The scripts, in game order
 
@@ -177,8 +177,15 @@ the castle pages, Larry's crystal ball and crash cards, the rift pages.
    snowfield of pillboxes round 7-1, the enemy base's defense wall beside it, the jungle, cliffs and a waterfall
    over 7-3 with the river below, the energy zone's pylons and Red Falcon's alien lair over 7-4, and its levels wear
    Contra-style looks (the snowfield, the base's corridors, the jungle shore, the jungle river, the alien lair; 7-3
-   keeps its jungle and Bill's camp and the waterfall climb their own). The other page keeps its name and look
-   until its world is themed, and is renamed when it is.
+   keeps its jungle and Bill's camp and the waterfall climb their own). World 8 came last (0.4.31): its page is
+   BOWSER'S UNDERWORLD (it was BOWSER'S LAND), Blaster Master's Underworld broken into Bowser's land: his castle
+   and the lava sea stay at 8-4, and round them lie the Underworld's gnarled forest and stone ruins, cavern
+   mouths, the radioactive pit Jason fell through by 8-1 and Sophia's garage below the castle, with mutants
+   hopping and flitting about; its levels wear Blaster Master-style looks (8-1 the forest and stone ruins of the
+   Underworld's first area, 8-2 the techno castle, 8-3 the frozen ruins of the ice area, the coin rooms Jason's
+   on-foot dungeon seen from the side). 8-4 and 8-4-end are Bowser's real castle and Chapter 1's finale and
+   keep SMB's castle (the ending, the credits, Peach and the false ending and rift as they were); its water room
+   keeps SMB's water and Sophia's underworld areas under it their own look.
 3. **World 8's gate.** The draft makes the road into the rift wait for Sophia III too (the same rule as every
    world; Toad's reminder after the credits). Or should the rift open on 8-4 alone, with Sophia III optional?
 4. **The player's hero talks** (Mario in 1-1, `<HERO>:` in Luigi's and Link's talks, the castle remarks). All are

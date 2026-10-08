@@ -69,14 +69,15 @@ describe('map rendering', () => {
 
   it('walkable tiles are ground-like, never water, walls or scenery', () => {
     for (const ch of '#,*:o=I(O){-}G87923146qezc[]nuF') expect(MAP_WALKABLE.has(ch), ch).toBe(true);
-    for (const ch of '.~L%TYHS^RCKhj!|WVPXAsxDkabdfgilmprtvMNEBw5ZJ<U>Q@y0&$"+?/;_`Λψχ«»┌┬┐└┴┘ĦΩ║╔╦╗╚╩╝¤⌐¬▛▀▜▙▄▟≡ЖΓΠΔΣΞΦ◤◆◥◣●◢')
+    for (const ch of '.~L%TYHS^RCKhj!|WVPXAsxDkabdfgilmprtvMNEBw5ZJ<U>Q@y0&$"+?/;_`Λψχ«»┌┬┐└┴┘ĦΩ║╔╦╗╚╩╝¤⌐¬▛▀▜▙▄▟≡ЖΓΠΔΣΞΦ◤◆◥◣●◢╭╮╰╯∩Ш⌂')
       expect(MAP_WALKABLE.has(ch), ch).toBe(false);
   });
 
   it('gives each theme its own sky colour', () => {
     const skies = MAP_PAGES.map(mapSky);
     for (const s of skies) expect(s).toMatch(/^#[0-9a-f]{6}$/);
-    expect(mapSky(MAP_PAGES[7] as (typeof MAP_PAGES)[number])).toBe('#881400');
+    // World 8's BOWSER'S UNDERWORLD (0.4.31): Bowser's red sky gone dim over the Underworld.
+    expect(mapSky(MAP_PAGES[7] as (typeof MAP_PAGES)[number])).toBe('#300810');
   });
 
   // Rasterizes every page over many frames: ~3.5 s alone, so the 5 s default is too tight
