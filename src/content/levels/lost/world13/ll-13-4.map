@@ -43,3 +43,17 @@ piranha 103 9 red=1
 [zones]
 cheeps 53 6
 pipe 103 9 down -> ll-13-4-exit 3 10 exit=up
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump short (charHorz): a lift over the lava at 43 and
+;; another at 55, past the pipe at 51 where Normal Sophia III stopped, and a pillar at 70
+;; (docs/HEROES.md). Every piece the original lays for her in this area.
+31 12 .
+33 12 %
+70 12 %% *3
+11 13 % *2
+32 13 %% *2
+- podoboo 34 12
++ podoboo 35 12
++ lift-h 43 13 len=4 range=3
++ lift-fall 55 9 len=4

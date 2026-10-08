@@ -30,7 +30,14 @@ import { CHEST_X, OPEN_FRAMES } from '@game/bonus/toad-house';
 import { toPx } from '@engine/math/units';
 import { RESULT_DELAY } from '@game/bonus/slots';
 import { MISS_FRAMES } from '@game/bonus/memory';
-import { boardFaces, SLOT_CELL, SLOT_STRIPS, type CardFace } from '@game/bonus/rules';
+import {
+  boardFaces,
+  MEMORY_COLS,
+  MEMORY_ROWS,
+  SLOT_CELL,
+  SLOT_STRIPS,
+  type CardFace,
+} from '@game/bonus/rules';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { SCREEN_W } from '@engine/viewport';
 import { CHARACTERS } from '@game/characters/registry';
@@ -586,11 +593,23 @@ describe('Toad House', () => {
   });
 });
 
-/** Moves the memory cursor to card `i` and turns it. */
+/**
+ * Moves the memory cursor to card `i` and turns it. The cursor passes over taken cards, so down
+ * may skip `i`'s row in this column: after a full round of downs it tries the next column.
+ */
 function turnCard(h: H, m: MemoryScene, i: number) {
-  while (m.cursor !== i) {
-    if (m.row !== Math.floor(i / 6)) h.tap('down');
-    else h.tap('right');
+  const row = Math.floor(i / MEMORY_COLS);
+  let downs = 0;
+  for (let n = 0; m.cursor !== i; n++) {
+    if (n > 200) throw new Error(`the cursor never reached card ${i}`);
+    if (m.row === row) h.tap('right');
+    else if (downs < MEMORY_ROWS) {
+      h.tap('down');
+      downs++;
+    } else {
+      h.tap('right');
+      downs = 0;
+    }
   }
   h.tap('jump');
 }

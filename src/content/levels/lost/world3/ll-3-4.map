@@ -53,3 +53,24 @@ loop 127 3 12 -> 63 check=96:3:4,107:3:5 any
 loop 193 3 4 -> 263 check=175:3:5
 loop 263 3 12 -> 193 check=245:7:12,253:10:12,261:6:12 any
 exit 318 next=ll-4-1
+
+[variant sophia classic]
+;; The original's pieces for Sophia III in this maze (heroes who jump low, charVert: the
+;; blocks at 23 and 87 a row lower; short, charHorz: lava filled at 19 and 83; wide,
+;; WideCharacter: the one-tile notches two wide). Every piece the original lays for her here.
+37 5 . *5
+79 5 .
+101 5 . *5
+143 5 .
+177 6 .
+247 6 .
+79 8 .
+143 8 .
+23 9 .....
+87 9 .....
+177 9 .
+247 9 .
+79 11 .
+143 11 .
+19 13 % *2
+83 13 % *2

@@ -10,6 +10,8 @@ import { STORY_NOT_OVER } from '../story/script';
 
 /** The game's name on two lines ("Super Mario Bros. Crossover: REMIX" is too wide for one). */
 export const CREDITS_NAME: readonly string[] = ['SUPER MARIO BROS. CROSSOVER', 'REMIX'];
+/** Its short form, for the closing lines. */
+export const CREDITS_SHORT_NAME: readonly string[] = ['SMB CROSSOVER', 'REMIX'];
 
 /** Our credits (the original's GameTextMessages.CREDITS_* credit its own team; these credit ours). */
 export const CREDITS: readonly string[] = [
@@ -49,8 +51,8 @@ export const CREDITS: readonly string[] = [
 ];
 /**
  * The credits as they roll: the campaign's SMB 8-4 false ending (`story`, docs/STORY.md 2.12)
- * adds "...BUT THE STORY ISN'T OVER." right after THANKS FOR PLAYING / SUPER MARIO BROS.
- * CROSSOVER / REMIX; everywhere else the plain CREDITS.
+ * adds "END OF CHAPTER 1" and "...BUT THE STORY ISN'T OVER." (STORY_NOT_OVER) right after
+ * THANKS FOR PLAYING / SUPER MARIO BROS. CROSSOVER / REMIX; everywhere else the plain CREDITS.
  */
 export function creditsLines(story: boolean): readonly string[] {
   if (!story) return CREDITS;
@@ -59,7 +61,7 @@ export function creditsLines(story: boolean): readonly string[] {
 }
 
 /** The closing lines that stop mid-screen (GameTextMessages.CREDITS_TAIL's place). */
-export const CREDITS_TAIL: readonly string[] = ['SMB CROSSOVER', 'REMIX'];
+export const CREDITS_TAIL: readonly string[] = CREDITS_SHORT_NAME;
 
 /** ScreenManager.CREDITS_SPEED = 40 Flash px/s: 20 px/s here, at 60 frames a second. */
 const SPEED = 20 / 60;

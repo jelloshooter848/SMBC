@@ -75,3 +75,15 @@ cloud-2 195 3
 cloud-1 201 7
 cloud-2 210 2
 cloud-1 220 11
+
+[variant sophia classic]
+;; The original's piece for heroes who jump short or low (charHorz, charVert): a bridge between
+;; the last low bridge and the high platform at 199 (docs/HEROES.md).
+;; With every other piece the original lays for her in this area (but the flagpole's lift).
+193 6 --
+71 10 --
+85 10 ---
+136 11 ---
+93 12 -
+127 13 T
+128 14 t

@@ -4,6 +4,7 @@ import type {
   Decor,
   EntitySpawn,
   LevelData,
+  LevelVariant,
   PipeDir,
   Theme,
   TransferMode,
@@ -71,6 +72,11 @@ function parseProps(parts: string[]): Props {
  *   [campaign-decor]      `kind x y`: the decor of the level's campaign look, which also takes
  *                         the headers `campaignTheme: <theme>` and `campaignMusic: <song>`
  *                         (level/campaign.ts applyLook; other play keeps [decor])
+ *   [variant <hero>]      `x y tiles [*N]`: a run of map tiles from (x, y) rightward (`.` opens one,
+ *                         a marker adds its spawn; `*N`: on N rows from y down), `+ type x y
+ *                         [key=val]` (a spawn added), `- type x y` (one taken out): laid when any
+ *                         player is that hero, in campaign play only; `[variant <hero> classic]` in
+ *                         all play (level/variants.ts heroVariant)
  */
 export function parseTextMap(src: string, idHint = 'level'): LevelData {
   const header: Record<string, string> = {};
@@ -81,7 +87,11 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
   const decor: Decor[] = [];
   const lookDecor: Decor[] = [];
   let hasLookDecor = false;
-  let section: 'header' | 'legend' | 'tiles' | 'entities' | 'zones' | 'decor' | 'campaign-decor' = 'header';
+  const variants: LevelVariant[] = [];
+  /** Each variant run's source line, for the bounds check once the width is known. */
+  const runLines: { run: LevelVariant['tiles'][number]; line: number }[] = [];
+  let section: 'header' | 'legend' | 'tiles' | 'entities' | 'zones' | 'decor' | 'campaign-decor' | 'variant' =
+    'header';
 
   const lines = src.split(/\r?\n/);
   lines.forEach((raw, i) => {
@@ -92,6 +102,14 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     if (section !== 'tiles' && line.trimStart().startsWith('#')) return;
     const trimmed = line.trim();
     if (!trimmed) return;
+    const variant = /^\[variant\s+([\w-]+)(\s+classic)?\]$/.exec(trimmed);
+    if (variant) {
+      const v: LevelVariant = { hero: variant[1] as string, tiles: [] };
+      if (variant[2]) v.classic = true;
+      variants.push(v);
+      section = 'variant';
+      return;
+    }
     const sec = /^\[([\w-]+)\]$/.exec(trimmed);
     if (sec) {
       const name = sec[1];
@@ -150,6 +168,48 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
           (section === 'decor' ? decor : lookDecor).push({ kind, x: Number(xs), y: Number(ys) });
           break;
         }
+        case 'variant': {
+          const v = variants.at(-1) as LevelVariant;
+          const parts = trimmed.split(/\s+/);
+          if (parts[0] === '+' || parts[0] === '-') {
+            // `+ type x y [key=val]`: a spawn added; `- type x y`: the map's spawn there taken out.
+            const [sign, type, xs, ys, ...rest] = parts;
+            if (!type || !/^\d+$/.test(xs ?? '') || !/^\d+$/.test(ys ?? '') || (sign === '-' && rest.length))
+              throw new Error('expected "+ type x y [key=val]" or "- type x y"');
+            const e: EntitySpawn = { type, x: Number(xs), y: Number(ys) };
+            if (sign === '-') (v.remove ??= []).push(e);
+            else {
+              if (rest.length) e.props = parseProps(rest);
+              (v.add ??= []).push(e);
+            }
+            break;
+          }
+          const [xs, ys, chars, rep, ...more] = parts;
+          if (
+            !/^\d+$/.test(xs ?? '') ||
+            !/^\d+$/.test(ys ?? '') ||
+            !chars ||
+            (rep !== undefined && !/^\*[1-9]\d*$/.test(rep)) ||
+            more.length
+          )
+            throw new Error('expected "x y tiles [*rows]"');
+          const x0 = Number(xs);
+          // `*N`: the same run on N rows, from y down.
+          for (let y = Number(ys); y < Number(ys) + (rep ? Number(rep.slice(1)) : 1); y++) {
+            // A marker in a run (a spring's `s`) adds that spawn on open air, as in [tiles].
+            const ids = [...chars].map((ch, i) => {
+              const t = legend[ch];
+              if (t === undefined) throw new Error(`"${ch}" is not a tile`);
+              if (typeof t === 'number') return t;
+              (v.add ??= []).push({ type: t.slice(1), x: x0 + i, y });
+              return T.AIR;
+            });
+            const run = { x: x0, y, tiles: ids };
+            v.tiles.push(run);
+            runLines.push({ run, line: lineNo });
+          }
+          break;
+        }
       }
     } catch (e) {
       throw new MapParseError((e as Error).message, lineNo);
@@ -194,6 +254,10 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
       } else tiles[y * width + x] = v;
     }
   });
+
+  for (const { run, line } of runLines)
+    if (run.y >= height || run.x + run.tiles.length > width)
+      throw new MapParseError(`variant run at ${run.x},${run.y} reaches outside the level`, line);
 
   const id = header.id ?? idHint;
   const [ws, ss] = id.split('-');
@@ -240,6 +304,7 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     if (hasLookDecor) look.decor = lookDecor;
     level.campaignLook = look;
   }
+  if (variants.length) level.variants = variants;
   return level;
 }
 
@@ -550,6 +615,22 @@ export function serializeTextMap(level: LevelData): string {
   if (level.campaignLook?.decor) {
     out.push('', '[campaign-decor]');
     for (const d of level.campaignLook.decor) out.push(`${d.kind} ${d.x} ${d.y}`);
+  }
+  for (const v of level.variants ?? []) {
+    out.push('', `[variant ${v.hero}${v.classic ? ' classic' : ''}]`);
+    for (const r of v.tiles) out.push(`${r.x} ${r.y} ${r.tiles.map((t) => rev.get(t) ?? '.').join('')}`);
+    for (const e of v.add ?? [])
+      out.push(
+        `+ ${e.type} ${e.x} ${e.y}${
+          e.props
+            ? ' ' +
+              Object.entries(e.props)
+                .map(([k, val]) => `${k}=${val}`)
+                .join(' ')
+            : ''
+        }`,
+      );
+    for (const e of v.remove ?? []) out.push(`- ${e.type} ${e.x} ${e.y}`);
   }
   return out.join('\n') + '\n';
 }

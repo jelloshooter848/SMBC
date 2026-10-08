@@ -36,12 +36,42 @@ const FACE_NAMES: Readonly<Record<CardFace, string>> = {
 
 /**
  * SMB3's N-spade: the file's board (one of a fixed set dealt in turn, rules.ts NSPADE_BOARDS), 3
- * rows of 6 face down, less the pairs found on earlier visits. Move the cursor and TURN two at a
- * time; a matching pair wins its prize (items to the inventory, 1-ups and coins at once) and stays
+ * rows of 6 face down, less the pairs found on earlier visits. Move the cursor (it passes over
+ * the pairs already taken) and TURN two at a time; a matching pair wins its prize (items to the
+ * inventory, 1-ups and coins at once) and stays
  * gone on the next visit (Game.bonus.spadeTaken, saved), until the board is cleared and the next
  * one comes. Two misses end it, as does clearing the board. A round for fun leaves the file's
  * board as it was.
  */
+/**
+ * The N-spade cursor's next spot from (col, row) one step along (dc, dr), passing over taken
+ * cards. Left and right wrap round the row. Up and down go to the next row that way (wrapping)
+ * with any card left: the same column if its card is there, else that row's nearest card (ties:
+ * right). So every card left can always be reached.
+ */
+export function cursorStep(
+  taken: (col: number, row: number) => boolean,
+  col: number,
+  row: number,
+  dc: number,
+  dr: number,
+): [number, number] {
+  if (dc) {
+    for (let k = 1; k < MEMORY_COLS; k++) {
+      const c = (col + dc * k + MEMORY_COLS * k) % MEMORY_COLS;
+      if (!taken(c, row)) return [c, row];
+    }
+    return [col, row];
+  }
+  for (let k = 1; k < MEMORY_ROWS; k++) {
+    const r = (row + dr * k + MEMORY_ROWS * k) % MEMORY_ROWS;
+    if (!taken(col, r)) return [col, r];
+    for (let d = 1; d < MEMORY_COLS; d++)
+      for (const c of [col + d, col - d]) if (c >= 0 && c < MEMORY_COLS && !taken(c, r)) return [c, r];
+  }
+  return [col, row];
+}
+
 export class MemoryScene extends BonusScene {
   protected music = BONUS_MUSIC.game;
   readonly board: MemoryGame;
@@ -54,6 +84,29 @@ export class MemoryScene extends BonusScene {
     super(game, 'memory', seed, onEnd);
     const b = game.bonus;
     this.board = new MemoryGame(boardFaces(b.spadeBoard), b.spadeTaken);
+    this.offTaken();
+  }
+
+  /** A card already taken (a pair found, on this visit or an earlier one): the cursor passes over it. */
+  private taken(col: number, row: number): boolean {
+    return this.board.cards[row * MEMORY_COLS + col]?.matched ?? true;
+  }
+
+  /** Moves the cursor off a taken card, to the next card left on the board in reading order. */
+  private offTaken(): void {
+    const n = MEMORY_COLS * MEMORY_ROWS;
+    for (let k = 0; k < n; k++) {
+      const i = (this.cursor + k) % n;
+      if (this.board.cards[i]?.matched) continue;
+      this.col = i % MEMORY_COLS;
+      this.row = Math.floor(i / MEMORY_COLS);
+      return;
+    }
+  }
+
+  /** The cursor's next spot one step along (dc, dr), passing over taken cards (`cursorStep`). */
+  private step(dc: number, dr: number): [number, number] {
+    return cursorStep((c, r) => this.taken(c, r), this.col, this.row, dc, dr);
   }
 
   get cursor(): number {
@@ -93,8 +146,7 @@ export class MemoryScene extends BonusScene {
       ['down', 0, 1],
     ] as const) {
       if (!input.pressed(a)) continue;
-      this.col = (this.col + dc + MEMORY_COLS) % MEMORY_COLS;
-      this.row = (this.row + dr + MEMORY_ROWS) % MEMORY_ROWS;
+      [this.col, this.row] = this.step(dc, dr);
       this.sfx(BONUS_SFX.move);
       this.say(this.where());
       return;
@@ -120,7 +172,9 @@ export class MemoryScene extends BonusScene {
     if (res === 'match') {
       this.sfx(BONUS_SFX.win);
       this.keepPair();
+      this.offTaken();
       this.award(cardPrize(face));
+      if (!b.over) this.say(this.where());
       if (b.over) this.decide();
       return;
     }

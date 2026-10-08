@@ -6,6 +6,7 @@ import { CannonShot, HomingMissile, SophiaBoom, TripleMissile } from '@game/char
 import { Corpse } from '@game/entities/effects/effects';
 import { sophiaState, CEIL, FLOOR, LEFT, RIGHT } from '@game/characters/sophia/state';
 import { Pickup } from '@game/entities/objects/pickup';
+import { Spring, SPRING_BOOST, SPRING_PLAIN } from '@game/entities/objects/spring';
 import { ParkedTank } from '@game/characters/sophia/jason';
 import { getLevel } from '@content/levels';
 import { MARIO } from '@game/characters/mario';
@@ -593,6 +594,62 @@ describe('Sophia III: kills, deaths and the rest (SO-23, SO-34, SO-43)', () => {
     expect(r.world.player.dead).toBe(false);
     expect(r.world.player.body.onGround).toBe(true);
     expect(toPx(r.world.player.body.x)).toBeGreaterThan(8 * 16);
+  });
+
+  it('a red spring throws her with its own power, as every hero (SpringRed.springLaunch)', () => {
+    // Sophia.as sets defSpringPwr 400 / boostSpringPwr 930, but SpringRed launches with its own
+    // 500 / 1000 (the lines reading the character's are commented out); the character's values
+    // only drive the bouncy-pits cheat. So her launch speed is Mario's.
+    const launch = (c: typeof SOPHIA, press: boolean) => {
+      let fastest = 0;
+      runSim({
+        level: field({ 12: at(8, 'Z') }, 2, ['', '[legend]', 'Z @spring']),
+        character: c,
+        script: { steps: [] },
+        maxFrames: 60,
+        controller: (w, f) => {
+          if (f === 1) {
+            w.player.body.x = px(8 * 16 - 1);
+            w.player.body.y = px(120);
+          }
+          fastest = Math.min(fastest, w.player.body.vy);
+          const on = w.entities.some((e) => e instanceof Spring && e.ridBy(w.player));
+          return on && press && f % 2 === 0 ? ['jump'] : [];
+        },
+      });
+      return -fastest;
+    };
+    expect(launch(SOPHIA, false)).toBe(SPRING_PLAIN);
+    expect(launch(SOPHIA, true)).toBe(SPRING_BOOST);
+    expect(launch(MARIO, true)).toBe(SPRING_BOOST);
+  });
+
+  it('a hop onto a spring and jump pressed on it: the boosted launch, as high as from a drop', () => {
+    // Sophia.as: the release damping (frictionY) ends once a rise is over (vy >= 0), so a hop's
+    // released jump never damps the spring's launch (LL 4-3's spring at 26: Chapter 1 finishing pass).
+    const peak = (hop: boolean) => {
+      let top = Infinity;
+      let rode = false;
+      run(
+        field({ 12: at(8, 'Z') }, hop ? 5 : 2, ['', '[legend]', 'Z @spring']),
+        (w, f) => {
+          if (!hop && f === 1) {
+            w.player.body.x = px(8 * 16 - 1);
+            w.player.body.y = px(120);
+          }
+          const on = w.entities.some((e) => e instanceof Spring && e.ridBy(w.player));
+          if (on) rode = true;
+          if (rode) top = Math.min(top, toPx(w.player.body.y));
+          if (on) return f % 2 === 0 ? ['jump'] : [];
+          if (hop && !rode) return f < 4 ? ['right', 'jump'] : f < 16 ? ['right'] : [];
+          return [];
+        },
+        240,
+      );
+      return 176 - Math.round(top);
+    };
+    expect(peak(false)).toBeGreaterThan(96);
+    expect(Math.abs(peak(true) - peak(false))).toBeLessThanOrEqual(4);
   });
 });
 

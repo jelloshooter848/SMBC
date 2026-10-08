@@ -415,7 +415,7 @@ function upright(
       const k = (st.engaged && !p.launched) || (st.coasting && st.released) ? RELEASE_DAMPING : HOLD_DAMPING;
       b.vy = damp(b.vy, k);
       if (b.vy >= 0) st.coasting = false;
-    }
+    } else if (b.vy >= 0) st.coasting = false; // the rise is over (Sophia.as: frictionY = false)
     b.vy += GRAVITY;
     // 5. The fall clamp (no SMB1 reset).
     if (b.vy > FALL_MAX) b.vy = FALL_MAX;

@@ -95,3 +95,15 @@ cloud-2 306 2
 cloud-1 316 11
 cloud-1 323 7
 cloud-1 326 6
+
+[variant sophia classic]
+;; The original's pieces for Sophia III here: red springs and platforms by the green super springs (charHorz). Every piece the original lays for
+;; her in this area but the flagpole's lift (docs/HEROES.md).
+287 5 B
+292 5 B
+300 8 B
+211 10 s
+183 13 TT
+193 13 TT
+182 14 tt
+194 14 tt

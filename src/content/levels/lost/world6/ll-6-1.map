@@ -99,3 +99,20 @@ bush-2 234 12
 hill-big 240 12
 cloud-1 248 3
 bush-3 251 12
+
+[variant sophia classic]
+;; The original's pieces for Sophia III here: a step and a pillar by the gap at 175, the falling lift at 160 moved (charHorz). Every piece the original lays for
+;; her in this area but the flagpole's lift (docs/HEROES.md).
+21 4 1
+21 6 .
+139 9 .
+178 9 B
+180 9 . *4
+177 10 B
+176 11 B
+88 12 .^
+175 12 B
+89 13 # *2
+175 13 # *2
+- lift-fall 160 5
++ lift-fall 162 5 len=4

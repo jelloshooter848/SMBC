@@ -40,3 +40,9 @@ piranha 51 11
 pipe 51 11 down -> ll-1-2-bonus 1 0 exit=none
 pipe 86 10 down -> ll-4-1 2 12
 warp 80 16 worlds=4 text=WELCOME_TO_WARP_ZONE!
+
+[variant sophia classic]
+;; The original's pieces for Sophia III here: the falling lift at 33 a tile further left (charHorz). Every piece the original lays for
+;; her in this area but the flagpole's lift (docs/HEROES.md).
+- lift-fall 34 9
++ lift-fall 33 9 len=6 dx=-8

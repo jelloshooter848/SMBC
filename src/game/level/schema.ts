@@ -395,6 +395,28 @@ export interface LevelData {
    * tunnel under 8-4 (`8-4-fred`) swims in the Underworld's look.
    */
   swim?: boolean;
+  /**
+   * Heroes' variants of the level (the map's `[variant <hero>]` sections; level/variants.ts
+   * `heroVariant`): extra tiles laid when any player is that hero (Sophia III's steps).
+   */
+  variants?: LevelVariant[];
+}
+
+/**
+ * One hero's variant of a level (`[variant <hero>]`, or `[variant <hero> classic]`): runs of tiles
+ * laid as written when any player is that hero. Campaign play only, unless `classic` (the
+ * original Crossover has those tiles for that hero, so classic play has them too).
+ */
+export interface LevelVariant {
+  /** A CharacterDef id ('sophia'). */
+  hero: string;
+  classic?: boolean;
+  /** Each run starts at (x, y) and goes right, one tile id a column. */
+  tiles: { x: number; y: number; tiles: number[] }[];
+  /** Spawns added (`+ type x y`, or a marker in a run). */
+  add?: EntitySpawn[];
+  /** The map's spawns taken out (`- type x y`: every spawn of that type at that tile). */
+  remove?: { type: string; x: number; y: number }[];
 }
 
 /**

@@ -83,3 +83,24 @@ cloud-1 190 11
 cloud-2 195 3
 cloud-1 201 7
 cloud-2 210 2
+
+[variant sophia classic]
+;; The original's pieces for Sophia III here: platforms in the gaps at 12-21, 73-87 and 165-181, the lift at 44 longer (charHorz,
+;; charVert). Every piece the original lays for
+;; her in this area but the flagpole's lift (docs/HEROES.md).
+165 5 TTT
+180 5 TTT
+166 6 t *9
+181 6 t *9
+87 8 ...
+21 9 TT
+73 9 B
+87 9 BBB
+20 10 tt *5
+13 11 BB
+12 13 T
+78 13 TT
+11 14 t
+79 14 tt
+- lift-h 44 6
++ lift-h 44 6 len=6 range=3 dx=-8

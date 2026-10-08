@@ -170,8 +170,8 @@ then their die frame is the king and they neither tell nor unmask.
 - `campaignLevel` (`toadAt84`) swaps 8-4's `princess` for a `toad`: Toad came to cheer, the
   princess is in hiding. The map file and every other play keep the princess.
 - 8-4's castle pages say the king was real and the wand broke; the exit is `end`, so the castle
-  text heads the credits (`Game.showEnding`), which add "...BUT THE STORY ISN'T OVER." after
-  THANKS FOR PLAYING (`creditsLines(true)`, said by the announcer too).
+  text heads the credits (`Game.showEnding`), which add "END OF CHAPTER 1" and "...BUT THE
+  STORY ISN'T OVER." after THANKS FOR PLAYING (`creditsLines(true)`, said by the announcer too).
 - After the credits the file returns to World 8, where Toad's rift scene (a major scene, due once
   `gameCleared`) plays first and then the road on to Lost World 1 draws in.
 

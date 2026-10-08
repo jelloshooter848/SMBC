@@ -43,6 +43,7 @@ import { seedSeen, storyOn } from '../story/beats';
 import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
+import { heroVariant } from '../level/variants';
 import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship';
 import { isLostLevel } from '../level/lost-campaign';
 import { abilityHint } from './hints';
@@ -1104,13 +1105,14 @@ export class Game {
     else this.scenes.clear();
   }
 
-  /** The scene for `level` (its campaign variant in campaign play), not yet pushed. */
+  /**
+   * The scene for `level` (its campaign variant in campaign play, then the variant of the heroes
+   * playing: level/variants.ts), not yet pushed.
+   */
   levelScene(level: LevelData, start: LevelStart): LevelScene {
-    return new LevelScene(
-      this,
-      this.campaign ? campaignLevel(level, undefined, this.mapProgress.secrets) : level,
-      start,
-    );
+    const played = this.campaign ? campaignLevel(level, undefined, this.mapProgress.secrets) : level;
+    const heroes = [this.state.character.id, ...(this.state.character2 ? [this.state.character2.id] : [])];
+    return new LevelScene(this, heroVariant(played, heroes, this.campaign !== null), start);
   }
 
   /**

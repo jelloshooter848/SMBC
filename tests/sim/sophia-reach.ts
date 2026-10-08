@@ -1,12 +1,14 @@
 import type { Action } from '@engine/input/actions';
 import { px, tileAt, tileToSub, toPx } from '@engine/math/units';
-import { getLevel } from '@content/levels';
+import { getLevel as bundled } from '@content/levels';
+import { heroVariant } from '@game/level/variants';
 import { runSim } from '@game/sim/headless';
 import { SOPHIA } from '@game/characters/sophia';
 import { sophiaState } from '@game/characters/sophia/state';
 import { ParkedTank } from '@game/characters/sophia/jason';
 import { groundBelow } from '@game/entities/body';
 import { Enemy } from '@game/entities/enemies/enemy';
+import { Spring } from '@game/entities/objects/spring';
 import type { LevelData } from '@game/level/schema';
 import type { World, WorldStart } from '@game/world/world';
 
@@ -19,9 +21,13 @@ import type { World, WorldStart } from '@game/world/world';
  * stands still again on solid ground. Pipes and vines into other areas are followed; a flagpole,
  * the castle axe, the level's exit or a warp to another level ends the search. The maze loops'
  * checkpoints travel with each spot. It answers "can she finish it", not "how hard is it".
+ * Every level is searched with her campaign variant laid (`[variant sophia]`: level/variants.ts).
  */
 
 type Form = 'tank' | 'jason';
+
+/** A level as campaign play gives it to Sophia III: with her variant's steps (level/variants.ts). */
+const getLevel = (id: string): LevelData => heroVariant(bundled(id), [SOPHIA.id], true);
 
 interface Spot {
   area: string;
@@ -62,6 +68,9 @@ const calm = (w: World) => {
   for (const e of w.entities) if (e instanceof Enemy) e.alive = false;
 };
 
+/** Riding a springboard (not a lift: the ride moves leave it alone). */
+const onSpring = (w: World) => w.entities.some((e) => e instanceof Spring && e.ridBy(w.player));
+
 type Internals = { loopChecks: Set<string>; loopPrevX: number | null };
 
 /** A move that lets go of everything once it has been in the air and landed again. */
@@ -84,6 +93,8 @@ function moves(form: Form, power: string, water: boolean, spring = false): Move[
   for (const d of ['right', 'left'] as const) {
     hold(`walk-${d}`, [d], 14);
     hold(`run-${d}`, [d], 40);
+    // Off a ledge with the direction held until she lands (a drop that steers in under a ledge).
+    jumpy(`drive-${d}`, 200, () => [d]);
     // Jumps: held all the way, or tapped, the direction held all the way.
     jumpy(`jump-${d}`, 90, (_w, f) => (f < 70 ? [d, 'jump'] : [d]));
     jumpy(`hop-${d}`, 60, (_w, f) => (f < 2 ? [d, 'jump'] : [d]));
@@ -104,6 +115,30 @@ function moves(form: Form, power: string, water: boolean, spring = false): Move[
           // Not let go on landing: the spring's bounce is a landing too.
           act: (_w, f) => (f < k ? [d, 'jump'] : [o, 'jump']),
         });
+    // Hop onto a spring and press jump on it (the boosted launch needs a fresh press there), then
+    // rise straight up for `k` frames and steer `d` until she lands (`k` 0: steered all the way).
+    if (spring)
+      for (const k of [0, 20, 40, 60, 90]) {
+        let rode = false;
+        let up = -1;
+        let done = false;
+        out.push({
+          name: `boost${k}-${d}`,
+          frames: 360,
+          act: (w, f) => {
+            const p = w.player;
+            if (done) return [];
+            if (onSpring(w)) {
+              rode = true;
+              return f % 2 === 0 ? ['jump'] : [];
+            }
+            if (!rode) return f < 3 ? [d, 'jump'] : p.body.onGround && f > 6 ? ((done = true), []) : [d];
+            if (up < 0) up = f;
+            if (p.body.onGround && f - up > 4) return ((done = true), []);
+            return f - up < k ? ['jump'] : [d, 'jump'];
+          },
+        });
+      }
     // Drive to the edge (no floor under her middle), then a held jump; and the same from a
     // run-up (backing off first).
     for (const back of [0, 30]) {
@@ -297,7 +332,7 @@ function play(
       if (phase === 'move' && move) {
         // Landed on a lift mid-move: the ride (if any) takes over at once (a falling lift).
         const lb = p.body;
-        if (t > 4 && lb.onGround && !groundBelow(lb, w.map) && !p.vine) {
+        if (t > 4 && lb.onGround && !groundBelow(lb, w.map) && !p.vine && !onSpring(w)) {
           liftSeen = true;
           if (ride) phase = 'settle';
         }
@@ -315,7 +350,7 @@ function play(
         if (rideJump < 10 || (!b.onGround && rideJump < 150)) return [ride.dir, 'jump'];
         rideJump = 0;
       }
-      if (b.onGround && !groundBelow(b, w.map) && !p.vine) {
+      if (b.onGround && !groundBelow(b, w.map) && !p.vine && !onSpring(w)) {
         liftSeen = true;
         onLift++;
         if (ride && rides < 8 && onLift >= ride.wait) {
@@ -400,6 +435,8 @@ export function reach(
   budget = 20000,
   /** Stop at the first spot this accepts (how: 'goal') instead of the level's end. */
   goal?: (s: Omit<Spot, 'path'>) => boolean,
+  /** Search from here instead of the level's start (past a stretch a scripted sim got through). */
+  from?: WorldStart,
 ): ReachResult {
   const main = getLevel(id);
   const seen = new Set<string>();
@@ -455,7 +492,7 @@ export function reach(
     }
     return null;
   };
-  const first = enter(main, { mode: main.startMode }, []);
+  const first = enter(main, from ?? { mode: main.startMode }, []);
   if (first) return first;
   let played = 0;
   while (queue.length && played < budget) {
@@ -516,14 +553,17 @@ function areaStart(level: LevelData, target: NonNullable<Outcome['target']>): Wo
 
 /**
  * Plays a route reach() found (its `path`) again, step by step from each spot the last step
- * left her on: whether it still finishes the level, and the step where it went wrong if not.
+ * left her on: whether it still finishes the level, and the step where it went wrong if not
+ * (`stand`: where the last step left her standing, for a route that stops short of the end).
  */
 export function replay(
   id: string,
   power: string,
   path: string[],
   log?: (step: string, o: Outcome) => void,
-): { done: boolean; how: string | null; at: string } {
+  /** Where the route starts instead of the level's start (reach()'s `from`). */
+  from?: WorldStart,
+): { done: boolean; how: string | null; at: string; stand?: { area: string; col: number } } {
   const main = getLevel(id);
   const blank = (area: string): Spot => ({
     area,
@@ -536,7 +576,7 @@ export function replay(
     checks: [],
     path: [],
   });
-  let o = play(blank(main.id), main, power, null, { mode: main.startMode });
+  let o = play(blank(main.id), main, power, null, from ?? { mode: main.startMode });
   for (const step of path) {
     if (step.startsWith('enter ')) continue;
     // Through pipes into the next area first.
@@ -566,7 +606,8 @@ export function replay(
       return { done: true, how: `warp to ${level.id}`, at: 'end' };
     o = play(blank(level.id), level, power, null, areaStart(level, o.target));
   }
-  return { done: o.kind === 'done', how: o.how ?? null, at: 'end' };
+  const stand = o.kind === 'stand' && o.spot ? { area: o.spot.area, col: tileAt(o.spot.x) } : undefined;
+  return { done: o.kind === 'done', how: o.how ?? null, at: 'end', ...(stand ? { stand } : {}) };
 }
 
 /**

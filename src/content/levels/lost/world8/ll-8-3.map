@@ -85,3 +85,36 @@ cloud-2 210 2
 cloud-1 220 11
 cloud-1 227 7
 cloud-1 230 6
+
+[variant sophia classic]
+;; The original's pieces for Sophia III here: red springs, a platform and falling lifts in the long gaps, the Paratroopas moved
+;; to suit (charHorz, charVert). Every piece the original lays for
+;; her in this area but the flagpole's lift (docs/HEROES.md).
+200 5 BBBB
+205 5 .
+91 8 H
+95 8 H
+98 8 H
+179 8 H
+181 8 H
+91 9 5
+95 9 P
+98 9 V
+179 9 C
+181 9 5
+26 12 s
+183 12 s
+54 13 T
+147 13 s
+53 14 t
+147 14 B
+- koopa-para-red 42 9
+- lift-fall 45 5
+- koopa-para-red 148 9
+- koopa-para-red 151 10
+- koopa-para-red 209 7
++ koopa-para-red 41 9 dy=-8
++ lift-fall 43 5 len=4
++ koopa-para-red 144 10 dy=-8
++ koopa-para-red 150 10 dx=8 dy=-8
++ koopa-para-red 208 7 dy=-8

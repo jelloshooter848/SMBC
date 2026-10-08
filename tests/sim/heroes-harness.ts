@@ -17,6 +17,7 @@ import { MARIO } from '@game/characters/mario';
 import { Captive } from '@game/entities/objects/captive';
 import { newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import type { Action } from '@engine/input/actions';
+import type { Settings } from '@engine/save/settings';
 import type { Announcer } from '@engine/a11y/announcer';
 import { airshipBot } from './airship-bot';
 
@@ -35,7 +36,8 @@ export function useStorage(): void {
   });
 }
 
-export function makeGame() {
+/** `dev`: dev mode on (a file's "Chapter 2 gate: open" flag then lets the campaign into the Lost Kingdom). */
+export function makeGame(opts: { dev?: boolean } = {}) {
   const said: string[] = [];
   const assets = new AssetRegistry(PALETTES);
   assets.defineAll(SPRITES);
@@ -44,6 +46,7 @@ export function makeGame() {
     ctx: { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
     getLevel,
     characters: CHARACTERS,
+    ...(opts.dev ? { settings: { dev: true } as Settings } : {}),
     announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
   });
   const p1 = new ScriptedInput({ steps: [] });

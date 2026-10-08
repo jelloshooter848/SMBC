@@ -88,3 +88,12 @@ hill-small 208 12
 cloud-1 211 2
 bush-2 215 12
 cloud-3 219 3
+
+[variant sophia classic]
+;; The original's piece for heroes who jump low (charVert): the pipe at 117 a tile lower (five
+;; tiles tall is out of Normal Sophia III's reach; docs/HEROES.md), its plant with it.
+;; With every other piece the original lays for her in this area (but the flagpole's lift).
+117 8 ..
+117 9 []
+- piranha 117 8
++ piranha 117 9 red=1

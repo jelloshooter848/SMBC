@@ -670,3 +670,36 @@ describe('Coin heavens stand on cloud blocks, as in the original', () => {
     expect(tilesOf(l, T.CLOUD_BLOCK)).toBe(0);
   });
 });
+
+describe('Five one-tile slips in the original data match the NES maps (tools/levelgen/nes-fixes.mjs)', () => {
+  it('1-3: the starting ground ends at column 15, before the gap', () => {
+    const l = load('1-3');
+    expect(tile(l, 15, 13)).toBe(T.GROUND);
+    expect(tile(l, 16, 13)).toBe(T.AIR);
+    expect(tile(l, 16, 14)).toBe(T.AIR);
+  });
+  it('2-4: the upper wall by the lifts spans columns 93-98', () => {
+    const l = load('2-4');
+    for (const y of [2, 3, 4]) {
+      expect(tile(l, 92, y)).toBe(T.AIR);
+      expect(tile(l, 93, y)).toBe(T.CASTLE_BRICK);
+    }
+  });
+  it("4-2: the warp room's ceiling ends at column 218", () => {
+    const l = load('4-2');
+    expect(tile(l, 218, 2)).toBe(T.BRICK);
+    expect(tile(l, 219, 2)).toBe(T.AIR);
+  });
+  it('5-3: two coins over the first lift, at columns 85 and 86', () => {
+    const l = load('5-3');
+    expect(tile(l, 85, 5)).toBe(T.COIN);
+    expect(tile(l, 86, 5)).toBe(T.COIN);
+    expect(tile(l, 87, 5)).toBe(T.AIR);
+  });
+  it("8-4's water section: open water above the exit pipe", () => {
+    const l = load('8-4-water');
+    expect(tile(l, 68, 7)).toBe(T.PIPE_H_TL);
+    expect(tile(l, 68, 6)).toBe(T.AIR);
+    expect(tile(l, 69, 6)).toBe(T.GROUND);
+  });
+});

@@ -277,8 +277,17 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
 export const WAND_BREAK_SAID =
   "The wand spins out of Bowser's hand and breaks! Its glowing pieces swirl into a crack in the air.";
 
-/** The block the 8-4 credits add after THANKS FOR PLAYING (campaign): the false ending. */
-export const STORY_NOT_OVER: readonly string[] = ['', '...BUT THE STORY', "ISN'T OVER."];
+/**
+ * The block the 8-4 credits add after THANKS FOR PLAYING (campaign): Chapter 1 ends there, and
+ * the false ending says the story goes on (into the Lost Kingdom, Chapter 2).
+ */
+export const STORY_NOT_OVER: readonly string[] = [
+  '',
+  'END OF CHAPTER 1',
+  '',
+  '...BUT THE STORY',
+  "ISN'T OVER.",
+];
 
 /** Toad works out Peach's note on the World 8 map after the credits (a major scene). */
 export function riftPages(hero: string): Page[] {

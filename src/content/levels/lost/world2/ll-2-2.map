@@ -97,3 +97,21 @@ cloud-1 238 11
 cloud-2 243 3
 cloud-1 249 7
 cloud-2 258 2
+
+[variant sophia classic]
+;; The original's pieces for Sophia III here: the hidden block of the crossing at 186 a row lower (charVert), ground in the gaps at
+;; 45, 82 and 103 (charHorz). Every piece the original lays for
+;; her in this area but the flagpole's lift (docs/HEROES.md).
+152 6 ....
+141 8 ...
+152 8 $$$$
+186 8 .
+237 8 ...
+186 9 2
+237 9 BBB
+141 10 $$$
+81 12 .B
+102 12 B
+45 13 # *2
+82 13 # *2
+103 13 # *2

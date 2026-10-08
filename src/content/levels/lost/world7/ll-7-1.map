@@ -102,3 +102,12 @@ tree-big 205 12
 cloud-1 210 3
 tree-big 213 12
 tree-small 215 12
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump short or low (charHorz, charVert): the ground
+;; longer past the gaps at 32 and 141 (ten tiles from the stairs is past Normal Sophia III's
+;; reach) and a hidden block at 114. Every piece the original lays for her here (but the
+;; flagpole's lift).
+114 9 2
+37 13 ##### *2
+146 13 #### *2
