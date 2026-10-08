@@ -8,6 +8,25 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- World 2 is now Hyrule, Link's world (campaign only; classic play keeps SMB's 2-1 to 2-4):
+  - The World 2 map page is a Zelda II overworld named HYRULE. It has mountains, a palace over 2-4, ruins, a lake,
+    forests and a graveyard, with blobs, a fairy and river creatures in place of the cheep cheeps.
+  - 2-2 is a lake over a sunken palace with new lake music, and every hero still swims.
+  - 2-4 is a Zelda II palace with red curtains and knight statues, and new palace music.
+  - 2-1's bonus room and the Moblin's cave are Hyrule caves with new cave music.
+  - 2-2's way in and out, and 2-3, take 2-1's Zelda II field look.
+- 2-1's sky ruins are now Link's sky palace, five screens of Zelda II-style palace on the clouds:
+  - Cross a stair of floating palace blocks, pass the great gate and jump the hall's broken floor.
+  - Link waits on an altar under a gold crest, between knight statues and banners.
+  - The balcony beyond drops back into 2-1 as before.
+
+### Fixed
+
+- A test of the 7-3 camp sometimes failed. The tests that play through the game now keep each level's fixed seed.
+  The game itself still plays each visit differently.
+
 ## [0.4.23] - 2026-10-08
 
 ### Added
