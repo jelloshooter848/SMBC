@@ -10,6 +10,20 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- World 4 is now Samus's world, Zebes (campaign only; classic play keeps SMB's 4-1 to 4-4):
+  - The World 4 map page is PLANET ZEBES (it was MUSHROOM WOODS): rock spires, alien plants and lava pools, Samus's
+    gunship by the start, a Chozo statue by 4-2 and Tourian's glass dome over 4-4, with Zoomers, Rippers and a
+    Metroid. The airship, Larry's road, the bonus spot and its Hammer Bro work as before.
+  - 4-1 and 4-2's way in, way out and warp room are Zebes's surface, the bonus rooms are Brinstar, 4-3 is Norfair
+    (bubble platforms on hot stalks) and 4-4 is Tourian, Mother Brain's lair.
+  - New original Metroid-style music for Zebes's surface and Norfair; 4-4 plays the Tourian tune.
+
+### Fixed
+
+- The airship crash's opening line no longer doubles a full stop.
+
+### Changed
+
 - World 3 is now Mega Man's world (campaign only; classic play keeps SMB's 3-1 to 3-4):
   - The World 3 map page is MEGA CITY, a Mega Man 2-style city with Dr. Light's lab, Metal Man's gears, Wood Man's
     forest, Flash Man's crystals and Wily's skull fortress, with Mets and propeller bots about.
