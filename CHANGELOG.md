@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.20] - 2026-10-07
+
 ### Added
 
 - The Lost Kingdom is sealed until Chapter 2. The campaign still plays through 8-4, the credits and onto Lost World 1's
@@ -567,7 +569,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.19...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.20...HEAD
+[0.4.20]: https://github.com/jelloshooter848/SMBC/compare/v0.4.19...v0.4.20
 [0.4.19]: https://github.com/jelloshooter848/SMBC/compare/v0.4.18...v0.4.19
 [0.4.18]: https://github.com/jelloshooter848/SMBC/compare/v0.4.17...v0.4.18
 [0.4.17]: https://github.com/jelloshooter848/SMBC/compare/v0.4.16...v0.4.17
