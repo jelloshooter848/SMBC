@@ -98,8 +98,9 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
 goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
-never leave. The map titles: World 2's page is HYRULE since 0.4.24 (it was SEA SIDE); the other pages (NIGHT
-HILLS...) keep their names for now and are renamed as their worlds are themed (see the open questions).
+never leave. The map titles: World 2's page is HYRULE since 0.4.24 (it was SEA SIDE) and World 3's MEGA CITY since
+0.4.26 (it was NIGHT HILLS); the other pages (MUSHROOM WOODS...) keep their names for now and are renamed as their
+worlds are themed (see the open questions).
 
 ## 2. The scripts, in game order
 
@@ -157,8 +158,10 @@ the castle pages, Larry's crystal ball and crash cards, the rift pages.
    Game Arena, or Pause → Story so far on the map)?
 2. **The map titles and art.** Answered by the owner's notes 5, 18 and 21: each world, its map page and every level
    in it, is themed after the hero freed there. World 2 came first (0.4.24): its page is HYRULE, a Zelda II
-   overworld, and its levels wear Zelda II looks in campaign play. The other pages keep their names (NIGHT HILLS...)
-   and look until their worlds are themed, and are renamed as they are.
+   overworld, and its levels wear Zelda II looks in campaign play. World 3 followed (0.4.26): its page is MEGA CITY
+   (it was NIGHT HILLS), a Mega Man 2-style city map with Dr. Light's lab and Wily's skull fortress, and its levels
+   wear Mega Man 2-style stage looks. The other pages keep their names (MUSHROOM WOODS...) and look until their worlds
+   are themed, and are renamed as they are.
 3. **World 8's gate.** The draft makes the road into the rift wait for Sophia III too (the same rule as every
    world; Toad's reminder after the credits). Or should the rift open on 8-4 alone, with Sophia III optional?
 4. **The player's hero talks** (Mario in 1-1, `<HERO>:` in Luigi's and Link's talks, the castle remarks). All are

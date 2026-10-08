@@ -103,8 +103,7 @@ describe("World 3 as Mega Man's world: Mega Man 2-style stage looks, campaign on
   });
 
   it('3-1 and its sky keep the night stage; the space station keeps its own look', () => {
-    for (const id of ['3-1', '3-1-sky'])
-      expect(campaignLevel(getLevel(id)).theme, id).toBe('megaman-stage');
+    for (const id of ['3-1', '3-1-sky']) expect(campaignLevel(getLevel(id)).theme, id).toBe('megaman-stage');
     const station = getLevel('3-1-station');
     expect(station.campaignLook).toBeUndefined();
     expect(campaignLevel(station).theme).toBe('station');
@@ -113,8 +112,11 @@ describe("World 3 as Mega Man's world: Mega Man 2-style stage looks, campaign on
   it.each(IDS)('%s: every tile it draws has a frame in its look, every solid block redrawn', (id) => {
     const { theme } = WORLD3[id]!;
     const used = framesUsed(getLevel(id));
-    for (const name of used) expect(frames[`${name}@${theme}`] ?? frames[name], `${id}: ${name}`).toBeDefined();
-    for (const name of used.filter((n) => /^(ground|brick|hard|used|castle-brick|bridge|chain|tree-top|tree-trunk)$/.test(n)))
+    for (const name of used)
+      expect(frames[`${name}@${theme}`] ?? frames[name], `${id}: ${name}`).toBeDefined();
+    for (const name of used.filter((n) =>
+      /^(ground|brick|hard|used|castle-brick|bridge|chain|tree-top|tree-trunk)$/.test(n),
+    ))
       expect(frames[`${name}@${theme}`], `${id}: ${name}@${theme}`).toBeDefined();
   });
 
@@ -152,7 +154,7 @@ describe("3-1's bonus room: a Metal Man-style factory (megaman-metal)", () => {
   });
 });
 
-describe("3-2: a Wood Man-style forest (megaman-wood)", () => {
+describe('3-2: a Wood Man-style forest (megaman-wood)', () => {
   it('stands its trees as robot-forest trees and paints a forest behind the level', () => {
     const decor = registry().sheet('decor', decorPalette('megaman-wood'));
     for (const t of ['tree-big', 'tree-small']) expect(decor.frames.has(`${t}@megaman-wood`), t).toBe(true);
@@ -163,7 +165,7 @@ describe("3-2: a Wood Man-style forest (megaman-wood)", () => {
   });
 });
 
-describe("3-3: Air Man-style cloud platforms (megaman-air)", () => {
+describe('3-3: Air Man-style cloud platforms (megaman-air)', () => {
   it('draws its treetops as cloud platforms on steel pylons, and its ledges stay solid', () => {
     const used = framesUsed(getLevel('3-3'));
     for (const n of ['tree-top', 'tree-trunk']) expect(used, n).toContain(n);
@@ -231,9 +233,10 @@ describe('the new looks', () => {
       const camp = campaignLevel(getLevel(id));
       const sheet = assets.sheet('decor', decorPalette(camp.theme));
       for (const d of camp.decor)
-        expect(sheet.frames.has(`${d.kind}@${camp.theme}`) || sheet.frames.has(d.kind), `${id}: ${d.kind}`).toBe(
-          true,
-        );
+        expect(
+          sheet.frames.has(`${d.kind}@${camp.theme}`) || sheet.frames.has(d.kind),
+          `${id}: ${d.kind}`,
+        ).toBe(true);
     }
   });
 
