@@ -281,3 +281,21 @@ export const megamanDecorFrames: Record<string, Rows> = {
   'tree-small@megaman-stage': ventMM,
   'mm-skyline': skyline,
 };
+
+/**
+ * The night stage's shapes, for World 3's other Mega Man looks (megaman-world.ts, 0.4.26), which
+ * draw them in their own palettes (the same slot roles).
+ */
+export const megamanStageArt = {
+  plate,
+  ground: groundMM,
+  brick: brickMM,
+  hard: hardMM,
+  used: usedMM,
+  bridge: bridgeMM,
+  treeTrunk: treeTrunkMM,
+  panels: castleBrickMM,
+  girder,
+  ringed,
+  mast,
+} as const;

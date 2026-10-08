@@ -9,6 +9,13 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.26): a Wood Man-style forest (`megaman-wood`): a floor of logs, plank
+;; bricks, log ends for the staircase, robot-forest trees (its tree decor, drawn by the look) and
+;; a dark forest of trunks under a leaf canopy painted behind it (world/theme-backdrop.ts); its
+;; clouds hang as leaf clumps. Elsewhere (level select, ?level=3-2) it looks as it always did.
+campaignTheme: megaman-wood
+campaignMusic: mm-wood
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

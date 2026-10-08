@@ -9,6 +9,13 @@ start: 1,6
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.26): Wily's fortress (`megaman-fortress`, in the castle family): teal
+;; steel panels, bolted plates with red warning strips, a girder bridge and a steel chain over
+;; SMB's lava, a wall of machinery with skull plates painted behind it
+;; (world/theme-backdrop.ts). Elsewhere (level select, ?level=3-4) it looks as it always did.
+campaignTheme: megaman-fortress
+campaignMusic: mm-wily
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

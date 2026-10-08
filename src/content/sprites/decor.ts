@@ -15,6 +15,13 @@ import {
   zelda2PalaceDecorPalette,
   zelda2WaterDecorPalette,
 } from './zelda2-hyrule';
+import {
+  megamanAirDecorPalette,
+  megamanFortressDecorPalette,
+  megamanMetalDecorPalette,
+  megamanWoodDecorPalette,
+  megamanWorldDecorFrames,
+} from './megaman-world';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -140,6 +147,11 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-zelda2-water': zelda2WaterDecorPalette,
   'decor-zelda2-palace': zelda2PalaceDecorPalette,
   'decor-zelda2-cave': zelda2CaveDecorPalette,
+  // World 3 as Mega Man's world (0.4.26): 3-1's bonus room, 3-2, 3-3, 3-4 (megaman-world.ts).
+  'decor-megaman-metal': megamanMetalDecorPalette,
+  'decor-megaman-wood': megamanWoodDecorPalette,
+  'decor-megaman-air': megamanAirDecorPalette,
+  'decor-megaman-fortress': megamanFortressDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -712,5 +724,7 @@ export const decorDef: SpriteDef = {
     ...brinstarDecorFrames,
     // World 2 as Hyrule (0.4.24): lake weed, cave rocks, the palace's wall, curtains and statues.
     ...zelda2HyruleDecorFrames,
+    // World 3 as Mega Man's world (0.4.26): gears, robot trees, the forest and the fortress walls.
+    ...megamanWorldDecorFrames,
   },
 };

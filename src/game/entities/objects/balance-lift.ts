@@ -19,7 +19,7 @@ const FRICTION = Math.pow(0.0006, 1 / FPS);
 const MIN_SPEED = (20 * 0.5) / FPS;
 /** ScoreValue.PULLY_FALL: popped at the rider when the rope snaps. */
 const SNAP_SCORE = 1000;
-const ROPE_COLOUR = '#d8b878';
+export const ROPE_COLOUR = '#d8b878';
 
 /**
  * Two platforms on a rope over a pair of pulleys. Standing on one lowers it and raises the

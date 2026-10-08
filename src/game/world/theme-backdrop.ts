@@ -17,6 +17,10 @@ import type { View } from '../entities/entity';
  *   band down, scrolling with the level, a red curtain every PALACE_CURTAIN_PERIOD px hanging from
  *   the wall's top (behind the ceiling where it is thick); the knight statues are the level's own
  *   decor.
+ * - `megaman-wood` (3-2 as a Wood Man-style forest, 0.4.26): a dark forest at half the camera's
+ *   speed: a trunk every FOREST_TRUNK_PERIOD px under a ragged leaf canopy.
+ * - `megaman-fortress` (3-4 as Wily's fortress, 0.4.26): a wall of dim machinery from below the
+ *   HUD's band down, scrolling with the level, a skull plate every FORTRESS_SKULL_PERIOD px.
  */
 
 /** The black band left at the top for the HUD (a vampire-hunting stage keeps its HUD on black). */
@@ -69,10 +73,39 @@ function palaceHall(r: Renderer, view: View): void {
     r.sprite(sheet, 'z2-curtain', base + 80 - cam, HALL_TOP);
 }
 
+/** 3-2's far trunks stand this many px apart (at half the camera's speed). */
+export const FOREST_TRUNK_PERIOD = 80;
+
+function woodForest(r: Renderer, view: View): void {
+  const sheet = view.assets.sheet('decor', 'decor-megaman-wood');
+  if (!sheet.frames.has('mmw-trunk')) return;
+  const cam = view.camX >> 1;
+  for (let x = -wrap(cam, FOREST_TRUNK_PERIOD); x < SCREEN_W; x += FOREST_TRUNK_PERIOD)
+    for (let y = HALL_TOP + 8; y < SCREEN_H; y += 32) r.sprite(sheet, 'mmw-trunk', x + 24, y);
+  for (let x = -wrap(cam, 64); x < SCREEN_W; x += 64) r.sprite(sheet, 'mmw-canopy', x, HALL_TOP - 8);
+}
+
+/** 3-4's skull plates repeat every this many px of the level. */
+export const FORTRESS_SKULL_PERIOD = 256;
+
+function wilyFortress(r: Renderer, view: View): void {
+  const sheet = view.assets.sheet('decor', 'decor-megaman-fortress');
+  if (!sheet.frames.has('mmf-wall')) return;
+  const cam = view.camX;
+  for (let x = -wrap(cam, 32); x < SCREEN_W; x += 32)
+    for (let y = HALL_TOP; y < SCREEN_H; y += 32) r.sprite(sheet, 'mmf-wall', x, y);
+  const first = Math.floor((cam - 64) / FORTRESS_SKULL_PERIOD) * FORTRESS_SKULL_PERIOD;
+  for (let base = first; base < cam + SCREEN_W + 64; base += FORTRESS_SKULL_PERIOD)
+    r.sprite(sheet, 'mmf-skull', base + 112 - cam, HALL_TOP + 64);
+}
+
 const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   castlevania: castleHall,
   'ninja-city': citySkyline,
   'zelda2-palace': palaceHall,
+  // World 3 as Mega Man's world (0.4.26).
+  'megaman-wood': woodForest,
+  'megaman-fortress': wilyFortress,
 };
 
 /** Whether a theme paints a backdrop. */
