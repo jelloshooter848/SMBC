@@ -3,10 +3,11 @@ import { toPx, px } from '@engine/math/units';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { FileSelectScene } from '@game/scenes/file-select';
-import { CardScene, MessageScene } from '@game/scenes/message';
+import { CardScene, CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import { MenuScene } from '@game/scenes/menu';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { captiveDialogue, CARD_COLS, freedCard } from '@game/scenes/free-hero';
+import { freedTalk } from '@game/story/script';
 import { fontText } from '@game/hud/text';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -27,10 +28,12 @@ import {
   intoBonus,
   makeGame,
   offered,
+  skipFreedTalk,
   standByLuigi,
   store,
   talkIntoMiniGame,
   useStorage,
+  type H,
 } from './heroes-harness';
 import { skipOpening } from './story-seen';
 
@@ -283,6 +286,7 @@ describe('freeing Luigi', () => {
     }
     expect(sawRules).toBe(true);
     h.tap('jump'); // the placeholder: jump passes
+    skipFreedTalk(h); // (the talk: its own sims below)
     expect(h.top()).toBeInstanceOf(CardScene);
     expect((h.top() as CardScene).lines).toContain('LUIGI IS FREE!');
     // Saved at once.
@@ -323,6 +327,7 @@ describe('freeing Luigi', () => {
     expect((round2 as unknown as { retry: boolean }).retry).toBe(true);
     h.tap('jump'); // pass
     expect(h.game.freed).toContain('luigi');
+    skipFreedTalk(h);
     h.idle(32);
     h.tap('jump');
     expect(h.top()).toBe(l);
@@ -369,6 +374,8 @@ describe('freeing Luigi', () => {
     h.idle(300); // a long round
     h.tap('jump'); // pass
     h.idle(200);
+    h.step(['attack']); // BACK skips Luigi's talk
+    h.idle(200);
     h.step(['jump']); // the freed card: back to the level
     expect(h.top()).toBe(l);
     expect(l.world.time).toBe(time);
@@ -413,6 +420,81 @@ describe('freeing Luigi', () => {
       h.step();
       expect(l.world.player.body.y).toBe(y);
     }
+  });
+});
+
+describe("the freed hero's talk (0.4.23, docs/STORY.md 2.13)", () => {
+  /** Into the stub round and pass it: Luigi's talk shows. */
+  function pass(h: H): LevelScene {
+    file();
+    const l = intoBonus(h);
+    standByLuigi(h, l);
+    talkIntoMiniGame(h, l);
+    h.tap('jump');
+    return l;
+  }
+
+  it('Luigi talks over the level, still standing there, before the freed card; OK reads every page', () => {
+    const h = makeGame();
+    const l = pass(h);
+    const pages = freedTalk('luigi', 'MARIO');
+    expect(pages.length).toBeGreaterThan(3);
+    // Free and saved already; still in the room while he talks.
+    expect(loadSave(1)?.freed).toEqual(['mario', 'luigi']);
+    for (const [i, page] of pages.entries()) {
+      const card = h.top() as CardScene;
+      expect(card).toBeInstanceOf(CardScene);
+      expect(card.lines).toEqual(page);
+      expect(captives(l)).toHaveLength(1);
+      const last = i === pages.length - 1;
+      expect(h.said.at(-1)).toBe(
+        `${page.filter((x) => x !== '').join(' ')} ${last ? 'OK to continue.' : 'OK for more, BACK to skip.'}`,
+      );
+      h.idle(CARD_GUARD_FRAMES + 1);
+      h.tap('jump');
+    }
+    expect((h.top() as CardScene).lines).toContain('LUIGI IS FREE!');
+    h.idle(32);
+    h.tap('jump');
+    expect(h.top()).toBe(l);
+    h.idle(60);
+    expect(captives(l)).toHaveLength(0);
+  });
+
+  it("the player hero speaks the <HERO>: page, and is named in Luigi's first", () => {
+    const h = makeGame();
+    pass(h);
+    expect((h.top() as CardScene).lines).toEqual(['LUIGI:', '', 'OOF... MY HEAD...', 'MARIO? IS THAT YOU?']);
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('jump');
+    expect((h.top() as CardScene).lines[0]).toBe('MARIO:');
+  });
+
+  it('BACK skips the rest of the talk, straight to the freed card; it never turns by itself', () => {
+    const h = makeGame();
+    const l = pass(h);
+    const first = h.top();
+    h.idle(3600);
+    expect(h.top()).toBe(first);
+    h.tap('attack');
+    expect((h.top() as CardScene).lines).toContain('LUIGI IS FREE!');
+    const pages = freedTalk('luigi', 'MARIO');
+    expect(h.said.some((t) => t.startsWith(pages[2]!.filter((x) => x !== '').join(' ')))).toBe(false);
+    h.idle(32);
+    h.tap('jump');
+    expect(h.top()).toBe(l);
+  });
+
+  it('the talk plays once: Luigi has left, and nobody is there to talk to again', () => {
+    const h = makeGame();
+    const l = pass(h);
+    skipFreedTalk(h);
+    h.idle(32);
+    h.tap('jump');
+    h.idle(60);
+    expect(captives(l)).toHaveLength(0);
+    h.tap('up');
+    expect(h.top()).toBe(l);
   });
 });
 

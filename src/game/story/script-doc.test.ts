@@ -12,6 +12,8 @@ import {
   CASTLE_PAGES,
   CRASH_PAGES,
   FAKES_PAGES,
+  FREED_TALKS,
+  freedTalk,
   HUB_PAGE,
   LARRY_PAGES,
   LUIGI_RUNS_PAGE,
@@ -122,6 +124,9 @@ function scriptPages(): Map<string, Page> {
   add('HUB_PAGE', HUB_PAGE);
   add('ARENA_PAGE', ARENA_PAGE);
   for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}`, p.pages);
+  // S2 (0.4.23): each hint NPC's after-freed page, and every hero's freed talk (2.4-2.11).
+  for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}.after`, p.after ?? []);
+  for (const id of Object.keys(FREED_TALKS)) list(`FREED_TALKS.${id}`, freedTalk(id, HERO));
   return out;
 }
 
@@ -144,10 +149,11 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
     const old = blocks.filter((b) => b.old);
     for (const b of old) expect(byText.has(key(b.lines)), key(b.lines)).toBe(false);
     expect(NOT_BUILT).toEqual([]);
-    // Jason's three pages and Sophia III's challenge are among the pages the doc and script share.
+    // Jason's three pages and his after page, Sophia III's challenge, and her freed talk (three
+    // pages of hers, two of Jason's) are among the pages the doc and script share.
     const firsts = blocks.filter((b) => !b.old).map((b) => b.lines[0]);
-    expect(firsts.filter((l) => l === 'JASON:')).toHaveLength(3);
-    expect(firsts.filter((l) => l === 'SOPHIA III:')).toHaveLength(1);
+    expect(firsts.filter((l) => l === 'JASON:')).toHaveLength(6);
+    expect(firsts.filter((l) => l === 'SOPHIA III:')).toHaveLength(4);
   });
 
   it('every page of script.ts is in the doc', () => {

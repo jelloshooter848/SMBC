@@ -9,7 +9,15 @@ import { miniGameFor } from '@game/minigames';
 import { SAMUS_MINIGAME } from '@game/minigames/samus';
 import { EscapeScene } from '@game/minigames/samus/scene';
 import { EscapeBot } from '@game/minigames/samus/bot';
-import { captives, file, makeGame, talkIntoMiniGame, useStorage, type H } from './heroes-harness';
+import {
+  captives,
+  file,
+  makeGame,
+  skipFreedTalk,
+  talkIntoMiniGame,
+  useStorage,
+  type H,
+} from './heroes-harness';
 
 // Freeing Samus from the cavern below 4-2 (campaign play): talk to her on the dais, the dialogue
 // and the rules card, then Zebes Escape itself, played to the ship by the escape's bot.
@@ -57,6 +65,7 @@ describe('freeing Samus: the cavern → Zebes Escape', () => {
     const bot = new EscapeBot();
     for (let i = 0; i < 9000 && h.top() === scene; i++) h.step(bot.next(scene));
     expect(h.top()).toBeInstanceOf(CardScene);
+    skipFreedTalk(h); // the freed talk (0.4.23)
     expect((h.top() as CardScene).lines).toContain('SAMUS IS FREE!');
     expect(h.game.freed).toContain('samus');
     expect(loadSave(1)?.freed).toContain('samus');

@@ -166,6 +166,20 @@ export function talkIntoMiniGame(h: H, l: LevelScene) {
 }
 
 /**
+ * A round just passed: the freed hero's talk shows (0.4.23, docs/STORY.md 2.13); BACK skips the
+ * rest of it, and the freed card follows. Returns the talk's first page.
+ */
+export function skipFreedTalk(h: H): readonly string[] {
+  const talk = h.top();
+  expect(talk).toBeInstanceOf(CardScene);
+  const lines = (talk as CardScene).lines;
+  h.idle(CARD_GUARD_FRAMES + 1);
+  h.tap('attack');
+  expect(h.top()).not.toBe(talk);
+  return lines;
+}
+
+/**
  * Larry's airship deck (any `camera: auto` level with a down pipe): play it like a player (the
  * airship bot, tests/sim/airship-bot.ts: on with the scrolling screen, jumping walls and pits,
  * dodging shots, onto the stern pipe and DOWN), unhurtable. Returns once the deck is left (or

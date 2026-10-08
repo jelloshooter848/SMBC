@@ -33,6 +33,9 @@ goomba 98 12 dx=8
 goomba 115 12 dx=8
 goomba 175 12 dx=8
 decor-castle 202 12
+;; Campaign only (0.4.23, docs/STORY.md 2.4): the villager Luigi knocked flat on his way down the
+;; bonus pipe (57), rubbing his head just before it.
+partner 55 12 who=villager campaign=true
 
 [zones]
 checkpoint 82 12

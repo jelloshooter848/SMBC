@@ -145,7 +145,11 @@ describe('8-4-end outside the campaign is v0.4.12 tile for tile: the trap pipe a
       old.camera,
       old.parent,
     ]);
-    expect(l.entities).toEqual(old.entities);
+    // (0.4.23: Fred by the trap pipe sleeps outside the campaign.)
+    expect(l.entities.filter((e) => e.props?.campaign !== true)).toEqual(old.entities);
+    expect(l.entities.filter((e) => e.props?.campaign === true)).toEqual([
+      { type: 'partner', x: 8, y: 12, props: { who: 'fred', campaign: true } },
+    ]);
     expect(l.decor).toEqual(old.decor);
     expect(l.zones.filter((z) => !('campaign' in z && z.campaign))).toEqual(old.zones);
     expect(l.zones.filter((z) => 'campaign' in z && z.campaign)).toEqual([

@@ -29,8 +29,6 @@ parent: 3-1
 ################
 
 [entities]
-;; Campaign only (0.4.13, docs/STORY.md 2.6): Dr. Light on the floor where the heroes land.
-partner 4 12 who=dr-light campaign=true
 
 [zones]
 pipe 13 12 right -> 3-1 67 10 exit=up

@@ -36,6 +36,9 @@ lift-down 141 7 len=6 dx=-16
 lift-down 141 13 len=6 dx=-16
 lift-up 156 5 len=6 dx=-16 dy=-8
 lift-up 156 13 len=6 dx=-16 dy=-8
+;; Campaign only (0.4.23, docs/STORY.md 2.4): the pipe keeper, on the warp zone's one floor tile
+;; left of its pipes (the bricks at 176 wall it in), says where the middle pipe goes.
+partner 177 12 who=pipe-keeper campaign=true
 
 [zones]
 checkpoint 97 12

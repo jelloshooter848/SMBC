@@ -110,13 +110,13 @@ describe('2-1 outside the campaign is v0.4.9 tile for tile', () => {
     expect(l.zones.filter((z) => !sleeps(z))).toEqual(old.zones);
     expect(l.entities.filter((e) => e.props?.campaign !== true)).toEqual(old.entities);
     // What sleeps: the cave mouth, the hidden path and the way into the cave (and, from 0.4.13,
-    // the old man at the start with his cave doorway and fires: tests/sim/partners.test.ts).
+    // the old man with his cave doorway and fires, by the vine since 0.4.23: tests/sim/partners.test.ts).
     expect(l.entities.filter((e) => e.props?.campaign === true)).toEqual([
       { type: 'decor', x: 220, y: 12, props: { kind: 'items:cave-mouth', campaign: true } },
-      { type: 'cave-fire', x: 7, y: 12, props: { campaign: true } },
-      { type: 'decor', x: 8, y: 12, props: { kind: 'partners:cave', campaign: true } },
-      { type: 'partner', x: 8, y: 12, props: { who: 'old-man', dx: 8, campaign: true } },
-      { type: 'cave-fire', x: 10, y: 12, props: { campaign: true } },
+      { type: 'cave-fire', x: 79, y: 12, props: { campaign: true } },
+      { type: 'decor', x: 80, y: 12, props: { kind: 'partners:cave', campaign: true } },
+      { type: 'partner', x: 80, y: 12, props: { who: 'old-man', dx: 8, campaign: true } },
+      { type: 'cave-fire', x: 82, y: 12, props: { campaign: true } },
     ]);
     expect(l.zones.filter(sleeps)).toEqual([
       ...STEPS.map((p) => ({ kind: 'path', ...p, w: 1, block: HIDDEN, oneWay: true, campaign: true })),

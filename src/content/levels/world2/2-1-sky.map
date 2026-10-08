@@ -34,6 +34,9 @@ OOOO.OOOOOOOOOOO OOOOOOOOOOOOOOOO OOOOOOOOOOOOOOOO OOOOOOOOOOOOOO.. ............
 [entities]
 vine 4 14 len=8
 lift-right 17 10 len=6 dx=-16
+;; Campaign only (0.4.23, docs/STORY.md 2.5): a fairy floats by the arrival, beside the vine the
+;; heroes climb in on (4), so nobody rides past her.
+partner 7 12 who=fairy campaign=true
 
 [zones]
 vine 71 7 -> 2-1-sky2 4 14

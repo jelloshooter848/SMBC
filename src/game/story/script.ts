@@ -240,7 +240,9 @@ export const LUIGI_RUNS_PAGE: Page = [
 
 /* ================================================================ end of S1 */
 
-/* ---------------------------------------------------------------- the partners (2.5-2.10) */
+/* ================================================================ S2 (0.4.23): the NPCs and the freeing talks */
+
+/* ---------------------------------------------------------------- the hint NPCs (2.4-2.11) */
 
 /** A partner's id (the `partner x y who=<id>` entity) and what it says when talked to (or read). */
 export interface PartnerScript {
@@ -251,37 +253,126 @@ export interface PartnerScript {
   pages: readonly Page[];
   /** The page after which a single coin pops out over it (the old man's "TAKE THIS."). */
   coinAfter?: number;
+  /**
+   * The hero this partner gives the hints for (docs/STORY.md 2.3 "Hint NPCs"). Once that hero is
+   * freed on the file it says `after` instead of `pages`; with no `after` it is gone (Fred: home).
+   */
+  hero?: string;
+  /** What it says once `hero` is freed (one page, NEW in 0.4.23). */
+  after?: readonly Page[];
+}
+
+/** The pages partner `script` says on a file where the heroes `freed` are free (story/partners.ts). */
+export function partnerPages(script: PartnerScript, freed: readonly string[]): readonly Page[] {
+  return script.hero && script.after && freed.includes(script.hero) ? script.after : script.pages;
+}
+
+/** Whether partner `script` has left on a file where `freed` are free (a hint NPC with no after line). */
+export function partnerGone(script: PartnerScript, freed: readonly string[]): boolean {
+  return script.hero !== undefined && script.after === undefined && freed.includes(script.hero);
 }
 
 export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
+  // 1-1, column 55: the Mushroom Kingdom villager Luigi knocked flat on his way down the pipe (2.4).
+  villager: {
+    verb: 'TALK',
+    name: 'A villager',
+    hero: 'luigi',
+    pages: [
+      [
+        'VILLAGER:',
+        '',
+        'OW, MY CAP! SOME GUY IN',
+        'GREEN JUST KNOCKED ME FLAT',
+        'AND JUMPED DOWN THIS PIPE!',
+      ],
+      ['VILLAGER:', '', 'HIS EYES WERE ALL GLOWY. HE', "DIDN'T EVEN SAY SORRY. BE", 'CAREFUL DOWN THERE!'],
+    ],
+    after: [
+      [
+        'VILLAGER:',
+        '',
+        'THAT WAS LUIGI? HE CAME BACK',
+        'AND SAID SORRY. NICE GUY,',
+        "WHEN HE'S NOT GLOWING.",
+      ],
+    ],
+  },
+  // 1-2's warp zone: not a hint for a hero; he says where the one working pipe goes (2.4).
+  'pipe-keeper': {
+    verb: 'TALK',
+    name: 'The pipe keeper',
+    pages: [
+      [
+        'PIPE KEEPER:',
+        '',
+        'WELCOME TO THE WARP ZONE!',
+        'I KEEP THESE PIPES. THEY',
+        'USED TO GO TO OTHER PARTS',
+        'OF THE KINGDOM...',
+      ],
+      [
+        'PIPE KEEPER:',
+        '',
+        "BUT SINCE THE KING'S BIG",
+        'SPELL, ONLY THE MIDDLE ONE',
+        'WORKS, AND IT GOES SOMEWHERE',
+        'STRANGE.',
+      ],
+      [
+        'PIPE KEEPER:',
+        '',
+        'A PLACE BETWEEN WORLDS!',
+        'STRANGE FOLK PLAY STRANGE',
+        'GAMES THERE. HAVE A LOOK,',
+        'IF YOU DARE.',
+      ],
+    ],
+  },
+  // 2-1, by the vine block (83), in front of his cave doorway (2.5).
   'old-man': {
     verb: 'TALK',
     name: 'An old man',
+    hero: 'link',
     coinAfter: 0,
     pages: [
       ['OLD MAN:', '', "IT'S DANGEROUS TO GO", 'ALONE! TAKE THIS.'],
-      ['OLD MAN:', '', 'THE SILENT ONE WAITS ABOVE', 'THE CLOUDS. A BRICK AHEAD', 'HIDES A VINE. CLIMB IT.'],
-      [
-        'OLD MAN:',
-        '',
-        'WHERE THE COINS IN THE SKY',
-        'RUN OUT, BUMP THE EMPTY AIR.',
-        'A SECOND VINE GOES HIGHER.',
-      ],
+      ['OLD MAN:', '', 'THE SILENT ONE WAITS ABOVE', 'THE CLOUDS. A BRICK RIGHT', 'UP THERE HIDES A VINE.'],
       ['OLD MAN:', '', 'ALSO, PAY ME FOR THE DOOR', 'REPAIR CHARGE. ...KIDDING.', 'THERE IS NO DOOR.'],
     ],
+    after: [['OLD MAN:', '', 'THE SILENT ONE THANKED ME.', 'WELL, HE NODDED. SAME', 'THING.']],
   },
+  // 2-1-sky, bobbing in the air at the arrival (2.5).
+  fairy: {
+    verb: 'TALK',
+    name: 'A fairy',
+    hero: 'link',
+    pages: [
+      ['FAIRY:', '', "THE SILENT ONE'S TEMPLE", 'FLOATS HIGHER STILL!'],
+      [
+        'FAIRY:',
+        '',
+        'RIDE THE CLOUDS TO WHERE',
+        'THE COINS RUN OUT. THEN',
+        'JUMP, AND BUMP THE EMPTY',
+        'AIR. A VINE WILL GROW.',
+      ],
+    ],
+    after: [['FAIRY:', '', 'YOU FOUND HIM! NOW GO ON,', 'SHOO. FAIRIES NEED NAPS.']],
+  },
+  // 3-1, on the ground before the vine block (131) (2.6).
   'dr-light': {
     verb: 'TALK',
     name: 'Doctor Light',
+    hero: 'megaman',
     pages: [
       [
         'DR. LIGHT:',
         '',
-        "AH, A VISITOR! I'VE BEEN",
-        "TRACKING MY BOY'S SIGNAL.",
-        'IT COMES FROM ABOVE THE',
-        'SKY. HIGHER THAN COINS GO.',
+        "AH, A VISITOR! MY BOY'S",
+        'SIGNAL COMES FROM ABOVE',
+        'THE SKY. A BLOCK UP THERE',
+        'HIDES A VINE. CLIMB IT!',
       ],
       [
         'DR. LIGHT:',
@@ -292,23 +383,28 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'JUMPING. BUMP THE AIR!',
       ],
     ],
+    after: [['DR. LIGHT:', '', 'THANK YOU FOR BRINGING MY', 'BOY BACK. TAKE GOOD CARE', 'OF EACH OTHER!']],
   },
+  // 4-2's Brinstar underground, before the vine block (64) (2.7). A caption: no speaker.
   chozo: {
     verb: 'READ',
     name: 'An old bird statue',
+    hero: 'samus',
     pages: [
       ['AN OLD BIRD STATUE. ITS', 'EYES GLOW. WORDS ARE CUT', 'INTO ITS BASE:'],
       [
         'THE HUNTER SLEEPS BELOW.',
-        "CLIMB THE NEXT LAND'S VINE",
-        'TO THE PIPE THAT NO LONGER',
+        'CLIMB THE VINE ABOVE TO',
+        'THE PIPE THAT NO LONGER',
         'WARPS, AND GO DOWN.',
       ],
     ],
+    after: [["THE STATUE'S EYES HAVE", 'GONE DARK. IT LOOKS...', 'PLEASED?']],
   },
   townsperson: {
     verb: 'TALK',
     name: 'A townsperson',
+    hero: 'simon',
     pages: [
       ['TOWNSPERSON:', '', 'WHAT A HORRIBLE NIGHT TO', 'HAVE A CURSE.'],
       [
@@ -321,10 +417,12 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['TOWNSPERSON:', '', 'AND HIT THE CRACKED WALL', 'WITH YOUR HEAD TO MAKE A', 'HOLE. TRUST ME.'],
     ],
+    after: [['TOWNSPERSON:', '', 'THE HUNTER IS FREE! WHAT A', 'WONDERFUL NIGHT TO HAVE NO', 'CURSE.']],
   },
   irene: {
     verb: 'TALK',
     name: 'Irene',
+    hero: 'ryu',
     pages: [
       [
         'IRENE:',
@@ -343,10 +441,12 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'LEFT WALL DOWN THERE.',
       ],
     ],
+    after: [['IRENE:', '', 'YOU FOUND HIM! HE THANKED', 'ME, THEN VANISHED. NINJAS.']],
   },
   lance: {
     verb: 'TALK',
     name: 'Lance',
+    hero: 'bill',
     pages: [
       ['LANCE:', '', 'SEEN MY PARTNER? WE CAME', 'TO STOP AN ALIEN. NOW HE', 'WORKS FOR IT.'],
       [
@@ -358,12 +458,25 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'RUN. HE NEVER RUNS.',
       ],
     ],
+    after: [['LANCE:', '', 'THANKS FOR BRINGING MY', 'PARTNER BACK. I OWE YOU A', 'SPREAD GUN.']],
+  },
+  // Fred the frog by 8-4-end's trap pipe (10): he can't talk, so his second page is a caption.
+  // Once Sophia III is freed he is gone (home with Jason).
+  fred: {
+    verb: 'TALK',
+    name: 'Fred the frog',
+    hero: 'sophia',
+    pages: [
+      ['FRED:', '', 'RIBBIT.'],
+      ['THE FROG LOOKS AT YOU,', 'THEN DOWN THE PIPE. THEN', 'AT YOU AGAIN.'],
+    ],
   },
   // Sophia III's pilot, in his secret area behind 8-4-end's trap pipe (8-4-jason): talking to him
   // sends Fred into the pool (objects/fred.ts).
   jason: {
     verb: 'TALK',
     name: 'Jason',
+    hero: 'sophia',
     pages: [
       ['JASON:', '', 'FRED! FRED, COME BACK!', '...OH, HI. HAVE YOU SEEN', 'A FROG? GREEN, THIS BIG?'],
       [
@@ -376,5 +489,144 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['JASON:', '', "MY TANK, SOPHIA! SHE'S DOWN", 'THERE TOO. FOLLOW FRED,', "PLEASE. I CAN'T SWIM."],
     ],
+    after: [['JASON:', '', "SOPHIA'S BACK, FRED'S BACK.", 'BEST DAY EVER! THANK YOU!']],
   },
 };
+
+/* ---------------------------------------------------------------- 2.13: the freed talks */
+
+/**
+ * What each freed hero says (docs/STORY.md 2.4-2.11), between the round and the freed card
+ * (scenes/free-hero.ts), by hero id; `you` is the full name of the hero who talked to them (the
+ * `<HERO>` of the doc), who speaks the `<HERO>:` pages. Each talk reveals a bit more (2.13).
+ */
+export const FREED_TALKS: Readonly<Record<string, (you: string) => Page[]>> = {
+  luigi: (you) => [
+    ['LUIGI:', '', 'OOF... MY HEAD...', `${you}? IS THAT YOU?`],
+    [`${you}:`, '', 'LUIGI! ...YOU DID SNAP OUT', "OF IT, DIDN'T YOU?"],
+    [
+      'LUIGI:',
+      '',
+      'I THINK SO! IT WAS BOWSER.',
+      "HE'S GOT A MAGIC WAND, AND",
+      "HE'S BRAINWASHING PEOPLE",
+      'TO DO HIS BIDDING!',
+    ],
+    [
+      'LUIGI:',
+      '',
+      'ALL HE WANTED FROM ME WAS',
+      'ONE THING: FIND THE',
+      "PRINCESS. AND I WASN'T THE",
+      'ONLY ONE HE ZAPPED.',
+    ],
+    [
+      'LUIGI:',
+      '',
+      'THERE WERE OTHERS IN THAT',
+      'SPELL. HEROES FROM OTHER',
+      'WORLDS! WE HAVE TO FIND',
+      'THEM AND SAVE THEM TOO.',
+    ],
+    ['LUIGI:', '', 'BUT WHERE COULD THEY BE?', "...COUNT ME IN. LET'S GO!"],
+  ],
+  link: (you) => [
+    ['LINK:', '', '...'],
+    [`${you}:`, '', 'ARE YOU OKAY?'],
+    [
+      'LINK:',
+      '',
+      '...THANK YOU. THE SHADOW',
+      'SHOWED ME HER. A PRINCESS',
+      'IN PINK, RUNNING. NOT',
+      'CAUGHT. RUNNING.',
+    ],
+    [
+      'LINK:',
+      '',
+      "THE KING'S SPELL DID NOT",
+      'TAKE ONLY ME. IT TORE MY',
+      'LAND FROM ITS PLACE AND',
+      'SET IT DOWN HERE.',
+    ],
+    ['LINK:', '', "EACH HERO'S LAND IS SEALED", 'WITH HIS MAGIC. FREE THEM,', 'AND THE SEALS WILL BREAK.'],
+    ['LINK:', '', '...I WILL COME WITH YOU.'],
+  ],
+  megaman: (you) => [
+    ['MEGA MAN:', '', 'SYSTEMS... REBOOTING. ROGUE', 'PROGRAM DELETED. THANK YOU,', `${you}!`],
+    [
+      'MEGA MAN:',
+      '',
+      'I LOGGED THE SPELL WHILE IT',
+      'RAN ME. EVERY SPELL COMES',
+      'FROM ONE SOURCE: THE WAND.',
+    ],
+    ['MEGA MAN:', '', 'WHEN YOU BREAK A SPELL, ITS', 'ENERGY SNAPS BACK INTO THE', "WAND. IT'S OVERLOADING!"],
+    ['MEGA MAN:', '', 'FREE THE OTHERS, AND IT', "WILL KEEP SPARKING. LET'S", "GO. I'M READY!"],
+  ],
+  samus: (you) => [
+    ['SAMUS:', '', 'THE PARASITE IS GONE.', `THANKS, ${you}.`, 'I OWE YOU ONE.'],
+    ['SAMUS:', '', 'MY VISOR SCANNED THAT WAND', "WHILE I WAS UNDER. IT'S NOT", "EVEN THE KING'S."],
+    ['SAMUS:', '', "IT'S REGISTERED TO ONE OF", 'HIS KIDS. LARRY. THE KING', 'STOLE IT FROM HIS OWN SON.'],
+    ['SAMUS:', '', 'A KOOPA WHO ROBS HIS OWN', "FAMILY. I'VE HUNTED WORSE.", "NOT MANY. LET'S MOVE."],
+  ],
+  simon: (you) => [
+    ['SIMON:', '', 'THE CURSE IS LIFTED. MY', 'BLOOD RUNS CLEAN AGAIN. I', `AM IN YOUR DEBT, ${you}.`],
+    ['SIMON:', '', 'UNDER THE CURSE, I HUNTED', 'YOUR PRINCESS. EVERY TRAIL', 'WENT COLD. EVERY ONE.'],
+    [
+      'SIMON:',
+      '',
+      'SHE WARNS VILLAGES BEFORE',
+      'THE KOOPAS COME. SHE LAYS',
+      'FALSE TRACKS. NO HUNTER',
+      'COULD CATCH HER.',
+    ],
+    [
+      'SIMON:',
+      '',
+      'YOUR PRINCESS IS NO DAMSEL.',
+      'BUT WE SHOULD FIND HER',
+      'BEFORE THE KING DOES. LEAD',
+      'ON.',
+    ],
+  ],
+  ryu: () => [
+    ['RYU:', '', 'THE MASK IS BROKEN. MY', 'BLADE IS MY OWN AGAIN.'],
+    ['RYU:', '', "I SAW THE KING'S PLAN WHILE", 'I SERVED HIM. HIS STAND-INS', 'ARE NEARLY SPENT.'],
+    ['RYU:', '', 'WHEN THE LAST ONE FALLS, HE', 'WILL HIDE IN HIS OWN', 'CASTLE AND FIGHT YOU', 'HIMSELF.'],
+    [
+      'RYU:',
+      '',
+      'AND I SAW YOUR PRINCESS',
+      'ONCE, ON A ROOFTOP. SHE SAW',
+      'ME TOO, AND VANISHED.',
+      'LIKE A NINJA.',
+    ],
+  ],
+  bill: (you) => [
+    ['BILL:', '', "ALIEN'S OUT OF MY HEAD.", 'FEELS GOOD. THANKS,', `${you}.`],
+    ['BILL:', '', "INTEL: THE KING'S WAND HAS", 'MORE CRACKS THAN MY OLD', "HELMET. IT'S ABOUT TO GO."],
+    ['BILL:', '', 'ONE WORLD LEFT. ONE HERO', 'LEFT. THEN WE HIT THE', "KING'S BASE. LOCK AND", 'LOAD!'],
+  ],
+  sophia: (you) => [
+    ['SOPHIA III:', '', 'SYSTEM REBOOT... PILOT', 'FOUND. HELLO, JASON.'],
+    ['JASON:', '', "SOPHIA! YOU'RE OKAY! AND", `YOU... THANKS, ${you}.`],
+    [
+      'SOPHIA III:',
+      '',
+      'ALERT. SCAN SHOWS A TEAR',
+      'IN SPACE UNDER THIS',
+      "CASTLE. THE KING'S WAND IS",
+      'HOLDING IT SHUT.',
+    ],
+    ['SOPHIA III:', '', 'BEYOND IT: A LAND NO MAP', 'SHOWS. NO KOOPA SIGNALS', 'THERE. NONE.'],
+    ['JASON:', '', "WE'RE WITH YOU. CLIMB IN", 'ANY TIME!'],
+  ],
+};
+
+/** Hero `id`'s freed talk, `you` speaking the `<HERO>:` pages; none for a hero without one. */
+export function freedTalk(id: string, you: string): Page[] {
+  return FREED_TALKS[id]?.(you) ?? [];
+}
+
+/* ================================================================ end of S2 */

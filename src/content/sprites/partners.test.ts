@@ -16,7 +16,13 @@ const SIZES: Record<string, Size> = {
   townsperson: [16, 32],
   irene: [16, 32],
   lance: [16, 32],
+  // 0.4.23 (S2): two Mushroom Kingdom folk, Toad's height, and a fairy that floats.
+  villager: [16, 24],
+  'pipe-keeper': [16, 24],
+  fairy: [16, 16],
 };
+/** Partners drawn from a hero's own sheet (entities/objects/partner.ts BORROWED). */
+const BORROWED = ['jason', 'fred'];
 const FRAMES: Record<string, Size> = {
   ...Object.fromEntries(
     Object.entries(SIZES).flatMap(([who, s]) => [
@@ -43,10 +49,12 @@ describe('partners sheet', () => {
     }
   });
 
-  it("draws every partner of the script (Jason from Sophia III's sheet: her side-view pilot)", () => {
-    expect([...Object.keys(SIZES), 'jason'].sort()).toEqual(Object.keys(PARTNERS).sort());
-    const jason = sophiaDef.frames['jason-stand'] as readonly string[];
-    expect([jason[0]?.length, jason.length]).toEqual([16, 16]);
+  it("draws every partner of the script (Jason and Fred from Sophia III's sheet: her pilot and his frog)", () => {
+    expect([...Object.keys(SIZES), ...BORROWED].sort()).toEqual(Object.keys(PARTNERS).sort());
+    for (const f of ['jason-stand', 'fred-0']) {
+      const rows = sophiaDef.frames[f] as readonly string[];
+      expect([rows[0]?.length, rows.length], f).toEqual([16, 16]);
+    }
   });
 
   it('is registered with its palette', () => {
@@ -70,7 +78,7 @@ describe('partners sheet', () => {
   });
 
   it('the idle pair differs only around the eyes (a blink, or the statue glowing brighter)', () => {
-    for (const who of Object.keys(SIZES)) {
+    for (const who of Object.keys(SIZES).filter((w) => w !== 'fairy')) {
       const [a, b] = [rows(`${who}-0`), rows(`${who}-1`)];
       const changed: number[] = [];
       a.forEach((r, y) => [...r].forEach((c, x) => c !== b[y]?.[x] && changed.push(y)));
@@ -89,6 +97,21 @@ describe('partners sheet', () => {
     expect(count(rows('lance-0'), '9')).toBeGreaterThan(8);
     expect(count(rows('townsperson-0'), 'hi')).toBeGreaterThan(100);
     expect(count(rows('irene-0'), 'ab')).toBeGreaterThan(100);
+    // The villager's cap has blue spots (our Toad's are red); the pipe keeper's green, and he
+    // carries a grey wrench; the fairy is pink with pale blue wings.
+    expect(count(rows('villager-0'), 'd')).toBeGreaterThan(12);
+    expect(count(rows('villager-0'), '9')).toBe(0);
+    expect(count(rows('pipe-keeper-0'), 'k')).toBeGreaterThan(12);
+    expect(count(rows('pipe-keeper-0'), '3')).toBeGreaterThan(5);
+    expect(count(rows('fairy-0'), 'j')).toBeGreaterThan(10);
+    expect(count(rows('fairy-0'), 'l')).toBeGreaterThan(10);
+  });
+
+  it("the fairy's pair is a wing beat: the wings move, the body stays", () => {
+    const [a, b] = [rows('fairy-0'), rows('fairy-1')];
+    expect(a).not.toEqual(b);
+    expect(a.slice(9)).toEqual(b.slice(9));
+    expect(count(b, 'l')).toBeGreaterThan(10);
   });
 
   it('the cave is a rock face with a dark doorway in the middle that meets the ground', () => {
