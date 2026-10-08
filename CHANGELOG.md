@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.29] - 2026-10-08
+
 ### Changed
 
 - World 6 is now Ryu's world (campaign only; classic play keeps SMB's 6-1 to 6-4):
@@ -734,7 +736,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.28...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.29...HEAD
+[0.4.29]: https://github.com/jelloshooter848/SMBC/compare/v0.4.28...v0.4.29
 [0.4.28]: https://github.com/jelloshooter848/SMBC/compare/v0.4.27...v0.4.28
 [0.4.27]: https://github.com/jelloshooter848/SMBC/compare/v0.4.26...v0.4.27
 [0.4.26]: https://github.com/jelloshooter848/SMBC/compare/v0.4.25...v0.4.26

@@ -1,6 +1,6 @@
 {
   "name": "smbc",
-  "version": "0.4.28",
+  "version": "0.4.29",
   "private": true,
   "description": "Super Mario Bros. Crossover: REMIX (SMBC REMIX), an unofficial browser remake of the fan game by Exploding Rabbit, with original art and music.",
   "type": "module",
