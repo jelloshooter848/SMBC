@@ -1,7 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { MapActor, MapTheme, WorldMapPage } from '@game/map/types';
-import { ARENA_CROWD_FRAMES, ARENA_NIGHT, WARP_SPACE, WATER_FRAMES } from '@content/sprites/map';
+import { ARENA_CROWD_FRAMES, ARENA_NIGHT, WARP_SPACE, WATER_FRAMES, ZEBES_NIGHT } from '@content/sprites/map';
 import { POND_CHARS } from './build';
 
 /*
@@ -37,6 +37,9 @@ import { POND_CHARS } from './build';
  *   Mega City (theme 'megaman', World 3 since 0.4.26):
  *   0  city blocks    & $  Dr. Light's lab (left, right)    "  gearworks (Metal Man's quarter)
  *   + ? /  Wily's fortress: towers and skull (left, middle, right) over  ; _ `  its walls and gate
+ *   Planet Zebes (theme 'zebes', World 4 since 0.4.27; its sea and its pond are lava):
+ *   Λ  rock spires    ψ  alien plant    χ  Chozo statue    « »  Samus's gunship (left, right)
+ *   ┌ ┬ ┐  Tourian's glass dome (left, middle, right) over  └ ┴ ┘  its base and gate
  *
  * Walkable (MAP_WALKABLE; every path tile must be one of these): # , * : o, all shores and
  * landings, = I, the mushroom caps ( O ), the treetops { - }, the gate G and the pitch F.
@@ -63,6 +66,10 @@ import { POND_CHARS } from './build';
  *   met {range, phase}   Mega City: a Met walking back and forth over `range` px, now and then
  *                        hiding under its hard hat
  *   copter {phase}       Mega City: a little propeller robot hovering in a slow loop
+ *   ripper {range, speed} Zebes: glides back and forth over `range` px, turning at each end
+ *   zoomer {size, speed, phase}  Zebes: crawls clockwise round the edges of the `size` px rock
+ *                        whose top-left is (x, y), turned to cling to each side
+ *   metroid {phase}      Zebes: floats in a slow loop, its membrane pulsing
  */
 
 interface TileDef {
@@ -168,6 +175,19 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   ';': { frame: 'wily-left' },
   _: { frame: 'wily-gate' },
   '`': { frame: 'wily-right' },
+  // Planet Zebes (World 4): rock spires, alien plants, the Chozo statue, Samus's gunship and
+  // Tourian's glass dome (its glass over its base and gate).
+  Λ: { frame: 'spire' },
+  ψ: { frame: 'alien-plant' },
+  χ: { frame: 'chozo' },
+  '«': { frame: 'ship-left' },
+  '»': { frame: 'ship-right' },
+  '┌': { frame: 'dome-top-left' },
+  '┬': { frame: 'dome-top-mid' },
+  '┐': { frame: 'dome-top-right' },
+  '└': { frame: 'dome-left' },
+  '┴': { frame: 'dome-gate' },
+  '┘': { frame: 'dome-right' },
   ...Object.fromEntries(POND_CHARS.split('').map((ch, i) => [ch, wet(`pond-${i}`)])),
 };
 
@@ -215,6 +235,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   arena: 'map-arena',
   hyrule: 'map-hyrule',
   megaman: 'map-megaman',
+  zebes: 'map-zebes',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -230,6 +251,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   arena: ARENA_NIGHT, // a night match under the lights
   hyrule: '#6888fc', // Zelda II's periwinkle daylight (2-1's field)
   megaman: '#0c1040', // Mega City's night over the skyline
+  zebes: ZEBES_NIGHT, // Zebes's deep violet night
 };
 
 /** Background colour behind the tiles. */
@@ -277,6 +299,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   arena: 'enemies-overworld',
   hyrule: 'enemies-overworld',
   megaman: 'enemies-overworld',
+  zebes: 'enemies-overworld',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -291,6 +314,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   arena: 'enemies-water',
   hyrule: 'enemies-water',
   megaman: 'enemies-water',
+  zebes: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -305,6 +329,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   arena: 'decor-night',
   hyrule: 'decor-zelda2', // Zelda II's flat clouds (CLOUD_ZELDA2)
   megaman: 'decor-megaman-stage', // the night stage's dim clouds
+  zebes: 'decor-crateria', // the surface's storm clouds
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
@@ -318,6 +343,11 @@ const COPTER = ['copter-0', 'copter-1'] as const;
 /** A Met walks MET_WALK frames of every MET_CYCLE, then hides under its hard hat. */
 const MET_CYCLE = 240;
 const MET_WALK = 180;
+const RIPPER = ['ripper-0', 'ripper-1'] as const;
+const ZOOMER = ['zoomer-0', 'zoomer-1'] as const;
+const METROID = ['metroid-0', 'metroid-1'] as const;
+/** Quarter turns for a Zoomer on the top, right, bottom and left sides of its rock. */
+const CLING = [0, 90, 180, 270] as const;
 const CHEEP = ['cheep-0', 'cheep-1'] as const;
 const SPLASH = ['splash-0', 'splash-1'] as const;
 const PODOBOO = ['podoboo-0', 'podoboo-1'] as const;
@@ -393,6 +423,10 @@ export const MAP_ACTOR_TYPES = [
   // Mega City (World 3).
   'met',
   'copter',
+  // Planet Zebes (World 4).
+  'ripper',
+  'zoomer',
+  'metroid',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -586,6 +620,37 @@ export function drawMapActor(
       r.sprite(assets.sheet('map', MAP_PAL[page.theme]), COPTER[(t >> 3) & 1] as string, cx, cy);
       return;
     }
+    case 'ripper': {
+      // Rippers face left; flipped on the way back.
+      const p = pace(t, num(actor, 'range', 48), num(actor, 'speed', 0.3));
+      r.sprite(assets.sheet('zebes', 'zebes'), RIPPER[(t >> 4) & 1] as string, x + Math.abs(p), y, p > 0);
+      return;
+    }
+    case 'zoomer': {
+      // Clockwise round the rock: along its top, down its right side, back under it, up its left.
+      const size = num(actor, 'size', 16);
+      const u = Math.floor(t * num(actor, 'speed', 0.25)) % (4 * size);
+      const side = Math.floor(u / size);
+      const v = u % size;
+      const [zx, zy] =
+        side === 0
+          ? [x + v - 8, y - 16]
+          : side === 1
+            ? [x + size, y + v - 8]
+            : side === 2
+              ? [x + size - v - 8, y + size]
+              : [x - 16, y + size - v - 8];
+      const sheet = assets.sheet('zebes', 'zebes');
+      r.sprite(sheet, ZOOMER[(t >> 3) & 1] as string, zx, zy, true, false, CLING[side]);
+      return;
+    }
+    case 'metroid': {
+      // A slow drifting loop; the membrane swells every 24 frames (a pulse, never a flash).
+      const mx = x + Math.sin(t / 61) * 14;
+      const my = y + Math.sin(t / 23) * 4;
+      r.sprite(assets.sheet('map', MAP_PAL[page.theme]), METROID[Math.floor(t / 24) & 1] as string, mx, my);
+      return;
+    }
     default:
       return;
   }
@@ -644,6 +709,14 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
       return [x, y, x + num(a, 'range', 24) + 16, y + 16];
     case 'copter':
       return [x - 12, y - 3, x + 28, y + 19];
+    case 'ripper':
+      return [x, y, x + num(a, 'range', 48) + 16, y + 16];
+    case 'zoomer': {
+      const size = num(a, 'size', 16);
+      return [x - 16, y - 16, x + size + 16, y + size + 16];
+    }
+    case 'metroid':
+      return [x - 14, y - 4, x + 30, y + 20];
     default:
       return [x, y, x + 16, y + 16];
   }

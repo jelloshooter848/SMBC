@@ -94,7 +94,7 @@ describe('World 4: PLANET ZEBES', () => {
       [-1, -1],
       [0, -1],
       [1, -1],
-    ])
+    ] as const)
       expect(at(b.x + dx, b.y + dy), `${dx},${dy}`).toBe('#');
   });
 
@@ -119,7 +119,15 @@ describe('World 4: PLANET ZEBES', () => {
     for (let f = 0; f < 2000; f += 7) {
       const drawn: { frame: string; x: number; y: number; rotate: number }[] = [];
       const r = Object.assign(new NullRenderer(), {
-        sprite(s: SpriteSheet, frame: string, x: number, y: number, _fx?: boolean, _fy?: boolean, rot?: number) {
+        sprite(
+          s: SpriteSheet,
+          frame: string,
+          x: number,
+          y: number,
+          _fx?: boolean,
+          _fy?: boolean,
+          rot?: number,
+        ) {
           drawn.push({ frame: `${s.id} ${frame}`, x, y, rotate: rot ?? 0 });
         },
       });

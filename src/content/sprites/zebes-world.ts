@@ -206,7 +206,9 @@ const groundNorfair = bubbleRock(ROCK, (x, y) => (hash(x, y, 51) < 0.08 ? '0' : 
 
 /** Cracked bubble rock (the bricks): the crust split by a black seam into four. */
 const brickNorfair = draw(16, 16, (x, y) =>
-  x === 15 || y === 15 || (y === 7 && x < 15) || (x === (y < 8 ? 7 : 3)) ? '0' : (groundNorfair[y]![x] as string),
+  x === 15 || y === 15 || (y === 7 && x < 15) || x === (y < 8 ? 7 : 3)
+    ? '0'
+    : (groundNorfair[y]![x] as string),
 );
 
 /** A length of hot pipe (the hard blocks): glowing along the top, a dark band at each joint. */
@@ -377,7 +379,8 @@ const tourianWall = draw(32, 32, (x, y) => {
  */
 const tourianTube = draw(32, 64, (x, y) => {
   if (x < 4 || x > 27) return '.';
-  if (y < 6 || y > 55) return x === 4 || x === 27 || y === 0 || y === 63 ? '0' : y === 59 && x % 6 === 3 ? 'a' : '3';
+  if (y < 6 || y > 55)
+    return x === 4 || x === 27 || y === 0 || y === 63 ? '0' : y === 59 && x % 6 === 3 ? 'a' : '3';
   if (x === 4 || x === 27) return '0';
   if (x === 5 || x === 26) return '5';
   for (const [bx, by, r] of [

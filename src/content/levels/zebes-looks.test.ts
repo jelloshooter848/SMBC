@@ -132,7 +132,9 @@ describe("World 4 as Samus's world: Metroid-style looks, campaign only", () => {
     for (const name of used)
       expect(frames[`${name}@${theme}`] ?? frames[name], `${id}: ${name}`).toBeDefined();
     for (const name of used.filter((n) =>
-      /^(ground|brick|hard|used|castle-brick|bridge|chain|tree-top|tree-trunk|mushroom-top|mushroom-stem)$/.test(n),
+      /^(ground|brick|hard|used|castle-brick|bridge|chain|tree-top|tree-trunk|mushroom-top|mushroom-stem)$/.test(
+        n,
+      ),
     ))
       expect(frames[`${name}@${theme}`], `${id}: ${name}@${theme}`).toBeDefined();
   });
