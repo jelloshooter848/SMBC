@@ -1075,7 +1075,7 @@ export class Game {
   levelScene(level: LevelData, start: LevelStart): LevelScene {
     const played = this.campaign ? campaignLevel(level, undefined, this.mapProgress.secrets) : level;
     const heroes = [this.state.character.id, ...(this.state.character2 ? [this.state.character2.id] : [])];
-    return new LevelScene(this, heroVariant(played, heroes, this.campaign), start);
+    return new LevelScene(this, heroVariant(played, heroes, this.campaign !== null), start);
   }
 
   /**

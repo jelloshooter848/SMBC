@@ -621,7 +621,14 @@ export function serializeTextMap(level: LevelData): string {
     for (const r of v.tiles) out.push(`${r.x} ${r.y} ${r.tiles.map((t) => rev.get(t) ?? '.').join('')}`);
     for (const e of v.add ?? [])
       out.push(
-        `+ ${e.type} ${e.x} ${e.y}${e.props ? ' ' + Object.entries(e.props).map(([k, val]) => `${k}=${val}`).join(' ') : ''}`,
+        `+ ${e.type} ${e.x} ${e.y}${
+          e.props
+            ? ' ' +
+              Object.entries(e.props)
+                .map(([k, val]) => `${k}=${val}`)
+                .join(' ')
+            : ''
+        }`,
       );
     for (const e of v.remove ?? []) out.push(`- ${e.type} ${e.x} ${e.y}`);
   }

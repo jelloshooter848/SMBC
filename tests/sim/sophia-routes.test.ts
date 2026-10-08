@@ -4,7 +4,8 @@ import { replay } from './sophia-reach';
 /*
  * Routes the completability search (sophia-reach.ts, sophia-sweep.test.ts) found through some
  * of the hardest levels, played again on every run: the tank, Jason and the nose-first drop must
- * keep getting Sophia III through them (4-4 at Normal is a scripted sim in sophia.test.ts). A failing replay names the step that went wrong.
+ * keep getting Sophia III through them (4-4 at Normal is a scripted sim in sophia.test.ts; the levels
+ * with her variants are in sophia-variants.test.ts). A failing replay names the step that went wrong.
  * To refresh a route after a deliberate physics change, run the sweep for that level and paste
  * the path it prints.
  */
@@ -16,17 +17,17 @@ const ROUTES: [string, string, string][] = [
     'small',
     'enter 7-4 | tank@1,6 run-right | tank@7,9 edge-right ride-drive16-right | tank@30,9 long-right | tank@36,6 hop-right | tank@40,5 edge-right | tank@54,9 edge-right | tank@70,5 edge-right | tank@85,5 edge-right | tank@96,12 edge-right | tank@111,12 long-right | tank@118,9 edge-right | tank@134,5 edge-right | tank@149,5 edge-right | tank@162,12 hop-right | tank@167,12 jump-right | tank@174,12 edge-right | tank@190,9 edge-right | tank@198,9 jump-right | tank@201,5 edge-right | tank@216,5 walk-right | tank@220,9 long-right | tank@227,5 run-right | tank@231,5 run-right | tank@235,5 edge-right | tank@247,5 jump-right | tank@251,12 walk-right | tank@252,12 jump-left | tank@250,12 jump-right | tank@254,9 edge-right | tank@262,9 jump-right | tank@265,5 edge-right | tank@280,5 walk-right | tank@284,9 edge-right | tank@294,12 jump-right | tank@298,9 edge-right | tank@310,9 edge-right | tank@318,9 edge-right',
   ],
-  // Crusher: the hanging pipe at 163 is out of the tank's reach at Normal.
+  // Crusher: climbing and hovering (Normal gets onto the hanging pipe at 163 by her variant's step).
   [
     '8-4',
     'fire',
     'enter 8-4 | tank@1,6 long-right | tank@15,12 climb-right | tank@38,12 climb-right | tank@60,12 hover-right | tank@77,5 run-right | tank@82,7 pipe | tank@81,8 pipe | enter 8-4 | tank@126,10 climb-right | tank@147,12 run-left | tank@145,12 hover-right | tank@163,5 pipe | enter 8-4 | tank@206,10 hover-right | tank@226,9 hover-right | tank@246,9 hover-right | tank@266,9 hover-right | tank@285,9 hover-right | tank@303,7 pipe | enter 8-4-water | tank@3,10 swim-3-240-right | tank@20,7 climb-right | tank@37,3 far-right | tank@57,12 edge-right | tank@67,8 jump-right | enter 8-4-end | tank@3,10 long-right | tank@12,12 edge-right | tank@26,9 hover-right',
   ],
-  // Crusher: up the wall past the one-tile shaft, nose first down the next.
+  // Crusher: climbing walls and hovering (ll-2-4 with Sophia's variant: its shafts two wide).
   [
     'll-2-4',
     'fire',
-    'enter ll-2-4 | tank@0,6 climb-right | tank@21,5 run-right | tank@23,5 down-right | tank@24,12 climb-right | tank@49,12 hover-right | tank@66,8 climb-right | tank@91,8 climb-right | tank@101,12 jump-right | tank@105,8 run-right | tank@110,12 hover-right | tank@127,9 edge-right',
+    'enter ll-2-4 | tank@0,6 climb-right | tank@21,5 climb-right | tank@43,12 hover-right | tank@63,11 hover-right | tank@81,8 climb-right | tank@99,12 long-right | tank@105,8 run-right | tank@110,12 hover-right | tank@127,9 edge-right',
   ],
   // Normal: nose first down a shaft onto the moving lift over lava.
   [

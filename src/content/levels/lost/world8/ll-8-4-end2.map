@@ -54,3 +54,10 @@ loop 112 3 8 -> 48
 pipe 35 11 down -> ll-8-4 47 10 exit=up
 pipe 99 11 down -> ll-8-4 47 10 exit=up
 pipe 203 9 right -> ll-8-4-end3 3 10 exit=up
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump short (charHorz): lifts over the lava at 7, 71
+;; and 195. Every piece the original lays for her in this area.
++ lift-h 7 13 len=4 range=3
++ lift-h 71 13 len=4 range=3
++ lift-h 195 12 len=4 range=3 dx=-8

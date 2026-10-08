@@ -42,3 +42,8 @@ princess 137 12
 [zones]
 exit 136 next=end
 pipe 14 13 down -> ll-8-4 47 10 exit=up
+
+[variant sophia classic]
+;; The original's piece for heroes who jump short (charHorz): a falling lift at 75. Every
+;; piece the original lays for her in this area.
++ lift-fall 75 11 len=4

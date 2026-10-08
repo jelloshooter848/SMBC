@@ -87,7 +87,9 @@ describe('[variant <hero>] sections', () => {
       ]),
     );
     const text = serializeTextMap(l);
-    expect(text).toContain('[variant sophia]\n5 9 BB\n6 12 .\n+ spring 6 12\n+ koopa-para-red 5 9 dx=8\n- goomba 7 12');
+    expect(text).toContain(
+      '[variant sophia]\n5 9 BB\n6 12 .\n+ spring 6 12\n+ koopa-para-red 5 9 dx=8\n- goomba 7 12',
+    );
     expect(text).toContain('[variant sophia classic]\n1 2 #');
     expect(parseTextMap(text).variants).toEqual(l.variants);
   });
@@ -124,7 +126,10 @@ describe('heroVariant', () => {
 
   it('adds and takes out spawns', () => {
     const l = parseTextMap(map(['[variant sophia]', '3 12 s', '- goomba 7 12', '- goomba 9 9']));
-    const withGoombas = { ...l, entities: [...l.entities, { type: 'goomba', x: 7, y: 12 }, { type: 'koopa-green', x: 7, y: 12 }] };
+    const withGoombas = {
+      ...l,
+      entities: [...l.entities, { type: 'goomba', x: 7, y: 12 }, { type: 'koopa-green', x: 7, y: 12 }],
+    };
     expect(heroVariant(withGoombas, ['sophia'], true).entities).toEqual([
       { type: 'koopa-green', x: 7, y: 12 },
       { type: 'spring', x: 3, y: 12 },

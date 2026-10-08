@@ -553,14 +553,15 @@ function areaStart(level: LevelData, target: NonNullable<Outcome['target']>): Wo
 
 /**
  * Plays a route reach() found (its `path`) again, step by step from each spot the last step
- * left her on: whether it still finishes the level, and the step where it went wrong if not.
+ * left her on: whether it still finishes the level, and the step where it went wrong if not
+ * (`stand`: where the last step left her standing, for a route that stops short of the end).
  */
 export function replay(
   id: string,
   power: string,
   path: string[],
   log?: (step: string, o: Outcome) => void,
-): { done: boolean; how: string | null; at: string } {
+): { done: boolean; how: string | null; at: string; stand?: { area: string; col: number } } {
   const main = getLevel(id);
   const blank = (area: string): Spot => ({
     area,
@@ -603,7 +604,8 @@ export function replay(
       return { done: true, how: `warp to ${level.id}`, at: 'end' };
     o = play(blank(level.id), level, power, null, areaStart(level, o.target));
   }
-  return { done: o.kind === 'done', how: o.how ?? null, at: 'end' };
+  const stand = o.kind === 'stand' && o.spot ? { area: o.spot.area, col: tileAt(o.spot.x) } : undefined;
+  return { done: o.kind === 'done', how: o.how ?? null, at: 'end', ...(stand ? { stand } : {}) };
 }
 
 /**
