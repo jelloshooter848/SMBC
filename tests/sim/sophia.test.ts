@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseTextMap } from '@game/level/textmap';
 import { runSim } from '@game/sim/headless';
+import { heroVariant } from '@game/level/variants';
 import { SOPHIA } from '@game/characters/sophia';
 import { CannonShot, HomingMissile, SophiaBoom, TripleMissile } from '@game/characters/sophia/weapons';
 import { Corpse } from '@game/entities/effects/effects';
@@ -1272,7 +1273,9 @@ describe('Sophia III: the 0.4.11 review', () => {
     let from = -1;
     let at = -1;
     const r = runSim({
-      level: getLevel('4-4'),
+      // As she plays it: with the original's pieces for her (0.4.33: the drops at 160 and 224 two
+      // wide, so she may drop through without the nose-first turn).
+      level: heroVariant(getLevel('4-4'), [SOPHIA.id], false),
       character: SOPHIA,
       script: { steps: [] },
       maxFrames: 6000,
