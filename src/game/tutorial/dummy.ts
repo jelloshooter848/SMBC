@@ -29,6 +29,7 @@ export class TargetDummy extends Enemy {
     super(x, feet - px(24), 12, 24);
     this.hp = DUMMY_HP;
     this.contactHurts = false;
+    this.practiceTarget = true;
     this.body.vx = 0;
     this.walkSpeed = 0;
     this.despawnMargin = null;

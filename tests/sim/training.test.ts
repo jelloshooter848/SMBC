@@ -11,7 +11,8 @@ import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
 import { SAMUS } from '@game/characters/samus';
 import { loadSave, migrateSave, newSave } from '@game/save/save-files';
-import { PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
+import { CARD_GUARD_FRAMES, PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
+import { lessonsFor, PREVIEW } from '@game/tutorial/lessons';
 import { TrainingQuestionScene } from '@game/tutorial/training';
 import type { TargetDummy } from '@game/tutorial/dummy';
 import type { Settings } from '@engine/save/settings';
@@ -92,7 +93,11 @@ describe('the training question', () => {
     expect(loadSave(1)?.tutorials).toContain('link');
     // The room's own world and state: its kit, its score.
     expect(room.player.scratch.bombs).toBe(8);
-    // Knock the dummy down with the sword: the room's own score goes up.
+    // The first chapter's card waits for a button; then knock the dummy down with the sword: the
+    // room's own score goes up.
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('jump');
+    expect(room.phase).toBe('lesson');
     const d = room.dummy as TargetDummy;
     for (let i = 0; i < 300 && d.alive; i++)
       h.step(toPx(room.player.centerX) < 128 ? ['right'] : i % 16 < 2 ? ['attack'] : []);
@@ -239,6 +244,82 @@ describe('training and the dev "All heroes" toggle', () => {
     again.game.state.character = MARIO;
     pick(again, 1);
     expect(again.top()).toBeInstanceOf(TrainingQuestionScene);
+  });
+});
+
+describe('the whole kit, previews and chapters', () => {
+  it("a first pick's lessons for kit not unlocked yet say (PREVIEW); the kit is lent, then the run's comes back", () => {
+    const h = makeGame();
+    file({ freed: ['mario', 'samus'] });
+    h.game.openFile(1);
+    pick(h, 1);
+    choose(h, 'Yes');
+    const room = h.top() as PracticeRoomScene;
+    expect(room.hero).toBe(SAMUS);
+    // A fresh Samus: no beam upgrades yet. The plain beam is hers; the Long Beam is a preview, lent.
+    room.startLesson(0);
+    expect(room.promptWrapped().join(' ')).not.toContain('(PREVIEW)');
+    room.startLesson(lessonsFor('samus').findIndex((l) => l.id === 'long-beam'));
+    expect(room.promptWrapped().join(' ').startsWith(PREVIEW.trim())).toBe(true);
+    expect(h.said.at(-1)).toMatch(/^\(preview\) long beam/i);
+    expect(room.player.scratch.beam).toBe(1);
+    skip(h);
+    h.until(() => h.top() instanceof LevelScene);
+    expect(h.game.state.character).toBe(SAMUS);
+    expect(h.game.state.kit).toEqual({});
+  });
+
+  it('a hero with the kit unlocked sees no preview for it; from pause the lessons come in the same order', () => {
+    const h = makeGame();
+    file(
+      { freed: ['mario', 'samus'], tutorials: ['mario', 'samus'], kit: { beam: 2, missiles: 5 } },
+      SAMUS.id,
+    );
+    h.game.openFile(1);
+    pick(h, 0);
+    h.until(() => h.top() instanceof LevelScene);
+    h.idle(30);
+    const kit = { ...h.game.state.kit };
+    expect(kit.beam).toBe(2);
+    h.tap('start');
+    choose(h, 'Training');
+    const room = h.top() as PracticeRoomScene;
+    expect(room.lessons.map((l) => l.id)).toEqual(lessonsFor('samus').map((l) => l.id));
+    const marks = room.lessons.map((l) => room.preview(l));
+    const ids = room.lessons.map((l) => l.id);
+    expect(marks[ids.indexOf('long-beam')]).toBe(false);
+    expect(marks[ids.indexOf('ice-beam')]).toBe(false);
+    expect(marks[ids.indexOf('wave-beam')]).toBe(true);
+    // The room's lessons change its kit (the wave beam lent, missiles spent)...
+    room.startLesson(ids.indexOf('wave-beam'));
+    expect(room.player.scratch.beam).toBe(3);
+    skip(h);
+    // ...but the run's kit is restored.
+    expect(h.game.state.kit).toEqual(kit);
+  });
+
+  it('Skip chapter from the menu moves on to the next chapter; a skipped room ends as skipped', () => {
+    const h = makeGame();
+    file({ freed: ['mario', 'luigi'] });
+    h.game.openFile(1);
+    pick(h, 1);
+    choose(h, 'Yes');
+    const room = h.top() as PracticeRoomScene;
+    expect(room.chapters.map((c) => c.id)).toEqual(['moves', 'fire']);
+    h.idle(4);
+    h.tap('start');
+    choose(h, 'Skip chapter');
+    expect([room.phase, room.chapter]).toEqual(['chapter', 1]);
+    h.idle(4);
+    h.tap('start');
+    choose(h, 'Skip chapter');
+    // Past the last chapter: READY!, waiting for a button.
+    expect(room.phase).toBe('ready');
+    h.idle(200);
+    expect(h.top()).toBe(room);
+    h.tap('jump');
+    h.until(() => h.top() instanceof LevelScene);
+    expect(h.game.state.character).toBe(LUIGI);
   });
 });
 

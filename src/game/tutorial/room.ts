@@ -319,6 +319,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     this.phase = 'chapter';
     this.phaseT = 0;
     this.dummyShoots = false;
+    this.tracker.reset();
     const n = ch.lessons.length;
     this.game.deps.announcer?.say(
       `${lead}Chapter ${c + 1} of ${this.chapters.length}: ${spoken(ch.title)}. ${n} ${n === 1 ? 'lesson' : 'lessons'}. Any button to start.`,
@@ -538,8 +539,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     if (src.owner instanceof Projectile) {
       tags.push('shot', src.owner.kind);
       if (src.owner.spec.wave) tags.push('wave');
-    }
-    else if (src.kind === 'stomp') tags.push('stomp');
+    } else if (src.kind === 'stomp') tags.push('stomp');
     else if (src.owner === null && src.kind === 'sword') {
       tags.push('melee');
       if (p.scratch.downThrust) tags.push('down-thrust');

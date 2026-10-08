@@ -513,8 +513,10 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
       title: 'TOOLS',
       room: 'gear',
       lessons: [
-        lesson('boomerang', '[USE TOOL:special] THROWS THE BOOMERANG. [TOOLS:select] PICKS ANOTHER TOOL.', (t) =>
-          t.shotKinds.has('boomerang'),
+        lesson(
+          'boomerang',
+          '[USE TOOL:special] THROWS THE BOOMERANG. [TOOLS:select] PICKS ANOTHER TOOL.',
+          (t) => t.shotKinds.has('boomerang'),
         ),
         lesson(
           'bomb',
@@ -533,8 +535,10 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
           '[TOOLS:select] TO THE JUMP SPELL. [USE TOOL:special], THEN JUMP TO THE HIGH LEDGE!',
           (t) => t.toolUses.has('jump') && t.highestStand <= t.room.ledgeTop,
         ),
-        lesson('shield-spell', '[TOOLS:select] TO THE SHIELD SPELL. [USE TOOL:special]: HALF DAMAGE FOR A WHILE.', (t) =>
-          t.toolUses.has('shield'),
+        lesson(
+          'shield-spell',
+          '[TOOLS:select] TO THE SHIELD SPELL. [USE TOOL:special]: HALF DAMAGE FOR A WHILE.',
+          (t) => t.toolUses.has('shield'),
         ),
         lesson(
           'fire-spell',
@@ -550,7 +554,13 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
       id: 'water',
       title: 'WATER',
       room: 'water',
-      lessons: [lesson('swim', 'IN WATER [SWIM:jump] STROKES UP. SWIM UP TO THE SURFACE!', (t) => t.topReached <= SURFACE_PX)],
+      lessons: [
+        lesson(
+          'swim',
+          'IN WATER [SWIM:jump] STROKES UP. SWIM UP TO THE SURFACE!',
+          (t) => t.topReached <= SURFACE_PX,
+        ),
+      ],
     },
   ],
   megaman: [
@@ -573,7 +583,11 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
       title: 'MOVES',
       room: 'gear',
       lessons: [
-        lesson('slide', 'HOLD DOWN AND PRESS [JUMP:jump] TO SLIDE. SLIDE UNDER THE LOW WALL!', (t) => t.slid && t.tunnel),
+        lesson(
+          'slide',
+          'HOLD DOWN AND PRESS [JUMP:jump] TO SLIDE. SLIDE UNDER THE LOW WALL!',
+          (t) => t.slid && t.tunnel,
+        ),
         lesson(
           'rush',
           '[WEAPON:select] TO RUSH. [USE WEAPON:special], THEN LAND ON THE COIL TO FLY UP!',
@@ -620,13 +634,19 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
     {
       id: 'beams',
       title: 'BEAMS',
-      room: 'practice',
+      room: 'gear',
       lessons: [
-        lesson('shoot', '[SHOOT:attack] THE DUMMY WITH YOUR BEAM.', (t) => t.dummyHits.has('beam'), undefined, setKit({ beam: 0 })),
+        lesson(
+          'shoot',
+          '[SHOOT:attack] THE DUMMY WITH YOUR BEAM.',
+          (t) => t.dummyHits.has('beam'),
+          undefined,
+          setKit({ beam: 0 }),
+        ),
         lesson('aim-up', 'HOLD UP TO AIM STRAIGHT UP, AND [SHOOT:attack].', (t) => t.shotsUp > 0),
         lesson(
           'long-beam',
-          'LONG BEAM: FULL RANGE. GO TO THE LEFT WALL AND [SHOOT:attack] THE DUMMY.',
+          'LONG BEAM: FULL RANGE. GO TO THE FAR LEFT AND [SHOOT:attack] THE DUMMY.',
           (t) => t.dummyHits.has('far'),
           (run) => k(run, 'beam') >= 1,
           setKit({ beam: 1 }),
@@ -745,10 +765,11 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
         ),
         lesson(
           'double-shot',
-          'DOUBLE SHOT: TWO SUB-WEAPONS AT ONCE. [THROW:special] TWICE, QUICKLY!',
+          'DOUBLE SHOT: TWO SUB-WEAPONS AT ONCE. [THROW:special] TWO AXES, QUICKLY!',
           (t) => t.maxShotsOut >= 2,
           (run) => k(run, 'multi') >= 2,
-          setKit({ multi: 2, tool: 0 }),
+          // The axe: its long arc leaves time for a second throw.
+          setKit({ multi: 2, tool: 1 }),
         ),
       ],
     },
@@ -785,7 +806,9 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
       title: 'AIM',
       room: 'practice',
       lessons: [
-        lesson('shoot', '[SHOOT:attack] THE DUMMY. YOUR BULLETS NEVER RUN OUT.', (t) => t.dummyHits.has('shot')),
+        lesson('shoot', '[SHOOT:attack] THE DUMMY. YOUR BULLETS NEVER RUN OUT.', (t) =>
+          t.dummyHits.has('shot'),
+        ),
         lesson(
           'aim',
           'AIM IN 8 WAYS: HOLD UP, OR UP AND A DIRECTION. [SHOOT:attack] 3 WAYS.',
@@ -832,8 +855,14 @@ export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = {
           'DRIVE RIGHT AND [JUMP:jump] THE GAP. HOLD JUMP TO GO HIGHER.',
           (t) => t.gapCrossings > 0,
         ),
-        lesson('cannon', "[SHOOT:attack] THE DUMMY WITH SOPHIA'S CANNON.", (t) => t.dummyHits.has('sophia-cannon')),
-        lesson('cannon-up', 'HOLD UP AND [SHOOT:attack]: THE CANNON FIRES STRAIGHT UP.', (t) => t.shotsUp > 0),
+        lesson('cannon', "[SHOOT:attack] THE DUMMY WITH SOPHIA'S CANNON.", (t) =>
+          t.dummyHits.has('sophia-cannon'),
+        ),
+        lesson(
+          'cannon-up',
+          'HOLD UP AND [SHOOT:attack]: THE CANNON FIRES STRAIGHT UP.',
+          (t) => t.shotsUp > 0,
+        ),
       ],
     },
     {
@@ -896,4 +925,3 @@ export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = Obje
 export function lessonsFor(heroId: string): readonly TrainingLesson[] {
   return LESSONS[heroId] ?? [];
 }
-

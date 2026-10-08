@@ -41,10 +41,57 @@ function vocabulary(id: string): string[] {
  */
 const KIT: Record<string, string[]> = {
   luigi: ['high-jump', 'slippery-stop', 'fireball'],
-  link: ['sword', 'down-thrust', 'up-thrust', 'shield', 'boomerang', 'bomb', 'jump-spell', 'shield-spell', 'fire-spell', 'swim'],
-  megaman: ['shoot', 'charge', 'slide', 'rush', 'weapon', 'saw', 'leaf', 'flame', 'knuckle', 'bolt', 'seabed-jump'],
-  samus: ['shoot', 'aim-up', 'long-beam', 'ice-beam', 'wave-beam', 'missile', 'missile-switch', 'morph-ball', 'bomb', 'bomb-jump'],
-  simon: ['whip', 'crouch-whip', 'committed-jump', 'dagger', 'hand-axe', 'holy-water', 'cross', 'stopwatch', 'hearts', 'chain-whip', 'morning-star', 'double-shot'],
+  link: [
+    'sword',
+    'down-thrust',
+    'up-thrust',
+    'shield',
+    'boomerang',
+    'bomb',
+    'jump-spell',
+    'shield-spell',
+    'fire-spell',
+    'swim',
+  ],
+  megaman: [
+    'shoot',
+    'charge',
+    'slide',
+    'rush',
+    'weapon',
+    'saw',
+    'leaf',
+    'flame',
+    'knuckle',
+    'bolt',
+    'seabed-jump',
+  ],
+  samus: [
+    'shoot',
+    'aim-up',
+    'long-beam',
+    'ice-beam',
+    'wave-beam',
+    'missile',
+    'missile-switch',
+    'morph-ball',
+    'bomb',
+    'bomb-jump',
+  ],
+  simon: [
+    'whip',
+    'crouch-whip',
+    'committed-jump',
+    'dagger',
+    'hand-axe',
+    'holy-water',
+    'cross',
+    'stopwatch',
+    'hearts',
+    'chain-whip',
+    'morning-star',
+    'double-shot',
+  ],
   ryu: ['slash', 'cling', 'wall-jump', 'throwing-star', 'windmill', 'fire-wheel', 'jump-slash'],
   bill: ['shoot', 'aim', 'prone', 'jump-shoot', 'mg', 'spread', 'laser', 'flame-gun', 'swim-shoot'],
   sophia: ['drive-jump', 'cannon', 'cannon-up', 'hover', 'missile', 'homing', 'wall-climb', 'jason'],
@@ -60,9 +107,15 @@ describe('hero lessons', () => {
     expect(Object.keys(LESSONS).every((id) => CHARACTERS.some((c) => c.id === id))).toBe(true);
     // The kit's own lists: every Mega Man weapon, Simon sub-weapon, Ryu art and Bill gun.
     expect(lessonsFor('megaman').map((l) => l.id)).toEqual(expect.arrayContaining(WEAPONS.map((w) => w.id)));
-    expect(lessonsFor('simon').map((l) => l.id)).toEqual(expect.arrayContaining(SUB_WEAPONS.map((w) => w.id)));
-    expect(lessonsFor('ryu').map((l) => l.id)).toEqual(expect.arrayContaining(NINPO_ARTS.map((a) => (a.id === 'slash' ? 'jump-slash' : a.id))));
-    expect(lessonsFor('bill').map((l) => l.id)).toEqual(expect.arrayContaining(GUNS.slice(1).map((g) => g.id)));
+    expect(lessonsFor('simon').map((l) => l.id)).toEqual(
+      expect.arrayContaining(SUB_WEAPONS.map((w) => w.id)),
+    );
+    expect(lessonsFor('ryu').map((l) => l.id)).toEqual(
+      expect.arrayContaining(NINPO_ARTS.map((a) => (a.id === 'slash' ? 'jump-slash' : a.id))),
+    );
+    expect(lessonsFor('bill').map((l) => l.id)).toEqual(
+      expect.arrayContaining(GUNS.slice(1).map((g) => g.id)),
+    );
   });
 
   it('lessons come in short chapters: 1 to 6 lessons each, titled to fit the heading', () => {
