@@ -56,6 +56,15 @@ const RESTYLES: Readonly<Record<string, { theme: Theme; music: string; hero: str
   '3-3': { theme: 'megaman-air', music: 'mm-air', hero: 'megaman' },
   '3-4': { theme: 'megaman-fortress', music: 'mm-wily', hero: 'megaman' },
   '4-2': { theme: 'brinstar', music: 'brinstar', hero: 'samus' },
+  // World 4 as Samus's world, Zebes (0.4.27).
+  '4-1': { theme: 'crateria', music: 'crateria', hero: 'samus' },
+  '4-1-bonus': { theme: 'brinstar', music: 'brinstar', hero: 'samus' },
+  '4-2-intro': { theme: 'crateria', music: 'crateria', hero: 'samus' },
+  '4-2-exit': { theme: 'crateria', music: 'crateria', hero: 'samus' },
+  '4-2-warp': { theme: 'crateria', music: 'crateria', hero: 'samus' },
+  '4-2-bonus': { theme: 'brinstar', music: 'brinstar', hero: 'samus' },
+  '4-3': { theme: 'norfair', music: 'norfair', hero: 'samus' },
+  '4-4': { theme: 'tourian-lair', music: 'tourian', hero: 'samus' },
   '5-4': { theme: 'castlevania', music: 'cv-hall', hero: 'simon' },
   '6-2': { theme: 'ninja-city', music: 'ng-city', hero: 'ryu' },
   '6-2-sky': { theme: 'ninja-city', music: 'ng-city', hero: 'ryu' },
@@ -173,10 +182,8 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
       '2-top-secret',
       // (3-1's bonus room is a Metal Man-style factory since 0.4.26; the space station keeps its own)
       '3-1-station',
-      '4-2-intro',
-      '4-2-exit',
-      '4-2-warp',
-      '4-2-bonus',
+      // (4-2's overworld areas, the vine's warp room and the bonus room take Zebes looks since
+      // 0.4.27; Samus's cavern and Larry's airship keep their own)
       '4-2-cavern',
       '4-2-airship',
       '4-2-larry',

@@ -77,6 +77,9 @@ const SONG_IDS = [
   'mm-wood',
   'mm-air',
   'mm-wily',
+  // World 4 as Samus's world, Zebes (0.4.27): the planet's surface, 4-3's Norfair.
+  'crateria',
+  'norfair',
 ];
 
 const SFX_IDS = [

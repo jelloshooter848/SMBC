@@ -80,6 +80,10 @@ describe('themes', () => {
       'megaman-wood',
       'megaman-air',
       'megaman-fortress',
+      // World 4 as Samus's world, Zebes (0.4.27): 4-1 and 4-2's overworld areas, 4-3, 4-4
+      'crateria',
+      'norfair',
+      'tourian-lair',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -143,6 +147,9 @@ describe('themes', () => {
       'megaman-wood': 'mm-wood',
       'megaman-air': 'mm-air',
       'megaman-fortress': 'mm-wily',
+      crateria: 'crateria',
+      norfair: 'norfair',
+      'tourian-lair': 'tourian',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

@@ -448,6 +448,9 @@ const decorFrames: Record<string, Size> = {
   'mmf-skull': [32, 32],
   'tree-big@megaman-wood': [16, 48],
   'tree-small@megaman-wood': [16, 32],
+  // World 4 as Samus's world, Zebes (0.4.27).
+  'zt-wall': [32, 32],
+  'zt-tube': [32, 64],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -516,6 +519,10 @@ describe('tile sprites', () => {
         'tiles-megaman-wood',
         'tiles-megaman-air',
         'tiles-megaman-fortress',
+        // World 4 as Samus's world, Zebes (0.4.27)
+        'tiles-crateria',
+        'tiles-norfair',
+        'tiles-tourian-lair',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -604,6 +611,10 @@ describe('decor sprites', () => {
         'decor-megaman-wood',
         'decor-megaman-air',
         'decor-megaman-fortress',
+        // World 4 as Samus's world, Zebes (0.4.27)
+        'decor-crateria',
+        'decor-norfair',
+        'decor-tourian-lair',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);
