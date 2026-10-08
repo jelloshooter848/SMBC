@@ -198,7 +198,8 @@ cloud-1 222 3
 henge 15 12
 henge 28 12
 henge 52 12
-henge 80 12
+;; (0.4.23: moved on from 80, where the old man's cave stands now.)
+henge 97 12
 henge 111 12
 henge 145 12
 henge 171 12
