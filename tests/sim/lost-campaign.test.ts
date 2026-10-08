@@ -26,6 +26,7 @@ import type { MapNode, PageId, WorldMapPage } from '@game/map/types';
 import type { WorldEvent } from '@game/world/world';
 import { loadProgress } from '@engine/save/progress';
 import type { Action } from '@engine/input/actions';
+import type { Settings } from '@engine/save/settings';
 import type { Announcer } from '@engine/a11y/announcer';
 import { ALL_STORY } from './story-seen';
 
@@ -55,6 +56,9 @@ function makeGame() {
     ctx: { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
     getLevel,
     characters: CHARACTERS,
+    // Dev mode on: the files below lift the Chapter 2 gate (map menu "Chapter 2 gate: open",
+    // tests/sim/chapter-gate.test.ts) so the Lost Kingdom can be played as before.
+    settings: { dev: true } as Settings,
     announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
   });
   const p1 = new ScriptedInput({ steps: [] });
@@ -105,6 +109,7 @@ function file(over: Partial<SaveFile> = {}): SaveFile {
   // Toad's map scenes (0.4.13; the rift in toad-guide.test.ts) are seen.
   const s = {
     ...newSave(1, MARIO.id),
+    devGateOpen: true,
     gameCleared: true,
     secrets: ['bonus-1'],
     story: [...ALL_STORY],

@@ -916,7 +916,7 @@ describe('the Chapter 2 gate (chapterGated)', () => {
       expect(chapterGated(id, false), id).toBe(true);
   });
 
-  it('leaves the Mushroom Kingdom alone: SMB levels, 1-0, sub-areas and Larry\'s airship (Chapter 1)', () => {
+  it("leaves the Mushroom Kingdom alone: SMB levels, 1-0, sub-areas and Larry's airship (Chapter 1)", () => {
     for (const id of ['1-0', '1-1', '1-2-exit', '4-2', '4-2-airship', '4-2-larry', '8-4', '2-top-secret'])
       expect(chapterGated(id, false), id).toBe(false);
   });

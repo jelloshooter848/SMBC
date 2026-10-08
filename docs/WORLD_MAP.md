@@ -276,6 +276,43 @@ ll-9 → ll-10 (A) → ll-11 → ll-12 → ll-13 (D)`, off the right edge, with 
 - Every condition reads the save file alone (campaign rules; the global NES progress store in
   `src/engine/save/progress.ts` is only for non-campaign play).
 
+## The Chapter 2 gate (pre-release, 0.4.20)
+
+Until Chapter 2 (the Lost Kingdom, docs/ROADMAP.md) ships, the campaign plays exactly as before up
+to the Lost Kingdom's map pages (8-4's credits, Toad's rift pages, the road onto Lost World 1, the
+Worlds menu), but **no Lost Kingdom level can be entered**. JUMP on such a node shows a card over
+the map instead (read out; OK, MENU or BACK closes it):
+
+```
+THE PATH IS BLOCKED!
+A STRANGE FORCE SEALS THE
+WAY INTO THE LOST KINGDOM.
+COME BACK IN CHAPTER 2!
+```
+
+The hero stays on the node and can walk, open the menu, save and quit. Nothing is written to the
+file by being blocked.
+
+- **One constant:** `CHAPTER_GATE` in `src/game/map/rules.ts`. Set it to `false` (or delete it,
+  `rules.chapterGated` and its two callers) when Chapter 2 is released.
+- **What is gated** (`rules.chapterGated(levelId, open)`): every `ll-` level (Lost 1-1 to 8-4,
+  World 9, A-D, their sub-areas) and any level on a page of the `ll` group. Larry's airship
+  (`4-2-airship`, `4-2-larry`) is Chapter 1 and stays open. The six Koopaling airships (Chapter 2
+  side quest, not built yet) will sit behind Lost warp zones, so they are behind the gate too.
+- **Where:** the map's level entry (`WorldMapScene.updateIdle`, the one place the map starts a
+  level) checks `Game.chapterBlocked` before character select. As a backstop, `Game.goToLevel`
+  and `Game.startLevel` send a campaign start into gated content back to the map with the card (no
+  SMB level warps into the Lost Kingdom; a Lost warp pipe ends on the map, `campaignWarpToMap`;
+  deaths and continues only restart a level already entered). A file saved on a Lost page opens
+  on that page and is blocked on entry.
+- **Not gated:** anything outside the campaign (`Game.campaign` null): the dev level select,
+  `?level=`, custom and shared levels, play-tests, the Mini Game Arena.
+- **Dev lift:** the map menu's **Chapter 2 gate: closed / open** row (dev mode only, after "Unlock
+  all") sets the file's `SaveFile.devGateOpen` (optional, `true` or missing/false). It counts only
+  while dev mode is on (`Game.chapterGateOpen`), like "Unlock all" and "All heroes"; it is kept per
+  file so a test file can stay open across sessions. Campaign sims that play the Lost Kingdom open
+  it this way (tests/sim/lost-campaign.test.ts).
+
 ## Progress, reveals and saves
 
 - `MapProgress`: `cleared` (main level ids beaten through their **normal** exit, `1-0` included
