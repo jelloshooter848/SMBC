@@ -24,6 +24,7 @@ const THEMES = [
   'zebes',
   'transylvania',
   'ninja',
+  'contra',
 ];
 
 const tileFrames = [
@@ -119,6 +120,24 @@ const tileFrames = [
   'temple-left',
   'temple-gate',
   'temple-right',
+  // Bill's GALUGA ISLAND (World 7, 0.4.30).
+  'jungle',
+  'pillbox',
+  'falls-0',
+  'falls-1',
+  'pylon',
+  'base-top-left',
+  'base-top-mid',
+  'base-top-right',
+  'base-left',
+  'base-gate',
+  'base-right',
+  'lair-top-left',
+  'lair-top-mid',
+  'lair-top-right',
+  'lair-left',
+  'lair-maw',
+  'lair-right',
   ...Array.from({ length: WATER_FRAMES }, (_, f) => [
     `water-${f}`,
     `surf-${f}`,
@@ -178,6 +197,13 @@ const actorFrames: Record<string, Size> = {
   'ninja-leap': T16,
   'masked-0': T16,
   'masked-1': T16,
+  // GALUGA ISLAND's weapon capsules, soldiers and helicopter (World 7, 0.4.30).
+  'capsule-0': T16,
+  'capsule-1': T16,
+  'soldier-0': T16,
+  'soldier-1': T16,
+  'chopper-0': T16,
+  'chopper-1': T16,
 };
 
 function expectFrame(name: string, [w, h]: Size): void {

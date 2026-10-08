@@ -472,6 +472,15 @@ const decorFrames: Record<string, Size> = {
   'ngp-peaks': [128, 64],
   'ngt-wall': [64, 64],
   'ngt-pillar': [32, 128],
+  // World 7 as Bill's world (0.4.30).
+  'cs-peaks': [128, 64],
+  'cs-base': [96, 48],
+  'tree-big@contra-snow': [16, 48],
+  'tree-small@contra-snow': [16, 32],
+  'cb-wall': [64, 64],
+  'csh-jungle': [64, 48],
+  'cl-wall': [64, 64],
+  'cl-heart': [64, 64],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -557,6 +566,12 @@ describe('tile sprites', () => {
         'tiles-ng-harbor',
         'tiles-ng-pass',
         'tiles-ng-temple',
+        // World 7 as Bill's world (0.4.30)
+        'tiles-contra-snow',
+        'tiles-contra-base',
+        'tiles-contra-shore',
+        'tiles-contra-river',
+        'tiles-contra-lair',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -662,6 +677,12 @@ describe('decor sprites', () => {
         'decor-ng-harbor',
         'decor-ng-pass',
         'decor-ng-temple',
+        // World 7 as Bill's world (0.4.30)
+        'decor-contra-snow',
+        'decor-contra-base',
+        'decor-contra-shore',
+        'decor-contra-river',
+        'decor-contra-lair',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

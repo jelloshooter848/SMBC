@@ -87,6 +87,9 @@ const SONG_IDS = [
   'ng-sewer',
   'ng-harbor',
   'ng-pass',
+  // World 7 as Bill's world (0.4.30): 7-1's snowfield, 7-2's jungle river.
+  'contra-snow',
+  'contra-river',
 ];
 
 const SFX_IDS = [

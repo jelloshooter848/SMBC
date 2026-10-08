@@ -98,6 +98,12 @@ describe('themes', () => {
       'ng-harbor',
       'ng-pass',
       'ng-temple',
+      // World 7 as Bill's world (0.4.30): 7-1, its bonus room, 7-2's way in and out, its water area, 7-4
+      'contra-snow',
+      'contra-base',
+      'contra-shore',
+      'contra-river',
+      'contra-lair',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -175,6 +181,11 @@ describe('themes', () => {
       'ng-harbor': 'ng-harbor',
       'ng-pass': 'ng-pass',
       'ng-temple': 'ng-boss',
+      'contra-snow': 'contra-snow',
+      'contra-base': 'contra-stage',
+      'contra-shore': 'contra-jungle',
+      'contra-river': 'contra-river',
+      'contra-lair': 'contra-lair',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

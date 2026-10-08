@@ -84,6 +84,13 @@ const RESTYLES: Readonly<Record<string, { theme: Theme; music: string; hero: str
   '6-2-sky': { theme: 'ninja-city', music: 'ng-city', hero: 'ryu' },
   // 7-3's Contra jungle came first (0.4.9), the model for the others.
   '7-3': { theme: 'contra-jungle', music: 'contra-jungle', hero: 'bill' },
+  // World 7 as Bill's world (0.4.30); 7-3 keeps its jungle, its camp and the falls their own looks.
+  '7-1': { theme: 'contra-snow', music: 'contra-snow', hero: 'bill' },
+  '7-1-bonus': { theme: 'contra-base', music: 'contra-stage', hero: 'bill' },
+  '7-2-intro': { theme: 'contra-shore', music: 'contra-jungle', hero: 'bill' },
+  '7-2': { theme: 'contra-river', music: 'contra-river', hero: 'bill' },
+  '7-2-exit': { theme: 'contra-shore', music: 'contra-jungle', hero: 'bill' },
+  '7-4': { theme: 'contra-lair', music: 'contra-lair', hero: 'bill' },
 };
 const IDS = Object.keys(RESTYLES);
 
@@ -205,6 +212,10 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
       '5-4-dungeon',
       // (6-2's coin rooms and water area take World 6 looks since 0.4.29; Ryu's dojo keeps its own)
       '6-2-dojo',
+      // (World 7's areas take Contra looks since 0.4.30; Bill's camp and the waterfall climb keep
+      // their own)
+      '7-3-camp',
+      '7-3-falls',
       '1-1',
     ];
     for (const id of own) {
