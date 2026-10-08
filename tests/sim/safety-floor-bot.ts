@@ -190,6 +190,8 @@ export function dropSim(
       }
       if (p.inWater) {
         if (toPx(b.y + b.h) <= (landedRow - 2) * 16) swamUp = true;
+        // A seabed walker (Mega Man, Samus: no stroke, 0.4.25) holds a full floor jump instead.
+        if (p.profile.swim?.mode === 'seabed') return f % 60 < 45 ? ['jump'] : [];
         return f % 8 < 2 ? ['jump'] : [];
       }
       if (backT > 0) {
