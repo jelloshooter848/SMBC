@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.23] - 2026-10-08
+
 ### Added
 
 - A new file opens at Peach's castle: Toad brings her handwritten note, and the story starts there.
@@ -649,7 +651,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.22...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.23...HEAD
+[0.4.23]: https://github.com/jelloshooter848/SMBC/compare/v0.4.22...v0.4.23
 [0.4.22]: https://github.com/jelloshooter848/SMBC/compare/v0.4.21...v0.4.22
 [0.4.21]: https://github.com/jelloshooter848/SMBC/compare/v0.4.20...v0.4.21
 [0.4.20]: https://github.com/jelloshooter848/SMBC/compare/v0.4.19...v0.4.20
