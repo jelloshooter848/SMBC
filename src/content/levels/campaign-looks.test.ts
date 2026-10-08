@@ -175,7 +175,11 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
       const camp = campaignLevel(getLevel(id));
       const sheet = assets.sheet('decor', decorPalette(camp.theme));
       for (const d of camp.decor) {
-        const has = sheet.frames.has(`${d.kind}@${camp.theme}`) || sheet.frames.has(d.kind);
+        // Link's sky palace (2-1-sky2) places pieces of its own sheet: `zelda2-sky:<frame>`.
+        const own = /^(zelda2-sky):(.+)$/.exec(d.kind);
+        const has = own
+          ? assets.sheet(own[1] as string).frames.has(own[2] as string)
+          : sheet.frames.has(`${d.kind}@${camp.theme}`) || sheet.frames.has(d.kind);
         expect(has, `${id}: ${d.kind}`).toBe(true);
       }
     }
@@ -188,9 +192,10 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
 
   it('nothing animates: the looks are still frames (reduce flashing has nothing to calm)', () => {
     // A decor kind that animates is named for its frames (`smb3:propeller-0`); the looks place none.
+    // The one other sheet a look places from is the sky palace's, whose frames are all still.
     for (const id of IDS)
       for (const d of campaignLevel(getLevel(id)).decor)
-        expect(d.kind, `${id}: ${d.kind}`).not.toMatch(/-0$|:/);
+        expect(d.kind.replace(/^zelda2-sky:/, ''), `${id}: ${d.kind}`).not.toMatch(/-0$|:/);
   });
 
   it("5-4 and 6-2 paint their hall and skyline behind; 4-2's warp room stays bare for the anchor", () => {

@@ -16,7 +16,7 @@ import type { Action } from '@engine/input/actions';
 
 // The 2-1 coin heaven's way up (owner design): past the end of the clouds an up-arrow of coins,
 // three small cloud platforms, and a hidden vine block over the middle one (71,7) whose vine
-// climbs to the sky ruins (2-1-sky2), where a drop off the clouds lands in 2-1 at column 162.
+// climbs to Link's sky palace (2-1-sky2), where a drop off its balcony lands in 2-1 at column 162.
 
 const level = (id: string): LevelData =>
   parseTextMap(
@@ -192,7 +192,7 @@ describe('2-1 sky: the hidden vine block over the second to last cloud platform'
   );
 });
 
-describe('2-1 sky ruins (2-1-sky2)', () => {
+describe('2-1 sky palace (2-1-sky2)', () => {
   it('arrives climbing the vine, steps off onto the clouds, and going right drops into 2-1 at 162', () => {
     const bot = newBot();
     const r = runSim({
@@ -207,14 +207,18 @@ describe('2-1 sky ruins (2-1-sky2)', () => {
     expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({
       target: { level: '2-1', x: 162, y: 0, exitDir: 'fall' },
     });
-    // Walked the whole floor first: the drop is at the right end, past the temple.
-    expect(r.playerX).toBeGreaterThan(55 * 16);
+    // Crossed the whole palace first: the drop is past the balcony's end, beyond the hall.
+    expect(r.playerX).toBeGreaterThan(69 * 16);
     expect(r.world.time).toBeLessThanOrEqual(321);
     expect(r.world.time).toBeGreaterThan(250);
   });
 
-  it('every hero lands from the arrival vine and makes it across the ruins to the drop', () => {
-    for (const c of CHARACTERS) {
+  it('every hero lands from the arrival vine, and any way the run-right bot goes ends back in 2-1', () => {
+    // (Crossing the whole palace, up to Link and on, hero by hero: sky-palace.test.ts.) Not Ryu:
+    // this bot jumps the altar's one-tile steps from right beside them, and Ryu clings to a wall he
+    // jumps into, so it hangs on a step's side for good; a player (or sky-palace.test.ts's walker,
+    // hopping from half a tile out) clears them.
+    for (const c of CHARACTERS.filter((h) => h.id !== 'ryu')) {
       const bot = newBot();
       const r = runSim({
         level: level('2-1-sky2'),
@@ -223,7 +227,7 @@ describe('2-1 sky ruins (2-1-sky2)', () => {
         maxFrames: 3000,
         controller: (w) => (w.player.vine || w.player.frozen ? [] : autoPlayer(w, bot)),
       });
-      expect(r.playerX, c.name).toBeGreaterThan(55 * 16);
+      expect(r.playerX, c.name).toBeGreaterThan(16 * 16);
       expect(r.outcome, c.name).toBe('pipe');
       expect(
         r.events.find((e) => e.type === 'pipe'),

@@ -95,9 +95,9 @@ describe("2-1 sky palace (2-1-sky2): Link's palace on the clouds above the coin 
   it('five screens: the landing, a sky stair of palace blocks, the gate, the hall and a balcony', () => {
     expect(l.width).toBe(80);
     // The stair: two floating runs of palace ledge blocks, each a step up, over open sky.
-    for (let x = 17; x <= 20; x++) expect(tile(l, x, 12), `${x}`).toBe(T.USED);
-    for (let x = 23; x <= 26; x++) expect(tile(l, x, 11), `${x}`).toBe(T.USED);
-    for (const x of [15, 16, 21, 22, 27, 28])
+    for (let x = 16; x <= 20; x++) expect(tile(l, x, 12), `${x}`).toBe(T.USED);
+    for (let x = 22; x <= 27; x++) expect(tile(l, x, 11), `${x}`).toBe(T.USED);
+    for (const x of [15, 21, 28])
       for (let y = 2; y <= 14; y++) expect(solid(x, y), `${x},${y}`).toBe(false);
     // The hall: palace masonry floor (broken by one two-wide gap) and a ceiling on rows 2-3.
     for (let x = 29; x <= 69; x++) {
