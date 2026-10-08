@@ -20,7 +20,7 @@ import { Toad } from '@game/entities/objects/toad';
 import { Princess } from '@game/entities/objects/princess';
 import { campaignLevel } from '@game/level/campaign';
 import { CASTLE_PAGES, STORY_NOT_OVER } from '@game/story/script';
-import { CREDITS, CreditsScene, creditsLines } from '@game/scenes/credits';
+import { CREDITS, CREDITS_NAME, CreditsScene, creditsLines } from '@game/scenes/credits';
 import { Game } from '@game/scenes/game';
 import { LevelScene } from '@game/scenes/level';
 import type { LevelData } from '@game/level/schema';
@@ -422,11 +422,13 @@ describe('8-4 credits', () => {
   it('the story adds "...BUT THE STORY ISN\'T OVER." right after THANKS FOR PLAYING', () => {
     const lines = creditsLines(true);
     const i = lines.indexOf('THANKS FOR PLAYING');
-    expect(lines.slice(i, i + 2 + STORY_NOT_OVER.length)).toEqual([
+    // The game's name follows THANKS FOR PLAYING (two lines since the rebrand), then the story's lines.
+    expect(lines.slice(i, i + 1 + CREDITS_NAME.length + STORY_NOT_OVER.length)).toEqual([
       'THANKS FOR PLAYING',
-      'SUPER MARIO BROS. CROSSOVER',
+      ...CREDITS_NAME,
       ...STORY_NOT_OVER,
     ]);
+    expect(CREDITS_NAME).toEqual(['SUPER MARIO BROS. CROSSOVER', 'REMIX']);
     expect(creditsLines(false)).toEqual(CREDITS);
   });
 
