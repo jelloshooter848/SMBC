@@ -185,6 +185,14 @@ describe('hero items: blocks in the campaign', () => {
     expect(shroom.item).toBe('mushroom');
   });
 
+  it("Mario taking another hero's item gets SMB's item and 1000 points once (as in SMB)", () => {
+    const { w, p } = campaignWorld(MARIO);
+    const before = w.state.score;
+    w.takeHeroItem(p, new HeroItem(5, 9, 'long-beam', 'samus', {}));
+    expect(w.state.score - before).toBe(1000);
+    expect(p.powerState).toBe('big');
+  });
+
   it("the Top Secret Area's fixed blocks: R the grow item, W the entry or default power", () => {
     const { w } = campaignWorld(LINK, { grown: true });
     expect((strike(w, 14) as HeroItem).item).toBe('heart-container');
