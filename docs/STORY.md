@@ -410,7 +410,881 @@ reads `TALK TO THE <LOCAL>` (for example `TALK TO THE HEALER`) and `TALK` (up) p
 welcome names the hero, says who did it (the locals don't know who: "someone"), and says where the hero was last
 seen. Some carry a clue that Toad's old world entries carried (World 4's airship, World 8's turnip).
 
-### 2.4 (being rewritten)
+### 2.4 World 1: the Mushroom Kingdom (Luigi)
+
+**Toad's World 1 scene.** REPLACES World 1's entry (`WORLD_ENTRY['smb-1']`). **Trigger:** back on the World 1 map
+after 1-0 (cleared or skipped), before the road to 1-1 draws in. A major scene: Toad walks in. Once per file. We
+don't know about the brainwashing yet.
+
+```text
+TOAD:
+
+MARIO, DID YOU SEE THAT?!
+BOWSER USED MAGIC TO BRING
+PEOPLE HERE FROM OTHER
+UNIVERSES!
+```
+
+```text
+TOAD:
+
+AND HE WANTS THEM TO FIND
+THE PRINCESS FOR HIM. WE
+HAVE TO FIND HER FIRST!
+```
+
+```text
+TOAD:
+
+WHERE'S LUIGI? WE NEED TO
+FIND HIM. WE COULD REALLY
+USE HIS HELP FINDING
+PEACH.
+```
+
+**1-1: Luigi runs.** NEW. **Trigger:** the first time 1-1 starts on the file while Luigi is not freed, once the
+player stands free. Once per file. **Staging:** play holds. Brainwashed Luigi (the captive palette, a few wand
+sparkles drifting off him) stands about eight columns ahead of Mario, his back turned. He looks over his shoulder,
+sees Mario, flinches, and **runs off the right of the screen** at full speed (toward the pipe at column 57). A beat
+later Mario's card shows; then play goes on. Said: _A brainwashed Luigi looks back and runs away._
+
+```text
+MARIO:
+
+WAS THAT LUIGI? WHY DID HE
+LOOK LIKE THAT? LET'S GO
+FIND HIM!
+```
+
+(Mario is the only hero a file has before Luigi is freed, so his name is written in.)
+
+**Hint NPC: a villager.** NEW partner (`villager`). A Mushroom Kingdom villager (a Toad-like sprite in a different
+cap colour, so he is not our Toad) on the ground at **1-1 column 55**, right before the pipe at column 57 that
+leads down to Luigi's bonus room. He rubs his head.
+
+```text
+VILLAGER:
+
+OW, MY CAP! SOME GUY IN
+GREEN JUST KNOCKED ME FLAT
+AND JUMPED DOWN THIS PIPE!
+```
+
+```text
+VILLAGER:
+
+HIS EYES WERE ALL GLOWY. HE
+DIDN'T EVEN SAY SORRY. BE
+CAREFUL DOWN THERE!
+```
+
+After Luigi is freed:
+
+```text
+VILLAGER:
+
+THAT WAS LUIGI? HE CAME BACK
+AND SAID SORRY. NICE GUY,
+WHEN HE'S NOT GLOWING.
+```
+
+**Luigi, captive:** KEEP (the shared first card, 2.13, then `I KNOW NO <HERO>... RACE ME TO THE FLAG`).
+
+**Luigi, freed.** NEW. The first freed hero, so the first to explain what is going on. **Trigger:** the race won,
+before the freed card.
+
+```text
+LUIGI:
+
+OOF... MY HEAD...
+<HERO>? IS THAT YOU?
+```
+
+```text
+<HERO>:
+
+LUIGI! ...YOU DID SNAP OUT
+OF IT, DIDN'T YOU?
+```
+
+```text
+LUIGI:
+
+I THINK SO! IT WAS BOWSER.
+HE'S GOT A MAGIC WAND, AND
+HE'S BRAINWASHING PEOPLE
+TO DO HIS BIDDING!
+```
+
+```text
+LUIGI:
+
+ALL HE WANTED FROM ME WAS
+ONE THING: FIND THE
+PRINCESS. AND I WASN'T THE
+ONLY ONE HE ZAPPED.
+```
+
+```text
+LUIGI:
+
+THERE WERE OTHERS IN THAT
+SPELL. HEROES FROM OTHER
+WORLDS! WE HAVE TO FIND
+THEM AND SAVE THEM TOO.
+```
+
+```text
+LUIGI:
+
+BUT WHERE COULD THEY BE?
+...COUNT ME IN. LET'S GO!
+```
+
+**1-2: the pipe keeper.** NEW partner (`pipe-keeper`). Not a hint for a hero: the owner asked for someone to say
+where the warp zone's pipe goes. An old villager with a wrench, at **1-2 column 174**, in the warp zone, just left
+of its pipes (178-186; in the campaign only the middle one works, and it opens the road to the Warp Zone hub).
+
+```text
+PIPE KEEPER:
+
+WELCOME TO THE WARP ZONE!
+I KEEP THESE PIPES. THEY
+USED TO GO TO OTHER PARTS
+OF THE KINGDOM...
+```
+
+```text
+PIPE KEEPER:
+
+BUT SINCE THE KING'S BIG
+SPELL, ONLY THE MIDDLE ONE
+WORKS, AND IT GOES SOMEWHERE
+STRANGE.
+```
+
+```text
+PIPE KEEPER:
+
+A PLACE BETWEEN WORLDS!
+STRANGE FOLK PLAY STRANGE
+GAMES THERE. HAVE A LOOK,
+IF YOU DARE.
+```
+
+**Castle 1-4** (a Goomba). The hero's remark (2.3a, reaching the axe):
+
+```text
+<HERO>:
+
+WAIT... THAT'S NOT BOWSER!
+IT'S A GOOMBA IN A BOWSER
+SUIT!
+```
+
+The castle's pages: REPLACES `CASTLE_PAGES['1-4']`. Page 1 also carries what Toad's old map card after 1-4 said
+(that card is gone).
+
+```text
+THANK YOU <HERO>!
+
+THAT GOOMBA WAS UNDER A
+SPELL! THE KING DRESSED
+IT UP AS HIMSELF.
+```
+
+Then, 2 s later (second page, same box):
+
+```text
+THE REAL KING HIDES BEHIND
+STAND-INS. HE FLED EAST,
+WAND AND ALL.
+```
+
+**The gate, World 1 to 2.** The reminder (Luigi not freed; hint line `SEALED - FREE LUIGI FIRST`):
+
+```text
+TOAD:
+
+THE WAY ON IS SEALED BY
+BOWSER'S MAGIC... AND WE
+STILL HAVEN'T FOUND LUIGI!
+```
+
+```text
+TOAD:
+
+THAT VILLAGER IN 1-1 SAW
+WHERE HE WENT. LET'S GO
+BACK AND LOOK!
+```
+
+The gate scene. Bowser's cutaway: he is admiring the wand when its star **sputters**, a weak puff of grey smoke.
+
+```text
+BOWSER:
+
+HUH? WHAT WAS THAT? MY WAND
+JUST... SPUTTERED.
+```
+
+```text
+BOWSER:
+
+...PROBABLY NOTHING. KEEP
+LOOKING FOR THAT PRINCESS!
+```
+
+The seal shatters, the road to World 2 draws in, and Toad walks in:
+
+```text
+TOAD:
+
+WHOA! DID YOU SEE THAT? WE
+MUST BE WEAKENING HIS
+SPELLS!
+```
+
+```text
+TOAD:
+
+AND THE WAY TO ANOTHER
+WORLD JUST OPENED UP.
+LET'S GO!
+```
+
+### 2.5 World 2: Hyrule (Link)
+
+**The welcome: a healer.** A townswoman in a Zelda II town's style (long dress, a basket), beside World 2's start
+node. Hint line `TALK TO THE HEALER`.
+
+```text
+HEALER:
+
+WELCOME TO HYRULE,
+TRAVELER. OR WHAT'S LEFT OF
+IT. A SPELL DRAGGED OUR
+LAND HERE, SEA AND ALL.
+```
+
+```text
+HEALER:
+
+OUR HERO LINK HAS BEEN
+BRAINWASHED BY SOMEONE.
+PLEASE HELP!
+```
+
+```text
+HEALER:
+
+HE WAS LAST SEEN NEAR 2-1.
+AN OLD MAN THERE KNOWS
+THINGS. HE ALWAYS DOES.
+```
+
+```text
+HEALER:
+
+LET ME HEAL YOU BEFORE YOU
+GO. ...OH. YOU'RE FINE.
+NEVER MIND.
+```
+
+**Hint NPC: the old man, moved to the vine.** MOVES (owner): from 2-1's start (column 8) to **beside the vine block
+(column 83)**: he stands on the ground a column or two before it, in front of his cave doorway (the
+`partners:cave` decor moves with him; where the ground there allows). His third page (the sky's second vine) moves
+to the fairy below, so each NPC gives the step in front of it.
+
+```text
+OLD MAN:
+
+IT'S DANGEROUS TO GO
+ALONE! TAKE THIS.
+```
+
+_(A single coin pops out over him, as now.)_
+
+```text
+OLD MAN:
+
+THE SILENT ONE WAITS ABOVE
+THE CLOUDS. A BRICK RIGHT
+UP THERE HIDES A VINE.
+```
+
+```text
+OLD MAN:
+
+ALSO, PAY ME FOR THE DOOR
+REPAIR CHARGE. ...KIDDING.
+THERE IS NO DOOR.
+```
+
+After Link is freed:
+
+```text
+OLD MAN:
+
+THE SILENT ONE THANKED ME.
+WELL, HE NODDED. SAME
+THING.
+```
+
+**Hint NPC: a fairy in the clouds.** NEW partner (`fairy`, owner). A small Zelda-style fairy bobbing in the air by
+**2-1-sky's arrival** (column 7, beside the vine the player climbs in on at column 4), so nobody rides past her.
+
+```text
+FAIRY:
+
+THE SILENT ONE'S TEMPLE
+FLOATS HIGHER STILL!
+```
+
+```text
+FAIRY:
+
+RIDE THE CLOUDS TO WHERE
+THE COINS RUN OUT. THEN
+JUMP, AND BUMP THE EMPTY
+AIR. A VINE WILL GROW.
+```
+
+After Link is freed:
+
+```text
+FAIRY:
+
+YOU FOUND HIM! NOW GO ON,
+SHOO. FAIRIES NEED NAPS.
+```
+
+**Link, captive:** KEEP (`THE SHADOW... HOLDS ME...`, the Shadow Keep).
+
+**Link, freed.** NEW. He says little, but what he says matters: Peach is free and running, and the spell dragged
+whole lands here and sealed them.
+
+```text
+LINK:
+
+...
+```
+
+```text
+<HERO>:
+
+ARE YOU OKAY?
+```
+
+```text
+LINK:
+
+...THANK YOU. THE SHADOW
+SHOWED ME HER. A PRINCESS
+IN PINK, RUNNING. NOT
+CAUGHT. RUNNING.
+```
+
+```text
+LINK:
+
+THE KING'S SPELL DID NOT
+TAKE ONLY ME. IT TORE MY
+LAND FROM ITS PLACE AND
+SET IT DOWN HERE.
+```
+
+```text
+LINK:
+
+EACH HERO'S LAND IS SEALED
+WITH HIS MAGIC. FREE THEM,
+AND THE SEALS WILL BREAK.
+```
+
+```text
+LINK:
+
+...I WILL COME WITH YOU.
+```
+
+**Castle 2-4** (a Koopa Troopa). The hero's remark:
+
+```text
+<HERO>:
+
+ANOTHER FAKE! JUST A KOOPA
+TROOPA WEARING THE KING'S
+FACE.
+```
+
+The castle's pages (REPLACES `CASTLE_PAGES['2-4']`):
+
+```text
+THANK YOU <HERO>!
+
+A KOOPA UNDER THE SPELL,
+IN THE KING'S SHAPE AGAIN.
+```
+
+```text
+THE KOOPAS SEARCHED EVERY
+CAVE IN THIS LAND. NO
+PRINCESS. JUST OLD MEN.
+```
+
+**The gate, World 2 to 3.** The reminder (hint line `SEALED - FREE LINK FIRST`):
+
+```text
+TOAD:
+
+THE WAY ON IS STILL SEALED,
+AND LINK IS STILL UNDER THE
+SPELL. THAT OLD MAN IN 2-1
+KNOWS SOMETHING, I BET.
+```
+
+The gate scene. Bowser's cutaway: the wand **sparks** in his face and singes his eyebrows (two little puffs of smoke
+over his eyes).
+
+```text
+BOWSER:
+
+OW! MY EYEBROWS! THE WAND
+JUST SPARKED AT ME!
+```
+
+```text
+BOWSER:
+
+WHO'S MESSING WITH MY
+SPELLS? FIND THAT PRINCESS,
+YOU FOOLS!
+```
+
+```text
+TOAD:
+
+ANOTHER SEAL, GONE! EVERY
+HERO WE FREE TAKES A BITE
+OUT OF HIS MAGIC.
+```
+
+```text
+TOAD:
+
+THE NEXT WORLD IS OPEN. I
+CAN HEAR MACHINES HUMMING
+OVER THERE...
+```
+
+### 2.6 World 3: the year 20XX (Mega Man)
+
+**The welcome: a lab robot.** A small round helper robot in Mega Man's style (one antenna, a blinking light),
+beside World 3's start node. Hint line `TALK TO THE LAB ROBOT`.
+
+```text
+LAB ROBOT:
+
+BEEP! WELCOME TO THE YEAR
+20XX. WELL, A CHUNK OF IT.
+YOUR KINGDOM HAS ODD
+PHYSICS.
+```
+
+```text
+LAB ROBOT:
+
+OUR HERO MEGA MAN HAS BEEN
+REPROGRAMMED BY SOMEONE.
+PLEASE HELP! BEEP!
+```
+
+```text
+LAB ROBOT:
+
+HIS LAST SIGNAL CAME FROM
+3-1. DR. LIGHT IS THERE,
+TRACKING IT.
+```
+
+**Hint NPC: Dr. Light, moved to the vine.** MOVES (suggested): from 3-1's pipe room (`3-1-bonus`, which many players
+never enter) to **3-1's ground beside the vine block (column 131)**, at about column 128, so the hint cannot be
+missed. His first page now points at the vine; the second is as before. (If the owner prefers the pipe room, page
+1's last two lines go back to `IT COMES FROM ABOVE THE / SKY. HIGHER THAN COINS GO.`)
+
+```text
+DR. LIGHT:
+
+AH, A VISITOR! MY BOY'S
+SIGNAL COMES FROM ABOVE
+THE SKY. A BLOCK UP THERE
+HIDES A VINE. CLIMB IT!
+```
+
+```text
+DR. LIGHT:
+
+MY OLD TELEPORTER ANSWERS
+TO A HIDDEN BLOCK. PAST
+THE CLOUD COINS, KEEP
+JUMPING. BUMP THE AIR!
+```
+
+After Mega Man is freed:
+
+```text
+DR. LIGHT:
+
+THANK YOU FOR BRINGING MY
+BOY BACK. TAKE GOOD CARE
+OF EACH OTHER!
+```
+
+**Mega Man, captive:** KEEP (`ERROR... ROGUE PROGRAM`, the dark copy).
+
+**Mega Man, freed.** NEW. He logged the spell while it ran him: it all comes from one wand, and every broken spell
+overloads it (the rule the gates show).
+
+```text
+MEGA MAN:
+
+SYSTEMS... REBOOTING. ROGUE
+PROGRAM DELETED. THANK YOU,
+<HERO>!
+```
+
+```text
+MEGA MAN:
+
+I LOGGED THE SPELL WHILE IT
+RAN ME. EVERY SPELL COMES
+FROM ONE SOURCE: THE WAND.
+```
+
+```text
+MEGA MAN:
+
+WHEN YOU BREAK A SPELL, ITS
+ENERGY SNAPS BACK INTO THE
+WAND. IT'S OVERLOADING!
+```
+
+```text
+MEGA MAN:
+
+FREE THE OTHERS, AND IT
+WILL KEEP SPARKING. LET'S
+GO. I'M READY!
+```
+
+**Castle 3-4** (a Buzzy Beetle). The hero's remark:
+
+```text
+<HERO>:
+
+A BUZZY BEETLE?! SO THAT'S
+WHY THE SHELL WAS SO SHINY.
+```
+
+The castle's pages (REPLACES `CASTLE_PAGES['3-4']`; page 2 KEEP, Peach's clue 1: she is out there, a step ahead,
+and never says where):
+
+```text
+THANK YOU <HERO>!
+
+A BUZZY BEETLE, UNDER THE
+SPELL. STILL NOT THE KING.
+```
+
+```text
+SOMEONE SLIPPED THE KOOPAS
+A MAP SIGNED - P. IT LED
+THEM STRAIGHT INTO A
+SWAMP. HA!
+```
+
+**The gate, World 3 to 4.** The reminder (hint line `SEALED - FREE MEGA MAN FIRST`):
+
+```text
+TOAD:
+
+STILL SEALED. MEGA MAN MUST
+STILL BE OUT THERE. DR.
+LIGHT IN 3-1 IS TRACKING
+HIS SIGNAL!
+```
+
+The gate scene. Bowser's cutaway: the wand **fires by itself**; a bolt blasts his own portrait off the wall behind
+the throne.
+
+```text
+BOWSER:
+
+WHAT NOW?! THE WAND FIRED
+BY ITSELF! MY PORTRAIT! I
+LOOKED SO GOOD IN THAT!
+```
+
+```text
+BOWSER:
+
+THOSE HEROES ARE SUPPOSED
+TO WORK FOR ME! WHO KEEPS
+LETTING THEM GO?!
+```
+
+```text
+TOAD:
+
+THAT SEAL CRACKED LIKE AN
+EGG! HIS SPELLS ARE GETTING
+WEAKER, ALL RIGHT.
+```
+
+```text
+TOAD:
+
+ANOTHER WORLD IS OPEN. IT
+LOOKS LIKE... A PLANET?
+CAREFUL, IT'S DARK IN THERE.
+```
+
+### 2.7 World 4: Planet Zebes (Samus, and Larry Koopa)
+
+**The welcome: a scientist.** A researcher in a lab coat and goggles, beside World 4's start node. The last page
+keeps the airship clue from Toad's old World 4 entry. Hint line `TALK TO THE SCIENTIST`.
+
+```text
+SCIENTIST:
+
+WELCOME TO PLANET ZEBES...
+OR A PIECE OF IT. OUR
+WHOLE RESEARCH BASE CAME
+ALONG FOR THE RIDE.
+```
+
+```text
+SCIENTIST:
+
+THE HUNTER WHO GUARDS US,
+SAMUS, HAS BEEN BRAINWASHED
+BY SOMEONE. PLEASE HELP!
+```
+
+```text
+SCIENTIST:
+
+HER LAST READING CAME FROM
+DEEP UNDER 4-2. THERE'S AN
+OLD BIRD STATUE IN THERE.
+```
+
+```text
+SCIENTIST:
+
+ALSO, A KOOPA AIRSHIP KEEPS
+CIRCLING 4-2. KEEP AN EYE
+ON THE SKY!
+```
+
+**Hint NPC: the Chozo statue, moved into 4-2.** MOVES: from 4-1's pipe room (`4-1-bonus`) into **4-2 itself**, on
+the floor of its Brinstar-look underground at about **column 61**, just before the vine block (64,5) that leads up
+to the vine area and its one working pipe. Its card has no speaker (prompt `READ`).
+
+```text
+AN OLD BIRD STATUE. ITS
+EYES GLOW. WORDS ARE CUT
+INTO ITS BASE:
+```
+
+```text
+THE HUNTER SLEEPS BELOW.
+CLIMB THE VINE ABOVE TO
+THE PIPE THAT NO LONGER
+WARPS, AND GO DOWN.
+```
+
+After Samus is freed:
+
+```text
+THE STATUE'S EYES HAVE
+GONE DARK. IT LOOKS...
+PLEASED?
+```
+
+**Samus, captive:** KEEP (the parasite, the countdown).
+
+**Samus, freed.** NEW. Her visor scanned the wand: it is not even the king's. It is Larry's (whom the player may
+meet on the airship at the end of 4-2, before or after this).
+
+```text
+SAMUS:
+
+THE PARASITE IS GONE.
+THANKS, <HERO>.
+I OWE YOU ONE.
+```
+
+```text
+SAMUS:
+
+MY VISOR SCANNED THAT WAND
+WHILE I WAS UNDER. IT'S NOT
+EVEN THE KING'S.
+```
+
+```text
+SAMUS:
+
+IT'S REGISTERED TO ONE OF
+HIS KIDS. LARRY. THE KING
+STOLE IT FROM HIS OWN SON.
+```
+
+```text
+SAMUS:
+
+A KOOPA WHO ROBS HIS OWN
+FAMILY. I'VE HUNTED WORSE.
+NOT MANY. LET'S MOVE.
+```
+
+#### 4-2: Larry Koopa
+
+KEEP. The king stole Larry's wand; Larry fights with a cheap spare (his sprite holds one, and he fires rings), and
+helps the hunt because the king promised it back once the princess is caught.
+
+**Larry in his room** (`4-2-larry`, `scenes/airship.ts`). **Trigger:** the first time the hero rises out of the
+room's pipe in a run (not again on TRY AGAIN). The fight starts when it closes.
+
+```text
+LARRY:
+
+HEY! THE KING TOOK MY
+WAND, AND ALL I GOT WAS
+THIS LOUSY SPARE!
+```
+
+```text
+LARRY:
+
+HE SAYS I GET IT BACK
+WHEN THE PRINCESS IS
+CAUGHT. SO BUZZ OFF!
+```
+
+**Larry beaten**: his `BWAH!` stays. **The crystal ball** (REPLACES the second page of `STORY_CRYSTAL_BALL_PAGES`;
+26 columns): every hero of worlds 1-3 is already free by now (the gates), so the ball's use changes: from now on
+each world's hiding level shows its hero's shadow on the map **from the first arrival** in that world, not only
+after the level is cleared (NEW).
+
+```text
+LARRY DROPPED HIS
+CRYSTAL BALL! IT SEES
+WHEREVER THE WAND'S SPELL
+IS AT WORK...
+```
+
+```text
+...SO FROM NOW ON, THE MAP
+SHOWS WHERE EACH HERO
+HIDES!
+```
+
+**After the airship crash** (World 4 map, right after the crash cutscene; a major scene). Page 1 KEEP; page 2
+REPLACES.
+
+```text
+TOAD:
+
+NICE LANDING! I MADE THE
+WRECK INTO A BONUS SPOT.
+WATCH OUT FOR HAMMER BROS.
+```
+
+```text
+TOAD:
+
+AND THAT CRYSTAL BALL WILL
+SHOW US WHERE EVERY HERO
+HIDES, IN EVERY WORLD WE
+REACH. HANDY!
+```
+
+The bonus spot's texts (`TOAD'S BONUS HOUSE`, `BEAT THE HAMMER BRO TO REOPEN`, `THE HAMMER BROS ARE BEATEN!`,
+the Toad House's `PICK A BOX...`) need no change.
+
+**Castle 4-4** (a Spiny). The hero's remark:
+
+```text
+<HERO>:
+
+A SPINY! NO WONDER THAT
+SUIT LOOKED SO POINTY.
+```
+
+The castle's pages (REPLACES `CASTLE_PAGES['4-4']`; the old page 2, the wand fizzling, is what the gates show now):
+
+```text
+THANK YOU <HERO>!
+
+A SPINY UNDER THE SPELL,
+IN A KING SUIT. OUCH.
+```
+
+```text
+LARRY IS TELLING EVERYONE
+THE KING STOLE HIS WAND.
+FOR ONCE, HE'S NOT LYING.
+```
+
+**The gate, World 4 to 5.** The reminder (hint line `SEALED - FREE SAMUS FIRST`):
+
+```text
+TOAD:
+
+STILL SEALED! WE NEED THE
+HUNTER. THAT BIRD STATUE
+DOWN IN 4-2 MUST KNOW
+WHERE SHE IS.
+```
+
+The gate scene. Bowser's cutaway: the wand **smokes** and won't stop; he shakes it, glares at it, and blames his
+son (which tells a player who skipped the airship whose wand it was).
+
+```text
+BOWSER:
+
+THE WAND IS SMOKING! IT
+WON'T STOP SMOKING!
+```
+
+```text
+BOWSER:
+
+LARRY! DID YOU SWAP MY
+WAND FOR YOUR CHEAP SPARE?!
+...WAIT. THIS IS THE GOOD
+ONE.
+```
+
+```text
+TOAD:
+
+HALFWAY THERE! HIS WAND
+MUST BE SMOKING BY NOW.
+```
+
+```text
+TOAD:
+
+THE NEXT WORLD IS OPEN...
+BRR. I HEAR BATS. AND
+ORGAN MUSIC.
+```
+
+### 2.8 (being rewritten)
 
 ### 2.15 The Lost Kingdom
 
