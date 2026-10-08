@@ -82,6 +82,8 @@ function beam(p: Player): ProjectileSpec {
  * first and then a tank refills it.
  */
 export function energyTanks(p: Player): { full: number; total: number; bar: number } | null {
+  // The campaign's reserve tanks (decision 6); classic play keeps today's plain EN number.
+  if (!isFound(p)) return null;
   const total = p.scratch.tanks ?? 0;
   if (total <= 0) return null;
   const size = (maxHp(p) - START_ENERGY) / total;

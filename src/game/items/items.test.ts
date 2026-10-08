@@ -185,6 +185,14 @@ describe('hero items: blocks in the campaign', () => {
     expect(shroom.item).toBe('mushroom');
   });
 
+  it("Mario taking another hero's item gets SMB's item and 1000 points once (as in SMB)", () => {
+    const { w, p } = campaignWorld(MARIO);
+    const before = w.state.score;
+    w.takeHeroItem(p, new HeroItem(5, 9, 'long-beam', 'samus', {}));
+    expect(w.state.score - before).toBe(1000);
+    expect(p.powerState).toBe('big');
+  });
+
   it("the Top Secret Area's fixed blocks: R the grow item, W the entry or default power", () => {
     const { w } = campaignWorld(LINK, { grown: true });
     expect((strike(w, 14) as HeroItem).item).toBe('heart-container');
@@ -378,6 +386,44 @@ describe('hero items: migrations', () => {
     swapInventory(b, 'mario');
     expect(b.inventory).toEqual(['star', 'flower']);
     expect(bonusSaveFields(b).heroInventory).toEqual({ mario: ['star', 'flower'] });
+  });
+
+  it('loading a migrated file again changes nothing (both migrations are idempotent)', () => {
+    const old = {
+      ...newSave(1, 'samus'),
+      kit: { varia: 1, tanks: 2, maxHp: 90, beam: 3, missiles: 7 },
+      hp: 90,
+      powerState: 'full',
+      inventory: ['mushroom'],
+      itemsNext: ['flower'],
+    } as Record<string, unknown>;
+    delete old.heroInventory;
+    delete old.heroItemsNext;
+    delete old.heroKits;
+    const once = migrateSave(JSON.parse(JSON.stringify(old)), 1)!;
+    const twice = migrateSave(JSON.parse(JSON.stringify(once)), 1)!;
+    expect(twice).toEqual(once);
+    expect(once.hp).toBe(90);
+    expect(once.kit).toMatchObject({ tanks: 6, 'has-wave-beam': 1, missiles: 7 });
+  });
+
+  it('odd saved kits load safely: unknown heroes and bad fields dropped, no hero at 0 hit points', () => {
+    const save = {
+      ...newSave(1, 'mario'),
+      heroKits: {
+        simon: { powerState: 'full', hp: 0, kit: { found: 1, maxHp: 10, junk: 'x' } },
+        ryu: { powerState: 'full', hp: -3, kit: null },
+        nobody: { powerState: 'full', hp: 5, kit: {} },
+        link: 'broken',
+        samus: { powerState: 'big', hp: 30, kit: {} },
+      },
+      heroInventory: { link: ['star', 'bogus'], nobody: ['star'], samus: 'x' },
+    } as unknown as Record<string, unknown>;
+    const s = migrateSave(save, 1)!;
+    expect(Object.keys(s.heroKits!).sort()).toEqual(['ryu', 'simon']);
+    expect(s.heroKits!.simon).toEqual({ powerState: 'full', hp: 10, kit: { found: 1, maxHp: 10 } });
+    expect(s.heroKits!.ryu!.hp).toBeGreaterThan(0);
+    expect(s.heroInventory).toEqual({ link: ['star'] });
   });
 
   it('a kit carried through a level keeps its found flags', () => {

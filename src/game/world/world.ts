@@ -1936,13 +1936,14 @@ export class World {
     let id: string | null = e.item;
     if (p.def.id !== e.hero)
       id = e.entries === GROW_BLOCK ? blockItem(p, null, 'mushroom') : blockItem(p, e.entries);
-    this.addScore(1000, p.body.x, p.body.y - px(16));
-    // A hero without items of their own (Mario or Luigi in an older co-op file): SMB's item.
+    // A hero without items of their own (Mario or Luigi in an older co-op file): SMB's item, whose
+    // onPowerUp scores its own 1000.
     if (id === null) {
       const kind = e.entries === GROW_BLOCK ? 'mushroom' : p.def.blockPowerUp(p);
       if (kind !== 'poison' && kind !== 'clock') p.def.behaviour.onPowerUp(p, kind, this);
       return;
     }
+    this.addScore(1000, p.body.x, p.body.y - px(16));
     const got = applyItem(p, id);
     if (!got) return;
     if (!got.fresh) {

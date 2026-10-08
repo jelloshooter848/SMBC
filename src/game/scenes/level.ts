@@ -494,7 +494,10 @@ export class LevelScene implements Scene {
     const c = this.world.itemCaption;
     if (!c) return;
     const t = fontText(c.text);
-    r.text(this.game.ctx.assets.sheet('font'), t, (SCREEN_W - t.length * 8) >> 1, 48);
+    const x = (SCREEN_W - t.length * 8) >> 1;
+    // On a black strip so it reads over clouds and sky alike.
+    r.rect(x - 4, 46, t.length * 8 + 8, 12, '#000');
+    r.text(this.game.ctx.assets.sheet('font'), t, x, 48);
   }
 
   /** The OK prompt under the castle's text while it waits (World.castleWaiting). */
