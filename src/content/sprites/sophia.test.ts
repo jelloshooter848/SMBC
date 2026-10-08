@@ -374,7 +374,8 @@ describe('bm-dungeon sheet (the top-down kit)', () => {
   it("draws every frame Link's dungeon sheet draws for the kit, at its size", () => {
     validateDef('bm-dungeon', bmDungeonDef);
     const size = (f: readonly string[] | undefined) => [f?.[0]?.length, f?.length];
-    // Link's own frames: the thick Zelda walls of his rebuilt keep and his treasures.
+    // Link's own frames: the thick Zelda walls of his rebuilt keep and his treasures (the
+    // shrine's white sword among them: nothing in Jason's dungeon gives it).
     const linkOnly = new Set<string>([
       ...THICK_SIDE_FRAMES,
       'exit-0-thick',
@@ -382,7 +383,9 @@ describe('bm-dungeon sheet (the top-down kit)', () => {
       'map',
       'compass',
       'triforce',
+      'white-sword-icon',
     ]);
+    for (const name of linkOnly) expect(bmDungeonDef.frames[name], name).toBeUndefined();
     for (const [name, f] of Object.entries(dungeonDef.frames))
       if (!linkOnly.has(name)) expect(size(bmDungeonDef.frames[name]), name).toEqual(size(f));
     for (const [name, f] of Object.entries(bmDungeonDef.frames)) {

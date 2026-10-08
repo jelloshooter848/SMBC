@@ -326,20 +326,7 @@ const onPad = (shape: (c: Canvas) => void): string[] => {
   return c.outline().rows();
 };
 
-// Armour plating (in the white sword's slot), a big cell (a life more), and a refill of four cells.
-const ARMOUR = onPad((c) => {
-  c.poly(
-    [
-      [2, 2],
-      [14, 2],
-      [14, 9],
-      [8, 15],
-      [2, 9],
-    ],
-    'd',
-  );
-  c.hline(3, 13, 3, '7').vline(8, 4, 12, 'c').rect(6, 6, 5, 2, 'b');
-});
+// A big cell (a life more) and a refill of four cells.
 const BIG_CELL = onPad((c) => {
   c.rect(2, 3, 12, 11, 'a').rect(5, 1, 6, 2, 'b');
   c.hline(3, 12, 4, '7').rect(7, 6, 2, 6, '7').rect(5, 8, 6, 2, '7');
@@ -381,7 +368,8 @@ export const bmDungeonDef: SpriteDef = {
     'wall-cracked': WALL_CRACKED,
     'wall-hole': WALL_HOLE,
     // The kit's pickups and HUD frames, at Link's sizes: energy cells for hearts, a keycard, a
-    // blaster, grenades, a homing round, armour plating, a big cell and a refill.
+    // blaster, grenades, a homing round, a big cell and a refill. (No white sword: the
+    // Shadow Keep's shrine prize is Link's own, and nothing in Jason's dungeon gives it.)
     heart: CELL,
     'heart-half': CELL_HALF,
     'heart-empty': CELL_EMPTY,
@@ -390,7 +378,6 @@ export const bmDungeonDef: SpriteDef = {
     'refill-icon': REFILL,
     key: KEY,
     'sword-icon': GUN_ICON,
-    'white-sword-icon': ARMOUR,
     'bomb-icon': grenade('0'),
     'bomb-pickup': grenade('9'),
     'boomerang-icon': HOMING_ICON,
