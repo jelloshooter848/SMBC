@@ -1293,7 +1293,7 @@ any player is that hero, so a co-op partner plays it too.
   sees the pieces marked `charHorz` or `charVert` (heroes who jump short or low) and
   `WideCharacter` (wide heroes), and loses the ones those hide. In a level that needed one, the
   section holds all of the original's pieces for her in that area: its walls, lowered blocks,
-  extra ground, springs and lifts. Since 0.4.33 it also holds the flagpole's step-fall lift
+  extra ground, springs and lifts. Since 0.4.32 it also holds the flagpole's step-fall lift
   (`+ lift-fall <x> 4 len=2`, row 5 in 7-1 and ll-9-3: a one-tile `StepFall` platform shown to
   heroes who jump short, `charHorz`, five columns left of the pole; it drops once she stands on
   it), in every SMB and Lost Levels area where the original has one at Normal (59 areas).
@@ -1309,7 +1309,7 @@ takes Normal Sophia past each variant's spot, and up 8-4's hidden block onto its
 **Results (2026-10-08, the Chapter 1 finishing pass).** Every level of the table below, at
 Normal, with her variants:
 
-- SMB 8-4 (with no variant), the SMB rows with the original's pieces (0.4.33) and 24 of the 27 Lost
+- SMB 8-4 (with no variant), the SMB rows with the original's pieces (0.4.32) and 24 of the 27 Lost
   Levels rows are finished, all checked by the sweep or by sims
   (the "How" column).
 - **ll-7-3** and **ll-12-3** are not followed past their first green super spring. A braked
@@ -1322,14 +1322,14 @@ in `Sophia.as`, the release damping now ends once a rise is over.
 
 8-4 has no variant (owner decision): its hanging pipe had a way up all along, the hidden coin
 block at 161 (row 9), a step to its top as in the original. The original's one Sophia piece in
-8-4's areas, ground in 8-4-end's lava at 21, is laid since 0.4.33 (`8-4-end`'s variant).
+8-4's areas, ground in 8-4-end's lava at 21, is laid since 0.4.32 (`8-4-end`'s variant).
 
 Her red spring launch is the spring's own, as every hero's: 500, or 1000 boosted (Flash px/s).
 `Sophia.as` sets 400 / 930, but `SpringRed.springLaunch` reads the spring's values (the lines
 reading the character's are commented out); the character's values only serve the bouncy-pits
 cheat (`Character.bouncePit`). A test pins it (`tests/sim/sophia.test.ts`).
 
-**0.4.33: the SMB pieces and the flagpole lifts.** The original's Sophia pieces in the SMB
+**0.4.32: the SMB pieces and the flagpole lifts.** The original's Sophia pieces in the SMB
 levels she finishes without them are laid now, each as `[variant sophia classic]` exactly as the
 original has them (the SMB rows of the table below), with the flagpole's step-fall lift in every
 area that has one. The sweep still finishes each of them at Normal (below). Not laid: the

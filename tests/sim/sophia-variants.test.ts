@@ -19,7 +19,7 @@ import { file, makeGame, useStorage, type H } from './heroes-harness';
  * levels Normal Sophia could not finish (docs/HEROES.md "Sophia III in the campaign levels"). They
  * are the original Crossover's own pieces for her (`[variant sophia classic]`, so classic play has
  * them too). SMB 8-4 has none (owner decision): its hidden coin block is her way up, as in the
- * original. Since 0.4.33 the SMB levels have the original's pieces for her too, and every area
+ * original. Since 0.4.32 the SMB levels have the original's pieces for her too, and every area
  * with a flagpole the original's step-fall lift by it.
  */
 
@@ -57,7 +57,7 @@ const VARIANT_LEVELS = [
 ];
 
 /**
- * The SMB levels with the original's own pieces for her (0.4.33): `[map, x, y, tile char]` of
+ * The SMB levels with the original's own pieces for her (0.4.32): `[map, x, y, tile char]` of
  * one cell each piece sets ('.' opens one), checked laid for her and not for Mario.
  */
 const SMB_PIECES: [string, number, number, string][] = [
@@ -78,7 +78,7 @@ const SMB_PIECES: [string, number, number, string][] = [
 /**
  * The original's step-fall lift by the flagpole (a `StepFall` platform shown to heroes who jump
  * short, `charHorz`: one tile wide, five columns left of the pole), `map x y`, in every SMB and
- * Lost Levels area the original has one at Normal (0.4.33).
+ * Lost Levels area the original has one at Normal (0.4.32).
  */
 const FLAG_LIFTS = [
   '1-1 193 4',
@@ -216,7 +216,7 @@ describe.each(VARIANT_LEVELS)('%s: the Sophia variant', (id) => {
   });
 });
 
-describe('the original’s SMB pieces for her (0.4.33)', () => {
+describe('the original’s SMB pieces for her (0.4.32)', () => {
   // Our maps' legend (none of these maps overrides these characters): a character to its tile id.
   const tileOf = (ch: string) => (ch === '.' ? 0 : (DEFAULT_LEGEND[ch] as number));
   it.each(SMB_PIECES)(
@@ -234,7 +234,7 @@ describe('the original’s SMB pieces for her (0.4.33)', () => {
   );
 });
 
-describe('the flagpole’s step-fall lift for her (0.4.33)', () => {
+describe('the flagpole’s step-fall lift for her (0.4.32)', () => {
   const lift = (l: LevelData, x: number, y: number) =>
     l.entities.some((e) => e.type === 'lift-fall' && e.x === x && e.y === y && e.props?.len === 2);
   it.each(FLAG_LIFTS)('%s: the lift at %i,%i for her, in classic play too, not for Mario', (id, x, y) => {
