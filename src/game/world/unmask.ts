@@ -66,6 +66,8 @@ export class CastleUnmask {
       o.stairs = null;
       o.body.vx = 0;
       o.body.vy = 0;
+      // The fight is over: no hit blink, which would freeze on an off frame under the remark card.
+      o.invuln = 0;
       if (!o.dead) o.anim = 'idle';
     }
     if (this.kind === 'axe') {

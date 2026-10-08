@@ -193,6 +193,17 @@ describe('reaching the axe with the fake standing (campaign)', () => {
     expect(sfx.filter((s) => s === 'poof')).toHaveLength(1);
   });
 
+  it('a hero still blinking from a hit stops blinking: never invisible while the scene holds play', () => {
+    const { world, input, level } = castle('world5/5-4.map', '5-4', true, 6);
+    world.remarkHook = () => true; // the card stays up
+    const p = world.player;
+    toAxe(world, level);
+    p.invuln = 21;
+    step(world, input);
+    expect(world.unmask?.kind).toBe('axe');
+    for (let f = 0; f < 4; f++) expect(p.visible(world.frame + f)).toBe(true);
+  });
+
   it('without a remark due (seen, or no hook) the hero just looks a moment', () => {
     const { world, input, level } = castle('world1/1-4.map', '1-4', true, 6);
     toAxe(world, level);
