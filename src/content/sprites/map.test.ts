@@ -72,6 +72,7 @@ const tileFrames = [
   'lab-left',
   'lab-right',
   'gears',
+  'crystal-flash', // Flash Man's blue crystals
   'wily-top-left',
   'wily-top-mid',
   'wily-top-right',

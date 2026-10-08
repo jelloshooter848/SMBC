@@ -841,6 +841,13 @@ const CRYSTAL = stamp(GROUND, [
   '.11111111111111.',
 ]);
 
+/**
+ * Mega City's Flash Man crystals (World 3, 0.4.26): the same cluster with its glass in the water
+ * roles (8 light, 7 main), so it reads blue and cyan as Flash Man's stage does, never the page's
+ * red accent (its gears and lamps). It never animates.
+ */
+const CRYSTAL_FLASH = CRYSTAL.map((row) => row.replace(/i/g, '8').replace(/r/g, '7'));
+
 /* Sky details on transparent backgrounds. */
 const starTile = (size: number, cx: number, cy: number): Rows => {
   const rows = fill('.').map((r) => r.split(''));
@@ -1648,6 +1655,7 @@ const frames: Record<string, readonly string[]> = {
   pipe: PIPE,
   blaster: BLASTER,
   crystal: CRYSTAL,
+  'crystal-flash': CRYSTAL_FLASH,
   moon: MOON,
   cloud: CLOUD,
   'flag-0': flag(0),

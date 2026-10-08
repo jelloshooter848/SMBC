@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { mapPalettes } from '@content/sprites/map';
+import { mapDef, mapPalettes } from '@content/sprites/map';
 import { heroSide } from '@game/map/captives';
 import { localSpot } from '@game/map/world-gate';
 import { WORLD_3, SKETCH_3 } from './world3';
-import { MAP_WALKABLE, mapActorBounds, mapSky } from './render';
+import { WORLD_4 } from './world4';
+import { MAP_WALKABLE, mapActorBounds, mapSky, pageTileFrame } from './render';
 
 /*
  * World 3's map page as Mega Man's world (0.4.26, owner notes 5, 18 and 21: each world, its map
@@ -61,6 +62,33 @@ describe('World 3: MEGA CITY', () => {
     expect([at(b.x + 1, b.y), at(b.x, b.y - 1)]).toEqual(['"', '"']);
     // none of the new scenery is walkable
     for (const ch of '0&$"+?/;_`') expect(MAP_WALKABLE.has(ch), ch).toBe(false);
+  });
+
+  it("draws Flash Man's crystals blue and cyan, as in Mega Man 2, in their own frame", () => {
+    expect(pageTileFrame(WORLD_3, 'A', 0)).toBe('crystal-flash');
+    // other pages keep the shared crystal (its accent colours), and the gears and lamps keep theirs
+    expect(pageTileFrame(WORLD_4, 'A', 0)).toBe('crystal');
+    expect(pageTileFrame(WORLD_3, '"', 0)).toBe('gears');
+    const rows = mapDef.frames['crystal-flash'] as readonly string[];
+    const shared = mapDef.frames['crystal'] as readonly string[];
+    expect(rows).toHaveLength(16);
+    // the same cluster's outline and ground, only its glass recoloured
+    rows.forEach((row, y) =>
+      [...row].forEach((c, x) => {
+        const s = shared[y]![x]!;
+        if (s === 'i' || s === 'r') expect('678', `${x},${y}`).toContain(c);
+        else expect(c, `${x},${y}`).toBe(s);
+      }),
+    );
+    // its glass is blue and cyan in Mega City's palette (no red)
+    const pal = mapPalettes['map-megaman']!;
+    const ROLES = '0123456789abcdefghijklmnopqr';
+    for (const ch of new Set([...rows.join('')].filter((c) => '678'.includes(c)))) {
+      const hex = pal[ROLES.indexOf(ch)]!;
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
+      expect(b, `${ch} ${hex}`).toBeGreaterThan(r);
+      expect(b, `${ch} ${hex}`).toBeGreaterThanOrEqual(g);
+    }
   });
 
   it("leaves Mega Man's map hint and the local on plain ground", () => {

@@ -24,7 +24,7 @@ import { POND_CHARS } from './build';
  *   ( O )  giant mushroom cap (left, middle, right)   !  mushroom stem
  *   { - }  treetop platform in the sea (left, middle, right)   |  tree trunk in the sea
  *   W castle wall   V battlements   G castle gate      P pipe   X cannon
- *   A  crystal cluster (the Warp Zone's scenery)
+ *   A  crystal cluster (the Warp Zone's scenery; Flash Man's blue ones in Mega City)
  *   s x  twinkling stars     D moon     k small cloud
  *   a b d f / g i l m / p r t v  a round pond, 4×3 tiles, always written as this whole block
  *   The Mini Game Arena (theme 'arena'; no water, so no autoShore):
@@ -247,8 +247,19 @@ export function drawMapTile(
   y: number,
   frame: number,
 ): void {
-  const f = mapTileFrame(ch, frame);
+  const f = pageTileFrame(page, ch, frame);
   if (f) r.sprite(assets.sheet('map', MAP_PAL[page.theme]), f, x, y);
+}
+
+/** A theme's own frames for shared legend tiles: Mega City's crystals are Flash Man's blue. */
+const THEME_TILE_FRAMES: Readonly<Partial<Record<MapTheme, Readonly<Record<string, string>>>>> = {
+  megaman: { crystal: 'crystal-flash' },
+};
+
+/** The frame tile `ch` of `page` draws (its theme's own, if it has one); '' for none. */
+export function pageTileFrame(page: WorldMapPage, ch: string, frame: number): string {
+  const f = mapTileFrame(ch, frame);
+  return THEME_TILE_FRAMES[page.theme]?.[f] ?? f;
 }
 
 /* ------------------------------------------------------------------------------------------ */
