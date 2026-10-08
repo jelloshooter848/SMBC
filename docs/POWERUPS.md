@@ -1,4 +1,4 @@
-# Hero power-ups (0.4.34 design draft)
+# Hero power-ups (0.4.33 design draft)
 
 Every hero gets their own items from the power blocks: their own grow item in place of the mushroom,
 and their own power items (beams, weapons, sub-weapons, spells, guns) in place of the fire flower, each placed by
@@ -35,7 +35,7 @@ here exists in the game yet. It ends with the open questions (section 12).
   (Link's heart containers, Samus's energy tanks, Bill's medals): each copy adds more, up to a maximum.
 - **Power item**: one entry of the hero's power list. A few stack too (Ryu's ninpo scroll).
 - **Entry**: what one power block gives one hero, written in the level's `[hero-items]` section (section 3).
-- **Default power**: what a power block with **no entry** for that hero gives (Lost Levels blocks in 0.4.34, custom
+- **Default power**: what a power block with **no entry** for that hero gives (Lost Levels blocks in 0.4.33, custom
   and shared levels played in the campaign, any block the plan leaves blank).
 - **Owned**: the hero already has the item (a stacking item counts as owned once it is at its maximum).
 - **Refill / points**: what an owned item gives instead, defined per hero. Every item taken also scores 1000, as
@@ -429,7 +429,7 @@ Copies per item (the "at least twice" rule): Link 4-8 each, Mega Man 5-7, Samus 
 default), Simon 3-4 (Chain Whip also by default), Ryu: Windmill 7, Fire Wheel 7, Jump and Slash 5, Scroll 4 (three
 count, the fourth is a refill), Bill: Laser 9, Flame Gun 5, Spread Gun 3, Sophia: Triple 8, Homing 4.
 
-### 6.4 Not placed in 0.4.34
+### 6.4 Not placed in 0.4.33
 
 - **The Lost Levels** (Chapter 2) have no entries: every block gives the default power. A later pass places them.
 - **Custom and shared levels** played in the campaign: defaults. In classic play: mushrooms and flowers.
@@ -524,7 +524,7 @@ The mini games, the arena and the training room keep their own kits.
 
 ## 10. Training (a later release)
 
-The 0.4.32 training (`src/game/tutorial/lessons.ts`) already marks a lesson **(PREVIEW)** when the run lacks its
+The training rework (0.4.34) (`src/game/tutorial/lessons.ts`) already marks a lesson **(PREVIEW)** when the run lacks its
 kit and lends the kit in the room. With hero items:
 
 - **Each unlock lesson names its item**: its `unlocked` reads the hero's owned items (`owns(run, 'ice-beam')`)
