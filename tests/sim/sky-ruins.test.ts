@@ -13,6 +13,7 @@ import { px, toPx } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
 import type { World } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
+import { LINK, walker } from './sky-palace-way';
 
 // The 2-1 coin heaven's way up (owner design): past the end of the clouds an up-arrow of coins,
 // three small cloud platforms, and a hidden vine block over the middle one (71,7) whose vine
@@ -213,12 +214,12 @@ describe('2-1 sky palace (2-1-sky2)', () => {
     expect(r.world.time).toBeGreaterThan(250);
   });
 
-  it('every hero lands from the arrival vine, and any way the run-right bot goes ends back in 2-1', () => {
-    // (Crossing the whole palace, up to Link and on, hero by hero: sky-palace.test.ts.) Not Ryu:
-    // this bot jumps the altar's one-tile steps from right beside them, and Ryu clings to a wall he
-    // jumps into, so it hangs on a step's side for good; a player (or sky-palace.test.ts's walker,
-    // hopping from half a tile out) clears them.
-    for (const c of CHARACTERS.filter((h) => h.id !== 'ryu')) {
+  it('the run-right bot lands from the arrival vine and crosses the whole palace to the drop', () => {
+    // Outside the campaign (plain ruins, the same tiles). Not Ryu or Simon with this bot: it jumps
+    // the altar's one-tile steps from right beside them, and Ryu clings to a wall he jumps into, so
+    // he hangs on a step's side for good; and it takes off for the hall's two-tile gap a tile early,
+    // which Simon's fixed arc does not carry. The walker below (a player's timing) takes both across.
+    for (const c of CHARACTERS.filter((h) => h.id !== 'ryu' && h.id !== 'simon')) {
       const bot = newBot();
       const r = runSim({
         level: level('2-1-sky2'),
@@ -227,7 +228,7 @@ describe('2-1 sky palace (2-1-sky2)', () => {
         maxFrames: 3000,
         controller: (w) => (w.player.vine || w.player.frozen ? [] : autoPlayer(w, bot)),
       });
-      expect(r.playerX, c.name).toBeGreaterThan(16 * 16);
+      expect(r.playerX, c.name).toBeGreaterThan(69 * 16);
       expect(r.outcome, c.name).toBe('pipe');
       expect(
         r.events.find((e) => e.type === 'pipe'),
@@ -237,6 +238,35 @@ describe('2-1 sky palace (2-1-sky2)', () => {
       });
     }
   });
+
+  it.each(
+    CHARACTERS.flatMap((c) => (['small', 'big'] as const).map((p) => [`${c.name} (${p})`, c, p] as const)),
+  )(
+    'outside the campaign, %s walks from the vine over the altar and off the balcony into 2-1',
+    (_n, c, power) => {
+      const way = { hold: 0 };
+      let onAltar = false;
+      const r = runSim({
+        level: level('2-1-sky2'),
+        character: c,
+        state: { powerState: power },
+        script: none,
+        maxFrames: 3000,
+        controller: (w) => {
+          const p = w.player;
+          if (p.vine || p.frozen) return [];
+          if (p.body.onGround && toPx(p.body.y + p.body.h) === LINK.feet) onAltar = true;
+          return walker(p.body, w.map, way);
+        },
+      });
+      expect(onAltar, `${c.name} over the altar's top`).toBe(true);
+      expect(r.playerX, c.name).toBeGreaterThan(69 * 16);
+      expect(r.outcome, c.name).toBe('pipe');
+      expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({
+        target: { level: '2-1', x: 162, y: 0, exitDir: 'fall' },
+      });
+    },
+  );
 
   it('the running clock carries over: coin heaven → ruins → back into 2-1', () => {
     const sky = level('2-1-sky');
