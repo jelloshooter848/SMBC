@@ -113,7 +113,8 @@ candidate list) are not part of 0.5.1.
   - **A:** a gold block "CROSSOVER" logo with a small "SMB" tag and a tilted red "REMIX" stamp, over a Mushroom
     Kingdom scene. Freed heroes stand on the ground in colour; unfound ones are "?" silhouettes, so the row doubles as
     a progress display. The menu, "CHAPTER 1", the version, "MADE BY JELLOSHOOTER848", the "BASED ON ... EXPLODING
-    RABBIT" credit and "UNOFFICIAL FAN PROJECT" are all on screen.
+    RABBIT" credit and a "PRE-RELEASE" footer (owner's choice; it replaced "UNOFFICIAL FAN PROJECT", which the
+    credits roll keeps) are all on screen.
   - **Intro, from C:** the wand's bolt tears a rift open, then the logo and the heroes drop out of it onto the field.
   - Built from the game's own sprites and font, with new gold/red font palettes; all art and music stay original.
   - **Kept for later:** mockup B (an SMB3 curtain stage with the heroes as the cast) and the rest of C (the rift with a

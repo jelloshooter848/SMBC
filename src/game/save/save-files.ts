@@ -57,6 +57,12 @@ export interface SaveFile extends MapProgress {
    */
   devAllHeroes?: boolean;
   /**
+   * Developer mode's map menu "Chapter 2 gate: open": the file's campaign may enter Lost Kingdom
+   * levels before Chapter 2 ships (rules.chapterGated). Only has an effect while dev mode is on;
+   * missing: closed. Nothing else in the file changes with it.
+   */
+  devGateOpen?: boolean;
+  /**
    * Heroes freed on this file (CharacterDef ids, Mario always first): only these can be picked
    * in campaign play; the rest are brainwashed captives to find (docs/HEROES.md).
    */
@@ -248,6 +254,7 @@ export function newSave(
     pendingReveal: [],
     devUnlockAll: false,
     devAllHeroes: false,
+    devGateOpen: false,
     freed: freedHeroes([character, character2], characters),
     tutorials: tutorialHeroes([character, character2], characters),
     met: metIds([], freedHeroes([character, character2], characters), false, characters),
@@ -404,6 +411,7 @@ export function migrateSave(
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
     devAllHeroes: stored.devAllHeroes === true,
+    devGateOpen: stored.devGateOpen === true,
     freed,
     // The file's current (freed) heroes count as answered, so an existing player is never
     // interrupted; a hero used only through dev "All heroes" still gets its real question.

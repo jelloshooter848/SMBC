@@ -8,6 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- The Lost Kingdom is sealed until Chapter 2. The campaign still plays through 8-4, the credits and onto Lost World 1's
+  map, but entering any Lost Kingdom level (Lost 1-1 to 8-4, World 9, A–D) shows "THE PATH IS BLOCKED!" over the map.
+  Nothing outside the campaign is affected (the dev level select, shared levels and the Mini Game Arena still go
+  anywhere).
+- Dev mode: the map menu has a "Chapter 2 gate: closed / open" row, saved per file, to play the Lost Kingdom in the
+  campaign.
+
+### Changed
+
+- The title screen's footer now reads PRE-RELEASE.
+
 ## [0.4.19] - 2026-10-07
 
 ### Changed
