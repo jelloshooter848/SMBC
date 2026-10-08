@@ -131,6 +131,12 @@ export interface WorldExit {
   requires?: MapCondition;
   /** The hint line while the hero stands on `from` and the exit is locked (at most 32 chars). */
   hint?: string;
+  /**
+   * The world gate (docs/STORY.md 2.3b, campaign only): the hero (CharacterDef id) hidden in this
+   * world, whom the file must have freed before the road opens (rules.gateHolds). SMB worlds 1-8
+   * (World 8's is the rift on to Lost World 1).
+   */
+  gate?: string;
 }
 
 /** Decorative animated thing on a page (drawn by src/content/worldmap/render.ts). */
@@ -171,4 +177,9 @@ export interface MapProgress {
   position: { page: PageId; node: string };
   /** SMB 8-4 beaten on this file (the 'gameCleared' condition); absent counts as false. */
   gameCleared?: boolean;
+  /**
+   * The file's freed heroes, for the world gates (WorldExit.gate). Not saved from here (the save
+   * file has its own `freed`); absent means no gate holds (classic play, older tests).
+   */
+  freed?: readonly string[];
 }

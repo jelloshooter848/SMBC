@@ -53,7 +53,7 @@ export const WORLD_1: WorldMapPage = {
     { from: '1-3', to: '1-4', points: poly([11, 6], [11, 8], [13, 8], [13, 10]) },
     { from: '1-2', to: 'bonus-1', points: poly([6, 4], [6, 11], [5, 11]) },
   ],
-  exits: [{ from: '1-4', to: 'smb-2', side: 'right', points: poly([13, 10], [15, 10]) }],
+  exits: [{ from: '1-4', to: 'smb-2', side: 'right', points: poly([13, 10], [15, 10]), gate: 'luigi' }],
   actors: [
     actor('cloud', 30, 18, { size: 2, speed: 0.12 }),
     actor('cloud', 170, 212, { size: 1, speed: 0.08 }),

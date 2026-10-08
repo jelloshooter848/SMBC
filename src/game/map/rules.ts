@@ -229,7 +229,32 @@ export function isExitOpen(
 ): boolean {
   if (!conditionMet(progress, e.requires, unlockAll)) return false;
   if (unlockAll) return isOpen(progress, page, e.from, true);
-  return isPageOpen(progress, page.id) && isCleared(progress, page, e.from);
+  return isPageOpen(progress, page.id) && isCleared(progress, page, e.from) && !gateHolds(progress, e);
+}
+
+/**
+ * The world gate (docs/STORY.md 2.3b, campaign only) keeps exit `e` shut: it waits for a hero
+ * (`gate`) the file has not freed, and the page it leads to is not open yet (a world a file has
+ * already reached keeps its road). A file without a freed list has no gates. Unlock all is the
+ * caller's (isExitOpen never asks with it).
+ */
+export function gateHolds(progress: MapProgress, e: WorldExit): boolean {
+  const freed = progress.freed;
+  return !!e.gate && !!freed && !freed.includes(e.gate) && !progress.pages.includes(e.to);
+}
+
+/**
+ * The seal stands across exit `e` (drawn at the page's edge, its hint line SEALED - FREE <NAME>
+ * FIRST): everything else that opens the road holds (its castle cleared, its condition met),
+ * only the gate's hero is missing.
+ */
+export function sealStands(progress: MapProgress, page: WorldMapPage, e: WorldExit): boolean {
+  return (
+    gateHolds(progress, e) &&
+    conditionMet(progress, e.requires) &&
+    isPageOpen(progress, page.id) &&
+    isCleared(progress, page, e.from)
+  );
 }
 
 /**
@@ -378,7 +403,8 @@ export function clearLevel(
     // The castle's world exits lead on (SMB 8-4's road to Lost World 1, after its ending; Lost
     // D-4 has none: the final ending).
     for (const e of at.page.exits)
-      if (e.from === at.node.id && conditionMet(progress, e.requires)) openPage(progress, e.to);
+      if (e.from === at.node.id && conditionMet(progress, e.requires) && !gateHolds(progress, e))
+        openPage(progress, e.to);
   });
 }
 
