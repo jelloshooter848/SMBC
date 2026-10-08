@@ -26,7 +26,7 @@ here exists in the game yet. It ends with the open questions (section 12).
 | 5. Co-op              | A block's item belongs to whoever bumped it; if the other player grabs it, it becomes the grabber's entry for that block.                                    |
 | 6. Classic play       | Outside the campaign everyone keeps the mushroom and the fire flower, as today.                                                                              |
 | 7. Losing powers      | A hit takes what it takes today, per hero (section 7).                                                                                                       |
-| 8. Training           | A later release shows each unlock with the real item (section 10).                                                                                           |
+| 8. Training           | The training rework (0.4.34) shows each unlock with the real item (section 10).                                                                              |
 | 9. Art and sound      | Every new sprite and sound is original, in each hero's game style (section 11).                                                                              |
 
 ## 2. Words used
@@ -522,10 +522,11 @@ mushroom and fire flower, drawn as today, and each hero's **today's** mapping st
 `[hero-items]` sections are ignored, the starting kits are today's (Link's full belt), and the random drops stay.
 The mini games, the arena and the training room keep their own kits.
 
-## 10. Training (a later release)
+## 10. Training (the 0.4.34 rework)
 
-The training rework (0.4.34) (`src/game/tutorial/lessons.ts`) already marks a lesson **(PREVIEW)** when the run lacks its
-kit and lends the kit in the room. With hero items:
+The training work in progress (`src/game/tutorial/lessons.ts` on `claude/wip-0.4.32-training`) already marks a
+lesson **(PREVIEW)** when the run lacks its kit and lends the kit in the room. The 0.4.34 rework, after this
+release, adds hero items:
 
 - **Each unlock lesson names its item**: its `unlocked` reads the hero's owned items (`owns(run, 'ice-beam')`)
   instead of tier counts (`k(run, 'beam') >= 2`), so Ice and Long Beam are separate lessons with separate checks.
