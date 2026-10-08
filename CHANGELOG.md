@@ -8,6 +8,23 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Every hero has their own power-ups in the campaign: a grow item each (Heart Container, Helmet, Energy Tank, Pot Roast,
+  Medicine, Medal, Power Capsule) and 40 power items, placed block by block in Worlds 1 to 8. Each has its own sprite
+  and pickup sound and is named on screen and by the announcer. Items stay on their block.
+- Each hero's kit is saved on its own, so switching heroes keeps it; a death wipes only that hero's found items.
+- Each hero has their own item inventory. Prizes go to the hero being played, as that hero's grow item or default
+  power. An old save's inventory moves to Mario.
+
+### Changed
+
+- Link starts with the Boomerang and finds his bombs and spells. Mega Man's Rush Coil is its own item. Samus has up to
+  six reserve Energy Tanks (boxes above EN) and keeps both Ice and Wave on her WEAPON belt. Simon and Ryu start with a
+  10-point health bar that their grow item raises to 16. Sophia III's Wall Climb and Ceiling Climb are separate items.
+- Drops follow the items found: Link's bombs and magic, Samus's missile packs. Bill's falcon capsule now heals.
+- Classic play keeps the mushroom and the fire flower for everyone.
+
 ## [0.4.32] - 2026-10-08
 
 ### Added
