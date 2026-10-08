@@ -496,7 +496,7 @@ const stoneLantern = draw(16, 32, (x, y) => {
   return x >= 3 && x <= 12 ? (y === 28 ? '8' : '6') : '.';
 });
 
-/** The temple's carved wall (64x64): dim stone courses, a gold demon glyph in a carved frame. */
+/** The temple's carved wall (64x64): dim stone courses, a demon's face carved in a frame, its eyes dim gold. */
 const templeWall = draw(64, 64, (x, y) => {
   const fx = x - 32;
   const fy = y - 30;
@@ -508,7 +508,8 @@ const templeWall = draw(64, 64, (x, y) => {
     const horn = fy < -4 && Math.abs(Math.abs(fx) - 8 + (fy + 4) * 0.5) < 1.2;
     const eye = Math.abs(fy + 1) <= 1 && Math.abs(Math.abs(fx) - 5) <= 2;
     const mouth = fy >= 5 && fy <= 7 && Math.abs(fx) <= 6 && (fy !== 7 || fx % 3 !== 0);
-    if (horn || eye || mouth) return '9';
+    if (eye) return '9';
+    if (horn || mouth) return '3';
     return '1';
   }
   const course = y >> 4;

@@ -4,7 +4,7 @@ import { PALETTES, SPRITES } from '@content/sprites';
 import { AssetRegistry } from '@engine/assets/registry';
 import { NullRenderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
-import { heroSide } from '@game/map/captives';
+import { heroSide, hiddenHeroesAt } from '@game/map/captives';
 import { localSpot } from '@game/map/world-gate';
 import { WORLD_6, SKETCH_6 } from './world6';
 import { MAP_ACTOR_TYPES, MAP_WALKABLE, drawMapActor, mapActorBounds, mapSky, pageTileFrame } from './render';
@@ -118,9 +118,12 @@ describe('World 6: DRAGON VALLEY', () => {
   });
 
   it("leaves Ryu's map hint (the crystal ball's silhouette), the local and the seal on plain ground", () => {
-    const n = node('6-4');
+    // Ryu hides at 6-2 (his dojo); his silhouette stands beside its node
+    const n = WORLD_6.nodes.find((x) => hiddenHeroesAt('smb-6', x.id).some((h) => h.hero === 'ryu'))!;
+    expect(n.id).toBe('6-2');
     const side = heroSide(WORLD_6, n);
     expect([at(n.x + side, n.y), at(n.x + side, n.y - 1)]).toEqual(['#', '#']);
+    expect(at(n.x, n.y - 1), 'the silhouette peeks out from behind the node').toBe('#');
     const spot = localSpot(WORLD_6)!;
     expect(at(Math.floor(spot.x / 16), Math.floor((spot.y + 19) / 16))).toBe('#');
     const seal = WORLD_6.exits[0]!.points.at(-1)!;

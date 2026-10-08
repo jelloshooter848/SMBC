@@ -14,7 +14,7 @@ export const SKETCH_6 = [
   '................',
   '................',
   '.s..x....D...s.x', // the full moon over the city
-  'hhhh0¤00¤0jjj▛▀▜', // the city's skyline; the demon temple's roofs...
+  'hhhh0¤¤##0jjj▛▀▜', // the skyline, open behind Ryu's silhouette by 6-2; the temple's roofs...
   'TTTT#######^S▙▄▟', // ...over its walls and gate, right above 6-4
   'TTTT#0¤#00#S^###',
   'TTTT############',
@@ -63,7 +63,7 @@ export const WORLD_6: WorldMapPage = {
     actor('star', 184, 30, { phase: 90 }),
     actor('hawk', 8, 24, { range: 48, period: 420 }),
     actor('hawk', 136, 208, { range: 88, period: 480, phase: 100 }),
-    actor('ninja', 64, 37, { range: 48, period: 150, height: 13 }),
+    actor('ninja', 64, 37, { range: 32, period: 150, height: 13 }),
     actor('masked-ninja', 210, 50, {}),
   ],
 };
