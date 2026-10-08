@@ -1,31 +1,38 @@
 import type { WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
-/** World 5, SKY TREES: treetop canopies on a sea of clouds, trunks reaching down into a sea of clouds, Bullet Bills. */
+/**
+ * World 5, TRANSYLVANIA (0.4.28, owner notes 5, 18 and 21: each world is themed after the hero
+ * freed there; World 5 is Simon's): a Castlevania-style night map. The moon hangs over the ridge;
+ * a village stands by the start, a graveyard by 5-1 and the bonus spot, a dead forest on the moor,
+ * a river and a moonlit lake run under the bridges, the clock tower rises by 5-3 and Dracula's
+ * castle stands on its crag right under 5-4. Every node, road and bridge is where SKY TREES had
+ * them.
+ */
 export const SKETCH_5 = [
   '................',
   '................',
-  '~~~~~~~~~~~~~~~~',
-  '####~~####~#####',
-  '#T##~~####=##T,#',
-  '####==#T##~#####',
-  '#*T#~~#,##~#####',
-  '####~~####~~|~I~',
-  '~|~~~~|~I~~~|~I~',
-  '~|~~~~|~I~~#####',
-  '###~~#####~##T,#',
-  '#T#~~#T,T#~#####',
-  '###~~#####~#####',
-  '|~{-}~|~|{-}|~|~',
-  '|~~|~~|~|~|~|~|~',
+  'hhhhhhhhhhhhhDhh', // the moon over the ridge
+  '#Ħ##~~#J##~#T#T#', // the village by the start; a grave by 5-1
+  '#ĦĦ#~~####=###T#',
+  '####==#J##~#####',
+  '##Ħ#~~#J##~#####', // (the start's local stands at 1,6)
+  '####~~####~~~~I~', // the river and the lake under the bridges
+  '~~~~~~~~I~~~~~I~',
+  '~~~~~~~~I~~#####',
+  '####~~#######T##',
+  'T#T#~~#J#J#Ω####', // the clock tower by 5-3...
+  '#T##~~##J##║#╔╦╗', // ...and Dracula's castle on its crag right under 5-4
+  'T#T#~~#J#T##T╚╩╝',
+  '#T##~~##T#T##^^^',
 ];
 
 export const WORLD_5: WorldMapPage = {
   id: 'smb-5',
   group: 'smb',
   label: 'WORLD 5',
-  title: 'SKY TREES',
-  theme: 'sky',
+  title: 'TRANSYLVANIA',
+  theme: 'transylvania',
   music: 'map',
   tiles: autoShore(SKETCH_5),
   nodes: worldNodes(
@@ -47,13 +54,14 @@ export const WORLD_5: WorldMapPage = {
     { from: '5-1', to: 'bonus-5', points: poly([8, 4], [8, 10], [7, 10]) },
   ],
   exits: [{ from: '5-4', to: 'smb-6', side: 'right', points: poly([14, 11], [15, 11]), gate: 'simon' }],
+  // Transylvania's creatures: bats round the village and the castle, Medusa heads drifting in
+  // waves over the ridge and the moor, ravens over the graves and the dead forest.
   actors: [
-    actor('bullet', 200, 26, { speed: -0.7 }),
-    actor('bullet', 40, 218, { speed: -0.5 }),
-    actor('bullet', 120, 208, { speed: 0.6, phase: 200 }),
-    actor('cloud', 20, 18, { size: 3, speed: 0.1 }),
-    actor('cloud', 150, 212, { size: 2, speed: -0.08 }),
-    actor('paratroopa', 72, 136, { range: 10 }),
-    actor('paratroopa', 160, 120, { range: 8, color: 'red', phase: 60 }),
+    actor('bat', 40, 36, {}),
+    actor('bat', 180, 200, { phase: 70 }),
+    actor('medusa', 200, 36, { speed: -0.4, amp: 8 }),
+    actor('medusa', 60, 210, { speed: -0.35, amp: 10, phase: 300 }),
+    actor('raven', 100, 48, { range: 48, speed: 0.35 }),
+    actor('raven', 8, 216, { range: 32, speed: 0.3, phase: 120 }),
   ],
 };

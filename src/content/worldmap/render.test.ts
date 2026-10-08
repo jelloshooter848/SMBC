@@ -120,8 +120,9 @@ describe('map rendering', () => {
   it('wraps drifting actors with the page while it slides', () => {
     const assets = registry();
     const page = MAP_PAGES[4];
-    const bullet = page?.actors.find((a) => a.type === 'bullet');
-    if (!page || !bullet) throw new Error('world 5 has bullets');
+    // World 5's Medusa heads drift and wrap as its Bullet Bills did before it was Transylvania (0.4.28).
+    const bullet = page?.actors.find((a) => a.type === 'medusa');
+    if (!page || !bullet) throw new Error('world 5 has Medusa heads');
     const at = (a: MapActor) => {
       const r = new CheckingRenderer();
       drawMapActor(r, assets, page, a, 500);

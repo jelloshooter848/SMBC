@@ -4,7 +4,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
  * themed world map pages (World 2's Hyrule since 0.4.24, World 3's Mega City since 0.4.26, World
- * 4's Planet Zebes since 0.4.27), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
+ * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
  * share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
@@ -89,6 +89,8 @@ const MEGA_CITY = '#30487c';
 const MEGA_CITY_LIGHT = '#5070a8';
 /** Planet Zebes's night sky over the page (World 4 since 0.4.27). */
 export const ZEBES_NIGHT = '#100820';
+/** Transylvania's moonlit night over the page (World 5 since 0.4.28). */
+export const TRANSYLVANIA_NIGHT = '#0c0a24';
 
 export const mapPalettes: Record<string, string[]> = {
   'map-grass': theme({
@@ -283,6 +285,24 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: ['#7c8494', '#b8c0d0', '#3c4250'],
     white: [NES.white, '#c0b0d0'],
+  }),
+  /*
+   * Transylvania (World 5 since 0.4.28, Simon's world): a Castlevania-style night map of dark
+   * moor (ground), grey crags (rock), dead trees and their bare branches (leaf), a moonlit lake and
+   * river (water), timber and red roofs (wood, accent), the castle's, the clock tower's and the
+   * village's stone (wall), lit windows, the clock's face and the moon in pale gold (accent light).
+   */
+  'map-transylvania': theme({
+    ground: ['#1c2418', '#34402c', '#506048'],
+    sand: ['#6c6050', '#4c4438'],
+    water: ['#0c1440', '#1c2c6c', '#5c74b8', '#b8c8f0'],
+    rock: ['#24202c', '#44404c', '#706c7c'],
+    leaf: ['#1c1810', '#3c3020', '#5c4c34'],
+    wood: ['#7c5c3c', '#4c3424'],
+    accent: ['#c83010', '#fce4a0', '#701808'],
+    lava,
+    wall: ['#585468', '#8c88a0', '#2c2838'],
+    white: ['#e8e8f0', '#a8a8c0'],
   }),
 };
 
@@ -1801,6 +1821,174 @@ const metroid = (swell: number): Rows =>
 const METROID = [metroid(0), metroid(1)];
 
 /* ------------------------------------------------------------------------------------------ */
+/* Transylvania (World 5, 0.4.28): dead trees, the village, the clock tower, Dracula's castle    */
+/* ------------------------------------------------------------------------------------------ */
+
+/** A dead tree: a bare, crooked trunk and its clawing branches. */
+const DEAD_TREE = stamp(GROUND, [
+  '.0.....0....0...',
+  '.e0...0e0..0e...',
+  '..e0.0e.e00e....',
+  '...e0e...ee..0..',
+  '0...ee..0e..0e..',
+  'e0...e0e0..0e...',
+  '.ee..ee0..ee....',
+  '...e0fee0e......',
+  '.....0fe0.......',
+  '.....0fed0......',
+  '.....0fed0......',
+  '.....0fed0......',
+  '....0ffedd0.....',
+  '...0fe0ed0d0....',
+  '...11111111.....',
+  '................',
+]);
+
+/** A village house: stone walls, a steep red roof, a lit window and a timber door. */
+const HOUSE = stamp(GROUND, [
+  '.......00.......',
+  '......0ir0......',
+  '.....0iirr0.....',
+  '....0iiirrr0..0.',
+  '...0iiiirrrr00h0',
+  '..0iiiiirrrrr0h0',
+  '.0iiiiiirrrrrr00',
+  '0000000000000000',
+  '.0nmmmmmmmmmmq0.',
+  '.0nm0000mm0g0q0.',
+  '.0nm0jj0mm0g0q0.',
+  '.0nm0jj0mm0h0q0.',
+  '.0nm0000mm0g0q0.',
+  '.0nmmmmmmm0h0q0.',
+  '.000000000000000',
+  '..111111111111..',
+]);
+
+/** The clock tower's top: a pointed slate roof over the clock face, its hands near midnight. */
+const CLOCK_TOWER_TOP = stamp(GROUND, [
+  '.......00.......',
+  '......0qq0......',
+  '.....0nmqq0.....',
+  '.....0nmqq0.....',
+  '....0nmmmqq0....',
+  '...0000000000...',
+  '...0nm0000mq0...',
+  '...0n0jjjj0q0...',
+  '...00jj0jjj00...',
+  '...00jj0jjj00...',
+  '...00jjj00j00...',
+  '...0n0jjjj0q0...',
+  '...0nm0000mq0...',
+  '...0nmmmmmmq0...',
+  '...0nmmmmmmq0...',
+  '...0nmmmmmmq0...',
+]);
+
+/** The clock tower's base: the shaft of stone on its footing, an arched door. */
+const CLOCK_TOWER = stamp(GROUND, [
+  '...0nmmmmmmq0...',
+  '...0nmm00mmq0...',
+  '...0nmm0jmmq0...',
+  '...0nmmmmmmq0...',
+  '...0nqmmmmqq0...',
+  '...0nmmmmmmq0...',
+  '...0nmmmmmmq0...',
+  '...0nmm00mmq0...',
+  '...0nm0000mq0...',
+  '...0nm0000mq0...',
+  '...0nm0000mq0...',
+  '..0nnmm00mmqq0..',
+  '..0nmmmmmmmmq0..',
+  '..000000000000..',
+  '...1111111111...',
+  '................',
+]);
+
+/**
+ * Dracula's castle on its crag (three tiles wide, two tall): pointed towers round a tall keep,
+ * windows burning gold, the gate under a portcullis, grey crag rock at its foot.
+ */
+const DRACULA: Rows = stamp(
+  groundUnder(48, 32),
+  paint(48, 32, (x, y) => {
+    // the crag
+    const crag = 26 + Math.round(Math.abs(Math.sin(x / 5)) * 2);
+    if (y >= crag) return y === crag ? '0' : (x + y) % 5 === 0 ? 'a' : x % 7 < 3 ? 'c' : 'b';
+    // towers: [centre, roof tip, half width]
+    for (const [cx, top, half] of [
+      [5, 6, 3],
+      [24, 0, 5],
+      [42, 4, 3],
+      [15, 10, 2],
+      [33, 9, 2],
+    ] as const) {
+      const dx = x - cx;
+      if (Math.abs(dx) > half + 0.5) continue;
+      const roofEnd = top + half * 2 + 1;
+      if (y < roofEnd) {
+        const w = (y - top) / 2;
+        if (Math.abs(dx) > w + 0.5) continue;
+        return Math.abs(dx) > w - 0.5 ? '0' : dx < 0 ? 'r' : 'i';
+      }
+      if (Math.abs(dx) > half - 0.5) return '0';
+      if ((y - roofEnd) % 6 === 2 && Math.abs(dx) < 1) return 'j';
+      return dx < 0 ? 'n' : 'm';
+    }
+    // the curtain wall between the towers, crenellated
+    if (y >= 15) {
+      if (y === 15) return x % 4 < 2 ? '0' : '.';
+      if (y === 16) return '0';
+      const gx = x - 24;
+      if (Math.abs(gx) <= 3 && y >= 19) return Math.abs(gx) === 3 || y === 19 ? '0' : x % 2 ? 'q' : '0';
+      if (y === 21 && x % 8 === 4) return 'j';
+      return (y - 17) % 4 === 3 ? 'q' : 'm';
+    }
+    return '.';
+  }),
+);
+
+/** A raven facing left: 0 wings up, 1 wings down. */
+const raven = (up: boolean): Rows =>
+  up
+    ? [
+        '................',
+        '.0.........0....',
+        '.00.......00....',
+        '..00.....000....',
+        '..000...0000....',
+        '...000.00000....',
+        '....000000......',
+        '.00.00000000....',
+        '0i00000000000...',
+        '..0000000000000.',
+        '...000000..0000.',
+        '......0.0.......',
+        '......0.0.......',
+        '................',
+        '................',
+        '................',
+      ]
+    : [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '.00.............',
+        '0i00000000......',
+        '..0000000000000.',
+        '...00000000.0000',
+        '...0000000......',
+        '..000.00000.....',
+        '.000...00000....',
+        '.00.....0.0000..',
+        '........0.......',
+        '................',
+      ];
+const RAVEN = [raven(true), raven(false)];
+
+/* ------------------------------------------------------------------------------------------ */
 
 const frames: Record<string, readonly string[]> = {
   ground: GROUND,
@@ -1897,6 +2085,21 @@ const frames: Record<string, readonly string[]> = {
   'dome-right': cut(DOME, 2, 1),
   'metroid-0': METROID[0] as Rows,
   'metroid-1': METROID[1] as Rows,
+  // Transylvania (World 5): dead trees (the tree tile's own frame on this page), the village's
+  // houses, the clock tower (its clock over its base), Dracula's castle on its crag (its towers,
+  // then its walls and gate) and the ravens (its bats and Medusa heads are Simon's crypt's).
+  'dead-tree': DEAD_TREE,
+  house: HOUSE,
+  'clock-tower-top': CLOCK_TOWER_TOP,
+  'clock-tower': CLOCK_TOWER,
+  'drac-top-left': cut(DRACULA, 0, 0),
+  'drac-top-mid': cut(DRACULA, 1, 0),
+  'drac-top-right': cut(DRACULA, 2, 0),
+  'drac-left': cut(DRACULA, 0, 1),
+  'drac-gate': cut(DRACULA, 1, 1),
+  'drac-right': cut(DRACULA, 2, 1),
+  'raven-0': RAVEN[0] as Rows,
+  'raven-1': RAVEN[1] as Rows,
 };
 for (let f = 0; f < ARENA_CROWD_FRAMES; f++) {
   frames[`arena-crowd-a-${f}`] = crowd('a', f);
