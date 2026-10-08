@@ -61,7 +61,7 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 | 1-0           | The warm-up. At its end Bowser appears in person, shows off his wand, quotes the note, and casts the spell: eight heroes are pulled into the eight worlds, brainwashed.                                                                                                                                                                                                                 |
 | World 1       | Toad: Bowser brought people from other universes to find Peach; where's Luigi? In 1-1 a brainwashed Luigi runs away; a villager saw him go down a pipe. Freed, Luigi explains the brainwashing.                                                                                                                                                                                         |
 | Worlds 2-7    | Each world is its hero's homeland (Hyrule, 20XX, Zebes, Transylvania, a ninja village, the front). A local welcomes you on the start node; NPCs in the hero's level give the hints; the freed hero talks. Each castle's fake is unmasked. With the castle cleared and the hero freed, Bowser's wand misfires and the seal to the next world breaks.                                     |
-| 4-2           | Larry Koopa, angry: the king took his wand and left him a spare. Beaten, he drops his crystal ball, which from then on shows on the map where each hero hides.                                                                                                                                                                                                                         |
+| 4-2           | Larry Koopa, angry: the king took his wand and left him a spare. Beaten, he drops his crystal ball, which from then on shows on the map where each hero hides.                                                                                                                                                                                                                          |
 | World 8       | The Underworld (Blaster Master) and Bowser's own land. The last hero is a tank; her pilot Jason is lost in 8-4 after his frog. A miner found a pulled-up turnip by the lava.                                                                                                                                                                                                            |
 | 8-4           | Bowser falls. The wand flies from his hand and breaks; its pieces fall through a crack in the world. Toad stands at the end. Credits, as a false ending (`...BUT THE STORY ISN'T OVER.`). Back on the World 8 map, with Sophia III freed, Toad works out Peach's note: she is in the Lost Kingdom, and the road on to Lost World 1 draws in.                                            |
 | Lost Kingdom  | Everything looks like home, only meaner. Clues that someone is hiding (more pulled-up turnips, a very tall Toad). The wand broke into six pieces and the star tip: each Koopaling but Larry (Morton, Wendy, Iggy, Roy, Lemmy, Ludwig) grabs a piece and flies off in an airship; the king keeps the star tip, the wand's heart.                                                         |
@@ -85,16 +85,16 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 
 ### Who is where
 
-| World | The hero's homeland (look)          | Hero       | Hidden in                                       | Welcome on the start node | Hint NPCs, inside the hero's level                                     |
-| ----- | ----------------------------------- | ---------- | ----------------------------------------------- | ------------------------- | ---------------------------------------------------------------------- |
-| 1     | The Mushroom Kingdom (SMB)          | Luigi      | 1-1's bonus room, top-right ledge               | (Toad's scene, 2.4)       | A villager, 1-1 column 55, by the bonus pipe (57)                      |
-| 2     | Hyrule (Zelda II)                   | Link       | 2-1 sky ruins, past the coin heaven's end       | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival   |
-| 3     | The year 20XX (Mega Man)            | Mega Man   | 3-1 space station, via a hidden teleporter      | A lab robot               | Dr. Light, by 3-1's vine block (131)                                   |
-| 4     | Planet Zebes (Metroid)              | Samus      | 4-2 cavern, down the vine area's warp pipe      | A scientist               | The Chozo statue, by 4-2's vine block (64)                             |
-| 5     | Transylvania (Castlevania)          | Simon      | 5-4 crypt, riding the lift down past its end    | A merchant                | The townsperson, at 5-4's entrance                                     |
-| 6     | A ninja village (Ninja Gaiden)      | Ryu        | 6-2 dojo, through a trick wall in a pipe room   | The village elder         | Irene Lew, at 6-2's start                                              |
-| 7     | The front (Contra)                  | Bill       | 7-3 camp, falling through the exploding bridge  | A sergeant                | Lance, at 7-3's start                                                  |
-| 8     | The Underworld (Blaster Master)     | Sophia III | 8-4 garage, after Fred down 8-4-end's trap pipe | A miner                   | Fred the frog, by 8-4-end's trap pipe (10); Jason, behind it           |
+| World | The hero's homeland (look)      | Hero       | Hidden in                                       | Welcome on the start node | Hint NPCs, inside the hero's level                                   |
+| ----- | ------------------------------- | ---------- | ----------------------------------------------- | ------------------------- | -------------------------------------------------------------------- |
+| 1     | The Mushroom Kingdom (SMB)      | Luigi      | 1-1's bonus room, top-right ledge               | (Toad's scene, 2.4)       | A villager, 1-1 column 55, by the bonus pipe (57)                    |
+| 2     | Hyrule (Zelda II)               | Link       | 2-1 sky ruins, past the coin heaven's end       | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival |
+| 3     | The year 20XX (Mega Man)        | Mega Man   | 3-1 space station, via a hidden teleporter      | A lab robot               | Dr. Light, by 3-1's vine block (131)                                 |
+| 4     | Planet Zebes (Metroid)          | Samus      | 4-2 cavern, down the vine area's warp pipe      | A scientist               | The Chozo statue, by 4-2's vine block (64)                           |
+| 5     | Transylvania (Castlevania)      | Simon      | 5-4 crypt, riding the lift down past its end    | A merchant                | The townsperson, at 5-4's entrance                                   |
+| 6     | A ninja village (Ninja Gaiden)  | Ryu        | 6-2 dojo, through a trick wall in a pipe room   | The village elder         | Irene Lew, at 6-2's start                                            |
+| 7     | The front (Contra)              | Bill       | 7-3 camp, falling through the exploding bridge  | A sergeant                | Lance, at 7-3's start                                                |
+| 8     | The Underworld (Blaster Master) | Sophia III | 8-4 garage, after Fred down 8-4-end's trap pipe | A miner                   | Fred the frog, by 8-4-end's trap pipe (10); Jason, behind it         |
 
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
 goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
@@ -148,6 +148,28 @@ reminder, Bowser's cutaway, the hint line (2.3b); the welcomes: a local on each 
 node (2.3b); the crystal ball's new use (2.7); the rift waiting for Sophia III (2.12); and removing the page
 timeouts. Text-only swaps: Toad's 1-0 greeting, Toad's World 1 scene (it takes the old World 1 entry's place),
 the castle pages, Larry's crystal ball and crash cards, the rift pages.
+
+#### Open questions for the owner (0.4.23 draft)
+
+1. **Replays.** In this draft Bowser's spell replays with 1-0, and the welcomes and hint NPCs can be talked to
+   again; the opening note and the freeing talks play once. Add a way to see those again (a Story pad in the Mini
+   Game Arena, or Pause → Story so far on the map)?
+2. **The map titles and art.** Worlds 2-8 are now the heroes' homelands, but the pages keep their names (SEA SIDE,
+   NIGHT HILLS...) and look; only the hero's level is restyled. Rename them (WORLD 2: HYRULE...) or restyle the
+   map pages too?
+3. **World 8's gate.** The draft makes the road into the rift wait for Sophia III too (the same rule as every
+   world; Toad's reminder after the credits). Or should the rift open on 8-4 alone, with Sophia III optional?
+4. **The player's hero talks** (Mario in 1-1, `<HERO>:` in Luigi's and Link's talks, the castle remarks). All are
+   written to fit any hero. All right to give the heroes a voice?
+5. **Dr. Light** moves from 3-1's pipe room to 3-1's vine in this draft, so the hint can't be missed. Or keep him in
+   the pipe room?
+6. **The Lost Kingdom's fakes** (Chapter 2): should they get the jump-over and remark scenes too? They would need
+   remark lines.
+7. **The castle remark** plays the first time per castle per file, so replays stay quick. Or every clear?
+8. **Files from before 0.4.23**: the draft keeps every world a file has already reached open (the seals only stand
+   on roads not yet opened), and seeds the new scenes as seen where their trigger is already past. Agreed?
+9. **Peach's "old friends"** could pay off when she is found at Lost 4-4 (2.16, Chapter 2), for example with a
+   line that she came looking for the Toads of the old stories. Add it then?
 
 ### 2.1 A new file: the princess is missing
 
@@ -2070,7 +2092,85 @@ KOOPALINGS WILL GO AFTER
 THEM. LET'S HURRY!
 ```
 
-### 2.13 (being rewritten)
+### 2.13 Every hero: the captive card, the freed talk, the freed card
+
+**The order when a hero is freed** (CHANGE, `free-hero.ts`): the captive's two cards → the rules card → the round →
+pass: **the freed talk** (NEW, the hero's pages in each world's section, over the level with the hero still standing
+there) → the hero leaves in a puff and the freed card shows, as now. `BACK` skips the rest of the talk. Fail and
+quit are as now. **Replay:** the talk plays once (the hero leaves); see open question 1.
+
+**The first card** (`captiveDialogue`, shared by every hero): KEEP.
+
+```text
+LUIGI:
+
+...LUIGI SERVES
+KING KOOPA...
+...MUST FIND
+THE PRINCESS...
+```
+
+(The name is the hero's; `SOPHIA III` fits.)
+
+**The freed card** (`freedCard`): KEEP (`<HERO> IS FREE! / <HERO> JOINS YOUR TEAM. / PICK THE NEW HERO WHEN YOU
+ENTER A LEVEL.`, with the freed hero's name). Toad no longer reacts on the map.
+
+**The mini games' own lines** (the Shadow Keep's `LINK... WAKE UP...`, `THE SPELL BREAKS!`, `DRACULA IS
+DEFEATED! / THE CURSE IS BROKEN.`, `THE MASKED NINJA FALLS!`, `SAMUS ESCAPED!`, `DARK MEGA MAN IS BEATEN!`, the
+Ninja Gaiden cutscene, the Contra briefing): no change needed. They speak of a spell or a curse, which still fits.
+
+**What the eight talks reveal, in order** (each builds on the one before; a player who frees them in world order
+hears the story in this order, and the gates make that the only order):
+
+| Hero       | Reveals                                                                                         |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| Luigi      | Bowser has a wand and brainwashes people to find Peach; others from other worlds; save them     |
+| Link       | Peach is free and running, not caught; the spell dragged whole lands here and sealed them       |
+| Mega Man   | All the spells come from the one wand; each broken spell snaps back into it and overloads it    |
+| Samus      | The wand is not the king's: it is his son Larry's                                               |
+| Simon      | He hunted Peach himself: she warns villages and lays false trails; nobody can catch her         |
+| Ryu        | The king's stand-ins are nearly spent; he will fight in his own castle; Peach seen on a rooftop |
+| Bill       | The wand is about to go; one world, one hero left                                               |
+| Sophia III | A tear in space under the castle, held shut by the wand; beyond it a land with no Koopas        |
+
+### 2.14 Toad's map lines that stay, and what is removed
+
+**The optional extras** (KEEP, first visit only, Toad's box):
+
+The Warp Zone hub (`STARLIGHT CROSSING`; the pipe keeper in 1-2 points the way):
+
+```text
+TOAD:
+
+A PLACE BETWEEN WORLDS!
+THE WAND'S MAGIC MUST HAVE
+WORN A PATH THROUGH HERE.
+```
+
+The Mini Game Arena:
+
+```text
+TOAD:
+
+THE HEROES CAN RELIVE
+THEIR TRIALS HERE. JUST
+FOR FUN, THIS TIME.
+```
+
+**Removed from Chapter 1** (owner's notes 6 and 10; their text stays in git history, this file at v0.4.21). For the
+build, by constant in `script.ts`:
+
+- `STORY_TEASE_PAGES` (1-0's shadow tease in the campaign): replaced by Bowser's spell (2.2).
+- `FAKES_PAGES` (Toad's map card after 1-4): folded into castle 1-4's first page.
+- `RESTYLE_PAGES` (Toad's first-visit remarks on the restyled levels): gone. The looks themselves stay; the
+  welcomes explain them (each world is a piece of the hero's homeland).
+- `WORLD_ENTRY` for `smb-2` to `smb-8`, and `ENTRY_NEEDS`: gone; World 1's becomes Toad's World 1 scene (2.4). Their
+  two clues moved to the welcomes (World 4's airship, World 8's turnip).
+- `MISSED_PAGES` and `MISSED_HINT` (the missed-hero cards and Toad's per-hero hint lines): gone; a shadow's hint line
+  is the generic one again.
+- `JOINED_CRACK`, `JOINED_GENERIC`, `JOINED_PAGES` (Toad's reactions to a freed hero, the crack pages included):
+  gone; Mega Man's talk carries the crack rule and the gates show it.
+- `ALL_FREED_BEFORE`, `ALL_FREED_AFTER`: gone; Sophia III's talk and the rift close the chapter's hunt.
 
 ### 2.15 The Lost Kingdom
 
@@ -2146,7 +2246,8 @@ FAR LANDS. AFTER HIM!
 ```
 
 **Lost worlds 2-D: Toad's world entries** (one card each, first arrival; kept light). Lost 2 and 4 carry the
-clues that Peach is near (she grows turnips and throws them, as in SMB2; Toad found the first turnip in World 8);
+clues that Peach is near (she grows turnips and throws them, as in SMB2; the first turnip turned up in World 8,
+where the miner found it);
 Lost 3 brings in the Koopalings.
 
 Lost 2, Twilight Vale:
@@ -2673,6 +2774,15 @@ WANTS CAKE?
 
 All fourteen questions are decided (twelve from the first draft, two settled afterwards). The story is not to be
 rewritten: keep its shape, its jokes and its references to the heroes' games.
+
+**Superseded for Chapter 1 by the owner's notes of 2026-10-08** (the 0.4.23 draft, "What changed from v0.4.21" in
+section 2): 2 (the old man moves again, to 2-1's vine; every hint NPC now stands in the hero's own level), 3 (Toad
+no longer hints at all; the NPCs are the only hints), 8 (freed heroes still weaken the wand, now shown by the world
+gates and told by Mega Man; the castles no longer blame overuse), 10 (Toad walks in for his World 1 scene, the
+gates, the crash and the rift; there are no routine world entries any more) and 11 (the per-hero hint lines are
+removed). The note after the list (Bowser's tease, Toad's opening, Peach's three traces) is also replaced by the
+new 1-0 and opening; the three traces stay (castles 3-4 and 5-4, and World 8's turnip, now told by the miner). The
+rest stands, and Chapter 2 is unchanged.
 
 1. **Which Lost world for Peach?** DECIDED: **Lost 4-4**, Toadstool Grove, disguised as a tall Toad (2.16). Lost 2-4
    is too early, right after the 8-4 reveal.
