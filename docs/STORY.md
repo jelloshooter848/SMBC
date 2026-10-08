@@ -292,7 +292,7 @@ this file has never seen it. **Replay:** play 1-0 again from its map node.
 3. After the fourth page, **the spell**: he raises the wand over his head, the star flares (a steady glow with
    reduce flashing), and eight sparks shoot off the top of the screen. Cut to a dark screen with **eight small
    framed windows** in two rows of four, labelled `1` to `8` in a corner. They open one after another (half a
-   second each, a rising chime), each showing a strip of its world as it looks in this game (1 the Mushroom
+   second each, a rising magic shimmer), each showing a strip of its world as it looks in this game (1 the Mushroom
    Kingdom's grass, 2 a Zelda II field, 3 a Mega Man factory, 4 Brinstar's rock, 5 a Castlevania crypt, 6 a
    Ninja Gaiden street, 7 a Contra jungle, 8 the Blaster Master Underworld), and a hero pulled down into it by a
    beam of sparks: Luigi, Link, Mega Man, Samus, Simon, Ryu, Bill, Sophia III, in order. Each hero is drawn in

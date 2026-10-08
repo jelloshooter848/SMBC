@@ -13,6 +13,7 @@ import { transylvaniaSongs } from './transylvania';
 import { ninjaWorldSongs } from './ninja-world';
 import { contraWorldSongs } from './contra-world';
 import { blasterWorldSongs } from './blaster-world';
+import { openingSong } from './opening';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1230,4 +1231,6 @@ export const songs: Song[] = [
   ...contraWorldSongs,
   // World 8 as Sophia's world (0.4.31): 8-2's techno castle, 8-3's frozen ruins.
   ...blasterWorldSongs,
+  // The new file's opening scene (0.4.31; it borrowed the toad house's tune before).
+  openingSong,
 ];

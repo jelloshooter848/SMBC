@@ -209,7 +209,7 @@ export class BowserSpellScene implements Scene {
         }
         return;
       case 'windows': {
-        for (let i = 0; i < SPELL_WINDOWS.length; i++) if (this.pt === windowAt(i)) audio.sfx('coin');
+        for (let i = 0; i < SPELL_WINDOWS.length; i++) if (this.pt === windowAt(i)) audio.sfx('spell-window');
         const skip = guarded && pressed(inputs, [...OK_KEYS, ...BACK_KEYS]);
         if (skip || this.pt >= WINDOWS_END) {
           this.go('last');
