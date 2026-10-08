@@ -10,6 +10,19 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- World 7 is now Bill's world (campaign only; classic play keeps SMB's 7-1 to 7-4):
+  - The World 7 map page is GALUGA ISLAND (it was CANNON COAST): a snowfield, the enemy base and its defense wall,
+    jungle, a waterfall and river, the energy zone and Red Falcon's lair over 7-4, with weapon capsules, soldiers and a
+    helicopter.
+  - 7-1 is the snowfield before the enemy base (pillbox cannons, snowy pines), its coin room the base's corridors,
+    7-2's way in and way out the jungle shore, 7-2 the jungle river (every hero still swims there) and 7-4 Red
+    Falcon's alien lair. 7-3's jungle, Bill's camp, the waterfall climb and the bridge blast are unchanged.
+  - Two new original Contra-style songs: the snowfield and the river.
+
+## [0.4.29] - 2026-10-08
+
+### Changed
+
 - World 6 is now Ryu's world (campaign only; classic play keeps SMB's 6-1 to 6-4):
   - The World 6 map page is DRAGON VALLEY (it was SNOW NIGHT), a night valley under a full moon with the Hayabusa
     village and dojo, a bamboo forest, the night city's rooftops and neon, snowy passes and the demon temple over 6-4.
@@ -734,7 +747,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.28...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.29...HEAD
+[0.4.29]: https://github.com/jelloshooter848/SMBC/compare/v0.4.28...v0.4.29
 [0.4.28]: https://github.com/jelloshooter848/SMBC/compare/v0.4.27...v0.4.28
 [0.4.27]: https://github.com/jelloshooter848/SMBC/compare/v0.4.26...v0.4.27
 [0.4.26]: https://github.com/jelloshooter848/SMBC/compare/v0.4.25...v0.4.26
