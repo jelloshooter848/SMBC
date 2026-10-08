@@ -9,51 +9,127 @@ start: 4,14
 startMode: climb
 camera: scroll
 parent: 2-1
-;; Campaign play only: the sky ruins above 2-1 share its Zelda II look and music.
+;; Campaign play only: the sky palace shares 2-1's Zelda II look and music, and puts on its own
+;; palace art (the `zelda2-sky` sheet, [campaign-decor]).
 campaignTheme: zelda2
 campaignMusic: zelda2-field
 
-;; Sky ruins above the 2-1 coin heaven (reached by the hidden vine block in 2-1-sky): a fallen
-;; temple on the clouds where captive Link waits beside the doorway. The clouds end on the right in a
-;; drop, signposted by a down-arrow of coins, that lands in 2-1 where the coin heaven's drop does.
+;; Link's sky palace above the 2-1 coin heaven (reached by the hidden vine block in 2-1-sky), five
+;; screens: the vine lands on the clouds among broken columns; a sky stair of floating palace blocks
+;; rises to the great gate; the hall beyond, its floor broken once, holds captive Link on the altar
+;; in its middle, three steps up under the triad crest, between two knight statues; past the hall a
+;; balcony ends in a drop, signposted by a down-arrow of coins, that lands in 2-1 where the coin
+;; heaven's drop does. Outside the campaign the same tiles carry plain ruins.
 
 [tiles]
-;; 0                16               32               48
-................ ................ ................ ................
-................ ................ ................ ................
-................ ................ ................ ................
-................ ................ ................ ................
-................ ................ ................ ................
-................ ................ ................ ...........$....
-................ ...........$.... ................ ...........$....
-................ ..........$$$... ................ ...........$....
-................ .........$...$.. ................ .........$.$.$..
-.........$$$.... ........$$$.$$$. ......$$$....... ..........$$$...
-................ .....OO......... .OO............. ...........$....
-..............OO O............... ............OO.. ................
-..............OO O............... ................ ................
-OOOO.OOOOOOOOOOO OOOOOOOOOOOOOOOO OOOOOOOOOOOOOOOO OOOOOOOO........
-................ ................ ................ ................
+;; 0              16               32               48               64
+................ ................ ................ ................ ................
+................ ................ ................ ................ ................
+................ ................ ..%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% ................
+................ ................ ..%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% ................
+................ ................ ................ ................ ................
+................ ................ ................ ................ ..........$.....
+................ .....$.......... ................ ................ ..........$.....
+................ ....$.$......... ........$$...... ................ ..........$.....
+................ ...$$$$$........ .......$..$..... ................ ........$.$.$...
+................ ................ ................ ..uuuu.......... .........$$$....
+................ ................ ................ .uuuuuu......... ..........$.....
+................ ......uuuuuu.... ................ uuuuuuuu........ ................
+................ uuuuu........%%% %%%%%%%%..%%%%%% %%%%%%%%%%%%%%%% %%%%%%..........
+OOOO.OOOOOOOOOO. .............%%% %%%%%%%%..%%%%%% %%%%%%%%%%%%%%%% %%%%%%..........
+................ ................ ................ ................ ................
 
 [entities]
 vine 4 14 len=8
-captive 30 12 hero=link
+captive 52 8 hero=link
 
 [zones]
 pit 0 -> 2-1 162 0
 
 [decor]
+;; Outside the campaign: ruins on the clouds.
 cloud-1 2 3
 cloud-2 18 2
-cloud-1 36 4
-cloud-2 50 2
-ruin-pillar 8 12
-ruin-pillar-broken 11 12
-ruin-statue 15 10
-ruin-pillar 19 12
-ruin-temple 26 12
-ruin-pillar 35 12
-ruin-pillar-broken 41 12
-ruin-pillar 44 10
-ruin-pillar 49 12
-ruin-pillar-broken 53 12
+cloud-1 70 3
+ruin-pillar-broken 7 12
+ruin-pillar 12 12
+ruin-temple 29 11
+ruin-pillar 47 11
+ruin-statue 45 11
+ruin-pillar 56 11
+ruin-pillar-broken 67 11
+
+[campaign-decor]
+;; The sky below: a sea of clouds along the bottom, flat Zelda II clouds above.
+zelda2-sky:cloud-sea 0 14
+zelda2-sky:cloud-sea 4 14
+zelda2-sky:cloud-sea 8 14
+zelda2-sky:cloud-sea 12 14
+zelda2-sky:cloud-sea 16 14
+zelda2-sky:cloud-sea 20 14
+zelda2-sky:cloud-sea 24 14
+zelda2-sky:cloud-sea 28 14
+zelda2-sky:cloud-sea 32 14
+zelda2-sky:cloud-sea 36 14
+zelda2-sky:cloud-sea 40 14
+zelda2-sky:cloud-sea 44 14
+zelda2-sky:cloud-sea 48 14
+zelda2-sky:cloud-sea 52 14
+zelda2-sky:cloud-sea 56 14
+zelda2-sky:cloud-sea 60 14
+zelda2-sky:cloud-sea 64 14
+zelda2-sky:cloud-sea 68 14
+zelda2-sky:cloud-sea 72 14
+zelda2-sky:cloud-sea 76 14
+cloud-2 1 4
+cloud-1 10 3
+cloud-3 18 4
+cloud-1 66 4
+cloud-2 72 2
+;; The landing: broken columns of the palace that once stood here.
+zelda2-sky:column-broken 7 12
+zelda2-sky:column-broken 12 12
+;; The gate on the terrace.
+zelda2-sky:gate 29 11
+;; The hall: the dark back wall, two windows on the sky, columns, the drapes along the ceiling.
+zelda2-sky:wall 34 11
+zelda2-sky:wall 38 11
+zelda2-sky:wall 42 11
+zelda2-sky:wall 46 11
+zelda2-sky:wall 50 11
+zelda2-sky:wall 54 11
+zelda2-sky:wall 58 11
+zelda2-sky:wall 60 11
+zelda2-sky:window 37 8
+zelda2-sky:window 60 8
+zelda2-sky:column 34 11
+zelda2-sky:column 43 11
+zelda2-sky:column 46 11
+zelda2-sky:column 57 11
+zelda2-sky:column 63 11
+zelda2-sky:curtain 34 4
+zelda2-sky:curtain 36 4
+zelda2-sky:curtain 38 4
+zelda2-sky:curtain 40 4
+zelda2-sky:curtain 42 4
+zelda2-sky:curtain 44 4
+zelda2-sky:curtain 46 4
+zelda2-sky:curtain 48 4
+zelda2-sky:curtain 50 4
+zelda2-sky:curtain 52 4
+zelda2-sky:curtain 54 4
+zelda2-sky:curtain 56 4
+zelda2-sky:curtain 58 4
+zelda2-sky:curtain 60 4
+zelda2-sky:curtain 62 4
+;; The altar: banners and the triad crest over Link, knight statues and braziers flanking it.
+zelda2-sky:banner 48 6
+zelda2-sky:banner 55 6
+zelda2-sky:crest 50 5
+zelda2-sky:statue 47 11
+zelda2-sky:statue-r 56 11
+zelda2-sky:brazier 44 11
+zelda2-sky:brazier 59 11
+;; The balcony.
+zelda2-sky:brazier 65 11
+zelda2-sky:column-broken 68 11

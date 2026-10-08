@@ -45,8 +45,12 @@ export class Decoration extends Entity {
   }
 }
 
-/** `sheet:frame` decor (`station:window`) hangs in front of the tiles; the classic decor behind them. */
-export const decorInFront = (kind: string): boolean => kind.includes(':');
+/**
+ * `sheet:frame` decor (`station:window`) hangs in front of the tiles; the classic decor behind them.
+ * The exception is Link's sky palace (`zelda2-sky:*`, 2-1-sky2's campaign look): its back wall,
+ * columns and gate stand behind the hall's tiles and coins, like the classic decor.
+ */
+export const decorInFront = (kind: string): boolean => kind.includes(':') && !kind.startsWith('zelda2-sky:');
 
 /**
  * Decor drawn over the players: the pipe in Larry's cabin ceiling (`smb3:ceiling-pipe`), so a

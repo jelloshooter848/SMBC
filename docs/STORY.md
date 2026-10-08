@@ -88,7 +88,7 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 | World | The hero's homeland (look)      | Hero       | Hidden in                                       | Welcome on the start node | Hint NPCs, inside the hero's level                                   |
 | ----- | ------------------------------- | ---------- | ----------------------------------------------- | ------------------------- | -------------------------------------------------------------------- |
 | 1     | The Mushroom Kingdom (SMB)      | Luigi      | 1-1's bonus room, top-right ledge               | (Toad's scene, 2.4)       | A villager, 1-1 column 55, by the bonus pipe (57)                    |
-| 2     | Hyrule (Zelda II)               | Link       | 2-1 sky ruins, past the coin heaven's end       | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival |
+| 2     | Hyrule (Zelda II)               | Link       | 2-1 sky palace, past the coin heaven's end      | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival |
 | 3     | The year 20XX (Mega Man)        | Mega Man   | 3-1 space station, via a hidden teleporter      | A lab robot               | Dr. Light, by 3-1's vine block (131)                                 |
 | 4     | Planet Zebes (Metroid)          | Samus      | 4-2 cavern, down the vine area's warp pipe      | A scientist               | The Chozo statue, by 4-2's vine block (64)                           |
 | 5     | Transylvania (Castlevania)      | Simon      | 5-4 crypt, riding the lift down past its end    | A merchant                | The townsperson, at 5-4's entrance                                   |
