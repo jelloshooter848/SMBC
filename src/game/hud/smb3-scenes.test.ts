@@ -11,22 +11,28 @@ import { MARIO } from '../characters/mario';
 import { HammerBattleScene } from '../scenes/hammer-battle';
 import { LevelScene } from '../scenes/level';
 import { createBonusScene, BONUS_KINDS } from '../bonus';
-import { STATUS_BAR_Y, SMB3_WORLD_SHIFT } from './smb3-status';
+import { STATUS_BAR_H, STATUS_BAR_Y, SMB3_WORLD_SHIFT } from './smb3-status';
 
 /** Records texts and sprites with where they went. */
 class Recorder implements Renderer {
   texts: { s: string; x: number; y: number }[] = [];
   sprites: { f: string; x: number; y: number }[] = [];
+  /** The draw order: 'sprite', 'text', and 'bar' for the status bar's black band. */
+  order: string[] = [];
   private readonly none = new NullRenderer();
   clear = this.none.clear;
-  rect = this.none.rect;
   debugText = this.none.debugText;
   line = this.none.line;
+  rect(x: number, y: number, w: number, h: number): void {
+    if (x === 0 && y === STATUS_BAR_Y && w === 256 && h === STATUS_BAR_H) this.order.push('bar');
+  }
   sprite(_s: Parameters<Renderer['sprite']>[0], f: string, x: number, y: number): void {
     this.sprites.push({ f, x, y });
+    this.order.push('sprite');
   }
   text(_f: Parameters<Renderer['text']>[0], s: string, x: number, y: number): void {
     this.texts.push({ s, x, y });
+    this.order.push('text');
   }
 }
 
@@ -85,6 +91,26 @@ describe('the SMB3 pieces use the SMB3 status bar', () => {
     const r = drawTop(game);
     expect(smb3Bar(r)).toBe(true);
     expect(smb1Hud(r)).toBe(false);
+  });
+
+  it("Larry's cabin: the hero's drop from the ceiling is drawn under the HUD, never over a label", () => {
+    const game = makeGame();
+    game.startLevel(getLevel('4-2-larry'), { mode: 'fall' });
+    const scene = game.scenes.top as LevelScene;
+    const p = scene.world.player;
+    expect(p.body.y).toBeLessThan(0); // above the room, in the ceiling pipe
+    for (let f = 0; f < 90; f++) {
+      game.scenes.update([NO_INPUT]);
+      const r = drawTop(game);
+      const bar = r.order.indexOf('bar');
+      expect(bar).toBeGreaterThanOrEqual(0);
+      // Every sprite (the hero among them) goes down before the bar: the HUD is drawn on top.
+      expect(r.order.lastIndexOf('sprite')).toBeLessThan(bar);
+      // No HUD label up top for the hero to cross (SMB1's MARIO / WORLD / TIME row).
+      expect(smb1Hud(r)).toBe(false);
+      expect(r.texts.filter((t) => t.y < STATUS_BAR_Y)).toEqual([]);
+    }
+    expect(p.body.onGround).toBe(true);
   });
 
   it('any other level keeps the SMB1 HUD', () => {

@@ -419,7 +419,7 @@ beforeEach(() => {
 });
 
 describe('8-4 credits', () => {
-  it('the story adds "...BUT THE STORY ISN\'T OVER." right after THANKS FOR PLAYING', () => {
+  it('the story adds "END OF CHAPTER 1 / ...BUT THE STORY ISN\'T OVER." right after THANKS FOR PLAYING', () => {
     const lines = creditsLines(true);
     const i = lines.indexOf('THANKS FOR PLAYING');
     // The game's name follows THANKS FOR PLAYING (two lines since the rebrand), then the story's lines.
@@ -429,6 +429,7 @@ describe('8-4 credits', () => {
       ...STORY_NOT_OVER,
     ]);
     expect(CREDITS_NAME).toEqual(['SUPER MARIO BROS. CROSSOVER', 'REMIX']);
+    expect(STORY_NOT_OVER).toEqual(['', 'END OF CHAPTER 1', '', '...BUT THE STORY', "ISN'T OVER."]);
     expect(creditsLines(false)).toEqual(CREDITS);
   });
 
