@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.25] - 2026-10-08
+
 ### Added
 
 - Water for every hero, each the way their own game does it:
@@ -681,7 +683,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.24...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.25...HEAD
+[0.4.25]: https://github.com/jelloshooter848/SMBC/compare/v0.4.24...v0.4.25
 [0.4.24]: https://github.com/jelloshooter848/SMBC/compare/v0.4.23...v0.4.24
 [0.4.23]: https://github.com/jelloshooter848/SMBC/compare/v0.4.22...v0.4.23
 [0.4.22]: https://github.com/jelloshooter848/SMBC/compare/v0.4.21...v0.4.22
