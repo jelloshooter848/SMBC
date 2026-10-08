@@ -8,7 +8,9 @@ import { loadSave, migrateSave, newSave, saveKey } from '@game/save/save-files';
 import { playStoryCards } from '@game/story/cards';
 import { beat, seedSeen, STORY_REV } from '@game/story/beats';
 import { BowserSaysScene, BRIDGE_ROOM } from '@game/story/level-beats';
-import { FAKES_PAGES } from '@game/story/script';
+import { riftPages } from '@game/story/script';
+import { CHARACTERS } from '@game/characters/registry';
+import { ALL_STORY } from './story-seen';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // The story foundation (0.4.13, src/game/story): the seen-beats list on the save file, the
@@ -226,20 +228,22 @@ describe('developer "Unlock all": story scenes play but are never recorded', () 
     expect(loadSave(1)?.story).toEqual([STORY_REV, beat.bowser84]);
   });
 
-  it("a map beat (Toad's fake Bowsers after 1-4): plays, nothing marked; then for real", () => {
-    const story = [STORY_REV, 'opening', 'spell', 'luigi-runs', 'enter:smb-1', 'enter:smb-2'];
+  it("a map beat (Toad's rift scene on World 8): plays, nothing marked; then for real", () => {
+    const story = ALL_STORY.filter((id) => id !== beat.rift);
     const h = devFile({
-      cleared: ['1-0', '1-1', '1-2', '1-3', '1-4'],
-      pages: ['smb-1', 'smb-2'],
-      position: { page: 'smb-1', node: '1-4' },
+      cleared: ['1-0', '1-1', '1-2', '1-3', '1-4', '8-4'],
+      pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6', 'smb-7', 'smb-8', 'll-1'],
+      freed: CHARACTERS.map((c) => c.id),
+      gameCleared: true,
+      position: { page: 'smb-8', node: '8-4' },
       story,
     });
     const map = () => h.top() as WorldMapScene;
     expect(map().story).toBe(true);
     h.until(() => map().toad?.lines != null, 300);
-    expect(map().toad?.lines).toEqual(FAKES_PAGES[0]);
+    expect(map().toad?.lines).toEqual(riftPages('MARIO')[0]);
     closeMapBox(h);
-    expect(h.game.story).not.toContain(beat.fakes);
+    expect(h.game.story).not.toContain(beat.rift);
     expect(loadSave(1)?.story).toEqual(story);
     // Shown again while Unlock all is on: not repeated.
     h.game.showMap();
@@ -251,7 +255,7 @@ describe('developer "Unlock all": story scenes play but are never recorded', () 
     h.step();
     expect(map().story).toBe(true);
     closeMapBox(h);
-    expect(loadSave(1)?.story).toContain(beat.fakes);
+    expect(loadSave(1)?.story).toContain(beat.rift);
   });
 });
 

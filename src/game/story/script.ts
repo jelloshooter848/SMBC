@@ -35,12 +35,6 @@ export const STORY_TOAD_PAGES: readonly Page[] = [
 
 /* ---------------------------------------------------------------- 2.3a: the fake Bowsers */
 
-/** Toad's one-time explanation on the World 1 map after 1-4 (a major scene: he walks in). */
-export const FAKES_PAGES: readonly Page[] = [
-  toad('DID YOU SEE THAT? THE KING', 'USED THE WAND TO DRESS A', 'GOOMBA UP AS HIMSELF!'),
-  toad('HE HIDES BEHIND STAND-INS.', "THE REAL ONE WON'T FACE", 'YOU UNTIL HIS OWN LAND.'),
-];
-
 /** Bowser on first entering 8-4's bridge room (campaign), in the prompt box. */
 export function noMoreStandIns(hero: string): Page {
   return ['BOWSER: NO MORE STAND-INS,', `${hero}. THIS TIME IT'S`, 'REALLY ME! BWA HA HA!'];
@@ -70,27 +64,28 @@ export const CRASH_PAGES: readonly Page[] = [
 
 /**
  * Each castle's two pages (2.3a), by its main level id: page 1 the reveal (under the thanks),
- * page 2 the story beat, 2 s later in the same box. 8-4's page 1 confirms the king was real.
+ * page 2 the story beat, on OK in the same box. 8-4's page 1 confirms the king was real.
+ * (0.4.23, S3: 1-4 to 7-4 rewritten; 1-4's first page carries what Toad's old map card said.)
  */
 export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>> = {
   '1-4': {
-    reveal: ['IT WAS A GOOMBA IN THE', "KING'S SHAPE! WAND MAGIC!"],
-    news: ['THE REAL KING FLED EAST,', 'WAND AND ALL.'],
+    reveal: ['THAT GOOMBA WAS UNDER A', 'SPELL! THE KING DRESSED', 'IT UP AS HIMSELF.'],
+    news: ['THE REAL KING HIDES BEHIND', 'STAND-INS. HE FLED EAST,', 'WAND AND ALL.'],
   },
   '2-4': {
-    reveal: ['A KOOPA IN DISGUISE! THE', 'KING SENDS STAND-INS.'],
-    news: ['THE SPELL OVER THE SEA IS', "FADING. THE KING'S SHIPS", 'SAILED FOR THE HILLS.'],
+    reveal: ['A KOOPA UNDER THE SPELL,', "IN THE KING'S SHAPE AGAIN."],
+    news: ['THE KOOPAS SEARCHED EVERY', 'CAVE IN THIS LAND. NO', 'PRINCESS. JUST OLD MEN.'],
   },
   '3-4': {
-    reveal: ['A BUZZY BEETLE THIS TIME!', 'STILL NOT THE REAL KING.'],
+    reveal: ['A BUZZY BEETLE, UNDER THE', 'SPELL. STILL NOT THE KING.'],
     news: ['SOMEONE SLIPPED THE KOOPAS', 'A MAP SIGNED - P. IT LED', 'THEM STRAIGHT INTO A', 'SWAMP. HA!'],
   },
   '4-4': {
-    reveal: ['A SPINY IN A KING SUIT!', 'OUCH. STILL A FAKE.'],
-    news: ['THE KING WAVED THE WAND AT', 'US, BUT IT ONLY FIZZLED!', "IT'S GETTING WEAKER."],
+    reveal: ['A SPINY UNDER THE SPELL,', 'IN A KING SUIT. OUCH.'],
+    news: ['LARRY IS TELLING EVERYONE', 'THE KING STOLE HIS WAND.', "FOR ONCE, HE'S NOT LYING."],
   },
   '5-4': {
-    reveal: ['A LAKITU, OF ALL THINGS!', 'THE KING HIDES BEHIND', 'HIS OWN SHAPE.'],
+    reveal: ['A LAKITU, OF ALL THINGS!', 'UNDER THE SPELL LIKE THE', 'REST.'],
     news: [
       'THE KOOPAS STORMED OUR',
       'VILLAGE, BUT IT WAS EMPTY.',
@@ -99,12 +94,12 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
     ],
   },
   '6-4': {
-    reveal: ['A BLOOPER?! IN A CASTLE?', "THE WAND'S TRICKS ARE", 'GETTING SILLY.'],
+    reveal: ["A BLOOPER?! THE WAND'S", 'TRICKS ARE GETTING SILLY.'],
     news: ['THE KING SLEEPS WITH THE', 'WAND UNDER HIS PILLOW NOW.', "HE KNOWS YOU'RE COMING."],
   },
   '7-4': {
-    reveal: ['A HAMMER BRO! THE LAST', 'FAKE. THE REAL KING', 'WAITS IN HIS OWN LAND.'],
-    news: ['THE WAND IS CRACKING! ALL', 'THAT SPELL-WORK WORE IT', "THIN. HE'S GONE HOME."],
+    reveal: ['A HAMMER BRO UNDER THE', 'SPELL. THAT WAS HIS LAST', 'STAND-IN!'],
+    news: ['THE KOOPAS ARE ALL RUNNING', 'HOME. THE KING CALLED THEM', 'BACK TO GUARD HIS CASTLE.'],
   },
   '8-4': {
     reveal: ['NO TRICK THIS TIME. THAT', 'WAS THE REAL KING!'],
@@ -115,6 +110,304 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
 /** Said once as the wand breaks over 8-4's lava (campaign; a scene without on-screen text). */
 export const WAND_BREAK_SAID =
   "The wand spins out of Bowser's hand and breaks! Its glowing pieces swirl into a crack in the air.";
+
+/* ================================================================ S3 (0.4.23): castles, gates, welcomes, the rift
+ * docs/STORY.md 2.3a (the hero's remark at the axe), 2.3b (the world gates and the welcomes) and
+ * 2.12 (the rift waits for Sophia III). The castles' own pages are CASTLE_PAGES above.
+ */
+
+/** The hero's remark at castles 1-4 to 7-4 (2.3a: reaching the axe), by main level id, without the speaker. */
+const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
+  '1-4': ["WAIT... THAT'S NOT BOWSER!", "IT'S A GOOMBA IN A BOWSER", 'SUIT!'],
+  '2-4': ['ANOTHER FAKE! JUST A KOOPA', "TROOPA WEARING THE KING'S", 'FACE.'],
+  '3-4': ["A BUZZY BEETLE?! SO THAT'S", 'WHY THE SHELL WAS SO SHINY.'],
+  '4-4': ['A SPINY! NO WONDER THAT', 'SUIT LOOKED SO POINTY.'],
+  '5-4': ['A LAKITU?! WITHOUT ITS', 'CLOUD IT LOOKS SO SMALL.'],
+  '6-4': ['A BLOOPER?! IN A CASTLE?', 'HOW IS IT EVEN BREATHING?'],
+  '7-4': ['A HAMMER BRO! THE LAST', 'FAKE. THE REAL KING MUST', 'BE CLOSE.'],
+};
+
+/** The castles with a remark (1-4 to 7-4), in order. */
+export const REMARK_CASTLES: readonly string[] = Object.keys(CASTLE_REMARKS);
+
+/** Castle `level`'s remark card, the player's hero `hero` (full name) speaking; null without one. */
+export function castleRemark(level: string, hero: string): Page | null {
+  const body = CASTLE_REMARKS[level];
+  return body ? [`${hero}:`, '', ...body] : null;
+}
+
+const bowser = (...lines: string[]): Page => ['BOWSER:', '', ...lines];
+
+/** One world gate's lines (2.3b): Toad's reminder, Bowser's cutaway, Toad once the seal breaks. */
+export interface GateScript {
+  reminder: readonly Page[];
+  bowser: readonly Page[];
+  toad: readonly Page[];
+}
+
+/** The gates out of worlds 1-7 (Bowser's misfires grow worse each time), `hero` filling <HERO>. */
+export function gateScript(world: number, hero: string): GateScript | null {
+  switch (world) {
+    case 1:
+      return {
+        reminder: [
+          toad('THE WAY ON IS SEALED BY', "BOWSER'S MAGIC... AND WE", "STILL HAVEN'T FOUND LUIGI!"),
+          toad('THAT VILLAGER IN 1-1 SAW', "WHERE HE WENT. LET'S GO", 'BACK AND LOOK!'),
+        ],
+        bowser: [
+          bowser('HUH? WHAT WAS THAT? MY WAND', 'JUST... SPUTTERED.'),
+          bowser('...PROBABLY NOTHING. KEEP', 'LOOKING FOR THAT PRINCESS!'),
+        ],
+        toad: [
+          toad('WHOA! DID YOU SEE THAT? WE', 'MUST BE WEAKENING HIS', 'SPELLS!'),
+          toad('AND THE WAY TO ANOTHER', 'WORLD JUST OPENED UP.', "LET'S GO!"),
+        ],
+      };
+    case 2:
+      return {
+        reminder: [
+          toad(
+            'THE WAY ON IS STILL SEALED,',
+            'AND LINK IS STILL UNDER THE',
+            'SPELL. THAT OLD MAN IN 2-1',
+            'KNOWS SOMETHING, I BET.',
+          ),
+        ],
+        bowser: [
+          bowser('OW! MY EYEBROWS! THE WAND', 'JUST SPARKED AT ME!'),
+          bowser("WHO'S MESSING WITH MY", 'SPELLS? FIND THAT PRINCESS,', 'YOU FOOLS!'),
+        ],
+        toad: [
+          toad('ANOTHER SEAL, GONE! EVERY', 'HERO WE FREE TAKES A BITE', 'OUT OF HIS MAGIC.'),
+          toad('THE NEXT WORLD IS OPEN. I', 'CAN HEAR MACHINES HUMMING', 'OVER THERE...'),
+        ],
+      };
+    case 3:
+      return {
+        reminder: [
+          toad(
+            'STILL SEALED. MEGA MAN MUST',
+            'STILL BE OUT THERE. DR.',
+            'LIGHT IN 3-1 IS TRACKING',
+            'HIS SIGNAL!',
+          ),
+        ],
+        bowser: [
+          bowser('WHAT NOW?! THE WAND FIRED', 'BY ITSELF! MY PORTRAIT! I', 'LOOKED SO GOOD IN THAT!'),
+          bowser('THOSE HEROES ARE SUPPOSED', 'TO WORK FOR ME! WHO KEEPS', 'LETTING THEM GO?!'),
+        ],
+        toad: [
+          toad('THAT SEAL CRACKED LIKE AN', 'EGG! HIS SPELLS ARE GETTING', 'WEAKER, ALL RIGHT.'),
+          toad('ANOTHER WORLD IS OPEN. IT', 'LOOKS LIKE... A PLANET?', "CAREFUL, IT'S DARK IN THERE."),
+        ],
+      };
+    case 4:
+      return {
+        reminder: [
+          toad(
+            'STILL SEALED! WE NEED THE',
+            'HUNTER. THAT BIRD STATUE',
+            'DOWN IN 4-2 MUST KNOW',
+            'WHERE SHE IS.',
+          ),
+        ],
+        bowser: [
+          bowser('THE WAND IS SMOKING! IT', "WON'T STOP SMOKING!"),
+          bowser(
+            'LARRY! DID YOU SWAP MY',
+            'WAND FOR YOUR CHEAP SPARE?!',
+            '...WAIT. THIS IS THE GOOD',
+            'ONE.',
+          ),
+        ],
+        toad: [
+          toad('HALFWAY THERE! HIS WAND', 'MUST BE SMOKING BY NOW.'),
+          toad('THE NEXT WORLD IS OPEN...', 'BRR. I HEAR BATS. AND', 'ORGAN MUSIC.'),
+        ],
+      };
+    case 5:
+      return {
+        reminder: [
+          toad(
+            'STILL SEALED. THE VAMPIRE',
+            'HUNTER! THE TOWNSPERSON AT',
+            'THE GATE OF 5-4 SAID',
+            'SOMETHING ABOUT A LIFT...',
+          ),
+        ],
+        bowser: [
+          bowser("IS THAT... A CRACK? THAT'S", 'A CRACK! WHO PUT A CRACK IN', 'MY WAND?!'),
+          bowser('...NOBODY TELL LARRY.'),
+        ],
+        toad: [
+          toad('FIVE SEALS DOWN! THEY BREAK', "EASIER EVERY TIME. HE'S", 'RUNNING OUT OF MAGIC!'),
+          toad("THE NEXT WORLD IS OPEN. IT'S", 'SNOWING THERE, AND I SAW A', 'SHADOW ON A ROOFTOP...'),
+        ],
+      };
+    case 6:
+      return {
+        reminder: [
+          toad('STILL SEALED. WE NEED THE', 'NINJA. THAT AGENT AT THE', 'START OF 6-2 WAS TRACKING', 'HIM!'),
+        ],
+        bowser: [
+          bowser('WHOA! WHOA! THE WAND JUST', 'BLASTED MY THRONE TO BITS!'),
+          bowser('GRR! FINE! WHO NEEDS A', 'THRONE? KOOPAS! DOUBLE THE', 'GUARDS!'),
+        ],
+        toad: [
+          toad('SIX SEALS! I COULD HEAR', 'THAT ONE CRACK FROM HERE.'),
+          toad('THE NEXT WORLD IS OPEN. A', 'JUNGLE... AND EXPLOSIONS.', 'LOTS OF EXPLOSIONS.'),
+        ],
+      };
+    case 7:
+      return {
+        reminder: [
+          toad(
+            'STILL SEALED. WE NEED THE',
+            'SOLDIER. HIS PARTNER LANCE',
+            'IS WAITING AT THE START OF',
+            '7-3.',
+          ),
+        ],
+        bowser: [
+          bowser('THE WAND IS SHAKING! I CAN', 'BARELY HOLD IT!'),
+          bowser('ENOUGH! IF YOU WANT', 'SOMETHING DONE RIGHT, DO', 'IT YOURSELF.'),
+          bowser('COME TO MY CASTLE,', `${hero}. I'LL BE WAITING!`, 'BWA HA HA!'),
+        ],
+        toad: [
+          toad('THE LAST SEAL! THE ROAD', 'GOES STRAIGHT INTO', "BOWSER'S OWN LAND."),
+          toad(`THIS IS IT, ${hero}!`, "LET'S FINISH THIS!"),
+        ],
+      };
+    default:
+      return null;
+  }
+}
+
+/** World 8's rift still shut (2.12): Toad's reminder after the credits while Sophia III is captive. */
+export const RIFT_SEALED_PAGES: readonly Page[] = [
+  toad(
+    'THE KING IS BEATEN, BUT',
+    'THAT CRACK IS TOO SMALL TO',
+    "GO THROUGH. SOMETHING'S",
+    'HOLDING IT SHUT...',
+  ),
+  toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT. HER PILOT IS', 'LOST SOMEWHERE IN 8-4.'),
+];
+
+/** The map's hint line on a castle whose road is sealed (`name`: the hero's full name). */
+export function sealedHint(name: string): string {
+  return `SEALED - FREE ${name} FIRST`;
+}
+
+/** A world's local on its start node (2.3b): who speaks, and the welcome. */
+export interface WelcomeScript {
+  /** The local's name as the speaker and the hint line say it ('LAB ROBOT'). */
+  local: string;
+  /** Said by the announcer on the node ("A healer."). */
+  said: string;
+  pages: readonly Page[];
+}
+
+const welcome = (who: string, said: string, ...pages: string[][]): WelcomeScript => ({
+  local: who,
+  said,
+  pages: pages.map((p) => [`${who}:`, '', ...p]),
+});
+
+/** The welcomes of worlds 2-8, by map page. */
+export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
+  'smb-2': welcome(
+    'HEALER',
+    'A healer',
+    [
+      'WELCOME TO HYRULE,',
+      "TRAVELER. OR WHAT'S LEFT OF",
+      'IT. A SPELL DRAGGED OUR',
+      'LAND HERE, SEA AND ALL.',
+    ],
+    ['OUR HERO LINK HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
+    ['HE WAS LAST SEEN NEAR 2-1.', 'AN OLD MAN THERE KNOWS', 'THINGS. HE ALWAYS DOES.'],
+    ['LET ME HEAL YOU BEFORE YOU', "GO. ...OH. YOU'RE FINE.", 'NEVER MIND.'],
+  ),
+  'smb-3': welcome(
+    'LAB ROBOT',
+    'A lab robot',
+    ['BEEP! WELCOME TO THE YEAR', '20XX. WELL, A CHUNK OF IT.', 'YOUR KINGDOM HAS ODD', 'PHYSICS.'],
+    ['OUR HERO MEGA MAN HAS BEEN', 'REPROGRAMMED BY SOMEONE.', 'PLEASE HELP! BEEP!'],
+    ['HIS LAST SIGNAL CAME FROM', '3-1. DR. LIGHT IS THERE,', 'TRACKING IT.'],
+  ),
+  'smb-4': welcome(
+    'SCIENTIST',
+    'A scientist',
+    [
+      'WELCOME TO PLANET ZEBES...',
+      'OR A PIECE OF IT. OUR',
+      'WHOLE RESEARCH BASE CAME',
+      'ALONG FOR THE RIDE.',
+    ],
+    ['THE HUNTER WHO GUARDS US,', 'SAMUS, HAS BEEN BRAINWASHED', 'BY SOMEONE. PLEASE HELP!'],
+    ['HER LAST READING CAME FROM', "DEEP UNDER 4-2. THERE'S AN", 'OLD BIRD STATUE IN THERE.'],
+    ['ALSO, A KOOPA AIRSHIP KEEPS', 'CIRCLING 4-2. KEEP AN EYE', 'ON THE SKY!'],
+  ),
+  'smb-5': welcome(
+    'MERCHANT',
+    'A merchant',
+    [
+      'WELCOME, STRANGER, TO',
+      'TRANSYLVANIA. A FOUL SPELL',
+      'CARRIED OUR WHOLE COUNTRY',
+      'HERE. EVEN THE NIGHTS.',
+    ],
+    ['OUR HERO SIMON HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
+    ['HE WAS LAST SEEN IN THE', 'OLD CASTLE, 5-4. A', 'TOWNSPERSON WAITS AT ITS', 'GATE.'],
+    ['WANT TO BUY A WHITE', 'CRYSTAL? ...NO? NOBODY', 'EVER DOES.'],
+  ),
+  'smb-6': welcome(
+    'ELDER',
+    'The village elder',
+    ['WELCOME TO OUR NINJA', 'VILLAGE. A DARK SPELL', 'BROUGHT IT HERE, SNOW AND', 'ALL.'],
+    ['OUR YOUNG MASTER RYU HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
+    ['HE WAS LAST SEEN IN THE', 'CITY STREETS OF 6-2. AN', 'AMERICAN AGENT IS ON HIS', 'TRAIL.'],
+    ['A NINJA IS SEEN ONLY IF HE', 'WISHES TO BE. DO NOT LOOK', 'FOR HIM. LOOK FOR WHAT', 'HIDES HIM.'],
+  ),
+  'smb-7': welcome(
+    'SERGEANT',
+    'A sergeant',
+    ['WELCOME TO THE FRONT,', 'SOLDIER. SOME SPELL DROPPED', 'OUR WHOLE JUNGLE HERE,', 'ALIENS AND ALL.'],
+    ['OUR BEST MAN, BILL, HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
+    ['HE WAS LAST SEEN AT 7-3.', 'HIS PARTNER LANCE IS', 'WAITING THERE. MOVE OUT!'],
+  ),
+  'smb-8': welcome(
+    'MINER',
+    'A miner',
+    [
+      'WELCOME TO THE UNDERWORLD,',
+      'STRANGER. MUTANTS DOWN',
+      'BELOW, AND NOW A SPIKY KING',
+      'UPSTAIRS. LOVELY.',
+    ],
+    [
+      'OUR HERO IS A TANK CALLED',
+      'SOPHIA. SOMEONE BRAINWASHED',
+      'HER, AND HER PILOT IS LOST.',
+      'PLEASE HELP!',
+    ],
+    [
+      "THE BOY WENT INTO THE KING'S",
+      'CASTLE, 8-4, AFTER HIS FROG.',
+      'THAT FROG TAKES THE PIPES',
+      'NOBODY ELSE DOES.',
+    ],
+    ['ODD THING... SOMEONE PULLED', 'UP A TURNIP RIGHT HERE. WHO', 'GROWS TURNIPS NEXT TO LAVA?'],
+  ),
+};
+
+/** The map's hint line on a start node with a local (`TALK TO THE HEALER`). */
+export function welcomeHint(local: string): string {
+  return `TALK TO THE ${local}`;
+}
+
+/* ================================================================ end of S3's region */
 
 /**
  * The block the 8-4 credits add after THANKS FOR PLAYING (campaign): Chapter 1 ends there, and
@@ -198,8 +491,6 @@ export const OPENING_TOAD_PAGES: readonly Page[] = [
   toad('MARIO! THE KOOPAS ARE', 'ALREADY OUT HUNTING FOR', 'HER. WE HAVE TO FIND HER', 'FIRST!'),
   toad('COME ON, THE ROAD STARTS', "JUST OUTSIDE TOWN. LET'S", 'GO!'),
 ];
-
-const bowser = (...lines: string[]): Page => ['BOWSER:', '', ...lines];
 
 /**
  * 2.2: Bowser in person at the end of 1-0 (campaign): the pages before his spell (the wand comes

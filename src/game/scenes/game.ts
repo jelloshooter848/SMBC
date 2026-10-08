@@ -979,6 +979,8 @@ export class Game {
       secrets: save.secrets.slice(),
       position: { page: save.position.page, node: save.position.node },
       gameCleared: save.gameCleared,
+      // The world gates read the file's freed heroes (the same list freeHero adds to).
+      freed: this.freed,
     };
     // A file from before the story (or a test's file) counts what already happened as seen, and
     // a list from before 0.4.23 gets the new scenes whose trigger is already past (upgradeStory).

@@ -189,7 +189,16 @@ then their die frame is the king and they neither tell nor unmask.
 - **The unmasking:** however he is beaten, the disguise bursts in a puff of wand sparkles with a
   "poof", and the true form falls in his place (`bowser-die-N`, palette `bowser-true-form` in
   castles).
-- Toad's `fakes` scene on the World 1 map after 1-4 explains them.
+- **The unmask scenes** (0.4.23, `world/unmask.ts`; the campaign's 1-4 to 7-4 only, not 8-4, not
+  the Lost Kingdom, never classic play). Play holds while they run. Beaten with weapons
+  (`World.unmaskOnKill`, from `Bowser.flipOut`): the disguise bursts (`Bowser.burst`), the true form
+  drops onto the bridge dazed (stars over its head) and the hero (in co-op the one nearer the axe)
+  runs up, jumps over it and lands at the axe. Reaching the axe with the fake standing
+  (`World.unmaskAtAxe`): it bursts, the creature looks about, the hero turns to look and says the
+  castle's remark (`castleRemark`, `World.remarkHook` → `story/castle-remark.ts`, beat
+  `remark:<id>`, once per castle per file; after that the hero just looks a moment), turns back,
+  and the axe goes. Either way the bridge then falls as before, the creature with it.
+- Toad's `fakes` map scene is gone (0.4.23): castle 1-4's first page says it.
 
 ## 8-4 and the hand-off
 
@@ -200,6 +209,31 @@ then their die frame is the king and they neither tell nor unmask.
   STORY ISN'T OVER." after THANKS FOR PLAYING (`creditsLines(true)`, said by the announcer too).
 - After the credits the file returns to World 8, where Toad's rift scene (a major scene, due once
   `gameCleared`) plays first and then the road on to Lost World 1 draws in.
+
+## The world gates and the welcomes (0.4.23, `map/world-gate.ts`, `map/gate-scene.ts`)
+
+- **The rule** (`rules.gateHolds`): a `WorldExit` with `gate: '<hero>'` (SMB worlds 1-8; World 8's
+  is the rift on to Lost World 1) stays shut while the file has not freed that hero and the page it
+  leads to is not open yet (a world a file already reached keeps its road). The file's freed list
+  reaches the rules as `MapProgress.freed` (the Game's own `freed` array); without it there are no
+  gates. Unlock all keeps every road.
+- **The seal** (`rules.sealStands`): the castle is cleared, only the hero is missing. The map draws
+  a wall of wand sparkles at the page's edge (World 8: the rift's thin crack), the castle's hint
+  line reads `SEALED - FREE <NAME> FIRST`, and Toad's reminder plays once (`sealed:<page>`; World
+  8's is `RIFT_SEALED_PAGES`).
+- **The gate scene** (`gate:<page>`): when the page shows with its gate exit waiting in the reveal
+  (the castle and the hero both done), the map's `gate` mode plays Bowser's throne-room cutaway
+  (his misfire, worse each world; his pages in the box at the top, OK / BACK), the seal shattering
+  (`seal-shatter`), the road drawing in, then Toad walking in with the gate's pages. World 8: the
+  crack tears open (when it had been seen shut), then Toad's rift scene (it waits for Sophia III,
+  `riftOpen`), then the road.
+- **The welcomes** (`welcome:<page>`, worlds 2-8): the local (`locals` sheet, `LOCAL_SPRITES`)
+  stands one tile above the start node; on the first arrival there it speaks in the box at the
+  top; standing on the node the hint line reads `TALK TO THE <LOCAL>` and up plays it again.
+- **The crystal ball** (0.4.23): once found, a hidden hero's shadow shows by its level from the
+  first arrival in that world, even before the level's node is reached.
+- Old files: `seedSeen` (and `seedSeenS3`) count the gates of roads already open, the welcomes of
+  open worlds and the remarks of cleared castles as seen.
 
 ## Adding a beat
 

@@ -16,7 +16,11 @@ import { CRYSTAL_BALL } from '@game/map/captives';
  * - `crash`         the airship crash on World 4 (the crystal ball);
  * - `rift`          Toad works out Peach's note after the 8-4 credits;
  * - `bowser-8-4`    Bowser's "no more stand-ins" on first entering 8-4's bridge room;
- * - `hub` / `arena` the first visit to the Warp Zone hub / the Mini Game Arena.
+ * - `hub` / `arena` the first visit to the Warp Zone hub / the Mini Game Arena;
+ * - `gate:<page>`   (0.4.23) the world gate out of page `page` broke: Bowser's cutaway and Toad;
+ * - `sealed:<page>` (0.4.23) Toad's reminder while that road is sealed ('sealed:smb-8': the rift);
+ * - `welcome:<page>` (0.4.23) the local's welcome on the first arrival on page `page` (worlds 2-8);
+ * - `remark:<level>` (0.4.23) the hero's remark at castle `level`'s axe ('remark:1-4').
  *
  * Gone in 0.4.23 (docs/STORY.md 2.14; old files may still list them, nothing reads them):
  * `enter:<page>:<hero>`, `missed:<hero>`, `joined`, `joined:<hero>`, `all-freed`, `restyle:<level>`.
@@ -53,6 +57,14 @@ export const beat = {
   bowser84: 'bowser-8-4',
   hub: 'hub',
   arena: 'arena',
+  /** The world gate out of page `page` ('smb-1'..'smb-7') broke: Bowser's cutaway, the seal, Toad. */
+  gate: (page: string) => `gate:${page}`,
+  /** Toad's reminder while page `page`'s road on is sealed ('sealed:smb-8': the rift waits for Sophia III). */
+  sealed: (page: string) => `sealed:${page}`,
+  /** The local's welcome, the first arrival on page `page` ('smb-2'..'smb-8'). */
+  welcome: (page: string) => `welcome:${page}`,
+  /** The hero's remark at castle `level`'s axe ('1-4'..'7-4'). */
+  remark: (level: string) => `remark:${level}`,
 } as const;
 
 /** The hero every file starts with (never a captive). The one definition: save-files imports and re-exports it. */
@@ -88,16 +100,17 @@ export function seedSeen(progress: MapProgress, freed: readonly string[]): strin
  * when it is past. Pure.
  *
  * - `opening` and `spell` once the file has cleared anything (1-0 first of all);
- * - `luigi-runs` once 1-1 is cleared or Luigi is freed.
+ * - `luigi-runs` once 1-1 is cleared or Luigi is freed;
+ * - S3's `gate:` / `sealed:` / `welcome:` / `remark:` beats as seedSeenS3 gives them.
  *
- * Every other 0.4.23 beat (the freeing talks, the gates, the welcomes, the castle remarks) adds its
- * own rule here too, so an older file's list is brought up to date with it.
+ * The freeing talks need no beat: each plays once, as its hero is freed (scenes/free-hero.ts).
  */
 export function seedNew(progress: MapProgress, freed: readonly string[]): string[] {
   const out: string[] = [];
   const cleared = progress.cleared;
   if (cleared.length) out.push(beat.opening, beat.spell);
   if (cleared.includes('1-1') || freed.includes('luigi')) out.push(beat.luigiRuns);
+  out.push(...seedSeenS3(progress));
   return out;
 }
 
@@ -122,4 +135,23 @@ export function upgradeStory(
   if (story?.includes(STORY_REV)) return [...story];
   const add = story ? seedNew(progress, freed) : seedSeen(progress, freed);
   return [...new Set([...(story ?? []), ...add, STORY_REV])];
+}
+
+/**
+ * S3's part of seedNew (0.4.23): the gates, the welcomes and the castle remarks already past:
+ * `gate:<page>` and `sealed:<page>` for every SMB page whose road on has led somewhere already
+ * (the next page open), `welcome:<page>` for every open page of worlds 2-8, and `remark:<id>` for
+ * every castle cleared.
+ */
+export function seedSeenS3(progress: MapProgress): string[] {
+  const out: string[] = [];
+  const open = progress.pages;
+  for (let n = 1; n <= 8; n++) {
+    const page = `smb-${n}`;
+    const next = n < 8 ? `smb-${n + 1}` : 'll-1';
+    if (open.includes(next)) out.push(beat.gate(page), beat.sealed(page));
+    if (n >= 2 && open.includes(page)) out.push(beat.welcome(page));
+    if (n <= 7 && progress.cleared.includes(`${n}-4`)) out.push(beat.remark(`${n}-4`));
+  }
+  return out;
 }

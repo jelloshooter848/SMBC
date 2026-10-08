@@ -235,10 +235,11 @@ function fireballs(level: LevelData, story: boolean, worldNo = level.world) {
 }
 
 describe('the fake Bowsers unmask (campaign)', () => {
-  it('fireballs: the disguise bursts with a poof and the true form drops', () => {
+  it('fireballs: the disguise bursts with a poof and the true form drops onto the bridge (0.4.23)', () => {
+    // The hero then jumps over it to the axe: tests/sim/castle-unmask.test.ts.
     const r = fireballs(load('world3/3-4.map', '3-4'), true);
-    expect(r.alive).toBe(false);
-    expect(r.corpse?.frame).toBe('bowser-die-3');
+    expect(r.alive).toBe(true);
+    expect(r.corpse).toBeUndefined();
     expect(r.poof).toBe(true);
     expect(r.sfx).toContain('poof');
   });

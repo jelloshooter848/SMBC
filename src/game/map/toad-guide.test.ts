@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { beat } from '../story/beats';
-import { ARENA_PAGE, CRASH_PAGES, FAKES_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES } from '../story/script';
+import { ARENA_PAGE, CRASH_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES } from '../story/script';
 import * as script from '../story/script';
 import { dueScenes, type GuideInput } from './toad-guide';
 import type { MapProgress } from './types';
@@ -64,25 +64,35 @@ describe('dueScenes', () => {
       'JOINED_PAGES',
       'ALL_FREED_BEFORE',
       'ALL_FREED_AFTER',
+      'FAKES_PAGES',
     ])
       expect(name in script, name).toBe(false);
   });
 
-  it('the fake Bowsers: once, on World 1 after 1-4, walking in', () => {
-    const s = dueScenes(input({ prog: { cleared: ['1-0', '1-4'] }, story: [beat.enter('smb-1')] }));
-    expect(s).toEqual([{ ids: [beat.fakes], pages: [...FAKES_PAGES], walk: true }]);
-    expect(
-      dueScenes(input({ page: 'smb-2', prog: { cleared: ['1-0', '1-4'] }, story: ['enter:smb-2'] })),
-    ).toEqual([]);
+  it('the fake Bowsers: no map card after 1-4 any more (castle 1-4 says it, 0.4.23)', () => {
+    expect(dueScenes(input({ prog: { cleared: ['1-0', '1-4'] }, story: [beat.enter('smb-1')] }))).toEqual([]);
   });
 
   it('the crash, the rift, the extras', () => {
     const crash = dueScenes(input({ page: 'smb-4', crash: true, story: ['enter:smb-4'] }));
     expect(crash).toEqual([{ ids: [beat.crash], pages: [...CRASH_PAGES], walk: true }]);
-    const rift = dueScenes(
-      input({ page: 'smb-8', hero: 'MEGA MAN', story: ['enter:smb-8'], prog: { gameCleared: true } }),
-    );
-    expect(rift).toEqual([{ ids: [beat.rift], pages: riftPages('MEGA MAN'), walk: true }]);
+    const rift = (freed: string[]) =>
+      dueScenes(
+        input({
+          page: 'smb-8',
+          hero: 'MEGA MAN',
+          freed,
+          story: ['enter:smb-8'],
+          prog: { gameCleared: true },
+        }),
+      );
+    // The rift waits for Sophia III (0.4.23).
+    expect(rift(['mario', 'sophia'])[0]).toEqual({
+      ids: [beat.rift],
+      pages: riftPages('MEGA MAN'),
+      walk: true,
+    });
+    expect(rift(['mario']).map((s) => s.ids)).not.toContainEqual([beat.rift]);
     expect(dueScenes(input({ page: 'hub' }))).toEqual([{ ids: [beat.hub], pages: [HUB_PAGE], walk: false }]);
     expect(dueScenes(input({ page: 'arena' }))).toEqual([
       { ids: [beat.arena], pages: [ARENA_PAGE], walk: false },
@@ -91,7 +101,7 @@ describe('dueScenes', () => {
 
   it('the play order: the major scenes, then the extras; nothing on Lost pages', () => {
     const g = input({ page: 'smb-1', prog: { cleared: ['1-0', '1-1', '1-4'] }, freed: HEROES });
-    expect(ids(g)).toEqual([beat.enter('smb-1'), beat.fakes]);
+    expect(ids(g)).toEqual([beat.enter('smb-1')]);
     expect(dueScenes({ ...g, page: 'll-1' })).toEqual([]);
   });
 });

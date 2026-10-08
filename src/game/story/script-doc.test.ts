@@ -10,8 +10,14 @@ import {
   BOWSER_SPELL_LAST,
   BOWSER_SPELL_PAGES,
   CASTLE_PAGES,
+  castleRemark,
+  gateScript,
+  REMARK_CASTLES,
+  RIFT_SEALED_PAGES,
+  sealedHint,
+  WELCOMES,
+  welcomeHint,
   CRASH_PAGES,
-  FAKES_PAGES,
   FREED_TALKS,
   freedTalk,
   HUB_PAGE,
@@ -71,13 +77,6 @@ function docBlocks(from: string, to: string): { section: string; lines: string[]
   return out;
 }
 
-/** The doc's `Hint line: \`...\`` lines in the shipped sections. */
-function docHints(): string[] {
-  const md = readFileSync(resolve(__dirname, '../../../docs/STORY.md'), 'utf8');
-  const shipped = md.slice(md.indexOf('\n### 2.1 '), md.indexOf('\n### 2.15 '));
-  return [...shipped.matchAll(/Hint line: `([^`]+)`/g)].map((m) => m[1] as string);
-}
-
 const hero = (id: string) => CHARACTERS.find((c) => c.id === id) as CharacterDef;
 
 /** The captive's cards (free-hero.ts) for hero `id`, with player 1's name back to `<HERO>`. */
@@ -102,7 +101,6 @@ function scriptPages(): Map<string, Page> {
   add('BOWSER_SPELL_LAST', BOWSER_SPELL_LAST);
   list('WORLD1_PAGES', WORLD1_PAGES);
   add('LUIGI_RUNS_PAGE', LUIGI_RUNS_PAGE);
-  list('FAKES_PAGES', FAKES_PAGES);
   add('noMoreStandIns', noMoreStandIns(HERO));
   list('LARRY_PAGES', LARRY_PAGES);
   list('STORY_CRYSTAL_BALL_PAGES', STORY_CRYSTAL_BALL_PAGES);
@@ -127,6 +125,17 @@ function scriptPages(): Map<string, Page> {
   // S2 (0.4.23): each hint NPC's after-freed page, and every hero's freed talk (2.4-2.11).
   for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}.after`, p.after ?? []);
   for (const id of Object.keys(FREED_TALKS)) list(`FREED_TALKS.${id}`, freedTalk(id, HERO));
+  // S3 (0.4.23): the castle remarks, the world gates, the rift's reminder and the welcomes.
+  for (const id of REMARK_CASTLES) add(`castleRemark.${id}`, castleRemark(id, HERO) as Page);
+  for (let w = 1; w <= 7; w++) {
+    const g = gateScript(w, HERO);
+    if (!g) continue;
+    list(`gateScript.${w}.reminder`, g.reminder);
+    list(`gateScript.${w}.bowser`, g.bowser);
+    list(`gateScript.${w}.toad`, g.toad);
+  }
+  list('RIFT_SEALED_PAGES', RIFT_SEALED_PAGES);
+  for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}`, w.pages);
   return out;
 }
 
@@ -162,10 +171,14 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
     expect(missing).toEqual([]);
   });
 
-  it("every hint line of the doc is one of script.ts's, and back", () => {
-    // 0.4.23: Toad's per-hero hint lines (MISSED_HINT) are gone; a shadow's line is the generic
-    // one again (world-map.ts HIDING_HINT). New hint lines join this list as they are built.
-    const lines: string[] = [];
-    expect(docHints().sort()).toEqual(lines.sort());
+  it("the gates' and welcomes' hint lines (`hint line ...`) are script.ts's, and back (S3)", () => {
+    const md = readFileSync(resolve(__dirname, '../../../docs/STORY.md'), 'utf8');
+    const shipped = md.slice(md.indexOf('\n### 2.1 '), md.indexOf('\n### 2.15 '));
+    const doc = [...shipped.matchAll(/[Hh]int line(?: on [^:`]+:)?\s+`((?:SEALED|TALK)[^`]+)`/g)].map(
+      (m) => m[1] as string,
+    );
+    const names = ['LUIGI', 'LINK', 'MEGA MAN', 'SAMUS', 'SIMON', 'RYU', 'BILL', 'SOPHIA III'];
+    const ours = [...names.map(sealedHint), ...Object.values(WELCOMES).map((w) => welcomeHint(w.local))];
+    expect([...new Set(doc)].sort()).toEqual(ours.sort());
   });
 });

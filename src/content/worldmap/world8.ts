@@ -51,7 +51,7 @@ export const WORLD_8: WorldMapPage = {
     { from: '8-2', to: 'bonus-8', points: poly([7, 11], [7, 13], [4, 13]) },
   ],
   // The story goes on: Lost World 1 (a cross-group road, the only one; docs/WORLD_MAP.md).
-  exits: [{ from: '8-4', to: 'll-1', side: 'right', points: poly([14, 5], [15, 5]) }],
+  exits: [{ from: '8-4', to: 'll-1', side: 'right', points: poly([14, 5], [15, 5]), gate: 'sophia' }],
   actors: [
     actor('podoboo', 184, 176, { height: 44, period: 140 }),
     actor('podoboo', 224, 208, { height: 36, period: 170, phase: 80 }),

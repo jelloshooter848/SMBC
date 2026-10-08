@@ -48,7 +48,7 @@ export const WORLD_4: WorldMapPage = {
     { from: '4-3', to: '4-4', points: poly([10, 11], [13, 11], [13, 8], [12, 8], [12, 5], [13, 5]) },
     { from: '4-2', to: 'bonus-4', exit: 'secret:larry', points: poly([4, 11], [4, 13], [2, 13]) },
   ],
-  exits: [{ from: '4-4', to: 'smb-5', side: 'right', points: poly([13, 5], [15, 5]) }],
+  exits: [{ from: '4-4', to: 'smb-5', side: 'right', points: poly([13, 5], [15, 5]), gate: 'samus' }],
   actors: [
     actor('lakitu', 120, 32, { range: 80 }),
     actor('cloud', 10, 20, { size: 2, speed: 0.1 }),

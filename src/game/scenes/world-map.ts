@@ -18,6 +18,7 @@ import {
   openPaths,
   parseRevealId,
   pathId,
+  revealId,
   warpText,
   exitHint,
   warpTo,
@@ -63,10 +64,23 @@ import {
 import { AirshipCrash, type CrashNames } from '../map/airship-crash';
 import { arenaPadHint, arenaPadSaid, arenaPadTouch, drawArenaPad, playArenaPad } from '../arena';
 import { dueScenes, ToadGuide, type ToadScene } from '../map/toad-guide';
-import { storyOn } from '../story/beats';
+import { beat, storyOn } from '../story/beats';
 import { fontText } from '../hud/text';
 import { CardScene } from './message';
 import { pageSaid } from '../story/cards';
+// S3 (0.4.23): the world gates, the welcomes (map/world-gate.ts, map/gate-scene.ts).
+import {
+  gateDue,
+  gateScenes,
+  localHint,
+  localNode,
+  sealedExit,
+  smbWorld,
+  welcomeOf,
+} from '../map/world-gate';
+import { drawCrack, drawSeal, GateScene } from '../map/gate-scene';
+import { LOCAL_SPRITES } from '@content/sprites/locals';
+import { sealedHint, type Page } from '../story/script';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -138,8 +152,11 @@ export interface WorldMapOptions {
   slideFrom?: PageId;
 }
 
-/** `story`: Toad's box at the top of the map (map/toad-guide.ts), before the page's reveal. */
-type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade' | 'cutscene' | 'story';
+/**
+ * `story`: Toad's box at the top of the map (map/toad-guide.ts), before the page's reveal.
+ * `gate`: a world gate breaking (map/gate-scene.ts), before the reveal and Toad (0.4.23).
+ */
+type Mode = 'reveal' | 'idle' | 'walk' | 'slide' | 'fade' | 'cutscene' | 'story' | 'gate';
 
 /**
  * The Chapter 2 gate's card (rules.chapterGated): shown over the map instead of starting a Lost
@@ -353,6 +370,10 @@ export class WorldMapScene implements Scene {
   } | null = null;
   /** Toad's story scenes playing over the map (the `story` mode), or null. */
   toad: ToadGuide | null = null;
+  /** A world gate breaking (the `gate` mode, map/gate-scene.ts), or null. */
+  gate: GateScene | null = null;
+  /** Toad's pages once a gate's road has drawn in (he walks in after the reveal). */
+  private gateToad: readonly Page[] | null = null;
   /** The Hammer Bro wandering the road to a used bonus spot on this page, or null. */
   guard: MapGuard | null = null;
   private guardGrace = 0;
@@ -428,6 +449,7 @@ export class WorldMapScene implements Scene {
    * `crash`): Toad's due story scenes first (campaign), then the page's reveal draws in.
    */
   private arrived(crash = false): void {
+    if (!crash && this.startGate()) return;
     if (this.startStory(crash)) return;
     this.afterStory();
   }
@@ -448,9 +470,11 @@ export class WorldMapScene implements Scene {
    * story plays, story/beats.ts storyOn): played as the `story` mode. False when none has a
    * page to show (scenes with none are only marked seen).
    */
-  private startStory(crash: boolean): boolean {
+  private startStory(crash: boolean, lead: readonly Page[] = []): boolean {
     const game = this.game;
-    const scenes = this.storyScenes(crash);
+    // A gate's Toad (a major scene: he walks in) leads, then whatever else is due.
+    const first: ToadScene[] = lead.length ? [{ ids: [], pages: [...lead], walk: true }] : [];
+    const scenes = [...first, ...this.storyScenes(crash)];
     if (!scenes.length) return false;
     // Toad stands just left of the hero, or right of him when the hero is at the left edge
     // (World 1's start), so he never covers the hero.
@@ -471,7 +495,7 @@ export class WorldMapScene implements Scene {
     const game = this.game;
     // Not on a page shown only through developer "Unlock all".
     if (!storyOn(game) || !this.page.nodes.length || !isPageOpen(this.progress, this.page.id)) return [];
-    return dueScenes({
+    const due = dueScenes({
       page: this.page.id,
       seen: (id) => game.seen(id),
       progress: this.progress,
@@ -480,6 +504,77 @@ export class WorldMapScene implements Scene {
       hero: fontText(game.state.character.name),
       crash,
     });
+    // S3: the gate's reminder and the local's welcome (routine), after Toad's own.
+    return [...due, ...gateScenes(this.gateInput())];
+  }
+
+  /** What map/world-gate.ts reads about the page shown. */
+  private gateInput() {
+    const game = this.game;
+    return {
+      page: this.page,
+      progress: this.progress,
+      seen: (id: string) => game.seen(id),
+      hero: fontText(game.state.character.name),
+      node: this.node,
+    };
+  }
+
+  /**
+   * A world gate breaks on this page (map/world-gate.ts gateDue: its road on is waiting in the
+   * reveal; campaign story only, on a page really open): its beat is marked and the `gate` mode
+   * plays Bowser's cutaway and the seal shattering (World 8: the crack tearing open). False when
+   * none is due.
+   */
+  private startGate(): boolean {
+    const game = this.game;
+    if (!storyOn(game) || !this.page.nodes.length || !isPageOpen(this.progress, this.page.id)) return false;
+    const pending = this.revealQueue.map((id) => revealId(this.page.id, id));
+    const due = gateDue(this.gateInput(), pending);
+    if (!due) return false;
+    game.markSeen(beat.gate(this.page.id));
+    const end = due.exit.points[due.exit.points.length - 1] ?? [15, 7];
+    const scene = new GateScene(
+      due,
+      { x: end[0] * 16, y: end[1] * 16 },
+      {
+        say: (text) => this.say(text),
+        sfx: (id) => game.ctx.audio.sfx(id),
+        prompt: () => abilityHint(game, 'OK', 'jump'),
+        reduceFlashing: () => game.ctx.reduceFlashing,
+      },
+    );
+    this.gateToad = due.toad.length ? due.toad : null;
+    if (scene.done) {
+      this.afterGate();
+      return true;
+    }
+    this.gate = scene;
+    this.mode = 'gate';
+    return true;
+  }
+
+  private updateGate(inputs: readonly InputFrame[]): void {
+    const g = this.gate;
+    if (g) g.update(inputs);
+    if (g && !g.done) return;
+    this.gate = null;
+    this.afterGate();
+  }
+
+  /**
+   * The gate scene is over: worlds 1-7 draw the road in, then Toad walks in (finishReveal);
+   * World 8 goes on to Toad's rift scene, then its road (the usual order).
+   */
+  private afterGate(): void {
+    if (this.gateToad) {
+      this.revealT = 0;
+      if (this.revealQueue.length) this.mode = 'reveal';
+      else this.finishReveal();
+      return;
+    }
+    if (this.startStory(false)) return;
+    this.afterStory();
   }
 
   /**
@@ -622,7 +717,9 @@ export class WorldMapScene implements Scene {
         ...exits.map((e) => ({ id: exitId(e), dots: pathDots(e.points, true, false) })),
       ],
       nodes,
-      heroes: nodes.flatMap(({ node }) => this.heroMarks(page, node)),
+      // Every node may have a hero beside it: a shown node's silhouette or trophy, and with the
+      // crystal ball a silhouette by a node not reached yet (heroMarks).
+      heroes: page.nodes.flatMap((node) => this.heroMarks(page, node)),
     };
     this.views.set(page, v);
     return v;
@@ -641,9 +738,15 @@ export class WorldMapScene implements Scene {
       const hint = heroHint(h, this.progress, this.game.freed);
       const def = this.game.deps.characters.find((c) => c.id === h.hero);
       if (hint === 'none' || !def) continue;
-      // A silhouette (the crystal ball's hint before a clear) only on a node the file has really
-      // reached: never one shown only through developer "Unlock all".
-      if (hint === 'silhouette' && !isOpen(this.progress, page, node.id)) continue;
+      // A node not shown (yet): nothing beside it, except, once the crystal ball is found, the
+      // silhouette of a hero hiding on a world the file has really reached (0.4.23, docs/STORY.md
+      // 2.7: the ball shows each world's hider from the first arrival). Never one shown only
+      // through developer "Unlock all".
+      const reached = isOpen(this.progress, page, node.id);
+      const ball = this.progress.secrets.includes(CRYSTAL_BALL) && isPageOpen(this.progress, page.id);
+      const shows =
+        hint === 'trophy' ? isOpen(this.progress, page, node.id, this.unlockAll) : reached || ball;
+      if (!shows) continue;
       // The silhouette peeks out from behind the dot (half of it hidden); the trophy's pedestal
       // stands clear of it (and of the player's marker on the node), on the ground beside it.
       const out0 = hint === 'silhouette' ? 9 : 18;
@@ -723,6 +826,10 @@ export class WorldMapScene implements Scene {
     const hint = exitHint(this.progress, this.page, n.id, this.unlockAll);
     let text = this.nodeLabelPlain(n, label, state);
     if (hint) text += `. ${spoken(hint)}`;
+    const sealed = this.sealedHintAt(n);
+    if (sealed) text += `. ${spoken(sealed)}`;
+    const local = this.localHere(n) ? welcomeOf(this.page.id) : null;
+    if (local) text += `. ${local.said}. Up to talk`;
     if (this.isHiding(n)) text += `. ${HIDING_SAID}`;
     return text;
   }
@@ -733,6 +840,49 @@ export class WorldMapScene implements Scene {
     const stage = n.level?.split('-').pop();
     const lvl = stage ? `${label}-${stage}` : label;
     return n.kind === 'castle' ? `${lvl} castle, ${state}` : `${lvl}, ${state}`;
+  }
+
+  /**
+   * The seal's hint line on node `n` when the road on leaving it is sealed (story only; never
+   * through Unlock all), else ''.
+   */
+  private sealedHintAt(n: MapNode): string {
+    if (!storyOn(this.game) || this.unlockAll) return '';
+    const e = sealedExit(this.progress, this.page);
+    if (!e || e.from !== n.id || !e.gate) return '';
+    const def = this.game.deps.characters.find((c) => c.id === e.gate);
+    return sealedHint(fontText(def?.name ?? e.gate).toUpperCase());
+  }
+
+  /** The sealed hint while the hero stands still on its node, else ''. */
+  private sealedHintHere(): string {
+    if (this.mode !== 'idle') return '';
+    const n = this.nodeById(this.node);
+    return n ? this.sealedHintAt(n) : '';
+  }
+
+  /** Node `n` is this page's start with a local standing by it (worlds 2-8; story only). */
+  private localHere(n: MapNode): boolean {
+    return storyOn(this.game) && localNode(this.progress, this.page) === n;
+  }
+
+  /** TALK (up) on a start node with a local: the welcome again, in the box at the top. */
+  private talkToLocal(): void {
+    const w = welcomeOf(this.page.id);
+    if (!w) return;
+    const game = this.game;
+    const guide = new ToadGuide(
+      [{ ids: [], pages: [...w.pages], walk: false }],
+      { x: 0, y: 0 },
+      {
+        markSeen: (id) => game.markSeen(id),
+        say: (text) => this.say(text),
+        prompt: () => abilityHint(game, 'OK', 'jump'),
+      },
+    );
+    if (guide.done) return;
+    this.toad = guide;
+    this.mode = 'story';
   }
 
   /** The warp node the hero stands still on (the hint line shows), or null. */
@@ -760,6 +910,10 @@ export class WorldMapScene implements Scene {
           ? BONUS_CLOSED_HINT
           : BONUS_SPENT_HINT;
     if (here?.kind === 'game') return arenaPadHint(this.game, here);
+    // S3: a sealed road on (SEALED - FREE <NAME> FIRST); a world's local on its start node.
+    const sealed = this.sealedHintHere();
+    if (sealed) return sealed;
+    if (here && this.localHere(here)) return localHint(this.page.id);
     return (
       exitHint(this.progress, this.page, this.node, this.unlockAll) ||
       (here && this.hidingHere() ? HIDING_HINT : '')
@@ -780,6 +934,9 @@ export class WorldMapScene implements Scene {
         return;
       case 'story':
         this.updateStory(inputs);
+        return;
+      case 'gate':
+        this.updateGate(inputs);
         return;
       case 'walk':
         this.updateWalk();
@@ -803,7 +960,8 @@ export class WorldMapScene implements Scene {
   touchLabels(): TouchLabels {
     if (this.mode === 'reveal' || this.mode === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
     // Toad's box: OK the next page, SKIP the rest of that scene.
-    if (this.mode === 'story') return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'SKIP' };
+    if (this.mode === 'story' || this.mode === 'gate')
+      return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'SKIP' };
     if (this.mode !== 'idle') return NO_TOUCH_BUTTONS;
     const here = this.nodeById(this.node);
     const open = !!here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll);
@@ -874,6 +1032,12 @@ export class WorldMapScene implements Scene {
     this.revealNodes = [];
     if (opened.length) this.say(opened.join('. '));
     this.game.autosave();
+    // A gate's road has drawn in: Toad walks in (then whatever else is due).
+    const toad = this.gateToad;
+    if (toad) {
+      this.gateToad = null;
+      this.startStory(false, toad);
+    }
   }
 
   /**
@@ -884,6 +1048,7 @@ export class WorldMapScene implements Scene {
     return (
       this.mode === 'reveal' ||
       this.mode === 'cutscene' ||
+      this.mode === 'gate' ||
       (this.mode === 'story' && this.revealQueue.length > 0)
     );
   }
@@ -949,6 +1114,11 @@ export class WorldMapScene implements Scene {
     for (const d of DIRS) {
       if (!input.pressed(d)) continue;
       const step = here ? nextStep(this.page, this.progress, this.node, d, MAP_PAGES, this.unlockAll) : null;
+      // S3: up on a start node with a local (no road goes up from it) talks to the local.
+      if (!step && d === 'up' && here && this.localHere(here)) {
+        this.talkToLocal();
+        return;
+      }
       if (!step) {
         this.game.ctx.audio.sfx('bump');
         return;
@@ -1349,6 +1519,8 @@ export class WorldMapScene implements Scene {
     this.drawHint(r);
     // Toad (walking in for a major scene) and his box at the top, over the map.
     this.toad?.draw(r, this.game.ctx.assets);
+    // A world gate breaking: the cutaway over the dimmed map, or the seal shattering.
+    this.gate?.draw(r, this.game.ctx.assets);
   }
 
   /** The hint line across the bottom (a warp node, open or locked, or a locked exit's hint). */
@@ -1412,6 +1584,7 @@ export class WorldMapScene implements Scene {
       const m = v.heroes[i] as HeroMark;
       if (m.hint === 'trophy') this.drawHeroMark(r, page, m, ox);
     }
+    this.drawGateAndLocal(r, page, ox);
     if (hero && this.guard) this.drawGuard(r, this.guard);
     const crash = hero ? this.crash?.scene : undefined;
     if (crash) {
@@ -1420,6 +1593,34 @@ export class WorldMapScene implements Scene {
       if (at) this.drawHeroes(r, at.x, at.y);
       crash.draw(r, this.game.ctx.assets, this.game.ctx.reduceFlashing);
     } else if (hero && page.nodes.length) this.drawHeroes(r);
+  }
+
+  /**
+   * S3 (0.4.23, story only): the seal across a sealed road at the page's edge (World 8: the rift's
+   * crack, held shut), kept while a gate scene runs until it shatters; and a world's local beside
+   * its start node, blinking now and then.
+   */
+  private drawGateAndLocal(r: Renderer, page: WorldMapPage, ox: number): void {
+    if (!storyOn(this.game) || this.unlockAll) return;
+    const reduce = this.game.ctx.reduceFlashing;
+    const gate = page === this.page ? this.gate : null;
+    const e = gate ? (gate.sealShown ? gate.gate.exit : null) : sealedExit(this.progress, page);
+    const end = e?.points[e.points.length - 1];
+    if (end) {
+      if (smbWorld(page.id) === 8) drawCrack(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
+      else drawSeal(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
+    }
+    const start = localNode(this.progress, page);
+    const who = LOCAL_SPRITES[page.id];
+    if (!start || !who) return;
+    // One tile up from the node (no road leaves a start that way), feet on that tile's ground line.
+    const blink = this.t % 200 < 8 ? 1 : 0;
+    r.sprite(
+      this.game.ctx.assets.sheet('locals'),
+      `${who}-${blink}`,
+      ox + start.x * 16,
+      start.y * 16 - 16 + 10 - 20,
+    );
   }
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {
@@ -1573,7 +1774,7 @@ export class WorldMapScene implements Scene {
     const page = f && f.t < MAP_FADE_FRAMES / 2 ? f.from : this.page;
     // Standing on a level or castle node (not walking, sliding or fading) names the level.
     const standing =
-      !f && (this.mode === 'idle' || this.mode === 'reveal' || this.mode === 'story')
+      !f && (this.mode === 'idle' || this.mode === 'reveal' || this.mode === 'story' || this.mode === 'gate')
         ? this.nodeById(this.node)
         : undefined;
     const node = standing && levelNode(standing) ? standing : null;

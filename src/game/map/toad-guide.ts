@@ -5,23 +5,16 @@ import type { AssetRegistry } from '@engine/assets/registry';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import { beat } from '../story/beats';
 import { pageSaid } from '../story/cards';
-import {
-  ARENA_PAGE,
-  CRASH_PAGES,
-  FAKES_PAGES,
-  HUB_PAGE,
-  riftPages,
-  WORLD1_PAGES,
-  type Page,
-} from '../story/script';
+import { ARENA_PAGE, CRASH_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES, type Page } from '../story/script';
+import { riftOpen } from './world-gate';
 import type { MapProgress } from './types';
 
 /*
  * Toad as the world map's guide (docs/STORY.md 2.3, 2.3a item 4, 2.4-2.12, 2.14; campaign only):
  * which of his story scenes are due when a map page shows, and the box at the top of the map that
  * plays them, page by page (OK the next page, BACK the rest of that scene), with his map sprite
- * walking in from the left for the major scenes only (his World 1 scene after 1-0, the fake
- * Bowsers, the airship crash, the 8-4 rift). Since 0.4.23 he has no world entries, hero-joined,
+ * walking in from the left for the major scenes only (his World 1 scene after 1-0, the
+ * airship crash, the 8-4 rift; the fake Bowsers are now 1-4's castle pages, world/unmask.ts). Since 0.4.23 he has no world entries, hero-joined,
  * all-freed or missed-hero cards any more (docs/STORY.md 2.14). Every scene plays once per file: its beat ids
  * (story/beats.ts) are marked seen as it starts. The map scene (scenes/world-map.ts) runs this as
  * its `story` mode, before the page's reveal draws in.
@@ -53,7 +46,7 @@ export interface GuideInput {
 
 /**
  * The scenes due on the page shown, in play order: the major scenes (the crash, the rift, Toad's
- * World 1 scene, the fake Bowsers), then the extras. The Lost Kingdom's pages have none (its
+ * World 1 scene), then the extras. The Lost Kingdom's pages have none (its
  * story is for a later release). Pure.
  */
 export function dueScenes(g: GuideInput): ToadScene[] {
@@ -68,10 +61,10 @@ export function dueScenes(g: GuideInput): ToadScene[] {
   };
   // The major scenes.
   if (g.crash && !g.seen(beat.crash)) add([beat.crash], [...CRASH_PAGES], true);
-  if (page === 'smb-8' && p.gameCleared === true) add([beat.rift], riftPages(g.hero), true);
+  // The rift waits for Sophia III too (0.4.23, S3: map/world-gate.ts riftOpen).
+  if (page === 'smb-8' && riftOpen(p, g.freed)) add([beat.rift], riftPages(g.hero), true);
   // Toad's World 1 scene (2.4): back on the map after 1-0 (cleared or skipped), once per file.
   if (page === 'smb-1' && p.cleared.includes('1-0')) add([beat.enter('smb-1')], [...WORLD1_PAGES], true);
-  if (page === 'smb-1' && p.cleared.includes('1-4')) add([beat.fakes], [...FAKES_PAGES], true);
   if (page === 'hub') add([beat.hub], [HUB_PAGE]);
   if (page === 'arena') add([beat.arena], [ARENA_PAGE]);
   return out;

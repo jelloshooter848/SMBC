@@ -13,7 +13,7 @@ import type { World } from '@game/world/world';
 import { Fred, FRED_DIVES_SAID } from '@game/entities/objects/fred';
 import { Partner } from '@game/entities/objects/partner';
 import { carryTime, LevelScene } from '@game/scenes/level';
-import { HIDING_HINT, WorldMapScene } from '@game/scenes/world-map';
+import { WorldMapScene } from '@game/scenes/world-map';
 import { CardScene } from '@game/scenes/message';
 import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
 import { fontText } from '@game/hud/text';
@@ -21,7 +21,7 @@ import { hiddenHeroes, hiddenHeroesAt } from '@game/map/captives';
 import { MINIGAMES, type MiniGameDef } from '@game/minigames';
 import { arenaGames, metHero } from '@game/arena';
 import { beat } from '@game/story/beats';
-import { PARTNERS, riftPages } from '@game/story/script';
+import { PARTNERS, RIFT_SEALED_PAGES, sealedHint } from '@game/story/script';
 import { CreditsScene } from '@game/scenes/credits';
 import { px, toPx } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
@@ -653,9 +653,9 @@ describe('captive Sophia III', () => {
 });
 
 describe("Sophia III's story lines play now that she hides in 8-4", () => {
-  it("after the 8-4 credits: the rift; her shadow's hint line is the generic one (0.4.23)", () => {
+  it("after the 8-4 credits: the rift still shut without her (0.4.23); Toad's reminder, the sealed hint", () => {
     const h = makeGame();
-    world8({ story: ALL_STORY.filter((id) => id !== beat.rift) });
+    world8({ story: ALL_STORY.filter((id) => id !== beat.rift && id !== beat.sealed('smb-8')) });
     h.game.openFile(1);
     h.step();
     h.game.showEnding('8-4');
@@ -675,9 +675,10 @@ describe("Sophia III's story lines play now that she hides in 8-4", () => {
       h.idle(31);
       h.tap('jump');
     }
-    expect(read).toEqual(riftPages('MARIO').map((p) => [...p]));
+    expect(read).toEqual(RIFT_SEALED_PAGES.map((p) => [...p]));
+    expect(h.game.seen(beat.rift)).toBe(false);
     h.until(() => map.mode === 'idle', 600);
-    expect(map.hintLine).toBe(HIDING_HINT);
+    expect(map.hintLine).toBe(sealedHint('SOPHIA III'));
   });
 
   it('freed: Toad no longer reacts on the map (docs/STORY.md 2.13)', () => {

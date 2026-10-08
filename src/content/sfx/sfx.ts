@@ -84,6 +84,14 @@ export const sfx: Sfx[] = [
     pulse2: '@2 v6 q8 x0 l64 r32 o7 g d o6 b f# d x1 o4 a8',
     noise: 'v12 x1 l64 n0 n1 l32 n3 l8 n9',
   },
+  // A world gate's seal shattering on the map (campaign, docs/STORY.md 2.3b): a bright glassy
+  // crack, then shards tinkling down in two voices over a short hiss (about 500 ms).
+  {
+    id: 'seal-shatter',
+    pulse: '@2 v11 q8 x0 l64 o8 c o7 a f+ e c+ o6 a x1 o7 e16',
+    pulse2: '@1 v6 q8 x0 l64 r64 o7 b g e c o6 b g x1 o7 c16',
+    noise: 'v12 x1 l64 n0 n1 l32 n2 l16 n5',
+  },
   // Noise whoosh.
   { id: 'bowser-flame', noise: 'v11 x1 l16 n1 n2 n3 l8 n5' },
   // Firework pop.

@@ -4,9 +4,10 @@ import { WorldMapScene } from '@game/scenes/world-map';
 import { CreditsScene } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
 import { CRASH_FRAMES } from '@game/map/airship-crash';
+import { CHARACTERS } from '@game/characters/registry';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { beat, upgradeStory } from '@game/story/beats';
-import { CRASH_PAGES, FAKES_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES, type Page } from '@game/story/script';
+import { CRASH_PAGES, gateScript, HUB_PAGE, riftPages, WORLD1_PAGES, type Page } from '@game/story/script';
 import { HIDING_HINT } from '@game/scenes/world-map';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { ALL_STORY } from './story-seen';
@@ -108,23 +109,25 @@ describe("Toad's map scenes", () => {
     expect(h.said.filter((t) => t.startsWith('World 1')).length).toBe(1);
   });
 
-  it("the play order when several are due: World 1's scene, then the fakes; BACK closes one scene", () => {
+  it("the play order when several are due: World 1's scene, then the gate's reminder; BACK closes one scene", () => {
     const h = open({
       cleared: W1,
-      pages: ['smb-1', 'smb-2'],
-      freed: ['mario', 'luigi'],
+      pages: ['smb-1'],
+      freed: ['mario'], // Luigi still captive: World 1's seal stands
       position: { page: 'smb-1', node: '1-4' },
       story: [],
     });
     expect(map(h).story).toBe(true);
     h.until(() => map(h).toad?.lines != null, 300);
     expect(map(h).toad?.lines).toEqual(WORLD1_PAGES[0]);
-    // BACK: the rest of the World 1 scene is skipped, the next scene (the fakes) starts.
+    // BACK: the rest of the World 1 scene is skipped, the next scene (the seal's reminder,
+    // routine: after the major ones, S3's gateScenes) starts.
+    const reminder = gateScript(1, 'MARIO')?.reminder ?? [];
     h.idle(31);
     h.tap('attack');
-    expect(map(h).toad?.lines).toEqual(FAKES_PAGES[0]);
-    expect(readAll(h)).toEqual(FAKES_PAGES);
-    for (const id of [beat.fakes, beat.enter('smb-1')]) expect(h.game.seen(id)).toBe(true);
+    expect(map(h).toad?.lines).toEqual(reminder[0]);
+    expect(readAll(h)).toEqual(reminder);
+    for (const id of [beat.sealed('smb-1'), beat.enter('smb-1')]) expect(h.game.seen(id)).toBe(true);
   });
 
   it("the airship crash: the cutscene, then Toad's crash cards, then the road", () => {
@@ -152,6 +155,8 @@ describe("Toad's map scenes", () => {
     const h = open({
       cleared: ['1-0', ...cleared.filter((id) => id !== '8-4')],
       pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
+      // Sophia III freed first: the rift opens with the credits (0.4.23: it waits for her).
+      freed: CHARACTERS.map((c) => c.id),
       position: { page: 'smb-8', node: '8-4' },
       story: ALL_STORY.filter((id) => id !== beat.rift && id !== beat.bowser84),
     });
@@ -220,19 +225,22 @@ describe("Toad's map scenes", () => {
 });
 
 describe("Toad's map scenes: after the last page", () => {
-  /** World 1 after 1-4 with only the fake Bowsers due (a major scene: Toad walks in), no reveal. */
-  const fakesOnly = (over: Partial<SaveFile> = {}) =>
+  /** World 8 after the credits with only the rift due (a major scene: Toad walks in), no reveal. */
+  const riftOnly = (over: Partial<SaveFile> = {}) =>
     open({
-      cleared: W1,
-      pages: ['smb-1', 'smb-2'],
-      position: { page: 'smb-1', node: '1-4' },
-      story: ['enter:smb-1', 'enter:smb-2', 'missed:luigi'],
+      cleared: [...W1, '8-4'],
+      pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6', 'smb-7', 'smb-8', 'll-1'],
+      freed: CHARACTERS.map((c) => c.id),
+      gameCleared: true,
+      position: { page: 'smb-8', node: '8-4' },
+      story: ALL_STORY.filter((id) => id !== beat.rift),
       ...over,
     });
+  const RIFT = riftPages('MARIO');
 
   it('Toad walks off while the map is already the player’s: the hero can move at once', () => {
-    const h = fakesOnly();
-    expect(readAll(h)).toEqual(FAKES_PAGES);
+    const h = riftOnly();
+    expect(readAll(h)).toEqual(RIFT);
     // The frame the last page closes, the map is idle, Toad still on stage walking off.
     expect(map(h).mode).toBe('idle');
     const off = toadSprite(h);
@@ -248,19 +256,15 @@ describe("Toad's map scenes: after the last page", () => {
   });
 
   it('co-op: player 2 pressing OK turns the pages of Toad’s box', () => {
-    const h = fakesOnly({
-      character2: 'luigi',
-      freed: ['mario', 'luigi'],
-      story: ['enter:smb-1', 'enter:smb-2', 'joined', 'joined:luigi'],
-    });
+    const h = riftOnly({ character2: 'luigi' });
     expect(h.game.state.character2?.id).toBe('luigi');
     h.until(() => map(h).toad?.lines != null, 300);
-    expect(map(h).toad?.lines).toEqual(FAKES_PAGES[0]);
+    expect(map(h).toad?.lines).toEqual(RIFT[0]);
     h.idle(31);
     h.tap('jump', 1);
-    expect(map(h).toad?.lines).toEqual(FAKES_PAGES[1]);
+    expect(map(h).toad?.lines).toEqual(RIFT[1]);
     h.idle(31);
-    h.tap('start', 1);
+    h.tap('attack', 1);
     expect(map(h).mode).not.toBe('story');
   });
 });

@@ -30,6 +30,7 @@ import { CardScene } from './message';
 import { storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { playLevelBeat } from '../story/level-beats';
+import { playCastleRemark } from '../story/castle-remark';
 import { STORY_CRYSTAL_BALL_PAGES } from '../story/script';
 import { partnerNearSaid, talkToPartner } from '../story/partners';
 import { abilityHint } from './hints';
@@ -105,6 +106,13 @@ export class LevelScene implements Scene {
       };
     // The campaign's story (src/game/story): entities and the world check it.
     this.world.storyMode = storyOn(game);
+    // The hero's remark at a fake Bowser's axe (story/castle-remark.ts, 0.4.23).
+    if (this.world.storyMode)
+      this.world.remarkHook = (level, hero, done) =>
+        playCastleRemark(game, this.world, level, hero, () => {
+          this.resumePlay();
+          done();
+        });
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);
     if (this.tutorial) this.world.time = null;
