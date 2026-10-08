@@ -1229,8 +1229,9 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
   (`<HERO> TRAINING`, `CHAPTER 2/4`, its title, ANY BUTTON TO START), announced with its lesson
   count; it holds the room still and waits for a button (after `CARD_GUARD_FRAMES`). The heading
   over a lesson is `<HERO> <CHAPTER> 2/5`. After the last chapter READY! also waits for a button.
-  No text moves on by itself: a prompt goes only when the player does the thing or skips (GOOD!
-  is a 50-frame tick between lessons, not a prompt). MENU in the room: Continue / Skip chapter (on
+  No text moves on by itself: a prompt goes only when the player does the thing or skips, and
+  GOOD! (with ANY BUTTON TO GO ON; the hero still moves) waits for a button after the guard too,
+  then the next prompt or card comes up (tests/sim/text-waits.test.ts). MENU in the room: Continue / Skip chapter (on
   to the next card, or READY! after the last; the room then ends as skipped) / Skip training.
 - **Lessons** (`lessons.ts`). `TrainingLesson { id, prompt, done(tracker), setup?(room),
 unlocked?(run) }`; `lessonsFor(id)` is every chapter's lessons in order. `MoveStats` watches the

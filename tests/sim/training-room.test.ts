@@ -254,7 +254,7 @@ function play(heroId: string, max = 12000) {
       since = 0;
     }
     const policy = id ? (pol[`${heroId}:${id}`] ?? pol[id]) : undefined;
-    const card = r.scene.phase === 'chapter' || r.scene.phase === 'ready';
+    const card = r.scene.phase === 'chapter' || r.scene.phase === 'ready' || r.scene.phase === 'good';
     const act = card
       ? since > CARD_GUARD_FRAMES && since % 4 === 0
         ? (['jump'] as Action[])
@@ -329,8 +329,11 @@ describe('the practice room', () => {
     h.step();
     expect(scene.phase).toBe('good');
     expect(draw(scene).texts.some((t) => t.str === 'GOOD!')).toBe(true);
-    expect(h.said.at(-1)).toBe('Good!');
-    h.idle(60);
+    expect(h.said.at(-1)).toBe('Good! Any button to go on.');
+    // GOOD! waits for a button (0.4.22: text never moves on by itself).
+    h.idle(200);
+    expect(scene.phase).toBe('good');
+    pressOn(h);
     expect(scene.lesson?.id).toBe('down-thrust');
     expect(h.said.at(-1)).toMatch(/^Jump over the dummy/);
   });
@@ -402,12 +405,18 @@ describe('the practice room', () => {
   it("Link's shield lesson: the dummy shoots, and a shot on the shield counts while a hit does not", () => {
     const { h, scene } = room('link');
     pressOn(h);
-    while (scene.lesson?.id !== 'shield') {
+    for (let i = 0; i < 2000 && scene.lesson?.id !== 'shield'; i++) {
+      // GOOD! waits for a button.
+      if (scene.phase === 'good') {
+        pressOn(h);
+        continue;
+      }
       scene.tracker.hitDummy(['sword', 'melee', 'down-thrust']);
       scene.tracker.observe(scene.player, scene.world);
       (scene.tracker as unknown as { seen: Set<string> }).seen.add('upThrust');
       h.step();
     }
+    expect(scene.lesson?.id).toBe('shield');
     expect(scene.dummyShoots).toBe(true);
     // Facing away: the shot gets through (blinking), nothing counts.
     for (let i = 0; i < 6; i++) h.step(['left']);

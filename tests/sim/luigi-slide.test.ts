@@ -120,7 +120,8 @@ describe("Luigi's slippery stop (training 2/3) passes on the first honest attemp
     const finished = [120, 130, 140, 150, 160].filter((x) => {
       const { h, scene } = lesson2();
       let off = false;
-      for (let i = 0; i < 240; i++) {
+      // While the lesson is up (GOOD! waits for a button with the hero still moving).
+      for (let i = 0; i < 240 && scene.phase === 'lesson'; i++) {
         if (toPx(scene.player.centerX) >= x) off = true;
         h.step(off ? [] : ['right', 'attack']);
       }

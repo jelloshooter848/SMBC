@@ -11,6 +11,8 @@ import { playStoryCards } from '@game/story/cards';
 import { BowserSaysScene } from '@game/story/level-beats';
 import { ToadGuide, type ToadScene } from '@game/map/toad-guide';
 import { ShadowTeaseScene } from '@game/tutorial/tease';
+import { PracticeRoomScene } from '@game/tutorial/room';
+import { LUIGI_HIGH_JUMP_PX } from '@game/tutorial/lessons';
 import { LINK } from '@game/characters/link';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
@@ -256,5 +258,53 @@ describe('castle pages wait for a key per page, then exit', () => {
     expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', ...page.news]);
     c.run(1, [], ['attack']);
     expect(c.exited()).toBe(true);
+  });
+});
+
+describe('the training room: cards, GOOD! and READY! wait for a key', () => {
+  it('a chapter card, a GOOD! and READY! each stay up with no input, and go on with a key', () => {
+    const h = makeGame();
+    const ends: string[] = [];
+    const room = new PracticeRoomScene(h.game, LUIGI, { onEnd: (r) => ends.push(r) });
+    h.game.scenes.push(room);
+    h.idle(LONG);
+    expect(room.phase).toBe('chapter');
+    h.tap('jump');
+    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'high-jump']);
+    // The lesson is done: GOOD! stays up (the hero still moves) until a key, never on a timer.
+    room.tracker.maxJumpHeight = LUIGI_HIGH_JUMP_PX;
+    h.step();
+    expect(room.phase).toBe('good');
+    expect(h.said.at(-1)).toMatch(/^Good!/);
+    h.idle(LONG);
+    expect([room.phase, room.lesson?.id]).toEqual(['good', 'high-jump']);
+    expect(room.promptLines()).toContain('GOOD!');
+    h.tap('attack');
+    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'slippery-stop']);
+    // The last lesson's GOOD! waits too, then the next chapter's card, then READY!.
+    room.startLesson(room.lessons.length - 1);
+    room.tracker.dummyHits.add('fireball');
+    h.step();
+    h.idle(LONG);
+    expect(room.phase).toBe('good');
+    h.tap('jump');
+    expect(room.phase).toBe('ready');
+    h.idle(LONG);
+    expect(ends).toEqual([]);
+    h.tap('jump');
+    expect(ends).toEqual(['done']);
+  });
+
+  it('a key pressed with GOOD! just up (within the card guard) does not skip it', () => {
+    const h = makeGame();
+    const room = new PracticeRoomScene(h.game, LUIGI, { onEnd: () => {} });
+    h.game.scenes.push(room);
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('jump');
+    room.tracker.maxJumpHeight = LUIGI_HIGH_JUMP_PX;
+    h.step();
+    expect(room.phase).toBe('good');
+    h.tap('jump');
+    expect(room.phase).toBe('good');
   });
 });

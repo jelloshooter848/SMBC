@@ -51,15 +51,13 @@ const SOURCES: Record<RoomId, string> = { practice: practiceSource, gear: gearSo
 export const ROOM_COLS = 25;
 /** Lines a prompt may take in the box. */
 export const ROOM_LINES = 3;
-/** Frames "GOOD!" shows after a lesson before the next prompt. */
-export const GOOD_FRAMES = 50;
 /**
- * Frames a chapter card or READY! shows before a button can move on (so a press already on its
- * way, or the one that ticked the lesson, does not skip it unread). After that the text waits for
- * a button: nothing moves on by itself.
+ * Frames a chapter card, GOOD! or READY! shows before a button can move on (so a press already on
+ * its way, or the one that ticked the lesson, does not skip it unread). After that the text waits
+ * for a button: nothing moves on by itself (owner note 4, 0.4.22).
  */
 export const CARD_GUARD_FRAMES = 20;
-/** The buttons that move a chapter card or READY! on. */
+/** The buttons that move a chapter card, GOOD! or READY! on. */
 const GO_ON: readonly Action[] = ['jump', 'attack', 'special', 'select'];
 /** Frames before a popped dummy is put back up. */
 export const DUMMY_RESPAWN_FRAMES = 45;
@@ -190,7 +188,7 @@ export interface RoomOptions {
  * run's lives, score and power are never touched. Each chapter (lessons.ts) opens with a card that
  * waits for a button, in its own screen (the room, the gear screen or the water screen), built
  * afresh; its lessons come up one at a time in a box near the top, each announced; doing one ticks
- * it off with a sound and GOOD!, and after the last "READY!" waits for a button and the room ends.
+ * it off with a sound and GOOD!, which waits for a button; after the last "READY!" waits too and the room ends.
  * Nothing here can kill the hero: hit points stay topped up, the dummy never hurts, and falling in
  * the gap puts the hero back at the start. MENU opens Continue / Skip chapter / Skip training.
  */
@@ -439,6 +437,11 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
       if (this.phase === 'ready') return this.finish(this.skipped ? 'skip' : 'done');
       return this.startLesson(this.index);
     }
+    // GOOD! stays up (the hero still moves) until a button: the press goes on and does nothing else.
+    if (this.phase === 'good' && this.phaseT >= CARD_GUARD_FRAMES && GO_ON.some((a) => frame.pressed(a))) {
+      frame.consumeJumpBuffer();
+      return this.next();
+    }
     const invuln = this.player.invuln;
     this.world.update([frame]);
     this.world.events.splice(0);
@@ -557,7 +560,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     this.tracker.hitDummy(tags);
   }
 
-  /** Ticks the lesson off when done; moves on after GOOD!, and ends the room after READY!. */
+  /** Ticks the lesson off when done: GOOD!, which waits for a button (`update`). */
   private advance(): void {
     this.phaseT++;
     if (this.phase === 'lesson') {
@@ -566,14 +569,16 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
         this.phaseT = 0;
         this.dummyShoots = false;
         this.game.ctx.audio.sfx('coin');
-        this.game.deps.announcer?.say('Good!');
+        this.game.deps.announcer?.say('Good! Any button to go on.');
       }
-    } else if (this.phase === 'good' && this.phaseT >= GOOD_FRAMES) {
-      const next = this.index + 1;
-      // The next lesson in this chapter, or the next chapter's card (READY! after the last).
-      if (this.chapterOf(next) === this.chapter) this.startLesson(next);
-      else this.startChapter(this.chapter + 1);
     }
+  }
+
+  /** After GOOD!: the next lesson in this chapter, or the next chapter's card (READY! after the last). */
+  private next(): void {
+    const next = this.index + 1;
+    if (this.chapterOf(next) === this.chapter) this.startLesson(next);
+    else this.startChapter(this.chapter + 1);
   }
 
   /** The room is over: report it once. */
@@ -610,7 +615,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
       ];
     const n = ch.lessons.length;
     const head = fontText(`${name} ${ch.title} ${this.index - this.firstOf(this.chapter) + 1}/${n}`);
-    if (this.phase === 'good') return [head, '', 'GOOD!'];
+    if (this.phase === 'good') return [head, 'GOOD!', '', this.goOn('GO ON')];
     return [head, ...this.promptWrapped()];
   }
 
@@ -622,7 +627,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
       covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
     });
     const font = assets.sheet('font');
-    const tick = this.phase === 'good' ? 2 : this.phase === 'ready' || this.phase === 'over' ? 1 : -1;
+    const tick = this.phase === 'good' || this.phase === 'ready' || this.phase === 'over' ? 1 : -1;
     const bottom = drawRoomBox(r, font, this.promptLines(), tick);
     // How to skip, on the box's bottom edge (like its tag on the top one): never over the floor.
     const skip = this.skipText();
