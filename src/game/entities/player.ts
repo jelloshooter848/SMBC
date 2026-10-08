@@ -329,12 +329,13 @@ export class Player {
     // A seabed walker jumps off the floor only; over water with no floor below at all (a pit
     // under the sea, or World 9-2's bottomless stretch) they may push off again once sinking, so
     // no water level is left without a way across.
-    const seabedJump = b.onGround || (b.vy >= 0 && this.overVoid(map));
+    const seabedJump = seabed && (b.onGround || (b.vy >= 0 && this.overVoid(map)));
     const canJump =
       this.sliding === 0 && (this.def.behaviour.canJump?.(this) ?? true) && (!seabed || seabedJump);
     if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
       input.consumeJumpBuffer();
-      if (seabed && p.slide && input.held('down')) this.startSlide();
+      // A slide starts on the floor only, as on land (not in a push-off over bottomless water).
+      if (seabed && p.slide && input.held('down') && b.onGround) this.startSlide();
       else {
         b.vy = -sw.stroke;
         b.onGround = false;

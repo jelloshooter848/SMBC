@@ -139,6 +139,32 @@ describe('Mega Man and Samus walk the seabed (no stroke)', () => {
     expect(rose).toBe(true);
   });
 
+  it("Mega Man's slide (down and jump) starts only on the floor, never in a push-off over bottomless water", () => {
+    let slid = false;
+    let rose = false;
+    runSim({
+      level: getLevel('ll-9-2'),
+      character: hero('megaman'),
+      script: none,
+      maxFrames: 60,
+      assist: { invulnerable: true },
+      controller: (w, f) => {
+        const b = w.player.body;
+        if (f === 0) {
+          b.x = px(30 * 16);
+          b.y = px(6 * 16);
+          b.vy = 0;
+          b.onGround = false;
+        }
+        if (w.player.sliding > 0) slid = true;
+        if (f > 31 && b.vy < 0) rose = true;
+        return f >= 30 && f < 50 ? ['down', 'jump'] : [];
+      },
+    });
+    expect(slid).toBe(false);
+    expect(rose).toBe(true);
+  });
+
   it.each(SEABED)('%s: the touch jump button still says JUMP under water', (id) => {
     const w = onFloor(hero(id), 2, () => []);
     expect(w.player.inWater).toBe(true);
