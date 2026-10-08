@@ -44,6 +44,7 @@ import { CHARACTERS } from '@game/characters/registry';
 import { carriedKit } from '@game/entities/player';
 import { giveDevItems } from '@game/bonus/items';
 import type { SaveFile } from '@game/save/save-files';
+import { ALL_STORY } from './story-seen';
 
 // The SMB3 bonus games and the item inventory (docs/BONUS.md).
 
@@ -57,7 +58,8 @@ function onMap(over: Partial<SaveFile> = {}, dev = false, hero = 'mario') {
   const h = makeGame();
   const settings = { dev } as Settings;
   h.game.deps.settings = settings;
-  file(over, hero);
+  // Every story beat seen: 1-1's opening beat (Luigi running off) is not what these are about.
+  file({ story: [...ALL_STORY], ...over }, hero);
   h.game.openFile(1);
   h.idle(8);
   expect(h.top()).toBeInstanceOf(WorldMapScene);

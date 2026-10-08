@@ -33,6 +33,7 @@ function choose(h: H, label: string, value?: string) {
 
 /** From the map: enter 1-1 and move the select's cursor `right` times, then OK. */
 function pick(h: H, right: number) {
+  h.game.markSeen('luigi-runs'); // 1-1's opening beat (Luigi running off) is another story
   h.game.enterLevelFromMap('1-1');
   expect(h.top()).toBeInstanceOf(CharacterSelectScene);
   h.idle(12);

@@ -117,6 +117,7 @@ describe('save files lock heroes in campaign play', () => {
     h.game.openFile(1);
     expect(h.game.freed).toEqual(['mario', 'link']);
     expect(h.game.state.character).toBe(LINK);
+    h.game.markSeen('luigi-runs'); // 1-1's opening beat is another story
     h.game.enterLevelFromMap('1-1');
     h.idle(12);
     expect(new Set(offered(h))).toEqual(new Set(['Mario', 'Link']));

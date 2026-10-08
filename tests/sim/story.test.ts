@@ -65,8 +65,9 @@ describe('the seen story beats on the save file', () => {
 });
 
 describe('World.storyMode', () => {
+  // 1-2: 1-1 opens with Luigi running off on a campaign file (story/luigi-runs.ts).
   const into = (h: H) => {
-    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+    h.game.startLevel(getLevel('1-2'), { mode: 'stand' });
     h.step();
     const l = h.top();
     expect(l).toBeInstanceOf(LevelScene);
@@ -272,7 +273,7 @@ describe('markSeen mid-level writes only the story list', () => {
     file({ story: [STORY_REV], coins: 7, score: 1200 });
     h.game.openFile(1);
     h.idle(4);
-    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+    h.game.startLevel(getLevel('1-2'), { mode: 'stand' });
     h.step();
     const st = h.game.state;
     st.coins = 42;
