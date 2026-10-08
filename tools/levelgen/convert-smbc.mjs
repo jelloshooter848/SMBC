@@ -11,10 +11,13 @@
 // The XML is a <LEVELDATA> of <LEVEL ID TIME MAIN_AREA> holding <AREA ID TYPE><MAP> cells:
 // a flat comma list of 15 rows × W columns. A cell is `0` or tokens joined by `()`, each
 // `name&&Key=Value&&Flag`; `HideOnDifficulties=easynormal` style values hide a token on the
-// named difficulties. Crossover-only enemies and helpers are skipped and listed.
+// named difficulties. Crossover-only enemies and helpers are skipped and listed. Last, the few
+// one-tile slips in the original data that the owner set to match the NES are applied
+// (nes-fixes.mjs, SMB1 maps only).
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { MapBuilder } from './lib.mjs';
+import { applyNesFixes } from './nes-fixes.mjs';
 
 const args = process.argv.slice(2);
 const PREFIX = (args.find((a) => a.startsWith('--prefix='))?.slice(9) ?? '').trim();
@@ -890,6 +893,8 @@ for (const id of ids) {
     process.exit(1);
   }
   for (const c of convertLevel(level, levels)) {
+    // One-tile slips in the original data, set to match the NES (nes-fixes.mjs).
+    const fixed = applyNesFixes(c.id, c.builder);
     const text = c.builder.toString();
     const file = join(outDir, `${c.id}.map`);
     let changed = 'new file';
@@ -907,6 +912,8 @@ for (const id of ids) {
     }
     writeFileSync(file, text);
     const skipped = [...c.skipped].map(([k, v]) => `${k}×${v}`).join(', ');
-    console.log(`${c.id}: ${c.area.width} wide, ${changed}${skipped ? `; skipped ${skipped}` : ''}`);
+    console.log(
+      `${c.id}: ${c.area.width} wide, ${changed}${fixed ? `; ${fixed} NES fixes` : ''}${skipped ? `; skipped ${skipped}` : ''}`,
+    );
   }
 }
