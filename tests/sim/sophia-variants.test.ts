@@ -37,6 +37,7 @@ const VARIANT_LEVELS = [
   'll-8-4-end2',
   'll-8-4-end3',
   'll-11-4',
+  'll-12-1',
   'll-12-2',
   'll-13-4',
   'll-13-4-exit',
@@ -165,6 +166,11 @@ const ROUTES: [string, number, string][] = [
     'll-11-4',
     0,
     'enter ll-11-4 | tank@0,6 run-right | tank@6,11 jump-right | tank@12,9 edge-right | tank@20,10 jump-right | tank@24,7 edge-right | tank@42,12 jump-right | tank@45,8 jump-right | tank@50,5 long-right | tank@55,5 edge-runup-right ride40-right | tank@70,5 edge-right | tank@83,5 edge-right | tank@100,12 drive-right | tank@119,12 edge-right | tank@131,12 drive-right | tank@151,12 edge-right | tank@163,12 drive-right | tank@183,12 edge-right | tank@197,12 walk-right | tank@197,12 walk-left | tank@196,12 late-right | tank@199,11 up-right | tank@203,8 hop-right | tank@208,9 drive-right | tank@227,9 edge-right',
+  ],
+  [
+    'll-12-1',
+    0,
+    'enter ll-12-1 | tank@1,12 drive-right | tank@21,12 edge-right | tank@35,10 run-right | tank@39,12 edge-right | tank@50,12 drive-right | tank@69,12 edge-right | tank@77,12 edge-right | tank@94,12 late-right | tank@97,9 pipe | enter ll-12-1-bonus | tank@1,5 drive-right | tank@8,8 drive-right | tank@19,12 drive-right | enter ll-12-1 | tank@131,10 long-right | tank@140,12 long-right | tank@149,12 jump-right | tank@156,12 drive-right | tank@175,12 edge-right | tank@184,12 long-right | tank@192,12 jump-right | tank@199,12 jump-right | tank@206,12 long-right | tank@212,9 jump-right | tank@217,7 jump-right | tank@222,12 jump-right',
   ],
   [
     'll-12-2',
