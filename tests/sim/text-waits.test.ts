@@ -13,6 +13,7 @@ import { ToadGuide, type ToadScene } from '@game/map/toad-guide';
 import { ShadowTeaseScene } from '@game/tutorial/tease';
 import { LINK } from '@game/characters/link';
 import { MARIO } from '@game/characters/mario';
+import { LUIGI } from '@game/characters/luigi';
 import { CASTLE_PAGES } from '@game/story/script';
 import { World } from '@game/world/world';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
@@ -151,8 +152,13 @@ describe("1-0's shadow tease waits for a key once Bowser speaks", () => {
   it('outside the campaign: the one page stays until OK', () => {
     const h = makeGame();
     const state = tease(h);
+    expect(h.top().touchLabels?.()).toMatchObject({ jump: null });
+    h.idle(60);
+    expect(h.top().touchLabels?.()).toMatchObject({ jump: 'SKIP' });
     h.idle(LONG);
     expect(state.ended).toBe(false);
+    // Bowser's box shows OK, and so does the touch button that closes it.
+    expect(h.top().touchLabels?.()).toMatchObject({ jump: 'OK', attack: null });
     h.tap('jump');
     expect(state.ended).toBe(true);
   });
@@ -171,8 +177,8 @@ describe('the credits', () => {
 });
 
 describe('castle pages wait for a key per page, then exit', () => {
-  function castle(level: LevelData, story: boolean) {
-    const state = newGameState(MARIO);
+  function castle(level: LevelData, story: boolean, coop = false) {
+    const state = newGameState(MARIO, coop ? LUIGI : null);
     state.world = level.world;
     const axe = (level.entities.find((e) => e.type === 'axe') as { x: number }).x;
     const world = new World(
@@ -188,9 +194,10 @@ describe('castle pages wait for a key per page, then exit', () => {
     );
     world.storyMode = story;
     const input = new ScriptedInput({ steps: [] });
+    const input2 = new ScriptedInput({ steps: [] });
     let exited = false;
     let placed = false;
-    const run = (n: number, hold: Action[] = []) => {
+    const run = (n: number, hold: Action[] = [], hold2: Action[] = []) => {
       for (let i = 0; i < n && !exited; i++) {
         if (!placed && world.entities.some((e) => e.constructor.name === 'Bowser')) {
           placed = true;
@@ -201,7 +208,9 @@ describe('castle pages wait for a key per page, then exit', () => {
         }
         input.setHeld(hold);
         input.next();
-        world.update([input]);
+        input2.setHeld(hold2);
+        input2.next();
+        world.update(coop ? [input, input2] : [input]);
         for (const ev of world.events.splice(0)) if (ev.type === 'exit') exited = true;
       }
     };
@@ -230,6 +239,22 @@ describe('castle pages wait for a key per page, then exit', () => {
     expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!']);
     expect(c.exited()).toBe(false);
     c.run(1, ['attack']);
+    expect(c.exited()).toBe(true);
+  });
+
+  it("co-op: either player's OK turns the page and exits; MENU does not", () => {
+    const c = castle(getLevel('1-4'), true, true);
+    const page = CASTLE_PAGES['1-4'];
+    if (!page) throw new Error('no 1-4 page');
+    c.run(LONG);
+    expect(c.world.castleWaiting).toBe(true);
+    c.run(1, [], ['start']);
+    c.run(1);
+    expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', ...page.reveal]);
+    c.run(1, [], ['jump']);
+    c.run(LONG);
+    expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', ...page.news]);
+    c.run(1, [], ['attack']);
     expect(c.exited()).toBe(true);
   });
 });

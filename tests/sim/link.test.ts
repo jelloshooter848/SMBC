@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseTextMap } from '@game/level/textmap';
 import { runSim } from '@game/sim/headless';
-import { LINK, JUMP_SPELL, MAX_MAGIC } from '@game/characters/link';
+import { BOOMERANG, LINK, JUMP_SPELL, MAX_MAGIC } from '@game/characters/link';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
 import { Pickup } from '@game/entities/objects/pickup';
@@ -339,5 +339,71 @@ describe("Link's boomerang fetches (0.4.22, owner note 27)", () => {
     expect(r.world.entities.some((e) => (e instanceof PowerUp || e instanceof Pickup) && e.alive)).toBe(
       false,
     );
+  });
+
+  it('leaves a poison mushroom and an item still rising out of its block; takes a star and a 1-up', () => {
+    let checked = false;
+    run(
+      field(),
+      (w, f) => {
+        if (f !== 1) return [];
+        const b = w.player.body;
+        const x = b.x + 64 * 256;
+        const feet = b.y + b.h;
+        const out = (['poison', 'star', '1up'] as const).map((k) => {
+          const m = PowerUp.hopOut(x, feet, k);
+          m.body.vx = 0;
+          m.body.vy = 0;
+          w.spawn(m);
+          return m;
+        });
+        const rising = new PowerUp(x >> 12, 12, 'mushroom');
+        w.spawn(rising);
+        // A boomerang over all of them.
+        const boom = new Projectile(x, feet - 32 * 256, 1, BOOMERANG, w.player);
+        Object.assign(boom.body, { x: x - 24 * 256, y: feet - 40 * 256, w: 48 * 256, h: 48 * 256 });
+        w.boomerangFetch(boom);
+        expect(boom.carried).toEqual([out[1], out[2]]);
+        expect(out[0]?.alive).toBe(true);
+        expect(rising.alive).toBe(true);
+        const lives = w.state.lives;
+        w.deliverFetch(boom);
+        expect(w.player.star).toBeGreaterThan(0);
+        expect(w.state.lives).toBe(lives + 1);
+        expect(boom.carried).toEqual([]);
+        // Delivered once: a second delivery gives nothing more.
+        w.deliverFetch(boom);
+        expect(w.state.lives).toBe(lives + 1);
+        checked = true;
+        return [];
+      },
+      4,
+    );
+    expect(checked).toBe(true);
+  });
+
+  it('a down-thrust bounce off a ? block strikes it once: held down, Link lands on the used block', () => {
+    let bounces = 0;
+    let wasUp = false;
+    const r = run(
+      field({ 9: at(2, '?') }),
+      (w, f) => {
+        const b = w.player.body;
+        if (f === 1) {
+          b.y = (9 * 16 - 24 - 40) * 256;
+          b.vy = 0x01000;
+          b.onGround = false;
+        }
+        const up = b.vy < 0;
+        if (up && !wasUp) bounces++;
+        wasUp = up;
+        return f >= 1 ? ['down'] : [];
+      },
+      240,
+    );
+    expect(r.coins).toBe(1);
+    expect(r.world.map.get(2, 9)).toBe(T.USED);
+    expect(bounces).toBe(1);
+    expect(r.world.player.body.onGround).toBe(true);
   });
 });

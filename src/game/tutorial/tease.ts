@@ -78,8 +78,14 @@ export class ShadowTeaseScene implements Scene {
     this.game.deps.announcer?.say('A shadowy hero dashes past and is gone.');
   }
 
+  /**
+   * SKIP while the shadow runs; once Bowser's box is up (it waits for a key) OK, as its prompt
+   * says, and in the campaign BACK for the rest of his pages.
+   */
   touchLabels(): TouchLabels {
-    return this.t > CARD_GUARD_FRAMES ? { ...NO_TOUCH_BUTTONS, jump: 'SKIP' } : NO_TOUCH_BUTTONS;
+    if (this.t <= CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS;
+    if (this.t < BOX_AT) return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
+    return { ...NO_TOUCH_BUTTONS, jump: 'OK', ...(this.pages ? { attack: 'BACK' } : {}) };
   }
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
