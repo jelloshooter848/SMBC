@@ -142,6 +142,7 @@ describe('the airship crash on the World 4 map', () => {
     expect(first).toMatch(
       /^World 4, PLANET ZEBES\. World 4-2, .*\. Larry's airship limps over World 4, smoking\. Skip: JUMP/,
     );
+    expect(first).not.toMatch(/\.\./); // the node line's own full stop isn't doubled
     expect(h.said.some((t) => /^Skip:/.test(t))).toBe(false);
     // Toad's house stands; now the road draws in, and the map ends as today's reveal does.
     expect(frame(map).sprites.some(TOAD_HOUSE)).toBe(true);

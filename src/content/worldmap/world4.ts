@@ -16,7 +16,7 @@ export const SKETCH_4 = [
   '#######Λ#ψ#Λ┌┬┐Λ', // Tourian's glass dome...
   'Λ#«»#ψ##abdf└┴┘#', // ...over its gate, 4-4's castle node below; the gunship by the start
   '###ψ###Λgilm####',
-  '####Λ###prtv#ψ#Λ', // the lava lake
+  '####Λ###prtv#ψ##', // the lava lake (no spire under the seal at 15,6)
   'Λ##ψ#####Λ####Λ#', // a Zoomer's spire by the lava lake
   '#ψ###Λ####ψ###Λ#',
   'Λ#####ψ#####Λ##ψ',
