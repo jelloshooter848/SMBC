@@ -98,7 +98,11 @@ export function drawStars(r: Renderer, camX: number): void {
  * of its tiles' water. A theme without its own takes the Underworld's.
  */
 export const FLOODED_WATER = '#002c3c';
-export const FLOODED: Readonly<Record<string, string>> = { underworld: FLOODED_WATER };
+export const FLOODED: Readonly<Record<string, string>> = {
+  underworld: FLOODED_WATER,
+  // 2-2 as Hyrule's lake (0.4.24): its waves' own deep blue (zelda2-hyrule.ts HYRULE_LAKE).
+  'zelda2-water': '#1838a0',
+};
 
 export const SKY: Record<string, string> = {
   overworld: '#5c94fc',
@@ -156,4 +160,9 @@ export const SKY: Record<string, string> = {
   brinstar: '#000000',
   // Tourian (Samus's mini game): Metroid's black behind the machine panels.
   tourian: '#000000',
+  // World 2 as Hyrule (0.4.24): 2-2's lake under the field's periwinkle (only the band above the
+  // waves shows it), 2-4's palace and 2-1's caves in the dark.
+  'zelda2-water': '#6888fc',
+  'zelda2-palace': '#000000',
+  'zelda2-cave': '#000000',
 };

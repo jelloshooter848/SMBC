@@ -45,8 +45,12 @@ export class Decoration extends Entity {
   }
 }
 
-/** `sheet:frame` decor (`station:window`) hangs in front of the tiles; the classic decor behind them. */
-export const decorInFront = (kind: string): boolean => kind.includes(':');
+/**
+ * `sheet:frame` decor (`station:window`) hangs in front of the tiles; the classic decor behind them.
+ * The exception is Link's sky palace (`zelda2-sky:*`, 2-1-sky2's campaign look): its back wall,
+ * columns and gate stand behind the hall's tiles and coins, like the classic decor.
+ */
+export const decorInFront = (kind: string): boolean => kind.includes(':') && !kind.startsWith('zelda2-sky:');
 
 /**
  * Decor drawn over the players: the pipe in Larry's cabin ceiling (`smb3:ceiling-pipe`), so a
@@ -96,6 +100,9 @@ export function decorPalette(theme: string): string {
   if (theme === 'ninja-city') return 'decor-ninja-city';
   if (theme === 'smw-secret') return 'decor-smw';
   if (theme === 'zelda2' || theme === 'megaman-stage' || theme === 'brinstar') return `decor-${theme}`;
+  // World 2 as Hyrule (0.4.24): the lake, the palace and the cave.
+  if (theme === 'zelda2-water' || theme === 'zelda2-palace' || theme === 'zelda2-cave')
+    return `decor-${theme}`;
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern' || theme === 'tourian') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';

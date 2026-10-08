@@ -10,6 +10,12 @@ startMode: fall
 camera: locked
 parent: 2-1
 
+;; Campaign play only (level/campaign.ts applyLook, 0.4.24): World 2 is Hyrule (Link's world), and
+;; this coin room under 2-1 is a Hyrule cave: rough rock, boulders, stalactites under its bricks.
+;; Elsewhere (level select, ?level=2-1-bonus) it looks as it always did.
+campaignTheme: zelda2-cave
+campaignMusic: zelda2-cave
+
 [tiles]
 ;; 0
 ................
@@ -30,3 +36,9 @@ parent: 2-1
 
 [zones]
 pipe 13 12 right -> 2-1 115 10 exit=up
+
+[campaign-decor]
+;; Stalactites under the bricks' roof and a rock pile on the floor.
+z2-stalactite 5 4
+z2-stalactite 9 4
+z2-rocks 1 12

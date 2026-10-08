@@ -68,7 +68,9 @@ describe('campaign looks: 2-1 Zelda II, 3-1 Mega Man, 4-2 Brinstar', () => {
       ['brick', 'ground', 'hard', 'used', ...QUESTION, ...FLAG, ...PIPE].sort(),
     );
     expect(framesUsed(level('world2/2-1-sky'))).toEqual(['cloud-block', 'used', ...COINS].sort());
-    expect(framesUsed(level('world2/2-1-sky2'))).toEqual(['cloud-block', ...COINS].sort());
+    expect(framesUsed(level('world2/2-1-sky2'))).toEqual(
+      ['castle-brick', 'cloud-block', 'used', ...COINS].sort(),
+    );
     expect(framesUsed(level('world3/3-1'))).toEqual(
       [
         'brick',

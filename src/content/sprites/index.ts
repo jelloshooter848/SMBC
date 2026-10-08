@@ -25,6 +25,7 @@ import { partnersPalettes, partnersDef } from './partners';
 import { localsPalettes, localsDef } from './locals';
 import { wandPalettes, wandDef } from './wand';
 import { storyPalettes, storyDef } from './story';
+import { zelda2SkyDef, zelda2SkyPalettes } from './zelda2-sky';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -92,6 +93,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   wand: wandDef,
   // The 0.4.23 story's opening props: Bowser's star wand, the wax seal, Toad's note.
   story: storyDef,
+  // 0.4.24: Link's sky palace above 2-1 (2-1-sky2's campaign look).
+  'zelda2-sky': zelda2SkyDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -125,6 +128,7 @@ const defaults: Record<string, readonly string[]> = {
   ...localsPalettes,
   ...wandPalettes,
   ...storyPalettes,
+  ...zelda2SkyPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

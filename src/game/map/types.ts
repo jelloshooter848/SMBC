@@ -7,7 +7,7 @@
 /** Look of a map page; each has its own palette and scenery. */
 export type MapTheme =
   | 'grass' // World 1
-  | 'sea' // World 2
+  | 'sea' // the Lost Levels' sea worlds (World 2's until 0.4.24)
   | 'night' // World 3
   | 'mushroom' // World 4
   | 'sky' // World 5
@@ -15,7 +15,8 @@ export type MapTheme =
   | 'coast' // World 7
   | 'bowser' // World 8
   | 'warp' // Warp Zone hub
-  | 'arena'; // the Mini Game Arena
+  | 'arena' // the Mini Game Arena
+  | 'hyrule'; // World 2 since 0.4.24: Link's Hyrule
 
 /**
  * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),

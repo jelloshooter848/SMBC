@@ -362,19 +362,27 @@ describe('the restyles’ music', () => {
 });
 
 describe('castle and solid-floor theme families', () => {
-  it("the castle family is the castles, their Lost Levels skins and 5-4's hall", () => {
+  it("the castle family is the castles, their Lost Levels skins, 5-4's hall and 2-4's palace", () => {
     expect(THEMES.filter(isCastleTheme)).toEqual([
       'castle',
       'castle-overworld',
       'castle-water',
       'castlevania',
+      'zelda2-palace',
     ]);
   });
 
   it("Hammer Bros' solid floors are unchanged for every existing theme, and hold in the hall and Brinstar", () => {
     // the rule hammer-bro.ts used before the helper, plus 4-2's underground in its Brinstar look
     for (const t of THEMES)
-      expect(hasSolidFloors(t), t).toBe(t === 'underground' || t === 'brinstar' || t.startsWith('castle'));
+      expect(hasSolidFloors(t), t).toBe(
+        t === 'underground' ||
+          t === 'brinstar' ||
+          t.startsWith('castle') ||
+          // World 2 as Hyrule (0.4.24): 2-4's palace is a castle, 2-1's caves the underground
+          t === 'zelda2-palace' ||
+          t === 'zelda2-cave',
+      );
     expect(hasSolidFloors('castlevania')).toBe(true);
     expect(hasSolidFloors('brinstar')).toBe(true);
     expect(hasSolidFloors('ninja-city')).toBe(false);

@@ -30,6 +30,7 @@ export function enemyPalette(theme: Theme): string {
     case 'underworld':
     case 'brinstar':
     case 'tourian':
+    case 'zelda2-cave': // 2-1's bonus room and the Moblin's cave as a Hyrule cave (0.4.24)
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':
@@ -40,8 +41,10 @@ export function enemyPalette(theme: Theme): string {
     case 'alien-lair':
     case 'bm-dungeon':
     case 'castlevania': // 5-4's castle hall is a castle still (Podoboos; Bowser's true form)
+    case 'zelda2-palace': // and so is 2-4's palace (0.4.24)
       return 'enemies-castle';
     case 'water':
+    case 'zelda2-water': // 2-2's lake keeps the water's fish and squids (0.4.24)
       return 'enemies-water';
     default:
       return 'enemies-overworld';

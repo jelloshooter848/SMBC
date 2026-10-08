@@ -3,8 +3,9 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
- * themed world map pages, the Warp Zone hub and the Mini Game Arena. One frame set recolours
- * into every theme through the `map-<theme>` palettes, which all share these roles:
+ * themed world map pages (World 2's Hyrule since 0.4.24), the Warp Zone hub and the Mini Game
+ * Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
+ * share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
  *   4 sand main                5 sand dark         6 water dark        7 water main
@@ -79,6 +80,9 @@ const lava: [string, string] = [NES.lava, NES.lavaLight];
 export const ARENA_NIGHT = '#081848';
 /* The pitch's light green squares: NES 2C02 $2A, which the curated NES table doesn't name. */
 const PITCH_LIGHT = '#58d854';
+/* Hyrule's field and forest greens: NES 2C02 $2A and $1A, which the curated NES table doesn't name. */
+const HYRULE_FIELD = '#58d854';
+const HYRULE_FOREST = '#007800';
 
 export const mapPalettes: Record<string, string[]> = {
   'map-grass': theme({
@@ -218,6 +222,24 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: [NES.blueMid, NES.blueLight, NES.blueDark],
     white: [NES.white, NES.lightGray],
+  }),
+  /*
+   * Hyrule (World 2 since 0.4.24, Link's world): a Zelda II overworld of light field grass, dark
+   * forests (leaf), brown mountains and boulders (rock), sand roads, a blue lake and sea, palace,
+   * ruins and graves of grey stone (wall), red and yellow accents for its flowers, fairies and
+   * blobs.
+   */
+  'map-hyrule': theme({
+    ground: [NES.green, HYRULE_FIELD, NES.greenLight],
+    sand: [NES.tan, NES.tanDark],
+    water: [NES.blueDark, NES.blueMid, NES.blueLight, NES.white],
+    rock: [NES.brownDark, NES.orangeBrown, NES.brownLight],
+    leaf: [NES.greenDark, HYRULE_FOREST, NES.green],
+    wood: [NES.brownLight, NES.orangeBrown],
+    accent: [NES.redBright, NES.yellowLight, NES.redDark],
+    lava,
+    wall: stone,
+    white: [NES.white, NES.skyLight],
   }),
 };
 
@@ -1094,6 +1116,233 @@ const scoreboard = (phase: number): Rows => {
 };
 
 /* ------------------------------------------------------------------------------------------ */
+/* Hyrule (World 2, 0.4.24): forest, a palace, ruins, graves and the critters                  */
+/* ------------------------------------------------------------------------------------------ */
+
+/**
+ * A dense forest: round crowns packed on a 16x16 torus (so a block of it tiles both ways), each
+ * lit up-left, dark between them.
+ */
+const FOREST: Rows = (() => {
+  const crowns: [number, number][] = [
+    [4, 4],
+    [12, 3],
+    [8, 10],
+    [0, 11],
+    [16, 11],
+    [4, 16],
+    [12, 15],
+  ];
+  return Array.from({ length: 16 }, (_, y) =>
+    Array.from({ length: 16 }, (_, x) => {
+      let best: [number, number] | null = null;
+      for (const [cx, cy] of crowns)
+        for (const oy of [-16, 0, 16])
+          for (const ox of [-16, 0, 16]) {
+            const dx = x - cx - ox;
+            const dy = y - cy - oy;
+            if (dx * dx + dy * dy <= 17 && (!best || cy + oy > best[1])) best = [cx + ox, cy + oy];
+          }
+      if (!best) return '0';
+      const dx = x - best[0];
+      const dy = y - best[1];
+      const d = dx * dx + dy * dy;
+      if (d > 12) return 'd';
+      if (dx + dy < -2) return 'f';
+      return 'e';
+    }).join(''),
+  );
+})();
+
+/** The palace (three tiles wide, two tall): a stepped stone pediment over six columns and a door. */
+const PALACE_W = 48;
+const PALACE: Rows = Array.from({ length: 32 }, (_, y) =>
+  Array.from({ length: PALACE_W }, (_, x) => {
+    const c = PALACE_W / 2 - 0.5;
+    const dx = Math.abs(x - c);
+    if (y < 12) {
+      // the pediment: steps 4 px wide, 2 px tall, up to the apex at y 2, a gold crest on top
+      const half = 23.5 - Math.floor((11 - y) / 2) * 4;
+      if (y < 2) return dx < 1 ? 'j' : '.';
+      if (dx > half) return '.';
+      if (dx > half - 1 || y === 11 || (y % 2 === 1 && dx > half - 4)) return '0';
+      if (dx < 3 && y > 5 && y < 9) return y === 6 || y === 8 ? 'q' : 'j'; // the crest's emblem
+      return x < c ? 'n' : 'm';
+    }
+    if (y < 15) return y === 12 ? 'n' : y === 14 ? '0' : 'q'; // the entablature
+    if (y >= 29) return y === 29 ? 'n' : y === 31 ? '0' : 'm'; // the steps
+    // the door: an arch in the middle
+    if (dx < 5 && (y > 20 || Math.hypot(dx, y - 21) < 5)) return dx > 4 || y === 16 ? 'q' : '0';
+    // the columns: 4 px wide every 8 px, shadowed between
+    const col = (x + 2) % 8;
+    if (col < 4) return col === 0 ? 'n' : col === 3 ? 'q' : 'm';
+    return 'q';
+  }).join(''),
+);
+const palacePart = (i: number, row: 0 | 1): Rows =>
+  PALACE.slice(row * 16, row * 16 + 16).map((r) => r.slice(i * 16, i * 16 + 16));
+
+/** Stone ruins on the field: a broken column, a toppled drum and a standing stump. */
+const RUINS = stamp(GROUND, [
+  '................',
+  '...000..........',
+  '..0nm00.........',
+  '..0nmq0.........',
+  '..0nmq0....000..',
+  '..0nmq0...0nmq0.',
+  '..0nmq0...0nmq0.',
+  '..0nmq0...0nmq0.',
+  '..0nmq0...0nmq0.',
+  '.0nnmmq0..0nmq0.',
+  '.00000000.00000.',
+  '.....0000000....',
+  '....0nnmmmmq0...',
+  '....0qqqqqqq0...',
+  '.....0000000....',
+  '................',
+]);
+
+/** Graves: a stone cross and a round headstone, a mound before each. */
+const GRAVES = stamp(GROUND, [
+  '................',
+  '....00..........',
+  '....0n0.........',
+  '..000n000.......',
+  '..0nnnmq0..000..',
+  '..000mq00.0nnm0.',
+  '....0m0..0nmmmq0',
+  '....0m0..0nq0mq0',
+  '....0m0..0nmmmq0',
+  '....0q0..0nmmmq0',
+  '...00000.0nmmmq0',
+  '..01111100000000',
+  '..01111101111110',
+  '...00000.000000.',
+  '................',
+  '................',
+]);
+
+/** A red blob resting (squat) and mid-hop (tall), a white shine, two dark eyes. */
+const BLOB = [
+  [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '......0000......',
+    '....00iiii00....',
+    '...0ioiiiiii0...',
+    '..0iooiiiiiir0..',
+    '..0iiii0ii0ir0..',
+    '.0iiiii0ii0irr0.',
+    '.0riiiiiiiirrr0.',
+    '..000000000000..',
+    '................',
+  ],
+  [
+    '................',
+    '................',
+    '.......00.......',
+    '......0ii0......',
+    '.....0ioii0.....',
+    '.....0ooii0.....',
+    '....0iiiiir0....',
+    '....0i0ii0r0....',
+    '....0i0ii0r0....',
+    '....0iiiiir0....',
+    '....0iiiirr0....',
+    '....0riirrr0....',
+    '.....0rrrr0.....',
+    '......0000......',
+    '................',
+    '................',
+  ],
+];
+
+/** A fairy: a tiny bright body between two pale wings, up and down. */
+const FAIRY = [
+  [
+    '..pp........pp..',
+    '.p88p......p88p.',
+    '.p888p....p888p.',
+    '..p888p..p888p..',
+    '...p88pjjp88p...',
+    '....ppjoojpp....',
+    '......joij......',
+    '......jooj......',
+    '.......ii.......',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+  ],
+  [
+    '................',
+    '................',
+    '................',
+    '................',
+    '......jjjj......',
+    '...ppjoojjpp....',
+    '.pp888joij888pp.',
+    'p8888pjoojp8888p',
+    '.pppp..ii..pppp.',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+  ],
+];
+
+/** A river creature surfacing: its finned head peeking out, then head and shoulders. */
+const ZORA = [
+  [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.......0i0......',
+    '......0iir0.....',
+    '.....00ddd00....',
+    '....0deeeeed0...',
+    '...0deo0eo0ed0..',
+    '...888888888888.',
+    '..8.9..9..9..8..',
+    '................',
+  ],
+  [
+    '................',
+    '................',
+    '................',
+    '.......0i0......',
+    '......0iir0.....',
+    '.....00ddd00....',
+    '....0deeeeed0...',
+    '...0deo0eo0ed0..',
+    '...0deeeeeeed0..',
+    '..0i0deeeeed0i0.',
+    '..0ir0dfffd0ri0.',
+    '...00deffffed00.',
+    '....0deeeeeed0..',
+    '...888888888888.',
+    '..8.9..9..9..8..',
+    '................',
+  ],
+];
+
+/* ------------------------------------------------------------------------------------------ */
 /* Actor frames                                                                                */
 /* ------------------------------------------------------------------------------------------ */
 
@@ -1231,6 +1480,23 @@ const frames: Record<string, readonly string[]> = {
   'arena-tower-1': lightTower(true),
   'arena-scoreboard-0': scoreboard(0),
   'arena-scoreboard-1': scoreboard(1),
+  // Hyrule (World 2): forest, the palace (roof row, then columns and door), ruins, graves and the
+  // critters (blob, fairy, river creature).
+  forest: FOREST,
+  'palace-roof-left': palacePart(0, 0),
+  'palace-roof-mid': palacePart(1, 0),
+  'palace-roof-right': palacePart(2, 0),
+  'palace-left': palacePart(0, 1),
+  'palace-door': palacePart(1, 1),
+  'palace-right': palacePart(2, 1),
+  ruins: RUINS,
+  graves: GRAVES,
+  'blob-0': BLOB[0] as Rows,
+  'blob-1': BLOB[1] as Rows,
+  'fairy-0': FAIRY[0] as Rows,
+  'fairy-1': FAIRY[1] as Rows,
+  'zora-0': ZORA[0] as Rows,
+  'zora-1': ZORA[1] as Rows,
 };
 for (let f = 0; f < ARENA_CROWD_FRAMES; f++) {
   frames[`arena-crowd-a-${f}`] = crowd('a', f);

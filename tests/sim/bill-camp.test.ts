@@ -288,12 +288,27 @@ describe('the campaign look hook (LevelData.campaignLook)', () => {
     }).not.toThrow();
   });
 
-  it("7-3 came first; 0.4.12's hero tributes and their coin heavens have looks too, nothing else", () => {
+  it("7-3 came first; 0.4.12's hero tributes and their coin heavens have looks too, and World 2's Hyrule (0.4.24), nothing else", () => {
+    const hyrule = ['2-1-bonus', '2-1-cave', '2-2-intro', '2-2', '2-2-exit', '2-3', '2-4'];
     expect(
       levelIds()
         .filter((id) => getLevel(id).campaignLook)
         .sort(),
-    ).toEqual(['2-1', '2-1-sky', '2-1-sky2', '3-1', '3-1-sky', '4-2', '5-4', '6-2', '6-2-sky', '7-3'].sort());
+    ).toEqual(
+      [
+        '2-1',
+        '2-1-sky',
+        '2-1-sky2',
+        '3-1',
+        '3-1-sky',
+        '4-2',
+        '5-4',
+        '6-2',
+        '6-2-sky',
+        '7-3',
+        ...hyrule,
+      ].sort(),
+    );
   });
 });
 

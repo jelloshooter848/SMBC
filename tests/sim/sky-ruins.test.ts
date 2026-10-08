@@ -13,10 +13,11 @@ import { px, toPx } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
 import type { World } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
+import { LINK, walker } from './sky-palace-way';
 
 // The 2-1 coin heaven's way up (owner design): past the end of the clouds an up-arrow of coins,
 // three small cloud platforms, and a hidden vine block over the middle one (71,7) whose vine
-// climbs to the sky ruins (2-1-sky2), where a drop off the clouds lands in 2-1 at column 162.
+// climbs to Link's sky palace (2-1-sky2), where a drop off its balcony lands in 2-1 at column 162.
 
 const level = (id: string): LevelData =>
   parseTextMap(
@@ -192,7 +193,7 @@ describe('2-1 sky: the hidden vine block over the second to last cloud platform'
   );
 });
 
-describe('2-1 sky ruins (2-1-sky2)', () => {
+describe('2-1 sky palace (2-1-sky2)', () => {
   it('arrives climbing the vine, steps off onto the clouds, and going right drops into 2-1 at 162', () => {
     const bot = newBot();
     const r = runSim({
@@ -207,14 +208,18 @@ describe('2-1 sky ruins (2-1-sky2)', () => {
     expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({
       target: { level: '2-1', x: 162, y: 0, exitDir: 'fall' },
     });
-    // Walked the whole floor first: the drop is at the right end, past the temple.
-    expect(r.playerX).toBeGreaterThan(55 * 16);
+    // Crossed the whole palace first: the drop is past the balcony's end, beyond the hall.
+    expect(r.playerX).toBeGreaterThan(69 * 16);
     expect(r.world.time).toBeLessThanOrEqual(321);
     expect(r.world.time).toBeGreaterThan(250);
   });
 
-  it('every hero lands from the arrival vine and makes it across the ruins to the drop', () => {
-    for (const c of CHARACTERS) {
+  it('the run-right bot lands from the arrival vine and crosses the whole palace to the drop', () => {
+    // Outside the campaign (plain ruins, the same tiles). Not Ryu or Simon with this bot: it jumps
+    // the altar's one-tile steps from right beside them, and Ryu clings to a wall he jumps into, so
+    // he hangs on a step's side for good; and it takes off for the hall's two-tile gap a tile early,
+    // which Simon's fixed arc does not carry. The walker below (a player's timing) takes both across.
+    for (const c of CHARACTERS.filter((h) => h.id !== 'ryu' && h.id !== 'simon')) {
       const bot = newBot();
       const r = runSim({
         level: level('2-1-sky2'),
@@ -223,7 +228,7 @@ describe('2-1 sky ruins (2-1-sky2)', () => {
         maxFrames: 3000,
         controller: (w) => (w.player.vine || w.player.frozen ? [] : autoPlayer(w, bot)),
       });
-      expect(r.playerX, c.name).toBeGreaterThan(55 * 16);
+      expect(r.playerX, c.name).toBeGreaterThan(69 * 16);
       expect(r.outcome, c.name).toBe('pipe');
       expect(
         r.events.find((e) => e.type === 'pipe'),
@@ -233,6 +238,35 @@ describe('2-1 sky ruins (2-1-sky2)', () => {
       });
     }
   });
+
+  it.each(
+    CHARACTERS.flatMap((c) => (['small', 'big'] as const).map((p) => [`${c.name} (${p})`, c, p] as const)),
+  )(
+    'outside the campaign, %s walks from the vine over the altar and off the balcony into 2-1',
+    (_n, c, power) => {
+      const way = { hold: 0 };
+      let onAltar = false;
+      const r = runSim({
+        level: level('2-1-sky2'),
+        character: c,
+        state: { powerState: power },
+        script: none,
+        maxFrames: 3000,
+        controller: (w) => {
+          const p = w.player;
+          if (p.vine || p.frozen) return [];
+          if (p.body.onGround && toPx(p.body.y + p.body.h) === LINK.feet) onAltar = true;
+          return walker(p.body, w.map, way);
+        },
+      });
+      expect(onAltar, `${c.name} over the altar's top`).toBe(true);
+      expect(r.playerX, c.name).toBeGreaterThan(69 * 16);
+      expect(r.outcome, c.name).toBe('pipe');
+      expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({
+        target: { level: '2-1', x: 162, y: 0, exitDir: 'fall' },
+      });
+    },
+  );
 
   it('the running clock carries over: coin heaven → ruins → back into 2-1', () => {
     const sky = level('2-1-sky');

@@ -1,21 +1,28 @@
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
-/** World 2, SEA SIDE: sandy islands and palms, bridges over the sea, 2-2 out on an islet. */
+/**
+ * World 2, HYRULE (0.4.24, owner notes 5, 18 and 21: each world is themed after the hero freed
+ * there; World 2 is Link's): a Zelda II overworld. Brown mountains along the north, the palace
+ * (2-4) set into them, stone ruins by the hidden bonus spot (the Top Secret Area), forests east
+ * and west, a lake in the middle (2-2's) draining south to the sea under a bridge, and a
+ * graveyard by the start, where the healer stands. Every node, road and bridge is where SEA SIDE
+ * had it.
+ */
 export const SKETCH_2 = [
   '................',
   '................',
-  '~~~~~~~~~~~~~~~~',
-  '######~###~#####',
-  'Y#,###=###~#####',
-  '#Y####~###~##T,#', // the palm left of 2-1 stands one tile out, clear of Link's map hint
-  ',#####~~~~~###Y#',
-  '#Y,#T#~~~~~#*##,',
-  '####,#~~~~~###Y#',
-  '##Y,##~~~~~##,##',
-  '###Y##~###~##T##',
-  ',#,###=###=###,#',
-  '######~###~#####',
+  '^^^^^^^^^^^^<U>^', // the palace's roof...
+  '55^#H#,#ZZ^^Q@y^', // ...over its columns and door, 2-4's castle node before it; ruins by the bonus spot
+  '555######Z,R####',
+  '55##,########T55', // plain ground left of 2-1 (Link's map hint)
+  '55####~~~~~###55',
+  '5T,#*#~~~~~#H#55',
+  'T###,#~~~~~###55',
+  '5#,J##~~~~~##,55',
+  '##J#J#~######T55', // the graveyard; the healer stands on plain ground below the start
+  ',#J###=#######55',
+  '######~#########',
   '~~~~~~~~~~~~~~~~',
   '~~~~~~~~~~~~~~~~',
 ];
@@ -24,8 +31,8 @@ export const WORLD_2: WorldMapPage = {
   id: 'smb-2',
   group: 'smb',
   label: 'WORLD 2',
-  title: 'SEA SIDE',
-  theme: 'sea',
+  title: 'HYRULE',
+  theme: 'hyrule',
   music: 'map',
   tiles: autoShore(SKETCH_2),
   nodes: worldNodes(
@@ -53,14 +60,15 @@ export const WORLD_2: WorldMapPage = {
     { from: '2-1', to: 'bonus-2', points: poly([3, 6], [3, 4], [8, 4]) },
   ],
   exits: [{ from: '2-4', to: 'smb-3', side: 'right', points: poly([13, 4], [15, 4]), gate: 'link' }],
+  // Hyrule's critters: blobs hopping by the lake and in the east, a fairy over the western
+  // forest, river creatures surfacing in the lake and the sea.
   actors: [
-    actor('cheep', 104, 136, { range: 24, height: 36, period: 150 }),
-    actor('cheep', 140, 140, { range: -24, height: 28, period: 190, phase: 70 }),
-    actor('cheep', 30, 214, { range: 40, height: 22, period: 170, phase: 30 }),
-    actor('cheep', 200, 214, { range: -36, height: 20, period: 160, phase: 110 }),
     actor('cloud', 60, 18, { size: 1, speed: 0.1 }),
     actor('cloud', 190, 212, { size: 2, speed: 0.14 }),
-    actor('bubble', 120, 222, { height: 12 }),
-    actor('koopa', 208, 192, { range: 20, color: 'red' }),
+    actor('blob', 112, 160, { range: 32 }),
+    actor('blob', 208, 176, { range: 16, phase: 40 }),
+    actor('fairy', 16, 48, { phase: 30 }),
+    actor('zora', 128, 112, { period: 260 }),
+    actor('zora', 40, 216, { period: 220, phase: 120 }),
   ],
 };

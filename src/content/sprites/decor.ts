@@ -9,6 +9,12 @@ import { smwDecorFrames, smwDecorPalette } from './top-secret';
 import { zelda2DecorFrames, zelda2DecorPalette } from './zelda2-look';
 import { megamanDecorFrames, megamanDecorPalette } from './megaman-look';
 import { brinstarDecorFrames, brinstarDecorPalette } from './brinstar-look';
+import {
+  zelda2CaveDecorPalette,
+  zelda2HyruleDecorFrames,
+  zelda2PalaceDecorPalette,
+  zelda2WaterDecorPalette,
+} from './zelda2-hyrule';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -130,6 +136,10 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-zelda2': zelda2DecorPalette,
   'decor-megaman-stage': megamanDecorPalette,
   'decor-brinstar': brinstarDecorPalette,
+  // World 2 as Hyrule (0.4.24): 2-2's lake, 2-4's palace, 2-1's caves (zelda2-hyrule.ts).
+  'decor-zelda2-water': zelda2WaterDecorPalette,
+  'decor-zelda2-palace': zelda2PalaceDecorPalette,
+  'decor-zelda2-cave': zelda2CaveDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -700,5 +710,7 @@ export const decorDef: SpriteDef = {
     ...zelda2DecorFrames,
     ...megamanDecorFrames,
     ...brinstarDecorFrames,
+    // World 2 as Hyrule (0.4.24): lake weed, cave rocks, the palace's wall, curtains and statues.
+    ...zelda2HyruleDecorFrames,
   },
 };

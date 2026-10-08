@@ -88,7 +88,7 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 | World | The hero's homeland (look)      | Hero       | Hidden in                                       | Welcome on the start node | Hint NPCs, inside the hero's level                                   |
 | ----- | ------------------------------- | ---------- | ----------------------------------------------- | ------------------------- | -------------------------------------------------------------------- |
 | 1     | The Mushroom Kingdom (SMB)      | Luigi      | 1-1's bonus room, top-right ledge               | (Toad's scene, 2.4)       | A villager, 1-1 column 55, by the bonus pipe (57)                    |
-| 2     | Hyrule (Zelda II)               | Link       | 2-1 sky ruins, past the coin heaven's end       | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival |
+| 2     | Hyrule (Zelda II)               | Link       | 2-1 sky palace, past the coin heaven's end      | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival |
 | 3     | The year 20XX (Mega Man)        | Mega Man   | 3-1 space station, via a hidden teleporter      | A lab robot               | Dr. Light, by 3-1's vine block (131)                                 |
 | 4     | Planet Zebes (Metroid)          | Samus      | 4-2 cavern, down the vine area's warp pipe      | A scientist               | The Chozo statue, by 4-2's vine block (64)                           |
 | 5     | Transylvania (Castlevania)      | Simon      | 5-4 crypt, riding the lift down past its end    | A merchant                | The townsperson, at 5-4's entrance                                   |
@@ -98,7 +98,8 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
 goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
-never leave. The map titles (SEA SIDE, NIGHT HILLS...) are unchanged in this draft (see the open questions).
+never leave. The map titles: World 2's page is HYRULE since 0.4.24 (it was SEA SIDE); the other pages (NIGHT
+HILLS...) keep their names for now and are renamed as their worlds are themed (see the open questions).
 
 ## 2. The scripts, in game order
 
@@ -154,9 +155,10 @@ the castle pages, Larry's crystal ball and crash cards, the rift pages.
 1. **Replays.** In this draft Bowser's spell replays with 1-0, and the welcomes and hint NPCs can be talked to
    again; the opening note and the freeing talks play once. Add a way to see those again (a Story pad in the Mini
    Game Arena, or Pause → Story so far on the map)?
-2. **The map titles and art.** Worlds 2-8 are now the heroes' homelands, but the pages keep their names (SEA SIDE,
-   NIGHT HILLS...) and look; only the hero's level is restyled. Rename them (WORLD 2: HYRULE...) or restyle the
-   map pages too?
+2. **The map titles and art.** Answered by the owner's notes 5, 18 and 21: each world, its map page and every level
+   in it, is themed after the hero freed there. World 2 came first (0.4.24): its page is HYRULE, a Zelda II
+   overworld, and its levels wear Zelda II looks in campaign play. The other pages keep their names (NIGHT HILLS...)
+   and look until their worlds are themed, and are renamed as they are.
 3. **World 8's gate.** The draft makes the road into the rift wait for Sophia III too (the same rule as every
    world; Toad's reminder after the credits). Or should the rift open on 8-4 alone, with Sophia III optional?
 4. **The player's hero talks** (Mario in 1-1, `<HERO>:` in Luigi's and Link's talks, the castle remarks). All are

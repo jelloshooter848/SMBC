@@ -179,7 +179,8 @@ export interface WorldStart {
   clearEnemies?: 'all' | 'keep-piranhas';
   /**
    * Seed for the world's RNG (swimming Cheep Cheeps' setup, jump and throw timers...). Left out,
-   * every visit gets a fresh one, as the original's Math.random does; headless runs pass a fixed one.
+   * the level's fixed seed (levelSeed). In play LevelScene passes a fresh one for every visit, as
+   * the original's Math.random does (GameDeps.freshSeeds, main.ts only); tests keep the fixed one.
    */
   seed?: number;
   /**
