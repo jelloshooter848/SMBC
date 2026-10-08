@@ -4,7 +4,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import { beat, FIRST_HERO } from '../story/beats';
-import { pageSaid, STORY_CARD_TIMEOUT } from '../story/cards';
+import { pageSaid } from '../story/cards';
 import {
   ALL_FREED_AFTER,
   ALL_FREED_BEFORE,
@@ -170,15 +170,12 @@ export class ToadGuide {
   private t = 0;
   /** Toad's x while on stage; null while off it. */
   private tx: number | null = null;
-  private readonly timeout: number;
 
   constructor(
     readonly scenes: readonly ToadScene[],
     private readonly stand: { x: number; y: number },
     private readonly hooks: GuideHooks,
-    timeout = STORY_CARD_TIMEOUT,
   ) {
-    this.timeout = timeout;
     this.nextScene();
   }
 
@@ -269,11 +266,11 @@ export class ToadGuide {
         return;
       }
       case 'page': {
-        if (cardContinues(this.t, Infinity, inputs, SKIP_KEYS)) {
+        if (cardContinues(this.t, inputs, SKIP_KEYS)) {
           this.nextScene();
           return;
         }
-        if (!cardContinues(this.t, this.timeout, inputs, OK_KEYS)) return;
+        if (!cardContinues(this.t, inputs, OK_KEYS)) return;
         const s = this.scenes[this.scene] as ToadScene;
         if (this.page < s.pages.length - 1) {
           this.page++;

@@ -92,6 +92,11 @@ import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 import { CASTLE_PAGES } from '../story/script';
+import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
+import type { Action } from '@engine/input/actions';
+
+/** What goes on from the castle's text (OK): JUMP or ATTACK. MENU still pauses. */
+const CASTLE_OK_KEYS: readonly Action[] = ['jump', 'attack'];
 
 export type WorldEvent =
   /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
@@ -420,9 +425,19 @@ export class World {
   private readonly fallingIn = new Set<Player>();
   private checkpointSent = false;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
-  bossClear: { t: number; stop?: number } | null = null;
+  bossClear: { t: number; stop?: number; page?: number; at?: number } | null = null;
   /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
   castleText: string[] = [];
+  /**
+   * The castle's text is up and waits for OK (JUMP or ATTACK, any player) to show its next page
+   * or to exit: text never moves on by itself (owner note 4). True once the card guard is over,
+   * when LevelScene draws the OK prompt under the text.
+   */
+  get castleWaiting(): boolean {
+    const c = this.bossClear;
+    if (!c || c.stop === undefined || c.at === undefined) return false;
+    return c.t - c.stop - c.at > CARD_GUARD_FRAMES;
+  }
   /** Drawn behind the tiles and sprites (the ending's credits, which the original adds under the level). */
   backdrop: ((r: Renderer) => void) | null = null;
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
@@ -1077,7 +1092,7 @@ export class World {
     }
     if (this.bossClear) {
       this.tickScorePopups();
-      return this.updateBossClear();
+      return this.updateBossClear(inputs);
     }
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
@@ -2582,7 +2597,7 @@ export class World {
     this.spawn(new WandBreak(handX, feet - 16, riftX, feet - 56));
   }
 
-  private updateBossClear(): void {
+  private updateBossClear(inputs: readonly InputFrame[]): void {
     const c = this.bossClear as NonNullable<typeof this.bossClear>;
     const p = this.bossPlayer ?? this.player;
     c.t++;
@@ -2634,10 +2649,11 @@ export class World {
       }
     }
     if (c.stop === undefined) return;
-    // Then Toad's thanks; 1.5 s later the news, and 3.5 s after it the next level (the
-    // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle says instead that
-    // the quest is over (ScreenManager.addTxtTmrHandler, GameTextMessages.QUEST_IS_OVER) and hands
-    // over to the ending 2.5 s later (START_MOVE_CREDITS_TMR_DUR), where the credits roll.
+    // Then Toad's thanks and 1.5 s later the news (the original's ADD_TXT_TMR_DUR), which stays
+    // until OK (owner note 4: text never moves by itself; the original went on to the next level
+    // 3.5 s later, WIN_END_TMR_DUNGEON_DUR). The last castle says instead that the quest is over
+    // (ScreenManager.addTxtTmrHandler, GameTextMessages.QUEST_IS_OVER) and, on OK, hands over to
+    // the ending, where the credits roll.
     // The Lost Levels' last castles (8-4, 9-4, D-4) say nothing themselves: the ending's card
     // (Game.showLostEnding) is the thanks, over the level, when Toad's thanks would start, so
     // no line is said twice.
@@ -2650,29 +2666,34 @@ export class World {
       }
       return;
     }
-    if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
-    // The campaign's castles (docs/STORY.md 2.4-2.12) tell their own news in two pages instead:
-    // the fake Bowser's true form, then 2 s later the story, each read out; the exit waits 3.5 s
-    // after the second. The Lost castles keep the NES text (their story is Chapter 2).
-    const pages = this.storyMode ? CASTLE_PAGES[this.level.parent ?? this.level.id] : undefined;
-    if (pages) {
-      const page = s === 120 ? pages.reveal : s === 240 ? pages.news : null;
-      if (page) {
-        this.castleText = [`THANK YOU ${p.def.hudName}!`, '', ...page];
-        this.events.push({ type: 'say', text: [this.castleText[0], ...page].join(' ') });
-      }
-      if (s >= 450) {
-        this.events.push({ type: 'exit', next });
-        c.t = -100000;
-      }
-      return;
-    }
-    if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
-    if (s === 120 && next === 'end') this.castleText.push('', 'YOUR QUEST IS OVER.');
-    if (s >= (next === 'end' ? 270 : 330)) {
+    const thanks = `THANK YOU ${p.def.hudName}!`;
+    if (s === 30) this.castleText = [thanks];
+    const ok = c.at !== undefined && cardContinues(s - c.at, inputs, CASTLE_OK_KEYS);
+    const leave = () => {
       this.events.push({ type: 'exit', next });
       c.t = -100000;
+      delete c.at;
+    };
+    // The campaign's castles (docs/STORY.md 2.4-2.12) tell their own news in two pages instead:
+    // the fake Bowser's true form, then on OK the story, each read out; OK on the second exits.
+    // The Lost castles keep the NES text (their story is Chapter 2).
+    const pages = this.storyMode ? CASTLE_PAGES[this.level.parent ?? this.level.id] : undefined;
+    if (pages) {
+      const page = s === 120 ? pages.reveal : ok && c.page === 0 ? pages.news : null;
+      if (page) {
+        c.page = page === pages.reveal ? 0 : 1;
+        c.at = s;
+        this.castleText = [thanks, '', ...page];
+        this.events.push({ type: 'say', text: [thanks, ...page, 'OK to continue.'].join(' ') });
+      } else if (ok) leave();
+      return;
     }
+    if (s === 120) {
+      const news = next === 'end' ? ['YOUR QUEST IS OVER.'] : ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+      this.castleText.push('', ...news);
+      c.at = s;
+      this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
+    } else if (ok) leave();
   }
 
   /**

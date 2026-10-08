@@ -60,7 +60,6 @@ export const PLACEHOLDER_BONUS: BonusGame = {
       game,
       [...lines, '', fontText(`PRESS ${abilityHint(game, 'OK', 'jump')}`)],
       () => done('used'),
-      1800,
       ['start', 'jump', 'attack'],
     );
   },

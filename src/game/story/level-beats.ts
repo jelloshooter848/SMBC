@@ -13,7 +13,7 @@ import { NO_TOUCH_BUTTONS } from '@game/touch-labels';
 import { fontText } from '@game/hud/text';
 import { drawPromptBox, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { beat, storyOn } from './beats';
-import { playStoryCards, STORY_CARD_TIMEOUT } from './cards';
+import { playStoryCards } from './cards';
 import { LARRY_PAGES, noMoreStandIns, RESTYLE_PAGES, type Page } from './script';
 
 /*
@@ -80,7 +80,7 @@ export function playLevelBeat(game: Game, scene: LevelScene): boolean {
 
 /**
  * Bowser speaks in the prompt box at the top (as in 1-0's tease) over the frozen level: his laugh,
- * the lines read out, OK or BACK (or MENU) closes it after the card guard, or the timeout.
+ * the lines read out, OK or BACK (or MENU) closes it after the card guard (never by itself).
  */
 export class BowserSaysScene implements Scene {
   readonly translucent = true;
@@ -106,7 +106,7 @@ export class BowserSaysScene implements Scene {
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
     if (this.done) return;
-    if (cardContinues(++this.t, STORY_CARD_TIMEOUT, inputs, ['jump', 'attack', 'start'])) {
+    if (cardContinues(++this.t, inputs, ['jump', 'attack', 'start'])) {
       this.done = true;
       this.next();
     }

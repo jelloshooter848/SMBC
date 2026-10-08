@@ -14,14 +14,9 @@ export function pageSaid(page: readonly string[], last: boolean): string {
   return `${text} ${last ? 'OK to continue.' : 'OK for more, BACK to skip.'}`;
 }
 
-/** Frames a story page waits before going on by itself (a minute). */
-export const STORY_CARD_TIMEOUT = 3600;
-
 export interface StoryCardOptions {
   /** The box at the bottom of the screen instead of the top (the default, under the HUD). */
   bottom?: boolean;
-  /** Frames each page waits before going on by itself (default STORY_CARD_TIMEOUT). */
-  timeout?: number;
   /** Runs when page `i` is closed with OK (not when BACK skips the rest), before what follows. */
   onNext?: (i: number) => void;
 }
@@ -31,7 +26,7 @@ export interface StoryCardOptions {
  * CardScene box pushed over the frozen scene beneath: over `world`'s level, or with `world` null
  * over whatever scene is on top (the world map). The box is at the top by default, with the OK
  * prompt; each page is read out by the announcer. OK (jump) or MENU (start) goes on to the next
- * page; BACK (attack) closes the rest of the scene. When the last page is closed, or the scene
+ * page; BACK (attack) closes the rest of the scene. A page never turns by itself. When the last page is closed, or the scene
  * is skipped, the card is popped and `done` runs. No pages: `done` runs at once.
  */
 export function playStoryCards(
@@ -64,7 +59,6 @@ export function playStoryCards(
           else show(i + 1);
         },
         world,
-        opts.timeout ?? STORY_CARD_TIMEOUT,
         {
           panel: true,
           overlay: true,

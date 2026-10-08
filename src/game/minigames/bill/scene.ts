@@ -11,7 +11,7 @@ import { MiniGameMenuScene } from '../menu';
 import type { MiniGameResult } from '../types';
 import { drawBanner } from '../megaman/scene';
 import { CONTRA_MUSIC, soundId } from './art';
-import { CARD_ANIM, CARD_AUTO, drawCard } from './card';
+import { CARD_ANIM, drawCard } from './card';
 import { GUNS } from './commando';
 import { Jungle, type JungleEvent } from './jungle';
 import { drawJungle } from './view';
@@ -197,7 +197,7 @@ export class JungleScene implements Scene {
       }
       return this.startPlay();
     }
-    if (this.phaseT >= CARD_AUTO) this.startPlay();
+    // The briefing stays until JUMP (text never moves on by itself, owner note 4).
   }
 
   private startPlay(): void {

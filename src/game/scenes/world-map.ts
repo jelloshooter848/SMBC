@@ -145,7 +145,7 @@ export function showChapterGate(game: Game): void {
   game.ctx.audio.sfx('bump');
   game.deps.announcer?.say(pageSaid(CHAPTER_GATE_CARD, true));
   game.scenes.push(
-    new CardScene(game, CHAPTER_GATE_CARD, () => game.scenes.pop(), null, 1800, {
+    new CardScene(game, CHAPTER_GATE_CARD, () => game.scenes.pop(), null, {
       panel: true,
       overlay: true,
       top: true,

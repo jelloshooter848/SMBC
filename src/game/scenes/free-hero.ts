@@ -166,7 +166,6 @@ export function talkToCaptive(
         then();
       },
       world,
-      3600,
       { keys: CARD_KEYS, panel: true, prompt: () => fontText(abilityHint(game, 'OK', 'jump')) },
     );
   };
@@ -182,8 +181,7 @@ export function talkToCaptive(
           game.scenes.pop();
           round();
         },
-        // No timeout: the round starts only on OK.
-        Infinity,
+        // The round starts only on OK.
         ['start', 'jump'],
       ),
     );

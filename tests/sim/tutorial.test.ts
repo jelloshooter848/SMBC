@@ -194,9 +194,9 @@ function playTutorial(h: H, stop: () => boolean, max = 6000) {
       h.step(frames % 40 === 39 ? ['jump'] : []);
       continue;
     }
-    // The tease plays out by itself.
+    // The tease waits for OK once Bowser speaks (text never moves by itself).
     if (t instanceof ShadowTeaseScene) {
-      h.step();
+      h.step(frames % 40 === 39 ? ['jump'] : []);
       continue;
     }
     h.step(bot(h));

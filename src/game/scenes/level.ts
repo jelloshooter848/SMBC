@@ -19,7 +19,9 @@ import { startHp, type CharacterDef } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
-import { levelTouchLabels } from '../touch-labels';
+import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
+import { fontText } from '../hud/text';
+import { SCREEN_W } from '@engine/viewport';
 import { talkToCaptive } from './free-hero';
 import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
@@ -185,6 +187,8 @@ export class LevelScene implements Scene {
 
   /** Player 1's hero decides the buttons: touch input only ever drives player 1. */
   touchLabels(): TouchLabels {
+    // The castle's text waits for OK (World.castleWaiting).
+    if (this.world.castleWaiting) return { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'MENU' };
     return levelTouchLabels(this.world.players[0], this.world);
   }
 
@@ -385,7 +389,7 @@ export class LevelScene implements Scene {
       return playStoryCards(game, this.world, STORY_CRYSTAL_BALL_PAGES, done, { bottom: true });
     game.deps.announcer?.say(`${CRYSTAL_BALL_CARD.join(' ')} OK to continue.`);
     game.scenes.push(
-      new CardScene(game, CRYSTAL_BALL_CARD, done, this.world, 1800, {
+      new CardScene(game, CRYSTAL_BALL_CARD, done, this.world, {
         panel: true,
         keys: ['start', 'attack', 'jump'],
         prompt: () => abilityHint(game, 'OK', 'jump'),
@@ -426,7 +430,6 @@ export class LevelScene implements Scene {
             else show(i + 1);
           },
           this.world,
-          3600,
           // In a box at the top, so the Moblin and his fires on the floor stay in view.
           {
             panel: true,
@@ -475,6 +478,14 @@ export class LevelScene implements Scene {
       outline: LIGHT_SKIES.has(this.world.level.theme),
     });
     this.tutorial?.render(r);
+    if (this.world.castleWaiting) this.drawCastlePrompt(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
+  }
+
+  /** The OK prompt under the castle's text while it waits (World.castleWaiting). */
+  private drawCastlePrompt(r: Renderer): void {
+    const ok = fontText(abilityHint(this.game, 'OK', 'jump'));
+    const y = 80 + this.world.castleText.length * 16;
+    r.text(this.game.ctx.assets.sheet('font'), ok, (SCREEN_W - ok.length * 8) >> 1, y);
   }
 }

@@ -305,7 +305,6 @@ export class Game {
             this,
             [...page, '', fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`)],
             next,
-            1800,
             ['start', 'attack', 'jump'], // as the card, plus A
           ),
         );

@@ -180,7 +180,6 @@ function greet({ game, scene }: TutorialContext, done: () => void): void {
           show(i + 1);
         },
         scene.world,
-        3600,
         { keys: CARD_KEYS, panel: true, prompt, top: true },
       ),
     );

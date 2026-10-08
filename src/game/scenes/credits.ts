@@ -7,6 +7,9 @@ import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import type { World } from '../world/world';
 import { STORY_NOT_OVER } from '../story/script';
+import { cardContinues, CARD_GUARD_FRAMES } from './message';
+import { abilityHint } from './hints';
+import { fontText } from '../hud/text';
 
 /** The game's name on two lines ("Super Mario Bros. Crossover: REMIX" is too wide for one). */
 export const CREDITS_NAME: readonly string[] = ['SUPER MARIO BROS. CROSSOVER', 'REMIX'];
@@ -67,8 +70,6 @@ export const CREDITS_TAIL: readonly string[] = CREDITS_SHORT_NAME;
 const SPEED = 20 / 60;
 /** ScreenManager.CREDITS_SPEED_FAST = CREDITS_SPEED * 10 (the pause button, ButtonManager). */
 const FAST = SPEED * 10;
-/** ScreenManager.RESTART_GAME_TMR_DUR = 6500 ms (a quarter of it when fast-forwarded). */
-export const CREDITS_HOLD_FRAMES = 390;
 /** Text above this (ScreenManager.CREDITS_VISIBLE_END_Y, 2 Flash tiles: under the HUD) is not drawn. */
 const TOP = 32;
 const LINE = 12;
@@ -77,14 +78,16 @@ const LINE = 12;
  * The credits roll after the last castle (ScreenManager.startMoveCreditsTmrHandler and
  * moveCreditsLoopTmrHandler): the castle's text lines (`head`, drawn where World draws them) and
  * the credits scroll up from below the screen; the closing lines follow until their middle
- * reaches the middle of the screen and stay there; 6.5 s later `onDone` runs (the original's
- * restartGameTmrHandler -> beatGame). Start fast-forwards. Given the level's `world`, the text
+ * reaches the middle of the screen and stay there, with an OK prompt once the card guard is over,
+ * until OK (JUMP, ATTACK or MENU, any player) runs `onDone` (owner note 4: the original went on
+ * by itself 6.5 s later, restartGameTmrHandler -> beatGame). Start fast-forwards the roll. Given the level's `world`, the text
  * is drawn behind its tiles and sprites (the original adds it under the level); else on black.
  */
 export class CreditsScene implements Scene {
   readonly translucent: boolean;
   private scroll = 0;
   private fast = false;
+  /** Frames the closing lines have stood still, or null while they still rise. */
   private hold: number | null = null;
   private finished = false;
 
@@ -111,21 +114,28 @@ export class CreditsScene implements Scene {
     return Math.max(natural, (SCREEN_H - CREDITS_TAIL.length * LINE) / 2);
   }
 
-  /** Start speeds the roll up (once). */
+  /** The closing lines stand still and OK goes on. */
+  private get waiting(): boolean {
+    return this.hold !== null && this.hold > CARD_GUARD_FRAMES;
+  }
+
+  /** Start speeds the roll up (once); at the end OK goes on. */
   touchLabels(): TouchLabels {
+    if (this.waiting && !this.finished) return { ...NO_TOUCH_BUTTONS, jump: 'OK' };
     return { ...NO_TOUCH_BUTTONS, start: this.fast || this.finished ? null : 'FASTER' };
   }
 
-  update(input: InputFrame): void {
+  update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     if (this.finished) return;
-    if (input.pressed('start')) this.fast = true;
-    this.scroll += this.fast ? FAST : SPEED;
     if (this.hold === null) {
-      if (this.tailY <= (SCREEN_H - CREDITS_TAIL.length * LINE) / 2)
-        this.hold = this.fast ? CREDITS_HOLD_FRAMES / 4 : CREDITS_HOLD_FRAMES;
+      if (inputs.some((i) => i.pressed('start'))) this.fast = true;
+      this.scroll += this.fast ? FAST : SPEED;
+      if (this.tailY <= (SCREEN_H - CREDITS_TAIL.length * LINE) / 2) this.hold = 0;
       return;
     }
-    if (--this.hold <= 0) {
+    this.hold++;
+    if (this.hold === CARD_GUARD_FRAMES + 1) this.game.deps.announcer?.say('OK to continue.');
+    if (cardContinues(this.hold, inputs, ['jump', 'attack', 'start'])) {
       this.finished = true;
       this.onDone();
     }
@@ -146,5 +156,9 @@ export class CreditsScene implements Scene {
     this.lines.forEach((s, i) => line(s, SCREEN_H + i * LINE - this.scroll));
     const tail = this.tailY;
     CREDITS_TAIL.forEach((s, i) => line(s, tail + i * LINE));
+    if (this.waiting && !this.finished) {
+      const ok = fontText(abilityHint(this.game, 'OK', 'jump'));
+      line(ok, tail + (CREDITS_TAIL.length + 1) * LINE);
+    }
   }
 }

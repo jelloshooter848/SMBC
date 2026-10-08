@@ -85,6 +85,8 @@ function clearCastle(level: LevelData, story: boolean) {
   let poofs = 0;
   let frames = 0;
   for (; frames < 2000 && exitAt < 0; frames++) {
+    // OK while the text waits (it never moves on by itself, owner note 4).
+    input.setHeld(world.castleWaiting && frames % 2 === 0 ? ['jump'] : []);
     const b = bowserOf(world);
     if (!placed && b) {
       placed = true;
@@ -123,10 +125,10 @@ describe('castle pages (campaign)', () => {
       ['THANK YOU MARIO!', '', ...page.news],
     ]);
     expect(r.texts.flat()).not.toContain('ANOTHER CASTLE!');
-    // Each page is read out.
+    // Each page is read out, with what to press.
     expect(r.said).toEqual([
-      ['THANK YOU MARIO!', ...page.reveal].join(' '),
-      ['THANK YOU MARIO!', ...page.news].join(' '),
+      ['THANK YOU MARIO!', ...page.reveal, 'OK to continue.'].join(' '),
+      ['THANK YOU MARIO!', ...page.news, 'OK to continue.'].join(' '),
     ]);
     // The axe drop unmasks the fake: a poof, and its true form falls.
     expect(r.unmasked).toBe(`bowser-die-${id[0]}`);
@@ -150,14 +152,14 @@ describe('castle pages (campaign)', () => {
     expect(r.sfx).not.toContain('poof');
   });
 
-  it('page 2 shows 2 s after page 1 and stays up about 3.5 s before the exit', () => {
+  it('page 1 shows 1.5 s after the thanks; page 2 and the exit each wait for OK', () => {
     const level = load('world1/1-4.map', '1-4');
     const axe = axeOf(level).x;
     const { world } = makeWorld(level, true, { x: axe - 6, y: 8 });
     const input = new ScriptedInput({ steps: [{ frame: 0, hold: [] as Action[] }] });
     const at: Record<string, number> = {};
     let placed = false;
-    for (let f = 0; f < 2000 && at.exit === undefined; f++) {
+    for (let f = 0; f < 4000 && at.exit === undefined; f++) {
       if (!placed && bowserOf(world)) {
         placed = true;
         const p = world.player.body;
@@ -165,6 +167,9 @@ describe('castle pages (campaign)', () => {
         p.y = px(9 * 16) - p.h;
         world.camera.snapTo(p.x);
       }
+      // OK 1000 frames after each page shows, never before.
+      const since = f - (at.p2 ?? at.p1 ?? Infinity);
+      input.setHeld(since === 1000 ? ['jump'] : []);
       input.next();
       world.update([input]);
       for (const ev of world.events.splice(0)) if (ev.type === 'exit') at.exit = f;
@@ -174,8 +179,8 @@ describe('castle pages (campaign)', () => {
       if (world.castleText[2] === CASTLE_PAGES['1-4']?.news[0] && at.p2 === undefined) at.p2 = f;
     }
     expect((at.p1 as number) - (at.thanks as number)).toBe(90);
-    expect((at.p2 as number) - (at.p1 as number)).toBe(120);
-    expect((at.exit as number) - (at.p2 as number)).toBeGreaterThanOrEqual(200);
+    expect((at.p2 as number) - (at.p1 as number)).toBe(1000);
+    expect((at.exit as number) - (at.p2 as number)).toBe(1000);
   });
 
   it('every page fits the castle box', () => {
@@ -190,7 +195,7 @@ describe('castle text outside the story (classic) and in the Lost castles', () =
   it.each(SMB_CASTLES)('%s classic: "BUT OUR PRINCESS IS IN ANOTHER CASTLE!", no poof', (id, path) => {
     const r = clearCastle(load(path, id), false);
     expect(r.texts).toEqual([['THANK YOU MARIO!'], ['THANK YOU MARIO!', ...OLD_NEWS]]);
-    expect(r.said).toEqual([]);
+    expect(r.said).toEqual(['THANK YOU MARIO! BUT OUR PRINCESS IS IN ANOTHER CASTLE! OK to continue.']);
     expect(r.unmasked).toBeNull();
     expect(r.poofs).toBe(0);
     expect(r.sfx).not.toContain('poof');

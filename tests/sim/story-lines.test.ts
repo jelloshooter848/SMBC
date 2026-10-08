@@ -24,13 +24,7 @@ import {
   STORY_TOAD_PAGES,
 } from '@game/story/script';
 import { TOAD_PAGES } from '@game/tutorial/mario-1-0';
-import {
-  ShadowTeaseScene,
-  TEASE_FRAMES,
-  TEASE_LAST_FRAMES,
-  TEASE_LINES,
-  TEASE_PAGE_FRAMES,
-} from '@game/tutorial/tease';
+import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
 import { wrapPrompt } from '@game/tutorial/stage-prompts';
 import { closeCards, draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
@@ -176,7 +170,7 @@ describe('1-0: Bowser’s shadow tease', () => {
     expect(h.said.some((t) => t.includes(TEASE_LINES[1]!))).toBe(false);
   });
 
-  it('campaign: the pages turn and end by themselves; a press during the dash skips to Bowser', () => {
+  it('campaign: the pages wait for OK, never turning by themselves; a press during the dash skips to Bowser', () => {
     const h = campaign();
     const { state } = tease(h, start(h, '1-1'));
     h.idle(CARD_GUARD_FRAMES + 2);
@@ -184,13 +178,17 @@ describe('1-0: Bowser’s shadow tease', () => {
     // Not over: straight on to Bowser's words.
     expect(state.ended).toBe(false);
     expect(h.said.at(-1)).toMatch(/^BOWSER: BWA HA HA!/);
-    h.idle(30 + TEASE_PAGE_FRAMES + 1);
+    h.idle(5000);
+    expect(texts(h)).toEqual(expect.arrayContaining(linesOf(STORY_TEASE_PAGES[0]!)));
+    h.tap('jump');
     expect(texts(h)).toEqual(expect.arrayContaining(linesOf(STORY_TEASE_PAGES[1]!)));
-    h.idle(TEASE_LAST_FRAMES + 1);
+    h.idle(5000);
+    expect(state.ended).toBe(false);
+    h.tap('jump');
     expect(state.ended).toBe(true);
   });
 
-  it('outside the campaign: the old line, one page, over after TEASE_FRAMES', () => {
+  it('outside the campaign: the old line, one page, over on OK', () => {
     const h = makeGame();
     h.game.newGame(MARIO, '1-1');
     h.until(() => h.top() instanceof LevelScene, 400);
@@ -198,7 +196,9 @@ describe('1-0: Bowser’s shadow tease', () => {
     h.idle(boxShows);
     expect(texts(h)).toEqual(expect.arrayContaining(TEASE_LINES.flatMap((l) => wrapPrompt(l))));
     expect(h.said).toContain(TEASE_LINES.join(' '));
-    h.idle(TEASE_FRAMES - boxShows);
+    h.idle(5000);
+    expect(state.ended).toBe(false);
+    h.tap('jump');
     expect(state.ended).toBe(true);
     expect(h.said.some((t) => t.includes('MY KOOPAS'))).toBe(false);
   });
