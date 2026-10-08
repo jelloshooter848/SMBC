@@ -223,7 +223,8 @@ then their die frame is the king and they neither tell nor unmask.
   8's is `RIFT_SEALED_PAGES`).
 - **The gate scene** (`gate:<page>`): when the page shows with its gate exit waiting in the reveal
   (the castle and the hero both done), the map's `gate` mode plays Bowser's throne-room cutaway
-  (his misfire, worse each world; his pages in the box at the top, OK / BACK), the seal shattering
+  (his misfire, worse each world, from the star wand of his spell: `story` sheet `star-wand-0/1`,
+  World 5's crack drawn over the rod; his pages in the box at the top, OK / BACK), the seal shattering
   (`seal-shatter`), the road drawing in, then Toad walking in with the gate's pages. World 8: the
   crack tears open (when it had been seen shut), then Toad's rift scene (it waits for Sophia III,
   `riftOpen`), then the road.
@@ -232,8 +233,9 @@ then their die frame is the king and they neither tell nor unmask.
   top; standing on the node the hint line reads `TALK TO THE <LOCAL>` and up plays it again.
 - **The crystal ball** (0.4.23): once found, a hidden hero's shadow shows by its level from the
   first arrival in that world, even before the level's node is reached.
-- Old files: `seedSeen` (and `seedSeenS3`) count the gates of roads already open, the welcomes of
-  open worlds and the remarks of cleared castles as seen.
+- Old files: `seedSeenS3` (run from `seedNew`, so both a file without a list and a list from an
+  older build get it) counts the gates of roads already open, the welcomes of open worlds and the
+  remarks of cleared castles as seen.
 
 ## Adding a beat
 
