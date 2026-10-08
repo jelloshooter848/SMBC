@@ -118,6 +118,16 @@ describe('beaten with weapons (campaign castles 1-4 to 7-4)', () => {
     expect(sfx.filter((s) => s === 'poof').length).toBe(poofs);
   });
 
+  it('a shot that lands after the hero died: no scene (no one to run to the axe), the death goes on', () => {
+    const { world, input, b } = castle('world1/1-4.map', '1-4', true, 9);
+    world.kill(world.player);
+    kill(b, world);
+    expect(world.unmask).toBeNull();
+    expect(b.alive).toBe(false);
+    step(world, input, 120);
+    expect(world.bossClear).toBeNull();
+  });
+
   it('classic play: the NES true form drops as a corpse, no scene', () => {
     const { world, b } = castle('world3/3-4.map', '3-4', false, 9);
     kill(b, world);

@@ -2659,9 +2659,10 @@ export class World {
   unmaskOnKill(b: Bowser): boolean {
     const level = this.unmaskCastle(b);
     const axe = this.entities.find((e): e is Axe => e instanceof Axe && e.alive);
-    if (!level || !axe || this.unmask || this.bossClear) return false;
+    // A shot that lands after the hero died: no one runs to the axe (the death goes on, as before).
+    const hero = axe ? this.nearestTo(axe) : null;
+    if (!level || !axe || !hero || this.unmask || this.bossClear) return false;
     if (!b.burst(this, true)) return false;
-    const hero = this.nearestTo(axe);
     this.unmask = new CastleUnmask('killed', b, hero, axe, level);
     this.unmask.start(this);
     return true;
@@ -2683,11 +2684,11 @@ export class World {
     return true;
   }
 
-  /** The living player nearest the axe (co-op: that one acts in the unmask scenes). */
-  private nearestTo(axe: Axe): Player {
+  /** The living player nearest the axe (co-op: that one acts in the unmask scenes), or null. */
+  private nearestTo(axe: Axe): Player | null {
     const live = this.players.filter((p) => !p.dead);
     const d = (p: Player) => Math.abs(p.body.x - axe.body.x);
-    return live.reduce((a, p) => (d(p) < d(a) ? p : a), live[0] ?? this.player);
+    return live.reduce<Player | null>((a, p) => (!a || d(p) < d(a) ? p : a), null);
   }
   /** The hero who took the axe (Toad's "THANK YOU <hero>!"), or null before the bridge is cut. */
   get castleHero(): Player['def'] | null {
