@@ -79,6 +79,16 @@ import {
   contraRiverTileFrames,
   contraLairTileFrames,
 } from './contra-world';
+import {
+  bmForestTilePalette,
+  bmTechnoTilePalette,
+  bmIceTilePalette,
+  bmVaultTilePalette,
+  bmForestTileFrames,
+  bmTechnoTileFrames,
+  bmIceTileFrames,
+  bmVaultTileFrames,
+} from './blaster-world';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -409,6 +419,11 @@ export const tilePalettes: Record<string, string[]> = {
   'tiles-contra-shore': contraShoreTilePalette,
   'tiles-contra-river': contraRiverTilePalette,
   'tiles-contra-lair': contraLairTilePalette,
+  // World 8 as Sophia's world (0.4.31): 8-1, 8-2, 8-3 and their coin rooms (blaster-world.ts).
+  'tiles-bm-forest': bmForestTilePalette,
+  'tiles-bm-techno': bmTechnoTilePalette,
+  'tiles-bm-ice': bmIceTilePalette,
+  'tiles-bm-vault': bmVaultTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2456,4 +2471,13 @@ Object.assign(
   contraShoreTileFrames(tilesDef.frames),
   contraRiverTileFrames(),
   contraLairTileFrames(tilesDef.frames),
+);
+
+// World 8 as Sophia's world (0.4.31): 8-1, 8-2, 8-3 and their coin rooms (blaster-world.ts).
+Object.assign(
+  tilesDef.frames,
+  bmForestTileFrames(),
+  bmTechnoTileFrames(tilesDef.frames),
+  bmIceTileFrames(tilesDef.frames),
+  bmVaultTileFrames(),
 );

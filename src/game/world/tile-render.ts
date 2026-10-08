@@ -88,6 +88,9 @@ export const STARRY_SKIES: ReadonlySet<string> = new Set([
   // World 7 as Bill's world (0.4.30): the snowfield's and the jungle shore's night.
   'contra-snow',
   'contra-shore',
+  // World 8 as Sophia's world (0.4.31): the Underworld's forest night and the frozen ruins'.
+  'bm-forest',
+  'bm-ice',
 ]);
 
 /**
@@ -221,4 +224,10 @@ export const SKY: Record<string, string> = {
   'contra-shore': '#000c24',
   'contra-river': '#000818',
   'contra-lair': '#000000',
+  // World 8 as Sophia's world (0.4.31): the Underworld's forest night, the techno castle's dark,
+  // the frozen ruins' cold night, Jason's dungeon black.
+  'bm-forest': '#000818',
+  'bm-techno': '#080818',
+  'bm-ice': '#0c1430',
+  'bm-vault': '#000000',
 };

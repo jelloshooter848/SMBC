@@ -104,6 +104,11 @@ describe('themes', () => {
       'contra-shore',
       'contra-river',
       'contra-lair',
+      // World 8 as Sophia's world (0.4.31): 8-1, 8-2, 8-3 and their coin rooms
+      'bm-forest',
+      'bm-techno',
+      'bm-ice',
+      'bm-vault',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -186,6 +191,10 @@ describe('themes', () => {
       'contra-shore': 'contra-jungle',
       'contra-river': 'contra-river',
       'contra-lair': 'contra-lair',
+      'bm-forest': 'bm-area',
+      'bm-techno': 'bm-techno',
+      'bm-ice': 'bm-ice',
+      'bm-vault': 'bm-dungeon',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

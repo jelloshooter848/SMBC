@@ -111,7 +111,9 @@ describe("World 8: BOWSER'S UNDERWORLD", () => {
     const all = SKETCH_8.join('');
     const g = all.indexOf('⌂');
     expect(g).toBeGreaterThanOrEqual(0);
-    expect(Math.abs((g % 16) - node('8-4').x) + Math.abs(Math.floor(g / 16) - node('8-4').y)).toBeLessThanOrEqual(5);
+    expect(
+      Math.abs((g % 16) - node('8-4').x) + Math.abs(Math.floor(g / 16) - node('8-4').y),
+    ).toBeLessThanOrEqual(5);
     // nothing new is walkable, and nothing on the page animates (no flashing)
     for (const ch of SCENERY) {
       expect(MAP_WALKABLE.has(ch), ch).toBe(false);

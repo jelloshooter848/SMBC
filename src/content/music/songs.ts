@@ -12,6 +12,7 @@ import { zebesWorldSongs } from './zebes-world';
 import { transylvaniaSongs } from './transylvania';
 import { ninjaWorldSongs } from './ninja-world';
 import { contraWorldSongs } from './contra-world';
+import { blasterWorldSongs } from './blaster-world';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1227,4 +1228,6 @@ export const songs: Song[] = [
   ...ninjaWorldSongs,
   // World 7 as Bill's world (0.4.30): 7-1's snowfield, 7-2's jungle river.
   ...contraWorldSongs,
+  // World 8 as Sophia's world (0.4.31): 8-2's techno castle, 8-3's frozen ruins.
+  ...blasterWorldSongs,
 ];

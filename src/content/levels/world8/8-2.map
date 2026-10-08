@@ -9,6 +9,14 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.31): the techno castle (`bm-techno`, the second area's castle of machine
+;; panels): steel panels with circuit traces and deck plates, its Bullet Bill blasters machine
+;; cannons (still SMB's shape and badge, a warning stripe round their muzzles) and the castle's
+;; machine towers painted behind (nothing on them blinks). It plays its own techno tune.
+;; Elsewhere (level select, ?level=8-2) it looks as it always did.
+campaignTheme: bm-techno
+campaignMusic: bm-techno
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

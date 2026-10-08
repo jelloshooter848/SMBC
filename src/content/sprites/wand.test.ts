@@ -71,7 +71,8 @@ describe('wand sheet', () => {
     const arms = up.map((r) => (r.match(/[23]/g) ?? []).length);
     expect(Math.max(...arms)).toBeGreaterThanOrEqual(7);
     // the pieces it breaks into are bits of the star and the rod, in the lavender glow
-    for (const name of ['piece-0', 'piece-1', 'piece-2']) expect(rows(name).join(''), name).not.toMatch(/[56]/);
+    for (const name of ['piece-0', 'piece-1', 'piece-2'])
+      expect(rows(name).join(''), name).not.toMatch(/[56]/);
   });
 
   it('is registered with its palette and renders in every colour mode', () => {

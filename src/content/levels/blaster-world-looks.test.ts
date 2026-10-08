@@ -90,7 +90,6 @@ function backdrop(theme: Theme, camX: number, frame = 0, reduceFlashing = true):
   return drawn;
 }
 
-
 describe("World 8 as Sophia's world: Blaster Master-style looks, campaign only", () => {
   it.each(IDS)('%s names its look; campaign play shows it', (id) => {
     const { theme, music } = WORLD8[id]!;

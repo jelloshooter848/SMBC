@@ -9,6 +9,14 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (level/campaign.ts applyLook, 0.4.31): World 8 is Sophia's world, and 8-1 is
+;; the Underworld's surface, its first area (`bm-forest`): mossy stone ruins over dark forest earth,
+;; a forest of gnarled trees and broken columns and arches painted behind under a starry night
+;; (world/theme-backdrop.ts); its trees gnarled ones. It plays the Underworld's area march.
+;; Elsewhere (level select, ?level=8-1) it looks as it always did.
+campaignTheme: bm-forest
+campaignMusic: bm-area
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224              240              256              272              288              304              320              336              352              368              384
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................
