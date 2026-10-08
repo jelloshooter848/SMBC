@@ -203,9 +203,7 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
       '4-2-larry',
       '5-4-crypt',
       '5-4-dungeon',
-      '6-2-bonus',
-      '6-2-bonus2',
-      '6-2-water',
+      // (6-2's coin rooms and water area take World 6 looks since 0.4.29; Ryu's dojo keeps its own)
       '6-2-dojo',
       '1-1',
     ];

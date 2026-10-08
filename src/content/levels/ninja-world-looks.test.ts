@@ -22,6 +22,8 @@ import {
 import { T, tileDef } from '@game/level/tiles';
 import { enemyPalette } from '@game/entities/enemies/enemy';
 import { decorPalette } from '@game/entities/objects/decoration';
+import { trickPalette } from '@game/entities/objects/trick-wall';
+import { ninjaDef } from '@content/sprites/ninja';
 import { FLOODED, SKY, STARRY_SKIES } from '@game/world/tile-render';
 import { drawThemeBackdrop, hasThemeBackdrop } from '@game/world/theme-backdrop';
 import type { View } from '@game/entities/entity';
@@ -65,6 +67,7 @@ function framesUsed(lvl: LevelData): string[] {
     if (def.block?.kind === 'hidden') continue;
     if (def.block?.kind === 'question') for (const n of [0, 1, 2]) used.add(`question-${n}`);
     else if (def.block?.kind === 'brick' || id === T.TRICK) used.add('brick');
+    else if (id === T.LAVA) for (const n of [0, 1]) used.add(`lava-${n}`);
     else if (def.pickup === 'coin') for (const n of [0, 1, 2, 3]) used.add(`coin-${n}`);
     else if (id === T.WATER) for (const n of [0, 1]) used.add(`water-${n}`);
     else used.add(def.name);
@@ -113,8 +116,9 @@ describe("World 6 as Ryu's world: ninja-game looks, campaign only", () => {
     }
     expect(getLevel('6-2-dojo').campaignLook).toBeUndefined();
     expect(campaignLevel(getLevel('6-2-dojo')).theme).toBe('dojo');
-    // the trick wall into the dojo still wakes in the campaign
-    expect(campaignLevel(getLevel('6-2')).zones.some((z) => z.kind === 'trick')).toBe(true);
+    // the trick wall into the dojo (in 6-2-bonus) still wakes in the campaign, leading to the dojo
+    const trick = campaignLevel(getLevel('6-2-bonus')).zones.find((z) => z.kind === 'trick');
+    expect(trick).toMatchObject({ target: { level: '6-2-dojo' } });
   });
 
   it.each(IDS)('%s: every tile it draws has a frame in its look, every solid block redrawn', (id) => {
@@ -170,6 +174,20 @@ describe("6-2's coin rooms: the city's sewers (ng-sewer)", () => {
     expect(hasSolidFloors('ng-sewer')).toBe(true);
     expect(enemyPalette('ng-sewer')).toBe('enemies-underground');
     expect(SKY['ng-sewer']).toBe('#000000');
+  });
+
+  it("Ryu's trick panel in 6-2-bonus still cannot be told from the sewer brick round it", () => {
+    expect(campaignLevel(getLevel('6-2-bonus')).zones.some((z) => z.kind === 'trick')).toBe(true);
+    expect(trickPalette('ng-sewer')).toBe('ninja-ng-sewer');
+    expect(trickPalette('underground')).toBeUndefined();
+    const ROLES = '0123456789abcdefghijklm';
+    const ninja = PALETTES.default['ninja-ng-sewer'] as string[];
+    const sewer = tiles('ng-sewer');
+    const panel = ninjaDef.frames['trick-wall-0'] as readonly string[];
+    const brick = frames['brick@ng-sewer'] as readonly string[];
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++)
+        expect(ninja[ROLES.indexOf(panel[y]![x]!)], `${x},${y}`).toBe(sewer[ROLES.indexOf(brick[y]![x]!)]);
   });
 });
 

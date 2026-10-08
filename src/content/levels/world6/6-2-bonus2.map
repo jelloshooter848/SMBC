@@ -10,6 +10,11 @@ startMode: fall
 camera: locked
 parent: 6-2
 
+;; Campaign play only (0.4.29): the other coin room under the street is the city's sewers too
+;; (`ng-sewer`, the underground still). Elsewhere (level select, ?level=6-2) it looks as it always did.
+campaignTheme: ng-sewer
+campaignMusic: ng-sewer
+
 [tiles]
 ;; 0
 ................

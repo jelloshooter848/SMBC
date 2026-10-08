@@ -362,7 +362,7 @@ describe('the restyles’ music', () => {
 });
 
 describe('castle and solid-floor theme families', () => {
-  it("the castle family is the castles, their Lost Levels skins, 5-4's hall, 2-4's palace, 3-4's fortress and 4-4's Tourian", () => {
+  it("the castle family is the castles, their Lost Levels skins, 5-4's hall, 2-4's palace, 3-4's fortress, 4-4's Tourian and 6-4's demon temple", () => {
     expect(THEMES.filter(isCastleTheme)).toEqual([
       'castle',
       'castle-overworld',
@@ -371,6 +371,7 @@ describe('castle and solid-floor theme families', () => {
       'zelda2-palace',
       'megaman-fortress',
       'tourian-lair',
+      'ng-temple',
     ]);
   });
 

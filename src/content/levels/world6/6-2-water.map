@@ -10,6 +10,14 @@ startMode: fall
 camera: scroll
 parent: 6-2
 
+;; Campaign play only (0.4.29): the night harbour under the city's piers (`ng-harbor`):
+;; barnacled quay stone, rope-bound cargo crates and dark blue water. No restyle is a water theme:
+;; the harbour swims by `swim: true` (which changes nothing in the classic water theme, which always
+;; swims). Elsewhere (level select, ?level=6-2) it looks as it always did.
+swim: true
+campaignTheme: ng-harbor
+campaignMusic: ng-harbor
+
 [tiles]
 ;; 0                16               32               48               64
 ................ ................ ................ ................ .

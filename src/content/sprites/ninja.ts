@@ -1,6 +1,7 @@
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { NES } from '@engine/gfx/palette';
 import { tilesDef } from './tiles';
+import { ngSewerTilePalette } from './ninja-world';
 
 /**
  * Ryu's hideout under 6-2 and his mini game's Ninja Gaiden-style night: the karakuri trick wall,
@@ -69,6 +70,9 @@ export const ninjaPalettes: Record<string, string[]> = {
   'ninja-flash': ninjaBase().map((c, i) => (i === 0 ? c : i % 2 ? NES.white : NES.lightGray)),
   // The Masked Ninja's clone trail: indigo where the outline was, the rest in two purples.
   'ninja-ghost': ninjaBase().map((_, i) => (i === 0 ? '#4428bc' : i % 2 ? NES.purple : '#6844fc')),
+  // 6-2's coin rooms as the city's sewers (0.4.29): the trick panel in the sewer brick's colours
+  // (slots 1-3 are tiles-ng-sewer's), so it still cannot be told from the wall round it.
+  'ninja-ng-sewer': ninjaBase().map((c, i) => (i >= 1 && i <= 3 ? (ngSewerTilePalette[i] as string) : c)),
 };
 
 /* ---------- composition helpers ---------- */

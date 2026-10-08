@@ -31,6 +31,14 @@ export function ninjaFrame(assets: AssetRegistry, frame: string): boolean {
 }
 
 /**
+ * The `ninja` palette the panel's brick face is drawn in under a theme whose brick is not the
+ * underground's colours, or undefined for the sheet's own: 6-2-bonus as the city's sewers (0.4.29,
+ * campaign) draws it in the sewer brick's colours, so it still cannot be told from the wall.
+ */
+export const trickPalette = (theme: string): string | undefined =>
+  theme === 'ng-sewer' ? 'ninja-ng-sewer' : undefined;
+
+/**
  * The half turn as seen from the brick side (the bonus room): the brick face (`trick-wall-0`,
  * `brick@underground` exactly), turning (`-1`), edge-on (`-2`), the wooden back turning (`-3`), the
  * back flat (`trick-wall-back`, the dojo side). Each frame fills its tile; a taller panel stacks it.
@@ -64,6 +72,7 @@ const isDojoSide = (theme: string): boolean => theme === 'dojo';
 /** Rect fallback colours of the brick face (the theme's brick: top light, body, mortar). */
 function brickColours(theme: string): [string, string, string] {
   if (theme === 'underground') return [NES.lavender, NES.blueUnderground, NES.blueDark];
+  if (theme === 'ng-sewer') return ['#707c80', '#40484c', '#1c2024'];
   return [NES.lightGray, NES.gray, NES.black];
 }
 
@@ -129,7 +138,7 @@ export class TrickWall extends Entity {
   private renderSpin(r: Renderer, view: View, x: number, y: number, h: number, t: number): void {
     const frame = spinFrame(t, this.spinDir, isDojoSide(view.theme));
     if (ninjaFrame(view.assets, frame)) {
-      const sheet = view.assets.sheet('ninja');
+      const sheet = view.assets.sheet('ninja', trickPalette(view.theme));
       for (let ty = 0; ty < h; ty += 16) r.sprite(sheet, frame, x, y + ty);
       return;
     }
@@ -162,7 +171,7 @@ export class TrickWall extends Entity {
   private renderRest(r: Renderer, view: View, x: number, y: number, h: number): void {
     const my = y + (this.markRow - this.zone.y) * 16;
     if (ninjaFrame(view.assets, 'trick-wall-back') && ninjaFrame(view.assets, 'shuriken-mark')) {
-      const sheet = view.assets.sheet('ninja');
+      const sheet = view.assets.sheet('ninja', trickPalette(view.theme));
       if (isDojoSide(view.theme))
         for (let ty = 0; ty < h; ty += 16) r.sprite(sheet, 'trick-wall-back', x, y + ty);
       else if (ninjaFrame(view.assets, 'trick-wall-cracked')) r.sprite(sheet, 'trick-wall-cracked', x, my);

@@ -9,6 +9,14 @@ start: 2,6
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.29): the demon temple, Jaquio's lair (`ng-temple`, in the castle
+;; family): crimson stone, carved blocks with gold eyes and a lacquered bridge on a gold chain over
+;; the lava, a carved wall and demon-headed pillars painted behind. It plays the Masked Ninja's
+;; tune. Castle play is unchanged (the fake Bowser's unmask, the castle remark). Elsewhere (level
+;; select, ?level=6-4) it looks as it always did.
+campaignTheme: ng-temple
+campaignMusic: ng-boss
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

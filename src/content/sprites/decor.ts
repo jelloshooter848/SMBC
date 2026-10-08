@@ -37,6 +37,14 @@ import {
   cvClockDecorPalette,
   transylvaniaDecorFrames,
 } from './transylvania';
+import {
+  ngFieldDecorPalette,
+  ngSewerDecorPalette,
+  ngHarborDecorPalette,
+  ngPassDecorPalette,
+  ngTempleDecorPalette,
+  ninjaWorldDecorFrames,
+} from './ninja-world';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -178,6 +186,12 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-cv-storm': cvStormDecorPalette,
   'decor-cv-lake': cvLakeDecorPalette,
   'decor-cv-clock': cvClockDecorPalette,
+  // World 6 as Ryu's world (0.4.29) (ninja-world.ts).
+  'decor-ng-field': ngFieldDecorPalette,
+  'decor-ng-sewer': ngSewerDecorPalette,
+  'decor-ng-harbor': ngHarborDecorPalette,
+  'decor-ng-pass': ngPassDecorPalette,
+  'decor-ng-temple': ngTempleDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -756,5 +770,7 @@ export const decorDef: SpriteDef = {
     ...zebesWorldDecorFrames,
     // World 5 as Simon's world, Transylvania (0.4.28): the moon, the backdrops, statues and lamps.
     ...transylvaniaDecorFrames,
+    // World 6 as Ryu's world (0.4.29): the moon, the backdrops, bamboo and lanterns.
+    ...ninjaWorldDecorFrames,
   },
 };

@@ -55,6 +55,18 @@ import {
   cvLakeTileFrames,
   cvClockTileFrames,
 } from './transylvania';
+import {
+  ngFieldTilePalette,
+  ngSewerTilePalette,
+  ngHarborTilePalette,
+  ngPassTilePalette,
+  ngTempleTilePalette,
+  ngFieldTileFrames,
+  ngSewerTileFrames,
+  ngHarborTileFrames,
+  ngPassTileFrames,
+  ngTempleTileFrames,
+} from './ninja-world';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -373,6 +385,12 @@ export const tilePalettes: Record<string, string[]> = {
   'tiles-cv-storm': cvTownTilePalette,
   'tiles-cv-lake': cvLakeTilePalette,
   'tiles-cv-clock': cvClockTilePalette,
+  // World 6 as Ryu's world (0.4.29): 6-1, 6-2's coin rooms and water area, 6-3, 6-4 (ninja-world.ts).
+  'tiles-ng-field': ngFieldTilePalette,
+  'tiles-ng-sewer': ngSewerTilePalette,
+  'tiles-ng-harbor': ngHarborTilePalette,
+  'tiles-ng-pass': ngPassTilePalette,
+  'tiles-ng-temple': ngTempleTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2400,4 +2418,14 @@ Object.assign(
   cvStormTileFrames(tilesDef.frames),
   cvLakeTileFrames(),
   cvClockTileFrames(),
+);
+
+// World 6 as Ryu's world (0.4.29): 6-1, 6-2-bonus, 6-2-bonus2, 6-2-water, 6-3 and 6-4 (ninja-world.ts).
+Object.assign(
+  tilesDef.frames,
+  ngFieldTileFrames(tilesDef.frames),
+  ngSewerTileFrames(tilesDef.frames),
+  ngHarborTileFrames(),
+  ngPassTileFrames(tilesDef.frames),
+  ngTempleTileFrames(tilesDef.frames),
 );
