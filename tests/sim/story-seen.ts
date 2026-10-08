@@ -1,4 +1,6 @@
 import { beat, STORY_REV } from '@game/story/beats';
+import { OpeningScene } from '@game/story/opening';
+import { CARD_GUARD_FRAMES } from '@game/scenes/message';
 
 /*
  * Every Chapter 1 story beat id (story/beats.ts), for tests about something else: a file with
@@ -24,4 +26,19 @@ export const ALL_STORY: readonly string[] = [
 /** Marks every story beat seen on the open file (saved the next time the game saves). */
 export function seeAllStory(game: { story: string[] }): void {
   game.story = [...new Set([...game.story, ...ALL_STORY])];
+}
+
+/**
+ * A new file plays the story's opening (story/opening.ts, docs/STORY.md 2.1) before its map:
+ * BACK skips it and the map shows, for tests about something else. Does nothing without one.
+ */
+export function skipOpening(h: {
+  game: { scenes: { top: unknown } };
+  idle(n: number): void;
+  tap(a: 'attack'): void;
+}): void {
+  if (!(h.game.scenes.top instanceof OpeningScene)) return;
+  h.idle(CARD_GUARD_FRAMES + 1);
+  h.tap('attack');
+  for (let i = 0; i < 300 && h.game.scenes.top instanceof OpeningScene; i++) h.idle(1);
 }

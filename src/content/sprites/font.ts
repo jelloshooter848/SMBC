@@ -14,6 +14,8 @@ export const FONT_COLOURS = {
   grey: 'font-silver',
   cyan: 'font-cyan',
   black: 'font-black',
+  // Peach's note (docs/STORY.md 2.1): brown ink on parchment.
+  ink: 'font-ink',
 } as const;
 export type FontColour = keyof typeof FONT_COLOURS;
 
@@ -24,6 +26,7 @@ export const fontPalettes: Record<string, readonly string[]> = {
   [FONT_COLOURS.grey]: tint(NES.lightGray),
   [FONT_COLOURS.cyan]: tint(NES.skyLight),
   [FONT_COLOURS.black]: tint(NES.black),
+  [FONT_COLOURS.ink]: tint(NES.brownDark),
 };
 
 /**

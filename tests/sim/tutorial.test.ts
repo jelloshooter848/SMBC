@@ -31,7 +31,7 @@ import { STORY_TOAD_PAGES } from '@game/story/script';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
 import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
-import { ALL_STORY } from './story-seen';
+import { ALL_STORY, skipOpening } from './story-seen';
 
 // Mario's tutorial stage 1-0 (0.5.0): World 1's start node, where a new file begins; 1-1 opens
 // once it is cleared (or skipped). Toad tells the story, the lessons follow one by one in a
@@ -51,6 +51,7 @@ function newFileFromTitle(h: H) {
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);
   h.tap('jump');
+  skipOpening(h); // the story's opening first (opening.test.ts)
 }
 
 /** From the map on 1-0: JUMP enters it (no character select), the card, then the level. */
