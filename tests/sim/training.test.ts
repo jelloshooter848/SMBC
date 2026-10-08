@@ -10,8 +10,11 @@ import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
 import { SAMUS } from '@game/characters/samus';
+import { heroStart } from '@game/items/heroes';
+import { carriedKit } from '@game/entities/player';
 import { loadSave, migrateSave, newSave } from '@game/save/save-files';
-import { PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
+import { CARD_GUARD_FRAMES, PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
+import { lessonsFor, TRAINING, type HeroTraining } from '@game/tutorial/lessons';
 import { TrainingQuestionScene } from '@game/tutorial/training';
 import type { TargetDummy } from '@game/tutorial/dummy';
 import type { Settings } from '@engine/save/settings';
@@ -92,7 +95,11 @@ describe('the training question', () => {
     expect(loadSave(1)?.tutorials).toContain('link');
     // The room's own world and state: its kit, its score.
     expect(room.player.scratch.bombs).toBe(8);
-    // Knock the dummy down with the sword: the room's own score goes up.
+    // The first chapter's card waits for a button; then knock the dummy down with the sword: the
+    // room's own score goes up.
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('jump');
+    expect(room.phase).toBe('lesson');
     const d = room.dummy as TargetDummy;
     for (let i = 0; i < 300 && d.alive; i++)
       h.step(toPx(room.player.centerX) < 128 ? ['right'] : i % 16 < 2 ? ['attack'] : []);
@@ -107,7 +114,7 @@ describe('the training question', () => {
     const s = h.game.state;
     expect(s.character).toBe(LINK);
     expect([s.lives, s.score, s.coins, s.powerState, s.hp]).toEqual([4, 1200, 7, 'full', 6]);
-    expect(s.kit).toEqual({ found: 1 }); // Link's basic campaign kit (docs/POWERUPS.md)
+    expect(s.kit).toEqual(heroStart(LINK).kit); // Link's basic campaign kit (docs/POWERUPS.md)
   });
 
   it("old saves don't ask for the heroes they already play; a new hero still asks", () => {
@@ -239,6 +246,97 @@ describe('training and the dev "All heroes" toggle', () => {
     again.game.state.character = MARIO;
     pick(again, 1);
     expect(again.top()).toBeInstanceOf(TrainingQuestionScene);
+  });
+});
+
+describe('the basic kit and chapters', () => {
+  it('the room starts from the basic kit whatever the run holds, with no (PREVIEW); the run gets its own back', () => {
+    // Samus's lessons as converted ones (no `fullKit`): the room gives her the basic kit.
+    const all = TRAINING as Record<string, HeroTraining>;
+    const before = all.samus as HeroTraining;
+    all.samus = { chapters: before.chapters };
+    try {
+      const h = makeGame();
+      file({ freed: ['mario', 'samus'], tutorials: ['mario', 'samus'] }, SAMUS.id);
+      h.game.openFile(1);
+      pick(h, 0);
+      h.until(() => h.top() instanceof LevelScene);
+      h.idle(30);
+      // The run has found the Long Beam and the Missiles.
+      const level = h.top() as LevelScene;
+      Object.assign(level.world.player.scratch, { 'has-long-beam': 1, 'has-missiles': 1, missiles: 7 });
+      h.tap('start');
+      choose(h, 'Training');
+      const room = h.top() as PracticeRoomScene;
+      const kit = { ...h.game.state.kit };
+      expect(room.player.scratch).toMatchObject(heroStart(SAMUS).kit);
+      expect(room.player.scratch['has-long-beam']).toBeUndefined();
+      expect(room.player.scratch['has-missiles']).toBeUndefined();
+      for (let i = 0; i < room.lessons.length; i++) {
+        room.startLesson(i);
+        expect(room.promptWrapped().join(' ')).not.toContain('PREVIEW');
+        expect(h.said.at(-1)).not.toMatch(/preview/i);
+      }
+      skip(h);
+      // The run's own kit, as the level's hero carries it.
+      expect({ ...kit, ...h.game.state.kit }).toEqual(carriedKit(level.world.player));
+      expect(level.world.player.scratch).toMatchObject({
+        'has-long-beam': 1,
+        'has-missiles': 1,
+        missiles: 7,
+      });
+    } finally {
+      all.samus = before;
+    }
+  });
+
+  it('from pause the lessons come in the same order, and the run keeps its own kit', () => {
+    const h = makeGame();
+    file(
+      { freed: ['mario', 'samus'], tutorials: ['mario', 'samus'], kit: { beam: 2, missiles: 5 } },
+      SAMUS.id,
+    );
+    h.game.openFile(1);
+    pick(h, 0);
+    h.until(() => h.top() instanceof LevelScene);
+    h.idle(30);
+    const kit = { ...h.game.state.kit };
+    h.tap('start');
+    choose(h, 'Training');
+    const room = h.top() as PracticeRoomScene;
+    expect(room.lessons.map((l) => l.id)).toEqual(lessonsFor('samus').map((l) => l.id));
+    const ids = room.lessons.map((l) => l.id);
+    // The room's lessons change its kit (the wave beam, missiles spent)...
+    room.startLesson(ids.indexOf('wave-beam'));
+    room.player.scratch.beam = 3;
+    room.player.scratch.missiles = 0;
+    skip(h);
+    // ...but the run's kit is restored.
+    expect(h.game.state.kit).toEqual(kit);
+  });
+
+  it('Skip chapter from the menu moves on to the next chapter; a skipped room ends as skipped', () => {
+    const h = makeGame();
+    file({ freed: ['mario', 'luigi'] });
+    h.game.openFile(1);
+    pick(h, 1);
+    choose(h, 'Yes');
+    const room = h.top() as PracticeRoomScene;
+    expect(room.chapters.map((c) => c.id)).toEqual(['moves', 'fire']);
+    h.idle(4);
+    h.tap('start');
+    choose(h, 'Skip chapter');
+    expect([room.phase, room.chapter]).toEqual(['chapter', 1]);
+    h.idle(4);
+    h.tap('start');
+    choose(h, 'Skip chapter');
+    // Past the last chapter: READY!, waiting for a button.
+    expect(room.phase).toBe('ready');
+    h.idle(200);
+    expect(h.top()).toBe(room);
+    h.tap('jump');
+    h.until(() => h.top() instanceof LevelScene);
+    expect(h.game.state.character).toBe(LUIGI);
   });
 });
 

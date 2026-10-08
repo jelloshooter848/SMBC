@@ -1,0 +1,39 @@
+;; The practice room's gear screen (hero training, docs/HEROES.md): a floor, a high ledge at the
+;; left (Mega Man's Rush Coil lesson aims for it, under the prompt box), a target dummy, and a low wall at the right with
+;; a one-tile tunnel under it (Mega Man slides and Samus rolls through; the pocket behind it is
+;; reached only that way). src/game/tutorial/room.ts loads it with ?raw, like practice.map.
+id: practice-gear
+name: TRAINING
+world: 1
+stage: 1
+theme: overworld
+music: overworld
+time: 400
+start: 5,12
+startMode: stand
+camera: locked
+
+[tiles]
+;; 0123456789012345
+............BB..
+............BB..
+............BB..
+............BB..
+............BB..
+............BB..
+............BB..
+............BB..
+BBB.........BB..
+............BB..
+............BB..
+............BB..
+................
+################
+################
+
+[entities]
+dummy 8 12
+
+[decor]
+bush-1 3 12
+cloud-1 6 2

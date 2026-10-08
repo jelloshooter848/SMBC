@@ -1,75 +1,28 @@
 import { toPx } from '@engine/math/units';
-import type { Action } from '@engine/input/actions';
 import type { Player } from '../entities/player';
 import type { World } from '../world/world';
 import { Projectile } from '../entities/projectiles/projectile';
 import { Bomb } from '../entities/objects/bomb';
 import { RushCoil } from '../entities/objects/rush-coil';
-import { WEAPONS } from '../characters/megaman/weapons';
-import { SUB_WEAPONS } from '../characters/simon/weapons';
-import { NINPO_ARTS } from '../characters/ryu/weapons';
+import { activeTool } from '../characters/toolbelt';
+import type { HeroTraining, ItemId, RoomGeometry, TrainingChapter, TrainingLesson } from './lessons/common';
+import { LUIGI_TRAINING } from './lessons/luigi';
+import { LINK_TRAINING } from './lessons/link';
+import { MEGAMAN_TRAINING } from './lessons/megaman';
+import { SAMUS_TRAINING } from './lessons/samus';
+import { SIMON_TRAINING } from './lessons/simon';
+import { RYU_TRAINING } from './lessons/ryu';
+import { BILL_TRAINING } from './lessons/bill';
+import { SOPHIA_TRAINING } from './lessons/sophia';
 
 /*
- * Hero training (docs/HEROES.md): the lessons each hero's practice room teaches, and the tracker
- * that watches the player to tick them off. Prompts name abilities the way the hero's guide and
- * touch buttons do (JUMP, SWORD, SHOOT, TOOLS...), never button letters, and wrap to the room's
- * prompt box (28 columns, at most 3 lines).
+ * Hero training (docs/HEROES.md): every hero's lessons (lessons/<hero>.ts, sharing
+ * lessons/common.ts, re-exported here), and the tracker that watches the player to tick them off.
  */
 
-/** `[LABEL:action]`: a button's ability in a prompt. */
-const TOKEN = /\[([^:\]]+):(\w+)\]/g;
-
-/**
- * A prompt's text: each `[LABEL:action]` through `hint` (the room passes `abilityHint`), or the
- * bare label without one.
- */
-export function promptText(prompt: string, hint?: (label: string, action: Action) => string): string {
-  return prompt.replace(TOKEN, (_m, label: string, action: string) =>
-    hint ? hint(label, action as Action) : label,
-  );
-}
-
-/** The actions named by a prompt's `[LABEL:action]` tokens. */
-export function promptActions(prompt: string): string[] {
-  return [...prompt.matchAll(TOKEN)].map((m) => m[2] as string);
-}
-
-/** Where things are in the practice room (px), so lessons can ask "on the ledge", "over the gap". */
-export interface RoomGeometry {
-  /** Top of the floor. */
-  floorTop: number;
-  /** Top of the high ledge. */
-  ledgeTop: number;
-  /** The gap in the floor: its left and right edges. */
-  gap: { x0: number; x1: number };
-}
-
-/** What a lesson's setup can change in the room. */
-export interface PracticeRoom {
-  readonly player: Player;
-  readonly world: World;
-  /** The dummy fires slow, harmless shots at the hero (Link's shield lesson). */
-  dummyShoots: boolean;
-}
-
-export interface TrainingLesson {
-  id: string;
-  /**
-   * Shown in the prompt box and announced: ability names, never button letters. A button's
-   * ability is written `[LABEL:action]` ('[SHOOT:attack]'): the room shows it through
-   * `abilityHint` ("SHOOT (X)" with keys, "SHOOT" on touch); `promptText` gives the bare label.
-   */
-  prompt: string;
-  /**
-   * The prompt on touch, when the touch controls do it differently (running: push the d-pad
-   * far to the side); absent: `prompt`.
-   */
-  touchPrompt?: string;
-  /** True once the player has done it (since the lesson came up: the tracker is reset). */
-  done(t: MoveStats): boolean;
-  /** Runs when the lesson comes up (gives the room's kit, e.g. Luigi's fire flower). */
-  setup?(room: PracticeRoom): void;
-}
+export * from './lessons/common';
+export { LUIGI_HIGH_JUMP_PX, LUIGI_COAST_PX, LUIGI_SLIDE_PX } from './lessons/luigi';
+export { SEABED_JUMP_PX } from './lessons/megaman';
 
 /**
  * Watches the room's player and world each frame (`observe`, after the world's update) and
@@ -129,6 +82,24 @@ export class MoveStats {
   blocked = 0;
   /** Jumps that took off on one side of the gap and landed on the other. */
   gapCrossings = 0;
+  /** The hero was in the one-tile tunnel (under its roof). */
+  tunnel = false;
+  /** Takeoffs upward while curled in Samus's morph ball: bomb jumps. */
+  ballJumps = 0;
+  /** Belt tools used up ammo or magic (their ids: Link's spells, Simon's stopwatch...). */
+  readonly toolUses = new Set<string>();
+  /** The belt tool selected when each shot was fired (Samus's 'missile' with it switched in). */
+  readonly shotTools = new Set<string>();
+  /** The most of the hero's projectiles in flight at once. */
+  maxShotsOut = 0;
+  /** Highest the feet have been (smallest y, px). */
+  topReached = Infinity;
+  /** Shots fired while swimming (in water, off the floor). */
+  swimShots = 0;
+  /** The hero's scratch as of the last frame (hearts, magic...). */
+  now: Readonly<Record<string, number>> = {};
+  /** Power-ups grabbed in the room (PracticeRoom.placeItem); the grab starts the counting afresh. */
+  readonly taken = new Set<ItemId>();
 
   private wasOnGround = true;
   private wasClinging = false;
@@ -138,8 +109,10 @@ export class MoveStats {
   private lastTool: number | undefined;
   private lastAttack = 0;
   private lastEntity = 0;
+  private lastAmmo: Record<string, number> = {};
 
-  constructor(readonly room: RoomGeometry) {}
+  /** `room`: the current room's geometry (the room swaps it when a chapter changes rooms). */
+  constructor(public room: RoomGeometry) {}
 
   /** Start counting afresh (a new lesson). What the player is doing right now carries on. */
   reset(): void {
@@ -167,6 +140,14 @@ export class MoveStats {
     this.dummyHits.clear();
     this.blocked = 0;
     this.gapCrossings = 0;
+    this.tunnel = false;
+    this.ballJumps = 0;
+    this.toolUses.clear();
+    this.shotTools.clear();
+    this.maxShotsOut = 0;
+    this.topReached = Infinity;
+    this.swimShots = 0;
+    this.taken.clear();
     this.coast = 0;
   }
 
@@ -185,6 +166,12 @@ export class MoveStats {
     this.blocked++;
   }
 
+  /** Power-up `id` was grabbed: counting starts afresh from here, with the grab noted. */
+  grabbed(id: ItemId): void {
+    this.reset();
+    this.taken.add(id);
+  }
+
   /** One frame of play, after the world's update. */
   observe(p: Player, world: World): void {
     const b = p.body;
@@ -194,6 +181,7 @@ export class MoveStats {
     if (this.wasOnGround && !b.onGround) {
       const jumped = b.vy < 0;
       if (jumped) this.jumps++;
+      if (jumped && (p.scratch.ball ?? 0) > 0) this.ballJumps++;
       this.airborne = { jumped, feet, top: feet, x: cx };
     } else if (!b.onGround && this.airborne) {
       this.airborne.top = Math.min(this.airborne.top, feet);
@@ -224,6 +212,9 @@ export class MoveStats {
       } else this.coast = 0;
     } else this.coast = 0;
     this.wasOnGround = b.onGround;
+    this.topReached = Math.min(this.topReached, feet);
+    const { x0, x1 } = this.room.tunnel;
+    if (x1 > x0 && cx >= x0 && cx <= x1 && toPx(b.y) >= this.room.floorTop - 16) this.tunnel = true;
     // Wall cling and the kick off it.
     if (p.clinging) this.clung = true;
     if (this.wasClinging && !p.clinging && b.vy < 0 && p.clingLock > 0) this.wallJumps++;
@@ -237,6 +228,16 @@ export class MoveStats {
     const tool = p.scratch.tool;
     if (this.lastTool !== undefined && tool !== this.lastTool) this.toolCycles++;
     this.lastTool = tool;
+    const belt = p.def.tools?.(p);
+    const selected = belt ? activeTool(p, belt)?.id : undefined;
+    // Ammo or magic spent: the selected tool was used.
+    for (const key of AMMO_KEYS) {
+      const v = p.scratch[key];
+      const was = this.lastAmmo[key];
+      if (v !== undefined && was !== undefined && v < was && selected) this.toolUses.add(selected);
+      if (v !== undefined) this.lastAmmo[key] = v;
+    }
+    this.now = { ...p.scratch };
     // What the hero launched or placed this frame (entity ids only grow).
     let last = this.lastEntity;
     let fired: string | null = null;
@@ -250,6 +251,8 @@ export class MoveStats {
         const vy = Math.sign(e.body.vy);
         fired ??= `${vx},${vy}`;
         if (!b.onGround) this.airShots++;
+        if (!b.onGround && p.inWater) this.swimShots++;
+        if (selected) this.shotTools.add(selected);
         if (vx === 0 && vy < 0) this.shotsUp++;
       } else if (e instanceof Bomb && e.owner === p) {
         this.bombs++;
@@ -257,6 +260,12 @@ export class MoveStats {
       } else if (e instanceof RushCoil && e.owner === p) this.shotKinds.add('rush');
     }
     this.lastEntity = last;
+    let out = 0;
+    for (const e of world.entities) {
+      if (e instanceof Projectile && e.alive && ownedBy(e, p)) out++;
+      else if (e instanceof RushCoil && e.owner === p && e.springing) this.seen.add('rush-bounce');
+    }
+    this.maxShotsOut = Math.max(this.maxShotsOut, out);
     if (fired !== null) {
       const ax = p.scratch.aimX;
       const ay = p.scratch.aimY;
@@ -276,241 +285,48 @@ function ownedBy(e: Projectile, p: Player): boolean {
   return o === p || (o instanceof Projectile && o.owner === p);
 }
 
-const MEGAMAN_SPECIALS = [...WEAPONS.map((w) => w.spec.kind), 'rush'];
-const SIMON_SUBS = SUB_WEAPONS.map((w) => w.id);
-const RYU_ARTS = NINPO_ARTS.flatMap((a) => (a.spec ? [a.spec.kind] : []));
-const any = (set: ReadonlySet<string>, kinds: readonly string[]) => kinds.some((k) => set.has(k));
+/** Scratch keys that count down as ammo or magic is spent (MoveStats.toolUses). */
+export const AMMO_KEYS = ['magic', 'bombs', 'hearts', 'ninpo', 'missiles', 'triple', 'homing'] as const;
 
-/** Luigi's standing jump with JUMP held all the way clears this; a tap or Mario's does not. */
-export const LUIGI_HIGH_JUMP_PX = 72;
-/** Luigi glides at least this far after letting go from a run (Mario stops well short). */
-export const LUIGI_COAST_PX = 48;
-/**
- * A stop from a run that would carry Luigi this far on open floor also counts: further than
- * Mario's longest (about 64 px from full speed), so it still means "Luigi slides further". The
- * room is short: from a real run Luigi glides 100+ px, so a glide the gap cuts short counts by
- * where it was going (MoveStats.maxRunGlide).
- */
-export const LUIGI_SLIDE_PX = 72;
 /** A glide counts toward `maxRunGlide` once it has carried this far (px): the slide is seen. */
 export const GLIDE_SEEN_PX = 6;
 
-/** Each hero's lessons: the 3-5 things that make them different from Mario. */
-export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = {
-  luigi: [
-    {
-      id: 'high-jump',
-      prompt: "HOLD [JUMP:jump] FOR LUIGI'S HIGH JUMP. REACH THE HIGH LEDGE FROM THE STEP!",
-      done: (t) => t.maxJumpHeight >= LUIGI_HIGH_JUMP_PX || t.highestStand <= t.room.ledgeTop,
-    },
-    {
-      id: 'slippery-stop',
-      prompt: 'HOLD RIGHT AND [RUN:attack], LET GO BEFORE THE GAP AND WATCH LUIGI SLIDE!',
-      touchPrompt: 'PUSH THE D-PAD FAR RIGHT OR HOLD [RUN:attack] TO RUN. LET GO BEFORE THE GAP!',
-      done: (t) => t.maxRunCoast >= LUIGI_COAST_PX || t.maxRunGlide >= LUIGI_SLIDE_PX,
-    },
-    {
-      id: 'fireball',
-      prompt: 'FIRE POWER! [FIRE:attack] THROWS A FIREBALL. HIT THE DUMMY WITH ONE.',
-      setup(room) {
-        const p = room.player;
-        if (p.powerState === 'fire') return;
-        p.powerState = 'fire';
-        p.startTransition('grow');
-        room.world.audio.sfx('powerup');
-      },
-      done: (t) => t.dummyHits.has('fireball'),
-    },
-  ],
-  link: [
-    {
-      id: 'sword',
-      prompt: 'SWING YOUR [SWORD:attack] AT THE DUMMY.',
-      done: (t) => t.dummyHits.has('sword'),
-    },
-    {
-      id: 'down-thrust',
-      prompt: '[JUMP:jump] OVER THE DUMMY AND HOLD DOWN FOR A DOWN-THRUST.',
-      done: (t) => t.dummyHits.has('down-thrust'),
-    },
-    {
-      id: 'up-thrust',
-      prompt: '[JUMP:jump] UNDER THE BRICKS AND HOLD UP FOR AN UP-THRUST.',
-      done: (t) => t.seen.has('upThrust'),
-    },
-    {
-      id: 'shield',
-      prompt: 'STAND STILL A FEW STEPS FROM THE DUMMY, FACING IT: YOUR SHIELD BLOCKS.',
-      setup(room) {
-        room.dummyShoots = true;
-      },
-      done: (t) => t.blocked > 0,
-    },
-    {
-      id: 'boomerang',
-      prompt: '[USE TOOL:special] THROWS THE BOOMERANG. [TOOLS:select] PICKS ANOTHER TOOL.',
-      done: (t) => t.shotKinds.has('boomerang'),
-    },
-  ],
-  megaman: [
-    {
-      id: 'shoot',
-      prompt: '[SHOOT:attack] THE DUMMY WITH YOUR BUSTER.',
-      done: (t) => t.dummyHits.has('buster'),
-    },
-    {
-      id: 'slide',
-      prompt: 'HOLD DOWN AND PRESS [JUMP:jump] TO SLIDE.',
-      done: (t) => t.slid,
-    },
-    {
-      id: 'charge',
-      prompt: 'HOLD [SHOOT:attack] TO CHARGE UP, THEN LET GO FOR A CHARGE SHOT.',
-      done: (t) => t.shotKinds.has('buster-charged'),
-    },
-    {
-      id: 'weapon',
-      prompt: '[WEAPON:select] PICKS A SPECIAL WEAPON. FIRE IT WITH [USE WEAPON:special].',
-      done: (t) => any(t.shotKinds, MEGAMAN_SPECIALS),
-    },
-  ],
-  samus: [
-    {
-      id: 'shoot',
-      prompt: '[SHOOT:attack] THE DUMMY WITH YOUR BEAM.',
-      done: (t) => t.dummyHits.has('beam'),
-    },
-    {
-      id: 'aim-up',
-      prompt: 'HOLD UP TO AIM STRAIGHT UP, AND [SHOOT:attack].',
-      done: (t) => t.shotsUp > 0,
-    },
-    {
-      id: 'morph-ball',
-      prompt: 'PRESS DOWN TO ROLL INTO THE MORPH BALL.',
-      done: (t) => t.seen.has('ball'),
-    },
-    {
-      id: 'bomb',
-      prompt: 'IN THE MORPH BALL, [BOMB:attack] DROPS A BOMB.',
-      done: (t) => t.bombs > 0,
-    },
-    {
-      id: 'missile',
-      prompt: 'UP STANDS YOU UP. [MISSILE:special] FIRES A MISSILE.',
-      done: (t) => t.shotKinds.has('missile'),
-    },
-  ],
-  simon: [
-    {
-      id: 'whip',
-      prompt: 'CRACK THE [WHIP:attack] AT THE DUMMY. IT WINDS UP, SO SWING EARLY!',
-      done: (t) => t.dummyHits.has('melee'),
-    },
-    {
-      id: 'crouch-whip',
-      prompt: 'HOLD DOWN TO CROUCH, AND [WHIP:attack] LOW.',
-      done: (t) => t.crouchAttacks > 0,
-    },
-    {
-      id: 'sub-weapon',
-      prompt: '[THROW:special] HURLS YOUR SUB-WEAPON. IT COSTS HEARTS.',
-      done: (t) => any(t.shotKinds, SIMON_SUBS),
-    },
-    {
-      id: 'committed-jump',
-      prompt: "SIMON'S [JUMP:jump] IS COMMITTED: NO STEERING IN THE AIR. JUMP THE GAP!",
-      done: (t) => t.gapCrossings > 0,
-    },
-  ],
-  ryu: [
-    {
-      id: 'slash',
-      prompt: '[SLASH:attack] THE DUMMY WITH YOUR SWORD.',
-      done: (t) => t.dummyHits.has('melee'),
-    },
-    {
-      id: 'cling',
-      prompt: '[JUMP:jump] AT THE TALL WALL AND HOLD TOWARD IT TO CLING.',
-      done: (t) => t.clung,
-    },
-    {
-      id: 'wall-jump',
-      prompt: 'WHILE CLINGING, [JUMP:jump] TO KICK OFF THE WALL.',
-      done: (t) => t.wallJumps > 0,
-    },
-    {
-      id: 'ninpo',
-      prompt: '[CAST:special] USES A NINPO ART. IT COSTS NINPO.',
-      done: (t) => any(t.shotKinds, RYU_ARTS) || t.seen.has('spin'),
-    },
-  ],
-  bill: [
-    {
-      id: 'shoot',
-      prompt: '[SHOOT:attack] THE DUMMY. YOUR BULLETS NEVER RUN OUT.',
-      done: (t) => t.dummyHits.has('shot'),
-    },
-    {
-      id: 'aim',
-      prompt: 'AIM IN 8 WAYS: HOLD UP, OR UP AND A DIRECTION. [SHOOT:attack] 3 WAYS.',
-      done: (t) => t.shotDirs.size >= 3 && t.aimedDirs >= 2,
-    },
-    {
-      id: 'prone',
-      prompt: 'HOLD DOWN TO GO PRONE.',
-      done: (t) => t.crouched,
-    },
-    {
-      id: 'jump-shoot',
-      prompt: '[JUMP:jump] AND [SHOOT:attack] IN THE AIR.',
-      done: (t) => t.airShots > 0,
-    },
-  ],
-  sophia: [
-    {
-      id: 'cannon',
-      prompt: "[SHOOT:attack] THE DUMMY WITH SOPHIA'S CANNON. JUMP IS A SQUAT, THEN A HOP.",
-      done: (t) => t.dummyHits.has('sophia-cannon'),
-    },
-    {
-      id: 'hover',
-      prompt: 'HYPER POWER! [JUMP:jump], THEN PRESS AND HOLD JUMP AGAIN IN THE AIR TO HOVER.',
-      setup(room) {
-        const p = room.player;
-        if (p.powerState !== 'small') return;
-        p.powerState = 'big';
-        p.startTransition('grow');
-        room.world.audio.sfx('powerup');
-      },
-      done: (t) => t.seen.has('_hover'),
-    },
-    {
-      id: 'missile',
-      prompt: '[MISSILE:special] FIRES THREE MISSILES. THEY FLY THROUGH WALLS.',
-      done: (t) => t.shotKinds.has('sophia-missile'),
-    },
-    {
-      id: 'wall-climb',
-      prompt: 'CRUSHER POWER! HOLD UP AND DRIVE INTO THE TALL WALL TO CLIMB IT.',
-      setup(room) {
-        const p = room.player;
-        if (p.powerState === 'fire') return;
-        p.powerState = 'fire';
-        p.startTransition('grow');
-        room.world.audio.sfx('powerup');
-      },
-      done: (t) => t.seen.has('_wall'),
-    },
-    {
-      id: 'jason',
-      prompt: '[EXIT:select] AND JASON HOPS OUT ON FOOT. UP BY THE TANK GETS HIM BACK IN.',
-      done: (t) => t.seen.has('_jason'),
-    },
-  ],
+/** Each hero's training (Mario has none: his tutorial is stage 1-0). */
+export const TRAINING: Readonly<Record<string, HeroTraining>> = {
+  luigi: LUIGI_TRAINING,
+  link: LINK_TRAINING,
+  megaman: MEGAMAN_TRAINING,
+  samus: SAMUS_TRAINING,
+  simon: SIMON_TRAINING,
+  ryu: RYU_TRAINING,
+  bill: BILL_TRAINING,
+  sophia: SOPHIA_TRAINING,
 };
 
-/** A hero's lessons; empty for Mario (his tutorial is stage 1-0) and heroes without a room. */
+/** A hero's training, or null for Mario (his tutorial is stage 1-0) and heroes without a room. */
+export function trainingFor(heroId: string): HeroTraining | null {
+  return TRAINING[heroId] ?? null;
+}
+
+/**
+ * Each hero's training (owner note 24): chapters of lessons covering the whole kit, in the order
+ * the room plays them, starting from the basic kit and growing it item by item.
+ */
+export const CHAPTERS: Readonly<Record<string, readonly TrainingChapter[]>> = Object.fromEntries(
+  Object.entries(TRAINING).map(([id, t]) => [id, t.chapters]),
+);
+
+/** A hero's chapters; empty for Mario (his tutorial is stage 1-0) and heroes without a room. */
+export function chaptersFor(heroId: string): readonly TrainingChapter[] {
+  return TRAINING[heroId]?.chapters ?? [];
+}
+
+/** Each hero's lessons in order: every chapter's, one after another. */
+export const LESSONS: Readonly<Record<string, readonly TrainingLesson[]>> = Object.fromEntries(
+  Object.entries(CHAPTERS).map(([id, chapters]) => [id, chapters.flatMap((c) => c.lessons)]),
+);
+
+/** A hero's lessons in order; empty for Mario (his tutorial is stage 1-0) and heroes without a room. */
 export function lessonsFor(heroId: string): readonly TrainingLesson[] {
-  return LESSONS[heroId] ?? [];
+  return chaptersFor(heroId).flatMap((c) => c.lessons);
 }
