@@ -19,6 +19,8 @@ import type { EntitySpawn } from '@game/level/schema';
 import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
+import { LevelScene } from '@game/scenes/level';
+import { makeGame } from './heroes-harness';
 
 const map = (dir: string, id: string): LevelData =>
   parseTextMap(
@@ -208,6 +210,26 @@ describe('Swimming Cheep Cheeps', () => {
       expect(run()).toBe(run());
       expect(run(5)).toBe(run(5));
       expect(run(5)).not.toBe(run(6));
+    });
+
+    // A sim played through Game (heroes-harness makeGame) got a Math.random seed for every level,
+    // so bill-camp's "7-3 bridge → camp → falls" run lost Mario to a leaping Cheep Cheep about one
+    // run in fifty. Only main.ts asks for fresh seeds; a Game in a test keeps each level's own.
+    it('a Game keeps the fixed seed unless it asks for fresh ones, and main.ts does', () => {
+      const visit = (freshSeeds: boolean) => {
+        const h = makeGame({ freshSeeds });
+        h.game.devStart('2-2', MARIO, 'small');
+        h.until(() => h.top() instanceof LevelScene);
+        return school((h.top() as LevelScene).world);
+      };
+      const headless = school(
+        runSim({ level: map('world2', '2-2'), character: MARIO, script: none, maxFrames: 1 }).world,
+      );
+      expect(visit(false)).toBe(headless);
+      expect(visit(false)).toBe(headless);
+      expect(visit(true)).not.toBe(visit(true));
+      const main = readFileSync(join(import.meta.dirname, '../../src/main.ts'), 'utf8');
+      expect(main).toMatch(/^\s*freshSeeds: true,$/m);
     });
   });
 

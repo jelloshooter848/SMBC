@@ -85,6 +85,7 @@ function boot(): void {
     input,
     announcer,
     titleIntro: true,
+    freshSeeds: true,
     applySettings: () => applySettings(),
     lastInput: () => touch.lastInput,
     controlScheme: () =>

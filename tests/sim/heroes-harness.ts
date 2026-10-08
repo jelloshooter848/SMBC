@@ -36,8 +36,12 @@ export function useStorage(): void {
   });
 }
 
-/** `dev`: dev mode on (a file's "Chapter 2 gate: open" flag then lets the campaign into the Lost Kingdom). */
-export function makeGame(opts: { dev?: boolean } = {}) {
+/**
+ * `dev`: dev mode on (a file's "Chapter 2 gate: open" flag then lets the campaign into the Lost Kingdom).
+ * `freshSeeds`: a fresh world seed every visit, as in play (main.ts); left off, every level keeps its
+ * fixed seed, so a sim through Game repeats exactly.
+ */
+export function makeGame(opts: { dev?: boolean; freshSeeds?: boolean } = {}) {
   const said: string[] = [];
   const assets = new AssetRegistry(PALETTES);
   assets.defineAll(SPRITES);
@@ -47,6 +51,7 @@ export function makeGame(opts: { dev?: boolean } = {}) {
     getLevel,
     characters: CHARACTERS,
     ...(opts.dev ? { settings: { dev: true } as Settings } : {}),
+    ...(opts.freshSeeds ? { freshSeeds: true } : {}),
     announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
   });
   const p1 = new ScriptedInput({ steps: [] });
