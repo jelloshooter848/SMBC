@@ -44,7 +44,7 @@ function map(at: [number, number, string][], base = EMPTY): string[] {
   return rows.map((r) => r.join(''));
 }
 
-function world(defs: RoomDef[], opts: { shield?: boolean; noDamage?: () => boolean } = {}) {
+function world(defs: RoomDef[], opts: { noDamage?: () => boolean } = {}) {
   const w = new TopDownWorld(buildDungeon(defs), { seed: 1, ...opts });
   w.events.length = 0;
   const input = new ScriptedInput({ steps: [] });
@@ -259,7 +259,7 @@ describe('top-down kit: bombs and cracked walls', () => {
   });
 });
 
-describe('top-down kit: chests, the shield and heart containers', () => {
+describe('top-down kit: chests, the white sword and heart containers', () => {
   it('walking into a chest opens it once: the prize is held up while the room waits, and it stays open', () => {
     const west: RoomDef = {
       id: 'west',
@@ -297,9 +297,8 @@ describe('top-down kit: chests, the shield and heart containers', () => {
     expect(w.inv.owned).toEqual(['boomerang']);
   });
 
-  it('without a shield rocks hit from the front and the side; with one the front is blocked', () => {
-    const { w, hero, step } = world([{ id: 'r', at: [0, 0], map: map([[7, 5, '@']]) }], { shield: false });
-    expect(hero.shield).toBe(false);
+  it('rocks and angled shots hit from the front and the side (there is no shield)', () => {
+    const { w, hero, step } = world([{ id: 'r', at: [0, 0], map: map([[7, 5, '@']]) }]);
     hero.facing = 'right';
     w.add(new Rock(hero.x + 40, hero.y + 4, 'left'));
     expect(step([], 30)).toContainEqual({ type: 'hurt', hp: 5 });
@@ -308,43 +307,19 @@ describe('top-down kit: chests, the shield and heart containers', () => {
     hero.facing = 'right';
     w.add(new Rock(hero.x + 4, hero.y - 40, 'down'));
     expect(step([], 30)).toContainEqual({ type: 'hurt', hp: 4 });
-    w.grant('shield');
-    expect(hero.shield).toBe(true);
     hero.invuln = 0;
     hero.x = 112;
     hero.y = 80;
-    hero.facing = 'right';
-    w.add(new Rock(hero.x + 40, hero.y + 4, 'left'));
-    expect(step([], 30)).toContainEqual({ type: 'block' });
-    expect(hero.hp).toBe(4);
-  });
-
-  it('with the shield an angled blockable shot is stopped from the front by its main axis', () => {
-    const { w, hero, step } = world([{ id: 'r', at: [0, 0], map: map([[7, 5, '@']]) }], { shield: false });
-    const angled = () => {
-      hero.invuln = 0;
-      hero.x = 112;
-      hero.y = 80;
-      // Down and a little left: from above, its main axis is down.
-      w.add(new Projectile(hero.x + 10, hero.y - 40, -0.4, 1.5, null));
-    };
     hero.facing = 'up';
-    angled();
-    expect(step([], 40)).toContainEqual({ type: 'hurt', hp: 5 });
-    hero.shield = true;
-    angled();
-    expect(step([], 40)).toContainEqual({ type: 'block' });
-    hero.facing = 'left';
-    angled();
-    expect(step([], 40)).toContainEqual({ type: 'hurt', hp: 4 });
+    w.add(new Projectile(hero.x + 10, hero.y - 40, -0.4, 1.5, null));
+    expect(step([], 40)).toContainEqual({ type: 'hurt', hp: 3 });
   });
 
-  it("the shield's guard halves a monster's touch, never below half a heart", () => {
-    const { hero } = one([]);
-    hero.shield = false;
-    expect([hero.contactDamage(1), hero.contactDamage(2), hero.contactDamage(4)]).toEqual([1, 2, 4]);
-    hero.shield = true;
-    expect([hero.contactDamage(1), hero.contactDamage(2), hero.contactDamage(4)]).toEqual([1, 1, 2]);
+  it('the white sword turns the sword beam on', () => {
+    const { w } = one([]);
+    expect(w.swordBeam).toBe(false);
+    w.grant('white-sword');
+    expect(w.swordBeam).toBe(true);
   });
 
   it('a heart container adds a heart and fills them all; a refill only fills', () => {

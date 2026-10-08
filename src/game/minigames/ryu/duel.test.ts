@@ -47,7 +47,7 @@ import {
   STAR_AT,
 } from './masked';
 import { T } from '@game/level/tiles';
-import { BAR_H, CLASH_AT, CUTSCENE_FRAMES } from './cutscene';
+import { BAR_H, CLASH_AT, CUT_BEATS, CUTSCENE_FRAMES, LAND_AT } from './cutscene';
 import { DEATH_FRAMES } from '@game/world/death-style';
 import { GAME_OVER_FRAMES } from '../lives';
 import {
@@ -198,21 +198,51 @@ describe('Shadow Duel: the mini game contract', () => {
 });
 
 describe('Shadow Duel: the opening cutscene', () => {
-  it('plays first (its music, announced), then READY on its own; touch shows SKIP and MENU', () => {
-    const h = duelHarness();
+  it('plays first (its music, announced); its lines wait for OK a page at a time; touch shows OK, SKIP and MENU', () => {
+    const h = duelHarness({ assets: STUB_ASSETS });
     expect(h.scene.phase).toBe('cutscene');
     expect(h.log.music.at(-1)).toBe('ng-cutscene');
-    expect(h.said.at(-1)).toMatch(/moonlit field/);
-    expect(h.scene.touchLabels()).toMatchObject({ jump: 'SKIP', start: 'MENU', attack: null });
-    h.step([], CUTSCENE_FRAMES);
+    expect(h.said.at(-1)).toMatch(/moonlit field.*clash under the moon\. OK.*for more, SKIP.*to skip\./);
+    expect(h.scene.touchLabels()).toMatchObject({ jump: 'OK', attack: 'SKIP', start: 'MENU' });
+    // Untouched (a minute and a half) it never moves on: the first page, the ninja landed.
+    h.step([], CUTSCENE_FRAMES + 90 * 60);
+    const c = h.scene.captions;
+    expect(h.scene.phase).toBe('cutscene');
+    expect(c.page).toBe(0);
+    expect(c.pic).toBe(LAND_AT);
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toEqual(expect.arrayContaining(['A MOONLIT FIELD.', expect.stringMatching(/^OK/)]));
+    // OK turns each page (read out), then on the last starts READY.
+    for (let i = 1; i < CUT_BEATS.length; i++) {
+      h.tap('jump');
+      expect(c.page).toBe(i);
+      expect(h.said.at(-1)).toContain((CUT_BEATS[i]?.lines ?? []).join(' '));
+      h.step([], 300);
+      expect(h.scene.phase).toBe('cutscene');
+    }
+    h.tap('jump');
     expect(h.scene.phase).toBe('ready');
+    expect(h.scene.skipped).toBe(false);
     expect(h.said.at(-1)).toMatch(/Ready!/);
   });
 
-  it('JUMP (OK) skips it, and the press does not make Ryu jump', () => {
+  it('the clash rings once as the picture reaches it; OK early jumps the picture on to the next page', () => {
+    const h = duelHarness();
+    h.step([], CLASH_AT + 5);
+    expect(h.log.sfx.filter((s) => s === 'clang')).toHaveLength(1);
+    const h2 = duelHarness();
+    h2.step([], 40);
+    h2.step(['jump']);
+    expect(h2.scene.captions.pic).toBe(LAND_AT);
+    h2.step([], 300);
+    expect(h2.log.sfx.filter((s) => s === 'clang')).toHaveLength(0);
+  });
+
+  it('SKIP (ATTACK) ends it on any page, and neither press makes Ryu jump', () => {
     const h = duelHarness();
     h.step([], 30);
-    h.step(['jump']);
+    h.step(['attack']);
     expect(h.scene.phase).toBe('ready');
     expect(h.scene.skipped).toBe(true);
     h.step(['jump'], 5);
@@ -220,6 +250,8 @@ describe('Shadow Duel: the opening cutscene', () => {
     expect(h.scene.phase).toBe('stage');
     expect(h.scene.player.body.onGround).toBe(true);
     const h2 = duelHarness();
+    h2.step([], 40);
+    h2.tap('jump');
     h2.tap('attack');
     expect(h2.scene.phase).toBe('ready');
   });
@@ -550,7 +582,7 @@ describe('Shadow Duel: endings, menu and assists', () => {
   it('a sharp bot plays the whole round (clinging its way up) and passes, leaving the campaign state alone', () => {
     const h = duelHarness();
     const before = { ...h.game.state };
-    h.step(['jump']); // skips the cutscene
+    h.step(['attack']); // skips the cutscene
     h.step([]);
     const bot = new DuelBot(SHARP);
     h.play(bot);
@@ -814,7 +846,7 @@ describe('Shadow Duel: review follow-ups', () => {
   it('touch: READY names the art button as it shows (SHURIKEN, later WINDMILL), not CAST', () => {
     const h = duelHarness({ assets: STUB_ASSETS, scheme: 'touch' });
     h.step([], 30);
-    h.tap('jump'); // skip the cutscene: READY is said
+    h.tap('attack'); // skip the cutscene: READY is said
     const ready = h.said.at(-1) ?? '';
     expect(ready).toMatch(/SHURIKEN casts your ninpo art/);
     expect(ready).not.toMatch(/CAST/);

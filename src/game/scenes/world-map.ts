@@ -37,7 +37,14 @@ import {
   type HeroHint,
 } from '../map/captives';
 import { fxPalette, mapShadePalette } from '@content/sprites/palette-fx';
-import { trophyPose } from '../map/trophy';
+import {
+  PEDESTAL_EDGE,
+  PEDESTAL_H,
+  PEDESTAL_STONE,
+  PEDESTAL_W,
+  TROPHY_SCALE,
+  trophyPose,
+} from '../map/trophy';
 import { Player } from '../entities/player';
 import { startHp } from '../characters/character';
 import { MenuScene, type MenuItem } from './menu';
@@ -110,6 +117,22 @@ const TROPHY_OUTLINE: readonly (readonly [number, number])[] = [
   [0, 1],
 ];
 
+/**
+ * A trophy statue's stone pedestal (original art), its top-left at (x, y): a PEDESTAL_W cap
+ * with its shadow over a narrower shaft and a foot, outlined dark against any ground.
+ */
+function drawPedestal(r: Renderer, x: number, y: number): void {
+  const [light, shadow, face] = PEDESTAL_STONE as [string, string, string];
+  const w = PEDESTAL_W;
+  r.rect(x - 1, y - 1, w + 2, 3, PEDESTAL_EDGE); // the cap's outline
+  r.rect(x, y + 2, w, PEDESTAL_H - 1, PEDESTAL_EDGE); // the shaft's and foot's
+  r.rect(x, y, w, 1, light); // cap
+  r.rect(x, y + 1, w, 1, shadow); // its underside
+  r.rect(x + 2, y + 2, w - 4, PEDESTAL_H - 3, face); // shaft
+  r.rect(x + w - 4, y + 2, 2, PEDESTAL_H - 3, shadow); // its shaded side
+  r.rect(x + 1, y + PEDESTAL_H - 1, w - 2, 1, shadow); // foot
+}
+
 export interface WorldMapOptions {
   /**
    * Page-qualified ids (rules.revealId: 'smb-1:1-2', 'smb-1:1-1>1-2', 'smb-2:start') to draw
@@ -145,7 +168,7 @@ export function showChapterGate(game: Game): void {
   game.ctx.audio.sfx('bump');
   game.deps.announcer?.say(pageSaid(CHAPTER_GATE_CARD, true));
   game.scenes.push(
-    new CardScene(game, CHAPTER_GATE_CARD, () => game.scenes.pop(), null, 1800, {
+    new CardScene(game, CHAPTER_GATE_CARD, () => game.scenes.pop(), null, {
       panel: true,
       overlay: true,
       top: true,
@@ -663,15 +686,16 @@ export class WorldMapScene implements Scene {
       // A silhouette (the crystal ball's hint before a clear) only on a node the file has really
       // reached: never one shown only through developer "Unlock all".
       if (hint === 'silhouette' && !isOpen(this.progress, page, node.id)) continue;
-      // The silhouette peeks out from behind the dot (half of it hidden); the trophy stands just
-      // clear of it, feet on the ground beside it as the player's marker stands on the node.
-      const out0 = hint === 'silhouette' ? 9 : 17;
+      // The silhouette peeks out from behind the dot (half of it hidden); the trophy's pedestal
+      // stands clear of it (and of the player's marker on the node), on the ground beside it.
+      const out0 = hint === 'silhouette' ? 9 : 18;
+      const step = hint === 'silhouette' ? 12 : PEDESTAL_W + 3;
       out.push({
         node,
         hint,
         def,
         side,
-        cx: node.x * 16 + 8 + side * (out0 + out.length * 12),
+        cx: node.x * 16 + 8 + side * (out0 + out.length * step),
         feet: node.y * 16 + (hint === 'silhouette' ? 9 : 10),
       });
     }
@@ -1500,9 +1524,10 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * A freed hero beside its node, glad to be free (map/trophy.ts): every few seconds a happy hop
-   * in its jump frame with a small sparkle at the top (none with reduce flashing), a burst of
-   * hops the first time after freeing. A 1-px dark outline keeps it clear of the map's ground
+   * A freed hero beside its node, glad to be free (map/trophy.ts): a half-size statue of it on a
+   * small stone pedestal, so it never reads as the player's marker. Every few seconds a small
+   * happy hop in its jump frame with a twinkle at the top (none with reduce flashing), a burst
+   * of hops the first time after freeing. A 1-px dark outline keeps it clear of the map's ground
    * (Luigi's green on grass).
    */
   private drawTrophy(r: Renderer, m: HeroMark, ox: number): void {
@@ -1519,18 +1544,22 @@ export class WorldMapScene implements Scene {
     const look = jump ?? def.portrait;
     const sheet = assets.sheet(look.sheet, look.palette);
     const f = sheet.frames.get(look.frame);
-    const w = f?.w ?? 16;
-    const h = f?.h ?? 16;
+    const w = Math.round((f?.w ?? 16) * TROPHY_SCALE);
+    const h = Math.round((f?.h ?? 16) * TROPHY_SCALE);
+    // The pedestal stands on the ground line (its bottom a pixel under the marker's feet row).
+    const top = m.feet + 1 - PEDESTAL_H;
+    drawPedestal(r, ox + Math.round(m.cx - PEDESTAL_W / 2), top);
     const x = ox + Math.round(m.cx - w / 2);
-    const y = m.feet - h - pose.lift;
+    const y = top - h - pose.lift;
     const flip = m.side > 0;
     const dark = assets.sheet(look.sheet, fxPalette(look.palette, 'silhouette'));
-    for (const [dx, dy] of TROPHY_OUTLINE) r.sprite(dark, look.frame, x + dx, y + dy, flip);
-    r.sprite(sheet, look.frame, x, y, flip);
+    for (const [dx, dy] of TROPHY_OUTLINE)
+      r.sprite(dark, look.frame, x + dx, y + dy, flip, false, 0, TROPHY_SCALE);
+    r.sprite(sheet, look.frame, x, y, flip, false, 0, TROPHY_SCALE);
     if (pose.sparkle > 0) {
       // A little twinkle over the head, on the side away from the node.
-      const sx = x + (w >> 1) + m.side * 6;
-      const sy = y - 3;
+      const sx = x + (w >> 1) + m.side * 4;
+      const sy = y - 2;
       const n = pose.sparkle;
       r.rect(sx - n, sy, 2 * n + 1, 1, '#fce4a0');
       r.rect(sx, sy - n, 1, 2 * n + 1, '#fce4a0');

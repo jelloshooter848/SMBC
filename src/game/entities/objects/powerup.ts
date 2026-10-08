@@ -54,6 +54,11 @@ export class PowerUp extends Entity {
     return p;
   }
 
+  /** Out of its block (not still rising): it can be touched and taken. */
+  get out(): boolean {
+    return this.emerging === 0;
+  }
+
   /**
    * The block under it was bumped (Brick.hitObjectsAbove, on a bounce or a break). Mushroom.gBounceHit
    * pops it up with the same BOUNCE_AMT (350 px/s = 2.92 px/f) and BOUNCE_GRAVITY (1500 px/s² =

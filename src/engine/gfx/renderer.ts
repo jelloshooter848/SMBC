@@ -11,6 +11,8 @@ export interface Renderer {
   /**
    * Draw a named frame from a sprite sheet with its top-left at (x, y). `rotate` turns it a
    * quarter turn clockwise per 90 after the flips; (x, y) is then the turned box's top-left.
+   * `scale` (default 1, unrotated frames only) draws it that many times its size, nearest
+   * neighbour (the map's half-size trophy statues).
    */
   sprite(
     sheet: SpriteSheet,
@@ -20,6 +22,7 @@ export interface Renderer {
     flipX?: boolean,
     flipY?: boolean,
     rotate?: Rotation,
+    scale?: number,
   ): void;
   /** Draw text with the bitmap font; `font` is a sheet whose frames are single characters. */
   text(font: SpriteSheet, str: string, x: number, y: number): void;
@@ -65,8 +68,11 @@ export class OffsetRenderer implements Renderer {
     flipX?: boolean,
     flipY?: boolean,
     rotate?: Rotation,
+    scale?: number,
   ): void {
-    if (rotate) this.inner.sprite(sheet, frame, x + this.dx, y + this.dy, flipX, flipY, rotate);
+    if (scale !== undefined && scale !== 1)
+      this.inner.sprite(sheet, frame, x + this.dx, y + this.dy, flipX, flipY, rotate ?? 0, scale);
+    else if (rotate) this.inner.sprite(sheet, frame, x + this.dx, y + this.dy, flipX, flipY, rotate);
     else this.inner.sprite(sheet, frame, x + this.dx, y + this.dy, flipX, flipY);
   }
   text(font: SpriteSheet, str: string, x: number, y: number): void {
@@ -102,10 +108,22 @@ export class CanvasRenderer implements Renderer {
     flipX = false,
     flipY = false,
     rotate: Rotation = 0,
+    scale = 1,
   ): void {
     const f = sheet.frames.get(frame);
     if (!f) return;
     const ctx = this.ctx;
+    if (scale !== 1 && !rotate) {
+      // Nearest neighbour (imageSmoothingEnabled is off), whole pixels.
+      const w = Math.max(1, Math.round(f.w * scale));
+      const h = Math.max(1, Math.round(f.h * scale));
+      ctx.save();
+      ctx.translate((x | 0) + (flipX ? w : 0), (y | 0) + (flipY ? h : 0));
+      ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+      ctx.drawImage(sheet.image as CanvasImageSource, f.x, f.y, f.w, f.h, 0, 0, w, h);
+      ctx.restore();
+      return;
+    }
     if (rotate) {
       // Move the origin to where the frame's top-left lands once turned, turn, then flip inside.
       const x0 = x | 0;

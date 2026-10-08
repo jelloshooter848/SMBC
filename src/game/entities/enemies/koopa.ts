@@ -44,6 +44,11 @@ const PARA_HOP_MAX_FALL = 0x06aab;
 
 export type KoopaState = 'walk' | 'shell' | 'shell-moving' | 'wiggle';
 
+/** A Koopa's walking (and flying) collision height: one tile, as SMB's (its sprite is 24). */
+export const KOOPA_H = 16;
+/** The walking sprite's height (koopa-0/1, koopa-fly-0/1). */
+const KOOPA_SPRITE_H = 24;
+
 /**
  * Koopa Troopa: green ones walk off ledges, red ones turn at them; stomping makes a kickable
  * shell. With wings it is a Paratroopa: red ones fly up and down around their spawn point,
@@ -68,8 +73,14 @@ export class Koopa extends Enemy {
   /** Kills by a moving shell chain for combo scoring. */
   shellCombo = 0;
   readonly color: 'green' | 'red' | 'buzzy';
-  /** Standing height in px (koopas 22, buzzy beetles 14). */
+  /**
+   * Standing collision height in px: Koopas 16 (KOOPA_H), Buzzy Beetles 14. A Koopa's 16x24
+   * sprite stands 8 px taller than its box (walkOffsetY), so it walks under one-tile gaps as
+   * SMB's do (owner note 12: 1-2's tunnel at cols 54-55).
+   */
   private readonly walkH: number;
+  /** How far the walking sprite reaches above the box (24 px sprite over KOOPA_H; buzzy 2). */
+  private readonly walkOffsetY: number;
 
   constructor(
     x: number,
@@ -78,9 +89,10 @@ export class Koopa extends Enemy {
     wings = false,
     glide = false,
   ) {
-    super(x, y, 12, color === 'buzzy' ? 14 : 22);
+    super(x, y, 12, color === 'buzzy' ? 14 : KOOPA_H);
     this.color = color;
-    this.walkH = color === 'buzzy' ? 14 : 22;
+    this.walkH = color === 'buzzy' ? 14 : KOOPA_H;
+    this.walkOffsetY = color === 'buzzy' ? 2 : KOOPA_SPRITE_H - KOOPA_H;
     this.wings = wings;
     this.glide = wings && glide;
     this.homeX = x;
@@ -88,7 +100,7 @@ export class Koopa extends Enemy {
     if (wings && (color === 'red' || this.glide)) this.body.vx = 0;
     this.fallsOffLedges = color !== 'red';
     this.spriteOffsetX = 2;
-    this.spriteOffsetY = 2;
+    this.spriteOffsetY = this.walkOffsetY;
     this.currentFrame = `${this.prefix}-0`;
     this.vulnerability = { ...this.vulnerability, stomp: 'shell', bump: 'bounce' };
     // Buzzy Beetles shrug off fireballs.
@@ -163,7 +175,7 @@ export class Koopa extends Enemy {
     this.contactHurts = true;
     this.fallsOffLedges = this.color !== 'red';
     b.vx = -this.walkSpeed;
-    this.spriteOffsetY = 2;
+    this.spriteOffsetY = this.walkOffsetY;
   }
 
   /** Kick the shell away from the kicker. */

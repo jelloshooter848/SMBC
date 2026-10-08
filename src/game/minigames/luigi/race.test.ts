@@ -25,6 +25,8 @@ import { AssistOptionsScene } from '@game/scenes/options';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Enemy } from '@game/entities/enemies/enemy';
 import { Piranha } from '@game/entities/enemies/piranha';
+import { Koopa } from '@game/entities/enemies/koopa';
+import { Decoration } from '@game/entities/objects/decoration';
 import { parseTextMap } from '@game/level/textmap';
 import { DEFAULT_LEGEND, T } from '@game/level/tiles';
 import { levelSeed, World } from '@game/world/world';
@@ -498,6 +500,36 @@ describe('Mirror Race: outcomes', () => {
     expect(h.results).toEqual(['pass']);
     expect(h.scene.world.state.score).toBeGreaterThan(0); // the flag's points went to the race
     expect(s).toEqual(before);
+  });
+});
+
+describe('Mirror Race: the start (0.4.22, owner note 9)', () => {
+  it('frame 0: the start castle and the Paratroopa at column 16 are already spawned', () => {
+    const h = setup(null, { stubAssets: true });
+    const w = h.scene.world;
+    expect(w.entities.some((e) => e instanceof Decoration && toPx(e.body.x) < 16 * 3)).toBe(true);
+    expect(w.entities.some((e) => e instanceof Koopa && e.wings && toPx(e.body.x) >> 4 === 16)).toBe(true);
+    // Nothing more spawns at GO: what the banner showed is what races.
+    const before = w.entities.length;
+    for (let i = 0; i < GO_FRAME; i++) h.step();
+    expect(h.scene.phase).toBe('race');
+    expect(w.entities.length).toBe(before);
+  });
+
+  it('a TRY AGAIN skips the lives card: straight to the course under the banner, no lives shown', () => {
+    const h = setup(null, { stubAssets: true });
+    const results: MiniGameResult[] = [];
+    const retry = LUIGI_MINIGAME.create(h.game, (r) => void results.push(r), {
+      retry: true,
+    }) as MirrorRaceScene;
+    h.game.scenes.push(retry);
+    expect(retry.phase).toBe('ready');
+    const r = new TextRenderer();
+    h.game.scenes.render(r);
+    expect(r.texts).toContain('RACE LUIGI TO THE FLAG!');
+    expect(r.texts).not.toContain('WORLD 1-1');
+    expect(r.texts.some((t) => t.startsWith('×'))).toBe(false);
+    expect(retry.world.entities.some((e) => e instanceof Decoration)).toBe(true);
   });
 });
 

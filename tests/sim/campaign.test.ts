@@ -697,6 +697,8 @@ describe('campaign: clears return to the map', () => {
     expect(loadSave(1)?.gameCleared).toBe(false);
     h.idle(60);
     h.tap('start'); // fast-forwards (the original's pause button during the credits)
+    h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
+    h.tap('jump'); // the closing lines wait for OK
     h.until(() => h.top() instanceof WorldMapScene, 3000);
     const saved = loadSave(1) as SaveFile;
     expect(saved.gameCleared).toBe(true);
@@ -1118,6 +1120,8 @@ describe('non-campaign starts never touch save files', () => {
     play(h, '8-4-end');
     h.fire({ type: 'exit', next: 'end' });
     expect(h.top()).toBeInstanceOf(CreditsScene);
+    h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
+    h.tap('jump'); // the closing lines wait for OK
     h.until(() => h.top() instanceof TitleScene, 6000);
     expect(saveKeys()).toEqual([]);
   });

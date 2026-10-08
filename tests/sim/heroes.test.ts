@@ -17,6 +17,7 @@ import { loadSave, newSave } from '@game/save/save-files';
 import { miniGameFor, type MiniGameDef, type MiniGameResult } from '@game/minigames';
 import type { Action } from '@engine/input/actions';
 import type { Scene } from '@engine/scene';
+import type { InputFrame } from '@engine/input/input-manager';
 import type { Game } from '@game/scenes/game';
 import { TOAD_PAGES } from '@game/tutorial/mario-1-0';
 import {
@@ -43,15 +44,17 @@ vi.mock('@game/minigames', () => {
     hero: 'luigi',
     title: 'STUB RACE',
     rules: ['JUMP PASSES.', 'ATTACK FAILS.'],
-    create(game: Game, done: (r: MiniGameResult) => void): Scene {
+    create(game: Game, done: (r: MiniGameResult) => void, opts?: { retry?: boolean }): Scene {
       let over = false;
       const end = (r: MiniGameResult) => {
         if (over) return;
         over = true;
         done(r);
       };
-      return {
-        update(input) {
+      const round: Scene & { retry: boolean } = {
+        // Whether the flow started this round as a TRY AGAIN.
+        retry: opts?.retry === true,
+        update(input: InputFrame) {
           if (input.pressed('jump')) end('pass');
           else if (input.pressed('attack')) end('fail');
           else if (input.pressed('start')) end('quit');
@@ -68,6 +71,7 @@ vi.mock('@game/minigames', () => {
         },
         render() {},
       };
+      return round;
     },
   };
   return { MINIGAMES: { luigi: stub }, miniGameFor: (hero: string) => (hero === 'luigi' ? stub : null) };
@@ -311,6 +315,9 @@ describe('freeing Luigi', () => {
     const round2 = h.top();
     expect(round2).not.toBe(round1);
     expect(round2).not.toBeInstanceOf(MenuScene);
+    // The flow tells the round it is a retry (the Mirror Race then skips its lives card).
+    expect((round1 as unknown as { retry: boolean }).retry).toBe(false);
+    expect((round2 as unknown as { retry: boolean }).retry).toBe(true);
     h.tap('jump'); // pass
     expect(h.game.freed).toContain('luigi');
     h.idle(32);

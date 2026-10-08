@@ -79,7 +79,6 @@ export class DevBonusGamesScene extends MenuScene {
               this.restoreMusic();
               this.announce();
             },
-            Infinity,
             ['jump', 'start', 'attack'],
           ),
         );

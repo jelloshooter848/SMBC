@@ -80,7 +80,7 @@ describe('Shadow Keep: a cautious human (difficulty)', () => {
   it.runIf(n > 0)(
     'reports the pass rate',
     () => {
-      const plans = { 'with the shield': KEEP_PLAN, 'no shrine, no shield': KEEP_PLAN_NO_SHRINE };
+      const plans = { 'with the white sword': KEEP_PLAN, 'no shrine, no white sword': KEEP_PLAN_NO_SHRINE };
       for (const [name, plan] of Object.entries(plans))
         for (const reaction of [12, 15, 18, 21]) {
           const { rate, runs } = cautiousPassRate(n, { reaction }, plan);

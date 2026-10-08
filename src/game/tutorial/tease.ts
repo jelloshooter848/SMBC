@@ -26,29 +26,23 @@ const RUN_SPEED = 3;
 const BOWSER_AT = 110;
 /** Frames Bowser's shadow takes to rise into view. */
 const BOWSER_RISE = 30;
-/** The whole tease, unless skipped. */
-export const TEASE_FRAMES = 330;
-
 /** What Bowser says, in the box at the top (and read out). */
 export const TEASE_LINES: readonly string[] = ['BOWSER: BWA HA HA!', 'YOUR FRIENDS SERVE ME NOW, MARIO!'];
 
-/** Frame the campaign's box shows (Bowser's shadow has risen). */
-const BOX_AT = BOWSER_AT + BOWSER_RISE;
-/** Frames the campaign's first page waits before turning by itself. */
-export const TEASE_PAGE_FRAMES = 240;
-/** Frames the campaign's second page waits before the tease ends by itself. */
-export const TEASE_LAST_FRAMES = 300;
+/** Frame the box shows (Bowser's shadow has risen). */
+export const BOX_AT = BOWSER_AT + BOWSER_RISE;
 
 /**
  * The tutorial's tease (owner brief, 0.5.0): the level stands still while a dark silhouette of a
  * brainwashed hero dashes past Mario and off the right of the screen; then the sky dims, Bowser's
- * shadow rises over it and laughs. Short, and skippable as the cards are (OK, BACK or MENU after
- * the card guard). Drawn over the frozen level (translucent).
+ * shadow rises over it and laughs. Skippable as the cards are (OK, BACK or MENU after the card
+ * guard); once Bowser's box shows it stays until one of them is pressed (text never moves by
+ * itself, owner note 4). Drawn over the frozen level (translucent).
  *
  * In the campaign (story/beats storyOn) Bowser says STORY_TEASE_PAGES instead (docs/STORY.md 2.2),
- * two pages in the same box: OK (or MENU) or TEASE_PAGE_FRAMES turns to the second, which OK or
- * TEASE_LAST_FRAMES ends; BACK ends it at once. A press before the box shows skips to Bowser
- * (a mandatory scene: his words are never skipped unseen). Each page is read out.
+ * two pages in the same box: OK (or MENU) turns to the second, which OK ends; BACK ends it at
+ * once. Neither page turns by itself. A press before the box shows skips to Bowser (a mandatory
+ * scene: his words are never skipped unseen). Each page is read out.
  */
 export class ShadowTeaseScene implements Scene {
   readonly translucent = true;
@@ -84,8 +78,14 @@ export class ShadowTeaseScene implements Scene {
     this.game.deps.announcer?.say('A shadowy hero dashes past and is gone.');
   }
 
+  /**
+   * SKIP while the shadow runs; once Bowser's box is up (it waits for a key) OK, as its prompt
+   * says, and in the campaign BACK for the rest of his pages.
+   */
   touchLabels(): TouchLabels {
-    return this.t > CARD_GUARD_FRAMES ? { ...NO_TOUCH_BUTTONS, jump: 'SKIP' } : NO_TOUCH_BUTTONS;
+    if (this.t <= CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS;
+    if (this.t < BOX_AT) return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
+    return { ...NO_TOUCH_BUTTONS, jump: 'OK', ...(this.pages ? { attack: 'BACK' } : {}) };
   }
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
@@ -103,7 +103,7 @@ export class ShadowTeaseScene implements Scene {
       this.game.deps.announcer?.say(this.pages ? this.said(0) : TEASE_LINES.join(' '));
     }
     if (this.pages) return this.updatePages(inputs);
-    if (cardContinues(this.t, TEASE_FRAMES, inputs, ['jump', 'attack', 'start'])) this.finish();
+    if (cardContinues(this.t, inputs, ['jump', 'attack', 'start'])) this.finish();
   }
 
   /** What the announcer reads for the campaign's page `i`. */
@@ -125,10 +125,8 @@ export class ShadowTeaseScene implements Scene {
     }
     const since = this.t - this.pageAt;
     if (since > CARD_GUARD_FRAMES && any(['attack'])) return this.finish();
-    const last = this.page === pages.length - 1;
-    if (!cardContinues(since, last ? TEASE_LAST_FRAMES : TEASE_PAGE_FRAMES, inputs, ['jump', 'start']))
-      return;
-    if (last) return this.finish();
+    if (!cardContinues(since, inputs, ['jump', 'start'])) return;
+    if (this.page === pages.length - 1) return this.finish();
     this.page++;
     this.pageAt = this.t;
     this.game.deps.announcer?.say(this.said(this.page));

@@ -261,7 +261,7 @@ export class DevMiniGameResultScene implements Scene {
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
     if (this.done) return;
-    if (cardContinues(++this.t, Infinity, inputs, ['jump', 'start', 'attack'])) {
+    if (cardContinues(++this.t, inputs, ['jump', 'start', 'attack'])) {
       this.done = true;
       this.next();
     }

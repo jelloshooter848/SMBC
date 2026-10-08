@@ -219,7 +219,6 @@ export function newUnderworld(opts: UnderworldWorldOptions = {}): UnderworldWorl
     spawners: UNDERWORLD_SPAWNERS,
     items: UNDERWORLD_ITEMS,
     maxHp: POW_MAX,
-    shield: false,
     hero: (x, y, maxHp) => new Jason(x, y, maxHp),
     ...(opts.noDamage ? { noDamage: opts.noDamage } : {}),
   };

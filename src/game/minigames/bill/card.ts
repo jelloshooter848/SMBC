@@ -33,8 +33,6 @@ export const TYPE_AT = 24;
 export const TYPE_STEP = 2;
 /** Frames until the card has drawn everything (SKIP jumps there). */
 export const CARD_ANIM = TYPE_AT + BRIEFING.join('').length * TYPE_STEP;
-/** The card starts the stage by itself after this long. */
-export const CARD_AUTO = 1200;
 /** The island map's place and size. */
 export const MAP_X = 80;
 export const MAP_Y = 36;

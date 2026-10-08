@@ -8,7 +8,7 @@ import type { TopDownWorld } from '../../topdown/world';
 export const KEEPER_HP = 8;
 /** Frames between spells (and while badly hurt), and how long it glows before casting. */
 export const CAST_EVERY = 110;
-export const CAST_EVERY_ANGRY = 76;
+export const CAST_EVERY_ANGRY = 92;
 export const GLOW_FRAMES = 32;
 /** Frames it can't be hurt after a hit. */
 export const KEEPER_INVULN = 30;
@@ -24,8 +24,7 @@ export const KEEPER_STUN = 30;
 const BOB = [0, 1, 2, 2, 1, 0, -1, -1] as const;
 
 /**
- * The keeper's spell: a slow orb fired at an angle. Step aside, or (with the magic shield from
- * the shrine) face it: the shield stops it from the front like a rock (by its main axis).
+ * The keeper's spell: a slow orb fired at an angle. Step aside: nothing blocks it.
  */
 export class Spell extends Projectile {
   constructor(x: number, y: number, angle: number) {

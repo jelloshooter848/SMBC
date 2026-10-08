@@ -62,7 +62,42 @@ export const BOOMERANG: ProjectileSpec = {
   frameRate: 2,
   pierce: true,
   returns: { after: 36 },
+  // Zelda's fetch: coins, items and drops it touches come back with it (World.boomerangFetch).
+  fetches: true,
 };
+
+/**
+ * An up-thrust that strikes a block rebounds Link down as a head bump would (owner note 27):
+ * instead of rising on through a broken brick, he starts down at this speed (a frame of gravity).
+ */
+export const THRUST_REBOUND_VY = 0x00400;
+
+/**
+ * The block tiles Link's sword has struck in this swing or thrust (owner notes 26-27): each tile
+ * once per swing, as World.strikeBlock is a bump. Cleared when a new swing or thrust starts.
+ */
+const struck = new WeakMap<Player, Set<number>>();
+
+/**
+ * Strikes every block tile the box overlaps that this swing has not struck yet (bricks break,
+ * ? blocks give their item: Brick.hitByAttack in the original, every attack of Link's).
+ * Returns whether one was struck.
+ */
+function strikeBlocks(p: Player, world: World, box: { x: number; y: number; w: number; h: number }): boolean {
+  let seen = struck.get(p);
+  if (!seen) struck.set(p, (seen = new Set()));
+  let hit = false;
+  for (let ty = tileAt(box.y); ty <= tileAt(box.y + box.h - 1); ty++)
+    for (let tx = tileAt(box.x); tx <= tileAt(box.x + box.w - 1); tx++) {
+      const block = tileDef(world.map.get(tx, ty)).block;
+      const key = ty * 4096 + tx;
+      if (!block || block.kind === 'hidden' || seen.has(key)) continue;
+      seen.add(key);
+      world.strikeBlock(tx, ty, p, true);
+      hit = true;
+    }
+  return hit;
+}
 
 function maxHp(p: Player): number {
   return p.scratch.maxHp ?? 6;
@@ -271,34 +306,33 @@ export const LINK: CharacterDef = {
         return;
       }
       if (input.pressed('special') && p.attackTimer === 0) useTool(p, world);
-      // Down-thrust: hold down in the air; the sword box sits under the feet.
+      // Down-thrust: hold down in the air; the sword box sits under the feet. A block it lands on
+      // is struck (a brick breaks, a ? block gives its item) and Link bounces off it, as the
+      // original's dThrust does off any Ground it hits (Link.attackObjPiercing: vy = -bouncePwr).
       const airborne = !b.onGround && p.attackTimer === 0;
       const thrusting = airborne && input.held('down');
+      if (thrusting && !p.scratch.downThrust) struck.get(p)?.clear();
       p.scratch.downThrust = thrusting ? 1 : 0;
       if (thrusting) {
         p.scratch.upThrust = 0;
         p.activeMelee = { x: b.x + px(2), y: b.y + b.h, w: px(8), h: px(8) };
+        if (b.vy >= 0 && strikeBlocks(p, world, p.activeMelee)) p.stompBounce();
         return;
       }
-      // Up-thrust: hold up in the air; the sword box sits over the head and opens blocks.
+      // Up-thrust: hold up in the air; the sword box sits over the head and opens blocks. Striking
+      // one stops the rise: Link rebounds down as from a head bump (THRUST_REBOUND_VY).
       const thrustingUp = airborne && input.held('up');
+      if (thrustingUp && !p.scratch.upThrust) struck.get(p)?.clear();
       p.scratch.upThrust = thrustingUp ? 1 : 0;
       if (thrustingUp) {
         const box = { x: b.x + px(2), y: b.y - px(10), w: px(8), h: px(10) };
         p.activeMelee = box;
-        const tx = tileAt(box.x + (box.w >> 1));
-        const ty = tileAt(box.y);
-        const key = ty * 4096 + tx;
-        if (tileDef(world.map.get(tx, ty)).block) {
-          if (p.scratch.thrustTile !== key) {
-            p.scratch.thrustTile = key;
-            world.strikeBlock(tx, ty, p, true);
-          }
-        } else p.scratch.thrustTile = -1;
+        if (strikeBlocks(p, world, { x: box.x + (box.w >> 1), y: box.y, w: 1, h: 1 }) && b.vy < 0)
+          b.vy = THRUST_REBOUND_VY;
         return;
       }
-      p.scratch.thrustTile = -1;
       if (input.pressed('attack') && p.attackTimer === 0 && !p.scratch.throwT) {
+        struck.get(p)?.clear();
         p.attackTimer = ATTACK_FRAMES;
         world.audio.sfx('sword');
         const beam = (p.scratch.beam && p.hp >= maxHp(p)) || p.scratch.fireSpell;
@@ -314,6 +348,8 @@ export const LINK: CharacterDef = {
           p.facing > 0
             ? { x: b.x + b.w, y, w: px(14), h: px(6) }
             : { x: b.x - px(14), y, w: px(14), h: px(6) };
+        // The blade bumps ? blocks and breaks bricks it meets (owner note 26), once a swing.
+        strikeBlocks(p, world, p.activeMelee);
       } else p.activeMelee = null;
     },
     onMeleeHit(p) {

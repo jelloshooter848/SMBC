@@ -170,7 +170,7 @@ export class HammerBattleScene implements Scene {
     const card = [...BATTLE_WON_CARD, ...(prize ? ['', ...prize.lines.map(fontText)] : [])];
     game.deps.announcer?.say(`${BATTLE_WON_CARD.join(' ')} ${prize ? `${prize.said} ` : ''}OK to continue.`);
     game.scenes.push(
-      new CardScene(game, card, () => game.hammerBattleWon(), this.world, 1800, {
+      new CardScene(game, card, () => game.hammerBattleWon(), this.world, {
         panel: true,
         keys: ['start', 'attack', 'jump'],
         prompt: () => abilityHint(game, 'OK', 'jump'),

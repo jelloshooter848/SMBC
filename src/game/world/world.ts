@@ -92,6 +92,11 @@ import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 import { CASTLE_PAGES } from '../story/script';
+import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
+import type { Action } from '@engine/input/actions';
+
+/** What goes on from the castle's text (OK): JUMP or ATTACK. MENU still pauses. */
+const CASTLE_OK_KEYS: readonly Action[] = ['jump', 'attack'];
 
 export type WorldEvent =
   /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
@@ -420,9 +425,19 @@ export class World {
   private readonly fallingIn = new Set<Player>();
   private checkpointSent = false;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
-  bossClear: { t: number; stop?: number } | null = null;
+  bossClear: { t: number; stop?: number; page?: number; at?: number } | null = null;
   /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
   castleText: string[] = [];
+  /**
+   * The castle's text is up and waits for OK (JUMP or ATTACK, any player) to show its next page
+   * or to exit: text never moves on by itself (owner note 4). True once the card guard is over,
+   * when LevelScene draws the OK prompt under the text.
+   */
+  get castleWaiting(): boolean {
+    const c = this.bossClear;
+    if (!c || c.stop === undefined || c.at === undefined) return false;
+    return c.t - c.stop - c.at > CARD_GUARD_FRAMES;
+  }
   /** Drawn behind the tiles and sprites (the ending's credits, which the original adds under the level). */
   backdrop: ((r: Renderer) => void) | null = null;
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
@@ -775,16 +790,18 @@ export class World {
     switch (s.type) {
       case 'goomba':
         return new Goomba(x + px(2), y + px(2));
+      // Feet on the spawn tile's bottom: the 16 px box (KOOPA_H) fills the tile; the sprite
+      // reaches 8 px above it as before.
       case 'koopa-green':
-        return new Koopa(x + px(2), y - px(6), 'green');
+        return new Koopa(x + px(2), y, 'green');
       case 'koopa-red':
-        return new Koopa(x + px(2), y - px(6), 'red');
+        return new Koopa(x + px(2), y, 'red');
       case 'koopa-para-green':
-        return new Koopa(x + px(2), y - px(6), 'green', true);
+        return new Koopa(x + px(2), y, 'green', true);
       case 'koopa-para-red':
-        return new Koopa(x + px(2), y - px(6), 'red', true);
+        return new Koopa(x + px(2), y, 'red', true);
       case 'koopa-para-green-h':
-        return new Koopa(x + px(2), y - px(6), 'green', true, true);
+        return new Koopa(x + px(2), y, 'green', true, true);
       case 'piranha':
         return new Piranha(s.x, s.y, false, !!s.props?.red);
       case 'piranha-down':
@@ -989,6 +1006,53 @@ export class World {
       }
   }
 
+  /**
+   * A fetching boomerang (ProjectileSpec.fetches, Link's) takes what it touches: coins in the tile
+   * grid, items out of their blocks (a poison mushroom stays: it is no prize) and drops. They
+   * leave the level and ride on it until it is back (deliverFetch).
+   */
+  boomerangFetch(proj: Projectile): void {
+    const b = proj.body;
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++)
+        if (tileDef(this.map.get(tx, ty)).pickup === 'coin') {
+          this.map.set(tx, ty, T.AIR);
+          proj.carriedCoins++;
+        }
+    for (const e of this.entities) {
+      if (!e.alive || !overlaps(b, e.body)) continue;
+      const item = (e instanceof PowerUp && e.out && e.item !== 'poison') || e instanceof Pickup;
+      if (!item) continue;
+      e.destroy();
+      proj.carried.push(e);
+    }
+  }
+
+  /**
+   * A fetching boomerang is back (or gone): its owner gets what it carried, as if touched (a coin
+   * and its 200 points, an item, a drop; a drop the owner has no room for falls at his feet).
+   */
+  deliverFetch(proj: Projectile): void {
+    const p = proj.owner instanceof Player && !proj.owner.dead && !proj.owner.out ? proj.owner : null;
+    const coins = proj.carriedCoins;
+    const carried = proj.carried.splice(0);
+    proj.carriedCoins = 0;
+    if (!p) return;
+    for (let i = 0; i < coins; i++) {
+      this.addCoin();
+      this.addScore(200);
+    }
+    for (const e of carried) {
+      if (e instanceof PowerUp) {
+        if (e.item === 'clock') this.collectClock(e);
+        else if (e.item !== 'poison') p.def.behaviour.onPowerUp(p, e.item, this);
+      } else if (e instanceof Pickup && !p.def.behaviour.onPickup?.(p, e.item, this)) {
+        const pb = p.body;
+        this.spawn(new Pickup(pb.x + (pb.w >> 1), pb.y + pb.h, e.item));
+      }
+    }
+  }
+
   /** A projectile struck the tile at a point: bricks and item blocks react as to a head bump. */
   breakAt(x: number, y: number, owner: Entity | Player | null): void {
     const tx = tileAt(x);
@@ -1077,7 +1141,7 @@ export class World {
     }
     if (this.bossClear) {
       this.tickScorePopups();
-      return this.updateBossClear();
+      return this.updateBossClear(inputs);
     }
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
@@ -2582,7 +2646,7 @@ export class World {
     this.spawn(new WandBreak(handX, feet - 16, riftX, feet - 56));
   }
 
-  private updateBossClear(): void {
+  private updateBossClear(inputs: readonly InputFrame[]): void {
     const c = this.bossClear as NonNullable<typeof this.bossClear>;
     const p = this.bossPlayer ?? this.player;
     c.t++;
@@ -2634,10 +2698,11 @@ export class World {
       }
     }
     if (c.stop === undefined) return;
-    // Then Toad's thanks; 1.5 s later the news, and 3.5 s after it the next level (the
-    // original's ADD_TXT_TMR_DUR and WIN_END_TMR_DUNGEON_DUR). The last castle says instead that
-    // the quest is over (ScreenManager.addTxtTmrHandler, GameTextMessages.QUEST_IS_OVER) and hands
-    // over to the ending 2.5 s later (START_MOVE_CREDITS_TMR_DUR), where the credits roll.
+    // Then Toad's thanks and 1.5 s later the news (the original's ADD_TXT_TMR_DUR), which stays
+    // until OK (owner note 4: text never moves by itself; the original went on to the next level
+    // 3.5 s later, WIN_END_TMR_DUNGEON_DUR). The last castle says instead that the quest is over
+    // (ScreenManager.addTxtTmrHandler, GameTextMessages.QUEST_IS_OVER) and, on OK, hands over to
+    // the ending, where the credits roll.
     // The Lost Levels' last castles (8-4, 9-4, D-4) say nothing themselves: the ending's card
     // (Game.showLostEnding) is the thanks, over the level, when Toad's thanks would start, so
     // no line is said twice.
@@ -2650,29 +2715,34 @@ export class World {
       }
       return;
     }
-    if (s === 30) this.castleText = [`THANK YOU ${p.def.hudName}!`];
-    // The campaign's castles (docs/STORY.md 2.4-2.12) tell their own news in two pages instead:
-    // the fake Bowser's true form, then 2 s later the story, each read out; the exit waits 3.5 s
-    // after the second. The Lost castles keep the NES text (their story is Chapter 2).
-    const pages = this.storyMode ? CASTLE_PAGES[this.level.parent ?? this.level.id] : undefined;
-    if (pages) {
-      const page = s === 120 ? pages.reveal : s === 240 ? pages.news : null;
-      if (page) {
-        this.castleText = [`THANK YOU ${p.def.hudName}!`, '', ...page];
-        this.events.push({ type: 'say', text: [this.castleText[0], ...page].join(' ') });
-      }
-      if (s >= 450) {
-        this.events.push({ type: 'exit', next });
-        c.t = -100000;
-      }
-      return;
-    }
-    if (s === 120 && next !== 'end') this.castleText.push('', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!');
-    if (s === 120 && next === 'end') this.castleText.push('', 'YOUR QUEST IS OVER.');
-    if (s >= (next === 'end' ? 270 : 330)) {
+    const thanks = `THANK YOU ${p.def.hudName}!`;
+    if (s === 30) this.castleText = [thanks];
+    const ok = c.at !== undefined && cardContinues(s - c.at, inputs, CASTLE_OK_KEYS);
+    const leave = () => {
       this.events.push({ type: 'exit', next });
       c.t = -100000;
+      delete c.at;
+    };
+    // The campaign's castles (docs/STORY.md 2.4-2.12) tell their own news in two pages instead:
+    // the fake Bowser's true form, then on OK the story, each read out; OK on the second exits.
+    // The Lost castles keep the NES text (their story is Chapter 2).
+    const pages = this.storyMode ? CASTLE_PAGES[this.level.parent ?? this.level.id] : undefined;
+    if (pages) {
+      const page = s === 120 ? pages.reveal : ok && c.page === 0 ? pages.news : null;
+      if (page) {
+        c.page = page === pages.reveal ? 0 : 1;
+        c.at = s;
+        this.castleText = [thanks, '', ...page];
+        this.events.push({ type: 'say', text: [thanks, ...page, 'OK to continue.'].join(' ') });
+      } else if (ok) leave();
+      return;
     }
+    if (s === 120) {
+      const news = next === 'end' ? ['YOUR QUEST IS OVER.'] : ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+      this.castleText.push('', ...news);
+      c.at = s;
+      this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
+    } else if (ok) leave();
   }
 
   /**

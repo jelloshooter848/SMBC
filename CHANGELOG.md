@@ -8,6 +8,29 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Text never moves on by itself. Story cards, Toad's map box, Bowser's lines, the 1-0 tease, endings, the chapter
+  gate, captive dialogue, the crystal ball, the Moblin, the hammer battle, the bonus house and Bill's briefing all wait
+  for a key. The short guard and BACK still apply.
+- Castle text (the campaign pages and the classic "another castle" news) waits for OK on each page and shows an OK
+  prompt. The classic news is now read out too.
+- The credits still roll, but the closing lines wait for OK.
+- Sophia's and Ryu's opening cutscenes show one caption page at a time, waiting for OK while the picture rests. SKIP
+  ends the cutscene, and touch shows OK, SKIP and MENU.
+- Map trophies are half-size statues on stone pedestals, easy to tell from your own marker.
+- Shadow Keep: Link starts without the sword beam. The secret shrine's chest now holds the White Sword (a beam at full
+  hearts) instead of the shield, which is gone. The keeper casts a little less often when angry.
+- Link's sword and down-thrust break bricks and open ? blocks. An up-thrust that hits a block drops him back down. The
+  boomerang brings back coins, items and drops it touches.
+
+### Fixed
+
+- Mirror Race: the start castle and the Paratroopa are on screen from the first frame, and TRY AGAIN skips the lives
+  card.
+- Koopas have a one-tile collision box (the sprite is unchanged), so they walk through 1-2's tunnel.
+- 1-0's tease: the touch button reads OK once Bowser's box is waiting.
+
 ## [0.4.21] - 2026-10-07
 
 ### Added

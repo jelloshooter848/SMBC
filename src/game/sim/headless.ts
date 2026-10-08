@@ -72,6 +72,11 @@ export interface SimOptions {
   start?: WorldStart;
   /** World RNG seed; defaults to the level's fixed seed so every run is repeatable. */
   seed?: number;
+  /**
+   * While a castle's text waits for OK (World.castleWaiting) the sim taps JUMP, as a player
+   * would, so a run through a castle still ends (default true). False leaves it waiting.
+   */
+  castleOk?: boolean;
 }
 
 export interface SimResult {
@@ -97,13 +102,17 @@ export function runSim(opts: SimOptions): SimResult {
     { ...opts.start, seed: opts.start?.seed ?? opts.seed ?? levelSeed(opts.level) },
   );
   const input = new ScriptedInput(opts.script);
+  const ok = new ScriptedInput({ steps: [] });
   const events: WorldEvent[] = [];
   let outcome: SimResult['outcome'] = 'timeout';
   let frames = 0;
   for (; frames < opts.maxFrames; frames++) {
     if (opts.controller) input.setHeld(opts.controller(world, frames));
     input.next();
-    world.update([input]);
+    const waiting = opts.castleOk !== false && world.castleWaiting;
+    ok.setHeld(waiting && frames % 2 === 0 ? ['jump'] : []);
+    ok.next();
+    world.update([waiting ? ok : input]);
     events.push(...world.events.splice(0));
     const last = events[events.length - 1];
     if (last?.type === 'exit') {

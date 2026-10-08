@@ -13,7 +13,7 @@ const blockAt = (w: TopDownWorld, x: number, y: number) =>
  *
  *   start → bats (key) → start → map hall (unlock; the map) → cellar (boomerang) → map hall →
  *   shutters → compass → shutters → blocks → knights (key) → armory (bombs; bomb the cracked
- *   wall) → shrine (shield) → armory → knights (unlock) → switch → keeper (heart container) →
+ *   wall) → shrine (white sword) → armory → knights (unlock) → switch → keeper (heart container) →
  *   triforce
  */
 export const KEEP_PLAN: Readonly<Record<string, BotPlan>> = {
@@ -43,7 +43,7 @@ export const KEEP_PLAN: Readonly<Record<string, BotPlan>> = {
       ? [{ do: 'leave', side: 'e' }]
       : [{ do: 'fight' }, { do: 'pickup' }, { do: 'leave', side: 'n' }],
   armory: (w) =>
-    w.hero.shield
+    w.swordBeam
       ? [{ do: 'leave', side: 's' }]
       : [
           { do: 'fight' },
@@ -70,7 +70,7 @@ export const KEEP_PLAN: Readonly<Record<string, BotPlan>> = {
 
 /**
  * The same run for a player who never finds the secret: bombs from the armory's chest, then
- * straight back down, no shrine and no shield (difficulty tuning, human-sim.test.ts).
+ * straight back down, no shrine and no white sword (difficulty tuning, human-sim.test.ts).
  */
 export const KEEP_PLAN_NO_SHRINE: Readonly<Record<string, BotPlan>> = {
   ...KEEP_PLAN,

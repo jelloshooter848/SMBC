@@ -179,7 +179,7 @@ describe('playStoryCards', () => {
 
   it('a CardScene without the new options is unchanged (no BACK, on black without a world)', () => {
     const h = makeGame();
-    const c = new CardScene(h.game, ['A'], () => {}, null, 1800, { panel: true });
+    const c = new CardScene(h.game, ['A'], () => {}, null, { panel: true });
     expect(c.translucent).toBe(false);
     expect(c.touchLabels().attack).toBe('OK');
   });

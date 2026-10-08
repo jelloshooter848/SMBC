@@ -66,9 +66,8 @@ const SPIN: readonly Dir[] = ['down', 'left', 'up', 'right'];
  * The top-down hero (Link in the Shadow Keep): four-way walking at 1.5 px/frame on a half-tile
  * grid, a sword stab in the facing direction (one at a time; at full hearts, in a world with
  * beams, it also throws a sword beam), the item in the slot on SPECIAL
- * (SELECT moves the slot), a shield once he has one that stops blockable shots coming at his
- * front while not stabbing and halves monsters' touch damage, hearts in halves, knockback with invulnerability after
- * a hit, and a death spin. Walking into a chest opens it; he holds the prize up for a moment.
+ * (SELECT moves the slot), hearts in halves, knockback with invulnerability after a hit, and a
+ * death spin. Walking into a chest opens it; he holds the prize up for a moment.
  */
 export class TdHero {
   x: number;
@@ -79,8 +78,6 @@ export class TdHero {
   maxHp: number;
   /** Frames left in the current stab (0 = not attacking). */
   attackT = 0;
-  /** Carries a shield (it blocks shots from the front). */
-  shield = true;
   /** Frames left in the throw pose after using an item. */
   useT = 0;
   /** Frames left holding a prize up, and its tile-sheet frame. */
@@ -157,22 +154,6 @@ export class TdHero {
     const b = swordAt(this.x, this.y, this.facing);
     const v = this.facing === 'up' || this.facing === 'down';
     return { ...b, frame: v ? 'sword-v' : 'sword-h', fx: this.facing === 'left', fy: this.facing === 'down' };
-  }
-
-  /**
-   * The guard: with the shield, a monster's touch costs half as much (never less than half a
-   * heart). `damage` in half hearts.
-   */
-  contactDamage(damage: number): number {
-    return this.shield ? Math.max(1, Math.floor(damage / 2)) : damage;
-  }
-
-  /** Does the shield stop a shot travelling in `dir`? Only a shot coming at the hero's front. */
-  shieldBlocks(dir: Dir | null): boolean {
-    if (!dir || !this.shield || this.attacking || this.dying || this.kbT > 0) return false;
-    const v = DIR_VEC[this.facing];
-    const s = DIR_VEC[dir];
-    return v.dx === -s.dx && v.dy === -s.dy;
   }
 
   /**
@@ -411,8 +392,7 @@ export class TdHero {
             ? 'hold'
             : 'down-0'
           : `${dirName}-${(this.walkT >> 3) & 1}`;
-    // Without the shield: the `-ns` twin of the pose.
-    const frame = !this.shield && sheet?.frames.has(`${pose}-ns`) ? `${pose}-ns` : pose;
+    const frame = pose;
     if (this.holding) {
       const tiles = view.sheet(view.sheets.tiles, view.tilePalette);
       const w = tiles?.frames.get(this.holding)?.w ?? 8;

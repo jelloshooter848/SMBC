@@ -13,19 +13,14 @@ export const CARD_GUARD_FRAMES = 30;
 
 /**
  * Whether a card `t` frames old should go on: any player newly pressed one of `keys` (a button
- * held since before the card does not count) once the guard is over, or the timeout ran out.
+ * held since before the card does not count) once the guard is over. Text never moves on by
+ * itself (owner note 4, 0.4.22): there is no timeout.
  */
-export function cardContinues(
-  t: number,
-  timeout: number,
-  inputs: readonly InputFrame[],
-  keys: readonly Action[],
-): boolean {
-  if (t >= timeout) return true;
+export function cardContinues(t: number, inputs: readonly InputFrame[], keys: readonly Action[]): boolean {
   return t > CARD_GUARD_FRAMES && inputs.some((i) => keys.some((k) => i.pressed(k)));
 }
 
-/** Centered lines of text on black; continues on `keys` (any player) or after a timeout. */
+/** Centered lines of text on black; continues on `keys` (any player), never by itself. */
 export class MessageScene implements Scene {
   private t = 0;
   private done = false;
@@ -33,7 +28,6 @@ export class MessageScene implements Scene {
     private readonly game: Game,
     private readonly lines: string[],
     private readonly next: () => void,
-    private readonly timeout = 600,
     private readonly keys: readonly Action[] = ['start', 'jump'],
   ) {}
 
@@ -45,7 +39,7 @@ export class MessageScene implements Scene {
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
     if (this.done) return;
-    if (cardContinues(++this.t, this.timeout, inputs, this.keys)) {
+    if (cardContinues(++this.t, inputs, this.keys)) {
       this.done = true;
       this.next();
     }
@@ -93,7 +87,7 @@ export interface CardOptions {
  * A closing card (the Lost Levels' endings): its lines drawn where the castle's text goes
  * (World.castleText), over the level when given its `world` so the HUD keeps showing the score,
  * as in the SMB 8-4 ending; else on black. Start or B (attack, the card's "PUSH BUTTON B")
- * from any player continues, or the timeout. With `panel` the lines go in a box over the level.
+ * from any player continues; the card never goes on by itself. With `panel` the lines go in a box over the level.
  */
 export class CardScene implements Scene {
   readonly translucent: boolean;
@@ -104,7 +98,6 @@ export class CardScene implements Scene {
     readonly lines: readonly string[],
     private readonly next: () => void,
     private readonly world: World | null = null,
-    private readonly timeout = 1800,
     opts: CardOptions = {},
   ) {
     this.keys = opts.keys ?? ['start', 'attack'];
@@ -136,12 +129,12 @@ export class CardScene implements Scene {
   update(_input: InputFrame, inputs: InputFrame[]): void {
     if (this.done) return;
     this.t++;
-    if (this.onSkip && cardContinues(this.t, Infinity, inputs, this.skipKeys)) {
+    if (this.onSkip && cardContinues(this.t, inputs, this.skipKeys)) {
       this.done = true;
       this.onSkip();
       return;
     }
-    if (cardContinues(this.t, this.timeout, inputs, this.keys)) {
+    if (cardContinues(this.t, inputs, this.keys)) {
       this.done = true;
       this.next();
     }

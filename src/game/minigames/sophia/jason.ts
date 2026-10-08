@@ -99,7 +99,6 @@ export class Jason extends TdHero {
 
   constructor(x: number, y: number, maxHp = POW_MAX) {
     super(x, y, maxHp);
-    this.shield = false;
     this.facing = 'up';
   }
 

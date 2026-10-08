@@ -7,7 +7,7 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { NullRenderer } from '@engine/gfx/renderer';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
-import { CreditsScene, CREDITS, CREDITS_HOLD_FRAMES, CREDITS_TAIL } from '@game/scenes/credits';
+import { CreditsScene, CREDITS, CREDITS_TAIL } from '@game/scenes/credits';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import { CARD_GUARD_FRAMES, CardScene, MessageScene } from '@game/scenes/message';
@@ -67,31 +67,42 @@ describe('the credits roll', () => {
   // and stop once their middle reaches the middle of the screen.
   const rise = 240 + CREDITS.length * LINE - (240 - CREDITS_TAIL.length * LINE) / 2;
 
-  it('scrolls at 20 px/s (CREDITS_SPEED 40 Flash px/s) and ends 6.5 s after the closing lines stop', () => {
+  /** Frames until the closing lines stand still and OK is offered (the card guard after). */
+  function untilOk(h: ReturnType<typeof makeGame>, credits: CreditsScene, frames = 0): number {
+    while (credits.touchLabels().jump !== 'OK' && frames < 5000) {
+      h.step();
+      frames++;
+    }
+    return frames;
+  }
+
+  it('scrolls at 20 px/s (CREDITS_SPEED 40 Flash px/s); the closing lines then wait for OK', () => {
     const h = makeGame();
     const done = vi.fn();
     const credits = new CreditsScene(h.game, ['THANK YOU MARIO!', '', 'YOUR QUEST IS OVER.'], done);
     h.game.scenes.push(credits);
     expect(h.audio.playMusic).toHaveBeenCalledWith('credits');
-    let frames = 0;
-    while (!done.mock.calls.length && frames < 5000) {
-      h.step();
-      frames++;
-    }
-    expect(Math.abs(frames - (rise * 3 + CREDITS_HOLD_FRAMES))).toBeLessThanOrEqual(2);
+    const frames = untilOk(h, credits);
+    expect(Math.abs(frames - (rise * 3 + CARD_GUARD_FRAMES + 1))).toBeLessThanOrEqual(2);
+    expect(h.said.at(-1)).toBe('OK to continue.');
+    // Text never moves on by itself (owner note 4): the hold lasts until a key.
+    for (let i = 0; i < 5000; i++) h.step();
+    expect(done).not.toHaveBeenCalled();
+    h.step(['jump']);
+    expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it('Start fast-forwards ten times, and cuts the wait to a quarter', () => {
+  it('Start fast-forwards ten times', () => {
     const h = makeGame();
     const done = vi.fn();
-    h.game.scenes.push(new CreditsScene(h.game, [], done));
+    const credits = new CreditsScene(h.game, [], done);
+    h.game.scenes.push(credits);
     h.step(['start']);
-    let frames = 1;
-    while (!done.mock.calls.length && frames < 5000) {
-      h.step();
-      frames++;
-    }
-    expect(Math.abs(frames - (rise * 0.3 + CREDITS_HOLD_FRAMES / 4))).toBeLessThanOrEqual(2);
+    const frames = untilOk(h, credits, 1);
+    expect(Math.abs(frames - (rise * 0.3 + CARD_GUARD_FRAMES + 1))).toBeLessThanOrEqual(2);
+    expect(done).not.toHaveBeenCalled();
+    h.step(['start']);
+    expect(done).toHaveBeenCalledTimes(1);
   });
 
   it('every line fits the screen', () => {
@@ -110,8 +121,10 @@ describe('the credits roll', () => {
     expect(credits).toBeInstanceOf(CreditsScene);
     expect((credits as CreditsScene).translucent).toBe(true);
     expect(level.world.castleText).toEqual([]); // handed to the credits
-    expect(h.said.at(-1)).toContain('YOUR QUEST IS OVER.');
-    for (let i = 0; i < 5000 && !(h.top() instanceof TitleScene); i++) h.step();
+    expect(h.said.at(-1)).toBe('Credits.'); // the castle reads its lines as they show
+    for (let i = 0; i < 5000; i++) h.step();
+    expect(h.top()).toBe(credits); // the closing lines wait for OK
+    h.step(['jump']);
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 });
@@ -248,7 +261,9 @@ describe('Lost Levels endings (NES rules)', () => {
     expect((credits as CreditsScene).translucent).toBe(true);
     expect(level.world.castleText).toEqual([]); // handed to the credits
     expect(h.audio.playMusic).toHaveBeenCalledWith('credits');
-    for (let i = 0; i < 5000 && !(h.top() instanceof TitleScene); i++) h.step();
+    for (let i = 0; i < 5000; i++) h.step();
+    expect(h.top()).toBe(credits);
+    h.step(['attack']);
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 
@@ -335,14 +350,23 @@ describe('Lost Levels endings (NES rules)', () => {
       ['ll-8-4', MessageScene],
       ['ll-9-4', TitleScene],
       ['ll-13-4', CreditsScene],
-    ] as const)('left alone for 30 s, the %s card goes on by itself', (from, after) => {
-      const h = makeGame();
-      h.game.newGame(MARIO, from);
-      h.game.showEnding(from);
-      for (let i = 0; i < 1799; i++) h.step();
-      expect(h.top()).toBeInstanceOf(CardScene);
-      h.step();
-      expect(h.top()).toBeInstanceOf(after);
+    ] as const)(
+      'left alone, the %s card stays up; a key goes on (text waits, owner note 4)',
+      (from, after) => {
+        const h = makeGame();
+        h.game.newGame(MARIO, from);
+        h.game.showEnding(from);
+        for (let i = 0; i < 10_000; i++) h.step();
+        expect(h.top()).toBeInstanceOf(CardScene);
+        h.step(['attack']);
+        expect(h.top()).toBeInstanceOf(after);
+      },
+    );
+
+    it('left alone, the tally page stays up too', () => {
+      const h = at('tally');
+      for (let i = 0; i < 10_000; i++) h.step();
+      expect(h.top()).toBeInstanceOf(MessageScene);
     });
   });
 });

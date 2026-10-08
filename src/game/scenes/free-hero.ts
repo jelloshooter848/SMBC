@@ -166,7 +166,6 @@ export function talkToCaptive(
         then();
       },
       world,
-      3600,
       { keys: CARD_KEYS, panel: true, prompt: () => fontText(abilityHint(game, 'OK', 'jump')) },
     );
   };
@@ -182,29 +181,32 @@ export function talkToCaptive(
           game.scenes.pop();
           round();
         },
-        // No timeout: the round starts only on OK.
-        Infinity,
+        // The round starts only on OK.
         ['start', 'jump'],
       ),
     );
   };
 
-  const round = () => {
+  const round = (retry = false) => {
     const saved = game.state;
     const before = snapshot(saved);
     audio.stopMusic();
     let over = false;
-    const scene = def.create(game, (result: MiniGameResult) => {
-      if (over) return;
-      over = true;
-      // The round's own scenes (its menu) go with it; the run is as the level left it.
-      while (game.scenes.depth > 0 && game.scenes.top !== level) {
-        if (game.scenes.pop() === scene) break;
-      }
-      game.state = saved;
-      Object.assign(saved, before);
-      ended(result);
-    });
+    const scene = def.create(
+      game,
+      (result: MiniGameResult) => {
+        if (over) return;
+        over = true;
+        // The round's own scenes (its menu) go with it; the run is as the level left it.
+        while (game.scenes.depth > 0 && game.scenes.top !== level) {
+          if (game.scenes.pop() === scene) break;
+        }
+        game.state = saved;
+        Object.assign(saved, before);
+        ended(result);
+      },
+      { retry },
+    );
     game.scenes.push(scene);
   };
 
@@ -226,7 +228,7 @@ export function talkToCaptive(
               label: 'Yes',
               select: () => {
                 game.scenes.pop();
-                round();
+                round(true);
               },
             },
             { label: 'No', select: back },

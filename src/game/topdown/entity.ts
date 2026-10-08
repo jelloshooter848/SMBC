@@ -175,7 +175,8 @@ export class Poof extends TdEntity {
 
 /**
  * What a pickup or chest can give (world.ts `grant`): `heart` (one heart back), `key`,
- * `heart-container` (one more heart, all of them back), `refill` (all hearts back), `shield`,
+ * `heart-container` (one more heart, all of them back), `refill` (all hearts back), `white-sword`
+ * (the sword beam),
  * an item's ammo pickup (`bombs`), or an item id (the item itself).
  */
 export type PickupKind = string;
@@ -196,8 +197,6 @@ export function pickupFrame(kind: PickupKind): string {
       return 'key';
     case 'bombs':
       return 'bomb-pickup';
-    case 'shield':
-      return 'shield-pickup';
     case 'heart-container':
     case 'map':
     case 'compass':

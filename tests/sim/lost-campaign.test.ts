@@ -328,6 +328,8 @@ describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and
       press(h, 'attack');
       if (id === 'll-13-4') {
         expect(h.top()).toBeInstanceOf(CreditsScene);
+        h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
+        h.tap('jump'); // the closing lines wait for OK
         h.until(() => h.top() instanceof WorldMapScene, 8000);
       }
     }
@@ -383,6 +385,8 @@ describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and
     expect(h.top()).not.toBeInstanceOf(BowserSaysScene);
     h.fire({ type: 'exit', next: 'end' });
     expect(h.top()).toBeInstanceOf(CreditsScene);
+    h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
+    h.tap('jump'); // the closing lines wait for OK
     h.until(() => h.top() instanceof WorldMapScene, 8000);
     expect(h.map().page.id).toBe('smb-8');
     expect(h.map().node).toBe('8-4');
@@ -523,6 +527,8 @@ describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and
     expect(loadSave(1)?.cleared).toContain('ll-13-4');
     press(h, 'attack');
     expect(h.top()).toBeInstanceOf(CreditsScene);
+    h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
+    h.tap('jump'); // the closing lines wait for OK
     h.until(() => h.top() instanceof WorldMapScene, 8000);
     expect(h.map().page.id).toBe('ll-13');
     expect(h.map().node).toBe(at('ll-13-4').node);

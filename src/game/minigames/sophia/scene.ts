@@ -30,7 +30,8 @@ import {
   soundId,
   type BmSound,
 } from './art';
-import { CUT_SAY, CUTSCENE_FRAMES, drawCutscene } from './cutscene';
+import { CUT_BEATS, drawCutscene } from './cutscene';
+import { CAPTION_OK, CAPTION_SKIP, CaptionPager, drawCaptionKeys } from '../captions';
 import { areaStage, atGateway, newArea, newBossRoom, onFoot, sophiaDef } from './area';
 import type { PlutoniumBoss } from './plutonium';
 import { newUnderworld } from './dungeon';
@@ -128,6 +129,9 @@ export class UnderworldScene implements Scene {
   private winT = -1;
   private readonly view: TdView;
   private skipText = 'SKIP';
+  private okText = 'OK';
+  /** The opening's captions, a page at a time: OK turns them, SKIP ends the cutscene. */
+  readonly captions = new CaptionPager(CUT_BEATS);
   /** The tank's hero (null: no tank sections), and the side-view World played (cavern or boss). */
   readonly tankHero: CharacterDef | null;
   area: World | null = null;
@@ -186,10 +190,11 @@ export class UnderworldScene implements Scene {
 
   enter(): void {
     this.game.ctx.audio.stopMusic();
-    this.skipText = this.hint('SKIP', 'jump');
+    this.skipText = this.hint('SKIP', CAPTION_SKIP);
+    this.okText = this.hint('OK', CAPTION_OK);
     if (this.phase === 'cutscene') {
       this.playMusic(BM_MUSIC.cutscene);
-      this.say(`Underworld. ${CUT_SAY} ${this.hint('JUMP', 'jump')} skips.`);
+      this.say(`Underworld. ${this.captions.said(this.game)}`);
     } else if (this.phase === 'area') this.startArea();
     else if (this.phase === 'boss') this.startBoss();
     else this.startDungeon();
@@ -227,9 +232,9 @@ export class UnderworldScene implements Scene {
     this.phaseT = 0;
   }
 
-  /** SKIP in the cutscene; SHOOT and GRENADE while Jason is up; MENU while the menu opens. */
+  /** OK and SKIP in the cutscene; SHOOT and GRENADE while Jason is up; MENU while the menu opens. */
   touchLabels(): TouchLabels {
-    if (this.phase === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP', start: 'MENU' };
+    if (this.phase === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'SKIP', start: 'MENU' };
     if ((this.phase === 'area' || this.phase === 'boss') && this.area) {
       const p = this.area.player;
       if (p.dead) return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
@@ -256,9 +261,11 @@ export class UnderworldScene implements Scene {
     this.t++;
     this.phaseT++;
     switch (this.phase) {
-      case 'cutscene':
-        if (input.pressed('jump') || input.pressed('attack')) this.skipped = true;
-        if (this.skipped || this.phaseT >= CUTSCENE_FRAMES) {
+      case 'cutscene': {
+        if (input.pressed(CAPTION_SKIP)) this.skipped = true;
+        const step = this.skipped ? 'done' : this.captions.update(input.pressed(CAPTION_OK));
+        if (step === 'next') this.say(this.captions.said(this.game));
+        if (step === 'done') {
           input.consumeJumpBuffer();
           this.stopMusic();
           if (this.tankHero) {
@@ -270,6 +277,7 @@ export class UnderworldScene implements Scene {
           }
         }
         return;
+      }
       case 'area':
         return this.updateArea(input);
       case 'gateway':
@@ -627,9 +635,9 @@ export class UnderworldScene implements Scene {
     const assets = this.game.ctx.assets;
     const font = fontSheet(assets);
     if (this.phase === 'cutscene') {
-      drawCutscene(r, assets, this.phaseT, this.game.ctx.reduceFlashing);
-      const skip = this.skipText;
-      r.text(font, skip, SCREEN_W - 8 - skip.length * 8, 16);
+      const c = this.captions;
+      drawCutscene(r, assets, c.pic, this.game.ctx.reduceFlashing, { lines: c.lines, clock: this.phaseT });
+      drawCaptionKeys(r, font, this.skipText, c.waiting ? this.okText : null);
       return;
     }
     if (this.phase === 'return') {

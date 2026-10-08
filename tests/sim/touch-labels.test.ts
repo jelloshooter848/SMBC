@@ -113,7 +113,7 @@ describe('touch labels per scene', () => {
     expect(shown(h.game)).toBe('- - - - -');
     h.game.scenes.replace(new MessageScene(h.game, ['HI'], next));
     expect(shown(h.game)).toBe('OK - - - -');
-    h.game.scenes.replace(new MessageScene(h.game, ['HI'], next, 60, ['start']));
+    h.game.scenes.replace(new MessageScene(h.game, ['HI'], next, ['start']));
     expect(shown(h.game)).toBe('- - - OK -');
     h.game.scenes.replace(new CardScene(h.game, ['THANK YOU'], next));
     expect(shown(h.game)).toBe('- OK - - -');

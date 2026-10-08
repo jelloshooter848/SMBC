@@ -94,7 +94,9 @@ from the file's `cleared` and `freed`):
    the trance's lilac for half a second (`~shade-<theme>-glow`); never with reduce flashing.
    Standing on the node, the announcer adds "Someone is hiding in this level." to the node's name
    and the hint line shows `SOMEONE IS HIDING IN THIS LEVEL`. Nothing says where in the level.
-3. **Freed:** the hero stands beside the node in full colour, facing it, with a small idle hop.
+3. **Freed:** a statue of the hero stands beside the node in full colour, facing it: the
+   portrait at half size on a small stone pedestal (0.4.22, owner note 13: it must never read
+   as the player's marker), with a small idle hop (`map/trophy.ts`).
    A hero freed some other way (a file started with that hero) shows here too, once the node is
    open.
 
@@ -363,11 +365,12 @@ interface MiniGameDef {
 
 A small dungeon in the style of the first Zelda game, the spell's prison in Link's mind. You play
 Link (overhead, four-way walking on a half-tile grid, three hearts taken in halves). He starts
-with only his sword: a stab hits the whole tile in front of him plus 4 px to each side (and 6 px
+with only his sword, no beam and no shield (0.4.22, owner note 22): a stab hits the whole tile in front of him plus 4 px to each side (and 6 px
 back into his own tile), is out for 12 of its 14 frames, and wins ties: a monster the blade
 touches is knocked back and does no touch damage that frame, so monsters coming in at an angle
-meet the blade (owner feedback: "attacking with the sword is flawed"). With every heart full a
-stab also throws a **sword beam** (`topdown/beam.ts`, as in Zelda; one on screen at a time, 3 px a
+meet the blade (owner feedback: "attacking with the sword is flawed"). Once he has the **white
+sword** from the secret shrine, with every heart full a stab also throws a **sword beam**
+(`topdown/beam.ts`, as in Zelda; one on screen at a time, 3 px a
 frame [M]): it hurts the first monster it meets like the sword and bursts at walls into four
 pieces flying apart diagonally; it flickers through four tints (one steady tint with reduce
 flashing; sound `sword-beam`). The HUD is Zelda's (0.4.12 fidelity pass): LEVEL-1 over the map,
@@ -389,12 +392,12 @@ appears there too: three hearts become four, all refilled), the armory (a chest 
 four, up to eight, refills dropped by monsters; set one down in front, it blows after 1.5 s,
 2 damage to monsters and half a heart to Link within a tile and a half, and opens **cracked
 walls**; statues point at the cracked west wall; owner decision: no refill waits there, so
-wasting the bombs can cost the optional shield, by design), behind it the secret shrine (a chest
-with the
-magic **shield**, owner decision "make it worth the secret room": from then on it stops rocks and
-the keeper's spells coming at Link's front while he isn't stabbing (an angled spell by its main
-axis), and its guard halves monsters' touch damage, never below half a heart; the banner says
-"FACE ROCKS AND SPELLS TO BLOCK" / "MONSTERS HURT YOU LESS"),
+wasting the bombs can cost the optional white sword, by design), behind it the secret shrine (a
+chest with the **white sword**, owner decision "make it worth the secret room"; 0.4.22, owner
+note 22, replacing the magic shield of 0.4.12-0.4.21, which is gone with its blocking, its
+halved touch damage and the shieldless `-ns` frames: from then on a stab at full hearts throws
+the sword beam; the banner says "YOU GOT THE WHITE SWORD!" / "AT FULL HEARTS THE SWORD" /
+"SHOOTS A BEAM", announced "You got the white sword! At full hearts the sword shoots a beam."),
 rock-spitters with a floor switch behind water (it opens the way on and shows a heart refill), the
 keeper (drifts across the top, glows, then fans three spells at Link; eight hits, a bomb counts
 two; no name on screen, as a Zelda boss has none; its spells vanish when it falls) and the
@@ -408,7 +411,7 @@ monsters, rocks, spells and his own bombs (he is still knocked back), read each 
 so switching it mid-round counts at once; **slow motion** slows the whole loop, the keep
 included; the others have nothing to act on here.
 Dev: `?minigame=link` (the scene is `window.__miniGame`; `world.warpTo(roomId, x, y)` jumps,
-`world.grant('bomb')` gives an item, a pickup kind or `shield`).
+`world.grant('bomb')` gives an item, a pickup kind or `white-sword`).
 
 Difficulty (a "cautious human" sim, `human-sim.test.ts`: the bot's plan seen through a 15-frame
 reaction delay, monster positions misjudged by up to 4 px, pauses and early swings; `KEEP_SIM=30
@@ -418,8 +421,12 @@ knows the whole plan, so it measures combat difficulty, not puzzles or finding t
 and the magic shield 97-100% (about 1.8 of four hearts lost to the keeper); skipping the shrine
 93-100% (about 2.2 lost). The keeper got two more hit points to keep it a fight. With the sword
 beam (0.4.12, `KEEP_SIM=40`): with the shield 100% at every reaction (about 1.4-2.0 hearts lost
-to the keeper), without it 93-98% (about 2.1-2.4), the same band as before. The sim dodges
-spells rather than facing them, so a player who learns to block does better than it does.
+to the keeper), without it 93-98% (about 2.1-2.4), the same band as before. 0.4.22 (no beam at the
+start, the white sword instead of the shield; `KEEP_SIM=20`): 70-85% with the white sword and
+70-95% without the shrine, nearly every loss to the keeper, so the keeper casts a little less
+often once it is angry (`CAST_EVERY_ANGRY` 76 → 92 frames): with the white sword 100% at
+reactions 12-18 and 85% at 21 (about 1.7-2.0 hearts lost to the keeper), without the shrine
+95-100% (about 1.6-2.0).
 
 ### The top-down kit (`src/game/topdown/`)
 
@@ -435,10 +442,10 @@ Reusable for later top-down mini games; it knows no particular game.
   shutters that close once the hero has stepped in, room memory (conditions met stay met,
   cleared rooms stay empty, a solved block stays put, an unsolved one resets), room slides and
   events for the game to turn into sounds and announcements. The update order is documented there.
-- `hero.ts`, `entity.ts`, `enemies.ts`: the hero (corner rounding into gaps, `swordReach`, a
-  `shield` flag, the throw and hold-up poses, `-ns` frames without the shield), enemies with
+- `hero.ts`, `entity.ts`, `enemies.ts`: the hero (corner rounding into gaps, `swordReach`, the
+  throw and hold-up poses; no shield since 0.4.22), enemies with
   knockback, stuns (`stunFor` lets a boss shorten them), invulnerability and drops (bat, knight,
-  spitter), shots, pickups (`heart`, `key`, `heart-container`, `refill`, `shield`, ammo, items),
+  spitter), shots, pickups (`heart`, `key`, `heart-container`, `refill`, `white-sword`, ammo, items),
   chests (`c`, contents in the room's `chests`), push blocks, switches, torches. A game adds its
   own spawn kinds (the keeper) through `spawners`.
 - `items.ts`: `TdItem` (label, icon, optional ammo, `ready`, `use`), the `Inventory` (owned items,
@@ -453,7 +460,8 @@ Reusable for later top-down mini games; it knows no particular game.
   and rotated for the sides (`withSideFrames` derives `-side` and the doorway halves `-l`/`-r`
   when the sheet is registered); the Zelda-style HUD (the level over the map, keys and ammo,
   lettered item boxes, -LIFE- in red over the hearts).
-- `beam.ts`: the sword beam (`swordBeam`, a world option, default off) and its burst.
+- `beam.ts`: the sword beam (`swordBeam`, a world option, default off; a `white-sword` pickup
+  turns it on) and its burst.
 - `bot.ts`: a breadth-first-search player driven by a per-room plan (a list of steps, or a
   function of the world for rooms passed twice): fights (stunning with a boomerang it owns),
   pushes, opens chests, bombs walls. `CautiousBot` wraps it as a cautious first-time player for
@@ -851,9 +859,11 @@ fresh GameState, three lives and a **150-second clock** (held by the Infinite ti
 - **The cutscene** (`cutscene.ts`, music `ng-cutscene`): letterboxed (40 px bars), a big moon over
   tall grass; the two ninja run in, leap, clash in mid-air in front of the moon (sfx `clang`, the spark
   `cut-clash`; a 3-frame white flash only without reduce flashing) and land back to back; the
-  lines come up under the picture. JUMP (OK) or SLASH skips it; the skipping press never makes
-  Ryu jump. The SKIP prompt (with the JUMP key) sits right-aligned in the top bar. Touch: SKIP
-  and MENU. Then READY.
+  lines come up under the picture a page at a time (`CUT_BEATS`, `minigames/captions.ts`): the
+  picture plays on to the page's rest frame and waits there; OK (JUMP) turns the page, on the
+  last one ends the cutscene (text never moves on by itself, 0.4.22). SKIP (SLASH) ends it at
+  any time; neither press makes Ryu jump. SKIP (with its key) sits right-aligned in the top bar,
+  OK at the bottom right once the page waits. Touch: OK, SKIP and MENU. Then READY.
 - **The stage** (128 columns, rows 0-1 under the HUD; cling walls are `%`, the dressed stones): the
   street (lanterns, a knife thrower), **building A** (columns 20-27, 7 tiles: too tall to jump;
   climb its face), its roof, the ground (a dog, a hawk, a knife thrower), **the shaft** (a 5-tall
@@ -945,7 +955,7 @@ sound draws a box, falls back to the overworld/castle tiles or a stock sound; no
 
 - **The stage card** (`card.ts`, sting `contra-card`): the island map with the route drawn dot by
   dot, 1P / REST 2, STAGE 1 / JUNGLE and a typed briefing. JUMP skips the drawing (SKIP), then
-  starts (OK); it starts by itself after 20 s. **The Konami code** on the card (UP UP DOWN DOWN
+  starts (OK); it never starts by itself (0.4.22: text waits for a key). **The Konami code** on the card (UP UP DOWN DOWN
   LEFT RIGHT LEFT RIGHT, FIRE, JUMP: the title's `CheatCode` sequence, its own instance) gives 30
   lives (REST 29, sfx `konami`, announced); its last JUMP does not start the stage, and a START
   within half a second after it (the NES code's last press) opens no menu. Keys, pad and
@@ -1031,8 +1041,10 @@ round (Blaster Master's), the REST shown; one GAME OVER fails the round.
 - **The opening** (`cutscene.ts`, music `bm-cutscene`): letterboxed, a night yard: Fred, Jason's
   pet frog, hops in, touches the glowing chest, swells up (`fred-big`) and leaps down the hole;
   Jason runs after him and jumps in. Lines under the picture, ending on the radiation carrying
-  Bowser's spell. JUMP or SHOOT skips (SKIP with the JUMP key, top right); the glow pulses,
-  steady with reduce flashing.
+  Bowser's spell. The lines come a page at a time, each waiting for OK (JUMP) while the picture
+  rests on its beat (`CUT_BEATS`, `minigames/captions.ts`; 0.4.22); SHOOT skips the rest (SKIP
+  with its key, top right; OK bottom right once the page waits); each page is read out. The glow
+  keeps pulsing while a page waits, steady with reduce flashing.
 - **The tank** (S1's real `SOPHIA` def) plays the two side-view parts, each in a World of its own
   with a fresh GameState (the campaign is never touched). Its kit is chosen so the lessons hold:
   **Hyper** (the Mushroom: the hover, the stronger cannon, one hit to spare before Normal) with 8
@@ -1107,7 +1119,7 @@ round (Blaster Master's), the REST shown; one GAME OVER fails the round.
   `fail`; the menu (`UnderworldMenuScene`, the shared MiniGameMenuScene with the dev assists: No
   damage keeps the tank's power, POW and the GUN level; Infinite lives) gives Give up = `quit`.
   `done` is called once.
-- **Touch**: SKIP and MENU in the opening; the tank's own buttons (S1: SHOOT, HOMING, EXIT) and
+- **Touch**: OK, SKIP and MENU in the opening; the tank's own buttons (S1: SHOOT, HOMING, EXIT) and
   MENU in its parts; SHOOT, GRENADE and MENU in the dungeon; nothing once the round is decided.
 
 Difficulty (`human-sim.test.ts`): Jason's dungeon is played by `HumanJason` over `JasonBot` (it

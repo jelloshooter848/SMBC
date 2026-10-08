@@ -20,7 +20,8 @@ import type { MiniGameResult } from '../types';
 import { drawBanner } from '../megaman/scene';
 import { drawNinja, hasNinjaFrame, NG_SOUNDS, STAGE_THEME } from './art';
 import { Creature, NgShot } from './creatures';
-import { CLASH_AT, CUT_SAY, CUTSCENE_FRAMES, drawCutscene } from './cutscene';
+import { CLASH_AT, CUT_BEATS, drawCutscene } from './cutscene';
+import { CAPTION_OK, CAPTION_SKIP, CaptionPager, drawCaptionKeys } from '../captions';
 import { BAR_SEGMENTS, drawNgHud, HUD_H } from './hud';
 import { Afterimage, BossLife, INTRO_FRAMES, MASKED_HP, MaskedNinja } from './masked';
 import type { DuelLayout as Layout } from './stage';
@@ -139,6 +140,9 @@ export class DuelScene implements Scene {
   private readonly seed: number | undefined;
   /** The cutscene's skip prompt: "SKIP" with the JUMP key, as the touch button says. */
   private skipText = 'SKIP';
+  private okText = 'OK';
+  /** The opening's captions, a page at a time: OK turns them, SKIP ends the cutscene. */
+  readonly captions = new CaptionPager(CUT_BEATS);
 
   constructor(
     private readonly game: Game,
@@ -201,10 +205,11 @@ export class DuelScene implements Scene {
 
   enter(): void {
     this.game.ctx.audio.stopMusic();
-    this.skipText = this.hint('SKIP', 'jump');
+    this.skipText = this.hint('SKIP', CAPTION_SKIP);
+    this.okText = this.hint('OK', CAPTION_OK);
     if (this.phase === 'cutscene') {
       this.playMusic(NG_SOUNDS.cutscene);
-      this.say(`Shadow Duel. ${CUT_SAY} ${this.hint('JUMP', 'jump')} skips.`);
+      this.say(`Shadow Duel. ${this.captions.said(this.game)}`);
     } else this.sayReady();
   }
 
@@ -259,7 +264,7 @@ export class DuelScene implements Scene {
 
   /**
    * Ryu's buttons as in a level while he plays (SLASH hides while he clings, where it does
-   * nothing); SKIP and MENU in the cutscene; only MENU while the stage takes over.
+   * nothing); OK, SKIP and MENU in the cutscene; only MENU while the stage takes over.
    */
   touchLabels(): TouchLabels {
     if (this.phase === 'stage' || this.phase === 'fight') {
@@ -268,7 +273,7 @@ export class DuelScene implements Scene {
       if (p?.clinging) out.attack = null;
       return out;
     }
-    if (this.phase === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP', start: 'MENU' };
+    if (this.phase === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'SKIP', start: 'MENU' };
     if (this.phase === 'ready' || this.phase === 'gate' || this.phase === 'intro')
       return { ...NO_TOUCH_BUTTONS, start: 'MENU' };
     return { ...NO_TOUCH_BUTTONS };
@@ -295,16 +300,21 @@ export class DuelScene implements Scene {
     this.t++;
     this.phaseT++;
     switch (this.phase) {
-      case 'cutscene':
-        if (this.phaseT === CLASH_AT) this.game.ctx.audio.sfx(NG_SOUNDS.clang);
-        if (input.pressed('jump') || input.pressed('attack')) this.skipped = true;
-        if (this.skipped || this.phaseT >= CUTSCENE_FRAMES) {
+      case 'cutscene': {
+        if (input.pressed(CAPTION_SKIP)) this.skipped = true;
+        const c = this.captions;
+        const pic = c.pic;
+        const step = this.skipped ? 'done' : c.update(input.pressed(CAPTION_OK));
+        if (pic === CLASH_AT - 1 && c.pic === CLASH_AT) this.game.ctx.audio.sfx(NG_SOUNDS.clang);
+        if (step === 'next') this.say(c.said(this.game));
+        if (step === 'done') {
           input.consumeJumpBuffer();
           this.stopMusic();
           this.setPhase('ready');
           this.sayReady();
         }
         return;
+      }
       case 'ready':
         input.consumeJumpBuffer();
         if (this.phaseT >= READY_FRAMES) {
@@ -593,9 +603,9 @@ export class DuelScene implements Scene {
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
     if (this.phase === 'cutscene') {
-      drawCutscene(r, assets, this.phaseT, this.game.ctx.reduceFlashing);
-      const skip = this.skipText;
-      r.text(font, skip, SCREEN_W - 8 - skip.length * 8, 16);
+      const c = this.captions;
+      drawCutscene(r, assets, c.pic, this.game.ctx.reduceFlashing, c.lines);
+      drawCaptionKeys(r, font, this.skipText, c.waiting ? this.okText : null);
       return;
     }
     this.world.render(r);

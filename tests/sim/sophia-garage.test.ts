@@ -658,6 +658,8 @@ describe("Sophia III's story lines play now that she hides in 8-4", () => {
     expect(h.top()).toBeInstanceOf(CreditsScene);
     h.idle(60);
     h.tap('start');
+    h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
+    h.tap('jump'); // the closing lines wait for OK
     h.until(() => h.top() instanceof WorldMapScene, 3000);
     const map = h.top() as WorldMapScene;
     const read: string[][] = [];

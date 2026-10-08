@@ -22,8 +22,9 @@ import type { World } from '@game/world/world';
 // The castle clear: the bridge falls, the player walks to Toad (or the princess) and stops at
 // the exit marker, Toad's thanks appear over the level, then "BUT OUR PRINCESS IS IN ANOTHER
 // CASTLE!" in every castle but the last (the original's ScreenManager.displayThankYouText and
-// GameTextMessages), and the next level starts; the last castle says "YOUR QUEST IS OVER."
-// (GameTextMessages.QUEST_IS_OVER) and goes to the ending 2.5 s later.
+// GameTextMessages), and on OK the next level starts; the last castle says "YOUR QUEST IS OVER."
+// (GameTextMessages.QUEST_IS_OVER) and goes to the ending on OK (text waits for a key, owner
+// note 4; the sims press it).
 
 const levels = join(import.meta.dirname, '../../src/content/levels');
 const load = (path: string, id: string): LevelData =>
@@ -70,6 +71,8 @@ function clearCastle(level: LevelData, axe: number, character: CharacterDef = MA
       placed = true;
       place(scene.world, axe, 9);
     }
+    // OK while the castle's text waits (it never moves on by itself, owner note 4).
+    input.setHeld(scene.world.castleWaiting && frames % 2 === 0 ? ['jump'] : []);
     input.next();
     scene.update(input);
     const last = texts[texts.length - 1];
@@ -94,8 +97,8 @@ describe('castle clear: Toad and the news', () => {
     expect(r.showEnding).not.toHaveBeenCalled();
     // No separate message screen any more: the news is part of the level.
     expect(r.push).not.toHaveBeenCalled();
-    // Still in the level while the news is up.
-    expect(r.frames).toBeGreaterThan(500);
+    // Still in the level while the news is up (until OK, pressed as soon as it waits here).
+    expect(r.frames).toBeGreaterThan(400);
   });
 
   it("Lost Levels 1-4: the same news, with the hero's name", () => {
@@ -212,5 +215,26 @@ describe('castle clear walk', () => {
     });
     expect(r.events.at(-1)).toEqual({ type: 'exit', next: 'end' });
     expect(r.world.castleText).toEqual(['THANK YOU MARIO!', ...QUEST_OVER]);
+  });
+
+  it('the news waits for OK: no exit without a key', () => {
+    const r = runSim({
+      level: castle(['exit 39 next=2-1']),
+      character: MARIO,
+      script: { steps: [{ frame: 0, hold: [] }] },
+      maxFrames: 10_000,
+      assist: { invulnerable: true },
+      castleOk: false,
+      controller: (w, f) => {
+        if (f === 0) place(w, 28, 11);
+        return [];
+      },
+    });
+    expect(r.outcome).toBe('timeout');
+    expect(r.world.castleWaiting).toBe(true);
+    expect(r.world.castleText).toEqual(['THANK YOU MARIO!', ...NEWS]);
+    expect(r.events.filter((e) => e.type === 'say').map((e) => (e as { text: string }).text)).toEqual([
+      'THANK YOU MARIO! BUT OUR PRINCESS IS IN ANOTHER CASTLE! OK to continue.',
+    ]);
   });
 });
