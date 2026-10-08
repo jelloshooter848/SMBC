@@ -493,51 +493,82 @@ const upThrust = compose(
   [['.6.', ...Array.from({ length: 6 }, () => '.7.'), '999'], 13, 0],
 );
 
+// The guard's torso: the shield arm brought round to the front (the shield itself is `shieldFront`).
+const torsoGuard = [
+  '....02111110....',
+  '...0021111110...',
+  '..03321111110...',
+  '..03321111110...',
+  '..03321111110...',
+  '..03321111110...',
+  '.000055555550...',
+  '....02111110....',
+  '....02111110....',
+  '....02111110....',
+  '....0000000.....',
+];
+
+// The shield held out in front, chest to knees. 6 wide, 13 rows.
+const shieldFront = [
+  '.0000.',
+  '099990',
+  '09aa90',
+  '09aa90',
+  '09aa90',
+  '09aa90',
+  '09aa90',
+  '09aa90',
+  '09aa90',
+  '09aa90',
+  '099990',
+  '.0990.',
+  '..00..',
+];
+
 // Guarding: the shield comes off the back and is held out in front, chest to knees, while the sword
 // hangs point-down in the back hand.
 const block = compose(
   W,
   H,
   [head, 0, 4],
-  [
-    [
-      '....02111110....',
-      '...0021111110...',
-      '..03321111110...',
-      '..03321111110...',
-      '..03321111110...',
-      '..03321111110...',
-      '.000055555550...',
-      '....02111110....',
-      '....02111110....',
-      '....02111110....',
-      '....0000000.....',
-    ],
-    0,
-    14,
-  ],
+  [torsoGuard, 0, 14],
   [legsStand, 0, 25],
   [swordDown, 1, 18],
-  [
-    [
-      '.0000.',
-      '099990',
-      '09aa90',
-      '09aa90',
-      '09aa90',
-      '09aa90',
-      '09aa90',
-      '09aa90',
-      '09aa90',
-      '09aa90',
-      '099990',
-      '.0990.',
-      '..00..',
-    ],
-    10,
-    15,
-  ],
+  [shieldFront, 10, 15],
 );
+
+// Swimming (0.4.25): the guard pose with the legs kicking. A wide scissor kick, then the legs
+// drawn together with the boots pointed back; the body bobs a pixel between the two.
+const legsKick0 = [
+  '.....0330330....',
+  '....03300330....',
+  '...0330..0330...',
+  '..0550....0550..',
+  '.0550......0550.',
+  '0550........000.',
+  '000.............',
+];
+const legsKick1 = [
+  '.....0330330....',
+  '.....0330330....',
+  '....0550550.....',
+  '....0550550.....',
+  '...05550550.....',
+  '...0555.0550....',
+  '...000..000.....',
+];
+const swimming = (legs: readonly string[], dy: number): string[] =>
+  compose(
+    W,
+    H,
+    [head, 0, 4 + dy],
+    [torsoGuard, 0, 14 + dy],
+    [legs, 0, 25 + dy],
+    [swordDown, 1, 18 + dy],
+    [shieldFront, 10, 15 + dy],
+  );
+const swim0 = swimming(legsKick0, 0);
+const swim1 = swimming(legsKick1, -1);
 
 // Throwing: the sword arm is empty and stretched out level at the shoulder, palm open, with the sword
 // hanging unheld at the hip.
@@ -587,5 +618,7 @@ export const linkDef: SpriteDef = {
     die,
     'climb-0': climb0,
     'climb-1': climb1,
+    'swim-0': swim0,
+    'swim-1': swim1,
   },
 };

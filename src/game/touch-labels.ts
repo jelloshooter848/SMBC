@@ -73,6 +73,7 @@ export function levelTouchLabels(p: Player | undefined, world: World): TouchLabe
   const canJump = def.behaviour.canJump?.(p) ?? true;
   // On Castlevania stairs JUMP does nothing (Player.stairWalk), whoever the hero.
   if (!canJump || p.stairs) out.jump = null;
-  else if (p.inWater) out.jump = 'SWIM';
+  // Under water JUMP strokes, except for a seabed walker (Mega Man, Samus) who still jumps.
+  else if (p.inWater && p.profile.swim?.mode !== 'seabed') out.jump = 'SWIM';
   return out;
 }

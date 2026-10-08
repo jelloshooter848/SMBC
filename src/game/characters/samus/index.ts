@@ -30,6 +30,9 @@ export const SAMUS_PROFILE: MovementProfile = {
   variableJump: 'cut',
   instantAccel: false,
   coyoteFrames: 0,
+  // Under water (0.4.25, TUNED by feel after Metroid's liquids): no stroke; she walks the bottom
+  // and jumps off it about 9 tiles high, floating down slowly.
+  swim: { mode: 'seabed', stroke: 0x03c00, gravity: 0x000c8, sinkMax: 0x01555 },
 };
 
 export const START_ENERGY = 30;

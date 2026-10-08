@@ -8,6 +8,15 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Water for every hero, each the way their own game does it:
+  - Mega Man and Samus walk the seabed with floaty jumps about 9 tiles high and no stroke, as in Bubble Man's stage
+    and Metroid's liquids. Over bottomless water they can push off again.
+  - Bill, Link, Simon and Ryu swim with strokes and new swim art of their own. Bill fires forward and up while
+    swimming, Link's shield still blocks, Simon can steer, and Ryu doesn't cling to walls under water.
+  - On touch, the jump button says SWIM only for the heroes who stroke.
+
 ## [0.4.24] - 2026-10-08
 
 ### Changed

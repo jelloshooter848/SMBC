@@ -26,6 +26,8 @@ const linkFrames: Record<string, Size> = {
   die: [16, 32],
   'climb-0': [16, 32],
   'climb-1': [16, 32],
+  'swim-0': [16, 32],
+  'swim-1': [16, 32],
 };
 
 const megamanFrames: Record<string, Size> = {

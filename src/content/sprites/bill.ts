@@ -362,6 +362,46 @@ const spin2 = rotateCW(spin1);
 const spin3 = rotateCW(spin2);
 const spinFrame = (rows: readonly string[]): string[] => compose(W, H, [rows, 0, 16]);
 
+// Swimming (0.4.25): the rifle held level over the water line with a kick below, Contra style.
+// Legs scissored, then drawn together with the body a pixel higher; firing levels the rifle with a
+// flash, or raises it straight up or at 45 degrees.
+const legsSwimKick = [
+  '.....0333330....',
+  '....03300330....',
+  '...0330..0330...',
+  '..0330....0330..',
+  '.0330......0330.',
+  '0220........0220',
+  '000..........000',
+  '................',
+  '................',
+  '................',
+];
+const legsSwimTuck = [
+  '.....0333330....',
+  '.....0333330....',
+  '.....0330330....',
+  '....0330.0330...',
+  '....0330.0330...',
+  '...0220...0220..',
+  '...000.....000..',
+  '................',
+  '................',
+  '................',
+];
+const swim0 = compose(W, H, [head, 0, 3], [torsoLevel, 0, 12], [legsSwimKick, 0, 22]);
+const swim1 = compose(W, H, [head, 0, 2], [torsoLevel, 0, 11], [legsSwimTuck, 0, 21]);
+const swimShoot = paste(swim0, flash, 15, 15);
+const swimAimUp = compose(W, H, [head, -1, 3], [torsoArms, -1, 12], [legsSwimKick, -1, 22], [rifleUp, 12, 0]);
+const swimAimDiagUp = compose(
+  W,
+  H,
+  [head, 0, 3],
+  [torsoArms, 0, 12],
+  [legsSwimKick, 0, 22],
+  [rifleDiagUp, 0, 8],
+);
+
 export const billDef: SpriteDef = {
   palette: 'bill',
   frames: {
@@ -380,5 +420,10 @@ export const billDef: SpriteDef = {
     'spin-3': spinFrame(spin3),
     hurt,
     die,
+    'swim-0': swim0,
+    'swim-1': swim1,
+    'swim-shoot': swimShoot,
+    'swim-aim-up': swimAimUp,
+    'swim-aim-diag-up': swimAimDiagUp,
   },
 };

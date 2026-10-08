@@ -6,6 +6,7 @@ import { runSim } from '@game/sim/headless';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
+import { SIMON } from '@game/characters/simon';
 import { Cheep } from '@game/entities/enemies/cheep';
 import { Blooper } from '@game/entities/enemies/blooper';
 import { Corpse } from '@game/entities/effects/effects';
@@ -114,7 +115,8 @@ describe('Swimming (MarioBase water stats)', () => {
     expect(rise).toBeLessThanOrEqual(30);
   });
 
-  it.each([MARIO, LINK])(
+  // 0.4.25: each hero's sink is tuned apart (characters/<hero> `swim`); Simon keeps the original's.
+  it.each([MARIO, SIMON])(
     '$id sinks at up to 250 Flash px/s (2.08 px/f), faster than he swims across',
     (def) => {
       let maxVy = 0;

@@ -31,6 +31,8 @@ export const LINK_PROFILE: MovementProfile = {
   variableJump: false,
   instantAccel: false,
   coyoteFrames: 0,
+  // Under water (0.4.25, TUNED by feel): a steady stroke, a little lighter than the default.
+  swim: { stroke: 0x01c00, gravity: 0x000e0, sinkMax: 0x01aab },
 };
 
 export const MAX_HEARTS = 8;
@@ -109,10 +111,13 @@ function bombs(p: Player): number {
   return p.scratch.bombs ?? 0;
 }
 
-/** Shield up: standing or walking on the ground, not swinging, crouching or hurt. */
+/**
+ * Shield up: standing or walking on the ground, or swimming (0.4.25: under water it stays in
+ * front of him), not swinging, crouching or hurt.
+ */
 function shieldUp(p: Player): boolean {
   return (
-    p.body.onGround &&
+    (p.body.onGround || p.inWater) &&
     p.attackTimer === 0 &&
     !p.crouching &&
     p.stun === 0 &&
@@ -149,6 +154,9 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
         break;
       case 'climb':
         name = `climb-${(frame >> 3) & 1}`;
+        break;
+      case 'swim':
+        name = `swim-${(frame >> 3) & 1}`;
         break;
       default:
         name = shieldUp(p) ? 'block' : 'idle';
