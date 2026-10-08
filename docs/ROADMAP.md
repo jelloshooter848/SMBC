@@ -145,10 +145,13 @@ hook built for 7-3 (`campaignTheme:`, `campaignMusic:`, `[campaign-decor]` in th
   "The Top Secret Area").
 - A theme drives some gameplay: a water theme turns on swimming, and a hero's own music only plays on the
   `overworld` theme. No restyle may use a water theme.
-- Decided: the level keeps its look after the hero is freed (a souvenir of where they were found). On the first
-  visit Toad remarks on it ("WHY DOES SEA SIDE LOOK SO DIFFERENT HERE?"), see docs/STORY.md 2.3b.
+- Decided: the level keeps its look after the hero is freed (a souvenir of where they were found). The plan then
+  was for Toad to remark on it on the first visit ("WHY DOES SEA SIDE LOOK SO DIFFERENT HERE?", from when World 2's
+  page was SEA SIDE); the 0.4.23 story gave each world a local's welcome instead (docs/STORY.md 2.3b), and since
+  0.4.24 World 2's page is HYRULE itself.
 - Decided: the look's own music plays there for every hero. The coin heavens above these levels share the look;
-  bonus rooms and water areas keep their own.
+  bonus rooms and water areas keep their own (except in World 2, themed whole as Hyrule in 0.4.24: docs/WORLD_MAP.md
+  "Campaign looks").
 
 ### A coherent story (0.4.12 for Chapter 1; the Lost Kingdom parts in Chapter 2)
 

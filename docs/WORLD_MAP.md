@@ -743,11 +743,22 @@ in another theme, music and decor (7-3 as a Contra jungle stage; since 0.4.12 th
 Brinstar `brinstar`, 5-4 as a Castlevania hall `castlevania`, 6-2 as a Ninja Gaiden city street
 `ninja-city`, each with its own music; 1-1 stays as it is). The coin heavens above them (2-1-sky,
 2-1-sky2, 3-1-sky, 6-2-sky) share the look; bonus rooms, water areas and the other areas keep
-their own. A look stays after the hero is freed, and its music plays for every hero (a hero's own
-overworld tune, `levelMusic` in `scenes/level.ts`, plays only in a plain `overworld` area). No
-look is a water theme, and every rule that keys off the theme (`isWaterTheme`, `isCastleTheme`,
-`hasSolidFloors`, `enemyPalette`) answers as for the classic level
-(`src/content/levels/campaign-looks.test.ts`). In the map:
+their own. Since 0.4.24 World 2 is Hyrule whole (owner notes 5, 18 and 21: each world, its map
+page and every level in it, is themed after the hero freed there): its map page is HYRULE
+(`MapTheme` `hyrule`), 2-2-intro, 2-2-exit and 2-3 wear 2-1's Zelda II field (`zelda2`), 2-2 is
+a lake over a sunken palace (`zelda2-water`), 2-4 a Zelda II palace (`zelda2-palace`, a hall of
+curtains painted behind it, `world/theme-backdrop.ts`), 2-1's bonus room and the Moblin's cave a
+Hyrule cave (`zelda2-cave`), each with its own music (art `src/content/sprites/zelda2-hyrule.ts`,
+music `src/content/music/zelda2.ts`), and 2-1-sky2 is Link's sky palace (its own `zelda2-sky`
+sheet, `src/content/sprites/zelda2-sky.ts`, placed as `zelda2-sky:<piece>` decor behind the
+tiles); World 2's Top Secret Area keeps its own look. A look stays after the hero is freed, and
+its music plays for every hero (a hero's own overworld tune, `levelMusic` in `scenes/level.ts`,
+plays only in a plain `overworld` area). No look is a water theme, and every rule that keys off
+the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake swims by its
+map's `swim: true`, "Swimming in any theme", which changes nothing in its classic water theme),
+the castle family (`isCastleTheme`: `zelda2-palace` is in it, so 2-4's Bowser, axe, bridge and
+unmask are SMB's), `hasSolidFloors` (`zelda2-cave` as the underground) and `enemyPalette`
+(`src/content/levels/campaign-looks.test.ts`, `hyrule-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle
