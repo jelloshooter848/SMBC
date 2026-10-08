@@ -29,6 +29,8 @@ import {
   pathExit,
   secretExit,
   secretExitTaken,
+  CHAPTER_GATE,
+  chapterGated,
 } from './rules';
 import { saveProgress, type Progress } from '@engine/save/progress';
 
@@ -901,5 +903,33 @@ describe("the Lost Levels as the story's extension (0.4.7)", () => {
     expect(q.pages).toEqual(['smb-1', 'll-8', 'll-10', 'll-9']);
     // Nothing is taken away: A stays open without 9-4.
     expect(isPageOpen(q, 'll-10')).toBe(true);
+  });
+});
+
+describe('the Chapter 2 gate (chapterGated)', () => {
+  it('is on for this release (one constant; remove it for Chapter 2)', () => {
+    expect(CHAPTER_GATE).toBe(true);
+  });
+
+  it('blocks every Lost Kingdom level while closed: Lost 1-1, a later Lost level, World 9 and A-D', () => {
+    for (const id of ['ll-1-1', 'll-5-2', 'll-8-4', 'll-9-1', 'll-9-1-start', 'll-10-1', 'll-13-4'])
+      expect(chapterGated(id, false), id).toBe(true);
+  });
+
+  it('leaves the Mushroom Kingdom alone: SMB levels, 1-0, sub-areas and Larry\'s airship (Chapter 1)', () => {
+    for (const id of ['1-0', '1-1', '1-2-exit', '4-2', '4-2-airship', '4-2-larry', '8-4', '2-top-secret'])
+      expect(chapterGated(id, false), id).toBe(false);
+  });
+
+  it("gates by the map too: a level on a Lost page (a future Koopaling airship's node) is Chapter 2", () => {
+    const lost: WorldMapPage = { ...straightPage(1), id: 'll-x', group: 'll' };
+    lost.nodes.push({ id: 'ship', kind: 'level', level: 'morton-ship', x: 1, y: 1 });
+    expect(chapterGated('morton-ship', false, [lost])).toBe(true);
+    expect(chapterGated('morton-ship', false, [straightPage(1)])).toBe(false);
+  });
+
+  it("opens with the dev lift ('open') and is off entirely without the constant", () => {
+    expect(chapterGated('ll-1-1', true)).toBe(false);
+    expect(chapterGated('ll-1-1', false, undefined, false)).toBe(false);
   });
 });
