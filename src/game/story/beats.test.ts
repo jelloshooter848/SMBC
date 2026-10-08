@@ -115,7 +115,17 @@ describe('upgradeStory (files from before 0.4.23)', () => {
 
   it("an older file's list keeps its own beats; only the new ones whose trigger is past are added", () => {
     const p = progress({ cleared: ['1-0', '1-4'], pages: ['smb-1', 'smb-2'] });
-    expect(upgradeStory([], p, ['mario'])).toEqual(['opening', 'spell', STORY_REV]);
+    // S3's beats past on it too (seedSeenS3, run from seedNew): World 1's gate and seal, 1-4's
+    // remark, World 2's welcome.
+    expect(upgradeStory([], p, ['mario'])).toEqual([
+      'opening',
+      'spell',
+      'gate:smb-1',
+      'sealed:smb-1',
+      'remark:1-4',
+      'welcome:smb-2',
+      STORY_REV,
+    ]);
   });
 
   it("an older file's list: the new beats whose trigger is past are added, once", () => {

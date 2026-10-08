@@ -205,9 +205,12 @@ describe("Toad's map scenes", () => {
   });
 
   it('only while the story plays: a round played for fun shows no card', () => {
+    // Two scenes due (World 1's, then the seal's reminder: Luigi is still captive), so one is
+    // still due when the file is opened again.
     const h = open({
       cleared: W1,
-      pages: ['smb-1', 'smb-2'],
+      pages: ['smb-1'],
+      freed: ['mario'],
       position: { page: 'smb-1', node: '1-4' },
       story: [],
     });
