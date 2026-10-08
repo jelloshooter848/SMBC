@@ -3,34 +3,26 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
-import { beat, FIRST_HERO } from '../story/beats';
+import { beat } from '../story/beats';
 import { pageSaid } from '../story/cards';
 import {
-  ALL_FREED_AFTER,
-  ALL_FREED_BEFORE,
   ARENA_PAGE,
   CRASH_PAGES,
-  ENTRY_NEEDS,
   FAKES_PAGES,
   HUB_PAGE,
-  JOINED_CRACK,
-  JOINED_GENERIC,
-  JOINED_PAGES,
-  MISSED_HINT,
-  MISSED_PAGES,
   riftPages,
-  WORLD_ENTRY,
+  WORLD1_PAGES,
   type Page,
 } from '../story/script';
-import { CRYSTAL_BALL } from './captives';
 import type { MapProgress } from './types';
 
 /*
  * Toad as the world map's guide (docs/STORY.md 2.3, 2.3a item 4, 2.4-2.12, 2.14; campaign only):
  * which of his story scenes are due when a map page shows, and the box at the top of the map that
  * plays them, page by page (OK the next page, BACK the rest of that scene), with his map sprite
- * walking in from the left for the major scenes only (the World 1 entry after 1-0, the fake
- * Bowsers, the airship crash, the 8-4 rift). Every scene plays once per file: its beat ids
+ * walking in from the left for the major scenes only (his World 1 scene after 1-0, the fake
+ * Bowsers, the airship crash, the 8-4 rift). Since 0.4.23 he has no world entries, hero-joined,
+ * all-freed or missed-hero cards any more (docs/STORY.md 2.14). Every scene plays once per file: its beat ids
  * (story/beats.ts) are marked seen as it starts. The map scene (scenes/world-map.ts) runs this as
  * its `story` mode, before the page's reveal draws in.
  */
@@ -51,12 +43,8 @@ export interface GuideInput {
   progress: MapProgress;
   /** The file's freed heroes (the first hero, Mario, included). */
   freed: readonly string[];
-  /** Every registered character id (World 8's entry needs Sophia's). */
+  /** Every registered character id. */
   heroes: readonly string[];
-  /** Every hidden hero's id that the game has (its captive in a level, its character registered). */
-  hidden: readonly string[];
-  /** Hero ids whose silhouette shows on this page because their level was cleared. */
-  shadows: readonly string[];
   /** Player 1's full name, in font characters ('MEGA MAN'). */
   hero: string;
   /** The airship crash cutscene has just played on this page. */
@@ -64,9 +52,9 @@ export interface GuideInput {
 }
 
 /**
- * The scenes due on the page shown, in play order: the major scene (the crash, the rift, the
- * fake Bowsers), then heroes joined, every hero freed, the world entry, missed heroes, the
- * extras. The Lost Kingdom's pages have none (its story is for a later release). Pure.
+ * The scenes due on the page shown, in play order: the major scenes (the crash, the rift, Toad's
+ * World 1 scene, the fake Bowsers), then the extras. The Lost Kingdom's pages have none (its
+ * story is for a later release). Pure.
  */
 export function dueScenes(g: GuideInput): ToadScene[] {
   const out: ToadScene[] = [];
@@ -81,62 +69,12 @@ export function dueScenes(g: GuideInput): ToadScene[] {
   // The major scenes.
   if (g.crash && !g.seen(beat.crash)) add([beat.crash], [...CRASH_PAGES], true);
   if (page === 'smb-8' && p.gameCleared === true) add([beat.rift], riftPages(g.hero), true);
+  // Toad's World 1 scene (2.4): back on the map after 1-0 (cleared or skipped), once per file.
+  if (page === 'smb-1' && p.cleared.includes('1-0')) add([beat.enter('smb-1')], [...WORLD1_PAGES], true);
   if (page === 'smb-1' && p.cleared.includes('1-4')) add([beat.fakes], [...FAKES_PAGES], true);
-  // A hero joined: the generic card first (once per file), then each hero's own.
-  const cracked = p.gameCleared === true;
-  const generic = (): Page[] => (cracked ? [JOINED_GENERIC] : [JOINED_CRACK, JOINED_GENERIC]);
-  let genericNow = false;
-  for (const id of g.freed) {
-    if (id === FIRST_HERO || g.seen(beat.joined(id))) continue;
-    if (!g.seen(beat.joined()) && !genericNow) {
-      add([beat.joined()], generic());
-      genericNow = true;
-    }
-    const own = JOINED_PAGES[id];
-    if (own) add([beat.joined(id)], [own]);
-    else if (genericNow)
-      add([beat.joined(id)], []); // the generic card just played stands for it
-    else add([beat.joined(id)], generic());
-  }
-  if (g.hidden.length && g.hidden.every((id) => g.freed.includes(id)))
-    add([beat.allFreed], [cracked ? ALL_FREED_AFTER : ALL_FREED_BEFORE]);
-  // The world entry, on first arrival (World 1's once 1-0 is behind; World 8's with Sophia).
-  // Pages about a hero not in the game yet (World 8's Sophia) wait for her, as a beat of their own.
-  const entry = WORLD_ENTRY[page];
-  if (entry && (page !== 'smb-1' || p.cleared.includes('1-0'))) {
-    const needs = ENTRY_NEEDS[page];
-    const heroId = needs && g.heroes.includes(needs.hero) ? beat.enterHero(page, needs.hero) : null;
-    const ids = [beat.enter(page), ...(heroId ? [heroId] : [])].filter((id) => !g.seen(id));
-    const hers = (i: number) => needs?.pages.includes(i) === true;
-    const pages = entry.filter((_, i) =>
-      hers(i) ? heroId !== null && ids.includes(heroId) : ids.includes(beat.enter(page)),
-    );
-    if (pages.length) add(ids, pages, page === 'smb-1');
-  }
-  // Missed heroes: after the crystal ball every shadow shows at once, and the crash's card stands
-  // in for theirs (only marked).
-  const ball = p.secrets.includes(CRYSTAL_BALL);
-  for (const id of g.shadows) {
-    const own = MISSED_PAGES[id];
-    add([beat.missed(id)], ball || !own ? [] : [own]);
-  }
   if (page === 'hub') add([beat.hub], [HUB_PAGE]);
   if (page === 'arena') add([beat.arena], [ARENA_PAGE]);
   return out;
-}
-
-/** The map's hint line while the hero stands by hero `id`'s shadow, or null without its own. */
-export function missedHint(id: string): string | null {
-  return MISSED_HINT[id] ?? null;
-}
-
-/** What the announcer says for hero `id`'s hint line ("Toad: I hear a mustache sigh..."), or null. */
-export function missedSaid(id: string): string | null {
-  const line = MISSED_HINT[id];
-  if (!line) return null;
-  const body = line.replace(/^TOAD:\s*/, '').toLowerCase();
-  const text = body.charAt(0).toUpperCase() + body.slice(1);
-  return `Toad: ${/[.!?]$/.test(text) ? text : `${text}.`}`;
 }
 
 /** Top of Toad's box: just under the map's header bar. */

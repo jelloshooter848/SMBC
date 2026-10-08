@@ -25,7 +25,7 @@ import type { WorldMapPage } from '@game/map/types';
 import { loadSave, newSave, saveKey } from '@game/save/save-files';
 import { MARIO_LESSONS, MARIO_TUTORIAL, TOAD_PAGES } from '@game/tutorial/mario-1-0';
 import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
-import { STORY_TEASE_PAGES, STORY_TOAD_PAGES } from '@game/story/script';
+import { STORY_TOAD_PAGES } from '@game/story/script';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
 import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
@@ -260,7 +260,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     // The campaign tells the story's greeting (docs/STORY.md 2.1); TOAD_PAGES stay for other play.
     expect(card.lines).toEqual(STORY_TOAD_PAGES[0]);
     skipGreeting(h);
-    expect(h.said.some((t) => t.startsWith(STORY_TOAD_PAGES[3]!.filter(Boolean).join(' ')))).toBe(true);
+    expect(h.said.some((t) => t.startsWith(STORY_TOAD_PAGES[0]!.filter(Boolean).join(' ')))).toBe(true);
     expect(director(h)?.lesson?.id).toBe('walk');
     expect(h.said.at(-1)).toMatch(/HOLD RIGHT TO WALK/);
     // The greeting is not repeated after a respawn.
@@ -292,8 +292,6 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(d.done).toEqual(MARIO_LESSONS.map((l) => l.id));
     expect(d.missed).toEqual([]);
     expect(teased).toBe(true);
-    // The campaign's tease: Bowser's two pages (docs/STORY.md 2.2), each read out.
-    for (const page of STORY_TEASE_PAGES) expect(h.said.some((t) => t.startsWith(page.join(' ')))).toBe(true);
     expect(h.game.state.lives).toBe(lives);
     // The flag clears 1-0: back on the map, 1-1 drawn in.
     h.until(() => h.top() instanceof WorldMapScene, 1200);

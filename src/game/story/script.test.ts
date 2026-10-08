@@ -2,32 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { fontText } from '@game/hud/text';
 import { CARD_COLS } from '@game/scenes/free-hero';
 import {
-  ALL_FREED_AFTER,
-  ALL_FREED_BEFORE,
   ARENA_PAGE,
+  BOWSER_SPELL_LAST,
+  BOWSER_SPELL_PAGES,
   CAPTIVE_HUNT,
   CASTLE_COLS,
   CASTLE_PAGES,
   CRASH_PAGES,
   FAKES_PAGES,
-  HINT_COLS,
   HUB_PAGE,
-  JOINED_CRACK,
-  JOINED_GENERIC,
-  JOINED_PAGES,
   LARRY_PAGES,
-  MISSED_HINT,
-  MISSED_PAGES,
+  LUIGI_RUNS_PAGE,
   noMoreStandIns,
+  NOTE_COLS,
+  NOTE_LINES,
+  OPENING_CAPTION,
+  OPENING_TOAD_PAGES,
   PARTNERS,
-  RESTYLE_PAGES,
+  PEACH_NOTE,
   riftPages,
   SIMON_CURSE,
   STORY_CRYSTAL_BALL_PAGES,
   STORY_NOT_OVER,
-  STORY_TEASE_PAGES,
   STORY_TOAD_PAGES,
-  WORLD_ENTRY,
+  WORLD1_PAGES,
   type Page,
 } from './script';
 
@@ -40,23 +38,18 @@ const CARD_LINES = 6;
 const CASTLE_LINES = 4;
 
 const cards: [string, Page][] = [
+  ['opening caption', OPENING_CAPTION],
+  ...OPENING_TOAD_PAGES.map((p, i): [string, Page] => [`opening toad ${i}`, p]),
   ...STORY_TOAD_PAGES.map((p, i): [string, Page] => [`toad ${i}`, p]),
-  ...STORY_TEASE_PAGES.map((p, i): [string, Page] => [`tease ${i}`, p]),
+  ...BOWSER_SPELL_PAGES.map((p, i): [string, Page] => [`bowser spell ${i}`, p]),
+  ['bowser spell last', BOWSER_SPELL_LAST],
+  ...WORLD1_PAGES.map((p, i): [string, Page] => [`world 1 ${i}`, p]),
+  ['luigi runs', LUIGI_RUNS_PAGE],
   ...FAKES_PAGES.map((p, i): [string, Page] => [`fakes ${i}`, p]),
   ['no more stand-ins', noMoreStandIns(LONGEST)],
-  ...Object.entries(RESTYLE_PAGES).map(([k, p]): [string, Page] => [`restyle ${k}`, p]),
-  ...Object.entries(WORLD_ENTRY).flatMap(([k, ps]) =>
-    ps.map((p, i): [string, Page] => [`entry ${k} ${i}`, p]),
-  ),
-  ...Object.entries(MISSED_PAGES).map(([k, p]): [string, Page] => [`missed ${k}`, p]),
   ...LARRY_PAGES.map((p, i): [string, Page] => [`larry ${i}`, p]),
   ...CRASH_PAGES.map((p, i): [string, Page] => [`crash ${i}`, p]),
   ...riftPages(LONGEST).map((p, i): [string, Page] => [`rift ${i}`, p]),
-  ['joined crack', JOINED_CRACK],
-  ['joined generic', JOINED_GENERIC],
-  ...Object.entries(JOINED_PAGES).map(([k, p]): [string, Page] => [`joined ${k}`, p]),
-  ['all freed before', ALL_FREED_BEFORE],
-  ['all freed after', ALL_FREED_AFTER],
   ['hub', HUB_PAGE],
   ['arena', ARENA_PAGE],
   ['not over', STORY_NOT_OVER],
@@ -91,9 +84,11 @@ describe('the story script', () => {
     expect(fontOnly(page)).toEqual([]);
   });
 
-  it.each(Object.entries(MISSED_HINT))('hint line for %s fits the strip', (_hero, line) => {
-    expect(line.length).toBeLessThanOrEqual(HINT_COLS);
-    expect(fontText(line)).toBe(line);
+  it("Peach's note fits its parchment (2.1)", () => {
+    expect(PEACH_NOTE.length).toBeLessThanOrEqual(NOTE_LINES);
+    expect(tooWide(PEACH_NOTE, NOTE_COLS)).toEqual([]);
+    expect(fontOnly(PEACH_NOTE)).toEqual([]);
+    expect(PEACH_NOTE[0]).toBe('DEAR TOAD,');
   });
 
   it('every partner has a name and pages', () => {
@@ -101,9 +96,5 @@ describe('the story script', () => {
       expect(s.name).not.toBe('');
       expect(s.pages.length).toBeGreaterThan(0);
     }
-  });
-
-  it('has a missed card and a hint line for the same heroes', () => {
-    expect(Object.keys(MISSED_HINT).sort()).toEqual(Object.keys(MISSED_PAGES).sort());
   });
 });

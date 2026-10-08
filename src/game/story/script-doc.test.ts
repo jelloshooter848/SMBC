@@ -6,28 +6,25 @@ import type { CharacterDef } from '@game/characters/character';
 import type { MiniGameDef } from '@game/minigames';
 import { captiveDialogue } from '@game/scenes/free-hero';
 import {
-  ALL_FREED_AFTER,
-  ALL_FREED_BEFORE,
   ARENA_PAGE,
+  BOWSER_SPELL_LAST,
+  BOWSER_SPELL_PAGES,
   CASTLE_PAGES,
   CRASH_PAGES,
   FAKES_PAGES,
   HUB_PAGE,
-  JOINED_CRACK,
-  JOINED_GENERIC,
-  JOINED_PAGES,
   LARRY_PAGES,
-  MISSED_HINT,
-  MISSED_PAGES,
+  LUIGI_RUNS_PAGE,
   noMoreStandIns,
+  OPENING_CAPTION,
+  OPENING_TOAD_PAGES,
   PARTNERS,
-  RESTYLE_PAGES,
+  PEACH_NOTE,
   riftPages,
   STORY_CRYSTAL_BALL_PAGES,
   STORY_NOT_OVER,
-  STORY_TEASE_PAGES,
   STORY_TOAD_PAGES,
-  WORLD_ENTRY,
+  WORLD1_PAGES,
   type Page,
 } from './script';
 
@@ -94,13 +91,17 @@ function scriptPages(): Map<string, Page> {
   const out = new Map<string, Page>();
   const add = (name: string, page: Page) => out.set(name, page);
   const list = (name: string, pages: readonly Page[]) => pages.forEach((p, i) => add(`${name}[${i}]`, p));
+  // S1 (0.4.23): the opening, 1-0's greeting and Bowser's spell, World 1's start.
+  add('OPENING_CAPTION', OPENING_CAPTION);
+  add('PEACH_NOTE', PEACH_NOTE);
+  list('OPENING_TOAD_PAGES', OPENING_TOAD_PAGES);
   list('STORY_TOAD_PAGES', STORY_TOAD_PAGES);
-  list('STORY_TEASE_PAGES', STORY_TEASE_PAGES);
+  list('BOWSER_SPELL_PAGES', BOWSER_SPELL_PAGES);
+  add('BOWSER_SPELL_LAST', BOWSER_SPELL_LAST);
+  list('WORLD1_PAGES', WORLD1_PAGES);
+  add('LUIGI_RUNS_PAGE', LUIGI_RUNS_PAGE);
   list('FAKES_PAGES', FAKES_PAGES);
   add('noMoreStandIns', noMoreStandIns(HERO));
-  for (const [id, page] of Object.entries(RESTYLE_PAGES)) add(`RESTYLE_PAGES.${id}`, page);
-  for (const [id, pages] of Object.entries(WORLD_ENTRY)) list(`WORLD_ENTRY.${id}`, pages);
-  for (const [id, page] of Object.entries(MISSED_PAGES)) add(`MISSED_PAGES.${id}`, page);
   list('LARRY_PAGES', LARRY_PAGES);
   list('STORY_CRYSTAL_BALL_PAGES', STORY_CRYSTAL_BALL_PAGES);
   list('CRASH_PAGES', CRASH_PAGES);
@@ -118,11 +119,6 @@ function scriptPages(): Map<string, Page> {
   add('SIMON_CURSE', (captiveCards('simon')[1] as Page).slice(2));
   // Sophia III's challenge (2.11), her own card in full.
   add('DIALOGUE.sophia', captiveCards('sophia')[1] as Page);
-  add('JOINED_CRACK', JOINED_CRACK);
-  add('JOINED_GENERIC', JOINED_GENERIC);
-  for (const [id, page] of Object.entries(JOINED_PAGES)) add(`JOINED_PAGES.${id}`, page);
-  add('ALL_FREED_BEFORE', ALL_FREED_BEFORE);
-  add('ALL_FREED_AFTER', ALL_FREED_AFTER);
   add('HUB_PAGE', HUB_PAGE);
   add('ARENA_PAGE', ARENA_PAGE);
   for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}`, p.pages);
@@ -144,8 +140,8 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
   });
 
   it('the old text the doc quotes is gone from script.ts; every block is built (Sophia III since 0.4.18)', () => {
+    // 0.4.23's Chapter 1 quotes no old text (Old: blocks); any it quotes must be gone.
     const old = blocks.filter((b) => b.old);
-    expect(old.length).toBeGreaterThan(0);
     for (const b of old) expect(byText.has(key(b.lines)), key(b.lines)).toBe(false);
     expect(NOT_BUILT).toEqual([]);
     // Jason's three pages and Sophia III's challenge are among the pages the doc and script share.
@@ -161,6 +157,9 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
   });
 
   it("every hint line of the doc is one of script.ts's, and back", () => {
-    expect(docHints().sort()).toEqual(Object.values(MISSED_HINT).sort());
+    // 0.4.23: Toad's per-hero hint lines (MISSED_HINT) are gone; a shadow's line is the generic
+    // one again (world-map.ts HIDING_HINT). New hint lines join this list as they are built.
+    const lines: string[] = [];
+    expect(docHints().sort()).toEqual(lines.sort());
   });
 });

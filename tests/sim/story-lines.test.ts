@@ -14,15 +14,8 @@ import { fontText, wrapText } from '@game/hud/text';
 import { loadSave } from '@game/save/save-files';
 import { beat } from '@game/story/beats';
 import { pageSaid } from '@game/story/cards';
-import { BowserSaysScene, BRIDGE_ROOM, inCampaignLook } from '@game/story/level-beats';
-import {
-  LARRY_PAGES,
-  noMoreStandIns,
-  RESTYLE_PAGES,
-  STORY_CRYSTAL_BALL_PAGES,
-  STORY_TEASE_PAGES,
-  STORY_TOAD_PAGES,
-} from '@game/story/script';
+import { BowserSaysScene, BRIDGE_ROOM } from '@game/story/level-beats';
+import { LARRY_PAGES, noMoreStandIns, STORY_CRYSTAL_BALL_PAGES, STORY_TOAD_PAGES } from '@game/story/script';
 import { TOAD_PAGES } from '@game/tutorial/mario-1-0';
 import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
 import { wrapPrompt } from '@game/tutorial/stage-prompts';
@@ -61,10 +54,11 @@ function enter10(h: H): void {
 const texts = (h: H) => draw(h.top() as { render(r: never): void }).texts.map((t) => t.str);
 
 describe('1-0: Toad’s greeting', () => {
-  it('the campaign shows the story’s four pages, each read out', () => {
+  it('the campaign shows the story’s one page (the warm-up, 0.4.23), read out', () => {
     const h = campaign();
     enter10(h);
     expect(closeCards(h)).toEqual(STORY_TOAD_PAGES);
+    expect(STORY_TOAD_PAGES).toHaveLength(1);
     for (const page of STORY_TOAD_PAGES)
       expect(h.said.some((t) => t.startsWith(page.filter(Boolean).join(' ')))).toBe(true);
   });
@@ -78,7 +72,7 @@ describe('1-0: Toad’s greeting', () => {
     );
   });
 
-  it('campaign: BACK on page 1 closes the rest of the greeting; on to the lessons', () => {
+  it('campaign: BACK closes the greeting; on to the lessons', () => {
     const h = campaign();
     enter10(h);
     expect((h.top() as CardScene).lines).toEqual(STORY_TOAD_PAGES[0]);
@@ -87,19 +81,16 @@ describe('1-0: Toad’s greeting', () => {
     expect(h.top()).toBeInstanceOf(LevelScene);
     h.idle(4);
     expect(h.top()).toBeInstanceOf(LevelScene);
-    expect(h.said.some((t) => t.startsWith(STORY_TOAD_PAGES[1]!.filter(Boolean).join(' ')))).toBe(false);
     expect(h.said.at(-1)).toMatch(/HOLD RIGHT TO WALK/);
   });
 
-  it('campaign: OK and MENU turn the pages; the music plays on when the greeting closes', () => {
+  it('campaign: MENU closes the page as OK does; the music plays on when the greeting closes', () => {
     const h = campaign();
     enter10(h);
     h.audio.stopMusic.mockClear();
     h.audio.playMusic.mockClear();
     h.idle(CARD_GUARD_FRAMES + 1);
     h.tap('start');
-    expect((h.top() as CardScene).lines).toEqual(STORY_TOAD_PAGES[1]);
-    closeCards(h);
     expect(h.top()).toBeInstanceOf(LevelScene);
     h.idle(4);
     expect(h.audio.stopMusic).not.toHaveBeenCalled();
@@ -135,7 +126,7 @@ describe('1-0: Toad’s greeting', () => {
   });
 });
 
-describe('1-0: Bowser’s shadow tease', () => {
+describe('1-0: Bowser’s shadow tease (outside the campaign since 0.4.23)', () => {
   /** The tease pushed over a level; `ended` turns true when it calls back. */
   function tease(h: H, level: LevelScene) {
     const state = { ended: false };
@@ -147,46 +138,6 @@ describe('1-0: Bowser’s shadow tease', () => {
     return { scene, state };
   }
   const boxShows = 110 + 30 + 1;
-  const linesOf = (page: readonly string[]) => page.flatMap((l) => wrapPrompt(l));
-
-  it('campaign: page 1, turned by OK, then page 2, ended by OK; each read out', () => {
-    const h = campaign();
-    const { scene, state } = tease(h, start(h, '1-1'));
-    h.idle(boxShows);
-    expect(texts(h)).toEqual(expect.arrayContaining(linesOf(STORY_TEASE_PAGES[0]!)));
-    // The same words as every story box: OK for the next page, BACK skips.
-    expect(h.said.at(-1)).toBe(
-      "BOWSER: BWA HA HA! MY KOOPAS COULDN'T FIND THAT PRINCESS. FINE! OK for more, BACK to skip.",
-    );
-    h.idle(CARD_GUARD_FRAMES);
-    h.tap('jump');
-    expect(h.top()).toBe(scene);
-    expect(texts(h)).toEqual(expect.arrayContaining(linesOf(STORY_TEASE_PAGES[1]!)));
-    expect(h.said.at(-1)).toMatch(/^THESE HEROES DON'T THINK.* OK to continue\.$/);
-    h.idle(CARD_GUARD_FRAMES);
-    expect(state.ended).toBe(false);
-    h.tap('jump');
-    expect(state.ended).toBe(true);
-    expect(h.said.some((t) => t.includes(TEASE_LINES[1]!))).toBe(false);
-  });
-
-  it('campaign: the pages wait for OK, never turning by themselves; a press during the dash skips to Bowser', () => {
-    const h = campaign();
-    const { state } = tease(h, start(h, '1-1'));
-    h.idle(CARD_GUARD_FRAMES + 2);
-    h.tap('jump');
-    // Not over: straight on to Bowser's words.
-    expect(state.ended).toBe(false);
-    expect(h.said.at(-1)).toMatch(/^BOWSER: BWA HA HA!/);
-    h.idle(5000);
-    expect(texts(h)).toEqual(expect.arrayContaining(linesOf(STORY_TEASE_PAGES[0]!)));
-    h.tap('jump');
-    expect(texts(h)).toEqual(expect.arrayContaining(linesOf(STORY_TEASE_PAGES[1]!)));
-    h.idle(5000);
-    expect(state.ended).toBe(false);
-    h.tap('jump');
-    expect(state.ended).toBe(true);
-  });
 
   it('outside the campaign: the old line, one page, over on OK', () => {
     const h = makeGame();
@@ -280,70 +231,13 @@ describe('Larry in his room (2.7)', () => {
   });
 });
 
-describe('restyled levels: Toad’s remark (2.3b)', () => {
-  it('7-3 (its look registered): once per file, before play, saved on the file', () => {
+describe('restyled levels: no remark any more (0.4.23, docs/STORY.md 2.14)', () => {
+  it('7-3 in its look: play starts at once, nothing marked', () => {
     const h = campaign();
     const level = start(h, '7-3');
     expect(level.world.level.theme).not.toBe('overworld');
-    expect(h.top()).toBeInstanceOf(CardScene);
-    expect((h.top() as CardScene).lines).toEqual(RESTYLE_PAGES['7-3']);
-    expect(h.said.at(-1)).toMatch(/^TOAD: CANNON COAST TURNED INTO A JUNGLE/);
-    const frame = level.world.frame;
-    h.idle(20);
-    expect(level.world.frame).toBe(frame); // the level waits
-    expect(closeCards(h)).toHaveLength(1);
     expect(h.top()).toBe(level);
-    expect(loadSave(1)?.story).toContain(beat.restyle('7-3'));
-    // Not again on this file: a restart, a reload.
-    start(h, '7-3');
-    expect(h.top()).toBeInstanceOf(LevelScene);
-    h.game.openFile(1);
-    h.idle(4);
-    start(h, '7-3');
-    expect(h.top()).toBeInstanceOf(LevelScene);
-  });
-
-  it('not in its sub-areas, not outside the campaign, not on an old file that cleared it', () => {
-    const h = campaign();
-    start(h, '7-3-camp');
-    expect(h.top()).toBeInstanceOf(LevelScene);
-    expect(h.game.seen(beat.restyle('7-3'))).toBe(false);
-
-    const dev = makeGame();
-    dev.game.newGame(MARIO, '7-3');
-    dev.until(() => dev.top() instanceof LevelScene, 400);
-    dev.idle(10);
-    expect(dev.top()).toBeInstanceOf(LevelScene);
-
-    const old = makeGame();
-    file({ cleared: ['1-0', '7-3'] });
-    old.game.openFile(1);
-    old.idle(4);
-    start(old, '7-3');
-    expect(old.top()).toBeInstanceOf(LevelScene);
-  });
-
-  it('keyed on the look: a remark level shows it only once its campaign look is on', () => {
-    const look = getLevel('7-3').campaignLook!;
-    const base = getLevel('2-1');
-    const looked: LevelData = { ...base, campaignLook: { theme: look.theme } };
-    const plain: LevelData = { ...base };
-    delete plain.campaignLook;
-    const unknown: LevelData = { ...base, campaignLook: { theme: 'not-a-theme' } };
-    expect(inCampaignLook(looked)).toBe(true);
-    expect(inCampaignLook(plain)).toBe(false);
-    expect(inCampaignLook(unknown)).toBe(false);
-    for (const level of [plain, unknown]) {
-      const h = campaign();
-      start(h, level);
-      expect(h.top()).toBeInstanceOf(LevelScene);
-      expect(h.game.seen(beat.restyle('2-1'))).toBe(false);
-    }
-    const h = campaign();
-    start(h, looked);
-    expect((h.top() as CardScene).lines).toEqual(RESTYLE_PAGES['2-1']);
-    // Every remark level has its card.
-    expect(Object.keys(RESTYLE_PAGES).sort()).toEqual(['2-1', '3-1', '4-2', '5-4', '6-2', '7-3']);
+    expect(loadSave(1)?.story ?? []).not.toContain('restyle:7-3');
   });
 });
 

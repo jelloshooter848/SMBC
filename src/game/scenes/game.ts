@@ -39,7 +39,7 @@ import {
 } from '../map/rules';
 import { mapPage } from '@content/worldmap';
 import { CRYSTAL_BALL } from '../map/captives';
-import { seedSeen, storyOn } from '../story/beats';
+import { storyOn, upgradeStory } from '../story/beats';
 import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
@@ -973,8 +973,9 @@ export class Game {
       position: { page: save.position.page, node: save.position.node },
       gameCleared: save.gameCleared,
     };
-    // A file from before the story (or a test's file) counts what already happened as seen.
-    this.story = (save.story ?? seedSeen(this.mapProgress, this.freed)).slice();
+    // A file from before the story (or a test's file) counts what already happened as seen, and
+    // a list from before 0.4.23 gets the new scenes whose trigger is already past (upgradeStory).
+    this.story = upgradeStory(save.story, this.mapProgress, this.freed);
     this.storyUnsaved.clear();
     this.showMap(); // the map saves the file as it opens
   }

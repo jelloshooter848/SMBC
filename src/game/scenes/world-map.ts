@@ -28,14 +28,7 @@ import {
 import type { CharacterDef } from '../characters/character';
 import { pad } from '../hud/hud';
 import { hasSecretExit } from '../map/secret-exits';
-import {
-  CRYSTAL_BALL,
-  heroHint,
-  heroSide,
-  hiddenHeroes,
-  hiddenHeroesAt,
-  type HeroHint,
-} from '../map/captives';
+import { CRYSTAL_BALL, heroHint, heroSide, hiddenHeroesAt, type HeroHint } from '../map/captives';
 import { fxPalette, mapShadePalette } from '@content/sprites/palette-fx';
 import {
   PEDESTAL_EDGE,
@@ -69,8 +62,8 @@ import {
 } from '../map/bonus-spot';
 import { AirshipCrash, type CrashNames } from '../map/airship-crash';
 import { arenaPadHint, arenaPadSaid, arenaPadTouch, drawArenaPad, playArenaPad } from '../arena';
-import { dueScenes, missedHint, missedSaid, ToadGuide, type ToadScene } from '../map/toad-guide';
-import { beat, storyOn } from '../story/beats';
+import { dueScenes, ToadGuide, type ToadScene } from '../map/toad-guide';
+import { storyOn } from '../story/beats';
 import { fontText } from '../hud/text';
 import { CardScene } from './message';
 import { pageSaid } from '../story/cards';
@@ -94,9 +87,8 @@ export const MAP_HINT_Y = 226;
 
 /**
  * A level node hiding a captive hero the file has not freed, once that level is cleared: the
- * announcer's line and the hint line (map/captives.ts; it never says where in the level). The
- * campaign's story says Toad's line for that hero instead (story/script.ts MISSED_HINT); these
- * stay for a hero without one.
+ * announcer's line and the hint line (map/captives.ts; it never says where in the level). Since
+ * 0.4.23 the campaign says these too (Toad's per-hero lines are gone, docs/STORY.md 2.3).
  */
 export const HIDING_SAID = 'Someone is hiding in this level.';
 export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
@@ -361,8 +353,6 @@ export class WorldMapScene implements Scene {
   } | null = null;
   /** Toad's story scenes playing over the map (the `story` mode), or null. */
   toad: ToadGuide | null = null;
-  /** The page's line (announceHere) waits for Toad's scenes: a missed card is due here. */
-  private hereHeld = false;
   /** The Hammer Bro wandering the road to a used bonus spot on this page, or null. */
   guard: MapGuard | null = null;
   private guardGrace = 0;
@@ -415,10 +405,7 @@ export class WorldMapScene implements Scene {
     this.game.addReveal(this.opts.reveal ?? []);
     this.takeReveal();
     if (this.startCrash()) return;
-    // A missed hero's card due by the node the hero stands on: Toad's card is said first, the
-    // node's line (its hint is about that hero) once his scenes are over (afterStory).
-    this.hereHeld = this.missedCardHere();
-    if (!this.hereHeld) this.announceHere();
+    this.announceHere();
     const from = this.opts.slideFrom === undefined ? undefined : mapPage(this.opts.slideFrom);
     if (from && from !== this.page) {
       // A warp: slide in from the page warped from (fade in from another group); the reveal
@@ -447,10 +434,6 @@ export class WorldMapScene implements Scene {
 
   /** After Toad's scenes (or with none): the reveal, else the map is the player's (saved). */
   private afterStory(): void {
-    if (this.hereHeld) {
-      this.hereHeld = false;
-      this.announceHere();
-    }
     this.revealT = 0;
     if (this.revealQueue.length) this.mode = 'reveal';
     else if (this.revealTaken.length) this.finishReveal();
@@ -483,42 +466,17 @@ export class WorldMapScene implements Scene {
     return true;
   }
 
-  /** A missed hero's card (with pages) is due for a shadow by the node the hero stands on. */
-  private missedCardHere(): boolean {
-    const n = this.nodeById(this.node);
-    if (!n) return false;
-    const here = this.view(this.page)
-      .heroes.filter((m) => m.node === n && m.hint === 'silhouette')
-      .map((m) => beat.missed(m.def.id));
-    if (!here.length) return false;
-    return this.storyScenes(false).some((s) => s.pages.length > 0 && s.ids.some((id) => here.includes(id)));
-  }
-
   /** Toad's scenes due on this page now (none outside the story, or on a page not open). Pure. */
   private storyScenes(crash: boolean): ToadScene[] {
     const game = this.game;
     // Not on a page shown only through developer "Unlock all".
     if (!storyOn(game) || !this.page.nodes.length || !isPageOpen(this.progress, this.page.id)) return [];
-    const chars = game.deps.characters.map((c) => c.id);
-    const ball = this.progress.secrets.includes(CRYSTAL_BALL);
-    const cleared = this.progress.cleared;
-    const shadows = this.view(this.page)
-      .heroes.filter((m) => m.hint === 'silhouette')
-      .map((m) => m.def.id)
-      .filter(
-        (id) =>
-          ball ||
-          hiddenHeroes().some((h) => h.hero === id && h.page === this.page.id && cleared.includes(h.main)),
-      );
-    const hidden = [...new Set(hiddenHeroes().map((h) => h.hero))].filter((id) => chars.includes(id));
     return dueScenes({
       page: this.page.id,
       seen: (id) => game.seen(id),
       progress: this.progress,
       freed: game.freed,
-      heroes: chars,
-      hidden,
-      shadows: [...new Set(shadows)],
+      heroes: game.deps.characters.map((c) => c.id),
       hero: fontText(game.state.character.name),
       crash,
     });
@@ -765,7 +723,7 @@ export class WorldMapScene implements Scene {
     const hint = exitHint(this.progress, this.page, n.id, this.unlockAll);
     let text = this.nodeLabelPlain(n, label, state);
     if (hint) text += `. ${spoken(hint)}`;
-    if (this.isHiding(n)) text += `. ${this.hidingSaid(n)}`;
+    if (this.isHiding(n)) text += `. ${HIDING_SAID}`;
     return text;
   }
 
@@ -775,27 +733,6 @@ export class WorldMapScene implements Scene {
     const stage = n.level?.split('-').pop();
     const lvl = stage ? `${label}-${stage}` : label;
     return n.kind === 'castle' ? `${lvl} castle, ${state}` : `${lvl}, ${state}`;
-  }
-
-  /** The first hero whose shadow shows by node `n` that has a line of Toad's (story only), or null. */
-  private shadowWithLine(n: MapNode): string | null {
-    if (!storyOn(this.game)) return null;
-    const m = this.view(this.page).heroes.find(
-      (h) => h.node === n && h.hint === 'silhouette' && missedHint(h.def.id) !== null,
-    );
-    return m ? m.def.id : null;
-  }
-
-  /** The hint line by a node hiding a hero: Toad's line for that hero, else HIDING_HINT. */
-  private hidingHint(n: MapNode): string {
-    const id = this.shadowWithLine(n);
-    return (id && missedHint(id)) ?? HIDING_HINT;
-  }
-
-  /** What the announcer says by a node hiding a hero (hidingHint, spoken). */
-  private hidingSaid(n: MapNode): string {
-    const id = this.shadowWithLine(n);
-    return (id && missedSaid(id)) ?? HIDING_SAID;
   }
 
   /** The warp node the hero stands still on (the hint line shows), or null. */
@@ -825,7 +762,7 @@ export class WorldMapScene implements Scene {
     if (here?.kind === 'game') return arenaPadHint(this.game, here);
     return (
       exitHint(this.progress, this.page, this.node, this.unlockAll) ||
-      (here && this.hidingHere() ? this.hidingHint(here) : '')
+      (here && this.hidingHere() ? HIDING_HINT : '')
     );
   }
 

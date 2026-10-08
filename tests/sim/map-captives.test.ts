@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mapPage } from '@content/worldmap';
-import { WorldMapScene } from '@game/scenes/world-map';
+import { HIDING_HINT, HIDING_SAID, WorldMapScene } from '@game/scenes/world-map';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import type { SaveFile } from '@game/save/save-files';
@@ -15,8 +15,6 @@ import {
   TROPHY_HOP_PX,
   TROPHY_SCALE,
 } from '@game/map/trophy';
-import { MISSED_HINT } from '@game/story/script';
-import { missedSaid } from '@game/map/toad-guide';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
 // The world map's hint for levels that hide a brainwashed hero (docs/HEROES.md "The map hint"):
@@ -27,9 +25,9 @@ import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
 useStorage();
 
-// 0.4.13: the campaign's story says Toad's line for each hero (story/script.ts MISSED_HINT).
-const said = (hero: string) => missedSaid(hero) as string;
-const HIDING = said('luigi');
+// 0.4.23: the campaign says the generic line again (Toad's per-hero lines are gone, docs/STORY.md 2.3).
+const said = (_hero: string) => HIDING_SAID;
+const HIDING = HIDING_SAID;
 
 const W1_CLEAR = ['1-0', '1-1', '1-2', '1-3', '1-4'];
 
@@ -153,8 +151,8 @@ describe('map hint for hidden heroes: the three stages', () => {
         expect(Math.abs(sx - s.n.x * 16)).toBeLessThan(16);
         // Standing on the node: the announcer adds the line, the hint line shows it.
         expect(h.said.some((t) => t.includes(said(c.hero)))).toBe(true);
-        expect(map.hintLine).toBe(MISSED_HINT[c.hero]);
-        expect(s.texts.map((t) => t.str)).toContain(MISSED_HINT[c.hero]);
+        expect(map.hintLine).toBe(HIDING_HINT);
+        expect(s.texts.map((t) => t.str)).toContain(HIDING_HINT);
         // Beyond Toad's hint, it never says where in the level.
         const rest = h.said.join(' ').replace(said(c.hero), '');
         expect(rest).not.toMatch(/bonus|pipe|vine|sky|ruins|station|teleport/i);
