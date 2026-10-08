@@ -87,7 +87,7 @@ cloud-2 210 2
 [variant sophia classic]
 ;; The original's pieces for Sophia III here: platforms in the gaps at 12-21, 73-87 and 165-181, the lift at 44 longer (charHorz,
 ;; charVert). Every piece the original lays for
-;; her in this area but the flagpole's lift (docs/HEROES.md).
+;; her in this area (docs/HEROES.md).
 165 5 TTT
 180 5 TTT
 166 6 t *9
@@ -104,3 +104,5 @@ cloud-2 210 2
 79 14 tt
 - lift-h 44 6
 + lift-h 44 6 len=6 range=3 dx=-8
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
++ lift-fall 195 4 len=2 dx=8

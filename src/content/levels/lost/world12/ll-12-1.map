@@ -124,9 +124,11 @@ cloud-1 237 2
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short or low (charHorz, charVert): ground in the
 ;; 9-tile gap at 145 (past Normal Sophia III's reach) and at 193 and 197, the hidden block at
-;; 197 a row lower. Every piece the original lays for her here (but the flagpole's lift).
+;; 197 a row lower. Every piece the original lays for her here (and the flagpole's lift).
 197 8 .
 197 9 2
 147 13 ### *2
 193 13 # *2
 197 13 # *2
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
++ lift-fall 224 4 len=2 dx=8

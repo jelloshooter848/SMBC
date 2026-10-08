@@ -80,7 +80,7 @@ cloud-3 171 3
 
 [variant sophia classic]
 ;; The original's pieces for Sophia III here: the steps at 112-116 reworked (charHorz). Every piece the original lays for
-;; her in this area but the flagpole's lift (docs/HEROES.md).
+;; her in this area (docs/HEROES.md).
 113 11 B.
 112 12 B
 114 12 . *3

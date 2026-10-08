@@ -85,3 +85,7 @@ hill-small 208 12
 cloud-1 211 2
 bush-2 215 12
 cloud-3 219 3
+
+[variant sophia classic]
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
++ lift-fall 193 4 len=2 dx=8

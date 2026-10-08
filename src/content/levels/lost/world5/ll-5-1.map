@@ -161,7 +161,7 @@ cloud-1 411 2
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): the pillars after the staircase
 ;; moved closer together (gaps of 8 and 9 tiles are past Normal Sophia III's ~7; docs/HEROES.md).
-;; With every other piece the original lays for her in this area (but the flagpole's lift).
+;; With every other piece the original lays for her in this area (and the flagpole's lift).
 136 5 BBB *8
 140 5 ...BBB *8
 150 5 B *8
@@ -183,3 +183,5 @@ cloud-1 411 2
 284 13 #### *2
 - piranha 101 8
 + piranha 101 9 red=1
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
++ lift-fall 357 4 len=2

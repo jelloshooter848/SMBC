@@ -58,3 +58,8 @@ toad 153 12
 [zones]
 exit 152 next=4-1
 bowser-fire 89
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump short (charHorz): the lava at 87 filled.
+;; Every piece the original lays for her here.
+87 13 % *2

@@ -37,5 +37,5 @@ warp 48 16 worlds=3 text=WELCOME_TO_WARP_ZONE!
 
 [variant sophia classic]
 ;; The original's pieces for Sophia III here: the ground a tile longer at 38 (charHorz). Every piece the original lays for
-;; her in this area but the flagpole's lift (docs/HEROES.md).
+;; her in this area (docs/HEROES.md).
 38 13 # *2

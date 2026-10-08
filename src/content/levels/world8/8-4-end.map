@@ -47,3 +47,8 @@ pipe 10 11 down -> 8-4 19 10 exit=up
 ;; (8-4-garage), whose pipe brings the hero back up out of this pipe. A secret detour, not a
 ;; shortcut. Outside the campaign this zone sleeps and the trap pipe is as it always was.
 pipe 10 11 down -> 8-4-jason 1 10 exit=up campaign
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump low (charVert): the lava at 21 filled.
+;; Every piece the original lays for her here.
+21 13 % *2

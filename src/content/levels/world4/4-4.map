@@ -59,3 +59,9 @@ loop 191 11 12 -> 255 check=161:11:12
 loop 255 3 9 -> 191 check=239:3:9
 exit 312 next=5-1
 bowser-fire 256
+
+[variant sophia classic]
+;; The original's pieces for wide heroes (WideCharacter): the maze's one-tile drops at 160 and 224 (row 10) two tiles wide.
+;; Every piece the original lays for her here.
+161 10 .
+225 10 .
