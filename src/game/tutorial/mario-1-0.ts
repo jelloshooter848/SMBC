@@ -9,16 +9,18 @@ import { fontText, wrapText } from '../hud/text';
 import type { Lesson } from './stage-prompts';
 import type { StageTutorial, TutorialContext } from './stage-tutorial';
 import { ShadowTeaseScene } from './tease';
-import { storyOn } from '../story/beats';
+import { beat, storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { STORY_TOAD_PAGES } from '../story/script';
+import { BowserSpellScene } from '../story/bowser-spell';
 
 /*
  * Mario's tutorial stage 1-0 (owner brief, 0.5.0; the map: src/content/levels/world1/1-0.map).
  * World 1's start node on the map: every new file stands on it, and 1-1 opens once it is cleared.
- * It doubles as the game's general tutorial and the start of the story: Toad greets Mario and
- * tells him what Bowser did, the lessons follow one by one, and near the end a brainwashed hero's
- * shadow dashes past while Bowser laughs.
+ * It doubles as the game's general tutorial and the start of the story: Toad greets Mario, the
+ * lessons follow one by one, and near the end Bowser appears in person and casts his spell
+ * (campaign, docs/STORY.md 2.2: story/bowser-spell.ts); elsewhere a brainwashed hero's shadow
+ * dashes past while Bowser laughs (tease.ts).
  */
 
 const alive = (p: Player): boolean => !p.dead && !p.out;
@@ -187,6 +189,23 @@ function greet({ game, scene }: TutorialContext, done: () => void): void {
   show(0);
 }
 
+/**
+ * In the campaign, Bowser's spell (docs/STORY.md 2.2) over the level, every time 1-0 is played;
+ * the level's music comes back after it. False outside the campaign (the tease plays).
+ */
+export function playBowserSpell({ game, scene }: TutorialContext, done: () => void): boolean {
+  if (!storyOn(game)) return false;
+  game.markSeen(beat.spell);
+  game.scenes.push(
+    new BowserSpellScene(game, scene.world, () => {
+      game.scenes.pop();
+      scene.resume();
+      done();
+    }),
+  );
+  return true;
+}
+
 /** The shadow hero of the tease: Luigi (waiting brainwashed in 1-1's bonus room), else any other. */
 function shadowHero({ game }: TutorialContext) {
   const chars = game.deps.characters;
@@ -198,11 +217,14 @@ export const MARIO_TUTORIAL: StageTutorial = {
   hero: 'mario',
   lessons: MARIO_LESSONS,
   greet,
+  // Skipped from the pause menu: a file that never saw Bowser's spell sees it first.
+  beforeSkip: (ctx, done) => !ctx.game.seen(beat.spell) && playBowserSpell(ctx, done),
   // Back up from the pipe room, a few steps before the flagpole.
   beat: {
     lesson: 'flag',
     x: 83,
     play(ctx, done) {
+      if (playBowserSpell(ctx, done)) return;
       const hero = shadowHero(ctx);
       if (!hero) return done();
       const { game, scene } = ctx;

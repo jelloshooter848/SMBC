@@ -53,6 +53,9 @@ lift-down 156 12 len=6 dx=-8
 koopa-green 168 12 dx=8
 koopa-green 169 12 dx=8
 piranha 180 6
+;; Campaign only (0.4.23, docs/STORY.md 2.7): the bird statue, moved from 4-1's pipe room, on the
+;; floor past the lift's pit (57-62), just past the vine block (64) up to the vine area's dead pipe.
+partner 65 12 who=chozo campaign=true
 
 [zones]
 checkpoint 98 12

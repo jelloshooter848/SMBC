@@ -12,6 +12,7 @@ import {
   makeGame,
   standByLuigi,
   talkIntoMiniGame,
+  skipFreedTalk,
   useStorage,
 } from './heroes-harness';
 
@@ -31,6 +32,7 @@ describe('freeing Luigi with the real Mirror Race', () => {
     h.idle(30);
     // Reported as the race does at its end (a full race is race.test.ts's business).
     (race as unknown as { finish(r: MiniGameResult): void }).finish('pass');
+    skipFreedTalk(h); // the freed talk (0.4.23)
     expect(h.top()).toBeInstanceOf(CardScene);
     expect((h.top() as CardScene).lines).toContain('LUIGI IS FREE!');
     expect(h.game.freed).toContain('luigi');

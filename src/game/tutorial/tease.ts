@@ -15,10 +15,6 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText } from '../hud/text';
 import { abilityHint } from '../scenes/hints';
 import { drawPromptBox, wrapPrompt } from './stage-prompts';
-import type { Action } from '@engine/input/actions';
-import { storyOn } from '../story/beats';
-import { STORY_TEASE_PAGES } from '../story/script';
-import { pageSaid } from '../story/cards';
 
 /** Pixels a frame the shadow hero runs. */
 const RUN_SPEED = 3;
@@ -39,10 +35,8 @@ export const BOX_AT = BOWSER_AT + BOWSER_RISE;
  * guard); once Bowser's box shows it stays until one of them is pressed (text never moves by
  * itself, owner note 4). Drawn over the frozen level (translucent).
  *
- * In the campaign (story/beats storyOn) Bowser says STORY_TEASE_PAGES instead (docs/STORY.md 2.2),
- * two pages in the same box: OK (or MENU) turns to the second, which OK ends; BACK ends it at
- * once. Neither page turns by itself. A press before the box shows skips to Bowser (a mandatory
- * scene: his words are never skipped unseen). Each page is read out.
+ * Outside the campaign only since 0.4.23: the campaign plays Bowser's spell in its place
+ * (story/bowser-spell.ts, docs/STORY.md 2.2).
  */
 export class ShadowTeaseScene implements Scene {
   readonly translucent = true;
@@ -51,11 +45,6 @@ export class ShadowTeaseScene implements Scene {
   private readonly pose: Player;
   private x: number;
   private readonly feet: number;
-  /** The campaign's two pages (STORY_TEASE_PAGES), else null (TEASE_LINES as before). */
-  private readonly pages: readonly (readonly string[])[] | null;
-  /** The page shown (campaign) and the frame it showed. */
-  private page = 0;
-  private pageAt = BOX_AT;
 
   constructor(
     private readonly game: Game,
@@ -70,7 +59,6 @@ export class ShadowTeaseScene implements Scene {
     // From the left edge of the screen, along the ground Mario stands on.
     this.x = -24;
     this.feet = toPx(p.body.y + p.body.h);
-    this.pages = storyOn(game) ? STORY_TEASE_PAGES : null;
   }
 
   enter(): void {
@@ -78,14 +66,11 @@ export class ShadowTeaseScene implements Scene {
     this.game.deps.announcer?.say('A shadowy hero dashes past and is gone.');
   }
 
-  /**
-   * SKIP while the shadow runs; once Bowser's box is up (it waits for a key) OK, as its prompt
-   * says, and in the campaign BACK for the rest of his pages.
-   */
+  /** SKIP while the shadow runs; once Bowser's box is up (it waits for a key) OK, as its prompt says. */
   touchLabels(): TouchLabels {
     if (this.t <= CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS;
     if (this.t < BOX_AT) return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
-    return { ...NO_TOUCH_BUTTONS, jump: 'OK', ...(this.pages ? { attack: 'BACK' } : {}) };
+    return { ...NO_TOUCH_BUTTONS, jump: 'OK' };
   }
 
   update(_input: InputFrame, inputs: InputFrame[]): void {
@@ -100,36 +85,9 @@ export class ShadowTeaseScene implements Scene {
     }
     if (this.t === BOWSER_AT) {
       this.game.ctx.audio.sfx('bowser-laugh');
-      this.game.deps.announcer?.say(this.pages ? this.said(0) : TEASE_LINES.join(' '));
+      this.game.deps.announcer?.say(TEASE_LINES.join(' '));
     }
-    if (this.pages) return this.updatePages(inputs);
     if (cardContinues(this.t, inputs, ['jump', 'attack', 'start'])) this.finish();
-  }
-
-  /** What the announcer reads for the campaign's page `i`. */
-  private said(i: number): string {
-    return pageSaid(this.pages?.[i] ?? [], i === (this.pages?.length ?? 0) - 1);
-  }
-
-  /** The campaign's two pages (see the class comment). */
-  private updatePages(inputs: InputFrame[]): void {
-    const pages = this.pages as readonly (readonly string[])[];
-    const any = (keys: readonly Action[]) => inputs.some((i) => keys.some((k) => i.pressed(k)));
-    if (this.t < BOX_AT) {
-      // Straight on to Bowser: the shadow hero is gone, the laugh plays next frame.
-      if (this.t > CARD_GUARD_FRAMES && this.t < BOWSER_AT && any(['jump', 'attack', 'start'])) {
-        this.x = SCREEN_W + 32;
-        this.t = BOWSER_AT - 1;
-      }
-      return;
-    }
-    const since = this.t - this.pageAt;
-    if (since > CARD_GUARD_FRAMES && any(['attack'])) return this.finish();
-    if (!cardContinues(since, inputs, ['jump', 'start'])) return;
-    if (this.page === pages.length - 1) return this.finish();
-    this.page++;
-    this.pageAt = this.t;
-    this.game.deps.announcer?.say(this.said(this.page));
   }
 
   private finish(): void {
@@ -176,7 +134,6 @@ export class ShadowTeaseScene implements Scene {
     if (k < 1) return;
     const font = assets.sheet('font');
     const ok = fontText(abilityHint(this.game, 'OK', 'jump'));
-    const lines = this.pages?.[this.page] ?? TEASE_LINES;
-    drawPromptBox(r, font, [...lines.flatMap((l) => wrapPrompt(l)), ok]);
+    drawPromptBox(r, font, [...TEASE_LINES.flatMap((l) => wrapPrompt(l)), ok]);
   }
 }

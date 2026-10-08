@@ -43,6 +43,26 @@ export interface StageTutorial {
    * or past it in the main area. `play` pushes its scenes and calls `done` when they are over.
    */
   beat?: { lesson: string; x: number; play(ctx: TutorialContext, done: () => void): void };
+  /**
+   * Pause → Skip tutorial (campaign): a story scene the file must still see before the stage
+   * closes (1-0: Bowser's spell, once per file). Pushes it and calls `done` after it, and returns
+   * true; false when there is none (the stage closes at once).
+   */
+  beforeSkip?(ctx: TutorialContext, done: () => void): boolean;
+}
+
+/**
+ * Game.skipTutorial in the campaign: plays the tutorial's `beforeSkip` scene over `scene` (the
+ * pause menu and anything else over the level closed first), `then` after it. False when there
+ * is none to play.
+ */
+export function skipTutorialStory(game: Game, scene: LevelScene, levelId: string, then: () => void): boolean {
+  const def = stageTutorial(levelId);
+  if (!def?.beforeSkip) return false;
+  const stack = game.scenes;
+  if (!stack.find((s) => s === scene)) return false;
+  while (stack.top !== scene) stack.pop();
+  return def.beforeSkip({ game, scene }, then);
 }
 
 /** Every stage tutorial, by main level id. */

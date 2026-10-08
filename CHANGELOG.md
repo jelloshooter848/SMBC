@@ -8,6 +8,39 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- A new file opens at Peach's castle: Toad brings her handwritten note, and the story starts there.
+- At the end of 1-0, Bowser appears in person, shows off his wand and casts his spell. Eight heroes from other worlds
+  are pulled into the eight worlds.
+- In 1-1, a brainwashed Luigi runs off and a villager points you to the pipe he took.
+- Freed heroes talk. After the challenge, each of the eight tells a bit more of the story before the freed card (BACK
+  skips).
+- New hint characters in the heroes' levels:
+  - new: a villager in 1-1, a pipe keeper in 1-2's warp zone, a fairy in 2-1's clouds, and Fred the frog by 8-4's trap
+    pipe;
+  - moved: the old man to 2-1's vine, Dr. Light to 3-1's vine, and the bird statue into 4-2.
+
+  Once their hero is freed, each one says something new.
+
+- Leaving a world now takes both its castle and its hero. A seal of wand magic blocks the road on until that world's
+  hero is freed, and Toad reminds you who to look for.
+- When a seal breaks, the map cuts to Bowser's throne room, where his wand misfires a little worse each time.
+- Worlds 2 to 8 each have a local beside the start node who welcomes you. Stand there and press up to hear them again,
+  and they thank you once the world's hero is freed.
+- Fake Bowsers now always unmask. Beat one with weapons and your hero jumps over the creature to the axe. Reach the axe
+  first and your hero turns to say who it really was.
+
+### Changed
+
+- Toad's 1-0 greeting is shorter, and back on the map he wonders where Luigi is. Toad's world entries, hero-joined,
+  all-freed and missed-hero cards and the restyle remarks are gone; the story now comes from the heroes and the
+  characters in each world.
+- Larry's crystal ball now shows where each world's hero hides as soon as you arrive in that world.
+- The rift after 8-4 stays shut until Sophia III is freed.
+- The crystal ball, airship crash, castle and rift pages have new words.
+- Files from before 0.4.23 keep the worlds they've reached and don't replay scenes they've already passed.
+
 ## [0.4.22] - 2026-10-08
 
 ### Changed

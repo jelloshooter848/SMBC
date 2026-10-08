@@ -23,189 +23,22 @@ const toad = (...lines: string[]): Page => ['TOAD:', '', ...lines];
 
 /* ---------------------------------------------------------------- 2.1 / 2.2: 1-0 */
 
-/** Toad's greeting in 1-0 (campaign): the stolen wand, the heroes, Peach's note. */
+/** Toad's greeting in 1-0 (campaign): one page, the warm-up (the opening told the rest). */
 export const STORY_TOAD_PAGES: readonly Page[] = [
-  toad('MARIO! THANK GOODNESS', "YOU'RE HERE! KING KOOPA", "STOLE LARRY'S MAGIC WAND!"),
-  toad('NOW STRANGE HEROES FROM', 'OTHER WORLDS ARE POPPING', "UP, ALL UNDER THE KING'S", 'SPELL. BUT WHY?'),
-  toad('AND THE PRINCESS IS GONE!', 'SHE LEFT ME ONE NOTE:', 'GONE WHERE NO KOOPA', 'WOULD EVER LOOK. - P'),
-  toad('SEARCH EVERY PIPE, VINE', 'AND HIDDEN BLOCK! BUT', 'FIRST, A WARM-UP. FOLLOW', 'THE TIPS UP TOP!'),
-];
-
-/** Bowser's shadow in 1-0's tease (campaign): two pages in the prompt box. */
-export const STORY_TEASE_PAGES: readonly Page[] = [
-  ['BOWSER: BWA HA HA!', "MY KOOPAS COULDN'T FIND", 'THAT PRINCESS. FINE!'],
-  ["THESE HEROES DON'T THINK", "LIKE KOOPAS. THEY'LL SNIFF", 'HER OUT BEFORE YOU DO!'],
+  toad(
+    "WE'LL SEARCH EVERY PIPE,",
+    'VINE AND HIDDEN BLOCK! BUT',
+    'FIRST, A WARM-UP. FOLLOW',
+    'THE TIPS UP TOP!',
+  ),
 ];
 
 /* ---------------------------------------------------------------- 2.3a: the fake Bowsers */
-
-/** Toad's one-time explanation on the World 1 map after 1-4 (a major scene: he walks in). */
-export const FAKES_PAGES: readonly Page[] = [
-  toad('DID YOU SEE THAT? THE KING', 'USED THE WAND TO DRESS A', 'GOOMBA UP AS HIMSELF!'),
-  toad('HE HIDES BEHIND STAND-INS.', "THE REAL ONE WON'T FACE", 'YOU UNTIL HIS OWN LAND.'),
-];
 
 /** Bowser on first entering 8-4's bridge room (campaign), in the prompt box. */
 export function noMoreStandIns(hero: string): Page {
   return ['BOWSER: NO MORE STAND-INS,', `${hero}. THIS TIME IT'S`, 'REALLY ME! BWA HA HA!'];
 }
-
-/* ---------------------------------------------------------------- 2.3b: restyled levels */
-
-/** Toad's remark the first time a restyled level starts (campaign), by main level id. */
-export const RESTYLE_PAGES: Readonly<Record<string, Page>> = {
-  '2-1': toad(
-    'WHY DOES SEA SIDE LOOK SO',
-    'DIFFERENT HERE? STONE',
-    'RUINS? SOMEONE BROUGHT A',
-    'BIT OF THEIR WORLD ALONG.',
-  ),
-  '3-1': toad(
-    'WHY DOES NIGHT HILLS LOOK',
-    'LIKE A FACTORY HERE? ALL',
-    'BOLTS AND PIPES. SOMEBODY',
-    'BROUGHT THEIR WORLD ALONG.',
-  ),
-  '4-2': toad('MUSHROOM WOODS, BUT BLUE', 'AND BUBBLY DOWN HERE? IT', 'FEELS LIKE ANOTHER PLANET.'),
-  '5-4': toad(
-    'WHY DOES THIS CASTLE LOOK',
-    'SO... OLD? CANDLES, STONE,',
-    'AND I SWEAR SOMETHING JUST',
-    'MOVED IN THAT WINDOW.',
-  ),
-  '6-2': toad(
-    'SNOW NIGHT HAS STREETS',
-    'NOW? SHOP FRONTS, LAMPS...',
-    "SOMEONE'S WORLD HAS",
-    'BLED INTO THIS ONE.',
-  ),
-  '7-3': toad('CANNON COAST TURNED INTO A', "JUNGLE?! AND WHAT'S WITH", "THAT BRIDGE'S RED LIGHT?"),
-};
-
-/* ---------------------------------------------------------------- 2.4-2.11: the worlds */
-
-/** Toad's world entry, by map page (first arrival on the page). */
-export const WORLD_ENTRY: Readonly<Record<string, readonly Page[]>> = {
-  'smb-1': [
-    toad(
-      'FIRST, WHO ARE WE LOOKING',
-      'FOR HERE? SOMEONE IN GREEN.',
-      'TALLER THAN YOU. JUMPS',
-      'HIGHER. ALWAYS PLAYER TWO.',
-    ),
-    toad('IF I KNOW HIM, HE FOUND', 'THE COINS BEFORE YOU DID.', 'DOWN A PIPE, MAYBE?'),
-  ],
-  'smb-2': [
-    toad(
-      'ONE CASTLE DOWN! NEXT WE',
-      'SEEK A SWORDSMAN IN A',
-      'GREEN CAP. HE NEVER SAYS',
-      "A WORD. NOT ONE. I'VE TRIED.",
-    ),
-    toad('I KEEP DREAMING OF OLD', 'RUINS ABOVE THE CLOUDS.', 'FUNNY... THE CLOUDS HERE', 'END SO SUDDENLY.'),
-  ],
-  'smb-3': [
-    toad(
-      'THE SEA IS CALM AGAIN!',
-      'NEXT: A BLUE ROBOT BOY',
-      'WITH A CANNON FOR AN ARM.',
-      'FROM THE FUTURE, I THINK.',
-    ),
-    toad('LOOK AT THE SKY TONIGHT.', 'ONE STAR KEEPS BLINKING.', "STARS DON'T BLINK LIKE", 'THAT. DO THEY?'),
-  ],
-  'smb-4': [
-    toad(
-      'THREE CASTLES! THE KING IS',
-      'WORRIED. NEXT: A HUNTER',
-      'IN A POWER SUIT. NO ONE',
-      'HAS EVER SEEN HER FACE.',
-    ),
-    toad('SOME OLD WARP PIPES HERE', "DON'T WARP ANY MORE...", 'THEY GO DOWN. DEEP DOWN.'),
-    toad('AND I SAW AN AIRSHIP', 'FLYING LOW OVER 4-2.', 'KEEP AN EYE ON THE SKY!'),
-  ],
-  'smb-5': [
-    toad(
-      'THE WOODS ARE FREE! NEXT:',
-      'A HUNTER OF THE NIGHT.',
-      'HIS FAMILY HAS FOUGHT',
-      'VAMPIRES FOR AGES.',
-    ),
-    toad('UP IN THE SKY TREES? NO...', 'A MAN LIKE THAT IS DEEP', 'UNDERGROUND, IN SOME', 'DUNGEON. BRR!'),
-  ],
-  'smb-6': [
-    toad('FIVE CASTLES! NEXT: A', "NINJA. YOU WON'T SEE HIM", 'UNLESS HE WANTS YOU TO.'),
-    toad(
-      'NINJAS LOVE SECRET DOORS.',
-      "WALLS THAT AREN'T WALLS.",
-      "I'D PUSH ON ANYTHING THAT",
-      'LOOKS... POKED.',
-    ),
-  ],
-  'smb-7': [
-    toad('SIX CASTLES! NEXT: A', 'SOLDIER. ONE BIG GUN,', 'NO SHIRT, NO FEAR.'),
-    toad(
-      'THE COAST LOOKS LIKE A',
-      'JUNGLE NOW, AND THE',
-      'BRIDGES GO BOOM. RUN, OR',
-      "DON'T. HE'D KNOW WHICH.",
-    ),
-  ],
-  // Pages 2-3, World 8's hero (Sophia III) and her pilot: only once she is in the game (ENTRY_NEEDS).
-  'smb-8': [
-    toad("BOWSER'S LAND. HE'S IN", 'HERE SOMEWHERE WITH THE', "WAND. AND HE'S NOT HAPPY."),
-    toad("THE LAST ONE WE SEEK ISN'T", "A PERSON AT ALL. IT'S A...", 'TANK? A TANK THAT JUMPS?'),
-    toad(
-      'HER PILOT IS LOST IN THE',
-      "KING'S CASTLE. HE KEEPS",
-      'TAKING THE PIPE THAT',
-      'EVERYONE ELSE SKIPS.',
-    ),
-    toad(
-      'ODD... SOMEONE PULLED UP A',
-      'TURNIP RIGHT HERE. IN',
-      "BOWSER'S LAND! WHO PLANTS",
-      'TURNIPS NEXT TO LAVA?',
-    ),
-  ],
-};
-
-/**
- * The pages of a world entry that are about a hero who may not be in the game yet (World 8's
- * Sophia III and her pilot, pages 2-3 by index): shown only once that character is registered,
- * as a beat of their own (beats.ts beat.enterHero), so a file that reached the world before she
- * landed still hears them later, once. The rest of the entry (World 8: Bowser's land and the
- * turnip, Peach's clue) always plays.
- */
-export const ENTRY_NEEDS: Readonly<Record<string, { hero: string; pages: readonly number[] }>> = {
-  'smb-8': { hero: 'sophia', pages: [1, 2] },
-};
-
-/** Toad's "missed something" card, by hero id: the first time that hero's shadow shows. */
-export const MISSED_PAGES: Readonly<Record<string, Page>> = {
-  luigi: toad('HUH. 1-1 FEELS... CROWDED.', 'LIKE SOMEONE WAS WAITING', 'UNDER IT THE WHOLE TIME.'),
-  link: toad('2-1 LOOKED TALLER THAN IT', 'SHOULD. AS IF IT KEPT GOING', 'UP, PAST THE LAST CLOUD...'),
-  megaman: toad('THAT STAR OVER 3-1 IS', 'STILL BLINKING. I THINK', "IT'S BLINKING AT US."),
-  samus: toad('4-2 SOUNDED HOLLOW. LIKE', "THERE'S A WHOLE CAVE UNDER", 'IT THAT WE NEVER SAW.'),
-  simon: toad("THAT CASTLE'S LIFT WENT", 'DOWN... AND SOMETHING DOWN', 'THERE WENT TAP, TAP, TAP.'),
-  ryu: toad('6-2 HAD A STAR STUCK IN', 'A WALL. NOT THE GOOD KIND', 'OF STAR, EITHER.'),
-  bill: toad('THAT JUNGLE STILL SMELLS', 'OF SMOKE. SOMEONE IS', 'CAMPING UNDER THOSE', 'BRIDGES.'),
-  sophia: toad('A FROG HAS BEEN SITTING', 'ON 8-4, CROAKING AT ME.', 'I THINK HE WANTS SOMETHING.'),
-};
-
-/**
- * The map's hint line while the hero stands on a node whose hidden hero's shadow shows, by hero
- * id (replaces the generic HIDING_HINT), and what the announcer says for it.
- */
-export const MISSED_HINT: Readonly<Record<string, string>> = {
-  luigi: 'TOAD: I HEAR A MUSTACHE SIGH...',
-  link: 'TOAD: SOMETHING UP THERE HUMS...',
-  megaman: 'TOAD: A STAR UP THERE BLINKS...',
-  samus: 'TOAD: THE PIPES HERE ECHO...',
-  simon: 'TOAD: THIS LIFT SMELLS OF BATS',
-  ryu: 'TOAD: A WALL IN HERE IS WATCHING',
-  bill: 'TOAD: I SMELL A CAMPFIRE...',
-  sophia: 'TOAD: A FROG CROAKED IN THERE',
-};
 
 /* ---------------------------------------------------------------- 2.7: Larry and the ball */
 
@@ -218,40 +51,41 @@ export const LARRY_PAGES: readonly Page[] = [
 /** The crystal ball's cards (Larry beaten; campaign), at most 26 columns a line. */
 export const STORY_CRYSTAL_BALL_PAGES: readonly Page[] = [
   ['LARRY DROPPED HIS', 'CRYSTAL BALL! IT SEES', "WHEREVER THE WAND'S SPELL", 'IS AT WORK...'],
-  ['...SO IT SHOWS WHERE', 'YOUR FRIENDS ARE HIDDEN!'],
+  ['...SO FROM NOW ON, THE MAP', 'SHOWS WHERE EACH HERO', 'HIDES!'],
 ];
 
-/** World 4's map right after the airship crash: also stands in for the per-hero missed cards. */
+/** World 4's map right after the airship crash (a major scene). */
 export const CRASH_PAGES: readonly Page[] = [
   toad('NICE LANDING! I MADE THE', 'WRECK INTO A BONUS SPOT.', 'WATCH OUT FOR HAMMER BROS.'),
-  toad('AND THAT CRYSTAL BALL LIT', 'UP EVERY HIDING PLACE ON', 'THE MAP. SEE THE SHADOWS?'),
+  toad('AND THAT CRYSTAL BALL WILL', 'SHOW US WHERE EVERY HERO', 'HIDES, IN EVERY WORLD WE', 'REACH. HANDY!'),
 ];
 
 /* ---------------------------------------------------------------- castles (2.4-2.12) */
 
 /**
  * Each castle's two pages (2.3a), by its main level id: page 1 the reveal (under the thanks),
- * page 2 the story beat, 2 s later in the same box. 8-4's page 1 confirms the king was real.
+ * page 2 the story beat, on OK in the same box. 8-4's page 1 confirms the king was real.
+ * (0.4.23, S3: 1-4 to 7-4 rewritten; 1-4's first page carries what Toad's old map card said.)
  */
 export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>> = {
   '1-4': {
-    reveal: ['IT WAS A GOOMBA IN THE', "KING'S SHAPE! WAND MAGIC!"],
-    news: ['THE REAL KING FLED EAST,', 'WAND AND ALL.'],
+    reveal: ['THAT GOOMBA WAS UNDER A', 'SPELL! THE KING DRESSED', 'IT UP AS HIMSELF.'],
+    news: ['THE REAL KING HIDES BEHIND', 'STAND-INS. HE FLED EAST,', 'WAND AND ALL.'],
   },
   '2-4': {
-    reveal: ['A KOOPA IN DISGUISE! THE', 'KING SENDS STAND-INS.'],
-    news: ['THE SPELL OVER THE SEA IS', "FADING. THE KING'S SHIPS", 'SAILED FOR THE HILLS.'],
+    reveal: ['A KOOPA UNDER THE SPELL,', "IN THE KING'S SHAPE AGAIN."],
+    news: ['THE KOOPAS SEARCHED EVERY', 'CAVE IN THIS LAND. NO', 'PRINCESS. JUST OLD MEN.'],
   },
   '3-4': {
-    reveal: ['A BUZZY BEETLE THIS TIME!', 'STILL NOT THE REAL KING.'],
+    reveal: ['A BUZZY BEETLE, UNDER THE', 'SPELL. STILL NOT THE KING.'],
     news: ['SOMEONE SLIPPED THE KOOPAS', 'A MAP SIGNED - P. IT LED', 'THEM STRAIGHT INTO A', 'SWAMP. HA!'],
   },
   '4-4': {
-    reveal: ['A SPINY IN A KING SUIT!', 'OUCH. STILL A FAKE.'],
-    news: ['THE KING WAVED THE WAND AT', 'US, BUT IT ONLY FIZZLED!', "IT'S GETTING WEAKER."],
+    reveal: ['A SPINY UNDER THE SPELL,', 'IN A KING SUIT. OUCH.'],
+    news: ['LARRY IS TELLING EVERYONE', 'THE KING STOLE HIS WAND.', "FOR ONCE, HE'S NOT LYING."],
   },
   '5-4': {
-    reveal: ['A LAKITU, OF ALL THINGS!', 'THE KING HIDES BEHIND', 'HIS OWN SHAPE.'],
+    reveal: ['A LAKITU, OF ALL THINGS!', 'UNDER THE SPELL LIKE THE', 'REST.'],
     news: [
       'THE KOOPAS STORMED OUR',
       'VILLAGE, BUT IT WAS EMPTY.',
@@ -260,12 +94,12 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
     ],
   },
   '6-4': {
-    reveal: ['A BLOOPER?! IN A CASTLE?', "THE WAND'S TRICKS ARE", 'GETTING SILLY.'],
+    reveal: ["A BLOOPER?! THE WAND'S", 'TRICKS ARE GETTING SILLY.'],
     news: ['THE KING SLEEPS WITH THE', 'WAND UNDER HIS PILLOW NOW.', "HE KNOWS YOU'RE COMING."],
   },
   '7-4': {
-    reveal: ['A HAMMER BRO! THE LAST', 'FAKE. THE REAL KING', 'WAITS IN HIS OWN LAND.'],
-    news: ['THE WAND IS CRACKING! ALL', 'THAT SPELL-WORK WORE IT', "THIN. HE'S GONE HOME."],
+    reveal: ['A HAMMER BRO UNDER THE', 'SPELL. THAT WAS HIS LAST', 'STAND-IN!'],
+    news: ['THE KOOPAS ARE ALL RUNNING', 'HOME. THE KING CALLED THEM', 'BACK TO GUARD HIS CASTLE.'],
   },
   '8-4': {
     reveal: ['NO TRICK THIS TIME. THAT', 'WAS THE REAL KING!'],
@@ -276,6 +110,357 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
 /** Said once as the wand breaks over 8-4's lava (campaign; a scene without on-screen text). */
 export const WAND_BREAK_SAID =
   "The wand spins out of Bowser's hand and breaks! Its glowing pieces swirl into a crack in the air.";
+
+/* ================================================================ S3 (0.4.23): castles, gates, welcomes, the rift
+ * docs/STORY.md 2.3a (the hero's remark at the axe), 2.3b (the world gates and the welcomes) and
+ * 2.12 (the rift waits for Sophia III). The castles' own pages are CASTLE_PAGES above.
+ */
+
+/** The hero's remark at castles 1-4 to 7-4 (2.3a: reaching the axe), by main level id, without the speaker. */
+const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
+  '1-4': ["WAIT... THAT'S NOT BOWSER!", "IT'S A GOOMBA IN A BOWSER", 'SUIT!'],
+  '2-4': ['ANOTHER FAKE! JUST A KOOPA', "TROOPA WEARING THE KING'S", 'FACE.'],
+  '3-4': ["A BUZZY BEETLE?! SO THAT'S", 'WHY THE SHELL WAS SO SHINY.'],
+  '4-4': ['A SPINY! NO WONDER THAT', 'SUIT LOOKED SO POINTY.'],
+  '5-4': ['A LAKITU?! WITHOUT ITS', 'CLOUD IT LOOKS SO SMALL.'],
+  '6-4': ['A BLOOPER?! IN A CASTLE?', 'HOW IS IT EVEN BREATHING?'],
+  '7-4': ['A HAMMER BRO! THE LAST', 'FAKE. THE REAL KING MUST', 'BE CLOSE.'],
+};
+
+/** The castles with a remark (1-4 to 7-4), in order. */
+export const REMARK_CASTLES: readonly string[] = Object.keys(CASTLE_REMARKS);
+
+/** Castle `level`'s remark card, the player's hero `hero` (full name) speaking; null without one. */
+export function castleRemark(level: string, hero: string): Page | null {
+  const body = CASTLE_REMARKS[level];
+  return body ? [`${hero}:`, '', ...body] : null;
+}
+
+const bowser = (...lines: string[]): Page => ['BOWSER:', '', ...lines];
+
+/** One world gate's lines (2.3b): Toad's reminder, Bowser's cutaway, Toad once the seal breaks. */
+export interface GateScript {
+  reminder: readonly Page[];
+  bowser: readonly Page[];
+  toad: readonly Page[];
+}
+
+/** The gates out of worlds 1-7 (Bowser's misfires grow worse each time), `hero` filling <HERO>. */
+export function gateScript(world: number, hero: string): GateScript | null {
+  switch (world) {
+    case 1:
+      return {
+        reminder: [
+          toad('THE WAY ON IS SEALED BY', "BOWSER'S MAGIC... AND WE", "STILL HAVEN'T FOUND LUIGI!"),
+          toad('THAT VILLAGER IN 1-1 SAW', "WHERE HE WENT. LET'S GO", 'BACK AND LOOK!'),
+        ],
+        bowser: [
+          bowser('HUH? WHAT WAS THAT? MY WAND', 'JUST... SPUTTERED.'),
+          bowser('...PROBABLY NOTHING. KEEP', 'LOOKING FOR THAT PRINCESS!'),
+        ],
+        toad: [
+          toad('WHOA! DID YOU SEE THAT? WE', 'MUST BE WEAKENING HIS', 'SPELLS!'),
+          toad('AND THE WAY TO ANOTHER', 'WORLD JUST OPENED UP.', "LET'S GO!"),
+        ],
+      };
+    case 2:
+      return {
+        reminder: [
+          toad(
+            'THE WAY ON IS STILL SEALED,',
+            'AND LINK IS STILL UNDER THE',
+            'SPELL. THAT OLD MAN IN 2-1',
+            'KNOWS SOMETHING, I BET.',
+          ),
+        ],
+        bowser: [
+          bowser('OW! MY EYEBROWS! THE WAND', 'JUST SPARKED AT ME!'),
+          bowser("WHO'S MESSING WITH MY", 'SPELLS? FIND THAT PRINCESS,', 'YOU FOOLS!'),
+        ],
+        toad: [
+          toad('ANOTHER SEAL, GONE! EVERY', 'HERO WE FREE TAKES A BITE', 'OUT OF HIS MAGIC.'),
+          toad('THE NEXT WORLD IS OPEN. I', 'CAN HEAR MACHINES HUMMING', 'OVER THERE...'),
+        ],
+      };
+    case 3:
+      return {
+        reminder: [
+          toad(
+            'STILL SEALED. MEGA MAN MUST',
+            'STILL BE OUT THERE. DR.',
+            'LIGHT IN 3-1 IS TRACKING',
+            'HIS SIGNAL!',
+          ),
+        ],
+        bowser: [
+          bowser('WHAT NOW?! THE WAND FIRED', 'BY ITSELF! MY PORTRAIT! I', 'LOOKED SO GOOD IN THAT!'),
+          bowser('THOSE HEROES ARE SUPPOSED', 'TO WORK FOR ME! WHO KEEPS', 'LETTING THEM GO?!'),
+        ],
+        toad: [
+          toad('THAT SEAL CRACKED LIKE AN', 'EGG! HIS SPELLS ARE GETTING', 'WEAKER, ALL RIGHT.'),
+          toad('ANOTHER WORLD IS OPEN. IT', 'LOOKS LIKE... A PLANET?', "CAREFUL, IT'S DARK IN THERE."),
+        ],
+      };
+    case 4:
+      return {
+        reminder: [
+          toad(
+            'STILL SEALED! WE NEED THE',
+            'HUNTER. THAT BIRD STATUE',
+            'DOWN IN 4-2 MUST KNOW',
+            'WHERE SHE IS.',
+          ),
+        ],
+        bowser: [
+          bowser('THE WAND IS SMOKING! IT', "WON'T STOP SMOKING!"),
+          bowser(
+            'LARRY! DID YOU SWAP MY',
+            'WAND FOR YOUR CHEAP SPARE?!',
+            '...WAIT. THIS IS THE GOOD',
+            'ONE.',
+          ),
+        ],
+        toad: [
+          toad('HALFWAY THERE! HIS WAND', 'MUST BE SMOKING BY NOW.'),
+          toad('THE NEXT WORLD IS OPEN...', 'BRR. I HEAR BATS. AND', 'ORGAN MUSIC.'),
+        ],
+      };
+    case 5:
+      return {
+        reminder: [
+          toad(
+            'STILL SEALED. THE VAMPIRE',
+            'HUNTER! THE TOWNSPERSON AT',
+            'THE GATE OF 5-4 SAID',
+            'SOMETHING ABOUT A LIFT...',
+          ),
+        ],
+        bowser: [
+          bowser("IS THAT... A CRACK? THAT'S", 'A CRACK! WHO PUT A CRACK IN', 'MY WAND?!'),
+          bowser('...NOBODY TELL LARRY.'),
+        ],
+        toad: [
+          toad('FIVE SEALS DOWN! THEY BREAK', "EASIER EVERY TIME. HE'S", 'RUNNING OUT OF MAGIC!'),
+          toad("THE NEXT WORLD IS OPEN. IT'S", 'SNOWING THERE, AND I SAW A', 'SHADOW ON A ROOFTOP...'),
+        ],
+      };
+    case 6:
+      return {
+        reminder: [
+          toad('STILL SEALED. WE NEED THE', 'NINJA. THAT AGENT AT THE', 'START OF 6-2 WAS TRACKING', 'HIM!'),
+        ],
+        bowser: [
+          bowser('WHOA! WHOA! THE WAND JUST', 'BLASTED MY THRONE TO BITS!'),
+          bowser('GRR! FINE! WHO NEEDS A', 'THRONE? KOOPAS! DOUBLE THE', 'GUARDS!'),
+        ],
+        toad: [
+          toad('SIX SEALS! I COULD HEAR', 'THAT ONE CRACK FROM HERE.'),
+          toad('THE NEXT WORLD IS OPEN. A', 'JUNGLE... AND EXPLOSIONS.', 'LOTS OF EXPLOSIONS.'),
+        ],
+      };
+    case 7:
+      return {
+        reminder: [
+          toad(
+            'STILL SEALED. WE NEED THE',
+            'SOLDIER. HIS PARTNER LANCE',
+            'IS WAITING AT THE START OF',
+            '7-3.',
+          ),
+        ],
+        bowser: [
+          bowser('THE WAND IS SHAKING! I CAN', 'BARELY HOLD IT!'),
+          bowser('ENOUGH! IF YOU WANT', 'SOMETHING DONE RIGHT, DO', 'IT YOURSELF.'),
+          bowser('COME TO MY CASTLE,', `${hero}. I'LL BE WAITING!`, 'BWA HA HA!'),
+        ],
+        toad: [
+          toad('THE LAST SEAL! THE ROAD', 'GOES STRAIGHT INTO', "BOWSER'S OWN LAND."),
+          toad(`THIS IS IT, ${hero}!`, "LET'S FINISH THIS!"),
+        ],
+      };
+    default:
+      return null;
+  }
+}
+
+/** World 8's rift still shut (2.12): Toad's reminder after the credits while Sophia III is captive. */
+export const RIFT_SEALED_PAGES: readonly Page[] = [
+  toad(
+    'THE KING IS BEATEN, BUT',
+    'THAT CRACK IS TOO SMALL TO',
+    "GO THROUGH. SOMETHING'S",
+    'HOLDING IT SHUT...',
+  ),
+  toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT. HER PILOT IS', 'LOST SOMEWHERE IN 8-4.'),
+];
+
+/** The map's hint line on a castle whose road is sealed (`name`: the hero's full name). */
+export function sealedHint(name: string): string {
+  return `SEALED - FREE ${name} FIRST`;
+}
+
+/** A world's local on its start node (2.3b): who speaks, and the welcome. */
+export interface WelcomeScript {
+  /** The local's name as the speaker and the hint line say it ('LAB ROBOT'). */
+  local: string;
+  /** Said by the announcer on the node ("A healer."). */
+  said: string;
+  pages: readonly Page[];
+  /**
+   * Talking again once the world's hero is freed (0.4.23, docs/STORY.md 2.5-2.11 "after-freed"):
+   * this page instead of the welcome's plea.
+   */
+  after?: readonly Page[];
+}
+
+const welcome = (who: string, said: string, ...pages: string[][]): WelcomeScript => ({
+  local: who,
+  said,
+  pages: pages.map((p) => [`${who}:`, '', ...p]),
+});
+
+/** Welcome `w` with its after-freed page (`lines`, spoken by its local). */
+const afterFreed = (w: WelcomeScript, ...lines: string[]): WelcomeScript => ({
+  ...w,
+  after: [[`${w.local}:`, '', ...lines]],
+});
+
+/** The welcomes of worlds 2-8, by map page. */
+export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
+  'smb-2': afterFreed(
+    welcome(
+      'HEALER',
+      'A healer',
+      [
+        'WELCOME TO HYRULE,',
+        "TRAVELER. OR WHAT'S LEFT OF",
+        'IT. A SPELL DRAGGED OUR',
+        'LAND HERE, SEA AND ALL.',
+      ],
+      ['OUR HERO LINK HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
+      ['HE WAS LAST SEEN NEAR 2-1.', 'AN OLD MAN THERE KNOWS', 'THINGS. HE ALWAYS DOES.'],
+      ['LET ME HEAL YOU BEFORE YOU', "GO. ...OH. YOU'RE FINE.", 'NEVER MIND.'],
+    ),
+    'LINK IS HIMSELF AGAIN!',
+    'THANK YOU, TRAVELER. GO ON',
+    'EAST, AND STAY HEALTHY...',
+    "I'M STILL OUT OF PATIENTS.",
+  ),
+  'smb-3': afterFreed(
+    welcome(
+      'LAB ROBOT',
+      'A lab robot',
+      ['BEEP! WELCOME TO THE YEAR', '20XX. WELL, A CHUNK OF IT.', 'YOUR KINGDOM HAS ODD', 'PHYSICS.'],
+      ['OUR HERO MEGA MAN HAS BEEN', 'REPROGRAMMED BY SOMEONE.', 'PLEASE HELP! BEEP!'],
+      ['HIS LAST SIGNAL CAME FROM', '3-1. DR. LIGHT IS THERE,', 'TRACKING IT.'],
+    ),
+    'BEEP! MEGA MAN IS BACK',
+    'ONLINE! DR. LIGHT SAYS',
+    'THANK YOU. THE ROAD AHEAD',
+    'IS CLEAR. BEEP BOOP!',
+  ),
+  'smb-4': afterFreed(
+    welcome(
+      'SCIENTIST',
+      'A scientist',
+      [
+        'WELCOME TO PLANET ZEBES...',
+        'OR A PIECE OF IT. OUR',
+        'WHOLE RESEARCH BASE CAME',
+        'ALONG FOR THE RIDE.',
+      ],
+      ['THE HUNTER WHO GUARDS US,', 'SAMUS, HAS BEEN BRAINWASHED', 'BY SOMEONE. PLEASE HELP!'],
+      ['HER LAST READING CAME FROM', "DEEP UNDER 4-2. THERE'S AN", 'OLD BIRD STATUE IN THERE.'],
+      ['ALSO, A KOOPA AIRSHIP KEEPS', 'CIRCLING 4-2. KEEP AN EYE', 'ON THE SKY!'],
+    ),
+    'SAMUS IS BACK ON PATROL.',
+    'OUR BASE IS SAFE AGAIN,',
+    'THANKS TO YOU. ONWARD! THE',
+    'NEXT WORLD NEEDS YOU MORE.',
+  ),
+  'smb-5': afterFreed(
+    welcome(
+      'MERCHANT',
+      'A merchant',
+      [
+        'WELCOME, STRANGER, TO',
+        'TRANSYLVANIA. A FOUL SPELL',
+        'CARRIED OUR WHOLE COUNTRY',
+        'HERE. EVEN THE NIGHTS.',
+      ],
+      ['OUR HERO SIMON HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
+      ['HE WAS LAST SEEN IN THE', 'OLD CASTLE, 5-4. A', 'TOWNSPERSON WAITS AT ITS', 'GATE.'],
+      ['WANT TO BUY A WHITE', 'CRYSTAL? ...NO? NOBODY', 'EVER DOES.'],
+    ),
+    'SIMON WALKS FREE AGAIN!',
+    'YOU HAVE MY THANKS. NOW,',
+    'ON YOUR WAY... AND STILL',
+    'NO WHITE CRYSTAL? SHAME.',
+  ),
+  'smb-6': afterFreed(
+    welcome(
+      'ELDER',
+      'The village elder',
+      ['WELCOME TO OUR NINJA', 'VILLAGE. A DARK SPELL', 'BROUGHT IT HERE, SNOW AND', 'ALL.'],
+      ['OUR YOUNG MASTER RYU HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
+      ['HE WAS LAST SEEN IN THE', 'CITY STREETS OF 6-2. AN', 'AMERICAN AGENT IS ON HIS', 'TRAIL.'],
+      ['A NINJA IS SEEN ONLY IF HE', 'WISHES TO BE. DO NOT LOOK', 'FOR HIM. LOOK FOR WHAT', 'HIDES HIM.'],
+    ),
+    'MASTER RYU HAS RETURNED TO',
+    'HIMSELF. THE VILLAGE OWES',
+    'YOU A DEBT. GO NOW. THE',
+    'PATH AHEAD IS YOURS.',
+  ),
+  'smb-7': afterFreed(
+    welcome(
+      'SERGEANT',
+      'A sergeant',
+      ['WELCOME TO THE FRONT,', 'SOLDIER. SOME SPELL DROPPED', 'OUR WHOLE JUNGLE HERE,', 'ALIENS AND ALL.'],
+      ['OUR BEST MAN, BILL, HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
+      ['HE WAS LAST SEEN AT 7-3.', 'HIS PARTNER LANCE IS', 'WAITING THERE. MOVE OUT!'],
+    ),
+    "BILL'S BACK IN THE FIGHT!",
+    'GOOD WORK, SOLDIER. THE',
+    'WHOLE UNIT SALUTES YOU.',
+    'NOW MOVE OUT!',
+  ),
+  'smb-8': afterFreed(
+    welcome(
+      'MINER',
+      'A miner',
+      [
+        'WELCOME TO THE UNDERWORLD,',
+        'STRANGER. MUTANTS DOWN',
+        'BELOW, AND NOW A SPIKY KING',
+        'UPSTAIRS. LOVELY.',
+      ],
+      [
+        'OUR HERO IS A TANK CALLED',
+        'SOPHIA. SOMEONE BRAINWASHED',
+        'HER, AND HER PILOT IS LOST.',
+        'PLEASE HELP!',
+      ],
+      [
+        "THE BOY WENT INTO THE KING'S",
+        'CASTLE, 8-4, AFTER HIS FROG.',
+        'THAT FROG TAKES THE PIPES',
+        'NOBODY ELSE DOES.',
+      ],
+      ['ODD THING... SOMEONE PULLED', 'UP A TURNIP RIGHT HERE. WHO', 'GROWS TURNIPS NEXT TO LAVA?'],
+    ),
+    "SOPHIA'S ROLLING AGAIN, AND",
+    "THE BOY'S BACK WITH HIS",
+    'FROG. THANK YOU, STRANGER!',
+    'MIND THE LAVA ON YOUR WAY.',
+  ),
+};
+
+/** The map's hint line on a start node with a local (`TALK TO THE HEALER`). */
+export function welcomeHint(local: string): string {
+  return `TALK TO THE ${local}`;
+}
+
+/* ================================================================ end of S3's region */
 
 /**
  * The block the 8-4 credits add after THANKS FOR PLAYING (campaign): Chapter 1 ends there, and
@@ -293,12 +478,8 @@ export const STORY_NOT_OVER: readonly string[] = [
 export function riftPages(hero: string): Page[] {
   return [
     toad('THAT CRACK LEADS TO THE', 'LOST KINGDOM! NOBODY GOES', 'THERE. NOBODY EVER LOOKS', 'THERE...'),
-    toad(
-      '...WAIT. WHERE NO KOOPA',
-      'WOULD EVER LOOK, AND NO',
-      "HERO EVER SNIFFED. THAT'S",
-      `WHERE SHE IS, ${hero}!`,
-    ),
+    toad('...WAIT. WHERE NO KOOPA', "WOULD EVER LOOK. THAT'S", `WHERE SHE WENT, ${hero}!`),
+    toad('OLD FRIENDS, SHE WROTE...', 'WHO COULD SHE KNOW IN THE', 'LOST KINGDOM?'),
     toad(
       "BUT THE WAND'S PIECES FELL",
       'IN THERE TOO, AND THE',
@@ -320,44 +501,6 @@ export const SIMON_CURSE: Page = [
   'BLOOD. NOW I AM HIS THRALL.',
 ];
 
-/** Toad's generic hero-joined card: its first page (the crack) is left out once 8-4 is beaten. */
-export const JOINED_CRACK: Page = toad(
-  'ANOTHER HERO SET FREE! AND',
-  'DID YOU HEAR THAT CRACK?',
-  'EVERY SPELL YOU BREAK SNAPS',
-  'BACK INTO THE WAND!',
-);
-export const JOINED_GENERIC: Page = toad(
-  'ONE LESS PAIR OF EYES',
-  'HUNTING THE PRINCESS, AND',
-  'ONE MORE CRACK IN THE WAND!',
-);
-
-/** Toad's reaction the first time the map shows after a hero is freed, by hero id. */
-export const JOINED_PAGES: Readonly<Record<string, Page>> = {
-  luigi: toad("LUIGI! I KNEW YOU'D SNAP", 'OUT OF IT. ...YOU DID SNAP', 'OUT OF IT, RIGHT?'),
-  link: toad("THE SWORDSMAN STILL HASN'T", 'SAID A WORD TO ME. HE', 'TALKED TO YOU?!'),
-  megaman: toad('A ROBOT ON THE TEAM! CAN', 'HE MAKE TOAST? ...NO?', 'OKAY. STILL GREAT.'),
-  samus: toad('THE HUNTER IS WITH US! SHE', 'SAID THANKS. I THINK. HER', 'HELMET MUFFLES THINGS.'),
-  simon: toad('THE VAMPIRE HUNTER SAID', 'WHAT A HORRIBLE NIGHT IT', "IS. IT'S THE MIDDLE OF", 'THE DAY.'),
-  ryu: toad('THE NINJA IS WITH US! HE', 'WAS STANDING BEHIND ME THE', "WHOLE TIME, WASN'T HE."),
-  bill: toad('THE SOLDIER SAYS THANKS.', 'AT LEAST I THINK SO. IT', 'WAS MOSTLY EXPLOSIONS.'),
-  sophia: toad('JASON AND FRED SAY THANK', 'YOU! AND THE TANK... DID', 'THE TANK JUST HONK?'),
-};
-
-/** Every hidden hero freed: before 8-4 is beaten, and after. */
-export const ALL_FREED_BEFORE: Page = toad(
-  'EVERY HERO IS FREE! NOBODY',
-  'HUNTS THE PRINCESS NOW...',
-  'EXCEPT BOWSER. THE WAND',
-  'MUST BE NEARLY EMPTY!',
-);
-export const ALL_FREED_AFTER: Page = toad(
-  'EVERY HERO IS FREE! NOW',
-  "THEY'RE ALL LOOKING FOR",
-  'THE PRINCESS WITH US.',
-);
-
 /** The optional extras, the first visit to the Warp Zone hub and to the Mini Game Arena. */
 export const HUB_PAGE: Page = toad(
   'A PLACE BETWEEN WORLDS!',
@@ -370,7 +513,80 @@ export const ARENA_PAGE: Page = toad(
   'FOR FUN, THIS TIME.',
 );
 
-/* ---------------------------------------------------------------- the partners (2.5-2.10) */
+/* ================================================================ S1 (0.4.23): the opening, 1-0, World 1 */
+
+/** 2.1: the caption over Peach's courtyard (a card without a speaker), before her note. */
+export const OPENING_CAPTION: Page = ['PRINCESS PEACH IS MISSING!', 'SHE LEFT THIS NOTE:'];
+
+/** Columns and lines of Peach's note on its parchment (2.1). */
+export const NOTE_COLS = 26;
+export const NOTE_LINES = 13;
+
+/** 2.1: Peach's note, as written on the parchment (blank lines are gaps between paragraphs). */
+export const PEACH_NOTE: Page = [
+  'DEAR TOAD,',
+  '',
+  'BOWSER IS UP TO SOMETHING.',
+  "THIS TIME I WON'T SIT AND",
+  'WAIT TO BE RESCUED.',
+  '',
+  "I'VE GONE TO FIND OLD",
+  'FRIENDS WHO CAN HELP, IN A',
+  'PLACE WHERE NO KOOPA WOULD',
+  'EVER LOOK.',
+  '',
+  "DON'T WORRY ABOUT ME!",
+  '                       - P',
+];
+
+/** 2.1: back in the courtyard after the note, Toad to Mario. */
+export const OPENING_TOAD_PAGES: readonly Page[] = [
+  toad('MARIO! THE KOOPAS ARE', 'ALREADY OUT HUNTING FOR', 'HER. WE HAVE TO FIND HER', 'FIRST!'),
+  toad('COME ON, THE ROAD STARTS', "JUST OUTSIDE TOWN. LET'S", 'GO!'),
+];
+
+/**
+ * 2.2: Bowser in person at the end of 1-0 (campaign): the pages before his spell (the wand comes
+ * out on the second), then the last page after it.
+ */
+export const BOWSER_SPELL_PAGES: readonly Page[] = [
+  bowser("BWA HA HA! SO YOU'RE", 'LOOKING FOR THE PRINCESS', 'TOO, MARIO?'),
+  bowser('LIKE MY NEW WAND? ONE WAVE', 'AND ANYONE DOES WHATEVER I', 'SAY!'),
+  bowser('AND I READ HER LITTLE NOTE.', "'WHERE NO KOOPA WOULD EVER", "LOOK.' HMPH!"),
+  bowser("WELL, IF MY KOOPAS CAN'T", "FIND HER, THEN I'LL FIND", 'SOMEBODY WHO WILL!'),
+];
+export const BOWSER_SPELL_LAST: Page = bowser(
+  'HEROES OF OTHER WORLDS,',
+  'YOU SERVE ME NOW! FIND ME',
+  'THAT PRINCESS! BWA HA HA!',
+);
+
+/** Said once during the spell's eight windows (a scene without on-screen text). */
+export const BOWSER_SPELL_SAID =
+  'Bowser raises the wand. Eight heroes from other worlds are pulled into the eight worlds, under his spell.';
+
+/** 2.4: Toad's World 1 scene, back on the map after 1-0 (a major scene: he walks in). */
+export const WORLD1_PAGES: readonly Page[] = [
+  toad('MARIO, DID YOU SEE THAT?!', 'BOWSER USED MAGIC TO BRING', 'PEOPLE HERE FROM OTHER', 'UNIVERSES!'),
+  toad('AND HE WANTS THEM TO FIND', 'THE PRINCESS FOR HIM. WE', 'HAVE TO FIND HER FIRST!'),
+  toad("WHERE'S LUIGI? WE NEED TO", 'FIND HIM. WE COULD REALLY', 'USE HIS HELP FINDING', 'PEACH.'),
+];
+
+/** 2.4: 1-1, brainwashed Luigi runs off: what the announcer says, then Mario's card. */
+export const LUIGI_RUNS_SAID = 'A brainwashed Luigi looks back and runs away.';
+export const LUIGI_RUNS_PAGE: Page = [
+  'MARIO:',
+  '',
+  'WAS THAT LUIGI? WHY DID HE',
+  "LOOK LIKE THAT? LET'S GO",
+  'FIND HIM!',
+];
+
+/* ================================================================ end of S1 */
+
+/* ================================================================ S2 (0.4.23): the NPCs and the freeing talks */
+
+/* ---------------------------------------------------------------- the hint NPCs (2.4-2.11) */
 
 /** A partner's id (the `partner x y who=<id>` entity) and what it says when talked to (or read). */
 export interface PartnerScript {
@@ -381,37 +597,126 @@ export interface PartnerScript {
   pages: readonly Page[];
   /** The page after which a single coin pops out over it (the old man's "TAKE THIS."). */
   coinAfter?: number;
+  /**
+   * The hero this partner gives the hints for (docs/STORY.md 2.3 "Hint NPCs"). Once that hero is
+   * freed on the file it says `after` instead of `pages`; with no `after` it is gone (Fred: home).
+   */
+  hero?: string;
+  /** What it says once `hero` is freed (one page, NEW in 0.4.23). */
+  after?: readonly Page[];
+}
+
+/** The pages partner `script` says on a file where the heroes `freed` are free (story/partners.ts). */
+export function partnerPages(script: PartnerScript, freed: readonly string[]): readonly Page[] {
+  return script.hero && script.after && freed.includes(script.hero) ? script.after : script.pages;
+}
+
+/** Whether partner `script` has left on a file where `freed` are free (a hint NPC with no after line). */
+export function partnerGone(script: PartnerScript, freed: readonly string[]): boolean {
+  return script.hero !== undefined && script.after === undefined && freed.includes(script.hero);
 }
 
 export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
+  // 1-1, column 55: the Mushroom Kingdom villager Luigi knocked flat on his way down the pipe (2.4).
+  villager: {
+    verb: 'TALK',
+    name: 'A villager',
+    hero: 'luigi',
+    pages: [
+      [
+        'VILLAGER:',
+        '',
+        'OW, MY CAP! SOME GUY IN',
+        'GREEN JUST KNOCKED ME FLAT',
+        'AND JUMPED DOWN THIS PIPE!',
+      ],
+      ['VILLAGER:', '', 'HIS EYES WERE ALL GLOWY. HE', "DIDN'T EVEN SAY SORRY. BE", 'CAREFUL DOWN THERE!'],
+    ],
+    after: [
+      [
+        'VILLAGER:',
+        '',
+        'THAT WAS LUIGI? HE CAME BACK',
+        'AND SAID SORRY. NICE GUY,',
+        "WHEN HE'S NOT GLOWING.",
+      ],
+    ],
+  },
+  // 1-2's warp zone: not a hint for a hero; he says where the one working pipe goes (2.4).
+  'pipe-keeper': {
+    verb: 'TALK',
+    name: 'The pipe keeper',
+    pages: [
+      [
+        'PIPE KEEPER:',
+        '',
+        'WELCOME TO THE WARP ZONE!',
+        'I KEEP THESE PIPES. THEY',
+        'USED TO GO TO OTHER PARTS',
+        'OF THE KINGDOM...',
+      ],
+      [
+        'PIPE KEEPER:',
+        '',
+        "BUT SINCE THE KING'S BIG",
+        'SPELL, ONLY THE MIDDLE ONE',
+        'WORKS, AND IT GOES SOMEWHERE',
+        'STRANGE.',
+      ],
+      [
+        'PIPE KEEPER:',
+        '',
+        'A PLACE BETWEEN WORLDS!',
+        'STRANGE FOLK PLAY STRANGE',
+        'GAMES THERE. HAVE A LOOK,',
+        'IF YOU DARE.',
+      ],
+    ],
+  },
+  // 2-1, by the vine block (83), in front of his cave doorway (2.5).
   'old-man': {
     verb: 'TALK',
     name: 'An old man',
+    hero: 'link',
     coinAfter: 0,
     pages: [
       ['OLD MAN:', '', "IT'S DANGEROUS TO GO", 'ALONE! TAKE THIS.'],
-      ['OLD MAN:', '', 'THE SILENT ONE WAITS ABOVE', 'THE CLOUDS. A BRICK AHEAD', 'HIDES A VINE. CLIMB IT.'],
-      [
-        'OLD MAN:',
-        '',
-        'WHERE THE COINS IN THE SKY',
-        'RUN OUT, BUMP THE EMPTY AIR.',
-        'A SECOND VINE GOES HIGHER.',
-      ],
+      ['OLD MAN:', '', 'THE SILENT ONE WAITS ABOVE', 'THE CLOUDS. A BRICK RIGHT', 'UP THERE HIDES A VINE.'],
       ['OLD MAN:', '', 'ALSO, PAY ME FOR THE DOOR', 'REPAIR CHARGE. ...KIDDING.', 'THERE IS NO DOOR.'],
     ],
+    after: [['OLD MAN:', '', 'THE SILENT ONE THANKED ME.', 'WELL, HE NODDED. SAME', 'THING.']],
   },
+  // 2-1-sky, bobbing in the air at the arrival (2.5).
+  fairy: {
+    verb: 'TALK',
+    name: 'A fairy',
+    hero: 'link',
+    pages: [
+      ['FAIRY:', '', "THE SILENT ONE'S TEMPLE", 'FLOATS HIGHER STILL!'],
+      [
+        'FAIRY:',
+        '',
+        'RIDE THE CLOUDS TO WHERE',
+        'THE COINS RUN OUT. THEN',
+        'JUMP, AND BUMP THE EMPTY',
+        'AIR. A VINE WILL GROW.',
+      ],
+    ],
+    after: [['FAIRY:', '', 'YOU FOUND HIM! NOW GO ON,', 'SHOO. FAIRIES NEED NAPS.']],
+  },
+  // 3-1, on the ground before the vine block (131) (2.6).
   'dr-light': {
     verb: 'TALK',
     name: 'Doctor Light',
+    hero: 'megaman',
     pages: [
       [
         'DR. LIGHT:',
         '',
-        "AH, A VISITOR! I'VE BEEN",
-        "TRACKING MY BOY'S SIGNAL.",
-        'IT COMES FROM ABOVE THE',
-        'SKY. HIGHER THAN COINS GO.',
+        "AH, A VISITOR! MY BOY'S",
+        'SIGNAL COMES FROM ABOVE',
+        'THE SKY. A BLOCK UP THERE',
+        'HIDES A VINE. CLIMB IT!',
       ],
       [
         'DR. LIGHT:',
@@ -422,23 +727,28 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'JUMPING. BUMP THE AIR!',
       ],
     ],
+    after: [['DR. LIGHT:', '', 'THANK YOU FOR BRINGING MY', 'BOY BACK. TAKE GOOD CARE', 'OF EACH OTHER!']],
   },
+  // 4-2's Brinstar underground, before the vine block (64) (2.7). A caption: no speaker.
   chozo: {
     verb: 'READ',
     name: 'An old bird statue',
+    hero: 'samus',
     pages: [
       ['AN OLD BIRD STATUE. ITS', 'EYES GLOW. WORDS ARE CUT', 'INTO ITS BASE:'],
       [
         'THE HUNTER SLEEPS BELOW.',
-        "CLIMB THE NEXT LAND'S VINE",
-        'TO THE PIPE THAT NO LONGER',
+        'CLIMB THE VINE ABOVE TO',
+        'THE PIPE THAT NO LONGER',
         'WARPS, AND GO DOWN.',
       ],
     ],
+    after: [["THE STATUE'S EYES HAVE", 'GONE DARK. IT LOOKS...', 'PLEASED?']],
   },
   townsperson: {
     verb: 'TALK',
     name: 'A townsperson',
+    hero: 'simon',
     pages: [
       ['TOWNSPERSON:', '', 'WHAT A HORRIBLE NIGHT TO', 'HAVE A CURSE.'],
       [
@@ -451,10 +761,12 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['TOWNSPERSON:', '', 'AND HIT THE CRACKED WALL', 'WITH YOUR HEAD TO MAKE A', 'HOLE. TRUST ME.'],
     ],
+    after: [['TOWNSPERSON:', '', 'THE HUNTER IS FREE! WHAT A', 'WONDERFUL NIGHT TO HAVE NO', 'CURSE.']],
   },
   irene: {
     verb: 'TALK',
     name: 'Irene',
+    hero: 'ryu',
     pages: [
       [
         'IRENE:',
@@ -473,10 +785,12 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'LEFT WALL DOWN THERE.',
       ],
     ],
+    after: [['IRENE:', '', 'YOU FOUND HIM! HE THANKED', 'ME, THEN VANISHED. NINJAS.']],
   },
   lance: {
     verb: 'TALK',
     name: 'Lance',
+    hero: 'bill',
     pages: [
       ['LANCE:', '', 'SEEN MY PARTNER? WE CAME', 'TO STOP AN ALIEN. NOW HE', 'WORKS FOR IT.'],
       [
@@ -488,12 +802,25 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'RUN. HE NEVER RUNS.',
       ],
     ],
+    after: [['LANCE:', '', 'THANKS FOR BRINGING MY', 'PARTNER BACK. I OWE YOU A', 'SPREAD GUN.']],
+  },
+  // Fred the frog by 8-4-end's trap pipe (10): he can't talk, so his second page is a caption.
+  // Once Sophia III is freed he is gone (home with Jason).
+  fred: {
+    verb: 'TALK',
+    name: 'Fred the frog',
+    hero: 'sophia',
+    pages: [
+      ['FRED:', '', 'RIBBIT.'],
+      ['THE FROG LOOKS AT YOU,', 'THEN DOWN THE PIPE. THEN', 'AT YOU AGAIN.'],
+    ],
   },
   // Sophia III's pilot, in his secret area behind 8-4-end's trap pipe (8-4-jason): talking to him
   // sends Fred into the pool (objects/fred.ts).
   jason: {
     verb: 'TALK',
     name: 'Jason',
+    hero: 'sophia',
     pages: [
       ['JASON:', '', 'FRED! FRED, COME BACK!', '...OH, HI. HAVE YOU SEEN', 'A FROG? GREEN, THIS BIG?'],
       [
@@ -506,5 +833,144 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['JASON:', '', "MY TANK, SOPHIA! SHE'S DOWN", 'THERE TOO. FOLLOW FRED,', "PLEASE. I CAN'T SWIM."],
     ],
+    after: [['JASON:', '', "SOPHIA'S BACK, FRED'S BACK.", 'BEST DAY EVER! THANK YOU!']],
   },
 };
+
+/* ---------------------------------------------------------------- 2.13: the freed talks */
+
+/**
+ * What each freed hero says (docs/STORY.md 2.4-2.11), between the round and the freed card
+ * (scenes/free-hero.ts), by hero id; `you` is the full name of the hero who talked to them (the
+ * `<HERO>` of the doc), who speaks the `<HERO>:` pages. Each talk reveals a bit more (2.13).
+ */
+export const FREED_TALKS: Readonly<Record<string, (you: string) => Page[]>> = {
+  luigi: (you) => [
+    ['LUIGI:', '', 'OOF... MY HEAD...', `${you}? IS THAT YOU?`],
+    [`${you}:`, '', 'LUIGI! ...YOU DID SNAP OUT', "OF IT, DIDN'T YOU?"],
+    [
+      'LUIGI:',
+      '',
+      'I THINK SO! IT WAS BOWSER.',
+      "HE'S GOT A MAGIC WAND, AND",
+      "HE'S BRAINWASHING PEOPLE",
+      'TO DO HIS BIDDING!',
+    ],
+    [
+      'LUIGI:',
+      '',
+      'ALL HE WANTED FROM ME WAS',
+      'ONE THING: FIND THE',
+      "PRINCESS. AND I WASN'T THE",
+      'ONLY ONE HE ZAPPED.',
+    ],
+    [
+      'LUIGI:',
+      '',
+      'THERE WERE OTHERS IN THAT',
+      'SPELL. HEROES FROM OTHER',
+      'WORLDS! WE HAVE TO FIND',
+      'THEM AND SAVE THEM TOO.',
+    ],
+    ['LUIGI:', '', 'BUT WHERE COULD THEY BE?', "...COUNT ME IN. LET'S GO!"],
+  ],
+  link: (you) => [
+    ['LINK:', '', '...'],
+    [`${you}:`, '', 'ARE YOU OKAY?'],
+    [
+      'LINK:',
+      '',
+      '...THANK YOU. THE SHADOW',
+      'SHOWED ME HER. A PRINCESS',
+      'IN PINK, RUNNING. NOT',
+      'CAUGHT. RUNNING.',
+    ],
+    [
+      'LINK:',
+      '',
+      "THE KING'S SPELL DID NOT",
+      'TAKE ONLY ME. IT TORE MY',
+      'LAND FROM ITS PLACE AND',
+      'SET IT DOWN HERE.',
+    ],
+    ['LINK:', '', "EACH HERO'S LAND IS SEALED", 'WITH HIS MAGIC. FREE THEM,', 'AND THE SEALS WILL BREAK.'],
+    ['LINK:', '', '...I WILL COME WITH YOU.'],
+  ],
+  megaman: (you) => [
+    ['MEGA MAN:', '', 'SYSTEMS... REBOOTING. ROGUE', 'PROGRAM DELETED. THANK YOU,', `${you}!`],
+    [
+      'MEGA MAN:',
+      '',
+      'I LOGGED THE SPELL WHILE IT',
+      'RAN ME. EVERY SPELL COMES',
+      'FROM ONE SOURCE: THE WAND.',
+    ],
+    ['MEGA MAN:', '', 'WHEN YOU BREAK A SPELL, ITS', 'ENERGY SNAPS BACK INTO THE', "WAND. IT'S OVERLOADING!"],
+    ['MEGA MAN:', '', 'FREE THE OTHERS, AND IT', "WILL KEEP SPARKING. LET'S", "GO. I'M READY!"],
+  ],
+  samus: (you) => [
+    ['SAMUS:', '', 'THE PARASITE IS GONE.', `THANKS, ${you}.`, 'I OWE YOU ONE.'],
+    ['SAMUS:', '', 'MY VISOR SCANNED THAT WAND', "WHILE I WAS UNDER. IT'S NOT", "EVEN THE KING'S."],
+    ['SAMUS:', '', "IT'S REGISTERED TO ONE OF", 'HIS KIDS. LARRY. THE KING', 'STOLE IT FROM HIS OWN SON.'],
+    ['SAMUS:', '', 'A KOOPA WHO ROBS HIS OWN', "FAMILY. I'VE HUNTED WORSE.", "NOT MANY. LET'S MOVE."],
+  ],
+  simon: (you) => [
+    ['SIMON:', '', 'THE CURSE IS LIFTED. MY', 'BLOOD RUNS CLEAN AGAIN. I', `AM IN YOUR DEBT, ${you}.`],
+    ['SIMON:', '', 'UNDER THE CURSE, I HUNTED', 'YOUR PRINCESS. EVERY TRAIL', 'WENT COLD. EVERY ONE.'],
+    [
+      'SIMON:',
+      '',
+      'SHE WARNS VILLAGES BEFORE',
+      'THE KOOPAS COME. SHE LAYS',
+      'FALSE TRACKS. NO HUNTER',
+      'COULD CATCH HER.',
+    ],
+    [
+      'SIMON:',
+      '',
+      'YOUR PRINCESS IS NO DAMSEL.',
+      'BUT WE SHOULD FIND HER',
+      'BEFORE THE KING DOES. LEAD',
+      'ON.',
+    ],
+  ],
+  ryu: () => [
+    ['RYU:', '', 'THE MASK IS BROKEN. MY', 'BLADE IS MY OWN AGAIN.'],
+    ['RYU:', '', "I SAW THE KING'S PLAN WHILE", 'I SERVED HIM. HIS STAND-INS', 'ARE NEARLY SPENT.'],
+    ['RYU:', '', 'WHEN THE LAST ONE FALLS, HE', 'WILL HIDE IN HIS OWN', 'CASTLE AND FIGHT YOU', 'HIMSELF.'],
+    [
+      'RYU:',
+      '',
+      'AND I SAW YOUR PRINCESS',
+      'ONCE, ON A ROOFTOP. SHE SAW',
+      'ME TOO, AND VANISHED.',
+      'LIKE A NINJA.',
+    ],
+  ],
+  bill: (you) => [
+    ['BILL:', '', "ALIEN'S OUT OF MY HEAD.", 'FEELS GOOD. THANKS,', `${you}.`],
+    ['BILL:', '', "INTEL: THE KING'S WAND HAS", 'MORE CRACKS THAN MY OLD', "HELMET. IT'S ABOUT TO GO."],
+    ['BILL:', '', 'ONE WORLD LEFT. ONE HERO', 'LEFT. THEN WE HIT THE', "KING'S BASE. LOCK AND", 'LOAD!'],
+  ],
+  sophia: (you) => [
+    ['SOPHIA III:', '', 'SYSTEM REBOOT... PILOT', 'FOUND. HELLO, JASON.'],
+    ['JASON:', '', "SOPHIA! YOU'RE OKAY! AND", `YOU... THANKS, ${you}.`],
+    [
+      'SOPHIA III:',
+      '',
+      'ALERT. SCAN SHOWS A TEAR',
+      'IN SPACE UNDER THIS',
+      "CASTLE. THE KING'S WAND IS",
+      'HOLDING IT SHUT.',
+    ],
+    ['SOPHIA III:', '', 'BEYOND IT: A LAND NO MAP', 'SHOWS. NO KOOPA SIGNALS', 'THERE. NONE.'],
+    ['JASON:', '', "WE'RE WITH YOU. CLIMB IN", 'ANY TIME!'],
+  ],
+};
+
+/** Hero `id`'s freed talk, `you` speaking the `<HERO>:` pages; none for a hero without one. */
+export function freedTalk(id: string, you: string): Page[] {
+  return FREED_TALKS[id]?.(you) ?? [];
+}
+
+/* ================================================================ end of S2 */

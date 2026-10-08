@@ -46,7 +46,7 @@ export const WORLD_3: WorldMapPage = {
     { from: '3-3', to: '3-4', points: poly([9, 10], [11, 10], [11, 6], [13, 6]) },
     { from: '3-1', to: 'bonus-3', points: poly([4, 6], [7, 6], [7, 5], [8, 5]) },
   ],
-  exits: [{ from: '3-4', to: 'smb-4', side: 'right', points: poly([13, 6], [15, 6]) }],
+  exits: [{ from: '3-4', to: 'smb-4', side: 'right', points: poly([13, 6], [15, 6]), gate: 'megaman' }],
   actors: [
     actor('star', 52, 30, { phase: 0 }),
     actor('star', 132, 26, { phase: 50 }),

@@ -35,6 +35,9 @@ podoboo 23 12
 bowser 40 9 attack=both
 axe 45 8
 princess 57 12
+;; Campaign only (0.4.23, docs/STORY.md 2.11): Fred the frog by the trap pipe (10) that leads to
+;; Jason's area; gone once Sophia III is freed.
+partner 8 12 who=fred campaign=true
 
 [zones]
 exit 56 next=end

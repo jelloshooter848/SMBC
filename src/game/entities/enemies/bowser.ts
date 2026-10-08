@@ -125,6 +125,13 @@ export class Bowser extends Enemy {
   private age = 0;
   /** The axe dropped a fake whose disguise burst: its true form (N of `bowser-die-N`) falls. */
   private unmasked = 0;
+  /**
+   * The disguise burst before the bridge fell (0.4.23, the campaign's castle unmask scene,
+   * world/unmask.ts): the true form (N) stands on the bridge, harmless, until the axe drops it.
+   */
+  standing = 0;
+  /** The true form standing was beaten with weapons: dazed, little stars over its head. */
+  dazed = false;
 
   constructor(
     tx: number,
@@ -180,6 +187,9 @@ export class Bowser extends Enemy {
    * palette so they show on the black. In the campaign a fake's disguise bursts first (unmask).
    */
   protected override flipOut(_src: DamageSource, world: World): void {
+    // The campaign's castles 1-4 to 7-4: the disguise bursts and the creature drops onto the
+    // bridge, dazed, while the hero jumps over it to the axe (world/unmask.ts).
+    if (world.unmaskOnKill(this)) return;
     const n = Math.min(8, Math.max(1, world.state.world | 0));
     this.unmask(world);
     const corpse = new Corpse(
@@ -212,7 +222,9 @@ export class Bowser extends Enemy {
     this.stompable = false;
     this.body.vx = 0;
     if (!world) return;
-    const n = this.unmask(world);
+    // Already unmasked (the castle's unmask scene): no second puff.
+    const n = this.standing || this.unmask(world);
+    this.standing = 0;
     if (!n) return;
     this.unmasked = n;
     this.currentFrame = `bowser-die-${n}`;
@@ -238,6 +250,29 @@ export class Bowser extends Enemy {
     return n;
   }
 
+  /**
+   * The campaign's castle unmask scene (world/unmask.ts): the disguise bursts now, in its puff, and
+   * the true form stands where he stood, harmless (`dazed` after a weapon kill). Returns the true
+   * form (0: none, nothing happens).
+   */
+  burst(world: World, dazed: boolean): number {
+    const n = this.unmask(world);
+    if (!n) return 0;
+    this.standing = n;
+    this.dazed = dazed;
+    this.contactHurts = false;
+    this.stompable = false;
+    this.body.vx = 0;
+    for (const k of Object.keys(this.vulnerability) as (keyof typeof this.vulnerability)[])
+      this.vulnerability[k] = 'immune';
+    return n;
+  }
+
+  /** The true form's height in px (its rows sit at the bottom of his 32-px frame). */
+  get standingHeight(): number {
+    return TRUE_FORM_HEIGHT[this.standing] ?? 24;
+  }
+
   /** Whether the tell is on (its last TELL_FRAMES of every TELL_PERIOD; campaign fakes only). */
   get tellWindow(): boolean {
     if (!this.disguise || this.dead) return false;
@@ -257,6 +292,26 @@ export class Bowser extends Enemy {
     if (this.unmasked) {
       const sheet = assets.sheet(this.sheet, this.formPalette(view.theme));
       r.sprite(sheet, `bowser-die-${this.unmasked}`, x, y, flip, true);
+      return;
+    }
+    if (this.standing) {
+      // The true form on its feet (its rows start 8 px down his box), dazed stars over its head.
+      const n = this.standing;
+      const fy = y + 24 - (TRUE_FORM_HEIGHT[n] ?? 24);
+      r.sprite(assets.sheet(this.sheet, this.formPalette(view.theme)), `bowser-die-${n}`, x, fy, flip);
+      if (this.dazed) {
+        const cx = x + (flip ? 22 : 10);
+        for (let i = 0; i < 3; i++) {
+          const a = (view.frame / 10 + (i * Math.PI * 2) / 3) % (Math.PI * 2);
+          drawSparkle(
+            r,
+            Math.round(cx + Math.cos(a) * 7),
+            Math.round(fy - 3 + Math.sin(a) * 2),
+            1,
+            '#fce4a0',
+          );
+        }
+      }
       return;
     }
     const n = this.disguise;
@@ -345,6 +400,12 @@ export class Bowser extends Enemy {
       b.vy += 0x00400;
       b.y += velToSub(b.vy);
       if (this.isBelowLevel()) this.destroy();
+      return;
+    }
+    // Unmasked on the bridge: it only drops onto it, and waits for the axe.
+    if (this.standing) {
+      b.vx = 0;
+      this.fall(world, GRAVITY);
       return;
     }
     if (world.bossClear) return;

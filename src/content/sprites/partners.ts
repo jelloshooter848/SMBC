@@ -2,16 +2,18 @@ import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
- * The campaign's partners (docs/STORY.md 2.5-2.10, `partner x y who=<id>`): the old man in 2-1's
- * cave mouth, Dr. Light, the bird statue, a night-town local, Agent Irene and Lance, plus the cave
- * doorway the old man stands in front of (`decor x y kind=partners:cave`). Original 8-bit art
+ * The campaign's partners (docs/STORY.md 2.4-2.11, `partner x y who=<id>`): 1-1's villager, 1-2's
+ * pipe keeper, the old man by 2-1's vine, the fairy in 2-1's clouds, Dr. Light, the bird statue, a
+ * night-town local, Agent Irene and Lance, plus the cave doorway the old man stands in front of
+ * (`decor x y kind=partners:cave`). Original 8-bit art
  * drawn here in the spirit of the NES games they come from (black outlines, flat colours); nothing
  * is traced.
  *
  * Conventions the game relies on:
  * - `<who>-0` is the idle frame and `<who>-1` the blink (for the statue: its eyes glowing
  *   brighter); the two differ only around the eyes. People are 16x32 and stand on their bottom
- *   row, seen from the front; the seated statue is 16x24, facing left.
+ *   row, seen from the front (the Mushroom Kingdom folk are Toad's 16x24); the seated statue is
+ *   16x24, facing left. The fairy (16x16) floats; her `-1` is a wing beat.
  * - `cave` (32x40) is a small rock face with a dark doorway in the middle, standing on its bottom
  *   row.
  */
@@ -21,7 +23,8 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  *   0 black / outline  1 white           2 light grey      3 grey            4 dark grey
  *   5 skin             6 skin shade      7 robe red-brown  8 robe shade      9 bright red
  *   a light brown      b brown           c dark brown      d blue            e dark blue
- *   f glow yellow      g glow pale       h olive           i dark green
+ *   f glow yellow      g glow pale       h olive           i dark green      j pink
+ *   k green            l pale blue
  */
 export const partnersPalettes: Record<string, string[]> = {
   partners: [
@@ -44,6 +47,9 @@ export const partnersPalettes: Record<string, string[]> = {
     NES.yellowLight,
     NES.olive,
     NES.greenDark,
+    NES.pink,
+    NES.green,
+    NES.blueLight,
   ],
 };
 
@@ -267,6 +273,103 @@ const lance0: Rows = [
 ];
 const lance1 = swap(swap(lance0, 7, '...0555555550.99'), 8, '...0565555650.9.');
 
+/*
+ * 0.4.23 (S2): the Mushroom Kingdom folk and the fairy. The villager and the pipe keeper are
+ * Toad's height (16x24), front view, standing on their bottom row; the fairy (16x16) floats (the
+ * partner draws her above her spot, bobbing) and her `-1` frame is a wing beat, not a blink.
+ */
+
+/** The villager (1-1): a white cap with blue spots, a brown vest, rubbing his head with one hand. */
+const villager0: Rows = [
+  '................',
+  '.....000000.....',
+  '...00111dd100...',
+  '..0dd1111ddd10..',
+  '.01ddd1111ddd10.',
+  '.011d111111d110.',
+  '0111111dd1111110',
+  '01dd1dddddd1dd10',
+  '.000000000005550',
+  '...0555555550550',
+  '...0505555050550',
+  '...0505555050550',
+  '...0555005550550',
+  '....055555500110',
+  '...0bb1111bb0110',
+  '..01bb1111bbb10.',
+  '.011bb1111bbb0..',
+  '.011bb1111bb0...',
+  '.055bb1111bb0...',
+  '..00bbbbbbbb0...',
+  '...0eeeeeeee0...',
+  '...0eee00eee0...',
+  '..0ccc0..0ccc0..',
+  '..00000..00000..',
+];
+const villager1 = swap(swap(villager0, 10, '...0555555550550'), 11, '...0565555650550');
+
+/** The pipe keeper (1-2's warp zone): an old one, green-spotted cap, white brows and moustache, blue overalls, a wrench. */
+const pipeKeeper0: Rows = [
+  '................',
+  '.....000000.....',
+  '...0011kk1100...',
+  '..01kkk11kkk10..',
+  '.01kk111111kk10.',
+  '.0111kk11kk1110.',
+  '011kkkk11kkkk110',
+  '0111kk1111kk1110',
+  '.00000000000000.',
+  '...0555555550...',
+  '...0115555110...',
+  '...0505555050...',
+  '..011115511110..',
+  '....01111110....',
+  '...011dddd110...',
+  '..011dddddd110..',
+  '..01dfddddfd10..',
+  '..05dddddddd53..',
+  '...0dddddddd03..',
+  '...0ddd00ddd03..',
+  '...0ddd00ddd333.',
+  '...0ddd00ddd3.3.',
+  '..0ccc0..0ccc0..',
+  '..00000..00000..',
+];
+const pipeKeeper1 = swap(pipeKeeper0, 11, '...0565555650...');
+
+/** The fairy (2-1-sky): a pink glow with a golden head and pale blue wings, wings up. */
+const fairy0: Rows = [
+  '................',
+  '.000........000.',
+  '0lll0..00..0lll0',
+  '0llll00ff00llll0',
+  '.0llll0ff0llll0.',
+  '..0lll0550lll0..',
+  '...00l0550l00...',
+  '.....0jjjj0.....',
+  '....0jjggjj0....',
+  '....0jggggj0....',
+  '....0jjggjj0....',
+  '.....0jjjj0.....',
+  '......0jj0......',
+  '.......00.......',
+  '................',
+  '.......gg.......',
+];
+/** Wings down. */
+const fairy1: Rows = [
+  '................',
+  '................',
+  '.......00.......',
+  '......0ff0......',
+  '......0ff0......',
+  '.000..0550..000.',
+  '0llll005500llll0',
+  '.0lll0jjjj0lll0.',
+  '..000jjggjj000..',
+  ...fairy0.slice(9),
+];
+
 /**
  * The cave doorway at 2-1's start (32x40): a small mound of brown boulders with a dark arched
  * doorway in the middle (16 wide, as wide as the old man), standing on the ground.
@@ -333,6 +436,12 @@ export const partnersDef: SpriteDef = {
     'irene-1': irene1,
     'lance-0': lance0,
     'lance-1': lance1,
+    'villager-0': villager0,
+    'villager-1': villager1,
+    'pipe-keeper-0': pipeKeeper0,
+    'pipe-keeper-1': pipeKeeper1,
+    'fairy-0': fairy0,
+    'fairy-1': fairy1,
     cave,
   },
 };

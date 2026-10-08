@@ -39,7 +39,8 @@ import {
 } from '../map/rules';
 import { mapPage } from '@content/worldmap';
 import { CRYSTAL_BALL } from '../map/captives';
-import { seedSeen, storyOn } from '../story/beats';
+import { storyOn, upgradeStory } from '../story/beats';
+import { playOpening } from '../story/opening';
 import { bonusGame, type BonusOutcome, type BonusSpot } from '../map/bonus-spot';
 import { HammerBattleScene } from './hammer-battle';
 import { campaignLevel } from '../level/campaign';
@@ -48,7 +49,13 @@ import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship'
 import { isLostLevel } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
-import { levelTutorial, newTutorialRun, stageTutorial, type TutorialRun } from '../tutorial/stage-tutorial';
+import {
+  levelTutorial,
+  newTutorialRun,
+  skipTutorialStory,
+  stageTutorial,
+  type TutorialRun,
+} from '../tutorial/stage-tutorial';
 import {
   FIRST_HERO,
   loadSave,
@@ -931,7 +938,7 @@ export class Game {
    * Play save file `slot` (file select): load it into the game state, save it, show the map.
    * `save` is passed when just created (so play goes on even if storage is unavailable).
    */
-  openFile(slot: SaveSlot, save = loadSave(slot)): void {
+  openFile(slot: SaveSlot, save = loadSave(slot), opening = false): void {
     if (!save) {
       this.showTitle();
       return;
@@ -972,20 +979,25 @@ export class Game {
       secrets: save.secrets.slice(),
       position: { page: save.position.page, node: save.position.node },
       gameCleared: save.gameCleared,
+      // The world gates read the file's freed heroes (the same list freeHero adds to).
+      freed: this.freed,
     };
-    // A file from before the story (or a test's file) counts what already happened as seen.
-    this.story = (save.story ?? seedSeen(this.mapProgress, this.freed)).slice();
+    // A file from before the story (or a test's file) counts what already happened as seen, and
+    // a list from before 0.4.23 gets the new scenes whose trigger is already past (upgradeStory).
+    this.story = upgradeStory(save.story, this.mapProgress, this.freed);
     this.storyUnsaved.clear();
+    // A new file's opening plays first (docs/STORY.md 2.1, story/opening.ts), then the map.
+    if (opening && playOpening(this, () => this.showMap())) return;
     this.showMap(); // the map saves the file as it opens
   }
 
   /**
-   * A file just created on the file select: its World 1 map, the hero standing on 1-0, Mario's
-   * tutorial stage, where Toad tells the story (Bowser has brainwashed the heroes of other worlds;
-   * Mario must find and free them). 1-1 opens once 1-0 is cleared (or skipped from its pause menu).
+   * A file just created on the file select: the story's opening (Peach's castle and her note,
+   * once per file), then its World 1 map, the hero standing on 1-0, Mario's tutorial stage, where
+   * Bowser casts his spell. 1-1 opens once 1-0 is cleared (or skipped from its pause menu).
    */
   startNewFile(slot: SaveSlot, save: SaveFile): void {
-    this.openFile(slot, save);
+    this.openFile(slot, save, true);
   }
 
   /**
@@ -998,8 +1010,11 @@ export class Game {
     if (!run) return;
     this.state.checkpoint = null;
     this.state.time = null;
-    // Campaign: the clear's way back to the map gives the file's hero back (endTutorial).
+    // Campaign: the clear's way back to the map gives the file's hero back (endTutorial). A file
+    // that never saw Bowser's spell sees it first, over the level (docs/STORY.md 2.2).
     if (this.campaign) {
+      const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+      if (scene && skipTutorialStory(this, scene, run.level, () => this.levelCleared(run.level))) return;
       this.levelCleared(run.level);
       return;
     }

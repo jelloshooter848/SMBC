@@ -4,8 +4,6 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import type { Game } from '@game/scenes/game';
 import type { LevelScene } from '@game/scenes/level';
-import type { LevelData } from '@game/level/schema';
-import { applyLook } from '@game/level/campaign';
 import { AIRSHIP_ROOM } from '@game/scenes/airship';
 import { cardContinues, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import { abilityHint } from '@game/scenes/hints';
@@ -14,35 +12,26 @@ import { fontText } from '@game/hud/text';
 import { drawPromptBox, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { beat, storyOn } from './beats';
 import { playStoryCards } from './cards';
-import { LARRY_PAGES, noMoreStandIns, RESTYLE_PAGES, type Page } from './script';
+import { LARRY_PAGES, LUIGI_RUNS_PAGE, noMoreStandIns, type Page } from './script';
+import { LuigiRunsScene } from './luigi-runs';
 
 /*
  * The story scenes that play inside a level, over its frozen world (campaign only, storyOn), each
  * once the players stand free (not rising out of a pipe):
  *
- * - Toad's remark on a restyled level (docs/STORY.md 2.3b): the first time a main level with a
- *   RESTYLE_PAGES card starts on the file, before play, while its campaign look is on (the look's
- *   theme registered: level/campaign.ts applyLook). Once per file (`beat.restyle(id)`).
+ * - Luigi runs off in 1-1 (2.4): the first time 1-1 starts on the file while Luigi is not freed
+ *   (`beat.luigiRuns`), then Mario's card.
  * - Larry in his room (2.7): the first time the hero rises out of `4-2-larry`'s pipe in a run
  *   (AirshipRun.larrySpoke), not again on TRY AGAIN; a mandatory scene, so every run.
  * - Bowser in 8-4's bridge room (2.3a item 5): on first entering `8-4-end`, in the prompt box.
  *   Once per file (`beat.bowser84`).
  */
 
+/** The level Luigi runs off in (his captive waits in its bonus room). */
+export const LUIGI_LEVEL = '1-1';
+
 /** 8-4's bridge room, where the real king waits. */
 export const BRIDGE_ROOM = '8-4-end';
-
-/** `level` (as played) is in its campaign look: it has one and the look's theme is registered. */
-export function inCampaignLook(level: LevelData): boolean {
-  return level.campaignLook !== undefined && applyLook(level) !== level;
-}
-
-/** The restyled level's remark due on `scene`'s level now, else null (see the top of the file). */
-export function restyleDue(game: Game, level: LevelData): Page | null {
-  const page = level.parent ? undefined : RESTYLE_PAGES[level.id];
-  if (!page || game.seen(beat.restyle(level.id)) || !inCampaignLook(level)) return null;
-  return page;
-}
 
 /**
  * LevelScene.update, before the world moves: starts the story scene due in this level, if any
@@ -52,10 +41,15 @@ export function playLevelBeat(game: Game, scene: LevelScene): boolean {
   if (!storyOn(game) || scene.world.inPipe) return false;
   const level = scene.level;
   const resume = () => scene.resumePlay();
-  const restyle = restyleDue(game, level);
-  if (restyle) {
-    game.markSeen(beat.restyle(level.id));
-    playStoryCards(game, scene.world, [restyle], resume);
+  const luigi = game.deps.characters.find((c) => c.id === 'luigi');
+  if (level.id === LUIGI_LEVEL && luigi && !game.freed.includes('luigi') && !game.seen(beat.luigiRuns)) {
+    game.markSeen(beat.luigiRuns);
+    game.scenes.push(
+      new LuigiRunsScene(game, scene.world, luigi, () => {
+        game.scenes.pop();
+        playStoryCards(game, scene.world, [LUIGI_RUNS_PAGE], resume);
+      }),
+    );
     return true;
   }
   const run = scene.airship;

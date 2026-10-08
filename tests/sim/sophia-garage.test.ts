@@ -21,7 +21,7 @@ import { hiddenHeroes, hiddenHeroesAt } from '@game/map/captives';
 import { MINIGAMES, type MiniGameDef } from '@game/minigames';
 import { arenaGames, metHero } from '@game/arena';
 import { beat } from '@game/story/beats';
-import { JOINED_PAGES, MISSED_HINT, MISSED_PAGES, PARTNERS, riftPages, type Page } from '@game/story/script';
+import { PARTNERS, RIFT_SEALED_PAGES, sealedHint } from '@game/story/script';
 import { CreditsScene } from '@game/scenes/credits';
 import { px, toPx } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
@@ -145,7 +145,11 @@ describe('8-4-end outside the campaign is v0.4.12 tile for tile: the trap pipe a
       old.camera,
       old.parent,
     ]);
-    expect(l.entities).toEqual(old.entities);
+    // (0.4.23: Fred by the trap pipe sleeps outside the campaign.)
+    expect(l.entities.filter((e) => e.props?.campaign !== true)).toEqual(old.entities);
+    expect(l.entities.filter((e) => e.props?.campaign === true)).toEqual([
+      { type: 'partner', x: 8, y: 12, props: { who: 'fred', campaign: true } },
+    ]);
     expect(l.decor).toEqual(old.decor);
     expect(l.zones.filter((z) => !('campaign' in z && z.campaign))).toEqual(old.zones);
     expect(l.zones.filter((z) => 'campaign' in z && z.campaign)).toEqual([
@@ -649,9 +653,9 @@ describe('captive Sophia III', () => {
 });
 
 describe("Sophia III's story lines play now that she hides in 8-4", () => {
-  it('missed: after the 8-4 credits, the rift, then the frog on 8-4; the hint line at her shadow', () => {
+  it("after the 8-4 credits: the rift still shut without her (0.4.23); Toad's reminder, the sealed hint", () => {
     const h = makeGame();
-    world8({ story: ALL_STORY.filter((id) => id !== beat.rift && id !== beat.missed('sophia')) });
+    world8({ story: ALL_STORY.filter((id) => id !== beat.rift && id !== beat.sealed('smb-8')) });
     h.game.openFile(1);
     h.step();
     h.game.showEnding('8-4');
@@ -671,19 +675,19 @@ describe("Sophia III's story lines play now that she hides in 8-4", () => {
       h.idle(31);
       h.tap('jump');
     }
-    expect(read).toEqual([...riftPages('MARIO'), MISSED_PAGES.sophia as Page].map((p) => [...p]));
-    expect(h.game.seen(beat.missed('sophia'))).toBe(true);
+    expect(read).toEqual(RIFT_SEALED_PAGES.map((p) => [...p]));
+    expect(h.game.seen(beat.rift)).toBe(false);
     h.until(() => map.mode === 'idle', 600);
-    expect(map.hintLine).toBe(MISSED_HINT.sophia);
+    expect(map.hintLine).toBe(sealedHint('SOPHIA III'));
   });
 
-  it('joined: the first map after she is freed, Jason, Fred and the honk', () => {
+  it('freed: Toad no longer reacts on the map (docs/STORY.md 2.13)', () => {
     const h = makeGame();
-    world8({ freed: ['mario', 'sophia'], story: ALL_STORY.filter((id) => id !== beat.joined('sophia')) });
+    world8({ freed: ['mario', 'sophia'], story: [...ALL_STORY] });
     h.game.openFile(1);
     h.step();
     const map = h.top() as WorldMapScene;
-    expect(map.toad?.lines).toEqual(JOINED_PAGES.sophia);
+    expect(map.toad).toBeNull();
   });
 });
 

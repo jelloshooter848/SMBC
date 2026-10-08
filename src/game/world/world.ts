@@ -81,7 +81,7 @@ import {
 } from '../entities/objects/trick-wall';
 import { sfx as SFX_LIB } from '@content/sfx/sfx';
 import { Firebar } from '../entities/enemies/firebar';
-import { Bowser, type BowserAttack } from '../entities/enemies/bowser';
+import { Bowser, trueFormOf, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
 import { DEATH_FRAMES, DEATH_SFX, renderDeath, startDeath, stepDeath, type DeathStyle } from './death-style';
 import { Axe } from '../entities/objects/axe';
@@ -91,7 +91,8 @@ import { Larry } from '../entities/enemies/larry';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
-import { CASTLE_PAGES } from '../story/script';
+import { CASTLE_PAGES, REMARK_CASTLES } from '../story/script';
+import { CastleUnmask } from './unmask';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
@@ -424,6 +425,17 @@ export class World {
   /** Players still in a fall arrival's straight drop (FALL_IN_STEER_Y): no steering yet. */
   private readonly fallingIn = new Set<Player>();
   private checkpointSent = false;
+  /**
+   * The campaign's fake Bowser unmasking before the axe (0.4.23, world/unmask.ts): play holds while
+   * it runs; then the axe drops the bridge as usual.
+   */
+  unmask: CastleUnmask | null = null;
+  /**
+   * Set by LevelScene in the campaign: shows the hero's remark at castle `level`'s axe if it is
+   * due (story/castle-remark.ts) and returns true, calling `done` when the card closes; false when
+   * there is none (the hero just looks a moment).
+   */
+  remarkHook: ((level: string, hero: Player['def'], done: () => void) => boolean) | null = null;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
   bossClear: { t: number; stop?: number; page?: number; at?: number } | null = null;
   /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
@@ -766,7 +778,11 @@ export class World {
   }
 
   private spawnPending(): void {
-    const limit = this.camera.right + px(SPAWN_MARGIN_PX);
+    this.spawnUpTo(this.camera.right + px(SPAWN_MARGIN_PX));
+  }
+
+  /** Spawns the map's entities not spawned yet whose column starts at or before `limit` (sub-px). */
+  private spawnUpTo(limit: number): void {
     while (this.spawnIndex < this.spawns.length) {
       const s = this.spawns[this.spawnIndex] as EntitySpawn;
       if (tileToSub(s.x) > limit) break;
@@ -840,9 +856,12 @@ export class World {
         return new Captive(s.x, s.y, hero);
       }
       case 'partner':
-        // A campaign story partner (`partner x y who=<id>`): only while the story plays.
+        // A campaign story partner (`partner x y who=<id>`): only while the story plays (and
+        // not once it has left: Fred, after Sophia III is freed).
         return this.storyMode
-          ? Partner.create(s.x, s.y, String(s.props?.who ?? ''), Number(s.props?.dx ?? 0))
+          ? Partner.create(s.x, s.y, String(s.props?.who ?? ''), Number(s.props?.dx ?? 0), (id) =>
+              Boolean(this.captives?.isFreed(id)),
+            )
           : null;
       case 'spring':
       case 'spring-green':
@@ -1138,6 +1157,15 @@ export class World {
     if (this.clear) {
       this.tickScorePopups();
       return this.updateClear(inputs);
+    }
+    if (this.unmask) {
+      this.tickScorePopups();
+      const done = this.unmask.update(this);
+      if (done) {
+        this.unmask = null;
+        this.startBossClear(done.axe, done.player);
+      }
+      return;
     }
     if (this.bossClear) {
       this.tickScorePopups();
@@ -1930,8 +1958,10 @@ export class World {
         if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();
       } else if (e instanceof Projectile) this.projectile(p, e);
       else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e, p);
-      else if (e instanceof Axe && overlaps(pb, e.body)) this.startBossClear(e, p);
-      if (p.dead || this.clear || this.bossClear) return;
+      else if (e instanceof Axe && overlaps(pb, e.body)) {
+        if (!this.unmaskAtAxe(e, p)) this.startBossClear(e, p);
+      }
+      if (p.dead || this.clear || this.bossClear || this.unmask) return;
     }
   }
 
@@ -2612,6 +2642,63 @@ export class World {
     this.bossPlayer = p;
   }
   private bossPlayer: Player | null = null;
+
+  /**
+   * The castle whose fake gets the unmask scenes (docs/STORY.md 2.3a): the campaign's 1-4 to 7-4
+   * (its main level id), with the bridge's disguised Bowser `b`; null elsewhere (classic play, 8-4,
+   * the Lost Kingdom, which keep today's unmasking).
+   */
+  private unmaskCastle(b: Bowser): string | null {
+    const id = this.level.parent ?? this.level.id;
+    if (!this.storyMode || b.fake || !REMARK_CASTLES.includes(id) || trueFormOf(this.state.world) === 0)
+      return null;
+    return id;
+  }
+
+  /**
+   * Bowser `b` took a killing hit (Bowser.flipOut): in a castle with the unmask scenes his
+   * disguise bursts, the creature drops onto the bridge dazed, and the hero jumps over it to the
+   * axe (world/unmask.ts). True when the scene started (he stays, harmless, until the axe).
+   */
+  unmaskOnKill(b: Bowser): boolean {
+    const level = this.unmaskCastle(b);
+    if (!level || this.unmask || this.bossClear) return false;
+    // Beaten from the foot of the bridge, the axe is often still past the screen's edge (not
+    // spawned): bring the map's entities in up to it, so the hero can run there.
+    const at = this.level.entities.find((e) => e.type === 'axe');
+    if (at && !this.entities.some((e) => e instanceof Axe)) this.spawnUpTo(tileToSub(at.x));
+    const axe = this.entities.find((e): e is Axe => e instanceof Axe && e.alive);
+    // A shot that lands after the hero died: no one runs to the axe (the death goes on, as before).
+    const hero = axe ? this.nearestTo(axe) : null;
+    if (!level || !axe || !hero || this.unmask || this.bossClear) return false;
+    if (!b.burst(this, true)) return false;
+    this.unmask = new CastleUnmask('killed', b, hero, axe, level);
+    this.unmask.start(this);
+    return true;
+  }
+
+  /**
+   * Player `p` touched the axe: with the fake still standing in a castle with the unmask scenes,
+   * his disguise bursts and the hero looks at the creature (and says the remark) before the axe
+   * goes (world/unmask.ts). True when that scene started.
+   */
+  private unmaskAtAxe(axe: Axe, p: Player): boolean {
+    const b = this.entities.find(
+      (e): e is Bowser => e instanceof Bowser && e.alive && !e.fake && e.standing === 0,
+    );
+    const level = b ? this.unmaskCastle(b) : null;
+    if (!b || !level || this.unmask) return false;
+    this.unmask = new CastleUnmask('axe', b, p, axe, level);
+    this.unmask.start(this);
+    return true;
+  }
+
+  /** The living player nearest the axe (co-op: that one acts in the unmask scenes), or null. */
+  private nearestTo(axe: Axe): Player | null {
+    const live = this.players.filter((p) => !p.dead);
+    const d = (p: Player) => Math.abs(p.body.x - axe.body.x);
+    return live.reduce<Player | null>((a, p) => (!a || d(p) < d(a) ? p : a), null);
+  }
   /** The hero who took the axe (Toad's "THANK YOU <hero>!"), or null before the bridge is cut. */
   get castleHero(): Player['def'] | null {
     return this.bossPlayer?.def ?? null;

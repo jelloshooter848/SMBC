@@ -22,7 +22,9 @@ import { contraPalettes, contraDef } from './contra';
 import { sophiaPalettes, sophiaDef } from './sophia';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { partnersPalettes, partnersDef } from './partners';
+import { localsPalettes, localsDef } from './locals';
 import { wandPalettes, wandDef } from './wand';
+import { storyPalettes, storyDef } from './story';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -86,7 +88,10 @@ export const SPRITES: Record<string, SpriteDef> = {
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
   partners: partnersDef,
+  locals: localsDef,
   wand: wandDef,
+  // The 0.4.23 story's opening props: Bowser's star wand, the wax seal, Toad's note.
+  story: storyDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -117,7 +122,9 @@ const defaults: Record<string, readonly string[]> = {
   ...sophiaPalettes,
   ...bmDungeonPalettes,
   ...partnersPalettes,
+  ...localsPalettes,
   ...wandPalettes,
+  ...storyPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

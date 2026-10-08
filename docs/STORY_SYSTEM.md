@@ -8,8 +8,8 @@ for the shipped sections (2.1-2.14) and checks them against script.ts both ways,
 and the doc cannot drift apart (edit both together).
 
 Every story box is announced the same way, by `pageSaid` (story/cards.ts): the page's lines, then
-"OK for more, BACK to skip." (or "OK to continue." on the last page). Story cards, Toad's map box
-1-0's greeting (campaign) and 1-0's shadow tease all use it.
+"OK for more, BACK to skip." (or "OK to continue." on the last page). Story cards, Toad's map box,
+1-0's greeting (campaign), the opening and Bowser's spell all use it.
 
 ## Files
 
@@ -18,7 +18,10 @@ Every story box is announced the same way, by `pageSaid` (story/cards.ts): the p
 | `src/game/story/script.ts`              | All the text: pages, castle pages, partners, Toad's map lines               |
 | `src/game/story/beats.ts`               | `storyOn`, the beat ids (`beat.*`), `seedSeen`                              |
 | `src/game/story/cards.ts`               | `playStoryCards`: pages in the story box over a frozen level or the map     |
-| `src/game/story/level-beats.ts`         | Scenes inside a level: restyle remarks, Larry, Bowser in 8-4's bridge room  |
+| `src/game/story/level-beats.ts`         | Scenes inside a level: Luigi running off in 1-1, Larry, Bowser in 8-4       |
+| `src/game/story/opening.ts`             | A new file's opening: Peach's castle, her note (0.4.23, STORY.md 2.1)       |
+| `src/game/story/bowser-spell.ts`        | Bowser's spell at the end of 1-0, the eight windows (0.4.23, 2.2)           |
+| `src/game/story/luigi-runs.ts`          | 1-1: brainwashed Luigi runs off (0.4.23, 2.4)                               |
 | `src/game/story/partners.ts`            | Talking to a partner (`talkToPartner`), its announcement                    |
 | `src/game/map/toad-guide.ts`            | Which of Toad's map scenes are due (`dueScenes`), and his box (`ToadGuide`) |
 | `src/game/entities/objects/partner.ts`  | The partner entity                                                          |
@@ -43,7 +46,7 @@ A **beat** is a story scene that plays once per file. Its id (a plain string, `b
 never rename one.
 
 - **Only the list is written.** `markSeen` updates the stored campaign file's `story` field and
-  writes that, nothing else: a beat seen mid-level (a partner, a restyle remark, Bowser in 8-4)
+  writes that, nothing else: a beat seen mid-level (a partner, Luigi running off in 1-1, Bowser in 8-4)
   never turns the run's power, coins or score into a new save point. The next full `autosave`
   (a level's end, the map) saves the rest as before.
 - **Developer "Unlock all"** (`game.mapUnlockAll`): story scenes may play, but `markSeen` never
@@ -53,10 +56,17 @@ never rename one.
 
 The list is saved as `SaveFile.story?: string[]`: optional, no format bump, no migration (a patch
 change by docs/RELEASING.md). A file without it (from before 0.4.13, or a test's file) is seeded on
-load (`Game.openFile`) by `seedSeen(progress, freed)`: every beat whose trigger already holds
-counts as seen (open worlds' entries, `fakes` once 1-4 is cleared, joined cards for freed heroes,
-shown silhouettes, the crash with the crystal ball, the rift once 8-4 is beaten, ...), so an old
-file is not flooded with cards about the past. A malformed list is dropped and seeded the same way.
+load (`Game.openFile`, beats.ts `upgradeStory`) by `seedSeen(progress, freed)`: every beat whose
+trigger already holds counts as seen (World 1's scene once 1-0 is cleared, `fakes` once 1-4 is
+cleared, the crash with the crystal ball, the rift once 8-4 is beaten, ...), so an old file is not
+flooded with cards about the past. A malformed list is dropped and seeded the same way.
+
+**Files from before 0.4.23** (docs/STORY.md open question 8): a list without the mark
+`story:0.4.23` (`STORY_REV`) keeps what it has and gets `seedNew`, the 0.4.23 beats already past
+(the opening and the spell once anything is cleared, Luigi's run once 1-1 is cleared or he is
+freed, ...); then it is marked, once. Every new beat adds its rule to `seedNew`. The worlds a file
+has reached stay open (map/rules.ts). Ids of removed beats (`missed:*`, `joined*`, `all-freed`,
+`restyle:*`, `enter:smb-8:sophia`) may stay on old lists; nothing reads them.
 
 ## Toad on the map (`map/toad-guide.ts`)
 
@@ -66,46 +76,44 @@ When a map page shows (the map opens, a slide or fade ends, the airship crash cu
 Not on pages shown only through dev "Unlock all", and none on the Lost Kingdom's pages (their
 story is a later release).
 
-- **Play order:** the major scene (the airship crash, the 8-4 rift, the fake Bowsers), then heroes
-  joined (the generic card once per file, then each hero's own), every hero freed, the world's
-  entry on first arrival (World 1's only once 1-0 is cleared), missed heroes (a shadow's first
-  showing; after the crystal ball only marked, the crash's card stands in), then the hub / arena
-  extras.
-- **All heroes freed** (`all-freed`) counts the hidden heroes the game has: a hidden hero whose
-  character is not registered (Sophia III, not in every build) is left out, so in a build without
-  her it fires once the 7 others are freed. It is a beat like any other: once seen it does not
-  play again when Sophia lands later (World 8's entry has its own guard, `ENTRY_NEEDS`, below;
-  this card has none).
+- **Play order:** the major scenes (the airship crash, the 8-4 rift, Toad's World 1 scene once
+  1-0 is cleared or skipped, the fake Bowsers), then the hub / arena extras. Since 0.4.23 Toad has
+  no world entries, hero-joined, all-freed or missed-hero cards (docs/STORY.md 2.14); a shadow's
+  hint line is the generic `SOMEONE IS HIDING IN THIS LEVEL` again.
 - **The box:** at the top of the map (`TOAD_BOX_Y` = 28, under the header bar), white-rimmed
   black, the lines centred, the OK prompt after `CARD_GUARD_FRAMES`. OK (jump) or MENU goes on;
   **BACK** (attack) skips the rest of that scene (the next scene still plays). Each page is
   announced; it never goes on by itself (0.4.22, owner note 4: text waits for a key).
 - **Toad walks in** (his `smb3:toad-map-0/1` frames, 2 px a frame from off the left edge to 20 px
-  left of the hero) only for the major scenes: the World 1 entry after 1-0, the fake Bowsers
+  left of the hero) only for the major scenes: his World 1 scene after 1-0, the fake Bowsers
   (after 1-4), the crash and the rift. He stays until the last scene and walks back off; that
   walk-off plays over the map once it is already the player's (the reveal draws in, the hero can
   move: `ToadGuide.leaving`), so nobody waits for him to leave.
 - Every scene's beat ids are marked seen as it starts, so leaving mid-scene never replays it.
-- **World 8's guard:** pages 2-3 of World 8's entry are about Sophia III, who is not in every
-  build. `ENTRY_NEEDS` keeps them back until her character is registered; they then play once as a
-  beat of their own (`enter:smb-8:sophia`), while the rest of the entry plays as usual.
-- Missed heroes also get a hint line while the hero stands by their shadow (`missedHint`).
-  When the map opens on that node with the hero's missed card due, the page's line (which says
-  the hint) waits until Toad's scenes are over, so his card is announced first.
 
 ## Scenes inside a level (`story/level-beats.ts`)
 
 `playLevelBeat` runs before the world moves, once the players stand free (not in a pipe), and
-plays over the frozen level with `playStoryCards` (top box; OK next, BACK skips the rest):
-Toad's restyle remark on a restyled level's first start (`restyle:<id>`, only while its campaign
-look is on), Larry in `4-2-larry` (every run, not on TRY AGAIN), and Bowser's "no more stand-ins"
-on first entering `8-4-end` (`bowser-8-4`, in the prompt box with his laugh). When the scene
-closes, play goes on with `LevelScene.resumePlay`: the music is never stopped or restarted (only
-the closing press is kept from making the hero jump). `resume` (music back on) is for the captive
-flow, whose mini game changes the music. Under `storyOn`, 1-0's greeting plays
-`STORY_TOAD_PAGES` with `playStoryCards` (then `resumePlay`) and the shadow tease swaps in
-`STORY_TEASE_PAGES`; outside the campaign the greeting keeps `TOAD_PAGES`, its own keys and
-words, and `resume`.
+plays over the frozen level: brainwashed Luigi running off in 1-1 (`luigi-runs.ts`, the first
+time 1-1 starts while Luigi is not freed, `luigi-runs`) and then Mario's card, Larry in
+`4-2-larry` (every run, not on TRY AGAIN), and Bowser's "no more stand-ins" on first entering
+`8-4-end` (`bowser-8-4`, in the prompt box with his laugh). Cards use `playStoryCards` (top box; OK
+next, BACK skips the rest). When the scene closes, play goes on with `LevelScene.resumePlay`: the
+music is never stopped or restarted (only the closing press is kept from making the hero jump).
+`resume` (music back on) is for the captive flow and Bowser's spell, which stop the music.
+
+**1-0** (campaign): the greeting plays `STORY_TOAD_PAGES` (one page) with `playStoryCards`, and the
+tutorial's scripted moment near the flag is Bowser's spell (`bowser-spell.ts`, every time 1-0 is
+played; marks `spell`): his four pages, the spell's eight windows (each hero in the captive
+palette, half hidden; OK or BACK skips to his last page), his last page and his puff. Pause →
+Skip tutorial plays it first on a file without `spell` (`StageTutorial.beforeSkip`). Outside the
+campaign the greeting keeps `TOAD_PAGES` and the moment is the shadow tease (`tease.ts`).
+
+**The opening** (`opening.ts`): `Game.startNewFile` → `openFile(slot, save, true)` → `playOpening`
+(campaign, `opening` not seen): Peach's courtyard, the caption, her note (brown ink, `FONT_COLOURS.ink`,
+each letter nudged by `inkNudge`, a line at a time, on a tilted parchment with the `story` sheet's
+wax seal), Toad's two pages, then the map. Art: `src/content/sprites/story.ts` (`star-wand-0/1`,
+`wax-seal`, `note-sheet`).
 
 ## Partners
 
@@ -118,22 +126,40 @@ once on arrival; up talks (`partner` event → `talkToPartner`), and the pages c
 time. Any player can talk (in co-op, player 2 too); the pages close back into play with
 `resumePlay`, the music untouched.
 
-| `who`         | Level and spot           | For        |
-| ------------- | ------------------------ | ---------- |
-| `old-man`     | 2-1 (8, 12), `dx=8`      | Link       |
-| `dr-light`    | 3-1's bonus room (4, 12) | Mega       |
-| `chozo`       | 4-1's bonus room (2, 12) | Samus      |
-| `townsperson` | 5-4 (10, 9)              | Simon      |
-| `irene`       | 6-2 (7, 12)              | Ryu        |
-| `lance`       | 7-3 (5, 12)              | Bill       |
-| `jason`       | 8-4-jason (5, 12)        | Sophia III |
+| `who`         | Level and spot                                      | For        |
+| ------------- | --------------------------------------------------- | ---------- |
+| `villager`    | 1-1 (55, 12), before the bonus pipe (57)            | Luigi      |
+| `pipe-keeper` | 1-2 (177, 12), the warp zone's floor left of pipes  | (none)     |
+| `old-man`     | 2-1 (80, 12), `dx=8`, before the vine block (83)    | Link       |
+| `fairy`       | 2-1-sky (7, 12), by the vine the heroes climb in on | Link       |
+| `dr-light`    | 3-1 (124, 12), before the spring and vine (131)     | Mega       |
+| `chozo`       | 4-2 (65, 12), past the lift's pit, by the vine (64) | Samus      |
+| `townsperson` | 5-4 (10, 9)                                         | Simon      |
+| `irene`       | 6-2 (7, 12)                                         | Ryu        |
+| `lance`       | 7-3 (5, 12)                                         | Bill       |
+| `fred`        | 8-4-end (8, 12), by the trap pipe (10)              | Sophia III |
+| `jason`       | 8-4-jason (5, 12)                                   | Sophia III |
 
-The old man gives one coin after his first page (`coinAfter`, once a visit). The statue's eyes
-glow slowly, held dim with reduce flashing. Art: `src/content/sprites/partners.ts` (`<who>-0`,
-`<who>-1`), but Jason is drawn from Sophia III's sheet (`jason-stand`, `BORROWED` in
-`objects/partner.ts`), facing the heroes and now and then looking round at the pool. A partner
-talked to is marked (`Partner.talked`): talking to Jason sends his frog Fred into the pool, the way
-on to Sophia III (`objects/fred.ts`, docs/HEROES.md).
+A hint NPC names its hero (`PartnerScript.hero`); once that hero is freed on the file it says its
+one `after` page instead (`partnerPages`), and one without an `after` page is gone (`partnerGone`:
+Fred, home with Jason). The old man gives one coin after his first page (`coinAfter`, once a
+visit, only while Link is still to be found). The statue's eyes glow slowly, held dim with reduce
+flashing. The fairy floats over her spot (`FLOAT` in `objects/partner.ts`: drawn higher, bobbing,
+her `-1` frame a wing beat); her talking reach is the ground under her. Art:
+`src/content/sprites/partners.ts` (`<who>-0`, `<who>-1`; the villager and the pipe keeper are
+Toad's 16x24, the fairy 16x16), but Jason and Fred are drawn from Sophia III's sheet
+(`jason-stand`, `fred-0`; `BORROWED` in `objects/partner.ts`), facing the heroes and now and then
+looking round (Jason at the pool, Fred at the pipe). A partner talked to is marked
+(`Partner.talked`): talking to Jason sends his frog Fred into the pool, the way on to Sophia III
+(`objects/fred.ts`, docs/HEROES.md).
+
+## The freed talks (`scenes/free-hero.ts`)
+
+When a round is passed the hero is freed and saved at once, then talks over the level, still
+standing there: `freedTalk(id, <the talker's full name>)` (script.ts `FREED_TALKS`, docs/STORY.md
+2.4-2.11) through `playStoryCards` (OK next page, BACK skips the rest, every page announced). The
+player who talked speaks the `<HERO>:` pages. Then the hero leaves in a puff and the freed card
+shows, as before. The talk plays once: the hero is gone afterwards.
 
 ## Castle pages (`World.updateBossClear`)
 
@@ -163,7 +189,16 @@ then their die frame is the king and they neither tell nor unmask.
 - **The unmasking:** however he is beaten, the disguise bursts in a puff of wand sparkles with a
   "poof", and the true form falls in his place (`bowser-die-N`, palette `bowser-true-form` in
   castles).
-- Toad's `fakes` scene on the World 1 map after 1-4 explains them.
+- **The unmask scenes** (0.4.23, `world/unmask.ts`; the campaign's 1-4 to 7-4 only, not 8-4, not
+  the Lost Kingdom, never classic play). Play holds while they run. Beaten with weapons
+  (`World.unmaskOnKill`, from `Bowser.flipOut`): the disguise bursts (`Bowser.burst`), the true form
+  drops onto the bridge dazed (stars over its head) and the hero (in co-op the one nearer the axe)
+  runs up, jumps over it and lands at the axe. Reaching the axe with the fake standing
+  (`World.unmaskAtAxe`): it bursts, the creature looks about, the hero turns to look and says the
+  castle's remark (`castleRemark`, `World.remarkHook` → `story/castle-remark.ts`, beat
+  `remark:<id>`, once per castle per file; after that the hero just looks a moment), turns back,
+  and the axe goes. Either way the bridge then falls as before, the creature with it.
+- Toad's `fakes` map scene is gone (0.4.23): castle 1-4's first page says it.
 
 ## 8-4 and the hand-off
 
@@ -174,6 +209,33 @@ then their die frame is the king and they neither tell nor unmask.
   STORY ISN'T OVER." after THANKS FOR PLAYING (`creditsLines(true)`, said by the announcer too).
 - After the credits the file returns to World 8, where Toad's rift scene (a major scene, due once
   `gameCleared`) plays first and then the road on to Lost World 1 draws in.
+
+## The world gates and the welcomes (0.4.23, `map/world-gate.ts`, `map/gate-scene.ts`)
+
+- **The rule** (`rules.gateHolds`): a `WorldExit` with `gate: '<hero>'` (SMB worlds 1-8; World 8's
+  is the rift on to Lost World 1) stays shut while the file has not freed that hero and the page it
+  leads to is not open yet (a world a file already reached keeps its road). The file's freed list
+  reaches the rules as `MapProgress.freed` (the Game's own `freed` array); without it there are no
+  gates. Unlock all keeps every road.
+- **The seal** (`rules.sealStands`): the castle is cleared, only the hero is missing. The map draws
+  a wall of wand sparkles at the page's edge (World 8: the rift's thin crack), the castle's hint
+  line reads `SEALED - FREE <NAME> FIRST`, and Toad's reminder plays once (`sealed:<page>`; World
+  8's is `RIFT_SEALED_PAGES`).
+- **The gate scene** (`gate:<page>`): when the page shows with its gate exit waiting in the reveal
+  (the castle and the hero both done), the map's `gate` mode plays Bowser's throne-room cutaway
+  (his misfire, worse each world, from the star wand of his spell: `story` sheet `star-wand-0/1`,
+  World 5's crack drawn over the rod; his pages in the box at the top, OK / BACK), the seal shattering
+  (`seal-shatter`), the road drawing in, then Toad walking in with the gate's pages. World 8: the
+  crack tears open (when it had been seen shut), then Toad's rift scene (it waits for Sophia III,
+  `riftOpen`), then the road.
+- **The welcomes** (`welcome:<page>`, worlds 2-8): the local (`locals` sheet, `LOCAL_SPRITES`)
+  stands one tile above the start node; on the first arrival there it speaks in the box at the
+  top; standing on the node the hint line reads `TALK TO THE <LOCAL>` and up plays it again.
+- **The crystal ball** (0.4.23): once found, a hidden hero's shadow shows by its level from the
+  first arrival in that world, even before the level's node is reached.
+- Old files: `seedSeenS3` (run from `seedNew`, so both a file without a list and a list from an
+  older build get it) counts the gates of roads already open, the welcomes of open worlds and the
+  remarks of cleared castles as seen.
 
 ## Adding a beat
 

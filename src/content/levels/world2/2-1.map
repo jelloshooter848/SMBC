@@ -54,12 +54,12 @@ piranha 176 10
 decor-castle 204 12
 ;; Campaign only (0.4.10): past the castle, the rocky mouth of the Moblin's hidden cave.
 decor 220 12 kind=items:cave-mouth campaign=true
-;; Campaign only (0.4.13, docs/STORY.md 2.5): the old man at the start, in front of a cave doorway
-;; between the castle (to column 6) and the first tree (11), a fire either side.
-cave-fire 7 12 campaign=true
-decor 8 12 kind=partners:cave campaign=true
-partner 8 12 who=old-man dx=8 campaign=true
-cave-fire 10 12 campaign=true
+;; Campaign only (0.4.13, docs/STORY.md 2.5; moved in 0.4.23 from the start): the old man by the
+;; vine block (83), in front of a cave doorway, a fire either side.
+cave-fire 79 12 campaign=true
+decor 80 12 kind=partners:cave campaign=true
+partner 80 12 who=old-man dx=8 campaign=true
+cave-fire 82 12 campaign=true
 
 [zones]
 checkpoint 98 12
@@ -198,7 +198,8 @@ cloud-1 222 3
 henge 15 12
 henge 28 12
 henge 52 12
-henge 80 12
+;; (0.4.23: moved on from 80, where the old man's cave stands now.)
+henge 97 12
 henge 111 12
 henge 145 12
 henge 171 12

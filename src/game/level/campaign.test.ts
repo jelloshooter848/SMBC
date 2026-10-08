@@ -94,7 +94,12 @@ describe('4-2 (the right warp zone): campaign variant', () => {
     const other = (z: Zone) =>
       z.kind !== 'warp' && !(z.x === 214 && (z.kind === 'pipe' || z.kind === 'vine'));
     expect(l.zones.filter(other)).toEqual(base.zones.filter(other));
-    expect(l.entities.filter((e) => e.type !== 'anchor-drop')).toEqual(base.entities);
+    // (0.4.23: the bird statue, campaign only, wakes before the vine block.)
+    const notStatue = (e: { type: string }) => e.type !== 'anchor-drop' && e.type !== 'partner';
+    expect(l.entities.filter(notStatue)).toEqual(base.entities.filter(notStatue));
+    expect(l.entities.filter((e) => e.type === 'partner')).toEqual([
+      { type: 'partner', x: 65, y: 12, props: { who: 'chozo' } },
+    ]);
   });
 
   it('with `larry` on the file: the room sealed (no drop, no vine, no pipe, no text)', () => {
@@ -121,8 +126,13 @@ describe('4-2 (the right warp zone): campaign variant', () => {
   it('a goto whose level is not in the library (yet) leaves the warp as it is', () => {
     const base = getLevel('4-2');
     // only 4-2's campaign look (0.4.12) applies: the warp's tiles and zones stay as they are
-    expect(campaignLevel(base, () => false)).toEqual(applyLook(base));
-    expect(campaignLevel(base, () => false).zones).toBe(base.zones);
+    // (and, from 0.4.23, its one campaign entity wakes: the bird statue)
+    const l = campaignLevel(base, () => false);
+    expect({ ...l, entities: [] }).toEqual({ ...applyLook(base), entities: [] });
+    expect(l.zones).toEqual(base.zones);
+    expect(l.entities).toEqual(
+      base.entities.map((e) => (e.type === 'partner' ? { ...e, props: { who: 'chozo' } } : e)),
+    );
   });
 });
 
