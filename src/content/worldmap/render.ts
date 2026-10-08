@@ -34,6 +34,9 @@ import { POND_CHARS } from './build';
  *   Hyrule (theme 'hyrule', World 2 since 0.4.24):
  *   5  dense forest (a block of it tiles)    Z  stone ruins    J  graves
  *   < U >  the palace's stepped roof (left, middle, right) over  Q @ y  its columns and door
+ *   Mega City (theme 'megaman', World 3 since 0.4.26):
+ *   0  city blocks    & $  Dr. Light's lab (left, right)    "  gearworks (Metal Man's quarter)
+ *   + ? /  Wily's fortress: towers and skull (left, middle, right) over  ; _ `  its walls and gate
  *
  * Walkable (MAP_WALKABLE; every path tile must be one of these): # , * : o, all shores and
  * landings, = I, the mushroom caps ( O ), the treetops { - }, the gate G and the pitch F.
@@ -57,6 +60,9 @@ import { POND_CHARS } from './build';
  *   fairy {phase}        Hyrule: flutters in a small loop, its wings beating slowly
  *   zora {period, phase} Hyrule: a river creature surfacing from the water, looking about and
  *                        sinking back, a ring of ripples where it breaks the surface
+ *   met {range, phase}   Mega City: a Met walking back and forth over `range` px, now and then
+ *                        hiding under its hard hat
+ *   copter {phase}       Mega City: a little propeller robot hovering in a slow loop
  */
 
 interface TileDef {
@@ -150,6 +156,18 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   Q: { frame: 'palace-left' },
   '@': { frame: 'palace-door' },
   y: { frame: 'palace-right' },
+  // Mega City (World 3): city blocks, Dr. Light's lab, gearworks and Wily's fortress (towers and
+  // skull over its walls and gate).
+  '0': { frame: 'city' },
+  '&': { frame: 'lab-left' },
+  $: { frame: 'lab-right' },
+  '"': { frame: 'gears' },
+  '+': { frame: 'wily-top-left' },
+  '?': { frame: 'wily-top-mid' },
+  '/': { frame: 'wily-top-right' },
+  ';': { frame: 'wily-left' },
+  _: { frame: 'wily-gate' },
+  '`': { frame: 'wily-right' },
   ...Object.fromEntries(POND_CHARS.split('').map((ch, i) => [ch, wet(`pond-${i}`)])),
 };
 
@@ -196,6 +214,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   warp: 'map-warp',
   arena: 'map-arena',
   hyrule: 'map-hyrule',
+  megaman: 'map-megaman',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -210,6 +229,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   warp: WARP_SPACE, // the same indigo as its void, so sky and void are one starfield
   arena: ARENA_NIGHT, // a night match under the lights
   hyrule: '#6888fc', // Zelda II's periwinkle daylight (2-1's field)
+  megaman: '#0c1040', // Mega City's night over the skyline
 };
 
 /** Background colour behind the tiles. */
@@ -245,6 +265,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   warp: 'enemies-underground',
   arena: 'enemies-overworld',
   hyrule: 'enemies-overworld',
+  megaman: 'enemies-overworld',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -258,6 +279,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   warp: 'enemies-water',
   arena: 'enemies-water',
   hyrule: 'enemies-water',
+  megaman: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -271,6 +293,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   warp: 'decor-night',
   arena: 'decor-night',
   hyrule: 'decor-zelda2', // Zelda II's flat clouds (CLOUD_ZELDA2)
+  megaman: 'decor-megaman-stage', // the night stage's dim clouds
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
@@ -279,6 +302,11 @@ const CLOUD_ZELDA2 = ['cloud-1@zelda2', 'cloud-2@zelda2', 'cloud-3@zelda2'] as c
 const BLOB = ['blob-0', 'blob-1'] as const;
 const FAIRY = ['fairy-0', 'fairy-1'] as const;
 const ZORA = ['zora-0', 'zora-1'] as const;
+const MET = ['met-0', 'met-1'] as const;
+const COPTER = ['copter-0', 'copter-1'] as const;
+/** A Met walks MET_WALK frames of every MET_CYCLE, then hides under its hard hat. */
+const MET_CYCLE = 240;
+const MET_WALK = 180;
 const CHEEP = ['cheep-0', 'cheep-1'] as const;
 const SPLASH = ['splash-0', 'splash-1'] as const;
 const PODOBOO = ['podoboo-0', 'podoboo-1'] as const;
@@ -351,6 +379,9 @@ export const MAP_ACTOR_TYPES = [
   'blob',
   'fairy',
   'zora',
+  // Mega City (World 3).
+  'met',
+  'copter',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -528,6 +559,22 @@ export function drawMapActor(
       else r.sprite(map, ZORA[local < 20 || local >= 70 ? 0 : 1] as string, x, y);
       return;
     }
+    case 'met': {
+      // It walks (its eyes peeking out) and stops now and then to hide under its hard hat.
+      const local = t % MET_CYCLE;
+      const walked = Math.floor(t / MET_CYCLE) * MET_WALK + Math.min(local, MET_WALK);
+      const p = pace(walked, num(actor, 'range', 24), num(actor, 'speed', 0.25));
+      const map = assets.sheet('map', MAP_PAL[page.theme]);
+      r.sprite(map, MET[local < MET_WALK ? 0 : 1] as string, x + Math.abs(p), y, p > 0);
+      return;
+    }
+    case 'copter': {
+      // A slow loop; its rotor turns every 8 frames (a whirr, never a flash).
+      const cx = x + Math.sin(t / 53) * 12;
+      const cy = y + Math.sin(t / 19) * 3;
+      r.sprite(assets.sheet('map', MAP_PAL[page.theme]), COPTER[(t >> 3) & 1] as string, cx, cy);
+      return;
+    }
     default:
       return;
   }
@@ -582,6 +629,10 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
       return [x - 10, y - 4, x + 26, y + 20];
     case 'zora':
       return [x, y, x + 16, y + 16];
+    case 'met':
+      return [x, y, x + num(a, 'range', 24) + 16, y + 16];
+    case 'copter':
+      return [x - 12, y - 3, x + 28, y + 19];
     default:
       return [x, y, x + 16, y + 16];
   }

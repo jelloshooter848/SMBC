@@ -53,7 +53,7 @@ describe('map rendering', () => {
     const page = MAP_PAGES[0];
     if (!page) throw new Error('no pages');
     drawMapTile(r, registry(), page, '.', 0, 0, 0);
-    drawMapTile(r, registry(), page, '?', 0, 0, 0);
+    drawMapTile(r, registry(), page, '¤', 0, 0, 0); // ('?' is Wily's fortress since 0.4.26)
     expect(r.drawn).toEqual([]);
   });
 

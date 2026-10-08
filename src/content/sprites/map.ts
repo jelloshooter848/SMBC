@@ -3,8 +3,8 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
- * themed world map pages (World 2's Hyrule since 0.4.24), the Warp Zone hub and the Mini Game
- * Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
+ * themed world map pages (World 2's Hyrule since 0.4.24, World 3's Mega City since 0.4.26), the
+ * Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
  * share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
@@ -83,6 +83,10 @@ const PITCH_LIGHT = '#58d854';
 /* Hyrule's field and forest greens: NES 2C02 $2A and $1A, which the curated NES table doesn't name. */
 const HYRULE_FIELD = '#58d854';
 const HYRULE_FOREST = '#007800';
+/* Mega City's steel-blue ground (dark, main, light). */
+const MEGA_CITY_DARK = '#1c2c5c';
+const MEGA_CITY = '#30487c';
+const MEGA_CITY_LIGHT = '#5070a8';
 
 export const mapPalettes: Record<string, string[]> = {
   'map-grass': theme({
@@ -240,6 +244,24 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: stone,
     white: [NES.white, NES.skyLight],
+  }),
+  /*
+   * Mega City (World 3 since 0.4.26, Mega Man's world): a Mega Man 2-style map of steel-blue city
+   * ground (its plazas and streets), grey city blocks, Dr. Light's lab and Wily's fortress (wall),
+   * grey crags round the fortress (rock), Wood Man's forest (leaf), a dark harbour (water, and the
+   * lab's glass), lit windows and the Mets' hard hats in yellow, red lamps and gears.
+   */
+  'map-megaman': theme({
+    ground: [MEGA_CITY_DARK, MEGA_CITY, MEGA_CITY_LIGHT],
+    sand: [NES.lightGray, NES.gray],
+    water: [NES.blueDark, NES.blueMid, NES.blueLight, NES.white],
+    rock: [NES.darkGray, NES.gray, NES.lightGray],
+    leaf: [NES.greenDark, NES.green, NES.greenPipe],
+    wood: [NES.brownLight, NES.orangeBrown],
+    accent: [NES.redBright, NES.yellow, NES.redDark],
+    lava,
+    wall: stone,
+    white: [NES.white, NES.lightGray],
   }),
 };
 
@@ -1434,6 +1456,171 @@ const SPLASH = [
 ];
 
 /* ------------------------------------------------------------------------------------------ */
+/* Mega City (World 3, 0.4.26): city blocks, Dr. Light's lab, gearworks, Wily's fortress, robots */
+/* ------------------------------------------------------------------------------------------ */
+
+/** City blocks: a tall tower and a lower one, lit windows here and there, doors at their feet. */
+const CITY = stamp(GROUND, [
+  '................',
+  '.0000000........',
+  '.0nnmmm0........',
+  '.0njmqm0........',
+  '.0nmmmm0.000000.',
+  '.0njmjm0.0nnmm0.',
+  '.0nmmmm0.0njmq0.',
+  '.0nqmjm0.0nmmm0.',
+  '.0nmmmm0.0nqmj0.',
+  '.0njmqm0.0nmmm0.',
+  '.0nmmmm0.0njmj0.',
+  '.0nqmjm0.0nmmm0.',
+  '.0nmmmm0.0nqmq0.',
+  '.0nm00m0.0nm0m0.',
+  '.00000000000000.',
+  '................',
+]);
+
+/** A frame `w` x `h` from a pixel function ('.' leaves what is under it when stamped). */
+const paint = (w: number, h: number, px: (x: number, y: number) => string): Rows =>
+  Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => px(x, y)).join(''));
+
+/** Ground tiled under a frame `w` x `h` of whole tiles. */
+const groundUnder = (w: number, h: number): Rows =>
+  Array.from({ length: h }, (_, y) => (GROUND[y % 16] as string).repeat(Math.ceil(w / 16)).slice(0, w));
+
+/** Tile `i` of tile row `row`, cut out of a frame of whole tiles. */
+const cut = (rows: Rows, i: number, row: number): Rows =>
+  rows.slice(row * 16, row * 16 + 16).map((r) => r.slice(i * 16, i * 16 + 16));
+
+/**
+ * Dr. Light's lab (two tiles wide): a white lab wing with a row of blue windows and a radio mast
+ * (its lamp a steady red) beside a glass observatory dome.
+ */
+const LAB: Rows = stamp(
+  groundUnder(32, 16),
+  paint(32, 16, (x, y) => {
+    // the mast
+    if (x === 5 && y >= 1 && y <= 6) return y === 1 ? 'i' : '0';
+    if ((x === 4 || x === 6) && y === 3) return '0';
+    // the dome over the right half
+    const d = Math.hypot((x - 21.5) / 7.5, (y - 8) / 6.5);
+    if (y < 8 && d <= 1) return d > 0.85 ? '0' : x < 20 && y < 5 ? '8' : '7';
+    // the building
+    if (y < 7 || y > 14 || x < 1 || x > 30) return '.';
+    if (y === 7 || y === 14 || x === 1 || x === 30) return '0';
+    if (y === 8) return 'o';
+    if (x >= 14 && x <= 16 && y >= 11) return '0'; // the door
+    if (y >= 9 && y <= 10 && x % 4 !== 1 && x > 2 && x < 29) return y === 9 ? '8' : '7'; // windows
+    return x > 24 ? 'p' : 'o';
+  }),
+);
+
+/** Gearworks (Metal Man's quarter): a big red gear meshing with a small grey one. */
+const GEARS = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    for (const [cx, cy, r, main, dark, teeth] of [
+      [6, 9, 5.5, 'i', 'r', 10],
+      [12.5, 4, 3.5, 'c', 'b', 6],
+    ] as const) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const d = Math.hypot(dx, dy);
+      const tooth = Math.cos(Math.atan2(dy, dx) * teeth) > 0.3;
+      if (d > r + 1.6 || (d > r && !tooth)) continue;
+      if (d < 1.2 || d > r + 0.6 || (d > r - 0.6 && !tooth)) return '0';
+      return dx + dy < 0 ? main : dark;
+    }
+    return '.';
+  }),
+);
+
+/**
+ * Wily's fortress (three tiles wide, two tall): two crenellated towers, a curtain wall between
+ * them and a great skull on its face, its eyes a steady red and its jaw the gate.
+ */
+const WILY: Rows = stamp(
+  groundUnder(48, 32),
+  paint(48, 32, (x, y) => {
+    const dx = x - 23.5;
+    // the skull: a cranium over a jaw, outlined
+    const head = Math.hypot(dx / 9.5, (y - 12) / 9);
+    const jaw = y >= 17 && y <= 25 && Math.abs(dx) <= 6.5;
+    if (head <= 1 || jaw) {
+      if (y >= 24 && Math.abs(dx) <= 3.5) return '0'; // the gate in its jaw
+      if ((jaw && Math.abs(dx) > 5.5) || (!jaw && head > 0.9) || y === 25) return '0';
+      for (const ex of [-4, 4]) {
+        const e = Math.hypot(dx - ex, y - 11);
+        if (e < 1.2) return 'k';
+        if (e < 2.6) return '0';
+      }
+      if (y >= 15 && y <= 16 && Math.abs(dx) <= y - 14.5) return '0'; // the nose
+      if (y >= 19 && y <= 22) return y === 19 || y === 22 || Math.round(dx) % 2 === 0 ? '0' : 'o'; // teeth
+      return dx > 3 ? 'p' : 'o';
+    }
+    // the towers
+    for (const [l, r] of [
+      [2, 11],
+      [36, 45],
+    ] as const) {
+      if (x < l || x > r || y < 2) continue;
+      if (y < 5) return y === 2 && (x - l) % 3 === 2 ? '.' : y === 4 || x === l || x === r ? '0' : 'n';
+      if (x === l || x === r || y === 31) return '0';
+      if ((y === 10 || y === 11 || y === 20 || y === 21) && x === (l + r) >> 1) return 'k';
+      return x === l + 1 ? 'n' : x === r - 1 ? 'q' : 'm';
+    }
+    // the curtain wall
+    if (x > 11 && x < 36 && y >= 14) {
+      if (y === 14 || y === 31) return '0';
+      return y % 4 === 2 ? 'q' : 'm';
+    }
+    return '.';
+  }),
+);
+
+const blank = (n: number): Rows => Array.from({ length: n }, () => '.'.repeat(16));
+
+/** A Met walking (its eyes peeking out from under its hard hat) and hiding under the hat. */
+const MET_HAT = [
+  '......0000......',
+  '....00jjoj00....',
+  '...0jjjjjjoj0...',
+  '..0jjjjjjjjjj0..',
+  '..0jjjjjjjjjj0..',
+  '.000000000000000',
+];
+const MET = [
+  [
+    ...blank(4),
+    ...MET_HAT,
+    '...0ooo00ooo0...',
+    '...0o0o00o0o0...',
+    '...0mmmmmmmm0...',
+    '....0mm00mm0....',
+    '...000.00.000...',
+    ...blank(1),
+  ],
+  [...blank(9), ...MET_HAT, ...blank(1)],
+];
+
+/** A little propeller robot: a round body with one eye, its rotor's blades spread and edge-on. */
+const copter = (rotor: string): Rows => [
+  rotor,
+  '.......00.......',
+  '.......00.......',
+  '.....000000.....',
+  '....0nnnnmm0....',
+  '...0nnoo0mmq0...',
+  '...0nno00mmq0...',
+  '...0nnnnmmmq0...',
+  '....0nmmmmq0....',
+  '.....000000.....',
+  '......0ii0......',
+  '.......00.......',
+  ...blank(4),
+];
+const COPTER = [copter('..000000000000..'), copter('.....000000.....')];
+
+/* ------------------------------------------------------------------------------------------ */
 
 const frames: Record<string, readonly string[]> = {
   ground: GROUND,
@@ -1497,6 +1684,22 @@ const frames: Record<string, readonly string[]> = {
   'fairy-1': FAIRY[1] as Rows,
   'zora-0': ZORA[0] as Rows,
   'zora-1': ZORA[1] as Rows,
+  // Mega City (World 3): city blocks, Dr. Light's lab, gearworks, Wily's fortress (its towers and
+  // skull, then its walls and gate) and the robots (a Met, a propeller bot).
+  city: CITY,
+  'lab-left': cut(LAB, 0, 0),
+  'lab-right': cut(LAB, 1, 0),
+  gears: GEARS,
+  'wily-top-left': cut(WILY, 0, 0),
+  'wily-top-mid': cut(WILY, 1, 0),
+  'wily-top-right': cut(WILY, 2, 0),
+  'wily-left': cut(WILY, 0, 1),
+  'wily-gate': cut(WILY, 1, 1),
+  'wily-right': cut(WILY, 2, 1),
+  'met-0': MET[0] as Rows,
+  'met-1': MET[1] as Rows,
+  'copter-0': COPTER[0] as Rows,
+  'copter-1': COPTER[1] as Rows,
 };
 for (let f = 0; f < ARENA_CROWD_FRAMES; f++) {
   frames[`arena-crowd-a-${f}`] = crowd('a', f);
