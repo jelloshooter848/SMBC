@@ -111,6 +111,15 @@ export function decorPalette(theme: string): string {
   if (theme.startsWith('cv-')) return `decor-${theme}`;
   // World 6 as Ryu's world (0.4.29): the field, the sewers, the harbour, the pass and the temple.
   if (theme.startsWith('ng-')) return `decor-${theme}`;
+  // World 7 as Bill's world (0.4.30): the snowfield, the base, the shore, the river and the lair.
+  if (
+    theme === 'contra-snow' ||
+    theme === 'contra-base' ||
+    theme === 'contra-shore' ||
+    theme === 'contra-river' ||
+    theme === 'contra-lair'
+  )
+    return `decor-${theme}`;
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern' || theme === 'tourian') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';

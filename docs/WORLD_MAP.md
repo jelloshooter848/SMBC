@@ -805,17 +805,38 @@ on frozen cliffs for its treetops, snowy peaks painted behind under the moon, a 
 and ropes stand out against; new `ng-pass` tune) and 6-4 the demon temple, Jaquio's lair
 (`ng-temple`, in the castle family: a carved wall and demon-headed pillars painted behind; the
 Masked Ninja's `ng-boss` tune) (art `src/content/sprites/ninja-world.ts`, music
-`src/content/music/ninja-world.ts`). A look stays after the hero is freed, and
+`src/content/music/ninja-world.ts`). Since 0.4.30 World 7 is Bill's world: its map page is GALUGA
+ISLAND (`MapTheme` `contra`: a jungle island at night, a snowfield with pillboxes round the start and
+7-1, the enemy base's defense wall beside 7-1, the jungle round 7-2, cliffs and a waterfall over
+7-3 falling into the river, the energy zone's pylons on the road to 7-4 and Red Falcon's alien lair
+over 7-4, the island's cliffs over the sea; flying weapon capsules, running soldiers and a
+helicopter for critters, nothing on the page blinking; every node, road, the seal, the start's
+local and Bill's silhouette as before). 7-3 keeps its jungle (`contra-jungle`) with its bridge blast
+into Bill's camp, and the camp and the waterfall climb keep their `contra-jungle` and
+`contra-falls`; 7-1 is the snowfield before the enemy base (`contra-snow`: packed snow, concrete
+bunker blocks, its blasters steel pillbox cannons with snow on their barrels, still SMB's shape and
+badge; far snowy peaks and the base's wall painted behind, snowy pines and firs for its trees; new
+`contra-snow` tune), its bonus room the base's inner corridors (`contra-base`, the underground
+still: grating, bulkheads, a corridor wall behind with no light blinking; Bill's `contra-stage`
+march), 7-2's way in and way out the jungle shore (`contra-shore`: sand, the jungle's brick, palms
+and ferns painted behind; Bill's `contra-jungle`), its water area the jungle river (`contra-river`:
+riverbed rock, green water; it swims by its map's `swim: true`; new `contra-river` tune) and 7-4
+Red Falcon's alien lair (`contra-lair`, in the castle family: Bill's mini game's flesh, bone and egg
+clutches over SMB's lava, a spine bridge, ribbed walls and the lair's great heart painted behind,
+still; Red Falcon's `contra-lair` tune; the mini game's own `alien-lair` is no castle) (art
+`src/content/sprites/contra-world.ts`, music `src/content/music/contra-world.ts`). A look stays after the hero is freed, and
 its music plays for every hero (a hero's own overworld tune, `levelMusic` in `scenes/level.ts`,
 plays only in a plain `overworld` area). No look is a water theme, and every rule that keys off
-the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake, 5-2-water's underground lake and 6-2-water's harbour swim by their
+the theme answers as for the classic level: swimming (`isSwimLevel`; 2-2's lake, 5-2-water's underground lake, 6-2-water's harbour and 7-2's river swim by their
 maps' `swim: true`, "Swimming in any theme", which changes nothing in their classic water theme),
-the castle family (`isCastleTheme`: `zelda2-palace`, `megaman-fortress`, `tourian-lair` and
-`ng-temple` are in it, so 2-4's, 3-4's, 4-4's and 6-4's Bowser, axe, bridge and unmask are SMB's),
-`hasSolidFloors` (`zelda2-cave`, `megaman-metal`, `brinstar`, `cv-catacomb` and `ng-sewer` as the
-underground) and `enemyPalette`
+the castle family (`isCastleTheme`: `zelda2-palace`, `megaman-fortress`, `tourian-lair`,
+`ng-temple` and `contra-lair` are in it, so 2-4's, 3-4's, 4-4's, 6-4's and 7-4's Bowser, axe, bridge
+and unmask are SMB's, and 7-4's maze loops as ever), `hasSolidFloors` (`zelda2-cave`,
+`megaman-metal`, `brinstar`, `cv-catacomb`, `ng-sewer` and `contra-base` as the underground) and
+`enemyPalette`
 (`src/content/levels/campaign-looks.test.ts`, `hyrule-looks.test.ts`, `megaman-looks.test.ts`,
-`zebes-looks.test.ts`, `transylvania-looks.test.ts`, `ninja-world-looks.test.ts`). In the map:
+`zebes-looks.test.ts`, `transylvania-looks.test.ts`, `ninja-world-looks.test.ts`,
+`contra-world-looks.test.ts`). In the map:
 
 ```
 campaignTheme: contra-jungle

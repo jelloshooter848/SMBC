@@ -9,6 +9,14 @@ start: 2,6
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.30): Red Falcon's alien lair (`contra-lair`, in the castle family):
+;; Bill's mini game's flesh, bone and egg clutches over the lava, a spine bridge on a bone chain,
+;; ribbed organic walls and the lair's great heart painted behind (still; nothing pulses). It plays
+;; Red Falcon's lair tune. Castle play is unchanged (the maze's loops, the fake Bowser's unmask, the
+;; castle remark). Elsewhere (level select, ?level=7-4) it looks as it always did.
+campaignTheme: contra-lair
+campaignMusic: contra-lair
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224              240              256              272              288              304              320              336
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

@@ -362,7 +362,7 @@ describe('the restyles’ music', () => {
 });
 
 describe('castle and solid-floor theme families', () => {
-  it("the castle family is the castles, their Lost Levels skins, 5-4's hall, 2-4's palace, 3-4's fortress, 4-4's Tourian and 6-4's demon temple", () => {
+  it("the castle family is the castles, their Lost Levels skins, 5-4's hall, 2-4's palace, 3-4's fortress, 4-4's Tourian, 6-4's demon temple and 7-4's alien lair", () => {
     expect(THEMES.filter(isCastleTheme)).toEqual([
       'castle',
       'castle-overworld',
@@ -372,6 +372,7 @@ describe('castle and solid-floor theme families', () => {
       'megaman-fortress',
       'tourian-lair',
       'ng-temple',
+      'contra-lair',
     ]);
   });
 
@@ -394,7 +395,10 @@ describe('castle and solid-floor theme families', () => {
           t === 'cv-catacomb' ||
           // World 6 (0.4.29): 6-4's demon temple is a castle, 6-2's coin rooms (the sewers) the underground
           t === 'ng-temple' ||
-          t === 'ng-sewer',
+          t === 'ng-sewer' ||
+          // World 7 (0.4.30): 7-4's alien lair is a castle, 7-1's bonus room (the base) the underground
+          t === 'contra-lair' ||
+          t === 'contra-base',
       );
     expect(hasSolidFloors('castlevania')).toBe(true);
     expect(hasSolidFloors('brinstar')).toBe(true);

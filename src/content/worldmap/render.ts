@@ -4,6 +4,7 @@ import type { MapActor, MapTheme, WorldMapPage } from '@game/map/types';
 import {
   ARENA_CROWD_FRAMES,
   ARENA_NIGHT,
+  CONTRA_NIGHT,
   NINJA_NIGHT,
   TRANSYLVANIA_NIGHT,
   WARP_SPACE,
@@ -56,6 +57,11 @@ import { POND_CHARS } from './build';
  *   Hayabusa village's, its city blocks 0 the night city's rooftops, its moon D full):
  *   ¤  a tower with a neon sign    ⌐ ¬  the Hayabusa dojo (left, right)
  *   ▛ ▀ ▜  the demon temple's roofs (left, middle, right) over  ▙ ▄ ▟  its walls and demon gate
+ *   GALUGA ISLAND (theme 'contra', World 7 since 0.4.30; its trees T are jungle, its cannons X
+ *   pillboxes in the snow):
+ *   ≡  the waterfall (falling into the river below it)    Ж  an energy zone pylon
+ *   Γ Π Δ  the enemy base's battlements, turrets and sensor dome over  Σ Ξ Φ  its wall and gate
+ *   ◤ ◆ ◥  Red Falcon's lair's horns (left, middle, right) over  ◣ ● ◢  its flesh and maw
  *
  * Walkable (MAP_WALKABLE; every path tile must be one of these): # , * : o, all shores and
  * landings, = I, the mushroom caps ( O ), the treetops { - }, the gate G and the pitch F.
@@ -96,6 +102,11 @@ import { POND_CHARS } from './build';
  *                        the next in an arc `height` px high, crouches, and leaps back
  *   masked-ninja {phase} DRAGON VALLEY: the masked ninja's silhouette standing watch, his scarf
  *                        streaming
+ *   capsule {speed, amp, phase}  GALUGA ISLAND: a flying weapon capsule crossing the page in a wave
+ *                        `amp` px high, wrapping round, its wings beating
+ *   soldier {range, speed}  GALUGA ISLAND: an enemy soldier running back and forth over `range` px
+ *   chopper {speed}      GALUGA ISLAND: a helicopter crossing the sky and wrapping round, its rotor
+ *                        turning (a whirr, never a flash)
  */
 
 interface TileDef {
@@ -236,6 +247,22 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   '▙': { frame: 'temple-left' },
   '▄': { frame: 'temple-gate' },
   '▟': { frame: 'temple-right' },
+  // GALUGA ISLAND (World 7): the waterfall, the energy zone's pylons, the enemy base (its
+  // battlements over its wall and gate) and Red Falcon's lair (its horns over its maw).
+  '≡': { frame: 'falls', frames: 2, ticks: 10 },
+  Ж: { frame: 'pylon' },
+  Γ: { frame: 'base-top-left' },
+  Π: { frame: 'base-top-mid' },
+  Δ: { frame: 'base-top-right' },
+  Σ: { frame: 'base-left' },
+  Ξ: { frame: 'base-gate' },
+  Φ: { frame: 'base-right' },
+  '◤': { frame: 'lair-top-left' },
+  '◆': { frame: 'lair-top-mid' },
+  '◥': { frame: 'lair-top-right' },
+  '◣': { frame: 'lair-left' },
+  '●': { frame: 'lair-maw' },
+  '◢': { frame: 'lair-right' },
   ...Object.fromEntries(POND_CHARS.split('').map((ch, i) => [ch, wet(`pond-${i}`)])),
 };
 
@@ -286,6 +313,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   zebes: 'map-zebes',
   transylvania: 'map-transylvania',
   ninja: 'map-ninja',
+  contra: 'map-contra',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -304,6 +332,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   zebes: ZEBES_NIGHT, // Zebes's deep violet night
   transylvania: TRANSYLVANIA_NIGHT, // Transylvania's moonlit night
   ninja: NINJA_NIGHT, // DRAGON VALLEY's night under the full moon
+  contra: CONTRA_NIGHT, // GALUGA ISLAND's night over the jungle
 };
 
 /** Background colour behind the tiles. */
@@ -328,12 +357,14 @@ export function drawMapTile(
 /**
  * A theme's own frames for shared legend tiles: Mega City's crystals are Flash Man's blue,
  * Transylvania's trees dead trees, DRAGON VALLEY's bamboo (its houses the Hayabusa village's, its
- * city blocks the night city's rooftops, its moon full).
+ * city blocks the night city's rooftops, its moon full), GALUGA ISLAND's jungle (its cannons
+ * pillboxes in the snow).
  */
 const THEME_TILE_FRAMES: Readonly<Partial<Record<MapTheme, Readonly<Record<string, string>>>>> = {
   megaman: { crystal: 'crystal-flash' },
   transylvania: { tree: 'dead-tree' },
   ninja: { tree: 'bamboo', house: 'minka', city: 'ng-rooftops', moon: 'full-moon' },
+  contra: { tree: 'jungle', blaster: 'pillbox' },
 };
 
 /** The frame tile `ch` of `page` draws (its theme's own, if it has one); '' for none. */
@@ -360,6 +391,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   zebes: 'enemies-overworld',
   transylvania: 'enemies-overworld',
   ninja: 'enemies-overworld',
+  contra: 'enemies-overworld',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -377,6 +409,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   zebes: 'enemies-water',
   transylvania: 'enemies-water',
   ninja: 'enemies-water',
+  contra: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -394,6 +427,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   zebes: 'decor-crateria', // the surface's storm clouds
   transylvania: 'decor-cv-gate', // the gate's dim night clouds
   ninja: 'decor-ng-field', // the bamboo field's dim night clouds
+  contra: 'decor-contra-shore', // the jungle shore's dim night clouds
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
@@ -419,6 +453,9 @@ const MEDUSA = ['medusa-0', 'medusa-1'] as const;
 const RAVEN = ['raven-0', 'raven-1'] as const;
 const HAWK = ['hawk-0', 'hawk-1'] as const;
 const MASKED = ['masked-0', 'masked-1'] as const;
+const CAPSULE = ['capsule-0', 'capsule-1'] as const;
+const SOLDIER = ['soldier-0', 'soldier-1'] as const;
+const CHOPPER = ['chopper-0', 'chopper-1'] as const;
 const CHEEP = ['cheep-0', 'cheep-1'] as const;
 const SPLASH = ['splash-0', 'splash-1'] as const;
 const PODOBOO = ['podoboo-0', 'podoboo-1'] as const;
@@ -506,6 +543,10 @@ export const MAP_ACTOR_TYPES = [
   'hawk',
   'ninja',
   'masked-ninja',
+  // GALUGA ISLAND (World 7).
+  'capsule',
+  'soldier',
+  'chopper',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -787,6 +828,30 @@ export function drawMapActor(
       r.sprite(assets.sheet('map', MAP_PAL[page.theme]), MASKED[Math.floor(t / 20) & 1] as string, x, y);
       return;
     }
+    case 'capsule': {
+      // A weapon capsule crosses in a wave and comes round again, its wings beating every 8 frames.
+      const speed = num(actor, 'speed', 0.5);
+      const ox = pageOffset(page, actor);
+      const cx = ox + wrapX(x - ox + t * speed, 16);
+      const cy = y + Math.round(Math.sin((t + num(actor, 'phase', 0)) / 20) * num(actor, 'amp', 8));
+      r.sprite(assets.sheet('map', MAP_PAL[page.theme]), CAPSULE[(t >> 3) & 1] as string, cx, cy);
+      return;
+    }
+    case 'soldier': {
+      // Soldiers face right; flipped on the way back, their legs scissoring every 6 frames.
+      const p = pace(t, num(actor, 'range', 32), num(actor, 'speed', 0.4));
+      const sheet = assets.sheet('map', MAP_PAL[page.theme]);
+      r.sprite(sheet, SOLDIER[Math.floor(t / 6) & 1] as string, x + Math.round(Math.abs(p)), y, p < 0);
+      return;
+    }
+    case 'chopper': {
+      // Nose first across the sky, wrapping round; its rotor turns every 4 frames.
+      const speed = num(actor, 'speed', -0.45);
+      const ox = pageOffset(page, actor);
+      const hx = ox + wrapX(x - ox + t * speed, 16);
+      r.sprite(assets.sheet('map', MAP_PAL[page.theme]), CHOPPER[(t >> 2) & 1] as string, hx, y, speed < 0);
+      return;
+    }
     default:
       return;
   }
@@ -865,6 +930,12 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
       return [x, y, x + num(a, 'range', 64) + 16, y + 32];
     case 'ninja':
       return [x, y - num(a, 'height', 16), x + num(a, 'range', 48) + 16, y + 16];
+    case 'capsule':
+      return [0, y - num(a, 'amp', 8), 256, y + 16 + num(a, 'amp', 8)];
+    case 'soldier':
+      return [x, y, x + num(a, 'range', 32) + 16, y + 16];
+    case 'chopper':
+      return [0, y, 256, y + 16];
     default:
       return [x, y, x + 16, y + 16];
   }

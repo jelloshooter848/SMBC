@@ -10,6 +10,12 @@ startMode: autowalk
 camera: locked
 parent: 7-2
 
+;; Campaign play only (0.4.30): the jungle shore where 7-2's river begins (`contra-shore`): sand,
+;; the jungle's mossy brick and a treeline of palms and ferns painted behind, to Bill's jungle tune.
+;; Elsewhere (level select, ?level=7-2) it looks as it always did.
+campaignTheme: contra-shore
+campaignMusic: contra-jungle
+
 [tiles]
 ;; 0
 ................

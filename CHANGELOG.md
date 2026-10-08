@@ -8,6 +8,17 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- World 7 is now Bill's world (campaign only; classic play keeps SMB's 7-1 to 7-4):
+  - The World 7 map page is GALUGA ISLAND (it was CANNON COAST): a snowfield, the enemy base and its defense wall,
+    jungle, a waterfall and river, the energy zone and Red Falcon's lair over 7-4, with weapon capsules, soldiers and a
+    helicopter.
+  - 7-1 is the snowfield before the enemy base (pillbox cannons, snowy pines), its coin room the base's corridors,
+    7-2's way in and way out the jungle shore, 7-2 the jungle river (every hero still swims there) and 7-4 Red
+    Falcon's alien lair. 7-3's jungle, Bill's camp, the waterfall climb and the bridge blast are unchanged.
+  - Two new original Contra-style songs: the snowfield and the river.
+
 ## [0.4.29] - 2026-10-08
 
 ### Changed

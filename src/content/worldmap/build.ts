@@ -21,6 +21,8 @@ const INLAND = new Set([
   ...['Ħ', 'Ω', '║', '╔', '╦', '╗', '╚', '╩', '╝'],
   // DRAGON VALLEY (World 6): neon towers, the dojo and the demon temple.
   ...['¤', '⌐', '¬', '▛', '▀', '▜', '▙', '▄', '▟'],
+  // GALUGA ISLAND (World 7): the energy zone's pylons, the enemy base and Red Falcon's lair.
+  ...['Ж', 'Γ', 'Π', 'Δ', 'Σ', 'Ξ', 'Φ', '◤', '◆', '◥', '◣', '●', '◢'],
 ]);
 
 /** The round pond's tiles, row by row (4 wide, 3 tall); a sketch writes the whole block. */

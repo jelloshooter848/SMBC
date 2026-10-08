@@ -34,6 +34,7 @@ export function enemyPalette(theme: Theme): string {
     case 'megaman-metal': // 3-1's bonus room as a Metal Man-style factory (0.4.26)
     case 'cv-catacomb': // 5-1's bonus room as the catacombs (0.4.28)
     case 'ng-sewer': // 6-2's coin rooms as the city's sewers (0.4.29)
+    case 'contra-base': // 7-1's bonus room as the enemy base's corridors (0.4.30)
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':
@@ -48,11 +49,13 @@ export function enemyPalette(theme: Theme): string {
     case 'megaman-fortress': // and 3-4 as Wily's fortress (0.4.26)
     case 'tourian-lair': // and 4-4 as Tourian, Mother Brain's lair (0.4.27)
     case 'ng-temple': // and 6-4 as the demon temple, Jaquio's lair (0.4.29)
+    case 'contra-lair': // and 7-4 as Red Falcon's alien lair (0.4.30)
       return 'enemies-castle';
     case 'water':
     case 'zelda2-water': // 2-2's lake keeps the water's fish and squids (0.4.24)
     case 'cv-lake': // and so does 5-2's underground lake (0.4.28)
     case 'ng-harbor': // and 6-2's night harbour (0.4.29)
+    case 'contra-river': // and 7-2's jungle river (0.4.30)
       return 'enemies-water';
     default:
       return 'enemies-overworld';

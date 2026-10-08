@@ -11,6 +11,7 @@ import { megamanWorldSongs } from './megaman-world';
 import { zebesWorldSongs } from './zebes-world';
 import { transylvaniaSongs } from './transylvania';
 import { ninjaWorldSongs } from './ninja-world';
+import { contraWorldSongs } from './contra-world';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1224,4 +1225,6 @@ export const songs: Song[] = [
   ...transylvaniaSongs,
   // World 6 as Ryu's world (0.4.29): 6-2's sewers and harbour, 6-3's mountain pass.
   ...ninjaWorldSongs,
+  // World 7 as Bill's world (0.4.30): 7-1's snowfield, 7-2's jungle river.
+  ...contraWorldSongs,
 ];

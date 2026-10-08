@@ -45,6 +45,14 @@ import {
   ngTempleDecorPalette,
   ninjaWorldDecorFrames,
 } from './ninja-world';
+import {
+  contraSnowDecorPalette,
+  contraBaseDecorPalette,
+  contraShoreDecorPalette,
+  contraRiverDecorPalette,
+  contraLairDecorPalette,
+  contraWorldDecorFrames,
+} from './contra-world';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -192,6 +200,12 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-ng-harbor': ngHarborDecorPalette,
   'decor-ng-pass': ngPassDecorPalette,
   'decor-ng-temple': ngTempleDecorPalette,
+  // World 7 as Bill's world (0.4.30) (contra-world.ts).
+  'decor-contra-snow': contraSnowDecorPalette,
+  'decor-contra-base': contraBaseDecorPalette,
+  'decor-contra-shore': contraShoreDecorPalette,
+  'decor-contra-river': contraRiverDecorPalette,
+  'decor-contra-lair': contraLairDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -772,5 +786,7 @@ export const decorDef: SpriteDef = {
     ...transylvaniaDecorFrames,
     // World 6 as Ryu's world (0.4.29): the moon, the backdrops, bamboo and lanterns.
     ...ninjaWorldDecorFrames,
+    // World 7 as Bill's world (0.4.30): the backdrops, snowy pines and firs.
+    ...contraWorldDecorFrames,
   },
 };

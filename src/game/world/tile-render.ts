@@ -85,6 +85,9 @@ export const STARRY_SKIES: ReadonlySet<string> = new Set([
   // World 6 as Ryu's world (0.4.29): the bamboo field's and the mountain pass's night.
   'ng-field',
   'ng-pass',
+  // World 7 as Bill's world (0.4.30): the snowfield's and the jungle shore's night.
+  'contra-snow',
+  'contra-shore',
 ]);
 
 /**
@@ -116,6 +119,8 @@ export const FLOODED: Readonly<Record<string, string>> = {
   'cv-lake': '#1c4c28',
   // 6-2's water area as the night harbour (0.4.29): its waves' dark blue (ninja-world.ts NG_HARBOR_WATER).
   'ng-harbor': '#102c74',
+  // 7-2's water area as the jungle river (0.4.30): its waves' green (contra-world.ts CONTRA_RIVER_WATER).
+  'contra-river': '#145c44',
 };
 
 export const SKY: Record<string, string> = {
@@ -209,4 +214,11 @@ export const SKY: Record<string, string> = {
   'ng-harbor': '#080c1c',
   'ng-pass': '#101830',
   'ng-temple': '#000000',
+  // World 7 as Bill's world (0.4.30): the snowfield's winter night, the base's corridors in the dark,
+  // the shore's and the river's jungle night, the alien lair black over its organic wall.
+  'contra-snow': '#141c30',
+  'contra-base': '#000000',
+  'contra-shore': '#000c24',
+  'contra-river': '#000818',
+  'contra-lair': '#000000',
 };

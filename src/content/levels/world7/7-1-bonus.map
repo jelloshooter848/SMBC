@@ -10,6 +10,13 @@ startMode: fall
 camera: locked
 parent: 7-1
 
+;; Campaign play only (0.4.30): 7-1's coin room is the enemy base's inner corridors
+;; (`contra-base`, the underground still): steel grating, bulkhead panels with a hazard stripe and
+;; riveted plate before a corridor wall of panels and conduits (no light on it blinks), to Bill's
+;; stage march. Elsewhere (level select, ?level=7-1) it looks as it always did.
+campaignTheme: contra-base
+campaignMusic: contra-stage
+
 [tiles]
 ;; 0
 ................
