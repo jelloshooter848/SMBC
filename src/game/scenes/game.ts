@@ -48,7 +48,13 @@ import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship'
 import { isLostLevel } from '../level/lost-campaign';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
-import { levelTutorial, newTutorialRun, stageTutorial, type TutorialRun } from '../tutorial/stage-tutorial';
+import {
+  levelTutorial,
+  newTutorialRun,
+  skipTutorialStory,
+  stageTutorial,
+  type TutorialRun,
+} from '../tutorial/stage-tutorial';
 import {
   FIRST_HERO,
   loadSave,
@@ -999,8 +1005,11 @@ export class Game {
     if (!run) return;
     this.state.checkpoint = null;
     this.state.time = null;
-    // Campaign: the clear's way back to the map gives the file's hero back (endTutorial).
+    // Campaign: the clear's way back to the map gives the file's hero back (endTutorial). A file
+    // that never saw Bowser's spell sees it first, over the level (docs/STORY.md 2.2).
     if (this.campaign) {
+      const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+      if (scene && skipTutorialStory(this, scene, run.level, () => this.levelCleared(run.level))) return;
       this.levelCleared(run.level);
       return;
     }

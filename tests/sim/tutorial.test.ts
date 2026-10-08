@@ -25,6 +25,8 @@ import type { WorldMapPage } from '@game/map/types';
 import { loadSave, newSave, saveKey } from '@game/save/save-files';
 import { MARIO_LESSONS, MARIO_TUTORIAL, TOAD_PAGES } from '@game/tutorial/mario-1-0';
 import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
+import { BowserSpellScene } from '@game/story/bowser-spell';
+import { BOWSER_SPELL_PAGES } from '@game/story/script';
 import { STORY_TOAD_PAGES } from '@game/story/script';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
@@ -194,8 +196,9 @@ function playTutorial(h: H, stop: () => boolean, max = 6000) {
       h.step(frames % 40 === 39 ? ['jump'] : []);
       continue;
     }
-    // The tease waits for OK once Bowser speaks (text never moves by itself).
-    if (t instanceof ShadowTeaseScene) {
+    // The tease (Bowser's spell in the campaign) waits for OK once Bowser speaks (text never
+    // moves by itself).
+    if (t instanceof ShadowTeaseScene || t instanceof BowserSpellScene) {
       h.step(frames % 40 === 39 ? ['jump'] : []);
       continue;
     }
@@ -269,7 +272,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(h.top()).toBeInstanceOf(LevelScene);
   });
 
-  it('a scripted Mario does every lesson in order, sees the tease and reaches the flag', () => {
+  it("a scripted Mario does every lesson in order, sees Bowser's spell and reaches the flag", () => {
     const h = makeGame();
     file();
     h.game.openFile(1);
@@ -279,7 +282,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     let teased = false;
     playTutorial(h, () => {
       const t = h.top();
-      if (t instanceof ShadowTeaseScene) teased = true;
+      if (t instanceof BowserSpellScene) teased = true;
       if (t instanceof LevelScene) {
         const id = t.tutorial?.lesson?.id;
         if (id && seen.at(-1) !== id) seen.push(id);
@@ -292,6 +295,9 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(d.done).toEqual(MARIO_LESSONS.map((l) => l.id));
     expect(d.missed).toEqual([]);
     expect(teased).toBe(true);
+    // The campaign's spell (docs/STORY.md 2.2): Bowser's pages, each read out.
+    for (const page of BOWSER_SPELL_PAGES)
+      expect(h.said.some((t) => t.startsWith(page.filter(Boolean).join(' ')))).toBe(true);
     expect(h.game.state.lives).toBe(lives);
     // The flag clears 1-0: back on the map, 1-1 drawn in.
     h.until(() => h.top() instanceof WorldMapScene, 1200);
