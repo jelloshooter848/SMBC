@@ -735,6 +735,13 @@ palm 1 12
   and the decor in the level's map; a test like `tests/sim/bill-camp.test.ts` "outside the
   campaign".
 
+## Hero variants (`[variant <hero>]`, Chapter 1 finishing pass)
+
+A level can change for a hero: a map's `[variant <hero>]` section lists the extra tiles and
+spawns that hero gets (laid when any player is that hero; campaign only, or in all play when
+marked `classic`). `level/variants.ts`, applied in `Game.levelScene` after the campaign variant.
+Sophia III's variants and the format are in docs/HEROES.md, "Her level variants".
+
 ## Story system (0.4.13)
 
 In the campaign (`storyOn`, src/game/story/beats.ts) Toad is the map's guide: when a page shows,

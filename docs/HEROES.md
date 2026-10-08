@@ -1210,57 +1210,86 @@ replays some of the routes it found on every test run. A level it cannot finish 
 that no route exists (it tries fixed moves from standing spots, and a block it reveals or a lift
 it rides is gone again at its next try), so the table says which places were checked by hand.
 
-**Results (2026-10-07, 0.4.13).** Super Mario Bros.: 32 of 33 levels (1-0 to 8-4) are finished at
-Normal (by the sweep, which ran before the search kept the screen's left edge: rows other than 4-4,
-7-4 and 8-4 may be optimistic, see below). The one that is not is **8-4**: its hanging pipe (column
-163, seven tiles over the floor; Mario gets there off the Paratroopas) is out of the tank's reach,
-and of Jason's hop even from the parked tank's roof. As Crusher the search finishes it, but 8-4 has
-no power-up, so a Normal Sophia who dies there cannot finish it until its variant is built (the
-owner's call: Normal Sophia's gaps ship as a known issue, fixed with the variants in the Chapter 1 finishing pass). The Lost
-Levels: 25 of 52 at Normal; the rest below. "Hyper: yes" also means Crusher (which has the hover
-too); Crusher is searched only when Hyper fails. A number is the column where the search stopped.
-**Genuine** marks a level checked by hand that the tank and Jason cannot get through at that power;
-the others are where the search gave up and need a look when their variants are made.
+The search plays every level with Sophia's variant laid (below). Besides its fixed moves it
+drives off a ledge with the direction held until she lands, and on a springboard presses jump
+afresh for the boosted launch (`boost<k>`). `reach()` and `replay()` also take a start spot,
+past a stretch that only a scripted sim gets through.
 
-The sweep ran before the search kept the screen's left edge from one try to the next (it re-centred
-the camera at each spot, so a route could go back past an edge the screen had already scrolled by).
-Re-run with the edge kept: 7-4 is still finished at Normal; 8-4 is finished as Crusher, not found as
-Hyper; 4-4's end is not found any more (the search only found the way that backtracked), but 4-4 is
-finished at Normal from its start without the screen going back: the search's route to the floor
-left of the chamber at 224, then a scripted drop through the chamber and the hole (the sim in
-`tests/sim/sophia.test.ts`). The other rows may be optimistic in the same way.
+### Her level variants (`[variant sophia]`)
 
-| Level   | Normal | Hyper    | Crusher  | At Normal                                                                                                                                                                                                                    |
-| ------- | ------ | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 8-4     | no     | no (206) | yes      | 163: the hanging pipe, 7 tiles over the floor (Mario bounces off the Paratroopas); out of the tank's and Jason's reach. **Genuine.**                                                                                         |
-| ll-1-2  | no     | yes      | yes      | 63: four falling lifts over a pit (67-91); not timed by the search.                                                                                                                                                          |
-| ll-2-2  | no     | yes      | yes      | 187: a 10-tile gap crossed on hidden blocks (185, 186); the search does not keep blocks it revealed.                                                                                                                         |
-| ll-2-4  | no     | no (30)  | yes      | 30: the way on is a one-tile shaft four tiles up (column 17); the tank does not fit, Jason hops three. Crusher climbs past it. **Genuine at Normal and Hyper.**                                                              |
-| ll-3-3  | no     | yes      | yes      | 15: the first platform is five tiles up (80 px); the tank jumps 72. **Genuine.**                                                                                                                                             |
-| ll-3-4  | no     | no (126) | yes      | 126: not checked by hand.                                                                                                                                                                                                    |
-| ll-4-1  | no     | yes      | yes      | 73: an 11-tile gap with a springboard at its edge; the search does not time a spring boost.                                                                                                                                  |
-| ll-4-2  | no     | yes      | yes      | 116: not checked by hand.                                                                                                                                                                                                    |
-| ll-4-3  | no     | yes      | yes      | 15: an 8-tile gap at the same height (the tank clears about 7, checked by hand). **Genuine.**                                                                                                                                |
-| ll-4-4  | no     | no (94)  | yes      | 94: not checked by hand.                                                                                                                                                                                                     |
-| ll-5-1  | no     | yes      | yes      | 133: not checked by hand.                                                                                                                                                                                                    |
-| ll-6-1  | no     | yes      | yes      | 79: a pipe seven tiles tall, climbed from a hidden block beside it; done by hand at Normal (the search does not keep revealed blocks). Finishable.                                                                           |
-| ll-6-3  | no     | yes      | yes      | 192: not checked by hand.                                                                                                                                                                                                    |
-| ll-7-1  | no     | yes      | yes      | 31: not checked by hand.                                                                                                                                                                                                     |
-| ll-7-2  | no     | yes      | yes      | 127: not checked by hand.                                                                                                                                                                                                    |
-| ll-7-3  | no     | no (22)  | no (22)  | 22: green super springs; by hand a flight braked in the air lands on the next tree. Not followed further.                                                                                                                    |
-| ll-8-1  | no     | yes      | yes      | 74: an 11-tile gap Mario crosses on Paratroopas. **Likely genuine** (she cannot stomp).                                                                                                                                      |
-| ll-8-2  | no     | no (174) | no (175) | 104: the level goes on by a vine out of a block (127) to the warp area; the search found no way to it at any power.                                                                                                          |
-| ll-8-3  | no     | no (183) | no (183) | 26: lifts and long gaps; at Hyper it stops at 183, a 29-tile gap with balance lifts before the exit.                                                                                                                         |
-| ll-8-4  | no     | yes      | yes      | 48: pipes over lava, 4 to 7 tiles apart; not checked by hand.                                                                                                                                                                |
-| ll-11-3 | no     | no (20)  | no (20)  | 20: lifts out of a 6-tile gap two tiles up from the start; not timed by the search.                                                                                                                                          |
-| ll-11-4 | no     | no (63)  | no (63)  | 63: a one-tile shaft up from a moving lift over lava (column 68); the tank does not fit and Jason cannot get out on a lift. **Genuine at Normal and Hyper**; Crusher would have to climb the wall from the lift (not found). |
-| ll-12-1 | no     | yes      | yes      | 144: not checked by hand.                                                                                                                                                                                                    |
-| ll-12-2 | no     | yes      | yes      | 21: an 8-tile gap from the block at 19-21 to the platform at 30. **Likely genuine.**                                                                                                                                         |
-| ll-12-3 | no     | no (22)  | no (22)  | 22: green super springs, as 7-3.                                                                                                                                                                                             |
-| ll-13-1 | no     | yes      | yes      | 31: from the ledge at row 6 to the staircase at 37; done by hand at Normal. Finishable.                                                                                                                                      |
-| ll-13-3 | no     | yes      | yes      | 143: not checked by hand.                                                                                                                                                                                                    |
-| ll-13-4 | no     | yes      | yes      | 52: in the exit area, a 9-tile jump from the staircase to the pipe at 85. **Genuine.**                                                                                                                                       |
+A level can change for a hero (`level/variants.ts`, owner decision for the Chapter 1 finishing
+pass). A map's `[variant <hero>]` section lists runs of tiles, `x y tiles [*N]` (map characters
+from (x, y) rightward; `.` opens a tile; `*N` repeats the run on N rows going down). It also
+lists spawns added (`+ type x y [key=val]`, or a marker such as a spring's `s` in a run) or
+taken out (`- type x y`). `Game.levelScene` lays the variant after the campaign variant when
+any player is that hero, so a co-op partner plays it too.
 
-For the Chapter 1 finishing pass (Sophia's level variants, the Sophia-only tiles of the original): 8-4 first (Chapter 1),
-then the Lost Levels marked genuine (2-4, 3-3, 4-3, 11-4, 13-4, likely 8-1 and 12-2), then the rest
-of the table once checked by hand. The variants can be checked with the same sweep.
+- `[variant sophia]` is ours and applies in campaign play only. Its tiles only fill open air,
+  away from the other heroes' routes, so nothing another hero stands on or needs goes away.
+- `[variant sophia classic]` holds the original's own pieces for her and applies in classic
+  play too. Crossover builds each level per hero (`Level.as` determineHelperVisibility). Sophia
+  sees the pieces marked `charHorz` or `charVert` (heroes who jump short or low) and
+  `WideCharacter` (wide heroes), and loses the ones those hide. In a level that needed one, the
+  section holds all of the original's pieces for her in that area: its walls, lowered blocks,
+  extra ground, springs and lifts. It leaves out only the flagpole's step-fall lift, which
+  nearly every level has. `tools/levelgen` still converts the maps for the classic hero, so the
+  pieces were taken from the same data with her visibility.
+
+Tests: `src/game/level/variants.test.ts` (parse, serialize, laying) and
+`tests/sim/sophia-variants.test.ts`. The second file covers the game laying the variant (both
+co-op seats, campaign and classic). Every variant map is checked to be the level itself for
+Mario, and our own tiles to land in open air. A replayed route (or a scripted sim) takes Normal
+Sophia past each variant's spot.
+
+**Results (2026-10-08, the Chapter 1 finishing pass).** Every level of the table below, at
+Normal, with her variants:
+
+- SMB 8-4 and 27 of the 29 Lost Levels rows are finished, all checked by the sweep or by sims
+  (the "How" column).
+- **ll-7-3** and **ll-12-3** are not followed past their first green super spring. A braked
+  flight lands on the next tree.
+- **ll-8-3** stops at 140. The search does not find the jump onto the original's red spring in
+  the 12-tile gap at 147.
+
+A bug fix came out of it. A hop's released jump damped a spring's launch to almost nothing; as
+in `Sophia.as`, the release damping now ends once a rise is over.
+
+8-4's hanging pipe had a way up all along: the hidden coin block at 161 (row 9) is a step to its
+top. Our variant adds a hard block at 160 (row 9) that a player can see. The original has no
+Sophia piece there, so it is campaign only. The original's one Sophia piece in 8-4 is ground in
+8-4-end's lava at 21, which she does not need; it is not laid.
+
+| Level   | Variant                                                                    | At Normal | How                                                                                                                   |
+| ------- | -------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
+| 8-4     | ours, campaign only: a hard block at 160 (row 9) under the hanging pipe    | yes       | sweep                                                                                                                 |
+| ll-1-2  | original: the falling lifts over the pit set closer, steps at 21-26        | yes       | sweep                                                                                                                 |
+| ll-2-2  | original: the crossing's hidden block at 186 a row lower, ground in gaps   | yes       | sim over the hidden blocks at 185-186, then the search                                                                |
+| ll-2-4  | original: the one-tile shafts at 17 and 24 two wide                        | yes       | sweep                                                                                                                 |
+| ll-3-3  | original: the first platform (13-15) two rows lower                        | yes       | sweep                                                                                                                 |
+| ll-3-4  | original: blocks at 23 and 87 a row lower, lava filled at 19 and 83        | yes       | sweep                                                                                                                 |
+| ll-4-1  | original: ground in the gap after the springboard, blocks a row lower      | yes       | search to the water area's pipe at 163, the search from there                                                         |
+| ll-4-2  | original: the pipe at 117 a tile lower                                     | yes       | sweep                                                                                                                 |
+| ll-4-3  | original: longer ground and a wider platform at 16-23, a platform at 69-72 | yes       | search to 27, sim on the spring and over the lifts to 63, the search from there                                       |
+| ll-4-4  | none                                                                       | yes       | search to 94, sim off the block under the pillar at 95, the search from there                                         |
+| ll-5-1  | original: the pillars at 136-159 closer, the hidden block at 317 lower     | yes       | sweep to 319, sim up the hidden blocks at 317-318, the search from the wall's top                                     |
+| ll-6-1  | original: a step and pillar at 175-178, a lift moved                       | yes       | sim up the hidden block onto the pipe at 79, the search from there                                                    |
+| ll-6-3  | original: a bridge at 193 (row 6)                                          | yes       | sweep                                                                                                                 |
+| ll-7-1  | original: the ground longer at 37 and 146, a hidden block at 114           | yes       | sweep                                                                                                                 |
+| ll-7-2  | original: hidden blocks under the raised pipes (53, 117)                   | yes       | sim up the hidden block into the pipe at 115 (past the loop), the search to 238, jumps over the lifts to the flagpole |
+| ll-7-3  | original: red springs at 181 and 211, blocks at 287-300                    | not found | the first green spring by sim (a braked flight lands on 45-48); not followed further                                  |
+| ll-8-1  | original: red springs in the long gaps, the Paratroopas moved              | yes       | search to 176, jumps onto the pipe at 183, the search from there                                                      |
+| ll-8-2  | original: the steps at 112-116 reworked                                    | yes       | search to 173; sim: bump the vine block at 127, up onto it and up the vine; the search in the warp area               |
+| ll-8-3  | original: springs, a platform and lifts in the gaps, Paratroopas moved     | no (140)  | the search does not find the jump onto the red spring at 147                                                          |
+| ll-8-4  | original: lava filled and a lift in the first area, lifts in 8-4-end2      | yes       | search to the pipe at 47; sims over 8-4-end's wall and end3's gap; the search for the rest                            |
+| ll-11-3 | original: platforms at 12-21, 73-87 and 165-181                            | yes       | search to 22, jumps over the lifts to 63, the search to 102, the green spring and lifts by jumps to the flagpole      |
+| ll-11-4 | original: the one-tile shafts at 64 and 68 two wide                        | yes       | sweep                                                                                                                 |
+| ll-12-1 | original: ground in the gap at 145 and at 193, 197                         | yes       | sweep                                                                                                                 |
+| ll-12-2 | original: a bridge in the gap at 24-26                                     | yes       | sweep                                                                                                                 |
+| ll-12-3 | original: red springs and platforms by the green super springs             | not found | as ll-7-3                                                                                                             |
+| ll-13-1 | none                                                                       | yes       | sweep                                                                                                                 |
+| ll-13-3 | none                                                                       | yes       | sweep (the boosted spring)                                                                                            |
+| ll-13-4 | original: lifts at 43 and 55; the exit area's staircase five tiles right   | yes       | sweep                                                                                                                 |
+
+"Sweep" is `SOPHIA_SWEEP=1 LVLS=<level>` from the level's start. "Sim" and "jumps" are scripted
+runs, made while checking. The ones in `tests/sim/sophia-variants.test.ts` cover each variant's
+spot.
