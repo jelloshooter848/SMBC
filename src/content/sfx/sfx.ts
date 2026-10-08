@@ -5,6 +5,7 @@ import { ninjaSfx } from './ninja';
 import { contraSfx } from './contra';
 import { sophiaSfx } from './sophia';
 import { deathSfx } from './deaths';
+import { heroItemSfx } from './hero-items';
 
 /**
  * Original sound effects. At the default 150 bpm one tick is ~8.3 ms, so l64 = 25 ms,
@@ -224,4 +225,6 @@ export const sfx: Sfx[] = [
   ...sophiaSfx,
   // The mini game heroes' own deaths (WorldStart.deathStyle).
   ...deathSfx,
+  // 0.4.33: each hero item's own pickup cue (hero-items.ts).
+  ...heroItemSfx,
 ];
