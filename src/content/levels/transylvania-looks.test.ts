@@ -133,15 +133,18 @@ describe("World 5 as Simon's world: Castlevania-style looks, campaign only", () 
       expect(frames[`${name}@${theme}`], `${id}: ${name}@${theme}`).toBeDefined();
   });
 
-  it.each(IDS)('%s: no water theme; swimming, castle, floors and enemies answer as in the classic level', (id) => {
-    const camp = campaignLevel(getLevel(id));
-    const classic = getLevel(id);
-    expect(isWaterTheme(camp.theme)).toBe(false);
-    expect(isSwimLevel(camp)).toBe(isSwimLevel(classic));
-    expect(isCastleTheme(camp.theme)).toBe(isCastleTheme(classic.theme));
-    expect(hasSolidFloors(camp.theme)).toBe(hasSolidFloors(classic.theme));
-    expect(enemyPalette(camp.theme)).toBe(enemyPalette(classic.theme));
-  });
+  it.each(IDS)(
+    '%s: no water theme; swimming, castle, floors and enemies answer as in the classic level',
+    (id) => {
+      const camp = campaignLevel(getLevel(id));
+      const classic = getLevel(id);
+      expect(isWaterTheme(camp.theme)).toBe(false);
+      expect(isSwimLevel(camp)).toBe(isSwimLevel(classic));
+      expect(isCastleTheme(camp.theme)).toBe(isCastleTheme(classic.theme));
+      expect(hasSolidFloors(camp.theme)).toBe(hasSolidFloors(classic.theme));
+      expect(enemyPalette(camp.theme)).toBe(enemyPalette(classic.theme));
+    },
+  );
 });
 
 describe("5-1: the castle's courtyard gate (cv-gate)", () => {
@@ -159,7 +162,7 @@ describe("5-1: the castle's courtyard gate (cv-gate)", () => {
     for (const d of drawn) expect(d.startsWith('decor@decor-cv-gate'), d).toBe(true);
   });
 
-  it("its trees are statues and torch braziers; its Bullet Bill blasters are black iron that reads on the night", () => {
+  it('its trees are statues and torch braziers; its Bullet Bill blasters are black iron that reads on the night', () => {
     const assets = registry();
     const sheet = assets.sheet('decor', 'decor-cv-gate');
     expect(sheet.frames.get('tree-big@cv-gate')).toMatchObject({ w: 16, h: 48 });
@@ -170,7 +173,10 @@ describe("5-1: the castle's courtyard gate (cv-gate)", () => {
     for (const f of ['blaster-top@cv-gate', 'blaster-base@cv-gate']) {
       const used = new Set((frames[f] as readonly string[]).join('').replace(/[.0]/g, ''));
       // at least two of its colours stand well out from the night
-      expect([...used].filter((c) => lum(pal[ROLES.indexOf(c)]!) - sky >= 150).length, f).toBeGreaterThanOrEqual(2);
+      expect(
+        [...used].filter((c) => lum(pal[ROLES.indexOf(c)]!) - sky >= 150).length,
+        f,
+      ).toBeGreaterThanOrEqual(2);
     }
   });
 });
@@ -189,7 +195,9 @@ describe("5-2: Simon's Quest-style town streets (cv-town) and its stormy coin he
     expect(tiles('cv-storm')).toEqual(tiles('cv-town'));
     expect(frames['cloud-block@cv-storm']).toHaveLength(16);
     // the clouds' fill stands out from the storm sky
-    const cloud = new Set((frames['cloud-block@cv-storm'] as readonly string[]).join('').replace(/[.0]/g, ''));
+    const cloud = new Set(
+      (frames['cloud-block@cv-storm'] as readonly string[]).join('').replace(/[.0]/g, ''),
+    );
     const brightest = Math.max(...[...cloud].map((c) => lum(tiles('cv-storm')['0123456789ab'.indexOf(c)]!)));
     expect(brightest - lum(SKY['cv-storm'] as string)).toBeGreaterThanOrEqual(200);
   });
@@ -276,6 +284,13 @@ describe('the new looks', () => {
       expect(c.loop, s.id).toBe(true);
       for (const t of Object.values(c.tracks) as Track[]) expect(t.length, s.id).toBe(c.length);
     }
-    expect(NEW_THEMES.map(themeMusic)).toEqual(['cv-hall', 'crypt', 'cv-town', 'cv-town', 'cv-lake', 'cv-stage']);
+    expect(NEW_THEMES.map(themeMusic)).toEqual([
+      'cv-hall',
+      'crypt',
+      'cv-town',
+      'cv-town',
+      'cv-lake',
+      'cv-stage',
+    ]);
   });
 });

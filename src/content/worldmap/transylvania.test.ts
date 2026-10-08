@@ -28,7 +28,10 @@ const registry = () => {
 };
 
 /** Every sprite `actor` draws over `frames` frames, as `sheet frame x y`. */
-function drawn(actor: (typeof WORLD_5.actors)[number], frames: number): { f: string; x: number; y: number }[] {
+function drawn(
+  actor: (typeof WORLD_5.actors)[number],
+  frames: number,
+): { f: string; x: number; y: number }[] {
   const a = registry();
   const out: { f: string; x: number; y: number }[] = [];
   const r = Object.assign(new NullRenderer(), {
@@ -136,7 +139,8 @@ describe('World 5: TRANSYLVANIA', () => {
     const [x0, y0, x1, y1] = mapActorBounds(bat);
     const d = drawn(bat, 600);
     expect(new Set(d.map((s) => s.f))).toEqual(new Set(['crypt@crypt bat-1', 'crypt@crypt bat-2']));
-    for (const s of d) expect(s.x >= x0 && s.x + 16 <= x1 && s.y >= y0 && s.y + 16 <= y1, `${s.x},${s.y}`).toBe(true);
+    for (const s of d)
+      expect(s.x >= x0 && s.x + 16 <= x1 && s.y >= y0 && s.y + 16 <= y1, `${s.x},${s.y}`).toBe(true);
   });
 
   it('Medusa heads drift across the page in waves, wrapping round, never into the header', () => {
@@ -152,7 +156,7 @@ describe('World 5: TRANSYLVANIA', () => {
     expect(Math.max(...xs)).toBeGreaterThan(240); // ...and comes round again
   });
 
-  it('a raven flaps its wings (the map sheet\'s raven)', () => {
+  it("a raven flaps its wings (the map sheet's raven)", () => {
     const raven = WORLD_5.actors.find((x) => x.type === 'raven')!;
     const d = drawn(raven, 600);
     expect(new Set(d.map((s) => s.f))).toEqual(

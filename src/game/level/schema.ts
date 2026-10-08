@@ -75,7 +75,17 @@ export type Theme =
   // ESCAPE's own `tourian` is not one).
   | 'crateria'
   | 'norfair'
-  | 'tourian-lair';
+  | 'tourian-lair'
+  // World 5 as Simon's world, Transylvania (0.4.28, campaign looks): 5-1 as the castle's courtyard
+  // gate, its bonus room as the catacombs (the underground still), 5-2 as a Simon's Quest-style
+  // town, its coin heaven as a stormy night over the castle, its water area as the underground lake
+  // (it swims by its map's `swim: true`; no restyle is a water theme) and 5-3 as the clock tower.
+  | 'cv-gate'
+  | 'cv-catacomb'
+  | 'cv-town'
+  | 'cv-storm'
+  | 'cv-lake'
+  | 'cv-clock';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -123,6 +133,12 @@ export const THEMES: readonly Theme[] = [
   'crateria',
   'norfair',
   'tourian-lair',
+  'cv-gate',
+  'cv-catacomb',
+  'cv-town',
+  'cv-storm',
+  'cv-lake',
+  'cv-clock',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -169,6 +185,7 @@ export const hasSolidFloors = (theme: Theme): boolean =>
   theme === 'brinstar' ||
   theme === 'zelda2-cave' ||
   theme === 'megaman-metal' ||
+  theme === 'cv-catacomb' ||
   isCastleTheme(theme);
 
 /** The music an area of this theme plays when its map names none. */
@@ -206,6 +223,14 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'crateria') return 'crateria';
   if (theme === 'norfair') return 'norfair';
   if (theme === 'tourian-lair') return 'tourian';
+  // World 5 as Simon's world, Transylvania (0.4.28): the gate plays 5-4's hall, the catacombs the
+  // crypt and the clock tower Simon's castle stage; the town (and its coin heaven) and the lake have
+  // their own tunes (music/transylvania.ts).
+  if (theme === 'cv-gate') return 'cv-hall';
+  if (theme === 'cv-catacomb') return 'crypt';
+  if (theme === 'cv-town' || theme === 'cv-storm') return 'cv-town';
+  if (theme === 'cv-lake') return 'cv-lake';
+  if (theme === 'cv-clock') return 'cv-stage';
   return 'overworld';
 }
 

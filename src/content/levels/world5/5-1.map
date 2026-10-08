@@ -9,6 +9,15 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (level/campaign.ts applyLook, 0.4.28): World 5 is Simon's world,
+;; Transylvania, and 5-1 is the castle's courtyard gate (`cv-gate`): worn flagstones, grey castle
+;; bricks and carved stone under a starry night, the courtyard's crenellated wall with its barred
+;; gates and Dracula's castle far off painted behind (world/theme-backdrop.ts); its trees are stone
+;; statues and torch braziers, its Bullet Bill blasters black iron. It plays 5-4's hall tune.
+;; Elsewhere (level select, ?level=5-1) it looks as it always did.
+campaignTheme: cv-gate
+campaignMusic: cv-hall
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

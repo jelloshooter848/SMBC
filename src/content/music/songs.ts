@@ -9,6 +9,7 @@ import { lookSongs } from './looks';
 import { zelda2Songs } from './zelda2';
 import { megamanWorldSongs } from './megaman-world';
 import { zebesWorldSongs } from './zebes-world';
+import { transylvaniaSongs } from './transylvania';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1218,4 +1219,6 @@ export const songs: Song[] = [
   ...megamanWorldSongs,
   // World 4 as Samus's world, Zebes (0.4.27): the planet's surface, 4-3's Norfair.
   ...zebesWorldSongs,
+  // World 5 as Simon's world, Transylvania (0.4.28): 5-2's town, its underground lake.
+  ...transylvaniaSongs,
 ];

@@ -10,6 +10,13 @@ startMode: climb
 camera: scroll
 parent: 5-2
 
+;; Campaign play only (0.4.28): the coin heaven over the town is a stormy night over the castle
+;; (`cv-storm`, the town's family): heavy storm clouds to stand on, the castle far off and lightning
+;; painted behind (never with reduce flashing), to the town's tune. Elsewhere (level select,
+;; ?level=5-2) it looks as it always did.
+campaignTheme: cv-storm
+campaignMusic: cv-town
+
 [tiles]
 ;; 0                16               32               48               64
 ................ ................ ................ ................ ................

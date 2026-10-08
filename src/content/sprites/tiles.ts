@@ -42,6 +42,19 @@ import {
   tourianLairTileFrames,
   tourianLairTilePalette,
 } from './zebes-world';
+import {
+  cvGateTilePalette,
+  cvCatacombTilePalette,
+  cvTownTilePalette,
+  cvLakeTilePalette,
+  cvClockTilePalette,
+  cvGateTileFrames,
+  cvCatacombTileFrames,
+  cvTownTileFrames,
+  cvStormTileFrames,
+  cvLakeTileFrames,
+  cvClockTileFrames,
+} from './transylvania';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -352,6 +365,14 @@ export const tilePalettes: Record<string, string[]> = {
   'tiles-crateria': crateriaTilePalette,
   'tiles-norfair': norfairTilePalette,
   'tiles-tourian-lair': tourianLairTilePalette,
+  // World 5 as Simon's world, Transylvania (0.4.28): 5-1, its bonus room, 5-2, its coin heaven
+  // (the town's palette) and water area, 5-3 (transylvania.ts).
+  'tiles-cv-gate': cvGateTilePalette,
+  'tiles-cv-catacomb': cvCatacombTilePalette,
+  'tiles-cv-town': cvTownTilePalette,
+  'tiles-cv-storm': cvTownTilePalette,
+  'tiles-cv-lake': cvLakeTilePalette,
+  'tiles-cv-clock': cvClockTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2367,4 +2388,16 @@ Object.assign(
   crateriaTileFrames(),
   norfairTileFrames(),
   tourianLairTileFrames(tilesDef.frames),
+);
+
+// World 5 as Simon's world, Transylvania (0.4.28): 5-1, 5-1-bonus, 5-2, 5-2-sky, 5-2-water and 5-3
+// (transylvania.ts).
+Object.assign(
+  tilesDef.frames,
+  cvGateTileFrames(tilesDef.frames),
+  cvCatacombTileFrames(),
+  cvTownTileFrames(tilesDef.frames),
+  cvStormTileFrames(tilesDef.frames),
+  cvLakeTileFrames(),
+  cvClockTileFrames(),
 );

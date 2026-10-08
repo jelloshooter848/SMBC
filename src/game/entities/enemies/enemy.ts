@@ -32,6 +32,7 @@ export function enemyPalette(theme: Theme): string {
     case 'tourian':
     case 'zelda2-cave': // 2-1's bonus room and the Moblin's cave as a Hyrule cave (0.4.24)
     case 'megaman-metal': // 3-1's bonus room as a Metal Man-style factory (0.4.26)
+    case 'cv-catacomb': // 5-1's bonus room as the catacombs (0.4.28)
       return 'enemies-underground';
     case 'castle':
     case 'castle-water':
@@ -48,6 +49,7 @@ export function enemyPalette(theme: Theme): string {
       return 'enemies-castle';
     case 'water':
     case 'zelda2-water': // 2-2's lake keeps the water's fish and squids (0.4.24)
+    case 'cv-lake': // and so does 5-2's underground lake (0.4.28)
       return 'enemies-water';
     default:
       return 'enemies-overworld';

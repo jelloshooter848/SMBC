@@ -10,6 +10,14 @@ startMode: fall
 camera: scroll
 parent: 5-2
 
+;; Campaign play only (0.4.28): the underground lake under the town (`cv-lake`): mossy stones,
+;; iron sewer grates and murky green water. No restyle is a water theme: the lake swims by
+;; `swim: true` (which changes nothing in the classic water theme, which always swims). Elsewhere
+;; (level select, ?level=5-2) it looks as it always did.
+swim: true
+campaignTheme: cv-lake
+campaignMusic: cv-lake
+
 [tiles]
 ;; 0                16               32               48               64
 ................ ................ ................ ................ .

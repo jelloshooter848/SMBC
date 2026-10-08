@@ -28,6 +28,15 @@ import {
   tourianLairDecorPalette,
   zebesWorldDecorFrames,
 } from './zebes-world';
+import {
+  cvGateDecorPalette,
+  cvCatacombDecorPalette,
+  cvTownDecorPalette,
+  cvStormDecorPalette,
+  cvLakeDecorPalette,
+  cvClockDecorPalette,
+  transylvaniaDecorFrames,
+} from './transylvania';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -162,6 +171,13 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-crateria': crateriaDecorPalette,
   'decor-norfair': norfairDecorPalette,
   'decor-tourian-lair': tourianLairDecorPalette,
+  // World 5 as Simon's world, Transylvania (0.4.28) (transylvania.ts).
+  'decor-cv-gate': cvGateDecorPalette,
+  'decor-cv-catacomb': cvCatacombDecorPalette,
+  'decor-cv-town': cvTownDecorPalette,
+  'decor-cv-storm': cvStormDecorPalette,
+  'decor-cv-lake': cvLakeDecorPalette,
+  'decor-cv-clock': cvClockDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -738,5 +754,7 @@ export const decorDef: SpriteDef = {
     ...megamanWorldDecorFrames,
     // World 4 as Samus's world, Zebes (0.4.27): far spires, Tourian's wall and glass tubes.
     ...zebesWorldDecorFrames,
+    // World 5 as Simon's world, Transylvania (0.4.28): the moon, the backdrops, statues and lamps.
+    ...transylvaniaDecorFrames,
   },
 };
