@@ -77,3 +77,12 @@ hill-small 160 12
 cloud-1 163 2
 bush-2 167 12
 cloud-3 171 3
+
+[variant sophia classic]
+;; The original's pieces for Sophia III here: the steps at 112-116 reworked (charHorz). Every piece the original lays for
+;; her in this area but the flagpole's lift (docs/HEROES.md).
+113 11 B.
+112 12 B
+114 12 . *3
+112 13 # *2
+116 13 # *2

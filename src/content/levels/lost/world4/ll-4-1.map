@@ -90,3 +90,14 @@ cloud-1 200 3
 bush-3 203 12
 hill-small 208 12
 cloud-1 211 2
+
+[variant sophia classic]
+;; The original's pieces for Sophia III here: ground in the gap after the springboard at 73 (charHorz) and the blocks at 148 and
+;; 190 a row lower (charVert). Every piece the original lays for
+;; her in this area but the flagpole's lift (docs/HEROES.md).
+148 8 ..
+190 8 .
+148 9 ?M
+190 9 2
+82 12 B....
+82 13 #### *2
