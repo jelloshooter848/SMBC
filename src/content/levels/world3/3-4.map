@@ -63,3 +63,7 @@ bowser-fire 89
 ;; The original's pieces for heroes who jump short (charHorz): the lava at 87 filled.
 ;; Every piece the original lays for her here.
 87 13 % *2
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+43 9 link=grow megaman=grow samus=grow simon=grow ryu=grow bill=grow

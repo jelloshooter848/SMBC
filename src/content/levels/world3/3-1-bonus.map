@@ -46,3 +46,7 @@ mm-gear 1 4
 mm-gear 12 4
 mm-gear 1 11
 mm-gear 7 11
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+5 5 megaman=flame-wave simon=axe ryu=windmill bill=laser

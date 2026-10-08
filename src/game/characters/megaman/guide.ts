@@ -17,8 +17,14 @@ export const MEGAMAN_GUIDE: CharacterGuide = {
     },
   ],
   powerups: [
-    { item: 'mushroom', does: 'The helmet: charge shot, brick breaking and the Rush Coil. Full heal.' },
-    { item: 'flower', does: 'Unlocks the next special weapon. With all five, refills them.' },
+    {
+      item: 'mushroom',
+      does: 'Classic play: The helmet: charge shot, brick breaking and the Rush Coil. Full heal.',
+    },
+    {
+      item: 'flower',
+      does: 'Classic play: Unlocks the next special weapon. With all five, refills them.',
+    },
     { item: 'star', does: 'Invincible for a few seconds.' },
     {
       item: 'drops',
@@ -53,6 +59,9 @@ export const MEGAMAN_GUIDE: CharacterGuide = {
       does: 'Drops a spring ahead of you. Land on it for a huge jump.',
     },
   ],
-  tips: ['The second bar beside your health is the selected weapon’s energy.'],
+  tips: [
+    "In the story, power blocks hold Mega Man's own items: the Helmet, Rush Coil and five weapons. A death loses what he found; replay levels to find it again.",
+    'The second bar beside your health is the selected weapon’s energy.',
+  ],
   demo: ['idle', 'walk', 'jump', 'attack'],
 };

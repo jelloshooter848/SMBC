@@ -404,7 +404,8 @@ describe('1-0: Toad, the lessons and the tease', () => {
 });
 
 describe("1-0 gives the file's own hero back", () => {
-  const KIT = { maxHp: 12, tunic: 1, beam: 1, bombs: 8, magic: 4 };
+  // A campaign kit (0.4.33's found-item rules: `found` and the items' own flags).
+  const KIT = { found: 1, maxHp: 12, tunic: 1, beam: 1, bombs: 8, magic: 4, 'has-bomb-bag': 1 };
   /** A Link file past the tutorial, with a full kit, on 1-0; entered as Mario. */
   function linkOn10(h: H) {
     file({

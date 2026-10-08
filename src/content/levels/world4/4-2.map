@@ -102,3 +102,10 @@ brinstar-column 179 12
 ;; Every piece the original lays for her here.
 184 10 = *3
 184 13 # *2
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+28 9 link=shield-spell megaman=homing-knuckle samus=varia-suit simon=double-shot ryu=fire-wheel bill=laser
+55 9 link=fire-spell megaman=flame-wave simon=cross sophia=triple-missile
+120 5 link=blue-ring megaman=rush-coil samus=ice-beam simon=morning-star ryu=windmill sophia=wall-climb
+161 9 link=jump-spell megaman=homing-knuckle samus=varia-suit simon=double-shot ryu=fire-wheel bill=laser sophia=ceiling-climb

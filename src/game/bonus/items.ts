@@ -170,13 +170,14 @@ export function bonusStateFrom(
   const n = stored.bonusNext;
   const b = stored.spadeBoard;
   const board = typeof b === 'number' && Number.isInteger(b) && b >= 0 ? b % NSPADE_BOARDS.length : 0;
-  const legacy = !isRecord(stored.heroInventory) && !isRecord(stored.heroItemsNext);
-  const heroInventory = legacy
-    ? byHero({ [LEGACY_INVENTORY_HERO]: stored.inventory }, inventoryItems, known)
-    : byHero(stored.heroInventory, inventoryItems, known);
-  const heroItemsNext = legacy
-    ? byHero({ [LEGACY_INVENTORY_HERO]: stored.itemsNext }, nextItems, known)
-    : byHero(stored.heroItemsNext, nextItems, known);
+  // Older files keep one shared `inventory` / `itemsNext`: Mario's now (never written again).
+  const heroInventory = byHero(stored.heroInventory, inventoryItems, known);
+  const heroItemsNext = byHero(stored.heroItemsNext, nextItems, known);
+  const oldItems = inventoryItems(stored.inventory);
+  const oldNext = nextItems(stored.itemsNext);
+  if (oldItems.length && !heroInventory[LEGACY_INVENTORY_HERO])
+    heroInventory[LEGACY_INVENTORY_HERO] = oldItems;
+  if (oldNext.length && !heroItemsNext[LEGACY_INVENTORY_HERO]) heroItemsNext[LEGACY_INVENTORY_HERO] = oldNext;
   const inventory = heroInventory[owner] ?? [];
   const itemsNext = heroItemsNext[owner] ?? [];
   delete heroInventory[owner];

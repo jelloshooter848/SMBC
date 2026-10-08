@@ -78,3 +78,7 @@ cv-candle 99 12
 cv-candle 107 12
 cv-candle 146 12
 cv-candle 157 12
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+23 3 link=grow megaman=grow samus=grow simon=grow ryu=grow bill=grow

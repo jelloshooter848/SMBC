@@ -17,8 +17,11 @@ export const SIMON_GUIDE: CharacterGuide = {
     { action: 'up+attack', touch: 'WHIP', does: 'Also throws the sub-weapon.' },
   ],
   powerups: [
-    { item: 'mushroom', does: 'Unlocks the next sub-weapon. Full heal.' },
-    { item: 'flower', does: 'A longer whip: leather, chain, morning star. Then double and triple shot.' },
+    { item: 'mushroom', does: 'Classic play: Unlocks the next sub-weapon. Full heal.' },
+    {
+      item: 'flower',
+      does: 'Classic play: A longer whip: leather, chain, morning star. Then double and triple shot.',
+    },
     { item: 'star', does: 'Invincible for a few seconds.' },
     { item: 'drops', does: 'Hearts, small and large. Hearts are your sub-weapon ammo.' },
   ],
@@ -39,6 +42,9 @@ export const SIMON_GUIDE: CharacterGuide = {
     { name: 'Cross', icon: 'icon-cross', cost: '1 heart', does: 'Spins out and comes back.' },
     { name: 'Stopwatch', icon: 'icon-watch', cost: '5 hearts', does: 'Freezes everything on screen.' },
   ],
-  tips: ['Getting hit knocks you back hard. Mind the pits.'],
+  tips: [
+    "In the story, power blocks hold Simon's own items: the Pot Roast (his health bar grows from 10 to 16), two whips, five sub-weapons and the Double and Triple Shot. A death loses what he found; replay levels to find it again.",
+    'Getting hit knocks you back hard. Mind the pits.',
+  ],
   demo: ['idle', 'walk', 'jump', 'attack', 'crouch', 'special'],
 };

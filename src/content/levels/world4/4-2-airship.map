@@ -88,3 +88,7 @@ smb3:railing 92 7
 smb3:railing 93 7
 smb3:railing 96 7
 smb3:railing 97 7
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+55 7 link=fire-spell megaman=homing-knuckle simon=cross ryu=fire-wheel
