@@ -443,7 +443,8 @@ const snowFir = draw(16, 32, (x, y) => {
 const corridorWall = draw(64, 64, (x, y) => {
   if (y >= 10 && y <= 13) return y === 10 ? '3' : y === 13 ? '1' : '2'; // the conduits
   if (y >= 16 && y <= 17) return y === 16 ? '3' : '1';
-  if (y >= 40 && y <= 47 && x >= 28 && x <= 35) return x === 28 || y === 40 ? '3' : x === 35 || y === 47 ? '1' : '0';
+  if (y >= 40 && y <= 47 && x >= 28 && x <= 35)
+    return x === 28 || y === 40 ? '3' : x === 35 || y === 47 ? '1' : '0';
   if (x % 32 === 31 || y % 32 === 31) return '1';
   if (x % 32 === 0 || y % 32 === 0) return '3';
   if (y % 32 >= 26 && y % 32 <= 28) return (x + y) % 6 < 3 ? '9' : '1';
@@ -491,7 +492,10 @@ const lairHeart = draw(64, 64, (x, y) => {
   // a heart curve
   const v = (dx * dx + dy * dy - 1) ** 3 - dx * dx * (-dy) ** 3;
   if (v <= 0) {
-    if (Math.abs(x - 26 - Math.round(Math.sin(y / 4) * 2)) < 1 || Math.abs(y - 40 - Math.round(Math.sin(x / 5) * 2)) < 1)
+    if (
+      Math.abs(x - 26 - Math.round(Math.sin(y / 4) * 2)) < 1 ||
+      Math.abs(y - 40 - Math.round(Math.sin(x / 5) * 2)) < 1
+    )
       return '1';
     return x < 28 && y < 30 ? 'a' : '9';
   }
@@ -511,4 +515,3 @@ export const contraWorldDecorFrames: Record<string, Rows> = {
   'cl-wall': lairWall,
   'cl-heart': lairHeart,
 };
-

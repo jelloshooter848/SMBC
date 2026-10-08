@@ -4,7 +4,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
  * themed world map pages (World 2's Hyrule since 0.4.24, World 3's Mega City since 0.4.26, World
- * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28, World 6's Dragon Valley since 0.4.29), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
+ * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28, World 6's Dragon Valley since 0.4.29, World 7's Galuga Island since 0.4.30), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
  * share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
@@ -93,6 +93,8 @@ export const ZEBES_NIGHT = '#100820';
 export const TRANSYLVANIA_NIGHT = '#0c0a24';
 /** DRAGON VALLEY's night under the full moon (World 6 since 0.4.29). */
 export const NINJA_NIGHT = '#0c1030';
+/** GALUGA ISLAND's night over the jungle (World 7 since 0.4.30). */
+export const CONTRA_NIGHT = '#080c24';
 
 export const mapPalettes: Record<string, string[]> = {
   'map-grass': theme({
@@ -323,6 +325,24 @@ export const mapPalettes: Record<string, string[]> = {
     lava,
     wall: ['#3c3c58', '#6c6c90', '#1c1c30'],
     white: ['#e8eef8', '#a8b4cc'],
+  }),
+  /*
+   * GALUGA ISLAND (World 7 since 0.4.30, Bill's world): a jungle run-and-gun's night island of
+   * jungle floor (ground), the river's blues and the falls' white water (water), grey cliffs (rock),
+   * jungle and palm greens (leaf), timber and skin (wood), Red Falcon's red with the capsules' and
+   * the eyes' gold (accent), the enemy base's steel (wall) and the snowfield's snow (white).
+   */
+  'map-contra': theme({
+    ground: ['#142410', '#24401c', '#3c6428'],
+    sand: ['#a08850', '#706038'],
+    water: ['#082040', '#104878', '#3888c0', '#d8f0fc'],
+    rock: ['#2c2c28', '#58584c', '#8c8c78'],
+    leaf: ['#0c3010', '#1c7024', '#58b040'],
+    wood: ['#d89c68', '#8c5c34'],
+    accent: ['#c81c28', '#fcd848', '#701018'],
+    lava,
+    wall: ['#4c5868', '#8c98a8', '#242c38'],
+    white: ['#f0f4fc', '#b0bccc'],
   }),
 };
 
@@ -2248,6 +2268,215 @@ const masked = (wave: number): Rows => {
 const MASKED = [masked(0), masked(1)];
 
 /* ------------------------------------------------------------------------------------------ */
+/* GALUGA ISLAND (World 7, 0.4.30): jungle, pillboxes in the snow, the waterfall, the energy   */
+/* zone's pylons, the enemy base's defense wall, Red Falcon's lair, weapon capsules, soldiers  */
+/* and a helicopter                                                                             */
+/* ------------------------------------------------------------------------------------------ */
+
+/** A clump of jungle (the tree tile's own frame on this page): broad-leafed crowns over a trunk. */
+const JUNGLE = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    const crowns = [
+      [4.5, 7, 4.5],
+      [11, 6, 4.5],
+      [7.5, 3.5, 3.8],
+    ] as const;
+    const inside = (px: number, py: number) =>
+      crowns.some(([cx, cy, r]) => Math.hypot(px - cx, (py - cy) * 1.15) < r);
+    if (inside(x, y)) {
+      if (!inside(x, y + 1) || !inside(x + 1, y)) return 'd';
+      if (!inside(x, y - 1) || !inside(x - 1, y)) return 'f';
+      return (x + y * 3) % 7 === 0 ? 'd' : 'e';
+    }
+    if (y >= 10 && y <= 14 && (x === 7 || x === 8)) return x === 7 ? 'g' : 'h';
+    if (y === 15 && x > 2 && x < 13) return '1';
+    return '.';
+  }),
+);
+
+/** A pillbox in the snow (the cannon tile's own frame on this page): a concrete dome, its gun slit, snow on top. */
+const PILLBOX = stamp(
+  SNOW_DRIFT,
+  paint(16, 16, (x, y) => {
+    const dx = (x - 8.5) / 6.5;
+    const dy = (y - 14.5) / 8;
+    const d = dx * dx + dy * dy;
+    if (y <= 14 && d <= 1) {
+      if (d > 0.82) return '0';
+      if (y === 10 && x >= 5 && x <= 12) return '0'; // the gun slit
+      if (y < 10 && d > 0.45) return 'o'; // snow on its crown
+      return x < 8 ? 'n' : 'm';
+    }
+    if (y === 10 && x >= 0 && x < 4) return x === 0 ? '0' : 'q'; // the barrel
+    if (y === 15 && x >= 2 && x <= 15) return 'p';
+    return '.';
+  }),
+);
+
+/** The waterfall (two frames): white water sliding down between dark rock edges. */
+const falls = (shift: number): Rows =>
+  paint(16, 16, (x, y) => {
+    if (x < 2 || x > 13) return x === 0 || x === 15 ? '0' : 'a';
+    if (x === 2 || x === 13) return 'b';
+    const yy = (y - shift + 16) % 16;
+    if (x === 4 || x === 8 || x === 11) return (yy + x * 3) % 16 < 6 ? '9' : '8';
+    return (yy + x * 5) % 11 === 0 ? '8' : '7';
+  });
+const FALLS = [falls(0), falls(8)];
+
+/** An energy zone pylon: a steel lattice tower, its insulators gold; no arc ever leaps (still). */
+const PYLON = stamp(
+  GROUND,
+  paint(16, 16, (x, y) => {
+    const dx = Math.abs(x - 7.5);
+    const half = 0.5 + y * 0.42;
+    if (y < 2) return dx < 1 ? 'n' : '.';
+    if (y === 3) return dx < 6.5 ? (dx > 5.5 ? 'j' : 'n') : '.';
+    if (y === 2) return Math.abs(dx - 6) < 0.6 ? 'j' : dx < 1 ? 'n' : '.';
+    if (y <= 14 && Math.abs(dx - half) < 0.7) return 'm';
+    if (y >= 5 && y <= 14 && y % 3 === 2 && dx < half) return 'q';
+    if (y >= 5 && y <= 14 && Math.abs(dx - (y % 3) * (half / 3)) < 0.5) return 'q';
+    return '.';
+  }),
+);
+
+/**
+ * The enemy base's defense wall (three tiles wide, two tall): steel battlements with a gun turret
+ * at each end and a sensor dome between them, over the wall and its armoured gate, the base's red
+ * core set over the gate (steady, never blinking).
+ */
+const DEFENSE: Rows = stamp(
+  groundUnder(48, 32),
+  paint(48, 32, (x, y) => {
+    const dx = Math.abs(x - 23.5);
+    // the turrets, their barrels pointing out
+    for (const [tx, dir] of [
+      [4, -1],
+      [36, 1],
+    ] as const) {
+      if (x >= tx && x < tx + 8 && y >= 5 && y < 13)
+        return y === 5 || x === tx ? 'n' : x === tx + 7 ? 'q' : 'm';
+      const bx = dir < 0 ? tx - 4 : tx + 8;
+      if (y === 8 && x >= bx && x < bx + 4) return '0';
+    }
+    // the sensor dome
+    if (y >= 6 && y < 13 && Math.hypot(dx, (y - 13) * 1.4) < 7)
+      return dx < 2 && y >= 9 && y <= 11 ? 'i' : y < 9 ? 'n' : 'm';
+    // the battlements along the top
+    if (y >= 13 && y < 16) return y === 13 ? (x % 6 < 4 ? 'n' : '.') : 'm';
+    if (y === 16) return '0';
+    // the wall and its gate
+    if (y >= 17 && y < 31) {
+      if (x < 1 || x > 46) return '.';
+      if (dx < 6) {
+        if (dx > 5) return 'n';
+        if (y < 19) return 'q';
+        if (Math.hypot(dx, y - 21.5) < 2.5) return Math.hypot(dx, y - 21.5) < 1.2 ? 'j' : 'i';
+        return y % 3 === 0 ? 'q' : '0';
+      }
+      if (y % 7 === 3) return 'q';
+      if (x % 8 === 0) return 'q';
+      return (x + y) % 9 === 0 ? 'n' : 'm';
+    }
+    if (y === 31) return x >= 1 && x <= 46 ? '0' : '.';
+    return '.';
+  }),
+);
+
+/**
+ * Red Falcon's alien lair (three tiles wide, two tall): a mound of ribbed flesh with two bone horns
+ * and gold eyes, its toothed maw the way in.
+ */
+const LAIR: Rows = stamp(
+  groundUnder(48, 32),
+  paint(48, 32, (x, y) => {
+    const dx = x - 23.5;
+    // the horns
+    for (const s of [-1, 1]) {
+      const hx = 23.5 + s * (9 + (12 - y) * 0.7);
+      if (y >= 1 && y < 12 && Math.abs(x - hx) < 1.3 - y * 0.02) return y < 4 ? 'p' : 'o';
+    }
+    const top = 6 + (dx * dx) / 42;
+    if (y < top) return '.';
+    if (y < top + 1) return '0';
+    if (y === 31) return '0';
+    // the maw and its teeth
+    const maw = Math.hypot(dx / 7, (y - 26) / 6);
+    if (maw < 1) {
+      if (maw > 0.86) return 'o';
+      if (y <= 22 && x % 3 === 0) return 'o';
+      return '0';
+    }
+    // the eyes
+    if (y >= 12 && y <= 13 && Math.abs(Math.abs(dx) - 6) < 1.5) return 'j';
+    // the ribs
+    if ((y + Math.abs(dx) * 0.5) % 5 < 1) return 'r';
+    return dx < 0 ? 'i' : 'r';
+  }),
+);
+
+/** A weapon capsule flying (two frames, its wings up and down): a pod with a gold band. */
+const capsule = (up: boolean): Rows =>
+  paint(16, 16, (x, y) => {
+    const d = ((x - 7.5) / 5.2) ** 2 + ((y - 8.5) / 3.2) ** 2;
+    if (d <= 1) {
+      if (d > 0.68) return '0';
+      if (y === 8 || y === 9) return 'j';
+      return y < 8 ? 'n' : 'm';
+    }
+    if (x < 3 || x > 12) {
+      const e = x < 3 ? 2 - x : x - 13;
+      const wy = up ? 7 - e * 2 : 9 + e * 2;
+      if (y === wy) return 'o';
+      if (y === wy + 1) return 'p';
+    }
+    return '.';
+  });
+const CAPSULE = [capsule(true), capsule(false)];
+
+/** An enemy soldier running (two frames), facing right: helmet, grey fatigues, rifle forward. */
+const soldier = (stride: boolean): Rows => [
+  '................',
+  '......000.......',
+  '.....0qqq0......',
+  '.....0ggg0......',
+  '......0g0.......',
+  '.....0mmm0......',
+  '....0mmnm00000..',
+  '....0mmmm0qqqq0.',
+  '.....0mmm00000..',
+  '.....0mmm0......',
+  '.....0qqq0......',
+  ...(stride
+    ? ['....0mm0mm0.....', '...0mm0..0mm0...', '..0mm0....0mm0..', '..000......000..']
+    : ['.....0mmm0......', '.....0m0m0......', '....0mm0mm0.....', '....000.000.....']),
+  '................',
+];
+const SOLDIER = [soldier(true), soldier(false)];
+
+/** A helicopter (two frames, its rotor turning; a whirr, never a flash), nose to the right. */
+const chopper = (rotor: string): Rows => [
+  rotor,
+  '........0.......',
+  '......00000.....',
+  '....00mmmm880...',
+  '0..0mmmmmm8880..',
+  '0q0mmmmmmmmmmm0.',
+  '0qqmmmmmmmmmmm0.',
+  '.0.0mmmmmmmmq0..',
+  '....0qqqqqqqq0..',
+  '.....0.....0....',
+  '...0000000000...',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+];
+const CHOPPER = [chopper('.00000000000000.'), chopper('.....000000.....')];
+
+/* ------------------------------------------------------------------------------------------ */
 
 const frames: Record<string, readonly string[]> = {
   ground: GROUND,
@@ -2380,6 +2609,33 @@ const frames: Record<string, readonly string[]> = {
   'ninja-leap': NINJA_LEAP,
   'masked-0': MASKED[0] as Rows,
   'masked-1': MASKED[1] as Rows,
+  // GALUGA ISLAND (World 7): jungle (the tree tile's own frame on this page), pillboxes in the
+  // snow (the cannon tile's), the waterfall, the energy zone's pylons, the enemy base's defense
+  // wall (its battlements over its wall and gate), Red Falcon's lair (its horns over its maw),
+  // weapon capsules, soldiers and a helicopter.
+  jungle: JUNGLE,
+  pillbox: PILLBOX,
+  'falls-0': FALLS[0] as Rows,
+  'falls-1': FALLS[1] as Rows,
+  pylon: PYLON,
+  'base-top-left': cut(DEFENSE, 0, 0),
+  'base-top-mid': cut(DEFENSE, 1, 0),
+  'base-top-right': cut(DEFENSE, 2, 0),
+  'base-left': cut(DEFENSE, 0, 1),
+  'base-gate': cut(DEFENSE, 1, 1),
+  'base-right': cut(DEFENSE, 2, 1),
+  'lair-top-left': cut(LAIR, 0, 0),
+  'lair-top-mid': cut(LAIR, 1, 0),
+  'lair-top-right': cut(LAIR, 2, 0),
+  'lair-left': cut(LAIR, 0, 1),
+  'lair-maw': cut(LAIR, 1, 1),
+  'lair-right': cut(LAIR, 2, 1),
+  'capsule-0': CAPSULE[0] as Rows,
+  'capsule-1': CAPSULE[1] as Rows,
+  'soldier-0': SOLDIER[0] as Rows,
+  'soldier-1': SOLDIER[1] as Rows,
+  'chopper-0': CHOPPER[0] as Rows,
+  'chopper-1': CHOPPER[1] as Rows,
 };
 for (let f = 0; f < ARENA_CROWD_FRAMES; f++) {
   frames[`arena-crowd-a-${f}`] = crowd('a', f);

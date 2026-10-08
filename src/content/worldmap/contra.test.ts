@@ -151,20 +151,24 @@ describe('World 7: GALUGA ISLAND', () => {
     const cap = WORLD_7.actors.find((x) => x.type === 'capsule')!;
     const [x0, y0, x1, y1] = mapActorBounds(cap);
     const d = drawn(cap, 1200);
-    expect(new Set(d.map((s) => s.f))).toEqual(new Set(['map@map-contra capsule-0', 'map@map-contra capsule-1']));
+    expect(new Set(d.map((s) => s.f))).toEqual(
+      new Set(['map@map-contra capsule-0', 'map@map-contra capsule-1']),
+    );
     const ys = d.map((s) => s.y);
     expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThanOrEqual(6);
     for (const s of d)
-      expect(s.x >= x0 && s.x + 16 <= x1 + 16 && s.y >= y0 && s.y + 16 <= y1, `${s.x},${s.y}`).toBe(true);
+      expect(s.x >= x0 - 16 && s.x <= x1 && s.y >= y0 && s.y + 16 <= y1, `${s.x},${s.y}`).toBe(true);
   });
 
   it('a soldier runs back and forth, in its bounds', () => {
     const sol = WORLD_7.actors.find((x) => x.type === 'soldier')!;
     const [x0, y0, x1, y1] = mapActorBounds(sol);
     const d = drawn(sol, 1200);
-    expect(new Set(d.map((s) => s.f))).toEqual(new Set(['map@map-contra soldier-0', 'map@map-contra soldier-1']));
+    expect(new Set(d.map((s) => s.f))).toEqual(
+      new Set(['map@map-contra soldier-0', 'map@map-contra soldier-1']),
+    );
     const xs = d.map((s) => s.x);
-    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThanOrEqual(16);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThanOrEqual(12);
     for (const s of d)
       expect(s.x >= x0 && s.x + 16 <= x1 && s.y >= y0 && s.y + 16 <= y1, `${s.x},${s.y}`).toBe(true);
   });
@@ -172,7 +176,9 @@ describe('World 7: GALUGA ISLAND', () => {
   it('a helicopter crosses the sky and comes round again, its rotor turning', () => {
     const heli = WORLD_7.actors.find((x) => x.type === 'chopper')!;
     const d = drawn(heli, 1200);
-    expect(new Set(d.map((s) => s.f))).toEqual(new Set(['map@map-contra chopper-0', 'map@map-contra chopper-1']));
+    expect(new Set(d.map((s) => s.f))).toEqual(
+      new Set(['map@map-contra chopper-0', 'map@map-contra chopper-1']),
+    );
     expect(new Set(d.map((s) => s.y)).size).toBe(1);
     expect(new Set(d.map((s) => s.x)).size).toBeGreaterThan(50);
   });

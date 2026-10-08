@@ -1,21 +1,30 @@
 import type { WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
-/** World 7, CANNON COAST: rocky headlands bristling with cannons above steep sea cliffs. */
+/**
+ * World 7, GALUGA ISLAND (0.4.30, owner notes 5, 18 and 21: each world is themed after the hero
+ * freed there; World 7 is Bill's): a jungle run-and-gun's island at night. A snowfield bristling
+ * with pillboxes runs round the start and 7-1, the enemy base and its defense wall stand beside
+ * 7-1, the jungle fills the middle round 7-2, cliffs and a waterfall rise over 7-3 with the river
+ * below, the energy zone's pylons line the road down to 7-4 and Red Falcon's alien lair looms
+ * over 7-4, the island's cliffs over the sea along the bottom. Every node and road is where
+ * CANNON COAST had them. On this page T is jungle and X a pillbox in the snow (render.ts
+ * THEME_TILE_FRAMES).
+ */
 export const SKETCH_7 = [
   '................',
   '................',
-  '~~~~~~~~~~~~~~~~',
-  '##############~~',
-  '#X#R,##X######~~',
-  ',##^^#R,#^^,##~~',
-  '###X##,X#R#X##~~',
-  'X,##R####,####~~',
-  '#^^#,X##R##X##~~',
-  ',^#R#,X#^R#,####',
-  '#X#,####X,######',
-  '##R#X#,##X#R#,##',
-  'KKKKKKKKKKKKKKKK',
+  'jjjjjjΓΠΔhh^CC≡≡', // the snowfield's ridge, the enemy base's battlements, cliffs and the falls
+  'oXooooΣΞΦ^C##C~~', // the base's wall and gate beside 7-1; the falls' pool, the river below
+  'SooXSooX#######~',
+  'XoooXoST#YTЖ###~', // the snowfield's pillboxes; the energy zone's pylons by 7-3
+  'oooSooTY#TY##Ж#~',
+  'o#ooT####Y#####~', // the jungle round 7-2
+  'SoTYTY##TY#◤◆◥#~', // Red Falcon's lair's horns...
+  'TYTTYT##YT#◣●◢##', // ...over its maw, right above 7-4
+  'YTYTT###TY######',
+  'TYTYY#YTYTYTYTYT',
+  'KKKKKKKKKKKKKKKK', // the island's cliffs over the sea
   '~~~~~~~~~~~~~~~~',
   '~~~~~~~~~~~~~~~~',
 ];
@@ -24,8 +33,8 @@ export const WORLD_7: WorldMapPage = {
   id: 'smb-7',
   group: 'smb',
   label: 'WORLD 7',
-  title: 'CANNON COAST',
-  theme: 'coast',
+  title: 'GALUGA ISLAND',
+  theme: 'contra',
   music: 'map',
   tiles: autoShore(SKETCH_7),
   nodes: worldNodes(
@@ -47,13 +56,15 @@ export const WORLD_7: WorldMapPage = {
     { from: '7-2', to: 'bonus-7', points: poly([7, 7], [7, 10], [5, 10], [5, 11]) },
   ],
   exits: [{ from: '7-4', to: 'smb-8', side: 'right', points: poly([12, 10], [15, 10]), gate: 'bill' }],
+  // Bill's world's critters: weapon capsules flying over the island, soldiers running by the base
+  // and through the jungle and a helicopter crossing the sky.
   actors: [
-    actor('hammer-bro', 208, 144, { range: 6 }),
-    actor('bullet', 180, 26, { speed: -0.8 }),
-    actor('bullet', 60, 216, { speed: -0.55 }),
-    actor('cheep', 40, 214, { range: 32, height: 22, period: 180 }),
-    actor('cheep', 150, 214, { range: -28, height: 20, period: 150, phase: 75 }),
-    actor('cheep', 236, 96, { range: -8, height: 26, period: 210, phase: 40 }),
-    actor('cloud', 100, 18, { size: 2, speed: 0.1 }),
+    actor('chopper', 200, 26, { speed: -0.45 }),
+    actor('capsule', 40, 28, { speed: 0.5, amp: 3 }),
+    actor('capsule', 150, 200, { speed: -0.35, amp: 6, phase: 60 }),
+    actor('soldier', 0, 56, { range: 16, speed: 0.3 }),
+    actor('soldier', 96, 68, { range: 16, speed: 0.35 }),
+    actor('soldier', 8, 140, { range: 40, speed: 0.5 }),
+    actor('soldier', 160, 176, { range: 64, speed: 0.45 }),
   ],
 };

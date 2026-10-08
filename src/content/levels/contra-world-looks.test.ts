@@ -153,8 +153,13 @@ describe('7-1: the snowfield before the enemy base (contra-snow)', () => {
       const f = frames[`${n}@contra-snow`];
       expect(f, n).toHaveLength(16);
       // the cannon's barrel and badge stand out against the sky
-      const colours = new Set([...f!.join('')].filter((c) => c !== '.').map((c) => pal['0123456789ab'.indexOf(c)]!));
-      expect(Math.max(...[...colours].map((c) => Math.abs(lum(c) - lum(SKY['contra-snow']!)))), n).toBeGreaterThanOrEqual(200);
+      const colours = new Set(
+        [...f!.join('')].filter((c) => c !== '.').map((c) => pal['0123456789ab'.indexOf(c)]!),
+      );
+      expect(
+        Math.max(...[...colours].map((c) => Math.abs(lum(c) - lum(SKY['contra-snow']!)))),
+        n,
+      ).toBeGreaterThanOrEqual(200);
     }
   });
 
