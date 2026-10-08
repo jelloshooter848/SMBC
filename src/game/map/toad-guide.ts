@@ -22,6 +22,7 @@ import {
   type Page,
 } from '../story/script';
 import { CRYSTAL_BALL } from './captives';
+import { riftOpen } from './world-gate';
 import type { MapProgress } from './types';
 
 /*
@@ -79,7 +80,8 @@ export function dueScenes(g: GuideInput): ToadScene[] {
   };
   // The major scenes.
   if (g.crash && !g.seen(beat.crash)) add([beat.crash], [...CRASH_PAGES], true);
-  if (page === 'smb-8' && p.gameCleared === true) add([beat.rift], riftPages(g.hero), true);
+  // The rift waits for Sophia III too (0.4.23, S3: map/world-gate.ts riftOpen).
+  if (page === 'smb-8' && riftOpen(p, g.freed)) add([beat.rift], riftPages(g.hero), true);
   // A hero joined: the generic card first (once per file), then each hero's own.
   const cracked = p.gameCleared === true;
   const generic = (): Page[] => (cracked ? [JOINED_GENERIC] : [JOINED_CRACK, JOINED_GENERIC]);
