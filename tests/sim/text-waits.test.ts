@@ -152,13 +152,13 @@ describe("1-0's shadow tease waits for a key once Bowser speaks", () => {
   it('outside the campaign: the one page stays until OK', () => {
     const h = makeGame();
     const state = tease(h);
-    expect(h.top().touchLabels?.()).toMatchObject({ jump: null });
+    expect(h.top()?.touchLabels?.()).toMatchObject({ jump: null });
     h.idle(60);
-    expect(h.top().touchLabels?.()).toMatchObject({ jump: 'SKIP' });
+    expect(h.top()?.touchLabels?.()).toMatchObject({ jump: 'SKIP' });
     h.idle(LONG);
     expect(state.ended).toBe(false);
     // Bowser's box shows OK, and so does the touch button that closes it.
-    expect(h.top().touchLabels?.()).toMatchObject({ jump: 'OK', attack: null });
+    expect(h.top()?.touchLabels?.()).toMatchObject({ jump: 'OK', attack: null });
     h.tap('jump');
     expect(state.ended).toBe(true);
   });
