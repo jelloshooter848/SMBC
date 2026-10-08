@@ -75,6 +75,11 @@ describe('themes', () => {
       'zelda2-water',
       'zelda2-palace',
       'zelda2-cave',
+      // World 3 as Mega Man's world (0.4.26): 3-1's bonus room, 3-2, 3-3, 3-4
+      'megaman-metal',
+      'megaman-wood',
+      'megaman-air',
+      'megaman-fortress',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -134,6 +139,10 @@ describe('themes', () => {
       'zelda2-water': 'zelda2-water',
       'zelda2-palace': 'zelda2-palace',
       'zelda2-cave': 'zelda2-cave',
+      'megaman-metal': 'mm-station',
+      'megaman-wood': 'mm-wood',
+      'megaman-air': 'mm-air',
+      'megaman-fortress': 'mm-wily',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

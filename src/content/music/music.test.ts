@@ -73,6 +73,10 @@ const SONG_IDS = [
   'zelda2-water',
   'zelda2-palace',
   'zelda2-cave',
+  // World 3 as Mega Man's world (0.4.26): 3-2's forest, 3-3's sky, 3-4's fortress.
+  'mm-wood',
+  'mm-air',
+  'mm-wily',
 ];
 
 const SFX_IDS = [
