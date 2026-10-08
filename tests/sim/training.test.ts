@@ -251,7 +251,7 @@ describe('training and the dev "All heroes" toggle', () => {
 
 describe('the basic kit and chapters', () => {
   it('the room starts from the basic kit whatever the run holds, with no (PREVIEW); the run gets its own back', () => {
-    // Samus's lessons as converted ones (no `fullKit`): the room gives her the basic kit.
+    // The room gives Samus her basic kit.
     const all = TRAINING as Record<string, HeroTraining>;
     const before = all.samus as HeroTraining;
     all.samus = { chapters: before.chapters };
