@@ -5,8 +5,12 @@ export const LINK_GUIDE: CharacterGuide = {
   controls: [
     { action: 'left/right', does: 'Walk. No running.' },
     { action: 'jump', does: 'A fixed-height jump. Steer in the air.' },
-    { action: 'attack', touch: 'SWORD', does: 'Slash. Full hearts and the red tunic fire a beam.' },
-    { action: 'down', does: 'Crouch. In the air: down-thrust, bouncing off enemies.' },
+    {
+      action: 'attack',
+      touch: 'SWORD',
+      does: 'Slash. Breaks bricks and opens blocks. Full hearts and the red tunic fire a beam.',
+    },
+    { action: 'down', does: 'Crouch. In the air: down-thrust, bouncing off enemies and blocks it opens.' },
     { action: 'up', does: 'In the air: up-thrust. Hits enemies above and opens blocks.' },
     { action: 'select', touch: 'TOOLS', does: 'Pick the next tool.' },
     {
@@ -29,7 +33,7 @@ export const LINK_GUIDE: CharacterGuide = {
     {
       name: 'Boomerang',
       icon: 'icon-boomerang',
-      does: 'Flies out and back. Stuns what it hits. A stunned enemy is harmless: finish it with the sword.',
+      does: 'Flies out and back. Stuns what it hits and brings back coins, items and drops it touches. A stunned enemy is harmless: finish it with the sword.',
     },
     {
       name: 'Bomb',

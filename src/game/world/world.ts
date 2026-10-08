@@ -1006,6 +1006,53 @@ export class World {
       }
   }
 
+  /**
+   * A fetching boomerang (ProjectileSpec.fetches, Link's) takes what it touches: coins in the tile
+   * grid, items out of their blocks (a poison mushroom stays: it is no prize) and drops. They
+   * leave the level and ride on it until it is back (deliverFetch).
+   */
+  boomerangFetch(proj: Projectile): void {
+    const b = proj.body;
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++)
+        if (tileDef(this.map.get(tx, ty)).pickup === 'coin') {
+          this.map.set(tx, ty, T.AIR);
+          proj.carriedCoins++;
+        }
+    for (const e of this.entities) {
+      if (!e.alive || !overlaps(b, e.body)) continue;
+      const item = (e instanceof PowerUp && e.out && e.item !== 'poison') || e instanceof Pickup;
+      if (!item) continue;
+      e.destroy();
+      proj.carried.push(e);
+    }
+  }
+
+  /**
+   * A fetching boomerang is back (or gone): its owner gets what it carried, as if touched (a coin
+   * and its 200 points, an item, a drop; a drop the owner has no room for falls at his feet).
+   */
+  deliverFetch(proj: Projectile): void {
+    const p = proj.owner instanceof Player && !proj.owner.dead && !proj.owner.out ? proj.owner : null;
+    const coins = proj.carriedCoins;
+    const carried = proj.carried.splice(0);
+    proj.carriedCoins = 0;
+    if (!p) return;
+    for (let i = 0; i < coins; i++) {
+      this.addCoin();
+      this.addScore(200);
+    }
+    for (const e of carried) {
+      if (e instanceof PowerUp) {
+        if (e.item === 'clock') this.collectClock(e);
+        else if (e.item !== 'poison') p.def.behaviour.onPowerUp(p, e.item, this);
+      } else if (e instanceof Pickup && !p.def.behaviour.onPickup?.(p, e.item, this)) {
+        const pb = p.body;
+        this.spawn(new Pickup(pb.x + (pb.w >> 1), pb.y + pb.h, e.item));
+      }
+    }
+  }
+
   /** A projectile struck the tile at a point: bricks and item blocks react as to a head bump. */
   breakAt(x: number, y: number, owner: Entity | Player | null): void {
     const tx = tileAt(x);

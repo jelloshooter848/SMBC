@@ -5,6 +5,7 @@ import { LINK, JUMP_SPELL, MAX_MAGIC } from '@game/characters/link';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
 import { Pickup } from '@game/entities/objects/pickup';
+import { PowerUp } from '@game/entities/objects/powerup';
 import { Bomb } from '@game/entities/objects/bomb';
 import { Projectile, BOWSER_FLAME } from '@game/entities/projectiles/projectile';
 import { T } from '@game/level/tiles';
@@ -145,7 +146,7 @@ describe("Link's kit", () => {
     expect(r.world.player.hp).toBe(6);
   });
 
-  it('only the up-thrust opens bricks and item blocks overhead', () => {
+  it('only the up-thrust (not the head) opens bricks and item blocks overhead', () => {
     // A brick two tiles above the head; jump under it with or without holding up.
     const under = (held: Action[], row: string) =>
       run(field({ 9: at(2, row) }), (_w, f) => (f >= 2 && f < 20 ? ['jump', ...held] : held), 60);
@@ -229,5 +230,114 @@ describe("Link's kit", () => {
     expect(r.world.player.scratch.bombs).toBe(1);
     expect(r.world.player.scratch.magic).toBe(18);
     expect(r.world.entities.some((e) => e instanceof Pickup && e.alive)).toBe(false);
+  });
+});
+
+describe("Link's sword and blocks (0.4.22, owner notes 26-27)", () => {
+  /** Link at col 2 swings once (frame 2) at row 12, facing right, a block at col 3. */
+  const swing = (row: string, frames = 40, times = 1) =>
+    run(
+      field({ 12: at(3, row) }),
+      (_w, f) => (f >= 2 && f < 2 + 2 * times && f % 2 === 0 ? ['attack'] : []),
+      frames,
+    );
+
+  it('a sword swing breaks a brick it hits', () => {
+    const r = swing('=');
+    expect(r.world.map.get(3, 12)).toBe(T.AIR);
+    expect(r.score).toBeGreaterThanOrEqual(50);
+  });
+
+  it('a sword swing bumps a ? block it hits (its coin), and a used block stays', () => {
+    const r = swing('?');
+    expect(r.coins).toBe(1);
+    expect(r.world.map.get(3, 12)).toBe(T.USED);
+  });
+
+  it('one strike per tile per swing: a ten-coin brick gives one coin a swing', () => {
+    const one = swing('C', 30);
+    expect(one.coins).toBe(1);
+    // A second swing strikes it again.
+    const two = run(field({ 12: at(3, 'C') }), (_w, f) => (f === 2 || f === 30 ? ['attack'] : []), 60);
+    expect(two.coins).toBe(2);
+  });
+
+  it('the down-thrust breaks a brick it lands on (and Link bounces off it), and opens a ? block', () => {
+    const drop = (row: string) => {
+      let bounced = false;
+      let struck = false;
+      const r = run(
+        field({ 9: at(2, row) }),
+        (w, f) => {
+          const b = w.player.body;
+          if (f === 1) {
+            // Mid-air over the block (col 2, row 9), falling.
+            b.y = (9 * 16 - 24 - 40) * 256;
+            b.vy = 0x01000;
+            b.onGround = false;
+          }
+          if (w.map.get(2, 9) !== (row === '=' ? T.BRICK : T.Q_COIN)) struck = true;
+          if (struck && b.vy < 0) bounced = true;
+          return f >= 1 ? ['down'] : [];
+        },
+        90,
+      );
+      return { r, bounced };
+    };
+    const brick = drop('=');
+    expect(brick.r.world.map.get(2, 9)).toBe(T.AIR);
+    expect(brick.bounced).toBe(true);
+    const q = drop('?');
+    expect(q.r.coins).toBe(1);
+    expect(q.bounced).toBe(true);
+  });
+
+  it('an up-thrust that breaks a brick rebounds Link down, as a head bump does, instead of rising through', () => {
+    let top = Infinity;
+    const r = run(
+      field({ 9: at(2, '=') }),
+      (w, f) => {
+        top = Math.min(top, w.player.body.y);
+        return f >= 2 && f < 20 ? ['jump', 'up'] : ['up'];
+      },
+      60,
+    );
+    expect(r.world.map.get(2, 9)).toBe(T.AIR);
+    // He never got past the brick's row: his head stayed below row 9's top.
+    expect(top).toBeGreaterThanOrEqual(9 * 16 * 256);
+  });
+});
+
+describe("Link's boomerang fetches (0.4.22, owner note 27)", () => {
+  it('brings back a coin, a mushroom and a drop it touches; Link gets them when it returns', () => {
+    let atTouch: { coins: number; bombs: number } | null = null;
+    const r = run(
+      field({ 12: at(6, '$') }),
+      (w, f) => {
+        const b = w.player.body;
+        if (f === 1) {
+          const m = PowerUp.hopOut(b.x + 80 * 256, b.y + b.h, 'mushroom');
+          m.body.vx = 0;
+          m.body.vy = 0;
+          w.spawn(m);
+          w.spawn(new Pickup(b.x + 50 * 256, b.y + b.h, 'bomb'));
+        }
+        if (f === 3) return ['special']; // the boomerang (the first tool)
+        // The moment the coin tile is gone (taken by the boomerang), Link has nothing yet.
+        if (!atTouch && f > 3 && w.map.get(6, 12) === T.AIR)
+          atTouch = { coins: w.state.coins, bombs: w.player.scratch.bombs ?? 0 };
+        return [];
+      },
+      150,
+      {},
+      4,
+    );
+    expect(atTouch).toEqual({ coins: 0, bombs: 0 });
+    expect(r.coins).toBe(1);
+    expect(r.world.player.scratch.bombs).toBe(1);
+    expect(r.world.player.scratch.maxHp).toBe(8); // the mushroom's heart container
+    expect(r.world.entities.some((e) => (e instanceof PowerUp || e instanceof Pickup) && e.alive)).toBe(
+      false,
+    );
   });
 });

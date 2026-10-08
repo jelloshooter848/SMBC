@@ -79,7 +79,7 @@ story is a later release).
 - **The box:** at the top of the map (`TOAD_BOX_Y` = 28, under the header bar), white-rimmed
   black, the lines centred, the OK prompt after `CARD_GUARD_FRAMES`. OK (jump) or MENU goes on;
   **BACK** (attack) skips the rest of that scene (the next scene still plays). Each page is
-  announced; it goes on by itself after a minute.
+  announced; it never goes on by itself (0.4.22, owner note 4: text waits for a key).
 - **Toad walks in** (his `smb3:toad-map-0/1` frames, 2 px a frame from off the left edge to 20 px
   left of the hero) only for the major scenes: the World 1 entry after 1-0, the fake Bowsers
   (after 1-4), the crash and the rift. He stays until the last scene and walks back off; that

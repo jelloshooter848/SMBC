@@ -8,7 +8,7 @@ import type { TopDownWorld } from '../../topdown/world';
 export const KEEPER_HP = 8;
 /** Frames between spells (and while badly hurt), and how long it glows before casting. */
 export const CAST_EVERY = 110;
-export const CAST_EVERY_ANGRY = 76;
+export const CAST_EVERY_ANGRY = 92;
 export const GLOW_FRAMES = 32;
 /** Frames it can't be hurt after a hit. */
 export const KEEPER_INVULN = 30;

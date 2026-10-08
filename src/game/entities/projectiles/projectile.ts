@@ -42,6 +42,11 @@ export interface ProjectileSpec {
   orbit?: { radius: number; step: number };
   /** Comes back to the owner after N frames and vanishes when it reaches them. */
   returns?: { after: number };
+  /**
+   * Takes the coins, items and drops it touches and carries them back to its owner, who gets
+   * them when it returns (Link's boomerang, Zelda's fetch: World.boomerangFetch / deliverFetch).
+   */
+  fetches?: boolean;
   /** A wall hit on a brick breaks it (as the owner's head bump would). */
   breaksBricks?: boolean;
   /** Destroys enemy projectiles it touches (shields, leaf guards). */
@@ -170,6 +175,10 @@ export class Projectile extends Entity {
   thrown = false;
   /** Boomerang on its way back. */
   returning = false;
+  /** What a fetching boomerang carries (taken out of the level; drawn on it; World.deliverFetch). */
+  readonly carried: Entity[] = [];
+  /** Coins a fetching boomerang carries. */
+  carriedCoins = 0;
   private angle = 0;
   private readonly originY: number;
   constructor(
@@ -208,7 +217,7 @@ export class Projectile extends Entity {
   update(world: World): void {
     const b = this.body;
     this.age++;
-    if (this.spec.lifetime !== null && this.age > this.spec.lifetime) return this.destroy();
+    if (this.spec.lifetime !== null && this.age > this.spec.lifetime) return this.end(world);
     if (this.spec.orbit && !this.thrown) return this.orbitOwner();
     if (this.spec.returns && this.age > this.spec.returns.after) this.returning = true;
     if (this.returning) {
@@ -219,7 +228,8 @@ export class Projectile extends Entity {
       this.steerTo(tx, ty, this.spec.speed, this.spec.speed);
       b.x += velToSub(b.vx);
       b.y += velToSub(b.vy);
-      if (overlaps(b, ob)) this.destroy();
+      if (this.spec.fetches) world.boomerangFetch(this);
+      if (overlaps(b, ob)) this.end(world);
       return;
     }
     if (this.spec.homing) {
@@ -274,11 +284,18 @@ export class Projectile extends Entity {
       }
       if (this.spec.breaksBricks && this.spec.piercesTiles && (this.age & 3) === 0)
         world.breakAt(b.x + (b.w >> 1), b.y + (b.h >> 1), this.owner);
+      if (this.spec.fetches) world.boomerangFetch(this);
     }
     // Off the right or left of the camera: gone.
     const camL = world.camera.x - px(16);
     const camR = world.camera.right + px(16);
-    if (b.x + b.w < camL || b.x > camR || this.isBelowLevel()) this.destroy();
+    if (b.x + b.w < camL || b.x > camR || this.isBelowLevel()) this.end(world);
+  }
+
+  /** Gone: what it carries goes to its owner first (World.deliverFetch). */
+  private end(world: World): void {
+    if (this.carried.length || this.carriedCoins) world.deliverFetch(this);
+    this.destroy();
   }
 
   private orbitOwner(): void {
@@ -326,5 +343,11 @@ export class Projectile extends Entity {
       toPx(this.body.y),
       this.facing > 0,
     );
+    // What it fetches rides on it, centred.
+    for (const e of this.carried) {
+      e.body.x = this.body.x + ((this.body.w - e.body.w) >> 1);
+      e.body.y = this.body.y + ((this.body.h - e.body.h) >> 1);
+      e.render(r, view);
+    }
   }
 }
