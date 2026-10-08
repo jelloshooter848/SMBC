@@ -21,7 +21,7 @@ import {
 import { T, tileDef } from '@game/level/tiles';
 import { enemyPalette } from '@game/entities/enemies/enemy';
 import { decorPalette } from '@game/entities/objects/decoration';
-import { FLOODED, SKY } from '@game/world/tile-render';
+import { FLOODED, SKY, STARRY_SKIES } from '@game/world/tile-render';
 import { drawThemeBackdrop, hasThemeBackdrop } from '@game/world/theme-backdrop';
 import type { View } from '@game/entities/entity';
 
@@ -307,5 +307,11 @@ describe('the new looks', () => {
       'contra-river',
       'contra-lair',
     ]);
+  });
+
+  it('the snowfield and the jungle shore have stars in their night skies, as the jungle does', () => {
+    expect(STARRY_SKIES.has('contra-snow')).toBe(true);
+    expect(STARRY_SKIES.has('contra-shore')).toBe(true);
+    expect(STARRY_SKIES.has('contra-jungle')).toBe(true);
   });
 });

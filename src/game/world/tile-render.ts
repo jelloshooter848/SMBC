@@ -85,6 +85,9 @@ export const STARRY_SKIES: ReadonlySet<string> = new Set([
   // World 6 as Ryu's world (0.4.29): the bamboo field's and the mountain pass's night.
   'ng-field',
   'ng-pass',
+  // World 7 as Bill's world (0.4.30): the snowfield's and the jungle shore's night.
+  'contra-snow',
+  'contra-shore',
 ]);
 
 /**
