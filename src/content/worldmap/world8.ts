@@ -65,7 +65,7 @@ export const WORLD_8: WorldMapPage = {
     actor('podoboo', 224, 208, { height: 36, period: 170, phase: 80 }),
     actor('flag', 160, 34),
     actor('flag', 192, 34, { phase: 15 }),
-    actor('mutant-hopper', 8, 196, { range: 24, speed: 0.25, period: 56 }),
+    actor('mutant-hopper', 48, 118, { range: 16, speed: 0.25, period: 56 }),
     actor('mutant-hopper', 96, 148, { range: 16, speed: 0.2, period: 64 }),
     actor('mutant-flyer', 40, 28, { speed: 0.4, amp: 3 }),
     actor('mutant-flyer', 120, 52, { speed: -0.3, amp: 4, phase: 50 }),
