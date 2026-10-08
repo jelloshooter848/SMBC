@@ -16,8 +16,8 @@ const byId = (id: string) => lessons.find((l) => l.id === id);
 
 describe("Bill's training", () => {
   it('starts from the basic kit: no whole-kit room, no PREVIEW marks', () => {
-    expect(BILL_TRAINING.fullKit).toBeUndefined();
-    for (const l of lessons) expect(l.unlocked, l.id).toBeUndefined();
+    expect('fullKit' in BILL_TRAINING).toBe(false);
+    for (const l of lessons) expect('unlocked' in l, l.id).toBe(false);
   });
 
   it('teaches the rifle, then the Medal and every gun in the order the campaign places them', () => {

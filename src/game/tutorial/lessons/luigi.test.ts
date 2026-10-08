@@ -14,8 +14,8 @@ const byId = (id: string) => lessons.find((l) => l.id === id);
 
 describe("Luigi's training", () => {
   it('starts small: no whole-kit room, no PREVIEW marks, no power given by a setup', () => {
-    expect(LUIGI_TRAINING.fullKit).toBeUndefined();
-    for (const l of lessons) expect(l.unlocked, l.id).toBeUndefined();
+    expect('fullKit' in LUIGI_TRAINING).toBe(false);
+    for (const l of lessons) expect('unlocked' in l, l.id).toBe(false);
   });
 
   it('teaches his moves, then the Mushroom, then the Fire Flower', () => {

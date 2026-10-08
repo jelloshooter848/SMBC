@@ -16,8 +16,8 @@ const byId = (id: string) => lessons.find((l) => l.id === id);
 
 describe("Sophia III's training", () => {
   it('starts from the basic kit: no whole-kit room, no PREVIEW marks', () => {
-    expect(SOPHIA_TRAINING.fullKit).toBeUndefined();
-    for (const l of lessons) expect(l.unlocked, l.id).toBeUndefined();
+    expect('fullKit' in SOPHIA_TRAINING).toBe(false);
+    for (const l of lessons) expect('unlocked' in l, l.id).toBe(false);
   });
 
   it('teaches the tank and Jason, then every power-up in the order the campaign places them', () => {

@@ -30,8 +30,8 @@ import { TargetDummy } from './dummy';
 import {
   AMMO_KEYS,
   chaptersFor,
+  ENERGY_KEYS,
   FAR_HIT_PX,
-  trainingFor,
   type ItemId,
   type TileSpot,
   MoveStats,
@@ -179,6 +179,23 @@ export function spoken(text: string): string {
 export type TrainingResult = 'done' | 'skip';
 export type RoomPhase = 'chapter' | 'lesson' | 'ready' | 'over';
 
+/**
+ * Scratch keys of a move or spell in progress, left behind when the hero goes on to a new chapter's
+ * room (the rest of the kit comes along): Samus's morph ball and aim, Link's running spells, a
+ * charging shot or a throw under way.
+ */
+export const ROOM_TRANSIENT = [
+  'ball',
+  'aimUp',
+  'jumpSpell',
+  'shieldSpell',
+  'fireSpell',
+  'chargeT',
+  'throwT',
+  'spin',
+  'autoT',
+] as const;
+
 export interface RoomOptions {
   /** Which player trains (their input drives the hero). */
   player?: number;
@@ -250,27 +267,16 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
 
   /**
    * The hero with its basic kit (the campaign's first kit, items/heroes.ts heroStart), whatever
-   * the run holds: the lessons' items build it up. Full health, one life, no clock. A hero whose
-   * training still has `fullKit` gets its whole kit from `devKit` instead.
+   * the run holds: the lessons' items build it up. Full health, one life, no clock.
    */
   private freshState(): GameState {
     const s = newGameState(this.hero);
-    if (this.fullKit) {
-      s.kit = this.hero.devKit?.() ?? {};
-      if (this.hero.damage.kind === 'hp') s.hp = s.kit.maxHp ?? startHp(this.hero);
-    } else {
-      const start = heroStart(this.hero);
-      s.kit = { ...start.kit };
-      s.powerState = start.powerState;
-      s.hp = start.hp;
-    }
+    const start = heroStart(this.hero);
+    s.kit = { ...start.kit };
+    s.powerState = start.powerState;
+    s.hp = start.hp;
     s.lives = 1;
     return s;
-  }
-
-  /** @deprecated The hero's training is not converted to items yet: the old whole-kit room. */
-  get fullKit(): boolean {
-    return !!trainingFor(this.hero.id)?.fullKit;
   }
 
   private build(): World {
@@ -394,6 +400,8 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     this.state.powerState = p.powerState;
     this.state.hp = p.hp;
     this.state.kit = carriedKit(p);
+    // Not what the hero was in the middle of: Samus's ball, Link's spells, a charge...
+    for (const key of ROOM_TRANSIENT) delete this.state.kit[key];
     this.layout = practiceRoom(ch.room);
     this.tracker.room = this.layout.geometry;
     this.placed = null;
@@ -494,18 +502,35 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
   }
 
   /**
-   * Ammo and magic back to the most the hero has had in the room (the whole kit's with
-   * `fullKit`), so no lesson runs dry from the one before.
+   * Ammo and magic back to the most the hero has had in the room, and Mega Man's weapon energy
+   * full, so no lesson runs dry from the one before.
    */
   private refill(): void {
     const scratch = this.player.scratch;
-    const kit = this.fullKit ? (this.hero.devKit?.() ?? {}) : {};
     for (const key of AMMO_KEYS) {
-      const v = Math.max(kit[key] ?? 0, scratch[key] ?? 0, this.ammoTop[key] ?? 0);
-      if (kit[key] === undefined && scratch[key] === undefined) continue;
+      if (scratch[key] === undefined) continue;
+      const v = Math.max(scratch[key] ?? 0, this.ammoTop[key] ?? 0);
       this.ammoTop[key] = v;
       scratch[key] = v;
     }
+    for (const [key, full] of Object.entries(ENERGY_KEYS))
+      if (scratch[key] !== undefined) scratch[key] = full;
+  }
+
+  /**
+   * Mid-lesson: once a tool on the belt can't be used for want of ammo or magic, it is all topped
+   * up again, so the player can never be stuck short of what the lesson needs (not in a lesson
+   * about running out: `spends`).
+   */
+  private topUp(): void {
+    if (this.phase !== 'lesson' || this.lesson?.spends) return;
+    const p = this.player;
+    const scratch = p.scratch;
+    for (const key of AMMO_KEYS) {
+      const v = scratch[key];
+      if (v !== undefined && v > (this.ammoTop[key] ?? 0)) this.ammoTop[key] = v;
+    }
+    if (p.def.tools?.(p).some((t) => !t.usable)) this.refill();
   }
 
   private ready(lead = ''): void {
@@ -565,6 +590,8 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     }
     const invuln = this.player.invuln;
     this.world.update([frame]);
+    // A hit raises the hero's invulnerability (before keepSafe's own, for the gap).
+    if (this.player.invuln > invuln) this.tracker.wasHurt();
     // A taken item's name and what it does are read out; the room has no other world events.
     for (const ev of this.world.events.splice(0))
       if (ev.type === 'say') this.game.deps.announcer?.say(ev.text);
@@ -572,6 +599,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     this.tendDummy();
     this.tracker.observe(this.player, this.world);
     this.watchItem();
+    this.topUp();
     this.checkShots(invuln);
     this.advance();
   }

@@ -18,8 +18,8 @@ const fresh = () => new MoveStats(practiceRoom().geometry);
 
 describe("Simon's training", () => {
   it('starts from the basic kit: no whole-kit room, no PREVIEW marks', () => {
-    expect(SIMON_TRAINING.fullKit).toBeUndefined();
-    for (const l of lessons) expect(l.unlocked, l.id).toBeUndefined();
+    expect('fullKit' in SIMON_TRAINING).toBe(false);
+    for (const l of lessons) expect('unlocked' in l, l.id).toBe(false);
   });
 
   it('teaches the basic moves, then every power-up in the order the campaign places them', () => {

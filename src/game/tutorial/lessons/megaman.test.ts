@@ -23,8 +23,8 @@ describe("Mega Man's lessons", () => {
   });
 
   it('starts from the basic kit: no whole-kit room, no (PREVIEW) checks', () => {
-    expect(MEGAMAN_TRAINING.fullKit).toBeUndefined();
-    for (const l of lessonsFor('megaman')) expect(l.unlocked, l.id).toBeUndefined();
+    expect('fullKit' in MEGAMAN_TRAINING).toBe(false);
+    for (const l of lessonsFor('megaman')) expect('unlocked' in l, l.id).toBe(false);
   });
 
   it('one lesson per item, the Helmet first, in the order the kit builds up (docs/POWERUPS.md)', () => {

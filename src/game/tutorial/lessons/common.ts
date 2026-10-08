@@ -121,17 +121,10 @@ export interface TrainingLesson {
   /** Where the room places `item` (a tile; its feet on the tile's bottom). */
   itemAt?: TileSpot;
   /**
-   * @deprecated The old (PREVIEW) marking: never read any more (training starts from the basic
-   * kit and lessons place their items). Left only so unconverted lessons still compile.
+   * The lesson is about running ammo out (Simon's hearts): the room doesn't top it up mid-lesson
+   * when a tool runs dry.
    */
-  unlocked?(run: RunKit): boolean;
-}
-
-/** @deprecated The run's kit for one hero (the old PREVIEW marking; training no longer reads it). */
-export interface RunKit {
-  kit: Readonly<Record<string, number>>;
-  /** The carried power state ('small', 'big', 'fire', 'full'...). */
-  power: string;
+  spends?: boolean;
 }
 
 /** The rooms a chapter can use (src/content/levels/practice*.map). */
@@ -149,15 +142,7 @@ export interface TrainingChapter {
 /** One hero's training (lessons/<hero>.ts). */
 export interface HeroTraining {
   chapters: readonly TrainingChapter[];
-  /**
-   * @deprecated The pre-0.4.34 room: the hero's whole kit from `devKit` instead of the basic kit
-   * and placed items. Only for a hero whose lessons aren't converted yet.
-   */
-  fullKit?: boolean;
 }
-
-/** @deprecated A run kit's key (the old `unlocked` checks). */
-export const k = (run: RunKit, key: string): number => run.kit[key] ?? 0;
 
 /** Turn the hero into `power` for a lesson (Luigi's fire, Sophia III's Hyper and Crusher). */
 export function givePower(room: PracticeRoom, power: string, unless: readonly string[] = [power]): void {
@@ -200,17 +185,6 @@ export function itemLesson(
   more: Omit<LessonMore, 'item'> = {},
 ): TrainingLesson {
   return { id, prompt, done, item, ...more };
-}
-
-/** @deprecated The pre-0.4.34 positional builder (with the old `unlocked`); use `lesson`. */
-export function legacyLesson(
-  id: string,
-  prompt: string,
-  done: (t: MoveStats) => boolean,
-  unlocked?: (run: RunKit) => boolean,
-  setup?: (room: PracticeRoom) => void,
-): TrainingLesson {
-  return { id, prompt, done, ...(unlocked ? { unlocked } : {}), ...(setup ? { setup } : {}) };
 }
 
 /** A hit on the dummy from this far (px, the hero's front edge to the dummy) is a long-range hit. */

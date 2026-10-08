@@ -5,6 +5,7 @@ import { Projectile } from '../entities/projectiles/projectile';
 import { Bomb } from '../entities/objects/bomb';
 import { RushCoil } from '../entities/objects/rush-coil';
 import { activeTool } from '../characters/toolbelt';
+import { RUSH, WEAPON_ENERGY, WEAPONS } from '../characters/megaman/weapons';
 import type { HeroTraining, ItemId, RoomGeometry, TrainingChapter, TrainingLesson } from './lessons/common';
 import { LUIGI_TRAINING } from './lessons/luigi';
 import { LINK_TRAINING } from './lessons/link';
@@ -80,6 +81,8 @@ export class MoveStats {
   readonly dummyHits = new Set<string>();
   /** The dummy's shots stopped by the hero's shield. */
   blocked = 0;
+  /** Hits the hero took (the room keeps health topped up, so each shows only as a fresh hit). */
+  hurt = 0;
   /** Jumps that took off on one side of the gap and landed on the other. */
   gapCrossings = 0;
   /** The hero was in the one-tile tunnel (under its roof). */
@@ -139,6 +142,7 @@ export class MoveStats {
     this.seen.clear();
     this.dummyHits.clear();
     this.blocked = 0;
+    this.hurt = 0;
     this.gapCrossings = 0;
     this.tunnel = false;
     this.ballJumps = 0;
@@ -164,6 +168,11 @@ export class MoveStats {
 
   shieldBlock(): void {
     this.blocked++;
+  }
+
+  /** The hero took a hit (the room sees the invulnerability rise). */
+  wasHurt(): void {
+    this.hurt++;
   }
 
   /** Power-up `id` was grabbed: counting starts afresh from here, with the grab noted. */
@@ -287,6 +296,11 @@ function ownedBy(e: Projectile, p: Player): boolean {
 
 /** Scratch keys that count down as ammo or magic is spent (MoveStats.toolUses). */
 export const AMMO_KEYS = ['magic', 'bombs', 'hearts', 'ninpo', 'missiles', 'triple', 'homing'] as const;
+
+/** Mega Man's weapon energy keys (`w<id>`), each with its full value: the room tops them up too. */
+export const ENERGY_KEYS: Readonly<Record<string, number>> = Object.fromEntries(
+  [...WEAPONS, RUSH].map((w) => [`w${w.id}`, WEAPON_ENERGY]),
+);
 
 /** A glide counts toward `maxRunGlide` once it has carried this far (px): the slide is seen. */
 export const GLIDE_SEEN_PX = 6;

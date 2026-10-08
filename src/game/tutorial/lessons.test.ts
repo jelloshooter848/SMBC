@@ -200,13 +200,11 @@ describe('prompt tokens', () => {
     expect(touchNames(p)).toEqual(['BOOMERANG', 'TOOLS']);
   });
 
-  it("converted heroes' touch prompts name the tool or weapon, never USE TOOL, USE WEAPON, THROW or CAST", () => {
+  it("every hero's touch prompts name the tool or weapon, never USE TOOL, USE WEAPON, THROW or CAST", () => {
     const generic = ['USE TOOL', 'USE WEAPON', 'THROW', 'CAST'];
-    for (const [hero, t] of Object.entries(TRAINING)) {
-      if (t.fullKit) continue;
+    for (const [hero, t] of Object.entries(TRAINING))
       for (const l of t.chapters.flatMap((c) => c.lessons))
         for (const name of touchNames(l.touchPrompt ?? l.prompt))
           expect(generic, `${hero}:${l.id}`).not.toContain(name);
-    }
   });
 });

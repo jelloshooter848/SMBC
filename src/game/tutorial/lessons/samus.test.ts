@@ -20,8 +20,8 @@ describe("Samus's lessons", () => {
   });
 
   it('starts from the basic kit: no whole-kit room, no (PREVIEW) checks', () => {
-    expect(SAMUS_TRAINING.fullKit).toBeUndefined();
-    for (const l of lessonsFor('samus')) expect(l.unlocked, l.id).toBeUndefined();
+    expect('fullKit' in SAMUS_TRAINING).toBe(false);
+    for (const l of lessonsFor('samus')) expect('unlocked' in l, l.id).toBe(false);
   });
 
   it('one lesson per item: the Energy Tank, Missiles, then the beams (docs/POWERUPS.md)', () => {

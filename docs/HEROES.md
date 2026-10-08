@@ -1252,10 +1252,12 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
   each. The room runs in a World of its own with a fresh GameState for the hero and its **basic
   kit** (0.4.34, owner decision: `heroStart`, the campaign's first kit: Link's Boomerang, Simon's
   and Ryu's 10-point bars, small Luigi), whatever the run holds; the lessons' power-ups build it
-  up. Ammo and magic are topped up at each lesson to the most the hero has had in the room; what
-  the hero carries (power, health, kit) goes on into the next chapter's room. (A hero whose
-  training still says `fullKit` gets the old whole kit from `devKit`: only until its lessons are
-  converted.) The run's GameState is snapshotted and restored around it (as the mini games
+  up. Ammo and magic (and Mega Man's weapon energy) are topped up at each lesson to the most the
+  hero has had in the room, and again mid-lesson whenever a tool on the belt runs dry, so the
+  player can never be stuck short of what a lesson needs (not in a lesson about running out,
+  `spends`: Simon's hearts). What the hero carries (power, health, kit) goes on into the next
+  chapter's room, but not what was in progress (`ROOM_TRANSIENT`: Samus's morph ball, Link's
+  running spells, a charge or throw). The run's GameState is snapshotted and restored around it (as the mini games
   do), so lives, score, power and kit are never touched. Hit points stay topped up, so nothing in
   the room can end it. The HUD shows TRAINING where WORLD and TIME go, and no score or coins
   (`drawHud`'s `place` option).
@@ -1274,22 +1276,22 @@ Mario's tutorial is stage 1-0. Every other hero has an optional practice room (o
 - **Lessons** (0.4.34: one module per hero, `src/game/tutorial/lessons/<hero>.ts`, exporting its
   `HeroTraining { chapters }`; shared types and builders in `lessons/common.ts`; `lessons.ts`
   holds the `TRAINING` registry and the tracker and re-exports both). `TrainingLesson { id,
-prompt, touchPrompt?, done(tracker), setup?(room), item?, itemAt? }`, built with `lesson(id,
-prompt, done, more)` or `itemLesson(id, item, prompt, done, more)`; `lessonsFor(id)` is every
-  chapter's lessons in order. `MoveStats` watches the
+prompt, touchPrompt?, done(tracker), setup?(room), item?, itemAt?, spends? }`, built with
+  `lesson(id, prompt, done, more)` or `itemLesson(id, item, prompt, done, more)`; `lessonsFor(id)`
+  is every chapter's lessons in order. `MoveStats` watches the
   player and world each frame (jumps and their height, the highest point, ground speed and glide,
   attacks, shots by kind, direction and selected tool, shots in flight at once, charge shots,
   slides, the tunnel, crouching, tool changes, ammo or magic spent per tool, wall cling and wall
   jumps, bomb jumps, scratch flags like the morph ball and a sprung Rush Coil, bombs, shield
-  blocks, gap crossings, and how the dummy was hit: the damage kind, the shot's kind, `wave` for
+  blocks, hits taken (`hurt`), gap crossings, and how the dummy was hit: the damage kind, the shot's kind, `wave` for
   the Wave Beam, `far` from FAR_HIT_PX away). The tracker is reset when a lesson or a card comes
   up, so each is done while its prompt shows. Prompts name abilities as the guide and touch
   buttons do (never button letters); a button's ability is written `[SHOOT:attack]` and shown
   through `abilityHint` ("SHOOT (X)" with keys or a pad), falling back to the bare names when
   that would not fit 3 lines of 25 columns (`promptText`). On touch a token shows its touch
   caption, `[USE TOOL:special:BOOMERANG]` → BOOMERANG, so the prompt names the tool or weapon as
-  its button does (0.4.34, owner pick 2; keys and pads keep the ability names; converted heroes
-  are tested never to say USE TOOL, USE WEAPON, THROW or CAST on touch). They come one at a time
+  its button does (0.4.34, owner pick 2; keys and pads keep the ability names; every hero is
+  tested never to say USE TOOL, USE WEAPON, THROW or CAST on touch). They come one at a time
   in a centred box under the HUD (`drawRoomBox`), announced. Walking, jumping and the basic
   attack never tick a move lesson (tested per hero).
 - **Power-ups** (0.4.34, owner decision: show how each power is unlocked). A lesson's `item` (a
@@ -1305,16 +1307,16 @@ prompt, done, more)` or `itemLesson(id, item, prompt, done, more)`; `lessonsFor(
   Arena play the same lessons in the same order. The run's GameState is restored afterwards as
   before.
 
-| Hero     | Chapters and lessons (before the 0.4.34 item lessons; in brackets: kit that came from items)                                                                                   |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Luigi    | Moves: high jump, slippery stop. Fire: [fireball] (gives fire)                                                                                                                 |
-| Link     | Sword: sword, down-thrust, up-thrust, shield. Tools (gear): boomerang, bomb. Magic: jump, shield and fire spells. Water: swim                                                  |
-| Mega Man | Buster: buster, [charge]. Moves (gear): slide through the tunnel, [Rush Coil]. Weapons: [switching], [saw, leaf, flame, knuckle, bolt]. Water: seabed jump                     |
-| Samus    | Beams (gear): beam, aim up, [Long Beam from afar], [Ice Beam], [Wave Beam]. Missiles: missile, switch to missiles. Morph ball (gear): roll through the tunnel, bomb, bomb jump |
-| Simon    | Whip: whip, crouch whip, committed jump. Sub-weapons: [dagger, axe, holy water, cross, stopwatch], [hearts as ammo]. Upgrades: [chain whip], [morning star], [double shot]     |
-| Ryu      | Sword: slash, wall cling, wall jump. Ninpo: [throwing star, windmill, fire wheel, jump and slash]                                                                              |
-| Bill     | Aim: shoot, 8-way aim, prone, jump and shoot. Guns: [machine gun, spread, laser, flame thrower]. Water: swim and shoot                                                         |
-| Sophia   | Drive: drive and jump the gap, cannon, cannon up. Power-ups: [hover], [missiles], [homing], [wall climb]. Jason: Jason on foot (EXIT)                                          |
+| Hero     | Chapters and lessons (0.4.34; in brackets: the power-up the lesson places, grabbed before use)                                                                                                           |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Link     | Sword: sword, down-thrust, up-thrust, shield. Tools (gear): boomerang, [Heart Container], [Bomb Bag] bomb. Magic: [Shield, Jump spells], [Blue Ring], [Fire spell], [Magical Sword]. Water: swim         |
+| Mega Man | Basics (gear): buster, [Helmet] charge, slide. Weapons (gear): [Saw], [Leaf], [Rush Coil]. More weapons: [Flame], [Knuckle], [Bolt]. Water: seabed jump                                                  |
+| Samus    | Basics (gear): beam, [Energy Tank], aim up, morph ball, bomb, bomb jump. Missiles: [Missiles], switch. Beams (gear): [Long Beam], [Ice Beam], [Varia Suit], [Wave Beam]                                  |
+| Simon    | Whip: whip, crouch-whip, committed jump. Power-ups: [Pot Roast], [Chain Whip], [Dagger], hearts, [Holy Water], [Axe]. More power-ups: [Morning Star], [Cross], [Double Shot], [Stopwatch], [Triple Shot] |
+| Ryu      | Sword: slash, cling, wall jump. Ninpo: [Medicine], [Throwing Star], [Ninpo Scroll], [Windmill], [Fire Wheel], [Jump and Slash]                                                                           |
+| Bill     | Aim: shoot, aim, prone, jump-shoot. Guns: [Medal], [Machine Gun], [Laser], [Flame Gun], [Spread Gun]. Water: swim-shoot                                                                                  |
+| Sophia   | Drive: drive-jump, cannon, cannon-up, Jason (out and back in). Power-ups: [Power Capsule] hover, [Crusher], [Triple Missile], [Wall Climb]. More power-ups: [Ceiling Climb], [Homing Missile]            |
+| Luigi    | Moves: high jump, slippery stop. Power-ups: [Mushroom], [Fire Flower]                                                                                                                                    |
 
 Not in the training because the campaign code has no such kit: Bill's R and B capsules (only in
 his mini game, Jungle Assault). Link's bomb lesson blasts the dummy rather than a cracked wall (a

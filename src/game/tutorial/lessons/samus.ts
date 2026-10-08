@@ -1,12 +1,4 @@
-import type { Player } from '../../entities/player';
-import {
-  type HeroTraining,
-  itemLesson,
-  lesson,
-  type PracticeRoom,
-  setKit,
-  type TrainingLesson,
-} from './common';
+import { type HeroTraining, itemLesson, lesson, setKit } from './common';
 
 /*
  * Samus's training (docs/HEROES.md): the chapters of lessons, in the order the room plays them.
@@ -14,41 +6,6 @@ import {
  * then grabs the Energy Tank (her grow item), Missiles, then the beams and the suit in the order
  * her kit builds up (docs/POWERUPS.md 5.4). Ice and Wave are both kept: WEAPON picks each one.
  */
-
-/**
- * The Varia Suit's lesson: grab it, then take one of the dummy's shots. The room keeps her energy
- * full, so the hit shows as her invulnerability rising again (a fresh hit) after the grab.
- */
-function variaLesson(): TrainingLesson {
-  let hero: Player | null = null;
-  let last = Infinity;
-  return itemLesson(
-    'varia-suit',
-    'varia-suit',
-    'GRAB THE VARIA SUIT: HITS TAKE HALF THE ENERGY. LET THE DUMMY SHOOT YOU!',
-    (t) => {
-      if (!hero || !t.now.varia) return false;
-      const was = last;
-      last = hero.invuln;
-      return hero.invuln > was;
-    },
-    {
-      setup(room) {
-        room.dummyShoots = true;
-        hero = room.player;
-        last = Infinity;
-      },
-    },
-  );
-}
-
-/** Out of the morph ball the last chapter may have left her in (the new room carries her kit). */
-function standUp(room: PracticeRoom): void {
-  const p = room.player;
-  if (!p.scratch.ball) return;
-  p.scratch.ball = 0;
-  p.refitHitbox();
-}
 
 export const SAMUS_TRAINING: HeroTraining = {
   chapters: [
@@ -89,7 +46,6 @@ export const SAMUS_TRAINING: HeroTraining = {
           'missiles',
           'MISSILES! [MISSILE:special] FIRES ONE: THREE DAMAGE, AND IT OPENS BRICKS.',
           (t) => t.shotKinds.has('missile'),
-          { setup: standUp },
         ),
         lesson(
           'missile-switch',
@@ -117,7 +73,14 @@ export const SAMUS_TRAINING: HeroTraining = {
           '[WEAPON:select] TO THE ICE BEAM: IT FREEZES WHAT IT HITS. [SHOOT:attack] THE DUMMY.',
           (t) => t.dummyHits.has('ice'),
         ),
-        variaLesson(),
+        // The room keeps her energy full, so the hit counts as the tracker's `hurt`.
+        itemLesson(
+          'varia-suit',
+          'varia-suit',
+          'GRAB THE VARIA SUIT: HITS TAKE HALF THE ENERGY. LET THE DUMMY SHOOT YOU!',
+          (t) => (t.now.varia ?? 0) > 0 && t.hurt > 0,
+          { setup: (room) => void (room.dummyShoots = true) },
+        ),
         itemLesson(
           'wave-beam',
           'wave-beam',

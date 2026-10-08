@@ -77,7 +77,7 @@ export const SIMON_TRAINING: HeroTraining = {
           'hearts',
           'SUB-WEAPONS COST HEARTS. YOU HAVE 3: [THROW:special:DAGGER] UNTIL THEY RUN OUT.',
           (t) => t.now.hearts === 0,
-          { setup: setKit({ hearts: 3, tool: 0 }) },
+          { setup: setKit({ hearts: 3, tool: 0 }), spends: true },
         ),
         itemLesson(
           'holy-water',

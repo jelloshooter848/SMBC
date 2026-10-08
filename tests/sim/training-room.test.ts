@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Action } from '@engine/input/actions';
-import { toPx } from '@engine/math/units';
+import { px, toPx } from '@engine/math/units';
 import type { Scene } from '@engine/scene';
 import { CHARACTERS } from '@game/characters/registry';
 import { LUIGI } from '@game/characters/luigi';
@@ -15,13 +15,12 @@ import {
   TrainingMenuScene,
   type TrainingResult,
 } from '@game/tutorial/room';
-import { chaptersFor, type RunKit } from '@game/tutorial/lessons';
-import { activeTool } from '@game/characters/toolbelt';
-import { RushCoil } from '@game/entities/objects/rush-coil';
+import { chaptersFor } from '@game/tutorial/lessons';
 import { defaultSettings } from '@engine/save/settings';
 import type { TargetDummy } from '@game/tutorial/dummy';
 import { runSim } from '@game/sim/headless';
 import { getLevel } from '@content/levels';
+import { applyItem } from '@game/items/heroes';
 import { draw, makeGame, useStorage } from './heroes-harness';
 import { tcPolicies } from './training-tc';
 import { tbPolicies } from './training-tb';
@@ -36,181 +35,10 @@ type Policy = (p: Player, f: number, s: PracticeRoomScene) => Action[];
 
 const cx = (p: Player) => toPx(p.centerX);
 const tapEvery = (f: number, a: Action, n = 8): Action[] => (f % n < 2 ? [a] : []);
-/** Walk until the centre is near `x` px (within 3 px), then nothing. */
-const goTo = (p: Player, x: number): Action[] => (cx(p) < x - 3 ? ['right'] : cx(p) > x + 3 ? ['left'] : []);
-/** The belt's selected tool. */
-const tool = (p: Player) => activeTool(p, p.def.tools?.(p) ?? [])?.id;
-/** Pick `id` on the belt (the belt's button), then use it with `use` every `n` frames. */
-const pick =
-  (id: string, use: Action = 'special', n = 20): Policy =>
-  (p, f) =>
-    tool(p) !== id ? (f % 8 === 0 ? ['select'] : []) : tapEvery(f, use, n);
 
-/** The dummy's left edge is at 146 px, the bricks span 80-128, the gap 176-208, the wall is at 240. */
+/** Every hero's scripted players, keyed `<hero>:<lesson id>` (training-tb.ts, training-tc.ts). */
 function policies(): Record<string, Policy> {
-  let released = false;
-  let backed = false;
-  let wasClose = false;
-  return {
-    // Luigi
-    'high-jump': (p, f) => (Math.abs(cx(p) - 140) > 3 ? goTo(p, 140) : f % 60 < 45 ? ['jump'] : []),
-    'slippery-stop': (p) => {
-      if (!backed) {
-        backed = cx(p) <= 72;
-        return ['left'];
-      }
-      if (!released && cx(p) >= 112) released = true;
-      return released ? [] : ['right', 'attack'];
-    },
-    fireball: (_p, f) => (f < 60 ? [] : tapEvery(f, 'attack', 12)),
-    // Link (and the shared ones)
-    sword: (p, f) => (cx(p) < 128 ? goTo(p, 130) : tapEvery(f, 'attack', 16)),
-    'down-thrust': (p, f) => {
-      const b = p.body;
-      if (b.onGround) {
-        if (cx(p) > 124) return ['left'];
-        return cx(p) < 118 ? ['right'] : f % 6 < 3 ? ['right', 'jump'] : [];
-      }
-      const hold: Action[] = cx(p) < 152 ? ['right'] : [];
-      return b.vy > 0 ? [...hold, 'down'] : [...hold, 'jump'];
-    },
-    'up-thrust': (p, f) => (Math.abs(cx(p) - 104) > 3 ? goTo(p, 104) : f % 30 < 15 ? ['jump', 'up'] : ['up']),
-    shield: (p) => goTo(p, 100),
-    boomerang: (_p, f) => tapEvery(f, 'special', 20),
-    // Mega Man
-    shoot: (_p, f) => tapEvery(f, 'attack', 10),
-    slide: (_p, f) => (f % 20 < 2 ? ['down', 'jump'] : ['down']),
-    charge: (_p, f) => (f % 70 < 55 ? ['attack'] : []),
-    weapon: (_p, f) => (f === 2 ? ['select'] : f > 10 ? tapEvery(f, 'special', 20) : []),
-    // Samus
-    'aim-up': (_p, f) => ['up', ...tapEvery(f, 'attack', 10)],
-    missile: (_p, f) => (f < 10 ? tapEvery(f, 'up', 4) : tapEvery(f, 'special', 10)),
-    // Simon
-    whip: (p, f) => (cx(p) < 116 ? goTo(p, 118) : tapEvery(f, 'attack', 30)),
-    'crouch-whip': (_p, f) => ['down', ...tapEvery(f, 'attack', 30)],
-    'sub-weapon': (_p, f) => tapEvery(f, 'special', 20),
-    'committed-jump': (p, f) =>
-      p.body.onGround && cx(p) < 208
-        ? cx(p) < 160
-          ? ['right']
-          : f % 4 < 2
-            ? ['right', 'jump']
-            : ['right']
-        : [],
-    // Ryu
-    slash: (p, f) => (cx(p) < 126 ? goTo(p, 128) : tapEvery(f, 'attack', 14)),
-    cling: (p, f) =>
-      p.body.onGround && cx(p) >= 160 ? (f % 4 < 2 ? ['right', 'jump'] : ['right']) : ['right'],
-    'wall-jump': (p, f) => {
-      if (p.clinging) {
-        const go: Action[] = wasClose ? ['right', 'jump'] : ['right'];
-        wasClose = !wasClose;
-        return go;
-      }
-      return p.body.onGround && cx(p) >= 160 ? (f % 4 < 2 ? ['right', 'jump'] : ['right']) : ['right'];
-    },
-    ninpo: (_p, f) => tapEvery(f, 'special', 20),
-    // Bill
-    aim: (_p, f) => {
-      const k = Math.floor(f / 20) % 3;
-      const hold: Action[] = k === 0 ? [] : k === 1 ? ['up'] : ['up', 'right'];
-      return [...hold, ...tapEvery(f, 'attack', 10)];
-    },
-    prone: () => ['down'],
-    'jump-shoot': (p, f) => (p.body.onGround ? tapEvery(f, 'jump', 20) : tapEvery(f, 'attack', 4)),
-    // Sophia III (the shared 'missile' fires hers too)
-    cannon: (_p, f) => tapEvery(f, 'attack', 10),
-    hover: (p, f) => (p.body.onGround ? tapEvery(f, 'jump', 40) : f % 40 >= 12 ? ['jump'] : []),
-    // Over the gap with a held jump, then up the tall wall.
-    'wall-climb': (p, f) => {
-      if (!p.body.onGround) return ['right', 'up', 'jump'];
-      return cx(p) > 150 && cx(p) < 176 && f % 2 ? ['right', 'up', 'jump'] : ['right', 'up'];
-    },
-    // Off the wall first (into it + jump lets go; her wall pose is under a tile wide), then
-    // EXIT on the floor.
-    jason: (p, f) => {
-      if (p.body.onGround) return f % 10 === 0 ? ['select'] : [];
-      return p.body.w < 16 * 256 && f % 2 ? ['right', 'jump'] : [];
-    },
-    // Link's tools (the gear screen: the dummy at 128-140) and magic.
-    // Link's, Mega Man's and Samus's item lessons (0.4.34): walk to the item, then use it.
-    ...tbPolicies(),
-    'jump-spell': (p, f) => {
-      if (!p.scratch.jumpSpell) return pick('jump')(p, f, null as never);
-      return ['left', ...(f % 40 < 30 ? (['jump'] as Action[]) : [])];
-    },
-    'shield-spell': pick('shield'),
-    'fire-spell': (p, f) => {
-      if (!p.scratch.fireSpell) return pick('fire')(p, f, null as never);
-      // Down off the ledge or the bricks first: the beam flies at the hero's height.
-      if (toPx(p.body.y + p.body.h) < 190) return cx(p) < 64 ? ['right'] : ['left'];
-      return cx(p) < 96 ? ['right'] : p.facing < 0 ? ['right'] : tapEvery(f, 'attack', 16);
-    },
-    swim: (_p, f) => tapEvery(f, 'jump', 10),
-    // Mega Man's moves (the gear screen: the tunnel at 192-224), weapons and the seabed.
-    'megaman:slide': (p, f) =>
-      cx(p) < 160 ? ['right'] : f % 20 < 2 ? ['right', 'down', 'jump'] : ['right', 'down'],
-    rush: (p, f, s) => {
-      const coil = s.world.entities.find((e) => e instanceof RushCoil && e.alive);
-      if (!coil) return p.body.onGround ? pick('rush')(p, f, s) : [];
-      const at = toPx(coil.body.x + (coil.body.w >> 1));
-      if (p.body.onGround) return f % 6 < 3 ? ['jump'] : [];
-      return cx(p) < at - 2 ? ['right', 'jump'] : cx(p) > at + 2 ? ['left', 'jump'] : ['jump'];
-    },
-    saw: pick('saw'),
-    leaf: pick('leaf'),
-    flame: pick('flame'),
-    knuckle: pick('knuckle'),
-    bolt: pick('bolt', 'special', 40),
-    'seabed-jump': (_p, f) => (f % 90 < 70 ? ['jump'] : []),
-    // Samus: the beams from the left wall, missiles, the ball (the gear screen).
-    'long-beam': (p, f) => (cx(p) > 20 ? ['left'] : p.facing < 0 ? ['right'] : tapEvery(f, 'attack', 10)),
-    'ice-beam': (_p, f) => tapEvery(f, 'attack', 12),
-    'wave-beam': (_p, f) => tapEvery(f, 'attack', 12),
-    'missile-switch': (p, f) =>
-      tool(p) !== 'missile' ? (f % 8 === 0 ? ['select'] : []) : tapEvery(f, 'attack', 12),
-    'morph-ball': (p, f) =>
-      cx(p) < 168 ? ['right'] : !p.scratch.ball ? (f % 6 === 0 ? ['down'] : []) : ['right'],
-    'samus:bomb': (p, f) => (!p.scratch.ball ? tapEvery(f, 'down', 10) : tapEvery(f, 'attack', 10)),
-    'bomb-jump': (p, f) => (!p.scratch.ball ? tapEvery(f, 'down', 10) : tapEvery(f, 'attack', 60)),
-    // Simon's sub-weapons and upgrades.
-    dagger: (_p, f) => tapEvery(f, 'special', 20),
-    'hand-axe': pick('hand-axe', 'special', 30),
-    'holy-water': pick('holy-water', 'special', 30),
-    cross: pick('cross', 'special', 30),
-    stopwatch: pick('stopwatch', 'special', 30),
-    hearts: (_p, f) => tapEvery(f, 'special', 24),
-    'simon:whip': (p, f) => (cx(p) < 128 ? goTo(p, 130) : tapEvery(f, 'attack', 30)),
-    'chain-whip': (p, f) => (cx(p) < 122 ? goTo(p, 124) : tapEvery(f, 'attack', 30)),
-    'morning-star': (p, f) => (cx(p) < 116 ? goTo(p, 118) : tapEvery(f, 'attack', 30)),
-    'double-shot': (_p, f) => tapEvery(f, 'special', 14),
-    // Ryu's arts.
-    'throwing-star': (_p, f) => tapEvery(f, 'special', 20),
-    windmill: pick('windmill', 'special', 30),
-    'fire-wheel': pick('fire-wheel', 'special', 30),
-    'jump-slash': pick('slash', 'special', 40),
-    // Bill's guns and the swim.
-    mg: pick('mg', 'attack', 6),
-    spread: pick('spread', 'attack', 12),
-    laser: pick('laser', 'attack', 20),
-    'flame-gun': pick('flame-gun', 'attack', 20),
-    'swim-shoot': (_p, f) => [...tapEvery(f, 'jump', 12), ...tapEvery(f + 6, 'attack', 6)],
-    // Sophia III's drive, cannon and missiles.
-    'drive-jump': (p, f) =>
-      p.body.onGround && cx(p) < 208
-        ? cx(p) < 150
-          ? ['right']
-          : f % 4 < 2
-            ? ['right', 'jump']
-            : ['right']
-        : ['right', 'jump'],
-    'sophia:cannon': (p, f) =>
-      cx(p) > 104 ? ['left'] : p.facing < 0 ? ['right'] : tapEvery(f, 'attack', 10),
-    'cannon-up': (_p, f) => ['up', ...tapEvery(f, 'attack', 10)],
-    homing: (_p, f) => (f === 2 ? ['down', 'special'] : f > 10 ? tapEvery(f, 'special', 20) : []),
-    // Simon, Ryu, Bill, Sophia III and Luigi from 0.4.34 (`<hero>:<lesson>`, training-tc.ts).
-    ...tcPolicies(),
-  };
+  return { ...tbPolicies(), ...tcPolicies() };
 }
 
 /** Wait out a card (a chapter's or READY!) and press on. */
@@ -220,14 +48,13 @@ function pressOn(h: { idle(n: number): void; tap(a: Action): void }): void {
 }
 
 /** The room for `heroId` pushed over a stand-in scene, as the training flow does. */
-function room(heroId: string, run?: RunKit) {
+function room(heroId: string) {
   const h = makeGame();
   const hero = CHARACTERS.find((c) => c.id === heroId) ?? MARIO;
   const below: Scene = { update() {}, render() {} };
   h.game.scenes.push(below);
   const results: TrainingResult[] = [];
   const scene = new PracticeRoomScene(h.game, hero, {
-    ...(run ? { run } : {}),
     onEnd: (r) => {
       results.push(r);
       h.game.scenes.pop();
@@ -257,7 +84,7 @@ function play(heroId: string, max = 12000) {
       phase = r.scene.phase;
       since = 0;
     }
-    const policy = id ? (pol[`${heroId}:${id}`] ?? pol[id]) : undefined;
+    const policy = id ? pol[`${heroId}:${id}`] : undefined;
     const card = r.scene.phase === 'chapter' || r.scene.phase === 'ready';
     const act = card
       ? since > CARD_GUARD_FRAMES && since % 4 === 0
@@ -646,5 +473,59 @@ describe('the skip hint', () => {
       expect(skip && skip.y + 8, id).toBeLessThanOrEqual(practiceRoom().geometry.ledgeTop);
       expect(skip && skip.y, id).toBeGreaterThan(44);
     }
+  });
+});
+
+describe('the room looks after the kit between lessons and rooms', () => {
+  const at = (heroId: string, id: string) => lessonsFor(heroId).findIndex((l) => l.id === id);
+
+  it("a new chapter's room drops what was in progress (Samus's ball, Link's spells) but keeps the kit", () => {
+    const s = room('samus');
+    pressOn(s.h);
+    const p = s.scene.player;
+    Object.assign(p.scratch, { ball: 1, tanks: 1 });
+    p.refitHitbox();
+    s.scene.skipChapter();
+    expect(s.scene.chapter).toBe(1);
+    expect(s.scene.player.scratch.ball ?? 0).toBe(0);
+    expect(s.scene.player.scratch.tanks).toBeGreaterThanOrEqual(1);
+    expect(s.scene.player.body.h).toBeGreaterThan(16 * 256);
+    const l = room('link');
+    pressOn(l.h);
+    Object.assign(l.scene.player.scratch, { jumpSpell: 300, fireSpell: 1 });
+    l.scene.skipChapter();
+    expect([l.scene.player.scratch.jumpSpell ?? 0, l.scene.player.scratch.fireSpell ?? 0]).toEqual([0, 0]);
+  });
+
+  it('tops ammo up mid-lesson once a tool runs dry, except in a lesson about running out', () => {
+    const { h, scene } = room('samus');
+    pressOn(h);
+    applyItem(scene.player, 'missiles');
+    const full = scene.player.scratch.missiles ?? 0;
+    expect(full).toBeGreaterThan(0);
+    scene.startLesson(at('samus', 'missile-switch'));
+    scene.player.scratch.missiles = 0;
+    h.step([]);
+    expect(scene.player.scratch.missiles).toBe(full);
+    // Simon's hearts lesson is about running them out: no top-up, and it ticks.
+    const simon = room('simon');
+    pressOn(simon.h);
+    applyItem(simon.scene.player, 'dagger');
+    simon.scene.startLesson(at('simon', 'hearts'));
+    simon.scene.player.scratch.hearts = 0;
+    simon.h.step([]);
+    expect(simon.scene.ticked).toContain('hearts');
+  });
+
+  it("counts the hero's hits as `hurt`, not the gap's put-back", () => {
+    const { h, scene } = room('samus');
+    pressOn(h);
+    scene.startLesson(at('samus', 'varia-suit'));
+    const p = scene.player;
+    p.body.y = px(400);
+    h.step([]);
+    expect(scene.tracker.hurt).toBe(0);
+    for (let f = 0; f < 400 && scene.tracker.hurt === 0; f++) h.step([]);
+    expect(scene.tracker.hurt).toBeGreaterThan(0);
   });
 });

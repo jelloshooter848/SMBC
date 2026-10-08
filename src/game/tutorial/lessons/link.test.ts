@@ -22,8 +22,8 @@ describe("Link's lessons", () => {
   });
 
   it('starts from the basic kit: no whole-kit room, no (PREVIEW) checks', () => {
-    expect(LINK_TRAINING.fullKit).toBeUndefined();
-    for (const l of lessonsFor('link')) expect(l.unlocked, l.id).toBeUndefined();
+    expect('fullKit' in LINK_TRAINING).toBe(false);
+    for (const l of lessonsFor('link')) expect('unlocked' in l, l.id).toBe(false);
   });
 
   it('one lesson per item, grow item first, in the order the kit builds up (docs/POWERUPS.md)', () => {
