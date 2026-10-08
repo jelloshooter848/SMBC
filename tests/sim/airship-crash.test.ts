@@ -140,7 +140,7 @@ describe('the airship crash on the World 4 map', () => {
     // apart, the next frame's line would talk over them).
     const first = h.said.find((t) => /limps over World 4/.test(t)) as string;
     expect(first).toMatch(
-      /^World 4, MUSHROOM WOODS\. World 4-2, .*\. Larry's airship limps over World 4, smoking\. Skip: JUMP/,
+      /^World 4, PLANET ZEBES\. World 4-2, .*\. Larry's airship limps over World 4, smoking\. Skip: JUMP/,
     );
     expect(h.said.some((t) => /^Skip:/.test(t))).toBe(false);
     // Toad's house stands; now the road draws in, and the map ends as today's reveal does.
