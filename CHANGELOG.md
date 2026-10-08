@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.30] - 2026-10-08
+
 ### Changed
 
 - World 7 is now Bill's world (campaign only; classic play keeps SMB's 7-1 to 7-4):
@@ -747,7 +749,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.29...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.30...HEAD
+[0.4.30]: https://github.com/jelloshooter848/SMBC/compare/v0.4.29...v0.4.30
 [0.4.29]: https://github.com/jelloshooter848/SMBC/compare/v0.4.28...v0.4.29
 [0.4.28]: https://github.com/jelloshooter848/SMBC/compare/v0.4.27...v0.4.28
 [0.4.27]: https://github.com/jelloshooter848/SMBC/compare/v0.4.26...v0.4.27
