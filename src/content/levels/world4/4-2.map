@@ -96,3 +96,9 @@ brinstar-column 130 12
 brinstar-column 141 12
 brinstar-column 151 12
 brinstar-column 179 12
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump short (charHorz): the gap at 183-184 a tile narrower: a brick column on ground at 184.
+;; Every piece the original lays for her here.
+184 10 = *3
+184 13 # *2

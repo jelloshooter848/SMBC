@@ -60,7 +60,7 @@ warp 208 16 worlds=2 text=WELCOME_TO_WARP_ZONE!
 [variant sophia classic]
 ;; The original's pieces for Sophia III here: the falling lifts over the pit at 67-92 set closer together (charHorz), and steps by
 ;; the water at 21-26. Every piece the original lays for
-;; her in this area but the flagpole's lift (docs/HEROES.md).
+;; her in this area (docs/HEROES.md).
 164 2 =
 171 4 2
 26 8 B

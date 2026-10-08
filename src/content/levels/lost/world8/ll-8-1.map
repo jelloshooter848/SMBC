@@ -103,7 +103,7 @@ cloud-3 219 3
 ;; The original's pieces for heroes who jump short or low (charHorz, charVert): a red spring
 ;; on a block in each long gap (Mario crosses them on the Paratroopas, which the tank cannot
 ;; stomp), the Paratroopas moved to suit (docs/HEROES.md).
-;; With every other piece the original lays for her in this area (but the flagpole's lift).
+;; With every other piece the original lays for her in this area (and the flagpole's lift).
 78 13 s
 82 13 s
 127 13 s
@@ -120,3 +120,5 @@ cloud-3 219 3
 + koopa-para-red 80 9
 + koopa-para-red 84 9 dx=8
 + koopa-para-red 129 11 dy=-8
+;; The flagpole's step-fall lift (WideCharacter): a two-tile lift by the pole that drops once stood on.
++ lift-fall 210 4 len=2 dx=8

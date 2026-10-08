@@ -92,8 +92,10 @@ cloud-3 219 3
 [variant sophia classic]
 ;; The original's piece for heroes who jump low (charVert): the pipe at 117 a tile lower (five
 ;; tiles tall is out of Normal Sophia III's reach; docs/HEROES.md), its plant with it.
-;; With every other piece the original lays for her in this area (but the flagpole's lift).
+;; With every other piece the original lays for her in this area (and the flagpole's lift).
 117 8 ..
 117 9 []
 - piranha 117 8
 + piranha 117 9 red=1
+;; The flagpole's step-fall lift (WideCharacter): a two-tile lift by the pole that drops once stood on.
++ lift-fall 201 4 len=2 dx=8

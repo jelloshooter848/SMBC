@@ -59,7 +59,7 @@ cloud-2 68 2
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): the staircase five tiles further
 ;; right, so the jump from its top to the pipe at 85 is four tiles, not nine (docs/HEROES.md).
-;; With every other piece the original lays for her in this area (but the flagpole's lift).
+;; With every other piece the original lays for her in this area.
 72 5 ....
 77 5 BBBB
 71 6 .....BBBBB

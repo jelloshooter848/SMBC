@@ -56,7 +56,7 @@ pipe 193 10 down -> ll-11-4-exit 3 10 exit=up
 [variant sophia classic]
 ;; The original's pieces for wide heroes (WideCharacter): the one-tile shafts at 64 and 68 up
 ;; from the lift over the lava are two tiles wide for the tank (docs/HEROES.md).
-;; With every other piece the original lays for her in this area (but the flagpole's lift).
+;; With every other piece the original lays for her in this area.
 63 6 . *7
 69 6 . *7
 95 9 .

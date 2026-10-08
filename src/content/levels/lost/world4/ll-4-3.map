@@ -81,7 +81,7 @@ cloud-1 195 3
 [variant sophia classic]
 ;; The original's pieces for heroes who jump short (charHorz): the ground two tiles longer and
 ;; the first platform two wider (the 8-tile gap is past Normal Sophia III's ~7; docs/HEROES.md).
-;; With every other piece the original lays for her in this area (but the flagpole's lift).
+;; With every other piece the original lays for her in this area (and the flagpole's lift).
 128 5 BB
 175 5 B
 69 9 TTTT
@@ -91,3 +91,5 @@ cloud-1 195 3
 22 13 TT
 148 13 B
 23 14 tt
+;; The flagpole's step-fall lift (WideCharacter): a two-tile lift by the pole that drops once stood on.
++ lift-fall 180 4 len=2 dx=8
