@@ -26,6 +26,16 @@ export interface SwimProfile {
   sinkMax: number;
   /** Ground speed cap while standing under water (`walksSlowUnderWater`); absent: `maxWalk`. */
   floorWalk?: number | undefined;
+  /**
+   * 'stroke' (absent): a tap of jump strokes upward anywhere in the water (Mario, the swimmers).
+   * 'seabed': no stroke; the hero walks the floor and jumps off it (or a ledge) only, `stroke`
+   * being the take-off speed of a slow, floaty jump that keeps the hero's own jump rules (Mega
+   * Man's cut on release); `gravity` and `sinkMax` make it high and the fall slow (Bubble Man's
+   * stage, Metroid's liquids).
+   */
+  mode?: 'stroke' | 'seabed' | undefined;
+  /** Horizontal control off the floor under water; absent: the profile's `airControl`. */
+  airControl?: MovementProfile['airControl'] | undefined;
 }
 
 export interface MovementProfile {

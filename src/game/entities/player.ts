@@ -307,7 +307,8 @@ export class Player {
 
   /**
    * Underwater: no running, a tap of jump is a stroke upward, and everything sinks slowly.
-   * Walking on the floor still works, so pipes and springs behave.
+   * Walking on the floor still works, so pipes and springs behave. A seabed walker (SwimProfile
+   * `mode: 'seabed'`, Mega Man and Samus) has no stroke: only a high, floaty jump off the floor.
    */
   private swim(
     input: InputFrame,
@@ -319,22 +320,26 @@ export class Player {
     const p = this.profile;
     const b = this.body;
     const sw = p.swim ?? DEFAULT_SWIM;
+    const seabed = sw.mode === 'seabed';
     this.airCap = p.maxWalk;
     // Character.as water block: on the floor a slow walker is capped at vxMaxGroundWater.
     const cap = b.onGround && sw.floorWalk !== undefined ? sw.floorWalk : p.maxWalk;
     if (b.vx > cap) b.vx = cap;
     if (b.vx < -cap) b.vx = -cap;
-    if (
-      input.bufferedJump(JUMP_BUFFER_FRAMES) &&
-      this.sliding === 0 &&
-      (this.def.behaviour.canJump?.(this) ?? true)
-    ) {
+    const canJump =
+      this.sliding === 0 && (this.def.behaviour.canJump?.(this) ?? true) && (!seabed || b.onGround);
+    if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
       input.consumeJumpBuffer();
-      b.vy = -sw.stroke;
-      b.onGround = false;
-      this.jumping = false;
-      audio.sfx('swim');
+      if (seabed && p.slide && input.held('down')) this.startSlide();
+      else {
+        b.vy = -sw.stroke;
+        b.onGround = false;
+        // A seabed jump keeps the hero's own jump rules (Mega Man's cut on release); a stroke never.
+        this.jumping = seabed;
+        audio.sfx(seabed ? this.def.jumpSfx(this) : 'swim');
+      }
     }
+    if (seabed && p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
     if (this.stun === 0) {
       if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
       else if (dir !== 0) this.facing = dir;
@@ -357,7 +362,8 @@ export class Player {
     }
     this.tier = pickJumpTier(p, b.vx);
     this.updateAnim(dir);
-    if (!b.onGround) this.anim = 'swim';
+    // A seabed walker keeps their own jump and walk poses; a swimmer strokes in a swim pose.
+    if (!b.onGround && !seabed) this.anim = 'swim';
   }
 
   /**
@@ -525,12 +531,13 @@ export class Player {
   private airMove(dir: -1 | 0 | 1): void {
     const p = this.profile;
     const b = this.body;
-    if (p.airControl === 'none' || dir === 0) return;
+    const control = this.inWater ? (p.swim?.airControl ?? p.airControl) : p.airControl;
+    if (control === 'none' || dir === 0) return;
     if (p.instantAccel) {
       b.vx = dir * p.maxWalk;
       return;
     }
-    const cap = p.airControl === 'smb1' ? this.airCap : p.maxRun;
+    const cap = control === 'smb1' ? this.airCap : p.maxRun;
     const accel = Math.abs(b.vx) > p.maxWalk ? p.runAccel : p.walkAccel;
     if (b.vx === 0) b.vx = dir * p.minWalk;
     else if (sign(b.vx) !== dir) b.vx += dir * accel;

@@ -456,6 +456,19 @@ const spin2 = rotateCW(spin1);
 const spin3 = rotateCW(spin2);
 const spinFrame = (rows: readonly string[]): string[] => compose(W, H, [rows, 0, 16]);
 
+// Swimming (0.4.25): arms swept out with a scissor kick, the scarf streaming back; then the
+// front arm reaching up for the next stroke with the legs together, a pixel higher.
+const swim0 = compose(W, H, [scarfBack, 0, 9], [head, 0, 3], [torsoJump, 0, 13], [legsRun0, 0, 22]);
+const swim1 = compose(
+  W,
+  H,
+  [scarfBack, 0, 8],
+  [head, -1, 2],
+  [armUp, 12, 0],
+  [torsoArmUp, 0, 12],
+  [legsStand, 0, 21],
+);
+
 export const ryuDef: SpriteDef = {
   palette: 'ryu',
   frames: {
@@ -476,5 +489,7 @@ export const ryuDef: SpriteDef = {
     'spin-1': spinFrame(spin1),
     'spin-2': spinFrame(spin2),
     'spin-3': spinFrame(spin3),
+    'swim-0': swim0,
+    'swim-1': swim1,
   },
 };

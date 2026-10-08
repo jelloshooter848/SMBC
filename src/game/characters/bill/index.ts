@@ -31,6 +31,9 @@ export const BILL_PROFILE: MovementProfile = {
   variableJump: false,
   instantAccel: false,
   coyoteFrames: 0,
+  // Under water (0.4.25, TUNED by feel): Contra's wading turned into a real swim for a full-water
+  // level, a stroke with each jump.
+  swim: { stroke: 0x01aab, gravity: 0x000d0, sinkMax: 0x01c00 },
 };
 
 export const START_HITS = 3;
@@ -48,11 +51,14 @@ function gun(p: Player): Gun {
   return unlocked(p).find((g) => g.id === activeTool(p, tools(p))?.id) ?? (GUNS[0] as Gun);
 }
 
-/** Eight-way aim from the d-pad: straight up when standing still with up, down only in the air. */
+/**
+ * Eight-way aim from the d-pad: straight up when standing still with up, down only in the air.
+ * Swimming (0.4.25) he fires forward and up only, as Contra's commando does from the water.
+ */
 function aim(p: Player, input: InputFrame): { x: number; y: number } {
   const b = p.body;
   const up = input.held('up');
-  const down = input.held('down') && !b.onGround;
+  const down = input.held('down') && !b.onGround && !p.inWater;
   const dx = input.dirX;
   if (p.crouching) return { x: p.facing, y: 0 };
   if (up && dx === 0) return { x: 0, y: -1 };
@@ -75,6 +81,10 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   else if (p.crouching) {
     name = 'prone';
     offsetY = 24;
+  } else if (p.anim === 'swim') {
+    // Swimming: a kick and stroke, or the rifle levelled forward or raised as he fires.
+    if (p.attackTimer > 0) name = ay < 0 ? (ax === 0 ? 'swim-aim-up' : 'swim-aim-diag-up') : 'swim-shoot';
+    else name = `swim-${(frame >> 3) & 1}`;
   } else if (!b.onGround)
     name =
       p.attackTimer > 0 && ay !== 0 ? (ay < 0 ? 'aim-diag-up' : 'aim-diag-down') : `spin-${(frame >> 2) & 3}`;

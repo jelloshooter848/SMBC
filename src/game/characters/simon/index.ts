@@ -31,6 +31,9 @@ export const SIMON_PROFILE: MovementProfile = {
   variableJump: false,
   instantAccel: false,
   coyoteFrames: 0,
+  // Under water (0.4.25, TUNED by feel): a heavy, short stroke and a quick sink, but he can steer
+  // while swimming (on land his jump arc is committed at takeoff).
+  swim: { stroke: 0x01800, gravity: 0x00110, sinkMax: 0x02155, airControl: 'full' },
 };
 
 export const MAX_HP = 16;
@@ -73,6 +76,7 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     else if (t > WHIP_FRAMES_TOTAL - 10) name = 'whip-1';
     else name = (p.crouching ? 'crouch-' : '') + WHIP_FRAMES[whipLevel(p)];
   } else if (p.crouching) name = 'crouch';
+  else if (p.anim === 'swim') name = `swim-${(frame >> 3) & 1}`;
   else if (!p.body.onGround) name = 'jump';
   else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${p.walkFrame}`;
   else name = 'idle';

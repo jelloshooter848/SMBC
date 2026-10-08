@@ -30,6 +30,8 @@ export const RYU_PROFILE: MovementProfile = {
   variableJump: 'cut',
   instantAccel: false,
   coyoteFrames: 0,
+  // Under water (0.4.25, TUNED by feel): a strong, quick stroke and a slow sink.
+  swim: { stroke: 0x02000, gravity: 0x000c0, sinkMax: 0x01800 },
 };
 
 export const MAX_HP = 16;
@@ -72,6 +74,7 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   else if ((p.scratch.throwT ?? 0) > 0) name = 'throw';
   else if (t > 0) name = p.crouching ? 'crouch-slash' : t > SLASH_FRAMES - 3 ? 'slash-0' : 'slash-1';
   else if (p.crouching) name = 'crouch';
+  else if (p.anim === 'swim') name = `swim-${(frame >> 3) & 1}`;
   else if (!b.onGround) name = 'jump';
   else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${p.walkFrame}`;
   else name = 'idle';

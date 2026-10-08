@@ -365,6 +365,35 @@ function lashRow(lash: readonly string[]): number {
   return lash.findIndex((r) => r.startsWith('5'));
 }
 
+// Swimming (0.4.25): a flutter kick. Arms out with the legs scissored, then the arms pulled in
+// and the legs drawn back together, the body bobbing a pixel between the two.
+const legsFlutter0 = [
+  '....04444440....',
+  '....04444440....',
+  '....0440.0440...',
+  '...0440..0440...',
+  '...0440...0440..',
+  '...0000...0000..',
+  '..0440.....0440.',
+  '..0440.....0440.',
+  '.04440.....04440',
+  '.00000.....00000',
+];
+const legsFlutter1 = [
+  '....04444440....',
+  '....04444440....',
+  '....04400440....',
+  '....04400440....',
+  '....04400440....',
+  '....00000000....',
+  '...0440..0440...',
+  '..0440....0440..',
+  '.04440....04440.',
+  '.00000....00000.',
+];
+const swim0 = compose(W, H, [head, 0, 3], [torsoArmsOut, 0, 13], [legsFlutter0, 0, 22], [coil, 1, 21]);
+const swim1 = compose(W, H, [head, 0, 2], [torsoIdle, 0, 12], [legsFlutter1, 0, 21], [coil, 1, 20]);
+
 export const simonDef: SpriteDef = {
   palette: 'simon',
   frames: {
@@ -377,6 +406,8 @@ export const simonDef: SpriteDef = {
     throw: throwFrame,
     hurt,
     die,
+    'swim-0': swim0,
+    'swim-1': swim1,
     'whip-0': whip0,
     'whip-1': whip1,
     'whip-leather': strike(lashLeather),

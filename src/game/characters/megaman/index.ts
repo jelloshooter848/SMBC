@@ -33,6 +33,9 @@ export const MEGAMAN_PROFILE: MovementProfile = {
   instantAccel: true,
   coyoteFrames: 0,
   slide: { speed: 0x02800, frames: 26, hitboxH: 12 },
+  // Under water (0.4.25, TUNED by feel after Bubble Man's stage): no stroke; he walks the seabed
+  // and jumps off it about 7 tiles high, floating down slowly. The release cut still works.
+  swim: { mode: 'seabed', stroke: 0x04000, gravity: 0x00120, sinkMax: 0x01800 },
 };
 
 export const MAX_HP = 28;
