@@ -9,6 +9,13 @@ start: 1,6
 startMode: stand
 camera: scroll
 
+;; Campaign play only (0.4.24): a Zelda II palace (`zelda2-palace`, in the castle family): slate
+;; brick and stone over SMB's lava, a hall of red curtains painted behind it
+;; (world/theme-backdrop.ts) and knight statues on its floors ([campaign-decor]). Elsewhere (level
+;; select, ?level=2-4) it looks as it always did.
+campaignTheme: zelda2-palace
+campaignMusic: zelda2-palace
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................
@@ -48,3 +55,14 @@ toad 153 12
 [zones]
 exit 152 next=3-1
 bowser-fire 87
+
+[campaign-decor]
+;; Knight statues on the floors, behind the fire bars and clear of the lava.
+z2-statue 10 9
+z2-statue 13 9
+z2-statue 40 12
+z2-statue 58 12
+z2-statue 68 12
+z2-statue 100 12
+z2-statue 147 12
+z2-statue 157 12

@@ -5,7 +5,14 @@ import { decorDef } from '@content/sprites/decor';
 import { AssetRegistry } from '@engine/assets/registry';
 import { CHARACTERS } from '@game/characters/registry';
 import { applyLook, campaignLevel } from '@game/level/campaign';
-import { hasSolidFloors, isCastleTheme, isWaterTheme, type LevelData, type Theme } from '@game/level/schema';
+import {
+  hasSolidFloors,
+  isCastleTheme,
+  isSwimLevel,
+  isWaterTheme,
+  type LevelData,
+  type Theme,
+} from '@game/level/schema';
 import { enemyPalette } from '@game/entities/enemies/enemy';
 import { Decoration, decorPalette } from '@game/entities/objects/decoration';
 import { levelMusic } from '@game/scenes/level';
@@ -22,12 +29,25 @@ import { MARIO } from '@game/characters/mario';
  * water areas and the other areas keep their own. A look is skin only: every restyled level plays
  * exactly as the classic one (same tiles, zones, entities, start and clock, and every rule that
  * keys off the theme answers the same).
+ *
+ * 0.4.24: World 2 is Hyrule, Link's world: its other levels and areas take Zelda II looks too (the
+ * field for 2-2's way in and out and 2-3, a lake for 2-2, a palace for 2-4, a cave for 2-1's bonus
+ * room and the Moblin's cave; hyrule-looks.test.ts). 2-2's lake is no water theme: it swims by its
+ * map's `swim: true`.
  */
 
 const RESTYLES: Readonly<Record<string, { theme: Theme; music: string; hero: string }>> = {
   '2-1': { theme: 'zelda2', music: 'zelda2-field', hero: 'link' },
   '2-1-sky': { theme: 'zelda2', music: 'zelda2-field', hero: 'link' },
   '2-1-sky2': { theme: 'zelda2', music: 'zelda2-field', hero: 'link' },
+  // World 2 as Hyrule (0.4.24).
+  '2-1-bonus': { theme: 'zelda2-cave', music: 'zelda2-cave', hero: 'link' },
+  '2-1-cave': { theme: 'zelda2-cave', music: 'zelda2-cave', hero: 'link' },
+  '2-2-intro': { theme: 'zelda2', music: 'zelda2-field', hero: 'link' },
+  '2-2': { theme: 'zelda2-water', music: 'zelda2-water', hero: 'link' },
+  '2-2-exit': { theme: 'zelda2', music: 'zelda2-field', hero: 'link' },
+  '2-3': { theme: 'zelda2', music: 'zelda2-field', hero: 'link' },
+  '2-4': { theme: 'zelda2-palace', music: 'zelda2-palace', hero: 'link' },
   '3-1': { theme: 'megaman-stage', music: 'mm-stage-31', hero: 'megaman' },
   '3-1-sky': { theme: 'megaman-stage', music: 'mm-stage-31', hero: 'megaman' },
   '4-2': { theme: 'brinstar', music: 'brinstar', hero: 'samus' },
@@ -91,9 +111,10 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
     const [camp, classic] = both(id);
     const a = camp.theme;
     const b = classic.theme;
-    // no swimming; castle rules (Bowser, Hammer Bros' floors); the enemies' (and corpses') palette
+    // no look is a water theme, and a level swims in its look just as it did (2-2 by its
+    // `swim: true`); castle rules (Bowser, Hammer Bros' floors); the enemies' (and corpses') palette
     expect(isWaterTheme(a), 'isWaterTheme').toBe(false);
-    expect(isWaterTheme(a), 'isWaterTheme').toBe(isWaterTheme(b));
+    expect(isSwimLevel(camp), 'isSwimLevel').toBe(isSwimLevel(classic));
     expect(isCastleTheme(a), 'isCastleTheme').toBe(isCastleTheme(b));
     expect(hasSolidFloors(a), 'hasSolidFloors').toBe(hasSolidFloors(b));
     expect(enemyPalette(a), 'enemyPalette').toBe(enemyPalette(b));
@@ -142,8 +163,9 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
 
   it('bonus rooms, water areas and the other areas of these levels keep their own looks', () => {
     const own = [
-      '2-1-bonus',
-      '2-1-cave',
+      // (World 2's bonus room and the Moblin's cave take Hyrule's cave look since 0.4.24; its Top
+      // Secret Area keeps its own)
+      '2-top-secret',
       '3-1-bonus',
       '3-1-station',
       '4-2-intro',

@@ -56,7 +56,13 @@ export type Theme =
   | 'megaman-stage'
   | 'brinstar'
   // Tourian (Samus's mini game, ZEBES ESCAPE): green machine panels and tubes in the dark.
-  | 'tourian';
+  | 'tourian'
+  // World 2 as Hyrule (0.4.24, campaign looks): 2-2 as a lake over a sunken palace (it swims by its
+  // map's `swim: true`; no restyle is a water theme), 2-4 as a Zelda II palace (a castle still) and
+  // 2-1's bonus room and the Moblin's cave as a Hyrule cave (the underground still).
+  | 'zelda2-water'
+  | 'zelda2-palace'
+  | 'zelda2-cave';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -94,6 +100,9 @@ export const THEMES: readonly Theme[] = [
   'megaman-stage',
   'brinstar',
   'tourian',
+  'zelda2-water',
+  'zelda2-palace',
+  'zelda2-cave',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -115,18 +124,24 @@ export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =
 
 /**
  * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
- * 5-4's campaign look (Simon's hall). Castle rules that key off the theme ask this, never the name.
+ * the campaign looks of 5-4 (Simon's hall) and 2-4 (Link's palace, 0.4.24). Castle rules that key
+ * off the theme ask this, never the name.
  */
 export const isCastleTheme = (theme: Theme): boolean =>
-  theme === 'castle' || theme === 'castle-overworld' || theme === 'castle-water' || theme === 'castlevania';
+  theme === 'castle' ||
+  theme === 'castle-overworld' ||
+  theme === 'castle-water' ||
+  theme === 'castlevania' ||
+  theme === 'zelda2-palace';
 
 /**
  * The original's `cannotPassThroughGround`: underground and castle areas, where a Hammer Bro's
  * jumps go only straight up and down (no hopping through the floors), and 4-2's campaign look
- * (Brinstar), which is 4-2's underground still. Samus's cavern is not one.
+ * (Brinstar), which is 4-2's underground still, and the Hyrule cave (2-1's bonus room and the
+ * Moblin's cave, 0.4.24). Samus's cavern is not one.
  */
 export const hasSolidFloors = (theme: Theme): boolean =>
-  theme === 'underground' || theme === 'brinstar' || isCastleTheme(theme);
+  theme === 'underground' || theme === 'brinstar' || theme === 'zelda2-cave' || isCastleTheme(theme);
 
 /** The music an area of this theme plays when its map names none. */
 export function themeMusic(theme: Theme): string {
@@ -150,6 +165,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'megaman-stage') return 'mm-stage-31';
   if (theme === 'brinstar') return 'brinstar';
   if (theme === 'tourian') return 'tourian';
+  // World 2 as Hyrule (0.4.24): each look has its own tune of the same name.
+  if (theme === 'zelda2-water' || theme === 'zelda2-palace' || theme === 'zelda2-cave') return theme;
   return 'overworld';
 }
 

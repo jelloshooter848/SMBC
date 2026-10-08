@@ -6,6 +6,7 @@ import { contraSongs } from './contra';
 import { sophiaSongs } from './sophia';
 import { heroJingles } from './hero-jingles';
 import { lookSongs } from './looks';
+import { zelda2Songs } from './zelda2';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1209,4 +1210,6 @@ export const songs: Song[] = [
   ...heroJingles,
   // The campaign looks of 2-1, 3-1 and 4-2.
   ...lookSongs,
+  // World 2 as Hyrule (0.4.24): 2-2's lake, 2-4's palace, 2-1's caves.
+  ...zelda2Songs,
 ];

@@ -432,6 +432,13 @@ const decorFrames: Record<string, Size> = {
   'mm-skyline': [64, 32],
   'brinstar-brush': [32, 16],
   'brinstar-column': [16, 48],
+  // World 2 as Hyrule (0.4.24).
+  'z2-lakeweed': [16, 32],
+  'z2-rocks': [32, 16],
+  'z2-stalactite': [16, 16],
+  'z2-palace-wall': [32, 32],
+  'z2-curtain': [32, 48],
+  'z2-statue': [16, 32],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
@@ -491,6 +498,10 @@ describe('tile sprites', () => {
         'tiles-ninja-city',
         // Tourian, Samus's mini game (0.4.16)
         'tiles-tourian',
+        // World 2 as Hyrule (0.4.24)
+        'tiles-zelda2-water',
+        'tiles-zelda2-palace',
+        'tiles-zelda2-cave',
       ].sort(),
     );
     expect(tilePalettes[tilesDef.palette]).toBeDefined();
@@ -570,6 +581,10 @@ describe('decor sprites', () => {
         'decor-zelda2',
         'decor-megaman-stage',
         'decor-brinstar',
+        // World 2 as Hyrule (0.4.24)
+        'decor-zelda2-water',
+        'decor-zelda2-palace',
+        'decor-zelda2-cave',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

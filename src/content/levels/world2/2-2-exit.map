@@ -10,6 +10,11 @@ startMode: pipe-exit
 camera: scroll
 parent: 2-2
 
+;; Campaign play only (0.4.24): back on Hyrule's field (2-1's Zelda II look). Elsewhere it looks
+;; as it always did.
+campaignTheme: zelda2
+campaignMusic: zelda2-field
+
 [tiles]
 ;; 0                16               32
 ................ ................ ..........
@@ -43,3 +48,14 @@ bush-3 27 12
 hill-small 32 12
 cloud-1 35 2
 bush-2 39 12
+
+[campaign-decor]
+;; The field: forest trees, flat clouds and standing stones past the castle.
+cloud-2 4 2
+tree-big 17 12
+tree-small 18 12
+cloud-1 24 3
+henge 32 12
+cloud-1 35 2
+tree-small 39 12
+tree-big 40 12

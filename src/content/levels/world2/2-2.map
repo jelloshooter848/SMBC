@@ -9,6 +9,15 @@ start: 2,1
 startMode: fall
 camera: scroll
 
+;; Campaign play only (0.4.24): Hyrule's lake over a sunken palace (`zelda2-water`): mossy
+;; cobbles, sunken masonry, a dark lake under the field's sky, weed and the palace's ruins on the
+;; lakebed ([campaign-decor]). No restyle is a water theme: the lake swims by `swim: true` (which
+;; changes nothing in the classic water theme, which always swims). Elsewhere (level select,
+;; ?level=2-2) it looks as it always did.
+swim: true
+campaignTheme: zelda2-water
+campaignMusic: zelda2-water
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................
@@ -55,3 +64,27 @@ cheep-red 185 7 dx=8
 [zones]
 checkpoint 82 12
 pipe 189 8 right -> 2-2-exit 3 10 exit=up
+
+[campaign-decor]
+;; Lake weed and the sunken palace (the sky ruins' pillars, statue and temple, drawn in the
+;; lake's dim stone) on open stretches of the lakebed, clear of the gaps.
+z2-lakeweed 5 12
+z2-lakeweed 7 12
+z2-lakeweed 27 12
+z2-lakeweed 40 12
+z2-lakeweed 52 12
+z2-lakeweed 60 12
+z2-lakeweed 75 12
+z2-lakeweed 85 12
+z2-lakeweed 99 12
+z2-lakeweed 115 12
+z2-lakeweed 127 12
+z2-lakeweed 150 12
+z2-lakeweed 170 12
+ruin-temple 24 12
+ruin-pillar 37 12
+ruin-pillar-broken 58 12
+ruin-statue 108 12
+ruin-temple 123 12
+ruin-pillar 152 12
+ruin-statue 168 12

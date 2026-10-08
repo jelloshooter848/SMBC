@@ -69,6 +69,10 @@ const SONG_IDS = [
   'ng-city',
   // Tourian, before the escape (ZEBES ESCAPE, 0.4.16).
   'tourian',
+  // World 2 as Hyrule (0.4.24): 2-2's lake, 2-4's palace, 2-1's caves.
+  'zelda2-water',
+  'zelda2-palace',
+  'zelda2-cave',
 ];
 
 const SFX_IDS = [

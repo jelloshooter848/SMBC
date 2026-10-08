@@ -102,10 +102,15 @@ describe('World 2 as Hyrule: every level in a Zelda II look, campaign only', () 
   it.each(IDS)('%s: every tile it draws has a frame in its look', (id) => {
     const { theme } = WORLD2[id]!;
     for (const name of framesUsed(getLevel(id)))
-      expect(frames[`${name}@${theme}`] ?? (theme === 'zelda2' ? undefined : frames[name]), `${id}: ${name}`).toBeDefined();
+      expect(
+        frames[`${name}@${theme}`] ?? (theme === 'zelda2' ? undefined : frames[name]),
+        `${id}: ${name}`,
+      ).toBeDefined();
     // the new looks redraw every solid block of theirs (none falls back to SMB's art)
     if (theme !== 'zelda2')
-      for (const name of framesUsed(getLevel(id)).filter((n) => /^(ground|brick|hard|used|castle-brick|bridge|chain)$/.test(n)))
+      for (const name of framesUsed(getLevel(id)).filter((n) =>
+        /^(ground|brick|hard|used|castle-brick|bridge|chain)$/.test(n),
+      ))
         expect(frames[`${name}@${theme}`], `${id}: ${name}@${theme}`).toBeDefined();
   });
 
@@ -125,7 +130,8 @@ describe("2-2's lake (zelda2-water)", () => {
     expect(isSwimLevel(camp())).toBe(true);
     expect(isSwimLevel(getLevel('2-2'))).toBe(true);
     // the dry ways in and out never swim
-    for (const id of ['2-2-intro', '2-2-exit']) expect(isSwimLevel(campaignLevel(getLevel(id))), id).toBe(false);
+    for (const id of ['2-2-intro', '2-2-exit'])
+      expect(isSwimLevel(campaignLevel(getLevel(id))), id).toBe(false);
   });
 
   it.each(CHARACTERS.map((c) => [c.id, c] as const))('%s drops into the lake and swims', (_, hero) => {
@@ -140,7 +146,7 @@ describe("2-2's lake (zelda2-water)", () => {
     expect(Number.isFinite(r.world.waterTop)).toBe(true);
   });
 
-  it('a lake under a Hyrule sky: the deep water fills from the waves down in the waves\' own blue', () => {
+  it("a lake under a Hyrule sky: the deep water fills from the waves down in the waves' own blue", () => {
     const tiles = PALETTES.default['tiles-zelda2-water'] as string[];
     expect(tiles).toHaveLength(12);
     // the wave tiles' body (slot 9) is the flooded water, so the surface joins the depths
@@ -227,9 +233,10 @@ describe('the new looks', () => {
       const camp = campaignLevel(getLevel(id));
       const sheet = assets.sheet('decor', decorPalette(camp.theme));
       for (const d of camp.decor)
-        expect(sheet.frames.has(`${d.kind}@${camp.theme}`) || sheet.frames.has(d.kind), `${id}: ${d.kind}`).toBe(
-          true,
-        );
+        expect(
+          sheet.frames.has(`${d.kind}@${camp.theme}`) || sheet.frames.has(d.kind),
+          `${id}: ${d.kind}`,
+        ).toBe(true);
     }
   });
 

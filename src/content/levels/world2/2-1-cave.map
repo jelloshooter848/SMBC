@@ -15,6 +15,11 @@ parent: 2-1
 ;; between two fires as in a Zelda cave, is surprised to be found and tells his secret: the level
 ;; ends with 2-1 cleared and World 2's Top Secret Area found (docs/WORLD_MAP.md).
 
+;; Campaign play only (0.4.24): the Moblin's cave in the Hyrule cave look (2-1-bonus's), its
+;; stalactites hanging from the roof. Elsewhere it looks as it always did.
+campaignTheme: zelda2-cave
+campaignMusic: zelda2-cave
+
 [tiles]
 ;; 0
 ................
@@ -37,3 +42,9 @@ B..............B
 cave-fire 7 12
 moblin 9 12 secret=bonus-2 next=2-2-intro
 cave-fire 11 12
+
+[campaign-decor]
+z2-stalactite 3 4
+z2-stalactite 6 4
+z2-stalactite 12 4
+z2-rocks 13 12

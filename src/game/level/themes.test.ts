@@ -71,6 +71,10 @@ describe('themes', () => {
       'megaman-stage',
       'brinstar',
       'tourian',
+      // World 2 as Hyrule (0.4.24): 2-2's lake, 2-4's palace, 2-1's caves
+      'zelda2-water',
+      'zelda2-palace',
+      'zelda2-cave',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -127,6 +131,9 @@ describe('themes', () => {
       'megaman-stage': 'mm-stage-31',
       brinstar: 'brinstar',
       tourian: 'tourian',
+      'zelda2-water': 'zelda2-water',
+      'zelda2-palace': 'zelda2-palace',
+      'zelda2-cave': 'zelda2-cave',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.
