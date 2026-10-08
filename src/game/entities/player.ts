@@ -326,8 +326,12 @@ export class Player {
     const cap = b.onGround && sw.floorWalk !== undefined ? sw.floorWalk : p.maxWalk;
     if (b.vx > cap) b.vx = cap;
     if (b.vx < -cap) b.vx = -cap;
+    // A seabed walker jumps off the floor only; over water with no floor below at all (a pit
+    // under the sea, or World 9-2's bottomless stretch) they may push off again once sinking, so
+    // no water level is left without a way across.
+    const seabedJump = b.onGround || (b.vy >= 0 && this.overVoid(map));
     const canJump =
-      this.sliding === 0 && (this.def.behaviour.canJump?.(this) ?? true) && (!seabed || b.onGround);
+      this.sliding === 0 && (this.def.behaviour.canJump?.(this) ?? true) && (!seabed || seabedJump);
     if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
       input.consumeJumpBuffer();
       if (seabed && p.slide && input.held('down')) this.startSlide();
@@ -364,6 +368,18 @@ export class Player {
     this.updateAnim(dir);
     // A seabed walker keeps their own jump and walk poses; a swimmer strokes in a swim pose.
     if (!b.onGround && !seabed) this.anim = 'swim';
+  }
+
+  /** Nothing to stand on anywhere under the body, down to the bottom of the map. */
+  private overVoid(map: TileMap): boolean {
+    const b = this.body;
+    const from = tileAt(b.y + b.h);
+    for (const tx of [tileAt(b.x), tileAt(b.x + b.w - 1)])
+      for (let ty = from; ty < map.height; ty++) {
+        const c = map.collisionAt(tx, ty);
+        if (c === 'solid' || c === 'top') return false;
+      }
+    return true;
   }
 
   /**

@@ -22,6 +22,11 @@ const billFrames: Record<string, Size> = {
   'spin-3': [16, 32],
   hurt: [16, 32],
   die: [16, 32],
+  'swim-0': [16, 32],
+  'swim-1': [16, 32],
+  'swim-shoot': [16, 32],
+  'swim-aim-up': [16, 32],
+  'swim-aim-diag-up': [16, 32],
 };
 
 const grounded = [

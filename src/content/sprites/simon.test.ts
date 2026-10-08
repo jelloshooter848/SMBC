@@ -24,6 +24,8 @@ const simonFrames: Record<string, Size> = {
   'crouch-whip-leather': [48, 32],
   'crouch-whip-chain': [48, 32],
   'crouch-whip-star': [48, 32],
+  'swim-0': [16, 32],
+  'swim-1': [16, 32],
 };
 
 const grounded = [

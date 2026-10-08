@@ -24,6 +24,8 @@ const ryuFrames: Record<string, Size> = {
   'spin-1': [16, 32],
   'spin-2': [16, 32],
   'spin-3': [16, 32],
+  'swim-0': [16, 32],
+  'swim-1': [16, 32],
 };
 
 const grounded = [

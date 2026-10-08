@@ -96,7 +96,8 @@ const TABLE: [CharacterDef, string, Setup, string][] = [
   [SAMUS, 'missiles selected', { kit: { missiles: 5, tool: 1 } }, 'JUMP MISSILE MISSILE MENU WEAPON'],
   [SAMUS, 'missiles selected, none left', { kit: { tool: 1 } }, 'JUMP - - MENU WEAPON'],
   [SAMUS, 'morph ball', { kit: { ball: 1, missiles: 5 } }, '- BOMB BOMB MENU WEAPON'],
-  [SAMUS, 'swimming', { water: true }, 'SWIM SHOOT - MENU WEAPON'],
+  // 0.4.25: she walks the seabed, so JUMP still jumps under water (no stroke).
+  [SAMUS, 'under water', { water: true }, 'JUMP SHOOT - MENU WEAPON'],
   [SIMON, 'whip only', {}, 'JUMP WHIP - MENU -'],
   [SIMON, 'dagger only', { kit: { subs: 1 } }, 'JUMP WHIP DAGGER MENU -'],
   [SIMON, 'axe', { kit: { ...SIMON_ALL, tool: 1 } }, 'JUMP WHIP AXE MENU TOOLS'],
