@@ -39,6 +39,9 @@ const INTRO_Y = 112;
 
 export const INTRO_LINES = ['LINK... WAKE UP...', 'THE SPELL HOLDS YOU HERE'] as const;
 
+/** The shrine chest's prize (dungeon.ts): the sword beam at full hearts (TopDownWorld.grant). */
+export const WHITE_SWORD = 'white-sword';
+
 export type KeepPhase = 'play' | 'dying' | 'won' | 'over';
 
 export interface KeepOptions {
@@ -47,7 +50,7 @@ export interface KeepOptions {
 
 /**
  * Link's mini game, "Escape the Shadow Keep": a small Zelda-style dungeon (dungeon.ts) on the
- * top-down kit (src/game/topdown). Link walks it room by room with sword and shield, solves the
+ * top-down kit (src/game/topdown). Link walks it room by room with his sword, solves the
  * block and switch rooms, takes the key to the locked door, beats the keeper (keeper.ts) and
  * walks into the shining exit: pass. Losing every heart: fail, after the death spin. The menu
  * offers Continue / Give up (quit). The world has its own hearts and keys, so the campaign's
@@ -69,8 +72,9 @@ export class ShadowKeepScene implements Scene {
     private readonly done: (result: MiniGameResult) => void,
     opts: KeepOptions = {},
   ) {
-    // Link starts with only his sword; the shield is in the secret shrine. The no-damage assist
-    // (dev mode) is read each time he is hurt, so turning it on mid-round counts at once.
+    // Link starts with only his sword, no beam: the white sword (the beam at full hearts) is in
+    // the secret shrine (owner note 22). The no-damage assist (dev mode) is read each time he is
+    // hurt, so turning it on mid-round counts at once.
     this.world = new TopDownWorld(keepDungeon(), {
       seed: opts.seed ?? KEEP_SEED,
       spawners: {
@@ -80,8 +84,7 @@ export class ShadowKeepScene implements Scene {
           w.state().taken.has(`${s.col},${s.row}`) ? null : new Pickup(s.x - TILE / 2, s.y, 'triforce'),
       },
       items: DEFAULT_ITEMS,
-      shield: false,
-      swordBeam: true,
+      swordBeam: false,
       noDamage: () => game.ctx.assist.invulnerable,
     });
     this.world.events.length = 0; // the first room's arrival is announced in enter()
@@ -132,9 +135,9 @@ export class ShadowKeepScene implements Scene {
         said += ` ${abilityHint(game, 'ITEM', 'select')} switches items.`;
       }
       if (what === 'bomb') said += ' Bombs can open cracked walls.';
-    } else if (what === 'shield') {
-      lines = ['YOU GOT THE SHIELD!', 'FACE ROCKS AND SPELLS TO BLOCK', 'MONSTERS HURT YOU LESS'];
-      said = 'You got the magic shield! Face rocks and spells to block them, and monsters hurt you less.';
+    } else if (what === WHITE_SWORD) {
+      lines = ['YOU GOT THE WHITE SWORD!', 'AT FULL HEARTS THE SWORD', 'SHOOTS A BEAM'];
+      said = 'You got the white sword! At full hearts the sword shoots a beam.';
     } else return;
     const y = this.world.hero.y > 88 ? HUD_H + 16 : HUD_H + 120;
     this.banner = { lines, until: this.t + ITEM_BANNER_FRAMES, y };

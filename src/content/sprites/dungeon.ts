@@ -808,22 +808,23 @@ const SWORD_ICON = [
   '...00...',
 ];
 
-// Link's shield, lying in the secret room: a blue heater shield with a gold rim and cross.
-const SHIELD_PICKUP = [
-  '................',
-  '.00000000000000.',
-  '.0ffffffffffff0.',
-  '.0fjhhhddhhhhd0.',
-  '.0fjhhhddhhhhd0.',
-  '.0fhhhhddhhhid0.',
-  '.0fddddddddddd0.',
-  '.0fhhhhddhhhid0.',
-  '.0fhhhhddhhhid0.',
-  '..0fhhhddhhid0..',
-  '..0fhhhddhiid0..',
-  '...0fhhddhid0...',
-  '....0fhddid0....',
-  '.....0fddd0.....',
+// The white sword, waiting in the secret shrine: a long white blade with a pale glow along its
+// edge, a wide gold guard and a dark grip (the shrine's prize, 0.4.22: the sword beam).
+const WHITE_SWORD_ICON = [
+  '.......00.......',
+  '......0660......',
+  '.....056650.....',
+  '.....056650.....',
+  '.....056650.....',
+  '.....056650.....',
+  '.....056650.....',
+  '.....056650.....',
+  '.....056650.....',
+  '...0000660000...',
+  '..0ddddddddddd0.',
+  '...0000bb0000...',
+  '......0bb0......',
+  '......0bb0......',
   '......0dd0......',
   '.......00.......',
 ];
@@ -923,7 +924,7 @@ export const dungeonDef: SpriteDef = {
     'wall-cracked': WALL_CRACKED,
     'wall-hole': WALL_HOLE,
     'chest-open': CHEST_OPEN,
-    'shield-pickup': SHIELD_PICKUP,
+    'white-sword-icon': WHITE_SWORD_ICON,
     'heart-container': HEART_CONTAINER,
     'bomb-pickup': BOMB_PICKUP,
     'boomerang-icon': BOOMERANG_ICON,
@@ -945,8 +946,8 @@ export const dungeonDef: SpriteDef = {
 /* Overhead Link (16x16)                                                                        */
 /* ------------------------------------------------------------------------------------------ */
 
-// He carries the shield on his right arm and the sword in his left hand, so facing down the
-// shield is on the viewer's left and the sword hand on the right (mirrored facing up).
+// He holds the sword in his left hand, so facing down the sword hand is on the viewer's right
+// (mirrored facing up). No shield in the Shadow Keep (0.4.22): one set of poses.
 
 // Facing down: rounded cap, fringe, pointed ears, two eyes.
 const HEAD_DOWN = [
@@ -969,13 +970,9 @@ const BODY_DOWN = [
 ];
 const LEGS_A = ['...0550..0000...', '...0000.........'];
 const LEGS_B = ['...0000..0550...', '.........0000...'];
-// Shield held across the front: blue face, gold cross.
-const SHIELD_FRONT = ['.000.', '0aaa0', '0a9a0', '09990', '0a9a0', '0aab0', '.000.'];
+const linkDown = (legs: readonly string[]) => [...HEAD_DOWN, ...BODY_DOWN, ...legs];
 
-const linkDownNs = (legs: readonly string[]) => [...HEAD_DOWN, ...BODY_DOWN, ...legs];
-const linkDown = (legs: readonly string[]) => paste(linkDownNs(legs), SHIELD_FRONT, 0, 9);
-
-// Facing up: the back of the cap with its tail hanging down, hair, the shield's rim on the arm.
+// Facing up: the back of the cap with its tail hanging down, hair.
 const HEAD_UP = [
   '......0000......',
   '....00111100....',
@@ -995,11 +992,9 @@ const BODY_UP = [
   '...0211111120...',
 ];
 const CAP_TAIL = ['0120', '0120', '.00.'];
-const SHIELD_EDGE = ['000', '0a0', '0b0', '0a0', '0b0', '000'];
-const upBodyNs = (legs: readonly string[]) => paste([...HEAD_UP, ...BODY_UP, ...legs], CAP_TAIL, 8, 7);
-const upBody = (legs: readonly string[]) => paste(upBodyNs(legs), SHIELD_EDGE, 13, 9);
+const upBody = (legs: readonly string[]) => paste([...HEAD_UP, ...BODY_UP, ...legs], CAP_TAIL, 8, 7);
 
-// Facing right: cap peak and tail streaming back, pointed ear, eye, nose; shield held in front.
+// Facing right: cap peak and tail streaming back, pointed ear, eye, nose.
 const HEAD_SIDE = [
   '......00000.....',
   '....00111110....',
@@ -1020,13 +1015,11 @@ const BODY_SIDE = [
 ];
 const LEGS_SIDE_A = ['..0550..0550....', '..0000..0000....'];
 const LEGS_SIDE_B = ['....0550550.....', '....0000000.....'];
-const SHIELD_SIDE = ['000.', '0aa0', '0a90', '0990', '0a90', '0aa0', '0bb0', '000.'];
-const linkSideNs = (legs: readonly string[]) => [...HEAD_SIDE, ...BODY_SIDE, ...legs];
-const linkSide = (legs: readonly string[]) => paste(linkSideNs(legs), SHIELD_SIDE, 12, 8);
+const linkSide = (legs: readonly string[]) => [...HEAD_SIDE, ...BODY_SIDE, ...legs];
 
 // Attacks: the sword arm thrust to the tile edge, where the blade sprite's grip overlaps the hand
 // (see LINK_SWORD_GRIP below).
-const ATTACK_DOWN_NS = [
+const ATTACK_DOWN = [
   ...HEAD_DOWN,
   '..022111111220..',
   '.02211111111220.',
@@ -1036,26 +1029,14 @@ const ATTACK_DOWN_NS = [
   '...0550..0330...',
   '...0000...00....',
 ];
-const ATTACK_DOWN = paste(ATTACK_DOWN_NS, SHIELD_FRONT, 0, 9);
 const UP_ARM_RAISED = ['.00.', '0330', '0330', '0110', '0110', '0110', '0120', '0120', '0220'];
-const ATTACK_UP_NS = paste(
+const ATTACK_UP = paste(
   paste(['.'.repeat(16), ...HEAD_UP, ...BODY_UP, '...0000..0000...'], CAP_TAIL, 8, 8),
   UP_ARM_RAISED,
   2,
   0,
 );
-const ATTACK_UP = paste(
-  paste(
-    paste(['.'.repeat(16), ...HEAD_UP, ...BODY_UP, '...0000..0000...'], CAP_TAIL, 8, 8),
-    SHIELD_EDGE,
-    13,
-    10,
-  ),
-  UP_ARM_RAISED,
-  2,
-  0,
-);
-const ATTACK_SIDE_NS = [
+const ATTACK_SIDE = [
   ...HEAD_SIDE,
   '...0221111120...',
   '...0211111110000',
@@ -1065,13 +1046,10 @@ const ATTACK_SIDE_NS = [
   '..0550....0550..',
   '..0000....0000..',
 ];
-// Facing right the shield hangs on the far arm, its rim peeking out behind him.
-const SHIELD_BACK = ['000', '0a0', '090', '0a0', '000'];
-const ATTACK_SIDE = paste(ATTACK_SIDE_NS, SHIELD_BACK, 1, 9);
 
 // Throwing the boomerang or setting down a bomb: the free hand flung out, open, short of the
 // sword's reach (no grip to hold), the other arm as in the walk.
-const THROW_DOWN_NS = [
+const THROW_DOWN = [
   ...HEAD_DOWN,
   '..022111111220..',
   '.02211111111220.',
@@ -1081,11 +1059,9 @@ const THROW_DOWN_NS = [
   '...0550...00....',
   '...0000.........',
 ];
-const THROW_DOWN = paste(THROW_DOWN_NS, SHIELD_FRONT, 0, 9);
 const UP_ARM_THROW = ['.00.', '0330', '0330', '0110', '0120', '0220'];
-const THROW_UP_NS = paste(paste([...HEAD_UP, ...BODY_UP, ...LEGS_A], CAP_TAIL, 8, 7), UP_ARM_THROW, 2, 3);
-const THROW_UP = paste(THROW_UP_NS, SHIELD_EDGE, 13, 9);
-const THROW_SIDE_NS = [
+const THROW_UP = paste(paste([...HEAD_UP, ...BODY_UP, ...LEGS_A], CAP_TAIL, 8, 7), UP_ARM_THROW, 2, 3);
+const THROW_SIDE = [
   ...HEAD_SIDE,
   '...0221111120...',
   '...021111111000.',
@@ -1095,12 +1071,11 @@ const THROW_SIDE_NS = [
   '..0550....0550..',
   '..0000....0000..',
 ];
-const THROW_SIDE = paste(THROW_SIDE_NS, SHIELD_BACK, 1, 9);
 
 // Holding a prize up (the item-get pose): facing the viewer, both arms straight up beside the
 // head, hands open at the top where the prize rests.
 const ARM_UP = ['.0.', '030', '030', '010', '010', '010', '010', '020', '020', '020', '0.0'];
-const HOLD_NS = paste(
+const HOLD = paste(
   paste(
     [
       ...HEAD_DOWN,
@@ -1120,8 +1095,6 @@ const HOLD_NS = paste(
   12,
   0,
 );
-// With the shield: slung on his back, its rim showing at his side.
-const HOLD = paste(HOLD_NS, ['00', 'a0', 'b0', 'a0', '00'], 14, 10);
 
 // Sword blade pointing up: white edge, grey spine, gold guard, brown grip, gold pommel.
 const SWORD_V = [
@@ -1279,24 +1252,10 @@ export const linkTdDef: SpriteDef = {
     'blast-0': BLAST_0,
     'blast-1': BLAST_1,
     'blast-2': BLAST_2,
-    // Before the shield is found: the same poses with the shield left off.
-    'down-0-ns': linkDownNs(LEGS_A),
-    'down-1-ns': linkDownNs(LEGS_B),
-    'up-0-ns': upBodyNs(LEGS_B),
-    'up-1-ns': upBodyNs(LEGS_A),
-    'side-0-ns': linkSideNs(LEGS_SIDE_A),
-    'side-1-ns': linkSideNs(LEGS_SIDE_B),
-    'attack-down-ns': ATTACK_DOWN_NS,
-    'attack-up-ns': ATTACK_UP_NS,
-    'attack-side-ns': ATTACK_SIDE_NS,
     'throw-down': THROW_DOWN,
     'throw-up': THROW_UP,
     'throw-side': THROW_SIDE,
-    'throw-down-ns': THROW_DOWN_NS,
-    'throw-up-ns': THROW_UP_NS,
-    'throw-side-ns': THROW_SIDE_NS,
     hold: HOLD,
-    'hold-ns': HOLD_NS,
   },
 };
 

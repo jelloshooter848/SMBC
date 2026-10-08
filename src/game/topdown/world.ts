@@ -144,11 +144,12 @@ export interface TdWorldOptions {
   maxHp?: number;
   /** The items there are (the kit's boomerang and bombs by default). */
   items?: Readonly<Record<string, TdItem>>;
-  /** Does the hero start with a shield (default yes)? */
-  shield?: boolean;
   /** Asked whenever the hero is hurt: true keeps his hearts (a no-damage assist). */
   noDamage?: () => boolean;
-  /** Does a stab at full hearts also throw a sword beam (beam.ts; default no)? */
+  /**
+   * Does a stab at full hearts also throw a sword beam (beam.ts; default no)? Picking up a
+   * `white-sword` turns it on.
+   */
   swordBeam?: boolean;
   /** Builds the hero at the start (a game's own TdHero subclass); the kit's sword hero by default. */
   hero?: (x: number, y: number, maxHp?: number) => TdHero;
@@ -162,7 +163,7 @@ export interface TdWorldOptions {
  *   1. a room slide in progress only advances the slide;
  *   2. the hero (input, sword, walking, pushing, keys on locked doors);
  *   3. every entity (enemies, shots, blocks, switches);
- *   4. contacts: the sword, enemy touch, shots (shield), pickups;
+ *   4. contacts: the sword, enemy touch, shots, pickups;
  *   5. the room: conditions met, shutters, hidden pickups, sealing;
  *   6. leaving: exit tiles, a doorway edge starts a slide;
  *   7. dead entities are dropped.
@@ -177,8 +178,8 @@ export class TopDownWorld {
   readonly inv: Inventory;
   /** True keeps the hero's hearts when he is hurt (asked each time, so it can change mid-run). */
   readonly noDamage: () => boolean;
-  /** A stab at full hearts also throws a sword beam (TdHero.beamReady). */
-  readonly swordBeam: boolean;
+  /** A stab at full hearts also throws a sword beam (TdHero.beamReady); the white sword sets it. */
+  swordBeam: boolean;
   room: Room;
   entities: TdEntity[] = [];
   readonly events: TdEvent[] = [];
@@ -216,7 +217,6 @@ export class TopDownWorld {
     const start = dungeon.rooms.get(dungeon.startRoom) as Room;
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
     this.hero = opts.hero ? opts.hero(at.x, at.y, opts.maxHp) : new TdHero(at.x, at.y, opts.maxHp);
-    this.hero.shield = opts.shield ?? true;
     this.room = start;
     this.enterRoom(start);
   }
@@ -521,11 +521,10 @@ export class TopDownWorld {
       }
       if (e.dead) continue;
       if (e instanceof TdEnemy && e.contact > 0 && !bladed && boxesOverlap(hb, e.hurtbox()))
-        hero.hurt(this, hero.contactDamage(e.contact), dirToward(e.hurtbox(), hb));
+        hero.hurt(this, e.contact, dirToward(e.hurtbox(), hb));
       else if (e instanceof Projectile && e.hostile && boxesOverlap(hb, e.hurtbox())) {
         e.dead = true;
-        if (e.blockable && hero.shieldBlocks(e.heading())) this.emit({ type: 'block' });
-        else hero.hurt(this, e.damage, e.dir ?? dirToward(e.hurtbox(), hb));
+        hero.hurt(this, e.damage, e.dir ?? dirToward(e.hurtbox(), hb));
       } else if (e instanceof Pickup && !e.hidden && boxesOverlap(hb, e.hurtbox())) this.collect(e);
     }
   }
@@ -540,7 +539,7 @@ export class TopDownWorld {
 
   /**
    * Gives the hero something (see PickupKind): a heart, a key, a heart container (one more
-   * heart, all refilled), a refill, the shield, the dungeon's map or compass (or a Triforce),
+   * heart, all refilled), a refill, the white sword (the beam), the dungeon's map or compass (or a Triforce),
    * an item's ammo, or an item. Emits 'pickup'.
    */
   grant(what: string): void {
@@ -559,8 +558,8 @@ export class TopDownWorld {
       case 'refill':
         hero.heal(hero.maxHp);
         break;
-      case 'shield':
-        hero.shield = true;
+      case 'white-sword':
+        this.swordBeam = true;
         break;
       case 'map':
       case 'compass':

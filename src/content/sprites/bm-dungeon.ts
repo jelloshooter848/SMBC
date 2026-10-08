@@ -326,7 +326,7 @@ const onPad = (shape: (c: Canvas) => void): string[] => {
   return c.outline().rows();
 };
 
-// Armour plating (the shield's slot), a big cell (a life more), and a refill of four cells.
+// Armour plating (in the white sword's slot), a big cell (a life more), and a refill of four cells.
 const ARMOUR = onPad((c) => {
   c.poly(
     [
@@ -390,7 +390,7 @@ export const bmDungeonDef: SpriteDef = {
     'refill-icon': REFILL,
     key: KEY,
     'sword-icon': GUN_ICON,
-    'shield-pickup': ARMOUR,
+    'white-sword-icon': ARMOUR,
     'bomb-icon': grenade('0'),
     'bomb-pickup': grenade('9'),
     'boomerang-icon': HOMING_ICON,

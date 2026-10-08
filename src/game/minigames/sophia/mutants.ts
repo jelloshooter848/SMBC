@@ -33,11 +33,10 @@ export class Boom extends TdEntity {
 /** The orbs' frames (shared with the boss's small shots). */
 export const ORB_FRAMES = ['boss-shot-0', 'boss-shot-1'] as const;
 
-/** A mutant's orb: a slow shot (no shield to stop it). */
+/** A mutant's orb: a slow shot. */
 export class Orb extends Projectile {
   constructor(x: number, y: number, vx: number, vy: number, frames: readonly string[] = ORB_FRAMES) {
     super(x, y, vx, vy, null);
-    this.blockable = false;
     this.frames = frames;
     this.color = LOOK.orb[1];
   }

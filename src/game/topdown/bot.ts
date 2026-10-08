@@ -201,7 +201,7 @@ export class TopDownBot {
     const hero = world.hero;
     if (hero.attacking) return [];
     const foes = world.enemies();
-    // Step out of the way of a shot the shield won't stop.
+    // Step out of the way of a shot.
     const danger = (x: number, y: number) => this.inLine(world, x, y);
     if (danger(hero.x, hero.y)) {
       const out = this.walkTo(
@@ -267,12 +267,9 @@ export class TopDownBot {
 
   /** Would a hostile shot hit a hero standing at (x, y) within the next half second? */
   private inLine(world: TopDownWorld, x: number, y: number): boolean {
-    const hero = world.hero;
     const hb = { x: x + 1, y: y + 1, w: 14, h: 14 };
     return world.entities.some((e) => {
       if (!(e instanceof Projectile) || !e.hostile || e.dead) return false;
-      // A shot the shield would stop doesn't count when standing still facing it.
-      if (e.blockable && x === hero.x && y === hero.y && hero.shieldBlocks(e.heading())) return false;
       for (let t = 0; t <= 30; t += 2) {
         const b = e.hurtbox();
         if (boxesOverlap({ x: b.x + e.vx * t, y: b.y + e.vy * t, w: b.w, h: b.h }, hb)) return true;

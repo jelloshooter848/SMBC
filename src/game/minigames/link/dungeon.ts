@@ -35,8 +35,8 @@ export const KEEP_WALL = 2;
  * with only his sword. The bats guard the first key; the map lies in the hall past the locked
  * door, the boomerang in the cellar's chest beside it, the compass in the east wing past the
  * kill-all room. The push block opens the way to the knights and the second key; the armory's
- * chest holds the bombs beside the cracked wall, and the shield waits in the secret shrine behind
- * it. Past the second locked door the rock-spitters' switch opens the keeper's lair; the keeper
+ * chest holds the bombs beside the cracked wall, and the white sword (its beam) waits in the
+ * secret shrine behind it. Past the second locked door the rock-spitters' switch opens the keeper's lair; the keeper
  * leaves a heart container, and beyond it lies the Triforce.
  */
 export const KEEP_ROOMS: readonly RoomDef[] = [
@@ -213,7 +213,7 @@ export const KEEP_ROOMS: readonly RoomDef[] = [
   {
     id: 'shrine',
     at: [0, 1],
-    chests: ['shield'],
+    chests: ['white-sword'],
     hint: 'A secret room! Something waits in the chest.',
     map: [
       '################',
@@ -234,7 +234,7 @@ export const KEEP_ROOMS: readonly RoomDef[] = [
     at: [2, 2],
     shutters: 'switches',
     reveal: 'switches',
-    hint: "Rock-spitters: step out of a rock's path, or face it with a shield. A floor switch hides behind the water.",
+    hint: "Rock-spitters: step out of a rock's path. A floor switch hides behind the water.",
     map: [
       '#######XX#######',
       '#######XX#######',

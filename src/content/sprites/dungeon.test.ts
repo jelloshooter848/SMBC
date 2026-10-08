@@ -50,7 +50,7 @@ const DUNGEON_FRAMES: Record<string, Size> = {
   'wall-cracked': T16,
   'wall-hole': T16,
   'chest-open': T16,
-  'shield-pickup': T16,
+  'white-sword-icon': T16,
   'heart-container': T16,
   'bomb-pickup': V8,
   'boomerang-icon': V8,
@@ -90,26 +90,12 @@ const LINK_TD_FRAMES: Record<string, Size> = {
   'blast-0': [32, 32],
   'blast-1': [32, 32],
   'blast-2': [32, 32],
-  // Before the shield is found.
-  'down-0-ns': T16,
-  'down-1-ns': T16,
-  'up-0-ns': T16,
-  'up-1-ns': T16,
-  'side-0-ns': T16,
-  'side-1-ns': T16,
-  'attack-down-ns': T16,
-  'attack-up-ns': T16,
-  'attack-side-ns': T16,
-  // Throwing the boomerang / setting a bomb, with and without the shield.
+  // Throwing the boomerang / setting a bomb.
   'throw-down': T16,
   'throw-up': T16,
   'throw-side': T16,
-  'throw-down-ns': T16,
-  'throw-up-ns': T16,
-  'throw-side-ns': T16,
   // Holding a prize up over his head with both hands (the item-get pose).
   hold: T16,
-  'hold-ns': T16,
 };
 
 const ENEMY_FRAMES: Record<string, Size> = {
@@ -301,9 +287,9 @@ describe('dungeon tiles', () => {
     expect(open.some((r) => r.includes('0000000000'))).toBe(true);
   });
 
-  it("the shield pickup is Link's blue shield with its gold cross; the heart container is a big heart", () => {
-    const shield = rows(dungeonDef, 'shield-pickup').join('');
-    for (const ch of ['h', 'd']) expect(shield).toContain(ch);
+  it('the white sword is a white blade with a gold guard; the heart container is a big heart', () => {
+    const sword = rows(dungeonDef, 'white-sword-icon').join('');
+    for (const ch of ['6', 'd']) expect(sword).toContain(ch);
     const container = rows(dungeonDef, 'heart-container');
     const red = container.join('').replace(/[^eg]/g, '').length;
     expect(red).toBeGreaterThan(4 * rows(dungeonDef, 'heart-pickup').join('').replace(/[^eg]/g, '').length);
@@ -333,9 +319,7 @@ describe('overhead Link', () => {
       expect(rows(linkTdDef, `${dir}-0`), dir).not.toEqual(rows(linkTdDef, `${dir}-1`));
   });
 
-  it('without the shield: the same poses, only the shield pixels removed', () => {
-    // The shield is drawn in its blue face/shade, gold trim and black outline; nothing else moves.
-    const SHIELD = new Set(['0', '9', 'a', 'b']);
+  it('one set of poses, none with a shield (no shield in the Shadow Keep)', () => {
     for (const pose of [
       'down-0',
       'down-1',
@@ -350,28 +334,15 @@ describe('overhead Link', () => {
       'throw-up',
       'throw-side',
     ]) {
-      const withShield = rows(linkTdDef, pose);
-      const bare = rows(linkTdDef, `${pose}-ns`);
-      expect(bare.join(''), `${pose}-ns has no shield`).not.toMatch(/[ab]/);
-      expect(withShield.join(''), `${pose} has a shield`).toMatch(/a/);
-      let diff = 0;
-      withShield.forEach((row, y) =>
-        [...row].forEach((ch, x) => {
-          if (ch === bare[y]?.[x]) return;
-          diff++;
-          expect(SHIELD.has(ch), `${pose} (${x},${y}) '${ch}' is shield`).toBe(true);
-        }),
-      );
-      expect(diff, pose).toBeGreaterThan(0);
+      // The shield was drawn in its blue face/shade (a, b).
+      expect(rows(linkTdDef, pose).join(''), `${pose} has no shield`).not.toMatch(/[ab]/);
+      expect(linkTdDef.frames[`${pose}-ns`], `no ${pose}-ns twin`).toBeUndefined();
     }
   });
 
   it('throwing is its own pose, distinct from the sword thrust', () => {
     for (const dir of ['down', 'up', 'side'])
-      for (const ns of ['', '-ns'])
-        expect(rows(linkTdDef, `throw-${dir}${ns}`), dir + ns).not.toEqual(
-          rows(linkTdDef, `attack-${dir}${ns}`),
-        );
+      expect(rows(linkTdDef, `throw-${dir}`), dir).not.toEqual(rows(linkTdDef, `attack-${dir}`));
   });
 
   it('item animations: the boomerang spins, the fuse flickers, the blast grows then scatters', () => {

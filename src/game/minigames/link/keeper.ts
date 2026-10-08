@@ -24,8 +24,7 @@ export const KEEPER_STUN = 30;
 const BOB = [0, 1, 2, 2, 1, 0, -1, -1] as const;
 
 /**
- * The keeper's spell: a slow orb fired at an angle. Step aside, or (with the magic shield from
- * the shrine) face it: the shield stops it from the front like a rock (by its main axis).
+ * The keeper's spell: a slow orb fired at an angle. Step aside: nothing blocks it.
  */
 export class Spell extends Projectile {
   constructor(x: number, y: number, angle: number) {

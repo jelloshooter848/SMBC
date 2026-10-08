@@ -212,7 +212,7 @@ describe('Shadow Keep: the dungeon', () => {
     // The rest of the keep, as before.
     expect(room('cellar')?.def.chests).toEqual(['boomerang']);
     expect(room('armory')?.def.chests).toEqual(['bomb']);
-    expect(room('shrine')?.def.chests).toEqual(['shield']);
+    expect(room('shrine')?.def.chests).toEqual(['white-sword']);
     expect(kinds('blocks').match(/P/g)).toHaveLength(1);
     expect(room('blocks')?.def.shutters).toBe('plates');
     expect(room('shutters')?.def.shutters).toBe('clear');
@@ -300,7 +300,7 @@ describe('Shadow Keep: a full run', { timeout: 30_000 }, () => {
     expect(h.world.keys).toBe(0); // both keys went into the locked doors
     expect([...h.world.found].sort()).toEqual(['compass', 'map', 'triforce']);
     expect(h.world.inv.owned).toEqual(['boomerang', 'bomb']);
-    expect(h.world.hero.shield).toBe(true);
+    expect(h.world.swordBeam).toBe(true); // the white sword from the shrine
     expect(h.world.hero.maxHp).toBe(8);
     expect(h.log.music).toEqual(['dungeon', 'keeper', 'dungeon', 'triforce-get']);
     for (const id of [
@@ -329,7 +329,7 @@ describe('Shadow Keep: a full run', { timeout: 30_000 }, () => {
 });
 
 describe('Shadow Keep: the keeper', () => {
-  it('waits for Link to step in; the shutters shut; it glows, then fans three spells at him; without the shield facing them is no help', () => {
+  it('waits for Link to step in; the shutters shut; it glows, then fans three spells at him; facing them is no help', () => {
     const h = setup();
     h.world.warpTo('keeper', 7.5 * TILE, 9 * TILE);
     const keeper = h.world.enemies().find((e) => e instanceof Keeper) as Keeper;
@@ -345,8 +345,7 @@ describe('Shadow Keep: the keeper', () => {
     h.step([], GLOW_FRAMES);
     const spells = h.world.entities.filter((e) => e instanceof Spell) as Spell[];
     expect(spells).toHaveLength(3);
-    // No shield yet: facing them doesn't help.
-    expect(h.world.hero.shield).toBe(false);
+    // No shield in the keep: facing them doesn't help.
     h.world.hero.facing = 'up';
     const hp = h.world.hero.hp;
     for (let i = 0; i < 120 && h.world.hero.hp === hp; i++) h.step();
@@ -602,8 +601,18 @@ describe('Shadow Keep: the sword beam', () => {
   }
   const beams = (h: Harness) => h.world.entities.filter((e) => e instanceof SwordBeam);
 
-  it('at full hearts a stab also throws a beam up the room that hurts the first monster it meets', () => {
+  it('Link starts without it: a stab at full hearts throws nothing', () => {
     const h = setup();
+    lineUp(h);
+    expect(h.world.swordBeam).toBe(false);
+    h.tap('attack');
+    expect(beams(h)).toHaveLength(0);
+    expect(h.log.sfx).not.toContain('sword-beam');
+  });
+
+  it('with the white sword, at full hearts a stab also throws a beam up the room that hurts the first monster it meets', () => {
+    const h = setup();
+    h.world.grant('white-sword');
     const knight = lineUp(h);
     const hp = knight.hp;
     h.tap('attack');
@@ -616,6 +625,7 @@ describe('Shadow Keep: the sword beam', () => {
 
   it('one beam at a time; none below full hearts', () => {
     const h = setup();
+    h.world.grant('white-sword');
     lineUp(h).dead = true;
     h.tap('attack');
     h.step([], ATTACK_FRAMES);
@@ -630,6 +640,7 @@ describe('Shadow Keep: the sword beam', () => {
 
   it('bursts at the wall into four pieces that fly apart diagonally and are gone in a moment', () => {
     const h = setup();
+    h.world.grant('white-sword');
     lineUp(h).dead = true;
     h.tap('attack');
     let burst: BeamBurst | null = null;
@@ -648,6 +659,7 @@ describe('Shadow Keep: the sword beam', () => {
 
   /** Fires a beam from Link at (col, row) facing `dir`; returns where it burst (room px). */
   function fireUntilBurst(h: Harness, col: number, row: number, dir: 'left' | 'up'): BeamBurst | null {
+    h.world.grant('white-sword');
     const hero = h.world.hero;
     hero.x = col * TILE;
     hero.y = row * TILE;
@@ -685,11 +697,11 @@ describe('Shadow Keep: the sword beam', () => {
   });
 });
 
-describe('Shadow Keep: items, the shield and the secret', () => {
-  it('Link starts with only his sword: no shield, so rocks hit from the front and from the side', () => {
+describe('Shadow Keep: items, the white sword and the secret', () => {
+  it('Link starts with only his sword (no beam, no shield): rocks hit from the front and from the side', () => {
     const h = setup();
     const hero = h.world.hero;
-    expect(hero.shield).toBe(false);
+    expect(h.world.swordBeam).toBe(false);
     expect(h.world.inv.owned).toEqual([]);
     hero.facing = 'right';
     h.world.add(new Rock(hero.x + 40, hero.y + 4, 'left'));
@@ -741,7 +753,7 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(h.said).toContain('A heart container! One more heart, and every heart refilled.');
   });
 
-  it('a bombs pickup adds four and is announced; no refill waits by the cracked wall (wasting bombs can cost the shield)', () => {
+  it('a bombs pickup adds four and is announced; no refill waits by the cracked wall (wasting bombs can cost the white sword)', () => {
     const h = setup();
     h.world.grant('bomb');
     h.world.inv.addAmmo('bomb', -9);
@@ -754,7 +766,7 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(h.said).toContain('Bombs! 4');
   });
 
-  it("a bomb opens the armory's cracked wall (only a blast does); the shrine's chest holds the shield", () => {
+  it("a bomb opens the armory's cracked wall (only a blast does); the shrine's chest holds the white sword", () => {
     const h = setup();
     h.world.warpTo('armory', 7.5 * TILE, 8 * TILE);
     for (const k of h.world.enemies()) k.die(h.world);
@@ -784,25 +796,19 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     h.step(['left'], 100);
     expect(h.world.room.id).toBe('shrine');
     h.step([], 30); // he walks himself in past the wall
+    expect(h.world.swordBeam).toBe(false);
     openChest(h);
-    expect(hero.shield).toBe(true);
-    expect(h.said).toContain(
-      'You got the magic shield! Face rocks and spells to block them, and monsters hurt you less.',
-    );
+    expect(h.world.swordBeam).toBe(true);
+    expect(h.said).toContain('You got the white sword! At full hearts the sword shoots a beam.');
     expect(drawnText(h)).toEqual(
-      expect.arrayContaining([
-        'YOU GOT THE SHIELD!',
-        'FACE ROCKS AND SPELLS TO BLOCK',
-        'MONSTERS HURT YOU LESS',
-      ]),
+      expect.arrayContaining(['YOU GOT THE WHITE SWORD!', 'AT FULL HEARTS THE SWORD', 'SHOOTS A BEAM']),
     );
     h.step([], 70);
-    hero.invuln = 0;
+    // From now on a stab at full hearts throws a beam.
+    hero.hp = hero.maxHp;
     hero.facing = 'right';
-    const hp = hero.hp;
-    h.world.add(new Rock(hero.x + 40, hero.y + 4, 'left'));
-    h.step([], 30);
-    expect(hero.hp).toBe(hp);
+    h.tap('attack');
+    expect(h.world.entities.some((e) => e instanceof SwordBeam)).toBe(true);
   });
 
   it('labels the item button by the item while it can be used, and ITEM once there are two', () => {
@@ -871,51 +877,29 @@ describe('Shadow Keep: items, the shield and the secret', () => {
     expect(keeper.stun(h.world, STUN_FRAMES)).toBe(false);
   });
 
-  it('with the magic shield, a spell is blocked from the front (not from the side, not mid-stab, not without it)', () => {
-    const spellAt = (h: Harness, dx: number, dy: number, angle: number) => {
-      const hero = h.world.hero;
-      hero.invuln = 0;
-      h.world.add(new Spell(hero.x + 4 + dx, hero.y + 4 + dy, angle));
-    };
+  it('a spell hits Link whichever way he faces (no shield in the keep)', () => {
     const down = Math.PI / 2 + 0.3; // fanned, but mostly down
-    for (const shield of [true, false]) {
+    for (const facing of ['up', 'right'] as const) {
       const h = setup();
-      h.world.hero.shield = shield;
-      h.world.hero.facing = 'up';
-      spellAt(h, 10, -40, down);
+      const hero = h.world.hero;
+      hero.facing = facing;
+      h.world.add(new Spell(hero.x + 14, hero.y - 36, down));
       h.step([], 40);
-      expect(h.world.hero.hp).toBe(shield ? 6 : 5);
+      expect(hero.hp).toBe(5);
     }
-    const h = setup();
-    const hero = h.world.hero;
-    hero.shield = true;
-    hero.facing = 'right'; // from above while facing right: the side
-    spellAt(h, 10, -40, down);
-    h.step([], 40);
-    expect(hero.hp).toBe(5);
-    hero.facing = 'up';
-    hero.x = 112;
-    hero.y = 80;
-    spellAt(h, 8, -20, down);
-    h.step(['attack']); // mid-stab
-    h.step([], 12);
-    expect(hero.hp).toBe(4);
   });
 
-  it("with the shield the keeper's touch costs half a heart instead of a whole one", () => {
-    for (const shield of [false, true]) {
-      const h = setup();
-      const keeper = toKeeper(h);
-      const hero = h.world.hero;
-      hero.shield = shield;
-      hero.invuln = 0;
-      hero.attackT = 0;
-      const hp = hero.hp;
-      hero.x = keeper.x + 8;
-      hero.y = keeper.y + 8;
-      h.step();
-      expect(hp - hero.hp).toBe(shield ? 1 : 2);
-    }
+  it("the keeper's touch costs a whole heart", () => {
+    const h = setup();
+    const keeper = toKeeper(h);
+    const hero = h.world.hero;
+    hero.invuln = 0;
+    hero.attackT = 0;
+    const hp = hero.hp;
+    hero.x = keeper.x + 8;
+    hero.y = keeper.y + 8;
+    h.step();
+    expect(hp - hero.hp).toBe(2);
   });
 
   it("the keeper's spells vanish when it falls", () => {

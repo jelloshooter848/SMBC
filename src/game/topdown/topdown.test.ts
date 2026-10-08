@@ -452,7 +452,7 @@ describe('top-down kit: push blocks and switches', () => {
   });
 });
 
-describe('top-down kit: sword, shield and damage', () => {
+describe('top-down kit: sword and damage', () => {
   function withKnight() {
     const d = buildDungeon([
       room(
@@ -599,27 +599,28 @@ describe('top-down kit: sword, shield and damage', () => {
     expect(world.hero.dying).toBe(0);
   });
 
-  it('the shield stops a rock from the front, but not one from the side or while stabbing', () => {
+  it('a rock hurts from the front, from the side and while stabbing (no shield)', () => {
     const d = buildDungeon([room('r', [0, 0], map([[7, 5, '@']]))]);
     const { world, pad, hero } = setup(d);
     hero.facing = 'right';
     world.add(new Rock(hero.x + 40, hero.y + 4, 'left'));
     let events = pad.step([], 30);
-    expect(events).toContainEqual({ type: 'block' });
-    expect(hero.hp).toBe(6);
+    expect(events).not.toContainEqual({ type: 'block' });
+    expect(hero.hp).toBe(5);
     // From above, while facing right.
+    hero.invuln = 0;
     world.add(new Rock(hero.x + 4, hero.y - 40, 'down'));
     events = pad.step([], 30);
-    expect(events).toContainEqual({ type: 'hurt', hp: 5 });
-    // From the front, but mid-stab.
+    expect(events).toContainEqual({ type: 'hurt', hp: 4 });
+    // From the front, mid-stab.
     hero.invuln = 0;
     hero.facing = 'right';
     hero.x = 112;
     hero.y = 80;
     world.add(new Rock(hero.x + 24, hero.y + 4, 'left'));
     pad.step(['attack']);
-    expect(pad.step([], 12)).toContainEqual({ type: 'hurt', hp: 4 });
-    expect(hero.hp).toBe(4);
+    expect(pad.step([], 12)).toContainEqual({ type: 'hurt', hp: 3 });
+    expect(hero.hp).toBe(3);
     expect(ROCK_SPEED).toBeGreaterThan(1);
   });
 

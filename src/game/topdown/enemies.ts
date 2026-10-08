@@ -6,15 +6,13 @@ import type { Mover, TopDownWorld } from './world';
 
 /**
  * A straight-flying shot. Positions are kept as floats so any angle works; `dir` is set for
- * shots that travel along an axis. A `blockable` shot is stopped by the hero's shield when it
- * comes at his front: along its axis, or for an angled one its main axis (`heading`).
+ * shots that travel along an axis.
  */
 export class Projectile extends TdEntity {
   override layer = 2;
   override w = 8;
   override h = 8;
   damage = 1;
-  blockable = true;
   /** Hurts the hero (as opposed to a shot of the hero's own). */
   hostile = true;
   mover: Mover = 'shot';
@@ -39,14 +37,6 @@ export class Projectile extends TdEntity {
     return { x: this.x + 1, y: this.y + 1, w: this.w - 2, h: this.h - 2 };
   }
 
-  /** The way it is going for the shield: its axis, or the main axis of an angled shot. */
-  heading(): Dir | null {
-    if (this.dir) return this.dir;
-    if (this.vx === 0 && this.vy === 0) return null;
-    if (Math.abs(this.vx) > Math.abs(this.vy)) return this.vx < 0 ? 'left' : 'right';
-    return this.vy < 0 ? 'up' : 'down';
-  }
-
   update(world: TopDownWorld): void {
     this.fx += this.vx;
     this.fy += this.vy;
@@ -65,7 +55,7 @@ export class Projectile extends TdEntity {
 
 export const ROCK_SPEED = 2;
 
-/** A spitter's rock: flies straight along its facing; the shield stops it from the front. */
+/** A spitter's rock: flies straight along its facing. */
 export class Rock extends Projectile {
   constructor(x: number, y: number, dir: Dir) {
     const v = DIR_VEC[dir];
