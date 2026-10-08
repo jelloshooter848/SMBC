@@ -13,6 +13,8 @@ import {
 } from '@game/bonus/items';
 import { CRYSTAL_BALL } from '@game/map/captives';
 import { FIRST_HERO } from '@game/story/beats';
+import { heroStart, type HeroPower } from '@game/items/heroes';
+import { campaignKit } from '@game/items/migrate';
 
 /**
  * Three campaign save files (world map progress plus the run: lives, score, coins, heroes and
@@ -113,6 +115,19 @@ export interface SaveFile extends MapProgress {
   devInventory?: boolean;
   itemsNext?: NextItem[];
   /**
+   * Each hero's own inventory and held items (0.4.33, docs/POWERUPS.md 8.3), by hero id. Missing:
+   * the older single `inventory` / `itemsNext` above, which become Mario's (decision 13) and are
+   * no longer written.
+   */
+  heroInventory?: Record<string, ItemId[]>;
+  heroItemsNext?: Record<string, NextItem[]>;
+  /**
+   * The power, hit points and kit of each hero not being played (0.4.33, decision 3), so switching
+   * heroes keeps them; the played hero's are `powerState`, `hp` and `kit`. Missing: none saved
+   * (every other hero starts with their basic kit).
+   */
+  heroKits?: Record<string, HeroPower>;
+  /**
    * The story beats this file has seen (0.4.13, src/game/story/beats.ts), each once. Missing in
    * older files (and new ones until the first save): seeded on load from the file's progress
    * (beats.ts seedSeen). No format change.
@@ -210,10 +225,18 @@ export const SAVE_MIGRATIONS: SaveMigration[] = [migrateV1toV2, migrateV2toV3];
 /** The current format: version 1 plus one per migration. */
 export const SAVE_VERSION = 1 + SAVE_MIGRATIONS.length;
 
-/** A hero's starting power: 'small' and no hp for power-up heroes, 'full' at starting hp otherwise. */
-function defaultPower(c: CharacterDef | undefined): { power: string; hp: number } {
-  if (!c || c.damage.kind === 'powerup') return { power: 'small', hp: 0 };
-  return { power: 'full', hp: startHp(c) };
+/**
+ * A hero's starting power on a campaign file: their basic kit (decision 2), or 'small' and no hp
+ * for an unknown hero.
+ */
+function defaultPower(c: CharacterDef | undefined): {
+  power: string;
+  hp: number;
+  kit: Record<string, number>;
+} {
+  if (!c) return { power: 'small', hp: 0, kit: {} };
+  const start = heroStart(c);
+  return { power: start.powerState, hp: start.hp, kit: start.kit };
 }
 
 /**
@@ -241,10 +264,10 @@ export function newSave(
     coins: 0,
     powerState: p1.power,
     hp: p1.hp,
-    kit: {},
+    kit: p1.kit,
     powerState2: p2.power,
     hp2: p2.hp,
-    kit2: {},
+    kit2: p2.kit,
     cleared: [],
     pages: ['smb-1'],
     secrets: [],
@@ -261,7 +284,8 @@ export function newSave(
     inventoryUnlocked: false,
     bonusOpen: true,
     bonusGuard: false,
-    ...bonusSaveFields(newBonusState()),
+    ...bonusSaveFields(newBonusState(character)),
+    heroKits: {},
   };
 }
 
@@ -332,6 +356,34 @@ function withTutorial(cleared: string[]): string[] {
   return cleared.length && !cleared.includes(TUTORIAL_LEVEL) ? [TUTORIAL_LEVEL, ...cleared] : cleared;
 }
 
+/**
+ * The saved kits of heroes not being played: known heroes (not `played`), a power that suits the
+ * hero, hp capped, kits converted to the found-item rules (campaignKit).
+ */
+function heroKits(x: unknown, played: readonly string[]): Record<string, HeroPower> {
+  const out: Record<string, HeroPower> = {};
+  if (!isObj(x)) return out;
+  for (const [id, v] of Object.entries(x)) {
+    const c = CHARACTERS.find((h) => h.id === id);
+    if (
+      !c ||
+      played.includes(id) ||
+      !isObj(v) ||
+      typeof v.powerState !== 'string' ||
+      !validPower(c, v.powerState)
+    )
+      continue;
+    const k = campaignKit(id, kit(v.kit), v.powerState);
+    const start = heroStart(c);
+    out[id] = {
+      powerState: v.powerState,
+      hp: c.damage.kind === 'hp' ? capHp(c, num(v.hp, start.hp), k) : 0,
+      kit: k,
+    };
+  }
+  return out;
+}
+
 function kit(x: unknown): Record<string, number> {
   const out: Record<string, number> = {};
   if (isObj(x))
@@ -398,10 +450,14 @@ export function migrateSave(
     coins: whole(stored.coins, d.coins, 0),
     powerState: str(stored.powerState, d.powerState),
     hp: num(stored.hp, d.hp),
-    kit: kit(stored.kit),
+    // A kit from before 0.4.33 follows the found-item rules from now on (items/migrate.ts).
+    kit: campaignKit(stored.character, kit(stored.kit), str(stored.powerState, d.powerState)),
     powerState2: str(stored.powerState2, d.powerState2),
     hp2: num(stored.hp2, d.hp2),
-    kit2: kit(stored.kit2),
+    kit2:
+      typeof stored.character2 === 'string'
+        ? campaignKit(stored.character2, kit(stored.kit2), str(stored.powerState2, d.powerState2))
+        : kit(stored.kit2),
     cleared,
     pages,
     secrets,
@@ -425,7 +481,11 @@ export function migrateSave(
     inventoryUnlocked: stored.inventoryUnlocked === true || secrets.includes('larry'),
     bonusOpen: stored.bonusOpen !== false,
     bonusGuard: stored.bonusOpen === false && stored.bonusGuard === true,
-    ...bonusSaveFields(bonusStateFrom(stored)),
+    ...bonusSaveFields(bonusStateFrom(stored, stored.character, (id) => CHARACTERS.some((c) => c.id === id))),
+    heroKits: heroKits(stored.heroKits, [
+      stored.character,
+      ...(typeof stored.character2 === 'string' ? [stored.character2] : []),
+    ]),
     // The seen story beats: kept only when well formed (else seeded on load, Game.openFile).
     ...(isStrings(stored.story) ? { story: [...new Set(stored.story)] } : {}),
   };
@@ -483,6 +543,15 @@ export function stateFromSave(save: SaveFile, characters: readonly CharacterDef[
   const c1 = characters.find((c) => c.id === save.character);
   const c2 = save.character2 === null ? null : (characters.find((c) => c.id === save.character2) ?? first);
   const s = newGameState(c1 ?? first, c2);
+  // A campaign run: each hero starts from their basic kit unless the file has their power.
+  const start1 = heroStart(c1 ?? first);
+  s.hp = start1.hp;
+  s.kit = start1.kit;
+  if (c2) {
+    const start2 = heroStart(c2);
+    s.hp2 = start2.hp;
+    s.kit2 = start2.kit;
+  }
   s.lives = save.lives;
   s.score = save.score;
   s.coins = save.coins;

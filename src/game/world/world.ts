@@ -7,7 +7,7 @@ import { overlaps } from '@engine/math/aabb';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
-import type { EntitySpawn, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
+import type { EntitySpawn, HeroItemEntry, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
 import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
@@ -50,6 +50,8 @@ import {
 } from '../entities/objects/teleporter';
 import { PowerUp } from '../entities/objects/powerup';
 import { Pickup } from '../entities/objects/pickup';
+import { HeroItem } from '../entities/objects/hero-item';
+import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
 import {
@@ -98,6 +100,10 @@ import type { Action } from '@engine/input/actions';
 
 /** What goes on from the castle's text (OK): JUMP or ATTACK. MENU still pauses. */
 const CASTLE_OK_KEYS: readonly Action[] = ['jump', 'attack'];
+/** How long an item's name shows under the HUD when first found (docs/POWERUPS.md 3.3). */
+export const ITEM_CAPTION_FRAMES = 120;
+/** A HeroItem's entries from the Top Secret Area's fixed grow block (`R`): the grow item for anyone. */
+const GROW_BLOCK: Readonly<Record<string, string>> = Object.freeze({});
 
 export type WorldEvent =
   /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
@@ -458,6 +464,14 @@ export class World {
   readonly flagpole: Flagpole | null = null;
   /** Set by LevelScene in campaign play; see CaptiveRules. */
   captives: CaptiveRules | null = null;
+  /**
+   * The campaign's hero items (docs/POWERUPS.md): the level's `[hero-items]` entries by "x,y"
+   * (LevelScene.useHeroItems). Null outside the campaign, where blocks give SMB's mushroom and
+   * flower as today.
+   */
+  heroItems: Map<string, Readonly<Record<string, string>>> | null = null;
+  /** An item just found: its name, shown under the HUD for ITEM_CAPTION_FRAMES (LevelScene). */
+  itemCaption: { text: string; t: number } | null = null;
   /**
    * The campaign's story plays here (set by LevelScene when story/beats.ts storyOn holds): off in
    * classic, dev, arena and play-test levels, which keep their old text and behaviour.
@@ -1041,7 +1055,10 @@ export class World {
         }
     for (const e of this.entities) {
       if (!e.alive || !overlaps(b, e.body)) continue;
-      const item = (e instanceof PowerUp && e.out && e.item !== 'poison') || e instanceof Pickup;
+      const item =
+        (e instanceof PowerUp && e.out && e.item !== 'poison') ||
+        (e instanceof HeroItem && e.out) ||
+        e instanceof Pickup;
       if (!item) continue;
       e.destroy();
       proj.carried.push(e);
@@ -1066,7 +1083,8 @@ export class World {
       if (e instanceof PowerUp) {
         if (e.item === 'clock') this.collectClock(e);
         else if (e.item !== 'poison') p.def.behaviour.onPowerUp(p, e.item, this);
-      } else if (e instanceof Pickup && !p.def.behaviour.onPickup?.(p, e.item, this)) {
+      } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
+      else if (e instanceof Pickup && !p.def.behaviour.onPickup?.(p, e.item, this)) {
         const pb = p.body;
         this.spawn(new Pickup(pb.x + (pb.w >> 1), pb.y + pb.h, e.item));
       }
@@ -1149,6 +1167,7 @@ export class World {
 
   update(inputs: InputFrame[]): void {
     this.frame++;
+    if (this.itemCaption && --this.itemCaption.t <= 0) this.itemCaption = null;
     if (this.shakeFrames > 0) this.shakeFrames--;
 
     // Growth/shrink pauses the world (SMB1 does too).
@@ -1783,7 +1802,7 @@ export class World {
         break;
       }
       case 'powerup':
-        this.spawn(new PowerUp(tx, ty, p.def.blockPowerUp(p)));
+        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(new PowerUp(tx, ty, p.def.blockPowerUp(p)));
         this.audio.sfx('powerup-appear');
         this.feats.powerBlocks++;
         break;
@@ -1812,8 +1831,9 @@ export class World {
       case 'flower':
       case 'mushroom':
         // The Top Secret Area: always this item, whatever the hero's power (its onPowerUp gives
-        // the hero's own flower or mushroom power).
-        this.spawn(new PowerUp(tx, ty, content));
+        // the hero's own flower or mushroom power). Campaign: the hero's own grow item from `R`,
+        // their entry or default power from `W`.
+        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(new PowerUp(tx, ty, content));
         this.audio.sfx('powerup-appear');
         this.feats.powerBlocks++;
         break;
@@ -1880,6 +1900,58 @@ export class World {
   /** Whether a bumped hidden path is still being laid (tests, the bots). */
   get layingPath(): boolean {
     return this.pathQueue.length > 0;
+  }
+
+  /** Campaign play: blocks give each hero their own items from `entries` (the level's `[hero-items]`). */
+  useHeroItems(entries: readonly HeroItemEntry[]): void {
+    this.heroItems = new Map(entries.map((e) => [`${e.x},${e.y}`, e.items]));
+  }
+
+  /**
+   * A power block struck in the campaign by a hero with items of their own: their item rises from
+   * it (docs/POWERUPS.md 3.3). False (nothing spawned) outside the campaign and for Mario and
+   * Luigi, whose blocks give SMB's mushroom and flower.
+   */
+  private spawnHeroItem(
+    tx: number,
+    ty: number,
+    p: Player,
+    content: 'powerup' | 'mushroom' | 'flower',
+  ): boolean {
+    if (!this.heroItems) return false;
+    const entries = this.heroItems.get(`${tx},${ty}`) ?? null;
+    const item = blockItem(p, entries, content);
+    if (item === null) return false;
+    // The fixed grow block (`R`) holds the grow item for whoever takes it.
+    this.spawn(new HeroItem(tx, ty, item, p.def.id, content === 'mushroom' ? GROW_BLOCK : entries));
+    return true;
+  }
+
+  /**
+   * `p` takes a hero item: theirs if they struck the block, else worked out again for their own
+   * hero from the same block (a small hero: the grow item). 1000 points, then the item's effect,
+   * sound and name the first time, or the hero's refill and refill sound once owned.
+   */
+  takeHeroItem(p: Player, e: HeroItem): void {
+    let id: string | null = e.item;
+    if (p.def.id !== e.hero)
+      id = e.entries === GROW_BLOCK ? blockItem(p, null, 'mushroom') : blockItem(p, e.entries);
+    this.addScore(1000, p.body.x, p.body.y - px(16));
+    // A hero without items of their own (Mario or Luigi in an older co-op file): SMB's item.
+    if (id === null) {
+      const kind = e.entries === GROW_BLOCK ? 'mushroom' : p.def.blockPowerUp(p);
+      if (kind !== 'poison' && kind !== 'clock') p.def.behaviour.onPowerUp(p, kind, this);
+      return;
+    }
+    const got = applyItem(p, id);
+    if (!got) return;
+    if (!got.fresh) {
+      this.audio.sfx(itemRules(p.def.id)?.refillSfx ?? 'pickup');
+      return;
+    }
+    this.audio.sfx(itemSfx(id));
+    this.itemCaption = { text: got.name.toUpperCase(), t: ITEM_CAPTION_FRAMES };
+    this.events.push({ type: 'say', text: `${got.name}: ${got.does}.` });
   }
 
   /**
@@ -1954,6 +2026,11 @@ export class World {
             if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
           } else if (e.item === 'clock') this.collectClock(e);
           else p.def.behaviour.onPowerUp(p, e.item, this);
+        }
+      } else if (e instanceof HeroItem) {
+        if (e.out && overlaps(pb, e.body)) {
+          e.destroy();
+          this.takeHeroItem(p, e);
         }
       } else if (e instanceof Pickup) {
         if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();

@@ -11,6 +11,7 @@ import { MEGAMAN_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { beltButton, toolButton } from '../../touch-labels';
 import { RUSH, WEAPON_ENERGY, WEAPONS, type WeaponDef } from './weapons';
+import { has, isFound } from '../../items/flags';
 
 /** Robot boy: instant acceleration, tall cut-able jump, slide, arm cannon, hit-point bar. */
 export const MEGAMAN_PROFILE: MovementProfile = {
@@ -46,12 +47,18 @@ const SHOOT_POSE_FRAMES = 16;
 
 /** Scratch keys: helmet, weapons (how many unlocked), tool, w<id> (energy), etanks, chargeT. */
 function unlocked(p: Player): WeaponDef[] {
+  // Campaign: each weapon is its own item (docs/POWERUPS.md 5.3), on the belt in WEAPONS order.
+  if (isFound(p)) return WEAPONS.filter((w) => has(p, w.item));
   return WEAPONS.slice(0, p.scratch.weapons ?? 0);
+}
+/** Rush Coil is on the belt: with the helmet, or (campaign) once found as its own item. */
+function hasRush(p: Player): boolean {
+  return isFound(p) ? has(p, 'rush-coil') : !!p.scratch.helmet;
 }
 function energy(p: Player, id: string): number {
   return p.scratch[`w${id}`] ?? WEAPON_ENERGY;
 }
-function setEnergy(p: Player, id: string, v: number): void {
+export function setEnergy(p: Player, id: string, v: number): void {
   p.scratch[`w${id}`] = Math.max(0, Math.min(WEAPON_ENERGY, v));
 }
 function etanks(p: Player): number {
@@ -62,7 +69,7 @@ function tools(p: Player): ToolInfo[] {
   const list: ToolInfo[] = [{ id: 'buster', icon: 'icon-buster', count: null, usable: true }];
   for (const w of unlocked(p))
     list.push({ id: w.id, icon: w.icon, count: null, usable: energy(p, w.id) >= w.cost });
-  if (p.scratch.helmet)
+  if (hasRush(p))
     list.push({ id: RUSH.id, icon: RUSH.icon, count: null, usable: energy(p, RUSH.id) >= RUSH.cost });
   return list;
 }

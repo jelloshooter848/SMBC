@@ -67,7 +67,14 @@ import {
   type SaveFile,
   type SaveSlot,
 } from '@game/save/save-files';
-import { bonusSaveFields, bonusStateFrom, newBonusState, type BonusState } from '../bonus/items';
+import {
+  bonusSaveFields,
+  bonusStateFrom,
+  newBonusState,
+  swapInventory,
+  type BonusState,
+} from '../bonus/items';
+import { heroStart, type HeroPower } from '../items/heroes';
 import type { StageRound } from '../arena/stage-round';
 
 export interface GameDeps {
@@ -188,6 +195,11 @@ export class Game {
    * outside campaign play.
    */
   bonus: BonusState = newBonusState();
+  /**
+   * Campaign: the power, hit points and kit of each hero not being played (decision 3: switching
+   * heroes keeps them). The played heroes' are in `state`.
+   */
+  heroKits: Record<string, HeroPower> = {};
   /**
    * The story beats seen on the campaign's file (SaveFile.story; ids from src/game/story/beats.ts),
    * each once. See `seen` / `markSeen`; whether the story plays at all is beats.ts storyOn.
@@ -488,6 +500,7 @@ export class Game {
       bonusOpen: this.bonusOpen,
       bonusGuard: this.bonusGuard,
       ...bonusSaveFields(this.bonus),
+      heroKits: this.savedHeroKits(state),
       story: this.story.slice(),
     };
     this.campaignSave = save;
@@ -519,6 +532,12 @@ export class Game {
     this.tutorialRun = null;
     if (!heroes) return;
     const s = this.state;
+    // The tutorial's hero puts their kit away again (decision 3); the file's hero comes back.
+    if (this.campaign && s.character !== heroes.character) {
+      this.heroKits[s.character.id] = { powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+      delete this.heroKits[heroes.character.id];
+      swapInventory(this.bonus, heroes.character.id);
+    }
     s.character = heroes.character;
     s.powerState = heroes.powerState;
     s.hp = heroes.hp;
@@ -670,15 +689,8 @@ export class Game {
    * any death, then the map (the Hammer Bro still there), or GAME OVER with no lives left.
    */
   hammerBattleLost(): void {
+    this.resetAfterDeath();
     const s = this.state;
-    s.powerState = s.character.damage.kind === 'powerup' ? 'small' : 'full';
-    s.hp = startHp(s.character);
-    s.kit = {};
-    s.kit2 = {};
-    if (s.character2) {
-      s.powerState2 = s.character2.damage.kind === 'powerup' ? 'small' : 'full';
-      s.hp2 = startHp(s.character2);
-    }
     if (!this.deps.ctx.assist.infiniteLives) s.lives--;
     if (s.lives <= 0) {
       s.lives = 0;
@@ -966,7 +978,8 @@ export class Game {
     this.bonusOpen = save.bonusOpen !== false;
     this.bonusGuard = !this.bonusOpen && save.bonusGuard === true;
     this.inventoryUnlocked = save.inventoryUnlocked === true || save.secrets.includes(CRYSTAL_BALL);
-    this.bonus = bonusStateFrom(save);
+    this.bonus = bonusStateFrom(save, this.state.character.id);
+    this.heroKits = structuredClone(save.heroKits ?? {});
     // Only heroes freed on this file, this session, get the map's burst of hops.
     this.celebrate.clear();
     // A hero the file has not freed (a hand-edited file, or one picked through "All heroes" with
@@ -1173,9 +1186,72 @@ export class Game {
     );
   }
 
-  /** Give player `player` hero `c`, starting from its default power (small, or full hp). */
+  /**
+   * After a death: the playing heroes back to their start (decision 1: in the campaign their found
+   * items are wiped, back to the basic kit; the other heroes' saved kits stay).
+   */
+  resetAfterDeath(): void {
+    const s = this.state;
+    const fresh = (c: CharacterDef): HeroPower =>
+      this.campaign
+        ? heroStart(c)
+        : { powerState: c.damage.kind === 'powerup' ? 'small' : 'full', hp: startHp(c), kit: {} };
+    const p1 = fresh(s.character);
+    s.powerState = p1.powerState;
+    s.hp = p1.hp;
+    s.kit = p1.kit;
+    s.kit2 = {};
+    if (s.character2) {
+      const p2 = fresh(s.character2);
+      s.powerState2 = p2.powerState;
+      s.hp2 = p2.hp;
+      s.kit2 = this.campaign ? p2.kit : {};
+    }
+  }
+
+  /** The heroes' kits to save: the ones put away, and a tutorial's own hero's live power. */
+  private savedHeroKits(saved: GameState): Record<string, HeroPower> {
+    const out = structuredClone(this.heroKits);
+    const s = this.state;
+    if (s.character !== saved.character)
+      out[s.character.id] = { powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+    delete out[saved.character.id];
+    if (saved.character2) delete out[saved.character2.id];
+    return out;
+  }
+
+  /**
+   * Give player `player` hero `c`. Campaign: the old hero's power, hit points and kit are put away
+   * and `c` comes back as they were left, or with their basic kit the first time (decisions 2, 3);
+   * player 1's inventory goes with the hero (docs/POWERUPS.md 8.1). Elsewhere `c` starts from its
+   * default power (small, or full hp).
+   */
   setHero(player: 0 | 1, c: CharacterDef): void {
     const s = this.state;
+    if (this.campaign) {
+      const old = player === 1 ? s.character2 : s.character;
+      if (old === c) return;
+      if (old)
+        this.heroKits[old.id] =
+          player === 1
+            ? { powerState: s.powerState2, hp: s.hp2, kit: { ...s.kit2 } }
+            : { powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+      const next = this.heroKits[c.id] ?? heroStart(c);
+      delete this.heroKits[c.id];
+      if (player === 1) {
+        s.character2 = c;
+        s.powerState2 = next.powerState;
+        s.hp2 = next.hp;
+        s.kit2 = { ...next.kit };
+      } else {
+        s.character = c;
+        s.powerState = next.powerState;
+        s.hp = next.hp;
+        s.kit = { ...next.kit };
+        swapInventory(this.bonus, c.id);
+      }
+      return;
+    }
     const power = c.damage.kind === 'powerup' ? 'small' : 'full';
     if (player === 1) {
       s.character2 = c;

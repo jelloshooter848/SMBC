@@ -3,6 +3,8 @@ import type { ProjectileSpec } from '../../entities/projectiles/projectile';
 /** One entry of the arm-cannon arsenal, unlocked in this order by fire flowers. */
 export interface WeaponDef {
   id: string;
+  /** Its campaign item id (src/game/items/catalog.ts). */
+  item: string;
   name: string;
   icon: string;
   /** Energy spent per shot (each weapon holds 28). */
@@ -105,6 +107,7 @@ export const BOLT: ProjectileSpec = {
 export const WEAPONS: readonly WeaponDef[] = [
   {
     id: 'saw',
+    item: 'saw-disc',
     name: 'Saw Disc',
     icon: 'icon-saw',
     cost: 2,
@@ -114,6 +117,7 @@ export const WEAPONS: readonly WeaponDef[] = [
   },
   {
     id: 'leaf',
+    item: 'leaf-guard',
     name: 'Leaf Guard',
     icon: 'icon-leaf',
     cost: 4,
@@ -123,6 +127,7 @@ export const WEAPONS: readonly WeaponDef[] = [
   },
   {
     id: 'flame',
+    item: 'flame-wave',
     name: 'Flame Wave',
     icon: 'icon-flame',
     cost: 3,
@@ -132,6 +137,7 @@ export const WEAPONS: readonly WeaponDef[] = [
   },
   {
     id: 'knuckle',
+    item: 'homing-knuckle',
     name: 'Homing Knuckle',
     icon: 'icon-knuckle',
     cost: 4,
@@ -141,6 +147,7 @@ export const WEAPONS: readonly WeaponDef[] = [
   },
   {
     id: 'bolt',
+    item: 'bolt',
     name: 'Bolt',
     icon: 'icon-bolt',
     cost: 5,

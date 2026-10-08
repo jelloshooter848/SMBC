@@ -5,6 +5,7 @@ import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import { Projectile } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
+import { has, isFound } from '../../items/flags';
 import { RYU_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { beltButton, toolButton } from '../../touch-labels';
@@ -43,14 +44,24 @@ const SLASH_FRAMES = 10;
 const THROW_FRAMES = 10;
 const SPIN_FRAMES = 36;
 
-/** Scratch keys: arts (unlocked count), tool, ninpo, ninpoMax, spin, throwT. */
-function ninpoMax(p: Player): number {
+/** Health bar a campaign Ryu starts with (decision 4); the Medicine grows it to MAX_HP. */
+export const SMALL_HP = 10;
+
+/**
+ * Scratch keys: arts (unlocked count), tool, ninpo, ninpoMax, spin, throwT, maxHp (campaign). In
+ * the campaign each art is an item with its own flag (docs/POWERUPS.md 5.6).
+ */
+export function maxHp(p: Player): number {
+  return p.scratch.maxHp ?? MAX_HP;
+}
+export function ninpoMax(p: Player): number {
   return p.scratch.ninpoMax ?? START_NINPO;
 }
 function ninpo(p: Player): number {
   return p.scratch.ninpo ?? ninpoMax(p);
 }
 function unlocked(p: Player): NinpoArt[] {
+  if (isFound(p)) return NINPO_ARTS.filter((a) => has(p, a.item));
   return NINPO_ARTS.slice(0, p.scratch.arts ?? 0);
 }
 function tools(p: Player): ToolInfo[] {
@@ -250,8 +261,8 @@ export const RYU: CharacterDef = {
           world.audio.sfx('pickup');
           return true;
         case 'health-small':
-          if (p.hp >= MAX_HP) return false;
-          p.hp = Math.min(MAX_HP, p.hp + 4);
+          if (p.hp >= maxHp(p)) return false;
+          p.hp = Math.min(maxHp(p), p.hp + 4);
           world.audio.sfx('pickup');
           return true;
         default:
@@ -263,7 +274,7 @@ export const RYU: CharacterDef = {
         case 'mushroom': {
           const n = p.scratch.arts ?? 0;
           if (n < NINPO_ARTS.length) p.scratch.arts = n + 1;
-          p.hp = MAX_HP;
+          p.hp = maxHp(p);
           world.addScore(1000, p.body.x, p.body.y - px(16));
           world.audio.sfx('powerup');
           break;
@@ -271,7 +282,7 @@ export const RYU: CharacterDef = {
         case 'flower':
           p.scratch.ninpoMax = Math.min(MAX_NINPO, ninpoMax(p) + NINPO_PER_FLOWER);
           p.scratch.ninpo = ninpoMax(p);
-          p.hp = MAX_HP;
+          p.hp = maxHp(p);
           world.addScore(1000, p.body.x, p.body.y - px(16));
           world.audio.sfx('powerup');
           break;

@@ -1,4 +1,6 @@
 import type { AssetRegistry } from '@engine/assets/registry';
+import { heroPrize } from './items';
+import { HERO_ITEMS_SHEET } from '../entities/objects/hero-item';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { ItemId } from './items';
@@ -43,8 +45,18 @@ function smb3(assets: AssetRegistry): SpriteSheet {
 }
 
 /** A 16×16 item icon (`item-<id>`). */
-export function drawItem(r: Renderer, assets: AssetRegistry, item: ItemId, x: number, y: number): void {
-  r.sprite(smb3(assets), `item-${item}`, x, y);
+export function drawItem(
+  r: Renderer,
+  assets: AssetRegistry,
+  item: ItemId,
+  x: number,
+  y: number,
+  hero?: string,
+): void {
+  // A hero's own item in their art (docs/POWERUPS.md 8.1); Starman, the 1-up and Mario's are SMB3's.
+  const own = heroPrize(hero, item);
+  if (own) r.sprite(assets.sheet(HERO_ITEMS_SHEET), own.id, x, y);
+  else r.sprite(smb3(assets), `item-${item}`, x, y);
 }
 
 /** A 16×16 chest, closed or open. */

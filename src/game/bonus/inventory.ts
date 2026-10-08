@@ -9,7 +9,7 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText, wrapText } from '../hud/text';
 import { BONUS_SFX, drawItem } from './art';
 import { fitLine } from './common';
-import { INVENTORY_MAX, ITEM_NAMES, type ItemId } from './items';
+import { heroPrize, INVENTORY_MAX, itemName, type ItemId } from './items';
 import { heldItems, inventoryAvailable, shownItems, useInventoryItem, type UseOutcome } from './use';
 
 /** The panel across the bottom of the map. */
@@ -24,6 +24,8 @@ export function itemDoes(game: Game, item: ItemId): string {
   const hero = game.state.character;
   if (item === '1up') return 'One more life.';
   if (item === 'star') return 'Star power: invincible for a few seconds.';
+  const own = heroPrize(hero.id, item);
+  if (own) return `${own.does[0]?.toUpperCase()}${own.does.slice(1)}.`;
   return hero.guide.powerups.find((p) => p.item === item)?.does ?? 'A power-up.';
 }
 
@@ -63,7 +65,7 @@ export class InventoryScene implements Scene {
     const use = abilityHint(this.game, 'use', 'jump');
     const back = abilityHint(this.game, 'back', 'attack');
     const text = item
-      ? `${head}${this.cursor + 1}: ${ITEM_NAMES[item].toLowerCase()}. ${itemDoes(this.game, item)}${item === '1up' ? '' : ' Given at the start of the next level.'} ${use} to use it, ${back} to close.`
+      ? `${head}${this.cursor + 1}: ${itemName(item, this.game.state.character.id).toLowerCase()}. ${itemDoes(this.game, item)}${item === '1up' ? '' : ' Given at the start of the next level.'} ${use} to use it, ${back} to close.`
       : `${head}No items. Win them at the bonus spot and from Hammer Bros. ${back} to close.`;
     this.game.deps.announcer?.say(text);
   }
@@ -144,7 +146,7 @@ export class InventoryScene implements Scene {
       // Waiting for the next level: NEXT and their icons.
       const x0 = SCREEN_W - 16 - held.length * 18;
       r.text(font, 'NEXT', x0 - 36, PANEL_Y + 6);
-      held.forEach((h, i) => drawItem(r, assets, h, x0 + i * 18, PANEL_Y + 2));
+      held.forEach((h, i) => drawItem(r, assets, h, x0 + i * 18, PANEL_Y + 2, game.state.character.id));
     } else {
       const count = `${this.items.length}/${INVENTORY_MAX}`;
       r.text(font, count, SCREEN_W - 16 - count.length * 8, PANEL_Y + 6);
@@ -154,7 +156,7 @@ export class InventoryScene implements Scene {
       r.rect(x, SLOTS_Y, SLOT - 1, SLOT - 1, '#3c3c3c');
       r.rect(x + 1, SLOTS_Y + 1, SLOT - 3, SLOT - 3, '#0c0c0c');
       const item = this.items[i];
-      if (item) drawItem(r, assets, item, x, SLOTS_Y);
+      if (item) drawItem(r, assets, item, x, SLOTS_Y, game.state.character.id);
     }
     const item = this.items[this.cursor];
     if (item && !this.note) {
@@ -170,7 +172,7 @@ export class InventoryScene implements Scene {
     if (this.note) lines = this.note.lines.map(fontText);
     else if (item)
       lines = [
-        ITEM_NAMES[item],
+        itemName(item, game.state.character.id),
         ...wrapText(itemDoes(game, item), 28).slice(0, 3),
         ...(item === '1up' ? [] : [HELD_NOTE]),
       ];
