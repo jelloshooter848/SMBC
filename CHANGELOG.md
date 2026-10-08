@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.34] - 2026-10-08
+
 ### Changed
 
 - Training starts every hero from their basic kit. Each power-up lesson places the real item in the room: grab it,
@@ -806,7 +808,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.33...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.34...HEAD
+[0.4.34]: https://github.com/jelloshooter848/SMBC/compare/v0.4.33...v0.4.34
 [0.4.33]: https://github.com/jelloshooter848/SMBC/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jelloshooter848/SMBC/compare/v0.4.31...v0.4.32
 [0.4.31]: https://github.com/jelloshooter848/SMBC/compare/v0.4.30...v0.4.31
