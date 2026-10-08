@@ -15,14 +15,14 @@ import { file, makeGame, useStorage, type H } from './heroes-harness';
 
 /*
  * Sophia III's level variants (Chapter 1 finishing pass): the `[variant sophia]` sections of the
- * levels Normal Sophia could not finish (docs/HEROES.md "Sophia III in the campaign levels").
- * 8-4's is ours (campaign only); the Lost Levels' are the original Crossover's own pieces for her
- * (`[variant sophia classic]`, so classic play has them too).
+ * levels Normal Sophia could not finish (docs/HEROES.md "Sophia III in the campaign levels"). They
+ * are the original Crossover's own pieces for her (`[variant sophia classic]`, so classic play has
+ * them too). SMB 8-4 has none (owner decision): its hidden coin block is her way up, as in the
+ * original.
  */
 
 /** Every bundled map with a Sophia variant. */
 const VARIANT_LEVELS = [
-  '8-4',
   'll-1-2',
   'll-1-2-warp',
   'll-1-2-under',
@@ -65,10 +65,11 @@ const tile = (l: LevelData, x: number, y: number) => l.tiles[y * l.width + x];
 useStorage();
 
 describe('the game lays the Sophia variant', () => {
-  const play = (hero: typeof MARIO, campaign: boolean, partner?: typeof MARIO, id = '8-4') => {
-    const h = makeGame();
+  const play = (hero: typeof MARIO, campaign: boolean, partner?: typeof MARIO, id = 'll-2-4') => {
+    // Dev mode with the file's Chapter 2 gate open: the campaign may enter the Lost Kingdom.
+    const h = makeGame({ dev: true });
     if (campaign) {
-      file();
+      file({ devGateOpen: true });
       h.game.openFile(1);
     }
     h.game.setHero(0, hero);
@@ -77,26 +78,23 @@ describe('the game lays the Sophia variant', () => {
     h.step();
     return scene(h).world.level;
   };
+  const runs = laid(getLevel('ll-2-4'), true);
 
-  it('in campaign play when a player is Sophia III (either one in co-op)', () => {
-    const runs = laid(getLevel('8-4'));
+  it('when a player is Sophia III (either one in co-op), in campaign play and in classic', () => {
     expect(runs.length).toBeGreaterThan(0);
-    for (const level of [play(SOPHIA, true), play(MARIO, true, SOPHIA)])
+    for (const level of [play(SOPHIA, true), play(MARIO, true, SOPHIA), play(SOPHIA, false)])
       for (const r of runs) expect(tile(level, r.x, r.y)).toBe(r.t);
   });
 
-  it('not for Mario, and not outside the campaign (8-4 has no Sophia tiles in the original)', () => {
-    for (const level of [play(MARIO, true), play(SOPHIA, false)])
-      for (const r of laid(getLevel('8-4')))
-        expect(tile(level, r.x, r.y)).toBe(tile(getLevel('8-4'), r.x, r.y));
+  it('not for Mario alone, in campaign play or classic', () => {
+    for (const level of [play(MARIO, true), play(MARIO, false)])
+      for (const r of runs) expect(tile(level, r.x, r.y)).toBe(tile(getLevel('ll-2-4'), r.x, r.y));
+    expect(play(MARIO, false).tiles).toBe(getLevel('ll-2-4').tiles);
   });
 
-  it('the original’s pieces (classic sections) also outside the campaign, for her only', () => {
-    const runs = laid(getLevel('ll-2-4'), true);
-    expect(runs.length).toBeGreaterThan(0);
-    const classic = play(SOPHIA, false, undefined, 'll-2-4');
-    for (const r of runs) expect(tile(classic, r.x, r.y)).toBe(r.t);
-    expect(play(MARIO, false, undefined, 'll-2-4').tiles).toBe(getLevel('ll-2-4').tiles);
+  it('8-4 has no variant: the level as it is, for her too', () => {
+    expect(getLevel('8-4').variants).toBeUndefined();
+    expect(play(SOPHIA, true, undefined, '8-4').tiles).toEqual(campaignLevel(getLevel('8-4')).tiles);
   });
 });
 
@@ -123,12 +121,6 @@ describe.each(VARIANT_LEVELS)('%s: the Sophia variant', (id) => {
  * (when the route starts past a stretch only a scripted sim gets through)].
  */
 const ROUTES: [string, string, number, string, [number, number]?][] = [
-  [
-    '8-4',
-    '8-4',
-    0,
-    'enter 8-4 | tank@1,6 walk-right | tank@4,8 edge-right | tank@13,12 edge-right | tank@23,12 drive-right | tank@42,12 edge-right | tank@55,12 edge-right | tank@64,9 jump-right ride1-right | tank@77,9 long-right | tank@85,9 late-left | tank@82,7 pipe | enter 8-4 | tank@126,10 long-right | tank@134,9 jump-right | tank@141,12 jump-right | tank@147,12 long-right | tank@154,9 jump-right | tank@160,8 up-right | tank@164,5 pipe | enter 8-4 | tank@206,10 jump-right | tank@212,9 jump-right | tank@219,9 long-right | tank@226,9 edge-right | tank@237,9 jump-right | tank@243,9 drive-right | tank@262,9 edge-right | tank@273,9 long-right | tank@283,9 long-right | tank@290,9 edge-right | tank@301,9 hop-right | tank@304,7 pipe | enter 8-4-water | tank@3,10 swim-3-240-right | tank@20,7 swim-3-240-right | tank@36,4 far-right | tank@57,12 edge-right | tank@67,8 drive-right | enter 8-4-end | tank@3,10 long-right | tank@12,12 edge-right | tank@26,9 drive-right | tank@43,9 jump-right',
-  ],
   [
     'll-1-2',
     'll-1-2',
@@ -331,6 +323,47 @@ describe('Normal Sophia III gets past each variant’s spot', () => {
     expect(getLevel('ll-7-2-bonus').zones).toContainEqual(
       expect.objectContaining({ kind: 'pipe', target: expect.objectContaining({ level: 'll-7-2', x: 147 }) }),
     );
+  });
+
+  it('8-4 (no variant): up the hidden coin block at 161 onto the hanging pipe at 163 and down it', () => {
+    // As in the original: reveal the block (row 9) from the floor, jump onto it, onto the pipe's
+    // top seven tiles over the floor (Mario gets there off the Paratroopas), and down the pipe.
+    const plan: [Action[], number][] = [
+      [[], 20],
+      [['jump'], 30],
+      [[], 40],
+      [['left'], 30],
+      [[], 30],
+      [['right', 'jump'], 8],
+      [['jump'], 52],
+      [[], 30],
+      [['right', 'jump'], 8],
+      [['jump'], 52],
+      [[], 30],
+    ];
+    const ends = plan.reduce<number[]>((a, [, n]) => [...a, (a.at(-1) ?? 0) + n], []);
+    let onPipe = false;
+    const r = runSim({
+      level: campaignLevel(getLevel('8-4')),
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 900,
+      assist: { invulnerable: true, infiniteTime: true },
+      start: { x: 161, y: 12, mode: 'stand' },
+      controller: (w, f) => {
+        for (const e of w.entities) if (e instanceof Enemy) e.alive = false;
+        const b = w.player.body;
+        if (b.onGround && toPx(b.y + b.h) === 96 && toPx(b.x) > 2590) onPipe = true;
+        const k = ends.findIndex((e) => f < e);
+        if (k >= 0) return (plan[k] as [Action[], number])[0];
+        // Over the pipe's mouth (its middle at 164 * 16), then down.
+        const d = 2614 - toPx(b.x);
+        if (Math.abs(d) > 1 || Math.abs(b.vx) >= 400) return f % 6 === 0 ? [d > 0 ? 'right' : 'left'] : [];
+        return ['down'];
+      },
+    });
+    expect(onPipe).toBe(true);
+    expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: { level: '8-4', x: 206 } });
   });
 
   it('ll-2-2: the hidden blocks of the crossing at 185 (the original’s 186 a row lower)', () => {
