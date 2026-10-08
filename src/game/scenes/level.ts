@@ -3,7 +3,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { px } from '@engine/math/units';
 import { MAP_EXIT, type LevelData } from '../level/schema';
-import { freshSeed, World, type WorldStart } from '../world/world';
+import { freshSeed, levelSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
 import {
   drawSmb3Status,
@@ -95,9 +95,10 @@ export class LevelScene implements Scene {
     readonly level: LevelData,
     start: LevelStart,
   ) {
-    // Each visit plays out differently (swimming Cheep Cheeps, timers); headless sims and tests
-    // keep the level's fixed seed.
-    this.world = new World(level, game.ctx, game.state, { ...start, seed: start.seed ?? freshSeed() });
+    // In play each visit plays out differently (swimming Cheep Cheeps, timers); headless sims and
+    // tests (no GameDeps.freshSeeds) keep the level's fixed seed.
+    const seed = start.seed ?? (game.deps.freshSeeds === true ? freshSeed() : levelSeed(level));
+    this.world = new World(level, game.ctx, game.state, { ...start, seed });
     // Campaign play: brainwashed heroes wait in some rooms until freed on this file.
     if (game.campaign)
       this.world.captives = {

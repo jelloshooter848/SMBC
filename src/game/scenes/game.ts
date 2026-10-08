@@ -93,6 +93,13 @@ export interface GameDeps {
   lastInput?: () => LastInput;
   /** Play the title's rift intro on the session's first title (main.ts; off in the headless sims). */
   titleIntro?: boolean;
+  /**
+   * A fresh world seed for every level visit (main.ts), so no two visits play out the same
+   * (swimming Cheep Cheeps, leaping ones, timers). Off, every world keeps its level's fixed seed
+   * (levelSeed), as in the headless sims: the tests that play through Game repeat exactly, run
+   * after run, alone or in the full suite.
+   */
+  freshSeeds?: boolean;
 }
 
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
@@ -860,7 +867,7 @@ export class Game {
 
   /**
    * Developer level select: any level, character and power state, with 99 lives. `seed` fixes the
-   * level's world seed (tests); otherwise each visit gets a fresh one.
+   * level's world seed (tests); otherwise LevelScene picks it (GameDeps.freshSeeds).
    */
   devStart(levelId: string, character: CharacterDef, power: string, fullKit = false, seed?: number): void {
     this.tutorialRun = null;
