@@ -6,7 +6,7 @@ import { mapPage } from '@content/worldmap';
 import { px } from '@engine/math/units';
 import type { Settings } from '@engine/save/settings';
 import type { Scene } from '@engine/scene';
-import { WorldMapScene, GUARD_GRACE_FRAMES } from '@game/scenes/world-map';
+import { WorldMapScene, GUARD_GRACE_FRAMES, HIDING_HINT, HIDING_SAID } from '@game/scenes/world-map';
 import { LevelScene } from '@game/scenes/level';
 import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { CardScene, MessageScene } from '@game/scenes/message';
@@ -41,7 +41,7 @@ import {
   useStorage,
   type H,
 } from './heroes-harness';
-import { ALL_STORY, RESTYLES_SEEN } from './story-seen';
+import { ALL_STORY } from './story-seen';
 
 // Larry Koopa's airship (4-2), the crystal ball and World 4's bonus spot with its Hammer Bro
 // (docs/HEROES.md "Larry Koopa and the crystal ball", docs/WORLD_MAP.md "The bonus spot and its
@@ -118,7 +118,9 @@ describe('the crystal ball (campaign)', () => {
     expect(h.top()).toBeInstanceOf(CardScene);
     expect(closeCards(h)).toEqual(STORY_CRYSTAL_BALL_PAGES);
     expect(h.said.some((t) => t.startsWith('LARRY DROPPED HIS CRYSTAL BALL!'))).toBe(true);
-    expect(h.said.some((t) => t.startsWith('...SO IT SHOWS WHERE YOUR FRIENDS ARE HIDDEN!'))).toBe(true);
+    expect(h.said.some((t) => t.startsWith('...SO FROM NOW ON, THE MAP SHOWS WHERE EACH HERO HIDES!'))).toBe(
+      true,
+    );
     const map = h.top() as WorldMapScene;
     expect(map).toBeInstanceOf(WorldMapScene);
     expect(map.page.id).toBe('smb-4');
@@ -305,17 +307,17 @@ describe('crystal-ball hints on the map', () => {
     });
     const { sprites, texts } = draw(map());
     expect(sprites.some((s) => s.key === 'mario@luigi~shade-grass')).toBe(true);
-    // Toad's line for Luigi (0.4.13, story/script.ts MISSED_HINT).
-    expect(map().hintLine).toBe('TOAD: I HEAR A MUSTACHE SIGH...');
-    expect(texts.map((t) => t.str)).toContain('TOAD: I HEAR A MUSTACHE SIGH...');
-    expect(h.said.some((t) => t.includes('Toad: I hear a mustache sigh...'))).toBe(true);
+    // The generic line (Toad's per-hero lines are gone since 0.4.23).
+    expect(map().hintLine).toBe(HIDING_HINT);
+    expect(texts.map((t) => t.str)).toContain(HIDING_HINT);
+    expect(h.said.some((t) => t.includes(HIDING_SAID))).toBe(true);
   });
 
   it("Unlock all shows no silhouette on a node the file hasn't really reached", () => {
     const h = makeGame();
     h.game.deps.settings = { dev: true } as Settings;
     file({
-      story: [...RESTYLES_SEEN],
+      story: [],
       cleared: ['1-0'],
       secrets: ['larry'],
       devUnlockAll: true,

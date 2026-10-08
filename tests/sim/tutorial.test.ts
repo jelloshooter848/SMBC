@@ -25,11 +25,13 @@ import type { WorldMapPage } from '@game/map/types';
 import { loadSave, newSave, saveKey } from '@game/save/save-files';
 import { MARIO_LESSONS, MARIO_TUTORIAL, TOAD_PAGES } from '@game/tutorial/mario-1-0';
 import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
-import { STORY_TEASE_PAGES, STORY_TOAD_PAGES } from '@game/story/script';
+import { BowserSpellScene } from '@game/story/bowser-spell';
+import { BOWSER_SPELL_PAGES } from '@game/story/script';
+import { STORY_TOAD_PAGES } from '@game/story/script';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
 import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
-import { ALL_STORY } from './story-seen';
+import { ALL_STORY, skipOpening } from './story-seen';
 
 // Mario's tutorial stage 1-0 (0.5.0): World 1's start node, where a new file begins; 1-1 opens
 // once it is cleared (or skipped). Toad tells the story, the lessons follow one by one in a
@@ -49,6 +51,7 @@ function newFileFromTitle(h: H) {
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);
   h.tap('jump');
+  skipOpening(h); // the story's opening first (opening.test.ts)
 }
 
 /** From the map on 1-0: JUMP enters it (no character select), the card, then the level. */
@@ -194,8 +197,9 @@ function playTutorial(h: H, stop: () => boolean, max = 6000) {
       h.step(frames % 40 === 39 ? ['jump'] : []);
       continue;
     }
-    // The tease waits for OK once Bowser speaks (text never moves by itself).
-    if (t instanceof ShadowTeaseScene) {
+    // The tease (Bowser's spell in the campaign) waits for OK once Bowser speaks (text never
+    // moves by itself).
+    if (t instanceof ShadowTeaseScene || t instanceof BowserSpellScene) {
       h.step(frames % 40 === 39 ? ['jump'] : []);
       continue;
     }
@@ -260,7 +264,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     // The campaign tells the story's greeting (docs/STORY.md 2.1); TOAD_PAGES stay for other play.
     expect(card.lines).toEqual(STORY_TOAD_PAGES[0]);
     skipGreeting(h);
-    expect(h.said.some((t) => t.startsWith(STORY_TOAD_PAGES[3]!.filter(Boolean).join(' ')))).toBe(true);
+    expect(h.said.some((t) => t.startsWith(STORY_TOAD_PAGES[0]!.filter(Boolean).join(' ')))).toBe(true);
     expect(director(h)?.lesson?.id).toBe('walk');
     expect(h.said.at(-1)).toMatch(/HOLD RIGHT TO WALK/);
     // The greeting is not repeated after a respawn.
@@ -269,7 +273,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(h.top()).toBeInstanceOf(LevelScene);
   });
 
-  it('a scripted Mario does every lesson in order, sees the tease and reaches the flag', () => {
+  it("a scripted Mario does every lesson in order, sees Bowser's spell and reaches the flag", () => {
     const h = makeGame();
     file();
     h.game.openFile(1);
@@ -279,7 +283,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     let teased = false;
     playTutorial(h, () => {
       const t = h.top();
-      if (t instanceof ShadowTeaseScene) teased = true;
+      if (t instanceof BowserSpellScene) teased = true;
       if (t instanceof LevelScene) {
         const id = t.tutorial?.lesson?.id;
         if (id && seen.at(-1) !== id) seen.push(id);
@@ -292,8 +296,9 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(d.done).toEqual(MARIO_LESSONS.map((l) => l.id));
     expect(d.missed).toEqual([]);
     expect(teased).toBe(true);
-    // The campaign's tease: Bowser's two pages (docs/STORY.md 2.2), each read out.
-    for (const page of STORY_TEASE_PAGES) expect(h.said.some((t) => t.startsWith(page.join(' ')))).toBe(true);
+    // The campaign's spell (docs/STORY.md 2.2): Bowser's pages, each read out.
+    for (const page of BOWSER_SPELL_PAGES)
+      expect(h.said.some((t) => t.startsWith(page.filter(Boolean).join(' ')))).toBe(true);
     expect(h.game.state.lives).toBe(lives);
     // The flag clears 1-0: back on the map, 1-1 drawn in.
     h.until(() => h.top() instanceof WorldMapScene, 1200);

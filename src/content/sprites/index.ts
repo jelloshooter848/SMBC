@@ -23,6 +23,7 @@ import { sophiaPalettes, sophiaDef } from './sophia';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { partnersPalettes, partnersDef } from './partners';
 import { wandPalettes, wandDef } from './wand';
+import { storyPalettes, storyDef } from './story';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -87,6 +88,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'bm-dungeon': withSideFrames(bmDungeonDef),
   partners: partnersDef,
   wand: wandDef,
+  // The 0.4.23 story's opening props: Bowser's star wand, the wax seal, Toad's note.
+  story: storyDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -118,6 +121,7 @@ const defaults: Record<string, readonly string[]> = {
   ...bmDungeonPalettes,
   ...partnersPalettes,
   ...wandPalettes,
+  ...storyPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

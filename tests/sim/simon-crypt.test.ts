@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { RESTYLES_SEEN } from './story-seen';
 import { getLevel, levelIds } from '@content/levels';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
@@ -772,7 +771,7 @@ describe('co-op arrivals', () => {
 /** File 1 open on World 5, then 5-4 from the map's flow (campaign variant), on the down lift. */
 function onTheLift(h: H): LevelScene {
   file({
-    story: [...RESTYLES_SEEN],
+    story: [],
     cleared: ['1-0', '5-3'],
     pages: ['smb-1', 'smb-5'],
     position: { page: 'smb-5', node: '5-4' },

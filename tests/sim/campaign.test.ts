@@ -31,7 +31,7 @@ import type { WorldEvent } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import type { Settings } from '@engine/save/settings';
-import { ALL_STORY, seeAllStory } from './story-seen';
+import { ALL_STORY, seeAllStory, skipOpening } from './story-seen';
 
 // Campaign mode: levels picked on the world map return to it when cleared, warps open their
 // target world, game over continues on the map, and the save file follows along. Every other
@@ -184,6 +184,7 @@ function newFileFromTitle(h: H) {
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);
   h.tap('jump');
+  skipOpening(h); // the story's opening first (opening.test.ts)
   seeAllStory(h.game); // Toad's map scenes are tested in toad-guide.test.ts
 }
 

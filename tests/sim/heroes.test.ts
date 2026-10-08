@@ -32,6 +32,7 @@ import {
   talkIntoMiniGame,
   useStorage,
 } from './heroes-harness';
+import { skipOpening } from './story-seen';
 
 // Freeing the heroes (0.5.0): a campaign file starts with Mario only; the others are brainwashed
 // captives to find. Luigi waits in the 1-1 bonus room; talking to him starts his mini game. The
@@ -117,6 +118,7 @@ describe('save files lock heroes in campaign play', () => {
     h.game.openFile(1);
     expect(h.game.freed).toEqual(['mario', 'link']);
     expect(h.game.state.character).toBe(LINK);
+    h.game.markSeen('luigi-runs'); // 1-1's opening beat is another story
     h.game.enterLevelFromMap('1-1');
     h.idle(12);
     expect(new Set(offered(h))).toEqual(new Set(['Mario', 'Link']));
@@ -167,6 +169,7 @@ describe('the story intro', () => {
     expect(h.top()).toBeInstanceOf(FileSelectScene);
     h.idle(8);
     h.tap('jump');
+    skipOpening(h); // the story's opening first (opening.test.ts)
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect((h.top() as WorldMapScene).node).toBe('start');
     expect(loadSave(1)?.freed).toEqual(['mario']);

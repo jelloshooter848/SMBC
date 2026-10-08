@@ -1,4 +1,3 @@
-import { beat } from '@game/story/beats';
 import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { defaultSettings, type Settings } from '@engine/save/settings';
@@ -69,8 +68,7 @@ const playAirship = (h: H) => {
 function in42(over: Partial<SaveFile> = {}): { h: H; main: LevelScene } {
   const h = makeGame();
   h.game.deps.settings = { dev: false } as Settings;
-  // 4-2's campaign look has a one-time remark; it is not what these tests are about.
-  file(world4({ story: [beat.restyle('4-2')], ...over }));
+  file(world4({ ...over }));
   h.game.openFile(1);
   h.idle(8);
   expect(h.top()).toBeInstanceOf(WorldMapScene);

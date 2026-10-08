@@ -23,18 +23,14 @@ const toad = (...lines: string[]): Page => ['TOAD:', '', ...lines];
 
 /* ---------------------------------------------------------------- 2.1 / 2.2: 1-0 */
 
-/** Toad's greeting in 1-0 (campaign): the stolen wand, the heroes, Peach's note. */
+/** Toad's greeting in 1-0 (campaign): one page, the warm-up (the opening told the rest). */
 export const STORY_TOAD_PAGES: readonly Page[] = [
-  toad('MARIO! THANK GOODNESS', "YOU'RE HERE! KING KOOPA", "STOLE LARRY'S MAGIC WAND!"),
-  toad('NOW STRANGE HEROES FROM', 'OTHER WORLDS ARE POPPING', "UP, ALL UNDER THE KING'S", 'SPELL. BUT WHY?'),
-  toad('AND THE PRINCESS IS GONE!', 'SHE LEFT ME ONE NOTE:', 'GONE WHERE NO KOOPA', 'WOULD EVER LOOK. - P'),
-  toad('SEARCH EVERY PIPE, VINE', 'AND HIDDEN BLOCK! BUT', 'FIRST, A WARM-UP. FOLLOW', 'THE TIPS UP TOP!'),
-];
-
-/** Bowser's shadow in 1-0's tease (campaign): two pages in the prompt box. */
-export const STORY_TEASE_PAGES: readonly Page[] = [
-  ['BOWSER: BWA HA HA!', "MY KOOPAS COULDN'T FIND", 'THAT PRINCESS. FINE!'],
-  ["THESE HEROES DON'T THINK", "LIKE KOOPAS. THEY'LL SNIFF", 'HER OUT BEFORE YOU DO!'],
+  toad(
+    "WE'LL SEARCH EVERY PIPE,",
+    'VINE AND HIDDEN BLOCK! BUT',
+    'FIRST, A WARM-UP. FOLLOW',
+    'THE TIPS UP TOP!',
+  ),
 ];
 
 /* ---------------------------------------------------------------- 2.3a: the fake Bowsers */
@@ -50,163 +46,6 @@ export function noMoreStandIns(hero: string): Page {
   return ['BOWSER: NO MORE STAND-INS,', `${hero}. THIS TIME IT'S`, 'REALLY ME! BWA HA HA!'];
 }
 
-/* ---------------------------------------------------------------- 2.3b: restyled levels */
-
-/** Toad's remark the first time a restyled level starts (campaign), by main level id. */
-export const RESTYLE_PAGES: Readonly<Record<string, Page>> = {
-  '2-1': toad(
-    'WHY DOES SEA SIDE LOOK SO',
-    'DIFFERENT HERE? STONE',
-    'RUINS? SOMEONE BROUGHT A',
-    'BIT OF THEIR WORLD ALONG.',
-  ),
-  '3-1': toad(
-    'WHY DOES NIGHT HILLS LOOK',
-    'LIKE A FACTORY HERE? ALL',
-    'BOLTS AND PIPES. SOMEBODY',
-    'BROUGHT THEIR WORLD ALONG.',
-  ),
-  '4-2': toad('MUSHROOM WOODS, BUT BLUE', 'AND BUBBLY DOWN HERE? IT', 'FEELS LIKE ANOTHER PLANET.'),
-  '5-4': toad(
-    'WHY DOES THIS CASTLE LOOK',
-    'SO... OLD? CANDLES, STONE,',
-    'AND I SWEAR SOMETHING JUST',
-    'MOVED IN THAT WINDOW.',
-  ),
-  '6-2': toad(
-    'SNOW NIGHT HAS STREETS',
-    'NOW? SHOP FRONTS, LAMPS...',
-    "SOMEONE'S WORLD HAS",
-    'BLED INTO THIS ONE.',
-  ),
-  '7-3': toad('CANNON COAST TURNED INTO A', "JUNGLE?! AND WHAT'S WITH", "THAT BRIDGE'S RED LIGHT?"),
-};
-
-/* ---------------------------------------------------------------- 2.4-2.11: the worlds */
-
-/** Toad's world entry, by map page (first arrival on the page). */
-export const WORLD_ENTRY: Readonly<Record<string, readonly Page[]>> = {
-  'smb-1': [
-    toad(
-      'FIRST, WHO ARE WE LOOKING',
-      'FOR HERE? SOMEONE IN GREEN.',
-      'TALLER THAN YOU. JUMPS',
-      'HIGHER. ALWAYS PLAYER TWO.',
-    ),
-    toad('IF I KNOW HIM, HE FOUND', 'THE COINS BEFORE YOU DID.', 'DOWN A PIPE, MAYBE?'),
-  ],
-  'smb-2': [
-    toad(
-      'ONE CASTLE DOWN! NEXT WE',
-      'SEEK A SWORDSMAN IN A',
-      'GREEN CAP. HE NEVER SAYS',
-      "A WORD. NOT ONE. I'VE TRIED.",
-    ),
-    toad('I KEEP DREAMING OF OLD', 'RUINS ABOVE THE CLOUDS.', 'FUNNY... THE CLOUDS HERE', 'END SO SUDDENLY.'),
-  ],
-  'smb-3': [
-    toad(
-      'THE SEA IS CALM AGAIN!',
-      'NEXT: A BLUE ROBOT BOY',
-      'WITH A CANNON FOR AN ARM.',
-      'FROM THE FUTURE, I THINK.',
-    ),
-    toad('LOOK AT THE SKY TONIGHT.', 'ONE STAR KEEPS BLINKING.', "STARS DON'T BLINK LIKE", 'THAT. DO THEY?'),
-  ],
-  'smb-4': [
-    toad(
-      'THREE CASTLES! THE KING IS',
-      'WORRIED. NEXT: A HUNTER',
-      'IN A POWER SUIT. NO ONE',
-      'HAS EVER SEEN HER FACE.',
-    ),
-    toad('SOME OLD WARP PIPES HERE', "DON'T WARP ANY MORE...", 'THEY GO DOWN. DEEP DOWN.'),
-    toad('AND I SAW AN AIRSHIP', 'FLYING LOW OVER 4-2.', 'KEEP AN EYE ON THE SKY!'),
-  ],
-  'smb-5': [
-    toad(
-      'THE WOODS ARE FREE! NEXT:',
-      'A HUNTER OF THE NIGHT.',
-      'HIS FAMILY HAS FOUGHT',
-      'VAMPIRES FOR AGES.',
-    ),
-    toad('UP IN THE SKY TREES? NO...', 'A MAN LIKE THAT IS DEEP', 'UNDERGROUND, IN SOME', 'DUNGEON. BRR!'),
-  ],
-  'smb-6': [
-    toad('FIVE CASTLES! NEXT: A', "NINJA. YOU WON'T SEE HIM", 'UNLESS HE WANTS YOU TO.'),
-    toad(
-      'NINJAS LOVE SECRET DOORS.',
-      "WALLS THAT AREN'T WALLS.",
-      "I'D PUSH ON ANYTHING THAT",
-      'LOOKS... POKED.',
-    ),
-  ],
-  'smb-7': [
-    toad('SIX CASTLES! NEXT: A', 'SOLDIER. ONE BIG GUN,', 'NO SHIRT, NO FEAR.'),
-    toad(
-      'THE COAST LOOKS LIKE A',
-      'JUNGLE NOW, AND THE',
-      'BRIDGES GO BOOM. RUN, OR',
-      "DON'T. HE'D KNOW WHICH.",
-    ),
-  ],
-  // Pages 2-3, World 8's hero (Sophia III) and her pilot: only once she is in the game (ENTRY_NEEDS).
-  'smb-8': [
-    toad("BOWSER'S LAND. HE'S IN", 'HERE SOMEWHERE WITH THE', "WAND. AND HE'S NOT HAPPY."),
-    toad("THE LAST ONE WE SEEK ISN'T", "A PERSON AT ALL. IT'S A...", 'TANK? A TANK THAT JUMPS?'),
-    toad(
-      'HER PILOT IS LOST IN THE',
-      "KING'S CASTLE. HE KEEPS",
-      'TAKING THE PIPE THAT',
-      'EVERYONE ELSE SKIPS.',
-    ),
-    toad(
-      'ODD... SOMEONE PULLED UP A',
-      'TURNIP RIGHT HERE. IN',
-      "BOWSER'S LAND! WHO PLANTS",
-      'TURNIPS NEXT TO LAVA?',
-    ),
-  ],
-};
-
-/**
- * The pages of a world entry that are about a hero who may not be in the game yet (World 8's
- * Sophia III and her pilot, pages 2-3 by index): shown only once that character is registered,
- * as a beat of their own (beats.ts beat.enterHero), so a file that reached the world before she
- * landed still hears them later, once. The rest of the entry (World 8: Bowser's land and the
- * turnip, Peach's clue) always plays.
- */
-export const ENTRY_NEEDS: Readonly<Record<string, { hero: string; pages: readonly number[] }>> = {
-  'smb-8': { hero: 'sophia', pages: [1, 2] },
-};
-
-/** Toad's "missed something" card, by hero id: the first time that hero's shadow shows. */
-export const MISSED_PAGES: Readonly<Record<string, Page>> = {
-  luigi: toad('HUH. 1-1 FEELS... CROWDED.', 'LIKE SOMEONE WAS WAITING', 'UNDER IT THE WHOLE TIME.'),
-  link: toad('2-1 LOOKED TALLER THAN IT', 'SHOULD. AS IF IT KEPT GOING', 'UP, PAST THE LAST CLOUD...'),
-  megaman: toad('THAT STAR OVER 3-1 IS', 'STILL BLINKING. I THINK', "IT'S BLINKING AT US."),
-  samus: toad('4-2 SOUNDED HOLLOW. LIKE', "THERE'S A WHOLE CAVE UNDER", 'IT THAT WE NEVER SAW.'),
-  simon: toad("THAT CASTLE'S LIFT WENT", 'DOWN... AND SOMETHING DOWN', 'THERE WENT TAP, TAP, TAP.'),
-  ryu: toad('6-2 HAD A STAR STUCK IN', 'A WALL. NOT THE GOOD KIND', 'OF STAR, EITHER.'),
-  bill: toad('THAT JUNGLE STILL SMELLS', 'OF SMOKE. SOMEONE IS', 'CAMPING UNDER THOSE', 'BRIDGES.'),
-  sophia: toad('A FROG HAS BEEN SITTING', 'ON 8-4, CROAKING AT ME.', 'I THINK HE WANTS SOMETHING.'),
-};
-
-/**
- * The map's hint line while the hero stands on a node whose hidden hero's shadow shows, by hero
- * id (replaces the generic HIDING_HINT), and what the announcer says for it.
- */
-export const MISSED_HINT: Readonly<Record<string, string>> = {
-  luigi: 'TOAD: I HEAR A MUSTACHE SIGH...',
-  link: 'TOAD: SOMETHING UP THERE HUMS...',
-  megaman: 'TOAD: A STAR UP THERE BLINKS...',
-  samus: 'TOAD: THE PIPES HERE ECHO...',
-  simon: 'TOAD: THIS LIFT SMELLS OF BATS',
-  ryu: 'TOAD: A WALL IN HERE IS WATCHING',
-  bill: 'TOAD: I SMELL A CAMPFIRE...',
-  sophia: 'TOAD: A FROG CROAKED IN THERE',
-};
-
 /* ---------------------------------------------------------------- 2.7: Larry and the ball */
 
 /** Larry in his room, the first time the hero rises out of its pipe in a run. */
@@ -218,13 +57,13 @@ export const LARRY_PAGES: readonly Page[] = [
 /** The crystal ball's cards (Larry beaten; campaign), at most 26 columns a line. */
 export const STORY_CRYSTAL_BALL_PAGES: readonly Page[] = [
   ['LARRY DROPPED HIS', 'CRYSTAL BALL! IT SEES', "WHEREVER THE WAND'S SPELL", 'IS AT WORK...'],
-  ['...SO IT SHOWS WHERE', 'YOUR FRIENDS ARE HIDDEN!'],
+  ['...SO FROM NOW ON, THE MAP', 'SHOWS WHERE EACH HERO', 'HIDES!'],
 ];
 
-/** World 4's map right after the airship crash: also stands in for the per-hero missed cards. */
+/** World 4's map right after the airship crash (a major scene). */
 export const CRASH_PAGES: readonly Page[] = [
   toad('NICE LANDING! I MADE THE', 'WRECK INTO A BONUS SPOT.', 'WATCH OUT FOR HAMMER BROS.'),
-  toad('AND THAT CRYSTAL BALL LIT', 'UP EVERY HIDING PLACE ON', 'THE MAP. SEE THE SHADOWS?'),
+  toad('AND THAT CRYSTAL BALL WILL', 'SHOW US WHERE EVERY HERO', 'HIDES, IN EVERY WORLD WE', 'REACH. HANDY!'),
 ];
 
 /* ---------------------------------------------------------------- castles (2.4-2.12) */
@@ -293,12 +132,8 @@ export const STORY_NOT_OVER: readonly string[] = [
 export function riftPages(hero: string): Page[] {
   return [
     toad('THAT CRACK LEADS TO THE', 'LOST KINGDOM! NOBODY GOES', 'THERE. NOBODY EVER LOOKS', 'THERE...'),
-    toad(
-      '...WAIT. WHERE NO KOOPA',
-      'WOULD EVER LOOK, AND NO',
-      "HERO EVER SNIFFED. THAT'S",
-      `WHERE SHE IS, ${hero}!`,
-    ),
+    toad('...WAIT. WHERE NO KOOPA', "WOULD EVER LOOK. THAT'S", `WHERE SHE WENT, ${hero}!`),
+    toad('OLD FRIENDS, SHE WROTE...', 'WHO COULD SHE KNOW IN THE', 'LOST KINGDOM?'),
     toad(
       "BUT THE WAND'S PIECES FELL",
       'IN THERE TOO, AND THE',
@@ -320,44 +155,6 @@ export const SIMON_CURSE: Page = [
   'BLOOD. NOW I AM HIS THRALL.',
 ];
 
-/** Toad's generic hero-joined card: its first page (the crack) is left out once 8-4 is beaten. */
-export const JOINED_CRACK: Page = toad(
-  'ANOTHER HERO SET FREE! AND',
-  'DID YOU HEAR THAT CRACK?',
-  'EVERY SPELL YOU BREAK SNAPS',
-  'BACK INTO THE WAND!',
-);
-export const JOINED_GENERIC: Page = toad(
-  'ONE LESS PAIR OF EYES',
-  'HUNTING THE PRINCESS, AND',
-  'ONE MORE CRACK IN THE WAND!',
-);
-
-/** Toad's reaction the first time the map shows after a hero is freed, by hero id. */
-export const JOINED_PAGES: Readonly<Record<string, Page>> = {
-  luigi: toad("LUIGI! I KNEW YOU'D SNAP", 'OUT OF IT. ...YOU DID SNAP', 'OUT OF IT, RIGHT?'),
-  link: toad("THE SWORDSMAN STILL HASN'T", 'SAID A WORD TO ME. HE', 'TALKED TO YOU?!'),
-  megaman: toad('A ROBOT ON THE TEAM! CAN', 'HE MAKE TOAST? ...NO?', 'OKAY. STILL GREAT.'),
-  samus: toad('THE HUNTER IS WITH US! SHE', 'SAID THANKS. I THINK. HER', 'HELMET MUFFLES THINGS.'),
-  simon: toad('THE VAMPIRE HUNTER SAID', 'WHAT A HORRIBLE NIGHT IT', "IS. IT'S THE MIDDLE OF", 'THE DAY.'),
-  ryu: toad('THE NINJA IS WITH US! HE', 'WAS STANDING BEHIND ME THE', "WHOLE TIME, WASN'T HE."),
-  bill: toad('THE SOLDIER SAYS THANKS.', 'AT LEAST I THINK SO. IT', 'WAS MOSTLY EXPLOSIONS.'),
-  sophia: toad('JASON AND FRED SAY THANK', 'YOU! AND THE TANK... DID', 'THE TANK JUST HONK?'),
-};
-
-/** Every hidden hero freed: before 8-4 is beaten, and after. */
-export const ALL_FREED_BEFORE: Page = toad(
-  'EVERY HERO IS FREE! NOBODY',
-  'HUNTS THE PRINCESS NOW...',
-  'EXCEPT BOWSER. THE WAND',
-  'MUST BE NEARLY EMPTY!',
-);
-export const ALL_FREED_AFTER: Page = toad(
-  'EVERY HERO IS FREE! NOW',
-  "THEY'RE ALL LOOKING FOR",
-  'THE PRINCESS WITH US.',
-);
-
 /** The optional extras, the first visit to the Warp Zone hub and to the Mini Game Arena. */
 export const HUB_PAGE: Page = toad(
   'A PLACE BETWEEN WORLDS!',
@@ -369,6 +166,79 @@ export const ARENA_PAGE: Page = toad(
   'THEIR TRIALS HERE. JUST',
   'FOR FUN, THIS TIME.',
 );
+
+/* ================================================================ S1 (0.4.23): the opening, 1-0, World 1 */
+
+/** 2.1: the caption over Peach's courtyard (a card without a speaker), before her note. */
+export const OPENING_CAPTION: Page = ['PRINCESS PEACH IS MISSING!', 'SHE LEFT THIS NOTE:'];
+
+/** Columns and lines of Peach's note on its parchment (2.1). */
+export const NOTE_COLS = 26;
+export const NOTE_LINES = 13;
+
+/** 2.1: Peach's note, as written on the parchment (blank lines are gaps between paragraphs). */
+export const PEACH_NOTE: Page = [
+  'DEAR TOAD,',
+  '',
+  'BOWSER IS UP TO SOMETHING.',
+  "THIS TIME I WON'T SIT AND",
+  'WAIT TO BE RESCUED.',
+  '',
+  "I'VE GONE TO FIND OLD",
+  'FRIENDS WHO CAN HELP, IN A',
+  'PLACE WHERE NO KOOPA WOULD',
+  'EVER LOOK.',
+  '',
+  "DON'T WORRY ABOUT ME!",
+  '                       - P',
+];
+
+/** 2.1: back in the courtyard after the note, Toad to Mario. */
+export const OPENING_TOAD_PAGES: readonly Page[] = [
+  toad('MARIO! THE KOOPAS ARE', 'ALREADY OUT HUNTING FOR', 'HER. WE HAVE TO FIND HER', 'FIRST!'),
+  toad('COME ON, THE ROAD STARTS', "JUST OUTSIDE TOWN. LET'S", 'GO!'),
+];
+
+const bowser = (...lines: string[]): Page => ['BOWSER:', '', ...lines];
+
+/**
+ * 2.2: Bowser in person at the end of 1-0 (campaign): the pages before his spell (the wand comes
+ * out on the second), then the last page after it.
+ */
+export const BOWSER_SPELL_PAGES: readonly Page[] = [
+  bowser("BWA HA HA! SO YOU'RE", 'LOOKING FOR THE PRINCESS', 'TOO, MARIO?'),
+  bowser('LIKE MY NEW WAND? ONE WAVE', 'AND ANYONE DOES WHATEVER I', 'SAY!'),
+  bowser('AND I READ HER LITTLE NOTE.', "'WHERE NO KOOPA WOULD EVER", "LOOK.' HMPH!"),
+  bowser("WELL, IF MY KOOPAS CAN'T", "FIND HER, THEN I'LL FIND", 'SOMEBODY WHO WILL!'),
+];
+export const BOWSER_SPELL_LAST: Page = bowser(
+  'HEROES OF OTHER WORLDS,',
+  'YOU SERVE ME NOW! FIND ME',
+  'THAT PRINCESS! BWA HA HA!',
+);
+
+/** Said once during the spell's eight windows (a scene without on-screen text). */
+export const BOWSER_SPELL_SAID =
+  'Bowser raises the wand. Eight heroes from other worlds are pulled into the eight worlds, under his spell.';
+
+/** 2.4: Toad's World 1 scene, back on the map after 1-0 (a major scene: he walks in). */
+export const WORLD1_PAGES: readonly Page[] = [
+  toad('MARIO, DID YOU SEE THAT?!', 'BOWSER USED MAGIC TO BRING', 'PEOPLE HERE FROM OTHER', 'UNIVERSES!'),
+  toad('AND HE WANTS THEM TO FIND', 'THE PRINCESS FOR HIM. WE', 'HAVE TO FIND HER FIRST!'),
+  toad("WHERE'S LUIGI? WE NEED TO", 'FIND HIM. WE COULD REALLY', 'USE HIS HELP FINDING', 'PEACH.'),
+];
+
+/** 2.4: 1-1, brainwashed Luigi runs off: what the announcer says, then Mario's card. */
+export const LUIGI_RUNS_SAID = 'A brainwashed Luigi looks back and runs away.';
+export const LUIGI_RUNS_PAGE: Page = [
+  'MARIO:',
+  '',
+  'WAS THAT LUIGI? WHY DID HE',
+  "LOOK LIKE THAT? LET'S GO",
+  'FIND HIM!',
+];
+
+/* ================================================================ end of S1 */
 
 /* ---------------------------------------------------------------- the partners (2.5-2.10) */
 

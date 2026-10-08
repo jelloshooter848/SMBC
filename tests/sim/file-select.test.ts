@@ -18,6 +18,7 @@ import { LINK } from '@game/characters/link';
 import { listSaves, loadSave, newSave, SAVE_VERSION, writeSave } from '@game/save/save-files';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import { skipOpening } from './story-seen';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -120,6 +121,7 @@ describe('file select', () => {
     toFileSelect(h);
     h.tap('down'); // file 2
     h.tap('jump');
+    skipOpening(h); // the story's opening first (opening.test.ts)
     // Straight to World 1's map, standing on its start (1-0, the tutorial, where Toad tells the
     // story): no player-count choice or character select.
     const map = top(h.game) as WorldMapScene;
@@ -284,6 +286,7 @@ describe('file select', () => {
     expect(store.has('smbc.save.1')).toBe(false);
     expect(h.said.at(-1)).toMatch(/File 1 erased\. File 1\. New game\./);
     h.tap('jump');
+    skipOpening(h);
     expect(top(h.game)).toBeInstanceOf(WorldMapScene);
   });
 

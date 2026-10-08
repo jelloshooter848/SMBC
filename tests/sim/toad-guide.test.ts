@@ -4,22 +4,10 @@ import { WorldMapScene } from '@game/scenes/world-map';
 import { CreditsScene } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
 import { CRASH_FRAMES } from '@game/map/airship-crash';
-import { CHARACTERS } from '@game/characters/registry';
-import type { CharacterDef } from '@game/characters/character';
 import { loadSave, type SaveFile } from '@game/save/save-files';
-import { beat, seedSeen } from '@game/story/beats';
-import {
-  CRASH_PAGES,
-  FAKES_PAGES,
-  HUB_PAGE,
-  JOINED_CRACK,
-  JOINED_GENERIC,
-  JOINED_PAGES,
-  MISSED_PAGES,
-  riftPages,
-  WORLD_ENTRY,
-  type Page,
-} from '@game/story/script';
+import { beat, upgradeStory } from '@game/story/beats';
+import { CRASH_PAGES, FAKES_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES, type Page } from '@game/story/script';
+import { HIDING_HINT } from '@game/scenes/world-map';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { ALL_STORY } from './story-seen';
 
@@ -60,7 +48,7 @@ function readAll(h: H, press: 'jump' | 'attack' = 'jump'): Page[] {
 }
 
 describe("Toad's map scenes", () => {
-  it('World 1 after 1-0: Toad walks in, two pages at the top, then the road to 1-1; once per file', () => {
+  it("World 1 after 1-0: Toad walks in, his World 1 scene's three pages at the top, then the road to 1-1; once per file", () => {
     const h = open({});
     expect(map(h).story).toBe(false); // a new file, 1-0 not cleared: nothing yet
     h.game.levelCleared('1-0');
@@ -79,14 +67,14 @@ describe("Toad's map scenes", () => {
     const { texts } = draw(map(h));
     const top = texts.find((t) => t.str === 'TOAD:');
     expect(top!.y).toBeLessThan(60);
-    expect(h.said.some((t) => t.startsWith('TOAD: FIRST, WHO ARE WE LOOKING') && /OK for more/.test(t))).toBe(
+    expect(h.said.some((t) => t.startsWith('TOAD: MARIO, DID YOU SEE THAT?!') && /OK for more/.test(t))).toBe(
       true,
     );
     // The road waits behind the box.
     expect(h.game.pendingReveal.length).toBeGreaterThan(0);
     const pages = readAll(h);
-    expect(pages).toEqual(WORLD_ENTRY['smb-1']);
-    expect(h.said.some((t) => t.startsWith('TOAD: IF I KNOW HIM') && /OK to continue/.test(t))).toBe(true);
+    expect(pages).toEqual(WORLD1_PAGES);
+    expect(h.said.some((t) => t.startsWith("TOAD: WHERE'S LUIGI?") && /OK to continue/.test(t))).toBe(true);
     expect(h.game.seen(beat.enter('smb-1'))).toBe(true);
     expect(loadSave(1)?.story).toContain(beat.enter('smb-1'));
     // Toad walks back off; then the reveal.
@@ -99,49 +87,20 @@ describe("Toad's map scenes", () => {
     expect(map(h).story).toBe(false);
   });
 
-  it('routine lines show the box only: no Toad walking in (a missed hero)', () => {
+  it('a cleared level still hiding its hero: no card, the generic hint line (0.4.23)', () => {
     const h = open({ cleared: ['1-0'], position: { page: 'smb-1', node: '1-1' }, story: ['enter:smb-1'] });
     h.game.levelCleared('1-1');
-    expect(map(h).story).toBe(true);
-    expect(map(h).toad?.lines).toEqual(MISSED_PAGES.luigi);
-    for (let i = 0; i < 20; i++) {
-      expect(toadSprite(h)).toBeUndefined();
-      h.step();
-    }
-    expect(readAll(h)).toEqual([MISSED_PAGES.luigi]);
-    expect(h.game.seen('missed:luigi')).toBe(true);
-    // The road to 1-2 then draws in.
+    expect(map(h).story).toBe(false);
     h.until(() => map(h).mode === 'idle', 600);
-    // Back on 1-1 (the hero stands there), Toad's hint line for Luigi.
-    expect(map(h).hintLine).toBe('TOAD: I HEAR A MUSTACHE SIGH...');
+    expect(map(h).hintLine).toBe(HIDING_HINT);
   });
 
-  it("at a missed hero's shadow: Toad's card is said first, the node's line (with his hint) after it", () => {
-    const h = open({ cleared: ['1-0'], position: { page: 'smb-1', node: '1-1' }, story: ['enter:smb-1'] });
-    const before = h.said.length;
-    h.game.levelCleared('1-1');
-    expect(map(h).toad?.lines).toEqual(MISSED_PAGES.luigi);
-    const during = h.said.slice(before);
-    // While the box shows, nothing said yet carries the hint; the card is the first map line.
-    expect(during.some((t) => /mustache/i.test(t))).toBe(false);
-    expect(during.findIndex((t) => t.startsWith('TOAD: HUH. 1-1 FEELS'))).toBeGreaterThanOrEqual(0);
-    readAll(h);
-    h.until(() => map(h).mode === 'idle', 600);
-    const all = h.said.slice(before);
-    const card = all.findIndex((t) => t.startsWith('TOAD: HUH. 1-1 FEELS'));
-    const here = all.filter(
-      (t) => t.includes('World 1-1, cleared') && /Toad: I hear a mustache sigh/.test(t),
-    );
-    expect(here).toHaveLength(1);
-    expect(all.indexOf(here[0]!)).toBeGreaterThan(card);
-  });
-
-  it('a story scene elsewhere (no missed card here): the node line is still said on arrival, first', () => {
+  it('a story scene elsewhere: the node line is still said on arrival, first', () => {
     const h = open({ cleared: ['1-0'], position: { page: 'smb-1', node: 'start' }, story: [] });
     // The World 1 entry plays (Toad walks in); the page's line was said ahead of it, as before.
     h.until(() => map(h).toad?.lines != null, 300);
     const idx = h.said.findIndex((t) => t.startsWith('World 1'));
-    const card = h.said.findIndex((t) => t.startsWith('TOAD: FIRST, WHO ARE WE LOOKING'));
+    const card = h.said.findIndex((t) => t.startsWith('TOAD: MARIO, DID YOU SEE THAT?!'));
     expect(idx).toBeGreaterThanOrEqual(0);
     expect(card).toBeGreaterThan(idx);
     readAll(h);
@@ -149,7 +108,7 @@ describe("Toad's map scenes", () => {
     expect(h.said.filter((t) => t.startsWith('World 1')).length).toBe(1);
   });
 
-  it('the play order when several are due: fakes (walking in), joined, entry; BACK closes one scene', () => {
+  it("the play order when several are due: World 1's scene, then the fakes; BACK closes one scene", () => {
     const h = open({
       cleared: W1,
       pages: ['smb-1', 'smb-2'],
@@ -159,18 +118,16 @@ describe("Toad's map scenes", () => {
     });
     expect(map(h).story).toBe(true);
     h.until(() => map(h).toad?.lines != null, 300);
-    expect(map(h).toad?.lines).toEqual(FAKES_PAGES[0]);
-    // BACK: the rest of the fakes scene is skipped, the next scene (the generic joined) starts.
+    expect(map(h).toad?.lines).toEqual(WORLD1_PAGES[0]);
+    // BACK: the rest of the World 1 scene is skipped, the next scene (the fakes) starts.
     h.idle(31);
     h.tap('attack');
-    expect(map(h).toad?.lines).toEqual(JOINED_CRACK);
-    const rest = readAll(h);
-    expect(rest).toEqual([JOINED_CRACK, JOINED_GENERIC, JOINED_PAGES.luigi, ...(WORLD_ENTRY['smb-1'] ?? [])]);
-    for (const id of [beat.fakes, beat.joined(), beat.joined('luigi'), beat.enter('smb-1')])
-      expect(h.game.seen(id)).toBe(true);
+    expect(map(h).toad?.lines).toEqual(FAKES_PAGES[0]);
+    expect(readAll(h)).toEqual(FAKES_PAGES);
+    for (const id of [beat.fakes, beat.enter('smb-1')]) expect(h.game.seen(id)).toBe(true);
   });
 
-  it("the airship crash: the cutscene, then Toad's crash cards, then the road; no missed cards", () => {
+  it("the airship crash: the cutscene, then Toad's crash cards, then the road", () => {
     const h = open({
       cleared: [...W1, '2-1', '2-2', '2-3', '2-4', '3-1', '3-2', '3-3', '3-4', '4-1'],
       pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4'],
@@ -186,9 +143,6 @@ describe("Toad's map scenes", () => {
     const pages = readAll(h);
     expect(pages).toEqual(CRASH_PAGES);
     expect(h.game.seen(beat.crash)).toBe(true);
-    // The crash's cards stand in for World 4's missed card (Samus, on 4-2): only marked.
-    expect(h.game.seen(beat.missed('samus'))).toBe(true);
-    expect(h.said.some((t) => t.startsWith('TOAD: 4-2 SOUNDED HOLLOW'))).toBe(false);
     h.until(() => map(h).mode === 'idle', 600);
     expect(h.game.pendingReveal).toEqual([]);
   });
@@ -219,33 +173,6 @@ describe("Toad's map scenes", () => {
     expect(h.game.seen(beat.rift)).toBe(true);
   });
 
-  it('World 8 entry: pages 1 and 4 without Sophia; all four with her', () => {
-    const entry = WORLD_ENTRY['smb-8'] as Page[];
-    const at8 = (setup?: (h: H) => void) =>
-      open(
-        {
-          cleared: ['1-0', ...[1, 2, 3, 4, 5, 6, 7].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`))],
-          pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
-          position: { page: 'smb-8', node: 'start' },
-          story: ALL_STORY.filter((id) => !id.startsWith('enter:smb-8')),
-        },
-        setup,
-      );
-    // The roster without Sophia III (as before 0.4.13), then with her (she is in CHARACTERS now).
-    const without = at8((h) => {
-      (h.game.deps as { characters: CharacterDef[] }).characters = CHARACTERS.filter(
-        (c) => c.id !== 'sophia',
-      );
-    });
-    expect(readAll(without)).toEqual([entry[0], entry[3]]);
-    expect(without.game.seen('enter:smb-8:sophia')).toBe(false);
-    const withHer = at8((h) => {
-      (h.game.deps as { characters: CharacterDef[] }).characters = [...CHARACTERS];
-    });
-    expect(readAll(withHer)).toEqual(entry);
-    expect(withHer.game.seen('enter:smb-8:sophia')).toBe(true);
-  });
-
   it('the hub: its line on the first visit only', () => {
     const h = open({
       cleared: ['1-0', '1-1'],
@@ -269,7 +196,7 @@ describe("Toad's map scenes", () => {
     });
     expect(map(h).story).toBe(false);
     expect(map(h).mode).toBe('idle');
-    expect(h.game.story).toEqual(seedSeen(h.game.mapProgress, h.game.freed));
+    expect(h.game.story).toEqual(upgradeStory(undefined, h.game.mapProgress, h.game.freed));
   });
 
   it('only while the story plays: a round played for fun shows no card', () => {

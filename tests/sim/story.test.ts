@@ -6,10 +6,10 @@ import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import type { Settings } from '@engine/save/settings';
 import { loadSave, migrateSave, newSave, saveKey } from '@game/save/save-files';
 import { playStoryCards } from '@game/story/cards';
-import { beat, seedSeen } from '@game/story/beats';
+import { beat, seedSeen, STORY_REV } from '@game/story/beats';
 import { BowserSaysScene, BRIDGE_ROOM } from '@game/story/level-beats';
-import { FAKES_PAGES, RESTYLE_PAGES } from '@game/story/script';
-import { closeCards, draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
+import { FAKES_PAGES } from '@game/story/script';
+import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // The story foundation (0.4.13, src/game/story): the seen-beats list on the save file, the
 // multi-page story cards, and World.storyMode (campaign only).
@@ -39,10 +39,10 @@ describe('the seen story beats on the save file', () => {
     expect(stored()).not.toHaveProperty('story');
     h.game.openFile(1);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    const want = seedSeen({ ...newSave(1, 'mario'), ...over }, over.freed);
+    const want = [...seedSeen({ ...newSave(1, 'mario'), ...over }, over.freed), STORY_REV];
     expect(h.game.story).toEqual(want);
     expect(h.game.story).toEqual(
-      expect.arrayContaining(['enter:smb-1', 'enter:smb-2', 'fakes', 'joined:luigi']),
+      expect.arrayContaining(['enter:smb-1', 'enter:smb-2', 'fakes', 'opening', 'luigi-runs']),
     );
     h.game.autosave();
     expect(loadSave(1)?.story).toEqual(want);
@@ -52,20 +52,22 @@ describe('the seen story beats on the save file', () => {
     const h = makeGame();
     file({ story: ['hub'] });
     h.game.openFile(1);
-    expect(h.game.story).toEqual(['hub']);
+    // A list from before 0.4.23 is marked as brought up to date (beats.ts upgradeStory).
+    expect(h.game.story).toEqual(['hub', STORY_REV]);
     expect(h.game.seen('hub')).toBe(true);
     expect(h.game.seen('enter:smb-1')).toBe(false);
     h.game.markSeen('enter:smb-1');
     h.game.markSeen('enter:smb-1');
-    expect(h.game.story).toEqual(['hub', 'enter:smb-1']);
-    expect(stored().story).toEqual(['hub', 'enter:smb-1']);
-    expect(loadSave(1)?.story).toEqual(['hub', 'enter:smb-1']);
+    expect(h.game.story).toEqual(['hub', STORY_REV, 'enter:smb-1']);
+    expect(stored().story).toEqual(['hub', STORY_REV, 'enter:smb-1']);
+    expect(loadSave(1)?.story).toEqual(['hub', STORY_REV, 'enter:smb-1']);
   });
 });
 
 describe('World.storyMode', () => {
+  // 1-2: 1-1 opens with Luigi running off on a campaign file (story/luigi-runs.ts).
   const into = (h: H) => {
-    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+    h.game.startLevel(getLevel('1-2'), { mode: 'stand' });
     h.step();
     const l = h.top();
     expect(l).toBeInstanceOf(LevelScene);
@@ -200,36 +202,32 @@ describe('developer "Unlock all": story scenes play but are never recorded', () 
     h.step();
   };
 
-  it('level beats (7-3, 8-4): play, nothing marked; once Unlock all is off they play for real', () => {
+  it('a level beat (8-4): plays, nothing marked; once Unlock all is off it plays for real', () => {
     const h = devFile();
     expect(h.game.mapUnlockAll).toBe(true);
-    into(h, '7-3');
-    expect((h.top() as CardScene).lines).toEqual(RESTYLE_PAGES['7-3']);
-    closeCards(h);
-    expect(h.top()).toBeInstanceOf(LevelScene);
-    into(h, BRIDGE_ROOM);
-    expect(h.top()).toBeInstanceOf(BowserSaysScene);
-    h.idle(CARD_GUARD_FRAMES + 1);
-    h.tap('jump');
-    expect(h.top()).toBeInstanceOf(LevelScene);
+    const bowser = () => {
+      into(h, BRIDGE_ROOM);
+      expect(h.top()).toBeInstanceOf(BowserSaysScene);
+      h.idle(CARD_GUARD_FRAMES + 1);
+      h.tap('jump');
+      expect(h.top()).toBeInstanceOf(LevelScene);
+    };
+    bowser();
     // Nothing in the game's list, nothing on the file...
-    expect(h.game.story).not.toContain(beat.restyle('7-3'));
     expect(h.game.story).not.toContain(beat.bowser84);
     h.game.autosave();
-    expect(loadSave(1)?.story).toEqual([]);
+    expect(loadSave(1)?.story).toEqual([STORY_REV]);
     // ...and not again while Unlock all stays on (no loop over the level).
-    into(h, '7-3');
+    into(h, BRIDGE_ROOM);
     expect(h.top()).toBeInstanceOf(LevelScene);
     // Unlock all off: the beat plays for real, and is saved.
     h.game.devUnlockAll = false;
-    into(h, '7-3');
-    expect((h.top() as CardScene).lines).toEqual(RESTYLE_PAGES['7-3']);
-    closeCards(h);
-    expect(loadSave(1)?.story).toEqual([beat.restyle('7-3')]);
+    bowser();
+    expect(loadSave(1)?.story).toEqual([STORY_REV, beat.bowser84]);
   });
 
   it("a map beat (Toad's fake Bowsers after 1-4): plays, nothing marked; then for real", () => {
-    const story = ['enter:smb-1', 'enter:smb-2', 'missed:luigi'];
+    const story = [STORY_REV, 'opening', 'spell', 'luigi-runs', 'enter:smb-1', 'enter:smb-2'];
     const h = devFile({
       cleared: ['1-0', '1-1', '1-2', '1-3', '1-4'],
       pages: ['smb-1', 'smb-2'],
@@ -272,10 +270,10 @@ function closeMapBox(h: H): void {
 describe('markSeen mid-level writes only the story list', () => {
   it('coins, score and power changed in the level stay as last saved; the beat is on the file', () => {
     const h = makeGame();
-    file({ story: [], coins: 7, score: 1200 });
+    file({ story: [STORY_REV], coins: 7, score: 1200 });
     h.game.openFile(1);
     h.idle(4);
-    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+    h.game.startLevel(getLevel('1-2'), { mode: 'stand' });
     h.step();
     const st = h.game.state;
     st.coins = 42;
@@ -283,7 +281,7 @@ describe('markSeen mid-level writes only the story list', () => {
     st.powerState = 'fire';
     h.game.markSeen(beat.hub);
     const saved = loadSave(1)!;
-    expect(saved.story).toEqual([beat.hub]);
+    expect(saved.story).toEqual([STORY_REV, beat.hub]);
     expect(saved.coins).toBe(7);
     expect(saved.score).toBe(1200);
     expect(saved.powerState).toBe('small');
