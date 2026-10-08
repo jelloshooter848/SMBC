@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.27] - 2026-10-08
+
 ### Changed
 
 - World 4 is now Samus's world, Zebes (campaign only; classic play keeps SMB's 4-1 to 4-4):
@@ -708,7 +710,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.26...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.27...HEAD
+[0.4.27]: https://github.com/jelloshooter848/SMBC/compare/v0.4.26...v0.4.27
 [0.4.26]: https://github.com/jelloshooter848/SMBC/compare/v0.4.25...v0.4.26
 [0.4.25]: https://github.com/jelloshooter848/SMBC/compare/v0.4.24...v0.4.25
 [0.4.24]: https://github.com/jelloshooter848/SMBC/compare/v0.4.23...v0.4.24
