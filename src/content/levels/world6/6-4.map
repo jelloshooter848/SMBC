@@ -58,3 +58,7 @@ toad 153 12
 [zones]
 exit 152 next=7-1
 bowser-fire 92
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+30 6 link=grow megaman=grow samus=grow simon=grow ryu=grow bill=grow

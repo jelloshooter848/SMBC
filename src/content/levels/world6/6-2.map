@@ -189,3 +189,7 @@ ng-lamp 198 12
 119 13 ##### *2
 128 13 ## *2
 + lift-fall 211 4 len=2 dx=8
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+52 9 link=blue-ring megaman=flame-wave simon=cross ryu=ninpo-scroll bill=laser sophia=homing-missile

@@ -35,3 +35,7 @@ campaignMusic: ng-sewer
 
 [zones]
 pipe 13 12 right -> 6-2 179 10 exit=up
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+13 9 megaman=bolt samus=wave-beam simon=double-shot ryu=jump-slash bill=flame-gun

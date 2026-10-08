@@ -248,3 +248,7 @@ jungle-band-half 223 12
 111 13 T
 112 14 t
 + lift-fall 220 4 len=2 dx=8
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+102 5 link=fire-spell megaman=homing-knuckle simon=stopwatch ryu=fire-wheel bill=spread-gun sophia=triple-missile

@@ -107,3 +107,8 @@ tree-big 205 12
 27 5 ...
 27 6 P==
 + lift-fall 174 5 len=2 dx=8 dy=-8
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+27 5 link=grow megaman=grow samus=grow simon=grow ryu=grow bill=grow
+151 2 link=magical-sword megaman=bolt samus=wave-beam simon=triple-shot ryu=jump-slash bill=spread-gun sophia=wall-climb

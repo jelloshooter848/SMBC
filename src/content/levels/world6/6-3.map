@@ -86,3 +86,7 @@ cloud-1 153 7
 ;; and the flagpole's step-fall lift (charHorz). Every piece the original lays for her here.
 124 12 s
 + lift-fall 162 4 len=2 dx=8
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+55 3 link=shield-spell megaman=bolt samus=wave-beam simon=triple-shot ryu=jump-slash sophia=ceiling-climb

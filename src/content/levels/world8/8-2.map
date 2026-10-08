@@ -119,3 +119,7 @@ cloud-1 237 2
 ;; and the flagpole's step-fall lift (charHorz). Every piece the original lays for her here.
 149 13 # *2
 + lift-fall 211 4 len=2 dx=8
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+100 9 link=grow megaman=grow samus=grow simon=grow ryu=grow bill=grow
