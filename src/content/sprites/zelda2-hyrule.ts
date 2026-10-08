@@ -343,9 +343,9 @@ export const zelda2PalaceDecorPalette: string[] = [
 /* The cave's decor (`decor-zelda2-cave`): 1-3 the rock's browns, dimmed; the rest a castle's. */
 export const zelda2CaveDecorPalette: string[] = [
   NES.black,
-  '#201000',
-  '#402800',
-  '#6c4818',
+  '#503000',
+  '#8c6020',
+  '#c89050',
   NES.white,
   NES.lightGray,
   NES.brownDark,
@@ -389,38 +389,42 @@ const rocks = draw(32, 16, (x, y) => {
   return '.';
 });
 
-/** A stalactite (16x16) hanging from a cave's roof: its top row flush with the rock. */
-const stalactite = draw(16, 16, (x, y) => {
+/** Stalactites (16x32) hanging from a cave's roof: three cones, their tops flush with the rock. */
+const stalactite = draw(16, 32, (x, y) => {
   for (const [cx, w, len] of [
-    [5, 4, 15],
-    [11, 3, 9],
+    [4, 4.5, 30],
+    [10, 3.5, 18],
+    [14, 2.5, 11],
   ] as const) {
     const half = (w * (len - y)) / len;
     const d = x - cx;
     if (y > len || Math.abs(d) > half) continue;
-    if (Math.abs(d) > half - 1) return '0';
-    return d < 0 ? '3' : '2';
+    if (d > half - 1) return '1';
+    return d < -0.5 ? '3' : hash(x, y, 73) < 0.15 ? '1' : '2';
   }
   return '.';
 });
 
 /**
- * The palace hall's wall (32x32, tiles both ways): big dim bricks in offset courses, black
- * mortar, a lit top edge on some.
+ * The palace hall's wall (32x32, tiles both ways): dim bricks 16x8 in offset courses (half the
+ * level's own brick height, so the wall never reads as solid blocks), black mortar, a lit top
+ * edge on some.
  */
 const palaceWall = draw(32, 32, (x, y) => {
-  const course = y >> 4;
-  const bx = (x + (course % 2 ? 16 : 0)) % 32;
-  if (y % 16 === 15 || bx % 32 === 31 || (bx === 15 && course % 2 === 0)) return '0';
-  if (y % 16 === 0 && hash(bx >> 4, course, 81) < 0.7) return '3';
-  return hash(x, y, 83) < 0.04 ? '1' : '2';
+  const course = y >> 3;
+  const bx = (x + (course % 2 ? 8 : 0)) % 32;
+  if (y % 8 === 7 || bx % 16 === 15) return '0';
+  if (y % 8 === 0 && hash(bx >> 4, course, 81) < 0.6) return '3';
+  return hash(x, y, 83) < 0.05 ? '1' : '2';
 });
 
 /**
- * A red curtain (32x48) hanging from a gold rod: a scalloped valance over two drapes, parted and
- * gathered at their middle, their folds lit and shaded.
+ * A red curtain (32x96) hanging from a gold rod at the top of the hall's wall: a scalloped
+ * valance over two drapes, drawn back to gold ties two thirds of the way down and falling
+ * free below, their folds lit and shaded. Under a thick ceiling only the drapes show.
  */
-const curtain = draw(32, 48, (x, y) => {
+export const CURTAIN_H = 96;
+const curtain = draw(32, CURTAIN_H, (x, y) => {
   if (y < 2) return x === 0 || x === 31 ? '0' : y === 0 ? '0' : '7';
   if (y < 9) {
     // the valance: scallops 8 px wide
@@ -430,13 +434,13 @@ const curtain = draw(32, 48, (x, y) => {
     if (y - 2 === depth) return '0';
     return s === 0 ? '4' : s < 3 ? '6' : '5';
   }
-  // the two drapes: each narrows to its tie at y 30, then flares
-  const tie = 30;
-  const width = y < tie ? 15 - Math.round((y - 9) * 0.35) : 8 + Math.round((y - tie) * 0.45);
+  // each drape narrows from the full half to its tie, then flares out to the floor
+  const tie = 62;
+  const width = y < tie ? 16 - Math.round(((y - 9) * 9) / (tie - 9)) : 7 + Math.round((y - tie) * 0.22);
   const left = x < 16;
   const d = left ? x : 31 - x;
   if (d >= width) return '.';
-  if (d === width - 1) return '0';
+  if (d === width - 1 || y === CURTAIN_H - 1) return '0';
   if (y === tie || y === tie + 1) return d > width - 4 ? '7' : '0';
   const fold = (d + (left ? 0 : 1)) % 4;
   return fold === 0 ? '4' : fold === 1 ? '6' : '5';
@@ -491,6 +495,27 @@ const statue = (() => {
 })();
 
 /**
+ * Far mountains (64x32) for the field's background (2-3, in `decor-zelda2`): pale grey peaks lit on
+ * the left, white snow on their tops, no outline, so they stand far off behind the bridges.
+ */
+const farPeaks = draw(64, 32, (x, y) => {
+  let top = 99;
+  let cx = 0;
+  for (const [px, h, w] of [
+    [14, 28, 18],
+    [36, 20, 16],
+    [52, 26, 15],
+  ] as const) {
+    const t = 32 - h + (Math.abs(x - px) * h) / w;
+    if (t < top) [top, cx] = [t, px];
+  }
+  if (y < top) return '.';
+  // snow on the upper slopes, ragged at its foot; the faces lit on the left
+  if (y < 12 + (hash(x, 0, 91) < 0.5 ? 0 : 2) && y < top + 6) return x <= cx ? '4' : '8';
+  return x <= cx ? '8' : '5';
+});
+
+/**
  * Decor frames (registered in decor.ts): the lake's weed, the cave's rocks and stalactites, the
  * palace's wall and curtains (its backdrop) and its knight statues.
  */
@@ -501,4 +526,5 @@ export const zelda2HyruleDecorFrames: Record<string, Rows> = {
   'z2-palace-wall': palaceWall,
   'z2-curtain': curtain,
   'z2-statue': statue,
+  'z2-far-peaks': farPeaks,
 };

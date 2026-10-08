@@ -80,7 +80,16 @@ cloud-1 230 6
 cloud-1 238 11
 
 [campaign-decor]
-;; The level's clouds (drawn flat, Zelda II's), and the field's forest before the flagpole.
+;; Far mountains in the haze behind the bridges, the level's clouds (drawn flat, Zelda II's)
+;; and the field's forest before the flagpole.
+z2-far-peaks 12 14
+z2-far-peaks 40 14
+z2-far-peaks 66 14
+z2-far-peaks 94 14
+z2-far-peaks 120 14
+z2-far-peaks 148 14
+z2-far-peaks 174 14
+z2-far-peaks 200 14
 cloud-2 3 3
 cloud-1 9 7
 cloud-2 18 2

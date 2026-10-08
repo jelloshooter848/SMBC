@@ -39,6 +39,6 @@ pipe 13 12 right -> 2-1 115 10 exit=up
 
 [campaign-decor]
 ;; Stalactites under the bricks' roof and a rock pile on the floor.
-z2-stalactite 5 3
-z2-stalactite 9 3
+z2-stalactite 5 4
+z2-stalactite 9 4
 z2-rocks 1 12

@@ -435,10 +435,11 @@ const decorFrames: Record<string, Size> = {
   // World 2 as Hyrule (0.4.24).
   'z2-lakeweed': [16, 32],
   'z2-rocks': [32, 16],
-  'z2-stalactite': [16, 16],
+  'z2-stalactite': [16, 32],
   'z2-palace-wall': [32, 32],
-  'z2-curtain': [32, 48],
+  'z2-curtain': [32, 96],
   'z2-statue': [16, 32],
+  'z2-far-peaks': [64, 32],
 };
 
 function expectFrame(def: SpriteDef, name: string, [w, h]: Size): void {
