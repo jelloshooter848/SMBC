@@ -109,7 +109,7 @@ export class StationWeaponScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
-    return { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'BACK' };
+    return { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'MENU' };
   }
 
   update(input: InputFrame): void {

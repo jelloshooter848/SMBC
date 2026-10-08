@@ -3,7 +3,7 @@
 // The original Crossover data (levelDataSmb.xml) differs from the NES levels in many places on
 // purpose (wider gaps for the classic hero, helper ground, extra enemies), and our maps keep those.
 // A few one-tile differences have no reason behind them: compared against the NES maps cell by cell
-// (the 0.5.0 Chapter 1 check), the owner chose to match the NES there, in all play. Each entry is
+// (the Chapter 1 finishing pass, 0.4.21), the owner chose to match the NES there, in all play. Each entry is
 // one cell of one generated map: `from` is what the original data gives (a mismatch is reported
 // and the cell left alone, so a changed source can't be patched blindly), `to` is the NES tile.
 // Ids are unprefixed: they only touch SMB1's maps, never The Lost Levels' (`ll-...`).

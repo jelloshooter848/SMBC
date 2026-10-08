@@ -9,7 +9,8 @@ import { Game } from '../scenes/game';
 import { CHARACTERS } from '../characters/registry';
 import { MARIO } from '../characters/mario';
 import { BONUS_GUARD_FRAMES } from './common';
-import { MemoryScene } from './memory';
+import { cursorStep, MemoryScene } from './memory';
+import { MEMORY_COLS, MEMORY_ROWS } from './rules';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -80,10 +81,10 @@ describe('N-spade: the cursor skips taken cards', () => {
     tap('down'); // 7
     tap('left'); // 6
     expect(scene.cursor).toBe(6);
-    tap('up');
-    expect(scene.cursor).toBe(12);
-    tap('down');
-    expect(scene.cursor).toBe(6);
+    tap('up'); // the top row's card in column 0 is taken: its nearest card, 1
+    expect(scene.cursor).toBe(1);
+    tap('down'); // column 1's middle card, 7
+    expect(scene.cursor).toBe(7);
   });
 
   it('a pair found on this visit is taken too: the cursor moves off it and passes over it', () => {
@@ -110,5 +111,46 @@ describe('N-spade: the cursor skips taken cards', () => {
     tap('left'); // 6
     tap('up'); // column 0 has only 6 left: the nearest card in the top row, 1
     expect(scene.cursor).toBe(1);
+  });
+});
+
+describe('N-spade: every card left can be reached', () => {
+  it('from any card, for every set of taken cards', () => {
+    const n = MEMORY_COLS * MEMORY_ROWS;
+    const moves = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ] as const;
+    for (let mask = 0; mask < 1 << n; mask++) {
+      const taken = (c: number, r: number) => ((mask >> (r * MEMORY_COLS + c)) & 1) === 1;
+      const left = [...Array(n).keys()].filter((i) => !((mask >> i) & 1));
+      const from = left[0];
+      if (from === undefined) continue;
+      const seen = new Set([from]);
+      const todo = [from];
+      while (todo.length) {
+        const i = todo.pop() as number;
+        for (const [dc, dr] of moves) {
+          const [c, r] = cursorStep(taken, i % MEMORY_COLS, Math.floor(i / MEMORY_COLS), dc, dr);
+          const j = r * MEMORY_COLS + c;
+          if (!seen.has(j)) {
+            seen.add(j);
+            todo.push(j);
+          }
+        }
+      }
+      if (seen.size !== left.length)
+        throw new Error(`taken mask ${mask}: reached ${seen.size} of ${left.length}`);
+    }
+  });
+
+  it('the review case: row 1 is reached when only columns 0 and 4 hold cards there and above', () => {
+    // Board 0 with every face but the F and M pairs at 4, 6, 9 and 16 taken.
+    const { scene, tap } = nspade([0, 1, 2, 3, 5, 7, 8, 10, 11, 12, 13, 14, 15, 17]);
+    expect(scene.cursor).toBe(4);
+    tap('down');
+    expect([6, 9]).toContain(scene.cursor);
   });
 });

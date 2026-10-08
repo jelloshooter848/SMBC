@@ -8,6 +8,26 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Sophia III can now finish the Lost Levels at Normal. A level can change for one hero (`[variant <hero>]` in a map),
+  and the Lost Levels get the original Crossover's own pieces for her, in classic play too. SMB 8-4 needs none: the
+  hidden block by its hanging pipe is her way up, as in the original.
+
+### Changed
+
+- In the campaign, the credits after 8-4 now say END OF CHAPTER 1 before "...BUT THE STORY ISN'T OVER."
+- In Station Escape, MENU now closes the weapon screen from any row, as START does in Mega Man 2. It no longer uses an
+  E-tank or opens the menu by accident.
+
+### Fixed
+
+- Five one-tile differences from the NES maps in 1-3, 2-4, 4-2, 5-3 and 8-4's water section.
+- The N-Spade cursor skips cards that are already taken, and every card left can always be reached.
+- The stage decor in Station Escape shows from the first frame, not only after READY.
+- Sophia III's spring launch after a hop with the jump released was damped to almost nothing.
+- Dev: the debug overlay (F1) lines up with the world in Larry's airship and cabin.
+
 ## [0.4.20] - 2026-10-07
 
 ### Added

@@ -43,6 +43,35 @@ const FACE_NAMES: Readonly<Record<CardFace, string>> = {
  * one comes. Two misses end it, as does clearing the board. A round for fun leaves the file's
  * board as it was.
  */
+/**
+ * The N-spade cursor's next spot from (col, row) one step along (dc, dr), passing over taken
+ * cards. Left and right wrap round the row. Up and down go to the next row that way (wrapping)
+ * with any card left: the same column if its card is there, else that row's nearest card (ties:
+ * right). So every card left can always be reached.
+ */
+export function cursorStep(
+  taken: (col: number, row: number) => boolean,
+  col: number,
+  row: number,
+  dc: number,
+  dr: number,
+): [number, number] {
+  if (dc) {
+    for (let k = 1; k < MEMORY_COLS; k++) {
+      const c = (col + dc * k + MEMORY_COLS * k) % MEMORY_COLS;
+      if (!taken(c, row)) return [c, row];
+    }
+    return [col, row];
+  }
+  for (let k = 1; k < MEMORY_ROWS; k++) {
+    const r = (row + dr * k + MEMORY_ROWS * k) % MEMORY_ROWS;
+    if (!taken(col, r)) return [col, r];
+    for (let d = 1; d < MEMORY_COLS; d++)
+      for (const c of [col + d, col - d]) if (c >= 0 && c < MEMORY_COLS && !taken(c, r)) return [c, r];
+  }
+  return [col, row];
+}
+
 export class MemoryScene extends BonusScene {
   protected music = BONUS_MUSIC.game;
   readonly board: MemoryGame;
@@ -75,30 +104,9 @@ export class MemoryScene extends BonusScene {
     }
   }
 
-  /**
-   * The cursor's next spot from (col, row) one step along (dc, dr), passing over taken cards:
-   * left and right wrap round the row, up and down round the column; with nothing else left in
-   * that column, up and down go to the nearest card in the next row that has one (ties: right).
-   */
+  /** The cursor's next spot one step along (dc, dr), passing over taken cards (`cursorStep`). */
   private step(dc: number, dr: number): [number, number] {
-    const { col, row } = this;
-    if (dc) {
-      for (let k = 1; k < MEMORY_COLS; k++) {
-        const c = (col + dc * k + MEMORY_COLS * k) % MEMORY_COLS;
-        if (!this.taken(c, row)) return [c, row];
-      }
-      return [col, row];
-    }
-    for (let k = 1; k < MEMORY_ROWS; k++) {
-      const r = (row + dr * k + MEMORY_ROWS * k) % MEMORY_ROWS;
-      if (!this.taken(col, r)) return [col, r];
-    }
-    for (let k = 1; k < MEMORY_ROWS; k++) {
-      const r = (row + dr * k + MEMORY_ROWS * k) % MEMORY_ROWS;
-      for (let d = 1; d < MEMORY_COLS; d++)
-        for (const c of [col + d, col - d]) if (c >= 0 && c < MEMORY_COLS && !this.taken(c, r)) return [c, r];
-    }
-    return [col, row];
+    return cursorStep((c, r) => this.taken(c, r), this.col, this.row, dc, dr);
   }
 
   get cursor(): number {
@@ -166,6 +174,7 @@ export class MemoryScene extends BonusScene {
       this.keepPair();
       this.offTaken();
       this.award(cardPrize(face));
+      if (!b.over) this.say(this.where());
       if (b.over) this.decide();
       return;
     }
