@@ -428,7 +428,8 @@ are already rewired there). Classic play and Unlock all keep today's roads.
 over the old map. **Trigger:** the first arrival on World N's start node (N = 2-8), right after the walk in from
 the gate. **Staging:** a local (a new map sprite, in the style of the hero's game) stands beside the start node and
 speaks in the box at the top; no Toad walk-in. **Replay:** any time, standing on the start node: the hint line
-reads `TALK TO THE <LOCAL>` (for example `TALK TO THE HEALER`) and `TALK` (up) plays the welcome again. Each
+reads `TALK TO THE <LOCAL>` (for example `TALK TO THE HEALER`) and `TALK` (up) plays the welcome again; once the
+world's hero is freed it plays the local's after-freed page instead (NEW, written under each welcome). Each
 welcome names the hero, says who did it (the locals don't know who: "someone"), and says where the hero was last
 seen. Some carry a clue that Toad's old world entries carried (World 4's airship, World 8's turnip).
 
@@ -713,6 +714,17 @@ GO. ...OH. YOU'RE FINE.
 NEVER MIND.
 ```
 
+After Link is freed (NEW, after-freed: talking to the healer again plays this page instead):
+
+```text
+HEALER:
+
+LINK IS HIMSELF AGAIN!
+THANK YOU, TRAVELER. GO ON
+EAST, AND STAY HEALTHY...
+I'M STILL OUT OF PATIENTS.
+```
+
 **Hint NPC: the old man, moved to the vine.** MOVES (owner): from 2-1's start (column 8) to **beside the vine block
 (column 83)**: he stands on the ground a column or two before it, in front of his cave doorway (the
 `partners:cave` decor moves with him; where the ground there allows). His third page (the sky's second vine) moves
@@ -930,6 +942,17 @@ HIS LAST SIGNAL CAME FROM
 TRACKING IT.
 ```
 
+After Mega Man is freed (NEW, after-freed: talking to the lab robot again plays this page instead):
+
+```text
+LAB ROBOT:
+
+BEEP! MEGA MAN IS BACK
+ONLINE! DR. LIGHT SAYS
+THANK YOU. THE ROAD AHEAD
+IS CLEAR. BEEP BOOP!
+```
+
 **Hint NPC: Dr. Light, moved to the vine.** MOVES (suggested): from 3-1's pipe room (`3-1-bonus`, which many players
 never enter) to **3-1's ground beside the vine block (column 131)**, at about column 128, so the hint cannot be
 missed. His first page now points at the vine; the second is as before. (If the owner prefers the pipe room, page
@@ -1108,6 +1131,17 @@ SCIENTIST:
 ALSO, A KOOPA AIRSHIP KEEPS
 CIRCLING 4-2. KEEP AN EYE
 ON THE SKY!
+```
+
+After Samus is freed (NEW, after-freed: talking to the scientist again plays this page instead):
+
+```text
+SCIENTIST:
+
+SAMUS IS BACK ON PATROL.
+OUR BASE IS SAFE AGAIN,
+THANKS TO YOU. ONWARD! THE
+NEXT WORLD NEEDS YOU MORE.
 ```
 
 **Hint NPC: the Chozo statue, moved into 4-2.** MOVES: from 4-1's pipe room (`4-1-bonus`) into **4-2 itself**, on
@@ -1345,6 +1379,17 @@ CRYSTAL? ...NO? NOBODY
 EVER DOES.
 ```
 
+After Simon is freed (NEW, after-freed: talking to the merchant again plays this page instead):
+
+```text
+MERCHANT:
+
+SIMON WALKS FREE AGAIN!
+YOU HAVE MY THANKS. NOW,
+ON YOUR WAY... AND STILL
+NO WHITE CRYSTAL? SHAME.
+```
+
 **Hint NPC: the townsperson.** KEEP, on the safe floor at the start of 5-4, before the lift at column 84.
 
 ```text
@@ -1539,6 +1584,17 @@ FOR HIM. LOOK FOR WHAT
 HIDES HIM.
 ```
 
+After Ryu is freed (NEW, after-freed: talking to the elder again plays this page instead):
+
+```text
+ELDER:
+
+MASTER RYU HAS RETURNED TO
+HIMSELF. THE VILLAGE OWES
+YOU A DEBT. GO NOW. THE
+PATH AHEAD IS YOURS.
+```
+
 **Hint NPC: Irene Lew.** KEEP, on the ground at the start of 6-2, before the first pipe (column 19), the pipe down
 to the room with the trick wall.
 
@@ -1703,6 +1759,17 @@ SERGEANT:
 HE WAS LAST SEEN AT 7-3.
 HIS PARTNER LANCE IS
 WAITING THERE. MOVE OUT!
+```
+
+After Bill is freed (NEW, after-freed: talking to the sergeant again plays this page instead):
+
+```text
+SERGEANT:
+
+BILL'S BACK IN THE FIGHT!
+GOOD WORK, SOLDIER. THE
+WHOLE UNIT SALUTES YOU.
+NOW MOVE OUT!
 ```
 
 **Hint NPC: Lance.** KEEP, in the jungle at the start of 7-3, well before the marked bridge at column 128.
@@ -1881,6 +1948,17 @@ MINER:
 ODD THING... SOMEONE PULLED
 UP A TURNIP RIGHT HERE. WHO
 GROWS TURNIPS NEXT TO LAVA?
+```
+
+After Sophia III is freed (NEW, after-freed: talking to the miner again plays this page instead):
+
+```text
+MINER:
+
+SOPHIA'S ROLLING AGAIN, AND
+THE BOY'S BACK WITH HIS
+FROG. THANK YOU, STRANGER!
+MIND THE LAVA ON YOUR WAY.
 ```
 
 (Peach clue 3. Nobody can explain it; it points at her SMB2 kit and the Lost Kingdom's turnips.)

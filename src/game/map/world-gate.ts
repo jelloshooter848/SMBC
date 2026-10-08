@@ -93,6 +93,18 @@ export function welcomeOf(page: string): (typeof WELCOMES)[string] | null {
 }
 
 /**
+ * What page `page`'s local says (worlds 2-8): the welcome, or once the world's hero (its gate's)
+ * is among `freed`, the after-freed page instead. Empty without a local.
+ */
+export function welcomePages(page: string, freed: readonly string[]): readonly Page[] {
+  const w = welcomeOf(page);
+  if (!w) return [];
+  const map = mapPage(page);
+  const hero = map ? gateExit(map)?.gate : undefined;
+  return hero && freed.includes(hero) && w.after?.length ? w.after : w.pages;
+}
+
+/**
  * The routine scenes due on the page shown (after the major ones): Toad's reminder while the seal
  * stands, then the local's welcome on the first arrival on the start node.
  */
@@ -107,7 +119,7 @@ export function gateScenes(g: GateInput): ToadScene[] {
   const w = welcomeOf(id);
   const start = g.page.nodes.find((n) => n.kind === 'start');
   if (w && start && g.node === start.id && !g.seen(beat.welcome(id)))
-    out.push({ ids: [beat.welcome(id)], pages: [...w.pages], walk: false });
+    out.push({ ids: [beat.welcome(id)], pages: [...welcomePages(id, g.progress.freed ?? [])], walk: false });
   return out;
 }
 

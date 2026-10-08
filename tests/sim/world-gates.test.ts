@@ -155,6 +155,24 @@ describe('the welcomes (0.4.23)', () => {
     expect(map(h).story).toBe(false);
   });
 
+  it('once Link is freed, TALK (up) plays the after-freed page instead of the welcome', () => {
+    const h = open({
+      cleared: [...W1, '2-1'],
+      pages: ['smb-1', 'smb-2'],
+      freed: ['mario', 'luigi', 'link'],
+      position: { page: 'smb-2', node: 'start' },
+      story: [...ALL_STORY],
+    });
+    h.idle(10);
+    expect(map(h).hintLine).toBe('TALK TO THE HEALER');
+    h.tap('up');
+    expect(map(h).story).toBe(true);
+    const after = w2?.after ?? [];
+    expect(after).toHaveLength(1);
+    expect(readAll(h)).toEqual(after);
+    expect(h.said.some((s) => s.startsWith('HEALER: LINK IS HIMSELF AGAIN!'))).toBe(true);
+  });
+
   it('World 1 has no local', () => {
     const h = open({ cleared: ['1-0'], story: [...ALL_STORY] });
     expect(draw(map(h)).sprites.some((s) => s.key === 'locals')).toBe(false);

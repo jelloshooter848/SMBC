@@ -78,6 +78,7 @@ import {
   sealedExit,
   smbWorld,
   welcomeOf,
+  welcomePages,
 } from '../map/world-gate';
 import { drawCrack, drawSeal, GateScene } from '../map/gate-scene';
 import { LOCAL_SPRITES } from '@content/sprites/locals';
@@ -867,13 +868,16 @@ export class WorldMapScene implements Scene {
     return storyOn(this.game) && localNode(this.progress, this.page) === n;
   }
 
-  /** TALK (up) on a start node with a local: the welcome again, in the box at the top. */
+  /**
+   * TALK (up) on a start node with a local: the welcome again, in the box at the top (the
+   * after-freed page once the world's hero is freed).
+   */
   private talkToLocal(): void {
-    const w = welcomeOf(this.page.id);
-    if (!w) return;
     const game = this.game;
+    const pages = welcomePages(this.page.id, game.freed);
+    if (!pages.length) return;
     const guide = new ToadGuide(
-      [{ ids: [], pages: [...w.pages], walk: false }],
+      [{ ids: [], pages: [...pages], walk: false }],
       { x: 0, y: 0 },
       {
         markSeen: (id) => game.markSeen(id),

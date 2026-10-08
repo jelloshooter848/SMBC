@@ -306,6 +306,11 @@ export interface WelcomeScript {
   /** Said by the announcer on the node ("A healer."). */
   said: string;
   pages: readonly Page[];
+  /**
+   * Talking again once the world's hero is freed (0.4.23, docs/STORY.md 2.5-2.11 "after-freed"):
+   * this page instead of the welcome's plea.
+   */
+  after?: readonly Page[];
 }
 
 const welcome = (who: string, said: string, ...pages: string[][]): WelcomeScript => ({
@@ -314,91 +319,139 @@ const welcome = (who: string, said: string, ...pages: string[][]): WelcomeScript
   pages: pages.map((p) => [`${who}:`, '', ...p]),
 });
 
+/** Welcome `w` with its after-freed page (`lines`, spoken by its local). */
+const afterFreed = (w: WelcomeScript, ...lines: string[]): WelcomeScript => ({
+  ...w,
+  after: [[`${w.local}:`, '', ...lines]],
+});
+
 /** The welcomes of worlds 2-8, by map page. */
 export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
-  'smb-2': welcome(
-    'HEALER',
-    'A healer',
-    [
-      'WELCOME TO HYRULE,',
-      "TRAVELER. OR WHAT'S LEFT OF",
-      'IT. A SPELL DRAGGED OUR',
-      'LAND HERE, SEA AND ALL.',
-    ],
-    ['OUR HERO LINK HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
-    ['HE WAS LAST SEEN NEAR 2-1.', 'AN OLD MAN THERE KNOWS', 'THINGS. HE ALWAYS DOES.'],
-    ['LET ME HEAL YOU BEFORE YOU', "GO. ...OH. YOU'RE FINE.", 'NEVER MIND.'],
+  'smb-2': afterFreed(
+    welcome(
+      'HEALER',
+      'A healer',
+      [
+        'WELCOME TO HYRULE,',
+        "TRAVELER. OR WHAT'S LEFT OF",
+        'IT. A SPELL DRAGGED OUR',
+        'LAND HERE, SEA AND ALL.',
+      ],
+      ['OUR HERO LINK HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
+      ['HE WAS LAST SEEN NEAR 2-1.', 'AN OLD MAN THERE KNOWS', 'THINGS. HE ALWAYS DOES.'],
+      ['LET ME HEAL YOU BEFORE YOU', "GO. ...OH. YOU'RE FINE.", 'NEVER MIND.'],
+    ),
+    'LINK IS HIMSELF AGAIN!',
+    'THANK YOU, TRAVELER. GO ON',
+    'EAST, AND STAY HEALTHY...',
+    "I'M STILL OUT OF PATIENTS.",
   ),
-  'smb-3': welcome(
-    'LAB ROBOT',
-    'A lab robot',
-    ['BEEP! WELCOME TO THE YEAR', '20XX. WELL, A CHUNK OF IT.', 'YOUR KINGDOM HAS ODD', 'PHYSICS.'],
-    ['OUR HERO MEGA MAN HAS BEEN', 'REPROGRAMMED BY SOMEONE.', 'PLEASE HELP! BEEP!'],
-    ['HIS LAST SIGNAL CAME FROM', '3-1. DR. LIGHT IS THERE,', 'TRACKING IT.'],
+  'smb-3': afterFreed(
+    welcome(
+      'LAB ROBOT',
+      'A lab robot',
+      ['BEEP! WELCOME TO THE YEAR', '20XX. WELL, A CHUNK OF IT.', 'YOUR KINGDOM HAS ODD', 'PHYSICS.'],
+      ['OUR HERO MEGA MAN HAS BEEN', 'REPROGRAMMED BY SOMEONE.', 'PLEASE HELP! BEEP!'],
+      ['HIS LAST SIGNAL CAME FROM', '3-1. DR. LIGHT IS THERE,', 'TRACKING IT.'],
+    ),
+    'BEEP! MEGA MAN IS BACK',
+    'ONLINE! DR. LIGHT SAYS',
+    'THANK YOU. THE ROAD AHEAD',
+    'IS CLEAR. BEEP BOOP!',
   ),
-  'smb-4': welcome(
-    'SCIENTIST',
-    'A scientist',
-    [
-      'WELCOME TO PLANET ZEBES...',
-      'OR A PIECE OF IT. OUR',
-      'WHOLE RESEARCH BASE CAME',
-      'ALONG FOR THE RIDE.',
-    ],
-    ['THE HUNTER WHO GUARDS US,', 'SAMUS, HAS BEEN BRAINWASHED', 'BY SOMEONE. PLEASE HELP!'],
-    ['HER LAST READING CAME FROM', "DEEP UNDER 4-2. THERE'S AN", 'OLD BIRD STATUE IN THERE.'],
-    ['ALSO, A KOOPA AIRSHIP KEEPS', 'CIRCLING 4-2. KEEP AN EYE', 'ON THE SKY!'],
+  'smb-4': afterFreed(
+    welcome(
+      'SCIENTIST',
+      'A scientist',
+      [
+        'WELCOME TO PLANET ZEBES...',
+        'OR A PIECE OF IT. OUR',
+        'WHOLE RESEARCH BASE CAME',
+        'ALONG FOR THE RIDE.',
+      ],
+      ['THE HUNTER WHO GUARDS US,', 'SAMUS, HAS BEEN BRAINWASHED', 'BY SOMEONE. PLEASE HELP!'],
+      ['HER LAST READING CAME FROM', "DEEP UNDER 4-2. THERE'S AN", 'OLD BIRD STATUE IN THERE.'],
+      ['ALSO, A KOOPA AIRSHIP KEEPS', 'CIRCLING 4-2. KEEP AN EYE', 'ON THE SKY!'],
+    ),
+    'SAMUS IS BACK ON PATROL.',
+    'OUR BASE IS SAFE AGAIN,',
+    'THANKS TO YOU. ONWARD! THE',
+    'NEXT WORLD NEEDS YOU MORE.',
   ),
-  'smb-5': welcome(
-    'MERCHANT',
-    'A merchant',
-    [
-      'WELCOME, STRANGER, TO',
-      'TRANSYLVANIA. A FOUL SPELL',
-      'CARRIED OUR WHOLE COUNTRY',
-      'HERE. EVEN THE NIGHTS.',
-    ],
-    ['OUR HERO SIMON HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
-    ['HE WAS LAST SEEN IN THE', 'OLD CASTLE, 5-4. A', 'TOWNSPERSON WAITS AT ITS', 'GATE.'],
-    ['WANT TO BUY A WHITE', 'CRYSTAL? ...NO? NOBODY', 'EVER DOES.'],
+  'smb-5': afterFreed(
+    welcome(
+      'MERCHANT',
+      'A merchant',
+      [
+        'WELCOME, STRANGER, TO',
+        'TRANSYLVANIA. A FOUL SPELL',
+        'CARRIED OUR WHOLE COUNTRY',
+        'HERE. EVEN THE NIGHTS.',
+      ],
+      ['OUR HERO SIMON HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
+      ['HE WAS LAST SEEN IN THE', 'OLD CASTLE, 5-4. A', 'TOWNSPERSON WAITS AT ITS', 'GATE.'],
+      ['WANT TO BUY A WHITE', 'CRYSTAL? ...NO? NOBODY', 'EVER DOES.'],
+    ),
+    'SIMON WALKS FREE AGAIN!',
+    'YOU HAVE MY THANKS. NOW,',
+    'ON YOUR WAY... AND STILL',
+    'NO WHITE CRYSTAL? SHAME.',
   ),
-  'smb-6': welcome(
-    'ELDER',
-    'The village elder',
-    ['WELCOME TO OUR NINJA', 'VILLAGE. A DARK SPELL', 'BROUGHT IT HERE, SNOW AND', 'ALL.'],
-    ['OUR YOUNG MASTER RYU HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
-    ['HE WAS LAST SEEN IN THE', 'CITY STREETS OF 6-2. AN', 'AMERICAN AGENT IS ON HIS', 'TRAIL.'],
-    ['A NINJA IS SEEN ONLY IF HE', 'WISHES TO BE. DO NOT LOOK', 'FOR HIM. LOOK FOR WHAT', 'HIDES HIM.'],
+  'smb-6': afterFreed(
+    welcome(
+      'ELDER',
+      'The village elder',
+      ['WELCOME TO OUR NINJA', 'VILLAGE. A DARK SPELL', 'BROUGHT IT HERE, SNOW AND', 'ALL.'],
+      ['OUR YOUNG MASTER RYU HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
+      ['HE WAS LAST SEEN IN THE', 'CITY STREETS OF 6-2. AN', 'AMERICAN AGENT IS ON HIS', 'TRAIL.'],
+      ['A NINJA IS SEEN ONLY IF HE', 'WISHES TO BE. DO NOT LOOK', 'FOR HIM. LOOK FOR WHAT', 'HIDES HIM.'],
+    ),
+    'MASTER RYU HAS RETURNED TO',
+    'HIMSELF. THE VILLAGE OWES',
+    'YOU A DEBT. GO NOW. THE',
+    'PATH AHEAD IS YOURS.',
   ),
-  'smb-7': welcome(
-    'SERGEANT',
-    'A sergeant',
-    ['WELCOME TO THE FRONT,', 'SOLDIER. SOME SPELL DROPPED', 'OUR WHOLE JUNGLE HERE,', 'ALIENS AND ALL.'],
-    ['OUR BEST MAN, BILL, HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
-    ['HE WAS LAST SEEN AT 7-3.', 'HIS PARTNER LANCE IS', 'WAITING THERE. MOVE OUT!'],
+  'smb-7': afterFreed(
+    welcome(
+      'SERGEANT',
+      'A sergeant',
+      ['WELCOME TO THE FRONT,', 'SOLDIER. SOME SPELL DROPPED', 'OUR WHOLE JUNGLE HERE,', 'ALIENS AND ALL.'],
+      ['OUR BEST MAN, BILL, HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
+      ['HE WAS LAST SEEN AT 7-3.', 'HIS PARTNER LANCE IS', 'WAITING THERE. MOVE OUT!'],
+    ),
+    "BILL'S BACK IN THE FIGHT!",
+    'GOOD WORK, SOLDIER. THE',
+    'WHOLE UNIT SALUTES YOU.',
+    'NOW MOVE OUT!',
   ),
-  'smb-8': welcome(
-    'MINER',
-    'A miner',
-    [
-      'WELCOME TO THE UNDERWORLD,',
-      'STRANGER. MUTANTS DOWN',
-      'BELOW, AND NOW A SPIKY KING',
-      'UPSTAIRS. LOVELY.',
-    ],
-    [
-      'OUR HERO IS A TANK CALLED',
-      'SOPHIA. SOMEONE BRAINWASHED',
-      'HER, AND HER PILOT IS LOST.',
-      'PLEASE HELP!',
-    ],
-    [
-      "THE BOY WENT INTO THE KING'S",
-      'CASTLE, 8-4, AFTER HIS FROG.',
-      'THAT FROG TAKES THE PIPES',
-      'NOBODY ELSE DOES.',
-    ],
-    ['ODD THING... SOMEONE PULLED', 'UP A TURNIP RIGHT HERE. WHO', 'GROWS TURNIPS NEXT TO LAVA?'],
+  'smb-8': afterFreed(
+    welcome(
+      'MINER',
+      'A miner',
+      [
+        'WELCOME TO THE UNDERWORLD,',
+        'STRANGER. MUTANTS DOWN',
+        'BELOW, AND NOW A SPIKY KING',
+        'UPSTAIRS. LOVELY.',
+      ],
+      [
+        'OUR HERO IS A TANK CALLED',
+        'SOPHIA. SOMEONE BRAINWASHED',
+        'HER, AND HER PILOT IS LOST.',
+        'PLEASE HELP!',
+      ],
+      [
+        "THE BOY WENT INTO THE KING'S",
+        'CASTLE, 8-4, AFTER HIS FROG.',
+        'THAT FROG TAKES THE PIPES',
+        'NOBODY ELSE DOES.',
+      ],
+      ['ODD THING... SOMEONE PULLED', 'UP A TURNIP RIGHT HERE. WHO', 'GROWS TURNIPS NEXT TO LAVA?'],
+    ),
+    "SOPHIA'S ROLLING AGAIN, AND",
+    "THE BOY'S BACK WITH HIS",
+    'FROG. THANK YOU, STRANGER!',
+    'MIND THE LAVA ON YOUR WAY.',
   ),
 };
 

@@ -29,6 +29,9 @@ const cards: [string, Page][] = [
   }),
   ...RIFT_SEALED_PAGES.map((p, i): [string, Page] => [`rift sealed ${i}`, p]),
   ...Object.entries(WELCOMES).flatMap(([k, w]) => w.pages.map((p, i): [string, Page] => [`${k} ${i}`, p])),
+  ...Object.entries(WELCOMES).flatMap(([k, w]) =>
+    (w.after ?? []).map((p, i): [string, Page] => [`${k} after ${i}`, p]),
+  ),
 ];
 
 describe("S3's story lines", () => {
@@ -75,5 +78,25 @@ describe("S3's story lines", () => {
   it('a welcome for each of worlds 2-8, spoken by its local', () => {
     expect(Object.keys(WELCOMES)).toEqual(['smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6', 'smb-7', 'smb-8']);
     for (const w of Object.values(WELCOMES)) for (const p of w.pages) expect(p[0]).toBe(`${w.local}:`);
+  });
+
+  it("each local has one short after-freed page in its own voice (its world's hero freed)", () => {
+    for (const [k, w] of Object.entries(WELCOMES)) {
+      expect(w.after, k).toHaveLength(1);
+      const page = w.after?.[0] ?? [];
+      expect(page[0], k).toBe(`${w.local}:`);
+      expect(page.length - 2, k).toBeLessThanOrEqual(4);
+      expect(
+        page.filter((l) => l.length > 28),
+        k,
+      ).toEqual([]);
+      // Abilities, never button letters.
+      expect(
+        page.filter((l) => /\b(PRESS|PUSH|BUTTON)\b|\b[BXYZ]\b/.test(l)),
+        k,
+      ).toEqual([]);
+      // Not the welcome's plea any more.
+      expect(page.join(' '), k).not.toMatch(/BRAINWASHED|REPROGRAMMED|PLEASE HELP/);
+    }
   });
 });

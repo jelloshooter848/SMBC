@@ -136,6 +136,8 @@ function scriptPages(): Map<string, Page> {
   }
   list('RIFT_SEALED_PAGES', RIFT_SEALED_PAGES);
   for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}`, w.pages);
+  // Each local's after-freed page (0.4.23 review: talking again once the world's hero is freed).
+  for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}.after`, w.after ?? []);
   return out;
 }
 
