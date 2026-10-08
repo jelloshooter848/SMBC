@@ -10,6 +10,7 @@ import { STAR_FRAMES } from '../../constants';
 import { LINK_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { toolButton } from '../../touch-labels';
+import { has, isFound } from '../../items/flags';
 
 /** Sword-and-shield adventurer: fixed-height jump, no run, hearts, sword melee and a down-thrust. */
 export const LINK_PROFILE: MovementProfile = {
@@ -101,7 +102,7 @@ function strikeBlocks(p: Player, world: World, box: { x: number; y: number; w: n
   return hit;
 }
 
-function maxHp(p: Player): number {
+export function maxHp(p: Player): number {
   return p.scratch.maxHp ?? 6;
 }
 function magic(p: Player): number {
@@ -172,14 +173,34 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   };
 }
 
+/** The belt's tools found as items in the campaign (the Boomerang is in his starting kit). */
+const TOOL_ITEMS: Readonly<Record<string, string>> = {
+  bomb: 'bomb-bag',
+  jump: 'jump-spell',
+  shield: 'shield-spell',
+  fire: 'fire-spell',
+};
+export const LINK_SPELLS = ['jump-spell', 'shield-spell', 'fire-spell'] as const;
+
+/** He has a spell (the magic meter shows): always outside the campaign's found-item rules. */
+export function hasSpell(p: Player): boolean {
+  return !isFound(p) || LINK_SPELLS.some((id) => has(p, id));
+}
+
 function tools(p: Player): ToolInfo[] {
-  return [
+  const all: ToolInfo[] = [
     { id: 'boomerang', icon: 'icon-boomerang', count: null, usable: !p.scratch.boomerangOut },
     { id: 'bomb', icon: 'icon-bomb', count: bombs(p), usable: bombs(p) > 0 },
     { id: 'jump', icon: 'icon-jump', count: null, usable: magic(p) >= JUMP_SPELL.cost },
     { id: 'shield', icon: 'icon-shield', count: null, usable: magic(p) >= SHIELD_SPELL.cost },
     { id: 'fire', icon: 'icon-fire', count: null, usable: magic(p) >= FIRE_SPELL.cost },
   ];
+  if (!isFound(p)) return all;
+  // Campaign: the Boomerang, then the tools he has found (docs/POWERUPS.md 5.2).
+  return all.filter((t) => {
+    const item = TOOL_ITEMS[t.id];
+    return item === undefined || has(p, item);
+  });
 }
 
 function spendMagic(p: Player, cost: number, world: World): boolean {
@@ -278,12 +299,13 @@ export const LINK: CharacterDef = {
   jumpSfx: () => 'jump-big',
   portrait: { sheet: 'link', palette: 'link', frame: 'idle' },
   tools,
-  meter: (p) => ({ value: magic(p), max: MAX_MAGIC, colour: '#3cbcfc', label: 'M' }),
+  meter: (p) => (hasSpell(p) ? { value: magic(p), max: MAX_MAGIC, colour: '#3cbcfc', label: 'M' } : null),
   devKit: () => ({ maxHp: MAX_HEARTS * 2, tunic: 1, beam: 1, bombs: MAX_BOMBS, magic: MAX_MAGIC }),
-  drop(rng) {
+  drop(rng, _enemy, killer) {
     const r = rng.int(16);
-    if (r < 4) return 'bomb';
-    if (r < 8) return 'magic-small';
+    // Campaign: bombs only once he has the Bomb Bag, magic jars only once he has a spell.
+    if (r < 4) return !killer || !isFound(killer) || has(killer, 'bomb-bag') ? 'bomb' : null;
+    if (r < 8) return !killer || hasSpell(killer) ? 'magic-small' : null;
     if (r === 8) return 'heart-small';
     return null;
   },

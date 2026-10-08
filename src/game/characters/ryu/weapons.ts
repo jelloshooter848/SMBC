@@ -3,6 +3,8 @@ import type { ProjectileSpec } from '../../entities/projectiles/projectile';
 /** A ninpo art on the belt. `cost` is ninpo points; `spec` is null for non-projectile arts. */
 export interface NinpoArt {
   id: string;
+  /** Its campaign item id (src/game/items/catalog.ts). */
+  item: string;
   name: string;
   icon: string;
   cost: number;
@@ -64,8 +66,29 @@ export const FIRE_WHEEL: ProjectileSpec = {
 };
 
 export const NINPO_ARTS: readonly NinpoArt[] = [
-  { id: 'throwing-star', name: 'Throwing Star', icon: 'icon-star', cost: 3, spec: THROWING_STAR },
-  { id: 'windmill', name: 'Windmill Shuriken', icon: 'icon-windmill', cost: 5, spec: WINDMILL },
-  { id: 'fire-wheel', name: 'Fire Wheel', icon: 'icon-fire-wheel', cost: 5, spec: FIRE_WHEEL },
-  { id: 'slash', name: 'Jump and Slash', icon: 'icon-slash', cost: 5, spec: null },
+  {
+    id: 'throwing-star',
+    item: 'throwing-star',
+    name: 'Throwing Star',
+    icon: 'icon-star',
+    cost: 3,
+    spec: THROWING_STAR,
+  },
+  {
+    id: 'windmill',
+    item: 'windmill',
+    name: 'Windmill Shuriken',
+    icon: 'icon-windmill',
+    cost: 5,
+    spec: WINDMILL,
+  },
+  {
+    id: 'fire-wheel',
+    item: 'fire-wheel',
+    name: 'Fire Wheel',
+    icon: 'icon-fire-wheel',
+    cost: 5,
+    spec: FIRE_WHEEL,
+  },
+  { id: 'slash', item: 'jump-slash', name: 'Jump and Slash', icon: 'icon-slash', cost: 5, spec: null },
 ];

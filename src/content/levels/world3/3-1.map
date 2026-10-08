@@ -173,3 +173,7 @@ mm-skyline 94 12
 mm-skyline 110 12
 mm-skyline 145 12
 mm-skyline 158 12
+
+[variant sophia classic]
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
++ lift-fall 195 4 len=2 dx=8

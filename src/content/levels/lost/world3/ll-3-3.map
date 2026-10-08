@@ -84,7 +84,7 @@ cloud-2 195 3
 [variant sophia classic]
 ;; The original's piece for heroes who jump low (charVert): the first platform two rows lower
 ;; (five tiles up is out of Normal Sophia III's reach; docs/HEROES.md).
-;; With every other piece the original lays for her in this area (but the flagpole's lift).
+;; With every other piece the original lays for her in this area (and the flagpole's lift).
 174 2 ...
 174 3 $$$
 169 5 B
@@ -101,3 +101,5 @@ cloud-2 195 3
 97 14 t
 - lift-fall 148 8
 + lift-fall 150 8 len=6 dx=-16
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
++ lift-fall 181 4 len=2

@@ -8,7 +8,8 @@ import { Bomb } from '../../entities/objects/bomb';
 import { STAR_FRAMES } from '../../constants';
 import { SAMUS_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
-import { BEAMS, MISSILE } from './weapons';
+import { BEAMS, ICE_BEAM, LONG_BEAM, MISSILE, POWER_BEAM, WAVE_BEAM } from './weapons';
+import { has, isFound } from '../../items/flags';
 
 /** Armoured bounty hunter: floaty cut-able jump with a somersault, arm cannon, morph ball. */
 export const SAMUS_PROFILE: MovementProfile = {
@@ -38,6 +39,12 @@ export const SAMUS_PROFILE: MovementProfile = {
 export const START_ENERGY = 30;
 export const TANK_ENERGY = 30;
 export const MAX_TANKS = 2;
+/**
+ * The campaign's Energy Tanks (decision 6, NES Metroid style): up to six reserve tanks of 10
+ * energy each over the 30-energy bar, so six give today's maximum of 90.
+ */
+export const RESERVE_TANK_ENERGY = 10;
+export const MAX_RESERVE_TANKS = 6;
 export const MAX_MISSILES = 30;
 const CONTACT_DAMAGE = 8;
 const SHOOT_POSE_FRAMES = 12;
@@ -46,24 +53,60 @@ const MAX_MORPH_BOMBS = 3;
 const BOMB_JUMP_VY = 0x02800;
 
 /** Scratch keys: varia, tanks, maxHp, beam (0..3), missiles, tool, ball, aimUp. */
-function maxHp(p: Player): number {
+export function maxHp(p: Player): number {
   return p.scratch.maxHp ?? START_ENERGY;
 }
-function missiles(p: Player): number {
+export function missiles(p: Player): number {
   return p.scratch.missiles ?? 0;
 }
+/** A beam without the Long Beam: it fizzles after about five tiles, as the Power Beam. */
+const short = (spec: ProjectileSpec): ProjectileSpec => ({ ...spec, lifetime: POWER_BEAM.lifetime });
+const SHORT_ICE = short(ICE_BEAM);
+const SHORT_WAVE = short(WAVE_BEAM);
 function beam(p: Player): ProjectileSpec {
+  if (isFound(p)) {
+    // Campaign: Ice and Wave are both kept and picked on the belt; the Long Beam gives range to
+    // whichever is in use (docs/POWERUPS.md 5.4).
+    const long = has(p, 'long-beam');
+    const t = activeTool(p, tools(p))?.id;
+    if (t === 'ice') return long ? ICE_BEAM : SHORT_ICE;
+    if (t === 'wave') return long ? WAVE_BEAM : SHORT_WAVE;
+    return long ? LONG_BEAM : POWER_BEAM;
+  }
   return BEAMS[Math.min(BEAMS.length - 1, p.scratch.beam ?? 0)] as ProjectileSpec;
+}
+
+/**
+ * Her reserve tanks for the HUD (small boxes above the EN number): `full` of `total` tanks hold
+ * energy, `bar` is what the EN number shows. Hit points are her whole energy; the bar runs out
+ * first and then a tank refills it.
+ */
+export function energyTanks(p: Player): { full: number; total: number; bar: number } | null {
+  const total = p.scratch.tanks ?? 0;
+  if (total <= 0) return null;
+  const size = (maxHp(p) - START_ENERGY) / total;
+  if (!(size > 0)) return null;
+  const full = Math.max(0, Math.min(total, Math.floor((p.hp - 1) / size)));
+  return { full, total, bar: Math.max(0, p.hp - full * size) };
 }
 function inBall(p: Player): boolean {
   return (p.scratch.ball ?? 0) > 0;
 }
 
 function tools(p: Player): ToolInfo[] {
-  return [
-    { id: 'beam', icon: 'icon-beam', count: null, usable: true },
-    { id: 'missile', icon: 'icon-missile', count: missiles(p), usable: missiles(p) > 0 },
-  ];
+  const missile: ToolInfo = {
+    id: 'missile',
+    icon: 'icon-missile',
+    count: missiles(p),
+    usable: missiles(p) > 0,
+  };
+  if (!isFound(p)) return [{ id: 'beam', icon: 'icon-beam', count: null, usable: true }, missile];
+  // Campaign: WEAPON cycles the beam, Ice, Wave and missiles she has found.
+  const list: ToolInfo[] = [{ id: 'beam', icon: 'icon-beam', count: null, usable: true }];
+  if (has(p, 'ice-beam')) list.push({ id: 'ice', icon: 'icon-ice-beam', count: null, usable: true });
+  if (has(p, 'wave-beam')) list.push({ id: 'wave', icon: 'icon-wave-beam', count: null, usable: true });
+  if (has(p, 'missiles')) list.push(missile);
+  return list;
 }
 
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
@@ -190,6 +233,7 @@ export const SAMUS: CharacterDef = {
   jumpSfx: () => 'jump-big',
   portrait: { sheet: 'samus', palette: 'samus', frame: 'idle' },
   tools,
+  energyTanks,
   devKit: () => ({
     varia: 1,
     tanks: MAX_TANKS,
@@ -197,11 +241,12 @@ export const SAMUS: CharacterDef = {
     beam: BEAMS.length - 1,
     missiles: MAX_MISSILES,
   }),
-  drop(rng) {
+  drop(rng, _enemy, killer) {
     const r = rng.int(12);
     if (r < 4) return 'energy-small';
     if (r === 4) return 'energy-large';
-    if (r < 7) return 'missile-pack';
+    // Campaign: missile packs only once she owns Missiles (decision 8).
+    if (r < 7) return !killer || !isFound(killer) || has(killer, 'missiles') ? 'missile-pack' : null;
     return null;
   },
   guide: SAMUS_GUIDE,

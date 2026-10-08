@@ -1,5 +1,6 @@
 import { LEVEL_ROWS } from '../constants';
 import type {
+  HeroItemEntry,
   CampaignLook,
   Decor,
   EntitySpawn,
@@ -13,6 +14,7 @@ import type {
 import { CAMERA_MODES, isTheme, themeMusic, type CameraMode } from './schema';
 import { DEFAULT_AUTO_SCROLL } from '../world/camera';
 import { DEFAULT_LEGEND, T } from './tiles';
+import { entryItem, heroItems as heroItemList } from '../items/catalog';
 
 export class MapParseError extends Error {
   constructor(
@@ -77,6 +79,10 @@ function parseProps(parts: string[]): Props {
  *                         [key=val]` (a spawn added), `- type x y` (one taken out): laid when any
  *                         player is that hero, in campaign play only; `[variant <hero> classic]` in
  *                         all play (level/variants.ts heroVariant)
+ *   [hero-items]          `x y hero=item ...`: what the power block at x y gives each hero in the
+ *                         campaign (docs/POWERUPS.md 3.2; `grow`: their grow item; a hero not
+ *                         named gets their default power). The tile must be a power block (M, P,
+ *                         3 or W) in the map or a hero variant.
  */
 export function parseTextMap(src: string, idHint = 'level'): LevelData {
   const header: Record<string, string> = {};
@@ -90,8 +96,17 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
   const variants: LevelVariant[] = [];
   /** Each variant run's source line, for the bounds check once the width is known. */
   const runLines: { run: LevelVariant['tiles'][number]; line: number }[] = [];
-  let section: 'header' | 'legend' | 'tiles' | 'entities' | 'zones' | 'decor' | 'campaign-decor' | 'variant' =
-    'header';
+  const heroItems: { entry: HeroItemEntry; line: number }[] = [];
+  let section:
+    | 'header'
+    | 'legend'
+    | 'tiles'
+    | 'entities'
+    | 'zones'
+    | 'decor'
+    | 'campaign-decor'
+    | 'variant'
+    | 'hero-items' = 'header';
 
   const lines = src.split(/\r?\n/);
   lines.forEach((raw, i) => {
@@ -119,7 +134,8 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
         name !== 'entities' &&
         name !== 'zones' &&
         name !== 'decor' &&
-        name !== 'campaign-decor'
+        name !== 'campaign-decor' &&
+        name !== 'hero-items'
       ) {
         throw new MapParseError(`unknown section [${name}]`, lineNo);
       }
@@ -166,6 +182,13 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
           const [kind, xs, ys] = trimmed.split(/\s+/);
           if (!kind || xs === undefined || ys === undefined) throw new Error('expected "kind x y"');
           (section === 'decor' ? decor : lookDecor).push({ kind, x: Number(xs), y: Number(ys) });
+          break;
+        }
+        case 'hero-items': {
+          const entry = parseHeroItems(trimmed);
+          if (heroItems.some((h) => h.entry.x === entry.x && h.entry.y === entry.y))
+            throw new Error(`a second line for the block at ${entry.x} ${entry.y}`);
+          heroItems.push({ entry, line: lineNo });
           break;
         }
         case 'variant': {
@@ -258,6 +281,20 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
   for (const { run, line } of runLines)
     if (run.y >= height || run.x + run.tiles.length > width)
       throw new MapParseError(`variant run at ${run.x},${run.y} reaches outside the level`, line);
+  // A `[hero-items]` line names a power block: in the map, or laid by a hero variant.
+  for (const { entry, line } of heroItems) {
+    const { x, y } = entry;
+    const atMap = x < width && y < height ? (tiles[y * width + x] as number) : -1;
+    const inVariant = runLines.some(
+      ({ run }) =>
+        run.y === y &&
+        x >= run.x &&
+        x < run.x + run.tiles.length &&
+        POWER_BLOCKS.has(run.tiles[x - run.x] as number),
+    );
+    if (!POWER_BLOCKS.has(atMap) && !inVariant)
+      throw new MapParseError(`no power block (M, P, 3 or W) at ${x} ${y} for [hero-items]`, line);
+  }
 
   const id = header.id ?? idHint;
   const [ws, ss] = id.split('-');
@@ -305,7 +342,34 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     level.campaignLook = look;
   }
   if (variants.length) level.variants = variants;
+  if (heroItems.length) level.heroItems = heroItems.map((h) => h.entry);
   return level;
+}
+
+/** The tiles a `[hero-items]` line can name: ? and brick power blocks, the hidden one, the flower block. */
+const POWER_BLOCKS: ReadonlySet<number> = new Set([
+  T.Q_POWERUP,
+  T.BRICK_POWERUP,
+  T.HIDDEN_POWERUP,
+  T.Q_FLOWER,
+]);
+
+/** `x y hero=item ...` (each hero once, each item theirs or `grow`). */
+function parseHeroItems(line: string): HeroItemEntry {
+  const [xs, ys, ...pairs] = line.split(/\s+/);
+  if (!/^\d+$/.test(xs ?? '') || !/^\d+$/.test(ys ?? '') || !pairs.length)
+    throw new Error('expected "x y hero=item ..."');
+  const items: Record<string, string> = {};
+  for (const pair of pairs) {
+    const m = /^([\w-]+)=([\w-]+)$/.exec(pair);
+    if (!m) throw new Error(`expected "hero=item", got "${pair}"`);
+    const [, hero, item] = m as unknown as [string, string, string];
+    if (!heroItemList(hero)) throw new Error(`unknown hero "${hero}"`);
+    if (hero in items) throw new Error(`"${hero}" named twice`);
+    if (entryItem(hero, item) === null) throw new Error(`"${item}" is not one of ${hero}'s items`);
+    items[hero] = item;
+  }
+  return { x: Number(xs), y: Number(ys), items };
 }
 
 /** A whole number ≥ 0 from a header or id part, else `d`. */
@@ -615,6 +679,15 @@ export function serializeTextMap(level: LevelData): string {
   if (level.campaignLook?.decor) {
     out.push('', '[campaign-decor]');
     for (const d of level.campaignLook.decor) out.push(`${d.kind} ${d.x} ${d.y}`);
+  }
+  if (level.heroItems?.length) {
+    out.push('', '[hero-items]');
+    for (const h of level.heroItems)
+      out.push(
+        `${h.x} ${h.y} ${Object.entries(h.items)
+          .map(([hero, item]) => `${hero}=${item}`)
+          .join(' ')}`,
+      );
   }
   for (const v of level.variants ?? []) {
     out.push('', `[variant ${v.hero}${v.classic ? ' classic' : ''}]`);

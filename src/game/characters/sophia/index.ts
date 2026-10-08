@@ -4,6 +4,7 @@ import type { CharacterDef, SpriteSpec } from '../character';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import { STAR_FRAMES } from '../../constants';
+import { hasKey } from '../../items/flags';
 import { activeTool, type ToolInfo } from '../toolbelt';
 import { SOPHIA_GUIDE } from './guide';
 import {
@@ -411,8 +412,13 @@ export const SOPHIA: CharacterDef = {
     onHurt(p, world, fromDir = 1) {
       if (p.powerState === 'small') return 'dead';
       const st = sophiaState(p);
-      // Lose Everything: straight to Normal; the missiles and their ammo are kept (SO-23).
+      // Lose Everything: straight to Normal; the missiles and their ammo are kept (SO-23). In the
+      // campaign the climbs go too (docs/POWERUPS.md 5.8).
       p.powerState = p.powerState === 'fire' && world.assist.fireRevertsToBig ? 'big' : 'small';
+      if (p.powerState === 'small') {
+        delete p.scratch[hasKey('wall-climb')];
+        delete p.scratch[hasKey('ceiling-climb')];
+      }
       p.invuln = HURT_INVULN;
       world.audio.sfx(SOUNDS.hurt);
       if (st.jason) {

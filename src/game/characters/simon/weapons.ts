@@ -3,6 +3,8 @@ import type { ProjectileSpec } from '../../entities/projectiles/projectile';
 /** A sub-weapon on the belt. `cost` is in hearts. */
 export interface SubWeapon {
   id: string;
+  /** Its campaign item id (src/game/items/catalog.ts). */
+  item: string;
   name: string;
   icon: string;
   cost: number;
@@ -94,11 +96,18 @@ export const CROSS: ProjectileSpec = {
 };
 
 export const SUB_WEAPONS: readonly SubWeapon[] = [
-  { id: 'dagger', name: 'Dagger', icon: 'icon-dagger', cost: 1, spec: DAGGER },
-  { id: 'hand-axe', name: 'Axe', icon: 'icon-axe', cost: 1, spec: HAND_AXE },
-  { id: 'holy-water', name: 'Holy Water', icon: 'icon-holy-water', cost: 1, spec: HOLY_WATER },
-  { id: 'cross', name: 'Cross', icon: 'icon-cross', cost: 1, spec: CROSS },
-  { id: 'stopwatch', name: 'Stopwatch', icon: 'icon-watch', cost: 5, spec: null },
+  { id: 'dagger', item: 'dagger', name: 'Dagger', icon: 'icon-dagger', cost: 1, spec: DAGGER },
+  { id: 'hand-axe', item: 'axe', name: 'Axe', icon: 'icon-axe', cost: 1, spec: HAND_AXE },
+  {
+    id: 'holy-water',
+    item: 'holy-water',
+    name: 'Holy Water',
+    icon: 'icon-holy-water',
+    cost: 1,
+    spec: HOLY_WATER,
+  },
+  { id: 'cross', item: 'cross', name: 'Cross', icon: 'icon-cross', cost: 1, spec: CROSS },
+  { id: 'stopwatch', item: 'stopwatch', name: 'Stopwatch', icon: 'icon-watch', cost: 5, spec: null },
 ];
 
 /** Whip reach in px per upgrade level (leather, chain, morning star). */

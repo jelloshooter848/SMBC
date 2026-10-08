@@ -1319,9 +1319,12 @@ any player is that hero, so a co-op partner plays it too.
   sees the pieces marked `charHorz` or `charVert` (heroes who jump short or low) and
   `WideCharacter` (wide heroes), and loses the ones those hide. In a level that needed one, the
   section holds all of the original's pieces for her in that area: its walls, lowered blocks,
-  extra ground, springs and lifts. It leaves out only the flagpole's step-fall lift, which
-  nearly every level has. `tools/levelgen` still converts the maps for the classic hero, so the
-  pieces were taken from the same data with her visibility.
+  extra ground, springs and lifts. Since 0.4.32 it also holds the flagpole's step-fall lift
+  (`+ lift-fall <x> 4 len=2`, row 5 in 7-1 and ll-9-3: a one-tile `StepFall` platform shown to
+  heroes who jump short, `charHorz`, five columns left of the pole; it drops once she stands on
+  it), in every SMB and Lost Levels area where the original has one at Normal (59 areas).
+  `tools/levelgen` still converts the maps for the classic hero, so the pieces were taken from
+  the same data with her visibility.
 
 Tests: `src/game/level/variants.test.ts` (parse, serialize, laying) and
 `tests/sim/sophia-variants.test.ts`. The second file covers the game laying the variant (both
@@ -1332,7 +1335,8 @@ takes Normal Sophia past each variant's spot, and up 8-4's hidden block onto its
 **Results (2026-10-08, the Chapter 1 finishing pass).** Every level of the table below, at
 Normal, with her variants:
 
-- SMB 8-4 (with no variant) and 24 of the 27 Lost Levels rows are finished, all checked by the sweep or by sims
+- SMB 8-4 (with no variant), the SMB rows with the original's pieces (0.4.32) and 24 of the 27 Lost
+  Levels rows are finished, all checked by the sweep or by sims
   (the "How" column).
 - **ll-7-3** and **ll-12-3** are not followed past their first green super spring. A braked
   flight lands on the next tree. Not verified: Chapter 2.
@@ -1344,20 +1348,38 @@ in `Sophia.as`, the release damping now ends once a rise is over.
 
 8-4 has no variant (owner decision): its hanging pipe had a way up all along, the hidden coin
 block at 161 (row 9), a step to its top as in the original. The original's one Sophia piece in
-8-4 is ground in 8-4-end's lava at 21, which she does not need; it is not laid.
+8-4's areas, ground in 8-4-end's lava at 21, is laid since 0.4.32 (`8-4-end`'s variant).
 
 Her red spring launch is the spring's own, as every hero's: 500, or 1000 boosted (Flash px/s).
 `Sophia.as` sets 400 / 930, but `SpringRed.springLaunch` reads the spring's values (the lines
 reading the character's are commented out); the character's values only serve the bouncy-pits
 cheat (`Character.bouncePit`). A test pins it (`tests/sim/sophia.test.ts`).
 
-**Follow-up (a later 0.4.2x, owner decision):** the original's Sophia pieces in the levels she
-finishes without them are not laid. These are SMB 2-3, 3-3, 3-4, 4-2, 4-3, 6-2, 6-3, 7-1, 8-1,
-8-2 and 8-4-end, and the Lost Levels outside the table. The flagpole's step-fall lift is not
-laid either; nearly every level has one.
+**0.4.32: the SMB pieces and the flagpole lifts.** The original's Sophia pieces in the SMB
+levels she finishes without them are laid now, each as `[variant sophia classic]` exactly as the
+original has them (the SMB rows of the table below), with the flagpole's step-fall lift in every
+area that has one. The sweep still finishes each of them at Normal (below). Not laid: the
+original's bushes at 6-2 (119-121), decor that a variant cannot hold, and the Lost Levels pieces
+outside the table (ll-1-3, ll-1-4, ll-2-1, ll-2-3, ll-3-1, ll-3-2, ll-4-4, ll-5-2 to ll-5-4,
+ll-5-2-warp, ll-6-2, ll-6-4, ll-7-4, ll-8-2-warp, ll-9-1, ll-9-3, ll-9-4, ll-10-1, ll-10-3,
+ll-10-4, ll-11-1, ll-11-2, ll-12-4, ll-13-1 to ll-13-3, ll-13-4-end: a later follow-up). Where those have a
+flagpole, only its lift is laid.
 
 | Level   | Variant                                                                    | At Normal                | How                                                                                                                   |
 | ------- | -------------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| 2-3     | original: the first tree at 112 a tile wider (111)                         | yes                      | sweep                                                                                                                 |
+| 3-3     | original: the low tree at 30-32 two tiles wider                            | yes                      | sweep                                                                                                                 |
+| 3-4     | original: the lava at 87 filled                                            | yes                      | sweep                                                                                                                 |
+| 4-2     | original: a brick column on ground at 184 narrows the gap                  | yes                      | sweep                                                                                                                 |
+| 4-3     | original: a mushroom at 30-32 (row 7)                                      | yes                      | sweep                                                                                                                 |
+| 4-4     | original: the maze drops at 160 and 224 two tiles wide                     | yes                      | the sim to the axe with the pieces laid (the sweep stops at 254, with or without them)                                |
+| 6-2     | original: ground in the gap at 119-129 (four tiles left)                   | yes                      | sweep                                                                                                                 |
+| 6-3     | original: a red spring at 124                                              | yes                      | sweep                                                                                                                 |
+| 7-1     | original: the brick row at 27-29 a row lower                               | yes                      | sweep                                                                                                                 |
+| 7-3     | original: as 2-3, the first tree a tile wider                              | yes                      | sweep                                                                                                                 |
+| 8-1     | original: ground in the gaps at 221, 226 and 314                           | yes                      | sweep                                                                                                                 |
+| 8-2     | original: ground in the gap at 149                                         | yes                      | sweep                                                                                                                 |
+| 8-4-end | original: the lava at 21 filled                                            | yes                      | as 8-4 (the sweep stops at 179 with or without it)                                                                    |
 | 8-4     | none: the hidden coin block at 161 is a step to the hanging pipe           | yes                      | sim up the hidden block onto the pipe at 163, the search for the rest (0.4.13's Crusher route still replays)          |
 | ll-1-2  | original: the falling lifts over the pit set closer, steps at 21-26        | yes                      | sweep                                                                                                                 |
 | ll-2-2  | original: the crossing's hidden block at 186 a row lower, ground in gaps   | yes                      | sim over the hidden blocks at 185-186, then the search                                                                |

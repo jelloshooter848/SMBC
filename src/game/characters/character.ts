@@ -178,6 +178,11 @@ export interface CharacterDef {
   meter?(p: Player): MeterInfo | null;
   /** Fully stocked kit for the developer level select. */
   devKit?(): Record<string, number>;
+  /**
+   * Reserve energy tanks drawn as small boxes above the EN number (Samus, NES Metroid style):
+   * `full` of `total` hold energy, `bar` is the number shown. Null with no tanks.
+   */
+  energyTanks?(p: Player): { full: number; total: number; bar: number } | null;
   /** Short extra HUD text under the name (stored E-tanks...). */
   hudExtra?(p: Player): string | null;
   /** A stored item usable from the pause menu (E-tanks). `label` is null when there is none. */

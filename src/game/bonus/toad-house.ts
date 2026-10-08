@@ -14,7 +14,7 @@ import { newGameState } from '../context';
 import { BONUS_MUSIC, BONUS_SFX, drawChest, drawItem, drawToad } from './art';
 import { BonusScene, centred, drawTextBox, fitLine, HINT_Y, type BonusResult } from './common';
 import { dealChests } from './rules';
-import { ITEM_SPOKEN, type ItemId } from './items';
+import { itemSpoken, type ItemId } from './items';
 import source from './toad-house.map?raw';
 
 /** Toad's line (SMB3's, word for word). */
@@ -133,7 +133,7 @@ export class ToadHouseScene extends BonusScene {
     this.markPlayed();
     this.opened = { index, t: this.t };
     this.sfx(BONUS_SFX.open);
-    this.say(`Box ${index + 1}: ${ITEM_SPOKEN[this.chests[index] as ItemId]}!`);
+    this.say(`Box ${index + 1}: ${itemSpoken(this.chests[index] as ItemId, this.game.state.character.id)}!`);
   }
 
   /** The room behind the hero (room px; the world draws it moved up with itself): Toad and the chests. */
@@ -147,7 +147,14 @@ export class ToadHouseScene extends BonusScene {
       drawChest(r, assets, o?.index === i, x, CHEST_Y);
       if (!o) return;
       const k = Math.min(1, (this.t - o.t) / OPEN_FRAMES);
-      drawItem(r, assets, this.chests[i] as ItemId, x, CHEST_Y - 4 - Math.round(24 * k));
+      drawItem(
+        r,
+        assets,
+        this.chests[i] as ItemId,
+        x,
+        CHEST_Y - 4 - Math.round(24 * k),
+        this.game.state.character.id,
+      );
     });
   }
 

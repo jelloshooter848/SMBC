@@ -8,6 +8,15 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.32] - 2026-10-08
+
+### Added
+
+- Sophia III gets the original Crossover's own pieces for her in SMB 2-3, 3-3, 3-4, 4-2, 4-3, 4-4, 6-2, 6-3, 7-1, 7-3,
+  8-1, 8-2 and 8-4-end (wider trees, filled lava, extra ground, a mushroom, a red spring and wider maze drops), in
+  classic play and the campaign.
+- Sophia III gets the original's step-fall lift by the flagpole in every SMB and Lost Levels area that has one.
+
 ## [0.4.31] - 2026-10-08
 
 ### Changed
@@ -764,7 +773,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.31...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.32...HEAD
+[0.4.32]: https://github.com/jelloshooter848/SMBC/compare/v0.4.31...v0.4.32
 [0.4.31]: https://github.com/jelloshooter848/SMBC/compare/v0.4.30...v0.4.31
 [0.4.30]: https://github.com/jelloshooter848/SMBC/compare/v0.4.29...v0.4.30
 [0.4.29]: https://github.com/jelloshooter848/SMBC/compare/v0.4.28...v0.4.29

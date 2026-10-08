@@ -98,7 +98,7 @@ cloud-1 326 6
 
 [variant sophia classic]
 ;; The original's pieces for Sophia III here: red springs and platforms by the green super springs (charHorz). Every piece the original lays for
-;; her in this area but the flagpole's lift (docs/HEROES.md).
+;; her in this area (docs/HEROES.md).
 287 5 B
 292 5 B
 300 8 B
@@ -107,3 +107,5 @@ cloud-1 326 6
 193 13 TT
 182 14 tt
 194 14 tt
+;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
++ lift-fall 310 4 len=2 dx=8

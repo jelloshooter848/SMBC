@@ -5,7 +5,19 @@ import { carriedKit } from '../entities/player';
 import { ScorePopup } from '../entities/effects/effects';
 import { freshSeed, World } from '../world/world';
 import type { Game } from '../scenes/game';
-import { addItem, ITEM_NAMES, ITEM_SPOKEN, NEXT_ORDER, takeItem, type ItemId, type NextItem } from './items';
+import {
+  addItem,
+  heroPrize,
+  itemName,
+  itemSpoken,
+  NEXT_ORDER,
+  takeItem,
+  type ItemId,
+  type NextItem,
+} from './items';
+import { applyItem } from '../items/heroes';
+import { isFound } from '../items/flags';
+import type { Player } from '../entities/player';
 import { Rng } from '@engine/rng';
 import { CHEST_WEIGHTS, rollWeighted, type BonusPrize } from './rules';
 
@@ -86,6 +98,16 @@ const sameKit = (a: Record<string, number>, b: Record<string, number>): boolean 
   JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
 
 /**
+ * A held mushroom or flower given to `p`: in the campaign a hero with items of their own gets their
+ * grow item or default power (docs/POWERUPS.md 8.1), else the hero's onPowerUp as today.
+ */
+function givePrize(p: Player, item: 'mushroom' | 'flower', world: World): void {
+  const own = isFound(p) ? heroPrize(p.def.id, item) : null;
+  if (own) applyItem(p, own.id);
+  else p.def.behaviour.onPowerUp(p, item, world);
+}
+
+/**
  * Whether a mushroom or fire flower would change anything for `hero` (its power, hit points or
  * kit), tried through its own `onPowerUp` in a silent scratch world; nothing real is touched.
  */
@@ -100,7 +122,7 @@ export function powerUpChanges(game: Game, hero: HeroPower, item: 'mushroom' | '
   };
   const world = new World(ITEM_ROOM, { ...game.ctx, audio: NULL_AUDIO }, temp, { seed: 1 });
   const p = world.player;
-  hero.def.behaviour.onPowerUp(p, item, world);
+  givePrize(p, item, world);
   return p.powerState !== hero.power || p.hp !== hero.hp || !sameKit(carriedKit(p), hero.kit);
 }
 
@@ -121,7 +143,8 @@ export interface UseOutcome {
  * full). `dev`: a dev mode item, held in the unsaved `devNext`.
  */
 export function useItem(game: Game, item: ItemId, dev = false): UseOutcome {
-  const name = ITEM_NAMES[item];
+  const hero = game.state.character.id;
+  const name = itemName(item, hero);
   if (item === '1up') {
     if (game.state.lives >= MAX_LIVES)
       return { ok: false, lines: ['YOU HAVE ALL THE LIVES', 'YOU CAN HOLD.'], said: 'Lives are full.' };
@@ -133,7 +156,7 @@ export function useItem(game: Game, item: ItemId, dev = false): UseOutcome {
     return {
       ok: false,
       lines: [`A ${name} IS ALREADY`, 'WAITING FOR THE NEXT LEVEL.'],
-      said: `${ITEM_SPOKEN[item]} is already waiting for the next level.`.replace(/^a /, 'A '),
+      said: `${itemSpoken(item, hero)} is already waiting for the next level.`.replace(/^a /, 'A '),
     };
   // A dev item waits in the unsaved dev list, a file's item in the saved one.
   if (dev) b.devNext = NEXT_ORDER.filter((k) => k === item || b.devNext.includes(k));
@@ -141,7 +164,7 @@ export function useItem(game: Game, item: ItemId, dev = false): UseOutcome {
   return {
     ok: true,
     lines: [`${name} READY FOR THE`, 'START OF THE NEXT LEVEL!'],
-    said: `${ITEM_SPOKEN[item].replace(/^a /, 'A ')}, ready for the start of the next level.`,
+    said: `${itemSpoken(item, hero).replace(/^an? /, (a) => a[0]!.toUpperCase() + a.slice(1))}, ready for the start of the next level.`,
   };
 }
 
@@ -206,7 +229,8 @@ export function applyHeldItems(game: Game, world: World): HeldOutcome[] {
         continue;
       }
     }
-    p.def.behaviour.onPowerUp(p, item, world);
+    if (item === 'star') p.def.behaviour.onPowerUp(p, item, world);
+    else givePrize(p, item, world);
     out.push({ item, given: true, returned: false, dev });
   }
   // Items from the item box are not worth points: neither the score nor its pop-ups stay.
@@ -218,13 +242,19 @@ export function applyHeldItems(game: Game, world: World): HeldOutcome[] {
   s.kit = carriedKit(p);
   const back = out.filter((o) => !o.given);
   if (back.length) {
-    const names = back.map((o) => ITEM_NAMES[o.item].toLowerCase()).join(' and ');
+    const names = back.map((o) => itemName(o.item, p.def.id).toLowerCase()).join(' and ');
     game.deps.announcer?.say(
       `${p.def.name} is at full power: the ${names} ${back.every((o) => o.returned) ? 'went back to your items' : 'had no room in your items'}.`,
     );
   }
   game.autosave();
   return out;
+}
+
+/** "A MUSHROOM", "AN ENERGY TANK": a prize's name with its article, for the banner. */
+function gotName(item: ItemId, hero: string): string {
+  const name = itemName(item, hero);
+  return `${/^[AEIOU]/.test(name) ? 'AN' : 'A'} ${name}`;
 }
 
 /** What winning a prize did. */
@@ -265,7 +295,10 @@ export function awardPrize(game: Game, prize: BonusPrize): AwardOutcome {
           ]
         : prize.kind === 'coins'
           ? [`${prize.amount} COINS!`, `${prize.amount} coins`]
-          : [`YOU GOT A ${ITEM_NAMES[prize.item]}!`, `You got ${ITEM_SPOKEN[prize.item]}`];
+          : [
+              `YOU GOT ${gotName(prize.item, s.character.id)}!`,
+              `You got ${itemSpoken(prize.item, s.character.id)}`,
+            ];
     return { lines: [line, '(JUST FOR FUN)'], said: `${said}, just for fun.`, stored: false };
   }
   if (prize.kind === 'lives') {
@@ -281,12 +314,12 @@ export function awardPrize(game: Game, prize: BonusPrize): AwardOutcome {
     out = { lines: [`${prize.amount} COINS!`], said: `${prize.amount} coins.`, stored: false };
   } else {
     const item = prize.item;
-    const got = `YOU GOT A ${ITEM_NAMES[item]}!`;
+    const got = `YOU GOT ${gotName(item, s.character.id)}!`;
     if (inventoryAvailable(game) && addItem(game.bonus, item)) {
       const n = game.bonus.inventory.length;
       out = {
         lines: [got, `ADDED TO YOUR ITEMS (${n})`],
-        said: `You got ${ITEM_SPOKEN[item]}. Added to your items.`,
+        said: `You got ${itemSpoken(item, s.character.id)}. Added to ${s.character.name}'s items.`,
         stored: true,
       };
     } else {
@@ -298,7 +331,7 @@ export function awardPrize(game: Game, prize: BonusPrize): AwardOutcome {
       const now = item === '1up' ? 'USED AT ONCE.' : 'KEPT FOR THE NEXT LEVEL.';
       out = {
         lines: [got, why, use.ok ? now : 'ONE IS WAITING. LOST.'],
-        said: `You got ${ITEM_SPOKEN[item]}. ${said}: ${use.ok ? now.toLowerCase() : 'one is already waiting, so it is lost.'}`,
+        said: `You got ${itemSpoken(item, s.character.id)}. ${said}: ${use.ok ? now.toLowerCase() : 'one is already waiting, so it is lost.'}`,
         stored: false,
       };
     }
