@@ -14,6 +14,11 @@ import { newGameState, type GameState } from '../context';
 import { startHp, type CharacterDef } from '../characters/character';
 import { carriedKit, type Player } from '../entities/player';
 import { Projectile, type ProjectileSpec } from '../entities/projectiles/projectile';
+import type { Entity } from '../entities/entity';
+import { HeroItem } from '../entities/objects/hero-item';
+import { PowerUp } from '../entities/objects/powerup';
+import { heroItems } from '../items/catalog';
+import { heroStart, itemRules } from '../items/heroes';
 import type { DamageSource } from '../rules/damage';
 import type { Game } from '../scenes/game';
 import { MenuScene } from '../scenes/menu';
@@ -26,6 +31,9 @@ import {
   AMMO_KEYS,
   chaptersFor,
   FAR_HIT_PX,
+  trainingFor,
+  type ItemId,
+  type TileSpot,
   isPreview,
   MoveStats,
   PREVIEW,
@@ -59,6 +67,11 @@ export const ROOM_LINES = 3;
 export const CARD_GUARD_FRAMES = 20;
 /** The buttons that move a chapter card, GOOD! or READY! on. */
 const GO_ON: readonly Action[] = ['jump', 'attack', 'special', 'select'];
+/**
+ * Frames a placed item takes to rise out of a block (HeroItem's and PowerUp's emerging): the room
+ * plays them at once, so the item is simply there.
+ */
+const ITEM_RISE_FRAMES = 32;
 /** Frames before a popped dummy is put back up. */
 export const DUMMY_RESPAWN_FRAMES = 45;
 /** Frames between the dummy's shots (Link's shield lesson). */
@@ -216,6 +229,10 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
   private shotT = 0;
   private readonly shots: Projectile[] = [];
   private readonly player_: number;
+  /** The power-up placed in the room and not grabbed yet (`placeItem`). */
+  private placed: { id: ItemId; at: TileSpot; e: Entity } | null = null;
+  /** The most of each ammo key the hero has had in the room: `refill` tops up to it. */
+  private readonly ammoTop: Record<string, number> = {};
 
   constructor(
     private readonly game: Game,
@@ -231,13 +248,29 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     this.world = this.build();
   }
 
-  /** The hero as it starts a level, with its whole kit and full health; one life, no clock. */
+  /**
+   * The hero with its basic kit (the campaign's first kit, items/heroes.ts heroStart), whatever
+   * the run holds: the lessons' items build it up. Full health, one life, no clock. A hero whose
+   * training still has `fullKit` gets its whole kit from `devKit` instead.
+   */
   private freshState(): GameState {
     const s = newGameState(this.hero);
-    s.kit = this.hero.devKit?.() ?? {};
-    if (this.hero.damage.kind === 'hp') s.hp = s.kit.maxHp ?? startHp(this.hero);
+    if (this.fullKit) {
+      s.kit = this.hero.devKit?.() ?? {};
+      if (this.hero.damage.kind === 'hp') s.hp = s.kit.maxHp ?? startHp(this.hero);
+    } else {
+      const start = heroStart(this.hero);
+      s.kit = { ...start.kit };
+      s.powerState = start.powerState;
+      s.hp = start.hp;
+    }
     s.lives = 1;
     return s;
+  }
+
+  /** @deprecated The hero's training is not converted to items yet: the old whole-kit room. */
+  get fullKit(): boolean {
+    return !!trainingFor(this.hero.id)?.fullKit;
   }
 
   private build(): World {
@@ -247,6 +280,67 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     this.dummy = null;
     this.dummyGone = 0;
     return world;
+  }
+
+  /** Where a lesson's item goes by default: two tiles ahead of the start, on the floor. */
+  itemSpot(): TileSpot {
+    const start = this.layout.level.start;
+    return { x: start.x + 2, y: start.y };
+  }
+
+  /** The hero already has power-up `id` (Mario and Luigi: their power state). */
+  private owns(id: ItemId): boolean {
+    const p = this.player;
+    const rules = itemRules(this.hero.id);
+    if (rules) return rules.owned(p, id);
+    if (id === 'mushroom') return p.powerState !== 'small';
+    if (id === 'fire-flower') return p.powerState === 'fire';
+    return false;
+  }
+
+  /**
+   * Power-up `id` in the room as the real pickup (`at`, else `itemSpot`), already out of its
+   * block: the hero's own HeroItem, or SMB's mushroom or flower (standing still) for Mario and
+   * Luigi. Taking it is the world's (World.takeHeroItem, the hero's onPowerUp): its effect,
+   * sound, caption and announcement. The room watches for the grab (`watchItem`). One at a time:
+   * a new one replaces the last.
+   */
+  placeItem(id: ItemId, at: TileSpot = this.itemSpot()): Entity | null {
+    this.placed?.e.destroy();
+    this.placed = null;
+    const own = heroItems(this.hero.id)?.ownItems;
+    let e: Entity;
+    if (own) e = new HeroItem(at.x, at.y + 1, id, this.hero.id);
+    else if (id === 'mushroom' || id === 'fire-flower')
+      e = new PowerUp(at.x, at.y + 1, id === 'mushroom' ? 'mushroom' : 'flower');
+    else return null;
+    for (let i = 0; i < ITEM_RISE_FRAMES; i++) e.update(this.world);
+    e.body.vx = 0;
+    this.world.spawn(e);
+    this.placed = { id, at, e };
+    return e;
+  }
+
+  /**
+   * The placed item is gone: grabbed (the tracker notes it, counting afresh), or fallen out of
+   * the room (it comes back to its spot).
+   */
+  private watchItem(): void {
+    const placed = this.placed;
+    if (!placed || placed.e.alive) return;
+    this.placed = null;
+    if (toPx(placed.e.body.y) > this.layout.level.height * 16) {
+      this.placeItem(placed.id, placed.at);
+      return;
+    }
+    this.tracker.grabbed(placed.id);
+  }
+
+  /** The lesson's item: placed, or noted as taken if the hero has it already. */
+  private offerItem(lesson: TrainingLesson): void {
+    if (!lesson.item) return;
+    if (this.owns(lesson.item)) this.tracker.taken.add(lesson.item);
+    else this.placeItem(lesson.item, lesson.itemAt);
   }
 
   get player(): Player {
@@ -301,6 +395,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     this.state.kit = carriedKit(p);
     this.layout = practiceRoom(ch.room);
     this.tracker.room = this.layout.geometry;
+    this.placed = null;
     this.world = this.build();
     this.putUpDummy();
     this.tracker.teleported();
@@ -386,15 +481,22 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     if (!lesson) return this.ready();
     this.refill();
     lesson.setup?.(this);
+    this.offerItem(lesson);
     this.game.deps.announcer?.say(`${lead}${spoken(this.promptWrapped().join(' '))}`);
   }
 
-  /** Ammo and magic back to the room's full kit, so no lesson runs dry from the one before. */
+  /**
+   * Ammo and magic back to the most the hero has had in the room (the whole kit's with
+   * `fullKit`), so no lesson runs dry from the one before.
+   */
   private refill(): void {
-    const kit = this.hero.devKit?.() ?? {};
+    const scratch = this.player.scratch;
+    const kit = this.fullKit ? (this.hero.devKit?.() ?? {}) : {};
     for (const key of AMMO_KEYS) {
-      const v = kit[key];
-      if (v !== undefined) this.player.scratch[key] = v;
+      const v = Math.max(kit[key] ?? 0, scratch[key] ?? 0, this.ammoTop[key] ?? 0);
+      if (kit[key] === undefined && scratch[key] === undefined) continue;
+      this.ammoTop[key] = v;
+      scratch[key] = v;
     }
   }
 
@@ -444,10 +546,13 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     }
     const invuln = this.player.invuln;
     this.world.update([frame]);
-    this.world.events.splice(0);
+    // A taken item's name and what it does are read out; the room has no other world events.
+    for (const ev of this.world.events.splice(0))
+      if (ev.type === 'say') this.game.deps.announcer?.say(ev.text);
     this.keepSafe();
     this.tendDummy();
     this.tracker.observe(this.player, this.world);
+    this.watchItem();
     this.checkShots(invuln);
     this.advance();
   }
@@ -457,12 +562,15 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
     let p = this.player;
     if (p.dead) {
       // Should not happen (nothing hurts for real); start the room's world over.
+      const pending = this.placed;
+      this.placed = null;
       this.world = this.build();
       this.putUpDummy();
       this.tracker.teleported();
       p = this.player;
       this.refill();
       this.lesson?.setup?.(this);
+      if (pending) this.placeItem(pending.id, pending.at);
     }
     if (this.hero.damage.kind === 'hp') {
       const max = p.scratch.maxHp ?? startHp(this.hero);
@@ -564,7 +672,9 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
   private advance(): void {
     this.phaseT++;
     if (this.phase === 'lesson') {
-      if (this.lesson?.done(this.tracker)) {
+      const l = this.lesson;
+      // A lesson's item must be grabbed first; the grab restarts the counting (`watchItem`).
+      if (l && (!l.item || this.tracker.taken.has(l.item)) && l.done(this.tracker)) {
         this.phase = 'good';
         this.phaseT = 0;
         this.dummyShoots = false;

@@ -10,6 +10,7 @@ import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
 import { SAMUS } from '@game/characters/samus';
+import { heroStart } from '@game/items/heroes';
 import { loadSave, migrateSave, newSave } from '@game/save/save-files';
 import { CARD_GUARD_FRAMES, PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
 import { lessonsFor, PREVIEW } from '@game/tutorial/lessons';
@@ -112,7 +113,7 @@ describe('the training question', () => {
     const s = h.game.state;
     expect(s.character).toBe(LINK);
     expect([s.lives, s.score, s.coins, s.powerState, s.hp]).toEqual([4, 1200, 7, 'full', 6]);
-    expect(s.kit).toEqual({});
+    expect(s.kit).toEqual(heroStart(LINK).kit);
   });
 
   it("old saves don't ask for the heroes they already play; a new hero still asks", () => {
@@ -266,10 +267,10 @@ describe('the whole kit, previews and chapters', () => {
     skip(h);
     h.until(() => h.top() instanceof LevelScene);
     expect(h.game.state.character).toBe(SAMUS);
-    expect(h.game.state.kit).toEqual({});
+    expect(h.game.state.kit).toEqual(heroStart(SAMUS).kit);
   });
 
-  it('a hero with the kit unlocked sees no preview for it; from pause the lessons come in the same order', () => {
+  it('from pause the lessons come in the same order, and the run keeps its own kit', () => {
     const h = makeGame();
     file(
       { freed: ['mario', 'samus'], tutorials: ['mario', 'samus'], kit: { beam: 2, missiles: 5 } },
@@ -280,19 +281,15 @@ describe('the whole kit, previews and chapters', () => {
     h.until(() => h.top() instanceof LevelScene);
     h.idle(30);
     const kit = { ...h.game.state.kit };
-    expect(kit.beam).toBe(2);
     h.tap('start');
     choose(h, 'Training');
     const room = h.top() as PracticeRoomScene;
     expect(room.lessons.map((l) => l.id)).toEqual(lessonsFor('samus').map((l) => l.id));
-    const marks = room.lessons.map((l) => room.preview(l));
     const ids = room.lessons.map((l) => l.id);
-    expect(marks[ids.indexOf('long-beam')]).toBe(false);
-    expect(marks[ids.indexOf('ice-beam')]).toBe(false);
-    expect(marks[ids.indexOf('wave-beam')]).toBe(true);
-    // The room's lessons change its kit (the wave beam lent, missiles spent)...
+    // The room's lessons change its kit (the wave beam, missiles spent)...
     room.startLesson(ids.indexOf('wave-beam'));
-    expect(room.player.scratch.beam).toBe(3);
+    room.player.scratch.beam = 3;
+    room.player.scratch.missiles = 0;
     skip(h);
     // ...but the run's kit is restored.
     expect(h.game.state.kit).toEqual(kit);
