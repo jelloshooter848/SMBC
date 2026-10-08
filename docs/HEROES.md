@@ -1139,6 +1139,38 @@ first-timer (15-frame reactions, a few px misjudged, pauses) 97% (~151 s), at 12
 a clumsy one (21 frames, 10 px, more pauses) 37%. The dungeon and guardian alone: sharp, careful
 100%, at 18 frames 97%, clumsy 60%.
 
+## Hero power-ups: where each hero's items come from (0.4.33)
+
+In the campaign every hero has their own items instead of SMB's mushroom and fire flower (the design,
+the owner's decisions and the block-by-block plan are in `docs/POWERUPS.md`). Classic play keeps the
+mushroom and the flower for everyone.
+
+- **Power blocks** (`?` and brick power blocks, and the Top Secret Area's two fixed blocks) give the
+  hero who strikes them their own item: their grow item while they are small, else the block's
+  `[hero-items]` entry for them, or their default power. Items rise and stay on the block (only Mario
+  and Luigi's Super Mushroom slides). An owned item gives its refill instead.
+- **Every world places every hero's items**, the earlier worlds included, so a hero freed late (Link in
+  World 2, Sophia III in World 8) replays earlier levels to collect them. A hero always starts with
+  their basic kit the first time they are played.
+- **Each hero's kit is saved on its own** (`SaveFile.heroKits`): switching heroes keeps it. A death
+  wipes the played hero's found items, back to the basic kit.
+- **Each hero has their own inventory** (`SaveFile.heroInventory`, `heroItemsNext`): prizes go to the
+  hero being played, a mushroom as their grow item and a flower as their default power.
+
+| Hero         | Basic kit                                       | Grow item       | Found in the blocks                                                                                 |
+| ------------ | ----------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| Mario, Luigi | small                                           | Super Mushroom  | Fire Flower (as SMB)                                                                                |
+| Link         | sword, shield, thrusts, the Boomerang           | Heart Container | Bomb Bag (default), Shield / Jump / Fire Spell, Blue Ring, Magical Sword                            |
+| Mega Man     | buster, slide                                   | Helmet          | Saw Disc (default), Leaf Guard, Rush Coil, Flame Wave, Homing Knuckle, Bolt                         |
+| Samus        | Power Beam, morph ball and bombs, 30 energy     | Energy Tank     | Missiles (default), Long / Ice / Wave Beam, Varia Suit; six 10-energy reserve tanks at most         |
+| Simon        | leather whip, 5 hearts, a 10-point health bar   | Pot Roast       | Chain Whip (default), Dagger, Holy Water, Axe, Morning Star, Cross, Stopwatch, Double / Triple Shot |
+| Ryu          | Dragon Sword, wall cling, a 10-point health bar | Medicine        | Throwing Star (default), Ninpo Scroll, Windmill Star, Fire Wheel, Jump and Slash                    |
+| Bill         | rifle, 3 hits                                   | Medal           | Machine Gun (default), Laser, Flame Gun, Spread Gun                                                 |
+| Sophia III   | Normal cannon, Jason on foot                    | Power Capsule   | Crusher (default), Wall Climb, Ceiling Climb, Triple and Homing Missiles                            |
+
+Drops follow the items found: Link's bombs only with the Bomb Bag and magic jars only with a spell,
+Samus's missile packs only with Missiles; Bill's falcon capsule heals instead of unlocking a gun.
+
 ## Water: every hero their own way (0.4.25)
 
 Wherever a level swims (`isSwimLevel`: a water theme, or a map's `swim: true` such as 2-2's

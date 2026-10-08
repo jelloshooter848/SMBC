@@ -17,8 +17,8 @@ export const BILL_GUIDE: CharacterGuide = {
     },
   ],
   powerups: [
-    { item: 'mushroom', does: 'One more hit, up to five.' },
-    { item: 'flower', does: 'The next gun in order and it becomes selected.' },
+    { item: 'mushroom', does: 'Classic play: One more hit, up to five.' },
+    { item: 'flower', does: 'Classic play: The next gun in order and it becomes selected.' },
     { item: 'star', does: 'Invincible for a few seconds.' },
     { item: 'drops', does: 'Health and weapon capsules.' },
   ],
@@ -29,6 +29,9 @@ export const BILL_GUIDE: CharacterGuide = {
     { name: 'Laser', icon: 'icon-laser', does: 'One beam that pierces everything in a line.' },
     { name: 'Flame thrower', icon: 'icon-flame-gun', does: 'A slow heavy fireball.' },
   ],
-  tips: ['You start with three hits. Every touch costs one.'],
+  tips: [
+    "In the story, power blocks hold Bill's own items: Medals and the falcon guns M, L, F and S. A death loses what he found; replay levels to find it again.",
+    'You start with three hits. Every touch costs one.',
+  ],
   demo: ['idle', 'walk', 'jump', 'attack', 'crouch'],
 };

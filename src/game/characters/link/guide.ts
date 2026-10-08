@@ -23,9 +23,12 @@ export const LINK_GUIDE: CharacterGuide = {
   powerups: [
     {
       item: 'mushroom',
-      does: 'A heart container, full heal, and the white tunic: every other hit glances off.',
+      does: 'Classic play: A heart container, full heal, and the white tunic: every other hit glances off.',
     },
-    { item: 'flower', does: 'The red tunic: the sword fires a beam while your hearts are full.' },
+    {
+      item: 'flower',
+      does: 'Classic play: The red tunic: the sword fires a beam while your hearts are full.',
+    },
     { item: 'star', does: 'Invincible for a few seconds.' },
     { item: 'drops', does: 'Enemies drop bombs, magic jars and half hearts.' },
   ],
@@ -51,6 +54,7 @@ export const LINK_GUIDE: CharacterGuide = {
     },
   ],
   tips: [
+    "In the story, power blocks hold Link's own items: Heart Containers, the Bomb Bag, three spells, the Blue Ring and the Magical Sword. He starts with the Boomerang. A death loses what he found; replay levels to find it again.",
     'Stand still facing a shot and the shield blocks it.',
     'Magic jars refill the blue meter under your hearts.',
   ],

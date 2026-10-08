@@ -464,7 +464,8 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
     // SMB3's prize for beating them: an item in the inventory (docs/BONUS.md).
     expect(h.game.bonus.inventory).toHaveLength(1);
     expect(['mushroom', 'flower', 'star']).toContain(h.game.bonus.inventory[0]);
-    expect(loadSave(1)?.inventory).toEqual(h.game.bonus.inventory);
+    // Each hero's own inventory (0.4.33): the hero who fought gets it.
+    expect(loadSave(1)?.heroInventory?.[h.game.state.character.id]).toEqual(h.game.bonus.inventory);
     expect(map.guard).toBeNull();
     expect(map.node).toBe('4-2');
   });

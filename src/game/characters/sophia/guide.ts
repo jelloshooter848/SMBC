@@ -41,10 +41,13 @@ export const SOPHIA_GUIDE: CharacterGuide = {
     },
   ],
   powerups: [
-    { item: 'mushroom', does: 'Hyper cannon and the hover. A hit takes everything back.' },
+    {
+      item: 'mushroom',
+      does: 'Classic play: Hyper cannon and the hover. A hit takes everything back.',
+    },
     {
       item: 'flower',
-      does: 'Crusher cannon, wall and ceiling climbing, and missiles. Another flower gives more missiles.',
+      does: 'Classic play: Crusher cannon, wall and ceiling climbing, and missiles. Another flower gives more missiles.',
     },
     { item: 'star', does: 'Invincible, free missiles and a full hover bar.' },
     { item: 'drops', does: 'Missile ammo, once you have missiles.' },
@@ -66,6 +69,7 @@ export const SOPHIA_GUIDE: CharacterGuide = {
     },
   ],
   tips: [
+    "In the story, power blocks hold Sophia's own items: the Power Capsule, the Crusher, Wall Climb, Ceiling Climb and two missiles. A death loses what she found; replay levels to find it again.",
     'She cannot stomp. Shoot enemies instead.',
     'Jump into a ceiling to grab it. Hold down to bump blocks instead.',
     'Under water, up and down steer freely. Hold jump to go faster.',

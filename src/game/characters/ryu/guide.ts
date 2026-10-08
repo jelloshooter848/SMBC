@@ -17,8 +17,8 @@ export const RYU_GUIDE: CharacterGuide = {
     },
   ],
   powerups: [
-    { item: 'mushroom', does: 'Unlocks the next ninpo art. Full heal.' },
-    { item: 'flower', does: 'A bigger ninpo meter, refilled.' },
+    { item: 'mushroom', does: 'Classic play: Unlocks the next ninpo art. Full heal.' },
+    { item: 'flower', does: 'Classic play: A bigger ninpo meter, refilled.' },
     { item: 'star', does: 'Invincible for a few seconds.' },
     { item: 'drops', does: 'Ninpo flames and health.' },
   ],
@@ -43,6 +43,9 @@ export const RYU_GUIDE: CharacterGuide = {
       does: 'A somersault that cuts anything you touch.',
     },
   ],
-  tips: ['Walls stop you only until you learn to climb them.'],
+  tips: [
+    "In the story, power blocks hold Ryu's own items: Medicine (his health bar grows from 10 to 16), Ninpo Scrolls and four ninpo arts. A death loses what he found; replay levels to find it again.",
+    'Walls stop you only until you learn to climb them.',
+  ],
   demo: ['idle', 'walk', 'jump', 'attack', 'crouch', 'special'],
 };
