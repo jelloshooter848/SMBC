@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Training starts every hero from their basic kit. Each power-up lesson places the real item in the room: grab it,
+  then use it, in the order the hero's kit builds up (the grow item first). Every hero's chapters are new: Link's tools
+  and magic, Mega Man's helmet, weapons and Rush Coil, Samus's tanks, missiles and beams, Simon's whips and
+  sub-weapons, Ryu's ninpo, Bill's guns, Sophia III's capsule, missiles and climbs, and Luigi's mushroom and flower.
+- GOOD! no longer waits for a button: a tick sits by the next prompt. Chapter cards and READY! still wait.
+- On touch, training prompts name the tool or weapon as its button does (BOOMERANG, SAW, AXE...).
+
+### Fixed
+
+- The training room tops up ammo, magic and weapon energy whenever a tool runs dry, and a new chapter no longer starts
+  Samus curled in her ball or Link mid-spell.
+
 ## [0.4.33] - 2026-10-08
 
 ### Added
