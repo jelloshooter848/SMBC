@@ -9,16 +9,19 @@ import { MenuScene } from './menu';
 import { abilityHint } from './hints';
 import { fontText, wrapText } from '../hud/text';
 import { miniGameFor, type MiniGameDef, type MiniGameResult } from '../minigames';
-import { CAPTIVE_HUNT, SIMON_CURSE } from '../story/script';
+import { CAPTIVE_HUNT, freedTalk, SIMON_CURSE } from '../story/script';
+import { playStoryCards } from '../story/cards';
 
 /*
  * Freeing a brainwashed hero (campaign only, docs/HEROES.md). Talking to a captive pauses the
  * level (every scene here is pushed over it, so its clock and world stand still):
  *
  *   dialogue cards (the hero speaks) → rules card (MiniGameDef.title + rules) → one round
- *   (MiniGameDef.create) → pass: "<HERO> IS FREE!", the hero joins the file's roster (saved at
- *   once) and leaves the room in a puff; fail: TRY AGAIN? YES (a fresh round) / NO (back);
- *   quit: back. Back means the level exactly as it was left, its music restarted.
+ *   (MiniGameDef.create) → pass: the hero joins the file's roster (saved at once), talks over the
+ *   level, still standing there (0.4.23, docs/STORY.md 2.13: story pages, OK next, BACK skips the
+ *   rest), then leaves the room in a puff and "<HERO> IS FREE!" shows; fail: TRY AGAIN? YES (a
+ *   fresh round) / NO (back); quit: back. Back means the level exactly as it was left, its music
+ *   restarted.
  *
  * The flow knows mini games only through the MiniGameDef contract (miniGameFor), so a hero's
  * mini game can be rebuilt without touching it.
@@ -212,10 +215,13 @@ export function talkToCaptive(
 
   const ended = (result: MiniGameResult) => {
     if (result === 'pass') {
-      game.freeHero(hero.id); // saved at once
-      world.freeCaptive(hero.id);
-      audio.sfx('1up');
-      game.scenes.push(card(freedCard(hero), back));
+      game.freeHero(hero.id); // saved at once, so the talk plays once
+      // The freed hero talks (the player who talked speaks the <HERO>: pages), then goes.
+      playStoryCards(game, world, freedTalk(hero.id, fontText(talker.name)), () => {
+        world.freeCaptive(hero.id);
+        audio.sfx('1up');
+        game.scenes.push(card(freedCard(hero), back));
+      });
     } else if (result === 'fail') {
       audio.sfx('bump');
       game.deps.announcer?.say('Try again?');
