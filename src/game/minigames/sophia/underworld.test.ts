@@ -7,7 +7,7 @@ import { ROUND_GIVE_UP_HINT } from '@game/minigames/menu';
 import { TILE } from '../../topdown/geometry';
 import { SOPHIA_MINIGAME } from '.';
 import { soundId } from './art';
-import { CUTSCENE_FRAMES, fredPose, jasonPose, LEAP_AT, TOUCH_AT } from './cutscene';
+import { CUT_BEATS, CUTSCENE_FRAMES, fredPose, jasonPose, LEAP_AT, TOUCH_AT } from './cutscene';
 import { newUnderworld, UNDERWORLD_ROOMS } from './dungeon';
 import {
   CAPSULE_LIFE,
@@ -384,13 +384,13 @@ function drawn(h: ReturnType<typeof underworldHarness>): string[] {
 }
 
 describe('Underworld: the round', () => {
-  it('opens on the cutscene (skippable with JUMP or SHOOT, announced with how to skip), then the tank’s cavern', () => {
+  it('opens on the cutscene (SHOOT skips it, announced with OK and SKIP), then the tank’s cavern', () => {
     const h = underworldHarness({ keep: true });
     expect(h.scene.phase).toBe('cutscene');
-    expect(h.said[0]).toMatch(/Fred.*chest.*hole/);
-    expect(h.said[0]).toMatch(/JUMP.*skips/);
+    expect(h.said[0]).toMatch(/^Underworld\. FRED, JASON'S PET FROG/);
+    expect(h.said[0]).toMatch(/OK.*for more, SKIP.*to skip/);
     expect(h.log.music).toContain('bm-cutscene');
-    expect(h.scene.touchLabels()).toMatchObject({ jump: 'SKIP', start: 'MENU' });
+    expect(h.scene.touchLabels()).toMatchObject({ jump: 'OK', attack: 'SKIP', start: 'MENU' });
     h.step([], 10);
     expect(drawn(h)).toEqual(expect.arrayContaining([expect.stringMatching(/^SKIP/)]));
     h.tap('attack');
@@ -398,10 +398,10 @@ describe('Underworld: the round', () => {
     expect(h.scene.area?.player.def.id).toBe('sophia');
     expect(h.log.music.at(-1)).toBe('bm-area');
     expect(h.scene.touchLabels()).toMatchObject({ attack: 'SHOOT', select: 'EXIT', start: 'MENU' });
-    // Untouched, the cutscene ends by itself.
+    // Untouched, the cutscene never ends by itself (0.4.22).
     const h2 = underworldHarness({ keep: true });
-    h2.step([], CUTSCENE_FRAMES);
-    expect(h2.scene.phase).toBe('area');
+    h2.step([], CUTSCENE_FRAMES + 90 * 60);
+    expect(h2.scene.phase).toBe('cutscene');
     // In the dungeon: Jason's SHOOT and GRENADE.
     const h3 = underworldHarness({ keep: true, skipCutscene: true });
     expect(h3.scene.phase).toBe('dungeon');
@@ -413,6 +413,47 @@ describe('Underworld: the round', () => {
       start: 'MENU',
       jump: null,
     });
+  });
+
+  it("the cutscene's lines wait for OK a page at a time while the picture rests; OK on the last ends it", () => {
+    const h = underworldHarness({ keep: true });
+    const c = h.scene.captions;
+    // Left alone (a minute and a half), the first page stays, the picture resting on its beat.
+    h.step([], 90 * 60);
+    expect(h.scene.phase).toBe('cutscene');
+    expect(c.page).toBe(0);
+    expect(c.pic).toBe(CUT_BEATS[0]?.hold);
+    expect(fredPose(c.pic)?.y).toBe(fredPose(0)?.y); // between two hops, on the ground
+    expect(drawn(h)).toEqual(
+      expect.arrayContaining([...(CUT_BEATS[0]?.lines ?? []), expect.stringMatching(/^OK/)]),
+    );
+    // Each OK turns one page, read out; the picture goes on from the page's beat.
+    for (let i = 1; i < CUT_BEATS.length; i++) {
+      h.tap('jump');
+      expect(c.page).toBe(i);
+      expect(c.pic).toBeGreaterThanOrEqual(CUT_BEATS[i]?.at ?? 0);
+      expect(h.said.at(-1)).toContain((CUT_BEATS[i]?.lines ?? []).join(' '));
+      // A press inside the card guard does not turn the next page.
+      h.tap('jump');
+      expect(c.page).toBe(i);
+      h.step([], 300);
+      expect(c.pic).toBe(CUT_BEATS[i]?.hold);
+      expect(drawn(h)).toEqual(expect.arrayContaining([...(CUT_BEATS[i]?.lines ?? [])]));
+    }
+    expect(h.said.at(-1)).toMatch(/OK.*to continue\.$/);
+    expect(h.scene.phase).toBe('cutscene');
+    h.tap('jump');
+    expect(h.scene.phase).toBe('area');
+    expect(h.scene.skipped).toBe(false);
+    // The OK press does not make the tank jump.
+    expect(h.scene.area?.player.body.onGround).toBe(true);
+    // SKIP still ends it on any page.
+    const h2 = underworldHarness({ keep: true });
+    h2.step([], 40);
+    h2.tap('jump');
+    h2.tap('attack');
+    expect(h2.scene.phase).toBe('area');
+    expect(h2.scene.skipped).toBe(true);
   });
 
   it('the cutscene: Fred hops to the chest, swells, leaps down the hole; Jason runs after him', () => {

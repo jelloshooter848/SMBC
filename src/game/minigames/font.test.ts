@@ -71,7 +71,7 @@ describe('the bitmap font draws every mini game line', () => {
       const lines: string[] = [];
       h.step([], 30);
       lines.push(...drawn(h));
-      h.tap('jump'); // skip the cutscene
+      h.tap('attack'); // skip the cutscene
       lines.push(...drawn(h));
       h.step([], READY_FRAMES);
       h.scene.clingTaught = false;

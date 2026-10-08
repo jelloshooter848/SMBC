@@ -53,14 +53,14 @@ describe('Underworld: the tank’s cavern (section 1)', () => {
 
   it('starts the cavern after the cutscene when there is a hero for it, with its music and words', () => {
     const h = underworldHarness({ keep: true, tankHero: MARIO });
-    h.tap('jump');
+    h.tap('attack');
     expect(h.scene.phase).toBe('area');
     expect(h.log.music.at(-1)).toBe('bm-area');
     expect(h.said.at(-1)).toMatch(/cannon.*gateway.*Jason on foot/);
     expect(h.scene.touchLabels().start).toBe('MENU');
     // Without one (S1's Sophia not registered), straight to the dungeon.
     const h2 = underworldHarness({ keep: true, tankHero: null });
-    h2.tap('jump');
+    h2.tap('attack');
     expect(h2.scene.phase).toBe('dungeon');
   });
 

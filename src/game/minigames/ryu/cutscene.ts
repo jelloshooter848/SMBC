@@ -1,13 +1,16 @@
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
+import type { CaptionPage } from '../captions';
 import { drawNinja, hasNinjaFrame } from './art';
 
 /*
  * The opening cutscene, Tecmo style: letterboxed, a huge moon over a field of tall grass, two
  * ninja run at each other, leap, and clash in mid-air in front of the moon; they land past each
- * other, and the lines come up under the picture. JUMP or OK skips it (the scene). With reduce
- * flashing there is no white flash at the clash: the spark is simply drawn.
+ * other, and the lines come up under the picture a page at a time (CUT_BEATS): each waits for OK
+ * (JUMP) while the picture rests on its last beat (text never moves on by itself, 0.4.22); SKIP
+ * (ATTACK) ends it at once (the scene). With reduce flashing there is no white flash at the
+ * clash: the spark is simply drawn.
  */
 
 /** The letterbox bars (px) and the picture between them. */
@@ -21,16 +24,22 @@ export const LEAP_AT = 100;
 export const CLASH_AT = 140;
 export const CLASH_FRAMES = 18;
 export const LAND_AT = 190;
-/** Frames the whole cutscene lasts before READY. */
+/** Frames the whole picture lasts (its last page rests on the frame before). */
 export const CUTSCENE_FRAMES = 470;
 /** Frames of the white flash at the clash (none with reduce flashing). */
 export const FLASH_FRAMES = 3;
 
-/** The lines under the picture, by the frame each beat's lines come up. */
-export const CUT_BEATS: readonly { at: number; lines: readonly string[] }[] = [
-  { at: 0, lines: ['A MOONLIT FIELD.'] },
-  { at: LAND_AT, lines: ['TWO NINJA. ONE STROKE.'] },
-  { at: 280, lines: ['THE MASKED NINJA WAITS', 'ON THE ROOFTOPS...'] },
+/** What the announcer reads for the first page: what the picture shows. */
+export const CUT_SAY = 'A moonlit field. Two ninja leap at each other and clash under the moon.';
+
+/**
+ * The pages under the picture: the frame each starts at and the frame the picture rests on
+ * while it waits for OK (the first page's: both ninja landed after the clash).
+ */
+export const CUT_BEATS: readonly CaptionPage[] = [
+  { at: 0, hold: LAND_AT, lines: ['A MOONLIT FIELD.'], said: CUT_SAY },
+  { at: LAND_AT, hold: 279, lines: ['TWO NINJA. ONE STROKE.'] },
+  { at: 280, hold: CUTSCENE_FRAMES - 1, lines: ['THE MASKED NINJA WAITS', 'ON THE ROOFTOPS...'] },
 ];
 
 /** The lines showing at frame `t`: the latest beat's. */
@@ -39,9 +48,6 @@ export function cutLines(t: number): readonly string[] {
   for (const b of CUT_BEATS) if (t >= b.at) lines = b.lines;
   return lines;
 }
-
-/** The words the announcer reads for each beat. */
-export const CUT_SAY = 'A moonlit field. Two ninja leap at each other and clash under the moon.';
 
 const lerp = (a: number, b: number, k: number) => Math.round(a + (b - a) * Math.max(0, Math.min(1, k)));
 
@@ -89,8 +95,14 @@ const FOE_POSE: Pose = { x: 0, y: 0, frame: 0 };
 const RYU_FRAMES = ['cut-ryu-0', 'cut-ryu-1'] as const;
 const FOE_FRAMES = ['cut-masked-0', 'cut-masked-1'] as const;
 
-/** Draws the cutscene at frame `t`. */
-export function drawCutscene(r: Renderer, assets: AssetRegistry, t: number, reduceFlashing: boolean): void {
+/** Draws the cutscene's picture at frame `t` with `lines` under it (default: the beat's at `t`). */
+export function drawCutscene(
+  r: Renderer,
+  assets: AssetRegistry,
+  t: number,
+  reduceFlashing: boolean,
+  lines: readonly string[] = cutLines(t),
+): void {
   const font = assets.sheet('font');
   r.rect(0, 0, SCREEN_W, SCREEN_H, '#000');
   // The night sky, the moon, the field.
@@ -131,7 +143,6 @@ export function drawCutscene(r: Renderer, assets: AssetRegistry, t: number, redu
   // The letterbox and the lines.
   r.rect(0, 0, SCREEN_W, BAR_H, '#000');
   r.rect(0, SCREEN_H - BAR_H, SCREEN_W, BAR_H, '#000');
-  const lines = cutLines(t);
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i] as string;
     r.text(font, l, (SCREEN_W - l.length * 8) >> 1, SCREEN_H - BAR_H + 8 + i * 12);

@@ -859,9 +859,11 @@ fresh GameState, three lives and a **150-second clock** (held by the Infinite ti
 - **The cutscene** (`cutscene.ts`, music `ng-cutscene`): letterboxed (40 px bars), a big moon over
   tall grass; the two ninja run in, leap, clash in mid-air in front of the moon (sfx `clang`, the spark
   `cut-clash`; a 3-frame white flash only without reduce flashing) and land back to back; the
-  lines come up under the picture. JUMP (OK) or SLASH skips it; the skipping press never makes
-  Ryu jump. The SKIP prompt (with the JUMP key) sits right-aligned in the top bar. Touch: SKIP
-  and MENU. Then READY.
+  lines come up under the picture a page at a time (`CUT_BEATS`, `minigames/captions.ts`): the
+  picture plays on to the page's rest frame and waits there; OK (JUMP) turns the page, on the
+  last one ends the cutscene (text never moves on by itself, 0.4.22). SKIP (SLASH) ends it at
+  any time; neither press makes Ryu jump. SKIP (with its key) sits right-aligned in the top bar,
+  OK at the bottom right once the page waits. Touch: OK, SKIP and MENU. Then READY.
 - **The stage** (128 columns, rows 0-1 under the HUD; cling walls are `%`, the dressed stones): the
   street (lanterns, a knife thrower), **building A** (columns 20-27, 7 tiles: too tall to jump;
   climb its face), its roof, the ground (a dog, a hawk, a knife thrower), **the shaft** (a 5-tall
@@ -1039,8 +1041,10 @@ round (Blaster Master's), the REST shown; one GAME OVER fails the round.
 - **The opening** (`cutscene.ts`, music `bm-cutscene`): letterboxed, a night yard: Fred, Jason's
   pet frog, hops in, touches the glowing chest, swells up (`fred-big`) and leaps down the hole;
   Jason runs after him and jumps in. Lines under the picture, ending on the radiation carrying
-  Bowser's spell. JUMP or SHOOT skips (SKIP with the JUMP key, top right); the glow pulses,
-  steady with reduce flashing.
+  Bowser's spell. The lines come a page at a time, each waiting for OK (JUMP) while the picture
+  rests on its beat (`CUT_BEATS`, `minigames/captions.ts`; 0.4.22); SHOOT skips the rest (SKIP
+  with its key, top right; OK bottom right once the page waits); each page is read out. The glow
+  keeps pulsing while a page waits, steady with reduce flashing.
 - **The tank** (S1's real `SOPHIA` def) plays the two side-view parts, each in a World of its own
   with a fresh GameState (the campaign is never touched). Its kit is chosen so the lessons hold:
   **Hyper** (the Mushroom: the hover, the stronger cannon, one hit to spare before Normal) with 8
@@ -1115,7 +1119,7 @@ round (Blaster Master's), the REST shown; one GAME OVER fails the round.
   `fail`; the menu (`UnderworldMenuScene`, the shared MiniGameMenuScene with the dev assists: No
   damage keeps the tank's power, POW and the GUN level; Infinite lives) gives Give up = `quit`.
   `done` is called once.
-- **Touch**: SKIP and MENU in the opening; the tank's own buttons (S1: SHOOT, HOMING, EXIT) and
+- **Touch**: OK, SKIP and MENU in the opening; the tank's own buttons (S1: SHOOT, HOMING, EXIT) and
   MENU in its parts; SHOOT, GRENADE and MENU in the dungeon; nothing once the round is decided.
 
 Difficulty (`human-sim.test.ts`): Jason's dungeon is played by `HumanJason` over `JasonBot` (it

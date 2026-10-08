@@ -1,13 +1,15 @@
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
+import type { CaptionPage } from '../captions';
 import { drawSophia, fontSheet, hasFrame, LOOK } from './art';
 
 /*
  * The opening, Blaster Master's in brief: letterboxed, a night yard; Fred, Jason's pet frog, hops
  * in and touches a glowing chest, swells up and leaps down a hole; Jason runs after him and jumps
- * in. The lines come up under the picture. JUMP or SHOOT skips it (the scene). With reduce
- * flashing the chest glows steadily instead of pulsing.
+ * in. The lines come up under the picture a page at a time (CUT_BEATS): each waits for OK (JUMP)
+ * while the picture rests on its last beat (text never moves on by itself, 0.4.22); SKIP (SHOOT)
+ * ends it at once (the scene). With reduce flashing the chest glows steadily instead of pulsing.
  */
 
 /** The letterbox bars (px) and the picture between them. */
@@ -27,16 +29,23 @@ export const DOWN_AT = 190;
 export const JASON_AT = 210;
 export const JASON_JUMP_AT = 280;
 export const JASON_GONE_AT = 320;
-/** Frames the whole cutscene lasts. */
+/** Frames the whole picture lasts (its last page rests on the frame before). */
 export const CUTSCENE_FRAMES = 480;
 
-/** The lines under the picture, by the frame each beat's lines come up. */
-export const CUT_BEATS: readonly { at: number; lines: readonly string[] }[] = [
-  { at: 0, lines: ["FRED, JASON'S PET FROG,", 'HOPPED OUT INTO THE YARD.'] },
-  { at: TOUCH_AT, lines: ['HE TOUCHED A STRANGE,', 'GLOWING CHEST...'] },
-  { at: LEAP_AT, lines: ['...AND LEAPT DOWN A HOLE', 'INTO THE UNDERWORLD!'] },
-  { at: JASON_AT, lines: ['JASON WENT AFTER HIM.'] },
-  { at: JASON_GONE_AT + 20, lines: ['DOWN THERE, THE RADIATION', "CARRIED BOWSER'S SPELL..."] },
+/**
+ * The pages under the picture: the frame each starts at and the frame the picture rests on
+ * while it waits for OK (Fred between two hops at the first page's).
+ */
+export const CUT_BEATS: readonly CaptionPage[] = [
+  { at: 0, hold: 64, lines: ["FRED, JASON'S PET FROG,", 'HOPPED OUT INTO THE YARD.'] },
+  { at: TOUCH_AT, hold: LEAP_AT - 1, lines: ['HE TOUCHED A STRANGE,', 'GLOWING CHEST...'] },
+  { at: LEAP_AT, hold: JASON_AT - 1, lines: ['...AND LEAPT DOWN A HOLE', 'INTO THE UNDERWORLD!'] },
+  { at: JASON_AT, hold: JASON_GONE_AT + 19, lines: ['JASON WENT AFTER HIM.'] },
+  {
+    at: JASON_GONE_AT + 20,
+    hold: CUTSCENE_FRAMES - 1,
+    lines: ['DOWN THERE, THE RADIATION', "CARRIED BOWSER'S SPELL..."],
+  },
 ];
 
 /** The lines showing at frame `t`: the latest beat's. */
@@ -45,10 +54,6 @@ export function cutLines(t: number): readonly string[] {
   for (const b of CUT_BEATS) if (t >= b.at) lines = b.lines;
   return lines;
 }
-
-/** What the announcer reads as the cutscene starts. */
-export const CUT_SAY =
-  "Fred, Jason's pet frog, touches a glowing chest and leaps down a hole into the Underworld. Jason goes after him.";
 
 const lerp = (a: number, b: number, k: number) => Math.round(a + (b - a) * Math.max(0, Math.min(1, k)));
 
@@ -86,8 +91,18 @@ export function jasonPose(t: number): { x: number; y: number } | null {
   return { x: lerp(HOLE_X - 28, HOLE_X + 16, k), y };
 }
 
-/** Draws the cutscene at frame `t`. */
-export function drawCutscene(r: Renderer, assets: AssetRegistry, t: number, reduceFlashing: boolean): void {
+/**
+ * Draws the cutscene's picture at frame `t` with `opts.lines` under it (default: the beat's at
+ * `t`); the chest's glow pulses on `opts.clock` (default `t`), so it keeps pulsing while a page
+ * waits.
+ */
+export function drawCutscene(
+  r: Renderer,
+  assets: AssetRegistry,
+  t: number,
+  reduceFlashing: boolean,
+  opts: { lines?: readonly string[]; clock?: number } = {},
+): void {
   const font = fontSheet(assets);
   r.rect(0, 0, SCREEN_W, SCREEN_H, '#000');
   // The night sky over the yard, a few fixed stars, the ground.
@@ -105,7 +120,7 @@ export function drawCutscene(r: Renderer, assets: AssetRegistry, t: number, redu
   // The chest: glowing once Fred has touched it (pulsing; steady with reduce flashing).
   const lit = t >= TOUCH_AT;
   if (lit) {
-    const pulse = reduceFlashing ? 1 : ((t >> 3) & 1) + 1;
+    const pulse = reduceFlashing ? 1 : (((opts.clock ?? t) >> 3) & 1) + 1;
     r.rect(
       CHEST_X - 4 * pulse,
       GROUND_Y - 24 - 4 * pulse,
@@ -126,7 +141,7 @@ export function drawCutscene(r: Renderer, assets: AssetRegistry, t: number, redu
   // The letterbox and the lines.
   r.rect(0, 0, SCREEN_W, BAR_H, '#000');
   r.rect(0, SCREEN_H - BAR_H, SCREEN_W, BAR_H, '#000');
-  const lines = cutLines(t);
+  const lines = opts.lines ?? cutLines(t);
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i] as string;
     r.text(font, l, (SCREEN_W - l.length * 8) >> 1, SCREEN_H - BAR_H + 8 + i * 12);
