@@ -10,6 +10,12 @@ startMode: fall
 camera: locked
 parent: 4-1
 
+;; Campaign play only (0.4.27): World 4 is Samus's world, and this coin room under 4-1 is a pocket
+;; of Brinstar (4-2's look and tune: blue bubble rock, the shootable blocks). Elsewhere (level
+;; select, ?level=4-1-bonus) it looks as it always did.
+campaignTheme: brinstar
+campaignMusic: brinstar
+
 [tiles]
 ;; 0
 ................

@@ -22,6 +22,12 @@ import {
   megamanWoodDecorPalette,
   megamanWorldDecorFrames,
 } from './megaman-world';
+import {
+  crateriaDecorPalette,
+  norfairDecorPalette,
+  tourianLairDecorPalette,
+  zebesWorldDecorFrames,
+} from './zebes-world';
 
 /**
  * Background decor palette roles (same indices in every variant):
@@ -152,6 +158,10 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-megaman-wood': megamanWoodDecorPalette,
   'decor-megaman-air': megamanAirDecorPalette,
   'decor-megaman-fortress': megamanFortressDecorPalette,
+  // World 4 as Samus's world, Zebes (0.4.27): the surface, 4-3, 4-4 (zebes-world.ts).
+  'decor-crateria': crateriaDecorPalette,
+  'decor-norfair': norfairDecorPalette,
+  'decor-tourian-lair': tourianLairDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -726,5 +736,7 @@ export const decorDef: SpriteDef = {
     ...zelda2HyruleDecorFrames,
     // World 3 as Mega Man's world (0.4.26): gears, robot trees, the forest and the fortress walls.
     ...megamanWorldDecorFrames,
+    // World 4 as Samus's world, Zebes (0.4.27): far spires, Tourian's wall and glass tubes.
+    ...zebesWorldDecorFrames,
   },
 };

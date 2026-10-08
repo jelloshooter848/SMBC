@@ -69,7 +69,13 @@ export type Theme =
   | 'megaman-metal'
   | 'megaman-wood'
   | 'megaman-air'
-  | 'megaman-fortress';
+  | 'megaman-fortress'
+  // World 4 as Samus's world, Zebes (0.4.27, campaign looks): 4-1 and 4-2's overworld areas as
+  // Zebes's surface, 4-3 as Norfair and 4-4 as Tourian, Mother Brain's lair (a castle still; ZEBES
+  // ESCAPE's own `tourian` is not one).
+  | 'crateria'
+  | 'norfair'
+  | 'tourian-lair';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -114,6 +120,9 @@ export const THEMES: readonly Theme[] = [
   'megaman-wood',
   'megaman-air',
   'megaman-fortress',
+  'crateria',
+  'norfair',
+  'tourian-lair',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -135,8 +144,8 @@ export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =
 
 /**
  * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
- * the campaign looks of 5-4 (Simon's hall), 2-4 (Link's palace, 0.4.24) and 3-4 (Wily's fortress,
- * 0.4.26). Castle rules that key
+ * the campaign looks of 5-4 (Simon's hall), 2-4 (Link's palace, 0.4.24), 3-4 (Wily's fortress,
+ * 0.4.26) and 4-4 (Tourian, Mother Brain's lair, 0.4.27). Castle rules that key
  * off the theme ask this, never the name.
  */
 export const isCastleTheme = (theme: Theme): boolean =>
@@ -145,7 +154,8 @@ export const isCastleTheme = (theme: Theme): boolean =>
   theme === 'castle-water' ||
   theme === 'castlevania' ||
   theme === 'zelda2-palace' ||
-  theme === 'megaman-fortress';
+  theme === 'megaman-fortress' ||
+  theme === 'tourian-lair';
 
 /**
  * The original's `cannotPassThroughGround`: underground and castle areas, where a Hammer Bro's
@@ -191,6 +201,11 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'megaman-wood') return 'mm-wood';
   if (theme === 'megaman-air') return 'mm-air';
   if (theme === 'megaman-fortress') return 'mm-wily';
+  // World 4 as Samus's world, Zebes (0.4.27): the surface and Norfair have their own tunes
+  // (music/zebes-world.ts); Mother Brain's lair plays ZEBES ESCAPE's Tourian, mapped explicitly.
+  if (theme === 'crateria') return 'crateria';
+  if (theme === 'norfair') return 'norfair';
+  if (theme === 'tourian-lair') return 'tourian';
   return 'overworld';
 }
 

@@ -21,6 +21,10 @@ import type { View } from '../entities/entity';
  *   speed: a trunk every FOREST_TRUNK_PERIOD px under a ragged leaf canopy.
  * - `megaman-fortress` (3-4 as Wily's fortress, 0.4.26): a wall of dim machinery from below the
  *   HUD's band down, scrolling with the level, a skull plate every FORTRESS_SKULL_PERIOD px.
+ * - `crateria` (Zebes's surface, 4-1 and 4-2's overworld areas, 0.4.27): far rock spires along
+ *   the horizon at half the camera's speed, standing on SPIRES_BOTTOM.
+ * - `tourian-lair` (4-4 as Mother Brain's lair, 0.4.27): a wall of dim machinery from below the
+ *   HUD's band down, scrolling with the level, a glass tube every TOURIAN_TUBE_PERIOD px.
  */
 
 /** The black band left at the top for the HUD (a vampire-hunting stage keeps its HUD on black). */
@@ -99,6 +103,31 @@ function wilyFortress(r: Renderer, view: View): void {
     r.sprite(sheet, 'mmf-skull', base + 112 - cam, HALL_TOP + 64);
 }
 
+/** Zebes's far spires stand on the ground's top (4-1's floor, row 13). */
+export const SPIRES_BOTTOM = 13 * 16;
+
+function zebesSpires(r: Renderer, view: View): void {
+  const sheet = view.assets.sheet('decor', 'decor-crateria');
+  const f = sheet.frames.get('zc-spires');
+  if (!f) return;
+  const top = SPIRES_BOTTOM - f.h;
+  for (let x = -wrap(view.camX >> 1, f.w); x < SCREEN_W; x += f.w) r.sprite(sheet, 'zc-spires', x, top);
+}
+
+/** 4-4's glass tubes repeat every this many px of the level. */
+export const TOURIAN_TUBE_PERIOD = 192;
+
+function tourianLair(r: Renderer, view: View): void {
+  const sheet = view.assets.sheet('decor', 'decor-tourian-lair');
+  if (!sheet.frames.has('zt-wall')) return;
+  const cam = view.camX;
+  for (let x = -wrap(cam, 32); x < SCREEN_W; x += 32)
+    for (let y = HALL_TOP; y < SCREEN_H; y += 32) r.sprite(sheet, 'zt-wall', x, y);
+  const first = Math.floor((cam - 64) / TOURIAN_TUBE_PERIOD) * TOURIAN_TUBE_PERIOD;
+  for (let base = first; base < cam + SCREEN_W + 64; base += TOURIAN_TUBE_PERIOD)
+    r.sprite(sheet, 'zt-tube', base + 80 - cam, HALL_TOP + 48);
+}
+
 const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   castlevania: castleHall,
   'ninja-city': citySkyline,
@@ -106,6 +135,9 @@ const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   // World 3 as Mega Man's world (0.4.26).
   'megaman-wood': woodForest,
   'megaman-fortress': wilyFortress,
+  // World 4 as Samus's world, Zebes (0.4.27).
+  crateria: zebesSpires,
+  'tourian-lair': tourianLair,
 };
 
 /** Whether a theme paints a backdrop. */

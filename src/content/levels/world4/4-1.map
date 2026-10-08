@@ -9,6 +9,14 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (level/campaign.ts applyLook, 0.4.27): World 4 is Samus's world, Zebes, and
+;; 4-1 is the planet's surface (`crateria`): mauve crag rock with teal lichen, Chozo ruin bricks,
+;; steel vent blocks and pipes, under a dusky storm sky with far rock spires painted behind
+;; (world/theme-backdrop.ts); its hills and bushes are dim violet mounds. Elsewhere (level select,
+;; ?level=4-1) it looks as it always did.
+campaignTheme: crateria
+campaignMusic: crateria
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208              224
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

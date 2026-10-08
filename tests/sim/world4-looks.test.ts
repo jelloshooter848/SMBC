@@ -122,10 +122,9 @@ describe("4-4 as Tourian: the fake Bowser's unmask and the castle remark still p
   it('reaching the axe with the fake standing: the disguise bursts, the hero says the remark', () => {
     const { world, step, b, axe, sfx } = castle();
     expect(b).toBeDefined();
-    const calls: string[] = [];
-    world.remarkHook = (lvl, _hero, done) => {
-      calls.push(lvl);
-      done();
+    const calls: { level: string; done: () => void }[] = [];
+    world.remarkHook = (level, _hero, done) => {
+      calls.push({ level, done });
       return true;
     };
     const p = world.player.body;
@@ -138,9 +137,11 @@ describe("4-4 as Tourian: the fake Bowser's unmask and the castle remark still p
     expect(world.unmask?.kind).toBe('axe');
     expect(b.standing).toBe(4);
     expect(sfx).toContain('poof');
-    step(200);
-    expect(calls).toEqual(['4-4']);
+    step(60);
+    expect(calls.map((c) => c.level)).toEqual(['4-4']);
     expect(castleRemark('4-4', 'MARIO')).toBeTruthy();
+    calls[0]?.done();
+    step(60);
     expect(world.bossClear).not.toBeNull();
   });
 });

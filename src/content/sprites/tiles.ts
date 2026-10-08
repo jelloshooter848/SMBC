@@ -34,6 +34,14 @@ import {
   megamanWoodTileFrames,
   megamanWoodTilePalette,
 } from './megaman-world';
+import {
+  crateriaTileFrames,
+  crateriaTilePalette,
+  norfairTileFrames,
+  norfairTilePalette,
+  tourianLairTileFrames,
+  tourianLairTilePalette,
+} from './zebes-world';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -340,6 +348,10 @@ export const tilePalettes: Record<string, string[]> = {
   'tiles-megaman-wood': megamanWoodTilePalette,
   'tiles-megaman-air': megamanAirTilePalette,
   'tiles-megaman-fortress': megamanFortressTilePalette,
+  // World 4 as Samus's world, Zebes (0.4.27): the surface, 4-3, 4-4 (zebes-world.ts).
+  'tiles-crateria': crateriaTilePalette,
+  'tiles-norfair': norfairTilePalette,
+  'tiles-tourian-lair': tourianLairTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2347,4 +2359,12 @@ Object.assign(
   megamanWoodTileFrames(),
   megamanAirTileFrames(),
   megamanFortressTileFrames(),
+);
+
+// World 4 as Samus's world, Zebes (0.4.27): the surface, 4-3 and 4-4 (zebes-world.ts).
+Object.assign(
+  tilesDef.frames,
+  crateriaTileFrames(),
+  norfairTileFrames(),
+  tourianLairTileFrames(tilesDef.frames),
 );

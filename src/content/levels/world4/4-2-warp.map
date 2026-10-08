@@ -10,6 +10,12 @@ startMode: climb
 camera: scroll
 parent: 4-2
 
+;; Campaign play only (0.4.27): the vine's warp room is up on Zebes's surface (`crateria`): its
+;; mushroom platform an alien stalk. Its one pipe still leads down to Samus's cavern (`goto`
+;; below). Elsewhere (level select, ?level=4-2) it looks as it always did.
+campaignTheme: crateria
+campaignMusic: crateria
+
 [tiles]
 ;; 0                16               32               48
 ................ ................ ................ ................

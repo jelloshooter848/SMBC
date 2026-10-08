@@ -172,4 +172,10 @@ export const SKY: Record<string, string> = {
   'megaman-wood': '#001800',
   'megaman-air': '#2858d8',
   'megaman-fortress': '#000000',
+  // World 4 as Samus's world, Zebes (0.4.27): the surface under a dusky storm indigo, Norfair
+  // under a dark, hot red (the lifts' planks and the balance lifts' ropes stand out against it),
+  // Mother Brain's lair in the dark.
+  crateria: '#18183c',
+  norfair: '#300808',
+  'tourian-lair': '#000000',
 };
