@@ -94,7 +94,17 @@ export type Theme =
   | 'ng-sewer'
   | 'ng-harbor'
   | 'ng-pass'
-  | 'ng-temple';
+  | 'ng-temple'
+  // World 7 as Bill's world (0.4.30, campaign looks): 7-1 as the snowfield before the enemy base,
+  // its bonus room as the base's inner corridors (the underground still), 7-2's way in and way out
+  // as the jungle shore, its water area as the jungle river (it swims by its map's `swim: true`; no
+  // restyle is a water theme) and 7-4 as Red Falcon's alien lair (in the castle family; Bill's mini
+  // game's own `alien-lair` is not one).
+  | 'contra-snow'
+  | 'contra-base'
+  | 'contra-shore'
+  | 'contra-river'
+  | 'contra-lair';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -153,6 +163,11 @@ export const THEMES: readonly Theme[] = [
   'ng-harbor',
   'ng-pass',
   'ng-temple',
+  'contra-snow',
+  'contra-base',
+  'contra-shore',
+  'contra-river',
+  'contra-lair',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -175,8 +190,8 @@ export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =
 /**
  * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
  * the campaign looks of 5-4 (Simon's hall), 2-4 (Link's palace, 0.4.24), 3-4 (Wily's fortress,
- * 0.4.26), 4-4 (Tourian, Mother Brain's lair, 0.4.27) and 6-4 (the demon temple,
- * Jaquio's lair, 0.4.29). Castle rules that key off the theme ask this, never the name.
+ * 0.4.26), 4-4 (Tourian, Mother Brain's lair, 0.4.27), 6-4 (the demon temple,
+ * Jaquio's lair, 0.4.29) and 7-4 (Red Falcon's alien lair, 0.4.30). Castle rules that key off the theme ask this, never the name.
  */
 export const isCastleTheme = (theme: Theme): boolean =>
   theme === 'castle' ||
@@ -186,7 +201,8 @@ export const isCastleTheme = (theme: Theme): boolean =>
   theme === 'zelda2-palace' ||
   theme === 'megaman-fortress' ||
   theme === 'tourian-lair' ||
-  theme === 'ng-temple';
+  theme === 'ng-temple' ||
+  theme === 'contra-lair';
 
 /**
  * The original's `cannotPassThroughGround`: underground and castle areas, where a Hammer Bro's
@@ -202,6 +218,7 @@ export const hasSolidFloors = (theme: Theme): boolean =>
   theme === 'megaman-metal' ||
   theme === 'cv-catacomb' ||
   theme === 'ng-sewer' ||
+  theme === 'contra-base' ||
   isCastleTheme(theme);
 
 /** The music an area of this theme plays when its map names none. */
@@ -254,6 +271,14 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'ng-harbor') return 'ng-harbor';
   if (theme === 'ng-pass') return 'ng-pass';
   if (theme === 'ng-temple') return 'ng-boss';
+  // World 7 as Bill's world (0.4.30): the base's corridors play Bill's stage march, the shore his
+  // jungle and the alien lair Red Falcon's; the snowfield and the river have their own tunes
+  // (music/contra-world.ts).
+  if (theme === 'contra-snow') return 'contra-snow';
+  if (theme === 'contra-base') return 'contra-stage';
+  if (theme === 'contra-shore') return 'contra-jungle';
+  if (theme === 'contra-river') return 'contra-river';
+  if (theme === 'contra-lair') return 'contra-lair';
   return 'overworld';
 }
 

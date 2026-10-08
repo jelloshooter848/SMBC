@@ -10,6 +10,11 @@ startMode: pipe-exit
 camera: scroll
 parent: 7-2
 
+;; Campaign play only (0.4.30): the jungle shore past 7-2's river (`contra-shore`), to Bill's
+;; jungle tune. Elsewhere (level select, ?level=7-2) it looks as it always did.
+campaignTheme: contra-shore
+campaignMusic: contra-jungle
+
 [tiles]
 ;; 0                16               32
 ................ ................ ..........

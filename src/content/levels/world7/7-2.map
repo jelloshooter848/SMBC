@@ -9,6 +9,14 @@ start: 2,1
 startMode: fall
 camera: scroll
 
+;; Campaign play only (0.4.30): the jungle river (`contra-river`): mossy riverbed rock and green
+;; water, to its own river tune. No restyle is a water theme: the river swims by `swim: true` (which
+;; changes nothing in the classic water theme, which always swims). Elsewhere (level select,
+;; ?level=7-2) it looks as it always did.
+swim: true
+campaignTheme: contra-river
+campaignMusic: contra-river
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

@@ -13,7 +13,6 @@ import { Bowser } from '@game/entities/enemies/bowser';
 import { castleRemark } from '@game/story/script';
 import { px, toPx } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
-import type { World } from '@game/world/world';
 import { drops, dropSim } from './safety-floor-bot';
 
 /*

@@ -9,6 +9,15 @@ start: 2,12
 startMode: stand
 camera: scroll
 
+;; Campaign play only (level/campaign.ts applyLook, 0.4.30): World 7 is Bill's world, and 7-1 is
+;; the snowfield before the enemy base at night (`contra-snow`): packed snow, concrete bunker blocks
+;; and riveted steel, its Bullet Bill blasters steel pillbox cannons (still SMB's shape and badge,
+;; snow on their barrels), far snowy peaks and the base's wall painted behind
+;; (world/theme-backdrop.ts); its trees are snowy pines and firs. It plays its own snowfield tune.
+;; Elsewhere (level select, ?level=7-1) it looks as it always did.
+campaignTheme: contra-snow
+campaignMusic: contra-snow
+
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192
 ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................

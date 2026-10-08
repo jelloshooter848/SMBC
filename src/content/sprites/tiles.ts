@@ -67,6 +67,18 @@ import {
   ngPassTileFrames,
   ngTempleTileFrames,
 } from './ninja-world';
+import {
+  contraSnowTilePalette,
+  contraBaseTilePalette,
+  contraShoreTilePalette,
+  contraRiverTilePalette,
+  contraLairTilePalette,
+  contraSnowTileFrames,
+  contraBaseTileFrames,
+  contraShoreTileFrames,
+  contraRiverTileFrames,
+  contraLairTileFrames,
+} from './contra-world';
 
 /** NES $0C and $11, the master palette's deep teal and azure: the cavern's rock (also its decor). */
 export const DEEP_TEAL = '#004058';
@@ -391,6 +403,12 @@ export const tilePalettes: Record<string, string[]> = {
   'tiles-ng-harbor': ngHarborTilePalette,
   'tiles-ng-pass': ngPassTilePalette,
   'tiles-ng-temple': ngTempleTilePalette,
+  // World 7 as Bill's world (0.4.30): 7-1, its bonus room, 7-2's way in and out, 7-2, 7-4 (contra-world.ts).
+  'tiles-contra-snow': contraSnowTilePalette,
+  'tiles-contra-base': contraBaseTilePalette,
+  'tiles-contra-shore': contraShoreTilePalette,
+  'tiles-contra-river': contraRiverTilePalette,
+  'tiles-contra-lair': contraLairTilePalette,
 };
 
 /* Two courses of rounded 7x7 cobbles with a 1px seam. Tiles seamlessly in both directions. */
@@ -2428,4 +2446,14 @@ Object.assign(
   ngHarborTileFrames(),
   ngPassTileFrames(tilesDef.frames),
   ngTempleTileFrames(tilesDef.frames),
+);
+
+// World 7 as Bill's world (0.4.30): 7-1, 7-1-bonus, 7-2-intro, 7-2, 7-2-exit and 7-4 (contra-world.ts).
+Object.assign(
+  tilesDef.frames,
+  contraSnowTileFrames(tilesDef.frames),
+  contraBaseTileFrames(),
+  contraShoreTileFrames(tilesDef.frames),
+  contraRiverTileFrames(),
+  contraLairTileFrames(tilesDef.frames),
 );

@@ -40,6 +40,13 @@ import type { View } from '../entities/entity';
  *   - `ng-pass` (6-3): the moon over snowy peaks at a quarter of the camera's speed.
  *   - `ng-temple` (6-4, the demon temple): a carved wall from below the HUD's band down, scrolling
  *     with the level, a demon-headed pillar every TEMPLE_PILLAR_PERIOD px.
+ * - World 7 as Bill's world (0.4.30); nothing in these blinks or pulses:
+ *   - `contra-snow` (7-1): far snowy peaks at a quarter of the camera's speed, the enemy base's wall
+ *     at half its speed, standing on GATE_BOTTOM.
+ *   - `contra-base` (7-1-bonus): the corridor wall from below the HUD's band down, with the level.
+ *   - `contra-shore` (7-2's way in and out): the jungle's palms and ferns at half the camera's speed.
+ *   - `contra-lair` (7-4, Red Falcon's lair): the ribbed organic wall from below the HUD's band down,
+ *     with the level, the great heart every LAIR_HEART_PERIOD px.
  */
 
 /** The black band left at the top for the HUD (a vampire-hunting stage keeps its HUD on black). */
@@ -232,6 +239,40 @@ function ngTemple(r: Renderer, view: View): void {
     r.sprite(sheet, 'ngt-pillar', base + 16 - cam, HALL_TOP + 16);
 }
 
+function contraSnow(r: Renderer, view: View): void {
+  strip(r, view, 'decor-contra-snow', 'cs-peaks', 2, GATE_BOTTOM - 24);
+  strip(r, view, 'decor-contra-snow', 'cs-base', 1, GATE_BOTTOM);
+}
+
+/** Tile a 64 px wall frame from below the HUD's band down, scrolling with the level. */
+function wall64(r: Renderer, view: View, palette: string, frame: string): boolean {
+  const sheet = view.assets.sheet('decor', palette);
+  if (!sheet.frames.has(frame)) return false;
+  for (let x = -wrap(view.camX, 64); x < SCREEN_W; x += 64)
+    for (let y = HALL_TOP; y < SCREEN_H; y += 64) r.sprite(sheet, frame, x, y);
+  return true;
+}
+
+function contraBase(r: Renderer, view: View): void {
+  wall64(r, view, 'decor-contra-base', 'cb-wall');
+}
+
+function contraShore(r: Renderer, view: View): void {
+  strip(r, view, 'decor-contra-shore', 'csh-jungle', 1, GATE_BOTTOM);
+}
+
+/** 7-4's heart repeats every this many px of the level. */
+export const LAIR_HEART_PERIOD = 320;
+
+function contraLair(r: Renderer, view: View): void {
+  if (!wall64(r, view, 'decor-contra-lair', 'cl-wall')) return;
+  const sheet = view.assets.sheet('decor', 'decor-contra-lair');
+  const cam = view.camX;
+  const first = Math.floor((cam - 64) / LAIR_HEART_PERIOD) * LAIR_HEART_PERIOD;
+  for (let base = first; base < cam + SCREEN_W + 64; base += LAIR_HEART_PERIOD)
+    r.sprite(sheet, 'cl-heart', base + 96 - cam, HALL_TOP + 40);
+}
+
 const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   castlevania: castleHall,
   'ninja-city': citySkyline,
@@ -251,6 +292,11 @@ const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   'ng-field': ngField,
   'ng-pass': ngPass,
   'ng-temple': ngTemple,
+  // World 7 as Bill's world (0.4.30).
+  'contra-snow': contraSnow,
+  'contra-base': contraBase,
+  'contra-shore': contraShore,
+  'contra-lair': contraLair,
 };
 
 /** Whether a theme paints a backdrop. */
