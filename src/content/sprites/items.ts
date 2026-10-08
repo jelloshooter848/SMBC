@@ -1203,6 +1203,28 @@ const iconBeam = [
   '........',
   '........',
 ];
+/** Samus's Ice Beam on the belt (0.4.33): the beam icon in ice blue with a crystal tip. */
+const iconIceBeam = [
+  '........',
+  '......a.',
+  'a..aaa1a',
+  '.aaaa111',
+  '.aaaa111',
+  'a..aaa1a',
+  '......a.',
+  '........',
+];
+/** Samus's Wave Beam on the belt (0.4.33): a purple wave. */
+const iconWaveBeam = [
+  '........',
+  '.cc...cc',
+  'c..c.c..',
+  '....c...',
+  '.dd...dd',
+  'd..d.d..',
+  '....d...',
+  '........',
+];
 const iconMissile = [
   '...22...',
   '..2222..',
@@ -1891,6 +1913,8 @@ export const itemsDef: SpriteDef = {
     'missile-pack': missilePack,
     'icon-beam': iconBeam,
     'icon-missile': iconMissile,
+    'icon-ice-beam': iconIceBeam,
+    'icon-wave-beam': iconWaveBeam,
     dagger,
     'hand-axe-0': handAxe0,
     'hand-axe-1': handAxe1,
