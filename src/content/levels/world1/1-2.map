@@ -50,3 +50,9 @@ pipe 186 10 down -> 2-1 2 12
 ;; Campaign play: one unlabelled pipe (the middle one) that records map secret bonus-1 and
 ;; returns to the World 1 map (level/campaign.ts); other play keeps the three warps.
 warp 176 16 worlds=4,3,2 text=WELCOME_TO_WARP_ZONE! secret=bonus-1
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+10 9 samus=long-beam
+69 8 megaman=leaf-guard simon=dagger ryu=ninpo-scroll
+150 8 samus=long-beam simon=dagger

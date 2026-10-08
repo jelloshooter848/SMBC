@@ -48,3 +48,7 @@ pipe 61 12 right -> 4-2 72 9 exit=up
 zebes:bubble-door 14 12
 zebes:chozo-0 37 11
 zebes:bubble-door 48 12
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+38 8 samus=varia-suit simon=axe ryu=fire-wheel

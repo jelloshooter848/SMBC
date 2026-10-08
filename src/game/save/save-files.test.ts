@@ -21,6 +21,7 @@ import {
   writeSave,
 } from './save-files';
 import { CHARACTERS } from '@game/characters/registry';
+import { campaignKit } from '@game/items/migrate';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
@@ -88,7 +89,7 @@ describe('save files', () => {
     s.secrets = ['bonus-1'];
     s.position = { page: 'smb-4', node: 'start' };
     s.score = 12345;
-    s.kit = { hearts: 5, bombs: 3 };
+    s.kit = { found: 1, hearts: 5, bombs: 3 };
     s.gameCleared = true;
     expect(writeSave(s)).toBe(true);
     expect(s.updated).toBeGreaterThan(1000);
@@ -147,7 +148,8 @@ describe('save files', () => {
     // Any clear means a file from before the tutorial: 1-0 counts as cleared.
     expect(s.cleared).toEqual(['1-0', '1-1']);
     expect(s.pages).toEqual(['smb-1', 'smb-3']);
-    expect(s.kit).toEqual({ hearts: 4 });
+    // A kit from before 0.4.33 follows the campaign's found-item rules from now on.
+    expect(s.kit).toEqual({ hearts: 4, found: 1 });
     expect(s.position).toEqual({ page: 'smb-3', node: 'start' });
     expect((s as unknown as { bogus?: boolean }).bogus).toBeUndefined();
   });
@@ -508,6 +510,7 @@ describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
       ...newSave(1, 'link'),
       ...Object.fromEntries(Object.entries(V1).filter(([k]) => k !== 'worlds')),
       v: SAVE_VERSION,
+      kit: campaignKit('link', V1.kit),
       freed: ['mario', 'link'],
       cleared: ['1-0', ...V1.cleared],
       pages: ['smb-1', 'smb-4', 'smb-2'],
@@ -776,7 +779,7 @@ describe('save file ↔ game state', () => {
     expect(s.character).toBe(CHARACTERS[0]);
     expect(s.character2).toBe(CHARACTERS[0]);
     expect(s.powerState).toBe('small');
-    expect(s.kit).toEqual({});
+    expect(s.kit).toEqual({ found: 1 }); // Mario's basic campaign kit
     expect(stateFromSave(newSave(1, 'luigi'), CHARACTERS).character).toBe(LUIGI);
   });
 });

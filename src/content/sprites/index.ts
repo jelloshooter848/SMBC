@@ -26,6 +26,7 @@ import { localsPalettes, localsDef } from './locals';
 import { wandPalettes, wandDef } from './wand';
 import { storyPalettes, storyDef } from './story';
 import { zelda2SkyDef, zelda2SkyPalettes } from './zelda2-sky';
+import { heroItemPalettes, heroItemsDef } from './hero-items';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -95,6 +96,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   story: storyDef,
   // 0.4.24: Link's sky palace above 2-1 (2-1-sky2's campaign look).
   'zelda2-sky': zelda2SkyDef,
+  // 0.4.33: the heroes' own pickup items (docs/POWERUPS.md 11).
+  'hero-items': heroItemsDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -129,6 +132,7 @@ const defaults: Record<string, readonly string[]> = {
   ...wandPalettes,
   ...storyPalettes,
   ...zelda2SkyPalettes,
+  ...heroItemPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

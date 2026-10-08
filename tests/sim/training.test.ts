@@ -107,7 +107,7 @@ describe('the training question', () => {
     const s = h.game.state;
     expect(s.character).toBe(LINK);
     expect([s.lives, s.score, s.coins, s.powerState, s.hp]).toEqual([4, 1200, 7, 'full', 6]);
-    expect(s.kit).toEqual({});
+    expect(s.kit).toEqual({ found: 1 }); // Link's basic campaign kit (docs/POWERUPS.md)
   });
 
   it("old saves don't ask for the heroes they already play; a new hero still asks", () => {

@@ -111,3 +111,9 @@ cloud-2 222 3
 [variant sophia classic]
 ;; The flagpole's step-fall lift (charHorz): a one-tile lift by the pole that drops once stood on.
 + lift-fall 195 4 len=2 dx=8
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+34 5 link=grow megaman=grow samus=grow simon=grow ryu=grow bill=grow
+142 11 link=magical-sword megaman=homing-knuckle simon=stopwatch ryu=fire-wheel bill=flame-gun sophia=homing-missile
+168 9 link=fire-spell megaman=rush-coil samus=varia-suit simon=holy-water ryu=windmill bill=laser sophia=ceiling-climb

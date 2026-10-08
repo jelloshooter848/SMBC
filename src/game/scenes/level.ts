@@ -15,7 +15,7 @@ import {
 import { drawHud } from '../hud/hud';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
-import { startHp, type CharacterDef } from '../characters/character';
+import type { CharacterDef } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
@@ -107,6 +107,8 @@ export class LevelScene implements Scene {
       };
     // The campaign's story (src/game/story): entities and the world check it.
     this.world.storyMode = storyOn(game);
+    // Campaign play (as the story's): each hero's own items from the power blocks.
+    if (this.world.storyMode) this.world.useHeroItems(level.heroItems ?? []);
     // The hero's remark at a fake Bowser's axe (story/castle-remark.ts, 0.4.23).
     if (this.world.storyMode)
       this.world.remarkHook = (level, hero, done) =>
@@ -334,14 +336,8 @@ export class LevelScene implements Scene {
           return;
         }
         const s = game.state;
-        s.powerState = s.character.damage.kind === 'powerup' ? 'small' : 'full';
-        s.hp = startHp(s.character);
-        s.kit = {};
-        s.kit2 = {};
-        if (s.character2) {
-          s.powerState2 = s.character2.damage.kind === 'powerup' ? 'small' : 'full';
-          s.hp2 = startHp(s.character2);
-        }
+        // Decision 1: the hero's found items go (campaign: back to the basic kit).
+        game.resetAfterDeath();
         s.time = null;
         // A stage tutorial: no life lost, straight back in at the current lesson.
         if (this.tutorial) {
@@ -473,6 +469,7 @@ export class LevelScene implements Scene {
       const ctx = this.game.ctx;
       const status = smb3Status(this.game.state, this.world.player, time);
       drawSmb3Status(r, ctx.assets, status, this.world.frame, ctx.reduceFlashing);
+      this.drawItemCaption(r);
       this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0, {
         shiftY: SMB3_WORLD_SHIFT,
         bottom: STATUS_BAR_Y,
@@ -486,9 +483,21 @@ export class LevelScene implements Scene {
       ...(this.level.bonus ? { area: this.level.name } : {}),
       outline: LIGHT_SKIES.has(this.world.level.theme),
     });
+    this.drawItemCaption(r);
     this.tutorial?.render(r);
     if (this.world.castleWaiting) this.drawCastlePrompt(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
+  }
+
+  /** A hero item's name under the HUD the first time it is found (World.itemCaption). */
+  private drawItemCaption(r: Renderer): void {
+    const c = this.world.itemCaption;
+    if (!c) return;
+    const t = fontText(c.text);
+    const x = (SCREEN_W - t.length * 8) >> 1;
+    // On a black strip so it reads over clouds and sky alike.
+    r.rect(x - 4, 46, t.length * 8 + 8, 12, '#000');
+    r.text(this.game.ctx.assets.sheet('font'), t, x, 48);
   }
 
   /** The OK prompt under the castle's text while it waits (World.castleWaiting). */

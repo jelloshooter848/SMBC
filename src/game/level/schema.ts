@@ -547,6 +547,22 @@ export interface LevelData {
    * `heroVariant`): extra tiles laid when any player is that hero (Sophia III's steps).
    */
   variants?: LevelVariant[];
+  /**
+   * The campaign's hero items (the map's `[hero-items]` section, docs/POWERUPS.md 3.2): what each
+   * power block gives each hero. Classic play ignores it.
+   */
+  heroItems?: HeroItemEntry[];
+}
+
+/**
+ * One power block's `[hero-items]` line: `x y hero=item ...`. A hero not named gets their default
+ * power from it; `grow` is the hero's grow item.
+ */
+export interface HeroItemEntry {
+  x: number;
+  y: number;
+  /** CharacterDef id → item id (src/game/items/catalog.ts) or `grow`. */
+  items: Record<string, string>;
 }
 
 /**

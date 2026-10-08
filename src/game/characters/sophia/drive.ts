@@ -1,5 +1,6 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import type { AudioSink } from '@engine/audio/audio-manager';
+import { has, isFound } from '../../items/flags';
 import { px, sign, tileAt, tileToSub, velToSub } from '@engine/math/units';
 import { JUMP_BUFFER_FRAMES } from '../../constants';
 import { moveX, moveY, type Body } from '../../entities/body';
@@ -61,8 +62,14 @@ const UH = px(TANK_H);
 
 /** Owns Hover (Hyper and up: a Mushroom). */
 export const hasHover = (p: Player): boolean => p.powerState === 'big' || p.powerState === 'fire';
-/** Owns Wall Climb and Ceiling Climb (Crusher: a Flower). */
-export const hasClimb = (p: Player): boolean => p.powerState === 'fire';
+/**
+ * Owns Wall Climb / Ceiling Climb: the Crusher (a Flower) has both; in the campaign each is its own
+ * item, working in the Hyper hull or better (decision 10, docs/POWERUPS.md 5.8).
+ */
+export const hasWallClimb = (p: Player): boolean =>
+  isFound(p) ? p.powerState !== 'small' && has(p, 'wall-climb') : p.powerState === 'fire';
+export const hasCeilingClimb = (p: Player): boolean =>
+  isFound(p) ? p.powerState !== 'small' && has(p, 'ceiling-climb') : p.powerState === 'fire';
 
 /** A visible solid tile she can drive on (inside the map: the level's side edges don't count). */
 const climbable = (map: TileMap, tx: number, ty: number): boolean =>
@@ -360,7 +367,7 @@ function upright(
   if (grounded && !st.push && st.squat === 0 && c.into && !c.away && noseDown(p, st, map)) return;
 
   // Wall Climb from the floor: an inside turn up a wall ahead, or round a ledge (SO-36).
-  if (grounded && !st.push && st.squat === 0 && hasClimb(p) && startFloorTurn(p, st, c, map)) return;
+  if (grounded && !st.push && st.squat === 0 && hasWallClimb(p) && startFloorTurn(p, st, c, map)) return;
 
   // 2. The jump state: the rise ends at its height (put exactly there).
   const pu = st.push;
@@ -488,7 +495,7 @@ function canGrip(
   struck: readonly [number, number][],
   vy: number,
 ): boolean {
-  if (!hasClimb(p) || vy >= 0 || input.held('down') || st.engaged) return false;
+  if (!hasCeilingClimb(p) || vy >= 0 || input.held('down') || st.engaged) return false;
   if (p.inWater && !st.push) return false;
   return struck.some(([tx, ty]) => climbable(map, tx, ty) && ty < map.height - 1);
 }
@@ -832,7 +839,7 @@ function wall(p: Player, st: SophiaState, input: InputFrame, map: TileMap): void
         const floorY = tileToSub(aheadRow);
         const toX = face + out * (px(INSIDE_END_PX) + 0);
         if (startTurn(p, st, TURN_INSIDE, FLOOR, toX, floorY - (UH >> 1), out as -1 | 1, map)) return;
-      } else if (hasClimb(p)) {
+      } else if (hasCeilingClimb(p)) {
         const ceilY = tileToSub(aheadRow + 1);
         if (
           startTurn(
@@ -862,7 +869,7 @@ function wall(p: Player, st: SophiaState, input: InputFrame, map: TileMap): void
       }
       b.y = y;
       b.vy = 0;
-      if (fwd && (d < 0 || hasClimb(p))) {
+      if (fwd && (d < 0 || hasCeilingClimb(p))) {
         const into = left ? -1 : 1;
         const toX = face + into * px(OUTSIDE_END_PX);
         if (d < 0) {

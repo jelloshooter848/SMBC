@@ -2,6 +2,8 @@ import type { ProjectileSpec } from '../../entities/projectiles/projectile';
 
 export interface Gun {
   id: string;
+  /** Its campaign item id (src/game/items/catalog.ts; the rifle is his starting gun). */
+  item: string;
   name: string;
   icon: string;
   /** Hold the button to keep firing every `auto` frames (0 = tap to fire). */
@@ -78,10 +80,31 @@ export const FLAME_SHOT: ProjectileSpec = {
 
 /** Guns in unlock order; the rifle is always there. */
 export const GUNS: readonly Gun[] = [
-  { id: 'rifle', name: 'Rifle', icon: 'icon-rifle', auto: 0, maxOut: 4, fan: 1, fanDeg: 0, spec: RIFLE_SHOT },
-  { id: 'mg', name: 'Machine Gun', icon: 'icon-mg', auto: 6, maxOut: 6, fan: 1, fanDeg: 0, spec: MG_SHOT },
+  {
+    id: 'rifle',
+    item: 'rifle',
+    name: 'Rifle',
+    icon: 'icon-rifle',
+    auto: 0,
+    maxOut: 4,
+    fan: 1,
+    fanDeg: 0,
+    spec: RIFLE_SHOT,
+  },
+  {
+    id: 'mg',
+    item: 'machine-gun',
+    name: 'Machine Gun',
+    icon: 'icon-mg',
+    auto: 6,
+    maxOut: 6,
+    fan: 1,
+    fanDeg: 0,
+    spec: MG_SHOT,
+  },
   {
     id: 'spread',
+    item: 'spread-gun',
     name: 'Spread Gun',
     icon: 'icon-spread',
     auto: 0,
@@ -90,9 +113,20 @@ export const GUNS: readonly Gun[] = [
     fanDeg: 15,
     spec: SPREAD_SHOT,
   },
-  { id: 'laser', name: 'Laser', icon: 'icon-laser', auto: 0, maxOut: 1, fan: 1, fanDeg: 0, spec: LASER_BEAM },
+  {
+    id: 'laser',
+    item: 'laser',
+    name: 'Laser',
+    icon: 'icon-laser',
+    auto: 0,
+    maxOut: 1,
+    fan: 1,
+    fanDeg: 0,
+    spec: LASER_BEAM,
+  },
   {
     id: 'flame-gun',
+    item: 'flame-gun',
     name: 'Flame Thrower',
     icon: 'icon-flame-gun',
     auto: 0,

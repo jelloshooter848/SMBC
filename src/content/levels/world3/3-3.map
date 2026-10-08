@@ -85,3 +85,7 @@ cloud-1 172 11
 33 13 TT
 32 14 tt
 + lift-fall 146 4 len=2 dx=8
+
+[hero-items]
+;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
+49 3 link=shield-spell megaman=flame-wave samus=ice-beam ryu=windmill bill=laser sophia=wall-climb

@@ -207,7 +207,14 @@ export class HammerBattleScene implements Scene {
     drawChest(r, assets, this.openedFor !== null, BATTLE_CHEST_X, Math.round(c.y));
     if (this.openedFor === null) return;
     const k = Math.min(1, this.openedFor / BATTLE_CHEST_OPEN_FRAMES);
-    drawItem(r, assets, this.item, BATTLE_CHEST_X, Math.round(c.y) - 4 - Math.round(24 * k));
+    drawItem(
+      r,
+      assets,
+      this.item,
+      BATTLE_CHEST_X,
+      Math.round(c.y) - 4 - Math.round(24 * k),
+      this.game.state.character.id,
+    );
   }
 
   /** SMB3's look: the arena above SMB3's status bar (hud/smb3-status.ts), no HUD across the top. */

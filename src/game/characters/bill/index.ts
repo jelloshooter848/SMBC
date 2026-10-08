@@ -6,6 +6,7 @@ import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import { Projectile } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
+import { has, isFound } from '../../items/flags';
 import { BILL_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { beltButton, toolButton } from '../../touch-labels';
@@ -40,8 +41,12 @@ export const START_HITS = 3;
 export const MAX_HITS = 5;
 const SHOOT_POSE_FRAMES = 10;
 
-/** Scratch keys: guns (unlocked count beyond the rifle), tool, autoT, aimX, aimY. */
-function unlocked(p: Player): Gun[] {
+/**
+ * Scratch keys: guns (unlocked count beyond the rifle), tool, autoT, aimX, aimY, maxHp. In the
+ * campaign each falcon gun is an item with its own flag (docs/POWERUPS.md 5.7).
+ */
+export function unlocked(p: Player): Gun[] {
+  if (isFound(p)) return GUNS.filter((g, i) => i === 0 || has(p, g.item));
   return GUNS.slice(0, 1 + (p.scratch.guns ?? 0));
 }
 function tools(p: Player): ToolInfo[] {
@@ -184,6 +189,13 @@ export const BILL: CharacterDef = {
     onPickup(p, kind, world) {
       switch (kind) {
         case 'capsule':
+          // Campaign: the falcon capsule is a health pickup (decision 8); guns are placed items.
+          if (isFound(p)) {
+            if (p.hp >= (p.scratch.maxHp ?? START_HITS)) return false;
+            p.hp += 1;
+            world.audio.sfx('pickup');
+            return true;
+          }
           if ((p.scratch.guns ?? 0) >= GUNS.length - 1) return false;
           p.scratch.guns = (p.scratch.guns ?? 0) + 1;
           p.scratch.tool = p.scratch.guns; // switch to the new gun like a capsule would

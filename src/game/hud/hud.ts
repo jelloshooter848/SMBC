@@ -1,4 +1,5 @@
 import type { Renderer } from '@engine/gfx/renderer';
+import { isFound } from '../items/flags';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { worldLabel } from './world-label';
 import type { AssetRegistry } from '@engine/assets/registry';
@@ -99,7 +100,15 @@ export function drawHud(
   const dmg = state.character.damage;
   if (dmg.kind === 'hp' && player) {
     if (dmg.hudStyle === 'number') {
-      text(`EN${pad(player.hp, 2)}`, 24, 24);
+      const tanks = state.character.energyTanks?.(player);
+      if (tanks) {
+        // NES Metroid: a row of small boxes above EN, filled while the tank holds energy.
+        for (let i = 0; i < tanks.total; i++) {
+          r.rect(40 + i * 7, 24, 6, 5, '#fcfcfc');
+          if (i >= tanks.full) r.rect(41 + i * 7, 25, 4, 3, '#202020');
+        }
+        text(`EN${pad(tanks.bar, 2)}`, 24, 30);
+      } else text(`EN${pad(player.hp, 2)}`, 24, 24);
     } else if (dmg.hudStyle === 'hearts') {
       const full = Math.floor(player.hp / 2);
       const half = player.hp % 2;
@@ -108,14 +117,16 @@ export function drawHud(
       for (let i = 0; i < total; i++) s += i < full ? 'h' : i === full && half ? 'f' : 'e';
       text(s, 24, 24);
     } else {
-      // Mega Man style vertical bar: 28 segments, 2 px each, at the left edge.
+      // Mega Man style vertical bar: 28 segments, 2 px each, at the left edge (one per hit point
+      // the hero can hold in the campaign: Simon and Ryu's grows from 10 to 16 with their grow item).
       const x = 8;
       const y0 = 40;
-      r.rect(x - 1, y0 - 1, 8, dmg.max * 2 + 2, '#000');
-      for (let i = 0; i < dmg.max; i++) {
+      const max = isFound(player) ? (player.scratch.maxHp ?? dmg.max) : dmg.max;
+      r.rect(x - 1, y0 - 1, 8, max * 2 + 2, '#000');
+      for (let i = 0; i < max; i++) {
         const filled = i < player.hp;
-        r.rect(x, y0 + (dmg.max - 1 - i) * 2, 6, 1, filled ? '#fcfcfc' : '#404040');
-        r.rect(x, y0 + (dmg.max - 1 - i) * 2 + 1, 6, 1, filled ? '#f8d878' : '#202020');
+        r.rect(x, y0 + (max - 1 - i) * 2, 6, 1, filled ? '#fcfcfc' : '#404040');
+        r.rect(x, y0 + (max - 1 - i) * 2 + 1, 6, 1, filled ? '#f8d878' : '#202020');
       }
     }
   }

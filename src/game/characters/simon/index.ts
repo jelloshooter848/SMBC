@@ -5,6 +5,7 @@ import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import { Projectile } from '../../entities/projectiles/projectile';
 import { STAR_FRAMES } from '../../constants';
+import { has, isFound } from '../../items/flags';
 import { SIMON_GUIDE } from './guide';
 import { STUN_FRAMES } from '../../rules/damage';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
@@ -44,17 +45,30 @@ const HIT_DAMAGE = 2;
 const WHIP_FRAMES_TOTAL = 18;
 const THROW_FRAMES = 12;
 
-/** Scratch keys: whip (0..2), subs (unlocked count), multi (1..3), hearts, tool, throwT. */
-function hearts(p: Player): number {
+/** Health bar a campaign Simon starts with (decision 4); the Pot Roast grows it to MAX_HP. */
+export const SMALL_HP = 10;
+
+/**
+ * Scratch keys: whip (0..2), subs (unlocked count), multi (1..3), hearts, tool, throwT, maxHp
+ * (campaign). In the campaign the whips, shots and sub-weapons are items with their own flags
+ * instead (docs/POWERUPS.md 5.5): he uses the best whip and shot he owns.
+ */
+export function maxHp(p: Player): number {
+  return p.scratch.maxHp ?? MAX_HP;
+}
+export function hearts(p: Player): number {
   return p.scratch.hearts ?? START_HEARTS;
 }
 function whipLevel(p: Player): number {
+  if (isFound(p)) return has(p, 'morning-star') ? 2 : has(p, 'chain-whip') ? 1 : 0;
   return Math.min(WHIP_REACH.length - 1, p.scratch.whip ?? 0);
 }
 function multi(p: Player): number {
+  if (isFound(p)) return has(p, 'triple-shot') ? 3 : has(p, 'double-shot') ? 2 : 1;
   return Math.max(1, Math.min(MAX_MULTI, p.scratch.multi ?? 1));
 }
 function unlocked(p: Player): SubWeapon[] {
+  if (isFound(p)) return SUB_WEAPONS.filter((w) => has(p, w.item));
   return SUB_WEAPONS.slice(0, p.scratch.subs ?? 0);
 }
 
@@ -229,7 +243,7 @@ export const SIMON: CharacterDef = {
           const n = p.scratch.subs ?? 0;
           if (n < SUB_WEAPONS.length) p.scratch.subs = n + 1;
           else p.scratch.hearts = Math.min(MAX_HEARTS, hearts(p) + 10);
-          p.hp = MAX_HP;
+          p.hp = maxHp(p);
           world.addScore(1000, p.body.x, p.body.y - px(16));
           world.audio.sfx('powerup');
           break;
@@ -238,7 +252,7 @@ export const SIMON: CharacterDef = {
           if ((p.scratch.whip ?? 0) < WHIP_REACH.length - 1) p.scratch.whip = (p.scratch.whip ?? 0) + 1;
           else if (multi(p) < MAX_MULTI) p.scratch.multi = multi(p) + 1;
           else p.scratch.hearts = Math.min(MAX_HEARTS, hearts(p) + 10);
-          p.hp = MAX_HP;
+          p.hp = maxHp(p);
           world.addScore(1000, p.body.x, p.body.y - px(16));
           world.audio.sfx('powerup');
           break;
