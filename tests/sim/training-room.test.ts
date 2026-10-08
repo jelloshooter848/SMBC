@@ -23,6 +23,7 @@ import type { TargetDummy } from '@game/tutorial/dummy';
 import { runSim } from '@game/sim/headless';
 import { getLevel } from '@content/levels';
 import { draw, makeGame, useStorage } from './heroes-harness';
+import { tbPolicies } from './training-tb';
 
 useStorage();
 
@@ -131,8 +132,8 @@ function policies(): Record<string, Policy> {
       return p.body.w < 16 * 256 && f % 2 ? ['right', 'jump'] : [];
     },
     // Link's tools (the gear screen: the dummy at 128-140) and magic.
-    'link:bomb': (p, f, s) =>
-      cx(p) > 118 ? ['left'] : cx(p) < 106 ? ['right'] : p.facing < 0 ? ['right'] : pick('bomb')(p, f, s),
+    // Link's, Mega Man's and Samus's item lessons (0.4.34): walk to the item, then use it.
+    ...tbPolicies(),
     'jump-spell': (p, f) => {
       if (!p.scratch.jumpSpell) return pick('jump')(p, f, null as never);
       return ['left', ...(f % 40 < 30 ? (['jump'] as Action[]) : [])];
@@ -383,7 +384,7 @@ describe('the practice room', () => {
     // Hurt: health is topped up again at once.
     scene.world.hurtPlayer(p);
     h.step();
-    expect(p.hp).toBe(p.scratch.maxHp);
+    expect(p.hp).toBe(p.scratch.maxHp ?? 6); // Link's basic kit: 3 hearts
     // The dummy pops after three hits and stands up again.
     const d = scene.dummy as TargetDummy;
     for (let i = 0; i < 3; i++) d.hit({ kind: 'bomb', amount: 1, owner: null, dirX: 1 }, scene.world);
@@ -492,7 +493,7 @@ describe('the practice room', () => {
 const MOVE_LESSONS: Record<string, string[]> = {
   luigi: ['high-jump', 'slippery-stop'],
   link: ['down-thrust', 'up-thrust', 'boomerang', 'shield-spell'],
-  megaman: ['slide', 'charge', 'weapon', 'rush'],
+  megaman: ['slide', 'charge', 'saw', 'rush'],
   samus: ['aim-up', 'morph-ball', 'bomb', 'missile', 'long-beam'],
   simon: ['crouch-whip', 'dagger', 'committed-jump', 'stopwatch'],
   ryu: ['cling', 'wall-jump', 'throwing-star', 'jump-slash'],
@@ -593,8 +594,9 @@ describe('the kit lessons measure the real thing', () => {
     for (const beam of [0, 1]) {
       const { h, scene } = room('samus');
       pressOn(h);
+      // With the Long Beam already hers (as if grabbed), or without it (it stays where it is put).
+      scene.player.scratch['has-long-beam'] = beam;
       scene.startLesson(lessonsFor('samus').findIndex((l) => l.id === 'long-beam'));
-      scene.player.scratch.beam = beam;
       const p = scene.player;
       for (let f = 0; f < 240 && !scene.ticked.includes('long-beam'); f++)
         h.step(cx(p) > 20 ? ['left'] : p.facing < 0 ? ['right'] : tapEvery(f, 'attack', 10));

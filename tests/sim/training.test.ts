@@ -94,7 +94,7 @@ describe('the training question', () => {
     expect(room.hero).toBe(LINK);
     expect(loadSave(1)?.tutorials).toContain('link');
     // The room's own world and state: its kit, its score.
-    expect(room.player.scratch.bombs).toBe(8);
+    expect([room.player.scratch.found, room.player.scratch.bombs]).toEqual([1, undefined]); // Link's basic kit
     // The first chapter's card waits for a button; then knock the dummy down with the sword: the
     // room's own score goes up.
     h.idle(CARD_GUARD_FRAMES + 1);

@@ -39,11 +39,23 @@ export function placedItem(s: PracticeRoomScene): HeroItem | undefined {
 /** Walk to the lesson's item and take it, then play `then` (its frames counted from the grab). */
 export function grab(then: Policy): Policy {
   let t0 = -1;
+  let off = false;
+  let lastX = -1;
   return (p, f, s) => {
     const item = placedItem(s);
     if (item) {
       t0 = -1;
-      return goTo(p, toPx(item.body.x + (item.body.w >> 1)));
+      const x = toPx(item.body.x + (item.body.w >> 1));
+      // Standing on the bricks right over it: off their left end first.
+      const above = toPx(p.body.y + p.body.h) < toPx(item.body.y + item.body.h) - 8;
+      if (above && p.body.onGround && Math.abs(cx(p) - x) <= 16) off = true;
+      if (!above) off = false;
+      if (off) return ['left'];
+      // Up the step if it is in the way: a jump when walking gets nowhere.
+      const go = goTo(p, x);
+      const stuck = go.length > 0 && p.body.onGround && cx(p) === lastX;
+      lastX = cx(p);
+      return stuck ? [...go, 'jump'] : go;
     }
     if (t0 < 0 || f < t0) t0 = f;
     return then(p, f - t0, s);
@@ -86,8 +98,10 @@ export function tbPolicies(): Record<string, Policy> {
       cx(p) > 118 ? ['left'] : cx(p) < 106 ? ['right'] : p.facing < 0 ? ['right'] : pick('bomb')(p, f, s),
     ),
     'link:shield-spell': grab(pick('shield')),
+    // Cast, then from left of the bricks (which a jump under would bump) jump left onto the ledge.
     'link:jump-spell': grab((p, f, s) => {
       if (!p.scratch.jumpSpell) return pick('jump')(p, f, s);
+      if (p.body.onGround && cx(p) > 76) return ['left'];
       return ['left', ...(f % 40 < 30 ? (['jump'] as Action[]) : [])];
     }),
     // His back to the dummy (to its left, facing left), standing still: its shot gets past the shield.

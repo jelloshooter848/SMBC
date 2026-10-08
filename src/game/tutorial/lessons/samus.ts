@@ -1,44 +1,81 @@
-import { type HeroTraining, k, legacyLesson, setKit } from './common';
+import type { Player } from '../../entities/player';
+import {
+  type HeroTraining,
+  itemLesson,
+  lesson,
+  type PracticeRoom,
+  setKit,
+  type TrainingLesson,
+} from './common';
 
-/* Samus's training (docs/HEROES.md): the chapters of lessons, in the order the room plays them. */
+/*
+ * Samus's training (docs/HEROES.md): the chapters of lessons, in the order the room plays them.
+ * She starts with her basic kit (the short Power Beam, aiming up, the Morph Ball and its bombs),
+ * then grabs the Energy Tank (her grow item), Missiles, then the beams and the suit in the order
+ * her kit builds up (docs/POWERUPS.md 5.4). Ice and Wave are both kept: WEAPON picks each one.
+ */
+
+/**
+ * The Varia Suit's lesson: grab it, then take one of the dummy's shots. The room keeps her energy
+ * full, so the hit shows as her invulnerability rising again (a fresh hit) after the grab.
+ */
+function variaLesson(): TrainingLesson {
+  let hero: Player | null = null;
+  let last = Infinity;
+  return itemLesson(
+    'varia-suit',
+    'varia-suit',
+    'GRAB THE VARIA SUIT: HITS TAKE HALF THE ENERGY. LET THE DUMMY SHOOT YOU!',
+    (t) => {
+      if (!hero || !t.now.varia) return false;
+      const was = last;
+      last = hero.invuln;
+      return hero.invuln > was;
+    },
+    {
+      setup(room) {
+        room.dummyShoots = true;
+        hero = room.player;
+        last = Infinity;
+      },
+    },
+  );
+}
+
+/** Out of the morph ball the last chapter may have left her in (the new room carries her kit). */
+function standUp(room: PracticeRoom): void {
+  const p = room.player;
+  if (!p.scratch.ball) return;
+  p.scratch.ball = 0;
+  p.refitHitbox();
+}
 
 export const SAMUS_TRAINING: HeroTraining = {
-  // The old whole-kit room (devKit) until its lessons place their items (0.4.34).
-  fullKit: true,
   chapters: [
     {
-      id: 'beams',
-      title: 'BEAMS',
+      id: 'basics',
+      title: 'BASICS',
       room: 'gear',
       lessons: [
-        legacyLesson(
-          'shoot',
-          '[SHOOT:attack] THE DUMMY WITH YOUR BEAM.',
-          (t) => t.dummyHits.has('beam'),
-          undefined,
-          setKit({ beam: 0 }),
+        lesson('shoot', '[SHOOT:attack] THE DUMMY WITH YOUR BEAM.', (t) => t.dummyHits.has('beam')),
+        // The grow item: a reserve tank, shown as a box over her energy.
+        itemLesson(
+          'energy-tank',
+          'energy-tank',
+          'GRAB THE ENERGY TANK. ITS BOX SHOWS UP ABOVE YOUR ENERGY.',
+          (t) => (t.now.tanks ?? 0) > 0,
         ),
-        legacyLesson('aim-up', 'HOLD UP TO AIM STRAIGHT UP, AND [SHOOT:attack].', (t) => t.shotsUp > 0),
-        legacyLesson(
-          'long-beam',
-          'LONG BEAM: FULL RANGE. GO TO THE FAR LEFT AND [SHOOT:attack] THE DUMMY.',
-          (t) => t.dummyHits.has('far'),
-          (run) => k(run, 'beam') >= 1,
-          setKit({ beam: 1 }),
+        lesson('aim-up', 'HOLD UP TO AIM STRAIGHT UP, AND [SHOOT:attack].', (t) => t.shotsUp > 0),
+        lesson(
+          'morph-ball',
+          'PRESS DOWN TO ROLL INTO THE MORPH BALL. ROLL UNDER THE LOW WALL!',
+          (t) => t.seen.has('ball') && t.tunnel,
         ),
-        legacyLesson(
-          'ice-beam',
-          'ICE BEAM: IT FREEZES WHAT IT HITS. [SHOOT:attack] THE DUMMY.',
-          (t) => t.dummyHits.has('ice'),
-          (run) => k(run, 'beam') >= 2,
-          setKit({ beam: 2 }),
-        ),
-        legacyLesson(
-          'wave-beam',
-          'WAVE BEAM: IT GOES THROUGH WALLS. [SHOOT:attack] THE DUMMY.',
-          (t) => t.dummyHits.has('wave'),
-          (run) => k(run, 'beam') >= 3,
-          setKit({ beam: 3 }),
+        lesson('bomb', 'IN THE MORPH BALL, [BOMB:attack] DROPS A BOMB.', (t) => t.bombs > 0),
+        lesson(
+          'bomb-jump',
+          'SIT ON A BOMB: ITS BLAST BOUNCES THE BALL UP. [BOMB:attack] FOR A BOMB JUMP!',
+          (t) => t.ballJumps > 0,
         ),
       ],
     },
@@ -47,33 +84,45 @@ export const SAMUS_TRAINING: HeroTraining = {
       title: 'MISSILES',
       room: 'practice',
       lessons: [
-        legacyLesson(
+        itemLesson(
           'missile',
-          '[MISSILE:special] FIRES A MISSILE: THREE DAMAGE, AND IT OPENS BRICKS.',
+          'missiles',
+          'MISSILES! [MISSILE:special] FIRES ONE: THREE DAMAGE, AND IT OPENS BRICKS.',
           (t) => t.shotKinds.has('missile'),
+          { setup: standUp },
         ),
-        legacyLesson(
+        lesson(
           'missile-switch',
-          '[WEAPON:select] SWITCHES THE CANNON TO MISSILES. THEN [SHOOT:attack].',
+          '[WEAPON:select] SWITCHES THE CANNON TO MISSILES. THEN [SHOOT:attack:MISSILE].',
           (t) => t.shotTools.has('missile') && t.shotKinds.has('missile'),
         ),
       ],
     },
     {
-      id: 'ball',
-      title: 'MORPH BALL',
+      id: 'beams',
+      title: 'BEAMS',
       room: 'gear',
       lessons: [
-        legacyLesson(
-          'morph-ball',
-          'PRESS DOWN TO ROLL INTO THE MORPH BALL. ROLL UNDER THE LOW WALL!',
-          (t) => t.seen.has('ball') && t.tunnel,
+        // The beam selected again (missile-switch left the cannon on missiles, which fly far too).
+        itemLesson(
+          'long-beam',
+          'long-beam',
+          'LONG BEAM: FULL RANGE. GO TO THE FAR LEFT AND [SHOOT:attack] THE DUMMY.',
+          (t) => t.dummyHits.has('far') && t.dummyHits.has('beam'),
+          { setup: setKit({ tool: 0 }) },
         ),
-        legacyLesson('bomb', 'IN THE MORPH BALL, [BOMB:attack] DROPS A BOMB.', (t) => t.bombs > 0),
-        legacyLesson(
-          'bomb-jump',
-          'SIT ON A BOMB: ITS BLAST BOUNCES THE BALL UP. [BOMB:attack] FOR A BOMB JUMP!',
-          (t) => t.ballJumps > 0,
+        itemLesson(
+          'ice-beam',
+          'ice-beam',
+          '[WEAPON:select] TO THE ICE BEAM: IT FREEZES WHAT IT HITS. [SHOOT:attack] THE DUMMY.',
+          (t) => t.dummyHits.has('ice'),
+        ),
+        variaLesson(),
+        itemLesson(
+          'wave-beam',
+          'wave-beam',
+          '[WEAPON:select] TO THE WAVE BEAM: IT GOES THROUGH WALLS. [SHOOT:attack] THE DUMMY.',
+          (t) => t.dummyHits.has('wave'),
         ),
       ],
     },

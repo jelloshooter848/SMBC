@@ -39,14 +39,18 @@ describe("Samus's lessons", () => {
         if (a === 'select') expect(name, l.id).toBe('WEAPON');
         if (a === 'special') expect(name, l.id).toBe('MISSILE');
         if (a === 'attack')
-          expect(name, l.id).toBe(l.id === 'missile-switch' ? 'MISSILE' : /bomb/.test(l.id) ? 'BOMB' : 'SHOOT');
+          expect(name, l.id).toBe(
+            l.id === 'missile-switch' ? 'MISSILE' : /bomb/.test(l.id) ? 'BOMB' : 'SHOOT',
+          );
       });
     }
   });
 
   it('Ice and Wave are both kept: each lesson switches to its beam with WEAPON', () => {
     for (const id of ['ice-beam', 'wave-beam'])
-      expect(promptActions(lessonsFor('samus').find((l) => l.id === id)?.prompt ?? ''), id).toContain('select');
+      expect(promptActions(lessonsFor('samus').find((l) => l.id === id)?.prompt ?? ''), id).toContain(
+        'select',
+      );
   });
 });
 
@@ -108,6 +112,7 @@ describe("Samus's whole training", () => {
     expect(r.h.game.scenes.top).toBe(r.below);
     expect(r.kit.tanks).toBe(1);
     expect(r.kit.varia).toBe(1);
-    for (const id of ['missiles', 'long-beam', 'ice-beam', 'wave-beam']) expect(r.kit[hasKey(id)], id).toBe(1);
+    for (const id of ['missiles', 'long-beam', 'ice-beam', 'wave-beam'])
+      expect(r.kit[hasKey(id)], id).toBe(1);
   });
 });
