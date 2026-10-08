@@ -182,3 +182,10 @@ ng-lamp 134 12
 ng-lamp 165 12
 ng-lamp 177 12
 ng-lamp 198 12
+
+[variant sophia classic]
+;; The original's pieces for heroes who jump short (charHorz): the gap at 119-129 four tiles wide: ground at 119-123 and 128-129;
+;; and the flagpole's step-fall lift (WideCharacter). Every piece the original lays for her here.
+119 13 ##### *2
+128 13 ## *2
++ lift-fall 211 4 len=2 dx=8

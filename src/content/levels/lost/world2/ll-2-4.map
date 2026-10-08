@@ -54,7 +54,7 @@ exit 152 next=ll-3-1
 ;; The original's pieces for wide heroes (Level.as WideCharacter): the one-tile shafts at 17 and
 ;; 24 are two tiles wide for the tank (lava under 25 as under 24: drive right on the way down).
 ;; Normal Sophia III could not get up the first one (docs/HEROES.md).
-;; With every other piece the original lays for her in this area (but the flagpole's lift).
+;; With every other piece the original lays for her in this area.
 25 3 . *7
 18 6 . *4
 72 9 .

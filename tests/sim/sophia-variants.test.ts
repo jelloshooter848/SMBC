@@ -10,6 +10,7 @@ import { Enemy } from '@game/entities/enemies/enemy';
 import { toPx } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
 import type { LevelData } from '@game/level/schema';
+import { DEFAULT_LEGEND } from '@game/level/tiles';
 import { replay } from './sophia-reach';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
 
@@ -53,6 +54,49 @@ const VARIANT_LEVELS = [
   'll-13-4',
   'll-13-4-exit',
 ];
+
+/**
+ * The SMB levels with the original's own pieces for her (0.4.33): `[map, x, y, tile char]` of
+ * one cell each piece sets ('.' opens one), checked laid for her and not for Mario.
+ */
+const SMB_PIECES: [string, number, number, string][] = [
+  ['2-3', 111, 13, 'T'],
+  ['3-3', 33, 13, 'T'],
+  ['3-4', 87, 14, '%'],
+  ['4-2', 184, 12, '='],
+  ['4-3', 31, 14, 'i'],
+  ['4-4', 161, 10, '.'],
+  ['6-2', 123, 14, '#'],
+  ['7-1', 29, 6, '='],
+  ['7-3', 112, 14, 't'],
+  ['8-1', 314, 14, '#'],
+  ['8-2', 149, 13, '#'],
+  ['8-4-end', 21, 13, '%'],
+];
+
+/**
+ * The original's step-fall lift by the flagpole (a `StepFall` platform shown to wide heroes,
+ * `WideCharacter`: 2 tiles, five columns left of the pole), `map x y`, in every SMB and Lost
+ * Levels area the original has one (0.4.33).
+ */
+const FLAG_LIFTS = [
+  '1-1 193 4', '1-2-exit 17 4', '1-3 147 4', '2-1 195 4', '2-2-exit 17 4', '2-3 220 4', '3-1 195 4',
+  '3-2 204 4', '3-3 146 4', '4-1 220 4', '4-2-exit 17 4', '4-3 142 4', '5-1 194 4', '5-2 195 4',
+  '5-3 147 4', '6-1 181 4', '6-2 211 4', '6-3 162 4', '7-1 174 5', '7-2-exit 17 4', '7-3 220 4',
+  '8-1 371 4', '8-2 211 4', '8-3 209 4', 'll-1-1 183 4', 'll-1-2-exit 23 4', 'll-1-3 164 4',
+  'll-10-2-exit 23 4', 'll-11-1 194 4', 'll-11-2-exit 23 4', 'll-11-3 195 4', 'll-12-1 224 4',
+  'll-12-2 188 4', 'll-12-3 310 4', 'll-13-1 194 4', 'll-13-2 173 4', 'll-13-3 212 4', 'll-2-1 227 4',
+  'll-2-2 257 4', 'll-2-3 172 4', 'll-3-1 181 4', 'll-3-2-exit 23 4', 'll-3-3 181 4', 'll-4-1 194 4',
+  'll-4-2 201 4', 'll-4-3 180 4', 'll-5-1 357 4', 'll-5-2-exit 23 4', 'll-5-3 248 4', 'll-6-1 239 4',
+  'll-6-2-exit 23 4', 'll-6-3 212 4', 'll-7-1 197 4', 'll-7-2 253 4', 'll-7-3 310 4', 'll-8-1 210 4',
+  'll-8-2-warp 22 4', 'll-8-3 209 4', 'll-9-3 209 5',
+].map((s) => s.split(' ')).map(([id, x, y]) => [id as string, Number(x), Number(y)] as const);
+
+const SMB_VARIANT_LEVELS = [
+  ...new Set([...SMB_PIECES.map(([id]) => id), ...FLAG_LIFTS.map(([id]) => id).filter((id) => !id.startsWith('ll-'))]),
+];
+const LL_LIFT_ONLY = FLAG_LIFTS.map(([id]) => id).filter((id) => id.startsWith('ll-') && !VARIANT_LEVELS.includes(id));
+VARIANT_LEVELS.push(...SMB_VARIANT_LEVELS, ...LL_LIFT_ONLY);
 
 const scene = (h: H) => h.game.scenes.find((s): s is LevelScene => s instanceof LevelScene) as LevelScene;
 /** The (x, y) tiles a level's Sophia variant lays, from its map (`classic`: of classic sections only). */
@@ -112,6 +156,33 @@ describe.each(VARIANT_LEVELS)('%s: the Sophia variant', (id) => {
     expect(v).not.toBe(campaignLevel(level));
     for (const r of laid(level, false)) expect(tile(level, r.x, r.y), `${id} ${r.x},${r.y}`).toBe(0);
     for (const r of laid(level)) expect(tile(v, r.x, r.y)).toBe(r.t);
+  });
+});
+
+describe('the original’s SMB pieces for her (0.4.33)', () => {
+  // Our maps' legend (none of these maps overrides these characters): a character to its tile id.
+  const tileOf = (ch: string) => (ch === '.' ? 0 : (DEFAULT_LEGEND[ch] as number));
+  it.each(SMB_PIECES)('%s: the piece at %i,%i is laid for her, in classic play too, not for Mario', (id, x, y, ch) => {
+    const level = getLevel(id);
+    const want = tileOf(ch);
+    expect(typeof want).toBe('number');
+    expect(level.variants?.some((v) => v.hero === 'sophia' && v.classic)).toBe(true);
+    expect(tile(level, x, y)).not.toBe(want);
+    expect(tile(heroVariant(level, [SOPHIA.id], false), x, y)).toBe(want);
+    expect(tile(heroVariant(campaignLevel(level), [SOPHIA.id], true), x, y)).toBe(want);
+    expect(tile(heroVariant(level, [MARIO.id], false), x, y)).not.toBe(want);
+  });
+});
+
+describe('the flagpole’s step-fall lift for her (0.4.33)', () => {
+  const lift = (l: LevelData, x: number, y: number) =>
+    l.entities.some((e) => e.type === 'lift-fall' && e.x === x && e.y === y && e.props?.len === 2);
+  it.each(FLAG_LIFTS)('%s: the lift at %i,%i for her, in classic play too, not for Mario', (id, x, y) => {
+    const level = getLevel(id);
+    expect(lift(level, x, y)).toBe(false);
+    expect(lift(heroVariant(level, [SOPHIA.id], false), x, y)).toBe(true);
+    expect(lift(heroVariant(campaignLevel(level), [SOPHIA.id], true), x, y)).toBe(true);
+    expect(lift(heroVariant(level, [MARIO.id], false), x, y)).toBe(false);
   });
 });
 
