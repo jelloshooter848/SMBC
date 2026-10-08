@@ -1226,8 +1226,9 @@ lists spawns added (`+ type x y [key=val]`, or a marker such as a spring's `s` i
 taken out (`- type x y`). `Game.levelScene` lays the variant after the campaign variant when
 any player is that hero, so a co-op partner plays it too.
 
-- `[variant sophia]` is ours and applies in campaign play only. Its tiles only fill open air,
-  away from the other heroes' routes, so nothing another hero stands on or needs goes away.
+- `[variant sophia]` would be ours and apply in campaign play only, its tiles only filling open
+  air away from the other heroes' routes. No map has one: every Sophia variant is the
+  original's.
 - `[variant sophia classic]` holds the original's own pieces for her and applies in classic
   play too. Crossover builds each level per hero (`Level.as` determineHelperVisibility). Sophia
   sees the pieces marked `charHorz` or `charVert` (heroes who jump short or low) and
@@ -1240,57 +1241,66 @@ any player is that hero, so a co-op partner plays it too.
 Tests: `src/game/level/variants.test.ts` (parse, serialize, laying) and
 `tests/sim/sophia-variants.test.ts`. The second file covers the game laying the variant (both
 co-op seats, campaign and classic). Every variant map is checked to be the level itself for
-Mario, and our own tiles to land in open air. A replayed route (or a scripted sim) takes Normal
-Sophia past each variant's spot.
+Mario, and our own tiles (if any) to land in open air. A replayed route (or a scripted sim)
+takes Normal Sophia past each variant's spot, and up 8-4's hidden block onto its hanging pipe.
 
 **Results (2026-10-08, the Chapter 1 finishing pass).** Every level of the table below, at
 Normal, with her variants:
 
-- SMB 8-4 and 27 of the 29 Lost Levels rows are finished, all checked by the sweep or by sims
+- SMB 8-4 (with no variant) and 24 of the 27 Lost Levels rows are finished, all checked by the sweep or by sims
   (the "How" column).
 - **ll-7-3** and **ll-12-3** are not followed past their first green super spring. A braked
-  flight lands on the next tree.
+  flight lands on the next tree. Not verified: Chapter 2.
 - **ll-8-3** stops at 140. The search does not find the jump onto the original's red spring in
-  the 12-tile gap at 147.
+  the 12-tile gap at 147. Not verified: Chapter 2.
 
 A bug fix came out of it. A hop's released jump damped a spring's launch to almost nothing; as
 in `Sophia.as`, the release damping now ends once a rise is over.
 
-8-4's hanging pipe had a way up all along: the hidden coin block at 161 (row 9) is a step to its
-top. Our variant adds a hard block at 160 (row 9) that a player can see. The original has no
-Sophia piece there, so it is campaign only. The original's one Sophia piece in 8-4 is ground in
-8-4-end's lava at 21, which she does not need; it is not laid.
+8-4 has no variant (owner decision): its hanging pipe had a way up all along, the hidden coin
+block at 161 (row 9), a step to its top as in the original. The original's one Sophia piece in
+8-4 is ground in 8-4-end's lava at 21, which she does not need; it is not laid.
 
-| Level   | Variant                                                                    | At Normal | How                                                                                                                   |
-| ------- | -------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
-| 8-4     | ours, campaign only: a hard block at 160 (row 9) under the hanging pipe    | yes       | sweep                                                                                                                 |
-| ll-1-2  | original: the falling lifts over the pit set closer, steps at 21-26        | yes       | sweep                                                                                                                 |
-| ll-2-2  | original: the crossing's hidden block at 186 a row lower, ground in gaps   | yes       | sim over the hidden blocks at 185-186, then the search                                                                |
-| ll-2-4  | original: the one-tile shafts at 17 and 24 two wide                        | yes       | sweep                                                                                                                 |
-| ll-3-3  | original: the first platform (13-15) two rows lower                        | yes       | sweep                                                                                                                 |
-| ll-3-4  | original: blocks at 23 and 87 a row lower, lava filled at 19 and 83        | yes       | sweep                                                                                                                 |
-| ll-4-1  | original: ground in the gap after the springboard, blocks a row lower      | yes       | search to the water area's pipe at 163, the search from there                                                         |
-| ll-4-2  | original: the pipe at 117 a tile lower                                     | yes       | sweep                                                                                                                 |
-| ll-4-3  | original: longer ground and a wider platform at 16-23, a platform at 69-72 | yes       | search to 27, sim on the spring and over the lifts to 63, the search from there                                       |
-| ll-4-4  | none                                                                       | yes       | search to 94, sim off the block under the pillar at 95, the search from there                                         |
-| ll-5-1  | original: the pillars at 136-159 closer, the hidden block at 317 lower     | yes       | sweep to 319, sim up the hidden blocks at 317-318, the search from the wall's top                                     |
-| ll-6-1  | original: a step and pillar at 175-178, a lift moved                       | yes       | sim up the hidden block onto the pipe at 79, the search from there                                                    |
-| ll-6-3  | original: a bridge at 193 (row 6)                                          | yes       | sweep                                                                                                                 |
-| ll-7-1  | original: the ground longer at 37 and 146, a hidden block at 114           | yes       | sweep                                                                                                                 |
-| ll-7-2  | original: hidden blocks under the raised pipes (53, 117)                   | yes       | sim up the hidden block into the pipe at 115 (past the loop), the search to 238, jumps over the lifts to the flagpole |
-| ll-7-3  | original: red springs at 181 and 211, blocks at 287-300                    | not found | the first green spring by sim (a braked flight lands on 45-48); not followed further                                  |
-| ll-8-1  | original: red springs in the long gaps, the Paratroopas moved              | yes       | search to 176, jumps onto the pipe at 183, the search from there                                                      |
-| ll-8-2  | original: the steps at 112-116 reworked                                    | yes       | search to 173; sim: bump the vine block at 127, up onto it and up the vine; the search in the warp area               |
-| ll-8-3  | original: springs, a platform and lifts in the gaps, Paratroopas moved     | no (140)  | the search does not find the jump onto the red spring at 147                                                          |
-| ll-8-4  | original: lava filled and a lift in the first area, lifts in 8-4-end2      | yes       | search to the pipe at 47; sims over 8-4-end's wall and end3's gap; the search for the rest                            |
-| ll-11-3 | original: platforms at 12-21, 73-87 and 165-181                            | yes       | search to 22, jumps over the lifts to 63, the search to 102, the green spring and lifts by jumps to the flagpole      |
-| ll-11-4 | original: the one-tile shafts at 64 and 68 two wide                        | yes       | sweep                                                                                                                 |
-| ll-12-1 | original: ground in the gap at 145 and at 193, 197                         | yes       | sweep                                                                                                                 |
-| ll-12-2 | original: a bridge in the gap at 24-26                                     | yes       | sweep                                                                                                                 |
-| ll-12-3 | original: red springs and platforms by the green super springs             | not found | as ll-7-3                                                                                                             |
-| ll-13-1 | none                                                                       | yes       | sweep                                                                                                                 |
-| ll-13-3 | none                                                                       | yes       | sweep (the boosted spring)                                                                                            |
-| ll-13-4 | original: lifts at 43 and 55; the exit area's staircase five tiles right   | yes       | sweep                                                                                                                 |
+Her red spring launch is the spring's own, as every hero's: 500, or 1000 boosted (Flash px/s).
+`Sophia.as` sets 400 / 930, but `SpringRed.springLaunch` reads the spring's values (the lines
+reading the character's are commented out); the character's values only serve the bouncy-pits
+cheat (`Character.bouncePit`). A test pins it (`tests/sim/sophia.test.ts`).
+
+**Follow-up (a later 0.4.2x, owner decision):** the original's Sophia pieces in the levels she
+finishes without them are not laid. These are SMB 2-3, 3-3, 3-4, 4-2, 4-3, 6-2, 6-3, 7-1, 8-1,
+8-2 and 8-4-end, and the Lost Levels outside the table. The flagpole's step-fall lift is not
+laid either; nearly every level has one.
+
+| Level   | Variant                                                                    | At Normal                | How                                                                                                                   |
+| ------- | -------------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| 8-4     | none: the hidden coin block at 161 is a step to the hanging pipe           | yes                      | sim up the hidden block onto the pipe at 163, the search for the rest (0.4.13's Crusher route still replays)          |
+| ll-1-2  | original: the falling lifts over the pit set closer, steps at 21-26        | yes                      | sweep                                                                                                                 |
+| ll-2-2  | original: the crossing's hidden block at 186 a row lower, ground in gaps   | yes                      | sim over the hidden blocks at 185-186, then the search                                                                |
+| ll-2-4  | original: the one-tile shafts at 17 and 24 two wide                        | yes                      | sweep                                                                                                                 |
+| ll-3-3  | original: the first platform (13-15) two rows lower                        | yes                      | sweep                                                                                                                 |
+| ll-3-4  | original: blocks at 23 and 87 a row lower, lava filled at 19 and 83        | yes                      | sweep                                                                                                                 |
+| ll-4-1  | original: ground in the gap after the springboard, blocks a row lower      | yes                      | search to the water area's pipe at 163, the search from there                                                         |
+| ll-4-2  | original: the pipe at 117 a tile lower                                     | yes                      | sweep                                                                                                                 |
+| ll-4-3  | original: longer ground and a wider platform at 16-23, a platform at 69-72 | yes                      | search to 27, sim on the spring and over the lifts to 63, the search from there                                       |
+| ll-4-4  | none                                                                       | yes                      | search to 94, sim off the block under the pillar at 95, the search from there                                         |
+| ll-5-1  | original: the pillars at 136-159 closer, the hidden block at 317 lower     | yes                      | sweep to 319, sim up the hidden blocks at 317-318, the search from the wall's top                                     |
+| ll-6-1  | original: a step and pillar at 175-178, a lift moved                       | yes                      | sim up the hidden block onto the pipe at 79, the search from there                                                    |
+| ll-6-3  | original: a bridge at 193 (row 6)                                          | yes                      | sweep                                                                                                                 |
+| ll-7-1  | original: the ground longer at 37 and 146, a hidden block at 114           | yes                      | sweep                                                                                                                 |
+| ll-7-2  | original: hidden blocks under the raised pipes (53, 117)                   | yes                      | sim up the hidden block into the pipe at 115 (past the loop), the search to 238, jumps over the lifts to the flagpole |
+| ll-7-3  | original: red springs at 181 and 211, blocks at 287-300                    | not verified (Chapter 2) | the first green spring by sim (a braked flight lands on 45-48); not followed further                                  |
+| ll-8-1  | original: red springs in the long gaps, the Paratroopas moved              | yes                      | search to 176, jumps onto the pipe at 183, the search from there                                                      |
+| ll-8-2  | original: the steps at 112-116 reworked                                    | yes                      | search to 173; sim: bump the vine block at 127, up onto it and up the vine; the search in the warp area               |
+| ll-8-3  | original: springs, a platform and lifts in the gaps, Paratroopas moved     | not verified (Chapter 2) | the search stops at 140: it does not find the jump onto the red spring at 147                                         |
+| ll-8-4  | original: lava filled and a lift in the first area, lifts in 8-4-end2      | yes                      | search to the pipe at 47; sims over 8-4-end's wall and end3's gap; the search for the rest                            |
+| ll-11-3 | original: platforms at 12-21, 73-87 and 165-181                            | yes                      | search to 22, jumps over the lifts to 63, the search to 102, the green spring and lifts by jumps to the flagpole      |
+| ll-11-4 | original: the one-tile shafts at 64 and 68 two wide                        | yes                      | sweep                                                                                                                 |
+| ll-12-1 | original: ground in the gap at 145 and at 193, 197                         | yes                      | sweep                                                                                                                 |
+| ll-12-2 | original: a bridge in the gap at 24-26                                     | yes                      | sweep                                                                                                                 |
+| ll-12-3 | original: red springs and platforms by the green super springs             | not verified (Chapter 2) | as ll-7-3                                                                                                             |
+| ll-13-1 | none                                                                       | yes                      | sweep                                                                                                                 |
+| ll-13-3 | none                                                                       | yes                      | sweep (the boosted spring)                                                                                            |
+| ll-13-4 | original: lifts at 43 and 55; the exit area's staircase five tiles right   | yes                      | sweep                                                                                                                 |
 
 "Sweep" is `SOPHIA_SWEEP=1 LVLS=<level>` from the level's start. "Sim" and "jumps" are scripted
 runs, made while checking. The ones in `tests/sim/sophia-variants.test.ts` cover each variant's
