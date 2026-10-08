@@ -377,7 +377,7 @@ function drawRubble(r: Renderer, x: number, floor: number): void {
 
 /** A burst of fire and smoke at (x, y), `since` frames old. */
 function drawBlast(r: Renderer, x: number, y: number, since: number, reduce: boolean): void {
-  if (since < 0) return;
+  if (since < 0 || since >= 34) return;
   const k = Math.min(1, since / 30);
   for (let i = 0; i < 7; i++) {
     const a = (i / 7) * Math.PI * 2;
@@ -495,12 +495,13 @@ function drawMisfire(
 
 /** The seal across a road at the page's edge: a shimmering wall of wand sparkles on tile (x, y) px. */
 export function drawSeal(r: Renderer, x: number, y: number, t: number, reduce: boolean): void {
-  r.rect(x + 4, y - 6, 8, 28, 'rgba(176,112,232,0.35)');
-  r.rect(x + 6, y - 6, 4, 28, 'rgba(248,216,248,0.35)');
-  for (let i = 0; i < 7; i++) {
-    const sy = y - 4 + i * 4;
-    const sx = x + 5 + ((i * 3) % 6);
-    const size = reduce ? (i % 3 === 0 ? 1 : 0) : ((t >> 3) + i) % 4 === 0 ? 1 : 0;
+  r.rect(x + 2, y - 8, 12, 32, 'rgba(120,48,200,0.45)');
+  r.rect(x + 4, y - 8, 8, 32, 'rgba(176,112,232,0.55)');
+  r.rect(x + 6, y - 8, 4, 32, 'rgba(248,216,248,0.5)');
+  for (let i = 0; i < 8; i++) {
+    const sy = y - 6 + i * 4;
+    const sx = x + 4 + ((i * 3) % 8);
+    const size = reduce ? (i % 2 === 0 ? 1 : 0) : ((t >> 3) + i) % 3 === 0 ? 1 : 0;
     drawSparkle(r, sx, sy, size, WAND_SPARKLE[reduce ? i % 3 : (i + (t >> 4)) % 3] as string);
   }
 }

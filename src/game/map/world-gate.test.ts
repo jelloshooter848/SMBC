@@ -102,6 +102,13 @@ describe('the world gates (map/rules.ts)', () => {
     expect(isExitOpen(p, w1, w1.exits[0] as never, true)).toBe(true);
   });
 
+  it('no warp node skips a seal: the SMB pages and the hub warp only to World 1, the hub, the arena', () => {
+    const hub = MAP_PAGES.filter((p) => p.group === 'smb' || p.group === 'hub');
+    const targets = hub.flatMap((p) => p.nodes.filter((n) => n.to !== undefined).map((n) => n.to as string));
+    expect(targets.length).toBeGreaterThan(0);
+    for (const t of targets) expect(['smb-1', 'hub', 'arena']).toContain(t);
+  });
+
   it("World 8's road on to Lost World 1 (the rift) waits for Sophia III too", () => {
     const p = file(8, [...world1, '1-4']);
     p.gameCleared = true;
