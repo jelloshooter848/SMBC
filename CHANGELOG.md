@@ -8,6 +8,15 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- World 3 is now Mega Man's world (campaign only; classic play keeps SMB's 3-1 to 3-4):
+  - The World 3 map page is MEGA CITY, a Mega Man 2-style city with Dr. Light's lab, Metal Man's gears, Wood Man's
+    forest, Flash Man's crystals and Wily's skull fortress, with Mets and propeller bots about.
+  - 3-1's bonus room is a Metal Man-style factory, 3-2 a Wood Man-style forest, 3-3 Air Man-style cloud platforms
+    on steel pylons, and 3-4 Wily's fortress.
+  - Three new original songs: the forest, the sky and Wily's fortress.
+
 ## [0.4.25] - 2026-10-08
 
 ### Added
