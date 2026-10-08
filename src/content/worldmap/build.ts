@@ -9,7 +9,11 @@ export const SHORE_OPEN = new Set(['~', 'L', '=', 'I', '|', '{', '-', '}']);
 const WATER = new Set(['~', 'L']);
 
 /** Ground decorations that would leave a hard edge if placed right beside water. */
-const INLAND = new Set([',', '*', ':', 'o', 'T', 'Y', 'H', 'S', '^', 'R', 'P', 'X', '(', 'O', ')', '!', 'A']);
+const INLAND = new Set([
+  ...[',', '*', ':', 'o', 'T', 'Y', 'H', 'S', '^', 'R', 'P', 'X', '(', 'O', ')', '!', 'A'],
+  // Hyrule (World 2): forest, the palace, ruins and graves.
+  ...['5', '<', 'U', '>', 'Q', '@', 'y', 'Z', 'J'],
+]);
 
 /** The round pond's tiles, row by row (4 wide, 3 tall); a sketch writes the whole block. */
 export const POND_CHARS = 'abdfgilmprtv';

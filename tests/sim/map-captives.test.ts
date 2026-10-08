@@ -60,7 +60,7 @@ const CASES: Case[] = [
   {
     hero: 'link',
     colour: 'link@link',
-    shade: 'link@link~shade-sea',
+    shade: 'link@link~shade-hyrule', // World 2 is Hyrule since 0.4.24
     page: 'smb-2',
     node: '2-1',
     before: { cleared: W1_CLEAR, pages: ['smb-1', 'smb-2'], position: { page: 'smb-2', node: '2-1' } },

@@ -31,6 +31,9 @@ import { POND_CHARS } from './build';
  *   F  the pitch (checkered floor)     M N  stands full of cheering fans (two crowds, out of step)
  *   E  a team banner over the stands   B  the barrier wall (ad boards) along the pitch's far edge
  *   w  bunting: a line of pennants waving in the sky above the stands
+ *   Hyrule (theme 'hyrule', World 2 since 0.4.24):
+ *   5  dense forest (a block of it tiles)    Z  stone ruins    J  graves
+ *   < U >  the palace's stepped roof (left, middle, right) over  Q @ y  its columns and door
  *
  * Walkable (MAP_WALKABLE; every path tile must be one of these): # , * : o, all shores and
  * landings, = I, the mushroom caps ( O ), the treetops { - }, the gate G and the pitch F.
@@ -50,6 +53,10 @@ import { POND_CHARS } from './build';
  *   light-tower {phase}  the arena's floodlights, 16×48 standing on the box; a lamp glints now and then
  *   scoreboard {phase}   the arena's scoreboard, 48×32 from the box's left edge, standing on its
  *                        bottom (box rows y-16..y+16); its marquee bulbs slowly trade colours
+ *   blob {range, phase}  Hyrule: a slime hopping back and forth over `range` px
+ *   fairy {phase}        Hyrule: flutters in a small loop, its wings beating slowly
+ *   zora {period, phase} Hyrule: a river creature surfacing from the water, looking about and
+ *                        sinking back, a ring of ripples where it breaks the surface
  */
 
 interface TileDef {
@@ -133,6 +140,16 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   E: { frame: 'arena-banner', frames: ARENA_CROWD_FRAMES, ticks: 26 },
   B: { frame: 'arena-wall' },
   w: { frame: 'arena-bunting', frames: 3, ticks: 14 },
+  // Hyrule (World 2): forest, ruins, graves and the palace (roof over columns and door).
+  '5': { frame: 'forest' },
+  Z: { frame: 'ruins' },
+  J: { frame: 'graves' },
+  '<': { frame: 'palace-roof-left' },
+  U: { frame: 'palace-roof-mid' },
+  '>': { frame: 'palace-roof-right' },
+  Q: { frame: 'palace-left' },
+  '@': { frame: 'palace-door' },
+  y: { frame: 'palace-right' },
   ...Object.fromEntries(POND_CHARS.split('').map((ch, i) => [ch, wet(`pond-${i}`)])),
 };
 
@@ -178,6 +195,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   bowser: 'map-bowser',
   warp: 'map-warp',
   arena: 'map-arena',
+  hyrule: 'map-hyrule',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -191,6 +209,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   bowser: '#881400',
   warp: WARP_SPACE, // the same indigo as its void, so sky and void are one starfield
   arena: ARENA_NIGHT, // a night match under the lights
+  hyrule: '#6888fc', // Zelda II's periwinkle daylight (2-1's field)
 };
 
 /** Background colour behind the tiles. */
@@ -225,6 +244,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   bowser: 'enemies-castle',
   warp: 'enemies-underground',
   arena: 'enemies-overworld',
+  hyrule: 'enemies-overworld',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -237,6 +257,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   bowser: 'enemies-castle',
   warp: 'enemies-water',
   arena: 'enemies-water',
+  hyrule: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -249,9 +270,15 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   bowser: 'decor-gray',
   warp: 'decor-night',
   arena: 'decor-night',
+  hyrule: 'decor-zelda2', // Zelda II's flat clouds (CLOUD_ZELDA2)
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
+/** Hyrule's clouds: Zelda II's flat ones (decor-zelda2), the same sizes. */
+const CLOUD_ZELDA2 = ['cloud-1@zelda2', 'cloud-2@zelda2', 'cloud-3@zelda2'] as const;
+const BLOB = ['blob-0', 'blob-1'] as const;
+const FAIRY = ['fairy-0', 'fairy-1'] as const;
+const ZORA = ['zora-0', 'zora-1'] as const;
 const CHEEP = ['cheep-0', 'cheep-1'] as const;
 const SPLASH = ['splash-0', 'splash-1'] as const;
 const PODOBOO = ['podoboo-0', 'podoboo-1'] as const;
@@ -320,6 +347,10 @@ export const MAP_ACTOR_TYPES = [
   'comet',
   'light-tower',
   'scoreboard',
+  // Hyrule (World 2).
+  'blob',
+  'fairy',
+  'zora',
 ] as const;
 
 /** Draws a decorative actor; `frame` is the animation counter. */
@@ -338,7 +369,8 @@ export function drawMapActor(
       const size = Math.min(3, Math.max(1, num(actor, 'size', 1)));
       const ox = pageOffset(page, actor);
       const cx = ox + wrapX(x - ox + t * num(actor, 'speed', 0.15), 16 + 16 * size);
-      r.sprite(assets.sheet('decor', DECOR_PAL[page.theme]), CLOUD[size - 1] as string, cx, y);
+      const names = page.theme === 'hyrule' ? CLOUD_ZELDA2 : CLOUD;
+      r.sprite(assets.sheet('decor', DECOR_PAL[page.theme]), names[size - 1] as string, cx, y);
       return;
     }
     case 'bullet': {
@@ -463,6 +495,39 @@ export function drawMapActor(
         y - 16,
       );
       return;
+    case 'blob': {
+      // Hops of 40 frames, 12 px high, a rest between; it turns at the ends of its range.
+      const range = num(actor, 'range', 24);
+      const step = Math.floor(t / 64);
+      const local = t % 64;
+      const hops = Math.max(1, Math.round(range / 8));
+      const leg = step % (2 * hops);
+      const at = (leg < hops ? leg : 2 * hops - leg) * (range / hops);
+      const dir = leg < hops ? 1 : -1;
+      const s = Math.min(1, local / 40);
+      const air = local < 40;
+      const bx = x + at + (air ? dir * (range / hops) * s : 0);
+      const by = y - (air ? Math.sin(s * Math.PI) * 12 : 0);
+      r.sprite(assets.sheet('map', MAP_PAL[page.theme]), BLOB[air ? 1 : 0] as string, bx, by);
+      return;
+    }
+    case 'fairy': {
+      // A slow figure of eight; the wings beat every 8 frames (a flutter, never a flash).
+      const fx = x + Math.sin(t / 47) * 10;
+      const fy = y + Math.sin(t / 23) * 4;
+      r.sprite(assets.sheet('map', MAP_PAL[page.theme]), FAIRY[(t >> 3) & 1] as string, fx, fy);
+      return;
+    }
+    case 'zora': {
+      // Under for most of its period; it rises (head, then shoulders), looks about and sinks.
+      const period = num(actor, 'period', 240);
+      const local = t % period;
+      const map = assets.sheet('map', MAP_PAL[page.theme]);
+      if (local >= 90) return;
+      if (local < 10 || local >= 80) r.sprite(map, SPLASH[(local >> 2) & 1] as string, x, y + 8);
+      else r.sprite(map, ZORA[local < 20 || local >= 70 ? 0 : 1] as string, x, y);
+      return;
+    }
     default:
       return;
   }
@@ -511,6 +576,12 @@ export function mapActorBounds(a: MapActor): [number, number, number, number] {
     }
     case 'lakitu':
       return [x, y - 10, x + num(a, 'range', 48) + 16, y + 18];
+    case 'blob':
+      return [x, y - 12, x + num(a, 'range', 24) + 16, y + 16];
+    case 'fairy':
+      return [x - 10, y - 4, x + 26, y + 20];
+    case 'zora':
+      return [x, y, x + 16, y + 16];
     default:
       return [x, y, x + 16, y + 16];
   }
