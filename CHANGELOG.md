@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.33] - 2026-10-08
+
 ### Added
 
 - Every hero has their own power-ups in the campaign: a grow item each (Heart Container, Helmet, Energy Tank, Pot Roast,
@@ -790,7 +792,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.32...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.33...HEAD
+[0.4.33]: https://github.com/jelloshooter848/SMBC/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jelloshooter848/SMBC/compare/v0.4.31...v0.4.32
 [0.4.31]: https://github.com/jelloshooter848/SMBC/compare/v0.4.30...v0.4.31
 [0.4.30]: https://github.com/jelloshooter848/SMBC/compare/v0.4.29...v0.4.30
