@@ -23,6 +23,7 @@ import type { TargetDummy } from '@game/tutorial/dummy';
 import { runSim } from '@game/sim/headless';
 import { getLevel } from '@content/levels';
 import { draw, makeGame, useStorage } from './heroes-harness';
+import { tcPolicies } from './training-tc';
 
 useStorage();
 
@@ -206,6 +207,8 @@ function policies(): Record<string, Policy> {
       cx(p) > 104 ? ['left'] : p.facing < 0 ? ['right'] : tapEvery(f, 'attack', 10),
     'cannon-up': (_p, f) => ['up', ...tapEvery(f, 'attack', 10)],
     homing: (_p, f) => (f === 2 ? ['down', 'special'] : f > 10 ? tapEvery(f, 'special', 20) : []),
+    // Simon, Ryu, Bill, Sophia III and Luigi from 0.4.34 (`<hero>:<lesson>`, training-tc.ts).
+    ...tcPolicies(),
   };
 }
 
@@ -470,9 +473,11 @@ describe('the practice room', () => {
     const { h, scene } = room('bill');
     pressOn(h);
     scene.startLesson(1);
-    scene.player.scratch.tool = 2; // the spread gun
+    // The Spread Gun found (the room starts from the rifle alone), in hand.
+    Object.assign(scene.player.scratch, { 'has-spread-gun': 1, tool: 1 });
     for (let i = 0; i < 120; i++) h.step(i % 12 < 2 ? ['attack'] : []);
     expect(scene.tracker.shots).toBeGreaterThan(5);
+    expect([...scene.tracker.shotKinds]).toEqual(['spread']);
     expect([...scene.tracker.shotDirs]).toEqual(['1,0']);
     expect(scene.phase).toBe('lesson');
   });
@@ -496,7 +501,7 @@ const MOVE_LESSONS: Record<string, string[]> = {
   samus: ['aim-up', 'morph-ball', 'bomb', 'missile', 'long-beam'],
   simon: ['crouch-whip', 'dagger', 'committed-jump', 'stopwatch'],
   ryu: ['cling', 'wall-jump', 'throwing-star', 'jump-slash'],
-  bill: ['aim', 'prone', 'jump-shoot', 'laser'],
+  bill: ['aim', 'prone', 'jump-shoot'],
   sophia: ['hover', 'missile', 'wall-climb', 'jason', 'cannon-up'],
 };
 

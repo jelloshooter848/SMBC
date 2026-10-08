@@ -1,38 +1,47 @@
-import { SUB_WEAPONS } from '../../characters/simon/weapons';
-import { type HeroTraining, k, legacyLesson, setKit } from './common';
+import { type HeroTraining, itemLesson, lesson, type PracticeRoom, setKit } from './common';
 
-/* Simon's training (docs/HEROES.md): the chapters of lessons, in the order the room plays them. */
+/*
+ * Simon's training (docs/HEROES.md): the chapters of lessons, in the order the room plays them.
+ * He starts from his basic kit (the leather whip, 5 hearts, a 10-point health bar) and finds his
+ * items in the order the campaign places them (docs/POWERUPS.md 6.2): the Pot Roast first, then
+ * the Chain Whip, the Dagger, the Holy Water, the Axe, the Morning Star, the Cross, the Double
+ * Shot, the Stopwatch and the Triple Shot. Touch prompts name the sub-weapon as THROW's button
+ * shows it (DAGGER, AXE, WATER, CROSS, WATCH).
+ */
 
-const SIMON_SUB_PROMPTS: Record<string, string> = {
-  dagger: '[THROW:special] HURLS A SUB-WEAPON: THE DAGGER FLIES FAST AND STRAIGHT.',
-  'hand-axe': '[TOOLS:select] TO THE AXE. [THROW:special] LOBS IT HIGH OVER WALLS.',
-  'holy-water': '[TOOLS:select] TO THE HOLY WATER. [THROW:special]: IT BURNS ON THE FLOOR.',
-  cross: '[TOOLS:select] TO THE CROSS. [THROW:special]: IT SPINS OUT AND COMES BACK.',
-  stopwatch: '[TOOLS:select] TO THE STOPWATCH. [THROW:special] FREEZES THE DUMMY: 5 HEARTS.',
-};
+/** The Pot Roast's health bar (characters/simon MAX_HP; small Simon has 10). */
+export const SIMON_BIG_HP = 16;
+
+/** At least `n` hearts (sub-weapon ammo) for the lesson: the stopwatch alone costs 5. */
+const heartsAtLeast =
+  (n: number) =>
+  (room: PracticeRoom): void => {
+    const s = room.player.scratch;
+    s.hearts = Math.max(s.hearts ?? 0, n);
+  };
+
+/** Picks sub-weapon `id` on the belt (its index among the ones he has) and tops up the hearts. */
+const holdSub =
+  (id: string) =>
+  (room: PracticeRoom): void => {
+    heartsAtLeast(10)(room);
+    const belt = room.player.def.tools?.(room.player) ?? [];
+    const i = belt.findIndex((t) => t.id === id);
+    if (i >= 0) room.player.scratch.tool = i;
+  };
 
 export const SIMON_TRAINING: HeroTraining = {
-  // The old whole-kit room (devKit) until its lessons place their items (0.4.34).
-  fullKit: true,
   chapters: [
     {
       id: 'whip',
       title: 'WHIP',
       room: 'practice',
       lessons: [
-        legacyLesson(
-          'whip',
-          'CRACK THE [WHIP:attack] AT THE DUMMY. IT WINDS UP, SO SWING EARLY!',
-          (t) => t.dummyHits.has('melee'),
-          undefined,
-          setKit({ whip: 0 }),
+        lesson('whip', 'CRACK THE [WHIP:attack] AT THE DUMMY. IT WINDS UP, SO SWING EARLY!', (t) =>
+          t.dummyHits.has('melee'),
         ),
-        legacyLesson(
-          'crouch-whip',
-          'HOLD DOWN TO CROUCH, AND [WHIP:attack] LOW.',
-          (t) => t.crouchAttacks > 0,
-        ),
-        legacyLesson(
+        lesson('crouch-whip', 'HOLD DOWN TO CROUCH, AND [WHIP:attack] LOW.', (t) => t.crouchAttacks > 0),
+        lesson(
           'committed-jump',
           "SIMON'S [JUMP:jump] IS COMMITTED: NO STEERING IN THE AIR. JUMP THE GAP!",
           (t) => t.gapCrossings > 0,
@@ -40,53 +49,91 @@ export const SIMON_TRAINING: HeroTraining = {
       ],
     },
     {
-      id: 'subs',
-      title: 'SUB-WEAPONS',
+      id: 'items',
+      title: 'POWER-UPS',
       room: 'practice',
       lessons: [
-        ...SUB_WEAPONS.map((w, i) =>
-          legacyLesson(
-            w.id,
-            SIMON_SUB_PROMPTS[w.id] ?? '',
-            w.spec ? (t) => t.shotKinds.has(w.id) : (t) => t.toolUses.has(w.id),
-            (run) => k(run, 'subs') > i,
-          ),
+        // A chapter starts with the hero at the start, so the item lies to the right.
+        itemLesson(
+          'pot-roast',
+          'pot-roast',
+          'WALK RIGHT TO THE POT ROAST: YOUR HEALTH BAR GROWS FROM 10 TO 16.',
+          (t) => (t.now.maxHp ?? 0) >= SIMON_BIG_HP,
         ),
-        legacyLesson(
+        itemLesson(
+          'chain-whip',
+          'chain-whip',
+          'GRAB THE CHAIN WHIP: IT REACHES FURTHER. [WHIP:attack] THE DUMMY WITH IT.',
+          (t) => t.dummyHits.has('melee'),
+        ),
+        itemLesson(
+          'dagger',
+          'dagger',
+          'GRAB THE DAGGER. [THROW:special:DAGGER] HURLS IT FAST AND STRAIGHT.',
+          (t) => t.shotKinds.has('dagger'),
+          { setup: heartsAtLeast(10) },
+        ),
+        lesson(
           'hearts',
-          'SUB-WEAPONS COST HEARTS. YOU HAVE 3: [THROW:special] UNTIL THEY RUN OUT.',
+          'SUB-WEAPONS COST HEARTS. YOU HAVE 3: [THROW:special:DAGGER] UNTIL THEY RUN OUT.',
           (t) => t.now.hearts === 0,
-          (run) => k(run, 'subs') > 0,
-          setKit({ hearts: 3, tool: 0 }),
+          { setup: setKit({ hearts: 3, tool: 0 }) },
+        ),
+        itemLesson(
+          'holy-water',
+          'holy-water',
+          'GRAB THE HOLY WATER. [TOOLS:select] TO IT, THEN [THROW:special:WATER]: IT BURNS.',
+          (t) => t.shotKinds.has('holy-water'),
+          { setup: heartsAtLeast(10) },
+        ),
+        itemLesson(
+          'hand-axe',
+          'axe',
+          'GRAB THE AXE. [TOOLS:select] TO IT. [THROW:special:AXE] LOBS IT HIGH OVER WALLS.',
+          (t) => t.shotKinds.has('hand-axe'),
+          { setup: heartsAtLeast(10) },
         ),
       ],
     },
     {
-      id: 'upgrades',
-      title: 'UPGRADES',
+      id: 'more',
+      title: 'MORE POWER-UPS',
       room: 'practice',
       lessons: [
-        legacyLesson(
-          'chain-whip',
-          'THE CHAIN WHIP REACHES FURTHER. [WHIP:attack] THE DUMMY WITH IT.',
-          (t) => t.dummyHits.has('melee'),
-          (run) => k(run, 'whip') >= 1,
-          setKit({ whip: 1 }),
-        ),
-        legacyLesson(
+        itemLesson(
           'morning-star',
-          'THE MORNING STAR REACHES FURTHEST. [WHIP:attack] THE DUMMY WITH IT.',
+          'morning-star',
+          'THE MORNING STAR REACHES FURTHEST. GRAB IT AND [WHIP:attack] THE DUMMY.',
           (t) => t.dummyHits.has('melee'),
-          (run) => k(run, 'whip') >= 2,
-          setKit({ whip: 2 }),
         ),
-        legacyLesson(
+        itemLesson(
+          'cross',
+          'cross',
+          'GRAB THE CROSS. [TOOLS:select] TO IT. [THROW:special:CROSS]: IT SPINS OUT AND BACK.',
+          (t) => t.shotKinds.has('cross'),
+          { setup: heartsAtLeast(10) },
+        ),
+        itemLesson(
           'double-shot',
-          'DOUBLE SHOT: TWO SUB-WEAPONS AT ONCE. [THROW:special] TWO AXES, QUICKLY!',
+          'double-shot',
+          'DOUBLE SHOT: TWO AT ONCE. GRAB IT, THEN [THROW:special:AXE] TWO AXES, QUICKLY!',
           (t) => t.maxShotsOut >= 2,
-          (run) => k(run, 'multi') >= 2,
           // The axe: its long arc leaves time for a second throw.
-          setKit({ multi: 2, tool: 1 }),
+          { setup: holdSub('hand-axe') },
+        ),
+        itemLesson(
+          'stopwatch',
+          'stopwatch',
+          'GRAB THE STOPWATCH. [TOOLS:select] TO IT. [THROW:special:WATCH] FREEZES THE DUMMY.',
+          (t) => t.toolUses.has('stopwatch'),
+          { setup: heartsAtLeast(10) },
+        ),
+        itemLesson(
+          'triple-shot',
+          'triple-shot',
+          'TRIPLE SHOT: THREE AT ONCE. GRAB IT, THEN [THROW:special:AXE] THREE AXES!',
+          (t) => t.maxShotsOut >= 3,
+          { setup: holdSub('hand-axe') },
         ),
       ],
     },

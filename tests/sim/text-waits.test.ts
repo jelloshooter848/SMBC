@@ -292,9 +292,15 @@ describe('the training room: cards and READY! wait for a key; GOOD! is a tick th
     h.idle(LONG);
     expect(room.phase).toBe('chapter');
     h.tap('jump');
-    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'fireball']);
+    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'mushroom']);
     // Still ticked until this lesson is done.
     expect(room.promptLines()).toContain('GOOD!');
+    // The mushroom grabbed and a brick broken: on to the last lesson, the Fire Flower's.
+    room.tracker.taken.add('mushroom');
+    room.world.feats.bricks++;
+    h.step();
+    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'fireball']);
+    room.tracker.taken.add('fire-flower');
     room.tracker.dummyHits.add('fireball');
     h.step();
     expect(room.phase).toBe('ready');
@@ -311,6 +317,7 @@ describe('the training room: cards and READY! wait for a key; GOOD! is a tick th
     h.idle(CARD_GUARD_FRAMES + 1);
     h.tap('jump');
     room.startLesson(room.lessons.length - 1);
+    room.tracker.taken.add('fire-flower');
     room.tracker.dummyHits.add('fireball');
     h.step();
     expect(room.phase).toBe('ready');
