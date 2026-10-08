@@ -14,7 +14,7 @@ import { LevelScene } from '@game/scenes/level';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import type { MenuItem } from '@game/scenes/menu';
 import type { MapNode, WorldMapPage } from '@game/map/types';
-import { isOpen, openPaths } from '@game/map/rules';
+import { gateHolds, isOpen, openPaths } from '@game/map/rules';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { defaultSettings } from '@engine/save/settings';
 import {
@@ -705,6 +705,31 @@ describe('meeting the heroes (SaveFile.met)', () => {
     expect(loadSave(1)?.met).toEqual(['mario', 'luigi']);
     expect(ARENA_GAMES.find((g) => g.id === 'mini-luigi')?.found(h.game)).toBe(true);
     expect(ARENA_GAMES.find((g) => g.id === 'train-luigi')?.found(h.game)).toBe(false);
+  });
+
+  it("a round leaves the world gates reading the file's freed list: Luigi freed afterwards opens World 2", () => {
+    // 0.4.23: MapProgress.freed is Game.freed itself (rules.gateHolds); a round puts both back.
+    const h = makeGame();
+    onArena(
+      h,
+      {
+        cleared: ['1-0', '1-1', '1-2', '1-3', '1-4'],
+        pages: ['smb-1', 'hub', 'arena'],
+        freed: ['mario'],
+        met: ['mario', 'luigi'],
+      },
+      arenaPadId('mini-luigi'),
+    );
+    const m = map(h);
+    h.tap('jump');
+    quitRound(h, m);
+    h.idle(40);
+    h.tap('jump');
+    expect(h.top()).toBe(m);
+    expect(h.game.mapProgress.freed).toBe(h.game.freed);
+    h.game.freeHero('luigi');
+    const w1 = mapPage('smb-1') as WorldMapPage;
+    expect(gateHolds(h.game.mapProgress, w1.exits[0] as NonNullable<(typeof w1.exits)[0]>)).toBe(false);
   });
 
   it("boarding Larry's airship meets Larry", () => {

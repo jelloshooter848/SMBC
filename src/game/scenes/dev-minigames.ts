@@ -114,6 +114,9 @@ export function playRound(game: Game, def: DevRound, ended: (result: MiniGameRes
     game.celebrate.clear();
     for (const id of celebrate) game.celebrate.add(id);
     game.campaign = campaign;
+    // The world gates read the file's freed list itself (Game.openFile): keep them one array, or a
+    // hero freed after a round would leave the gate shut until the file is reloaded.
+    if (progress.freed) progress.freed = freed;
     game.mapProgress = progress;
     game.pendingReveal = pendingReveal;
     game.mapLastNode = lastNode;
