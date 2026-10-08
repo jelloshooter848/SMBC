@@ -19,38 +19,41 @@ const level = () => campaignLevel(getLevel('2-1-sky2'));
 describe('the sky palace: every hero reaches Link and gets back to 2-1', () => {
   it.each(
     CHARACTERS.flatMap((c) => (['small', 'big'] as const).map((p) => [`${c.name} (${p})`, c, p] as const)),
-  )('%s climbs in by the vine, stops by Link on the altar, then goes on and drops into 2-1', (_n, c, power) => {
-    const way = { hold: 0 };
-    let metAt = -1;
-    let waited = 0;
-    const r = runSim({
-      level: level(),
-      character: c,
-      state: { powerState: power },
-      script: none,
-      start: { time: 300 },
-      maxFrames: 4000,
-      controller: (w, f) => {
-        const p = w.player;
-        if (p.vine || p.frozen) return [];
-        if (metAt < 0) {
-          if (settledByLink(p.body)) metAt = f;
-          else return toLink(p.body, w.map, way);
-        }
-        // Stand there a moment (where TALK would start his round), then on to the drop.
-        if (waited < 30) {
-          if (++waited === 30) expect(byLink(p.body), `${c.name} stands by Link`).toBe(true);
-          return p.body.vx > 0 ? ['left'] : [];
-        }
-        return walker(p.body, w.map, way);
-      },
-    });
-    expect(metAt, `${c.name} (${power}) reached Link`).toBeGreaterThan(0);
-    expect(r.world.player.dead).toBe(false);
-    expect(r.outcome, `${c.name} (${power}) got back`).toBe('pipe');
-    expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: BACK });
-    expect(r.playerX).toBeGreaterThan(69 * 16); // off the balcony's end, not through the hall's gap
-  });
+  )(
+    '%s climbs in by the vine, stops by Link on the altar, then goes on and drops into 2-1',
+    (_n, c, power) => {
+      const way = { hold: 0 };
+      let metAt = -1;
+      let waited = 0;
+      const r = runSim({
+        level: level(),
+        character: c,
+        state: { powerState: power },
+        script: none,
+        start: { time: 300 },
+        maxFrames: 4000,
+        controller: (w, f) => {
+          const p = w.player;
+          if (p.vine || p.frozen) return [];
+          if (metAt < 0) {
+            if (settledByLink(p.body)) metAt = f;
+            else return toLink(p.body, w.map, way);
+          }
+          // Stand there a moment (where TALK would start his round), then on to the drop.
+          if (waited < 30) {
+            if (++waited === 30) expect(byLink(p.body), `${c.name} stands by Link`).toBe(true);
+            return p.body.vx > 0 ? ['left'] : [];
+          }
+          return walker(p.body, w.map, way);
+        },
+      });
+      expect(metAt, `${c.name} (${power}) reached Link`).toBeGreaterThan(0);
+      expect(r.world.player.dead).toBe(false);
+      expect(r.outcome, `${c.name} (${power}) got back`).toBe('pipe');
+      expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: BACK });
+      expect(r.playerX).toBeGreaterThan(69 * 16); // off the balcony's end, not through the hall's gap
+    },
+  );
 
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
     '%s starting beside Link (as after his round): the run-right bot takes him on to the drop',

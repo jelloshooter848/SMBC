@@ -50,5 +50,4 @@ export const toLink = (b: Body, map: TileMap, s: { hold: number }): Action[] =>
   walker(b, map, s, px(LINK.x * 16));
 
 /** Standing by Link, settled (close to his left, where `toLink` stops). */
-export const settledByLink = (b: Body): boolean =>
-  byLink(b) && Math.abs(toPx(centre(b)) - LINK.x * 16) <= 12;
+export const settledByLink = (b: Body): boolean => byLink(b) && Math.abs(toPx(centre(b)) - LINK.x * 16) <= 12;
