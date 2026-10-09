@@ -404,6 +404,9 @@ export const LINK: CharacterDef = {
           if (p.hp >= maxHp(p)) return false;
           p.hp = Math.min(maxHp(p), p.hp + 1);
           break;
+        default:
+          // Not one of his: points instead (World.collectPickup).
+          return false;
       }
       world.audio.sfx('pickup');
       return true;

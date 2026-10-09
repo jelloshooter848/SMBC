@@ -53,6 +53,27 @@ const megamanFrames: Record<string, Size> = {
   'climb-top': [16, 32],
   'charge-0': [16, 32],
 };
+// Without the helmet (the campaign, 0.4.35): every pose that shows his head, with the bare head.
+for (const f of [
+  'idle',
+  'idle-blink',
+  'walk-0',
+  'walk-1',
+  'walk-2',
+  'jump',
+  'shoot',
+  'walk-shoot-0',
+  'walk-shoot-1',
+  'walk-shoot-2',
+  'jump-shoot',
+  'slide',
+  'hurt',
+  'climb-0',
+  'climb-1',
+  'climb-shoot',
+  'charge-0',
+])
+  megamanFrames[`bare-${f}`] = megamanFrames[f] as Size;
 
 const size = (rows: readonly string[]): Size => [rows[0]?.length ?? 0, rows.length];
 
@@ -192,6 +213,15 @@ describe('megaman extras', () => {
         f,
       ).toBe(true);
     }
+  });
+
+  it('draws the bare head (no helmet) in the outline and skin only, the same in every suit', () => {
+    const idle = megamanDef.frames.idle as readonly string[];
+    const bare = megamanDef.frames['bare-idle'] as readonly string[];
+    // The head's rows (8..17) differ, the body below is the same frame.
+    expect(bare.slice(18)).toEqual(idle.slice(18));
+    expect(bare.slice(8, 18)).not.toEqual(idle.slice(8, 18));
+    for (const row of bare.slice(8, 17)) expect(row).toMatch(/^[.034]+$/);
   });
 
   it('mirrors climb-1 from climb-0', () => {

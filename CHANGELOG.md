@@ -8,6 +8,41 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- The title screen has a speaker: tap or click it, or press SOUND (SELECT), to turn all sound on or off. It is the same
+  setting as Options → Audio → Mute.
+- Standing by someone you can talk to shows a TALK prompt with its key. On touch a TALK button appears, and on the map
+  A talks to a world's local.
+
+### Changed
+
+- In the story, Mega Man's Helmet is his mushroom: a hit knocks it off (with a power-down sound and his bare head
+  showing), and with it the charge shot and brick breaking. His weapons stay.
+- Mega Man's full charge shot is a big blast, as in the original: three times the buster's damage, and it goes on
+  through what it defeats.
+- In the story, Mega Man's weapon belt lists only his weapons and Rush. The buster is always on SHOOT and charges with
+  the Helmet. Classic play keeps the original belt.
+- A power block that gives a hero's grow item gives their next power item once they already have it, as SMB gives big
+  Mario a flower.
+- Every enemy drop can be picked up by every hero. Ammo for a power not found yet is kept for later, and a drop with
+  nothing to fill gives points.
+- Locals and Toad describe where a hero was last seen instead of naming the level. The crystal ball still pinpoints it.
+- The world map no longer says "someone is hiding in this level". The faint shadow by the node is the hint.
+- Toad walks off forward, to the right, after his map scenes.
+- The arrow of coins in 2-1's coin heaven is gone: the old man and the fairy tell the way.
+- On Larry's airship and in the Hammer Bro battle, a hero's life, weapon and tool stats sit in the status bar instead
+  of over the play.
+
+### Fixed
+
+- Taking 2-1's secret exit (the Moblin) no longer opens 2-2. Only 2-1's flagpole does.
+- Mega Man's life and weapon bars, Link's hearts and Samus's energy show on Larry's airship and in the Hammer Bro
+  battle.
+- Toad thanks heroes by their full name ("THANK YOU MEGA MAN!", not "MEGA").
+- The Moblin in 2-1's cave is named on his cards.
+- A weapon-energy drop fills Mega Man's selected weapon first.
+
 ## [0.4.34] - 2026-10-08
 
 ### Changed

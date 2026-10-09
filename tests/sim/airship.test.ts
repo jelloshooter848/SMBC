@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { px } from '@engine/math/units';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { CHARACTERS } from '@game/characters/registry';
+import { HERO_PANEL } from '@game/hud/smb3-hero-panel';
 import { LevelScene } from '@game/scenes/level';
 import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { CardScene } from '@game/scenes/message';
@@ -583,4 +586,71 @@ describe('every hero rides the deck to the stern pipe', () => {
       });
     }
   }
+});
+
+describe("the heroes' own stats aboard Larry's airship (0.4.35: Mega Man's bars were missing)", () => {
+  /** Rects and texts (with where) of one frame of `scene`. */
+  function frame(scene: { render(r: Renderer): void }) {
+    const rects: { x: number; y: number; w: number; h: number; c: string }[] = [];
+    const texts: string[] = [];
+    const at: { s: string; x: number; y: number }[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      rect(x: number, y: number, w: number, h: number, c: string): void {
+        rects.push({ x, y, w, h, c });
+      },
+      text(_f: SpriteSheet, str: string, x: number, y: number): void {
+        texts.push(str);
+        at.push({ s: str, x, y });
+      },
+    });
+    scene.render(r);
+    return { rects, texts, at };
+  }
+  /** Inside the status bar's hero box (over the card slots), not over the play. */
+  const inPanel = (x: number, y: number) =>
+    x >= HERO_PANEL.x &&
+    x < HERO_PANEL.x + HERO_PANEL.w &&
+    y >= HERO_PANEL.y &&
+    y < HERO_PANEL.y + HERO_PANEL.h;
+
+  it.each([AIRSHIP_DECK, AIRSHIP_ROOM])('%s: every hero with hit points shows them', (id) => {
+    for (const c of CHARACTERS) {
+      if (c.damage.kind !== 'hp') continue;
+      const h = makeGame();
+      h.game.devStart(id, c, 'small', true);
+      h.until(() => h.top() instanceof LevelScene, 400);
+      const scene = h.top() as LevelScene;
+      expect(scene.level.id).toBe(id);
+      const { rects, at } = frame(scene);
+      const style = c.damage.hudStyle;
+      // Nothing of theirs over the play's top-left any more (the hero is pinned there).
+      expect(
+        rects.some((q) => q.x === 7 && q.w === 8 && q.c === '#000'),
+        `${c.id} no bar over the deck`,
+      ).toBe(false);
+      if (style === 'bar') {
+        // The life bar laid flat in the status bar's box (a black backing 6 px high), and the
+        // weapon bar under it.
+        const bars = rects.filter((q) => q.h === 6 && q.c === '#000' && inPanel(q.x, q.y));
+        expect(bars.length, `${c.id} life bar`).toBeGreaterThanOrEqual(1);
+        if (c.meter?.(scene.world.player)) expect(bars.length, `${c.id} weapon bar`).toBe(2);
+      } else if (style === 'hearts')
+        expect(
+          at.some((t) => /^[hfe]+$/.test(t.s) && inPanel(t.x, t.y)),
+          `${c.id} hearts`,
+        ).toBe(true);
+      else
+        expect(
+          at.some((t) => /^EN/.test(t.s) && inPanel(t.x, t.y)),
+          `${c.id} EN`,
+        ).toBe(true);
+      // The hero's extra (Mega Man's E-tanks) in the box too, not floating over the play.
+      const extra = c.hudExtra?.(scene.world.player);
+      if (extra)
+        expect(
+          at.some((t) => t.s === extra && inPanel(t.x, t.y)),
+          `${c.id} ${extra}`,
+        ).toBe(true);
+    }
+  });
 });

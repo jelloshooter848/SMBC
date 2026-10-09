@@ -376,7 +376,7 @@ export const SOPHIA: CharacterDef = {
             p.powerState = 'fire';
             if (!p.scratch.hasTriple && !p.scratch.hasHoming) {
               p.scratch.hasTriple = 1;
-              p.scratch.triple = TRIPLE_START;
+              p.scratch.triple = Math.max(p.scratch.triple ?? 0, TRIPLE_START);
             }
             p.startTransition('grow');
           } else addAmmo(p, TRIPLE_REPEAT, HOMING_REPEAT);
@@ -396,11 +396,13 @@ export const SOPHIA: CharacterDef = {
       }
     },
     onPickup(p, kind, world) {
+      // Ammo for missiles she hasn't found yet goes into a hidden reserve, there when she finds
+      // them (0.4.35, owner: drops are always collectible); full, it gives points instead.
       if (kind === 'triple-ammo') {
-        if (!p.scratch.hasTriple || (p.scratch.triple ?? 0) >= TRIPLE_MAX) return false;
+        if ((p.scratch.triple ?? 0) >= TRIPLE_MAX) return false;
         p.scratch.triple = Math.min(TRIPLE_MAX, (p.scratch.triple ?? 0) + TRIPLE_DROP);
       } else if (kind === 'homing-ammo') {
-        if (!p.scratch.hasHoming || (p.scratch.homing ?? 0) >= HOMING_MAX) return false;
+        if ((p.scratch.homing ?? 0) >= HOMING_MAX) return false;
         p.scratch.homing = Math.min(HOMING_MAX, (p.scratch.homing ?? 0) + HOMING_DROP);
       } else return false;
       world.audio.sfx(SOUNDS.pickup);

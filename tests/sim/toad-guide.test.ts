@@ -8,7 +8,6 @@ import { CHARACTERS } from '@game/characters/registry';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { beat, upgradeStory } from '@game/story/beats';
 import { CRASH_PAGES, gateScript, HUB_PAGE, riftPages, WORLD1_PAGES, type Page } from '@game/story/script';
-import { HIDING_HINT } from '@game/scenes/world-map';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { ALL_STORY } from './story-seen';
 
@@ -78,22 +77,22 @@ describe("Toad's map scenes", () => {
     expect(h.said.some((t) => t.startsWith("TOAD: WHERE'S LUIGI?") && /OK to continue/.test(t))).toBe(true);
     expect(h.game.seen(beat.enter('smb-1'))).toBe(true);
     expect(loadSave(1)?.story).toContain(beat.enter('smb-1'));
-    // Toad walks back off; then the reveal.
+    // Toad walks on off to the right (0.4.35); the reveal draws the road in meanwhile.
     h.until(() => map(h).mode === 'idle', 600);
     expect(h.game.pendingReveal).toEqual([]);
-    expect(toadSprite(h)).toBeUndefined();
+    h.until(() => toadSprite(h) === undefined, 300);
     // Reopened: not again.
     h.game.openFile(1);
     h.step();
     expect(map(h).story).toBe(false);
   });
 
-  it('a cleared level still hiding its hero: no card, the generic hint line (0.4.23)', () => {
+  it('a cleared level still hiding its hero: no card, and no hint line (0.4.35: only the shadow)', () => {
     const h = open({ cleared: ['1-0'], position: { page: 'smb-1', node: '1-1' }, story: ['enter:smb-1'] });
     h.game.levelCleared('1-1');
     expect(map(h).story).toBe(false);
     h.until(() => map(h).mode === 'idle', 600);
-    expect(map(h).hintLine).toBe(HIDING_HINT);
+    expect(map(h).hintLine).toBe('');
   });
 
   it('a story scene elsewhere: the node line is still said on arrival, first', () => {
@@ -249,7 +248,9 @@ describe("Toad's map scenes: after the last page", () => {
     const off = toadSprite(h);
     expect(off).toBeDefined();
     h.idle(6); // the map's idle settle
-    expect(toadSprite(h)!.x).toBeLessThan(off!.x);
+    // He leaves FORWARD, on to the right (0.4.35, owner: never back the way he came), facing it.
+    expect(toadSprite(h)!.x).toBeGreaterThan(off!.x);
+    expect(map(h).toad!.toad()!.flip).toBe(false);
     // The hero walks while Toad is still going.
     for (const d of ['left', 'up', 'down', 'right'] as const) if (map(h).mode === 'idle') h.tap(d);
     expect(map(h).mode).toBe('walk');

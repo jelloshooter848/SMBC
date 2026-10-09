@@ -78,7 +78,7 @@ Sophia III).
 | **What**     | Hidden hero: Luigi                                                    |
 | **Where**    | World 1-1, the bonus room under the fourth pipe                       |
 | **Who can**  | Every hero. Ryu can also cling to the wall and climb up to the ledge. |
-| **Map hint** | "I HEAR A MUSTACHE SIGH..."                                           |
+| **Map hint** | A faint shadow by the level's node once it is cleared                 |
 
 1. In 1-1, stand on the fourth pipe (the tallest one, after the three smaller pipes) and press
    **DOWN** to go in.
@@ -150,12 +150,12 @@ and **TALK**. He gives you a coin, then tells you how to find Link.
 
 ### Link: the sky ruins above 2-1
 
-|              |                                                     |
-| ------------ | --------------------------------------------------- |
-| **What**     | Hidden hero: Link                                   |
-| **Where**    | World 2-1, above the coin heaven, in the sky palace |
-| **Who can**  | Every hero                                          |
-| **Map hint** | "SOMETHING UP THERE HUMS..."                        |
+|              |                                                       |
+| ------------ | ----------------------------------------------------- |
+| **What**     | Hidden hero: Link                                     |
+| **Where**    | World 2-1, above the coin heaven, in the sky palace   |
+| **Who can**  | Every hero                                            |
+| **Map hint** | A faint shadow by the level's node once it is cleared |
 
 1. In 2-1, a row of five bricks floats high above two groups of ? blocks. Its middle brick hides
    a vine: **JUMP** from the ? blocks to the left of it, drifting right, to bump it, then climb the
@@ -164,8 +164,9 @@ and **TALK**. He gives you a coin, then tells you how to find Link.
    ![The vine growing from the brick in 2-1](img/2-link-1.png)
 
 2. Cross the coin heaven to where the clouds end. Hop over to the small cloud platforms past the
-   end. Over the middle one, the coins run out: **JUMP** straight up there to bump a hidden
-   block. A second vine grows out of it. Climb it.
+   end (the fairy at the start of the coin heaven says the temple floats higher still). Over the
+   middle one, **JUMP** straight up to bump a hidden block. A second vine grows out of it. Climb
+   it.
 
    ![The hidden block over the middle cloud, with its vine](img/2-link-2.png)
 
@@ -249,12 +250,12 @@ hint about Mega Man.
 
 ### Mega Man: the space station above 3-1
 
-|              |                                                     |
-| ------------ | --------------------------------------------------- |
-| **What**     | Hidden hero: Mega Man                               |
-| **Where**    | World 3-1, a hidden teleporter past the coin heaven |
-| **Who can**  | Every hero                                          |
-| **Map hint** | "A STAR UP THERE BLINKS..."                         |
+|              |                                                       |
+| ------------ | ----------------------------------------------------- |
+| **What**     | Hidden hero: Mega Man                                 |
+| **Where**    | World 3-1, a hidden teleporter past the coin heaven   |
+| **Who can**  | Every hero                                            |
+| **Map hint** | A faint shadow by the level's node once it is cleared |
 
 1. Late in 3-1, the last brick in a short row high up hides a vine. **JUMP** from the bricks under
    it to bump it, and climb the vine to the coin heaven.
@@ -286,12 +287,12 @@ bird statue with glowing eyes. Stand next to it and **READ** the words cut into 
 
 ### Samus: the cavern under 4-2
 
-|              |                                                 |
-| ------------ | ----------------------------------------------- |
-| **What**     | Hidden hero: Samus                              |
-| **Where**    | World 4-2, the warp zone at the top of the vine |
-| **Who can**  | Every hero                                      |
-| **Map hint** | "THE PIPES HERE ECHO..."                        |
+|              |                                                       |
+| ------------ | ----------------------------------------------------- |
+| **What**     | Hidden hero: Samus                                    |
+| **Where**    | World 4-2, the warp zone at the top of the vine       |
+| **Who can**  | Every hero                                            |
+| **Map hint** | A faint shadow by the level's node once it is cleared |
 
 1. Early in 4-2, a brick high up hides a vine. Hidden blocks under it make a staircase: bump them
    from below, climb them and bump the brick. Climb the vine.
@@ -409,7 +410,7 @@ unreliable) hint about Simon.
 | **What**     | Hidden hero: Simon                                                              |
 | **Where**    | World 5-4, under the lift shaft                                                 |
 | **Who can**  | Every hero. Small Mario and small Luigi have no attack: they use a Koopa shell. |
-| **Map hint** | "THIS LIFT SMELLS OF BATS"                                                      |
+| **Map hint** | A faint shadow by the level's node once it is cleared                           |
 
 1. In 5-4, find the shaft with the lifts. Get on a lift going **down** (the down lifts have a faint
    skull on their middle plank) and stay on it. Ride it on past the bottom of the shaft. Falling into the
@@ -451,7 +452,7 @@ Agent Irene stands at the start of 6-2. **TALK** to her for a hint about Ryu.
 | **What**     | Hidden hero: Ryu                                           |
 | **Where**    | World 6-2, the bonus room under the first pipe             |
 | **Who can**  | Every hero (Samus can roll into the wall in her ball, too) |
-| **Map hint** | "A WALL IN HERE IS WATCHING"                               |
+| **Map hint** | A faint shadow by the level's node once it is cleared      |
 
 1. Go down the first pipe in 6-2.
 
@@ -489,7 +490,7 @@ Lance stands at the start of 7-3. **TALK** to him for a hint about Bill.
 | **What**     | Hidden hero: Bill                                         |
 | **Where**    | World 7-3, under the exploding bridge past the checkpoint |
 | **Who can**  | Every hero                                                |
-| **Map hint** | "I SMELL A CAMPFIRE..."                                   |
+| **Map hint** | A faint shadow by the level's node once it is cleared     |
 
 1. Just past 7-3's checkpoint, one bridge is marked: a red light blinks on its post and an arrow of
    coins points down at it. Step onto it and it starts blowing up behind you, piece by piece.
@@ -530,7 +531,7 @@ pipe (below). **TALK** to him there: he is looking for his frog, Fred.
 | **What**     | Hidden hero: Sophia III (the tank)                                     |
 | **Where**    | World 8-4, down the trap pipe just after the water section             |
 | **Who can**  | Every hero. Simon walks along the floor of the flooded tunnel instead. |
-| **Map hint** | "A FROG CROAKED IN THERE"                                              |
+| **Map hint** | A faint shadow by the level's node once it is cleared                  |
 
 1. Get through 8-4 to its water section and swim to its pipe: you come up a pipe into the last
    stretch of the castle. The **next pipe**, a few steps to the right, is the one everybody skips:

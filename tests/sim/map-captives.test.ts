@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mapPage } from '@content/worldmap';
-import { HIDING_HINT, HIDING_SAID, WorldMapScene } from '@game/scenes/world-map';
+import { HIDING_SAID, WorldMapScene } from '@game/scenes/world-map';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import type { SaveFile } from '@game/save/save-files';
@@ -149,10 +149,11 @@ describe('map hint for hidden heroes: the three stages', () => {
         else expect(sx).toBeLessThan(s.n.x * 16);
         // Partly behind the node: it overlaps the node's tile.
         expect(Math.abs(sx - s.n.x * 16)).toBeLessThan(16);
-        // Standing on the node: the announcer adds the line, the hint line shows it.
+        // Standing on the node: the announcer describes the shadow (what the eye sees); no hint
+        // line says someone is hiding (0.4.35, owner: too on the nose).
         expect(h.said.some((t) => t.includes(said(c.hero)))).toBe(true);
-        expect(map.hintLine).toBe(HIDING_HINT);
-        expect(s.texts.map((t) => t.str)).toContain(HIDING_HINT);
+        expect(map.hintLine).toBe('');
+        expect(s.texts.map((t) => t.str).join(' ')).not.toMatch(/HIDING/);
         // Beyond Toad's hint, it never says where in the level.
         const rest = h.said.join(' ').replace(said(c.hero), '');
         expect(rest).not.toMatch(/bonus|pipe|vine|sky|ruins|station|teleport/i);

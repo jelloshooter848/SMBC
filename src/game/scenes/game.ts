@@ -295,7 +295,7 @@ export class Game {
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
     // "THANK YOU <hero>!" names the hero who took the axe, as Toad's thanks do (World.castleText).
-    const hero = (world?.castleHero ?? s.character).hudName;
+    const hero = fontText((world?.castleHero ?? s.character).name);
     const card =
       from === 'll-8-4' || from === 'll-13-4'
         ? [
@@ -604,16 +604,14 @@ export class Game {
 
   /**
    * Campaign: the Moblin's secret in 2-1's hidden cave (0.4.10, owner design; the cave is reached
-   * only by jumping over 2-1's flagpole without touching it). Unlike a plain secret exit it does
-   * both: `levelId`'s level counts as cleared (its normal roads open, as a flagpole clear opens
-   * them) AND `secret` is found (rules.secretExit: the road to World 2's hidden bonus spot, the
-   * Top Secret Area). Both are drawn in on the way back to the map, which saves.
+   * only by jumping over 2-1's flagpole without touching it): a secret exit like any other
+   * (rules.secretExit): `secret` is found and only its road, to World 2's hidden bonus spot (the
+   * Top Secret Area), draws in. 2-1 does not count as cleared (0.4.35, owner: a secret exit
+   * never opens the normal road; 2-2 waits for the flagpole).
    */
   campaignTopSecret(secret: string, levelId: string): void {
     if (!this.campaign) return;
-    const cleared = clearLevel(this.mapProgress, levelId, this.deps.getLevel);
-    const found = secretExit(this.mapProgress, levelId, secret, this.deps.getLevel);
-    this.returnToMap([...cleared, ...found]);
+    this.returnToMap(secretExit(this.mapProgress, levelId, secret, this.deps.getLevel));
   }
 
   /**

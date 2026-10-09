@@ -51,7 +51,10 @@ export function heroStart(def: CharacterDef): HeroPower {
 /**
  * The item a power block gives `p` (docs/POWERUPS.md 3.3): a small hero gets their grow item; else
  * the block's entry for their hero, or their default power. `content` `mushroom` is the Top Secret
- * Area's fixed grow block (always the grow item). Null for a hero without items of their own.
+ * Area's fixed grow block. A grow-slot block (that, or an entry `grow`) works as SMB's does for a
+ * big Mario (0.4.35): once the hero owns their grow item (a stacking one at its maximum) it gives
+ * their next power item they don't own, in the catalog's order, else their default power (its
+ * refill); never the grow item again. Null for a hero without items of their own.
  */
 export function blockItem(
   p: Player,
@@ -62,9 +65,12 @@ export function blockItem(
   const items = heroItems(hero);
   const rules = itemRules(hero);
   if (!items?.ownItems || !rules) return null;
-  if (content === 'mushroom' || rules.small(p)) return items.grow;
+  if (rules.small(p)) return items.grow;
   const entry = entries?.[hero];
-  return (entry !== undefined ? entryItem(hero, entry) : null) ?? items.defaultPower;
+  const placed = content === 'mushroom' ? items.grow : entry !== undefined ? entryItem(hero, entry) : null;
+  if (placed !== items.grow) return placed ?? items.defaultPower;
+  if (!rules.owned(p, items.grow)) return items.grow;
+  return items.items.find((i) => i.kind === 'power' && !rules.owned(p, i.id))?.id ?? items.defaultPower;
 }
 
 /** What taking an item did: `fresh` the first one (named on screen), else a refill. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Settings } from '@engine/save/settings';
+import { defaultSettings, type Settings } from '@engine/save/settings';
 import { MAP_HEADER_H, MAP_HINT_Y, WorldMapScene } from '@game/scenes/world-map';
 import { CreditsScene } from '@game/scenes/credits';
 import { CHARACTERS } from '@game/characters/registry';
@@ -278,5 +278,36 @@ describe("the crystal ball's new job (0.4.23, docs/STORY.md 2.7)", () => {
         (s) => s.frame === simon?.portrait.frame && s.key.startsWith(`${simon?.portrait.sheet}@`),
       ),
     ).toBe(true);
+  });
+});
+
+describe("a world's local: the TALK prompt as a button (0.4.35)", () => {
+  const onW2 = (scheme: 'keyboard' | 'touch') => {
+    const h = open({
+      cleared: W1,
+      pages: ['smb-1', 'smb-2'],
+      freed: ['mario', 'luigi'],
+      position: { page: 'smb-2', node: 'start' },
+      story: [...ALL_STORY],
+    });
+    h.game.deps.settings = defaultSettings();
+    h.game.deps.controlScheme = () => scheme;
+    h.idle(10);
+    return h;
+  };
+
+  it('with keys the hint line names the key: TALK (UP) TO THE HEALER', () => {
+    const h = onW2('keyboard');
+    expect(map(h).hintLine).toBe('TALK (UP) TO THE HEALER');
+    expect(draw(map(h)).texts.map((t) => t.str)).toContain('TALK (UP) TO THE HEALER');
+  });
+
+  it('on touch A is the TALK button there, and talks', () => {
+    const h = onW2('touch');
+    expect(map(h).hintLine).toBe('TALK TO THE HEALER');
+    expect(map(h).touchLabels().jump).toBe('TALK');
+    h.tap('jump');
+    expect(map(h).story).toBe(true);
+    expect(readAll(h)).toEqual(WELCOMES['smb-2']?.pages);
   });
 });

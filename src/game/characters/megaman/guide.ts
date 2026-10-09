@@ -7,7 +7,11 @@ export const MEGAMAN_GUIDE: CharacterGuide = {
     { action: 'jump', does: 'A tall jump. Let go early to cut it short.' },
     { action: 'down+jump', does: 'Slide: low and fast, under one-tile gaps.' },
     { action: 'attack', touch: 'SHOOT', does: 'Fire the buster, three shots at a time.' },
-    { action: 'attack (hold)', touch: 'SHOOT', does: 'With the helmet: charge, let go for a piercing shot.' },
+    {
+      action: 'attack (hold)',
+      touch: 'SHOOT',
+      does: 'With the helmet: charge, let go for a big blast that goes on through what it defeats.',
+    },
     { action: 'select', touch: 'WEAPON', does: 'Pick the next weapon.' },
     {
       action: 'special',
@@ -61,6 +65,7 @@ export const MEGAMAN_GUIDE: CharacterGuide = {
   ],
   tips: [
     "In the story, power blocks hold Mega Man's own items: the Helmet, Rush Coil and five weapons. A death loses what he found; replay levels to find it again.",
+    'In the story the Helmet is his mushroom: a hit knocks it off (and its charge shot and brick breaking) as well as hurting him. His weapons stay.',
     'The second bar beside your health is the selected weapon’s energy.',
   ],
   demo: ['idle', 'walk', 'jump', 'attack'],

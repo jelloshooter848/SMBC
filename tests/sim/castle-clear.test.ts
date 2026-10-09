@@ -11,6 +11,7 @@ import type { Game } from '@game/scenes/game';
 import type { CharacterDef } from '@game/characters/character';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
+import { MEGAMAN } from '@game/characters/megaman';
 import { Bowser } from '@game/entities/enemies/bowser';
 import { Toad } from '@game/entities/objects/toad';
 import { Princess } from '@game/entities/objects/princess';
@@ -106,6 +107,11 @@ describe('castle clear: Toad and the news', () => {
     expect(r.world.entities.some((e) => e instanceof Toad && e.alive)).toBe(true);
     expect(r.texts).toEqual([['THANK YOU LINK!'], ['THANK YOU LINK!', ...NEWS]]);
     expect(r.goToLevel).toHaveBeenCalledWith('ll-2-1', { mode: 'stand' });
+  });
+
+  it("Toad thanks the hero by full name, never the HUD's short one (0.4.35: not 'MEGA')", () => {
+    const r = clearCastle(load('world1/1-4.map', '1-4'), 141, MEGAMAN);
+    expect(r.texts[0]).toEqual(['THANK YOU MEGA MAN!']);
   });
 
   it('Lost Levels 8-4: the princess waits instead of Toad, and the ending card is her thanks', () => {

@@ -15,8 +15,8 @@ import type { World } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
 import { LINK, walker } from './sky-palace-way';
 
-// The 2-1 coin heaven's way up (owner design): past the end of the clouds an up-arrow of coins,
-// three small cloud platforms, and a hidden vine block over the middle one (71,7) whose vine
+// The 2-1 coin heaven's way up (owner design): past the end of the clouds (no coin
+// arrow since 0.4.35) three small cloud platforms, and a hidden vine block over the middle one (71,7) whose vine
 // climbs to Link's sky palace (2-1-sky2), where a drop off its balcony lands in 2-1 at column 162.
 
 const level = (id: string): LevelData =>

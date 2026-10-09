@@ -100,3 +100,9 @@ describe("S3's story lines", () => {
     }
   });
 });
+
+describe('locals and Toad describe places, never level numbers (0.4.35, owner)', () => {
+  it.each(cards)('"%s" names no level like 2-1 or 4-2 (the crystal ball pinpoints levels)', (_name, page) => {
+    expect(page.filter((l) => /\b[1-8]-[1-4]\b/.test(l))).toEqual([]);
+  });
+});

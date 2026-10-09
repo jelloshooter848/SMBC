@@ -6,13 +6,16 @@ import { PARTNERS, partnerPages } from './script';
 
 /**
  * What the announcer says when a player comes within a partner's reach: "Doctor Light. Up to
- * talk." (the statue: "Up to read."); in co-op prefixed with the player.
+ * talk." (the statue: "Up to read."); on touch, where the TALK (READ) button shows, "Press
+ * TALK."; in co-op prefixed with the player.
  */
-export function partnerNearSaid(who: string, player: number, coop: boolean): string {
+export function partnerNearSaid(who: string, player: number, coop: boolean, touch = false): string {
   const script = PARTNERS[who];
   const name = script?.name ?? who;
-  const verb = script?.verb === 'READ' ? 'read' : 'talk';
-  return `${coop ? `Player ${player + 1}: ` : ''}${name}. Up to ${verb}.`;
+  const how = touch
+    ? `Press ${script?.verb ?? 'TALK'}`
+    : `Up to ${script?.verb === 'READ' ? 'read' : 'talk'}`;
+  return `${coop ? `Player ${player + 1}: ` : ''}${name}. ${how}.`;
 }
 
 /**

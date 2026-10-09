@@ -14,6 +14,9 @@ import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import { PARTNERS, type Page } from '@game/story/script';
 import type { WorldStart } from '@game/world/world';
 import { px } from '@engine/math/units';
+import { defaultSettings } from '@engine/save/settings';
+import { setHas } from '@game/items/flags';
+import { Projectile } from '@game/entities/projectiles/projectile';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 
 // The campaign's partners (docs/STORY.md 2.5-2.10, section 3 decision 2): someone from a hero's
@@ -443,5 +446,43 @@ describe('partners: who moved, and how they look (0.4.23)', () => {
     h.idle(120);
     const s = draw(l).sprites.find((d) => d.frame === 'fred-0');
     expect(s?.key).toBe('sophia');
+  });
+});
+
+describe('partners: the TALK prompt is a button (0.4.35)', () => {
+  it('with keys, the word over a partner names the key: TALK (UP)', () => {
+    const h = makeGame();
+    h.game.deps.settings = defaultSettings();
+    h.game.deps.controlScheme = () => 'keyboard';
+    const l = campaignIn(h, spotOf('irene'));
+    walkUp(h, l);
+    expect(draw(l).texts.map((t) => t.str)).toContain('TALK (UP)');
+    expect(h.said).toContain('Irene. Up to talk.');
+  });
+
+  it('on touch, a TALK button shows in reach and talks; out of reach it is gone', () => {
+    const h = makeGame();
+    h.game.deps.settings = defaultSettings();
+    h.game.deps.controlScheme = () => 'touch';
+    const l = campaignIn(h, spotOf('irene'));
+    expect(l.touchLabels().special ?? null).not.toBe('TALK');
+    walkUp(h, l);
+    expect(draw(l).texts.map((t) => t.str)).toContain('TALK');
+    expect(l.touchLabels().special).toBe('TALK');
+    expect(h.said).toContain('Irene. Press TALK.');
+    h.tap('special');
+    h.until(() => h.top() instanceof CardScene, 30);
+    expect((h.top() as CardScene).lines).toEqual(PARTNERS.irene!.pages[0]);
+  });
+
+  it("a hero's own special does nothing while in reach: it talks (Mega Man fires no weapon)", () => {
+    const h = makeGame();
+    const megaman = CHARACTERS.find((c) => c.id === 'megaman')!;
+    const l = campaignIn(h, spotOf('dr-light'), megaman, 'full');
+    const p = walkUp(h, l) && l.world.player;
+    setHas(p, 'saw-disc');
+    h.tap('special');
+    expect(l.world.entities.some((e) => e instanceof Projectile && e.kind === 'saw')).toBe(false);
+    h.until(() => h.top() instanceof CardScene, 30);
   });
 });

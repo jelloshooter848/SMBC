@@ -51,12 +51,15 @@ captive 13 6 hero=luigi
   collision and never despawns.
 - It spawns only in campaign play (`World.captives`, set by LevelScene), and only while that hero
   is not freed on the file.
-- **Talking:** a player on the ground within 1.5 tiles (24 px, same floor) sees `TALK` with an
-  up arrow above it, and the announcer says "Luigi. Up to talk." each time a player comes into
-  reach. Pressing **up** talks (`World.checkTalk` raises a `talk` event). Up was
-  picked because every control scheme has it, including the touch d-pad, so no face button
-  changes its label or meaning. Heroes that also use up on the ground (Samus and Bill aim up)
-  just talk as well while in reach. It does nothing on a vine.
+- **Talking:** a player on the ground within 1.5 tiles (24 px, same floor) sees the TALK prompt
+  above it, input-aware like the other prompts (0.4.35: `TALK (UP)` with keys or a pad, on a black
+  strip; it was a bare TALK and an up arrow), and the announcer says "Luigi. Up to talk." ("Luigi.
+  Press TALK." on touch) each time a player comes into reach. Pressing **up** talks (`World.checkTalk`
+  raises a `talk` event), and so does **SPECIAL**: in reach it is the TALK button (on touch the C
+  button reads TALK, `World.talkVerb`; the hero's own special waits while in reach). Heroes that
+  also use up on the ground (Samus and Bill aim up) just talk as well while in reach. It does
+  nothing on a vine. On the map a world's local works the same way: the hint line reads
+  `TALK (UP) TO THE HEALER`, and A (on touch the TALK button) talks too.
 
 Luigi waits in the 1-1 bonus room on a hard-block ledge at the top right (row 7, columns
 12-14), 48 px above the top of the coin bricks. From the bricks a running or walking jump reaches
@@ -92,8 +95,9 @@ from the file's `cleared` and `freed`):
    ground shade lifted a little toward the ground colour (`<palette>~shade-<theme>`, `mapShadeFx`
    in `palette-fx.ts`), so it is just barely visible. Every 6 seconds it shimmers faintly toward
    the trance's lilac for half a second (`~shade-<theme>-glow`); never with reduce flashing.
-   Standing on the node, the announcer adds "Someone is hiding in this level." to the node's name
-   and the hint line shows `SOMEONE IS HIDING IN THIS LEVEL`. Nothing says where in the level.
+   Standing on the node, the announcer adds "A faint shadow stands by it." to the node's name (what
+   the eye sees); no hint line says someone is hiding (0.4.35, owner: too on the nose). Nothing
+   says where in the level.
 3. **Freed:** a statue of the hero stands beside the node in full colour, facing it: the
    portrait at half size on a small stone pedestal (0.4.22, owner note 13: it must never read
    as the player's marker), with a small idle hop (`map/trophy.ts`).
@@ -250,7 +254,11 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   level draws SMB3's bar along the bottom (WORLD, the P-meter, coins; the hero's badge and lives,
   the score, the clock; three end-card slots) instead of the HUD across the top, and its world
   32 px higher (`renderSmb3World`), so rows 2-14 fill the screen above the bar. The Hammer Bro
-  battle and the bonus games use the same bar.
+  battle and the bonus games use the same bar. A hero with stats of their own (0.4.35,
+  `hud/smb3-hero-panel.ts`) has them in a box of the bar over the (always empty) card slots, never
+  over the deck, where the ship pins the hero to the left: hit points (a flat Mega Man style bar,
+  hearts, EN and tanks), the weapon or magic meter, and the tool in hand with Mega Man's E-tanks.
+  Player two's stay at the top right of the play.
 - **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
   restarts the deck as it was boarded, or Larry's room once it has been reached (dropping in from
   its ceiling pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)

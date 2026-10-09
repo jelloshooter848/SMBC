@@ -81,6 +81,7 @@ const TABLE: [CharacterDef, string, Setup, string][] = [
   [LINK, 'jump spell, low magic', { kit: { tool: 2, magic: 4 } }, 'JUMP SWORD - MENU TOOLS'],
   [LINK, 'shield spell', { kit: { tool: 3 } }, 'JUMP SWORD SHIELD MENU TOOLS'],
   [LINK, 'fire spell', { kit: { tool: 4, magic: 4 } }, 'JUMP SWORD FIRE MENU TOOLS'],
+  // Classic play keeps the original belt, the Buster first; the campaign's has none (below).
   [MEGAMAN, 'no helmet', {}, 'JUMP SHOOT BUSTER MENU -'],
   [MEGAMAN, 'helmet (buster + Rush)', { kit: { helmet: 1 } }, 'JUMP SHOOT BUSTER MENU WEAPON'],
   [MEGAMAN, 'Rush selected', { kit: { helmet: 1, tool: 1 } }, 'JUMP SHOOT RUSH MENU WEAPON'],
@@ -91,6 +92,15 @@ const TABLE: [CharacterDef, string, Setup, string][] = [
   [MEGAMAN, 'Homing Knuckle', { kit: { ...MM, tool: 4 } }, 'JUMP SHOOT KNUCKLE MENU WEAPON'],
   [MEGAMAN, 'Bolt', { kit: { ...MM, tool: 5 } }, 'JUMP SHOOT BOLT MENU WEAPON'],
   [MEGAMAN, 'Rush, all weapons', { kit: { ...MM, tool: 6 } }, 'JUMP SHOOT RUSH MENU WEAPON'],
+  // Campaign (`found` kit): no 'Buster' entry (0.4.35); SHOOT is always the buster.
+  [MEGAMAN, 'campaign, nothing found', { kit: { found: 1 } }, 'JUMP SHOOT - MENU -'],
+  [MEGAMAN, 'campaign, Rush Coil', { kit: { found: 1, 'has-rush-coil': 1 } }, 'JUMP SHOOT RUSH MENU -'],
+  [
+    MEGAMAN,
+    'campaign, Saw and Rush',
+    { kit: { found: 1, helmet: 1, 'has-saw-disc': 1, 'has-rush-coil': 1 } },
+    'JUMP SHOOT SAW MENU WEAPON',
+  ],
   [SAMUS, 'beam, no missiles', {}, 'JUMP SHOOT - MENU WEAPON'],
   [SAMUS, 'beam, missiles', { kit: { missiles: 5 } }, 'JUMP SHOOT MISSILE MENU WEAPON'],
   [SAMUS, 'missiles selected', { kit: { missiles: 5, tool: 1 } }, 'JUMP MISSILE MISSILE MENU WEAPON'],

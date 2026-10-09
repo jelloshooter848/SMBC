@@ -212,8 +212,9 @@ different road with each, and **no ending opens every road leaving its level**.
 - **Old files**: nothing changes in the format. A file that cleared 1-2 through its pipe before
   0.5.0 has both `1-2` in `cleared` and `bonus-1` in `secrets`, so it keeps both roads; nothing
   re-locks.
-- **One exception** (0.4.10): the Moblin in 2-1's hidden cave both clears 2-1 and finds `bonus-2`,
-  opening both roads ("The Top Secret Area" below).
+- **No exceptions** (0.4.35, owner): the Moblin in 2-1's hidden cave is a secret exit like the
+  others: he finds `bonus-2` (the road to the Top Secret Area) and 2-1 stays uncleared; 2-2 opens
+  only from 2-1's flagpole. (0.4.10 to 0.4.34 had him clear 2-1 as well.)
 - Today 1-2's campaign pipe is a secret exit (below), and so is Larry Koopa's crystal ball in
   4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
   Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each leads into an
@@ -477,14 +478,13 @@ art, 24x32, about big Mario's height: a pig-faced brute with heavy jowls, a pale
 nostrils and a thick spear; `items:moblin-0/1` breathing, `items:moblin-surprised`; a `moblin` with
 no `secret=` is left out, so no empty secret is ever recorded). When a player on the ground comes
 within 56 px he jumps with surprise, everyone stops, and his cards play over the cave (a box at the
-top, each read out, OK = JUMP to go on): `...!` / `YOU FOUND ME?!` / `I'LL SHOW YOU A SECRET PATH...
+top, each headed `MOBLIN:` like other NPCs' cards (0.4.35), read out, OK = JUMP to go on): `...!` / `YOU FOUND ME?!` / `I'LL SHOW YOU A SECRET PATH...
 AS LONG AS YOU DON'T TELL ANYONE.` / `IT'S A SECRET TO EVERYBODY.` (the `secret` jingle). Then:
 
-- **Campaign** (`Game.campaignTopSecret`): **2-1 counts as cleared** (`clearLevel`: its normal road
-  to 2-2) **and** the secret `bonus-2` is found (`secretExit`: the road to the bonus node). This is
-  the one exit that opens both (owner decision); the map draws both roads in, like the 1-2 warp
-  spot's (`pendingReveal` `smb-2:2-1>2-2`, `smb-2:2-2`, `smb-2:2-1>bonus-2`, `smb-2:bonus-2`), and
-  2-1 reads "World 2-1, cleared, secret exit found". 2-1 shows the secret-exit dot from the start:
+- **Campaign** (`Game.campaignTopSecret`): the secret `bonus-2` is found (`secretExit`: the road
+  to the bonus node, `pendingReveal` `smb-2:2-1>bonus-2`, `smb-2:bonus-2`) and nothing else: 2-1 is
+  not cleared and 2-2 opens only from its flagpole (0.4.35, owner; 0.4.10 to 0.4.34 cleared 2-1
+  too). 2-1 reads "World 2-1, open, secret exit found". 2-1 shows the secret-exit dot from the start:
   `map/secret-exits.ts` counts an area entity with a `secret` prop (the Moblin) as a way out.
 - Elsewhere (level select, `?level=2-1-cave`) play goes on to `next` (2-2); a play-test ends.
 

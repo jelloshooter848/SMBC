@@ -13,6 +13,7 @@ import {
   STATUS_BAR_Y,
 } from '../hud/smb3-status';
 import { drawHud } from '../hud/hud';
+import { drawSmb3HeroStats } from '../hud/smb3-hero-panel';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
 import type { CharacterDef } from '../characters/character';
@@ -33,7 +34,7 @@ import { playLevelBeat } from '../story/level-beats';
 import { playCastleRemark } from '../story/castle-remark';
 import { STORY_CRYSTAL_BALL_PAGES } from '../story/script';
 import { partnerNearSaid, talkToPartner } from '../story/partners';
-import { abilityHint } from './hints';
+import { abilityHint, controlScheme } from './hints';
 import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
 import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
 
@@ -58,7 +59,8 @@ export const MOBLIN_CARDS: readonly (readonly string[])[] = [
   ['YOU FOUND ME?!'],
   ["I'LL SHOW YOU A SECRET", 'PATH... AS LONG AS YOU', "DON'T TELL ANYONE."],
   ["IT'S A SECRET TO", 'EVERYBODY.'],
-];
+  // Named like every other NPC's card (0.4.35): the speaker, a blank line, the words.
+].map((lines) => ['MOBLIN:', '', ...lines]);
 
 /** Said when a hidden path's block is bumped (World.layPath). */
 export const PATH_SAID = 'A path of clouds appears.';
@@ -99,6 +101,9 @@ export class LevelScene implements Scene {
     // tests (no GameDeps.freshSeeds) keep the level's fixed seed.
     const seed = start.seed ?? (game.deps.freshSeeds === true ? freshSeed() : levelSeed(level));
     this.world = new World(level, game.ctx, game.state, { ...start, seed });
+    // The TALK prompt over a captive or a partner names its key ("TALK (UP)"); on touch "TALK",
+    // the button it is then (0.4.35).
+    this.world.talkHint = (verb) => fontText(abilityHint(game, verb, 'up'));
     // Campaign play: brainwashed heroes wait in some rooms until freed on this file.
     if (game.campaign)
       this.world.captives = {
@@ -235,7 +240,9 @@ export class LevelScene implements Scene {
         if (this.world.storyMode) talkToPartner(game, this, ev.who);
         break;
       case 'partner-near':
-        game.deps.announcer?.say(partnerNearSaid(ev.who, ev.player, this.world.coop));
+        game.deps.announcer?.say(
+          partnerNearSaid(ev.who, ev.player, this.world.coop, controlScheme(game) === 'touch'),
+        );
         break;
       case 'crystal-ball':
         this.takeCrystalBall(ev.next);
@@ -255,7 +262,9 @@ export class LevelScene implements Scene {
       case 'captive-near': {
         const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
         const who = this.world.coop ? `Player ${ev.player + 1}: ` : '';
-        game.deps.announcer?.say(`${who}${name}. Up to talk.`);
+        game.deps.announcer?.say(
+          `${who}${name}. ${controlScheme(game) === 'touch' ? 'Press TALK' : 'Up to talk'}.`,
+        );
         break;
       }
       case 'pipe': {
@@ -405,8 +414,8 @@ export class LevelScene implements Scene {
   /**
    * The Moblin in 2-1's hidden cave saw a player (objects/moblin.ts): his cards over the frozen
    * cave, one after another (each read out, OK to go on), the secret jingle on the last; then in
-   * the campaign the Top Secret exit (Game.campaignTopSecret: 2-1 cleared and `secret` found, so
-   * both roads draw in on the map). A play-test ends; elsewhere play goes on to `next`.
+   * the campaign the Top Secret exit (Game.campaignTopSecret: `secret` found, only its road draws
+   * in on the map; 2-1 is not cleared). A play-test ends; elsewhere play goes on to `next`.
    */
   private meetMoblin(secret: string, next: string | null): void {
     const game = this.game;
@@ -424,7 +433,7 @@ export class LevelScene implements Scene {
       const lines = MOBLIN_CARDS[i] as readonly string[];
       const last = i === MOBLIN_CARDS.length - 1;
       if (last) audio.sfx('secret');
-      game.deps.announcer?.say(`${lines.join(' ')} ${last ? 'OK to continue.' : 'OK.'}`);
+      game.deps.announcer?.say(`${lines.filter(Boolean).join(' ')} ${last ? 'OK to continue.' : 'OK.'}`);
       game.scenes.push(
         new CardScene(
           game,
@@ -469,6 +478,9 @@ export class LevelScene implements Scene {
       const ctx = this.game.ctx;
       const status = smb3Status(this.game.state, this.world.player, time);
       drawSmb3Status(r, ctx.assets, status, this.world.frame, ctx.reduceFlashing);
+      // The heroes' own hit points, bars, hearts and tool belt in a box of the bar, over its
+      // empty card slots (never over the deck, where Larry's ship pins the hero to the left).
+      drawSmb3HeroStats(r, ctx.assets, this.game.state, this.world.players);
       this.drawItemCaption(r);
       this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0, {
         shiftY: SMB3_WORLD_SHIFT,

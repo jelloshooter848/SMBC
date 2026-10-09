@@ -40,7 +40,7 @@ export class TrainingQuestionScene extends MenuScene {
   ) {
     super(
       game,
-      fontText(`${hero.hudName} TRAINING?`),
+      fontText(`${hero.name} TRAINING?`),
       [
         {
           label: 'Yes',

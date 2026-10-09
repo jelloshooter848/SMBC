@@ -760,7 +760,9 @@ describe("the Moblin's cave", () => {
   });
 
   it("his cards fit a card and the font: '...!', 'YOU FOUND ME?!', the secret path, the secret", () => {
-    expect(MOBLIN_CARDS.map((c) => c.join(' '))).toEqual([
+    // Each card names the speaker like every other NPC's (0.4.35): 'MOBLIN:', a blank line, the words.
+    for (const card of MOBLIN_CARDS) expect(card.slice(0, 2)).toEqual(['MOBLIN:', '']);
+    expect(MOBLIN_CARDS.map((c) => c.slice(2).join(' '))).toEqual([
       '...!',
       'YOU FOUND ME?!',
       "I'LL SHOW YOU A SECRET PATH... AS LONG AS YOU DON'T TELL ANYONE.",
@@ -854,32 +856,28 @@ function readCards(h: H) {
   }
 }
 
-describe('campaign: the Moblin clears 2-1 and opens the road to the Top Secret Area', () => {
-  it('cards, then the map: 2-1 cleared AND bonus-2 found, both roads drawn in, saved', () => {
+describe('campaign: the Moblin opens only the road to the Top Secret Area', () => {
+  it('cards, then the map: bonus-2 found and its road drawn in; 2-1 NOT cleared, 2-2 stays shut (0.4.35)', () => {
     const h = makeGame();
     onWorld2(h);
     h.game.startLevel(getLevel('2-1-cave'), { mode: 'stand', time: 250 });
     h.step();
     expect(h.top()).toBeInstanceOf(LevelScene);
     holdUntil(h, ['right'], () => h.top() instanceof CardScene, 400);
-    expect(h.said.at(-1)).toBe('...! OK.');
+    expect(h.said.at(-1)).toBe('MOBLIN: ...! OK.');
     readCards(h);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     const prog = h.game.mapProgress;
-    expect(prog.cleared).toContain('2-1');
+    // A secret exit opens its own road only: the normal road to 2-2 waits for the flagpole.
+    expect(prog.cleared).not.toContain('2-1');
     expect(prog.secrets).toEqual(['bonus-2']);
     expect(prog.position).toEqual({ page: 'smb-2', node: '2-1' });
-    expect(h.game.pendingReveal).toEqual([
-      'smb-2:2-1>2-2',
-      'smb-2:2-2',
-      'smb-2:2-1>bonus-2',
-      'smb-2:bonus-2',
-    ]);
+    expect(h.game.pendingReveal).toEqual(['smb-2:2-1>bonus-2', 'smb-2:bonus-2']);
     expect(loadSave(1)).toMatchObject({ secrets: ['bonus-2'], position: { page: 'smb-2', node: '2-1' } });
-    expect(loadSave(1)?.cleared).toContain('2-1');
+    expect(loadSave(1)?.cleared).not.toContain('2-1');
     h.until(() => map(h).mode === 'idle', 1600);
     expect(h.game.pendingReveal).toEqual([]);
-    expect(isOpen(prog, w2(), '2-2')).toBe(true);
+    expect(isOpen(prog, w2(), '2-2')).toBe(false);
     expect(isOpen(prog, w2(), 'bonus-2')).toBe(true);
     expect(
       isPathOpen(
@@ -888,9 +886,9 @@ describe('campaign: the Moblin clears 2-1 and opens the road to the Top Secret A
         w2().paths.find((p) => p.to === 'bonus-2')!,
       ),
     ).toBe(true);
-    expect(h.said).toContain('World 2-2, open. Top Secret Area, open');
-    expect(map(h).nodeLabel(node('2-1'))).toMatch(/^World 2-1, cleared, secret exit found/);
-    expect(clearedMainLevels(prog)).toBe(5);
+    expect(h.said).toContain('Top Secret Area, open');
+    expect(map(h).nodeLabel(node('2-1'))).toMatch(/^World 2-1, open, secret exit found/);
+    expect(clearedMainLevels(prog)).toBe(4);
   });
 
   it('touching the pole instead clears 2-1 only: the Top Secret road stays hidden', () => {

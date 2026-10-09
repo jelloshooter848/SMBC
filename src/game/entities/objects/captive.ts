@@ -5,6 +5,7 @@ import { Entity, type View } from '../entity';
 import { Player } from '../player';
 import { startHp, type CharacterDef } from '../../characters/character';
 import type { World } from '../../world/world';
+import { drawTalkPrompt } from './talk-prompt';
 
 /** How close (px, centre to centre) a player on the ground must stand to talk. */
 export const TALK_REACH_PX = 24;
@@ -94,18 +95,8 @@ export class Captive extends Entity {
     const x = toPx(this.body.x) - view.camX - (s.flip ? w - bw - s.offsetX : s.offsetX) + sway;
     const top = toPx(this.body.y) - s.offsetY;
     r.sprite(sheet, s.frame, x, top, s.flip);
-    if (!this.prompt) return;
-    // TALK with a small up arrow: up talks.
-    const font = view.assets.sheet('font');
-    const cx = toPx(this.centerX) - view.camX;
-    const y = Math.max(0, top - 12);
-    const tx = cx - 16 + 4;
-    r.text(font, 'TALK', tx, y);
-    const ax = tx - 7;
-    r.rect(ax + 2, y, 1, 1, '#fcfcfc');
-    r.rect(ax + 1, y + 1, 3, 1, '#fcfcfc');
-    r.rect(ax, y + 2, 5, 1, '#fcfcfc');
-    r.rect(ax + 2, y + 3, 1, 4, '#fcfcfc');
+    // TALK, with its key: up (or the TALK button) talks.
+    if (this.prompt) drawTalkPrompt(r, view, 'TALK', toPx(this.centerX) - view.camX, top);
   }
 }
 

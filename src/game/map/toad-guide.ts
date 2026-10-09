@@ -72,9 +72,13 @@ export function dueScenes(g: GuideInput): ToadScene[] {
 
 /** Top of Toad's box: just under the map's header bar. */
 export const TOAD_BOX_Y = 28;
-/** Toad's walking speed (px per frame) and where he starts, off the left edge. */
+/**
+ * Toad's walking speed (px per frame), where he starts, off the left edge, and where he leaves
+ * to: forward, off the right edge (0.4.35, owner: never back the way he came).
+ */
 export const TOAD_WALK_SPEED = 2;
 export const TOAD_OFF_X = -18;
+export const TOAD_EXIT_X = 258;
 
 /** What the guide asks of the map scene. */
 export interface GuideHooks {
@@ -91,7 +95,7 @@ const SKIP_KEYS: readonly Action[] = ['attack'];
 
 /**
  * Plays a list of Toad's scenes over the map: walks Toad in when a scene is major (he then stays
- * until the last scene, and walks back off), shows each page in the box at the top, announced.
+ * until the last scene, and walks on off to the right), shows each page in the box at the top, announced.
  * `stand` is where Toad stops (top-left of his 16x16 frame, feet on the hero's ground line).
  */
 export class ToadGuide {
@@ -115,7 +119,7 @@ export class ToadGuide {
   }
 
   /**
-   * Every page is over and Toad is walking back off: the map is the player's again while he goes
+   * Every page is over and Toad is walking on off to the right: the map is the player's again while he goes
    * (the map keeps updating and drawing him until he is off stage, `done`).
    */
   get leaving(): boolean {
@@ -138,7 +142,7 @@ export class ToadGuide {
     if (this.tx === null) return null;
     const walking = this.phase === 'in' || this.phase === 'out';
     const frame = walking ? `toad-map-${(this.t >> 3) & 1}` : `toad-map-${(this.t >> 4) & 1}`;
-    return { frame, x: Math.round(this.tx), y: this.stand.y, flip: this.phase === 'out' };
+    return { frame, x: Math.round(this.tx), y: this.stand.y, flip: false };
   }
 
   /** Starts the next scene with pages (marking every scene passed on the way), or ends. */
@@ -188,9 +192,9 @@ export class ToadGuide {
         return;
       }
       case 'out': {
-        const x = (this.tx ?? TOAD_OFF_X) - TOAD_WALK_SPEED;
+        const x = (this.tx ?? TOAD_OFF_X) + TOAD_WALK_SPEED;
         this.tx = x;
-        if (x <= TOAD_OFF_X) {
+        if (x >= TOAD_EXIT_X) {
           this.tx = null;
           this.phase = 'done';
         }

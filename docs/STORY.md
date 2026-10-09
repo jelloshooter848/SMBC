@@ -371,7 +371,7 @@ freed hero talks**, a few pages in their own voice, before the freed card. These
 reveals a bit more.
 
 **The map's shadows** stay: a level cleared with its hero still hidden shows the hero's shadow by its node. Its hint
-line goes back to the generic `SOMEONE IS HIDING IN THIS LEVEL` (Toad's per-hero lines are removed). After Larry's
+line says nothing (0.4.35, owner: the shadow is the hint; Toad's per-hero lines are removed). After Larry's
 crystal ball (2.7) the shadow shows from the first arrival in a world.
 
 ### 2.3a The fake Bowsers: the disguise always comes off
@@ -666,9 +666,9 @@ STILL HAVEN'T FOUND LUIGI!
 ```text
 TOAD:
 
-THAT VILLAGER IN 1-1 SAW
-WHERE HE WENT. LET'S GO
-BACK AND LOOK!
+THAT VILLAGER JUST DOWN
+THE ROAD SAW WHERE HE WENT.
+LET'S GO BACK AND LOOK!
 ```
 
 The gate scene. Bowser's cutaway: he is admiring the wand when its star **sputters**, a weak puff of grey smoke.
@@ -730,9 +730,10 @@ PLEASE HELP!
 ```text
 HEALER:
 
-HE WAS LAST SEEN NEAR 2-1.
-AN OLD MAN THERE KNOWS
-THINGS. HE ALWAYS DOES.
+HE WAS LAST SEEN ON THE
+GREAT FIELD. AN OLD MAN IN
+A CAVE THERE KNOWS THINGS.
+HE ALWAYS DOES.
 ```
 
 ```text
@@ -903,8 +904,8 @@ TOAD:
 
 THE WAY ON IS STILL SEALED,
 AND LINK IS STILL UNDER THE
-SPELL. THAT OLD MAN IN 2-1
-KNOWS SOMETHING, I BET.
+SPELL. THE OLD MAN IN THE
+FIELD CAVE KNOWS, I BET.
 ```
 
 The gate scene. Bowser's cutaway: the wand **sparks** in his face and singes his eyebrows (two little puffs of smoke
@@ -967,8 +968,8 @@ PLEASE HELP! BEEP!
 LAB ROBOT:
 
 HIS LAST SIGNAL CAME FROM
-3-1. DR. LIGHT IS THERE,
-TRACKING IT.
+THE RADIO MASTS. DR. LIGHT
+IS OUT THERE, TRACKING IT.
 ```
 
 After Mega Man is freed (NEW, after-freed: talking to the lab robot again plays this page instead):
@@ -1084,9 +1085,9 @@ SWAMP. HA!
 TOAD:
 
 STILL SEALED. MEGA MAN MUST
-STILL BE OUT THERE. DR.
-LIGHT IN 3-1 IS TRACKING
-HIS SIGNAL!
+BE OUT THERE. DR. LIGHT IS
+TRACKING HIS SIGNAL OUT BY
+THE RADIO MASTS!
 ```
 
 The gate scene. Bowser's cutaway: the wand **fires by itself**; a bolt blasts his own portrait off the wall behind
@@ -1150,16 +1151,17 @@ BY SOMEONE. PLEASE HELP!
 SCIENTIST:
 
 HER LAST READING CAME FROM
-DEEP UNDER 4-2. THERE'S AN
-OLD BIRD STATUE IN THERE.
+DEEP IN THE CAVERNS. THERE'S
+AN OLD BIRD STATUE DOWN
+THERE.
 ```
 
 ```text
 SCIENTIST:
 
 ALSO, A KOOPA AIRSHIP KEEPS
-CIRCLING 4-2. KEEP AN EYE
-ON THE SKY!
+CIRCLING OVER THE CAVERNS.
+KEEP AN EYE ON THE SKY!
 ```
 
 After Samus is freed (NEW, after-freed: talking to the scientist again plays this page instead):
@@ -1331,8 +1333,8 @@ TOAD:
 
 STILL SEALED! WE NEED THE
 HUNTER. THAT BIRD STATUE
-DOWN IN 4-2 MUST KNOW
-WHERE SHE IS.
+DOWN IN THE CAVERNS MUST
+KNOW WHERE SHE IS.
 ```
 
 The gate scene. Bowser's cutaway: the wand **smokes** and won't stop; he shakes it, glares at it, and blames his
@@ -1395,9 +1397,9 @@ PLEASE HELP!
 MERCHANT:
 
 HE WAS LAST SEEN IN THE
-OLD CASTLE, 5-4. A
-TOWNSPERSON WAITS AT ITS
-GATE.
+OLD CASTLE AT THE END OF
+THE ROAD. A TOWNSPERSON
+WAITS AT ITS GATE.
 ```
 
 ```text
@@ -1537,7 +1539,7 @@ TOAD:
 
 STILL SEALED. THE VAMPIRE
 HUNTER! THE TOWNSPERSON AT
-THE GATE OF 5-4 SAID
+THE OLD CASTLE'S GATE SAID
 SOMETHING ABOUT A LIFT...
 ```
 
@@ -1599,7 +1601,7 @@ SOMEONE. PLEASE HELP!
 ELDER:
 
 HE WAS LAST SEEN IN THE
-CITY STREETS OF 6-2. AN
+CITY STREETS AT NIGHT. AN
 AMERICAN AGENT IS ON HIS
 TRAIL.
 ```
@@ -1722,8 +1724,8 @@ HE KNOWS YOU'RE COMING.
 TOAD:
 
 STILL SEALED. WE NEED THE
-NINJA. THAT AGENT AT THE
-START OF 6-2 WAS TRACKING
+NINJA. THAT AGENT IN THE
+CITY STREETS WAS TRACKING
 HIM!
 ```
 
@@ -1785,7 +1787,8 @@ SOMEONE. PLEASE HELP!
 ```text
 SERGEANT:
 
-HE WAS LAST SEEN AT 7-3.
+HE WAS LAST SEEN IN THE
+DEEP JUNGLE, BY THE BRIDGES.
 HIS PARTNER LANCE IS
 WAITING THERE. MOVE OUT!
 ```
@@ -1893,8 +1896,8 @@ TOAD:
 
 STILL SEALED. WE NEED THE
 SOLDIER. HIS PARTNER LANCE
-IS WAITING AT THE START OF
-7-3.
+IS WAITING IN THE DEEP
+JUNGLE, BY THE BRIDGES.
 ```
 
 The gate scene. Bowser's cutaway: the wand **shakes wildly**, throwing sparks everywhere; Bowser holds it with both
@@ -1966,7 +1969,7 @@ PLEASE HELP!
 MINER:
 
 THE BOY WENT INTO THE KING'S
-CASTLE, 8-4, AFTER HIS FROG.
+OWN CASTLE AFTER HIS FROG.
 THAT FROG TAKES THE PIPES
 NOBODY ELSE DOES.
 ```
@@ -2156,7 +2159,7 @@ TOAD:
 
 THE LAST SPELL! THE TANK IS
 STILL UNDER IT. HER PILOT IS
-LOST SOMEWHERE IN 8-4.
+LOST IN THE KING'S CASTLE.
 ```
 
 - **Toad works out the note** (a major scene: Toad walks in). **Trigger:** the first time the World 8 map shows

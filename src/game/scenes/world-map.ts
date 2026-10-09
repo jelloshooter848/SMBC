@@ -42,7 +42,7 @@ import {
 import { Player } from '../entities/player';
 import { startHp } from '../characters/character';
 import { MenuScene, type MenuItem } from './menu';
-import { abilityHint } from './hints';
+import { abilityHint, boundKey, controlScheme } from './hints';
 import { OptionsScene } from './options';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
@@ -82,7 +82,7 @@ import {
 } from '../map/world-gate';
 import { drawCrack, drawSeal, GateScene } from '../map/gate-scene';
 import { LOCAL_SPRITES } from '@content/sprites/locals';
-import { sealedHint, type Page } from '../story/script';
+import { HINT_COLS, sealedHint, welcomeHint, type Page } from '../story/script';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -103,11 +103,10 @@ export const MAP_HINT_Y = 226;
 
 /**
  * A level node hiding a captive hero the file has not freed, once that level is cleared: the
- * announcer's line and the hint line (map/captives.ts; it never says where in the level). Since
- * 0.4.23 the campaign says these too (Toad's per-hero lines are gone, docs/STORY.md 2.3).
+ * announcer describes the faint shadow by the node, as the eye sees it (map/captives.ts). No hint
+ * line says someone is hiding (0.4.35, owner: too on the nose); the shadow is the hint.
  */
-export const HIDING_SAID = 'Someone is hiding in this level.';
-export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
+export const HIDING_SAID = 'A faint shadow stands by it.';
 /** The hidden hero's slow shimmer: one cycle, and the frames of it the faint glow shade shows. */
 export const HIDING_SHIMMER_FRAMES = 360;
 export const HIDING_GLOW_FRAMES = 30;
@@ -591,7 +590,7 @@ export class WorldMapScene implements Scene {
     this.afterStory();
   }
 
-  /** Outside the `story` mode: Toad walking back off after his last page, until he is gone. */
+  /** Outside the `story` mode: Toad walking on off to the right after his last page, until he is gone. */
   private updateToadLeaving(): void {
     const g = this.toad;
     if (!g || this.mode === 'story') return;
@@ -781,13 +780,6 @@ export class WorldMapScene implements Scene {
       if (m.hint === 'trophy' && c.delete(m.def.id)) this.trophyBursts.set(m.def.id, this.t);
   }
 
-  /** The node the hero stands still on hides a hero not freed yet whose level is cleared. */
-  private hidingHere(): boolean {
-    if (this.mode !== 'idle') return false;
-    const n = this.nodeById(this.node);
-    return !!n && this.isHiding(n);
-  }
-
   private isHiding(n: MapNode): boolean {
     return this.view(this.page).heroes.some((m) => m.node === n && m.hint === 'silhouette');
   }
@@ -836,7 +828,8 @@ export class WorldMapScene implements Scene {
     const sealed = this.sealedHintAt(n);
     if (sealed) text += `. ${spoken(sealed)}`;
     const local = this.localHere(n) ? welcomeOf(this.page.id) : null;
-    if (local) text += `. ${local.said}. Up to talk`;
+    if (local)
+      text += `. ${local.said}. ${controlScheme(this.game) === 'touch' ? 'Press TALK' : 'Up to talk'}`;
     if (this.isHiding(n)) text += `. ${HIDING_SAID}`;
     return text;
   }
@@ -869,6 +862,19 @@ export class WorldMapScene implements Scene {
   }
 
   /** Node `n` is this page's start with a local standing by it (worlds 2-8; story only). */
+  /**
+   * The hint line on a start node with a local: TALK and its key, "TALK (UP) TO THE HEALER"
+   * (0.4.35: the TALK prompt as a button); on touch, or when the key's name would not fit, the
+   * bare "TALK TO THE HEALER" (on touch A is the TALK button then).
+   */
+  private localTalkHint(): string {
+    const w = welcomeOf(this.page.id);
+    if (!w) return localHint(this.page.id);
+    const key = boundKey(this.game, 'up');
+    const keyed = key ? fontText(`TALK (${key}) TO THE ${w.local}`) : '';
+    return keyed && keyed.length <= HINT_COLS ? keyed : welcomeHint(w.local);
+  }
+
   private localHere(n: MapNode): boolean {
     return storyOn(this.game) && localNode(this.progress, this.page) === n;
   }
@@ -904,8 +910,8 @@ export class WorldMapScene implements Scene {
 
   /**
    * The hint line's text while the hero stands still on a warp node, on the node a locked world
-   * exit with a hint leaves from (Lost 8-4: World 9's count), or on a cleared level that still
-   * hides a hero (HIDING_HINT); '' otherwise.
+   * exit with a hint leaves from (Lost 8-4: World 9's count); '' otherwise (a level hiding a
+   * hero says nothing: its shadow by the node is the only hint, 0.4.35).
    */
   get hintLine(): string {
     const n = this.warpHere();
@@ -923,11 +929,8 @@ export class WorldMapScene implements Scene {
     // S3: a sealed road on (SEALED - FREE <NAME> FIRST); a world's local on its start node.
     const sealed = this.sealedHintHere();
     if (sealed) return sealed;
-    if (here && this.localHere(here)) return localHint(this.page.id);
-    return (
-      exitHint(this.progress, this.page, this.node, this.unlockAll) ||
-      (here && this.hidingHere() ? HIDING_HINT : '')
-    );
+    if (here && this.localHere(here)) return this.localTalkHint();
+    return exitHint(this.progress, this.page, this.node, this.unlockAll);
   }
 
   update(input: InputFrame, inputs: readonly InputFrame[] = [input]): void {
@@ -981,9 +984,10 @@ export class WorldMapScene implements Scene {
       !isBonusArea(here) &&
       this.game.bonusOpen &&
       isOpen(this.progress, this.page, here.id, this.unlockAll);
+    const talk = !!here && this.localHere(here);
     return {
       ...NO_TOUCH_BUTTONS,
-      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : null,
+      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : talk ? 'TALK' : null,
       start: 'MENU',
       special: inventoryAvailable(this.game) ? 'ITEMS' : null,
       ...(here?.kind === 'game' ? arenaPadTouch(this.game, here) : {}),
@@ -1104,6 +1108,11 @@ export class WorldMapScene implements Scene {
         this.game.ctx.audio.sfx('bump');
         this.say(this.bonusShutSaid());
       }
+      return;
+    }
+    // A start node's local: JUMP (on touch the TALK button) talks, as up does (0.4.35).
+    if (input.pressed('jump') && here && this.localHere(here) && !here.level) {
+      this.talkToLocal();
       return;
     }
     if (input.pressed('jump') && here?.kind === 'game') {

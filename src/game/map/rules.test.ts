@@ -33,6 +33,7 @@ import {
   chapterGated,
 } from './rules';
 import { saveProgress, type Progress } from '@engine/save/progress';
+import { MAP_PAGES } from '@content/worldmap';
 
 /** A straight road like the placeholder pages: start, W-1..W-3, the W-4 castle, a hidden bonus off W-2. */
 function straightPage(world: number): WorldMapPage {
@@ -322,6 +323,38 @@ describe('secret exits (Super Mario World style: each exit opens its own road)',
     expect(isExitOpen(p, page, page.exits[0]!)).toBe(false);
   });
 });
+
+describe('every campaign secret exit opens only its own road (0.4.35: 2-1 opened 2-2)', () => {
+  const roads = MAP_PAGES.flatMap((page) =>
+    page.paths
+      .filter((p) => node0(page, p.from)?.level && pathExit(page, p) !== 'normal')
+      .map((p) => ({ page, p })),
+  );
+
+  it('there are some (1-2 pipe, 2-1 Moblin, 4-2 crystal ball, ...)', () => {
+    const froms = roads.map(({ page, p }) => node0(page, p.from)!.level);
+    expect(froms).toEqual(expect.arrayContaining(['1-2', '2-1', '4-2']));
+  });
+
+  it.each(roads.map(({ page, p }) => [pathId(p), page, p] as const))(
+    '%s: the secret leaves the level uncleared and its normal roads shut',
+    (_id, page, road) => {
+      const prog = newMapProgress();
+      prog.pages = MAP_PAGES.map((pg) => pg.id);
+      const key = pathExit(page, road).slice('secret:'.length);
+      const level = node0(page, road.from)!.level!;
+      secretExit(prog, level, key, (id) => ({ id, parent: null }) as LevelData);
+      expect(prog.cleared).toEqual([]);
+      expect(prog.secrets).toEqual([key]);
+      for (const q of page.paths.filter((x) => x.from === road.from && pathExit(page, x) === 'normal'))
+        expect(isPathOpen(prog, page, q), pathId(q)).toBe(false);
+    },
+  );
+});
+
+function node0(page: WorldMapPage, id: string): MapNode | undefined {
+  return page.nodes.find((n) => n.id === id);
+}
 
 describe('nextStep', () => {
   // start (2,3) ─┐ 1-1 at (5,6) via a bend; 1-1 → 1-2 goes up then right then down.

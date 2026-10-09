@@ -277,6 +277,30 @@ const buster1 = [
   '........',
 ];
 
+/*
+ * Mega Man's full charge shot (0.4.35: a big blast like the original Crossover's, MM4's full
+ * charge): a white-hot core in a gold shell, travelling left (flipped when fired right), its
+ * energy streaming back in a tail. 24x16; the second frame swaps the shell's golds to shimmer.
+ */
+const chargeShot0 = [
+  '........................',
+  '.....0000...............',
+  '...00555500000..........',
+  '..0556666555550000......',
+  '.056611116666655550000..',
+  '.05611111111666665555500',
+  '0561111111111116666665..',
+  '0561111111111111666650..',
+  '0561111111111111666650..',
+  '0561111111111116666665..',
+  '.05611111111666665555500',
+  '.056611116666655550000..',
+  '..0556666555550000......',
+  '...00555500000..........',
+  '.....0000...............',
+  '........................',
+];
+
 const swordBeam = [
   '........',
   '.....a..',
@@ -1839,6 +1863,8 @@ export const itemsDef: SpriteDef = {
     firebar,
     'buster-0': buster0,
     'buster-1': buster1,
+    'charge-shot-0': chargeShot0,
+    'charge-shot-1': swapColors(chargeShot0, { '5': '6', '6': '5' }),
     'sword-beam': swordBeam,
     'bowser-flame-0': bowserFlame0,
     'bowser-flame-1': bowserFlame1,

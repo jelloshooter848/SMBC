@@ -114,6 +114,8 @@ export const sfx: Sfx[] = [
   { id: 'sword', pulse: '@1 v9 q8 x1 p12 o5 c32 p-12 o6 c32', noise: 'v10 x1 l32 n1 n2 n4' },
   // Short pew.
   { id: 'buster', pulse: '@0 v10 q8 x1 p-12 o6 c32.' },
+  // Mega Man's full charge shot: a fat low blast under a falling pew, with a rush of noise.
+  { id: 'charge-shot', pulse: '@0 v13 q8 x1 p-10 o5 c16 p-8 o4 g16', noise: 'v11 x1 l32 n3 n5 n7 n9' },
   // Player hurt: harsh low buzz on the narrowest duty plus grit.
   { id: 'hit', pulse: '@3 v12 q8 x1 p-6 o2 e16 p-6 o2 c16', noise: 'v9 x1 l16 n12 n13' },
   // Small thud.

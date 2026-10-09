@@ -1,6 +1,7 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
 import { SCORE_MAX } from '../hud/hud';
+import { fontText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
@@ -333,6 +334,18 @@ const AUTO_WALK_INPUT: InputFrame = {
  */
 export const FALL_IN_STEER_Y = 3 * 16;
 
+/** `input` without SPECIAL: in reach of someone to talk to, it is the TALK button (0.4.35). */
+function withoutSpecial(input: InputFrame): InputFrame {
+  return {
+    held: (a) => a !== 'special' && input.held(a),
+    pressed: (a) => a !== 'special' && input.pressed(a),
+    released: (a) => a !== 'special' && input.released(a),
+    bufferedJump: (w) => input.bufferedJump(w),
+    consumeJumpBuffer: () => input.consumeJumpBuffer(),
+    dirX: input.dirX,
+  };
+}
+
 /** A player's input with left and right taken out (the straight drop of a fall arrival). */
 function withoutSteering(input: InputFrame): InputFrame {
   return {
@@ -357,6 +370,8 @@ const ANCHOR_ROOM = 32;
 
 /** No hero's body is wider than a tile (characters' hitboxes; simon-crypt.test.ts checks). */
 const MAX_HERO_W = 16;
+/** Points for a drop taken with nothing to fill (World.collectPickup). */
+export const PICKUP_FULL_SCORE = 200;
 
 /**
  * Whether fire bar (tx, ty) of `n` balls can sweep anything spanning x0..x1 (px, end exclusive):
@@ -374,6 +389,8 @@ function barSweepX(tx: number, n: number, x0: number, x1: number): boolean {
 export class World {
   /** Points scored float up as a popup (WorldStart.scorePopups). */
   readonly scorePopups: boolean;
+  /** The TALK prompt's words over someone in reach (View.talkHint), set by LevelScene. */
+  talkHint: ((verb: string) => string) | null = null;
   readonly map: TileMap;
   readonly camera: Camera;
   readonly players: Player[] = [];
@@ -1084,10 +1101,7 @@ export class World {
         if (e.item === 'clock') this.collectClock(e);
         else if (e.item !== 'poison') p.def.behaviour.onPowerUp(p, e.item, this);
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
-      else if (e instanceof Pickup && !p.def.behaviour.onPickup?.(p, e.item, this)) {
-        const pb = p.body;
-        this.spawn(new Pickup(pb.x + (pb.w >> 1), pb.y + pb.h, e.item));
-      }
+      else if (e instanceof Pickup) this.collectPickup(p, e);
     }
   }
 
@@ -1102,6 +1116,19 @@ export class World {
   }
 
   /* ---------- Scoring ---------- */
+
+  /**
+   * `p` takes dropped pickup `e`. Drops are always collectible (owner decision, 0.4.35): the
+   * hero's onPickup uses it (filling what it fills, or a hidden reserve for a power not owned
+   * yet); when there is nothing to fill (full, or a drop no use to this hero) it gives
+   * PICKUP_FULL_SCORE points instead. Either way it is gone.
+   */
+  collectPickup(p: Player, e: Pickup): void {
+    e.destroy();
+    if (p.def.behaviour.onPickup?.(p, e.item, this)) return;
+    this.addScore(PICKUP_FULL_SCORE, e.body.x, e.body.y - px(8));
+    this.audio.sfx('coin');
+  }
 
   addScore(n: number, x?: number, y?: number): void {
     // Capped like the original's StatManager.addPoints (SCORE_MAX = 9999999).
@@ -1223,6 +1250,7 @@ export class World {
       }
       if (this.autoWalk) input = AUTO_WALK_INPUT;
       else if (this.vineArrival && p.vine) input = AUTO_CLIMB_INPUT;
+      else if (this.talkTarget(p)) input = withoutSpecial(input);
       p.inWater = p.body.y + (p.body.h >> 1) >= this.waterTop;
       this.grabVines(p, input);
       this.grabStairs(p, input);
@@ -1396,10 +1424,31 @@ export class World {
     return this.vineArrival !== null;
   }
 
-  /** Up pressed by a player within a captive's reach: a `talk` event; a partner's: a `partner` event (one a frame). */
+  /**
+   * Someone `p` can talk to now (a captive hero or a partner within reach), or null. In reach,
+   * SPECIAL is the TALK button (0.4.35: levelTouchLabels shows it, the hero's own special waits).
+   */
+  talkTarget(p: Player): Captive | Partner | null {
+    if (p.vine) return null;
+    for (const e of this.entities)
+      if ((e instanceof Captive || e instanceof Partner) && e.alive && e.inReach(p)) return e;
+    return null;
+  }
+
+  /** The TALK button's word for `p` now (READ for the bird statue), or null out of reach. */
+  talkVerb(p: Player): string | null {
+    const to = this.talkTarget(p);
+    return to instanceof Partner ? to.script.verb : to ? 'TALK' : null;
+  }
+
+  /**
+   * Up (or SPECIAL, the TALK button) pressed by a player within a captive's reach: a `talk`
+   * event; a partner's: a `partner` event (one a frame).
+   */
   private checkTalk(inputs: InputFrame[]): void {
     for (const [i, p] of this.players.entries()) {
-      if (!(inputs[i] ?? NO_INPUT).pressed('up') || p.vine) continue;
+      const input = inputs[i] ?? NO_INPUT;
+      if (!(input.pressed('up') || input.pressed('special')) || p.vine) continue;
       const c = this.entities.find((e): e is Captive => e instanceof Captive && e.alive && e.inReach(p));
       if (c) {
         c.prompt = false; // hidden under the dialogue; back on the next update in reach
@@ -2034,7 +2083,7 @@ export class World {
           this.takeHeroItem(p, e);
         }
       } else if (e instanceof Pickup) {
-        if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();
+        if (overlaps(pb, e.body)) this.collectPickup(p, e);
       } else if (e instanceof Projectile) this.projectile(p, e);
       else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e, p);
       else if (e instanceof Axe && overlaps(pb, e.body)) {
@@ -2182,7 +2231,9 @@ export class World {
       this.scoreKill(e, src.kind, r);
       if (r === 'hp') this.audio.sfx('hurt-enemy');
       else if (r === 'stun') this.audio.sfx('hurt-enemy');
-      if (!pr.spec.pierce) {
+      // A shot that pierces what it defeats goes on only past a kill.
+      const through = pr.spec.pierce || (pr.spec.pierceDefeat && r !== 'hp' && r !== 'stun');
+      if (!through) {
         pr.burst(this);
         return;
       }
@@ -2881,7 +2932,7 @@ export class World {
       }
       return;
     }
-    const thanks = `THANK YOU ${p.def.hudName}!`;
+    const thanks = `THANK YOU ${fontText(p.def.name)}!`;
     if (s === 30) this.castleText = [thanks];
     const ok = c.at !== undefined && cardContinues(s - c.at, inputs, CASTLE_OK_KEYS);
     const leave = () => {
@@ -2944,6 +2995,7 @@ export class World {
       assets: this.ctx.assets,
       theme,
       reduceFlashing: this.ctx.reduceFlashing,
+      ...(this.talkHint ? { talkHint: this.talkHint } : {}),
     };
     // A restyled theme's hall or skyline behind everything (theme-backdrop.ts).
     drawThemeBackdrop(screen, view);

@@ -14,6 +14,11 @@ export interface View {
   assets: AssetRegistry;
   theme: Theme;
   reduceFlashing: boolean;
+  /**
+   * The TALK (or READ) prompt over someone to talk to, input-aware ("TALK (UP)"; on touch "TALK",
+   * with its button): LevelScene's, through World.talkHint. Bare `verb` without it.
+   */
+  talkHint?: (verb: string) => string;
 }
 
 export type Layer = 'back' | 'main' | 'front';

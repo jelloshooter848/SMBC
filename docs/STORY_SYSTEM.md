@@ -78,15 +78,15 @@ story is a later release).
 
 - **Play order:** the major scenes (the airship crash, the 8-4 rift, Toad's World 1 scene once
   1-0 is cleared or skipped, the fake Bowsers), then the hub / arena extras. Since 0.4.23 Toad has
-  no world entries, hero-joined, all-freed or missed-hero cards (docs/STORY.md 2.14); a shadow's
-  hint line is the generic `SOMEONE IS HIDING IN THIS LEVEL` again.
+  no world entries, hero-joined, all-freed or missed-hero cards (docs/STORY.md 2.14); a shadow
+  has no hint line (0.4.35: the shadow is the hint).
 - **The box:** at the top of the map (`TOAD_BOX_Y` = 28, under the header bar), white-rimmed
   black, the lines centred, the OK prompt after `CARD_GUARD_FRAMES`. OK (jump) or MENU goes on;
   **BACK** (attack) skips the rest of that scene (the next scene still plays). Each page is
   announced; it never goes on by itself (0.4.22, owner note 4: text waits for a key).
 - **Toad walks in** (his `smb3:toad-map-0/1` frames, 2 px a frame from off the left edge to 20 px
   left of the hero) only for the major scenes: his World 1 scene after 1-0, the fake Bowsers
-  (after 1-4), the crash and the rift. He stays until the last scene and walks back off; that
+  (after 1-4), the crash and the rift. He stays until the last scene and walks on off to the right (forward, 0.4.35); that
   walk-off plays over the map once it is already the player's (the reveal draws in, the hero can
   move: `ToadGuide.leaving`), so nobody waits for him to leave.
 - Every scene's beat ids are marked seen as it starts, so leaving mid-scene never replays it.
@@ -121,8 +121,9 @@ A partner is someone from a hero's own game who says how to find that hero
 (`partner x y who=<id> campaign=true` in a map's `[entities]`, optional `dx=` px further right).
 They spawn only while the story plays (`World.storyMode`); `campaign=true` also keeps them asleep
 outside the campaign. Scenery like a captive: no collision, never despawn. A player on the ground
-within `TALK_REACH_PX` on the same floor sees TALK (the statue: READ) with an up arrow, announced
-once on arrival; up talks (`partner` event → `talkToPartner`), and the pages can be read again any
+within `TALK_REACH_PX` on the same floor sees the TALK prompt (the statue: READ), input-aware
+(`TALK (UP)`; on touch TALK, and the C button becomes TALK, 0.4.35), announced once on arrival; up
+(or SPECIAL, the TALK button) talks (`partner` event → `talkToPartner`), and the pages can be read again any
 time. Any player can talk (in co-op, player 2 too); the pages close back into play with
 `resumePlay`, the music untouched.
 

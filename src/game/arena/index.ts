@@ -8,6 +8,7 @@ import type { Game } from '../scenes/game';
 import { MINIGAMES } from '../minigames';
 import { CHARACTERS } from '../characters/registry';
 import type { CharacterDef } from '../characters/character';
+import { fontText } from '../hud/text';
 import { lessonsFor } from '../tutorial/lessons';
 import { PracticeRoomScene } from '../tutorial/room';
 import { AIRSHIP_CHALLENGE, AIRSHIP_TITLE } from '../scenes/airship';
@@ -98,7 +99,7 @@ function bonusRound(kind: BonusKind): DevRound {
 /** A hero's training room as a round: every lesson done passes, Skip training quits. */
 function trainingRound(hero: CharacterDef): DevRound {
   return {
-    title: `${hero.hudName} TRAINING`,
+    title: fontText(`${hero.name} TRAINING`),
     hero: hero.id,
     create: (game, done) =>
       new PracticeRoomScene(game, hero, { player: 0, onEnd: (r) => done(r === 'done' ? 'pass' : 'quit') }),
@@ -149,7 +150,7 @@ export function arenaGames(characters: readonly CharacterDef[] = CHARACTERS): Ar
       .map((c): ArenaGame => ({
         id: `train-${c.id}`,
         kind: 'training',
-        title: `${c.hudName} TRAINING`.slice(0, 32),
+        title: fontText(`${c.name} TRAINING`).slice(0, 32),
         hero: c.id,
         locked: ARENA_LOCKED.training,
         found: (game) => all(game) || game.tutorials.includes(c.id) || game.freed.includes(c.id),

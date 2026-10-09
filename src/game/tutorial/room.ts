@@ -761,7 +761,7 @@ export class PracticeRoomScene implements Scene, PracticeRoom {
    * lesson done), or READY!.
    */
   promptLines(): string[] {
-    const name = this.hero.hudName;
+    const name = this.hero.name;
     if (this.phase === 'ready' || this.phase === 'over')
       return [fontText(`${name} TRAINING`), 'READY!', '', this.goOn('GO ON')];
     const ch = this.chapters[this.chapter];
@@ -842,7 +842,7 @@ export class TrainingMenuScene extends MenuScene {
   constructor(game: Game, hero: CharacterDef, skip: () => void, skipChapter?: () => void) {
     super(
       game,
-      fontText(`${hero.hudName} TRAINING`),
+      fontText(`${hero.name} TRAINING`),
       [
         { label: 'Continue', select: () => game.scenes.pop() },
         ...(skipChapter

@@ -86,7 +86,12 @@ describe('the placement plan in the World 1-8 maps', () => {
           w.update([NO_INPUT]);
           const got = w.entities.find((x): x is HeroItem => x instanceof HeroItem && x.alive);
           const want = e.items[hero.id];
-          const item = want === undefined ? HERO_ITEMS[hero.id]!.defaultPower : entryItem(hero.id, want);
+          const rules = itemRules(hero.id)!;
+          const h = HERO_ITEMS[hero.id]!;
+          let item = want === undefined ? h.defaultPower : entryItem(hero.id, want);
+          // A grow-slot block once the grow item is owned: the next power item not owned (0.4.35).
+          if (item === h.grow && rules.owned(p, h.grow))
+            item = h.items.find((i) => i.kind === 'power' && !rules.owned(p, i.id))?.id ?? h.defaultPower;
           expect(got?.item, `${id} ${e.x},${e.y}`).toBe(item);
         }
       }

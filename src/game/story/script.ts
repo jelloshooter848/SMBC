@@ -152,7 +152,7 @@ export function gateScript(world: number, hero: string): GateScript | null {
       return {
         reminder: [
           toad('THE WAY ON IS SEALED BY', "BOWSER'S MAGIC... AND WE", "STILL HAVEN'T FOUND LUIGI!"),
-          toad('THAT VILLAGER IN 1-1 SAW', "WHERE HE WENT. LET'S GO", 'BACK AND LOOK!'),
+          toad('THAT VILLAGER JUST DOWN', 'THE ROAD SAW WHERE HE WENT.', "LET'S GO BACK AND LOOK!"),
         ],
         bowser: [
           bowser('HUH? WHAT WAS THAT? MY WAND', 'JUST... SPUTTERED.'),
@@ -169,8 +169,8 @@ export function gateScript(world: number, hero: string): GateScript | null {
           toad(
             'THE WAY ON IS STILL SEALED,',
             'AND LINK IS STILL UNDER THE',
-            'SPELL. THAT OLD MAN IN 2-1',
-            'KNOWS SOMETHING, I BET.',
+            'SPELL. THE OLD MAN IN THE',
+            'FIELD CAVE KNOWS, I BET.',
           ),
         ],
         bowser: [
@@ -187,9 +187,9 @@ export function gateScript(world: number, hero: string): GateScript | null {
         reminder: [
           toad(
             'STILL SEALED. MEGA MAN MUST',
-            'STILL BE OUT THERE. DR.',
-            'LIGHT IN 3-1 IS TRACKING',
-            'HIS SIGNAL!',
+            'BE OUT THERE. DR. LIGHT IS',
+            'TRACKING HIS SIGNAL OUT BY',
+            'THE RADIO MASTS!',
           ),
         ],
         bowser: [
@@ -207,8 +207,8 @@ export function gateScript(world: number, hero: string): GateScript | null {
           toad(
             'STILL SEALED! WE NEED THE',
             'HUNTER. THAT BIRD STATUE',
-            'DOWN IN 4-2 MUST KNOW',
-            'WHERE SHE IS.',
+            'DOWN IN THE CAVERNS MUST',
+            'KNOW WHERE SHE IS.',
           ),
         ],
         bowser: [
@@ -231,7 +231,7 @@ export function gateScript(world: number, hero: string): GateScript | null {
           toad(
             'STILL SEALED. THE VAMPIRE',
             'HUNTER! THE TOWNSPERSON AT',
-            'THE GATE OF 5-4 SAID',
+            "THE OLD CASTLE'S GATE SAID",
             'SOMETHING ABOUT A LIFT...',
           ),
         ],
@@ -247,7 +247,7 @@ export function gateScript(world: number, hero: string): GateScript | null {
     case 6:
       return {
         reminder: [
-          toad('STILL SEALED. WE NEED THE', 'NINJA. THAT AGENT AT THE', 'START OF 6-2 WAS TRACKING', 'HIM!'),
+          toad('STILL SEALED. WE NEED THE', 'NINJA. THAT AGENT IN THE', 'CITY STREETS WAS TRACKING', 'HIM!'),
         ],
         bowser: [
           bowser('WHOA! WHOA! THE WAND JUST', 'BLASTED MY THRONE TO BITS!'),
@@ -264,8 +264,8 @@ export function gateScript(world: number, hero: string): GateScript | null {
           toad(
             'STILL SEALED. WE NEED THE',
             'SOLDIER. HIS PARTNER LANCE',
-            'IS WAITING AT THE START OF',
-            '7-3.',
+            'IS WAITING IN THE DEEP',
+            'JUNGLE, BY THE BRIDGES.',
           ),
         ],
         bowser: [
@@ -291,7 +291,7 @@ export const RIFT_SEALED_PAGES: readonly Page[] = [
     "GO THROUGH. SOMETHING'S",
     'HOLDING IT SHUT...',
   ),
-  toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT. HER PILOT IS', 'LOST SOMEWHERE IN 8-4.'),
+  toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT. HER PILOT IS', "LOST IN THE KING'S CASTLE."),
 ];
 
 /** The map's hint line on a castle whose road is sealed (`name`: the hero's full name). */
@@ -338,7 +338,12 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
         'LAND HERE, SEA AND ALL.',
       ],
       ['OUR HERO LINK HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
-      ['HE WAS LAST SEEN NEAR 2-1.', 'AN OLD MAN THERE KNOWS', 'THINGS. HE ALWAYS DOES.'],
+      [
+        'HE WAS LAST SEEN ON THE',
+        'GREAT FIELD. AN OLD MAN IN',
+        'A CAVE THERE KNOWS THINGS.',
+        'HE ALWAYS DOES.',
+      ],
       ['LET ME HEAL YOU BEFORE YOU', "GO. ...OH. YOU'RE FINE.", 'NEVER MIND.'],
     ),
     'LINK IS HIMSELF AGAIN!',
@@ -352,7 +357,7 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
       'A lab robot',
       ['BEEP! WELCOME TO THE YEAR', '20XX. WELL, A CHUNK OF IT.', 'YOUR KINGDOM HAS ODD', 'PHYSICS.'],
       ['OUR HERO MEGA MAN HAS BEEN', 'REPROGRAMMED BY SOMEONE.', 'PLEASE HELP! BEEP!'],
-      ['HIS LAST SIGNAL CAME FROM', '3-1. DR. LIGHT IS THERE,', 'TRACKING IT.'],
+      ['HIS LAST SIGNAL CAME FROM', 'THE RADIO MASTS. DR. LIGHT', 'IS OUT THERE, TRACKING IT.'],
     ),
     'BEEP! MEGA MAN IS BACK',
     'ONLINE! DR. LIGHT SAYS',
@@ -370,8 +375,8 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
         'ALONG FOR THE RIDE.',
       ],
       ['THE HUNTER WHO GUARDS US,', 'SAMUS, HAS BEEN BRAINWASHED', 'BY SOMEONE. PLEASE HELP!'],
-      ['HER LAST READING CAME FROM', "DEEP UNDER 4-2. THERE'S AN", 'OLD BIRD STATUE IN THERE.'],
-      ['ALSO, A KOOPA AIRSHIP KEEPS', 'CIRCLING 4-2. KEEP AN EYE', 'ON THE SKY!'],
+      ['HER LAST READING CAME FROM', "DEEP IN THE CAVERNS. THERE'S", 'AN OLD BIRD STATUE DOWN', 'THERE.'],
+      ['ALSO, A KOOPA AIRSHIP KEEPS', 'CIRCLING OVER THE CAVERNS.', 'KEEP AN EYE ON THE SKY!'],
     ),
     'SAMUS IS BACK ON PATROL.',
     'OUR BASE IS SAFE AGAIN,',
@@ -389,7 +394,12 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
         'HERE. EVEN THE NIGHTS.',
       ],
       ['OUR HERO SIMON HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
-      ['HE WAS LAST SEEN IN THE', 'OLD CASTLE, 5-4. A', 'TOWNSPERSON WAITS AT ITS', 'GATE.'],
+      [
+        'HE WAS LAST SEEN IN THE',
+        'OLD CASTLE AT THE END OF',
+        'THE ROAD. A TOWNSPERSON',
+        'WAITS AT ITS GATE.',
+      ],
       ['WANT TO BUY A WHITE', 'CRYSTAL? ...NO? NOBODY', 'EVER DOES.'],
     ),
     'SIMON WALKS FREE AGAIN!',
@@ -403,7 +413,7 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
       'The village elder',
       ['WELCOME TO OUR NINJA', 'VILLAGE. A DARK SPELL', 'BROUGHT IT HERE, SNOW AND', 'ALL.'],
       ['OUR YOUNG MASTER RYU HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
-      ['HE WAS LAST SEEN IN THE', 'CITY STREETS OF 6-2. AN', 'AMERICAN AGENT IS ON HIS', 'TRAIL.'],
+      ['HE WAS LAST SEEN IN THE', 'CITY STREETS AT NIGHT. AN', 'AMERICAN AGENT IS ON HIS', 'TRAIL.'],
       ['A NINJA IS SEEN ONLY IF HE', 'WISHES TO BE. DO NOT LOOK', 'FOR HIM. LOOK FOR WHAT', 'HIDES HIM.'],
     ),
     'MASTER RYU HAS RETURNED TO',
@@ -417,7 +427,12 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
       'A sergeant',
       ['WELCOME TO THE FRONT,', 'SOLDIER. SOME SPELL DROPPED', 'OUR WHOLE JUNGLE HERE,', 'ALIENS AND ALL.'],
       ['OUR BEST MAN, BILL, HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
-      ['HE WAS LAST SEEN AT 7-3.', 'HIS PARTNER LANCE IS', 'WAITING THERE. MOVE OUT!'],
+      [
+        'HE WAS LAST SEEN IN THE',
+        'DEEP JUNGLE, BY THE BRIDGES.',
+        'HIS PARTNER LANCE IS',
+        'WAITING THERE. MOVE OUT!',
+      ],
     ),
     "BILL'S BACK IN THE FIGHT!",
     'GOOD WORK, SOLDIER. THE',
@@ -442,7 +457,7 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
       ],
       [
         "THE BOY WENT INTO THE KING'S",
-        'CASTLE, 8-4, AFTER HIS FROG.',
+        'OWN CASTLE AFTER HIS FROG.',
         'THAT FROG TAKES THE PIPES',
         'NOBODY ELSE DOES.',
       ],
