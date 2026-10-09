@@ -434,9 +434,10 @@ World 4's bonus slot `bonus-4` (2,13) is an SMB3 bonus spot: `kind: 'bonus'`, `u
   (missing: off, but on for a file with the secret `larry`).
 - Campaign only (the map is). Dev "Unlock all" does not show it (bonus nodes need their key).
 
-## The Top Secret Area (World 2, 0.4.10)
+## The Top Secret Area (World 2, 0.4.10) and Kakariko Village (0.4.41)
 
-Owner design, after Super Mario World's "Top Secret Area". Campaign only.
+Owner design, after Super Mario World's "Top Secret Area". Campaign only. Since 0.4.41 the hidden spot is
+**Kakariko Village** (below), and the Top Secret Area is the inside of its secret house.
 
 **The way in: over 2-1's flagpole.** A hero who gets past 2-1's flagpole **without touching it**
 (jumping over it) can walk on past the castle into a cave mouth at the level's end (columns
@@ -493,13 +494,15 @@ AS LONG AS YOU DON'T TELL ANYONE.` / `IT'S A SECRET TO EVERYBODY.` (the `secret`
 node with a `level` is a **bonus area** (`map/bonus-spot.ts isBonusArea`): hidden until its key like
 any bonus node (also with dev Unlock all), then always open: no bonus game, no `bonusOpen`, no Hammer
 Bro. Its icon is `items:map-node-tsa` (the green bonus dot with a gold sparkle), the hint line and
-the announcer say "TOP SECRET AREA" ("Top Secret Area, open"), the touch JUMP says ENTER, and JUMP
-enters its level through character select, like a level node, every time. Nothing is ever cleared
-there and no save field is added.
+the announcer say its name ("Top Secret Area, open"), the touch JUMP says ENTER. Since 0.4.41 the node
+also carries `town: 'kakariko'` and `townLabel: 'KAKARIKO VILLAGE'`: in campaign play JUMP walks straight
+into Kakariko Village (no character select), and once the village has been found (the secret `kakariko`
+on the file) the hint line and the announcer say KAKARIKO VILLAGE (`bonusAreaLabel`). Nothing is ever
+cleared there and no save field is added.
 
 **The Top Secret Area** (`2-top-secret.map`, header `bonus: true`: `LevelData.bonus`, a fill-up
-spot: no clock, no WORLD card; it is entered straight from character select, the announcer says
-"Top Secret Area."; its HUD shows the area's name, `TOP SECRET` / `AREA`, where WORLD 2-1 would
+spot: no clock, no WORLD card; since 0.4.41 it is entered through the secret house's door in Kakariko
+Village, with the village's hero, the announcer says "Top Secret Area."; its HUD shows the area's name, `TOP SECRET` / `AREA`, where WORLD 2-1 would
 be, and no TIME, HudOptions.area; on its light sky every HUD text has a dark outline, `LIGHT_SKIES`
 and HudOptions.outline): one locked screen in the `smw-secret` theme, five `?` blocks in a row on row 9,
 columns 6-10:
@@ -516,11 +519,14 @@ lets out what it holds. Yoshi is not in the game yet, so a **1-up hops out** (as
 when Yoshi is already with you; `PowerUp.hopOut`). The hook for a later release:
 `yoshiUnlocked(world)` (always false today, a `TODO(yoshi)`) and `hatch` (docs/ROADMAP.md).
 
-The blocks are full again on every visit (each visit is a new World from the map's tiles). Its pipe
-(`pipe 13 11 down -> map 0 0`, `MAP_EXIT`: a pipe target that is no level) goes back to the map: in
-the campaign `Game.returnToMap()` with the hero still on `bonus-2` and nothing cleared; elsewhere a
-play-test ends or the title follows. Co-op: both players come along; each block gives its item to
-whoever takes it.
+Since 0.4.41 the blocks **refill once per visit to the village** (owner), not on every entry: a block
+opened stays used if any hero goes back in during the same visit (`Game.town.used`, laid as used blocks
+when the level loads: `town/secret-house.ts`); the next visit from the map finds all five full. Nothing
+about them is saved. Its pipe (`pipe 13 11 down -> town 0 0`, `TOWN_EXIT`: a pipe target that is no
+level) comes back out to the secret house's doorstep (`Game.returnToTown`); with no village visit under
+way (level select, `?level=2-top-secret`) it is the way back to the map as `-> map` (`MAP_EXIT`) is: in
+the campaign the map, elsewhere a play-test ends or the title follows. Co-op: both players come along
+into the area (only player 1 walks the village); each block gives its item to whoever takes it.
 
 **Art** (all original, `src/content/sprites/top-secret.ts`): the `smw-secret` theme (tile palette
 `tiles-smw-secret`, grass-topped dirt `tree-top@smw-secret` over `ground@smw-secret`, `used@smw-secret`;
@@ -531,6 +537,73 @@ Yoshi egg frames, `egg-shell`, the Moblin, `cave-fire-0/1` (flickering slower wi
 
 **Toad** speaks on the map since 0.4.13 ("Story system" below), but has no line for this node
 yet. A suggested one: "SOMETHING TELLS ME THIS SPOT WAS MEANT TO STAY A SECRET..."
+
+**Its look in the campaign (0.4.41):** the inside of the secret house, the campaign look `tsa-house`
+(`campaignTheme: tsa-house`, `[campaign-decor] tsa-house:wall 0 12`; art `src/content/sprites/tsa-house.ts`):
+polished floorboards over a stone footing (`tree-top@tsa-house`, `ground@tsa-house`), a plastered wall
+between dark beams over a stone wainscot, a window on a sunny sky, two hanging lamps (a steady glow,
+never a flicker) and a small painting, one 256×208 frame drawn behind the tiles (`decorInFront` leaves
+`tsa-house:` out). The ? blocks stay SMB's, the pipe stays a pipe, tinted copper (the tile palette's
+pipe roles), the music stays `top-secret`, and the HUD's text is outlined on the light wall
+(`LIGHT_SKIES`). Outside the campaign the area keeps its Super Mario World look.
+
+### Kakariko Village (0.4.41, release 1)
+
+Owner's approved design (option A, top-down like A Link to the Past). Campaign only; classic play and the
+way to the spot (2-1's cave → `bonus-2`) are unchanged. Code `src/game/town/` (scene, village, folk,
+hero, secret house), maps `src/content/town/kakariko.ts`, art `src/content/sprites/town.ts` (tiles)
+and `town-folk.ts` (townsfolk, heroes from above), music `src/content/music/kakariko.ts`, lines
+`src/game/story/kakariko.ts` (docs/STORY.md 2.5 "Kakariko Village").
+
+- **Getting in and out.** JUMP on World 2's spot (`Game.enterTown`): straight in with the file's hero,
+  walking up through the south gate. The first entry adds `kakariko` to the file's `secrets` (saved):
+  the map label changes and the guard says hello (his first-visit cards) as the hero walks in.
+  Walking off the gate screen's south edge (or the menu's **Quit to map**) is `Game.leaveTown`: the map,
+  on the spot, nothing cleared, saved as after a level, whoever the hero now is. `Game.showMap` ends any
+  visit (the Top Secret Area's own Quit to map included).
+- **Six screens** (3×2) of 16×11 cells: THE WELL (house A, the well, the fallen log on the closed west
+  path), THE SQUARE (the inn on its ledge up the steps, the weathervane in a hedged square), THE ORCHARD
+  (blossom trees, the pond under a ledge), THE GARDENS (cabbage rows, the gardener, the secret house in
+  its hedge), GATE STREET (the shop, the guard, the kid and the hen, the south gate) and HEALER'S LANE
+  (the healer's thatched cottage, herb pots, house B, the pond's end). Walking off a screen's edge
+  slides to the next (6 px a frame, brisker than a dungeon's 4; only walking toward the edge, never
+  while sliding along it). The village is closed all round but for the gate. No enemies, no damage, no
+  clock.
+- **Doors** (`DOORS`): walking up into a front door fades into its room; walking down through the
+  room's way out fades back to the doorstep, facing out. The inn has two front doors: the bar, and the
+  back room. The secret house's door loads the Top Secret Area (`@tsa`, `Game.enterSecretHouse`). The
+  shop's door is shut until the shop opens (release 2): bumping it says THE SHOP: COMING SOON!, and its
+  sign says the same.
+- **The door lock** (for later): every door may carry `needs: '<secret>'`, checked against the file's
+  existing `secrets` (`TdEntrance.needs`, `TopDownWorld.has`). Locked, it is solid, drawn boarded
+  (`door-boarded`), and bumping it says CLOSED. ASK AROUND. No door is locked today and no save field is
+  needed to add one.
+- **Moving.** Heroes walk eight ways at 1.5 px a frame (2 with ATTACK or RUN held), sliding along walls
+  and round corners into doorways (up to 7 px; a door takes the hero from up to 10 px either side).
+  Heroes only walk and talk: JUMP or SPECIAL talks to (or reads, or looks at) whoever is in front, the
+  prompt over them names it with its key; START opens the menu (Continue, Quit to map).
+- **Switching heroes:** SELECT (named TOOLS; the touch button reads HERO in the village) switches to the
+  next freed hero in character select's order (`Game.heroLocked` skips the rest; with nobody else: a
+  buzz and NO ONE ELSE HAS JOINED YOU YET.), on the same spot facing the same way, with a puff of smoke
+  (a still cloud with reduce flashing), a chime and the hero's name said; 20 frames before the next.
+  Not while a card is up or a screen slides or fades. `Game.setHero(0, hero)` keeps each hero's power,
+  hit points and kit. Only in the village (inside the Top Secret Area SELECT is the hero's own TOOLS).
+- **Heroes from above** (16×16, chibi; `town/hero.ts overheadLook`): Link's keep sprite (`link-td`; his
+  found tunic blue, the beam red), Sophia III as Jason (`jason-o-*`), Luigi in Mario's set
+  (`td-mario@td-luigi`), and new sets `td-mario`, `td-megaman`, `td-samus`, `td-simon`, `td-ryu`, `td-bill`.
+  Power shows by palette only (fire Mario and Luigi, Samus's Varia); the HUD names it.
+- **Townsfolk** (`town/folk.ts`): the guard, the kid (always a few steps behind the hen; he never steps
+  onto the hero), the hen (flutters off when walked into; not solid), the woman in the square, the
+  gardener, the old man, the barkeep (talked to across his counter), two patrons, the stranger in the
+  back room, the healer and a mother and child. The well, the weathervane, the fallen log and the shop's
+  sign can be read or looked at. Some lines change with the hero.
+- **The healer** heals the hero's hit points in full, for free (`fullHp`: the kit's `maxHp`, else the
+  hero's start); Mario and Luigi have none to heal.
+- **HUD** (64 px): the village and the screen (or building), the hero and their power, coins, lives, the
+  switch button's name, and a map of the six screens.
+- **Music:** `village` outdoors, `village-indoors` in the rooms; sounds `hero-switch` and `hen`.
+- **Dev:** level select's last entry, `village` (`DEV_VILLAGE`), walks into the village with no file:
+  every hero to switch to, nothing saved, the gate (or Quit to map) back to the title.
 
 ## Hidden paths and campaign pipes (level zones, 0.4.10)
 

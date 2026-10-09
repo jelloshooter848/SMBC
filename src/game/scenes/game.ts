@@ -77,7 +77,7 @@ import {
 import { heroStart, type HeroPower } from '../items/heroes';
 import type { StageRound } from '../arena/stage-round';
 import { TownScene } from '../town/scene';
-import { KAKARIKO, layUsedBlocks, openedBlocks, SECRET_HOUSE_LEVEL } from '../town/secret-house';
+import { DEV_VILLAGE, KAKARIKO, layUsedBlocks, openedBlocks, SECRET_HOUSE_LEVEL } from '../town/secret-house';
 import type { World } from '../world/world';
 
 export interface GameDeps {
@@ -479,6 +479,8 @@ export class Game {
    */
   leaveTown(): void {
     this.town = null;
+    // Dev level select's village has no map to go back to.
+    if (!this.campaign) return this.showTitle();
     this.returnToMap();
   }
 
@@ -958,6 +960,14 @@ export class Game {
     this.pendingLevel = null;
     this.quickRespawn = true;
     this.campaign = null;
+    if (levelId === DEV_VILLAGE) {
+      this.deps.ctx.audio.stopMusic();
+      const scene = new TownScene(this, { first: false });
+      this.town = { scene, used: new Set() };
+      this.scenes.clear();
+      this.scenes.push(scene);
+      return;
+    }
     this.goToLevel(levelId, seed === undefined ? { mode: 'stand' } : { mode: 'stand', seed });
   }
 

@@ -34,3 +34,6 @@ export function layUsedBlocks(world: World, used: Iterable<string>): void {
     world.map.set(x, y, T.USED);
   }
 }
+
+/** Dev level select's entry for the village (no level: Game.devStart walks into the village). */
+export const DEV_VILLAGE = 'village';

@@ -1207,6 +1207,233 @@ CAN HEAR MACHINES HUMMING
 OVER THERE...
 ```
 
+#### Kakariko Village (0.4.41)
+
+NEW (owner's approved design, release 1). World 2's hidden map spot, found through the Moblin's cave, is no longer one
+room but a small walled village walked from above, as in A Link to the Past: **Kakariko Village**. The spot reads TOP
+SECRET AREA until the village has been found, then KAKARIKO VILLAGE. JUMP on it walks straight in through the south
+gate (no character select); SELECT (TOOLS; HERO on the touch pad) switches to the next freed hero there, and some
+lines below change with who is walking the village. One house's door leads into the old Top Secret Area. The shop
+opens in a later release; its sign says so. Every card is read aloud and waits for OK; BACK skips the rest.
+
+**The guard** at the south gate says hello as the hero walks in, the first time:
+
+```text
+GUARD:
+
+A VILLAGE NO MAP SHOWS.
+FUNNY HOW YOU FOUND IT.
+```
+
+```text
+GUARD:
+
+WELCOME TO KAKARIKO.
+WIPE YOUR BOOTS. MIND
+THE HEN.
+```
+
+On a later visit:
+
+```text
+GUARD:
+
+BACK AGAIN? THE HEN
+MISSED YOU.
+```
+
+**The kid** on Gate Street chases the hen (she flutters off when walked into). To most heroes:
+
+```text
+KID:
+
+I'M GONNA CATCH THAT HEN!
+SHE'S FASTER THAN SHE
+LOOKS.
+```
+
+To Samus:
+
+```text
+KID:
+
+ARE YOU A ROBOT?
+```
+
+To Mega Man:
+
+```text
+KID:
+
+ARE YOU A ROBOT?
+...COOL.
+```
+
+**The shop's sign** (READ):
+
+```text
+THE SHOP
+
+COMING SOON!
+```
+
+**The woman in the square:**
+
+```text
+WOMAN:
+
+THE WEATHERVANE POINTS
+WHEREVER THE WIND LIKES.
+MOSTLY AT THE SHOP.
+```
+
+**The weathervane** in the square (READ):
+
+```text
+W... E... S...
+
+THE N FELL OFF YEARS AGO.
+```
+
+**The well** (LOOK) echoes the hero's name back:
+
+```text
+YOU CALL DOWN THE WELL.
+
+...<HERO>...
+<HERO>...
+```
+
+**The fallen log** across the west path (LOOK), the hook for a later secret:
+
+```text
+SOMEONE SHOULD MOVE THIS.
+
+SOMEDAY.
+```
+
+**The gardener** among his cabbages. To Link:
+
+```text
+GARDENER:
+
+YOU AGAIN! KEEP THAT
+SWORD AWAY FROM MY
+BUSHES.
+```
+
+To everyone else:
+
+```text
+GARDENER:
+
+NOTHING UNDER THESE
+BUSHES. I CHECKED.
+```
+
+**The old man** in his house by the well tells of the hero switch. Its button is named TOOLS (on the touch pad, HERO,
+the button's own name in the village):
+
+```text
+OLD MAN:
+
+IF YOUR HERO CAN'T MANAGE
+IT, PRESS TOOLS. SOMEONE
+ELSE MIGHT.
+```
+
+```text
+OLD MAN:
+
+HERE IN THE VILLAGE, ANY
+FRIEND YOU'VE FREED CAN
+TAKE A WALK IN YOUR PLACE.
+```
+
+**The inn.** The barkeep, across his counter (the place is named in-world, never by level number):
+
+```text
+BARKEEP:
+
+WORD IS THERE'S A BLOCK
+HIGH OVER THE GREAT
+FIELD'S LAST TOWER THAT
+NOBODY'S EVER BUMPED...
+```
+
+```text
+BARKEEP:
+
+...WELL. ONE PERSON.
+```
+
+Two patrons:
+
+```text
+PATRON:
+
+IF YOU FALL IN A PIT, YOU
+DROP EVERYTHING YOU CARRY.
+ASK ME HOW I KNOW.
+```
+
+```text
+PATRON:
+
+I CAME FOR ONE NIGHT.
+THAT WAS THREE KINGDOMS
+AGO.
+```
+
+**The inn's back room** (its own door on the inn's front), a nod to Zelda II's town (World 2 is Hyrule):
+
+```text
+STRANGER:
+
+I AM ERROR.
+```
+
+**The healer**, World 2's healer from the map, who has a house here. She heals a hero who counts hit points in full,
+for free:
+
+```text
+HEALER:
+
+LET ME SEE THOSE
+SCRAPES... THERE.
+GOOD AS NEW.
+```
+
+To Mario or Luigi:
+
+```text
+HEALER:
+
+YOU LOOK FINE TO ME.
+TRY A MUSHROOM.
+```
+
+**The family** next door to her:
+
+```text
+MOTHER:
+
+THE HEALER NEXT DOOR
+PATCHES ANYONE UP. FREE!
+SHE'S BORED, YOU SEE.
+```
+
+```text
+CHILD:
+
+MY BIG BROTHER CHASES THE
+HEN ALL DAY. I THINK THE
+HEN IS WINNING.
+```
+
+Notices (said too, gone by themselves; no card): a locked door (the hook for a later secret) `CLOSED. ASK AROUND.`; the
+shop's door `THE SHOP: COMING SOON!`; SELECT with nobody else freed `NO ONE ELSE HAS JOINED YOU YET.`.
+
 ### 2.6 World 3: the year 20XX (Mega Man)
 
 **The welcome: a lab robot.** A small round helper robot in Mega Man's style (one antenna, a blinking light),

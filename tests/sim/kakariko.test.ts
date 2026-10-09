@@ -14,7 +14,7 @@ import { talkTarget } from '@game/topdown/person';
 import { TownScene, SWITCH_GAP, fullHp, nextHero, VILLAGE_NAME } from '@game/town/scene';
 import { villageDungeon, villageRooms, isOutdoor } from '@game/town/village';
 import { folkSpawner, Townsperson, FOLK_DEFS } from '@game/town/folk';
-import { KAKARIKO, SECRET_HOUSE_LEVEL } from '@game/town/secret-house';
+import { DEV_VILLAGE, KAKARIKO, SECRET_HOUSE_LEVEL } from '@game/town/secret-house';
 import { overheadLook } from '@game/town/hero';
 import { LevelScene } from '@game/scenes/level';
 import { WorldMapScene } from '@game/scenes/world-map';
@@ -741,6 +741,29 @@ describe('campaign only', () => {
     expect(isOutdoor('inn')).toBe(false);
   });
 });
+
+describe('dev level select: the village for testing', () => {
+  it('its `village` entry walks in with no file: every hero to switch to, nothing saved, the title after', () => {
+    const h = makeGame();
+    h.game.devStart(DEV_VILLAGE, MARIO, 'small');
+    expect(h.top()).toBeInstanceOf(TownScene);
+    expect(h.game.campaign).toBeNull();
+    h.until(() => town(h).free, 200);
+    expect(h.top()).toBeInstanceOf(TownScene); // no hello: nothing was found
+    h.tap('select');
+    expect(h.game.state.character.id).toBe('luigi');
+    expect(h.game.mapProgress.secrets).not.toContain(KAKARIKO);
+    outOfGate2(h);
+    expect(h.top()).toBeInstanceOf(TitleScene);
+    expect(h.game.town).toBeNull();
+  });
+});
+
+/** Out of the gate when no map follows (dev). */
+function outOfGate2(h: H) {
+  walkTo(h, key(GATE.room, GATE.col, GATE.row));
+  for (let i = 0; i < 300 && h.top() instanceof TownScene; i++) h.step(['down']);
+}
 
 describe('the door lock (for a later secret)', () => {
   it("a door that needs a secret is shut, boarded, and says so, until the file's secrets have it", () => {
