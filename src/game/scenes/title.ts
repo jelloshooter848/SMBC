@@ -263,7 +263,8 @@ export class TitleScene extends MenuScene {
     const key = boundKey(this.game, 'select');
     if (key) {
       const s = `(${key})`;
-      this.text(r, s, 252 - (s.length * 8 - 1), b.y + b.h + 4 + dy, undefined, true);
+      // Beside the icon on its row, so the two read as one control: "(RIGHT SHIFT) [speaker]".
+      this.text(r, s, b.x - 3 - s.length * 8, b.y + 2 + dy, undefined, true);
     }
   }
 
