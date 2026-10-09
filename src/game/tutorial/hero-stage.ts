@@ -100,7 +100,14 @@ export function stageEntity(
   const p = s.props ?? {};
   const opts: TargetOptions = {};
   if (typeof p.lesson === 'string') opts.lesson = p.lesson;
-  if (typeof p.shoots === 'number') opts.shoots = p.shoots;
+  if (typeof p.shoots === 'number') {
+    opts.shoots = p.shoots;
+    // A lesson's shooter fires only while that lesson is played (its item taken).
+    if (typeof p.lesson === 'string') {
+      const lesson = p.lesson;
+      opts.live = () => live(lesson);
+    }
+  }
   if (typeof p.tough === 'number') opts.tough = p.tough;
   if (p.facing === 'left') opts.facing = -1;
   else if (p.facing === 'right') opts.facing = 1;

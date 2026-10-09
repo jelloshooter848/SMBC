@@ -56,6 +56,12 @@ export interface TargetOptions {
   facing?: -1 | 1;
   /** It hangs from the ceiling (no fall), on a short chain. */
   hang?: boolean;
+  /**
+   * A shooter fires only while this holds (a stage: its lesson is being played, its item taken),
+   * so it never knocks a power off the hero on the way to the lesson's block (Mega Man's Helmet,
+   * whose loss would turn the block into a Helmet).
+   */
+  live?: () => boolean;
 }
 
 /** A stage's straw target (TargetDummy's drawing): a lesson's mark. */
@@ -84,6 +90,10 @@ export class TrainingTarget extends TargetDummy {
     } else super.update(world);
     const every = this.opts.shoots;
     if (!every || !this.alive || this.stunned > 0) return;
+    if (this.opts.live && !this.opts.live()) {
+      this.shotT = every - 40;
+      return;
+    }
     if (++this.shotT < every) return;
     const b = this.body;
     const cx = b.x + (b.w >> 1);

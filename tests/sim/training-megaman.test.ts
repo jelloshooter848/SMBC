@@ -192,6 +192,39 @@ describe("Mega Man's stage", () => {
     expect(lessonId(s)).toBe('saw');
   });
 
+  it("the leaf's shooter holds fire until the Leaf Guard is taken (its Helmet stays on for the block)", () => {
+    const { h, stage } = startStage('megaman', { replay: true });
+    choose(h, 'Leaf Guard');
+    const s = stage();
+    const shots = () =>
+      s.world.entities.filter((e) => e instanceof Projectile && e.alive && e.kind === 'target-shot');
+    // Standing in the shooter's range by the block, the item not taken: no shot comes.
+    playStage(
+      h,
+      s,
+      (st) => {
+        const out: Action[] = [];
+        controls(st, out).goTo(S.leafBlock.x + 1);
+        expect(shots()).toEqual([]);
+        return out;
+      },
+      () => false,
+      400,
+    );
+    expect(s.world.player.scratch.helmet).toBe(1);
+    // Taken: the block gave the Leaf Guard (not a Helmet), and the shooter starts.
+    const bot = megamanBot();
+    playStage(h, s, bot, () => !!s.world.player.scratch['has-leaf-guard'], 600);
+    playStage(
+      h,
+      s,
+      () => [],
+      () => shots().length > 0,
+      300,
+    );
+    expect(shots().length).toBeGreaterThan(0);
+  });
+
   it('only the slide gets under the low wall, and only Rush gets up the tall one', () => {
     const { h, stage } = startStage('megaman', { replay: true });
     choose(h, 'Rush Coil');
