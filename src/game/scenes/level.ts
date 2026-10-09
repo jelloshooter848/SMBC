@@ -58,7 +58,8 @@ export const MOBLIN_CARDS: readonly (readonly string[])[] = [
   ['YOU FOUND ME?!'],
   ["I'LL SHOW YOU A SECRET", 'PATH... AS LONG AS YOU', "DON'T TELL ANYONE."],
   ["IT'S A SECRET TO", 'EVERYBODY.'],
-];
+  // Named like every other NPC's card (0.4.35): the speaker, a blank line, the words.
+].map((lines) => ['MOBLIN:', '', ...lines]);
 
 /** Said when a hidden path's block is bumped (World.layPath). */
 export const PATH_SAID = 'A path of clouds appears.';
@@ -424,7 +425,7 @@ export class LevelScene implements Scene {
       const lines = MOBLIN_CARDS[i] as readonly string[];
       const last = i === MOBLIN_CARDS.length - 1;
       if (last) audio.sfx('secret');
-      game.deps.announcer?.say(`${lines.join(' ')} ${last ? 'OK to continue.' : 'OK.'}`);
+      game.deps.announcer?.say(`${lines.filter(Boolean).join(' ')} ${last ? 'OK to continue.' : 'OK.'}`);
       game.scenes.push(
         new CardScene(
           game,

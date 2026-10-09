@@ -478,7 +478,7 @@ art, 24x32, about big Mario's height: a pig-faced brute with heavy jowls, a pale
 nostrils and a thick spear; `items:moblin-0/1` breathing, `items:moblin-surprised`; a `moblin` with
 no `secret=` is left out, so no empty secret is ever recorded). When a player on the ground comes
 within 56 px he jumps with surprise, everyone stops, and his cards play over the cave (a box at the
-top, each read out, OK = JUMP to go on): `...!` / `YOU FOUND ME?!` / `I'LL SHOW YOU A SECRET PATH...
+top, each headed `MOBLIN:` like other NPCs' cards (0.4.35), read out, OK = JUMP to go on): `...!` / `YOU FOUND ME?!` / `I'LL SHOW YOU A SECRET PATH...
 AS LONG AS YOU DON'T TELL ANYONE.` / `IT'S A SECRET TO EVERYBODY.` (the `secret` jingle). Then:
 
 - **Campaign** (`Game.campaignTopSecret`): the secret `bonus-2` is found (`secretExit`: the road

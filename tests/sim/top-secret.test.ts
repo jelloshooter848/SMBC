@@ -760,7 +760,9 @@ describe("the Moblin's cave", () => {
   });
 
   it("his cards fit a card and the font: '...!', 'YOU FOUND ME?!', the secret path, the secret", () => {
-    expect(MOBLIN_CARDS.map((c) => c.join(' '))).toEqual([
+    // Each card names the speaker like every other NPC's (0.4.35): 'MOBLIN:', a blank line, the words.
+    for (const card of MOBLIN_CARDS) expect(card.slice(0, 2)).toEqual(['MOBLIN:', '']);
+    expect(MOBLIN_CARDS.map((c) => c.slice(2).join(' '))).toEqual([
       '...!',
       'YOU FOUND ME?!',
       "I'LL SHOW YOU A SECRET PATH... AS LONG AS YOU DON'T TELL ANYONE.",
@@ -862,7 +864,7 @@ describe('campaign: the Moblin opens only the road to the Top Secret Area', () =
     h.step();
     expect(h.top()).toBeInstanceOf(LevelScene);
     holdUntil(h, ['right'], () => h.top() instanceof CardScene, 400);
-    expect(h.said.at(-1)).toBe('...! OK.');
+    expect(h.said.at(-1)).toBe('MOBLIN: ...! OK.');
     readCards(h);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     const prog = h.game.mapProgress;
