@@ -202,7 +202,7 @@ export const SOPHIA_LESSONS: readonly Lesson[] = [
     enter: fillMissiles,
     // With Ceiling Climb a jump into a block grips it: the cannon opens this one.
     get: 'THE LAST ? BLOCK: STAND UNDER IT, HOLD UP AND [SHOOT:attack] IT OPEN.',
-    text: 'HOLD DOWN AND PRESS [MISSILE:special] TO SWITCH TO HOMING. IT SEEKS!',
+    text: 'HOLD DOWN AND PRESS [MISSILE:special] FOR HOMING, THEN FIRE: IT SEEKS!',
     touchText: 'HOLD DOWN, TAP [MISSILE:special:MISSILE] TILL IT READS HOMING. FIRE: IT SEEKS!',
     retry: 'SWITCH TO THE HOMING MISSILE AND FIRE: IT FINDS THE TARGET UP ON THE LEDGE.',
     done: (w) =>

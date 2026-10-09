@@ -338,7 +338,7 @@ export class HeroStageScene implements Scene, TutorialHost {
     lessons.forEach((l, i) => {
       if (!l.item) return;
       items.push({
-        label: itemName(this.hero.id, l.item),
+        label: l.name ?? itemName(this.hero.id, l.item),
         select: pick(i),
         hint: 'Earlier items are given',
       });

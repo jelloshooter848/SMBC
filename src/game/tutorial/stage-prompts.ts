@@ -78,6 +78,8 @@ export interface Lesson {
   block?: { x: number; y: number };
   /** The words for `get` on touch, as `touchText`. */
   touchGet?: string;
+  /** Its entry in START AT, when its item's name alone does not say it (a folded lesson's). */
+  name?: string;
   /**
    * Further power-ups the same lesson gives, each from a block of its own (0.4.38: Simon's Double
    * Shot and Triple Shot, folded into one lesson). The lesson's item counts as taken once all are;

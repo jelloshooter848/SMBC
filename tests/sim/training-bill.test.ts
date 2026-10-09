@@ -128,4 +128,41 @@ describe("Bill's stage", () => {
     expect(lessonId(s)).toBe('shoot-down');
     expect(toPx(s.world.player.centerX)).toBeLessThan(S.turret * 16);
   });
+
+  it("the guns note stays up until the laser's tip takes over: it never goes by itself", () => {
+    const { h, stage } = startStage('bill', { replay: true });
+    choose(h, 'Machine Gun');
+    const s = stage();
+    playStage(h, s, billBot(), () => lessonId(s) === 'guns', 1500);
+    expect(lessonId(s)).toBe('guns');
+    // Standing still, then walking on to just before the laser's block: still the note.
+    h.idle(600);
+    playStage(
+      h,
+      s,
+      (st) => {
+        const out: Action[] = [];
+        controls(st, out).goTo(S.laserBlock.x - 1);
+        return out;
+      },
+      () => false,
+      300,
+    );
+    expect(lessonId(s)).toBe('guns');
+    expect(s.director.lines().join(' ')).toMatch(/^EACH NEW GUN IS READY AT ONCE/);
+    // The laser taken: its tip replaces the note.
+    playStage(
+      h,
+      s,
+      (st) => {
+        const out: Action[] = [];
+        controls(st, out).takeFrom(S.laserBlock);
+        return out;
+      },
+      () => lessonId(s) !== 'guns',
+      600,
+    );
+    expect(lessonId(s)).toBe('laser');
+    expect(s.director.lines().join(' ')).toMatch(/^LASER!/);
+  });
 });

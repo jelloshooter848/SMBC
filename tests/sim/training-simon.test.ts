@@ -54,7 +54,7 @@ describe("Simon's stage", () => {
       'Axe',
       'Morning Star',
       'Cross',
-      'Double Shot',
+      'Double + Triple Shot',
       'Stopwatch',
     ]);
   });
@@ -135,7 +135,7 @@ describe("Simon's stage", () => {
 
   it('Skip this lesson gives the folded lesson both its items and opens the gate', () => {
     const { h, stage } = startStage('simon', { replay: true });
-    choose(h, 'Double Shot');
+    choose(h, 'Double + Triple Shot');
     const s = stage();
     expect(lessonId(s)).toBe('shots');
     stageMenu(h, 'Skip this lesson');

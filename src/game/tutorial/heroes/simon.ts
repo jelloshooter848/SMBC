@@ -251,8 +251,9 @@ export const SIMON_LESSONS: readonly Lesson[] = [
     enter: crumble(S.starWall),
     during: keepHearts,
     get: 'ANOTHER ? BLOCK!',
-    text: '[TOOLS:select] TO IT: IT FLIES OUT AND BACK.',
-    touchText: 'TAP [TOOLS:select] TILL IT READS CROSS, TAP [CROSS:special:CROSS]: IT COMES BACK!',
+    text: '[TOOLS:select] TO IT. [THROW:special:CROSS] IT AT THE TARGET: IT COMES BACK!',
+    touchText:
+      'TAP [TOOLS:select] TILL IT READS CROSS. TAP [CROSS:special:CROSS] AT THE TARGET: IT COMES BACK!',
     retry: 'PICK THE CROSS WITH [TOOLS:select] AND SEND IT AT THE TARGET.',
     done: (w) => hitsSince(w, (h) => h.shotKind === 'cross' && h.target instanceof TrainingTarget).length > 0,
   },
@@ -261,6 +262,8 @@ export const SIMON_LESSONS: readonly Lesson[] = [
     at: 120,
     row: 11,
     item: 'double-shot',
+    // The font has no "&": the nearest that reads as one lesson with the box's TRIPLE SHOT!.
+    name: 'Double + Triple Shot',
     block: S.doubleBlock,
     more: [{ item: 'triple-shot', block: S.tripleBlock }],
     during: keepHearts,

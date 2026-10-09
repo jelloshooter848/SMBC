@@ -6,6 +6,7 @@ import { lessonUpFrame } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { TrainingTarget, type StageHit } from '../targets';
+import { ownsItem } from '../kit';
 import { alive, hitsSince, landedPast } from './common';
 import source from '../../../content/levels/training/bill.map?raw';
 
@@ -188,7 +189,9 @@ export const BILL_LESSONS: readonly Lesson[] = [
     row: 11,
     note: true,
     text: 'EACH NEW GUN IS READY AT ONCE. [WEAPON:select] SWITCHES BETWEEN THEM.',
-    done: (w) => landedPast(w, S.laserBlock.x - 3),
+    // Text never goes by itself (owner): the note stays up until the laser's tip takes over, once
+    // the laser is taken (or he walked on past its block, to be asked for it).
+    done: (w) => ownsItem(w.player, 'laser') || landedPast(w, S.laserBlock.x + 4),
   },
   {
     id: 'laser',
