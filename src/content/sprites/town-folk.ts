@@ -303,6 +303,36 @@ folkFrames['puff-1'] = puff(6, true);
 folkFrames['puff-2'] = puff(7.5, true);
 folkFrames['puff-calm'] = puff(6, false);
 
+/*
+ * The village HUD's little icons (8×8, drawn here; each with its own dark outline so it reads on
+ * grass, paths and floorboards): lives (a green mushroom), and a plumber's power from above the
+ * fray (no mushroom, a red one, a fire flower).
+ */
+const MUSHROOM: Rows = [
+  '..0000..',
+  '.0aCCa0.',
+  '0aaCCaa0',
+  '0aCaaCa0',
+  '00000000',
+  '.011110.',
+  '.010010.',
+  '..0000..',
+];
+const shroom = (cap: string, spot: string) => MUSHROOM.map((r) => r.replace(/a/g, cap).replace(/C/g, spot));
+folkFrames['hud-life'] = shroom('e', '7');
+folkFrames['hud-shroom'] = shroom('a', '7');
+folkFrames['hud-small'] = shroom('9', '8');
+folkFrames['hud-flower'] = [
+  '.000000.',
+  '0hhgghh0',
+  '0g7777g0',
+  '0hhgghh0',
+  '.000000.',
+  '0e0ee0e0',
+  '.0eeee0.',
+  '..0000..',
+];
+
 export const townFolkDef: SpriteDef = { palette: 'town-folk', frames: folkFrames };
 
 /* ---------------------------------------------------------------------------------------------- */

@@ -21,9 +21,13 @@ import {
   HUD_HINT_CHARS,
   promptRow,
   TownMenuScene,
+  PLAY_Y,
+  TOWN_HUD,
+  BANNER_MIN,
+  BANNER_GREET,
+  energyOf,
 } from '@game/town/scene';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
-import { HUD_H } from '@game/topdown/geometry';
 import type { Game, ControlScheme } from '@game/scenes/game';
 import { villageDungeon, villageRooms, isOutdoor } from '@game/town/village';
 import { folkSpawner, Townsperson, FOLK_DEFS } from '@game/town/folk';
@@ -871,15 +875,6 @@ describe("the village HUD's switch hint", () => {
 });
 
 describe('the village menu and the TALK prompt (RQ41)', () => {
-  it('the pause panel sits over a blank HUD band (the HUD lines showed through and round it)', () => {
-    const h = makeGame();
-    const rects: [number, number, number, number, string][] = [];
-    const r = new NullRenderer() as unknown as Renderer;
-    r.rect = (x: number, y: number, w: number, hh: number, c: string) => void rects.push([x, y, w, hh, c]);
-    new TownMenuScene(h.game, () => undefined).render(r);
-    expect(rects[0]).toEqual([0, 0, 256, HUD_H, '#000000']);
-  });
-
   it('the prompt goes under the townsperson when the hero talks down to them, else over them', () => {
     // Hero a tile above, facing down: the band is under the person, clear of the hero.
     expect(promptRow(80, 64)).toBe(98);
@@ -890,5 +885,160 @@ describe('the village menu and the TALK prompt (RQ41)', () => {
     // Kept on the screen at the edges.
     expect(promptRow(4, 20)).toBe(1);
     expect(promptRow(160, 144)).toBeLessThanOrEqual(176 - 11);
+  });
+});
+
+/* ---------- The HUD over the play area, the place-name banner (owner, RQ41) ---------- */
+
+/** A renderer that keeps what is drawn. */
+function recorder() {
+  const texts: { s: string; x: number; y: number }[] = [];
+  const rects: { x: number; y: number; w: number; h: number; c: string }[] = [];
+  const sprites: { f: string; x: number; y: number }[] = [];
+  const r = new NullRenderer() as unknown as Renderer;
+  r.text = ((_f: unknown, s: string, x: number, y: number) =>
+    void texts.push({ s, x, y })) as Renderer['text'];
+  r.rect = ((x: number, y: number, w: number, h: number, c: string) =>
+    void rects.push({ x, y, w, h, c })) as Renderer['rect'];
+  r.sprite = ((_s: unknown, f: string, x: number, y: number) =>
+    void sprites.push({ f, x, y })) as Renderer['sprite'];
+  return { r, texts, rects, sprites };
+}
+
+/** The village on a later visit, the banner gone and nobody in reach. */
+function townQuiet(h: H, over: Parameters<typeof file>[0] = {}): TownScene {
+  onWorld2(h, { secrets: ['bonus-2', KAKARIKO], ...over });
+  const t = intoTown(h);
+  walkTo(h, key('gate', 7, 6));
+  t.banner = null;
+  return t;
+}
+
+const byId = (id: string) => CHARACTERS.find((c) => c.id === id) as CharacterDef;
+
+describe("the HUD over the village, A Link to the Past's way (owner, RQ41)", () => {
+  it('no black box: the room is centred on the screen and the HUD sits over its top strip', () => {
+    expect(PLAY_Y).toBe((240 - ROOM_ROWS * TILE) / 2);
+    const h = makeGame();
+    const t = townQuiet(h);
+    const rec = recorder();
+    t.render(rec.r);
+    expect(rec.rects.some((b) => b.x === 0 && b.y === 0 && b.w === 256 && b.h >= 32)).toBe(false);
+    // The hero's box at the top left, its portrait (the hero from above) inside.
+    const box = TOWN_HUD.box;
+    expect(rec.rects).toContainEqual({ ...box, c: '#101010' });
+    expect(
+      rec.sprites.some((s) => s.f === 'down-0' && s.x >= box.x && s.y >= box.y && s.y < box.y + box.h),
+    ).toBe(true);
+    // The counters under their icons, the health at the right; all over the top strip.
+    const hud = rec.texts.filter((x) => x.y < TOWN_HUD.bottom);
+    expect(hud.map((x) => x.s)).toEqual(expect.arrayContaining(['$', '00', '03', '- POWER -', 'SMALL']));
+    expect(rec.sprites.some((s) => s.f === 'hud-life')).toBe(true);
+    for (const x of hud) expect(x.x + x.s.length * 8, x.s).toBeLessThanOrEqual(256);
+    // No place names and no NEXT HERO line on screen for good.
+    expect(rec.texts.some((x) => /KAKARIKO|GATE STREET|NEXT HERO/.test(x.s))).toBe(false);
+  });
+
+  it("health in the hero's own style: hearts, a bar, EN and tanks, a plumber's power", () => {
+    const h = makeGame();
+    const t = townQuiet(h);
+    const draw = () => {
+      const rec = recorder();
+      t.render(rec.r);
+      return rec;
+    };
+    const s = h.game.state;
+    h.game.setHero(0, LINK);
+    s.hp = 3;
+    let rec = draw();
+    expect(rec.texts.map((x) => x.s)).toContain('- HEALTH -');
+    expect(rec.texts.find((x) => /^[hfe]+$/.test(x.s))?.s).toBe('hfe');
+    h.game.setHero(0, byId('megaman'));
+    s.hp = 20;
+    rec = draw();
+    const lit = rec.rects.filter((b) => b.c === '#f8d878' && b.w === 1);
+    expect(lit).toHaveLength(20);
+    h.game.setHero(0, SAMUS);
+    s.hp = 30;
+    rec = draw();
+    expect(rec.texts.map((x) => x.s)).toContain('EN30');
+    expect(energyOf(250, 399, 3, 99)).toEqual({ full: 2, total: 3, en: 50 });
+    h.game.setHero(0, MARIO);
+    s.powerState = 'fire';
+    rec = draw();
+    expect(rec.texts.map((x) => x.s)).toEqual(expect.arrayContaining(['- POWER -', 'FIRE']));
+    expect(rec.sprites.some((x) => x.f === 'hud-flower')).toBe(true);
+  });
+
+  it('paused, the HUD gives way to the menu: the place, a map of the screens, the NEXT HERO hint', () => {
+    const h = makeGame();
+    const t = townQuiet(h);
+    h.tap('start');
+    expect(h.top()).toBeInstanceOf(TownMenuScene);
+    expect(h.said.at(-1)).toBe('Gate Street. TOOLS: next hero. Continue');
+    const rec = recorder();
+    t.render(rec.r);
+    expect(rec.texts.filter((x) => x.y < TOWN_HUD.bottom)).toEqual([]);
+    const menu = recorder();
+    (h.top() as TownMenuScene).render(menu.r);
+    expect(menu.texts.map((x) => x.s)).toEqual(
+      expect.arrayContaining(['GATE STREET', 'NEXT HERO:', 'TOOLS']),
+    );
+    expect(menu.rects.filter((b) => b.w === 15 && b.h === 10)).toHaveLength(6);
+  });
+});
+
+describe('the place-name banner', () => {
+  it('on arrival: the village, the screen and the NEXT HERO hint; it stays until moving or a key', () => {
+    const h = makeGame();
+    onWorld2(h, { secrets: ['bonus-2', KAKARIKO] });
+    h.idle(8);
+    h.tap('jump');
+    const t = town(h);
+    expect(t.banner?.lines).toEqual(['KAKARIKO VILLAGE', 'GATE STREET', '', 'TOOLS: NEXT HERO']);
+    expect(h.said.at(-1)).toMatch(/^Kakariko Village\. Gate Street\. /);
+    // A key too soon does not clear it (it is seen first)...
+    h.until(() => t.free, 100);
+    expect(t.banner?.t).toBeLessThan(BANNER_MIN);
+    h.tap('left');
+    expect(t.banner).not.toBeNull();
+    // ...nor does standing still, however long.
+    h.idle(400);
+    expect(t.banner).not.toBeNull();
+    const rec = recorder();
+    t.render(rec.r);
+    expect(rec.texts.map((x) => x.s)).toEqual(expect.arrayContaining(['KAKARIKO VILLAGE', 'GATE STREET']));
+    // Walking clears it.
+    h.step(['up']);
+    expect(t.banner).toBeNull();
+  });
+
+  it('a new screen or room brings it back with its own name (said as before); a key clears it', () => {
+    const h = makeGame();
+    const t = townQuiet(h);
+    const before = h.said.length;
+    walkTo(h, key('square', 7, 10));
+    expect(h.said.slice(before)).toContain('The Square.');
+    expect(t.banner?.lines).toEqual(['KAKARIKO VILLAGE', 'THE SQUARE']);
+    h.idle(BANNER_MIN);
+    h.tap('attack');
+    expect(t.banner).toBeNull();
+    goIn(h, 'inn');
+    h.idle(40);
+    expect(t.world.room.id).toBe('inn');
+    expect(t.banner?.lines).toEqual(['KAKARIKO VILLAGE', 'THE INN']);
+  });
+
+  it("first visit: the guard's hello waits until the welcome has shown, and clears it", () => {
+    const h = makeGame();
+    onWorld2(h);
+    h.idle(8);
+    h.tap('jump');
+    const t = town(h);
+    h.until(() => t.free, 100);
+    expect(h.top()).toBeInstanceOf(TownScene);
+    h.until(() => h.top() instanceof CardScene, BANNER_GREET + 10);
+    expect(h.top()).toBeInstanceOf(CardScene);
+    expect(t.banner).toBeNull();
   });
 });

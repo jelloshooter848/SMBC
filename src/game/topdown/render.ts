@@ -208,10 +208,11 @@ function pastDoor(world: TopDownWorld, room: Room, side: Side, left: Side): Door
 }
 
 /**
- * Draws the play area (y from HUD_H down): the room, its entities and the hero; during a slide,
+ * Draws the play area (y from `top` down: HUD_H under the kit's HUD band; Kakariko Village's room
+ * sits lower, its HUD drawn over the screen): the room, its entities and the hero; during a slide,
  * the room left behind and the new one moving in together, the hero riding with the new one.
  */
-export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld): void {
+export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld, top = HUD_H): void {
   const dark = world.room.def.dark && base.sheets.tilesDark ? base.sheets.tilesDark : undefined;
   const view: TdView = {
     frame: base.frame,
@@ -221,7 +222,7 @@ export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld): voi
     tilePalette: dark,
   };
   let ox = 0;
-  let oy = HUD_H;
+  let oy = top;
   const tr = world.transition;
   if (tr) {
     const v = DIR_VEC[SIDE_DIR[tr.side]];
@@ -233,11 +234,11 @@ export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld): voi
       tr.from,
       (s) => pastDoor(world, tr.from, s, tr.side),
       -v.dx * shift,
-      HUD_H - v.dy * shift,
+      top - v.dy * shift,
       (c) => world.state(tr.from.id).blasted.has(c),
     );
     ox = v.dx * (span - shift);
-    oy = HUD_H + v.dy * (span - shift);
+    oy = top + v.dy * (span - shift);
   }
   drawRoomTiles(
     r,

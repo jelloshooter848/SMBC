@@ -1,5 +1,6 @@
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
+import { Actions } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
@@ -16,11 +17,13 @@ import { fontText } from '../hud/text';
 import { playStoryCards } from '../story/cards';
 import { DOOR_LOCKED, NO_ONE_ELSE, SHOP_SHUT } from '../story/kakariko';
 import { TopDownWorld, type TdEvent } from '../topdown/world';
-import { renderWorld } from '../topdown/render';
-import { HUD_H, ROOM_H, TILE } from '../topdown/geometry';
+import { drawRoomTiles, renderWorld } from '../topdown/render';
+import type { Room } from '../topdown/room';
+import { DIR_VEC, ROOM_COLS, ROOM_H, ROOM_W, SIDE_DIR, TILE } from '../topdown/geometry';
+import { fxPalette } from '@content/sprites/palette-fx';
 import { fontOf, sheetLookup, type TdSheets, type TdView } from '../topdown/view';
 import { talkTarget } from '../topdown/person';
-import { TownHero } from './hero';
+import { overheadLook, TownHero } from './hero';
 import { folkSpawner, Kid, Townsperson, type TalkContext } from './folk';
 import { indoorName, isOutdoor, villageDungeon } from './village';
 
@@ -54,6 +57,19 @@ export const SWITCH_GAP = 20;
 export const PUFF_FRAMES = 18;
 /** Frames a notice (a shut door, nobody to switch to) stays on screen; it is said as it shows. */
 export const NOTICE_FRAMES = 150;
+/**
+ * The top of the play area: the room is centred on the screen, with a strip of the screens above
+ * and below it (or more of its own edge) round it, and the HUD drawn over it, as in A Link to the
+ * Past (owner, RQ41: no black HUD box).
+ */
+export const PLAY_Y = (SCREEN_H - ROOM_H) >> 1;
+/** The row of an indoor room whose edge pictures fill round it. */
+const ROOM_ROWS_MID = 5;
+/** Frames a place-name banner stays at least, before moving or a key clears it. */
+export const BANNER_MIN = 60;
+/** Frames the welcome banner shows on a first visit before the guard says hello. */
+export const BANNER_GREET = 120;
+
 /** Where the hero walks in to from the gate (pixels, the gate screen). */
 export const GATE_IN = { x: GATE.col * TILE, y: (GATE.row - 2) * TILE };
 
@@ -83,6 +99,12 @@ export class TownScene implements Scene {
   /** The smoke puff of the last switch (room pixels) and its age. */
   puff: { x: number; y: number; t: number } | null = null;
   notice: { text: string; until: number } | null = null;
+  /**
+   * The place-name banner (the village and the screen or room; on arrival also the NEXT HERO
+   * hint), shown on entering the village or a new place and cleared by moving or a key once it
+   * has shown BANNER_MIN frames. `t`: frames shown.
+   */
+  banner: { lines: string[]; t: number } | null = null;
   /** Someone is being talked to (their cards are up). */
   talking: Townsperson | null = null;
   /** The guard's hello is still to come (first visit, after the walk in). */
@@ -144,7 +166,22 @@ export class TownScene implements Scene {
     this.world.events.length = 0;
     this.fade = { t: 0, out: false, then: () => undefined };
     this.music = null;
-    this.say(`${spoken(VILLAGE_NAME)}. ${spoken(SCREEN_NAMES.gardens)}.`);
+    this.screen = this.world.room.id;
+    this.showBanner();
+    this.say(`${spoken(VILLAGE_NAME)}. ${spoken(this.placeName())}.`);
+  }
+
+  /** What the screen or room the hero is in is called. */
+  placeName(): string {
+    const room = this.world.room.id;
+    return isOutdoor(room) ? SCREEN_NAMES[room] : indoorName(room as IndoorId);
+  }
+
+  /** The banner for the place the hero is in (`welcome`: with the NEXT HERO hint, on arrival). */
+  showBanner(welcome = false): void {
+    const lines = [VILLAGE_NAME, fontText(this.placeName())];
+    if (welcome) lines.push('', townHudHint(this.game));
+    this.banner = { lines, t: 0 };
   }
 
   /** Announced on the first frame (the scene may be built before the announcer is listening). */
@@ -186,8 +223,11 @@ export class TownScene implements Scene {
     this.t++;
     if (!this.announced) {
       this.announced = true;
-      this.say(`${spoken(VILLAGE_NAME)}. ${this.helpSaid()}`);
+      this.showBanner(true);
+      this.say(`${spoken(VILLAGE_NAME)}. ${spoken(this.placeName())}. ${this.helpSaid()}`);
     }
+    if (this.banner) this.banner.t++;
+    const before = { x: this.hero.x, y: this.hero.y, free: this.free };
     if (this.puff && ++this.puff.t >= PUFF_FRAMES) this.puff = null;
     if (this.switchT > 0) this.switchT--;
     if (this.fade) {
@@ -196,7 +236,7 @@ export class TownScene implements Scene {
     }
     if (this.free) {
       if (input.pressed('start')) {
-        this.game.scenes.push(new TownMenuScene(this.game, () => this.leave()));
+        this.game.scenes.push(new TownMenuScene(this.game, () => this.leave(), this));
         return;
       }
       if (input.pressed('select')) this.switchHero();
@@ -206,8 +246,12 @@ export class TownScene implements Scene {
       }
     }
     this.world.update(input);
+    // The banner goes once it has been seen, as soon as the hero is walked or a key pressed.
+    const moved = before.free && (this.hero.x !== before.x || this.hero.y !== before.y);
+    if (this.banner && this.banner.t >= BANNER_MIN && (moved || anyPressed(input))) this.banner = null;
     for (const e of this.world.events.splice(0)) this.onEvent(e);
-    if (this.greet && !this.world.walkIn && !this.fade) {
+    const welcomed = !this.banner || this.banner.t >= BANNER_GREET;
+    if (this.greet && !this.world.walkIn && !this.fade && welcomed) {
       this.greet = false;
       const guard = this.world.entities.find((e) => e instanceof Townsperson && e.id === 'guard');
       if (guard instanceof Townsperson) this.talk(guard);
@@ -244,6 +288,7 @@ export class TownScene implements Scene {
     p.faceToward(this.hero.feet());
     if (p instanceof Kid) p.talking = true;
     this.talking = p;
+    this.banner = null;
     // The box goes where it hides the hero least.
     const bottom = this.hero.y < ROOM_H / 2;
     playStoryCards(
@@ -298,7 +343,10 @@ export class TownScene implements Scene {
         if (e.id !== this.screen) {
           this.screen = String(e.id);
           this.notice = null;
-          if (isOutdoor(this.screen)) this.say(`${spoken(SCREEN_NAMES[this.screen])}.`);
+          if (isOutdoor(this.screen)) {
+            this.showBanner();
+            this.say(`${spoken(SCREEN_NAMES[this.screen])}.`);
+          }
         }
         return;
       }
@@ -313,8 +361,8 @@ export class TownScene implements Scene {
           this.world.events.length = 0;
           this.screen = this.world.room.id;
           this.updateMusic();
-          const room = this.world.room.id;
-          this.say(`${spoken(isOutdoor(room) ? SCREEN_NAMES[room] : indoorName(room as IndoorId))}.`);
+          this.showBanner();
+          this.say(`${spoken(this.placeName())}.`);
         });
         return;
       }
@@ -375,14 +423,18 @@ export class TownScene implements Scene {
 
   render(r: Renderer): void {
     r.clear('#000000');
-    renderWorld(r, this.view, this.world);
+    drawSurround(r, this.view, this.world);
+    renderWorld(r, this.view, this.world, PLAY_Y);
     this.drawPuff(r);
     this.drawPrompt(r);
+    const k = this.fadeLevel();
+    if (k > 0) r.rect(0, 0, SCREEN_W, SCREEN_H, `rgba(0,0,0,${k.toFixed(3)})`);
+    // Paused, the menu has the place, the map and the hints; the HUD would only clutter it.
+    if (this.game.scenes.top instanceof TownMenuScene) return;
     drawTownHud(r, this);
+    if (this.banner && !this.fade) drawBanner(r, this.view, this.banner.lines, this.hero.y < ROOM_H / 2);
     const n = this.notice;
     if (n && this.t < n.until) drawNotice(r, fontOf(this.view), n.text);
-    const k = this.fadeLevel();
-    if (k > 0) r.rect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H, `rgba(0,0,0,${k.toFixed(3)})`);
   }
 
   /** A puff of smoke where the hero switched (two rings; one still cloud with reduce flashing). */
@@ -392,7 +444,7 @@ export class TownScene implements Scene {
     const sheet = this.view.sheet('town-folk');
     const frame = this.view.reduceFlashing ? 'puff-calm' : `puff-${Math.min(2, Math.floor(p.t / 6))}`;
     const x = p.x;
-    const y = HUD_H + p.y;
+    const y = PLAY_Y + p.y;
     if (sheet?.frames.has(frame)) r.sprite(sheet, frame, x, y);
     else r.rect(x + 2, y + 2, 12, 12, 'rgba(252,252,252,0.6)');
   }
@@ -406,7 +458,7 @@ export class TownScene implements Scene {
     const font = fontOf(this.view);
     const w = text.length * 8 + 4;
     const x = Math.max(2, Math.min(SCREEN_W - w - 2, p.x + 8 - (w >> 1)));
-    const y = HUD_H + promptRow(p.y, this.hero.y);
+    const y = PLAY_Y + promptRow(p.y, this.hero.y);
     r.rect(x, y, w, 10, 'rgba(0,0,0,0.75)');
     r.text(font, text, x + 2, y + 1);
   }
@@ -438,6 +490,9 @@ export function nextHero(game: Game): CharacterDef | null {
   return null;
 }
 
+/** Any button pressed this frame (a place-name banner goes). */
+const anyPressed = (input: InputFrame): boolean => Actions.some((a) => input.pressed(a));
+
 /** A notice on a dark band over the village's lower part. */
 function drawNotice(r: Renderer, font: ReturnType<typeof fontOf>, text: string): void {
   const t = fontText(text);
@@ -457,33 +512,215 @@ export function powerName(game: Game): string {
   return `HP ${s.hp}/${fullHp(c, s.kit)}`;
 }
 
+/** The dark outline's offsets: each HUD text's silhouette once each way, under it. */
+const OUTLINE: readonly (readonly [number, number])[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+  [1, 1],
+];
+
+/** Text with a dark outline, so it reads on grass, paths and floorboards alike. */
+function outlined(r: Renderer, view: TdView, text: string, x: number, y: number, colour?: string): void {
+  const dark = view.sheet('font', fxPalette('font', 'silhouette'));
+  if (dark) for (const [dx, dy] of OUTLINE) r.text(dark, text, x + dx, y + dy);
+  r.text((colour ? view.sheet('font', colour) : null) ?? fontOf(view), text, x, y);
+}
+
+/** One of the HUD's 8×8 icons (the town-folk sheet's `hud-*`), or a flat square without the art. */
+function icon(r: Renderer, view: TdView, frame: string, x: number, y: number, fallback: string): void {
+  const sheet = view.sheet('town-folk');
+  if (sheet?.frames.has(frame)) r.sprite(sheet, frame, x, y);
+  else r.rect(x, y, 8, 8, fallback);
+}
+
+/** Where the HUD's pieces sit (screen pixels): the hero's box, the counters, the health. */
+export const TOWN_HUD = {
+  box: { x: 12, y: 6, w: 24, h: 24 },
+  coins: { x: 44, y: 8 },
+  lives: { x: 68, y: 8 },
+  /** The health's right edge and rows (the label over it). */
+  right: 244,
+  labelY: 6,
+  healthY: 17,
+  /** Everything stays above this line (the room's top two rows show under it). */
+  bottom: 34,
+} as const;
+
+/** The health label: Mario and Luigi's is their power, everyone else's their health. */
+export function healthLabel(c: CharacterDef): string {
+  return c.damage.kind === 'powerup' ? '- POWER -' : '- HEALTH -';
+}
+
 /**
- * The village HUD (64 px over the screen): the village and the screen (or the building) on the
- * left, the hero and their power, coins and lives, the switch button's name, and a little map of
- * the six screens with the hero's.
+ * Samus's energy as her tanks and the EN count left in the one in use (her side-view HUD's: full
+ * tanks over EN), from the hero's hit points, their full count and her kit's tanks.
+ */
+export function energyOf(
+  hp: number,
+  full: number,
+  tanks: number,
+  start: number,
+): { full: number; total: number; en: number } {
+  const size = tanks > 0 ? (full - start) / tanks : 0;
+  if (!(size > 0)) return { full: 0, total: 0, en: hp };
+  const got = Math.max(0, Math.min(tanks, Math.floor((hp - 1) / size)));
+  return { full: got, total: tanks, en: Math.max(0, hp - got * size) };
+}
+
+/**
+ * The village HUD, drawn over the play area in A Link to the Past's manner (no panel behind it):
+ * at the top left the hero's portrait in a framed box and the coin and life counters under their
+ * icons; at the top right the hero's health in their own style under a "- HEALTH -" label
+ * (hearts, a bar, Samus's EN and tanks, or Mario and Luigi's power). Every piece is outlined.
  */
 function drawTownHud(r: Renderer, scene: TownScene): void {
   const game = scene.game;
   const view = scene.view;
-  const font = fontOf(view);
   const s = game.state;
-  r.rect(0, 0, SCREEN_W, HUD_H, '#000000');
-  const room = scene.world.room.id;
-  const place = isOutdoor(room) ? SCREEN_NAMES[room] : indoorName(room as IndoorId);
-  r.text(font, VILLAGE_NAME, 8, 6);
-  r.text(font, fontText(place), 8, 16);
-  r.text(font, fontText(s.character.name.toUpperCase()), 8, 30);
-  r.text(font, fontText(powerName(game)), 8, 40);
-  r.text(font, `COINS×${String(s.coins).padStart(2, '0')}`, 120, 30);
-  r.text(font, `LIVES×${String(s.lives).padStart(2, '0')}`, 120, 40);
-  r.text(font, townHudHint(game), 8, 52);
-  // The six screens, the hero's lit (indoors: the screen the building stands on).
-  const here = isOutdoor(room) ? SCREEN_AT[room] : screenOfIndoor(room);
-  const mx = 200;
-  const my = 6;
-  for (const [, at] of Object.entries(SCREEN_AT)) {
-    const on = here && at[0] === here[0] && at[1] === here[1];
-    r.rect(mx + at[0] * 16, my + at[1] * 11, 15, 10, on ? '#80d010' : '#305830');
+  const c = s.character;
+  const H = TOWN_HUD;
+  // The hero's box: a dark rim, a gold frame, a night-blue inside, the hero from above.
+  const b = H.box;
+  r.rect(b.x, b.y, b.w, b.h, '#101010');
+  r.rect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, '#f8d878');
+  r.rect(b.x + 3, b.y + 3, b.w - 6, b.h - 6, '#182848');
+  const look = overheadLook(c, s.powerState, s.kit, 'down', 0);
+  const sheet = view.sheet(look.sheet, look.palette) ?? view.sheet(look.sheet);
+  const f = sheet?.frames.get(look.frame);
+  if (sheet && f) r.sprite(sheet, look.frame, b.x + 12 - (f.w >> 1), b.y + 12 - (f.h >> 1));
+  // Coins and lives: the icon over the count.
+  const two = (n: number) => String(Math.max(0, Math.min(99, n))).padStart(2, '0');
+  outlined(r, view, '$', H.coins.x + 4, H.coins.y);
+  outlined(r, view, two(s.coins), H.coins.x, H.coins.y + 10);
+  icon(r, view, 'hud-life', H.lives.x + 4, H.lives.y, '#40a040');
+  outlined(r, view, two(s.lives), H.lives.x, H.lives.y + 10);
+  // Health, right-aligned under its label.
+  const width = drawHealth(r, view, game);
+  const label = healthLabel(c);
+  const lx = Math.min(SCREEN_W - 8 - label.length * 8, H.right - (width >> 1) - label.length * 4);
+  outlined(r, view, label, lx, H.labelY, 'font-red');
+}
+
+/** The hero's health at the HUD's top right; returns how wide it is drawn. */
+function drawHealth(r: Renderer, view: TdView, game: Game): number {
+  const s = game.state;
+  const c = s.character;
+  const H = TOWN_HUD;
+  const y = H.healthY;
+  if (c.damage.kind === 'powerup') {
+    const word = powerName(game);
+    const frame = word === 'FIRE' ? 'hud-flower' : word === 'SUPER' ? 'hud-shroom' : 'hud-small';
+    const w = 11 + word.length * 8;
+    icon(r, view, frame, H.right - w, y, '#d83830');
+    outlined(r, view, word, H.right - word.length * 8, y);
+    return w;
+  }
+  const full = fullHp(c, s.kit);
+  const style = c.damage.hudStyle;
+  if (style === 'hearts') {
+    // Two hit points a heart, ten to a row (a second row under the first).
+    const hearts = Math.ceil(full / 2);
+    const perRow = Math.min(10, hearts);
+    let row = '';
+    const rows: string[] = [];
+    for (let i = 0; i < hearts; i++) {
+      const left = s.hp - i * 2;
+      row += left >= 2 ? 'h' : left === 1 ? 'f' : 'e';
+      if (row.length === perRow) {
+        rows.push(row);
+        row = '';
+      }
+    }
+    if (row) rows.push(row);
+    rows.forEach((t, i) => outlined(r, view, t, H.right - perRow * 8, y + i * 9));
+    return perRow * 8;
+  }
+  if (style === 'number') {
+    const e = energyOf(s.hp, full, s.kit.tanks ?? 0, startHp(c));
+    const text = `EN${String(Math.round(e.en)).padStart(2, '0')}`;
+    const w = text.length * 8 + (e.total > 0 ? e.total * 7 + 2 : 0);
+    const x0 = H.right - w;
+    for (let i = 0; i < e.total; i++) {
+      r.rect(x0 + i * 7 - 1, y, 8, 7, '#101010');
+      r.rect(x0 + i * 7, y + 1, 6, 5, '#fcfcfc');
+      if (i >= e.full) r.rect(x0 + i * 7 + 1, y + 2, 4, 3, '#202020');
+    }
+    outlined(r, view, text, H.right - text.length * 8, y);
+    return w;
+  }
+  // A bar of the hero's hit points, two pixels each, in a dark frame.
+  const w = full * 2;
+  const x0 = H.right - w;
+  r.rect(x0 - 2, y - 1, w + 3, 9, '#101010');
+  for (let i = 0; i < full; i++) {
+    const on = i < s.hp;
+    r.rect(x0 + i * 2, y + 1, 1, 1, on ? '#fcfcfc' : '#505050');
+    r.rect(x0 + i * 2, y + 2, 1, 4, on ? '#f8d878' : '#303030');
+  }
+  return w;
+}
+
+/**
+ * The place-name banner (A Link to the Past's): a framed box with the village's name in gold and
+ * the place's under it (on arrival also the NEXT HERO hint), over the play area's top, or its
+ * bottom when the hero is in the top half.
+ */
+function drawBanner(r: Renderer, view: TdView, lines: readonly string[], bottom: boolean): void {
+  const w = Math.min(SCREEN_W, Math.max(...lines.map((l) => l.length)) * 8 + 16);
+  const h = lines.length * 10 + 10;
+  const x = (SCREEN_W - w) >> 1;
+  const y = bottom ? PLAY_Y + ROOM_H - h - 6 : TOWN_HUD.bottom + 6;
+  r.rect(x, y, w, h, '#101010');
+  r.rect(x + 1, y + 1, w - 2, h - 2, '#d8d8d8');
+  r.rect(x + 2, y + 2, w - 4, h - 4, 'rgba(16,24,56,0.92)');
+  lines.forEach((l, i) => {
+    if (!l) return;
+    const sheet = (i === 0 ? view.sheet('font', 'font-gold') : null) ?? fontOf(view);
+    r.text(sheet, l, x + ((w - l.length * 8) >> 1), y + 6 + i * 10);
+  });
+}
+
+/**
+ * The play area's surroundings: the room fills 176 of the screen's 240 rows, so a strip of the
+ * screen above shows over it and of the screen below under it, as a scrolling view would (more
+ * of the room's own edge where there is none); indoors, the house's outside. They slide with the
+ * rooms.
+ */
+function drawSurround(r: Renderer, view: TdView, world: TopDownWorld): void {
+  const placed: [Room, number, number][] = [];
+  let ox = 0;
+  let oy = PLAY_Y;
+  const tr = world.transition;
+  if (tr) {
+    const v = DIR_VEC[SIDE_DIR[tr.side]];
+    const span = v.dx !== 0 ? ROOM_W : ROOM_H;
+    const shift = Math.round((tr.t / tr.frames) * span);
+    placed.push([tr.from, -v.dx * shift, PLAY_Y - v.dy * shift]);
+    ox = v.dx * (span - shift);
+    oy = PLAY_Y + v.dy * (span - shift);
+  }
+  placed.push([world.room, ox, oy]);
+  const open = () => 'open' as const;
+  for (const [room, x, y] of placed) {
+    const v: TdView =
+      room.def.dark && view.sheets.tilesDark ? { ...view, tilePalette: view.sheets.tilesDark } : view;
+    if (room.wall !== 0) {
+      // Indoors: the house's outside (its edge column's ground), above and below.
+      const art = room.def.art?.[ROOM_ROWS_MID * ROOM_COLS] ?? null;
+      const tiles = v.sheet(v.sheets.tiles, v.tilePalette);
+      for (const by of [y - 2 * TILE, y - TILE, y + ROOM_H, y + ROOM_H + TILE])
+        for (let col = 0; col < ROOM_COLS; col++)
+          if (art?.[0] && tiles) r.sprite(tiles, art[0], x + col * TILE, by);
+          else r.rect(x + col * TILE, by, TILE, TILE, '#201810');
+      continue;
+    }
+    for (const dir of [-1, 1] as const) {
+      const next = world.dungeon.roomAt(room.gx, room.gy + dir);
+      if (next && next.wall === 0) drawRoomTiles(r, v, next, open, x, y + dir * ROOM_H);
+      else for (const k of [2, 1]) drawRoomTiles(r, v, room, open, x, y + dir * k * TILE);
+    }
   }
 }
 
@@ -507,9 +744,19 @@ function screenOfIndoor(room: string): readonly [number, number] | null {
   return door && isOutdoor(door.room) ? SCREEN_AT[door.room] : null;
 }
 
-/** The village's menu: Continue, Quit to map (and, in dev mode, the assists). */
+/**
+ * The village's menu: Continue, Quit to map (and, in dev mode, the assists); under them where the
+ * hero is (the place and a little map of the six screens, the hero's lit) and the NEXT HERO hint,
+ * the HUD's old lines (RQ41: the HUD is drawn over the village now, with no room for them).
+ */
 export class TownMenuScene extends MenuScene {
-  constructor(game: Game, quit: () => void) {
+  private told = false;
+
+  constructor(
+    game: Game,
+    quit: () => void,
+    private readonly town: TownScene | null = null,
+  ) {
     super(
       game,
       VILLAGE_NAME,
@@ -536,13 +783,54 @@ export class TownMenuScene extends MenuScene {
     super.enter();
   }
 
+  /** The first time: the place and the NEXT HERO hint, then the item, as one announcement. */
+  protected override announce(): void {
+    if (this.told || !this.town) return super.announce();
+    this.told = true;
+    const it = this.items[this.index];
+    const said = `${spoken(this.town.placeName())}. ${nextHeroSaid(this.game)}. ${it ? it.label : ''}`;
+    this.game.deps.announcer?.say(said);
+  }
+
   exit(): void {
     this.game.ctx.audio.resume();
   }
 
-  /** The panel over a blank HUD band: the village HUD's lines would show through and round it. */
   override render(r: Renderer): void {
-    r.rect(0, 0, SCREEN_W, HUD_H, '#000000');
+    r.rect(0, 0, SCREEN_W, SCREEN_H, 'rgba(0,0,0,0.45)');
     super.render(r);
+    const town = this.town;
+    if (!town) return;
+    const font = fontOf(town.view);
+    const top = 52 + Math.min(9, this.items.length) * 14 + 6;
+    if (top > 112) return; // the dev items fill the panel
+    const centre = (t: string, y: number) => r.text(font, t, (SCREEN_W - t.length * 8) >> 1, y);
+    const place = fontText(town.placeName());
+    centre(place, top);
+    // The six screens, the hero's lit (indoors: the screen the building stands on).
+    const room = town.world.room.id;
+    const here = isOutdoor(room) ? SCREEN_AT[room] : screenOfIndoor(room);
+    const mx = (SCREEN_W - 48) >> 1;
+    const my = top + 12;
+    for (const at of Object.values(SCREEN_AT)) {
+      const on = here && at[0] === here[0] && at[1] === here[1];
+      r.rect(mx + at[0] * 16, my + at[1] * 11, 15, 10, on ? '#80d010' : '#305830');
+    }
+    const [key, what] = nextHeroLines(this.game);
+    centre(what, my + 30);
+    centre(key, my + 40);
   }
+}
+
+/** The NEXT HERO hint in two lines for the menu: the button (with its key), then what it does. */
+export function nextHeroLines(game: Game): [string, string] {
+  const key =
+    controlScheme(game) === 'touch' ? 'HERO BUTTON' : fontText(abilityHint(game, 'TOOLS', 'select'));
+  return [key, 'NEXT HERO:'];
+}
+
+/** The NEXT HERO hint as said. */
+function nextHeroSaid(game: Game): string {
+  const [key] = nextHeroLines(game);
+  return `${key}: next hero`;
 }
