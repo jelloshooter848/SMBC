@@ -19,7 +19,8 @@ import type { World } from '../../world/world';
  * - `telly-port x y`: a hatch on the deck that lets out a Telly now and then while it is on
  *   screen (at most two of its own at a time, never with the hero right on top of it).
  * - Telly: a little flying can with one eye that drifts slowly toward the nearest hero, through
- *   everything. One hit.
+ *   everything; it bursts on the hero it touches (a hit, it never clings on) and after a while
+ *   gives up and drifts off the top of the screen. One shot.
  * - `gull x y`: a robot gull that sweeps in from the right at its height, a gentle bob, and drops
  *   one bomb as it passes over the hero. One hit. Its bomb falls, can be shot down for points, and
  *   bursts on the deck (a small blast that hurts whoever stands in it).
@@ -103,6 +104,9 @@ export const TELLY_SCORES: KillScores = { stomp: 200, attack: 200, star: 200, be
 /** Drift toward the hero: up to 0.5 px a frame, turning by a little each frame. */
 const TELLY_MAX = 0x00800;
 const TELLY_TURN = 0x00020;
+/** Frames it chases before it gives up and drifts off the top of the screen. */
+export const TELLY_LIFE = 540;
+const TELLY_LEAVE = 0x01000;
 
 export class Telly extends SkyBot {
   readonly kind = 'telly';
@@ -115,12 +119,28 @@ export class Telly extends SkyBot {
     this.despawnMargin = 48;
     this.layer = 'front';
     this.currentFrame = 'telly-0';
+    // It bursts on the hero it touches (World.collisions would let it cling on).
+    this.contactHurts = false;
   }
 
   update(world: World): void {
     this.tick();
     this.age++;
     const b = this.body;
+    this.currentFrame = `telly-${(this.age >> 3) & 1}`;
+    for (const p of world.activePlayers()) {
+      if (!overlaps(b, p.body)) continue;
+      world.hurtPlayer(p, p.centerX < b.x + (b.w >> 1) ? -1 : 1);
+      world.spawn(new Explosion(b.x + (b.w >> 1), b.y + (b.h >> 1), true));
+      world.audio.sfx('kick');
+      return this.destroy();
+    }
+    if (this.age > TELLY_LIFE) {
+      // Given up: off the top of the screen.
+      b.y -= velToSub(TELLY_LEAVE);
+      if (b.y + b.h < -px(16)) this.destroy();
+      return;
+    }
     const p = world.nearestPlayer(b.x + (b.w >> 1));
     const dx = p.centerX - (b.x + (b.w >> 1));
     const dy = p.body.y + (p.body.h >> 1) - (b.y + (b.h >> 1));
@@ -132,7 +152,6 @@ export class Telly extends SkyBot {
     b.x += velToSub(b.vx);
     b.y += velToSub(b.vy);
     if (dx !== 0) this.facing = dx < 0 ? -1 : 1;
-    this.currentFrame = `telly-${(this.age >> 3) & 1}`;
     if (b.x + b.w < world.camera.x - px(48) || b.y > px(this.levelHeightPx + 16)) this.destroy();
   }
 }
@@ -405,9 +424,10 @@ export const YOKU_WARN = 30;
 export class Yoku extends Entity {
   readonly kind = 'yoku';
   shown = false;
-  private readonly period: number;
-  private readonly on: number;
-  private readonly at: number;
+  /** Its cycle, how long it shows in each, and where in the shared clock it starts (frames). */
+  readonly period: number;
+  readonly on: number;
+  readonly at: number;
   constructor(
     readonly tx: number,
     readonly ty: number,

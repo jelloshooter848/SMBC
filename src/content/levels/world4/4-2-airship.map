@@ -99,9 +99,10 @@ smb3:railing 97 7
 ;; - Shoot it, don't stomp it (World.megamanShip): cannonballs and Bullet Bills are shot down for
 ;;   points, every cannon takes four buster hits (a charge shot is three) and is wrecked, and a
 ;;   charge shot goes on through what it beats, so one clears a line of them.
-;; - His own enemies (entities/enemies/wily-sky.ts): a Telly hatch on the fore deck (18) and one
-;;   in the gateway (65); a shielded Joe on the main deck (40) and one on the lower stern deck
-;;   (78, where Rocky Wrench was); two robot gulls with bombs over the middle (60, 76).
+;; - His own enemies (entities/enemies/wily-sky.ts): a Telly hatch on the fore deck (18, where
+;;   Rocky Wrench was); a shielded Joe in the gateway under the thick block (66: room to jump over
+;;   him, and no cannon fire there) and one on the lower stern deck (78, where the other Rocky
+;;   Wrench was); two robot gulls with bombs over the middle (60, 76).
 ;; - THE RIGGING: the stern's four steps (83-90) are gone; four appearing blocks lead from the
 ;;   lower stern deck up the rigging to the high stern deck and its pipe, each showing for 110 of
 ;;   every 180 frames, the next 45 frames after the last, the last moments darker as a warning.
@@ -111,8 +112,7 @@ music mm-wily
 + telly-port 18 8
 - rocky 77 12
 + shield-joe 78 12
-+ shield-joe 40 11
-+ telly-port 65 11
++ shield-joe 66 11
 + gull 60 5
 + gull 76 4
 83 9 ........ *4

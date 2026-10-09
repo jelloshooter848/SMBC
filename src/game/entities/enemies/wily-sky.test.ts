@@ -391,7 +391,7 @@ describe("Larry's room on Mega Man's airship", () => {
     return { ...r, larry };
   }
 
-  it('Larry has a hit-point bar: buster 2, a charge shot 7, a stomp a third, a short flash', () => {
+  it('Larry has a hit-point bar: buster 4, a charge shot 10, a stomp a third, a short flash', () => {
     const { world, larry } = room(true);
     expect(larry.hpMode).toBe(true);
     expect(larry.hp).toBe(LARRY_MM_HP);
@@ -412,7 +412,7 @@ describe("Larry's room on Mega Man's airship", () => {
     expect(fresh.larry.defeated).toBe(true);
   });
 
-  it('beaten with the buster alone: fourteen hits', () => {
+  it('beaten with the buster alone: seven hits', () => {
     const { world, step, larry } = room(true);
     let hits = 0;
     for (let i = 0; i < 40 && !larry.defeated; i++) {
@@ -420,7 +420,7 @@ describe("Larry's room on Mega Man's airship", () => {
       larry.hit({ kind: 'buster', amount: 1, owner: null, dirX: 1 }, world);
       hits++;
     }
-    expect(hits).toBe(LARRY_MM_HP / LARRY_MM_SHOT);
+    expect(hits).toBe(Math.ceil(LARRY_MM_HP / LARRY_MM_SHOT));
     step(60);
     expect(larry.defeated).toBe(true);
   });

@@ -86,5 +86,7 @@ smb3:ceiling-pipe 1 3
 
 [variant megaman]
 ;; Mega Man's airship (0.4.39; World.megamanShip): Larry's room stays an SMB3 fight, but Larry has
-;; a Mega Man 2 style hit-point bar (Larry.hpMode: buster 2 of 28, a charge shot 7, a stomp still a
-;; third), and his wand blasts can be shot down. No tiles change.
+;; a Mega Man 2 style hit-point bar (Larry.hpMode: buster 4 of 28, a charge shot 10, a stomp still a
+;; third), and his wand blasts can be shot down. The raised post at (7,12) goes: it took every
+;; standing buster shot at Larry across it, and a shot from on top of it flew over his head.
+7 12 .
