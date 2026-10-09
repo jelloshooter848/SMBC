@@ -195,6 +195,43 @@ const clockIn = { b: '3', c: '4', h: 'd', i: 'e', a: 'f' };
 const clockmaker0 = recolor(partner('townsperson-0'), clockIn);
 const clockmaker1 = recolor(partner('townsperson-1'), clockIn);
 
+/* ---------------------------------------------------------------- World 6: Dragon Valley */
+
+/**
+ * 6-1's ninja of Ryu's clan (new head, 16x32): a charcoal hood and mask with a band of skin and
+ * eyes, on Lance's build in charcoal garb with a red sash and black boots. The blink is the eyes.
+ */
+const ninjaHead: Rows = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '.....000000.....',
+  '....04444440....',
+  '...0444444440...',
+  '...0444444440...',
+  '...0455555540...',
+  '...0450550540...',
+  '...0444444440...',
+  '....04444440....',
+  '....00444400....',
+];
+const ninjaBody = (lance: string): Rows =>
+  swap(
+    swap(recolor(partner(lance).slice(13), { 5: '4', 6: '3', c: '9', e: '4' }), 16, '...0000000000...'),
+    17,
+    '..000000000000..',
+  );
+const ninja0: Rows = [...ninjaHead, ...ninjaBody('lance-0')];
+const ninja1 = swap(ninja0, 9, '...0455555540...');
+/** 6-3's hermit: World 6's elder in a red-brown robe. */
+const hermit0 = local('elder-0', { 3: '7', 4: '8' });
+const hermit1 = local('elder-1', { 3: '7', 4: '8' });
+/** 6-4's clan scout: the ninja in forest green with a yellow sash. */
+const scoutIn = { 4: 'i', 3: 'h', 9: 'f' };
+const clanScout0 = recolor(ninja0, scoutIn);
+const clanScout1 = recolor(ninja1, scoutIn);
+
 export const npcsDef: SpriteDef = {
   palette: 'npcs',
   frames: {
@@ -226,5 +263,11 @@ export const npcsDef: SpriteDef = {
     'garlic-seller-1': garlicSeller1,
     'clockmaker-0': clockmaker0,
     'clockmaker-1': clockmaker1,
+    'ninja-0': ninja0,
+    'ninja-1': ninja1,
+    'hermit-0': hermit0,
+    'hermit-1': hermit1,
+    'clan-scout-0': clanScout0,
+    'clan-scout-1': clanScout1,
   },
 };

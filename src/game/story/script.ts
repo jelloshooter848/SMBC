@@ -1360,6 +1360,86 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
   },
+
+  /* ------------------------ World 6 (Dragon Valley, Ryu): the ninja clan and a mountain hermit */
+
+  // 6-1's start, in the moonlit field.
+  ninja: {
+    verb: 'TALK',
+    name: 'A ninja',
+    hero: 'ryu',
+    pages: [
+      ['NINJA:', '', '...YOU SAW ME? THEN I AM', 'NO NINJA. HMPH.'],
+      [
+        'NINJA:',
+        '',
+        'OUR MASTER RYU IS LOST TO',
+        'A SPELL. THE CITY STREETS',
+        'AT NIGHT. AN AGENT TRACKS',
+        'HIM. FIND HIM, I BEG YOU.',
+      ],
+    ],
+    after: [
+      [
+        'NINJA:',
+        '',
+        'MASTER RYU IS FREE. HIS',
+        'FATHER ONCE FOUGHT A DUEL',
+        'ON A FIELD LIKE THIS, UNDER',
+        'A MOON LIKE THIS.',
+      ],
+      ['NINJA:', '', 'TWO LEAPS. ONE STRIKE. THE', 'GRASS STILL TALKS ABOUT IT.'],
+    ],
+  },
+  // 6-3's start, at the foot of the snowy pass.
+  hermit: {
+    verb: 'TALK',
+    name: 'A hermit',
+    hero: 'ryu',
+    pages: [
+      ['HERMIT:', '', "COLD, ISN'T IT? THE SPELL", 'BROUGHT OUR SNOW ALONG.', 'AND TOOK OUR NINJA.'],
+      [
+        'HERMIT:',
+        '',
+        'SEEK RYU IN THE CITY',
+        'STREETS AT NIGHT. AN',
+        'AMERICAN AGENT IS ON HIS',
+        'TRAIL. GO, AND HURRY.',
+      ],
+    ],
+    after: [
+      ['HERMIT:', '', 'RYU IS FREE. GOOD. NOW, ON', 'THESE CLIFFS, A WARNING:'],
+      ['HERMIT:', '', 'BEWARE THE BIRDS. EVERY', 'NINJA FEARS THE BIRDS.', 'THEY KNOW WHAT THEY DID.'],
+    ],
+  },
+  // 6-4, at the foot of the demon temple's entrance steps.
+  'clan-scout': {
+    verb: 'TALK',
+    name: 'A clan scout',
+    hero: 'ryu',
+    pages: [
+      ['CLAN SCOUT:', '', 'THE WAY OUT OF THIS VALLEY', 'IS SEALED UNTIL MASTER RYU', 'IS FREE.'],
+      [
+        'CLAN SCOUT:',
+        '',
+        'HE WAS LAST SEEN IN THE',
+        'CITY STREETS AT NIGHT. GO.',
+        'THE CLAN IS COUNTING ON',
+        'YOU.',
+      ],
+    ],
+    after: [
+      [
+        'CLAN SCOUT:',
+        '',
+        'MASTER RYU IS FREE. HEED',
+        'THIS: IN OUR TEMPLES, FALL',
+        'TO THE MASTER AND YOU START',
+        'AGAIN FROM FAR BELOW.',
+      ],
+      ['CLAN SCOUT:', '', "HERE? I DON'T KNOW. DON'T", 'FALL.'],
+    ],
+  },
 };
 
 /* ---------------------------------------------------------------- 2.13: the freed talks */

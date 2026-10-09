@@ -36,6 +36,8 @@ campaignMusic: ng-stage
 ################ ####..#########. .....##..####### #########..##### ##########...### #############... ################ ###############. ......##.####### #####......##### ####...#######.. ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a ninja of Ryu's clan at the start, in the moonlit field.
+partner 10 12 who=ninja campaign=true
 decor-castle-big -2 12
 lakitu 21 0 end=170
 piranha 102 10

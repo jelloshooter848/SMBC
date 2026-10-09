@@ -2390,6 +2390,121 @@ ME TOO, AND VANISHED.
 LIKE A NINJA.
 ```
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Ryu: missing, they plead and say where to
+look (by place, never by level number); freed, their found lines.
+
+**6-1: a ninja.** NEW partner (`ninja`, new art: a charcoal hood and mask, a red sash). One of Ryu's clan, at
+**6-1's start** (column 10), in the moonlit field. Freed, he remembers the duel Ryu's story opens with.
+
+```text
+NINJA:
+
+...YOU SAW ME? THEN I AM
+NO NINJA. HMPH.
+```
+
+```text
+NINJA:
+
+OUR MASTER RYU IS LOST TO
+A SPELL. THE CITY STREETS
+AT NIGHT. AN AGENT TRACKS
+HIM. FIND HIM, I BEG YOU.
+```
+
+After Ryu is freed:
+
+```text
+NINJA:
+
+MASTER RYU IS FREE. HIS
+FATHER ONCE FOUGHT A DUEL
+ON A FIELD LIKE THIS, UNDER
+A MOON LIKE THIS.
+```
+
+```text
+NINJA:
+
+TWO LEAPS. ONE STRIKE. THE
+GRASS STILL TALKS ABOUT IT.
+```
+
+**6-3: a hermit.** NEW partner (`hermit`). World 6's elder in a red-brown robe, at **6-3's start** (column 8), at
+the foot of the snowy pass. Freed, he warns of what every ninja on a cliff fears.
+
+```text
+HERMIT:
+
+COLD, ISN'T IT? THE SPELL
+BROUGHT OUR SNOW ALONG.
+AND TOOK OUR NINJA.
+```
+
+```text
+HERMIT:
+
+SEEK RYU IN THE CITY
+STREETS AT NIGHT. AN
+AMERICAN AGENT IS ON HIS
+TRAIL. GO, AND HURRY.
+```
+
+After Ryu is freed:
+
+```text
+HERMIT:
+
+RYU IS FREE. GOOD. NOW, ON
+THESE CLIFFS, A WARNING:
+```
+
+```text
+HERMIT:
+
+BEWARE THE BIRDS. EVERY
+NINJA FEARS THE BIRDS.
+THEY KNOW WHAT THEY DID.
+```
+
+**6-4: a clan scout.** NEW partner (`clan-scout`). The ninja in forest green with a yellow sash, at the foot of
+**6-4's entrance steps** (column 8). Freed, the temple rule every Ninja Gaiden player remembers.
+
+```text
+CLAN SCOUT:
+
+THE WAY OUT OF THIS VALLEY
+IS SEALED UNTIL MASTER RYU
+IS FREE.
+```
+
+```text
+CLAN SCOUT:
+
+HE WAS LAST SEEN IN THE
+CITY STREETS AT NIGHT. GO.
+THE CLAN IS COUNTING ON
+YOU.
+```
+
+After Ryu is freed:
+
+```text
+CLAN SCOUT:
+
+MASTER RYU IS FREE. HEED
+THIS: IN OUR TEMPLES, FALL
+TO THE MASTER AND YOU START
+AGAIN FROM FAR BELOW.
+```
+
+```text
+CLAN SCOUT:
+
+HERE? I DON'T KNOW. DON'T
+FALL.
+```
+
 **Castle 6-4** (a Blooper). The hero's remark:
 
 ```text
