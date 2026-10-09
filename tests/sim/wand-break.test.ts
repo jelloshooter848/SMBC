@@ -269,8 +269,9 @@ describe('8-4: the wand breaks (campaign)', () => {
     const r = clearCastle(campaign84(), true, { state, who: 1 });
     expect(r.placed).toBe(true);
     expect(r.wand).toBeDefined();
-    const thanks = `THANK YOU ${MEGAMAN.hudName}!`;
-    expect(thanks).toBe('THANK YOU MEGA!');
+    // The hero's full name, never the HUD's short one (0.4.35).
+    const thanks = `THANK YOU ${MEGAMAN.name.toUpperCase()}!`;
+    expect(thanks).toBe('THANK YOU MEGA MAN!');
     expect(r.texts).toEqual([[thanks], [thanks, '', ...PAGES.reveal], [thanks, '', ...PAGES.news]]);
     expect(r.said.slice(1)).toEqual([
       [thanks, ...PAGES.reveal, 'OK to continue.'].join(' '),

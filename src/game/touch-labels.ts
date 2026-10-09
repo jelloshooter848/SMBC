@@ -76,7 +76,7 @@ export function levelTouchLabels(p: Player | undefined, world: World): TouchLabe
   // Under water JUMP strokes, except for a seabed walker (Mega Man, Samus) who still jumps.
   else if (p.inWater && p.profile.swim?.mode !== 'seabed') out.jump = 'SWIM';
   // By someone to talk to, C is the TALK button (READ for the bird statue), 0.4.35.
-  const verb = world.talkVerb(p);
+  const verb = world.talkVerb?.(p);
   if (verb) out.special = verb;
   return out;
 }

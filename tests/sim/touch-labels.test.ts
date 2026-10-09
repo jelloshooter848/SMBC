@@ -83,7 +83,8 @@ describe('touch labels per scene', () => {
   it('menus: A is OK, B is BACK only where there is a way back', () => {
     const h = makeGame();
     h.game.showTitle();
-    expect(shown(h.game)).toBe('OK  - - -'); // B blank, only for the developer code
+    // B blank, only for the developer code; SELECT is the speaker's SOUND (0.4.35).
+    expect(shown(h.game)).toBe('OK  - - SOUND');
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop()));
     expect(shown(h.game)).toBe('OK BACK - - -');
     // The pause menu's Assists entry (campaign, dev mode) opens a menu with a way back.
