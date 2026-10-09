@@ -1228,8 +1228,59 @@ her own completability search (`sophia-sweep.test.ts`, `sophia-routes.test.ts`).
 
 ## Hero training (optional practice rooms)
 
-Mario's tutorial is stage 1-0. Every other hero has an optional practice room (owner decision:
-"tutorials other than Mario's can be optional"). Code: `src/game/tutorial/`.
+Mario's tutorial is stage 1-0. Every other hero has an optional training (owner decision:
+"tutorials other than Mario's can be optional"). Code: `src/game/tutorial/`. Since 0.4.37 Luigi,
+Link, Mega Man and Samus train in a **training stage** of their own (below); Simon, Ryu, Bill and
+Sophia III keep the 0.4.34 practice rooms until 0.4.38 (`hasTraining`, `trainingScene` in
+`training.ts` pick one or the other). The question, the save, Pause → Training and the Arena's
+training round are the same for both.
+
+### Training stages (0.4.37)
+
+A short stage per hero in their own game's look and music (`src/content/levels/training/<hero>.map`,
+loaded with `?raw`, out of the level library and the dev select), built on Mario's 1-0: one tip at a
+time in 1-0's box, gates that hold the way, Toad's card at a closed gate, NICE! when a tip is done,
+the flagpole at the end. Code: `hero-stage.ts` (`HeroStageScene`), `heroes/<hero>.ts` (columns,
+lessons, gates and checks, as `mario-1-0.ts`), `kit.ts`, `targets.ts`; the director
+(`stage-tutorial.ts`) runs both 1-0 and the stages through `TutorialHost`.
+
+| Hero     | Map (theme, song)             | Lessons, in order (in brackets: the power block's item)                                                                                                   |
+| -------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Luigi    | `luigi.map` (overworld)       | high jump (out of a well only his jump clears), run (the sprint bar), slippery stop, floaty running jump (a wide ditch), [Mushroom]                       |
+| Link     | `link.map` (zelda2, field)    | sword, shield, down-thrust, up-thrust, boomerang, [Heart Container], [Bomb Bag], [Shield spell], [Jump spell], [Blue Ring], [Fire spell], [Magical Sword] |
+| Mega Man | `megaman.map` (megaman-stage) | buster, slide, [Helmet], charge shot, bricks, [Saw], [Leaf], [Rush Coil], [Flame], [Knuckle], [Bolt]                                                      |
+| Samus    | `samus.map` (brinstar)        | beam, aim up, morph ball, bomb jump, [Energy Tank], [Long Beam], [Missiles], [Ice Beam], [Varia Suit], [Wave Beam]                                        |
+
+- **The scene.** Its own World and a fresh GameState for the hero (`heroStart`: the campaign's
+  first kit, small, one life, no clock, no score popups); the run's GameState is never touched.
+  Power-ups come from real power blocks (`[hero-items]` sections, used here outside the campaign),
+  grow item first, then the order of POWERUPS.md 6.2; the item's name leads the box's first line
+  ("BLUE RING! ...") instead of the level's caption. The HUD shows TRAINING. Toad greets the hero
+  (a card that waits for a key). MENU: Continue / Skip this lesson (its item is given quietly) /
+  Skip training. A replay (Pause → Training, the Arena) first offers START AT: any lesson.
+- **Recovery.** Health refills at each lesson start (not in the lessons about being hit: Link's
+  Blue Ring, Samus's Varia Suit). Toad's card at a gate puts the hero back at the lesson's start
+  and rebuilds that stretch (its block used once the item is taken, its targets fresh, done
+  lessons' targets gone); a death costs no life and stands the hero up at the current lesson.
+  Every put-back and respawn restores the **kit floor**: every item of the lessons done so far
+  (`kit.ts`); what was in progress (`TRANSIENT_KIT`: the morph ball, a running spell, a charge) is
+  dropped.
+- **Targets and walkers** (`targets.ts`): the straw target (`TrainingTarget`: never falls, pops
+  and comes back; it can shoot at the hero for the shield lesson, hang from a ceiling for aim-up,
+  or be tough for the bomb and the charge shot); `TrainingDoor` sends walkers out of a door or
+  pipe only while its lesson is up and its item taken, so none roam past. `StageWatch` logs every
+  enemy hit (by what) and every hurt (with its cost), shield blocks and leaf swats for the checks.
+- **Meters in the box**: the sprint bar (Luigi), the charge bar (Mega Man), Link's FREE / HURT
+  lights (the Blue Ring: green FREE, red HURT, lit by each hit), Samus's "-4 EN (WAS -8)" note;
+  the last lights and note stay up under NICE!.
+- **Sims**: `tests/sim/training-<hero>.test.ts` play each stage to the flagpole by a bot
+  (`stage-bot.ts`), with keys and touch, checking every gate holds, Toad's card only when still on
+  the ground, the box never covers the hero, at most 3 lines, the screen's colour never flashing,
+  and the run's state untouched; `training-stages.test.ts` checks the item order, the prompts on
+  every input and the rebuilt stretches.
+- **Simon (0.4.38 note, owner)**: his stage folds Double Shot and Triple Shot into one lesson.
+
+### Practice rooms (0.4.34: Simon, Ryu, Bill, Sophia III until 0.4.38)
 
 - **The question.** The first time a hero other than Mario is picked on a file (entering a level
   from the map, the pick after a death, player two's pick), "<HERO> TRAINING?" asks YES / NO
