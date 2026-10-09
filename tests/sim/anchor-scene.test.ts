@@ -125,7 +125,13 @@ describe('the anchor scene (campaign story, once per file)', () => {
     expect(untilCard(h)).toEqual(['MARIO:', '', "LET'S GET HIM!"]);
     expect(h.said).toContain("MARIO: LET'S GET HIM! OK to continue.");
     ok(h);
-    // 7. Up the chain into the airship.
+    // 7. The hero runs to the chain and climbs it into the airship.
+    let climbed = false;
+    for (let f = 0; f < 400 && h.top() === main; f++) {
+      h.step();
+      if (p.anim === 'climb' && Math.abs(toPx(p.centerX) - (ANCHOR_COL * 16 + 8)) <= 2) climbed = true;
+    }
+    expect(climbed).toBe(true);
     h.until(() => h.top() instanceof LevelScene && (h.top() as LevelScene).level.id === '4-2-airship', 120);
     const ship = h.top() as LevelScene;
     expect(ship.world.arriving).toBe(true);

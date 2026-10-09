@@ -22,7 +22,8 @@ import { ANCHOR_LARRY_SAID } from '../story/script';
  * 4. Larry yells down from his airship: his card (`AnchorStory.cards('larry')`, read out, OK).
  * 5. He climbs down the chain, sees the hero, panics (a `!`) and scurries back up.
  * 6. The hero's line (`cards('hero')`: "LET'S GET HIM!", or that hero's own).
- * 7. Play goes on into the airship: up the chain, as a climb off its top would (World.boardChain).
+ * 7. Play goes on into the airship: the hero runs to the chain and climbs it off the top of the
+ *    screen, as a climb would (World.boardChain: the chain's `vine` link, a climb arrival).
  *
  * BACK (or MENU) skips the whole scene at any point after a short guard, and so does BACK on its
  * cards: the anchor is put at rest, the pipe smashed, and the hero goes straight up into the
@@ -37,11 +38,14 @@ export const ANCHOR_SCENE = {
   yellAfter: 36,
   /** Larry's climb down (px a frame) to his feet at STOP_Y (screen px), his panic, the climb up. */
   down: 1.5,
-  stopY: 96,
+  stopY: 160,
   panic: 48,
   up: 4,
   /** Off the top: a beat, then the hero's line. */
   heroAfter: 20,
+  /** The run to the chain and the climb up it (px a frame). */
+  run: 2,
+  climb: 3,
   /** Frames before BACK or MENU may skip (a press held from before the scene does not count). */
   guard: 30,
 } as const;
@@ -73,7 +77,8 @@ export const ANCHOR_SCENE_SAID = {
   crash: 'An anchor slams down and knocks you back!',
 } as const;
 
-export type AnchorPhase = 'rumble' | 'fall' | 'knock' | 'yell' | 'down' | 'panic' | 'up' | 'hero' | 'done';
+export type AnchorPhase =
+  'rumble' | 'fall' | 'knock' | 'yell' | 'down' | 'panic' | 'up' | 'hero' | 'go' | 'done';
 
 export class AnchorScene {
   phase: AnchorPhase = 'rumble';
@@ -164,7 +169,7 @@ export class AnchorScene {
         }
         if (this.larry && this.larry.climb(world, -S.down, S.stopY)) {
           this.larry.panic(this.hero);
-          this.mark(world, this.larry.body.x + px(8), this.larry.body.y - px(14), S.panic);
+          this.mark(world, this.larry.body.x + px(8), this.larry.body.y - px(3), S.panic);
           world.audio.sfx('flinch');
           this.enter('panic');
         }
@@ -180,7 +185,10 @@ export class AnchorScene {
           this.larry.destroy();
           this.larry = null;
         }
-        if (!this.larry && this.t >= S.heroAfter) this.cards(world, 'hero', () => this.finish(world));
+        if (!this.larry && this.t >= S.heroAfter) this.cards(world, 'hero', () => this.enter('go'));
+        break;
+      case 'go':
+        if (this.goUp(world)) this.finish(world);
         break;
       case 'hero':
       case 'yell':
@@ -199,10 +207,38 @@ export class AnchorScene {
     }
   }
 
+  /**
+   * Everyone runs to the chain and climbs it: true once the hero is off the top of the screen.
+   */
+  private goUp(world: World): boolean {
+    for (const p of world.players) {
+      if (p.dead || p.out) continue;
+      const b = p.body;
+      const dx = this.chainX - toPx(p.centerX);
+      if (p.anim !== 'climb' && Math.abs(dx) > S.run) {
+        b.x += px(Math.sign(dx) * S.run);
+        p.facing = dx < 0 ? -1 : 1;
+        p.anim = b.onGround ? 'walk' : 'jump';
+        if (this.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
+        continue;
+      }
+      if (p.anim !== 'climb') {
+        b.x = px(this.chainX) - (b.w >> 1);
+        p.anim = 'climb';
+        world.audio.sfx('vine');
+      }
+      b.vx = 0;
+      b.vy = 0;
+      b.y -= px(S.climb);
+      if (this.t % 6 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
+    }
+    return toPx(this.hero.body.y + this.hero.body.h) < 0;
+  }
+
   /** The players fall to the floor and slide out their knockback; nobody leaves the room's floor. */
   private physics(world: World): void {
     for (const p of world.players) {
-      if (p.dead || p.out) continue;
+      if (p.dead || p.out || p.anim === 'climb') continue;
       const b = p.body;
       if (b.onGround && b.vy >= 0 && this.phase !== 'fall') {
         b.vx = 0;
@@ -234,7 +270,7 @@ export class AnchorScene {
     for (const p of world.players) {
       if (p.dead || p.out) continue;
       p.facing = this.facingChain(p);
-      this.mark(world, p.centerX, p.body.y - px(14), S.rumble - S.lookAt + 8);
+      this.mark(world, p.centerX, p.body.y - px(3), S.rumble - S.lookAt + 8);
     }
     world.audio.sfx('flinch');
   }
@@ -306,7 +342,7 @@ export class Exclaim extends Entity {
     bottom: number,
     private readonly frames: number,
   ) {
-    super(cx - px(3), bottom - px(10), 6, 10);
+    super(cx - px(3), bottom - px(14), 6, 14);
     this.layer = 'front';
     this.despawnMargin = null;
   }
@@ -315,16 +351,16 @@ export class Exclaim extends Entity {
     if (++this.age >= this.frames) this.destroy();
   }
 
+  /** A bold `!` (white, outlined in black), 6 wide and 14 tall, popping up a few pixels. */
   render(r: Renderer, view: View): void {
     const x = toPx(this.body.x) - view.camX;
-    // It pops up: a pixel higher for its first few frames.
     const y = toPx(this.body.y) - (this.age < 4 ? 4 - this.age : 0);
-    r.rect(x, y, 6, 7, '#000');
-    r.rect(x + 1, y + 1, 4, 5, '#fcfcfc');
-    r.rect(x, y + 7, 6, 3, '#000');
-    r.rect(x + 2, y + 8, 2, 1, '#fcfcfc');
-    r.rect(x + 1, y + 1, 1, 1, '#000');
-    r.rect(x + 4, y + 1, 1, 1, '#000');
+    // The stem, tapering at its foot, then the dot.
+    r.rect(x, y, 6, 10, '#000');
+    r.rect(x + 1, y + 1, 4, 6, '#fcfcfc');
+    r.rect(x + 2, y + 7, 2, 2, '#fcfcfc');
+    r.rect(x, y + 10, 6, 4, '#000');
+    r.rect(x + 1, y + 11, 4, 2, '#fcfcfc');
   }
 }
 
