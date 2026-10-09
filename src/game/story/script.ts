@@ -1440,6 +1440,91 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['CLAN SCOUT:', '', "HERE? I DON'T KNOW. DON'T", 'FALL.'],
     ],
   },
+
+  /* ------------------------------------- World 7 (Galuga Island, Bill): soldiers of the front */
+
+  // 7-1's start, on watch in the snowfield before the base.
+  corporal: {
+    verb: 'TALK',
+    name: 'A corporal',
+    hero: 'bill',
+    pages: [
+      ['CORPORAL:', '', 'CORPORAL, ON WATCH. THE', 'ALIEN BASE IS DEAD AHEAD.', 'SO ARE THE ALIENS.'],
+      [
+        'CORPORAL:',
+        '',
+        'WE LOST BILL TO SOME SPELL.',
+        'LAST SEEN IN THE DEEP',
+        'JUNGLE, BY THE BRIDGES.',
+        'BRING HIM BACK. PLEASE.',
+      ],
+    ],
+    after: [
+      [
+        'CORPORAL:',
+        '',
+        "BILL'S BACK! HE TAUGHT ME A",
+        'SECRET CODE ONCE. UP, UP,',
+        'DOWN, DOWN... THEN I FORGOT',
+        'THE REST.',
+      ],
+      ['CORPORAL:', '', 'SOMETHING ABOUT THIRTY', 'LIVES. I COULD USE THIRTY', 'LIVES.'],
+    ],
+  },
+  // 7-2's way out (7-2-exit), on the bank below the steps to the flag.
+  'river-scout': {
+    verb: 'TALK',
+    name: 'A river scout',
+    hero: 'bill',
+    pages: [
+      ['RIVER SCOUT:', '', 'YOU SWAM THAT RIVER? NICE.', 'THE ALIENS HATE WATER.', '...PROBABLY.'],
+      [
+        'RIVER SCOUT:',
+        '',
+        "BILL'S STILL OUT THERE,",
+        'UNDER THE SPELL. DEEP',
+        'JUNGLE, BY THE BRIDGES.',
+        'BRING HIM HOME, SOLDIER.',
+      ],
+    ],
+    after: [
+      [
+        'RIVER SCOUT:',
+        '',
+        "BILL'S FREE! FUNNY THING:",
+        'IN SOME LANDS, THEY SAY',
+        'BILL AND LANCE ARE ROBOTS.',
+      ],
+      ['RIVER SCOUT:', '', "I'VE MET BILL. HE'S NOT A", 'ROBOT. ...PRETTY SURE.'],
+    ],
+  },
+  // 7-4, at the foot of the alien lair's entrance steps.
+  medic: {
+    verb: 'TALK',
+    name: 'A medic',
+    hero: 'bill',
+    pages: [
+      ['MEDIC:', '', 'STAY BACK! THIS PLACE IS', 'ALIVE. THE WALLS ARE', 'BREATHING.'],
+      [
+        'MEDIC:',
+        '',
+        'AND THE ROAD OFF THIS',
+        "ISLAND IS SEALED TILL BILL'S",
+        'FREE. DEEP JUNGLE, BY THE',
+        'BRIDGES. HURRY, PLEASE!',
+      ],
+    ],
+    after: [
+      [
+        'MEDIC:',
+        '',
+        "BILL'S FREE, AND HE NEVER",
+        'EVEN NEEDED ME. ONE HIT',
+        "AND HE'S DOWN, SURE. BUT HE",
+        'NEVER STAYS DOWN.',
+      ],
+    ],
+  },
 };
 
 /* ---------------------------------------------------------------- 2.13: the freed talks */

@@ -37,6 +37,8 @@ campaignMusic: contra-snow
 ################ ################ ################ ################ #########..##### ################ ################ ################ ################ ########.####### ################ ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a corporal on watch at the start, in the snowfield.
+partner 10 12 who=corporal campaign=true
 decor-castle-big -2 12
 koopa-para-green 26 11
 koopa-para-green 44 10

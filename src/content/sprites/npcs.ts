@@ -232,6 +232,18 @@ const scoutIn = { 4: 'i', 3: 'h', 9: 'f' };
 const clanScout0 = recolor(ninja0, scoutIn);
 const clanScout1 = recolor(ninja1, scoutIn);
 
+/* ---------------------------------------------------------------- World 7: Galuga Island */
+
+/** 7-1's corporal: World 7's sergeant in snow gear, a grey helmet and a white parka. */
+const corporal0 = local('sergeant-0', { i: '3', h: '2' });
+const corporal1 = local('sergeant-1', { i: '3', h: '2' });
+/** 7-2's river scout: the sergeant in a brown helmet and tan fatigues. */
+const riverScout0 = local('sergeant-0', { i: 'b', h: 'a' });
+const riverScout1 = local('sergeant-1', { i: 'b', h: 'a' });
+/** 7-4's medic: the sergeant in white, his radio a red medical pack. */
+const medic0 = local('sergeant-0', { i: '1', h: '2', 4: '9' });
+const medic1 = local('sergeant-1', { i: '1', h: '2', 4: '9' });
+
 export const npcsDef: SpriteDef = {
   palette: 'npcs',
   frames: {
@@ -269,5 +281,11 @@ export const npcsDef: SpriteDef = {
     'hermit-1': hermit1,
     'clan-scout-0': clanScout0,
     'clan-scout-1': clanScout1,
+    'corporal-0': corporal0,
+    'corporal-1': corporal1,
+    'river-scout-0': riverScout0,
+    'river-scout-1': riverScout1,
+    'medic-0': medic0,
+    'medic-1': medic1,
   },
 };

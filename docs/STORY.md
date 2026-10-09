@@ -2674,6 +2674,117 @@ KING'S BASE. LOCK AND
 LOAD!
 ```
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Bill: missing, they plead and say where
+to look (by place, never by level number); freed, their found lines.
+
+**7-1: a corporal.** NEW partner (`corporal`). World 7's sergeant in snow gear, on watch at **7-1's start** (column
+10). Freed, Bill's famous secret, half remembered (it names no button: he forgets before he gets there).
+
+```text
+CORPORAL:
+
+CORPORAL, ON WATCH. THE
+ALIEN BASE IS DEAD AHEAD.
+SO ARE THE ALIENS.
+```
+
+```text
+CORPORAL:
+
+WE LOST BILL TO SOME SPELL.
+LAST SEEN IN THE DEEP
+JUNGLE, BY THE BRIDGES.
+BRING HIM BACK. PLEASE.
+```
+
+After Bill is freed:
+
+```text
+CORPORAL:
+
+BILL'S BACK! HE TAUGHT ME A
+SECRET CODE ONCE. UP, UP,
+DOWN, DOWN... THEN I FORGOT
+THE REST.
+```
+
+```text
+CORPORAL:
+
+SOMETHING ABOUT THIRTY
+LIVES. I COULD USE THIRTY
+LIVES.
+```
+
+**7-2: a river scout.** NEW partner (`river-scout`). The sergeant in tan fatigues, on the bank below the steps to
+**7-2's flag** (7-2-exit, column 15), out of the river. Freed, the rumour from the lands where Bill's game was
+sold with robots in it.
+
+```text
+RIVER SCOUT:
+
+YOU SWAM THAT RIVER? NICE.
+THE ALIENS HATE WATER.
+...PROBABLY.
+```
+
+```text
+RIVER SCOUT:
+
+BILL'S STILL OUT THERE,
+UNDER THE SPELL. DEEP
+JUNGLE, BY THE BRIDGES.
+BRING HIM HOME, SOLDIER.
+```
+
+After Bill is freed:
+
+```text
+RIVER SCOUT:
+
+BILL'S FREE! FUNNY THING:
+IN SOME LANDS, THEY SAY
+BILL AND LANCE ARE ROBOTS.
+```
+
+```text
+RIVER SCOUT:
+
+I'VE MET BILL. HE'S NOT A
+ROBOT. ...PRETTY SURE.
+```
+
+**7-4: a medic.** NEW partner (`medic`). The sergeant in white with a red medical pack, at the foot of **7-4's
+entrance steps** (column 8), in the alien lair.
+
+```text
+MEDIC:
+
+STAY BACK! THIS PLACE IS
+ALIVE. THE WALLS ARE
+BREATHING.
+```
+
+```text
+MEDIC:
+
+AND THE ROAD OFF THIS
+ISLAND IS SEALED TILL BILL'S
+FREE. DEEP JUNGLE, BY THE
+BRIDGES. HURRY, PLEASE!
+```
+
+After Bill is freed:
+
+```text
+MEDIC:
+
+BILL'S FREE, AND HE NEVER
+EVEN NEEDED ME. ONE HIT
+AND HE'S DOWN, SURE. BUT HE
+NEVER STAYS DOWN.
+```
+
 **Castle 7-4** (a Hammer Bro). The hero's remark:
 
 ```text
