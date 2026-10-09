@@ -30,6 +30,19 @@ const STATION_FRAMES: Record<string, Size> = {
   window: [48, 32],
   console: [32, 16],
   girder: T16,
+  // Mega Man's airship, the Wily-sky remix (0.4.39).
+  'telly-0': T16,
+  'telly-1': T16,
+  'telly-port-0': T16,
+  'telly-port-1': T16,
+  'gull-0': T16,
+  'gull-1': T16,
+  'sky-bomb': [8, 8],
+  'joe-guard': [16, 24],
+  'joe-shoot': [16, 24],
+  yoku: T16,
+  'yoku-in': T16,
+  'yoku-fade': T16,
 };
 
 const rows = (name: string): readonly string[] => stationDef.frames[name] as readonly string[];
