@@ -292,10 +292,10 @@ describe('hero items: what each hero starts with and finds', () => {
   it('Mega Man: Rush is its own item, not the helmet', () => {
     const { p } = campaignWorld(MEGAMAN);
     itemRules('megaman')!.give(p, 'helmet');
-    expect(MEGAMAN.tools!(p).map((t) => t.id)).toEqual(['buster']);
+    expect(MEGAMAN.tools!(p).map((t) => t.id)).toEqual([]);
     itemRules('megaman')!.give(p, 'rush-coil');
     itemRules('megaman')!.give(p, 'bolt');
-    expect(MEGAMAN.tools!(p).map((t) => t.id)).toEqual(['buster', 'bolt', 'rush']);
+    expect(MEGAMAN.tools!(p).map((t) => t.id)).toEqual(['bolt', 'rush']);
   });
 
   it('Sophia: the climbs are their own items, and a hit to Normal takes them', () => {

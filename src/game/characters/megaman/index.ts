@@ -65,8 +65,12 @@ function etanks(p: Player): number {
   return p.scratch.etanks ?? 0;
 }
 
+/**
+ * The weapon belt: the weapons he has and Rush (0.4.35, owner: no "Buster" entry; the plain shot,
+ * ATTACK, is always the buster, and charges with the helmet whatever is selected).
+ */
 function tools(p: Player): ToolInfo[] {
-  const list: ToolInfo[] = [{ id: 'buster', icon: 'icon-buster', count: null, usable: true }];
+  const list: ToolInfo[] = [];
   for (const w of unlocked(p))
     list.push({ id: w.id, icon: w.icon, count: null, usable: energy(p, w.id) >= w.cost });
   if (hasRush(p))
@@ -130,8 +134,9 @@ function fireBuster(p: Player, world: World, charged: boolean): void {
   const b = p.body;
   const spec = charged ? CHARGED_BUSTER : BUSTER;
   const x = p.facing > 0 ? b.x + b.w : b.x - px(spec.w);
-  world.spawn(new Projectile(x, b.y + px(8), p.facing, spec, p));
-  world.audio.sfx('buster');
+  // The big charge shot is centred on his arm cannon (a 14 px blast around the buster's row).
+  world.spawn(new Projectile(x, b.y + px(charged ? 4 : 8), p.facing, spec, p));
+  world.audio.sfx(charged ? 'charge-shot' : 'buster');
   p.attackTimer = SHOOT_POSE_FRAMES;
 }
 
@@ -197,7 +202,7 @@ function dropRush(p: Player, world: World): void {
 
 function meter(p: Player): MeterInfo | null {
   const t = activeTool(p, tools(p));
-  if (!t || t.id === 'buster') return null;
+  if (!t) return null;
   const w = selectedWeapon(p);
   return {
     value: energy(p, t.id),
@@ -216,7 +221,6 @@ function heal(p: Player, n: number, world: World): boolean {
 
 /** Touch captions for the belt (C shows the selected weapon). */
 export const MEGAMAN_TOOL_LABELS: Record<string, string> = {
-  buster: 'BUSTER',
   saw: 'SAW',
   leaf: 'LEAF',
   flame: 'FLAME',
@@ -296,7 +300,6 @@ export const MEGAMAN: CharacterDef = {
         const w = selectedWeapon(p);
         if (w) fireWeapon(p, w, input, world);
         else if (t?.id === 'rush') dropRush(p, world);
-        else if (world.countProjectiles(p, 'buster') < 3) fireBuster(p, world, false);
       }
       if (p.scratch.helmet) {
         if (input.held('attack')) {
@@ -316,9 +319,13 @@ export const MEGAMAN: CharacterDef = {
           return heal(p, 10, world);
         case 'weapon-small':
         case 'weapon-large': {
+          // The selected weapon (or Rush) first, else the emptiest one he has; a weapon he hasn't
+          // found keeps its full tank for when he does. Nothing to fill: points (World.collectPickup).
+          const belt = tools(p).filter((b) => energy(p, b.id) < WEAPON_ENERGY);
           const t = activeTool(p, tools(p));
-          if (!t || t.id === 'buster' || energy(p, t.id) >= WEAPON_ENERGY) return false;
-          setEnergy(p, t.id, energy(p, t.id) + (kind === 'weapon-small' ? 4 : 10));
+          const to = t && belt.includes(t) ? t : belt.sort((a, b) => energy(p, a.id) - energy(p, b.id))[0];
+          if (!to) return false;
+          setEnergy(p, to.id, energy(p, to.id) + (kind === 'weapon-small' ? 4 : 10));
           world.audio.sfx('pickup');
           return true;
         }
@@ -363,6 +370,10 @@ export const MEGAMAN: CharacterDef = {
       return null;
     },
     onHurt(p, world) {
+      // Campaign (0.4.35, owner): the helmet is his mushroom, so a hit takes it, and with it the
+      // charge shot and brick breaking, as well as its damage. The weapons he found stay. Classic
+      // play keeps the original's (a hit costs health only).
+      if (isFound(p) && p.scratch.helmet) p.scratch.helmet = 0;
       p.hp -= HIT_DAMAGE;
       if (p.hp <= 0) {
         p.hp = 0;

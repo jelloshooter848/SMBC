@@ -57,8 +57,10 @@ block's entry. "Small" per hero:
 | Ryu          | no medicine (NEW: a 10-point health bar)  |
 | Bill         | no medal (3 hits)                         |
 
-Hit-point heroes never lose their grow item to a hit (section 7), so they are small only on a fresh start and after
-a death (decision 1). Mario, Luigi and Sophia III become small again with hits, as today.
+Hit-point heroes whose grow item is **capacity** (Link, Samus, Simon, Ryu, Bill) never lose it to a hit (section 7),
+so they are small only on a fresh start and after a death (decision 1). Mario, Luigi and Sophia III become small
+again with hits, as today, and so does **Mega Man** (0.4.35, owner): his Helmet is a state, his mushroom, and a hit
+knocks it off.
 
 ## 3. Power blocks and the `[hero-items]` section
 
@@ -183,6 +185,10 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 - **Grow**: Helmet (`helmet`): the charge shot and brick breaking, full health. Single. **Today** the helmet also
   gives the Rush Coil; NEW: Rush is its own item.
 - **Starting kit**: the buster, the slide. E-tanks stay drops.
+- **The buster** (0.4.35): SHOOT is always the buster, and charges with the helmet whatever weapon is in hand; it
+  is no belt entry. The belt (WEAPON / USE WEAPON) lists only the weapons he has and Rush. The full charge shot is
+  a big blast like the original Crossover's (its own 24x16 art, three times the buster's damage, on through what
+  it defeats).
 
 | Item           | Id               | What it does (our code)                                     | Owned again |
 | -------------- | ---------------- | ----------------------------------------------------------- | ----------- |
@@ -194,7 +200,12 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 | Bolt           | `bolt`           | A beam across the screen (5)                                | refill      |
 
 - **Default**: Saw Disc. The belt order stays the code's (`WEAPONS`), with only the weapons he owns.
-- **Hit**: 4 of 28 health. Nothing is lost. Unchanged.
+- **Hit** (0.4.35, owner: the helmet is his mushroom): with the Helmet, a hit knocks it off (and with it the charge
+  shot and brick breaking) **and** costs its 4 of 28 health; without it, 4 of 28 health. His weapons and Rush stay.
+  The cleanest of the choices: SMB's big → small, while his health bar still counts every hit (a helmet-only hit
+  costing no health would make the helmet an extra life bar). Classic play keeps the original's (health only).
+- **Drops** (0.4.35): weapon energy fills the weapon in hand, else the emptiest one he has; a weapon he hasn't found
+  keeps a full tank for when he does; nothing to fill gives points (section 7's "drops").
 - **Flags**: today weapons unlock in a fixed order (`scratch.weapons` is a count); NEW: each is its own flag.
 - **Crossover** never lost any weapon (`NEVER_LOSE_UPGRADES` held all nine and Rush).
 
@@ -464,7 +475,7 @@ found items, back to their basic kit.
 | Mario, Luigi | fire → small (assist: → big); big → small; small dies                                       | everything    |
 | Sophia III   | Hyper or Crusher → Normal (assist: Crusher → Hyper); climbs too; missiles kept; Normal dies | everything    |
 | Link         | 1 hit point (half a heart); with the Blue Ring or Shield spell every other hit glances off  | everything    |
-| Mega Man     | 4 of 28 health                                                                              | everything    |
+| Mega Man     | the Helmet (charge shot, brick breaking) and 4 of 28 health; without it, 4 of 28 (0.4.35)   | everything    |
 | Samus        | 8 energy, 4 with the Varia Suit                                                             | everything    |
 | Simon        | 2 health                                                                                    | everything    |
 | Ryu          | 2 health                                                                                    | everything    |
@@ -478,13 +489,19 @@ found items, back to their basic kit.
 2. **Each hero's kit is saved on its own** (decision 3, `heroKits`): switching heroes keeps the old hero's power,
    hit points and kit for their return, and the new hero comes back as they were left (their basic kit the first
    time).
-3. **Nothing but a death ever takes a hit-point hero's items**, so their "small" (grow first) only matters on a
+3. **Nothing but a death ever takes a hit-point hero's items** (but Mega Man's Helmet, 0.4.35), so their "small" (grow first) only matters on a
    fresh start: fine, but worth knowing.
 4. **Random unlocks today** that would bypass placement: Bill's `capsule` drop (next gun), Samus's missile packs
    (missiles before the Missiles item). Both fixed in the campaign (decision 8, sections 5.4 and 5.7).
 5. **Unobtainable today**: Sophia III's Homing Missile in the campaign.
 6. **Mixed bundles today**: Link's heart container brings the white tunic; Mega Man's helmet brings Rush; Sophia's
    first Crusher brings the triple missile and both climbs. This design splits each.
+
+**Drops are always collectible** (owner decision, 0.4.35; `World.collectPickup`): every hero picks up every enemy
+drop, even one they cannot use yet. Ammo or energy for a power not owned yet goes into a hidden reserve that is there
+when they get it (Sophia III's missile ammo; Link's bombs; Ryu's ninpo; Mega Man's unfound weapons keep a full
+tank); with nothing to fill (full, or no use to this hero) a drop gives 200 points. The 0.4.33 rules stand: Bill's
+falcon capsule heals; Samus's missile packs only drop once she owns Missiles, but one that appears is collectible.
 
 ## 8. Per-hero item inventory
 

@@ -32,6 +32,11 @@ export interface ProjectileSpec {
   burstFrame?: string;
   /** Keeps going after hitting an enemy (each enemy is hit once). */
   pierce?: boolean;
+  /**
+   * Goes on through an enemy it defeats, stops (bursts) on one it only hurts or can't hurt (the
+   * original's PR_PASSTHROUGH_DEFEAT: Mega Man's full charge shot).
+   */
+  pierceDefeat?: boolean;
   /** Initial vertical speed (velocity units); callers can override per shot. */
   vy?: number;
   /** Falls under gravity and dies on landing (no bounce). */
@@ -103,13 +108,21 @@ export const BUSTER: ProjectileSpec = {
   frameRate: 3,
 };
 
+/**
+ * Mega Man's full charge shot: a big blast, like the original Crossover's (MegaManProjectile
+ * strongChargeShot: three times the buster's damage, MEGA_MAN_FULL_CHARGE_NORMAL 300 to
+ * MEGA_MAN_MEGA_BUSTER 100, and PR_PASSTHROUGH_DEFEAT: on through what it defeats, stopped by
+ * what it doesn't). 0.4.35: its own 24x16 art (items `charge-shot-0/1`) and body.
+ */
 export const CHARGED_BUSTER: ProjectileSpec = {
   ...BUSTER,
   kind: 'buster-charged',
   amount: 3,
-  pierce: true,
-  w: 16,
-  h: 12,
+  pierceDefeat: true,
+  w: 24,
+  h: 14,
+  frames: ['charge-shot-0', 'charge-shot-1'],
+  frameRate: 4,
 };
 
 export const SWORD_BEAM: ProjectileSpec = {

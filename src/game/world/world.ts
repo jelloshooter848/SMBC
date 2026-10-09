@@ -358,6 +358,8 @@ const ANCHOR_ROOM = 32;
 
 /** No hero's body is wider than a tile (characters' hitboxes; simon-crypt.test.ts checks). */
 const MAX_HERO_W = 16;
+/** Points for a drop taken with nothing to fill (World.collectPickup). */
+export const PICKUP_FULL_SCORE = 200;
 
 /**
  * Whether fire bar (tx, ty) of `n` balls can sweep anything spanning x0..x1 (px, end exclusive):
@@ -1085,10 +1087,7 @@ export class World {
         if (e.item === 'clock') this.collectClock(e);
         else if (e.item !== 'poison') p.def.behaviour.onPowerUp(p, e.item, this);
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
-      else if (e instanceof Pickup && !p.def.behaviour.onPickup?.(p, e.item, this)) {
-        const pb = p.body;
-        this.spawn(new Pickup(pb.x + (pb.w >> 1), pb.y + pb.h, e.item));
-      }
+      else if (e instanceof Pickup) this.collectPickup(p, e);
     }
   }
 
@@ -1103,6 +1102,19 @@ export class World {
   }
 
   /* ---------- Scoring ---------- */
+
+  /**
+   * `p` takes dropped pickup `e`. Drops are always collectible (owner decision, 0.4.35): the
+   * hero's onPickup uses it (filling what it fills, or a hidden reserve for a power not owned
+   * yet); when there is nothing to fill (full, or a drop no use to this hero) it gives
+   * PICKUP_FULL_SCORE points instead. Either way it is gone.
+   */
+  collectPickup(p: Player, e: Pickup): void {
+    e.destroy();
+    if (p.def.behaviour.onPickup?.(p, e.item, this)) return;
+    this.addScore(PICKUP_FULL_SCORE, e.body.x, e.body.y - px(8));
+    this.audio.sfx('coin');
+  }
 
   addScore(n: number, x?: number, y?: number): void {
     // Capped like the original's StatManager.addPoints (SCORE_MAX = 9999999).
@@ -2035,7 +2047,7 @@ export class World {
           this.takeHeroItem(p, e);
         }
       } else if (e instanceof Pickup) {
-        if (overlaps(pb, e.body) && p.def.behaviour.onPickup?.(p, e.item, this)) e.destroy();
+        if (overlaps(pb, e.body)) this.collectPickup(p, e);
       } else if (e instanceof Projectile) this.projectile(p, e);
       else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e, p);
       else if (e instanceof Axe && overlaps(pb, e.body)) {
@@ -2183,7 +2195,9 @@ export class World {
       this.scoreKill(e, src.kind, r);
       if (r === 'hp') this.audio.sfx('hurt-enemy');
       else if (r === 'stun') this.audio.sfx('hurt-enemy');
-      if (!pr.spec.pierce) {
+      // A shot that pierces what it defeats goes on only past a kill.
+      const through = pr.spec.pierce || (pr.spec.pierceDefeat && r !== 'hp' && r !== 'stun');
+      if (!through) {
         pr.burst(this);
         return;
       }

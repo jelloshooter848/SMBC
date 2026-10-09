@@ -319,10 +319,11 @@ export class StationBot {
     const facing = (dir === 0 ? p.facing : dir) === toward;
     const saw = (p.scratch.weapons ?? 0) >= 1 && (p.scratch.wsaw ?? 28) >= 2;
     const level = boss.y + boss.h > me.y + 4 && boss.y < me.y + me.h - 4;
+    // The belt's first entry is the saw once it is ours (0.4.35: no buster entry; SHOOT is the buster).
     const tool = p.scratch.tool ?? 0;
     // Switch to the saw (WEAPON) once it is ours, and fire it straight ahead.
-    const select = saw && tool !== 1;
-    const weapon = saw && tool === 1 && facing && level;
+    const select = saw && tool !== 0;
+    const weapon = saw && tool === 0 && facing && level;
     // Without the saw: a charge shot from afar (hold SHOOT, let go when lined up), taps up close.
     const charge = !saw && dist > 88;
     return { dir, jump, shoot: facing && level && !saw, weapon, select, charge };
