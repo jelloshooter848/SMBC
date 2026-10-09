@@ -4,9 +4,8 @@ import type { Song } from '@engine/audio/mml';
  * The new file's opening scene (story/opening.ts, 0.4.31; it borrowed the toad house's tune
  * before): an original short loop, composed for this project. Morning at Mario's house (the
  * castle courtyard before 0.4.36), calm at first, then a turn to A minor as Toad comes running
- * with the note. Same conventions as
- * songs.ts: pulse1 = melody, pulse2 = harmony, triangle = bass, noise = drums; every channel the
- * same length.
+ * with the note. Same conventions as songs.ts: pulse1 = melody, pulse2 = harmony, triangle =
+ * bass, noise = drums; every channel the same length.
  */
 
 /** A bar of rolling eighths over a chord (each note with its own octave). */
