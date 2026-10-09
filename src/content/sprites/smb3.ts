@@ -13,7 +13,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * - Larry faces LEFT (like every enemy; flip for right). All his frames are bottom-anchored:
  *   `larry-0` stands on its bottom row, `larry-1` is the hop (wand raised, feet tucked up off the
  *   floor), `larry-shell-0..3` spin in order, `larry-hurt` is the flinch after a stomp (wand
- *   knocked away). `smb3-flash` is the same sheet blanched for a hit flash.
+ *   knocked away). `larry-climb-0/1` grip 4-2's anchor chain at their left edge (x 1-3), in turn. `smb3-flash` is the same sheet blanched for a hit flash.
  * - `wand-blast-0/1` alternate while a ring flies; `crystal-ball` sits on its stand.
  * - Cards are 16x24 with the picture on a white face; `card-back` is the face-down side.
  * - `slot-<picture>-top/mid/bot` are the three 32x16 thirds of one 32x48 picture on black, for
@@ -240,6 +240,26 @@ const LARRY_BODY_HURT = [
   '.....00g8811770.',
 ];
 const LARRY_LEGS_HURT = ['.0aaa00...00aaa0', '.0aaaa0...0aaaa0', '..0000.....0000.', '................'];
+// Climbing 4-2's anchor chain (0.4.39): both hands out in front gripping the chain at his left
+// edge (x 1-3), the wand tucked away, one leg drawn up; `-1` has the hands and legs the other way.
+const LARRY_BODY_CLIMB = [
+  ['..000.088881660.', '.09990g888156570', '..0990gaaa155570', '...000g888150570'],
+  ['.....0088881660.', '..000.g888156570', '.09990gaaa155570', '..0990g888150570'],
+];
+const LARRY_ARM_LOW = [
+  ['.099999088150570', '.0990090aa155770', '..000.0g8811770.'],
+  ['...000g088150570', '.09999990a155770', '..00000g8811770.'],
+];
+const LARRY_LEGS_CLIMB = [
+  ['....0aaa0.0990..', '....00000.0990..', '.........0aaaa0.', '.........000000.'],
+  ['.....0990.0aaa0.', '.....0990.00000.', '...0aaaa0.......', '...000000.......'],
+];
+const larryClimb = (i: 0 | 1): string[] => [
+  ...LARRY_HEAD,
+  ...(LARRY_BODY_CLIMB[i] as string[]),
+  ...(LARRY_ARM_LOW[i] as string[]),
+  ...(LARRY_LEGS_CLIMB[i] as string[]),
+];
 const larry0 = [...LARRY_HEAD, ...LARRY_BODY, ...LARRY_LEGS];
 const larry1 = [...LARRY_HEAD, ...LARRY_BODY_HOP, ...LARRY_LEGS_HOP];
 const larryHurt = [...LARRY_HEAD_HURT, ...LARRY_BODY_HURT, ...LARRY_LEGS_HURT];
@@ -1159,6 +1179,8 @@ export const smb3Def: SpriteDef = {
     'larry-shell-2': larryShell(2),
     'larry-shell-3': larryShell(3),
     'larry-hurt': larryHurt,
+    'larry-climb-0': larryClimb(0),
+    'larry-climb-1': larryClimb(1),
     'wand-blast-0': wandBlast0,
     'wand-blast-1': wandBlast1,
     'crystal-ball': crystalBall,

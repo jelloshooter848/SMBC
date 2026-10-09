@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { fontText } from '@game/hud/text';
 import { CARD_COLS } from '@game/scenes/free-hero';
 import {
+  ANCHOR_HEROES,
+  ANCHOR_LARRY_PAGES,
+  anchorHeroPage,
   ARENA_PAGE,
   BOWSER_SPELL_LAST,
   BOWSER_SPELL_PAGES,
@@ -10,6 +13,7 @@ import {
   CASTLE_PAGES,
   CRASH_PAGES,
   HUB_PAGE,
+  LARRY_AGAIN_PAGES,
   LARRY_PAGES,
   LUIGI_RUNS_PAGE,
   noMoreStandIns,
@@ -46,6 +50,9 @@ const cards: [string, Page][] = [
   ['luigi runs', LUIGI_RUNS_PAGE],
   ['no more stand-ins', noMoreStandIns(LONGEST)],
   ...LARRY_PAGES.map((p, i): [string, Page] => [`larry ${i}`, p]),
+  ...LARRY_AGAIN_PAGES.map((p, i): [string, Page] => [`larry again ${i}`, p]),
+  ...ANCHOR_LARRY_PAGES.map((p, i): [string, Page] => [`anchor larry ${i}`, p]),
+  ...ANCHOR_HEROES.map((id): [string, Page] => [`anchor ${id}`, anchorHeroPage(id, LONGEST)]),
   ...CRASH_PAGES.map((p, i): [string, Page] => [`crash ${i}`, p]),
   ...riftPages(LONGEST).map((p, i): [string, Page] => [`rift ${i}`, p]),
   ['hub', HUB_PAGE],

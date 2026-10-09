@@ -12,7 +12,7 @@ import { fontText } from '@game/hud/text';
 import { drawPromptBox, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { beat, storyOn } from './beats';
 import { playStoryCards } from './cards';
-import { LARRY_PAGES, LUIGI_RUNS_PAGE, noMoreStandIns, type Page } from './script';
+import { LARRY_AGAIN_PAGES, LARRY_PAGES, LUIGI_RUNS_PAGE, noMoreStandIns, type Page } from './script';
 import { LuigiRunsScene } from './luigi-runs';
 
 /*
@@ -55,7 +55,8 @@ export function playLevelBeat(game: Game, scene: LevelScene): boolean {
   const run = scene.airship;
   if (level.id === AIRSHIP_ROOM && run && !run.larrySpoke) {
     run.larrySpoke = true;
-    playStoryCards(game, scene.world, LARRY_PAGES, resume);
+    // Met already in 4-2's anchor scene (0.4.39): he knows the hero this time.
+    playStoryCards(game, scene.world, game.seen(beat.anchor42) ? LARRY_AGAIN_PAGES : LARRY_PAGES, resume);
     return true;
   }
   if (level.id === BRIDGE_ROOM && !game.seen(beat.bowser84)) {

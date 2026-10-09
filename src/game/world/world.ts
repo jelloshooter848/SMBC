@@ -39,6 +39,7 @@ import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
 import { placeOnStairs, Stairs, type StairDir } from '../entities/objects/stairs';
 import { AnchorDrop } from '../entities/objects/anchor-drop';
+import { AnchorScene, type AnchorStory } from './anchor-scene';
 import { BridgeBlast } from '../entities/objects/bridge-blast';
 import {
   BEAM_GATHER_FRAMES,
@@ -50,7 +51,7 @@ import {
   type TeleportZone,
 } from '../entities/objects/teleporter';
 import { PowerUp } from '../entities/objects/powerup';
-import { Pickup } from '../entities/objects/pickup';
+import { isPickupKind, Pickup } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
@@ -90,7 +91,8 @@ import { DEATH_FRAMES, DEATH_SFX, renderDeath, startDeath, stepDeath, type Death
 import { Axe } from '../entities/objects/axe';
 import { CaveFire, Moblin } from '../entities/objects/moblin';
 import { YoshiEgg } from '../entities/objects/yoshi-egg';
-import { Larry } from '../entities/enemies/larry';
+import { Larry, WAND_BLAST_POINTS, WandBlast } from '../entities/enemies/larry';
+import { Gull, ShieldJoe, TellyPort, Telly, Yoku } from '../entities/enemies/wily-sky';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
@@ -139,7 +141,7 @@ export type WorldEvent =
    */
   | { type: 'crystal-ball'; player: number; next: string | null }
   /** Larry's anchor smashed 4-2's warp-zone pipe (objects/anchor-drop.ts): the level announces it. */
-  | { type: 'anchor' }
+  | { type: 'anchor'; scene?: boolean }
   /**
    * A player came up to the Moblin in 2-1's hidden cave (objects/moblin.ts): the level plays his
    * cards and ends (campaign: 2-1 cleared and the secret `secret` found; else on to `next`).
@@ -442,6 +444,15 @@ export class World {
   timeHidden = false;
   /** Frames of screen shake left (the anchor's crash); never drawn with reduce flashing. */
   shakeFrames = 0;
+  /** How far the shake moves the screen (px): 2, or 1 for the anchor scene's gentle one. */
+  private shakeAmp = 2;
+  /**
+   * 4-2's anchor scene, while it is due (LevelScene: the campaign's story, not yet seen on the
+   * file): the anchor drop starts it (startAnchorScene) instead of falling on its own.
+   */
+  anchorStory: AnchorStory | null = null;
+  /** The anchor scene running (world/anchor-scene.ts): play holds while it does. */
+  anchorScene: AnchorScene | null = null;
   /** Warp zones whose pipe the anchor smashed: their number and welcome text are gone. */
   private readonly smashedWarps = new Set<Zone>();
   private readonly deathTimers = new Map<Player, number>();
@@ -944,7 +955,22 @@ export class World {
       case 'rocky':
         return new RockyWrench(s.x, s.y);
       case 'larry':
-        return new Larry(s.x, s.y, typeof s.props?.next === 'string' ? s.props.next : null);
+        return new Larry(s.x, s.y, typeof s.props?.next === 'string' ? s.props.next : null, this.megamanShip);
+      // Mega Man's airship, the Wily-sky remix (0.4.39, entities/enemies/wily-sky.ts).
+      case 'telly-port':
+        return new TellyPort(s.x, s.y);
+      case 'telly':
+        return new Telly(x + px(8), y + px(8));
+      case 'gull':
+        return new Gull(x, y);
+      case 'shield-joe':
+        return new ShieldJoe(x, y);
+      case 'yoku':
+        return new Yoku(s.x, s.y, s.props ?? {});
+      // A pickup laid by the map (`pickup x y item=<kind>`, standing in cell x y): Mega Man's
+      // large health pellet before his airship's stern pipe (0.4.39).
+      case 'pickup':
+        return isPickupKind(s.props?.item) ? new Pickup(x + px(8), y + px(16), s.props.item, true) : null;
       case 'lift-h':
       case 'lift-v':
       case 'lift-fall':
@@ -1025,7 +1051,49 @@ export class World {
     else if (o instanceof Projectile && o.owner instanceof Player) killer = o.owner;
     if (!killer) killer = this.nearestPlayer(e.body.x);
     const kind = killer.def.drop?.(this.rng, e, killer);
-    if (kind) this.spawn(new Pickup(e.body.x + (e.body.w >> 1), e.body.y + e.body.h, kind));
+    if (!kind) return;
+    const drop = new Pickup(e.body.x + (e.body.w >> 1), e.body.y + e.body.h, kind);
+    if (this.megamanShip) this.placeDrop(drop);
+    this.spawn(drop);
+  }
+
+  /**
+   * Mega Man's airship (0.4.39: the level laid with his `[variant megaman]` sections, level/
+   * variants.ts): his own rules there. Cannons take buster hits, Larry has a hit-point bar, his
+   * wand blasts can be shot down, and every drop lands where it can be collected.
+   */
+  get megamanShip(): boolean {
+    return this.level.heroVariants?.includes('megaman') === true;
+  }
+
+  /**
+   * A drop on Mega Man's airship is always collectible: one over open air (a gap, the sky under
+   * the hull) or too near the scrolling screen's left edge moves to the nearest column on screen
+   * with a deck under it, and one inside a wall comes out on top of it.
+   */
+  placeDrop(drop: Pickup): void {
+    const b = drop.body;
+    const cam = this.camera;
+    const first = tileAt(cam.x) + 2;
+    const last = tileAt(cam.right) - 1;
+    const row = Math.max(0, Math.min(this.level.height - 1, tileAt(b.y)));
+    /** The first solid row at or below `row` in column `col`, or null. */
+    const ground = (col: number): number | null => {
+      for (let y = row; y < this.level.height; y++) if (this.map.isSolid(col, y)) return y;
+      return null;
+    };
+    const col0 = Math.max(first, Math.min(last, tileAt(b.x + (b.w >> 1))));
+    for (let d = 0; d <= last - first; d++)
+      for (const col of d === 0 ? [col0] : [col0 + d, col0 - d]) {
+        if (col < first || col > last) continue;
+        let g = ground(col);
+        if (g === null) continue;
+        // Inside a wall: on top of it instead.
+        while (g > 0 && this.map.isSolid(col, g - 1)) g--;
+        b.x = tileToSub(col) + px(8) - (b.w >> 1);
+        if (b.y + b.h > tileToSub(g)) b.y = tileToSub(g) - b.h;
+        return;
+      }
   }
 
   /** A bomb blast centred at (cx, cy) in subpixels: hurts everything in the square, opens blocks. */
@@ -1108,6 +1176,23 @@ export class World {
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
       else if (e instanceof Pickup) this.collectPickup(p, e);
     }
+  }
+
+  /**
+   * A player's shot hit a wall at (x, y) (subpixels): on Mega Man's airship a cannon there takes
+   * the hit (Cannon.shot). True when one did.
+   */
+  shotWall(pr: Projectile, x: number, y: number): boolean {
+    if (!this.megamanShip || !(pr.owner instanceof Player)) return false;
+    const tx = tileAt(x);
+    const ty = tileAt(y);
+    for (const e of this.entities)
+      if (e instanceof Cannon && e.alive && e.tx === tx && e.ty === ty)
+        return e.shot(
+          { kind: pr.spec.damage, amount: pr.spec.amount, owner: pr, dirX: pr.body.vx > 0 ? 1 : -1 },
+          this,
+        );
+    return false;
   }
 
   /** A projectile struck the tile at a point: bricks and item blocks react as to a head bump. */
@@ -1222,6 +1307,12 @@ export class World {
     if (this.bossClear) {
       this.tickScorePopups();
       return this.updateBossClear(inputs);
+    }
+    if (this.anchorScene) {
+      this.tickScorePopups();
+      if (this.anchorScene.update(this, inputs)) this.anchorScene = null;
+      this.cull();
+      return;
     }
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
@@ -2219,6 +2310,20 @@ export class World {
       return;
     }
     if (!pr.spec.hitsEnemies || pr.owner !== p) return;
+    // Mega Man's airship: Larry's wand blasts can be shot down (a few points; the shot goes on
+    // only if it pierces).
+    if (this.megamanShip)
+      for (const q of this.entities) {
+        if (!(q instanceof WandBlast) || !q.alive || !overlaps(q.body, pr.body)) continue;
+        q.destroy();
+        this.spawn(new Explosion(q.body.x + (q.body.w >> 1), q.body.y + (q.body.h >> 1), true));
+        this.audio.sfx('kick');
+        this.addScore(WAND_BLAST_POINTS, q.body.x, q.body.y);
+        if (!pr.spec.pierce && !pr.spec.pierceDefeat) {
+          pr.destroy();
+          return;
+        }
+      }
     for (const e of this.enemies) {
       if (pr.hitIds.has(e.id) || !overlaps(pr.body, e.body)) continue;
       const src: DamageSource = {
@@ -3451,9 +3556,43 @@ export class World {
     this.spawn(new BrickPiece(cx + px(8), cy + px(8), 0x01000, -0x03000, frame));
   }
 
-  /** Shake the screen for `frames` (drawn only without reduce flashing). */
-  shake(frames: number): void {
+  /** Shake the screen for `frames` by `amp` px (drawn only without reduce flashing). */
+  shake(frames: number, amp = 2): void {
+    if (this.shakeFrames <= 0 || amp > this.shakeAmp) this.shakeAmp = amp;
     this.shakeFrames = Math.max(this.shakeFrames, frames);
+  }
+
+  /**
+   * 4-2's anchor drop `drop` saw a player land on its floor: with the anchor scene due
+   * (anchorStory), it starts, the player nearest the anchor as the hero. False when it is not due
+   * (the drop falls on its own, as outside the story).
+   */
+  startAnchorScene(drop: AnchorDrop): boolean {
+    const story = this.anchorStory;
+    if (!story || this.anchorScene) return false;
+    const live = this.players.filter((p) => !p.dead && !p.out);
+    const d = (p: Player) => Math.abs(p.body.x - drop.body.x);
+    const hero =
+      live.find((p) => p === this.players[0]) ??
+      live.reduce<Player | null>((a, p) => (!a || d(p) < d(a) ? p : a), null);
+    if (!hero) return false;
+    this.anchorStory = null;
+    this.anchorScene = new AnchorScene(drop, hero, story);
+    this.anchorScene.start(this);
+    return true;
+  }
+
+  /**
+   * The anchor scene is over: everyone goes up `drop`'s chain into the airship, as a climb off its
+   * top would (its `vine` zone's link, an anchor-chain arrival).
+   */
+  boardChain(drop: AnchorDrop): void {
+    const z = this.level.zones.find(
+      (v): v is Zone & { kind: 'vine' } => v.kind === 'vine' && v.x === drop.tx && v.y === drop.foot,
+    );
+    if (z) return this.transfer(z.target, 'climb', true);
+    // No link (a level without one): play just goes on.
+    for (const p of this.players) p.frozen = false;
   }
 
   /** The warp zone over column `tx` loses its world numbers and welcome text (pipe smashed). */
@@ -3465,7 +3604,7 @@ export class World {
   /** The screen's vertical offset this frame (a shake), 0 with reduce flashing. */
   get shakeY(): number {
     if (this.shakeFrames <= 0 || this.ctx.reduceFlashing) return 0;
-    return (this.shakeFrames >> 1) & 1 ? 2 : -2;
+    return (this.shakeFrames >> 1) & 1 ? this.shakeAmp : -this.shakeAmp;
   }
 
   private renderWarpText(r: Renderer, view: View): void {

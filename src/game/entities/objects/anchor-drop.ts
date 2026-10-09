@@ -44,7 +44,12 @@ export class AnchorDrop extends Entity {
   private readonly pipeRow: number;
   private readonly holes: number[];
   private readonly room: [number, number];
-  private smashed = false;
+  smashed = false;
+  /**
+   * Driven by the campaign's anchor scene (world/anchor-scene.ts): the scene calls `startFall`,
+   * `fallStep` and `restNow` itself while play holds, and the crash's shake is a gentle one.
+   */
+  scripted = false;
   /** The chain left standing (a climbable placed vine) once the anchor rests. */
   chain: Vine | null = null;
 
@@ -81,16 +86,15 @@ export class AnchorDrop extends Entity {
         if (this.someoneOnFloor(world)) {
           this.phase = 'warn';
           this.t = 0;
+          // The campaign's story: the anchor scene takes over from here (World.startAnchorScene).
+          world.startAnchorScene(this);
         }
         return;
       case 'warn':
-        if (this.t >= ANCHOR_WAIT_FRAMES) {
-          this.phase = 'fall';
-          this.vy = FALL_SPEED;
-        }
+        if (this.t >= ANCHOR_WAIT_FRAMES) this.startFall();
         return;
       case 'fall':
-        this.drop(world);
+        this.fallStep(world);
         return;
       case 'rest':
         return;
@@ -107,7 +111,26 @@ export class AnchorDrop extends Entity {
     });
   }
 
-  private drop(world: World): void {
+  /** The anchor starts falling from above the screen. */
+  startFall(): void {
+    if (this.phase !== 'wait' && this.phase !== 'warn') return;
+    this.phase = 'fall';
+    this.vy = FALL_SPEED;
+  }
+
+  /**
+   * At rest at once, whatever it was doing (the anchor scene skipped): the ceiling broken, the
+   * pipe smashed and the chain standing, as after the fall.
+   */
+  restNow(world: World): void {
+    if (this.phase === 'rest') return;
+    this.phase = 'fall';
+    this.top = this.restTop;
+    this.fallStep(world);
+  }
+
+  /** One frame of the fall (and the crash at its end). */
+  fallStep(world: World): void {
     this.top = Math.min(this.restTop, this.top + this.vy);
     this.vy = Math.min(FALL_MAX, this.vy + FALL_GAIN);
     this.body.y = px(this.top);
@@ -138,9 +161,10 @@ export class AnchorDrop extends Entity {
       }
     world.audio.sfx('cannon');
     world.audio.sfx('break');
-    world.shake(ANCHOR_SHAKE_FRAMES);
+    world.shake(ANCHOR_SHAKE_FRAMES, this.scripted ? 1 : 2);
     world.smashWarpAt(this.tx);
-    world.events.push({ type: 'anchor' });
+    // The anchor scene says its own line for the crash.
+    world.events.push(this.scripted ? { type: 'anchor', scene: true } : { type: 'anchor' });
   }
 
   render(r: Renderer, view: View): void {

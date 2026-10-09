@@ -20,6 +20,9 @@ const SMB3_FRAMES: Record<string, Size> = {
   'larry-shell-2': T16,
   'larry-shell-3': T16,
   'larry-hurt': TALL,
+  // On 4-2's anchor chain (0.4.39).
+  'larry-climb-0': TALL,
+  'larry-climb-1': TALL,
   'wand-blast-0': T16,
   'wand-blast-1': T16,
   'crystal-ball': T16,

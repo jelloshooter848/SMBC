@@ -78,7 +78,8 @@ function parseProps(parts: string[]): Props {
  *                         a marker adds its spawn; `*N`: on N rows from y down), `+ type x y
  *                         [key=val]` (a spawn added), `- type x y` (one taken out): laid when any
  *                         player is that hero, in campaign play only; `[variant <hero> classic]` in
- *                         all play (level/variants.ts heroVariant)
+ *                         all play (level/variants.ts heroVariant); `music <song>`: the level's
+ *                         music while that hero plays it
  *   [hero-items]          `x y hero=item ...`: what the power block at x y gives each hero in the
  *                         campaign (docs/POWERUPS.md 3.2; `grow`: their grow item; a hero not
  *                         named gets their default power). The tile must be a power block (M, P,
@@ -194,6 +195,12 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
         case 'variant': {
           const v = variants.at(-1) as LevelVariant;
           const parts = trimmed.split(/\s+/);
+          if (parts[0] === 'music') {
+            // `music <song>`: the level's music while that hero plays it.
+            if (parts.length !== 2 || !parts[1]) throw new Error('expected "music <song>"');
+            v.music = parts[1];
+            break;
+          }
           if (parts[0] === '+' || parts[0] === '-') {
             // `+ type x y [key=val]`: a spawn added; `- type x y`: the map's spawn there taken out.
             const [sign, type, xs, ys, ...rest] = parts;
@@ -691,6 +698,7 @@ export function serializeTextMap(level: LevelData): string {
   }
   for (const v of level.variants ?? []) {
     out.push('', `[variant ${v.hero}${v.classic ? ' classic' : ''}]`);
+    if (v.music) out.push(`music ${v.music}`);
     for (const r of v.tiles) out.push(`${r.x} ${r.y} ${r.tiles.map((t) => rev.get(t) ?? '.').join('')}`);
     for (const e of v.add ?? [])
       out.push(

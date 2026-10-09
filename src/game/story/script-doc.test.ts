@@ -5,7 +5,10 @@ import { CHARACTERS } from '@game/characters/registry';
 import type { CharacterDef } from '@game/characters/character';
 import type { MiniGameDef } from '@game/minigames';
 import { captiveDialogue } from '@game/scenes/free-hero';
+import { fontText } from '@game/hud/text';
 import {
+  ANCHOR_LARRY_PAGES,
+  anchorHeroPage,
   ARENA_PAGE,
   BOWSER_SPELL_LAST,
   BOWSER_SPELL_PAGES,
@@ -21,6 +24,7 @@ import {
   FREED_TALKS,
   freedTalk,
   HUB_PAGE,
+  LARRY_AGAIN_PAGES,
   LARRY_PAGES,
   LUIGI_RUNS_PAGE,
   noMoreStandIns,
@@ -102,7 +106,11 @@ function scriptPages(): Map<string, Page> {
   list('WORLD1_PAGES', WORLD1_PAGES);
   add('LUIGI_RUNS_PAGE', LUIGI_RUNS_PAGE);
   add('noMoreStandIns', noMoreStandIns(HERO));
+  list('ANCHOR_LARRY_PAGES', ANCHOR_LARRY_PAGES);
+  // 0.4.39: each hero's line at the end of 4-2's anchor scene, in their own name.
+  for (const c of CHARACTERS) add(`anchorHeroPage.${c.id}`, anchorHeroPage(c.id, fontText(c.name)));
   list('LARRY_PAGES', LARRY_PAGES);
+  add('LARRY_AGAIN_PAGES.0', LARRY_AGAIN_PAGES[0] as Page);
   list('STORY_CRYSTAL_BALL_PAGES', STORY_CRYSTAL_BALL_PAGES);
   list('CRASH_PAGES', CRASH_PAGES);
   // The castle's page 1 shows under the thanks, as the doc writes it.
@@ -161,10 +169,11 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
     for (const b of old) expect(byText.has(key(b.lines)), key(b.lines)).toBe(false);
     expect(NOT_BUILT).toEqual([]);
     // Jason's three pages and his after page, Sophia III's challenge, and her freed talk (three
-    // pages of hers, two of Jason's) are among the pages the doc and script share.
+    // pages of hers, two of Jason's) are among the pages the doc and script share, and (0.4.39)
+    // her line in 4-2's anchor scene.
     const firsts = blocks.filter((b) => !b.old).map((b) => b.lines[0]);
     expect(firsts.filter((l) => l === 'JASON:')).toHaveLength(6);
-    expect(firsts.filter((l) => l === 'SOPHIA III:')).toHaveLength(4);
+    expect(firsts.filter((l) => l === 'SOPHIA III:')).toHaveLength(5);
   });
 
   it('every page of script.ts is in the doc', () => {

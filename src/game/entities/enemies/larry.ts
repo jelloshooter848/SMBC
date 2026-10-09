@@ -34,6 +34,18 @@ export const LARRY_HP = 6;
 export const STOMP_DAMAGE = 2;
 /** Frames he flashes, untouchable by attacks, after a non-stomp hit. */
 export const LARRY_FLASH_FRAMES = 40;
+/**
+ * Mega Man's airship (0.4.39, World.megamanShip): Larry's hit-point mode. A Mega Man 2 style bar
+ * of 28; a stomp still takes a third of it (three stomps win), a buster shot 2, a charge shot (or
+ * any heavy hit, amount 3 or more) 6, with a short flash between hits.
+ */
+export const LARRY_MM_HP = 28;
+export const LARRY_MM_STOMP = 10;
+export const LARRY_MM_SHOT = 2;
+export const LARRY_MM_HEAVY = 6;
+export const LARRY_MM_FLASH = 20;
+/** Points for a wand blast shot down on Mega Man's airship (World.projectile). */
+export const WAND_BLAST_POINTS = 100;
 
 /** Gravity 0.25 px/f² (ENTITY_GRAVITY). Hop: 2.5 px/f up (12 px high), 0.75 px/f across. */
 const HOP_VY = 0x02800;
@@ -132,11 +144,20 @@ export class Larry extends Enemy {
   invuln = 0;
   /** Where the crystal ball leads outside the campaign (the map's `next=`). */
   private readonly next: string | null;
+  /** His hit points when full: LARRY_HP, or LARRY_MM_HP in the hit-point mode. */
+  readonly maxHp: number;
 
-  constructor(tx: number, ty: number, next: string | null = null) {
+  constructor(
+    tx: number,
+    ty: number,
+    next: string | null = null,
+    /** Mega Man's airship: the hit-point mode (LARRY_MM_HP, a bar over the cabin). */
+    readonly hpMode = false,
+  ) {
     // `tx ty`: the tile his feet stand in.
     super(px(tx * 16 + 1), px((ty + 1) * 16 - STAND_H), 14, STAND_H);
-    this.hp = LARRY_HP;
+    this.maxHp = hpMode ? LARRY_MM_HP : LARRY_HP;
+    this.hp = this.maxHp;
     this.scores = LARRY_SCORES;
     this.despawnMargin = null;
     this.body.vx = 0;
@@ -163,11 +184,12 @@ export class Larry extends Enemy {
     if (this.inShell) return src.kind === 'stomp' ? 'bounce' : 'immune';
     if (src.kind === 'stomp') {
       world.audio.sfx('stomp');
-      this.damage(STOMP_DAMAGE, world, true);
+      this.damage(this.hpMode ? LARRY_MM_STOMP : STOMP_DAMAGE, world, true);
       return 'hp';
     }
-    const n = larryDamage(src);
+    let n = larryDamage(src);
     if (n === 0 || this.invuln > 0) return 'immune';
+    if (this.hpMode) n = n >= 2 ? LARRY_MM_HEAVY : LARRY_MM_SHOT;
     this.damage(n, world, false);
     return 'hp';
   }
@@ -176,7 +198,7 @@ export class Larry extends Enemy {
     this.hp = Math.max(0, this.hp - n);
     if (this.hp === 0) return this.beaten(world);
     if (stomp) this.enter('spin');
-    else this.invuln = LARRY_FLASH_FRAMES;
+    else this.invuln = this.hpMode ? LARRY_MM_FLASH : LARRY_FLASH_FRAMES;
   }
 
   /** Down: the hurt pose, his rings gone, "BWAH!", then the puff and the flight (update). */

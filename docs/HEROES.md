@@ -284,6 +284,43 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   10 frames after a stomp and while beaten, `larry-shell-0..3` spinning. A hit flash blinks him in
   the `smb3-flash` palette; with reduce flashing he stays in it, without blinking, for the flash
   time. `wand-blast-0/1` and `crystal-ball` (bottom-centred on its body).
+- **The anchor scene** (0.4.39, `world/anchor-scene.ts`; campaign story, once per file, beat
+  `anchor-4-2`): the first landing on the zone's floor plays a scene instead of the plain drop.
+  The ground shakes gently (never with reduce flashing), the hero stops and looks up (a `!`), the
+  anchor slams down and knocks the hero back unhurt, Larry yells down the chain (a card), climbs
+  down (`larry-climb-0/1`), panics (`larry-hurt`, a `!`) and scurries back up, the hero says their
+  line ("LET'S GET HIM!" for Mario, each hero their own: `anchorHeroPage`), runs to the chain and
+  climbs it into the airship. JUMP (or MENU) skips the whole scene, as in the opening (BACK on a
+  card too, never between them); every card waits; the beats are read out. Later
+  visits get the plain drop and the climb prompt. Script: docs/STORY.md 2.7.
+
+### Mega Man's airship, the "Wily-sky remix" (0.4.39)
+
+Campaign play with Mega Man as any player lays the deck's and the room's `[variant megaman]`
+sections (`level/variants.ts`; the copy is tagged `heroVariants`, so `World.megamanShip`). Every
+other hero (and classic play) gets the airship exactly as before.
+
+- **Shoot it, don't stomp it**: cannonballs and Bullet Bills fall to one buster shot for points;
+  every cannon takes four buster hits (a charge shot is three: `Cannon.shot`, through
+  `World.shotWall`) and is wrecked for 1000; a charge shot goes on through what it beats, so one
+  clears a line. Every drop lands where it can be collected (`World.placeDrop`: on a deck on
+  screen, never over a gap).
+- **His enemies** (`entities/enemies/wily-sky.ts`, original art on the station sheet): a Telly
+  hatch on the fore deck (Tellys drift at him, burst on contact, give up after nine seconds; two of
+  a hatch's own at most); shielded Joes in the gateway and on the lower stern deck (the shield
+  dinks shots from the front; he lowers it to fire three pellets); two robot gulls that each drop a
+  bomb (shootable) as they pass over him.
+- **The rigging**: the stern's steps are opened into four appearing (yoku) blocks over the lower
+  deck (no pit under them: a miss costs only the climb), each up 110 of every 180 frames, the next
+  45 frames after the last, darker in their last half second; they never appear on anyone. At the
+  top, a large health pellet waits on the high stern deck before the pipe (a map `pickup`, laid
+  for good), so a rough crossing doesn't send him into Larry nearly empty.
+- **Look and sound**: the SMB3 hull and length as before; the Wily fortress music (`music mm-wily`
+  in the variant section).
+- **Larry's room** stays an SMB3 fight, with a Mega Man 2 style hit-point bar at the top right
+  (`Larry.hpMode`, `drawBossBar`): 28 notches, a buster shot 2, a charge shot 6, a stomp still a
+  third (three stomps win), a 20-frame flash between hits; his wand blasts can be shot down (100).
+  The raised post goes for Mega Man (it took every standing shot at Larry; the log wall stays).
 
 ## The unlock flow (`src/game/scenes/free-hero.ts`)
 

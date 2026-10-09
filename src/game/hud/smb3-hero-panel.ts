@@ -41,6 +41,24 @@ function flatBar(r: Renderer, x: number, y: number, max: number, filled: number,
   }
 }
 
+/** Where Larry's bar stands on Mega Man's airship (screen px: the cabin's top right, over its logs). */
+export const BOSS_BAR = { x: 226, y: 20 } as const;
+
+/**
+ * A boss's hit points as a Mega Man 2 style bar standing upright (`max` notches of 2 px, filling
+ * from the bottom): Larry's on Mega Man's airship (Larry.hpMode, 0.4.39).
+ */
+export function drawBossBar(r: Renderer, max: number, filled: number, colour = '#f878f8'): void {
+  const { x, y } = BOSS_BAR;
+  r.rect(x - 1, y - 1, 10, max * 2 + 2, '#000');
+  for (let i = 0; i < max; i++) {
+    const on = i < filled;
+    const top = y + (max - 1 - i) * 2;
+    r.rect(x, top, 8, 1, on ? WHITE : '#404040');
+    r.rect(x, top + 1, 8, 1, on ? colour : '#202020');
+  }
+}
+
 /**
  * Player one's stats in the SMB3 status bar's box (HERO_PANEL), and player two's over the play.
  * Drawn after drawSmb3Status. Nothing for a hero without stats of their own (Mario keeps the

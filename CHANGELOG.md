@@ -8,6 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- 4-2's anchor scene: the ground shakes, the hero looks up, the anchor slams down and throws them back, Larry yells
+  down the chain, climbs down, panics and scurries back up, and the hero says "LET'S GET HIM!" (each hero has their own
+  line) before climbing into the airship. It plays once per file, every card waits, and JUMP skips it. Afterwards
+  Larry greets you with "YOU AGAIN?!".
+- Mega Man's airship, the "Wily-sky remix": he shoots it rather than stomps it. Cannonballs, Bullet Bills and bombs
+  fall to his buster, cannons are wrecked by four hits, and a charge shot clears a line. Telly hatches, robot gulls
+  with bombs and shielded Joes guard the deck, an appearing-block climb leads up the stern past a health pellet, and
+  the Wily fortress music plays.
+- Larry's room for Mega Man: a Mega Man 2-style life bar (three stomps still win), and his wand blasts can be shot
+  down. Every other hero gets the airship as before.
+
 ## [0.4.38] - 2026-10-09
 
 ### Changed

@@ -83,3 +83,10 @@ smb3:pillar 15 12
 smb3:porthole 5 6
 smb3:porthole 10 6
 smb3:ceiling-pipe 1 3
+
+[variant megaman]
+;; Mega Man's airship (0.4.39; World.megamanShip): Larry's room stays an SMB3 fight, but Larry has
+;; a Mega Man 2 style hit-point bar (Larry.hpMode: buster 2 of 28, a charge shot 6, a stomp still a
+;; third), and his wand blasts can be shot down. The raised post at (7,12) goes (log wall behind): it took every
+;; standing buster shot at Larry across it, and a shot from on top of it flew over his head.
+7 12 H

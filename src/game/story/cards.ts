@@ -19,6 +19,11 @@ export interface StoryCardOptions {
   bottom?: boolean;
   /** Runs when page `i` is closed with OK (not when BACK skips the rest), before what follows. */
   onNext?: (i: number) => void;
+  /**
+   * Runs instead of `done` when BACK skips the rest (the card already popped): a scene that goes
+   * on after its cards (4-2's anchor scene) skips the whole of itself then, not just the cards.
+   */
+  onSkip?: () => void;
 }
 
 /**
@@ -45,7 +50,7 @@ export function playStoryCards(
     const last = i === pages.length - 1;
     const close = () => {
       game.scenes.pop();
-      done();
+      (opts.onSkip ?? done)();
     };
     game.deps.announcer?.say(pageSaid(page, last));
     game.scenes.push(

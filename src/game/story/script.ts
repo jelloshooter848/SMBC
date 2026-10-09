@@ -42,10 +42,61 @@ export function noMoreStandIns(hero: string): Page {
 
 /* ---------------------------------------------------------------- 2.7: Larry and the ball */
 
+/**
+ * 4-2's anchor scene (0.4.39, world/anchor-scene.ts): Larry yells down the chain from his airship
+ * after the anchor has knocked the hero back, before he climbs down, panics and scurries up.
+ */
+export const ANCHOR_LARRY_PAGES: readonly Page[] = [
+  [
+    'LARRY:',
+    '',
+    'AFTER MY WAND, ARE YOU?!',
+    'NOBODY TAKES MY WAND!',
+    '...NOBODY ELSE, ANYWAY.',
+    'STAY RIGHT THERE!',
+  ],
+];
+
+/** Said as Larry climbs down the anchor chain, sees the hero, panics and scurries back up. */
+export const ANCHOR_LARRY_SAID = 'Larry climbs down the chain, sees you, panics and scurries back up!';
+
+/** The hero's line as Larry scurries back up the chain, by hero id, without the speaker. */
+const ANCHOR_HERO_LINES: Readonly<Record<string, Page>> = {
+  mario: ["LET'S GET HIM!"],
+  luigi: ["HE'S MORE SCARED THAN ME!", "LET'S GET HIM!"],
+  link: ['...AFTER HIM!'],
+  megaman: ['A FLYING FORTRESS? JUST', "LIKE DR. WILY'S. LET'S GO!"],
+  samus: ['TARGET IS RUNNING.', 'MOVING TO INTERCEPT.'],
+  simon: ['FLEE, COWARD! A BELMONT', 'NEVER LOSES THE TRAIL.'],
+  ryu: ['HE CANNOT OUTRUN A NINJA.'],
+  bill: ["BOGEY'S HEADING TOPSIDE.", "LET'S TAKE HIM DOWN!"],
+  sophia: ['TARGET CLIMBING. SOPHIA', 'III, ENGAGE PURSUIT!'],
+};
+
+/** The heroes with their own line in the anchor scene (anchorHeroPage), in roster order. */
+export const ANCHOR_HEROES: readonly string[] = Object.keys(ANCHOR_HERO_LINES);
+
+/**
+ * The hero's card at the end of 4-2's anchor scene: `name` (the hero's full name, upper case)
+ * speaking hero `id`'s line, Mario's "LET'S GET HIM!" for a hero without one.
+ */
+export function anchorHeroPage(id: string, name: string): Page {
+  return [`${name}:`, '', ...(ANCHOR_HERO_LINES[id] ?? ANCHOR_HERO_LINES.mario ?? [])];
+}
+
 /** Larry in his room, the first time the hero rises out of its pipe in a run. */
 export const LARRY_PAGES: readonly Page[] = [
   ['LARRY:', '', 'HEY! THE KING TOOK MY', 'WAND, AND ALL I GOT WAS', 'THIS LOUSY SPARE!'],
   ['LARRY:', '', 'HE SAYS I GET IT BACK', 'WHEN THE PRINCESS IS', 'CAUGHT. SO BUZZ OFF!'],
+];
+
+/**
+ * Larry in his room when the hero has already met him in 4-2's anchor scene (0.4.39: the file has
+ * seen `anchor-4-2`): he knows the hero this time. The second page is LARRY_PAGES's.
+ */
+export const LARRY_AGAIN_PAGES: readonly Page[] = [
+  ['LARRY:', '', 'YOU AGAIN?! THE KING TOOK', 'MY WAND, AND ALL I GOT WAS', 'THIS LOUSY SPARE!'],
+  LARRY_PAGES[1] as Page,
 ];
 
 /** The crystal ball's cards (Larry beaten; campaign), at most 26 columns a line. */

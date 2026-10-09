@@ -5,6 +5,8 @@ import { ENEMY_SCORES } from '../../rules/score';
 import { Entity, type View } from '../entity';
 import { T } from '../../level/tiles';
 import type { World } from '../../world/world';
+import type { DamageSource } from '../../rules/damage';
+import { Explosion } from '../effects/effects';
 
 /*
  * SMB3 airship cannons (Larry's airship deck, 4-2-airship.map): a cannon is a solid block that
@@ -37,6 +39,13 @@ export const CANNON_PERIOD = 150;
 const HOLD_DIST = px(20);
 /** After a held shot, try again this soon. */
 const RETRY = 20;
+
+/**
+ * Mega Man's airship (0.4.39, World.megamanShip): a cannon takes this many buster hits (a charge
+ * shot counts its three) and is wrecked, for these points. Elsewhere shots just burst on it.
+ */
+export const CANNON_HP = 4;
+export const CANNON_POINTS = 1000;
 
 /** A cannon's ball: a 12×12 body inside its 16×16 frame. */
 export class Cannonball extends Enemy {
@@ -112,8 +121,13 @@ export class Cannon extends Entity {
   /** Frames (on screen) to the next shot. */
   timer: number;
   shots = 0;
+  /** Hit points on Mega Man's airship (shot); a pale flash for a moment after a hit. */
+  hp = CANNON_HP;
+  private flash = 0;
   /** Its cell has been made solid (done on the first update, when the world is at hand). */
   private placed = false;
+  /** The cell was open air that the cannon made solid (wrecked, it opens again). */
+  private madeSolid = false;
 
   constructor(
     readonly tx: number,
@@ -146,9 +160,13 @@ export class Cannon extends Entity {
   }
 
   update(world: World): void {
+    if (this.flash > 0) this.flash--;
     if (!this.placed) {
       this.placed = true;
-      if (!world.map.isSolid(this.tx, this.ty)) world.map.set(this.tx, this.ty, T.BUMPING);
+      if (!world.map.isSolid(this.tx, this.ty)) {
+        world.map.set(this.tx, this.ty, T.BUMPING);
+        this.madeSolid = true;
+      }
     }
     const cam = world.camera;
     const b = this.body;
@@ -169,12 +187,38 @@ export class Cannon extends Entity {
     this.shots++;
   }
 
+  /**
+   * A player's shot hit it (Mega Man's airship only: World.shotWall): it takes the shot's amount
+   * (buster 1, charge shot 3) and, out of hit points, is wrecked. True when it took the hit.
+   */
+  shot(src: DamageSource, world: World): boolean {
+    if (!this.alive || src.amount <= 0 || src.kind === 'boomerang' || src.kind === 'ice') return false;
+    this.hp -= src.amount;
+    this.flash = 6;
+    world.audio.sfx('hurt-enemy');
+    if (this.hp <= 0) this.wreck(world);
+    return true;
+  }
+
+  /** Blown apart: an explosion, its points, and its cell open again if it made it solid. */
+  private wreck(world: World): void {
+    this.destroy();
+    if (this.madeSolid && world.map.get(this.tx, this.ty) === T.BUMPING)
+      world.map.set(this.tx, this.ty, T.AIR);
+    world.spawn(new Explosion(this.body.x + px(8), this.body.y + px(8)));
+    world.audio.sfx('bomb-blast');
+    world.addScore(CANNON_POINTS, this.body.x, this.body.y);
+  }
+
   render(r: Renderer, view: View): void {
     const x = toPx(this.body.x) - view.camX;
     const y = toPx(this.body.y);
     const frame = `cannon-${this.dir}`;
     if (view.assets.has(SMB3)) {
-      const sheet = view.assets.sheet(SMB3);
+      const sheet = view.assets.sheet(
+        SMB3,
+        this.flash > 0 && !view.reduceFlashing ? 'smb3-flash' : undefined,
+      );
       if (sheet.frames.has(frame)) return r.sprite(sheet, frame, x, y);
     }
     // Until the art lands: a grey block with its barrel's mouth marked.

@@ -13,7 +13,8 @@ import {
   STATUS_BAR_Y,
 } from '../hud/smb3-status';
 import { drawHud } from '../hud/hud';
-import { drawSmb3HeroStats } from '../hud/smb3-hero-panel';
+import { drawBossBar, drawSmb3HeroStats } from '../hud/smb3-hero-panel';
+import { Larry } from '../entities/enemies/larry';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
 import type { CharacterDef } from '../characters/character';
@@ -28,11 +29,11 @@ import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
-import { storyOn } from '../story/beats';
+import { beat, storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { playLevelBeat } from '../story/level-beats';
 import { playCastleRemark } from '../story/castle-remark';
-import { STORY_CRYSTAL_BALL_PAGES } from '../story/script';
+import { ANCHOR_LARRY_PAGES, anchorHeroPage, STORY_CRYSTAL_BALL_PAGES } from '../story/script';
 import { partnerNearSaid, talkToPartner } from '../story/partners';
 import { abilityHint, controlScheme } from './hints';
 import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
@@ -121,6 +122,32 @@ export class LevelScene implements Scene {
           this.resumePlay();
           done();
         });
+    // 4-2's anchor scene (world/anchor-scene.ts, 0.4.39): once per file, while the story plays.
+    if (this.world.storyMode && !game.seen(beat.anchor42))
+      this.world.anchorStory = {
+        cards: (kind, hero, done, skip) => {
+          const pages =
+            kind === 'larry' ? ANCHOR_LARRY_PAGES : [anchorHeroPage(hero.def.id, fontText(hero.def.name))];
+          playStoryCards(
+            game,
+            this.world,
+            pages,
+            () => {
+              this.resumePlay();
+              done();
+            },
+            {
+              onSkip: () => {
+                this.resumePlay();
+                skip();
+              },
+            },
+          );
+        },
+        say: (text) => game.deps.announcer?.say(text),
+        started: () => game.markSeen(beat.anchor42),
+        skipHint: () => abilityHint(game, 'SKIP', 'jump'),
+      };
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);
     if (this.tutorial) this.world.time = null;
@@ -184,7 +211,13 @@ export class LevelScene implements Scene {
         this.world.camera.x = Math.min(this.world.camera.maxX, this.world.camera.x + step);
       return;
     }
-    if (inputs.some((f) => f.pressed('start')) && this.world.activePlayers().length > 0 && this.started) {
+    if (
+      inputs.some((f) => f.pressed('start')) &&
+      this.world.activePlayers().length > 0 &&
+      this.started &&
+      // MENU skips the anchor scene instead (world/anchor-scene.ts).
+      !this.world.anchorScene
+    ) {
       // Aboard Larry's airship MENU is Continue / Give up, as in a mini game.
       this.game.scenes.push(this.airship ? airshipMenu(this.game) : new PauseScene(this.game, this.world));
       return;
@@ -205,6 +238,8 @@ export class LevelScene implements Scene {
   touchLabels(): TouchLabels {
     // The castle's text waits for OK (World.castleWaiting).
     if (this.world.castleWaiting) return { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'MENU' };
+    // 4-2's anchor scene: JUMP skips it (as in the opening scene).
+    if (this.world.anchorScene) return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
     return levelTouchLabels(this.world.players[0], this.world);
   }
 
@@ -257,7 +292,9 @@ export class LevelScene implements Scene {
         game.deps.announcer?.say(ev.text);
         break;
       case 'anchor':
-        game.deps.announcer?.say(`${ANCHOR_SAID} Climb its chain: ${abilityHint(game, 'UP', 'up')}.`);
+        // The anchor scene says its own (world/anchor-scene.ts).
+        if (!ev.scene)
+          game.deps.announcer?.say(`${ANCHOR_SAID} Climb its chain: ${abilityHint(game, 'UP', 'up')}.`);
         break;
       case 'captive-near': {
         const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
@@ -483,6 +520,9 @@ export class LevelScene implements Scene {
       // The heroes' own hit points, bars, hearts and tool belt in a box of the bar, over its
       // empty card slots (never over the deck, where Larry's ship pins the hero to the left).
       drawSmb3HeroStats(r, ctx.assets, this.game.state, this.world.players);
+      // Mega Man's airship: Larry's hit points as a Mega Man 2 style bar (0.4.39).
+      const larry = this.world.entities.find((e): e is Larry => e instanceof Larry && e.hpMode);
+      if (larry && larry.state !== 'fly') drawBossBar(r, larry.maxHp, larry.hp);
       this.drawItemCaption(r);
       this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0, {
         shiftY: SMB3_WORLD_SHIFT,
@@ -498,6 +538,7 @@ export class LevelScene implements Scene {
       outline: LIGHT_SKIES.has(this.world.level.theme),
     });
     this.drawItemCaption(r);
+    this.drawSkipHint(r);
     this.tutorial?.render(r);
     if (this.world.castleWaiting) this.drawCastlePrompt(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
@@ -512,6 +553,16 @@ export class LevelScene implements Scene {
     // On a black strip so it reads over clouds and sky alike.
     r.rect(x - 4, 46, t.length * 8 + 8, 12, '#000');
     r.text(this.game.ctx.assets.sheet('font'), t, x, 48);
+  }
+
+  /** "SKIP (key)" at the bottom right while 4-2's anchor scene plays between its cards. */
+  private drawSkipHint(r: Renderer): void {
+    const s = this.world.anchorScene;
+    if (!s || s.waiting || s.over) return;
+    const t = fontText(abilityHint(this.game, 'SKIP', 'jump'));
+    const x = SCREEN_W - 8 - t.length * 8;
+    r.rect(x - 4, 212, t.length * 8 + 8, 12, '#000');
+    r.text(this.game.ctx.assets.sheet('font'), t, x, 214);
   }
 
   /** The OK prompt under the castle's text while it waits (World.castleWaiting). */
