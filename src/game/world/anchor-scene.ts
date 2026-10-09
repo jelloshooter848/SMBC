@@ -70,6 +70,8 @@ export interface AnchorStory {
   say(text: string): void;
   /** The scene has started: it is seen on the file. */
   started(): void;
+  /** The skip control as the hint on screen names it ("SKIP (X)"; "SKIP" on touch). */
+  skipHint(): string;
 }
 
 export const ANCHOR_SCENE_SAID = {
@@ -114,7 +116,8 @@ export class AnchorScene {
     world.shake(S.rumble + 4, 1);
     world.audio.sfx('rumble');
     this.story.started();
-    this.story.say(ANCHOR_SCENE_SAID.rumble);
+    // The SKIP hint on screen is said too (new text is announced).
+    this.story.say(`${ANCHOR_SCENE_SAID.rumble} ${this.story.skipHint()} skips the scene.`);
   }
 
   private enter(phase: AnchorPhase): void {

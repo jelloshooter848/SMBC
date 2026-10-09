@@ -146,6 +146,7 @@ export class LevelScene implements Scene {
         },
         say: (text) => game.deps.announcer?.say(text),
         started: () => game.markSeen(beat.anchor42),
+        skipHint: () => abilityHint(game, 'SKIP', 'attack'),
       };
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);

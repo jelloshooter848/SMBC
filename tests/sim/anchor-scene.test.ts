@@ -74,7 +74,8 @@ describe('the anchor scene (campaign story, once per file)', () => {
     expect(scene.phase).toBe('rumble');
     // Seen at once: a TRY AGAIN or a later visit does not play it again.
     expect(h.game.seen(beat.anchor42)).toBe(true);
-    expect(h.said).toContain(ANCHOR_SCENE_SAID.rumble);
+    // Its first line also says how to skip it, as the SKIP hint on screen shows (new text is said).
+    expect(h.said).toContain(`${ANCHOR_SCENE_SAID.rumble} SKIP skips the scene.`);
     // 1. The ground shakes gently: never more than a pixel.
     let shook = 0;
     let lookedUp = false;
