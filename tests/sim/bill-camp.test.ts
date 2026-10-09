@@ -325,6 +325,8 @@ describe('the campaign look hook (LevelData.campaignLook)', () => {
         ...ninja,
         ...contra,
         ...blaster,
+        // The Top Secret Area as the inside of Kakariko Village's secret house (0.4.41).
+        '2-top-secret',
       ].sort(),
     );
   });
