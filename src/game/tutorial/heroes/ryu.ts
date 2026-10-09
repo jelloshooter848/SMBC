@@ -159,9 +159,11 @@ export const RYU_LESSONS: readonly Lesson[] = [
     block: S.spinBlock,
     enter: fillNinpo,
     get: 'THE LAST ? BLOCK!',
-    text: '[NINPO:select] TO IT. SOMERSAULT INTO THE ENEMY!',
-    touchText: 'TAP [NINPO:select] TILL IT READS SPIN. TAP [SPIN:special:SPIN] AS THE ENEMY COMES.',
-    retry: 'PICK JUMP AND SLASH WITH [NINPO:select] AND SPIN AS THE ENEMY REACHES YOU.',
+    // Cast from the ground, the spin's hop clears a walker unless it is already touching him: a
+    // jump first, then the spin on the way down onto it, cuts it (RQ38).
+    text: '[NINPO:select] TO IT. [JUMP:jump], CAST AS YOU DROP!',
+    touchText: 'TAP [NINPO:select] TILL IT READS SPIN. [JUMP:jump], TAP [SPIN:special:SPIN] AS YOU DROP.',
+    retry: 'PICK JUMP AND SLASH WITH [NINPO:select]. JUMP AS THE ENEMY COMES, SPIN AS YOU DROP ONTO IT.',
     done: (w) => hitsSince(w, (h) => h.spin && !(h.target instanceof TrainingTarget)).length > 0,
   },
   {

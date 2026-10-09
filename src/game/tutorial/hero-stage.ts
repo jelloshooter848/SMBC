@@ -502,9 +502,21 @@ export class StageMenu extends MenuScene {
   }
 }
 
+/** Columns of a menu title inside the translucent panel (menu.ts: 224 px). */
+const TITLE_COLS = 28;
+
+/**
+ * START AT's title: "<HERO> TRAINING: START AT", or "<HERO>: START AT" when that would run past
+ * the menu's panel ("SOPHIA III TRAINING: START AT" is 29 columns).
+ */
+export function startAtTitle(hero: CharacterDef): string {
+  const full = fontText(`${hero.name} TRAINING: START AT`);
+  return full.length <= TITLE_COLS ? full : fontText(`${hero.name}: START AT`);
+}
+
 /** START AT: where a replayed stage begins (the beginning, or a power-up's lesson). */
 export class StartAtMenu extends MenuScene {
   constructor(game: Game, hero: CharacterDef, items: MenuItem[], back: () => void) {
-    super(game, fontText(`${hero.name} TRAINING: START AT`), items, back, true);
+    super(game, startAtTitle(hero), items, back, true);
   }
 }

@@ -7,7 +7,7 @@ import { defaultSettings } from '@engine/save/settings';
 import { DEFAULT_ASSIST } from '@game/context';
 import { Game, type ControlScheme } from '@game/scenes/game';
 import { CHARACTERS } from '@game/characters/registry';
-import { HeroStageScene } from '@game/tutorial/hero-stage';
+import { HeroStageScene, startAtTitle } from '@game/tutorial/hero-stage';
 import { HERO_STAGES } from '@game/tutorial/heroes';
 import { itemInfo, heroItems } from '@game/items/catalog';
 import { lessonBlocks, lessonItems, tokenCaptions } from '@game/tutorial/stage-prompts';
@@ -148,4 +148,19 @@ describe('the hero stages', () => {
       for (const it of items.slice(1)) expect(entries, it).toContain(it);
     });
   }
+});
+
+describe('START AT', () => {
+  it("its title fits the menu's panel (28 columns) for every hero, Sophia III's shortened (RQ38)", () => {
+    for (const id of Object.keys(HERO_STAGES)) {
+      const hero = CHARACTERS.find((c) => c.id === id);
+      if (!hero) throw new Error(id);
+      expect(startAtTitle(hero).length, id).toBeLessThanOrEqual(28);
+    }
+    const sophia = CHARACTERS.find((c) => c.id === 'sophia');
+    const link = CHARACTERS.find((c) => c.id === 'link');
+    if (!sophia || !link) throw new Error('heroes');
+    expect(startAtTitle(sophia)).toBe('SOPHIA III: START AT');
+    expect(startAtTitle(link)).toBe('LINK TRAINING: START AT');
+  });
 });

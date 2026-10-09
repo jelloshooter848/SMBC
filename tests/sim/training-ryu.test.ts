@@ -5,6 +5,7 @@ import { CardScene } from '@game/scenes/message';
 import type { HeroStageScene } from '@game/tutorial/hero-stage';
 import { RYU_LESSONS, RYU_SCROLL_NINPO, RYU_STAGE } from '@game/tutorial/heroes/ryu';
 import { ninpoMax } from '@game/characters/ryu';
+import { Goomba } from '@game/entities/enemies/goomba';
 import { useStorage } from './heroes-harness';
 import { ryuBot } from './bots/ryu';
 import { choose, controls, playStage, skipGreeting, stageMenu, startAtLabels, startStage } from './stage-bot';
@@ -100,5 +101,68 @@ describe("Ryu's stage", () => {
     expect(ninpoMax(s.world.player)).toBe(RYU_SCROLL_NINPO);
     // The box asks for the windmill's block: the scroll counts as taken.
     expect(s.director.lines().join(' ')).toBe('ANOTHER ? BLOCK!');
+  });
+  it('Jump and Slash as the tip says: a jump as the walker comes, the cast as he drops, cuts it (RQ38)', () => {
+    const jumpSlash = RYU_LESSONS.find((l) => l.id === 'jump-slash');
+    expect(jumpSlash?.text).toMatch(/\[JUMP:jump\], CAST AS YOU DROP/);
+    /** From standing at column 84 with the art picked, one attempt at the next walker. */
+    const attempt = (how: 'ground' | 'jump'): boolean => {
+      const { h, stage } = startStage('ryu', { replay: true });
+      choose(h, 'Jump and Slash');
+      const s = stage();
+      playStage(h, s, ryuBot(), () => !!s.world.player.scratch['has-jump-slash'], 900);
+      playStage(
+        h,
+        s,
+        (st) => {
+          const out: Action[] = [];
+          const c = controls(st, out);
+          if (c.pick('slash')) c.standAt(84);
+          return out;
+        },
+        () => {
+          const out: Action[] = [];
+          const c = controls(s, out);
+          return c.tool() === 'slash' && c.standAt(84) && out.length === 0;
+        },
+        600,
+      );
+      let went = false;
+      let cast = false;
+      playStage(
+        h,
+        s,
+        (st) => {
+          const p = st.world.player;
+          const b = p.body;
+          const front = toPx(b.x + b.w);
+          const g = st.world.entities.find((e): e is Goomba => e instanceof Goomba && e.alive);
+          const near = !!g && toPx(g.body.x) - front <= 16;
+          if (how === 'ground') {
+            if (!went && near) {
+              went = true;
+              return ['special'];
+            }
+            return [];
+          }
+          if (!went && near && b.onGround) {
+            went = true;
+            return ['jump'];
+          }
+          // Cast once, as he starts to drop (no steering).
+          if (went && !cast && !b.onGround && b.vy > 0) {
+            cast = true;
+            return ['special'];
+          }
+          return went && !b.onGround ? ['jump'] : [];
+        },
+        () => lessonId(s) !== 'jump-slash',
+        240,
+      );
+      return lessonId(s) !== 'jump-slash';
+    };
+    // The spin's hop from the ground clears a walker a step away; the jump first cuts it.
+    expect(attempt('ground')).toBe(false);
+    expect(attempt('jump')).toBe(true);
   });
 });

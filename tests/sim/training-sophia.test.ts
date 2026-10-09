@@ -129,4 +129,20 @@ describe("Sophia III's stage", () => {
     ]);
     expect(lessonId(s)).toBe('homing-missile');
   });
+  it('Wall Climb needs UP held, as the tip says: driving into the wall alone stops her (RQ38)', () => {
+    const wall = SOPHIA_LESSONS.find((l) => l.id === 'wall-climb');
+    expect(wall?.text).toMatch(/^HOLD UP AND DRIVE INTO THE TALL WALL/);
+    const { h, stage } = startStage('sophia', { replay: true });
+    choose(h, 'Wall Climb');
+    const s = stage();
+    playStage(h, s, sophiaBot(), () => !!s.world.player.scratch['has-wall-climb'], 900);
+    const up = () => onTop(s.world, S.wall.top, S.wall.from, S.wall.to);
+    // Right alone, for three seconds: she drives into the wall's foot and stays there.
+    playStage(h, s, () => ['right'], up, 180);
+    expect(up()).toBe(false);
+    expect(heroCol(s)).toBeLessThan(S.wall.from);
+    // UP as well: up the wall and onto its top.
+    playStage(h, s, () => ['right', 'up'], up, 600);
+    expect(up()).toBe(true);
+  });
 });

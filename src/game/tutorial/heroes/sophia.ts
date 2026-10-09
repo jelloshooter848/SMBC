@@ -178,7 +178,8 @@ export const SOPHIA_LESSONS: readonly Lesson[] = [
     item: 'wall-climb',
     block: S.wallBlock,
     get: 'A ? BLOCK!',
-    text: 'DRIVE INTO THE TALL WALL TO DRIVE UP IT.',
+    // UP is what turns her up a wall (drive.ts startFloorTurn): driving into it alone stops her.
+    text: 'HOLD UP AND DRIVE INTO THE TALL WALL TO DRIVE UP IT.',
     done: (w) => onTop(w, S.wall.top, S.wall.from, S.wall.to) || landedPast(w, S.wall.to + 1),
   },
   {
