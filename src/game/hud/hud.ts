@@ -1,4 +1,4 @@
-import type { Renderer } from '@engine/gfx/renderer';
+import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { isFound } from '../items/flags';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { worldLabel } from './world-label';
@@ -65,7 +65,6 @@ export function drawHud(
   players: Player[],
   opts: HudOptions = {},
 ): void {
-  const player = players[0] ?? null;
   const font = assets.sheet('font');
   const covered = opts.covered;
   /** A HUD text; outlined in black when a sprite is under it (or always, on a light sky). */
@@ -97,6 +96,27 @@ export function drawHud(
       if (time !== null) text(pad(time, 3), 208, 16);
     }
   }
+  drawHeroStats(r, assets, state, players, text);
+  // Blink the timer label when low.
+  if (opts.place === undefined && time !== null && time <= 100 && (frame >> 4) % 2 === 0)
+    text('TIME', 200, 8);
+}
+
+/**
+ * The heroes' own stats: hit points (Samus's EN and tanks, Link's hearts, the Mega Man style
+ * bars of Mega Man, Simon and Ryu), the tool belt and the weapon / secondary meter, and player
+ * two's name and hit points. The SMB1 HUD draws them under its top rows; an SMB3 piece (Larry's
+ * airship) draws them over its world with its status bar along the bottom (0.4.35: they were
+ * missing there), `text` being the caller's outlined text.
+ */
+export function drawHeroStats(
+  r: Renderer,
+  assets: AssetRegistry,
+  state: GameState,
+  players: Player[],
+  text: (str: string, x: number, y: number) => void,
+): void {
+  const player = players[0] ?? null;
   const dmg = state.character.damage;
   if (dmg.kind === 'hp' && player) {
     if (dmg.hudStyle === 'number') {
@@ -194,7 +214,25 @@ export function drawHud(
     }
     if (p2.out) text('OUT', 200, 24);
   }
-  // Blink the timer label when low.
-  if (opts.place === undefined && time !== null && time <= 100 && (frame >> 4) % 2 === 0)
-    text('TIME', 200, 8);
+}
+
+/**
+ * The heroes' stats over a world without the SMB1 HUD (Larry's airship, SMB3's status bar along
+ * the bottom): drawn as drawHud draws them, `dy` px up or down (the airship: up into the two HUD
+ * rows it has no use for), every text outlined so it reads over the deck and the sky.
+ */
+export function drawHeroStatsOver(
+  r: Renderer,
+  assets: AssetRegistry,
+  state: GameState,
+  players: Player[],
+  dy: number,
+): void {
+  const o = new OffsetRenderer(r, 0, dy);
+  const font = assets.sheet('font');
+  const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
+  drawHeroStats(o, assets, state, players, (str, x, y) => {
+    for (const [ox, oy] of OUTLINE) o.text(dark, str, x + ox, y + oy);
+    o.text(font, str, x, y);
+  });
 }

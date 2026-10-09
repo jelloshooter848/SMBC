@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { px } from '@engine/math/units';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { CHARACTERS } from '@game/characters/registry';
 import { LevelScene } from '@game/scenes/level';
 import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
@@ -583,4 +585,56 @@ describe('every hero rides the deck to the stern pipe', () => {
       });
     }
   }
+});
+
+describe("the heroes' own stats aboard Larry's airship (0.4.35: Mega Man's bars were missing)", () => {
+  /** Rects and texts of one frame of `scene`. */
+  function frame(scene: { render(r: Renderer): void }) {
+    const rects: { x: number; y: number; w: number; h: number; c: string }[] = [];
+    const texts: string[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      rect(x: number, y: number, w: number, h: number, c: string): void {
+        rects.push({ x, y, w, h, c });
+      },
+      text(_f: SpriteSheet, str: string): void {
+        texts.push(str);
+      },
+    });
+    scene.render(r);
+    return { rects, texts };
+  }
+
+  it.each([AIRSHIP_DECK, AIRSHIP_ROOM])('%s: every hero with hit points shows them', (id) => {
+    for (const c of CHARACTERS) {
+      if (c.damage.kind !== 'hp') continue;
+      const h = makeGame();
+      h.game.devStart(id, c, 'small', true);
+      h.until(() => h.top() instanceof LevelScene, 400);
+      const scene = h.top() as LevelScene;
+      expect(scene.level.id).toBe(id);
+      const { rects, texts } = frame(scene);
+      const style = c.damage.hudStyle;
+      if (style === 'bar') {
+        // The life bar's black frame at the left edge, its segments inside.
+        expect(
+          rects.some((q) => q.x === 7 && q.w === 8 && q.c === '#000'),
+          `${c.id} life bar`,
+        ).toBe(true);
+        if (c.meter?.(scene.world.player))
+          expect(
+            rects.some((q) => q.x === 15 && q.w === 8 && q.c === '#000'),
+            `${c.id} weapon bar`,
+          ).toBe(true);
+      } else if (style === 'hearts')
+        expect(
+          texts.some((t) => /^[hfe]+$/.test(t)),
+          `${c.id} hearts`,
+        ).toBe(true);
+      else
+        expect(
+          texts.some((t) => /^EN/.test(t)),
+          `${c.id} EN`,
+        ).toBe(true);
+    }
+  });
 });

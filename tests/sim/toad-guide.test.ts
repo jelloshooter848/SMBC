@@ -250,7 +250,7 @@ describe("Toad's map scenes: after the last page", () => {
     h.idle(6); // the map's idle settle
     // He leaves FORWARD, on to the right (0.4.35, owner: never back the way he came), facing it.
     expect(toadSprite(h)!.x).toBeGreaterThan(off!.x);
-    expect(toadSprite(h)!.flip).toBeFalsy();
+    expect(map(h).toad!.toad()!.flip).toBe(false);
     // The hero walks while Toad is still going.
     for (const d of ['left', 'up', 'down', 'right'] as const) if (map(h).mode === 'idle') h.tap(d);
     expect(map(h).mode).toBe('walk');

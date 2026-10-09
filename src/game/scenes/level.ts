@@ -12,7 +12,7 @@ import {
   smb3Status,
   STATUS_BAR_Y,
 } from '../hud/smb3-status';
-import { drawHud } from '../hud/hud';
+import { drawHeroStatsOver, drawHud } from '../hud/hud';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
 import type { CharacterDef } from '../characters/character';
@@ -470,6 +470,9 @@ export class LevelScene implements Scene {
       const ctx = this.game.ctx;
       const status = smb3Status(this.game.state, this.world.player, time);
       drawSmb3Status(r, ctx.assets, status, this.world.frame, ctx.reduceFlashing);
+      // SMB3's bar has no room for them: the heroes' hit points, bars, hearts and tool belt over
+      // the deck's top-left, where the SMB1 HUD puts them, 16 px up into the rows it lacks.
+      drawHeroStatsOver(r, ctx.assets, this.game.state, this.world.players, -16);
       this.drawItemCaption(r);
       this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0, {
         shiftY: SMB3_WORLD_SHIFT,

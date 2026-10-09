@@ -10,6 +10,7 @@ import { HammerBro } from '../entities/enemies/hammer-bro';
 import { Projectile } from '../entities/projectiles/projectile';
 import { carriedKit } from '../entities/player';
 import { drawSmb3Status, renderSmb3World, smb3Status } from '../hud/smb3-status';
+import { drawHeroStatsOver } from '../hud/hud';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 import { CardScene } from './message';
 import { PauseScene } from './pause';
@@ -223,5 +224,7 @@ export class HammerBattleScene implements Scene {
     const ctx = this.game.ctx;
     const status = smb3Status(this.game.state, this.world.player, null);
     drawSmb3Status(r, ctx.assets, status, this.world.frame, ctx.reduceFlashing);
+    // The heroes' own hit points and bars, as aboard Larry's airship (LevelScene.render).
+    drawHeroStatsOver(r, ctx.assets, this.game.state, this.world.players, -16);
   }
 }
