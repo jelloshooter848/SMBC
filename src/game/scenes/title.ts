@@ -12,6 +12,7 @@ import {
 } from '@content/sprites/title-logo';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { MenuScene, type MenuItem } from './menu';
+import { abilityHint, boundKey, controlScheme } from './hints';
 import { OptionsScene } from './options';
 import { FileSelectScene } from './file-select';
 import { CheatCode, DEV_CODE } from './cheat';
@@ -51,6 +52,14 @@ const RIFT_CX = 128;
 const RIFT_CY = 50;
 
 const SKY = '#5c94fc';
+
+/**
+ * The speaker in the top-right corner (0.4.35, owner): sound on / off without a menu, the same
+ * mute as Options > Audio > Mute. Its box (screen px) is also what a tap or click hits.
+ */
+const SPEAKER = { x: 236, y: 4, w: 16, h: 12 } as const;
+/** The speaker's pixel rows: `#` white, `x` the red cross when muted, waves `)` while sound is on. */
+const SPEAKER_BODY = ['....##', '...###', '######', '######', '######', '######', '...###', '....##'];
 
 export type TitlePhase = 'rift' | 'drop' | 'ready';
 
@@ -134,6 +143,7 @@ export class TitleScene extends MenuScene {
   }
 
   override enter(): void {
+    this.bindPointer();
     const audio = this.game.ctx.audio;
     if (this.phase === 'rift') audio.playJingle('title-rift');
     else audio.playMusic('title');
@@ -149,6 +159,9 @@ export class TitleScene extends MenuScene {
         'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit. Pre-release.',
         `Version ${__APP_VERSION__}.`,
         this.phase === 'rift' ? 'Press any button to skip the intro.' : '',
+        this.game.deps.settings?.audio
+          ? `Sound ${this.muted ? 'off' : 'on'}. ${controlScheme(this.game) === 'touch' ? 'SOUND' : abilityHint(this.game, 'SOUND', 'select')} ${this.muted ? 'turns it on' : 'mutes it'}.`
+          : '',
         it ? `${it.label}${it.hint ? `. ${it.hint}` : ''}` : '',
       ]
         .filter(Boolean)
@@ -156,10 +169,102 @@ export class TitleScene extends MenuScene {
     );
   }
 
-  /** B does nothing here, but stays (blank) so the developer code can be entered by touch. */
+  /**
+   * B does nothing here, but stays (blank) so the developer code can be entered by touch. SELECT
+   * is the SOUND button (the speaker).
+   */
   override touchLabels(): TouchLabels {
     if (this.phase === 'rift') return { jump: 'SKIP', attack: '', special: null, start: null, select: null };
-    return { ...super.touchLabels(), attack: '' };
+    return { ...super.touchLabels(), attack: '', select: 'SOUND' };
+  }
+
+  // ------------------------------------------------------------ the speaker (sound on / off)
+
+  /** All sound is off (Options > Audio > Mute). */
+  get muted(): boolean {
+    return this.game.deps.settings?.audio?.muted ?? false;
+  }
+
+  /** The speaker's box, screen px (a tap or click inside it toggles the sound). */
+  get speakerBox(): { x: number; y: number; w: number; h: number } {
+    return { ...SPEAKER };
+  }
+
+  /** Sound on / off: the setting Options > Audio > Mute changes, saved and applied, and said. */
+  toggleSound(): void {
+    const s = this.game.deps.settings;
+    if (!s?.audio) return;
+    s.audio.muted = !s.audio.muted;
+    this.game.deps.applySettings?.();
+    if (!s.audio.muted) this.game.ctx.audio.sfx('select');
+    this.game.deps.announcer?.say(s.audio.muted ? 'Sound off.' : 'Sound on.');
+  }
+
+  /** A tap or click at screen (x, y): on the speaker it toggles the sound (true). */
+  tapAt(x: number, y: number): boolean {
+    const b = SPEAKER;
+    // A little slack around the icon: a fingertip is bigger than 16 px.
+    if (x < b.x - 6 || x > b.x + b.w + 4 || y < b.y - 4 || y > b.y + b.h + 6) return false;
+    this.toggleSound();
+    return true;
+  }
+
+  private unbindPointer: (() => void) | null = null;
+
+  /** Taps and clicks on the canvas reach the speaker while the title is on top. */
+  private bindPointer(): void {
+    const canvas = this.game.deps.canvas;
+    const viewport = this.game.deps.viewport;
+    if (!canvas || !viewport || this.unbindPointer) return;
+    const down = (e: PointerEvent) => {
+      if (this.game.scenes.top !== this || this.phase === 'rift') return;
+      const s = viewport.toScreen(e.clientX, e.clientY);
+      if (this.tapAt(s.x, s.y)) e.preventDefault();
+    };
+    canvas.addEventListener('pointerdown', down);
+    this.unbindPointer = () => canvas.removeEventListener('pointerdown', down);
+  }
+
+  exit(): void {
+    this.unbindPointer?.();
+    this.unbindPointer = null;
+  }
+
+  /** The speaker icon and, with keys or a pad, its key under it ("(RIGHT SHIFT)"). */
+  private speaker(r: Renderer, dy: number): void {
+    const b = SPEAKER;
+    const x = b.x;
+    const y = b.y + 2 + dy;
+    const px1 = (cx: number, cy: number, c: string) => r.rect(x + cx, y + cy, 1, 1, c);
+    SPEAKER_BODY.forEach((row, cy) => {
+      for (let cx = 0; cx < row.length; cx++)
+        if (row[cx] === '#') {
+          px1(cx + 1, cy + 1, '#000');
+          px1(cx, cy, '#fcfcfc');
+        }
+    });
+    if (this.muted) {
+      // A red cross where the waves were.
+      for (let i = 0; i < 6; i++) {
+        px1(8 + i, 1 + i, '#d82800');
+        px1(13 - i, 1 + i, '#d82800');
+      }
+    } else {
+      // Two sound waves.
+      for (const [cx, cy, h] of [
+        [8, 2, 4],
+        [10, 1, 6],
+        [12, 0, 8],
+      ] as const) {
+        if (cx === 12 && (this.t >> 5) % 2 === 1 && !this.calm) continue;
+        r.rect(x + cx, y + cy, 1, h, '#fcfcfc');
+      }
+    }
+    const key = boundKey(this.game, 'select');
+    if (key) {
+      const s = `(${key})`;
+      this.text(r, s, 252 - (s.length * 8 - 1), b.y + b.h + 4 + dy, undefined, true);
+    }
   }
 
   // ------------------------------------------------------------ effects (reduce flashing aware)
@@ -258,6 +363,10 @@ export class TitleScene extends MenuScene {
       return; // the final press of the code must not also activate a menu item
     }
     if (this.phase === 'drop' && Actions.some((a) => input.pressed(a))) this.finish();
+    if (input.pressed('select')) {
+      this.toggleSound();
+      return;
+    }
     super.update(input);
   }
 
@@ -491,5 +600,6 @@ export class TitleScene extends MenuScene {
     }
     this.menu(r, dy);
     this.credits(r, dy);
+    this.speaker(r, dy);
   }
 }

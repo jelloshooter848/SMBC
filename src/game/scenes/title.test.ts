@@ -8,7 +8,7 @@ import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
-import type { Settings } from '@engine/save/settings';
+import { defaultSettings, type Settings } from '@engine/save/settings';
 import { ScriptedInput } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import type { CharacterDef } from '@game/characters/character';
@@ -333,5 +333,56 @@ describe('intro layering', () => {
       checked++;
     }
     expect(checked).toBeGreaterThan(0);
+  });
+});
+
+describe('the title speaker: sound on / off without a menu (0.4.35)', () => {
+  function withSettings(scheme: 'keyboard' | 'touch' = 'keyboard') {
+    const h = makeGame();
+    const settings = defaultSettings();
+    let applied = 0;
+    h.game.deps.settings = settings;
+    h.game.deps.applySettings = () => void applied++;
+    h.game.deps.controlScheme = () => scheme;
+    h.game.showTitle();
+    h.idle(TITLE_TIMING.dropEnd + 4);
+    return { ...h, settings, applied: () => applied, title: h.game.scenes.top as TitleScene };
+  }
+
+  it('SOUND (the select key) mutes all sound, saved like Options > Audio > Mute, and says so', () => {
+    const h = withSettings();
+    const index = (h.title as unknown as { index: number }).index;
+    h.tap('select');
+    expect(h.settings.audio.muted).toBe(true);
+    expect(h.applied()).toBe(1);
+    expect(h.said.at(-1)).toBe('Sound off.');
+    // The menu cursor did not move, nothing opened.
+    expect(h.game.scenes.top).toBe(h.title);
+    expect((h.title as unknown as { index: number }).index).toBe(index);
+    h.tap('select');
+    expect(h.settings.audio.muted).toBe(false);
+    expect(h.said.at(-1)).toBe('Sound on.');
+  });
+
+  it('the speaker shows in the corner with its key; a tap or click on it toggles', () => {
+    const h = withSettings();
+    const t = texts(h.title).map((x) => x.str);
+    expect(t).toContain('(RIGHT SHIFT)');
+    const box = h.title.speakerBox;
+    expect(box.x + box.w).toBeLessThanOrEqual(256);
+    expect(box.y).toBeLessThan(24);
+    expect(h.title.tapAt(box.x + box.w / 2, box.y + box.h / 2)).toBe(true);
+    expect(h.settings.audio.muted).toBe(true);
+    expect(h.title.tapAt(128, 120)).toBe(false);
+    expect(h.settings.audio.muted).toBe(true);
+  });
+
+  it('on touch the SELECT button reads SOUND; the title says how to mute', () => {
+    const h = withSettings('touch');
+    expect(h.title.touchLabels().select).toBe('SOUND');
+    expect(texts(h.title).some((x) => x.str.startsWith('('))).toBe(false);
+    h.game.showTitle();
+    h.step();
+    expect(h.said.at(-1)).toMatch(/Sound on\. SOUND mutes it\./);
   });
 });
