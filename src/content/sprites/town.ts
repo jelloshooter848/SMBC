@@ -8,7 +8,7 @@ import {
   type IndoorId,
   type ScreenId,
 } from '@content/town/kakariko';
-import { Canvas, hash, mirror } from './paint';
+import { Canvas, hash } from './paint';
 
 /*
  * Kakariko Village's tiles (0.4.41): original art in the spirit of A Link to the Past's towns,
@@ -282,7 +282,7 @@ function bigTree(c: Canvas, leaf: [string, string, string], trunk = true): void 
 }
 
 /** Tree pieces (`tree-0-0` top-left ... `tree-1-1`), blossom trees (`blossom-...`) and bushes. */
-const TREE_FRAMES = ((): void => {
+function paintTrees(): void {
   const t = new Canvas(32, 32);
   bigTree(t, ['a', 'b', 'c']);
   const b = new Canvas(32, 32);
@@ -302,8 +302,8 @@ const TREE_FRAMES = ((): void => {
     FRAMES[`tree-${ix}-${iy}`] = t.crop(ix * 16, iy * 16);
     FRAMES[`blossom-${ix}-${iy}`] = b.crop(ix * 16, iy * 16);
   }
-})();
-void TREE_FRAMES;
+}
+paintTrees();
 
 /** A small round tree that fills one cell (where a big one does not fit). */
 function bush(kind: 'tree' | 'blossom'): string {
@@ -566,7 +566,7 @@ function well(): string {
 }
 
 /** The weathervane (2×2): a stone plinth marked W, E and S (the N fell off), a vane and a hen on top. */
-const VANE = ((): void => {
+function paintVane(): void {
   const c = new Canvas(32, 32);
   c.ellipse(16, 28, 13, 3.5, '1');
   // The plinth.
@@ -600,8 +600,8 @@ const VANE = ((): void => {
     [1, 1],
   ] as const)
     FRAMES[`vane-${ix}-${iy}`] = c.crop(ix * 16, iy * 16);
-})();
-void VANE;
+}
+paintVane();
 
 function bench(): string {
   return frame('bench', (c) => {
@@ -656,7 +656,7 @@ function barrel(): string {
   });
 }
 
-const LOG = ((): void => {
+function paintLog(): void {
   const c = new Canvas(32, 16);
   c.ellipse(16, 14, 14, 1.5, '1');
   c.rect(4, 4, 24, 9, 'q');
@@ -670,8 +670,8 @@ const LOG = ((): void => {
   c.paste(o.rows());
   FRAMES['log-0'] = c.crop(0, 0);
   FRAMES['log-1'] = c.crop(16, 0);
-})();
-void LOG;
+}
+paintLog();
 
 function soil(): string {
   return frame('soil', (c) => c.each((x, y) => (y % 4 === 3 ? '4' : hash(x, y, 101) < 0.1 ? '6' : '5')));
@@ -830,7 +830,7 @@ function stool(): string {
   });
 }
 
-const FIRE = ((): void => {
+function paintFire(): void {
   const c = new Canvas(32, 16);
   c.each((x, y) => ((x + (y >> 2) * 3) % 6 === 0 || y % 4 === 3 ? 'u' : y < 2 ? 't' : 's'));
   c.rect(6, 4, 20, 12, '0');
@@ -839,8 +839,8 @@ const FIRE = ((): void => {
   c.rect(0, 0, 32, 1, '0');
   FRAMES['fire-0'] = c.crop(0, 0);
   FRAMES['fire-1'] = c.crop(16, 0);
-})();
-void FIRE;
+}
+paintFire();
 
 function shelf(): string {
   return frame('shelf', (c) => {
@@ -1091,6 +1091,3 @@ export function townArt(room: string): readonly (readonly string[] | null)[] | u
 
 /** The village's tile sheet: exactly the frames its rooms use, and the shut doors. */
 export const townDef: SpriteDef = { palette: 'town', frames: FRAMES };
-
-/** (For the art test: every frame a room uses is on the sheet.) */
-export const TOWN_MIRROR = mirror;

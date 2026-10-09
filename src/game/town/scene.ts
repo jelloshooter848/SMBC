@@ -469,8 +469,8 @@ function drawTownHud(r: Renderer, scene: TownScene): void {
   r.text(font, `LIVES×${String(s.lives).padStart(2, '0')}`, 120, 40);
   const hint =
     controlScheme(game) === 'touch'
-      ? 'HERO BUTTON: SWITCH'
-      : `${fontText(abilityHint(game, 'TOOLS', 'select'))}: SWITCH HERO`;
+      ? 'HERO BUTTON: NEXT HERO'
+      : `${fontText(abilityHint(game, 'TOOLS', 'select'))}: NEXT HERO`;
   r.text(font, hint.slice(0, 30), 8, 52);
   // The six screens, the hero's lit (indoors: the screen the building stands on).
   const here = isOutdoor(room) ? SCREEN_AT[room] : screenOfIndoor(room);

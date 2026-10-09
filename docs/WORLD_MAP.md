@@ -600,7 +600,7 @@ and `town-folk.ts` (townsfolk, heroes from above), music `src/content/music/kaka
 - **The healer** heals the hero's hit points in full, for free (`fullHp`: the kit's `maxHp`, else the
   hero's start); Mario and Luigi have none to heal.
 - **HUD** (64 px): the village and the screen (or building), the hero and their power, coins, lives, the
-  switch button's name, and a map of the six screens.
+  switch button's name (TOOLS (key): NEXT HERO; HERO BUTTON on touch), and a map of the six screens.
 - **Music:** `village` outdoors, `village-indoors` in the rooms; sounds `hero-switch` and `hen`.
 - **Dev:** level select's last entry, `village` (`DEV_VILLAGE`), walks into the village with no file:
   every hero to switch to, nothing saved, the gate (or Quit to map) back to the title.

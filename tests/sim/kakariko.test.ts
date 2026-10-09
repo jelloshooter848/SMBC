@@ -16,6 +16,8 @@ import { villageDungeon, villageRooms, isOutdoor } from '@game/town/village';
 import { folkSpawner, Townsperson, FOLK_DEFS } from '@game/town/folk';
 import { DEV_VILLAGE, KAKARIKO, SECRET_HOUSE_LEVEL } from '@game/town/secret-house';
 import { overheadLook } from '@game/town/hero';
+import { PALETTES, SPRITES } from '@content/sprites';
+import { townArt } from '@content/sprites/town';
 import { LevelScene } from '@game/scenes/level';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { CharacterSelectScene } from '@game/scenes/character-select';
@@ -739,6 +741,37 @@ describe('campaign only', () => {
     expect(VILLAGE_NAME).toBe('KAKARIKO VILLAGE');
     for (const id of SCREENS) expect(OUTDOOR[id]).toHaveLength(11);
     expect(isOutdoor('inn')).toBe(false);
+  });
+});
+
+describe('the art', () => {
+  it('every picture a room uses, every townsperson and every hero from above is drawn', () => {
+    const town = SPRITES.town!.frames;
+    for (const id of villageDungeon().rooms.keys())
+      for (const cell of townArt(id) ?? [])
+        for (const f of cell ?? []) expect(town[f], `${id}: ${f}`).toBeDefined();
+    expect(town['door-boarded']).toBeDefined();
+    expect(town['door-closed']).toBeDefined();
+    const folk = SPRITES['town-folk']!.frames;
+    for (const [who, def] of Object.entries(FOLK_DEFS)) {
+      if (!def.frames) continue;
+      for (const k of who === 'hen' ? ['-0', '-1', '-flap'] : ['-0', '-1', '-side'])
+        expect(folk[`${def.frames}${k}`], `${who}${k}`).toBeDefined();
+    }
+    for (const k of ['puff-0', 'puff-1', 'puff-2', 'puff-calm']) expect(folk[k]).toBeDefined();
+    for (const c of CHARACTERS)
+      for (const facing of ['up', 'down', 'left', 'right'] as Dir[])
+        for (const step of [0, 1] as const) {
+          const look = overheadLook(
+            c,
+            c.damage.kind === 'powerup' ? 'fire' : 'full',
+            { tunic: 1, varia: 1 },
+            facing,
+            step,
+          );
+          expect(SPRITES[look.sheet]?.frames[look.frame], `${c.id} ${look.frame}`).toBeDefined();
+          if (look.palette) expect(PALETTES.default[look.palette], look.palette).toBeDefined();
+        }
   });
 });
 

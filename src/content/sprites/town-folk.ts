@@ -1,5 +1,5 @@
 import type { SpriteDef } from '@engine/gfx/pixelart';
-import { Canvas, mirror, recolor } from './paint';
+import { Canvas, recolor } from './paint';
 
 /*
  * Kakariko Village's people from above (0.4.41), all original: the townsfolk (`town-folk`: each
@@ -615,6 +615,3 @@ export const townFolkPalettes: Record<string, string[]> = {
   'td-ryu': [...FOLK_PALETTE],
   'td-bill': [...FOLK_PALETTE],
 };
-
-/** (For tests.) Mirrors a frame, as the side frames are drawn for left. */
-export const mirrorFrame = mirror;
