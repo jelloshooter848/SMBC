@@ -5,22 +5,49 @@ import { snapshot } from '../scenes/free-hero';
 import { fontText } from '../hud/text';
 import { FIRST_HERO } from '../save/save-files';
 import { lessonsFor } from './lessons';
-import { MergedInput, PracticeRoomScene, type TrainingResult } from './room';
+import { MergedInput, PracticeRoomScene } from './room';
+import { HeroStageScene } from './hero-stage';
+import { heroStage } from './heroes';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
+import type { Scene } from '@engine/scene';
 
 /*
  * Optional hero training (campaign only, docs/HEROES.md). The first time a hero other than Mario
  * is picked on a save file, "<HERO> TRAINING?" asks YES / NO; either answer is recorded on the
- * file (SaveFile.tutorials) so it is asked once. YES plays the practice room, then the pick goes
- * on exactly as it would have. The pause menu's Training replays the room from a level.
+ * file (SaveFile.tutorials) so it is asked once. YES plays the hero's training, then the pick goes
+ * on exactly as it would have. The pause menu's Training replays it from a level, starting with
+ * START AT. Luigi, Link, Mega Man and Samus train in a stage of their own (hero-stage.ts, 0.4.37);
+ * the others in the practice room (room.ts) until theirs come.
  */
+
+/** The hero has training: a stage of their own, or the practice room's lessons (not Mario: 1-0). */
+export function hasTraining(heroId: string): boolean {
+  return heroId !== FIRST_HERO && (heroStage(heroId) !== null || lessonsFor(heroId).length > 0);
+}
+
+/** Where the hero trains, in words: "a training stage" or "a training room". */
+export function trainingPlace(heroId: string): string {
+  return heroStage(heroId) ? 'a training stage' : 'a training room';
+}
 
 /** Training exists for this hero here: campaign play (not an editor play-test), not Mario. */
 export function trainingOffered(game: Game, hero: CharacterDef): boolean {
-  return (
-    game.campaign !== null && !game.playtestDone && hero.id !== FIRST_HERO && lessonsFor(hero.id).length > 0
-  );
+  return game.campaign !== null && !game.playtestDone && hasTraining(hero.id);
+}
+
+/**
+ * The hero's training scene: their stage (a `replay` asks START AT first), else the practice
+ * room. `onEnd` gets 'done' when it is finished, 'skip' when it is left.
+ */
+export function trainingScene(
+  game: Game,
+  hero: CharacterDef,
+  opts: { player: number; replay: boolean; onEnd: (result: 'done' | 'skip') => void },
+): Scene {
+  const stage = heroStage(hero.id);
+  if (stage) return new HeroStageScene(game, hero, stage, opts);
+  return new PracticeRoomScene(game, hero, { player: opts.player, onEnd: opts.onEnd });
 }
 
 /** The first pick of this freed hero on the file: ask about training before going on. */
@@ -45,7 +72,7 @@ export class TrainingQuestionScene extends MenuScene {
         {
           label: 'Yes',
           select: () => answer(true),
-          hint: `Practise ${hero.name}'s moves in a training room`,
+          hint: `Practise ${hero.name}'s moves in ${trainingPlace(hero.id)}`,
         },
         { label: 'No', select: () => answer(false), hint: 'Play on' },
       ],
@@ -72,33 +99,41 @@ export class TrainingQuestionScene extends MenuScene {
   override enter(): void {
     this.game.ctx.audio.sfx('pause');
     this.game.deps.announcer?.say(
-      `${this.hero.name} training? Learn ${this.hero.name}'s moves in a practice room. Training is also in the pause menu. Up and down to choose, OK to confirm. Yes.`,
+      `${this.hero.name} training? Learn ${this.hero.name}'s moves in ${trainingPlace(this.hero.id)}. Training is also in the pause menu. Up and down to choose, OK to confirm. Yes.`,
     );
   }
 }
 
 /**
- * Play the practice room for `hero` (player `player`'s input drives it), then `after`. The room
- * starts from the hero's basic kit whatever the run holds, and the run's GameState is restored
- * afterwards, so the room cannot change lives, score, power or kit.
+ * Play `hero`'s training (player `player`'s input drives it), then `after`. It starts from the
+ * hero's basic kit whatever the run holds, in a state of its own, and the run's GameState is
+ * restored afterwards, so training cannot change lives, score, coins, power, kit or the clock. A
+ * `replay` (Pause, the Arena) asks where to START AT.
  */
-export function runTraining(game: Game, hero: CharacterDef, player: number, after: () => void): void {
+export function runTraining(
+  game: Game,
+  hero: CharacterDef,
+  player: number,
+  after: () => void,
+  replay = false,
+): void {
   const saved = game.state;
   const before = snapshot(saved);
   let over = false;
-  const room = new PracticeRoomScene(game, hero, {
+  const scene = trainingScene(game, hero, {
     player,
-    onEnd: (_result: TrainingResult) => {
+    replay,
+    onEnd: () => {
       if (over) return;
       over = true;
-      // The room's own scenes (its menu) go with it.
-      while (game.scenes.depth > 0) if (game.scenes.pop() === room) break;
+      // The training's own scenes (its menu, its cards) go with it.
+      while (game.scenes.depth > 0) if (game.scenes.pop() === scene) break;
       game.state = saved;
       Object.assign(saved, before);
       after();
     },
   });
-  game.scenes.push(room);
+  game.scenes.push(scene);
 }
 
 /**
@@ -138,9 +173,15 @@ export function trainFromPause(game: Game, hero: CharacterDef, player: number): 
   const pause = game.scenes.top;
   // The pause menu suspended the sound; the room has its own music.
   game.ctx.audio.resume();
-  runTraining(game, hero, player, () => {
-    if (game.scenes.top === pause) game.scenes.pop();
-    const level = game.scenes.top as { resume?: () => void } | undefined;
-    level?.resume?.();
-  });
+  runTraining(
+    game,
+    hero,
+    player,
+    () => {
+      if (game.scenes.top === pause) game.scenes.pop();
+      const level = game.scenes.top as { resume?: () => void } | undefined;
+      level?.resume?.();
+    },
+    true,
+  );
 }

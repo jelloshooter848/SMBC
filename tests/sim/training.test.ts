@@ -16,6 +16,9 @@ import { loadSave, migrateSave, newSave } from '@game/save/save-files';
 import { CARD_GUARD_FRAMES, PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
 import { lessonsFor, TRAINING, type HeroTraining } from '@game/tutorial/lessons';
 import { TrainingQuestionScene } from '@game/tutorial/training';
+import { HeroStageScene, StageMenu, StartAtMenu } from '@game/tutorial/hero-stage';
+import { CardScene } from '@game/scenes/message';
+import { RYU } from '@game/characters/ryu';
 import type { TargetDummy } from '@game/tutorial/dummy';
 import type { Settings } from '@engine/save/settings';
 import { mapPage } from '@content/worldmap';
@@ -44,8 +47,23 @@ function pick(h: H, right: number) {
   h.tap('jump');
 }
 
-/** Skip training from the room's menu. */
+/**
+ * Skip training from its menu: a hero stage's (START AT's Beginning first on a replay, Toad's
+ * greeting skipped with BACK), or the practice room's.
+ */
 function skip(h: H) {
+  if (h.top() instanceof StartAtMenu) choose(h, 'Beginning');
+  if (h.game.scenes.find((sc) => sc instanceof HeroStageScene)) {
+    h.until(() => h.top() instanceof CardScene, 60);
+    h.idle(CARD_GUARD_FRAMES + 12);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(HeroStageScene);
+    h.idle(4);
+    h.tap('start');
+    expect(h.top()).toBeInstanceOf(StageMenu);
+    choose(h, 'Skip training');
+    return;
+  }
   expect(h.top()).toBeInstanceOf(PracticeRoomScene);
   h.idle(4);
   h.tap('start');
@@ -214,9 +232,9 @@ describe('the training question', () => {
     expect(h.top()).toBeInstanceOf(TrainingQuestionScene);
     h.idle(8);
     h.tap('jump', 1); // YES, from player two's controls
-    // The room answers to player two's input (player one's drives it too).
-    expect(h.top()).toBeInstanceOf(PracticeRoomScene);
-    expect((h.top() as PracticeRoomScene).hero).toBe(LUIGI);
+    // The stage answers to player two's input (player one's drives it too).
+    expect(h.top()).toBeInstanceOf(HeroStageScene);
+    expect((h.top() as HeroStageScene).hero).toBe(LUIGI);
   });
 });
 
@@ -317,16 +335,19 @@ describe('the basic kit and chapters', () => {
 
   it('Skip chapter from the menu moves on to the next chapter; a skipped room ends as skipped', () => {
     const h = makeGame();
-    file({ freed: ['mario', 'luigi'] });
+    file({ freed: ['mario', 'ryu'] });
     h.game.openFile(1);
     pick(h, 1);
     choose(h, 'Yes');
     const room = h.top() as PracticeRoomScene;
-    expect(room.chapters.map((c) => c.id)).toEqual(['moves', 'power']);
-    h.idle(4);
-    h.tap('start');
-    choose(h, 'Skip chapter');
-    expect([room.phase, room.chapter]).toEqual(['chapter', 1]);
+    expect(room.hero).toBe(RYU);
+    const n = room.chapters.length;
+    for (let c = 1; c < n; c++) {
+      h.idle(4);
+      h.tap('start');
+      choose(h, 'Skip chapter');
+      expect([room.phase, room.chapter]).toEqual(['chapter', c]);
+    }
     h.idle(4);
     h.tap('start');
     choose(h, 'Skip chapter');
@@ -336,7 +357,7 @@ describe('the basic kit and chapters', () => {
     expect(h.top()).toBe(room);
     h.tap('jump');
     h.until(() => h.top() instanceof LevelScene);
-    expect(h.game.state.character).toBe(LUIGI);
+    expect(h.game.state.character).toBe(RYU);
   });
 });
 
