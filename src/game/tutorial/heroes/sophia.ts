@@ -3,6 +3,7 @@ import type { World } from '../../world/world';
 import { T } from '../../level/tiles';
 import { CannonShot } from '../../characters/sophia/weapons';
 import { CEIL, sophiaState } from '../../characters/sophia/state';
+import { HOMING_START, TRIPLE_START } from '../../characters/sophia/profile';
 import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
@@ -41,7 +42,7 @@ export const SOPHIA_STAGE = {
   wallBlock: { x: 103, y: 9 },
   wall: { from: 108, to: 111, top: 1 },
   ceilingBlock: { x: 116, y: 9 },
-  roof: { from: 120, to: 135, row: 7 },
+  roof: { from: 120, to: 135, row: 8 },
   roofDitch: { from: 122, to: 133 },
   ceilingGate: 137,
   homingBlock: { x: 140, y: 9 },
@@ -50,6 +51,17 @@ export const SOPHIA_STAGE = {
   flag: 158,
 } as const;
 const S = SOPHIA_STAGE;
+
+/**
+ * Missiles for a missile's lesson once she has it (at least what the item gives), again at each
+ * put-back: three volleys spent missing the target never strand her at the gate.
+ */
+const fillMissiles = (w: World): void => {
+  for (const p of w.players) {
+    if (p.scratch.hasTriple) p.scratch.triple = Math.max(p.scratch.triple ?? 0, TRIPLE_START);
+    if (p.scratch.hasHoming) p.scratch.homing = Math.max(p.scratch.homing ?? 0, HOMING_START);
+  }
+};
 
 /** She stands on the floor of the passage under the bridge, past its narrow hole. */
 const inPassage = (w: World): boolean =>
@@ -152,6 +164,7 @@ export const SOPHIA_LESSONS: readonly Lesson[] = [
     row: 11,
     item: 'triple-missile',
     block: S.missileBlock,
+    enter: fillMissiles,
     get: 'A ? BLOCK!',
     text: '[MISSILE:special:MISSILE] FIRES THREE, THROUGH WALLS: HIT THE TARGET.',
     retry: 'FIRE A MISSILE AT THE BOX: IT FLIES THROUGH THE WALL TO THE TARGET.',
@@ -185,6 +198,7 @@ export const SOPHIA_LESSONS: readonly Lesson[] = [
     row: 11,
     item: 'homing-missile',
     block: S.homingBlock,
+    enter: fillMissiles,
     // With Ceiling Climb a jump into a block grips it: the cannon opens this one.
     get: 'THE LAST ? BLOCK: STAND UNDER IT, HOLD UP AND [SHOOT:attack] IT OPEN.',
     text: 'HOLD DOWN AND PRESS [MISSILE:special] TO SWITCH TO HOMING. IT SEEKS!',

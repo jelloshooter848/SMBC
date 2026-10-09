@@ -23,21 +23,43 @@ function simonTake(s: HeroStageScene, out: Action[], blk: { x: number; y: number
   const used = w.map.get(blk.x, blk.y) !== T.Q_POWERUP;
   const item = w.entities.find((e) => e instanceof HeroItem && e.alive);
   if (!used) {
-    if (c.goTo(blk.x, 2)) c.press('jump', 4);
+    // Up on the ledge: off it first (to the right), to come up under the block.
+    if (b.onGround && toPx(b.y + b.h) <= blk.y * 16) c.goTo(blk.x + 3, 2);
+    else if (c.goTo(blk.x, 2)) c.press('jump', 4);
     return false;
   }
   if (!item) return true;
   if (!b.onGround) return false;
-  const run = blk.x * 16 - 36;
+  // Up on the block's ledge: walk into it.
+  if (toPx(b.y + b.h) <= blk.y * 16) {
+    c.goTo(blk.x, 2);
+    return false;
+  }
+  // The block's ledge, and the side to take a run at it from: the left, unless the screen's edge
+  // leaves no room there for a run-up (then the right).
+  let left = blk.x;
+  let right = blk.x;
+  while (w.map.isSolid(left - 1, blk.y)) left--;
+  while (w.map.isSolid(right + 1, blk.y)) right++;
+  const dir = left * 16 - 22 - 20 - 6 >= w.camera.pxX ? 1 : -1;
+  // The take-off point: clear of the ledge's end on the way up, landing on the ledge.
+  const run = dir > 0 ? left * 16 - 22 : (right + 1) * 16 + 22;
+  const key = dir > 0 ? 'right' : 'left';
   // Walking at it: on to the take-off point, and the jump there (too slow by then: stop).
-  if (b.vx > 0) {
-    if (cx >= run - 2 && b.vx >= 0x0f00) out.push('right', 'jump');
-    else if (cx < run + 8) out.push('right');
+  if (b.vx * dir > 0) {
+    if ((cx - run) * dir >= -2 && Math.abs(b.vx) >= 0x0f00) out.push(key, 'jump');
+    else if ((cx - run) * dir < 8) out.push(key);
     return false;
   }
   // Too close (or past it): back up first, then walk at it.
-  if (cx > run - 24 && !c.goTo(blk.x - 3, 2)) return false;
-  out.push('right');
+  const back = run - dir * 20;
+  if ((cx - back) * dir > -4) {
+    // Back to the run-up's start (a plain walk: no hops over whatever lies beyond).
+    if (Math.abs(cx - back) > 3) out.push(cx > back ? 'left' : 'right');
+    else if (Math.abs(b.vx) < 0x100) out.push(key);
+    return false;
+  }
+  out.push(key);
   return false;
 }
 
@@ -102,7 +124,7 @@ export function simonBot(): (s: HeroStageScene) => Action[] {
         break;
       case 'cross':
         if (!has('cross')) simonTake(s, out, S.crossBlock);
-        else if (c.pick('cross') && c.standAt(S.crossTarget - 3)) c.press('special', 30);
+        else if (c.pick('cross') && c.standAt(S.crossTarget - 2)) c.press('special', 30);
         break;
       case 'shots':
         if (!has('double-shot')) simonTake(s, out, S.doubleBlock);

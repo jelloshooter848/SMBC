@@ -71,6 +71,31 @@ describe("Sophia III's stage", () => {
     expect(lessonId(s)).toBe('crusher');
   });
 
+  it("missiles all spent missing the target: Toad's put-back gives them again", () => {
+    const { h, stage } = startStage('sophia', { replay: true });
+    choose(h, 'Triple Missile');
+    const s = stage();
+    playStage(h, s, sophiaBot(), () => !!s.world.player.scratch.hasTriple, 900);
+    expect(lessonId(s)).toBe('triple-missile');
+    s.world.player.scratch.triple = 0;
+    playStage(
+      h,
+      s,
+      (st) => {
+        const out: Action[] = [];
+        controls(st, out).goTo(S.missileGate - 1);
+        return out;
+      },
+      () => h.top() instanceof CardScene,
+      900,
+    );
+    for (let i = 0; i < 40 && h.top() instanceof CardScene; i++) h.step(i % 8 === 7 ? ['jump'] : []);
+    expect(lessonId(s)).toBe('triple-missile');
+    expect(s.world.player.scratch.triple).toBe(9);
+    playStage(h, s, sophiaBot(), () => lessonId(s) !== 'triple-missile', 900);
+    expect(lessonId(s)).toBe('wall-climb');
+  });
+
   it("a hit takes her hull and climbs; Toad's put-back gives them back", () => {
     const { h, stage } = startStage('sophia', { replay: true });
     choose(h, 'Homing Missile');
