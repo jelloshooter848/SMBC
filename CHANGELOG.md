@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.39] - 2026-10-09
+
 ### Added
 
 - 4-2's anchor scene: the ground shakes, the hero looks up, the anchor slams down and throws them back, Larry yells
@@ -907,7 +909,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.38...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.39...HEAD
+[0.4.39]: https://github.com/jelloshooter848/SMBC/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jelloshooter848/SMBC/compare/v0.4.37...v0.4.38
 [0.4.37]: https://github.com/jelloshooter848/SMBC/compare/v0.4.36...v0.4.37
 [0.4.36]: https://github.com/jelloshooter848/SMBC/compare/v0.4.35...v0.4.36
