@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getLevel } from '@content/levels';
 import type { Scene } from '@engine/scene';
-import { toPx } from '@engine/math/units';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { PauseScene } from '@game/scenes/pause';
@@ -13,12 +12,10 @@ import { SAMUS } from '@game/characters/samus';
 import { heroStart } from '@game/items/heroes';
 import { carriedKit } from '@game/entities/player';
 import { loadSave, migrateSave, newSave } from '@game/save/save-files';
-import { CARD_GUARD_FRAMES, PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
 import { TrainingQuestionScene } from '@game/tutorial/training';
 import { HeroStageScene, StageMenu, StartAtMenu } from '@game/tutorial/hero-stage';
-import { CardScene } from '@game/scenes/message';
+import { CARD_GUARD_FRAMES, CardScene } from '@game/scenes/message';
 import { RYU } from '@game/characters/ryu';
-import type { TargetDummy } from '@game/tutorial/dummy';
 import type { Settings } from '@engine/save/settings';
 import { mapPage } from '@content/worldmap';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
@@ -47,29 +44,22 @@ function pick(h: H, right: number) {
 }
 
 /**
- * Skip training from its menu: a hero stage's (START AT's Beginning first on a replay, Toad's
- * greeting skipped with BACK), or the practice room's.
+ * Skip training from its stage's menu (START AT's Beginning first on a replay, Toad's greeting
+ * skipped with BACK).
  */
 function skip(h: H) {
   if (h.top() instanceof StartAtMenu) choose(h, 'Beginning');
   const stage = h.game.scenes.find((sc) => sc instanceof HeroStageScene) as HeroStageScene | undefined;
-  if (stage) {
-    if (!stage.run.greeted) {
-      h.until(() => h.top() instanceof CardScene, 60);
-      h.idle(CARD_GUARD_FRAMES + 12);
-      h.tap('attack');
-    }
-    expect(h.top()).toBeInstanceOf(HeroStageScene);
-    h.idle(4);
-    h.tap('start');
-    expect(h.top()).toBeInstanceOf(StageMenu);
-    choose(h, 'Skip training');
-    return;
+  expect(stage).toBeInstanceOf(HeroStageScene);
+  if (!stage?.run.greeted) {
+    h.until(() => h.top() instanceof CardScene, 60);
+    h.idle(CARD_GUARD_FRAMES + 12);
+    h.tap('attack');
   }
-  expect(h.top()).toBeInstanceOf(PracticeRoomScene);
+  expect(h.top()).toBeInstanceOf(HeroStageScene);
   h.idle(4);
   h.tap('start');
-  expect(h.top()).toBeInstanceOf(TrainingMenuScene);
+  expect(h.top()).toBeInstanceOf(StageMenu);
   choose(h, 'Skip training');
 }
 
@@ -127,28 +117,18 @@ describe('the training question', () => {
     expect(s.kit).toEqual(heroStart(LINK).kit); // Link's basic campaign kit (docs/POWERUPS.md)
   });
 
-  it('YES plays the practice room (a hero without a stage yet), then the level starts; the run is untouched', () => {
+  it("YES plays Ryu's stage (0.4.38's), then the level starts; the run is untouched", () => {
     const h = makeGame();
     file({ freed: ['mario', 'ryu'], lives: 4, score: 1200, coins: 7, powerState: 'fire' });
     h.game.openFile(1);
     pick(h, 1);
     choose(h, 'Yes');
-    const room = h.top() as PracticeRoomScene;
-    expect(room).toBeInstanceOf(PracticeRoomScene);
-    expect(room.hero).toBe(RYU);
+    const stage = h.top() as HeroStageScene;
+    expect(stage).toBeInstanceOf(HeroStageScene);
+    expect(stage.hero).toBe(RYU);
     expect(loadSave(1)?.tutorials).toContain('ryu');
-    // The room's own world and state: its kit, its score.
-    expect(room.player.scratch).toMatchObject(heroStart(RYU).kit); // Ryu's basic kit
-    // The first chapter's card waits for a button; then knock the dummy down with the sword: the
-    // room's own score goes up.
-    h.idle(CARD_GUARD_FRAMES + 1);
-    h.tap('jump');
-    expect(room.phase).toBe('lesson');
-    const d = room.dummy as TargetDummy;
-    for (let i = 0; i < 300 && d.alive; i++)
-      h.step(toPx(room.player.centerX) < 128 ? ['right'] : i % 16 < 2 ? ['attack'] : []);
-    expect(d.alive).toBe(false);
-    expect(room.state.score).toBeGreaterThan(0);
+    // The stage's own world and state: Ryu's basic kit.
+    expect(stage.world.player.scratch).toMatchObject(heroStart(RYU).kit);
     // Still the pick in progress: Mario's power, the run's lives, score and coins.
     expect(h.game.state.character).toBe(MARIO);
     expect(h.game.state.powerState).toBe('fire');
@@ -293,7 +273,7 @@ describe('training and the dev "All heroes" toggle', () => {
   });
 });
 
-describe('the basic kit and chapters', () => {
+describe('the basic kit and START AT', () => {
   it('the stage starts from the basic kit whatever the run holds; the run gets its own back', () => {
     const h = makeGame();
     file({ freed: ['mario', 'samus'], tutorials: ['mario', 'samus'] }, SAMUS.id);
@@ -364,33 +344,6 @@ describe('the basic kit and chapters', () => {
     skip(h);
     // ...but the run's kit is restored.
     expect(h.game.state.kit).toEqual(kit);
-  });
-
-  it('Skip chapter from the menu moves on to the next chapter; a skipped room ends as skipped', () => {
-    const h = makeGame();
-    file({ freed: ['mario', 'ryu'] });
-    h.game.openFile(1);
-    pick(h, 1);
-    choose(h, 'Yes');
-    const room = h.top() as PracticeRoomScene;
-    expect(room.hero).toBe(RYU);
-    const n = room.chapters.length;
-    for (let c = 1; c < n; c++) {
-      h.idle(4);
-      h.tap('start');
-      choose(h, 'Skip chapter');
-      expect([room.phase, room.chapter]).toEqual(['chapter', c]);
-    }
-    h.idle(4);
-    h.tap('start');
-    choose(h, 'Skip chapter');
-    // Past the last chapter: READY!, waiting for a button.
-    expect(room.phase).toBe('ready');
-    h.idle(200);
-    expect(h.top()).toBe(room);
-    h.tap('jump');
-    h.until(() => h.top() instanceof LevelScene);
-    expect(h.game.state.character).toBe(RYU);
   });
 });
 

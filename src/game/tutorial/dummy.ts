@@ -6,11 +6,12 @@ import { Explosion } from '../entities/effects/effects';
 import type { DamageSource, Reaction } from '../rules/damage';
 import type { World } from '../world/world';
 
-/** Hits a dummy takes before it pops (the practice room puts up a new one). */
+/** Hits a dummy takes before it pops (a stage's target sets its own: targets.ts). */
 export const DUMMY_HP = 3;
 
 /**
- * The practice room's target dummy: a straw figure on a post that never moves and never hurts.
+ * The straw target dummy (the hero stages' targets: targets.ts): a straw figure on a post that never
+ * moves and never hurts.
  * Every hero's attacks connect with it (stomps, swords, shots, bombs; a boomerang or ice beam
  * freezes it like any enemy). Each hit is reported to `onHit` and makes it wobble; after
  * DUMMY_HP hits it pops in a puff, and the room puts up a fresh one. Drawn with rectangles, so it

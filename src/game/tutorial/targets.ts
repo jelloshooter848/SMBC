@@ -13,8 +13,7 @@ import { Goomba } from '../entities/enemies/goomba';
 import { Candle } from '../entities/objects/crypt';
 
 /*
- * The hero stages' targets and what they see (0.4.37). A target is the practice room's straw
- * dummy, put up by the stage's map (`target x y [lesson=id] [shoots=frames] [tough=hits]`): it
+ * The hero stages' targets and what they see (0.4.37). A target is the straw dummy (dummy.ts), put up by the stage's map (`target x y [lesson=id] [shoots=frames] [tough=hits]`): it
  * never moves, never hurts and stands up to any number of hits unless it is tough (it falls after
  * that many); once its lesson is done it pops. A shooter fires slow shots at a hero in front of
  * it. The watch (`stageWatch`) records every hit on a target or an enemy (by what, how), every

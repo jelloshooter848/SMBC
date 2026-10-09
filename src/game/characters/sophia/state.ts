@@ -83,8 +83,6 @@ export interface SophiaState {
   nose: boolean;
   /** The row of the hole's lip she went nose first into: below it she may right herself mid-fall. */
   noseLip: number;
-  /** On a wall she drove up from the floor (the training room's wall climb, not a ceiling's end). */
-  wallFromFloor: boolean;
   /** Jason on foot: the parked tank (jason.ts). */
   jason: JasonOut | null;
 }
@@ -126,7 +124,6 @@ export function sophiaState(p: Player): SophiaState {
       vineBox: false,
       nose: false,
       noseLip: 0,
-      wallFromFloor: false,
       jason: null,
     };
     STATES.set(p, s);

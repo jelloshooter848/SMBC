@@ -169,7 +169,7 @@ the field (its start, a warp back to `warp-arena`, paired 1:1), and the game pad
 - Every pad and road of the arena is walkable as soon as the page is open (`rules.pathFromDone`:
   roads leaving a `game` node count as walked on an open page). Whether a game is **found** is the
   arena's own rule (docs/HEROES.md "Met heroes and the Mini Game Arena"); a dark pad shows the
-  hero's silhouette and `?`, its hint line says what to find (`??? - FIND THIS HERO FIRST`, `??? - FREE THIS HERO FIRST` for a training room) and JUMP
+  hero's silhouette and `?`, its hint line says what to find (`??? - FIND THIS HERO FIRST`, `??? - FREE THIS HERO FIRST` for a training stage) and JUMP
   bumps. On a found pad the hint line names the game, the touch JUMP says PLAY, and the announcer
   says "Mirror Race, Luigi. Jump to play, for fun."
 - A round is played over the map and nothing is saved (docs/HEROES.md); Larry's airship asks for

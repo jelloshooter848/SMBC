@@ -29,7 +29,7 @@ import {
   type TutorialRun,
 } from './stage-tutorial';
 import { lessonItems } from './stage-prompts';
-import { MergedInput } from './room';
+import { MergedInput } from './merged-input';
 import { itemName, ownsItem, TRANSIENT_KIT } from './kit';
 import {
   LessonCandle,

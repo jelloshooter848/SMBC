@@ -3,8 +3,8 @@
  * imports so every hero's code can read them.
  *
  * - `found: 1` marks a campaign kit: the hero finds their items one by one in the power blocks
- *   (docs/POWERUPS.md). A kit without it (classic play, the mini games, the training rooms, the
- *   developer's levels) keeps today's rules: SMB's mushroom and flower, unlocking in a fixed order.
+ *   (docs/POWERUPS.md). A kit without it (classic play, the mini games, the developer's levels)
+ *   keeps today's rules: SMB's mushroom and flower, unlocking in a fixed order.
  * - `has-<item id>: 1` marks an item found (`has-ice-beam`), for items with no older key of their own.
  */
 

@@ -69,7 +69,7 @@ export abstract class Enemy extends Entity {
   /** Touching this enemy (other than a stomp) hurts the player. */
   contactHurts = true;
   /**
-   * A practice target (the training room's dummy): harmless to touch, yet seeking shots (Sophia
+   * A practice target (a training stage's straw target): harmless to touch, yet seeking shots (Sophia
    * III's homing missile) still pick it.
    */
   practiceTarget = false;

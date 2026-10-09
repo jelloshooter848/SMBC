@@ -568,33 +568,19 @@ Outside the campaign (dev select, `?level=`, custom and shared levels, editor pl
 mushroom and fire flower, drawn as today, and each hero's **today's** mapping stays as the classic mapping (today's
 `onPowerUp` and `blockPowerUp`, kept as they are), as Crossover's classic mode kept its `classicGet*` lists. The
 `[hero-items]` sections are ignored, the starting kits are today's (Link's full belt), and the random drops stay.
-The mini games, the arena and the training room keep their own kits.
+The mini games and the arena keep their own kits; the training stages give the campaign's items.
 
-## 10. Training (the 0.4.34 rework; stages since 0.4.37)
+## 10. Training (stages since 0.4.37)
 
-**0.4.37**: Luigi, Link, Mega Man and Samus train in a stage of their own (docs/HEROES.md "Training stages").
-Each starts from the hero's basic kit and gives every power-up from a real power block (`[hero-items]`), the grow
-item first, then the order of 6.2; the item's name leads the tips box's first line. Skipping a lesson gives its
-item quietly, and every put-back restores the items of the lessons done so far. Link's Blue Ring lesson shows the
-rule "every other hit costs no heart" with FREE / HURT lights; with the Shield spell too, every hit is free while
-the spell lasts. Simon, Ryu, Bill and Sophia III keep the rooms below until 0.4.38 (Simon's Double Shot and Triple
-Shot then become one lesson).
-
-The 0.4.34 rooms:
-
-The training work in progress (`src/game/tutorial/lessons.ts` on `claude/wip-0.4.32-training`) already marks a
-lesson **(PREVIEW)** when the run lacks its kit and lends the kit in the room. The 0.4.34 rework, after this
-release, adds hero items:
-
-- **Each unlock lesson names its item**: its `unlocked` reads the hero's owned items (`owns(run, 'ice-beam')`)
-  instead of tier counts (`k(run, 'beam') >= 2`), so Ice and Long Beam are separate lessons with separate checks.
-- **The room gives it for real**: the practice room's `?` block holds the lesson's item. The hero bumps it, the
-  item's own sprite rises, its pickup sound plays and its name shows, exactly as in a level; the lesson then
-  starts. A preview lends the item this way too, and the room's snapshot gives it back afterwards, as today.
-- **The chapter card** shows the items of its lessons in their pickup sprites, found ones in full colour, previews
-  marked (PREVIEW). Previews never say where an item is found (decision 14).
-- **The guide pages** ("How to play") list the hero's grow and power items with their sprites in place of today's
-  mushroom and flower rows (campaign; classic keeps today's rows).
+Every hero but Mario (whose training is 1-0) trains in a stage of their own (docs/HEROES.md "Training stages"):
+Luigi, Link, Mega Man and Samus since 0.4.37, Simon, Ryu, Bill and Sophia III since 0.4.38, which retired the
+0.4.34 practice rooms. Each starts from the hero's basic kit and gives every power-up from a real power block
+(`[hero-items]`), the grow item first, then the order of 6.2; the item's name leads the tips box's first line.
+Skipping a lesson gives its item quietly, and every put-back restores the items of the lessons done so far. Link's
+Blue Ring lesson shows the rule "every other hit costs no heart" with FREE / HURT lights; with the Shield spell too,
+every hit is free while the spell lasts. Simon's Double Shot and Triple Shot are one lesson (owner, 0.4.38): two
+blocks, then three axes in the air at once; the Stopwatch, with its fire bar, ends his stage. A Ninpo Scroll counts
+as owned in a stage once Ryu has one (the kit floor never stacks another).
 
 ## 11. Art and sound budget
 
