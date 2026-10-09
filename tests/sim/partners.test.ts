@@ -61,6 +61,11 @@ const SPOTS = [
   { who: 'cave-toad', level: '1-2', start: fromStart, col: 5 },
   { who: 'lookout', level: '1-3', start: fromStart, col: 8 },
   { who: 'retainer', level: '1-4', start: fromStart, col: 8 },
+  // World 2: Error below the steps to 2-2's flag (walked down to), the river man at 2-3's start,
+  // a wise man at the foot of 2-4's entrance steps.
+  { who: 'error', level: '2-2-exit', start: near(18), col: 15 },
+  { who: 'river-man', level: '2-3', start: fromStart, col: 5 },
+  { who: 'wise-man', level: '2-4', start: fromStart, col: 7 },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
 
 const spotOf = (who: string) => SPOTS.find((s) => s.who === who) as (typeof SPOTS)[number];

@@ -60,6 +60,19 @@ const [lookout0, lookout1] = toadIn('j', 'k');
 /** 1-4's retainer, sneaking through the king's castle: orange spots, a royal blue vest. */
 const [retainer0, retainer1] = toadIn('7', 'd');
 
+/* ---------------------------------------------------------------- World 2: Hyrule */
+
+/** 2-2's Error, a townsman of Hyrule: the night town's townsperson in a red-brown cloak, a dark belt. */
+const errorIn = { h: '7', i: '8', a: 'c' };
+const error0 = recolor(partner('townsperson-0'), errorIn);
+const error1 = recolor(partner('townsperson-1'), errorIn);
+/** 2-3's river man: 2-1's old man in a green robe. */
+const riverMan0 = recolor(partner('old-man-0'), { 7: 'k', 8: 'i' });
+const riverMan1 = recolor(partner('old-man-1'), { 7: 'k', 8: 'i' });
+/** 2-4's wise man: the old man in a blue robe. */
+const wiseMan0 = recolor(partner('old-man-0'), { 7: 'd', 8: 'e' });
+const wiseMan1 = recolor(partner('old-man-1'), { 7: 'd', 8: 'e' });
+
 export const npcsDef: SpriteDef = {
   palette: 'npcs',
   frames: {
@@ -69,5 +82,11 @@ export const npcsDef: SpriteDef = {
     'lookout-1': lookout1,
     'retainer-0': retainer0,
     'retainer-1': retainer1,
+    'error-0': error0,
+    'error-1': error1,
+    'river-man-0': riverMan0,
+    'river-man-1': riverMan1,
+    'wise-man-0': wiseMan0,
+    'wise-man-1': wiseMan1,
   },
 };

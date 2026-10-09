@@ -1015,6 +1015,88 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['RETAINER:', '', "AND IF THE PRINCESS ISN'T", 'IN THIS CASTLE... WELL.', 'THAT HAPPENS A LOT.'],
     ],
   },
+
+  /* ---------------------------------------------------- World 2 (Hyrule, Link): Zelda II folk */
+
+  // 2-2's way out (2-2-exit), on the ground below the steps to the flag. A townsman of Hyrule.
+  error: {
+    verb: 'TALK',
+    name: 'Error',
+    hero: 'link',
+    pages: [
+      ['ERROR:', '', 'I AM ERROR.'],
+      [
+        'ERROR:',
+        '',
+        'YOU SEEK THE SILENT ONE? HE',
+        'WAS LAST SEEN ON THE GREAT',
+        'FIELD. THE OLD MAN IN THE',
+        'CAVE THERE KNOWS MORE.',
+      ],
+      ['ERROR:', '', 'PLEASE FIND HIM. MY FRIEND', 'BAGU IS WORRIED SICK.'],
+    ],
+    after: [
+      ['ERROR:', '', 'I AM STILL ERROR.'],
+      ['ERROR:', '', 'THE SILENT ONE IS FREE?', 'THEN NOTHING HERE IS AN', 'ERROR. EXCEPT ME.'],
+    ],
+  },
+  // 2-3's start, before the stone bridges: the man who keeps them.
+  'river-man': {
+    verb: 'TALK',
+    name: 'The river man',
+    hero: 'link',
+    pages: [
+      ['RIVER MAN:', '', 'HALT! NOBODY CROSSES MY', 'BRIDGES WITHOUT A NOTE', 'FROM BAGU.'],
+      [
+        'RIVER MAN:',
+        '',
+        '...THE SILENT ONE CROSSED',
+        'WITHOUT ONE. HE WAS ON THE',
+        'GREAT FIELD, STARING AT THE',
+        'CLOUDS. EYES ALL WRONG.',
+      ],
+      ['RIVER MAN:', '', 'GO BACK AND FIND HIM. HE', 'NEEDS HELP MORE THAN MY', 'BRIDGES NEED NOTES.'],
+    ],
+    after: [
+      ['RIVER MAN:', '', 'HALT! NOBODY CROSSES', 'WITHOUT A NOTE FROM BAGU.'],
+      ['RIVER MAN:', '', 'THE SILENT ONE WROTE YOU', "ONE? IT SAYS '...'.", 'GOOD ENOUGH. GO ON.'],
+    ],
+  },
+  // 2-4, at the foot of the palace's entrance steps, before its knight statues.
+  'wise-man': {
+    verb: 'TALK',
+    name: 'A wise man',
+    hero: 'link',
+    pages: [
+      [
+        'WISE MAN:',
+        '',
+        'THE ROAD OUT OF HYRULE IS',
+        'SEALED. ONLY THE SILENT',
+        "ONE'S FREEDOM CAN BREAK",
+        'THE SPELL.',
+      ],
+      [
+        'WISE MAN:',
+        '',
+        'SEEK HIM ABOVE THE CLOUDS',
+        'OF THE GREAT FIELD. I WOULD',
+        "GO MYSELF, BUT I'M WISE.",
+        'I KNOW BETTER.',
+      ],
+    ],
+    after: [
+      [
+        'WISE MAN:',
+        '',
+        'THE SILENT ONE IS FREE! FOR',
+        'THIS, I TEACH YOU A SPELL.',
+        'IT TURNS YOUR FOES INTO',
+        'LITTLE BLOBS.',
+      ],
+      ['WISE MAN:', '', '...NOTHING? HM. IT WORKS', "BETTER IN HYRULE. YOU'RE", 'DOING FINE WITHOUT IT.'],
+    ],
+  },
 };
 
 /* ---------------------------------------------------------------- 2.13: the freed talks */

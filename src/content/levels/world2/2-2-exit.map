@@ -34,6 +34,8 @@ campaignMusic: zelda2-field
 ################ ################ ##########
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): Error, on the ground below the steps to the flag (22).
+partner 15 12 who=error campaign=true
 piranha 3 11
 decor-castle 26 12
 

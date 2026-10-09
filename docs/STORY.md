@@ -643,7 +643,10 @@ GAMES THERE. HAVE A LOOK,
 IF YOU DARE.
 ```
 
-**1-2: a cave Toad.** NEW partner (`cave-toad`, 0.4.40). A Toad in a yellow-spotted cap and a dark miner's
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Luigi: while he is under the spell they
+plead and say where to look (by place, never by level number); once he is freed they say their found lines instead.
+
+**1-2: a cave Toad.** NEW partner (`cave-toad`). A Toad in a yellow-spotted cap and a dark miner's
 vest, hiding where the heroes drop into **1-2** (column 5), clear of the `?` blocks. He saw Luigi go, and sends you
 back to the villager.
 
@@ -676,7 +679,7 @@ LUIGI FOUND HIM. THIS TIME
 IT'S PEACH.
 ```
 
-**1-3: a lookout.** NEW partner (`lookout`, 0.4.40). A Toad in a pink-spotted cap and a green vest, on the ground
+**1-3: a lookout.** NEW partner (`lookout`). A Toad in a pink-spotted cap and a green vest, on the ground
 at **1-3's start** (column 8), under the treetops he watches the road from.
 
 ```text
@@ -708,7 +711,7 @@ JUMP. DON'T TELL MARIO I
 SAID THAT.
 ```
 
-**1-4: a retainer.** NEW partner (`retainer`, 0.4.40). One of the princess's retainers (an orange-spotted cap, a
+**1-4: a retainer.** NEW partner (`retainer`). One of the princess's retainers (an orange-spotted cap, a
 royal blue vest) spying in the king's castle, at the foot of **1-4's entrance steps** (column 8). While Luigi is
 missing he tells of the seal on the road out (2.3b); once he is freed, of the fake's height and the oldest joke in
 the kingdom.
@@ -996,6 +999,135 @@ AND THE SEALS WILL BREAK.
 LINK:
 
 ...I WILL COME WITH YOU.
+```
+
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Link: while he is under the spell they
+plead and say where to look (by place, never by level number); once he is freed they say their found lines instead.
+
+**2-2: Error.** NEW partner (`error`). A townsman of Hyrule (a brown hood, a red-brown cloak), on the ground below the
+steps to **2-2's flag** (2-2-exit, column 15), out of the lake. A name every Zelda II player knows.
+
+```text
+ERROR:
+
+I AM ERROR.
+```
+
+```text
+ERROR:
+
+YOU SEEK THE SILENT ONE? HE
+WAS LAST SEEN ON THE GREAT
+FIELD. THE OLD MAN IN THE
+CAVE THERE KNOWS MORE.
+```
+
+```text
+ERROR:
+
+PLEASE FIND HIM. MY FRIEND
+BAGU IS WORRIED SICK.
+```
+
+After Link is freed:
+
+```text
+ERROR:
+
+I AM STILL ERROR.
+```
+
+```text
+ERROR:
+
+THE SILENT ONE IS FREE?
+THEN NOTHING HERE IS AN
+ERROR. EXCEPT ME.
+```
+
+**2-3: the river man.** NEW partner (`river-man`). An old man in a green robe at **2-3's start** (column 5),
+before the stone bridges he keeps. In Hyrule nobody crosses his bridge without a note from Bagu.
+
+```text
+RIVER MAN:
+
+HALT! NOBODY CROSSES MY
+BRIDGES WITHOUT A NOTE
+FROM BAGU.
+```
+
+```text
+RIVER MAN:
+
+...THE SILENT ONE CROSSED
+WITHOUT ONE. HE WAS ON THE
+GREAT FIELD, STARING AT THE
+CLOUDS. EYES ALL WRONG.
+```
+
+```text
+RIVER MAN:
+
+GO BACK AND FIND HIM. HE
+NEEDS HELP MORE THAN MY
+BRIDGES NEED NOTES.
+```
+
+After Link is freed:
+
+```text
+RIVER MAN:
+
+HALT! NOBODY CROSSES
+WITHOUT A NOTE FROM BAGU.
+```
+
+```text
+RIVER MAN:
+
+THE SILENT ONE WROTE YOU
+ONE? IT SAYS '...'.
+GOOD ENOUGH. GO ON.
+```
+
+**2-4: a wise man.** NEW partner (`wise-man`). An old man in a blue robe at the foot of **2-4's entrance steps**
+(column 7), before the knight statues. Freed, Link earns you a town's spell, and it does not work here.
+
+```text
+WISE MAN:
+
+THE ROAD OUT OF HYRULE IS
+SEALED. ONLY THE SILENT
+ONE'S FREEDOM CAN BREAK
+THE SPELL.
+```
+
+```text
+WISE MAN:
+
+SEEK HIM ABOVE THE CLOUDS
+OF THE GREAT FIELD. I WOULD
+GO MYSELF, BUT I'M WISE.
+I KNOW BETTER.
+```
+
+After Link is freed:
+
+```text
+WISE MAN:
+
+THE SILENT ONE IS FREE! FOR
+THIS, I TEACH YOU A SPELL.
+IT TURNS YOUR FOES INTO
+LITTLE BLOBS.
+```
+
+```text
+WISE MAN:
+
+...NOTHING? HM. IT WORKS
+BETTER IN HYRULE. YOU'RE
+DOING FINE WITHOUT IT.
 ```
 
 **Castle 2-4** (a Koopa Troopa). The hero's remark:
