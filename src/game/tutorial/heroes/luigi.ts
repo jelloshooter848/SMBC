@@ -21,9 +21,12 @@ import source from '../../../content/levels/training/luigi.map?raw';
 
 /** The set pieces' columns and rows (luigi.map). */
 export const LUIGI_STAGE = {
-  /** The well (columns 1-3, floor top row 14, its left wall column 0) and its tall side (4-8, top row 9). */
-  well: { from: 1, to: 3, floor: 14 },
-  tallSide: { from: 4, to: 8, top: 9 },
+  /**
+   * The well (columns 1-4, floor top row 14, its left wall column 0) and its tall side (5-8, top
+   * row 9). Four blocks wide: room for the walk at the wall his jump needs.
+   */
+  well: { from: 1, to: 4, floor: 14 },
+  tallSide: { from: 5, to: 8, top: 9 },
   /** The run starts here; its gate. */
   runFrom: 10,
   runGate: 31,
@@ -79,7 +82,8 @@ export const LUIGI_LESSONS: readonly Lesson[] = [
     id: 'high-jump',
     at: 1,
     row: 13,
-    text: 'LUIGI JUMPS HIGHER! WALK AT THE WALL AND HOLD [JUMP:jump] AS YOU GO.',
+    // A jump from against the wall falls a pixel short: he needs a walk at it from the back.
+    text: 'LUIGI JUMPS HIGHER! FROM THE BACK, WALK AT THE WALL AND HOLD [JUMP:jump].',
     done: (w) => onTop(w, S.tallSide.top, S.tallSide.from, S.tallSide.to) || landedPast(w, S.tallSide.to + 1),
   },
   {
