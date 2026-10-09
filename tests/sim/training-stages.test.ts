@@ -60,6 +60,7 @@ const KIT_ORDER: Readonly<Record<string, readonly string[]>> = {
   ],
   ryu: ['medicine', 'throwing-star', 'ninpo-scroll', 'windmill', 'fire-wheel', 'jump-slash'],
   bill: ['medal', 'machine-gun', 'laser', 'flame-gun', 'spread-gun'],
+  sophia: ['power-capsule', 'crusher', 'triple-missile', 'wall-climb', 'ceiling-climb', 'homing-missile'],
 };
 
 function stageIn(heroId: string, scheme: ControlScheme): HeroStageScene {

@@ -6,6 +6,7 @@ import { SAMUS_STAGE_DEF } from './samus';
 import { SIMON_STAGE_DEF } from './simon';
 import { RYU_STAGE_DEF } from './ryu';
 import { BILL_STAGE_DEF } from './bill';
+import { SOPHIA_STAGE_DEF } from './sophia';
 
 /*
  * The heroes' training stages (0.4.37, tutorial/hero-stage.ts), one file each. Simon, Ryu, Bill
@@ -19,6 +20,7 @@ export const HERO_STAGES: Readonly<Record<string, HeroStage>> = {
   simon: SIMON_STAGE_DEF,
   ryu: RYU_STAGE_DEF,
   bill: BILL_STAGE_DEF,
+  sophia: SOPHIA_STAGE_DEF,
 };
 
 /** The hero's training stage, or null (Mario's is 1-0; the room's heroes have none yet). */

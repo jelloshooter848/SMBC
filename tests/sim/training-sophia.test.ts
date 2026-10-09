@@ -1,0 +1,223 @@
+import { describe, expect, it } from 'vitest';
+import type { Action } from '@engine/input/actions';
+import { toPx } from '@engine/math/units';
+import { CardScene } from '@game/scenes/message';
+import { T } from '@game/level/tiles';
+import { activeTool } from '@game/characters/toolbelt';
+import { sophiaState } from '@game/characters/sophia/state';
+import type { HeroStageScene } from '@game/tutorial/hero-stage';
+import { SOPHIA_LESSONS, SOPHIA_STAGE } from '@game/tutorial/heroes/sophia';
+import { onTop } from '@game/tutorial/heroes/common';
+import { useStorage } from './heroes-harness';
+import { choose, controls, heroCol, playStage, skipGreeting, startAtLabels, startStage } from './stage-bot';
+
+// Sophia III's training stage (0.4.38, design section 10): Normal, with the cannon, the nose-first
+// drop and Jason on foot, then the Power Capsule and each item from a block in her order. The
+// hover crosses a ditch no jump does; a hit takes her hull and climbs, and the put-back gives them.
+
+useStorage();
+
+const S = SOPHIA_STAGE;
+const lessonId = (s: HeroStageScene) => s.director.lesson?.id;
+
+/** Sophia III's bot: reads the current lesson and plays it as a player would. */
+export function sophiaBot(): (s: HeroStageScene) => Action[] {
+  let air = 0;
+  return (s) => {
+    const out: Action[] = [];
+    const c = controls(s, out);
+    const { w, p, b, cx } = c;
+    const st = sophiaState(p);
+    const front = toPx(b.x + b.w);
+    air = b.onGround ? 0 : air + 1;
+    /** A held jump (the whole rise). */
+    const heldJump = (): void => {
+      if (b.onGround || b.vy < 0) out.push('jump');
+    };
+    // Stuck to a block's underside after bumping it (Ceiling Climb): a jump drops her off it.
+    if (st.surface === 3 && lessonId(s) !== 'ceiling-climb') {
+      c.press('jump', 6);
+      return out;
+    }
+    switch (lessonId(s)) {
+      case 'drive-jump':
+        out.push('right');
+        if (front >= S.plateau.from * 16 - 30 || !b.onGround) heldJump();
+        break;
+      case 'cannon':
+        // Through the hole once the brick is broken.
+        if (!w.map.isSolid(S.brickWall.x, S.brickWall.brick)) out.push('right');
+        else if (c.standAt(S.brickWall.x - 1)) c.press('attack', 10);
+        break;
+      case 'cannon-up':
+        if (c.goTo(S.upTarget, 3)) {
+          out.push('up');
+          c.press('attack', 14);
+        }
+        break;
+      case 'nose-drop':
+        out.push('right');
+        if (cx > (S.hole - 2) * 16) out.push('down');
+        break;
+      case 'jason': {
+        if (!st.jason) {
+          // Coins taken: back in already. Else park by the pit and send Jason.
+          if (c.standAt(S.pit.x - 2)) c.press('select', 20);
+          break;
+        }
+        const tank = st.jason.tank.body;
+        const left = S.pit.coins.some((row) => w.map.get(S.pit.x, row) === T.COIN);
+        // Into the pit for the coins, out again and back to the tank: UP beside it gets him in.
+        if (left && cx < S.pit.x * 16 + 4) out.push('right');
+        else if (left) break;
+        else if (toPx(b.x) > toPx(tank.x + tank.w)) {
+          out.push('left');
+          if (b.onGround && toPx(b.y + b.h) > 192) out.push('jump');
+          else if (!b.onGround && b.vy < 0) out.push('jump');
+        } else out.push('up');
+        break;
+      }
+      case 'power-capsule':
+        c.takeFrom(S.capsuleBlock);
+        break;
+      case 'hover':
+        out.push('right');
+        // A jump from the edge, then a second press held: the hover across.
+        if (b.onGround) {
+          if (front >= S.ditch.from * 16 - 4) c.press('jump', 4);
+        } else if (air < 12 || air > 16) out.push('jump');
+        break;
+      case 'crusher':
+        if (p.powerState !== 'fire') c.takeFrom(S.crusherBlock);
+        else if (c.standAt(S.toughTarget - 4)) c.press('attack', 20);
+        break;
+      case 'triple-missile':
+        if (!p.scratch.hasTriple) c.takeFrom(S.missileBlock);
+        else if (c.standAt(S.box.from - 4)) c.press('special', 40);
+        break;
+      case 'wall-climb':
+        if (!p.scratch['has-wall-climb']) c.takeFrom(S.wallBlock);
+        else out.push('right', 'up');
+        break;
+      case 'ceiling-climb':
+        if (!p.scratch['has-ceiling-climb']) c.takeFrom(S.ceilingBlock);
+        else if (st.surface === 3) out.push('right');
+        else if (cx < (S.roof.from + 1) * 16) c.goTo(S.roof.from + 1);
+        else heldJump();
+        break;
+      case 'homing-missile': {
+        if (!p.scratch.hasHoming) {
+          // The cannon opens it from below (a jump would grip it), then the item is taken.
+          if (w.map.get(S.homingBlock.x, S.homingBlock.y) !== T.Q_POWERUP) c.takeFrom(S.homingBlock);
+          else if (c.goTo(S.homingBlock.x, 3)) {
+            out.push('up');
+            c.press('attack', 14);
+          }
+          break;
+        }
+        const tool = activeTool(p, p.def.tools?.(p) ?? [])?.id;
+        if (!c.standAt(S.ledge.from - 4)) break;
+        if (tool !== 'homing') {
+          out.push('down');
+          c.press('special', 12);
+        } else c.press('special', 30);
+        break;
+      }
+      default:
+        if (cx < (S.flag - 3) * 16) c.goTo(S.flag);
+        else {
+          out.push('right');
+          heldJump();
+        }
+    }
+    return out;
+  };
+}
+
+describe("Sophia III's stage", () => {
+  it('a bot plays it to the TRAINING CLEAR card in about two minutes, the box always clear', () => {
+    const { h, stage } = startStage('sophia');
+    const s = stage();
+    expect(s.world.player.powerState).toBe('small');
+    skipGreeting(h);
+    const log = playStage(h, s, sophiaBot(), () => s.cleared, 7200);
+    expect(s.director.done).toEqual(SOPHIA_LESSONS.map((l) => l.id));
+    expect(log.cards).toEqual([]);
+    expect(log.frames).toBeLessThan(7200);
+    expect(h.top()).toBeInstanceOf(CardScene);
+  });
+
+  it('START AT lists her items in order', () => {
+    const { h } = startStage('sophia', { replay: true });
+    expect(startAtLabels(h)).toEqual([
+      'Beginning',
+      'Power Capsule',
+      'Crusher',
+      'Triple Missile',
+      'Wall Climb',
+      'Ceiling Climb',
+      'Homing Missile',
+    ]);
+  });
+
+  it('the hover crosses the wide ditch; her best jump falls short of the far bank', () => {
+    const { h, stage } = startStage('sophia', { replay: true });
+    choose(h, 'Crusher');
+    const s = stage();
+    // Back to the hover's lesson's spot: Hyper, at the ditch, jumping without the hover.
+    s.director.startAt(SOPHIA_LESSONS.findIndex((l) => l.id === 'hover'));
+    expect(s.world.player.powerState).toBe('big');
+    playStage(
+      h,
+      s,
+      (st) => {
+        const pl = st.world.player.body;
+        const out: Action[] = ['right'];
+        if (pl.onGround ? toPx(pl.x + pl.w) >= S.ditch.from * 16 - 2 : pl.vy < 0) out.push('jump');
+        return out;
+      },
+      () => !s.world.player.body.onGround && toPx(s.world.player.body.y) > 200,
+      400,
+    );
+    expect(onTop(s.world, S.farBank.top, S.farBank.from, S.farBank.to)).toBe(false);
+    expect(lessonId(s)).toBe('hover');
+    // From the ditch's floor (the screen keeps her from going back), the hover takes her up the
+    // far bank, which no jump climbs.
+    playStage(h, s, sophiaBot(), () => lessonId(s) !== 'hover', 900);
+    expect(lessonId(s)).toBe('crusher');
+  });
+
+  it("a hit takes her hull and climbs; Toad's put-back gives them back", () => {
+    const { h, stage } = startStage('sophia', { replay: true });
+    choose(h, 'Homing Missile');
+    const s = stage();
+    const p = () => s.world.player;
+    expect([p().powerState, p().scratch['has-wall-climb'], p().scratch['has-ceiling-climb']]).toEqual([
+      'fire',
+      1,
+      1,
+    ]);
+    s.world.hurtPlayer(p());
+    expect([p().powerState, p().scratch['has-wall-climb']]).toEqual(['small', undefined]);
+    playStage(
+      h,
+      s,
+      (st) => {
+        const out: Action[] = [];
+        controls(st, out).goTo(S.homingGate - 1);
+        return out;
+      },
+      () => h.top() instanceof CardScene,
+      900,
+    );
+    expect(heroCol(s)).toBe(S.homingGate - 1);
+    h.idle(40);
+    h.tap('jump');
+    expect([p().powerState, p().scratch['has-wall-climb'], p().scratch['has-ceiling-climb']]).toEqual([
+      'fire',
+      1,
+      1,
+    ]);
+    expect(lessonId(s)).toBe('homing-missile');
+  });
+});
