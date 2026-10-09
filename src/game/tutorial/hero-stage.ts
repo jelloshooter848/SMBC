@@ -30,7 +30,7 @@ import {
 } from './stage-tutorial';
 import { MergedInput } from './room';
 import { itemName, ownsItem, TRANSIENT_KIT } from './kit';
-import { stageWatch, TrainingDoor, TrainingTarget, type TargetOptions } from './targets';
+import { stageWatch, TrainingDoor, TrainingTarget, WaitingGoomba, type TargetOptions } from './targets';
 
 /*
  * A hero's training stage (0.4.37, docs/HEROES.md): a short stage of their own, in their own
@@ -83,7 +83,8 @@ export function stageLevel(stage: HeroStage): LevelData {
 
 /**
  * A map's own spawns (feet on the bottom of their tile): `target` a TrainingTarget, `door` a
- * TrainingDoor whose walkers come while lesson `lesson=` is being played (`live`).
+ * TrainingDoor whose walkers come while lesson `lesson=` is being played (`live`), a `goomba` with
+ * `lesson=` a WaitingGoomba that walks only then.
  */
 export function stageEntity(
   s: EntitySpawn,
@@ -95,6 +96,11 @@ export function stageEntity(
   if (s.type === 'door') {
     const lesson = String(s.props?.lesson ?? '');
     return new TrainingDoor(tileToSub(s.x), tileToSub(s.y + 1), () => live(lesson));
+  }
+  // A lesson's walker waits until its lesson is being played (its item taken).
+  if (s.type === 'goomba' && typeof s.props?.lesson === 'string') {
+    const lesson = s.props.lesson;
+    return new WaitingGoomba(tileToSub(s.x) + px(2), tileToSub(s.y) + px(2), () => live(lesson));
   }
   if (s.type !== 'target') return undefined;
   const p = s.props ?? {};

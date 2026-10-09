@@ -225,6 +225,40 @@ describe("Mega Man's stage", () => {
     expect(shots().length).toBeGreaterThan(0);
   });
 
+  it("the Bolt's walkers wait until the Bolt is taken (his Helmet stays on for the block)", () => {
+    const { h, stage } = startStage('megaman', { replay: true });
+    choose(h, 'Bolt');
+    const s = stage();
+    const walkers = () => s.world.entities.filter((e): e is Goomba => e instanceof Goomba && e.alive);
+    // Standing by the block, the Bolt not taken: each walker holds where it first showed.
+    const first = new Map<Goomba, number>();
+    playStage(
+      h,
+      s,
+      (st) => {
+        const out: Action[] = [];
+        controls(st, out).goTo(S.boltBlock.x - 2);
+        for (const g of walkers()) if (!first.has(g)) first.set(g, g.body.x);
+        return out;
+      },
+      () => false,
+      400,
+    );
+    expect(first.size).toBeGreaterThan(0);
+    for (const [g, x] of first) expect(g.body.x).toBe(x);
+    expect(s.world.player.scratch.helmet).toBe(1);
+    // Taken: the block gave the Bolt (not a Helmet), and they walk.
+    playStage(h, s, megamanBot(), () => !!s.world.player.scratch['has-bolt'], 600);
+    playStage(
+      h,
+      s,
+      () => [],
+      () => [...first].some(([g, x]) => g.body.x !== x),
+      120,
+    );
+    expect([...first].some(([g, x]) => g.body.x !== x)).toBe(true);
+  });
+
   it('only the slide gets under the low wall, and only Rush gets up the tall one', () => {
     const { h, stage } = startStage('megaman', { replay: true });
     choose(h, 'Rush Coil');

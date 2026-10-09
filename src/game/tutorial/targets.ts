@@ -149,6 +149,31 @@ export class TrainingTarget extends TargetDummy {
   }
 }
 
+/**
+ * A stage map's walker for a lesson (`goomba x y lesson=id`): it stands still until that lesson is
+ * being played and its item taken (`live`), as a lesson's shooter holds fire, so a hit never knocks
+ * a power off the hero on the way to the lesson's block (Mega Man's Helmet: the block would then
+ * give a Helmet).
+ */
+export class WaitingGoomba extends Goomba {
+  constructor(
+    x: number,
+    y: number,
+    private readonly live: () => boolean,
+  ) {
+    super(x, y);
+  }
+
+  override update(world: World): void {
+    if (this.live()) {
+      super.update(world);
+      return;
+    }
+    // Nothing moves it while it waits (its walking speed is kept for when it goes).
+    this.currentFrame = 'goomba-0';
+  }
+}
+
 /** Frames between a door's walkers (after the last one is gone). */
 export const DOOR_FRAMES = 75;
 

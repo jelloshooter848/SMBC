@@ -42,9 +42,9 @@ target 36 11 lesson=charge
 target 70 11 lesson=leaf shoots=90 facing=left
 buzzy 94 13
 target 110 6 lesson=knuckle
-goomba 124 11
-goomba 126 11
-goomba 128 11
+goomba 124 11 lesson=bolt
+goomba 126 11 lesson=bolt
+goomba 128 11 lesson=bolt
 
 [zones]
 exit 138 next=1-1
