@@ -13,6 +13,7 @@ import { has, setHas } from '../../items/flags';
 import { SOPHIA } from '../sophia';
 import { MEGAMAN, MEGAMAN_TOOL_LABELS, MAX_HP } from './index';
 import { MEGAMAN_GUIDE } from './guide';
+import { megamanDef } from '@content/sprites/megaman';
 
 const STUB_ASSETS = {
   sheet: () => ({ id: 'stub', image: null, frames: new Map() }),
@@ -89,6 +90,60 @@ describe('Mega Man: the helmet is his mushroom (0.4.35)', () => {
     p.invuln = 0;
     hold(w, ['attack'], 60);
     expect(w.entities.some((e) => e instanceof Projectile && e.kind === 'buster-charged')).toBe(false);
+  });
+
+  it('in the campaign he is drawn without the helmet in his weapon colours, and loses it with the power-down sound', () => {
+    const w = world();
+    const p = w.player;
+    const sounds: string[] = [];
+    w.audio.sfx = (id: string) => void sounds.push(id);
+    itemRules('megaman')!.give(p, 'helmet');
+    setHas(p, 'saw-disc');
+    const on = MEGAMAN.sprite(p, 100, true);
+    expect(on.frame).toBe('idle');
+    expect(on.palette).toBe('megaman-saw');
+    w.hurtPlayer(p);
+    expect(sounds).toContain('pipe');
+    expect(sounds).not.toContain('hit');
+    p.attackTimer = 0;
+    p.anim = 'idle';
+    const off = MEGAMAN.sprite(p, 100, true);
+    expect(off.frame).toBe('bare-idle');
+    expect(off.palette).toBe('megaman-saw');
+    // Every frame he can show has its bare twin on his sheet, the same size.
+    for (const [k, rows] of Object.entries(megamanDef.frames))
+      if (k.startsWith('bare-'))
+        expect(rows.length, k).toBe((megamanDef.frames[k.slice(5)] as string[]).length);
+    for (const k of [
+      'idle',
+      'idle-blink',
+      'walk-0',
+      'walk-1',
+      'walk-2',
+      'jump',
+      'shoot',
+      'jump-shoot',
+      'slide',
+      'hurt',
+      'charge-0',
+      'climb-0',
+      'climb-1',
+      'climb-shoot',
+    ])
+      expect(megamanDef.frames[`bare-${k}`], k).toBeDefined();
+    // A hit without the helmet is the plain hit sound.
+    sounds.length = 0;
+    p.invuln = 0;
+    w.hurtPlayer(p);
+    expect(sounds).toContain('hit');
+  });
+
+  it('classic play keeps the plain suit until the helmet, never the bare head', () => {
+    const w = world(MEGAMAN, false);
+    const p = w.player;
+    const s = MEGAMAN.sprite(p, 100, true);
+    expect(s.palette).toBe('megaman-plain');
+    expect(s.frame.startsWith('bare-')).toBe(false);
   });
 
   it('classic play keeps the original: a hit costs health only', () => {

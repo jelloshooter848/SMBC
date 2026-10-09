@@ -90,13 +90,18 @@ function selectedWeapon(p: Player): WeaponDef | null {
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const t = activeTool(p, tools(p));
   const w = selectedWeapon(p);
-  let palette = !p.scratch.helmet
-    ? 'megaman-plain'
-    : w
-      ? w.palette
-      : t?.id === 'rush'
-        ? RUSH.palette
-        : 'megaman';
+  // Classic play: the dull plain suit until the helmet. The campaign keeps the weapon's colours
+  // and draws him without the helmet instead (the `bare-` frames, 0.4.35), so losing it to a hit
+  // shows whatever weapon is in hand.
+  const bare = isFound(p) && !p.scratch.helmet;
+  let palette =
+    !p.scratch.helmet && !bare
+      ? 'megaman-plain'
+      : w
+        ? w.palette
+        : t?.id === 'rush'
+          ? RUSH.palette
+          : 'megaman';
   const charging = (p.scratch.chargeT ?? 0) > 12;
   if (charging) palette = `megaman-charge-${reduceFlashing ? 0 : (frame >> 2) % 3}`;
   if (p.star > 0) palette = `megaman-star-${reduceFlashing ? 0 : (frame >> 1) & 3}`;
@@ -126,7 +131,7 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   return {
     sheet: 'megaman',
     palette,
-    frame: name,
+    frame: bare ? `bare-${name}` : name,
     flip: p.facing < 0,
     offsetX: 2,
     offsetY: p.sliding > 0 ? 20 : 10,
@@ -379,7 +384,8 @@ export const MEGAMAN: CharacterDef = {
       // Campaign (0.4.35, owner): the helmet is his mushroom, so a hit takes it, and with it the
       // charge shot and brick breaking, as well as its damage. The weapons he found stay. Classic
       // play keeps the original's (a hit costs health only).
-      if (isFound(p) && p.scratch.helmet) p.scratch.helmet = 0;
+      const helmetLost = isFound(p) && !!p.scratch.helmet;
+      if (helmetLost) p.scratch.helmet = 0;
       p.hp -= HIT_DAMAGE;
       if (p.hp <= 0) {
         p.hp = 0;
@@ -387,7 +393,8 @@ export const MEGAMAN: CharacterDef = {
       }
       p.invuln = 60;
       p.scratch.chargeT = 0;
-      world.audio.sfx('hit');
+      // The helmet knocked off: Mario's power-down (shrink) sound, else the hit's.
+      world.audio.sfx(helmetLost ? 'pipe' : 'hit');
       return 'hurt';
     },
   },

@@ -205,6 +205,9 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
   shot and brick breaking) **and** costs its 4 of 28 health; without it, 4 of 28 health. His weapons and Rush stay.
   The cleanest of the choices: SMB's big → small, while his health bar still counts every hit (a helmet-only hit
   costing no health would make the helmet an extra life bar). Classic play keeps the original's (health only).
+  It shows: the helmet comes off with Mario's power-down sound (`pipe`), and without it he is drawn bare-headed
+  (short dark hair, the sheet's `bare-` frames) in whatever weapon's colours are in hand; classic play keeps the
+  plain grey suit until the helmet instead.
 - **Drops** (0.4.35): weapon energy fills the weapon in hand, else the emptiest one he has; a weapon he hasn't found
   keeps a full tank for when he does; nothing to fill gives points (section 7's "drops").
 - **Flags**: today weapons unlock in a fixed order (`scratch.weapons` is a count); NEW: each is its own flag.

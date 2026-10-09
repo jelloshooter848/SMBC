@@ -83,6 +83,25 @@ const head = [
 // Same head with the eye shut.
 const headBlink = head.map((r, i) => (i === 5 ? '..001102333330..' : i === 6 ? '..001102300030..' : r));
 
+// Without the helmet (the campaign, after a hit: the helmet is his mushroom, 0.4.35): the same
+// face and neck under short spiky hair, in the outline's black so it reads dark in every weapon
+// palette; a skin-coloured ear where the helmet's ear-piece was. Same 16x10 box as `head`.
+const bareHead = [
+  '.......0.0......',
+  '.....0000000....',
+  '...000000000....',
+  '..00000000000...',
+  '..000000000000..',
+  '..000033334030..',
+  '..000333330030..',
+  '..030333333330..',
+  '...0003333330...',
+  '.....0000330....',
+];
+const bareHeadBlink = bareHead.map((r, i) =>
+  i === 5 ? '..000033333330..' : i === 6 ? '..000333300030..' : r,
+);
+
 // Torso with both arms hanging (rows 18..25 of the standing pose). 16 wide, 8 rows.
 const torso = [
   '....01111110....',
@@ -166,77 +185,87 @@ const legsJump = [
 const W = 16;
 const H = 32;
 
-const standing = (legs: readonly string[], hd: readonly string[] = head): string[] =>
-  compose(W, H, [hd, 0, 8], [torso, 0, 18], [legs, 0, 26]);
+// On a ladder, side-on to shoot (Mega Man 2): the cannon out, the back boot up on a rung.
+const legsLadder = [
+  '.....01100110...',
+  '.....0220.0220..',
+  '....02220.0220..',
+  '....00000.02220.',
+  '..........02220.',
+  '..........00000.',
+];
 
-const shooting = (w: number, legs: readonly string[], dy = 0): string[] =>
-  compose(w, H, [head, 0, 8 + dy], [torsoShoot, 0, 18 + dy], [legs, 0, 26 + dy], [cannon, 12, 18 + dy]);
-
-const idle = standing(legsStand);
-const idleBlink = standing(legsStand, headBlink);
-const walk0 = standing(legsWalk0);
-const walk1 = compose(W, H, [head, 0, 7], [torso, 0, 17], [legsWalk1, 0, 25]);
-const walk2 = standing(legsWalk2);
-const jump = standing(legsJump);
-
-const shoot = shooting(24, legsStand);
-const walkShoot0 = shooting(24, legsWalk0);
-const walkShoot1 = shooting(24, legsWalk1, -1);
-const walkShoot2 = shooting(24, legsWalk2);
-const jumpShoot = shooting(24, legsJump);
-
-// Sliding along the ground: head leading high in front, torso tucked under the chin, both boots
-// side by side on the floor and the back arm trailing with its glove on the ground.
-const slide = compose(
-  W,
-  H,
-  [head, 2, 16],
-  [
-    [
-      '.0111101111110..',
-      '02211101111110..',
-      '0220002222220220',
-      '000.022220022220',
-      '....022220022220',
-      '....000000000000',
-    ],
-    0,
-    26,
-  ],
-);
-
-// Flinch: knocked back, arms thrown out, legs splayed.
-const hurt = compose(
-  W,
-  H,
-  [head, -1, 9],
-  [
-    [
-      '...01111110.....',
-      '..0111111110....',
-      '.0101111110100..',
-      '.0201111110200..',
-      '.0001111110000..',
-      '...0222222 0....',
-      '...00222220.....',
-    ].map((r) => r.replace(' ', '2')),
-    0,
-    19,
-  ],
-  [legsWalk0, 0, 26],
-  [['.0.', '020', '020'], 1, 16],
-  [['.0.', '020', '020'], 12, 16],
-);
-
-// Standing with the charge glow sparking around the cannon hand.
-const charge0 = compose(
-  W,
-  H,
-  [head, 0, 8],
-  [torso, 0, 18],
-  [legsStand, 0, 26],
-  [['....5', '.....', '5....', '.....', '....5', '.....', '..5..'], 11, 18],
-);
+/** Every frame that shows his head, drawn with head `hd` (the helmet's, or the bare one). */
+function headFrames(hd: readonly string[], hdBlink: readonly string[]): Record<string, string[]> {
+  const standing = (legs: readonly string[], h: readonly string[] = hd): string[] =>
+    compose(W, H, [h, 0, 8], [torso, 0, 18], [legs, 0, 26]);
+  const shooting = (w: number, legs: readonly string[], dy = 0): string[] =>
+    compose(w, H, [hd, 0, 8 + dy], [torsoShoot, 0, 18 + dy], [legs, 0, 26 + dy], [cannon, 12, 18 + dy]);
+  return {
+    idle: standing(legsStand),
+    'idle-blink': standing(legsStand, hdBlink),
+    'walk-0': standing(legsWalk0),
+    'walk-1': compose(W, H, [hd, 0, 7], [torso, 0, 17], [legsWalk1, 0, 25]),
+    'walk-2': standing(legsWalk2),
+    jump: standing(legsJump),
+    shoot: shooting(24, legsStand),
+    'walk-shoot-0': shooting(24, legsWalk0),
+    'walk-shoot-1': shooting(24, legsWalk1, -1),
+    'walk-shoot-2': shooting(24, legsWalk2),
+    'jump-shoot': shooting(24, legsJump),
+    'climb-shoot': shooting(24, legsLadder),
+    // Sliding along the ground: head leading high in front, torso tucked under the chin, both
+    // boots side by side on the floor and the back arm trailing with its glove on the ground.
+    slide: compose(
+      W,
+      H,
+      [hd, 2, 16],
+      [
+        [
+          '.0111101111110..',
+          '02211101111110..',
+          '0220002222220220',
+          '000.022220022220',
+          '....022220022220',
+          '....000000000000',
+        ],
+        0,
+        26,
+      ],
+    ),
+    // Flinch: knocked back, arms thrown out, legs splayed.
+    hurt: compose(
+      W,
+      H,
+      [hd, -1, 9],
+      [
+        [
+          '...01111110.....',
+          '..0111111110....',
+          '.0101111110100..',
+          '.0201111110200..',
+          '.0001111110000..',
+          '...0222222 0....',
+          '...00222220.....',
+        ].map((r) => r.replace(' ', '2')),
+        0,
+        19,
+      ],
+      [legsWalk0, 0, 26],
+      [['.0.', '020', '020'], 1, 16],
+      [['.0.', '020', '020'], 12, 16],
+    ),
+    // Standing with the charge glow sparking around the cannon hand.
+    'charge-0': compose(
+      W,
+      H,
+      [hd, 0, 8],
+      [torso, 0, 18],
+      [legsStand, 0, 26],
+      [['....5', '.....', '5....', '.....', '....5', '.....', '..5..'], 11, 18],
+    ),
+  };
+}
 
 // 8x8 ring that the game scatters when the robot is destroyed.
 const deathOrb = [
@@ -292,17 +321,6 @@ const climb0 = [
 
 const climb1 = flipH(climb0);
 
-// On a ladder, side-on to shoot (Mega Man 2): the cannon out, the back boot up on a rung.
-const legsLadder = [
-  '.....01100110...',
-  '.....0220.0220..',
-  '....02220.0220..',
-  '....00000.02220.',
-  '..........02220.',
-  '..........00000.',
-];
-const climbShoot = shooting(24, legsLadder);
-
 // Climbing over a ladder's top, seen from behind: hunched, both hands on the floor above, knees
 // bent under him.
 const climbTop = [
@@ -324,28 +342,43 @@ const climbTop = [
   '..000000000000..',
 ];
 
+/**
+ * A from-behind frame without the helmet: in rows `y0..y1`, columns `x0..x1`, the helmet's armour
+ * turns to dark hair (the outline's black) and its ear-pieces to skin.
+ */
+function bareBack(rows: readonly string[], y0: number, y1: number, x0: number, x1: number): string[] {
+  return rows.map((r, y) => {
+    if (y < y0 || y > y1) return r;
+    const out = r.split('');
+    for (let x = x0; x <= x1; x++) {
+      if (out[x] === '2') out[x] = '0';
+      else if (out[x] === '1') out[x] = '3';
+    }
+    return out.join('');
+  });
+}
+
+/**
+ * The frames without the helmet, `bare-<frame>` (the campaign, 0.4.35): the same poses with the
+ * bare head, so they take every suit's palette as the helmeted ones do.
+ */
+const bareFrames: Record<string, string[]> = Object.fromEntries(
+  Object.entries({
+    ...headFrames(bareHead, bareHeadBlink),
+    'climb-0': bareBack(climb0, 8, 16, 2, 13),
+    'climb-1': flipH(bareBack(climb0, 8, 16, 2, 13)),
+  }).map(([k, v]) => [`bare-${k}`, v]),
+);
+
 export const megamanDef: SpriteDef = {
   palette: 'megaman',
   frames: {
-    idle,
-    'idle-blink': idleBlink,
-    'walk-0': walk0,
-    'walk-1': walk1,
-    'walk-2': walk2,
-    jump,
-    shoot,
-    'walk-shoot-0': walkShoot0,
-    'walk-shoot-1': walkShoot1,
-    'walk-shoot-2': walkShoot2,
-    'jump-shoot': jumpShoot,
-    slide,
-    hurt,
+    ...headFrames(head, headBlink),
     'death-orb': deathOrb,
     'teleport-0': teleport0,
     'climb-0': climb0,
     'climb-1': climb1,
-    'climb-shoot': climbShoot,
     'climb-top': climbTop,
-    'charge-0': charge0,
+    ...bareFrames,
   },
 };
