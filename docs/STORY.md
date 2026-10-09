@@ -682,8 +682,8 @@ CAVE TOAD:
 
 LUIGI'S FREE? PHEW! LAST
 TIME MARIO WENT MISSING,
-LUIGI FOUND HIM. THIS TIME
-IT'S PEACH.
+LUIGI FOUND HIM. NOW HE
+CAN HELP YOU FIND PEACH.
 ```
 
 **1-3: a lookout.** NEW partner (`lookout`). A Toad in a pink-spotted cap and a green vest, on the ground
@@ -1133,7 +1133,7 @@ LITTLE BLOBS.
 WISE MAN:
 
 ...NOTHING? HM. IT WORKS
-BETTER IN HYRULE. YOU'RE
+BETTER BACK HOME. YOU'RE
 DOING FINE WITHOUT IT.
 ```
 
@@ -1786,10 +1786,10 @@ to look (by place, never by level number); freed, their found lines.
 ```text
 TROOPER:
 
-FEDERATION TROOPER,
-REPORTING. OUR HUNTER,
-SAMUS, WENT DARK. WE LOST
-HER SIGNAL.
+THE FEDERATION SENT ONE
+HUNTER TO THIS PLANET.
+JUST ONE: SAMUS. NOW EVEN
+SHE'S GONE DARK.
 ```
 
 ```text
@@ -2017,10 +2017,10 @@ LINGER AFTER DARK, DEARIE.
 ```text
 OLD WOMAN:
 
-OUR SIMON IS UNDER A CURSE
-NOT HIS OWN. HE WAS LAST
-SEEN IN THE OLD CASTLE AT
-THE END OF THE ROAD.
+CURSED AGAIN, POOR SIMON,
+AND NOT EVEN BY DRACULA.
+HE WENT INTO THE OLD CASTLE
+AT THE END OF THE ROAD.
 ```
 
 ```text
@@ -2085,7 +2085,8 @@ IN A GRAVEYARD. EVERY TIME.
 ```
 
 **5-3: the clockmaker.** NEW partner (`clockmaker`). The night town's townsperson in a grey hood and a blue smock,
-at **5-3's start** (column 8), at the foot of the clock tower.
+on **5-3's way out** (column 147), on the floor below the steps to the flag: the flying Bullet Bills cover the clock
+tower up to column 126, so he waits past them, where stopping to talk is safe.
 
 ```text
 CLOCKMAKER:
@@ -2414,9 +2415,9 @@ NO NINJA. HMPH.
 NINJA:
 
 OUR MASTER RYU IS LOST TO
-A SPELL. THE CITY STREETS
-AT NIGHT. AN AGENT TRACKS
-HIM. FIND HIM, I BEG YOU.
+A SPELL. SEEK THE CITY
+STREETS AT NIGHT, WHERE AN
+AGENT TRACKS HIM. GO.
 ```
 
 After Ryu is freed:
@@ -2500,9 +2501,9 @@ After Ryu is freed:
 CLAN SCOUT:
 
 MASTER RYU IS FREE. HEED
-THIS: IN OUR TEMPLES, FALL
-TO THE MASTER AND YOU START
-AGAIN FROM FAR BELOW.
+THIS: IN OUR LAST TEMPLE,
+FALL TO THE DEMON AND YOU
+START AGAIN FROM FAR BELOW.
 ```
 
 ```text
@@ -2685,7 +2686,7 @@ LOAD!
 to look (by place, never by level number); freed, their found lines.
 
 **7-1: a corporal.** NEW partner (`corporal`). World 7's sergeant in snow gear, on watch at **7-1's start** (column
-10). Freed, Bill's famous secret, half remembered (it names no button: he forgets before he gets there).
+5, left of where the camera would bring the Bill Blaster at 19 on screen and start it firing). Freed, Bill's famous secret, half remembered (it names no button: he forgets before he gets there).
 
 ```text
 CORPORAL:
@@ -3003,7 +3004,7 @@ THE TANK.
 ```
 
 **8-3: an ice miner.** NEW partner (`ice-miner`). The miner in a pale blue helmet and a teal shirt, at **8-3's
-start** (column 8), in the frozen ruins. Freed, how Sophia III's story began.
+start** (column 4, clear of the Bill Blaster at 18 the way 7-1's corporal is), in the frozen ruins. Freed, how Sophia III's story began.
 
 ```text
 ICE MINER:

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { getLevel, levelIds } from '@content/levels';
 import { SMB_PAGES } from '@content/worldmap';
 import { CHARACTERS } from '@game/characters/registry';
+import { TALK_REACH_PX } from '@game/entities/objects/captive';
+import { tileAtTiles } from '@game/level/schema';
+import { T } from '@game/level/tiles';
 import { PARTNERS, partnerPages, type Page } from './script';
 
 // 0.4.40 (owner: "an NPC in every level"): every main level of Chapter 1, 1-1 to 8-4, has someone
@@ -121,6 +124,33 @@ describe('an NPC in every level (0.4.40)', () => {
     for (const [who, s] of Object.entries(PARTNERS)) {
       if (!s.after || !s.hero) continue;
       expect(text(s.after), `${who} (${name(s.hero)})`).not.toMatch(/PLEASE (FIND|HELP|SAVE|BRING)/);
+    }
+  });
+
+  // RQ40: standing still to talk must not be a cheap hit. 5-3's flying Bullet Bills cover the level
+  // up to column 126 (World.flyingBullets), so its clockmaker stands past them; a Bill Blaster
+  // fires only with its barrel on screen, a tile either way (BulletLauncher), so 7-1's corporal and
+  // 8-3's ice miner stand far enough left that the camera keeps the blaster ahead off screen.
+  it('nobody stands where Bullet Bills fly at a hero who stops to talk', () => {
+    const HALF_HERO = 6; // every hero's hitbox is 12 px wide
+    const SCREEN_W = 256;
+    const PUSH_X = 80; // Camera.pushX: the camera scrolls once the lead is this far in
+    for (const p of placed) {
+      const l = getLevel(p.level);
+      const e = l.entities.find((s) => s.type === 'partner' && s.props?.who === p.who)!;
+      const where = `${p.level}: ${p.who}`;
+      for (const z of l.zones)
+        if (z.kind === 'bullets') expect(e.x < z.x || e.x >= z.x + z.w, where).toBe(true);
+      // The furthest right a hero can stand and still talk, and the camera there (it never scrolls back).
+      const centre = e.x * 16 + 8 + Number(e.props?.dx ?? 0);
+      const camX = Math.max(0, centre + TALK_REACH_PX - HALF_HERO - PUSH_X);
+      // Blasters whose bills fly at the height of a hero standing on the NPC's floor.
+      for (let ty = e.y - 1; ty <= e.y; ty++)
+        for (let tx = 0; tx < l.width; tx++) {
+          if (tileAtTiles(l, tx, ty) !== T.BLASTER_TOP) continue;
+          const onScreen = tx * 16 <= camX + SCREEN_W + 16 && tx * 16 + 16 >= camX - 16;
+          expect(onScreen, `${where}: the blaster at ${tx} fires while you talk`).toBe(false);
+        }
     }
   });
 });

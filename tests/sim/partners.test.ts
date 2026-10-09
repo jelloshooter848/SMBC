@@ -75,24 +75,25 @@ const SPOTS = [
   { who: 'trooper', level: '4-1', start: fromStart, col: 10 },
   { who: 'researcher', level: '4-3', start: fromStart, col: 8 },
   { who: 'baby-metroid', level: '4-4', start: near(17), col: 21 },
-  // World 5: at the starts of 5-1 (the courtyard gate), 5-2 (the town) and 5-3 (the clock tower).
+  // World 5: at the starts of 5-1 (the courtyard gate) and 5-2 (the town); in 5-3 (the clock
+  // tower) below the steps to the flag (walked back to), past the flying Bullet Bills.
   { who: 'old-woman', level: '5-1', start: fromStart, col: 7 },
   { who: 'garlic-seller', level: '5-2', start: fromStart, col: 7 },
-  { who: 'clockmaker', level: '5-3', start: fromStart, col: 8 },
+  { who: 'clockmaker', level: '5-3', start: near(150), col: 147 },
   // World 6: a ninja at 6-1's start, a hermit at 6-3's, a clan scout at the foot of 6-4's steps.
   { who: 'ninja', level: '6-1', start: fromStart, col: 10 },
   { who: 'hermit', level: '6-3', start: fromStart, col: 8 },
   { who: 'clan-scout', level: '6-4', start: fromStart, col: 8 },
   // World 7: a corporal at 7-1's start, a river scout below the steps to 7-2's flag (walked down
   // to), a medic at the foot of 7-4's steps.
-  { who: 'corporal', level: '7-1', start: fromStart, col: 10 },
+  { who: 'corporal', level: '7-1', start: fromStart, col: 5 },
   { who: 'river-scout', level: '7-2-exit', start: near(18), col: 15 },
   { who: 'medic', level: '7-4', start: fromStart, col: 8 },
   // World 8: at the starts of 8-1, 8-2 and 8-3; in 8-4 on the floor past the first lava (Fred
   // and Jason are behind the trap pipe at its end, and Fred goes home once Sophia III is free).
   { who: 'mutant', level: '8-1', start: fromStart, col: 10 },
   { who: 'engineer', level: '8-2', start: fromStart, col: 6 },
-  { who: 'ice-miner', level: '8-3', start: fromStart, col: 8 },
+  { who: 'ice-miner', level: '8-3', start: fromStart, col: 4 },
   { who: 'castle-mutant', level: '8-4', start: near(12), col: 14 },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
 
