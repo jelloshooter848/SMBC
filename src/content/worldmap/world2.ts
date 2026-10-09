@@ -47,7 +47,7 @@ export const WORLD_2: WorldMapPage = {
     [8, 4],
   )
     // The bonus slot is the Top Secret Area (0.4.10): found by jumping over 2-1's flagpole and
-    // walking on past the castle into the Moblin's cave (secret 'bonus-2', which also clears 2-1).
+    // walking on past the castle into the Moblin's cave (secret 'bonus-2'; a secret exit only, 2-1's flagpole opens 2-2).
     // JUMP on it enters its level, every time: a fill-up spot (docs/WORLD_MAP.md).
     .map((n): MapNode =>
       n.kind === 'bonus' ? { ...n, level: '2-top-secret', label: 'TOP SECRET AREA' } : n,

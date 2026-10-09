@@ -405,8 +405,8 @@ export class LevelScene implements Scene {
   /**
    * The Moblin in 2-1's hidden cave saw a player (objects/moblin.ts): his cards over the frozen
    * cave, one after another (each read out, OK to go on), the secret jingle on the last; then in
-   * the campaign the Top Secret exit (Game.campaignTopSecret: 2-1 cleared and `secret` found, so
-   * both roads draw in on the map). A play-test ends; elsewhere play goes on to `next`.
+   * the campaign the Top Secret exit (Game.campaignTopSecret: `secret` found, only its road draws
+   * in on the map; 2-1 is not cleared). A play-test ends; elsewhere play goes on to `next`.
    */
   private meetMoblin(secret: string, next: string | null): void {
     const game = this.game;

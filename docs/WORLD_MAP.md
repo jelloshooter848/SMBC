@@ -212,8 +212,9 @@ different road with each, and **no ending opens every road leaving its level**.
 - **Old files**: nothing changes in the format. A file that cleared 1-2 through its pipe before
   0.5.0 has both `1-2` in `cleared` and `bonus-1` in `secrets`, so it keeps both roads; nothing
   re-locks.
-- **One exception** (0.4.10): the Moblin in 2-1's hidden cave both clears 2-1 and finds `bonus-2`,
-  opening both roads ("The Top Secret Area" below).
+- **No exceptions** (0.4.35, owner): the Moblin in 2-1's hidden cave is a secret exit like the
+  others: he finds `bonus-2` (the road to the Top Secret Area) and 2-1 stays uncleared; 2-2 opens
+  only from 2-1's flagpole. (0.4.10 to 0.4.34 had him clear 2-1 as well.)
 - Today 1-2's campaign pipe is a secret exit (below), and so is Larry Koopa's crystal ball in
   4-2's airship (`secret:larry`, the road to World 4's bonus spot; "The bonus spot and its Hammer
   Bro" below). SMB 4-2's two warp zones are no warps in campaign play (0.5.0): each leads into an
