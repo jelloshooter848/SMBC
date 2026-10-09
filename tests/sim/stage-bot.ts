@@ -192,6 +192,8 @@ export const heroCol = (s: HeroStageScene): number => Math.floor(toPx(s.world.pl
  * item out of a ? block (bump it, then touch the item from the side the hero is on).
  */
 const stands = new WeakMap<HeroStageScene, { col: number; back: boolean }>();
+/** Frames a hero who can't steer in the air (Simon) backs off a step for a run-up at it. */
+const runUps = new WeakMap<HeroStageScene, number>();
 
 export function controls(s: HeroStageScene, out: Action[]) {
   const w = s.world;
@@ -209,7 +211,24 @@ export function controls(s: HeroStageScene, out: Action[]) {
     if (!b.onGround && b.vy < 0) out.push('jump');
     const ahead = Math.floor((dir > 0 ? toPx(b.x + b.w) + 1 : toPx(b.x) - 1) / 16);
     const feet = Math.floor((toPx(b.y + b.h) - 1) / 16);
-    if (b.onGround && w.map.isSolid(ahead, feet) && (w.frame & 3) === 0) out.push('jump');
+    if (p.def.movement.airControl !== 'none') {
+      if (b.onGround && w.map.isSolid(ahead, feet) && (w.frame & 3) === 0) out.push('jump');
+      return false;
+    }
+    // No steering in the air: a step is taken with a walking jump a few pixels before it, and from
+    // a standstill against it he first backs off for a run-up.
+    const back = runUps.get(s) ?? 0;
+    if (back > 0) {
+      runUps.set(s, back - 1);
+      out.pop();
+      out.push(dir > 0 ? 'left' : 'right');
+      return false;
+    }
+    if (!b.onGround) return false;
+    const soon = Math.floor((dir > 0 ? toPx(b.x + b.w) + 12 : toPx(b.x) - 12) / 16);
+    const fast = Math.abs(b.vx) >= (p.def.movement.maxWalk * 3) >> 2;
+    if (w.map.isSolid(soon, feet) && fast) out.push('jump');
+    else if (w.map.isSolid(ahead, feet) && !fast) runUps.set(s, 14);
     return false;
   };
   /**

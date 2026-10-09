@@ -28,9 +28,17 @@ import {
   type TutorialHost,
   type TutorialRun,
 } from './stage-tutorial';
+import { lessonItems } from './stage-prompts';
 import { MergedInput } from './room';
 import { itemName, ownsItem, TRANSIENT_KIT } from './kit';
-import { stageWatch, TrainingDoor, TrainingTarget, WaitingGoomba, type TargetOptions } from './targets';
+import {
+  LessonCandle,
+  stageWatch,
+  TrainingDoor,
+  TrainingTarget,
+  WaitingGoomba,
+  type TargetOptions,
+} from './targets';
 
 /*
  * A hero's training stage (0.4.37, docs/HEROES.md): a short stage of their own, in their own
@@ -82,7 +90,8 @@ export function stageLevel(stage: HeroStage): LevelData {
 }
 
 /**
- * A map's own spawns (feet on the bottom of their tile): `target` a TrainingTarget, `door` a
+ * A map's own spawns (feet on the bottom of their tile): `target` a TrainingTarget, `candle` a
+ * wall candle (`dx=` px along, `lesson=`: gone once that lesson is done), `door` a
  * TrainingDoor whose walkers come while lesson `lesson=` is being played (`live`), a `goomba` with
  * `lesson=` a WaitingGoomba that walks only then.
  */
@@ -91,8 +100,18 @@ export function stageEntity(
   live: (lesson: string) => boolean,
   done: (lesson: string) => boolean = () => false,
 ): Entity | null | undefined {
-  // A target of a lesson done is not put up again in a rebuilt stretch.
-  if (s.type === 'target' && typeof s.props?.lesson === 'string' && done(s.props.lesson)) return null;
+  // A target (or a candle) of a lesson done is not put up again in a rebuilt stretch.
+  if (
+    (s.type === 'target' || s.type === 'candle') &&
+    typeof s.props?.lesson === 'string' &&
+    done(s.props.lesson)
+  )
+    return null;
+  // A wall candle (Simon's), `dx` px right of its tile's: just past a whip's reach from a low wall.
+  if (s.type === 'candle') {
+    const lesson = typeof s.props?.lesson === 'string' ? s.props.lesson : undefined;
+    return new LessonCandle(s.x, s.y, lesson, Number(s.props?.dx ?? 0) || 0);
+  }
   if (s.type === 'door') {
     const lesson = String(s.props?.lesson ?? '');
     return new TrainingDoor(tileToSub(s.x), tileToSub(s.y + 1), () => live(lesson));
@@ -206,7 +225,7 @@ export class HeroStageScene implements Scene, TutorialHost {
   lessonLive(id: string): boolean {
     const l = this.director?.lesson;
     if (!l || l.id !== id || this.director.scripted) return false;
-    return !l.item || ownsItem(this.world.player, l.item);
+    return lessonItems(l).every((item) => ownsItem(this.world.player, item));
   }
 
   /** The stage's music (its world's song). */

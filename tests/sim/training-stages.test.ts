@@ -10,7 +10,7 @@ import { CHARACTERS } from '@game/characters/registry';
 import { HeroStageScene } from '@game/tutorial/hero-stage';
 import { HERO_STAGES } from '@game/tutorial/heroes';
 import { itemInfo, heroItems } from '@game/items/catalog';
-import { tokenCaptions } from '@game/tutorial/stage-prompts';
+import { lessonBlocks, lessonItems, tokenCaptions } from '@game/tutorial/stage-prompts';
 import { levelTouchLabels } from '@game/touch-labels';
 import { T } from '@game/level/tiles';
 import { TrainingTarget } from '@game/tutorial/targets';
@@ -44,6 +44,20 @@ const KIT_ORDER: Readonly<Record<string, readonly string[]>> = {
   ],
   megaman: ['helmet', 'saw-disc', 'leaf-guard', 'rush-coil', 'flame-wave', 'homing-knuckle', 'bolt'],
   samus: ['energy-tank', 'long-beam', 'missiles', 'ice-beam', 'varia-suit', 'wave-beam'],
+  // The Double and Triple Shot are one lesson (owner, 0.4.38), after the Cross: the Stopwatch,
+  // with its fire bar, ends the stage.
+  simon: [
+    'pot-roast',
+    'chain-whip',
+    'dagger',
+    'holy-water',
+    'axe',
+    'morning-star',
+    'cross',
+    'double-shot',
+    'triple-shot',
+    'stopwatch',
+  ],
 };
 
 function stageIn(heroId: string, scheme: ControlScheme): HeroStageScene {
@@ -109,7 +123,7 @@ describe('the hero stages', () => {
       const last = lessons.length - 1;
       s.director.startAt(last);
       for (const l of lessons.slice(0, last)) {
-        if (l.block) expect(s.world.map.get(l.block.x, l.block.y), l.id).toBe(T.USED);
+        for (const b of lessonBlocks(l)) expect(s.world.map.get(b.x, b.y), l.id).toBe(T.USED);
         expect(
           s.world.entities.some((e) => e instanceof TrainingTarget && e.lesson === l.id),
           `${l.id}'s targets`,
@@ -117,11 +131,11 @@ describe('the hero stages', () => {
       }
       // ...and the kit floor gives every earlier item.
       for (const l of lessons.slice(0, last))
-        if (l.item) expect(ownsItem(s.world.player, l.item), l.item).toBe(true);
+        for (const it of lessonItems(l)) expect(ownsItem(s.world.player, it), it).toBe(true);
     });
 
     it(`${id}: the power-ups come in the order the hero's kit builds up, the grow item first`, () => {
-      const items = stage.tutorial.lessons.flatMap((l) => (l.item ? [l.item] : []));
+      const items = stage.tutorial.lessons.flatMap(lessonItems);
       for (const it of items) expect(itemInfo(id, it), it).not.toBeNull();
       expect(items).toEqual(KIT_ORDER[id]);
       if (items.length) expect(items[0]).toBe(heroItems(id)?.grow);

@@ -10,11 +10,21 @@ import { itemRules } from '../items/heroes';
  */
 
 /**
- * The hero has power-up `id` (Mario and Luigi: their power state). A grow item that stacks (Link's
- * Heart Container, Samus's Energy Tank) counts once the hero has one: no longer small.
+ * Power items that stack, owned for a stage once the hero has one (their rules count them owned
+ * only at the most): Ryu's Ninpo Scroll.
+ */
+const STACKED: Readonly<Record<string, (p: Player) => boolean>> = {
+  'ninpo-scroll': (p) => (p.scratch.scrolls ?? 0) > 0,
+};
+
+/**
+ * The hero has power-up `id` (Mario and Luigi: their power state). An item that stacks (Link's
+ * Heart Container, Samus's Energy Tank, Ryu's Ninpo Scroll) counts once the hero has one.
  */
 export function ownsItem(p: Player, id: string): boolean {
   const rules = itemRules(p.def.id);
+  const stacked = STACKED[id];
+  if (rules && stacked) return stacked(p);
   if (rules) return id === heroItems(p.def.id)?.grow ? !rules.small(p) : rules.owned(p, id);
   if (id === 'mushroom') return p.powerState !== 'small';
   if (id === 'fire-flower') return p.powerState === 'fire';
@@ -27,6 +37,9 @@ export function giveQuietly(p: Player, id: string): void {
   const rules = itemRules(p.def.id);
   if (rules) {
     rules.give(p, id);
+    // No grow flicker either (Sophia III's hull: her power state).
+    p.transition = null;
+    p.refitHitbox();
     return;
   }
   if (id === 'mushroom' && p.powerState === 'small') p.powerState = 'big';
