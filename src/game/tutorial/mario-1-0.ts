@@ -20,7 +20,7 @@ import { BowserSpellScene } from '../story/bowser-spell';
  * on it, and 1-1 opens once it is cleared. It doubles as the game's general tutorial and the start
  * of the story: Toad greets Mario, the lessons follow one by one, and after the flagpole Bowser
  * interrupts in person and casts his spell (campaign, docs/STORY.md 2.2: story/bowser-spell.ts);
- * elsewhere a brainwashed hero's shadow dashes past while Bowser laughs (tease.ts).
+ * elsewhere a brainwashed hero's shadow dashes past while Bowser laughs (tease.ts), after the flag too.
  *
  * The lessons (0.4.36): walk; hop the steps; walk, then sprint (RUN held at top speed until the
  * bar fills) and walk again down a long stretch; two gaps only a sprinting jump clears (7 and 8

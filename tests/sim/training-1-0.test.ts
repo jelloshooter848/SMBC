@@ -8,8 +8,8 @@ import { Goomba } from '@game/entities/enemies/goomba';
 import { Vine } from '@game/entities/objects/vine';
 import { T } from '@game/level/tiles';
 import { MARIO_10, MARIO_LESSONS, SPRINT_FRAMES } from '@game/tutorial/mario-1-0';
-import { GATE_STOP_FRAMES } from '@game/tutorial/stage-tutorial';
-import { file, makeGame, useStorage, type H } from './heroes-harness';
+import { GATE_FRAME, GATE_STOP_FRAMES } from '@game/tutorial/stage-tutorial';
+import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { playTutorial, tutorialBot } from './tutorial-bot';
 
 // 1-0's training as the owner asked for it in 0.4.36 (tutorial/mario-1-0.ts): a real sustained
@@ -249,5 +249,34 @@ describe('the hidden vine and the brick wall', () => {
   it('the whole stage, then the map', () => {
     const h = upTo('flag');
     playTutorial(h, () => h.top() instanceof WorldMapScene, 3000);
+  });
+
+  it('a closed gate is drawn as a column of barrier blocks; an open one is gone', () => {
+    const h = upTo('stomp');
+    h.until(() => {
+      h.step(['right']);
+      return col(h) >= M.stompGate - 8;
+    }, 900);
+    const gate = () => draw(level(h)).sprites.filter((x) => x.frame === GATE_FRAME).length;
+    expect(gate()).toBe(13 - 6);
+    for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
+    level(h).world.feats.stomps = 1;
+    h.step();
+    expect(director(h)?.closedGates).not.toContain(M.stompGate);
+    expect(gate()).toBe(0);
+  });
+
+  it('the tips box moves to the bottom while Mario is up high (the vine)', () => {
+    const h = upTo('climb');
+    h.idle(61); // past "NICE!" over the hint
+    const boxY = () =>
+      Math.min(
+        ...draw(level(h))
+          .texts.filter((t) => /VINE/.test(t.str))
+          .map((t) => t.y),
+      );
+    expect(boxY()).toBeLessThan(80);
+    level(h).world.player.body.y = tileToSub(2);
+    expect(boxY()).toBeGreaterThan(160);
   });
 });

@@ -103,17 +103,20 @@ music is never stopped or restarted (only the closing press is kept from making 
 `resume` (music back on) is for the captive flow and Bowser's spell, which stop the music.
 
 **1-0** (campaign): the greeting plays `STORY_TOAD_PAGES` (one page) with `playStoryCards`, and the
-tutorial's scripted moment near the flag is Bowser's spell (`bowser-spell.ts`, every time 1-0 is
-played; marks `spell`): his four pages, the spell's eight windows (each hero in the captive
+tutorial's scripted moment is Bowser's spell right after the flagpole (since 0.4.36: the beat's
+`when`, `World.clearPhase === 'hop'`; `bowser-spell.ts`, every time 1-0 is played; marks `spell`;
+his own theme `bowser-spell` plays through it): his four pages, the spell's eight windows (each hero in the captive
 palette, half hidden; OK or BACK skips to his last page), his last page and his puff. Pause →
 Skip tutorial plays it first on a file without `spell` (`StageTutorial.beforeSkip`). Outside the
 campaign the greeting keeps `TOAD_PAGES` and the moment is the shadow tease (`tease.ts`).
 
 **The opening** (`opening.ts`): `Game.startNewFile` → `openFile(slot, save, true)` → `playOpening`
-(campaign, `opening` not seen): Peach's courtyard, the caption, her note (brown ink, `FONT_COLOURS.ink`,
-each letter nudged by `inkNudge`, a line at a time, on a tilted parchment with the `story` sheet's
-wax seal), Toad's two pages, then the map. Art: `src/content/sprites/story.ts` (`star-wand-0/1`,
-`wax-seal`, `note-sheet`).
+(campaign, `opening` not seen): Mario's house (since 0.4.36; it was Peach's courtyard), Toad bursting
+in at the door with his first card (`OPENING_BURST`, named `TOAD:` like every card), her note (brown
+ink, `FONT_COLOURS.ink`, each letter nudged by `inkNudge`, a line at a time, on a tilted parchment
+with the `story` sheet's wax seal), Toad's two pages, then the map. Art: `src/content/sprites/story.ts`
+(`star-wand-0/1`, `wax-seal`, `note-sheet`) and `src/content/sprites/house.ts` (the room's furniture
+and door).
 
 ## Partners
 
