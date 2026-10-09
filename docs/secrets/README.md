@@ -164,8 +164,9 @@ and **TALK**. He gives you a coin, then tells you how to find Link.
    ![The vine growing from the brick in 2-1](img/2-link-1.png)
 
 2. Cross the coin heaven to where the clouds end. Hop over to the small cloud platforms past the
-   end. Over the middle one, the coins run out: **JUMP** straight up there to bump a hidden
-   block. A second vine grows out of it. Climb it.
+   end (the fairy at the start of the coin heaven says the temple floats higher still). Over the
+   middle one, **JUMP** straight up to bump a hidden block. A second vine grows out of it. Climb
+   it.
 
    ![The hidden block over the middle cloud, with its vine](img/2-link-2.png)
 

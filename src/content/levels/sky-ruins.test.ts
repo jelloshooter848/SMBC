@@ -6,8 +6,8 @@ import { DEFAULT_LEGEND, T, tileDef } from '@game/level/tiles';
 import type { LevelData } from '@game/level/schema';
 import { getLevel, levelIds } from '.';
 
-// Owner design (2-1 coin heaven): past the end of the clouds an up-arrow of coins hints at
-// something higher; a hidden vine block over the second to last cloud platform on the right
+// Owner design (2-1 coin heaven): past the end of the clouds (0.4.35: no coin arrow any more; the
+// old man in 2-1 and the fairy here tell of it) a hidden vine block over the second to last cloud platform on the right
 // grows a vine up to a Link-themed sky area (2-1-sky2) with captive Link, and a gap in its
 // clouds drops back into 2-1 exactly where the coin heaven's own drop does. 0.4.24 rebuilds that
 // area as a Zelda II palace on the clouds, Link held on the altar in the middle of its hall.
@@ -39,16 +39,9 @@ describe('the hidden vine block tile', () => {
 describe('2-1 sky: the way up to the sky ruins', () => {
   const l = load('2-1-sky');
 
-  it('an up-arrow of coins just past the end of the clouds', () => {
+  it('no coin arrow past the end of the clouds (0.4.35: the old man and the fairy hint instead)', () => {
     expect(tile(l, 61, 13)).toBe(T.CLOUD_BLOCK);
-    expect(coinsIn(l, 62, 66, 5, 10)).toEqual([
-      '..$..', //
-      '.$$$.',
-      '$.$.$',
-      '..$..',
-      '..$..',
-      '..$..',
-    ]);
+    expect(coinsIn(l, 62, 66, 5, 10)).toEqual(['.....', '.....', '.....', '.....', '.....', '.....']);
   });
 
   it('three small cloud platforms on the right; the hidden vine block is over the second to last', () => {
