@@ -2,6 +2,7 @@ import { expect } from 'vitest';
 import type { Action } from '@engine/input/actions';
 import { toPx } from '@engine/math/units';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { Scene } from '@engine/scene';
 import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import type { MenuItem } from '@game/scenes/menu';
@@ -82,6 +83,11 @@ export function checkBox(stage: HeroStageScene): void {
 /** What happened while a stage was played (playStage). */
 export interface PlayLog {
   frames: number;
+  /**
+   * Every colour the whole screen was filled with (the backdrop's clear, any full-screen rect):
+   * with reduce flashing on (the harness's) it never changes in a stage.
+   */
+  fills: Set<string>;
   /** Toad's gate cards, with how the hero stood when each came. */
   cards: { lines: readonly string[]; ground: boolean; vx: number }[];
 }
@@ -98,7 +104,16 @@ export function playStage(
   stop: () => boolean,
   max = 7200,
 ): PlayLog {
-  const log: PlayLog = { frames: 0, cards: [] };
+  const log: PlayLog = { frames: 0, cards: [], fills: new Set() };
+  // Records the screen-wide fills of a frame (reduce flashing is on in the harness).
+  const rec: Renderer = Object.assign(new NullRenderer(), {
+    clear(color: string): void {
+      log.fills.add(color);
+    },
+    rect(x: number, y: number, w: number, h: number, color: string): void {
+      if (x <= 0 && y <= 0 && w >= SCREEN_W && h >= SCREEN_H) log.fills.add(color);
+    },
+  });
   let last = { ground: true, vx: 0 };
   let wait = 0;
   for (; log.frames < max && !stop(); log.frames++) {
@@ -122,7 +137,9 @@ export function playStage(
     const b = stage.world.player.body;
     last = { ground: b.onGround, vx: Math.abs(b.vx) };
     h.step(bot(stage));
+    if (h.top() === stage) stage.render(rec);
   }
+  expect([...log.fills].length, `whole-screen colours: ${[...log.fills].join(', ')}`).toBeLessThanOrEqual(1);
   for (const c of log.cards) {
     expect(c.ground, 'a card only on the ground').toBe(true);
     expect(c.vx, 'a card only when still').toBeLessThan(0x400);
