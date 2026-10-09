@@ -45,7 +45,7 @@ export const SOPHIA_STAGE = {
   roofDitch: { from: 122, to: 133 },
   ceilingGate: 137,
   homingBlock: { x: 140, y: 9 },
-  ledge: { from: 145, to: 147, top: 5 },
+  ledge: { from: 145, to: 147, top: 7 },
   homingGate: 151,
   flag: 158,
 } as const;

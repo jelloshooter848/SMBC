@@ -4,9 +4,9 @@ import { toPx } from '@engine/math/units';
 import { CardScene } from '@game/scenes/message';
 import type { HeroStageScene } from '@game/tutorial/hero-stage';
 import { BILL_LESSONS, BILL_STAGE, heldShots } from '@game/tutorial/heroes/bill';
-import { lessonTargets } from '@game/tutorial/heroes/common';
 import { stageWatch } from '@game/tutorial/targets';
 import { useStorage } from './heroes-harness';
+import { billBot } from './bots/bill';
 import { choose, controls, playStage, skipGreeting, startAtLabels, startStage } from './stage-bot';
 
 // Bill's training stage (0.4.38, design section 9): the rifle, 8-way aim, prone and 3 hits, then
@@ -16,71 +16,6 @@ useStorage();
 
 const S = BILL_STAGE;
 const lessonId = (s: HeroStageScene) => s.director.lesson?.id;
-
-/** Bill's bot: reads the current lesson and plays it as a player would. */
-export function billBot(): (s: HeroStageScene) => Action[] {
-  return (s) => {
-    const out: Action[] = [];
-    const c = controls(s, out);
-    const { p, b, cx } = c;
-    const has = (id: string) => !!p.scratch[`has-${id}`];
-    switch (lessonId(s)) {
-      case 'rifle':
-        if (c.standAt(4)) c.press('attack', 10);
-        break;
-      case 'aim': {
-        const [up] = lessonTargets(s.world, 'aim');
-        // Under the high target, aiming straight up; then up and ahead, walking on under the ledge.
-        if (up && up.taken === 0) {
-          if (c.goTo(S.upTarget, 2)) {
-            out.push('up');
-            c.press('attack', 8);
-          }
-        } else if (cx < S.upTarget * 16 + 60) {
-          out.push('right', 'up');
-          c.press('attack', 8);
-        } else c.goTo(S.upTarget + 1);
-        break;
-      }
-      case 'prone':
-        if (c.standAt(S.turret - 4)) out.push('down');
-        break;
-      case 'shoot-down':
-        if (!b.onGround) {
-          out.push('right', 'down');
-          c.press('attack', 4);
-        } else if (cx < (S.ditch.from - 1) * 16) c.goTo(S.ditch.from - 1);
-        else out.push('right', 'jump');
-        break;
-      case 'medal':
-        c.takeFrom(S.medalBlock);
-        break;
-      case 'machine-gun':
-        if (!has('machine-gun')) c.takeFrom(S.gunBlock);
-        else if (c.standAt(S.gunBlock.x + 2)) out.push('attack');
-        break;
-      case 'laser':
-        if (!has('laser')) c.takeFrom(S.laserBlock);
-        else if (c.standAt(S.laserTargets[0] - 3)) c.press('attack', 20);
-        break;
-      case 'flame-gun':
-        if (!has('flame-gun')) c.takeFrom(S.flameBlock);
-        else if (c.standAt(S.toughTarget - 3)) c.press('attack', 15);
-        break;
-      case 'spread-gun':
-        if (!has('spread-gun')) c.takeFrom(S.spreadBlock);
-        else if (c.standAt(S.spreadTargets[0] - 8)) c.press('attack', 20);
-        break;
-      default:
-        if (cx < (S.flag - 3) * 16) c.goTo(S.flag);
-        else {
-          out.push('right');
-          if (b.onGround || b.vy < 0) out.push('jump');
-        }
-    }
-    return out;
-  };
-}
 
 describe("Bill's stage", () => {
   it('a bot plays it to the TRAINING CLEAR card in under two minutes, the box always clear of his bar', () => {

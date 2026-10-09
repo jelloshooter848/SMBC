@@ -1,7 +1,7 @@
 ;; Bill's training stage (0.4.38, src/game/tutorial/heroes/bill.ts; docs/HEROES.md), in the Contra
 ;; jungle look: the rifle at a soldier (gate 16), aiming up and up-ahead at two high targets (gate
 ;; 34), prone under a turret's shots (gate 45), a shot down at the enemy in the ditch from a jump
-;; (gate 55), the Medal and the Machine Gun held on a group of soldiers (gate 75), a note on switching
+;; (gate 56), the Medal and the Machine Gun held on a group of soldiers (gate 75), a note on switching
 ;; guns, the Laser through two targets in a row (gate 93), the Flame Gun at a tough target (gate
 ;; 105), the Spread Gun's fan at three targets at once (gate 121) and the flagpole. Each power
 ;; block's item is in [hero-items]; the gates are laid by the tutorial.
@@ -30,8 +30,8 @@ camera: scroll
 ................ ................ ................ ..........M...M. ................ ..M............. M...........M... ...............! ........
 ................ ................ ................ ................ ................ ................ ................ ...............! ........
 ................ ................ ................ ................ ................ ................ ................ ...............B ........
-################ ################ ################ ##...########### ################ ################ ################ ################ ########
-################ ################ ################ ##...########### ################ ################ ################ ################ ########
+################ ################ ################ ##....########## ################ ################ ################ ################ ########
+################ ################ ################ ##....########## ################ ################ ################ ################ ########
 ################ ################ ################ ################ ################ ################ ################ ################ ########
 
 [entities]
