@@ -229,7 +229,7 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     at: 144,
     // A respawn makes the block hidden again: back to finding it.
     restartsAt: 'vine',
-    text: 'JUMP TO GRAB THE VINE AND HOLD [UP:up] TO CLIMB. THEN STEP OFF ONTO THE WALL.',
+    text: 'JUMP TO GRAB THE VINE AND HOLD [UP:up] TO CLIMB. THEN LET GO AND PUSH TOWARD THE WALL TO STEP OFF.',
     done: (w) => onTop(w, M.vineWall.top, M.vineWall.from, M.vineWall.to) || landedPast(w, M.vineWall.to + 2),
   },
   {
