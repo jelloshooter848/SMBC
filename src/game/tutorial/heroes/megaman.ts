@@ -1,5 +1,5 @@
 import type { World } from '../../world/world';
-import { Projectile } from '../../entities/projectiles/projectile';
+import type { Projectile } from '../../entities/projectiles/projectile';
 import { Koopa } from '../../entities/enemies/koopa';
 import { T } from '../../level/tiles';
 import type { Lesson } from '../stage-prompts';

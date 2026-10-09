@@ -98,6 +98,11 @@ export function stageEntity(s: EntitySpawn, live: (lesson: string) => boolean): 
   if (typeof p.tough === 'number') opts.tough = p.tough;
   if (p.facing === 'left') opts.facing = -1;
   else if (p.facing === 'right') opts.facing = 1;
+  // A hanging target's top is the top of its tile (under the ceiling); a standing one's feet the bottom.
+  if (p.hang) {
+    opts.hang = true;
+    return new TrainingTarget(tileToSub(s.x) + px(2), tileToSub(s.y) + px(24), opts);
+  }
   return new TrainingTarget(tileToSub(s.x) + px(2), tileToSub(s.y + 1), opts);
 }
 

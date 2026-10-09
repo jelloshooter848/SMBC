@@ -260,8 +260,8 @@ describe("Link's stage", () => {
       () => lessonId(s) !== 'blue-ring',
       2400,
     );
-    // Full hearts at the grab; FREE with nothing lost; then the hit that lit HURT cost half a heart.
-    expect(seen).toEqual(['ring:8', 'FREE/-:8']);
+    // Full hearts at the grab; FREE with nothing lost; then HURT, half a heart gone, both lit a while.
+    expect(seen).toEqual(['ring:8', 'FREE/-:8', 'FREE/HURT:7']);
     const costs = stageWatch(s.world).hurts.map((x) => x.cost);
     expect(costs).toEqual([0, 1]);
     // The next lesson comes up with full hearts again.
@@ -282,7 +282,7 @@ describe("Link's stage", () => {
     playStage(h, s, bot, () => !!s.world.player.scratch.tunic, 900);
     s.world.player.scratch.shieldSpell = 600;
     playStage(h, s, bot, () => (s.world.player.scratch.shieldSpell ?? 0) === 0, 700);
-    expect(ringLights(s.world)).toEqual({ free: true, hurt: false });
+    expect(ringLights(s.world)).toMatchObject({ free: true, hurt: false });
     expect(s.world.player.hp).toBe(8);
   });
 

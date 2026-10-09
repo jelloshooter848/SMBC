@@ -19,7 +19,7 @@ export const DUMMY_HP = 3;
 export class TargetDummy extends Enemy {
   readonly kind = 'dummy';
   /** Frames of wobble left after a hit. */
-  private wobble = 0;
+  protected wobble = 0;
 
   constructor(
     x: number,

@@ -14,7 +14,6 @@ import { heroStart } from '@game/items/heroes';
 import { carriedKit } from '@game/entities/player';
 import { loadSave, migrateSave, newSave } from '@game/save/save-files';
 import { CARD_GUARD_FRAMES, PracticeRoomScene, TrainingMenuScene } from '@game/tutorial/room';
-import { lessonsFor, TRAINING, type HeroTraining } from '@game/tutorial/lessons';
 import { TrainingQuestionScene } from '@game/tutorial/training';
 import { HeroStageScene, StageMenu, StartAtMenu } from '@game/tutorial/hero-stage';
 import { CardScene } from '@game/scenes/message';
@@ -295,47 +294,36 @@ describe('training and the dev "All heroes" toggle', () => {
 });
 
 describe('the basic kit and chapters', () => {
-  it('the room starts from the basic kit whatever the run holds, with no (PREVIEW); the run gets its own back', () => {
-    // The room gives Samus her basic kit.
-    const all = TRAINING as Record<string, HeroTraining>;
-    const before = all.samus as HeroTraining;
-    all.samus = { chapters: before.chapters };
-    try {
-      const h = makeGame();
-      file({ freed: ['mario', 'samus'], tutorials: ['mario', 'samus'] }, SAMUS.id);
-      h.game.openFile(1);
-      pick(h, 0);
-      h.until(() => h.top() instanceof LevelScene);
-      h.idle(30);
-      // The run has found the Long Beam and the Missiles.
-      const level = h.top() as LevelScene;
-      Object.assign(level.world.player.scratch, { 'has-long-beam': 1, 'has-missiles': 1, missiles: 7 });
-      h.tap('start');
-      choose(h, 'Training');
-      const room = h.top() as PracticeRoomScene;
-      const kit = { ...h.game.state.kit };
-      expect(room.player.scratch).toMatchObject(heroStart(SAMUS).kit);
-      expect(room.player.scratch['has-long-beam']).toBeUndefined();
-      expect(room.player.scratch['has-missiles']).toBeUndefined();
-      for (let i = 0; i < room.lessons.length; i++) {
-        room.startLesson(i);
-        expect(room.promptWrapped().join(' ')).not.toContain('PREVIEW');
-        expect(h.said.at(-1)).not.toMatch(/preview/i);
-      }
-      skip(h);
-      // The run's own kit, as the level's hero carries it.
-      expect({ ...kit, ...h.game.state.kit }).toEqual(carriedKit(level.world.player));
-      expect(level.world.player.scratch).toMatchObject({
-        'has-long-beam': 1,
-        'has-missiles': 1,
-        missiles: 7,
-      });
-    } finally {
-      all.samus = before;
-    }
+  it('the stage starts from the basic kit whatever the run holds; the run gets its own back', () => {
+    const h = makeGame();
+    file({ freed: ['mario', 'samus'], tutorials: ['mario', 'samus'] }, SAMUS.id);
+    h.game.openFile(1);
+    pick(h, 0);
+    h.until(() => h.top() instanceof LevelScene);
+    h.idle(30);
+    // The run has found the Long Beam and the Missiles.
+    const level = h.top() as LevelScene;
+    Object.assign(level.world.player.scratch, { 'has-long-beam': 1, 'has-missiles': 1, missiles: 7 });
+    h.tap('start');
+    choose(h, 'Training');
+    choose(h, 'Beginning');
+    const stage = h.top() as HeroStageScene;
+    expect(stage).toBeInstanceOf(HeroStageScene);
+    const kit = { ...h.game.state.kit };
+    expect(stage.world.player.scratch).toMatchObject(heroStart(SAMUS).kit);
+    expect(stage.world.player.scratch['has-long-beam']).toBeUndefined();
+    expect(stage.world.player.scratch['has-missiles']).toBeUndefined();
+    skip(h);
+    // The run's own kit, as the level's hero carries it.
+    expect({ ...kit, ...h.game.state.kit }).toEqual(carriedKit(level.world.player));
+    expect(level.world.player.scratch).toMatchObject({
+      'has-long-beam': 1,
+      'has-missiles': 1,
+      missiles: 7,
+    });
   });
 
-  it('from pause the lessons come in the same order, and the run keeps its own kit', () => {
+  it('START AT a power-up gives the earlier ones quietly, and the run keeps its own kit', () => {
     const h = makeGame();
     file(
       { freed: ['mario', 'samus'], tutorials: ['mario', 'samus'], kit: { beam: 2, missiles: 5 } },
@@ -348,13 +336,31 @@ describe('the basic kit and chapters', () => {
     const kit = { ...h.game.state.kit };
     h.tap('start');
     choose(h, 'Training');
-    const room = h.top() as PracticeRoomScene;
-    expect(room.lessons.map((l) => l.id)).toEqual(lessonsFor('samus').map((l) => l.id));
-    const ids = room.lessons.map((l) => l.id);
-    // The room's lessons change its kit (the wave beam, missiles spent)...
-    room.startLesson(ids.indexOf('wave-beam'));
-    room.player.scratch.beam = 3;
-    room.player.scratch.missiles = 0;
+    expect(items(h.top()).map((i) => i.label)).toEqual([
+      'Beginning',
+      'Energy Tank',
+      'Long Beam',
+      'Missiles',
+      'Ice Beam',
+      'Varia Suit',
+      'Wave Beam',
+    ]);
+    choose(h, 'Wave Beam');
+    const stage = h.top() as HeroStageScene;
+    expect(stage.director.lesson?.id).toBe('wave-beam');
+    // The earlier items, quietly: a tank, the beams, the missiles and the suit; not the Wave Beam.
+    const p = stage.world.player;
+    expect(p.scratch).toMatchObject({
+      tanks: 1,
+      'has-long-beam': 1,
+      'has-missiles': 1,
+      'has-ice-beam': 1,
+      varia: 1,
+    });
+    expect(p.scratch['has-wave-beam']).toBeUndefined();
+    expect(h.said.join(' ')).not.toMatch(/Energy Tank:/);
+    // The stage's lessons change its kit...
+    p.scratch.missiles = 0;
     skip(h);
     // ...but the run's kit is restored.
     expect(h.game.state.kit).toEqual(kit);
@@ -461,6 +467,7 @@ describe('pause → Training', () => {
     h.idle(60);
     h.tap('start');
     choose(h, 'Training');
-    expect((h.top() as PracticeRoomScene).hero).toBe(SAMUS);
+    expect(h.top()).toBeInstanceOf(StartAtMenu);
+    expect((h.game.scenes.find((sc) => sc instanceof HeroStageScene) as HeroStageScene).hero).toBe(SAMUS);
   });
 });

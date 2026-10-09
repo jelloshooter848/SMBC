@@ -24,6 +24,25 @@ const SCHEMES: readonly ControlScheme[] = ['keyboard', 'gamepad', 'touch'];
 /** What touch never shows: the belt's generic verbs (the buttons read the tool's own name). */
 const TOUCH_NEVER = /\b(USE TOOL|USE WEAPON|THROW|CAST)\b/;
 
+/**
+ * Each hero's items in the order their kit builds up in the campaign (docs/POWERUPS.md 6.2: world
+ * by world, the grow item first): the stages give them in this order.
+ */
+const KIT_ORDER: Readonly<Record<string, readonly string[]>> = {
+  luigi: ['mushroom'],
+  link: [
+    'heart-container',
+    'bomb-bag',
+    'shield-spell',
+    'jump-spell',
+    'blue-ring',
+    'fire-spell',
+    'magical-sword',
+  ],
+  megaman: ['helmet', 'saw-disc', 'leaf-guard', 'rush-coil', 'flame-wave', 'homing-knuckle', 'bolt'],
+  samus: ['energy-tank', 'long-beam', 'missiles', 'ice-beam', 'varia-suit', 'wave-beam'],
+};
+
 function stageIn(heroId: string, scheme: ControlScheme): HeroStageScene {
   const assets = new AssetRegistry(PALETTES);
   assets.defineAll(SPRITES);
@@ -81,11 +100,10 @@ describe('the hero stages', () => {
       expect(long).toEqual([]);
     });
 
-    it(`${id}: the power-ups come in the hero's own order, the grow item first`, () => {
+    it(`${id}: the power-ups come in the order the hero's kit builds up, the grow item first`, () => {
       const items = stage.tutorial.lessons.flatMap((l) => (l.item ? [l.item] : []));
-      const all = heroItems(id)?.items.map((i) => i.id) ?? [];
       for (const it of items) expect(itemInfo(id, it), it).not.toBeNull();
-      expect([...items].sort((a, b) => all.indexOf(a) - all.indexOf(b))).toEqual(items);
+      expect(items).toEqual(KIT_ORDER[id]);
       if (items.length) expect(items[0]).toBe(heroItems(id)?.grow);
       // Each item is in the stage's map as a real power block, with its hero's entry.
       const s = stageIn(id, 'keyboard');

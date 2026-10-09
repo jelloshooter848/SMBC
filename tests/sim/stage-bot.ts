@@ -184,6 +184,8 @@ export function controls(s: HeroStageScene, out: Action[]) {
     if (Math.abs(dx) <= slack || (dx < 0 && pinned)) return Math.abs(b.vx) < 0x100 && b.onGround;
     const dir = dx > 0 ? 1 : -1;
     out.push(dir > 0 ? 'right' : 'left');
+    // A hop over a step: a full one (JUMP held while rising).
+    if (!b.onGround && b.vy < 0) out.push('jump');
     const ahead = Math.floor((dir > 0 ? toPx(b.x + b.w) + 1 : toPx(b.x) - 1) / 16);
     const feet = Math.floor((toPx(b.y + b.h) - 1) / 16);
     if (b.onGround && w.map.isSolid(ahead, feet) && (w.frame & 3) === 0) out.push('jump');
@@ -197,19 +199,23 @@ export function controls(s: HeroStageScene, out: Action[]) {
     const target = col * 16 + 8;
     let st = stands.get(s);
     if (!st || st.col !== col) stands.set(s, (st = { col, back: false }));
-    if (cx > target + 3 && !pinned) st.back = true;
+    if (cx > target + 12 && !pinned) st.back = true;
     if (st.back) {
-      if (cx > target - 12 && !pinned) {
-        out.push('left');
+      if (cx > target - 10 && !pinned) {
+        goTo(col - 1, 2);
         return false;
       }
       st.back = false;
     }
-    if (cx < target - 3 || p.facing < 0) {
+    if (cx < target - 12) {
+      goTo(col, 2);
+      return false;
+    }
+    if (p.facing < 0) {
       out.push('right');
       return false;
     }
-    return b.onGround && Math.abs(b.vx) < 0x100;
+    return b.onGround;
   };
   const tool = (): string | undefined => {
     const tools = p.def.tools?.(p) ?? [];
@@ -236,6 +242,11 @@ export function controls(s: HeroStageScene, out: Action[]) {
         if (up) out.push('up');
         const dx = blk.x * 16 + 8 - cx;
         if (Math.abs(dx) > 2) out.push(dx > 0 ? 'right' : 'left');
+        return false;
+      }
+      // Standing on top of it: off it first, to come up under it.
+      if (toPx(b.y + b.h) <= blk.y * 16 && Math.abs(cx - (blk.x * 16 + 8)) < 20) {
+        goTo(blk.x + 2);
         return false;
       }
       if (goTo(blk.x)) press('jump', 4);

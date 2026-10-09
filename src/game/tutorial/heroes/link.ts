@@ -87,16 +87,20 @@ const ringFrames = new WeakMap<World, number>();
  * The Blue Ring's two lights: FREE once a hit after the grab cost nothing, HURT once a later one
  * cost half a heart.
  */
-export function ringLights(w: World): { free: boolean; hurt: boolean } {
+export function ringLights(w: World): { free: boolean; hurt: boolean; at: number } {
   let from = ringFrames.get(w);
   if (from === undefined) {
-    if (!ownsItem(w.player, 'blue-ring')) return { free: false, hurt: false };
+    if (!ownsItem(w.player, 'blue-ring')) return { free: false, hurt: false, at: 0 };
     ringFrames.set(w, (from = w.frame));
   }
   const hurts = hurtsSince(w).filter((h) => h.frame >= (from as number));
   const free = hurts.findIndex((h) => h.cost === 0);
-  return { free: free >= 0, hurt: free >= 0 && hurts.slice(free + 1).some((h) => h.cost > 0) };
+  const hurt = free >= 0 ? hurts.slice(free + 1).find((h) => h.cost > 0) : undefined;
+  return { free: free >= 0, hurt: !!hurt, at: hurt?.frame ?? 0 };
 }
+
+/** Frames both lights show before the ring's lesson is done. */
+export const READ_FRAMES = 75;
 
 /** Magic full for a spell's lesson (he can always cast it again). */
 const fillMagic = (w: World): void => {
@@ -204,9 +208,10 @@ export const LINK_LESSONS: readonly Lesson[] = [
     get: 'OPEN THE ? BLOCK IN THE PEN.',
     text: 'EVERY OTHER HIT COSTS NO HEART. LET TWO ENEMIES BUMP YOU.',
     retry: 'TAKE THE BLUE RING, THEN LET TWO ENEMIES BUMP YOU: ONE IS FREE, ONE COSTS.',
+    // Both lights lit, and read for a moment.
     done: (w) => {
       const l = ringLights(w);
-      return l.free && l.hurt;
+      return l.free && l.hurt && w.frame >= l.at + READ_FRAMES;
     },
     lights: (w) => {
       const l = ringLights(w);

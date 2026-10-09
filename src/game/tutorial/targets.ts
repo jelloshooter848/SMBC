@@ -54,6 +54,8 @@ export interface TargetOptions {
   tough?: number;
   /** It faces left (shoots left); default: toward the hero. */
   facing?: -1 | 1;
+  /** It hangs from the ceiling (no fall), on a short chain. */
+  hang?: boolean;
 }
 
 /** A stage's straw target (TargetDummy's drawing): a lesson's mark. */
@@ -75,7 +77,11 @@ export class TrainingTarget extends TargetDummy {
   }
 
   override update(world: World): void {
-    super.update(world);
+    if (this.opts.hang) {
+      if (this.wobble > 0) this.wobble--;
+      this.body.vx = 0;
+      this.body.vy = 0;
+    } else super.update(world);
     const every = this.opts.shoots;
     if (!every || !this.alive || this.stunned > 0) return;
     if (++this.shotT < every) return;
@@ -116,6 +122,12 @@ export class TrainingTarget extends TargetDummy {
 
   override render(r: Renderer, view: View): void {
     super.render(r, view);
+    if (this.opts.hang) {
+      // Its chain to the ceiling: a few dark links over the head.
+      const hx = toPx(this.body.x) - view.camX;
+      const hy = toPx(this.body.y);
+      for (let i = 0; i < 3; i++) r.rect(hx + 5, hy - 2 - i * 3, 2, 2, '#606060');
+    }
     // A shooter's muzzle: a dark ring on the side it fires from.
     if (!this.opts.shoots) return;
     const x = toPx(this.body.x) - view.camX;

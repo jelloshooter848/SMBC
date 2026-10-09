@@ -218,6 +218,11 @@ export class TutorialDirector {
 
   /** What the box last read out: its lesson and whether that lesson's item was taken. */
   private told = '';
+  /** The lights and the note of the lesson just done, kept under NICE!. */
+  private last: { lights: { label: string; on: boolean }[]; note: string | null } = {
+    lights: [],
+    note: null,
+  };
 
   constructor(
     private readonly game: Game,
@@ -518,6 +523,12 @@ export class TutorialDirector {
     }
     const step = this.tracker.update(world, this.mainArea);
     if (step) {
+      // The lights and the note as they stood when it was done: they stay up under NICE!.
+      const l = step.lesson;
+      this.last = {
+        lights: (l.lights?.(world) ?? []).map((x) => ({ ...x })),
+        note: l.note2?.(world) ?? null,
+      };
       this.sync();
       this.openGates();
       this.lessonUp();
@@ -662,8 +673,8 @@ export class TutorialDirector {
     const l = this.tracker.lessons[this.shown];
     const live = this.nice === 0 && this.itemTaken(l);
     const meter = l?.meter && live ? Math.max(0, Math.min(1, l.meter(world))) : null;
-    const lights = (l?.lights && live ? l.lights(world) : null) ?? [];
-    const note = l?.note2 && live ? l.note2(world) : null;
+    const lights = this.nice > 0 ? this.last.lights : ((l?.lights && live ? l.lights(world) : null) ?? []);
+    const note = this.nice > 0 ? this.last.note : l?.note2 && live ? l.note2(world) : null;
     const text = note ? [...lines, fontText(note)] : lines;
     // Room under the words for the meter (a row) and the lights (two rows).
     const blank = (meter !== null ? 1 : 0) + (lights.length ? 1 : 0);
