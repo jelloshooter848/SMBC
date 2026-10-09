@@ -18,7 +18,7 @@ import source from '../../../content/levels/training/bill.map?raw';
 
 /** The set pieces' columns (bill.map). */
 export const BILL_STAGE = {
-  soldier: 13,
+  enemy: 13,
   shootGate: 16,
   upTarget: 22,
   ledge: { from: 30, to: 31, top: 6 },
@@ -131,8 +131,8 @@ export const BILL_LESSONS: readonly Lesson[] = [
     id: 'rifle',
     at: 2,
     row: 11,
-    text: '[SHOOT:attack] THE SOLDIER. YOUR BULLETS NEVER RUN OUT.',
-    retry: 'SHOOT THE SOLDIER TO OPEN THE WAY. HERE HE COMES AGAIN!',
+    text: '[SHOOT:attack] THE ENEMY. YOUR BULLETS NEVER RUN OUT.',
+    retry: 'SHOOT THE ENEMY TO OPEN THE WAY. HERE IT COMES AGAIN!',
     done: (w) => hitsSince(w, (h) => !!h.shot && !(h.target instanceof TrainingTarget)).length > 0,
   },
   {

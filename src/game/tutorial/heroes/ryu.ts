@@ -131,7 +131,7 @@ export const RYU_LESSONS: readonly Lesson[] = [
     enter: fillNinpo,
     get: 'ANOTHER ? BLOCK!',
     text: '[NINPO:select] TO IT. HIT BOTH: IT CUTS THROUGH!',
-    touchText: 'TAP [NINPO:select] TILL IT READS WINDMILL. [WINDMILL:special:WINDMILL]: HIT BOTH TARGETS!',
+    touchText: 'TAP [NINPO:select] TILL IT READS WINDMILL. TAP [WINDMILL:special:WINDMILL]: HIT BOTH!',
     retry: 'PICK THE WINDMILL STAR WITH [NINPO:select]: IT CUTS THROUGH BOTH TARGETS.',
     done: (w) => {
       const hit = new Set(hitsSince(w, (h) => h.shotKind === 'windmill').map((h) => h.target));
