@@ -1181,6 +1181,91 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
   },
+
+  /* ------------------------ World 4 (Planet Zebes, Samus): the Federation, a lab, a hatchling */
+
+  // 4-1's start, on the planet's surface.
+  trooper: {
+    verb: 'TALK',
+    name: 'A Federation trooper',
+    hero: 'samus',
+    pages: [
+      [
+        'TROOPER:',
+        '',
+        'FEDERATION TROOPER,',
+        'REPORTING. OUR HUNTER,',
+        'SAMUS, WENT DARK. WE LOST',
+        'HER SIGNAL.',
+      ],
+      [
+        'TROOPER:',
+        '',
+        'LAST READING: DEEP IN THE',
+        'CAVERNS OF BRINSTAR. AN OLD',
+        'BIRD STATUE STANDS DOWN',
+        'THERE. PLEASE, FIND HER.',
+      ],
+    ],
+    after: [
+      [
+        'TROOPER:',
+        '',
+        'SAMUS IS BACK ON PATROL!',
+        'HALF MY SQUAD THOUGHT SHE',
+        'WAS A MAN, TILL SHE TOOK',
+        'OFF HER HELMET.',
+      ],
+      ['TROOPER:', '', "THE OTHER HALF THINK SHE'S", "A ROBOT. I DON'T ASK."],
+    ],
+  },
+  // 4-3's start, in Norfair's heat.
+  researcher: {
+    verb: 'TALK',
+    name: 'A researcher',
+    hero: 'samus',
+    pages: [
+      ['RESEARCHER:', '', 'PHEW. I CAME TO STUDY', "NORFAIR'S HEAT. NOW I'M", 'MOSTLY STUDYING SWEAT.'],
+      [
+        'RESEARCHER:',
+        '',
+        'SAMUS COULD WALK THROUGH',
+        "THIS. BUT SHE'S LOST IN THE",
+        'CAVERNS OF BRINSTAR. PLEASE,',
+        'BRING HER BACK!',
+      ],
+    ],
+    after: [
+      [
+        'RESEARCHER:',
+        '',
+        'SAMUS IS FREE! SHE SAYS',
+        'NORFAIR IS NICE THIS TIME',
+        'OF YEAR. SHE HAS A HEAT',
+        'SUIT. I HAVE A LAB COAT.',
+      ],
+    ],
+  },
+  // 4-4, Tourian: a hatchling floating at the foot of the entrance steps. It can't talk, so its
+  // second card is a caption (like Fred's).
+  'baby-metroid': {
+    verb: 'TALK',
+    name: 'A baby Metroid',
+    hero: 'samus',
+    pages: [
+      ['BABY METROID:', '', 'CHIRP? CHIRP?'],
+      [
+        'IT DRIFTS BACK THE WAY YOU',
+        'CAME, TOWARD THE CAVERNS',
+        'OF BRINSTAR, THEN BACK TO',
+        'YOU. IT MISSES THE HUNTER.',
+      ],
+    ],
+    after: [
+      ['BABY METROID:', '', 'CHIRP!'],
+      ['IT THINKS THE HUNTER IS', 'ITS MOTHER. NOBODY HAS THE', 'HEART TO TELL IT.'],
+    ],
+  },
 };
 
 /* ---------------------------------------------------------------- 2.13: the freed talks */

@@ -41,6 +41,9 @@ type Rows = readonly string[];
 const recolor = (rows: Rows, map: Readonly<Record<string, string>>): Rows =>
   rows.map((r) => [...r].map((c) => map[c] ?? c).join(''));
 
+/** `rows` with row `y` replaced (a blink). */
+const swap = (rows: Rows, y: number, row: string): Rows => rows.map((r, i) => (i === y ? row : r));
+
 /** A `partners` frame, by name. */
 const partner = (name: string): Rows => partnersDef.frames[name] ?? [];
 
@@ -110,6 +113,74 @@ const pruneBot1 = local('lab-robot-1', { d: 'k', e: 'i' });
 const weatherBot0 = local('lab-robot-0', { d: 'f', e: '4' });
 const weatherBot1 = local('lab-robot-1', { d: 'f', e: '4' });
 
+/* ---------------------------------------------------------------- World 4: Planet Zebes */
+
+/**
+ * 4-1's Federation trooper (new, 16x32): a white helmet with a cyan visor, blue armour with a
+ * grey chest plate, grey gloves and boots. The blink is a glint running across the visor.
+ */
+const trooper0: Rows = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '.....000000.....',
+  '....02222220....',
+  '...0222222220...',
+  '...0223333220...',
+  '...0200000020...',
+  '...020oooo020...',
+  '...0200000020...',
+  '...0222222220...',
+  '....03333330....',
+  '..000dddddd000..',
+  '.0dd0d2222d0dd0.',
+  '.0dd0d2332d0dd0.',
+  '.0dd0d2332d0dd0.',
+  '.0dd0dd22dd0dd0.',
+  '.0ee0dddddd0ee0.',
+  '.02204444440220.',
+  '..000dddddd000..',
+  '....0dddddd0....',
+  '...0ddd00ddd0...',
+  '...0ddd00ddd0...',
+  '...0eee00eee0...',
+  '...0ddd00ddd0...',
+  '...0ddd00ddd0...',
+  '...0ddd00ddd0...',
+  '...0333003330...',
+  '..033330033330..',
+  '..044440044440..',
+  '..000000000000..',
+];
+const trooper1 = swap(trooper0, 9, '...0201ooo020...');
+/** 4-3's researcher: World 4's scientist in a yellow heat suit. */
+const researcher0 = local('scientist-0', { 1: 'f', 2: 'a' });
+const researcher1 = local('scientist-1', { 1: 'f', 2: 'a' });
+/**
+ * 4-4's baby Metroid (new, 16x16): a lime membrane dome over three red nuclei (two, and one below), pale fangs below.
+ * It floats (partner.ts FLOAT); its `-1` frame is a pulse, the nuclei glowing brighter.
+ */
+const metroid0: Rows = [
+  '................',
+  '................',
+  '.....000000.....',
+  '...00pppppp00...',
+  '..0p1ppppppkp0..',
+  '.0ppssppppsspkp0',
+  '.0ps88spps88skp0',
+  '0pps88spps88skp0',
+  '0ppppps88spppkk0',
+  '0kpppps88sppppk0',
+  '0kkppppssppppkk0',
+  '.0kkkkkkkkkkkk0.',
+  '..000000000000..',
+  '...020.02.020...',
+  '...020.02.020...',
+  '....0..00..0....',
+];
+const metroid1 = recolor(metroid0, { s: '9', 8: 's' });
+
 export const npcsDef: SpriteDef = {
   palette: 'npcs',
   frames: {
@@ -129,5 +200,11 @@ export const npcsDef: SpriteDef = {
     'prune-bot-1': pruneBot1,
     'weather-bot-0': weatherBot0,
     'weather-bot-1': weatherBot1,
+    'trooper-0': trooper0,
+    'trooper-1': trooper1,
+    'researcher-0': researcher0,
+    'researcher-1': researcher1,
+    'baby-metroid-0': metroid0,
+    'baby-metroid-1': metroid1,
   },
 };

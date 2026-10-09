@@ -1770,6 +1770,110 @@ REACH. HANDY!
 The bonus spot's texts (`TOAD'S BONUS HOUSE`, `BEAT THE HAMMER BRO TO REOPEN`, `THE HAMMER BROS ARE BEATEN!`,
 the Toad House's `PICK A BOX...`) need no change.
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Samus: missing, they plead and say where
+to look (by place, never by level number); freed, their found lines.
+
+**4-1: a Federation trooper.** NEW partner (`trooper`, new art: a white helmet with a cyan visor, blue armour), at
+**4-1's start** (column 10), on the planet's surface. Freed, the oldest surprise in Samus's story.
+
+```text
+TROOPER:
+
+FEDERATION TROOPER,
+REPORTING. OUR HUNTER,
+SAMUS, WENT DARK. WE LOST
+HER SIGNAL.
+```
+
+```text
+TROOPER:
+
+LAST READING: DEEP IN THE
+CAVERNS OF BRINSTAR. AN OLD
+BIRD STATUE STANDS DOWN
+THERE. PLEASE, FIND HER.
+```
+
+After Samus is freed:
+
+```text
+TROOPER:
+
+SAMUS IS BACK ON PATROL!
+HALF MY SQUAD THOUGHT SHE
+WAS A MAN, TILL SHE TOOK
+OFF HER HELMET.
+```
+
+```text
+TROOPER:
+
+THE OTHER HALF THINK SHE'S
+A ROBOT. I DON'T ASK.
+```
+
+**4-3: a researcher.** NEW partner (`researcher`). The base's scientist in a yellow heat suit, at **4-3's start**
+(column 8), sweating in Norfair.
+
+```text
+RESEARCHER:
+
+PHEW. I CAME TO STUDY
+NORFAIR'S HEAT. NOW I'M
+MOSTLY STUDYING SWEAT.
+```
+
+```text
+RESEARCHER:
+
+SAMUS COULD WALK THROUGH
+THIS. BUT SHE'S LOST IN THE
+CAVERNS OF BRINSTAR. PLEASE,
+BRING HER BACK!
+```
+
+After Samus is freed:
+
+```text
+RESEARCHER:
+
+SAMUS IS FREE! SHE SAYS
+NORFAIR IS NICE THIS TIME
+OF YEAR. SHE HAS A HEAT
+SUIT. I HAVE A LAB COAT.
+```
+
+**4-4: a baby Metroid.** NEW partner (`baby-metroid`, new art: a lime dome over three red nuclei). It floats and
+bobs in **4-4's** low corridor past the first lava pits (column 21); its talking reach is the floor under it. It
+can't talk, so its second card is a caption, like Fred's.
+
+```text
+BABY METROID:
+
+CHIRP? CHIRP?
+```
+
+```text
+IT DRIFTS BACK THE WAY YOU
+CAME, TOWARD THE CAVERNS
+OF BRINSTAR, THEN BACK TO
+YOU. IT MISSES THE HUNTER.
+```
+
+After Samus is freed:
+
+```text
+BABY METROID:
+
+CHIRP!
+```
+
+```text
+IT THINKS THE HUNTER IS
+ITS MOTHER. NOBODY HAS THE
+HEART TO TELL IT.
+```
+
 **Castle 4-4** (a Spiny). The hero's remark:
 
 ```text

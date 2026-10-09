@@ -70,6 +70,11 @@ const SPOTS = [
   { who: 'prune-bot', level: '3-2', start: fromStart, col: 7 },
   { who: 'weather-bot', level: '3-3', start: fromStart, col: 8 },
   { who: 'sniper-joe', level: '3-4', start: fromStart, col: 8 },
+  // World 4: a trooper at 4-1's start, a researcher at 4-3's, and a baby Metroid floating at the
+  // low corridor past 4-4's first lava pits.
+  { who: 'trooper', level: '4-1', start: fromStart, col: 10 },
+  { who: 'researcher', level: '4-3', start: fromStart, col: 8 },
+  { who: 'baby-metroid', level: '4-4', start: near(17), col: 21 },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
 
 const spotOf = (who: string) => SPOTS.find((s) => s.who === who) as (typeof SPOTS)[number];

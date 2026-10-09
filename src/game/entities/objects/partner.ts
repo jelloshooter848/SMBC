@@ -26,6 +26,8 @@ const LOOK_BACK = 48;
  */
 const FLOAT: Readonly<Record<string, { lift: number; bob: number; period: number; beat: number }>> = {
   fairy: { lift: 14, bob: 3, period: 96, beat: 8 },
+  // 0.4.40: 4-4's baby Metroid drifts lower and slower; its `-1` frame is a slow pulse.
+  'baby-metroid': { lift: 10, bob: 2, period: 120, beat: 24 },
 };
 
 /**

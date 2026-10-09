@@ -35,6 +35,8 @@ campaignMusic: norfair
 ###############. ..i..i....i..... .i.....i.i...i.. ....i........... ...ii..i.i..i... .....i.......... ....i.....i..... ...i..i.....i... ....i........### ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a researcher at the start, in Norfair's heat.
+partner 8 12 who=researcher campaign=true
 decor-castle 0 12
 koopa-red 28 8
 koopa-para-red 36 6

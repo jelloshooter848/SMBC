@@ -14,7 +14,7 @@ const who = Object.keys(npcsDef.frames)
   .filter((f) => f.endsWith('-0'))
   .map((f) => f.slice(0, -2));
 /** NPCs whose `-1` frame is not a blink: the floaters' wing beat or pulse. */
-const FLOATERS: readonly string[] = [];
+const FLOATERS: readonly string[] = ['baby-metroid'];
 
 describe('npcs sheet', () => {
   it('validates, and is registered with its palette', () => {

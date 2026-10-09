@@ -36,6 +36,8 @@ campaignMusic: crateria
 ################ ################ ..############## ################ ##############.. ..############## ################ ################ ################ #####..######### ##############.. .###..########.. ################ ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a Federation trooper at the start, on the planet's surface.
+partner 10 12 who=trooper campaign=true
 decor-castle-big -2 12
 lakitu 19 0 end=208
 piranha 21 10
