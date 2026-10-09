@@ -8,6 +8,7 @@ import { CoinPop } from '../effects/effects';
 import { TALK_REACH_PX } from './captive';
 import { PARTNERS, partnerGone, type PartnerScript } from '../../story/script';
 import type { World } from '../../world/world';
+import { drawTalkPrompt } from './talk-prompt';
 
 /** The blink: frames per cycle, and how many of them show the `-1` frame (the statue's glow). */
 const BLINK_FRAMES = 150;
@@ -150,17 +151,7 @@ export class Partner extends Entity {
         this.t % LOOK_FRAMES < LOOK_FRAMES - LOOK_BACK,
       );
     else r.sprite(view.assets.sheet('partners'), `${this.who}-${alt ? 1 : 0}`, x, top);
-    if (!this.prompt) return;
-    // TALK (or READ) with a small up arrow: up talks.
-    const font = view.assets.sheet('font');
-    const cx = toPx(this.centerX) - view.camX;
-    const y = Math.max(0, top - 12);
-    const tx = cx - 16 + 4;
-    r.text(font, this.script.verb, tx, y);
-    const ax = tx - 7;
-    r.rect(ax + 2, y, 1, 1, '#fcfcfc');
-    r.rect(ax + 1, y + 1, 3, 1, '#fcfcfc');
-    r.rect(ax, y + 2, 5, 1, '#fcfcfc');
-    r.rect(ax + 2, y + 3, 1, 4, '#fcfcfc');
+    // TALK (or READ), with its key: up (or the TALK button) talks.
+    if (this.prompt) drawTalkPrompt(r, view, this.script.verb, toPx(this.centerX) - view.camX, top);
   }
 }

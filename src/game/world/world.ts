@@ -335,6 +335,18 @@ const AUTO_WALK_INPUT: InputFrame = {
 export const FALL_IN_STEER_Y = 3 * 16;
 
 /** A player's input with left and right taken out (the straight drop of a fall arrival). */
+/** `input` without SPECIAL: in reach of someone to talk to, it is the TALK button (0.4.35). */
+function withoutSpecial(input: InputFrame): InputFrame {
+  return {
+    held: (a) => a !== 'special' && input.held(a),
+    pressed: (a) => a !== 'special' && input.pressed(a),
+    released: (a) => a !== 'special' && input.released(a),
+    bufferedJump: (w) => input.bufferedJump(w),
+    consumeJumpBuffer: () => input.consumeJumpBuffer(),
+    dirX: input.dirX,
+  };
+}
+
 function withoutSteering(input: InputFrame): InputFrame {
   return {
     held: (a) => a !== 'left' && a !== 'right' && input.held(a),
@@ -377,6 +389,8 @@ function barSweepX(tx: number, n: number, x0: number, x1: number): boolean {
 export class World {
   /** Points scored float up as a popup (WorldStart.scorePopups). */
   readonly scorePopups: boolean;
+  /** The TALK prompt's words over someone in reach (View.talkHint), set by LevelScene. */
+  talkHint: ((verb: string) => string) | null = null;
   readonly map: TileMap;
   readonly camera: Camera;
   readonly players: Player[] = [];
@@ -1236,6 +1250,7 @@ export class World {
       }
       if (this.autoWalk) input = AUTO_WALK_INPUT;
       else if (this.vineArrival && p.vine) input = AUTO_CLIMB_INPUT;
+      else if (this.talkTarget(p)) input = withoutSpecial(input);
       p.inWater = p.body.y + (p.body.h >> 1) >= this.waterTop;
       this.grabVines(p, input);
       this.grabStairs(p, input);
@@ -1409,10 +1424,31 @@ export class World {
     return this.vineArrival !== null;
   }
 
-  /** Up pressed by a player within a captive's reach: a `talk` event; a partner's: a `partner` event (one a frame). */
+  /**
+   * Someone `p` can talk to now (a captive hero or a partner within reach), or null. In reach,
+   * SPECIAL is the TALK button (0.4.35: levelTouchLabels shows it, the hero's own special waits).
+   */
+  talkTarget(p: Player): Captive | Partner | null {
+    if (p.vine) return null;
+    for (const e of this.entities)
+      if ((e instanceof Captive || e instanceof Partner) && e.alive && e.inReach(p)) return e;
+    return null;
+  }
+
+  /** The TALK button's word for `p` now (READ for the bird statue), or null out of reach. */
+  talkVerb(p: Player): string | null {
+    const to = this.talkTarget(p);
+    return to instanceof Partner ? to.script.verb : to ? 'TALK' : null;
+  }
+
+  /**
+   * Up (or SPECIAL, the TALK button) pressed by a player within a captive's reach: a `talk`
+   * event; a partner's: a `partner` event (one a frame).
+   */
   private checkTalk(inputs: InputFrame[]): void {
     for (const [i, p] of this.players.entries()) {
-      if (!(inputs[i] ?? NO_INPUT).pressed('up') || p.vine) continue;
+      const input = inputs[i] ?? NO_INPUT;
+      if (!(input.pressed('up') || input.pressed('special')) || p.vine) continue;
       const c = this.entities.find((e): e is Captive => e instanceof Captive && e.alive && e.inReach(p));
       if (c) {
         c.prompt = false; // hidden under the dialogue; back on the next update in reach
@@ -2959,6 +2995,7 @@ export class World {
       assets: this.ctx.assets,
       theme,
       reduceFlashing: this.ctx.reduceFlashing,
+      ...(this.talkHint ? { talkHint: this.talkHint } : {}),
     };
     // A restyled theme's hall or skyline behind everything (theme-backdrop.ts).
     drawThemeBackdrop(screen, view);

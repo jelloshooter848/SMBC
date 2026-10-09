@@ -121,8 +121,9 @@ A partner is someone from a hero's own game who says how to find that hero
 (`partner x y who=<id> campaign=true` in a map's `[entities]`, optional `dx=` px further right).
 They spawn only while the story plays (`World.storyMode`); `campaign=true` also keeps them asleep
 outside the campaign. Scenery like a captive: no collision, never despawn. A player on the ground
-within `TALK_REACH_PX` on the same floor sees TALK (the statue: READ) with an up arrow, announced
-once on arrival; up talks (`partner` event → `talkToPartner`), and the pages can be read again any
+within `TALK_REACH_PX` on the same floor sees the TALK prompt (the statue: READ), input-aware
+(`TALK (UP)`; on touch TALK, and the C button becomes TALK, 0.4.35), announced once on arrival; up
+(or SPECIAL, the TALK button) talks (`partner` event → `talkToPartner`), and the pages can be read again any
 time. Any player can talk (in co-op, player 2 too); the pages close back into play with
 `resumePlay`, the music untouched.
 

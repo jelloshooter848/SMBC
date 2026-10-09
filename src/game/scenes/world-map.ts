@@ -42,7 +42,7 @@ import {
 import { Player } from '../entities/player';
 import { startHp } from '../characters/character';
 import { MenuScene, type MenuItem } from './menu';
-import { abilityHint } from './hints';
+import { abilityHint, boundKey, controlScheme } from './hints';
 import { OptionsScene } from './options';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
@@ -82,7 +82,7 @@ import {
 } from '../map/world-gate';
 import { drawCrack, drawSeal, GateScene } from '../map/gate-scene';
 import { LOCAL_SPRITES } from '@content/sprites/locals';
-import { sealedHint, type Page } from '../story/script';
+import { HINT_COLS, sealedHint, welcomeHint, type Page } from '../story/script';
 
 /** Hero walking speed on the map (px per frame). */
 export const MAP_WALK_SPEED = 2;
@@ -828,7 +828,8 @@ export class WorldMapScene implements Scene {
     const sealed = this.sealedHintAt(n);
     if (sealed) text += `. ${spoken(sealed)}`;
     const local = this.localHere(n) ? welcomeOf(this.page.id) : null;
-    if (local) text += `. ${local.said}. Up to talk`;
+    if (local)
+      text += `. ${local.said}. ${controlScheme(this.game) === 'touch' ? 'Press TALK' : 'Up to talk'}`;
     if (this.isHiding(n)) text += `. ${HIDING_SAID}`;
     return text;
   }
@@ -861,6 +862,19 @@ export class WorldMapScene implements Scene {
   }
 
   /** Node `n` is this page's start with a local standing by it (worlds 2-8; story only). */
+  /**
+   * The hint line on a start node with a local: TALK and its key, "TALK (UP) TO THE HEALER"
+   * (0.4.35: the TALK prompt as a button); on touch, or when the key's name would not fit, the
+   * bare "TALK TO THE HEALER" (on touch A is the TALK button then).
+   */
+  private localTalkHint(): string {
+    const w = welcomeOf(this.page.id);
+    if (!w) return localHint(this.page.id);
+    const key = boundKey(this.game, 'up');
+    const keyed = key ? fontText(`TALK (${key}) TO THE ${w.local}`) : '';
+    return keyed && keyed.length <= HINT_COLS ? keyed : welcomeHint(w.local);
+  }
+
   private localHere(n: MapNode): boolean {
     return storyOn(this.game) && localNode(this.progress, this.page) === n;
   }
@@ -915,7 +929,7 @@ export class WorldMapScene implements Scene {
     // S3: a sealed road on (SEALED - FREE <NAME> FIRST); a world's local on its start node.
     const sealed = this.sealedHintHere();
     if (sealed) return sealed;
-    if (here && this.localHere(here)) return localHint(this.page.id);
+    if (here && this.localHere(here)) return this.localTalkHint();
     return exitHint(this.progress, this.page, this.node, this.unlockAll);
   }
 
@@ -970,9 +984,10 @@ export class WorldMapScene implements Scene {
       !isBonusArea(here) &&
       this.game.bonusOpen &&
       isOpen(this.progress, this.page, here.id, this.unlockAll);
+    const talk = !!here && this.localHere(here);
     return {
       ...NO_TOUCH_BUTTONS,
-      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : null,
+      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : talk ? 'TALK' : null,
       start: 'MENU',
       special: inventoryAvailable(this.game) ? 'ITEMS' : null,
       ...(here?.kind === 'game' ? arenaPadTouch(this.game, here) : {}),
@@ -1093,6 +1108,11 @@ export class WorldMapScene implements Scene {
         this.game.ctx.audio.sfx('bump');
         this.say(this.bonusShutSaid());
       }
+      return;
+    }
+    // A start node's local: JUMP (on touch the TALK button) talks, as up does (0.4.35).
+    if (input.pressed('jump') && here && this.localHere(here) && !here.level) {
+      this.talkToLocal();
       return;
     }
     if (input.pressed('jump') && here?.kind === 'game') {

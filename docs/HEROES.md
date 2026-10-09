@@ -51,12 +51,15 @@ captive 13 6 hero=luigi
   collision and never despawns.
 - It spawns only in campaign play (`World.captives`, set by LevelScene), and only while that hero
   is not freed on the file.
-- **Talking:** a player on the ground within 1.5 tiles (24 px, same floor) sees `TALK` with an
-  up arrow above it, and the announcer says "Luigi. Up to talk." each time a player comes into
-  reach. Pressing **up** talks (`World.checkTalk` raises a `talk` event). Up was
-  picked because every control scheme has it, including the touch d-pad, so no face button
-  changes its label or meaning. Heroes that also use up on the ground (Samus and Bill aim up)
-  just talk as well while in reach. It does nothing on a vine.
+- **Talking:** a player on the ground within 1.5 tiles (24 px, same floor) sees the TALK prompt
+  above it, input-aware like the other prompts (0.4.35: `TALK (UP)` with keys or a pad, on a black
+  strip; it was a bare TALK and an up arrow), and the announcer says "Luigi. Up to talk." ("Luigi.
+  Press TALK." on touch) each time a player comes into reach. Pressing **up** talks (`World.checkTalk`
+  raises a `talk` event), and so does **SPECIAL**: in reach it is the TALK button (on touch the C
+  button reads TALK, `World.talkVerb`; the hero's own special waits while in reach). Heroes that
+  also use up on the ground (Samus and Bill aim up) just talk as well while in reach. It does
+  nothing on a vine. On the map a world's local works the same way: the hint line reads
+  `TALK (UP) TO THE HEALER`, and A (on touch the TALK button) talks too.
 
 Luigi waits in the 1-1 bonus room on a hard-block ledge at the top right (row 7, columns
 12-14), 48 px above the top of the coin bricks. From the bricks a running or walking jump reaches
