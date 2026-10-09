@@ -25,7 +25,7 @@ import {
   freedTalk,
   gateScript,
   LUIGI_RUNS_PAGE,
-  OPENING_CAPTION,
+  OPENING_BURST,
   OPENING_TOAD_PAGES,
   PARTNERS,
   STORY_TOAD_PAGES,
@@ -49,7 +49,7 @@ useStorage();
 function classify(lines: readonly string[] | null | undefined): string | null {
   if (!lines) return null;
   const is = (pages: readonly Page[]) => pages.some((p) => JSON.stringify(p) === JSON.stringify(lines));
-  if (is([OPENING_CAPTION, ...OPENING_TOAD_PAGES])) return 'opening';
+  if (is([OPENING_BURST, ...OPENING_TOAD_PAGES])) return 'opening';
   if (is(STORY_TOAD_PAGES)) return 'greeting';
   if (is([...BOWSER_SPELL_PAGES, BOWSER_SPELL_LAST])) return 'spell';
   if (is(WORLD1_PAGES)) return 'toad-world-1';

@@ -45,7 +45,13 @@ export function makeGame(opts: { dev?: boolean; freshSeeds?: boolean } = {}) {
   const said: string[] = [];
   const assets = new AssetRegistry(PALETTES);
   assets.defineAll(SPRITES);
-  const audio = { ...NULL_AUDIO, stopMusic: vi.fn(), playMusic: vi.fn(), setTempoScale: vi.fn() };
+  const audio = {
+    ...NULL_AUDIO,
+    stopMusic: vi.fn(),
+    playMusic: vi.fn(),
+    setTempoScale: vi.fn(),
+    sfx: vi.fn(),
+  };
   const game = new Game({
     ctx: { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: true },
     getLevel,

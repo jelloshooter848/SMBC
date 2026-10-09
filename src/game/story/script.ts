@@ -530,8 +530,16 @@ export const ARENA_PAGE: Page = toad(
 
 /* ================================================================ S1 (0.4.23): the opening, 1-0, World 1 */
 
-/** 2.1: the caption over Peach's courtyard (a card without a speaker), before her note. */
-export const OPENING_CAPTION: Page = ['PRINCESS PEACH IS MISSING!', 'SHE LEFT THIS NOTE:'];
+/**
+ * 2.1: Toad bursts into Mario's house (0.4.36, owner: it opens with these words), before her
+ * note. It replaces the caption over Peach's courtyard ('PRINCESS PEACH IS MISSING!').
+ */
+export const OPENING_BURST: Page = toad(
+  'MARIO!!! THANK GOODNESS',
+  "YOU'RE HERE! PRINCESS PEACH",
+  'IS MISSING... SHE LEFT',
+  'THIS NOTE:',
+);
 
 /** Columns and lines of Peach's note on its parchment (2.1). */
 export const NOTE_COLS = 26;
@@ -554,10 +562,10 @@ export const PEACH_NOTE: Page = [
   '                       - P',
 ];
 
-/** 2.1: back in the courtyard after the note, Toad to Mario. */
+/** 2.1: after the note, Toad to Mario (his name is not said twice: the first card said it). */
 export const OPENING_TOAD_PAGES: readonly Page[] = [
-  toad('MARIO! THE KOOPAS ARE', 'ALREADY OUT HUNTING FOR', 'HER. WE HAVE TO FIND HER', 'FIRST!'),
-  toad('COME ON, THE ROAD STARTS', "JUST OUTSIDE TOWN. LET'S", 'GO!'),
+  toad('THE KOOPAS ARE ALREADY OUT', 'HUNTING FOR HER. WE HAVE TO', 'FIND HER FIRST!'),
+  toad('COME ON, THE ROAD STARTS', 'RIGHT OUTSIDE YOUR DOOR.', "LET'S GO!"),
 ];
 
 /**

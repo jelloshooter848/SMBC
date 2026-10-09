@@ -4,7 +4,7 @@ import { FileSelectScene } from '@game/scenes/file-select';
 import { CARD_GUARD_FRAMES } from '@game/scenes/message';
 import { beat } from '@game/story/beats';
 import { pageSaid } from '@game/story/cards';
-import { OPENING_CAPTION, OPENING_TOAD_PAGES, PEACH_NOTE } from '@game/story/script';
+import { OPENING_BURST, OPENING_TOAD_PAGES, PEACH_NOTE } from '@game/story/script';
 import { inkNudge, noteSaid, OpeningScene, OPENING_TIMING } from '@game/story/opening';
 import { loadSave } from '@game/save/save-files';
 import { draw, makeGame, useStorage, type H } from './heroes-harness';
@@ -31,7 +31,34 @@ const ok = (h: H, key: 'jump' | 'attack' | 'start' = 'jump') => {
 };
 
 describe('the opening (a new file)', () => {
-  it('courtyard, caption, the note, Toad, then the World 1 map; marked seen on the file', () => {
+  it("Mario's house: Toad bursts in through the door and every card is his, named at its top", () => {
+    const h = makeGame();
+    newFile(h);
+    const s = scene(h);
+    const frames = () => draw(scene(h)).sprites.map((x) => x.frame);
+    // A cozy room: the bed, the window, the lamp, the picture; the door shut until Toad comes.
+    for (const f of ['bed', 'window', 'lamp', 'picture', 'door-shut']) expect(frames()).toContain(f);
+    expect(frames()).not.toContain('castle-big');
+    expect(frames()).not.toContain('toad');
+    h.until(() => frames().includes('door-open'), OPENING_TIMING.toadOut + 2);
+    expect(h.audio.sfx).toHaveBeenCalledWith('door-open');
+    expect(frames()).toContain('toad');
+    expect(h.said.some((t) => t.startsWith("Mario's house"))).toBe(true);
+    // His first card opens with the owner's words, under the speaker label.
+    h.until(() => s.lines !== null, OPENING_TIMING.captionAt + 5);
+    expect(s.lines).toEqual(OPENING_BURST);
+    expect(OPENING_BURST.slice(0, 2)).toEqual(['TOAD:', '']);
+    expect(OPENING_BURST.slice(2).join(' ')).toMatch(
+      /^MARIO!!! THANK GOODNESS YOU'RE HERE! PRINCESS PEACH IS MISSING/,
+    );
+    // Every card after the note is his too, and none says MARIO again.
+    for (const page of OPENING_TOAD_PAGES) {
+      expect(page.slice(0, 2)).toEqual(['TOAD:', '']);
+      expect(page.join(' ')).not.toMatch(/MARIO/);
+    }
+  });
+
+  it('the house, Toad bursts in, the note, Toad, then the World 1 map; marked seen on the file', () => {
     const h = makeGame();
     newFile(h);
     expect(h.top()).toBeInstanceOf(OpeningScene);
@@ -40,14 +67,14 @@ describe('the opening (a new file)', () => {
     // its own short opening song (0.4.31; it borrowed the toad house's before)
     expect(h.audio.playMusic).toHaveBeenCalledWith('opening');
     expect(h.audio.playMusic).not.toHaveBeenCalledWith('toad-house');
-    // Toad runs out with the note; then the caption, which waits.
+    // Toad bursts in with the note; then his first card, which waits.
     h.until(() => scene(h).lines !== null, OPENING_TIMING.captionAt + 5);
-    expect(scene(h).lines).toEqual(OPENING_CAPTION);
-    expect(h.said.at(-1)).toBe(pageSaid(OPENING_CAPTION, false));
-    expect(draw(scene(h)).sprites.some((s) => s.frame === 'castle-big')).toBe(true);
+    expect(scene(h).lines).toEqual(OPENING_BURST);
+    expect(h.said.at(-1)).toBe(pageSaid(OPENING_BURST, false));
+    expect(draw(scene(h)).sprites.some((s) => s.frame === 'bed')).toBe(true);
     expect(draw(scene(h)).sprites.some((s) => s.frame === 'note-sheet')).toBe(true);
     h.idle(5000);
-    expect(scene(h).lines).toEqual(OPENING_CAPTION);
+    expect(scene(h).lines).toEqual(OPENING_BURST);
     // The note: written a line at a time; OK shows the rest, OK closes it.
     ok(h);
     expect(scene(h).stage).toBe('note');

@@ -205,9 +205,23 @@ the castle pages, Larry's crystal ball and crash cards, the rift pages.
 **Trigger:** NEW. A new save file in the campaign, before the World 1 map shows for the first time. Once per file.
 **Replay:** none yet (open question 1).
 
-**Staging:** Peach's castle at dawn, its courtyard in SMB tiles (the castle behind, its flag up, a pale sky). Mario
-stands in the courtyard, music soft. Toad runs out of the castle door waving a sheet of paper and stops beside him.
-The caption shows in the box at the top:
+**Staging:** **Mario's house** (0.4.36, owner note; it was Peach's castle courtyard): a small, cozy room in SMB
+colours, original art. Cream wallpaper over a wood wainscot, a plank floor, Mario's bed with its red blanket, a
+mushroom lamp on the nightstand, a picture of Peach's castle, Luigi's green cap on a peg, and a window on a blue
+morning with a green hill. Mario stands by the lamp, music soft. The front door **bursts open** (a bang) and Toad runs
+in waving a sheet of paper; Mario starts and turns to him, and Toad stops beside him. His first card shows in the box
+at the top, named like every card (`TOAD:` on its first line, as the NPC cards are):
+
+```text
+TOAD:
+
+MARIO!!! THANK GOODNESS
+YOU'RE HERE! PRINCESS PEACH
+IS MISSING... SHE LEFT
+THIS NOTE:
+```
+
+Old:
 
 ```text
 PRINCESS PEACH IS MISSING!
@@ -240,28 +254,28 @@ DON'T WORRY ABOUT ME!
 ever look" is what Bowser quotes in 1-0 and what Toad works out at the rift; the "old friends" are the Toads she
 hides among in the Lost Kingdom, Chapter 2.)
 
-Back in the courtyard, Toad turns to Mario:
+Back in the room, Toad turns to Mario (his name is not said again: the first card said it):
 
 ```text
 TOAD:
 
-MARIO! THE KOOPAS ARE
-ALREADY OUT HUNTING FOR
-HER. WE HAVE TO FIND HER
-FIRST!
+THE KOOPAS ARE ALREADY OUT
+HUNTING FOR HER. WE HAVE TO
+FIND HER FIRST!
 ```
 
 ```text
 TOAD:
 
 COME ON, THE ROAD STARTS
-JUST OUTSIDE TOWN. LET'S
-GO!
+RIGHT OUTSIDE YOUR DOOR.
+LET'S GO!
 ```
 
-They run off to the right; the screen fades to the World 1 map, Mario on 1-0.
+They run out of the door to the right; the screen fades to the World 1 map, Mario on 1-0.
 
-**Code:** NEW (a cutscene scene with the courtyard, the parchment drawing and the inked font).
+**Code:** `story/opening.ts` (the room, the parchment drawing and the inked font), the house's furniture in
+`content/sprites/house.ts`.
 
 ### 2.2 World 1-0: the warm-up, and Bowser in person
 
