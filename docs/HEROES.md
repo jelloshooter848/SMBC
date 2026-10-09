@@ -92,8 +92,9 @@ from the file's `cleared` and `freed`):
    ground shade lifted a little toward the ground colour (`<palette>~shade-<theme>`, `mapShadeFx`
    in `palette-fx.ts`), so it is just barely visible. Every 6 seconds it shimmers faintly toward
    the trance's lilac for half a second (`~shade-<theme>-glow`); never with reduce flashing.
-   Standing on the node, the announcer adds "Someone is hiding in this level." to the node's name
-   and the hint line shows `SOMEONE IS HIDING IN THIS LEVEL`. Nothing says where in the level.
+   Standing on the node, the announcer adds "A faint shadow stands by it." to the node's name (what
+   the eye sees); no hint line says someone is hiding (0.4.35, owner: too on the nose). Nothing
+   says where in the level.
 3. **Freed:** a statue of the hero stands beside the node in full colour, facing it: the
    portrait at half size on a small stone pedestal (0.4.22, owner note 13: it must never read
    as the player's marker), with a small idle hop (`map/trophy.ts`).

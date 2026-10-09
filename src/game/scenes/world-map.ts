@@ -103,11 +103,10 @@ export const MAP_HINT_Y = 226;
 
 /**
  * A level node hiding a captive hero the file has not freed, once that level is cleared: the
- * announcer's line and the hint line (map/captives.ts; it never says where in the level). Since
- * 0.4.23 the campaign says these too (Toad's per-hero lines are gone, docs/STORY.md 2.3).
+ * announcer describes the faint shadow by the node, as the eye sees it (map/captives.ts). No hint
+ * line says someone is hiding (0.4.35, owner: too on the nose); the shadow is the hint.
  */
-export const HIDING_SAID = 'Someone is hiding in this level.';
-export const HIDING_HINT = 'SOMEONE IS HIDING IN THIS LEVEL';
+export const HIDING_SAID = 'A faint shadow stands by it.';
 /** The hidden hero's slow shimmer: one cycle, and the frames of it the faint glow shade shows. */
 export const HIDING_SHIMMER_FRAMES = 360;
 export const HIDING_GLOW_FRAMES = 30;
@@ -781,13 +780,6 @@ export class WorldMapScene implements Scene {
       if (m.hint === 'trophy' && c.delete(m.def.id)) this.trophyBursts.set(m.def.id, this.t);
   }
 
-  /** The node the hero stands still on hides a hero not freed yet whose level is cleared. */
-  private hidingHere(): boolean {
-    if (this.mode !== 'idle') return false;
-    const n = this.nodeById(this.node);
-    return !!n && this.isHiding(n);
-  }
-
   private isHiding(n: MapNode): boolean {
     return this.view(this.page).heroes.some((m) => m.node === n && m.hint === 'silhouette');
   }
@@ -904,8 +896,8 @@ export class WorldMapScene implements Scene {
 
   /**
    * The hint line's text while the hero stands still on a warp node, on the node a locked world
-   * exit with a hint leaves from (Lost 8-4: World 9's count), or on a cleared level that still
-   * hides a hero (HIDING_HINT); '' otherwise.
+   * exit with a hint leaves from (Lost 8-4: World 9's count); '' otherwise (a level hiding a
+   * hero says nothing: its shadow by the node is the only hint, 0.4.35).
    */
   get hintLine(): string {
     const n = this.warpHere();
@@ -924,10 +916,7 @@ export class WorldMapScene implements Scene {
     const sealed = this.sealedHintHere();
     if (sealed) return sealed;
     if (here && this.localHere(here)) return localHint(this.page.id);
-    return (
-      exitHint(this.progress, this.page, this.node, this.unlockAll) ||
-      (here && this.hidingHere() ? HIDING_HINT : '')
-    );
+    return exitHint(this.progress, this.page, this.node, this.unlockAll);
   }
 
   update(input: InputFrame, inputs: readonly InputFrame[] = [input]): void {

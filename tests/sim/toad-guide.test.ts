@@ -8,7 +8,6 @@ import { CHARACTERS } from '@game/characters/registry';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { beat, upgradeStory } from '@game/story/beats';
 import { CRASH_PAGES, gateScript, HUB_PAGE, riftPages, WORLD1_PAGES, type Page } from '@game/story/script';
-import { HIDING_HINT } from '@game/scenes/world-map';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { ALL_STORY } from './story-seen';
 
@@ -88,12 +87,12 @@ describe("Toad's map scenes", () => {
     expect(map(h).story).toBe(false);
   });
 
-  it('a cleared level still hiding its hero: no card, the generic hint line (0.4.23)', () => {
+  it('a cleared level still hiding its hero: no card, and no hint line (0.4.35: only the shadow)', () => {
     const h = open({ cleared: ['1-0'], position: { page: 'smb-1', node: '1-1' }, story: ['enter:smb-1'] });
     h.game.levelCleared('1-1');
     expect(map(h).story).toBe(false);
     h.until(() => map(h).mode === 'idle', 600);
-    expect(map(h).hintLine).toBe(HIDING_HINT);
+    expect(map(h).hintLine).toBe('');
   });
 
   it('a story scene elsewhere: the node line is still said on arrival, first', () => {

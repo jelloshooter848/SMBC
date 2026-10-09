@@ -371,7 +371,7 @@ freed hero talks**, a few pages in their own voice, before the freed card. These
 reveals a bit more.
 
 **The map's shadows** stay: a level cleared with its hero still hidden shows the hero's shadow by its node. Its hint
-line goes back to the generic `SOMEONE IS HIDING IN THIS LEVEL` (Toad's per-hero lines are removed). After Larry's
+line says nothing (0.4.35, owner: the shadow is the hint; Toad's per-hero lines are removed). After Larry's
 crystal ball (2.7) the shadow shows from the first arrival in a world.
 
 ### 2.3a The fake Bowsers: the disguise always comes off

@@ -6,7 +6,7 @@ import { mapPage } from '@content/worldmap';
 import { px } from '@engine/math/units';
 import type { Settings } from '@engine/save/settings';
 import type { Scene } from '@engine/scene';
-import { WorldMapScene, GUARD_GRACE_FRAMES, HIDING_HINT, HIDING_SAID } from '@game/scenes/world-map';
+import { WorldMapScene, GUARD_GRACE_FRAMES, HIDING_SAID } from '@game/scenes/world-map';
 import { LevelScene } from '@game/scenes/level';
 import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { CardScene, MessageScene } from '@game/scenes/message';
@@ -307,9 +307,9 @@ describe('crystal-ball hints on the map', () => {
     });
     const { sprites, texts } = draw(map());
     expect(sprites.some((s) => s.key === 'mario@luigi~shade-grass')).toBe(true);
-    // The generic line (Toad's per-hero lines are gone since 0.4.23).
-    expect(map().hintLine).toBe(HIDING_HINT);
-    expect(texts.map((t) => t.str)).toContain(HIDING_HINT);
+    // No hint line (0.4.35, owner: too on the nose); the announcer describes the shadow only.
+    expect(map().hintLine).toBe('');
+    expect(texts.map((t) => t.str).join(' ')).not.toMatch(/HIDING/);
     expect(h.said.some((t) => t.includes(HIDING_SAID))).toBe(true);
   });
 

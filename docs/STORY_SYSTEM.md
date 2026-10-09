@@ -78,8 +78,8 @@ story is a later release).
 
 - **Play order:** the major scenes (the airship crash, the 8-4 rift, Toad's World 1 scene once
   1-0 is cleared or skipped, the fake Bowsers), then the hub / arena extras. Since 0.4.23 Toad has
-  no world entries, hero-joined, all-freed or missed-hero cards (docs/STORY.md 2.14); a shadow's
-  hint line is the generic `SOMEONE IS HIDING IN THIS LEVEL` again.
+  no world entries, hero-joined, all-freed or missed-hero cards (docs/STORY.md 2.14); a shadow
+  has no hint line (0.4.35: the shadow is the hint).
 - **The box:** at the top of the map (`TOAD_BOX_Y` = 28, under the header bar), white-rimmed
   black, the lines centred, the OK prompt after `CARD_GUARD_FRAMES`. OK (jump) or MENU goes on;
   **BACK** (attack) skips the rest of that scene (the next scene still plays). Each page is
