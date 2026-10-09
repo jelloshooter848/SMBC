@@ -1,0 +1,79 @@
+;; Bill's training stage (0.4.38, src/game/tutorial/heroes/bill.ts; docs/HEROES.md), in the Contra
+;; jungle look: the rifle at a soldier (gate 16), aiming up and up-ahead at two high targets (gate
+;; 34), prone under a turret's shots (gate 45), a shot down at the enemy in the ditch from a jump
+;; (gate 55), the Medal and the Machine Gun held on a group of soldiers (gate 75), a note on switching
+;; guns, the Laser through two targets in a row (gate 93), the Flame Gun at a tough target (gate
+;; 105), the Spread Gun's fan at three targets at once (gate 121) and the flagpole. Each power
+;; block's item is in [hero-items]; the gates are laid by the tutorial.
+id: training-bill
+name: BILL TRAINING
+world: 7
+stage: 0
+theme: contra-jungle
+music: contra-jungle
+time: 400
+start: 2,11
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0                16               32               48               64               80               96               112              128
+................ ................ ................ ................ ................ ................ ................ ................ ........
+................ ................ ................ ................ ................ ................ ................ ................ ........
+................ ................ ................ ................ ................ ................ ................ ...............o ........
+................ ................ ................ ................ ................ ................ ................ ...............! ........
+................ ......B......... ................ ................ ................ ................ ................ ...............! ........
+................ ................ ................ ................ ................ ................ ................ ...............! ........
+................ ..............BB ................ ................ ................ ................ ................ ....B..........! ........
+................ ................ ................ ................ ................ ................ ................ ...............! ........
+................ ................ ................ ................ ................ ................ ................ .....B.........! ........
+................ ................ ................ ..........M...M. ................ ..M............. M...........M... ...............! ........
+................ ................ ................ ................ ................ ................ ................ ...............! ........
+................ ................ ................ ................ ................ ................ ................ ...............B ........
+################ ################ ################ ##...########### ################ ################ ################ ################ ########
+################ ################ ################ ##...########### ################ ################ ################ ################ ########
+################ ################ ################ ################ ################ ################ ################ ################ ########
+
+[entities]
+;; Toad greets Bill at the start (scenery).
+toad 5 11
+goomba 13 11
+target 22 5 lesson=aim hang=1
+target 30 5 lesson=aim
+target 42 11 lesson=prone shoots=80 facing=left
+goomba 51 13
+goomba 68 11 lesson=machine-gun
+goomba 70 11 lesson=machine-gun
+goomba 72 11 lesson=machine-gun
+target 88 11 lesson=laser
+target 90 11 lesson=laser
+target 102 11 lesson=flame-gun tough=6
+target 118 11 lesson=spread-gun
+target 117 9 lesson=spread-gun hang=1
+target 116 7 lesson=spread-gun hang=1
+
+[zones]
+exit 127 next=1-1
+
+[decor]
+cloud-2 2 3
+tree-small 8 11
+tree-big 18 11
+cloud-1 26 2
+tree-small 37 11
+tree-big 47 11
+cloud-2 55 3
+tree-small 65 11
+tree-big 78 11
+cloud-1 85 2
+tree-small 99 11
+tree-big 110 11
+cloud-2 118 3
+tree-small 130 11
+
+[hero-items]
+58 9 bill=grow
+62 9 bill=machine-gun
+82 9 bill=laser
+96 9 bill=flame-gun
+108 9 bill=spread-gun

@@ -5,6 +5,7 @@ import { MEGAMAN_STAGE_DEF } from './megaman';
 import { SAMUS_STAGE_DEF } from './samus';
 import { SIMON_STAGE_DEF } from './simon';
 import { RYU_STAGE_DEF } from './ryu';
+import { BILL_STAGE_DEF } from './bill';
 
 /*
  * The heroes' training stages (0.4.37, tutorial/hero-stage.ts), one file each. Simon, Ryu, Bill
@@ -17,6 +18,7 @@ export const HERO_STAGES: Readonly<Record<string, HeroStage>> = {
   samus: SAMUS_STAGE_DEF,
   simon: SIMON_STAGE_DEF,
   ryu: RYU_STAGE_DEF,
+  bill: BILL_STAGE_DEF,
 };
 
 /** The hero's training stage, or null (Mario's is 1-0; the room's heroes have none yet). */
