@@ -66,6 +66,10 @@ const SPOTS = [
   { who: 'error', level: '2-2-exit', start: near(18), col: 15 },
   { who: 'river-man', level: '2-3', start: fromStart, col: 5 },
   { who: 'wise-man', level: '2-4', start: fromStart, col: 7 },
+  // World 3: robots at 3-2's and 3-3's starts, Sniper Joe at the foot of 3-4's entrance steps.
+  { who: 'prune-bot', level: '3-2', start: fromStart, col: 7 },
+  { who: 'weather-bot', level: '3-3', start: fromStart, col: 8 },
+  { who: 'sniper-joe', level: '3-4', start: fromStart, col: 8 },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
 
 const spotOf = (who: string) => SPOTS.find((s) => s.who === who) as (typeof SPOTS)[number];

@@ -1097,6 +1097,90 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['WISE MAN:', '', '...NOTHING? HM. IT WORKS', "BETTER IN HYRULE. YOU'RE", 'DOING FINE WITHOUT IT.'],
     ],
   },
+
+  /* ------------------------------------- World 3 (Mega City, Mega Man): Dr. Light's robots */
+
+  // 3-2's start, in the robot forest.
+  'prune-bot': {
+    verb: 'TALK',
+    name: 'A prune bot',
+    hero: 'megaman',
+    pages: [
+      ['PRUNE BOT:', '', 'BZZT. TRIMMING TREES.', 'WOOD MAN GROWS THEM FASTER', 'THAN I CAN CUT THEM.'],
+      [
+        'PRUNE BOT:',
+        '',
+        'MEGA MAN? HIS SIGNAL WENT',
+        'STRANGE. DR. LIGHT TRACKS',
+        'IT BY THE RADIO MASTS.',
+        'PLEASE, HELP HIM. BZZT.',
+      ],
+    ],
+    after: [
+      [
+        'PRUNE BOT:',
+        '',
+        'MEGA MAN IS BACK ONLINE!',
+        "WOOD MAN'S LEAF SHIELD? IT'S",
+        'JUST LEAVES. I RAKE THEM UP',
+        'EVERY WEEK.',
+      ],
+    ],
+  },
+  // 3-3's start, on the steel deck under the cloud platforms.
+  'weather-bot': {
+    verb: 'TALK',
+    name: 'A weather bot',
+    hero: 'megaman',
+    pages: [
+      ['WEATHER BOT:', '', 'FORECAST: WINDY, WITH A', 'CHANCE OF FLYING TURTLES.'],
+      [
+        'WEATHER BOT:',
+        '',
+        'ALSO: MEGA MAN, MISSING.',
+        'LAST SIGNAL: THE RADIO',
+        'MASTS. DR. LIGHT IS THERE.',
+        'PLEASE, BRING HIM HOME.',
+      ],
+    ],
+    after: [
+      ['WEATHER BOT:', '', 'FORECAST: WINDY. CAUSE: AIR', 'MAN. MANY HEROES CANNOT', 'BEAT AIR MAN.'],
+      ['WEATHER BOT:', '', 'MEGA MAN CAN. I CHECKED.', 'HAVE A NICE DAY.'],
+    ],
+  },
+  // 3-4, at the foot of the fortress's entrance steps: a guard robot on his break, shield up.
+  'sniper-joe': {
+    verb: 'TALK',
+    name: 'Sniper Joe',
+    hero: 'megaman',
+    pages: [
+      [
+        'SNIPER JOE:',
+        '',
+        "HALT! ...OH. YOU'RE NOT THE",
+        "BLUE ONE. I'M ON MY BREAK.",
+        'THE SHIELD STAYS UP. HABIT.',
+      ],
+      [
+        'SNIPER JOE:',
+        '',
+        "THE BLUE ONE? THE KING'S",
+        'SPELL GOT HIM. LAST SIGNAL:',
+        'UP OVER THE RADIO MASTS.',
+      ],
+      ['SNIPER JOE:', '', 'GO GET HIM. WORK IS NO FUN', 'WITHOUT HIM. GO, BEFORE I', 'CLOCK BACK IN.'],
+    ],
+    after: [
+      ['SNIPER JOE:', '', "THE BLUE ONE'S FREE? GOOD.", 'HE ONCE BEAT EIGHT OF MY', 'BOSSES IN A ROW.'],
+      [
+        'SNIPER JOE:',
+        '',
+        'THE BIG BOSS ALWAYS BEGGED',
+        'FOR MERCY AT THE END. ON HIS',
+        'KNEES. EVERY. TIME.',
+      ],
+    ],
+  },
 };
 
 /* ---------------------------------------------------------------- 2.13: the freed talks */

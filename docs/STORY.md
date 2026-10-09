@@ -1311,6 +1311,122 @@ WILL KEEP SPARKING. LET'S
 GO. I'M READY!
 ```
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Dr. Light's helpers, and one off-duty guard, speak for
+Mega Man: missing, they plead and say where to look (by place, never by level number); freed, their found lines.
+
+**3-2: a prune bot.** NEW partner (`prune-bot`). The lab robot in green, at **3-2's start** (column 7), keeping the
+robot forest trimmed.
+
+```text
+PRUNE BOT:
+
+BZZT. TRIMMING TREES.
+WOOD MAN GROWS THEM FASTER
+THAN I CAN CUT THEM.
+```
+
+```text
+PRUNE BOT:
+
+MEGA MAN? HIS SIGNAL WENT
+STRANGE. DR. LIGHT TRACKS
+IT BY THE RADIO MASTS.
+PLEASE, HELP HIM. BZZT.
+```
+
+After Mega Man is freed:
+
+```text
+PRUNE BOT:
+
+MEGA MAN IS BACK ONLINE!
+WOOD MAN'S LEAF SHIELD? IT'S
+JUST LEAVES. I RAKE THEM UP
+EVERY WEEK.
+```
+
+**3-3: a weather bot.** NEW partner (`weather-bot`). The lab robot in yellow, at **3-3's start** (column 8), on
+the steel deck under the cloud platforms. Its found lines are for every player who never beat Air Man.
+
+```text
+WEATHER BOT:
+
+FORECAST: WINDY, WITH A
+CHANCE OF FLYING TURTLES.
+```
+
+```text
+WEATHER BOT:
+
+ALSO: MEGA MAN, MISSING.
+LAST SIGNAL: THE RADIO
+MASTS. DR. LIGHT IS THERE.
+PLEASE, BRING HIM HOME.
+```
+
+After Mega Man is freed:
+
+```text
+WEATHER BOT:
+
+FORECAST: WINDY. CAUSE: AIR
+MAN. MANY HEROES CANNOT
+BEAT AIR MAN.
+```
+
+```text
+WEATHER BOT:
+
+MEGA MAN CAN. I CHECKED.
+HAVE A NICE DAY.
+```
+
+**3-4: Sniper Joe.** NEW partner (`sniper-joe`). The shielded guard of Mega Man's airship (`station` sheet,
+`joe-guard`), on his break at the foot of **3-4's entrance steps** (column 8), shield up. Freed, Mega Man reminds him
+how the old boss's fights always ended.
+
+```text
+SNIPER JOE:
+
+HALT! ...OH. YOU'RE NOT THE
+BLUE ONE. I'M ON MY BREAK.
+THE SHIELD STAYS UP. HABIT.
+```
+
+```text
+SNIPER JOE:
+
+THE BLUE ONE? THE KING'S
+SPELL GOT HIM. LAST SIGNAL:
+UP OVER THE RADIO MASTS.
+```
+
+```text
+SNIPER JOE:
+
+GO GET HIM. WORK IS NO FUN
+WITHOUT HIM. GO, BEFORE I
+CLOCK BACK IN.
+```
+
+After Mega Man is freed:
+
+```text
+SNIPER JOE:
+
+THE BLUE ONE'S FREE? GOOD.
+HE ONCE BEAT EIGHT OF MY
+BOSSES IN A ROW.
+```
+
+```text
+SNIPER JOE:
+
+THE BIG BOSS ALWAYS BEGGED
+FOR MERCY AT THE END. ON HIS
+KNEES. EVERY. TIME.
+```
+
 **Castle 3-4** (a Buzzy Beetle). The hero's remark:
 
 ```text

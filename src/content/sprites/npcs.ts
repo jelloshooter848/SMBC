@@ -1,5 +1,6 @@
 import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
+import { localsDef } from './locals';
 import { partnersDef, partnersPalettes } from './partners';
 
 /**
@@ -73,6 +74,42 @@ const riverMan1 = recolor(partner('old-man-1'), { 7: 'k', 8: 'i' });
 const wiseMan0 = recolor(partner('old-man-0'), { 7: 'd', 8: 'e' });
 const wiseMan1 = recolor(partner('old-man-1'), { 7: 'd', 8: 'e' });
 
+/* ---------------------------------------------------------------- World 3: Mega City */
+
+/** The `locals` palette's index letters moved onto this one (0-6 are the same colour on both). */
+const FROM_LOCALS: Readonly<Record<string, string>> = {
+  7: 'b',
+  8: 'c',
+  9: 'a',
+  a: 'h',
+  b: 'i',
+  c: 'd',
+  d: 'e',
+  e: '7',
+  f: '8',
+  g: 'f',
+  h: 'g',
+  i: 'i',
+  j: 'm',
+  k: 'n',
+  l: 'r',
+  m: 'o',
+};
+/**
+ * A welcome's local (`locals` sheet, 16x20) on this palette, recoloured by `map` (in this
+ * palette's letters), with an empty row on top (the locals' antennas and lamps reach row 0).
+ */
+const local = (name: string, map: Readonly<Record<string, string>> = {}): Rows => {
+  const rows = recolor(recolor(localsDef.frames[name] ?? [], FROM_LOCALS), map);
+  return /[^.]/.test(rows[0] ?? '') ? ['................', ...rows] : rows;
+};
+/** 3-2's prune bot: World 3's lab robot, painted green for the forest. */
+const pruneBot0 = local('lab-robot-0', { d: 'k', e: 'i' });
+const pruneBot1 = local('lab-robot-1', { d: 'k', e: 'i' });
+/** 3-3's weather bot: the lab robot in yellow, a storm-grey trim. */
+const weatherBot0 = local('lab-robot-0', { d: 'f', e: '4' });
+const weatherBot1 = local('lab-robot-1', { d: 'f', e: '4' });
+
 export const npcsDef: SpriteDef = {
   palette: 'npcs',
   frames: {
@@ -88,5 +125,9 @@ export const npcsDef: SpriteDef = {
     'river-man-1': riverMan1,
     'wise-man-0': wiseMan0,
     'wise-man-1': wiseMan1,
+    'prune-bot-0': pruneBot0,
+    'prune-bot-1': pruneBot1,
+    'weather-bot-0': weatherBot0,
+    'weather-bot-1': weatherBot1,
   },
 };

@@ -35,6 +35,8 @@ campaignMusic: mm-air
 ################ ...ttt.tttt....t .....ttttt..tt.t ttttttt.tt...... ..tttttttttttttt .....tt......... ..t......tt.ttt. .....t..tttttttt tt.............. ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a weather bot at the start, on the deck under the cloud platforms.
+partner 8 12 who=weather-bot campaign=true
 decor-castle 0 12
 lift-h 31 4 len=6 range=3 dx=-16
 lift-h 34 8 len=6 range=3 dx=-16

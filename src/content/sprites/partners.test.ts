@@ -22,8 +22,8 @@ const SIZES: Record<string, Size> = {
   'pipe-keeper': [16, 24],
   fairy: [16, 16],
 };
-/** Partners drawn from a hero's own sheet (entities/objects/partner.ts BORROWED). */
-const BORROWED = ['jason', 'fred'];
+/** Partners drawn from another sheet (entities/objects/partner.ts BORROWED): Sophia III's, Mega Man's station's. */
+const BORROWED = ['jason', 'fred', 'sniper-joe'];
 const FRAMES: Record<string, Size> = {
   ...Object.fromEntries(
     Object.entries(SIZES).flatMap(([who, s]) => [
