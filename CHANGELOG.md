@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.37] - 2026-10-09
+
 ### Changed
 
 - Training: Luigi, Link, Mega Man and Samus now train in a short stage of their own, in their game's look and music.
@@ -877,7 +879,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.36...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.37...HEAD
+[0.4.37]: https://github.com/jelloshooter848/SMBC/compare/v0.4.36...v0.4.37
 [0.4.36]: https://github.com/jelloshooter848/SMBC/compare/v0.4.35...v0.4.36
 [0.4.35]: https://github.com/jelloshooter848/SMBC/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/jelloshooter848/SMBC/compare/v0.4.33...v0.4.34
