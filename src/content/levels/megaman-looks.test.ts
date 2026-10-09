@@ -125,7 +125,13 @@ describe("World 3 as Mega Man's world: Mega Man 2-style stage looks, campaign on
     const classic = getLevel(id);
     const camp = campaignLevel(classic);
     expect(camp.tiles).toEqual(classic.tiles);
-    expect(camp.entities).toEqual(classic.entities);
+    // The same entities, a campaign-only one (0.4.40: each level's NPC, `campaign=true`) woken.
+    const woken = classic.entities.map((e) => {
+      if (e.props?.campaign !== true) return e;
+      const { campaign: _, ...props } = e.props;
+      return { ...e, props };
+    });
+    expect(camp.entities).toEqual(woken);
     expect(camp.zones).toEqual(classic.zones);
     expect([camp.start, camp.startMode, camp.time, camp.width]).toEqual([
       classic.start,

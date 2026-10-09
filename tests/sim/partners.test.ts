@@ -106,13 +106,17 @@ const cases = SPOTS.flatMap((s) =>
 );
 
 const said = (page: Page) => page.filter((l) => l !== '').join(' ');
+/** The spot's partner each level was entered for (0.4.40: 1-2 has two, the cave Toad and the pipe keeper). */
+const spotWho = new WeakMap<LevelScene, string>();
 const partners = (l: LevelScene) =>
-  l.world.entities.filter((e): e is Partner => e instanceof Partner && e.alive);
+  l.world.entities.filter(
+    (e): e is Partner => e instanceof Partner && e.alive && (!spotWho.has(l) || e.who === spotWho.get(l)),
+  );
 
 /** Campaign file 1, hero `c` at `power`, into `spot`'s level as play reaches it. */
 function campaignIn(
   h: H,
-  spot: { level: string; start: WorldStart },
+  spot: { level: string; start: WorldStart; who?: string },
   c: CharacterDef = MARIO,
   power = 'small',
   over: Parameters<typeof file>[0] = {},
@@ -132,6 +136,7 @@ function campaignIn(
   h.step();
   const l = h.top();
   expect(l).toBeInstanceOf(LevelScene);
+  if (spot.who) spotWho.set(l as LevelScene, spot.who);
   return l as LevelScene;
 }
 
