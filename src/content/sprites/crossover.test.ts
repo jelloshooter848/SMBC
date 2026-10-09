@@ -131,15 +131,17 @@ describe.each([
 });
 
 describe('link extras', () => {
-  it('has red and white tunic variants that only recolour the tunic', () => {
+  it('has red and blue tunic variants that only recolour the tunic, the blue clear of the shield', () => {
     expect(linkPalettes['link-red']).toBeDefined();
     const base = linkPalettes.link as string[];
-    const white = linkPalettes['link-white'] as string[];
-    expect(white).toBeDefined();
-    expect(white[1]).toBe('#fcfcfc');
-    expect(white[2]).toBe('#bcbcbc');
+    const blue = linkPalettes['link-blue'] as string[];
+    expect(blue).toBeDefined();
+    // Light blue (the Blue Ring, 0.4.37), not the shield's deep blue (index a).
+    expect(blue[1]).toBe('#a4e4fc');
+    expect(blue[2]).toBe('#3cbcfc');
+    expect([blue[1], blue[2]]).not.toContain(base[10]);
     base.forEach((c, i) => {
-      if (i !== 1 && i !== 2) expect(white[i], `index ${i}`).toBe(c);
+      if (i !== 1 && i !== 2) expect(blue[i], `index ${i}`).toBe(c);
     });
   });
 

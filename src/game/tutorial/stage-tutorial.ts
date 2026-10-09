@@ -234,6 +234,8 @@ export class TutorialDirector {
    * floor is given, and the current lesson comes up again (its `enter`, health refilled).
    */
   rebuilt(): void {
+    // Toad's card (busy while it showed) is over: the lessons go on in the new world.
+    this.busy = false;
     this.laid.clear();
     this.stopped = 0;
     this.nice = 0;
@@ -568,6 +570,23 @@ export class TutorialDirector {
     return abilityHint(this.game, touch ? (caption ?? now ?? ability) : ability, action);
   }
 
+  /**
+   * Lesson `l`'s words as the box shows them in the scheme in use with the buttons' captions
+   * `labels`: before its item is taken (`get`), or after, its name leading the first line ("BOMB
+   * BAG! TOOLS PICKS..."). Tests read every lesson's this way.
+   */
+  linesFor(l: Lesson, taken: boolean, labels: TouchLabels): string[] {
+    const touch = controlScheme(this.game) === 'touch';
+    const words = taken
+      ? ((touch ? l.touchText : undefined) ?? l.text)
+      : ((touch ? l.touchGet : undefined) ?? l.get ?? l.text);
+    const head = l.item && taken ? `${itemName(this.def.hero, l.item).toUpperCase()}! ` : '';
+    return wrapPrompt(
+      head + fillAbilities(words, (a, act, cap) => this.abilityName(a, act, labels, cap)),
+      this.cols,
+    );
+  }
+
   /** Columns a line of the box takes. */
   get cols(): number {
     return this.def.boxCols ?? PROMPT_COLS;
@@ -587,18 +606,7 @@ export class TutorialDirector {
     const key = [this.shown, scheme, labels.jump, labels.attack, labels.special, labels.select, taken].join(
       '|',
     );
-    const touch = scheme === 'touch';
-    const text = taken
-      ? ((touch ? l.touchText : undefined) ?? l.text)
-      : ((touch ? l.touchGet : undefined) ?? l.get ?? l.text);
-    if (this.cache.key !== key) {
-      const words = wrapPrompt(
-        fillAbilities(text, (a, act, cap) => this.abilityName(a, act, labels, cap)),
-        this.cols,
-      );
-      const head = l.item && taken ? [fontText(`${itemName(this.def.hero, l.item).toUpperCase()}!`)] : [];
-      this.cache = { key, lines: [...head, ...words] };
-    }
+    if (this.cache.key !== key) this.cache = { key, lines: this.linesFor(l, taken, labels) };
     return this.cache.lines;
   }
 

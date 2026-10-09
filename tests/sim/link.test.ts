@@ -182,7 +182,7 @@ describe("Link's kit", () => {
     expect(spell.height).toBeGreaterThan(plain.height * 1.3);
   });
 
-  it('the white tunic makes every other hit glance off', () => {
+  it('the Blue Ring (the old white tunic) makes every other hit cost no heart; with the Shield spell, every hit', () => {
     // A bot that keeps walking into the goomba gets hit again each time invulnerability ends.
     const walkInto = (kit: Record<string, number>) => {
       let hits = 0;
@@ -206,6 +206,13 @@ describe("Link's kit", () => {
     const tunic = walkInto({ tunic: 1 });
     expect(tunic.hits).toBeGreaterThanOrEqual(2);
     expect(tunic.hp).toBe(6 - Math.floor(tunic.hits / 2));
+    // The ring and the Shield spell together (owner, 0.4.37): every hit is free while it lasts.
+    const both = walkInto({ tunic: 1, shieldSpell: 600 });
+    expect(both.hits).toBeGreaterThanOrEqual(2);
+    expect(both.hp).toBe(6);
+    // The spell alone: every other hit, as the ring.
+    const spell = walkInto({ shieldSpell: 600 });
+    expect(spell.hp).toBe(6 - Math.floor(spell.hits / 2));
   });
 
   it('drops include bombs, magic and hearts, and a bomb pickup raises the ammo', () => {

@@ -73,9 +73,8 @@ export function checkBox(stage: HeroStageScene): void {
   }
   if (p.def.damage.kind === 'hp' && p.def.damage.hudStyle === 'bar')
     expect(overlap(rect, { x: 7, y: 39, w: 17, h: 60 }), 'box over the bars').toBe(false);
-  const words = box.rows.filter((r) => r !== '');
-  const head = stage.director.lesson?.item ? 1 : 0;
-  expect(words.length - head, words.join('/')).toBeLessThanOrEqual(3);
+  const words = stage.director.lines();
+  expect(words.length, words.join('/')).toBeLessThanOrEqual(3);
 }
 
 /** What happened while a stage was played (playStage). */

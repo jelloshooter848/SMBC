@@ -8,6 +8,8 @@ import type { Player } from '../entities/player';
 import type { DamageSource, Reaction } from '../rules/damage';
 import type { World } from '../world/world';
 import { TargetDummy } from './dummy';
+import { Entity } from '../entities/entity';
+import { Goomba } from '../entities/enemies/goomba';
 
 /*
  * The hero stages' targets and what they see (0.4.37). A target is the practice room's straw
@@ -122,6 +124,47 @@ export class TrainingTarget extends TargetDummy {
     const mx = dir < 0 ? x - 3 : x + 11;
     r.rect(mx, y + 8, 4, 4, '#202020');
     r.rect(mx + 1, y + 9, 2, 2, '#d82800');
+  }
+}
+
+/** Frames between a door's walkers (after the last one is gone). */
+export const DOOR_FRAMES = 75;
+
+/**
+ * A door that walkers come out of (Link's pen, 0.4.37): while `live` holds, a slow Goomba walks
+ * out of it whenever none of its walkers is about, one at a time. Nothing to draw (the map's decor
+ * draws the door) and nothing to touch.
+ */
+export class TrainingDoor extends Entity {
+  readonly kind = 'training-door';
+  private walker: Enemy | null = null;
+  private wait = 30;
+
+  constructor(
+    x: number,
+    feet: number,
+    private readonly live: (world: World) => boolean,
+  ) {
+    super(x, feet - px(16), 16, 16);
+    this.despawnMargin = null;
+  }
+
+  update(world: World): void {
+    if (!this.live(world)) {
+      this.wait = 30;
+      return;
+    }
+    if (this.walker?.alive) return;
+    if (--this.wait > 0) return;
+    this.wait = DOOR_FRAMES;
+    const g = new Goomba(this.body.x + px(2), this.body.y + px(2));
+    g.facing = -1;
+    world.spawn(g);
+    this.walker = g;
+  }
+
+  render(): void {
+    // The map's decor is the door.
   }
 }
 

@@ -29,8 +29,8 @@ import {
   type TutorialRun,
 } from './stage-tutorial';
 import { MergedInput } from './room';
-import { itemName, TRANSIENT_KIT } from './kit';
-import { stageWatch, TrainingTarget, type TargetOptions } from './targets';
+import { itemName, ownsItem, TRANSIENT_KIT } from './kit';
+import { stageWatch, TrainingDoor, TrainingTarget, type TargetOptions } from './targets';
 
 /*
  * A hero's training stage (0.4.37, docs/HEROES.md): a short stage of their own, in their own
@@ -81,8 +81,15 @@ export function stageLevel(stage: HeroStage): LevelData {
   return level;
 }
 
-/** A map's `target` spawn as a TrainingTarget (feet on the bottom of its tile). */
-export function stageEntity(s: EntitySpawn): Entity | undefined {
+/**
+ * A map's own spawns (feet on the bottom of their tile): `target` a TrainingTarget, `door` a
+ * TrainingDoor whose walkers come while lesson `lesson=` is being played (`live`).
+ */
+export function stageEntity(s: EntitySpawn, live: (lesson: string) => boolean): Entity | undefined {
+  if (s.type === 'door') {
+    const lesson = String(s.props?.lesson ?? '');
+    return new TrainingDoor(tileToSub(s.x), tileToSub(s.y + 1), () => live(lesson));
+  }
   if (s.type !== 'target') return undefined;
   const p = s.props ?? {};
   const opts: TargetOptions = {};
@@ -151,7 +158,7 @@ export class HeroStageScene implements Scene, TutorialHost {
       y,
       mode: 'stand',
       seed: levelSeed(level),
-      extraEntities: (s) => stageEntity(s),
+      extraEntities: (s) => stageEntity(s, (id) => this.lessonLive(id)),
     });
     world.time = null;
     world.useHeroItems(level.heroItems ?? []);
@@ -159,6 +166,16 @@ export class HeroStageScene implements Scene, TutorialHost {
     stageWatch(world);
     this.popped = 0;
     return world;
+  }
+
+  /**
+   * Lesson `id` is being played: it is the current one, and its item (if any) is taken. A door's
+   * walkers come only then.
+   */
+  lessonLive(id: string): boolean {
+    const l = this.director?.lesson;
+    if (!l || l.id !== id || this.director.scripted) return false;
+    return !l.item || ownsItem(this.world.player, l.item);
   }
 
   /** The stage's music (its world's song). */

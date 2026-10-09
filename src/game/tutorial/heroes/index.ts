@@ -1,5 +1,6 @@
 import type { HeroStage } from '../hero-stage';
 import { LUIGI_STAGE_DEF } from './luigi';
+import { LINK_STAGE_DEF } from './link';
 
 /*
  * The heroes' training stages (0.4.37, tutorial/hero-stage.ts), one file each. Simon, Ryu, Bill
@@ -7,6 +8,7 @@ import { LUIGI_STAGE_DEF } from './luigi';
  */
 export const HERO_STAGES: Readonly<Record<string, HeroStage>> = {
   luigi: LUIGI_STAGE_DEF,
+  link: LINK_STAGE_DEF,
 };
 
 /** The hero's training stage, or null (Mario's is 1-0; the room's heroes have none yet). */

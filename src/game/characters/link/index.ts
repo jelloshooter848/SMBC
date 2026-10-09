@@ -128,7 +128,8 @@ function shieldUp(p: Player): boolean {
 }
 
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
-  let palette = p.scratch.beam ? 'link-red' : p.scratch.tunic ? 'link-white' : 'link';
+  // The Blue Ring (`tunic`) turns the tunic light blue (owner, 0.4.37); the Magical Sword red.
+  let palette = p.scratch.beam ? 'link-red' : p.scratch.tunic ? 'link-blue' : 'link';
   if (p.star > 0) palette = `link-star-${reduceFlashing ? 0 : (frame >> 1) & 3}`;
   let name: string;
   if (p.dead) name = 'die';
@@ -414,7 +415,7 @@ export const LINK: CharacterDef = {
     onPowerUp(p, kind, world) {
       switch (kind) {
         case 'mushroom':
-          // A heart container, and the white tunic that softens blows.
+          // A heart container, and the blue tunic (the ring) that softens blows.
           p.scratch.maxHp = Math.min(MAX_HEARTS * 2, maxHp(p) + 2);
           p.scratch.tunic = 1;
           p.hp = maxHp(p);
@@ -441,10 +442,14 @@ export const LINK: CharacterDef = {
       return null;
     },
     onHurt(p, world) {
-      // White tunic / Shield spell: every other hit glances off.
-      const protectedHit = p.scratch.tunic || (p.scratch.shieldSpell ?? 0) > 0;
-      if (protectedHit && !p.scratch.halfHit) {
-        p.scratch.halfHit = 1;
+      // The Blue Ring or the Shield spell: every other hit costs no heart (a bump, a knock back).
+      // Both at once (owner, 0.4.37): every hit is free while the spell lasts, and the ring's
+      // count stays where it was.
+      const ring = !!p.scratch.tunic;
+      const spell = (p.scratch.shieldSpell ?? 0) > 0;
+      const both = ring && spell;
+      if (both || ((ring || spell) && !p.scratch.halfHit)) {
+        if (!both) p.scratch.halfHit = 1;
         p.invuln = 60;
         world.audio.sfx('bump');
         return 'hurt';

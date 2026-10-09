@@ -24,10 +24,11 @@ export const linkPalettes: Record<string, string[]> = {
     NES.yellow,
     NES.blueMid,
   ],
-  'link-white': [
+  // The Blue Ring (0.4.37, owner: light blue, clear of the shield's deep blue).
+  'link-blue': [
     NES.black,
-    NES.white,
-    NES.lightGray,
+    NES.skyLight,
+    NES.blueLight,
     NES.skin,
     NES.brown,
     NES.brownDark,

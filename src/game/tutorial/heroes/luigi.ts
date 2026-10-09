@@ -112,7 +112,7 @@ export const LUIGI_LESSONS: readonly Lesson[] = [
     note: true,
     item: 'mushroom',
     get: 'MUSHROOMS AND FIRE FLOWERS WORK FOR LUIGI JUST AS FOR MARIO. ON TO THE FLAGPOLE!',
-    text: 'BIG LUIGI TAKES A HIT AND BREAKS BRICKS, AS MARIO DOES. ON TO THE FLAGPOLE!',
+    text: 'BIG LUIGI TAKES A HIT AND BREAKS BRICKS. ON TO THE FLAGPOLE!',
     done: (w) => w.flagGrabbedBy !== null,
   },
 ];

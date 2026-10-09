@@ -53,10 +53,13 @@ function pick(h: H, right: number) {
  */
 function skip(h: H) {
   if (h.top() instanceof StartAtMenu) choose(h, 'Beginning');
-  if (h.game.scenes.find((sc) => sc instanceof HeroStageScene)) {
-    h.until(() => h.top() instanceof CardScene, 60);
-    h.idle(CARD_GUARD_FRAMES + 12);
-    h.tap('attack');
+  const stage = h.game.scenes.find((sc) => sc instanceof HeroStageScene) as HeroStageScene | undefined;
+  if (stage) {
+    if (!stage.run.greeted) {
+      h.until(() => h.top() instanceof CardScene, 60);
+      h.idle(CARD_GUARD_FRAMES + 12);
+      h.tap('attack');
+    }
     expect(h.top()).toBeInstanceOf(HeroStageScene);
     h.idle(4);
     h.tap('start');
@@ -101,18 +104,42 @@ describe('the training question', () => {
     again.until(() => again.top() instanceof LevelScene);
   });
 
-  it('YES plays the practice room, then the level starts as the pick would have; the run is untouched', () => {
+  it("YES plays Link's stage (no START AT), then the level starts as the pick would have; the run is untouched", () => {
     const h = makeGame();
     file({ freed: ['mario', 'link'], lives: 4, score: 1200, coins: 7, powerState: 'fire' });
     h.game.openFile(1);
     pick(h, 1);
     choose(h, 'Yes');
+    const stage = h.top() as HeroStageScene;
+    expect(stage).toBeInstanceOf(HeroStageScene);
+    expect(stage.hero).toBe(LINK);
+    expect(loadSave(1)?.tutorials).toContain('link');
+    // The stage's own world and state: Link's basic kit.
+    expect(stage.state).not.toBe(h.game.state);
+    expect(stage.world.player.scratch).toMatchObject(heroStart(LINK).kit);
+    expect(stage.world.player.scratch['has-bomb-bag']).toBeUndefined();
+    expect(h.game.state.character).toBe(MARIO);
+    skip(h);
+    h.until(() => h.top() instanceof LevelScene);
+    expect((h.top() as LevelScene).level.id).toBe('1-1');
+    const s = h.game.state;
+    expect(s.character).toBe(LINK);
+    expect([s.lives, s.score, s.coins, s.powerState, s.hp]).toEqual([4, 1200, 7, 'full', 6]);
+    expect(s.kit).toEqual(heroStart(LINK).kit); // Link's basic campaign kit (docs/POWERUPS.md)
+  });
+
+  it('YES plays the practice room (a hero without a stage yet), then the level starts; the run is untouched', () => {
+    const h = makeGame();
+    file({ freed: ['mario', 'ryu'], lives: 4, score: 1200, coins: 7, powerState: 'fire' });
+    h.game.openFile(1);
+    pick(h, 1);
+    choose(h, 'Yes');
     const room = h.top() as PracticeRoomScene;
     expect(room).toBeInstanceOf(PracticeRoomScene);
-    expect(room.hero).toBe(LINK);
-    expect(loadSave(1)?.tutorials).toContain('link');
+    expect(room.hero).toBe(RYU);
+    expect(loadSave(1)?.tutorials).toContain('ryu');
     // The room's own world and state: its kit, its score.
-    expect([room.player.scratch.found, room.player.scratch.bombs]).toEqual([1, undefined]); // Link's basic kit
+    expect(room.player.scratch).toMatchObject(heroStart(RYU).kit); // Ryu's basic kit
     // The first chapter's card waits for a button; then knock the dummy down with the sword: the
     // room's own score goes up.
     h.idle(CARD_GUARD_FRAMES + 1);
@@ -130,9 +157,9 @@ describe('the training question', () => {
     h.until(() => h.top() instanceof LevelScene);
     expect((h.top() as LevelScene).level.id).toBe('1-1');
     const s = h.game.state;
-    expect(s.character).toBe(LINK);
-    expect([s.lives, s.score, s.coins, s.powerState, s.hp]).toEqual([4, 1200, 7, 'full', 6]);
-    expect(s.kit).toEqual(heroStart(LINK).kit); // Link's basic campaign kit (docs/POWERUPS.md)
+    expect(s.character).toBe(RYU);
+    expect([s.lives, s.score, s.coins, s.powerState, s.hp]).toEqual([4, 1200, 7, 'full', heroStart(RYU).hp]);
+    expect(s.kit).toEqual(heroStart(RYU).kit);
   });
 
   it("old saves don't ask for the heroes they already play; a new hero still asks", () => {
@@ -375,7 +402,7 @@ describe('pause → Training', () => {
     return level;
   }
 
-  it('replays the room over the paused level, then returns to it exactly as it was', () => {
+  it("replays Link's stage over the paused level (START AT first), then returns to it exactly as it was", () => {
     const h = makeGame();
     const level = paused(h);
     const world = level.world;
@@ -385,13 +412,16 @@ describe('pause → Training', () => {
     expect(items(h.top()).some((i) => i.label === 'Training')).toBe(true);
     const resume = vi.spyOn(h.audio, 'resume');
     choose(h, 'Training');
-    const room = h.top() as PracticeRoomScene;
-    expect(room).toBeInstanceOf(PracticeRoomScene);
-    expect(room.hero).toBe(LINK);
-    // The pause menu suspended the sound: the room's music plays.
+    // A replay: where to start, the beginning or any power-up.
+    expect(h.top()).toBeInstanceOf(StartAtMenu);
+    choose(h, 'Beginning');
+    const stage = h.top() as HeroStageScene;
+    expect(stage).toBeInstanceOf(HeroStageScene);
+    expect(stage.hero).toBe(LINK);
+    // The pause menu suspended the sound: the stage's music (Zelda II's field) plays.
     expect(resume).toHaveBeenCalled();
-    expect(h.audio.playMusic).toHaveBeenLastCalledWith('overworld');
-    // Play in the room for a while: the level stands still.
+    expect(h.audio.playMusic).toHaveBeenLastCalledWith('zelda2-field');
+    // Play in the stage for a while: the level stands still.
     for (let i = 0; i < 120; i++) h.step(i % 20 < 2 ? ['attack', 'right'] : ['right']);
     expect(world.time).toBe(time);
     expect(world.player.body.x).toBe(x);
