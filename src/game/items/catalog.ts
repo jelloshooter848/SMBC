@@ -54,9 +54,9 @@ export const HERO_ITEMS: Readonly<Record<string, HeroItems>> = {
     items: [
       grow('heart-container', 'Heart Container', 'one more heart, and all hearts filled'),
       power('bomb-bag', 'Bomb Bag', 'bombs on your tool belt'),
-      power('shield-spell', 'Shield Spell', 'a spell: every other hit glances off for a while'),
+      power('shield-spell', 'Shield Spell', 'a spell: every other hit costs no heart for a while'),
       power('jump-spell', 'Jump Spell', 'a spell: higher jumps for a while'),
-      power('blue-ring', 'Blue Ring', 'every other hit glances off'),
+      power('blue-ring', 'Blue Ring', 'every other hit costs no heart'),
       power('fire-spell', 'Fire Spell', 'a spell: your next sword swing fires a beam'),
       power('magical-sword', 'Magical Sword', 'your sword fires a beam while your hearts are full'),
     ],

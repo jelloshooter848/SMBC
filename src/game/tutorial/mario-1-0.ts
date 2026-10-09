@@ -104,6 +104,20 @@ function pace(w: World): { sprint: number; walk: number; frame: number } {
   return s;
 }
 
+/** Frames the lead player has held top speed on the ground (the sprint bar's count, 0.4.37: Luigi's too). */
+export const sprintFrames = (w: World): number => tick(w).sprint;
+
+/**
+ * The sprint bar (0..1): the run-up to top speed fills its first part, then each frame held at top
+ * speed fills the rest, until SPRINT_FRAMES.
+ */
+export function sprintMeter(w: World): number {
+  const p = w.player;
+  const n = tick(w).sprint;
+  if (n > 0) return RUN_UP_SHARE + (1 - RUN_UP_SHARE) * Math.min(1, n / SPRINT_FRAMES);
+  return RUN_UP_SHARE * Math.min(1, speed(w) / p.def.movement.maxRun);
+}
+
 /** The lead player's ground speed now (absolute, subpixels per frame). */
 const speed = (w: World): number => Math.abs(w.player.body.vx);
 
@@ -147,12 +161,7 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     touchText: 'PUSH THE D-PAD FAR TO THE SIDE OR HOLD [RUN:attack] TO SPRINT, UNTIL THE BAR FILLS!',
     retry: 'THE WAY OPENS FOR A REAL SPRINT! HOLD [RUN:attack] AT TOP SPEED UNTIL THE BAR FILLS.',
     done: (w) => tick(w).sprint >= SPRINT_FRAMES,
-    meter: (w) => {
-      const p = w.player;
-      const n = tick(w).sprint;
-      if (n > 0) return RUN_UP_SHARE + (1 - RUN_UP_SHARE) * Math.min(1, n / SPRINT_FRAMES);
-      return RUN_UP_SHARE * Math.min(1, speed(w) / p.def.movement.maxRun);
-    },
+    meter: sprintMeter,
   },
   {
     id: 'ease',

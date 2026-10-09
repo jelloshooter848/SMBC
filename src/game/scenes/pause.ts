@@ -8,7 +8,7 @@ import type { TouchLabels } from '@engine/input/touch';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchMode } from '@engine/save/settings';
 import { nextTouchMode } from '@engine/input/touch-logic';
-import { trainFromPause, trainingOffered } from '../tutorial/training';
+import { trainFromPause, trainingOffered, trainingPlace } from '../tutorial/training';
 import { endStageRound } from '../arena/stage-round';
 
 const TOUCH_MODE_LABELS: Record<TouchMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
@@ -47,7 +47,7 @@ export class PauseScene extends MenuScene {
           label: 'Training',
           ...(heroes.length > 1 ? { value: () => c.name } : {}),
           select: () => trainFromPause(game, c, i),
-          hint: `Practise ${c.name}'s moves in a training room`,
+          hint: `Practise ${c.name}'s moves in ${trainingPlace(c.id)}`,
         });
       });
     // Stored items (E-tanks) are used from here, like the original weapon menu.

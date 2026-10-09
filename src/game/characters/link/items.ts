@@ -6,7 +6,7 @@ import { LINK_SPELLS, MAX_BOMBS, MAX_HEARTS, MAX_MAGIC, maxHp } from './index';
 export const BAG_BOMBS = 4;
 
 /**
- * Link's items (docs/POWERUPS.md 5.2). The Blue Ring is today's white tunic (`tunic`), the Magical
+ * Link's items (docs/POWERUPS.md 5.2). The Blue Ring is the old white tunic (`tunic`, light blue now), the Magical
  * Sword today's red tunic's beam (`beam`); the bag and the spells have their own flags.
  */
 export const LINK_ITEMS: HeroItemRules = {

@@ -9,8 +9,7 @@ import { MINIGAMES } from '../minigames';
 import { CHARACTERS } from '../characters/registry';
 import type { CharacterDef } from '../characters/character';
 import { fontText } from '../hud/text';
-import { lessonsFor } from '../tutorial/lessons';
-import { PracticeRoomScene } from '../tutorial/room';
+import { hasTraining, trainingScene } from '../tutorial/training';
 import { AIRSHIP_CHALLENGE, AIRSHIP_TITLE } from '../scenes/airship';
 import { BONUS_KINDS, BONUS_TITLES, type BonusKind } from '../bonus/rules';
 import { createBonusScene } from '../bonus';
@@ -96,13 +95,20 @@ function bonusRound(kind: BonusKind): DevRound {
   };
 }
 
-/** A hero's training room as a round: every lesson done passes, Skip training quits. */
+/**
+ * A hero's training as a round (their stage, START AT first, or the practice room): finished
+ * passes, Skip training quits.
+ */
 function trainingRound(hero: CharacterDef): DevRound {
   return {
     title: fontText(`${hero.name} TRAINING`),
     hero: hero.id,
     create: (game, done) =>
-      new PracticeRoomScene(game, hero, { player: 0, onEnd: (r) => done(r === 'done' ? 'pass' : 'quit') }),
+      trainingScene(game, hero, {
+        player: 0,
+        replay: true,
+        onEnd: (r) => done(r === 'done' ? 'pass' : 'quit'),
+      }),
   };
 }
 
@@ -146,7 +152,7 @@ export function arenaGames(characters: readonly CharacterDef[] = CHARACTERS): Ar
       round: TUTORIAL_ROUND,
     },
     ...characters
-      .filter((c) => c.id !== FIRST_HERO && lessonsFor(c.id).length > 0)
+      .filter((c) => hasTraining(c.id))
       .map((c): ArenaGame => ({
         id: `train-${c.id}`,
         kind: 'training',

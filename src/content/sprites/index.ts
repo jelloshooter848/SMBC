@@ -177,6 +177,7 @@ fallback('luigi', 'mario');
 fallback('luigi-fire', 'mario-fire');
 fallback('link-red', 'link');
 fallback('link-white', 'link');
+fallback('link-blue', 'link');
 fallback('samus-varia', 'samus');
 for (const w of ['plain', 'saw', 'leaf', 'flame', 'knuckle', 'bolt', 'rush'])
   fallback(`megaman-${w}`, 'megaman');

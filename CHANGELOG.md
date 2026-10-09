@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Training: Luigi, Link, Mega Man and Samus now train in a short stage of their own, in their game's look and music.
+  Toad guides, one tip at a time; gates hold the way until a lesson is done; power-ups come from real blocks in the
+  order the hero's kit builds up; and a lesson or the whole training can be skipped. A replay can start at any lesson.
+  Luigi's stage shows only how he differs from Mario. Simon, Ryu, Bill and Sophia III keep their practice rooms until
+  0.4.38.
+- In the story, Link's Blue Ring turns his tunic light blue, and with the Shield spell running as well every hit is
+  free while the spell lasts. Classic play keeps the white tunic.
+
+### Fixed
+
+- Menu labels without a value use the whole row, so long ones (SKIP THIS LESSON, HEART CONTAINER) are no longer cut.
+
 ## [0.4.36] - 2026-10-09
 
 ### Added

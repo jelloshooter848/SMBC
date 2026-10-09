@@ -62,6 +62,44 @@ export interface Lesson {
    * lesson it returns true for is skipped too.
    */
   gone?(world: World): boolean;
+  /**
+   * The power-up this lesson is about (a hero stage, 0.4.37: a real power block ahead gives it).
+   * Until the hero owns it the box shows `get`; once owned, its name on the box's first line
+   * ("BLUE RING!") over `text`. Skip this lesson and START AT give it quietly, and it is part of
+   * the kit floor once the lesson is done.
+   */
+  item?: string;
+  /** The words while `item` is not taken yet (where the block is); absent: `text`. */
+  get?: string;
+  /**
+   * The power block that gives `item` (its tile): once the lesson is done, a rebuilt stretch shows
+   * it used, as the hero left it.
+   */
+  block?: { x: number; y: number };
+  /** The words for `get` on touch, as `touchText`. */
+  touchGet?: string;
+  /**
+   * Runs when the lesson comes up, and again when its stretch is rebuilt while it is current (a
+   * put-back, a respawn): the hero's state for it (Link's ring count set back).
+   */
+  enter?(world: World): void;
+  /** Lights in the box under the words (Link's FREE / HURT), read every frame. */
+  lights?(world: World): readonly { label: string; on: boolean }[];
+  /** A line in the box under the words, read every frame (Samus's "-4 EN (WAS -8)"); null: none. */
+  note2?(world: World): string | null;
+}
+
+/** Per world: the frame after the current lesson came up (StageTutorial's director marks it). */
+const upFrames = new WeakMap<World, number>();
+
+/** The current lesson came up now: what it counts starts with the next frame. */
+export function markLessonUp(w: World): void {
+  upFrames.set(w, w.frame + 1);
+}
+
+/** The first frame the current lesson counts (0 when none was marked in this world). */
+export function lessonUpFrame(w: World): number {
+  return upFrames.get(w) ?? 0;
 }
 
 /** What `LessonTracker.update` saw this frame. */
@@ -122,15 +160,34 @@ export class LessonTracker {
   }
 }
 
-/** Ability tokens: `[NAME:action]`. */
-const TOKEN = /\[([A-Z][A-Z -]*):([a-z]+)\]/g;
+/**
+ * Ability tokens: `[NAME:action]`, or `[NAME:action:CAPTION]` where the touch button's caption is
+ * named too (a belt tool's own: BOMB, SAW...), shown on touch even while the button shows another
+ * tool or hides (0.4.37).
+ */
+const TOKEN = /\[([A-Z][A-Z -]*):([a-z]+)(?::([A-Z][A-Z -]*))?\]/g;
 
 /**
- * Fills in a lesson's ability tokens: `name(ability, action)` gives the words shown for each (the
- * stage tutorial passes abilityHint, with the touch button's caption as the ability on touch).
+ * Fills in a lesson's ability tokens: `name(ability, action, caption)` gives the words shown for
+ * each (the stage tutorial passes abilityHint, with the touch button's caption as the ability on
+ * touch; `caption` is the token's own touch caption, if any).
  */
-export function fillAbilities(text: string, name: (ability: string, action: Action) => string): string {
-  return text.replace(TOKEN, (_, ability: string, action: string) => name(ability, action as Action));
+export function fillAbilities(
+  text: string,
+  name: (ability: string, action: Action, caption?: string) => string,
+): string {
+  return text.replace(TOKEN, (_, ability: string, action: string, caption?: string) =>
+    name(ability, action as Action, caption),
+  );
+}
+
+/** The touch captions a lesson's tokens name (their own, else none): tests read them. */
+export function tokenCaptions(text: string): { ability: string; action: string; caption?: string }[] {
+  return [...text.matchAll(TOKEN)].map((m) => ({
+    ability: m[1] as string,
+    action: m[2] as string,
+    ...(m[3] ? { caption: m[3] } : {}),
+  }));
 }
 
 /** The words a lesson shows when nothing is filled in (the ability names alone). */
@@ -167,8 +224,10 @@ export const PROMPT_BOX_Y = 40;
 
 /** Where a prompt box goes and what it carries beyond its lines (all optional). */
 export interface PromptBoxOptions {
-  /** Left edge of the box (default 8); the box is centred, `SCREEN_W - 2 * x` wide. */
+  /** Left edge of the box (default 8); the box is centred, `SCREEN_W - 2 * x` wide... */
   x?: number;
+  /** ...unless its width is given (the lines are centred in the box either way). */
+  w?: number;
   /** Top of the box (default PROMPT_BOX_Y, under the HUD). */
   y?: number;
   /** A short tag at the box's top right, over the frame ("NICE!"). */
@@ -188,11 +247,11 @@ export function drawPromptBox(
   const x0 = opts.x ?? 8;
   const y = opts.y ?? PROMPT_BOX_Y;
   const tag = opts.tag ?? '';
-  const w = SCREEN_W - 2 * x0;
+  const w = opts.w ?? SCREEN_W - 2 * x0;
   const h = lines.length * 10 + 10;
   r.rect(x0, y, w, h, '#fcfcfc');
   r.rect(x0 + 2, y + 2, w - 4, h - 4, '#000');
-  lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + 6 + i * 10));
+  lines.forEach((l, i) => r.text(font, l, x0 + ((w - l.length * 8) >> 1), y + 6 + i * 10));
   if (tag) {
     const tx = x0 + w - 8 - tag.length * 8;
     r.rect(tx - 2, y - 4, tag.length * 8 + 4, 10, '#000');

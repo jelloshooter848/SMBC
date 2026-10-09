@@ -1,0 +1,75 @@
+;; Samus's training stage (0.4.37, src/game/tutorial/heroes/samus.ts; docs/HEROES.md), in the
+;; Brinstar look: the short beam at an enemy (gate 16), aiming up at a target hanging from the
+;; ceiling (gate 27), the morph ball through the tunnel and a bomb jump up the step inside it, the
+;; Energy Tank, the Long Beam across the ditch (gate 60), Missiles to open the wall's brick, the Ice
+;; Beam's freeze and shatter on an enemy out of a pipe (gate 82), the Varia Suit's half-cost hit from
+;; another (gate 94), the Wave Beam through
+;; the closed wall (gate 109) and the flagpole. Each power block's item is in [hero-items]; the
+;; gates are laid by the tutorial.
+id: training-samus
+name: SAMUS TRAINING
+world: 4
+stage: 0
+theme: brinstar
+music: brinstar
+time: 400
+start: 2,11
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0                16               32               48               64               80               96               112
+................ ................ ................ ................ ................ ................ ................ ................
+................ ................ ................ ................ ................ ................ ................ ....o...........
+................ ................ ................ ................ ................ ................ ................ ....!...........
+................ ..............BB BBBBBB.......... ................ ...B............ ................ ................ ....!...........
+................ ..............BB BBBBBB.......... ................ ...B............ ................ ................ ....!...........
+................ ..............BB BBBBBB.......... ................ ...B............ ................ ................ ....!...........
+................ ..BBBBBBBBB...BB BBBBBB.......... ................ ...B............ ................ ................ ....!...........
+................ ..............BB BBBBBB.....M.... .M.............M ...B.....M...... .....M.......... .M.....BBBB..... ....!...........
+................ ..............BB BBBBBB.......... ................ ...B............ ................ .......B..B..... ....!...........
+................ ..............BB BBBBBB.......... ................ ...B...........[ ].........[].... .......B..B..... ....!...........
+................ ..............BB B............... ................ ...=...........{ }.........{}.... .......B..B..... ....B...........
+................ ................ ...############# ####...######### ################ ################ ################ ################
+################ ################ ################ ####...######### ################ ################ ################ ################
+################ ################ ################ ################ ################ ################ ################ ################
+################ ################ ################ ################ ################ ################ ################ ################
+
+[entities]
+;; Toad greets Samus at the start (scenery).
+toad 5 11
+goomba 13 11
+target 22 7 lesson=aim-up hang=1
+target 58 10 lesson=long-beam
+;; Pipes the enemies come out of, one at a time, once the lesson's item is taken.
+door 79 8 lesson=ice-beam
+door 90 8 lesson=varia-suit
+target 104 10 lesson=wave-beam
+
+[zones]
+exit 116 next=1-1
+
+[decor]
+brinstar-column 1 11
+brinstar-brush 8 11
+brinstar-column 15 11
+brinstar-brush 27 11
+brinstar-column 40 10
+brinstar-brush 46 10
+brinstar-column 56 10
+brinstar-brush 61 10
+brinstar-column 70 10
+brinstar-brush 77 10
+brinstar-column 88 10
+brinstar-brush 95 10
+brinstar-column 100 10
+brinstar-brush 111 10
+brinstar-column 120 10
+
+[hero-items]
+43 7 samus=grow
+49 7 samus=long-beam
+63 7 samus=missiles
+73 7 samus=ice-beam
+85 7 samus=varia-suit
+97 7 samus=wave-beam

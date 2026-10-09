@@ -150,7 +150,7 @@ Using an item:
 - At the level's start (`applyHeldItems`, from `LevelScene.enter`; campaign levels only, not a
   stage tutorial) they go through the hero's own `CharacterDef.behaviour.onPowerUp`, as touching
   one in a level does: mushroom, then flower, then Starman (its music too). Mario grows or gets fire
-  power; Link gains a heart container and the white tunic, or the red tunic; Mega Man the helmet or
+  power; Link gains a heart container and the blue tunic, or the red tunic; Mega Man the helmet or
   the next weapon... Their points are not kept. A mushroom or flower that would change nothing for
   that hero (tried first in a silent one-screen scratch world: fire Mario, a hero at full
   strength) goes back into the inventory, and the announcer says so (lost only if the inventory has

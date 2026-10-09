@@ -167,16 +167,18 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 | Bomb Bag      | `bomb-bag`      | Bombs on the belt, with 4 bombs (carries 8; drops refill them)          | bombs to 8, refill |
 | Shield Spell  | `shield-spell`  | The belt's Shield spell (8 magic: every other hit glances off for 10 s) | refill             |
 | Jump Spell    | `jump-spell`    | The belt's Jump spell (8 magic: higher jumps for 10 s)                  | refill             |
-| Blue Ring     | `blue-ring`     | Today's white tunic: every other hit glances off                        | refill             |
+| Blue Ring     | `blue-ring`     | A light blue tunic: every other hit costs no heart                      | refill             |
 | Fire Spell    | `fire-spell`    | The belt's Fire spell (4 magic: the next swing fires a beam)            | refill             |
 | Magical Sword | `magical-sword` | Today's red tunic: the sword fires a beam while hearts are full         | refill             |
 
 - **Default**: Bomb Bag (the Boomerang is in his starting kit). **Drops** (bombs, magic jars, half hearts) as
   today, but bombs drop only once he has the Bomb Bag and magic jars only once he has a spell (NEW).
-- **Hit**: half a heart (1 hit point); with the Blue Ring or the Shield spell every other hit glances off. Nothing
-  is lost. Unchanged.
-- **Flags**: the starting belt shrinks to the Boomerang (decision 5); the Blue Ring palette is today's white tunic
-  (`link-white`).
+- **Hit**: half a heart (1 hit point); with the Blue Ring or the Shield spell every other hit costs no heart; with
+  both (0.4.37, owner decision) every hit is free while the spell lasts. Nothing is lost. Classic play keeps the
+  original rule (the two do not stack).
+- **Flags**: the starting belt shrinks to the Boomerang (decision 5); the Blue Ring turns his tunic light blue
+  (`link-blue`, 0.4.37 owner decision: clear of the blue shield; original palette work, no new frames). It is the
+  campaign's and its training's (a found kit); classic play keeps the original white tunic (`link-white`).
 - **Crossover** had the Magic Boomerang, Bow, Red Ring, Magical Sword, Bomb Bag and Quiver, never losing the bow,
   bombs and sword.
 
@@ -478,7 +480,7 @@ found items, back to their basic kit.
 | ------------ | ------------------------------------------------------------------------------------------- | ------------- |
 | Mario, Luigi | fire → small (assist: → big); big → small; small dies                                       | everything    |
 | Sophia III   | Hyper or Crusher → Normal (assist: Crusher → Hyper); climbs too; missiles kept; Normal dies | everything    |
-| Link         | 1 hit point (half a heart); with the Blue Ring or Shield spell every other hit glances off  | everything    |
+| Link         | 1 hit point; Blue Ring or Shield spell: every other hit free; both: every hit free          | everything    |
 | Mega Man     | the Helmet (charge shot, brick breaking) and 4 of 28 health; without it, 4 of 28 (0.4.35)   | everything    |
 | Samus        | 8 energy, 4 with the Varia Suit                                                             | everything    |
 | Simon        | 2 health                                                                                    | everything    |
@@ -568,7 +570,17 @@ mushroom and fire flower, drawn as today, and each hero's **today's** mapping st
 `[hero-items]` sections are ignored, the starting kits are today's (Link's full belt), and the random drops stay.
 The mini games, the arena and the training room keep their own kits.
 
-## 10. Training (the 0.4.34 rework)
+## 10. Training (the 0.4.34 rework; stages since 0.4.37)
+
+**0.4.37**: Luigi, Link, Mega Man and Samus train in a stage of their own (docs/HEROES.md "Training stages").
+Each starts from the hero's basic kit and gives every power-up from a real power block (`[hero-items]`), the grow
+item first, then the order of 6.2; the item's name leads the tips box's first line. Skipping a lesson gives its
+item quietly, and every put-back restores the items of the lessons done so far. Link's Blue Ring lesson shows the
+rule "every other hit costs no heart" with FREE / HURT lights; with the Shield spell too, every hit is free while
+the spell lasts. Simon, Ryu, Bill and Sophia III keep the rooms below until 0.4.38 (Simon's Double Shot and Triple
+Shot then become one lesson).
+
+The 0.4.34 rooms:
 
 The training work in progress (`src/game/tutorial/lessons.ts` on `claude/wip-0.4.32-training`) already marks a
 lesson **(PREVIEW)** when the run lacks its kit and lends the kit in the room. The 0.4.34 rework, after this
@@ -611,7 +623,7 @@ Also:
   icon exists.
 - **Refill sounds**: reuse what each hero has (`boss-fill` for Mega Man, `sophia-pickup`, `pickup`, Mario's
   `powerup`). None new.
-- **Hero sprites**: none new (the Blue Ring and Magical Sword use today's `link-white` and `link-red`; Varia, the
+- **Hero sprites**: none new (the Magical Sword uses today's `link-red`, the Blue Ring the `link-blue` palette; Varia, the
   weapon palettes, Simon's whips and Sophia's states all exist).
 - **Inventory and bonus games**: no new art (the panel draws the pickup frames; SMB3's cards and reels stay).
 

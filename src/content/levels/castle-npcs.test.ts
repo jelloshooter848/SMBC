@@ -61,12 +61,17 @@ describe('castle ends: Toad and the princess', () => {
     expect(exitOf(l)).toMatchObject({ x: x - 1, next: 'end' });
   });
 
-  it('no other map has Toad or the princess (but 1-0, where Toad greets Mario)', () => {
+  it('no other map has Toad or the princess (but 1-0 and the training stages, where Toad greets the hero)', () => {
     const withNpc = [...maps.keys()].filter((id) => {
       const l = load(id);
       return l.entities.some((e) => e.type === 'toad' || e.type === 'princess');
     });
-    expect(withNpc.sort()).toEqual([...Object.keys(TOADS), ...Object.keys(PRINCESSES), '1-0'].sort());
+    // The training stages (training/<hero>.map, 0.4.37): Toad is the guide in every hero's stage.
+    const training = ['link', 'luigi', 'megaman', 'samus'];
+    expect(withNpc.sort()).toEqual(
+      [...Object.keys(TOADS), ...Object.keys(PRINCESSES), '1-0', ...training].sort(),
+    );
+    for (const id of training) expect(maps.get(id)).toContain(join('levels', 'training'));
     expect(at(load('1-0'), 'toad')).toEqual([[6, 12]]);
   });
 });

@@ -1,0 +1,80 @@
+;; Mega Man's training stage (0.4.37, src/game/tutorial/heroes/megaman.ts; docs/HEROES.md), in the
+;; Mega Man night-stage look: the buster at an enemy (gate 17), the slide under the low wall, the
+;; Helmet from a ? block and a charge shot at the big target (gate 39), up through the brick roof, the
+;; Saw Disc at the brick on a diagonal (gate 62), the Leaf Guard against a shooter (gate 73), Rush up
+;; the tall wall, the Flame Wave into the trench at the shell (gate 99), the Homing Knuckle at the
+;; target on the ledge (gate 113), the Bolt through a screen of enemies (gate 131) and the flagpole.
+;; Each power block's item is in [hero-items]; the gates are laid by the tutorial.
+id: training-megaman
+name: MEGA MAN TRAINING
+world: 3
+stage: 0
+theme: megaman-stage
+music: mm-stage-31
+time: 400
+start: 2,11
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0                16               32               48               64               80               96               112              128
+................ ................ ................ ................ ................ ................ ................ ................ ................
+................ ................ ................ ................ ................ ................ ................ ................ ................
+................ ................ ................ ................ ................ ................ ................ ................ ..........o.....
+................ ................ ........B....... ................ ................ ................ ................ ................ ..........!.....
+................ .....BBB........ ........B....... ................ ................ ................ ................ ................ ..........!.....
+................ .....BBB........ ........B....... ............=... ................ ..BBBB.......... ................ ................ ..........!.....
+................ .....BBB........ ........B....... ................ ................ ..BBBB.......... ................ ................ ..........!.....
+................ .....BBB........ ........B....... ................ ................ ..BBBB.......... ............BBBB ................ ..........!.....
+................ .....BBB......M. ........BB====BB B...M........... .M...........M.. ..BBBB..M....... .......M........ .....M.......... ..........!.....
+................ .....BBB........ ................ B............... ................ ..BBBB.......... ................ ................ ..........!.....
+................ .....BBB........ ................ B............... ................ ..BBBB.......... ................ ................ ..........!.....
+................ ................ ................ B............... ................ ..BBBB.......... ................ ................ ..........B.....
+################ ################ ################ ################ ################ ############.... .############### ################ ################
+################ ################ ################ ################ ################ ############.... .############### ################ ################
+################ ################ ################ ################ ################ ################ ################ ################ ################
+
+[entities]
+;; Toad greets Mega Man at the start (scenery).
+toad 5 11
+goomba 14 11
+target 36 11 lesson=charge
+target 70 11 lesson=leaf shoots=90 facing=left
+buzzy 94 13
+target 110 6 lesson=knuckle
+goomba 124 11 lesson=bolt
+goomba 126 11 lesson=bolt
+goomba 128 11 lesson=bolt
+
+[zones]
+exit 138 next=1-1
+
+[decor]
+mm-skyline 0 11
+cloud-2 3 3
+tree-small 9 11
+cloud-1 16 2
+mm-skyline 24 11
+tree-big 28 11
+cloud-2 34 3
+tree-small 50 11
+mm-skyline 54 11
+cloud-1 58 2
+tree-big 68 11
+cloud-2 74 3
+mm-skyline 86 11
+tree-small 100 11
+cloud-1 104 2
+mm-skyline 114 11
+tree-big 120 11
+cloud-2 130 3
+tree-small 134 11
+
+[hero-items]
+30 8 megaman=grow
+52 8 megaman=saw-disc
+65 8 megaman=leaf-guard
+77 8 megaman=rush-coil
+88 8 megaman=flame-wave
+103 8 megaman=homing-knuckle
+117 8 megaman=bolt

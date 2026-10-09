@@ -1,14 +1,14 @@
 import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
+import type { Scene } from '@engine/scene';
 import type { TouchLabels } from '@engine/input/touch';
 import { px, tileToSub } from '@engine/math/units';
-import { SCREEN_H } from '@engine/viewport';
+import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { Game } from '../scenes/game';
 import { CardScene } from '../scenes/message';
 import type { World } from '../world/world';
 import { T } from '../level/tiles';
 import { fontText, wrapText } from '../hud/text';
-import type { LevelScene } from '../scenes/level';
 import type { LevelData } from '../level/schema';
 import type { CharacterDef } from '../characters/character';
 import { abilityHint, controlScheme } from '../scenes/hints';
@@ -17,11 +17,14 @@ import {
   drawPromptBox,
   fillAbilities,
   LessonTracker,
+  markLessonUp,
   PROMPT_BOX_Y,
+  PROMPT_COLS,
   wrapPrompt,
   type Lesson,
 } from './stage-prompts';
 import { MARIO_TUTORIAL } from './mario-1-0';
+import { giveQuietly, itemName, ownsItem, refillHealth } from './kit';
 
 /*
  * Stage tutorials (0.5.0): a level whose play is a list of lessons (stage-prompts.ts), shown one at
@@ -40,19 +43,39 @@ import { MARIO_TUTORIAL } from './mario-1-0';
  */
 
 /**
- * A gate (0.4.36): a column of blocks at column `col`, rows `top` to 12, solid (blank tiles under
- * it: the director draws it) until lesson `after` is done; then it breaks apart.
+ * A gate (0.4.36): a column of blocks at column `col`, rows `top` to `bottom` (default 12), solid
+ * (blank tiles under it: the director draws it) until lesson `after` is done; then it breaks apart.
  */
 export interface TutorialGate {
   col: number;
   top: number;
+  bottom?: number;
   after: string;
 }
 
-/** The game and the level scene a tutorial plays in, for its scripted scenes. */
+/**
+ * Where a tutorial is played (0.4.37): a level scene (1-0) or a hero stage (hero-stage.ts), which
+ * plays on top of a paused level or a hero pick in a world of its own.
+ */
+export interface TutorialHost extends Scene {
+  readonly world: World;
+  readonly level: LevelData;
+  /** Play on after scenes pushed over it: the music starts again. */
+  resume(): void;
+  /** Play on after a card over it: the music plays on. */
+  resumePlay(): void;
+  /**
+   * A hero stage rebuilds its own world with the hero standing at column `x`, row `y` (a put-back,
+   * a respawn, Skip this lesson, START AT), then calls the director's `rebuilt`. Absent (a level
+   * scene): the game starts the level afresh, with a new director.
+   */
+  restartAt?(x: number, y: number, why: 'put-back' | 'respawn'): void;
+}
+
+/** The game and the host a tutorial plays in, for its scripted scenes. */
 export interface TutorialContext {
   game: Game;
-  scene: LevelScene;
+  scene: TutorialHost;
 }
 
 export interface StageTutorial {
@@ -79,6 +102,12 @@ export interface StageTutorial {
   /** Once this lesson is done, a respawn comes back big (the lessons after it need it). */
   bigAfter?: string;
   /**
+   * The box's left edge (px). Default: 8, the box centred and 240 px wide (PROMPT_COLS a line). A
+   * hero with bars at the screen's left edge (Mega Man) starts it to their right; it then reaches
+   * to 4 px from the right edge, with as many columns as fit.
+   */
+  boxLeft?: number;
+  /**
    * Pause → Skip tutorial (campaign): a story scene the file must still see before the stage
    * closes (1-0: Bowser's spell, once per file). Pushes it and calls `done` after it, and returns
    * true; false when there is none (the stage closes at once).
@@ -91,7 +120,12 @@ export interface StageTutorial {
  * pause menu and anything else over the level closed first), `then` after it. False when there
  * is none to play.
  */
-export function skipTutorialStory(game: Game, scene: LevelScene, levelId: string, then: () => void): boolean {
+export function skipTutorialStory(
+  game: Game,
+  scene: TutorialHost,
+  levelId: string,
+  then: () => void,
+): boolean {
   const def = stageTutorial(levelId);
   if (!def?.beforeSkip) return false;
   const stack = game.scenes;
@@ -151,6 +185,10 @@ export function newTutorialRun(
 
 /** Frames before the greeting starts, so the stage shows first. */
 const GREET_DELAY = 20;
+/** The gap between a box that starts right of the left-edge bars and the screen's right edge. */
+const BOX_RIGHT = 4;
+/** The colours of a lit box light, by its label (anything else: gold). */
+const LIGHT_COLOURS: Readonly<Record<string, string>> = { FREE: '#00a800', HURT: '#d82800' };
 /** Frames the "NICE!" tag shows on the box after a lesson is done. */
 const NICE_FRAMES = 60;
 /** Frames a player stands against a closed gate before Toad's card comes (a bump is not a stop). */
@@ -178,9 +216,17 @@ export class TutorialDirector {
   private readonly laid = new Set<TutorialGate>();
   private stopped = 0;
 
+  /** What the box last read out: its lesson and whether that lesson's item was taken. */
+  private told = '';
+  /** The lights and the note of the lesson just done, kept under NICE!. */
+  private last: { lights: { label: string; on: boolean }[]; note: string | null } = {
+    lights: [],
+    note: null,
+  };
+
   constructor(
     private readonly game: Game,
-    private readonly scene: LevelScene,
+    private readonly scene: TutorialHost,
     readonly def: StageTutorial,
     readonly run: TutorialRun,
   ) {
@@ -189,6 +235,88 @@ export class TutorialDirector {
     this.tracker.missed.push(...run.missed);
     this.shown = this.tracker.index;
     this.layGates();
+  }
+
+  /**
+   * The host rebuilt its world (a hero stage): the gates still closed are laid in it, the kit
+   * floor is given, and the current lesson comes up again (its `enter`, health refilled).
+   */
+  rebuilt(): void {
+    // Toad's card (busy while it showed) is over: the lessons go on in the new world.
+    this.busy = false;
+    this.laid.clear();
+    this.stopped = 0;
+    this.nice = 0;
+    this.shown = this.tracker.index;
+    this.cache.key = '';
+    this.layGates();
+    // The blocks of the lessons done are used, as the hero left them.
+    const done = new Set(this.tracker.done);
+    for (const l of this.def.lessons)
+      if (l.block && done.has(l.id)) this.scene.world.map.set(l.block.x, l.block.y, T.USED);
+    this.lessonUp();
+  }
+
+  /** The items of the lessons done so far (the kit floor), in the stage's order. */
+  get floor(): string[] {
+    const done = new Set(this.tracker.done);
+    return this.def.lessons.flatMap((l) => (l.item && done.has(l.id) ? [l.item] : []));
+  }
+
+  /** Every player gets the kit floor's items they lack, quietly. */
+  private giveFloor(): void {
+    for (const p of this.scene.world.players) for (const id of this.floor) giveQuietly(p, id);
+  }
+
+  /**
+   * The current lesson comes up: the kit floor (a hit that knocked Mega Man's Helmet off never
+   * strands him: his next block would give it again instead of the lesson's item), health
+   * refilled quietly (a lesson about a hit starts full too, and is then never topped up), and its
+   * `enter`.
+   */
+  private lessonUp(): void {
+    const l = this.tracker.current;
+    if (!l) return;
+    const world = this.scene.world;
+    markLessonUp(world);
+    if (this.scene.restartAt) this.giveFloor();
+    for (const p of world.players) refillHealth(p);
+    l.enter?.(world);
+  }
+
+  /**
+   * Pause → Skip this lesson (a hero stage): the lesson counts as done, its item is given quietly
+   * and its gate opens; the hero stands at the next lesson's start, past the gate, in a fresh
+   * stretch. False when there is no lesson left or the host cannot rebuild.
+   */
+  skipLesson(): boolean {
+    const t = this.tracker;
+    const l = t.current;
+    const host = this.scene;
+    if (!l || !host.restartAt) return false;
+    t.done.push(l.id);
+    t.index++;
+    this.sync();
+    const next = t.current ?? l;
+    host.restartAt(next.at, next.row ?? 12, 'put-back');
+    return true;
+  }
+
+  /**
+   * START AT (a hero stage's replay): the stage from lesson `index`, the lessons before it done
+   * (their items given quietly, their gates open) and the greeting skipped past the first.
+   */
+  startAt(index: number): void {
+    const t = this.tracker;
+    const host = this.scene;
+    const i = Math.max(0, Math.min(index, t.lessons.length - 1));
+    t.index = i;
+    t.done.splice(0, t.done.length, ...t.lessons.slice(0, i).map((l) => l.id));
+    t.missed.length = 0;
+    if (i > 0) this.run.greeted = true;
+    this.sync();
+    const l = t.lessons[i];
+    if (l && host.restartAt) host.restartAt(l.at, l.row ?? 12, 'put-back');
   }
 
   /** Gate `g` is closed: its lesson is not done yet. */
@@ -207,7 +335,7 @@ export class TutorialDirector {
     const map = this.scene.world.map;
     for (const g of this.def.gates ?? []) {
       if (!this.closed(g)) continue;
-      for (let row = g.top; row <= 12; row++) map.set(g.col, row, T.BUMPING);
+      for (let row = g.top; row <= (g.bottom ?? 12); row++) map.set(g.col, row, T.BUMPING);
       this.laid.add(g);
     }
   }
@@ -218,7 +346,7 @@ export class TutorialDirector {
     for (const g of [...this.laid]) {
       if (this.closed(g)) continue;
       this.laid.delete(g);
-      for (let row = 12; row >= g.top; row--) {
+      for (let row = g.bottom ?? 12; row >= g.top; row--) {
         world.map.set(g.col, row, T.AIR);
         world.breakPieces(g.col, row);
       }
@@ -232,7 +360,7 @@ export class TutorialDirector {
    * hero (dev select or `?level=` with another hero: then it is a plain stage). Picks up the
    * game's run of that tutorial (a respawn, a pipe) or starts one; any other level ends the run.
    */
-  static attach(game: Game, scene: LevelScene): TutorialDirector | null {
+  static attach(game: Game, scene: TutorialHost): TutorialDirector | null {
     const def = levelTutorial(scene.level);
     if (!def || game.state.character.id !== def.hero) {
       game.tutorialRun = null;
@@ -299,7 +427,7 @@ export class TutorialDirector {
     this.busy = true;
     this.stopped = 0;
     const labels = levelTouchLabels(this.scene.world.players[0], this.scene.world);
-    const words = fillAbilities(l?.retry ?? RETRY, (a, act) => this.abilityName(a, act, labels));
+    const words = fillAbilities(l?.retry ?? RETRY, (a, act, cap) => this.abilityName(a, act, labels, cap));
     const lines = ['TOAD:', '', ...wrapText(fontText(words), CARD_COLS)];
     const game = this.game;
     game.ctx.audio.sfx('pause');
@@ -327,6 +455,7 @@ export class TutorialDirector {
   putBack(): void {
     this.rewind();
     const l = this.tracker.current ?? this.def.lessons[this.def.lessons.length - 1];
+    if (this.scene.restartAt) return this.scene.restartAt(l?.at ?? 2, l?.row ?? 12, 'put-back');
     this.game.state.checkpoint = null;
     this.game.startLevel(this.game.deps.getLevel(this.def.level), {
       x: l?.at ?? 2,
@@ -398,8 +527,15 @@ export class TutorialDirector {
     }
     const step = this.tracker.update(world, this.mainArea);
     if (step) {
+      // The lights and the note as they stood when it was done: they stay up under NICE!.
+      const l = step.lesson;
+      this.last = {
+        lights: (l.lights?.(world) ?? []).map((x) => ({ ...x })),
+        note: l.note2?.(world) ?? null,
+      };
       this.sync();
       this.openGates();
+      this.lessonUp();
       if (step.kind === 'done' && !step.lesson.note) {
         this.nice = NICE_FRAMES;
         this.game.ctx.audio.sfx('select');
@@ -407,7 +543,21 @@ export class TutorialDirector {
       } else this.showCurrent();
       return;
     }
+    // The item taken: its name on the box's first line, read out with the words that follow.
+    if (this.nice === 0 && this.told !== this.tellKey()) this.announce();
     if (this.mainArea && this.stoppedAtGate(world)) this.showRetry();
+  }
+
+  /** The lesson's item is taken (or it has none). */
+  private itemTaken(l: Lesson | undefined): boolean {
+    if (!l?.item) return true;
+    const p = this.scene.world.players[0];
+    return !!p && ownsItem(p, l.item);
+  }
+
+  /** What the box reads now: its lesson, and whether that lesson's item is taken. */
+  private tellKey(): string {
+    return `${this.shown}|${this.itemTaken(this.tracker.lessons[this.shown])}`;
   }
 
   /** The box moves on to the current lesson, read out. */
@@ -425,30 +575,59 @@ export class TutorialDirector {
 
   /** Reads out the prompt the box shows. */
   announce(): void {
+    this.told = this.tellKey();
     const text = this.lines().join(' ');
     if (text) this.game.deps.announcer?.say(text);
   }
 
-  /** The words for ability `ability` on `action`: the touch button's caption on touch, then the key. */
-  private abilityName(ability: string, action: Action, labels: TouchLabels): string {
+  /**
+   * The words for ability `ability` on `action`: on touch the token's own caption (`caption`, the
+   * tool's button as it reads once picked), else the button's caption now; then the key.
+   */
+  private abilityName(ability: string, action: Action, labels: TouchLabels, caption?: string): string {
     const touch = controlScheme(this.game) === 'touch';
-    const caption = action in labels ? labels[action as keyof TouchLabels] : null;
-    return abilityHint(this.game, touch && caption ? caption : ability, action);
+    const now = action in labels ? labels[action as keyof TouchLabels] : null;
+    return abilityHint(this.game, touch ? (caption ?? now ?? ability) : ability, action);
   }
 
-  /** The prompt's lines as the box shows them (cached until the lesson or the scheme changes). */
+  /**
+   * Lesson `l`'s words as the box shows them in the scheme in use with the buttons' captions
+   * `labels`: before its item is taken (`get`), or after, its name leading the first line ("BOMB
+   * BAG! TOOLS PICKS..."). Tests read every lesson's this way.
+   */
+  linesFor(l: Lesson, taken: boolean, labels: TouchLabels): string[] {
+    const touch = controlScheme(this.game) === 'touch';
+    const words = taken
+      ? ((touch ? l.touchText : undefined) ?? l.text)
+      : ((touch ? l.touchGet : undefined) ?? l.get ?? l.text);
+    const head = l.item && taken ? `${itemName(this.def.hero, l.item).toUpperCase()}! ` : '';
+    return wrapPrompt(
+      head + fillAbilities(words, (a, act, cap) => this.abilityName(a, act, labels, cap)),
+      this.cols,
+    );
+  }
+
+  /** Columns a line of the box takes. */
+  get cols(): number {
+    const left = this.def.boxLeft;
+    return left === undefined ? PROMPT_COLS : Math.floor((SCREEN_W - left - BOX_RIGHT - 8) / 8);
+  }
+
+  /**
+   * The prompt's lines as the box shows them (cached until the lesson, the scheme or a button's
+   * caption changes): the item's name first once it is taken ("BLUE RING!"), then the words
+   * (`get` before it is taken).
+   */
   lines(): string[] {
     const l = this.tracker.lessons[this.shown];
     if (!l) return [];
     const labels = levelTouchLabels(this.scene.world.players[0], this.scene.world);
     const scheme = controlScheme(this.game);
-    const key = `${this.shown}|${scheme}|${labels.jump}|${labels.attack}`;
-    const text = (scheme === 'touch' ? l.touchText : undefined) ?? l.text;
-    if (this.cache.key !== key)
-      this.cache = {
-        key,
-        lines: wrapPrompt(fillAbilities(text, (a, act) => this.abilityName(a, act, labels))),
-      };
+    const taken = this.itemTaken(l);
+    const key = [this.shown, scheme, labels.jump, labels.attack, labels.special, labels.select, taken].join(
+      '|',
+    );
+    if (this.cache.key !== key) this.cache = { key, lines: this.linesFor(l, taken, labels) };
     return this.cache.lines;
   }
 
@@ -456,32 +635,91 @@ export class TutorialDirector {
    * The prompt box over the level (not while a scripted scene plays, before the greeting, or under
    * the pause menu).
    */
-  render(r: Renderer): void {
-    this.drawGates(r);
-    if (this.busy || !this.run.greeted || this.game.scenes.top !== this.scene) return;
+  render(r: Renderer, opts: { gates?: boolean } = {}): void {
+    if (opts.gates !== false) this.drawGates(r);
+    if (this.game.scenes.top !== this.scene) return;
+    const box = this.box();
+    if (!box) return;
+    const font = this.game.ctx.assets.sheet('font');
+    const bottom = drawPromptBox(r, font, box.rows, {
+      tag: this.nice > 0 ? 'NICE!' : '',
+      y: box.y,
+      x: box.x,
+      w: box.w,
+    });
+    // The meter, then the lights, in the blank rows under the words.
+    let y = bottom - 5 - box.extra;
+    if (box.meter !== null) {
+      this.drawMeter(r, y + 2, box.meter, box.x + (box.w >> 1));
+      y += 10;
+    }
+    if (box.lights.length) this.drawLights(r, y + 1, box.lights, box.x + (box.w >> 1));
+  }
+
+  /**
+   * Where the box goes and what it holds this frame (null: none): its text rows (blank rows kept
+   * for the meter and the lights under the words), its left edge and top, its size.
+   */
+  box(): {
+    rows: string[];
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    meter: number | null;
+    lights: readonly { label: string; on: boolean }[];
+    extra: number;
+  } | null {
+    if (this.busy || !this.run.greeted) return null;
     const lines = this.lines();
-    if (!lines.length) return;
+    if (!lines.length) return null;
+    const world = this.scene.world;
     const l = this.tracker.lessons[this.shown];
-    const meter = l?.meter && this.nice === 0 ? Math.max(0, Math.min(1, l.meter(this.scene.world))) : null;
-    const shown = meter === null ? lines : [...lines, ''];
-    const h = shown.length * 10 + 10;
+    const live = this.nice === 0 && this.itemTaken(l);
+    const meter = l?.meter && live ? Math.max(0, Math.min(1, l.meter(world))) : null;
+    const lights = this.nice > 0 ? this.last.lights : ((l?.lights && live ? l.lights(world) : null) ?? []);
+    const note = this.nice > 0 ? this.last.note : l?.note2 && live ? l.note2(world) : null;
+    const text = note ? [...lines, fontText(note)] : lines;
+    // Room under the words for the meter (a row) and the lights (two rows).
+    const blank = (meter !== null ? 1 : 0) + (lights.length ? 1 : 0);
+    const rows = [...text, ...Array<string>(blank).fill('')];
+    const h = rows.length * 10 + 10;
+    const x = this.def.boxLeft ?? 8;
+    const boxW = this.def.boxLeft === undefined ? SCREEN_W - 2 * x : SCREEN_W - x - BOX_RIGHT;
     // Out of the way of a player up high (a vine, the flagpole's top): the box goes to the bottom.
-    const camY = this.scene.world.camera.pxY ?? 0;
-    const high = this.scene.world.players.some(
+    const camY = world.camera.pxY ?? 0;
+    const high = world.players.some(
       (p) => !p.dead && !p.out && Math.round(p.body.y / px(1)) - camY < PROMPT_BOX_Y + h + 8,
     );
     const y = high ? SCREEN_H - h - 6 : PROMPT_BOX_Y;
-    const bottom = drawPromptBox(r, this.game.ctx.assets.sheet('font'), shown, {
-      tag: this.nice > 0 ? 'NICE!' : '',
-      y,
-    });
-    if (meter !== null) this.drawMeter(r, bottom - 13, meter);
+    return { rows, x, y, w: boxW, h, meter, lights, extra: blank * 10 };
+  }
+
+  /** Lights in a row, centred: a frame each, lit in its colour or dark, the label inside. */
+  private drawLights(
+    r: Renderer,
+    y: number,
+    lights: readonly { label: string; on: boolean }[],
+    centre: number,
+  ): void {
+    const font = this.game.ctx.assets.sheet('font');
+    const cell = (l: { label: string }) => l.label.length * 8 + 8;
+    const gap = 16;
+    const total = lights.reduce((n, l) => n + cell(l), 0) + gap * (lights.length - 1);
+    let x = centre - (total >> 1);
+    for (const l of lights) {
+      const w = cell(l);
+      r.rect(x, y - 1, w, 10, '#fcfcfc');
+      r.rect(x + 1, y, w - 2, 8, l.on ? (LIGHT_COLOURS[l.label] ?? '#f8b800') : '#202020');
+      r.text(font, l.label, x + 4, y);
+      x += w + gap;
+    }
   }
 
   /** The sprint bar: a frame, dark cells, gold fill (white once full), arrow notches. */
-  private drawMeter(r: Renderer, y: number, k: number): void {
+  private drawMeter(r: Renderer, y: number, k: number, centre = SCREEN_W >> 1): void {
     const w = 128;
-    const x = 64;
+    const x = centre - 64;
     r.rect(x - 2, y - 2, w + 4, 10, '#fcfcfc');
     r.rect(x, y, w, 6, '#404040');
     const fill = Math.round(w * k);
@@ -490,7 +728,7 @@ export class TutorialDirector {
   }
 
   /** The closed gates: columns of red and white barrier blocks (blank solid tiles beneath). */
-  private drawGates(r: Renderer): void {
+  drawGates(r: Renderer): void {
     if (!this.laid.size) return;
     const cam = this.scene.world.camera;
     const camX = cam.pxX;
@@ -499,7 +737,7 @@ export class TutorialDirector {
     for (const g of this.laid) {
       const x = g.col * 16 - camX;
       if (x < -16 || x > 256) continue;
-      for (let row = g.top; row <= 12; row++) r.sprite(sheet, GATE_FRAME, x, row * 16 - camY);
+      for (let row = g.top; row <= (g.bottom ?? 12); row++) r.sprite(sheet, GATE_FRAME, x, row * 16 - camY);
     }
   }
 
@@ -511,6 +749,7 @@ export class TutorialDirector {
     const t = this.tracker;
     this.rewind();
     const l = t.current ?? t.lessons[t.lessons.length - 1];
+    if (this.scene.restartAt) return this.scene.restartAt(l?.at ?? 2, l?.row ?? 12, 'respawn');
     // Past the mushroom, the lessons need a big hero: he comes back big.
     const big = this.def.bigAfter;
     if (big && t.done.includes(big) && this.game.state.powerState === 'small')
