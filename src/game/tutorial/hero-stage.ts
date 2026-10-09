@@ -372,6 +372,14 @@ export class HeroStageScene implements Scene, TutorialHost {
     }
     const world = this.world;
     world.update([frame]);
+    // The top of the screen is a ceiling here: no hero gets over a gate from above it (Ryu kicking
+    // up a gate's face, 0.4.38).
+    for (const p of world.players) {
+      const b = p.body;
+      if (b.y >= 0 || p.dead) continue;
+      b.y = 0;
+      if (b.vy < 0) b.vy = 0;
+    }
     stageWatch(world).observe();
     this.syncState();
     this.director.update();

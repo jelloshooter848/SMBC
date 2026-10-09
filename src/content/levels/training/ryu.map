@@ -1,0 +1,72 @@
+;; Ryu's training stage (0.4.38, src/game/tutorial/heroes/ryu.ts; docs/HEROES.md), in the Ninja
+;; Gaiden city-street look: the sword at an enemy (gate 16), a cling to the shaft's wall and kicks
+;; up between its walls onto the roof (only wall jumps reach it), the Medicine and the Throwing Star
+;; at a target (gate 47), the Ninpo Scroll and the Windmill Star through two targets (gate 63), the
+;; Fire Wheel's flames against a shooter (gate 78), Jump and Slash at the walkers out of the pipe
+;; (gate 95) and the flagpole. Each power block's item is in [hero-items]; the gates are laid by the
+;; tutorial.
+id: training-ryu
+name: RYU TRAINING
+world: 6
+stage: 0
+theme: ninja-city
+music: ng-city
+time: 400
+start: 2,11
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0                16               32               48               64               80               96
+................ ...BB........... ................ ................ ................ ................ ................
+................ ...BB........... ................ ................ ................ ................ ................
+................ ...BB........... ................ ................ ................ ................ ....o...........
+................ ...BB........... ................ ................ ................ ................ ....!...........
+................ ...BB...BBBBBB.. ................ ................ ................ ................ ....!...........
+................ ...BB...BBBBBB.. ................ ................ ................ ................ ....!...........
+................ ...BB...BBBBBB.. ................ ................ ................ ................ ....!...........
+................ ...BB...BBBBBB.. ................ ................ ................ ................ ....!...........
+................ ...BB...BBBBBB.. ................ ................ ................ ................ ....!...........
+................ ........BBBBBB.. ..M...M......... ..M..M.......... ..M............. .M.............. ....!...........
+................ ........BBBBBB.. ................ ................ ................ ................ ....!...........
+................ ........BBBBBB.. ................ ................ ................ ..........[].... ....B...........
+################ ################ ################ ################ ################ ################ ################
+################ ################ ################ ################ ################ ################ ################
+################ ################ ################ ################ ################ ################ ################
+
+[entities]
+;; Toad greets Ryu at the start (scenery).
+toad 5 11
+goomba 13 11
+target 44 11 lesson=throwing-star
+target 58 11 lesson=windmill
+target 60 11 lesson=windmill
+target 74 11 lesson=fire-wheel shoots=90 facing=left
+;; The pipe Jump and Slash's walkers come out of, one at a time, once it is taken.
+door 90 10 lesson=jump-slash
+
+[zones]
+exit 100 next=1-1
+
+[decor]
+cloud-2 2 3
+tree-small 8 11
+tree-big 14 11
+cloud-1 31 2
+tree-small 36 11
+tree-big 46 11
+cloud-2 55 3
+tree-small 63 11
+tree-big 70 11
+cloud-1 78 2
+tree-small 86 11
+tree-big 96 11
+cloud-2 104 3
+
+[hero-items]
+34 9 ryu=grow
+38 9 ryu=throwing-star
+50 9 ryu=ninpo-scroll
+53 9 ryu=windmill
+66 9 ryu=fire-wheel
+81 9 ryu=jump-slash

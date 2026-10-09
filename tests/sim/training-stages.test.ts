@@ -58,6 +58,7 @@ const KIT_ORDER: Readonly<Record<string, readonly string[]>> = {
     'triple-shot',
     'stopwatch',
   ],
+  ryu: ['medicine', 'throwing-star', 'ninpo-scroll', 'windmill', 'fire-wheel', 'jump-slash'],
 };
 
 function stageIn(heroId: string, scheme: ControlScheme): HeroStageScene {
