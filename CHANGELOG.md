@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.35] - 2026-10-09
+
 ### Added
 
 - The title screen has a speaker: tap or click it, or press SOUND (SELECT), to turn all sound on or off. It is the same
@@ -843,7 +845,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.34...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.35...HEAD
+[0.4.35]: https://github.com/jelloshooter848/SMBC/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/jelloshooter848/SMBC/compare/v0.4.33...v0.4.34
 [0.4.33]: https://github.com/jelloshooter848/SMBC/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jelloshooter848/SMBC/compare/v0.4.31...v0.4.32
