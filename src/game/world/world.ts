@@ -91,7 +91,8 @@ import { DEATH_FRAMES, DEATH_SFX, renderDeath, startDeath, stepDeath, type Death
 import { Axe } from '../entities/objects/axe';
 import { CaveFire, Moblin } from '../entities/objects/moblin';
 import { YoshiEgg } from '../entities/objects/yoshi-egg';
-import { Larry } from '../entities/enemies/larry';
+import { Larry, WAND_BLAST_POINTS, WandBlast } from '../entities/enemies/larry';
+import { Gull, ShieldJoe, TellyPort, Telly, Yoku } from '../entities/enemies/wily-sky';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
@@ -954,7 +955,18 @@ export class World {
       case 'rocky':
         return new RockyWrench(s.x, s.y);
       case 'larry':
-        return new Larry(s.x, s.y, typeof s.props?.next === 'string' ? s.props.next : null);
+        return new Larry(s.x, s.y, typeof s.props?.next === 'string' ? s.props.next : null, this.megamanShip);
+      // Mega Man's airship, the Wily-sky remix (0.4.39, entities/enemies/wily-sky.ts).
+      case 'telly-port':
+        return new TellyPort(s.x, s.y);
+      case 'telly':
+        return new Telly(x + px(8), y + px(8));
+      case 'gull':
+        return new Gull(x, y);
+      case 'shield-joe':
+        return new ShieldJoe(x, y);
+      case 'yoku':
+        return new Yoku(s.x, s.y, s.props ?? {});
       case 'lift-h':
       case 'lift-v':
       case 'lift-fall':
@@ -1035,7 +1047,49 @@ export class World {
     else if (o instanceof Projectile && o.owner instanceof Player) killer = o.owner;
     if (!killer) killer = this.nearestPlayer(e.body.x);
     const kind = killer.def.drop?.(this.rng, e, killer);
-    if (kind) this.spawn(new Pickup(e.body.x + (e.body.w >> 1), e.body.y + e.body.h, kind));
+    if (!kind) return;
+    const drop = new Pickup(e.body.x + (e.body.w >> 1), e.body.y + e.body.h, kind);
+    if (this.megamanShip) this.placeDrop(drop);
+    this.spawn(drop);
+  }
+
+  /**
+   * Mega Man's airship (0.4.39: the level laid with his `[variant megaman]` sections, level/
+   * variants.ts): his own rules there. Cannons take buster hits, Larry has a hit-point bar, his
+   * wand blasts can be shot down, and every drop lands where it can be collected.
+   */
+  get megamanShip(): boolean {
+    return this.level.heroVariants?.includes('megaman') === true;
+  }
+
+  /**
+   * A drop on Mega Man's airship is always collectible: one over open air (a gap, the sky under
+   * the hull) or too near the scrolling screen's left edge moves to the nearest column on screen
+   * with a deck under it, and one inside a wall comes out on top of it.
+   */
+  placeDrop(drop: Pickup): void {
+    const b = drop.body;
+    const cam = this.camera;
+    const first = tileAt(cam.x) + 2;
+    const last = tileAt(cam.right) - 1;
+    const row = Math.max(0, Math.min(this.level.height - 1, tileAt(b.y)));
+    /** The first solid row at or below `row` in column `col`, or null. */
+    const ground = (col: number): number | null => {
+      for (let y = row; y < this.level.height; y++) if (this.map.isSolid(col, y)) return y;
+      return null;
+    };
+    const col0 = Math.max(first, Math.min(last, tileAt(b.x + (b.w >> 1))));
+    for (let d = 0; d <= last - first; d++)
+      for (const col of d === 0 ? [col0] : [col0 + d, col0 - d]) {
+        if (col < first || col > last) continue;
+        let g = ground(col);
+        if (g === null) continue;
+        // Inside a wall: on top of it instead.
+        while (g > 0 && this.map.isSolid(col, g - 1)) g--;
+        b.x = tileToSub(col) + px(8) - (b.w >> 1);
+        if (b.y + b.h > tileToSub(g)) b.y = tileToSub(g) - b.h;
+        return;
+      }
   }
 
   /** A bomb blast centred at (cx, cy) in subpixels: hurts everything in the square, opens blocks. */
@@ -1118,6 +1172,23 @@ export class World {
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
       else if (e instanceof Pickup) this.collectPickup(p, e);
     }
+  }
+
+  /**
+   * A player's shot hit a wall at (x, y) (subpixels): on Mega Man's airship a cannon there takes
+   * the hit (Cannon.shot). True when one did.
+   */
+  shotWall(pr: Projectile, x: number, y: number): boolean {
+    if (!this.megamanShip || !(pr.owner instanceof Player)) return false;
+    const tx = tileAt(x);
+    const ty = tileAt(y);
+    for (const e of this.entities)
+      if (e instanceof Cannon && e.alive && e.tx === tx && e.ty === ty)
+        return e.shot(
+          { kind: pr.spec.damage, amount: pr.spec.amount, owner: pr, dirX: pr.body.vx > 0 ? 1 : -1 },
+          this,
+        );
+    return false;
   }
 
   /** A projectile struck the tile at a point: bricks and item blocks react as to a head bump. */
@@ -2235,6 +2306,20 @@ export class World {
       return;
     }
     if (!pr.spec.hitsEnemies || pr.owner !== p) return;
+    // Mega Man's airship: Larry's wand blasts can be shot down (a few points; the shot goes on
+    // only if it pierces).
+    if (this.megamanShip)
+      for (const q of this.entities) {
+        if (!(q instanceof WandBlast) || !q.alive || !overlaps(q.body, pr.body)) continue;
+        q.destroy();
+        this.spawn(new Explosion(q.body.x + (q.body.w >> 1), q.body.y + (q.body.h >> 1), true));
+        this.audio.sfx('kick');
+        this.addScore(WAND_BLAST_POINTS, q.body.x, q.body.y);
+        if (!pr.spec.pierce && !pr.spec.pierceDefeat) {
+          pr.destroy();
+          return;
+        }
+      }
     for (const e of this.enemies) {
       if (pr.hitIds.has(e.id) || !overlaps(pr.body, e.body)) continue;
       const src: DamageSource = {

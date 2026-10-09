@@ -13,7 +13,8 @@ import {
   STATUS_BAR_Y,
 } from '../hud/smb3-status';
 import { drawHud } from '../hud/hud';
-import { drawSmb3HeroStats } from '../hud/smb3-hero-panel';
+import { drawBossBar, drawSmb3HeroStats } from '../hud/smb3-hero-panel';
+import { Larry } from '../entities/enemies/larry';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
 import type { CharacterDef } from '../characters/character';
@@ -518,6 +519,9 @@ export class LevelScene implements Scene {
       // The heroes' own hit points, bars, hearts and tool belt in a box of the bar, over its
       // empty card slots (never over the deck, where Larry's ship pins the hero to the left).
       drawSmb3HeroStats(r, ctx.assets, this.game.state, this.world.players);
+      // Mega Man's airship: Larry's hit points as a Mega Man 2 style bar (0.4.39).
+      const larry = this.world.entities.find((e): e is Larry => e instanceof Larry && e.hpMode);
+      if (larry && larry.state !== 'fly') drawBossBar(r, larry.maxHp, larry.hp);
       this.drawItemCaption(r);
       this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0, {
         shiftY: SMB3_WORLD_SHIFT,

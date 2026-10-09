@@ -548,6 +548,11 @@ export interface LevelData {
    */
   variants?: LevelVariant[];
   /**
+   * The heroes whose `[variant <hero>]` sections were laid on this copy of the level (set by
+   * `heroVariant` only; a map never has it): Mega Man's airship (0.4.39) plays by his rules.
+   */
+  heroVariants?: string[];
+  /**
    * The campaign's hero items (the map's `[hero-items]` section, docs/POWERUPS.md 3.2): what each
    * power block gives each hero. Classic play ignores it.
    */
@@ -578,6 +583,8 @@ export interface LevelVariant {
   tiles: { x: number; y: number; tiles: number[] }[];
   /** Spawns added (`+ type x y`, or a marker in a run). */
   add?: EntitySpawn[];
+  /** The level's music for that hero instead (`music <song>`: Mega Man's airship deck, 0.4.39). */
+  music?: string;
   /** The map's spawns taken out (`- type x y`: every spawn of that type at that tile). */
   remove?: { type: string; x: number; y: number }[];
 }

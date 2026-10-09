@@ -260,8 +260,10 @@ export class Projectile extends Entity {
     if (this.spec.hitsTiles && !this.spec.piercesTiles) {
       moveX(b, world.map, velToSub(b.vx));
       if (b.hitWall !== 0) {
-        if (this.spec.breaksBricks)
-          world.breakAt(b.x + (b.hitWall > 0 ? b.w : -1), b.y + (b.h >> 1), this.owner);
+        const wx = b.x + (b.hitWall > 0 ? b.w : -1);
+        if (this.spec.breaksBricks) world.breakAt(wx, b.y + (b.h >> 1), this.owner);
+        // Mega Man's airship: a cannon there takes the hit.
+        world.shotWall(this, wx, b.y + (b.h >> 1));
         return this.burst(world);
       }
       if (this.spec.gravity || this.spec.arc) {

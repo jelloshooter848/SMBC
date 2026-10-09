@@ -17,6 +17,10 @@ import type { LevelData } from './schema';
  *   too, as the original lays them (removals included). Everything else outside the campaign stays
  *   exactly as Crossover has it.
  *
+ * - A section may name the level's music while that hero plays it (`music <song>`), and the copy
+ *   lists the heroes whose sections it laid (LevelData.heroVariants): Mega Man's airship (0.4.39,
+ *   `[variant megaman]` in 4-2-airship and 4-2-larry) plays by his rules where World checks it.
+ *
  * Game.levelScene applies it after the campaign variant (level/campaign.ts).
  */
 
@@ -46,7 +50,9 @@ export function heroVariant(level: LevelData, heroes: readonly string[], campaig
   const entities = level.entities
     .filter((e) => !gone.some((g) => g.type === e.type && g.x === e.x && g.y === e.y))
     .concat(runs.flatMap((v) => (v.add ?? []).map((e) => ({ ...e }))));
-  const out: LevelData = { ...level, tiles, entities };
+  const laid = [...new Set(runs.map((v) => v.hero))].sort();
+  const music = runs.find((v) => v.music)?.music;
+  const out: LevelData = { ...level, tiles, entities, heroVariants: laid, ...(music ? { music } : {}) };
   if (!byKey) cache.set(level, (byKey = new Map()));
   byKey.set(key, out);
   return out;
