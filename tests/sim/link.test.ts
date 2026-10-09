@@ -206,13 +206,29 @@ describe("Link's kit", () => {
     const tunic = walkInto({ tunic: 1 });
     expect(tunic.hits).toBeGreaterThanOrEqual(2);
     expect(tunic.hp).toBe(6 - Math.floor(tunic.hits / 2));
-    // The ring and the Shield spell together (owner, 0.4.37): every hit is free while it lasts.
-    const both = walkInto({ tunic: 1, shieldSpell: 600 });
+    // The ring and the Shield spell together in the campaign (owner, 0.4.37): every hit is free
+    // while it lasts.
+    const both = walkInto({ found: 1, tunic: 1, shieldSpell: 600 });
     expect(both.hits).toBeGreaterThanOrEqual(2);
     expect(both.hp).toBe(6);
+    // Classic play keeps the original rule: the white tunic and the spell do not stack.
+    const classic = walkInto({ tunic: 1, shieldSpell: 600 });
+    expect(classic.hits).toBeGreaterThanOrEqual(2);
+    expect(classic.hp).toBe(6 - Math.floor(classic.hits / 2));
     // The spell alone: every other hit, as the ring.
     const spell = walkInto({ shieldSpell: 600 });
     expect(spell.hp).toBe(6 - Math.floor(spell.hits / 2));
+  });
+
+  it('the tunic is light blue (the Blue Ring) in the campaign and white in classic play', () => {
+    const palette = (kit: Record<string, number>) => {
+      const w = run(field(), () => [], 1, kit).world;
+      return w.player.def.sprite(w.player, 0, false).palette;
+    };
+    expect(palette({ tunic: 1 })).toBe('link-white');
+    expect(palette({ found: 1, tunic: 1 })).toBe('link-blue');
+    expect(palette({})).toBe('link');
+    expect(palette({ found: 1 })).toBe('link');
   });
 
   it('drops include bombs, magic and hearts, and a bomb pickup raises the ammo', () => {

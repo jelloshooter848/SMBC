@@ -174,9 +174,11 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 - **Default**: Bomb Bag (the Boomerang is in his starting kit). **Drops** (bombs, magic jars, half hearts) as
   today, but bombs drop only once he has the Bomb Bag and magic jars only once he has a spell (NEW).
 - **Hit**: half a heart (1 hit point); with the Blue Ring or the Shield spell every other hit costs no heart; with
-  both (0.4.37, owner decision) every hit is free while the spell lasts. Nothing is lost.
+  both (0.4.37, owner decision) every hit is free while the spell lasts. Nothing is lost. Classic play keeps the
+  original rule (the two do not stack).
 - **Flags**: the starting belt shrinks to the Boomerang (decision 5); the Blue Ring turns his tunic light blue
-  (`link-blue`, 0.4.37 owner decision: clear of the blue shield; original palette work, no new frames).
+  (`link-blue`, 0.4.37 owner decision: clear of the blue shield; original palette work, no new frames). It is the
+  campaign's and its training's (a found kit); classic play keeps the original white tunic (`link-white`).
 - **Crossover** had the Magic Boomerang, Bow, Red Ring, Magical Sword, Bomb Bag and Quiver, never losing the bow,
   bombs and sword.
 

@@ -128,8 +128,10 @@ function shieldUp(p: Player): boolean {
 }
 
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
-  // The Blue Ring (`tunic`) turns the tunic light blue (owner, 0.4.37); the Magical Sword red.
-  let palette = p.scratch.beam ? 'link-red' : p.scratch.tunic ? 'link-blue' : 'link';
+  // The Blue Ring (`tunic`) turns the tunic light blue in the campaign and its training (owner,
+  // 0.4.37); classic play keeps the original white tunic. The Magical Sword's is red.
+  const ring = isFound(p) ? 'link-blue' : 'link-white';
+  let palette = p.scratch.beam ? 'link-red' : p.scratch.tunic ? ring : 'link';
   if (p.star > 0) palette = `link-star-${reduceFlashing ? 0 : (frame >> 1) & 3}`;
   let name: string;
   if (p.dead) name = 'die';
@@ -443,11 +445,11 @@ export const LINK: CharacterDef = {
     },
     onHurt(p, world) {
       // The Blue Ring or the Shield spell: every other hit costs no heart (a bump, a knock back).
-      // Both at once (owner, 0.4.37): every hit is free while the spell lasts, and the ring's
-      // count stays where it was.
+      // Both at once in the campaign and its training (owner, 0.4.37): every hit is free while the
+      // spell lasts, and the ring's count stays where it was. Classic play keeps the original rule.
       const ring = !!p.scratch.tunic;
       const spell = (p.scratch.shieldSpell ?? 0) > 0;
-      const both = ring && spell;
+      const both = ring && spell && isFound(p);
       if (both || ((ring || spell) && !p.scratch.halfHit)) {
         if (!both) p.scratch.halfHit = 1;
         p.invuln = 60;

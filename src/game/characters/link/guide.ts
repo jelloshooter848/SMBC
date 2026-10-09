@@ -23,7 +23,7 @@ export const LINK_GUIDE: CharacterGuide = {
   powerups: [
     {
       item: 'mushroom',
-      does: 'Classic play: A heart container, full heal, and the blue tunic: every other hit costs no heart.',
+      does: 'Classic play: A heart container, full heal, and the white tunic: every other hit glances off.',
     },
     {
       item: 'flower',

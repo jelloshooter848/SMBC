@@ -131,9 +131,17 @@ describe.each([
 });
 
 describe('link extras', () => {
-  it('has red and blue tunic variants that only recolour the tunic, the blue clear of the shield', () => {
+  it('has red, white and blue tunic variants that only recolour the tunic, the blue clear of the shield', () => {
     expect(linkPalettes['link-red']).toBeDefined();
     const base = linkPalettes.link as string[];
+    // Classic play's white tunic (the original Crossover's) stays.
+    const white = linkPalettes['link-white'] as string[];
+    expect(white).toBeDefined();
+    expect(white[1]).toBe('#fcfcfc');
+    expect(white[2]).toBe('#bcbcbc');
+    base.forEach((c, i) => {
+      if (i !== 1 && i !== 2) expect(white[i], `index ${i}`).toBe(c);
+    });
     const blue = linkPalettes['link-blue'] as string[];
     expect(blue).toBeDefined();
     // Light blue (the Blue Ring, 0.4.37), not the shield's deep blue (index a).

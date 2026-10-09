@@ -24,7 +24,21 @@ export const linkPalettes: Record<string, string[]> = {
     NES.yellow,
     NES.blueMid,
   ],
-  // The Blue Ring (0.4.37, owner: light blue, clear of the shield's deep blue).
+  // Classic play's white tunic (the original Crossover's, from the mushroom).
+  'link-white': [
+    NES.black,
+    NES.white,
+    NES.lightGray,
+    NES.skin,
+    NES.brown,
+    NES.brownDark,
+    NES.white,
+    NES.lightGray,
+    NES.gray,
+    NES.yellow,
+    NES.blueMid,
+  ],
+  // The campaign's Blue Ring (0.4.37, owner: light blue, clear of the shield's deep blue).
   'link-blue': [
     NES.black,
     NES.skyLight,
