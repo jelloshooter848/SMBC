@@ -481,11 +481,10 @@ within 56 px he jumps with surprise, everyone stops, and his cards play over the
 top, each read out, OK = JUMP to go on): `...!` / `YOU FOUND ME?!` / `I'LL SHOW YOU A SECRET PATH...
 AS LONG AS YOU DON'T TELL ANYONE.` / `IT'S A SECRET TO EVERYBODY.` (the `secret` jingle). Then:
 
-- **Campaign** (`Game.campaignTopSecret`): **2-1 counts as cleared** (`clearLevel`: its normal road
-  to 2-2) **and** the secret `bonus-2` is found (`secretExit`: the road to the bonus node). This is
-  the one exit that opens both (owner decision); the map draws both roads in, like the 1-2 warp
-  spot's (`pendingReveal` `smb-2:2-1>2-2`, `smb-2:2-2`, `smb-2:2-1>bonus-2`, `smb-2:bonus-2`), and
-  2-1 reads "World 2-1, cleared, secret exit found". 2-1 shows the secret-exit dot from the start:
+- **Campaign** (`Game.campaignTopSecret`): the secret `bonus-2` is found (`secretExit`: the road
+  to the bonus node, `pendingReveal` `smb-2:2-1>bonus-2`, `smb-2:bonus-2`) and nothing else: 2-1 is
+  not cleared and 2-2 opens only from its flagpole (0.4.35, owner; 0.4.10 to 0.4.34 cleared 2-1
+  too). 2-1 reads "World 2-1, open, secret exit found". 2-1 shows the secret-exit dot from the start:
   `map/secret-exits.ts` counts an area entity with a `secret` prop (the Moblin) as a way out.
 - Elsewhere (level select, `?level=2-1-cave`) play goes on to `next` (2-2); a play-test ends.
 
