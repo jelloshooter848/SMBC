@@ -37,7 +37,7 @@ describe("Mega Man's deck (the variant)", () => {
     // every standing buster shot across it: still an SMB3 fight.
     const diff = [...mmRoom.tiles].flatMap((v, i) => (v === ROOM.tiles[i] ? [] : [i]));
     expect(diff).toEqual([12 * ROOM.width + 7]);
-    expect(mmRoom.tiles[12 * ROOM.width + 7]).toBe(T.AIR);
+    expect(mmRoom.tiles[12 * ROOM.width + 7]).toBe(T.WALL);
     expect(mmRoom.music).toBe(ROOM.music);
     // The bow, the cannons, the blasters and the pipe are where they were.
     for (const e of DECK.entities.filter((e) => e.type === 'cannon'))
