@@ -13,6 +13,7 @@ const FRAMES: Record<string, Size> = {
   picture: [24, 22],
   'cap-hook': [16, 16],
   clock: [18, 28],
+  'gate-block': [16, 16],
   'door-shut': [32, 56],
   'door-open': [32, 56],
 };

@@ -15,6 +15,8 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * - `picture` (24x22): a gold frame round a picture of Peach's castle.
  * - `cap-hook` (16x16): a peg with Luigi's green cap hanging on it.
  * - `clock` (18x28): a wall clock with a pendulum.
+ * - `gate-block` (16x16): not furniture: a block of the training gates that close 1-0's way until
+ *   a task is done (red and white barrier stripes).
  * - `door-shut` / `door-open` (32x56): the front door (planks, a round window, a brass knob);
  *   open, it shows the bright morning outside with the door swung in against the frame.
  */
@@ -220,6 +222,20 @@ function clock(): string[] {
   return rows(g);
 }
 
+/**
+ * A block of the training gate (tutorial/stage-tutorial.ts, 1-0's gates): red and white barrier
+ * stripes running up to the right in a dark frame, a shade along its bottom and right edges.
+ */
+function gateBlock(): string[] {
+  const g = blank(16, 16);
+  box(g, 0, 0, 16, 16, '0');
+  for (let y = 1; y < 15; y++)
+    for (let x = 1; x < 15; x++) dot(g, x, y, ((x + y) >> 2) % 2 === 0 ? '5' : '1');
+  box(g, 1, 14, 14, 1, 'e');
+  box(g, 14, 1, 1, 14, 'e');
+  return rows(g);
+}
+
 /** The front door, shut: planks, hinge straps, a round window and a brass knob. */
 function doorShut(): string[] {
   const g = blank(32, 56);
@@ -266,6 +282,7 @@ export const houseDef: SpriteDef = {
     picture: picture(),
     'cap-hook': capHook(),
     clock: clock(),
+    'gate-block': gateBlock(),
     'door-shut': doorShut(),
     'door-open': doorOpen(),
   },

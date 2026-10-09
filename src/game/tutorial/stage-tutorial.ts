@@ -159,6 +159,8 @@ export const GATE_STOP_FRAMES = 24;
 const CARD_COLS = 28;
 /** The keys that close Toad's card (OK, BACK or MENU), as the greeting's. */
 const CARD_KEYS = ['jump', 'attack', 'start'] as const;
+/** A gate's block (content/sprites/house.ts). */
+export const GATE_FRAME = 'gate-block';
 /** What Toad says at a gate when the lesson has no words of its own. */
 const RETRY = "DO THE TIP UP TOP TO OPEN THE WAY. LET'S TRY THAT AGAIN!";
 
@@ -487,26 +489,17 @@ export class TutorialDirector {
     for (let cx = x + 15; cx < x + w; cx += 16) r.rect(cx, y, 1, 6, '#000');
   }
 
-  /** The closed gates: columns of gold blocks with a dark "!" (blank solid tiles beneath). */
+  /** The closed gates: columns of red and white barrier blocks (blank solid tiles beneath). */
   private drawGates(r: Renderer): void {
     if (!this.laid.size) return;
     const cam = this.scene.world.camera;
     const camX = cam.pxX;
     const camY = cam.pxY ?? 0;
+    const sheet = this.game.ctx.assets.sheet('house');
     for (const g of this.laid) {
       const x = g.col * 16 - camX;
       if (x < -16 || x > 256) continue;
-      for (let row = g.top; row <= 12; row++) {
-        const y = row * 16 - camY;
-        r.rect(x, y, 16, 16, '#000');
-        r.rect(x + 1, y + 1, 14, 14, '#f8b800');
-        r.rect(x + 1, y + 1, 14, 2, '#f8d878');
-        r.rect(x + 1, y + 1, 2, 14, '#f8d878');
-        r.rect(x + 3, y + 13, 12, 2, '#ac7c00');
-        r.rect(x + 13, y + 3, 2, 12, '#ac7c00');
-        r.rect(x + 7, y + 4, 2, 6, '#000');
-        r.rect(x + 7, y + 11, 2, 2, '#000');
-      }
+      for (let row = g.top; row <= 12; row++) r.sprite(sheet, GATE_FRAME, x, row * 16 - camY);
     }
   }
 

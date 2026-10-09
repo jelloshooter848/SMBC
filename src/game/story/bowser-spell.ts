@@ -121,7 +121,6 @@ export class BowserSpellScene implements Scene {
     const p = world.player;
     const camX = world.camera.pxX;
     const mx = toPx(p.body.x) - camX;
-    this.feet = toPx(p.body.y + p.body.h);
     // Between Mario and the flagpole (or a few steps ahead of him), always on screen; after the
     // flagpole (0.4.36) between Mario, down the pole, and the castle.
     const pole = world.entities.find((e) => e.kind === 'flagpole');
@@ -130,6 +129,12 @@ export class BowserSpellScene implements Scene {
     this.bx = world.flagGrabbedBy
       ? Math.min(SCREEN_W - 44, mx + 56)
       : Math.max(mx + 28, Math.min(SCREEN_W - 44, mid));
+    // He stands on the ground under him (after the flagpole Mario is still up on its base).
+    const feet = toPx(p.body.y + p.body.h);
+    const col = Math.floor((this.bx + 16 + camX) / 16);
+    let row = Math.floor(feet / 16);
+    while (row < world.map.height && !world.map.isSolid(col, row)) row++;
+    this.feet = row < world.map.height ? row * 16 : feet;
     const chars = game.deps.characters;
     this.heroes = SPELL_WINDOWS.map(({ hero }) => {
       const def = chars.find((c) => c.id === hero);
