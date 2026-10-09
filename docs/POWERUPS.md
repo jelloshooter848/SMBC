@@ -186,7 +186,8 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
   gives the Rush Coil; NEW: Rush is its own item.
 - **Starting kit**: the buster, the slide. E-tanks stay drops.
 - **The buster** (0.4.35): SHOOT is always the buster, and charges with the helmet whatever weapon is in hand; it
-  is no belt entry. The belt (WEAPON / USE WEAPON) lists only the weapons he has and Rush. The full charge shot is
+  is no belt entry in the campaign: its belt (WEAPON / USE WEAPON) lists only the weapons he has and Rush (classic play
+  keeps the original's belt, the Buster first, in the blue suit). The full charge shot is
   a big blast like the original Crossover's (its own 24x16 art, three times the buster's damage, on through what
   it defeats).
 

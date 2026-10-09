@@ -498,14 +498,15 @@ describe('Station Escape: the weapon capsule', () => {
     expect(lines.join(' ')).toMatch(/WEAPON.*SWITCH/);
     expect(lines.join(' ')).toMatch(/USE WEAPON.*FIRE/);
     for (const l of lines) expect(l.length).toBeLessThanOrEqual(BANNER_COLS);
-    expect(h.said.at(-1)).toMatch(/Saw Disc.*USE WEAPON.*WEAPON/);
+    expect(h.said.at(-1)).toMatch(/Saw Disc.*WEAPON.*USE WEAPON/);
     // Held still for a moment.
     const x = p.body.x;
     h.step(['right'], ITEM_FREEZE - 2);
     expect(p.body.x).toBe(x);
     h.step(['right'], 4);
     expect(h.scene.phase).toBe('stage');
-    // It is in hand at once (the belt's first, 0.4.35: no buster entry); USE WEAPON throws one.
+    // WEAPON picks it; USE WEAPON throws a Saw Disc.
+    h.tap('select');
     expect(h.scene.touchLabels().special).toBe('SAW');
     h.tap('special');
     expect(h.world.entities.some((e) => e instanceof Projectile && e.kind === 'saw')).toBe(true);
@@ -945,17 +946,13 @@ describe("Station Escape: Mega Man 2's weapon screen (MENU)", () => {
       'etank',
       'options',
     ]);
-    // The saw is in hand already (the belt's first); P above it is the buster, his life.
-    expect(w.cursor).toBe(1);
-    h.tap('up');
     expect(w.cursor).toBe(0);
-    expect(h.said.at(-1)).toMatch(/^Mega Buster, life/);
     h.tap('down');
     expect(w.cursor).toBe(1);
     expect(h.said.at(-1)).toBe('Saw Disc, energy 20 of 28');
     h.tap('jump');
     expect(h.game.scenes.top).toBe(h.scene);
-    expect(p.scratch.tool).toBe(0);
+    expect(p.scratch.tool).toBe(1);
     expect(p.def.meter?.(p)?.value).toBe(20);
     // Opened again, the cursor starts on the weapon in hand; up from the top wraps to MENU.
     h.tap('start');
@@ -1079,10 +1076,10 @@ describe('Station Escape: screen and controls', () => {
     h.game.scenes.render(r);
     expect(r.texts).toEqual([]);
     expect(lifeBar()).toBe(true);
-    // The weapon bar shows while a weapon (or Rush) is in hand: the belt has no buster entry
-    // since 0.4.35, so with the helmet's Rush it always is.
+    expect(r.rects.some(([x, , w]) => x === WEAPON_BAR_X && w === 6)).toBe(false);
+    // The weapon bar shows while a weapon is selected.
     h.scene.player.scratch.weapons = 1;
-    h.scene.player.scratch.tool = 0;
+    h.scene.player.scratch.tool = 1;
     r.rects = [];
     h.game.scenes.render(r);
     expect(r.rects.some(([x, , w]) => x === WEAPON_BAR_X && w === 6)).toBe(true);
@@ -1289,7 +1286,7 @@ describe('Station Escape: death, lives and checkpoints', { timeout: 60_000 }, ()
     expect(Math.floor(toPx(p.body.x) / 16)).toBe(40);
     expect(p.scratch.weapons).toBe(1);
     expect(p.scratch.wsaw).toBe(10);
-    expect(p.scratch.tool ?? 0).toBe(0); // back on the belt's first (the saw)
+    expect(p.scratch.tool ?? 0).toBe(0); // back on the buster
     expect(p.hp).toBe(MAX_HP);
     warp(h, 500);
     h.step([], 4);

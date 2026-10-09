@@ -506,8 +506,6 @@ export class StationScene implements Scene {
   private gotSaw(p: Player): void {
     p.scratch.weapons = Math.max(1, p.scratch.weapons ?? 0);
     p.scratch.wsaw = WEAPON_ENERGY;
-    // In hand at once: the belt's first entry (SHOOT is always the buster).
-    p.scratch.tool = 0;
     this.sawGot = true;
     this.sawEnergy = WEAPON_ENERGY;
     this.game.ctx.audio.sfx(MM_SOUNDS.capsule);
@@ -517,14 +515,14 @@ export class StationScene implements Scene {
     const fit = (hinted: string, bare: string) => (hinted.length <= BANNER_COLS ? hinted : bare);
     const lines = [
       'YOU GOT SAW DISC!',
+      fit(`${weapon}: SWITCH`, 'WEAPON: SWITCH TO IT'),
       fit(`${use}: FIRE`, 'USE WEAPON: FIRE IT'),
-      fit(`${weapon}: SWITCH`, 'WEAPON: SWITCH WEAPON'),
       'HOLD A DIRECTION TO AIM',
     ];
     this.banner = { lines, until: this.t + ITEM_BANNER_FRAMES, y: ITEM_BANNER_Y };
     this.setPhase('item');
     this.say(
-      `You got the Saw Disc! It is in hand: ${use} fires it, ${weapon} switches weapons. Hold a direction to aim it eight ways. It cuts through Dark Mega Man.`,
+      `You got the Saw Disc! ${weapon} switches to it, ${use} fires it. Hold a direction to aim it eight ways. It cuts through Dark Mega Man.`,
     );
   }
 

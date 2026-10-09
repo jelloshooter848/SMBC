@@ -515,7 +515,7 @@ score or lives.
   shaft (column 77 of the top run, reached at 66 in its rows), or the boss door (the landing room
   under the drop, column 116, reached on landing: through the shutters again, and his bar fills
   again). Full hit
-  points; the Saw Disc stays his with the energy it had (in hand: the belt's first), and the capsule
+  points; the Saw Disc stays his with the energy it had (back on the buster), and the capsule
   stays gone. Losing the last life is GAME OVER (180 frames), then `fail`.
 
 - **The stage** (0.4.15, laid out as Mega Man 2's stages go; theme `station`: steel floor,
@@ -573,8 +573,7 @@ score or lives.
   (`StationMenuScene`, from the weapon screen's MENU row) Give up: `quit`.
 - **The weapon screen** (0.4.14, `weapon-menu.ts`, `StationWeaponScene`): MENU opens Mega Man 2's
   START screen in place of the menu: a dark blue panel with the weapons he carries (P, the Mega
-  Buster, whose bar shows his life as in Mega Man 2, always on SHOOT, so OK on it just goes back
-  to play (0.4.35: no belt entry); the Saw Disc once taken, in hand at once; Rush Coil), each with
+  Buster, whose bar shows his life as in Mega Man 2; the Saw Disc once taken; Rush Coil), each with
   its energy as a row of 28 ticks, the E-tanks (`×n` and four boxes; OK there fills his life when
   he has one and is not full; they last across lives), MEGA MAN ×lives, and a MENU row that opens
   the round's menu (Continue goes straight back to play). Up / down choose (wrapping, announced

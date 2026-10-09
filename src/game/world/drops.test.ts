@@ -112,6 +112,19 @@ describe('drops are always collectible (0.4.35)', () => {
     expect(p.scratch.wbolt).toBe(20);
   });
 
+  it('Mega Man: weapon energy fills the selected weapon first, even when another is emptier', () => {
+    const w = world(MEGAMAN);
+    const p = w.player;
+    setHas(p, 'saw-disc');
+    setHas(p, 'bolt');
+    p.scratch.wsaw = 20;
+    p.scratch.wbolt = 4;
+    p.scratch.tool = 0; // the saw
+    expect(take(w, 'weapon-small')).toBe(true);
+    expect(p.scratch.wsaw).toBe(24);
+    expect(p.scratch.wbolt).toBe(4);
+  });
+
   it("Sophia keeps missile ammo found before her missiles: it's there when she gets them", () => {
     const w = world(SOPHIA);
     const p = w.player;

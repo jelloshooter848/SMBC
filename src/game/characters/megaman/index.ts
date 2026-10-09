@@ -66,11 +66,14 @@ function etanks(p: Player): number {
 }
 
 /**
- * The weapon belt: the weapons he has and Rush (0.4.35, owner: no "Buster" entry; the plain shot,
- * ATTACK, is always the buster, and charges with the helmet whatever is selected).
+ * The weapon belt. Classic play keeps the original Crossover's: the Buster first (the blue suit),
+ * then the weapons he has and Rush. The campaign's has no "Buster" entry (0.4.35, owner): the
+ * plain shot, ATTACK, is always the buster, and charges with the helmet whatever is selected.
  */
 function tools(p: Player): ToolInfo[] {
-  const list: ToolInfo[] = [];
+  const list: ToolInfo[] = isFound(p)
+    ? []
+    : [{ id: 'buster', icon: 'icon-buster', count: null, usable: true }];
   for (const w of unlocked(p))
     list.push({ id: w.id, icon: w.icon, count: null, usable: energy(p, w.id) >= w.cost });
   if (hasRush(p))
@@ -202,7 +205,7 @@ function dropRush(p: Player, world: World): void {
 
 function meter(p: Player): MeterInfo | null {
   const t = activeTool(p, tools(p));
-  if (!t) return null;
+  if (!t || t.id === 'buster') return null;
   const w = selectedWeapon(p);
   return {
     value: energy(p, t.id),
@@ -221,6 +224,7 @@ function heal(p: Player, n: number, world: World): boolean {
 
 /** Touch captions for the belt (C shows the selected weapon). */
 export const MEGAMAN_TOOL_LABELS: Record<string, string> = {
+  buster: 'BUSTER',
   saw: 'SAW',
   leaf: 'LEAF',
   flame: 'FLAME',
@@ -300,6 +304,7 @@ export const MEGAMAN: CharacterDef = {
         const w = selectedWeapon(p);
         if (w) fireWeapon(p, w, input, world);
         else if (t?.id === 'rush') dropRush(p, world);
+        else if (t?.id === 'buster' && world.countProjectiles(p, 'buster') < 3) fireBuster(p, world, false);
       }
       if (p.scratch.helmet) {
         if (input.held('attack')) {
@@ -321,9 +326,10 @@ export const MEGAMAN: CharacterDef = {
         case 'weapon-large': {
           // The selected weapon (or Rush) first, else the emptiest one he has; a weapon he hasn't
           // found keeps its full tank for when he does. Nothing to fill: points (World.collectPickup).
-          const belt = tools(p).filter((b) => energy(p, b.id) < WEAPON_ENERGY);
+          const belt = tools(p).filter((b) => b.id !== 'buster' && energy(p, b.id) < WEAPON_ENERGY);
           const t = activeTool(p, tools(p));
-          const to = t && belt.includes(t) ? t : belt.sort((a, b) => energy(p, a.id) - energy(p, b.id))[0];
+          const to =
+            belt.find((b) => b.id === t?.id) ?? belt.sort((a, b) => energy(p, a.id) - energy(p, b.id))[0];
           if (!to) return false;
           setEnergy(p, to.id, energy(p, to.id) + (kind === 'weapon-small' ? 4 : 10));
           world.audio.sfx('pickup');

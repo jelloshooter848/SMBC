@@ -34,8 +34,7 @@ const at = (col: number, ch: string, width = 48) =>
 type Ctl = (w: World, f: number) => Action[];
 const FULL = { helmet: 1, weapons: WEAPONS.length };
 /** Belt order: buster, then the five weapons, then Rush. */
-// The belt holds weapons and Rush only (0.4.35: no 'Buster' entry; SHOOT is always the buster).
-const TOOL = { saw: 0, leaf: 1, flame: 2, knuckle: 3, bolt: 4, rush: 5 };
+const TOOL = { buster: 0, saw: 1, leaf: 2, flame: 3, knuckle: 4, bolt: 5, rush: 6 };
 
 function run(
   level: ReturnType<typeof field>,
@@ -74,7 +73,7 @@ describe("Mega Man's arsenal", () => {
     expect(p.scratch.weapons).toBe(2);
     expect(p.scratch.helmet).toBe(1);
     const ids = MEGAMAN.tools?.(p).map((t) => t.id);
-    expect(ids).toEqual(['saw', 'leaf', 'rush']);
+    expect(ids).toEqual(['buster', 'saw', 'leaf', 'rush']);
   });
 
   it('a shot costs energy and an empty weapon refuses to fire', () => {

@@ -30,7 +30,7 @@ export interface WeaponScreenHost {
   readonly livesLeft: number;
   /** The round's own menu (Continue / Give up, the dev assists). */
   openOptions(): void;
-  /** The weapons Mega Man carries now (and Rush), as his CharacterDef's belt lists them. */
+  /** The tools Mega Man carries now (the buster first), as his CharacterDef lists them. */
   tools(): readonly { id: string }[];
 }
 
@@ -56,9 +56,6 @@ export class StationWeaponScene implements Scene {
   ) {
     const tools = host.tools();
     this.rows = [
-      // Mega Man 2's P: the Mega Buster, always on SHOOT (0.4.35: no belt entry), its bar his
-      // life. OK on it just goes back to play.
-      { kind: 'weapon', tool: -1, id: 'buster', label: 'P' },
       ...tools.map((t, i): WeaponRow => {
         const w = WEAPONS.find((x) => x.id === t.id);
         const label = LABELS[t.id] ?? (w ? w.name.toUpperCase() : t.id.toUpperCase());
@@ -68,12 +65,10 @@ export class StationWeaponScene implements Scene {
       { kind: 'options' },
     ];
     const now = host.player.scratch.tool ?? 0;
-    this.cursor = tools.length
-      ? Math.max(
-          0,
-          this.rows.findIndex((r) => r.kind === 'weapon' && r.tool === now % tools.length),
-        )
-      : 0;
+    this.cursor = Math.max(
+      0,
+      this.rows.findIndex((r) => r.kind === 'weapon' && r.tool === now % Math.max(1, tools.length)),
+    );
   }
 
   get etanks(): number {
@@ -133,7 +128,7 @@ export class StationWeaponScene implements Scene {
   /** MENU (Mega Man 2's START): back to play, taking the weapon under the cursor if it is one. */
   close(): void {
     const r = this.rows[this.cursor] as WeaponRow;
-    if (r.kind === 'weapon' && r.tool >= 0) this.host.player.scratch.tool = r.tool;
+    if (r.kind === 'weapon') this.host.player.scratch.tool = r.tool;
     this.game.scenes.pop();
     const held = this.rows.find(
       (row) => row.kind === 'weapon' && row.tool === (this.host.player.scratch.tool ?? 0),
@@ -160,7 +155,7 @@ export class StationWeaponScene implements Scene {
       this.say(`Life filled. ${this.etanks} E-tanks left.`);
       return;
     }
-    if (r.tool >= 0) p.scratch.tool = r.tool;
+    p.scratch.tool = r.tool;
     this.game.scenes.pop();
     this.say(`${this.rowSaid(r).split(',')[0]}.`);
   }

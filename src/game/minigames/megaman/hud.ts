@@ -4,7 +4,7 @@ import { MAX_HP } from '../../characters/megaman';
 
 /*
  * Station Escape's HUD, as Mega Man 2's: bars only, no names, score or lives. Top left, side by
- * side: the selected weapon's energy (while a weapon or Rush is in hand),
+ * side: the selected weapon's energy (only while a weapon other than the buster is selected),
  * Mega Man's life, and the boss's life once he appears. Each is 28 segments of 2 px (a light line
  * over a coloured one), on black. Positions are from memory of the NES screens (weapon bar at
  * x 16, life at x 24, boss at x 40, the bars' tops at y 24).

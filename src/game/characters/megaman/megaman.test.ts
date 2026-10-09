@@ -138,7 +138,7 @@ describe("Mega Man's charge shot: a big blast like the original's (0.4.35)", () 
   });
 });
 
-describe("Mega Man's belt: real weapons and Rush only (0.4.35: no 'Buster' entry)", () => {
+describe("Mega Man's belt: in the campaign real weapons and Rush only (0.4.35: no 'Buster' entry)", () => {
   it('the belt is empty with no weapons; the plain shot is always the buster', () => {
     const w = world();
     const p = w.player;
@@ -147,8 +147,23 @@ describe("Mega Man's belt: real weapons and Rush only (0.4.35: no 'Buster' entry
     setHas(p, 'bolt');
     setHas(p, 'rush-coil');
     expect(MEGAMAN.tools!(p).map((t) => t.id)).toEqual(['bolt', 'rush']);
-    expect(MEGAMAN_TOOL_LABELS.buster).toBeUndefined();
     expect(MEGAMAN_GUIDE.belt?.some((b) => /buster/i.test(b.name))).toBe(false);
+  });
+
+  it("classic play keeps the original Crossover's belt: the Buster first, in the blue suit", () => {
+    const w = world(MEGAMAN, false);
+    const p = w.player;
+    expect(MEGAMAN.tools!(p).map((t) => t.id)).toEqual(['buster']);
+    p.scratch.helmet = 1;
+    p.scratch.weapons = 1;
+    expect(MEGAMAN.tools!(p).map((t) => t.id)).toEqual(['buster', 'saw', 'rush']);
+    expect(MEGAMAN_TOOL_LABELS.buster).toBe('BUSTER');
+    expect(MEGAMAN.touchLabels!(p, w).special).toBe('BUSTER');
+    expect(MEGAMAN.sprite(p, 0, true).palette).toBe('megaman');
+    expect(MEGAMAN.meter?.(p) ?? null).toBeNull();
+    // USE WEAPON with the Buster selected fires the buster, as in the original.
+    hold(w, ['special'], 1);
+    expect(w.entities.some((e) => e instanceof Projectile && e.kind === 'buster')).toBe(true);
   });
 
   it('the buster charges with the helmet whatever weapon is selected', () => {
