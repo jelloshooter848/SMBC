@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.40] - 2026-10-09
+
 ### Added
 
 - Every level of the story now has someone to talk to: Toads, Zelda II villagers, Dr. Light's robots, a Federation
@@ -916,7 +918,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.39...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.40...HEAD
+[0.4.40]: https://github.com/jelloshooter848/SMBC/compare/v0.4.39...v0.4.40
 [0.4.39]: https://github.com/jelloshooter848/SMBC/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jelloshooter848/SMBC/compare/v0.4.37...v0.4.38
 [0.4.37]: https://github.com/jelloshooter848/SMBC/compare/v0.4.36...v0.4.37
