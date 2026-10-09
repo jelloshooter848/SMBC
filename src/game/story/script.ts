@@ -1266,6 +1266,100 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['IT THINKS THE HUNTER IS', 'ITS MOTHER. NOBODY HAS THE', 'HEART TO TELL IT.'],
     ],
   },
+
+  /* -------------------------------- World 5 (Transylvania, Simon): the cursed country's folk */
+
+  // 5-1's start, at the courtyard gate.
+  'old-woman': {
+    verb: 'TALK',
+    name: 'An old woman',
+    hero: 'simon',
+    pages: [
+      [
+        'OLD WOMAN:',
+        '',
+        'A STRANGER, AT THIS HOUR?',
+        'THE GATES ARE NO PLACE TO',
+        'LINGER AFTER DARK, DEARIE.',
+      ],
+      [
+        'OLD WOMAN:',
+        '',
+        'OUR SIMON IS UNDER A CURSE',
+        'NOT HIS OWN. HE WAS LAST',
+        'SEEN IN THE OLD CASTLE AT',
+        'THE END OF THE ROAD.',
+      ],
+      ['OLD WOMAN:', '', 'PLEASE, BRING HIM HOME. HE', 'NEVER WIPES HIS BOOTS, BUT', "HE'S OUR BOY."],
+    ],
+    after: [
+      ['OLD WOMAN:', '', 'SIMON IS FREE! NOW TAKE AN', "OLD WOMAN'S ADVICE:"],
+      ['OLD WOMAN:', '', 'GET A SILK BAG FROM THE', 'GRAVEYARD DUCK TO LIVE', 'LONGER.'],
+      ['OLD WOMAN:', '', "...WHAT? IT'S GOOD ADVICE."],
+    ],
+  },
+  // 5-2's start, on the town street.
+  'garlic-seller': {
+    verb: 'TALK',
+    name: 'A garlic seller',
+    hero: 'simon',
+    pages: [
+      ['GARLIC SELLER:', '', 'GARLIC! FRESH GARLIC! KEEPS', 'VAMPIRES AWAY! ...MOSTLY.'],
+      [
+        'GARLIC SELLER:',
+        '',
+        'SIMON? THE CURSE TOOK HIM',
+        'TO THE OLD CASTLE AT THE',
+        'END OF THE ROAD. PLEASE,',
+        'GO! FIRST CLOVE IS FREE.',
+      ],
+    ],
+    after: [
+      [
+        'GARLIC SELLER:',
+        '',
+        'SIMON CAME BY AND BOUGHT',
+        'GARLIC. HE ALWAYS BUYS',
+        'GARLIC. THEN HE DROPS IT',
+        'IN A GRAVEYARD. EVERY TIME.',
+      ],
+    ],
+  },
+  // 5-3's start, at the foot of the clock tower.
+  clockmaker: {
+    verb: 'TALK',
+    name: 'The clockmaker',
+    hero: 'simon',
+    pages: [
+      [
+        'CLOCKMAKER:',
+        '',
+        'TICK, TOCK. THIS CLOCK HAS',
+        'STRUCK MIDNIGHT ALL WEEK.',
+        'A CURSED HOUR, IF YOU ASK',
+        'ME.',
+      ],
+      [
+        'CLOCKMAKER:',
+        '',
+        'SIMON COULD BREAK IT. BUT',
+        "HE'S LOST IN THE OLD CASTLE",
+        'AT THE END OF THE ROAD.',
+        'PLEASE, BRING HIM BACK.',
+      ],
+    ],
+    after: [
+      ['CLOCKMAKER:', '', 'THE MORNING SUN HAS', 'VANQUISHED THE HORRIBLE', 'NIGHT.'],
+      [
+        'CLOCKMAKER:',
+        '',
+        '...OR IT WILL. THE CLOCK',
+        'STILL SAYS MIDNIGHT. BUT',
+        "SIMON'S FREE, SO I HAVE",
+        'HOPE.',
+      ],
+    ],
+  },
 };
 
 /* ---------------------------------------------------------------- 2.13: the freed talks */

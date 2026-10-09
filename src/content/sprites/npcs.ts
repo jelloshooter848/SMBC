@@ -181,6 +181,20 @@ const metroid0: Rows = [
 ];
 const metroid1 = recolor(metroid0, { s: '9', 8: 's' });
 
+/* ---------------------------------------------------------------- World 5: Transylvania */
+
+/** 5-1's old woman: World 2's healer in a deep purple shawl and dress, a dark hem. */
+const oldWoman0 = local('healer-0', { 7: 'm', 8: '4' });
+const oldWoman1 = local('healer-1', { 7: 'm', 8: '4' });
+/** 5-2's garlic seller: World 5's merchant in a green hood, his sack white with garlic. */
+const garlicIn = { m: 'i', n: 'k', a: '1', b: '2' };
+const garlicSeller0 = local('merchant-0', garlicIn);
+const garlicSeller1 = local('merchant-1', garlicIn);
+/** 5-3's clockmaker: the townsperson in a grey hood and a blue smock, a brass belt. */
+const clockIn = { b: '3', c: '4', h: 'd', i: 'e', a: 'f' };
+const clockmaker0 = recolor(partner('townsperson-0'), clockIn);
+const clockmaker1 = recolor(partner('townsperson-1'), clockIn);
+
 export const npcsDef: SpriteDef = {
   palette: 'npcs',
   frames: {
@@ -206,5 +220,11 @@ export const npcsDef: SpriteDef = {
     'researcher-1': researcher1,
     'baby-metroid-0': metroid0,
     'baby-metroid-1': metroid1,
+    'old-woman-0': oldWoman0,
+    'old-woman-1': oldWoman1,
+    'garlic-seller-0': garlicSeller0,
+    'garlic-seller-1': garlicSeller1,
+    'clockmaker-0': clockmaker0,
+    'clockmaker-1': clockmaker1,
   },
 };

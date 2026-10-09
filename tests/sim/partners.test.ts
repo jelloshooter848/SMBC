@@ -75,6 +75,10 @@ const SPOTS = [
   { who: 'trooper', level: '4-1', start: fromStart, col: 10 },
   { who: 'researcher', level: '4-3', start: fromStart, col: 8 },
   { who: 'baby-metroid', level: '4-4', start: near(17), col: 21 },
+  // World 5: at the starts of 5-1 (the courtyard gate), 5-2 (the town) and 5-3 (the clock tower).
+  { who: 'old-woman', level: '5-1', start: fromStart, col: 7 },
+  { who: 'garlic-seller', level: '5-2', start: fromStart, col: 7 },
+  { who: 'clockmaker', level: '5-3', start: fromStart, col: 8 },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
 
 const spotOf = (who: string) => SPOTS.find((s) => s.who === who) as (typeof SPOTS)[number];

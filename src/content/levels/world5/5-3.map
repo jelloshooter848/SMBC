@@ -35,6 +35,8 @@ campaignMusic: cv-stage
 ################ ...tt....tttttt. .t..ttt..ttttt.. ...tt.......ttt. ..ttt..t.....ttt t............... ...tt....tttttt. ..t..tt....tt... .############### ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): the clockmaker at the start, at the foot of the clock tower.
+partner 8 12 who=clockmaker campaign=true
 decor-castle 0 12
 lift-v 55 10 len=4 range=6 dy=-8
 koopa-para-red 74 7

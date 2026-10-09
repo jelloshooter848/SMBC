@@ -1993,6 +1993,130 @@ ON YOUR WAY... AND STILL
 NO WHITE CRYSTAL? SHAME.
 ```
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Simon: missing, they plead and say where
+to look (by place, never by level number); freed, their found lines, which quote the night town's famous advice.
+
+**5-1: an old woman.** NEW partner (`old-woman`). World 2's healer in a deep purple shawl, at **5-1's start**
+(column 7), by the courtyard gate.
+
+```text
+OLD WOMAN:
+
+A STRANGER, AT THIS HOUR?
+THE GATES ARE NO PLACE TO
+LINGER AFTER DARK, DEARIE.
+```
+
+```text
+OLD WOMAN:
+
+OUR SIMON IS UNDER A CURSE
+NOT HIS OWN. HE WAS LAST
+SEEN IN THE OLD CASTLE AT
+THE END OF THE ROAD.
+```
+
+```text
+OLD WOMAN:
+
+PLEASE, BRING HIM HOME. HE
+NEVER WIPES HIS BOOTS, BUT
+HE'S OUR BOY.
+```
+
+After Simon is freed:
+
+```text
+OLD WOMAN:
+
+SIMON IS FREE! NOW TAKE AN
+OLD WOMAN'S ADVICE:
+```
+
+```text
+OLD WOMAN:
+
+GET A SILK BAG FROM THE
+GRAVEYARD DUCK TO LIVE
+LONGER.
+```
+
+```text
+OLD WOMAN:
+
+...WHAT? IT'S GOOD ADVICE.
+```
+
+**5-2: a garlic seller.** NEW partner (`garlic-seller`). World 5's merchant in a green hood, his sack white with
+garlic, at **5-2's start** (column 7), on the town street.
+
+```text
+GARLIC SELLER:
+
+GARLIC! FRESH GARLIC! KEEPS
+VAMPIRES AWAY! ...MOSTLY.
+```
+
+```text
+GARLIC SELLER:
+
+SIMON? THE CURSE TOOK HIM
+TO THE OLD CASTLE AT THE
+END OF THE ROAD. PLEASE,
+GO! FIRST CLOVE IS FREE.
+```
+
+After Simon is freed:
+
+```text
+GARLIC SELLER:
+
+SIMON CAME BY AND BOUGHT
+GARLIC. HE ALWAYS BUYS
+GARLIC. THEN HE DROPS IT
+IN A GRAVEYARD. EVERY TIME.
+```
+
+**5-3: the clockmaker.** NEW partner (`clockmaker`). The night town's townsperson in a grey hood and a blue smock,
+at **5-3's start** (column 8), at the foot of the clock tower.
+
+```text
+CLOCKMAKER:
+
+TICK, TOCK. THIS CLOCK HAS
+STRUCK MIDNIGHT ALL WEEK.
+A CURSED HOUR, IF YOU ASK
+ME.
+```
+
+```text
+CLOCKMAKER:
+
+SIMON COULD BREAK IT. BUT
+HE'S LOST IN THE OLD CASTLE
+AT THE END OF THE ROAD.
+PLEASE, BRING HIM BACK.
+```
+
+After Simon is freed:
+
+```text
+CLOCKMAKER:
+
+THE MORNING SUN HAS
+VANQUISHED THE HORRIBLE
+NIGHT.
+```
+
+```text
+CLOCKMAKER:
+
+...OR IT WILL. THE CLOCK
+STILL SAYS MIDNIGHT. BUT
+SIMON'S FREE, SO I HAVE
+HOPE.
+```
+
 **Hint NPC: the townsperson.** KEEP, on the safe floor at the start of 5-4, before the lift at column 84.
 
 ```text

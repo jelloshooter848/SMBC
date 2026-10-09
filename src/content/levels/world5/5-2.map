@@ -35,6 +35,8 @@ campaignMusic: cv-town
 ################ ##########...### ################ ################ ##..############ ############.... ################ ###############. .############### .......######### ##########...##. .########.##.### ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a garlic seller at the start, on the town street.
+partner 7 12 who=garlic-seller campaign=true
 decor-castle 0 12
 koopa-para-green 40 10 dy=-8
 hammer-bro 45 9 dx=8
