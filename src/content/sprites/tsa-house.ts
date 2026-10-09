@@ -154,8 +154,9 @@ function backWall(): string[] {
   c.rect(px - 2, py - 2, 44, 34, '5');
   c.rect(px, py, 40, 30, 'a');
   c.ellipse(px + 30, py + 8, 4, 4, 'c');
-  c.ellipse(px + 14, py + 30, 18, 12, 'g');
-  c.ellipse(px + 14, py + 30, 12, 8, 'h');
+  const inFrame = (x: number, y: number) => x >= px && x < px + 40 && y >= py && y < py + 30;
+  c.ellipse(px + 14, py + 30, 18, 12, (x, y) => (inFrame(x, y) ? 'g' : null));
+  c.ellipse(px + 14, py + 30, 12, 8, (x, y) => (inFrame(x, y) ? 'h' : null));
   return c.rows();
 }
 

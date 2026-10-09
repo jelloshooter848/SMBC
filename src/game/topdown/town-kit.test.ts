@@ -106,6 +106,19 @@ describe('open edges: outdoor screens slide into each other', () => {
     expect(w.hero.x).toBe(0);
   });
 
+  it("sliding down along an edge (not walking off it) keeps the screen; the slide speed is the world's", () => {
+    const w = new TopDownWorld(twoScreens(), { hero: walker, slideSpeed: 8 });
+    w.hero.x = 240;
+    w.hero.y = 3 * TILE;
+    w.hero.facing = 'down';
+    run(w, ['down'], 30);
+    expect(w.room.id).toBe('w');
+    w.hero.x = 245;
+    run(w, ['right'], 1);
+    expect(w.room.id).toBe('e');
+    expect(w.transition?.frames).toBe(ROOM_W / 8);
+  });
+
   it('a solid edge cell stops the hero at the edge', () => {
     const d = buildDungeon([
       outdoor('w', [0, 0], { 5: '.......@.......#' }),

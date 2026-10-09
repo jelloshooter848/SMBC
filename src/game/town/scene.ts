@@ -41,6 +41,11 @@ export const TOWN_SHEETS: TdSheets = {
   enemies: 'town-folk',
 };
 
+/**
+ * Pixels a frame the view slides from screen to screen: brisker than a dungeon's (the kit's 4), as
+ * a walk round town crosses many edges (about 0.7 s across, 0.5 s up or down).
+ */
+export const TOWN_SLIDE_SPEED = 6;
 /** Frames of each half of a fade (out, then in). */
 export const FADE_FRAMES = 16;
 /** Frames after a hero switch before the next one (accidental double presses). */
@@ -104,6 +109,7 @@ export class TownScene implements Scene {
       hero,
       spawners: { folk: folkSpawner },
       has: (secret) => game.mapProgress.secrets.includes(secret),
+      slideSpeed: TOWN_SLIDE_SPEED,
     });
     this.world.events.length = 0;
     // In through the south gate: from just past the edge, walking up a couple of tiles.
@@ -455,18 +461,21 @@ function drawTownHud(r: Renderer, scene: TownScene): void {
   r.rect(0, 0, SCREEN_W, HUD_H, '#000000');
   const room = scene.world.room.id;
   const place = isOutdoor(room) ? SCREEN_NAMES[room] : indoorName(room as IndoorId);
-  r.text(font, VILLAGE_NAME, 8, 8);
-  r.text(font, fontText(place), 8, 20);
-  r.text(font, fontText(s.character.name.toUpperCase()), 8, 36);
-  r.text(font, fontText(powerName(game)), 8, 46);
-  r.text(font, `COINS×${String(s.coins).padStart(2, '0')}`, 120, 36);
-  r.text(font, `LIVES×${String(s.lives).padStart(2, '0')}`, 120, 46);
-  const button = controlScheme(game) === 'touch' ? 'HERO' : fontText(abilityHint(game, 'TOOLS', 'select'));
-  r.text(font, `${button}: NEXT HERO`.slice(0, 30), 8, 56);
+  r.text(font, VILLAGE_NAME, 8, 6);
+  r.text(font, fontText(place), 8, 16);
+  r.text(font, fontText(s.character.name.toUpperCase()), 8, 30);
+  r.text(font, fontText(powerName(game)), 8, 40);
+  r.text(font, `COINS×${String(s.coins).padStart(2, '0')}`, 120, 30);
+  r.text(font, `LIVES×${String(s.lives).padStart(2, '0')}`, 120, 40);
+  const hint =
+    controlScheme(game) === 'touch'
+      ? 'HERO BUTTON: SWITCH'
+      : `${fontText(abilityHint(game, 'TOOLS', 'select'))}: SWITCH HERO`;
+  r.text(font, hint.slice(0, 30), 8, 52);
   // The six screens, the hero's lit (indoors: the screen the building stands on).
   const here = isOutdoor(room) ? SCREEN_AT[room] : screenOfIndoor(room);
   const mx = 200;
-  const my = 8;
+  const my = 6;
   for (const [, at] of Object.entries(SCREEN_AT)) {
     const on = here && at[0] === here[0] && at[1] === here[1];
     r.rect(mx + at[0] * 16, my + at[1] * 11, 15, 10, on ? '#80d010' : '#305830');

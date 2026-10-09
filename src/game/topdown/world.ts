@@ -153,6 +153,8 @@ export interface TdWorldOptions {
    * `white-sword` turns it on.
    */
   swordBeam?: boolean;
+  /** Pixels a frame the view slides between rooms (SLIDE_SPEED; a town's walk wants it brisker). */
+  slideSpeed?: number;
   /** Builds the hero at the start (a game's own TdHero subclass); the kit's sword hero by default. */
   hero?: (x: number, y: number, maxHp?: number) => TdHero;
   /**
@@ -213,6 +215,8 @@ export class TopDownWorld {
   left: Side | null = null;
   /** Asked for a building door's lock (TdWorldOptions.has). */
   readonly has: (secret: string) => boolean;
+  /** Pixels a frame of a room slide. */
+  readonly slideSpeed: number;
   /** The shut door the hero is leaning on (one `door-shut` a push). */
   private bumped: string | null = null;
   private readonly states = new Map<string, RoomState>();
@@ -233,6 +237,7 @@ export class TopDownWorld {
     this.noDamage = opts.noDamage ?? (() => false);
     this.swordBeam = opts.swordBeam ?? false;
     this.has = opts.has ?? (() => false);
+    this.slideSpeed = opts.slideSpeed ?? SLIDE_SPEED;
     const start = dungeon.rooms.get(dungeon.startRoom) as Room;
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
     this.hero = opts.hero ? opts.hero(at.x, at.y, opts.maxHp) : new TdHero(at.x, at.y, opts.maxHp);
@@ -802,6 +807,8 @@ export class TopDownWorld {
     else if (hero.x > ROOM_W - 12) side = 'e';
     else if (hero.y < -4) side = 'n';
     else if (hero.y > ROOM_H - 12) side = 's';
+    // Off an outdoor screen only walking that way (not while sliding along its edge).
+    if (side && this.room.wall === 0 && hero.facing !== SIDE_DIR[side]) side = null;
     if (side) this.slide(side);
   }
 
@@ -829,7 +836,7 @@ export class TopDownWorld {
     hero.attackT = 0;
     hero.kbT = 0;
     const v = DIR_VEC[SIDE_DIR[side]];
-    const frames = Math.round((v.dx !== 0 ? ROOM_W : ROOM_H) / SLIDE_SPEED);
+    const frames = Math.round((v.dx !== 0 ? ROOM_W : ROOM_H) / this.slideSpeed);
     this.enterRoom(next);
     this.transition = { side, from, t: 0, frames };
     // Then in past the wall: to the first floor tile.

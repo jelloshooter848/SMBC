@@ -196,11 +196,15 @@ export class Kid extends Townsperson {
     if (Math.abs(dx) + Math.abs(dy) < 28) return;
     const mx = Math.sign(dx);
     const my = Math.abs(dy) > 4 ? Math.sign(dy) : 0;
-    if (mx !== 0) {
+    // Never onto the hero (he would be stuck inside a solid kid): he waits for him to pass.
+    const b = this.body();
+    const into = (ox: number, oy: number) =>
+      boxesOverlap({ x: b.x + ox, y: b.y + oy, w: b.w, h: b.h }, world.hero.feet());
+    if (mx !== 0 && !into(mx, 0)) {
       this.facing = mx < 0 ? 'left' : 'right';
       world.moveEntity(this, mx, 0, 'walk');
     }
-    if (my !== 0) world.moveEntity(this, 0, my, 'walk');
+    if (my !== 0 && !into(0, my)) world.moveEntity(this, 0, my, 'walk');
   }
 }
 
