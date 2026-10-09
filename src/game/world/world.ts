@@ -51,7 +51,7 @@ import {
   type TeleportZone,
 } from '../entities/objects/teleporter';
 import { PowerUp } from '../entities/objects/powerup';
-import { Pickup } from '../entities/objects/pickup';
+import { isPickupKind, Pickup } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
@@ -967,6 +967,10 @@ export class World {
         return new ShieldJoe(x, y);
       case 'yoku':
         return new Yoku(s.x, s.y, s.props ?? {});
+      // A pickup laid by the map (`pickup x y item=<kind>`, standing in cell x y): Mega Man's
+      // large health pellet before his airship's stern pipe (0.4.39).
+      case 'pickup':
+        return isPickupKind(s.props?.item) ? new Pickup(x + px(8), y + px(16), s.props.item, true) : null;
       case 'lift-h':
       case 'lift-v':
       case 'lift-fall':

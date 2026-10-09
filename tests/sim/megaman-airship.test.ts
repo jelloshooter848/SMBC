@@ -11,6 +11,7 @@ import { toPx, px } from '@engine/math/units';
 import { Larry } from '@game/entities/enemies/larry';
 import { Yoku } from '@game/entities/enemies/wily-sky';
 import { Projectile } from '@game/entities/projectiles/projectile';
+import { Pickup, PICKUP_LIFETIME } from '@game/entities/objects/pickup';
 import type { World } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
 import { megamanShipBot } from './megaman-airship-bot';
@@ -62,6 +63,34 @@ describe("Mega Man's deck (the variant)", () => {
     }
     // The HUD rows stay clear.
     for (let y = 0; y < 3; y++) for (let x = 0; x < mmDeck.width; x++) expect(t(x, y)).toBe(T.AIR);
+  });
+
+  it('lays one large health pellet on the high stern deck before the pipe, his only', () => {
+    const pellets = mmDeck.entities.filter((e) => e.type === 'pickup');
+    expect(pellets).toEqual([{ type: 'pickup', x: 92, y: 7, props: { item: 'health-large' } }]);
+    expect(DECK.entities.some((e) => e.type === 'pickup')).toBe(false);
+    // On the deck (row 8 under it), left of the pipe (94), with room above.
+    expect(t(92, 8)).not.toBe(T.AIR);
+    expect(t(92, 7)).toBe(T.AIR);
+    // It sits there for good (no hop, no time limit) and fills his bar by 10 when he takes it.
+    const r = runSim({
+      level: mmDeck,
+      character: MEGAMAN,
+      state: { powerState: 'big', kit: { helmet: 1 } },
+      script: { steps: [] },
+      maxFrames: 1,
+    });
+    const w = r.world;
+    const pellet = new Pickup(px(92 * 16 + 8), px(8 * 16), 'health-large', true);
+    w.spawn(pellet);
+    for (let f = 0; f < PICKUP_LIFETIME + 60; f++) pellet.update(w);
+    expect(pellet.alive).toBe(true);
+    expect(toPx(pellet.body.y + pellet.body.h)).toBe(8 * 16);
+    const p = w.player;
+    p.hp = 8;
+    w.collectPickup(p, pellet);
+    expect(p.hp).toBe(18);
+    expect(pellet.alive).toBe(false);
   });
 
   it('every other hero gets the airship exactly as today (and classic play never the variant)', () => {

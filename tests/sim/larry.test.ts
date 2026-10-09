@@ -8,7 +8,7 @@ import type { Settings } from '@engine/save/settings';
 import type { Scene } from '@engine/scene';
 import { WorldMapScene, GUARD_GRACE_FRAMES, HIDING_SAID } from '@game/scenes/world-map';
 import { LevelScene } from '@game/scenes/level';
-import { LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
+import { LARRY_AGAIN_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { CardScene, MessageScene } from '@game/scenes/message';
 import { GameOverScene } from '@game/scenes/game-over';
 import { IntroScene } from '@game/scenes/intro';
@@ -78,9 +78,10 @@ function onMap(over: Partial<SaveFile>): { h: H; map: () => WorldMapScene } {
 /** Into Larry's room as from the airship deck's stern pipe; Larry is found once spawned. */
 function intoAirship(h: H): { level: LevelScene; larry: Larry } {
   h.game.startLevel(getLevel('4-2-larry'), { mode: 'fall', x: 2, y: 12, time: 300 });
-  // Dropping in from the ceiling pipe, Larry has his say first (campaign, story/level-beats.ts).
+  // Dropping in from the ceiling pipe, Larry has his say first (campaign, story/level-beats.ts):
+  // the file has seen every beat, the anchor scene too, so he knows the hero (0.4.39).
   h.until(() => h.top() instanceof CardScene, 200);
-  expect(closeCards(h)).toEqual(LARRY_PAGES);
+  expect(closeCards(h)).toEqual(LARRY_AGAIN_PAGES);
   const level = h.top() as LevelScene;
   expect(level).toBeInstanceOf(LevelScene);
   h.until(() => level.world.entities.some((e) => e instanceof Larry), 120);
@@ -171,9 +172,10 @@ describe('the crystal ball (campaign)', () => {
     // Down out of the pipe in the ceiling onto the floor (row 13), still no clock.
     const p = cabin.world.player;
     expect(p.body.y).toBeLessThan(0);
-    // Larry's cards (campaign) come first, over the frozen room, then the drop and the fight.
+    // Larry's cards (campaign) come first, over the frozen room, then the drop and the fight
+    // (the anchor scene on the way in was his first meeting: "YOU AGAIN?!").
     h.until(() => h.top() instanceof CardScene, 30);
-    expect(closeCards(h)).toEqual(LARRY_PAGES);
+    expect(closeCards(h)).toEqual(LARRY_AGAIN_PAGES);
     h.until(() => p.body.onGround, 200);
     expect((p.body.y + p.body.h) >> 8).toBe(13 * 16);
     expect(p.centerX >> 8).toBe(CEILING_PIPE_MID);

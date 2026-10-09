@@ -146,7 +146,7 @@ export class LevelScene implements Scene {
         },
         say: (text) => game.deps.announcer?.say(text),
         started: () => game.markSeen(beat.anchor42),
-        skipHint: () => abilityHint(game, 'SKIP', 'attack'),
+        skipHint: () => abilityHint(game, 'SKIP', 'jump'),
       };
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);
@@ -238,8 +238,8 @@ export class LevelScene implements Scene {
   touchLabels(): TouchLabels {
     // The castle's text waits for OK (World.castleWaiting).
     if (this.world.castleWaiting) return { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'MENU' };
-    // 4-2's anchor scene: BACK skips it.
-    if (this.world.anchorScene) return { ...NO_TOUCH_BUTTONS, attack: 'SKIP' };
+    // 4-2's anchor scene: JUMP skips it (as in the opening scene).
+    if (this.world.anchorScene) return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
     return levelTouchLabels(this.world.players[0], this.world);
   }
 
@@ -559,7 +559,7 @@ export class LevelScene implements Scene {
   private drawSkipHint(r: Renderer): void {
     const s = this.world.anchorScene;
     if (!s || s.waiting || s.over) return;
-    const t = fontText(abilityHint(this.game, 'SKIP', 'attack'));
+    const t = fontText(abilityHint(this.game, 'SKIP', 'jump'));
     const x = SCREEN_W - 8 - t.length * 8;
     r.rect(x - 4, 212, t.length * 8 + 8, 12, '#000');
     r.text(this.game.ctx.assets.sheet('font'), t, x, 214);

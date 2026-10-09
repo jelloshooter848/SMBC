@@ -218,7 +218,7 @@ export const ROOM_GAP = 220;
  * Campaign 4-2 (already the top LevelScene): put the hero on the ceiling beside its gap, walk into
  * the gap and drop into the hidden right zone, wait for the anchor to crash down, then walk to
  * its chain and climb it off the top of the screen. Returns once the level has changed. The
- * anchor scene (once per file, tests/sim/anchor-scene.test.ts) is skipped with BACK: it goes up
+ * anchor scene (once per file, tests/sim/anchor-scene.test.ts) is skipped with JUMP: it goes up
  * the chain itself.
  */
 export function dropInAndClimb(h: H, level: LevelScene, max = 1500): void {
@@ -230,7 +230,8 @@ export function dropInAndClimb(h: H, level: LevelScene, max = 1500): void {
   const chainX = px(ANCHOR_COL * 16 + 8);
   for (let f = 0; f < max; f++) {
     if (h.top() instanceof CardScene || (h.top() === level && w.anchorScene)) {
-      h.step(f % 2 ? ['attack'] : []);
+      // BACK on a card, JUMP between them.
+      h.step(f % 2 ? [h.top() instanceof CardScene ? 'attack' : 'jump'] : []);
       continue;
     }
     if (h.top() !== level) break;

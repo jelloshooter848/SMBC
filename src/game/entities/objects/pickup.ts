@@ -25,6 +25,11 @@ export type PickupKind =
   | 'triple-ammo'
   | 'homing-ammo';
 
+/** A pickup kind's name, as a map's `pickup x y item=<kind>` gives it. */
+export function isPickupKind(v: unknown): v is PickupKind {
+  return typeof v === 'string' && Object.hasOwn(FRAMES, v);
+}
+
 const FRAMES: Record<PickupKind, { frame: string; size: number; sheet?: string }> = {
   bomb: { frame: 'bomb-0', size: 16 },
   'magic-small': { frame: 'magic-jar-small', size: 8 },
@@ -58,11 +63,16 @@ export class Pickup extends Entity {
     cx: number,
     bottom: number,
     readonly item: PickupKind,
+    /** Laid by the map (`pickup x y item=<kind>`): it sits there for good, no hop, no blink. */
+    readonly placed = false,
   ) {
     const size = FRAMES[item].size;
     super(cx - px(size >> 1), bottom - px(size), size, size);
     this.layer = 'front';
-    this.body.vy = -0x02000; // a little hop out of the corpse
+    if (placed) {
+      this.life = Infinity;
+      this.despawnMargin = null;
+    } else this.body.vy = -0x02000; // a little hop out of the corpse
   }
 
   update(world: World): void {

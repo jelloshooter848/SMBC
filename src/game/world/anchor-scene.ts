@@ -25,8 +25,8 @@ import { ANCHOR_LARRY_SAID } from '../story/script';
  * 7. Play goes on into the airship: the hero runs to the chain and climbs it off the top of the
  *    screen, as a climb would (World.boardChain: the chain's `vine` link, a climb arrival).
  *
- * BACK (or MENU) skips the whole scene at any point after a short guard, and so does BACK on its
- * cards: the anchor is put at rest, the pipe smashed, and the hero goes straight up into the
+ * JUMP (or MENU) skips the whole scene between its cards after a short guard (the opening scene's
+ * skip; never BACK, the fire button a hero may be tapping), and so does BACK on its cards: the anchor is put at rest, the pipe smashed, and the hero goes straight up into the
  * airship. Every card waits for a press (story/cards.ts); the scene's own beats are announced.
  */
 
@@ -46,7 +46,10 @@ export const ANCHOR_SCENE = {
   /** The run to the chain and the climb up it (px a frame). */
   run: 2,
   climb: 3,
-  /** Frames before BACK or MENU may skip (a press held from before the scene does not count). */
+  /**
+   * Frames before JUMP or MENU may skip, from the scene's start and again after each card closes
+   * (a press held from before, or the second press of a double OK, does not count).
+   */
   guard: 30,
 } as const;
 const S = ANCHOR_SCENE;
@@ -56,6 +59,8 @@ const KNOCK_VY = 0x02c00;
 const KNOCK_VX = 0x01400;
 const KNOCK_NEAR_VX = 0x01c00;
 const NEAR = 48;
+/** Room (px) a throw needs on its side: with a wall closer behind the hero, the throw goes the other way. */
+const THROW_ROOM = 24;
 const GRAVITY = 0x00400;
 const MAX_FALL = 0x04000;
 
@@ -70,7 +75,7 @@ export interface AnchorStory {
   say(text: string): void;
   /** The scene has started: it is seen on the file. */
   started(): void;
-  /** The skip control as the hint on screen names it ("SKIP (X)"; "SKIP" on touch). */
+  /** The skip control as the hint on screen names it ("SKIP (Z)"; "SKIP" on touch). */
   skipHint(): string;
 }
 
@@ -89,6 +94,8 @@ export class AnchorScene {
   age = 0;
   /** A card is up: the scene waits for it. */
   waiting = false;
+  /** Frames since the scene started or a card last closed (the skip's guard). */
+  private quiet = 0;
   /** Larry on the chain (spawned for the climb down). */
   larry: LarryOnChain | null = null;
   private readonly marks: Exclaim[] = [];
@@ -136,7 +143,8 @@ export class AnchorScene {
     if (this.waiting) return false;
     this.age++;
     this.t++;
-    if (this.age > S.guard && inputs.some((i) => i.pressed('attack') || i.pressed('start'))) {
+    this.quiet++;
+    if (this.quiet > S.guard && inputs.some((i) => i.pressed('jump') || i.pressed('start'))) {
       this.skip(world);
       return true;
     }
@@ -291,7 +299,10 @@ export class AnchorScene {
     for (const p of world.players) {
       if (p.dead || p.out) continue;
       const dx = toPx(p.centerX) - this.chainX;
-      const away: -1 | 1 = dx < 0 ? -1 : 1;
+      let away: -1 | 1 = dx < 0 ? -1 : 1;
+      // Against a wall (the room's far wall, where a drop through the gap lands): toward the
+      // open floor instead, so it reads as a throw and not a hop in place.
+      if (wallWithin(world, p, away, THROW_ROOM)) away = away > 0 ? -1 : 1;
       const b = p.body;
       b.vx = away * (Math.abs(dx) < NEAR ? KNOCK_NEAR_VX : KNOCK_VX);
       b.vy = -KNOCK_VY;
@@ -309,6 +320,7 @@ export class AnchorScene {
       this.hero,
       () => {
         this.waiting = false;
+        this.quiet = 0;
         next();
       },
       () => {
@@ -333,6 +345,19 @@ export class AnchorScene {
     this.over = true;
     world.boardChain(this.drop);
   }
+}
+
+/** A solid tile within `room` px of player `p`'s side `dir`, at the height of its body. */
+function wallWithin(world: World, p: Player, dir: -1 | 1, room: number): boolean {
+  const b = p.body;
+  const edge = dir > 0 ? toPx(b.x + b.w) : toPx(b.x) - 1;
+  const top = toPx(b.y) >> 4;
+  const bottom = (toPx(b.y + b.h) - 1) >> 4;
+  for (let d = 0; d <= room; d += 4) {
+    const col = (edge + dir * d) >> 4;
+    for (let row = top; row <= bottom; row++) if (world.map.isSolid(col, row)) return true;
+  }
+  return false;
 }
 
 /** A `!` popping up over someone's head for a while (white, outlined). */

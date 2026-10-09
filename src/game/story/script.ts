@@ -90,6 +90,15 @@ export const LARRY_PAGES: readonly Page[] = [
   ['LARRY:', '', 'HE SAYS I GET IT BACK', 'WHEN THE PRINCESS IS', 'CAUGHT. SO BUZZ OFF!'],
 ];
 
+/**
+ * Larry in his room when the hero has already met him in 4-2's anchor scene (0.4.39: the file has
+ * seen `anchor-4-2`): he knows the hero this time. The second page is LARRY_PAGES's.
+ */
+export const LARRY_AGAIN_PAGES: readonly Page[] = [
+  ['LARRY:', '', 'YOU AGAIN?! THE KING TOOK', 'MY WAND, AND ALL I GOT WAS', 'THIS LOUSY SPARE!'],
+  LARRY_PAGES[1] as Page,
+];
+
 /** The crystal ball's cards (Larry beaten; campaign), at most 26 columns a line. */
 export const STORY_CRYSTAL_BALL_PAGES: readonly Page[] = [
   ['LARRY DROPPED HIS', 'CRYSTAL BALL! IT SEES', "WHEREVER THE WAND'S SPELL", 'IS AT WORK...'],

@@ -290,8 +290,9 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   anchor slams down and knocks the hero back unhurt, Larry yells down the chain (a card), climbs
   down (`larry-climb-0/1`), panics (`larry-hurt`, a `!`) and scurries back up, the hero says their
   line ("LET'S GET HIM!" for Mario, each hero their own: `anchorHeroPage`), runs to the chain and
-  climbs it into the airship. BACK (or MENU) skips the whole scene; every card waits; the beats
-  are read out. Later visits get the plain drop and the climb prompt. Script: docs/STORY.md 2.7.
+  climbs it into the airship. JUMP (or MENU) skips the whole scene, as in the opening (BACK on a
+  card too, never between them); every card waits; the beats are read out. Later
+  visits get the plain drop and the climb prompt. Script: docs/STORY.md 2.7.
 
 ### Mega Man's airship, the "Wily-sky remix" (0.4.39)
 
@@ -311,7 +312,9 @@ other hero (and classic play) gets the airship exactly as before.
   bomb (shootable) as they pass over him.
 - **The rigging**: the stern's steps are opened into four appearing (yoku) blocks over the lower
   deck (no pit under them: a miss costs only the climb), each up 110 of every 180 frames, the next
-  45 frames after the last, darker in their last half second; they never appear on anyone.
+  45 frames after the last, darker in their last half second; they never appear on anyone. At the
+  top, a large health pellet waits on the high stern deck before the pipe (a map `pickup`, laid
+  for good), so a rough crossing doesn't send him into Larry nearly empty.
 - **Look and sound**: the SMB3 hull and length as before; the Wily fortress music (`music mm-wily`
   in the variant section).
 - **Larry's room** stays an SMB3 fight, with a Mega Man 2 style hit-point bar at the top right

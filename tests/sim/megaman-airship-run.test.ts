@@ -9,7 +9,7 @@ import { CardScene } from '@game/scenes/message';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { BOSS_BAR } from '@game/hud/smb3-hero-panel';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
-import { CRASH_PAGES, LARRY_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
+import { CRASH_PAGES, LARRY_AGAIN_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { closeCards, dropInAndClimb, file, makeGame, useStorage } from './heroes-harness';
 import { megamanShipBot } from './megaman-airship-bot';
 
@@ -84,7 +84,8 @@ describe('the whole campaign run as Mega Man', () => {
     expect(room.level.id).toBe('4-2-larry');
     h.until(() => !room.world.player.frozen, 200);
     h.step();
-    expect(closeCards(h)).toEqual(LARRY_PAGES);
+    // He met Larry in the anchor scene, so Larry knows him (the scene not seen: LARRY_PAGES).
+    expect(closeCards(h)).toEqual(LARRY_AGAIN_PAGES);
     h.until(() => room.world.entities.some((e) => e instanceof Larry), 200);
     const larry = room.world.entities.find((e): e is Larry => e instanceof Larry) as Larry;
     expect(larry.hpMode).toBe(true);

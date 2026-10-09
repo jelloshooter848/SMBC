@@ -24,6 +24,7 @@ import {
   FREED_TALKS,
   freedTalk,
   HUB_PAGE,
+  LARRY_AGAIN_PAGES,
   LARRY_PAGES,
   LUIGI_RUNS_PAGE,
   noMoreStandIns,
@@ -109,6 +110,7 @@ function scriptPages(): Map<string, Page> {
   // 0.4.39: each hero's line at the end of 4-2's anchor scene, in their own name.
   for (const c of CHARACTERS) add(`anchorHeroPage.${c.id}`, anchorHeroPage(c.id, fontText(c.name)));
   list('LARRY_PAGES', LARRY_PAGES);
+  add('LARRY_AGAIN_PAGES.0', LARRY_AGAIN_PAGES[0] as Page);
   list('STORY_CRYSTAL_BALL_PAGES', STORY_CRYSTAL_BALL_PAGES);
   list('CRASH_PAGES', CRASH_PAGES);
   // The castle's page 1 shows under the thanks, as the doc writes it.

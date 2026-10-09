@@ -1339,8 +1339,9 @@ TARGET CLIMBING. SOPHIA
 III, ENGAGE PURSUIT!
 ```
 
-Then play goes on up the chain into the airship (the climb arrival on its bow). Every card waits for OK; BACK (or
-MENU between the cards) skips the whole scene straight up the chain. A later visit (a NO or Give up aboard, then back
+Then play goes on up the chain into the airship (the climb arrival on its bow). Every card waits for OK; JUMP (or
+MENU) between the cards, or BACK on one, skips the whole scene straight up the chain (never BACK between them: a hero
+may be tapping fire). A later visit (a NO or Give up aboard, then back
 to the room) shows the plain crash and the chain to climb.
 
 **Larry in his room** (`4-2-larry`, `scenes/airship.ts`). **Trigger:** the first time the hero rises out of the
@@ -1360,6 +1361,17 @@ LARRY:
 HE SAYS I GET IT BACK
 WHEN THE PRINCESS IS
 CAUGHT. SO BUZZ OFF!
+```
+
+Once the file has seen the anchor scene (NEW, 0.4.39), Larry knows the hero, and his first page opens instead (the
+second page is the same):
+
+```text
+LARRY:
+
+YOU AGAIN?! THE KING TOOK
+MY WAND, AND ALL I GOT WAS
+THIS LOUSY SPARE!
 ```
 
 **Larry beaten**: his `BWAH!` stays. **The crystal ball** (REPLACES the second page of `STORY_CRYSTAL_BALL_PAGES`;

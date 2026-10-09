@@ -107,6 +107,8 @@ smb3:railing 97 7
 ;;   lower stern deck up the rigging to the high stern deck and its pipe, each showing for 110 of
 ;;   every 180 frames, the next 45 frames after the last, the last moments darker as a warning.
 ;;   A miss lands back on the lower deck (no pit under them), and the camera has stopped by then.
+;; - A large health pellet on the high stern deck before the pipe (92), so a careless climb doesn't
+;;   send him into Larry nearly out of energy.
 music mm-wily
 - rocky 18 8
 + telly-port 18 8
@@ -120,3 +122,4 @@ music mm-wily
 + yoku 87 10 at=45
 + yoku 85 8 at=90
 + yoku 88 7 at=135
++ pickup 92 7 item=health-large

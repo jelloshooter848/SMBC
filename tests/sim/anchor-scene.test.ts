@@ -91,11 +91,12 @@ describe('the anchor scene (campaign story, once per file)', () => {
     expect(lookedUp).toBe(true);
     // The hero faces the anchor's column (he dropped in to its right).
     expect(p.facing).toBe(-1);
-    // 3. The anchor slams down: the pipe is gone, the hero is knocked back (away from it), unhurt.
+    // 3. The anchor slams down: the pipe is gone, the hero is knocked back, unhurt (he landed
+    // against the room's far wall, so the throw goes toward the open floor).
     h.until(() => drop(w)?.phase === 'rest', 200);
     h.until(() => toPx(p.body.x) !== toPx(startX), 40);
     const knocked = p.body.x;
-    expect(knocked).toBeGreaterThan(startX);
+    expect(knocked).toBeLessThan(startX);
     expect(h.said).toContain(ANCHOR_SCENE_SAID.crash);
     expect(h.said.some((t) => t.startsWith(ANCHOR_SAID))).toBe(false);
     // 4. Larry yells down: his card, read out, waiting for OK (never by itself).
@@ -152,7 +153,7 @@ describe('the anchor scene (campaign story, once per file)', () => {
   });
 
   it.each([
-    ['BACK during the rumble', 'rumble'],
+    ['JUMP during the rumble', 'rumble'],
     ['BACK on Larry’s card', 'card'],
     ['MENU while Larry climbs', 'climb'],
   ])('%s skips the whole scene, straight up into the airship', (_name, when) => {
@@ -162,7 +163,7 @@ describe('the anchor scene (campaign story, once per file)', () => {
     const w = main.world;
     if (when === 'rumble') {
       h.idle(ANCHOR_SCENE.guard + 1);
-      h.tap('attack');
+      h.tap('jump');
     } else {
       untilCard(h);
       h.idle(CARD_GUARD_FRAMES + 1);
@@ -170,7 +171,7 @@ describe('the anchor scene (campaign story, once per file)', () => {
       else {
         h.tap('jump');
         h.until(() => w.entities.some((e) => e instanceof LarryOnChain), 60);
-        h.idle(10);
+        h.idle(ANCHOR_SCENE.guard + 1);
         h.tap('start');
       }
     }
@@ -180,12 +181,57 @@ describe('the anchor scene (campaign story, once per file)', () => {
     expect(drop(w)?.phase).toBe('rest');
   });
 
+  it('dropped in against the room’s wall, the hero is thrown back toward open floor, not into it', () => {
+    const h = makeGame();
+    const main = in42(h);
+    dropIn(h, main);
+    const w = main.world;
+    const p = w.player;
+    // Flush against the wall on the far side from the anchor (where a player falling straight
+    // through the ceiling's gap lands).
+    const row = Math.floor((toPx(p.body.y + p.body.h) - 1) / 16);
+    let col = Math.floor(toPx(p.body.x + p.body.w) / 16);
+    while (!w.map.isSolid(col, row)) col++;
+    p.body.x = px(col * 16) - p.body.w;
+    const startX = p.body.x;
+    h.until(() => drop(w)?.phase === 'rest', 300);
+    h.until(() => w.anchorScene?.phase !== 'fall' && p.body.onGround, 60);
+    // A real throw: well clear of the wall, landing on its feet, unhurt.
+    expect(toPx(startX) - toPx(p.body.x)).toBeGreaterThanOrEqual(16);
+    expect(p.dead).toBe(false);
+    expect(p.powerState).toBe('small');
+  });
+
   it('a press held from before the scene does not skip it', () => {
     const h = makeGame();
     const main = in42(h);
     dropIn(h, main);
-    for (let f = 0; f < ANCHOR_SCENE.guard; f++) h.step(['attack']);
+    for (let f = 0; f < ANCHOR_SCENE.guard; f++) h.step(['jump']);
     expect(main.world.anchorScene?.phase).toBe('rumble');
+  });
+
+  it('fire (BACK) between the cards never skips it: a hero tapping his buster sees it all', () => {
+    const h = makeGame();
+    const main = in42(h, 'megaman');
+    dropIn(h, main);
+    for (let f = 0; f < 80; f++) h.step(f % 2 ? ['attack'] : []);
+    expect(main.world.anchorScene).not.toBeNull();
+    // The skip control is JUMP everywhere: the hint, its touch button and the line said.
+    expect(main.touchLabels().jump).toBe('SKIP');
+    expect(main.touchLabels().attack).toBeNull();
+  });
+
+  it('closing Larry’s card with a double press of OK does not skip what follows', () => {
+    const h = makeGame();
+    const main = in42(h);
+    dropIn(h, main);
+    untilCard(h);
+    ok(h);
+    // The second press of a quick double tap lands on the scene a few frames later.
+    h.idle(3);
+    h.tap('jump');
+    h.idle(2);
+    expect(main.world.anchorScene?.phase).toBe('down');
   });
 
   it('as Luigi and Mega Man: their own name and line', () => {
