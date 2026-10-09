@@ -16,6 +16,8 @@ import { levelTouchLabels } from '../touch-labels';
 import {
   drawPromptBox,
   fillAbilities,
+  lessonBlocks,
+  lessonItems,
   LessonTracker,
   markLessonUp,
   PROMPT_BOX_Y,
@@ -253,14 +255,14 @@ export class TutorialDirector {
     // The blocks of the lessons done are used, as the hero left them.
     const done = new Set(this.tracker.done);
     for (const l of this.def.lessons)
-      if (l.block && done.has(l.id)) this.scene.world.map.set(l.block.x, l.block.y, T.USED);
+      if (done.has(l.id)) for (const b of lessonBlocks(l)) this.scene.world.map.set(b.x, b.y, T.USED);
     this.lessonUp();
   }
 
   /** The items of the lessons done so far (the kit floor), in the stage's order. */
   get floor(): string[] {
     const done = new Set(this.tracker.done);
-    return this.def.lessons.flatMap((l) => (l.item && done.has(l.id) ? [l.item] : []));
+    return this.def.lessons.flatMap((l) => (done.has(l.id) ? lessonItems(l) : []));
   }
 
   /** Every player gets the kit floor's items they lack, quietly. */
@@ -514,6 +516,7 @@ export class TutorialDirector {
     this.run.greeted = true;
     const beat = def.beat;
     const world = this.scene.world;
+    this.tracker.current?.during?.(world);
     const due = (b: NonNullable<StageTutorial['beat']>): boolean =>
       b.when
         ? b.when(world)
@@ -548,11 +551,10 @@ export class TutorialDirector {
     if (this.mainArea && this.stoppedAtGate(world)) this.showRetry();
   }
 
-  /** The lesson's item is taken (or it has none). */
+  /** The lesson's items are all taken (or it has none). */
   private itemTaken(l: Lesson | undefined): boolean {
-    if (!l?.item) return true;
     const p = this.scene.world.players[0];
-    return !!p && ownsItem(p, l.item);
+    return !l || lessonItems(l).every((id) => !!p && ownsItem(p, id));
   }
 
   /** What the box reads now: its lesson, and whether that lesson's item is taken. */
@@ -600,7 +602,9 @@ export class TutorialDirector {
     const words = taken
       ? ((touch ? l.touchText : undefined) ?? l.text)
       : ((touch ? l.touchGet : undefined) ?? l.get ?? l.text);
-    const head = l.item && taken ? `${itemName(this.def.hero, l.item).toUpperCase()}! ` : '';
+    // The last item's name: a folded lesson's (Simon's Double and Triple Shot) is the one it teaches.
+    const last = lessonItems(l).pop();
+    const head = last && taken ? `${itemName(this.def.hero, last).toUpperCase()}! ` : '';
     return wrapPrompt(
       head + fillAbilities(words, (a, act, cap) => this.abilityName(a, act, labels, cap)),
       this.cols,

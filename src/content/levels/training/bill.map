@@ -1,0 +1,152 @@
+;; Bill's training stage (0.4.38, src/game/tutorial/heroes/bill.ts; docs/HEROES.md), in the Contra
+;; jungle look: the rifle at an enemy (gate 16), aiming up and up-ahead at two high targets (gate
+;; 34), prone under a turret's shots (gate 45), a shot down at the enemy in the ditch from a jump
+;; (gate 56), the Medal and the Machine Gun held on a group of enemies (gate 75), a note on switching
+;; guns, the Laser through two targets in a row (gate 93), the Flame Gun at a tough target (gate
+;; 105), the Spread Gun's fan at three targets at once (gate 121) and the flagpole. Each power
+;; block's item is in [hero-items]; the gates are laid by the tutorial.
+id: training-bill
+name: BILL TRAINING
+world: 7
+stage: 0
+theme: contra-jungle
+music: contra-jungle
+time: 400
+start: 2,11
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0                16               32               48               64               80               96               112              128
+................ ................ ................ ................ ................ ................ ................ ................ ........
+................ ................ ................ ................ ................ ................ ................ ................ ........
+................ ................ ................ ................ ................ ................ ................ ...............o ........
+................ ................ ................ ................ ................ ................ ................ ...............! ........
+................ ......B......... ................ ................ ................ ................ ................ ...............! ........
+................ ................ ................ ................ ................ ................ ................ ...............! ........
+................ ..............BB ................ ................ ................ ................ ................ ....B..........! ........
+................ ................ ................ ................ ................ ................ ................ ...............! ........
+................ ................ ................ ................ ................ ................ ................ .....B.........! ........
+................ ................ ................ ..........M...M. ................ ..M............. M...........M... ...............! ........
+................ ................ ................ ................ ................ ................ ................ ...............! ........
+................ ................ ................ ................ ................ ................ ................ ...............B ........
+################ ################ ################ ##....########## ################ ################ ################ ################ ########
+################ ################ ################ ##....########## ################ ################ ################ ################ ########
+################ ################ ################ ################ ################ ################ ################ ################ ########
+
+[entities]
+;; Toad greets Bill at the start (scenery).
+toad 5 11
+goomba 13 11
+target 22 5 lesson=aim hang=1
+target 30 5 lesson=aim
+target 42 11 lesson=prone shoots=80 facing=left
+goomba 51 13
+goomba 68 11 lesson=machine-gun
+goomba 70 11 lesson=machine-gun
+goomba 72 11 lesson=machine-gun
+target 88 11 lesson=laser
+target 90 11 lesson=laser
+target 102 11 lesson=flame-gun tough=6
+target 118 11 lesson=spread-gun
+target 117 9 lesson=spread-gun hang=1
+target 116 7 lesson=spread-gun hang=1
+
+[zones]
+exit 127 next=1-1
+
+[decor]
+canopy-hang 0 0
+canopy-hang 2 0
+canopy-hang 4 0
+canopy-hang 6 0
+canopy-hang 8 0
+canopy-hang 10 0
+canopy-hang 12 0
+canopy-hang 14 0
+canopy-hang 16 0
+canopy-hang 18 0
+canopy-hang 20 0
+canopy-hang 22 0
+canopy-hang 24 0
+canopy-hang 26 0
+canopy-hang 28 0
+canopy-hang 30 0
+canopy-hang 32 0
+canopy-hang 34 0
+canopy-hang 36 0
+canopy-hang 38 0
+canopy-hang 40 0
+canopy-hang 42 0
+canopy-hang 44 0
+canopy-hang 46 0
+canopy-hang 48 0
+canopy-hang 50 0
+canopy-hang 52 0
+canopy-hang 54 0
+canopy-hang 56 0
+canopy-hang 58 0
+canopy-hang 60 0
+canopy-hang 62 0
+canopy-hang 64 0
+canopy-hang 66 0
+canopy-hang 68 0
+canopy-hang 70 0
+canopy-hang 72 0
+canopy-hang 74 0
+canopy-hang 76 0
+canopy-hang 78 0
+canopy-hang 80 0
+canopy-hang 82 0
+canopy-hang 84 0
+canopy-hang 86 0
+canopy-hang 88 0
+canopy-hang 90 0
+canopy-hang 92 0
+canopy-hang 94 0
+canopy-hang 96 0
+canopy-hang 98 0
+canopy-hang 100 0
+canopy-hang 102 0
+canopy-hang 104 0
+canopy-hang 106 0
+canopy-hang 108 0
+canopy-hang 110 0
+canopy-hang 112 0
+canopy-hang 114 0
+canopy-hang 116 0
+canopy-hang 118 0
+canopy-hang 120 0
+canopy-hang 122 0
+canopy-hang 124 0
+canopy-hang 126 0
+canopy-hang 128 0
+canopy-hang 130 0
+canopy-hang 132 0
+canopy-hang 134 0
+palm 1 11
+palm 27 11
+palm 64 11
+palm 98 11
+palm 131 11
+jungle-band 6 11
+jungle-band 36 11
+jungle-band 44 11
+jungle-band 58 11
+jungle-band 66 11
+jungle-band 78 11
+jungle-band 86 11
+jungle-band 110 11
+jungle-band-half 20 11
+jungle-band-half 47 11
+jungle-band-half 70 11
+jungle-band-half 94 11
+jungle-band-half 104 11
+jungle-band-half 124 11
+
+[hero-items]
+58 9 bill=grow
+62 9 bill=machine-gun
+82 9 bill=laser
+96 9 bill=flame-gun
+108 9 bill=spread-gun

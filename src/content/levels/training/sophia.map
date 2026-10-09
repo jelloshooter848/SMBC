@@ -1,0 +1,72 @@
+;; Sophia III's training stage (0.4.38, src/game/tutorial/heroes/sophia.ts; docs/HEROES.md), in
+;; the Blaster Master Underworld forest look: a held jump onto the plateau, the cannon through the
+;; brick wall and up at the target above (gate 21), the nose-first dip through the bridge's narrow
+;; hole to the passage, Jason out for the coins down the pit only he fits and back in (gate 50), the
+;; Power Capsule and the hover over the wide ditch, the Crusher's one shot at the tough target (gate
+;; 85), the Triple Missile through the box's wall (gate 100), Wall Climb up the tall wall, Ceiling
+;; Climb along the roof over the second ditch (gate 137), the Homing Missile at the target up on the
+;; ledge (gate 151) and the flagpole. Each power block's item is in [hero-items]; the gates are laid
+;; by the tutorial.
+id: training-sophia
+name: SOPHIA III TRAINING
+world: 8
+stage: 0
+theme: bm-forest
+music: bm-area
+time: 400
+start: 2,11
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0                16               32               48               64               80               96               112              128              144              160
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ........
+................ ................ ................ ................ ................ ................ ............BBBB ................ ................ ................ ........
+................ B............... .........BB..... ................ ................ ................ ............BBBB ................ ................ ..............o. ........
+................ B............... .........BB..... ................ ................ ................ ............BBBB ................ ................ ..............!. ........
+................ B............... .........BB..... ................ ................ ................ ............BBBB ................ ................ ..............!. ........
+................ B............... .........BB..... ................ ................ ................ ............BBBB ................ ................ ..............!. ........
+................ =............... .........BB..... ................ ................ ................ ............BBBB ................ ................ ..............!. ........
+................ =............... .........BB..... ................ ................ ................ ............BBBB ................ ................ .BBB..........!. ........
+................ =............... .........BB..... ................ ................ ...............B BBB.........BBBB ........BBBBBBBB BBBBBBBB........ ..............!. ........
+.........####### #####BBBBBBBBBBB BBBB.BBBBBBBBBBB BBB....M........ ....####....M... ........M......B ..B....M....BBBB ....M........... ............M... ..............!. ........
+.........####### #####........... ................ ................ ....####........ ...............B ..B.........BBBB ................ ................ ..............!. ........
+.........####### #####........... ................ ................ ....####........ ...............B ..B.........BBBB ................ ................ ..............B. ........
+################ ################ ###############$ ############.... ....############ ################ ################ ##########...... ......########## ################ ########
+################ ################ ###############$ ############.... ....############ ################ ################ ##########...... ......########## ################ ########
+################ ################ ################ ################ ################ ################ ################ ################ ################ ################ ########
+
+[entities]
+;; Toad greets Sophia III at the start (scenery).
+toad 5 11
+target 19 5 lesson=cannon-up hang=1
+target 83 11 lesson=crusher tough=3
+target 96 11 lesson=triple-missile
+target 146 6 lesson=homing-missile
+
+[zones]
+exit 158 next=1-1
+
+[decor]
+cloud-2 2 3
+tree-small 7 11
+cloud-1 24 2
+tree-big 53 11
+cloud-2 58 3
+tree-small 73 11
+tree-big 80 11
+cloud-1 90 2
+tree-small 101 11
+tree-big 114 11
+cloud-2 138 3
+tree-small 143 11
+tree-big 152 11
+cloud-1 160 2
+
+[hero-items]
+55 9 sophia=grow
+76 9 sophia=crusher
+88 9 sophia=triple-missile
+103 9 sophia=wall-climb
+116 9 sophia=ceiling-climb
+140 9 sophia=homing-missile

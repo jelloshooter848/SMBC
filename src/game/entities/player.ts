@@ -19,7 +19,7 @@ const CLIMB_SPEED = 0x00100; // 1 px/f in subpixels
 
 /**
  * The part of a player's scratch state that follows them to the next level: not per-swing hit
- * marks (`hit…`), nor a hero's transient flags (`_…`, e.g. Sophia III's `_jason`, `_hover`).
+ * marks (`hit…`), nor a hero's transient flags (`_…`).
  */
 export function carriedKit(p: Player): Record<string, number> {
   const out: Record<string, number> = {};

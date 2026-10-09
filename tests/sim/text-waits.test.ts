@@ -11,8 +11,6 @@ import { playStoryCards } from '@game/story/cards';
 import { BowserSaysScene } from '@game/story/level-beats';
 import { ToadGuide, type ToadScene } from '@game/map/toad-guide';
 import { ShadowTeaseScene } from '@game/tutorial/tease';
-import { PracticeRoomScene } from '@game/tutorial/room';
-import { LUIGI_HIGH_JUMP_PX } from '@game/tutorial/lessons';
 import { LINK } from '@game/characters/link';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
@@ -24,6 +22,7 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { px } from '@engine/math/units';
 import type { LevelData } from '@game/level/schema';
 import { makeGame, useStorage, type H } from './heroes-harness';
+import { skipGreeting, startStage } from './stage-bot';
 
 // Owner note 4 (0.4.22): text never moves without a key press. Every card, page and box stays
 // up with no input (10,000 frames here, nearly three minutes) and goes on when a key is pressed
@@ -261,67 +260,20 @@ describe('castle pages wait for a key per page, then exit', () => {
   });
 });
 
-describe('the training room: cards and READY! wait for a key; GOOD! is a tick that never waits', () => {
-  it('a chapter card and READY! stay up with no input and go on with a key; GOOD! sits by the next prompt', () => {
-    const h = makeGame();
-    const ends: string[] = [];
-    const room = new PracticeRoomScene(h.game, LUIGI, { onEnd: (r) => ends.push(r) });
-    h.game.scenes.push(room);
+describe('a training stage: its cards wait for a key; NICE! is a tick that never waits', () => {
+  it("Toad's greeting stays up with no input and goes on with a key; NICE! goes by itself", () => {
+    const { h, stage } = startStage('simon');
+    const s = stage();
+    h.until(() => h.top() instanceof CardScene, 120);
     h.idle(LONG);
-    expect(room.phase).toBe('chapter');
-    h.tap('jump');
-    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'high-jump']);
-    expect(room.promptLines()).not.toContain('GOOD!');
-    // The lesson is done: the next prompt comes up at once, with GOOD! and a tick by it.
-    room.tracker.maxJumpHeight = LUIGI_HIGH_JUMP_PX;
-    h.step();
-    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'slippery-stop']);
-    expect(room.ticked).toEqual(['high-jump']);
-    expect(h.said.at(-1)).toMatch(/^Good! Hold right/);
-    expect(room.promptLines()).toContain('GOOD!');
-    // Nothing moves on by itself, and the tick stays (no timer).
+    expect(h.top()).toBeInstanceOf(CardScene);
+    skipGreeting(h);
+    expect(s.director.lesson?.id).toBe('whip');
+    // A lesson done: NICE! shows on the box a moment, then the next tip, with no key.
+    s.director.skipLesson();
+    expect(s.director.lesson?.id).toBe('stairs');
     h.idle(LONG);
-    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'slippery-stop']);
-    expect(room.promptLines()).toContain('GOOD!');
-    // The chapter's last lesson: GOOD! on the next chapter's card, which waits for a key.
-    room.tracker.maxRunCoast = 999;
-    h.step();
-    expect(room.phase).toBe('chapter');
-    expect(room.promptLines()).toContain('GOOD!');
-    expect(h.said.at(-1)).toMatch(/^Good! Chapter 2/);
-    h.idle(LONG);
-    expect(room.phase).toBe('chapter');
-    h.tap('jump');
-    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'mushroom']);
-    // Still ticked until this lesson is done.
-    expect(room.promptLines()).toContain('GOOD!');
-    // The mushroom grabbed and a brick broken: on to the last lesson, the Fire Flower's.
-    room.tracker.taken.add('mushroom');
-    room.world.feats.bricks++;
-    h.step();
-    expect([room.phase, room.lesson?.id]).toEqual(['lesson', 'fireball']);
-    room.tracker.taken.add('fire-flower');
-    room.tracker.dummyHits.add('fireball');
-    h.step();
-    expect(room.phase).toBe('ready');
-    h.idle(LONG);
-    expect(ends).toEqual([]);
-    h.tap('jump');
-    expect(ends).toEqual(['done']);
-  });
-
-  it('a key pressed as the last lesson ticks (within the card guard) does not skip READY!', () => {
-    const h = makeGame();
-    const room = new PracticeRoomScene(h.game, LUIGI, { onEnd: () => {} });
-    h.game.scenes.push(room);
-    h.idle(CARD_GUARD_FRAMES + 1);
-    h.tap('jump');
-    room.startLesson(room.lessons.length - 1);
-    room.tracker.taken.add('fire-flower');
-    room.tracker.dummyHits.add('fireball');
-    h.step();
-    expect(room.phase).toBe('ready');
-    h.tap('jump');
-    expect(room.phase).toBe('ready');
+    expect(h.top()).toBe(s);
+    expect(s.director.lines().join(' ')).toContain('STAIRS');
   });
 });

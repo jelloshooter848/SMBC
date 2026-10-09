@@ -30,7 +30,7 @@ import { TUTORIAL_ROUND } from './stage-round';
  *   airship    Larry's airship (AIRSHIP_CHALLENGE)          boarded it ('larry' in met) or beaten him
  *   bonus      each SMB3 bonus game (BONUS_KINDS)           found the bonus spot (secret 'larry')
  *   stage      Mario's tutorial stage 1-0                   cleared or skipped 1-0
- *   training   each hero's training room (lessonsFor)       answered its training question
+ *   training   each hero's training stage (hasTraining)     answered its training question
  *                                                           (SaveFile.tutorials) or freed the hero
  *
  * Developer "Unlock all" counts every game as found. A game not found yet shows as a dark "???"
@@ -96,8 +96,7 @@ function bonusRound(kind: BonusKind): DevRound {
 }
 
 /**
- * A hero's training as a round (their stage, START AT first, or the practice room): finished
- * passes, Skip training quits.
+ * A hero's training stage as a round (START AT first): finished passes, Skip training quits.
  */
 function trainingRound(hero: CharacterDef): DevRound {
   return {

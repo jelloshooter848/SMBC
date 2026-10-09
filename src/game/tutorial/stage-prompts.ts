@@ -78,6 +78,19 @@ export interface Lesson {
   block?: { x: number; y: number };
   /** The words for `get` on touch, as `touchText`. */
   touchGet?: string;
+  /** Its entry in START AT, when its item's name alone does not say it (a folded lesson's). */
+  name?: string;
+  /**
+   * Further power-ups the same lesson gives, each from a block of its own (0.4.38: Simon's Double
+   * Shot and Triple Shot, folded into one lesson). The lesson's item counts as taken once all are;
+   * the last one's name then leads the box. Skip, START AT and the kit floor give them too.
+   */
+  more?: readonly { item: string; block: { x: number; y: number } }[];
+  /**
+   * Runs every frame while the lesson is played (after the world's): what the lesson keeps up for
+   * the hero (Simon's hearts kept at 10 or more, so a sub-weapon never runs dry).
+   */
+  during?(world: World): void;
   /**
    * Runs when the lesson comes up, and again when its stretch is rebuilt while it is current (a
    * put-back, a respawn): the hero's state for it (Link's ring count set back).
@@ -87,6 +100,16 @@ export interface Lesson {
   lights?(world: World): readonly { label: string; on: boolean }[];
   /** A line in the box under the words, read every frame (Samus's "-4 EN (WAS -8)"); null: none. */
   note2?(world: World): string | null;
+}
+
+/** Every power-up lesson `l` gives (its `item`, then its `more`), in order. */
+export function lessonItems(l: Lesson): string[] {
+  return l.item ? [l.item, ...(l.more ?? []).map((m) => m.item)] : [];
+}
+
+/** Every power block lesson `l` takes its items from (its `block`, then its `more`'s). */
+export function lessonBlocks(l: Lesson): { x: number; y: number }[] {
+  return [...(l.block ? [l.block] : []), ...(l.more ?? []).map((m) => m.block)];
 }
 
 /** Per world: the frame after the current lesson came up (StageTutorial's director marks it). */

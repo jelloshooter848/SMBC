@@ -10,7 +10,7 @@ import { actor, poly } from './build';
  * the hub's centre: arriving never warps, JUMP warps back to the hub's Arena pad).
  *
  * The pads are not written here: the game list comes from the registries (src/game/arena:
- * MINIGAMES, the heroes with training rooms, Larry's airship, the bonus games, 1-0), which
+ * MINIGAMES, the heroes with training stages, Larry's airship, the bonus games, 1-0), which
  * installs them with `installArenaGames`, so the arena grows by itself as games are added. Pad
  * slots, in fill order (SLOTS): three rows of pads three tiles apart, two tiles apart in a row, the
  * middle row out from the Return pad, then the far row, then the near row (see SLOTS). Each hero

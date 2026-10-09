@@ -29,7 +29,7 @@ export interface HeroPick {
    */
   onMap?: () => void;
   /**
-   * The music playing under the pick (the map's), put back after a training room so the next
+   * The music playing under the pick (the map's), put back after a training stage so the next
    * pick (player two's) has it.
    */
   music?: string | undefined;

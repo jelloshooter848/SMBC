@@ -433,7 +433,7 @@ export class Game {
           then();
         },
         onCancel: back,
-        // A training room on the way plays its own music; the map's comes back after it.
+        // A training stage on the way plays its own music; the map's comes back after it.
         music: mapPage(this.mapProgress.position.page)?.music,
       });
     this.scenes.push(

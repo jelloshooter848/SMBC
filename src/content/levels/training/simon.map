@@ -1,0 +1,92 @@
+;; Simon's training stage (0.4.38, src/game/tutorial/heroes/simon.ts; docs/HEROES.md), in the
+;; Castlevania courtyard-gate look: the whip at a wall candle on a low wall (gate 15), the stairs
+;; up to a ledge too high to jump, a committed jump over a ditch, the Pot Roast and the Chain Whip
+;; from ? blocks and the candle past the low wall only the chain reaches from it (gate 53),
+;; the Dagger at a target (gate 66), the Holy Water's flame at the walkers out of the pipe (gate 80),
+;; the Axe's arc at the target on the high shelf (gate 96), the Morning Star at the far candle (gate
+;; 109), the Cross at a target (gate 119), the Double and Triple Shot: three axes at once (gate
+;; 132), the Stopwatch freezing the fire bar to walk past it (gate 150) and the flagpole. Each power
+;; block's item is in [hero-items]; the gates are laid by the tutorial.
+id: training-simon
+name: SIMON TRAINING
+world: 5
+stage: 0
+theme: cv-gate
+music: cv-hall
+time: 400
+start: 2,11
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0                16               32               48               64               80               96               112              128              144              160
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ............o... ........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ............!... ........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ............!... ........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ............!... ........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ............!... ........
+................ .......BBBBB.... ................ ................ ................ ..........BBBB.. ................ ................ ................ ............!... ........
+................ .......BBBBB.... ................ ................ ................ ................ ................ ................ ................ ............!... ........
+................ .......BBBBB.... .......BMBMB.... ........BMB..... ....BMB......... ..BMB........... ..BMB.........BM B.........BMBBMB .......BMB...... .B..........!... ........
+................ .......BBBBB.... ................ ................ ................ ................ ................ ................ ................ ............!... ........
+............B... .......BBBBB.... .###............ B............... .............[]. ................ ........B....... ................ ................ ............B... ........
+################ ###############. .############### ################ ################ ################ ################ ################ ################ ################ ########
+################ ################ ################ ################ ################ ################ ################ ################ ################ ################ ########
+################ ################ ################ ################ ################ ################ ################ ################ ################ ################ ########
+
+[entities]
+;; Toad greets Simon at the start (scenery).
+toad 5 11
+candle 12 10 lesson=whip
+stairs 18 11 len=5 dir=ur
+;; Just past the leather whip's reach from the low wall, inside the chain's.
+candle 48 10 lesson=chain-whip dx=13
+target 63 11 lesson=dagger
+;; The pipe the Holy Water's walkers come out of, one at a time, once it is taken.
+door 77 10 lesson=holy-water
+target 91 6 lesson=axe
+;; Just past the chain's reach from the low wall, inside the Morning Star's.
+candle 104 10 lesson=morning-star dx=21
+target 116 11 lesson=cross
+firebar 145 9
+
+[zones]
+exit 156 next=1-1
+
+[decor]
+cloud-2 2 3
+tree-small 8 11
+tree-big 14 11
+cloud-1 20 2
+tree-small 30 11
+tree-big 38 11
+cloud-2 46 3
+tree-small 55 11
+tree-big 61 11
+cloud-1 66 2
+tree-small 73 11
+tree-big 86 11
+cloud-2 94 3
+tree-small 101 11
+cloud-1 112 2
+tree-big 118 11
+tree-small 129 11
+cloud-2 134 3
+tree-big 140 11
+tree-small 152 11
+cloud-1 158 2
+tree-big 162 11
+
+[hero-items]
+40 9 simon=grow
+42 9 simon=chain-whip
+57 9 simon=dagger
+69 9 simon=holy-water
+83 9 simon=axe
+99 9 simon=morning-star
+111 9 simon=cross
+123 9 simon=double-shot
+126 9 simon=triple-shot
+136 9 simon=stopwatch

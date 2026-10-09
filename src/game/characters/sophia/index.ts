@@ -167,15 +167,6 @@ function addAmmo(p: Player, triple: number, homing: number): boolean {
   return true;
 }
 
-/**
- * A transient scratch flag (`_…`, which carriedKit leaves out): 1 while `on`, else removed. The
- * training tracker reads them (MoveStats.seen).
- */
-function flag(p: Player, key: string, on: boolean): void {
-  if (on) p.scratch[key] = 1;
-  else delete p.scratch[key];
-}
-
 /** Back upright and every jump state ended (a hit, a vine, the flagpole). */
 function settle(p: Player, st: SophiaState): void {
   if (st.surface !== FLOOR || st.turn) becomeUpright(p, st);
@@ -334,7 +325,6 @@ export const SOPHIA: CharacterDef = {
       const st = sophiaState(p);
       st.waterTop = world.waterTop;
       st.levelH = world.heightPx;
-      flag(p, '_jason', st.jason !== null);
       if (st.jason) return jasonUpdate(p, st, input, world);
       if (p.transition) return;
       // The cannon rises while "up" (away from the surface) is held; not off the floor in water.
@@ -356,10 +346,6 @@ export const SOPHIA: CharacterDef = {
         } else fireMissile(p, st, world);
       }
       if (st.hovering && world.frame % 8 === 0) world.audio.sfx(SOUNDS.hover);
-      // Shown to the training tracker (MoveStats.seen); gone again when it ends.
-      flag(p, '_hover', st.hovering);
-      flag(p, '_wall', (st.surface === LEFT || st.surface === RIGHT) && st.wallFromFloor);
-      flag(p, '_ceiling', st.surface === CEIL);
     },
     onPowerUp(p, kind, world) {
       const st = sophiaState(p);
@@ -451,7 +437,6 @@ export const SOPHIA: CharacterDef = {
     },
     onLevelClear(p) {
       settle(p, sophiaState(p));
-      for (const k of ['_jason', '_hover', '_wall', '_ceiling']) delete p.scratch[k];
     },
     narrowFall(p, tx, lip) {
       // A one-tile drop into the area (4-2's cabin): nose first through it.

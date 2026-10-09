@@ -17,7 +17,7 @@ export function pad(n: number, width: number): string {
 export interface HudOptions {
   /**
    * A place name (e.g. 'TRAINING') shown instead of the WORLD and TIME columns; the score and
-   * coin counter are left out too (a practice room has no run to count).
+   * coin counter are left out too (a training stage has no run to count).
    */
   place?: string;
   /**

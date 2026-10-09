@@ -7,10 +7,10 @@ import { defaultSettings } from '@engine/save/settings';
 import { DEFAULT_ASSIST } from '@game/context';
 import { Game, type ControlScheme } from '@game/scenes/game';
 import { CHARACTERS } from '@game/characters/registry';
-import { HeroStageScene } from '@game/tutorial/hero-stage';
+import { HeroStageScene, startAtTitle } from '@game/tutorial/hero-stage';
 import { HERO_STAGES } from '@game/tutorial/heroes';
 import { itemInfo, heroItems } from '@game/items/catalog';
-import { tokenCaptions } from '@game/tutorial/stage-prompts';
+import { lessonBlocks, lessonItems, tokenCaptions } from '@game/tutorial/stage-prompts';
 import { levelTouchLabels } from '@game/touch-labels';
 import { T } from '@game/level/tiles';
 import { TrainingTarget } from '@game/tutorial/targets';
@@ -44,6 +44,23 @@ const KIT_ORDER: Readonly<Record<string, readonly string[]>> = {
   ],
   megaman: ['helmet', 'saw-disc', 'leaf-guard', 'rush-coil', 'flame-wave', 'homing-knuckle', 'bolt'],
   samus: ['energy-tank', 'long-beam', 'missiles', 'ice-beam', 'varia-suit', 'wave-beam'],
+  // The Double and Triple Shot are one lesson (owner, 0.4.38), after the Cross: the Stopwatch,
+  // with its fire bar, ends the stage.
+  simon: [
+    'pot-roast',
+    'chain-whip',
+    'dagger',
+    'holy-water',
+    'axe',
+    'morning-star',
+    'cross',
+    'double-shot',
+    'triple-shot',
+    'stopwatch',
+  ],
+  ryu: ['medicine', 'throwing-star', 'ninpo-scroll', 'windmill', 'fire-wheel', 'jump-slash'],
+  bill: ['medal', 'machine-gun', 'laser', 'flame-gun', 'spread-gun'],
+  sophia: ['power-capsule', 'crusher', 'triple-missile', 'wall-climb', 'ceiling-climb', 'homing-missile'],
 };
 
 function stageIn(heroId: string, scheme: ControlScheme): HeroStageScene {
@@ -109,7 +126,7 @@ describe('the hero stages', () => {
       const last = lessons.length - 1;
       s.director.startAt(last);
       for (const l of lessons.slice(0, last)) {
-        if (l.block) expect(s.world.map.get(l.block.x, l.block.y), l.id).toBe(T.USED);
+        for (const b of lessonBlocks(l)) expect(s.world.map.get(b.x, b.y), l.id).toBe(T.USED);
         expect(
           s.world.entities.some((e) => e instanceof TrainingTarget && e.lesson === l.id),
           `${l.id}'s targets`,
@@ -117,11 +134,11 @@ describe('the hero stages', () => {
       }
       // ...and the kit floor gives every earlier item.
       for (const l of lessons.slice(0, last))
-        if (l.item) expect(ownsItem(s.world.player, l.item), l.item).toBe(true);
+        for (const it of lessonItems(l)) expect(ownsItem(s.world.player, it), it).toBe(true);
     });
 
     it(`${id}: the power-ups come in the order the hero's kit builds up, the grow item first`, () => {
-      const items = stage.tutorial.lessons.flatMap((l) => (l.item ? [l.item] : []));
+      const items = stage.tutorial.lessons.flatMap(lessonItems);
       for (const it of items) expect(itemInfo(id, it), it).not.toBeNull();
       expect(items).toEqual(KIT_ORDER[id]);
       if (items.length) expect(items[0]).toBe(heroItems(id)?.grow);
@@ -131,4 +148,19 @@ describe('the hero stages', () => {
       for (const it of items.slice(1)) expect(entries, it).toContain(it);
     });
   }
+});
+
+describe('START AT', () => {
+  it("its title fits the menu's panel (28 columns) for every hero, Sophia III's shortened (RQ38)", () => {
+    for (const id of Object.keys(HERO_STAGES)) {
+      const hero = CHARACTERS.find((c) => c.id === id);
+      if (!hero) throw new Error(id);
+      expect(startAtTitle(hero).length, id).toBeLessThanOrEqual(28);
+    }
+    const sophia = CHARACTERS.find((c) => c.id === 'sophia');
+    const link = CHARACTERS.find((c) => c.id === 'link');
+    if (!sophia || !link) throw new Error('heroes');
+    expect(startAtTitle(sophia)).toBe('SOPHIA III: START AT');
+    expect(startAtTitle(link)).toBe('LINK TRAINING: START AT');
+  });
 });

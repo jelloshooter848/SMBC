@@ -686,7 +686,6 @@ function turnFrame(p: Player, st: SophiaState): void {
   if (t.t < t.frames) return;
   st.turn = null;
   st.dir = t.dir;
-  st.wallFromFloor = t.from === FLOOR && (t.to === LEFT || t.to === RIGHT);
   if (t.to === FLOOR || t.to === CEIL) {
     b.vx = t.dir * t.speed;
     p.facing = t.dir;

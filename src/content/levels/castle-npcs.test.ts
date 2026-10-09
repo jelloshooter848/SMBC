@@ -66,8 +66,8 @@ describe('castle ends: Toad and the princess', () => {
       const l = load(id);
       return l.entities.some((e) => e.type === 'toad' || e.type === 'princess');
     });
-    // The training stages (training/<hero>.map, 0.4.37): Toad is the guide in every hero's stage.
-    const training = ['link', 'luigi', 'megaman', 'samus'];
+    // The training stages (training/<hero>.map, 0.4.37 and 0.4.38): Toad guides in every hero's stage.
+    const training = ['bill', 'link', 'luigi', 'megaman', 'ryu', 'samus', 'simon', 'sophia'];
     expect(withNpc.sort()).toEqual(
       [...Object.keys(TOADS), ...Object.keys(PRINCESSES), '1-0', ...training].sort(),
     );

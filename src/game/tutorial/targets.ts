@@ -10,11 +10,11 @@ import type { World } from '../world/world';
 import { TargetDummy } from './dummy';
 import { Entity } from '../entities/entity';
 import { Goomba } from '../entities/enemies/goomba';
+import { Candle } from '../entities/objects/crypt';
 
 /*
- * The hero stages' targets and what they see (0.4.37). A target is the practice room's straw
- * dummy, put up by the stage's map (`target x y [lesson=id] [shoots=frames] [tough=hits]`): it
- * never moves, never hurts and stands up to any number of hits unless it is tough (it falls after
+ * The hero stages' targets and what they see (0.4.37). A target is the straw dummy (dummy.ts), put
+ * up by the stage's map (`target x y [lesson=id] [shoots=frames] [tough=hits]`): it never moves, never hurts and stands up to any number of hits unless it is tough (it falls after
  * that many); once its lesson is done it pops. A shooter fires slow shots at a hero in front of
  * it. The watch (`stageWatch`) records every hit on a target or an enemy (by what, how), every
  * hit the hero takes (and what it cost), and every shooter shot a shield blocked or a leaf swatted:
@@ -174,6 +174,22 @@ export class WaitingGoomba extends Goomba {
   }
 }
 
+/**
+ * A stage map's wall candle (`candle x y [lesson=id] [dx=px]`, Simon's): the crypt's candle, `dx`
+ * px right of its tile's place, belonging to a lesson (a whip's mark).
+ */
+export class LessonCandle extends Candle {
+  constructor(
+    tx: number,
+    ty: number,
+    readonly lesson: string | undefined,
+    dx = 0,
+  ) {
+    super(tx, ty);
+    this.body.x += px(dx);
+  }
+}
+
 /** Frames between a door's walkers (after the last one is gone). */
 export const DOOR_FRAMES = 75;
 
@@ -225,11 +241,15 @@ export interface StageHit {
   shotKind: string | null;
   /** The shot flew straight up. */
   up: boolean;
+  /** The shot flew downward (straight or on a diagonal: Bill's aim down in a jump). */
+  down: boolean;
   /** The shot snakes through walls (Samus's wave). */
   wave: boolean;
   /** Link's thrusts, at the moment of the hit. */
   downThrust: boolean;
   upThrust: boolean;
+  /** A melee hit made spinning (Ryu's Jump and Slash). */
+  spin: boolean;
   /** The hero's front edge to the target's near edge (px). */
   dist: number;
   reaction: Reaction;
@@ -287,9 +307,11 @@ export class StageWatch {
       shot,
       shotKind: shot?.kind ?? null,
       up: !!shot && shot.body.vx === 0 && shot.body.vy < 0,
+      down: !!shot && shot.body.vy > 0,
       wave: !!shot?.spec.wave,
       downThrust: !shot && !!p.scratch.downThrust,
       upThrust: !shot && !!p.scratch.upThrust,
+      spin: !shot && (p.scratch.spin ?? 0) > 0,
       dist: Math.max(0, toPx(gap)),
       reaction,
       wasFrozen,
