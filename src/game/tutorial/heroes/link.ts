@@ -2,6 +2,7 @@ import type { World } from '../../world/world';
 import { T } from '../../level/tiles';
 import { Projectile } from '../../entities/projectiles/projectile';
 import { LINK_SPELLS, MAX_MAGIC, SHIELD_SPELL } from '../../characters/link';
+import { BAG_BOMBS } from '../../characters/link/items';
 import { has } from '../../items/flags';
 import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
@@ -102,6 +103,15 @@ export function ringLights(w: World): { free: boolean; hurt: boolean; at: number
 /** Frames both lights show before the ring's lesson is done. */
 export const READ_FRAMES = 75;
 
+/**
+ * Bombs for the bomb's lesson once he has the bag (at least the bag's own), again at each put-back:
+ * a player who spent them all missing the target is never stranded at the gate.
+ */
+const fillBombs = (w: World): void => {
+  const p = w.player;
+  if (has(p, 'bomb-bag')) p.scratch.bombs = Math.max(p.scratch.bombs ?? 0, BAG_BOMBS);
+};
+
 /** Magic full for a spell's lesson (he can always cast it again). */
 const fillMagic = (w: World): void => {
   const p = w.player;
@@ -165,6 +175,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     row: 11,
     item: 'bomb-bag',
     block: S.bombBlock,
+    enter: fillBombs,
     get: 'ANOTHER ? BLOCK! OPEN IT TOO.',
     text: '[TOOLS:select] TO THE BOMB. SET ONE BY THE TARGET!',
     touchText: 'TAP [TOOLS:select] TILL THE BUTTON READS BOMB, THEN TAP IT BY THE TARGET.',

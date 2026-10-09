@@ -269,6 +269,31 @@ describe("Link's stage", () => {
     expect(p().hp).toBe(8);
   });
 
+  it("bombs all spent missing the target: Toad's put-back gives the bag's bombs again", () => {
+    const { h, stage } = startStage('link', { replay: true });
+    choose(h, 'Bomb Bag');
+    const s = stage();
+    const bot = linkBot();
+    playStage(h, s, bot, () => !!s.world.player.scratch['has-bomb-bag'], 900);
+    expect(lessonId(s)).toBe('bomb');
+    // Every bomb thrown away, then on to the gate without one: Toad's card, then OK.
+    s.world.player.scratch.bombs = 0;
+    playStage(
+      h,
+      s,
+      () => ['right'],
+      () => h.top() instanceof CardScene,
+      900,
+    );
+    expect(h.top()).toBeInstanceOf(CardScene);
+    for (let i = 0; i < 40 && h.top() instanceof CardScene; i++) h.step(i % 8 === 7 ? ['jump'] : []);
+    expect(lessonId(s)).toBe('bomb');
+    expect(s.world.player.scratch.bombs).toBe(4);
+    // And the lesson can be done.
+    playStage(h, s, bot, () => lessonId(s) !== 'bomb', 900);
+    expect(lessonId(s)).toBe('shield-spell');
+  });
+
   it("a Shield spell still running is put out at the ring's lesson; ring and spell make every hit free", () => {
     const { h, stage } = startStage('link', { replay: true });
     choose(h, 'Jump Spell');
