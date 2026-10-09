@@ -38,6 +38,20 @@ export interface Lesson {
   /** Whether the lesson is done (checked every frame while it is the current one). */
   done(world: World): boolean;
   /**
+   * Toad's card for a player who stops at a closed gate (StageTutorial.gates) with this lesson
+   * not done; after a press he is put back at `at`. Ability tokens as in `text`.
+   */
+  retry?: string;
+  /** A bar shown in the box under the words, filled 0..1 (the sprint's), read every frame. */
+  meter?(world: World): number;
+  /** A line to read, not a task: done quietly (no "NICE!", no sound). */
+  note?: boolean;
+  /**
+   * A respawn while this lesson is current goes back to lesson `restartsAt` (what it needs is
+   * gone in a fresh world: the vine a hidden block grew).
+   */
+  restartsAt?: string;
+  /**
    * Moving on: once a player is past this column in the stage's main area with the lesson not
    * done (the Goomba jumped over, the block left behind), it is skipped so the prompt never
    * asks for something no longer there. Absent: only `done` ends it.

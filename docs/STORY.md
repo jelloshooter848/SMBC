@@ -292,14 +292,19 @@ THE TIPS UP TOP!
 ```
 
 **Bowser's spell.** NEW, REPLACES the shadow tease (`ShadowTeaseScene`, `STORY_TEASE_PAGES`; classic play keeps the
-tease as it is). **Trigger:** where the tease is now (the `flag` lesson, column 83, a few steps before the
-flagpole), every time 1-0 is played in the campaign; on **Pause → Skip tutorial** it plays before 1-0 closes if
-this file has never seen it. **Replay:** play 1-0 again from its map node.
+tease as it is). **Trigger:** since 0.4.36 (owner note) **right after the flagpole**: Bowser interrupts once
+Mario is down the pole, before the walk to the castle (it was a few steps before the flagpole), every time 1-0 is
+played in the campaign; on **Pause → Skip tutorial** it plays before 1-0 closes if this file has never seen it.
+**Replay:** play 1-0 again from its map node.
+
+**Music:** Bowser has **his own theme** (0.4.36, owner note), new and original: a slow, foreboding loop in C minor
+in the SMB sound (`bowser-spell`, `content/music/bowser-spell.ts`). It starts as the sky dims and stops when he
+vanishes; then the level-clear walk goes on with its jingle.
 
 **Staging:**
 
-1. The music stops and the sky dims. A column of wand sparkles drops onto the ground between Mario and the
-   flagpole, and **Bowser appears in it, in full colour** (his own castle palette, no silhouette), facing Mario.
+1. The music gives way to Bowser's theme and the sky dims. A column of wand sparkles drops onto the ground between
+   Mario (down the pole) and the castle, and **Bowser appears in it, in full colour** (his own castle palette, no silhouette), facing Mario.
    Mario turns to face him. The pages show in the box at the top.
 2. On the second page Bowser lifts **the wand** to show it off: a short rod with a gold star on the tip (a new
    held prop), the star twinkling.
@@ -313,8 +318,8 @@ this file has never seen it. **Replay:** play 1-0 again from its map node.
    **the captive palette** (the brainwashed look they have in their levels) and **half hidden**: a dark vignette
    round the window and wand sparkles drifting over the hero, so the shape reads but not the details. No names
    on screen. `OK` (or `BACK`) skips to the last page.
-4. Back in 1-0 for the last page. Bowser laughs and vanishes in a puff of sparkles (the fakes' "poof"), the sky
-   clears, the music comes back, and Mario walks on to the flag.
+4. Back in 1-0 for the last page. Bowser laughs and vanishes in a puff of sparkles (the fakes' "poof"), his theme
+   stops, the sky clears, and Mario walks on into the castle (the level-clear jingle).
 
 Said (the announcer, during the spell, as `WAND_BREAK_SAID` is): _Bowser raises the wand. Eight heroes from other
 worlds are pulled into the eight worlds, under his spell._

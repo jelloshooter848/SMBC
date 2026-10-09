@@ -95,6 +95,8 @@ const SONG_IDS = [
   'bm-ice',
   // The new file's opening scene (0.4.31; it borrowed the toad house's tune before).
   'opening',
+  // Bowser's foreboding theme for his spell after 1-0's flagpole (0.4.36).
+  'bowser-spell',
 ];
 
 const SFX_IDS = [
