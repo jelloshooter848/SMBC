@@ -39,6 +39,7 @@ import { Spring } from '../entities/objects/spring';
 import { Vine } from '../entities/objects/vine';
 import { placeOnStairs, Stairs, type StairDir } from '../entities/objects/stairs';
 import { AnchorDrop } from '../entities/objects/anchor-drop';
+import { AnchorScene, type AnchorStory } from './anchor-scene';
 import { BridgeBlast } from '../entities/objects/bridge-blast';
 import {
   BEAM_GATHER_FRAMES,
@@ -139,7 +140,7 @@ export type WorldEvent =
    */
   | { type: 'crystal-ball'; player: number; next: string | null }
   /** Larry's anchor smashed 4-2's warp-zone pipe (objects/anchor-drop.ts): the level announces it. */
-  | { type: 'anchor' }
+  | { type: 'anchor'; scene?: boolean }
   /**
    * A player came up to the Moblin in 2-1's hidden cave (objects/moblin.ts): the level plays his
    * cards and ends (campaign: 2-1 cleared and the secret `secret` found; else on to `next`).
@@ -442,6 +443,15 @@ export class World {
   timeHidden = false;
   /** Frames of screen shake left (the anchor's crash); never drawn with reduce flashing. */
   shakeFrames = 0;
+  /** How far the shake moves the screen (px): 2, or 1 for the anchor scene's gentle one. */
+  private shakeAmp = 2;
+  /**
+   * 4-2's anchor scene, while it is due (LevelScene: the campaign's story, not yet seen on the
+   * file): the anchor drop starts it (startAnchorScene) instead of falling on its own.
+   */
+  anchorStory: AnchorStory | null = null;
+  /** The anchor scene running (world/anchor-scene.ts): play holds while it does. */
+  anchorScene: AnchorScene | null = null;
   /** Warp zones whose pipe the anchor smashed: their number and welcome text are gone. */
   private readonly smashedWarps = new Set<Zone>();
   private readonly deathTimers = new Map<Player, number>();
@@ -1222,6 +1232,12 @@ export class World {
     if (this.bossClear) {
       this.tickScorePopups();
       return this.updateBossClear(inputs);
+    }
+    if (this.anchorScene) {
+      this.tickScorePopups();
+      if (this.anchorScene.update(this, inputs)) this.anchorScene = null;
+      this.cull();
+      return;
     }
     if (this.pipeAnim) return this.updatePipeAnim();
     if (this.pipeExit) return this.updatePipeExit();
@@ -3451,9 +3467,43 @@ export class World {
     this.spawn(new BrickPiece(cx + px(8), cy + px(8), 0x01000, -0x03000, frame));
   }
 
-  /** Shake the screen for `frames` (drawn only without reduce flashing). */
-  shake(frames: number): void {
+  /** Shake the screen for `frames` by `amp` px (drawn only without reduce flashing). */
+  shake(frames: number, amp = 2): void {
+    if (this.shakeFrames <= 0 || amp > this.shakeAmp) this.shakeAmp = amp;
     this.shakeFrames = Math.max(this.shakeFrames, frames);
+  }
+
+  /**
+   * 4-2's anchor drop `drop` saw a player land on its floor: with the anchor scene due
+   * (anchorStory), it starts, the player nearest the anchor as the hero. False when it is not due
+   * (the drop falls on its own, as outside the story).
+   */
+  startAnchorScene(drop: AnchorDrop): boolean {
+    const story = this.anchorStory;
+    if (!story || this.anchorScene) return false;
+    const live = this.players.filter((p) => !p.dead && !p.out);
+    const d = (p: Player) => Math.abs(p.body.x - drop.body.x);
+    const hero =
+      live.find((p) => p === this.players[0]) ??
+      live.reduce<Player | null>((a, p) => (!a || d(p) < d(a) ? p : a), null);
+    if (!hero) return false;
+    this.anchorStory = null;
+    this.anchorScene = new AnchorScene(drop, hero, story);
+    this.anchorScene.start(this);
+    return true;
+  }
+
+  /**
+   * The anchor scene is over: everyone goes up `drop`'s chain into the airship, as a climb off its
+   * top would (its `vine` zone's link, an anchor-chain arrival).
+   */
+  boardChain(drop: AnchorDrop): void {
+    const z = this.level.zones.find(
+      (v): v is Zone & { kind: 'vine' } => v.kind === 'vine' && v.x === drop.tx && v.y === drop.foot,
+    );
+    if (z) return this.transfer(z.target, 'climb', true);
+    // No link (a level without one): play just goes on.
+    for (const p of this.players) p.frozen = false;
   }
 
   /** The warp zone over column `tx` loses its world numbers and welcome text (pipe smashed). */
@@ -3465,7 +3515,7 @@ export class World {
   /** The screen's vertical offset this frame (a shake), 0 with reduce flashing. */
   get shakeY(): number {
     if (this.shakeFrames <= 0 || this.ctx.reduceFlashing) return 0;
-    return (this.shakeFrames >> 1) & 1 ? 2 : -2;
+    return (this.shakeFrames >> 1) & 1 ? this.shakeAmp : -this.shakeAmp;
   }
 
   private renderWarpText(r: Renderer, view: View): void {

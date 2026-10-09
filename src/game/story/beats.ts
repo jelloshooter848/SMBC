@@ -16,6 +16,7 @@ import { CRYSTAL_BALL } from '@game/map/captives';
  * - `crash`         the airship crash on World 4 (the crystal ball);
  * - `rift`          Toad works out Peach's note after the 8-4 credits;
  * - `bowser-8-4`    Bowser's "no more stand-ins" on first entering 8-4's bridge room;
+ * - `anchor-4-2`    (0.4.39) 4-2's anchor scene: the crash, Larry's yell, his panic, the hero's line;
  * - `hub` / `arena` the first visit to the Warp Zone hub / the Mini Game Arena;
  * - `gate:<page>`   (0.4.23) the world gate out of page `page` broke: Bowser's cutaway and Toad;
  * - `sealed:<page>` (0.4.23) Toad's reminder while that road is sealed ('sealed:smb-8': the rift);
@@ -55,6 +56,7 @@ export const beat = {
   crash: 'crash',
   rift: 'rift',
   bowser84: 'bowser-8-4',
+  anchor42: 'anchor-4-2',
   hub: 'hub',
   arena: 'arena',
   /** The world gate out of page `page` ('smb-1'..'smb-7') broke: Bowser's cutaway, the seal, Toad. */

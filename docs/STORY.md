@@ -1261,6 +1261,88 @@ NOT MANY. LET'S MOVE.
 KEEP. The king stole Larry's wand; Larry fights with a cheap spare (his sprite holds one, and he fires rings), and
 helps the hunt because the king promised it back once the princess is caught.
 
+**The anchor scene** (NEW, 0.4.39, owner's v0.4.34 play-test notes; `world/anchor-scene.ts`). **Trigger:** the
+first time on the file a player lands on the floor of 4-2's hidden right zone (the dead warp pipe). Play holds: the
+ground shakes (gently, and not at all with reduce flashing; never a flash), the hero stops and looks up (a `!`), the
+anchor slams down through the ceiling, smashes the pipe and knocks the hero back (unhurt). Larry yells down from his
+airship:
+
+```text
+LARRY:
+
+AFTER MY WAND, ARE YOU?!
+NOBODY TAKES MY WAND!
+...NOBODY ELSE, ANYWAY.
+STAY RIGHT THERE!
+```
+
+He climbs down the chain, sees the hero up close, panics (a `!`, his arms thrown up) and scurries back up (said:
+`Larry climbs down the chain, sees you, panics and scurries back up!`). The hero, by name:
+
+```text
+MARIO:
+
+LET'S GET HIM!
+```
+
+```text
+LUIGI:
+
+HE'S MORE SCARED THAN ME!
+LET'S GET HIM!
+```
+
+```text
+LINK:
+
+...AFTER HIM!
+```
+
+```text
+MEGA MAN:
+
+A FLYING FORTRESS? JUST
+LIKE DR. WILY'S. LET'S GO!
+```
+
+```text
+SAMUS:
+
+TARGET IS RUNNING.
+MOVING TO INTERCEPT.
+```
+
+```text
+SIMON:
+
+FLEE, COWARD! A BELMONT
+NEVER LOSES THE TRAIL.
+```
+
+```text
+RYU:
+
+HE CANNOT OUTRUN A NINJA.
+```
+
+```text
+BILL:
+
+BOGEY'S HEADING TOPSIDE.
+LET'S TAKE HIM DOWN!
+```
+
+```text
+SOPHIA III:
+
+TARGET CLIMBING. SOPHIA
+III, ENGAGE PURSUIT!
+```
+
+Then play goes on up the chain into the airship (the climb arrival on its bow). Every card waits for OK; BACK (or
+MENU between the cards) skips the whole scene straight up the chain. A later visit (a NO or Give up aboard, then back
+to the room) shows the plain crash and the chain to climb.
+
 **Larry in his room** (`4-2-larry`, `scenes/airship.ts`). **Trigger:** the first time the hero rises out of the
 room's pipe in a run (not again on TRY AGAIN). The fight starts when it closes.
 

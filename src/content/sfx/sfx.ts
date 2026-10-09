@@ -168,6 +168,15 @@ export const sfx: Sfx[] = [
     triangle: 'q8 x0 p7 o2 c4',
     noise: 'v10 x0 l16 n12 n11 n12 n11 x1 n9',
   },
+  // 4-2's anchor scene (0.4.39): the ground shaking before the anchor comes down, a low rolling
+  // rumble of noise over a deep wobbling hum (about 600 ms).
+  {
+    id: 'rumble',
+    triangle: 'q8 x0 l16 o1 a a- a a- a x1 p-3 o1 a8',
+    noise: 'v9 x0 l16 n14 n15 n13 n15 n14 n15 x1 l8 n15',
+  },
+  // Mega Man's airship (0.4.39): an appearing block blinking in, a short square blip.
+  { id: 'yoku', pulse: '@2 v8 q6 x1 l64 o6 e o7 e' },
   // A key in hand: a quick climbing fanfare.
   { id: 'key-get', pulse: '@2 v11 q7 x0 l32 o6 d f+ a o7 d r32 o6 a o7 d x1 f+8' },
   // Shadow Keep items. A lit fuse: a thin crackling hiss with a high tick (200 ms; repeat it
