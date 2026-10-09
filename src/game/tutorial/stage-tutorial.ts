@@ -250,6 +250,10 @@ export class TutorialDirector {
     this.shown = this.tracker.index;
     this.cache.key = '';
     this.layGates();
+    // The blocks of the lessons done are used, as the hero left them.
+    const done = new Set(this.tracker.done);
+    for (const l of this.def.lessons)
+      if (l.block && done.has(l.id)) this.scene.world.map.set(l.block.x, l.block.y, T.USED);
     this.lessonUp();
   }
 
@@ -631,8 +635,8 @@ export class TutorialDirector {
    * The prompt box over the level (not while a scripted scene plays, before the greeting, or under
    * the pause menu).
    */
-  render(r: Renderer): void {
-    this.drawGates(r);
+  render(r: Renderer, opts: { gates?: boolean } = {}): void {
+    if (opts.gates !== false) this.drawGates(r);
     if (this.game.scenes.top !== this.scene) return;
     const box = this.box();
     if (!box) return;
@@ -724,7 +728,7 @@ export class TutorialDirector {
   }
 
   /** The closed gates: columns of red and white barrier blocks (blank solid tiles beneath). */
-  private drawGates(r: Renderer): void {
+  drawGates(r: Renderer): void {
     if (!this.laid.size) return;
     const cam = this.scene.world.camera;
     const camX = cam.pxX;

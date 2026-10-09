@@ -106,7 +106,7 @@ describe("Luigi's stage", () => {
         character: c,
         maxFrames: 160,
         script: { steps: [] },
-        start: { x: 0, y: 13, mode: 'stand' },
+        start: { x: 1, y: 13, mode: 'stand' },
         controller: (_w, f) => (f < walk ? ['right', 'run'] : ['right', 'run', 'jump']),
         until: (w) =>
           w.player.body.onGround && w.player.body.y + w.player.body.h <= tileToSub(S.tallSide.top),
@@ -123,7 +123,7 @@ describe("Luigi's stage", () => {
           character: c,
           maxFrames: 400,
           script: { steps: [] },
-          start: { x: 57, y: 9, mode: 'stand' },
+          start: { x: S.floatFrom, y: 9, mode: 'stand' },
           controller: (w) => {
             const b = w.player.body;
             if (!took && b.onGround && toPx(b.x + b.w) >= S.wide.from * 16 - 2 - off) {
@@ -146,7 +146,7 @@ describe("Luigi's stage", () => {
       character: LUIGI,
       maxFrames: 300,
       script: { steps: [] },
-      start: { x: 75, y: 13, mode: 'stand' },
+      start: { x: S.wide.to - 1, y: 13, mode: 'stand' },
       controller: (_w, f) => (f % 60 < 20 ? ['right', 'run'] : ['right', 'run', 'jump']),
       until: (w) => w.player.body.onGround && w.player.body.y + w.player.body.h <= tileToSub(S.farBank.top),
     });
@@ -195,7 +195,7 @@ describe("Luigi's stage", () => {
     expect(lessonId(s)).toBe('slide');
     expect(s.director.done).toContain('run');
     expect(s.director.closedGates).not.toContain(S.runGate);
-    expect(heroCol(s)).toBe(30);
+    expect(heroCol(s)).toBe(S.slideFrom);
     stageMenu(h, 'Skip training');
     expect(ended()).toBe(true);
     const st = h.game.state;
@@ -212,7 +212,7 @@ describe("Luigi's stage", () => {
     expect(s.world.player.powerState).toBe('small');
     // The lessons before are done (their gates open); the mushroom is this lesson's own (its block).
     expect(s.director.closedGates).toEqual([]);
-    expect(heroCol(s)).toBe(79);
+    expect(heroCol(s)).toBe(S.farBank.from + 1);
   });
 
   it('a death costs no life: Luigi stands back up at the lesson', () => {
@@ -225,7 +225,7 @@ describe("Luigi's stage", () => {
     hold(h, [], () => s.world !== w, 400);
     expect(s.state.lives).toBe(1);
     expect(lessonId(s)).toBe('slide');
-    expect(heroCol(s)).toBe(30);
+    expect(heroCol(s)).toBe(S.slideFrom);
     expect(s.director.closedGates).not.toContain(S.runGate);
   });
 });

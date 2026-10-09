@@ -109,6 +109,7 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     at: 39,
     row: 10,
     item: 'energy-tank',
+    block: S.tankBlock,
     get: 'PRESS UP TO STAND, THEN JUMP INTO THE ? BLOCK.',
     text: 'ITS BOX SHOWS ABOVE YOUR ENERGY.',
     done: (w) => (w.player.scratch.tanks ?? 0) > 0,
@@ -118,6 +119,7 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     at: 45,
     row: 10,
     item: 'long-beam',
+    block: S.longBlock,
     get: 'ANOTHER ? BLOCK!',
     text: 'YOUR BEAM GOES ALL THE WAY. HIT THE TARGET ACROSS.',
     retry: 'SHOOT THE TARGET FROM THIS SIDE OF THE DITCH: THE LONG BEAM REACHES IT.',
@@ -128,6 +130,7 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     at: 61,
     row: 10,
     item: 'missiles',
+    block: S.missileBlock,
     get: 'A ? BLOCK BY THE WALL!',
     text: '[MISSILE:special:MISSILE] OPENS BRICKS: BLAST THE WALL, ROLL THROUGH.',
     done: (w) => firedMissile(w) && landedPast(w, S.wall.x + 1),
@@ -137,6 +140,7 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     at: 69,
     row: 10,
     item: 'ice-beam',
+    block: S.iceBlock,
     get: 'ONE MORE ? BLOCK.',
     text: 'FREEZE, THEN SHATTER THE ENEMY. PICK IT WITH [WEAPON:select].',
     retry: 'PICK THE ICE BEAM WITH [WEAPON:select]: ONE SHOT FREEZES THE ENEMY, THE NEXT SHATTERS IT.',
@@ -147,6 +151,7 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     at: 83,
     row: 10,
     item: 'varia-suit',
+    block: S.variaBlock,
     get: 'ANOTHER ? BLOCK.',
     text: 'HITS COST HALF THE ENERGY. LET THE ENEMY TOUCH YOU.',
     retry: 'TAKE THE VARIA SUIT, THEN LET THE ENEMY TOUCH YOU: SEE THE ENERGY IT COSTS.',
@@ -164,6 +169,7 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     at: 95,
     row: 10,
     item: 'wave-beam',
+    block: S.waveBlock,
     get: 'THE LAST ? BLOCK!',
     text: 'THROUGH WALLS! [WEAPON:select] TO IT, HIT THE TARGET.',
     retry: 'PICK THE WAVE BEAM WITH [WEAPON:select]: IT SHOOTS THROUGH THE WALL TO THE TARGET.',
@@ -179,8 +185,8 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
   },
 ];
 
-/** A gate stands the whole height of the screen over the ground. */
-const gate = (col: number, after: string, bottom: number): TutorialGate => ({ col, top: 0, bottom, after });
+/** A gate stands from under the HUD to the ground: no jump of hers clears it. */
+const gate = (col: number, after: string, bottom: number): TutorialGate => ({ col, top: 2, bottom, after });
 
 export const SAMUS_GATES: readonly TutorialGate[] = [
   gate(S.beamGate, 'beam', 11),

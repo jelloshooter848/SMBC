@@ -85,7 +85,13 @@ export function stageLevel(stage: HeroStage): LevelData {
  * A map's own spawns (feet on the bottom of their tile): `target` a TrainingTarget, `door` a
  * TrainingDoor whose walkers come while lesson `lesson=` is being played (`live`).
  */
-export function stageEntity(s: EntitySpawn, live: (lesson: string) => boolean): Entity | undefined {
+export function stageEntity(
+  s: EntitySpawn,
+  live: (lesson: string) => boolean,
+  done: (lesson: string) => boolean = () => false,
+): Entity | null | undefined {
+  // A target of a lesson done is not put up again in a rebuilt stretch.
+  if (s.type === 'target' && typeof s.props?.lesson === 'string' && done(s.props.lesson)) return null;
   if (s.type === 'door') {
     const lesson = String(s.props?.lesson ?? '');
     return new TrainingDoor(tileToSub(s.x), tileToSub(s.y + 1), () => live(lesson));
@@ -163,7 +169,14 @@ export class HeroStageScene implements Scene, TutorialHost {
       y,
       mode: 'stand',
       seed: levelSeed(level),
-      extraEntities: (s) => stageEntity(s, (id) => this.lessonLive(id)),
+      // No score is shown in training (the HUD reads TRAINING): no "200" floats up either.
+      scorePopups: false,
+      extraEntities: (s) =>
+        stageEntity(
+          s,
+          (id) => this.lessonLive(id),
+          (id) => !!this.director?.done.includes(id),
+        ),
     });
     world.time = null;
     world.useHeroItems(level.heroItems ?? []);
@@ -393,12 +406,14 @@ export class HeroStageScene implements Scene, TutorialHost {
 
   render(r: Renderer): void {
     this.world.render(r);
+    // The gates stand in the world: under the HUD (a gate the screen's full height never hides it).
+    this.director.drawGates(r);
     drawHud(r, this.game.ctx.assets, this.state, null, this.world.frame, this.world.players, {
       place: 'TRAINING',
       covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
       outline: LIGHT_SKIES.has(this.level.theme),
     });
-    this.director.render(r);
+    this.director.render(r, { gates: false });
   }
 }
 

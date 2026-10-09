@@ -154,6 +154,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     at: 60,
     row: 11,
     item: 'heart-container',
+    block: S.heartBlock,
     get: 'OPEN THE ? BLOCK WITH YOUR [SWORD:attack]: JUMP AND SWING, OR STAB UP.',
     text: 'ONE MORE HEART, AND ALL OF THEM FILLED.',
     done: (w) => (w.player.scratch.maxHp ?? 6) >= 8 && w.player.hp >= 8,
@@ -163,6 +164,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     at: 66,
     row: 11,
     item: 'bomb-bag',
+    block: S.bombBlock,
     get: 'ANOTHER ? BLOCK! OPEN IT TOO.',
     text: '[TOOLS:select] TO THE BOMB. SET ONE BY THE TARGET!',
     touchText: 'TAP [TOOLS:select] TILL THE BUTTON READS BOMB, THEN TAP IT BY THE TARGET.',
@@ -174,6 +176,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     at: 78,
     row: 11,
     item: 'shield-spell',
+    block: S.shieldBlock,
     enter: fillMagic,
     get: 'A SPELL IN THIS ? BLOCK! OPEN IT.',
     text: '[TOOLS:select] TO IT, [USE TOOL:special:SHIELD] CASTS IT.',
@@ -189,6 +192,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     at: 84,
     row: 11,
     item: 'jump-spell',
+    block: S.jumpBlock,
     enter: fillMagic,
     get: 'THE WALL IS TOO HIGH. THE ? BLOCK HOLDS A SPELL FOR IT!',
     text: 'CAST IT, THEN [JUMP:jump] ONTO THE WALL.',
@@ -200,6 +204,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     at: 97,
     row: 11,
     item: 'blue-ring',
+    block: S.ringBlock,
     // A Shield spell still running would make every hit free: put out, and the ring's count reset.
     enter: (w) => {
       w.player.scratch.shieldSpell = 0;
@@ -226,6 +231,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     at: 111,
     row: 11,
     item: 'fire-spell',
+    block: S.fireBlock,
     enter: fillMagic,
     get: 'ONE MORE SPELL IN THIS ? BLOCK.',
     text: 'CAST IT. YOUR NEXT [SWORD:attack] FIRES A BEAM: HIT THE FAR TARGET.',
@@ -239,6 +245,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     at: 129,
     row: 11,
     item: 'magical-sword',
+    block: S.swordBlock,
     // A Fire spell cast and not swung would fire the beam by itself.
     enter: (w) => void (w.player.scratch.fireSpell = 0),
     get: 'THE LAST ? BLOCK!',

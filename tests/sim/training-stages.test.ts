@@ -12,6 +12,9 @@ import { HERO_STAGES } from '@game/tutorial/heroes';
 import { itemInfo, heroItems } from '@game/items/catalog';
 import { tokenCaptions } from '@game/tutorial/stage-prompts';
 import { levelTouchLabels } from '@game/touch-labels';
+import { T } from '@game/level/tiles';
+import { TrainingTarget } from '@game/tutorial/targets';
+import { ownsItem } from '@game/tutorial/kit';
 import { useStorage } from './heroes-harness';
 
 // Every hero stage's words (0.4.37): one prompt fits the box (3 lines) with keys, with a pad and on
@@ -98,6 +101,23 @@ describe('the hero stages', () => {
         else for (const t of texts) expect(t).toMatch(/./);
       }
       expect(long).toEqual([]);
+    });
+
+    it(`${id}: a stretch rebuilt past a lesson shows its block used and its targets gone`, () => {
+      const s = stageIn(id, 'keyboard');
+      const lessons = stage.tutorial.lessons;
+      const last = lessons.length - 1;
+      s.director.startAt(last);
+      for (const l of lessons.slice(0, last)) {
+        if (l.block) expect(s.world.map.get(l.block.x, l.block.y), l.id).toBe(T.USED);
+        expect(
+          s.world.entities.some((e) => e instanceof TrainingTarget && e.lesson === l.id),
+          `${l.id}'s targets`,
+        ).toBe(false);
+      }
+      // ...and the kit floor gives every earlier item.
+      for (const l of lessons.slice(0, last))
+        if (l.item) expect(ownsItem(s.world.player, l.item), l.item).toBe(true);
     });
 
     it(`${id}: the power-ups come in the order the hero's kit builds up, the grow item first`, () => {

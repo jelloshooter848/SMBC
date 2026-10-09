@@ -71,6 +71,11 @@ export interface Lesson {
   item?: string;
   /** The words while `item` is not taken yet (where the block is); absent: `text`. */
   get?: string;
+  /**
+   * The power block that gives `item` (its tile): once the lesson is done, a rebuilt stretch shows
+   * it used, as the hero left it.
+   */
+  block?: { x: number; y: number };
   /** The words for `get` on touch, as `touchText`. */
   touchGet?: string;
   /**

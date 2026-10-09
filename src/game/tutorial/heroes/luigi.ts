@@ -21,21 +21,23 @@ import source from '../../../content/levels/training/luigi.map?raw';
 
 /** The set pieces' columns and rows (luigi.map). */
 export const LUIGI_STAGE = {
-  /** The well (columns 0-2, floor top row 14) and its tall side (columns 3-7, top row 9). */
-  well: { from: 0, to: 2, floor: 14 },
-  tallSide: { from: 3, to: 7, top: 9 },
+  /** The well (columns 1-3, floor top row 14, its left wall column 0) and its tall side (4-8, top row 9). */
+  well: { from: 1, to: 3, floor: 14 },
+  tallSide: { from: 4, to: 8, top: 9 },
   /** The run starts here; its gate. */
-  runFrom: 9,
-  runGate: 44,
+  runFrom: 10,
+  runGate: 31,
   /** The hard-block strip (top row 10), the shallow ditch after it and the slide's gate. */
-  strip: { from: 48, to: 53, top: 10 },
-  ditch: { from: 54, to: 56 },
-  slideGate: 58,
-  /** The wide ditch (columns 70-77) and the higher far bank (top row 8). */
-  wide: { from: 70, to: 77 },
-  farBank: { from: 78, to: 89, top: 8 },
-  block: { x: 84, y: 4 },
-  flag: 98,
+  strip: { from: 32, to: 37, top: 10 },
+  ditch: { from: 38, to: 40 },
+  slideFrom: 14,
+  slideGate: 42,
+  /** The run-up and the wide ditch (columns 56-63) to the higher far bank (top row 8). */
+  floatFrom: 43,
+  wide: { from: 56, to: 63 },
+  farBank: { from: 64, to: 75, top: 8 },
+  block: { x: 70, y: 5 },
+  flag: 84,
 } as const;
 const S = LUIGI_STAGE;
 
@@ -75,7 +77,7 @@ function restedOnStrip(w: World): boolean {
 export const LUIGI_LESSONS: readonly Lesson[] = [
   {
     id: 'high-jump',
-    at: 0,
+    at: 1,
     row: 13,
     text: 'LUIGI JUMPS HIGHER! WALK AT THE WALL AND HOLD [JUMP:jump] AS YOU GO.',
     done: (w) => onTop(w, S.tallSide.top, S.tallSide.from, S.tallSide.to) || landedPast(w, S.tallSide.to + 1),
@@ -92,7 +94,7 @@ export const LUIGI_LESSONS: readonly Lesson[] = [
   },
   {
     id: 'slide',
-    at: 30,
+    at: S.slideFrom,
     row: 9,
     text: 'RUN, THEN LET GO EARLY: LUIGI SLIDES! STOP ON THE HARD BLOCKS.',
     retry: 'LUIGI SLIDES FAR! RUN, LET GO WELL BEFORE THE HARD BLOCKS AND STOP ON THEM.',
@@ -100,17 +102,18 @@ export const LUIGI_LESSONS: readonly Lesson[] = [
   },
   {
     id: 'float',
-    at: 59,
+    at: S.floatFrom,
     row: 9,
     text: 'HE FLOATS LONGER TOO! RUN, AND HOLD [JUMP:jump] FROM THE EDGE TO CLEAR THE DITCH.',
     done: (w) => onTop(w, S.farBank.top, S.farBank.from, S.farBank.to),
   },
   {
     id: 'power-ups',
-    at: 79,
+    at: S.farBank.from + 1,
     row: 7,
     note: true,
     item: 'mushroom',
+    block: S.block,
     get: 'MUSHROOMS AND FIRE FLOWERS WORK FOR LUIGI JUST AS FOR MARIO. ON TO THE FLAGPOLE!',
     text: 'BIG LUIGI TAKES A HIT AND BREAKS BRICKS. ON TO THE FLAGPOLE!',
     done: (w) => w.flagGrabbedBy !== null,
