@@ -25,6 +25,7 @@ import { partnersPalettes, partnersDef } from './partners';
 import { localsPalettes, localsDef } from './locals';
 import { wandPalettes, wandDef } from './wand';
 import { storyPalettes, storyDef } from './story';
+import { housePalettes, houseDef } from './house';
 import { zelda2SkyDef, zelda2SkyPalettes } from './zelda2-sky';
 import { heroItemPalettes, heroItemsDef } from './hero-items';
 import {
@@ -94,6 +95,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   wand: wandDef,
   // The 0.4.23 story's opening props: Bowser's star wand, the wax seal, Toad's note.
   story: storyDef,
+  // 0.4.36: Mario's house, where the opening plays (story/opening.ts).
+  house: houseDef,
   // 0.4.24: Link's sky palace above 2-1 (2-1-sky2's campaign look).
   'zelda2-sky': zelda2SkyDef,
   // 0.4.33: the heroes' own pickup items (docs/POWERUPS.md 11).
@@ -131,6 +134,7 @@ const defaults: Record<string, readonly string[]> = {
   ...localsPalettes,
   ...wandPalettes,
   ...storyPalettes,
+  ...housePalettes,
   ...zelda2SkyPalettes,
   ...heroItemPalettes,
 };

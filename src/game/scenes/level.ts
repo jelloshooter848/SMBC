@@ -471,7 +471,9 @@ export class LevelScene implements Scene {
   }
 
   render(r: Renderer): void {
-    const time = this.world.timeHidden ? null : this.world.time;
+    // A stage tutorial has no clock: the flagpole's clear (World.startClear: time ??= 0) must not
+    // show TIME 000 under Bowser's spell (0.4.36).
+    const time = this.world.timeHidden || this.tutorial ? null : this.world.time;
     // Larry's airship is SMB3's: its status bar along the bottom instead of the HUD on top.
     if (isAirshipArea(this.level.id)) {
       renderSmb3World(r, this.world);

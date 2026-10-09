@@ -30,4 +30,4 @@ parent: 1-0
 ################
 
 [zones]
-pipe 13 12 right -> 1-0 80 10 exit=up
+pipe 13 12 right -> 1-0 137 10 exit=up

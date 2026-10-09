@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { mapPage } from '@content/worldmap';
-import type { Action } from '@engine/input/actions';
-import { tileAt, tileToSub, toPx } from '@engine/math/units';
+import { tileAt, tileToSub } from '@engine/math/units';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { defaultSettings } from '@engine/save/settings';
@@ -17,25 +16,25 @@ import type { MenuItem } from '@game/scenes/menu';
 import type { ControlScheme } from '@game/scenes/game';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
-import { Goomba } from '@game/entities/enemies/goomba';
-import { PowerUp } from '@game/entities/objects/powerup';
 import { Toad } from '@game/entities/objects/toad';
 import { isCleared, isOpen } from '@game/map/rules';
 import type { WorldMapPage } from '@game/map/types';
 import { loadSave, newSave, saveKey } from '@game/save/save-files';
-import { MARIO_LESSONS, MARIO_TUTORIAL, TOAD_PAGES } from '@game/tutorial/mario-1-0';
-import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
+import { MARIO_10, MARIO_LESSONS, MARIO_TUTORIAL, TOAD_PAGES } from '@game/tutorial/mario-1-0';
+import { TEASE_LINES } from '@game/tutorial/tease';
 import { BowserSpellScene } from '@game/story/bowser-spell';
 import { BOWSER_SPELL_PAGES } from '@game/story/script';
 import { STORY_TOAD_PAGES } from '@game/story/script';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
 import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
+import { playTutorial } from './tutorial-bot';
 import { ALL_STORY, skipOpening } from './story-seen';
 
-// Mario's tutorial stage 1-0 (0.5.0): World 1's start node, where a new file begins; 1-1 opens
-// once it is cleared (or skipped). Toad tells the story, the lessons follow one by one in a
-// box at the top, and a brainwashed hero's shadow dashes past near the end.
+// Mario's tutorial stage 1-0 (0.5.0; reworked in 0.4.36): World 1's start node, where a new file
+// begins; 1-1 opens once it is cleared (or skipped). Toad tells the story, the lessons follow one
+// by one in a box at the top, and after the flagpole Bowser interrupts (campaign; elsewhere a
+// brainwashed hero's shadow dashes past). The gates, the sprint and the gaps: training-1-0.test.ts.
 
 useStorage();
 
@@ -74,138 +73,6 @@ function skipGreeting(h: H) {
     h.tap('jump');
   }
   expect(h.top()).toBeInstanceOf(LevelScene);
-}
-
-/**
- * A scripted Mario that plays every lesson as asked, reading the current lesson: walks and
- * hops the steps, takes a run at the gap, stomps the Goomba, bumps the ? block, grows, breaks a
- * brick, takes the pipe down and the side pipe up, and grabs the flagpole.
- */
-function bot(h: H): Action[] {
-  const top = h.top();
-  if (!(top instanceof LevelScene)) return [];
-  const d = top.tutorial;
-  const w = top.world;
-  const p = w.player;
-  const b = p.body;
-  const lesson = d?.lesson?.id ?? 'flag';
-  const x = toPx(p.centerX);
-  const out: Action[] = [];
-  /** Walk to column `col`'s centre; true once there. */
-  const goTo = (col: number, run = false): boolean => {
-    const dx = col * 16 + 8 - x;
-    if (Math.abs(dx) <= 3 && Math.abs(b.vx) < 256) return true;
-    if (Math.abs(dx) > 3) out.push(dx > 0 ? 'right' : 'left');
-    if (run) out.push('attack');
-    return false;
-  };
-  /** Hold jump while rising (a full-height jump), press it on the ground. */
-  const jump = () => {
-    if (b.onGround ? (w.frame & 1) === 0 : b.vy < 0) out.push('jump');
-  };
-  const wallAhead = () => {
-    const col = tileAt(b.x + b.w);
-    const row = tileAt(b.y + b.h - 1);
-    return w.map.isSolid(col + 1, row) || w.map.isSolid(col + 1, row - 1);
-  };
-  switch (lesson) {
-    case 'walk':
-      goTo(11);
-      break;
-    case 'jump':
-      out.push('right');
-      if (wallAhead() || !b.onGround) jump();
-      break;
-    case 'run': {
-      out.push('right', 'attack');
-      const col = tileAt(b.x + b.w);
-      if ((col >= 23 && b.onGround) || (!b.onGround && b.vy < 0)) jump();
-      break;
-    }
-    case 'stomp': {
-      const g = w.entities.find((e): e is Goomba => e instanceof Goomba && e.alive);
-      if (!g) {
-        out.push('right');
-        break;
-      }
-      // Stop short of it, hop as it comes close, and come down on top of it.
-      const gap = toPx(g.body.x + (g.body.w >> 1)) - x;
-      if (!b.onGround) {
-        if (b.vy < 0) out.push('jump');
-        if (Math.abs(gap) > 2) out.push(gap > 0 ? 'right' : 'left');
-      } else if (gap > 72) out.push('right');
-      else if (b.vx > 0) out.push('left');
-      else if (gap <= 30) jump();
-      break;
-    }
-    case 'block':
-      if (goTo(50) || !b.onGround) jump();
-      break;
-    case 'grow': {
-      const m = w.entities.find((e): e is PowerUp => e instanceof PowerUp && e.alive);
-      if (m) {
-        goTo(Math.floor(toPx(m.body.x + (m.body.w >> 1)) / 16));
-        break;
-      }
-      if (x < 56 * 16) {
-        out.push('right');
-        if (wallAhead() || !b.onGround) jump();
-        break;
-      }
-      if (goTo(59) || !b.onGround) jump();
-      break;
-    }
-    case 'brick':
-      if (x < 64 * 16) {
-        out.push('right');
-        if (wallAhead() || !b.onGround) jump();
-        break;
-      }
-      if (goTo(68) || !b.onGround) jump();
-      break;
-    case 'pipe':
-      if (x < 74 * 16) {
-        out.push('right');
-        break;
-      }
-      if (b.y + b.h > tileToSub(11)) {
-        // Hop onto the pipe.
-        if (goTo(74) || !b.onGround) jump();
-        if (!b.onGround) out.push('right');
-        break;
-      }
-      if (goTo(75) || x >= 75 * 16 + 4) out.push('down');
-      break;
-    case 'pipe-out':
-      out.push('right');
-      if ((wallAhead() && tileAt(b.x + b.w) < 11) || !b.onGround) jump();
-      break;
-    default:
-      // The flag: run at it and jump.
-      out.push('right', 'attack');
-      if ((tileAt(b.x + b.w) >= 84 && b.onGround) || (!b.onGround && b.vy < 0)) jump();
-  }
-  return out;
-}
-
-/** Plays 1-0 with the bot until `stop`; cards and the tease go on with OK. */
-function playTutorial(h: H, stop: () => boolean, max = 6000) {
-  let frames = 0;
-  for (; frames < max && !stop(); frames++) {
-    const t = h.top();
-    if (t instanceof CardScene) {
-      h.step(frames % 40 === 39 ? ['jump'] : []);
-      continue;
-    }
-    // The tease (Bowser's spell in the campaign) waits for OK once Bowser speaks (text never
-    // moves by itself).
-    if (t instanceof ShadowTeaseScene || t instanceof BowserSpellScene) {
-      h.step(frames % 40 === 39 ? ['jump'] : []);
-      continue;
-    }
-    h.step(bot(h));
-  }
-  expect(stop(), `stopped after ${frames} frames`).toBe(true);
 }
 
 describe('World 1 map: 1-0 is the start node', () => {
@@ -273,7 +140,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(h.top()).toBeInstanceOf(LevelScene);
   });
 
-  it("a scripted Mario does every lesson in order, sees Bowser's spell and reaches the flag", () => {
+  it('a scripted Mario does every lesson in order, reaches the flag and Bowser interrupts after it', () => {
     const h = makeGame();
     file();
     h.game.openFile(1);
@@ -281,17 +148,24 @@ describe('1-0: Toad, the lessons and the tease', () => {
     const lives = h.game.state.lives;
     const seen: string[] = [];
     let teased = false;
+    let afterFlag = false;
     playTutorial(h, () => {
       const t = h.top();
-      if (t instanceof BowserSpellScene) teased = true;
+      if (t instanceof BowserSpellScene && !teased) {
+        teased = true;
+        afterFlag = level(h).world.flagGrabbedBy !== null;
+      }
       if (t instanceof LevelScene) {
         const id = t.tutorial?.lesson?.id;
         if (id && seen.at(-1) !== id) seen.push(id);
-        return t.world.flagGrabbedBy !== null;
+        return t.world.flagGrabbedBy !== null && teased && t.tutorial?.scripted === false;
       }
       return false;
     });
     const d = director(h)!;
+    // Down the pole, before the walk to the castle: Bowser's theme, then on with the clear.
+    expect(afterFlag).toBe(true);
+    expect(h.audio.playMusic).toHaveBeenCalledWith('bowser-spell');
     expect(seen).toEqual(MARIO_LESSONS.map((l) => l.id));
     expect(d.done).toEqual(MARIO_LESSONS.map((l) => l.id));
     expect(d.missed).toEqual([]);
@@ -316,18 +190,22 @@ describe('1-0: Toad, the lessons and the tease', () => {
     enter10(h);
     skipGreeting(h);
     const lives = h.game.state.lives;
-    playTutorial(h, () => director(h)?.lesson?.id === 'run');
-    // Walk (don't run) off the edge into the gap.
-    const start = level(h);
-    h.until(() => {
+    playTutorial(h, () => director(h)?.lesson?.id === 'gap1');
+    // Walk (don't run) off the edge into the gap: dropped back in a few steps before it.
+    let fell = false;
+    let back = false;
+    for (let i = 0; i < 900 && !back; i++) {
       h.step(['right']);
-      return h.top() !== start;
-    }, 600);
-    h.until(() => h.top() instanceof LevelScene, 60);
+      const y = level(h).world.player.body.y;
+      fell ||= y > tileToSub(13);
+      back = fell && y < tileToSub(2);
+    }
+    expect(back).toBe(true);
+    h.until(() => level(h).world.player.body.onGround, 120);
     const w = level(h).world;
     expect(w.player.dead).toBe(false);
-    expect(tileAt(w.player.body.x)).toBe(19);
-    expect(director(h)?.lesson?.id).toBe('run');
+    expect(tileAt(w.player.body.x)).toBe(MARIO_10.gap1.back);
+    expect(director(h)?.lesson?.id).toBe('gap1');
     expect(h.game.state.lives).toBe(lives);
   });
 
@@ -502,7 +380,7 @@ describe('1-0 outside the campaign', () => {
   });
 });
 
-describe('lessons: co-op, NICE!, a Goomba that is gone', () => {
+describe('lessons: co-op, NICE!', () => {
   it('co-op: a partner with hit points does not count as grown; Mario does', () => {
     const grow = MARIO_LESSONS.find((l) => l.id === 'grow')!;
     const h = makeGame();
@@ -542,21 +420,6 @@ describe('lessons: co-op, NICE!, a Goomba that is gone', () => {
     expect(t.some((x) => x.startsWith('PRESS JUMP'))).toBe(true);
     expect(h.said.at(-1)).toMatch(/^PRESS JUMP/);
   });
-
-  it('the stomp lesson moves on once its Goomba is gone', () => {
-    const h = makeGame();
-    h.game.devStart('1-0', MARIO, 'small');
-    h.until(() => h.top() instanceof LevelScene, 300);
-    skipGreeting(h);
-    playTutorial(h, () => director(h)?.lesson?.id === 'stomp');
-    const w = level(h).world;
-    h.until(() => w.entities.some((e) => e instanceof Goomba && e.alive), 300);
-    for (const e of w.entities) if (e instanceof Goomba) e.destroy();
-    w.player.body.x = tileToSub(39);
-    h.step();
-    expect(director(h)?.missed).toEqual(['stomp']);
-    expect(director(h)?.lesson?.id).toBe('block');
-  });
 });
 
 describe('the prompts name abilities, never buttons', () => {
@@ -581,15 +444,19 @@ describe('the prompts name abilities, never buttons', () => {
   it('touch shows the touch buttons’ own captions; keyboard adds the key after the ability', () => {
     const touch = prompts('touch');
     const keys = prompts('keyboard');
-    const run = MARIO_LESSONS.findIndex((l) => l.id === 'run');
-    // On touch the run lesson says how the pad runs: a push far to the side (or the RUN button).
+    const run = MARIO_LESSONS.findIndex((l) => l.id === 'sprint');
+    // On touch the sprint lesson says how the pad runs: a push far to the side (or the RUN button).
     expect(touch[run]?.join(' ')).toBe(
-      'TO RUN, PUSH THE D-PAD FAR TO THE SIDE OR HOLD RUN. THEN JUMP OVER THE GAP.',
+      'PUSH THE D-PAD FAR TO THE SIDE OR HOLD RUN TO SPRINT, UNTIL THE BAR FILLS!',
     );
     expect(touch[run]?.length).toBeLessThanOrEqual(3);
-    expect(keys[run]?.join(' ')).toBe('HOLD RUN (X) TO RUN, THEN JUMP (Z) OVER THE GAP.');
+    expect(keys[run]?.join(' ')).toBe(
+      'HOLD RUN (X) TO SPRINT. KEEP IT HELD AT TOP SPEED UNTIL THE BAR FILLS!',
+    );
     expect(prompts('gamepad')[run]?.join(' ')).not.toContain('D-PAD');
-    for (const l of MARIO_LESSONS) if (l.id !== 'run') expect(l.touchText, l.id).toBeUndefined();
+    for (const l of MARIO_LESSONS)
+      if (l.id !== 'sprint' && l.id !== 'gap1') expect(l.touchText, l.id).toBeUndefined();
+    for (const lines of [...touch, ...keys]) expect(lines.length).toBeLessThanOrEqual(4);
     for (const lines of [...touch, ...keys]) {
       for (const l of lines) {
         expect(l, l).not.toMatch(LETTER);
@@ -597,6 +464,7 @@ describe('the prompts name abilities, never buttons', () => {
       }
     }
     for (const l of MARIO_LESSONS) expect(plainText(l.text)).not.toMatch(LETTER);
+    for (const l of MARIO_LESSONS) if (l.retry) expect(plainText(l.retry)).not.toMatch(LETTER);
     for (const l of [...TOAD_PAGES.flat(), ...TEASE_LINES]) expect(l).not.toMatch(LETTER);
   });
 

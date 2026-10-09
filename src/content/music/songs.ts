@@ -14,6 +14,7 @@ import { ninjaWorldSongs } from './ninja-world';
 import { contraWorldSongs } from './contra-world';
 import { blasterWorldSongs } from './blaster-world';
 import { openingSong } from './opening';
+import { bowserSpellSong } from './bowser-spell';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1233,4 +1234,6 @@ export const songs: Song[] = [
   ...blasterWorldSongs,
   // The new file's opening scene (0.4.31; it borrowed the toad house's tune before).
   openingSong,
+  // Bowser's foreboding theme for his spell after 1-0's flagpole (0.4.36).
+  bowserSpellSong,
 ];

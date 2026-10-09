@@ -13,24 +13,27 @@ import { NO_TOUCH_BUTTONS } from '@game/touch-labels';
 import { fontText } from '@game/hud/text';
 import { beat, storyOn } from './beats';
 import { pageSaid } from './cards';
-import { OPENING_CAPTION, OPENING_TOAD_PAGES, PEACH_NOTE, type Page } from './script';
+import { OPENING_BURST, OPENING_TOAD_PAGES, PEACH_NOTE, type Page } from './script';
 
 /*
  * A new file's opening (docs/STORY.md 2.1; campaign, once per file, before the World 1 map shows
- * for the first time): Peach's castle at dawn, its courtyard in SMB tiles. Mario stands in the
- * courtyard; Toad runs out of the castle door waving a sheet of paper and stops beside him. The
- * caption shows in the box at the top; then the screen dims and Peach's note fills the middle of
- * it, on a tilted parchment with torn edges and a wax seal, in brown ink that looks handwritten
- * (the bitmap font, each letter nudged up or down a pixel in a fixed pattern), written out a line
- * at a time. Back in the courtyard Toad's two pages; then the two run off to the right and the
- * screen fades to the map.
+ * for the first time): Mario's house (0.4.36, owner note; it was Peach's castle courtyard), a
+ * small cozy room in SMB colours: wallpaper over a wood wainscot, a plank floor, his bed, a
+ * mushroom lamp, a picture of the castle, a clock, Luigi's cap on its peg, a window on the morning. Mario
+ * stands by the lamp; the front door bursts open and Toad runs in waving a sheet of paper and
+ * stops beside him (Mario turns with a start). Toad's first card shows in the box at the top,
+ * named like every card ("TOAD:"); then the screen dims and Peach's note fills the middle of it,
+ * on a tilted parchment with torn edges and a wax seal, in brown ink that looks handwritten (the
+ * bitmap font, each letter nudged up or down a pixel in a fixed pattern), written out a line at a
+ * time. Back in the room Toad's two pages; then the two run out of the door and the screen fades
+ * to the map.
  *
  * No text moves on by itself. OK turns a page (on the note: shows the rest at once, then closes
  * it); BACK skips the rest of the opening. The walks and fades are animations on timers.
  */
 
 export const OPENING_TIMING = {
-  /** Toad comes out of the door, runs to Mario, and the caption shows. */
+  /** The door bursts open and Toad runs in to Mario; then his first card shows. */
   toadOut: 40,
   captionAt: 112,
   /** Frames the screen takes to dim for the note, and per line written. */
@@ -42,20 +45,24 @@ export const OPENING_TIMING = {
 } as const;
 const T = OPENING_TIMING;
 
-type Phase = 'court' | 'caption' | 'note' | 'toad' | 'leave' | 'done';
+type Phase = 'room' | 'burst' | 'note' | 'toad' | 'leave' | 'done';
 
 const OK_KEYS: readonly Action[] = ['jump', 'start'];
 const BACK_KEYS: readonly Action[] = ['attack'];
 const pressed = (inputs: readonly InputFrame[], keys: readonly Action[]) =>
   inputs.some((i) => keys.some((k) => i.pressed(k)));
 
-/** The courtyard's ground line, the castle's place (castle-big: 144x176), its door. */
+/**
+ * The room (screen px): the floor line, the front door (house sheet, 32x56) at the right, where
+ * Mario stands and where Toad stops beside him. Everything sits below the card box at the top.
+ */
 const GROUND_Y = 208;
-const CASTLE_X = 104;
-const CASTLE_Y = GROUND_Y - 176;
-const DOOR_X = CASTLE_X + 64;
-const MARIO_X = 56;
-const TOAD_STOP = MARIO_X + 22;
+export const HOUSE_DOOR_X = 212;
+const DOOR_X = HOUSE_DOOR_X;
+const MARIO_X = 104;
+const TOAD_STOP = MARIO_X + 24;
+/** Frames Mario's start lasts (a little hop) once the door bangs open. */
+const STARTLE = 10;
 
 /** The parchment: its box, and where the first line of the note is written. */
 export const PARCHMENT = { x: 12, y: 18, w: 232, h: 206 } as const;
@@ -89,12 +96,15 @@ export function noteSaid(): string {
 }
 
 export class OpeningScene implements Scene {
-  private phase: Phase = 'court';
+  private phase: Phase = 'room';
   private t = 0;
   private pt = 0;
   private page = 0;
-  private toadX = DOOR_X;
+  private toadX = DOOR_X + 8;
   private marioX = MARIO_X;
+  /** The front door is open (Toad has burst in), and the frame it banged open (-1: not yet). */
+  private doorOpen = false;
+  private bangAt = -1;
   private readonly mario: Player | null;
 
   constructor(
@@ -104,7 +114,8 @@ export class OpeningScene implements Scene {
     const def = game.deps.characters.find((c) => c.id === 'mario');
     this.mario = def ? new Player(0, 0, def, 'small', 0) : null;
     if (this.mario) {
-      this.mario.facing = 1;
+      // Looking toward his bed until the door bangs open.
+      this.mario.facing = -1;
       this.mario.body.onGround = true;
     }
   }
@@ -113,9 +124,9 @@ export class OpeningScene implements Scene {
     return this.phase;
   }
 
-  /** The page in the box at the top now (the caption, Toad's pages), or null. */
+  /** The page in the box at the top now (Toad's first card, his pages after the note), or null. */
   get lines(): Page | null {
-    if (this.phase === 'caption') return OPENING_CAPTION;
+    if (this.phase === 'burst') return OPENING_BURST;
     if (this.phase === 'toad') return OPENING_TOAD_PAGES[this.page] ?? null;
     return null;
   }
@@ -134,14 +145,14 @@ export class OpeningScene implements Scene {
   enter(): void {
     this.game.ctx.audio.playMusic('opening');
     this.game.deps.announcer?.say(
-      "Peach's castle at dawn. Mario stands in the courtyard. Toad runs out of the castle waving a sheet of paper.",
+      "Mario's house, a cozy morning. The front door bursts open and Toad runs in, waving a sheet of paper.",
     );
   }
 
   touchLabels(): TouchLabels {
     if (this.phase === 'leave' || this.phase === 'done') return NO_TOUCH_BUTTONS;
     if (this.pt <= CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS;
-    return { ...NO_TOUCH_BUTTONS, jump: this.phase === 'court' ? 'SKIP' : 'OK', attack: 'BACK' };
+    return { ...NO_TOUCH_BUTTONS, jump: this.phase === 'room' ? 'SKIP' : 'OK', attack: 'BACK' };
   }
 
   private go(phase: Phase): void {
@@ -168,15 +179,17 @@ export class OpeningScene implements Scene {
     const ok = guarded && pressed(inputs, OK_KEYS);
     if (back && this.phase !== 'leave') return this.go('leave');
     switch (this.phase) {
-      case 'court':
+      case 'room':
+        if (this.t === T.toadOut) this.burstIn();
         if (this.t >= T.toadOut) this.toadX = Math.max(TOAD_STOP, this.toadX - 2);
         if (this.t >= T.captionAt || ok) {
+          if (this.t < T.toadOut) this.burstIn();
           this.toadX = TOAD_STOP;
-          this.go('caption');
-          this.say(OPENING_CAPTION, false);
+          this.go('burst');
+          this.say(OPENING_BURST, false);
         }
         return;
-      case 'caption':
+      case 'burst':
         if (!ok) return;
         this.go('note');
         this.game.ctx.audio.sfx('pause');
@@ -194,6 +207,8 @@ export class OpeningScene implements Scene {
         else this.go('leave');
         return;
       case 'leave':
+        if (!this.doorOpen) this.burstIn();
+        if (this.mario) this.mario.facing = 1;
         this.toadX += 3;
         this.marioX += 2;
         if (this.mario) {
@@ -212,7 +227,7 @@ export class OpeningScene implements Scene {
   /* ---------- drawing ---------- */
 
   render(r: Renderer): void {
-    this.drawCourtyard(r);
+    this.drawRoom(r);
     if (this.phase === 'note') this.drawNote(r);
     const lines = this.lines;
     if (lines) this.drawBox(r, lines);
@@ -222,48 +237,71 @@ export class OpeningScene implements Scene {
     }
   }
 
-  /** Dawn over Peach's castle: a pale sky in bands, the castle with its flag, the courtyard. */
-  private drawCourtyard(r: Renderer): void {
+  /** The door bangs open and Toad is in the doorway; Mario starts and turns to him. */
+  private burstIn(): void {
+    if (this.doorOpen) return;
+    this.doorOpen = true;
+    this.bangAt = this.t;
+    if (this.mario) this.mario.facing = 1;
+    this.game.ctx.audio.sfx('door-open');
+  }
+
+  /** Mario's house: the wall, the furniture, the door; then Mario and Toad. */
+  private drawRoom(r: Renderer): void {
     const assets = this.game.ctx.assets;
-    // A pale dawn sky: blue high up, warming to a peach glow at the horizon.
-    const bands = ['#88b0f8', '#a0c0f8', '#b8d0f8', '#d0d8f0', '#f0d8c8', '#f8d0a8'];
-    const bh = Math.ceil(GROUND_Y / bands.length);
-    bands.forEach((c, i) => r.rect(0, i * bh, SCREEN_W, bh, c));
-    const decor = assets.sheet('decor');
-    r.sprite(decor, 'cloud-1', 18, 40);
-    r.sprite(decor, 'cloud-2', 196, 64);
-    r.sprite(decor, 'hill-big', -24, GROUND_Y - 35);
-    // The flag over the top tower (the princess's pink pennant on a white pole).
-    const poleX = CASTLE_X + 71;
-    r.rect(poleX, CASTLE_Y - 22, 2, 22, '#fcfcfc');
-    r.rect(poleX - 1, CASTLE_Y - 25, 4, 3, '#f8d878');
-    const wave = this.t >> 4;
-    for (let i = 0; i < 6; i++)
-      r.rect(poleX + 2, CASTLE_Y - 21 + i, 10 - i * 2 + ((wave + i) & 1), 1, i < 3 ? '#f878f8' : '#d800cc');
-    r.sprite(decor, 'castle-big', CASTLE_X, CASTLE_Y);
-    r.sprite(decor, 'bush-1', 8, GROUND_Y - 16);
-    r.sprite(decor, 'bush-2', 216, GROUND_Y - 16);
-    const tiles = assets.sheet('tiles', 'tiles-overworld');
-    for (let x = 0; x < SCREEN_W; x += 16) {
-      r.sprite(tiles, 'ground', x, GROUND_Y);
-      r.sprite(tiles, 'ground', x, GROUND_Y + 16);
+    const house = assets.sheet('house');
+    // Wallpaper: warm cream with soft stripes, a ceiling beam over it.
+    r.rect(0, 0, SCREEN_W, GROUND_Y, '#fcd8a8');
+    for (let x = 6; x < SCREEN_W; x += 16) r.rect(x, 10, 4, GROUND_Y - 10, '#f8c890');
+    r.rect(0, 0, SCREEN_W, 8, '#503000');
+    r.rect(0, 8, SCREEN_W, 2, '#ac7c00');
+    // The wainscot: wood panels under a rail.
+    const rail = GROUND_Y - 40;
+    r.rect(0, rail, SCREEN_W, 40, '#ac7c00');
+    r.rect(0, rail, SCREEN_W, 3, '#e4a044');
+    r.rect(0, rail + 3, SCREEN_W, 1, '#503000');
+    for (let x = 4; x < SCREEN_W; x += 28) {
+      r.rect(x, rail + 9, 22, 24, '#503000');
+      r.rect(x + 1, rail + 10, 20, 22, '#c88c18');
     }
-    // Mario, then Toad (out of the door once he comes, waving the note as he runs).
-    if (this.mario && this.marioX < SCREEN_W + 16) {
+    // The plank floor: staggered boards with dark seams.
+    r.rect(0, GROUND_Y, SCREEN_W, SCREEN_H - GROUND_Y, '#e4a044');
+    for (let y = GROUND_Y, row = 0; y < SCREEN_H; y += 8, row++) {
+      r.rect(0, y, SCREEN_W, 1, '#503000');
+      for (let x = (row % 2) * 24; x < SCREEN_W; x += 48) r.rect(x, y, 1, 8, '#503000');
+      r.rect(0, y + 1, SCREEN_W, 1, '#f8c070');
+    }
+    r.rect(0, GROUND_Y, SCREEN_W, 2, '#503000');
+    // The furniture: the window, the picture over the bed, the bed, the lamp, Luigi's cap.
+    r.sprite(house, 'window', 136, 104);
+    r.sprite(house, 'picture', 30, 120);
+    r.sprite(house, 'bed', 6, GROUND_Y - 36);
+    r.sprite(house, 'lamp', 74, GROUND_Y - 36);
+    r.sprite(house, 'cap-hook', 196, 128);
+    r.sprite(house, 'clock', 96, 110);
+    // The door in its frame: shut, then open on the bright morning once Toad bursts in.
+    r.rect(DOOR_X - 4, GROUND_Y - 60, 40, 60, '#503000');
+    r.rect(DOOR_X - 3, GROUND_Y - 59, 38, 2, '#e4a044');
+    r.sprite(house, this.doorOpen ? 'door-open' : 'door-shut', DOOR_X, GROUND_Y - 56);
+    // Mario, then Toad (in at the door once it opens, waving the note as he runs).
+    if (this.mario && this.marioX < DOOR_X + 18) {
       const s = this.mario.def.sprite(this.mario, this.t, this.game.ctx.reduceFlashing);
       const sheet = assets.sheet(s.sheet, s.palette);
       const h = sheet.frames.get(s.frame)?.h ?? 16;
-      r.sprite(sheet, s.frame, Math.round(this.marioX), GROUND_Y - h, s.flip);
+      const since = this.t - this.bangAt;
+      const hop =
+        this.bangAt >= 0 && since < STARTLE ? -Math.round(4 * Math.sin((since / STARTLE) * Math.PI)) : 0;
+      r.sprite(sheet, s.frame, Math.round(this.marioX), GROUND_Y - h + hop, s.flip);
     }
-    if (this.phase === 'court' && this.t < T.toadOut) return;
-    if (this.toadX >= SCREEN_W + 16) return;
-    const running = (this.phase === 'court' && this.toadX > TOAD_STOP) || this.phase === 'leave';
+    if (!this.doorOpen) return;
+    if (this.toadX >= DOOR_X + 20) return;
+    const running = (this.phase === 'room' && this.toadX > TOAD_STOP) || this.phase === 'leave';
     const hop = running && ((this.t >> 2) & 1) === 1 ? -2 : 0;
     const tx = Math.round(this.toadX);
     // Facing left (toward Mario) as he comes, right as they leave.
     const facingLeft = this.phase !== 'leave';
     r.sprite(assets.sheet('items'), 'toad', tx, GROUND_Y - 24 + hop, facingLeft);
-    if (this.phase === 'court' || this.phase === 'caption') {
+    if (this.phase === 'room' || this.phase === 'burst') {
       const wave2 = running ? (this.t >> 3) & 1 : 0;
       r.sprite(
         assets.sheet('story'),

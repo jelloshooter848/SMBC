@@ -23,13 +23,14 @@ import { BOWSER_SPELL_LAST, BOWSER_SPELL_PAGES, BOWSER_SPELL_SAID, type Page } f
 
 /*
  * Bowser's spell at the end of 1-0 (docs/STORY.md 2.2; campaign only, in place of the shadow
- * tease): the music stops and the sky dims, a column of wand sparkles drops between Mario and
- * the flagpole and Bowser stands in it in full colour. His four pages show in the box at the top
+ * tease; since 0.4.36 right after the flagpole, Mario down the pole): the music gives way to
+ * Bowser's own foreboding theme (BOWSER_SPELL_MUSIC) and the sky dims, a column of wand sparkles
+ * drops ahead of Mario and Bowser stands in it in full colour. His four pages show in the box at the top
  * (the wand comes out on the second); then the spell: the wand goes up, its star flares and eight
  * sparks fly off the top, and eight framed windows open on a dark screen, one a half second, each
  * a strip of a hero's world with that hero pulled down into it by a beam of sparks, in the captive
- * palette and half hidden. Back in 1-0 for his last page; he vanishes in a puff, the sky clears,
- * the music comes back.
+ * palette and half hidden. Back in 1-0 for his last page; he vanishes in a puff, his theme stops
+ * and the sky clears (the level-clear walk goes on).
  *
  * No text moves on by itself: every page waits for OK (or MENU). BACK on a page skips the rest of
  * the scene (he vanishes); OK or BACK while the windows open skips to his last page. The windows
@@ -93,6 +94,9 @@ const BACK_KEYS: readonly Action[] = ['attack'];
 const pressed = (inputs: readonly InputFrame[], keys: readonly Action[]) =>
   inputs.some((i) => keys.some((k) => i.pressed(k)));
 
+/** Bowser's theme (content/music/bowser-spell.ts), from his arrival until he vanishes. */
+export const BOWSER_SPELL_MUSIC = 'bowser-spell';
+
 /** Top of the pages' box, under the HUD (as every story card at the top). */
 const BOX_Y = 40;
 
@@ -117,12 +121,20 @@ export class BowserSpellScene implements Scene {
     const p = world.player;
     const camX = world.camera.pxX;
     const mx = toPx(p.body.x) - camX;
-    this.feet = toPx(p.body.y + p.body.h);
-    // Between Mario and the flagpole (or a few steps ahead of him), always on screen.
+    // Between Mario and the flagpole (or a few steps ahead of him), always on screen; after the
+    // flagpole (0.4.36) between Mario, down the pole, and the castle.
     const pole = world.entities.find((e) => e.kind === 'flagpole');
     const px = pole ? toPx(pole.body.x) - camX : mx + 112;
     const mid = Math.round((mx + 16 + px) / 2) - 16;
-    this.bx = Math.max(mx + 28, Math.min(SCREEN_W - 44, mid));
+    this.bx = world.flagGrabbedBy
+      ? Math.min(SCREEN_W - 44, mx + 56)
+      : Math.max(mx + 28, Math.min(SCREEN_W - 44, mid));
+    // He stands on the ground under him (after the flagpole Mario is still up on its base).
+    const feet = toPx(p.body.y + p.body.h);
+    const col = Math.floor((this.bx + 16 + camX) / 16);
+    let row = Math.floor(feet / 16);
+    while (row < world.map.height && !world.map.isSolid(col, row)) row++;
+    this.feet = row < world.map.height ? row * 16 : feet;
     const chars = game.deps.characters;
     this.heroes = SPELL_WINDOWS.map(({ hero }) => {
       const def = chars.find((c) => c.id === hero);
@@ -154,7 +166,9 @@ export class BowserSpellScene implements Scene {
   }
 
   enter(): void {
+    // His own theme (0.4.36, owner note): slow, minor and foreboding, until he is gone.
     this.game.ctx.audio.stopMusic();
+    this.game.ctx.audio.playMusic(BOWSER_SPELL_MUSIC);
     this.game.deps.announcer?.say('The sky darkens. A column of sparkles falls, and Bowser appears.');
   }
 
@@ -227,6 +241,7 @@ export class BowserSpellScene implements Scene {
       case 'vanish':
         if (this.pt >= T.vanish) {
           this.phase = 'done';
+          audio.stopMusic();
           p.facing = 1;
           this.next();
         }

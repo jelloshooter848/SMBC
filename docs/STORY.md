@@ -98,11 +98,11 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
 goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
-never leave. The map titles: World 2's page is HYRULE since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since
-0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since 0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA
-since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since 0.4.29 (it was SNOW NIGHT), World 7's GALUGA
-ISLAND since 0.4.30 (it was CANNON COAST) and World 8's BOWSER'S UNDERWORLD since 0.4.31 (it was BOWSER'S LAND):
-every SMB world is themed now (see the open questions).
+never leave. The map titles: World 1's page is MUSHROOM KINGDOM since 0.4.36 (it was GRASS LAND), World 2's HYRULE
+since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since 0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since
+0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since
+0.4.29 (it was SNOW NIGHT), World 7's GALUGA ISLAND since 0.4.30 (it was CANNON COAST) and World 8's BOWSER'S
+UNDERWORLD since 0.4.31 (it was BOWSER'S LAND): every SMB world is themed now (see the open questions).
 
 ## 2. The scripts, in game order
 
@@ -205,9 +205,23 @@ the castle pages, Larry's crystal ball and crash cards, the rift pages.
 **Trigger:** NEW. A new save file in the campaign, before the World 1 map shows for the first time. Once per file.
 **Replay:** none yet (open question 1).
 
-**Staging:** Peach's castle at dawn, its courtyard in SMB tiles (the castle behind, its flag up, a pale sky). Mario
-stands in the courtyard, music soft. Toad runs out of the castle door waving a sheet of paper and stops beside him.
-The caption shows in the box at the top:
+**Staging:** **Mario's house** (0.4.36, owner note; it was Peach's castle courtyard): a small, cozy room in SMB
+colours, original art. Cream wallpaper over a wood wainscot, a plank floor, Mario's bed with its red blanket, a
+mushroom lamp on the nightstand, a picture of Peach's castle, Luigi's green cap on a peg, and a window on a blue
+morning with a green hill. Mario stands by the lamp, music soft. The front door **bursts open** (a bang) and Toad runs
+in waving a sheet of paper; Mario starts and turns to him, and Toad stops beside him. His first card shows in the box
+at the top, named like every card (`TOAD:` on its first line, as the NPC cards are):
+
+```text
+TOAD:
+
+MARIO!!! THANK GOODNESS
+YOU'RE HERE! PRINCESS PEACH
+IS MISSING... SHE LEFT
+THIS NOTE:
+```
+
+Old:
 
 ```text
 PRINCESS PEACH IS MISSING!
@@ -240,28 +254,28 @@ DON'T WORRY ABOUT ME!
 ever look" is what Bowser quotes in 1-0 and what Toad works out at the rift; the "old friends" are the Toads she
 hides among in the Lost Kingdom, Chapter 2.)
 
-Back in the courtyard, Toad turns to Mario:
+Back in the room, Toad turns to Mario (his name is not said again: the first card said it):
 
 ```text
 TOAD:
 
-MARIO! THE KOOPAS ARE
-ALREADY OUT HUNTING FOR
-HER. WE HAVE TO FIND HER
-FIRST!
+THE KOOPAS ARE ALREADY OUT
+HUNTING FOR HER. WE HAVE TO
+FIND HER FIRST!
 ```
 
 ```text
 TOAD:
 
 COME ON, THE ROAD STARTS
-JUST OUTSIDE TOWN. LET'S
-GO!
+RIGHT OUTSIDE YOUR DOOR.
+LET'S GO!
 ```
 
-They run off to the right; the screen fades to the World 1 map, Mario on 1-0.
+They run out of the door to the right; the screen fades to the World 1 map, Mario on 1-0.
 
-**Code:** NEW (a cutscene scene with the courtyard, the parchment drawing and the inked font).
+**Code:** `story/opening.ts` (the room, the parchment drawing and the inked font), the house's furniture in
+`content/sprites/house.ts`.
 
 ### 2.2 World 1-0: the warm-up, and Bowser in person
 
@@ -278,14 +292,19 @@ THE TIPS UP TOP!
 ```
 
 **Bowser's spell.** NEW, REPLACES the shadow tease (`ShadowTeaseScene`, `STORY_TEASE_PAGES`; classic play keeps the
-tease as it is). **Trigger:** where the tease is now (the `flag` lesson, column 83, a few steps before the
-flagpole), every time 1-0 is played in the campaign; on **Pause → Skip tutorial** it plays before 1-0 closes if
-this file has never seen it. **Replay:** play 1-0 again from its map node.
+tease as it is). **Trigger:** since 0.4.36 (owner note) **right after the flagpole**: Bowser interrupts once
+Mario is down the pole, before the walk to the castle (it was a few steps before the flagpole), every time 1-0 is
+played in the campaign; on **Pause → Skip tutorial** it plays before 1-0 closes if this file has never seen it.
+**Replay:** play 1-0 again from its map node.
+
+**Music:** Bowser has **his own theme** (0.4.36, owner note), new and original: a slow, foreboding loop in C minor
+in the SMB sound (`bowser-spell`, `content/music/bowser-spell.ts`). It starts as the sky dims and stops when he
+vanishes; then the level-clear walk goes on with its jingle.
 
 **Staging:**
 
-1. The music stops and the sky dims. A column of wand sparkles drops onto the ground between Mario and the
-   flagpole, and **Bowser appears in it, in full colour** (his own castle palette, no silhouette), facing Mario.
+1. The music gives way to Bowser's theme and the sky dims. A column of wand sparkles drops onto the ground between
+   Mario (down the pole) and the castle, and **Bowser appears in it, in full colour** (his own castle palette, no silhouette), facing Mario.
    Mario turns to face him. The pages show in the box at the top.
 2. On the second page Bowser lifts **the wand** to show it off: a short rod with a gold star on the tip (a new
    held prop), the star twinkling.
@@ -299,8 +318,8 @@ this file has never seen it. **Replay:** play 1-0 again from its map node.
    **the captive palette** (the brainwashed look they have in their levels) and **half hidden**: a dark vignette
    round the window and wand sparkles drifting over the hero, so the shape reads but not the details. No names
    on screen. `OK` (or `BACK`) skips to the last page.
-4. Back in 1-0 for the last page. Bowser laughs and vanishes in a puff of sparkles (the fakes' "poof"), the sky
-   clears, the music comes back, and Mario walks on to the flag.
+4. Back in 1-0 for the last page. Bowser laughs and vanishes in a puff of sparkles (the fakes' "poof"), his theme
+   stops, the sky clears, and Mario walks on into the castle (the level-clear jingle).
 
 Said (the announcer, during the spell, as `WAND_BREAK_SAID` is): _Bowser raises the wand. Eight heroes from other
 worlds are pulled into the eight worlds, under his spell._

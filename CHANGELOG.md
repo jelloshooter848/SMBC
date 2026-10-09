@@ -8,6 +8,22 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- 1-0 has a long sprint stretch where only a real sprint counts: hold RUN at top speed until the bar fills, then walk
+  on. Two gaps follow that only a sprinting jump clears, and a fall drops you back just before the gap.
+- 1-0 teaches secrets: a tip to search pipes, a hidden vine at the foot of a tall wall, and bricks only big Mario can
+  smash through.
+- Bowser now interrupts after 1-0's flagpole, to his own new foreboding theme.
+
+### Changed
+
+- The opening now happens at Mario's house: Toad bursts in through the front door with "MARIO!!! THANK GOODNESS
+  YOU'RE HERE! PRINCESS PEACH IS MISSING…". Every card is named TOAD:, and his later cards don't repeat MARIO.
+- World 1's map is now titled MUSHROOM KINGDOM (it was GRASS LAND).
+- A 1-0 task you walk past is no longer skipped: a barrier holds the way, and Toad puts you back before the task once
+  you stop, never mid-move.
+
 ## [0.4.35] - 2026-10-09
 
 ### Added

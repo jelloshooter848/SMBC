@@ -24,7 +24,7 @@ import {
   LARRY_PAGES,
   LUIGI_RUNS_PAGE,
   noMoreStandIns,
-  OPENING_CAPTION,
+  OPENING_BURST,
   OPENING_TOAD_PAGES,
   PARTNERS,
   PEACH_NOTE,
@@ -93,7 +93,7 @@ function scriptPages(): Map<string, Page> {
   const add = (name: string, page: Page) => out.set(name, page);
   const list = (name: string, pages: readonly Page[]) => pages.forEach((p, i) => add(`${name}[${i}]`, p));
   // S1 (0.4.23): the opening, 1-0's greeting and Bowser's spell, World 1's start.
-  add('OPENING_CAPTION', OPENING_CAPTION);
+  add('OPENING_BURST', OPENING_BURST);
   add('PEACH_NOTE', PEACH_NOTE);
   list('OPENING_TOAD_PAGES', OPENING_TOAD_PAGES);
   list('STORY_TOAD_PAGES', STORY_TOAD_PAGES);

@@ -288,7 +288,7 @@ export function startTime(level: LevelData, state: GameState, start: WorldStart 
   return start.time ?? (level.time === null ? (state.time ?? 400) : level.time);
 }
 
-type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done';
+export type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done';
 type PipeAnim = {
   player: Player;
   dir: PipeDir;
@@ -764,6 +764,11 @@ export class World {
   /** The player who touched the flagpole (its level-clear sequence is running), else null. */
   get flagGrabbedBy(): Player | null {
     return this.clear?.player ?? null;
+  }
+
+  /** The flagpole's level-clear sequence's phase ('slide', 'hop', 'walk', ...), else null. */
+  get clearPhase(): ClearPhase | null {
+    return this.clear?.phase ?? null;
   }
 
   /** Player 1 (also what enemies and the camera use as the primary target in solo play). */

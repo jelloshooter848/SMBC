@@ -335,12 +335,13 @@ describe('falls that lead somewhere still lead there', () => {
       character: MARIO,
       assist: SAFE,
       script: none,
-      start: { x: 26, y: 8, mode: 'stand' },
+      // Over 1-0's first sprint gap (0.4.36: columns 58-64), dropped back in a few steps before it.
+      start: { x: 61, y: 8, mode: 'stand' },
       maxFrames: 300,
     });
     expect(pipeTarget(loop)).toEqual({
       type: 'pipe',
-      target: { level: '1-0', x: 19, y: 12, exitDir: 'fall' },
+      target: { level: '1-0', x: 51, y: 12, exitDir: 'fall' },
     });
     const crypt = runSim({
       level: getLevel('5-4-dungeon'),

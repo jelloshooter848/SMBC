@@ -15,7 +15,7 @@ import {
   noMoreStandIns,
   NOTE_COLS,
   NOTE_LINES,
-  OPENING_CAPTION,
+  OPENING_BURST,
   OPENING_TOAD_PAGES,
   PARTNERS,
   PEACH_NOTE,
@@ -37,7 +37,7 @@ const CARD_LINES = 6;
 const CASTLE_LINES = 4;
 
 const cards: [string, Page][] = [
-  ['opening caption', OPENING_CAPTION],
+  ['opening burst', OPENING_BURST],
   ...OPENING_TOAD_PAGES.map((p, i): [string, Page] => [`opening toad ${i}`, p]),
   ...STORY_TOAD_PAGES.map((p, i): [string, Page] => [`toad ${i}`, p]),
   ...BOWSER_SPELL_PAGES.map((p, i): [string, Page] => [`bowser spell ${i}`, p]),
