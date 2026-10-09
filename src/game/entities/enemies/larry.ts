@@ -36,13 +36,13 @@ export const STOMP_DAMAGE = 2;
 export const LARRY_FLASH_FRAMES = 40;
 /**
  * Mega Man's airship (0.4.39, World.megamanShip): Larry's hit-point mode. A Mega Man 2 style bar
- * of 28; a stomp still takes a third of it (three stomps win), a buster shot 4, a charge shot (or
- * any heavy hit, amount 3 or more) 10, with a short flash between hits.
+ * of 28; a stomp still takes a third of it (three stomps win), a buster shot 2, a charge shot (or
+ * any heavy hit, amount 3 or more) 6, with a short flash between hits.
  */
 export const LARRY_MM_HP = 28;
 export const LARRY_MM_STOMP = 10;
-export const LARRY_MM_SHOT = 4;
-export const LARRY_MM_HEAVY = 10;
+export const LARRY_MM_SHOT = 2;
+export const LARRY_MM_HEAVY = 6;
 export const LARRY_MM_FLASH = 20;
 /** Points for a wand blast shot down on Mega Man's airship (World.projectile). */
 export const WAND_BLAST_POINTS = 100;

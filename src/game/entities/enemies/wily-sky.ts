@@ -473,8 +473,9 @@ export class Yoku extends Entity {
     const x = toPx(this.body.x) - view.camX;
     if (x < -16 || x > 272) return;
     const p = this.phase(view.frame);
-    // Building in for its first frames, darker for its last (a warning, not a flash).
-    const frame = p < 6 ? 'yoku-in' : p >= this.on - YOKU_WARN ? 'yoku-fade' : 'yoku';
+    // Building in for its first frames (not with reduce flashing), darker for its last (a
+    // warning that never blinks).
+    const frame = p < 6 && !view.reduceFlashing ? 'yoku-in' : p >= this.on - YOKU_WARN ? 'yoku-fade' : 'yoku';
     r.sprite(view.assets.sheet(SHEET), frame, x, toPx(this.body.y));
   }
 }
