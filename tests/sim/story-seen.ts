@@ -19,6 +19,7 @@ export const ALL_STORY: readonly string[] = [
   beat.crash,
   beat.rift,
   beat.bowser84,
+  beat.anchor42,
   beat.hub,
   beat.arena,
   // S3 (0.4.23): the world gates, their reminders, the welcomes and the castle remarks.
