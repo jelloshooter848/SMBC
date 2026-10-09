@@ -334,7 +334,6 @@ const AUTO_WALK_INPUT: InputFrame = {
  */
 export const FALL_IN_STEER_Y = 3 * 16;
 
-/** A player's input with left and right taken out (the straight drop of a fall arrival). */
 /** `input` without SPECIAL: in reach of someone to talk to, it is the TALK button (0.4.35). */
 function withoutSpecial(input: InputFrame): InputFrame {
   return {
@@ -347,6 +346,7 @@ function withoutSpecial(input: InputFrame): InputFrame {
   };
 }
 
+/** A player's input with left and right taken out (the straight drop of a fall arrival). */
 function withoutSteering(input: InputFrame): InputFrame {
   return {
     held: (a) => a !== 'left' && a !== 'right' && input.held(a),
