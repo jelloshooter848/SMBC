@@ -165,7 +165,10 @@ thank-you, or an easter egg about the hero's own game, in words only). Only the 
 the warp zone's guide) and Fred have one state. They are partners like the rest (TALK, every card
 announced and waiting for a key; campaign only). Most stand on the floor by the level's start;
 in the castles at the foot of the entrance steps; in 2-2 and 7-2 on the way out (`-exit`, below
-the steps to the flag), and in 4-4 and 8-4 on the first safe floor past the lava.
+the steps to the flag), and in 4-4 and 8-4 on the first safe floor past the lava. Stopping to talk
+is never a cheap hit (`level-npcs.test.ts`): 5-3's clockmaker stands below the steps to the flag,
+past its flying Bullet Bills (`bullets 0 126`), and 7-1's corporal and 8-3's ice miner stand far
+enough left that the camera keeps the Bill Blaster ahead off screen (it fires only on screen).
 
 | `who`           | Level and spot    | `who`           | Level and spot       |
 | --------------- | ----------------- | --------------- | -------------------- |
@@ -173,14 +176,14 @@ the steps to the flag), and in 4-4 and 8-4 on the first safe floor past the lava
 | `lookout`       | 1-3 (8, 12)       | `baby-metroid`  | 4-4 (21, 12), floats |
 | `retainer`      | 1-4 (8, 9)        | `old-woman`     | 5-1 (7, 12)          |
 | `error`         | 2-2-exit (15, 12) | `garlic-seller` | 5-2 (7, 12)          |
-| `river-man`     | 2-3 (5, 12)       | `clockmaker`    | 5-3 (8, 12)          |
+| `river-man`     | 2-3 (5, 12)       | `clockmaker`    | 5-3 (147, 12)        |
 | `wise-man`      | 2-4 (7, 9)        | `ninja`         | 6-1 (10, 12)         |
 | `prune-bot`     | 3-2 (7, 12)       | `hermit`        | 6-3 (8, 12)          |
 | `weather-bot`   | 3-3 (8, 12)       | `clan-scout`    | 6-4 (8, 9)           |
-| `sniper-joe`    | 3-4 (8, 9)        | `corporal`      | 7-1 (10, 12)         |
+| `sniper-joe`    | 3-4 (8, 9)        | `corporal`      | 7-1 (5, 12)          |
 | `trooper`       | 4-1 (10, 12)      | `river-scout`   | 7-2-exit (15, 12)    |
 | `mutant`        | 8-1 (10, 12)      | `medic`         | 7-4 (8, 9)           |
-| `engineer`      | 8-2 (6, 12)       | `ice-miner`     | 8-3 (8, 12)          |
+| `engineer`      | 8-2 (6, 12)       | `ice-miner`     | 8-3 (4, 12)          |
 | `castle-mutant` | 8-4 (14, 12)      |                 |                      |
 
 Their art is the `npcs` sheet (`src/content/sprites/npcs.ts`, its palette the `partners` one and a

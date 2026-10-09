@@ -941,8 +941,8 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         '',
         "LUIGI'S FREE? PHEW! LAST",
         'TIME MARIO WENT MISSING,',
-        'LUIGI FOUND HIM. THIS TIME',
-        "IT'S PEACH.",
+        'LUIGI FOUND HIM. NOW HE',
+        'CAN HELP YOU FIND PEACH.',
       ],
     ],
   },
@@ -1094,7 +1094,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'IT TURNS YOUR FOES INTO',
         'LITTLE BLOBS.',
       ],
-      ['WISE MAN:', '', '...NOTHING? HM. IT WORKS', "BETTER IN HYRULE. YOU'RE", 'DOING FINE WITHOUT IT.'],
+      ['WISE MAN:', '', '...NOTHING? HM. IT WORKS', "BETTER BACK HOME. YOU'RE", 'DOING FINE WITHOUT IT.'],
     ],
   },
 
@@ -1193,10 +1193,10 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       [
         'TROOPER:',
         '',
-        'FEDERATION TROOPER,',
-        'REPORTING. OUR HUNTER,',
-        'SAMUS, WENT DARK. WE LOST',
-        'HER SIGNAL.',
+        'THE FEDERATION SENT ONE',
+        'HUNTER TO THIS PLANET.',
+        'JUST ONE: SAMUS. NOW EVEN',
+        "SHE'S GONE DARK.",
       ],
       [
         'TROOPER:',
@@ -1285,10 +1285,10 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       [
         'OLD WOMAN:',
         '',
-        'OUR SIMON IS UNDER A CURSE',
-        'NOT HIS OWN. HE WAS LAST',
-        'SEEN IN THE OLD CASTLE AT',
-        'THE END OF THE ROAD.',
+        'CURSED AGAIN, POOR SIMON,',
+        'AND NOT EVEN BY DRACULA.',
+        'HE WENT INTO THE OLD CASTLE',
+        'AT THE END OF THE ROAD.',
       ],
       ['OLD WOMAN:', '', 'PLEASE, BRING HIM HOME. HE', 'NEVER WIPES HIS BOOTS, BUT', "HE'S OUR BOY."],
     ],
@@ -1325,7 +1325,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
   },
-  // 5-3's start, at the foot of the clock tower.
+  // 5-3's way out, below the steps to the flag, past the flying Bullet Bills.
   clockmaker: {
     verb: 'TALK',
     name: 'The clockmaker',
@@ -1374,9 +1374,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'NINJA:',
         '',
         'OUR MASTER RYU IS LOST TO',
-        'A SPELL. THE CITY STREETS',
-        'AT NIGHT. AN AGENT TRACKS',
-        'HIM. FIND HIM, I BEG YOU.',
+        'A SPELL. SEEK THE CITY',
+        'STREETS AT NIGHT, WHERE AN',
+        'AGENT TRACKS HIM. GO.',
       ],
     ],
     after: [
@@ -1433,9 +1433,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'CLAN SCOUT:',
         '',
         'MASTER RYU IS FREE. HEED',
-        'THIS: IN OUR TEMPLES, FALL',
-        'TO THE MASTER AND YOU START',
-        'AGAIN FROM FAR BELOW.',
+        'THIS: IN OUR LAST TEMPLE,',
+        'FALL TO THE DEMON AND YOU',
+        'START AGAIN FROM FAR BELOW.',
       ],
       ['CLAN SCOUT:', '', "HERE? I DON'T KNOW. DON'T", 'FALL.'],
     ],
@@ -1443,7 +1443,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
 
   /* ------------------------------------- World 7 (Galuga Island, Bill): soldiers of the front */
 
-  // 7-1's start, on watch in the snowfield before the base.
+  // 7-1's start, on watch in the snowfield before the base (clear of the Bill Blaster's range).
   corporal: {
     verb: 'TALK',
     name: 'A corporal',
@@ -1577,7 +1577,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
   },
-  // 8-3's start, in the frozen ruins.
+  // 8-3's start, in the frozen ruins (clear of the Bill Blaster's range).
   'ice-miner': {
     verb: 'TALK',
     name: 'An ice miner',
