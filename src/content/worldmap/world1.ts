@@ -1,7 +1,7 @@
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
-/** World 1, GRASS LAND: green hills and flowers, a river crossed by a bridge, the sea below. */
+/** World 1, MUSHROOM KINGDOM (GRASS LAND before 0.4.36): green hills and flowers, a river crossed by a bridge, the sea below. */
 export const SKETCH_1 = [
   '................',
   '................',
@@ -24,7 +24,7 @@ export const WORLD_1: WorldMapPage = {
   id: 'smb-1',
   group: 'smb',
   label: 'WORLD 1',
-  title: 'GRASS LAND',
+  title: 'MUSHROOM KINGDOM',
   theme: 'grass',
   music: 'map',
   tiles: autoShore(SKETCH_1),

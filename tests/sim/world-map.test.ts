@@ -104,6 +104,7 @@ describe('world map scene', () => {
     expect(h.map()).toBeInstanceOf(WorldMapScene);
     // Entering says the page and the node the hero stands on.
     expect(h.said).toContain(`World 1, ${page(1).title}. World 1-0, cleared`);
+    expect(page(1).title).toBe('MUSHROOM KINGDOM');
     h.idle(8);
     walkTo(h, '1-1');
     expect(h.said.at(-1)).toBe('World 1-1, open');

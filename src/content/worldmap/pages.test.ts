@@ -15,6 +15,7 @@ import { SKETCH_7 } from './world7';
 import { SKETCH_8 } from './world8';
 
 const SKETCHES = [SKETCH_1, SKETCH_2, SKETCH_3, SKETCH_4, SKETCH_5, SKETCH_6, SKETCH_7, SKETCH_8];
+// World 1 is Mario's MUSHROOM KINGDOM since 0.4.36 (it was GRASS LAND).
 // World 2 is Link's Hyrule since 0.4.24 (it was SEA SIDE).
 // World 3 is Mega Man's MEGA CITY since 0.4.26 (it was NIGHT HILLS).
 // World 4 is Samus's PLANET ZEBES since 0.4.27 (it was MUSHROOM WOODS).
@@ -61,6 +62,7 @@ describe('world map pages', () => {
     expect(SMB_PAGES.map((p) => p.label)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((w) => `WORLD ${w}`));
     expect(SMB_PAGES.every((p) => p.group === 'smb')).toBe(true);
     expect(SMB_PAGES.map((p) => p.theme)).toEqual(THEMES);
+    expect(SMB_PAGES[0]?.title).toBe('MUSHROOM KINGDOM');
     expect(pagesInGroup('smb')).toEqual(SMB_PAGES);
     // Node counts: start, 3 levels, the castle and the bonus slot on each.
     expect(SMB_PAGES.map((p) => p.nodes.length)).toEqual([6, 6, 6, 6, 6, 6, 6, 6]);

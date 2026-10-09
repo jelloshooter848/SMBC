@@ -159,7 +159,7 @@ export interface WorldMapPage {
   group: PageGroup;
   /** Shown in the header's top right: 'WORLD 1', 'WARP ZONE', 'LOST A' (at most 10 chars). */
   label: string;
-  /** Shown in the header's top left, e.g. 'GRASS LAND' (at most 20 chars). */
+  /** Shown in the header's top left, e.g. 'MUSHROOM KINGDOM' (at most 20 chars). */
   title: string;
   theme: MapTheme;
   /** Song id to loop on this page. */

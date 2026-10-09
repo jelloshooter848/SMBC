@@ -98,11 +98,11 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
 goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
-never leave. The map titles: World 2's page is HYRULE since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since
-0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since 0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA
-since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since 0.4.29 (it was SNOW NIGHT), World 7's GALUGA
-ISLAND since 0.4.30 (it was CANNON COAST) and World 8's BOWSER'S UNDERWORLD since 0.4.31 (it was BOWSER'S LAND):
-every SMB world is themed now (see the open questions).
+never leave. The map titles: World 1's page is MUSHROOM KINGDOM since 0.4.36 (it was GRASS LAND), World 2's HYRULE
+since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since 0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since
+0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since
+0.4.29 (it was SNOW NIGHT), World 7's GALUGA ISLAND since 0.4.30 (it was CANNON COAST) and World 8's BOWSER'S
+UNDERWORLD since 0.4.31 (it was BOWSER'S LAND): every SMB world is themed now (see the open questions).
 
 ## 2. The scripts, in game order
 
