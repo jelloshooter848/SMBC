@@ -35,6 +35,8 @@ campaignMusic: ng-pass
 ################ ...t..t..t...... tt....t.....t... ..tt............ ..ttt........... ......ttt..t..t. ..tt....t...ttt. ..ttt.......t... .....tt.tt...... .............t.. ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a hermit at the start, at the foot of the snowy pass.
+partner 8 12 who=hermit campaign=true
 decor-castle 0 12
 lift-v 28 9 len=4 range=6
 lift-h 42 5 len=4 range=3 dx=-8

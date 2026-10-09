@@ -37,6 +37,8 @@ campaignMusic: cv-hall
 ################ ################ ################ #..############# ################ ############.... ################ ##..############ ################ ########...##### ################ ################ ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): an old woman at the start, by the courtyard gate.
+partner 7 12 who=old-woman campaign=true
 decor-castle 0 12
 goomba 20 12 dx=8
 goomba 31 12 dx=8

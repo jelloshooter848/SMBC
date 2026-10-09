@@ -35,6 +35,8 @@ campaignMusic: mm-wood
 ################ ################ ################ ################ ################ ..############## ################ ###########..### ..############## ################ ################ ################ ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a prune bot at the start, in the robot forest.
+partner 7 12 who=prune-bot campaign=true
 decor-castle 0 12
 goomba 25 12 dx=8
 koopa-green 34 12 dx=8

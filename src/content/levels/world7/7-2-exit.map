@@ -34,6 +34,8 @@ campaignMusic: contra-jungle
 ################ ################ ##########
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a river scout on the bank below the steps to the flag (22).
+partner 15 12 who=river-scout campaign=true
 piranha 3 11
 decor-castle 26 12
 

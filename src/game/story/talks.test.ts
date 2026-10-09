@@ -50,7 +50,7 @@ describe('the freed talks and the after lines', () => {
     for (const id of heroes) if (id !== 'mario') expect(hinted.has(id), id).toBe(true);
   });
 
-  it('once its hero is freed a hint NPC says its one after page instead; Fred goes home', () => {
+  it('once its hero is freed a hint NPC says its after pages instead (one to three); Fred goes home', () => {
     for (const [who, s] of Object.entries(PARTNERS)) {
       expect(partnerPages(s, ['mario'])).toBe(s.pages);
       expect(partnerGone(s, ['mario']), who).toBe(false);
@@ -60,7 +60,8 @@ describe('the freed talks and the after lines', () => {
         expect(partnerGone(s, ['mario', s.hero])).toBe(true);
         continue;
       }
-      expect(s.after, who).toHaveLength(1);
+      expect(s.after?.length, who).toBeGreaterThanOrEqual(1);
+      expect(s.after?.length, who).toBeLessThanOrEqual(3);
       expect(partnerPages(s, ['mario', s.hero])).toBe(s.after);
       expect(partnerGone(s, ['mario', s.hero])).toBe(false);
     }

@@ -22,6 +22,7 @@ import { contraPalettes, contraDef } from './contra';
 import { sophiaPalettes, sophiaDef } from './sophia';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { partnersPalettes, partnersDef } from './partners';
+import { npcsPalettes, npcsDef } from './npcs';
 import { localsPalettes, localsDef } from './locals';
 import { wandPalettes, wandDef } from './wand';
 import { storyPalettes, storyDef } from './story';
@@ -91,6 +92,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
   partners: partnersDef,
+  // 0.4.40: the folk in every level of Chapter 1 (partners in new colours, and a few new faces).
+  npcs: npcsDef,
   locals: localsDef,
   wand: wandDef,
   // The 0.4.23 story's opening props: Bowser's star wand, the wax seal, Toad's note.
@@ -131,6 +134,7 @@ const defaults: Record<string, readonly string[]> = {
   ...sophiaPalettes,
   ...bmDungeonPalettes,
   ...partnersPalettes,
+  ...npcsPalettes,
   ...localsPalettes,
   ...wandPalettes,
   ...storyPalettes,

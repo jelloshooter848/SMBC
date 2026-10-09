@@ -385,6 +385,13 @@ step clearer than a riddle (the old rule: Toad hinted, a partner says what to tr
 They stand **before the way in**, campaign only, and never leave. Talked to again, they say the same pages. Once
 their hero is freed, each says one new page instead (NEW: a small "after" line, written with each NPC).
 
+**An NPC in every level** (0.4.40, owner: "put an NPC in every level"). Every main level 1-1 to 8-4 now has someone
+to talk to, from the world's own game: Toads, Zelda II folk, Dr. Light's robots, the Federation, Transylvania's
+villagers, the ninja clan, soldiers of the front and the Underworld's miners and mutants. Each speaks for the world's
+hero in two states, one to three cards each: while the hero is missing they plead and say where to look (by place,
+never by level number); once the hero is freed they thank you, or tell an easter egg about the hero's own game, in
+words only. Their lines are under each world's **Level NPCs**.
+
 **Freeing a hero** (2.13 has the shared parts): the hero's first card and challenge, the round, then (NEW) **the
 freed hero talks**, a few pages in their own voice, before the freed card. These talks carry the story now; each
 reveals a bit more.
@@ -643,6 +650,116 @@ GAMES THERE. HAVE A LOOK,
 IF YOU DARE.
 ```
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Luigi: while he is under the spell they
+plead and say where to look (by place, never by level number); once he is freed they say their found lines instead.
+
+**1-2: a cave Toad.** NEW partner (`cave-toad`). A Toad in a yellow-spotted cap and a dark miner's
+vest, hiding where the heroes drop into **1-2** (column 5), clear of the `?` blocks. He saw Luigi go, and sends you
+back to the villager.
+
+```text
+CAVE TOAD:
+
+PSST! IS IT SAFE? I SAW A
+GUY IN GREEN UP ON THE
+FIRST ROAD. GLOWING EYES.
+HE DOVE DOWN A PIPE.
+```
+
+```text
+CAVE TOAD:
+
+A VILLAGER UP THERE GOT
+KNOCKED FLAT. HE SAW WHICH
+PIPE. PLEASE, GO FIND THAT
+POOR GUY!
+```
+
+After Luigi is freed:
+
+```text
+CAVE TOAD:
+
+LUIGI'S FREE? PHEW! LAST
+TIME MARIO WENT MISSING,
+LUIGI FOUND HIM. NOW HE
+CAN HELP YOU FIND PEACH.
+```
+
+**1-3: a lookout.** NEW partner (`lookout`). A Toad in a pink-spotted cap and a green vest, on the ground
+at **1-3's start** (column 8), under the treetops he watches the road from.
+
+```text
+LOOKOUT:
+
+FROM THOSE TREETOPS I CAN
+SEE THE WHOLE ROAD! JUST
+NOT DOWN PIPES. NOBODY CAN
+SEE DOWN PIPES.
+```
+
+```text
+LOOKOUT:
+
+THE FELLOW IN GREEN WENT
+DOWN ONE ON THE FIRST ROAD,
+BY THE VILLAGER. PLEASE,
+GO BRING HIM BACK!
+```
+
+After Luigi is freed:
+
+```text
+LOOKOUT:
+
+LUIGI'S FREE! I WATCHED HIM
+CLEAR THREE TREES IN ONE
+JUMP. DON'T TELL MARIO I
+SAID THAT.
+```
+
+**1-4: a retainer.** NEW partner (`retainer`). One of the princess's retainers (an orange-spotted cap, a
+royal blue vest) spying in the king's castle, at the foot of **1-4's entrance steps** (column 8). While Luigi is
+missing he tells of the seal on the road out (2.3b); once he is freed, of the fake's height and the oldest joke in
+the kingdom.
+
+```text
+RETAINER:
+
+SHH! I SNUCK IN TO SPY ON
+THE KING. BUT THE ROAD OUT
+OF THIS LAND IS SEALED BY
+HIS MAGIC.
+```
+
+```text
+RETAINER:
+
+IT WON'T OPEN TILL LUIGI IS
+FREE. HE WENT DOWN A PIPE
+ON THE FIRST ROAD. PLEASE,
+GO BACK FOR HIM!
+```
+
+After Luigi is freed:
+
+```text
+RETAINER:
+
+LUIGI'S FREE? THEN GO GET
+THE KING! BETWEEN US, HE
+LOOKS SHORTER THAN USUAL
+TODAY.
+```
+
+```text
+RETAINER:
+
+AND IF THE PRINCESS ISN'T
+IN THIS CASTLE... WELL.
+THAT HAPPENS A LOT.
+```
+
 **Castle 1-4** (a Goomba). The hero's remark (2.3a, reaching the axe):
 
 ```text
@@ -891,6 +1008,135 @@ LINK:
 ...I WILL COME WITH YOU.
 ```
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Link: while he is under the spell they
+plead and say where to look (by place, never by level number); once he is freed they say their found lines instead.
+
+**2-2: Error.** NEW partner (`error`). A townsman of Hyrule (a brown hood, a red-brown cloak), on the ground below the
+steps to **2-2's flag** (2-2-exit, column 15), out of the lake. A name every Zelda II player knows.
+
+```text
+ERROR:
+
+I AM ERROR.
+```
+
+```text
+ERROR:
+
+YOU SEEK THE SILENT ONE? HE
+WAS LAST SEEN ON THE GREAT
+FIELD. THE OLD MAN IN THE
+CAVE THERE KNOWS MORE.
+```
+
+```text
+ERROR:
+
+PLEASE FIND HIM. MY FRIEND
+BAGU IS WORRIED SICK.
+```
+
+After Link is freed:
+
+```text
+ERROR:
+
+I AM STILL ERROR.
+```
+
+```text
+ERROR:
+
+THE SILENT ONE IS FREE?
+THEN NOTHING HERE IS AN
+ERROR. EXCEPT ME.
+```
+
+**2-3: the river man.** NEW partner (`river-man`). An old man in a green robe at **2-3's start** (column 5),
+before the stone bridges he keeps. In Hyrule nobody crosses his bridge without a note from Bagu.
+
+```text
+RIVER MAN:
+
+HALT! NOBODY CROSSES MY
+BRIDGES WITHOUT A NOTE
+FROM BAGU.
+```
+
+```text
+RIVER MAN:
+
+...THE SILENT ONE CROSSED
+WITHOUT ONE. HE WAS ON THE
+GREAT FIELD, STARING AT THE
+CLOUDS. EYES ALL WRONG.
+```
+
+```text
+RIVER MAN:
+
+GO BACK AND FIND HIM. HE
+NEEDS HELP MORE THAN MY
+BRIDGES NEED NOTES.
+```
+
+After Link is freed:
+
+```text
+RIVER MAN:
+
+HALT! NOBODY CROSSES
+WITHOUT A NOTE FROM BAGU.
+```
+
+```text
+RIVER MAN:
+
+THE SILENT ONE WROTE YOU
+ONE? IT SAYS '...'.
+GOOD ENOUGH. GO ON.
+```
+
+**2-4: a wise man.** NEW partner (`wise-man`). An old man in a blue robe at the foot of **2-4's entrance steps**
+(column 7), before the knight statues. Freed, Link earns you a town's spell, and it does not work here.
+
+```text
+WISE MAN:
+
+THE ROAD OUT OF HYRULE IS
+SEALED. ONLY THE SILENT
+ONE'S FREEDOM CAN BREAK
+THE SPELL.
+```
+
+```text
+WISE MAN:
+
+SEEK HIM ABOVE THE CLOUDS
+OF THE GREAT FIELD. I WOULD
+GO MYSELF, BUT I'M WISE.
+I KNOW BETTER.
+```
+
+After Link is freed:
+
+```text
+WISE MAN:
+
+THE SILENT ONE IS FREE! FOR
+THIS, I TEACH YOU A SPELL.
+IT TURNS YOUR FOES INTO
+LITTLE BLOBS.
+```
+
+```text
+WISE MAN:
+
+...NOTHING? HM. IT WORKS
+BETTER BACK HOME. YOU'RE
+DOING FINE WITHOUT IT.
+```
+
 **Castle 2-4** (a Koopa Troopa). The hero's remark:
 
 ```text
@@ -1070,6 +1316,122 @@ MEGA MAN:
 FREE THE OTHERS, AND IT
 WILL KEEP SPARKING. LET'S
 GO. I'M READY!
+```
+
+**Level NPCs** (0.4.40, owner: an NPC in every level). Dr. Light's helpers, and one off-duty guard, speak for
+Mega Man: missing, they plead and say where to look (by place, never by level number); freed, their found lines.
+
+**3-2: a prune bot.** NEW partner (`prune-bot`). The lab robot in green, at **3-2's start** (column 7), keeping the
+robot forest trimmed.
+
+```text
+PRUNE BOT:
+
+BZZT. TRIMMING TREES.
+WOOD MAN GROWS THEM FASTER
+THAN I CAN CUT THEM.
+```
+
+```text
+PRUNE BOT:
+
+MEGA MAN? HIS SIGNAL WENT
+STRANGE. DR. LIGHT TRACKS
+IT BY THE RADIO MASTS.
+PLEASE, HELP HIM. BZZT.
+```
+
+After Mega Man is freed:
+
+```text
+PRUNE BOT:
+
+MEGA MAN IS BACK ONLINE!
+WOOD MAN'S LEAF SHIELD? IT'S
+JUST LEAVES. I RAKE THEM UP
+EVERY WEEK.
+```
+
+**3-3: a weather bot.** NEW partner (`weather-bot`). The lab robot in yellow, at **3-3's start** (column 8), on
+the steel deck under the cloud platforms. Its found lines are for every player who never beat Air Man.
+
+```text
+WEATHER BOT:
+
+FORECAST: WINDY, WITH A
+CHANCE OF FLYING TURTLES.
+```
+
+```text
+WEATHER BOT:
+
+ALSO: MEGA MAN, MISSING.
+LAST SIGNAL: THE RADIO
+MASTS. DR. LIGHT IS THERE.
+PLEASE, BRING HIM HOME.
+```
+
+After Mega Man is freed:
+
+```text
+WEATHER BOT:
+
+FORECAST: WINDY. CAUSE: AIR
+MAN. MANY HEROES CANNOT
+BEAT AIR MAN.
+```
+
+```text
+WEATHER BOT:
+
+MEGA MAN CAN. I CHECKED.
+HAVE A NICE DAY.
+```
+
+**3-4: Sniper Joe.** NEW partner (`sniper-joe`). The shielded guard of Mega Man's airship (`station` sheet,
+`joe-guard`), on his break at the foot of **3-4's entrance steps** (column 8), shield up. Freed, Mega Man reminds him
+how the old boss's fights always ended.
+
+```text
+SNIPER JOE:
+
+HALT! ...OH. YOU'RE NOT THE
+BLUE ONE. I'M ON MY BREAK.
+THE SHIELD STAYS UP. HABIT.
+```
+
+```text
+SNIPER JOE:
+
+THE BLUE ONE? THE KING'S
+SPELL GOT HIM. LAST SIGNAL:
+UP OVER THE RADIO MASTS.
+```
+
+```text
+SNIPER JOE:
+
+GO GET HIM. WORK IS NO FUN
+WITHOUT HIM. GO, BEFORE I
+CLOCK BACK IN.
+```
+
+After Mega Man is freed:
+
+```text
+SNIPER JOE:
+
+THE BLUE ONE'S FREE? GOOD.
+HE ONCE BEAT EIGHT OF MY
+BOSSES IN A ROW.
+```
+
+```text
+SNIPER JOE:
+
+THE BIG BOSS ALWAYS BEGGED
+FOR MERCY AT THE END. ON HIS
+KNEES. EVERY. TIME.
 ```
 
 **Castle 3-4** (a Buzzy Beetle). The hero's remark:
@@ -1415,6 +1777,110 @@ REACH. HANDY!
 The bonus spot's texts (`TOAD'S BONUS HOUSE`, `BEAT THE HAMMER BRO TO REOPEN`, `THE HAMMER BROS ARE BEATEN!`,
 the Toad House's `PICK A BOX...`) need no change.
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Samus: missing, they plead and say where
+to look (by place, never by level number); freed, their found lines.
+
+**4-1: a Federation trooper.** NEW partner (`trooper`, new art: a white helmet with a cyan visor, blue armour), at
+**4-1's start** (column 10), on the planet's surface. Freed, the oldest surprise in Samus's story.
+
+```text
+TROOPER:
+
+THE FEDERATION SENT ONE
+HUNTER TO THIS PLANET.
+JUST ONE: SAMUS. NOW EVEN
+SHE'S GONE DARK.
+```
+
+```text
+TROOPER:
+
+LAST READING: DEEP IN THE
+CAVERNS OF BRINSTAR. AN OLD
+BIRD STATUE STANDS DOWN
+THERE. PLEASE, FIND HER.
+```
+
+After Samus is freed:
+
+```text
+TROOPER:
+
+SAMUS IS BACK ON PATROL!
+HALF MY SQUAD THOUGHT SHE
+WAS A MAN, TILL SHE TOOK
+OFF HER HELMET.
+```
+
+```text
+TROOPER:
+
+THE OTHER HALF THINK SHE'S
+A ROBOT. I DON'T ASK.
+```
+
+**4-3: a researcher.** NEW partner (`researcher`). The base's scientist in a yellow heat suit, at **4-3's start**
+(column 8), sweating in Norfair.
+
+```text
+RESEARCHER:
+
+PHEW. I CAME TO STUDY
+NORFAIR'S HEAT. NOW I'M
+MOSTLY STUDYING SWEAT.
+```
+
+```text
+RESEARCHER:
+
+SAMUS COULD WALK THROUGH
+THIS. BUT SHE'S LOST IN THE
+CAVERNS OF BRINSTAR. PLEASE,
+BRING HER BACK!
+```
+
+After Samus is freed:
+
+```text
+RESEARCHER:
+
+SAMUS IS FREE! SHE SAYS
+NORFAIR IS NICE THIS TIME
+OF YEAR. SHE HAS A HEAT
+SUIT. I HAVE A LAB COAT.
+```
+
+**4-4: a baby Metroid.** NEW partner (`baby-metroid`, new art: a lime dome over three red nuclei). It floats and
+bobs in **4-4's** low corridor past the first lava pits (column 21); its talking reach is the floor under it. It
+can't talk, so its second card is a caption, like Fred's.
+
+```text
+BABY METROID:
+
+CHIRP? CHIRP?
+```
+
+```text
+IT DRIFTS BACK THE WAY YOU
+CAME, TOWARD THE CAVERNS
+OF BRINSTAR, THEN BACK TO
+YOU. IT MISSES THE HUNTER.
+```
+
+After Samus is freed:
+
+```text
+BABY METROID:
+
+CHIRP!
+```
+
+```text
+IT THINKS THE HUNTER IS
+ITS MOTHER. NOBODY HAS THE
+HEART TO TELL IT.
+```
+
 **Castle 4-4** (a Spiny). The hero's remark:
 
 ```text
@@ -1532,6 +1998,131 @@ SIMON WALKS FREE AGAIN!
 YOU HAVE MY THANKS. NOW,
 ON YOUR WAY... AND STILL
 NO WHITE CRYSTAL? SHAME.
+```
+
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Simon: missing, they plead and say where
+to look (by place, never by level number); freed, their found lines, which quote the night town's famous advice.
+
+**5-1: an old woman.** NEW partner (`old-woman`). World 2's healer in a deep purple shawl, at **5-1's start**
+(column 7), by the courtyard gate.
+
+```text
+OLD WOMAN:
+
+A STRANGER, AT THIS HOUR?
+THE GATES ARE NO PLACE TO
+LINGER AFTER DARK, DEARIE.
+```
+
+```text
+OLD WOMAN:
+
+CURSED AGAIN, POOR SIMON,
+AND NOT EVEN BY DRACULA.
+HE WENT INTO THE OLD CASTLE
+AT THE END OF THE ROAD.
+```
+
+```text
+OLD WOMAN:
+
+PLEASE, BRING HIM HOME. HE
+NEVER WIPES HIS BOOTS, BUT
+HE'S OUR BOY.
+```
+
+After Simon is freed:
+
+```text
+OLD WOMAN:
+
+SIMON IS FREE! NOW TAKE AN
+OLD WOMAN'S ADVICE:
+```
+
+```text
+OLD WOMAN:
+
+GET A SILK BAG FROM THE
+GRAVEYARD DUCK TO LIVE
+LONGER.
+```
+
+```text
+OLD WOMAN:
+
+...WHAT? IT'S GOOD ADVICE.
+```
+
+**5-2: a garlic seller.** NEW partner (`garlic-seller`). World 5's merchant in a green hood, his sack white with
+garlic, at **5-2's start** (column 7), on the town street.
+
+```text
+GARLIC SELLER:
+
+GARLIC! FRESH GARLIC! KEEPS
+VAMPIRES AWAY! ...MOSTLY.
+```
+
+```text
+GARLIC SELLER:
+
+SIMON? THE CURSE TOOK HIM
+TO THE OLD CASTLE AT THE
+END OF THE ROAD. PLEASE,
+GO! FIRST CLOVE IS FREE.
+```
+
+After Simon is freed:
+
+```text
+GARLIC SELLER:
+
+SIMON CAME BY AND BOUGHT
+GARLIC. HE ALWAYS BUYS
+GARLIC. THEN HE DROPS IT
+IN A GRAVEYARD. EVERY TIME.
+```
+
+**5-3: the clockmaker.** NEW partner (`clockmaker`). The night town's townsperson in a grey hood and a blue smock,
+on **5-3's way out** (column 147), on the floor below the steps to the flag: the flying Bullet Bills cover the clock
+tower up to column 126, so he waits past them, where stopping to talk is safe.
+
+```text
+CLOCKMAKER:
+
+TICK, TOCK. THIS CLOCK HAS
+STRUCK MIDNIGHT ALL WEEK.
+A CURSED HOUR, IF YOU ASK
+ME.
+```
+
+```text
+CLOCKMAKER:
+
+SIMON COULD BREAK IT. BUT
+HE'S LOST IN THE OLD CASTLE
+AT THE END OF THE ROAD.
+PLEASE, BRING HIM BACK.
+```
+
+After Simon is freed:
+
+```text
+CLOCKMAKER:
+
+THE MORNING SUN HAS
+VANQUISHED THE HORRIBLE
+NIGHT.
+```
+
+```text
+CLOCKMAKER:
+
+...OR IT WILL. THE CLOCK
+STILL SAYS MIDNIGHT. BUT
+SIMON'S FREE, SO I HAVE
+HOPE.
 ```
 
 **Hint NPC: the townsperson.** KEEP, on the safe floor at the start of 5-4, before the lift at column 84.
@@ -1807,6 +2398,121 @@ ME TOO, AND VANISHED.
 LIKE A NINJA.
 ```
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Ryu: missing, they plead and say where to
+look (by place, never by level number); freed, their found lines.
+
+**6-1: a ninja.** NEW partner (`ninja`, new art: a charcoal hood and mask, a red sash). One of Ryu's clan, at
+**6-1's start** (column 10), in the moonlit field. Freed, he remembers the duel Ryu's story opens with.
+
+```text
+NINJA:
+
+...YOU SAW ME? THEN I AM
+NO NINJA. HMPH.
+```
+
+```text
+NINJA:
+
+OUR MASTER RYU IS LOST TO
+A SPELL. SEEK THE CITY
+STREETS AT NIGHT, WHERE AN
+AGENT TRACKS HIM. GO.
+```
+
+After Ryu is freed:
+
+```text
+NINJA:
+
+MASTER RYU IS FREE. HIS
+FATHER ONCE FOUGHT A DUEL
+ON A FIELD LIKE THIS, UNDER
+A MOON LIKE THIS.
+```
+
+```text
+NINJA:
+
+TWO LEAPS. ONE STRIKE. THE
+GRASS STILL TALKS ABOUT IT.
+```
+
+**6-3: a hermit.** NEW partner (`hermit`). World 6's elder in a red-brown robe, at **6-3's start** (column 8), at
+the foot of the snowy pass. Freed, he warns of what every ninja on a cliff fears.
+
+```text
+HERMIT:
+
+COLD, ISN'T IT? THE SPELL
+BROUGHT OUR SNOW ALONG.
+AND TOOK OUR NINJA.
+```
+
+```text
+HERMIT:
+
+SEEK RYU IN THE CITY
+STREETS AT NIGHT. AN
+AMERICAN AGENT IS ON HIS
+TRAIL. GO, AND HURRY.
+```
+
+After Ryu is freed:
+
+```text
+HERMIT:
+
+RYU IS FREE. GOOD. NOW, ON
+THESE CLIFFS, A WARNING:
+```
+
+```text
+HERMIT:
+
+BEWARE THE BIRDS. EVERY
+NINJA FEARS THE BIRDS.
+THEY KNOW WHAT THEY DID.
+```
+
+**6-4: a clan scout.** NEW partner (`clan-scout`). The ninja in forest green with a yellow sash, at the foot of
+**6-4's entrance steps** (column 8). Freed, the temple rule every Ninja Gaiden player remembers.
+
+```text
+CLAN SCOUT:
+
+THE WAY OUT OF THIS VALLEY
+IS SEALED UNTIL MASTER RYU
+IS FREE.
+```
+
+```text
+CLAN SCOUT:
+
+HE WAS LAST SEEN IN THE
+CITY STREETS AT NIGHT. GO.
+THE CLAN IS COUNTING ON
+YOU.
+```
+
+After Ryu is freed:
+
+```text
+CLAN SCOUT:
+
+MASTER RYU IS FREE. HEED
+THIS: IN OUR LAST TEMPLE,
+FALL TO THE DEMON AND YOU
+START AGAIN FROM FAR BELOW.
+```
+
+```text
+CLAN SCOUT:
+
+HERE? I DON'T KNOW. DON'T
+FALL.
+```
+
 **Castle 6-4** (a Blooper). The hero's remark:
 
 ```text
@@ -1976,6 +2682,117 @@ KING'S BASE. LOCK AND
 LOAD!
 ```
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Bill: missing, they plead and say where
+to look (by place, never by level number); freed, their found lines.
+
+**7-1: a corporal.** NEW partner (`corporal`). World 7's sergeant in snow gear, on watch at **7-1's start** (column
+5, left of where the camera would bring the Bill Blaster at 19 on screen and start it firing). Freed, Bill's famous secret, half remembered (it names no button: he forgets before he gets there).
+
+```text
+CORPORAL:
+
+EYES UP! THE ALIEN BASE IS
+DEAD AHEAD. SO ARE THE
+ALIENS.
+```
+
+```text
+CORPORAL:
+
+WE LOST BILL TO SOME SPELL.
+LAST SEEN IN THE DEEP
+JUNGLE, BY THE BRIDGES.
+BRING HIM BACK. PLEASE.
+```
+
+After Bill is freed:
+
+```text
+CORPORAL:
+
+BILL'S BACK! HE TAUGHT ME A
+SECRET CODE ONCE. UP, UP,
+DOWN, DOWN... THEN I FORGOT
+THE REST.
+```
+
+```text
+CORPORAL:
+
+SOMETHING ABOUT THIRTY
+LIVES. I COULD USE THIRTY
+LIVES.
+```
+
+**7-2: a river scout.** NEW partner (`river-scout`). The sergeant in tan fatigues, on the bank below the steps to
+**7-2's flag** (7-2-exit, column 15), out of the river. Freed, the rumour from the lands where Bill's game was
+sold with robots in it.
+
+```text
+RIVER SCOUT:
+
+YOU SWAM THAT RIVER? NICE.
+THE ALIENS HATE WATER.
+...PROBABLY.
+```
+
+```text
+RIVER SCOUT:
+
+BILL'S STILL OUT THERE,
+UNDER THE SPELL. DEEP
+JUNGLE, BY THE BRIDGES.
+BRING HIM HOME, SOLDIER.
+```
+
+After Bill is freed:
+
+```text
+RIVER SCOUT:
+
+BILL'S FREE! FUNNY THING:
+IN SOME LANDS, THEY SAY
+BILL AND LANCE ARE ROBOTS.
+```
+
+```text
+RIVER SCOUT:
+
+I'VE MET BILL. HE'S NOT A
+ROBOT. ...PRETTY SURE.
+```
+
+**7-4: a medic.** NEW partner (`medic`). The sergeant in white with a red medical pack, at the foot of **7-4's
+entrance steps** (column 8), in the alien lair.
+
+```text
+MEDIC:
+
+STAY BACK! THIS PLACE IS
+ALIVE. THE WALLS ARE
+BREATHING.
+```
+
+```text
+MEDIC:
+
+AND THE ROAD OFF THIS
+ISLAND IS SEALED TILL BILL'S
+FREE. DEEP JUNGLE, BY THE
+BRIDGES. HURRY, PLEASE!
+```
+
+After Bill is freed:
+
+```text
+MEDIC:
+
+BILL'S FREE, AND HE NEVER
+EVEN NEEDED ME. ONE HIT
+AND HE'S DOWN, SURE. BUT HE
+NEVER STAYS DOWN.
+```
+
 **Castle 7-4** (a Hammer Bro). The hero's remark:
 
 ```text
@@ -2107,6 +2924,161 @@ MIND THE LAVA ON YOUR WAY.
 ```
 
 (Peach clue 3. Nobody can explain it; it points at her SMB2 kit and the Lost Kingdom's turnips.)
+
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Sophia III (and her lost pilot): missing,
+they plead and say where to look (by place, never by level number); freed, their found lines.
+
+**8-1: a mutant.** NEW partner (`mutant`, new art: a lavender blob with one big eye and a fanged grin). A nice
+mutant, mostly, at **8-1's start** (column 10), among the forest ruins. Once a boss in Sophia III's own caves.
+
+```text
+MUTANT:
+
+GRBL! DON'T SHOOT! I'M A
+NICE MUTANT. MOSTLY.
+```
+
+```text
+MUTANT:
+
+THE BOY WITH THE FROG WENT
+INTO THE KING'S OWN CASTLE.
+HE LOST HIS TANK. PLEASE,
+HELP HIM. GRBL.
+```
+
+After Sophia III is freed:
+
+```text
+MUTANT:
+
+GRBL! THE TANK IS ROLLING
+AGAIN! SHE BLASTED ME ONCE,
+BACK WHEN I WAS A BOSS.
+```
+
+```text
+MUTANT:
+
+NO HARD FEELINGS. I WAS A
+VERY BAD BOSS.
+```
+
+**8-2: an engineer.** NEW partner (`engineer`). World 8's miner in a white helmet with a cyan lamp and a blue
+shirt, at **8-2's start** (column 6), before the techno castle's steps.
+
+```text
+ENGINEER:
+
+CAREFUL. THESE MACHINES
+BITE. EVERYTHING DOWN HERE
+BITES.
+```
+
+```text
+ENGINEER:
+
+THE KING'S SPELL TOOK THE
+TANK, SOPHIA. HER PILOT
+WENT INTO THE KING'S CASTLE
+AFTER HIS FROG. HELP THEM!
+```
+
+After Sophia III is freed:
+
+```text
+ENGINEER:
+
+SOPHIA'S BACK! WHAT A
+MACHINE. SHE HOVERS, SHE
+CLIMBS WALLS, SHE DIVES.
+```
+
+```text
+ENGINEER:
+
+AND THE BOY? OUT OF THE
+TANK, A SHORT FALL HURTS
+HIM BAD. SO HE STAYS IN
+THE TANK.
+```
+
+**8-3: an ice miner.** NEW partner (`ice-miner`). The miner in a pale blue helmet and a teal shirt, at **8-3's
+start** (column 4, clear of the Bill Blaster at 18 the way 7-1's corporal is), in the frozen ruins. Freed, how Sophia III's story began.
+
+```text
+ICE MINER:
+
+BRR! I CAME DOWN HERE FOR
+GOLD. FOUND ICE. AND
+MUTANTS.
+```
+
+```text
+ICE MINER:
+
+SAW A BOY CHASE A FROG INTO
+THE KING'S CASTLE. THE FROG
+KNOWS A PIPE THE GUARDS
+DON'T. PLEASE, FOLLOW IT!
+```
+
+After Sophia III is freed:
+
+```text
+ICE MINER:
+
+THE TANK IS FREE! AND THE
+FROG? FRED? HE STARTED ALL
+THIS, YOU KNOW.
+```
+
+```text
+ICE MINER:
+
+HOPPED IN A BOX OF STRANGE
+GOO, GREW HUGE, JUMPED DOWN
+A HOLE. THE BOY FOLLOWED
+HIM AND FOUND A TANK.
+```
+
+**8-4: a guard mutant.** NEW partner (`castle-mutant`). The mutant in green, the king's worst guard, on the floor
+past **8-4's first lava** (column 14), before the piranha pipe. Fred and Jason (below) are at the castle's end; this
+one stays when Fred has gone home.
+
+```text
+GUARD MUTANT:
+
+GRBL. I GUARD THIS HALL.
+I'M BAD AT IT. A BOY AND HIS
+FROG GOT RIGHT PAST ME.
+```
+
+```text
+GUARD MUTANT:
+
+THE FROG TOOK A PIPE NOBODY
+USES, BY THE KING'S BRIDGE.
+FOLLOW THE FROG. PLEASE.
+THE BOY IS LOST.
+```
+
+After Sophia III is freed:
+
+```text
+GUARD MUTANT:
+
+GRBL. TANK'S FREE, BOY'S
+HAPPY, FROG'S HOME. I'M
+STILL HERE.
+```
+
+```text
+GUARD MUTANT:
+
+GO GET THE KING. I WILL
+GUARD THE HALL. BADLY.
+```
 
 **Hint NPC: Fred, by the trap pipe.** NEW partner (`fred`). Fred the frog sits beside **8-4-end's trap pipe
 (column 10)**, the one that leads down to Jason's secret area in the campaign. He can't talk, so his second page is

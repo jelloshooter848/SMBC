@@ -676,7 +676,7 @@ export interface PartnerScript {
    * freed on the file it says `after` instead of `pages`; with no `after` it is gone (Fred: home).
    */
   hero?: string;
-  /** What it says once `hero` is freed (one page, NEW in 0.4.23). */
+  /** What it says once `hero` is freed (NEW in 0.4.23; one to three pages since 0.4.40). */
   after?: readonly Page[];
 }
 
@@ -908,6 +908,729 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['JASON:', '', "MY TANK, SOPHIA! SHE'S DOWN", 'THERE TOO. FOLLOW FRED,', "PLEASE. I CAN'T SWIM."],
     ],
     after: [['JASON:', '', "SOPHIA'S BACK, FRED'S BACK.", 'BEST DAY EVER! THANK YOU!']],
+  },
+
+  /* -------------------------------------------- 0.4.40: an NPC in every level (World 1, Luigi) */
+
+  // 1-2, by the spot the heroes drop in: a Toad hiding underground.
+  'cave-toad': {
+    verb: 'TALK',
+    name: 'A cave Toad',
+    hero: 'luigi',
+    pages: [
+      [
+        'CAVE TOAD:',
+        '',
+        'PSST! IS IT SAFE? I SAW A',
+        'GUY IN GREEN UP ON THE',
+        'FIRST ROAD. GLOWING EYES.',
+        'HE DOVE DOWN A PIPE.',
+      ],
+      [
+        'CAVE TOAD:',
+        '',
+        'A VILLAGER UP THERE GOT',
+        'KNOCKED FLAT. HE SAW WHICH',
+        'PIPE. PLEASE, GO FIND THAT',
+        'POOR GUY!',
+      ],
+    ],
+    after: [
+      [
+        'CAVE TOAD:',
+        '',
+        "LUIGI'S FREE? PHEW! LAST",
+        'TIME MARIO WENT MISSING,',
+        'LUIGI FOUND HIM. NOW HE',
+        'CAN HELP YOU FIND PEACH.',
+      ],
+    ],
+  },
+  // 1-3, on the ground at the start, under the treetops.
+  lookout: {
+    verb: 'TALK',
+    name: 'A lookout',
+    hero: 'luigi',
+    pages: [
+      [
+        'LOOKOUT:',
+        '',
+        'FROM THOSE TREETOPS I CAN',
+        'SEE THE WHOLE ROAD! JUST',
+        'NOT DOWN PIPES. NOBODY CAN',
+        'SEE DOWN PIPES.',
+      ],
+      [
+        'LOOKOUT:',
+        '',
+        'THE FELLOW IN GREEN WENT',
+        'DOWN ONE ON THE FIRST ROAD,',
+        'BY THE VILLAGER. PLEASE,',
+        'GO BRING HIM BACK!',
+      ],
+    ],
+    after: [
+      [
+        'LOOKOUT:',
+        '',
+        "LUIGI'S FREE! I WATCHED HIM",
+        'CLEAR THREE TREES IN ONE',
+        "JUMP. DON'T TELL MARIO I",
+        'SAID THAT.',
+      ],
+    ],
+  },
+  // 1-4, at the foot of the castle's entrance steps: one of the princess's retainers, spying.
+  retainer: {
+    verb: 'TALK',
+    name: 'A retainer',
+    hero: 'luigi',
+    pages: [
+      [
+        'RETAINER:',
+        '',
+        'SHH! I SNUCK IN TO SPY ON',
+        'THE KING. BUT THE ROAD OUT',
+        'OF THIS LAND IS SEALED BY',
+        'HIS MAGIC.',
+      ],
+      [
+        'RETAINER:',
+        '',
+        "IT WON'T OPEN TILL LUIGI IS",
+        'FREE. HE WENT DOWN A PIPE',
+        'ON THE FIRST ROAD. PLEASE,',
+        'GO BACK FOR HIM!',
+      ],
+    ],
+    after: [
+      [
+        'RETAINER:',
+        '',
+        "LUIGI'S FREE? THEN GO GET",
+        'THE KING! BETWEEN US, HE',
+        'LOOKS SHORTER THAN USUAL',
+        'TODAY.',
+      ],
+      ['RETAINER:', '', "AND IF THE PRINCESS ISN'T", 'IN THIS CASTLE... WELL.', 'THAT HAPPENS A LOT.'],
+    ],
+  },
+
+  /* ---------------------------------------------------- World 2 (Hyrule, Link): Zelda II folk */
+
+  // 2-2's way out (2-2-exit), on the ground below the steps to the flag. A townsman of Hyrule.
+  error: {
+    verb: 'TALK',
+    name: 'Error',
+    hero: 'link',
+    pages: [
+      ['ERROR:', '', 'I AM ERROR.'],
+      [
+        'ERROR:',
+        '',
+        'YOU SEEK THE SILENT ONE? HE',
+        'WAS LAST SEEN ON THE GREAT',
+        'FIELD. THE OLD MAN IN THE',
+        'CAVE THERE KNOWS MORE.',
+      ],
+      ['ERROR:', '', 'PLEASE FIND HIM. MY FRIEND', 'BAGU IS WORRIED SICK.'],
+    ],
+    after: [
+      ['ERROR:', '', 'I AM STILL ERROR.'],
+      ['ERROR:', '', 'THE SILENT ONE IS FREE?', 'THEN NOTHING HERE IS AN', 'ERROR. EXCEPT ME.'],
+    ],
+  },
+  // 2-3's start, before the stone bridges: the man who keeps them.
+  'river-man': {
+    verb: 'TALK',
+    name: 'The river man',
+    hero: 'link',
+    pages: [
+      ['RIVER MAN:', '', 'HALT! NOBODY CROSSES MY', 'BRIDGES WITHOUT A NOTE', 'FROM BAGU.'],
+      [
+        'RIVER MAN:',
+        '',
+        '...THE SILENT ONE CROSSED',
+        'WITHOUT ONE. HE WAS ON THE',
+        'GREAT FIELD, STARING AT THE',
+        'CLOUDS. EYES ALL WRONG.',
+      ],
+      ['RIVER MAN:', '', 'GO BACK AND FIND HIM. HE', 'NEEDS HELP MORE THAN MY', 'BRIDGES NEED NOTES.'],
+    ],
+    after: [
+      ['RIVER MAN:', '', 'HALT! NOBODY CROSSES', 'WITHOUT A NOTE FROM BAGU.'],
+      ['RIVER MAN:', '', 'THE SILENT ONE WROTE YOU', "ONE? IT SAYS '...'.", 'GOOD ENOUGH. GO ON.'],
+    ],
+  },
+  // 2-4, at the foot of the palace's entrance steps, before its knight statues.
+  'wise-man': {
+    verb: 'TALK',
+    name: 'A wise man',
+    hero: 'link',
+    pages: [
+      [
+        'WISE MAN:',
+        '',
+        'THE ROAD OUT OF HYRULE IS',
+        'SEALED. ONLY THE SILENT',
+        "ONE'S FREEDOM CAN BREAK",
+        'THE SPELL.',
+      ],
+      [
+        'WISE MAN:',
+        '',
+        'SEEK HIM ABOVE THE CLOUDS',
+        'OF THE GREAT FIELD. I WOULD',
+        "GO MYSELF, BUT I'M WISE.",
+        'I KNOW BETTER.',
+      ],
+    ],
+    after: [
+      [
+        'WISE MAN:',
+        '',
+        'THE SILENT ONE IS FREE! FOR',
+        'THIS, I TEACH YOU A SPELL.',
+        'IT TURNS YOUR FOES INTO',
+        'LITTLE BLOBS.',
+      ],
+      ['WISE MAN:', '', '...NOTHING? HM. IT WORKS', "BETTER BACK HOME. YOU'RE", 'DOING FINE WITHOUT IT.'],
+    ],
+  },
+
+  /* ------------------------------------- World 3 (Mega City, Mega Man): Dr. Light's robots */
+
+  // 3-2's start, in the robot forest.
+  'prune-bot': {
+    verb: 'TALK',
+    name: 'A prune bot',
+    hero: 'megaman',
+    pages: [
+      ['PRUNE BOT:', '', 'BZZT. TRIMMING TREES.', 'WOOD MAN GROWS THEM FASTER', 'THAN I CAN CUT THEM.'],
+      [
+        'PRUNE BOT:',
+        '',
+        'MEGA MAN? HIS SIGNAL WENT',
+        'STRANGE. DR. LIGHT TRACKS',
+        'IT BY THE RADIO MASTS.',
+        'PLEASE, HELP HIM. BZZT.',
+      ],
+    ],
+    after: [
+      [
+        'PRUNE BOT:',
+        '',
+        'MEGA MAN IS BACK ONLINE!',
+        "WOOD MAN'S LEAF SHIELD? IT'S",
+        'JUST LEAVES. I RAKE THEM UP',
+        'EVERY WEEK.',
+      ],
+    ],
+  },
+  // 3-3's start, on the steel deck under the cloud platforms.
+  'weather-bot': {
+    verb: 'TALK',
+    name: 'A weather bot',
+    hero: 'megaman',
+    pages: [
+      ['WEATHER BOT:', '', 'FORECAST: WINDY, WITH A', 'CHANCE OF FLYING TURTLES.'],
+      [
+        'WEATHER BOT:',
+        '',
+        'ALSO: MEGA MAN, MISSING.',
+        'LAST SIGNAL: THE RADIO',
+        'MASTS. DR. LIGHT IS THERE.',
+        'PLEASE, BRING HIM HOME.',
+      ],
+    ],
+    after: [
+      ['WEATHER BOT:', '', 'FORECAST: WINDY. CAUSE: AIR', 'MAN. MANY HEROES CANNOT', 'BEAT AIR MAN.'],
+      ['WEATHER BOT:', '', 'MEGA MAN CAN. I CHECKED.', 'HAVE A NICE DAY.'],
+    ],
+  },
+  // 3-4, at the foot of the fortress's entrance steps: a guard robot on his break, shield up.
+  'sniper-joe': {
+    verb: 'TALK',
+    name: 'Sniper Joe',
+    hero: 'megaman',
+    pages: [
+      [
+        'SNIPER JOE:',
+        '',
+        "HALT! ...OH. YOU'RE NOT THE",
+        "BLUE ONE. I'M ON MY BREAK.",
+        'THE SHIELD STAYS UP. HABIT.',
+      ],
+      [
+        'SNIPER JOE:',
+        '',
+        "THE BLUE ONE? THE KING'S",
+        'SPELL GOT HIM. LAST SIGNAL:',
+        'UP OVER THE RADIO MASTS.',
+      ],
+      ['SNIPER JOE:', '', 'GO GET HIM. WORK IS NO FUN', 'WITHOUT HIM. GO, BEFORE I', 'CLOCK BACK IN.'],
+    ],
+    after: [
+      ['SNIPER JOE:', '', "THE BLUE ONE'S FREE? GOOD.", 'HE ONCE BEAT EIGHT OF MY', 'BOSSES IN A ROW.'],
+      [
+        'SNIPER JOE:',
+        '',
+        'THE BIG BOSS ALWAYS BEGGED',
+        'FOR MERCY AT THE END. ON HIS',
+        'KNEES. EVERY. TIME.',
+      ],
+    ],
+  },
+
+  /* ------------------------ World 4 (Planet Zebes, Samus): the Federation, a lab, a hatchling */
+
+  // 4-1's start, on the planet's surface.
+  trooper: {
+    verb: 'TALK',
+    name: 'A Federation trooper',
+    hero: 'samus',
+    pages: [
+      [
+        'TROOPER:',
+        '',
+        'THE FEDERATION SENT ONE',
+        'HUNTER TO THIS PLANET.',
+        'JUST ONE: SAMUS. NOW EVEN',
+        "SHE'S GONE DARK.",
+      ],
+      [
+        'TROOPER:',
+        '',
+        'LAST READING: DEEP IN THE',
+        'CAVERNS OF BRINSTAR. AN OLD',
+        'BIRD STATUE STANDS DOWN',
+        'THERE. PLEASE, FIND HER.',
+      ],
+    ],
+    after: [
+      [
+        'TROOPER:',
+        '',
+        'SAMUS IS BACK ON PATROL!',
+        'HALF MY SQUAD THOUGHT SHE',
+        'WAS A MAN, TILL SHE TOOK',
+        'OFF HER HELMET.',
+      ],
+      ['TROOPER:', '', "THE OTHER HALF THINK SHE'S", "A ROBOT. I DON'T ASK."],
+    ],
+  },
+  // 4-3's start, in Norfair's heat.
+  researcher: {
+    verb: 'TALK',
+    name: 'A researcher',
+    hero: 'samus',
+    pages: [
+      ['RESEARCHER:', '', 'PHEW. I CAME TO STUDY', "NORFAIR'S HEAT. NOW I'M", 'MOSTLY STUDYING SWEAT.'],
+      [
+        'RESEARCHER:',
+        '',
+        'SAMUS COULD WALK THROUGH',
+        "THIS. BUT SHE'S LOST IN THE",
+        'CAVERNS OF BRINSTAR. PLEASE,',
+        'BRING HER BACK!',
+      ],
+    ],
+    after: [
+      [
+        'RESEARCHER:',
+        '',
+        'SAMUS IS FREE! SHE SAYS',
+        'NORFAIR IS NICE THIS TIME',
+        'OF YEAR. SHE HAS A HEAT',
+        'SUIT. I HAVE A LAB COAT.',
+      ],
+    ],
+  },
+  // 4-4, Tourian: a hatchling floating at the foot of the entrance steps. It can't talk, so its
+  // second card is a caption (like Fred's).
+  'baby-metroid': {
+    verb: 'TALK',
+    name: 'A baby Metroid',
+    hero: 'samus',
+    pages: [
+      ['BABY METROID:', '', 'CHIRP? CHIRP?'],
+      [
+        'IT DRIFTS BACK THE WAY YOU',
+        'CAME, TOWARD THE CAVERNS',
+        'OF BRINSTAR, THEN BACK TO',
+        'YOU. IT MISSES THE HUNTER.',
+      ],
+    ],
+    after: [
+      ['BABY METROID:', '', 'CHIRP!'],
+      ['IT THINKS THE HUNTER IS', 'ITS MOTHER. NOBODY HAS THE', 'HEART TO TELL IT.'],
+    ],
+  },
+
+  /* -------------------------------- World 5 (Transylvania, Simon): the cursed country's folk */
+
+  // 5-1's start, at the courtyard gate.
+  'old-woman': {
+    verb: 'TALK',
+    name: 'An old woman',
+    hero: 'simon',
+    pages: [
+      [
+        'OLD WOMAN:',
+        '',
+        'A STRANGER, AT THIS HOUR?',
+        'THE GATES ARE NO PLACE TO',
+        'LINGER AFTER DARK, DEARIE.',
+      ],
+      [
+        'OLD WOMAN:',
+        '',
+        'CURSED AGAIN, POOR SIMON,',
+        'AND NOT EVEN BY DRACULA.',
+        'HE WENT INTO THE OLD CASTLE',
+        'AT THE END OF THE ROAD.',
+      ],
+      ['OLD WOMAN:', '', 'PLEASE, BRING HIM HOME. HE', 'NEVER WIPES HIS BOOTS, BUT', "HE'S OUR BOY."],
+    ],
+    after: [
+      ['OLD WOMAN:', '', 'SIMON IS FREE! NOW TAKE AN', "OLD WOMAN'S ADVICE:"],
+      ['OLD WOMAN:', '', 'GET A SILK BAG FROM THE', 'GRAVEYARD DUCK TO LIVE', 'LONGER.'],
+      ['OLD WOMAN:', '', "...WHAT? IT'S GOOD ADVICE."],
+    ],
+  },
+  // 5-2's start, on the town street.
+  'garlic-seller': {
+    verb: 'TALK',
+    name: 'A garlic seller',
+    hero: 'simon',
+    pages: [
+      ['GARLIC SELLER:', '', 'GARLIC! FRESH GARLIC! KEEPS', 'VAMPIRES AWAY! ...MOSTLY.'],
+      [
+        'GARLIC SELLER:',
+        '',
+        'SIMON? THE CURSE TOOK HIM',
+        'TO THE OLD CASTLE AT THE',
+        'END OF THE ROAD. PLEASE,',
+        'GO! FIRST CLOVE IS FREE.',
+      ],
+    ],
+    after: [
+      [
+        'GARLIC SELLER:',
+        '',
+        'SIMON CAME BY AND BOUGHT',
+        'GARLIC. HE ALWAYS BUYS',
+        'GARLIC. THEN HE DROPS IT',
+        'IN A GRAVEYARD. EVERY TIME.',
+      ],
+    ],
+  },
+  // 5-3's way out, below the steps to the flag, past the flying Bullet Bills.
+  clockmaker: {
+    verb: 'TALK',
+    name: 'The clockmaker',
+    hero: 'simon',
+    pages: [
+      [
+        'CLOCKMAKER:',
+        '',
+        'TICK, TOCK. THIS CLOCK HAS',
+        'STRUCK MIDNIGHT ALL WEEK.',
+        'A CURSED HOUR, IF YOU ASK',
+        'ME.',
+      ],
+      [
+        'CLOCKMAKER:',
+        '',
+        'SIMON COULD BREAK IT. BUT',
+        "HE'S LOST IN THE OLD CASTLE",
+        'AT THE END OF THE ROAD.',
+        'PLEASE, BRING HIM BACK.',
+      ],
+    ],
+    after: [
+      ['CLOCKMAKER:', '', 'THE MORNING SUN HAS', 'VANQUISHED THE HORRIBLE', 'NIGHT.'],
+      [
+        'CLOCKMAKER:',
+        '',
+        '...OR IT WILL. THE CLOCK',
+        'STILL SAYS MIDNIGHT. BUT',
+        "SIMON'S FREE, SO I HAVE",
+        'HOPE.',
+      ],
+    ],
+  },
+
+  /* ------------------------ World 6 (Dragon Valley, Ryu): the ninja clan and a mountain hermit */
+
+  // 6-1's start, in the moonlit field.
+  ninja: {
+    verb: 'TALK',
+    name: 'A ninja',
+    hero: 'ryu',
+    pages: [
+      ['NINJA:', '', '...YOU SAW ME? THEN I AM', 'NO NINJA. HMPH.'],
+      [
+        'NINJA:',
+        '',
+        'OUR MASTER RYU IS LOST TO',
+        'A SPELL. SEEK THE CITY',
+        'STREETS AT NIGHT, WHERE AN',
+        'AGENT TRACKS HIM. GO.',
+      ],
+    ],
+    after: [
+      [
+        'NINJA:',
+        '',
+        'MASTER RYU IS FREE. HIS',
+        'FATHER ONCE FOUGHT A DUEL',
+        'ON A FIELD LIKE THIS, UNDER',
+        'A MOON LIKE THIS.',
+      ],
+      ['NINJA:', '', 'TWO LEAPS. ONE STRIKE. THE', 'GRASS STILL TALKS ABOUT IT.'],
+    ],
+  },
+  // 6-3's start, at the foot of the snowy pass.
+  hermit: {
+    verb: 'TALK',
+    name: 'A hermit',
+    hero: 'ryu',
+    pages: [
+      ['HERMIT:', '', "COLD, ISN'T IT? THE SPELL", 'BROUGHT OUR SNOW ALONG.', 'AND TOOK OUR NINJA.'],
+      [
+        'HERMIT:',
+        '',
+        'SEEK RYU IN THE CITY',
+        'STREETS AT NIGHT. AN',
+        'AMERICAN AGENT IS ON HIS',
+        'TRAIL. GO, AND HURRY.',
+      ],
+    ],
+    after: [
+      ['HERMIT:', '', 'RYU IS FREE. GOOD. NOW, ON', 'THESE CLIFFS, A WARNING:'],
+      ['HERMIT:', '', 'BEWARE THE BIRDS. EVERY', 'NINJA FEARS THE BIRDS.', 'THEY KNOW WHAT THEY DID.'],
+    ],
+  },
+  // 6-4, at the foot of the demon temple's entrance steps.
+  'clan-scout': {
+    verb: 'TALK',
+    name: 'A clan scout',
+    hero: 'ryu',
+    pages: [
+      ['CLAN SCOUT:', '', 'THE WAY OUT OF THIS VALLEY', 'IS SEALED UNTIL MASTER RYU', 'IS FREE.'],
+      [
+        'CLAN SCOUT:',
+        '',
+        'HE WAS LAST SEEN IN THE',
+        'CITY STREETS AT NIGHT. GO.',
+        'THE CLAN IS COUNTING ON',
+        'YOU.',
+      ],
+    ],
+    after: [
+      [
+        'CLAN SCOUT:',
+        '',
+        'MASTER RYU IS FREE. HEED',
+        'THIS: IN OUR LAST TEMPLE,',
+        'FALL TO THE DEMON AND YOU',
+        'START AGAIN FROM FAR BELOW.',
+      ],
+      ['CLAN SCOUT:', '', "HERE? I DON'T KNOW. DON'T", 'FALL.'],
+    ],
+  },
+
+  /* ------------------------------------- World 7 (Galuga Island, Bill): soldiers of the front */
+
+  // 7-1's start, on watch in the snowfield before the base (clear of the Bill Blaster's range).
+  corporal: {
+    verb: 'TALK',
+    name: 'A corporal',
+    hero: 'bill',
+    pages: [
+      ['CORPORAL:', '', 'EYES UP! THE ALIEN BASE IS', 'DEAD AHEAD. SO ARE THE', 'ALIENS.'],
+      [
+        'CORPORAL:',
+        '',
+        'WE LOST BILL TO SOME SPELL.',
+        'LAST SEEN IN THE DEEP',
+        'JUNGLE, BY THE BRIDGES.',
+        'BRING HIM BACK. PLEASE.',
+      ],
+    ],
+    after: [
+      [
+        'CORPORAL:',
+        '',
+        "BILL'S BACK! HE TAUGHT ME A",
+        'SECRET CODE ONCE. UP, UP,',
+        'DOWN, DOWN... THEN I FORGOT',
+        'THE REST.',
+      ],
+      ['CORPORAL:', '', 'SOMETHING ABOUT THIRTY', 'LIVES. I COULD USE THIRTY', 'LIVES.'],
+    ],
+  },
+  // 7-2's way out (7-2-exit), on the bank below the steps to the flag.
+  'river-scout': {
+    verb: 'TALK',
+    name: 'A river scout',
+    hero: 'bill',
+    pages: [
+      ['RIVER SCOUT:', '', 'YOU SWAM THAT RIVER? NICE.', 'THE ALIENS HATE WATER.', '...PROBABLY.'],
+      [
+        'RIVER SCOUT:',
+        '',
+        "BILL'S STILL OUT THERE,",
+        'UNDER THE SPELL. DEEP',
+        'JUNGLE, BY THE BRIDGES.',
+        'BRING HIM HOME, SOLDIER.',
+      ],
+    ],
+    after: [
+      [
+        'RIVER SCOUT:',
+        '',
+        "BILL'S FREE! FUNNY THING:",
+        'IN SOME LANDS, THEY SAY',
+        'BILL AND LANCE ARE ROBOTS.',
+      ],
+      ['RIVER SCOUT:', '', "I'VE MET BILL. HE'S NOT A", 'ROBOT. ...PRETTY SURE.'],
+    ],
+  },
+  // 7-4, at the foot of the alien lair's entrance steps.
+  medic: {
+    verb: 'TALK',
+    name: 'A medic',
+    hero: 'bill',
+    pages: [
+      ['MEDIC:', '', 'STAY BACK! THIS PLACE IS', 'ALIVE. THE WALLS ARE', 'BREATHING.'],
+      [
+        'MEDIC:',
+        '',
+        'AND THE ROAD OFF THIS',
+        "ISLAND IS SEALED TILL BILL'S",
+        'FREE. DEEP JUNGLE, BY THE',
+        'BRIDGES. HURRY, PLEASE!',
+      ],
+    ],
+    after: [
+      [
+        'MEDIC:',
+        '',
+        "BILL'S FREE, AND HE NEVER",
+        'EVEN NEEDED ME. ONE HIT',
+        "AND HE'S DOWN, SURE. BUT HE",
+        'NEVER STAYS DOWN.',
+      ],
+    ],
+  },
+
+  /* ------------------- World 8 (Bowser's Underworld, Sophia III): mutants and miners below */
+
+  // 8-1's start, among the forest ruins.
+  mutant: {
+    verb: 'TALK',
+    name: 'A mutant',
+    hero: 'sophia',
+    pages: [
+      ['MUTANT:', '', "GRBL! DON'T SHOOT! I'M A", 'NICE MUTANT. MOSTLY.'],
+      [
+        'MUTANT:',
+        '',
+        'THE BOY WITH THE FROG WENT',
+        "INTO THE KING'S OWN CASTLE.",
+        'HE LOST HIS TANK. PLEASE,',
+        'HELP HIM. GRBL.',
+      ],
+    ],
+    after: [
+      ['MUTANT:', '', 'GRBL! THE TANK IS ROLLING', 'AGAIN! SHE BLASTED ME ONCE,', 'BACK WHEN I WAS A BOSS.'],
+      ['MUTANT:', '', 'NO HARD FEELINGS. I WAS A', 'VERY BAD BOSS.'],
+    ],
+  },
+  // 8-2's start, before the techno castle's machines.
+  engineer: {
+    verb: 'TALK',
+    name: 'An engineer',
+    hero: 'sophia',
+    pages: [
+      ['ENGINEER:', '', 'CAREFUL. THESE MACHINES', 'BITE. EVERYTHING DOWN HERE', 'BITES.'],
+      [
+        'ENGINEER:',
+        '',
+        "THE KING'S SPELL TOOK THE",
+        'TANK, SOPHIA. HER PILOT',
+        "WENT INTO THE KING'S CASTLE",
+        'AFTER HIS FROG. HELP THEM!',
+      ],
+    ],
+    after: [
+      ['ENGINEER:', '', "SOPHIA'S BACK! WHAT A", 'MACHINE. SHE HOVERS, SHE', 'CLIMBS WALLS, SHE DIVES.'],
+      [
+        'ENGINEER:',
+        '',
+        'AND THE BOY? OUT OF THE',
+        'TANK, A SHORT FALL HURTS',
+        'HIM BAD. SO HE STAYS IN',
+        'THE TANK.',
+      ],
+    ],
+  },
+  // 8-3's start, in the frozen ruins (clear of the Bill Blaster's range).
+  'ice-miner': {
+    verb: 'TALK',
+    name: 'An ice miner',
+    hero: 'sophia',
+    pages: [
+      ['ICE MINER:', '', 'BRR! I CAME DOWN HERE FOR', 'GOLD. FOUND ICE. AND', 'MUTANTS.'],
+      [
+        'ICE MINER:',
+        '',
+        'SAW A BOY CHASE A FROG INTO',
+        "THE KING'S CASTLE. THE FROG",
+        'KNOWS A PIPE THE GUARDS',
+        "DON'T. PLEASE, FOLLOW IT!",
+      ],
+    ],
+    after: [
+      ['ICE MINER:', '', 'THE TANK IS FREE! AND THE', 'FROG? FRED? HE STARTED ALL', 'THIS, YOU KNOW.'],
+      [
+        'ICE MINER:',
+        '',
+        'HOPPED IN A BOX OF STRANGE',
+        'GOO, GREW HUGE, JUMPED DOWN',
+        'A HOLE. THE BOY FOLLOWED',
+        'HIM AND FOUND A TANK.',
+      ],
+    ],
+  },
+  // 8-4, on the floor past the first lava, before the piranha pipe (19): the king's worst guard.
+  'castle-mutant': {
+    verb: 'TALK',
+    name: 'A guard mutant',
+    hero: 'sophia',
+    pages: [
+      [
+        'GUARD MUTANT:',
+        '',
+        'GRBL. I GUARD THIS HALL.',
+        "I'M BAD AT IT. A BOY AND HIS",
+        'FROG GOT RIGHT PAST ME.',
+      ],
+      [
+        'GUARD MUTANT:',
+        '',
+        'THE FROG TOOK A PIPE NOBODY',
+        "USES, BY THE KING'S BRIDGE.",
+        'FOLLOW THE FROG. PLEASE.',
+        'THE BOY IS LOST.',
+      ],
+    ],
+    after: [
+      ['GUARD MUTANT:', '', "GRBL. TANK'S FREE, BOY'S", "HAPPY, FROG'S HOME. I'M", 'STILL HERE.'],
+      ['GUARD MUTANT:', '', 'GO GET THE KING. I WILL', 'GUARD THE HALL. BADLY.'],
+    ],
   },
 };
 

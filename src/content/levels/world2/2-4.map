@@ -35,6 +35,8 @@ BBBBB........... ..%%.......%%... .....%%%%%%%%%%% %B%%%%%%%%%%%B%% %%%%%%%%%B..
 %%%%%%%%%%%%%%%% ................ %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%........%%%% %%%%%%%%%%%%%..% %..%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a wise man at the foot of the entrance steps, before the knight statues (10, 13).
+partner 7 9 who=wise-man campaign=true
 podoboo 16 12
 podoboo 30 12
 firebar-ccw 49 9

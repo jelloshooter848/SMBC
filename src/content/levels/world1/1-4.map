@@ -28,6 +28,8 @@ BBBBB........... ................ ...%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%....
 %%%%%%%%%%%%%..% %%%%%%%%%%...%%% ...%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a retainer at the foot of the entrance steps, before the lava (13).
+partner 8 9 who=retainer campaign=true
 firebar-ccw 30 10
 firebar-ccw 49 6
 firebar-ccw 60 6

@@ -8,6 +8,13 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Every level of the story now has someone to talk to: Toads, Zelda II villagers, Dr. Light's robots, a Federation
+  trooper and a baby Metroid, Transylvania's townsfolk, the ninja clan, soldiers of the front, and the Underworld's
+  miners and mutants. While a world's hero is missing they plead and hint where to look; once the hero is freed they
+  thank you or share a story from the hero's own game.
+
 ## [0.4.39] - 2026-10-09
 
 ### Added

@@ -35,6 +35,8 @@ BBBBB........... ................ ..........?M?... ................ ............
 %%%%%%%%%%%%%%%% ..%%%..%%%..%%%. .%%%%%%%%%%%%%.. %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%...%%%%%% ...%%%...%%%...% %%%%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): Sniper Joe on his break, at the foot of the entrance steps.
+partner 8 9 who=sniper-joe campaign=true
 podoboo 16 12
 firebar-ccw 19 11
 firebar-ccw 24 11

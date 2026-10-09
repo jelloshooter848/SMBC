@@ -34,6 +34,8 @@ campaignMusic: zelda2-field
 #######..tttttt. ...............B ...............B ...............B ....B..........B ....B..........B ...B.....B...... .tttttt........B ...............B ..B........B...B ........B....... .......B........ .ttttttttttt...# ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): the river man at the start, before the stone bridges.
+partner 5 12 who=river-man campaign=true
 decor-castle 0 12
 decor-castle-big 228 12
 

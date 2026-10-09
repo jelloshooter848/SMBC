@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLevel } from '@content/levels';
+import { getLevel, levelIds } from '@content/levels';
 import { CHARACTERS } from '@game/characters/registry';
 import { beat } from '@game/story/beats';
 import { MARIO } from '@game/characters/mario';
@@ -31,6 +31,8 @@ useStorage();
  * enemies near it cleared, so every hero gets there; Jason's room: up out of its pipe).
  */
 const near = (x: number) => ({ mode: 'stand', x, y: 12, clearEnemies: 'all' }) as const;
+/** The level's own start (and arrival: standing, falling in, out of a pipe), the enemies near it cleared. */
+const fromStart = { clearEnemies: 'all' } as const;
 const SPOTS = [
   { who: 'villager', level: '1-1', start: near(52), col: 55 },
   // The warp zone's one free floor tile left of the pipes (178-186), walled in by bricks at 176.
@@ -53,6 +55,46 @@ const SPOTS = [
   },
   // Jason's secret area behind 8-4-end's trap pipe (0.4.18): up out of its pipe.
   { who: 'jason', level: '8-4-jason', start: { mode: 'pipe-exit', x: 1, y: 10, time: 300 }, col: 5 },
+  // 0.4.40: an NPC in every level, each walked up to from the level's own start.
+  // World 1: a cave Toad where 1-2's heroes drop in, the lookout at 1-3's start, and a retainer
+  // at the foot of 1-4's entrance steps.
+  { who: 'cave-toad', level: '1-2', start: fromStart, col: 5 },
+  { who: 'lookout', level: '1-3', start: fromStart, col: 8 },
+  { who: 'retainer', level: '1-4', start: fromStart, col: 8 },
+  // World 2: Error below the steps to 2-2's flag (walked down to), the river man at 2-3's start,
+  // a wise man at the foot of 2-4's entrance steps.
+  { who: 'error', level: '2-2-exit', start: near(18), col: 15 },
+  { who: 'river-man', level: '2-3', start: fromStart, col: 5 },
+  { who: 'wise-man', level: '2-4', start: fromStart, col: 7 },
+  // World 3: robots at 3-2's and 3-3's starts, Sniper Joe at the foot of 3-4's entrance steps.
+  { who: 'prune-bot', level: '3-2', start: fromStart, col: 7 },
+  { who: 'weather-bot', level: '3-3', start: fromStart, col: 8 },
+  { who: 'sniper-joe', level: '3-4', start: fromStart, col: 8 },
+  // World 4: a trooper at 4-1's start, a researcher at 4-3's, and a baby Metroid floating at the
+  // low corridor past 4-4's first lava pits.
+  { who: 'trooper', level: '4-1', start: fromStart, col: 10 },
+  { who: 'researcher', level: '4-3', start: fromStart, col: 8 },
+  { who: 'baby-metroid', level: '4-4', start: near(17), col: 21 },
+  // World 5: at the starts of 5-1 (the courtyard gate) and 5-2 (the town); in 5-3 (the clock
+  // tower) below the steps to the flag (walked back to), past the flying Bullet Bills.
+  { who: 'old-woman', level: '5-1', start: fromStart, col: 7 },
+  { who: 'garlic-seller', level: '5-2', start: fromStart, col: 7 },
+  { who: 'clockmaker', level: '5-3', start: near(150), col: 147 },
+  // World 6: a ninja at 6-1's start, a hermit at 6-3's, a clan scout at the foot of 6-4's steps.
+  { who: 'ninja', level: '6-1', start: fromStart, col: 10 },
+  { who: 'hermit', level: '6-3', start: fromStart, col: 8 },
+  { who: 'clan-scout', level: '6-4', start: fromStart, col: 8 },
+  // World 7: a corporal at 7-1's start, a river scout below the steps to 7-2's flag (walked down
+  // to), a medic at the foot of 7-4's steps.
+  { who: 'corporal', level: '7-1', start: fromStart, col: 5 },
+  { who: 'river-scout', level: '7-2-exit', start: near(18), col: 15 },
+  { who: 'medic', level: '7-4', start: fromStart, col: 8 },
+  // World 8: at the starts of 8-1, 8-2 and 8-3; in 8-4 on the floor past the first lava (Fred
+  // and Jason are behind the trap pipe at its end, and Fred goes home once Sophia III is free).
+  { who: 'mutant', level: '8-1', start: fromStart, col: 10 },
+  { who: 'engineer', level: '8-2', start: fromStart, col: 6 },
+  { who: 'ice-miner', level: '8-3', start: fromStart, col: 4 },
+  { who: 'castle-mutant', level: '8-4', start: near(12), col: 14 },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
 
 const spotOf = (who: string) => SPOTS.find((s) => s.who === who) as (typeof SPOTS)[number];
@@ -65,13 +107,17 @@ const cases = SPOTS.flatMap((s) =>
 );
 
 const said = (page: Page) => page.filter((l) => l !== '').join(' ');
+/** The spot's partner each level was entered for (0.4.40: 1-2 has two, the cave Toad and the pipe keeper). */
+const spotWho = new WeakMap<LevelScene, string>();
 const partners = (l: LevelScene) =>
-  l.world.entities.filter((e): e is Partner => e instanceof Partner && e.alive);
+  l.world.entities.filter(
+    (e): e is Partner => e instanceof Partner && e.alive && (!spotWho.has(l) || e.who === spotWho.get(l)),
+  );
 
 /** Campaign file 1, hero `c` at `power`, into `spot`'s level as play reaches it. */
 function campaignIn(
   h: H,
-  spot: { level: string; start: WorldStart },
+  spot: { level: string; start: WorldStart; who?: string },
   c: CharacterDef = MARIO,
   power = 'small',
   over: Parameters<typeof file>[0] = {},
@@ -91,6 +137,7 @@ function campaignIn(
   h.step();
   const l = h.top();
   expect(l).toBeInstanceOf(LevelScene);
+  if (spot.who) spotWho.set(l as LevelScene, spot.who);
   return l as LevelScene;
 }
 
@@ -124,7 +171,7 @@ describe('partners: where they stand (campaign only)', () => {
     const h = makeGame();
     const l = campaignIn(h, spot);
     // (Up out of a pipe, the room's entities come once the hero is out.)
-    h.idle(spot.start.mode === 'pipe-exit' ? 120 : 2);
+    h.idle('mode' in spot.start && spot.start.mode === 'pipe-exit' ? 120 : 2);
     const [it, ...more] = partners(l);
     expect(it?.who).toBe(spot.who);
     expect(more).toEqual([]);
@@ -168,6 +215,17 @@ describe('partners: where they stand (campaign only)', () => {
     classic.until(() => classic.top() instanceof LevelScene, 600);
     classic.idle(4);
     expect((classic.top() as LevelScene).world.entities.some((e) => e instanceof CaveFire)).toBe(false);
+  });
+});
+
+describe('partners: every one placed has its spot here (0.4.40)', () => {
+  it('each `partner` in a level file is one of the spots above, in that level', () => {
+    const placed = levelIds().flatMap((id) =>
+      getLevel(id)
+        .entities.filter((e) => e.type === 'partner')
+        .map((e) => `${String(e.props?.who)} in ${id}`),
+    );
+    expect(placed.sort()).toEqual(SPOTS.map((s) => `${s.who} in ${s.level}`).sort());
   });
 });
 
@@ -352,15 +410,19 @@ describe('partners: co-op', () => {
 describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () => {
   const hinting = SPOTS.filter((s) => PARTNERS[s.who]?.after);
 
-  it.each(hinting)('$who says its one after page instead, and again on a second talk', (spot) => {
+  it.each(hinting)('$who says its after pages instead, and again on a second talk', (spot) => {
     const script = PARTNERS[spot.who]!;
+    const after = script.after!;
     const h = makeGame();
     const l = campaignIn(h, spot, MARIO, 'small', { freed: ['mario', script.hero!] });
     walkUp(h, l);
     h.tap('up');
-    expect(h.top()).toBeInstanceOf(CardScene);
-    expect(h.said.at(-1)).toBe(`${said(script.after![0]!)} OK to continue.`);
-    press(h, 'jump');
+    after.forEach((page, i) => {
+      expect(h.top()).toBeInstanceOf(CardScene);
+      const last = i === after.length - 1;
+      expect(h.said.at(-1)).toBe(`${said(page)} ${last ? 'OK to continue.' : 'OK for more, BACK to skip.'}`);
+      press(h, 'jump');
+    });
     expect(h.top()).toBe(l);
     expect(h.said.some((s) => s.startsWith(said(script.pages[0]!)))).toBe(false);
     h.idle(2);

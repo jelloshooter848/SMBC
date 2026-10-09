@@ -145,8 +145,8 @@ time. Any player can talk (in co-op, player 2 too); the pages close back into pl
 | `jason`       | 8-4-jason (5, 12)                                   | Sophia III |
 
 A hint NPC names its hero (`PartnerScript.hero`); once that hero is freed on the file it says its
-one `after` page instead (`partnerPages`), and one without an `after` page is gone (`partnerGone`:
-Fred, home with Jason). The old man gives one coin after his first page (`coinAfter`, once a
+`after` pages instead (one to three, `partnerPages`), and one without an `after` page is gone
+(`partnerGone`: Fred, home with Jason). The old man gives one coin after his first page (`coinAfter`, once a
 visit, only while Link is still to be found). The statue's eyes glow slowly, held dim with reduce
 flashing. The fairy floats over her spot (`FLOAT` in `objects/partner.ts`: drawn higher, bobbing,
 her `-1` frame a wing beat); her talking reach is the ground under her. Art:
@@ -156,6 +156,44 @@ Toad's 16x24, the fairy 16x16), but Jason and Fred are drawn from Sophia III's s
 looking round (Jason at the pool, Fred at the pipe). A partner talked to is marked
 (`Partner.talked`): talking to Jason sends his frog Fred into the pool, the way on to Sophia III
 (`objects/fred.ts`, docs/HEROES.md).
+
+**An NPC in every level** (0.4.40, owner). Every main level of Chapter 1, 1-1 to 8-4, has at least
+one partner who speaks for its world's hero (`level-npcs.test.ts`; the hero is the one the map
+page's road out waits for): while that hero is missing they plead and say where to look, by place,
+never by level number (the 0.4.35 rule); once the hero is freed they say their `after` pages (a
+thank-you, or an easter egg about the hero's own game, in words only). Only the pipe keeper (1-2,
+the warp zone's guide) and Fred have one state. They are partners like the rest (TALK, every card
+announced and waiting for a key; campaign only). Most stand on the floor by the level's start;
+in the castles at the foot of the entrance steps; in 2-2 and 7-2 on the way out (`-exit`, below
+the steps to the flag), and in 4-4 and 8-4 on the first safe floor past the lava. Stopping to talk
+is never a cheap hit (`level-npcs.test.ts`): 5-3's clockmaker stands below the steps to the flag,
+past its flying Bullet Bills (`bullets 0 126`), and 7-1's corporal and 8-3's ice miner stand far
+enough left that the camera keeps the Bill Blaster ahead off screen (it fires only on screen).
+
+| `who`           | Level and spot    | `who`           | Level and spot       |
+| --------------- | ----------------- | --------------- | -------------------- |
+| `cave-toad`     | 1-2 (5, 12)       | `researcher`    | 4-3 (8, 12)          |
+| `lookout`       | 1-3 (8, 12)       | `baby-metroid`  | 4-4 (21, 12), floats |
+| `retainer`      | 1-4 (8, 9)        | `old-woman`     | 5-1 (7, 12)          |
+| `error`         | 2-2-exit (15, 12) | `garlic-seller` | 5-2 (7, 12)          |
+| `river-man`     | 2-3 (5, 12)       | `clockmaker`    | 5-3 (147, 12)        |
+| `wise-man`      | 2-4 (7, 9)        | `ninja`         | 6-1 (10, 12)         |
+| `prune-bot`     | 3-2 (7, 12)       | `hermit`        | 6-3 (8, 12)          |
+| `weather-bot`   | 3-3 (8, 12)       | `clan-scout`    | 6-4 (8, 9)           |
+| `sniper-joe`    | 3-4 (8, 9)        | `corporal`      | 7-1 (5, 12)          |
+| `trooper`       | 4-1 (10, 12)      | `river-scout`   | 7-2-exit (15, 12)    |
+| `mutant`        | 8-1 (10, 12)      | `medic`         | 7-4 (8, 9)           |
+| `engineer`      | 8-2 (6, 12)       | `ice-miner`     | 8-3 (4, 12)          |
+| `castle-mutant` | 8-4 (14, 12)      |                 |                      |
+
+Their art is the `npcs` sheet (`src/content/sprites/npcs.ts`, its palette the `partners` one and a
+few more colours): the partners' and the locals' art in new colours (a Toad's cap, an old man's
+robe, the lab robot, the sergeant, the miner; the locals' index letters moved onto this palette,
+an empty row added on top), and new art only where a world had nobody fitting: the Federation
+trooper, the baby Metroid (it floats, like the fairy; its `-1` is a pulse), the ninja (his body
+Lance's build) and the mutant. Sniper Joe is borrowed from Mega Man's station sheet (`joe-guard`,
+its empty bottom row cut so he stands on the floor). `tests/sim/partners.test.ts` walks every hero,
+small and big, up to each one and reads the pages; every `partner` in a level file must be there.
 
 ## The freed talks (`scenes/free-hero.ts`)
 
@@ -255,6 +293,8 @@ then their die frame is the king and they neither tell nor unmask.
 
 1. Add its `PartnerScript` to `PARTNERS` in `script.ts` (verb, the name the announcer says, pages
    of at most 28 columns with the speaker line first, optional `coinAfter`).
-2. Draw `<who>-0` and `<who>-1` (blink or glow) in `src/content/sprites/partners.ts` (original art).
+2. Draw `<who>-0` and `<who>-1` (blink or glow) in `src/content/sprites/partners.ts` (original art),
+   or (0.4.40) in `src/content/sprites/npcs.ts`, often as existing art in new colours.
 3. Place `partner x y who=<who> campaign=true` in the level's `[entities]`, feet on row `y`, with
    room to stand next to it on the same floor.
+4. Give it a spot in `tests/sim/partners.test.ts` (`SPOTS`), and its lines in docs/STORY.md.

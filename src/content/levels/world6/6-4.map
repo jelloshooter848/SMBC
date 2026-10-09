@@ -36,6 +36,8 @@ BBBBB........... ................ ...%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%....
 %%%%%%%%%%%%%..% %%%%%%%%%%...%%% ...%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a clan scout at the foot of the entrance steps, before the lava (13).
+partner 8 9 who=clan-scout campaign=true
 firebar 23 6
 podoboo 27 12
 firebar-ccw 30 10
