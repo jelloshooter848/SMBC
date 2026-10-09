@@ -2611,7 +2611,8 @@ export class World {
     // FlagPole.touchPlayer: scored by the player's vertical middle; the text follows the flag.
     const score = pole.scoreForGrab((p.body.y + p.body.h / 2) / px(1));
     this.addScore(score);
-    this.spawn(new FlagScore(pole, String(score)));
+    // No points float where the HUD shows no score (a training stage: WorldStart.scorePopups).
+    if (this.scorePopups) this.spawn(new FlagScore(pole, String(score)));
     const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
     const walkTo = tileToSub((exit?.x ?? pole.tx) + 6) + px(8);
     // StatManager.touchFlag keeps the HUD time (timeLeftBeatLevel); when the tally ends,

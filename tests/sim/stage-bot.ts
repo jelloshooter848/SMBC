@@ -7,6 +7,8 @@ import type { Scene } from '@engine/scene';
 import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import type { MenuItem } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
+import { ScorePopup } from '@game/entities/effects/effects';
+import { FlagScore } from '@game/entities/objects/flagpole';
 import { HeroItem } from '@game/entities/objects/hero-item';
 import { T } from '@game/level/tiles';
 import { HeroStageScene, StageMenu, StartAtMenu } from '@game/tutorial/hero-stage';
@@ -134,6 +136,8 @@ export function playStage(
       continue;
     }
     checkBox(stage);
+    // The HUD shows no score, so no points float up (the flagpole's either).
+    expect(stage.world.entities.some((e) => e instanceof ScorePopup || e instanceof FlagScore)).toBe(false);
     const b = stage.world.player.body;
     last = { ground: b.onGround, vx: Math.abs(b.vx) };
     h.step(bot(stage));
