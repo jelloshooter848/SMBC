@@ -50,6 +50,9 @@ export type Theme =
   // The Top Secret Area behind World 2's hidden bonus spot (0.4.10), in a Super Mario World look:
   // grass-topped dirt, green bush hills and a big sparkly hill under a cream sky.
   | 'smw-secret'
+  // The same room as the inside of Kakariko Village's secret house (0.4.41, its campaign look):
+  // floorboards, a plastered wall with a window and hanging lamps.
+  | 'tsa-house'
   // Campaign looks (0.4.12): 2-1 as a Zelda II field, 3-1 as a Mega Man night stage, 4-2 as
   // Metroid's Brinstar.
   | 'zelda2'
@@ -145,6 +148,7 @@ export const THEMES: readonly Theme[] = [
   'underworld',
   'bm-dungeon',
   'smw-secret',
+  'tsa-house',
   'zelda2',
   'megaman-stage',
   'brinstar',
@@ -235,7 +239,7 @@ export const hasSolidFloors = (theme: Theme): boolean =>
 
 /** The music an area of this theme plays when its map names none. */
 export function themeMusic(theme: Theme): string {
-  if (theme === 'smw-secret') return 'top-secret';
+  if (theme === 'smw-secret' || theme === 'tsa-house') return 'top-secret';
   if (isWaterTheme(theme)) return 'water';
   if (theme === 'castle' || theme === 'castle-overworld') return 'castle';
   if (theme === 'underground') return 'underground';

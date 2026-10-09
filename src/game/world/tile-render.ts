@@ -174,6 +174,8 @@ export const SKY: Record<string, string> = {
   'bm-dungeon': '#000000',
   // The Top Secret Area: Super Mario World's pale cream behind the hills.
   'smw-secret': '#f8ecc0',
+  // The secret house (the Top Secret Area's campaign look, 0.4.41): its wall's stone, under the decor.
+  'tsa-house': '#5c5048',
   // Link's field (2-1's campaign look): Zelda II's softer periwinkle daylight.
   zelda2: '#6888fc',
   // Mega Man's night stage (3-1's campaign look): a deep navy with stars (STARRY_SKIES).

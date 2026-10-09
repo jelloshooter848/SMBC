@@ -31,6 +31,7 @@ import { zelda2SkyDef, zelda2SkyPalettes } from './zelda2-sky';
 import { heroItemPalettes, heroItemsDef } from './hero-items';
 import { townDef, townPalettes } from './town';
 import { townFolkDef, townFolkPalettes, townHeroDefs } from './town-folk';
+import { tsaHouseDef, tsaHousePalettes } from './tsa-house';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -111,6 +112,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   // Its townsfolk, and the heroes from above (td-<hero>; Link's is link-td, Sophia III's Jason's).
   'town-folk': townFolkDef,
   ...townHeroDefs,
+  // The Top Secret Area's campaign look: the secret house's back wall (decor `tsa-house:wall`).
+  'tsa-house': tsaHouseDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -150,6 +153,7 @@ const defaults: Record<string, readonly string[]> = {
   ...heroItemPalettes,
   ...townPalettes,
   ...townFolkPalettes,
+  ...tsaHousePalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

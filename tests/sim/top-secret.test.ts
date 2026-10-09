@@ -1020,8 +1020,17 @@ describe('the Top Secret Area', () => {
     expect(l.decor.map((d) => d.kind)).toEqual(['smw-hill-big', 'smw-hill-small', 'smw-bush', 'smw-bush']);
     expect(levelIds()).toContain(TSA);
     expect(parseTextMap(serializeTextMap(l), TSA)).toEqual(l);
-    // Its campaign variant is itself: nothing sleeps there.
-    expect(campaignLevel(l)).toBe(l);
+    // Its campaign variant only changes its look (0.4.41: the secret house's inside): nothing
+    // sleeps there, every tile and zone is the same.
+    const camp = campaignLevel(l);
+    expect(camp.theme).toBe('tsa-house');
+    expect(camp.decor.map((d) => d.kind)).toEqual(['tsa-house:wall']);
+    expect([camp.tiles, camp.zones, camp.entities, camp.music]).toEqual([
+      l.tiles,
+      l.zones,
+      l.entities,
+      l.music,
+    ]);
   });
 
   it.each(heroes)(
