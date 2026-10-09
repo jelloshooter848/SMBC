@@ -7,6 +7,7 @@ import { sophiaSongs } from './sophia';
 import { heroJingles } from './hero-jingles';
 import { lookSongs } from './looks';
 import { zelda2Songs } from './zelda2';
+import { kakarikoSongs } from './kakariko';
 import { megamanWorldSongs } from './megaman-world';
 import { zebesWorldSongs } from './zebes-world';
 import { transylvaniaSongs } from './transylvania';
@@ -1220,6 +1221,7 @@ export const songs: Song[] = [
   ...lookSongs,
   // World 2 as Hyrule (0.4.24): 2-2's lake, 2-4's palace, 2-1's caves.
   ...zelda2Songs,
+  ...kakarikoSongs,
   // World 3 as Mega Man's world (0.4.26): 3-2's forest, 3-3's sky, 3-4's fortress.
   ...megamanWorldSongs,
   // World 4 as Samus's world, Zebes (0.4.27): the planet's surface, 4-3's Norfair.

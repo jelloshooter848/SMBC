@@ -58,6 +58,9 @@ const SONG_IDS = [
   'bm-boss',
   'bm-garage',
   'bm-cutscene',
+  // Kakariko Village (0.4.41): its streets and its rooms.
+  'village',
+  'village-indoors',
   // The mini game heroes' own start jingles.
   'zebes-start',
   // The campaign looks of 2-1, 3-1 and 4-2.
@@ -194,6 +197,9 @@ const SFX_IDS = [
   // Chapter 1 polish (0.4.31): the spell's windows, Luigi's flinch in 1-1.
   'spell-window',
   'flinch',
+  // Kakariko Village (0.4.41): the hero switch's chime, the hen.
+  'hero-switch',
+  'hen',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);
