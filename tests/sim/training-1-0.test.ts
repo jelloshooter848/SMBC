@@ -251,6 +251,17 @@ describe('the hidden vine and the brick wall', () => {
     playTutorial(h, () => h.top() instanceof WorldMapScene, 3000);
   });
 
+  it('no clock shows after the flagpole either (no TIME 000 under Bowser)', () => {
+    const h = upTo('flag');
+    const scene = level(h);
+    playTutorial(h, () => scene.world.clearPhase === 'hop', 3000);
+    expect(scene.world.time).toBe(0); // the clear's own tally starts from it
+    // TIME's label stays; its digits (under it, at the HUD's right) do not.
+    const texts = draw(scene).texts;
+    expect(texts.some((t) => t.str === 'TIME')).toBe(true);
+    expect(texts.some((t) => t.y === 16 && t.x >= 200)).toBe(false);
+  });
+
   it('a closed gate is drawn as a column of barrier blocks; an open one is gone', () => {
     const h = upTo('stomp');
     h.until(() => {
