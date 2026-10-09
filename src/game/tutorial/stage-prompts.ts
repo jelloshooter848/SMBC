@@ -219,8 +219,10 @@ export const PROMPT_BOX_Y = 40;
 
 /** Where a prompt box goes and what it carries beyond its lines (all optional). */
 export interface PromptBoxOptions {
-  /** Left edge of the box (default 8); the box is centred, `SCREEN_W - 2 * x` wide. */
+  /** Left edge of the box (default 8); the box is centred, `SCREEN_W - 2 * x` wide... */
   x?: number;
+  /** ...unless its width is given (the lines are centred in the box either way). */
+  w?: number;
   /** Top of the box (default PROMPT_BOX_Y, under the HUD). */
   y?: number;
   /** A short tag at the box's top right, over the frame ("NICE!"). */
@@ -240,11 +242,11 @@ export function drawPromptBox(
   const x0 = opts.x ?? 8;
   const y = opts.y ?? PROMPT_BOX_Y;
   const tag = opts.tag ?? '';
-  const w = SCREEN_W - 2 * x0;
+  const w = opts.w ?? SCREEN_W - 2 * x0;
   const h = lines.length * 10 + 10;
   r.rect(x0, y, w, h, '#fcfcfc');
   r.rect(x0 + 2, y + 2, w - 4, h - 4, '#000');
-  lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + 6 + i * 10));
+  lines.forEach((l, i) => r.text(font, l, x0 + ((w - l.length * 8) >> 1), y + 6 + i * 10));
   if (tag) {
     const tx = x0 + w - 8 - tag.length * 8;
     r.rect(tx - 2, y - 4, tag.length * 8 + 4, 10, '#000');

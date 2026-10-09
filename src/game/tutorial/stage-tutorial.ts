@@ -102,10 +102,11 @@ export interface StageTutorial {
   /** Once this lesson is done, a respawn comes back big (the lessons after it need it). */
   bigAfter?: string;
   /**
-   * Columns a line of the box takes (default PROMPT_COLS, the box 240 px wide): fewer keep it
-   * clear of bars at the screen's left edge (Mega Man's).
+   * The box's left edge (px). Default: 8, the box centred and 240 px wide (PROMPT_COLS a line). A
+   * hero with bars at the screen's left edge (Mega Man) starts it to their right; it then reaches
+   * to 4 px from the right edge, with as many columns as fit.
    */
-  boxCols?: number;
+  boxLeft?: number;
   /**
    * Pause → Skip tutorial (campaign): a story scene the file must still see before the stage
    * closes (1-0: Bowser's spell, once per file). Pushes it and calls `done` after it, and returns
@@ -184,6 +185,8 @@ export function newTutorialRun(
 
 /** Frames before the greeting starts, so the stage shows first. */
 const GREET_DELAY = 20;
+/** The gap between a box that starts right of the left-edge bars and the screen's right edge. */
+const BOX_RIGHT = 4;
 /** The colours of a lit box light, by its label (anything else: gold). */
 const LIGHT_COLOURS: Readonly<Record<string, string>> = { FREE: '#00a800', HURT: '#d82800' };
 /** Frames the "NICE!" tag shows on the box after a lesson is done. */
@@ -242,7 +245,6 @@ export class TutorialDirector {
     this.shown = this.tracker.index;
     this.cache.key = '';
     this.layGates();
-    this.giveFloor();
     this.lessonUp();
   }
 
@@ -258,14 +260,17 @@ export class TutorialDirector {
   }
 
   /**
-   * The current lesson comes up: health refilled quietly (a lesson about a hit starts full too,
-   * and is then never topped up), and its `enter`.
+   * The current lesson comes up: the kit floor (a hit that knocked Mega Man's Helmet off never
+   * strands him: his next block would give it again instead of the lesson's item), health
+   * refilled quietly (a lesson about a hit starts full too, and is then never topped up), and its
+   * `enter`.
    */
   private lessonUp(): void {
     const l = this.tracker.current;
     if (!l) return;
     const world = this.scene.world;
     markLessonUp(world);
+    if (this.scene.restartAt) this.giveFloor();
     for (const p of world.players) refillHealth(p);
     l.enter?.(world);
   }
@@ -589,7 +594,8 @@ export class TutorialDirector {
 
   /** Columns a line of the box takes. */
   get cols(): number {
-    return this.def.boxCols ?? PROMPT_COLS;
+    const left = this.def.boxLeft;
+    return left === undefined ? PROMPT_COLS : Math.floor((SCREEN_W - left - BOX_RIGHT - 8) / 8);
   }
 
   /**
@@ -624,14 +630,15 @@ export class TutorialDirector {
       tag: this.nice > 0 ? 'NICE!' : '',
       y: box.y,
       x: box.x,
+      w: box.w,
     });
     // The meter, then the lights, in the blank rows under the words.
     let y = bottom - 5 - box.extra;
     if (box.meter !== null) {
-      this.drawMeter(r, y + 2, box.meter);
+      this.drawMeter(r, y + 2, box.meter, box.x + (box.w >> 1));
       y += 10;
     }
-    if (box.lights.length) this.drawLights(r, y + 1, box.lights);
+    if (box.lights.length) this.drawLights(r, y + 1, box.lights, box.x + (box.w >> 1));
   }
 
   /**
@@ -662,23 +669,29 @@ export class TutorialDirector {
     const blank = (meter !== null ? 1 : 0) + (lights.length ? 1 : 0);
     const rows = [...text, ...Array<string>(blank).fill('')];
     const h = rows.length * 10 + 10;
-    const x = this.def.boxCols === undefined ? 8 : (SCREEN_W - (this.cols * 8 + 8)) >> 1;
+    const x = this.def.boxLeft ?? 8;
+    const boxW = this.def.boxLeft === undefined ? SCREEN_W - 2 * x : SCREEN_W - x - BOX_RIGHT;
     // Out of the way of a player up high (a vine, the flagpole's top): the box goes to the bottom.
     const camY = world.camera.pxY ?? 0;
     const high = world.players.some(
       (p) => !p.dead && !p.out && Math.round(p.body.y / px(1)) - camY < PROMPT_BOX_Y + h + 8,
     );
     const y = high ? SCREEN_H - h - 6 : PROMPT_BOX_Y;
-    return { rows, x, y, w: SCREEN_W - 2 * x, h, meter, lights, extra: blank * 10 };
+    return { rows, x, y, w: boxW, h, meter, lights, extra: blank * 10 };
   }
 
   /** Lights in a row, centred: a frame each, lit in its colour or dark, the label inside. */
-  private drawLights(r: Renderer, y: number, lights: readonly { label: string; on: boolean }[]): void {
+  private drawLights(
+    r: Renderer,
+    y: number,
+    lights: readonly { label: string; on: boolean }[],
+    centre: number,
+  ): void {
     const font = this.game.ctx.assets.sheet('font');
     const cell = (l: { label: string }) => l.label.length * 8 + 8;
     const gap = 16;
     const total = lights.reduce((n, l) => n + cell(l), 0) + gap * (lights.length - 1);
-    let x = (SCREEN_W - total) >> 1;
+    let x = centre - (total >> 1);
     for (const l of lights) {
       const w = cell(l);
       r.rect(x, y - 1, w, 10, '#fcfcfc');
@@ -689,9 +702,9 @@ export class TutorialDirector {
   }
 
   /** The sprint bar: a frame, dark cells, gold fill (white once full), arrow notches. */
-  private drawMeter(r: Renderer, y: number, k: number): void {
+  private drawMeter(r: Renderer, y: number, k: number, centre = SCREEN_W >> 1): void {
     const w = 128;
-    const x = 64;
+    const x = centre - 64;
     r.rect(x - 2, y - 2, w + 4, 10, '#fcfcfc');
     r.rect(x, y, w, 6, '#404040');
     const fill = Math.round(w * k);

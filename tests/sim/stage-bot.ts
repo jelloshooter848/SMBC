@@ -6,6 +6,8 @@ import type { Scene } from '@engine/scene';
 import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import type { MenuItem } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
+import { HeroItem } from '@game/entities/objects/hero-item';
+import { T } from '@game/level/tiles';
 import { HeroStageScene, StageMenu, StartAtMenu } from '@game/tutorial/hero-stage';
 import { runTraining } from '@game/tutorial/training';
 import { file, makeGame, type H } from './heroes-harness';
@@ -162,3 +164,91 @@ export function hold(h: H, input: Action[], stop: () => boolean, max: number): v
 
 /** The hero's centre column. */
 export const heroCol = (s: HeroStageScene): number => Math.floor(toPx(s.world.player.centerX) / 16);
+
+/**
+ * A bot's controls for this frame (pushing into `out`): walk to a column (hopping a step in the
+ * way), stand at one facing right, pick a belt tool, press a button now and then, and take an
+ * item out of a ? block (bump it, then touch the item from the side the hero is on).
+ */
+const stands = new WeakMap<HeroStageScene, { col: number; back: boolean }>();
+
+export function controls(s: HeroStageScene, out: Action[]) {
+  const w = s.world;
+  const p = w.player;
+  const b = p.body;
+  const cx = toPx(p.centerX);
+  // The screen never scrolls back left: a column behind its left edge is as near as he gets.
+  const pinned = toPx(b.x) - w.camera.pxX < 4;
+  const goTo = (col: number, slack = 3): boolean => {
+    const dx = col * 16 + 8 - cx;
+    if (Math.abs(dx) <= slack || (dx < 0 && pinned)) return Math.abs(b.vx) < 0x100 && b.onGround;
+    const dir = dx > 0 ? 1 : -1;
+    out.push(dir > 0 ? 'right' : 'left');
+    const ahead = Math.floor((dir > 0 ? toPx(b.x + b.w) + 1 : toPx(b.x) - 1) / 16);
+    const feet = Math.floor((toPx(b.y + b.h) - 1) / 16);
+    if (b.onGround && w.map.isSolid(ahead, feet) && (w.frame & 3) === 0) out.push('jump');
+    return false;
+  };
+  /**
+   * Stand at column `col` facing right: reached from the left, so he arrives facing right (from
+   * the right he first walks a little past it; the screen's left edge just turns him).
+   */
+  const standAt = (col: number): boolean => {
+    const target = col * 16 + 8;
+    let st = stands.get(s);
+    if (!st || st.col !== col) stands.set(s, (st = { col, back: false }));
+    if (cx > target + 3 && !pinned) st.back = true;
+    if (st.back) {
+      if (cx > target - 12 && !pinned) {
+        out.push('left');
+        return false;
+      }
+      st.back = false;
+    }
+    if (cx < target - 3 || p.facing < 0) {
+      out.push('right');
+      return false;
+    }
+    return b.onGround && Math.abs(b.vx) < 0x100;
+  };
+  const tool = (): string | undefined => {
+    const tools = p.def.tools?.(p) ?? [];
+    const n = tools.length;
+    if (!n) return undefined;
+    return tools[(((p.scratch.tool ?? 0) % n) + n) % n]?.id;
+  };
+  const pick = (id: string): boolean => {
+    if (tool() === id) return true;
+    if ((w.frame & 7) === 0) out.push('select');
+    return false;
+  };
+  const press = (a: Action, every = 12): void => {
+    if (w.frame % every === 0) out.push(a);
+  };
+  /** Bump the ? block at (x, y), then take its item: true once neither is left. */
+  const takeFrom = (blk: { x: number; y: number }, up = false): boolean => {
+    const used = w.map.get(blk.x, blk.y) !== T.Q_POWERUP;
+    const item = w.entities.find((e) => e instanceof HeroItem && e.alive);
+    // A full jump: JUMP held while rising.
+    if (!b.onGround && b.vy < 0) out.push('jump');
+    if (!used) {
+      if (!b.onGround) {
+        if (up) out.push('up');
+        const dx = blk.x * 16 + 8 - cx;
+        if (Math.abs(dx) > 2) out.push(dx > 0 ? 'right' : 'left');
+        return false;
+      }
+      if (goTo(blk.x)) press('jump', 4);
+      return false;
+    }
+    if (!item) return true;
+    const side = cx <= blk.x * 16 + 8 ? -2 : 2;
+    if (!b.onGround) {
+      out.push(side < 0 ? 'right' : 'left');
+      return false;
+    }
+    if (goTo(blk.x + side)) press('jump', 4);
+    return false;
+  };
+  return { w, p, b, cx, goTo, standAt, tool, pick, press, takeFrom };
+}

@@ -1,6 +1,6 @@
 import { startHp } from '../characters/character';
 import type { Player } from '../entities/player';
-import { itemInfo } from '../items/catalog';
+import { heroItems, itemInfo } from '../items/catalog';
 import { itemRules } from '../items/heroes';
 
 /*
@@ -9,10 +9,13 @@ import { itemRules } from '../items/heroes';
  * own (their power state); every other hero's are their items (items/heroes.ts).
  */
 
-/** The hero has power-up `id` (Mario and Luigi: their power state). */
+/**
+ * The hero has power-up `id` (Mario and Luigi: their power state). A grow item that stacks (Link's
+ * Heart Container, Samus's Energy Tank) counts once the hero has one: no longer small.
+ */
 export function ownsItem(p: Player, id: string): boolean {
   const rules = itemRules(p.def.id);
-  if (rules) return rules.owned(p, id);
+  if (rules) return id === heroItems(p.def.id)?.grow ? !rules.small(p) : rules.owned(p, id);
   if (id === 'mushroom') return p.powerState !== 'small';
   if (id === 'fire-flower') return p.powerState === 'fire';
   return false;
