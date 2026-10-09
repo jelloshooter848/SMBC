@@ -385,6 +385,13 @@ step clearer than a riddle (the old rule: Toad hinted, a partner says what to tr
 They stand **before the way in**, campaign only, and never leave. Talked to again, they say the same pages. Once
 their hero is freed, each says one new page instead (NEW: a small "after" line, written with each NPC).
 
+**An NPC in every level** (0.4.40, owner: "put an NPC in every level"). Every main level 1-1 to 8-4 now has someone
+to talk to, from the world's own game: Toads, Zelda II folk, Dr. Light's robots, the Federation, Transylvania's
+villagers, the ninja clan, soldiers of the front and the Underworld's miners and mutants. Each speaks for the world's
+hero in two states, one to three cards each: while the hero is missing they plead and say where to look (by place,
+never by level number); once the hero is freed they thank you, or tell an easter egg about the hero's own game, in
+words only. Their lines are under each world's **Level NPCs**.
+
 **Freeing a hero** (2.13 has the shared parts): the hero's first card and challenge, the round, then (NEW) **the
 freed hero talks**, a few pages in their own voice, before the freed card. These talks carry the story now; each
 reveals a bit more.
@@ -685,10 +692,10 @@ at **1-3's start** (column 8), under the treetops he watches the road from.
 ```text
 LOOKOUT:
 
-I CAN SEE THE WHOLE ROAD
-FROM UP HERE! JUST NOT
-DOWN PIPES. NOBODY CAN SEE
-DOWN PIPES.
+FROM THOSE TREETOPS I CAN
+SEE THE WHOLE ROAD! JUST
+NOT DOWN PIPES. NOBODY CAN
+SEE DOWN PIPES.
 ```
 
 ```text
@@ -2683,9 +2690,9 @@ to look (by place, never by level number); freed, their found lines.
 ```text
 CORPORAL:
 
-CORPORAL, ON WATCH. THE
-ALIEN BASE IS DEAD AHEAD.
-SO ARE THE ALIENS.
+EYES UP! THE ALIEN BASE IS
+DEAD AHEAD. SO ARE THE
+ALIENS.
 ```
 
 ```text

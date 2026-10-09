@@ -955,10 +955,10 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       [
         'LOOKOUT:',
         '',
-        'I CAN SEE THE WHOLE ROAD',
-        'FROM UP HERE! JUST NOT',
-        'DOWN PIPES. NOBODY CAN SEE',
-        'DOWN PIPES.',
+        'FROM THOSE TREETOPS I CAN',
+        'SEE THE WHOLE ROAD! JUST',
+        'NOT DOWN PIPES. NOBODY CAN',
+        'SEE DOWN PIPES.',
       ],
       [
         'LOOKOUT:',
@@ -1449,7 +1449,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     name: 'A corporal',
     hero: 'bill',
     pages: [
-      ['CORPORAL:', '', 'CORPORAL, ON WATCH. THE', 'ALIEN BASE IS DEAD AHEAD.', 'SO ARE THE ALIENS.'],
+      ['CORPORAL:', '', 'EYES UP! THE ALIEN BASE IS', 'DEAD AHEAD. SO ARE THE', 'ALIENS.'],
       [
         'CORPORAL:',
         '',
