@@ -88,6 +88,12 @@ const SPOTS = [
   { who: 'corporal', level: '7-1', start: fromStart, col: 10 },
   { who: 'river-scout', level: '7-2-exit', start: near(18), col: 15 },
   { who: 'medic', level: '7-4', start: fromStart, col: 8 },
+  // World 8: at the starts of 8-1, 8-2 and 8-3; in 8-4 on the floor past the first lava (Fred
+  // and Jason are behind the trap pipe at its end, and Fred goes home once Sophia III is free).
+  { who: 'mutant', level: '8-1', start: fromStart, col: 10 },
+  { who: 'engineer', level: '8-2', start: fromStart, col: 6 },
+  { who: 'ice-miner', level: '8-3', start: fromStart, col: 8 },
+  { who: 'castle-mutant', level: '8-4', start: near(12), col: 14 },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
 
 const spotOf = (who: string) => SPOTS.find((s) => s.who === who) as (typeof SPOTS)[number];

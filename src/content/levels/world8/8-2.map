@@ -36,6 +36,8 @@ campaignMusic: bm-techno
 ###############. #####.########## ####.########.## ##.#.###.######. ##############.. ####.########### ################ ################ ##########.##### .#.#......###### ##############.# ...############# ##########.#..## ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): an engineer at the start, before the techno castle's steps.
+partner 6 12 who=engineer campaign=true
 decor-castle 0 12
 lakitu 8 0 end=40
 koopa-para-green 19 9

@@ -35,6 +35,8 @@ campaignMusic: bm-ice
 ################ ################ ################ ################ #####..####..### ################ ################ ############..## ..############## ################ ################ ################ #####........... ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): an ice miner at the start, in the frozen ruins.
+partner 8 12 who=ice-miner campaign=true
 decor-castle 0 12
 koopa-para-green 30 10 dy=-8
 piranha 53 9

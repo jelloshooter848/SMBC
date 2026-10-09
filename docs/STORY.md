@@ -2917,6 +2917,161 @@ MIND THE LAVA ON YOUR WAY.
 
 (Peach clue 3. Nobody can explain it; it points at her SMB2 kit and the Lost Kingdom's turnips.)
 
+**Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Sophia III (and her lost pilot): missing,
+they plead and say where to look (by place, never by level number); freed, their found lines.
+
+**8-1: a mutant.** NEW partner (`mutant`, new art: a lavender blob with one big eye and a fanged grin). A nice
+mutant, mostly, at **8-1's start** (column 10), among the forest ruins. Once a boss in Sophia III's own caves.
+
+```text
+MUTANT:
+
+GRBL! DON'T SHOOT! I'M A
+NICE MUTANT. MOSTLY.
+```
+
+```text
+MUTANT:
+
+THE BOY WITH THE FROG WENT
+INTO THE KING'S OWN CASTLE.
+HE LOST HIS TANK. PLEASE,
+HELP HIM. GRBL.
+```
+
+After Sophia III is freed:
+
+```text
+MUTANT:
+
+GRBL! THE TANK IS ROLLING
+AGAIN! SHE BLASTED ME ONCE,
+BACK WHEN I WAS A BOSS.
+```
+
+```text
+MUTANT:
+
+NO HARD FEELINGS. I WAS A
+VERY BAD BOSS.
+```
+
+**8-2: an engineer.** NEW partner (`engineer`). World 8's miner in a white helmet with a cyan lamp and a blue
+shirt, at **8-2's start** (column 6), before the techno castle's steps.
+
+```text
+ENGINEER:
+
+CAREFUL. THESE MACHINES
+BITE. EVERYTHING DOWN HERE
+BITES.
+```
+
+```text
+ENGINEER:
+
+THE KING'S SPELL TOOK THE
+TANK, SOPHIA. HER PILOT
+WENT INTO THE KING'S CASTLE
+AFTER HIS FROG. HELP THEM!
+```
+
+After Sophia III is freed:
+
+```text
+ENGINEER:
+
+SOPHIA'S BACK! WHAT A
+MACHINE. SHE HOVERS, SHE
+CLIMBS WALLS, SHE DIVES.
+```
+
+```text
+ENGINEER:
+
+AND THE BOY? OUT OF THE
+TANK, A SHORT FALL HURTS
+HIM BAD. SO HE STAYS IN
+THE TANK.
+```
+
+**8-3: an ice miner.** NEW partner (`ice-miner`). The miner in a pale blue helmet and a teal shirt, at **8-3's
+start** (column 8), in the frozen ruins. Freed, how Sophia III's story began.
+
+```text
+ICE MINER:
+
+BRR! I CAME DOWN HERE FOR
+GOLD. FOUND ICE. AND
+MUTANTS.
+```
+
+```text
+ICE MINER:
+
+SAW A BOY CHASE A FROG INTO
+THE KING'S CASTLE. THE FROG
+KNOWS A PIPE THE GUARDS
+DON'T. PLEASE, FOLLOW IT!
+```
+
+After Sophia III is freed:
+
+```text
+ICE MINER:
+
+THE TANK IS FREE! AND THE
+FROG? FRED? HE STARTED ALL
+THIS, YOU KNOW.
+```
+
+```text
+ICE MINER:
+
+HOPPED IN A BOX OF STRANGE
+GOO, GREW HUGE, JUMPED DOWN
+A HOLE. THE BOY FOLLOWED
+HIM AND FOUND A TANK.
+```
+
+**8-4: a guard mutant.** NEW partner (`castle-mutant`). The mutant in green, the king's worst guard, on the floor
+past **8-4's first lava** (column 14), before the piranha pipe. Fred and Jason (below) are at the castle's end; this
+one stays when Fred has gone home.
+
+```text
+GUARD MUTANT:
+
+GRBL. I GUARD THIS HALL.
+I'M BAD AT IT. A BOY AND HIS
+FROG GOT RIGHT PAST ME.
+```
+
+```text
+GUARD MUTANT:
+
+THE FROG TOOK A PIPE NOBODY
+USES, BY THE KING'S BRIDGE.
+FOLLOW THE FROG. PLEASE.
+THE BOY IS LOST.
+```
+
+After Sophia III is freed:
+
+```text
+GUARD MUTANT:
+
+GRBL. TANK'S FREE, BOY'S
+HAPPY, FROG'S HOME. I'M
+STILL HERE.
+```
+
+```text
+GUARD MUTANT:
+
+GO GET THE KING. I WILL
+GUARD THE HALL. BADLY.
+```
+
 **Hint NPC: Fred, by the trap pipe.** NEW partner (`fred`). Fred the frog sits beside **8-4-end's trap pipe
 (column 10)**, the one that leads down to Jason's secret area in the campaign. He can't talk, so his second page is
 a caption. (Fred appears in Jason's area too, by the pool: the frog gets around.)

@@ -1525,6 +1525,113 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
   },
+
+  /* ------------------- World 8 (Bowser's Underworld, Sophia III): mutants and miners below */
+
+  // 8-1's start, among the forest ruins.
+  mutant: {
+    verb: 'TALK',
+    name: 'A mutant',
+    hero: 'sophia',
+    pages: [
+      ['MUTANT:', '', "GRBL! DON'T SHOOT! I'M A", 'NICE MUTANT. MOSTLY.'],
+      [
+        'MUTANT:',
+        '',
+        'THE BOY WITH THE FROG WENT',
+        "INTO THE KING'S OWN CASTLE.",
+        'HE LOST HIS TANK. PLEASE,',
+        'HELP HIM. GRBL.',
+      ],
+    ],
+    after: [
+      ['MUTANT:', '', 'GRBL! THE TANK IS ROLLING', 'AGAIN! SHE BLASTED ME ONCE,', 'BACK WHEN I WAS A BOSS.'],
+      ['MUTANT:', '', 'NO HARD FEELINGS. I WAS A', 'VERY BAD BOSS.'],
+    ],
+  },
+  // 8-2's start, before the techno castle's machines.
+  engineer: {
+    verb: 'TALK',
+    name: 'An engineer',
+    hero: 'sophia',
+    pages: [
+      ['ENGINEER:', '', 'CAREFUL. THESE MACHINES', 'BITE. EVERYTHING DOWN HERE', 'BITES.'],
+      [
+        'ENGINEER:',
+        '',
+        "THE KING'S SPELL TOOK THE",
+        'TANK, SOPHIA. HER PILOT',
+        "WENT INTO THE KING'S CASTLE",
+        'AFTER HIS FROG. HELP THEM!',
+      ],
+    ],
+    after: [
+      ['ENGINEER:', '', "SOPHIA'S BACK! WHAT A", 'MACHINE. SHE HOVERS, SHE', 'CLIMBS WALLS, SHE DIVES.'],
+      [
+        'ENGINEER:',
+        '',
+        'AND THE BOY? OUT OF THE',
+        'TANK, A SHORT FALL HURTS',
+        'HIM BAD. SO HE STAYS IN',
+        'THE TANK.',
+      ],
+    ],
+  },
+  // 8-3's start, in the frozen ruins.
+  'ice-miner': {
+    verb: 'TALK',
+    name: 'An ice miner',
+    hero: 'sophia',
+    pages: [
+      ['ICE MINER:', '', 'BRR! I CAME DOWN HERE FOR', 'GOLD. FOUND ICE. AND', 'MUTANTS.'],
+      [
+        'ICE MINER:',
+        '',
+        'SAW A BOY CHASE A FROG INTO',
+        "THE KING'S CASTLE. THE FROG",
+        'KNOWS A PIPE THE GUARDS',
+        "DON'T. PLEASE, FOLLOW IT!",
+      ],
+    ],
+    after: [
+      ['ICE MINER:', '', 'THE TANK IS FREE! AND THE', 'FROG? FRED? HE STARTED ALL', 'THIS, YOU KNOW.'],
+      [
+        'ICE MINER:',
+        '',
+        'HOPPED IN A BOX OF STRANGE',
+        'GOO, GREW HUGE, JUMPED DOWN',
+        'A HOLE. THE BOY FOLLOWED',
+        'HIM AND FOUND A TANK.',
+      ],
+    ],
+  },
+  // 8-4, on the floor past the first lava, before the piranha pipe (19): the king's worst guard.
+  'castle-mutant': {
+    verb: 'TALK',
+    name: 'A guard mutant',
+    hero: 'sophia',
+    pages: [
+      [
+        'GUARD MUTANT:',
+        '',
+        'GRBL. I GUARD THIS HALL.',
+        "I'M BAD AT IT. A BOY AND HIS",
+        'FROG GOT RIGHT PAST ME.',
+      ],
+      [
+        'GUARD MUTANT:',
+        '',
+        'THE FROG TOOK A PIPE NOBODY',
+        "USES, BY THE KING'S BRIDGE.",
+        'FOLLOW THE FROG. PLEASE.',
+        'THE BOY IS LOST.',
+      ],
+    ],
+    after: [
+      ['GUARD MUTANT:', '', "GRBL. TANK'S FREE, BOY'S", "HAPPY, FROG'S HOME. I'M", 'STILL HERE.'],
+      ['GUARD MUTANT:', '', 'GO GET THE KING. I WILL', 'GUARD THE HALL. BADLY.'],
+    ],
+  },
 };
 
 /* ---------------------------------------------------------------- 2.13: the freed talks */

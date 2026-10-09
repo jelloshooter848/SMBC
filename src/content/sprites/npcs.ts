@@ -244,6 +244,47 @@ const riverScout1 = local('sergeant-1', { i: 'b', h: 'a' });
 const medic0 = local('sergeant-0', { i: '1', h: '2', 4: '9' });
 const medic1 = local('sergeant-1', { i: '1', h: '2', 4: '9' });
 
+/* ---------------------------------------------------------------- World 8: Bowser's Underworld */
+
+/**
+ * 8-1's mutant (new, 16x20): a friendly lavender blob from Sophia III's caves, one big eye, a
+ * fanged grin, purple spots and three stubby legs. The blink shuts the eye.
+ */
+const mutant0: Rows = [
+  '................',
+  '................',
+  '......0000......',
+  '....00rrrr00....',
+  '...0rrrrrrrr0...',
+  '..0rrr0000rrr0..',
+  '.0rrr011110rrr0.',
+  '.0rrr011000rrr0.',
+  '.0rrr011000rrr0.',
+  '.0rrr011110rrr0.',
+  '.0rrrr0000rrrr0.',
+  '.0rmrrrrrrrrmr0.',
+  '.0rrrrr00rrrrr0.',
+  '.0rrrr0220rrrr0.',
+  '..0rrrrrrrrrr0..',
+  '..0mrrrrrrrrm0..',
+  '...0mmmmmmmm0...',
+  '...0rr0..0rr0...',
+  '..0rrr0..0rrr0..',
+  '..00000..00000..',
+];
+const mutant1 = swap(swap(mutant0, 7, '.0rrr000000rrr0.'), 8, '.0rrr0rrrr0rrr0.');
+/** 8-4's guard mutant: the mutant in green. */
+const castleMutant0 = recolor(mutant0, { r: 'k', m: 'i' });
+const castleMutant1 = recolor(mutant1, { r: 'k', m: 'i' });
+/** 8-2's engineer: World 8's miner in a white helmet with a cyan lamp, a blue shirt. */
+const engineerIn = { f: '1', g: 'o', 8: 'd', c: 'e' };
+const engineer0 = local('miner-0', engineerIn);
+const engineer1 = local('miner-1', engineerIn);
+/** 8-3's ice miner: the miner in a pale blue helmet and a teal shirt. */
+const iceIn = { f: 'l', g: '1', 8: 'q', c: '4' };
+const iceMiner0 = local('miner-0', iceIn);
+const iceMiner1 = local('miner-1', iceIn);
+
 export const npcsDef: SpriteDef = {
   palette: 'npcs',
   frames: {
@@ -287,5 +328,13 @@ export const npcsDef: SpriteDef = {
     'river-scout-1': riverScout1,
     'medic-0': medic0,
     'medic-1': medic1,
+    'mutant-0': mutant0,
+    'mutant-1': mutant1,
+    'engineer-0': engineer0,
+    'engineer-1': engineer1,
+    'ice-miner-0': iceMiner0,
+    'ice-miner-1': iceMiner1,
+    'castle-mutant-0': castleMutant0,
+    'castle-mutant-1': castleMutant1,
   },
 };
