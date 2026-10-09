@@ -254,7 +254,11 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   level draws SMB3's bar along the bottom (WORLD, the P-meter, coins; the hero's badge and lives,
   the score, the clock; three end-card slots) instead of the HUD across the top, and its world
   32 px higher (`renderSmb3World`), so rows 2-14 fill the screen above the bar. The Hammer Bro
-  battle and the bonus games use the same bar.
+  battle and the bonus games use the same bar. A hero with stats of their own (0.4.35,
+  `hud/smb3-hero-panel.ts`) has them in a box of the bar over the (always empty) card slots, never
+  over the deck, where the ship pins the hero to the left: hit points (a flat Mega Man style bar,
+  hearts, EN and tanks), the weapon or magic meter, and the tool in hand with Mega Man's E-tanks.
+  Player two's stay at the top right of the play.
 - **A death** never costs a life: `TRY AGAIN?` YES / NO (announced). **YES** (`retryAirship`)
   restarts the deck as it was boarded, or Larry's room once it has been reached (dropping in from
   its ceiling pipe again), with the run as it was when that area was first entered. **NO** (`leaveAirship`)
