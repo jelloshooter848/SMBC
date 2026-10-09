@@ -60,6 +60,7 @@ import {
   BONUS_SPENT_SAID,
   bonusGame,
   isBonusArea,
+  bonusAreaLabel,
 } from '../map/bonus-spot';
 import { AirshipCrash, type CrashNames } from '../map/airship-crash';
 import { arenaPadHint, arenaPadSaid, arenaPadTouch, drawArenaPad, playArenaPad } from '../arena';
@@ -811,7 +812,7 @@ export class WorldMapScene implements Scene {
     // A Mini Game Arena pad (src/game/arena): its game, or why it is still dark.
     if (n.kind === 'game') return arenaPadSaid(this.game, n, abilityHint(this.game, 'JUMP', 'jump'));
     // A bonus node leading into a level (World 2's Top Secret Area): its label; always open.
-    if (isBonusArea(n)) return `${spoken(n.label ?? 'Bonus')}, open`;
+    if (isBonusArea(n)) return `${spoken(bonusAreaLabel(n, this.progress.secrets) || 'Bonus')}, open`;
     // The bonus spot (map/bonus-spot.ts): the bonus game's name while open.
     if (n.kind === 'bonus')
       return this.game.bonusOpen ? `${spoken(bonusGame().label(this.game))}, open` : this.bonusShutSaid();
@@ -918,7 +919,7 @@ export class WorldMapScene implements Scene {
     if (n) return warpText(this.progress, n, this.unlockAll);
     if (this.mode !== 'idle') return '';
     const here = this.nodeById(this.node);
-    if (here && isBonusArea(here)) return here.label ?? '';
+    if (here && isBonusArea(here)) return bonusAreaLabel(here, this.progress.secrets);
     if (here?.kind === 'bonus')
       return this.game.bonusOpen
         ? bonusGame().label(this.game)
@@ -1083,6 +1084,17 @@ export class WorldMapScene implements Scene {
     // The ITEMS button (SMB3's item box), once the inventory is unlocked.
     if (input.pressed('special') && inventoryAvailable(this.game)) {
       this.openItems();
+      return;
+    }
+    // World 2's hidden spot: straight into Kakariko Village (no character select; campaign only).
+    if (
+      input.pressed('jump') &&
+      here?.town &&
+      this.game.campaign &&
+      isOpen(this.progress, this.page, here.id, this.unlockAll)
+    ) {
+      this.game.ctx.audio.sfx('coin');
+      this.game.enterTown();
       return;
     }
     if (input.pressed('jump') && here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll)) {

@@ -597,6 +597,13 @@ export interface LevelVariant {
 export const MAP_EXIT = 'map';
 
 /**
+ * A pipe target that is no level: back out to Kakariko Village, on the step of the house whose
+ * door led in (0.4.41: the Top Secret Area's pipe; Game.returnToTown). With no village visit
+ * under way (level select, `?level=`) it is the way back to the map, as MAP_EXIT.
+ */
+export const TOWN_EXIT = 'town';
+
+/**
  * A campaign-only reskin of a level (the map's `campaignTheme:` / `campaignMusic:` headers and
  * its `[campaign-decor]` section): 7-3 as a Contra jungle stage. Ids are kept as written, so a
  * look can name a theme or song that is not registered yet: campaign play then keeps the level's

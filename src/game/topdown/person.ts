@@ -29,6 +29,8 @@ export interface PersonOptions {
   verb?: string;
   /** Default: solid when it has a picture (a sign stands on a solid tile instead). */
   solid?: boolean;
+  /** Talked to across the counter in front of them (a barkeep): reachable from a tile further down. */
+  across?: boolean;
 }
 
 /**
@@ -52,6 +54,7 @@ export class TdPerson extends TdEntity {
   t = 0;
   /** Not drawn (still talkable). */
   hidden = false;
+  readonly across: boolean;
 
   constructor(x: number, y: number, opts: PersonOptions) {
     super(x, y);
@@ -62,6 +65,7 @@ export class TdPerson extends TdEntity {
     this.sheet = opts.sheet ?? PERSON_SHEET;
     this.palette = opts.palette;
     this.solid = opts.solid ?? opts.frames !== null;
+    this.across = opts.across ?? false;
   }
 
   /** The feet: what the hero bumps into. */
@@ -69,8 +73,12 @@ export class TdPerson extends TdEntity {
     return { x: this.x + 2, y: this.y + 6, w: 12, h: 10 };
   }
 
-  /** What the hero's reach must touch to talk: the feet, or the whole cell for a sign. */
+  /**
+   * What the hero's reach must touch to talk: the feet, or the whole cell for a sign; a tile more
+   * below for someone behind a counter.
+   */
   talkBox(): Box {
+    if (this.across) return { x: this.x, y: this.y, w: 16, h: 32 };
     return this.solid ? this.body() : { x: this.x, y: this.y, w: 16, h: 16 };
   }
 

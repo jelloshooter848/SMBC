@@ -2,7 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { px } from '@engine/math/units';
-import { MAP_EXIT, type LevelData } from '../level/schema';
+import { MAP_EXIT, TOWN_EXIT, type LevelData } from '../level/schema';
 import { freshSeed, levelSeed, World, type WorldStart } from '../world/world';
 import { DebugOverlay } from './debug-overlay';
 import {
@@ -305,8 +305,13 @@ export class LevelScene implements Scene {
         break;
       }
       case 'pipe': {
+        // Back out to the village (the Top Secret Area's pipe, during a visit): the house's step.
+        if (ev.target.level === TOWN_EXIT && game.town) {
+          game.returnToTown(this.world);
+          break;
+        }
         // The way back to the map (the Top Secret Area's pipe): nothing is cleared.
-        if (ev.target.level === MAP_EXIT) {
+        if (ev.target.level === MAP_EXIT || ev.target.level === TOWN_EXIT) {
           game.state.checkpoint = null;
           game.state.time = null;
           if (game.playtestDone) game.playtestDone();

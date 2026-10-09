@@ -29,6 +29,15 @@ export function isBonusArea(n: MapNode): boolean {
   return n.kind === 'bonus' && n.level !== undefined;
 }
 
+/**
+ * A bonus area's name on the map (hint line and announcer): its `label`, or once its town has been
+ * found (the town's secret, 0.4.41) the town's name: TOP SECRET AREA, then KAKARIKO VILLAGE.
+ */
+export function bonusAreaLabel(n: MapNode, secrets: readonly string[]): string {
+  if (n.town && n.townLabel && secrets.includes(n.town)) return n.townLabel;
+  return n.label ?? '';
+}
+
 /** Where the bonus was entered from (the node's page and id). */
 export interface BonusSpot {
   page: PageId;

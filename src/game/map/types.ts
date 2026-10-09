@@ -103,6 +103,13 @@ export interface MapNode {
   guard?: 'hammer-bro';
   /** 'game' nodes: the arena game played there (src/game/arena ArenaGame.id, e.g. 'mini-luigi'). */
   game?: string;
+  /**
+   * A bonus area that is a town (0.4.41: World 2's Kakariko Village, src/game/town): JUMP walks
+   * into it instead of `level` (campaign play), and `town` is also the secret the first visit
+   * finds (MapProgress.secrets), after which the node reads `townLabel` instead of `label`.
+   */
+  town?: string;
+  townLabel?: string;
 }
 
 /**
