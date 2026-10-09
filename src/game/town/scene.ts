@@ -5,7 +5,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { DOORS, GATE, SCREEN_AT, SCREEN_NAMES, type IndoorId, type TownDoor } from '@content/town/kakariko';
-import { townArt } from '@content/sprites/town';
+import { INDOOR_SURROUND, townArt } from '@content/sprites/town';
 import type { CharacterDef } from '../characters/character';
 import { startHp } from '../characters/character';
 import type { Game } from '../scenes/game';
@@ -63,8 +63,6 @@ export const NOTICE_FRAMES = 150;
  * Past (owner, RQ41: no black HUD box).
  */
 export const PLAY_Y = (SCREEN_H - ROOM_H) >> 1;
-/** The row of an indoor room whose edge pictures fill round it. */
-const ROOM_ROWS_MID = 5;
 /** Frames a place-name banner stays at least, before moving or a key clears it. */
 export const BANNER_MIN = 60;
 /** Frames the welcome banner shows on a first visit before the guard says hello. */
@@ -707,13 +705,12 @@ function drawSurround(r: Renderer, view: TdView, world: TopDownWorld): void {
     const v: TdView =
       room.def.dark && view.sheets.tilesDark ? { ...view, tilePalette: view.sheets.tilesDark } : view;
     if (room.wall !== 0) {
-      // Indoors: the house's outside (its edge column's ground), above and below.
-      const art = room.def.art?.[ROOM_ROWS_MID * ROOM_COLS] ?? null;
+      // Indoors: the ground round the house, above and below.
       const tiles = v.sheet(v.sheets.tiles, v.tilePalette);
       for (const by of [y - 2 * TILE, y - TILE, y + ROOM_H, y + ROOM_H + TILE])
         for (let col = 0; col < ROOM_COLS; col++)
-          if (art?.[0] && tiles) r.sprite(tiles, art[0], x + col * TILE, by);
-          else r.rect(x + col * TILE, by, TILE, TILE, '#201810');
+          if (tiles?.frames.has(INDOOR_SURROUND)) r.sprite(tiles, INDOOR_SURROUND, x + col * TILE, by);
+          else r.rect(x + col * TILE, by, TILE, TILE, '#a06030');
       continue;
     }
     for (const dir of [-1, 1] as const) {

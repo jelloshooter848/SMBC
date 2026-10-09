@@ -775,11 +775,17 @@ function innerWall(part: string): string {
         c.rect(part === 'bl' ? 13 : 0, 0, 3, 3, 'u');
         c.rect(part === 'bl' ? 12 : 0, 3, 4, 1, '0');
         return;
+      case 'out':
+        // Round the house, past its walls (the village screen's strips over and under the room).
+        c.each((x, y) => ((x + y * 3) % 7 === 0 ? 'q' : 'p'));
+        return;
       default:
         c.rect(0, 0, 16, 16, 'p');
     }
   });
 }
+/** The ground round a house seen from inside (drawn over and under its room, RQ41). */
+export const INDOOR_SURROUND = innerWall('out');
 
 /** The way out: a gap in the front wall, a mat on the floor. */
 function innerExit(): string {
