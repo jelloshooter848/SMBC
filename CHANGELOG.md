@@ -8,6 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Training: Simon, Ryu, Bill and Sophia III now train in a short stage of their own too: the Castlevania courtyard
+  gate, the Ninja Gaiden city, the Contra jungle and the Blaster Master forest. Toad guides, gates hold the way, and
+  power-ups come from real blocks in the order each hero's kit builds up. Simon whips wall candles and learns the
+  stairs and his committed jump (Double Shot and Triple Shot are one lesson); Ryu wall-jumps up a shaft; Bill aims
+  eight ways and goes prone under a turret; Sophia III sends Jason down a pit, then hovers, climbs walls and drives
+  along a roof.
+
+### Removed
+
+- Training: the old practice rooms. Every hero but Mario now trains in a stage; Mario keeps 1-0.
+
 ## [0.4.37] - 2026-10-09
 
 ### Changed
