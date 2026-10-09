@@ -1,7 +1,9 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { px, toPx } from '@engine/math/units';
 import { partnersDef } from '@content/sprites/partners';
+import { npcsDef } from '@content/sprites/npcs';
 import { sophiaDef } from '@content/sprites/sophia';
+import { stationDef } from '@content/sprites/station';
 import { Entity, type View } from '../entity';
 import type { Player } from '../player';
 import { CoinPop } from '../effects/effects';
@@ -27,20 +29,37 @@ const FLOAT: Readonly<Record<string, { lift: number; bob: number; period: number
 };
 
 /**
- * Partners drawn from a hero's own sheet instead of `partners` (both frames the same picture):
+ * Partners drawn from another sheet instead of `partners` (both frames the same picture):
  * Jason, Sophia III's pilot, is her sheet's side-view `jason-stand` (16x16, facing right), turned
- * to face left (toward the heroes coming up the pipe) and now and then right (the pool).
+ * to face left (toward the heroes coming up the pipe) and now and then right (the pool) (`look`).
+ * `rows` sizes it: a frame whose bottom row is empty is cut there, so its feet stand on the floor.
  */
-const BORROWED: Readonly<Record<string, { sheet: string; frame: string; rows: readonly string[] }>> = {
-  jason: { sheet: 'sophia', frame: 'jason-stand', rows: sophiaDef.frames['jason-stand'] ?? [] },
+const BORROWED: Readonly<
+  Record<string, { sheet: string; frame: string; rows: readonly string[]; look: boolean }>
+> = {
+  jason: { sheet: 'sophia', frame: 'jason-stand', rows: sophiaDef.frames['jason-stand'] ?? [], look: true },
   // Fred, by 8-4-end's trap pipe (0.4.23): her sheet's sitting frog, looking at the heroes coming
   // from the left and now and then down the pipe to his right.
-  fred: { sheet: 'sophia', frame: 'fred-0', rows: sophiaDef.frames['fred-0'] ?? [] },
+  fred: { sheet: 'sophia', frame: 'fred-0', rows: sophiaDef.frames['fred-0'] ?? [], look: true },
+  // 0.4.40: a Sniper Joe on his break at the door of 3-4's fortress, Mega Man's airship guard
+  // (`station` sheet), behind his shield and facing the heroes. His frame's bottom row is empty.
+  'sniper-joe': {
+    sheet: 'station',
+    frame: 'joe-guard',
+    rows: (stationDef.frames['joe-guard'] ?? []).slice(0, -1),
+    look: false,
+  },
 };
 
+/** The sheet a partner's own `<who>-0` / `<who>-1` frames are on: `partners`, or (0.4.40) `npcs`. */
+const sheetOf = (who: string): 'partners' | 'npcs' | null =>
+  partnersDef.frames[`${who}-0`] ? 'partners' : npcsDef.frames[`${who}-0`] ? 'npcs' : null;
+
 /** The idle frame's rows of partner `who` (its own sheet's `<who>-0`, or a borrowed one). */
-const idleRows = (who: string): readonly string[] | undefined =>
-  BORROWED[who]?.rows ?? partnersDef.frames[`${who}-0`];
+const idleRows = (who: string): readonly string[] | undefined => {
+  const sheet = sheetOf(who);
+  return BORROWED[who]?.rows ?? (sheet === 'npcs' ? npcsDef : partnersDef).frames[`${who}-0`];
+};
 
 /**
  * A partner in a campaign level (`partner x y who=old-man campaign=true`, docs/STORY.md 2.5-2.10):
@@ -148,9 +167,9 @@ export class Partner extends Entity {
         borrowed.frame,
         x,
         top,
-        this.t % LOOK_FRAMES < LOOK_FRAMES - LOOK_BACK,
+        borrowed.look && this.t % LOOK_FRAMES < LOOK_FRAMES - LOOK_BACK,
       );
-    else r.sprite(view.assets.sheet('partners'), `${this.who}-${alt ? 1 : 0}`, x, top);
+    else r.sprite(view.assets.sheet(sheetOf(this.who) ?? 'partners'), `${this.who}-${alt ? 1 : 0}`, x, top);
     // TALK (or READ), with its key: up (or the TALK button) talks.
     if (this.prompt) drawTalkPrompt(r, view, this.script.verb, toPx(this.centerX) - view.camX, top);
   }

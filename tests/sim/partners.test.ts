@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLevel } from '@content/levels';
+import { getLevel, levelIds } from '@content/levels';
 import { CHARACTERS } from '@game/characters/registry';
 import { beat } from '@game/story/beats';
 import { MARIO } from '@game/characters/mario';
@@ -31,6 +31,8 @@ useStorage();
  * enemies near it cleared, so every hero gets there; Jason's room: up out of its pipe).
  */
 const near = (x: number) => ({ mode: 'stand', x, y: 12, clearEnemies: 'all' }) as const;
+/** The level's own start (and arrival: standing, falling in, out of a pipe), the enemies near it cleared. */
+const fromStart = { clearEnemies: 'all' } as const;
 const SPOTS = [
   { who: 'villager', level: '1-1', start: near(52), col: 55 },
   // The warp zone's one free floor tile left of the pipes (178-186), walled in by bricks at 176.
@@ -53,6 +55,12 @@ const SPOTS = [
   },
   // Jason's secret area behind 8-4-end's trap pipe (0.4.18): up out of its pipe.
   { who: 'jason', level: '8-4-jason', start: { mode: 'pipe-exit', x: 1, y: 10, time: 300 }, col: 5 },
+  // 0.4.40: an NPC in every level, each walked up to from the level's own start.
+  // World 1: a cave Toad where 1-2's heroes drop in, the lookout at 1-3's start, and a retainer
+  // at the foot of 1-4's entrance steps.
+  { who: 'cave-toad', level: '1-2', start: fromStart, col: 5 },
+  { who: 'lookout', level: '1-3', start: fromStart, col: 8 },
+  { who: 'retainer', level: '1-4', start: fromStart, col: 8 },
 ] as const satisfies readonly { who: string; level: string; start: WorldStart; col: number }[];
 
 const spotOf = (who: string) => SPOTS.find((s) => s.who === who) as (typeof SPOTS)[number];
@@ -124,7 +132,7 @@ describe('partners: where they stand (campaign only)', () => {
     const h = makeGame();
     const l = campaignIn(h, spot);
     // (Up out of a pipe, the room's entities come once the hero is out.)
-    h.idle(spot.start.mode === 'pipe-exit' ? 120 : 2);
+    h.idle('mode' in spot.start && spot.start.mode === 'pipe-exit' ? 120 : 2);
     const [it, ...more] = partners(l);
     expect(it?.who).toBe(spot.who);
     expect(more).toEqual([]);
@@ -168,6 +176,17 @@ describe('partners: where they stand (campaign only)', () => {
     classic.until(() => classic.top() instanceof LevelScene, 600);
     classic.idle(4);
     expect((classic.top() as LevelScene).world.entities.some((e) => e instanceof CaveFire)).toBe(false);
+  });
+});
+
+describe('partners: every one placed has its spot here (0.4.40)', () => {
+  it('each `partner` in a level file is one of the spots above, in that level', () => {
+    const placed = levelIds().flatMap((id) =>
+      getLevel(id)
+        .entities.filter((e) => e.type === 'partner')
+        .map((e) => `${String(e.props?.who)} in ${id}`),
+    );
+    expect(placed.sort()).toEqual(SPOTS.map((s) => `${s.who} in ${s.level}`).sort());
   });
 });
 
@@ -352,15 +371,19 @@ describe('partners: co-op', () => {
 describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () => {
   const hinting = SPOTS.filter((s) => PARTNERS[s.who]?.after);
 
-  it.each(hinting)('$who says its one after page instead, and again on a second talk', (spot) => {
+  it.each(hinting)('$who says its after pages instead, and again on a second talk', (spot) => {
     const script = PARTNERS[spot.who]!;
+    const after = script.after!;
     const h = makeGame();
     const l = campaignIn(h, spot, MARIO, 'small', { freed: ['mario', script.hero!] });
     walkUp(h, l);
     h.tap('up');
-    expect(h.top()).toBeInstanceOf(CardScene);
-    expect(h.said.at(-1)).toBe(`${said(script.after![0]!)} OK to continue.`);
-    press(h, 'jump');
+    after.forEach((page, i) => {
+      expect(h.top()).toBeInstanceOf(CardScene);
+      const last = i === after.length - 1;
+      expect(h.said.at(-1)).toBe(`${said(page)} ${last ? 'OK to continue.' : 'OK for more, BACK to skip.'}`);
+      press(h, 'jump');
+    });
     expect(h.top()).toBe(l);
     expect(h.said.some((s) => s.startsWith(said(script.pages[0]!)))).toBe(false);
     h.idle(2);

@@ -676,7 +676,7 @@ export interface PartnerScript {
    * freed on the file it says `after` instead of `pages`; with no `after` it is gone (Fred: home).
    */
   hero?: string;
-  /** What it says once `hero` is freed (one page, NEW in 0.4.23). */
+  /** What it says once `hero` is freed (NEW in 0.4.23; one to three pages since 0.4.40). */
   after?: readonly Page[];
 }
 
@@ -908,6 +908,112 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['JASON:', '', "MY TANK, SOPHIA! SHE'S DOWN", 'THERE TOO. FOLLOW FRED,', "PLEASE. I CAN'T SWIM."],
     ],
     after: [['JASON:', '', "SOPHIA'S BACK, FRED'S BACK.", 'BEST DAY EVER! THANK YOU!']],
+  },
+
+  /* -------------------------------------------- 0.4.40: an NPC in every level (World 1, Luigi) */
+
+  // 1-2, by the spot the heroes drop in: a Toad hiding underground.
+  'cave-toad': {
+    verb: 'TALK',
+    name: 'A cave Toad',
+    hero: 'luigi',
+    pages: [
+      [
+        'CAVE TOAD:',
+        '',
+        'PSST! IS IT SAFE? I SAW A',
+        'GUY IN GREEN UP ON THE',
+        'FIRST ROAD. GLOWING EYES.',
+        'HE DOVE DOWN A PIPE.',
+      ],
+      [
+        'CAVE TOAD:',
+        '',
+        'A VILLAGER UP THERE GOT',
+        'KNOCKED FLAT. HE SAW WHICH',
+        'PIPE. PLEASE, GO FIND THAT',
+        'POOR GUY!',
+      ],
+    ],
+    after: [
+      [
+        'CAVE TOAD:',
+        '',
+        "LUIGI'S FREE? PHEW! LAST",
+        'TIME MARIO WENT MISSING,',
+        'LUIGI FOUND HIM. THIS TIME',
+        "IT'S PEACH.",
+      ],
+    ],
+  },
+  // 1-3, on the ground at the start, under the treetops.
+  lookout: {
+    verb: 'TALK',
+    name: 'A lookout',
+    hero: 'luigi',
+    pages: [
+      [
+        'LOOKOUT:',
+        '',
+        'I CAN SEE THE WHOLE ROAD',
+        'FROM UP HERE! JUST NOT',
+        'DOWN PIPES. NOBODY CAN SEE',
+        'DOWN PIPES.',
+      ],
+      [
+        'LOOKOUT:',
+        '',
+        'THE FELLOW IN GREEN WENT',
+        'DOWN ONE ON THE FIRST ROAD,',
+        'BY THE VILLAGER. PLEASE,',
+        'GO BRING HIM BACK!',
+      ],
+    ],
+    after: [
+      [
+        'LOOKOUT:',
+        '',
+        "LUIGI'S FREE! I WATCHED HIM",
+        'CLEAR THREE TREES IN ONE',
+        "JUMP. DON'T TELL MARIO I",
+        'SAID THAT.',
+      ],
+    ],
+  },
+  // 1-4, at the foot of the castle's entrance steps: one of the princess's retainers, spying.
+  retainer: {
+    verb: 'TALK',
+    name: 'A retainer',
+    hero: 'luigi',
+    pages: [
+      [
+        'RETAINER:',
+        '',
+        'SHH! I SNUCK IN TO SPY ON',
+        'THE KING. BUT THE ROAD OUT',
+        'OF THIS LAND IS SEALED BY',
+        'HIS MAGIC.',
+      ],
+      [
+        'RETAINER:',
+        '',
+        "IT WON'T OPEN TILL LUIGI IS",
+        'FREE. HE WENT DOWN A PIPE',
+        'ON THE FIRST ROAD. PLEASE,',
+        'GO BACK FOR HIM!',
+      ],
+    ],
+    after: [
+      [
+        'RETAINER:',
+        '',
+        "LUIGI'S FREE? THEN GO GET",
+        'THE KING! BETWEEN US, HE',
+        'LOOKS SHORTER THAN USUAL',
+        'TODAY.',
+      ],
+      ['RETAINER:', '', "AND IF THE PRINCESS ISN'T", 'IN THIS CASTLE... WELL.', 'THAT HAPPENS A LOT.'],
+    ],
   },
 };
 

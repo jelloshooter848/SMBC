@@ -5,6 +5,7 @@ import { PARTNERS } from '@game/story/script';
 import { PALETTES, SPRITES } from './index';
 import { partnersDef, partnersPalettes } from './partners';
 import { sophiaDef } from './sophia';
+import { npcsDef } from './npcs';
 
 type Size = readonly [w: number, h: number];
 
@@ -50,7 +51,11 @@ describe('partners sheet', () => {
   });
 
   it("draws every partner of the script (Jason and Fred from Sophia III's sheet: her pilot and his frog)", () => {
-    expect([...Object.keys(SIZES), ...BORROWED].sort()).toEqual(Object.keys(PARTNERS).sort());
+    // 0.4.40: the level NPCs are on the `npcs` sheet (src/content/sprites/npcs.test.ts).
+    const npcs = Object.keys(npcsDef.frames)
+      .filter((f) => f.endsWith('-0'))
+      .map((f) => f.slice(0, -2));
+    expect([...Object.keys(SIZES), ...BORROWED, ...npcs].sort()).toEqual(Object.keys(PARTNERS).sort());
     for (const f of ['jason-stand', 'fred-0']) {
       const rows = sophiaDef.frames[f] as readonly string[];
       expect([rows[0]?.length, rows.length], f).toEqual([16, 16]);

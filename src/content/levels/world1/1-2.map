@@ -28,6 +28,8 @@ camera: scroll
 ################ ################ ################ ################ ################ ...############# ################ ########..##..## ##########...... .########....... ################ ################
 
 [entities]
+;; Campaign only (0.4.40, docs/STORY.md): a cave Toad where the heroes drop in, clear of the ? blocks (10-14).
+partner 5 12 who=cave-toad campaign=true
 piranha 103 10
 piranha 109 9
 piranha 115 11

@@ -643,6 +643,113 @@ GAMES THERE. HAVE A LOOK,
 IF YOU DARE.
 ```
 
+**1-2: a cave Toad.** NEW partner (`cave-toad`, 0.4.40). A Toad in a yellow-spotted cap and a dark miner's
+vest, hiding where the heroes drop into **1-2** (column 5), clear of the `?` blocks. He saw Luigi go, and sends you
+back to the villager.
+
+```text
+CAVE TOAD:
+
+PSST! IS IT SAFE? I SAW A
+GUY IN GREEN UP ON THE
+FIRST ROAD. GLOWING EYES.
+HE DOVE DOWN A PIPE.
+```
+
+```text
+CAVE TOAD:
+
+A VILLAGER UP THERE GOT
+KNOCKED FLAT. HE SAW WHICH
+PIPE. PLEASE, GO FIND THAT
+POOR GUY!
+```
+
+After Luigi is freed:
+
+```text
+CAVE TOAD:
+
+LUIGI'S FREE? PHEW! LAST
+TIME MARIO WENT MISSING,
+LUIGI FOUND HIM. THIS TIME
+IT'S PEACH.
+```
+
+**1-3: a lookout.** NEW partner (`lookout`, 0.4.40). A Toad in a pink-spotted cap and a green vest, on the ground
+at **1-3's start** (column 8), under the treetops he watches the road from.
+
+```text
+LOOKOUT:
+
+I CAN SEE THE WHOLE ROAD
+FROM UP HERE! JUST NOT
+DOWN PIPES. NOBODY CAN SEE
+DOWN PIPES.
+```
+
+```text
+LOOKOUT:
+
+THE FELLOW IN GREEN WENT
+DOWN ONE ON THE FIRST ROAD,
+BY THE VILLAGER. PLEASE,
+GO BRING HIM BACK!
+```
+
+After Luigi is freed:
+
+```text
+LOOKOUT:
+
+LUIGI'S FREE! I WATCHED HIM
+CLEAR THREE TREES IN ONE
+JUMP. DON'T TELL MARIO I
+SAID THAT.
+```
+
+**1-4: a retainer.** NEW partner (`retainer`, 0.4.40). One of the princess's retainers (an orange-spotted cap, a
+royal blue vest) spying in the king's castle, at the foot of **1-4's entrance steps** (column 8). While Luigi is
+missing he tells of the seal on the road out (2.3b); once he is freed, of the fake's height and the oldest joke in
+the kingdom.
+
+```text
+RETAINER:
+
+SHH! I SNUCK IN TO SPY ON
+THE KING. BUT THE ROAD OUT
+OF THIS LAND IS SEALED BY
+HIS MAGIC.
+```
+
+```text
+RETAINER:
+
+IT WON'T OPEN TILL LUIGI IS
+FREE. HE WENT DOWN A PIPE
+ON THE FIRST ROAD. PLEASE,
+GO BACK FOR HIM!
+```
+
+After Luigi is freed:
+
+```text
+RETAINER:
+
+LUIGI'S FREE? THEN GO GET
+THE KING! BETWEEN US, HE
+LOOKS SHORTER THAN USUAL
+TODAY.
+```
+
+```text
+RETAINER:
+
+AND IF THE PRINCESS ISN'T
+IN THIS CASTLE... WELL.
+THAT HAPPENS A LOT.
+```
+
 **Castle 1-4** (a Goomba). The hero's remark (2.3a, reaching the axe):
 
 ```text
