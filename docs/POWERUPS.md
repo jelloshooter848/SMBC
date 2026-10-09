@@ -69,8 +69,8 @@ A **power block** is any block whose content is `powerup` (`src/game/level/tiles
 no SMB level uses one). Today `World.strikeBlock` spawns `p.def.blockPowerUp(p)` from them, which is each hero's
 mushroom-or-flower choice.
 
-The Top Secret Area's fixed blocks (World 2) follow the same idea: **`R`** (`Q_MUSHROOM`) always gives the hero's
-grow item (refill when owned) and takes no entries; **`W`** (`Q_FLOWER`) gives the hero's entry, or their default
+The Top Secret Area's fixed blocks (World 2) follow the same idea: **`R`** (`Q_MUSHROOM`) is a grow-slot block (the hero's
+grow item, then their next power item once it is owned, as below) and takes no entries; **`W`** (`Q_FLOWER`) gives the hero's entry, or their default
 power. `U`, `*`, `S`, `L`, `4`-`6` (1-ups, stars, poison) are unchanged.
 
 ### 3.2 The format (NEW)
@@ -102,6 +102,10 @@ zones). One line per block; a hero not named on a line gets their default power 
 1. A player strikes the block (a head bump, Link's sword, Samus's bombs and missiles, a saw disc: whatever opens
    it today). That player is the block's **owner**. A block opened with no player behind it belongs to player 1.
 2. The item is worked out for the owner's hero: small → grow item; else the block's entry, or the default power.
+   **A grow-slot block** (entry `grow`, or `R`) works as SMB's does for a big Mario (0.4.35, owner: five helmets
+   in a row): once the hero owns their grow item (a stacking one, heart containers, energy tanks, medals, at its
+   maximum) it gives their **next power item they don't own**, in section 5's order, else their default power
+   (its refill). It never gives an owned grow item again.
    It rises out of the block with SMB's `powerup-appear` (the block is SMB's) but in **the item's own sprite**.
 3. It stays put on the block like the flower, so none is lost down a pit (decision 9). Only Mario and Luigi's
    Super Mushroom keeps SMB's slide.
@@ -126,6 +130,9 @@ zones). One line per block; a hero not named on a line gets their default power 
 | Ryu          | Medicine        | Throwing Star            | full ninpo and full health                        | full health                       |
 | Bill         | Medal           | Machine Gun (M)          | full health (his hits)                            | full health                       |
 | Sophia III   | Power Capsule   | Crusher                  | missile ammo (12 triple, 4 homing) and full hover | a full hover bar                  |
+
+Since 0.4.35 a block never gives an owned grow item (3.3: the next power item instead), so its column applies
+only where a grow item still comes while owned (a grow item already out of its block when the hero grew).
 
 The default power is each hero's **first** power item, so a blank block is a second chance at the start of the kit
 and then a refill. Link starts with his Boomerang (decision 5), so his is the next item, the Bomb Bag. Sophia's is

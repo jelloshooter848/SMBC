@@ -39,14 +39,17 @@ const placedFor = (hero: string): string => {
   return h.items.find((i) => i.kind === 'power' && i.id !== h.defaultPower)!.id;
 };
 
-/** A flat room with three ? power blocks over the floor: (5,9) with every hero's entry, (8,9) blank, (11,9) `W`. */
+/**
+ * A flat room with ? power blocks over the floor: (5,9) with every hero's entry, (8,9) blank,
+ * (11,9) `W`, (14,9) `R`, and (17,9) a grow-slot block (every hero `=grow`).
+ */
 function room(): string {
   const rows: string[] = [];
   for (let y = 0; y < 15; y++) {
     let row = '';
     for (let x = 0; x < 24; x++) {
       if (y >= 13) row += '#';
-      else if (y === 9 && (x === 5 || x === 8)) row += 'M';
+      else if (y === 9 && (x === 5 || x === 8 || x === 17)) row += 'M';
       else if (y === 9 && x === 11) row += 'W';
       else if (y === 9 && x === 14) row += 'R';
       else row += '.';
@@ -63,6 +66,7 @@ function room(): string {
     '',
     '[hero-items]',
     `5 9 ${entries}`,
+    `17 9 ${HEROES_WITH_ITEMS.map((c) => `${c.id}=grow`).join(' ')}`,
   ].join('\n');
 }
 const ROOM = parseTextMap(room(), 't');
@@ -173,6 +177,35 @@ describe('hero items: blocks in the campaign', () => {
     });
   }
 
+  for (const def of HEROES_WITH_ITEMS) {
+    it(`${def.name}: a grow-slot block once grown gives the next power item, never the grow item again (0.4.35)`, () => {
+      const rules = itemRules(def.id)!;
+      const items = HERO_ITEMS[def.id]!;
+      const powers = items.items.filter((i) => i.kind === 'power').map((i) => i.id);
+      // Small: the grow item first (SMB).
+      expect((strike(campaignWorld(def).w, 17) as HeroItem).item).toBe(items.grow);
+      /** A fresh room, the hero grown all the way (a stacking grow item at its maximum), owning `owned`. */
+      const grown = (owned: readonly string[]) => {
+        const { w, p } = campaignWorld(def);
+        for (let i = 0; i < 10 && !rules.owned(p, items.grow); i++) rules.give(p, items.grow);
+        expect(rules.owned(p, items.grow)).toBe(true);
+        for (const id of owned) for (let i = 0; i < 4 && !rules.owned(p, id); i++) rules.give(p, id);
+        return { w, p };
+      };
+      // Grown: SMB's big Mario gets the flower. The grow-slot block and the R block give the next
+      // power item not owned, in docs/POWERUPS.md order, one after another.
+      for (let n = 0; n < powers.length; n++) {
+        const { w, p } = grown(powers.slice(0, n));
+        const want = powers.find((id) => !rules.owned(p, id)) ?? items.defaultPower;
+        expect((strike(w, 17) as HeroItem).item, `${n} owned`).toBe(want);
+        w.entities.forEach((e) => e.destroy());
+        expect((strike(w, 14) as HeroItem).item, `${n} owned, R`).toBe(want);
+      }
+      // Everything owned: the default power (its refill).
+      expect((strike(grown(powers).w, 17) as HeroItem).item).toBe(items.defaultPower);
+    });
+  }
+
   it('hero items stay put on the block; only the Super Mushroom slides', () => {
     const { w } = campaignWorld(SAMUS, { grown: true });
     const item = strike(w, 8) as HeroItem;
@@ -193,7 +226,7 @@ describe('hero items: blocks in the campaign', () => {
     expect(p.powerState).toBe('big');
   });
 
-  it("the Top Secret Area's fixed blocks: R the grow item, W the entry or default power", () => {
+  it("the Top Secret Area's fixed blocks: R the grow item (until it is owned), W the entry or default power", () => {
     const { w } = campaignWorld(LINK, { grown: true });
     expect((strike(w, 14) as HeroItem).item).toBe('heart-container');
     w.entities.forEach((e) => e.destroy());
