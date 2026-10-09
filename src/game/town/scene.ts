@@ -406,10 +406,19 @@ export class TownScene implements Scene {
     const font = fontOf(this.view);
     const w = text.length * 8 + 4;
     const x = Math.max(2, Math.min(SCREEN_W - w - 2, p.x + 8 - (w >> 1)));
-    const y = Math.max(HUD_H + 1, HUD_H + p.y - 12);
+    const y = HUD_H + promptRow(p.y, this.hero.y);
     r.rect(x, y, w, 10, 'rgba(0,0,0,0.75)');
     r.text(font, text, x + 2, y + 1);
   }
+}
+
+/**
+ * Where the TALK prompt's band goes (room pixels): over the townsperson, or under them when the hero
+ * stands above (talking down), so it never hides the hero's head.
+ */
+export function promptRow(personY: number, heroY: number): number {
+  if (heroY < personY - 4) return Math.min(ROOM_H - 11, personY + 18);
+  return Math.max(1, personY - 12);
 }
 
 /** A hero's hit points in full (the healer's): their kit's maximum, else their starting count. */
@@ -529,5 +538,11 @@ export class TownMenuScene extends MenuScene {
 
   exit(): void {
     this.game.ctx.audio.resume();
+  }
+
+  /** The panel over a blank HUD band: the village HUD's lines would show through and round it. */
+  override render(r: Renderer): void {
+    r.rect(0, 0, SCREEN_W, HUD_H, '#000000');
+    super.render(r);
   }
 }

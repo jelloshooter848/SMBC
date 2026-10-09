@@ -19,7 +19,11 @@ import {
   VILLAGE_NAME,
   townHudHint,
   HUD_HINT_CHARS,
+  promptRow,
+  TownMenuScene,
 } from '@game/town/scene';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import { HUD_H } from '@game/topdown/geometry';
 import type { Game, ControlScheme } from '@game/scenes/game';
 import { villageDungeon, villageRooms, isOutdoor } from '@game/town/village';
 import { folkSpawner, Townsperson, FOLK_DEFS } from '@game/town/folk';
@@ -863,5 +867,28 @@ describe("the village HUD's switch hint", () => {
     expect(townHudHint(fake('keyboard', 'ControlRight'))).toBe('TOOLS: NEXT HERO');
     expect(townHudHint(fake('gamepad', 'pad:8'))).toBe('TOOLS (BACK): NEXT HERO');
     expect(townHudHint(fake('touch', 'ShiftRight'))).toBe('HERO BUTTON: NEXT HERO');
+  });
+});
+
+describe('the village menu and the TALK prompt (RQ41)', () => {
+  it('the pause panel sits over a blank HUD band (the HUD lines showed through and round it)', () => {
+    const h = makeGame();
+    const rects: [number, number, number, number, string][] = [];
+    const r = new NullRenderer() as unknown as Renderer;
+    r.rect = (x: number, y: number, w: number, hh: number, c: string) => void rects.push([x, y, w, hh, c]);
+    new TownMenuScene(h.game, () => undefined).render(r);
+    expect(rects[0]).toEqual([0, 0, 256, HUD_H, '#000000']);
+  });
+
+  it('the prompt goes under the townsperson when the hero talks down to them, else over them', () => {
+    // Hero a tile above, facing down: the band is under the person, clear of the hero.
+    expect(promptRow(80, 64)).toBe(98);
+    expect(promptRow(80, 64) >= 80 + 16).toBe(true);
+    // Hero below or beside: over the person, as before.
+    expect(promptRow(80, 96)).toBe(68);
+    expect(promptRow(80, 80)).toBe(68);
+    // Kept on the screen at the edges.
+    expect(promptRow(4, 20)).toBe(1);
+    expect(promptRow(160, 144)).toBeLessThanOrEqual(176 - 11);
   });
 });
