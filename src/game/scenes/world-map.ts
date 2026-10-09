@@ -590,7 +590,7 @@ export class WorldMapScene implements Scene {
     this.afterStory();
   }
 
-  /** Outside the `story` mode: Toad walking back off after his last page, until he is gone. */
+  /** Outside the `story` mode: Toad walking on off to the right after his last page, until he is gone. */
   private updateToadLeaving(): void {
     const g = this.toad;
     if (!g || this.mode === 'story') return;

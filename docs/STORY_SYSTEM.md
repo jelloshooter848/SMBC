@@ -86,7 +86,7 @@ story is a later release).
   announced; it never goes on by itself (0.4.22, owner note 4: text waits for a key).
 - **Toad walks in** (his `smb3:toad-map-0/1` frames, 2 px a frame from off the left edge to 20 px
   left of the hero) only for the major scenes: his World 1 scene after 1-0, the fake Bowsers
-  (after 1-4), the crash and the rift. He stays until the last scene and walks back off; that
+  (after 1-4), the crash and the rift. He stays until the last scene and walks on off to the right (forward, 0.4.35); that
   walk-off plays over the map once it is already the player's (the reveal draws in, the hero can
   move: `ToadGuide.leaving`), so nobody waits for him to leave.
 - Every scene's beat ids are marked seen as it starts, so leaving mid-scene never replays it.

@@ -77,10 +77,10 @@ describe("Toad's map scenes", () => {
     expect(h.said.some((t) => t.startsWith("TOAD: WHERE'S LUIGI?") && /OK to continue/.test(t))).toBe(true);
     expect(h.game.seen(beat.enter('smb-1'))).toBe(true);
     expect(loadSave(1)?.story).toContain(beat.enter('smb-1'));
-    // Toad walks back off; then the reveal.
+    // Toad walks on off to the right (0.4.35); the reveal draws the road in meanwhile.
     h.until(() => map(h).mode === 'idle', 600);
     expect(h.game.pendingReveal).toEqual([]);
-    expect(toadSprite(h)).toBeUndefined();
+    h.until(() => toadSprite(h) === undefined, 300);
     // Reopened: not again.
     h.game.openFile(1);
     h.step();
@@ -248,7 +248,9 @@ describe("Toad's map scenes: after the last page", () => {
     const off = toadSprite(h);
     expect(off).toBeDefined();
     h.idle(6); // the map's idle settle
-    expect(toadSprite(h)!.x).toBeLessThan(off!.x);
+    // He leaves FORWARD, on to the right (0.4.35, owner: never back the way he came), facing it.
+    expect(toadSprite(h)!.x).toBeGreaterThan(off!.x);
+    expect(toadSprite(h)!.flip).toBeFalsy();
     // The hero walks while Toad is still going.
     for (const d of ['left', 'up', 'down', 'right'] as const) if (map(h).mode === 'idle') h.tap(d);
     expect(map(h).mode).toBe('walk');

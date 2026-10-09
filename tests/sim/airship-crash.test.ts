@@ -3,7 +3,7 @@ import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { Settings } from '@engine/save/settings';
 import { WorldMapScene } from '@game/scenes/world-map';
-import { CRASH_FRAMES } from '@game/map/airship-crash';
+import { AirshipCrash, CRASH_FRAMES } from '@game/map/airship-crash';
 import { secretExit } from '@game/map/rules';
 import { CRYSTAL_BALL } from '@game/map/captives';
 import { getLevel } from '@content/levels';
@@ -254,5 +254,23 @@ describe('the airship crash on the World 4 map', () => {
     expect(after.cutscene).toBe(false);
     h.until(() => !after.revealing, 300);
     expect(frame(after).sprites.some(TOAD_HOUSE)).toBe(false);
+  });
+});
+
+describe('Toad leaves the wreck forward (0.4.35, owner)', () => {
+  it('after building the bonus spot he walks on to the right and off screen, facing right', () => {
+    const c = new AirshipCrash({ x: 6, y: 8 }, { x: 3, y: 11 });
+    const names = { heroes: 'Mario', bonus: 'Toad House', skip: 'JUMP' };
+    while (c.t < CRASH_FRAMES.LEAVE) c.update(names);
+    const at = c.toad()!;
+    let last = at;
+    while (c.t < CRASH_FRAMES.END - 1) {
+      c.update(names);
+      const now = c.toad()!;
+      expect(now.x).toBeGreaterThanOrEqual(last.x);
+      expect(now.flip).toBe(false);
+      last = now;
+    }
+    expect(last.x).toBeGreaterThan(250);
   });
 });

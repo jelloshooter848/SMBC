@@ -36,11 +36,13 @@ export const CRASH_FRAMES = {
   HAMMER: 244,
   /** ... the wreck turns into the bonus node ... */
   BUILD: 304,
-  /** ... Toad waves, then walks back off. */
+  /** ... Toad waves, then walks on off to the right. */
   LEAVE: 334,
   END: 390,
 } as const;
 export const HAMMER_BEAT = 20;
+/** Where Toad walks off to: past the right edge of the 256 px screen. */
+const TOAD_EXIT_X = 258;
 export const HAMMER_HITS = 3;
 /** The smb3 sheet, which holds every frame the cutscene draws. */
 const SHEET = 'smb3';
@@ -222,7 +224,8 @@ export class AirshipCrash {
     if (t < F.LEAVE)
       return { frame: `toad-map-${(t >> 4) & 1}`, x: stand, y: y - ((t >> 3) & 1), flip: false };
     const k = (t - F.LEAVE) / (F.END - F.LEAVE);
-    return { frame: walk, x: Math.round(lerp(stand, -18, k)), y, flip: true };
+    // He leaves forward, on to the right and off screen (0.4.35, owner: never back the way he came).
+    return { frame: walk, x: Math.round(lerp(stand, TOAD_EXIT_X, k)), y, flip: false };
   }
 
   /**
