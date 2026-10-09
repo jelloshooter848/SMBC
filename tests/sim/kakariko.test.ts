@@ -11,7 +11,16 @@ import type { CharacterDef } from '@game/characters/character';
 import { TopDownWorld } from '@game/topdown/world';
 import { ROOM_COLS, ROOM_ROWS, TILE, type Dir } from '@game/topdown/geometry';
 import { talkTarget } from '@game/topdown/person';
-import { TownScene, SWITCH_GAP, fullHp, nextHero, VILLAGE_NAME } from '@game/town/scene';
+import {
+  TownScene,
+  SWITCH_GAP,
+  fullHp,
+  nextHero,
+  VILLAGE_NAME,
+  townHudHint,
+  HUD_HINT_CHARS,
+} from '@game/town/scene';
+import type { Game, ControlScheme } from '@game/scenes/game';
 import { villageDungeon, villageRooms, isOutdoor } from '@game/town/village';
 import { folkSpawner, Townsperson, FOLK_DEFS } from '@game/town/folk';
 import { DEV_VILLAGE, KAKARIKO, SECRET_HOUSE_LEVEL } from '@game/town/secret-house';
@@ -828,5 +837,31 @@ describe('the door lock (for a later secret)', () => {
     expect(Object.keys(FOLK_DEFS).length).toBeGreaterThan(10);
     void Townsperson;
     void nextHero;
+  });
+});
+
+describe("the village HUD's switch hint", () => {
+  /** Just enough of a game for the hint: the scheme in use and the TOOLS key bound to it. */
+  const fake = (scheme: ControlScheme, code: string) =>
+    ({
+      deps: {
+        controlScheme: () => scheme,
+        settings: { input: { bindings: [{ keyboard: { select: [code] }, gamepad: { select: [code] } }] } },
+      },
+    }) as unknown as Game;
+
+  it('fits the line at every input style and key name (RQ41: "SWITCH HE" was cut off)', () => {
+    const keys = ['ShiftRight', 'ControlRight', 'ControlLeft', 'Backspace', 'NumpadMultiply', 'KeyQ'];
+    for (const code of keys) {
+      for (const scheme of ['keyboard', 'gamepad', 'touch'] as const) {
+        const hint = townHudHint(fake(scheme, scheme === 'gamepad' ? 'pad:8' : code));
+        expect(hint.length, `${scheme} ${code}: ${hint}`).toBeLessThanOrEqual(HUD_HINT_CHARS);
+        expect(hint).toMatch(/^(TOOLS|HERO BUTTON).*: NEXT HERO$/);
+      }
+    }
+    expect(townHudHint(fake('keyboard', 'ShiftRight'))).toBe('TOOLS (RIGHT SHIFT): NEXT HERO');
+    expect(townHudHint(fake('keyboard', 'ControlRight'))).toBe('TOOLS: NEXT HERO');
+    expect(townHudHint(fake('gamepad', 'pad:8'))).toBe('TOOLS (BACK): NEXT HERO');
+    expect(townHudHint(fake('touch', 'ShiftRight'))).toBe('HERO BUTTON: NEXT HERO');
   });
 });

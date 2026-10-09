@@ -467,11 +467,7 @@ function drawTownHud(r: Renderer, scene: TownScene): void {
   r.text(font, fontText(powerName(game)), 8, 40);
   r.text(font, `COINS×${String(s.coins).padStart(2, '0')}`, 120, 30);
   r.text(font, `LIVES×${String(s.lives).padStart(2, '0')}`, 120, 40);
-  const hint =
-    controlScheme(game) === 'touch'
-      ? 'HERO BUTTON: NEXT HERO'
-      : `${fontText(abilityHint(game, 'TOOLS', 'select'))}: NEXT HERO`;
-  r.text(font, hint.slice(0, 30), 8, 52);
+  r.text(font, townHudHint(game), 8, 52);
   // The six screens, the hero's lit (indoors: the screen the building stands on).
   const here = isOutdoor(room) ? SCREEN_AT[room] : screenOfIndoor(room);
   const mx = 200;
@@ -480,6 +476,20 @@ function drawTownHud(r: Renderer, scene: TownScene): void {
     const on = here && at[0] === here[0] && at[1] === here[1];
     r.rect(mx + at[0] * 16, my + at[1] * 11, 15, 10, on ? '#80d010' : '#305830');
   }
+}
+
+/** Characters that fit on the HUD's hint line (8 px each, 8 px margins). */
+export const HUD_HINT_CHARS = (SCREEN_W - 16) / 8;
+
+/**
+ * The HUD's switch hint: "TOOLS (RIGHT SHIFT): NEXT HERO" with a keyboard or pad, "HERO BUTTON:
+ * NEXT HERO" on touch. A key name too long for the line ("RIGHT CONTROL", "NUM MULTIPLY") is
+ * dropped, leaving "TOOLS: NEXT HERO", so the line is never cut off.
+ */
+export function townHudHint(game: Game): string {
+  if (controlScheme(game) === 'touch') return 'HERO BUTTON: NEXT HERO';
+  const full = `${fontText(abilityHint(game, 'TOOLS', 'select'))}: NEXT HERO`;
+  return full.length <= HUD_HINT_CHARS ? full : 'TOOLS: NEXT HERO';
 }
 
 /** The screen a room indoors stands on (its front door's). */
