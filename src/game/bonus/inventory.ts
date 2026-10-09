@@ -139,7 +139,7 @@ export class InventoryScene implements Scene {
     r.rect(0, PANEL_Y + PANEL_H, SCREEN_W, 240 - PANEL_Y - PANEL_H, '#000');
     r.rect(8, PANEL_Y, SCREEN_W - 16, PANEL_H, '#fcfcfc');
     r.rect(10, PANEL_Y + 2, SCREEN_W - 20, PANEL_H - 4, '#000');
-    const title = fontText(`ITEMS - ${game.state.character.hudName}`);
+    const title = fontText(`ITEMS - ${game.state.character.name}`);
     r.text(font, title, 16, PANEL_Y + 6);
     const held = heldItems(game);
     if (held.length) {

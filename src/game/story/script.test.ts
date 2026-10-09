@@ -96,3 +96,23 @@ describe('the story script', () => {
     }
   });
 });
+
+describe('heroes are named in full in what anyone says (0.4.35: Toad called Mega Man "MEGA")', () => {
+  it('hudName (the HUD short name) is used only by the HUD and status bars', async () => {
+    const { readFileSync, readdirSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const f of readdirSync(dir)) {
+        const p = join(dir, f);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (p.endsWith('.ts') && !p.endsWith('.test.ts')) files.push(p);
+      }
+    };
+    walk('src/game');
+    // The HUD and the map's lives box (6 letters), and the hero definitions themselves.
+    const allowed = /^src\/game\/(hud\/|characters\/|scenes\/world-map\.ts)/;
+    const users = files.filter((f) => !allowed.test(f) && /\.hudName\b/.test(readFileSync(f, 'utf8')));
+    expect(users).toEqual([]);
+  });
+});

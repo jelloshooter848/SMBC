@@ -295,7 +295,7 @@ export class Game {
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
     // "THANK YOU <hero>!" names the hero who took the axe, as Toad's thanks do (World.castleText).
-    const hero = (world?.castleHero ?? s.character).hudName;
+    const hero = fontText((world?.castleHero ?? s.character).name);
     const card =
       from === 'll-8-4' || from === 'll-13-4'
         ? [

@@ -1,6 +1,7 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
 import { SCORE_MAX } from '../hud/hud';
+import { fontText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
@@ -2881,7 +2882,7 @@ export class World {
       }
       return;
     }
-    const thanks = `THANK YOU ${p.def.hudName}!`;
+    const thanks = `THANK YOU ${fontText(p.def.name)}!`;
     if (s === 30) this.castleText = [thanks];
     const ok = c.at !== undefined && cardContinues(s - c.at, inputs, CASTLE_OK_KEYS);
     const leave = () => {
