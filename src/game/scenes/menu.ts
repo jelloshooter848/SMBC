@@ -90,6 +90,8 @@ const IN_PANEL: MenuLayout = { titleY: 32, rowY: 52, statusY: 184, backY: 198 };
 const ROW_H = 14;
 const LABEL_X = 36;
 const VALUE_RIGHT = 232;
+/** Columns a label without a value may take (to the panel's right margin). */
+const LABEL_COLS = Math.floor((VALUE_RIGHT - LABEL_X) / 8);
 
 /**
  * A generic vertical list menu drawn with the bitmap font. Used by the title, pause and
@@ -190,7 +192,9 @@ export class MenuScene implements Scene {
       const y = at.rowY + i * ROW_H;
       const sel = first + i === this.index;
       if (sel) r.text(font, '>', 24, y);
-      const label = it.label.toUpperCase().slice(0, 14);
+      // 14 columns leave room for a value; a label without one may use the row ("SKIP THIS
+      // LESSON", "HEART CONTAINER" in a training stage's menus, 0.4.37).
+      const label = it.label.toUpperCase().slice(0, it.value ? 14 : LABEL_COLS);
       r.text(font, label, LABEL_X, y);
       if (it.value) {
         // The value fits between the label (one column of space after it) and the right edge.

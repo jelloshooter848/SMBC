@@ -9,6 +9,7 @@ import { T } from '@game/level/tiles';
 import type { HeroStageScene } from '@game/tutorial/hero-stage';
 import { LINK_LESSONS, LINK_STAGE, ringLights } from '@game/tutorial/heroes/link';
 import { stageWatch } from '@game/tutorial/targets';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { useStorage } from './heroes-harness';
 import { choose, heroCol, playStage, skipGreeting, startAtLabels, startStage } from './stage-bot';
 
@@ -292,6 +293,27 @@ describe("Link's stage", () => {
     // And the lesson can be done.
     playStage(h, s, bot, () => lessonId(s) !== 'bomb', 900);
     expect(lessonId(s)).toBe('shield-spell');
+  });
+
+  it('the START AT list and the stage menu show their entries in full (HEART CONTAINER, SKIP THIS LESSON)', () => {
+    const { h, stage } = startStage('link', { replay: true });
+    const texts = (): string[] => {
+      const out: string[] = [];
+      const r: Renderer = Object.assign(new NullRenderer(), {
+        text(_font: unknown, t: string): void {
+          out.push(t);
+        },
+      });
+      h.top()?.render(r);
+      return out;
+    };
+    expect(texts()).toContain('HEART CONTAINER');
+    choose(h, 'Beginning');
+    skipGreeting(h);
+    expect(h.top()).toBe(stage());
+    h.idle(2);
+    h.tap('start');
+    expect(texts()).toContain('SKIP THIS LESSON');
   });
 
   it("a Shield spell still running is put out at the ring's lesson; ring and spell make every hit free", () => {
