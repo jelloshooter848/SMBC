@@ -2,6 +2,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import { Rng } from '@engine/rng';
 import {
   DIR_VEC,
+  OPPOSITE,
   ROOM_COLS,
   ROOM_H,
   ROOM_ROWS,
@@ -26,6 +27,7 @@ import {
   type Dungeon,
   type Room,
   type Spawn,
+  type TdEntrance,
   type TileKind,
 } from './room';
 
@@ -153,6 +155,11 @@ export interface TdWorldOptions {
   swordBeam?: boolean;
   /** Builds the hero at the start (a game's own TdHero subclass); the kit's sword hero by default. */
   hero?: (x: number, y: number, maxHp?: number) => TdHero;
+  /**
+   * Is a secret found (the save file's `secrets`)? Asked for a building door's lock
+   * (TdEntrance.needs); left out, nothing is found, so every locked door stays shut.
+   */
+  has?: (secret: string) => boolean;
 }
 
 /**
@@ -197,6 +204,17 @@ export class TopDownWorld {
   sealed = false;
   /** An exit tile was reached. */
   exited = false;
+  /**
+   * The building door being gone through (0.4.41): set when the hero walks into one (`enter`);
+   * the world waits (the game fades) until `goThrough` or `arriveAt`.
+   */
+  entering: TdEntrance | null = null;
+  /** The edge of an outdoor screen with no screen past it that the hero walked off (`leave`). */
+  left: Side | null = null;
+  /** Asked for a building door's lock (TdWorldOptions.has). */
+  readonly has: (secret: string) => boolean;
+  /** The shut door the hero is leaning on (one `door-shut` a push). */
+  private bumped: string | null = null;
   private readonly states = new Map<string, RoomState>();
   private shutWas = false;
   /** The room on screen started with enemies in it. */
@@ -214,6 +232,7 @@ export class TopDownWorld {
     this.inv = new Inventory(this.items);
     this.noDamage = opts.noDamage ?? (() => false);
     this.swordBeam = opts.swordBeam ?? false;
+    this.has = opts.has ?? (() => false);
     const start = dungeon.rooms.get(dungeon.startRoom) as Room;
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
     this.hero = opts.hero ? opts.hero(at.x, at.y, opts.maxHp) : new TdHero(at.x, at.y, opts.maxHp);
@@ -321,18 +340,34 @@ export class TopDownWorld {
     return !this.shuttersShut();
   }
 
+  /** Can the hero go through building door `e` (not shut, and its lock's secret found)? */
+  entranceOpen(e: TdEntrance): boolean {
+    return !e.shut && (e.needs === undefined || this.has(e.needs));
+  }
+
+  /** The building door on a cell of the room on screen, if any. */
+  entranceAt(col: number, row: number): TdEntrance | null {
+    return this.room.entrances.find((e) => e.col === col && e.row === row) ?? null;
+  }
+
   /** Is a tile solid for a mover (`col`/`row` may be outside the room)? */
   private tileSolid(col: number, row: number, mover: Mover): boolean {
     const inside = col >= 0 && row >= 0 && col < ROOM_COLS && row < ROOM_ROWS;
     if (!inside) {
       if (mover !== 'hero') return true;
-      // Past the edge: open only straight through an open doorway.
+      // Past the edge: open only straight through an open doorway (an outdoor screen: past any
+      // walkable edge cell).
       const c = Math.max(0, Math.min(ROOM_COLS - 1, col));
       const r = Math.max(0, Math.min(ROOM_ROWS - 1, row));
       if ((c !== col) === (r !== row)) return true; // a corner beyond the room
+      if (this.room.wall === 0) return this.tileSolid(c, r, mover);
       return tileAt(this.room, c, r) !== 'door' || !this.doorOpen(sideOf(c, r, this.room.wall) as Side);
     }
     const t = tileAt(this.room, col, row) as TileKind;
+    if (mover === 'hero' && this.room.entrances.length > 0) {
+      const e = this.entranceAt(col, row);
+      if (e && !this.entranceOpen(e)) return true;
+    }
     switch (t) {
       case 'floor':
       case 'floor-alt':
@@ -491,6 +526,8 @@ export class TopDownWorld {
 
   update(input: InputFrame): void {
     this.frame++;
+    // Going through a building door, or gone off the town's edge: the game takes over.
+    if (this.entering || this.left) return;
     if (this.transition) {
       if (++this.transition.t >= this.transition.frames) this.transition = null;
       return;
@@ -504,7 +541,8 @@ export class TopDownWorld {
     for (const e of [...this.entities]) if (!e.dead) e.update(this);
     if (!hero.dying) this.contacts();
     this.roomLogic();
-    if (!hero.dying) this.leaving();
+    if (!hero.dying) this.entrances();
+    if (!hero.dying && !this.entering) this.leaving();
     this.entities = this.entities.filter((e) => !e.dead);
   }
 
@@ -675,6 +713,75 @@ export class TopDownWorld {
     this.shutWas = shut;
   }
 
+  /**
+   * Building doors: the hero's feet centre on an open door's cell, facing its way in, goes in
+   * (`enter`, then the world waits); facing into a shut one raises `door-shut` once a push.
+   */
+  private entrances(): void {
+    const doors = this.room.entrances;
+    if (doors.length === 0) return;
+    const hero = this.hero;
+    const f = hero.feet();
+    const col = Math.floor((f.x + f.w / 2) / TILE);
+    const row = Math.floor((f.y + f.h / 2) / TILE);
+    const here = this.entranceAt(col, row);
+    if (here && hero.facing === here.enter && this.entranceOpen(here)) {
+      this.entering = here;
+      this.emit({ type: 'enter', id: here.id, to: here.to });
+      return;
+    }
+    // Leaning on a shut door: the cell a pixel ahead of the feet, the way the hero faces.
+    const v = DIR_VEC[hero.facing];
+    const ahead = hero.feet(hero.x + v.dx, hero.y + v.dy);
+    let leaning: TdEntrance | null = null;
+    for (const e of doors) {
+      if (this.entranceOpen(e) || hero.facing !== e.enter) continue;
+      const cell = { x: e.col * TILE, y: e.row * TILE, w: TILE, h: TILE };
+      if (
+        ahead.x < cell.x + cell.w &&
+        cell.x < ahead.x + ahead.w &&
+        ahead.y < cell.y + cell.h &&
+        cell.y < ahead.y + ahead.h
+      )
+        leaning = e;
+    }
+    if (leaning && this.bumped !== leaning.id)
+      this.emit({ type: 'door-shut', id: leaning.id, ...(leaning.needs ? { needs: leaning.needs } : {}) });
+    this.bumped = leaning?.id ?? null;
+  }
+
+  /**
+   * Through the door being entered (`entering`) to its pair: the hero arrives one step past the
+   * other door, facing away from it. A door to something that is no room ('@...') is the game's.
+   */
+  goThrough(): void {
+    const e = this.entering;
+    if (!e) return;
+    if (e.to.startsWith('@')) return;
+    this.arriveAt(e.to);
+  }
+
+  /**
+   * Puts the hero on the step of building door `id` (one cell out from it, facing away), in its
+   * room: coming out of a house, or back from a level a door led to.
+   */
+  arriveAt(id: string): void {
+    const found = this.dungeon.entrances.get(id);
+    if (!found) throw new Error(`no door "${id}"`);
+    const { room, door } = found;
+    const out = OPPOSITE[door.enter];
+    const v = DIR_VEC[out];
+    this.entering = null;
+    this.left = null;
+    this.transition = null;
+    this.walkIn = null;
+    this.hero.x = (door.col + v.dx) * TILE;
+    this.hero.y = (door.row + v.dy) * TILE;
+    this.hero.facing = out;
+    this.bumped = null;
+    this.enterRoom(room);
+  }
+
   private leaving(): void {
     const hero = this.hero;
     const f = hero.feet();
@@ -698,11 +805,20 @@ export class TopDownWorld {
     if (side) this.slide(side);
   }
 
-  /** Starts the slide to the room past `side` and puts the hero in its doorway. */
+  /**
+   * Starts the slide to the room past `side` and puts the hero in its doorway. Off an outdoor
+   * screen's edge with no screen past it, the hero has left (`leave`; the game decides).
+   */
   private slide(side: Side): void {
     const [gx, gy] = neighbourCell(this.room, side);
     const next = this.dungeon.roomAt(gx, gy);
-    if (!next) return;
+    if (!next) {
+      if (this.room.wall === 0 && !this.left) {
+        this.left = side;
+        this.emit({ type: 'leave', side });
+      }
+      return;
+    }
     const from = this.room;
     const hero = this.hero;
     if (side === 'w') hero.x = ROOM_W - TILE;
@@ -735,6 +851,8 @@ export class TopDownWorld {
     if (!room) throw new Error(`no room "${id}"`);
     this.transition = null;
     this.walkIn = null;
+    this.entering = null;
+    this.left = null;
     this.hero.x = x;
     this.hero.y = y;
     this.enterRoom(room);

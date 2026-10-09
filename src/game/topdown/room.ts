@@ -1,4 +1,4 @@
-import { ROOM_COLS, ROOM_ROWS, TILE, type Side } from './geometry';
+import { DIR_VEC, OPPOSITE, ROOM_COLS, ROOM_ROWS, TILE, type Dir, type Side } from './geometry';
 
 /**
  * Text rooms. A room is 11 strings of 16 characters, one per tile, read like a map (here with
@@ -10,9 +10,11 @@ import { ROOM_COLS, ROOM_ROWS, TILE, type Side } from './geometry';
  *   #......o.......O     @ player start  P push block   o block plate  _ floor switch
  *   ...                  t torch (unlit) T torch (lit)  k key  h heart H heart container
  *                        f heart refill  c chest        C cracked wall
- *                        m map           v compass
+ *                        m map           v compass      D building door (floor, `entrances`)
  *                        b bat           n knight       r rock-spitter
  *
+ * A room with `wall: 0` is an outdoor screen (0.4.41, a town): no wall band, open edges, and
+ * usually an art layer (`art`) saying what each cell looks like.
  * A cracked wall (C) is a wall a blast opens (world.ts). On the border it is a doorway that
  * starts shut (door kind `cracked`); inside the room it is a wall cell that becomes floor.
  * A chest (c) holds what the room's `chests` list says, in reading order.
@@ -68,6 +70,8 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
   r: { tile: 'floor', spawn: 'spitter' },
   m: { tile: 'floor', spawn: 'map' },
   v: { tile: 'floor', spawn: 'compass' },
+  /** A building door's cell (floor; the room's `entrances` say where it goes). May sit on the border. */
+  D: { tile: 'floor' },
 };
 
 export interface RoomDef {
@@ -90,6 +94,45 @@ export interface RoomDef {
   goal?: boolean;
   /** What each chest (c) holds, in reading order: an item id or a pickup kind (world.ts `grant`). */
   chests?: readonly string[];
+  /**
+   * How many tiles thick this room's outer wall is, over the dungeon's (`DungeonOptions.wall`).
+   * 0 is an outdoor screen (a town's): no wall band, any cell may sit on the border, and walking
+   * off an edge whose cell is walkable slides to the screen past it (or, with none, leaves: the
+   * world's `leave` event).
+   */
+  wall?: number;
+  /**
+   * The art layer (0.4.41): each cell's pictures, bottom to top (frames of the tile sheet), in
+   * reading order (ROOM_COLS × ROOM_ROWS); null or left out, the cell draws its tile kind. The map
+   * characters still say what is solid; this says what it looks like (a hedge, a roof corner).
+   */
+  art?: readonly (readonly string[] | null)[];
+  /** Building doors inside the room (TdEntrance). */
+  entrances?: readonly TdEntrance[];
+}
+
+/**
+ * A door inside a room (0.4.41: a town's houses): walking onto its cell the way `enter` says
+ * (up into a house's front door, down out through a room's) takes the hero through to the door
+ * `to` names, arriving one step past it. A `to` starting with '@' is no door but the game's to
+ * handle (the house whose door loads a side-view level); the world raises `enter` and waits.
+ */
+export interface TdEntrance {
+  /** Unique in the dungeon. */
+  id: string;
+  col: number;
+  row: number;
+  /** The way the hero walks to go in. */
+  enter: Dir;
+  /** The paired door's id (its `to` is this one's), or '@<action>' for the game. */
+  to: string;
+  /**
+   * The lock: a secret (the save file's `secrets` list) that must be found first. Until then the
+   * door is shut (solid; bumping it raises `door-shut`). Left out, the door is open.
+   */
+  needs?: string;
+  /** Shut for now whatever is found (a building not open yet). */
+  shut?: boolean;
 }
 
 export interface Spawn {
@@ -117,6 +160,8 @@ export interface Room {
   readonly spawns: readonly Spawn[];
   /** Where the player starts when the game starts in this room (tile top-left), if marked. */
   readonly start: { x: number; y: number } | null;
+  /** Building doors inside the room. */
+  readonly entrances: readonly TdEntrance[];
 }
 
 /**
@@ -157,6 +202,7 @@ export function parseRoom(
   extraLegend: Readonly<Record<string, LegendEntry>> = {},
   wall = 1,
 ): Room {
+  wall = def.wall ?? wall;
   const where = (r: number, c?: number) => `room "${def.id}" row ${r}${c === undefined ? '' : ` col ${c}`}`;
   if (def.map.length !== ROOM_ROWS)
     throw new Error(`room "${def.id}": ${def.map.length} rows, expected ${ROOM_ROWS}`);
@@ -178,6 +224,10 @@ export function parseRoom(
       // A cracked wall on the border is a doorway a blast opens.
       const e: LegendEntry = found.tile === 'cracked' && side ? { tile: 'door', door: 'cracked' } : found;
       if (e.door) {
+        if (wall === 0)
+          throw new Error(
+            `${where(row, col)}: an outdoor screen (wall 0) has no doorways; its edges are open`,
+          );
         if (!side)
           throw new Error(`${where(row, col)}: a door must be on an edge, not inside or on a corner`);
         const had = doors[side];
@@ -188,7 +238,12 @@ export function parseRoom(
         const cells = (doorCells[side] ??= []);
         if (!cells.includes(along)) cells.push(along);
         doorAt.add(`${side}:${wallDepth(col, row, side)}:${along}`);
-      } else if (isBorder(col, row, wall) && e.tile !== 'wall' && e.tile !== 'exit') {
+      } else if (
+        isBorder(col, row, wall) &&
+        e.tile !== 'wall' &&
+        e.tile !== 'exit' &&
+        !def.entrances?.some((d) => d.col === col && d.row === row)
+      ) {
         throw new Error(`${where(row, col)}: the border must be wall, door or exit (got "${ch}")`);
       }
       tiles.push(e.tile);
@@ -210,7 +265,32 @@ export function parseRoom(
   const chests = spawns.filter((s) => s.kind === 'chest').length;
   if (chests !== (def.chests?.length ?? 0))
     throw new Error(`room "${def.id}": ${chests} chests but ${def.chests?.length ?? 0} in \`chests\``);
-  return { id: def.id, wall, gx: def.at[0], gy: def.at[1], def, tiles, doors, doorCells, spawns, start };
+  if (def.art && def.art.length !== ROOM_COLS * ROOM_ROWS)
+    throw new Error(`room "${def.id}": art for ${def.art.length} cells, expected ${ROOM_COLS * ROOM_ROWS}`);
+  const entrances = def.entrances ?? [];
+  for (const e of entrances) {
+    if (e.col < 0 || e.row < 0 || e.col >= ROOM_COLS || e.row >= ROOM_ROWS)
+      throw new Error(`room "${def.id}": door "${e.id}" is outside the room`);
+    const t = tiles[e.row * ROOM_COLS + e.col];
+    const v = DIR_VEC[OPPOSITE[e.enter]];
+    const step = tiles[(e.row + v.dy) * ROOM_COLS + e.col + v.dx];
+    const walkable = (k: TileKind | undefined) => k === 'floor' || k === 'floor-alt' || k === 'stairs';
+    if (!walkable(t) || !walkable(step))
+      throw new Error(`room "${def.id}": door "${e.id}" and its step must be walkable floor`);
+  }
+  return {
+    id: def.id,
+    wall,
+    gx: def.at[0],
+    gy: def.at[1],
+    def,
+    tiles,
+    doors,
+    doorCells,
+    spawns,
+    start,
+    entrances,
+  };
 }
 
 export function tileAt(room: Room, col: number, row: number): TileKind | null {
@@ -229,6 +309,8 @@ export interface Dungeon {
   readonly cols: number;
   readonly rows: number;
   roomAt(gx: number, gy: number): Room | null;
+  /** Every building door (TdEntrance) by id, with its room. */
+  readonly entrances: ReadonlyMap<string, { room: Room; door: TdEntrance }>;
 }
 
 const SIDE_STEP: Record<Side, [number, number]> = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
@@ -270,6 +352,20 @@ export function buildDungeon(
     rows = Math.max(rows, room.gy + 1);
   }
   if (!startRoom) throw new Error('no room has a player start (@)');
+  const entrances = new Map<string, { room: Room; door: TdEntrance }>();
+  for (const room of rooms.values())
+    for (const door of room.entrances) {
+      if (entrances.has(door.id)) throw new Error(`door "${door.id}" is defined twice`);
+      entrances.set(door.id, { room, door });
+    }
+  for (const { room, door } of entrances.values()) {
+    if (door.to.startsWith('@')) continue;
+    const other = entrances.get(door.to);
+    if (!other)
+      throw new Error(`room "${room.id}": door "${door.id}" leads to "${door.to}", which is no door`);
+    if (other.door.to !== door.id)
+      throw new Error(`room "${room.id}": door "${door.id}" leads to "${door.to}", which leads elsewhere`);
+  }
   const roomAt = (gx: number, gy: number) => byCell.get(`${gx},${gy}`) ?? null;
   for (const room of rooms.values()) {
     for (const side of Object.keys(room.doors) as Side[]) {
@@ -282,5 +378,5 @@ export function buildDungeon(
         throw new Error(`room "${room.id}": the ${side} door does not line up with room "${next.id}"'s`);
     }
   }
-  return { rooms, startRoom, cols, rows, roomAt };
+  return { rooms, startRoom, cols, rows, roomAt, entrances };
 }

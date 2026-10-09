@@ -16,3 +16,5 @@ export * from './view';
 export * from './render';
 export * from './hud';
 export * from './frames';
+export * from './walker';
+export * from './person';

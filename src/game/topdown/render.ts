@@ -2,7 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { DIR_VEC, HUD_H, ROOM_COLS, ROOM_H, ROOM_ROWS, ROOM_W, SIDE_DIR, TILE, type Side } from './geometry';
 import { isBorder, sideOf, tileAt, wallDepth, type Room, type TileKind } from './room';
 import type { TdView } from './view';
-import type { TdEnemy } from './entity';
+import type { TdEnemy, TdEntity } from './entity';
 import type { TopDownWorld } from './world';
 
 /** Flat colours used when the tile art is missing. */
@@ -96,6 +96,12 @@ export function drawRoomTiles(
       const x = ox + col * TILE;
       const y = oy + row * TILE;
       if (x <= -TILE || x >= ROOM_W || y <= -TILE || y >= 240) continue;
+      // The art layer (0.4.41): the cell's own pictures, bottom to top.
+      const art = room.def.art?.[row * ROOM_COLS + col];
+      if (art) {
+        for (const f of art) put(f, x, y, PLACEHOLDER.floor);
+        continue;
+      }
       const t = tileAt(room, col, row) as TileKind;
       const side = sideOf(col, row, wall);
       switch (t) {
@@ -165,6 +171,22 @@ export function drawRoomTiles(
   }
 }
 
+/**
+ * A shut building door (TdEntrance) drawn over its cell: `door-boarded` while its lock's secret
+ * is not found (`needs`), else `door-closed` (a building not open yet).
+ */
+function drawShutEntrances(r: Renderer, view: TdView, world: TopDownWorld, ox: number, oy: number): void {
+  const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
+  for (const e of world.room.entrances) {
+    if (world.entranceOpen(e)) continue;
+    const frame = e.shut ? 'door-closed' : 'door-boarded';
+    const x = ox + e.col * TILE;
+    const y = oy + e.row * TILE;
+    if (sheet?.frames.has(frame)) r.sprite(sheet, frame, x, y);
+    else r.rect(x + 2, y, TILE - 4, TILE, '#7c4c18');
+  }
+}
+
 /** How a doorway of the room on screen looks right now. */
 function liveDoor(world: TopDownWorld, side: Side): DoorLook {
   const kind = world.room.doors[side];
@@ -226,11 +248,19 @@ export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld): voi
     oy,
     (c) => world.state().blasted.has(c),
   );
+  drawShutEntrances(r, view, world, ox, oy);
   const byLayer = (l: number) => world.entities.filter((e) => e.layer === l && !e.dead);
   for (const e of byLayer(0)) e.render(r, view, ox, oy);
-  for (const e of byLayer(1)) e.render(r, view, ox, oy);
+  // Townsfolk (`ySort`) are drawn with the hero, whoever's feet are lower in front (0.4.41).
+  const sorted = (e: TdEntity) => 'ySort' in e && e.ySort === true;
+  const actors = byLayer(1);
+  for (const e of actors) if (!sorted(e)) e.render(r, view, ox, oy);
   for (const e of world.enemies()) if (e.stunT > 0) drawStunned(r, view, e, ox, oy);
+  const folk = actors.filter(sorted).sort((a, b) => a.y - b.y);
+  const heroY = world.hero.y;
+  for (const e of folk) if (e.y <= heroY) e.render(r, view, ox, oy);
   world.hero.render(r, view, ox, oy);
+  for (const e of folk) if (e.y > heroY) e.render(r, view, ox, oy);
   for (const e of byLayer(2)) e.render(r, view, ox, oy);
   for (const e of byLayer(3)) e.render(r, view, ox, oy);
 }
