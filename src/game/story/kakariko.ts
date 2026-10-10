@@ -119,7 +119,13 @@ export function shopGrowFirst(item: string): Page {
  */
 export const HOBB_GIFT: readonly Page[] = [
   say('HOBB', "I'M HOBB. I MAKE WALLETS.", 'YOURS IS A POCKET! COINS', 'FALL OUT AT A HUNDRED.'),
-  say('HOBB', 'TAKE THIS ONE. IT HOLDS', '999, AND IT NEVER SPILLS.', 'NO CHARGE. THE SHOP WILL', 'BE GLAD OF YOU.'),
+  say(
+    'HOBB',
+    'TAKE THIS ONE. IT HOLDS',
+    '999, AND IT NEVER SPILLS.',
+    'NO CHARGE. THE SHOP WILL',
+    'BE GLAD OF YOU.',
+  ),
 ];
 export const WALLET_GOT: Page = [
   "YOU GOT THE TRAVELER'S",

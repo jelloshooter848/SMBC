@@ -200,6 +200,9 @@ const SFX_IDS = [
   // Kakariko Village (0.4.41): the hero switch's chime, the hen.
   'hero-switch',
   'hen',
+  // Kakariko's shop (0.4.42): the purchase jingle, the Wallet's fanfare.
+  'shop-buy',
+  'wallet',
 ];
 
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);

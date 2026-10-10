@@ -71,13 +71,21 @@ const LINK_REFILL: ShopRefill = {
 };
 
 /** Mega Man's weapons on his belt (each its own item) and Rush. */
-const MEGAMAN_TANKS = [...WEAPONS.map((w) => ({ item: w.item, key: `w${w.id}` })), { item: 'rush-coil', key: `w${RUSH.id}` }];
+const MEGAMAN_TANKS = [
+  ...WEAPONS.map((w) => ({ item: w.item, key: `w${w.id}` })),
+  { item: 'rush-coil', key: `w${RUSH.id}` },
+];
 const MEGAMAN_REFILL: ShopRefill = {
   name: 'Weapon Energy',
   does: 'every weapon filled',
   icon: { sheet: 'items', frame: 'weapon-pellet-large' },
-  via: (p) => owned(p, MEGAMAN_TANKS.map((t) => t.item)),
-  room: (p) => MEGAMAN_TANKS.some((t) => has(p, t.item) && (p.scratch[t.key] ?? WEAPON_ENERGY) < WEAPON_ENERGY),
+  via: (p) =>
+    owned(
+      p,
+      MEGAMAN_TANKS.map((t) => t.item),
+    ),
+  room: (p) =>
+    MEGAMAN_TANKS.some((t) => has(p, t.item) && (p.scratch[t.key] ?? WEAPON_ENERGY) < WEAPON_ENERGY),
 };
 
 const SAMUS_REFILL: ShopRefill = {
@@ -187,7 +195,9 @@ function plumberOwns(p: Player, id: string): boolean {
 
 /** An item's picture: the hero items' own, or SMB's mushroom and flower for Mario and Luigi. */
 const heroIcon = (c: CharacterDef, id: string): ShopIcon =>
-  plumber(c) ? { sheet: 'items', frame: id === 'mushroom' ? 'mushroom' : 'flower-0' } : { sheet: 'hero-items', frame: id };
+  plumber(c)
+    ? { sheet: 'items', frame: id === 'mushroom' ? 'mushroom' : 'flower-0' }
+    : { sheet: 'hero-items', frame: id };
 
 /** The current hero's tables, left to right (three for a hero with no refill). */
 export function shopEntries(s: GameState, visit: ShopVisit): ShopEntry[] {

@@ -607,7 +607,8 @@ describe('townsfolk', () => {
       const def = FOLK_DEFS[f.who];
       expect(def, f.who).toBeDefined();
       // The hen has nothing to say; the shop's tables are for buying (tests/sim/kakariko-shop.test.ts).
-      if (f.who !== 'hen' && !f.who.startsWith('table-')) expect(def!.pages(ctx(MARIO)).length, f.who).toBeGreaterThan(0);
+      if (f.who !== 'hen' && !f.who.startsWith('table-'))
+        expect(def!.pages(ctx(MARIO)).length, f.who).toBeGreaterThan(0);
     }
     expect(FOLK_DEFS.gardener!.pages(ctx(LINK))).not.toEqual(FOLK_DEFS.gardener!.pages(ctx(MARIO)));
     expect(FOLK_DEFS.kid!.pages(ctx(SAMUS))).not.toEqual(FOLK_DEFS.kid!.pages(ctx(MARIO)));
@@ -616,7 +617,13 @@ describe('townsfolk', () => {
   });
 
   it('every line fits a card (26 columns) and names no level by its number', () => {
-    const ctx = { hero: MARIO, heroName: 'SOPHIA III', firstVisit: true, switchButton: 'TOOLS', wallet: false };
+    const ctx = {
+      hero: MARIO,
+      heroName: 'SOPHIA III',
+      firstVisit: true,
+      switchButton: 'TOOLS',
+      wallet: false,
+    };
     for (const [who, def] of Object.entries(FOLK_DEFS))
       for (const page of [...def.pages(ctx), ...def.pages({ ...ctx, wallet: true })])
         for (const line of page) {
@@ -1180,10 +1187,15 @@ describe("the Wallet: Hobb the tanner's gift on the first visit", () => {
   });
 });
 
-/** Into the shop on a later visit; `over` patches the file (coins, heroes freed, the Wallet). */
+/**
+ * Into the shop on a later visit; `over` patches the file (coins, heroes freed). `wallet: false`
+ * takes the Wallet away again once in (Hobb gives it on arrival, so in play the shop is never
+ * seen without it; its no-Wallet rules are tested all the same).
+ */
 function intoShop(h: H, over: Parameters<typeof file>[0] = {}): TownScene {
-  onWorld2(h, { secrets: ['bonus-2', KAKARIKO], ...over });
+  onWorld2(h, { secrets: ['bonus-2', KAKARIKO], ...over, wallet: true });
   intoTown(h);
+  if (over.wallet === false) h.game.state.wallet = false;
   goIn(h, 'shop');
   const t = town(h);
   expect(t.world.room.id).toBe('shop');
@@ -1327,6 +1339,7 @@ describe("Kakariko's shop", () => {
     outOfGate(h);
     h.until(() => map(h).mode === 'idle', 600);
     intoTown(h);
+    h.game.state.wallet = false;
     goIn(h, 'shop');
     expect(onTables(town(h))[2]).toBe('1-Up 50');
   });
@@ -1367,7 +1380,8 @@ describe("Kakariko's shop", () => {
 describe('3 digits with the Wallet: the village HUD and the level HUD', () => {
   it('the village HUD: 2 digits without, 3 with (the lives make room)', () => {
     const h = makeGame();
-    const t = townQuiet(h, { coins: 7, wallet: false });
+    const t = townQuiet(h, { coins: 7 });
+    h.game.state.wallet = false;
     const hud = () => {
       const rec = recorder();
       t.render(rec.r);

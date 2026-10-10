@@ -15,7 +15,18 @@ import { miniGameDevItems } from '../minigames/menu';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText } from '../hud/text';
 import { playStoryCards } from '../story/cards';
-import { DOOR_LOCKED, NO_ONE_ELSE, SHOP_SHUT } from '../story/kakariko';
+import {
+  DOOR_LOCKED,
+  NO_ONE_ELSE,
+  SHOP_FULL,
+  SHOP_ONE_A_VISIT,
+  SHOP_OWNED,
+  shopGrowFirst,
+  shopShort,
+} from '../story/kakariko';
+import type { Page } from '../story/script';
+import { coinText } from '../items/wallet';
+import { itemInfo } from '../items/catalog';
 import { TopDownWorld, type TdEvent } from '../topdown/world';
 import { drawRoomTiles, renderWorld } from '../topdown/render';
 import type { Room } from '../topdown/room';
@@ -24,7 +35,17 @@ import { fxPalette } from '@content/sprites/palette-fx';
 import { fontOf, sheetLookup, type TdSheets, type TdView } from '../topdown/view';
 import { talkTarget } from '../topdown/person';
 import { overheadLook, TownHero } from './hero';
-import { folkSpawner, Kid, Townsperson, type TalkContext } from './folk';
+import { FOLK_DEFS, folkSpawner, HELD_FRAMES, Kid, ShopTable, Townsperson, type TalkContext } from './folk';
+import {
+  buy,
+  newShopVisit,
+  SHOP_STOCK,
+  shopEntries,
+  type ShopEntry,
+  type ShopIcon,
+  type ShopSlot,
+} from './shop';
+import { ShopCardScene } from './shop-card';
 import { indoorName, isOutdoor, villageDungeon } from './village';
 
 /*
@@ -110,6 +131,17 @@ export class TownScene implements Scene {
   talking: Townsperson | null = null;
   /** The guard's hello is still to come (first visit, after the walk in). */
   private greet: boolean;
+  /**
+   * Hobb's gift is still to come (0.4.42): on arrival, after any hello, while the file has no
+   * Wallet (the first visit, or the first since a file found the village before the shop).
+   */
+  private gift: boolean;
+  /** This visit's shop (the 1-up without the Wallet is one a visit). */
+  readonly shopVisit = newShopVisit();
+  /** What floats over the hero's head (a bought item, the Wallet), and for how long more. */
+  held: { icon: ShopIcon; t: number } | null = null;
+  /** An item's own sound, played a moment after the purchase jingle. */
+  private laterSfx: { id: string; t: number } | null = null;
   /** Who the prompt was last said for (each is said once as they come in reach). */
   private prompted: Townsperson | null = null;
   private music: string | null = null;
@@ -122,6 +154,7 @@ export class TownScene implements Scene {
   ) {
     this.first = opts.first;
     this.greet = opts.first;
+    this.gift = !game.state.wallet;
     const hero = (x: number, y: number) =>
       new TownHero(x, y, {
         character: () => game.state.character,
@@ -196,6 +229,11 @@ export class TownScene implements Scene {
     this.game.ctx.audio.sfx(id);
   }
 
+  /** Someone is still to speak on arrival (the guard's hello, Hobb's gift). */
+  get arriving(): boolean {
+    return this.greet || this.gift;
+  }
+
   /** The hero can act (walk, talk, switch): nothing is sliding, fading or walking him in. */
   get free(): boolean {
     const w = this.world;
@@ -210,13 +248,20 @@ export class TownScene implements Scene {
       heroName: fontText(hero.name.toUpperCase()),
       firstVisit: this.first,
       switchButton: controlScheme(this.game) === 'touch' ? 'HERO' : 'TOOLS',
+      wallet: this.game.state.wallet,
     };
+  }
+
+  /** `p` has something to say (or, a display table, something on it to buy). */
+  canTalk(p: unknown): p is Townsperson {
+    if (p instanceof ShopTable) return p.entry !== null;
+    return p instanceof Townsperson && p.pages(this.talkContext()).length > 0;
   }
 
   touchLabels(): TouchLabels {
     if (!this.free) return { ...NO_TOUCH_BUTTONS };
     const target = talkTarget(this.world);
-    const talk = target instanceof Townsperson && target.pages(this.talkContext()).length > 0;
+    const talk = this.canTalk(target);
     return { ...NO_TOUCH_BUTTONS, jump: talk ? target.verb : null, start: 'MENU', select: 'HERO' };
   }
 
@@ -231,6 +276,12 @@ export class TownScene implements Scene {
     if (this.notice) this.notice.t++;
     const before = { x: this.hero.x, y: this.hero.y, free: this.free };
     if (this.puff && ++this.puff.t >= PUFF_FRAMES) this.puff = null;
+    if (this.held && ++this.held.t >= HELD_FRAMES) this.held = null;
+    if (this.laterSfx && --this.laterSfx.t <= 0) {
+      this.sfx(this.laterSfx.id);
+      this.laterSfx = null;
+    }
+    this.stockTables();
     if (this.switchT > 0) this.switchT--;
     if (this.fade) {
       this.updateFade();
@@ -244,7 +295,9 @@ export class TownScene implements Scene {
       if (input.pressed('select')) this.switchHero();
       else if (input.pressed('jump') || input.pressed('special')) {
         const p = talkTarget(this.world);
-        if (p instanceof Townsperson && this.talk(p)) return;
+        if (p instanceof ShopTable) {
+          if (this.openTable(p)) return;
+        } else if (p instanceof Townsperson && this.talk(p)) return;
       }
     }
     this.world.update(input);
@@ -255,10 +308,16 @@ export class TownScene implements Scene {
     if (this.notice && this.notice.t >= BANNER_MIN && dismiss) this.notice = null;
     for (const e of this.world.events.splice(0)) this.onEvent(e);
     const welcomed = !this.banner || this.banner.t >= BANNER_GREET;
-    if (this.greet && !this.world.walkIn && !this.fade && welcomed) {
-      this.greet = false;
-      const guard = this.world.entities.find((e) => e instanceof Townsperson && e.id === 'guard');
-      if (guard instanceof Townsperson) this.talk(guard);
+    if (this.arriving && this.free && welcomed && this.game.scenes.top === this) {
+      if (this.greet) {
+        this.greet = false;
+        const guard = this.folk('guard');
+        if (guard) this.talk(guard);
+      } else {
+        // Hobb's gift, straight after (the next frame): his cards, then the Wallet.
+        this.gift = false;
+        if (!this.game.state.wallet) this.giveWallet();
+      }
     }
     this.updatePrompt();
   }
@@ -274,9 +333,19 @@ export class TownScene implements Scene {
   /** Says who is in reach to talk to, once as they come in reach. */
   private updatePrompt(): void {
     const p = this.free ? talkTarget(this.world) : null;
-    const who = p instanceof Townsperson && p.pages(this.talkContext()).length > 0 ? p : null;
-    if (who && who !== this.prompted) this.say(`${spoken(who.name)}. ${this.promptText(who)}.`);
+    const who = this.canTalk(p) ? p : null;
+    if (who && who !== this.prompted) {
+      const e = who instanceof ShopTable ? who.entry : null;
+      const name = e ? `${e.name}, ${e.mark ? e.mark.toLowerCase() : `${e.price} coins`}` : spoken(who.name);
+      this.say(`${name}. ${this.promptText(who)}.`);
+    }
     this.prompted = who;
+  }
+
+  /** Who stands in the room with FOLK id `id`, if anyone. */
+  private folk(id: string): Townsperson | null {
+    const p = this.world.entities.find((e) => e instanceof Townsperson && e.id === id);
+    return p instanceof Townsperson ? p : null;
   }
 
   /** The prompt over someone in reach: TALK (or READ, LOOK) and its key. */
@@ -293,6 +362,7 @@ export class TownScene implements Scene {
     if (p instanceof Kid) p.talking = true;
     this.talking = p;
     this.banner = null;
+    const after = p.after(ctx);
     // The box goes where it hides the hero least.
     const bottom = this.hero.y < ROOM_H / 2;
     playStoryCards(
@@ -303,11 +373,88 @@ export class TownScene implements Scene {
         p.rest();
         if (p instanceof Kid) p.talking = false;
         this.talking = null;
-        if (p.after(ctx) === 'heal') this.heal();
+        if (after === 'heal') this.heal();
+        if (after === 'wallet' && !this.game.state.wallet) {
+          // BACK skipped the cards: the Wallet is given all the same.
+          this.receiveWallet();
+          this.say(`You got the ${spoken(WALLET_SAID)}.`);
+        }
       },
-      { bottom },
+      {
+        bottom,
+        // The Wallet changes hands as its card shows (the last page).
+        ...(after === 'wallet'
+          ? { onNext: (i: number) => i === pages.length - 2 && this.receiveWallet() }
+          : {}),
+      },
     );
     return true;
+  }
+
+  /**
+   * Hobb's gift (0.4.42): he turns to the hero and hands over the Wallet; his cards are skippable
+   * (BACK), and it is given either way. Without him in the room (a test's odd start) the cards
+   * play all the same.
+   */
+  giveWallet(): void {
+    const hobb = this.folk('tanner');
+    if (hobb) {
+      this.talk(hobb);
+      return;
+    }
+    const pages = FOLK_TANNER_PAGES(this.talkContext());
+    playStoryCards(this.game, null, pages, () => this.receiveWallet(), {
+      bottom: this.hero.y < ROOM_H / 2,
+      onNext: (i) => i === pages.length - 2 && this.receiveWallet(),
+    });
+  }
+
+  /** The Wallet is the file's: held up over the hero, a fanfare, saved at once. */
+  receiveWallet(): void {
+    const s = this.game.state;
+    if (s.wallet) return;
+    s.wallet = true;
+    this.held = { icon: { sheet: 'town-folk', frame: 'wallet' }, t: 0 };
+    this.sfx('wallet');
+    this.game.autosave();
+  }
+
+  /** The shop's tables show the current hero's stock (refreshed every frame: SELECT changes it). */
+  private stockTables(): void {
+    if (this.world.room.id !== 'shop') return;
+    const entries = shopEntries(this.game.state, this.shopVisit);
+    for (const e of this.world.entities) if (e instanceof ShopTable) e.entry = entries[e.index] ?? null;
+  }
+
+  /** TALK at a display table: its buy card (or the shopkeeper saying why not). False if bare. */
+  openTable(t: ShopTable): boolean {
+    this.stockTables();
+    const e = t.entry;
+    if (!e) return false;
+    this.banner = null;
+    this.notice = null;
+    const reply = shopReply(e, this.game.state.coins, this.game.state.character.id);
+    this.game.scenes.push(
+      new ShopCardScene(this.game, e, reply, (yes) => yes && this.purchase(e.slot), this.hero.y < ROOM_H / 2),
+    );
+    return true;
+  }
+
+  /**
+   * Buys the current hero's `slot` (YES on the card): the purchase jingle, then the item's own
+   * sound; the item floats over the hero, its name shows and is said, and the file is saved.
+   */
+  purchase(slot: ShopSlot): void {
+    const out = buy(this.game.state, this.shopVisit, slot);
+    if (out.kind !== 'bought') return;
+    const e = out.entry;
+    this.sfx('shop-buy');
+    this.laterSfx = { id: out.sfx, t: 24 };
+    this.held = { icon: e.icon, t: 0 };
+    this.notify(`${fontText(e.name.toUpperCase())}!`, false);
+    this.say(`${e.name}: ${e.does}. Thank you!`);
+    this.stockTables();
+    this.game.autosave();
   }
 
   /** The healer: the hero's hit points back in full, for free. */
@@ -335,9 +482,9 @@ export class TownScene implements Scene {
     this.prompted = null;
   }
 
-  private notify(text: string): void {
+  private notify(text: string, said = true): void {
     this.notice = { text, t: 0 };
-    this.say(spoken(text));
+    if (said) this.say(spoken(text));
   }
 
   private onEvent(e: TdEvent): void {
@@ -372,7 +519,7 @@ export class TownScene implements Scene {
       }
       case 'door-shut': {
         this.sfx('bump');
-        this.notify(e.id === 'shop' ? SHOP_SHUT : DOOR_LOCKED);
+        this.notify(DOOR_LOCKED);
         return;
       }
       case 'leave':
@@ -427,9 +574,11 @@ export class TownScene implements Scene {
 
   render(r: Renderer): void {
     r.clear('#000000');
+    this.stockTables();
     drawSurround(r, this.view, this.world);
     renderWorld(r, this.view, this.world, PLAY_Y);
     this.drawPuff(r);
+    this.drawHeld(r);
     this.drawPrompt(r);
     const k = this.fadeLevel();
     if (k > 0) r.rect(0, 0, SCREEN_W, SCREEN_H, `rgba(0,0,0,${k.toFixed(3)})`);
@@ -453,11 +602,23 @@ export class TownScene implements Scene {
     else r.rect(x + 2, y + 2, 12, 12, 'rgba(252,252,252,0.6)');
   }
 
-  /** TALK (READ, LOOK) over whoever the hero can talk to. */
+  /** A bought item (or the Wallet) held up over the hero's head, as it is got. */
+  private drawHeld(r: Renderer): void {
+    const h = this.held;
+    if (!h || this.world.transition) return;
+    const sheet = this.view.sheet(h.icon.sheet);
+    const f = sheet?.frames.get(h.icon.frame);
+    const x = this.hero.x + 8;
+    const y = PLAY_Y + this.hero.y - 3;
+    if (sheet && f) r.sprite(sheet, h.icon.frame, x - (f.w >> 1), y - f.h);
+    else r.rect(x - 6, y - 12, 12, 12, '#f8d878');
+  }
+
+  /** TALK (READ, LOOK; BUY at a table) over whoever the hero can talk to. */
   private drawPrompt(r: Renderer): void {
     if (!this.free) return;
     const p = talkTarget(this.world);
-    if (!(p instanceof Townsperson) || p.pages(this.talkContext()).length === 0) return;
+    if (!this.canTalk(p)) return;
     const text = fontText(this.promptText(p));
     const font = fontOf(this.view);
     const w = text.length * 8 + 4;
@@ -505,6 +666,30 @@ function drawNotice(r: Renderer, font: ReturnType<typeof fontOf>, text: string):
   const y = SCREEN_H - 28;
   r.rect(x, y, w, 16, 'rgba(0,0,0,0.8)');
   r.text(font, t, x + 8, y + 4);
+}
+
+/** The Wallet's name as said ("Traveler's Wallet"). */
+const WALLET_SAID = "TRAVELER'S WALLET";
+
+/** Hobb's pages with no Hobb in the room (giveWallet's fallback). */
+const FOLK_TANNER_PAGES = (ctx: TalkContext): readonly Page[] => FOLK_DEFS.tanner?.pages(ctx) ?? [];
+
+/**
+ * What the shopkeeper says on the buy card when `e` can't be bought by a hero with `coins` (null:
+ * it can, the card asks BUY?).
+ */
+export function shopReply(e: ShopEntry, coins: number, hero: string): Page | null {
+  switch (e.mark) {
+    case 'GROW FIRST': {
+      const grow = SHOP_STOCK[hero]?.grow ?? '';
+      return shopGrowFirst(fontText((itemInfo(hero, grow)?.name ?? grow).toUpperCase()));
+    }
+    case 'FULL':
+      return SHOP_FULL;
+    case 'SOLD OUT':
+      return e.slot === 'life' ? SHOP_ONE_A_VISIT : SHOP_OWNED;
+  }
+  return coins < e.price ? shopShort(e.price) : null;
 }
 
 /** The power a hero has, as the HUD names it. */
@@ -607,12 +792,16 @@ function drawTownHud(r: Renderer, scene: TownScene): void {
   const sheet = view.sheet(look.sheet, look.palette) ?? view.sheet(look.sheet);
   const f = sheet?.frames.get(look.frame);
   if (sheet && f) r.sprite(sheet, look.frame, b.x + 12 - (f.w >> 1), b.y + 12 - (f.h >> 1));
-  // Coins and lives: the icon over the count.
+  // Coins and lives: the icon over the count. With the Wallet the coins take 3 digits (0.4.42)
+  // and the lives move over to make room.
   const two = (n: number) => String(Math.max(0, Math.min(99, n))).padStart(2, '0');
-  outlined(r, view, '$', H.coins.x + 4, H.coins.y);
-  outlined(r, view, two(s.coins), H.coins.x, H.coins.y + 10);
-  icon(r, view, 'hud-life', H.lives.x + 4, H.lives.y, '#40a040');
-  outlined(r, view, two(s.lives), H.lives.x, H.lives.y + 10);
+  const coins = coinText(s);
+  const cw = coins.length * 8;
+  outlined(r, view, '$', H.coins.x + (cw >> 1) - 4, H.coins.y);
+  outlined(r, view, coins, H.coins.x, H.coins.y + 10);
+  const livesX = Math.max(H.lives.x, H.coins.x + cw + 8);
+  icon(r, view, 'hud-life', livesX + 4, H.lives.y, '#40a040');
+  outlined(r, view, two(s.lives), livesX, H.lives.y + 10);
   // Health, right-aligned under its label.
   const width = drawHealth(r, view, game);
   // The label, "- HEALTH -": gold over its dark outline, and solid outlined bars for the dashes

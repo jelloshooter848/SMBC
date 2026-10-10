@@ -1214,7 +1214,8 @@ room but a small walled village walked from above, as in A Link to the Past: **K
 SECRET AREA until the village has been found, then KAKARIKO VILLAGE. JUMP on it walks straight in through the south
 gate (no character select); SELECT (TOOLS; HERO on the touch pad) switches to the next freed hero there, and some
 lines below change with who is walking the village. One house's door leads into the old Top Secret Area. The shop
-opens in a later release; its sign says so. Every card is read aloud and waits for OK; BACK skips the rest.
+opened in 0.4.42 (below), and Hobb the tanner gives the Wallet. Every card is read aloud and waits for OK; BACK skips
+the rest.
 
 **The guard** at the south gate says hello as the hero walks in, the first time:
 
@@ -1269,12 +1270,117 @@ ARE YOU A ROBOT?
 ...COOL.
 ```
 
+**Hobb the tanner** (0.4.42, owner's addendum) stands on Gate Street. On the first visit, straight after the guard's
+hello (or, on a file that found the village before 0.4.42, as the hero arrives next time), he gives the Wallet,
+free. The Wallet changes hands, held up over the hero's head with a short fanfare, as the last card shows; BACK
+skips his cards and it is given all the same. With it coins add up to 999 and there is no 1-up at 100.
+
+```text
+HOBB:
+
+I'M HOBB. I MAKE WALLETS.
+YOURS IS A POCKET! COINS
+FALL OUT AT A HUNDRED.
+```
+
+```text
+HOBB:
+
+TAKE THIS ONE. IT HOLDS
+999, AND IT NEVER SPILLS.
+NO CHARGE. THE SHOP WILL
+BE GLAD OF YOU.
+```
+
+```text
+YOU GOT THE TRAVELER'S
+WALLET!
+
+COINS ADD UP TO 999 NOW
+(NO MORE 1-UP AT 100).
+SPEND THEM AT THE SHOP.
+```
+
+Later, talked to:
+
+```text
+HOBB:
+
+HOW IS THE WALLET? I
+DOUBLE-STITCHED THE
+CORNERS. HEROES ARE
+HARD ON CORNERS.
+```
+
 **The shop's sign** (READ):
 
 ```text
 THE SHOP
 
-COMING SOON!
+OPEN. COINS ONLY.
+```
+
+**The shop** (0.4.42): the shopkeeper behind his counter, and display tables with the current hero's own stock
+(docs/POWERUPS.md "Kakariko shop"). Standing at a table and pressing TALK shows a card with the item's name, what it
+does and its price, then BUY? YES / NO. The shopkeeper, talked to across his counter:
+
+```text
+SHOPKEEPER:
+
+COINS? I TAKE COINS.
+MOSTLY COINS. ONLY COINS.
+```
+
+```text
+SHOPKEEPER:
+
+STAND AT A TABLE AND
+PRESS TALK TO BUY.
+```
+
+When an item can't be bought, the buy card says why in the shopkeeper's words, in place of BUY? YES / NO. Too few
+coins (`<PRICE>` is the item's):
+
+```text
+SHOPKEEPER:
+
+YOU NEED <PRICE> COINS.
+COME BACK RICHER!
+```
+
+An item owned (SOLD OUT on its table):
+
+```text
+SHOPKEEPER:
+
+YOU ALREADY HAVE ONE
+OF THOSE.
+```
+
+A refill with nothing to fill, a grow item that stacks at its maximum, or lives at 99 (FULL):
+
+```text
+SHOPKEEPER:
+
+YOU'RE ALREADY FULL UP.
+```
+
+The 1-up a second time in a visit, without the Wallet (SOLD OUT):
+
+```text
+SHOPKEEPER:
+
+ONE OF THOSE A VISIT,
+FRIEND. COME BACK SOON!
+```
+
+A small hero's power item (GROW FIRST; `<ITEM>` is the hero's grow item, SUPER MUSHROOM, HEART CONTAINER...):
+
+```text
+SHOPKEEPER:
+
+GROW A LITTLE FIRST.
+TRY THE <ITEM>!
 ```
 
 **The woman in the square:**
@@ -1440,8 +1546,9 @@ HEN ALL DAY. I THINK THE
 HEN IS WINNING.
 ```
 
-Notices (said too, gone by themselves; no card): a locked door (the hook for a later secret) `CLOSED. ASK AROUND.`; the
-shop's door `THE SHOP: COMING SOON!`; SELECT with nobody else freed `NO ONE ELSE HAS JOINED YOU YET.`.
+Notices (said too; no card; they go when the hero moves or a key is pressed): a locked door (the hook for a later
+secret) `CLOSED. ASK AROUND.`; SELECT with nobody else freed `NO ONE ELSE HAS JOINED YOU YET.`; a purchase, the
+item's name (`SUPER MUSHROOM!`).
 
 ### 2.6 World 3: the year 20XX (Mega Man)
 

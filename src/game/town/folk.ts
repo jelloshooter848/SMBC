@@ -270,7 +270,9 @@ export class ShopTable extends Townsperson {
       r.rect(x + 6, y - 4, 20, 17, 'rgba(24,16,8,0.6)');
       const lines = e.mark.split(' ');
       const font = view.sheet('font', 'font-silver') ?? fontOf(view);
-      lines.forEach((l, i) => r.text(font, l, x + 16 - l.length * 4, y + 17 + i * 8 - (lines.length - 1) * 0));
+      // One word on the middle of the front, or two (SOLD OUT) filling it.
+      const top = lines.length > 1 ? y + 16 : y + 20;
+      lines.forEach((l, i) => r.text(font, l, x + 16 - l.length * 4, top + i * 8));
       return;
     }
     const price = String(e.price);
