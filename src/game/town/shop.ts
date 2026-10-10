@@ -158,6 +158,8 @@ export interface ShopEntry {
   icon: ShopIcon;
   /** Greyed out, and why; null when it can be bought. */
   mark: ShopMark | null;
+  /** A refill marked FULL because the hero has nothing it fills yet (no ammo item). */
+  empty?: true;
 }
 
 /** One visit to the shop: the 1-up without the Wallet is one a visit. */
@@ -224,7 +226,8 @@ export function shopEntries(s: GameState, visit: ShopVisit): ShopEntry[] {
   item('grow', stock.grow, owns(stock.grow) ? (STACKING.has(stock.grow) ? 'FULL' : 'SOLD OUT') : null);
   item('power', stock.power, owns(stock.power) ? 'SOLD OUT' : small ? 'GROW FIRST' : null);
   const r = stock.refill;
-  if (r)
+  if (r) {
+    const via = r.via(p);
     out.push({
       slot: 'refill',
       id: 'refill',
@@ -232,8 +235,10 @@ export function shopEntries(s: GameState, visit: ShopVisit): ShopEntry[] {
       does: r.does,
       price: PRICES.refill,
       icon: r.icon,
-      mark: r.via(p) !== null && r.room(p) ? null : 'FULL',
+      mark: via !== null && r.room(p) ? null : 'FULL',
+      ...(via === null ? { empty: true as const } : {}),
     });
+  }
   out.push({
     slot: 'life',
     id: 'life',

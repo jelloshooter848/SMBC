@@ -107,6 +107,8 @@ export function shopShort(price: number | string): Page {
 }
 export const SHOP_OWNED: Page = say('SHOPKEEPER', 'YOU ALREADY HAVE ONE', 'OF THOSE.');
 export const SHOP_FULL: Page = say('SHOPKEEPER', "YOU'RE ALREADY FULL UP.");
+/** A refill for a hero with nothing it fills yet (no missiles, no sub-weapon: FULL on its table). */
+export const SHOP_EMPTY: Page = say('SHOPKEEPER', 'NOTHING TO FILL YET!', 'FIND WHAT IT FILLS FIRST.');
 export const SHOP_ONE_A_VISIT: Page = say('SHOPKEEPER', 'ONE OF THOSE A VISIT,', 'FRIEND. COME BACK SOON!');
 /** `item`: the hero's grow item, as the font writes it. */
 export function shopGrowFirst(item: string): Page {
@@ -175,6 +177,7 @@ export const KAKARIKO_PAGES: Readonly<Record<string, readonly Page[]>> = {
   SHOPKEEPER,
   SHOP_OWNED: [SHOP_OWNED],
   SHOP_FULL: [SHOP_FULL],
+  SHOP_EMPTY: [SHOP_EMPTY],
   SHOP_ONE_A_VISIT: [SHOP_ONE_A_VISIT],
   HOBB_GIFT,
   WALLET_GOT: [WALLET_GOT],

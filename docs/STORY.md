@@ -1357,12 +1357,21 @@ YOU ALREADY HAVE ONE
 OF THOSE.
 ```
 
-A refill with nothing to fill, a grow item that stacks at its maximum, or lives at 99 (FULL):
+A refill already full, a grow item that stacks at its maximum, or lives at 99 (FULL):
 
 ```text
 SHOPKEEPER:
 
 YOU'RE ALREADY FULL UP.
+```
+
+A refill for a hero who has nothing it fills yet (no missiles, no sub-weapon; FULL on its table too):
+
+```text
+SHOPKEEPER:
+
+NOTHING TO FILL YET!
+FIND WHAT IT FILLS FIRST.
 ```
 
 The 1-up a second time in a visit, without the Wallet (SOLD OUT):

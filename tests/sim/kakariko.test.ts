@@ -3,6 +3,7 @@ import { mapPage } from '@content/worldmap';
 import { getLevel } from '@content/levels';
 import { DOORS, FOLK, GATE, OUTDOOR, SCREEN_AT, SCREENS, type TownDoor } from '@content/town/kakariko';
 import { CHARACTERS } from '@game/characters/registry';
+import { fontText } from '@game/hud/text';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { SAMUS } from '@game/characters/samus';
@@ -1154,6 +1155,9 @@ describe("the Wallet: Hobb the tanner's gift on the first visit", () => {
     expect(h.top()).toBeInstanceOf(TownScene);
     expect(h.game.state.wallet).toBe(true);
     expect(loadSave(1)?.wallet).toBe(true);
+    // Not silent: its name shows (until a press), and is said.
+    expect(town(h).notice?.text).toBe(`${fontText("TRAVELER'S WALLET")}!`);
+    expect(h.said.at(-1)).toBe("You got the Traveler's Wallet.");
     h.idle(300);
     expect(h.top()).toBeInstanceOf(TownScene);
   });

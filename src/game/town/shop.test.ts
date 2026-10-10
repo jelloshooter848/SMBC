@@ -18,6 +18,8 @@ import {
   type ShopEntry,
   type ShopSlot,
 } from './shop';
+import { shopReply } from './scene';
+import { SHOP_EMPTY, SHOP_FULL } from '../story/kakariko';
 
 // Kakariko's shop (0.4.42, the approved design's release 2, docs/POWERUPS.md "Kakariko shop"):
 // each hero's stock is placed, not worked out (their grow item, one World 2 power item, a refill
@@ -166,12 +168,17 @@ describe('the greying rules', () => {
     // Samus starts with no missiles; once she has them a pack adds ten, up to her maximum.
     const s = run('samus', 999, true);
     expect(entry(s, 'refill')?.mark).toBe('FULL');
+    // The shopkeeper says there is nothing to fill yet, not that she is full up (RQ42).
+    expect(entry(s, 'refill')?.empty).toBe(true);
+    expect(shopReply(entry(s, 'refill')!, 999, 'samus')).toBe(SHOP_EMPTY);
     s.kit = { ...s.kit, 'has-missiles': 1, missiles: 5 };
     expect(entry(s, 'refill')?.mark).toBe(null);
     bought(s, 'refill');
     expect(s.kit.missiles).toBe(15);
     for (let i = 0; i < 5 && entry(s, 'refill')?.mark === null; i++) bought(s, 'refill');
     expect(entry(s, 'refill')?.mark).toBe('FULL');
+    expect(entry(s, 'refill')?.empty).toBeUndefined();
+    expect(shopReply(entry(s, 'refill')!, 999, 'samus')).toBe(SHOP_FULL);
     // Link: bombs to 8 and full magic.
     const link = run('link');
     link.kit = { ...link.kit, 'has-bomb-bag': 1, bombs: 2 };

@@ -27,6 +27,7 @@ import { playStoryCards } from '../story/cards';
 import {
   DOOR_LOCKED,
   NO_ONE_ELSE,
+  SHOP_EMPTY,
   SHOP_FULL,
   SHOP_ONE_A_VISIT,
   SHOP_OWNED,
@@ -384,8 +385,10 @@ export class TownScene implements Scene {
         this.talking = null;
         if (after === 'heal') this.heal();
         if (after === 'wallet' && !this.game.state.wallet) {
-          // BACK skipped the cards: the Wallet is given all the same.
+          // BACK skipped the cards: the Wallet is given all the same, and its name shows (as a
+          // purchase's does) so the change to the coins is not silent.
           this.receiveWallet();
+          this.notify(`${fontText(WALLET_SAID)}!`, false);
           this.say(`You got the ${spoken(WALLET_SAID)}.`);
         }
       },
@@ -706,7 +709,7 @@ export function shopReply(e: ShopEntry, coins: number, hero: string): Page | nul
       return shopGrowFirst(fontText((itemInfo(hero, grow)?.name ?? grow).toUpperCase()));
     }
     case 'FULL':
-      return SHOP_FULL;
+      return e.empty ? SHOP_EMPTY : SHOP_FULL;
     case 'SOLD OUT':
       return e.slot === 'life' ? SHOP_ONE_A_VISIT : SHOP_OWNED;
   }
