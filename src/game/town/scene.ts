@@ -4,7 +4,16 @@ import { Actions } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
-import { DOORS, GATE, SCREEN_AT, SCREEN_NAMES, type IndoorId, type TownDoor } from '@content/town/kakariko';
+import {
+  DOORS,
+  GATE,
+  SCREEN_AT,
+  SCREEN_NAMES,
+  SHOP_TABLES,
+  SHOP_TABLES_3,
+  type IndoorId,
+  type TownDoor,
+} from '@content/town/kakariko';
 import { INDOOR_SURROUND, townArt } from '@content/sprites/town';
 import type { CharacterDef } from '../characters/character';
 import { startHp } from '../characters/character';
@@ -30,7 +39,7 @@ import { itemInfo } from '../items/catalog';
 import { TopDownWorld, type TdEvent } from '../topdown/world';
 import { drawRoomTiles, renderWorld } from '../topdown/render';
 import type { Room } from '../topdown/room';
-import { DIR_VEC, ROOM_COLS, ROOM_H, ROOM_W, SIDE_DIR, TILE } from '../topdown/geometry';
+import { boxesOverlap, DIR_VEC, ROOM_COLS, ROOM_H, ROOM_W, SIDE_DIR, TILE } from '../topdown/geometry';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { fontOf, sheetLookup, type TdSheets, type TdView } from '../topdown/view';
 import { talkTarget } from '../topdown/person';
@@ -419,11 +428,22 @@ export class TownScene implements Scene {
     this.game.autosave();
   }
 
-  /** The shop's tables show the current hero's stock (refreshed every frame: SELECT changes it). */
+  /**
+   * The shop's tables show the current hero's stock (refreshed every frame: SELECT changes it):
+   * four tables, or three laid out evenly for a hero with three items. A table that stands up
+   * where the hero is (just switched, between two tables) sends him to its front.
+   */
   private stockTables(): void {
     if (this.world.room.id !== 'shop') return;
     const entries = shopEntries(this.game.state, this.shopVisit);
-    for (const e of this.world.entities) if (e instanceof ShopTable) e.entry = entries[e.index] ?? null;
+    const spots = entries.length === 3 ? SHOP_TABLES_3 : SHOP_TABLES;
+    for (const t of this.world.entities) {
+      if (!(t instanceof ShopTable)) continue;
+      const [col, row] = spots[t.index] ?? SHOP_TABLES[t.index] ?? [0, 0];
+      t.place(entries[t.index] ?? null, col * TILE, row * TILE);
+      const feet = this.hero.feet();
+      if (t.solid && boxesOverlap(t.body(), feet)) this.hero.y += t.y + 32 - feet.y;
+    }
   }
 
   /** TALK at a display table: its buy card (or the shopkeeper saying why not). False if bare. */

@@ -231,14 +231,23 @@ export class Kid extends Townsperson {
 /** Frames a bought item (or the Wallet) floats over the hero's head. */
 export const HELD_FRAMES = 60;
 
+/** A display table's quarters on the `town` sheet. */
+const DISPLAY_QUARTERS = [
+  [0, 0],
+  [1, 0],
+  [0, 1],
+  [1, 1],
+] as const;
+
 /**
- * One of the shop's display tables (0.4.42, 2×2 cells; the tiles draw the table): on it the
- * current hero's item for its place (the scene sets `entry` each frame, so switching heroes changes
- * it on the spot), and on its front the price, or why it can't be bought (greyed out). Nothing
- * on it (a hero with three items has a bare fourth table): nothing to buy.
+ * One of the shop's display tables (0.4.42, 2×2 cells): on it the current hero's item for its
+ * place (the scene sets it each frame, so switching heroes changes it on the spot), and on its
+ * front the price, or why it can't be bought (greyed out, the mark inside the front). The table is
+ * a thing, not tiles: the scene stands the tables evenly for the stock's size (`place`), and a
+ * table with nothing to put on it (the fourth, for a hero with three items) is not there at all.
  */
 export class ShopTable extends Townsperson {
-  /** What is on the table now (null: bare). */
+  /** What is on the table now (null: no table). */
   entry: ShopEntry | null = null;
 
   constructor(
@@ -248,6 +257,19 @@ export class ShopTable extends Townsperson {
     readonly index: number,
   ) {
     super(x, y, def, { id: `table-${index}`, name: def.name, frames: null, verb: 'BUY', solid: false });
+  }
+
+  /** Puts `entry` on the table, standing at room pixel (`x`, `y`); null takes the table away. */
+  place(entry: ShopEntry | null, x: number, y: number): void {
+    this.entry = entry;
+    this.solid = entry !== null;
+    this.x = x;
+    this.y = y;
+  }
+
+  /** The whole table is solid, as the tiles it stands on were. */
+  override body() {
+    return { x: this.x, y: this.y, w: 32, h: 32 };
   }
 
   /** The whole table: reached from below, or from either side. */
@@ -260,19 +282,23 @@ export class ShopTable extends Townsperson {
     if (!e) return;
     const x = ox + Math.round(this.x);
     const y = oy + Math.round(this.y);
+    const town = view.sheet('town');
+    for (const [ix, iy] of DISPLAY_QUARTERS) {
+      const q = `display-${ix}-${iy}`;
+      if (town?.frames.has(q)) r.sprite(town, q, x + ix * 16, y + iy * 16);
+      else r.rect(x + ix * 16, y + iy * 16, 16, 16, iy ? '#583010' : '#3858b0');
+    }
     const sheet = view.sheet(e.icon.sheet);
     const f = sheet?.frames.get(e.icon.frame);
     // The item stands on the mat, centred (a small one sits on it).
     if (sheet && f) r.sprite(sheet, e.icon.frame, x + 16 - (f.w >> 1), y + 12 - f.h);
     else r.rect(x + 10, y, 12, 12, '#f8d878');
     if (e.mark) {
-      // Greyed out: the item dimmed, the reason written on the table's front.
+      // Greyed out: the item dimmed, the reason in small letters inside the table's front.
       r.rect(x + 6, y - 4, 20, 17, 'rgba(24,16,8,0.6)');
-      const lines = e.mark.split(' ');
-      const font = view.sheet('font', 'font-silver') ?? fontOf(view);
-      // One word on the middle of the front, or two (SOLD OUT) filling it.
-      const top = lines.length > 1 ? y + 16 : y + 20;
-      lines.forEach((l, i) => r.text(font, l, x + 16 - l.length * 4, top + i * 8));
+      const mark = `mark-${e.mark.toLowerCase().replace(/ /g, '-')}`;
+      if (town?.frames.has(mark)) r.sprite(town, mark, x + 2, y + 17);
+      else r.rect(x + 4, y + 22, 24, 2, '#c0c0c0');
       return;
     }
     const price = String(e.price);

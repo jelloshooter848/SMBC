@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mapPage } from '@content/worldmap';
 import { getLevel } from '@content/levels';
-import {
-  DOORS,
-  FOLK,
-  GATE,
-  OUTDOOR,
-  SCREEN_AT,
-  SCREENS,
-  SHOP_TABLES,
-  type TownDoor,
-} from '@content/town/kakariko';
+import { DOORS, FOLK, GATE, OUTDOOR, SCREEN_AT, SCREENS, type TownDoor } from '@content/town/kakariko';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
@@ -1210,8 +1201,9 @@ const onTables = (t: TownScene) =>
 
 /** Stands below display table `i`, facing it, and presses TALK: the buy card. */
 function atTable(h: H, i: number): ShopCardScene {
-  const [col] = SHOP_TABLES[i] as readonly [number, number];
-  walkTo(h, key('shop', col, 6));
+  const table = tables(town(h))[i] as ShopTable;
+  expect(table.entry, `table ${i}`).not.toBeNull();
+  walkTo(h, key('shop', Math.round(table.x / TILE), 6));
   town(h).hero.facing = 'up';
   h.tap('jump');
   expect(h.top()).toBeInstanceOf(ShopCardScene);
@@ -1326,7 +1318,71 @@ describe("Kakariko's shop", () => {
     expect(card.text()).toEqual(expect.arrayContaining(SHOP_ONE_A_VISIT.filter((l) => l)));
     const rec = recorder();
     t.render(rec.r);
-    expect(rec.texts.map((x) => x.s)).toEqual(expect.arrayContaining(['SOLD', 'OUT', 'FULL']));
+    expect(rec.sprites.map((x) => x.f)).toEqual(expect.arrayContaining(['mark-sold-out', 'mark-full']));
+  });
+
+  it("every mark (SOLD OUT, FULL, GROW FIRST) fits inside its table's front, under the item", () => {
+    const town = SPRITES.town!.frames;
+    for (const m of ['SOLD OUT', 'FULL', 'GROW FIRST']) {
+      const f = town[`mark-${m.toLowerCase().replace(/ /g, '-')}`];
+      expect(f, m).toBeDefined();
+      // Drawn at (2, 17) on the 32×32 table: inside the front's frame (x 2-29, y 17-30).
+      expect((f![0] as string).length, m).toBeLessThanOrEqual(28);
+      expect(f!.length, m).toBeLessThanOrEqual(14);
+      // Ink on every line of the mark, none in its outer column (a margin each side).
+      expect(
+        f!.every((row) => row[0] === '.' && row.at(-1) === '.'),
+        m,
+      ).toBe(true);
+    }
+    const h = makeGame();
+    const t = intoShop(h, { freed: ['mario'], wallet: false });
+    expect(onTables(t)[1]).toBe('Fire Flower GROW FIRST');
+    const rec = recorder();
+    t.render(rec.r);
+    const table = tables(t)[1]!;
+    const mark = rec.sprites.find((x) => x.f === 'mark-grow-first')!;
+    expect(mark).toBeDefined();
+    expect(mark.x - Math.round(table.x)).toBe(2);
+    // No big-font letters run off the table any more.
+    expect(rec.texts.map((x) => x.s)).not.toEqual(expect.arrayContaining(['GROW', 'FIRST']));
+  });
+
+  it('a hero with three items gets three tables laid out evenly, and no bare fourth one', () => {
+    const h = makeGame();
+    const t = intoShop(h, { freed: ['mario', 'link', 'bill'], wallet: false });
+    const centres = () =>
+      tables(t)
+        .filter((x) => x.entry)
+        .map((x) => x.x + 16);
+    expect(centres()).toEqual([64, 128, 192]);
+    const fourth = tables(t)[3]!;
+    expect(fourth.entry).toBeNull();
+    expect(fourth.solid).toBe(false);
+    const rec = recorder();
+    t.render(rec.r);
+    expect(rec.sprites.filter((x) => x.f === 'display-0-0')).toHaveLength(3);
+    // Link has four: the four tables, evenly too; Bill has three again.
+    h.tap('select');
+    expect(h.game.state.character.id).toBe('link');
+    expect(centres()).toEqual([48, 96, 160, 208]);
+    expect(tables(t).every((x) => x.solid)).toBe(true);
+    h.idle(SWITCH_GAP);
+    h.tap('select');
+    expect(h.game.state.character.id).toBe('bill');
+    expect(centres()).toEqual([64, 128, 192]);
+  });
+
+  it('a table that appears where the hero stands (a switch) sends him to its front', () => {
+    const h = makeGame();
+    const t = intoShop(h, { freed: ['mario', 'link'], wallet: false });
+    // Between Mario's tables, where Link's second table stands.
+    walkTo(h, key('shop', 5, 5));
+    expect(t.world.solidEntityAt(t.hero.feet())).toBeNull();
+    h.tap('select');
+    expect(h.game.state.character.id).toBe('link');
+    expect(t.world.solidEntityAt(t.hero.feet())).toBeNull();
+    expect(t.hero.feet().y).toBe(tables(t)[1]!.y + 32);
   });
 
   it('the 1-up is back on the next visit from the map', () => {

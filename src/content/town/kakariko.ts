@@ -14,7 +14,6 @@
  *   f fence        ^ ledge face    ~ pond             z bed           k barrel
  *   R red roof     B blue roof     Y thatch roof      y potted plant  b stool (walkable)
  *   W front wall   w window        o the well         D the way out   : rug
- *                                                     d a display table (2×2, the shop's)
  *   V weathervane  b bench         s sign
  *   l fallen log   p herb pot      v cabbages
  *   g gate post    k barrel        @ the gate (start)
@@ -201,15 +200,16 @@ export const INDOOR: Readonly<Record<IndoorId, readonly string[]>> = {
     '#..............#',
     '#######D########',
   ],
-  // The shop (0.4.42): the shopkeeper behind a counter across the back, and four display tables
-  // in front, A Link to the Past's way (the current hero's stock on them: src/game/town/shop.ts).
+  // The shop (0.4.42): the shopkeeper behind a counter across the back, and the display tables in
+  // front, A Link to the Past's way (SHOP_TABLES: they are things, not tiles, so a hero with three
+  // items gets three tables laid out evenly; the current hero's stock: src/game/town/shop.ts).
   shop: [
     '################',
     '#jj.k......k.jj#',
     '#==============#',
     '#..............#',
-    '#.dd.dd..dd.dd.#',
-    '#.dd.dd..dd.dd.#',
+    '#..............#',
+    '#..............#',
     '#..............#',
     '#..............#',
     '#y............y#',
@@ -224,6 +224,12 @@ export const SHOP_TABLES: readonly (readonly [number, number])[] = [
   [5, 4],
   [9, 4],
   [12, 4],
+];
+/** Where the first three stand for a hero with three items (Mario, Luigi, Bill): evenly spaced. */
+export const SHOP_TABLES_3: readonly (readonly [number, number])[] = [
+  [3, 4],
+  [7, 4],
+  [11, 4],
 ];
 
 /** Each room's cell on the dungeon grid: far from the village and from each other (no neighbours). */
