@@ -39,7 +39,7 @@ import {
   WORLD1_PAGES,
   type Page,
 } from './script';
-import { KAKARIKO_PAGES, oldManPages, wellPage } from './kakariko';
+import { KAKARIKO_PAGES, oldManPages, shopGrowFirst, shopShort, wellPage } from './kakariko';
 
 // docs/STORY.md is the script the owner reviews; script.ts is what the game shows. For the shipped
 // sections (Chapter 1: 2.1 to 2.14, everything before 2.15) every ```text block of the doc must be
@@ -151,6 +151,9 @@ function scriptPages(): Map<string, Page> {
   for (const [name, pages] of Object.entries(KAKARIKO_PAGES)) list(`KAKARIKO.${name}`, pages);
   list('oldManPages', oldManPages('TOOLS'));
   list('wellPage', wellPage(HERO));
+  // 0.4.42: the shopkeeper's answers on the buy card, with the price and the grow item.
+  list('shopShort', [shopShort('<PRICE>')]);
+  list('shopGrowFirst', [shopGrowFirst('<ITEM>')]);
   return out;
 }
 

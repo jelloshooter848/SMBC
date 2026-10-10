@@ -9,6 +9,7 @@ import {
   migrateSave,
   migrateV1toV2,
   migrateV2toV3,
+  migrateV3toV4,
   SAVE_MIGRATIONS,
   SAVE_VERSION,
   UNREADABLE,
@@ -570,10 +571,10 @@ describe('migration v2 → v3 (freed heroes, 0.5.0)', () => {
   } as Record<string, unknown>;
   delete V2.freed;
 
-  it('files are written at v3', () => {
-    expect(SAVE_VERSION).toBe(3);
-    expect(SAVE_MIGRATIONS).toEqual([migrateV1toV2, migrateV2toV3]);
-    expect(newSave(1, 'mario').v).toBe(3);
+  it('files are written at v4 (0.4.42: the Wallet, src/game/items/wallet.test.ts)', () => {
+    expect(SAVE_VERSION).toBe(4);
+    expect(SAVE_MIGRATIONS).toEqual([migrateV1toV2, migrateV2toV3, migrateV3toV4]);
+    expect(newSave(1, 'mario').v).toBe(4);
   });
 
   it('a new file has freed only Mario (and the heroes it was made with)', () => {
@@ -598,7 +599,8 @@ describe('migration v2 → v3 (freed heroes, 0.5.0)', () => {
   it('loads a stored v2 file locked to its last heroes, the rest of it untouched', () => {
     store.set('smbc.save.1', JSON.stringify(V2));
     const s = loadSave(1)!;
-    expect(s.v).toBe(3);
+    expect(s.v).toBe(4);
+    expect(s.wallet).toBe(false);
     expect(s.freed).toEqual(['mario', 'link', 'samus']);
     expect(s.character).toBe('link');
     expect(s.character2).toBe('samus');
@@ -607,10 +609,11 @@ describe('migration v2 → v3 (freed heroes, 0.5.0)', () => {
     expect(loadSave(1)).toEqual(s);
   });
 
-  it('a v1 file goes through both migrations', () => {
+  it('a v1 file goes through every migration', () => {
     store.set('smbc.save.2', JSON.stringify({ v: 1, character: 'ryu', character2: 'luigi', worlds: [1, 2] }));
     const s = loadSave(2)!;
-    expect(s.v).toBe(3);
+    expect(s.v).toBe(4);
+    expect(s.wallet).toBe(false);
     expect(s.pages).toEqual(['smb-1', 'smb-2']);
     expect(s.freed).toEqual(['mario', 'ryu', 'luigi']);
   });

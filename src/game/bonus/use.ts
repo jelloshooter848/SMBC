@@ -1,3 +1,4 @@
+import { gainCoins } from '../items/wallet';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import type { CharacterDef } from '../characters/character';
 import type { LevelData } from '../level/schema';
@@ -266,14 +267,13 @@ export interface AwardOutcome {
   stored: boolean;
 }
 
-/** Coins added the HUD way: every 100 makes a life (lives capped at MAX_LIVES). */
+/**
+ * Coins added the HUD way: every 100 makes a life (lives capped at MAX_LIVES), or with the Wallet
+ * they add up to 999 (items/wallet.ts).
+ */
 function addCoins(game: Game, n: number): void {
   const s = game.state;
-  s.coins += n;
-  while (s.coins >= 100) {
-    s.coins -= 100;
-    s.lives = Math.min(MAX_LIVES, s.lives + 1);
-  }
+  s.lives = Math.min(MAX_LIVES, s.lives + gainCoins(s, n));
 }
 
 /**

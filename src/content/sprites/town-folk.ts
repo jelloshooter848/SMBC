@@ -20,6 +20,7 @@ import { Canvas, recolor } from './paint';
  *   7 white  8 light grey  9 dark grey  a red  b dark red  c blue  d dark blue  e green
  *   f dark green  g yellow  h orange  i purple  j dark purple  k brown  l dark brown  m pink
  *   n teal  o dark teal  p tan  q dark tan  r steel  s dark steel  t sky blue  u gold
+ *   v coral  w dark coral (0.4.42: the Traveler's Wallet)
  */
 export const FOLK_PALETTE: readonly string[] = [
   '#201010',
@@ -53,6 +54,8 @@ export const FOLK_PALETTE: readonly string[] = [
   '#607080',
   '#70c8f8',
   '#c89818',
+  '#f08870',
+  '#b84838',
 ];
 
 type Rows = readonly string[];
@@ -215,6 +218,30 @@ const FOLK_LOOKS: Readonly<Record<string, Look>> = {
     over: { front: [[['OHHO', 'OHHO'], 6, 0]] },
   },
   child: { fill: { H: '5', C: 't', c: 'c', A: 'c', L: '1', F: 'l' } },
+  // The shop (0.4.42): the shopkeeper, bald with a black moustache, a teal shirt, a white apron.
+  shopkeeper: {
+    fill: { H: '1', C: 'n', c: 'o', A: '7', L: 'l', F: '0' },
+    over: {
+      front: [
+        [MUSTACHE, 5, 7],
+        [['7777', '7777', '7777'], 6, 10],
+        [['.22.'], 6, 2],
+      ],
+      side: [[['ll', 'l.'], 11, 7]],
+    },
+  },
+  // Hobb the tanner (0.4.42), who stitches wallets: grey hair under a brown cap, a leather apron.
+  tanner: {
+    fill: { H: 'k', C: 'e', c: 'f', A: 'l', L: 'l', F: 'l' },
+    over: {
+      front: [
+        [['kkkk', 'kkkk', 'kkkk'], 6, 10],
+        [['4', '4'], 3, 6],
+        [['4', '4'], 12, 6],
+      ],
+      side: [[['44', '44'], 4, 6]],
+    },
+  },
 };
 
 /** The hen: white, a red comb, pecking (frame 1), wings up when she flutters. Faces right. */
@@ -331,6 +358,32 @@ folkFrames['hud-flower'] = [
   '0e0ee0e0',
   '.0eeee0.',
   '..0000..',
+];
+
+/**
+ * The Traveler's Wallet (0.4.42, Hobb's gift; held over the hero's head as he hands it over), an
+ * original drawstring money bag: a coral body shaded darker below, a flared ruffled top with a
+ * light zigzag trim, a cream band where it is cinched, a gold coin on the front, a darker swirled
+ * band round the bottom, and the tie's cord looping off to the right with two orange beads. The
+ * bag is centred on the frame (columns 2-13); only the cord hangs off to the side.
+ */
+folkFrames.wallet = [
+  '................',
+  '....00.00.00....',
+  '...0vv0vv0vv0...',
+  '...0vpvppvpv0...',
+  '....00pppp00l...',
+  '....0vvvvvv0.l..',
+  '...0vvvvvvvv0.l.',
+  '..0vvvvuuvvvv0l.',
+  '..0vvvugguvvv0h.',
+  '..0vvvugguvvv0h.',
+  '..0wvvvuuvvvw0..',
+  '..0wbwwbbwwbw0..',
+  '...0bwbwwbwb0...',
+  '....0bbbbbb0....',
+  '.....000000.....',
+  '................',
 ];
 
 export const townFolkDef: SpriteDef = { palette: 'town-folk', frames: folkFrames };

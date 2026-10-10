@@ -119,6 +119,7 @@ describe('the SMB3 status bar', () => {
       lives: 3,
       score: 50,
       coins: 2,
+      wallet: false,
       time: 100,
       cards: [null, null, null],
     });

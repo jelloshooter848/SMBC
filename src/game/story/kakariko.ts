@@ -90,7 +90,57 @@ export const STRANGER: readonly Page[] = [say('STRANGER', 'I AM ERROR.')];
 /** Things to read and look at (no speaker). */
 export const WEATHERVANE: readonly Page[] = [['W... E... S...', '', 'THE N FELL OFF YEARS AGO.']];
 export const FALLEN_LOG: readonly Page[] = [['SOMEONE SHOULD MOVE THIS.', '', 'SOMEDAY.']];
-export const SHOP_SIGN: readonly Page[] = [['THE SHOP', '', 'COMING SOON!']];
+export const SHOP_SIGN: readonly Page[] = [['THE SHOP', '', 'OPEN. COINS ONLY.']];
+
+/** The shopkeeper behind his counter (0.4.42). */
+export const SHOPKEEPER: readonly Page[] = [
+  say('SHOPKEEPER', 'COINS? I TAKE COINS.', 'MOSTLY COINS. ONLY COINS.'),
+  say('SHOPKEEPER', 'STAND AT A TABLE AND', 'PRESS TALK TO BUY.'),
+];
+
+/*
+ * The shopkeeper's answers on the buy card (town/shop-card.ts): too few coins, an item owned or
+ * full, the 1-up already bought this visit, a power item before the grow item.
+ */
+export function shopShort(price: number | string): Page {
+  return say('SHOPKEEPER', `YOU NEED ${price} COINS.`, 'COME BACK RICHER!');
+}
+export const SHOP_OWNED: Page = say('SHOPKEEPER', 'YOU ALREADY HAVE ONE', 'OF THOSE.');
+export const SHOP_FULL: Page = say('SHOPKEEPER', "YOU'RE ALREADY FULL UP.");
+/** A refill for a hero with nothing it fills yet (no missiles, no sub-weapon: FULL on its table). */
+export const SHOP_EMPTY: Page = say('SHOPKEEPER', 'NOTHING TO FILL YET!', 'FIND WHAT IT FILLS FIRST.');
+export const SHOP_ONE_A_VISIT: Page = say('SHOPKEEPER', 'ONE OF THOSE A VISIT,', 'FRIEND. COME BACK SOON!');
+/** `item`: the hero's grow item, as the font writes it. */
+export function shopGrowFirst(item: string): Page {
+  return say('SHOPKEEPER', 'GROW A LITTLE FIRST.', `TRY THE ${item}!`);
+}
+
+/**
+ * Hobb the tanner on Gate Street gives the Wallet, free, on the first visit (0.4.42): his two
+ * pages, then what was got.
+ */
+export const HOBB_GIFT: readonly Page[] = [
+  say('HOBB', "I'M HOBB. I MAKE WALLETS.", 'YOURS IS A POCKET! COINS', 'FALL OUT AT A HUNDRED.'),
+  say(
+    'HOBB',
+    'TAKE THIS ONE. IT HOLDS',
+    '999, AND IT NEVER SPILLS.',
+    'NO CHARGE. THE SHOP WILL',
+    'BE GLAD OF YOU.',
+  ),
+];
+export const WALLET_GOT: Page = [
+  "YOU GOT THE TRAVELER'S",
+  'WALLET!',
+  '',
+  'COINS ADD UP TO 999 NOW',
+  '(NO MORE 1-UP AT 100).',
+  'SPEND THEM AT THE SHOP.',
+];
+/** Hobb once the Wallet is yours. */
+export const HOBB_AGAIN: readonly Page[] = [
+  say('HOBB', 'HOW IS THE WALLET? I', 'DOUBLE-STITCHED THE', 'CORNERS. HEROES ARE', 'HARD ON CORNERS.'),
+];
 
 /** The well echoes the hero's name back (`name`: as the font writes it). */
 export function wellPage(name: string): Page[] {
@@ -99,8 +149,6 @@ export function wellPage(name: string): Page[] {
 
 /** A building door that is locked (the hook for a later secret: TdEntrance.needs). */
 export const DOOR_LOCKED = 'CLOSED. ASK AROUND.';
-/** The shop's door, shut until the shop opens. */
-export const SHOP_SHUT = 'THE SHOP: COMING SOON!';
 /** SELECT with no other hero freed. */
 export const NO_ONE_ELSE = 'NO ONE ELSE HAS JOINED YOU YET.';
 
@@ -126,4 +174,12 @@ export const KAKARIKO_PAGES: Readonly<Record<string, readonly Page[]>> = {
   WEATHERVANE,
   FALLEN_LOG,
   SHOP_SIGN,
+  SHOPKEEPER,
+  SHOP_OWNED: [SHOP_OWNED],
+  SHOP_FULL: [SHOP_FULL],
+  SHOP_EMPTY: [SHOP_EMPTY],
+  SHOP_ONE_A_VISIT: [SHOP_ONE_A_VISIT],
+  HOBB_GIFT,
+  WALLET_GOT: [WALLET_GOT],
+  HOBB_AGAIN,
 };

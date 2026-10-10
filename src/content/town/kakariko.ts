@@ -19,8 +19,8 @@
  *   g gate post    k barrel        @ the gate (start)
  *
  * Doors (`DOORS`) pair a building's front door with the way out of its room. The secret house's
- * door leads to no room: it loads the side-view Top Secret Area ('@tsa'). The shop's is shut
- * until the shop opens (0.4.42).
+ * door leads to no room: it loads the side-view Top Secret Area ('@tsa'). The shop opened in
+ * 0.4.42 (src/game/town/shop.ts).
  */
 
 /** Screen ids, west to east, north then south. */
@@ -130,7 +130,7 @@ export const OUTDOOR: Readonly<Record<ScreenId, readonly string[]>> = {
 };
 
 /** The rooms inside the buildings (walls one tile thick; the way out is a door in the south wall). */
-export const INDOOR_IDS = ['inn', 'back-room', 'house-a', 'house-b', 'healer-house'] as const;
+export const INDOOR_IDS = ['inn', 'back-room', 'house-a', 'house-b', 'healer-house', 'shop'] as const;
 export type IndoorId = (typeof INDOOR_IDS)[number];
 
 // prettier-ignore
@@ -200,7 +200,37 @@ export const INDOOR: Readonly<Record<IndoorId, readonly string[]>> = {
     '#..............#',
     '#######D########',
   ],
+  // The shop (0.4.42): the shopkeeper behind a counter across the back, and the display tables in
+  // front, A Link to the Past's way (SHOP_TABLES: they are things, not tiles, so a hero with three
+  // items gets three tables laid out evenly; the current hero's stock: src/game/town/shop.ts).
+  shop: [
+    '################',
+    '#jj.k......k.jj#',
+    '#==============#',
+    '#..............#',
+    '#..............#',
+    '#..............#',
+    '#..............#',
+    '#..............#',
+    '#y............y#',
+    '#......::......#',
+    '#######D########',
+  ],
 };
+
+/** The shop's display tables, left to right (each 2×2; its top-left cell). */
+export const SHOP_TABLES: readonly (readonly [number, number])[] = [
+  [2, 4],
+  [5, 4],
+  [9, 4],
+  [12, 4],
+];
+/** Where the first three stand for a hero with three items (Mario, Luigi, Bill): evenly spaced. */
+export const SHOP_TABLES_3: readonly (readonly [number, number])[] = [
+  [3, 4],
+  [7, 4],
+  [11, 4],
+];
 
 /** Each room's cell on the dungeon grid: far from the village and from each other (no neighbours). */
 export const INDOOR_AT: Readonly<Record<IndoorId, readonly [number, number]>> = {
@@ -209,6 +239,7 @@ export const INDOOR_AT: Readonly<Record<IndoorId, readonly [number, number]>> = 
   'house-a': [14, 10],
   'house-b': [16, 10],
   'healer-house': [18, 10],
+  shop: [20, 10],
 };
 
 /** Room music: the village theme outdoors, its quiet arrangement indoors. */
@@ -223,7 +254,7 @@ export interface TownDoor {
   enter: 'up' | 'down';
   /** The paired door's id, or '@tsa' (the Top Secret Area). */
   to: string;
-  /** Shut until the shop opens (release 2). */
+  /** Shut: a building not open (none since the shop opened in 0.4.42; the kit keeps the hook). */
   shut?: boolean;
   /**
    * The door lock (design section 4): a secret on the save file's `secrets` list that must be
@@ -251,7 +282,8 @@ export const DOORS: readonly TownDoor[] = [
     name: 'THE SQUARE',
   },
   { id: 'secret-house', room: 'gardens', col: 8, row: 8, enter: 'up', to: '@tsa', name: 'TOP SECRET AREA' },
-  { id: 'shop', room: 'gate', col: 3, row: 4, enter: 'up', to: '@shop', shut: true, name: 'THE SHOP' },
+  { id: 'shop', room: 'gate', col: 3, row: 4, enter: 'up', to: 'shop-out', name: 'THE SHOP' },
+  { id: 'shop-out', room: 'shop', col: 7, row: 10, enter: 'down', to: 'shop', name: 'GATE STREET' },
   {
     id: 'healer-house',
     room: 'healer',
@@ -315,6 +347,11 @@ export const FOLK: readonly FolkSpot[] = [
   { who: 'healer', room: 'healer-house', col: 7, row: 2 },
   { who: 'mother', room: 'house-b', col: 6, row: 3 },
   { who: 'child', room: 'house-b', col: 11, row: 6 },
+  // The shop (0.4.42): the shopkeeper, and the display tables (things to buy, not to talk to).
+  { who: 'shopkeeper', room: 'shop', col: 7, row: 1 },
+  ...SHOP_TABLES.map(([col, row], i) => ({ who: `table-${i}`, room: 'shop', col, row })),
+  // Hobb the tanner, who gives the Wallet on the first visit (0.4.42).
+  { who: 'tanner', room: 'gate', col: 5, row: 8 },
   // Things to read or look at (no picture of their own: the tiles draw them).
   { who: 'weathervane', room: 'square', col: 7, row: 9 },
   { who: 'well', room: 'well', col: 10, row: 3 },

@@ -905,6 +905,80 @@ function plant(): string {
   });
 }
 
+/**
+ * The shop's display table (2×2, 0.4.42; drawn by the table itself, src/game/town/folk.ts): a blue
+ * cloth on a wooden top, with a cream mat where the item stands, and a dark wooden front where its
+ * price (or its mark: `mark-*`) is written.
+ */
+function paintDisplay(): void {
+  const c = new Canvas(32, 32);
+  // The top: a wooden rim round a blue cloth, a fringe along its front edge, the mat.
+  c.rect(1, 2, 30, 14, 'r');
+  c.rect(1, 2, 30, 1, 'z');
+  c.rect(3, 4, 26, 10, 'l');
+  c.rect(3, 4, 26, 1, 'm');
+  for (let x = 3; x < 29; x++) c.set(x, 14, x % 2 ? 'k' : 'm');
+  c.ellipse(16, 9, 8, 3.5, (_x, _y, d) => (d > 0.75 ? 'o' : 'n'));
+  c.rect(1, 15, 30, 1, 'q');
+  // The front: dark boards in a lighter frame (the price is written on it).
+  c.rect(1, 16, 30, 15, 'p');
+  c.rect(1, 16, 30, 1, 'q');
+  c.rect(1, 16, 1, 15, 'q');
+  c.rect(30, 16, 1, 15, 'q');
+  for (let x = 8; x < 30; x += 8) c.rect(x, 29, 1, 2, 'q');
+  const o = Canvas.from(c.rows());
+  o.outline('0');
+  c.paste(o.rows());
+  for (const [ix, iy] of [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
+  ] as const)
+    FRAMES[`display-${ix}-${iy}`] = c.crop(ix * 16, iy * 16);
+}
+paintDisplay();
+
+/** The marks' small letters (4×6, 1 px strokes; T and I 3 wide, W 5). */
+const MARK_GLYPHS: Record<string, Rows> = {
+  D: ['ttt.', 't..t', 't..t', 't..t', 't..t', 'ttt.'],
+  F: ['tttt', 't...', 'ttt.', 't...', 't...', 't...'],
+  G: ['.ttt', 't...', 't...', 't.tt', 't..t', '.ttt'],
+  I: ['ttt', '.t.', '.t.', '.t.', '.t.', 'ttt'],
+  L: ['t...', 't...', 't...', 't...', 't...', 'tttt'],
+  O: ['.tt.', 't..t', 't..t', 't..t', 't..t', '.tt.'],
+  R: ['ttt.', 't..t', 't..t', 'ttt.', 't.t.', 't..t'],
+  S: ['.ttt', 't...', 't...', '.tt.', '...t', 'ttt.'],
+  T: ['ttt', '.t.', '.t.', '.t.', '.t.', '.t.'],
+  U: ['t..t', 't..t', 't..t', 't..t', 't..t', '.tt.'],
+  W: ['t...t', 't...t', 't...t', 't.t.t', 't.t.t', '.t.t.'],
+};
+/** A mark plate's size: the inside of a display table's front. */
+export const MARK_W = 28;
+export const MARK_H = 14;
+
+/**
+ * Why a shop table can't be bought from (0.4.42), pale on its dark front: `mark-sold-out`,
+ * `mark-full`, `mark-grow-first`, one word a line, each line centred, so every mark fits inside
+ * the front (the big font's 8-px letters do not: GROW FIRST ran off the table).
+ */
+function paintMark(text: string): void {
+  const words = text.split(' ');
+  const c = new Canvas(MARK_W, MARK_H);
+  const top = Math.floor((MARK_H - (words.length * 7 - 1)) / 2);
+  words.forEach((word, i) => {
+    const glyphs = [...word].map((ch) => MARK_GLYPHS[ch] as Rows);
+    const w = glyphs.reduce((n, g) => n + (g[0] as string).length + 1, -1);
+    let x = Math.floor((MARK_W - w) / 2);
+    for (const g of glyphs) {
+      c.paste(g, x, top + i * 7);
+      x += (g[0] as string).length + 1;
+    }
+  });
+  FRAMES[`mark-${words.join('-').toLowerCase()}`] = c.rows();
+}
+for (const m of ['SOLD OUT', 'FULL', 'GROW FIRST']) paintMark(m);
+
 /* ---------------------------------------------------------------------------------------------- */
 /* The village, cell by cell                                                                       */
 /* ---------------------------------------------------------------------------------------------- */

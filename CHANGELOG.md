@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Kakariko's shop opens: a shopkeeper and display tables with each hero's own stock (grow item 20, power item 40,
+  refill 10, 1-up). Stand at a table and press TALK to see the item, what it does and its price, then BUY? YES / NO.
+  Items owned or full are greyed out (SOLD OUT, FULL, GROW FIRST), the shopkeeper tells you when you're short of
+  coins, and switching heroes in the shop changes the tables on the spot.
+- The Traveler's Wallet: Hobb the tanner gives it to you on your first visit to Kakariko. With it, coins add up to
+  999 instead of turning into a 1-up at 100, every coin counter shows 3 digits, and a 1-up costs 100 at the shop. A
+  game over keeps the Wallet but not its coins. Classic play keeps SMB's coins.
+
+### Changed
+
+- Save format v4: one new flag for the Wallet. Older saves load with it off.
+
 ## [0.4.41] - 2026-10-10
 
 ### Added

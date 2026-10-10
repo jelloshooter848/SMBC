@@ -1354,6 +1354,8 @@ export class Game {
       // (3, or 5 with two players), score and coins 0, the same heroes, map progress kept.
       const old = this.state;
       this.state = newGameState(old.character, old.character2);
+      // The Wallet is the file's, like a found secret: a game over keeps it (its coins go).
+      this.state.wallet = old.wallet;
       this.autosave();
       this.scenes.push(new GameOverScene(this, () => this.returnToMap()));
       return;

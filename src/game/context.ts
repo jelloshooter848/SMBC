@@ -63,6 +63,11 @@ export interface GameState {
   kit2: Record<string, number>;
   /** A warp pipe was used this run (The Lost Levels only opens World 9 to warpless runs). */
   warped: boolean;
+  /**
+   * The campaign file has the Wallet (0.4.42, items/wallet.ts): coins add up to 999 with no
+   * automatic 1-up. Never in classic play.
+   */
+  wallet: boolean;
 }
 
 export function playerCount(s: GameState): number {
@@ -87,5 +92,6 @@ export function newGameState(character: CharacterDef, character2: CharacterDef |
     kit: {},
     kit2: {},
     warped: false,
+    wallet: false,
   };
 }
