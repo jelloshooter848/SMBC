@@ -76,6 +76,9 @@ import {
 } from '../bonus/items';
 import { heroStart, type HeroPower } from '../items/heroes';
 import type { StageRound } from '../arena/stage-round';
+import { TownScene } from '../town/scene';
+import { DEV_VILLAGE, KAKARIKO, layUsedBlocks, openedBlocks, SECRET_HOUSE_LEVEL } from '../town/secret-house';
+import type { World } from '../world/world';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -200,6 +203,12 @@ export class Game {
    * heroes keeps them). The played heroes' are in `state`.
    */
   heroKits: Record<string, HeroPower> = {};
+  /**
+   * A visit to Kakariko Village under way (0.4.41, town/scene.ts): its scene, kept while the hero
+   * is in the secret house's Top Secret Area, and the ? blocks opened there this visit ("x,y";
+   * they refill on the next visit from the map, never saved). Null outside the village.
+   */
+  town: { scene: TownScene; used: Set<string> } | null = null;
   /**
    * The story beats seen on the campaign's file (SaveFile.story; ids from src/game/story/beats.ts),
    * each once. See `seen` / `markSeen`; whether the story plays at all is beats.ts storyOn.
@@ -363,6 +372,7 @@ export class Game {
     this.endTutorial();
     this.devAllHeroes = false;
     this.bonus = newBonusState();
+    this.town = null;
     this.scenes.clear();
     this.scenes.push(new TitleScene(this));
   }
@@ -377,6 +387,7 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.endTutorial();
+    this.town = null; // any visit to the village is over
     if (this.campaign) this.addReveal(openMetExits(this.mapProgress));
     this.scenes.clear();
     this.scenes.push(new WorldMapScene(this, page ?? this.mapProgress.position.page, opts));
@@ -443,6 +454,62 @@ export class Game {
         this.scenes.push(pick(1, go));
       }),
     );
+  }
+
+  /**
+   * World 2's hidden spot (its map node's `town`): straight into Kakariko Village with the file's
+   * hero, no character select (owner). The first time, the village is found: its secret goes on
+   * the file (the map's label and the guard's hello follow it) and the file is saved.
+   */
+  enterTown(): void {
+    const first = !this.mapProgress.secrets.includes(KAKARIKO);
+    if (first && this.campaign) this.mapProgress.secrets.push(KAKARIKO);
+    this.guardBonus();
+    this.autosave();
+    this.deps.ctx.audio.stopMusic();
+    const scene = new TownScene(this, { first });
+    this.town = { scene, used: new Set() };
+    this.scenes.clear();
+    this.scenes.push(scene);
+  }
+
+  /**
+   * Out of the village (the south gate, or its menu's Quit to map): back on the map with nothing
+   * cleared, saved as after a level, whoever the hero now is.
+   */
+  leaveTown(): void {
+    this.town = null;
+    // Dev level select's village has no map to go back to.
+    if (!this.campaign) return this.showTitle();
+    this.returnToMap();
+  }
+
+  /**
+   * The secret house's door: the side-view Top Secret Area with the town's hero (no character
+   * select, no WORLD card), its blocks as this visit has left them.
+   */
+  enterSecretHouse(): void {
+    this.state.checkpoint = null;
+    this.goToLevel(SECRET_HOUSE_LEVEL, { mode: 'stand' });
+  }
+
+  /**
+   * The Top Secret Area's pipe (`-> town`) during a visit: what was opened is remembered for the
+   * rest of the visit, and the village comes back with the hero on the secret house's step.
+   */
+  returnToTown(world: World): void {
+    const town = this.town;
+    if (!town) {
+      this.returnToMap();
+      return;
+    }
+    for (const key of openedBlocks(world.level, world)) town.used.add(key);
+    this.state.checkpoint = null;
+    this.state.time = null;
+    this.deps.ctx.audio.stopMusic();
+    this.scenes.clear();
+    this.scenes.push(town.scene);
+    town.scene.backFromSecretHouse();
   }
 
   /** Story beat `id` (beats.ts) has played on this file. */
@@ -893,6 +960,14 @@ export class Game {
     this.pendingLevel = null;
     this.quickRespawn = true;
     this.campaign = null;
+    if (levelId === DEV_VILLAGE) {
+      this.deps.ctx.audio.stopMusic();
+      const scene = new TownScene(this, { first: false });
+      this.town = { scene, used: new Set() };
+      this.scenes.clear();
+      this.scenes.push(scene);
+      return;
+    }
     this.goToLevel(levelId, seed === undefined ? { mode: 'stand' } : { mode: 'stand', seed });
   }
 
@@ -1143,7 +1218,10 @@ export class Game {
   levelScene(level: LevelData, start: LevelStart): LevelScene {
     const played = this.campaign ? campaignLevel(level, undefined, this.mapProgress.secrets) : level;
     const heroes = [this.state.character.id, ...(this.state.character2 ? [this.state.character2.id] : [])];
-    return new LevelScene(this, heroVariant(played, heroes, this.campaign !== null), start);
+    const scene = new LevelScene(this, heroVariant(played, heroes, this.campaign !== null), start);
+    // The secret house during a village visit: the blocks already opened stay used.
+    if (this.town && level.id === SECRET_HOUSE_LEVEL) layUsedBlocks(scene.world, this.town.used);
+    return scene;
   }
 
   /**

@@ -93,10 +93,10 @@ describe('World 2 as Hyrule: every level in a Zelda II look, campaign only', () 
     expect(applyLook(lvl, { theme: () => false, music: () => false })).toBe(lvl);
   });
 
-  it('the Top Secret Area keeps its own look', () => {
+  it("the Top Secret Area is no Zelda II look: since 0.4.41 it is the secret house's inside", () => {
     const l = getLevel('2-top-secret');
-    expect(l.campaignLook).toBeUndefined();
-    expect(campaignLevel(l).theme).toBe('smw-secret');
+    expect(l.theme).toBe('smw-secret');
+    expect(campaignLevel(l).theme).toBe('tsa-house');
   });
 
   it.each(IDS)('%s: every tile it draws has a frame in its look', (id) => {

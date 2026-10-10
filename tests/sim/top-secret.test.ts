@@ -12,7 +12,7 @@ import { LUIGI } from '@game/characters/luigi';
 import { LINK } from '@game/characters/link';
 import { campaignLevel } from '@game/level/campaign';
 import { parseTextMap, serializeTextMap } from '@game/level/textmap';
-import { MAP_EXIT, type LevelData, type Zone } from '@game/level/schema';
+import { MAP_EXIT, TOWN_EXIT, type LevelData, type Zone } from '@game/level/schema';
 import { T } from '@game/level/tiles';
 import { PATH_STEP_FRAMES, World, type WorldEvent } from '@game/world/world';
 import { Decoration } from '@game/entities/objects/decoration';
@@ -930,6 +930,9 @@ describe('the map: World 2 bonus spot is the Top Secret Area', () => {
       unlock: 'bonus-2',
       level: TSA,
       label: 'TOP SECRET AREA',
+      // 0.4.41: the spot is Kakariko Village, whose secret house holds the Top Secret Area.
+      town: 'kakariko',
+      townLabel: 'KAKARIKO VILLAGE',
     });
     expect(isBonusArea(n)).toBe(true);
     expect(isBonusArea(mapPage('smb-4')!.nodes.find((x) => x.kind === 'bonus')!)).toBe(false);
@@ -948,7 +951,7 @@ describe('the map: World 2 bonus spot is the Top Secret Area', () => {
     expect(isOpen({ ...prog, secrets: ['bonus-2'] }, w2(), 'bonus-2')).toBe(true);
   });
 
-  it('standing on it: its own icon, the hint line and the announcer name it; JUMP goes in (no WORLD card)', () => {
+  it('standing on it: its own icon, the hint line and the announcer name it; inside, no WORLD card', () => {
     const h = makeGame();
     onWorld2(h, { cleared: ['1-0', '1-1', '1-2', '1-3', '1-4', '2-1'], secrets: ['bonus-2'] });
     walkTo(h, 'bonus-2');
@@ -956,11 +959,11 @@ describe('the map: World 2 bonus spot is the Top Secret Area', () => {
     expect(h.said.at(-1)).toBe('Top Secret Area, open');
     expect(map(h).nodeLabel(node('bonus-2'))).toBe('Top Secret Area, open');
     expect(map(h).touchLabels().jump).toBe('ENTER');
+    // 0.4.41: JUMP walks into Kakariko Village (no character select; tests/sim/kakariko.test.ts),
+    // whose secret house's door loads the Top Secret Area.
     h.tap('jump');
-    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
-    h.idle(12);
-    h.tap('jump');
-    h.step();
+    expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
+    h.game.enterSecretHouse();
     expect(h.top()).toBeInstanceOf(LevelScene);
     const scene = h.top() as LevelScene;
     expect(scene.level.id).toBe(TSA);
@@ -1010,13 +1013,24 @@ describe('the Top Secret Area', () => {
       T.Q_MUSHROOM,
     ]);
     expect(l.zones).toEqual([
-      { kind: 'pipe', x: 13, y: 11, dir: 'down', target: { level: MAP_EXIT, x: 0, y: 0 } },
+      // Back out to the secret house's step in Kakariko Village (0.4.41; no visit: the map).
+      { kind: 'pipe', x: 13, y: 11, dir: 'down', target: { level: TOWN_EXIT, x: 0, y: 0 } },
     ]);
+    expect(TOWN_EXIT).not.toBe(MAP_EXIT);
     expect(l.decor.map((d) => d.kind)).toEqual(['smw-hill-big', 'smw-hill-small', 'smw-bush', 'smw-bush']);
     expect(levelIds()).toContain(TSA);
     expect(parseTextMap(serializeTextMap(l), TSA)).toEqual(l);
-    // Its campaign variant is itself: nothing sleeps there.
-    expect(campaignLevel(l)).toBe(l);
+    // Its campaign variant only changes its look (0.4.41: the secret house's inside): nothing
+    // sleeps there, every tile and zone is the same.
+    const camp = campaignLevel(l);
+    expect(camp.theme).toBe('tsa-house');
+    expect(camp.decor.map((d) => d.kind)).toEqual(['tsa-house:wall']);
+    expect([camp.tiles, camp.zones, camp.entities, camp.music]).toEqual([
+      l.tiles,
+      l.zones,
+      l.entities,
+      l.music,
+    ]);
   });
 
   it.each(heroes)(
@@ -1116,17 +1130,17 @@ describe('the Top Secret Area', () => {
     expect(items(w).map((p) => p.item)).toEqual(['mushroom']);
   });
 
-  it('campaign: down the pipe is back on the map, on the node, nothing cleared; revisit any time', () => {
+  it('campaign with no village visit under way: down the pipe is back on the map, nothing cleared', () => {
+    // (In play the area is reached through Kakariko Village, whose visit the pipe goes back to:
+    // tests/sim/kakariko.test.ts. With none under way the pipe is the way to the map, as before.)
     const h = makeGame();
     onWorld2(h, { cleared: ['1-0', '1-1', '1-2', '1-3', '1-4', '2-1'], secrets: ['bonus-2'] });
     walkTo(h, 'bonus-2');
     for (let visit = 0; visit < 2; visit++) {
       const before = h.game.mapProgress.cleared.slice();
       h.idle(8);
-      h.tap('jump');
-      h.idle(12);
-      h.tap('jump');
-      h.step();
+      h.game.enterSecretHouse();
+      expect(h.game.town).toBeNull();
       const scene = h.top() as LevelScene;
       expect(scene.level.id).toBe(TSA);
       expect(BLOCKS.map((x) => scene.world.map.get(x, 9))).toEqual([

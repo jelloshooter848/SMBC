@@ -8,6 +8,18 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- World 2's hidden spot is now Kakariko Village, walked from above in the style of A Link to the Past: six screens,
+  five rooms, townsfolk, a hen, a free healer, and a place-name banner as you arrive. Switch to any freed hero on the
+  spot with TOOLS (HERO on touch). You walk straight in from the map, and the spot reads KAKARIKO VILLAGE once found.
+- The village's secret house holds the Top Secret Area, now dressed as a cosy room. Its pipe brings you back to the
+  doorstep, and its blocks refill once per visit to the village. The shop opens in a later update.
+- In the village the screen is all play: the hero's portrait, coins and lives sit at the top left and their health
+  or power at the top right, drawn over the scenery.
+- New original art and music: the village tiles, townsfolk, every hero seen from above, and the village and indoor
+  themes.
+
 ## [0.4.40] - 2026-10-09
 
 ### Added

@@ -1,5 +1,5 @@
 import { getLevel, levelIds } from '@content/levels';
-import { MAP_EXIT, type LevelData } from '../level/schema';
+import { MAP_EXIT, TOWN_EXIT, type LevelData } from '../level/schema';
 
 /**
  * Levels with more than one way out (Super Mario World's "secret exit" dots), found from the level
@@ -54,7 +54,7 @@ export function secretExitsIn(levels: readonly LevelData[]): Set<string> {
       if (z.kind === 'warp') return true;
       if (z.kind !== 'pipe' && z.kind !== 'vine' && z.kind !== 'pit' && z.kind !== 'teleport') return false;
       // The way back to the map (the Top Secret Area's pipe) is no exit of a level.
-      if (z.target.level === MAP_EXIT) return false;
+      if (z.target.level === MAP_EXIT || z.target.level === TOWN_EXIT) return false;
       const to = mainOf(z.target.level);
       return to !== main && to !== next;
     });

@@ -113,6 +113,9 @@ const tileFrames = [
   'ground@smw-secret',
   'tree-top@smw-secret',
   'used@smw-secret',
+  // The same room as the secret house's inside (0.4.41).
+  'ground@tsa-house',
+  'tree-top@tsa-house',
   // Bill's jungle, waterfall and Red Falcon's lair.
   'ground@contra-jungle',
   'hard@contra-jungle',
@@ -538,6 +541,7 @@ describe('tile sprites', () => {
         'tiles-ninja-night',
         'tiles-contra-jungle',
         'tiles-smw-secret',
+        'tiles-tsa-house',
         'tiles-contra-falls',
         'tiles-alien-lair',
         'tiles-underworld',

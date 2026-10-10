@@ -48,9 +48,19 @@ export const WORLD_2: WorldMapPage = {
   )
     // The bonus slot is the Top Secret Area (0.4.10): found by jumping over 2-1's flagpole and
     // walking on past the castle into the Moblin's cave (secret 'bonus-2'; a secret exit only, 2-1's flagpole opens 2-2).
-    // JUMP on it enters its level, every time: a fill-up spot (docs/WORLD_MAP.md).
+    // Since 0.4.41 JUMP on it walks into Kakariko Village (src/game/town), where the secret house
+    // holds the Top Secret Area; once the village is found (secret 'kakariko') the spot is named
+    // after it (docs/WORLD_MAP.md).
     .map((n): MapNode =>
-      n.kind === 'bonus' ? { ...n, level: '2-top-secret', label: 'TOP SECRET AREA' } : n,
+      n.kind === 'bonus'
+        ? {
+            ...n,
+            level: '2-top-secret',
+            label: 'TOP SECRET AREA',
+            town: 'kakariko',
+            townLabel: 'KAKARIKO VILLAGE',
+          }
+        : n,
     ),
   paths: [
     { from: 'start', to: '2-1', points: poly([0, 10], [1, 10], [1, 8], [3, 8], [3, 6]) },

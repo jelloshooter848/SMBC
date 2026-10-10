@@ -116,7 +116,9 @@ const play = (l: LevelData) => {
 
 describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () => {
   it('each restyled level and coin heaven names its look; nothing else in the campaign has one', () => {
-    const looked = levelIds().filter((id) => getLevel(id).campaignLook);
+    // (The Top Secret Area's look is no hero tribute: the inside of Kakariko Village's secret
+    // house, 0.4.41, tests/sim/kakariko.test.ts.)
+    const looked = levelIds().filter((id) => getLevel(id).campaignLook && id !== '2-top-secret');
     expect(looked.sort()).toEqual([...IDS].sort());
     for (const id of IDS) {
       const { theme, music } = RESTYLES[id]!;
@@ -205,8 +207,7 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
   it('bonus rooms, water areas and the other areas of these levels keep their own looks', () => {
     const own = [
       // (World 2's bonus room and the Moblin's cave take Hyrule's cave look since 0.4.24; its Top
-      // Secret Area keeps its own)
-      '2-top-secret',
+      // Secret Area is the secret house's inside since 0.4.41)
       // (3-1's bonus room is a Metal Man-style factory since 0.4.26; the space station keeps its own)
       '3-1-station',
       // (4-2's overworld areas, the vine's warp room and the bonus room take Zebes looks since

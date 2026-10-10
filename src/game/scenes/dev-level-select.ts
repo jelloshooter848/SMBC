@@ -1,6 +1,7 @@
 import { MenuScene } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
+import { DEV_VILLAGE } from '../town/secret-house';
 
 const POWER_UP_STATES = ['small', 'big', 'fire'];
 const HP_STATES = ['full', 'half', '1 hp'];
@@ -17,6 +18,8 @@ export class DevLevelSelectScene extends MenuScene {
     super(game, 'LEVEL SELECT', [], onBack);
     this.levels = game.deps.listLevels?.() ?? ['1-1'];
     if (!this.levels.length) this.levels = ['1-1'];
+    // Kakariko Village (0.4.41), for testing: no file, every hero to switch to, the title after.
+    this.levels = [...this.levels, DEV_VILLAGE];
     const cycle = (i: number, d: number, n: number) => (i + d + n) % n;
     this.setItems([
       {

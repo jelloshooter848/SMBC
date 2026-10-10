@@ -138,6 +138,10 @@ export const linkTdPalettes: Record<string, string[]> = {
   'link-td-beam-2': beamTint(NES.skyLight, NES.blueLight, NES.blueMid, NES.lavender),
   'link-td-beam-3': beamTint(NES.white, NES.greenLight, NES.green, NES.yellowLight),
   'link-td-beam-calm': beamTint(NES.white, NES.skyLight, NES.blueLight, NES.white),
+  // Kakariko Village (0.4.41): his found tunic's blue and the sword beam's red, as his side-view
+  // self wears them (characters/link).
+  'link-td-blue': linkTd(NES.blueLight, NES.blueMid, NES.skin, NES.brown, NES.blueMid),
+  'link-td-red': linkTd(NES.redBright, NES.redDark, NES.skin, NES.brown, NES.blueMid),
 };
 
 /**

@@ -1,8 +1,9 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
-import { DIRS, DIR_VEC, ROOM_H, ROOM_W, boxesOverlap, type Box, type Dir } from '../../topdown/geometry';
+import { DIR_VEC, ROOM_H, ROOM_W, boxesOverlap, type Box, type Dir } from '../../topdown/geometry';
 import { Pickup, TdEnemy, TdEntity } from '../../topdown/entity';
-import { SPIN_FRAMES, TdHero } from '../../topdown/hero';
+import { SPIN_FRAMES } from '../../topdown/hero';
+import { CORNER_SLIDE as KIT_CORNER_SLIDE, TdWalker } from '../../topdown/walker';
 import { Explosion, type TdItem } from '../../topdown/items';
 import { TopDownWorld } from '../../topdown/world';
 import type { TdView } from '../../topdown/view';
@@ -75,8 +76,8 @@ export const WALK_PATTERN: readonly number[] = [1, 1, 2, 1];
 /** After a hit: knocked back this many frames at this many px. */
 export const JASON_KNOCK_FRAMES = 6;
 export const JASON_KNOCK_PX = 2;
-/** How far he slides sideways round a corner he walks into (doorways). */
-export const CORNER_SLIDE = 7;
+/** How far he slides sideways round a corner he walks into (doorways): the kit walker's. */
+export const CORNER_SLIDE = KIT_CORNER_SLIDE;
 
 /** Jason's overhead frames (the `sophia` sheet). */
 export function jasonFrame(facing: Dir, walkT: number, shooting: boolean): string {
@@ -84,36 +85,22 @@ export function jasonFrame(facing: Dir, walkT: number, shooting: boolean): strin
 }
 
 /**
- * Jason overhead: walks eight ways at 1.25 px a frame (sliding round corners into doorways),
- * faces the way last pressed, SHOOT fires along his facing (held: auto fire), SPECIAL throws a
- * grenade (the world's item slot). A hit costs POW and drops the GUN meter a level (never below
- * 1); with the no-damage assist he keeps both. POW is the kit's hp (one per bar).
+ * Jason overhead: walks eight ways at 1.25 px a frame (the kit's walker, topdown/walker.ts:
+ * sliding round corners into doorways), faces the way last pressed, SHOOT fires along his facing
+ * (held: auto fire), SPECIAL throws a grenade (the world's item slot). A hit costs POW and drops
+ * the GUN meter a level (never below 1); with the no-damage assist he keeps both. POW is the
+ * kit's hp (one per bar).
  */
-export class Jason extends TdHero {
+export class Jason extends TdWalker {
   /** GUN meter level, 1-8. */
   gun = GUN_START;
   /** Frames until he may fire again; frames left in the shooting pose. */
   fireT = 0;
   shootT = 0;
-  private stepT = 0;
 
   constructor(x: number, y: number, maxHp = POW_MAX) {
     super(x, y, maxHp);
     this.facing = 'up';
-  }
-
-  /** Narrower than Link: a 10-px stance fits a doorway with room to spare. */
-  override feet(x = this.x, y = this.y): Box {
-    return { x: x + 3, y: y + 8, w: 10, h: 8 };
-  }
-
-  override hurtbox(): Box {
-    return { x: this.x + 3, y: this.y + 2, w: 10, h: 13 };
-  }
-
-  /** No sword. */
-  override swordBox(): Box | null {
-    return null;
   }
 
   /** One GUN level up (a capsule); false at the top. */
@@ -172,38 +159,11 @@ export class Jason extends TdHero {
       return;
     }
     // Facing: the way just pressed, else keep one still held.
-    for (const d of DIRS) if (input.pressed(d) && input.held(d)) this.facing = d;
-    if (!input.held(this.facing)) {
-      const d = DIRS.find((k) => input.held(k));
-      if (d) this.facing = d;
-    }
+    this.face(input);
     if (input.pressed('attack') && this.fireT <= AUTO_FIRE - FIRE_GAP) this.fire(world);
     else if (input.held('attack') && this.fireT === 0) this.fire(world);
     if (input.pressed('special')) world.useItem();
-    const dx = (input.held('right') ? 1 : 0) - (input.held('left') ? 1 : 0);
-    const dy = (input.held('down') ? 1 : 0) - (input.held('up') ? 1 : 0);
-    if (dx === 0 && dy === 0) return;
-    const step = WALK_PATTERN[this.stepT++ % WALK_PATTERN.length] ?? 1;
-    this.walkT++;
-    if (dx !== 0 && !this.moveBy(world, dx * step, 0, false) && dy === 0) this.slide(world, dx, 0);
-    if (dy !== 0 && !this.moveBy(world, 0, dy * step, false) && dx === 0) this.slide(world, 0, dy);
-  }
-
-  /**
-   * Walking straight into a wall with an opening just beside (a doorway, a gap between blocks):
-   * a pixel toward the opening, as long as it is within CORNER_SLIDE px.
-   */
-  private slide(world: TopDownWorld, dx: number, dy: number): void {
-    for (let k = 1; k <= CORNER_SLIDE; k++)
-      for (const s of [-1, 1]) {
-        const ox = dx === 0 ? s * k : 0;
-        const oy = dy === 0 ? s * k : 0;
-        const at = this.feet(this.x + ox + dx, this.y + oy + dy);
-        if (world.blocked(at, 'hero', null)) continue;
-        if (world.blocked(this.feet(this.x + ox, this.y + oy), 'hero', null)) continue;
-        this.moveBy(world, Math.sign(ox), Math.sign(oy), false);
-        return;
-      }
+    this.walk(world, input, WALK_PATTERN);
   }
 
   /** Fires a volley along his facing at his GUN level (if fewer than MAX_VOLLEYS are out). */
