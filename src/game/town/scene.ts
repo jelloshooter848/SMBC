@@ -55,8 +55,6 @@ export const FADE_FRAMES = 16;
 export const SWITCH_GAP = 20;
 /** Frames the smoke puff of a switch shows. */
 export const PUFF_FRAMES = 18;
-/** Frames a notice (a shut door, nobody to switch to) stays on screen; it is said as it shows. */
-export const NOTICE_FRAMES = 150;
 /**
  * The top of the play area: the room is centred on the screen, with a strip of the screens above
  * and below it (or more of its own edge) round it, and the HUD drawn over it, as in A Link to the
@@ -96,7 +94,12 @@ export class TownScene implements Scene {
   switchT = 0;
   /** The smoke puff of the last switch (room pixels) and its age. */
   puff: { x: number; y: number; t: number } | null = null;
-  notice: { text: string; until: number } | null = null;
+  /**
+   * A notice (a shut door, nobody to switch to): said as it shows, and like the banner it stays
+   * until the hero is walked or a key pressed once it has shown BANNER_MIN frames (never timing
+   * out on its own). `t`: frames shown.
+   */
+  notice: { text: string; t: number } | null = null;
   /**
    * The place-name banner (the village and the screen or room; on arrival also the NEXT HERO
    * hint), shown on entering the village or a new place and cleared by moving or a key once it
@@ -165,7 +168,7 @@ export class TownScene implements Scene {
     this.fade = { t: 0, out: false, then: () => undefined };
     this.music = null;
     this.screen = this.world.room.id;
-    this.showBanner();
+    this.banner = null;
     this.say(`${spoken(VILLAGE_NAME)}. ${spoken(this.placeName())}.`);
   }
 
@@ -225,6 +228,7 @@ export class TownScene implements Scene {
       this.say(`${spoken(VILLAGE_NAME)}. ${spoken(this.placeName())}. ${this.helpSaid()}`);
     }
     if (this.banner) this.banner.t++;
+    if (this.notice) this.notice.t++;
     const before = { x: this.hero.x, y: this.hero.y, free: this.free };
     if (this.puff && ++this.puff.t >= PUFF_FRAMES) this.puff = null;
     if (this.switchT > 0) this.switchT--;
@@ -246,7 +250,9 @@ export class TownScene implements Scene {
     this.world.update(input);
     // The banner goes once it has been seen, as soon as the hero is walked or a key pressed.
     const moved = before.free && (this.hero.x !== before.x || this.hero.y !== before.y);
-    if (this.banner && this.banner.t >= BANNER_MIN && (moved || anyPressed(input))) this.banner = null;
+    const dismiss = moved || anyPressed(input);
+    if (this.banner && this.banner.t >= BANNER_MIN && dismiss) this.banner = null;
+    if (this.notice && this.notice.t >= BANNER_MIN && dismiss) this.notice = null;
     for (const e of this.world.events.splice(0)) this.onEvent(e);
     const welcomed = !this.banner || this.banner.t >= BANNER_GREET;
     if (this.greet && !this.world.walkIn && !this.fade && welcomed) {
@@ -330,7 +336,7 @@ export class TownScene implements Scene {
   }
 
   private notify(text: string): void {
-    this.notice = { text, until: this.t + NOTICE_FRAMES };
+    this.notice = { text, t: 0 };
     this.say(spoken(text));
   }
 
@@ -341,10 +347,9 @@ export class TownScene implements Scene {
         if (e.id !== this.screen) {
           this.screen = String(e.id);
           this.notice = null;
-          if (isOutdoor(this.screen)) {
-            this.showBanner();
-            this.say(`${spoken(SCREEN_NAMES[this.screen])}.`);
-          }
+          // Outdoors the screen is only said (the pause menu shows it): the banner is for arriving
+          // and for going indoors, as A Link to the Past names places.
+          if (isOutdoor(this.screen)) this.say(`${spoken(SCREEN_NAMES[this.screen])}.`);
         }
         return;
       }
@@ -359,7 +364,8 @@ export class TownScene implements Scene {
           this.world.events.length = 0;
           this.screen = this.world.room.id;
           this.updateMusic();
-          this.showBanner();
+          if (!isOutdoor(this.screen)) this.showBanner();
+          else this.banner = null;
           this.say(`${spoken(this.placeName())}.`);
         });
         return;
@@ -432,7 +438,7 @@ export class TownScene implements Scene {
     drawTownHud(r, this);
     if (this.banner && !this.fade) drawBanner(r, this.view, this.banner.lines, this.hero.y < ROOM_H / 2);
     const n = this.notice;
-    if (n && this.t < n.until) drawNotice(r, fontOf(this.view), n.text);
+    if (n) drawNotice(r, fontOf(this.view), n.text);
   }
 
   /** A puff of smoke where the hero switched (two rings; one still cloud with reduce flashing). */
@@ -505,18 +511,28 @@ function drawNotice(r: Renderer, font: ReturnType<typeof fontOf>, text: string):
 export function powerName(game: Game): string {
   const s = game.state;
   const c = s.character;
+  if (c.id === 'sophia')
+    // Sophia III's cannon: Normal, Hyper, Crusher (stored as small, big, fire).
+    return s.powerState === 'fire' ? 'CRUSHER' : s.powerState === 'big' ? 'HYPER' : 'NORMAL';
   if (c.damage.kind === 'powerup')
     return s.powerState === 'fire' ? 'FIRE' : s.powerState === 'big' ? 'SUPER' : 'SMALL';
   return `HP ${s.hp}/${fullHp(c, s.kit)}`;
 }
 
-/** The dark outline's offsets: each HUD text's silhouette once each way, under it. */
+/**
+ * The dark outline's offsets: each HUD text's silhouette all eight ways and a shadow down-right,
+ * under it, so it reads over busy scenery (benches, hedges) as well as grass and floorboards.
+ */
 const OUTLINE: readonly (readonly [number, number])[] = [
+  [-1, -1],
+  [0, -1],
+  [1, -1],
   [-1, 0],
   [1, 0],
-  [0, -1],
+  [-1, 1],
   [0, 1],
   [1, 1],
+  [2, 2],
 ];
 
 /** Text with a dark outline, so it reads on grass, paths and floorboards alike. */
@@ -546,9 +562,12 @@ export const TOWN_HUD = {
   bottom: 34,
 } as const;
 
-/** The health label: Mario and Luigi's is their power, everyone else's their health. */
+/**
+ * The health label's word (drawn "- WORD -", the dashes as outlined bars): Mario and Luigi's (and
+ * Sophia III's) is their power, everyone else's their health.
+ */
 export function healthLabel(c: CharacterDef): string {
-  return c.damage.kind === 'powerup' ? '- POWER -' : '- HEALTH -';
+  return c.damage.kind === 'powerup' ? 'POWER' : 'HEALTH';
 }
 
 /**
@@ -596,9 +615,16 @@ function drawTownHud(r: Renderer, scene: TownScene): void {
   outlined(r, view, two(s.lives), H.lives.x, H.lives.y + 10);
   // Health, right-aligned under its label.
   const width = drawHealth(r, view, game);
+  // The label, "- HEALTH -": gold over its dark outline, and solid outlined bars for the dashes
+  // (the font's thin dash glyphs got lost in benches and hedges).
   const label = healthLabel(c);
-  const lx = Math.min(SCREEN_W - 8 - label.length * 8, H.right - (width >> 1) - label.length * 4);
-  outlined(r, view, label, lx, H.labelY, 'font-red');
+  const lw = label.length * 8 + 20;
+  const lx = Math.min(SCREEN_W - 4 - lw, H.right - (width >> 1) - (lw >> 1));
+  for (const bx of [lx, lx + lw - 6]) {
+    r.rect(bx - 1, H.labelY + 1, 8, 5, '#101010');
+    r.rect(bx, H.labelY + 2, 6, 3, '#f8d878');
+  }
+  outlined(r, view, label, lx + 10, H.labelY, 'font-gold');
 }
 
 /** The hero's health at the HUD's top right; returns how wide it is drawn. */
@@ -610,8 +636,9 @@ function drawHealth(r: Renderer, view: TdView, game: Game): number {
   if (c.damage.kind === 'powerup') {
     const word = powerName(game);
     const frame = word === 'FIRE' ? 'hud-flower' : word === 'SUPER' ? 'hud-shroom' : 'hud-small';
-    const w = 11 + word.length * 8;
-    icon(r, view, frame, H.right - w, y, '#d83830');
+    // Sophia III's cannon level is a word alone (no mushroom for a tank).
+    const w = (c.id === 'sophia' ? 0 : 11) + word.length * 8;
+    if (c.id !== 'sophia') icon(r, view, frame, H.right - w, y, '#d83830');
     outlined(r, view, word, H.right - word.length * 8, y);
     return w;
   }

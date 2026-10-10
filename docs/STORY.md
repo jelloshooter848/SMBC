@@ -1413,6 +1413,15 @@ YOU LOOK FINE TO ME.
 TRY A MUSHROOM.
 ```
 
+To Sophia III:
+
+```text
+HEALER:
+
+I PATCH UP PEOPLE, DEAR,
+NOT TANKS. TRY A WRENCH.
+```
+
 **The family** next door to her:
 
 ```text

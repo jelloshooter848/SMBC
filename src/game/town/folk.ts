@@ -14,6 +14,7 @@ import {
   GUARD_FIRST,
   HEALER_HEALS,
   HEALER_PLUMBER,
+  HEALER_SOPHIA,
   KID,
   KID_MEGAMAN,
   KID_SAMUS,
@@ -77,7 +78,7 @@ export const FOLK_DEFS: Readonly<Record<string, FolkDef>> = {
   healer: {
     name: 'HEALER',
     frames: 'healer',
-    pages: (c) => (plumber(c.hero) ? HEALER_PLUMBER : HEALER_HEALS),
+    pages: (c) => (c.hero.id === 'sophia' ? HEALER_SOPHIA : plumber(c.hero) ? HEALER_PLUMBER : HEALER_HEALS),
     after: (c) => (plumber(c.hero) ? null : 'heal'),
   },
   mother: { name: 'MOTHER', frames: 'mother', pages: () => MOTHER },

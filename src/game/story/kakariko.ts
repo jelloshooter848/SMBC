@@ -26,6 +26,10 @@ export const HEALER_HEALS: readonly Page[] = [
 ];
 /** ...but Mario and Luigi have none to heal. */
 export const HEALER_PLUMBER: readonly Page[] = [say('HEALER', 'YOU LOOK FINE TO ME.', 'TRY A MUSHROOM.')];
+/** ...nor has Sophia III, a tank. */
+export const HEALER_SOPHIA: readonly Page[] = [
+  say('HEALER', 'I PATCH UP PEOPLE, DEAR,', 'NOT TANKS. TRY A WRENCH.'),
+];
 
 export const BARKEEP: readonly Page[] = [
   say(
@@ -106,6 +110,7 @@ export const KAKARIKO_PAGES: Readonly<Record<string, readonly Page[]>> = {
   GUARD_AGAIN,
   HEALER_HEALS,
   HEALER_PLUMBER,
+  HEALER_SOPHIA,
   BARKEEP,
   PATRON,
   PATRON_2,

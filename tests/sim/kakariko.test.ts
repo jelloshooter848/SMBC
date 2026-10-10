@@ -52,6 +52,7 @@ import {
   GUARD_FIRST,
   HEALER_HEALS,
   HEALER_PLUMBER,
+  HEALER_SOPHIA,
   NO_ONE_ELSE,
   oldManPages,
 } from '@game/story/kakariko';
@@ -609,6 +610,10 @@ describe('townsfolk', () => {
     const coins = h.game.state.coins;
     h.tap('jump');
     expect(readCards(h)).toEqual(HEALER_PLUMBER.map((p) => [...p]));
+    // Sophia III, a tank, gets her own.
+    expect(FOLK_DEFS.healer?.pages({ ...town(h).talkContext(), hero: byId('sophia') })).toEqual(
+      HEALER_SOPHIA,
+    );
     h.tap('select');
     expect(h.game.state.character.id).toBe('link');
     h.game.state.hp = 1;
@@ -932,7 +937,7 @@ describe("the HUD over the village, A Link to the Past's way (owner, RQ41)", () 
     ).toBe(true);
     // The counters under their icons, the health at the right; all over the top strip.
     const hud = rec.texts.filter((x) => x.y < TOWN_HUD.bottom);
-    expect(hud.map((x) => x.s)).toEqual(expect.arrayContaining(['$', '00', '03', '- POWER -', 'SMALL']));
+    expect(hud.map((x) => x.s)).toEqual(expect.arrayContaining(['$', '00', '03', 'POWER', 'SMALL']));
     expect(rec.sprites.some((s) => s.f === 'hud-life')).toBe(true);
     for (const x of hud) expect(x.x + x.s.length * 8, x.s).toBeLessThanOrEqual(256);
     // No place names and no NEXT HERO line on screen for good.
@@ -951,7 +956,7 @@ describe("the HUD over the village, A Link to the Past's way (owner, RQ41)", () 
     h.game.setHero(0, LINK);
     s.hp = 3;
     let rec = draw();
-    expect(rec.texts.map((x) => x.s)).toContain('- HEALTH -');
+    expect(rec.texts.map((x) => x.s)).toContain('HEALTH');
     expect(rec.texts.find((x) => /^[hfe]+$/.test(x.s))?.s).toBe('hfe');
     h.game.setHero(0, byId('megaman'));
     s.hp = 20;
@@ -966,8 +971,14 @@ describe("the HUD over the village, A Link to the Past's way (owner, RQ41)", () 
     h.game.setHero(0, MARIO);
     s.powerState = 'fire';
     rec = draw();
-    expect(rec.texts.map((x) => x.s)).toEqual(expect.arrayContaining(['- POWER -', 'FIRE']));
+    expect(rec.texts.map((x) => x.s)).toEqual(expect.arrayContaining(['POWER', 'FIRE']));
     expect(rec.sprites.some((x) => x.f === 'hud-flower')).toBe(true);
+    // Sophia III: her cannon's level, no mushroom.
+    h.game.setHero(0, byId('sophia'));
+    s.powerState = 'big';
+    rec = draw();
+    expect(rec.texts.map((x) => x.s)).toEqual(expect.arrayContaining(['POWER', 'HYPER']));
+    expect(rec.sprites.some((x) => x.f.startsWith('hud-') && x.f !== 'hud-life')).toBe(false);
   });
 
   it('paused, the HUD gives way to the menu: the place, a map of the screens, the NEXT HERO hint', () => {
@@ -1013,20 +1024,41 @@ describe('the place-name banner', () => {
     expect(t.banner).toBeNull();
   });
 
-  it('a new screen or room brings it back with its own name (said as before); a key clears it', () => {
+  it('outdoor screens are only said; going indoors brings it back with the room; a key clears it', () => {
     const h = makeGame();
     const t = townQuiet(h);
     const before = h.said.length;
     walkTo(h, key('square', 7, 10));
     expect(h.said.slice(before)).toContain('The Square.');
-    expect(t.banner?.lines).toEqual(['KAKARIKO VILLAGE', 'THE SQUARE']);
-    h.idle(BANNER_MIN);
-    h.tap('attack');
     expect(t.banner).toBeNull();
     goIn(h, 'inn');
     h.idle(40);
     expect(t.world.room.id).toBe('inn');
     expect(t.banner?.lines).toEqual(['KAKARIKO VILLAGE', 'THE INN']);
+    h.idle(BANNER_MIN);
+    h.tap('attack');
+    expect(t.banner).toBeNull();
+    // Back out of doors: no banner.
+    goIn(h, 'inn-out');
+    h.idle(40);
+    expect(t.world.room.id).toBe('square');
+    expect(t.banner).toBeNull();
+  });
+
+  it('a notice (nobody else to switch to) never times out: it goes on walking or a key, once seen', () => {
+    const h = makeGame();
+    const t = townQuiet(h, { freed: ['mario'] });
+    h.tap('select');
+    expect(t.notice?.text).toBe(NO_ONE_ELSE);
+    h.tap('attack');
+    expect(t.notice).not.toBeNull();
+    h.idle(600);
+    expect(t.notice).not.toBeNull();
+    const rec = recorder();
+    t.render(rec.r);
+    expect(rec.texts.map((x) => x.s)).toContain(NO_ONE_ELSE);
+    h.step(['left']);
+    expect(t.notice).toBeNull();
   });
 
   it("first visit: the guard's hello waits until the welcome has shown, and clears it", () => {
