@@ -1,3 +1,4 @@
+import { coinText } from '../items/wallet';
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Action } from '@engine/input/actions';
@@ -386,6 +387,7 @@ export class WorldMapScene implements Scene {
     lives: -1,
     score: -1,
     coins: -1,
+    wallet: false,
     title: '',
     world: '',
     livesText: '',
@@ -1811,7 +1813,8 @@ export class WorldMapScene implements Scene {
       h.hero !== s.character ||
       h.lives !== s.lives ||
       h.score !== s.score ||
-      h.coins !== s.coins
+      h.coins !== s.coins ||
+      h.wallet !== s.wallet
     ) {
       h.page = page;
       h.node = node;
@@ -1819,17 +1822,19 @@ export class WorldMapScene implements Scene {
       h.lives = s.lives;
       h.score = s.score;
       h.coins = s.coins;
+      h.wallet = s.wallet;
       h.title = page.title.toUpperCase().slice(0, 20);
       h.world = mapHeaderLabel(page, node);
       h.livesText = `${s.character.hudName.slice(0, 5)}×${pad(s.lives, 2)}`;
       h.scoreText = pad(s.score, 7);
-      h.coinsText = `$×${pad(s.coins, 2)}`;
+      h.coinsText = `$×${coinText(s)}`;
     }
     r.rect(0, 0, 256, MAP_HEADER_H, '#000');
     r.text(font, h.title, 8, 4);
     r.text(font, h.world, 248 - h.world.length * 8, 4);
     r.text(font, h.livesText, 8, 14);
     r.text(font, h.scoreText, 100, 14);
-    r.text(font, h.coinsText, 216, 14);
+    // Right-aligned: three digits with the Wallet (0.4.42).
+    r.text(font, h.coinsText, 256 - 8 - h.coinsText.length * 8, 14);
   }
 }

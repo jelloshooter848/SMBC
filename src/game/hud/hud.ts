@@ -1,3 +1,4 @@
+import { coinText } from '../items/wallet';
 import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { isFound } from '../items/flags';
 import { fxPalette } from '@content/sprites/palette-fx';
@@ -83,7 +84,8 @@ export function drawHud(
     text(opts.place, 232 - opts.place.length * 8, 8);
   } else {
     text(pad(state.score, 7), 24, 16);
-    text(`$×${pad(state.coins, 2)}`, 96, 16);
+    // Two digits, or three with the Wallet (0.4.42), which still end before WORLD.
+    text(`$×${coinText(state)}`, 96, 16);
     if (opts.area !== undefined) {
       // The area's name, its second row centred under the first; no clock, so no TIME.
       const [a, b] = hudAreaLines(opts.area);

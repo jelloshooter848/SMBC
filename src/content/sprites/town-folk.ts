@@ -215,6 +215,30 @@ const FOLK_LOOKS: Readonly<Record<string, Look>> = {
     over: { front: [[['OHHO', 'OHHO'], 6, 0]] },
   },
   child: { fill: { H: '5', C: 't', c: 'c', A: 'c', L: '1', F: 'l' } },
+  // The shop (0.4.42): the shopkeeper, bald with a black moustache, a teal shirt, a white apron.
+  shopkeeper: {
+    fill: { H: '1', C: 'n', c: 'o', A: '7', L: 'l', F: '0' },
+    over: {
+      front: [
+        [MUSTACHE, 5, 7],
+        [['7777', '7777', '7777'], 6, 10],
+        [['.22.'], 6, 2],
+      ],
+      side: [[['ll', 'l.'], 11, 7]],
+    },
+  },
+  // Hobb the tanner (0.4.42), who stitches wallets: grey hair under a brown cap, a leather apron.
+  tanner: {
+    fill: { H: 'k', C: 'e', c: 'f', A: 'l', L: 'l', F: 'l' },
+    over: {
+      front: [
+        [['kkkk', 'kkkk', 'kkkk'], 6, 10],
+        [['4', '4'], 3, 6],
+        [['4', '4'], 12, 6],
+      ],
+      side: [[['44', '44'], 4, 6]],
+    },
+  },
 };
 
 /** The hen: white, a red comb, pecking (frame 1), wings up when she flutters. Faces right. */
@@ -332,6 +356,29 @@ folkFrames['hud-flower'] = [
   '.0eeee0.',
   '..0000..',
 ];
+
+/**
+ * The Traveler's Wallet (0.4.42, Hobb's gift; held over the hero's head as he hands it over): a
+ * brown leather purse, double-stitched, with a gold clasp.
+ */
+folkFrames.wallet = [
+  '................',
+  '................',
+  '.....000000.....',
+  '....0uuggu0.....',
+  '..0000uu0000....',
+  '.0kkkk00kkkk0...',
+  '0kk7k7k7k7kkk0..',
+  '0kkkkkkkkkkkk0..',
+  '0k7kkkkkkkk7k0..',
+  '0kkkkkkkkkkkk0..',
+  '0k7kkkkkkkk7k0..',
+  '0lkkkkkkkkkkl0..',
+  '0ll7k7k7k7kll0..',
+  '.0llllllllll0...',
+  '..0000000000....',
+  '................',
+].map((r) => `.${r.slice(0, 15)}`);
 
 export const townFolkDef: SpriteDef = { palette: 'town-folk', frames: folkFrames };
 

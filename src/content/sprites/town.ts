@@ -905,6 +905,39 @@ function plant(): string {
   });
 }
 
+/**
+ * The shop's display table (2×2, 0.4.42): a blue cloth on a wooden top, with a cream mat where
+ * the item stands, and a dark wooden front where its price (or SOLD OUT, FULL) is written.
+ */
+function paintDisplay(): void {
+  const c = new Canvas(32, 32);
+  // The top: a wooden rim round a blue cloth, a fringe along its front edge, the mat.
+  c.rect(1, 2, 30, 14, 'r');
+  c.rect(1, 2, 30, 1, 'z');
+  c.rect(3, 4, 26, 10, 'l');
+  c.rect(3, 4, 26, 1, 'm');
+  for (let x = 3; x < 29; x++) c.set(x, 14, x % 2 ? 'k' : 'm');
+  c.ellipse(16, 9, 8, 3.5, (_x, _y, d) => (d > 0.75 ? 'o' : 'n'));
+  c.rect(1, 15, 30, 1, 'q');
+  // The front: dark boards in a lighter frame (the price is written on it).
+  c.rect(1, 16, 30, 15, 'p');
+  c.rect(1, 16, 30, 1, 'q');
+  c.rect(1, 16, 1, 15, 'q');
+  c.rect(30, 16, 1, 15, 'q');
+  for (let x = 8; x < 30; x += 8) c.rect(x, 29, 1, 2, 'q');
+  const o = Canvas.from(c.rows());
+  o.outline('0');
+  c.paste(o.rows());
+  for (const [ix, iy] of [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
+  ] as const)
+    FRAMES[`display-${ix}-${iy}`] = c.crop(ix * 16, iy * 16);
+}
+paintDisplay();
+
 /* ---------------------------------------------------------------------------------------------- */
 /* The village, cell by cell                                                                       */
 /* ---------------------------------------------------------------------------------------------- */
@@ -1066,6 +1099,10 @@ function indoorCell(map: readonly string[], col: number, row: number): string[] 
       return [f, barrel()];
     case 'y':
       return [f, plant()];
+    case 'd': {
+      const [qx, qy] = quarter(at, col, row, 'd');
+      return [f, `display-${qx}-${qy}`];
+    }
     case '#':
       return [innerWall('block')];
     default:

@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { mapPage } from '@content/worldmap';
 import { getLevel } from '@content/levels';
-import { DOORS, FOLK, GATE, OUTDOOR, SCREEN_AT, SCREENS, type TownDoor } from '@content/town/kakariko';
+import {
+  DOORS,
+  FOLK,
+  GATE,
+  OUTDOOR,
+  SCREEN_AT,
+  SCREENS,
+  SHOP_TABLES,
+  type TownDoor,
+} from '@content/town/kakariko';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
@@ -30,7 +39,8 @@ import {
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { Game, ControlScheme } from '@game/scenes/game';
 import { villageDungeon, villageRooms, isOutdoor } from '@game/town/village';
-import { folkSpawner, Townsperson, FOLK_DEFS } from '@game/town/folk';
+import { folkSpawner, Townsperson, FOLK_DEFS, ShopTable } from '@game/town/folk';
+import { ShopCardScene, SHOP_CARD_GUARD } from '@game/town/shop-card';
 import { DEV_VILLAGE, KAKARIKO, SECRET_HOUSE_LEVEL } from '@game/town/secret-house';
 import { overheadLook } from '@game/town/hero';
 import { PALETTES, SPRITES } from '@content/sprites';
@@ -53,8 +63,15 @@ import {
   HEALER_HEALS,
   HEALER_PLUMBER,
   HEALER_SOPHIA,
+  HOBB_AGAIN,
+  HOBB_GIFT,
   NO_ONE_ELSE,
   oldManPages,
+  SHOP_FULL,
+  SHOP_ONE_A_VISIT,
+  SHOP_OWNED,
+  shopShort,
+  WALLET_GOT,
 } from '@game/story/kakariko';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
 import { ALL_STORY } from './story-seen';
@@ -72,7 +89,10 @@ const node = (id: string) => w2().nodes.find((n) => n.id === id) as MapNode;
 const map = (h: H) => h.top() as WorldMapScene;
 const town = (h: H) => h.top() as TownScene;
 
-/** File 1 on World 2's map with the secret spot found; `over` patches the save. */
+/**
+ * File 1 on World 2's map with the secret spot found; `over` patches the save. The file has the
+ * Wallet unless `over` says not (0.4.42: without it Hobb gives it on arrival, kakariko-shop tests).
+ */
 function onWorld2(h: H, over: Parameters<typeof file>[0] = {}) {
   h.game.openFile(
     1,
@@ -82,6 +102,7 @@ function onWorld2(h: H, over: Parameters<typeof file>[0] = {}) {
       secrets: ['bonus-2'],
       position: { page: 'smb-2', node: 'bonus-2' },
       story: [...ALL_STORY],
+      wallet: true,
       ...over,
     }),
   );
@@ -105,7 +126,8 @@ function intoTown(h: H): TownScene {
   h.idle(8);
   h.tap('jump');
   expect(h.top()).toBeInstanceOf(TownScene);
-  h.until(() => h.top() instanceof CardScene || town(h).free, 200);
+  // Anyone who speaks on arrival (the guard's hello, Hobb's gift) does so before the hero is free.
+  h.until(() => h.top() instanceof CardScene || (town(h).free && !town(h).arriving), 400);
   readCards(h);
   expect(h.top()).toBeInstanceOf(TownScene);
   return town(h);
@@ -384,7 +406,7 @@ describe('the village: screens, doors and edges', () => {
     const got = reach();
     const rooms = new Set([...got.keys()].map((c) => c.split(':')[0]));
     expect([...rooms].sort()).toEqual([...villageDungeon().rooms.keys()].sort());
-    // Each door's step (the shop's door itself is shut for now).
+    // Each door's step, and the door (none is shut since the shop opened, 0.4.42).
     for (const d of DOORS)
       expect(got.has(key(d.room, d.col, d.row + (d.enter === 'up' ? 1 : -1))), d.id).toBe(true);
     for (const d of DOORS.filter((x) => !x.shut)) expect(got.has(key(d.room, d.col, d.row)), d.id).toBe(true);
@@ -411,7 +433,8 @@ describe('the village: screens, doors and edges', () => {
       expect(rooms.has(pair.room), d.id).toBe(true);
     }
     expect(DOORS.find((d) => d.id === 'secret-house')?.to).toBe('@tsa');
-    expect(DOORS.find((d) => d.id === 'shop')?.shut).toBe(true);
+    expect(DOORS.find((d) => d.id === 'shop')?.to).toBe('shop-out');
+    expect(DOORS.some((d) => d.shut)).toBe(false);
   });
 
   it('a player walks every screen and in and out of every door, from the gate, with the pad', () => {
@@ -578,11 +601,13 @@ describe('townsfolk', () => {
       heroName: hero.name.toUpperCase(),
       firstVisit: false,
       switchButton: 'TOOLS',
+      wallet: false,
     });
     for (const f of FOLK) {
       const def = FOLK_DEFS[f.who];
       expect(def, f.who).toBeDefined();
-      if (f.who !== 'hen') expect(def!.pages(ctx(MARIO)).length, f.who).toBeGreaterThan(0);
+      // The hen has nothing to say; the shop's tables are for buying (tests/sim/kakariko-shop.test.ts).
+      if (f.who !== 'hen' && !f.who.startsWith('table-')) expect(def!.pages(ctx(MARIO)).length, f.who).toBeGreaterThan(0);
     }
     expect(FOLK_DEFS.gardener!.pages(ctx(LINK))).not.toEqual(FOLK_DEFS.gardener!.pages(ctx(MARIO)));
     expect(FOLK_DEFS.kid!.pages(ctx(SAMUS))).not.toEqual(FOLK_DEFS.kid!.pages(ctx(MARIO)));
@@ -591,9 +616,9 @@ describe('townsfolk', () => {
   });
 
   it('every line fits a card (26 columns) and names no level by its number', () => {
-    const ctx = { hero: MARIO, heroName: 'SOPHIA III', firstVisit: true, switchButton: 'TOOLS' };
+    const ctx = { hero: MARIO, heroName: 'SOPHIA III', firstVisit: true, switchButton: 'TOOLS', wallet: false };
     for (const [who, def] of Object.entries(FOLK_DEFS))
-      for (const page of def.pages(ctx))
+      for (const page of [...def.pages(ctx), ...def.pages({ ...ctx, wallet: true })])
         for (const line of page) {
           expect(line.length, `${who}: ${line}`).toBeLessThanOrEqual(26);
           expect(line, who).not.toMatch(/\b[1-8]-[1-4]\b|\bWORLD [1-8]\b/);
@@ -937,7 +962,8 @@ describe("the HUD over the village, A Link to the Past's way (owner, RQ41)", () 
     ).toBe(true);
     // The counters under their icons, the health at the right; all over the top strip.
     const hud = rec.texts.filter((x) => x.y < TOWN_HUD.bottom);
-    expect(hud.map((x) => x.s)).toEqual(expect.arrayContaining(['$', '00', '03', 'POWER', 'SMALL']));
+    // The coins in 3 digits: the file has the Wallet (0.4.42).
+    expect(hud.map((x) => x.s)).toEqual(expect.arrayContaining(['$', '000', '03', 'POWER', 'SMALL']));
     expect(rec.sprites.some((s) => s.f === 'hud-life')).toBe(true);
     for (const x of hud) expect(x.x + x.s.length * 8, x.s).toBeLessThanOrEqual(256);
     // No place names and no NEXT HERO line on screen for good.
@@ -1072,5 +1098,303 @@ describe('the place-name banner', () => {
     h.until(() => h.top() instanceof CardScene, BANNER_GREET + 10);
     expect(h.top()).toBeInstanceOf(CardScene);
     expect(t.banner).toBeNull();
+  });
+});
+
+/* ---------- 0.4.42: the Wallet and the shop (the design's release 2 and its owner addendum) ---------- */
+
+describe("the Wallet: Hobb the tanner's gift on the first visit", () => {
+  const gift = () => [...HOBB_GIFT, WALLET_GOT].map((p) => [...p]);
+
+  it('first visit: the guard, then Hobb; every card waits for a press; the Wallet goes on the file', () => {
+    const h = makeGame();
+    onWorld2(h, { wallet: false, coins: 64 });
+    h.idle(8);
+    h.tap('jump');
+    h.until(() => h.top() instanceof CardScene, 400);
+    // A card never turns by itself.
+    const first = h.top();
+    h.idle(900);
+    expect(h.top()).toBe(first);
+    const cards = readCards(h);
+    expect(cards).toEqual([...GUARD_FIRST.map((p) => [...p]), ...gift()]);
+    expect(h.top()).toBeInstanceOf(TownScene);
+    expect(h.game.state.wallet).toBe(true);
+    expect(h.game.state.coins).toBe(64);
+    expect(loadSave(1)?.wallet).toBe(true);
+    expect(h.said.join(' ')).toContain("YOU GOT THE TRAVELER'S WALLET!");
+  });
+
+  it("the Wallet floats over the hero's head while its card shows", () => {
+    const h = makeGame();
+    onWorld2(h, { secrets: ['bonus-2', KAKARIKO], wallet: false });
+    h.idle(8);
+    h.tap('jump');
+    const t = town(h);
+    h.until(() => h.top() instanceof CardScene, 400);
+    for (let i = 0; i < HOBB_GIFT.length; i++) {
+      expect(t.held).toBeNull();
+      h.idle(CARD_GUARD_FRAMES + 1);
+      h.tap('jump');
+    }
+    expect((h.top() as CardScene).lines).toEqual(WALLET_GOT);
+    expect(t.held?.icon.frame).toBe('wallet');
+    const rec = recorder();
+    t.render(rec.r);
+    expect(rec.sprites.some((s) => s.f === 'wallet' && s.y < PLAY_Y + t.hero.y)).toBe(true);
+  });
+
+  it('BACK skips the scene; the Wallet is given all the same, once', () => {
+    const h = makeGame();
+    onWorld2(h, { secrets: ['bonus-2', KAKARIKO], wallet: false });
+    h.idle(8);
+    h.tap('jump');
+    h.until(() => h.top() instanceof CardScene, 400);
+    expect((h.top() as CardScene).lines).toEqual(HOBB_GIFT[0]);
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(TownScene);
+    expect(h.game.state.wallet).toBe(true);
+    expect(loadSave(1)?.wallet).toBe(true);
+    h.idle(300);
+    expect(h.top()).toBeInstanceOf(TownScene);
+  });
+
+  it('a file that found the village before 0.4.42 gets it on its next visit; after that Hobb just talks', () => {
+    const h = makeGame();
+    onWorld2(h, { secrets: ['bonus-2', KAKARIKO], wallet: false });
+    h.idle(8);
+    h.tap('jump');
+    h.until(() => h.top() instanceof CardScene, 400);
+    expect(readCards(h)).toEqual(gift());
+    outOfGate(h);
+    h.until(() => map(h).mode === 'idle', 600);
+    intoTown(h);
+    h.idle(200);
+    expect(h.top()).toBeInstanceOf(TownScene);
+    const hobb = FOLK.find((f) => f.who === 'tanner')!;
+    walkTo(h, key('gate', hobb.col + 1, hobb.row));
+    town(h).hero.facing = 'left';
+    h.tap('jump');
+    expect(readCards(h)).toEqual(HOBB_AGAIN.map((p) => [...p]));
+  });
+});
+
+/** Into the shop on a later visit; `over` patches the file (coins, heroes freed, the Wallet). */
+function intoShop(h: H, over: Parameters<typeof file>[0] = {}): TownScene {
+  onWorld2(h, { secrets: ['bonus-2', KAKARIKO], ...over });
+  intoTown(h);
+  goIn(h, 'shop');
+  const t = town(h);
+  expect(t.world.room.id).toBe('shop');
+  t.banner = null;
+  return t;
+}
+
+const tables = (t: TownScene) =>
+  t.world.entities.filter((e): e is ShopTable => e instanceof ShopTable).sort((a, b) => a.index - b.index);
+const onTables = (t: TownScene) =>
+  tables(t).map((x) => (x.entry ? `${x.entry.name} ${x.entry.mark ?? x.entry.price}` : '-'));
+
+/** Stands below display table `i`, facing it, and presses TALK: the buy card. */
+function atTable(h: H, i: number): ShopCardScene {
+  const [col] = SHOP_TABLES[i] as readonly [number, number];
+  walkTo(h, key('shop', col, 6));
+  town(h).hero.facing = 'up';
+  h.tap('jump');
+  expect(h.top()).toBeInstanceOf(ShopCardScene);
+  return h.top() as ShopCardScene;
+}
+
+/** Answers the buy card: YES (OK), or NO (right to NO, then OK). */
+function answer(h: H, yes: boolean) {
+  h.idle(SHOP_CARD_GUARD + 1);
+  if (!yes) h.tap('right');
+  h.tap('jump');
+}
+
+describe("Kakariko's shop", () => {
+  it("the door opens on the shop: the shopkeeper and the tables with the hero's own stock and prices", () => {
+    const h = makeGame();
+    const t = intoShop(h, { freed: ['mario', 'link'], wallet: false });
+    expect(onTables(t)).toEqual(['Super Mushroom 20', 'Fire Flower GROW FIRST', '1-Up 50', '-']);
+    expect(t.world.entities.some((e) => e instanceof Townsperson && e.id === 'shopkeeper')).toBe(true);
+    expect(h.game.ctx.audio.playMusic).toHaveBeenLastCalledWith('village-indoors');
+    // With the Wallet the 1-up costs 100.
+    h.game.state.wallet = true;
+    h.step();
+    expect(onTables(t)[2]).toBe('1-Up 100');
+  });
+
+  it('SELECT in the shop changes the tables on the spot', () => {
+    const h = makeGame();
+    const t = intoShop(h, { freed: ['mario', 'link', 'samus', 'bill'], wallet: false });
+    expect(onTables(t)[0]).toBe('Super Mushroom 20');
+    h.tap('select');
+    expect(h.game.state.character.id).toBe('link');
+    expect(onTables(t)).toEqual([
+      'Heart Container 20',
+      'Shield Spell GROW FIRST',
+      'Bombs and Magic FULL',
+      '1-Up 50',
+    ]);
+    h.idle(SWITCH_GAP);
+    h.tap('select');
+    expect(onTables(t)).toEqual(['Energy Tank 20', 'Ice Beam GROW FIRST', 'Missile Pack FULL', '1-Up 50']);
+    h.idle(SWITCH_GAP);
+    h.tap('select');
+    expect(onTables(t)).toEqual(['Medal 20', 'Machine Gun GROW FIRST', '1-Up 50', '-']);
+  });
+
+  it('a card names the item, says what it does and its price, then BUY? YES buys it (saved); NO does not', () => {
+    const h = makeGame();
+    const t = intoShop(h, { freed: ['mario', 'link'], coins: 75, wallet: false });
+    const card = atTable(h, 0);
+    expect(card.mode).toBe('ask');
+    const text = card.text().join(' ');
+    expect(text).toContain('SUPER MUSHROOM');
+    expect(text).toContain('YOU GROW BIG AND CAN TAKE A HIT');
+    expect(text).toContain('20 COINS');
+    expect(text).toContain('BUY?');
+    expect(h.said.at(-1)).toMatch(/Super Mushroom\. You grow big and can take a hit\. 20 coins\. Buy\?/);
+    answer(h, false);
+    expect(h.top()).toBe(t);
+    expect(h.game.state.coins).toBe(75);
+    expect(h.game.state.powerState).toBe('small');
+    atTable(h, 0);
+    answer(h, true);
+    expect(h.top()).toBe(t);
+    expect(h.game.state.coins).toBe(55);
+    expect(h.game.state.powerState).toBe('big');
+    expect(loadSave(1)?.coins).toBe(55);
+    expect(loadSave(1)?.powerState).toBe('big');
+    expect(h.game.ctx.audio.sfx).toHaveBeenCalledWith('shop-buy');
+    expect(t.held?.icon.frame).toBe('mushroom');
+    expect(onTables(t).slice(0, 2)).toEqual(['Super Mushroom SOLD OUT', 'Fire Flower 40']);
+  });
+
+  it("too few coins: the card says so, in the shopkeeper's words, and nothing is bought", () => {
+    const h = makeGame();
+    intoShop(h, { freed: ['mario', 'link'], coins: 12, wallet: false });
+    const card = atTable(h, 0);
+    expect(card.mode).toBe('say');
+    expect(card.text()).toEqual(expect.arrayContaining(shopShort(20).filter((l) => l)));
+    h.idle(SHOP_CARD_GUARD + 1);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(TownScene);
+    expect(h.game.state.coins).toBe(12);
+    expect(h.game.state.powerState).toBe('small');
+  });
+
+  it('SOLD OUT and FULL show on the tables, and the shopkeeper says why', () => {
+    const h = makeGame();
+    const t = intoShop(h, { freed: ['mario', 'link'], coins: 99, wallet: false });
+    h.tap('select');
+    h.game.state.kit = { ...h.game.state.kit, maxHp: 16 };
+    h.step();
+    expect(onTables(t)[0]).toBe('Heart Container FULL');
+    let card = atTable(h, 0);
+    expect(card.mode).toBe('say');
+    expect(card.text()).toEqual(expect.arrayContaining(SHOP_FULL.filter((l) => l)));
+    h.idle(SHOP_CARD_GUARD + 1);
+    h.tap('jump');
+    h.game.state.kit = { ...h.game.state.kit, 'has-shield-spell': 1 };
+    h.step();
+    expect(onTables(t)[1]).toBe('Shield Spell SOLD OUT');
+    card = atTable(h, 1);
+    expect(card.text()).toEqual(expect.arrayContaining(SHOP_OWNED.filter((l) => l)));
+    h.idle(SHOP_CARD_GUARD + 1);
+    h.tap('jump');
+    // The 1-up: one a visit without the Wallet.
+    atTable(h, 3);
+    answer(h, true);
+    expect(h.game.state.lives).toBe(4);
+    expect(onTables(t)[3]).toBe('1-Up SOLD OUT');
+    card = atTable(h, 3);
+    expect(card.text()).toEqual(expect.arrayContaining(SHOP_ONE_A_VISIT.filter((l) => l)));
+    const rec = recorder();
+    t.render(rec.r);
+    expect(rec.texts.map((x) => x.s)).toEqual(expect.arrayContaining(['SOLD', 'OUT', 'FULL']));
+  });
+
+  it('the 1-up is back on the next visit from the map', () => {
+    const h = makeGame();
+    const t = intoShop(h, { coins: 99, wallet: false });
+    atTable(h, 2);
+    answer(h, true);
+    expect(onTables(t)[2]).toBe('1-Up SOLD OUT');
+    goIn(h, 'shop-out');
+    outOfGate(h);
+    h.until(() => map(h).mode === 'idle', 600);
+    intoTown(h);
+    goIn(h, 'shop');
+    expect(onTables(town(h))[2]).toBe('1-Up 50');
+  });
+
+  it('shopping as four heroes buys every kind of item: grow, power, refill, 1-up', () => {
+    const h = makeGame();
+    const t = intoShop(h, { freed: ['mario', 'link', 'megaman', 'sophia'], coins: 999, wallet: true });
+    const buyAt = (i: number) => {
+      atTable(h, i);
+      answer(h, true);
+      expect(h.top()).toBe(t);
+    };
+    for (const id of ['mario', 'link', 'megaman', 'sophia']) {
+      while (h.game.state.character.id !== id) {
+        h.idle(SWITCH_GAP);
+        h.tap('select');
+      }
+      buyAt(0);
+      buyAt(1);
+      expect(onTables(t)[1], id).toMatch(/SOLD OUT$/);
+    }
+    expect(h.game.state.kit.hasTriple).toBe(1);
+    // Sophia's missile ammo once some is spent.
+    h.game.state.kit = { ...h.game.state.kit, triple: 2 };
+    h.step();
+    buyAt(2);
+    expect(h.game.state.kit.triple).toBe(14);
+    buyAt(3);
+    expect(h.game.state.lives).toBe(4);
+    // Each hero kept what they bought (their kits are put away on a switch).
+    expect(h.game.heroKits.mario?.powerState).toBe('fire');
+    expect(h.game.heroKits.megaman?.kit['has-rush-coil']).toBe(1);
+    expect(h.game.heroKits.link?.kit['has-shield-spell']).toBe(1);
+    expect(h.game.state.coins).toBe(999 - 4 * 60 - 10 - 100);
+  });
+});
+
+describe('3 digits with the Wallet: the village HUD and the level HUD', () => {
+  it('the village HUD: 2 digits without, 3 with (the lives make room)', () => {
+    const h = makeGame();
+    const t = townQuiet(h, { coins: 7, wallet: false });
+    const hud = () => {
+      const rec = recorder();
+      t.render(rec.r);
+      return rec.texts.filter((x) => x.y < TOWN_HUD.bottom);
+    };
+    expect(hud().map((x) => x.s)).toContain('07');
+    h.game.state.wallet = true;
+    h.game.state.coins = 512;
+    const texts = hud();
+    const coins = texts.find((x) => x.s === '512')!;
+    const lives = texts.find((x) => x.s === '03')!;
+    expect(coins).toBeDefined();
+    expect(lives.x).toBeGreaterThanOrEqual(coins.x + 3 * 8 + 4);
+  });
+
+  it('in a level: past 100 with no 1-up; the HUD reads $×100', () => {
+    const h = makeGame();
+    h.game.openFile(1, file({ wallet: true, coins: 99, story: [...ALL_STORY] }));
+    h.game.startLevel(getLevel('1-1'), { mode: 'stand' });
+    h.step();
+    const level = h.top() as LevelScene;
+    expect(level).toBeInstanceOf(LevelScene);
+    level.world.addCoin();
+    expect(h.game.state.coins).toBe(100);
+    expect(h.game.state.lives).toBe(3);
+    const rec = recorder();
+    level.render(rec.r);
+    expect(rec.texts.map((x) => x.s)).toContain('$×100');
   });
 });
