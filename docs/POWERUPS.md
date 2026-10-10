@@ -412,7 +412,7 @@ the tables on the spot).
 | Sophia III   | Power Capsule   | Triple Missile  | Missile Ammo: more Triple and Homing missiles | yes  |
 
 - **Prices** are fixed: refill 10, grow item 20, power item 40; the 1-up 50 and one a visit without the Wallet, 100
-  and no limit with it. Mario, Luigi and Bill have no refill: three tables (the fourth is bare).
+  and no limit with it. Mario, Luigi and Bill have no refill: three tables, laid out evenly (no bare fourth).
 - **Greyed out** (dim, the reason on the table's front, the shopkeeper says why on the buy card): an owned power item
   or single grow item **SOLD OUT**; a stacking grow item at its maximum (Heart Container, Energy Tank, Medal), a refill
   with nothing to fill (full, or its ammo item not owned yet) or lives at 99 **FULL**; the 1-up already bought this

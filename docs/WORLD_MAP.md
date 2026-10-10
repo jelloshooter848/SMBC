@@ -611,8 +611,9 @@ Code `src/game/town/shop.ts` (stock, greying, buying), `shop-card.ts` (the buy c
 (`ShopTable`, Hobb), `src/game/items/wallet.ts` (coins); the stock is docs/POWERUPS.md "Kakariko shop".
 
 - **The shop** (Gate Street's blue-roofed building): a top-down room with the shopkeeper behind a counter
-  across the back (talked to across it) and four display tables in front, each 2×2 with the current hero's
-  item on it and its price (or SOLD OUT, FULL, GROW FIRST, dimmed) on its front. Standing at a table and
+  across the back (talked to across it) and four display tables in front (three, laid out evenly, for a hero
+  with three items), each 2×2 with the current hero's item on it and its price (or SOLD OUT, FULL, GROW FIRST in
+  small letters, the item dimmed) on its front. Standing at a table and
   pressing TALK (JUMP or SPECIAL; the prompt reads BUY) shows the buy card: the item's name, what it does and
   its price, then BUY? YES / NO (left and right choose, OK answers, BACK is NO). When it can't be bought the
   card says why in the shopkeeper's words instead. YES: the coins go, a purchase jingle and the item's own
