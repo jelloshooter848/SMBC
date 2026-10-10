@@ -1,3 +1,4 @@
+import { gainCoins } from '../items/wallet';
 import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
 import { SCORE_MAX } from '../hud/hud';
@@ -1226,13 +1227,11 @@ export class World {
     if (x !== undefined && y !== undefined && this.scorePopups) this.spawn(new ScorePopup(x, y, String(n)));
   }
 
+  /** A coin: SMB's rule makes every 100 a life; with the Wallet they add up to 999 (items/wallet.ts). */
   addCoin(): void {
-    this.state.coins++;
+    const lives = gainCoins(this.state, 1);
     this.audio.sfx('coin');
-    if (this.state.coins >= 100) {
-      this.state.coins -= 100;
-      this.addLife(this.player.body.x, this.player.body.y - px(16));
-    }
+    for (let i = 0; i < lives; i++) this.addLife(this.player.body.x, this.player.body.y - px(16));
   }
 
   addLife(x: number, y: number): void {

@@ -15,6 +15,7 @@ import { CRYSTAL_BALL } from '@game/map/captives';
 import { FIRST_HERO } from '@game/story/beats';
 import { heroStart, type HeroPower } from '@game/items/heroes';
 import { campaignKit } from '@game/items/migrate';
+import { coinCap } from '@game/items/wallet';
 
 /**
  * Three campaign save files (world map progress plus the run: lives, score, coins, heroes and
@@ -128,6 +129,11 @@ export interface SaveFile extends MapProgress {
    */
   heroKits?: Record<string, HeroPower>;
   /**
+   * The file has the Wallet (0.4.42, Kakariko Village's gift; items/wallet.ts): coins add up to
+   * 999 with no automatic 1-up. Older files migrate with it off (v3 → v4).
+   */
+  wallet: boolean;
+  /**
    * The story beats this file has seen (0.4.13, src/game/story/beats.ts), each once. Missing in
    * older files (and new ones until the first save): seeded on load from the file's progress
    * (beats.ts seedSeen). No format change.
@@ -221,7 +227,15 @@ export function migrateV2toV3(old: Record<string, unknown>): Record<string, unkn
   return { ...old, v: 3, freed: freedHeroes([old.character, old.character2]) };
 }
 
-export const SAVE_MIGRATIONS: SaveMigration[] = [migrateV1toV2, migrateV2toV3];
+/**
+ * v3 → v4 (0.4.42, the Wallet): one new flag, "has the Wallet", off for every older file (its
+ * coins, at most 99, keep SMB's rule until the gift in Kakariko Village).
+ */
+export function migrateV3toV4(old: Record<string, unknown>): Record<string, unknown> {
+  return { ...old, v: 4, wallet: false };
+}
+
+export const SAVE_MIGRATIONS: SaveMigration[] = [migrateV1toV2, migrateV2toV3, migrateV3toV4];
 /** The current format: version 1 plus one per migration. */
 export const SAVE_VERSION = 1 + SAVE_MIGRATIONS.length;
 
@@ -286,6 +300,7 @@ export function newSave(
     bonusGuard: false,
     ...bonusSaveFields(newBonusState(character)),
     heroKits: {},
+    wallet: false,
   };
 }
 
@@ -442,6 +457,7 @@ export function migrateSave(
     position = { page: FIRST_PAGE_ID, node: 'start' };
   const freed = Array.isArray(stored.freed) ? freedHeroes(stored.freed) : d.freed;
   const secrets = strs(stored.secrets, d.secrets);
+  const wallet = stored.wallet === true;
   return {
     ...d,
     v: current,
@@ -449,7 +465,7 @@ export function migrateSave(
     updated: num(stored.updated, d.updated),
     lives: whole(stored.lives, d.lives, 1, 99),
     score: whole(stored.score, d.score, 0),
-    coins: whole(stored.coins, d.coins, 0),
+    coins: whole(stored.coins, d.coins, 0, coinCap(wallet)),
     powerState: str(stored.powerState, d.powerState),
     hp: num(stored.hp, d.hp),
     // A kit from before 0.4.33 follows the found-item rules from now on (items/migrate.ts).
@@ -488,6 +504,7 @@ export function migrateSave(
       stored.character,
       ...(typeof stored.character2 === 'string' ? [stored.character2] : []),
     ]),
+    wallet,
     // The seen story beats: kept only when well formed (else seeded on load, Game.openFile).
     ...(isStrings(stored.story) ? { story: [...new Set(stored.story)] } : {}),
   };
@@ -557,6 +574,7 @@ export function stateFromSave(save: SaveFile, characters: readonly CharacterDef[
   s.lives = save.lives;
   s.score = save.score;
   s.coins = save.coins;
+  s.wallet = save.wallet;
   s.world = Number(/-(\d+)$/.exec(save.position.page)?.[1] ?? 1);
   s.stage = 1;
   if (c1 && validPower(c1, save.powerState)) {
@@ -582,6 +600,7 @@ export function saveFromState(save: SaveFile, state: GameState): SaveFile {
     lives: state.lives,
     score: state.score,
     coins: state.coins,
+    wallet: state.wallet,
     powerState: state.powerState,
     hp: capHp(state.character, state.hp, state.kit),
     kit: { ...state.kit },
