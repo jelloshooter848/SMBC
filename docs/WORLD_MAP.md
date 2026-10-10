@@ -572,8 +572,7 @@ and `town-folk.ts` (townsfolk, heroes from above), music `src/content/music/kaka
 - **Doors** (`DOORS`): walking up into a front door fades into its room; walking down through the
   room's way out fades back to the doorstep, facing out. The inn has two front doors: the bar, and the
   back room. The secret house's door loads the Top Secret Area (`@tsa`, `Game.enterSecretHouse`). The
-  shop's door is shut until the shop opens (release 2): bumping it says THE SHOP: COMING SOON!, and its
-  sign says the same.
+  shop's door opened in 0.4.42 (below).
 - **The door lock** (for later): every door may carry `needs: '<secret>'`, checked against the file's
   existing `secrets` (`TdEntrance.needs`, `TopDownWorld.has`). Locked, it is solid, drawn boarded
   (`door-boarded`), and bumping it says CLOSED. ASK AROUND. No door is locked today and no save field is
@@ -601,9 +600,33 @@ and `town-folk.ts` (townsfolk, heroes from above), music `src/content/music/kaka
   hero's start); Mario and Luigi have none to heal.
 - **HUD** (64 px): the village and the screen (or building), the hero and their power, coins, lives, the
   switch button's name (TOOLS (key): NEXT HERO; HERO BUTTON on touch), and a map of the six screens.
-- **Music:** `village` outdoors, `village-indoors` in the rooms; sounds `hero-switch` and `hen`.
+- **Music:** `village` outdoors, `village-indoors` in the rooms; sounds `hero-switch` and `hen` (and since
+  0.4.42 `shop-buy`, the purchase jingle, and `wallet`, Hobb's fanfare).
 - **Dev:** level select's last entry, `village` (`DEV_VILLAGE`), walks into the village with no file:
   every hero to switch to, nothing saved, the gate (or Quit to map) back to the title.
+
+### Kakariko's shop and the Wallet (0.4.42, release 2 and the owner's addendum)
+
+Code `src/game/town/shop.ts` (stock, greying, buying), `shop-card.ts` (the buy card), `folk.ts`
+(`ShopTable`, Hobb), `src/game/items/wallet.ts` (coins); the stock is docs/POWERUPS.md "Kakariko shop".
+
+- **The shop** (Gate Street's blue-roofed building): a top-down room with the shopkeeper behind a counter
+  across the back (talked to across it) and four display tables in front, each 2×2 with the current hero's
+  item on it and its price (or SOLD OUT, FULL, GROW FIRST, dimmed) on its front. Standing at a table and
+  pressing TALK (JUMP or SPECIAL; the prompt reads BUY) shows the buy card: the item's name, what it does and
+  its price, then BUY? YES / NO (left and right choose, OK answers, BACK is NO). When it can't be bought the
+  card says why in the shopkeeper's words instead. YES: the coins go, a purchase jingle and the item's own
+  sound, the item held up over the hero's head, its name shown and said, and the file saved. SELECT in the
+  shop switches heroes and the tables change on the spot. The 1-up without the Wallet is one a visit (the
+  visit is the village's, from the map).
+- **The Wallet:** Hobb the tanner on Gate Street gives it free on the first visit, straight after the
+  guard's hello (a file that found the village before 0.4.42 gets it on its next visit). His cards wait
+  for OK and BACK skips them; the Wallet is given either way and the file saved. With it coins add up to
+  999 with no automatic 1-up (`World.addCoin`, the bonus games' prizes); without it SMB's rule holds. The
+  coin counters show 3 digits with it: the village HUD (the lives move over), the level HUD, the SMB3
+  status bar and the map's header.
+- **Save:** one flag, `wallet` (v4; older files migrate with it off). A game over keeps it (the coins go).
+  Classic play never has it.
 
 ## Hidden paths and campaign pipes (level zones, 0.4.10)
 

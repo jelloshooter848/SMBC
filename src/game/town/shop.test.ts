@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { newGameState, type GameState } from '../context';
 import type { CharacterDef } from '../characters/character';
@@ -66,6 +68,21 @@ describe("the shop's stock: placed per hero, as the design's table", () => {
     for (const [id, s] of Object.entries(SHOP_STOCK)) {
       expect(s.grow, id).toBe(HERO_ITEMS[id]?.grow);
       expect(itemInfo(id, s.power)?.kind, id).toBe('power');
+    }
+  });
+
+  it('docs/POWERUPS.md lists the same stock in its placement plan ("Kakariko shop")', () => {
+    const md = readFileSync(resolve(__dirname, '../../../docs/POWERUPS.md'), 'utf8');
+    const at = md.indexOf('**Kakariko shop**');
+    expect(at).toBeGreaterThan(md.indexOf('**World 2**'));
+    const rows = md.slice(at, md.indexOf('\n\n**World 3**', at));
+    for (const [id, s] of Object.entries(SHOP_STOCK)) {
+      const name = hero(id).name;
+      const row = rows.split('\n').find((l) => l.startsWith('|') && l.includes(name));
+      expect(row, id).toBeDefined();
+      expect(row, id).toContain(itemInfo(id, s.grow)?.name);
+      expect(row, id).toContain(itemInfo(id, s.power)?.name);
+      if (s.refill) expect(row, id).toContain(s.refill.name);
     }
   });
 

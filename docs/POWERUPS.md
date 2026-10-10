@@ -394,6 +394,37 @@ _Italics_ are the hero's default power: no entry is written for it. Blocks are `
 | 2-3 (102,5) ?       | Jump Spell   | Leaf     | Long Beam  | Axe        | _T. Star_ | _M_  | Triple M.  |
 | 2-4 (23,3) ? castle | Grow         | Grow     | Grow       | Grow       | Grow      | Grow | _Crusher_  |
 
+**Kakariko shop** (0.4.42, World 2's hidden village; `src/game/town/shop.ts` `SHOP_STOCK`). Not a block: the same
+items for coins, every visit, placed like a block's entries (decision 3: placed, not random). Each hero's power item
+is one of World 2's own new items (6.2) for a second chance near where it is found; Bill has none in World 2, so his
+is his first gun, to rearm without replaying 1-1. The stock shown is the current hero's (SELECT in the shop changes
+the tables on the spot).
+
+| Hero         | Grow item (20)  | Power item (40) | Refill (10)                                   | 1-up |
+| ------------ | --------------- | --------------- | --------------------------------------------- | ---- |
+| Mario, Luigi | Super Mushroom  | Fire Flower     | -                                             | yes  |
+| Link         | Heart Container | Shield Spell    | Bombs and Magic: bombs to 8, full magic       | yes  |
+| Mega Man     | Helmet          | Rush Coil       | Weapon Energy: every weapon filled            | yes  |
+| Samus        | Energy Tank     | Ice Beam        | Missile Pack: ten more missiles               | yes  |
+| Simon        | Pot Roast       | Holy Water      | Hearts: ten more, for his sub-weapons         | yes  |
+| Ryu          | Medicine        | Windmill Star   | Ninpo: all of it filled                       | yes  |
+| Bill         | Medal           | Machine Gun     | -                                             | yes  |
+| Sophia III   | Power Capsule   | Triple Missile  | Missile Ammo: more Triple and Homing missiles | yes  |
+
+- **Prices** are fixed: refill 10, grow item 20, power item 40; the 1-up 50 and one a visit without the Wallet, 100
+  and no limit with it. Mario, Luigi and Bill have no refill: three tables (the fourth is bare).
+- **Greyed out** (dim, the reason on the table's front, the shopkeeper says why on the buy card): an owned power item
+  or single grow item **SOLD OUT**; a stacking grow item at its maximum (Heart Container, Energy Tank, Medal), a refill
+  with nothing to fill (full, or its ammo item not owned yet) or lives at 99 **FULL**; the 1-up already bought this
+  visit without the Wallet **SOLD OUT**; a small hero's power item **GROW FIRST** (SMB's sequence rule, 2.1: the grow
+  item comes first). The grow table never turns into a power item (that is a block rule, 3.3).
+- **A purchase** goes through the blocks' code: `applyItem` and the hero's own give / refill rules (a refill is the
+  owned ammo item's "owned again", section 4), Mario's and Luigi's power state; it lands in the hero's carried kit
+  (`heroKits` on a switch), so it follows every rule (kept when switching heroes, wiped by a death). The SMB3
+  inventory is not touched. The file is saved after each purchase.
+- **Coins**: the Wallet (Hobb the tanner's gift on the first visit, docs/STORY.md 2.5) lets them add up to 999 with no
+  automatic 1-up; without it SMB's rule holds (100 make a life, the count back to 0). Classic play never has it.
+
 **World 3** (Mega Man's)
 
 | Block                           | Link         | Mega Man | Samus      | Simon        | Ryu       | Bill | Sophia     |
