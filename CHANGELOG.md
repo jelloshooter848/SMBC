@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.41] - 2026-10-10
+
 ### Added
 
 - World 2's hidden spot is now Kakariko Village, walked from above in the style of A Link to the Past: six screens,
@@ -930,7 +932,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.40...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.41...HEAD
+[0.4.41]: https://github.com/jelloshooter848/SMBC/compare/v0.4.40...v0.4.41
 [0.4.40]: https://github.com/jelloshooter848/SMBC/compare/v0.4.39...v0.4.40
 [0.4.39]: https://github.com/jelloshooter848/SMBC/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jelloshooter848/SMBC/compare/v0.4.37...v0.4.38
