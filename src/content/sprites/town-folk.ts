@@ -20,6 +20,7 @@ import { Canvas, recolor } from './paint';
  *   7 white  8 light grey  9 dark grey  a red  b dark red  c blue  d dark blue  e green
  *   f dark green  g yellow  h orange  i purple  j dark purple  k brown  l dark brown  m pink
  *   n teal  o dark teal  p tan  q dark tan  r steel  s dark steel  t sky blue  u gold
+ *   v coral  w dark coral (0.4.42: the Traveler's Wallet)
  */
 export const FOLK_PALETTE: readonly string[] = [
   '#201010',
@@ -53,6 +54,8 @@ export const FOLK_PALETTE: readonly string[] = [
   '#607080',
   '#70c8f8',
   '#c89818',
+  '#f08870',
+  '#b84838',
 ];
 
 type Rows = readonly string[];
@@ -358,27 +361,30 @@ folkFrames['hud-flower'] = [
 ];
 
 /**
- * The Traveler's Wallet (0.4.42, Hobb's gift; held over the hero's head as he hands it over): a
- * brown leather purse, double-stitched, with a gold clasp.
+ * The Traveler's Wallet (0.4.42, Hobb's gift; held over the hero's head as he hands it over), an
+ * original drawstring money bag: a coral body shaded darker below, a flared ruffled top with a
+ * light zigzag trim, a cream band where it is cinched, a gold coin on the front, a darker swirled
+ * band round the bottom, and the tie's cord looping off to the right with two orange beads. The
+ * bag is centred on the frame (columns 2-13); only the cord hangs off to the side.
  */
 folkFrames.wallet = [
   '................',
-  '................',
+  '....00.00.00....',
+  '...0vv0vv0vv0...',
+  '...0vpvppvpv0...',
+  '....00pppp00l...',
+  '....0vvvvvv0.l..',
+  '...0vvvvvvvv0.l.',
+  '..0vvvvuuvvvv0l.',
+  '..0vvvugguvvv0h.',
+  '..0vvvugguvvv0h.',
+  '..0wvvvuuvvvw0..',
+  '..0wbwwbbwwbw0..',
+  '...0bwbwwbwb0...',
+  '....0bbbbbb0....',
   '.....000000.....',
-  '....0uuggu0.....',
-  '..0000uu0000....',
-  '.0kkkk00kkkk0...',
-  '0kk7k7k7k7kkk0..',
-  '0kkkkkkkkkkkk0..',
-  '0k7kkkkkkkk7k0..',
-  '0kkkkkkkkkkkk0..',
-  '0k7kkkkkkkk7k0..',
-  '0lkkkkkkkkkkl0..',
-  '0ll7k7k7k7kll0..',
-  '.0llllllllll0...',
-  '..0000000000....',
   '................',
-].map((r) => `.${r.slice(0, 15)}`);
+];
 
 export const townFolkDef: SpriteDef = { palette: 'town-folk', frames: folkFrames };
 

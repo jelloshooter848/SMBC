@@ -623,7 +623,8 @@ export class TownScene implements Scene {
     const font = fontOf(this.view);
     const w = text.length * 8 + 4;
     const x = Math.max(2, Math.min(SCREEN_W - w - 2, p.x + 8 - (w >> 1)));
-    const y = PLAY_Y + promptRow(p.y, this.hero.y);
+    // Over a display table it sits above the item on it, not across it.
+    const y = PLAY_Y + (p instanceof ShopTable ? p.y - 18 : promptRow(p.y, this.hero.y));
     r.rect(x, y, w, 10, 'rgba(0,0,0,0.75)');
     r.text(font, text, x + 2, y + 1);
   }

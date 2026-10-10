@@ -345,7 +345,7 @@ export const FOLK: readonly FolkSpot[] = [
   { who: 'shopkeeper', room: 'shop', col: 7, row: 1 },
   ...SHOP_TABLES.map(([col, row], i) => ({ who: `table-${i}`, room: 'shop', col, row })),
   // Hobb the tanner, who gives the Wallet on the first visit (0.4.42).
-  { who: 'tanner', room: 'gate', col: 2, row: 7 },
+  { who: 'tanner', room: 'gate', col: 5, row: 8 },
   // Things to read or look at (no picture of their own: the tiles draw them).
   { who: 'weathervane', room: 'square', col: 7, row: 9 },
   { who: 'well', room: 'well', col: 10, row: 3 },

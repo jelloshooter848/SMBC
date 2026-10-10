@@ -108,7 +108,8 @@ export function drawSmb3Status(
   for (let i = 0; i < P_ARROWS; i++) drawPixels(r, ARROW, 69 + i * 8, row1, i < lit ? WHITE : DIM);
   const pOn = lit >= P_ARROWS && (reduceFlashing || ((frameNo >> 3) & 1) === 0);
   drawPixels(r, P_BADGE, 118, row1, pOn ? WHITE : DIM);
-  r.text(font, `$${coinText({ coins: s.coins, wallet: s.wallet === true })}`, 143, row1);
+  // Three digits with the Wallet (0.4.42): a step left, so they keep clear of the panel's edge.
+  r.text(font, `$${coinText({ coins: s.coins, wallet: s.wallet === true })}`, s.wallet ? 137 : 143, row1);
   // The hero's badge: his letter on a white tab, then his lives.
   r.rect(9, row2 - 1, 10, 10, WHITE);
   r.text(assets.sheet('font', fxPalette('font', 'silhouette')), s.initial, 10, row2);

@@ -22,8 +22,20 @@ export const SHOP_CARD_GUARD = 16;
 /** Characters a line of the card holds. */
 const CARD_COLS = 28;
 
-/** `text` cut into lines of at most `cols` characters, at spaces. */
+/**
+ * `text` cut into lines of at most `cols` characters at spaces, as evenly as it goes (no word left
+ * alone on a line of its own).
+ */
 export function wrap(text: string, cols = CARD_COLS): string[] {
+  const greedy = wrapAt(text, cols);
+  for (let w = Math.ceil(text.length / greedy.length); w < cols; w++) {
+    const even = wrapAt(text, w);
+    if (even.length === greedy.length) return even;
+  }
+  return greedy;
+}
+
+function wrapAt(text: string, cols: number): string[] {
   const out: string[] = [];
   let line = '';
   for (const word of text.split(' ')) {
@@ -130,6 +142,14 @@ export class ShopCardScene implements Scene {
       const sheet = i === 0 ? gold : font;
       r.text(sheet, l, (SCREEN_W - l.length * 8) >> 1, y + 7 + i * 10);
     });
+    // The item itself, left of its name, as on its table.
+    const icon = this.entry.icon;
+    const art = assets.has(icon.sheet) ? assets.sheet(icon.sheet) : null;
+    const f = art?.frames.get(icon.frame);
+    if (art && f) {
+      const nx = (SCREEN_W - (lines[0] ?? '').length * 8) >> 1;
+      r.sprite(art, icon.frame, nx - 6 - f.w, y + 11 - (f.h >> 1));
+    }
     if (prompt) r.text(font, prompt, SCREEN_W - 20 - prompt.length * 8, y + 7 + lines.length * 10);
   }
 }
