@@ -92,6 +92,17 @@ describe('watchServiceWorker', () => {
     expect(w.ready).toBe(true);
   });
 
+  it('a release already installing when registration resolves is still caught', async () => {
+    const c = new FakeContainer();
+    c.controller = {};
+    const sw = new FakeWorker();
+    c.reg.installing = sw; // its updatefound fired before the page listened
+    const w = watchServiceWorker('/', c as unknown as ServiceWorkerContainer, vi.fn());
+    await tick();
+    sw.become('installed');
+    expect(w.ready).toBe(true);
+  });
+
   it('no service worker support: never ready, apply does nothing', () => {
     const w = watchServiceWorker('/', undefined, vi.fn());
     expect(w.ready).toBe(false);

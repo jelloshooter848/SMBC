@@ -55,14 +55,14 @@ export function watchServiceWorker(
   container
     .register(`${base}sw.js`, { scope: base })
     .then((reg) => {
-      if (reg.waiting) found(reg.waiting);
-      reg.addEventListener('updatefound', () => {
-        const w = reg.installing;
-        if (!w) return;
-        w.addEventListener('statechange', () => {
+      const follow = (w: ServiceWorker | null) =>
+        w?.addEventListener('statechange', () => {
           if (w.state === 'installed') found(w);
         });
-      });
+      if (reg.waiting) found(reg.waiting);
+      // One may be installing already (its updatefound came before this listener).
+      follow(reg.installing);
+      reg.addEventListener('updatefound', () => follow(reg.installing));
       // A Home Screen app can stay open for days: look for a new release whenever it comes back.
       if (typeof document !== 'undefined')
         document.addEventListener('visibilitychange', () => {
