@@ -746,7 +746,7 @@ A ninja trick wall (a karakuri revolving panel) can flip the player through a wa
 area (6-2's first bonus room into Ryu's dojo):
 
 ```
-trick x y h -> level x y [exit=up] [campaign]
+trick x y h -> level x y [exit=up|fall] [campaign]
 ```
 
 - The panel is the `h` tiles from (x, y) down in column x, written `N` in maps (`T.TRICK`: solid,
@@ -763,8 +763,10 @@ trick x y h -> level x y [exit=up] [campaign]
   hidden as for a pipe; the panel makes a half turn over `TRICK_SPIN_FRAMES` (24) with the
   `panel-spin` sound; the pusher is hidden as it turns edge-on, and `TRICK_HOLD_FRAMES` (12) later,
   the panel still showing its far face, the level moves to `target` like a pipe transfer (`pipe`
-  event, the clock carries over within a stage): a `spin` arrival, or with `exit=up` rising out
-  of the pipe at the target. Only the panel turns: no flashing.
+  event, the clock carries over within a stage): a `spin` arrival, with `exit=up` rising out of
+  the pipe at the target, or with `exit=fall` dropping in from above it (the dojo's way out into
+  6-2 since 0.4.43: the player arrives the way he left, never up a pipe he did not go down). Only
+  the panel turns: no flashing.
 - **The frames** (the `ninja` sheet; `spinFrame`): from the brick side `trick-wall-0` (exactly
   `brick@underground`) → `-1` → `-2` (edge-on) → `-3` → `trick-wall-back` (the flat wooden dojo
   side), each frame filling its tile, stacked down the panel. A panel at rest shows its own room's

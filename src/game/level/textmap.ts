@@ -63,7 +63,7 @@ function parseProps(parts: string[]): Props {
  *                         `bowser-fire x`, `vine x y -> level x y`, `pit x -> level x y`,
  *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad),
  *                         `descent x w -> level x y [campaign]` (a down lift's shaft),
- *                         `trick x y h -> level x y [exit=up] [campaign]` (a trick wall's spinning panel)
+ *                         `trick x y h -> level x y [exit=up|fall] [campaign]` (a trick wall's spinning panel)
  *                         `pit x -> level x y [w=N] [campaign]` (`w`: only columns x..x+w-1)
  *                         `path x y w block=bx,by [one-way] [campaign]` (a hidden cloud path, World.layPath)
  *                         `ledge x y w campaign` (a one-way cloud ledge, laid in the campaign only)
@@ -471,7 +471,7 @@ function parseZone(line: string): Zone {
       return z;
     }
     case 'trick': {
-      // trick x y h -> level x y [exit=up] [campaign]
+      // trick x y h -> level x y [exit=up|fall] [campaign]
       const [, xs, ys, hs, arrow, level, tx, ty, ...rest] = parts;
       if (
         arrow !== '->' ||
@@ -482,7 +482,7 @@ function parseZone(line: string): Zone {
         tx === undefined ||
         ty === undefined
       )
-        throw new Error('expected "trick x y h -> level x y [exit=up] [campaign]"');
+        throw new Error('expected "trick x y h -> level x y [exit=up|fall] [campaign]"');
       const z: Zone = {
         kind: 'trick',
         x: Number(xs),
@@ -492,8 +492,8 @@ function parseZone(line: string): Zone {
       };
       const exit = parseProps(rest.filter((r) => r.includes('='))).exit;
       if (exit !== undefined) {
-        if (exit !== 'up') throw new Error('trick exit must be up');
-        z.target.exitDir = 'up';
+        if (exit !== 'up' && exit !== 'fall') throw new Error('trick exit must be up or fall');
+        z.target.exitDir = exit;
       }
       if (rest.includes('campaign')) z.campaign = true;
       return z;
