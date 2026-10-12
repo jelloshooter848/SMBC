@@ -6,7 +6,6 @@ import { CardScene } from '@game/scenes/message';
 import { PauseScene } from '@game/scenes/pause';
 import { WorldMapScene } from '@game/scenes/world-map';
 import type { MenuItem } from '@game/scenes/menu';
-import { Goomba } from '@game/entities/enemies/goomba';
 import { HeroStageScene, StageMenu } from '@game/tutorial/hero-stage';
 import { HERO_STAGES } from '@game/tutorial/heroes';
 import { TIP_LOCK_FRAMES } from '@game/tutorial/tips';
@@ -149,7 +148,7 @@ describe('1-0: a new tip holds the game until OK', () => {
     expect(h.game.mapProgress.cleared).toContain('1-0');
   });
 
-  it('NICE! never holds; the next tip does, once; the Goomba waits while it holds', () => {
+  it('NICE! never holds; the next tips do, once each, in order', () => {
     const h = on10();
     okTip(h);
     const held: string[] = [];
@@ -177,9 +176,6 @@ describe('1-0: a new tip holds the game until OK', () => {
     playTutorial(h, () => level(h).tutorial?.lesson?.id === 'stomp' && level(h).tutorial?.tipUp === true);
     if (tipHeld(h)) okTip(h);
     const w = level(h).world;
-    // The Goomba was still while the stomp's tip held; it walks now.
-    const g = w.entities.find((e) => e instanceof Goomba);
-    expect(g).toBeDefined();
     w.kill(w.player);
     h.until(() => h.top() instanceof LevelScene && level(h).world !== w && level(h).world.frame > 30, 600);
     expect(level(h).tutorial?.lesson?.id).toBe('stomp');

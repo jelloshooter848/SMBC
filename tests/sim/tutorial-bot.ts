@@ -92,7 +92,12 @@ export function tutorialBot(h: H): Action[] {
       break;
     }
     case 'block':
-      if (goTo(104) || !b.onGround) jump();
+      if (x < (M.coinBlock.x - 2) * 16) {
+        out.push('right');
+        if (wallAhead() || !b.onGround) jump();
+        break;
+      }
+      if (goTo(M.coinBlock.x) || !b.onGround) jump();
       break;
     case 'grow': {
       const m = w.entities.find((e): e is PowerUp => e instanceof PowerUp && e.alive);
@@ -100,12 +105,12 @@ export function tutorialBot(h: H): Action[] {
         goTo(Math.floor(toPx(m.body.x + (m.body.w >> 1)) / 16));
         break;
       }
-      if (x < 110 * 16) {
+      if (x < (M.mushroomBlock.x - 3) * 16) {
         out.push('right');
         if (wallAhead() || !b.onGround) jump();
         break;
       }
-      if (goTo(113) || !b.onGround) jump();
+      if (goTo(M.mushroomBlock.x) || !b.onGround) jump();
       break;
     }
     case 'pipe':

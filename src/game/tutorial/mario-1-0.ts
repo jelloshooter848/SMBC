@@ -1,8 +1,9 @@
 import type { Action } from '@engine/input/actions';
-import { tileToSub } from '@engine/math/units';
+import { px, tileToSub } from '@engine/math/units';
 import type { World } from '../world/world';
 import type { Player } from '../entities/player';
 import { Vine } from '../entities/objects/vine';
+import { Goomba } from '../entities/enemies/goomba';
 import { CardScene } from '../scenes/message';
 import { abilityHint } from '../scenes/hints';
 import { fontText, wrapText } from '../hud/text';
@@ -75,20 +76,31 @@ export const MARIO_10 = {
   /** The two gaps: first column and width. A fall drops Mario back in at `back`. */
   gap1: { x: 58, w: 7, back: 51 },
   gap2: { x: 76, w: 8, back: 67 },
-  goomba: 96,
-  stompGate: 101,
+  /**
+   * The runway after the second gap (0.4.45, owner #15: a sprinting Mario met the Goomba's gate
+   * before he was told about it): 20 columns of open ground, so the stomp's tip holds the game
+   * with the Goomba's wall still at the screen's right edge or past it.
+   */
+  runway: { from: 84, to: 103 },
+  /**
+   * The Goomba's pen (0.4.45, owner #16: it walked into the pit): a two-block wall on the pit's
+   * side (column `goombaWall`, rows 11-12) and the stomp's gate; the Goomba patrols between them.
+   */
+  goombaWall: 104,
+  goomba: 112,
+  stompGate: 117,
   /** The coin block and the mushroom's block (row 9). */
-  coinBlock: { x: 104, y: 9 },
-  mushroomBlock: { x: 113, y: 9 },
-  growGate: 120,
-  pipe: 132,
-  /** The hidden vine block (row 10) at the foot of the tall wall (columns 150-152, top row 5). */
-  vine: { x: 149, y: 10 },
-  vineWall: { from: 150, to: 152, top: 5 },
+  coinBlock: { x: 120, y: 9 },
+  mushroomBlock: { x: 129, y: 9 },
+  growGate: 136,
+  pipe: 148,
+  /** The hidden vine block (row 10) at the foot of the tall wall (columns 166-168, top row 5). */
+  vine: { x: 165, y: 10 },
+  vineWall: { from: 166, to: 168, top: 5 },
   /** The low tunnel's brick ceiling at its end (rows 9-10) and the step out (top row 10). */
-  bricks: { from: 170, to: 171 },
-  stepOut: { from: 172, to: 173, top: 10 },
-  flag: 182,
+  bricks: { from: 186, to: 187 },
+  stepOut: { from: 188, to: 189, top: 10 },
+  flag: 198,
 } as const;
 const M = MARIO_10;
 
@@ -98,6 +110,20 @@ export const SPRINT_FRAMES = 45;
 export const WALK_FRAMES = 20;
 /** Of the sprint bar: the share that shows the run-up to top speed (the rest fills while held). */
 const RUN_UP_SHARE = 0.3;
+
+/**
+ * The stomp's Goomba is never lost for good (0.4.45, owner #16): its wall keeps it from the pit, and
+ * if it is gone anyway (with no stomp yet, once the map has put it out) another drops into its pen
+ * from the top of the screen, at the end of the pen farther from Mario.
+ */
+function keepGoomba(w: World): void {
+  if (w.feats.stomps > 0 || w.level.id !== '1-0') return;
+  if (w.camera.right < tileToSub(M.goomba)) return;
+  if (w.entities.some((e) => e instanceof Goomba && e.alive)) return;
+  const near = Math.abs(w.player.centerX - tileToSub(M.goomba)) < tileToSub(4);
+  const col = near ? M.goombaWall + 2 : M.goomba;
+  w.entities.push(new Goomba(tileToSub(col) + px(2), w.camera.y));
+}
 
 /** Per world (a respawn or a put-back is a new world, so a fresh count): the sprint and the walk. */
 const paces = new WeakMap<World, { sprint: number; walk: number; frame: number }>();
@@ -192,17 +218,19 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     text: 'JUMP ON THE GOOMBA TO STOMP IT!',
     retry: 'STOMP THE GOOMBA TO OPEN THE WAY. HERE IT COMES AGAIN!',
     done: (w) => w.feats.stomps > 0,
+    // Penned in by its wall and the gate; lost anyway, another drops in (owner #16).
+    during: keepGoomba,
   },
   {
     id: 'block',
-    at: 102,
+    at: 118,
     text: 'JUMP UP UNDER THE ? BLOCK TO BUMP IT FOR A COIN.',
     retry: 'BUMP THE ? BLOCK FOR A COIN TO OPEN THE WAY.',
     done: (w) => w.feats.coinBlocks > 0,
   },
   {
     id: 'grow',
-    at: 106,
+    at: 122,
     text: 'THIS ? BLOCK HOLDS A MUSHROOM. BUMP IT, THEN TOUCH THE MUSHROOM TO GROW BIG.',
     retry: 'BUMP THE ? BLOCK AND GRAB THE MUSHROOM TO OPEN THE WAY.',
     // Bumped early and the mushroom lost (0.4.43): the stretch is rebuilt (TutorialDirector.spentLesson).
@@ -213,13 +241,13 @@ export const MARIO_LESSONS: readonly Lesson[] = [
   },
   {
     id: 'pipe',
-    at: 129,
+    at: 145,
     text: 'STAND ON THE PIPE AND HOLD [DOWN:down] TO GO IN.',
     done: (w) => w.level.id === PIPE_ROOM,
   },
   {
     id: 'pipe-out',
-    at: 129,
+    at: 145,
     area: PIPE_ROOM,
     text: 'GRAB THE COINS, THEN WALK RIGHT INTO THE SIDE PIPE.',
     done: (w) => w.level.id !== PIPE_ROOM,
@@ -227,20 +255,20 @@ export const MARIO_LESSONS: readonly Lesson[] = [
   {
     // Owner note (0.4.36): after the pipe lesson, a line to search pipes for secrets.
     id: 'secrets',
-    at: 137,
+    at: 153,
     note: true,
     text: 'PIPES OFTEN HIDE SECRETS. TRY GOING DOWN EVERY PIPE YOU FIND!',
-    done: (w) => past(w, 144),
+    done: (w) => past(w, 160),
   },
   {
     id: 'vine',
-    at: 144,
+    at: 160,
     text: 'SOME BLOCKS ARE HIDDEN! JUMP UNDER THE EMPTY SPOT AT THE FOOT OF THE TALL WALL.',
     done: (w) => w.entities.some((e) => e instanceof Vine && e.alive),
   },
   {
     id: 'climb',
-    at: 144,
+    at: 160,
     // A respawn makes the block hidden again: back to finding it.
     restartsAt: 'vine',
     text: 'JUMP TO GRAB THE VINE AND HOLD [UP:up] TO CLIMB. THEN LET GO AND PUSH TOWARD THE WALL TO STEP OFF.',
@@ -248,13 +276,13 @@ export const MARIO_LESSONS: readonly Lesson[] = [
   },
   {
     id: 'wall',
-    at: 156,
+    at: 172,
     text: 'ONLY BIG MARIO CAN BREAK BRICKS. SMASH UP THROUGH THE BRICKS AT THE END OF THE TUNNEL!',
     done: (w) => onTop(w, M.stepOut.top, M.stepOut.from, M.stepOut.to) || landedPast(w, M.stepOut.to + 1),
   },
   {
     id: 'flag',
-    at: 175,
+    at: 191,
     text: 'JUMP ONTO THE FLAGPOLE. THE HIGHER YOU GRAB IT, THE MORE POINTS!',
     done: (w) => w.flagGrabbedBy !== null,
   },

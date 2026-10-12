@@ -10,7 +10,7 @@ import { T } from '@game/level/tiles';
 import { MARIO_10, MARIO_LESSONS, SPRINT_FRAMES } from '@game/tutorial/mario-1-0';
 import { GATE_FRAME, GATE_STOP_FRAMES } from '@game/tutorial/stage-tutorial';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
-import { passTip, playTutorial, stepPast, tutorialBot } from './tutorial-bot';
+import { okTip, passTip, playTutorial, stepPast, tipHeld, tutorialBot } from './tutorial-bot';
 
 // 1-0's training as the owner asked for it in 0.4.36 (tutorial/mario-1-0.ts): a real sustained
 // sprint opens the stretch's gate (walking, tapping RUN or a short burst never does); two gaps only a
@@ -70,6 +70,22 @@ function untilCard(h: H, input: (f: number) => Action[], max = 2400): CardScene 
 function hold(h: H, input: Action[], stop: () => boolean, max: number): void {
   for (let i = 0; i < max && !stop(); i++) stepPast(h, input);
   expect(stop()).toBe(true);
+}
+
+/** Walking right, hopping any low wall in the way (the Goomba's pen wall). */
+function hopRight(h: H): Action[] {
+  const w = level(h).world;
+  const b = w.player.body;
+  const row = tileAt(b.y + b.h - 1);
+  const gates = level(h).tutorial?.closedGates ?? [];
+  const edge = tileAt(b.x + b.w);
+  const wall = [edge, edge + 1].some((c) => w.map.isSolid(c, row) && !gates.includes(c));
+  return ['right', ...((b.onGround && wall) || (!b.onGround && b.vy < 0) ? (['jump'] as Action[]) : [])];
+}
+
+/** No Goomba this frame (a lost one drops back in at once while the stomp is not done). */
+function clearGoombas(h: H): void {
+  for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
 }
 
 /** OK on Toad's card: back in the level, standing. */
@@ -160,6 +176,92 @@ describe('the gaps: only a sprinting jump clears them', () => {
   });
 });
 
+/**
+ * The bot over both gaps (OK on their tips), then `after` held on the ground beyond, until the
+ * stomp's tip holds the game.
+ */
+function sprintOn(h: H, after: Action[]): void {
+  for (let i = 0; i < 1500; i++) {
+    const id = lessonId(h);
+    if (tipHeld(h)) {
+      if (id === 'stomp') return;
+      okTip(h);
+      continue;
+    }
+    h.step(id === 'gap1' || id === 'gap2' ? tutorialBot(h) : after);
+  }
+}
+
+describe('the runway after the sprint-jump (0.4.45, #15)', () => {
+  it("a sprint that never stops: the stomp's tip holds the game before the Goomba's wall is reached, the wall at the screen's right edge or past it", () => {
+    const h = upTo('gap1');
+    // Over both gaps at a sprint, then on and on at top speed.
+    sprintOn(h, ['right', 'run']);
+    expect(tipHeld(h)).toBe(true);
+    expect(lessonId(h)).toBe('stomp');
+    const w = level(h).world;
+    const b = w.player.body;
+    expect(b.onGround).toBe(true);
+    expect(toPx(b.x + b.w)).toBeLessThan(M.goombaWall * 16);
+    expect(M.goombaWall * 16 - w.camera.pxX).toBeGreaterThanOrEqual(256 - 16);
+    // The Goomba is nowhere near him.
+    for (const e of w.entities)
+      if (e instanceof Goomba) expect(e.body.x).toBeGreaterThan(tileToSub(M.goombaWall));
+  });
+
+  it('a walk after the gap: the tip comes with the wall still off-screen', () => {
+    const h = upTo('gap1');
+    sprintOn(h, ['right']);
+    expect(tipHeld(h)).toBe(true);
+    expect(M.goombaWall * 16 - level(h).world.camera.pxX).toBeGreaterThanOrEqual(256);
+  });
+});
+
+describe("the stomp's Goomba (0.4.45, #16)", () => {
+  it('a block wall on the pit side keeps it penned: left alone a minute, it never reaches the pit', () => {
+    const h = upTo('stomp', false);
+    const w = () => level(h).world;
+    for (let row = 11; row <= 12; row++) expect(w().map.isSolid(M.goombaWall, row)).toBe(true);
+    // Up to the wall, then wait there for a minute.
+    hold(h, ['right'], () => col(h) >= M.goombaWall - 1, 900);
+    const g = w().entities.find((e): e is Goomba => e instanceof Goomba && e.alive);
+    expect(g).toBeDefined();
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 0; i < 3600; i++) {
+      stepPast(h, []);
+      const x = toPx(g!.body.x);
+      lo = Math.min(lo, x);
+      hi = Math.max(hi, x);
+    }
+    expect(g!.alive).toBe(true);
+    expect(lo).toBeGreaterThanOrEqual((M.goombaWall + 1) * 16);
+    expect(hi).toBeLessThan(M.stompGate * 16);
+    expect(lessonId(h)).toBe('stomp');
+  });
+
+  it('a Goomba lost anyway comes back, dropping into the pen', () => {
+    const h = upTo('stomp', false);
+    hold(h, ['right'], () => col(h) >= M.goombaWall - 3, 900);
+    const w = level(h).world;
+    for (const e of w.entities) if (e instanceof Goomba) e.destroy();
+    h.idle(2);
+    let back: Goomba | undefined;
+    for (let i = 0; i < 120 && !back; i++) {
+      stepPast(h, []);
+      back = w.entities.find((e): e is Goomba => e instanceof Goomba && e.alive);
+    }
+    expect(back).toBeDefined();
+    h.idle(120);
+    expect(back!.body.onGround).toBe(true);
+    const x = toPx(back!.body.x);
+    expect(x).toBeGreaterThan(M.goombaWall * 16);
+    expect(x).toBeLessThan(M.stompGate * 16);
+    // And a stomp still opens the way.
+    playTutorial(h, () => lessonId(h) === 'block');
+  });
+});
+
 describe('a task walked past is put back, never mid-move', () => {
   it('jump the Goomba and walk on: at the gate Toad waits for a press, then Mario stands before a fresh Goomba', () => {
     const h = upTo('stomp', false);
@@ -183,17 +285,24 @@ describe('a task walked past is put back, never mid-move', () => {
     okCard(h);
     expect(col(h)).toBe(at('stomp'));
     expect(lessonId(h)).toBe('stomp');
-    h.until(() => level(h).world.entities.some((e) => e instanceof Goomba && e.alive), 300);
+    const goomba = () => level(h).world.entities.some((e) => e instanceof Goomba && e.alive);
+    for (let i = 0; i < 900 && !goomba(); i++) h.step(hopRight(h));
+    expect(goomba()).toBe(true);
     // A bump into the gate on the way is not a stop: no card until he stands there.
     expect(GATE_STOP_FRAMES).toBeGreaterThanOrEqual(20);
   });
 
   it('a jump against the gate never brings the card while in the air', () => {
     const h = upTo('stomp', false);
-    for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
     // Walk to the gate, then keep hopping against it: no card while he hops.
-    hold(h, ['right'], () => col(h) === M.stompGate - 1, 900);
+    const there = () => col(h) === M.stompGate - 1 && level(h).world.player.body.onGround;
+    for (let i = 0; i < 900 && !there(); i++) {
+      clearGoombas(h);
+      stepPast(h, hopRight(h));
+    }
+    expect(there()).toBe(true);
     for (let i = 0; i < 240; i++) {
+      clearGoombas(h);
       const b = level(h).world.player.body;
       h.step(
         b.onGround && (i & 1) === 0
@@ -269,14 +378,14 @@ describe('the hidden vine and the brick wall', () => {
 
   it('a closed gate is drawn as a column of barrier blocks; an open one is gone', () => {
     const h = upTo('stomp', false);
-    for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
-    h.until(() => {
-      stepPast(h, ['right']);
-      return col(h) >= M.stompGate - 8;
-    }, 900);
+    for (let i = 0; i < 900 && col(h) < M.stompGate - 8; i++) {
+      clearGoombas(h);
+      stepPast(h, hopRight(h));
+    }
+    expect(col(h)).toBeGreaterThanOrEqual(M.stompGate - 8);
     const gate = () => draw(level(h)).sprites.filter((x) => x.frame === GATE_FRAME).length;
     expect(gate()).toBe(13 - 6);
-    for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
+    clearGoombas(h);
     level(h).world.feats.stomps = 1;
     h.step();
     expect(director(h)?.closedGates).not.toContain(M.stompGate);
