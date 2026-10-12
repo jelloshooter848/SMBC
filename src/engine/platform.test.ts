@@ -107,9 +107,9 @@ describe('platform: isStandalone', () => {
 
 describe('platform: installVariant (the Options row)', () => {
   it('hidden once running from the Home Screen, whatever the browser', () => {
-    expect(installVariant(env(UA.iphoneSafari, { navigatorStandalone: true, maxTouchPoints: 5 }), false)).toBe(
-      'hidden',
-    );
+    expect(
+      installVariant(env(UA.iphoneSafari, { navigatorStandalone: true, maxTouchPoints: 5 }), false),
+    ).toBe('hidden');
     expect(installVariant(env(UA.androidChrome, { matchMedia: media('standalone') }), true)).toBe('hidden');
   });
 
@@ -125,7 +125,7 @@ describe('platform: installVariant (the Options row)', () => {
     expect(installVariant(env(UA.iphoneFacebook, { maxTouchPoints: 5 }), false)).toBe('ios-other');
   });
 
-  it("an Android browser with no prompt: its own menu; a desktop with no install API: hidden", () => {
+  it('an Android browser with no prompt: its own menu; a desktop with no install API: hidden', () => {
     expect(installVariant(env(UA.androidFirefox, { maxTouchPoints: 5 }), false)).toBe('browser-menu');
     expect(installVariant(env(UA.androidChrome, { maxTouchPoints: 5 }), false)).toBe('browser-menu');
     expect(installVariant(env(UA.desktopFirefox), false)).toBe('hidden');
