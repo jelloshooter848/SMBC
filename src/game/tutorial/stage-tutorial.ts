@@ -599,9 +599,10 @@ export class TutorialDirector {
       this.lessonUp();
       if (step.kind === 'done' && !step.lesson.note) {
         this.game.ctx.audio.sfx('select');
-        this.game.deps.announcer?.say('Nice!');
-        // A new tip next: no second's wait (the hero could do its lesson meanwhile), NICE! over it.
+        // A new tip next: no second's wait (the hero could do its lesson meanwhile), NICE! over it
+        // and read out with it (two lines a frame apart would cut the first off).
         this.cheer = !!this.tracker.current && this.game.tips.wouldHold(this.tipKey(this.tracker.index));
+        if (!this.cheer) this.game.deps.announcer?.say('Nice!');
         this.nice = this.cheer ? 0 : NICE_FRAMES;
         this.moving = this.cheer;
       } else {
@@ -745,7 +746,8 @@ export class TutorialDirector {
     // A lesson's demo panel shows with the hold: its picture is read out too.
     const demo = holds ? this.demo : null;
     const picture = demo ? ` ${demo.said(this.game, demoVariant(controlScheme(this.game)))}` : '';
-    this.game.deps.announcer?.say(holds ? `${text}${picture} OK to continue.` : text);
+    const nice = holds && this.cheer ? 'Nice! ' : '';
+    this.game.deps.announcer?.say(holds ? `${nice}${text}${picture} OK to continue.` : text);
   }
 
   /** The demo shown under the box: the lesson's, while its new tip holds the game (else null). */

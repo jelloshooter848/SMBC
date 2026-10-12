@@ -200,6 +200,8 @@ describe('1-0: a new tip holds the game until OK', () => {
     okTip(h);
     playTutorial(h, () => level(h).tutorial?.lesson?.id === 'sprint' && tipHeld(h));
     expect(draw(level(h)).texts.some((t) => t.str === 'NICE!')).toBe(true);
+    // Read out as one line, so the tip never cuts "Nice!" off.
+    expect(h.said.at(-1)).toMatch(/^Nice! HOLD RUN .* OK to continue\.$/);
     okTip(h);
     h.idle(2);
     expect(draw(level(h)).texts.some((t) => t.str === 'NICE!')).toBe(false);

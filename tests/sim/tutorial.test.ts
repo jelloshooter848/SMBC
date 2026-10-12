@@ -416,14 +416,14 @@ describe('lessons: co-op, NICE!', () => {
     let t = drawn();
     expect(t).toContain('NICE!');
     expect(t.some((x) => x.startsWith('HOLD RIGHT'))).toBe(true);
-    expect(h.said.at(-1)).toBe('Nice!');
     // The next tip is new, so it holds the game as soon as Mario stands (0.4.45), NICE! over it
     // until OK.
     h.idle(61);
     t = drawn();
     expect(t).toContain('NICE!');
     expect(t.some((x) => x.startsWith('PRESS JUMP'))).toBe(true);
-    expect(h.said.at(-1)).toMatch(/^PRESS JUMP/);
+    // "Nice!" read out with it, as one line.
+    expect(h.said.at(-1)).toMatch(/^Nice! PRESS JUMP/);
     okTip(h);
     h.idle(2);
     t = drawn();
