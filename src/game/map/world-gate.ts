@@ -19,7 +19,7 @@ import type { MapNode, MapProgress, WorldExit, WorldMapPage } from './types';
  *   reminder is RIFT_SEALED_PAGES, and opening it is Toad's rift scene (toad-guide.ts), after the
  *   crack tears wide open when it had been seen shut.
  * - The welcome: the first arrival on a world's start node (worlds 2-8), the local speaking in
- *   the box at the top (no Toad); standing on the node, TALK (up) plays it again.
+ *   the box at the top (no Toad); standing on the node, TALK (the jump button) plays it again.
  */
 
 /** World `n`'s number from its SMB page id ('smb-3' → 3), or 0. */
