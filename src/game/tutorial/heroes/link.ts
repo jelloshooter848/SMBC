@@ -150,9 +150,9 @@ export const LINK_LESSONS: readonly Lesson[] = [
     row: 11,
     brick: S.brick,
     // The difference (0.4.43, owner): a ? block opens to any hit, so the stab is taught on a brick.
-    text: '? BLOCKS OPEN WITH ANY HIT. BRICKS NEED AN UP-STRIKE: [JUMP:jump] UNDER ONE, HOLD UP.',
+    text: '? BLOCKS OPEN WITH ANY HIT. BRICKS NEED AN UP-STRIKE: HOLD UP, [JUMP:jump] UNDER IT.',
     retry: 'HOLD UP AS YOU [JUMP:jump] UNDER THE BRICK: YOUR SWORD STABS UP AND BREAKS IT.',
-    spent: 'THAT BRICK BROKE WITHOUT AN UP-STRIKE. [JUMP:jump] UNDER IT AND HOLD UP. HERE IT IS AGAIN!',
+    spent: 'THAT BRICK BROKE WITHOUT AN UP-STRIKE. HOLD UP, THEN [JUMP:jump] UNDER IT. HERE IT IS AGAIN!',
     done: upThrustBrick,
   },
   {
