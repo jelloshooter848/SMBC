@@ -13,7 +13,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Plugin, ResolvedConfig } from 'vite';
-import { APP_ICON, APP_ICON_COLOURS, APP_ICON_SIZES } from '../../src/content/sprites/app-icon';
+import { APP_ICON, APP_ICON_COLOURS, APP_ICON_SIZES } from '../../src/content/sprites/app-icon.ts';
 
 // ------------------------------------------------------------------ PNG
 
