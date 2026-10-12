@@ -62,7 +62,10 @@ export function spokenCode(code: string): string {
 
 const reminders = (game: Game) => game.deps.settings?.backupReminders !== false;
 
-/** Options > Save files: the three files, BACKUP REMINDERS on or off, Back. */
+/**
+ * Options > Save files: the three files, PASTE CODE (into a file picked next: the path the Home
+ * Screen app's note names), BACKUP REMINDERS on or off, Back.
+ */
 export class SaveFilesOptions extends MenuScene {
   private saves: SlotContents[] = [];
   constructor(game: Game, onBack: () => void, translucent = false) {
@@ -86,6 +89,7 @@ export class SaveFilesOptions extends MenuScene {
         select: () => this.openFile(slot),
         hint: 'Share save, copy code or paste code',
       })),
+      { label: 'Paste code', select: () => this.paste(), hint: 'Load a save code into a file' },
       {
         label: 'Backup reminders',
         value: () => (reminders(game) ? 'On' : 'Off'),
@@ -99,6 +103,24 @@ export class SaveFilesOptions extends MenuScene {
       },
       { label: 'Back', select: () => this.onBack?.() },
     ]);
+  }
+
+  /** PASTE CODE into a file picked after the code (over a game: from the title only). */
+  private paste(): void {
+    if (this.translucent) {
+      this.game.ctx.audio.sfx('bump');
+      this.status = 'PASTE CODES FROM THE TITLE';
+      this.game.deps.announcer?.say(this.status);
+      return;
+    }
+    this.status = '';
+    this.game.scenes.push(
+      new PasteCodeScene(this.game, undefined, (slot) => {
+        this.rebuild();
+        if (slot !== null) this.status = `FILE ${slot} LOADED`;
+        this.announce();
+      }),
+    );
   }
 
   private openFile(slot: SaveSlot): void {
@@ -202,9 +224,9 @@ export class FileCodeScene extends MenuScene {
     }
     this.status = '';
     this.game.scenes.push(
-      new PasteCodeScene(this.game, this.slot, (loaded) => {
+      new PasteCodeScene(this.game, this.slot, (slot) => {
         this.refresh();
-        if (loaded) this.status = `FILE ${this.slot} LOADED`;
+        if (slot !== null) this.status = `FILE ${this.slot} LOADED`;
         this.announce();
       }),
     );
@@ -223,7 +245,8 @@ export class FileCodeScene extends MenuScene {
 /**
  * PASTE CODE: the DOM text box (code-entry.ts) over the file's screen; the clipboard is read at
  * once when the browser allows it (a code found there goes straight on). A good code goes on to
- * LoadCodeScene's question; a bad one says why in the box. B (or CANCEL) goes back.
+ * LoadCodeScene's question (which file first, when `slot` is not given); a bad one says why in
+ * the box. B (or CANCEL) goes back.
  */
 export class PasteCodeScene implements Scene {
   readonly translucent = true;
@@ -233,20 +256,25 @@ export class PasteCodeScene implements Scene {
 
   constructor(
     private readonly game: Game,
-    readonly slot: SaveSlot,
-    private readonly done: (loaded: boolean) => void,
+    readonly slot: SaveSlot | undefined,
+    /** The file loaded, or null when nothing changed. */
+    private readonly done: (slot: SaveSlot | null) => void,
   ) {}
+
+  private get heading(): string {
+    return this.slot ? `Paste code into file ${this.slot}` : 'Paste a save code';
+  }
 
   enter(): void {
     const game = this.game;
     game.deps.announcer?.say(
-      `Paste code into file ${this.slot}. Paste the save code, or the whole message with the link, into the text box, then Load.`,
+      `${this.heading}. Paste the save code, or the whole message with the link, into the text box, then Load.`,
     );
     const overlay = game.deps.overlay;
     if (!overlay || typeof document === 'undefined') return;
     const env = shareEnv(game);
     this.panel = new CodeEntryPanel(overlay, {
-      title: `Paste code into file ${this.slot}`,
+      title: this.heading,
       ...(env.read ? { read: env.read } : {}),
       submit: (text) => this.submit(text),
       cancel: () => this.cancel(),
@@ -263,7 +291,7 @@ export class PasteCodeScene implements Scene {
   /** Text typed or pasted: an error message, or null when it was a code (the question follows). */
   submit(text: string): string | null {
     if (this.finished) return null;
-    const r = readSaveCode(text, this.slot);
+    const r = readSaveCode(text, this.slot ?? 1);
     if (!r.ok) {
       this.game.ctx.audio.sfx('bump');
       return r.message;
@@ -272,10 +300,10 @@ export class PasteCodeScene implements Scene {
     this.game.scenes.pop();
     this.game.scenes.push(
       new LoadCodeScene(this.game, r, {
-        slot: this.slot,
+        ...(this.slot ? { slot: this.slot } : {}),
         done: (slot) => {
           this.game.scenes.pop();
-          this.done(slot !== null);
+          this.done(slot);
         },
       }),
     );
@@ -287,7 +315,7 @@ export class PasteCodeScene implements Scene {
     this.finished = true;
     this.game.scenes.pop();
     this.game.deps.announcer?.say('Cancelled.');
-    this.done(false);
+    this.done(null);
   }
 
   touchLabels(): TouchLabels {

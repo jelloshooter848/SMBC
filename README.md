@@ -75,6 +75,7 @@ game), so there is no account and no server: **the code is the save**.
   4 heroes)"; with no share sheet the link is copied instead), **COPY CODE**, or **PASTE CODE**,
   which reads the clipboard when the browser allows it and otherwise opens a text box: paste the
   code, or the whole message with the link in it. Its code is shown on the file's screen too.
+  **PASTE CODE** on the list itself asks which file to load the code into.
 - **After each castle** (the first clear of each X-4) a card asks **BACK UP YOUR GAME?** with SHARE
   SAVE, COPY CODE and NOT NOW. **Options → Save files → Backup reminders** turns it off.
 - **Opening a resume link** asks, after the title, **LOAD THIS SAVE?** and which file to put it

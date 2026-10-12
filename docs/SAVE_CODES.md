@@ -196,8 +196,10 @@ still goes through the escape, so nothing is ever lost, only a few characters.
   - its key presses never reach the game;
   - on a phone held sideways it fits above the on-screen keyboard.
 
-  PASTE CODE is offered from the title only (not over a running game), so the file being played
-  is never replaced under it.
+  PASTE CODE is on each file's screen (into that file) and on the Save files list itself, where
+  the question asks which file first (the path the Home Screen app's note names: Options → Save
+  files → PASTE CODE). Both are offered from the title only (not over a running game), so the
+  file being played is never replaced under it.
 
 - **`#save=` link:** `main.ts` hands the code to `Game.saveLink`. Once the title is ready,
   `Game.offerSaveLink` asks LOAD THIS SAVE? and which file, showing each file's summary. YES or NO

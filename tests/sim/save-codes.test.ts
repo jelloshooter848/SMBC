@@ -429,6 +429,56 @@ describe('Options > Save files', () => {
     expect(fileScene.code).toBe(code);
   });
 
+  it("PASTE CODE on the Save files list itself (the Home Screen note's path) asks which file, and only YES writes", () => {
+    const h = makeGame();
+    const other = worldFive(3);
+    const code = encodeSaveCode(other);
+    store.delete('smbc.save.3');
+    file({ cleared: ['1-0', '1-1'] }, 1);
+    h.game.showTitle();
+    const files = new SaveFilesOptions(h.game, () => h.game.scenes.pop());
+    h.game.scenes.push(files);
+    const labels = (files as unknown as { items: MenuItem[] }).items.map((i) => i.label);
+    expect(labels.indexOf('Paste code')).toBe(labels.indexOf('File 3') + 1);
+    item(files, 'Paste code').select?.();
+    const paste = h.top() as PasteCodeScene;
+    expect(paste).toBeInstanceOf(PasteCodeScene);
+    expect(paste.slot).toBeUndefined();
+    expect(paste.submit(code)).toBeNull();
+    const q = h.top() as LoadCodeScene;
+    expect(q).toBeInstanceOf(LoadCodeScene);
+    h.idle(20);
+    expect(q.mode).toBe('pick');
+    h.tap('jump'); // file 1: used, so it names what it replaces
+    expect(q.mode).toBe('confirm');
+    expect(h.said.at(-1)).toMatch(/File 1 has WORLD 1, 1 HERO\. It will be replaced/);
+    h.idle(20);
+    h.tap('jump'); // NO: back to the files
+    expect(q.mode).toBe('pick');
+    expect(loadSave(1)?.cleared).toEqual(['1-0', '1-1']);
+    h.idle(20);
+    h.tap('down');
+    h.tap('jump'); // file 2 (empty)
+    h.idle(20);
+    h.tap('left');
+    h.tap('jump'); // YES
+    h.idle(20);
+    h.tap('jump');
+    expect(h.top()).toBe(files);
+    expect(loadSave(2)?.pages).toEqual(other.pages);
+    expect(loadSave(1)?.cleared).toEqual(['1-0', '1-1']);
+    expect(item(files, 'File 2').value?.()).toBe('WORLD 5, 5 HEROES');
+  });
+
+  it("over a game, the list's PASTE CODE is only offered from the title", () => {
+    const h = makeGame();
+    const files = new SaveFilesOptions(h.game, () => h.game.scenes.pop(), true);
+    h.game.scenes.push(files);
+    item(files, 'Paste code').select?.();
+    expect(h.top()).toBe(files);
+    expect(h.said).toContain('PASTE CODES FROM THE TITLE');
+  });
+
   it('B cancels PASTE CODE without touching the file', () => {
     const h = makeGame();
     file({ cleared: ['1-0', '1-1'] }, 1);
