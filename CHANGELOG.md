@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.44] - 2026-10-12
+
 ### Added
 
 - Play from your Home Screen. The game installs as a full-screen app with its own pixel-art icon and plays offline
@@ -1004,7 +1006,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.43...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.44...HEAD
+[0.4.44]: https://github.com/jelloshooter848/SMBC/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jelloshooter848/SMBC/compare/v0.4.42...v0.4.43
 [0.4.42]: https://github.com/jelloshooter848/SMBC/compare/v0.4.41...v0.4.42
 [0.4.41]: https://github.com/jelloshooter848/SMBC/compare/v0.4.40...v0.4.41
