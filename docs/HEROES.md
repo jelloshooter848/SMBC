@@ -169,7 +169,9 @@ ends.
   jumps out in an arc and lands on 4-2 (`map-dust-0/1`); the ship dives onto the bonus spot and
   crashes (`cannon` boom, `map-wreck`, dust, smoke); Toad walks in from the left (`toad-map-0/1`),
   hammers three blows facing right (`toad-map-hammer-0/1`, planks fly), the wreck becomes the bonus
-  node, Toad waves and walks off (6.5 s, `CRASH_FRAMES`); then the road draws in as before. The
+  node, Toad waves by it (6 s, `CRASH_FRAMES`); his crash cards then walk him straight from the house
+  to the hero (0.4.43: no walk off the right edge and back in from the left, `ToadGuide`'s `from`,
+  skipped or not); then the road draws in as before. The
   announcer narrates each beat. JUMP (or MENU) skips to the end: the road drawn, the hero on 4-2,
   the node shown. With reduce flashing the crash has no white flash. It never replays (a reload
   mid-way only draws the road; taking the ball again plays nothing) and nothing plays without

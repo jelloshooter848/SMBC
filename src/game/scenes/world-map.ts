@@ -452,9 +452,9 @@ export class WorldMapScene implements Scene {
    * The page has shown (the map opened, or a slide or fade ended; the crash cutscene ended,
    * `crash`): Toad's due story scenes first (campaign), then the page's reveal draws in.
    */
-  private arrived(crash = false): void {
+  private arrived(crash = false, from: { x: number; y: number } | null = null): void {
     if (!crash && this.startGate()) return;
-    if (this.startStory(crash)) return;
+    if (this.startStory(crash, [], from)) return;
     this.afterStory();
   }
 
@@ -474,7 +474,11 @@ export class WorldMapScene implements Scene {
    * story plays, story/beats.ts storyOn): played as the `story` mode. False when none has a
    * page to show (scenes with none are only marked seen).
    */
-  private startStory(crash: boolean, lead: readonly Page[] = []): boolean {
+  private startStory(
+    crash: boolean,
+    lead: readonly Page[] = [],
+    from: { x: number; y: number } | null = null,
+  ): boolean {
     const game = this.game;
     // A gate's Toad (a major scene: he walks in) leads, then whatever else is due.
     const first: ToadScene[] = lead.length ? [{ ids: [], pages: [...lead], walk: true }] : [];
@@ -483,11 +487,16 @@ export class WorldMapScene implements Scene {
     // Toad stands just left of the hero, or right of him when the hero is at the left edge
     // (World 1's start), so he never covers the hero.
     const stand = { x: this.hx - 20 >= 4 ? this.hx - 20 : this.hx + 20, y: this.hy - 6 };
-    const guide = new ToadGuide(scenes, stand, {
-      markSeen: (id) => game.markSeen(id),
-      say: (text) => this.say(text),
-      prompt: () => abilityHint(game, 'OK', 'jump'),
-    });
+    const guide = new ToadGuide(
+      scenes,
+      stand,
+      {
+        markSeen: (id) => game.markSeen(id),
+        say: (text) => this.say(text),
+        prompt: () => abilityHint(game, 'OK', 'jump'),
+      },
+      from,
+    );
     if (guide.done) return false;
     this.toad = guide;
     this.mode = 'story';
@@ -652,11 +661,13 @@ export class WorldMapScene implements Scene {
   /** The crash cutscene's frame; JUMP (or MENU) skips straight to its end and the road drawn. */
   private updateCrash(input: InputFrame): void {
     const c = this.crash as NonNullable<typeof this.crash>;
+    // Toad's crash cards start with him by the house he built: he walks straight to the hero.
+    const home = c.scene.toadHome;
     if (this.t > 1 && (input.pressed('jump') || input.pressed('start'))) {
       this.endCrash();
       this.finishReveal();
       // Skipped: the road is drawn, and Toad's crash cards still play (once per file).
-      this.startStory(true);
+      this.startStory(true, [], home);
       return;
     }
     for (const ev of c.scene.update(c.names)) {
@@ -669,7 +680,7 @@ export class WorldMapScene implements Scene {
     if (!c.scene.done) return;
     this.endCrash();
     // Toad's crash cards (and whatever else is due), then the road to the bonus spot draws in.
-    this.arrived(true);
+    this.arrived(true, home);
   }
 
   /** The bonus node built by Toad: out of the reveal (drawn from now on, still announced). */

@@ -105,12 +105,20 @@ export class ToadGuide {
   private t = 0;
   /** Toad's x while on stage; null while off it. */
   private tx: number | null = null;
+  /** Toad's y (his top): the stand's but on a walk from `from`. */
+  private ty: number;
 
   constructor(
     readonly scenes: readonly ToadScene[],
     private readonly stand: { x: number; y: number },
     private readonly hooks: GuideHooks,
+    /**
+     * Where Toad already is when his first walk-in starts (the house he just built in the airship
+     * crash, 0.4.43): he walks straight from there to the stand, not in from the left edge.
+     */
+    private readonly from: { x: number; y: number } | null = null,
   ) {
+    this.ty = stand.y;
     this.nextScene();
   }
 
@@ -142,7 +150,7 @@ export class ToadGuide {
     if (this.tx === null) return null;
     const walking = this.phase === 'in' || this.phase === 'out';
     const frame = walking ? `toad-map-${(this.t >> 3) & 1}` : `toad-map-${(this.t >> 4) & 1}`;
-    return { frame, x: Math.round(this.tx), y: this.stand.y, flip: false };
+    return { frame, x: Math.round(this.tx), y: Math.round(this.ty), flip: false };
   }
 
   /** Starts the next scene with pages (marking every scene passed on the way), or ends. */
@@ -159,7 +167,8 @@ export class ToadGuide {
       this.page = 0;
       this.t = 0;
       if (s.walk && this.tx === null) {
-        this.tx = TOAD_OFF_X;
+        this.tx = this.from?.x ?? TOAD_OFF_X;
+        this.ty = this.from?.y ?? this.stand.y;
         this.phase = 'in';
         return;
       }
@@ -186,14 +195,24 @@ export class ToadGuide {
     this.t++;
     switch (this.phase) {
       case 'in': {
-        const x = Math.min(this.stand.x, (this.tx ?? TOAD_OFF_X) + TOAD_WALK_SPEED);
-        this.tx = x;
-        if (x >= this.stand.x) this.showPage();
+        // Straight to the stand, at his walking speed (from the left edge, or from `from`).
+        const dx = this.stand.x - (this.tx ?? TOAD_OFF_X);
+        const dy = this.stand.y - this.ty;
+        const d = Math.hypot(dx, dy);
+        if (d <= TOAD_WALK_SPEED) {
+          this.tx = this.stand.x;
+          this.ty = this.stand.y;
+          this.showPage();
+          return;
+        }
+        this.tx = (this.tx ?? TOAD_OFF_X) + (dx / d) * TOAD_WALK_SPEED;
+        this.ty += (dy / d) * TOAD_WALK_SPEED;
         return;
       }
       case 'out': {
         const x = (this.tx ?? TOAD_OFF_X) + TOAD_WALK_SPEED;
         this.tx = x;
+        this.ty = this.stand.y;
         if (x >= TOAD_EXIT_X) {
           this.tx = null;
           this.phase = 'done';
