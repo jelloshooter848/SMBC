@@ -52,10 +52,16 @@ export class BackupCardScene implements Scene {
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
-    if (++this.t <= CARD_GUARD_FRAMES || this.busy) return;
+    if (++this.t <= CARD_GUARD_FRAMES) return;
     const any = (a: 'jump' | 'start' | 'attack' | 'select' | 'up' | 'down' | 'left' | 'right') =>
       inputs.some((i) => i.pressed(a));
     const audio = this.game.ctx.audio;
+    // While the share sheet or clipboard is busy only NOT NOW works: a sheet that never answers
+    // (it happens) must not hold the card, and the map, forever.
+    if (this.busy) {
+      if (any('attack') || any('select')) this.close();
+      return;
+    }
     if (any('up') || any('left') || any('down') || any('right')) {
       this.index = (this.index + (any('up') || any('left') ? 2 : 1)) % 3;
       audio.sfx('select');

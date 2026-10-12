@@ -350,6 +350,21 @@ describe('"BACK UP YOUR GAME?" after a castle', () => {
     expect(f.copied[1]).toBe(code);
   });
 
+  it('a share sheet that never answers does not hold the card: NOT NOW still closes it', () => {
+    const env: ShareEnv = { href: 'https://example.com/SMBC/', share: () => new Promise<void>(() => {}) };
+    const h = makeGame(env);
+    h.game.openFile(1, castleFile());
+    clearCastle(h);
+    h.until(() => h.top() instanceof BackupCardScene);
+    const card = h.top() as BackupCardScene;
+    h.idle(40);
+    h.tap('jump'); // SHARE SAVE: the sheet is up, and stays up
+    h.idle(10);
+    expect(card.status).toBe('SHARING...');
+    h.tap('attack'); // NOT NOW
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+  });
+
   it('SHARE SAVE with a share sheet sends the summary line and the link', async () => {
     const f = fakeEnv({ share: true });
     const h = makeGame(f.env);
