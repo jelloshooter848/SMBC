@@ -29,6 +29,7 @@ import {
   type TutorialRun,
 } from './stage-tutorial';
 import { lessonItems } from './stage-prompts';
+import { lastTipsItem } from './last-tips';
 import { MergedInput } from './merged-input';
 import { itemName, ownsItem, TRANSIENT_KIT } from './kit';
 import {
@@ -366,6 +367,7 @@ export class HeroStageScene implements Scene, TutorialHost {
           this.hero,
           () => this.finish('skip'),
           this.director.lesson ? () => this.director.skipLesson() : null,
+          this.world,
         ),
       );
       return;
@@ -459,12 +461,20 @@ export class HeroStageScene implements Scene, TutorialHost {
 
 /** The stage's menu: Continue, Skip this lesson, Skip training. Pauses the music. */
 export class StageMenu extends MenuScene {
-  constructor(game: Game, hero: CharacterDef, skip: () => void, skipLesson: (() => void) | null) {
+  constructor(
+    game: Game,
+    hero: CharacterDef,
+    skip: () => void,
+    skipLesson: (() => void) | null,
+    world: World | null = null,
+  ) {
     super(
       game,
       fontText(`${hero.name} TRAINING`),
       [
         { label: 'Continue', select: () => game.scenes.pop() },
+        // The last three tips, read again (0.4.43).
+        ...lastTipsItem(game, world),
         ...(skipLesson
           ? [
               {

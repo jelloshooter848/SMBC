@@ -1316,8 +1316,11 @@ lessons, gates and checks, as `mario-1-0.ts`), `kit.ts`, `targets.ts`; the direc
   Power-ups come from real power blocks (`[hero-items]` sections, used here outside the campaign),
   grow item first, then the order of POWERUPS.md 6.2; the item's name leads the box's first line
   ("BLUE RING! ...") instead of the level's caption. The HUD shows TRAINING. Toad greets the hero
-  (a card that waits for a key). MENU: Continue / Skip this lesson (its item is given quietly) /
-  Skip training. A replay (Pause → Training, the Arena) first offers START AT: any lesson with an
+  (a card that waits for a key). MENU: Continue / Last tips / Skip this lesson (its item is given
+  quietly) / Skip training. **Tips stay** (0.4.43): a tip stays in the box until the next one
+  replaces it, never on a timer; Last tips (also in 1-0's pause menu) shows the last three, the
+  newest first, read out again, until OK (`tutorial/tips.ts` keeps them: the one place tip state
+  lives, where 0.4.45's freeze on a new tip will hook in). A replay (Pause → Training, the Arena) first offers START AT: any lesson with an
   item. The top of the screen is a ceiling in a stage (0.4.38), so no hero gets over a gate from
   above it (Ryu kicking up a gate's face, Sophia III's hover; her gates reach the top).
 - **Lessons.** A lesson may give more than one item (`more`: Simon's Double and Triple Shot, one

@@ -242,6 +242,8 @@ export class TutorialDirector {
     readonly def: StageTutorial,
     readonly run: TutorialRun,
   ) {
+    // A fresh run (not a respawn's or a pipe's new director): no tips shown yet.
+    if (run.lesson === 0 && !run.greeted && !run.done.length) game.tips.clear();
     this.tracker = new LessonTracker(def.lessons, run.lesson);
     this.tracker.done.push(...run.done);
     this.tracker.missed.push(...run.missed);
@@ -631,8 +633,12 @@ export class TutorialDirector {
   /** Reads out the prompt the box shows. */
   announce(): void {
     this.told = this.tellKey();
-    const text = this.lines().join(' ');
-    if (text) this.game.deps.announcer?.say(text);
+    const lines = this.lines();
+    const text = lines.join(' ');
+    if (!text) return;
+    // The one place tips are kept (tips.ts): the pause menu's LAST TIPS reads them back.
+    this.game.tips.show({ lines, said: text });
+    this.game.deps.announcer?.say(text);
   }
 
   /**

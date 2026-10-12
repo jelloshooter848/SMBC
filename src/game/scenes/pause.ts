@@ -10,6 +10,7 @@ import type { TouchMode } from '@engine/save/settings';
 import { nextTouchMode } from '@engine/input/touch-logic';
 import { trainFromPause, trainingOffered } from '../tutorial/training';
 import { endStageRound } from '../arena/stage-round';
+import { lastTipsItem } from '../tutorial/last-tips';
 
 const TOUCH_MODE_LABELS: Record<TouchMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
@@ -31,6 +32,8 @@ export class PauseScene extends MenuScene {
   private rebuild(): void {
     const game = this.game;
     const items: MenuItem[] = [{ label: 'Continue', select: () => game.scenes.pop() }];
+    // A stage tutorial (1-0): its last three tips, read again (0.4.43).
+    if (game.tutorialRun) items.push(...lastTipsItem(game, this.world));
     // The hero's own guide (and player two's in co-op).
     const heroes = [game.state.character, ...(game.state.character2 ? [game.state.character2] : [])];
     for (const c of heroes)
