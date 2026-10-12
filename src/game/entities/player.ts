@@ -159,7 +159,8 @@ export class Player {
     const b = this.body;
     const top = b.y + b.h - px(hb.h);
     for (let ty = tileAt(top); ty <= tileAt(b.y + b.h - 1); ty++)
-      for (let tx = tileAt(b.x); tx <= tileAt(b.x + px(hb.w) - 1); tx++) if (map.isSolid(tx, ty)) return false;
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + px(hb.w) - 1); tx++)
+        if (map.isSolid(tx, ty)) return false;
     return true;
   }
 

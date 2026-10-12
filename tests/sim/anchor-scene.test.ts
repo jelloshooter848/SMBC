@@ -101,7 +101,7 @@ describe('the anchor scene (campaign story, once per file)', () => {
     expect(h.said.some((t) => t.startsWith(ANCHOR_SAID))).toBe(false);
     // 4. Larry yells down: his card, read out, waiting for OK (never by itself).
     expect(untilCard(h)).toEqual(ANCHOR_LARRY_PAGES[0]);
-    expect(h.said.some((t) => t.startsWith('LARRY: AFTER MY WAND'))).toBe(true);
+    expect(h.said.some((t) => t.startsWith('LARRY KOOPA: AFTER MY WAND'))).toBe(true);
     h.idle(1500);
     expect(h.top()).toBeInstanceOf(CardScene);
     expect(p.dead).toBe(false);

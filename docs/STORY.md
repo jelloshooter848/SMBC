@@ -1962,8 +1962,8 @@ EVEN THE KING'S.
 SAMUS:
 
 IT'S REGISTERED TO ONE OF
-HIS KIDS. LARRY. THE KING
-STOLE IT FROM HIS OWN SON.
+HIS KIDS, LARRY KOOPA. THE
+KING ROBBED HIS OWN SON.
 ```
 
 ```text
@@ -1986,7 +1986,7 @@ anchor slams down through the ceiling, smashes the pipe and knocks the hero back
 airship:
 
 ```text
-LARRY:
+LARRY KOOPA:
 
 AFTER MY WAND, ARE YOU?!
 NOBODY TAKES MY WAND!
@@ -1995,7 +1995,7 @@ STAY RIGHT THERE!
 ```
 
 He climbs down the chain, sees the hero up close, panics (a `!`, his arms thrown up) and scurries back up (said:
-`Larry climbs down the chain, sees you, panics and scurries back up!`). The hero, by name:
+`Larry Koopa climbs down the chain, sees you, panics and scurries back up!`). The hero, by name:
 
 ```text
 MARIO:
@@ -2066,7 +2066,7 @@ to the room) shows the plain crash and the chain to climb.
 room's pipe in a run (not again on TRY AGAIN). The fight starts when it closes.
 
 ```text
-LARRY:
+LARRY KOOPA:
 
 HEY! THE KING TOOK MY
 WAND, AND ALL I GOT WAS
@@ -2074,7 +2074,7 @@ THIS LOUSY SPARE!
 ```
 
 ```text
-LARRY:
+LARRY KOOPA:
 
 HE SAYS I GET IT BACK
 WHEN THE PRINCESS IS
@@ -2085,7 +2085,7 @@ Once the file has seen the anchor scene (NEW, 0.4.39), Larry knows the hero, and
 second page is the same):
 
 ```text
-LARRY:
+LARRY KOOPA:
 
 YOU AGAIN?! THE KING TOOK
 MY WAND, AND ALL I GOT WAS

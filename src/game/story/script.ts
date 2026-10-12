@@ -48,7 +48,7 @@ export function noMoreStandIns(hero: string): Page {
  */
 export const ANCHOR_LARRY_PAGES: readonly Page[] = [
   [
-    'LARRY:',
+    'LARRY KOOPA:',
     '',
     'AFTER MY WAND, ARE YOU?!',
     'NOBODY TAKES MY WAND!',
@@ -58,7 +58,7 @@ export const ANCHOR_LARRY_PAGES: readonly Page[] = [
 ];
 
 /** Said as Larry climbs down the anchor chain, sees the hero, panics and scurries back up. */
-export const ANCHOR_LARRY_SAID = 'Larry climbs down the chain, sees you, panics and scurries back up!';
+export const ANCHOR_LARRY_SAID = 'Larry Koopa climbs down the chain, sees you, panics and scurries back up!';
 
 /** The hero's line as Larry scurries back up the chain, by hero id, without the speaker. */
 const ANCHOR_HERO_LINES: Readonly<Record<string, Page>> = {
@@ -86,8 +86,8 @@ export function anchorHeroPage(id: string, name: string): Page {
 
 /** Larry in his room, the first time the hero rises out of its pipe in a run. */
 export const LARRY_PAGES: readonly Page[] = [
-  ['LARRY:', '', 'HEY! THE KING TOOK MY', 'WAND, AND ALL I GOT WAS', 'THIS LOUSY SPARE!'],
-  ['LARRY:', '', 'HE SAYS I GET IT BACK', 'WHEN THE PRINCESS IS', 'CAUGHT. SO BUZZ OFF!'],
+  ['LARRY KOOPA:', '', 'HEY! THE KING TOOK MY', 'WAND, AND ALL I GOT WAS', 'THIS LOUSY SPARE!'],
+  ['LARRY KOOPA:', '', 'HE SAYS I GET IT BACK', 'WHEN THE PRINCESS IS', 'CAUGHT. SO BUZZ OFF!'],
 ];
 
 /**
@@ -95,7 +95,7 @@ export const LARRY_PAGES: readonly Page[] = [
  * seen `anchor-4-2`): he knows the hero this time. The second page is LARRY_PAGES's.
  */
 export const LARRY_AGAIN_PAGES: readonly Page[] = [
-  ['LARRY:', '', 'YOU AGAIN?! THE KING TOOK', 'MY WAND, AND ALL I GOT WAS', 'THIS LOUSY SPARE!'],
+  ['LARRY KOOPA:', '', 'YOU AGAIN?! THE KING TOOK', 'MY WAND, AND ALL I GOT WAS', 'THIS LOUSY SPARE!'],
   LARRY_PAGES[1] as Page,
 ];
 
@@ -1708,7 +1708,7 @@ export const FREED_TALKS: Readonly<Record<string, (you: string) => Page[]>> = {
   samus: (you) => [
     ['SAMUS:', '', 'THE PARASITE IS GONE.', `THANKS, ${you}.`, 'I OWE YOU ONE.'],
     ['SAMUS:', '', 'MY VISOR SCANNED THAT WAND', "WHILE I WAS UNDER. IT'S NOT", "EVEN THE KING'S."],
-    ['SAMUS:', '', "IT'S REGISTERED TO ONE OF", 'HIS KIDS. LARRY. THE KING', 'STOLE IT FROM HIS OWN SON.'],
+    ['SAMUS:', '', "IT'S REGISTERED TO ONE OF", 'HIS KIDS, LARRY KOOPA. THE', 'KING ROBBED HIS OWN SON.'],
     ['SAMUS:', '', 'A KOOPA WHO ROBS HIS OWN', "FAMILY. I'VE HUNTED WORSE.", "NOT MANY. LET'S MOVE."],
   ],
   simon: (you) => [
