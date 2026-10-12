@@ -349,6 +349,8 @@ export class TitleScene extends MenuScene {
       return; // the press that skips never reaches the menu
     }
     this.tick();
+    // A resume link (#save=) opened: once the title is up, ask which file to load it into.
+    if (this.phase === 'ready' && this.game.offerSaveLink()) return;
     if (this.unlockedFlash > 0) this.unlockedFlash--;
     if (this.cheat.feed(input)) {
       const s = this.game.deps.settings;

@@ -14,6 +14,7 @@ import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
 import { getLevel as getBuiltinLevel, levelIds } from '@content/levels';
 import { customLevelId, getCustomLevel, loadLibrary } from '@game/level/library';
 import { decodeShare } from '@engine/share';
+import { linkCode } from '@game/save/save-code';
 import { parseTextMap } from '@game/level/textmap';
 import { PALETTES, SPRITES } from '@content/sprites';
 import { songs } from '@content/music/songs';
@@ -87,6 +88,8 @@ function boot(): void {
     titleIntro: true,
     freshSeeds: true,
     applySettings: () => applySettings(),
+    // A resume link (#save=<code>) answered: off the address, so a reload doesn't ask again.
+    clearSaveLink: () => history.replaceState(history.state, '', location.pathname + location.search),
     lastInput: () => touch.lastInput,
     controlScheme: () =>
       touch.shown
@@ -175,6 +178,13 @@ function boot(): void {
     applySettings();
   }
   const shared = /^#level=([A-Za-z0-9_-]+)/.exec(location.hash)?.[1];
+  // A save code's resume link: the title asks which file to load it into (Game.offerSaveLink).
+  game.saveLink = linkCode(location.hash);
+  // A resume link pasted into the address bar of the open game changes only the hash.
+  window.addEventListener('hashchange', () => {
+    const code = linkCode(location.hash);
+    if (code !== null) game.saveLink = code;
+  });
   const level = params.get('level');
   if (level) {
     const c1 =

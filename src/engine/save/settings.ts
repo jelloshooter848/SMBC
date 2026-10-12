@@ -50,6 +50,11 @@ export interface Settings {
   announce: boolean;
   /** Developer mode (level select and test tools), unlocked with the title-screen code or ?dev=1. */
   dev: boolean;
+  /**
+   * After each castle's first clear, a card offers to back up the file as a save code (Options >
+   * Save files > Backup reminders, 0.4.44). On by default; older settings files get it on.
+   */
+  backupReminders: boolean;
 }
 
 export const SETTINGS_KEY = 'smbc.settings';
@@ -79,6 +84,7 @@ export function defaultSettings(): Settings {
     packs: [],
     announce: true,
     dev: false,
+    backupReminders: true,
   };
 }
 

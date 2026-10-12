@@ -975,6 +975,8 @@ export class WorldMapScene implements Scene {
         this.updateFade();
         return;
       case 'idle':
+        // After a castle's first clear: "BACK UP YOUR GAME?" once the map is the player's.
+        if (this.game.offerBackup()) return;
         this.updateIdle(input);
     }
   }

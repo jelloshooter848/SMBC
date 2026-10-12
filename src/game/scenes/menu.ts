@@ -194,12 +194,15 @@ export class MenuScene implements Scene {
       if (sel) r.text(font, '>', 24, y);
       // 14 columns leave room for a value; a label without one may use the row ("SKIP THIS
       // LESSON", "HEART CONTAINER" in a training stage's menus, 0.4.37).
-      const label = it.label.toUpperCase().slice(0, it.value ? 14 : LABEL_COLS);
+      // A short value ("ON") leaves a longer label its room ("BACKUP REMINDERS", 0.4.44).
+      const value = it.value?.();
+      const cols = value === undefined ? LABEL_COLS : Math.max(14, LABEL_COLS - value.length - 1);
+      const label = it.label.toUpperCase().slice(0, cols);
       r.text(font, label, LABEL_X, y);
-      if (it.value) {
+      if (value !== undefined) {
         // The value fits between the label (one column of space after it) and the right edge.
         const room = Math.floor((VALUE_RIGHT - LABEL_X) / 8) - label.length - 1;
-        const v = fitMenuValue(it.value(), room);
+        const v = fitMenuValue(value, room);
         r.text(font, v, VALUE_RIGHT - v.length * 8, y);
       }
     });
