@@ -976,6 +976,8 @@ export class WorldMapScene implements Scene {
         this.updateFade();
         return;
       case 'idle':
+        // After a castle's first clear: "BACK UP YOUR GAME?" once the map is the player's.
+        if (this.game.offerBackup()) return;
         // The one-time phone tip (0.4.44) waits over the map once the first clear is drawn in.
         if (mapNotice(this.game)) return;
         this.updateIdle(input);

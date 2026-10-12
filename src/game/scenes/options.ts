@@ -11,6 +11,7 @@ import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import { GuideIndexScene } from './guide';
 import { homeScreenItems } from '../pwa/home-screen';
+import { SaveFilesOptions } from './save-codes';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const onOff = (b: boolean) => (b ? 'On' : 'Off');
@@ -25,6 +26,11 @@ export class OptionsScene extends MenuScene {
       { label: 'Video', select: () => this.push(new VideoOptions(game, () => this.pop())) },
       { label: 'Audio', select: () => this.push(new AudioOptions(game, () => this.pop())) },
       { label: 'Controls', select: () => this.push(new ControlsOptions(game, () => this.pop())) },
+      {
+        label: 'Save files',
+        select: () => this.push(new SaveFilesOptions(game, () => this.pop(), translucent)),
+        hint: 'Share, copy or paste save codes',
+      },
       {
         label: 'How to play',
         select: () => this.push(new GuideIndexScene(game, () => this.pop())),

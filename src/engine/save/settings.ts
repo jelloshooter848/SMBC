@@ -51,6 +51,11 @@ export interface Settings {
   /** Developer mode (level select and test tools), unlocked with the title-screen code or ?dev=1. */
   dev: boolean;
   /**
+   * After each castle's first clear, a card offers to back up the file as a save code (Options >
+   * Save files > Backup reminders, 0.4.44). On by default; older settings files get it on.
+   */
+  backupReminders: boolean;
+  /**
    * Home Screen notes shown once (0.4.44), kept with the settings, not a save file: the phone
    * tip after a first level (`tipDone`), and the Home Screen app's note on its own saves
    * (`noticeDone`). Optional, so files saved before it existed need no migration.
@@ -90,6 +95,7 @@ export function defaultSettings(): Settings {
     packs: [],
     announce: true,
     dev: false,
+    backupReminders: true,
     homeScreen: { tipDone: false, noticeDone: false },
   };
 }
