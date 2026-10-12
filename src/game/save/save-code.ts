@@ -1054,9 +1054,14 @@ export function summaryText(save: SaveFile): string {
   return `WORLD ${world}, ${heroes} HERO${heroes === 1 ? '' : 'ES'}`;
 }
 
-/** The resume link: this page's address with `#save=<code>` as its hash. */
+/**
+ * The resume link: this page's address with `#save=<code>` as its hash. The page's query is left
+ * off, so a link made on a `?dev=1` or `?level=` page doesn't turn dev mode on for a friend or
+ * start a level instead of asking.
+ */
 export function saveLink(code: string, href: string): string {
   const url = new URL(href);
+  url.search = '';
   url.hash = `save=${code}`;
   return url.toString();
 }

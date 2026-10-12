@@ -805,8 +805,12 @@ describe('save codes: summaries and links', () => {
     expect(saveSummary(s)).toEqual({ world: 4, heroes: 4 });
     expect(summaryText(s)).toBe('WORLD 4, 4 HEROES');
     expect(summaryText(newSave(1, 'mario'))).toBe('WORLD 1, 1 HERO');
+    // The page's query is left off: a friend's link must not turn on ?dev=1 or start a ?level=.
     const link = saveLink('ABCDE-FGHJK', 'https://example.com/SMBC/index.html?dev=1#level=x');
-    expect(link).toBe('https://example.com/SMBC/index.html?dev=1#save=ABCDE-FGHJK');
+    expect(link).toBe('https://example.com/SMBC/index.html#save=ABCDE-FGHJK');
+    expect(saveLink('ABCDE', 'https://example.com/SMBC/?level=1-1&char=link')).toBe(
+      'https://example.com/SMBC/#save=ABCDE',
+    );
     expect(shareText(s, link)).toBe(`My SMBC REMIX save (World 4, 4 heroes): ${link}`);
   });
 
