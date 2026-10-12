@@ -44,7 +44,9 @@ builds it (campaign only).
 ### 2.1 Small, per hero
 
 SMB's rule stays for every hero: **a small hero bumping any power block gets their grow item**, whatever the
-block's entry. "Small" per hero:
+block's entry. The same holds for an SMB Mushroom or Fire Flower a hero with items of their own touches in the
+campaign (a block Mario struck in co-op, 0.4.43: Samus took the Varia Suit from one before any Energy Tank):
+it gives their item by the blocks' rule (`World.powerUp`). "Small" per hero:
 
 | Hero         | Small means                               |
 | ------------ | ----------------------------------------- |

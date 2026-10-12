@@ -55,6 +55,7 @@ import { PowerUp } from '../entities/objects/powerup';
 import { isPickupKind, Pickup } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
+import { isFound } from '../items/flags';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
 import {
@@ -1173,7 +1174,7 @@ export class World {
     for (const e of carried) {
       if (e instanceof PowerUp) {
         if (e.item === 'clock') this.collectClock(e);
-        else if (e.item !== 'poison') p.def.behaviour.onPowerUp(p, e.item, this);
+        else if (e.item !== 'poison') this.powerUp(p, e.item);
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
       else if (e instanceof Pickup) this.collectPickup(p, e);
     }
@@ -2100,6 +2101,20 @@ export class World {
   }
 
   /**
+   * `p` takes SMB's power-up `kind` (a block another hero struck: Mario's in co-op). In the
+   * campaign a hero with items of their own takes theirs instead, by the blocks' rule (0.4.43:
+   * Samus took the Varia Suit from a Mushroom before any Energy Tank): a small hero their grow item,
+   * else the Mushroom their next one, the Fire Flower their default power. Else its onPowerUp.
+   */
+  powerUp(p: Player, kind: Exclude<PowerUp['item'], 'poison' | 'clock'>): void {
+    if ((kind === 'mushroom' || kind === 'flower') && itemRules(p.def.id) && isFound(p)) {
+      const id = blockItem(p, null, kind === 'mushroom' ? 'mushroom' : 'powerup');
+      if (id !== null) return this.takeHeroItem(p, new HeroItem(0, 0, id, p.def.id));
+    }
+    p.def.behaviour.onPowerUp(p, kind, this);
+  }
+
+  /**
    * Any hero's Clock (Character.as, PickupInfo.CLOCK): Clock.SCORE_VALUE = 1000 points and
    * Clock.TIME_TO_ADD = 100 on the timer; back above the hurry time, the hurry tune ends
    * (StatManager.checkCancelSecondsLeft).
@@ -2170,7 +2185,7 @@ export class World {
           if (e.item === 'poison') {
             if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
           } else if (e.item === 'clock') this.collectClock(e);
-          else p.def.behaviour.onPowerUp(p, e.item, this);
+          else this.powerUp(p, e.item);
         }
       } else if (e instanceof HeroItem) {
         if (e.out && overlaps(pb, e.body)) {
