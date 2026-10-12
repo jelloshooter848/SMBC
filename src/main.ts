@@ -24,6 +24,15 @@ import { DEFAULT_ASSIST } from '@game/context';
 import { MENU_TOUCH_LABELS } from '@game/touch-labels';
 import { miniGameFor } from '@game/minigames';
 import { isBonusKind, openBonusGame } from '@game/bonus';
+import {
+  captureInstallPrompt,
+  currentEnv,
+  installVariant,
+  isIOS,
+  isPhone,
+  isStandalone,
+} from '@engine/platform';
+import { stopPageZoom, watchServiceWorker } from '@engine/pwa';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
@@ -57,7 +66,26 @@ function boot(): void {
   for (const ev of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click', 'gamepadconnected']) {
     window.addEventListener(ev, unlock, { passive: true });
   }
+  // Back from the background (the Home Screen app reopened, a call ended): sound comes back at
+  // once if iOS allows, else on the next tap (AudioManager.wake).
+  const wake = () => {
+    if (document.visibilityState === 'visible') audio.wake();
+  };
+  document.addEventListener('visibilitychange', wake);
+  window.addEventListener('pageshow', wake);
+  window.addEventListener('focus', wake);
   console.info(`SMBC REMIX ${__APP_VERSION__}`);
+
+  // Home Screen support (0.4.44): the browser's install prompt is saved for Options → ADD TO
+  // HOME SCREEN, and production builds register the offline service worker (never `pnpm dev`).
+  const platform = currentEnv();
+  const install = captureInstallPrompt(window);
+  const updates = watchServiceWorker(
+    import.meta.env.BASE_URL,
+    import.meta.env.PROD && 'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+    () => location.reload(),
+  );
+  stopPageZoom(document);
   const announcer = new Announcer(document.getElementById('announcer'));
 
   let fps = 0;
@@ -86,6 +114,15 @@ function boot(): void {
     announcer,
     titleIntro: true,
     freshSeeds: true,
+    homeScreen: {
+      ios: isIOS(platform),
+      phone: isPhone(platform),
+      standalone: isStandalone(platform),
+      variant: () => installVariant(platform, install.available),
+      prompt: () => install.prompt(),
+      updateReady: () => updates.ready,
+      applyUpdate: () => updates.apply(),
+    },
     applySettings: () => applySettings(),
     lastInput: () => touch.lastInput,
     controlScheme: () =>
