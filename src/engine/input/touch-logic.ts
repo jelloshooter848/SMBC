@@ -209,6 +209,14 @@ export function buttonShape(a: Action): ButtonShape {
 export type ButtonPlace = { right: number; bottom: number } | { right: number; top: number };
 
 /**
+ * The pad's box: the screen less the notch, rounded corners and home bar (0.4.44), in portrait
+ * and landscape, so every button and MENU stays where a thumb can reach it. All the controls are
+ * placed inside this box.
+ */
+export const SAFE_INSET =
+  'env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)';
+
+/**
  * The right-thumb cluster: A low on the right, B low on the left, C above between them, and
  * Select (the tool-belt swap) just up and to the left of C, so swapping sits next to using
  * and away from A/B. Start alone in the top-right corner. Everything scales with --ts.

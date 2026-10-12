@@ -19,6 +19,7 @@ import {
   SMALL_BUTTON,
   buttonShape,
   BUTTON_PLACES,
+  SAFE_INSET,
   touchPadVisible,
   type ButtonTarget,
   type DpadDirs,
@@ -93,7 +94,7 @@ export class TouchSource implements InputSource {
     const hitPad = ((DPAD_HIT_SCALE - 1) / 2) * 150;
     this.root.innerHTML = `
       <style>
-        .touch-controls { position: fixed; inset: 0; display: none; }
+        .touch-controls { position: fixed; inset: ${SAFE_INSET}; display: none; }
         .touch-controls.visible { display: block; }
         .touch-controls .tc { position: absolute; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
         .touch-controls .zone { left: 0; top: 0; width: ${FLOAT_ZONE_FRACTION * 100}%; height: 100%; display: none; }
@@ -265,7 +266,7 @@ export class TouchSource implements InputSource {
       // towards that edge (down at the bottom, left at the left) has no room.
       const c =
         this.style === 'floating'
-          ? clampCentre(e.clientX, e.clientY, rest.radius, innerWidth, innerHeight)
+          ? this.clampToSafeBox(e.clientX, e.clientY, rest.radius)
           : { cx: rest.x, cy: rest.y };
       this.pointers.set(e.pointerId, { kind: 'dpad', cx: c.cx, cy: c.cy, radius: rest.radius });
       this.moveDpad(e.clientX, e.clientY);
@@ -299,12 +300,21 @@ export class TouchSource implements InputSource {
     return { x: r.left + r.width / 2, y: r.top + r.height / 2, radius: r.width / DPAD_HIT_SCALE / 2 };
   }
 
+  /** clampCentre inside the pad's box (the screen less the safe-area insets), in client px. */
+  private clampToSafeBox(x: number, y: number, radius: number): { cx: number; cy: number } {
+    const b = this.root.getBoundingClientRect();
+    const w = b.width || innerWidth;
+    const h = b.height || innerHeight;
+    const c = clampCentre(x - b.left, y - b.top, radius, w, h);
+    return { cx: c.cx + b.left, cy: c.cy + b.top };
+  }
+
   private moveDpad(x: number, y: number): void {
     const p = [...this.pointers.values()].find((q) => q.kind === 'dpad');
     if (!p || p.kind !== 'dpad') return;
     if (this.style === 'floating') {
       const f = followCentre(p.cx, p.cy, x, y, p.radius);
-      const c = clampCentre(f.cx, f.cy, p.radius, innerWidth, innerHeight);
+      const c = this.clampToSafeBox(f.cx, f.cy, p.radius);
       p.cx = c.cx;
       p.cy = c.cy;
       const rest = this.restCentre();
