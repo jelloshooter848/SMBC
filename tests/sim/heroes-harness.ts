@@ -8,7 +8,7 @@ import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { px } from '@engine/math/units';
 import { ScriptedInput } from '@game/sim/headless';
-import { Game } from '@game/scenes/game';
+import { Game, type GameDeps } from '@game/scenes/game';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { LevelScene } from '@game/scenes/level';
 import { CardScene, CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
@@ -39,9 +39,10 @@ export function useStorage(): void {
 /**
  * `dev`: dev mode on (a file's "Chapter 2 gate: open" flag then lets the campaign into the Lost Kingdom).
  * `freshSeeds`: a fresh world seed every visit, as in play (main.ts); left off, every level keeps its
- * fixed seed, so a sim through Game repeats exactly.
+ * fixed seed, so a sim through Game repeats exactly. `deps`: more of the game's hooks (settings,
+ * the Home Screen's).
  */
-export function makeGame(opts: { dev?: boolean; freshSeeds?: boolean } = {}) {
+export function makeGame(opts: { dev?: boolean; freshSeeds?: boolean; deps?: Partial<GameDeps> } = {}) {
   const said: string[] = [];
   const assets = new AssetRegistry(PALETTES);
   assets.defineAll(SPRITES);
@@ -59,6 +60,7 @@ export function makeGame(opts: { dev?: boolean; freshSeeds?: boolean } = {}) {
     ...(opts.dev ? { settings: { dev: true } as Settings } : {}),
     ...(opts.freshSeeds ? { freshSeeds: true } : {}),
     announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
+    ...opts.deps,
   });
   const p1 = new ScriptedInput({ steps: [] });
   const p2 = new ScriptedInput({ steps: [] });

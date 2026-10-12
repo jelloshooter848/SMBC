@@ -1,4 +1,5 @@
 import { coinText } from '../items/wallet';
+import { mapNotice } from '../pwa/home-screen';
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Action } from '@engine/input/actions';
@@ -975,6 +976,8 @@ export class WorldMapScene implements Scene {
         this.updateFade();
         return;
       case 'idle':
+        // The one-time phone tip (0.4.44) waits over the map once the first clear is drawn in.
+        if (mapNotice(this.game)) return;
         this.updateIdle(input);
     }
   }

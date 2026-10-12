@@ -50,6 +50,17 @@ export interface Settings {
   announce: boolean;
   /** Developer mode (level select and test tools), unlocked with the title-screen code or ?dev=1. */
   dev: boolean;
+  /**
+   * Home Screen notes shown once (0.4.44), kept with the settings, not a save file: the phone
+   * tip after a first level (`tipDone`), and the Home Screen app's note on its own saves
+   * (`noticeDone`). Optional, so files saved before it existed need no migration.
+   */
+  homeScreen?: HomeScreenFlags;
+}
+
+export interface HomeScreenFlags {
+  tipDone: boolean;
+  noticeDone: boolean;
 }
 
 export const SETTINGS_KEY = 'smbc.settings';
@@ -79,6 +90,7 @@ export function defaultSettings(): Settings {
     packs: [],
     announce: true,
     dev: false,
+    homeScreen: { tipDone: false, noticeDone: false },
   };
 }
 
