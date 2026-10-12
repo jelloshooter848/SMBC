@@ -241,6 +241,10 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 - **Beams as items** (NEW): today the beam is a tier (`scratch.beam` 0-3: Power, Long, Ice, Wave), so Ice brings
   full range and Wave drops the freeze. As items: the Long Beam gives range to whichever beam is in use; Ice and
   Wave are both kept and WEAPON cycles beam, Ice, Wave and missiles (decision 7).
+- **Buttons** (0.4.43, owner): SHOOT always fires her beam, the last beam picked on the belt; the tool button
+  fires what is picked (a missile, or that beam) and reads as it on touch (MISSILE, BEAM, ICE, WAVE), as the
+  HUD's icon does; an item found (Missiles, Ice, Wave) is the one picked. In the ball both drop bombs. Classic
+  play keeps the original's: B the picked beam or missile, C always a missile.
 - **Drops**: missile packs drop only once she owns Missiles (decision 8; **today** they drop from the start, so
   missiles come at random).
 - **Hit**: 8 energy (4 with the Varia Suit). Nothing is lost. Unchanged.

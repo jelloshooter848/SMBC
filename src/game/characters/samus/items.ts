@@ -1,6 +1,14 @@
 import type { HeroItemRules } from '../../items/rules';
 import { has, setHas } from '../../items/flags';
-import { MAX_MISSILES, MAX_RESERVE_TANKS, RESERVE_TANK_ENERGY, START_ENERGY, maxHp, missiles } from './index';
+import {
+  MAX_MISSILES,
+  MAX_RESERVE_TANKS,
+  RESERVE_TANK_ENERGY,
+  START_ENERGY,
+  maxHp,
+  missiles,
+  pickFoundTool,
+} from './index';
 
 /** Missiles the launcher comes with, and each owned Missiles item adds. */
 export const MISSILES_PER_ITEM = 10;
@@ -30,9 +38,11 @@ export const SAMUS_ITEMS: HeroItemRules = {
       case 'missiles':
         setHas(p, id);
         p.scratch.missiles = Math.min(MAX_MISSILES, missiles(p) + MISSILES_PER_ITEM);
+        pickFoundTool(p, id);
         break;
       default:
         setHas(p, id);
+        pickFoundTool(p, id);
     }
     p.hp = maxHp(p);
   },
