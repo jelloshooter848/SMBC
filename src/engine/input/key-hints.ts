@@ -2,7 +2,7 @@ import type { Action } from './actions';
 import type { BindingMap, Code } from './bindings';
 import { describeCode } from './bindings';
 import type { TouchLabels } from './touch';
-import { BUTTON_PLACES } from './touch-logic';
+import { BUTTON_PLACES, SAFE_INSET } from './touch-logic';
 
 /** The keyboard key bound to each action, as the hints print it ("Z", "RIGHT SHIFT", "←"). */
 export type KeyHints = Partial<Record<Action, string>>;
@@ -77,7 +77,7 @@ export class KeyHintsOverlay {
         .join(' ');
     this.root.innerHTML = `
       <style>
-        .key-hints { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 1; font-family: system-ui, sans-serif; color: rgba(255,255,255,0.85); }
+        .key-hints { position: fixed; inset: ${SAFE_INSET}; pointer-events: none; display: none; z-index: 1; font-family: system-ui, sans-serif; color: rgba(255,255,255,0.85); }
         .key-hints.visible { display: block; }
         .key-hints .kh { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; width: ${Math.round(68 * SCALE)}px; height: ${Math.round(68 * SCALE)}px; border-radius: 50%; background: rgba(0,0,0,0.35); border: 2px solid rgba(255,255,255,0.3); text-align: center; line-height: 1.1; overflow: visible; }
         .key-hints .kh b { font-size: 11px; letter-spacing: 0.02em; white-space: nowrap; }

@@ -1,4 +1,6 @@
 import { SceneStack } from '@engine/scene';
+import { GestureGate } from '@engine/input/gesture';
+import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { GameContext, GameState } from '../context';
@@ -80,6 +82,11 @@ import { TownScene } from '../town/scene';
 import { DEV_VILLAGE, KAKARIKO, layUsedBlocks, openedBlocks, SECRET_HOUSE_LEVEL } from '../town/secret-house';
 import type { World } from '../world/world';
 import { TipLog } from '../tutorial/tips';
+import type { ShareEnv } from '../save/share-code';
+import { readSaveCode } from '../save/save-code';
+import { BackupCardScene } from './backup-card';
+import { LoadCodeScene } from './save-codes';
+import { FileSelectScene } from './file-select';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -111,14 +118,28 @@ export interface GameDeps {
    * after run, alone or in the full suite.
    */
   freshSeeds?: boolean;
+  /**
+   * The Home Screen (PWA) side, 0.4.44 (main.ts): platform, install prompt, the waiting update.
+   * Without it (the sims) Options has no ADD TO HOME SCREEN and no Home Screen notice shows.
+   */
+  homeScreen?: HomeScreenHooks;
+  /** The share sheet and clipboard for save codes (save/share-code.ts; default: the browser's). */
+  shareEnv?: ShareEnv;
+  /** Takes `#save=` off the page's address once a resume link was answered (main.ts). */
+  clearSaveLink?: () => void;
 }
 
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
 export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 
+/** A castle's main level id: SMB 'W-4' or the Lost Kingdom's 'll-W-4'. */
+export const isCastle = (id: string): boolean => /^(ll-)?\d+-4$/.test(id);
+
 /** Orchestrates scenes and carries GameState between levels. */
 export class Game {
   readonly scenes = new SceneStack();
+  /** The top scene's in-event confirm action (share, clipboard), run by main.ts's input handlers. */
+  readonly gestures = new GestureGate(() => this.scenes.top?.gesture?.() ?? null);
   state: GameState;
   /** The title's rift intro has had its turn this session (later titles use the quick drop). */
   titleIntroPlayed = false;
@@ -222,6 +243,13 @@ export class Game {
    * while it stays on and are never saved, so with it off the scene plays for real (markSeen).
    */
   private storyUnsaved = new Set<string>();
+  /**
+   * Campaign: a castle (X-4, SMB or Lost Kingdom) just cleared for the first time on this file, so
+   * the map offers "BACK UP YOUR GAME?" once it is the player's again (offerBackup). Null: none.
+   */
+  backupDue: string | null = null;
+  /** A resume link's code (`#save=`, main.ts), asked about once the title is up (offerSaveLink). */
+  saveLink: string | null = null;
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
@@ -270,7 +298,7 @@ export class Game {
       s.checkpoint = null;
       s.time = null;
       if (!isLostLevel(from)) this.mapProgress.gameCleared = true;
-      this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
+      this.addReveal(this.recordClear(from));
       this.autosave();
       if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
@@ -301,7 +329,7 @@ export class Game {
     if (campaign) {
       s.checkpoint = null;
       s.time = null;
-      this.addReveal(clearLevel(this.mapProgress, from, this.deps.getLevel));
+      this.addReveal(this.recordClear(from));
       this.autosave();
     }
     const below = this.scenes.top;
@@ -369,6 +397,7 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
+    this.backupDue = null;
     this.celebrate.clear();
     this.pendingReveal = [];
     this.devUnlockAll = false;
@@ -626,7 +655,56 @@ export class Game {
    */
   levelCleared(levelId: string): void {
     if (!this.campaign) return;
-    this.returnToMap(clearLevel(this.mapProgress, levelId, this.deps.getLevel));
+    this.returnToMap(this.recordClear(levelId));
+  }
+
+  /**
+   * Records a campaign clear on the map (rules.clearLevel; the revealIds it opens) and notes a
+   * castle's first clear for the backup card (backupDue): a castle cleared before never asks again.
+   */
+  private recordClear(levelId: string): string[] {
+    const main = mainLevel(levelId, this.deps.getLevel);
+    if (this.campaign && isCastle(main) && !this.mapProgress.cleared.includes(main)) this.backupDue = main;
+    return clearLevel(this.mapProgress, levelId, this.deps.getLevel);
+  }
+
+  /**
+   * The map is the player's again (WorldMapScene, idle): after a castle's first clear, the
+   * "BACK UP YOUR GAME?" card, once, while Options > Save files > Backup reminders is on (a game
+   * without settings, the headless sims, has none). True when the card opened.
+   */
+  offerBackup(): boolean {
+    const castle = this.backupDue;
+    if (castle === null) return false;
+    this.backupDue = null;
+    if (!this.campaign || this.mapUnlockAll || this.deps.settings?.backupReminders !== true) return false;
+    this.scenes.push(new BackupCardScene(this, this.campaign.slot));
+    return true;
+  }
+
+  /**
+   * The title is up: a resume link's code (`#save=`) asks which file to load it into (never
+   * replacing one without YES). However it is answered, the link leaves the address (a reload
+   * doesn't ask again); a file loaded opens the file select on it. True when it asked.
+   */
+  offerSaveLink(): boolean {
+    const code = this.saveLink;
+    if (code === null) return false;
+    this.saveLink = null;
+    this.scenes.push(
+      new LoadCodeScene(this, readSaveCode(code, 1), {
+        done: (slot) => {
+          this.deps.clearSaveLink?.();
+          if (slot === null) {
+            this.scenes.pop();
+            return;
+          }
+          this.scenes.clear();
+          this.scenes.push(new FileSelectScene(this, slot));
+        },
+      }),
+    );
+    return true;
   }
 
   /**
@@ -963,6 +1041,7 @@ export class Game {
     this.pendingLevel = null;
     this.quickRespawn = true;
     this.campaign = null;
+    this.backupDue = null;
     if (levelId === DEV_VILLAGE) {
       this.deps.ctx.audio.stopMusic();
       const scene = new TownScene(this, { first: false });
@@ -1004,6 +1083,7 @@ export class Game {
     this.playtestDone = done;
     this.quickRespawn = true;
     this.campaign = null;
+    this.backupDue = null;
     this.startLevel(level, { mode: 'stand' });
   }
 
@@ -1015,6 +1095,7 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
+    this.backupDue = null;
     this.startLevel(level, { mode: 'stand' });
   }
 
@@ -1024,6 +1105,7 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
+    this.backupDue = null;
     const id = this.pendingLevel ?? levelId;
     this.pendingLevel = null;
     this.goToLevel(id, { mode: 'stand' });
@@ -1043,6 +1125,7 @@ export class Game {
     this.pendingLevel = null;
     this.quickRespawn = false;
     this.campaign = { slot };
+    this.backupDue = null;
     this.campaignSave = save;
     this.pendingReveal = save.pendingReveal.slice();
     this.mapLastNode = { ...save.lastNode };

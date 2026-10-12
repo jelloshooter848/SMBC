@@ -8,6 +8,35 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Play from your Home Screen. The game installs as a full-screen app with its own pixel-art icon and plays offline
+  once loaded. Options → ADD TO HOME SCREEN opens the browser's install prompt (Android, Chrome, Edge), a
+  step-by-step guide on iPhone and iPad Safari, or "open this page in Safari first" in other iOS browsers.
+- When a new version has downloaded, the title shows UPDATE READY: OK updates now, BACK keeps playing.
+- A one-time tip after a new file's first level on a phone: add the game to the Home Screen for full screen and
+  offline play.
+- Portable save codes. Options → Save files gives each campaign file SHARE SAVE (the share sheet with a resume
+  link, or the link copied when there's no share sheet), COPY CODE and PASTE CODE, and the list itself has PASTE
+  CODE (from the clipboard, or a text box that finds the code in a pasted message). Codes are about 40 characters
+  early on and under 100 for a finished game; typos are caught, and old codes keep loading after updates. The
+  format is in docs/SAVE_CODES.md.
+- Resume links (`#save=…`): after the title the game asks LOAD THIS SAVE? and which file it goes into, and never
+  replaces a file without YES.
+- After each castle's first clear, a "BACK UP YOUR GAME?" card (SHARE SAVE · COPY CODE · NOT NOW). Options → Save
+  files → Backup reminders turns it off.
+- On its first launch, the iPhone Home Screen app explains that it keeps its own saves, separate from Safari's, and
+  that a save comes over with Options → Save files → PASTE CODE.
+
+### Changed
+
+- The touch pad, MENU and the game screen keep clear of the notch, rounded corners and home bar. No more
+  pull-to-refresh, bounce, long-press menus or double-tap zoom.
+
+### Fixed
+
+- Sound comes back after the app returns from the background on iPhone.
+
 ## [0.4.43] - 2026-10-12
 
 ### Changed

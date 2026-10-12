@@ -20,6 +20,7 @@ import type { Game } from './game';
 import { Player } from '../entities/player';
 import type { CharacterDef } from '../characters/character';
 import { listSaves } from '../save/save-files';
+import { titleNotice } from '../pwa/home-screen';
 import {
   bump,
   fall,
@@ -349,6 +350,10 @@ export class TitleScene extends MenuScene {
       return; // the press that skips never reaches the menu
     }
     this.tick();
+    // A resume link (#save=) opened: once the title is up, ask which file to load it into.
+    if (this.phase === 'ready' && this.game.offerSaveLink()) return;
+    // The Home Screen app's note and UPDATE READY (0.4.44) wait over the finished title.
+    if (this.phase === 'ready' && titleNotice(this.game)) return;
     if (this.unlockedFlash > 0) this.unlockedFlash--;
     if (this.cheat.feed(input)) {
       const s = this.game.deps.settings;

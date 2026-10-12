@@ -14,6 +14,7 @@ import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
 import { getLevel as getBuiltinLevel, levelIds } from '@content/levels';
 import { customLevelId, getCustomLevel, loadLibrary } from '@game/level/library';
 import { decodeShare } from '@engine/share';
+import { linkCode } from '@game/save/save-code';
 import { parseTextMap } from '@game/level/textmap';
 import { PALETTES, SPRITES } from '@content/sprites';
 import { songs } from '@content/music/songs';
@@ -24,6 +25,16 @@ import { DEFAULT_ASSIST } from '@game/context';
 import { MENU_TOUCH_LABELS } from '@game/touch-labels';
 import { miniGameFor } from '@game/minigames';
 import { isBonusKind, openBonusGame } from '@game/bonus';
+import {
+  captureInstallPrompt,
+  currentEnv,
+  installVariant,
+  isIOS,
+  isPhone,
+  isStandalone,
+} from '@engine/platform';
+import { stopPageZoom, watchServiceWorker } from '@engine/pwa';
+import { bindGestureKeys, CONFIRM_ACTIONS } from '@engine/input/gesture';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
@@ -57,7 +68,26 @@ function boot(): void {
   for (const ev of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click', 'gamepadconnected']) {
     window.addEventListener(ev, unlock, { passive: true });
   }
+  // Back from the background (the Home Screen app reopened, a call ended): sound comes back at
+  // once if iOS allows, else on the next tap (AudioManager.wake).
+  const wake = () => {
+    if (document.visibilityState === 'visible') audio.wake();
+  };
+  document.addEventListener('visibilitychange', wake);
+  window.addEventListener('pageshow', wake);
+  window.addEventListener('focus', wake);
   console.info(`SMBC REMIX ${__APP_VERSION__}`);
+
+  // Home Screen support (0.4.44): the browser's install prompt is saved for Options → ADD TO
+  // HOME SCREEN, and production builds register the offline service worker (never `pnpm dev`).
+  const platform = currentEnv();
+  const install = captureInstallPrompt(window);
+  const updates = watchServiceWorker(
+    import.meta.env.BASE_URL,
+    import.meta.env.PROD && 'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+    () => location.reload(),
+  );
+  stopPageZoom(document);
   const announcer = new Announcer(document.getElementById('announcer'));
 
   let fps = 0;
@@ -86,7 +116,18 @@ function boot(): void {
     announcer,
     titleIntro: true,
     freshSeeds: true,
+    homeScreen: {
+      ios: isIOS(platform),
+      phone: isPhone(platform),
+      standalone: isStandalone(platform),
+      variant: () => installVariant(platform, install.available),
+      prompt: () => install.prompt(),
+      updateReady: () => updates.ready,
+      applyUpdate: () => updates.apply(),
+    },
     applySettings: () => applySettings(),
+    // A resume link (#save=<code>) answered: off the address, so a reload doesn't ask again.
+    clearSaveLink: () => history.replaceState(history.state, '', location.pathname + location.search),
     lastInput: () => touch.lastInput,
     controlScheme: () =>
       touch.shown
@@ -96,10 +137,23 @@ function boot(): void {
           : 'keyboard',
   });
 
+  // Sharing and the clipboard run inside the confirm key's or touch button's own event (iOS
+  // allows them only there; engine/input/gesture.ts): a key on its way down, a touch button as it
+  // lifts.
+  const isConfirmKey = (code: string) =>
+    settings.input.bindings.some((b) => CONFIRM_ACTIONS.some((a) => b?.keyboard[a]?.includes(code)));
+  bindGestureKeys(game.gestures, window, isConfirmKey);
+  touch.onButton = (action, down) => {
+    if (!(CONFIRM_ACTIONS as readonly string[]).includes(action)) return;
+    if (down) game.gestures.touchDown();
+    else game.gestures.touchUp();
+  };
+
   const loop = new FixedLoop({
     step() {
       input.beginFrame();
       game.scenes.update([input.player(0), input.player(1)]);
+      game.gestures.endFrame();
       // The buttons say what they do in the scene now on top: its labels over the menu defaults
       // (setLabels only touches buttons whose label changed).
       const labels = { ...MENU_TOUCH_LABELS, ...game.scenes.top?.touchLabels?.() };
@@ -175,6 +229,13 @@ function boot(): void {
     applySettings();
   }
   const shared = /^#level=([A-Za-z0-9_-]+)/.exec(location.hash)?.[1];
+  // A save code's resume link: the title asks which file to load it into (Game.offerSaveLink).
+  game.saveLink = linkCode(location.hash);
+  // A resume link pasted into the address bar of the open game changes only the hash.
+  window.addEventListener('hashchange', () => {
+    const code = linkCode(location.hash);
+    if (code !== null) game.saveLink = code;
+  });
   const level = params.get('level');
   if (level) {
     const c1 =

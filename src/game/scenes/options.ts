@@ -10,6 +10,8 @@ import { nextTouchMode } from '@engine/input/touch-logic';
 import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import { GuideIndexScene } from './guide';
+import { homeScreenItems } from '../pwa/home-screen';
+import { SaveFilesOptions } from './save-codes';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const onOff = (b: boolean) => (b ? 'On' : 'Off');
@@ -25,11 +27,18 @@ export class OptionsScene extends MenuScene {
       { label: 'Audio', select: () => this.push(new AudioOptions(game, () => this.pop())) },
       { label: 'Controls', select: () => this.push(new ControlsOptions(game, () => this.pop())) },
       {
+        label: 'Save files',
+        select: () => this.push(new SaveFilesOptions(game, () => this.pop(), translucent)),
+        hint: 'Share, copy or paste save codes',
+      },
+      {
         label: 'How to play',
         select: () => this.push(new GuideIndexScene(game, () => this.pop())),
         hint: 'Controls and power-ups for every hero',
       },
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
+      // iPhone Home Screen support (0.4.44): only where it can help (hidden in the app itself).
+      ...homeScreenItems(game, (s) => (this.status = s)),
       // The editor leaves the current game, so it is only offered from the title.
       ...(translucent ? [] : [{ label: 'Level editor', select: () => game.openEditor() }]),
       { label: 'Back', select: onBack },
