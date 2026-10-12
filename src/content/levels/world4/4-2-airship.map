@@ -23,8 +23,10 @@ parent: 4-2
 ;;   propeller turns under the prow's bottom hull (23).
 ;; - MIDDLE (33-70): the long low main deck (row 12) on two hull segments with a 2-wide gap
 ;;   (50-51), a propeller behind each (49, 65); a 3-tall blaster post (44, its Bullet Bills flying
-;;   just over a standing hero's head), a plain post (59) and a ? block (55, row 7: 5 rows above
-;;   the deck so a Bullet Bill can be jumped under it; mushroom, or fire flower when big). Above
+;;   just over a standing hero's head), a plain post (59) and a ? block (55, row 8: 4 rows above
+;;   the deck; mushroom, or fire flower when big) with a low crate step beside it (53-54, 0.4.43,
+;;   #34: at row 7 nobody but a small Mario's Mushroom reached the item resting on it, Mega Man's
+;;   Helmet included, and the turret blocks the post's way; tests/sim/airship-items.test.ts). Above
 ;;   it the plank overhang (row 3, 40-60) with cannons hanging under it aimed down-left (43, 49)
 ;;   and a three-cannon turret (56-57: left, right and down-left, so nothing crosses fire over
 ;;   the gap), and at its right end the thick block (61-75, rows 3-5) over the metal gateway
@@ -46,11 +48,11 @@ parent: 4-2
 ................ ................ ................ .............### ############.... ................ ..  ;; 4
 ................ ................ ................ .............### ############.... ................ ..  ;; 5
 ................ ...............B B............... .............t.. ....t........... ..............[] ..  ;; 6
-##########...... ...............B B............... .......M.....t.. ....t........... ..............{} ..  ;; 7
-.#########...... ............BB^B B............... .............t.. ....t........... ...........##### ##  ;; 8
+##########...... ...............B B............... .............t.. ....t........... ..............{} ..  ;; 7
+.#########...... ............BB^B B............... .......M.....t.. ....t........... ...........##### ##  ;; 8
 ..############## ################ #...........^... .............t.. ....t........... .........####### ##  ;; 9
 ...############# ################ #...........|... ...........B.t.. ....t........... .......#####%### %#  ;; 10
-....############ ################ #...........|... ...........B.t.. ....t........... .....########### ##  ;; 11
+....############ ################ #...........|... .....BB....B.t.. ....t........... .....########### ##  ;; 11
 ......########## ################ ################ ##..############ #######......... ...############# ##  ;; 12
 ........######## #######......... ..############## #....########### #......######### ###########..... ..  ;; 13
 ................ ................ ................ ................ .......######### ###########..... ..  ;; 14
@@ -91,7 +93,7 @@ smb3:railing 97 7
 
 [hero-items]
 ;; x y   hero=item ...   (docs/POWERUPS.md 6.3; a hero not named gets their default power)
-55 7 link=fire-spell megaman=homing-knuckle simon=cross ryu=fire-wheel
+55 8 link=fire-spell megaman=homing-knuckle simon=cross ryu=fire-wheel
 
 [variant megaman]
 ;; Mega Man's airship, the "Wily-sky remix" (0.4.39, owner's v0.4.34 play-test notes; campaign

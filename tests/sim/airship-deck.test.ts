@@ -63,8 +63,10 @@ describe('the airship deck layout (SMB3 World 1 airship)', () => {
     expect(t(32, 9)).toBe(T.GROUND);
     expect(t(33, 12)).toBe(T.GROUND);
     expect(t(33, 9)).toBe(T.AIR);
-    // The ? block mid-ship, 5 rows above the deck.
-    expect(t(55, 7)).toBe(T.Q_POWERUP);
+    // The ? block mid-ship, 4 rows above the deck, a crate step beside it (0.4.43, #34: its item
+    // in reach of every hero; tests/sim/airship-items.test.ts).
+    expect(t(55, 8)).toBe(T.Q_POWERUP);
+    for (const x of [53, 54]) expect(t(x, 11)).toBe(t(59, 11));
     // The overhang and its hanging cannons.
     expect(t(45, 3)).toBe(T.BRIDGE);
     const hanging = deck.entities.filter((e) => e.type === 'cannon' && e.y <= 6);

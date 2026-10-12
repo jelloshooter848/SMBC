@@ -457,7 +457,7 @@ the tables on the spot).
 | 4-2 (120,5) brick                | Blue Ring    | Rush     | Ice Beam   | Morning Star | Windmill   | _M_  | Wall Climb    |
 | 4-2 (161,9) brick                | Jump Spell   | Knuckle  | Varia Suit | Double Shot  | Fire Wheel | L    | Ceiling Climb |
 | 4-2-cavern (38,8) ?, off path    | _Bomb Bag_   | _Saw_    | Varia Suit | Axe          | Fire Wheel | _M_  | _Crusher_     |
-| 4-2-airship (55,7) ?, off path   | Fire Spell   | Knuckle  | _Missiles_ | Cross        | Fire Wheel | _M_  | _Crusher_     |
+| 4-2-airship (55,8) ?, off path   | Fire Spell   | Knuckle  | _Missiles_ | Cross        | Fire Wheel | _M_  | _Crusher_     |
 | 4-3 (43,2) ?                     | _Bomb Bag_   | Flame    | Long Beam  | Double Shot  | _T. Star_  | L    | Ceiling Climb |
 
 The cavern is Samus's own side area (she is captive there, so it is for the others the first time); the airship
