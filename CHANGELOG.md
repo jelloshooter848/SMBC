@@ -15,7 +15,7 @@ under `## [Unreleased]`.
 - Tips stay on screen until the next one replaces it, and the pause menu in training and in 1-0 has LAST TIPS: the
   last three tips, read out again.
 - Samus: SHOOT always fires her beam, the tool button fires the weapon picked and its label follows, and a new find
-  is picked as you take it.
+  is picked as you take it. On touch, the tool and WEAPON buttons stay hidden until she has a second weapon.
 - Kakariko: every hero walks four ways, like Link's keep.
 - LARRY KOOPA is named in full.
 - Ryu's dojo: the trap door drops you into 6-2 from above, onto open street, instead of up out of a pipe.

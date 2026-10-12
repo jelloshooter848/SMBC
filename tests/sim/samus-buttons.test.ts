@@ -105,6 +105,20 @@ describe("Samus's buttons (campaign)", () => {
     expect(activeTool(p, SAMUS.tools?.(p) ?? [])?.id).toBe('wave');
   });
 
+  it('with only her first beam, the tool and WEAPON buttons stay hidden on touch (they would repeat SHOOT)', () => {
+    const p = new Player(0, 0, SAMUS, 'full', 30);
+    Object.assign(p.scratch, heroStart(SAMUS).kit, { [FOUND]: 1 });
+    expect(SAMUS.tools?.(p).length).toBe(1);
+    expect(SAMUS.touchLabels?.(p, {} as World)).toEqual({ attack: 'SHOOT', special: null, select: null });
+    itemRules('samus')?.give(p, 'missiles');
+    p.scratch.missiles = 5;
+    expect(SAMUS.touchLabels?.(p, {} as World)).toEqual({
+      attack: 'SHOOT',
+      special: 'MISSILE',
+      select: 'WEAPON',
+    });
+  });
+
   it('classic play keeps the original buttons: C always a missile, B the selected beam or missile', () => {
     const log = play({ missiles: 10, tool: 1 }, { 0: 'attack', 20: 'special' });
     expect(log.map((l) => l.split(' ')[0])).toEqual(['attack:missile', 'special:missile']);

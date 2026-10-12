@@ -8,6 +8,7 @@ import { Bomb } from '../../entities/objects/bomb';
 import { STAR_FRAMES } from '../../constants';
 import { SAMUS_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
+import { beltButton } from '../../touch-labels';
 import { BEAMS, ICE_BEAM, LONG_BEAM, MISSILE, POWER_BEAM, WAVE_BEAM } from './weapons';
 import { has, isFound } from '../../items/flags';
 
@@ -298,13 +299,17 @@ export const SAMUS: CharacterDef = {
     const missile = missiles(p) > 0 ? 'MISSILE' : null;
     const selected = activeTool(p, tools(p))?.id;
     // Campaign (0.4.43, owner): B always shoots her beam; C is the weapon picked on the belt and
-    // reads as it (a missile button hides with none left).
-    if (isFound(p))
+    // reads as it (a missile button hides with none left). With only her first beam, C and WEAPON
+    // would just repeat SHOOT, so both stay hidden until she finds a second weapon (owner).
+    if (isFound(p)) {
+      const belt = tools(p);
+      const label = selected === 'missile' ? missile : (SAMUS_TOOL_LABELS[selected ?? 'beam'] ?? 'BEAM');
       return {
         attack: 'SHOOT',
-        special: selected === 'missile' ? missile : (SAMUS_TOOL_LABELS[selected ?? 'beam'] ?? 'BEAM'),
-        select: 'WEAPON',
+        special: label === null ? null : beltButton(belt, label),
+        select: beltButton(belt, 'WEAPON'),
       };
+    }
     // Classic: B fires the selected beam or missile and C always a missile.
     return { attack: selected === 'missile' ? missile : 'SHOOT', special: missile, select: 'WEAPON' };
   },
