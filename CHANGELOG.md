@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.43] - 2026-10-12
+
 ### Changed
 
 - Talking is the TALK button only, everywhere: in levels, on the world map and in Kakariko. UP no longer talks, so
@@ -973,7 +975,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.42...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.43...HEAD
+[0.4.43]: https://github.com/jelloshooter848/SMBC/compare/v0.4.42...v0.4.43
 [0.4.42]: https://github.com/jelloshooter848/SMBC/compare/v0.4.41...v0.4.42
 [0.4.41]: https://github.com/jelloshooter848/SMBC/compare/v0.4.40...v0.4.41
 [0.4.40]: https://github.com/jelloshooter848/SMBC/compare/v0.4.39...v0.4.40
