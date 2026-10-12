@@ -10,7 +10,7 @@ import { T } from '@game/level/tiles';
 import { MARIO_10, MARIO_LESSONS, SPRINT_FRAMES } from '@game/tutorial/mario-1-0';
 import { GATE_FRAME, GATE_STOP_FRAMES } from '@game/tutorial/stage-tutorial';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
-import { playTutorial, tutorialBot } from './tutorial-bot';
+import { okTip, passTip, playTutorial, stepPast, tipHeld, tutorialBot } from './tutorial-bot';
 
 // 1-0's training as the owner asked for it in 0.4.36 (tutorial/mario-1-0.ts): a real sustained
 // sprint opens the stretch's gate (walking, tapping RUN or a short burst never does); two gaps only a
@@ -27,8 +27,11 @@ const lessonId = (h: H) => (h.top() instanceof LevelScene ? director(h)?.lesson?
 const col = (h: H) => tileAt(level(h).world.player.centerX);
 const at = (id: string) => MARIO_LESSONS.find((l) => l.id === id)?.at;
 
-/** A campaign file on 1-0, past Toad's greeting, played by the bot up to lesson `id`. */
-function upTo(id: string): H {
+/**
+ * A campaign file on 1-0, past Toad's greeting, played by the bot up to lesson `id`, then on until
+ * its tip is up (`play` false: standing still meanwhile).
+ */
+function upTo(id: string, play = true): H {
   const h = makeGame();
   file();
   h.game.openFile(1);
@@ -41,6 +44,8 @@ function upTo(id: string): H {
     h.tap('jump');
   }
   playTutorial(h, () => lessonId(h) === id);
+  // Its tip up, and OK on it (a new tip holds the game, 0.4.45); the bot plays on meanwhile.
+  passTip(h, () => (play ? tutorialBot(h) : []));
   return h;
 }
 
@@ -53,7 +58,7 @@ function untilCard(h: H, input: (f: number) => Action[], max = 2400): CardScene 
   for (let f = 0; f < max && !(h.top() instanceof CardScene); f++) {
     const b = level(h).world.player.body;
     last = { ground: b.onGround, vx: Math.abs(b.vx) };
-    h.step(input(f));
+    stepPast(h, input(f));
   }
   expect(h.top()).toBeInstanceOf(CardScene);
   expect(last.ground).toBe(true);
@@ -63,8 +68,24 @@ function untilCard(h: H, input: (f: number) => Action[], max = 2400): CardScene 
 
 /** Steps `input` until `stop` holds (at most `max` frames), and checks it did. */
 function hold(h: H, input: Action[], stop: () => boolean, max: number): void {
-  for (let i = 0; i < max && !stop(); i++) h.step(input);
+  for (let i = 0; i < max && !stop(); i++) stepPast(h, input);
   expect(stop()).toBe(true);
+}
+
+/** Walking right, hopping any low wall in the way (the Goomba's pen wall). */
+function hopRight(h: H): Action[] {
+  const w = level(h).world;
+  const b = w.player.body;
+  const row = tileAt(b.y + b.h - 1);
+  const gates = level(h).tutorial?.closedGates ?? [];
+  const edge = tileAt(b.x + b.w);
+  const wall = [edge, edge + 1].some((c) => w.map.isSolid(c, row) && !gates.includes(c));
+  return ['right', ...((b.onGround && wall) || (!b.onGround && b.vy < 0) ? (['jump'] as Action[]) : [])];
+}
+
+/** No Goomba this frame (a lost one drops back in at once while the stomp is not done). */
+function clearGoombas(h: H): void {
+  for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
 }
 
 /** OK on Toad's card: back in the level, standing. */
@@ -137,7 +158,7 @@ describe('the gaps: only a sprinting jump clears them', () => {
         const input: Action[] = ['right'];
         if ((b.onGround && toPx(b.x + b.w) >= gap.x * 16 - 2) || (!b.onGround && b.vy < 0))
           input.push('jump');
-        h.step(input);
+        stepPast(h, input);
         const y = level(h).world.player.body.y;
         fell ||= y > tileToSub(13);
         back = fell && y < tileToSub(2);
@@ -148,16 +169,102 @@ describe('the gaps: only a sprinting jump clears them', () => {
       expect(lessonId(h), id).toBe(id);
       expect(h.game.state.lives, id).toBe(lives);
       // From there, a sprint and a jump from the edge clear it.
-      for (let i = 0; i < 600 && lessonId(h) !== next; i++) h.step(tutorialBot(h));
+      for (let i = 0; i < 600 && lessonId(h) !== next; i++) stepPast(h, tutorialBot(h));
       expect(lessonId(h), id).toBe(next);
       expect(col(h), id).toBeGreaterThanOrEqual(gap.x + gap.w);
     }
   });
 });
 
+/**
+ * The bot over both gaps (OK on their tips), then `after` held on the ground beyond, until the
+ * stomp's tip holds the game.
+ */
+function sprintOn(h: H, after: Action[]): void {
+  for (let i = 0; i < 1500; i++) {
+    const id = lessonId(h);
+    if (tipHeld(h)) {
+      if (id === 'stomp') return;
+      okTip(h);
+      continue;
+    }
+    h.step(id === 'gap1' || id === 'gap2' ? tutorialBot(h) : after);
+  }
+}
+
+describe('the runway after the sprint-jump (0.4.45, #15)', () => {
+  it("a sprint that never stops: the stomp's tip holds the game before the Goomba's wall is reached, the wall at the screen's right edge or past it", () => {
+    const h = upTo('gap1');
+    // Over both gaps at a sprint, then on and on at top speed.
+    sprintOn(h, ['right', 'run']);
+    expect(tipHeld(h)).toBe(true);
+    expect(lessonId(h)).toBe('stomp');
+    const w = level(h).world;
+    const b = w.player.body;
+    expect(b.onGround).toBe(true);
+    expect(toPx(b.x + b.w)).toBeLessThan(M.goombaWall * 16);
+    expect(M.goombaWall * 16 - w.camera.pxX).toBeGreaterThanOrEqual(256 - 16);
+    // The Goomba is nowhere near him.
+    for (const e of w.entities)
+      if (e instanceof Goomba) expect(e.body.x).toBeGreaterThan(tileToSub(M.goombaWall));
+  });
+
+  it('a walk after the gap: the tip comes with the wall still off-screen', () => {
+    const h = upTo('gap1');
+    sprintOn(h, ['right']);
+    expect(tipHeld(h)).toBe(true);
+    expect(M.goombaWall * 16 - level(h).world.camera.pxX).toBeGreaterThanOrEqual(256);
+  });
+});
+
+describe("the stomp's Goomba (0.4.45, #16)", () => {
+  it('a block wall on the pit side keeps it penned: left alone a minute, it never reaches the pit', () => {
+    const h = upTo('stomp', false);
+    const w = () => level(h).world;
+    for (let row = 11; row <= 12; row++) expect(w().map.isSolid(M.goombaWall, row)).toBe(true);
+    // Up to the wall, then wait there for a minute.
+    hold(h, ['right'], () => col(h) >= M.goombaWall - 1, 900);
+    const g = w().entities.find((e): e is Goomba => e instanceof Goomba && e.alive);
+    expect(g).toBeDefined();
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 0; i < 3600; i++) {
+      stepPast(h, []);
+      const x = toPx(g!.body.x);
+      lo = Math.min(lo, x);
+      hi = Math.max(hi, x);
+    }
+    expect(g!.alive).toBe(true);
+    expect(lo).toBeGreaterThanOrEqual((M.goombaWall + 1) * 16);
+    expect(hi).toBeLessThan(M.stompGate * 16);
+    expect(lessonId(h)).toBe('stomp');
+  });
+
+  it('a Goomba lost anyway comes back, dropping into the pen', () => {
+    const h = upTo('stomp', false);
+    hold(h, ['right'], () => col(h) >= M.goombaWall - 3, 900);
+    const w = level(h).world;
+    for (const e of w.entities) if (e instanceof Goomba) e.destroy();
+    h.idle(2);
+    let back: Goomba | undefined;
+    for (let i = 0; i < 120 && !back; i++) {
+      stepPast(h, []);
+      back = w.entities.find((e): e is Goomba => e instanceof Goomba && e.alive);
+    }
+    expect(back).toBeDefined();
+    h.idle(120);
+    expect(back!.body.onGround).toBe(true);
+    const x = toPx(back!.body.x);
+    expect(x).toBeGreaterThan(M.goombaWall * 16);
+    expect(x).toBeLessThan(M.stompGate * 16);
+    // And a stomp still opens the way.
+    playTutorial(h, () => lessonId(h) === 'block');
+  });
+});
+
 describe('a task walked past is put back, never mid-move', () => {
   it('jump the Goomba and walk on: at the gate Toad waits for a press, then Mario stands before a fresh Goomba', () => {
-    const h = upTo('stomp');
+    const h = upTo('stomp', false);
     // Over the Goomba with a running jump, and on to the gate.
     const card = untilCard(h, () => {
       const w = level(h).world;
@@ -178,17 +285,24 @@ describe('a task walked past is put back, never mid-move', () => {
     okCard(h);
     expect(col(h)).toBe(at('stomp'));
     expect(lessonId(h)).toBe('stomp');
-    h.until(() => level(h).world.entities.some((e) => e instanceof Goomba && e.alive), 300);
+    const goomba = () => level(h).world.entities.some((e) => e instanceof Goomba && e.alive);
+    for (let i = 0; i < 900 && !goomba(); i++) h.step(hopRight(h));
+    expect(goomba()).toBe(true);
     // A bump into the gate on the way is not a stop: no card until he stands there.
     expect(GATE_STOP_FRAMES).toBeGreaterThanOrEqual(20);
   });
 
   it('a jump against the gate never brings the card while in the air', () => {
-    const h = upTo('stomp');
-    for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
+    const h = upTo('stomp', false);
     // Walk to the gate, then keep hopping against it: no card while he hops.
-    hold(h, ['right'], () => col(h) === M.stompGate - 1, 900);
+    const there = () => col(h) === M.stompGate - 1 && level(h).world.player.body.onGround;
+    for (let i = 0; i < 900 && !there(); i++) {
+      clearGoombas(h);
+      stepPast(h, hopRight(h));
+    }
+    expect(there()).toBe(true);
     for (let i = 0; i < 240; i++) {
+      clearGoombas(h);
       const b = level(h).world.player.body;
       h.step(
         b.onGround && (i & 1) === 0
@@ -199,6 +313,147 @@ describe('a task walked past is put back, never mid-move', () => {
     }
   });
 });
+
+describe('the crouch-slide and the brick ceiling (0.4.45, #18, #19)', () => {
+  const ids = MARIO_LESSONS.map((l) => l.id);
+
+  it('the mushroom comes first; the slide, then the ceiling', () => {
+    expect(ids.indexOf('grow')).toBeLessThan(ids.indexOf('slide'));
+    expect(ids.indexOf('slide')).toBe(ids.indexOf('climb') + 1);
+    expect(ids.indexOf('wall')).toBe(ids.indexOf('slide') + 1);
+  });
+
+  it('a low gap under a wall that reaches the top of the screen: big Mario walking never gets under; a crouch-slide does', () => {
+    const h = upTo('slide');
+    const w = () => level(h).world;
+    const { from, to } = M.lowWall;
+    for (let c = from; c <= to; c++) {
+      for (let row = 0; row <= 11; row++) expect(w().map.isSolid(c, row), `${c},${row}`).toBe(true);
+      expect(w().map.isSolid(c, 12)).toBe(false);
+    }
+    expect(level(h).world.player.powerState).toBe('big');
+    // Walking and running into it, jumping at it: never past it.
+    for (let i = 0; i < 600; i++) {
+      const b = w().player.body;
+      stepPast(h, ['right', 'run', ...(b.onGround && i % 40 === 0 ? (['jump'] as Action[]) : [])]);
+    }
+    expect(toPx(w().player.body.x + w().player.body.w)).toBeLessThanOrEqual(from * 16);
+    expect(lessonId(h)).toBe('slide');
+    // Back off, run at it and duck: under, and into the room.
+    playTutorial(h, () => lessonId(h) === 'wall');
+    const b = w().player.body;
+    expect(toPx(b.x + b.w)).toBeGreaterThanOrEqual((from + 1) * 16);
+    expect(w().player.crouching).toBe(true);
+    // On through, into the room.
+    playTutorial(h, () => col(h) > to, 600);
+    expect(col(h)).toBeLessThan(M.brickWall.x);
+  });
+
+  it('in the room, bricks from the side never break; only up through the ceiling', () => {
+    const h = upTo('wall', false);
+    const w = () => level(h).world;
+    for (let row = M.brickWall.top; row <= 12; row++) expect(w().map.isSolid(M.brickWall.x, row)).toBe(true);
+    for (let i = 0; i < 300; i++) stepPast(h, ['right', 'run']);
+    expect(w().feats.bricks).toBe(0);
+    expect(col(h)).toBeLessThan(M.brickWall.x);
+    expect(lessonId(h)).toBe('wall');
+  });
+
+  it('small Mario in the room is never stranded: Toad makes him big again, back in the room', () => {
+    const h = upTo('wall', false);
+    const w = () => level(h).world;
+    // The slide over: standing in the room.
+    hold(h, [], () => w().player.body.vx === 0 && w().player.body.onGround, 120);
+    const p = w().player;
+    p.powerState = 'small';
+    p.refitHitbox();
+    h.game.state.powerState = 'small';
+    // Standing small in the lesson: Toad's card, then he stands big in the room.
+    const d = director(h);
+    const card = untilCard(h, () => []);
+    expect(card.lines.join(' ')).toMatch(/BIG/);
+    expect(d?.cardKind).toBe('small');
+    okCard(h);
+    expect(lessonId(h)).toBe('wall');
+    expect(level(h).world.player.powerState).toBe('big');
+    playTutorial(h, () => lessonId(h) === 'star');
+  });
+});
+
+describe('a Star hidden in a brick, then a crowd (0.4.45, #17)', () => {
+  it('one of the bricks hides a Star; the Star runs Mario through the crowd', () => {
+    const h = upTo('star');
+    const w = () => level(h).world;
+    expect(w().map.get(M.starBrick.x, M.starBrick.y)).toBe(T.BRICK_STAR);
+    expect(director(h)?.lines().join(' ')).toMatch(/BRICK/);
+    playTutorial(h, () => lessonId(h) === 'crowd');
+    expect(w().player.star).toBeGreaterThan(0);
+    expect(director(h)?.lines().join(' ')).toMatch(/STAR/);
+    const lives = h.game.state.lives;
+    playTutorial(h, () => lessonId(h) === 'flag');
+    expect(h.game.state.lives).toBe(lives);
+    expect(w().player.powerState).toBe('big');
+  });
+
+  it('the crowd is passable without the Star (the Star run out): it opens the way', () => {
+    const h = upTo('crowd');
+    const p = level(h).world.player;
+    p.star = 0;
+    playTutorial(h, () => lessonId(h) === 'flag' || !(h.top() instanceof LevelScene), 4000);
+    expect(lessonId(h)).toBe('flag');
+  });
+
+  it("a Star missed (it got away): Toad's card, and the brick stands again", () => {
+    const h = upTo('star', false);
+    const w = level(h).world;
+    w.strikeBlock(M.starBrick.x, M.starBrick.y, w.player, true);
+    h.idle(30);
+    for (const e of w.entities) if (e.kind === 'powerup') e.alive = false;
+    const d = director(h);
+    const card = untilCard(h, () => []);
+    expect(d?.cardKind).toBe('spent');
+    expect(card.lines.join(' ')).toMatch(/STAR/);
+    okCard(h);
+    expect(level(h).world).not.toBe(w);
+    expect(level(h).world.map.get(M.starBrick.x, M.starBrick.y)).toBe(T.BRICK_STAR);
+    expect(lessonId(h)).toBe('star');
+  });
+
+  it('skip the Star: the crowd still lets him through to its gate, where Toad sends him back for it', () => {
+    const h = upTo('star', false);
+    expect(director(h)?.closedGates).toContain(M.crowdGate);
+    // Run and hop the Goombas, never bumping the bricks.
+    const card = untilCard(h, () => crowdHop(h));
+    expect(card.lines.join(' ')).toMatch(/STAR/);
+    expect(col(h)).toBe(M.crowdGate - 1);
+    okCard(h);
+    expect(lessonId(h)).toBe('star');
+    expect(col(h)).toBe(at('star'));
+  });
+
+  it('a death in the crowd: back before the bricks, the Star there again', () => {
+    const h = upTo('crowd');
+    const w0 = level(h).world;
+    w0.player.star = 0;
+    w0.kill(w0.player);
+    h.until(() => h.top() instanceof LevelScene && level(h).world !== w0 && level(h).world.frame > 30, 600);
+    expect(lessonId(h)).toBe('star');
+    expect(level(h).world.map.get(M.starBrick.x, M.starBrick.y)).toBe(T.BRICK_STAR);
+    expect(level(h).world.player.powerState).toBe('big');
+  });
+});
+
+/** Running right, hopping each Goomba ahead and the low wall: the crowd without a Star. */
+function crowdHop(h: H): Action[] {
+  const w = level(h).world;
+  const b = w.player.body;
+  const g = w.entities.some(
+    (e) => e instanceof Goomba && e.alive && e.body.x > b.x && e.body.x - b.x < tileToSub(3),
+  );
+  const out: Action[] = ['right'];
+  if ((b.onGround && g) || (!b.onGround && b.vy < 0)) out.push('jump');
+  return out;
+}
 
 describe('the hidden vine and the brick wall', () => {
   it("an empty-looking spot at the tall wall's foot hides a vine, the only way over", () => {
@@ -212,30 +467,26 @@ describe('the hidden vine and the brick wall', () => {
     playTutorial(h, () => lessonId(h) === 'climb');
     expect(w().entities.some((e) => e instanceof Vine && e.alive)).toBe(true);
     expect(w().map.isSolid(M.vine.x, M.vine.y)).toBe(true);
-    playTutorial(h, () => lessonId(h) === 'wall');
+    playTutorial(h, () => lessonId(h) === 'slide');
     const b = w().player.body;
     expect(b.y + b.h).toBeLessThanOrEqual(tileToSub(M.vineWall.top));
   });
 
-  it('small Mario only bumps the bricks; big Mario smashes up through them', () => {
-    const h = upTo('wall');
+  it('big Mario smashes up through the brick ceiling, the only way on', () => {
+    const h = upTo('wall', false);
     const w = () => level(h).world;
     const shut = () => w().map.isSolid(M.bricks.to, 9) || w().map.isSolid(M.bricks.to, 10);
-    // Small: the bot jumps into them for a while, and they hold.
-    const p = w().player;
-    p.powerState = 'small';
-    p.refitHitbox();
-    h.game.state.powerState = 'small';
-    for (let i = 0; i < 900; i++) h.step(tutorialBot(h));
     expect(shut()).toBe(true);
-    expect(lessonId(h)).toBe('wall');
-    // Big again: through, and onto the step out.
-    p.powerState = 'big';
-    p.refitHitbox();
-    h.game.state.powerState = 'big';
-    playTutorial(h, () => lessonId(h) === 'flag');
+    playTutorial(h, () => lessonId(h) === 'star');
     expect(shut()).toBe(false);
     expect(w().feats.bricks).toBeGreaterThanOrEqual(2);
+  });
+
+  it('the brick tip says Mario breaks bricks from below, never from the side, and fits the box', () => {
+    const h = upTo('wall');
+    const d = director(h)!;
+    expect(d.lines().join(' ')).toMatch(/^MARIO BREAKS BRICKS FROM BELOW, NEVER FROM THE SIDE\./);
+    expect(d.lines().length).toBeLessThanOrEqual(3);
   });
 
   it('past the mushroom, a respawn comes back big (the brick wall needs it)', () => {
@@ -263,14 +514,15 @@ describe('the hidden vine and the brick wall', () => {
   });
 
   it('a closed gate is drawn as a column of barrier blocks; an open one is gone', () => {
-    const h = upTo('stomp');
-    h.until(() => {
-      h.step(['right']);
-      return col(h) >= M.stompGate - 8;
-    }, 900);
+    const h = upTo('stomp', false);
+    for (let i = 0; i < 900 && col(h) < M.stompGate - 8; i++) {
+      clearGoombas(h);
+      stepPast(h, hopRight(h));
+    }
+    expect(col(h)).toBeGreaterThanOrEqual(M.stompGate - 8);
     const gate = () => draw(level(h)).sprites.filter((x) => x.frame === GATE_FRAME).length;
     expect(gate()).toBe(13 - 6);
-    for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
+    clearGoombas(h);
     level(h).world.feats.stomps = 1;
     h.step();
     expect(director(h)?.closedGates).not.toContain(M.stompGate);

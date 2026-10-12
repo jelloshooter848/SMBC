@@ -349,7 +349,7 @@ export class HeroStageScene implements Scene, TutorialHost {
 
   touchLabels(): TouchLabels {
     if (this.over) return { ...NO_TOUCH_BUTTONS };
-    return levelTouchLabels(this.world.players[0], this.world);
+    return this.director.heldTouchLabels() ?? levelTouchLabels(this.world.players[0], this.world);
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
@@ -372,6 +372,8 @@ export class HeroStageScene implements Scene, TutorialHost {
       );
       return;
     }
+    // A new tip holds the game until OK (0.4.45): the stage stays frozen.
+    if (this.director.hold([frame])) return;
     const world = this.world;
     world.update([frame]);
     // The top of the screen is a ceiling here: no hero gets over a gate from above it (Ryu kicking

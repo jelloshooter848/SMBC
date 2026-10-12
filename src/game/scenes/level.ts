@@ -222,6 +222,8 @@ export class LevelScene implements Scene {
       this.game.scenes.push(this.airship ? airshipMenu(this.game) : new PauseScene(this.game, this.world));
       return;
     }
+    // A new tip holds the game until OK (0.4.45, tutorial/stage-tutorial.ts): the world stays frozen.
+    if (this.tutorial?.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
     this.world.update(inputs);
     this.syncState();
@@ -240,6 +242,9 @@ export class LevelScene implements Scene {
     if (this.world.castleWaiting) return { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'MENU' };
     // 4-2's anchor scene: JUMP skips it (as in the opening scene).
     if (this.world.anchorScene) return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
+    // A new tip holding the game: OK goes on, MENU pauses.
+    const held = this.tutorial?.heldTouchLabels();
+    if (held) return held;
     return levelTouchLabels(this.world.players[0], this.world);
   }
 

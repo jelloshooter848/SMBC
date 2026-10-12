@@ -8,6 +8,8 @@ import { PowerUp } from '@game/entities/objects/powerup';
 import { MARIO_10 } from '@game/tutorial/mario-1-0';
 import { ShadowTeaseScene } from '@game/tutorial/tease';
 import { BowserSpellScene } from '@game/story/bowser-spell';
+import { HeroStageScene } from '@game/tutorial/hero-stage';
+import { TIP_LOCK_FRAMES } from '@game/tutorial/tips';
 import type { H } from './heroes-harness';
 
 /*
@@ -90,7 +92,12 @@ export function tutorialBot(h: H): Action[] {
       break;
     }
     case 'block':
-      if (goTo(104) || !b.onGround) jump();
+      if (x < (M.coinBlock.x - 2) * 16) {
+        out.push('right');
+        if (wallAhead() || !b.onGround) jump();
+        break;
+      }
+      if (goTo(M.coinBlock.x) || !b.onGround) jump();
       break;
     case 'grow': {
       const m = w.entities.find((e): e is PowerUp => e instanceof PowerUp && e.alive);
@@ -98,12 +105,12 @@ export function tutorialBot(h: H): Action[] {
         goTo(Math.floor(toPx(m.body.x + (m.body.w >> 1)) / 16));
         break;
       }
-      if (x < 110 * 16) {
+      if (x < (M.mushroomBlock.x - 3) * 16) {
         out.push('right');
         if (wallAhead() || !b.onGround) jump();
         break;
       }
-      if (goTo(113) || !b.onGround) jump();
+      if (goTo(M.mushroomBlock.x) || !b.onGround) jump();
       break;
     }
     case 'pipe':
@@ -145,28 +152,81 @@ export function tutorialBot(h: H): Action[] {
         else if (Math.abs(b.vx) < 256 || !b.onGround) jump();
       }
       break;
-    case 'wall': {
-      const col = M.bricks.to;
-      const shut = w.map.isSolid(col, 9) || w.map.isSolid(col, 10);
-      if (x < (M.bricks.from - 1) * 16) {
+    case 'slide': {
+      // Still on the vine (a tip held him there): let go of RIGHT and press it again to step off.
+      if (p.vine) {
+        if ((w.frame & 3) !== 0) out.push('right');
+        break;
+      }
+      const wall = M.lowWall.from * 16;
+      const right = toPx(b.x + b.w);
+      if (right > wall) {
+        // Under it: crawl on (pushing right, DOWN let go: he stays down until there is room).
         out.push('right');
         break;
       }
+      if (p.crouching && Math.abs(b.vx) < 0x100) {
+        // Stopped short, ducking: stand, back off for a run-up.
+        out.push('left');
+        break;
+      }
+      if (!b.onGround) {
+        out.push('right');
+        break;
+      }
+      // A run at it from five tiles off, ducking just before it.
+      const gap = wall - right;
+      if (b.vx < 0 && gap < 80) out.push('left');
+      else if (gap > 20) out.push('right', 'run');
+      else if (b.vx >= 0x1000) out.push('down');
+      else out.push('left');
+      break;
+    }
+    case 'wall': {
+      const col = M.bricks.to;
+      const shut = w.map.isSolid(col, 9) || w.map.isSolid(col, 10);
       if (shut) {
         // Under the bricks: jump into them until the way up is open.
         if (goTo(col) || !b.onGround) jump();
         break;
       }
-      // Up through the hole, then right onto the step.
+      // Up through the hole, then right onto the brick wall's top.
       if (b.onGround) {
-        if (b.y + b.h <= tileToSub(M.stepOut.top)) out.push('right');
+        if (b.y + b.h <= tileToSub(M.brickWall.top)) out.push('right');
         else if (goTo(col)) jump();
         break;
       }
       if (b.vy < 0) out.push('jump');
-      if (b.y + b.h < tileToSub(M.stepOut.top)) out.push('right');
+      if (b.y + b.h < tileToSub(M.brickWall.top)) out.push('right');
       break;
     }
+    case 'star': {
+      // The Star out: after it (it bounces right); else up under the middle brick.
+      const star = w.entities.find((e): e is PowerUp => e instanceof PowerUp && e.alive);
+      if (star) {
+        const sx = toPx(star.body.x + (star.body.w >> 1));
+        out.push(sx > x ? 'right' : 'left', 'run');
+        if ((b.onGround && Math.abs(sx - x) < 24 && star.body.y < b.y) || (!b.onGround && b.vy < 0)) jump();
+        break;
+      }
+      if (x < (M.starBrick.x - 3) * 16) {
+        out.push('right');
+        if (wallAhead() || !b.onGround) jump();
+        break;
+      }
+      if (goTo(M.starBrick.x) || !b.onGround) jump();
+      break;
+    }
+    case 'crowd':
+      // A Star: straight through, running.
+      out.push('right', 'run');
+      if (p.star === 0) {
+        const g = w.entities.some(
+          (e) => e instanceof Goomba && e.alive && e.body.x > b.x && e.body.x - b.x < tileToSub(3),
+        );
+        if ((b.onGround && g) || (!b.onGround && b.vy < 0)) jump();
+      }
+      break;
     default:
       // The flag: run at it and jump.
       out.push('right', 'attack');
@@ -175,9 +235,54 @@ export function tutorialBot(h: H): Action[] {
   return out;
 }
 
-/** Plays 1-0 with the bot until `stop`; cards, the tease and Bowser's spell go on with OK. */
-export function playTutorial(h: H, stop: () => boolean, max = 9000): void {
+/**
+ * A new tip holds the game (0.4.45): 1-0's level or a hero's training stage is on top and its
+ * tutorial waits for OK.
+ */
+export const tipHeld = (h: H): boolean => {
+  const t = h.top();
+  if (t instanceof LevelScene) return !!t.tutorial?.frozen;
+  return t instanceof HeroStageScene && t.director.frozen;
+};
+
+/** OK on a tip holding the game, once its lock is over: play goes on. */
+export function okTip(h: H): void {
+  for (let i = 0; i < 120 && tipHeld(h); i++) h.step(i > TIP_LOCK_FRAMES && i % 4 === 0 ? ['jump'] : []);
+  expect(tipHeld(h)).toBe(false);
+}
+
+/** One frame of `input`, after OK on any tip holding the game. */
+export function stepPast(h: H, input: Action[] = []): void {
+  if (tipHeld(h)) okTip(h);
+  h.step(input);
+}
+
+/**
+ * Steps `input` (default: idle) until the current lesson's tip is up (NICE! over, the hero landed),
+ * then OK on it if it holds the game: the tests that step on their own start from there.
+ */
+export function passTip(h: H, input: () => Action[] = () => [], max = 300): void {
+  for (let i = 0; i < max && !tipHeld(h); i++) {
+    const t = h.top();
+    const d = t instanceof LevelScene ? t.tutorial : t instanceof HeroStageScene ? t.director : null;
+    if (d?.tipUp) break;
+    h.step(input());
+  }
+  if (tipHeld(h)) okTip(h);
+}
+
+/**
+ * Plays 1-0 with the bot until `stop`; cards, the tease and Bowser's spell go on with OK, and so
+ * does each new tip that holds the game (0.4.45). `onHold` sees each hold as it starts.
+ */
+export function playTutorial(
+  h: H,
+  stop: () => boolean,
+  max = 9000,
+  onHold?: (scene: LevelScene) => void,
+): void {
   let frames = 0;
+  let held = 0;
   for (; frames < max && !stop(); frames++) {
     const t = h.top();
     // Text never moves by itself: every card waits for OK.
@@ -185,6 +290,12 @@ export function playTutorial(h: H, stop: () => boolean, max = 9000): void {
       h.step(frames % 40 === 39 ? ['jump'] : []);
       continue;
     }
+    if (t instanceof LevelScene && t.tutorial?.frozen) {
+      if (held++ === 0) onHold?.(t);
+      h.step(held % 24 === 0 ? ['jump'] : []);
+      continue;
+    }
+    held = 0;
     h.step(tutorialBot(h));
   }
   expect(stop(), `stopped after ${frames} frames`).toBe(true);

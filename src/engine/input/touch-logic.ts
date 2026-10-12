@@ -211,10 +211,14 @@ export type ButtonPlace = { right: number; bottom: number } | { right: number; t
 /**
  * The pad's box: the screen less the notch, rounded corners and home bar (0.4.44), in portrait
  * and landscape, so every button and MENU stays where a thumb can reach it. All the controls are
- * placed inside this box.
+ * placed inside this box. It is the game canvas's box too (index.html #screen), sized by the same
+ * rules (0.4.45), so the screen layout (touch-layout.ts) places the controls and the game in one
+ * frame: `--app-h` is the screen height main.ts measures (100vh until it does).
  */
-export const SAFE_INSET =
-  'env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)';
+export const GAME_FRAME =
+  'top: env(safe-area-inset-top, 0px); left: env(safe-area-inset-left, 0px); ' +
+  'width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); ' +
+  'height: calc(var(--app-h, 100vh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));';
 
 /**
  * The right-thumb cluster: A low on the right, B low on the left, C above between them, and

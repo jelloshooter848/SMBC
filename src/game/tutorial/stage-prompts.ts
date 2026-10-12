@@ -5,6 +5,7 @@ import { SCREEN_W } from '@engine/viewport';
 import { tileToSub } from '@engine/math/units';
 import type { World } from '../world/world';
 import { fontText } from '../hud/text';
+import type { LessonDemo } from './demo-panel';
 
 /*
  * Lesson prompts for a stage tutorial (reusable: nothing here knows about Mario or 1-0).
@@ -108,6 +109,18 @@ export interface Lesson {
    * put-back, a respawn): the hero's state for it (Link's ring count set back).
    */
   enter?(world: World): void;
+  /**
+   * The lesson needs a big hero (1-0's crouch-slide and brick ceiling, 0.4.45): a small one
+   * standing on the ground gets Toad's card (`small`, else SMALL_HERO) and is put back big.
+   */
+  big?: boolean;
+  /** Toad's words for a small hero in a `big` lesson. Ability tokens as in `text`. */
+  small?: string;
+  /**
+   * A looping demo of the move, shown under the box while the lesson's new tip holds the game
+   * (0.4.45: 1-0's RUN, demo-panel.ts).
+   */
+  demo?: LessonDemo;
   /** Lights in the box under the words (Link's FREE / HURT), read every frame. */
   lights?(world: World): readonly { label: string; on: boolean }[];
   /** A line in the box under the words, read every frame (Samus's "-4 EN (WAS -8)"); null: none. */
@@ -267,6 +280,8 @@ export interface PromptBoxOptions {
   y?: number;
   /** A short tag at the box's top right, over the frame ("NICE!"). */
   tag?: string;
+  /** A short tag at the box's bottom right, over the frame (a held tip's "OK (Z)"). */
+  foot?: string;
 }
 
 /**
@@ -291,6 +306,12 @@ export function drawPromptBox(
     const tx = x0 + w - 8 - tag.length * 8;
     r.rect(tx - 2, y - 4, tag.length * 8 + 4, 10, '#000');
     r.text(font, tag, tx, y - 3);
+  }
+  const foot = opts.foot ?? '';
+  if (foot) {
+    const fx = x0 + w - 8 - foot.length * 8;
+    r.rect(fx - 2, y + h - 6, foot.length * 8 + 4, 10, '#000');
+    r.text(font, foot, fx, y + h - 5);
   }
   return y + h;
 }
