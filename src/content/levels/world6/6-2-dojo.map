@@ -14,8 +14,9 @@ parent: 6-2
 ;; a night dojo, one locked screen. The player is flipped in through the trick panel in the right
 ;; wall (column 15, rows 10-12) and steps out beside it at column 14; captive Ryu kneels on the
 ;; floor at column 5 under the moon window. Pushing into the same panel flips the player out
-;; into 6-2 itself, dropping in from above, ninja style, beside the pipe the bonus room's own pipe
-;; leads to (0.4.43, owner: no longer rising out of a pipe he never went down), so the bonus room is
+;; into 6-2 itself, dropping in from above, ninja style, onto the open street (42) just past the pipes
+;; the bonus room's own pipe leads to (0.4.43, owner: no longer rising out of a pipe he never went
+;; down; never onto a Piranha Plant's pipe, holding right or left as he falls), so the bonus room is
 ;; entered again only down the pipe at 19 (its coins are not restocked by going round). The clock
 ;; runs on throughout.
 ;; Theme and music `dojo`: wooden beams and floor, a shoji band (the `wall` rows, with
@@ -47,7 +48,7 @@ parent: 6-2
 captive 5 12 hero=ryu
 
 [zones]
-trick 15 10 3 -> 6-2 34 0 exit=fall
+trick 15 10 3 -> 6-2 42 0 exit=fall
 
 [decor]
 ninja:moon-window 6 6
