@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.45] - 2026-10-12
+
 ### Added
 
 - Training: every new tip now pauses the game until you press OK, in 1-0 and in every hero's training stage. It
@@ -1026,7 +1028,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.44...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.45...HEAD
+[0.4.45]: https://github.com/jelloshooter848/SMBC/compare/v0.4.44...v0.4.45
 [0.4.44]: https://github.com/jelloshooter848/SMBC/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jelloshooter848/SMBC/compare/v0.4.42...v0.4.43
 [0.4.42]: https://github.com/jelloshooter848/SMBC/compare/v0.4.41...v0.4.42
