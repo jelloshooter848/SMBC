@@ -114,10 +114,13 @@ export const MARIO_10 = {
   /** Three bricks (row 9); the middle one hides a Star (owner #17). */
   starBricks: { from: 191, to: 193 },
   starBrick: { x: 192, y: 9 },
-  /** The crowd of Goombas the Star runs through (201-212), and its gate. */
-  crowd: { from: 201, to: 212 },
-  crowdGate: 215,
-  flag: 222,
+  /**
+   * The crowd of Goombas the Star runs through (206-217: they come into view only once Mario
+   * leaves the bricks), and its gate.
+   */
+  crowd: { from: 206, to: 217 },
+  crowdGate: 220,
+  flag: 226,
 } as const;
 const M = MARIO_10;
 
@@ -185,6 +188,13 @@ function tick(w: World): { sprint: number; walk: number } {
   s.walk = alive(p) && b.onGround && v > 0 && v <= p.def.movement.maxWalk ? s.walk + 1 : 0;
   return s;
 }
+
+/** A player is under the low wall's gap, halfway in or more (ducking, or small). */
+const underLowWall = (w: World): boolean =>
+  w.players.some(
+    (p) =>
+      alive(p) && p.body.x + p.body.w >= tileToSub(M.lowWall.from + 1) && p.body.y >= tileToSub(12) - px(1),
+  );
 
 /** Toad, to a small Mario at the crouch-slide or the brick ceiling: he is put back big. */
 const SMALL_MARIO = "ONLY BIG MARIO CAN BREAK THE BRICKS AHEAD. LET'S MAKE YOU BIG AGAIN!";
@@ -301,7 +311,9 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     id: 'slide',
     at: 172,
     text: 'TOO LOW FOR BIG MARIO! [RUN:attack] AT THE GAP, THEN HOLD [DOWN:down] TO DUCK AND SLIDE UNDER.',
-    done: (w) => past(w, M.lowWall.to + 1),
+    // Done once he is under it (only a duck or a small Mario gets there): the brick tip comes as
+    // he crawls into the room, before he starts on the ceiling.
+    done: underLowWall,
     big: true,
     small: SMALL_MARIO,
   },

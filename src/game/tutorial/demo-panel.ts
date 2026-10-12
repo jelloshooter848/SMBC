@@ -82,7 +82,7 @@ const C = {
   thumbEdge: '#fcfcfc',
   btn: '#2c2c2c',
   btnRun: '#94b8fc',
-  btnLit: '#bcbcbc',
+  btnLit: '#3c64d8',
   key: '#202020',
   keyLit: '#f8b800',
   text: '#fcfcfc',
@@ -198,11 +198,12 @@ function drawButton(
   disc(r, cx, cy, R, lit ? C.btnLit : C.btn);
   circle(r, cx, cy, R, C.btnRun);
   if (lit) {
-    // The thumb resting on it, from below.
-    disc(r, cx + 3, cy + 9, 7, C.thumb);
-    circle(r, cx + 3, cy + 9, 7, C.thumbEdge);
+    // The thumb pressing it from below and to the right, the caption left clear.
+    circle(r, cx, cy, R + 1, C.ringLit);
+    disc(r, cx + 9, cy + 11, 6, C.thumb);
+    circle(r, cx + 9, cy + 11, 6, C.thumbEdge);
   }
-  centred(r, font, label, cx, cy - 4);
+  centred(r, font, label, cx, cy - 6);
 }
 
 /** A key cap with a name on it; lit (gold, dark text) while held. Returns its width. */

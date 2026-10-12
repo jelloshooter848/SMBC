@@ -341,7 +341,11 @@ describe('the crouch-slide and the brick ceiling (0.4.45, #18, #19)', () => {
     expect(lessonId(h)).toBe('slide');
     // Back off, run at it and duck: under, and into the room.
     playTutorial(h, () => lessonId(h) === 'wall');
-    expect(col(h)).toBeGreaterThan(to);
+    const b = w().player.body;
+    expect(toPx(b.x + b.w)).toBeGreaterThanOrEqual((from + 1) * 16);
+    expect(w().player.crouching).toBe(true);
+    // On through, into the room.
+    playTutorial(h, () => col(h) > to, 600);
     expect(col(h)).toBeLessThan(M.brickWall.x);
   });
 
