@@ -8,6 +8,31 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Talking is the TALK button only, everywhere: in levels, on the world map and in Kakariko. UP no longer talks, so
+  it can't start a conversation by accident. The TALK hint names the key of the player in reach.
+- Tips stay on screen until the next one replaces it, and the pause menu in training and in 1-0 has LAST TIPS: the
+  last three tips, read out again.
+- Samus: SHOOT always fires her beam, the tool button fires the weapon picked and its label follows, and a new find
+  is picked as you take it.
+- Kakariko: every hero walks four ways, like Link's keep.
+- LARRY KOOPA is named in full.
+- Ryu's dojo: the trap door drops you into 6-2 from above, onto open street, instead of up out of a pipe.
+
+### Fixed
+
+- Training can't soft-lock any more: a block used the wrong way rebuilds its stretch, with a card from Toad. Link's
+  up-thrust is taught on a brick, with a line on the difference.
+- Link's Fire spell is picked as you take it, and its swing throws a fireball.
+- Samus never gets the Varia Suit before an Energy Tank, even from a Mushroom another hero knocked out.
+- Fake Bowsers: the hero never walks into a wall afterwards, and says their line however the fake dies.
+- A slide or crouch under a low ceiling keeps going until there is room to stand, so Mega Man no longer ends up
+  inside the ceiling.
+- Toad walks straight from the new bonus house to the hero after Larry's airship falls.
+- Link's boomerang visibly carries coins and pickups back, and Link collects them on the catch.
+- The ? block on Larry's airship decks is in reach of every hero.
+
 ## [0.4.42] - 2026-10-10
 
 ### Added
