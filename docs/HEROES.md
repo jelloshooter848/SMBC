@@ -1327,7 +1327,13 @@ lessons, gates and checks, as `mario-1-0.ts`), `kit.ts`, `targets.ts`; the direc
   Blue Ring, Samus's Varia Suit). Toad's card at a gate puts the hero back at the lesson's start
   and rebuilds that stretch (its block used once the item is taken, its targets fresh, done
   lessons' targets and candles gone); a death costs no life and stands the hero up at the current
-  lesson. Every put-back and respawn restores the **kit floor**: every item of the lessons done so
+  lesson. A block spent the wrong way never strands a lesson (0.4.43,
+  `TutorialDirector.spentLesson`): a power block of a lesson not done yet that is used while its
+  item is neither taken nor out (a small hero's block gives the grow item; Simon's second block
+  bumped before the first item was taken), or a lesson's brick broken without its move (Link's
+  up-thrust is taught on a brick: ? blocks open to any hit, bricks need the up-strike), brings
+  Toad's card once the hero stands, then the stretch is rebuilt. 1-0's mushroom block too, once
+  its mushroom is lost. Every put-back and respawn restores the **kit floor**: every item of the lessons done so
   far (`kit.ts`; an item that stacks counts once the hero has one: a Heart Container, an Energy
   Tank, a Ninpo Scroll, a Medal), given without a sound or a grow flicker (Sophia III's hull). What
   was in progress (`TRANSIENT_KIT`: the morph ball, a running spell, a charge) is dropped.

@@ -76,6 +76,18 @@ export interface Lesson {
    * it used, as the hero left it.
    */
   block?: { x: number; y: number };
+  /**
+   * A brick the lesson breaks (Link's up-thrust, 0.4.43): broken any other way while the lesson is
+   * not done, its stretch is rebuilt (TutorialDirector.spentLesson); gone in a stretch rebuilt once
+   * the lesson is done.
+   */
+  brick?: { x: number; y: number };
+  /**
+   * Toad's words when a block of this lesson is spent the wrong way (its brick broken without the
+   * move, its ? block used without its item coming out), before the stretch is rebuilt. Absent:
+   * SPENT_BLOCK. Ability tokens as in `text`.
+   */
+  spent?: string;
   /** The words for `get` on touch, as `touchText`. */
   touchGet?: string;
   /** Its entry in START AT, when its item's name alone does not say it (a folded lesson's). */

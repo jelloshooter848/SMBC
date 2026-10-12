@@ -77,6 +77,9 @@ export const MARIO_10 = {
   gap2: { x: 76, w: 8, back: 67 },
   goomba: 96,
   stompGate: 101,
+  /** The coin block and the mushroom's block (row 9). */
+  coinBlock: { x: 104, y: 9 },
+  mushroomBlock: { x: 113, y: 9 },
   growGate: 120,
   pipe: 132,
   /** The hidden vine block (row 10) at the foot of the tall wall (columns 150-152, top row 5). */
@@ -202,6 +205,8 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     at: 106,
     text: 'THIS ? BLOCK HOLDS A MUSHROOM. BUMP IT, THEN TOUCH THE MUSHROOM TO GROW BIG.',
     retry: 'BUMP THE ? BLOCK AND GRAB THE MUSHROOM TO OPEN THE WAY.',
+    // Bumped early and the mushroom lost (0.4.43): the stretch is rebuilt (TutorialDirector.spentLesson).
+    block: M.mushroomBlock,
     // Power-up heroes only: a co-op partner with hit points is never 'small'.
     done: (w) =>
       w.players.some((p) => alive(p) && p.def.damage.kind === 'powerup' && p.powerState !== 'small'),

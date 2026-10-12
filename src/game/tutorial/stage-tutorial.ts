@@ -7,7 +7,9 @@ import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { Game } from '../scenes/game';
 import { CardScene } from '../scenes/message';
 import type { World } from '../world/world';
-import { T } from '../level/tiles';
+import { T, tileDef } from '../level/tiles';
+import { HeroItem } from '../entities/objects/hero-item';
+import { PowerUp } from '../entities/objects/powerup';
 import { fontText, wrapText } from '../hud/text';
 import type { LevelData } from '../level/schema';
 import type { CharacterDef } from '../characters/character';
@@ -203,6 +205,14 @@ const CARD_KEYS = ['jump', 'attack', 'start'] as const;
 export const GATE_FRAME = 'gate-block';
 /** What Toad says at a gate when the lesson has no words of its own. */
 const RETRY = "DO THE TIP UP TOP TO OPEN THE WAY. LET'S TRY THAT AGAIN!";
+/**
+ * What Toad says when a lesson's block was spent without its item (0.4.43): the stretch is rebuilt,
+ * so a block bumped the wrong way never strands the lesson.
+ */
+export const SPENT_BLOCK = "THAT ? BLOCK IS SPENT, BUT ITS ITEM ISN'T YOURS YET. LET'S BUILD IT AGAIN!";
+
+/** A block tile spent: used up or broken (a block mid-bump is not yet). */
+const spentTile = (t: number): boolean => t !== T.BUMPING && !tileDef(t).block;
 
 /** Runs a stage tutorial in one level scene (LevelScene.tutorial). */
 export class TutorialDirector {
@@ -255,7 +265,10 @@ export class TutorialDirector {
     // The blocks of the lessons done are used, as the hero left them.
     const done = new Set(this.tracker.done);
     for (const l of this.def.lessons)
-      if (done.has(l.id)) for (const b of lessonBlocks(l)) this.scene.world.map.set(b.x, b.y, T.USED);
+      if (done.has(l.id)) {
+        for (const b of lessonBlocks(l)) this.scene.world.map.set(b.x, b.y, T.USED);
+        if (l.brick) this.scene.world.map.set(l.brick.x, l.brick.y, T.AIR);
+      }
     this.lessonUp();
   }
 
@@ -424,12 +437,15 @@ export class TutorialDirector {
    * Toad's card at a closed gate (the current lesson's `retry`): it waits for a press, then the
    * player is put back before the task.
    */
-  private showRetry(): void {
+  private showRetry(text?: string): void {
     const l = this.tracker.current;
     this.busy = true;
     this.stopped = 0;
+    this.cardKind = text === undefined ? 'gate' : 'spent';
     const labels = levelTouchLabels(this.scene.world.players[0], this.scene.world);
-    const words = fillAbilities(l?.retry ?? RETRY, (a, act, cap) => this.abilityName(a, act, labels, cap));
+    const words = fillAbilities(text ?? l?.retry ?? RETRY, (a, act, cap) =>
+      this.abilityName(a, act, labels, cap),
+    );
     const lines = ['TOAD:', '', ...wrapText(fontText(words), CARD_COLS)];
     const game = this.game;
     game.ctx.audio.sfx('pause');
@@ -548,8 +564,45 @@ export class TutorialDirector {
     }
     // The item taken: its name on the box's first line, read out with the words that follow.
     if (this.nice === 0 && this.told !== this.tellKey()) this.announce();
-    if (this.mainArea && this.stoppedAtGate(world)) this.showRetry();
+    if (!this.mainArea) return;
+    // A block spent the wrong way: Toad's card once the hero stands, then the stretch is rebuilt.
+    const spent = this.spentLesson(world);
+    const p = world.players[0];
+    if (spent && p && !p.dead && !p.out && p.body.onGround) return this.showRetry(spent.spent ?? SPENT_BLOCK);
+    if (this.stoppedAtGate(world)) this.showRetry();
   }
+
+  /**
+   * A lesson not done yet whose block was spent the wrong way (0.4.43, owner: a lesson never
+   * soft-locks): its brick broken without the move, or one of its power blocks used while its item
+   * is neither taken nor out (a small hero's block gives the grow item; Simon's second block bumped
+   * before the first item was taken). A block lesson without an item of its own (1-0's mushroom)
+   * waits while a power-up is out. Null when every block can still give what its lesson needs.
+   */
+  spentLesson(world: World): Lesson | null {
+    const t = this.tracker;
+    const p = world.players[0];
+    if (!p) return null;
+    const live = world.entities.filter((e) => e.alive);
+    const out = new Set(live.flatMap((e) => (e instanceof HeroItem ? [e.item] : [])));
+    const powerOut = live.some((e) => e instanceof PowerUp || e instanceof HeroItem);
+    const map = world.map;
+    for (const l of t.lessons.slice(t.index)) {
+      if (l.brick && spentTile(map.get(l.brick.x, l.brick.y))) return l;
+      const items = lessonItems(l);
+      const blocks = lessonBlocks(l);
+      for (let i = 0; i < blocks.length; i++) {
+        const b = blocks[i] as { x: number; y: number };
+        if (!spentTile(map.get(b.x, b.y))) continue;
+        const item = items[i];
+        if (item === undefined ? !powerOut && !l.done(world) : !ownsItem(p, item) && !out.has(item)) return l;
+      }
+    }
+    return null;
+  }
+
+  /** The kind of Toad's last card: a closed gate's, or a spent block's (tests read it). */
+  cardKind: 'gate' | 'spent' | null = null;
 
   /** The lesson's items are all taken (or it has none). */
   private itemTaken(l: Lesson | undefined): boolean {
