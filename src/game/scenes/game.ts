@@ -627,6 +627,8 @@ export class Game {
    * tutorial swapped in its own, comes back with its power, hit points and kit.
    */
   endTutorial(): void {
+    // A tip holding the game ends with it (0.4.45).
+    this.tips.release();
     const heroes = this.tutorialRun?.heroes;
     this.tutorialRun = null;
     if (!heroes) return;

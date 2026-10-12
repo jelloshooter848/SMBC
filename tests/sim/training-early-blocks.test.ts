@@ -8,7 +8,7 @@ import { MARIO_10 } from '@game/tutorial/mario-1-0';
 import { CardScene } from '@game/scenes/message';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
 import { playStage, skipGreeting, startStage } from './stage-bot';
-import { playTutorial } from './tutorial-bot';
+import { okTip, playTutorial } from './tutorial-bot';
 import { billBot } from './bots/bill';
 import { linkBot } from './bots/link';
 import { luigiBot } from './bots/luigi';
@@ -73,6 +73,11 @@ describe('training: every block hit early', () => {
       expect(s.director.done).toEqual(lessons.map((l) => l.id));
       // A small hero's first strikes give the grow item from every block: the stretch was rebuilt.
       expect(log.spent.length).toBeGreaterThan(0);
+      // New tips held the stage (0.4.45) and the bot went on with OK; a rebuilt stretch's tips
+      // never held twice.
+      expect(log.holds.length).toBeGreaterThan(0);
+      const held = log.holds.map((x) => x.lesson);
+      for (const id of new Set(held)) expect(held.filter((x) => x === id).length, id).toBeLessThanOrEqual(2);
     });
   }
 
@@ -91,6 +96,7 @@ describe('training: every block hit early', () => {
     const level = () => h.top() as LevelScene;
     const lessonId = () => (h.top() instanceof LevelScene ? level().tutorial?.lesson?.id : undefined);
     expect(lessonId()).toBe('walk');
+    okTip(h);
     // Both blocks bumped at once, at the start; the mushroom is then lost (it slid off and fell).
     const scene = level();
     const w = scene.world;

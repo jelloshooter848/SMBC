@@ -163,6 +163,14 @@ describe("Bill's stage", () => {
       600,
     );
     expect(lessonId(s)).toBe('laser');
+    // Up once Bill has landed (a new tip never holds him mid-jump, 0.4.45).
+    playStage(
+      h,
+      s,
+      () => [],
+      () => s.director.tipUp,
+      120,
+    );
     expect(s.director.lines().join(' ')).toMatch(/^LASER!/);
   });
 });

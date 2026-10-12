@@ -267,6 +267,8 @@ export interface PromptBoxOptions {
   y?: number;
   /** A short tag at the box's top right, over the frame ("NICE!"). */
   tag?: string;
+  /** A short tag at the box's bottom right, over the frame (a held tip's "OK (Z)"). */
+  foot?: string;
 }
 
 /**
@@ -291,6 +293,12 @@ export function drawPromptBox(
     const tx = x0 + w - 8 - tag.length * 8;
     r.rect(tx - 2, y - 4, tag.length * 8 + 4, 10, '#000');
     r.text(font, tag, tx, y - 3);
+  }
+  const foot = opts.foot ?? '';
+  if (foot) {
+    const fx = x0 + w - 8 - foot.length * 8;
+    r.rect(fx - 2, y + h - 6, foot.length * 8 + 4, 10, '#000');
+    r.text(font, foot, fx, y + h - 5);
   }
   return y + h;
 }

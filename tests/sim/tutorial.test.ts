@@ -28,7 +28,7 @@ import { STORY_TOAD_PAGES } from '@game/story/script';
 import { plainText, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { stageTutorial } from '@game/tutorial/stage-tutorial';
 import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
-import { playTutorial } from './tutorial-bot';
+import { okTip, passTip, playTutorial } from './tutorial-bot';
 import { ALL_STORY, skipOpening } from './story-seen';
 
 // Mario's tutorial stage 1-0 (0.5.0; reworked in 0.4.36): World 1's start node, where a new file
@@ -134,6 +134,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     expect(h.said.some((t) => t.startsWith(STORY_TOAD_PAGES[0]!.filter(Boolean).join(' ')))).toBe(true);
     expect(director(h)?.lesson?.id).toBe('walk');
     expect(h.said.at(-1)).toMatch(/HOLD RIGHT TO WALK/);
+    okTip(h);
     // The greeting is not repeated after a respawn.
     level(h).world.kill(level(h).world.player);
     h.until(() => h.top() instanceof LevelScene && level(h).world.frame > 40, 600);
@@ -191,6 +192,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     skipGreeting(h);
     const lives = h.game.state.lives;
     playTutorial(h, () => director(h)?.lesson?.id === 'gap1');
+    passTip(h);
     // Walk (don't run) off the edge into the gap: dropped back in a few steps before it.
     let fell = false;
     let back = false;
@@ -216,6 +218,7 @@ describe('1-0: Toad, the lessons and the tease', () => {
     enter10(h);
     skipGreeting(h);
     playTutorial(h, () => director(h)?.lesson?.id === 'stomp');
+    passTip(h);
     const lives = h.game.state.lives;
     level(h).world.kill(level(h).world.player);
     h.until(() => !(h.top() instanceof LevelScene), 400);

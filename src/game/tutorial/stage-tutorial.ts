@@ -2,6 +2,7 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { Scene } from '@engine/scene';
 import type { TouchLabels } from '@engine/input/touch';
+import type { InputFrame } from '@engine/input/input-manager';
 import { px, tileToSub } from '@engine/math/units';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { Game } from '../scenes/game';
@@ -14,7 +15,7 @@ import { fontText, wrapText } from '../hud/text';
 import type { LevelData } from '../level/schema';
 import type { CharacterDef } from '../characters/character';
 import { abilityHint, controlScheme } from '../scenes/hints';
-import { levelTouchLabels } from '../touch-labels';
+import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 import {
   drawPromptBox,
   fillAbilities,
@@ -43,7 +44,12 @@ import { giveQuietly, itemName, ownsItem, refillHealth } from './kit';
  * - the pause menu offers "Skip tutorial" (Game.skipTutorial): the stage counts as cleared;
  * - a task walked past is not skipped (0.4.36): a gate (`gates`) closes the way until it is done,
  *   and a player who stops at it on the ground is shown Toad's card (`Lesson.retry`, waiting for a
- *   press) and put back before the task, with a fresh stage. Nothing moves him while he moves.
+ *   press) and put back before the task, with a fresh stage. Nothing moves him while he moves;
+ * - a new tip holds the game (0.4.45, owner #37, in 1-0 and every hero's training): the first time
+ *   a tip shows in a run, the world freezes (hero, enemies, shots, timers, camera) until a press of
+ *   OK or TALK (tips.ts TipLog.hold), never a timer; the host asks `hold` each frame before its
+ *   world's. A tip due while the hero is in the air waits for him to land first (a little while at
+ *   most), with NICE! kept up. The tip then stays in the box as before; one seen again never holds.
  */
 
 /**
@@ -195,6 +201,11 @@ const BOX_RIGHT = 4;
 const LIGHT_COLOURS: Readonly<Record<string, string>> = { FREE: '#00a800', HURT: '#d82800' };
 /** Frames the "NICE!" tag shows on the box after a lesson is done. */
 const NICE_FRAMES = 60;
+/**
+ * Frames a tip that will hold the game waits for the hero to land (or grab a vine, a wall, the
+ * stairs, the water) before it shows; then it shows and holds anyway.
+ */
+export const TIP_LAND_WAIT = 120;
 /** Frames a player stands against a closed gate before Toad's card comes (a bump is not a stop). */
 export const GATE_STOP_FRAMES = 24;
 /** Columns a line of Toad's card may take (the dialogue box's, as the greeting's). */
@@ -221,6 +232,10 @@ export class TutorialDirector {
   private busy = false;
   private frames = 0;
   private nice = 0;
+  /** The box moves on to the current lesson once the hero is settled (not mid-jump). */
+  private moving = false;
+  /** Frames the box has waited for the hero to land. */
+  private airWait = 0;
   /** The lesson the box shows: the one just done while "NICE!" is up, else the current one. */
   private shown: number;
   private cache = { key: '', lines: [] as string[] };
@@ -261,6 +276,10 @@ export class TutorialDirector {
     this.laid.clear();
     this.stopped = 0;
     this.nice = 0;
+    this.moving = false;
+    this.airWait = 0;
+    // A hold over the stretch left behind (MENU → Skip this lesson while a tip held) ends with it.
+    if (this.frozen) this.game.tips.release();
     this.shown = this.tracker.index;
     this.cache.key = '';
     this.layGates();
@@ -521,8 +540,11 @@ export class TutorialDirector {
     else this.run.lives = s.lives;
     this.frames++;
     if (this.busy) return;
-    // "NICE!" over the lesson just done, then the next one.
-    if (this.nice > 0 && --this.nice === 0) this.showCurrent();
+    const world = this.scene.world;
+    // "NICE!" over the lesson just done (a second), then the next one: kept up while the hero is in
+    // the air if the next tip will hold the game, so it never freezes him mid-jump.
+    if (this.nice > 1) this.nice--;
+    else if (this.nice === 1) this.moving = true;
     const def = this.def;
     if (!this.run.greeted && def.greet && this.mainArea) {
       if (this.frames < GREET_DELAY) return;
@@ -533,7 +555,6 @@ export class TutorialDirector {
     }
     this.run.greeted = true;
     const beat = def.beat;
-    const world = this.scene.world;
     this.tracker.current?.during?.(world);
     const due = (b: NonNullable<StageTutorial['beat']>): boolean =>
       b.when
@@ -559,14 +580,27 @@ export class TutorialDirector {
       this.lessonUp();
       if (step.kind === 'done' && !step.lesson.note) {
         this.nice = NICE_FRAMES;
+        this.moving = false;
         this.game.ctx.audio.sfx('select');
         this.game.deps.announcer?.say('Nice!');
-      } else this.showCurrent();
+      } else {
+        // On to the next tip (next frame, once the lesson is checked: a tip never holds the game
+        // for a lesson already done).
+        this.nice = 0;
+        this.moving = true;
+      }
       return;
     }
-    // The item taken: its name on the box's first line, read out with the words that follow.
-    if (this.nice === 0 && this.told !== this.tellKey()) this.announce();
-    if (!this.mainArea) return;
+    // The box moves on (after NICE!, a note or a lesson passed by), once the hero is settled.
+    if (this.moving) {
+      if (this.settled(world, this.tracker.index)) this.showCurrent();
+    }
+    // The item taken: its name on the box's first line, read out with the words that follow (a
+    // new tip, so it holds the game, once the hero is settled).
+    else if (this.nice === 0 && this.told !== this.tellKey() && this.settled(world, this.shown))
+      this.announce();
+    // A tip holding the game: nothing else comes over it (Toad waits until it is let go).
+    if (this.frozen || !this.mainArea) return;
     // A block spent the wrong way: Toad's card once the hero stands, then the stretch is rebuilt.
     const spent = this.spentLesson(world);
     const p = world.players[0];
@@ -617,9 +651,37 @@ export class TutorialDirector {
     return `${this.shown}|${this.itemTaken(this.tracker.lessons[this.shown])}`;
   }
 
+  /**
+   * The tip of lesson `i` (taken or not), the same whatever the controls in use: a tip holds the
+   * game only the first time its key shows in a run.
+   */
+  tipKey(i = this.shown): string {
+    const l = this.tracker.lessons[i];
+    return `${this.def.level}|${l?.id ?? i}|${this.itemTaken(l) ? 'taken' : 'get'}`;
+  }
+
+  /**
+   * Whether lesson `i`'s tip may show now: it will not hold the game, or the hero is settled
+   * (standing, climbing, clinging, on stairs, in the water, or not playing), or he has been in the
+   * air for TIP_LAND_WAIT frames.
+   */
+  private settled(world: World, i: number): boolean {
+    if (!this.tracker.lessons[i] || !this.game.tips.wouldHold(this.tipKey(i))) return true;
+    const p = world.players[0];
+    const steady =
+      !p || p.dead || p.out || p.body.onGround || !!p.vine || !!p.stairs || p.inWater || p.clinging;
+    if (steady || ++this.airWait > TIP_LAND_WAIT) {
+      this.airWait = 0;
+      return true;
+    }
+    return false;
+  }
+
   /** The box moves on to the current lesson, read out. */
   private showCurrent(): void {
     this.nice = 0;
+    this.moving = false;
+    this.airWait = 0;
     this.shown = this.tracker.index;
     this.announce();
   }
@@ -630,15 +692,51 @@ export class TutorialDirector {
     if (this.tracker.current) this.showCurrent();
   }
 
-  /** Reads out the prompt the box shows. */
+  /**
+   * Reads out the prompt the box shows. The first time a tip shows in a run it holds the game until
+   * a press (tips.ts): read out with "OK to continue".
+   */
   announce(): void {
     this.told = this.tellKey();
     const lines = this.lines();
     const text = lines.join(' ');
     if (!text) return;
     // The one place tips are kept (tips.ts): the pause menu's LAST TIPS reads them back.
-    this.game.tips.show({ lines, said: text });
-    this.game.deps.announcer?.say(text);
+    const tip = { lines, said: text, key: this.tipKey() };
+    const tips = this.game.tips;
+    tips.show(tip);
+    const holds = this.shown === this.tracker.index && tips.hold(tip, this);
+    if (holds) this.game.ctx.audio.sfx('pause');
+    this.game.deps.announcer?.say(holds ? `${text} OK to continue.` : text);
+  }
+
+  /** The box shows the current lesson's tip, read out (no NICE!, nothing waiting to show). */
+  get tipUp(): boolean {
+    return (
+      this.nice === 0 && !this.moving && this.shown === this.tracker.index && this.told === this.tellKey()
+    );
+  }
+
+  /** A new tip holds the game now (the host's world stays frozen until a press). */
+  get frozen(): boolean {
+    return this.game.tips.heldBy(this) !== null;
+  }
+
+  /**
+   * Each frame before the host's world (after its MENU check, so the pause menu opens as ever):
+   * true while a new tip holds the game, and on the frame a press lets it go (that press never
+   * reaches the hero). OK or TALK, from any player, after the lock (tips.ts TIP_LOCK_FRAMES).
+   */
+  hold(inputs: readonly InputFrame[]): boolean {
+    const tips = this.game.tips;
+    if (!tips.heldBy(this)) return false;
+    if (!tips.update(this, inputs)) this.scene.resumePlay();
+    return true;
+  }
+
+  /** The touch buttons while a tip holds the game (OK and MENU only), else null. */
+  heldTouchLabels(): TouchLabels | null {
+    return this.frozen ? { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'MENU' } : null;
   }
 
   /**
@@ -704,8 +802,11 @@ export class TutorialDirector {
     const box = this.box();
     if (!box) return;
     const font = this.game.ctx.assets.sheet('font');
+    // While a new tip holds the game: OK at the box's bottom right, once a press will close it.
+    const ok = this.frozen && this.game.tips.unlocked ? fontText(abilityHint(this.game, 'OK', 'jump')) : '';
     const bottom = drawPromptBox(r, font, box.rows, {
       tag: this.nice > 0 ? 'NICE!' : '',
+      foot: ok,
       y: box.y,
       x: box.x,
       w: box.w,

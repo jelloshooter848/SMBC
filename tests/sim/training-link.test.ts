@@ -8,6 +8,7 @@ import { LINK_LESSONS, LINK_STAGE, ringLights } from '@game/tutorial/heroes/link
 import { stageWatch } from '@game/tutorial/targets';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { useStorage } from './heroes-harness';
+import { stepPast } from './tutorial-bot';
 import { linkBot } from './bots/link';
 import { choose, heroCol, playStage, skipGreeting, startAtLabels, startStage } from './stage-bot';
 
@@ -235,7 +236,7 @@ describe("Link's stage", () => {
     const s = stage();
     const w = s.world;
     w.kill(w.player);
-    for (let i = 0; i < 400 && s.world === w; i++) h.step();
+    for (let i = 0; i < 400 && s.world === w; i++) stepPast(h);
     expect(s.world).not.toBe(w);
     const p = s.world.player;
     expect(lessonId(s)).toBe('jump-spell');

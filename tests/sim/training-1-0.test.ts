@@ -10,7 +10,7 @@ import { T } from '@game/level/tiles';
 import { MARIO_10, MARIO_LESSONS, SPRINT_FRAMES } from '@game/tutorial/mario-1-0';
 import { GATE_FRAME, GATE_STOP_FRAMES } from '@game/tutorial/stage-tutorial';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
-import { playTutorial, tutorialBot } from './tutorial-bot';
+import { passTip, playTutorial, stepPast, tutorialBot } from './tutorial-bot';
 
 // 1-0's training as the owner asked for it in 0.4.36 (tutorial/mario-1-0.ts): a real sustained
 // sprint opens the stretch's gate (walking, tapping RUN or a short burst never does); two gaps only a
@@ -27,8 +27,11 @@ const lessonId = (h: H) => (h.top() instanceof LevelScene ? director(h)?.lesson?
 const col = (h: H) => tileAt(level(h).world.player.centerX);
 const at = (id: string) => MARIO_LESSONS.find((l) => l.id === id)?.at;
 
-/** A campaign file on 1-0, past Toad's greeting, played by the bot up to lesson `id`. */
-function upTo(id: string): H {
+/**
+ * A campaign file on 1-0, past Toad's greeting, played by the bot up to lesson `id`, then on until
+ * its tip is up (`play` false: standing still meanwhile).
+ */
+function upTo(id: string, play = true): H {
   const h = makeGame();
   file();
   h.game.openFile(1);
@@ -41,6 +44,8 @@ function upTo(id: string): H {
     h.tap('jump');
   }
   playTutorial(h, () => lessonId(h) === id);
+  // Its tip up, and OK on it (a new tip holds the game, 0.4.45); the bot plays on meanwhile.
+  passTip(h, () => (play ? tutorialBot(h) : []));
   return h;
 }
 
@@ -53,7 +58,7 @@ function untilCard(h: H, input: (f: number) => Action[], max = 2400): CardScene 
   for (let f = 0; f < max && !(h.top() instanceof CardScene); f++) {
     const b = level(h).world.player.body;
     last = { ground: b.onGround, vx: Math.abs(b.vx) };
-    h.step(input(f));
+    stepPast(h, input(f));
   }
   expect(h.top()).toBeInstanceOf(CardScene);
   expect(last.ground).toBe(true);
@@ -63,7 +68,7 @@ function untilCard(h: H, input: (f: number) => Action[], max = 2400): CardScene 
 
 /** Steps `input` until `stop` holds (at most `max` frames), and checks it did. */
 function hold(h: H, input: Action[], stop: () => boolean, max: number): void {
-  for (let i = 0; i < max && !stop(); i++) h.step(input);
+  for (let i = 0; i < max && !stop(); i++) stepPast(h, input);
   expect(stop()).toBe(true);
 }
 
@@ -137,7 +142,7 @@ describe('the gaps: only a sprinting jump clears them', () => {
         const input: Action[] = ['right'];
         if ((b.onGround && toPx(b.x + b.w) >= gap.x * 16 - 2) || (!b.onGround && b.vy < 0))
           input.push('jump');
-        h.step(input);
+        stepPast(h, input);
         const y = level(h).world.player.body.y;
         fell ||= y > tileToSub(13);
         back = fell && y < tileToSub(2);
@@ -148,7 +153,7 @@ describe('the gaps: only a sprinting jump clears them', () => {
       expect(lessonId(h), id).toBe(id);
       expect(h.game.state.lives, id).toBe(lives);
       // From there, a sprint and a jump from the edge clear it.
-      for (let i = 0; i < 600 && lessonId(h) !== next; i++) h.step(tutorialBot(h));
+      for (let i = 0; i < 600 && lessonId(h) !== next; i++) stepPast(h, tutorialBot(h));
       expect(lessonId(h), id).toBe(next);
       expect(col(h), id).toBeGreaterThanOrEqual(gap.x + gap.w);
     }
@@ -157,7 +162,7 @@ describe('the gaps: only a sprinting jump clears them', () => {
 
 describe('a task walked past is put back, never mid-move', () => {
   it('jump the Goomba and walk on: at the gate Toad waits for a press, then Mario stands before a fresh Goomba', () => {
-    const h = upTo('stomp');
+    const h = upTo('stomp', false);
     // Over the Goomba with a running jump, and on to the gate.
     const card = untilCard(h, () => {
       const w = level(h).world;
@@ -184,7 +189,7 @@ describe('a task walked past is put back, never mid-move', () => {
   });
 
   it('a jump against the gate never brings the card while in the air', () => {
-    const h = upTo('stomp');
+    const h = upTo('stomp', false);
     for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
     // Walk to the gate, then keep hopping against it: no card while he hops.
     hold(h, ['right'], () => col(h) === M.stompGate - 1, 900);
@@ -263,9 +268,10 @@ describe('the hidden vine and the brick wall', () => {
   });
 
   it('a closed gate is drawn as a column of barrier blocks; an open one is gone', () => {
-    const h = upTo('stomp');
+    const h = upTo('stomp', false);
+    for (const e of level(h).world.entities) if (e instanceof Goomba) e.destroy();
     h.until(() => {
-      h.step(['right']);
+      stepPast(h, ['right']);
       return col(h) >= M.stompGate - 8;
     }, 900);
     const gate = () => draw(level(h)).sprites.filter((x) => x.frame === GATE_FRAME).length;

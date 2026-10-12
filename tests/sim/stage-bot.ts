@@ -12,6 +12,7 @@ import { FlagScore } from '@game/entities/objects/flagpole';
 import { HeroStageScene, StageMenu, StartAtMenu } from '@game/tutorial/hero-stage';
 import { runTraining } from '@game/tutorial/training';
 import { file, makeGame, type H } from './heroes-harness';
+import { stepPast } from './tutorial-bot';
 
 /*
  * Shared helpers for the hero stages' sims (0.4.37, tutorial/hero-stage.ts): start a hero's
@@ -95,6 +96,11 @@ export interface PlayLog {
    * ground, walking or not, and the stretch is rebuilt after.
    */
   spent: (readonly string[])[];
+  /**
+   * The new tips that held the game (0.4.45): the lesson's id and whether the hero stood (or
+   * clung, climbed, swam) when each began (the bot presses OK through them).
+   */
+  holds: { lesson: string; ground: boolean }[];
 }
 
 /**
@@ -109,7 +115,7 @@ export function playStage(
   stop: () => boolean,
   max = 7200,
 ): PlayLog {
-  const log: PlayLog = { frames: 0, cards: [], spent: [], fills: new Set() };
+  const log: PlayLog = { frames: 0, cards: [], spent: [], holds: [], fills: new Set() };
   // Records the screen-wide fills of a frame (reduce flashing is on in the harness).
   const rec: Renderer = Object.assign(new NullRenderer(), {
     clear(color: string): void {
@@ -121,6 +127,7 @@ export function playStage(
   });
   let last = { ground: true, vx: 0 };
   let wait = 0;
+  let held = 0;
   for (; log.frames < max && !stop(); log.frames++) {
     const top = h.top();
     if (top instanceof CardScene) {
@@ -139,9 +146,23 @@ export function playStage(
     }
     wait = 0;
     if (top !== stage) {
+      held = 0;
       h.step();
       continue;
     }
+    // A new tip holds the stage until OK (0.4.45): nothing moves; OK once the lock is over.
+    if (stage.director.frozen) {
+      if (held++ === 0) {
+        const p = stage.world.player;
+        // Standing, or held still some other way (clinging to a wall, a vine, stairs, the water).
+        const ground = p.body.onGround || p.clinging || !!p.vine || !!p.stairs || p.inWater;
+        log.holds.push({ lesson: stage.director.lesson?.id ?? '', ground });
+      }
+      checkBox(stage);
+      h.step(held % 24 === 0 ? ['jump'] : []);
+      continue;
+    }
+    held = 0;
     checkBox(stage);
     // The HUD shows no score, so no points float up (the flagpole's either).
     expect(stage.world.entities.some((e) => e instanceof ScorePopup || e instanceof FlagScore)).toBe(false);
@@ -184,9 +205,12 @@ export function startAtLabels(h: H): string[] {
   return items(h.top()).map((i) => i.label);
 }
 
-/** Steps `input` until `stop` holds (at most `max` frames), and checks it did. */
+/**
+ * Steps `input` until `stop` holds (at most `max` frames), and checks it did. A new tip holding the
+ * stage on the way (0.4.45) is let go with OK first.
+ */
 export function hold(h: H, input: Action[], stop: () => boolean, max: number): void {
-  for (let i = 0; i < max && !stop(); i++) h.step(input);
+  for (let i = 0; i < max && !stop(); i++) stepPast(h, input);
   expect(stop()).toBe(true);
 }
 
