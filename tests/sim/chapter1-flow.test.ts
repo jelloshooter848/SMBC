@@ -295,7 +295,7 @@ describe("Chapter 1's start on a new file (0.4.23, end to end)", () => {
     for (let i = 0; i < 200 && !(villager() as Partner).inReach(l11.world.player); i++) f.step(['right']);
     expect((villager() as Partner).inReach(l11.world.player)).toBe(true);
     f.idle(4);
-    f.tap('up');
+    f.tap('special');
     expect(readCards(f)).toBe(PARTNERS.villager?.pages.length);
     expect(top(f)).toBe(l11);
 
@@ -317,7 +317,7 @@ describe("Chapter 1's start on a new file (0.4.23, end to end)", () => {
     f.until(() => p.onGround, 60);
     f.idle(10);
     // Luigi's talk and the race's rules, then the race (reported won: race.test.ts plays one).
-    f.tap('up');
+    f.tap('special');
     for (let i = 0; i < 8 && (top(f) instanceof CardScene || top(f) instanceof MessageScene); i++) ok(f);
     const race = top(f);
     expect(race).toBeInstanceOf(MirrorRaceScene);

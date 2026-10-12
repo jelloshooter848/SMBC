@@ -408,7 +408,7 @@ describe('captive Mega Man in the space station', () => {
     expect(c.prompt).toBe(true);
     expect(toPx(p.centerX) >> 4).toBeLessThan(44); // short of the return pad
     expect(draw(l).texts.some((t) => t.str === 'TALK')).toBe(true);
-    expect(h.said.some((t) => /^Mega Man\. Up to talk\.$/.test(t))).toBe(true);
+    expect(h.said.some((t) => /^Mega Man\. Press TALK to talk\.$/.test(t))).toBe(true);
   });
 
   it('is there only in campaign play, and only until Mega Man is freed', () => {

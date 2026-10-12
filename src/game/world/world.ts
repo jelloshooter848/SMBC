@@ -1538,13 +1538,14 @@ export class World {
   }
 
   /**
-   * Up (or SPECIAL, the TALK button) pressed by a player within a captive's reach: a `talk`
-   * event; a partner's: a `partner` event (one a frame).
+   * SPECIAL, the TALK button, pressed by a player within a captive's reach: a `talk` event; a
+   * partner's: a `partner` event (one a frame). Up no longer talks (0.4.43, owner: it went off by
+   * accident on touch); it keeps its own jobs (doors, pipes, vines).
    */
   private checkTalk(inputs: InputFrame[]): void {
     for (const [i, p] of this.players.entries()) {
       const input = inputs[i] ?? NO_INPUT;
-      if (!(input.pressed('up') || input.pressed('special')) || p.vine) continue;
+      if (!input.pressed('special') || p.vine) continue;
       const c = this.entities.find((e): e is Captive => e instanceof Captive && e.alive && e.inReach(p));
       if (c) {
         c.prompt = false; // hidden under the dialogue; back on the next update in reach

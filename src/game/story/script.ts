@@ -666,7 +666,7 @@ export const LUIGI_RUNS_PAGE: Page = [
 export interface PartnerScript {
   /** The word over it while a player is in reach: TALK, or READ for the Chozo statue. */
   verb: 'TALK' | 'READ';
-  /** Said by the announcer when a player comes within reach ("Dr. Light. Up to talk."). */
+  /** Said by the announcer when a player comes within reach ("Dr. Light. Press TALK to talk."). */
   name: string;
   pages: readonly Page[];
   /** The page after which a single coin pops out over it (the old man's "TAKE THIS."). */

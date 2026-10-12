@@ -237,7 +237,7 @@ describe('the captive Luigi in the 1-1 bonus room', () => {
     expect(c.prompt).toBe(true);
     expect(draw(l).texts.some((t) => t.str === 'TALK')).toBe(true);
     // Talking hides it under the dialogue box.
-    h.tap('up');
+    h.tap('special');
     expect(h.top()).not.toBe(l);
     expect(c.prompt).toBe(false);
     expect(draw(l).texts.some((t) => t.str === 'TALK')).toBe(false);
@@ -273,7 +273,7 @@ describe('freeing Luigi', () => {
     const l = intoBonus(h);
     standByLuigi(h, l);
     const before = { x: l.world.player.body.x, y: l.world.player.body.y, power: l.world.player.powerState };
-    h.tap('up');
+    h.tap('special');
     expect(h.top()).toBeInstanceOf(CardScene);
     expect(h.said.some((t) => /luigi serves king koopa/i.test(t))).toBe(true);
     const def = miniGameFor('luigi')!;
@@ -362,7 +362,7 @@ describe('freeing Luigi', () => {
     file();
     const l = intoBonus(h);
     standByLuigi(h, l);
-    h.step(['up']); // the level's last frame: the talk
+    h.step(['special']); // the level's last frame: the talk
     expect(h.top()).toBeInstanceOf(CardScene);
     const time = l.world.time;
     const frame = l.world.frame;
@@ -493,7 +493,7 @@ describe("the freed hero's talk (0.4.23, docs/STORY.md 2.13)", () => {
     h.tap('jump');
     h.idle(60);
     expect(captives(l)).toHaveLength(0);
-    h.tap('up');
+    h.tap('special');
     expect(h.top()).toBe(l);
   });
 });
@@ -521,7 +521,7 @@ describe('the unlock flow, in detail', () => {
     file();
     const l = intoBonus(h);
     standByLuigi(h, l);
-    h.tap('up');
+    h.tap('special');
     for (let i = 0; i < 6 && h.top() instanceof CardScene; i++) {
       h.idle(32);
       h.tap('jump');
@@ -540,7 +540,7 @@ describe('the unlock flow, in detail', () => {
     file();
     const l = intoBonus(h);
     standByLuigi(h, l);
-    h.tap('up');
+    h.tap('special');
     const card = h.top() as CardScene;
     expect(card).toBeInstanceOf(CardScene);
     expect(h.said.at(-1)).toMatch(/OK to continue\.$/);
@@ -556,7 +556,7 @@ describe('the unlock flow, in detail', () => {
     file();
     const l = intoBonus(h);
     h.idle(5);
-    const talk = () => h.said.filter((t) => t === 'Luigi. Up to talk.').length;
+    const talk = () => h.said.filter((t) => t === 'Luigi. Press TALK to talk.').length;
     expect(talk()).toBe(0);
     standByLuigi(h, l);
     expect(talk()).toBe(1);
@@ -587,7 +587,7 @@ describe('the unlock flow, in detail', () => {
     p2.body.onGround = false;
     h.until(() => p2.body.onGround, 60);
     h.idle(5);
-    h.tap('up', 1);
+    h.tap('special', 1);
     expect(h.top()).toBeInstanceOf(CardScene);
     h.idle(32);
     h.tap('jump');

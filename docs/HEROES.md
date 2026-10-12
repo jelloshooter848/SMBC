@@ -52,14 +52,14 @@ captive 13 6 hero=luigi
 - It spawns only in campaign play (`World.captives`, set by LevelScene), and only while that hero
   is not freed on the file.
 - **Talking:** a player on the ground within 1.5 tiles (24 px, same floor) sees the TALK prompt
-  above it, input-aware like the other prompts (0.4.35: `TALK (UP)` with keys or a pad, on a black
-  strip; it was a bare TALK and an up arrow), and the announcer says "Luigi. Up to talk." ("Luigi.
-  Press TALK." on touch) each time a player comes into reach. Pressing **up** talks (`World.checkTalk`
-  raises a `talk` event), and so does **SPECIAL**: in reach it is the TALK button (on touch the C
-  button reads TALK, `World.talkVerb`; the hero's own special waits while in reach). Heroes that
-  also use up on the ground (Samus and Bill aim up) just talk as well while in reach. It does
-  nothing on a vine. On the map a world's local works the same way: the hint line reads
-  `TALK (UP) TO THE HEALER`, and A (on touch the TALK button) talks too.
+  above it, input-aware like the other prompts (`TALK (C)` with keys or a pad, the TALK button's
+  key, on a black strip), and the announcer says "Luigi. Press TALK (C) to talk." ("Press TALK to
+  talk." on touch) each time a player comes into reach. **SPECIAL** talks: in reach it is the TALK
+  button (on touch the C button reads TALK, `World.talkVerb`; the hero's own special waits while in
+  reach; `World.checkTalk` raises a `talk` event). Up no longer talks (0.4.43, owner: it went off by
+  accident on touch); it keeps its other jobs (doors, pipes, vines, aiming). It does nothing on a
+  vine. On the map a world's local works the same way with the TALK button there, A: the hint line
+  reads `TALK (Z) TO THE HEALER` (on touch the A button reads TALK); up only walks the roads.
 
 Luigi waits in the 1-1 bonus room on a hard-block ledge at the top right (row 7, columns
 12-14), 48 px above the top of the coin bricks. From the bricks a running or walking jump reaches

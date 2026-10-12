@@ -43,7 +43,7 @@ import {
 import { Player } from '../entities/player';
 import { startHp } from '../characters/character';
 import { MenuScene, type MenuItem } from './menu';
-import { abilityHint, boundKey, controlScheme } from './hints';
+import { abilityHint, boundKey } from './hints';
 import { OptionsScene } from './options';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
@@ -842,8 +842,7 @@ export class WorldMapScene implements Scene {
     const sealed = this.sealedHintAt(n);
     if (sealed) text += `. ${spoken(sealed)}`;
     const local = this.localHere(n) ? welcomeOf(this.page.id) : null;
-    if (local)
-      text += `. ${local.said}. ${controlScheme(this.game) === 'touch' ? 'Press TALK' : 'Up to talk'}`;
+    if (local) text += `. ${local.said}. Press ${abilityHint(this.game, 'TALK', 'jump')} to talk`;
     if (this.isHiding(n)) text += `. ${HIDING_SAID}`;
     return text;
   }
@@ -877,14 +876,15 @@ export class WorldMapScene implements Scene {
 
   /** Node `n` is this page's start with a local standing by it (worlds 2-8; story only). */
   /**
-   * The hint line on a start node with a local: TALK and its key, "TALK (UP) TO THE HEALER"
-   * (0.4.35: the TALK prompt as a button); on touch, or when the key's name would not fit, the
-   * bare "TALK TO THE HEALER" (on touch A is the TALK button then).
+   * The hint line on a start node with a local: TALK and its key, "TALK (Z) TO THE HEALER"
+   * (0.4.35: the TALK prompt as a button; 0.4.43: the TALK button only, never up); on touch, or
+   * when the key's name would not fit, the bare "TALK TO THE HEALER" (on touch A is the TALK
+   * button then).
    */
   private localTalkHint(): string {
     const w = welcomeOf(this.page.id);
     if (!w) return localHint(this.page.id);
-    const key = boundKey(this.game, 'up');
+    const key = boundKey(this.game, 'jump');
     const keyed = key ? fontText(`TALK (${key}) TO THE ${w.local}`) : '';
     return keyed && keyed.length <= HINT_COLS ? keyed : welcomeHint(w.local);
   }
@@ -894,7 +894,7 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * TALK (up) on a start node with a local: the welcome again, in the box at the top (the
+   * TALK (the jump button) on a start node with a local: the welcome again, in the box at the top (the
    * after-freed page once the world's hero is freed).
    */
   private talkToLocal(): void {
@@ -1135,7 +1135,7 @@ export class WorldMapScene implements Scene {
       }
       return;
     }
-    // A start node's local: JUMP (on touch the TALK button) talks, as up does (0.4.35).
+    // A start node's local: JUMP (on touch the TALK button) talks (0.4.35; up no longer does, 0.4.43).
     if (input.pressed('jump') && here && this.localHere(here) && !here.level) {
       this.talkToLocal();
       return;
@@ -1158,11 +1158,6 @@ export class WorldMapScene implements Scene {
     for (const d of DIRS) {
       if (!input.pressed(d)) continue;
       const step = here ? nextStep(this.page, this.progress, this.node, d, MAP_PAGES, this.unlockAll) : null;
-      // S3: up on a start node with a local (no road goes up from it) talks to the local.
-      if (!step && d === 'up' && here && this.localHere(here)) {
-        this.talkToLocal();
-        return;
-      }
       if (!step) {
         this.game.ctx.audio.sfx('bump');
         return;

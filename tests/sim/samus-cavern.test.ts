@@ -238,7 +238,7 @@ describe('captive Samus in the cavern', () => {
     for (let i = 0; i < 120 && !c.prompt; i++) h.step(['right']);
     expect(c.prompt).toBe(true);
     expect(draw(l).texts.some((t) => t.str === 'TALK')).toBe(true);
-    expect(h.said.some((t) => /^Samus\. Up to talk\.$/.test(t))).toBe(true);
+    expect(h.said.some((t) => /^Samus\. Press TALK to talk\.$/.test(t))).toBe(true);
   });
 
   it('is there only in campaign play, and only until Samus is freed', () => {

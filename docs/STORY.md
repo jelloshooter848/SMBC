@@ -97,7 +97,7 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 | 8     | The Underworld (Blaster Master) | Sophia III | 8-4 garage, after Fred down 8-4-end's trap pipe | A miner                   | Fred the frog, by 8-4-end's trap pipe (10); Jason, behind it         |
 
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
-goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
+goes. Hint NPCs are partners: you walk up and talk with the **TALK button** (`TALK`, the statue `READ`; not up since 0.4.43), campaign only, and they
 never leave. The map titles: World 1's page is MUSHROOM KINGDOM since 0.4.36 (it was GRASS LAND), World 2's HYRULE
 since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since 0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since
 0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since

@@ -35,7 +35,7 @@ import { playLevelBeat } from '../story/level-beats';
 import { playCastleRemark } from '../story/castle-remark';
 import { ANCHOR_LARRY_PAGES, anchorHeroPage, STORY_CRYSTAL_BALL_PAGES } from '../story/script';
 import { partnerNearSaid, talkToPartner } from '../story/partners';
-import { abilityHint, controlScheme } from './hints';
+import { abilityHint } from './hints';
 import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
 import { airshipDied, airshipMenu, airshipWon, isAirshipArea, type AirshipRun } from './airship';
 
@@ -102,9 +102,9 @@ export class LevelScene implements Scene {
     // tests (no GameDeps.freshSeeds) keep the level's fixed seed.
     const seed = start.seed ?? (game.deps.freshSeeds === true ? freshSeed() : levelSeed(level));
     this.world = new World(level, game.ctx, game.state, { ...start, seed });
-    // The TALK prompt over a captive or a partner names its key ("TALK (UP)"); on touch "TALK",
-    // the button it is then (0.4.35).
-    this.world.talkHint = (verb) => fontText(abilityHint(game, verb, 'up'));
+    // The TALK prompt over a captive or a partner names the TALK button's key ("TALK (C)"); on
+    // touch "TALK", the button it is then (0.4.35). Up no longer talks (0.4.43).
+    this.world.talkHint = (verb) => fontText(abilityHint(game, verb, 'special'));
     // Campaign play: brainwashed heroes wait in some rooms until freed on this file.
     if (game.campaign)
       this.world.captives = {
@@ -276,7 +276,7 @@ export class LevelScene implements Scene {
         break;
       case 'partner-near':
         game.deps.announcer?.say(
-          partnerNearSaid(ev.who, ev.player, this.world.coop, controlScheme(game) === 'touch'),
+          partnerNearSaid(ev.who, ev.player, this.world.coop, (verb) => abilityHint(game, verb, 'special')),
         );
         break;
       case 'crystal-ball':
@@ -299,9 +299,7 @@ export class LevelScene implements Scene {
       case 'captive-near': {
         const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
         const who = this.world.coop ? `Player ${ev.player + 1}: ` : '';
-        game.deps.announcer?.say(
-          `${who}${name}. ${controlScheme(game) === 'touch' ? 'Press TALK' : 'Up to talk'}.`,
-        );
+        game.deps.announcer?.say(`${who}${name}. Press ${abilityHint(game, 'TALK', 'special')} to talk.`);
         break;
       }
       case 'pipe': {

@@ -146,7 +146,7 @@ describe('the welcomes (0.4.23)', () => {
     expect(h.game.seen(beat.welcome('smb-2'))).toBe(true);
     expect(map(h).hintLine).toBe('TALK TO THE HEALER');
     h.idle(10);
-    h.tap('up');
+    h.tap('jump');
     expect(map(h).story).toBe(true);
     expect(readAll(h)).toEqual(w2?.pages);
     // Shown again: no welcome by itself.
@@ -155,7 +155,7 @@ describe('the welcomes (0.4.23)', () => {
     expect(map(h).story).toBe(false);
   });
 
-  it('once Link is freed, TALK (up) plays the after-freed page instead of the welcome', () => {
+  it('once Link is freed, TALK plays the after-freed page instead of the welcome', () => {
     const h = open({
       cleared: [...W1, '2-1'],
       pages: ['smb-1', 'smb-2'],
@@ -165,7 +165,7 @@ describe('the welcomes (0.4.23)', () => {
     });
     h.idle(10);
     expect(map(h).hintLine).toBe('TALK TO THE HEALER');
-    h.tap('up');
+    h.tap('jump');
     expect(map(h).story).toBe(true);
     const after = w2?.after ?? [];
     expect(after).toHaveLength(1);
@@ -296,10 +296,15 @@ describe("a world's local: the TALK prompt as a button (0.4.35)", () => {
     return h;
   };
 
-  it('with keys the hint line names the key: TALK (UP) TO THE HEALER', () => {
+  it("with keys the hint line names the TALK button's key: TALK (Z) TO THE HEALER; up no longer talks", () => {
     const h = onW2('keyboard');
-    expect(map(h).hintLine).toBe('TALK (UP) TO THE HEALER');
-    expect(draw(map(h)).texts.map((t) => t.str)).toContain('TALK (UP) TO THE HEALER');
+    expect(map(h).hintLine).toBe('TALK (Z) TO THE HEALER');
+    expect(draw(map(h)).texts.map((t) => t.str)).toContain('TALK (Z) TO THE HEALER');
+    // Up (no road goes up from the start) only bumps now (0.4.43, owner).
+    h.tap('up');
+    expect(map(h).story).toBe(false);
+    h.tap('jump');
+    expect(map(h).story).toBe(true);
   });
 
   it('on touch A is the TALK button there, and talks', () => {

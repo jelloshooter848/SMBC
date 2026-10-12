@@ -162,7 +162,7 @@ export function standByLuigi(h: H, l: LevelScene) {
 
 /** Talk to Luigi and go through the dialogue and rules cards into his mini game. */
 export function talkIntoMiniGame(h: H, l: LevelScene) {
-  h.tap('up');
+  h.tap('special');
   expect(h.top()).not.toBe(l);
   // Dialogue cards (OK goes on), then the rules card, then the round.
   for (let i = 0; i < 6 && (h.top() instanceof CardScene || h.top() instanceof MessageScene); i++) {

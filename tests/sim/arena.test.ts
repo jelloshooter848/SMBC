@@ -700,7 +700,7 @@ describe('meeting the heroes (SaveFile.met)', () => {
     const l = intoBonus(h);
     expect(h.game.met).toEqual(['mario']);
     standByLuigi(h, l);
-    h.tap('up');
+    h.tap('special');
     expect(h.game.met).toEqual(['mario', 'luigi']);
     expect(loadSave(1)?.met).toEqual(['mario', 'luigi']);
     expect(ARENA_GAMES.find((g) => g.id === 'mini-luigi')?.found(h.game)).toBe(true);

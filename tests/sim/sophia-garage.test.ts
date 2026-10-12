@@ -540,7 +540,7 @@ describe('the whole way in campaign play', () => {
     expect(jason?.who).toBe('jason');
     for (let f = 0; f < 300 && !jason!.inReach(scene(h).world.player); f++) h.step(['right']);
     h.idle(4);
-    h.tap('up');
+    h.tap('special');
     expect(closeCards(h)).toEqual(PARTNERS.jason!.pages.map((p) => [...p]));
     // Fred dives as the pages close (the hero still stands by Jason).
     h.idle(60);
@@ -601,7 +601,7 @@ describe('captive Sophia III', () => {
     const w = l.world;
     for (let f = 0; f < 600 && !captives(l)[0]?.inReach(w.player); f++) h.step(['right']);
     h.idle(6);
-    h.tap('up');
+    h.tap('special');
     const first = h.top() as CardScene;
     expect(first).toBeInstanceOf(CardScene);
     expect([...first.lines]).toEqual([
