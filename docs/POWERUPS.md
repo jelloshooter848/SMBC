@@ -168,9 +168,11 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 | Shield Spell  | `shield-spell`  | The belt's Shield spell (8 magic: every other hit glances off for 10 s) | refill             |
 | Jump Spell    | `jump-spell`    | The belt's Jump spell (8 magic: higher jumps for 10 s)                  | refill             |
 | Blue Ring     | `blue-ring`     | A light blue tunic: every other hit costs no heart                      | refill             |
-| Fire Spell    | `fire-spell`    | The belt's Fire spell (4 magic: the next swing fires a beam)            | refill             |
+| Fire Spell    | `fire-spell`    | The belt's Fire spell (4 magic: the next swing throws a fireball)       | refill             |
 | Magical Sword | `magical-sword` | Today's red tunic: the sword fires a beam while hearts are full         | refill             |
 
+- **The belt** (0.4.43): the Bomb Bag or a spell just taken is the tool picked, so USE TOOL uses it at
+  once (the Fire spell taken with the Jump spell picked cast the Jump spell instead).
 - **Default**: Bomb Bag (the Boomerang is in his starting kit). **Drops** (bombs, magic jars, half hearts) as
   today, but bombs drop only once he has the Bomb Bag and magic jars only once he has a spell (NEW).
 - **Hit**: half a heart (1 hit point); with the Blue Ring or the Shield spell every other hit costs no heart; with

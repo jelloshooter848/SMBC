@@ -136,6 +136,16 @@ export const SWORD_BEAM: ProjectileSpec = {
   frameRate: 1,
 };
 
+/**
+ * Link's Fire spell's shot (0.4.43): the sword beam's flight and hit as a fireball, so the spell
+ * shows (a sword-beam all the same: one out at a time, and lessons count it as one).
+ */
+export const FIRE_BEAM: ProjectileSpec = {
+  ...SWORD_BEAM,
+  frames: ['spell-fire-0', 'spell-fire-1'],
+  frameRate: 4,
+};
+
 /** Bowser's flame (BowserFireBall.as SPEED = 160 px/s: 1.33 px/f). */
 export const BOWSER_FLAME: ProjectileSpec = {
   kind: 'bowser-flame',

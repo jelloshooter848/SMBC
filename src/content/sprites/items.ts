@@ -1721,6 +1721,29 @@ const laserBeam = [
   '........................',
 ];
 
+/* Link's Fire spell (0.4.43), 16x8: a fireball flying left (drawn flipped for the right), a white-hot
+ * head and an orange tail. Frame 1 flickers the tongues. */
+const spellFire0 = [
+  '...777..........',
+  '..7555777...7...',
+  '775566657777777.',
+  '7566111665555777',
+  '756611166555777.',
+  '7755666657777...',
+  '..7555577.......',
+  '...777..........',
+];
+const spellFire1 = [
+  '...77.7.........',
+  '.77555777....7..',
+  '77556665777777..',
+  '756611166555577.',
+  '7566111665557777',
+  '775566665777.7..',
+  '..75555777......',
+  '....7.7.........',
+];
+
 /* Flame shot, 16x16: a rolling fireball flying right, orange outside, gold inside and a white-hot
  * heart, with a tail of flame streaming back on the left. Frame 1 rolls the tongues and the tail
  * so the two flicker. */
@@ -1866,6 +1889,8 @@ export const itemsDef: SpriteDef = {
     'charge-shot-0': chargeShot0,
     'charge-shot-1': swapColors(chargeShot0, { '5': '6', '6': '5' }),
     'sword-beam': swordBeam,
+    'spell-fire-0': spellFire0,
+    'spell-fire-1': spellFire1,
     'bowser-flame-0': bowserFlame0,
     'bowser-flame-1': bowserFlame1,
     platform,

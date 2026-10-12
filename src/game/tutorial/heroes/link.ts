@@ -250,10 +250,11 @@ export const LINK_LESSONS: readonly Lesson[] = [
     block: S.fireBlock,
     enter: fillMagic,
     get: 'ONE MORE SPELL IN THIS ? BLOCK.',
-    text: 'CAST IT. YOUR NEXT [SWORD:attack] FIRES A BEAM: HIT THE FAR TARGET.',
-    touchText:
-      'PICK IT WITH [TOOLS:select] AND TAP [FIRE:special:FIRE]: THE NEXT [SWORD:attack] FIRES A BEAM!',
-    retry: 'THE FIRE SPELL, THEN A SWING: ITS BEAM FLIES OVER THE DITCH TO THE TARGET.',
+    // The spell is picked as it is taken (0.4.43, pickFoundTool): cast, then swing.
+    text: 'CAST IT WITH [USE TOOL:special:FIRE], THEN [SWORD:attack]: A FIREBALL FLIES!',
+    touchText: 'TAP [FIRE:special:FIRE], THEN [SWORD:attack] ON THE GROUND: A FIREBALL FLIES!',
+    retry:
+      '[USE TOOL:special:FIRE] FIRST, THEN [SWORD:attack] ON THE GROUND: THE FIREBALL FLIES OVER THE DITCH TO THE TARGET.',
     done: (w) => hitsSince(w, (h) => h.shotKind === 'sword-beam').length > 0,
   },
   {
