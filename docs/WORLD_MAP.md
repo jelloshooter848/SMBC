@@ -577,8 +577,11 @@ and `town-folk.ts` (townsfolk, heroes from above), music `src/content/music/kaka
   existing `secrets` (`TdEntrance.needs`, `TopDownWorld.has`). Locked, it is solid, drawn boarded
   (`door-boarded`), and bumping it says CLOSED. ASK AROUND. No door is locked today and no save field is
   needed to add one.
-- **Moving.** Heroes walk eight ways at 1.5 px a frame (2 with ATTACK or RUN held), sliding along walls
-  and round corners into doorways (up to 7 px; a door takes the hero from up to 10 px either side).
+- **Moving** (0.4.43, owner: the 8-bit feel). Every hero walks as Link in the Shadow Keep: four ways
+  (the direction pressed last wins), 1.5 px a frame, on Zelda's half-tile grid, nudged onto the grid
+  line with the way ahead open and round a corner by up to half a tile into a doorway or a gap
+  (`TdHero.walk4`; it was Jason's eight-way walk, with a RUN). A door takes the hero from up to 10
+  px either side.
   Heroes only walk and talk: JUMP or SPECIAL talks to (or reads, or looks at) whoever is in front, the
   prompt over them names it with its key; START opens the menu (Continue, Quit to map).
 - **Switching heroes:** SELECT (named TOOLS; the touch button reads HERO in the village) switches to the

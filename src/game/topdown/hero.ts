@@ -199,7 +199,7 @@ export class TdHero {
   }
 
   /** The held direction that counts: the latest one pressed among those held. */
-  private wantDir(input: InputFrame): Dir | null {
+  protected wantDir(input: InputFrame): Dir | null {
     const held = DIRS.filter((d) => input.held(d));
     for (const d of held) if (!this.wasHeld.has(d)) this.lastDir = d;
     this.wasHeld = new Set(held);
@@ -266,6 +266,15 @@ export class TdHero {
       this.pushT = 0;
       return;
     }
+    this.walk4(world, want);
+  }
+
+  /**
+   * One frame of the keep's four-way walk in `want` (0.4.43: Kakariko's heroes walk this way too):
+   * 1.5 px a frame on Zelda's half-tile grid, nudged onto the grid line with the way ahead open,
+   * and round a corner by up to half a tile into a doorway or a gap.
+   */
+  protected walk4(world: TopDownWorld, want: Dir): void {
     this.facing = want;
     this.parity ^= 1;
     const step = this.parity ? 1 : 2; // 1.5 px/frame on average

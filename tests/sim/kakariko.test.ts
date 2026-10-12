@@ -1472,3 +1472,33 @@ describe('3 digits with the Wallet: the village HUD and the level HUD', () => {
     expect(rec.texts.map((x) => x.s)).toContain('$×100');
   });
 });
+
+describe('walking the village four ways, as Link in the Shadow Keep (0.4.43, owner)', () => {
+  it('every hero walks the same: one axis at a time (the way pressed last), 1.5 px a frame, RUN no faster', () => {
+    const h = makeGame();
+    const t = townQuiet(h, { freed: CHARACTERS.map((c) => c.id) });
+    for (let n = 0; n < CHARACTERS.length; n++) {
+      const hero = t.hero;
+      const id = h.game.state.character.id;
+      walkTo(h, key('gate', 7, 6));
+      h.idle(4);
+      // Right, then up pressed too: he goes up only (the last pressed), never both at once.
+      const x0 = hero.x;
+      const y0 = hero.y;
+      h.step(['right']);
+      for (let i = 0; i < 12; i++) h.step(['right', 'up']);
+      expect(hero.facing, id).toBe('up');
+      expect(hero.x - x0, id).toBeLessThanOrEqual(8);
+      expect(y0 - hero.y, id).toBeGreaterThan(0);
+      // The pace: 30 frames straight down an open street, 45 px, with RUN held too.
+      walkTo(h, key('gate', 7, 3));
+      h.idle(4);
+      const ys = hero.y;
+      for (let i = 0; i < 30; i++) h.step(['down', 'attack']);
+      expect(hero.y - ys, id).toBe(45);
+      h.idle(SWITCH_GAP);
+      h.tap('select');
+      h.idle(SWITCH_GAP);
+    }
+  });
+});
