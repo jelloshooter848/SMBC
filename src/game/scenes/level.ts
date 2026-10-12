@@ -276,7 +276,9 @@ export class LevelScene implements Scene {
         break;
       case 'partner-near':
         game.deps.announcer?.say(
-          partnerNearSaid(ev.who, ev.player, this.world.coop, (verb) => abilityHint(game, verb, 'special')),
+          partnerNearSaid(ev.who, ev.player, this.world.coop, (verb) =>
+            abilityHint(game, verb, 'special', ev.player),
+          ),
         );
         break;
       case 'crystal-ball':
@@ -299,7 +301,10 @@ export class LevelScene implements Scene {
       case 'captive-near': {
         const name = game.deps.characters.find((c) => c.id === ev.hero)?.name ?? ev.hero;
         const who = this.world.coop ? `Player ${ev.player + 1}: ` : '';
-        game.deps.announcer?.say(`${who}${name}. Press ${abilityHint(game, 'TALK', 'special')} to talk.`);
+        // The TALK key of the player in reach (in co-op player 2's own).
+        game.deps.announcer?.say(
+          `${who}${name}. Press ${abilityHint(game, 'TALK', 'special', ev.player)} to talk.`,
+        );
         break;
       }
       case 'pipe': {
