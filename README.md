@@ -142,7 +142,36 @@ has the same guide for the hero you are playing.
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
+- **Add to Home Screen** (phones, and browsers that can install the game): the browser's own
+  install prompt where there is one (Android, Chrome, Edge), else a short guide; hidden when the
+  game already runs from the Home Screen and on desktop browsers that can't install it.
 - **Level editor** (title screen only): build and share your own levels.
+
+### Add to Home Screen (play full screen and offline)
+
+The game installs like an app: full screen, its own icon, and it plays with no signal once
+loaded.
+
+- **iPhone / iPad:** open the game in **Safari** (other browsers on iOS can't add it as an app).
+  Tap **Share** (the square with an arrow; on newer iPhones it may be under **...** first), then
+  **Add to Home Screen**, then **Add**. Options → **Add to Home Screen** shows the same steps.
+- **Android (Chrome, Edge):** Options → **Add to Home Screen** opens the browser's install
+  prompt; or use the browser menu's **Add to Home Screen** / **Install app**.
+- **Desktop Chrome / Edge:** the install button in the address bar, or Options → **Add to Home
+  Screen** when the browser offers it.
+
+On iPhone the Home Screen app keeps **its own saves, separate from Safari's** (the game says so
+on its first launch). To bring a Safari save over, use **Options → Save files → PASTE CODE** in
+the app. Home Screen apps are also exempt from Safari's 7-day clean-up of site data, so saves
+there are safer.
+
+A new release downloads in the background; the title then shows **UPDATE READY**: OK reloads
+into it, BACK keeps playing (the next launch picks it up anyway).
+
+How it is built: `tools/pwa/plugin.ts` draws the icons from the pixel art in
+`src/content/sprites/app-icon.ts` at build time (no PNG in the repository), writes the manifest,
+and writes the service worker (`tools/pwa/sw.js`) with every file of the build to cache. `pnpm
+dev` and the tests never register it.
 
 ### Developer mode
 

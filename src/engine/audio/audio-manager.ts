@@ -181,9 +181,13 @@ export class AudioManager implements AudioSink {
   /** Call from a user gesture handler. Safe to call repeatedly (also recovers from iOS interruptions). */
   unlock(): void {
     if (this.ctx) {
-      if (this.ctx.state !== 'running') {
-        void this.ctx.resume().catch(() => undefined);
+      // Back from the background (wake): the whole unlock again, inside this gesture.
+      const stale = this.stale;
+      this.stale = false;
+      if (this.ctx.state !== 'running' || stale) {
+        if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
         this.playSilentBuffer();
+        if (stale) this.replayMediaSession();
       }
       return;
     }
@@ -217,6 +221,30 @@ export class AudioManager implements AudioSink {
     }
   }
   private paused = false;
+  /** The app has been in the background since the last gesture (wake). */
+  private stale = false;
+
+  /**
+   * The page is back from the background (main.ts: visibilitychange, pageshow, focus), as when
+   * the Home Screen app is reopened (0.4.44). iOS interrupts the context meanwhile, and may hand
+   * it back "running" but silent: resume at once if allowed, and redo the whole unlock on the
+   * next tap or key. A game paused on purpose stays paused.
+   */
+  wake(): void {
+    if (!this.ctx || this.paused) return;
+    this.stale = true;
+    if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
+  }
+
+  /** Plays the silent element again: iOS's audio session back to "playback" (kickMediaSession). */
+  private replayMediaSession(): void {
+    try {
+      const p = this.silentElement?.play();
+      if (p && typeof p.catch === 'function') p.catch(() => undefined);
+    } catch {
+      /* ignore */
+    }
+  }
 
   setVolumes(v: Partial<Volumes>): void {
     this.volumes = { ...this.volumes, ...v };

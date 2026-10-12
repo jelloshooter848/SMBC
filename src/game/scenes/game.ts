@@ -1,4 +1,5 @@
 import { SceneStack } from '@engine/scene';
+import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { GameContext, GameState } from '../context';
@@ -111,6 +112,11 @@ export interface GameDeps {
    * after run, alone or in the full suite.
    */
   freshSeeds?: boolean;
+  /**
+   * The Home Screen (PWA) side, 0.4.44 (main.ts): platform, install prompt, the waiting update.
+   * Without it (the sims) Options has no ADD TO HOME SCREEN and no Home Screen notice shows.
+   */
+  homeScreen?: HomeScreenHooks;
 }
 
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */

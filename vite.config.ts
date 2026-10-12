@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import type { Plugin } from 'vite';
+import { pwaPlugin } from './tools/pwa/plugin.ts';
 
 const base = process.env.VITE_BASE ?? '/';
 
@@ -59,7 +60,7 @@ function rawMapFiles(): Plugin {
 
 export default defineConfig({
   base,
-  plugins: [rawMapFiles()],
+  plugins: [rawMapFiles(), pwaPlugin({ version: appVersion })],
   define: { __APP_VERSION__: JSON.stringify(appVersion) },
   resolve: {
     alias: {
