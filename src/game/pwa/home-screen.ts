@@ -41,13 +41,14 @@ export interface HomeScreenHooks {
 
 export const ADD_TO_HOME_SCREEN = 'Add to Home Screen';
 
-/** Lines fit the card box (at most 28 characters). */
+/** Lines fit the card box (at most 28 characters; the title's cards go at the top, clear of the footer). */
 export const PHONE_TIP_LINES: readonly string[] = [
   'TIP: ADD TO HOME SCREEN',
   'FOR FULL SCREEN AND',
   'OFFLINE PLAY.',
   '',
-  'OPTIONS > ADD TO HOME SCREEN',
+  'SEE OPTIONS >',
+  'ADD TO HOME SCREEN.',
 ];
 const PHONE_TIP_SAID =
   'Tip: add to Home Screen for full screen and offline play. It is in Options, Add to Home Screen. OK to close.';
@@ -159,7 +160,7 @@ export function titleNotice(game: Game): boolean {
       setFlag(game, 'noticeDone');
       game.scenes.pop();
     };
-    card(game, STANDALONE_NOTICE_LINES, STANDALONE_NOTICE_SAID, close);
+    card(game, STANDALONE_NOTICE_LINES, STANDALONE_NOTICE_SAID, close, { top: true });
     return true;
   }
   if (updateNoticeDue(game)) {
@@ -173,7 +174,7 @@ export function titleNotice(game: Game): boolean {
         game.deps.announcer?.say('Updating.');
         game.deps.homeScreen?.applyUpdate();
       },
-      { onBack: () => game.scenes.pop() },
+      { top: true, onBack: () => game.scenes.pop() },
     );
     return true;
   }
