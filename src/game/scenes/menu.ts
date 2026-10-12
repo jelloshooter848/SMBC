@@ -14,6 +14,11 @@ export interface MenuItem {
   adjust?: (dir: -1 | 1) => void;
   /** Activate with A/Start. */
   select?: () => void;
+  /**
+   * `select` must run inside the confirm key's or touch button's own event (it shares, or uses
+   * the clipboard: iOS allows that only there). See Scene.gesture.
+   */
+  gesture?: boolean;
   /** Extra line read to screen readers. */
   hint?: string;
 }
@@ -135,6 +140,17 @@ export class MenuScene implements Scene {
     return { ...menuTouchLabels(this.onBack !== null), jump: a };
   }
 
+  /** The highlighted item's select, when it must run inside the input event (MenuItem.gesture). */
+  gesture(): (() => void) | null {
+    const it = this.items[this.index];
+    if (this.t < 6 || !it?.gesture || !it.select) return null;
+    const select = it.select;
+    return () => {
+      this.game.ctx.audio.sfx('coin');
+      select();
+    };
+  }
+
   setItems(items: MenuItem[]): void {
     this.items = items;
     this.index = Math.min(this.index, Math.max(0, items.length - 1));
@@ -164,6 +180,8 @@ export class MenuScene implements Scene {
       this.game.ctx.audio.sfx('select');
       this.announce();
     } else if (input.pressed('jump') || input.pressed('start')) {
+      // An in-event item was already picked by its key's or button's own event.
+      if (it.gesture && this.game.gestures.take()) return;
       if (it.select) {
         this.game.ctx.audio.sfx('coin');
         it.select();

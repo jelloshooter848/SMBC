@@ -250,6 +250,12 @@ export class TouchSource implements InputSource {
     }
   }
 
+  /**
+   * A button went down or came up, called inside that pointer event (main.ts: a confirm button's
+   * release is the user gesture iOS needs for sharing and the clipboard, engine/input/gesture.ts).
+   */
+  onButton: ((action: Action, down: boolean) => void) | null = null;
+
   private onDown(e: PointerEvent): void {
     const target = e.target as HTMLElement;
     const btn = target.closest<HTMLElement>('[data-action]');
@@ -257,6 +263,7 @@ export class TouchSource implements InputSource {
       e.preventDefault();
       const action = btn.dataset.action as Action;
       this.pointers.set(e.pointerId, { kind: 'btn', action, slide: FACE.includes(action) });
+      this.onButton?.(action, true);
     } else if (target.closest('[data-dpad]') || target.closest('[data-zone]')) {
       e.preventDefault();
       // One thumb drives the pad; a new touch on it takes over.
@@ -292,6 +299,7 @@ export class TouchSource implements InputSource {
     this.pointers.delete(e.pointerId);
     if (p.kind === 'dpad') this.setDirs({ ...NO_DIRS }, 0, 0);
     this.update();
+    if (p.kind === 'btn' && p.action && e.type === 'pointerup') this.onButton?.(p.action, false);
   }
 
   /** The drawn pad's resting centre and radius in client px. */

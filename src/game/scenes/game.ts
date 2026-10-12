@@ -1,4 +1,5 @@
 import { SceneStack } from '@engine/scene';
+import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
@@ -137,6 +138,8 @@ export const isCastle = (id: string): boolean => /^(ll-)?\d+-4$/.test(id);
 /** Orchestrates scenes and carries GameState between levels. */
 export class Game {
   readonly scenes = new SceneStack();
+  /** The top scene's in-event confirm action (share, clipboard), run by main.ts's input handlers. */
+  readonly gestures = new GestureGate(() => this.scenes.top?.gesture?.() ?? null);
   state: GameState;
   /** The title's rift intro has had its turn this session (later titles use the quick drop). */
   titleIntroPlayed = false;

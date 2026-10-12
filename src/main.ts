@@ -34,6 +34,7 @@ import {
   isStandalone,
 } from '@engine/platform';
 import { stopPageZoom, watchServiceWorker } from '@engine/pwa';
+import { bindGestureKeys, CONFIRM_ACTIONS } from '@engine/input/gesture';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
@@ -136,10 +137,23 @@ function boot(): void {
           : 'keyboard',
   });
 
+  // Sharing and the clipboard run inside the confirm key's or touch button's own event (iOS
+  // allows them only there; engine/input/gesture.ts): a key on its way down, a touch button as it
+  // lifts.
+  const isConfirmKey = (code: string) =>
+    settings.input.bindings.some((b) => CONFIRM_ACTIONS.some((a) => b?.keyboard[a]?.includes(code)));
+  bindGestureKeys(game.gestures, window, isConfirmKey);
+  touch.onButton = (action, down) => {
+    if (!(CONFIRM_ACTIONS as readonly string[]).includes(action)) return;
+    if (down) game.gestures.touchDown();
+    else game.gestures.touchUp();
+  };
+
   const loop = new FixedLoop({
     step() {
       input.beginFrame();
       game.scenes.update([input.player(0), input.player(1)]);
+      game.gestures.endFrame();
       // The buttons say what they do in the scene now on top: its labels over the menu defaults
       // (setLabels only touches buttons whose label changed).
       const labels = { ...MENU_TOUCH_LABELS, ...game.scenes.top?.touchLabels?.() };

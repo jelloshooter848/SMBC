@@ -89,7 +89,12 @@ export class SaveFilesOptions extends MenuScene {
         select: () => this.openFile(slot),
         hint: 'Share save, copy code or paste code',
       })),
-      { label: 'Paste code', select: () => this.paste(), hint: 'Load a save code into a file' },
+      {
+        label: 'Paste code',
+        select: () => this.paste(),
+        hint: 'Load a save code into a file',
+        gesture: true,
+      },
       {
         label: 'Backup reminders',
         value: () => (reminders(game) ? 'On' : 'Off'),
@@ -158,9 +163,26 @@ export class FileCodeScene extends MenuScene {
     super(game, `FILE ${slot}`, [], onBack, translucent);
     this.refresh();
     this.setItems([
-      { label: 'Share save', select: () => void this.share(), hint: 'Send a link that loads this file' },
-      { label: 'Copy code', select: () => void this.copy(), hint: 'Put the save code on the clipboard' },
-      { label: 'Paste code', select: () => this.paste(), hint: `Load a save code into file ${slot}` },
+      // In the confirm press's own event (MenuItem.gesture): iOS shares and uses the clipboard
+      // only there.
+      {
+        label: 'Share save',
+        select: () => void this.share(),
+        hint: 'Send a link that loads this file',
+        gesture: true,
+      },
+      {
+        label: 'Copy code',
+        select: () => void this.copy(),
+        hint: 'Put the save code on the clipboard',
+        gesture: true,
+      },
+      {
+        label: 'Paste code',
+        select: () => this.paste(),
+        hint: `Load a save code into file ${slot}`,
+        gesture: true,
+      },
       { label: 'Back', select: () => this.onBack?.() },
     ]);
   }

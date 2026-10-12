@@ -24,6 +24,7 @@ import type { ShareEnv } from '@game/save/share-code';
 import type { MenuItem } from '@game/scenes/menu';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
+import { bindGestureKeys } from '@engine/input/gesture';
 import { ALL_STORY } from './story-seen';
 
 // Portable save codes (0.4.44, docs/SAVE_CODES.md) in play: a resume link's question at the
@@ -533,3 +534,123 @@ describe('Options > Save files', () => {
     expect(h.said).toContain('FILE 2 IS EMPTY');
   });
 });
+
+// ------------------------------------------------------------------ inside the input event (iOS)
+
+describe("share, copy and paste run inside the player's input event (iOS needs a user gesture)", () => {
+  /** A confirm key's keydown, dispatched like the browser's: `inEvent` is true only inside it. */
+  function keys(h: H) {
+    const target = new EventTarget();
+    bindGestureKeys(h.game.gestures, target, (c) => c === 'KeyZ');
+    const state = { inEvent: false };
+    const press = () => {
+      const e = new Event('keydown');
+      Object.defineProperty(e, 'code', { value: 'KeyZ' });
+      state.inEvent = true;
+      target.dispatchEvent(e);
+      state.inEvent = false;
+    };
+    return { state, press };
+  }
+
+  it('COPY CODE on the file screen copies inside the keydown, and the frame does not copy again', async () => {
+    const calls: boolean[] = [];
+    let k: ReturnType<typeof keys> | null = null;
+    const env: ShareEnv = {
+      href: 'https://example.com/SMBC/',
+      copy: async () => {
+        calls.push(k?.state.inEvent ?? false);
+        return true;
+      },
+    };
+    const h = makeGame(env);
+    k = keys(h);
+    file({ cleared: ['1-0', '1-1'] }, 1);
+    const fileScene = new FileCodeScene(h.game, 1, () => h.game.scenes.pop());
+    h.game.scenes.push(fileScene);
+    h.idle(8);
+    h.tap('down'); // COPY CODE
+    k.press();
+    expect(calls).toEqual([true]);
+    h.tap('jump'); // the same press, seen by the game a frame later
+    await vi.waitFor(() => expect(h.said).toContain('CODE COPIED'));
+    expect(calls).toEqual([true]);
+    // A gamepad has no such event: its press copies in the frame, as before.
+    h.idle(4);
+    h.tap('jump');
+    await vi.waitFor(() => expect(calls).toEqual([true, false]));
+  });
+
+  it('PASTE CODE opens the box (and reads the clipboard) inside the keydown', () => {
+    const h = makeGame();
+    const k = keys(h);
+    h.game.showTitle();
+    const files = new SaveFilesOptions(h.game, () => h.game.scenes.pop());
+    h.game.scenes.push(files);
+    h.idle(8);
+    for (let i = 0; i < 3; i++) h.tap('down'); // PASTE CODE
+    k.press();
+    expect(h.top()).toBeInstanceOf(PasteCodeScene);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(PasteCodeScene);
+  });
+
+  it("the backup card shares on the touch button's release, not on its press or a later frame", async () => {
+    const calls: boolean[] = [];
+    let inEvent = false;
+    const env: ShareEnv = {
+      href: 'https://example.com/SMBC/',
+      share: async () => void calls.push(inEvent),
+    };
+    const h = makeGame(env);
+    h.game.openFile(1, castleFileFor());
+    clearCastleFor(h);
+    h.until(() => h.top() instanceof BackupCardScene);
+    const card = h.top() as BackupCardScene;
+    h.idle(40);
+    h.game.gestures.touchDown(); // the A button goes down: no gesture yet on iOS
+    h.step(['jump']);
+    h.step(['jump']);
+    expect(calls).toEqual([]);
+    inEvent = true;
+    h.game.gestures.touchUp(); // ... and lifts
+    inEvent = false;
+    h.step();
+    expect(calls).toEqual([true]);
+    await vi.waitFor(() => expect(card.status).toBe('SAVE SHARED'));
+    expect(calls).toEqual([true]);
+  });
+
+  it('when the browser refuses, the card shows the code to copy by hand (and reads it out)', async () => {
+    const h = makeGame(fakeEnv({ copy: false }).env);
+    h.game.openFile(1, castleFileFor());
+    clearCastleFor(h);
+    h.until(() => h.top() instanceof BackupCardScene);
+    const card = h.top() as BackupCardScene;
+    h.idle(40);
+    h.tap('down');
+    h.tap('jump'); // COPY CODE
+    const code = encodeSaveCode(loadSave(1) as SaveFile);
+    await vi.waitFor(() => expect(card.shownCode).toBe(code));
+    expect(h.said).toContain('COPY FAILED');
+    expect(h.said.some((t) => t.startsWith('Your save code: '))).toBe(true);
+    expect(h.top()).toBe(card);
+  });
+});
+
+function castleFileFor(): SaveFile {
+  return file({
+    cleared: ['1-0', '1-1', '1-2', '1-3'],
+    freed: ['mario', 'luigi'],
+    position: { page: 'smb-1', node: '1-4' },
+  });
+}
+
+function clearCastleFor(h: H): void {
+  h.game.enterLevelFromMap('1-4');
+  h.idle(12);
+  h.tap('jump');
+  h.until(() => h.top() instanceof LevelScene);
+  (h.top() as LevelScene).world.events.push({ type: 'exit', next: '2-1' });
+  h.step();
+}

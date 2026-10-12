@@ -74,11 +74,23 @@ export function watchServiceWorker(
 }
 
 /**
+ * Where the phone's own touch handling stays: text fields, and DOM panels marked
+ * `data-native-touch` (PASTE CODE's box: double-tap to select, long-press Paste, the iOS Paste
+ * bubble).
+ */
+export const NATIVE_TOUCH = 'input, textarea, select, [contenteditable], [data-native-touch]';
+
+/**
  * The last of "feel like an app" that CSS can't do (index.html has the rest): iOS Safari ignores
- * `user-scalable=no`, so pinch (gesturestart) and double-tap zoom (dblclick) are stopped here.
+ * `user-scalable=no`, so pinch (gesturestart) and double-tap zoom (dblclick) are stopped here,
+ * except in a text field or a NATIVE_TOUCH panel.
  */
 export function stopPageZoom(doc: Document): void {
-  const stop = (e: Event) => e.preventDefault();
+  const stop = (e: Event) => {
+    const t = e.target as Partial<Element> | null;
+    if (typeof t?.closest === 'function' && t.closest(NATIVE_TOUCH)) return;
+    e.preventDefault();
+  };
   doc.addEventListener('gesturestart', stop, { passive: false });
   doc.addEventListener('dblclick', stop, { passive: false });
 }

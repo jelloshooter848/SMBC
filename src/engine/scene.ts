@@ -15,6 +15,13 @@ export interface Scene {
    * left out keep the menu defaults (main.ts, MENU_TOUCH_LABELS). Touch drives player 1 only.
    */
   touchLabels?(): TouchLabels;
+  /**
+   * The confirm action that must run inside the player's own input event (sharing, the
+   * clipboard: iOS allows them only there), while the cursor sits on it; null or absent: none.
+   * The input handlers run it in the event (engine/input/gesture.ts); the scene's frame then
+   * skips the same press when GestureGate.take() says it was handled.
+   */
+  gesture?(): (() => void) | null;
 }
 
 export class SceneStack {

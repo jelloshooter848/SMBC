@@ -22,7 +22,10 @@ const STYLE = `
 .code-entry { position: fixed; z-index: 50; left: 50%; top: max(8px, env(safe-area-inset-top));
   transform: translateX(-50%); width: min(560px, calc(100vw - 32px)); box-sizing: border-box;
   padding: 12px; background: #000; color: #fcfcfc; border: 4px solid #fcfcfc;
-  font: 16px/1.3 ui-monospace, Menlo, Consolas, monospace; text-transform: uppercase; }
+  font: 16px/1.3 ui-monospace, Menlo, Consolas, monospace; text-transform: uppercase;
+  /* The page blocks the long-press callout (index.html): the box keeps it, for Paste. */
+  -webkit-touch-callout: default; }
+.code-entry textarea, .code-entry button { -webkit-touch-callout: default; }
 .code-entry h2 { font-size: 16px; margin: 0 0 6px; letter-spacing: 1px; }
 .code-entry p { margin: 0 0 8px; font-size: 13px; color: #bcbcbc; }
 .code-entry textarea { display: block; width: 100%; box-sizing: border-box; height: 4.2em; resize: none;
@@ -56,6 +59,8 @@ export class CodeEntryPanel {
   ) {
     const el = document.createElement('div');
     el.className = 'code-entry';
+    // The phone's own touch handling (engine/pwa.ts NATIVE_TOUCH): no page-zoom blocking here.
+    el.dataset.nativeTouch = '';
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-modal', 'true');
     el.setAttribute('aria-labelledby', 'code-entry-title');

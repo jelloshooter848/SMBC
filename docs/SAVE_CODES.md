@@ -189,6 +189,12 @@ still goes through the escape, so nothing is ever lost, only a few characters.
     COPIED.
   - The sheet closed: SHARE CANCELLED.
 - **COPY CODE** uses the Clipboard API, then falls back to `execCommand('copy')`.
+- SHARE SAVE, COPY CODE and PASTE CODE run **inside the confirm press's own event** (iOS Safari
+  allows sharing and the clipboard only in a user gesture, never later in the game loop): a
+  menu item or the backup card offers the action (`Scene.gesture`), and `engine/input/gesture.ts`
+  runs it in the JUMP / START key's keydown or as the touch A / MENU button lifts. A gamepad
+  press has no such event and runs it in the frame. When the browser still refuses, the code is
+  on screen (the file's screen; the backup card shows it too) and PASTE CODE's text box takes it.
 - **PASTE CODE** reads the clipboard at once when the browser allows it, and a code found there
   goes straight to the question. Otherwise the DOM text box takes it:
   - type into it, or long-press and Paste;

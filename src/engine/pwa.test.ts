@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { watchServiceWorker } from './pwa';
+import { stopPageZoom, watchServiceWorker } from './pwa';
 
 // The page's side of the service worker (0.4.44): a first install is not an update; a new
 // release waiting behind the running one is (UPDATE READY); applying it asks the new worker to
@@ -107,5 +107,29 @@ describe('watchServiceWorker', () => {
     const w = watchServiceWorker('/', undefined, vi.fn());
     expect(w.ready).toBe(false);
     w.apply();
+  });
+});
+
+describe('stopPageZoom', () => {
+  /** An event as the browser sends it, from an element matching `selectors` (closest). */
+  function from(type: string, matches: (sel: string) => boolean): Event {
+    const e = new Event(type, { cancelable: true });
+    Object.defineProperty(e, 'target', { value: { closest: (sel: string) => (matches(sel) ? {} : null) } });
+    return e;
+  }
+
+  it('stops pinch and double-tap zoom on the game, but not in a text box or the paste box', () => {
+    const doc = new EventTarget() as unknown as Document;
+    stopPageZoom(doc);
+    for (const type of ['gesturestart', 'dblclick']) {
+      const onGame = from(type, () => false);
+      doc.dispatchEvent(onGame);
+      expect(onGame.defaultPrevented).toBe(true);
+      // the paste box (data-native-touch) and any text field keep the phone's own
+      // double-tap to select and pinch
+      const inBox = from(type, (sel) => sel.includes('[data-native-touch]') && sel.includes('textarea'));
+      doc.dispatchEvent(inBox);
+      expect(inBox.defaultPrevented).toBe(false);
+    }
   });
 });
