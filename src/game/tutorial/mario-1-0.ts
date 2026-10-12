@@ -228,6 +228,8 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     id: 'ease',
     at: 36,
     text: 'TOP SPEED! NOW LET GO OF [RUN:attack] AND JUST WALK.',
+    // A thumb pushed far runs too (the RUN demo's PUSH FAR): it eases back in to walk.
+    touchText: 'TOP SPEED! NOW JUST WALK: EASE THE D-PAD BACK IN, OR LET GO OF [RUN:attack].',
     retry: 'LET GO OF [RUN:attack] AND WALK UP TO THE GATE TO OPEN IT.',
     done: (w) => tick(w).walk >= WALK_FRAMES,
   },

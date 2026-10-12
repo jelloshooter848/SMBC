@@ -464,8 +464,12 @@ describe('the prompts name abilities, never buttons', () => {
       'HOLD RUN (X) TO SPRINT. KEEP IT HELD AT TOP SPEED UNTIL THE BAR FILLS!',
     );
     expect(prompts('gamepad')[run]?.join(' ')).not.toContain('D-PAD');
+    // After the sprint, a thumb pushed far is told how to walk too, not only to let go of RUN.
+    const ease = MARIO_LESSONS.findIndex((l) => l.id === 'ease');
+    expect(touch[ease]?.join(' ')).toMatch(/D-PAD/);
+    expect(keys[ease]?.join(' ')).toBe('TOP SPEED! NOW LET GO OF RUN (X) AND JUST WALK.');
     for (const l of MARIO_LESSONS)
-      if (l.id !== 'sprint' && l.id !== 'gap1') expect(l.touchText, l.id).toBeUndefined();
+      if (!['sprint', 'ease', 'gap1'].includes(l.id)) expect(l.touchText, l.id).toBeUndefined();
     for (const lines of [...touch, ...keys]) expect(lines.length).toBeLessThanOrEqual(4);
     for (const lines of [...touch, ...keys]) {
       for (const l of lines) {
