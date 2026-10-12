@@ -577,8 +577,11 @@ and `town-folk.ts` (townsfolk, heroes from above), music `src/content/music/kaka
   existing `secrets` (`TdEntrance.needs`, `TopDownWorld.has`). Locked, it is solid, drawn boarded
   (`door-boarded`), and bumping it says CLOSED. ASK AROUND. No door is locked today and no save field is
   needed to add one.
-- **Moving.** Heroes walk eight ways at 1.5 px a frame (2 with ATTACK or RUN held), sliding along walls
-  and round corners into doorways (up to 7 px; a door takes the hero from up to 10 px either side).
+- **Moving** (0.4.43, owner: the 8-bit feel). Every hero walks as Link in the Shadow Keep: four ways
+  (the direction pressed last wins), 1.5 px a frame, on Zelda's half-tile grid, nudged onto the grid
+  line with the way ahead open and round a corner by up to half a tile into a doorway or a gap
+  (`TdHero.walk4`; it was Jason's eight-way walk, with a RUN). A door takes the hero from up to 10
+  px either side.
   Heroes only walk and talk: JUMP or SPECIAL talks to (or reads, or looks at) whoever is in front, the
   prompt over them names it with its key; START opens the menu (Continue, Quit to map).
 - **Switching heroes:** SELECT (named TOOLS; the touch button reads HERO in the village) switches to the
@@ -746,7 +749,7 @@ A ninja trick wall (a karakuri revolving panel) can flip the player through a wa
 area (6-2's first bonus room into Ryu's dojo):
 
 ```
-trick x y h -> level x y [exit=up] [campaign]
+trick x y h -> level x y [exit=up|fall] [campaign]
 ```
 
 - The panel is the `h` tiles from (x, y) down in column x, written `N` in maps (`T.TRICK`: solid,
@@ -763,8 +766,10 @@ trick x y h -> level x y [exit=up] [campaign]
   hidden as for a pipe; the panel makes a half turn over `TRICK_SPIN_FRAMES` (24) with the
   `panel-spin` sound; the pusher is hidden as it turns edge-on, and `TRICK_HOLD_FRAMES` (12) later,
   the panel still showing its far face, the level moves to `target` like a pipe transfer (`pipe`
-  event, the clock carries over within a stage): a `spin` arrival, or with `exit=up` rising out
-  of the pipe at the target. Only the panel turns: no flashing.
+  event, the clock carries over within a stage): a `spin` arrival, with `exit=up` rising out of
+  the pipe at the target, or with `exit=fall` dropping in from above it (the dojo's way out into
+  6-2 since 0.4.43: the player arrives the way he left, never up a pipe he did not go down). Only
+  the panel turns: no flashing.
 - **The frames** (the `ninja` sheet; `spinFrame`): from the brick side `trick-wall-0` (exactly
   `brick@underground`) → `-1` → `-2` (edge-on) → `-3` → `trick-wall-back` (the flat wooden dojo
   side), each frame filling its tile, stacked down the panel. A panel at rest shows its own room's

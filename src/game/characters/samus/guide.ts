@@ -5,12 +5,25 @@ export const SAMUS_GUIDE: CharacterGuide = {
   controls: [
     { action: 'left/right', does: 'Walk. Jump while moving to somersault.' },
     { action: 'jump', does: 'A floaty jump. Let go early to cut it short.' },
-    { action: 'attack', touch: 'SHOOT', does: 'Fire the beam, or a missile when missiles are picked.' },
+    {
+      action: 'attack',
+      touch: 'SHOOT',
+      does: 'Fire your beam (the last beam picked). Classic play: a missile when missiles are picked.',
+    },
     { action: 'up', does: 'Hold to aim straight up.' },
     { action: 'down', does: 'Morph ball: fits one-tile gaps, no jumping. Up stands.' },
     { action: 'attack', touch: 'BOMB', does: 'In the ball: drop a bomb. Opens blocks. Sit on it to bounce.' },
-    { action: 'select', touch: 'WEAPON', does: 'Switch between your beams and missiles.' },
-    { action: 'special', touch: 'MISSILE', does: 'Fire a missile.' },
+    {
+      action: 'select',
+      touch: 'WEAPON',
+      does: 'Pick a beam or the missiles. The new one you find is picked.',
+    },
+    {
+      action: 'special',
+      touch: 'USE WEAPON',
+      does: 'Fire the weapon picked: a missile, or the beam picked. Classic play: always a missile.',
+      touchDoes: 'Shows the weapon picked. Tap to fire it.',
+    },
   ],
   powerups: [
     {

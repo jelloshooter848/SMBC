@@ -6,8 +6,10 @@ import type { AssetRegistry } from '@engine/assets/registry';
  * beaten and the crystal ball's card is dismissed, Larry's airship (map scale, smoking) flies in
  * over 4-2 and tips bow-down; the hero jumps out and lands on 4-2 (dust); the ship dives onto the
  * bonus spot and crashes (smoke, the wreck); Toad walks in from off screen, hammers a few times
- * (planks fly) and the wreck turns into the bonus node; Toad waves and walks off. Then the map's
- * usual secret-road reveal draws the road from 4-2 to the bonus spot (scenes/world-map.ts).
+ * (planks fly) and the wreck turns into the bonus node; Toad waves by it. Then his crash cards: he
+ * walks straight from the house to the hero (0.4.43, owner: no detour off the right edge and back
+ * in from the left; map/toad-guide.ts `from`), and the map's usual secret-road reveal draws the
+ * road from 4-2 to the bonus spot (scenes/world-map.ts).
  *
  * This is the timeline and the drawing only: the map scene runs it as its `cutscene` mode, feeds
  * it the frame clock, and plays the sounds and says the lines it hands back. All art is the smb3
@@ -36,13 +38,10 @@ export const CRASH_FRAMES = {
   HAMMER: 244,
   /** ... the wreck turns into the bonus node ... */
   BUILD: 304,
-  /** ... Toad waves, then walks on off to the right. */
-  LEAVE: 334,
-  END: 390,
+  /** ... and Toad waves by it; then his cards (he walks to the hero from here). */
+  END: 364,
 } as const;
 export const HAMMER_BEAT = 20;
-/** Where Toad walks off to: past the right edge of the 256 px screen. */
-const TOAD_EXIT_X = 258;
 export const HAMMER_HITS = 3;
 /** The smb3 sheet, which holds every frame the cutscene draws. */
 const SHEET = 'smb3';
@@ -221,11 +220,12 @@ export class AirshipCrash {
       const down = (t - F.HAMMER) % HAMMER_BEAT >= HAMMER_BEAT / 2;
       return { frame: `toad-map-hammer-${down ? 1 : 0}`, x: stand, y, flip: false };
     }
-    if (t < F.LEAVE)
-      return { frame: `toad-map-${(t >> 4) & 1}`, x: stand, y: y - ((t >> 3) & 1), flip: false };
-    const k = (t - F.LEAVE) / (F.END - F.LEAVE);
-    // He leaves forward, on to the right and off screen (0.4.35, owner: never back the way he came).
-    return { frame: walk, x: Math.round(lerp(stand, TOAD_EXIT_X, k)), y, flip: false };
+    return { frame: `toad-map-${(t >> 4) & 1}`, x: stand, y: y - ((t >> 3) & 1), flip: false };
+  }
+
+  /** Where Toad stands by the house he built (top-left of his frame): his cards' walk starts here. */
+  get toadHome(): { x: number; y: number } {
+    return { x: this.wreck.x - 14, y: this.bonusFeet - 16 };
   }
 
   /**

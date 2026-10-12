@@ -55,6 +55,7 @@ import { PowerUp } from '../entities/objects/powerup';
 import { isPickupKind, Pickup } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
+import { isFound } from '../items/flags';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
 import {
@@ -98,7 +99,7 @@ import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 import { CASTLE_PAGES, REMARK_CASTLES } from '../story/script';
-import { CastleUnmask } from './unmask';
+import { CastleUnmask, walkStep } from './unmask';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
@@ -1173,7 +1174,7 @@ export class World {
     for (const e of carried) {
       if (e instanceof PowerUp) {
         if (e.item === 'clock') this.collectClock(e);
-        else if (e.item !== 'poison') p.def.behaviour.onPowerUp(p, e.item, this);
+        else if (e.item !== 'poison') this.powerUp(p, e.item);
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
       else if (e instanceof Pickup) this.collectPickup(p, e);
     }
@@ -1537,13 +1538,14 @@ export class World {
   }
 
   /**
-   * Up (or SPECIAL, the TALK button) pressed by a player within a captive's reach: a `talk`
-   * event; a partner's: a `partner` event (one a frame).
+   * SPECIAL, the TALK button, pressed by a player within a captive's reach: a `talk` event; a
+   * partner's: a `partner` event (one a frame). Up no longer talks (0.4.43, owner: it went off by
+   * accident on touch); it keeps its own jobs (doors, pipes, vines).
    */
   private checkTalk(inputs: InputFrame[]): void {
     for (const [i, p] of this.players.entries()) {
       const input = inputs[i] ?? NO_INPUT;
-      if (!(input.pressed('up') || input.pressed('special')) || p.vine) continue;
+      if (!input.pressed('special') || p.vine) continue;
       const c = this.entities.find((e): e is Captive => e instanceof Captive && e.alive && e.inReach(p));
       if (c) {
         c.prompt = false; // hidden under the dialogue; back on the next update in reach
@@ -2100,6 +2102,20 @@ export class World {
   }
 
   /**
+   * `p` takes SMB's power-up `kind` (a block another hero struck: Mario's in co-op). In the
+   * campaign a hero with items of their own takes theirs instead, by the blocks' rule (0.4.43:
+   * Samus took the Varia Suit from a Mushroom before any Energy Tank): a small hero their grow item,
+   * else the Mushroom their next one, the Fire Flower their default power. Else its onPowerUp.
+   */
+  powerUp(p: Player, kind: Exclude<PowerUp['item'], 'poison' | 'clock'>): void {
+    if ((kind === 'mushroom' || kind === 'flower') && itemRules(p.def.id) && isFound(p)) {
+      const id = blockItem(p, null, kind === 'mushroom' ? 'mushroom' : 'powerup');
+      if (id !== null) return this.takeHeroItem(p, new HeroItem(0, 0, id, p.def.id));
+    }
+    p.def.behaviour.onPowerUp(p, kind, this);
+  }
+
+  /**
    * Any hero's Clock (Character.as, PickupInfo.CLOCK): Clock.SCORE_VALUE = 1000 points and
    * Clock.TIME_TO_ADD = 100 on the timer; back above the hurry time, the hurry tune ends
    * (StatManager.checkCancelSecondsLeft).
@@ -2170,7 +2186,7 @@ export class World {
           if (e.item === 'poison') {
             if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
           } else if (e.item === 'clock') this.collectClock(e);
-          else p.def.behaviour.onPowerUp(p, e.item, this);
+          else this.powerUp(p, e.item);
         }
       } else if (e instanceof HeroItem) {
         if (e.out && overlaps(pb, e.body)) {
@@ -2917,6 +2933,18 @@ export class World {
     return true;
   }
 
+  /** A campaign castle's fake that fell off the level (its castle id): the line comes at the axe. */
+  private fakeFell: string | null = null;
+
+  /**
+   * Bowser `b` fell off the bottom of the level alive (into the lava or a pit, 0.4.43). In a
+   * castle with the unmask scenes his disguise is gone with him: the hero says his line at the axe.
+   */
+  bowserFell(b: Bowser): void {
+    const level = this.unmaskCastle(b);
+    if (level) this.fakeFell = level;
+  }
+
   /**
    * Player `p` touched the axe: with the fake still standing in a castle with the unmask scenes,
    * his disguise bursts and the hero looks at the creature (and says the remark) before the axe
@@ -2926,6 +2954,13 @@ export class World {
     const b = this.entities.find(
       (e): e is Bowser => e instanceof Bowser && e.alive && !e.fake && e.standing === 0,
     );
+    // The fake fell off the level (0.4.43): the hero still looks and says his line.
+    if (!b && this.fakeFell && !this.unmask) {
+      this.unmask = new CastleUnmask('fell', null, p, axe, this.fakeFell);
+      this.fakeFell = null;
+      this.unmask.start(this);
+      return true;
+    }
     const level = b ? this.unmaskCastle(b) : null;
     if (!b || !level || this.unmask) return false;
     this.unmask = new CastleUnmask('axe', b, p, axe, level);
@@ -3011,8 +3046,7 @@ export class World {
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;
-      p.body.x += px(1);
-      this.bossWalkFall(p);
+      walkStep(this, p, px(1));
       // The screen follows the walk, so Toad (or the princess) comes into view.
       this.camera.follow(p.body.x);
       this.spawnPending();
@@ -3070,22 +3104,6 @@ export class World {
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
     } else if (ok) leave();
-  }
-
-  /**
-   * Gravity for the walk to Toad: the player drops off the axe's ledge onto the floor below, but
-   * never into a pit (over the cut bridge's lava the walk stays level).
-   */
-  private bossWalkFall(p: Player): void {
-    const b = p.body;
-    const col = tileAt(b.x + (b.w >> 1));
-    let ground = tileAt(b.y + b.h);
-    while (ground < this.level.height && !this.map.isSolid(col, ground)) ground++;
-    if (ground >= this.level.height) return;
-    const top = tileToSub(ground) - b.h;
-    b.vy = Math.min(b.vy + 0x00400, 0x04000);
-    b.y = Math.min(b.y + velToSub(b.vy), top);
-    if (b.y === top) b.vy = 0;
   }
 
   private renderCastleText(r: Renderer, view: View): void {

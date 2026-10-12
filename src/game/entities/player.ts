@@ -144,6 +144,26 @@ export class Player {
     b.y = bottom - b.h;
   }
 
+  /**
+   * Whether his standing body (not crouched, not sliding) fits where he is, feet where they are
+   * (0.4.43): a slide or a crouch ends only then.
+   */
+  roomToStand(map: TileMap): boolean {
+    const crouching = this.crouching;
+    const sliding = this.sliding;
+    this.crouching = false;
+    this.sliding = 0;
+    const hb = this.def.hitbox(this);
+    this.crouching = crouching;
+    this.sliding = sliding;
+    const b = this.body;
+    const top = b.y + b.h - px(hb.h);
+    for (let ty = tileAt(top); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + px(hb.w) - 1); tx++)
+        if (map.isSolid(tx, ty)) return false;
+    return true;
+  }
+
   startTransition(kind: 'grow' | 'shrink'): void {
     this.transition = { kind, t: 0 };
     this.refitHitbox();
@@ -191,11 +211,14 @@ export class Player {
     // Crouching: only when tall enough and on the ground; can't walk while crouched.
     const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
     const wantCrouch = input.held('down') && canCrouch && b.onGround && this.sliding === 0;
-    if (wantCrouch !== this.crouching) {
+    // Under a low ceiling (a crouch-slide under bricks, prone under a ledge) he stays down, and
+    // crawls on until there is room to stand (0.4.43: never standing up inside tiles).
+    const cramped = this.crouching && !wantCrouch && !this.roomToStand(map);
+    if (wantCrouch !== this.crouching && !cramped) {
       this.crouching = wantCrouch;
       this.refitHitbox();
     }
-    if (this.crouching) dir = 0;
+    if (this.crouching && !cramped) dir = 0;
 
     if (this.stun > 0) {
       this.stun--;
@@ -203,7 +226,15 @@ export class Player {
     } else if (this.sliding > 0) {
       this.sliding--;
       b.vx = this.facing * (p.slide?.speed ?? 0);
-      if (this.sliding === 0 || b.hitWall !== 0) this.endSlide();
+      if (this.sliding === 0 || b.hitWall !== 0) {
+        // Under a low ceiling the slide goes on until there is room to stand, as in his own games
+        // (0.4.43); against a wall there it waits, and turns with the d-pad.
+        if (this.roomToStand(map)) this.endSlide();
+        else {
+          this.sliding = 1;
+          if (b.hitWall === this.facing) b.vx = 0;
+        }
+      }
     } else if (b.onGround) {
       this.sinceGround = 0;
       this.groundMove(dir, running);

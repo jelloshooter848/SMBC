@@ -10,6 +10,7 @@ import { getLevel } from '@content/levels';
 import { newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
 import { ALL_STORY } from './story-seen';
+import { beat } from '@game/story/beats';
 
 // The World 4 map's airship crash (owner decision 8:25 PM PDT, docs/WORLD_MAP.md): after Larry is
 // beaten and the crystal ball's card is dismissed, the airship flies in smoking and tips, the
@@ -257,20 +258,44 @@ describe('the airship crash on the World 4 map', () => {
   });
 });
 
-describe('Toad leaves the wreck forward (0.4.35, owner)', () => {
-  it('after building the bonus spot he walks on to the right and off screen, facing right', () => {
+describe('Toad walks straight from the house to the hero (0.4.43, owner)', () => {
+  it('after building the bonus spot he waves by it; his crash cards bring him straight to the hero', () => {
     const c = new AirshipCrash({ x: 6, y: 8 }, { x: 3, y: 11 });
     const names = { heroes: 'Mario', bonus: 'Toad House', skip: 'JUMP' };
-    while (c.t < CRASH_FRAMES.LEAVE) c.update(names);
-    const at = c.toad()!;
-    let last = at;
-    while (c.t < CRASH_FRAMES.END - 1) {
+    while (c.t < CRASH_FRAMES.BUILD) c.update(names);
+    // He stays by the house to the end (no walk off the right edge).
+    while (!c.done) {
       c.update(names);
-      const now = c.toad()!;
-      expect(now.x).toBeGreaterThanOrEqual(last.x);
-      expect(now.flip).toBe(false);
-      last = now;
+      const at = c.toad();
+      if (at) expect(Math.abs(at.x - c.toadHome.x), `frame ${c.t}`).toBeLessThanOrEqual(0);
     }
-    expect(last.x).toBeGreaterThan(250);
+    for (const skip of [false, true]) {
+      const h = open(world4({ story: ALL_STORY.filter((id) => id !== beat.crash) }));
+      const map = takeBall(h);
+      if (skip) {
+        h.idle(30);
+        h.tap('jump');
+      } else h.until(() => !map.cutscene, CRASH_FRAMES.END + 10);
+      expect(map.cutscene).toBe(false);
+      const xs: { x: number; y: number }[] = [];
+      for (let i = 0; i < 300 && map.toad && !map.toad.lines; i++) {
+        const t = map.toad.toad();
+        if (t) xs.push({ x: t.x, y: t.y });
+        h.step();
+      }
+      expect(map.toad?.lines, `skip ${skip}`).toBeTruthy();
+      // The walk starts by the house (not off the left edge), and ends at the hero.
+      expect(xs.length).toBeGreaterThan(0);
+      const first = xs[0] as { x: number; y: number };
+      const last = map.toad?.toad() as { x: number; y: number };
+      expect(first.x, `skip ${skip}`).toBeGreaterThan(0);
+      // Every step closer to where he stops: never off screen and back.
+      const dist = (p: { x: number; y: number }) => Math.hypot(p.x - last.x, p.y - last.y);
+      for (let i = 1; i < xs.length; i++)
+        expect(dist(xs[i] as { x: number; y: number })).toBeLessThanOrEqual(
+          dist(xs[i - 1] as { x: number; y: number }) + 0.01,
+        );
+      for (const p of xs) expect(p.x).toBeGreaterThanOrEqual(0);
+    }
   });
 });

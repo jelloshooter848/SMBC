@@ -386,8 +386,9 @@ export type Zone =
    * A ninja trick wall (6-2's bonus room into Ryu's dojo): the panel of `h` tiles from (x, y)
    * down, in a wall (tile `N`, T.TRICK). A player pushing into its open side for TRICK_PUSH_FRAMES
    * (about a second) spins the panel and is flipped through into `target`: a `spin` arrival (the
-   * panel there spins and the players step out beside it), or with `exitDir: 'up'` rising out of
-   * the pipe at the target (the dojo's way back into 6-2). `campaign`: the zone sleeps (its panel
+   * panel there spins and the players step out beside it), with `exitDir: 'up'` rising out of
+   * the pipe at the target, or with `fall` dropping in from above it (the dojo's way back into
+   * 6-2, 0.4.43: a ninja's drop, not a pipe). `campaign`: the zone sleeps (its panel
    * a plain brick wall: no tile `N`, no mark, no spin) unless the campaign variant
    * (level/campaign.ts) wakes it, which also makes its panel `N` and lays a coin arrow at it.
    */
@@ -396,7 +397,7 @@ export type Zone =
       x: number;
       y: number;
       h: number;
-      target: { level: string; x: number; y: number; exitDir?: 'up' };
+      target: { level: string; x: number; y: number; exitDir?: 'up' | 'fall' };
       campaign?: boolean;
     }
   /**

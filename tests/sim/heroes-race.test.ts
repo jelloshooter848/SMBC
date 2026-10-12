@@ -64,7 +64,7 @@ describe('freeing Luigi with the real Mirror Race', () => {
     expect(loadSave(1)?.freed).toEqual(['mario']);
     // The level plays on and Luigi can be challenged again.
     h.idle(5);
-    h.tap('up');
+    h.tap('special');
     expect(h.top()).toBeInstanceOf(CardScene);
     expect(h.top()).not.toBeInstanceOf(MessageScene);
   });

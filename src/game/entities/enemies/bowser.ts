@@ -447,6 +447,13 @@ export class Bowser extends Enemy {
     moveX(b, world.map, velToSub(b.vx));
     if (b.hitWall !== 0 && !this.chasing) b.vx = -b.hitWall * WALK_SPEED;
     this.fall(world, GRAVITY);
+    // Campaign: fallen off the level (the lava, a pit), he is gone; the hero's line comes at the
+    // axe (World.bowserFell, 0.4.43). Classic play keeps the original's endless fall.
+    if (world.storyMode && this.isBelowLevel()) {
+      world.bowserFell(this);
+      this.destroy();
+      return;
+    }
 
     // The window: turn at xMin; at xMax turn in the normal state or stop while chasing
     // (pastXMax; a fake one only turns, and runs on past it while chasing).

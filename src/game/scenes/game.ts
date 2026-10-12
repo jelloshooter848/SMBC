@@ -79,6 +79,7 @@ import type { StageRound } from '../arena/stage-round';
 import { TownScene } from '../town/scene';
 import { DEV_VILLAGE, KAKARIKO, layUsedBlocks, openedBlocks, SECRET_HOUSE_LEVEL } from '../town/secret-house';
 import type { World } from '../world/world';
+import { TipLog } from '../tutorial/tips';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -168,6 +169,8 @@ export class Game {
    * null outside one (src/game/tutorial/stage-tutorial.ts).
    */
   tutorialRun: TutorialRun | null = null;
+  /** The tips a tutorial or a training stage has shown (0.4.43: the pause menu's LAST TIPS). */
+  readonly tips = new TipLog();
   /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
   tutorials: string[] = [];
   /**

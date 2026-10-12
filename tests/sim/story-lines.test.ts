@@ -15,7 +15,17 @@ import { loadSave } from '@game/save/save-files';
 import { beat } from '@game/story/beats';
 import { pageSaid } from '@game/story/cards';
 import { BowserSaysScene, BRIDGE_ROOM } from '@game/story/level-beats';
-import { LARRY_PAGES, noMoreStandIns, STORY_CRYSTAL_BALL_PAGES, STORY_TOAD_PAGES } from '@game/story/script';
+import {
+  ANCHOR_LARRY_PAGES,
+  ANCHOR_LARRY_SAID,
+  freedTalk,
+  LARRY_AGAIN_PAGES,
+  LARRY_PAGES,
+  noMoreStandIns,
+  STORY_CRYSTAL_BALL_PAGES,
+  STORY_TOAD_PAGES,
+} from '@game/story/script';
+import { readFileSync } from 'node:fs';
 import { TOAD_PAGES } from '@game/tutorial/mario-1-0';
 import { ShadowTeaseScene, TEASE_LINES } from '@game/tutorial/tease';
 import { wrapPrompt } from '@game/tutorial/stage-prompts';
@@ -186,6 +196,21 @@ describe('the heroes’ first card (2.13) and Simon’s curse (2.8)', () => {
       'CURSE DRACULA LEFT IN MY',
       'BLOOD. NOW I AM HIS THRALL.',
     ]);
+  });
+});
+
+describe('LARRY KOOPA in full (0.4.43, owner)', () => {
+  it("on his speaker labels, and wherever he is first named: the anchor scene, his room, Samus's talk", () => {
+    for (const page of [...ANCHOR_LARRY_PAGES, ...LARRY_PAGES, ...LARRY_AGAIN_PAGES])
+      expect(page[0]).toBe('LARRY KOOPA:');
+    expect(ANCHOR_LARRY_SAID).toMatch(/^Larry Koopa /);
+    // Samus (freed in 4-2's cavern, maybe before the anchor scene) names him first there.
+    const samus = freedTalk('samus', 'MARIO').flat().join(' ');
+    expect(samus).toContain('LARRY KOOPA');
+    // The doc's speaker labels too.
+    const doc = readFileSync(new URL('../../docs/STORY.md', import.meta.url), 'utf8');
+    expect(doc).not.toMatch(/^LARRY:$/m);
+    expect(doc.match(/^LARRY KOOPA:$/gm)?.length).toBeGreaterThanOrEqual(4);
   });
 });
 

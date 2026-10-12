@@ -52,14 +52,14 @@ captive 13 6 hero=luigi
 - It spawns only in campaign play (`World.captives`, set by LevelScene), and only while that hero
   is not freed on the file.
 - **Talking:** a player on the ground within 1.5 tiles (24 px, same floor) sees the TALK prompt
-  above it, input-aware like the other prompts (0.4.35: `TALK (UP)` with keys or a pad, on a black
-  strip; it was a bare TALK and an up arrow), and the announcer says "Luigi. Up to talk." ("Luigi.
-  Press TALK." on touch) each time a player comes into reach. Pressing **up** talks (`World.checkTalk`
-  raises a `talk` event), and so does **SPECIAL**: in reach it is the TALK button (on touch the C
-  button reads TALK, `World.talkVerb`; the hero's own special waits while in reach). Heroes that
-  also use up on the ground (Samus and Bill aim up) just talk as well while in reach. It does
-  nothing on a vine. On the map a world's local works the same way: the hint line reads
-  `TALK (UP) TO THE HEALER`, and A (on touch the TALK button) talks too.
+  above it, input-aware like the other prompts (`TALK (C)` with keys or a pad, the TALK button's
+  key, on a black strip), and the announcer says "Luigi. Press TALK (C) to talk." ("Press TALK to
+  talk." on touch) each time a player comes into reach. **SPECIAL** talks: in reach it is the TALK
+  button (on touch the C button reads TALK, `World.talkVerb`; the hero's own special waits while in
+  reach; `World.checkTalk` raises a `talk` event). Up no longer talks (0.4.43, owner: it went off by
+  accident on touch); it keeps its other jobs (doors, pipes, vines, aiming). It does nothing on a
+  vine. On the map a world's local works the same way with the TALK button there, A: the hint line
+  reads `TALK (Z) TO THE HEALER` (on touch the A button reads TALK); up only walks the roads.
 
 Luigi waits in the 1-1 bonus room on a hard-block ledge at the top right (row 7, columns
 12-14), 48 px above the top of the coin bricks. From the bricks a running or walking jump reaches
@@ -77,7 +77,7 @@ Simon waits in his crypt under 5-4 (`5-4-crypt`, an area of 5-4: `parent: 5-4`, 
 - **The Koopa** (`koopa-green 8 10 respawn=true`): small Mario and Luigi have no attack, so they stomp it and kick the shell into the wall. Kicked the wrong way, the shell bounces off the single block and comes back to the wall (a player standing between them is hit, as ever). A spawn with `respawn` is kept by a `Respawner` (`objects/crypt.ts`): a lost Koopa (killed, or fallen down the hole) walks back in at its spot 90 frames later, once no player stands there, for as long as a cracked wall stands.
 - **Art and sound** (S3's): theme and music `crypt` in both rooms; the `crypt` sheet's `wall-cracked`, `candle-0/1`, `rubble-0/1` (the wall's pieces, through `World.breakPieces`), decor `crypt:candelabra-0` (dungeon), `crypt:stained-glass` and `crypt:coffin` (crypt); sfx `whip-wall` and `candle`. Without the sheet the candles and crack fall back to rects and the rubble to the brick piece.
 
-Ryu waits in his hideout behind 6-2's first bonus room (`6-2-dojo`, an area of 6-2: `parent: 6-2`, `time: inherit`), standing on the dojo's floor (column 5, feet in row 12) under the moon window. The way in is campaign only: in campaign play the bonus room under the pipe at 19 (`6-2-bonus`) has a **ninja trick wall** in its left wall (column 0, rows 10-12), its middle tile cracked with a shuriken stuck in it, and a coin arrow pointing at it (outside the campaign the room is exactly as it was: plain bricks, no arrow). Pushing into it for about a second (every hero: just walking into it; Ryu clinging to it and Samus rolling into it in her morph ball count too) spins the panel and flips the player through into the dojo, stepping out beside the dojo's own panel in its right wall (column 15, rows 10-12). Pushing into that one flips him out into 6-2 itself, rising out of the pipe at 35 where the bonus room's pipe leads, so the trick wall is one way and the bonus room's coins are not restocked by going round. A short push does nothing (docs/WORLD_MAP.md "Trick walls"). In co-op both players go through together and step out inside the dojo, player 2 further in. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing the curse of the Masked Ninja, a cursed masked rival whose mask rules Ryu's blade; the round is their duel under the moon (`DIALOGUE.ryu`). Art and sound (R3's): theme and music `dojo`; the `ninja` sheet's `trick-wall-0..3`, `trick-wall-back`, `trick-wall-cracked` and `shuriken-mark` for the panel, decor `ninja:moon-window`, two `ninja:lantern-0` and two `ninja:shoji` screens (columns 1 and 12); sfx `panel-spin`. Tests: `tests/sim/ryu-dojo.test.ts` (every hero pushes through, small and big; Ryu's cling, Samus's ball; a short push does nothing; campaign only, the room otherwise v0.4.7's; one way; co-op; every hero reaches Ryu and gets out into 6-2).
+Ryu waits in his hideout behind 6-2's first bonus room (`6-2-dojo`, an area of 6-2: `parent: 6-2`, `time: inherit`), standing on the dojo's floor (column 5, feet in row 12) under the moon window. The way in is campaign only: in campaign play the bonus room under the pipe at 19 (`6-2-bonus`) has a **ninja trick wall** in its left wall (column 0, rows 10-12), its middle tile cracked with a shuriken stuck in it, and a coin arrow pointing at it (outside the campaign the room is exactly as it was: plain bricks, no arrow). Pushing into it for about a second (every hero: just walking into it; Ryu clinging to it and Samus rolling into it in her morph ball count too) spins the panel and flips the player through into the dojo, stepping out beside the dojo's own panel in its right wall (column 15, rows 10-12). Pushing into that one flips him out into 6-2 itself, dropping in from above, ninja style, onto the open street at 42 just past the pipes at 35-38 where the bonus room's pipe leads (0.4.43, owner: he arrives the way he left, never up out of a pipe he did not go down; never onto a Piranha Plant's pipe, whichever way he holds as he falls), so the trick wall is one way and the bonus room's coins are not restocked by going round. A short push does nothing (docs/WORLD_MAP.md "Trick walls"). In co-op both players go through together and step out inside the dojo, player 2 further in. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing the curse of the Masked Ninja, a cursed masked rival whose mask rules Ryu's blade; the round is their duel under the moon (`DIALOGUE.ryu`). Art and sound (R3's): theme and music `dojo`; the `ninja` sheet's `trick-wall-0..3`, `trick-wall-back`, `trick-wall-cracked` and `shuriken-mark` for the panel, decor `ninja:moon-window`, two `ninja:lantern-0` and two `ninja:shoji` screens (columns 1 and 12); sfx `panel-spin`. Tests: `tests/sim/ryu-dojo.test.ts` (every hero pushes through, small and big; Ryu's cling, Samus's ball; a short push does nothing; campaign only, the room otherwise v0.4.7's; one way; co-op; every hero reaches Ryu and gets out into 6-2).
 
 Bill waits in his jungle camp under 7-3 (`7-3-camp`, an area of 7-3: `parent: 7-3`, `time: inherit`), standing by the sandbags of his base under a searchlight (column 5, feet in row 12). In campaign play 7-3 is a Contra jungle stage: the same tiles, enemies, coins and collision in the `contra-jungle` theme and music, under a hanging jungle canopy and a black starry sky (no clouds, as NES Contra's), distant snow-capped mountains under the bridges, palms and a band of palms and undergrowth (`jungle-band`) along the ground (its campaign look, docs/WORLD_MAP.md "Campaign looks"). The girder bridge just past the checkpoint (columns 128-142, walled to the bottom by the pillars at 127 and 143) is marked: a red light blinks on its post and a coin arrow points down at it. A hero stepping on sets off a chain of explosions, Contra stage 1 style (`bridge-blast`, docs/WORLD_MAP.md "Exploding bridges"): segment after segment flashes and blows, at a pace a hero who keeps running just about outruns; whoever stops or walks falls through the gap, which a campaign-only `pit` turns into the drop into the camp (dropping in from above at column 2; co-op, both players). Anyone who ran across can still drop in on purpose; every other fall in 7-3 kills, and the bridge is whole again on any new visit. Outside the campaign 7-3 is exactly v0.4.8's (a plain bridge, no pit, its own look). In the camp a shallow river (one tile deep: a hop gets out) runs at the foot of a waterfall; past it, the cave mouth under the cliff (a side `pipe` at column 16) leads into **the waterfall climb** (`7-3-falls`, Contra stage 3 style: `camera: free`, 16 by 32 tiles): rock ledges three rows up and one tile apart beside the waterfall climb right to a jungle vine on the right wall, which rises nine rows to the ledges climbing left to a vine on the left wall; that one leads off the top of the screen into 7-3 at column 199, climbing up out of the jungle onto the tree platform past the bridge (a climb arrival). No ledge hangs over another's take-off, the floor catches every fall and walls close both sides, so nobody gets stuck. The clock runs on throughout; nothing is recorded on the map. His lines make the brainwashing Red Falcon's (Super C): King Koopa's spell let the alien take his mind (`DIALOGUE.bill`). Art and sound (B3's): theme and music `contra-jungle` (7-3's look and the camp), theme `contra-falls` (the climb: its falling water slides down); decor `canopy-hang` (the ceiling, every 2 columns on row 0), `canopy`, `palm`, `mountain`, `sandbags`, `searchlight`; the `contra` sheet's `blast-bridge-0/1` (lamp lit, dark) and `boom-0..3`; sfx `bridge-boom` (rect, item-blast and `explosion` fallbacks without them). Tests: `tests/sim/bill-camp.test.ts` (7-3 outside the campaign tile for tile and in look; the campaign variant's collision unchanged; the look hook; the chain's pace and order; every hero, small and big, falls in standing still, outruns it running, drops in on purpose; co-op; every hero reaches Bill and the cave, climbs the falls from the pool and from every ledge, and lands in 7-3; the whole way through the Game).
 
@@ -169,7 +169,9 @@ ends.
   jumps out in an arc and lands on 4-2 (`map-dust-0/1`); the ship dives onto the bonus spot and
   crashes (`cannon` boom, `map-wreck`, dust, smoke); Toad walks in from the left (`toad-map-0/1`),
   hammers three blows facing right (`toad-map-hammer-0/1`, planks fly), the wreck becomes the bonus
-  node, Toad waves and walks off (6.5 s, `CRASH_FRAMES`); then the road draws in as before. The
+  node, Toad waves by it (6 s, `CRASH_FRAMES`); his crash cards then walk him straight from the house
+  to the hero (0.4.43: no walk off the right edge and back in from the left, `ToadGuide`'s `from`,
+  skipped or not); then the road draws in as before. The
   announcer narrates each beat. JUMP (or MENU) skips to the end: the road drawn, the hero on 4-2,
   the node shown. With reduce flashing the crash has no white flash. It never replays (a reload
   mid-way only draws the road; taking the ball again plays nothing) and nothing plays without
@@ -1314,8 +1316,11 @@ lessons, gates and checks, as `mario-1-0.ts`), `kit.ts`, `targets.ts`; the direc
   Power-ups come from real power blocks (`[hero-items]` sections, used here outside the campaign),
   grow item first, then the order of POWERUPS.md 6.2; the item's name leads the box's first line
   ("BLUE RING! ...") instead of the level's caption. The HUD shows TRAINING. Toad greets the hero
-  (a card that waits for a key). MENU: Continue / Skip this lesson (its item is given quietly) /
-  Skip training. A replay (Pause → Training, the Arena) first offers START AT: any lesson with an
+  (a card that waits for a key). MENU: Continue / Last tips / Skip this lesson (its item is given
+  quietly) / Skip training. **Tips stay** (0.4.43): a tip stays in the box until the next one
+  replaces it, never on a timer; Last tips (also in 1-0's pause menu) shows the last three, the
+  newest first, read out again, until OK (`tutorial/tips.ts` keeps them: the one place tip state
+  lives, where 0.4.45's freeze on a new tip will hook in). A replay (Pause → Training, the Arena) first offers START AT: any lesson with an
   item. The top of the screen is a ceiling in a stage (0.4.38), so no hero gets over a gate from
   above it (Ryu kicking up a gate's face, Sophia III's hover; her gates reach the top).
 - **Lessons.** A lesson may give more than one item (`more`: Simon's Double and Triple Shot, one
@@ -1327,7 +1332,13 @@ lessons, gates and checks, as `mario-1-0.ts`), `kit.ts`, `targets.ts`; the direc
   Blue Ring, Samus's Varia Suit). Toad's card at a gate puts the hero back at the lesson's start
   and rebuilds that stretch (its block used once the item is taken, its targets fresh, done
   lessons' targets and candles gone); a death costs no life and stands the hero up at the current
-  lesson. Every put-back and respawn restores the **kit floor**: every item of the lessons done so
+  lesson. A block spent the wrong way never strands a lesson (0.4.43,
+  `TutorialDirector.spentLesson`): a power block of a lesson not done yet that is used while its
+  item is neither taken nor out (a small hero's block gives the grow item; Simon's second block
+  bumped before the first item was taken), or a lesson's brick broken without its move (Link's
+  up-thrust is taught on a brick: ? blocks open to any hit, bricks need the up-strike), brings
+  Toad's card once the hero stands, then the stretch is rebuilt. 1-0's mushroom block too, once
+  its mushroom is lost. Every put-back and respawn restores the **kit floor**: every item of the lessons done so
   far (`kit.ts`; an item that stacks counts once the hero has one: a Heart Container, an Energy
   Tank, a Ninpo Scroll, a Medal), given without a sound or a grow flicker (Sophia III's hull). What
   was in progress (`TRANSIENT_KIT`: the morph ball, a running spell, a charge) is dropped.

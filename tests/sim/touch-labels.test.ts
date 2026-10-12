@@ -223,7 +223,7 @@ describe('guides show one control scheme', () => {
     expect(link).toContain('USE TOOL - SHOWS THE');
     const samus = guide('touch', SAMUS).text.join('\n');
     expect(samus).toContain('BOMB - IN THE BALL: DROP A');
-    expect(samus).toContain('MISSILE - FIRE A MISSILE.');
+    expect(samus).toContain('USE WEAPON - SHOWS THE WEAPON');
   });
 
   it('every row fits the page and starts with its key', () => {

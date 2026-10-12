@@ -90,6 +90,11 @@ export interface PlayLog {
   fills: Set<string>;
   /** Toad's gate cards, with how the hero stood when each came. */
   cards: { lines: readonly string[]; ground: boolean; vx: number }[];
+  /**
+   * Toad's cards for a block spent the wrong way (0.4.43): they come once the hero stands on the
+   * ground, walking or not, and the stretch is rebuilt after.
+   */
+  spent: (readonly string[])[];
 }
 
 /**
@@ -104,7 +109,7 @@ export function playStage(
   stop: () => boolean,
   max = 7200,
 ): PlayLog {
-  const log: PlayLog = { frames: 0, cards: [], fills: new Set() };
+  const log: PlayLog = { frames: 0, cards: [], spent: [], fills: new Set() };
   // Records the screen-wide fills of a frame (reduce flashing is on in the harness).
   const rec: Renderer = Object.assign(new NullRenderer(), {
     clear(color: string): void {
@@ -121,8 +126,12 @@ export function playStage(
     if (top instanceof CardScene) {
       if (wait === 0) {
         const card = top;
-        if (card.lines[0] === 'TOAD:' && !stage.cleared && stage.run.greeted)
-          log.cards.push({ lines: card.lines, ground: last.ground, vx: last.vx });
+        if (card.lines[0] === 'TOAD:' && !stage.cleared && stage.run.greeted) {
+          if (stage.director.cardKind === 'spent') {
+            expect(stage.world.player.body.onGround, "a spent block's card only on the ground").toBe(true);
+            log.spent.push(card.lines);
+          } else log.cards.push({ lines: card.lines, ground: last.ground, vx: last.vx });
+        }
       }
       wait++;
       h.step(wait > CARD_GUARD_FRAMES + 2 && wait % 8 === 0 ? ['jump'] : []);

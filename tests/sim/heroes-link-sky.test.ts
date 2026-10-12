@@ -55,7 +55,7 @@ describe('captive Link in the 2-1 sky palace', () => {
     h.step();
     expect(c.prompt).toBe(true);
     expect(draw(l).texts.some((t) => t.str === 'TALK')).toBe(true);
-    expect(h.said.some((t) => /^Link\. Up to talk\.$/.test(t))).toBe(true);
+    expect(h.said.some((t) => /^Link\. Press TALK to talk\.$/.test(t))).toBe(true);
     expect(l.world.time).toBeLessThanOrEqual(300); // the running clock came along
   });
 

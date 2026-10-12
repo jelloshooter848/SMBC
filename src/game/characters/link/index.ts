@@ -3,7 +3,12 @@ import type { CharacterDef, SpriteSpec } from '../character';
 import type { MovementProfile } from '../profile';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
-import { Projectile, SWORD_BEAM, type ProjectileSpec } from '../../entities/projectiles/projectile';
+import {
+  FIRE_BEAM,
+  Projectile,
+  SWORD_BEAM,
+  type ProjectileSpec,
+} from '../../entities/projectiles/projectile';
 import { Bomb } from '../../entities/objects/bomb';
 import { tileDef } from '../../level/tiles';
 import { STAR_FRAMES } from '../../constants';
@@ -206,6 +211,19 @@ function tools(p: Player): ToolInfo[] {
   });
 }
 
+/**
+ * A belt tool just found is the one picked (0.4.43): the Fire spell taken with the Jump spell
+ * still picked cast the Jump spell, and its swing then fired no fireball. False when `item` is no
+ * tool of his.
+ */
+export function pickFoundTool(p: Player, item: string): boolean {
+  const id = Object.keys(TOOL_ITEMS).find((t) => TOOL_ITEMS[t] === item);
+  const i = tools(p).findIndex((t) => t.id === id);
+  if (id === undefined || i < 0) return false;
+  p.scratch.tool = i;
+  return true;
+}
+
 function spendMagic(p: Player, cost: number, world: World): boolean {
   if (magic(p) < cost) {
     world.audio.sfx('bump');
@@ -368,10 +386,13 @@ export const LINK: CharacterDef = {
         struck.get(p)?.clear();
         p.attackTimer = ATTACK_FRAMES;
         world.audio.sfx('sword');
-        const beam = (p.scratch.beam && p.hp >= maxHp(p)) || p.scratch.fireSpell;
+        const fire = !!p.scratch.fireSpell;
+        const beam = (p.scratch.beam && p.hp >= maxHp(p)) || fire;
         if (beam && world.countProjectiles(p, 'sword-beam') < 1) {
           const x = p.facing > 0 ? b.x + b.w : b.x - px(16);
-          world.spawn(new Projectile(x, b.y + px(8), p.facing, SWORD_BEAM, p));
+          // The Fire spell's swing throws a fireball (0.4.43: the plain beam's spark went unseen).
+          world.spawn(new Projectile(x, b.y + px(8), p.facing, fire ? FIRE_BEAM : SWORD_BEAM, p));
+          if (fire) world.audio.sfx('fireball');
           p.scratch.fireSpell = 0;
         }
       }

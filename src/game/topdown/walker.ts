@@ -15,7 +15,7 @@ export const CORNER_SLIDE = 7;
  * overhead mode: each axis held moves on its own and is checked on its own, so walking into a
  * wall at an angle slides along it; walking straight into a wall with an opening just beside (a
  * doorway, a gap in a hedge) nudges him toward it, up to CORNER_SLIDE px. He faces the way last
- * pressed. Jason on foot (Sophia's mini game) and the heroes in Kakariko Village walk this way.
+ * pressed. Jason on foot (Sophia's mini game) walks this way (Kakariko's heroes walk the keep's four-way walk since 0.4.43).
  * No sword: a game adds what its hero does with the other buttons.
  */
 export class TdWalker extends TdHero {

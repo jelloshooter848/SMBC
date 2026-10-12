@@ -32,7 +32,8 @@ export const LINK_STAGE = {
   shieldGate: 30,
   dip: { from: 35, to: 37 },
   thrustGate: 41,
-  coinBlock: { x: 46, y: 8 },
+  /** The up-thrust's brick (0.4.43: a ? block opened to any hit, so a plain jump spent it). */
+  brick: { x: 46, y: 8 },
   upGate: 49,
   ledge: { from: 53, to: 56, top: 7 },
   coin: { x: 55, y: 6 },
@@ -61,17 +62,18 @@ const S = LINK_STAGE;
 /** Frames of the Shield spell's bar seen running before its lesson is done. */
 export const SHIELD_BAR_SEEN = 60;
 
-/** Per world: the up-thrust's lesson, the coin blocks bumped as of the last frame. */
-const coinCounts = new WeakMap<World, { frame: number; coins: number; thrust: boolean }>();
+/** Per world: the up-thrust's lesson, the bricks broken as of the last frame. */
+const brickCounts = new WeakMap<World, { frame: number; bricks: number; thrust: boolean }>();
 
-/** A coin block was opened by an up-thrust (counted on the frame it gave its coin). */
-function upThrustCoin(w: World): boolean {
-  let c = coinCounts.get(w);
-  if (!c) coinCounts.set(w, (c = { frame: -1, coins: w.feats.coinBlocks, thrust: false }));
+/** The lesson's brick was broken by an up-thrust (counted on the frame it broke). */
+function upThrustBrick(w: World): boolean {
+  let c = brickCounts.get(w);
+  if (!c) brickCounts.set(w, (c = { frame: -1, bricks: w.feats.bricks, thrust: false }));
   if (c.frame === w.frame) return c.thrust;
   c.frame = w.frame;
-  if (w.feats.coinBlocks > c.coins && w.player.scratch.upThrust) c.thrust = true;
-  c.coins = w.feats.coinBlocks;
+  if (w.feats.bricks > c.bricks && w.player.scratch.upThrust && w.map.get(S.brick.x, S.brick.y) === T.AIR)
+    c.thrust = true;
+  c.bricks = w.feats.bricks;
   return c.thrust;
 }
 
@@ -146,9 +148,12 @@ export const LINK_LESSONS: readonly Lesson[] = [
     id: 'up-thrust',
     at: 42,
     row: 11,
-    text: '[JUMP:jump] UNDER THE BLOCK AND HOLD UP TO STAB UP INTO IT.',
-    retry: 'HOLD UP AS YOU [JUMP:jump] UNDER THE BLOCK: YOUR SWORD STABS UP INTO IT.',
-    done: upThrustCoin,
+    brick: S.brick,
+    // The difference (0.4.43, owner): a ? block opens to any hit, so the stab is taught on a brick.
+    text: '? BLOCKS OPEN WITH ANY HIT. BRICKS NEED AN UP-STRIKE: HOLD UP, [JUMP:jump] UNDER IT.',
+    retry: 'HOLD UP AS YOU [JUMP:jump] UNDER THE BRICK: YOUR SWORD STABS UP AND BREAKS IT.',
+    spent: 'THAT BRICK BROKE WITHOUT AN UP-STRIKE. HOLD UP, THEN [JUMP:jump] UNDER IT. HERE IT IS AGAIN!',
+    done: upThrustBrick,
   },
   {
     id: 'boomerang',
@@ -245,10 +250,11 @@ export const LINK_LESSONS: readonly Lesson[] = [
     block: S.fireBlock,
     enter: fillMagic,
     get: 'ONE MORE SPELL IN THIS ? BLOCK.',
-    text: 'CAST IT. YOUR NEXT [SWORD:attack] FIRES A BEAM: HIT THE FAR TARGET.',
-    touchText:
-      'PICK IT WITH [TOOLS:select] AND TAP [FIRE:special:FIRE]: THE NEXT [SWORD:attack] FIRES A BEAM!',
-    retry: 'THE FIRE SPELL, THEN A SWING: ITS BEAM FLIES OVER THE DITCH TO THE TARGET.',
+    // The spell is picked as it is taken (0.4.43, pickFoundTool): cast, then swing.
+    text: 'CAST IT WITH [USE TOOL:special:FIRE], THEN [SWORD:attack]: A FIREBALL FLIES!',
+    touchText: 'TAP [FIRE:special:FIRE], THEN [SWORD:attack] ON THE GROUND: A FIREBALL FLIES!',
+    retry:
+      '[USE TOOL:special:FIRE] FIRST, THEN [SWORD:attack] ON THE GROUND: THE FIREBALL FLIES OVER THE DITCH TO THE TARGET.',
     done: (w) => hitsSince(w, (h) => h.shotKind === 'sword-beam').length > 0,
   },
   {

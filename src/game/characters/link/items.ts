@@ -1,6 +1,6 @@
 import type { HeroItemRules } from '../../items/rules';
 import { has, setHas } from '../../items/flags';
-import { LINK_SPELLS, MAX_BOMBS, MAX_HEARTS, MAX_MAGIC, maxHp } from './index';
+import { LINK_SPELLS, MAX_BOMBS, MAX_HEARTS, MAX_MAGIC, maxHp, pickFoundTool } from './index';
 
 /** Bombs the Bomb Bag comes with (it carries MAX_BOMBS). */
 export const BAG_BOMBS = 4;
@@ -37,11 +37,13 @@ export const LINK_ITEMS: HeroItemRules = {
       case 'bomb-bag':
         setHas(p, id);
         p.scratch.bombs = Math.max(p.scratch.bombs ?? 0, BAG_BOMBS);
+        pickFoundTool(p, id);
         break;
       default:
         // A spell: the magic meter shows from the first one, full.
         if (!LINK_SPELLS.some((s) => has(p, s))) p.scratch.magic = MAX_MAGIC;
         setHas(p, id);
+        pickFoundTool(p, id);
     }
     p.hp = maxHp(p);
   },

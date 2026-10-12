@@ -95,8 +95,9 @@ export const WHIRR_EVERY = 12;
 /**
  * The thrown boomerang: flies straight along the hero's facing until it has gone its range or
  * hits a wall, block or monster, then flies back to the hero through everything and is caught.
- * A monster it touches is stunned (it turns back); hearts, keys and ammo it touches are
- * collected. Leaving the room loses it in flight, which only means it is ready again.
+ * A monster it touches is stunned (it turns back); hearts, keys and ammo it touches ride back on
+ * it and are the hero's on the catch (0.4.43: they used to vanish on contact). Leaving the room
+ * loses it in flight, which only means it is ready again (what it carries is the hero's then).
  */
 export class Boomerang extends TdEntity {
   override layer = 2;
@@ -107,6 +108,8 @@ export class Boomerang extends TdEntity {
   private gone = 0;
   private fx: number;
   private fy: number;
+  /** Pickups it touched, riding back on it (out of the room until the catch). */
+  readonly carried: Pickup[] = [];
 
   constructor(
     x: number,
@@ -138,18 +141,12 @@ export class Boomerang extends TdEntity {
       const dx = to.x - (this.fx + 4);
       const dy = to.y - (this.fy + 4);
       const d = Math.hypot(dx, dy);
-      if (d <= BOOMERANG_SPEED) {
-        this.dead = true;
-        return;
-      }
+      if (d <= BOOMERANG_SPEED) return this.caught(world);
       this.fx += (dx / d) * BOOMERANG_SPEED;
       this.fy += (dy / d) * BOOMERANG_SPEED;
       this.x = Math.round(this.fx);
       this.y = Math.round(this.fy);
-      if (boxesOverlap(this.body(), hero.hurtbox())) {
-        this.dead = true;
-        return;
-      }
+      if (boxesOverlap(this.body(), hero.hurtbox())) return this.caught(world);
     }
     const me = this.body();
     for (const e of world.entities) {
@@ -157,7 +154,25 @@ export class Boomerang extends TdEntity {
       if (e instanceof TdEnemy && this.out) {
         e.stun(world, STUN_FRAMES);
         this.out = false;
-      } else if (e instanceof Pickup && !e.hidden) world.collect(e);
+      } else if (e instanceof Pickup && !e.hidden) {
+        // Taken out of the room onto the boomerang; the hero gets it on the catch.
+        e.dead = true;
+        this.carried.push(e);
+      }
+    }
+  }
+
+  /** Back in the hero's hand: what it carries is his. */
+  private caught(world: TopDownWorld): void {
+    this.dead = true;
+    this.deliver(world);
+  }
+
+  /** The hero gets what it carries (the catch, or the room left with it in flight). */
+  deliver(world: TopDownWorld): void {
+    for (const p of this.carried.splice(0)) {
+      p.dead = false;
+      world.collect(p);
     }
   }
 
@@ -167,6 +182,12 @@ export class Boomerang extends TdEntity {
       w: 8,
       h: 8,
     });
+    // What it carries rides on it, centred.
+    for (const p of this.carried) {
+      p.x = this.x + 4 - (p.w >> 1);
+      p.y = this.y + 4 - (p.h >> 1);
+      p.render(r, view, ox, oy);
+    }
   }
 }
 

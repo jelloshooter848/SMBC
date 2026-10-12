@@ -43,7 +43,7 @@ import {
 import { Player } from '../entities/player';
 import { startHp } from '../characters/character';
 import { MenuScene, type MenuItem } from './menu';
-import { abilityHint, boundKey, controlScheme } from './hints';
+import { abilityHint, boundKey } from './hints';
 import { OptionsScene } from './options';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
@@ -452,9 +452,9 @@ export class WorldMapScene implements Scene {
    * The page has shown (the map opened, or a slide or fade ended; the crash cutscene ended,
    * `crash`): Toad's due story scenes first (campaign), then the page's reveal draws in.
    */
-  private arrived(crash = false): void {
+  private arrived(crash = false, from: { x: number; y: number } | null = null): void {
     if (!crash && this.startGate()) return;
-    if (this.startStory(crash)) return;
+    if (this.startStory(crash, [], from)) return;
     this.afterStory();
   }
 
@@ -474,7 +474,11 @@ export class WorldMapScene implements Scene {
    * story plays, story/beats.ts storyOn): played as the `story` mode. False when none has a
    * page to show (scenes with none are only marked seen).
    */
-  private startStory(crash: boolean, lead: readonly Page[] = []): boolean {
+  private startStory(
+    crash: boolean,
+    lead: readonly Page[] = [],
+    from: { x: number; y: number } | null = null,
+  ): boolean {
     const game = this.game;
     // A gate's Toad (a major scene: he walks in) leads, then whatever else is due.
     const first: ToadScene[] = lead.length ? [{ ids: [], pages: [...lead], walk: true }] : [];
@@ -483,11 +487,16 @@ export class WorldMapScene implements Scene {
     // Toad stands just left of the hero, or right of him when the hero is at the left edge
     // (World 1's start), so he never covers the hero.
     const stand = { x: this.hx - 20 >= 4 ? this.hx - 20 : this.hx + 20, y: this.hy - 6 };
-    const guide = new ToadGuide(scenes, stand, {
-      markSeen: (id) => game.markSeen(id),
-      say: (text) => this.say(text),
-      prompt: () => abilityHint(game, 'OK', 'jump'),
-    });
+    const guide = new ToadGuide(
+      scenes,
+      stand,
+      {
+        markSeen: (id) => game.markSeen(id),
+        say: (text) => this.say(text),
+        prompt: () => abilityHint(game, 'OK', 'jump'),
+      },
+      from,
+    );
     if (guide.done) return false;
     this.toad = guide;
     this.mode = 'story';
@@ -652,11 +661,13 @@ export class WorldMapScene implements Scene {
   /** The crash cutscene's frame; JUMP (or MENU) skips straight to its end and the road drawn. */
   private updateCrash(input: InputFrame): void {
     const c = this.crash as NonNullable<typeof this.crash>;
+    // Toad's crash cards start with him by the house he built: he walks straight to the hero.
+    const home = c.scene.toadHome;
     if (this.t > 1 && (input.pressed('jump') || input.pressed('start'))) {
       this.endCrash();
       this.finishReveal();
       // Skipped: the road is drawn, and Toad's crash cards still play (once per file).
-      this.startStory(true);
+      this.startStory(true, [], home);
       return;
     }
     for (const ev of c.scene.update(c.names)) {
@@ -669,7 +680,7 @@ export class WorldMapScene implements Scene {
     if (!c.scene.done) return;
     this.endCrash();
     // Toad's crash cards (and whatever else is due), then the road to the bonus spot draws in.
-    this.arrived(true);
+    this.arrived(true, home);
   }
 
   /** The bonus node built by Toad: out of the reveal (drawn from now on, still announced). */
@@ -831,8 +842,7 @@ export class WorldMapScene implements Scene {
     const sealed = this.sealedHintAt(n);
     if (sealed) text += `. ${spoken(sealed)}`;
     const local = this.localHere(n) ? welcomeOf(this.page.id) : null;
-    if (local)
-      text += `. ${local.said}. ${controlScheme(this.game) === 'touch' ? 'Press TALK' : 'Up to talk'}`;
+    if (local) text += `. ${local.said}. Press ${abilityHint(this.game, 'TALK', 'special')} to talk`;
     if (this.isHiding(n)) text += `. ${HIDING_SAID}`;
     return text;
   }
@@ -866,14 +876,15 @@ export class WorldMapScene implements Scene {
 
   /** Node `n` is this page's start with a local standing by it (worlds 2-8; story only). */
   /**
-   * The hint line on a start node with a local: TALK and its key, "TALK (UP) TO THE HEALER"
-   * (0.4.35: the TALK prompt as a button); on touch, or when the key's name would not fit, the
-   * bare "TALK TO THE HEALER" (on touch A is the TALK button then).
+   * The hint line on a start node with a local: TALK and its key, "TALK (C) TO THE HEALER"
+   * (0.4.35: the TALK prompt as a button; 0.4.43: the TALK button, SPECIAL, as in a level and in
+   * Kakariko, never up; JUMP talks there too); on touch, or when the key's name would not fit, the
+   * bare "TALK TO THE HEALER" (on touch the C button is the TALK button then).
    */
   private localTalkHint(): string {
     const w = welcomeOf(this.page.id);
     if (!w) return localHint(this.page.id);
-    const key = boundKey(this.game, 'up');
+    const key = boundKey(this.game, 'special');
     const keyed = key ? fontText(`TALK (${key}) TO THE ${w.local}`) : '';
     return keyed && keyed.length <= HINT_COLS ? keyed : welcomeHint(w.local);
   }
@@ -883,7 +894,7 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * TALK (up) on a start node with a local: the welcome again, in the box at the top (the
+   * TALK (or JUMP) on a start node with a local: the welcome again, in the box at the top (the
    * after-freed page once the world's hero is freed).
    */
   private talkToLocal(): void {
@@ -990,9 +1001,10 @@ export class WorldMapScene implements Scene {
     const talk = !!here && this.localHere(here);
     return {
       ...NO_TOUCH_BUTTONS,
-      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : talk ? 'TALK' : null,
+      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : null,
       start: 'MENU',
-      special: inventoryAvailable(this.game) ? 'ITEMS' : null,
+      // A local's node: C is the TALK button, as in a level (0.4.43); the items stay in the menu.
+      special: talk ? 'TALK' : inventoryAvailable(this.game) ? 'ITEMS' : null,
       ...(here?.kind === 'game' ? arenaPadTouch(this.game, here) : {}),
     };
   }
@@ -1083,6 +1095,12 @@ export class WorldMapScene implements Scene {
       this.openPause();
       return;
     }
+    // A start node's local: TALK (SPECIAL, the TALK button in a level and in Kakariko too) or JUMP
+    // talks (0.4.35; up no longer does, 0.4.43). There, TALK comes before the item box.
+    if ((input.pressed('special') || input.pressed('jump')) && here && this.localHere(here) && !here.level) {
+      this.talkToLocal();
+      return;
+    }
     // The ITEMS button (SMB3's item box), once the inventory is unlocked.
     if (input.pressed('special') && inventoryAvailable(this.game)) {
       this.openItems();
@@ -1124,11 +1142,6 @@ export class WorldMapScene implements Scene {
       }
       return;
     }
-    // A start node's local: JUMP (on touch the TALK button) talks, as up does (0.4.35).
-    if (input.pressed('jump') && here && this.localHere(here) && !here.level) {
-      this.talkToLocal();
-      return;
-    }
     if (input.pressed('jump') && here?.kind === 'game') {
       // A Mini Game Arena pad: one round for fun over the map, then back here (nothing saved).
       if (!playArenaPad(this.game, here, this.page.music, () => this.announceHere()))
@@ -1147,11 +1160,6 @@ export class WorldMapScene implements Scene {
     for (const d of DIRS) {
       if (!input.pressed(d)) continue;
       const step = here ? nextStep(this.page, this.progress, this.node, d, MAP_PAGES, this.unlockAll) : null;
-      // S3: up on a start node with a local (no road goes up from it) talks to the local.
-      if (!step && d === 'up' && here && this.localHere(here)) {
-        this.talkToLocal();
-        return;
-      }
       if (!step) {
         this.game.ctx.audio.sfx('bump');
         return;

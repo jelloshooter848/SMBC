@@ -142,7 +142,8 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     item: 'ice-beam',
     block: S.iceBlock,
     get: 'ONE MORE ? BLOCK.',
-    text: 'FREEZE, THEN SHATTER THE ENEMY. PICK IT WITH [WEAPON:select].',
+    // Picked as it is taken (0.4.43): SHOOT fires the beam picked last.
+    text: '[SHOOT:attack] FREEZES THE ENEMY, A SECOND SHOT SHATTERS IT.',
     retry: 'PICK THE ICE BEAM WITH [WEAPON:select]: ONE SHOT FREEZES THE ENEMY, THE NEXT SHATTERS IT.',
     done: (w) => hitsSince(w, (h) => h.wasFrozen && h.reaction === 'kill').length > 0,
   },
@@ -171,7 +172,7 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     item: 'wave-beam',
     block: S.waveBlock,
     get: 'THE LAST ? BLOCK!',
-    text: 'THROUGH WALLS! [WEAPON:select] TO IT, HIT THE TARGET.',
+    text: 'IT GOES THROUGH WALLS: [SHOOT:attack] THE TARGET BEHIND THE WALL.',
     retry: 'PICK THE WAVE BEAM WITH [WEAPON:select]: IT SHOOTS THROUGH THE WALL TO THE TARGET.',
     done: (w) => hitsSince(w, (h) => h.wave && h.target instanceof TrainingTarget).length > 0,
   },

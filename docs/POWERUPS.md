@@ -44,7 +44,9 @@ builds it (campaign only).
 ### 2.1 Small, per hero
 
 SMB's rule stays for every hero: **a small hero bumping any power block gets their grow item**, whatever the
-block's entry. "Small" per hero:
+block's entry. The same holds for an SMB Mushroom or Fire Flower a hero with items of their own touches in the
+campaign (a block Mario struck in co-op, 0.4.43: Samus took the Varia Suit from one before any Energy Tank):
+it gives their item by the blocks' rule (`World.powerUp`). "Small" per hero:
 
 | Hero         | Small means                               |
 | ------------ | ----------------------------------------- |
@@ -168,9 +170,11 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 | Shield Spell  | `shield-spell`  | The belt's Shield spell (8 magic: every other hit glances off for 10 s) | refill             |
 | Jump Spell    | `jump-spell`    | The belt's Jump spell (8 magic: higher jumps for 10 s)                  | refill             |
 | Blue Ring     | `blue-ring`     | A light blue tunic: every other hit costs no heart                      | refill             |
-| Fire Spell    | `fire-spell`    | The belt's Fire spell (4 magic: the next swing fires a beam)            | refill             |
+| Fire Spell    | `fire-spell`    | The belt's Fire spell (4 magic: the next swing throws a fireball)       | refill             |
 | Magical Sword | `magical-sword` | Today's red tunic: the sword fires a beam while hearts are full         | refill             |
 
+- **The belt** (0.4.43): the Bomb Bag or a spell just taken is the tool picked, so USE TOOL uses it at
+  once (the Fire spell taken with the Jump spell picked cast the Jump spell instead).
 - **Default**: Bomb Bag (the Boomerang is in his starting kit). **Drops** (bombs, magic jars, half hearts) as
   today, but bombs drop only once he has the Bomb Bag and magic jars only once he has a spell (NEW).
 - **Hit**: half a heart (1 hit point); with the Blue Ring or the Shield spell every other hit costs no heart; with
@@ -237,6 +241,10 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 - **Beams as items** (NEW): today the beam is a tier (`scratch.beam` 0-3: Power, Long, Ice, Wave), so Ice brings
   full range and Wave drops the freeze. As items: the Long Beam gives range to whichever beam is in use; Ice and
   Wave are both kept and WEAPON cycles beam, Ice, Wave and missiles (decision 7).
+- **Buttons** (0.4.43, owner): SHOOT always fires her beam, the last beam picked on the belt; the tool button
+  fires what is picked (a missile, or that beam) and reads as it on touch (MISSILE, BEAM, ICE, WAVE), as the
+  HUD's icon does; an item found (Missiles, Ice, Wave) is the one picked. In the ball both drop bombs. Classic
+  play keeps the original's: B the picked beam or missile, C always a missile.
 - **Drops**: missile packs drop only once she owns Missiles (decision 8; **today** they drop from the start, so
   missiles come at random).
 - **Hit**: 8 energy (4 with the Varia Suit). Nothing is lost. Unchanged.
@@ -449,7 +457,7 @@ the tables on the spot).
 | 4-2 (120,5) brick                | Blue Ring    | Rush     | Ice Beam   | Morning Star | Windmill   | _M_  | Wall Climb    |
 | 4-2 (161,9) brick                | Jump Spell   | Knuckle  | Varia Suit | Double Shot  | Fire Wheel | L    | Ceiling Climb |
 | 4-2-cavern (38,8) ?, off path    | _Bomb Bag_   | _Saw_    | Varia Suit | Axe          | Fire Wheel | _M_  | _Crusher_     |
-| 4-2-airship (55,7) ?, off path   | Fire Spell   | Knuckle  | _Missiles_ | Cross        | Fire Wheel | _M_  | _Crusher_     |
+| 4-2-airship (55,8) ?, off path   | Fire Spell   | Knuckle  | _Missiles_ | Cross        | Fire Wheel | _M_  | _Crusher_     |
 | 4-3 (43,2) ?                     | _Bomb Bag_   | Flame    | Long Beam  | Double Shot  | _T. Star_  | L    | Ceiling Climb |
 
 The cavern is Samus's own side area (she is captive there, so it is for the others the first time); the airship

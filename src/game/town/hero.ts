@@ -2,7 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { CharacterDef } from '../characters/character';
 import { isHorizontal, type Dir } from '../topdown/geometry';
-import { TdWalker } from '../topdown/walker';
+import { TdHero } from '../topdown/hero';
 import type { TdView } from '../topdown/view';
 import type { TopDownWorld } from '../topdown/world';
 
@@ -73,10 +73,12 @@ export interface HeroSource {
 }
 
 /**
- * A hero walking the village: the kit's eight-way walker (1.5 px a frame, 2 with ATTACK or RUN
- * held), drawn as whoever the file's hero is now. No sword, no jump: heroes only walk and talk.
+ * A hero walking the village, drawn as whoever the file's hero is now: the Shadow Keep's walk
+ * (0.4.43, owner: the 8-bit feel; it was Jason's eight-way walk): four ways, 1.5 px a frame on the
+ * half-tile grid, the keep's feet and its nudge round corners into doorways (TdHero.walk4). Every
+ * hero walks the same. No sword, no item, no jump: heroes only walk and talk.
  */
-export class TownHero extends TdWalker {
+export class TownHero extends TdHero {
   /** Moved on the last frame (the walk steps; standing shows step 0). */
   moving = false;
 
@@ -91,7 +93,9 @@ export class TownHero extends TdWalker {
 
   override update(world: TopDownWorld, input: InputFrame): void {
     const { x, y } = this;
-    super.update(world, input);
+    if (this.invuln > 0) this.invuln--;
+    const want = this.wantDir(input);
+    if (want) this.walk4(world, want);
     this.moving = x !== this.x || y !== this.y;
   }
 

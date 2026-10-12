@@ -136,6 +136,16 @@ export const SWORD_BEAM: ProjectileSpec = {
   frameRate: 1,
 };
 
+/**
+ * Link's Fire spell's shot (0.4.43): the sword beam's flight and hit as a fireball, so the spell
+ * shows (a sword-beam all the same: one out at a time, and lessons count it as one).
+ */
+export const FIRE_BEAM: ProjectileSpec = {
+  ...SWORD_BEAM,
+  frames: ['spell-fire-0', 'spell-fire-1'],
+  frameRate: 4,
+};
+
 /** Bowser's flame (BowserFireBall.as SPEED = 160 px/s: 1.33 px/f). */
 export const BOWSER_FLAME: ProjectileSpec = {
   kind: 'bowser-flame',
@@ -351,6 +361,21 @@ export class Projectile extends Entity {
     const f = this.spec.frames[
       Math.floor(this.age / this.spec.frameRate) % this.spec.frames.length
     ] as string;
+    // What it fetches rides on it, centred: its coins too (0.4.43: a coin it took from the level
+    // used to vanish until the catch), each spinning, stacked a few pixels apart; the boomerang is
+    // drawn over them, so it still shows.
+    for (let i = 0; i < Math.min(this.carriedCoins, 3); i++)
+      r.sprite(
+        view.assets.sheet('items'),
+        `coin-${((view.frame >> 2) + i) & 3}`,
+        toPx(this.body.x + (this.body.w >> 1)) - 8 + i * 3 - view.camX,
+        toPx(this.body.y + (this.body.h >> 1)) - 8 - i * 2,
+      );
+    for (const e of this.carried) {
+      e.body.x = this.body.x + ((this.body.w - e.body.w) >> 1);
+      e.body.y = this.body.y + ((this.body.h - e.body.h) >> 1);
+      e.render(r, view);
+    }
     r.sprite(
       view.assets.sheet(this.spec.sheet),
       f,
@@ -358,11 +383,5 @@ export class Projectile extends Entity {
       toPx(this.body.y),
       this.facing > 0,
     );
-    // What it fetches rides on it, centred.
-    for (const e of this.carried) {
-      e.body.x = this.body.x + ((this.body.w - e.body.w) >> 1);
-      e.body.y = this.body.y + ((this.body.h - e.body.h) >> 1);
-      e.render(r, view);
-    }
   }
 }

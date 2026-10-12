@@ -12,6 +12,8 @@ import { T } from '@game/level/tiles';
 import { Rng } from '@engine/rng';
 import type { World } from '@game/world/world';
 import type { Action } from '@engine/input/actions';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { View } from '@game/entities/entity';
 
 /** A flat 48-wide field; `rows` patches individual rows (0 = top, 12 = the row above the floor). */
 function field(rows: Record<number, string> = {}, startX = 2) {
@@ -362,6 +364,39 @@ describe("Link's boomerang fetches (0.4.22, owner note 27)", () => {
     expect(r.world.entities.some((e) => (e instanceof PowerUp || e instanceof Pickup) && e.alive)).toBe(
       false,
     );
+  });
+
+  it('a coin it takes rides on it, drawn, until the catch (0.4.43: it used to vanish on contact)', () => {
+    const drawn: string[] = [];
+    let carriedAt: number | null = null;
+    let coinsWhileCarried = -1;
+    const r = run(
+      field({ 12: at(6, '$') }),
+      (w, f) => {
+        if (f === 3) return ['special'];
+        const boom = w.entities.find((e): e is Projectile => e instanceof Projectile && e.alive);
+        if (boom && boom.carriedCoins > 0 && carriedAt === null) {
+          carriedAt = f;
+          coinsWhileCarried = w.state.coins;
+          const r: Renderer = Object.assign(new NullRenderer(), {
+            sprite(_s: unknown, frame: string): void {
+              drawn.push(frame);
+            },
+          });
+          boom.render(r, { camX: 0, frame: 0, assets: { sheet: () => ({}) } } as unknown as View);
+        }
+        return [];
+      },
+      200,
+      {},
+      4,
+    );
+    expect(carriedAt).not.toBeNull();
+    expect(coinsWhileCarried).toBe(0);
+    expect(drawn.some((d) => d.startsWith('coin-'))).toBe(true);
+    // The boomerang is drawn last, over what it carries (a coin drawn over it hid it).
+    expect(drawn.at(-1)?.startsWith('coin-')).toBe(false);
+    expect(r.coins).toBe(1);
   });
 
   it('leaves a poison mushroom and an item still rising out of its block; takes a star and a 1-up', () => {

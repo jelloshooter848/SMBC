@@ -8,6 +8,7 @@ import { Bomb } from '../../entities/objects/bomb';
 import { STAR_FRAMES } from '../../constants';
 import { SAMUS_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
+import { beltButton } from '../../touch-labels';
 import { BEAMS, ICE_BEAM, LONG_BEAM, MISSILE, POWER_BEAM, WAVE_BEAM } from './weapons';
 import { has, isFound } from '../../items/flags';
 
@@ -63,12 +64,44 @@ export function missiles(p: Player): number {
 const short = (spec: ProjectileSpec): ProjectileSpec => ({ ...spec, lifetime: POWER_BEAM.lifetime });
 const SHORT_ICE = short(ICE_BEAM);
 const SHORT_WAVE = short(WAVE_BEAM);
+/** Campaign: the belt's beams (the rest of the belt are weapons: her missiles). */
+const BEAM_TOOLS = ['beam', 'ice', 'wave'] as const;
+
+/**
+ * Campaign (0.4.43, owner): the beam SHOOT fires. A beam picked on the belt is the one; with a
+ * weapon picked (missiles), the last beam picked (`beamPick`) stays hers.
+ */
+export function shotBeam(p: Player): (typeof BEAM_TOOLS)[number] {
+  const list = tools(p);
+  const t = activeTool(p, list)?.id;
+  const picked = BEAM_TOOLS.find((b) => b === t);
+  if (picked) return picked;
+  const kept = BEAM_TOOLS[p.scratch.beamPick ?? 0] ?? 'beam';
+  return list.some((x) => x.id === kept) ? kept : 'beam';
+}
+
+/**
+ * A belt item just found is the one picked (0.4.43): Missiles, the Ice or the Wave Beam taken are
+ * ready on the tool button (and a beam on SHOOT). False when `item` is no belt entry of hers.
+ */
+export function pickFoundTool(p: Player, item: string): boolean {
+  const id = ({ missiles: 'missile', 'ice-beam': 'ice', 'wave-beam': 'wave' } as Record<string, string>)[
+    item
+  ];
+  const i = tools(p).findIndex((t) => t.id === id);
+  if (id === undefined || i < 0) return false;
+  p.scratch.tool = i;
+  const b = BEAM_TOOLS.findIndex((x) => x === id);
+  if (b >= 0) p.scratch.beamPick = b;
+  return true;
+}
+
 function beam(p: Player): ProjectileSpec {
   if (isFound(p)) {
     // Campaign: Ice and Wave are both kept and picked on the belt; the Long Beam gives range to
     // whichever is in use (docs/POWERUPS.md 5.4).
     const long = has(p, 'long-beam');
-    const t = activeTool(p, tools(p))?.id;
+    const t = shotBeam(p);
     if (t === 'ice') return long ? ICE_BEAM : SHORT_ICE;
     if (t === 'wave') return long ? WAVE_BEAM : SHORT_WAVE;
     return long ? LONG_BEAM : POWER_BEAM;
@@ -110,6 +143,14 @@ function tools(p: Player): ToolInfo[] {
   if (has(p, 'missiles')) list.push(missile);
   return list;
 }
+
+/** The tool button's caption for each belt entry (campaign). */
+export const SAMUS_TOOL_LABELS: Readonly<Record<string, string>> = {
+  beam: 'BEAM',
+  ice: 'ICE',
+  wave: 'WAVE',
+  missile: 'MISSILE',
+};
 
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   let palette = p.scratch.varia ? 'samus-varia' : 'samus';
@@ -253,12 +294,24 @@ export const SAMUS: CharacterDef = {
   },
   guide: SAMUS_GUIDE,
   touchLabels(p) {
-    // In the ball both buttons drop bombs (and A does nothing: canJump). Standing, B fires the
-    // selected beam or missile and C always a missile; a missile button hides with none left.
+    // In the ball both buttons drop bombs (and A does nothing: canJump).
     if (inBall(p)) return { attack: 'BOMB', special: 'BOMB', select: 'WEAPON' };
     const missile = missiles(p) > 0 ? 'MISSILE' : null;
-    const missileSelected = activeTool(p, tools(p))?.id === 'missile';
-    return { attack: missileSelected ? missile : 'SHOOT', special: missile, select: 'WEAPON' };
+    const selected = activeTool(p, tools(p))?.id;
+    // Campaign (0.4.43, owner): B always shoots her beam; C is the weapon picked on the belt and
+    // reads as it (a missile button hides with none left). With only her first beam, C and WEAPON
+    // would just repeat SHOOT, so both stay hidden until she finds a second weapon (owner).
+    if (isFound(p)) {
+      const belt = tools(p);
+      const label = selected === 'missile' ? missile : (SAMUS_TOOL_LABELS[selected ?? 'beam'] ?? 'BEAM');
+      return {
+        attack: 'SHOOT',
+        special: label === null ? null : beltButton(belt, label),
+        select: beltButton(belt, 'WEAPON'),
+      };
+    }
+    // Classic: B fires the selected beam or missile and C always a missile.
+    return { attack: selected === 'missile' ? missile : 'SHOOT', special: missile, select: 'WEAPON' };
   },
   behaviour: {
     canJump: (p) => !inBall(p),
@@ -296,7 +349,20 @@ export const SAMUS: CharacterDef = {
         return;
       }
       p.scratch.aimUp = input.held('up') ? 1 : 0;
-      const missileSelected = activeTool(p, tools(p))?.id === 'missile';
+      const selected = activeTool(p, tools(p))?.id;
+      const missileSelected = selected === 'missile';
+      if (isFound(p)) {
+        // Campaign (0.4.43, owner): SHOOT always fires her beam (the last beam picked); the tool
+        // button fires the weapon picked on the belt.
+        const b = BEAM_TOOLS.findIndex((x) => x === selected);
+        if (b >= 0) p.scratch.beamPick = b;
+        if (input.pressed('attack')) fireBeam(p, world);
+        if (input.pressed('special')) {
+          if (missileSelected) fireMissile(p, world);
+          else fireBeam(p, world);
+        }
+        return;
+      }
       if (input.pressed('attack')) {
         if (missileSelected) fireMissile(p, world);
         else fireBeam(p, world);

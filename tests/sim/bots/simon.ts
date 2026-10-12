@@ -45,6 +45,11 @@ function simonTake(s: HeroStageScene, out: Action[], blk: { x: number; y: number
   // The take-off point: clear of the ledge's end on the way up, landing on the ledge.
   const run = dir > 0 ? left * 16 - 22 : (right + 1) * 16 + 22;
   const key = dir > 0 ? 'right' : 'left';
+  // Far off (the item came out early, a pipe between): over to the block first, hopping.
+  if ((run - dir * 20 - cx) * dir > 16) {
+    c.goTo(blk.x, 2);
+    return false;
+  }
   // Walking at it: on to the take-off point, and the jump there (too slow by then: stop).
   if (b.vx * dir > 0) {
     if ((cx - run) * dir >= -2 && Math.abs(b.vx) >= 0x0f00) out.push(key, 'jump');

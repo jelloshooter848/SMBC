@@ -97,7 +97,7 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 | 8     | The Underworld (Blaster Master) | Sophia III | 8-4 garage, after Fred down 8-4-end's trap pipe | A miner                   | Fred the frog, by 8-4-end's trap pipe (10); Jason, behind it         |
 
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
-goes. Hint NPCs are partners: you walk up and talk with **up** (`TALK`, the statue `READ`), campaign only, and they
+goes. Hint NPCs are partners: you walk up and talk with the **TALK button** (`TALK`, the statue `READ`; not up since 0.4.43), campaign only, and they
 never leave. The map titles: World 1's page is MUSHROOM KINGDOM since 0.4.36 (it was GRASS LAND), World 2's HYRULE
 since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since 0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since
 0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since
@@ -412,12 +412,16 @@ Lakitu, 6-4 Blooper, 7-4 Hammer Bro). In the campaign only (classic play keeps t
 2. **Beaten with weapons** (fireballs, hammers, any hero's attack that would kill him): NEW. On the killing hit he
    freezes, the disguise **bursts** in a puff of wand sparkles with a "poof", and the true creature drops onto the
    bridge, dazed (little stars over its head). Play holds for a short scene: the hero runs up, **jumps over the
-   creature** and lands at the axe; the axe goes, the bridge falls, the creature falls with it. No text.
+   creature** and walks on to the axe (up a step in the way, never through a wall: 2-4's axe stands a step above
+   the bridge); there he **turns to look at it** and the hero's remark shows, as in 3 (0.4.43: the line plays
+   however the fake dies); the axe goes, the bridge falls, the creature falls with it.
 3. **Reaching the axe** with the fake still standing: NEW. As the hero touches the axe, play holds and the disguise
    **bursts** anyway (the "poof"). The true creature blinks on the bridge. The hero **turns to look at it**, and the
    hero's remark shows (one card, written in each world's section). The hero turns back and pulls the axe; the
    bridge falls, the creature falls.
-4. Then, either way, the walk to Toad and **the castle's two pages** as now (page 1: Toad on the creature; page 2,
+4. **Fallen** off the level (into the lava or a pit, 0.4.43): at the axe the hero looks back where it went and
+   the remark shows the same way.
+5. Then, every way, the walk to Toad (up and down steps, never through a wall) and **the castle's two pages** as now (page 1: Toad on the creature; page 2,
    2 s later in the same box: the news). Both are in each world's section.
 
 In co-op the player nearer the axe is the one who jumps or looks; the other stands still. **Replay:** the unmasking
@@ -483,7 +487,7 @@ are already rewired there). Classic play and Unlock all keep today's roads.
 over the old map. **Trigger:** the first arrival on World N's start node (N = 2-8), right after the walk in from
 the gate. **Staging:** a local (a new map sprite, in the style of the hero's game) stands beside the start node and
 speaks in the box at the top; no Toad walk-in. **Replay:** any time, standing on the start node: the hint line
-reads `TALK TO THE <LOCAL>` (for example `TALK TO THE HEALER`) and `TALK` (up) plays the welcome again; once the
+reads `TALK TO THE <LOCAL>` (for example `TALK TO THE HEALER`) and `TALK` (the TALK button, as in a level, or JUMP; never up since 0.4.43) plays the welcome again; once the
 world's hero is freed it plays the local's after-freed page instead (NEW, written under each welcome). Each
 welcome names the hero, says who did it (the locals don't know who: "someone"), and says where the hero was last
 seen. Some carry a clue that Toad's old world entries carried (World 4's airship, World 8's turnip).
@@ -1958,8 +1962,8 @@ EVEN THE KING'S.
 SAMUS:
 
 IT'S REGISTERED TO ONE OF
-HIS KIDS. LARRY. THE KING
-STOLE IT FROM HIS OWN SON.
+HIS KIDS, LARRY KOOPA. THE
+KING ROBBED HIS OWN SON.
 ```
 
 ```text
@@ -1982,7 +1986,7 @@ anchor slams down through the ceiling, smashes the pipe and knocks the hero back
 airship:
 
 ```text
-LARRY:
+LARRY KOOPA:
 
 AFTER MY WAND, ARE YOU?!
 NOBODY TAKES MY WAND!
@@ -1991,7 +1995,7 @@ STAY RIGHT THERE!
 ```
 
 He climbs down the chain, sees the hero up close, panics (a `!`, his arms thrown up) and scurries back up (said:
-`Larry climbs down the chain, sees you, panics and scurries back up!`). The hero, by name:
+`Larry Koopa climbs down the chain, sees you, panics and scurries back up!`). The hero, by name:
 
 ```text
 MARIO:
@@ -2062,7 +2066,7 @@ to the room) shows the plain crash and the chain to climb.
 room's pipe in a run (not again on TRY AGAIN). The fight starts when it closes.
 
 ```text
-LARRY:
+LARRY KOOPA:
 
 HEY! THE KING TOOK MY
 WAND, AND ALL I GOT WAS
@@ -2070,7 +2074,7 @@ THIS LOUSY SPARE!
 ```
 
 ```text
-LARRY:
+LARRY KOOPA:
 
 HE SAYS I GET IT BACK
 WHEN THE PRINCESS IS
@@ -2081,7 +2085,7 @@ Once the file has seen the anchor scene (NEW, 0.4.39), Larry knows the hero, and
 second page is the same):
 
 ```text
-LARRY:
+LARRY KOOPA:
 
 YOU AGAIN?! THE KING TOOK
 MY WAND, AND ALL I GOT WAS

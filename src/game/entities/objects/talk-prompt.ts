@@ -3,7 +3,7 @@ import type { View } from '../entity';
 
 /**
  * The prompt over someone a player can talk to (a captive hero, a partner): the ability and, with
- * keys or a pad, the key ("TALK (UP)"; on touch "TALK", which is also its button), on a black strip
+ * keys or a pad, the TALK button's key ("TALK (C)"; on touch "TALK", its caption), on a black strip
  * so it reads over any sky (0.4.35: it was a bare TALK and an up arrow). `cx` is its centre, `top`
  * the speaker's top (screen px).
  */

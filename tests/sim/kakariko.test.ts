@@ -27,7 +27,9 @@ import {
   BANNER_MIN,
   BANNER_GREET,
   energyOf,
+  GATE_IN,
 } from '@game/town/scene';
+import { ALIGN } from '@game/topdown/hero';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { Game, ControlScheme } from '@game/scenes/game';
 import { villageDungeon, villageRooms, isOutdoor } from '@game/town/village';
@@ -1470,5 +1472,70 @@ describe('3 digits with the Wallet: the village HUD and the level HUD', () => {
     const rec = recorder();
     level.render(rec.r);
     expect(rec.texts.map((x) => x.s)).toContain('$×100');
+  });
+});
+
+describe('walking the village four ways, as Link in the Shadow Keep (0.4.43, owner)', () => {
+  it('every hero walks the same: one axis at a time (the way pressed last), 1.5 px a frame, RUN no faster', () => {
+    const h = makeGame();
+    const t = townQuiet(h, { freed: CHARACTERS.map((c) => c.id) });
+    for (let n = 0; n < CHARACTERS.length; n++) {
+      const hero = t.hero;
+      const id = h.game.state.character.id;
+      walkTo(h, key('gate', 7, 6));
+      h.idle(4);
+      // Right, then up pressed too: he goes up only (the last pressed), never both at once.
+      const x0 = hero.x;
+      const y0 = hero.y;
+      h.step(['right']);
+      for (let i = 0; i < 12; i++) h.step(['right', 'up']);
+      expect(hero.facing, id).toBe('up');
+      expect(hero.x - x0, id).toBeLessThanOrEqual(8);
+      expect(y0 - hero.y, id).toBeGreaterThan(0);
+      // The pace: 30 frames straight down an open street, 45 px, with RUN held too.
+      walkTo(h, key('gate', 7, 3));
+      h.idle(4);
+      const ys = hero.y;
+      for (let i = 0; i < 30; i++) h.step(['down', 'attack']);
+      expect(hero.y - ys, id).toBe(45);
+      h.idle(SWITCH_GAP);
+      h.tap('select');
+      h.idle(SWITCH_GAP);
+    }
+  });
+});
+
+describe('every way into a village screen is on the keep grid (0.4.43 review)', () => {
+  it('the first step from the gate and from every door moves only along the way pressed', () => {
+    const h = makeGame();
+    onWorld2(h, { secrets: ['bonus-2', KAKARIKO] });
+    const t = intoTown(h);
+    t.banner = null;
+    // The walk in from the map ends where the gate entry below puts him.
+    expect([t.hero.x, t.hero.y]).toEqual([GATE_IN.x, GATE_IN.y]);
+    const w = t.world;
+    const entries: { name: string; at: () => void }[] = [
+      { name: 'gate', at: () => w.warpTo('gate', GATE_IN.x, GATE_IN.y) },
+      ...DOORS.map((d) => ({ name: d.id, at: () => w.arriveAt(d.id) })),
+    ];
+    const off: string[] = [];
+    let moved = 0;
+    for (const e of entries)
+      for (const dir of ['up', 'down', 'left', 'right'] as const) {
+        e.at();
+        h.idle(2);
+        const hero = t.hero;
+        expect(hero.x % ALIGN, `${e.name} x`).toBe(0);
+        expect(hero.y % ALIGN, `${e.name} y`).toBe(0);
+        const { x, y } = hero;
+        h.step([dir]);
+        const across = dir === 'up' || dir === 'down' ? hero.x - x : hero.y - y;
+        const along = dir === 'up' || dir === 'down' ? hero.y - y : hero.x - x;
+        if (along !== 0) moved++;
+        if (across !== 0) off.push(`${e.name} ${dir}: ${x},${y} -> ${hero.x},${hero.y}`);
+      }
+    expect(off).toEqual([]);
+    // Most ways out of an entry are open (a step back into a door or against a wall is not).
+    expect(moved).toBeGreaterThan(entries.length * 2);
   });
 });

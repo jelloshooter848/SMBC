@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLevel, levelIds } from '@content/levels';
 import { runSim } from '@game/sim/headless';
+import { newGameState } from '@game/context';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
@@ -43,6 +44,11 @@ const campBonus = () => campaignLevel(bonus());
 const dojo = () => getLevel('6-2-dojo');
 const INTO_DOJO = { level: '6-2-dojo', x: 14, y: 12, exitDir: 'spin' };
 const OUT_TO_6_2 = { level: '6-2', x: 35, y: 10, exitDir: 'up' as const };
+/**
+ * The dojo's way out (0.4.43, owner: arrive the way you left): a drop into 6-2 from above, onto the
+ * open street past the pipes at 35-38 (never onto a Piranha Plant's pipe).
+ */
+const DROP_TO_6_2 = { level: '6-2', x: 42, y: 0, exitDir: 'fall' as const };
 /** The campaign's coin arrow, pointing at the panel's middle row (11). */
 const ARROW = [
   [2, 11],
@@ -172,14 +178,14 @@ describe('the areas', () => {
     for (const [x, y] of ARROW) expect(tile(bonus(), x, y), `plain ${x},${y}`).toBe(T.AIR);
   });
 
-  it('one way: the dojo leads back into 6-2 itself, so the bonus room is entered only down the pipe at 19', () => {
+  it('one way: the dojo drops the player into 6-2 itself, so the bonus room is entered only down the pipe at 19', () => {
     const into: string[] = [];
     for (const id of levelIds())
       for (const z of campaignLevel(getLevel(id)).zones)
         if ('target' in z && z.target && (z.target as { level: string }).level === '6-2-bonus')
           into.push(`${id} ${z.kind} ${'x' in z ? z.x : ''}`);
     expect(into).toEqual(['6-2 pipe 19']);
-    expect(tricks(dojo().zones).map((z) => z.target)).toEqual([OUT_TO_6_2]);
+    expect(tricks(dojo().zones).map((z) => z.target)).toEqual([DROP_TO_6_2]);
   });
 
   it('the trick zone parses and writes back the same', () => {
@@ -196,11 +202,13 @@ describe('the areas', () => {
       '[zones]',
       'trick 0 10 3 -> t-dojo 14 12 campaign',
       'trick 15 9 2 -> t 1 12 exit=up',
+      'trick 15 9 2 -> t 1 0 exit=fall',
     ].join('\n');
     const l = parseTextMap(src);
     expect(tricks(l.zones)).toEqual([
       { kind: 'trick', x: 0, y: 10, h: 3, target: { level: 't-dojo', x: 14, y: 12 }, campaign: true },
       { kind: 'trick', x: 15, y: 9, h: 2, target: { level: 't', x: 1, y: 12, exitDir: 'up' } },
+      { kind: 'trick', x: 15, y: 9, h: 2, target: { level: 't', x: 1, y: 0, exitDir: 'fall' } },
     ]);
     expect(tricks(parseTextMap(serializeTextMap(l)).zones)).toEqual(tricks(l.zones));
   });
@@ -221,7 +229,7 @@ describe('the areas', () => {
     for (const y of PANEL.rows) expect(w.map.get(PANEL.x, y)).toBe(T.TRICK);
   });
 
-  it('the dojo is an area of 6-2 that keeps the clock, entered by a spin, left up 6-2’s pipe', () => {
+  it('the dojo is an area of 6-2 that keeps the clock, entered by a spin, left by a drop into 6-2', () => {
     const l = dojo();
     expect(l.parent).toBe('6-2');
     expect(l.time).toBeNull();
@@ -231,9 +239,9 @@ describe('the areas', () => {
     expect(l.start).toEqual({ x: 14, y: 12 });
     expect(l.width).toBe(16);
     for (const y of DOJO_PANEL.rows) expect(tile(l, DOJO_PANEL.x, y)).toBe(T.TRICK);
-    // Always awake (the way out works whoever got in): out into 6-2, rising out of the pipe at 35
-    // that the bonus room's own pipe leads to.
-    expect(tricks(l.zones)).toEqual([{ kind: 'trick', x: 15, y: 10, h: 3, target: OUT_TO_6_2 }]);
+    // Always awake (the way out works whoever got in): out into 6-2, dropping in from above past
+    // the pipes at 35-38 that the bonus room's own pipe leads to (0.4.43: never up a pipe).
+    expect(tricks(l.zones)).toEqual([{ kind: 'trick', x: 15, y: 10, h: 3, target: DROP_TO_6_2 }]);
     expect(bonus().zones).toContainEqual({ kind: 'pipe', x: 13, y: 12, dir: 'right', target: OUT_TO_6_2 });
     expect(l.zones.filter((z) => z.kind !== 'trick')).toEqual([]);
     expect(l.entities).toContainEqual({ type: 'captive', x: RYU_AT.x, y: RYU_AT.y, props: { hero: 'ryu' } });
@@ -615,7 +623,7 @@ describe('the spin arrival', () => {
 
 describe('every hero gets to Ryu and back out of 6-2', () => {
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
-    '%s: into the dojo, over to Ryu, back through the panel and up out of 6-2’s pipe at 35',
+    '%s: into the dojo, over to Ryu, back through the panel and dropping into 6-2 past its pipes at 35-38',
     (_n, c) => {
       // In: from where the pipe drops him in (column 1), push into the panel.
       const a = runSim({
@@ -646,21 +654,50 @@ describe('every hero gets to Ryu and back out of 6-2', () => {
       });
       expect(reached, `${c.name} stood beside Ryu`).toBe(true);
       expect(d.outcome, c.name).toBe('pipe');
-      expect(d.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: OUT_TO_6_2 });
+      expect(d.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: DROP_TO_6_2 });
       expect(d.world.time).toBeLessThanOrEqual(240);
-      // Out in 6-2: risen out of the pipe at 35 (where the bonus room's pipe leads), standing on it.
+      // Out in 6-2: dropped in from above (no pipe), standing on the street past the pipes at 35-38.
       const b = runSim({
         level: campaignLevel(getLevel('6-2')),
         character: c,
         script: none,
-        start: { x: 35, y: 10, mode: 'pipe-exit', time: 220, clearEnemies: 'keep-piranhas' },
+        start: { x: 42, y: 0, mode: 'fall', time: 220, clearEnemies: 'keep-piranhas' },
         maxFrames: 150,
       });
       expect(b.outcome, c.name).toBe('timeout');
       expect(b.world.player.dead).toBe(false);
       expect(b.world.player.body.onGround).toBe(true);
-      expect(toPx(b.world.player.body.y + b.world.player.body.h)).toBe(11 * 16); // the pipe's top
-      expect(Math.floor(toPx(b.world.player.centerX) / 16)).toBe(36);
+      // The street at 42, between the pipes at 35-38 and 46.
+      expect(toPx(b.world.player.body.y + b.world.player.body.h)).toBe(13 * 16);
+      expect(Math.floor(toPx(b.world.player.centerX) / 16)).toBeGreaterThanOrEqual(39);
+      expect(Math.floor(toPx(b.world.player.centerX) / 16)).toBeLessThanOrEqual(45);
+    },
+  );
+});
+
+describe("the trap door's drop into 6-2 (0.4.43 review)", () => {
+  // A player who just pushed right into the panel is still holding right as he falls (or turns
+  // back left): the drop must never land him on a pipe beside a Piranha Plant.
+  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
+    '%s: holding right, left or nothing, he lands on the street unhurt',
+    (_n, c) => {
+      for (const hold of [['right'], ['left'], []] as Action[][]) {
+        const b = runSim({
+          level: campaignLevel(getLevel('6-2')),
+          character: c,
+          script: none,
+          start: { ...DROP_TO_6_2, mode: 'fall', time: 220, clearEnemies: 'keep-piranhas' },
+          maxFrames: 150,
+          controller: (w) => (w.player.body.onGround ? [] : hold),
+        });
+        const tag = `${c.name} holding ${hold.join() || 'nothing'}`;
+        const hp = newGameState(c).hp;
+        expect(b.outcome, tag).toBe('timeout');
+        expect(b.world.player.hp, tag).toBe(hp);
+        expect(b.world.player.invuln, tag).toBe(0);
+        expect(b.world.player.body.onGround, tag).toBe(true);
+        expect(toPx(b.world.player.body.y + b.world.player.body.h), tag).toBe(13 * 16);
+      }
     },
   );
 });
@@ -678,7 +715,7 @@ function intoBonus(h: H): LevelScene {
 const levelId = (h: H) => (h.top() as LevelScene).level?.id;
 
 describe('the whole way in campaign play', () => {
-  it('bonus room → dojo → 6-2 (up its pipe at 35): the clock carries over, no secret and no clear recorded', () => {
+  it('bonus room → dojo → 6-2 (a drop past its pipes at 35-38): the clock carries over, no secret and no clear recorded', () => {
     const h = makeGame();
     const l = intoBonus(h);
     expect(tricks(l.level.zones)[0]?.campaign).toBeUndefined();
@@ -699,9 +736,9 @@ describe('the whole way in campaign play', () => {
     const main = (h.top() as LevelScene).world;
     expect(main.time).toBeLessThanOrEqual(inDojo.time as number);
     h.idle(90);
-    // Risen out of the pipe at 35, past the bonus room's pipe at 19: going back in means walking
-    // back to 19 and down it.
-    expect(Math.floor(toPx(main.player.centerX) / 16)).toBe(36);
+    // Dropped in from above past the pipes at 35-38 (never up out of a pipe he did not go down), past the
+    // bonus room's pipe at 19: going back in means walking back to 19 and down it.
+    expect(Math.floor(toPx(main.player.centerX) / 16)).toBe(42);
     expect(main.player.body.onGround).toBe(true);
     expect(main.time).toBeGreaterThan(arrived - 60);
     expect(h.game.mapProgress.secrets).toEqual([]);

@@ -235,8 +235,10 @@ describe('partners: every hero can walk up and talk', () => {
     const l = campaignIn(h, spot, c, power);
     const it = walkUp(h, l);
     const script = PARTNERS[spot.who]!;
-    expect(h.said).toContain(`${script.name}. Up to ${script.verb === 'READ' ? 'read' : 'talk'}.`);
-    h.tap('up');
+    expect(h.said).toContain(
+      `${script.name}. Press ${script.verb} to ${script.verb === 'READ' ? 'read' : 'talk'}.`,
+    );
+    h.tap('special');
     expect(h.top()).toBeInstanceOf(CardScene);
     expect(h.said.some((s) => s.startsWith(said(script.pages[0]!)))).toBe(true);
     press(h, 'attack');
@@ -252,7 +254,7 @@ describe('partners: the pages', () => {
     walkUp(h, l);
     const pages = PARTNERS[spot.who]!.pages;
     const from = h.said.length;
-    h.tap('up');
+    h.tap('special');
     for (const page of pages) {
       const card = h.top() as CardScene;
       expect(card).toBeInstanceOf(CardScene);
@@ -266,7 +268,7 @@ describe('partners: the pages', () => {
     );
     // They never leave: up talks again, from the first page.
     h.idle(2);
-    h.tap('up');
+    h.tap('special');
     expect(h.top()).toBeInstanceOf(CardScene);
     expect(h.said.at(-1)?.startsWith(said(pages[0]!))).toBe(true);
   });
@@ -275,7 +277,7 @@ describe('partners: the pages', () => {
     const h = makeGame();
     const l = campaignIn(h, spotOf('dr-light'));
     walkUp(h, l);
-    h.tap('up');
+    h.tap('special');
     press(h, 'attack');
     expect(h.top()).toBe(l);
     const pages = PARTNERS['dr-light']!.pages;
@@ -286,19 +288,19 @@ describe('partners: the pages', () => {
     expect(l.world.player.body.x).toBeLessThan(x);
   });
 
-  it('the statue reads: READ over it in reach, said as "Up to read."; the others say TALK', () => {
+  it('the statue reads: READ over it in reach, said as "Press READ (C) to read."; the others say TALK', () => {
     const h = makeGame();
     const l = campaignIn(h, spotOf('chozo'));
     walkUp(h, l);
     const texts = draw(l).texts.map((t) => t.str);
     expect(texts).toContain('READ');
     expect(texts).not.toContain('TALK');
-    expect(h.said).toContain('An old bird statue. Up to read.');
+    expect(h.said).toContain('An old bird statue. Press READ to read.');
     const h2 = makeGame();
     const l2 = campaignIn(h2, spotOf('irene'));
     walkUp(h2, l2);
     expect(draw(l2).texts.map((t) => t.str)).toContain('TALK');
-    expect(h2.said).toContain('Irene. Up to talk.');
+    expect(h2.said).toContain('Irene. Press TALK to talk.');
   });
 
   it('out of reach, no word shows over a partner', () => {
@@ -315,7 +317,7 @@ describe("partners: the old man's coin", () => {
     const l = campaignIn(h, spotOf('old-man'));
     const man = walkUp(h, l);
     expect(h.game.state.coins).toBe(0);
-    h.tap('up');
+    h.tap('special');
     press(h, 'jump');
     expect(h.game.state.coins).toBe(1);
     const pop = l.world.entities.find((e) => e instanceof CoinPop);
@@ -327,7 +329,7 @@ describe("partners: the old man's coin", () => {
     expect(h.game.state.coins).toBe(1);
     // Talked to again (every page): no second coin.
     h.idle(40);
-    h.tap('up');
+    h.tap('special');
     for (const _ of PARTNERS['old-man']!.pages) press(h, 'jump');
     expect(h.top()).toBe(l);
     h.idle(40);
@@ -338,12 +340,12 @@ describe("partners: the old man's coin", () => {
     const h = makeGame();
     const l = campaignIn(h, spotOf('old-man'));
     walkUp(h, l);
-    h.tap('up');
+    h.tap('special');
     press(h, 'attack');
     expect(h.top()).toBe(l);
     expect(h.game.state.coins).toBe(0);
     h.idle(2);
-    h.tap('up');
+    h.tap('special');
     press(h, 'jump');
     expect(h.game.state.coins).toBe(1);
   });
@@ -354,7 +356,7 @@ describe("partners: the old man's coin", () => {
       const l = campaignIn(h, spot);
       walkUp(h, l);
       const coins = h.game.state.coins;
-      h.tap('up');
+      h.tap('special');
       for (const _ of PARTNERS[spot.who]!.pages) press(h, 'jump');
       expect(h.top()).toBe(l);
       expect(h.game.state.coins, spot.who).toBe(coins);
@@ -369,11 +371,11 @@ describe('partners: the music plays on', () => {
     walkUp(h, l);
     h.audio.stopMusic.mockClear();
     h.audio.playMusic.mockClear();
-    h.tap('up');
+    h.tap('special');
     for (const _ of PARTNERS['dr-light']!.pages) press(h, 'jump');
     expect(h.top()).toBe(l);
     h.idle(2);
-    h.tap('up');
+    h.tap('special');
     press(h, 'attack');
     expect(h.top()).toBe(l);
     h.idle(10);
@@ -394,7 +396,7 @@ describe('partners: co-op', () => {
     p2.body.x = p1.body.x;
     p2.body.y = p1.body.y;
     h.until(() => p2.body.onGround && partners(l)[0]!.inReach(p2), 60);
-    h.tap('up', 1);
+    h.tap('special', 1);
     expect(h.top()).toBeInstanceOf(CardScene);
     const pages = PARTNERS.irene!.pages;
     expect(h.said.at(-1)?.startsWith(said(pages[0]!))).toBe(true);
@@ -416,7 +418,7 @@ describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () =>
     const h = makeGame();
     const l = campaignIn(h, spot, MARIO, 'small', { freed: ['mario', script.hero!] });
     walkUp(h, l);
-    h.tap('up');
+    h.tap('special');
     after.forEach((page, i) => {
       expect(h.top()).toBeInstanceOf(CardScene);
       const last = i === after.length - 1;
@@ -426,7 +428,7 @@ describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () =>
     expect(h.top()).toBe(l);
     expect(h.said.some((s) => s.startsWith(said(script.pages[0]!)))).toBe(false);
     h.idle(2);
-    h.tap('up');
+    h.tap('special');
     expect(h.said.at(-1)?.startsWith(said(script.after![0]!))).toBe(true);
   });
 
@@ -434,7 +436,7 @@ describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () =>
     const h = makeGame();
     const l = campaignIn(h, spotOf('old-man'), MARIO, 'small', { freed: ['mario', 'link'] });
     walkUp(h, l);
-    h.tap('up');
+    h.tap('special');
     press(h, 'jump');
     expect(h.top()).toBe(l);
     h.idle(20);
@@ -446,7 +448,7 @@ describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () =>
     const h = makeGame();
     const l = campaignIn(h, spotOf('villager'), MARIO, 'small', { freed: ['mario', 'link'] });
     walkUp(h, l);
-    h.tap('up');
+    h.tap('special');
     expect(h.said.at(-1)?.startsWith(said(PARTNERS.villager!.pages[0]!))).toBe(true);
   });
 
@@ -512,14 +514,14 @@ describe('partners: who moved, and how they look (0.4.23)', () => {
 });
 
 describe('partners: the TALK prompt is a button (0.4.35)', () => {
-  it('with keys, the word over a partner names the key: TALK (UP)', () => {
+  it("with keys, the word over a partner names the TALK button's key: TALK (C)", () => {
     const h = makeGame();
     h.game.deps.settings = defaultSettings();
     h.game.deps.controlScheme = () => 'keyboard';
     const l = campaignIn(h, spotOf('irene'));
     walkUp(h, l);
-    expect(draw(l).texts.map((t) => t.str)).toContain('TALK (UP)');
-    expect(h.said).toContain('Irene. Up to talk.');
+    expect(draw(l).texts.map((t) => t.str)).toContain('TALK (C)');
+    expect(h.said).toContain('Irene. Press TALK (C) to talk.');
   });
 
   it('on touch, a TALK button shows in reach and talks; out of reach it is gone', () => {
@@ -531,7 +533,7 @@ describe('partners: the TALK prompt is a button (0.4.35)', () => {
     walkUp(h, l);
     expect(draw(l).texts.map((t) => t.str)).toContain('TALK');
     expect(l.touchLabels().special).toBe('TALK');
-    expect(h.said).toContain('Irene. Press TALK.');
+    expect(h.said).toContain('Irene. Press TALK to talk.');
     h.tap('special');
     h.until(() => h.top() instanceof CardScene, 30);
     expect((h.top() as CardScene).lines).toEqual(PARTNERS.irene!.pages[0]);

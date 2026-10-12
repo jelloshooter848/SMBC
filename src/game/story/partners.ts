@@ -5,21 +5,25 @@ import { playStoryCards } from './cards';
 import { PARTNERS, partnerPages } from './script';
 
 /**
- * What the announcer says when a player comes within a partner's reach: "Doctor Light. Up to
- * talk." (the statue: "Up to read."); on touch, where the TALK (READ) button shows, "Press
- * TALK."; in co-op prefixed with the player.
+ * What the announcer says when a player comes within a partner's reach: "Doctor Light. Press TALK
+ * (C) to talk." (the statue: "Press READ (C) to read."; on touch "Press TALK to talk."): the TALK
+ * button, never up (0.4.43); `button(verb)` names it in the scheme in use (abilityHint). In co-op
+ * prefixed with the player.
  */
-export function partnerNearSaid(who: string, player: number, coop: boolean, touch = false): string {
+export function partnerNearSaid(
+  who: string,
+  player: number,
+  coop: boolean,
+  button: (verb: string) => string = (verb) => verb,
+): string {
   const script = PARTNERS[who];
   const name = script?.name ?? who;
-  const how = touch
-    ? `Press ${script?.verb ?? 'TALK'}`
-    : `Up to ${script?.verb === 'READ' ? 'read' : 'talk'}`;
-  return `${coop ? `Player ${player + 1}: ` : ''}${name}. ${how}.`;
+  const verb = script?.verb ?? 'TALK';
+  return `${coop ? `Player ${player + 1}: ` : ''}${name}. Press ${button(verb)} to ${verb.toLowerCase()}.`;
 }
 
 /**
- * A player pressed up next to partner `who` (docs/STORY.md 2.5-2.10): its pages play in the story
+ * A player pressed TALK next to partner `who` (docs/STORY.md 2.5-2.10): its pages play in the story
  * box over the frozen level (OK next page, BACK skips the rest), then play goes on. It can be
  * talked to again any time. Once its hero is freed on the file it says its after page instead
  * (0.4.23, script.ts partnerPages). The old man's coin (PartnerScript.coinAfter) pops out over him
