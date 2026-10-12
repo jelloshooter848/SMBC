@@ -5,6 +5,7 @@ import { SCREEN_W } from '@engine/viewport';
 import { tileToSub } from '@engine/math/units';
 import type { World } from '../world/world';
 import { fontText } from '../hud/text';
+import type { LessonDemo } from './demo-panel';
 
 /*
  * Lesson prompts for a stage tutorial (reusable: nothing here knows about Mario or 1-0).
@@ -115,6 +116,11 @@ export interface Lesson {
   big?: boolean;
   /** Toad's words for a small hero in a `big` lesson. Ability tokens as in `text`. */
   small?: string;
+  /**
+   * A looping demo of the move, shown under the box while the lesson's new tip holds the game
+   * (0.4.45: 1-0's RUN, demo-panel.ts).
+   */
+  demo?: LessonDemo;
   /** Lights in the box under the words (Link's FREE / HURT), read every frame. */
   lights?(world: World): readonly { label: string; on: boolean }[];
   /** A line in the box under the words, read every frame (Samus's "-4 EN (WAS -8)"); null: none. */

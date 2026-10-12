@@ -30,6 +30,7 @@ import {
 } from './stage-prompts';
 import { MARIO_TUTORIAL } from './mario-1-0';
 import { giveQuietly, itemName, ownsItem, refillHealth } from './kit';
+import { DEMO_H, demoVariant, drawDemoPanel, type LessonDemo } from './demo-panel';
 
 /*
  * Stage tutorials (0.5.0): a level whose play is a list of lessons (stage-prompts.ts), shown one at
@@ -730,7 +731,16 @@ export class TutorialDirector {
     tips.show(tip);
     const holds = this.shown === this.tracker.index && tips.hold(tip, this);
     if (holds) this.game.ctx.audio.sfx('pause');
-    this.game.deps.announcer?.say(holds ? `${text} OK to continue.` : text);
+    // A lesson's demo panel shows with the hold: its picture is read out too.
+    const demo = holds ? this.demo : null;
+    const picture = demo ? ` ${demo.said(this.game, demoVariant(controlScheme(this.game)))}` : '';
+    this.game.deps.announcer?.say(holds ? `${text}${picture} OK to continue.` : text);
+  }
+
+  /** The demo shown under the box: the lesson's, while its new tip holds the game (else null). */
+  get demo(): LessonDemo | null {
+    if (!this.frozen) return null;
+    return this.tracker.lessons[this.shown]?.demo ?? null;
   }
 
   /** The box shows the current lesson's tip, read out (no NICE!, nothing waiting to show). */
@@ -841,6 +851,13 @@ export class TutorialDirector {
       y += 10;
     }
     if (box.lights.length) this.drawLights(r, y + 1, box.lights, box.x + (box.w >> 1));
+    // The lesson's demo, under the box (over it when the box is at the bottom), while it holds.
+    const demo = this.demo;
+    if (demo) {
+      const top = box.y === PROMPT_BOX_Y;
+      const py = top ? box.y + box.h + 4 : box.y - DEMO_H - 4;
+      drawDemoPanel(r, this.game, demo, this.game.tips.heldFrames, box.x, py, box.w);
+    }
   }
 
   /**

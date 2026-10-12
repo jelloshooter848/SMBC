@@ -10,6 +10,7 @@ import { fontText, wrapText } from '../hud/text';
 import type { Lesson } from './stage-prompts';
 import type { StageTutorial, TutorialContext, TutorialGate } from './stage-tutorial';
 import { ShadowTeaseScene } from './tease';
+import { RUN_DEMO } from './demos';
 import { beat, storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { STORY_TOAD_PAGES } from '../story/script';
@@ -210,6 +211,8 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     retry: 'THE WAY OPENS FOR A REAL SPRINT! HOLD [RUN:attack] AT TOP SPEED UNTIL THE BAR FILLS.',
     done: (w) => tick(w).sprint >= SPRINT_FRAMES,
     meter: sprintMeter,
+    // Owner #38 (0.4.45): while its tip holds the game, a looping demo of the run (demos.ts).
+    demo: RUN_DEMO,
   },
   {
     id: 'ease',
