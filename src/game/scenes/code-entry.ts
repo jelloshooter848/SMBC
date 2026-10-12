@@ -34,6 +34,14 @@ const STYLE = `
 .code-entry button { flex: 1; min-height: 44px; font: inherit; font-size: 15px; color: #000; background: #fcfcfc;
   border: 0; border-radius: 0; cursor: pointer; touch-action: manipulation; text-transform: uppercase; }
 .code-entry button.alt { background: #3c3c3c; color: #fcfcfc; }
+@media (max-height: 500px) {
+  /* A phone on its side: the on-screen keyboard takes the lower half, so all of it fits above. */
+  .code-entry { padding: 6px 8px; border-width: 3px; }
+  .code-entry h2 { margin-bottom: 4px; }
+  .code-entry p { display: none; }
+  .code-entry textarea { height: 2.8em; padding: 4px 6px; }
+  .code-entry .status { margin: 3px 0; font-size: 13px; }
+}
 `;
 
 export class CodeEntryPanel {
@@ -55,7 +63,7 @@ export class CodeEntryPanel {
       <h2 id="code-entry-title"></h2>
       <p>Paste the code, or the whole message with the link. You can type it too.</p>
       <textarea aria-label="Save code" autocapitalize="characters" autocomplete="off" autocorrect="off"
-        spellcheck="false" enterkeyhint="done" placeholder="XXXXX-XXXXX-XXXXX-..."></textarea>
+        spellcheck="false" enterkeyhint="done" placeholder="Paste the code or the message here"></textarea>
       <div class="status" role="alert" aria-live="assertive"></div>
       <div class="row">
         ${opts.read ? '<button type="button" data-paste class="alt">Paste</button>' : ''}
@@ -66,9 +74,9 @@ export class CodeEntryPanel {
     this.el = el;
     this.box = el.querySelector('textarea') as HTMLTextAreaElement;
     this.status = el.querySelector('.status') as HTMLElement;
-    // Keys typed here are the text box's: the game's keyboard (on window) never sees them.
-    for (const type of ['keydown', 'keyup', 'keypress'])
-      el.addEventListener(type, (e) => e.stopPropagation());
+    // Keys typed here are the text box's: the game's keyboard (on window) never sees them go down.
+    // Key-ups still reach it, so the key that opened the box (still held then) is let go there.
+    for (const type of ['keydown', 'keypress']) el.addEventListener(type, (e) => e.stopPropagation());
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -81,6 +89,8 @@ export class CodeEntryPanel {
     // Touches on the panel are the panel's (the touch pad under it must not see them).
     for (const type of ['pointerdown', 'pointerup', 'touchstart', 'touchend'])
       el.addEventListener(type, (e) => e.stopPropagation());
+    // An old error goes once the text changes.
+    this.box.addEventListener('input', () => (this.status.textContent = ''));
     el.querySelector('[data-load]')?.addEventListener('click', () => this.load());
     el.querySelector('[data-cancel]')?.addEventListener('click', () => this.cancel());
     el.querySelector('[data-paste]')?.addEventListener('click', () => void this.paste());
@@ -103,7 +113,9 @@ export class CodeEntryPanel {
     const text = (await this.opts.read?.()) ?? null;
     if (this.closed) return;
     if (text === null || !text.trim()) {
-      if (!auto) this.show('NOTHING TO PASTE. TAP THE BOX AND PASTE OR TYPE THE CODE');
+      // Refused (no permission, no user gesture) or empty: the box is the way in.
+      if (!auto)
+        this.show(text === null ? 'TAP THE BOX AND PASTE THE CODE THERE' : 'NOTHING ON THE CLIPBOARD');
       return;
     }
     this.box.value = text;

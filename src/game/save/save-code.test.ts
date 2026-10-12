@@ -199,6 +199,7 @@ function midSave(): SaveFile {
     secrets: ['bonus-1', KAKARIKO],
     position: { page: 'smb-4', node: '4-1' },
     lastNode: { 'smb-1': '1-4', 'smb-2': '2-4', 'smb-3': '3-4' },
+    pendingReveal: ['smb-4:4-1>4-2', 'smb-4:4-2'],
     freed: ['mario', 'luigi', 'link', 'megaman'],
     tutorials: ['mario', 'luigi', 'link'],
     met: ['mario', 'luigi', 'link', 'megaman', 'samus'],
@@ -305,7 +306,9 @@ function randomSave(seed: number): SaveFile {
     lastNode: Object.fromEntries(
       pick(rng, pages).map((id) => [id, rng.pick(MAP_PAGES.find((p) => p.id === id)?.nodes ?? []).id]),
     ),
-    pendingReveal: pick(rng, pages, 0.1).map((p) => `${p}:${odd()}`),
+    pendingReveal: pick(rng, pages, 0.2).map((p) =>
+      rng.pick([`${p}:${odd()}`, `${p}:start`, `${p}:start>${rng.pick(pages)}`, `${p}:a>b>c`, `${p}:>x`]),
+    ),
     devUnlockAll: rng.chance(0.1),
     devAllHeroes: rng.chance(0.1),
     devGateOpen: rng.chance(0.1),
@@ -571,9 +574,34 @@ describe('save codes: round trips', () => {
 
   it('code lengths: new, mid-game and 100% (docs/SAVE_CODES.md)', () => {
     const len = (s: SaveFile) => encodeSaveCode(s).replace(/-/g, '').length;
-    const lengths = { new: len(newSave(1, 'mario')), mid: len(midSave()), full: len(fullSave()) };
+    // Right after 1-4, when the backup card asks: World 2's road still to draw in.
+    const firstCastle = migrateSave(
+      {
+        ...newSave(1, 'mario'),
+        powerState: 'fire',
+        coins: 42,
+        cleared: ['1-0', '1-1', '1-2', '1-3', '1-4'],
+        pages: ['smb-1', 'smb-2'],
+        position: { page: 'smb-1', node: '1-4' },
+        lastNode: { 'smb-1': '1-4' },
+        pendingReveal: ['smb-1:1-4>smb-2', 'smb-2:start'],
+        freed: ['mario', 'luigi'],
+        met: ['mario', 'luigi'],
+        heroInventory: { mario: ['star'] },
+        story: [STORY_REV, beat.opening, beat.spell, beat.enter('smb-1'), beat.luigiRuns, beat.remark('1-4')],
+      },
+      1,
+    ) as SaveFile;
+    expectRoundTrip(firstCastle);
+    const lengths = {
+      new: len(newSave(1, 'mario')),
+      firstCastle: len(firstCastle),
+      mid: len(midSave()),
+      full: len(fullSave()),
+    };
     console.info(`[save codes] characters without dashes: ${JSON.stringify(lengths)}`);
     expect(lengths.new).toBeLessThanOrEqual(30);
+    expect(lengths.firstCastle).toBeLessThanOrEqual(45);
     expect(lengths.mid).toBeLessThanOrEqual(80);
     expect(lengths.full).toBeLessThanOrEqual(125);
   });

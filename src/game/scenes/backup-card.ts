@@ -108,9 +108,9 @@ export class BackupCardScene implements Scene {
 
   render(r: Renderer): void {
     const font = this.game.ctx.assets.sheet('font');
-    const x = 24;
+    const x = 16;
     const y = 56;
-    const w = 208;
+    const w = 224;
     const h = 120;
     r.rect(x - 2, y - 2, w + 4, h + 4, '#fcfcfc');
     r.rect(x, y, w, h, '#000');
@@ -124,7 +124,7 @@ export class BackupCardScene implements Scene {
       // A steady cursor: no blinking (Options > Video > Reduce flash or not).
       if (i === this.index) r.text(font, '>', 66, ty);
     });
-    if (this.status) center(this.status.slice(0, 26), y + 92);
+    if (this.status) center(this.status.slice(0, 28), y + 92);
     center(abilityHint(this.game, 'OK', 'jump'), y + 106);
   }
 }

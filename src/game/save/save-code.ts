@@ -625,6 +625,44 @@ const lastNodeChoices = (page: string): string[] => {
   return [first as string, NO_NODE, ...rest];
 };
 
+/**
+ * A pending reveal id (map/rules.ts revealId: '<page>:<node>', or '<page>:<from>><to>' for a road
+ * or a world exit): the page, then the node, or the road's ends (a node, then a node or a page).
+ * Anything else is kept as text.
+ */
+function writeReveal(w: BitWriter, id: string, v: number): void {
+  const colon = id.indexOf(':');
+  const page = id.slice(0, colon);
+  const rest = id.slice(colon + 1);
+  const pages = at(PAGES, v);
+  if (colon <= 0 || !pages.includes(page)) {
+    w.bit(0);
+    writeStr(w, id);
+    return;
+  }
+  w.bit(1);
+  writeSym(w, pages, page);
+  const nodes = pageNodes(page);
+  const arrow = rest.indexOf('>');
+  w.bit(arrow > 0);
+  if (arrow <= 0) {
+    writePick(w, nodes, rest);
+    return;
+  }
+  writePick(w, nodes, rest.slice(0, arrow));
+  writePick(w, [...nodes, ...pages], rest.slice(arrow + 1));
+}
+
+function readReveal(r: BitReader, v: number): string {
+  if (!r.bit()) return readStr(r);
+  const pages = at(PAGES, v);
+  const page = readSym(r, pages);
+  const nodes = pageNodes(page);
+  if (!r.bit()) return `${page}:${readPick(r, nodes)}`;
+  const from = readPick(r, nodes);
+  return `${page}:${from}>${readPick(r, [...nodes, ...pages])}`;
+}
+
 // ---------------------------------------------------------------- the fields, in code order
 
 /** The decoded fields, before the save migrations (a SaveFile of the code's save format). */
@@ -744,12 +782,12 @@ const FIELDS: readonly FieldCodec[] = [
   {
     name: 'pendingReveal',
     since: 1,
-    write(w, s) {
+    write(w, s, v) {
       writeCount(w, s.pendingReveal.length);
-      for (const id of s.pendingReveal) writeStr(w, id);
+      for (const id of s.pendingReveal) writeReveal(w, id, v);
     },
-    read(r, raw) {
-      raw.pendingReveal = Array.from({ length: readCount(r, 64) }, () => readStr(r));
+    read(r, raw, v) {
+      raw.pendingReveal = Array.from({ length: readCount(r, 64) }, () => readReveal(r, v));
     },
   },
   {

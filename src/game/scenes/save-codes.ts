@@ -304,9 +304,10 @@ export class PasteCodeScene implements Scene {
 
   render(r: Renderer): void {
     const font = this.game.ctx.assets.sheet('font');
-    r.rect(16, 150, 224, 40, 'rgba(0,0,0,0.85)');
+    // The text box (a DOM panel at the top) is the screen now: the menu under it is hidden.
+    r.clear('#000');
     const lines = ['PASTE THE CODE IN THE BOX', abilityHint(this.game, 'CANCEL', 'attack')];
-    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 158 + i * 14));
+    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 196 + i * 14));
   }
 }
 
@@ -350,7 +351,7 @@ export class LoadCodeScene implements Scene {
   enter(): void {
     this.saves = listSaves();
     const r = this.result;
-    if (!r.ok) return this.message(wrapText(r.message, 26), () => this.opts.done(null));
+    if (!r.ok) return this.message(wrapText(r.message, 28), () => this.opts.done(null));
     if (this.opts.slot) this.confirm(this.opts.slot);
     else this.pick(0);
   }
@@ -469,14 +470,14 @@ export class LoadCodeScene implements Scene {
     if (this.mode === 'pick') {
       center('INTO WHICH FILE?', 80);
       for (let i = 0; i < 3; i++) {
-        const y = 100 + i * 22;
+        const y = 100 + i * 18;
         r.text(font, `FILE ${i + 1}`, 32, y);
         const s = slotSummary(this.saves[i] ?? null);
-        r.text(font, s, 232 - s.length * 8, y + 10);
+        r.text(font, s, 232 - s.length * 8, y);
         if (this.index === i) r.text(font, '>', 20, y);
       }
-      r.text(font, 'CANCEL', 32, 172);
-      if (this.index === 3) r.text(font, '>', 20, 172);
+      r.text(font, 'CANCEL', 32, 160);
+      if (this.index === 3) r.text(font, '>', 20, 160);
     } else {
       const slot = this.target;
       center(`INTO FILE ${slot}`, 72);
