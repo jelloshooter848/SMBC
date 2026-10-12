@@ -166,6 +166,42 @@ describe('top-down kit: the boomerang', () => {
   });
 });
 
+describe('top-down kit: the boomerang carries what it takes (0.4.43)', () => {
+  it("a heart it touches rides back on it, drawn there, and is the hero's only on the catch", () => {
+    const { w, hero, step, tap } = one([]);
+    w.grant('boomerang');
+    hero.hp = 3;
+    w.add(new Pickup(10 * TILE, 5 * TILE + 4, 'heart'));
+    hero.facing = 'right';
+    tap('special');
+    let carried = false;
+    for (let i = 0; i < 120; i++) {
+      step();
+      const b = w.entities.find((e): e is Boomerang => e instanceof Boomerang && !e.dead);
+      if (b && b.carried.length) {
+        carried = true;
+        expect(hero.hp).toBe(3);
+        expect(w.entities.some((e) => e instanceof Pickup && !e.dead)).toBe(false);
+        // Drawn: the boomerang, then the heart on it (as rects without art).
+        const drawn: { x: number; y: number }[] = [];
+        const r: Renderer = Object.assign(new NullRenderer(), {
+          rect(x: number, y: number): void {
+            drawn.push({ x, y });
+          },
+        });
+        const view = { sheet: () => null, sheets: DEFAULT_SHEETS } as unknown as TdView;
+        b.render(r, view, 0, 0);
+        expect(drawn.length).toBeGreaterThan(1);
+        const heart = drawn.at(-1) as { x: number; y: number };
+        expect(Math.abs(heart.x - b.x)).toBeLessThanOrEqual(8);
+        expect(Math.abs(heart.y - b.y)).toBeLessThanOrEqual(8);
+      }
+    }
+    expect(carried).toBe(true);
+    expect(hero.hp).toBe(5);
+  });
+});
+
 describe('top-down kit: bombs and cracked walls', () => {
   it('a bomb goes down in front, blows up after its fuse, hurts monsters 2 and the hero half a heart', () => {
     const { w, hero, step, tap } = one([[10, 5, 'n']]);

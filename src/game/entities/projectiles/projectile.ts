@@ -368,7 +368,15 @@ export class Projectile extends Entity {
       toPx(this.body.y),
       this.facing > 0,
     );
-    // What it fetches rides on it, centred.
+    // What it fetches rides on it, centred: its coins too (0.4.43: a coin it took from the level
+    // used to vanish until the catch), each spinning, stacked a few pixels apart.
+    for (let i = 0; i < Math.min(this.carriedCoins, 3); i++)
+      r.sprite(
+        view.assets.sheet('items'),
+        `coin-${((view.frame >> 2) + i) & 3}`,
+        toPx(this.body.x + (this.body.w >> 1)) - 8 + i * 3 - view.camX,
+        toPx(this.body.y + (this.body.h >> 1)) - 8 - i * 2,
+      );
     for (const e of this.carried) {
       e.body.x = this.body.x + ((this.body.w - e.body.w) >> 1);
       e.body.y = this.body.y + ((this.body.h - e.body.h) >> 1);

@@ -279,6 +279,8 @@ export class TopDownWorld {
 
   /** Puts the room's things in place: enemies (unless the room was cleared), blocks, pickups. */
   private enterRoom(room: Room): void {
+    // A boomerang still in flight is lost with the room; what it carries is the hero's.
+    for (const e of this.entities) (e as { deliver?(w: TopDownWorld): void }).deliver?.(this);
     this.room = room;
     this.entities = [];
     this.sealed = false;
