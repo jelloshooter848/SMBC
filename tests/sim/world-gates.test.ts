@@ -132,7 +132,7 @@ describe('the world gates (0.4.23)', () => {
 describe('the welcomes (0.4.23)', () => {
   const w2 = WELCOMES['smb-2'];
 
-  it("World 2's healer: on the first arrival, then again with TALK (up); the hint line", () => {
+  it("World 2's healer: on the first arrival, then again with TALK; the hint line", () => {
     const h = open({
       cleared: W1,
       pages: ['smb-1', 'smb-2'],
@@ -296,22 +296,47 @@ describe("a world's local: the TALK prompt as a button (0.4.35)", () => {
     return h;
   };
 
-  it("with keys the hint line names the TALK button's key: TALK (Z) TO THE HEALER; up no longer talks", () => {
+  it("with keys the hint line names the TALK button's key: TALK (C) TO THE HEALER; up no longer talks", () => {
     const h = onW2('keyboard');
-    expect(map(h).hintLine).toBe('TALK (Z) TO THE HEALER');
-    expect(draw(map(h)).texts.map((t) => t.str)).toContain('TALK (Z) TO THE HEALER');
+    expect(map(h).hintLine).toBe('TALK (C) TO THE HEALER');
+    expect(draw(map(h)).texts.map((t) => t.str)).toContain('TALK (C) TO THE HEALER');
     // Up (no road goes up from the start) only bumps now (0.4.43, owner).
     h.tap('up');
     expect(map(h).story).toBe(false);
+    // TALK (special), as in a level and in Kakariko (0.4.43 review: the same button everywhere).
+    h.tap('special');
+    expect(map(h).story).toBe(true);
+    expect(readAll(h)).toEqual(WELCOMES['smb-2']?.pages);
+    h.idle(10);
+    expect(map(h).story).toBe(false);
+    // JUMP still talks there too.
     h.tap('jump');
     expect(map(h).story).toBe(true);
   });
 
-  it('on touch A is the TALK button there, and talks', () => {
+  it('a remapped TALK key is the one the hint line and the announcer name', () => {
+    const h = onW2('keyboard');
+    const b = h.game.deps.settings?.input?.bindings?.[0];
+    if (!b) throw new Error('no bindings');
+    b.keyboard.special = ['KeyV'];
+    expect(map(h).hintLine).toBe('TALK (V) TO THE HEALER');
+    h.game.showMap();
+    h.idle(10);
+    expect(h.said.some((t) => t.includes('Press TALK (V) to talk'))).toBe(true);
+  });
+
+  it('TALK talks to the local even once the item box is open on the file (it opens elsewhere)', () => {
+    const h = onW2('keyboard');
+    h.game.inventoryUnlocked = true;
+    h.tap('special');
+    expect(map(h).story).toBe(true);
+  });
+
+  it('on touch the C button is the TALK button there, as in a level, and talks', () => {
     const h = onW2('touch');
     expect(map(h).hintLine).toBe('TALK TO THE HEALER');
-    expect(map(h).touchLabels().jump).toBe('TALK');
-    h.tap('jump');
+    expect(map(h).touchLabels().special).toBe('TALK');
+    h.tap('special');
     expect(map(h).story).toBe(true);
     expect(readAll(h)).toEqual(WELCOMES['smb-2']?.pages);
   });

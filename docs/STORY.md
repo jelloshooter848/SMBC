@@ -487,7 +487,7 @@ are already rewired there). Classic play and Unlock all keep today's roads.
 over the old map. **Trigger:** the first arrival on World N's start node (N = 2-8), right after the walk in from
 the gate. **Staging:** a local (a new map sprite, in the style of the hero's game) stands beside the start node and
 speaks in the box at the top; no Toad walk-in. **Replay:** any time, standing on the start node: the hint line
-reads `TALK TO THE <LOCAL>` (for example `TALK TO THE HEALER`) and `TALK` (the jump button; never up since 0.4.43) plays the welcome again; once the
+reads `TALK TO THE <LOCAL>` (for example `TALK TO THE HEALER`) and `TALK` (the TALK button, as in a level, or JUMP; never up since 0.4.43) plays the welcome again; once the
 world's hero is freed it plays the local's after-freed page instead (NEW, written under each welcome). Each
 welcome names the hero, says who did it (the locals don't know who: "someone"), and says where the hero was last
 seen. Some carry a clue that Toad's old world entries carried (World 4's airship, World 8's turnip).

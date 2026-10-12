@@ -842,7 +842,7 @@ export class WorldMapScene implements Scene {
     const sealed = this.sealedHintAt(n);
     if (sealed) text += `. ${spoken(sealed)}`;
     const local = this.localHere(n) ? welcomeOf(this.page.id) : null;
-    if (local) text += `. ${local.said}. Press ${abilityHint(this.game, 'TALK', 'jump')} to talk`;
+    if (local) text += `. ${local.said}. Press ${abilityHint(this.game, 'TALK', 'special')} to talk`;
     if (this.isHiding(n)) text += `. ${HIDING_SAID}`;
     return text;
   }
@@ -876,15 +876,15 @@ export class WorldMapScene implements Scene {
 
   /** Node `n` is this page's start with a local standing by it (worlds 2-8; story only). */
   /**
-   * The hint line on a start node with a local: TALK and its key, "TALK (Z) TO THE HEALER"
-   * (0.4.35: the TALK prompt as a button; 0.4.43: the TALK button only, never up); on touch, or
-   * when the key's name would not fit, the bare "TALK TO THE HEALER" (on touch A is the TALK
-   * button then).
+   * The hint line on a start node with a local: TALK and its key, "TALK (C) TO THE HEALER"
+   * (0.4.35: the TALK prompt as a button; 0.4.43: the TALK button, SPECIAL, as in a level and in
+   * Kakariko, never up; JUMP talks there too); on touch, or when the key's name would not fit, the
+   * bare "TALK TO THE HEALER" (on touch the C button is the TALK button then).
    */
   private localTalkHint(): string {
     const w = welcomeOf(this.page.id);
     if (!w) return localHint(this.page.id);
-    const key = boundKey(this.game, 'jump');
+    const key = boundKey(this.game, 'special');
     const keyed = key ? fontText(`TALK (${key}) TO THE ${w.local}`) : '';
     return keyed && keyed.length <= HINT_COLS ? keyed : welcomeHint(w.local);
   }
@@ -894,7 +894,7 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * TALK (the jump button) on a start node with a local: the welcome again, in the box at the top (the
+   * TALK (or JUMP) on a start node with a local: the welcome again, in the box at the top (the
    * after-freed page once the world's hero is freed).
    */
   private talkToLocal(): void {
@@ -1001,9 +1001,10 @@ export class WorldMapScene implements Scene {
     const talk = !!here && this.localHere(here);
     return {
       ...NO_TOUCH_BUTTONS,
-      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : talk ? 'TALK' : null,
+      jump: open || bonus ? 'ENTER' : warp ? 'WARP' : null,
       start: 'MENU',
-      special: inventoryAvailable(this.game) ? 'ITEMS' : null,
+      // A local's node: C is the TALK button, as in a level (0.4.43); the items stay in the menu.
+      special: talk ? 'TALK' : inventoryAvailable(this.game) ? 'ITEMS' : null,
       ...(here?.kind === 'game' ? arenaPadTouch(this.game, here) : {}),
     };
   }
@@ -1094,6 +1095,12 @@ export class WorldMapScene implements Scene {
       this.openPause();
       return;
     }
+    // A start node's local: TALK (SPECIAL, the TALK button in a level and in Kakariko too) or JUMP
+    // talks (0.4.35; up no longer does, 0.4.43). There, TALK comes before the item box.
+    if ((input.pressed('special') || input.pressed('jump')) && here && this.localHere(here) && !here.level) {
+      this.talkToLocal();
+      return;
+    }
     // The ITEMS button (SMB3's item box), once the inventory is unlocked.
     if (input.pressed('special') && inventoryAvailable(this.game)) {
       this.openItems();
@@ -1133,11 +1140,6 @@ export class WorldMapScene implements Scene {
         this.game.ctx.audio.sfx('bump');
         this.say(this.bonusShutSaid());
       }
-      return;
-    }
-    // A start node's local: JUMP (on touch the TALK button) talks (0.4.35; up no longer does, 0.4.43).
-    if (input.pressed('jump') && here && this.localHere(here) && !here.level) {
-      this.talkToLocal();
       return;
     }
     if (input.pressed('jump') && here?.kind === 'game') {
