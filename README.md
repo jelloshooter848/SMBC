@@ -65,6 +65,29 @@ rolls the credits, then marks the file with a star, saves it and returns to the 
 mode, `?level=`, custom and shared levels and editor play-tests skip the map and never write a
 save.
 
+### Save codes and resume links
+
+A save file can travel as a short code (about 40 characters early on, under 100 for a finished
+game), so there is no account and no server: **the code is the save**.
+
+- **Options → Save files** lists the three files. Pick one for **SHARE SAVE** (your phone's share
+  sheet with a link like `…/#save=K7MD4-P2QJ9-…` and a line such as "My SMBC REMIX save (World 3,
+  4 heroes)"; with no share sheet the link is copied instead), **COPY CODE**, or **PASTE CODE**,
+  which reads the clipboard when the browser allows it and otherwise opens a text box: paste the
+  code, or the whole message with the link in it. Its code is shown on the file's screen too.
+- **After each castle** (the first clear of each X-4) a card asks **BACK UP YOUR GAME?** with SHARE
+  SAVE, COPY CODE and NOT NOW. **Options → Save files → Backup reminders** turns it off.
+- **Opening a resume link** asks, after the title, **LOAD THIS SAVE?** and which file to put it
+  in, showing what each file holds. Nothing is replaced until you answer YES; cancelling changes
+  nothing. On iPhone, links open in Safari, not in a Home Screen app (its storage is separate):
+  there, use PASTE CODE instead.
+- A typo is caught ("THAT CODE DOESN'T LOOK RIGHT"). Case, dashes and spaces don't matter, and
+  O / I / L are read as 0 / 1 / 1. A code made by a newer version asks you to update the game;
+  codes from older versions keep loading.
+
+A code holds everything in the file except the score (a loaded file starts at 0). The format is
+in [docs/SAVE_CODES.md](docs/SAVE_CODES.md).
+
 ### Freeing the heroes
 
 Bowser has brainwashed the heroes of other worlds. A campaign file starts with **Mario only**:
@@ -139,6 +162,8 @@ has the same guide for the hero you are playing.
   **Key hints** (off by default) shows the same ability buttons with their current labels and
   bound keys beside the game ("JUMP / Z"), and a key line on the touch buttons. Instructions
   name abilities (JUMP, BACK, TOOLS), with your bound key or pad button when not on touch.
+- **Save files**: share, copy or paste each file's save code, and backup reminders on or off
+  (see [Save codes and resume links](#save-codes-and-resume-links)).
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
