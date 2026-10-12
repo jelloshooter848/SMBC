@@ -394,6 +394,8 @@ describe("Link's boomerang fetches (0.4.22, owner note 27)", () => {
     expect(carriedAt).not.toBeNull();
     expect(coinsWhileCarried).toBe(0);
     expect(drawn.some((d) => d.startsWith('coin-'))).toBe(true);
+    // The boomerang is drawn last, over what it carries (a coin drawn over it hid it).
+    expect(drawn.at(-1)?.startsWith('coin-')).toBe(false);
     expect(r.coins).toBe(1);
   });
 

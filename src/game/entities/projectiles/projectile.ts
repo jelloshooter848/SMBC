@@ -361,15 +361,9 @@ export class Projectile extends Entity {
     const f = this.spec.frames[
       Math.floor(this.age / this.spec.frameRate) % this.spec.frames.length
     ] as string;
-    r.sprite(
-      view.assets.sheet(this.spec.sheet),
-      f,
-      toPx(this.body.x) - view.camX,
-      toPx(this.body.y),
-      this.facing > 0,
-    );
     // What it fetches rides on it, centred: its coins too (0.4.43: a coin it took from the level
-    // used to vanish until the catch), each spinning, stacked a few pixels apart.
+    // used to vanish until the catch), each spinning, stacked a few pixels apart; the boomerang is
+    // drawn over them, so it still shows.
     for (let i = 0; i < Math.min(this.carriedCoins, 3); i++)
       r.sprite(
         view.assets.sheet('items'),
@@ -382,5 +376,12 @@ export class Projectile extends Entity {
       e.body.y = this.body.y + ((this.body.h - e.body.h) >> 1);
       e.render(r, view);
     }
+    r.sprite(
+      view.assets.sheet(this.spec.sheet),
+      f,
+      toPx(this.body.x) - view.camX,
+      toPx(this.body.y),
+      this.facing > 0,
+    );
   }
 }
