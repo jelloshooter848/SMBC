@@ -8,6 +8,26 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Training: every new tip now pauses the game until you press OK, in 1-0 and in every hero's training stage. It
+  pauses before you can do what it teaches (a tip that arrives mid-jump waits until you land), a tip you've already
+  seen doesn't pause again, and MENU, LAST TIPS and Skip still work while it's up.
+- 1-0: the RUN tip shows an animated demo of the controls in use: on touch, PUSH FAR on the d-pad and HOLD RUN take
+  turns; on a keyboard or gamepad, your RUN key lights up.
+- 1-0: duck and slide under a low gap, then break up through a brick ceiling ("Mario breaks bricks from below, never
+  from the side"). A small Mario gets made big again first.
+- 1-0: a Star hidden in a brick, and a crowd of Goombas to run through with it.
+
+### Changed
+
+- 1-0: a longer runway after the second gap, and the stomp Goomba is walled in (and comes back if lost).
+- Phones: held upright, the game screen sits balanced above the touch controls, and MENU joins the control group. No
+  touch button (SOUND, TOOLS, MENU, the d-pad or the action buttons) is ever drawn over the game in either
+  orientation; in landscape the select button moves into the right margin, and the controls shrink a little where a
+  margin is narrow. The game and the controls now share one frame, so the Home Screen app's shorter window no
+  longer lifts the controls.
+
 ## [0.4.44] - 2026-10-12
 
 ### Added
