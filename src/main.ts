@@ -6,6 +6,7 @@ import { KeyboardSource } from '@engine/input/keyboard';
 import { GamepadSource } from '@engine/input/gamepad';
 import { TouchSource } from '@engine/input/touch';
 import { KeyHintsOverlay, keyHintItems, keyHintMap } from '@engine/input/key-hints';
+import { layoutScreen } from '@engine/input/touch-layout';
 import { AssetRegistry } from '@engine/assets/registry';
 import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
@@ -149,6 +150,41 @@ function boot(): void {
     else game.gestures.touchUp();
   };
 
+  // The screen layout (0.4.45, engine/input/touch-layout.ts): the game and the touch controls in
+  // one box, no control over the game; on a phone held upright the game sits at the top.
+  // --app-h is the height the page really shows: innerHeight (above a browser's toolbar), but the
+  // whole screen when opened from the Home Screen, where iOS can report innerHeight short by the
+  // status bar while 100vh is the screen.
+  const vhProbe = document.createElement('div');
+  vhProbe.style.cssText =
+    'position:fixed;top:0;left:0;width:0;height:100vh;visibility:hidden;pointer-events:none';
+  document.body.appendChild(vhProbe);
+  const fullScreen = isStandalone(platform);
+  let layoutKey = '';
+  function relayout(): void {
+    const appH = fullScreen ? Math.max(innerHeight, vhProbe.offsetHeight) : innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    const { touchScale } = settings.input;
+    const { integerScale } = settings.video;
+    const key = [innerWidth, appH, dpr, touch.shown, touchScale, integerScale].join();
+    if (key === layoutKey) return;
+    layoutKey = key;
+    document.documentElement.style.setProperty('--app-h', `${appH}px`);
+    const r = viewport.display.getBoundingClientRect();
+    const layout = layoutScreen({
+      width: innerWidth,
+      height: appH,
+      insets: { top: r.top, left: r.left, right: innerWidth - r.right, bottom: appH - r.bottom },
+      dpr,
+      integerScale,
+      touch: touch.shown,
+      touchScale,
+    });
+    viewport.fit = layout.fit;
+    viewport.resize();
+    touch.applyLayout(layout);
+  }
+
   const loop = new FixedLoop({
     step() {
       input.beginFrame();
@@ -167,6 +203,7 @@ function boot(): void {
       keyHints.update(keys && !touch.shown ? keyHintItems(labels, keys) : null);
     },
     render() {
+      relayout(); // cheap unless the window, the pad or a setting changed
       game.scenes.render(renderer);
       if (settings.video.showFps) renderer.debugText(`${fps.toFixed(0)} FPS`, 200, 236, '#fff');
       viewport.present();
@@ -191,7 +228,7 @@ function boot(): void {
     input.bindings = settings.input.bindings;
     touch.setMode(settings.input.touch);
     touch.setDpadStyle(settings.input.dpad);
-    touch.setScale(settings.input.touchScale);
+    relayout();
     // Assists are developer tools: they only take effect while dev mode is on (values are kept).
     const { slowMotion, ...assist } = settings.assist;
     Object.assign(ctx.assist, settings.dev ? assist : DEFAULT_ASSIST);

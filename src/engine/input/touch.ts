@@ -19,7 +19,7 @@ import {
   SMALL_BUTTON,
   buttonShape,
   BUTTON_PLACES,
-  SAFE_INSET,
+  GAME_FRAME,
   touchPadVisible,
   type ButtonTarget,
   type DpadDirs,
@@ -27,6 +27,7 @@ import {
   type LastInput,
   type MeasureEm,
 } from './touch-logic';
+import type { ControlId, Place, ScreenLayout } from './touch-layout';
 
 /**
  * What each touch button says, from the current scene (Scene.touchLabels). A string is the label,
@@ -94,7 +95,7 @@ export class TouchSource implements InputSource {
     const hitPad = ((DPAD_HIT_SCALE - 1) / 2) * 150;
     this.root.innerHTML = `
       <style>
-        .touch-controls { position: fixed; inset: ${SAFE_INSET}; display: none; }
+        .touch-controls { position: fixed; ${GAME_FRAME} display: none; }
         .touch-controls.visible { display: block; }
         .touch-controls .tc { position: absolute; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
         .touch-controls .zone { left: 0; top: 0; width: ${FLOAT_ZONE_FRACTION * 100}%; height: 100%; display: none; }
@@ -168,6 +169,27 @@ export class TouchSource implements InputSource {
 
   setScale(scale: number): void {
     this.root.style.setProperty('--ts', String(scale));
+  }
+
+  /**
+   * Place the controls by the screen layout (touch-layout.ts, 0.4.45): its scale, and each
+   * control's place in px inside the box (the d-pad's hit area keeps its margin around the pad).
+   */
+  applyLayout(layout: ScreenLayout): void {
+    const s = layout.scale;
+    this.setScale(s);
+    const hitPad = ((DPAD_HIT_SCALE - 1) / 2) * 150 * s;
+    const put = (el: HTMLElement | undefined, p: Place, pad = 0) => {
+      if (!el) return;
+      for (const k of ['left', 'right', 'top', 'bottom'] as const) {
+        const v = p[k];
+        el.style[k] = v === undefined ? '' : `${v - pad}px`;
+      }
+    };
+    for (const id of Object.keys(layout.places) as ControlId[]) {
+      if (id === 'dpad') put(this.hit, layout.places.dpad, hitPad);
+      else put(this.buttons.get(id), layout.places[id]);
+    }
   }
 
   /** 'on'/'off' force the pad; 'auto' follows the device and the last input used. */

@@ -6,6 +6,47 @@ export interface ViewportOptions {
 }
 
 /**
+ * Where the game picture goes in the canvas (CSS px): `top` anchors it that far below the canvas
+ * top (a phone held upright, 0.4.45), else it is centred; `maxW` / `maxH` keep it smaller than the
+ * canvas so the touch controls have room beside or below it. Empty: as big as fits, centred.
+ */
+export interface GameFit {
+  top?: number;
+  maxW?: number;
+  maxH?: number;
+}
+
+/** The game picture in device px: its scale, size and offset in a canvas of `cssW` × `cssH` CSS px. */
+export interface GameBox {
+  scale: number;
+  dw: number;
+  dh: number;
+  ox: number;
+  oy: number;
+}
+
+/** How Viewport fits the 256x240 picture into the canvas (also the touch layout's game rect). */
+export function fitGame(
+  cssW: number,
+  cssH: number,
+  dpr: number,
+  integerScale: boolean,
+  fit: GameFit = {},
+): GameBox {
+  const W = Math.floor(cssW * dpr);
+  const H = Math.floor(cssH * dpr);
+  const bw = fit.maxW === undefined ? W : Math.min(W, Math.floor(fit.maxW * dpr));
+  const bh = fit.maxH === undefined ? H : Math.min(H, Math.floor(fit.maxH * dpr));
+  const raw = Math.min(bw / SCREEN_W, bh / SCREEN_H);
+  const scale = integerScale ? Math.max(1, Math.floor(raw)) : raw;
+  const dw = Math.round(SCREEN_W * scale);
+  const dh = Math.round(SCREEN_H * scale);
+  const ox = Math.floor((W - dw) / 2);
+  const oy = fit.top === undefined ? Math.floor((H - dh) / 2) : Math.round(fit.top * dpr);
+  return { scale, dw, dh, ox, oy };
+}
+
+/**
  * Owns the 256x240 backbuffer and presents it on the display canvas with integer scaling
  * (or stretch-to-fit) and letterboxing. Pixel art stays crisp: smoothing is off everywhere.
  */
@@ -14,6 +55,8 @@ export class Viewport {
   readonly ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
   private readonly displayCtx: CanvasRenderingContext2D;
   scale = 1;
+  /** Where the picture goes (set by the screen layout); empty centres it, as big as fits. */
+  fit: GameFit = {};
   offsetX = 0;
   offsetY = 0;
   private dw = SCREEN_W;
@@ -49,12 +92,12 @@ export class Viewport {
       this.display.width = W;
       this.display.height = H;
     }
-    const raw = Math.min(W / SCREEN_W, H / SCREEN_H);
-    this.scale = this.opts.integerScale ? Math.max(1, Math.floor(raw)) : raw;
-    this.dw = Math.round(SCREEN_W * this.scale);
-    this.dh = Math.round(SCREEN_H * this.scale);
-    this.offsetX = Math.floor((W - this.dw) / 2);
-    this.offsetY = Math.floor((H - this.dh) / 2);
+    const box = fitGame(cssW, cssH, dpr, this.opts.integerScale, this.fit);
+    this.scale = box.scale;
+    this.dw = box.dw;
+    this.dh = box.dh;
+    this.offsetX = box.ox;
+    this.offsetY = box.oy;
     this.displayCtx.imageSmoothingEnabled = false;
   }
 
