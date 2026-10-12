@@ -9,6 +9,7 @@ import type { MenuItem } from '@game/scenes/menu';
 import { HeroStageScene, StageMenu } from '@game/tutorial/hero-stage';
 import { HERO_STAGES } from '@game/tutorial/heroes';
 import { TIP_LOCK_FRAMES } from '@game/tutorial/tips';
+import { MARIO_LESSONS } from '@game/tutorial/mario-1-0';
 import type { TutorialDirector } from '@game/tutorial/stage-tutorial';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { okTip, playTutorial, tipHeld } from './tutorial-bot';
@@ -148,27 +149,60 @@ describe('1-0: a new tip holds the game until OK', () => {
     expect(h.game.mapProgress.cleared).toContain('1-0');
   });
 
-  it('NICE! never holds; the next tips do, once each, in order', () => {
+  it('NICE! never holds on its own; the next tips do, once each, in order', () => {
     const h = on10();
     okTip(h);
     const held: string[] = [];
-    let niceHeld = false;
+    let oldTipHeld = false;
     playTutorial(
       h,
       () => level(h).tutorial?.lesson?.id === 'block',
       9000,
       (s) => {
         held.push(s.tutorial?.lesson?.id ?? '');
-        niceHeld ||= draw(s).texts.some((t) => t.str === 'NICE!');
+        // What holds is always the new lesson's tip (NICE! may ride over it), never the one done.
+        oldTipHeld ||= !s.tutorial?.tipUp;
       },
     );
-    expect(niceHeld).toBe(false);
-    // Tips held the game once each, in order (a quick bot does some lessons before their tip shows).
+    expect(oldTipHeld).toBe(false);
     const order = ['walk', 'jump', 'sprint', 'ease', 'gap1', 'gap2', 'stomp'];
     expect(held).toEqual([...held].sort((a, b) => order.indexOf(a) - order.indexOf(b)));
     expect(new Set(held).size).toBe(held.length);
     expect(held).toContain('sprint');
     expect(held).toContain('stomp');
+  });
+
+  it('a quick player never does a lesson before its new tip holds the game (the bricks before their tip)', () => {
+    const h = on10();
+    okTip(h);
+    const held: string[] = [];
+    let bricksAtWall = -1;
+    playTutorial(
+      h,
+      () => h.top() instanceof WorldMapScene,
+      20000,
+      (s) => {
+        const id = s.tutorial?.lesson?.id ?? '';
+        held.push(id);
+        if (id === 'wall') bricksAtWall = s.world.feats.bricks;
+      },
+    );
+    // The brick tip holds before Mario has broken a brick, straight after the slide's NICE!.
+    expect(bricksAtWall).toBe(0);
+    // Every lesson's tip held the game before it was done (a note never holds the bot up: it is
+    // passed by walking on, so it may not).
+    const lessons = MARIO_LESSONS.filter((l) => !l.note).map((l) => l.id);
+    expect(['walk', ...held]).toEqual(expect.arrayContaining(lessons));
+  });
+
+  it('NICE! rides over the next tip while it holds, then goes with the OK', () => {
+    const h = on10();
+    okTip(h);
+    playTutorial(h, () => level(h).tutorial?.lesson?.id === 'sprint' && tipHeld(h));
+    expect(draw(level(h)).texts.some((t) => t.str === 'NICE!')).toBe(true);
+    okTip(h);
+    h.idle(2);
+    expect(draw(level(h)).texts.some((t) => t.str === 'NICE!')).toBe(false);
   });
 
   it("a tip seen again (a death, Toad's put-back) never holds again", () => {

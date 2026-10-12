@@ -50,7 +50,9 @@ import { DEMO_H, demoVariant, drawDemoPanel, type LessonDemo } from './demo-pane
  *   a tip shows in a run, the world freezes (hero, enemies, shots, timers, camera) until a press of
  *   OK or TALK (tips.ts TipLog.hold), never a timer; the host asks `hold` each frame before its
  *   world's. A tip due while the hero is in the air waits for him to land first (a little while at
- *   most), with NICE! kept up. The tip then stays in the box as before; one seen again never holds.
+ *   most), with NICE! kept up. A new tip after a lesson done comes without NICE!'s second (NICE!
+ *   rides over it until OK), so a quick hero never does a lesson before its tip holds. The tip then
+ *   stays in the box as before; one seen again never holds.
  */
 
 /**
@@ -243,6 +245,11 @@ export class TutorialDirector {
   private moving = false;
   /** Frames the box has waited for the hero to land. */
   private airWait = 0;
+  /**
+   * NICE! rides over the next tip (a new one, so it holds the game): it comes as soon as the hero
+   * is settled, not after NICE!'s second, so a quick hero never does a lesson before its tip.
+   */
+  private cheer = false;
   /** The lesson the box shows: the one just done while "NICE!" is up, else the current one. */
   private shown: number;
   private cache = { key: '', lines: [] as string[] };
@@ -285,6 +292,7 @@ export class TutorialDirector {
     this.nice = 0;
     this.moving = false;
     this.airWait = 0;
+    this.cheer = false;
     // A hold over the stretch left behind (MENU → Skip this lesson while a tip held) ends with it.
     if (this.frozen) this.game.tips.release();
     this.shown = this.tracker.index;
@@ -590,10 +598,12 @@ export class TutorialDirector {
       this.openGates();
       this.lessonUp();
       if (step.kind === 'done' && !step.lesson.note) {
-        this.nice = NICE_FRAMES;
-        this.moving = false;
         this.game.ctx.audio.sfx('select');
         this.game.deps.announcer?.say('Nice!');
+        // A new tip next: no second's wait (the hero could do its lesson meanwhile), NICE! over it.
+        this.cheer = !!this.tracker.current && this.game.tips.wouldHold(this.tipKey(this.tracker.index));
+        this.nice = this.cheer ? 0 : NICE_FRAMES;
+        this.moving = this.cheer;
       } else {
         // On to the next tip (next frame, once the lesson is checked: a tip never holds the game
         // for a lesson already done).
@@ -731,6 +741,7 @@ export class TutorialDirector {
     tips.show(tip);
     const holds = this.shown === this.tracker.index && tips.hold(tip, this);
     if (holds) this.game.ctx.audio.sfx('pause');
+    else this.cheer = false;
     // A lesson's demo panel shows with the hold: its picture is read out too.
     const demo = holds ? this.demo : null;
     const picture = demo ? ` ${demo.said(this.game, demoVariant(controlScheme(this.game)))}` : '';
@@ -763,7 +774,10 @@ export class TutorialDirector {
   hold(inputs: readonly InputFrame[]): boolean {
     const tips = this.game.tips;
     if (!tips.heldBy(this)) return false;
-    if (!tips.update(this, inputs)) this.scene.resumePlay();
+    if (!tips.update(this, inputs)) {
+      this.cheer = false;
+      this.scene.resumePlay();
+    }
     return true;
   }
 
@@ -838,7 +852,7 @@ export class TutorialDirector {
     // While a new tip holds the game: OK at the box's bottom right, once a press will close it.
     const ok = this.frozen && this.game.tips.unlocked ? fontText(abilityHint(this.game, 'OK', 'jump')) : '';
     const bottom = drawPromptBox(r, font, box.rows, {
-      tag: this.nice > 0 ? 'NICE!' : '',
+      tag: this.nice > 0 || this.cheer ? 'NICE!' : '',
       foot: ok,
       y: box.y,
       x: box.x,

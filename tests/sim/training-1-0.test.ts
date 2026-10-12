@@ -362,6 +362,8 @@ describe('the crouch-slide and the brick ceiling (0.4.45, #18, #19)', () => {
   it('small Mario in the room is never stranded: Toad makes him big again, back in the room', () => {
     const h = upTo('wall', false);
     const w = () => level(h).world;
+    // The slide over: standing in the room.
+    hold(h, [], () => w().player.body.vx === 0 && w().player.body.onGround, 120);
     const p = w().player;
     p.powerState = 'small';
     p.refitHitbox();
