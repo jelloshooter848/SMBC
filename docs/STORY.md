@@ -412,12 +412,16 @@ Lakitu, 6-4 Blooper, 7-4 Hammer Bro). In the campaign only (classic play keeps t
 2. **Beaten with weapons** (fireballs, hammers, any hero's attack that would kill him): NEW. On the killing hit he
    freezes, the disguise **bursts** in a puff of wand sparkles with a "poof", and the true creature drops onto the
    bridge, dazed (little stars over its head). Play holds for a short scene: the hero runs up, **jumps over the
-   creature** and lands at the axe; the axe goes, the bridge falls, the creature falls with it. No text.
+   creature** and walks on to the axe (up a step in the way, never through a wall: 2-4's axe stands a step above
+   the bridge); there he **turns to look at it** and the hero's remark shows, as in 3 (0.4.43: the line plays
+   however the fake dies); the axe goes, the bridge falls, the creature falls with it.
 3. **Reaching the axe** with the fake still standing: NEW. As the hero touches the axe, play holds and the disguise
    **bursts** anyway (the "poof"). The true creature blinks on the bridge. The hero **turns to look at it**, and the
    hero's remark shows (one card, written in each world's section). The hero turns back and pulls the axe; the
    bridge falls, the creature falls.
-4. Then, either way, the walk to Toad and **the castle's two pages** as now (page 1: Toad on the creature; page 2,
+4. **Fallen** off the level (into the lava or a pit, 0.4.43): at the axe the hero looks back where it went and
+   the remark shows the same way.
+5. Then, every way, the walk to Toad (up and down steps, never through a wall) and **the castle's two pages** as now (page 1: Toad on the creature; page 2,
    2 s later in the same box: the news). Both are in each world's section.
 
 In co-op the player nearer the axe is the one who jumps or looks; the other stands still. **Replay:** the unmasking

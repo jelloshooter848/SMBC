@@ -99,7 +99,7 @@ import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 import { CASTLE_PAGES, REMARK_CASTLES } from '../story/script';
-import { CastleUnmask } from './unmask';
+import { CastleUnmask, walkStep } from './unmask';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
@@ -2932,6 +2932,18 @@ export class World {
     return true;
   }
 
+  /** A campaign castle's fake that fell off the level (its castle id): the line comes at the axe. */
+  private fakeFell: string | null = null;
+
+  /**
+   * Bowser `b` fell off the bottom of the level alive (into the lava or a pit, 0.4.43). In a
+   * castle with the unmask scenes his disguise is gone with him: the hero says his line at the axe.
+   */
+  bowserFell(b: Bowser): void {
+    const level = this.unmaskCastle(b);
+    if (level) this.fakeFell = level;
+  }
+
   /**
    * Player `p` touched the axe: with the fake still standing in a castle with the unmask scenes,
    * his disguise bursts and the hero looks at the creature (and says the remark) before the axe
@@ -2941,6 +2953,13 @@ export class World {
     const b = this.entities.find(
       (e): e is Bowser => e instanceof Bowser && e.alive && !e.fake && e.standing === 0,
     );
+    // The fake fell off the level (0.4.43): the hero still looks and says his line.
+    if (!b && this.fakeFell && !this.unmask) {
+      this.unmask = new CastleUnmask('fell', null, p, axe, this.fakeFell);
+      this.fakeFell = null;
+      this.unmask.start(this);
+      return true;
+    }
     const level = b ? this.unmaskCastle(b) : null;
     if (!b || !level || this.unmask) return false;
     this.unmask = new CastleUnmask('axe', b, p, axe, level);
@@ -3026,8 +3045,7 @@ export class World {
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;
-      p.body.x += px(1);
-      this.bossWalkFall(p);
+      walkStep(this, p, px(1));
       // The screen follows the walk, so Toad (or the princess) comes into view.
       this.camera.follow(p.body.x);
       this.spawnPending();
@@ -3085,22 +3103,6 @@ export class World {
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
     } else if (ok) leave();
-  }
-
-  /**
-   * Gravity for the walk to Toad: the player drops off the axe's ledge onto the floor below, but
-   * never into a pit (over the cut bridge's lava the walk stays level).
-   */
-  private bossWalkFall(p: Player): void {
-    const b = p.body;
-    const col = tileAt(b.x + (b.w >> 1));
-    let ground = tileAt(b.y + b.h);
-    while (ground < this.level.height && !this.map.isSolid(col, ground)) ground++;
-    if (ground >= this.level.height) return;
-    const top = tileToSub(ground) - b.h;
-    b.vy = Math.min(b.vy + 0x00400, 0x04000);
-    b.y = Math.min(b.y + velToSub(b.vy), top);
-    if (b.y === top) b.vy = 0;
   }
 
   private renderCastleText(r: Renderer, view: View): void {
