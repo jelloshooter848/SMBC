@@ -183,7 +183,7 @@ export class TouchSource implements InputSource {
       if (!el) return;
       for (const k of ['left', 'right', 'top', 'bottom'] as const) {
         const v = p[k];
-        el.style[k] = v === undefined ? '' : `${v - pad}px`;
+        el.style[k] = v === undefined ? 'auto' : `${v - pad}px`;
       }
     };
     for (const id of Object.keys(layout.places) as ControlId[]) {
