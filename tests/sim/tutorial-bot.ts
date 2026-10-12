@@ -152,33 +152,81 @@ export function tutorialBot(h: H): Action[] {
         else if (Math.abs(b.vx) < 256 || !b.onGround) jump();
       }
       break;
-    case 'wall': {
+    case 'slide': {
       // Still on the vine (a tip held him there): let go of RIGHT and press it again to step off.
       if (p.vine) {
         if ((w.frame & 3) !== 0) out.push('right');
         break;
       }
-      const col = M.bricks.to;
-      const shut = w.map.isSolid(col, 9) || w.map.isSolid(col, 10);
-      if (x < (M.bricks.from - 1) * 16) {
+      const wall = M.lowWall.from * 16;
+      const right = toPx(b.x + b.w);
+      if (right > wall) {
+        // Under it: crawl on (pushing right, DOWN let go: he stays down until there is room).
         out.push('right');
         break;
       }
+      if (p.crouching && Math.abs(b.vx) < 0x100) {
+        // Stopped short, ducking: stand, back off for a run-up.
+        out.push('left');
+        break;
+      }
+      if (!b.onGround) {
+        out.push('right');
+        break;
+      }
+      // A run at it from five tiles off, ducking just before it.
+      const gap = wall - right;
+      if (b.vx < 0 && gap < 80) out.push('left');
+      else if (gap > 20) out.push('right', 'run');
+      else if (b.vx >= 0x1000) out.push('down');
+      else out.push('left');
+      break;
+    }
+    case 'wall': {
+      const col = M.bricks.to;
+      const shut = w.map.isSolid(col, 9) || w.map.isSolid(col, 10);
       if (shut) {
         // Under the bricks: jump into them until the way up is open.
         if (goTo(col) || !b.onGround) jump();
         break;
       }
-      // Up through the hole, then right onto the step.
+      // Up through the hole, then right onto the brick wall's top.
       if (b.onGround) {
-        if (b.y + b.h <= tileToSub(M.stepOut.top)) out.push('right');
+        if (b.y + b.h <= tileToSub(M.brickWall.top)) out.push('right');
         else if (goTo(col)) jump();
         break;
       }
       if (b.vy < 0) out.push('jump');
-      if (b.y + b.h < tileToSub(M.stepOut.top)) out.push('right');
+      if (b.y + b.h < tileToSub(M.brickWall.top)) out.push('right');
       break;
     }
+    case 'star': {
+      // The Star out: after it (it bounces right); else up under the middle brick.
+      const star = w.entities.find((e): e is PowerUp => e instanceof PowerUp && e.alive);
+      if (star) {
+        const sx = toPx(star.body.x + (star.body.w >> 1));
+        out.push(sx > x ? 'right' : 'left', 'run');
+        if ((b.onGround && Math.abs(sx - x) < 24 && star.body.y < b.y) || (!b.onGround && b.vy < 0)) jump();
+        break;
+      }
+      if (x < (M.starBrick.x - 3) * 16) {
+        out.push('right');
+        if (wallAhead() || !b.onGround) jump();
+        break;
+      }
+      if (goTo(M.starBrick.x) || !b.onGround) jump();
+      break;
+    }
+    case 'crowd':
+      // A Star: straight through, running.
+      out.push('right', 'run');
+      if (p.star === 0) {
+        const g = w.entities.some(
+          (e) => e instanceof Goomba && e.alive && e.body.x > b.x && e.body.x - b.x < tileToSub(3),
+        );
+        if ((b.onGround && g) || (!b.onGround && b.vy < 0)) jump();
+      }
+      break;
     default:
       // The flag: run at it and jump.
       out.push('right', 'attack');

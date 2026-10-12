@@ -108,6 +108,13 @@ export interface Lesson {
    * put-back, a respawn): the hero's state for it (Link's ring count set back).
    */
   enter?(world: World): void;
+  /**
+   * The lesson needs a big hero (1-0's crouch-slide and brick ceiling, 0.4.45): a small one
+   * standing on the ground gets Toad's card (`small`, else SMALL_HERO) and is put back big.
+   */
+  big?: boolean;
+  /** Toad's words for a small hero in a `big` lesson. Ability tokens as in `text`. */
+  small?: string;
   /** Lights in the box under the words (Link's FREE / HURT), read every frame. */
   lights?(world: World): readonly { label: string; on: boolean }[];
   /** A line in the box under the words, read every frame (Samus's "-4 EN (WAS -8)"); null: none. */

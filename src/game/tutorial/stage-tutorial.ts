@@ -222,6 +222,12 @@ const RETRY = "DO THE TIP UP TOP TO OPEN THE WAY. LET'S TRY THAT AGAIN!";
  */
 export const SPENT_BLOCK = "THAT ? BLOCK IS SPENT, BUT ITS ITEM ISN'T YOURS YET. LET'S BUILD IT AGAIN!";
 
+/**
+ * What Toad says to a small hero in a lesson that needs a big one (0.4.45): he is put back big, so a
+ * hero who got there small is never stranded.
+ */
+export const SMALL_HERO = "YOU NEED TO BE BIG FOR WHAT'S AHEAD. LET'S MAKE YOU BIG AGAIN!";
+
 /** A block tile spent: used up or broken (a block mid-bump is not yet). */
 const spentTile = (t: number): boolean => t !== T.BUMPING && !tileDef(t).block;
 
@@ -458,11 +464,14 @@ export class TutorialDirector {
    * Toad's card at a closed gate (the current lesson's `retry`): it waits for a press, then the
    * player is put back before the task.
    */
-  private showRetry(text?: string): void {
+  private showRetry(
+    text?: string,
+    kind: 'gate' | 'spent' | 'small' = text === undefined ? 'gate' : 'spent',
+  ): void {
     const l = this.tracker.current;
     this.busy = true;
     this.stopped = 0;
-    this.cardKind = text === undefined ? 'gate' : 'spent';
+    this.cardKind = kind;
     const labels = levelTouchLabels(this.scene.world.players[0], this.scene.world);
     const words = fillAbilities(text ?? l?.retry ?? RETRY, (a, act, cap) =>
       this.abilityName(a, act, labels, cap),
@@ -495,6 +504,7 @@ export class TutorialDirector {
     this.rewind();
     const l = this.tracker.current ?? this.def.lessons[this.def.lessons.length - 1];
     if (this.scene.restartAt) return this.scene.restartAt(l?.at ?? 2, l?.row ?? 12, 'put-back');
+    this.comeBackBig();
     this.game.state.checkpoint = null;
     this.game.startLevel(this.game.deps.getLevel(this.def.level), {
       x: l?.at ?? 2,
@@ -605,6 +615,19 @@ export class TutorialDirector {
     const spent = this.spentLesson(world);
     const p = world.players[0];
     if (spent && p && !p.dead && !p.out && p.body.onGround) return this.showRetry(spent.spent ?? SPENT_BLOCK);
+    // A small hero in a lesson that needs a big one (0.4.45): Toad, then back big, never stranded.
+    const cur = this.tracker.current;
+    if (
+      cur?.big &&
+      p &&
+      !p.dead &&
+      !p.out &&
+      !p.transition &&
+      p.body.onGround &&
+      p.def.damage.kind === 'powerup' &&
+      p.powerState === 'small'
+    )
+      return this.showRetry(cur.small ?? SMALL_HERO, 'small');
     if (this.stoppedAtGate(world)) this.showRetry();
   }
 
@@ -637,8 +660,8 @@ export class TutorialDirector {
     return null;
   }
 
-  /** The kind of Toad's last card: a closed gate's, or a spent block's (tests read it). */
-  cardKind: 'gate' | 'spent' | null = null;
+  /** The kind of Toad's last card: a closed gate's, a spent block's, a small hero's (tests read it). */
+  cardKind: 'gate' | 'spent' | 'small' | null = null;
 
   /** The lesson's items are all taken (or it has none). */
   private itemTaken(l: Lesson | undefined): boolean {
@@ -905,6 +928,13 @@ export class TutorialDirector {
     }
   }
 
+  /** Past the mushroom (`bigAfter`), the lessons need a big hero: a fresh stage brings him back big. */
+  private comeBackBig(): void {
+    const big = this.def.bigAfter;
+    if (big && this.tracker.done.includes(big) && this.game.state.powerState === 'small')
+      this.game.state.powerState = 'big';
+  }
+
   /**
    * A death (LevelScene, after the power is reset): no life lost, and straight back in at the
    * current lesson's column (a lesson in a sub-area goes back to the one leading there).
@@ -914,10 +944,7 @@ export class TutorialDirector {
     this.rewind();
     const l = t.current ?? t.lessons[t.lessons.length - 1];
     if (this.scene.restartAt) return this.scene.restartAt(l?.at ?? 2, l?.row ?? 12, 'respawn');
-    // Past the mushroom, the lessons need a big hero: he comes back big.
-    const big = this.def.bigAfter;
-    if (big && t.done.includes(big) && this.game.state.powerState === 'small')
-      this.game.state.powerState = 'big';
+    this.comeBackBig();
     this.game.state.checkpoint = null;
     this.game.state.lives = this.run.lives;
     this.game.goToLevel(this.def.level, {

@@ -314,6 +314,141 @@ describe('a task walked past is put back, never mid-move', () => {
   });
 });
 
+describe('the crouch-slide and the brick ceiling (0.4.45, #18, #19)', () => {
+  const ids = MARIO_LESSONS.map((l) => l.id);
+
+  it('the mushroom comes first; the slide, then the ceiling', () => {
+    expect(ids.indexOf('grow')).toBeLessThan(ids.indexOf('slide'));
+    expect(ids.indexOf('slide')).toBe(ids.indexOf('climb') + 1);
+    expect(ids.indexOf('wall')).toBe(ids.indexOf('slide') + 1);
+  });
+
+  it('a low gap under a wall that reaches the top of the screen: big Mario walking never gets under; a crouch-slide does', () => {
+    const h = upTo('slide');
+    const w = () => level(h).world;
+    const { from, to } = M.lowWall;
+    for (let c = from; c <= to; c++) {
+      for (let row = 0; row <= 11; row++) expect(w().map.isSolid(c, row), `${c},${row}`).toBe(true);
+      expect(w().map.isSolid(c, 12)).toBe(false);
+    }
+    expect(level(h).world.player.powerState).toBe('big');
+    // Walking and running into it, jumping at it: never past it.
+    for (let i = 0; i < 600; i++) {
+      const b = w().player.body;
+      stepPast(h, ['right', 'run', ...(b.onGround && i % 40 === 0 ? (['jump'] as Action[]) : [])]);
+    }
+    expect(toPx(w().player.body.x + w().player.body.w)).toBeLessThanOrEqual(from * 16);
+    expect(lessonId(h)).toBe('slide');
+    // Back off, run at it and duck: under, and into the room.
+    playTutorial(h, () => lessonId(h) === 'wall');
+    expect(col(h)).toBeGreaterThan(to);
+    expect(col(h)).toBeLessThan(M.brickWall.x);
+  });
+
+  it('in the room, bricks from the side never break; only up through the ceiling', () => {
+    const h = upTo('wall', false);
+    const w = () => level(h).world;
+    for (let row = M.brickWall.top; row <= 12; row++) expect(w().map.isSolid(M.brickWall.x, row)).toBe(true);
+    for (let i = 0; i < 300; i++) stepPast(h, ['right', 'run']);
+    expect(w().feats.bricks).toBe(0);
+    expect(col(h)).toBeLessThan(M.brickWall.x);
+    expect(lessonId(h)).toBe('wall');
+  });
+
+  it('small Mario in the room is never stranded: Toad makes him big again, back in the room', () => {
+    const h = upTo('wall', false);
+    const w = () => level(h).world;
+    const p = w().player;
+    p.powerState = 'small';
+    p.refitHitbox();
+    h.game.state.powerState = 'small';
+    // Standing small in the lesson: Toad's card, then he stands big in the room.
+    const d = director(h);
+    const card = untilCard(h, () => []);
+    expect(card.lines.join(' ')).toMatch(/BIG/);
+    expect(d?.cardKind).toBe('small');
+    okCard(h);
+    expect(lessonId(h)).toBe('wall');
+    expect(level(h).world.player.powerState).toBe('big');
+    playTutorial(h, () => lessonId(h) === 'star');
+  });
+});
+
+describe('a Star hidden in a brick, then a crowd (0.4.45, #17)', () => {
+  it('one of the bricks hides a Star; the Star runs Mario through the crowd', () => {
+    const h = upTo('star');
+    const w = () => level(h).world;
+    expect(w().map.get(M.starBrick.x, M.starBrick.y)).toBe(T.BRICK_STAR);
+    expect(director(h)?.lines().join(' ')).toMatch(/BRICK/);
+    playTutorial(h, () => lessonId(h) === 'crowd');
+    expect(w().player.star).toBeGreaterThan(0);
+    expect(director(h)?.lines().join(' ')).toMatch(/STAR/);
+    const lives = h.game.state.lives;
+    playTutorial(h, () => lessonId(h) === 'flag');
+    expect(h.game.state.lives).toBe(lives);
+    expect(w().player.powerState).toBe('big');
+  });
+
+  it('the crowd is passable without the Star (the Star run out): it opens the way', () => {
+    const h = upTo('crowd');
+    const p = level(h).world.player;
+    p.star = 0;
+    playTutorial(h, () => lessonId(h) === 'flag' || !(h.top() instanceof LevelScene), 4000);
+    expect(lessonId(h)).toBe('flag');
+  });
+
+  it("a Star missed (it got away): Toad's card, and the brick stands again", () => {
+    const h = upTo('star', false);
+    const w = level(h).world;
+    w.strikeBlock(M.starBrick.x, M.starBrick.y, w.player, true);
+    h.idle(30);
+    for (const e of w.entities) if (e.kind === 'powerup') e.alive = false;
+    const d = director(h);
+    const card = untilCard(h, () => []);
+    expect(d?.cardKind).toBe('spent');
+    expect(card.lines.join(' ')).toMatch(/STAR/);
+    okCard(h);
+    expect(level(h).world).not.toBe(w);
+    expect(level(h).world.map.get(M.starBrick.x, M.starBrick.y)).toBe(T.BRICK_STAR);
+    expect(lessonId(h)).toBe('star');
+  });
+
+  it('skip the Star: the crowd still lets him through to its gate, where Toad sends him back for it', () => {
+    const h = upTo('star', false);
+    expect(director(h)?.closedGates).toContain(M.crowdGate);
+    // Run and hop the Goombas, never bumping the bricks.
+    const card = untilCard(h, () => crowdHop(h));
+    expect(card.lines.join(' ')).toMatch(/STAR/);
+    expect(col(h)).toBe(M.crowdGate - 1);
+    okCard(h);
+    expect(lessonId(h)).toBe('star');
+    expect(col(h)).toBe(at('star'));
+  });
+
+  it('a death in the crowd: back before the bricks, the Star there again', () => {
+    const h = upTo('crowd');
+    const w0 = level(h).world;
+    w0.player.star = 0;
+    w0.kill(w0.player);
+    h.until(() => h.top() instanceof LevelScene && level(h).world !== w0 && level(h).world.frame > 30, 600);
+    expect(lessonId(h)).toBe('star');
+    expect(level(h).world.map.get(M.starBrick.x, M.starBrick.y)).toBe(T.BRICK_STAR);
+    expect(level(h).world.player.powerState).toBe('big');
+  });
+});
+
+/** Running right, hopping each Goomba ahead and the low wall: the crowd without a Star. */
+function crowdHop(h: H): Action[] {
+  const w = level(h).world;
+  const b = w.player.body;
+  const g = w.entities.some(
+    (e) => e instanceof Goomba && e.alive && e.body.x > b.x && e.body.x - b.x < tileToSub(3),
+  );
+  const out: Action[] = ['right'];
+  if ((b.onGround && g) || (!b.onGround && b.vy < 0)) out.push('jump');
+  return out;
+}
+
 describe('the hidden vine and the brick wall', () => {
   it("an empty-looking spot at the tall wall's foot hides a vine, the only way over", () => {
     const h = upTo('vine');
@@ -326,30 +461,26 @@ describe('the hidden vine and the brick wall', () => {
     playTutorial(h, () => lessonId(h) === 'climb');
     expect(w().entities.some((e) => e instanceof Vine && e.alive)).toBe(true);
     expect(w().map.isSolid(M.vine.x, M.vine.y)).toBe(true);
-    playTutorial(h, () => lessonId(h) === 'wall');
+    playTutorial(h, () => lessonId(h) === 'slide');
     const b = w().player.body;
     expect(b.y + b.h).toBeLessThanOrEqual(tileToSub(M.vineWall.top));
   });
 
-  it('small Mario only bumps the bricks; big Mario smashes up through them', () => {
-    const h = upTo('wall');
+  it('big Mario smashes up through the brick ceiling, the only way on', () => {
+    const h = upTo('wall', false);
     const w = () => level(h).world;
     const shut = () => w().map.isSolid(M.bricks.to, 9) || w().map.isSolid(M.bricks.to, 10);
-    // Small: the bot jumps into them for a while, and they hold.
-    const p = w().player;
-    p.powerState = 'small';
-    p.refitHitbox();
-    h.game.state.powerState = 'small';
-    for (let i = 0; i < 900; i++) h.step(tutorialBot(h));
     expect(shut()).toBe(true);
-    expect(lessonId(h)).toBe('wall');
-    // Big again: through, and onto the step out.
-    p.powerState = 'big';
-    p.refitHitbox();
-    h.game.state.powerState = 'big';
-    playTutorial(h, () => lessonId(h) === 'flag');
+    playTutorial(h, () => lessonId(h) === 'star');
     expect(shut()).toBe(false);
     expect(w().feats.bricks).toBeGreaterThanOrEqual(2);
+  });
+
+  it('the brick tip says Mario breaks bricks from below, never from the side, and fits the box', () => {
+    const h = upTo('wall');
+    const d = director(h)!;
+    expect(d.lines().join(' ')).toMatch(/^MARIO BREAKS BRICKS FROM BELOW, NEVER FROM THE SIDE\./);
+    expect(d.lines().length).toBeLessThanOrEqual(3);
   });
 
   it('past the mushroom, a respawn comes back big (the brick wall needs it)', () => {

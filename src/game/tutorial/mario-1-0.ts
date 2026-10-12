@@ -27,8 +27,10 @@ import { BowserSpellScene } from '../story/bowser-spell';
  * bar fills) and walk again down a long stretch; two gaps only a sprinting jump clears (7 and 8
  * tiles: a walking jump falls short, and a fall drops Mario back in a few steps before the gap);
  * stomp the Goomba; bump a ? block; grow; take the pipe, and a line to search pipes for secrets;
- * find the hidden vine at the foot of a tall wall and climb it over; smash up through the bricks
- * at the end of a low tunnel (big Mario only); the flagpole. A task walked past is never skipped:
+ * find the hidden vine at the foot of a tall wall and climb it over; duck and slide under a low
+ * gap into a room whose only way on is up through its brick ceiling (big Mario only: Mario breaks
+ * bricks from below, never from the side); find the Star hidden in a brick and run through a crowd
+ * of Goombas with it (0.4.45, owner #15-#19); the flagpole. A task walked past is never skipped:
  * a gate (MARIO_GATES) blocks the way until it is done, and a player who stops at the gate is
  * shown Toad's card (waiting for a press) and put back before the task. Nothing resets mid-move.
  */
@@ -97,10 +99,24 @@ export const MARIO_10 = {
   /** The hidden vine block (row 10) at the foot of the tall wall (columns 166-168, top row 5). */
   vine: { x: 165, y: 10 },
   vineWall: { from: 166, to: 168, top: 5 },
-  /** The low tunnel's brick ceiling at its end (rows 9-10) and the step out (top row 10). */
-  bricks: { from: 186, to: 187 },
-  stepOut: { from: 188, to: 189, top: 10 },
-  flag: 198,
+  /**
+   * The crouch-slide (0.4.45, owner #18): a wall from the top of the screen down to row 11, with a
+   * one-block gap under it that big Mario only gets through ducking at a run.
+   */
+  lowWall: { from: 180, to: 181 },
+  /**
+   * The room behind it: a brick ceiling (rows 9-10) and a brick wall on its right (rows 10-12) that
+   * never breaks from the side (owner #19). The only way on is up through the ceiling.
+   */
+  bricks: { from: 182, to: 185 },
+  brickWall: { x: 186, top: 10 },
+  /** Three bricks (row 9); the middle one hides a Star (owner #17). */
+  starBricks: { from: 191, to: 193 },
+  starBrick: { x: 192, y: 9 },
+  /** The crowd of Goombas the Star runs through (201-212), and its gate. */
+  crowd: { from: 201, to: 212 },
+  crowdGate: 215,
+  flag: 222,
 } as const;
 const M = MARIO_10;
 
@@ -168,6 +184,9 @@ function tick(w: World): { sprint: number; walk: number } {
   s.walk = alive(p) && b.onGround && v > 0 && v <= p.def.movement.maxWalk ? s.walk + 1 : 0;
   return s;
 }
+
+/** Toad, to a small Mario at the crouch-slide or the brick ceiling: he is put back big. */
+const SMALL_MARIO = "ONLY BIG MARIO CAN BREAK THE BRICKS AHEAD. LET'S MAKE YOU BIG AGAIN!";
 
 /**
  * The lessons, in the stage's order (columns from 1-0.map). Their words name abilities: the
@@ -275,14 +294,46 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     done: (w) => onTop(w, M.vineWall.top, M.vineWall.from, M.vineWall.to) || landedPast(w, M.vineWall.to + 2),
   },
   {
-    id: 'wall',
+    // Owner #18 (0.4.45): a low gap only a crouch-slide gets big Mario through.
+    id: 'slide',
     at: 172,
-    text: 'ONLY BIG MARIO CAN BREAK BRICKS. SMASH UP THROUGH THE BRICKS AT THE END OF THE TUNNEL!',
-    done: (w) => onTop(w, M.stepOut.top, M.stepOut.from, M.stepOut.to) || landedPast(w, M.stepOut.to + 1),
+    text: 'TOO LOW FOR BIG MARIO! [RUN:attack] AT THE GAP, THEN HOLD [DOWN:down] TO DUCK AND SLIDE UNDER.',
+    done: (w) => past(w, M.lowWall.to + 1),
+    big: true,
+    small: SMALL_MARIO,
+  },
+  {
+    // Owner #19: "can't Mario break walls?" Only from below, as in SMB.
+    id: 'wall',
+    at: M.bricks.from + 1,
+    text: 'MARIO BREAKS BRICKS FROM BELOW, NEVER FROM THE SIDE. JUMP UP THROUGH THE CEILING!',
+    done: (w) => onTop(w, M.brickWall.top, M.brickWall.x, M.brickWall.x) || landedPast(w, M.brickWall.x + 1),
+    big: true,
+    small: SMALL_MARIO,
+  },
+  {
+    // Owner #17: bricks can hide items. The Star's brick spent with the Star gone (it got away)
+    // rebuilds the stretch (TutorialDirector.spentLesson).
+    id: 'star',
+    at: M.brickWall.x + 2,
+    text: 'SOME BRICKS HIDE ITEMS! ONE OF THESE HIDES A STAR. BUMP THEM FROM BELOW AND GRAB IT!',
+    retry: 'FIRST FIND THE STAR IN THE BRICKS, THEN RUN THROUGH THE CROWD!',
+    spent: "THE STAR GOT AWAY! LET'S HIDE IT IN ITS BRICK AGAIN.",
+    block: M.starBrick,
+    done: (w) => w.players.some((p) => alive(p) && p.star > 0),
+  },
+  {
+    id: 'crowd',
+    at: M.brickWall.x + 2,
+    // A death in the crowd: back before the bricks, the Star in its brick again.
+    restartsAt: 'star',
+    text: 'A STAR! NOTHING CAN HURT YOU WHILE IT LASTS. RUN RIGHT THROUGH THE CROWD!',
+    retry: 'RUN THROUGH THE CROWD TO OPEN THE WAY.',
+    done: (w) => landedPast(w, M.crowd.to + 1),
   },
   {
     id: 'flag',
-    at: 191,
+    at: M.crowdGate + 1,
     text: 'JUMP ONTO THE FLAGPOLE. THE HIGHER YOU GRAB IT, THE MORE POINTS!',
     done: (w) => w.flagGrabbedBy !== null,
   },
@@ -297,6 +348,7 @@ export const MARIO_GATES: readonly TutorialGate[] = [
   { col: M.sprintGate, top: 6, after: 'ease' },
   { col: M.stompGate, top: 6, after: 'stomp' },
   { col: M.growGate, top: 6, after: 'grow' },
+  { col: M.crowdGate, top: 6, after: 'crowd' },
 ];
 
 /** Columns a line may take in the dialogue box (as the captive heroes' dialogue). */
