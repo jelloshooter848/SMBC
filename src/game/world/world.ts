@@ -109,7 +109,7 @@ import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 import { castlePages, REMARK_CASTLES } from '../story/script';
-import { FINALE } from '../story/finale';
+import { endMoved, FINALE } from '../story/finale';
 import { CastleUnmask, walkStep } from './unmask';
 import { BossBar } from './boss-bar';
 import { CostumePile } from '../entities/effects/costume-pile';
@@ -3375,7 +3375,9 @@ export class World {
       return;
     }
     if (s === 120) {
-      const news = next === 'end' ? ['YOUR QUEST IS OVER.'] : ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+      // In the story 8-4 is no longer the end (story/finale.ts endMoved): another castle.
+      const end = next === 'end' && !(this.storyMode && endMoved(this.level.parent ?? this.level.id));
+      const news = end ? ['YOUR QUEST IS OVER.'] : ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
       this.castleText.push('', ...news);
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
