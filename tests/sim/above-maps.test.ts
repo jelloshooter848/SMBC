@@ -15,7 +15,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
-import { MAP_HEADER_H, MAP_SLIDE_FRAMES, WorldMapScene } from '@game/scenes/world-map';
+import { MAP_HEADER_H, MAP_SLIDE_FRAMES, mapHeaderLabel, WorldMapScene } from '@game/scenes/world-map';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { loadSave, newSave, writeSave, type SaveFile } from '@game/save/save-files';
@@ -332,5 +332,13 @@ describe('the slides 1 → 2 → 3 → 4 and back', () => {
     slide('left', 'start', 'smb-1', []);
     expect(h.map().page).toBe(WORLD_1_KINGDOM);
     expect(h.map().node).toBe('1-4');
+  });
+});
+
+describe('a level’s shown label (the campaign order, level-order.md)', () => {
+  it('names the header by the node’s shown label, the id kept for saves', () => {
+    const node = { id: '4-2', kind: 'level', level: '4-2', shown: '4-1', x: 0, y: 0 } as const;
+    expect(mapHeaderLabel({ ...WORLD_2, label: 'WORLD 4' }, node)).toBe('WORLD 4-1');
+    expect(mapHeaderLabel(WORLD_2_HYRULE, WORLD_2_HYRULE.nodes[1] ?? null)).toBe('WORLD 2-1');
   });
 });
