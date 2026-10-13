@@ -555,5 +555,58 @@ export function nextStep(
       return { kind: 'back', page: prev.id, node: e.from, points };
     }
   }
+  const aimed = page.theme === 'kingdom' ? aimedRoad(page, from, dir) : null;
+  if (aimed && isPathOpen(progress, page, aimed.path, unlockAll))
+    return { kind: 'node', to: aimed.to, points: aimed.points };
   return null;
+}
+
+/** A road's score must reach this (cos 60 degrees) for a key to aim along it (aimedRoad). */
+const AIM_MIN = 0.5;
+
+/**
+ * On a page drawn from above (theme 'kingdom': World 1 in campaign play, 0.4.48) the eye goes to
+ * the next node, not to a road's first tile: a key no road or exit leaves `from` by takes the road
+ * whose far node lies nearest in angle to it, within 60 degrees (1-3's RIGHT, the fort's road
+ * leaving north onto the bridge). Every road of the page counts, open or not, so a key never
+ * changes meaning as roads open (nextStep walks it only once it is open). Null when none, or two
+ * tie. Other pages keep to a road's first step.
+ */
+function aimedRoad(
+  page: WorldMapPage,
+  from: string,
+  dir: Dir,
+): { path: MapPath; to: string; points: [number, number][] } | null {
+  const here = node(page, from);
+  if (!here) return null;
+  const roads = page.paths
+    .filter((p) => p.from === from || p.to === from)
+    .map((path) => {
+      const out = path.from === from;
+      return {
+        path,
+        to: out ? path.to : path.from,
+        points: out ? path.points.slice() : path.points.slice().reverse(),
+      };
+    });
+  if (roads.some((r) => heads(r.points, dir))) return null;
+  if (page.exits.some((e) => e.from === from && heads(e.points, dir))) return null;
+  const [ux, uy] = DELTA[dir];
+  let best: (typeof roads)[number] | null = null;
+  let bestScore = AIM_MIN;
+  let tie = false;
+  for (const r of roads) {
+    const end = r.points[r.points.length - 1] as [number, number];
+    const dx = end[0] - here.x;
+    const dy = end[1] - here.y;
+    const len = Math.hypot(dx, dy);
+    if (!len) continue;
+    const score = (dx * ux + dy * uy) / len;
+    if (score > bestScore || (!best && score === bestScore)) {
+      best = r;
+      bestScore = score;
+      tie = false;
+    } else if (best && score === bestScore) tie = true;
+  }
+  return tie ? null : best;
 }

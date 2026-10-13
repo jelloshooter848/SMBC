@@ -5,7 +5,7 @@ import { AssetRegistry } from '@engine/assets/registry';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { heroSide } from '@game/map/captives';
-import { exitId, pathId } from '@game/map/rules';
+import { exitId, newMapProgress, nextStep, pathId, type Dir } from '@game/map/rules';
 import type { MapNode } from '@game/map/types';
 import { CAMPAIGN_PAGES, mapPage, MAP_PAGES, pageLook } from './index';
 import { drawKingdomRoads, kingdomNodeFrame, kingdomRoadCells, tileShown } from './kingdom-render';
@@ -185,5 +185,52 @@ describe('World 1 from above (campaign look)', () => {
     // The bridge carries the road over the river: no road is drawn on the water.
     const wet = kingdomGround(page.tiles).wet;
     for (const d of r.drawn) expect(wet[(d.y / 16) * 16 + d.x / 16], key(d.x / 16, d.y / 16)).toBe(false);
+  });
+
+  it('walks a road with any key that clearly points to where it leads, not only its first step', () => {
+    // From above, the eye goes to the next node, not the road's first tile: 1-3's road to the fort
+    // leaves north onto the bridge, but the fort is east, so RIGHT goes too (UP still does). A key
+    // takes a road this way only when no road leaves the node that way, and only toward a node
+    // within 60 degrees of it, the nearest in angle (by the page, open or not, so a key never
+    // changes meaning as roads open: 1-2's RIGHT is the warp spot's even before it is found).
+    const p = newMapProgress();
+    const to = (from: string, d: Dir, all = true) => {
+      const s = nextStep(page, p, from, d, MAP_PAGES, all);
+      return s ? (s.kind === 'node' ? s.to : s.kind === 'exit' ? s.exit.to : s.page) : null;
+    };
+    const dirs: Dir[] = ['up', 'right', 'down', 'left'];
+    const table = Object.fromEntries(page.nodes.map((n) => [n.id, dirs.map((d) => to(n.id, d))]));
+    //                 up        right      down       left
+    expect(table).toEqual({
+      start: [null, '1-1', '1-1', null],
+      '1-1': ['start', '1-2', '1-2', null],
+      '1-2': ['1-3', 'bonus-1', 'bonus-1', '1-1'],
+      '1-3': ['1-4', '1-4', '1-2', '1-2'],
+      '1-4': ['1-3', 'smb-2', null, '1-3'],
+      'bonus-1': [null, null, null, '1-2'],
+    });
+    // The roads walked are the roads: the points run along the road from here to there.
+    const s = nextStep(page, p, '1-3', 'right', MAP_PAGES, true);
+    const road = page.paths.find((q) => pathId(q) === '1-3>1-4');
+    expect(s?.points).toEqual(road?.points);
+    // Closed roads stay closed: with 1-0 to 1-2 cleared, the start's DOWN goes to 1-1 and 1-3's
+    // RIGHT bumps (its road waits for 1-3), and with the warp spot unfound 1-2's RIGHT bumps too (it
+    // never sends the hero up to 1-3 instead).
+    p.cleared.push('1-0', '1-1', '1-2');
+    expect(to('start', 'down', false)).toBe('1-1');
+    expect(to('1-2', 'up', false)).toBe('1-3');
+    expect(to('1-3', 'right', false)).toBeNull();
+    expect(to('1-2', 'right', false)).toBeNull();
+    p.cleared.push('1-3');
+    expect(to('1-3', 'right', false)).toBe('1-4');
+    // Classic World 1 (side-on) is as it was: only a road's first step takes it.
+    for (const n of WORLD_1.nodes)
+      for (const d of dirs) {
+        const c = nextStep(WORLD_1, p, n.id, d, MAP_PAGES, true);
+        if (!c || c.kind === 'back') continue;
+        const [a, b] = c.points as [[number, number], [number, number]];
+        const step: Dir = b[0] > a[0] ? 'right' : b[0] < a[0] ? 'left' : b[1] > a[1] ? 'down' : 'up';
+        expect(step, `${n.id} ${d}`).toBe(d);
+      }
   });
 });
