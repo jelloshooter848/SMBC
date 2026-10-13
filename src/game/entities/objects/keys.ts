@@ -229,13 +229,16 @@ export class LockedDoor extends Entity implements KeyThing {
     );
   }
 
-  /** Standing in the open doorway on its floor: UP goes through. */
+  /**
+   * By the open doorway on its floor: UP goes through. As far off as its UP strip shows (in reach,
+   * TALK_REACH_PX), so a hero who walked on past it to the wall still goes in (INT52).
+   */
   canEnter(p: Player): boolean {
     return (
       this.open &&
       this.target !== null &&
       p.body.onGround &&
-      Math.abs(p.centerX - this.centerX) <= px(8) &&
+      Math.abs(p.centerX - this.centerX) <= px(TALK_REACH_PX) &&
       Math.abs(p.body.y + p.body.h - (this.body.y + this.body.h)) <= px(2)
     );
   }

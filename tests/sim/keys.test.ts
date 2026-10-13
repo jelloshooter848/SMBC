@@ -335,6 +335,24 @@ describe('the locked door', () => {
     expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: INTO_CRYPT });
   });
 
+  it('UP enters wherever the door’s UP strip shows: walked on past it to the wall, the hero still goes in', () => {
+    const r = room(MARIO);
+    place(r, 120);
+    r.world.keyHolder = 0;
+    const door = doorOf(r.world)!;
+    // Keep walking left after it opens, to the wall.
+    for (let f = 0; f < 240; f++) r.step(['left']);
+    expect(door.open).toBe(true);
+    expect(Math.abs(r.world.player.centerX - door.centerX)).toBeGreaterThan(px(8));
+    r.step();
+    expect(door.prompt).toBe(true);
+    r.step(['up']);
+    expect(r.world.inPipe).toBe(true);
+    expect(r.world.player.centerX).toBe(door.centerX);
+    for (let f = 0; f < 60; f++) r.step();
+    expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: INTO_CRYPT });
+  });
+
   it('a player not carrying the key opens nothing (co-op: the other carries it)', () => {
     const r = room(MARIO, { c2: MARIO });
     place(r, 120, FLOOR, 1);

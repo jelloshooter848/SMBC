@@ -1726,6 +1726,8 @@ export class World {
       (e): e is LockedDoor => e instanceof LockedDoor && e.alive && e.canEnter(p),
     );
     if (!door?.target) return false;
+    // Into the doorway itself (UP works anywhere its strip shows: LockedDoor.canEnter).
+    p.body.x = door.centerX - (p.body.w >> 1);
     for (const o of this.players) {
       o.frozen = true;
       o.stairs = null;
