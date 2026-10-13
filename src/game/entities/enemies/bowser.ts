@@ -138,6 +138,8 @@ export class Bowser extends Enemy {
   dazed = false;
   /** His Bowser bar has come up (campaign; world/boss-bar.ts). */
   private barStarted = false;
+  /** The hit points the screen reader last heard for his bar (-1: none yet). */
+  private barSaid = -1;
   /**
    * The villain costume he wears over the disguise (0.4.47, #31): the castle's world (2-7) in the
    * campaign's castles 2-4 to 7-4 (World.costumeOf), 0 for none or once it has dropped.
@@ -201,7 +203,8 @@ export class Bowser extends Enemy {
     if (killed) world.bossBar.beaten(this, BOWSER_HP, before);
     else world.bossBar.hit(this, BOWSER_HP, before, this.hp);
     this.barStarted = true;
-    world.events.push({ type: 'say', text: `Bowser: ${Math.max(0, this.hp)} of ${BOWSER_HP}.` });
+    this.barSaid = Math.max(0, this.hp);
+    world.events.push({ type: 'say', text: `Bowser: ${this.barSaid} of ${BOWSER_HP}.` });
   }
 
   /** Campaign: on screen and fighting, his bar comes up (once; world/boss-bar.ts). */
@@ -217,6 +220,9 @@ export class Bowser extends Enemy {
     if (this.barStarted || !this.onScreen(world)) return;
     if (!world.bossBar.start(this, BOWSER_HP, this.hp)) return;
     this.barStarted = true;
+    // Back in view at the health already said (he walks in and out at the screen's edge): no repeat.
+    if (this.hp === this.barSaid) return;
+    this.barSaid = this.hp;
     world.events.push({ type: 'say', text: `Bowser's health: ${this.hp} of ${BOWSER_HP}.` });
   }
 

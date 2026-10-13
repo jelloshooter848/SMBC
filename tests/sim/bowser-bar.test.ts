@@ -143,6 +143,29 @@ describe('the Bowser bar: shown while the fight is on (campaign)', () => {
     expect(world.bossBar.hp).toBe(4);
   });
 
+  it('walking in and out of view at the edge of the screen: said once, again only if his health changed', () => {
+    const { world, step, b, said } = castle('1-4');
+    step(2);
+    const p = world.player.body;
+    const x0 = p.x;
+    const away = () => {
+      p.x = Math.max(px(16), b.body.x - px(30 * 16));
+      world.camera.snapTo(p.x);
+      step();
+      p.x = x0;
+      world.camera.snapTo(p.x);
+      step(2);
+    };
+    away();
+    away();
+    expect(world.bossBar.shown).toBe(true);
+    expect(said.filter((s) => s.startsWith("Bowser's health"))).toEqual(["Bowser's health: 5 of 5."]);
+    fire(b, world);
+    step();
+    away();
+    expect(said.filter((s) => s.startsWith("Bowser's health"))).toEqual(["Bowser's health: 5 of 5."]);
+  });
+
   it('a despawned boss leaves no bar behind', () => {
     const { world, step, b } = castle('1-4');
     step(2);
