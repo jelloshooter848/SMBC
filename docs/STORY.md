@@ -2979,7 +2979,38 @@ WHAT A WONDERFUL NIGHT TO
 HAVE NO CURSE.
 ```
 
-As Simon (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+As Simon (NEW, 0.4.52: his own line, the old one went to the hall with the joke):
+
+```text
+TOWNSPERSON:
+
+SIMON! YOUR OWN CRYPT, AND
+I LOST ITS KEY. WHAT A
+HORRIBLE NIGHT TO BE ME.
+```
+
+**5-4: a townsperson in the hall.** NEW id (0.4.52, `hall-townsperson`, the same figure): someone still stands on
+5-4's safe floor at the start (an NPC in every level, 0.4.40), with only the night's joke and its thanks; the lift and
+cracked-wall hints went with that old way in.
+
+```text
+TOWNSPERSON:
+
+WHAT A HORRIBLE NIGHT TO
+HAVE A CURSE.
+```
+
+After Simon is freed:
+
+```text
+TOWNSPERSON:
+
+THE HUNTER IS FREE! WHAT A
+WONDERFUL NIGHT TO HAVE NO
+CURSE.
+```
+
+As Simon (the line the townsperson said at 5-4 since 0.4.47):
 
 ```text
 TOWNSPERSON:

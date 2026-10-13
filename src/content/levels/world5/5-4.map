@@ -34,6 +34,9 @@ BBBBB........... ..%%.......%%... .....%%%%%%%%%%% %B%%%%%%%%%%%B%% %%%%%%%%%B..
 %%%%%%%%%%%%%%%% ................ %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%% %%%%........%%%% %%%%%%%%%%%%%..% %..%%%%%%%%%%%%% .............%%% %%%%%%%%%%%%%%%%
 
 [entities]
+;; Campaign only (0.4.13, docs/STORY.md 2.8): a townsperson on the safe floor at the start. Since
+;; 0.4.52 (Simon's way in moved to 5-1) he has only the night's joke and its thanks.
+partner 10 9 who=hall-townsperson campaign=true
 podoboo 16 12
 podoboo 20 12
 firebar 23 7 len=12

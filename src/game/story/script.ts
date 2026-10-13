@@ -1068,6 +1068,25 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     after: [
       ['TOWNSPERSON:', '', 'THE DOOR IS OPEN FOR GOOD.', 'WHAT A WONDERFUL NIGHT TO', 'HAVE NO CURSE.'],
     ],
+    // 0.4.52: his own line moved with the old joke to the hall (hall-townsperson); this one is new.
+    own: [
+      [
+        'TOWNSPERSON:',
+        '',
+        'SIMON! YOUR OWN CRYPT, AND',
+        'I LOST ITS KEY. WHAT A',
+        'HORRIBLE NIGHT TO BE ME.',
+      ],
+    ],
+  },
+  // 0.4.52: 5-4's townsperson stays in the hall (an NPC in every level, 0.4.40), the cursed night's
+  // joke and its thanks only: the lift and cracked-wall hints went with that old way in.
+  'hall-townsperson': {
+    verb: 'TALK',
+    name: 'A townsperson',
+    hero: 'simon',
+    pages: [['TOWNSPERSON:', '', 'WHAT A HORRIBLE NIGHT TO', 'HAVE A CURSE.']],
+    after: [['TOWNSPERSON:', '', 'THE HUNTER IS FREE! WHAT A', 'WONDERFUL NIGHT TO HAVE NO', 'CURSE.']],
     own: [
       [
         'TOWNSPERSON:',

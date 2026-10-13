@@ -53,14 +53,21 @@ const BORROWED: Readonly<
   },
 };
 
+/**
+ * Partners drawn as another partner (0.4.52): 5-4's townsperson in the hall is the same night-town
+ * figure as the one who lost his key in 5-1-bonus (`townsperson`), with lines of his own.
+ */
+const LOOKS_LIKE: Readonly<Record<string, string>> = { 'hall-townsperson': 'townsperson' };
+const artOf = (who: string): string => LOOKS_LIKE[who] ?? who;
+
 /** The sheet a partner's own `<who>-0` / `<who>-1` frames are on: `partners`, or (0.4.40) `npcs`. */
 const sheetOf = (who: string): 'partners' | 'npcs' | null =>
-  partnersDef.frames[`${who}-0`] ? 'partners' : npcsDef.frames[`${who}-0`] ? 'npcs' : null;
+  partnersDef.frames[`${artOf(who)}-0`] ? 'partners' : npcsDef.frames[`${artOf(who)}-0`] ? 'npcs' : null;
 
 /** The idle frame's rows of partner `who` (its own sheet's `<who>-0`, or a borrowed one). */
 const idleRows = (who: string): readonly string[] | undefined => {
   const sheet = sheetOf(who);
-  return BORROWED[who]?.rows ?? (sheet === 'npcs' ? npcsDef : partnersDef).frames[`${who}-0`];
+  return BORROWED[who]?.rows ?? (sheet === 'npcs' ? npcsDef : partnersDef).frames[`${artOf(who)}-0`];
 };
 
 /**
@@ -173,7 +180,13 @@ export class Partner extends Entity {
         top,
         borrowed.look && this.t % LOOK_FRAMES < LOOK_FRAMES - LOOK_BACK,
       );
-    else r.sprite(view.assets.sheet(sheetOf(this.who) ?? 'partners'), `${this.who}-${alt ? 1 : 0}`, x, top);
+    else
+      r.sprite(
+        view.assets.sheet(sheetOf(this.who) ?? 'partners'),
+        `${artOf(this.who)}-${alt ? 1 : 0}`,
+        x,
+        top,
+      );
     // TALK (or READ), with its key: up (or the TALK button) talks.
     if (this.prompt) drawTalkPrompt(r, view, this.script.verb, toPx(this.centerX) - view.camX, top);
   }

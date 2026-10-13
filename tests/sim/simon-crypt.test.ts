@@ -72,10 +72,12 @@ describe('the areas', () => {
     expect(descents(raw.zones)).toEqual([]);
     const camp = campaignLevel(raw, () => true);
     expect(descents(camp.zones)).toEqual([]);
-    // Nothing of 5-4's tiles or entities changes in the campaign (its townsperson moved to 5-1-bonus).
+    // Nothing of 5-4's tiles changes in the campaign.
     expect(camp.tiles).toEqual(raw.tiles);
-    expect(camp.entities).toEqual(raw.entities);
-    expect(raw.entities.some((e) => e.type === 'partner')).toBe(false);
+    // Only the hall's townsperson wakes (his lift hints went with the lift route: hall-townsperson).
+    expect(camp.entities).toEqual(
+      raw.entities.map((e) => (e.type === 'partner' ? { ...e, props: { who: 'hall-townsperson' } } : e)),
+    );
     // No level leads into the retired dungeon.
     for (const id of levelIds())
       for (const z of getLevel(id).zones)
@@ -106,12 +108,10 @@ describe('the areas', () => {
     expect(descents(parseTextMap(serializeTextMap(l)).zones)).toEqual(descents(l.zones));
   });
 
-  it('the crypt is an area of 5-1 (the dungeon, retired, of 5-4): both keep the clock, dropping in from above', () => {
-    expect(crypt().parent).toBe('5-1');
-    expect([crypt().world, crypt().stage]).toEqual([5, 1]);
-    expect(dungeon().parent).toBe('5-4');
-    expect([dungeon().world, dungeon().stage]).toEqual([5, 4]);
+  it('the crypt (and the retired dungeon over it) are areas of 5-1: they keep the clock, dropping in from above', () => {
     for (const l of [dungeon(), crypt()]) {
+      expect(l.parent).toBe('5-1');
+      expect([l.world, l.stage]).toEqual([5, 1]);
       expect(l.time).toBeNull();
       expect(l.startMode).toBe('fall');
       expect(l.camera).toBe('locked');
