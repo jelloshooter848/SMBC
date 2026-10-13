@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { songs } from '@content/music/songs';
+import { WORLD_MAP_SONGS } from '@content/music/world-maps';
 import { isPageId, levelPage, MAP_PAGES, mapPage, pagesInGroup, SMB_PAGES } from './index';
 import { MAP_ACTOR_TYPES, MAP_LEGEND, MAP_WALKABLE, mapActorBounds } from './render';
 import { autoShore, poly, sketchProblems } from './build';
@@ -84,7 +85,8 @@ describe('world map pages', () => {
     it('has a title, a theme and a song that exists', () => {
       expect(page.title).toMatch(/^[A-Z' ]+$/);
       expect(songs.map((s) => s.id)).toContain(page.music);
-      expect(page.music).toBe(w === 8 ? 'map-bowser' : 'map');
+      // Each world's own map song (0.4.48; 'map' and World 8's 'map-bowser' before).
+      expect(page.music).toBe(WORLD_MAP_SONGS[w - 1]);
     });
 
     it('has start, W-1..W-3, the W-4 castle and a hidden bonus slot', () => {
