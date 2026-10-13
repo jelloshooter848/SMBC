@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { songs } from '@content/music/songs';
 import { WORLD_MAP_SONGS } from '@content/music/world-maps';
-import { isPageId, levelPage, MAP_PAGES, mapPage, pagesInGroup, SMB_PAGES } from './index';
+import { CAMPAIGN_PAGES, isPageId, levelPage, MAP_PAGES, mapPage, pagesInGroup, SMB_PAGES } from './index';
 import { MAP_ACTOR_TYPES, MAP_LEGEND, MAP_WALKABLE, mapActorBounds } from './render';
 import { autoShore, poly, sketchProblems } from './build';
 import { isWarpNode } from '@game/map/rules';
 import { SKETCH_1 } from './world1';
+import { SKETCH_1_KINGDOM, WORLD_1_KINGDOM } from './world1-kingdom';
 import { SKETCH_2 } from './world2';
 import { SKETCH_3 } from './world3';
 import { SKETCH_4 } from './world4';
@@ -71,15 +72,19 @@ describe('world map pages', () => {
     expect(SMB_PAGES.map((p) => p.exits.length)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
-  describe.each(SMB_PAGES.map((p, i) => [i + 1, p] as const))('world %i', (w, page) => {
+  // Each SMB world, and World 1 as campaign play draws it from above (0.4.48: same nodes, roads, exit).
+  describe.each([
+    ...SMB_PAGES.map((p, i) => [`${i + 1}`, i + 1, p, SKETCHES[i] as readonly string[]] as const),
+    ['1 (campaign, from above)', 1, WORLD_1_KINGDOM, SKETCH_1_KINGDOM] as const,
+  ])('world %s', (_, w, page, sketch) => {
     it('is 15 rows of 16 legend chars, sketched without hard shores', () => {
       expect(page.tiles).toHaveLength(15);
       for (const row of page.tiles) {
         expect(row).toHaveLength(16);
         for (const ch of row) expect(MAP_LEGEND[ch], `legend has '${ch}'`).toBeDefined();
       }
-      expect(sketchProblems(SKETCHES[w - 1] as string[])).toEqual([]);
-      expect(page.tiles).toEqual(autoShore(SKETCHES[w - 1] as string[]));
+      expect(sketchProblems(sketch)).toEqual([]);
+      expect(page.tiles).toEqual(autoShore(sketch));
     });
 
     it('has a title, a theme and a song that exists', () => {
@@ -229,7 +234,11 @@ describe('page registry', () => {
     expect(pairs).toBeGreaterThanOrEqual(4); // smb-1 spot / hub centre, hub pad / arena
   });
 
-  describe.each(MAP_PAGES.map((p) => [p.id, p] as const))('%s', (_, page) => {
+  // Every page as classic play shows it, and the campaign looks (0.4.48: World 1 from above).
+  describe.each([
+    ...MAP_PAGES.map((p) => [p.id, p] as const),
+    ...CAMPAIGN_PAGES.map((p) => [`${p.id} (campaign)`, p] as const),
+  ])('%s', (_, page) => {
     it('is 15 rows of 16 legend chars with plain sky under the header', () => {
       expect(page.tiles).toHaveLength(15);
       for (const row of page.tiles) {

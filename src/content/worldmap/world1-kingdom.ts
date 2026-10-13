@@ -98,14 +98,15 @@ export const WORLD_1_KINGDOM: WorldMapPage = {
   }),
   // Off the right edge on row 10, to World 2.
   exits: WORLD_1.exits.map((e) => ({ ...e, points: poly(at(e.from), [15, 10]) })),
-  // A Goomba on the meadow, a Koopa on the east bank, Cheep Cheeps in the river, smoke from Mario's
-  // chimney, the keep's flag. No clouds: a page seen from above has no sky.
+  // A Goomba in the garden between the roads, a Koopa on the east bank by the fort, Cheep Cheeps in
+  // the river, smoke from Mario's chimney, the keep's flag. No clouds: a page seen from above has no
+  // sky.
   actors: [
-    actor('goomba', 16, 224, { range: 16 }),
-    actor('koopa', 208, 208, { range: 12, speed: 0.2 }),
+    actor('goomba', 128, 192, { range: 12 }),
+    actor('koopa', 226, 136, { range: 10, speed: 0.2 }),
     actor('cheep', 160, 136, { range: 0, height: 14, period: 170 }),
     actor('cheep', 168, 200, { range: 0, height: 12, period: 200, phase: 90 }),
-    actor('smoke', 34, 18, { period: 90 }),
+    actor('smoke', 34, 30, { period: 90 }),
     actor('flag', 100, 20, { phase: 0 }),
   ],
   props: [...PROPS_1_KINGDOM],

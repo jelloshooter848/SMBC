@@ -63,6 +63,9 @@ export function levelPage(levelId: string): WorldMapPage | undefined {
  */
 const CAMPAIGN_LOOKS: Readonly<Record<PageId, WorldMapPage>> = { [WORLD_1_KINGDOM.id]: WORLD_1_KINGDOM };
 
+/** The campaign looks (each also registered under its id in MAP_PAGES, as classic play shows it). */
+export const CAMPAIGN_PAGES: readonly WorldMapPage[] = Object.values(CAMPAIGN_LOOKS);
+
 /** `page` as play shows it: its campaign look in campaign play, if it has one, else itself. */
 export function pageLook<P extends WorldMapPage | undefined>(page: P, campaign: boolean): P {
   if (!campaign || !page) return page;

@@ -12,7 +12,8 @@ import { kingdomGround, ROAD_FRAMES } from '@content/sprites/kingdom';
  * Roads are drawn as they open: an unopened road is just grass. A road tile joins only the tiles
  * before and after it on the same road (and the node tiles every road through them), so two roads
  * side by side never merge. A road being drawn in keeps the dot reveal's timing (REVEAL_DOT_FRAMES,
- * two dots a tile): tile k shows with its road's dot 2k, and the tip has its open end.
+ * two dots a tile): tile k shows (its far end rounded off) with its road's dot 2k, and reaches on
+ * to the next tile with the dot between them.
  */
 
 /** The river's two frames swap every this many frames. */
@@ -93,6 +94,14 @@ export function tileShown(i: number, dots: number, shown: number): boolean {
 }
 
 /**
+ * Whether tile `i` of a road of `tiles` tiles reaches on to the next with `shown` dots drawn: once
+ * the dot half way to it is (dot 2i); the last tile (an exit's, off the page) when the road is done.
+ */
+export function tileReaches(i: number, tiles: number, dots: number, shown: number): boolean {
+  return shown >= (i + 1 < tiles ? Math.min(2 * i + 1, dots) : dots);
+}
+
+/**
  * Draws the open roads' tiles at page offset `ox`: every road in full, but those in `shown`
  * (reveal ids → dots drawn so far) up to their reveal.
  */
@@ -114,7 +123,7 @@ export function drawKingdomRoads(
       if (!tileShown(p.i, p.dots, s)) continue;
       any = true;
       mask |= p.back;
-      if (p.i + 1 >= p.tiles || tileShown(p.i + 1, p.dots, s)) mask |= p.fwd;
+      if (tileReaches(p.i, p.tiles, p.dots, s)) mask |= p.fwd;
     }
     if (any) r.sprite(sheet, ROAD_FRAMES[mask] as string, ox + cell.x * 16, cell.y * 16);
   }
