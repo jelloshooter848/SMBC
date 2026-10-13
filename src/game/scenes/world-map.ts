@@ -115,6 +115,15 @@ export const PREPAINT_AFTER_FRAMES = 60;
 
 /** The most one frame (or one idle callback) spends painting a sheet ahead, in ms. */
 export const PREPAINT_BUDGET_MS = 4;
+
+/** An idle callback runs by this many ms even on a page with no idle time (a slow phone). */
+const PREPAINT_IDLE_TIMEOUT_MS = 50;
+
+/** The browser's requestIdleCallback, where it has one. */
+type RequestIdle = (
+  cb: (d: { didTimeout: boolean; timeRemaining(): number }) => void,
+  opts?: { timeout: number },
+) => number;
 /** Frames between two dots of a path being revealed, and before a revealed node pops in. */
 export const REVEAL_DOT_FRAMES = 6;
 export const REVEAL_NODE_FRAMES = 16;
@@ -1065,26 +1074,31 @@ export class WorldMapScene implements Scene {
 
   /**
    * Standing idle (PREPAINT_AFTER_FRAMES and on): paints the next page's sheet ahead, a slice at a
-   * time (PREPAINT_BUDGET_MS), in the browser's idle time where it has requestIdleCallback, else in
-   * this frame's; once painted, the sheet is rasterized (one step), so the slide to that page draws
-   * from a ready sheet. Only pages drawn from above have sheets painted on demand.
+   * time (PREPAINT_BUDGET_MS), in the browser's idle time where it has requestIdleCallback (or, on
+   * a device too busy to have any, when the callback times out), else in this frame's; once
+   * painted, the sheet is rasterized in a slice of its own, so the slide to that page draws from a
+   * ready sheet. Only pages drawn from above have sheets painted on demand.
    */
   private prepaintAhead(): void {
     if (++this.stillFrames < PREPAINT_AFTER_FRAMES || this.prepaintPending) return;
     const sheet = this.aheadSheet();
     if (!sheet) return;
-    const assets = this.game.ctx.assets;
     const slice = (budget: number): void => {
       this.prepaintPending = false;
       if (this.mode !== 'idle' || this.game.scenes.top !== this) return;
-      if (prepaintSheet(sheet, budget) && !assets.sheetKeys().includes(sheet)) assets.sheet(sheet);
+      if (!lazySheetReady(sheet)) prepaintSheet(sheet, budget);
+      else this.game.ctx.assets.sheet(sheet);
     };
-    const idle = (
-      globalThis as { requestIdleCallback?: (cb: (d: { timeRemaining(): number }) => void) => number }
-    ).requestIdleCallback;
+    const idle = (globalThis as { requestIdleCallback?: RequestIdle }).requestIdleCallback;
     if (!idle) return slice(PREPAINT_BUDGET_MS);
     this.prepaintPending = true;
-    idle((d) => slice(Math.max(1, Math.min(PREPAINT_BUDGET_MS, d.timeRemaining()))));
+    idle(
+      (d) =>
+        slice(
+          d.didTimeout ? PREPAINT_BUDGET_MS : Math.max(1, Math.min(PREPAINT_BUDGET_MS, d.timeRemaining())),
+        ),
+      { timeout: PREPAINT_IDLE_TIMEOUT_MS },
+    );
   }
 
   /** The sheet of the next page (by this page's exits) still to paint or rasterize, or null. */
