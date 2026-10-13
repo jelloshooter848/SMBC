@@ -6,6 +6,7 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import { MAP_PAGES, mapPage, pageLook } from '@content/worldmap';
 import { drawMapActor, drawMapTile, mapSky } from '@content/worldmap/render';
+import { VALLEY_PAGE_ID } from '@content/worldmap/valley-of-bowser';
 import {
   aboveLook,
   aboveRoadCells,
@@ -583,6 +584,9 @@ export class WorldMapScene implements Scene {
       from,
     );
     if (guide.done) return false;
+    // The Valley's castle stands at the top of its page: the box goes below the hero and Toad there
+    // (INT55). Elsewhere it stays at the top, as approved.
+    if (this.page.id === VALLEY_PAGE_ID) guide.avoidY = this.hy;
     this.toad = guide;
     this.mode = 'story';
     return true;

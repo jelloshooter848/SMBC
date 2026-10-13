@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { beat } from '../story/beats';
 import { ARENA_PAGE, CRASH_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES } from '../story/script';
 import * as script from '../story/script';
-import { dueScenes, type GuideInput } from './toad-guide';
+import { dueScenes, ToadGuide, TOAD_BOX_Y, type GuideInput } from './toad-guide';
 import { RIFT_PAGE } from './world-gate';
 import type { MapProgress } from './types';
 
@@ -108,5 +108,33 @@ describe('dueScenes', () => {
     const g = input({ page: 'smb-1', prog: { cleared: ['1-0', '1-1', '1-4'] }, freed: HEROES });
     expect(ids(g)).toEqual([beat.enter('smb-1')]);
     expect(dueScenes({ ...g, page: 'll-1' })).toEqual([]);
+  });
+});
+
+describe('the box keeps clear of the hero (INT55)', () => {
+  const boxTop = (avoidY: number | null): number => {
+    const g = new ToadGuide(
+      [{ ids: [], pages: [['TOAD:', '', 'ONE', 'TWO', 'THREE']], walk: false }],
+      { x: 100, y: 90 },
+      { markSeen: () => undefined, say: () => undefined, prompt: () => 'OK' },
+    );
+    g.avoidY = avoidY;
+    const ys: number[] = [];
+    const r = {
+      rect: (_x: number, y: number) => void ys.push(y),
+      text: () => undefined,
+      sprite: () => undefined,
+    };
+    g.draw(r as never, { sheet: () => ({}) } as never);
+    return Math.min(...ys);
+  };
+  it('stays at the top while the hero is lower down the map', () => {
+    expect(boxTop(null)).toBe(TOAD_BOX_Y);
+    expect(boxTop(160)).toBe(TOAD_BOX_Y);
+  });
+  it('drops to the bottom when the hero stands under the top box (the Valley castle, 0.4.55)', () => {
+    const y = boxTop(96);
+    expect(y).toBeGreaterThan(96 + 16);
+    expect(y + 72).toBeLessThanOrEqual(240);
   });
 });

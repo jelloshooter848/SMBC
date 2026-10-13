@@ -170,6 +170,13 @@ describe("Toad's map scenes", () => {
     expect(h.game.pendingReveal).toContain('valley-of-bowser:bowsers-castle>ll-1');
     expect(map(h).story).toBe(true);
     expect(toadSprite(h)).toBeDefined();
+    // INT55: the castle (and the hero and Toad at its gate) are at the top of the Valley's page,
+    // so the box shows below them, not over them.
+    h.until(() => map(h).toad?.lines != null, 600);
+    const shown = draw(map(h));
+    const boxTop = shown.texts.find((t) => t.str === 'TOAD:')!.y;
+    expect(boxTop).toBeGreaterThan(map(h).hy + 16);
+    expect(boxTop).toBeGreaterThan(toadSprite(h)!.y + 16);
     expect(readAll(h)).toEqual(riftPages('MARIO'));
     h.until(() => map(h).mode === 'idle', 600);
     expect(h.game.pendingReveal).not.toContain('valley-of-bowser:bowsers-castle>ll-1');
