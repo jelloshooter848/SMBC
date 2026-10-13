@@ -21,7 +21,9 @@ import { CRYSTAL_BALL } from '@game/map/captives';
  * - `gate:<page>`   (0.4.23) the world gate out of page `page` broke: Bowser's cutaway and Toad;
  * - `sealed:<page>` (0.4.23) Toad's reminder while that road is sealed ('sealed:smb-8': the rift);
  * - `welcome:<page>` (0.4.23) the local's welcome on the first arrival on page `page` (worlds 2-8);
- * - `remark:<level>` (0.4.23) the hero's remark at castle `level`'s axe ('remark:1-4').
+ * - `remark:<level>` (0.4.23) the hero's remark at castle `level`'s axe ('remark:1-4');
+ * - `sighting:<hero>` (0.4.51) the brainwashed hero glimpsed at the start of their world's first
+ *                   level (story/sightings.ts), one per SIGHTING_HEROES ('sighting:link').
  *
  * Gone in 0.4.23 (docs/STORY.md 2.14; old files may still list them, nothing reads them):
  * `enter:<page>:<hero>`, `missed:<hero>`, `joined`, `joined:<hero>`, `all-freed`, `restyle:<level>`.
@@ -67,7 +69,24 @@ export const beat = {
   welcome: (page: string) => `welcome:${page}`,
   /** The hero's remark at castle `level`'s axe ('1-4'..'7-4'). */
   remark: (level: string) => `remark:${level}`,
+  /** (0.4.51) Hero `hero` glimpsed at the start of their world's first level (story/sightings.ts). */
+  sighting: (hero: string) => `sighting:${hero}`,
 } as const;
+
+/**
+ * The heroes with a sighting beat (`sighting:<hero>`), Worlds 2 to 8 in order. All seven ids are
+ * in the save code's STORY dictionary since code version 3 (0.4.51), though the scenes ship world
+ * by world (story/sightings.ts SIGHTINGS lists the built ones), so no later one needs a new version.
+ */
+export const SIGHTING_HEROES: readonly string[] = [
+  'link',
+  'megaman',
+  'samus',
+  'simon',
+  'ryu',
+  'bill',
+  'sophia',
+];
 
 /** The hero every file starts with (never a captive). The one definition: save-files imports and re-exports it. */
 export const FIRST_HERO = 'mario';

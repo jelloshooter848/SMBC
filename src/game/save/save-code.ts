@@ -35,10 +35,10 @@ import {
  */
 
 /** The code layout this build writes. */
-export const CODE_VERSION = 2;
+export const CODE_VERSION = 3;
 
 /** The save format (SaveFile.v) each code version's fields make, before the save migrations. */
-const CODE_SAVE_FORMAT: Readonly<Record<number, number>> = { 1: 4, 2: 4 };
+const CODE_SAVE_FORMAT: Readonly<Record<number, number>> = { 1: 4, 2: 4, 3: 4 };
 
 export const CODE_TYPO = "THAT CODE DOESN'T LOOK RIGHT";
 export const CODE_NEWER = 'THIS CODE IS FROM A NEWER VERSION. UPDATE THE GAME TO LOAD IT';
@@ -127,7 +127,9 @@ const SECRETS: Chunks = [
 ];
 /**
  * Story beats (story/beats.ts) in the order a file meets them, so a file's list is a few long
- * runs; then the beats older builds wrote (nothing reads them, but a code keeps them).
+ * runs; then the beats older builds wrote (nothing reads them, but a code keeps them). Version 2
+ * added none (an empty chunk); version 3 (0.4.51) the seven hero sightings (beats.ts
+ * SIGHTING_HEROES), all at once though they ship world by world, so later ones need no new version.
  */
 const STORY: Chunks = [
   [
@@ -155,6 +157,16 @@ const STORY: Chunks = [
     'all-freed',
     ...(HEROES[0] as string[]).flatMap((h) => [`joined:${h}`, `missed:${h}`]),
     ...SMB_WORLDS.flatMap((n) => (HEROES[0] as string[]).map((h) => `enter:smb-${n}:${h}`)),
+  ],
+  [],
+  [
+    'sighting:link',
+    'sighting:megaman',
+    'sighting:samus',
+    'sighting:simon',
+    'sighting:ryu',
+    'sighting:bill',
+    'sighting:sophia',
   ],
 ];
 /** The inventory's items and the held items (bonus/items.ts ITEM_IDS, NEXT_ORDER). */
