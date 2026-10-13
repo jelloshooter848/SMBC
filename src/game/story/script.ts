@@ -170,21 +170,64 @@ export const WAND_BREAK_SAID =
 /** The hero's remark at castles 1-4 to 7-4 (2.3a: reaching the axe), by main level id, without the speaker. */
 const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
   '1-4': ["WAIT... THAT'S NOT BOWSER!", "IT'S A GOOMBA IN A BOWSER", 'SUIT!'],
-  '2-4': ['ANOTHER FAKE! JUST A KOOPA', "TROOPA WEARING THE KING'S", 'FACE.'],
-  '3-4': ["A BUZZY BEETLE?! SO THAT'S", 'WHY THE SHELL WAS SO SHINY.'],
-  '4-4': ['A SPINY! NO WONDER THAT', 'SUIT LOOKED SO POINTY.'],
-  '5-4': ['A LAKITU?! WITHOUT ITS', 'CLOUD IT LOOKS SO SMALL.'],
-  '6-4': ['A BLOOPER?! IN A CASTLE?', 'HOW IS IT EVEN BREATHING?'],
-  '7-4': ['A HAMMER BRO! THE LAST', 'FAKE. THE REAL KING MUST', 'BE CLOSE.'],
+  // 0.4.47 (#31): castles 2-4 to 7-4's fakes wear a villain costume; the line is its reveal.
+  '2-4': ['...THAT WAS A KOOPA IN A', 'DRESS?!'],
+  '3-4': ['THE SKULL WAS A CARDBOARD', 'BOX... AND THE MAD', 'SCIENTIST, A BUZZY BEETLE!'],
+  '4-4': ['A BRAIN IN A JAR... IT WAS', 'A SPINY IN A FISHBOWL!'],
+  '5-4': ['A VAMPIRE?! NO... JUST A', 'LAKITU WITH HAIR GEL.'],
+  '6-4': ['A BLOOPER IN A MOP AND A', 'PAPER MASK?! HOW IS IT', 'EVEN BREATHING?'],
+  '7-4': ['THE LAST FAKE... IN A', 'SOUVENIR T-SHIRT?! THE', 'REAL KING MUST BE CLOSE.'],
+};
+
+/**
+ * The castle's own hero sees through the costume of their own villain (0.4.47, #31; the
+ * ANCHOR_HERO_LINES pattern): their line instead of the shared one, by main level id and hero id.
+ * None for Simon: he is freed inside 5-4 and never meets its fake on a first clear.
+ */
+const CASTLE_HOME_REMARKS: Readonly<Record<string, Readonly<Record<string, Page>>>> = {
+  '2-4': { link: ['GANON?! ...NO. GANON IS', 'TALLER. AND NOT A KOOPA.'] },
+  '3-4': { megaman: ['DR. WILY?! ...NO. HIS', 'SKULLS NEVER HAVE HORNS.'] },
+  '4-4': { samus: ['MOTHER BRAIN. ...NEGATIVE.', 'SPINY IN A FISHBOWL.', 'MISSION CONTINUES.'] },
+  '6-4': { ryu: ['A FAKE MASK, A FAKE BLADE.', 'AN INSULT TO MY RIVAL.'] },
+  '7-4': { bill: ["I'VE SEEN THE REAL ALIEN.", "IT DIDN'T WEAR A T-SHIRT."] },
 };
 
 /** The castles with a remark (1-4 to 7-4), in order. */
 export const REMARK_CASTLES: readonly string[] = Object.keys(CASTLE_REMARKS);
 
-/** Castle `level`'s remark card, the player's hero `hero` (full name) speaking; null without one. */
-export function castleRemark(level: string, hero: string): Page | null {
-  const body = CASTLE_REMARKS[level];
+/** The castles with a home-hero remark, and whose (`[level, hero id]`), in order. */
+export const HOME_REMARKS: readonly (readonly [string, string])[] = Object.entries(
+  CASTLE_HOME_REMARKS,
+).flatMap(([level, by]) => Object.keys(by).map((id) => [level, id] as const));
+
+/**
+ * Castle `level`'s remark card, the player's hero `hero` (full name) speaking; null without one.
+ * Hero `id` (0.4.47), when it is the castle's own hero, says its home line instead.
+ */
+export function castleRemark(level: string, hero: string, id?: string): Page | null {
+  const body = (id ? CASTLE_HOME_REMARKS[level]?.[id] : undefined) ?? CASTLE_REMARKS[level];
   return body ? [`${hero}:`, '', ...body] : null;
+}
+
+/** What each castle's villain costume is made of, by world (2-7), as said when it falls off. */
+const COSTUME_PARTS: Readonly<Record<number, readonly [string, string]>> = {
+  2: ['Ganon', 'a pig mask, a bedsheet and a garden fork'],
+  3: ['Dr. Wily', 'a cardboard box skull, a foil hula hoop and a coat hanger'],
+  4: ['Mother Brain', 'a fishbowl, a swim cap and a garden hose'],
+  5: ['Dracula', 'a wig, a satin cape and plastic fangs'],
+  6: ['Masked Ninja', 'a paper mask, a mop head, a bathrobe and a toy sword'],
+  7: ['Red Falcon', 'a rubber alien head and a souvenir T-shirt'],
+};
+
+/**
+ * What the screen reader says as world `world`'s fake loses his costume (0.4.47): it falls off
+ * into a pile, or (`fell`) goes down with him.
+ */
+export function costumeSaid(world: number, fell: boolean): string {
+  const [who, parts] = COSTUME_PARTS[world] ?? ['villain', 'a costume'];
+  return fell
+    ? `The ${who} costume goes down with it: ${parts}.`
+    : `The ${who} costume falls off in a heap: ${parts}.`;
 }
 
 const bowser = (...lines: string[]): Page => ['BOWSER:', '', ...lines];

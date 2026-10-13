@@ -89,7 +89,8 @@ export class CastleUnmask {
   update(world: World): UnmaskDone | null {
     this.t++;
     if (this.bowser?.alive) this.bowser.update(world);
-    for (const e of world.entities) if (e.kind === 'wand-poof' && e.alive) e.update(world);
+    for (const e of world.entities)
+      if ((e.kind === 'wand-poof' || e.kind === 'costume-pile') && e.alive) e.update(world);
     if (this.lookFrom < 0) return this.updateKilled(world);
     return this.updateLook(world);
   }

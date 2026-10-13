@@ -6,6 +6,8 @@ import type { Theme } from '../../level/schema';
 import { Enemy } from './enemy';
 import type { View } from '../entity';
 import { drawSparkle, WandPoof, WAND_SPARKLE } from '../effects/wand-poof';
+import { CostumePile } from '../effects/costume-pile';
+import { costumeSaid } from '../../story/script';
 import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 import type { DamageSource } from '../../rules/damage';
@@ -136,6 +138,12 @@ export class Bowser extends Enemy {
   dazed = false;
   /** His Bowser bar has come up (campaign; world/boss-bar.ts). */
   private barStarted = false;
+  /**
+   * The villain costume he wears over the disguise (0.4.47, #31): the castle's world (2-7) in the
+   * campaign's castles 2-4 to 7-4 (World.costumeOf), 0 for none or once it has dropped.
+   */
+  costume = 0;
+  private costumeSet = false;
 
   constructor(
     tx: number,
@@ -276,6 +284,13 @@ export class Bowser extends Enemy {
     const n = world.storyMode ? trueFormOf(world.state.world) : 0;
     if (!n) return 0;
     const b = this.body;
+    // 0.4.47 (#31): his villain costume drops in a pile where he stood, behind the true form.
+    if (this.costume) {
+      const at = CostumePile.at(toPx(b.x) - this.spriteOffsetX, toPx(b.y) - this.spriteOffsetY, this.facing);
+      world.spawn(new CostumePile(at.x, at.y, this.costume, this.facing > 0));
+      world.events.push({ type: 'say', text: costumeSaid(this.costume, false) });
+      this.costume = 0;
+    }
     world.spawn(new WandPoof(b.x + (b.w >> 1), b.y + (b.h >> 1)));
     world.audio.sfx('poof');
     return n;
@@ -374,6 +389,9 @@ export class Bowser extends Enemy {
       return;
     }
     super.render(r, view);
+    // 0.4.47 (#31): the world's villain costume over him (castles 2-4 to 7-4), off while the tell
+    // shows the true form (above).
+    if (this.costume) r.sprite(assets.sheet('costumes'), `costume-${this.costume}`, x, y, flip);
     // Reduce flashing: no flicker; the true form's bright outline held over him for the window.
     if (view.reduceFlashing && this.tellWindow)
       r.sprite(
@@ -429,6 +447,11 @@ export class Bowser extends Enemy {
   update(world: World): void {
     const b = this.body;
     this.disguise = world.storyMode ? trueFormOf(world.state.world) : 0;
+    // The villain costume he wears (0.4.47; worn until his disguise bursts, never once it has).
+    if (!this.costumeSet) {
+      this.costume = world.costumeOf(this);
+      this.costumeSet = true;
+    }
     if (this.dead) {
       b.vy += 0x00400;
       b.y += velToSub(b.vy);
@@ -485,6 +508,9 @@ export class Bowser extends Enemy {
     // axe (World.bowserFell, 0.4.43). Classic play keeps the original's endless fall.
     if (world.storyMode && this.isBelowLevel()) {
       world.bossBar.end(this);
+      // His costume goes down with him (no pile to see): said all the same.
+      if (this.costume) world.events.push({ type: 'say', text: costumeSaid(this.costume, true) });
+      this.costume = 0;
       world.bowserFell(this);
       this.destroy();
       return;

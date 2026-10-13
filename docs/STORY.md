@@ -435,6 +435,23 @@ Lakitu, 6-4 Blooper, 7-4 Hammer Bro). In the campaign only (classic play keeps t
 5. Then, every way, the walk to Toad (up and down steps, never through a wall) and **the castle's two pages** as now (page 1: Toad on the creature; page 2,
    2 s later in the same box: the news). Both are in each world's section.
 
+6. **Villain costumes** (NEW, 0.4.47, owner, roadmap #31). In castles 2-4 to 7-4 the fake wears a cheap costume of
+   that world's own villain over the king suit (Ganon, Dr. Wily's skull machine, Mother Brain, Dracula, the Masked
+   Ninja, Red Falcon; World 1's Goomba keeps the plain king suit). It is a mask, a sheet or a box: his jaw, belly,
+   claws and legs still show, and the tell's flicker still shows the true form through it (with reduce flashing, the
+   steady outline goes over the costume). However he dies, the costume drops in a pile where he stood, behind the
+   true form, and goes down with the bridge (with a fall into the lava, it goes down with him); the screen reader
+   says what it was made of. The hero's remark becomes the costume's reveal; that world's own hero (Link, Mega Man,
+   Samus, Ryu, Bill) says a line of their own instead. Toad's castle pages are unchanged. Each castle below has its
+   costume and lines.
+7. **The Bowser bar** (NEW, 0.4.47, owner, roadmap #30). Every Bowser, fake and real, in every castle (8-4 and the
+   Lost Kingdom too) has a boss health bar while the fight is on: BOWSER and five notches, centred under the HUD. It
+   comes up when he comes on screen, loses a notch for each hit (the notches a hit takes glow a moment: a blink, held
+   steady with reduce flashing), and after a weapon kill shows empty for a moment, then goes. A kill by the axe or a
+   fall takes it away at once. Campaign only: the original Crossover shows no boss health (its HUD has the score,
+   coins, world and time; its Bowser only counts five hits), so classic play keeps it that way. The screen reader
+   says it as it comes up ("Bowser's health: 5 of 5.") and on each hit ("Bowser: 4 of 5.").
+
 In co-op the player nearer the axe is the one who jumps or looks; the other stands still. **Replay:** the unmasking
 plays on every clear; the remark card plays the first time per castle per file (after that the hero just looks for
 a moment and pulls the axe), so replays stay quick.
@@ -1295,7 +1312,25 @@ USED IT ON A BAT. TWICE.
 ...WE ALL LEARN.
 ```
 
-**Castle 2-4** (a Koopa Troopa). The hero's remark:
+**Castle 2-4** (a Koopa Troopa), in a villain costume (NEW, 0.4.47, owner; campaign only, art by CD47 in `content/sprites/costumes.ts`): Ganon: a blue rubber pig mask with painted tusks (the king's horns and red hair stick out of it), a purple bedsheet cape with a safety-pin clasp, and a garden fork tied to his back as the trident. Shed: the bedsheet in a heap with the fork across it, the mask face up. However he dies (weapons, the axe, a fall), the costume drops in a pile where he stood (with a fall it goes down with him), the true form shows, and the screen reader says: _The Ganon costume falls off in a heap: a pig mask, a bedsheet and a garden fork._ (with a fall: "goes down with it" instead of "falls off in a heap"). The hero's remark is the reveal (REPLACES the old remark):
+
+```text
+<HERO>:
+
+...THAT WAS A KOOPA IN A
+DRESS?!
+```
+
+With Link, the castle's own hero, playing (NEW, 0.4.47: instead of the line above):
+
+```text
+LINK:
+
+GANON?! ...NO. GANON IS
+TALLER. AND NOT A KOOPA.
+```
+
+Old:
 
 ```text
 <HERO>:
@@ -1997,7 +2032,26 @@ SHIELD STAYS UP. NOTHING
 PERSONAL.
 ```
 
-**Castle 3-4** (a Buzzy Beetle). The hero's remark:
+**Castle 3-4** (a Buzzy Beetle), in a villain costume (NEW, 0.4.47, owner; campaign only, art by CD47 in `content/sprites/costumes.ts`): Dr. Wily's skull machine: a cardboard box worn as the skull (holes cut for his horns, a big W in red marker, painted teeth, a coat-hanger antenna) and a foil-covered hula hoop round his middle as the saucer rim. Shed: the box on its back, the hoop flat behind it. However he dies (weapons, the axe, a fall), the costume drops in a pile where he stood (with a fall it goes down with him), the true form shows, and the screen reader says: _The Dr. Wily costume falls off in a heap: a cardboard box skull, a foil hula hoop and a coat hanger._ (with a fall: "goes down with it" instead of "falls off in a heap"). The hero's remark is the reveal (REPLACES the old remark):
+
+```text
+<HERO>:
+
+THE SKULL WAS A CARDBOARD
+BOX... AND THE MAD
+SCIENTIST, A BUZZY BEETLE!
+```
+
+With Mega Man, the castle's own hero, playing (NEW, 0.4.47: instead of the line above):
+
+```text
+MEGA MAN:
+
+DR. WILY?! ...NO. HIS
+SKULLS NEVER HAVE HORNS.
+```
+
+Old:
 
 ```text
 <HERO>:
@@ -2500,7 +2554,26 @@ VERY HAPPY. YOU ARE VERY
 STICKY NOW.
 ```
 
-**Castle 4-4** (a Spiny). The hero's remark:
+**Castle 4-4** (a Spiny), in a villain costume (NEW, 0.4.47, owner; campaign only, art by CD47 in `content/sprites/costumes.ts`): Mother Brain: a fishbowl upside down over his head, a pink swim cap with brain squiggles inside it, a lid ring round his neck and a garden hose into his shell: a brain in a jar on legs. Shed: the bowl on its side, the cap spilled, the hose coiled. However he dies (weapons, the axe, a fall), the costume drops in a pile where he stood (with a fall it goes down with him), the true form shows, and the screen reader says: _The Mother Brain costume falls off in a heap: a fishbowl, a swim cap and a garden hose._ (with a fall: "goes down with it" instead of "falls off in a heap"). The hero's remark is the reveal (REPLACES the old remark):
+
+```text
+<HERO>:
+
+A BRAIN IN A JAR... IT WAS
+A SPINY IN A FISHBOWL!
+```
+
+With Samus, the castle's own hero, playing (NEW, 0.4.47: instead of the line above):
+
+```text
+SAMUS:
+
+MOTHER BRAIN. ...NEGATIVE.
+SPINY IN A FISHBOWL.
+MISSION CONTINUES.
+```
+
+Old:
 
 ```text
 <HERO>:
@@ -2882,7 +2955,18 @@ BEFORE THE KING DOES. LEAD
 ON.
 ```
 
-**Castle 5-4** (a Lakitu). The hero's remark:
+**Castle 5-4** (a Lakitu), in a villain costume (NEW, 0.4.47, owner; campaign only, art by CD47 in `content/sprites/costumes.ts`): Dracula: a slicked dark wig with a widow's peak (his horns poke through), a tall red collar, a cheap blue satin cape with a red lining, two plastic fangs and a gold medallion. Shed: the cape flat, lining up, the wig in a heap, the fangs in front. However he dies (weapons, the axe, a fall), the costume drops in a pile where he stood (with a fall it goes down with him), the true form shows, and the screen reader says: _The Dracula costume falls off in a heap: a wig, a satin cape and plastic fangs._ (with a fall: "goes down with it" instead of "falls off in a heap"). The hero's remark is the reveal (REPLACES the old remark):
+
+```text
+<HERO>:
+
+A VAMPIRE?! NO... JUST A
+LAKITU WITH HAIR GEL.
+```
+
+No home line for Simon: he is freed inside 5-4 itself and never meets its fake on a first clear (the remark plays once per file).
+
+Old:
 
 ```text
 <HERO>:
@@ -3238,7 +3322,26 @@ SALUTE. WITH BOTH HANDS.
 I AM VERY EXCITED.
 ```
 
-**Castle 6-4** (a Blooper). The hero's remark:
+**Castle 6-4** (a Blooper), in a villain costume (NEW, 0.4.47, owner; campaign only, art by CD47 in `content/sprites/costumes.ts`): the Masked Ninja (a knock-off of the mini-game's rival): a crimson card mask with a painted scowl tied on with string, a mop head for the white mane (the handle still sticking out), a dark bathrobe with a crimson belt and a wooden toy sword. Shed: the mask face up, the mop in a tangle, the sword along the floor. However he dies (weapons, the axe, a fall), the costume drops in a pile where he stood (with a fall it goes down with him), the true form shows, and the screen reader says: _The Masked Ninja costume falls off in a heap: a paper mask, a mop head, a bathrobe and a toy sword._ (with a fall: "goes down with it" instead of "falls off in a heap"). The hero's remark is the reveal (REPLACES the old remark):
+
+```text
+<HERO>:
+
+A BLOOPER IN A MOP AND A
+PAPER MASK?! HOW IS IT
+EVEN BREATHING?
+```
+
+With Ryu, the castle's own hero, playing (NEW, 0.4.47: instead of the line above):
+
+```text
+RYU:
+
+A FAKE MASK, A FAKE BLADE.
+AN INSULT TO MY RIVAL.
+```
+
+Old:
 
 ```text
 <HERO>:
@@ -3572,7 +3675,26 @@ MEDICINE FOR THAT. JUST
 DUCK, OKAY?
 ```
 
-**Castle 7-4** (a Hammer Bro). The hero's remark:
+**Castle 7-4** (a Hammer Bro), in a villain costume (NEW, 0.4.47, owner; campaign only, art by CD47 in `content/sprites/costumes.ts`): Red Falcon: a lumpy crimson rubber alien head too big for him, with a bony crest, mandibles and three eyes (two painted on, one the hole his real eye looks out of), and a white T-shirt with a red falcon printed on it. Shed: the head on its side, the T-shirt crumpled beside it. However he dies (weapons, the axe, a fall), the costume drops in a pile where he stood (with a fall it goes down with him), the true form shows, and the screen reader says: _The Red Falcon costume falls off in a heap: a rubber alien head and a souvenir T-shirt._ (with a fall: "goes down with it" instead of "falls off in a heap"). The hero's remark is the reveal (REPLACES the old remark):
+
+```text
+<HERO>:
+
+THE LAST FAKE... IN A
+SOUVENIR T-SHIRT?! THE
+REAL KING MUST BE CLOSE.
+```
+
+With Bill, the castle's own hero, playing (NEW, 0.4.47: instead of the line above):
+
+```text
+BILL:
+
+I'VE SEEN THE REAL ALIEN.
+IT DIDN'T WEAR A T-SHIRT.
+```
+
+Old:
 
 ```text
 <HERO>:

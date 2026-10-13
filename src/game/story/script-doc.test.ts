@@ -15,6 +15,7 @@ import {
   CASTLE_PAGES,
   castleRemark,
   gateScript,
+  HOME_REMARKS,
   REMARK_CASTLES,
   RIFT_SEALED_PAGES,
   sealedHint,
@@ -139,6 +140,9 @@ function scriptPages(): Map<string, Page> {
   for (const id of Object.keys(FREED_TALKS)) list(`FREED_TALKS.${id}`, freedTalk(id, HERO));
   // S3 (0.4.23): the castle remarks, the world gates, the rift's reminder and the welcomes.
   for (const id of REMARK_CASTLES) add(`castleRemark.${id}`, castleRemark(id, HERO) as Page);
+  // 0.4.47 (#31): the castle's own hero's line at their villain's costume, in their own name.
+  for (const [id, who] of HOME_REMARKS)
+    add(`castleRemark.${id}.${who}`, castleRemark(id, fontText(hero(who).name).toUpperCase(), who) as Page);
   for (let w = 1; w <= 7; w++) {
     const g = gateScript(w, HERO);
     if (!g) continue;

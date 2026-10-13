@@ -37,8 +37,10 @@ function castle(id: string, story = true, back = 9) {
     { x: axe.x - back, y: 8, mode: 'stand' },
   );
   world.storyMode = story;
+  // The remark card closes a frame on (as a press would).
+  let close: (() => void) | null = null;
   world.remarkHook = (_l, _h, done) => {
-    done();
+    close = done;
     return true;
   };
   const input = new ScriptedInput({ steps: [{ frame: 0, hold: [] as Action[] }] });
@@ -46,6 +48,9 @@ function castle(id: string, story = true, back = 9) {
     for (let i = 0; i < n; i++) {
       input.next();
       world.update([input]);
+      const c: (() => void) | null = close;
+      close = null;
+      c?.();
       for (const ev of world.events.splice(0)) if (ev.type === 'say') said.push(ev.text);
     }
   };
@@ -69,6 +74,9 @@ function toAxe(world: World, axe: { x: number; y: number }): void {
 
 const fire = (b: Bowser, world: World) =>
   b.hit({ kind: 'fireball', amount: 1, owner: world.player, dirX: 1 }, world);
+
+/** The castle is over: the bridge is down and the walk has ended (Toad, or the princess). */
+const done = (world: World) => world.castleText.length > 0 || world.bossClear?.stop !== undefined;
 
 // Chapter 1's castles, and the Lost Kingdom's first and last (its 8-4 room has a fake and the king).
 const CASTLES = ['1-4', '2-4', '3-4', '4-4', '5-4', '6-4', '7-4', '8-4-end', 'll-1-4', 'll-8-4-end3'];
@@ -127,7 +135,7 @@ describe('the Bowser bar: shown while the fight is on (campaign)', () => {
 
 describe('the Bowser bar: each kind of death', () => {
   it.each(CASTLES)('%s, weapons: the last hit empties it; it shows empty a moment, then goes', (id) => {
-    const { world, step, b } = castle(id);
+    const { world, step, b, axe } = castle(id);
     step(2);
     for (let i = 0; i < 5; i++) fire(b, world);
     expect(world.bossBar.shown).toBe(true);
@@ -136,11 +144,13 @@ describe('the Bowser bar: each kind of death', () => {
     expect(world.bossBar.shown).toBe(true);
     step(4);
     expect(world.bossBar.shown).toBe(false);
-    // It never comes back for the rest of the scene.
-    for (let i = 0; i < 600 && !world.castleText.length; i++) {
+    // It never comes back for the rest of the scene (no unmask scene: the hero takes the axe).
+    if (!world.unmask) toAxe(world, axe);
+    for (let i = 0; i < 1500 && !done(world); i++) {
       step();
       expect(world.bossBar.shown).toBe(false);
     }
+    expect(done(world)).toBe(true);
   });
 
   it.each(CASTLES)('%s, the axe with him standing: gone at once', (id) => {
@@ -152,10 +162,11 @@ describe('the Bowser bar: each kind of death', () => {
     toAxe(world, axe);
     step();
     expect(world.bossBar.shown).toBe(false);
-    for (let i = 0; i < 400 && !world.castleText.length; i++) {
+    for (let i = 0; i < 1500 && !done(world); i++) {
       step();
       expect(world.bossBar.shown).toBe(false);
     }
+    expect(done(world)).toBe(true);
   });
 
   it.each(CASTLES)('%s, a fall into the lava: gone at once', (id) => {
