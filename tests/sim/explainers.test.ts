@@ -6,6 +6,7 @@ import { LevelScene } from '@game/scenes/level';
 import { Pickup, type PickupKind } from '@game/entities/objects/pickup';
 import { HeroItem } from '@game/entities/objects/hero-item';
 import { MEGAMAN } from '@game/characters/megaman';
+import { SOPHIA } from '@game/characters/sophia';
 import { CHARACTERS } from '@game/characters/registry';
 import { heroStart } from '@game/items/heroes';
 import { has } from '@game/items/flags';
@@ -279,6 +280,53 @@ describe("Mega Man's weapons come only with the Helmet (campaign)", () => {
     const p = r.world.player;
     expect(p.scratch.helmet).toBe(1);
     expect(has(p, 'saw-disc')).toBe(false);
+  });
+
+  it("the Helmet's rule is his alone: Sophia III's Crusher, out before a hit to Normal, stays the Crusher", () => {
+    const sophiaLevel = parseTextMap(
+      [
+        'id: t',
+        'time: 300',
+        'start: 4,12',
+        '',
+        '[tiles]',
+        ...rows,
+        '#'.repeat(24),
+        '#'.repeat(24),
+        '',
+        '[hero-items]',
+        '4 9 sophia=crusher',
+      ].join('\n'),
+    );
+    const r = runSim({
+      level: sophiaLevel,
+      character: SOPHIA,
+      script: { steps: [] },
+      maxFrames: 400,
+      state: { kit: heroStart(SOPHIA).kit, hp: 1, powerState: 'big' },
+      controller: (w, f) => {
+        if (f === 0) {
+          w.useHeroItems(sophiaLevel.heroItems ?? []);
+          w.strikeBlock(4, 9, w.player, true);
+        }
+        if (f === 30) {
+          expect(w.entities.some((e) => e instanceof HeroItem && e.item === 'crusher')).toBe(true);
+          w.player.invuln = 0;
+          w.hurtPlayer(w.player, 1);
+          expect(w.player.powerState).toBe('small');
+        }
+        if (f === 31) {
+          const it = w.entities.find((e): e is HeroItem => e instanceof HeroItem && e.alive);
+          if (it) {
+            it.destroy();
+            w.takeHeroItem(w.player, it);
+          }
+        }
+        return [];
+      },
+      until: (w) => !w.entities.some((e) => e instanceof HeroItem && e.alive) && w.frame > 40,
+    });
+    expect(r.world.player.powerState).toBe('fire');
   });
 
   it('the Helmet explains the rule the first time (campaign)', () => {

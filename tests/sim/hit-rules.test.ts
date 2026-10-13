@@ -112,14 +112,14 @@ describe('what a hit takes, per hero (code = POWERUPS.md = the training tip)', (
         expect(after.power).toBe('small');
       },
       words: [/fire → small/, /big → small/, /small dies/],
-      text: [/SMALL, FIRE OR BIG/, /WHILE SMALL COSTS A LIFE/],
+      text: [/^FIRE OR BIG, A HIT MAKES YOU SMALL\./, /WHILE SMALL COSTS A LIFE\.$/],
     },
     {
       id: 'luigi',
       doc: 'Mario, Luigi',
       check: ({ after }) => expect(after.power).toBe('small'),
       words: [/fire → small/, /small dies/],
-      text: [/SMALL, FIRE OR BIG/],
+      text: [/^FIRE OR BIG, A HIT MAKES YOU SMALL\./],
     },
     {
       id: 'link',

@@ -112,11 +112,13 @@ export const ITEM_CAPTION_FRAMES = 120;
 const GROW_BLOCK: Readonly<Record<string, string>> = Object.freeze({});
 
 /**
- * SMB's rule for an item already out of its block (0.4.46, owner #20): a hero who became small
- * since the block was struck (Mega Man's Helmet knocked off by a hit) takes their grow item from
- * it, never a power item. In a found kit (the campaign and training) only; a grow item stays one.
+ * SMB's rule for an item already out of its block (0.4.46, owner #20): a Mega Man whose Helmet a
+ * hit knocked off since the block was struck takes the Helmet from it, never a weapon (his weapons
+ * come only with the Helmet). His alone (no change for the other heroes: Sophia III knocked to
+ * Normal still takes her Crusher). In a found kit (the campaign and training) only.
  */
 function growFirst(p: Player, id: string): string {
+  if (p.def.id !== 'megaman') return id;
   const rules = itemRules(p.def.id);
   const grow = heroItems(p.def.id)?.grow;
   if (!rules || !grow || id === grow || !isFound(p) || !rules.small(p)) return id;
