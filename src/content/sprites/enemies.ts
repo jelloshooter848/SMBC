@@ -919,10 +919,51 @@ const outline = (rows: readonly string[]): string[] => {
   );
 };
 
-const TRUE_FORMS = [TF_GOOMBA, TF_SHELL, TF_BUZZY_SHELL, TF_SPINY, TF_LAKITU, TF_BLOOPER, TF_HAMMER_BRO];
+/**
+ * World 8's true form (0.4.54, CD53, owner-approved): a Piranha Plant knocked silly, out of its
+ * pipe and standing on its roots, jaws hanging open, tongue out. The campaign's 8-4 fake (the
+ * Plutonium Boss costume) is one: the one SMB enemy no other fake used. 16x24.
+ */
+const TF_PIRANHA = [
+  '.....111111.....',
+  '...1177477711...',
+  '..177777777471..',
+  '.17477777777771.',
+  '.17777747777471.',
+  '.17777777777771.',
+  '.14444444444441.',
+  '.14141414141411.',
+  '.11111111111111.',
+  '.11111333311111.',
+  '..111133331111..',
+  '..114141414141..',
+  '..114444444441..',
+  '...1777777771...',
+  '...1747777471...',
+  '....17777771....',
+  '.....111111.....',
+  '......1881......',
+  '..111.1881.111..',
+  '.15555188155551.',
+  '..155518815551..',
+  '...1111881111...',
+  '.....1331331....',
+  '....1331..1331..',
+];
+
+const TRUE_FORMS = [
+  TF_GOOMBA,
+  TF_SHELL,
+  TF_BUZZY_SHELL,
+  TF_SPINY,
+  TF_LAKITU,
+  TF_BLOOPER,
+  TF_HAMMER_BRO,
+  TF_PIRANHA,
+];
 
 /**
- * How tall each true form is (`bowser-die-N`, N = 1..7; its rows start at row 8 of the king's
+ * How tall each true form is (`bowser-die-N`, N = 1..8; its rows start at row 8 of the king's
  * 32-pixel box), so it can be drawn standing on his feet.
  */
 export const TRUE_FORM_HEIGHT: Readonly<Record<number, number>> = Object.fromEntries(
@@ -975,7 +1016,10 @@ export const enemiesDef: SpriteDef = {
     'bowser-die-5': trueForm(TF_LAKITU),
     'bowser-die-6': trueForm(TF_BLOOPER),
     'bowser-die-7': trueForm(TF_HAMMER_BRO),
-    'bowser-die-8': king(KING_HEAD_OPEN, KING_LEGS_0),
+    // 0.4.54: form 8 is the campaign's 8-4 fake's Piranha Plant; the king's own fall (the
+    // original's die_8: classic 8-4, Bowser's Castle, the Lost Levels' later worlds) is its own.
+    'bowser-die-8': trueForm(TF_PIRANHA),
+    'bowser-die-king': king(KING_HEAD_OPEN, KING_LEGS_0),
     // The true forms' outlines (the fakes' steady tell with reduce flashing on).
     ...Object.fromEntries(TRUE_FORMS.map((rows, i) => [`bowser-ghost-${i + 1}`, outline(trueForm(rows))])),
   },

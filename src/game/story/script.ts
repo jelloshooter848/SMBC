@@ -11,6 +11,8 @@
  * longest name a hero can have (SOPHIA III).
  */
 
+import { FINALE, finaleKingIsReal } from './finale';
+
 /** A page of a card: its lines, top to bottom. */
 export type Page = readonly string[];
 
@@ -113,10 +115,18 @@ export const CRASH_PAGES: readonly Page[] = [
 
 /* ---------------------------------------------------------------- castles (2.4-2.12) */
 
+/** A castle's pages under Toad's thanks: the reveal, then (on OK, in the same box) the news. */
+export interface CastlePages {
+  reveal: Page;
+  /** None: OK on the reveal leaves. */
+  news?: Page;
+}
+
 /**
- * Each castle's two pages (2.3a), by its main level id: page 1 the reveal (under the thanks),
- * page 2 the story beat, on OK in the same box. 8-4's page 1 confirms the king was real.
- * (0.4.23, S3: 1-4 to 7-4 rewritten; 1-4's first page carries what Toad's old map card said.)
+ * Each fake castle's two pages (2.3a), by its main level id: page 1 the reveal (under the
+ * thanks), page 2 the story beat, on OK in the same box. (0.4.23, S3: 1-4 to 7-4 rewritten; 1-4's
+ * first page carries what Toad's old map card said.) The last castle's are FINALE_PAGES
+ * (castlePages).
  */
 export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>> = {
   '1-4': {
@@ -152,11 +162,27 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
     reveal: ['A HAMMER BRO UNDER THE', 'SPELL. THAT WAS HIS LAST', 'STAND-IN!'],
     news: ['THE KOOPAS ARE ALL RUNNING', 'HOME. THE KING CALLED THEM', 'BACK TO GUARD HIS CASTLE.'],
   },
-  '8-4': {
-    reveal: ['NO TRICK THIS TIME. THAT', 'WAS THE REAL KING!'],
-    news: ['BOWSER FELL... AND THE', 'WAND BROKE! ITS PIECES', 'FELL THROUGH A CRACK IN', 'THE WORLD!'],
-  },
 };
+
+/**
+ * The last castle's pages (2.12; story/finale.ts FINALE.castle): page 1 confirms the king was
+ * real, page 2 the wand broke. 8-4's until 0.4.54; Bowser's Castle's from 0.4.55.
+ */
+export const FINALE_PAGES: { readonly reveal: Page; readonly news: Page } = {
+  reveal: ['NO TRICK THIS TIME. THAT', 'WAS THE REAL KING!'],
+  news: ['BOWSER FELL... AND THE', 'WAND BROKE! ITS PIECES', 'FELL THROUGH A CRACK IN', 'THE WORLD!'],
+};
+
+/**
+ * Castle `id`'s pages under Toad's thanks in the campaign (by its main level id), or undefined
+ * (the NES text). The last castle (FINALE.castle) has FINALE_PAGES; while that is still 8-4, whose
+ * king is a fake since 0.4.54 (its reveal is the hero's remark at the axe), only the wand's page,
+ * so Toad never calls the fake the real king.
+ */
+export function castlePages(id: string): CastlePages | undefined {
+  if (id === FINALE.castle) return finaleKingIsReal() ? FINALE_PAGES : { reveal: FINALE_PAGES.news };
+  return CASTLE_PAGES[id];
+}
 
 /** Said once as the wand breaks over 8-4's lava (campaign; a scene without on-screen text). */
 export const WAND_BREAK_SAID =
@@ -167,7 +193,7 @@ export const WAND_BREAK_SAID =
  * 2.12 (the rift waits for Sophia III). The castles' own pages are CASTLE_PAGES above.
  */
 
-/** The hero's remark at castles 1-4 to 7-4 (2.3a: reaching the axe), by main level id, without the speaker. */
+/** The hero's remark at castles 1-4 to 8-4 (2.3a: reaching the axe), by main level id, without the speaker. */
 const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
   '1-4': ["WAIT... THAT'S NOT BOWSER!", "IT'S A GOOMBA IN A BOWSER", 'SUIT!'],
   // 0.4.47 (#31): castles 2-4 to 7-4's fakes wear a villain costume; the line is its reveal.
@@ -177,6 +203,9 @@ const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
   '5-4': ['A VAMPIRE?! NO... JUST A', 'LAKITU WITH HAIR GEL.'],
   '6-4': ['A BLOOPER IN A MOP AND A', 'PAPER MASK?! HOW IS IT', 'EVEN BREATHING?'],
   '7-4': ['THE LAST FAKE... IN A', 'SOUVENIR T-SHIRT?! THE', 'REAL KING MUST BE CLOSE.'],
+  // 0.4.54 (CD53, owner-approved line 1): 8-4's fake in the Plutonium Boss costume; the real king
+  // waits in Bowser's Castle (never named by its level).
+  '8-4': ['ANOTHER FAKE?! A PIRANHA', 'PLANT IN PARTY BALLOONS.', 'THE REAL KING IS NEXT.'],
 };
 
 /**
@@ -199,9 +228,12 @@ const CASTLE_HOME_REMARKS: Readonly<Record<string, Readonly<Record<string, Page>
       'MUST BE CLOSE.',
     ],
   },
+  // 0.4.54 (CD53, owner-approved as drafted): Sophia III, freed in 8-1, meets 8-4's fake, in her
+  // terse machine voice.
+  '8-4': { sophia: ['SCAN: ZERO PLUTONIUM.', 'MUTANT: ONE PIRANHA PLANT.', 'REAL TARGET: DEAD AHEAD.'] },
 };
 
-/** The castles with a remark (1-4 to 7-4), in order. */
+/** The castles with a remark (1-4 to 8-4), in order. */
 export const REMARK_CASTLES: readonly string[] = Object.keys(CASTLE_REMARKS);
 
 /** The castles with a home-hero remark, and whose (`[level, hero id]`), in order. */
@@ -218,7 +250,7 @@ export function castleRemark(level: string, hero: string, id?: string): Page | n
   return body ? [`${hero}:`, '', ...body] : null;
 }
 
-/** What each castle's villain costume is made of, by world (2-7), as said when it falls off. */
+/** What each castle's villain costume is made of, by world (2-8), as said when it falls off. */
 const COSTUME_PARTS: Readonly<Record<number, readonly [string, string]>> = {
   2: ['Ganon', 'a pig mask, a bedsheet and a garden fork'],
   3: ['Dr. Wily', 'a cardboard box skull, a foil hula hoop and a coat hanger'],
@@ -226,6 +258,7 @@ const COSTUME_PARTS: Readonly<Record<number, readonly [string, string]>> = {
   5: ['Dracula', 'a wig, a satin cape and plastic fangs'],
   6: ['Masked Ninja', 'a paper mask, a mop head, a bathrobe and a toy sword'],
   7: ['Red Falcon', 'a rubber alien head and a souvenir T-shirt'],
+  8: ['Plutonium Boss', 'purple party balloons, glow sticks, a cardboard visor and a green ball'],
 };
 
 /**
@@ -395,7 +428,8 @@ export const RIFT_SEALED_PAGES: readonly Page[] = [
     "GO THROUGH. SOMETHING'S",
     'HOLDING IT SHUT...',
   ),
-  toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT. HER PILOT IS', "LOST IN THE KING'S CASTLE."),
+  // 0.4.54: she is under 8-1 now (its hatch in the forest), no longer in the king's castle.
+  toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT, DOWN THAT', 'HATCH IN THE FOREST.'),
 ];
 
 /**
@@ -619,11 +653,12 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
           'HER, AND HER PILOT IS LOST.',
           'PLEASE HELP!',
         ],
+        // 0.4.54: Sophia III's way in moved to 8-1 (its hatch, its coin room).
         [
-          "THE BOY WENT INTO THE KING'S",
-          'OWN CASTLE AFTER HIS FROG.',
-          'THAT FROG TAKES THE PIPES',
-          'NOBODY ELSE DOES.',
+          'THE TANK DROVE DOWN A HATCH',
+          'IN THE FOREST, AND THE',
+          "BOY'S FROG DOVE AFTER HER.",
+          "HE'S LOOKING FOR A WAY DOWN.",
         ],
         ['ODD THING... SOMEONE PULLED', 'UP A TURNIP RIGHT HERE. WHO', 'GROWS TURNIPS NEXT TO LAVA?'],
       ),
@@ -781,8 +816,8 @@ export const LUIGI_RUNS_PAGE: Page = [
 /**
  * The hero sightings (story/sightings.ts): a brainwashed hero glimpsed at the start of their
  * world's first level. Each line is said by player 1's hero (sightingPage), at most CASTLE_COLS
- * (26) columns. Only the built ones are here (Link, Mega Man; Samus, Simon since 0.4.52); the rest
- * come with their worlds.
+ * (26) columns. Only the built ones are here (Link, Mega Man; Samus, Simon since 0.4.52; Sophia
+ * III since 0.4.54); the rest come with their worlds.
  */
 const SIGHTING_LINES: Readonly<Record<string, Page>> = {
   link: ['WAS THAT LINK? A VINE', 'GREW RIGHT OUT OF THE', 'GROUND, AND HE CLIMBED IT', 'INTO THE SKY!'],
@@ -790,6 +825,13 @@ const SIGHTING_LINES: Readonly<Record<string, Page>> = {
   // 0.4.52 (owner-approved; Simon's option A).
   samus: ['SAMUS! SHE CURLED INTO A', 'BALL AND BOMBED HER WAY', 'DEEPER INTO THE CAVES.'],
   simon: ['SIMON! HE WALKED RIGHT', 'THROUGH THAT GATE, AND IT', 'SLAMMED SHUT BEHIND HIM.'],
+  // 0.4.54 (owner-approved, option A: the player's hero can't follow).
+  sophia: [
+    'SOPHIA III AND THE FROG',
+    'WENT DOWN THAT HOLE, AND',
+    "IT SHUT. I CAN'T FOLLOW...",
+    'THERE MUST BE ANOTHER WAY.',
+  ],
 };
 
 /** What the announcer says as each sighting starts (it has no text on screen until the card). */
@@ -799,14 +841,17 @@ export const SIGHTING_SAID: Readonly<Record<string, string>> = {
   samus: 'A brainwashed Samus curls into a ball and bombs her way off into the caves.',
   simon:
     'A brainwashed Simon looks back, walks to the crypt gate and goes through. It slams shut behind him.',
+  sophia:
+    'A brainwashed Sophia the Third drives into a hatch in the ground. A frog dives after her, and the hatch slams shut.',
 };
 
 /** The heroes whose sighting line is written (the keys of SIGHTING_LINES). */
 export const SIGHTING_LINE_HEROES: readonly string[] = Object.keys(SIGHTING_LINES);
 
 /**
- * (0.4.52) A locked gate tried (5-1's crypt gate while Simon is captive: objects/keys.ts), once a
- * visit: the player's hero, `speaker`, says it is locked (option A, the owner's).
+ * (0.4.52) A locked gate tried (5-1's crypt gate while Simon is captive, and since 0.4.54 8-1's
+ * hatch while Sophia III is: objects/keys.ts), once a visit: the player's hero, `speaker`, says it
+ * is locked (option A, the owner's).
  */
 export function lockedGatePage(speaker: string): Page {
   return [`${speaker}:`, '', "IT'S LOCKED... THERE", 'MUST BE ANOTHER WAY IN!'];
@@ -1160,34 +1205,25 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
   },
-  // Fred the frog by 8-4-end's trap pipe (10): he can't talk, so his second page is a caption.
-  // Once Sophia III is freed he is gone (home with Jason).
-  fred: {
-    verb: 'TALK',
-    name: 'Fred the frog',
-    hero: 'sophia',
-    pages: [
-      ['FRED:', '', 'RIBBIT.'],
-      ['THE FROG LOOKS AT YOU,', 'THEN DOWN THE PIPE. THEN', 'AT YOU AGAIN.'],
-    ],
-  },
-  // Sophia III's pilot, in his secret area behind 8-4-end's trap pipe (8-4-jason): talking to him
-  // sends Fred into the pool (objects/fred.ts).
+  // (0.4.23 to 0.4.53: Fred the frog sat by 8-4-end's trap pipe as a partner. Since 0.4.54 he
+  // dives down 8-1's hatch after Sophia III in her sighting, and rests in her garage.)
+  // Sophia III's pilot (0.4.54, owner: option A), in 8-1's coin room (8-1-bonus) between the key
+  // box and the locked blast door: the hatch shut on his tank and his frog, and he lost the key.
+  // (He used to wait behind 8-4-end's trap pipe, 8-4-jason, retired; talking to him there still
+  // sends Fred into the pool, objects/fred.ts.)
   jason: {
     verb: 'TALK',
     name: 'Jason',
     hero: 'sophia',
     pages: [
-      ['JASON:', '', 'FRED! FRED, COME BACK!', '...OH, HI. HAVE YOU SEEN', 'A FROG? GREEN, THIS BIG?'],
       [
         'JASON:',
         '',
-        'HE JUMPED IN THE WATER AND',
-        'SWAM DOWN A CRACK. LAST',
-        'TIME HE DID THAT, I FOUND',
-        'A TANK.',
+        'FRED! SOPHIA! THE HATCH',
+        'SHUT ON THEM! THIS DOOR',
+        'GOES DOWN THERE TOO, BUT I',
+        'LOST THE KEY IN HERE.',
       ],
-      ['JASON:', '', "MY TANK, SOPHIA! SHE'S DOWN", 'THERE TOO. FOLLOW FRED,', "PLEASE. I CAN'T SWIM."],
     ],
     after: [['JASON:', '', "SOPHIA'S BACK, FRED'S BACK.", 'BEST DAY EVER! THANK YOU!']],
     own: [
@@ -1984,10 +2020,10 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       [
         'MUTANT:',
         '',
-        'THE BOY WITH THE FROG WENT',
-        "INTO THE KING'S OWN CASTLE.",
-        'HE LOST HIS TANK. PLEASE,',
-        'HELP HIM. GRBL.',
+        'THE TANK WENT DOWN THAT',
+        'HATCH, AND THE BOY WENT',
+        'DOWN A PIPE TO FIND ANOTHER',
+        'WAY. HELP HIM. GRBL.',
       ],
     ],
     after: [
@@ -2007,9 +2043,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'ENGINEER:',
         '',
         "THE KING'S SPELL TOOK THE",
-        'TANK, SOPHIA. HER PILOT',
-        "WENT INTO THE KING'S CASTLE",
-        'AFTER HIS FROG. HELP THEM!',
+        'TANK, SOPHIA. HER PILOT IS',
+        'BACK IN THE FOREST, DOWN A',
+        'PIPE. HELP THEM!',
       ],
     ],
     after: [
@@ -2044,10 +2080,10 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       [
         'ICE MINER:',
         '',
-        'SAW A BOY CHASE A FROG INTO',
-        "THE KING'S CASTLE. THE FROG",
-        'KNOWS A PIPE THE GUARDS',
-        "DON'T. PLEASE, FOLLOW IT!",
+        'SAW A FROG DIVE DOWN A',
+        'HATCH IN THE FOREST. THE',
+        'BOY WENT DOWN A PIPE TO',
+        'FOLLOW. PLEASE, HELP HIM!',
       ],
     ],
     after: [
@@ -2082,16 +2118,15 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'GUARD MUTANT:',
         '',
         'GRBL. I GUARD THIS HALL.',
-        "I'M BAD AT IT. A BOY AND HIS",
-        'FROG GOT RIGHT PAST ME.',
+        "I'M BAD AT IT. NOBODY GETS",
+        'PAST ME. ...EXCEPT YOU.',
       ],
       [
         'GUARD MUTANT:',
         '',
-        'THE FROG TOOK A PIPE NOBODY',
-        "USES, BY THE KING'S BRIDGE.",
-        'FOLLOW THE FROG. PLEASE.',
-        'THE BOY IS LOST.',
+        'THE BOY AND HIS TANK? NOT',
+        'IN HERE. THEY WENT DOWN A',
+        'HATCH IN THE FOREST. GRBL.',
       ],
     ],
     after: [

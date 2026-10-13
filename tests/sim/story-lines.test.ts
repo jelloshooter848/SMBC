@@ -15,6 +15,7 @@ import { loadSave } from '@game/save/save-files';
 import { beat } from '@game/story/beats';
 import { pageSaid } from '@game/story/cards';
 import { BowserSaysScene, BRIDGE_ROOM } from '@game/story/level-beats';
+import { finaleKingIsReal } from '@game/story/finale';
 import {
   ANCHOR_LARRY_PAGES,
   ANCHOR_LARRY_SAID,
@@ -267,25 +268,45 @@ describe('restyled levels: no remark any more (0.4.23, docs/STORY.md 2.14)', () 
 });
 
 describe('8-4’s bridge room: the real king (2.3a item 5)', () => {
-  it('campaign: Bowser speaks in the prompt box before the fight, once per file; BACK closes', () => {
+  // 0.4.54: the boast belongs to the real king's bridge room (story/finale.ts FINALE). While the
+  // last castle is still 8-4, whose king is a fake, it plays nowhere, and the file keeps its beat
+  // for Bowser's Castle (0.4.55 flips the switch, and the test below runs again there).
+  it.runIf(!finaleKingIsReal())('campaign 8-4 (a fake now): he says nothing, and the beat waits', () => {
     const h = campaign([], { character: LINK.id, freed: ['mario', 'link'] });
-    const room = start(h, BRIDGE_ROOM);
-    const box = h.top() as BowserSaysScene;
-    expect(box).toBeInstanceOf(BowserSaysScene);
-    expect(box.lines).toEqual(noMoreStandIns('LINK'));
-    expect(texts(h)).toEqual(expect.arrayContaining([...noMoreStandIns('LINK')]));
-    expect(h.said.at(-1)).toBe(
-      "BOWSER: NO MORE STAND-INS, LINK. THIS TIME IT'S REALLY ME! BWA HA HA! OK to continue.",
-    );
-    const frame = room.world.frame;
-    h.idle(CARD_GUARD_FRAMES);
-    expect(room.world.frame).toBe(frame);
-    h.tap('attack');
-    expect(h.top()).toBe(room);
-    expect(loadSave(1)?.story).toContain(beat.bowser84);
+    expect(BRIDGE_ROOM).toBe('8-4-end');
     start(h, BRIDGE_ROOM);
     expect(h.top()).toBeInstanceOf(LevelScene);
+    expect(h.said.join(' ')).not.toContain('NO MORE STAND-INS');
+    expect(loadSave(1)?.story ?? []).not.toContain(beat.bowser84);
+    expect(noMoreStandIns('LINK')).toEqual([
+      'BOWSER: NO MORE STAND-INS,',
+      "LINK. THIS TIME IT'S",
+      'REALLY ME! BWA HA HA!',
+    ]);
   });
+
+  it.runIf(finaleKingIsReal())(
+    'campaign: Bowser speaks in the prompt box before the fight, once per file; BACK closes',
+    () => {
+      const h = campaign([], { character: LINK.id, freed: ['mario', 'link'] });
+      const room = start(h, BRIDGE_ROOM);
+      const box = h.top() as BowserSaysScene;
+      expect(box).toBeInstanceOf(BowserSaysScene);
+      expect(box.lines).toEqual(noMoreStandIns('LINK'));
+      expect(texts(h)).toEqual(expect.arrayContaining([...noMoreStandIns('LINK')]));
+      expect(h.said.at(-1)).toBe(
+        "BOWSER: NO MORE STAND-INS, LINK. THIS TIME IT'S REALLY ME! BWA HA HA! OK to continue.",
+      );
+      const frame = room.world.frame;
+      h.idle(CARD_GUARD_FRAMES);
+      expect(room.world.frame).toBe(frame);
+      h.tap('attack');
+      expect(h.top()).toBe(room);
+      expect(loadSave(1)?.story).toContain(beat.bowser84);
+      start(h, BRIDGE_ROOM);
+      expect(h.top()).toBeInstanceOf(LevelScene);
+    },
+  );
 
   it('outside the campaign, and on a file that beat 8-4, he says nothing', () => {
     const h = makeGame();

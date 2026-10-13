@@ -79,7 +79,15 @@ import { Decoration } from '../entities/objects/decoration';
 import { drawThemeBackdrop } from './theme-backdrop';
 import { Lift } from '../entities/objects/lift';
 import { Candle, Respawner } from '../entities/objects/crypt';
-import { KEY_SAID, KeyBox, KeyItem, LockedDoor, LockedGate, type KeyThing } from '../entities/objects/keys';
+import {
+  KEY_SAID,
+  KeyBox,
+  KeyItem,
+  LockedDoor,
+  LockedGate,
+  LockedHatch,
+  type KeyThing,
+} from '../entities/objects/keys';
 import {
   TRICK_HOLD_FRAMES,
   TRICK_PUSH_FRAMES,
@@ -100,7 +108,8 @@ import { Gull, ShieldJoe, TellyPort, Telly, Yoku } from '../entities/enemies/wil
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
-import { CASTLE_PAGES, REMARK_CASTLES } from '../story/script';
+import { castlePages, REMARK_CASTLES } from '../story/script';
+import { FINALE } from '../story/finale';
 import { CastleUnmask, walkStep } from './unmask';
 import { BossBar } from './boss-bar';
 import { CostumePile } from '../entities/effects/costume-pile';
@@ -177,10 +186,10 @@ export type WorldEvent =
   | { type: 'item'; item: string; player: number }
   /**
    * (0.4.52, objects/keys.ts) A player came within reach of the key (`key`), a locked door (`door`),
-   * an open one (`open-door`), or a locked gate untried (`gate`) or tried this visit (`locked`):
-   * announced.
+   * an open one (`open-door`), or a locked gate (or, 0.4.54, 8-1's hatch) untried (`gate`,
+   * `hatch`) or tried this visit (`locked`): announced.
    */
-  | { type: 'key-near'; what: 'key' | 'door' | 'open-door' | 'gate' | 'locked'; player: number }
+  | { type: 'key-near'; what: 'key' | 'door' | 'open-door' | 'gate' | 'hatch' | 'locked'; player: number }
   /** (0.4.52) Player `player` tried hero `hero`'s locked gate (once a visit): its locked card. */
   | { type: 'gate'; hero: string; player: number };
 
@@ -967,7 +976,9 @@ export class World {
           : null;
       // Keys and locked doors (0.4.52, objects/keys.ts): the story's only (classic keeps the brick).
       case 'key-box':
-        return this.storyMode ? new KeyBox(s.x, s.y, String(s.props?.hero ?? '')) : null;
+        return this.storyMode
+          ? new KeyBox(s.x, s.y, String(s.props?.hero ?? ''), s.props?.out === 'down' ? 'down' : 'up')
+          : null;
       case 'locked-door': {
         if (!this.storyMode) return null;
         const hero = String(s.props?.hero ?? '');
@@ -976,12 +987,19 @@ export class World {
           typeof to === 'string' && to
             ? { level: to, x: Number(s.props?.tx ?? 0), y: Number(s.props?.ty ?? 0) }
             : null;
-        return new LockedDoor(s.x, s.y, hero, target, Boolean(this.captives?.isFreed(hero)));
+        const look = s.props?.look === 'vault' ? 'vault' : 'crypt';
+        return new LockedDoor(s.x, s.y, hero, target, Boolean(this.captives?.isFreed(hero)), look);
       }
       case 'locked-gate': {
         if (!this.storyMode) return null;
         const hero = String(s.props?.hero ?? '');
         return new LockedGate(s.x, s.y, hero, Boolean(this.captives?.isFreed(hero)));
+      }
+      // 0.4.54: 8-1's steel hatch by the start (Sophia III's hole), a locked gate laid flat.
+      case 'locked-hatch': {
+        if (!this.storyMode) return null;
+        const hero = String(s.props?.hero ?? '');
+        return new LockedHatch(s.x, s.y, hero, Boolean(this.captives?.isFreed(hero)));
       }
       case 'spring':
       case 'spring-green':
@@ -1699,6 +1717,11 @@ export class World {
 
   /* ---------- Keys and locked doors (0.4.52, objects/keys.ts) ---------- */
 
+  /** The key box laid at tile (tx, ty), if any. */
+  private keyBoxAt(tx: number, ty: number): KeyBox | undefined {
+    return this.entities.find((e): e is KeyBox => e instanceof KeyBox && e.tx === tx && e.ty === ty);
+  }
+
   /** Player `i` picks up the key: carried (the HUD's key icon) until a door uses it. */
   takeKey(key: KeyItem, i: number): void {
     key.destroy();
@@ -2182,8 +2205,9 @@ export class World {
         this.layPath(tx, ty);
         break;
       case 'key':
-        // A key box (0.4.52, objects/keys.ts): the key rises out; the box is spent.
-        this.spawn(new KeyItem(tx, ty));
+        // A key box (0.4.52, objects/keys.ts): the key rises out (or drops out below); the box
+        // is spent.
+        this.spawn(new KeyItem(tx, ty, this.keyBoxAt(tx, ty)?.out ?? 'up'));
         this.audio.sfx('powerup-appear');
         this.events.push({ type: 'say', text: KEY_SAID.popped });
         break;
@@ -3131,25 +3155,32 @@ export class World {
   private bossPlayer: Player | null = null;
 
   /**
-   * The castle whose fake gets the unmask scenes (docs/STORY.md 2.3a): the campaign's 1-4 to 7-4
-   * (its main level id), with the bridge's disguised Bowser `b`; null elsewhere (classic play, 8-4,
-   * the Lost Kingdom, which keep today's unmasking).
+   * The castle whose fake gets the unmask scenes (docs/STORY.md 2.3a): the campaign's 1-4 to 8-4
+   * (its main level id; 8-4 since 0.4.54), with the bridge's disguised Bowser `b`; null elsewhere
+   * (classic play, the real king's castle, the Lost Kingdom, which keep today's unmasking).
    */
   private unmaskCastle(b: Bowser): string | null {
     const id = this.level.parent ?? this.level.id;
-    if (!this.storyMode || b.fake || !REMARK_CASTLES.includes(id) || trueFormOf(this.state.world) === 0)
-      return null;
+    if (!this.storyMode || b.fake || !REMARK_CASTLES.includes(id) || this.trueForm() === 0) return null;
     return id;
   }
 
   /**
-   * The villain costume fake Bowser `b` wears (0.4.47, roadmap #31): the castle's world (2-7) in
-   * the campaign's castles 2-4 to 7-4 (those with the unmask scenes; World 1's fake wears the
-   * plain king suit), else 0.
+   * The true form under this castle's Bowser (Bowser trueFormOf): the campaign's fakes 1..8 (8:
+   * the campaign's 8-4, 0.4.54), else 0 (the real king; classic play, which has no fakes).
+   */
+  trueForm(): number {
+    return this.storyMode ? trueFormOf(this.state.world, this.level.parent ?? this.level.id) : 0;
+  }
+
+  /**
+   * The villain costume fake Bowser `b` wears (0.4.47, roadmap #31): the castle's world (2-8) in
+   * the campaign's castles 2-4 to 8-4 (those with the unmask scenes; World 1's fake wears the
+   * plain king suit; 8-4's, since 0.4.54, the Plutonium Boss), else 0.
    */
   costumeOf(b: Bowser): number {
-    const w = this.unmaskCastle(b) ? trueFormOf(this.state.world) : 0;
-    return w >= 2 && w <= 7 ? w : 0;
+    const w = this.unmaskCastle(b) ? this.trueForm() : 0;
+    return w >= 2 && w <= 8 ? w : 0;
   }
 
   /**
@@ -3221,11 +3252,12 @@ export class World {
   }
 
   /**
-   * Whether the axe here breaks the wand (docs/STORY.md 2.12): the campaign's SMB 8-4 only (its
-   * main level and its areas), never classic play and never the Lost Levels' 8-4.
+   * Whether the axe here breaks the wand (docs/STORY.md 2.12): the campaign's last castle only
+   * (story/finale.ts FINALE.castle: SMB 8-4 until Bowser's Castle comes; its main level and its
+   * areas), never classic play and never the Lost Levels' 8-4.
    */
   private get wandScene(): boolean {
-    return this.storyMode && (this.level.parent ?? this.level.id) === '8-4';
+    return this.storyMode && (this.level.parent ?? this.level.id) === FINALE.castle;
   }
 
   /**
@@ -3331,9 +3363,9 @@ export class World {
     // The campaign's castles (docs/STORY.md 2.4-2.12) tell their own news in two pages instead:
     // the fake Bowser's true form, then on OK the story, each read out; OK on the second exits.
     // The Lost castles keep the NES text (their story is Chapter 2).
-    const pages = this.storyMode ? CASTLE_PAGES[this.level.parent ?? this.level.id] : undefined;
+    const pages = this.storyMode ? castlePages(this.level.parent ?? this.level.id) : undefined;
     if (pages) {
-      const page = s === 120 ? pages.reveal : ok && c.page === 0 ? pages.news : null;
+      const page = s === 120 ? pages.reveal : ok && c.page === 0 ? (pages.news ?? null) : null;
       if (page) {
         c.page = page === pages.reveal ? 0 : 1;
         c.at = s;

@@ -11,7 +11,9 @@ import { drawSparkle, WAND_SPARKLE } from '@game/entities/effects/wand-poof';
 import { cardContinues, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import { NO_TOUCH_BUTTONS } from '@game/touch-labels';
 import { SIGHTING_SAID } from './script';
-import { drawGate } from '@game/entities/objects/keys';
+import { drawGate, drawHatch } from '@game/entities/objects/keys';
+import { clipped } from '@engine/gfx/renderer';
+import { SCREEN_W } from '@engine/viewport';
 import type { View } from '@game/entities/entity';
 import { BURST_LIFE, DUST_LIFE, type SightingDraw, type SightingScript } from './sightings';
 
@@ -123,6 +125,10 @@ export class HeroSightingScene implements Scene {
       drawGate(r, this.view(), d.x - camX, d.top, d.lift, true, d.swing);
       return;
     }
+    if (d.kind === 'hatch') {
+      drawHatch(r, this.view(), d.x - camX, d.top, d.open);
+      return;
+    }
     if (d.kind === 'dust') {
       // Two little grey puffs either side of the gate's foot, drifting out (no flash, no shake).
       if (d.age >= DUST_LIFE) return;
@@ -154,7 +160,10 @@ export class HeroSightingScene implements Scene {
     const h = sheet.frames.get(d.frame)?.h ?? 32;
     const x = d.x - camX;
     const y = d.feet - h;
-    r.sprite(sheet, d.frame, x, y, d.flip === true);
+    // Sinking into a shaft (8-1's hatch): nothing below its bottom, so the ground stays over it.
+    if (d.clipBelow !== undefined)
+      clipped(r, 0, 0, SCREEN_W, d.clipBelow, () => r.sprite(sheet, d.frame, x, y, d.flip === true));
+    else r.sprite(sheet, d.frame, x, y, d.flip === true);
     if (!d.sparkles) return;
     // A few wand sparkles drifting up off them (as Luigi in 1-1; one colour each with reduce flashing).
     for (let k = 0; k < 3; k++) {

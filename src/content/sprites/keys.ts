@@ -11,10 +11,27 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * - `portcullis` (16x32): 5-1's crypt gate, iron bars on its bottom row; raised, it is hidden in
  *   the wall above the doorway (`portcullis-<n>`: its bottom n rows, as it rises or drops).
  *
- * `keys` index roles: 0 outline, 1 gold, 2 dark gold, 3 highlight, 4 iron light, 5 iron dark.
+ * - `hatch-shut` / `hatch-open` (32x16, 0.4.54): 8-1's riveted steel blast hatch with hazard
+ *   stripes over Sophia III's hole, flush with the ground (entities/objects/keys.ts LockedHatch).
+ *   Shut it is solid ground (the map's own); open, only in her sighting, its plates slide into
+ *   the edges over a black shaft.
+ *
+ * `keys` index roles: 0 outline, 1 gold, 2 dark gold, 3 highlight, 4 iron light, 5 iron dark;
+ * (0.4.54, the hatch) 6 light steel, 7 steel, 8 dark steel, 9 hazard yellow.
  */
 export const keysPalettes: Record<string, string[]> = {
-  keys: ['#000000', '#f8b800', '#c86c00', '#fcfce0', '#a8a8b8', '#58586c'],
+  keys: [
+    '#000000',
+    '#f8b800',
+    '#c86c00',
+    '#fcfce0',
+    '#a8a8b8',
+    '#58586c',
+    '#d8dce4',
+    '#8890a0',
+    '#4c5464',
+    '#f8d000',
+  ],
 };
 
 const key = [
@@ -107,6 +124,48 @@ const raised: Record<string, string[]> = {};
 for (let n = PORTCULLIS_STEP; n < 32; n += PORTCULLIS_STEP)
   raised[`portcullis-${n}`] = portcullis.slice(32 - n);
 
+/** The drafted hatch's steel roles (1 light, 2 steel, 3 dark, 4 hazard yellow) moved to 6-9. */
+const steel = (rows: readonly string[]): string[] =>
+  rows.map((r) => r.replace(/[1-4]/g, (c) => String(Number(c) + 5)));
+
+const hatchShut = steel([
+  '00000000000000003000000000000000',
+  '01111111111111103111111111111110',
+  '04422244422244403244422244422240',
+  '04422244422244403244422244422240',
+  '02222222222222203222222222222220',
+  '02222222222222203222222222222220',
+  '02212222222212203221222222221220',
+  '02232222222232203223222222223220',
+  '02222222222222203222222222222220',
+  '03333333333333303333333333333330',
+  '02222222222222203222222222222220',
+  '02222222222222203222222222222220',
+  '02212222222212203221222222221220',
+  '02232222222232203223222222223220',
+  '03333333333333303333333333333330',
+  '00000000000000003000000000000000',
+]);
+
+const hatchOpen = steel([
+  '01100000000000000000000000000110',
+  '01100000000000000000000000000110',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+  '03300000000000000000000000000330',
+]);
+
 export const keysDef: SpriteDef = {
   palette: 'keys',
   frames: {
@@ -115,5 +174,7 @@ export const keysDef: SpriteDef = {
     padlock,
     portcullis,
     ...raised,
+    'hatch-shut': hatchShut,
+    'hatch-open': hatchOpen,
   },
 };

@@ -2,6 +2,7 @@ import { px, toPx, velToSub } from '@engine/math/units';
 import type { Renderer } from '@engine/gfx/renderer';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { TRUE_FORM_HEIGHT } from '@content/sprites/enemies';
+import { WORLD8_FAKE_CASTLES } from '../../story/finale';
 import type { Theme } from '../../level/schema';
 import { Enemy } from './enemy';
 import type { View } from '../entity';
@@ -54,11 +55,15 @@ const TELL_FRAMES = 12;
 
 /**
  * The fake king's true form in world `world` (1..7: `bowser-die-N`), or 0 for the king himself
- * (world 8, and the Lost Levels' later worlds, whose die frame is the king).
+ * (world 8, and the Lost Levels' later worlds, whose fall is `bowser-die-king`). In World 8 the
+ * castle decides (0.4.54): the campaign's 8-4 (`castle`, its main level id) is the eighth fake,
+ * form 8 (the Piranha Plant); Bowser's Castle, classic 8-4 (the caller passes 0 outside the
+ * story) and the Lost Levels' 8-4 keep the king.
  */
-export function trueFormOf(world: number): number {
+export function trueFormOf(world: number, castle = ''): number {
   const n = Math.min(8, Math.max(1, world | 0));
-  return n < 8 ? n : 0;
+  if (n < 8) return n;
+  return WORLD8_FAKE_CASTLES.includes(castle) ? 8 : 0;
 }
 
 /** BowserFireBall.as: SPEED = 160 px/s (1.33 px/f), always to the left. */
@@ -142,7 +147,7 @@ export class Bowser extends Enemy {
   private barSaid = -1;
   /**
    * The villain costume he wears over the disguise (0.4.47, #31): the castle's world (2-7) in the
-   * campaign's castles 2-4 to 7-4 (World.costumeOf), 0 for none or once it has dropped.
+   * campaign's castles 2-4 to 8-4 (World.costumeOf), 0 for none or once it has dropped.
    */
   costume = 0;
   private costumeSet = false;
@@ -239,10 +244,13 @@ export class Bowser extends Enemy {
     // His bar: a weapon's last hit empties it (it shows empty a moment); the axe takes it away.
     if (src.kind === 'axe') world.bossBar.end(this);
     else this.barHit(world, src, true);
-    // The campaign's castles 1-4 to 7-4: the disguise bursts and the creature drops onto the
+    // The campaign's castles 1-4 to 8-4: the disguise bursts and the creature drops onto the
     // bridge, dazed, while the hero jumps over it to the axe (world/unmask.ts).
     if (world.unmaskOnKill(this)) return;
-    const n = Math.min(8, Math.max(1, world.state.world | 0));
+    // Worlds 1-7 fall as their true form (classic play too: the original's die_N); World 8 as
+    // the king himself, except the campaign's 8-4 fake (0.4.54: its Piranha Plant).
+    const w = Math.min(8, Math.max(1, world.state.world | 0));
+    const n = w < 8 ? w : world.trueForm();
     this.unmask(world);
     const corpse = new Corpse(
       this.body.x,
@@ -250,8 +258,8 @@ export class Bowser extends Enemy {
       toPx(this.body.w),
       toPx(this.body.h),
       this.sheet,
-      n < 8 ? this.formPalette(world.level.theme) : this.corpsePalette(world.level.theme),
-      `bowser-die-${n}`,
+      n ? this.formPalette(world.level.theme) : this.corpsePalette(world.level.theme),
+      n ? `bowser-die-${n}` : 'bowser-die-king',
       0, // drops straight down
       false,
       this.spriteOffsetX,
@@ -295,7 +303,7 @@ export class Bowser extends Enemy {
    * nothing happens).
    */
   private unmask(world: World): number {
-    const n = world.storyMode ? trueFormOf(world.state.world) : 0;
+    const n = world.trueForm();
     if (!n) return 0;
     const b = this.body;
     // 0.4.47 (#31): his villain costume drops in a pile where he stood, behind the true form.
@@ -403,7 +411,7 @@ export class Bowser extends Enemy {
       return;
     }
     super.render(r, view);
-    // 0.4.47 (#31): the world's villain costume over him (castles 2-4 to 7-4), off while the tell
+    // 0.4.47 (#31): the world's villain costume over him (castles 2-4 to 8-4), off while the tell
     // shows the true form (above).
     if (this.costume) r.sprite(assets.sheet('costumes'), `costume-${this.costume}`, x, y, flip);
     // Reduce flashing: no flicker; the true form's bright outline held over him for the window.
@@ -460,7 +468,7 @@ export class Bowser extends Enemy {
 
   update(world: World): void {
     const b = this.body;
-    this.disguise = world.storyMode ? trueFormOf(world.state.world) : 0;
+    this.disguise = world.trueForm();
     // The villain costume he wears (0.4.47; worn until his disguise bursts, never once it has).
     if (!this.costumeSet) {
       this.costume = world.costumeOf(this);

@@ -148,11 +148,16 @@ describe('beaten with weapons (campaign castles 1-4 to 7-4)', () => {
     expect(world.entities.find((e): e is Corpse => e instanceof Corpse)?.frame).toBe('bowser-die-3');
   });
 
-  it("8-4's real king: no scene", () => {
-    const { world, b } = castle('world8/8-4-end.map', '8-4-end', true, 9);
-    kill(b, world);
-    expect(b.alive).toBe(false);
-    expect(world.unmask).toBeNull();
+  it("8-4 (0.4.54): a fake too, its Piranha Plant dazed on the bridge; classic 8-4's real king: no scene", () => {
+    const fake = castle('world8/8-4-end.map', '8-4-end', true, 9);
+    kill(fake.b, fake.world);
+    expect(fake.world.unmask?.kind).toBe('killed');
+    expect(fake.b.standing).toBe(8);
+    expect(fake.b.dazed).toBe(true);
+    const real = castle('world8/8-4-end.map', '8-4-end', false, 9);
+    kill(real.b, real.world);
+    expect(real.b.alive).toBe(false);
+    expect(real.world.unmask).toBeNull();
   });
 });
 

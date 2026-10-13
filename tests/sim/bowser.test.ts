@@ -316,7 +316,8 @@ describe('Bowser death', () => {
     });
     expect(corpses.length).toBe(1);
     const c = corpses[0] as Corpse;
-    expect(c.frame).toBe('bowser-die-8');
+    // 0.4.54: his own fall is `bowser-die-king` (`bowser-die-8` is the campaign 8-4 fake's form).
+    expect(c.frame).toBe('bowser-die-king');
     expect(c.palette).toBe('enemies-castle');
     expect(c.facing).toBe(1);
   });

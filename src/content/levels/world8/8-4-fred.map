@@ -11,6 +11,10 @@ startMode: fall
 camera: scroll
 parent: 8-4
 
+;; RETIRED in 0.4.54 (owner: Sophia III's garage has a new way in, from 8-1's coin room): only
+;; the retired 8-4-jason leads here, so it is reached only from the developer level select. Kept,
+;; with its id, for Fred's swim and its tests. Its pipe still comes up in the garage.
+;;
 ;; Fred's flooded tunnel under 8-4 (campaign only, docs/HEROES.md): dropped into from Jason's pool
 ;; (8-4-jason) through the hole in the roof at columns 3-6. It swims like 8-4's water (`swim: true`:
 ;; from the wave tiles' row down) in the Underworld's look. Fred swims on ahead, staying in front
@@ -46,7 +50,7 @@ fred 8 11 mode=swim to=35
 
 [zones]
 ;; Up into Sophia III's garage.
-pipe 36 12 right -> 8-4-garage 1 10 exit=up
+pipe 36 12 right -> 8-4-garage 2 0 exit=fall
 
 [decor]
 roots 16 3

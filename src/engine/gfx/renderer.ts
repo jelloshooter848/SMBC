@@ -29,6 +29,17 @@ export interface Renderer {
   /** Debug-only text using the canvas font (not pixel-perfect). */
   debugText(str: string, x: number, y: number, color?: string): void;
   line(x1: number, y1: number, x2: number, y2: number, color: string): void;
+  /**
+   * Optional (0.4.54): runs `draw`, clipped to the rectangle (x, y, w, h). A renderer without it
+   * (the null and recording ones) draws unclipped: callers use `clipped` below.
+   */
+  clip?(x: number, y: number, w: number, h: number, draw: () => void): void;
+}
+
+/** `draw` through `r`, clipped to (x, y, w, h) where `r` can clip (Renderer.clip), else plain. */
+export function clipped(r: Renderer, x: number, y: number, w: number, h: number, draw: () => void): void {
+  if (r.clip) r.clip(x, y, w, h, draw);
+  else draw();
 }
 
 /** Quarter turns clockwise (Renderer.sprite). */
@@ -83,6 +94,9 @@ export class OffsetRenderer implements Renderer {
   }
   line(x1: number, y1: number, x2: number, y2: number, color: string): void {
     this.inner.line(x1 + this.dx, y1 + this.dy, x2 + this.dx, y2 + this.dy, color);
+  }
+  clip(x: number, y: number, w: number, h: number, draw: () => void): void {
+    clipped(this.inner, x + this.dx, y + this.dy, w, h, draw);
   }
 }
 
@@ -160,6 +174,18 @@ export class CanvasRenderer implements Renderer {
     this.ctx.font = '8px monospace';
     this.ctx.fillStyle = color;
     this.ctx.fillText(str, x, y);
+  }
+  clip(x: number, y: number, w: number, h: number, draw: () => void): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x | 0, y | 0, w | 0, h | 0);
+    ctx.clip();
+    try {
+      draw();
+    } finally {
+      ctx.restore();
+    }
   }
   line(x1: number, y1: number, x2: number, y2: number, color: string): void {
     this.ctx.strokeStyle = color;

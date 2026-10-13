@@ -23,6 +23,7 @@ import {
 import { LuigiRunsScene } from './luigi-runs';
 import { sightingDue } from './sightings';
 import { HeroSightingScene } from './hero-sighting';
+import { FINALE, finaleKingIsReal } from './finale';
 
 /*
  * The story scenes that play inside a level, over its frozen world (campaign only, storyOn), each
@@ -35,15 +36,16 @@ import { HeroSightingScene } from './hero-sighting';
  *   every player stands on the start screen; then player 1's hero's card.
  * - Larry in his room (2.7): the first time the hero rises out of `4-2-larry`'s pipe in a run
  *   (AirshipRun.larrySpoke), not again on TRY AGAIN; a mandatory scene, so every run.
- * - Bowser in 8-4's bridge room (2.3a item 5): on first entering `8-4-end`, in the prompt box.
- *   Once per file (`beat.bowser84`).
+ * - Bowser in the last castle's bridge room (2.3a item 5): on first entering it, in the prompt
+ *   box. Once per file (`beat.bowser84`). Only where the real king waits (story/finale.ts): since
+ *   0.4.54 8-4's king is a fake, so until Bowser's Castle comes (0.4.55) he says nothing.
  */
 
 /** The level Luigi runs off in (his captive waits in its bonus room). */
 export const LUIGI_LEVEL = '1-1';
 
-/** 8-4's bridge room, where the real king waits. */
-export const BRIDGE_ROOM = '8-4-end';
+/** The last castle's bridge room (story/finale.ts FINALE.bridgeRoom), where the real king waits. */
+export const BRIDGE_ROOM = FINALE.bridgeRoom;
 
 /**
  * LevelScene.update, before the world moves: starts the story scene due in this level, if any
@@ -83,7 +85,7 @@ export function playLevelBeat(game: Game, scene: LevelScene): boolean {
     playStoryCards(game, scene.world, game.seen(beat.anchor42) ? LARRY_AGAIN_PAGES : LARRY_PAGES, resume);
     return true;
   }
-  if (level.id === BRIDGE_ROOM && !game.seen(beat.bowser84)) {
+  if (level.id === BRIDGE_ROOM && finaleKingIsReal() && !game.seen(beat.bowser84)) {
     game.markSeen(beat.bowser84);
     const hero = fontText(game.state.character.name);
     game.scenes.push(

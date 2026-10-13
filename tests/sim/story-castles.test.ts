@@ -19,7 +19,8 @@ import { WandPoof } from '@game/entities/effects/wand-poof';
 import { Toad } from '@game/entities/objects/toad';
 import { Princess } from '@game/entities/objects/princess';
 import { campaignLevel } from '@game/level/campaign';
-import { CASTLE_PAGES, STORY_NOT_OVER } from '@game/story/script';
+import { CASTLE_PAGES, castlePages, FINALE_PAGES, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
+import { FINALE } from '@game/story/finale';
 import { CREDITS, CREDITS_NAME, CreditsScene, creditsLines } from '@game/scenes/credits';
 import { Game } from '@game/scenes/game';
 import { LevelScene } from '@game/scenes/level';
@@ -137,20 +138,21 @@ describe('castle pages (campaign)', () => {
     expect(r.sfx).toContain('poof');
   });
 
-  it('8-4: "no trick this time", then the wand breaks; the real king falls without a poof', () => {
+  it('8-4 (0.4.54, still the last castle): its fake poofs into the Piranha Plant; Toad never calls it the real king, the wand page only', () => {
     const level = load('world8/8-4-end.map', '8-4-end');
     const r = clearCastle(level, true);
-    const page = CASTLE_PAGES['8-4'];
-    if (!page) throw new Error('no 8-4 page');
-    expect(r.texts).toEqual([
-      ['THANK YOU MARIO!'],
-      ['THANK YOU MARIO!', '', ...page.reveal],
-      ['THANK YOU MARIO!', '', ...page.news],
-    ]);
+    expect(FINALE.castle).toBe('8-4');
+    expect(castlePages('8-4')).toEqual({ reveal: FINALE_PAGES.news });
+    expect(r.texts).toEqual([['THANK YOU MARIO!'], ['THANK YOU MARIO!', '', ...FINALE_PAGES.news]]);
+    expect(r.texts.flat().join(' ')).not.toContain('REAL KING');
     expect(r.texts.flat()).not.toContain('YOUR QUEST IS OVER.');
-    expect(r.unmasked).toBeNull();
-    expect(r.poofs).toBe(0);
-    expect(r.sfx).not.toContain('poof');
+    expect(r.said).toEqual([
+      WAND_BREAK_SAID,
+      ['THANK YOU MARIO!', ...FINALE_PAGES.news, 'OK to continue.'].join(' '),
+    ]);
+    expect(r.unmasked).toBe('bowser-die-8');
+    expect(r.poofs).toBeGreaterThan(0);
+    expect(r.sfx).toContain('poof');
   });
 
   it('page 1 shows 1.5 s after the thanks; page 2 and the exit each wait for OK', () => {
@@ -252,9 +254,9 @@ describe('the fake Bowsers unmask (campaign)', () => {
     expect(r.sfx).not.toContain('poof');
   });
 
-  it("8-4's real king never poofs", () => {
-    const r = fireballs(load('world8/8-4-end.map', '8-4-end'), true);
-    expect(r.corpse?.frame).toBe('bowser-die-8');
+  it("classic 8-4's real king never poofs, and falls as himself", () => {
+    const r = fireballs(load('world8/8-4-end.map', '8-4-end'), false);
+    expect(r.corpse?.frame).toBe('bowser-die-king');
     expect(r.poof).toBe(false);
     expect(r.sfx).not.toContain('poof');
   });
@@ -295,9 +297,10 @@ describe('the tell', () => {
     expect(r.shown).toBeLessThan(30);
   });
 
-  it('never in classic play, never for the real king', () => {
+  it("never in classic play (8-4's real king included); the campaign's 8-4 fake has it (0.4.54)", () => {
     expect(tells(load('world1/1-4.map', '1-4'), false).shown).toBe(0);
-    expect(tells(load('world8/8-4-end.map', '8-4-end'), true).shown).toBe(0);
+    expect(tells(load('world8/8-4-end.map', '8-4-end'), false).shown).toBe(0);
+    expect(tells(load('world8/8-4-end.map', '8-4-end'), true).shown).toBeGreaterThan(0);
   });
 
   /** What Bowser draws, frame by frame: `name@sheet` per sprite (the sheet id carries its palette). */
@@ -385,9 +388,9 @@ describe('the tell', () => {
     expect(c).not.toBe('#000000');
   });
 
-  it('the real 8-4 king never shows it', () => {
+  it('the real 8-4 king (classic) never shows it', () => {
     for (const rf of [true, false])
-      for (const f of drawnFrames('8-4', true, rf)) expect(f.draws.every(king)).toBe(true);
+      for (const f of drawnFrames('8-4', false, rf)) expect(f.draws.every(king)).toBe(true);
   });
 
   it('classic: only the king is drawn', () => {

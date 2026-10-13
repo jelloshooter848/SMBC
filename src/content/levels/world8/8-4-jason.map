@@ -10,6 +10,11 @@ startMode: pipe-exit
 camera: locked
 parent: 8-4
 
+;; RETIRED in 0.4.54 (owner: Sophia III's garage has a new way in, from 8-1's coin room): no level
+;; leads here any more (8-4-end's trap pipe is the original's again in the campaign too), so it is
+;; reached only from the developer level select. Kept, with its id, for Fred's dive and its tests
+;; (tests/sim/sophia-routes.test.ts). Jason waits in 8-1-bonus now.
+;;
 ;; Jason's secret area under 8-4 (campaign only, docs/HEROES.md): one locked screen of the
 ;; Underworld. In the campaign 8-4-end's trap pipe (column 10) brings the hero up out of the pipe
 ;; at the left. Jason, Sophia III's pilot (a story partner), is calling his frog Fred, who sits on

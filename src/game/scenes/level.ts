@@ -97,7 +97,7 @@ export function levelMusic(level: LevelData, hero: Pick<CharacterDef, 'music'>):
  */
 export function keyNearSaid(
   game: Game,
-  what: 'key' | 'door' | 'open-door' | 'gate' | 'locked',
+  what: 'key' | 'door' | 'open-door' | 'gate' | 'hatch' | 'locked',
   player: number,
   coop: boolean,
 ): string {
@@ -112,6 +112,8 @@ export function keyNearSaid(
       return `${who}An open door. Press ${abilityHint(game, 'UP', 'up', player)} to go in.`;
     case 'gate':
       return `${who}A locked gate. Press ${press('OPEN')} to try it.`;
+    case 'hatch':
+      return `${who}A locked hatch. Press ${press('OPEN')} to try it.`;
     case 'locked':
       return `${who}${KEY_SAID.locked}`;
   }

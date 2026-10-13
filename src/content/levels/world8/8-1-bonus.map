@@ -14,6 +14,13 @@ parent: 8-1
 ;; (`bm-vault`, the underground still): the overhead dungeon's steel plates, grilles and riveted
 ;; blocks before a wall of panels and a vent grille, to the dungeon's tune. Elsewhere (level
 ;; select, ?level=8-1) it looks as it always did.
+;;
+;; Campaign only (0.4.54, docs/STORY.md "Sophia III's way in"): the real way down to Sophia III's
+;; garage. The 10-coin brick (12,9) is a key box: bumped from the floor below (three tiles up, a
+;; plain jump for every hero) the key drops out of its underside to the floor. Carried to the
+;; locked blast door (4, rows 11-12) it opens the door by itself; UP goes down into the garage.
+;; Jason, who lost the key, stands between. Once Sophia III is freed the door stands open and the
+;; brick keeps its coins. Elsewhere the room is as it always was.
 campaignTheme: bm-vault
 campaignMusic: bm-dungeon
 
@@ -34,6 +41,11 @@ campaignMusic: bm-dungeon
 =..$$$$$$$$$.<>>
 ################
 ################
+
+[entities]
+key-box 12 9 hero=sophia out=down campaign=true
+locked-door 4 11 hero=sophia to=8-4-garage tx=2 ty=0 look=vault campaign=true
+partner 8 12 who=jason campaign=true
 
 [zones]
 pipe 13 12 right -> 8-1 115 10 exit=up

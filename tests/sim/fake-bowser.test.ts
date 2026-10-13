@@ -40,10 +40,13 @@ const WEAPON: Readonly<Record<string, DamageKind>> = {
 type Way = 'weapon' | 'fire' | 'axe' | 'fall';
 const WAYS: readonly Way[] = ['weapon', 'fire', 'axe', 'fall'];
 
+/** The castle's bridge room, where a castle's main level is not it (8-4's is 8-4-end). */
+const BRIDGE: Readonly<Record<string, string>> = { '8-4': '8-4-end' };
+
 function castle(id: string, heroId: string) {
   const hero = CHARACTERS.find((c) => c.id === heroId);
   if (!hero) throw new Error(heroId);
-  const level: LevelData = heroVariant(campaignLevel(getLevel(id)), [heroId], true);
+  const level: LevelData = heroVariant(campaignLevel(getLevel(BRIDGE[id] ?? id)), [heroId], true);
   const axe = level.entities.find((e) => e.type === 'axe') as { x: number; y: number };
   const state = newGameState(hero);
   state.world = level.world;
@@ -131,7 +134,8 @@ function play(id: string, heroId: string, way: Way) {
 }
 
 describe('a fake Bowser dies: every way, every hero, every castle with a fake', () => {
-  expect(REMARK_CASTLES).toEqual(['1-4', '2-4', '3-4', '4-4', '5-4', '6-4', '7-4']);
+  // 0.4.54: 8-4's fake (the Plutonium Boss costume over a Piranha Plant) too.
+  expect(REMARK_CASTLES).toEqual(['1-4', '2-4', '3-4', '4-4', '5-4', '6-4', '7-4', '8-4']);
   for (const id of REMARK_CASTLES)
     for (const way of WAYS)
       it(`${id}, ${way}: every hero says the line, stands on the floor, and walks to Toad`, () => {
