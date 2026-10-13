@@ -4313,9 +4313,17 @@ MUTANT: ONE PIRANHA PLANT.
 REAL TARGET: DEAD AHEAD.
 ```
 
-Toad's pages at 8-4 follow the finale switch (2.12): while 8-4 is still the last castle (0.4.54) Toad shows only
-the wand's page under the thanks (he never calls this fake the real king); from 0.4.55 the real king's pages move to
-Bowser's Castle.
+Toad's page at 8-4 (NEW, 0.4.55, CD53's draft): 8-4 is an ordinary fake castle since the ending moved to Bowser's
+Castle (2.12), so Toad gives one page under the thanks, then it is back to the map, where World 8's road on leads
+to the VALLEY OF BOWSER. (In 0.4.54, while 8-4 was still the last castle, he showed only the wand's page.)
+
+```text
+THANK YOU <HERO>!
+
+A PIRANHA PLANT! THE KING
+IS OUT OF STAND-INS NOW.
+HIS CASTLE IS JUST AHEAD!
+```
 
 **Sophia III, captive:** KEEP (the shared first card, then the brainwashing speaking through her computer):
 
@@ -4328,8 +4336,8 @@ WHEEL. <HERO>...
 CLIMB IN. BLAST IT OUT!
 ```
 
-**Sophia III, freed.** NEW. Her computer finds her pilot, then a tear in space under the castle that the wand holds
-shut, and a land beyond it with no Koopas at all (which Toad puts together with the note at the rift).
+**Sophia III, freed.** NEW. Her computer finds her pilot, then a tear in space under the king's own castle
+(Bowser's Castle, reworded in 0.4.55) that the wand holds shut, and a land beyond it with no Koopas at all (which Toad puts together with the note at the rift).
 
 ```text
 SOPHIA III:
@@ -4349,8 +4357,8 @@ YOU... THANKS, <HERO>.
 SOPHIA III:
 
 ALERT. SCAN SHOWS A TEAR
-IN SPACE UNDER THIS
-CASTLE. THE KING'S WAND IS
+IN SPACE UNDER THE KING'S
+OWN CASTLE. HIS WAND IS
 HOLDING IT SHUT.
 ```
 

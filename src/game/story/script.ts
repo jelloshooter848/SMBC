@@ -128,7 +128,7 @@ export interface CastlePages {
  * first page carries what Toad's old map card said.) The last castle's are FINALE_PAGES
  * (castlePages).
  */
-export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>> = {
+export const CASTLE_PAGES: Readonly<Record<string, CastlePages>> = {
   '1-4': {
     reveal: ['THAT GOOMBA WAS UNDER A', 'SPELL! THE KING DRESSED', 'IT UP AS HIMSELF.'],
     news: ['THE REAL KING HIDES BEHIND', 'STAND-INS. HE FLED EAST,', 'WAND AND ALL.'],
@@ -161,6 +161,11 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
   '7-4': {
     reveal: ['A HAMMER BRO UNDER THE', 'SPELL. THAT WAS HIS LAST', 'STAND-IN!'],
     news: ['THE KOOPAS ARE ALL RUNNING', 'HOME. THE KING CALLED THEM', 'BACK TO GUARD HIS CASTLE.'],
+  },
+  // 0.4.55 (CD53's draft, costume-8.md; new text for the owner): 8-4's fake, the Piranha Plant;
+  // one page, then back to the map. The real king and the wand's pages are Bowser's Castle's.
+  '8-4': {
+    reveal: ['A PIRANHA PLANT! THE KING', 'IS OUT OF STAND-INS NOW.', 'HIS CASTLE IS JUST AHEAD!'],
   },
 };
 
@@ -2261,8 +2266,8 @@ export const FREED_TALKS: Readonly<Record<string, (you: string) => Page[]>> = {
       'SOPHIA III:',
       '',
       'ALERT. SCAN SHOWS A TEAR',
-      'IN SPACE UNDER THIS',
-      "CASTLE. THE KING'S WAND IS",
+      "IN SPACE UNDER THE KING'S",
+      'OWN CASTLE. HIS WAND IS',
       'HOLDING IT SHUT.',
     ],
     ['SOPHIA III:', '', 'BEYOND IT: A LAND NO MAP', 'SHOWS. NO KOOPA SIGNALS', 'THERE. NONE.'],

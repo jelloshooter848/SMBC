@@ -120,7 +120,7 @@ describe('castle pages (campaign)', () => {
     expect(r.placed).toBe(true);
     const page = CASTLE_PAGES[id];
     expect(page).toBeDefined();
-    if (!page) return;
+    if (!page?.news) return;
     expect(r.texts).toEqual([
       ['THANK YOU MARIO!'],
       ['THANK YOU MARIO!', '', ...page.reveal],
@@ -179,7 +179,7 @@ describe('castle pages (campaign)', () => {
       const n = world.castleText.length;
       if (n === 1 && at.thanks === undefined) at.thanks = f;
       if (world.castleText[2] === CASTLE_PAGES['1-4']?.reveal[0] && at.p1 === undefined) at.p1 = f;
-      if (world.castleText[2] === CASTLE_PAGES['1-4']?.news[0] && at.p2 === undefined) at.p2 = f;
+      if (world.castleText[2] === CASTLE_PAGES['1-4']?.news?.[0] && at.p2 === undefined) at.p2 = f;
     }
     expect((at.p1 as number) - (at.thanks as number)).toBe(90);
     expect((at.p2 as number) - (at.p1 as number)).toBe(1000);
@@ -189,7 +189,7 @@ describe('castle pages (campaign)', () => {
   it('every page fits the castle box', () => {
     for (const { reveal, news } of Object.values(CASTLE_PAGES)) {
       expect(reveal.length).toBeLessThanOrEqual(4);
-      expect(news.length).toBeLessThanOrEqual(4);
+      expect((news ?? []).length).toBeLessThanOrEqual(4);
     }
   });
 });

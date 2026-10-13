@@ -228,7 +228,7 @@ describe('castle pages wait for a key per page, then exit', () => {
     c.run(1, ['jump']);
     c.run(1);
     c.run(LONG);
-    expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', ...page.news]);
+    expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', ...(page.news ?? [])]);
     expect(c.exited()).toBe(false);
     c.run(1, ['jump']);
     expect(c.exited()).toBe(true);
@@ -254,7 +254,7 @@ describe('castle pages wait for a key per page, then exit', () => {
     expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', ...page.reveal]);
     c.run(1, [], ['jump']);
     c.run(LONG);
-    expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', ...page.news]);
+    expect(c.world.castleText).toEqual(['THANK YOU MARIO!', '', ...(page.news ?? [])]);
     c.run(1, [], ['attack']);
     expect(c.exited()).toBe(true);
   });

@@ -129,7 +129,7 @@ function scriptPages(): Map<string, Page> {
   // The castle's page 1 shows under the thanks, as the doc writes it.
   for (const [id, c] of Object.entries(CASTLE_PAGES)) {
     add(`CASTLE_PAGES.${id}.reveal`, [`THANK YOU ${HERO}!`, '', ...c.reveal]);
-    add(`CASTLE_PAGES.${id}.news`, c.news);
+    if (c.news) add(`CASTLE_PAGES.${id}.news`, c.news);
   }
   // The last castle's (story/finale.ts; 8-4's until 0.4.55, its wand page only while its king is a fake).
   add('FINALE_PAGES.reveal', [`THANK YOU ${HERO}!`, '', ...FINALE_PAGES.reveal]);
