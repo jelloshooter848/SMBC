@@ -5,6 +5,7 @@ import type { TouchLabels } from '@engine/input/touch';
 import { clamp, px } from '@engine/math/units';
 import { fxPalette } from '@content/sprites/palette-fx';
 import type { Game } from '@game/scenes/game';
+import type { LevelScene } from '@game/scenes/level';
 import type { World } from '@game/world/world';
 import { drawSparkle, WAND_SPARKLE } from '@game/entities/effects/wand-poof';
 import { cardContinues, CARD_GUARD_FRAMES } from '@game/scenes/message';
@@ -14,9 +15,10 @@ import { BURST_LIFE, type SightingDraw, type SightingScript } from './sightings'
 
 /*
  * A hero sighting (story/sightings.ts) over the frozen level, as Luigi's run in 1-1: nothing in
- * the level moves and the clock holds. The script's frames are drawn over it (the hero in the
- * captive palette with wand sparkles drifting off them, and any scene-only props: a vine, a puff
- * of sparkles), its sounds play, and its camera pan runs. No text of its own: the announcer says
+ * the level moves and the clock holds. The script's frames are drawn in the level, over its world
+ * and under its HUD (LevelScene.underHud: the hero in the captive palette with wand sparkles
+ * drifting off them, and any scene-only props: a vine, a puff of sparkles), its sounds play, and
+ * its camera pan runs. No text of its own: the announcer says
  * what happens as it starts. When it ends, or on a press of JUMP, ATTACK or MENU after the card
  * guard (SKIP on touch), the camera is put back exactly and `next` shows the card.
  */
@@ -27,15 +29,17 @@ export class HeroSightingScene implements Scene {
   /** The camera as the scene found it (subpixels), put back before the card. */
   private readonly camX: number;
   private readonly camY: number;
+  private readonly world: World;
 
   constructor(
     private readonly game: Game,
-    private readonly world: World,
+    private readonly level: LevelScene,
     readonly script: SightingScript,
     private readonly next: () => void,
   ) {
-    this.camX = world.camera.x;
-    this.camY = world.camera.y;
+    this.world = level.world;
+    this.camX = this.world.camera.x;
+    this.camY = this.world.camera.y;
   }
 
   /** Frames played so far. */
@@ -44,6 +48,7 @@ export class HeroSightingScene implements Scene {
   }
 
   enter(): void {
+    this.level.underHud = (r) => this.drawFrame(r);
     const said = SIGHTING_SAID[this.script.hero];
     if (said) this.game.deps.announcer?.say(said);
   }
@@ -75,12 +80,18 @@ export class HeroSightingScene implements Scene {
 
   private finish(): void {
     this.done = true;
+    this.level.underHud = null;
     this.world.camera.x = this.camX;
     this.world.camera.y = this.camY;
     this.next();
   }
 
-  render(r: Renderer): void {
+  /** Nothing of its own: the frame is drawn in the level beneath, under its HUD (drawFrame). */
+  render(): void {}
+
+  /** The script's frame now, over the level's world (LevelScene.underHud while the scene runs). */
+  drawFrame(r: Renderer): void {
+    if (this.done) return;
     const reduce = this.game.ctx.reduceFlashing;
     const camX = this.world.camera.pxX;
     for (const d of this.script.draw(this.t, reduce)) this.drawOne(r, d, camX, reduce);

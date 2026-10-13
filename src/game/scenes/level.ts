@@ -94,6 +94,12 @@ export class LevelScene implements Scene {
   private roundOver = false;
   /** Back from scenes pushed over the level: the press that closed them must not jump. */
   private swallowJump = false;
+  /**
+   * Drawn over the world and under the HUD while set, as the level's own sprites are: a story
+   * scene's scene-only sprites and props (0.4.51, story/hero-sighting.ts), so a vine or a beam
+   * that goes up off the screen passes behind the HUD.
+   */
+  underHud: ((r: Renderer) => void) | null = null;
   /** The stage tutorial played here (1-0 and its pipe room), else null. */
   readonly tutorial: TutorialDirector | null;
   /** The one-time pickup and item explainers (0.4.46, campaign only). */
@@ -558,6 +564,7 @@ export class LevelScene implements Scene {
       return;
     }
     this.world.render(r);
+    this.underHud?.(r);
     drawHud(r, this.game.ctx.assets, this.game.state, time, this.world.frame, this.world.players, {
       covered: (x, y, w, h) => this.world.spriteIn(x, y, w, h),
       // A fill-up spot (the Top Secret Area) shows its name instead of WORLD and TIME.

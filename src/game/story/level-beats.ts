@@ -69,7 +69,7 @@ export function playLevelBeat(game: Game, scene: LevelScene): boolean {
     game.markSeen(beat.sighting(sighting.hero));
     const speaker = fontText(game.state.character.name);
     game.scenes.push(
-      new HeroSightingScene(game, scene.world, sighting, () => {
+      new HeroSightingScene(game, scene, sighting, () => {
         game.scenes.pop();
         playStoryCards(game, scene.world, [sightingPage(sighting.hero, speaker)], resume);
       }),

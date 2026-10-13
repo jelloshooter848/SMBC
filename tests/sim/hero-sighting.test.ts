@@ -92,6 +92,9 @@ function closeCard(h: H, key: 'jump' | 'attack' = 'jump', player = 0): void {
   expect(h.top()).toBeInstanceOf(LevelScene);
 }
 
+/** The scene's frame, as the level draws it under its HUD. */
+const frameOf = (s: HeroSightingScene) => ({ render: (r: Renderer) => s.drawFrame(r) });
+
 /** Every sprite and rect a scene draws, with each rect's colour. */
 function drawAll(scene: { render(r: Renderer): void }) {
   const rects: { x: number; y: number; c: string }[] = [];
@@ -122,8 +125,13 @@ describe.each([
     expect(h.game.seen(beat.sighting(id))).toBe(true);
     expect(loadSave(1)?.story).toContain(beat.sighting(id));
     const before = snapshot(l);
-    const first = draw(h.top() as HeroSightingScene).sprites.find((s) => s.key.endsWith(`${id}~brainwashed`));
+    const first = draw(frameOf(h.top() as HeroSightingScene)).sprites.find((s) =>
+      s.key.endsWith(`${id}~brainwashed`),
+    );
     expect(first).toBeDefined();
+    // Drawn by the level itself, over its world and under its HUD (a vine or beam passes behind it).
+    expect(draw(h.top() as HeroSightingScene).sprites).toEqual([]);
+    expect(draw(l).sprites.some((sp) => sp.key.endsWith(`${id}~brainwashed`))).toBe(true);
     // Ahead of the player, on the start screen.
     expect(first!.x).toBeGreaterThan(l.world.player.body.x / 256 + 64);
     expect(first!.x).toBeLessThan(256);
@@ -131,6 +139,8 @@ describe.each([
     const page = sightingPage(id, speaker);
     expect((h.top() as CardScene).lines).toEqual(page);
     expect(page[0]).toBe(`${speaker}:`);
+    expect(l.underHud).toBeNull();
+    expect(draw(l).sprites.some((sp) => sp.key.includes('~brainwashed'))).toBe(false);
     expect(h.said).toContain(pageSaid(page, true));
     // The card waits for a press, never a timer.
     h.idle(600);
@@ -328,7 +338,7 @@ describe('what each sighting shows', () => {
     const colours = (n: number) => {
       const seen: string[][] = [];
       for (let i = 0; i < n; i++) {
-        seen.push(drawAll(s).rects.map((r) => r.c));
+        seen.push(drawAll(frameOf(s)).rects.map((r) => r.c));
         h.step();
       }
       return seen;
@@ -363,7 +373,7 @@ describe('a sighting’s camera pan (scene support for later sightings)', () => 
     expect(h.top()).toBe(l);
     const next = vi.fn(() => h.game.scenes.pop());
     const before = snapshot(l);
-    h.game.scenes.push(new HeroSightingScene(h.game, l.world, PAN, next));
+    h.game.scenes.push(new HeroSightingScene(h.game, l, PAN, next));
     return { h, l, next, before };
   }
 
