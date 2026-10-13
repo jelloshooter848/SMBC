@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { PALETTES, SPRITES } from '@content/sprites';
+import { KEEP_EARTH_TONES, PALETTES, SPRITES } from '@content/sprites';
 import { AssetRegistry } from '@engine/assets/registry';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { heroSide } from '@game/map/captives';
 import { drawnFromAbove, exitId, newMapProgress, nextStep, pathId, type Dir } from '@game/map/rules';
 import { localSpot } from '@game/map/world-gate';
-import type { MapNode, WorldMapPage } from '@game/map/types';
+import type { MapNode, WorldExit, WorldMapPage } from '@game/map/types';
 import { CAMPAIGN_PAGES, mapPage, MAP_PAGES, pageLook } from './index';
 import {
   aboveLook,
@@ -28,14 +28,20 @@ import { WORLD_6 } from './world6';
 import { WORLD_6_GALESBURG } from './world6-galesburg';
 import { WORLD_7 } from './world7';
 import { WORLD_7_GALUGA } from './world7-galuga';
+import { WORLD_8 } from './world8';
+import { SKETCH_8_UNDERWORLD, underworldPage, WORLD_8_UNDERWORLD } from './world8-underworld';
+import { VALLEY_OF_BOWSER } from './valley-of-bowser';
 
 /*
  * Worlds 2 and 3 from above (0.4.50, campaign play): HYRULE and MEGA CITY are looks of the
  * registered World 2 and 3, so saves, save codes, reveals, the bonus spots and the gates read them
  * exactly as WORLD_2 and WORLD_3. Worlds 4 and 5 (0.4.52): PLANET ZEBES and TRANSYLVANIA the same
  * way, World 4's roads in the campaign order (map/campaign-order.ts). Worlds 6 and 7 (0.4.53):
- * GALESBURG and GALUGA ISLAND, both in the campaign order. pages.test.ts runs every page rule on
- * them too; tests/sim/above-maps.test.ts, above-maps-w45.test.ts and above-maps-w67.test.ts play them.
+ * GALESBURG and GALUGA ISLAND, both in the campaign order. World 8 (0.4.54): THE UNDERWORLD, its
+ * road on leading to the VALLEY OF BOWSER once that page is live, on to Lost World 1 until then
+ * (both are checked here), and the Valley itself. pages.test.ts runs every page rule on them too;
+ * tests/sim/above-maps.test.ts, above-maps-w45.test.ts, above-maps-w67.test.ts, above-maps-w8.test.ts
+ * and valley-of-bowser.test.ts play them.
  */
 
 const assets = new AssetRegistry(PALETTES);
@@ -57,12 +63,24 @@ class Recorder implements Renderer {
 
 const dirs: Dir[] = ['up', 'right', 'down', 'left'];
 
+/** The pages a step may lead to: the registry's, with World 8's road to the Valley as once it is live. */
+const AIM_PAGES: WorldMapPage[] = [
+  ...MAP_PAGES.filter((p) => p.id !== 'smb-8'),
+  underworldPage(true),
+  VALLEY_OF_BOWSER,
+];
+
 interface Case {
   page: WorldMapPage;
-  classic: WorldMapPage;
+  /** The registered page it is the campaign look of (none: the Valley, and World 8 once it is live). */
+  classic?: WorldMapPage;
+  /** Its title, when the campaign gives it another (World 8: THE UNDERWORLD). */
+  title?: string;
   sheet: string;
-  /** The node whose captive hero stands beside it, and the side. */
-  captive: [string, 1 | -1];
+  /** The node whose captive hero stands beside it, and the side (none on the Valley). */
+  captive?: [string, 1 | -1];
+  /** The node kinds it has markers for (default: start, level, castle and bonus). */
+  kinds?: MapNode['kind'][];
   /** Props a road may cross (it rides over them). */
   bridges: readonly string[];
   /** Every node's UP, RIGHT, DOWN, LEFT with every road open and the bonus spot found. */
@@ -188,10 +206,62 @@ const CASES: [string, Case][] = [
       roads: ['start>7-3', '7-3>7-1', '7-1>7-2', '7-2>7-4', '7-2>bonus-7'],
     },
   ],
+  [
+    'World 8, The Underworld (the Valley not live)',
+    {
+      // As it ships until the Valley is live (the switch's other side is the next case).
+      page: underworldPage(false),
+      classic: WORLD_8,
+      title: 'THE UNDERWORLD',
+      sheet: 'underworld-above',
+      captive: ['8-1', -1], // Sophia west of 8-1 (her garage is reached from 8-1), at 1,6, over the hole
+      bridges: [],
+      aim: {
+        start: ['8-1', '8-1', null, 'smb-7'],
+        '8-1': [null, '8-2', 'start', null],
+        '8-2': ['8-3', 'bonus-8', 'bonus-8', '8-1'],
+        '8-3': [null, '8-4', '8-2', null],
+        // Until the Valley is live, the road on climbs the east steps to Lost World 1's row.
+        '8-4': ['8-3', 'll-1', null, '8-3'],
+        'bonus-8': ['8-2', null, null, '8-2'],
+      },
+    },
+  ],
+  [
+    'World 8, The Underworld (the Valley live)',
+    {
+      page: underworldPage(true),
+      sheet: 'underworld-above',
+      captive: ['8-1', -1],
+      bridges: [],
+      aim: {
+        start: ['8-1', '8-1', null, 'smb-7'],
+        '8-1': [null, '8-2', 'start', null],
+        '8-2': ['8-3', 'bonus-8', 'bonus-8', '8-1'],
+        '8-3': [null, '8-4', '8-2', null],
+        // Once it is live, east on row 10 to the VALLEY OF BOWSER.
+        '8-4': ['8-3', 'valley-of-bowser', null, '8-3'],
+        'bonus-8': ['8-2', null, null, '8-2'],
+      },
+    },
+  ],
+  [
+    'the Valley of Bowser',
+    {
+      page: VALLEY_OF_BOWSER,
+      sheet: 'valley-above',
+      kinds: ['start', 'castle'],
+      bridges: [],
+      aim: {
+        start: [null, 'bowsers-castle', null, 'smb-8'],
+        'bowsers-castle': [null, 'll-1', 'start', 'start'],
+      },
+    },
+  ],
 ];
 
 describe('campaign looks from above', () => {
-  it('are Worlds 1 to 7’s, only in campaign play: the registry keeps the classic pages', () => {
+  it('are Worlds 1 to 8’s, only in campaign play: the registry keeps the classic pages', () => {
     expect(CAMPAIGN_PAGES).toEqual([
       WORLD_1_KINGDOM,
       WORLD_2_HYRULE,
@@ -200,6 +270,7 @@ describe('campaign looks from above', () => {
       WORLD_5_TRANSYLVANIA,
       WORLD_6_GALESBURG,
       WORLD_7_GALUGA,
+      WORLD_8_UNDERWORLD,
     ]);
     for (const p of CAMPAIGN_PAGES) {
       expect(MAP_PAGES).not.toContain(p);
@@ -225,23 +296,28 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
   };
   const roads = [...page.paths, ...page.exits].flatMap((p) => p.points);
 
-  it('keeps the classic page’s id, theme, nodes (every field but the tile), roads and exit', () => {
-    expect(page.id).toBe(classic.id);
-    expect(look.sheet).toBe(c.sheet);
-    for (const k of ['label', 'title', 'music', 'group', 'theme'] as const) expect(page[k]).toBe(classic[k]);
-    const strip = ({ shown: _s, ...n }: MapNode) => ({ ...n, x: 0, y: 0 });
-    expect(page.nodes.map(strip)).toEqual(classic.nodes.map(strip));
-    expect(page.paths.map(pathId)).toEqual(c.roads ?? classic.paths.map(pathId));
-    expect(page.paths.map((p) => p.exit)).toEqual(classic.paths.map((p) => p.exit));
-    expect(page.exits.map(exitId)).toEqual(classic.exits.map(exitId));
-    expect(page.exits.map(({ points: _p, ...e }) => e)).toEqual(
-      classic.exits.map(({ points: _p, ...e }) => e),
-    );
-    // The start and the exit stay on their rows, so the slides to the next and last pages line up.
-    const start = (p: WorldMapPage) => p.nodes.find((n) => n.kind === 'start');
-    expect([start(page)?.x, start(page)?.y]).toEqual([start(classic)?.x, start(classic)?.y]);
-    expect(page.exits[0]?.points.at(-1)).toEqual(classic.exits[0]?.points.at(-1));
-  });
+  it.runIf(classic)(
+    'keeps the classic page’s id, theme, nodes (every field but the tile), roads and exit',
+    () => {
+      if (!classic) return;
+      expect(page.id).toBe(classic.id);
+      expect(look.sheet).toBe(c.sheet);
+      for (const k of ['label', 'music', 'group', 'theme'] as const) expect(page[k]).toBe(classic[k]);
+      expect(page.title).toBe(c.title ?? classic.title);
+      const strip = ({ shown: _s, ...n }: MapNode) => ({ ...n, x: 0, y: 0 });
+      expect(page.nodes.map(strip)).toEqual(classic.nodes.map(strip));
+      expect(page.paths.map(pathId)).toEqual(c.roads ?? classic.paths.map(pathId));
+      expect(page.paths.map((p) => p.exit)).toEqual(classic.paths.map((p) => p.exit));
+      expect(page.exits.map(exitId)).toEqual(classic.exits.map(exitId));
+      expect(page.exits.map(({ points: _p, ...e }) => e)).toEqual(
+        classic.exits.map(({ points: _p, ...e }) => e),
+      );
+      // The start and the exit stay on their rows, so the slides to the next and last pages line up.
+      const start = (p: WorldMapPage) => p.nodes.find((n) => n.kind === 'start');
+      expect([start(page)?.x, start(page)?.y]).toEqual([start(classic)?.x, start(classic)?.y]);
+      expect(page.exits[0]?.points.at(-1)).toEqual(classic.exits[0]?.points.at(-1));
+    },
+  );
 
   it('has a frame for every ground tile, road join, landmark and node marker', () => {
     for (const f of [...g.frames[0], ...g.frames[1], ...g.scenery.map((s) => s.frame)])
@@ -249,7 +325,7 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
     expect(new Set(look.roads).size).toBe(16);
     for (const f of look.roads) expect(sheet.frames.has(f), f).toBe(true);
     for (const p of page.props ?? []) expect(sheet.frames.has(p.frame), p.frame).toBe(true);
-    const kinds: MapNode['kind'][] = ['start', 'level', 'castle', 'bonus'];
+    const kinds: MapNode['kind'][] = c.kinds ?? ['start', 'level', 'castle', 'bonus'];
     const seen = new Set<string>();
     for (const kind of kinds)
       for (const cleared of [false, true])
@@ -260,18 +336,20 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
           seen.add(f as string);
         }
     // The bonus spot (open and used) and the castle (open and cleared) each have their own marker.
-    expect(look.node('bonus', { cleared: false, secret: false, warpOpen: false })).not.toBe(
-      look.node('bonus', { cleared: true, secret: false, warpOpen: false }),
-    );
+    if (kinds.includes('bonus'))
+      expect(look.node('bonus', { cleared: false, secret: false, warpOpen: false })).not.toBe(
+        look.node('bonus', { cleared: true, secret: false, warpOpen: false }),
+      );
     expect(look.node('castle', { cleared: false, secret: false, warpOpen: false })).not.toBe(
       look.node('castle', { cleared: true, secret: false, warpOpen: false }),
     );
-    expect(seen.size).toBeGreaterThanOrEqual(8);
+    // Every kind its own marker (the Valley: its start, and its castle's gate, open and cleared).
+    expect(seen.size).toBeGreaterThanOrEqual(c.kinds ? 3 : 8);
     // The water ripples in two frames; nothing else on the ground moves.
     const moving = g.frames[0].filter((f, i) => f !== g.frames[1][i]);
     expect(moving.length).toBeGreaterThan(0);
     expect(
-      moving.every((f) => /^(water|sea|magma|z4-w|tv5-w|canal|river|falls)/.test(f)),
+      moving.every((f) => /^(water|sea|magma|z4-w|tv5-w|canal|river|falls|lake|pool)/.test(f)),
       moving.join(),
     ).toBe(true);
   });
@@ -286,9 +364,9 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
   });
 
   it('keeps its landmarks inside the page and off every node, road, the captive hero and the local', () => {
-    const [heroAt, side] = c.captive;
-    const hero = page.nodes.find((n) => n.id === heroAt) as MapNode;
-    expect(heroSide(page, hero)).toBe(side);
+    const [heroAt, side] = c.captive ?? ['', 1];
+    const hero = page.nodes.find((n) => n.id === heroAt);
+    if (hero) expect(heroSide(page, hero)).toBe(side);
     const local = localSpot(page);
     for (const p of page.props ?? []) {
       const f = sheet.frames.get(p.frame);
@@ -308,12 +386,13 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
             false,
           );
       // The captive hero's silhouette and trophy stand beside its node (captives.ts).
-      const hx = (hero.x + side) * 16;
-      for (let dy = -8; dy < 16; dy++)
+      const hx = ((hero?.x ?? -9) + side) * 16;
+      for (let dy = -8; dy < 16 && hero; dy++)
         for (let dx = 0; dx < 16; dx++)
-          expect(paints(p.frame, p.x, p.y, hx + dx, hero.y * 16 + dy), `${p.frame} over the hero`).toBe(
-            false,
-          );
+          expect(
+            paints(p.frame, p.x, p.y, hx + dx, (hero?.y ?? 0) * 16 + dy),
+            `${p.frame} over the hero`,
+          ).toBe(false);
       if (local)
         for (let dy = 0; dy < 20; dy++)
           for (let dx = 0; dx < 16; dx++)
@@ -379,17 +458,19 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
   it('walks a road with any key that clearly points to where it leads', () => {
     const p = newMapProgress();
     p.secrets.push(...page.nodes.filter((n) => n.kind === 'bonus').map((n) => n.unlock ?? n.id));
+    // The page itself open (the Valley is registered only once live; unlock all opens registered pages).
+    p.pages.push(page.id);
     const to = (from: string, d: Dir) => {
-      const s = nextStep(page, p, from, d, MAP_PAGES, true);
+      const s = nextStep(page, p, from, d, AIM_PAGES, true);
       return s ? (s.kind === 'node' ? s.to : s.kind === 'exit' ? s.exit.to : s.page) : null;
     };
     expect(Object.fromEntries(page.nodes.map((n) => [n.id, dirs.map((d) => to(n.id, d))]))).toEqual(c.aim);
     // Every road walks both ways by some key, along its own tiles.
     for (const road of page.paths) {
-      const there = dirs.map((d) => nextStep(page, p, road.from, d, MAP_PAGES, true));
+      const there = dirs.map((d) => nextStep(page, p, road.from, d, AIM_PAGES, true));
       const step = there.find((s) => s?.kind === 'node' && s.to === road.to);
       expect(step?.points, pathId(road)).toEqual(road.points);
-      const back = dirs.map((d) => nextStep(page, p, road.to, d, MAP_PAGES, true));
+      const back = dirs.map((d) => nextStep(page, p, road.to, d, AIM_PAGES, true));
       expect(
         back.some((s) => s?.kind === 'node' && s.to === road.from),
         pathId(road),
@@ -551,30 +632,172 @@ describe.each([
   });
 });
 
-describe('Galesburg and Galuga Island in the colour-blind modes', () => {
-  const ROLES = '0123456789abcdefghijklmnopqrstuvwxyz';
-  const roles = (sheet: string, mode: 'default' | 'deuteranopia' | 'protanopia', rs: string) =>
-    [...rs].map((r) => PALETTES[mode]?.[sheet]?.[ROLES.indexOf(r)]);
+describe('World 8, THE UNDERWORLD: no castle on the map, 8-4 the last node, the road on behind one switch', () => {
+  const look = aboveLook(WORLD_8_UNDERWORLD);
+  if (!look) throw new Error('not drawn from above');
+  const s = (cleared: boolean): AboveNodeState => ({ cleared, secret: false, warpOpen: false });
+  const node = (p: WorldMapPage, id: string) => p.nodes.find((n) => n.id === id) as MapNode;
 
-  it('keeps their earth tones (brick, wood, roads’ rims, golden rock, trunks) put: no red shift turns them pink', () => {
-    for (const mode of ['deuteranopia', 'protanopia'] as const) {
-      expect(roles('galesburg-above', mode, '4dhij'), mode).toEqual(
-        roles('galesburg-above', 'default', '4dhij'),
-      );
-      expect(roles('galuga-above', mode, '04dhi'), mode).toEqual(roles('galuga-above', 'default', '04dhi'));
+  it('is titled THE UNDERWORLD in campaign play only; classic keeps BOWSER’S UNDERWORLD', () => {
+    expect(WORLD_8_UNDERWORLD.title).toBe('THE UNDERWORLD');
+    expect(WORLD_8.title).toBe("BOWSER'S UNDERWORLD");
+    expect(mapPage('smb-8')).toBe(WORLD_8);
+    expect(pageLook(WORLD_8, true)).toBe(WORLD_8_UNDERWORLD);
+    // The theme stays the tank game's (its actors' looks), the song World 8's.
+    expect([WORLD_8_UNDERWORLD.theme, WORLD_8_UNDERWORLD.music]).toEqual([WORLD_8.theme, WORLD_8.music]);
+  });
+
+  it('draws no Bowser’s Castle: 8-4 is the plutonium fortress, the bonus spot a dungeon hatch', () => {
+    const frames = SPRITES['underworld-above']?.frames ?? {};
+    expect(Object.keys(frames).some((f) => /bowser/.test(f))).toBe(false);
+    expect(WORLD_8_UNDERWORLD.props?.some((p) => /castle|bowser/.test(p.frame))).toBe(false);
+    expect([look.node('castle', s(false)), look.node('castle', s(true))]).toEqual([
+      'fortress',
+      'fortress-cleared',
+    ]);
+    expect([look.node('bonus', s(false)), look.node('bonus', s(true))]).toEqual(['bonus', 'bonus-used']);
+    expect(frames.fortress).not.toEqual(frames['fortress-cleared']);
+    // 8-4 is the last node: only the road on leaves it.
+    expect(WORLD_8_UNDERWORLD.paths.filter((p) => p.from === '8-4')).toEqual([]);
+    expect(WORLD_8_UNDERWORLD.exits.map((e) => e.from)).toEqual(['8-4']);
+  });
+
+  it('keeps World 8’s play order, road ids and Sophia’s gate on the road on', () => {
+    expect(WORLD_8_UNDERWORLD.paths.map(pathId)).toEqual(WORLD_8.paths.map(pathId));
+    for (const valley of [false, true]) {
+      const e = underworldPage(valley).exits[0];
+      expect(e).toMatchObject({ from: '8-4', side: 'right', gate: 'sophia' });
+      expect(e?.requires).toBeUndefined();
     }
   });
 
-  it('still shifts their true reds (an open level’s space, the lacquer, the lair, the warning lights)', () => {
+  it('until the Valley is live, leads on to Lost World 1 on its start row (5), up the east steps', () => {
+    const e = underworldPage(false).exits[0];
+    const lost = mapPage('ll-1') as WorldMapPage;
+    expect(e?.to).toBe('ll-1');
+    expect(e?.points.at(-1)).toEqual([15, node(lost, 'start').y]);
+    expect(e?.points).toContainEqual([13, 7]);
+    expect(SKETCH_8_UNDERWORLD[7]?.[13]).toBe('G');
+  });
+
+  it('once the Valley is live, leads east on row 10 to its start, as every world’s road does', () => {
+    const e = underworldPage(true).exits[0];
+    expect(e?.to).toBe('valley-of-bowser');
+    expect(exitId(e as WorldExit)).toBe('8-4>valley-of-bowser');
+    expect(e?.points).toEqual([
+      [11, 10],
+      [12, 10],
+      [13, 10],
+      [14, 10],
+      [15, 10],
+    ]);
+    expect(node(VALLEY_OF_BOWSER, 'start')).toMatchObject({ x: 0, y: 10 });
+    // Nodes, roads and everything else are the same page either way.
+    const { exits: _a, ...on } = underworldPage(true);
+    const { exits: _b, ...off } = underworldPage(false);
+    expect(on).toEqual(off);
+  });
+
+  it('keeps Sophia’s mark west of 8-1 (her garage is reached from 8-1), on no road, over the hole', () => {
+    const n = node(WORLD_8_UNDERWORLD, '8-1');
+    expect(heroSide(WORLD_8_UNDERWORLD, n)).toBe(-1);
+    for (const valley of [false, true]) {
+      const page = underworldPage(valley);
+      const roads = [...page.paths, ...page.exits].flatMap((p) => p.points.map(([x, y]) => key(x, y)));
+      expect(roads).not.toContain(key(n.x - 1, n.y));
+    }
+  });
+});
+
+describe('the VALLEY OF BOWSER page', () => {
+  const look = aboveLook(VALLEY_OF_BOWSER);
+  if (!look) throw new Error('not drawn from above');
+  const s = (cleared: boolean): AboveNodeState => ({ cleared, secret: false, warpOpen: false });
+  const castle = VALLEY_OF_BOWSER.nodes.find((n) => n.id === 'bowsers-castle') as MapNode;
+
+  it('is its own page in its own group, with its own song: not a ninth SMB world', () => {
+    expect(VALLEY_OF_BOWSER).toMatchObject({
+      id: 'valley-of-bowser',
+      group: 'valley',
+      title: 'VALLEY OF BOWSER',
+      music: 'map-valley',
+      above: 'valley',
+    });
+    expect(VALLEY_OF_BOWSER.nodes.map((n) => [n.id, n.kind])).toEqual([
+      ['start', 'start'],
+      ['bowsers-castle', 'castle'],
+    ]);
+  });
+
+  it('names its castle BOWSER’S CASTLE, its level 8-5 inside only', () => {
+    expect(castle).toMatchObject({ level: '8-5', name: "BOWSER'S CASTLE" });
+    expect(castle.shown).toBeUndefined();
+    expect([look.node('castle', s(false)), look.node('castle', s(true))]).toEqual([
+      'castle-gate',
+      'castle-gate-cleared',
+    ]);
+    const frames = SPRITES['valley-above']?.frames ?? {};
+    expect(frames['castle-gate']).not.toEqual(frames['castle-gate-cleared']);
+    expect(VALLEY_OF_BOWSER.props?.some((p) => p.frame === 'bowser-castle')).toBe(true);
+  });
+
+  it('leads on to Lost World 1 from the castle, on its start row, once cleared or on a beaten file', () => {
+    expect(VALLEY_OF_BOWSER.exits).toHaveLength(1);
+    const e = VALLEY_OF_BOWSER.exits[0];
+    expect(e).toMatchObject({
+      from: 'bowsers-castle',
+      to: 'll-1',
+      side: 'right',
+      opens: 'castle-or-gameCleared',
+    });
+    expect(e?.gate).toBeUndefined();
+    const lost = mapPage('ll-1') as WorldMapPage;
+    expect(e?.points.at(-1)).toEqual([15, lost.nodes.find((n) => n.kind === 'start')?.y]);
+  });
+});
+
+describe('the colour-blind modes keep the maps’ earth tones put (0.4.53, 0.4.54)', () => {
+  const ROLES = '0123456789abcdefghijklmnopqrstuvwxyz';
+  const roles = (sheet: string, mode: 'default' | 'deuteranopia' | 'protanopia', rs: string) =>
+    [...rs].map((r) => PALETTES[mode]?.[sheet]?.[ROLES.indexOf(r)]);
+  // Sheet, the earth tones kept (by palette role), and true reds that still shift.
+  const SHEETS: [string, string, string][] = [
+    ['galesburg-above', '4dhij', 'pqrn'],
+    ['galuga-above', '04dhi', 'pqrt'],
+    // Brinstar's orange rock; Norfair's red rock and the lava (an open level's space) still shift.
+    ['zebes-above', '567', '89ano'],
+    // The cave rock, the cobbles, the wood; the magenta brick and the drapes (an open level's space).
+    ['transylvania-above', 'ijklmrs', '9abtu'],
+    // The cave dirt, the red rock, the gnarled wood; the plutonium's glow and the warning red.
+    ['underworld-above', '123789d', 'ptu'],
+    // The windows' and braziers' amber glow; the lava (an open level's space) and the king's banners.
+    ['valley-above', 'o', 'pqru'],
+  ];
+
+  it('as KEEP_EARTH_TONES lists them, Worlds 4-8 and the Valley among them', () => {
+    expect(Object.fromEntries(SHEETS.map(([sheet, keep]) => [sheet, keep]))).toEqual(KEEP_EARTH_TONES);
+  });
+
+  it.each(SHEETS)('%s: its browns stay put, no red shift turns them pink', (sheet, keep) => {
     for (const mode of ['deuteranopia', 'protanopia'] as const)
-      for (const [sheet, rs] of [
-        ['galesburg-above', 'pqrn'],
-        ['galuga-above', 'pqrt'],
-      ] as const) {
-        const shifted = roles(sheet, mode, rs);
-        roles(sheet, 'default', rs).forEach((c, i) =>
-          expect(shifted[i], `${mode} ${sheet} ${rs[i]}`).not.toBe(c),
-        );
-      }
+      expect(roles(sheet, mode, keep), mode).toEqual(roles(sheet, 'default', keep));
+  });
+
+  it.each(SHEETS)('%s: its true reds still shift', (sheet, _keep, reds) => {
+    for (const mode of ['deuteranopia', 'protanopia'] as const) {
+      const shifted = roles(sheet, mode, reds);
+      roles(sheet, 'default', reds).forEach((c, i) => expect(shifted[i], `${mode} ${reds[i]}`).not.toBe(c));
+    }
+  });
+
+  it('the Underworld’s and the Valley’s tan roads and the Valley’s grey-blue rock never shift anyway', () => {
+    for (const mode of ['deuteranopia', 'protanopia'] as const) {
+      expect(roles('underworld-above', mode, '456'), mode).toEqual(
+        roles('underworld-above', 'default', '456'),
+      );
+      expect(roles('valley-above', mode, '456789abc'), mode).toEqual(
+        roles('valley-above', 'default', '456789abc'),
+      );
+    }
   });
 });

@@ -225,7 +225,9 @@ describe('the welcomes (0.4.23)', () => {
   const OPEN_GROUND = /^map-[a-z]+:(ground|tuft|flowers-\d|drift|shore-[ns]-\d)$/;
   // Worlds 4 and 5 from above (0.4.52) paint their regions whole: a land tile is '<prefix>-g<n>'.
   // Worlds 6 and 7 (0.4.53): Galesburg's paving (a drain cover now and then), Galuga's jungle floor.
-  const OPEN_GROUND_ABOVE = /^((grass|pavement|pave|floor)-\d|pave-drain|(z4|tv5)-g\d+)$/;
+  // World 8 (0.4.54): the Underworld's cave dirt by the lake, the rim of the ledge above it here and there.
+  const OPEN_GROUND_ABOVE =
+    /^((grass|pavement|pave|floor)-\d|pave-drain|(z4|tv5)-g\d+|dirt-\d(-drop-[nesw-]{4})?)$/;
   it.each([2, 3, 4, 5, 6, 7, 8])('World %i: the local is clear of every hero on the start node', (n) => {
     for (const c of CHARACTERS) {
       const h = open({
@@ -253,7 +255,7 @@ describe('the welcomes (0.4.23)', () => {
           s.key === look.sheet &&
           s.x % 16 === 0 &&
           s.y % 16 === 0 &&
-          /^(grass|pavement|flowers|rock|sand|woods|cliff|ledge|band|accent|water|sea|magma|z4-|tv5-|pave|lawn|snow|gravel|floor|canal|river|falls|stairs)/.test(
+          /^(grass|pavement|flowers|rock|sand|woods|cliff|ledge|band|accent|water|sea|magma|z4-|tv5-|pave|lawn|snow|gravel|floor|canal|river|falls|stairs|dirt|lake)/.test(
             s.frame,
           ) &&
           ground0?.[(s.y / 16) * 16 + s.x / 16] !== undefined);

@@ -109,6 +109,9 @@ const SONG_IDS = [
   'map-ninja',
   'map-contra',
   'map-blaster',
+  // Bowser's own map song for the VALLEY OF BOWSER page (and his bridge fight) (0.4.54).
+  'map-valley',
+  'bowser-king',
 ];
 
 const SFX_IDS = [
