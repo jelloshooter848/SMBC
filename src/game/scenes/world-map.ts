@@ -307,6 +307,22 @@ const EMPTY_PAGE: WorldMapPage = {
   actors: [],
 };
 
+/** The edge between a page drawn from above and one drawn side-on, sliding: its shade each side. */
+const SEAM_SHADES: readonly (readonly [number, number, string])[] = [
+  [-4, 3, 'rgba(0,0,0,0.18)'],
+  [-1, 2, 'rgba(0,0,0,0.55)'],
+  [1, 3, 'rgba(0,0,0,0.3)'],
+  [4, 3, 'rgba(0,0,0,0.12)'],
+];
+
+/**
+ * The seam where a top-down page (World 1 in the campaign) meets a side-on one in a slide, at
+ * screen x `x`: a soft shadow, so the change of view reads as turning to the next page of the map.
+ */
+function drawPageSeam(r: Renderer, x: number): void {
+  for (const [dx, w, c] of SEAM_SHADES) r.rect(x + dx, MAP_HEADER_H, w, 240 - MAP_HEADER_H, c);
+}
+
 /** Dot centres along a tile path: every tile centre and half way between. */
 function pathDots(points: [number, number][], skipFirst: boolean, skipLast: boolean): number[] {
   const out: number[] = [];
@@ -1597,6 +1613,8 @@ export class WorldMapScene implements Scene {
       r.clear(mapSky(s.from));
       this.drawPage(r, s.from, -off, false);
       this.drawPage(r, this.page, s.dir * 256 - off, false);
+      // From above to side-on (World 1 in the campaign and World 2): the seam is a page's edge.
+      if (isKingdomPage(s.from) !== isKingdomPage(this.page)) drawPageSeam(r, s.dir > 0 ? 256 - off : -off);
     } else if (this.fade) {
       // First half: the page left darkens to black; second half: the new page comes up.
       const half = MAP_FADE_FRAMES / 2;
