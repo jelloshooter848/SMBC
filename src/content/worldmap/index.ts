@@ -11,6 +11,8 @@ import { HUB_PAGE } from './hub';
 import { LOST_PAGES } from './lost';
 import { ARENA_PAGE } from './arena';
 import { WORLD_1_KINGDOM } from './world1-kingdom';
+import { WORLD_2_HYRULE } from './world2-hyrule';
+import { WORLD_3_MEGACITY } from './world3-megacity';
 
 /*
  * The page registry (docs/WORLD_MAP.md). The eight themed SMB pages ('smb-1'..'smb-8'): every
@@ -57,11 +59,14 @@ export function levelPage(levelId: string): WorldMapPage | undefined {
 }
 
 /**
- * Pages drawn differently in campaign play (0.4.48: World 1 top-down, world1-kingdom.ts), by id.
- * Each keeps its registered page's id, node ids, kinds and order, road ids and exits, so the rules,
- * saves and save codes read it exactly as the registered one.
+ * Pages drawn differently in campaign play, by id: drawn from above, World 1 since 0.4.48
+ * (world1-kingdom.ts), Worlds 2 and 3 since 0.4.50 (world2-hyrule.ts, world3-megacity.ts). Each
+ * keeps its registered page's id, node ids, kinds and order, road ids and exits, so the rules, saves
+ * and save codes read it exactly as the registered one.
  */
-const CAMPAIGN_LOOKS: Readonly<Record<PageId, WorldMapPage>> = { [WORLD_1_KINGDOM.id]: WORLD_1_KINGDOM };
+const CAMPAIGN_LOOKS: Readonly<Record<PageId, WorldMapPage>> = Object.fromEntries(
+  [WORLD_1_KINGDOM, WORLD_2_HYRULE, WORLD_3_MEGACITY].map((p) => [p.id, p]),
+);
 
 /** The campaign looks (each also registered under its id in MAP_PAGES, as classic play shows it). */
 export const CAMPAIGN_PAGES: readonly WorldMapPage[] = Object.values(CAMPAIGN_LOOKS);

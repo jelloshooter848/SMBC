@@ -3,7 +3,7 @@ import { beat } from '../story/beats';
 import { gateScript, RIFT_SEALED_PAGES, WELCOMES, welcomeHint, type Page } from '../story/script';
 import { exitId, isOpen, revealId, sealStands } from './rules';
 import type { ToadScene } from './toad-guide';
-import type { MapNode, MapProgress, WorldExit, WorldMapPage } from './types';
+import type { AboveLookId, MapNode, MapProgress, WorldExit, WorldMapPage } from './types';
 
 /*
  * The world gates and the welcomes on the world map (docs/STORY.md 2.3b, 2.12; campaign only, the
@@ -143,6 +143,13 @@ export function localNode(progress: MapProgress, page: WorldMapPage): MapNode | 
 const LOCAL_COLUMN: Readonly<Record<string, number>> = { 'smb-3': 2 };
 
 /**
+ * Pixels a local stands lower than the default on a page drawn from above with this look (0.4.50,
+ * campaign play): on Mega City, Roll's head clears the walkway's rim over her. Classic pages keep
+ * the default.
+ */
+const LOCAL_DROP: Readonly<Partial<Record<AboveLookId, number>>> = { megacity: 1 };
+
+/**
  * Where page `page`'s local is drawn (its 16x20 sprite's top-left, px), or null without one:
  * beside the start node, down and to the right, its head just under the road on (every start
  * node is at the page's left edge, its road leaving to the right). That keeps it in full view of
@@ -153,7 +160,10 @@ export function localSpot(page: WorldMapPage): { x: number; y: number } | null {
   if (!welcomeOf(page.id)) return null;
   const start = page.nodes.find((n) => n.kind === 'start');
   if (!start) return null;
-  return { x: (start.x + (LOCAL_COLUMN[page.id] ?? 1)) * 16, y: start.y * 16 + 12 };
+  return {
+    x: (start.x + (LOCAL_COLUMN[page.id] ?? 1)) * 16,
+    y: start.y * 16 + 12 + (page.above ? (LOCAL_DROP[page.above] ?? 0) : 0),
+  };
 }
 
 /** The hint line on a start node with a local ('TALK TO THE HEALER'), or ''. */
