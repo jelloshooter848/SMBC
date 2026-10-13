@@ -42,6 +42,8 @@ export const HUNTER_PROFILE: MovementProfile = {
   variableJump: false,
   canRun: false,
   coyoteFrames: 0,
+  // Castlevania's own Simon has no double jump (0.4.46: the campaign's has the Crossover's).
+  airJumps: 0,
 };
 
 /** Whether Simon is in a knockback's arc (no control until he lands). */

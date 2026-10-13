@@ -58,6 +58,12 @@ export interface ProjectileSpec {
   blocks?: boolean;
   /** Ignores tiles while still being a player shot that stops on enemies. */
   piercesTiles?: boolean;
+  /**
+   * Flying through tiles, it bumps the blocks it crosses, each once, as its owner's head would
+   * (0.4.46, owner #23): 'all' every ? block and brick (Mega Man's campaign charge shot), 'question'
+   * only ? blocks (Simon's campaign axe). Its centre decides which tile it is crossing.
+   */
+  bumpsBlocks?: 'all' | 'question';
   /** Snakes up and down around its launch height (px amplitude, frames per cycle). */
   wave?: { amplitude: number; period: number };
   /** An arcing projectile leaves this behind where it lands (holy water's flame). */
@@ -123,6 +129,17 @@ export const CHARGED_BUSTER: ProjectileSpec = {
   h: 14,
   frames: ['charge-shot-0', 'charge-shot-1'],
   frameRate: 4,
+};
+
+/**
+ * The campaign's full charge shot (0.4.46, owner #23): the same blast, flying through solid tiles
+ * (blocks, pipes, walls) and bumping every ? block and brick it crosses, once each. Classic play
+ * keeps CHARGED_BUSTER (the original's: a wall stops it).
+ */
+export const PIERCING_CHARGED_BUSTER: ProjectileSpec = {
+  ...CHARGED_BUSTER,
+  piercesTiles: true,
+  bumpsBlocks: 'all',
 };
 
 export const SWORD_BEAM: ProjectileSpec = {
@@ -194,6 +211,8 @@ export class Projectile extends Entity {
   age = 0;
   /** Enemies already hit (piercing shots hit each enemy once). */
   readonly hitIds = new Set<number>();
+  /** Blocks a block-bumping shot has bumped ("x,y"), each once (ProjectileSpec.bumpsBlocks). */
+  readonly bumped = new Set<string>();
   /** Orbiting projectiles stay with the owner until thrown. */
   thrown = false;
   /** Boomerang on its way back. */
@@ -309,6 +328,7 @@ export class Projectile extends Entity {
       }
       if (this.spec.breaksBricks && this.spec.piercesTiles && (this.age & 3) === 0)
         world.breakAt(b.x + (b.w >> 1), b.y + (b.h >> 1), this.owner);
+      if (this.spec.bumpsBlocks && world.pierceBlocks(this)) return this.burst(world);
       if (this.spec.fetches) world.boomerangFetch(this);
     }
     // Off the right or left of the camera: gone.

@@ -5,7 +5,7 @@ import { RushCoil } from '@game/entities/objects/rush-coil';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import type { HeroStageScene } from '@game/tutorial/hero-stage';
 import { MEGAMAN_STAGE } from '@game/tutorial/heroes/megaman';
-import { controls } from '../stage-bot';
+import { controls } from '../stage-controls';
 
 /* Megaman's stage bot: its sim (tests/sim/training-megaman.test.ts) and the early-block sim use it. */
 
@@ -63,6 +63,20 @@ export function megamanBot(): (s: HeroStageScene) => Action[] {
           out.push('up', 'right', 'special');
           sawAt = w.frame;
         }
+        break;
+      case 'saw-up':
+        // Straight up from under the cloud.
+        if (!c.pick('saw') || !c.standAt(S.cloud.x)) break;
+        if (sawAt < 0 || w.frame - sawAt > 60) {
+          out.push('up', 'special');
+          sawAt = w.frame;
+        }
+        break;
+      case 'pierce':
+        // A full charge from in front of the pipe, through it and the row.
+        if (!c.standAt(S.pipe - 3)) break;
+        charge++;
+        if (charge % 70 < 55) out.push('attack');
         break;
       case 'leaf': {
         if (!has('leaf-guard')) {
@@ -131,9 +145,14 @@ export function megamanBot(): (s: HeroStageScene) => Action[] {
         break;
       }
       default:
+        // On right, hopping the used blocks of the row (0.4.46), then a jump at the flagpole.
+        if (cx < (S.flag - 3) * 16) {
+          c.goTo(S.flag);
+          break;
+        }
         out.push('right');
-        if (b.onGround && cx >= (S.flag - 3) * 16) out.push('jump');
-        else if (!b.onGround && b.vy < 0) out.push('jump');
+        if (b.onGround) out.push('jump');
+        else if (b.vy < 0) out.push('jump');
     }
     return out;
   };

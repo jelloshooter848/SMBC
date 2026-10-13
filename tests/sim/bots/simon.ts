@@ -71,6 +71,8 @@ function simonTake(s: HeroStageScene, out: Action[], blk: { x: number; y: number
 /** Simon's bot: reads the current lesson and plays it as a player would. */
 export function simonBot(): (s: HeroStageScene) => Action[] {
   let watchAt = -1;
+  /** Backing off from the double jump's wall for a run-up. */
+  let runUp = false;
   return (s) => {
     const out: Action[] = [];
     const c = controls(s, out);
@@ -151,6 +153,24 @@ export function simonBot(): (s: HeroStageScene) => Action[] {
           out.push('special');
           watchAt = w.frame;
         }
+        break;
+      }
+      case 'double-jump': {
+        // A run-up, a jump, and the second one at the top, toward the wall.
+        const wall = S.doubleWall.from * 16;
+        if (b.onGround) {
+          if (cx > wall - 30) runUp = true;
+          if (runUp && cx > wall - 60) {
+            out.push('left');
+            break;
+          }
+          runUp = false;
+          out.push('right');
+          if (cx >= wall - 46) out.push('jump');
+          break;
+        }
+        out.push('right');
+        if (b.vy >= 0 && b.vy < 0x400) out.push('jump');
         break;
       }
       default:

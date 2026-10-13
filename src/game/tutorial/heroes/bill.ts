@@ -7,7 +7,7 @@ import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { TrainingTarget, type StageHit } from '../targets';
 import { ownsItem } from '../kit';
-import { alive, hitsSince, landedPast } from './common';
+import { alive, hitLessons, hitsSince, landedPast } from './common';
 import source from '../../../content/levels/training/bill.map?raw';
 
 /*
@@ -41,7 +41,10 @@ export const BILL_STAGE = {
   spreadBlock: { x: 108, y: 9 },
   spreadTargets: [118, 117, 116],
   spreadGate: 121,
-  flag: 127,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 126,
+  hitGate: 128,
+  flag: 135,
 } as const;
 const S = BILL_STAGE;
 
@@ -231,6 +234,7 @@ export const BILL_LESSONS: readonly Lesson[] = [
       return volleyHit(w, 'spread', 3);
     },
   },
+  ...hitLessons('bill', { at: 122, row: 11, thorns: S.thorns }),
   {
     id: 'flag',
     at: 122,
@@ -253,6 +257,7 @@ export const BILL_GATES: readonly TutorialGate[] = [
   gate(S.laserGate, 'laser'),
   gate(S.flameGate, 'flame-gun'),
   gate(S.spreadGate, 'spread-gun'),
+  gate(S.hitGate, 'hit'),
 ];
 
 export const BILL_STAGE_DEF: HeroStage = {

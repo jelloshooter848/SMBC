@@ -1,4 +1,5 @@
 import { px, tileAt } from '@engine/math/units';
+import type { InputFrame } from '@engine/input/input-manager';
 import type { CharacterDef, SpriteSpec } from '../character';
 import type { MovementProfile } from '../profile';
 import type { Player } from '../../entities/player';
@@ -73,6 +74,9 @@ export const BOOMERANG: ProjectileSpec = {
   // Zelda's fetch: coins, items and drops it touches come back with it (World.boomerangFetch).
   fetches: true,
 };
+
+/** The boomerang's speed on each axis thrown diagonally up (LinkBoomerang.as `diagMult`). */
+export const BOOMERANG_DIAGONAL = 0.75;
 
 /**
  * An up-thrust that strikes a block rebounds Link down as a head bump would (owner note 27):
@@ -234,19 +238,42 @@ function spendMagic(p: Player, cost: number, world: World): boolean {
   return true;
 }
 
-function useTool(p: Player, world: World): void {
+/**
+ * The boomerang's throw (0.4.46, roadmap #26), as the original Crossover's LinkBoomerang.setDir
+ * reads the d-pad: UP alone throws it straight up from over his head; UP with RIGHT or LEFT throws
+ * it diagonally up that way, at 0.75 of its speed on each axis (`diagMult`); anything else, the way
+ * he faces, level with his middle. True to the original, so in classic play too.
+ */
+function throwBoomerang(p: Player, world: World, input: InputFrame): void {
+  if (world.countProjectiles(p, 'boomerang') > 0) return;
+  const b = p.body;
+  const up = input.held('up');
+  const dx = input.dirX;
+  const speed = BOOMERANG.speed;
+  if (up && dx === 0) {
+    world.spawn(
+      new Projectile(b.x + (b.w >> 1) - px(4), b.y - px(8), p.facing, BOOMERANG, p, { vx: 0, vy: -speed }),
+    );
+  } else if (up) {
+    const d = Math.round(speed * BOOMERANG_DIAGONAL);
+    const x = dx > 0 ? b.x + b.w - px(4) : b.x - px(4);
+    world.spawn(new Projectile(x, b.y - px(8), dx > 0 ? 1 : -1, BOOMERANG, p, { vx: dx * d, vy: -d }));
+  } else {
+    const x = p.facing > 0 ? b.x + b.w : b.x - px(8);
+    world.spawn(new Projectile(x, b.y + px(8), p.facing, BOOMERANG, p));
+  }
+  world.audio.sfx('boomerang');
+  p.scratch.throwT = THROW_FRAMES;
+}
+
+function useTool(p: Player, world: World, input: InputFrame): void {
   const t = activeTool(p, tools(p));
   if (!t) return;
   const b = p.body;
   switch (t.id) {
-    case 'boomerang': {
-      if (world.countProjectiles(p, 'boomerang') > 0) return;
-      const x = p.facing > 0 ? b.x + b.w : b.x - px(8);
-      world.spawn(new Projectile(x, b.y + px(8), p.facing, BOOMERANG, p));
-      world.audio.sfx('boomerang');
-      p.scratch.throwT = THROW_FRAMES;
+    case 'boomerang':
+      throwBoomerang(p, world, input);
       break;
-    }
     case 'bomb': {
       if (bombs(p) <= 0) {
         world.audio.sfx('bump');
@@ -356,7 +383,7 @@ export const LINK: CharacterDef = {
         p.scratch.upThrust = 0;
         return;
       }
-      if (input.pressed('special') && p.attackTimer === 0) useTool(p, world);
+      if (input.pressed('special') && p.attackTimer === 0) useTool(p, world, input);
       // Down-thrust: hold down in the air; the sword box sits under the feet. A block it lands on
       // is struck (a brick breaks, a ? block gives its item) and Link bounces off it, as the
       // original's dThrust does off any Ground it hits (Link.attackObjPiercing: vy = -bouncePwr).

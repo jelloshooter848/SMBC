@@ -8,7 +8,8 @@ import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { ownsItem } from '../kit';
-import { hitsSince, hurtsSince, blocksSince, onTop } from './common';
+import { blocksSince, hitLessons, hitsSince, hurtsSince, onTop } from './common';
+import { BOOMERANG_UP_DEMO } from '../demos';
 import source from '../../../content/levels/training/link.map?raw';
 
 /*
@@ -37,6 +38,8 @@ export const LINK_STAGE = {
   upGate: 49,
   ledge: { from: 53, to: 56, top: 7 },
   coin: { x: 55, y: 6 },
+  /** A coin up high (0.4.46, #26): no jump reaches it, the boomerang thrown up does. */
+  highCoin: { x: 57, y: 4 },
   boomerangGate: 59,
   heartBlock: { x: 64, y: 8 },
   bombBlock: { x: 69, y: 8 },
@@ -55,7 +58,10 @@ export const LINK_STAGE = {
   swordBlock: { x: 131, y: 8 },
   swordTarget: 138,
   swordGate: 141,
-  flag: 148,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 146,
+  hitGate: 148,
+  flag: 156,
 } as const;
 const S = LINK_STAGE;
 
@@ -77,11 +83,14 @@ function upThrustBrick(w: World): boolean {
   return c.thrust;
 }
 
-/** The boomerang brought the ledge's coin back: the coin is gone and no boomerang is out. */
-function coinFetched(w: World): boolean {
-  if (w.map.get(S.coin.x, S.coin.y) === T.COIN) return false;
+/** The boomerang brought coin `c` back: the coin is gone and no boomerang is out. */
+function fetched(w: World, c: { x: number; y: number }): boolean {
+  if (w.map.get(c.x, c.y) === T.COIN) return false;
   return !w.entities.some((e) => e instanceof Projectile && e.alive && e.kind === 'boomerang');
 }
+
+/** The boomerang brought the ledge's coin back. */
+const coinFetched = (w: World): boolean => fetched(w, S.coin);
 
 /** Per world: the frame the Blue Ring was taken in this lesson (null: not yet). */
 const ringFrames = new WeakMap<World, number>();
@@ -163,6 +172,20 @@ export const LINK_LESSONS: readonly Lesson[] = [
     touchText: 'JUMP AND TAP [BOOMERANG:special:BOOMERANG] TO FETCH THE COIN ON THE LEDGE. IT COMES BACK!',
     retry: 'JUMP BY THE LEDGE AND SEND THE BOOMERANG AT THE TOP OF THE JUMP: IT BRINGS THE COIN BACK.',
     done: coinFetched,
+  },
+  {
+    // 0.4.46 (owner #26): up, and up and ahead, as the original Crossover throws it.
+    id: 'boomerang-up',
+    at: 50,
+    row: 11,
+    // The box at the bottom, the coin up high in view.
+    boxLow: true,
+    text: 'HOLD UP AS YOU [USE TOOL:special:BOOMERANG]: IT FLIES UP. FETCH THE COIN UP HIGH!',
+    touchText: 'HOLD UP AND TAP [BOOMERANG:special:BOOMERANG]: IT FLIES UP. FETCH THE COIN UP HIGH!',
+    retry:
+      'STAND UNDER THE COIN AND HOLD UP AS YOU [USE TOOL:special:BOOMERANG]: IT FLIES UP AND BRINGS IT BACK.',
+    demo: BOOMERANG_UP_DEMO,
+    done: (w) => fetched(w, S.highCoin),
   },
   {
     id: 'heart-container',
@@ -269,6 +292,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     text: 'WITH FULL HEARTS, [SWORD:attack] FIRES BEAMS. HIT THE TARGET TWICE.',
     done: (w) => hitsSince(w, (h) => h.shotKind === 'sword-beam').length >= 2,
   },
+  ...hitLessons('link', { at: 142, row: 11, thorns: S.thorns }),
   {
     id: 'flag',
     at: 142,
@@ -286,11 +310,12 @@ export const LINK_GATES: readonly TutorialGate[] = [
   gate(S.shieldGate, 'shield'),
   gate(S.thrustGate, 'down-thrust'),
   gate(S.upGate, 'up-thrust'),
-  gate(S.boomerangGate, 'boomerang'),
+  gate(S.boomerangGate, 'boomerang-up'),
   gate(S.bombGate, 'bomb'),
   gate(S.ringGate, 'blue-ring'),
   gate(S.fireGate, 'fire-spell'),
   gate(S.swordGate, 'magical-sword'),
+  gate(S.hitGate, 'hit'),
 ];
 
 export const LINK_STAGE_DEF: HeroStage = {

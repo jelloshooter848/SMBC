@@ -8,6 +8,26 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- The first time a hero touches each kind of pickup (energy, weapon energy, E-tanks, missile packs, magic jars and
+  the like), a short explainer says what it does, once per save file. It's kept in save codes too; old codes still
+  load.
+- Every training stage, 1-0 included, ends with WHAT A HIT TAKES: walk into thorns, then read what the hit took.
+- Mega Man's training: saw a target on a cloud straight up (Lakitu falls to it too).
+- Link throws the boomerang straight up and diagonally up, as in the original Crossover.
+- Simon has the original Crossover's double jump.
+
+### Changed
+
+- Campaign: Mega Man's full charge shot flies through walls and pipes and bumps each ? block and brick it crosses;
+  Simon's axe bumps the ? blocks it crosses. Both are shown in training.
+
+### Fixed
+
+- Mega Man's weapons come only with the Helmet: a weapon already out of its block, touched after a hit knocked the
+  Helmet off, now gives the Helmet.
+
 ## [0.4.45] - 2026-10-12
 
 ### Added

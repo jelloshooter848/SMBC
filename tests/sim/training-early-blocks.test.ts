@@ -7,7 +7,8 @@ import { lessonBlocks } from '@game/tutorial/stage-prompts';
 import { MARIO_10 } from '@game/tutorial/mario-1-0';
 import { CardScene } from '@game/scenes/message';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
-import { playStage, skipGreeting, startStage } from './stage-bot';
+import { choose, playStage, skipGreeting, startStage } from './stage-bot';
+import { MEGAMAN_STAGE } from '@game/tutorial/heroes/megaman';
 import { okTip, playTutorial } from './tutorial-bot';
 import { billBot } from './bots/bill';
 import { linkBot } from './bots/link';
@@ -80,6 +81,23 @@ describe('training: every block hit early', () => {
       for (const id of new Set(held)) expect(held.filter((x) => x === id).length, id).toBeLessThanOrEqual(2);
     });
   }
+
+  it("megaman: the pierce row's blocks spent before its shot (0.4.46): Toad's put-back lays them again", () => {
+    const { h, stage } = startStage('megaman', { replay: true });
+    choose(h, 'Bolt');
+    const s = stage();
+    s.director.skipLesson();
+    expect(s.director.lesson?.id).toBe('pierce');
+    const w = s.world;
+    for (let x = MEGAMAN_STAGE.row.from; x <= MEGAMAN_STAGE.row.to; x++)
+      w.strikeBlock(x, MEGAMAN_STAGE.row.y, w.player, true);
+    const log = playStage(h, s, megamanBot(), () => s.director.lesson?.id !== 'pierce', 3000);
+    // Spent before the blast: Toad's card, and the fresh stretch's row was shot through.
+    expect(log.spent.length).toBe(1);
+    expect(log.spent[0]?.join(' ')).toMatch(/BUMPED BEFORE THE BLAST/);
+    expect(s.world).not.toBe(w);
+    expect(s.director.done).toContain('pierce');
+  });
 
   it("mario (1-0): the coin and mushroom blocks bumped before their lessons; a lost mushroom's block comes back", () => {
     const h: H = makeGame();
