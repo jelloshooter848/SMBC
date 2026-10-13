@@ -4366,7 +4366,7 @@ WHEEL. <HERO>...
 CLIMB IN. BLAST IT OUT!
 ```
 
-**Sophia III, freed.** NEW. Her computer finds her pilot, then a tear in space under the castle that the wand holds
+**Sophia III, freed.** NEW. Her computer finds her pilot, then a tear in space under the last castle that the wand holds
 shut, and a land beyond it with no Koopas at all (which Toad puts together with the note at the rift).
 
 ```text
@@ -4387,7 +4387,7 @@ YOU... THANKS, <HERO>.
 SOPHIA III:
 
 ALERT. SCAN SHOWS A TEAR
-IN SPACE UNDER THIS
+IN SPACE UNDER THE LAST
 CASTLE. THE KING'S WAND IS
 HOLDING IT SHUT.
 ```
@@ -4468,7 +4468,7 @@ Sophia III freed. The story reason is hers: the last spell still running holds t
 ```text
 TOAD:
 
-THE KING IS BEATEN, BUT
+THE WAND IS BROKEN, BUT
 THAT CRACK IS TOO SMALL TO
 GO THROUGH. SOMETHING'S
 HOLDING IT SHUT...

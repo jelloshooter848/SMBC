@@ -424,8 +424,10 @@ export function gateScript(world: number, hero: string): GateScript | null {
 
 /** World 8's rift still shut (2.12): Toad's reminder after the credits while Sophia III is captive. */
 export const RIFT_SEALED_PAGES: readonly Page[] = [
+  // 0.4.54 (INT54): the wand, not the king: 8-4's king is a fake now, and the line still holds once
+  // the finale moves to Bowser's Castle (story/finale.ts).
   toad(
-    'THE KING IS BEATEN, BUT',
+    'THE WAND IS BROKEN, BUT',
     'THAT CRACK IS TOO SMALL TO',
     "GO THROUGH. SOMETHING'S",
     'HOLDING IT SHUT...',
@@ -2258,7 +2260,7 @@ export const FREED_TALKS: Readonly<Record<string, (you: string) => Page[]>> = {
       'SOPHIA III:',
       '',
       'ALERT. SCAN SHOWS A TEAR',
-      'IN SPACE UNDER THIS',
+      'IN SPACE UNDER THE LAST',
       "CASTLE. THE KING'S WAND IS",
       'HOLDING IT SHUT.',
     ],
