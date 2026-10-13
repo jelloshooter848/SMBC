@@ -8,6 +8,29 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.55] - 2026-10-13
+
+### Added
+
+- BOWSER'S CASTLE, the real finale (campaign only). After World 8 a new map page, the VALLEY OF BOWSER (a dark cavern with
+  its own Bowser song), leads to a grand castle: fire-bar gauntlets, the great wheel, a lava lake of lifts, the twin-hall
+  maze, a hammer-bro guard room and the real king (fire and hammers, with his health bar) on his bridge, with five
+  checkpoints and his own bridge theme. The game never calls it 8-5: the map, intro card, HUD and announcer all say
+  BOWSER'S CASTLE.
+
+### Changed
+
+- The wand break, the false-ending credits and Toad's rift scene now happen at Bowser's Castle, and the road to the Lost
+  Levels leaves the Valley of Bowser. 8-4 is now a regular fake castle with its own Toad page. Classic play is unchanged.
+- World 8's road to the Valley is sealed until Sophia III is freed, like every world.
+- Files that beat the game before keep it beaten: the castle shows open and the Lost Levels road stays open.
+
+### Fixed
+
+- A level may have several checkpoints.
+- On the Valley of Bowser, Toad's box after the credits shows below the castle, so the hero and Toad stay in view.
+- The screen reader names the Valley once, and says "1 life" rather than "1 lives" when a level starts.
+
 ## [0.4.54] - 2026-10-13
 
 ### Added
@@ -1198,7 +1221,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...HEAD
+[0.4.55]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...v0.4.55
 [0.4.54]: https://github.com/jelloshooter848/SMBC/compare/v0.4.53...v0.4.54
 [0.4.53]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...v0.4.53
 [0.4.52]: https://github.com/jelloshooter848/SMBC/compare/v0.4.51...v0.4.52
