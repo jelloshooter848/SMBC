@@ -60,6 +60,7 @@ import {
   DUEL_START,
   DUEL_KIT,
   DuelMenuScene,
+  DuelScene,
   READY_FRAMES,
   SKY_TOP,
   TIME_LIMIT,
@@ -789,6 +790,25 @@ describe('Shadow Duel: screen and controls', () => {
       h.step();
     }
     expect(reads.every(Boolean)).toBe(true);
+  });
+
+  it('names the stage by its campaign label when Ryu is freed on a campaign file (internal 6-2 is 6-1)', () => {
+    const h = duelHarness({ assets: STUB_ASSETS, skipCutscene: true });
+    const stage = () => {
+      const r = new TextRenderer();
+      h.game.scenes.render(r);
+      return r.texts.find((t) => t.startsWith('STAGE-'));
+    };
+    expect(stage()).toBe('STAGE-6-2');
+    h.game.campaign = { slot: 1 };
+    h.game.scenes.pop();
+    h.game.scenes.push(new DuelScene(h.game, () => {}, { skipCutscene: true }));
+    expect(stage()).toBe('STAGE-6-1');
+    // A round played for fun keeps the real stage.
+    h.game.inRound = true;
+    h.game.scenes.pop();
+    h.game.scenes.push(new DuelScene(h.game, () => {}, { skipCutscene: true }));
+    expect(stage()).toBe('STAGE-6-2');
   });
 
   it('reduce flashing: a hit on the Masked Ninja shows his hurt frame, never the white flash', () => {

@@ -153,6 +153,9 @@ export class DuelScene implements Scene {
     const state = newGameState(RYU);
     state.world = 6;
     state.stage = 2;
+    // 0.4.53: freeing Ryu on a campaign file, his HUD names the level by its campaign label
+    // (map/campaign-order.ts: internal 6-2 is STAGE-6-1); a round played for fun keeps 6-2.
+    state.campaignOrder = game.campaign !== null && !game.inRound;
     this.state = state;
     this.seed = opts.seed;
     this.lives = new MiniLives({

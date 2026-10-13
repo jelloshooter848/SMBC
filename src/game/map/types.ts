@@ -29,10 +29,11 @@ export type MapTheme =
  * The sheet a page drawn from above takes its look from, when its theme is not 'kingdom' (campaign
  * play): 'hyrule' World 2 (sprites/hyrule-above.ts), 'megacity' World 3 (sprites/megacity-above.ts)
  * since 0.4.50; 'zebes' World 4 (sprites/zebes-above.ts), 'transylvania' World 5
- * (sprites/transylvania-above.ts) since 0.4.52. The page keeps its theme, so everything keyed on
- * the theme (the actors' palettes, the colour behind a slide, the hint's shade) holds.
+ * (sprites/transylvania-above.ts) since 0.4.52; 'galesburg' World 6 (sprites/galesburg-above.ts),
+ * 'galuga' World 7 (sprites/galuga-above.ts) since 0.4.53. The page keeps its theme, so everything
+ * keyed on the theme (the actors' palettes, the colour behind a slide, the hint's shade) holds.
  */
-export type AboveLookId = 'hyrule' | 'megacity' | 'zebes' | 'transylvania';
+export type AboveLookId = 'hyrule' | 'megacity' | 'zebes' | 'transylvania' | 'galesburg' | 'galuga';
 
 /**
  * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),

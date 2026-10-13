@@ -96,6 +96,34 @@ const CASES: Case[] = [
     level: '4-2',
     side: -1,
   },
+  {
+    hero: 'ryu',
+    colour: 'ryu@ryu',
+    shade: 'ryu@ryu~shade-above-galesburg', // Galesburg from above (0.4.53): its paving's shade
+    page: 'smb-6',
+    node: '6-2', // shown 6-1: World 6's first level in the campaign order
+    before: {
+      cleared: [...W1_CLEAR, ...[2, 3, 4, 5].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`))],
+      pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6'],
+      position: { page: 'smb-6', node: '6-2' },
+    },
+    level: '6-2',
+    side: 1, // east of the node, beside the dojo
+  },
+  {
+    hero: 'bill',
+    colour: 'bill@bill',
+    shade: 'bill@bill~shade-above-galuga', // Galuga Island from above (0.4.53): its jungle floor's shade
+    page: 'smb-7',
+    node: '7-3', // shown 7-1: World 7's first level in the campaign order
+    before: {
+      cleared: [...W1_CLEAR, ...[2, 3, 4, 5, 6].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`))],
+      pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6', 'smb-7'],
+      position: { page: 'smb-7', node: '7-3' },
+    },
+    level: '7-3',
+    side: -1, // west of the node, over his camp
+  },
 ];
 
 /** File 1 open on the map (dev mode `dev`), the map drawn a few frames in. */

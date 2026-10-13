@@ -367,3 +367,160 @@ export function space(
     c.outline(ink.outline);
   });
 }
+
+/* ---------------------------------------------------------------------------------------------- */
+/* Cliffs, stairs, textured ground, roofs (0.4.53: Worlds 6 and 7; TD58's design)                 */
+/* ---------------------------------------------------------------------------------------------- */
+
+/** Cliff colours: the ground on top (its lip), the rock face, cracks, and the ground at its foot. */
+export interface CliffInk {
+  /** The plateau's ground at the lip, and its lit edge. */
+  top: string;
+  topLight: string;
+  /** Rock face: shade, body, lit faces, cracks. */
+  dark: string;
+  body: string;
+  light: string;
+  crack: string;
+  /** The ground round its ends and under its foot, and the shadow it casts there. */
+  below: string;
+  shade: string;
+  outline: string;
+}
+
+/**
+ * A cliff face ('^'), the drop between two levels seen from the south: packed boulders lit on their
+ * upper left, a lip of the upper ground along its top when the tile above is no cliff, a dark foot
+ * and a shadow when the tile below is none; its ends round off. The rocks repeat every 16 px, so
+ * faces join their neighbours. (hyrule-above.ts cliff(), with the colours a parameter.)
+ */
+export function cliff(book: FrameBook, prefix: string, s: Sides, ink: CliffInk): string {
+  return book.frame(`${prefix}-${sideKey(s)}`, 16, 16, (c) => {
+    c.rect(0, 0, 16, 16, ink.below);
+    const top = s.n ? 0 : 3;
+    const foot = s.s ? 16 : 14;
+    const inFace = (x: number, y: number): boolean => {
+      if (y < top || y >= foot) return false;
+      if (!s.w && x < 3 && (y - top < 3 - x || foot - 1 - y < 2 - x)) return false;
+      if (!s.e && x > 12 && (y - top < x - 12 || foot - 1 - y < x - 13)) return false;
+      return true;
+    };
+    const seeds: [number, number][] = [];
+    for (let j = 0; j < 3; j++)
+      for (let i = 0; i < 3; i++)
+        seeds.push([i * 5.3 + 1 + hash(i, j, 232) * 3.5, j * 5.3 + 1 + hash(i, j, 233) * 3.5]);
+    c.each((x, y) => {
+      if (!inFace(x, y)) return null;
+      let d1 = 99;
+      let d2 = 99;
+      let sx = 0;
+      let sy = 0;
+      for (const [px, py] of seeds)
+        for (const ox of [-16, 0, 16])
+          for (const oy of [-16, 0, 16]) {
+            const d = Math.hypot((x + 0.5 - px - ox) * 0.8, y + 0.5 - py - oy);
+            if (d < d1) {
+              d2 = d1;
+              d1 = d;
+              sx = px + ox;
+              sy = py + oy;
+            } else if (d < d2) d2 = d;
+          }
+      if (d2 - d1 < 1.1) return ink.crack;
+      const l = x + 0.5 - sx + (y + 0.5 - sy);
+      if (l < -2.2) return d1 < 2.6 ? ink.light : ink.body;
+      if (l > 2.2) return ink.dark;
+      return hash(x, y, 231) < 0.08 ? ink.dark : ink.body;
+    });
+    if (!s.n)
+      for (let x = 0; x < 16; x++) {
+        if (!inFace(x, top)) continue;
+        c.set(x, top - 1, ink.top);
+        c.set(x, top - 2, ink.topLight);
+        c.set(x, top - 3, ink.top);
+        c.set(x, top, ink.dark);
+      }
+    if (!s.s)
+      for (let x = 0; x < 16; x++) {
+        if (!inFace(x, foot - 1)) continue;
+        c.set(x, foot - 1, ink.dark);
+        c.set(x, foot, ink.shade);
+        if (hash(x, 234) < 0.5) c.set(x, foot + 1, ink.shade);
+      }
+    c.outline(ink.outline, (x, y) => y >= top && y < foot && !inFace(x, y));
+  });
+}
+
+/** Stairs cut down through a cliff tile (`face`: the cliff frame they cut), steps lit on top. */
+export function stairs(
+  book: FrameBook,
+  name: string,
+  face: string,
+  ink: { dark: string; body: string; light: string; outline: string },
+): string {
+  return book.frame(name, 16, 16, (c) => {
+    c.paste(book.rows(face));
+    c.rect(3, 0, 10, 16, ink.dark);
+    for (let y = 0; y < 16; y += 3) {
+      c.rect(4, y, 8, 2, ink.light);
+      c.rect(4, y + 2, 8, 1, ink.body);
+    }
+    c.rect(3, 0, 1, 16, ink.outline);
+    c.rect(12, 0, 1, 16, ink.outline);
+  });
+}
+
+/**
+ * A plain ground tile: `base` with seeded specks of `dark` and `light` (density in [0, 1]) and,
+ * when `joint` is given, a slab grid of that colour every `step` px (offset each row: paving).
+ */
+export function speckle(
+  book: FrameBook,
+  name: string,
+  v: number,
+  ink: { base: string; dark: string; light: string; dense?: number; joint?: string; step?: number },
+): string {
+  return book.frame(name, 16, 16, (c) => {
+    const dense = ink.dense ?? 0.08;
+    c.each((x, y) => {
+      if (ink.joint) {
+        const step = ink.step ?? 8;
+        const row = Math.floor(y / step);
+        if (y % step === step - 1 || (x + (row % 2 ? step / 2 : 0) + v * 3) % step === 0) return ink.joint;
+      }
+      const r = hash(x, y, v, 301);
+      return r < dense ? ink.dark : r > 1 - dense * 0.7 ? ink.light : ink.base;
+    });
+  });
+}
+
+/**
+ * A pitched or hipped roof seen from above and the south, filling the box (x0..x1, y0..y1): rows of
+ * tiles, its ridge at `ridge` (a row inside the box), lit on its north slope, shaded on its south,
+ * hips sloping in at the ends when `hip`; returns nothing (paints `c`).
+ */
+export function roof(
+  c: Canvas,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  ink: { dark: string; body: string; light: string; ridge: string },
+  hip = true,
+): void {
+  const ridge = y0 + Math.round((y1 - y0) * 0.38);
+  for (let y = y0; y <= y1; y++)
+    for (let x = x0; x <= x1; x++) {
+      const inset = hip ? Math.max(0, Math.round((y < ridge ? ridge - y : 0) * 0.9)) : 0;
+      if (x < x0 + inset || x > x1 - inset) continue;
+      if (y === ridge) {
+        c.set(x, y, ink.ridge);
+        continue;
+      }
+      const north = y < ridge;
+      const row = north ? ridge - y : y - ridge;
+      const tile = (x + (row % 2 ? 2 : 0)) % 4 === 0 || row % 3 === 0;
+      const edge = y === y1 || x === x0 + inset || x === x1 - inset;
+      c.set(x, y, edge ? ink.dark : tile ? (north ? ink.body : ink.dark) : north ? ink.light : ink.body);
+    }
+}

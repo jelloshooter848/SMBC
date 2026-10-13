@@ -42,7 +42,7 @@ import { ALL_STORY } from './story-seen';
 // World 4 in the campaign order (map/campaign-order.ts: internal 4-2, Samus's cavern, first and
 // shown as 4-1). A file anywhere on them loads where it was (an old file's stale reveals dropped),
 // every road walks both ways, a clear draws its road in, the slides run 3 -> 4 -> 5 -> 6 and back
-// (the page's edge shaded only between above and side-on), and the first World 4 node is Samus's
+// (all drawn from above since 0.4.53: no seam), and the first World 4 node is Samus's
 // level, its intro card, HUD and announcer saying 4-1. Classic play keeps the real ids.
 
 const store = new Map<string, string>();
@@ -405,9 +405,9 @@ describe('the slides 3 → 4 → 5 → 6 and back', () => {
     expect(h.map().page).toBe(WORLD_5_TRANSYLVANIA);
     for (const id of ['5-1', '5-2', '5-3', '5-4']) walkTo(h, id);
     const s56 = slide('down', 'smb-6');
-    expect([s34, s45]).toEqual([0, 0]);
-    expect(s56).toBeGreaterThan(0);
-    expect(slide('left', 'smb-5')).toBeGreaterThan(0);
+    // World 6 is drawn from above too since 0.4.53 (above-maps-w67.test.ts): no seam on the way.
+    expect([s34, s45, s56]).toEqual([0, 0, 0]);
+    expect(slide('left', 'smb-5')).toBe(0);
     expect(h.map().node).toBe('5-4');
     for (const id of ['5-3', '5-2', '5-1', 'start']) walkTo(h, id);
     expect(slide('left', 'smb-4')).toBe(0);
