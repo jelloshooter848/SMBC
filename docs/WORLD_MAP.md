@@ -693,10 +693,9 @@ pipe x y down -> map 0 0
 - **A `campaign` pipe** sleeps outside campaign play (no way in; a zone only, so the level's tiles
   are the same either way); the campaign variant wakes it. 2-1's way into the cave. A woken pipe
   on the same mouth as a live one (same column, row and direction) takes its place, the live
-  zone going (0.4.18): 8-4-end's trap pipe at column 10 (`pipe 10 11 down -> 8-4 19 10 exit=up`)
-  has a `pipe 10 11 down -> 8-4-jason 1 10 exit=up campaign` on top of it, so in the campaign it
-  leads to Jason's secret area (Sophia III's route, docs/HEROES.md) and everywhere else it is the
-  trap pipe exactly as before.
+  zone going (0.4.18 to 0.4.53: 8-4-end's trap pipe at column 10 had a campaign pipe to Jason's
+  secret area on top of it, Sophia III's old route; since 0.4.54 her way in is 8-1's coin room and
+  the trap pipe is the original's everywhere, docs/HEROES.md).
 - **`-> map`** (`MAP_EXIT`): a pipe back to the world map (the Top Secret Area's). Nothing is
   cleared; it is no exit of a level for the map's secret-exit look.
 

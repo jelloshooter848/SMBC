@@ -149,8 +149,7 @@ time. Any player can talk (in co-op, player 2 too); the pages close back into pl
 | `townsperson` | 5-4 (10, 9)                                         | Simon      |
 | `irene`       | 6-2 (7, 12)                                         | Ryu        |
 | `lance`       | 7-3 (5, 12)                                         | Bill       |
-| `fred`        | 8-4-end (8, 12), by the trap pipe (10)              | Sophia III |
-| `jason`       | 8-4-jason (5, 12)                                   | Sophia III |
+| `jason`       | 8-1-bonus (8, 12), by the key box (0.4.54)          | Sophia III |
 
 A hint NPC names its hero (`PartnerScript.hero`); once that hero is freed on the file it says its
 `after` pages instead (one to three, `partnerPages`), and one without an `after` page is gone

@@ -22,12 +22,11 @@ parent: 8-1
 ;; 8-4-fred, both retired.)
 
 [tiles]
-;; Row 2 is the cavern's roof, with the shaft the hero drops in by (columns 2-3). Rows 0-1 are
-;; solid except over the shaft, so a hero who can rise (Sophia's hover) can't climb out onto the
-;; roof under the HUD.
+;; Rows 0-1 stay clear under the HUD; row 2 is the cavern's roof, with the shaft the hero drops
+;; in by (columns 2-3). (A hero who hovers up the shaft onto the roof just drops back down it.)
 ;; 0               16
-BB..BBBBBBBBBBBB
-BB..BBBBBBBBBBBB
+................
+................
 BB..BBBBBBBBBBBB
 B..............B
 B..............B

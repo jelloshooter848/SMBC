@@ -406,10 +406,11 @@ describe("Sophia III's garage (8-4-garage, an area of 8-1 since 0.4.54)", () => 
       { type: 'fred', x: 5, y: 12, props: { mode: 'rest' } },
     ]);
     expect(tile(l, SOPHIA_AT.x, SOPHIA_AT.y + 1)).toBe(T.GROUND);
-    // The shaft the hero drops in by (columns 2-3); above the roof only it is open.
-    for (let y = 0; y <= 2; y++)
-      for (let x = 0; x < l.width; x++)
-        expect(tile(l, x, y), `${x},${y}`).toBe(x === 2 || x === 3 ? T.AIR : T.HARD);
+    // Rows 0-1 clear under the HUD; the roof (row 2) has the shaft the hero drops in by (columns 2-3).
+    for (let x = 0; x < l.width; x++) {
+      for (const y of [0, 1]) expect(tile(l, x, y), `${x},${y}`).toBe(T.AIR);
+      expect(tile(l, x, 2), `${x},2`).toBe(x === 2 || x === 3 ? T.AIR : T.HARD);
+    }
     // The way back: up out of 8-1's pipe at column 115 (where the coin room's own pipe comes out).
     expect(l.zones).toEqual([{ kind: 'pipe', x: 13, y: 11, dir: 'down', target: BACK_TO_81 }]);
     expect([tile(l, 13, 11), tile(l, 14, 11)]).toEqual([T.PIPE_TL, T.PIPE_TR]);
