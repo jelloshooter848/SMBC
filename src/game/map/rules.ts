@@ -241,7 +241,9 @@ export function isPathOpen(
 
 /**
  * A world exit opens when the node it leaves from (the castle) is cleared and its `requires`
- * holds (with unlock all: when the node is open and the condition isn't 'never').
+ * holds (with unlock all: when the node is open and the condition isn't 'never'). An exit that
+ * `opens: 'castle-or-gameCleared'` (0.4.54: the VALLEY OF BOWSER's road on to the Lost Levels) is
+ * open on a file that has beaten the game too, its castle cleared or not, while its node is open.
  */
 export function isExitOpen(
   progress: MapProgress,
@@ -251,7 +253,10 @@ export function isExitOpen(
 ): boolean {
   if (!conditionMet(progress, e.requires, unlockAll)) return false;
   if (unlockAll) return isOpen(progress, page, e.from, true);
-  return isPageOpen(progress, page.id) && isCleared(progress, page, e.from) && !gateHolds(progress, e);
+  const done =
+    isCleared(progress, page, e.from) ||
+    (e.opens === 'castle-or-gameCleared' && progress.gameCleared === true && isOpen(progress, page, e.from));
+  return isPageOpen(progress, page.id) && done && !gateHolds(progress, e);
 }
 
 /**

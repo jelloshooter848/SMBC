@@ -30,24 +30,31 @@ export type MapTheme =
  * play): 'hyrule' World 2 (sprites/hyrule-above.ts), 'megacity' World 3 (sprites/megacity-above.ts)
  * since 0.4.50; 'zebes' World 4 (sprites/zebes-above.ts), 'transylvania' World 5
  * (sprites/transylvania-above.ts) since 0.4.52; 'galesburg' World 6 (sprites/galesburg-above.ts),
- * 'galuga' World 7 (sprites/galuga-above.ts) since 0.4.53. The page keeps its theme, so everything
- * keyed on the theme (the actors' palettes, the colour behind a slide, the hint's shade) holds.
+ * 'galuga' World 7 (sprites/galuga-above.ts) since 0.4.53; 'underworld' World 8
+ * (sprites/underworld-above.ts) and 'valley' the VALLEY OF BOWSER (sprites/valley-above.ts) since
+ * 0.4.54. The page keeps its theme, so everything keyed on the theme (the actors' palettes, the
+ * colour behind a slide, the hint's shade) holds.
  */
-export type AboveLookId = 'hyrule' | 'megacity' | 'zebes' | 'transylvania' | 'galesburg' | 'galuga';
+export type AboveLookId =
+  'hyrule' | 'megacity' | 'zebes' | 'transylvania' | 'galesburg' | 'galuga' | 'underworld' | 'valley';
 
 /**
- * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),
- * 'll-1'..'ll-13' (Lost Levels worlds 1-8, 9 and A-D) and 'arena' (the Mini Game Arena, off the
- * hub). Saved in files; never rename one.
+ * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'valley-of-bowser' (the VALLEY OF
+ * BOWSER, campaign play, once its castle's level exists: content/worldmap/valley-of-bowser.ts),
+ * 'hub' (the Warp Zone), 'll-1'..'ll-13' (Lost Levels worlds 1-8, 9 and A-D) and 'arena' (the Mini
+ * Game Arena, off the hub). Saved in files; never rename one.
  */
 export type PageId = string;
 
 /**
  * The set of pages a page belongs to (page order, the Worlds menu). 'smb' and 'll' are one story:
  * SMB World 8's castle road leads on to Lost World 1 (a slide, and back from its start); other
- * travel between groups is by warp node (a fade).
+ * travel between groups is by warp node (a fade). 'valley' (0.4.54) is the VALLEY OF BOWSER, part
+ * of the story between them: once it is live (valley-of-bowser.ts VALLEY_LIVE) campaign World 8's
+ * road leads to it and its castle's road on to Lost World 1, both slides. It is not an SMB world:
+ * smbWorld(), the world gates and the welcomes never take it for a ninth.
  */
-export type PageGroup = 'smb' | 'hub' | 'll' | 'arena';
+export type PageGroup = 'smb' | 'valley' | 'hub' | 'll' | 'arena';
 
 /**
  * Something that must hold for a warp node to work or a world exit to open:
@@ -74,6 +81,13 @@ export interface MapNode {
    * arrival node, JUMP on it enters the level, and its roads open once the level is cleared.
    */
   level?: string;
+  /**
+   * A node shown by its name instead of a stage number (0.4.54: the VALLEY OF BOWSER's castle node,
+   * "BOWSER'S CASTLE", its level never shown as 8-5): the map's header names it in place of the
+   * page's title while the hero stands on it, the announcer says it, and the page label stands
+   * alone at the top right. At most 20 chars.
+   */
+  name?: string;
   /**
    * The level's label where play shows it (the map's header and announcer), when it is not the
    * level id: the campaign plays some worlds in another order (a world's first level is the one
@@ -162,6 +176,13 @@ export interface WorldExit {
   side: 'right' | 'left' | 'top';
   /** Opens only while this holds too (none does yet). */
   requires?: MapCondition;
+  /**
+   * 'castle-or-gameCleared' (0.4.54, the VALLEY OF BOWSER's road on to the Lost Levels): open once
+   * the node it leaves from is cleared, OR on a file that has already beaten the game
+   * (MapProgress.gameCleared: a file that beat it before the page existed keeps its road). Default:
+   * the node cleared (rules.isExitOpen).
+   */
+  opens?: 'castle-or-gameCleared';
   /** The hint line while the hero stands on `from` and the exit is locked (at most 32 chars). */
   hint?: string;
   /**

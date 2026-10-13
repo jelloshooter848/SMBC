@@ -17,6 +17,7 @@ import { blasterWorldSongs } from './blaster-world';
 import { openingSong } from './opening';
 import { bowserSpellSong } from './bowser-spell';
 import { worldMapSongs } from './world-maps';
+import { valleyOfBowserSongs } from './valley-of-bowser';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1241,4 +1242,6 @@ export const songs: Song[] = [
   bowserSpellSong,
   // A song for each world map (0.4.48), worlds 1 to 8 (world-maps.ts).
   ...worldMapSongs,
+  // Bowser's own music (0.4.54): the VALLEY OF BOWSER's map song and his bridge fight's.
+  ...valleyOfBowserSongs,
 ];
