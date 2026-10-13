@@ -3745,26 +3745,28 @@ MEDICINE FOR THAT. JUST
 DUCK, OKAY?
 ```
 
-**Castle 7-4** (a Hammer Bro), in a villain costume (NEW, 0.4.47, owner; campaign only, art by CD47 in `content/sprites/costumes.ts`): Red Falcon: a lumpy crimson rubber alien head too big for him, with a bony crest, mandibles and three eyes (two painted on, one the hole his real eye looks out of), and a white T-shirt with a red falcon printed on it. Shed: the head on its side, the T-shirt crumpled beside it. However he dies (weapons, the axe, a fall), the costume drops in a pile where he stood (with a fall it goes down with him), the true form shows, and the screen reader says: _The Red Falcon costume falls off in a heap: a rubber alien head and a souvenir T-shirt._ (with a fall: "goes down with it" instead of "falls off in a heap"). The hero's remark is the reveal (REPLACES the old remark):
+**Castle 7-4** (a Hammer Bro), in a villain costume (NEW, 0.4.47, owner; campaign only, art by CD47 in `content/sprites/costumes.ts`): Red Falcon: a lumpy crimson rubber alien head too big for him, with a bony crest, mandibles and three eyes (two painted on, one the hole his real eye looks out of), and a white T-shirt with a red falcon printed on it. Shed: the head on its side, the T-shirt crumpled beside it. However he dies (weapons, the axe, a fall), the costume drops in a pile where he stood (with a fall it goes down with him), the true form shows, and the screen reader says: _The Red Falcon costume falls off in a heap: a rubber alien head and a souvenir T-shirt._ (with a fall: "goes down with it" instead of "falls off in a heap"). The hero's remark is the reveal (REPLACES the old remark). REWORDED (0.4.53, owner): fake #8 now waits at 8-4, so
+Red Falcon is no longer "the last fake" (0.4.47 said `THE LAST FAKE... IN A` / `SOUVENIR T-SHIRT?! THE` / `REAL KING
+MUST BE CLOSE.`); the souvenir T-shirt stays and the hint is softened:
 
 ```text
 <HERO>:
 
-THE LAST FAKE... IN A
+ANOTHER FAKE... IN A
 SOUVENIR T-SHIRT?! THE
-REAL KING MUST BE CLOSE.
+REAL KING CAN'T BE FAR.
 ```
 
 With Bill, the castle's own hero, playing (NEW, 0.4.47: instead of the line above, keeping its hint that the real
-king is near):
+king is near; REWORDED 0.4.53, it said `LAST FAKE. THE REAL KING` / `MUST BE CLOSE.`):
 
 ```text
 BILL:
 
 I'VE SEEN THE REAL ALIEN.
 IT DIDN'T WEAR A T-SHIRT.
-LAST FAKE. THE REAL KING
-MUST BE CLOSE.
+ANOTHER FAKE. THE REAL
+KING CAN'T BE FAR.
 ```
 
 Old:
@@ -3777,14 +3779,15 @@ FAKE. THE REAL KING MUST
 BE CLOSE.
 ```
 
-The castle's pages (REPLACES `CASTLE_PAGES['7-4']`; the old page 2, the wand cracking, is the gates' now):
+The castle's pages (REPLACES `CASTLE_PAGES['7-4']`; the old page 2, the wand cracking, is the gates' now). REWORDED
+(0.4.53, with the remark: page 1 said `SPELL. THAT WAS HIS LAST` / `STAND-IN!`, but fake #8 waits at 8-4):
 
 ```text
 THANK YOU <HERO>!
 
 A HAMMER BRO UNDER THE
-SPELL. THAT WAS HIS LAST
-STAND-IN!
+SPELL. ANOTHER OF HIS
+STAND-INS!
 ```
 
 ```text

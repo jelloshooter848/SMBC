@@ -269,9 +269,20 @@ describe('the costumes: the reveal lines', () => {
       'A VAMPIRE?! NO... JUST A',
       'LAKITU WITH HAIR GEL.',
     ]);
-    expect(castleRemark('7-4', 'MARIO', 'mario')?.join(' ')).toContain('REAL KING MUST BE CLOSE.');
+    // 0.4.53 (owner): fake #8 waits at 8-4 now, so Red Falcon is no longer "the last fake"; the
+    // lines keep the souvenir T-shirt and a softer hint that the real king is near.
+    expect(castleRemark('7-4', 'MARIO', 'mario')?.join(' ')).toContain('SOUVENIR T-SHIRT');
+    expect(castleRemark('7-4', 'MARIO', 'mario')?.join(' ')).toContain("REAL KING CAN'T BE FAR.");
     // Bill's own line at Red Falcon's costume keeps the story's hint that the real king is near.
-    expect(castleRemark('7-4', 'BILL', 'bill')?.join(' ')).toContain('REAL KING MUST BE CLOSE.');
+    expect(castleRemark('7-4', 'BILL', 'bill')?.join(' ')).toContain("KING CAN'T BE FAR.");
+    for (const id of ['mario', 'bill'])
+      expect(castleRemark('7-4', 'X', id)?.join(' ')).not.toMatch(/\bLAST\b|MUST BE CLOSE/);
+    expect(CASTLE_PAGES['7-4']?.reveal.join(' ')).not.toMatch(/\bLAST\b/);
+    for (const line of [
+      ...(castleRemark('7-4', 'X', 'mario') ?? []),
+      ...(castleRemark('7-4', 'X', 'bill') ?? []),
+    ])
+      expect(line.length).toBeLessThanOrEqual(26);
     expect(CASTLE_PAGES['2-4']?.reveal.join(' ')).toContain('KOOPA');
   });
 
