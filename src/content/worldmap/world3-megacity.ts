@@ -37,8 +37,8 @@ export const SKETCH_3_MEGACITY: readonly string[] = [
   'T,#,##,#,,######', // Elec Man's tower (prop) rises from here; 3-4 at Wily's gate, the exit east
   '##T#########X#,0', // Bomb Man's park begins
   ',T,,############', // the park's lawn
-  ',,,T##,#,T######', // 3-2 in the park
-  ',T,,####T#X#####', // 3-3 at the tower's foot
+  ',,,T##,#,T##X###', // 3-2 in the park; a generator in the walkway's bend
+  ',T,,####T#######', // 3-3 at the tower's foot
   '################', // Guts Man's quarry (prop) in the corner below
   '###R###########~', // the harbour's quay
   '###############~',
@@ -78,7 +78,8 @@ const AT: Readonly<Record<string, [number, number]>> = {
   start: [0, 4], // before Dr. Light's door
   '3-1': [5, 5], // Cut Man's ruins (Mega Man's hint east, at 6,5)
   '3-2': [7, 9], // Bomb Man's park
-  '3-3': [11, 10], // at the foot of Elec Man's tower
+  // At the foot of Elec Man's tower, under its west half: 3-4 lies within LEFT's aim (aimedRoad).
+  '3-3': [10, 10],
   '3-4': [13, 6], // Wily's skull gate
   'bonus-3': [9, 3], // Fire Man's works, by the magma
 };
@@ -87,8 +88,8 @@ const AT: Readonly<Record<string, [number, number]>> = {
 const ROADS: Readonly<Record<string, [number, number][]>> = {
   'start>3-1': poly([0, 4], [4, 4], [4, 5], [5, 5]),
   '3-1>3-2': poly([5, 5], [5, 7], [7, 7], [7, 9]),
-  '3-2>3-3': poly([7, 9], [7, 11], [11, 11], [11, 10]),
-  '3-3>3-4': poly([11, 10], [13, 10], [13, 6]),
+  '3-2>3-3': poly([7, 9], [7, 11], [10, 11], [10, 10]),
+  '3-3>3-4': poly([10, 10], [13, 10], [13, 6]),
   '3-1>bonus-3': poly([5, 5], [5, 3], [9, 3]),
 };
 
