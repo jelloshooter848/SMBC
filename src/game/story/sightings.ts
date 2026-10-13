@@ -96,9 +96,13 @@ const hero = (
  * nothing is left and the real vine is still to be found.
  */
 export const LINK_SIGHTING_TIMING = {
-  /** Where he stands (level px, his left edge) and where the vine grows (its left edge). */
-  x: 196,
-  vineX: 216,
+  /**
+   * Where he stands (level px, his left edge) and where the vine grows (its left edge): on the
+   * open grass between the start castle (to x 112) and the field's small tree (col 11, x 176), so
+   * the vine never grows over a tree and blends into its green.
+   */
+  x: 124,
+  vineX: 148,
   /** He looks back at you over his shoulder, then faces away again. */
   lookAt: 24,
   lookEnd: 36,

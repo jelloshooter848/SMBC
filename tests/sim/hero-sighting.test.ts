@@ -301,6 +301,16 @@ describe('what each sighting shows', () => {
     expect(LINK_SIGHTING.frames - vineGone).toBeLessThanOrEqual(T.beat + 1);
   });
 
+  it('Link: everything stays on the open grass between the start castle and the small tree', () => {
+    // 2-1's campaign look: decor-castle-big up to x 112, tree-small at col 11 (x 176-192).
+    for (const ds of frames(LINK_SIGHTING, false))
+      for (const d of ds) {
+        const [x0, x1] = d.kind === 'burst' ? [d.x - 14, d.x + 14] : [d.x, d.x + 16];
+        expect(x0).toBeGreaterThanOrEqual(112);
+        expect(x1).toBeLessThanOrEqual(176);
+      }
+  });
+
   it('Mega Man: blinks, the helmet flickers (held once with reduce flashing), he faces you and beams up', () => {
     const T = MEGAMAN_SIGHTING_TIMING;
     const at = (t: number, reduce: boolean) => sprites(MEGAMAN_SIGHTING.draw(t, reduce))[0]!;
