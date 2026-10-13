@@ -15,7 +15,14 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
-import { MAP_HEADER_H, MAP_SLIDE_FRAMES, mapHeaderLabel, WorldMapScene } from '@game/scenes/world-map';
+import {
+  MAP_HEADER_H,
+  MAP_SLIDE_FRAMES,
+  mapHeaderLabel,
+  PREPAINT_AFTER_FRAMES,
+  WorldMapScene,
+} from '@game/scenes/world-map';
+import { lazySheetReady } from '@content/worldmap/above-render';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
 import { loadSave, newSave, writeSave, type SaveFile } from '@game/save/save-files';
@@ -156,11 +163,21 @@ const PAGES: [string, WorldMapPage, WorldMapPage, string, Partial<SaveFile>][] =
   ],
 ];
 
-describe('the sheets are painted when their page first shows, never when the game loads', () => {
-  // First in this file: nothing before it has drawn World 2 or 3.
-  it('paints Hyrule on the slide to World 2 and Mega City on the slide to World 3', () => {
-    const h = makeGame();
-    expect([hyrulePainted(), megacityPainted()]).toEqual([0, 0]);
+describe('the sheets are painted ahead while the map idles, never when the game loads', () => {
+  // First in this file: nothing before it has drawn World 2 or 3. The steps share the sheets' state.
+  const h = makeGame();
+  const painted = () => [hyrulePainted(), megacityPainted()];
+  const ready = (id: string) => lazySheetReady(id) && h.assets.sheetKeys().includes(id);
+
+  it('paints nothing at load or on the title screen', () => {
+    expect(painted()).toEqual([0, 0]);
+    h.game.showTitle();
+    for (let i = 0; i < 2 * PREPAINT_AFTER_FRAMES; i++) h.step();
+    expect(painted()).toEqual([0, 0]);
+    expect(h.assets.sheetKeys().filter((k) => k.endsWith('-above'))).toEqual([]);
+  });
+
+  it('paints Hyrule ahead in slices once the hero stands idle on World 1, Mega City not yet', () => {
     open(h, {
       cleared: [...ALL_W1, ...ALL_W2],
       freed: FREED,
@@ -168,17 +185,43 @@ describe('the sheets are painted when their page first shows, never when the gam
       position: { page: 'smb-1', node: '1-4' },
     });
     expect(h.map().page).toBe(WORLD_1_KINGDOM);
-    for (let i = 0; i < 60; i++) h.step();
-    expect([hyrulePainted(), megacityPainted()]).toEqual([0, 0]);
-    expect(h.assets.sheetKeys().filter((k) => k.endsWith('-above'))).toEqual([]);
+    expect(painted()).toEqual([0, 0]);
+    // About a second idle first, then a slice a frame (PREPAINT_BUDGET_MS) until the sheet is
+    // painted and rasterized.
+    let idle = 0;
+    while (hyrulePainted() === 0 && idle < 2 * PREPAINT_AFTER_FRAMES) {
+      h.step();
+      idle++;
+    }
+    expect(idle).toBeGreaterThan(PREPAINT_AFTER_FRAMES / 2);
+    const counts: number[] = [];
+    for (let i = 0; i < 2000 && !ready('hyrule-above'); i++) {
+      h.step();
+      counts.push(hyrulePainted());
+    }
+    expect(ready('hyrule-above')).toBe(true);
+    expect(new Set(counts).size).toBeGreaterThan(3);
+    expect(megacityPainted()).toBe(0);
+  });
+
+  it('slides to World 2 with no first-show paint', () => {
+    const before = hyrulePainted();
     h.tap('right');
     h.until(() => h.map().mode === 'slide', 200);
     h.step();
-    expect(hyrulePainted()).toBeGreaterThan(0);
-    expect(megacityPainted()).toBe(0);
+    expect(h.r.frames.some((f) => f.sheet === 'hyrule-above')).toBe(true);
     for (let i = 0; i < MAP_SLIDE_FRAMES; i++) h.step();
     h.until(() => h.map().mode === 'idle', 800);
     expect(h.map().page).toBe(WORLD_2_HYRULE);
+    expect(hyrulePainted()).toBe(before);
+    expect(megacityPainted()).toBe(0);
+  });
+
+  it('outside the campaign, idling paints nothing ahead (the classic pages are side-on)', () => {
+    const c = makeGame();
+    c.game.mapProgress.pages.push('smb-2');
+    c.game.scenes.push(new WorldMapScene(c.game, 'smb-2'));
+    for (let i = 0; i < 3 * PREPAINT_AFTER_FRAMES; i++) c.step();
     expect(megacityPainted()).toBe(0);
   });
 });

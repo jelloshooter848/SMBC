@@ -1,4 +1,3 @@
-import type { SpriteDef } from '@engine/gfx/pixelart';
 import type { MapNode } from '@game/map/types';
 import type { Canvas } from './paint';
 import { hash } from './paint';
@@ -7,8 +6,9 @@ import {
   type AbovePiece,
   FrameBook,
   lazySheet,
-  roadFrames,
+  type LazySheetDef,
   roadNames,
+  roadSteps,
   shadow,
   space,
   type Sides,
@@ -819,6 +819,28 @@ const grounds = new WeakMap<readonly string[], AboveGround>();
 export function hyruleGround(tiles: readonly string[]): AboveGround {
   const hit = grounds.get(tiles);
   if (hit) return hit;
+  const b = groundBuilder(tiles);
+  for (let i = 0; i < b.count; i++) b.tile(i);
+  grounds.set(tiles, b.out);
+  return b.out;
+}
+
+/** hyruleGround's steps: one ground tile each (a lazy sheet's prepaint), then the cache. */
+function groundSteps(tiles: readonly string[]): (() => void)[] {
+  if (grounds.has(tiles)) return [];
+  const b = groundBuilder(tiles);
+  return [
+    ...Array.from({ length: b.count }, (_, i) => () => b.tile(i)),
+    () => void (grounds.has(tiles) || grounds.set(tiles, b.out)),
+  ];
+}
+
+/** Works out a Hyrule page's ground a tile at a time, in row order (`tile(i)`, i < count). */
+function groundBuilder(tiles: readonly string[]): {
+  count: number;
+  tile: (i: number) => void;
+  out: AboveGround;
+} {
   const ch = (x: number, y: number): string => {
     const yy = Math.max(2, Math.min(tiles.length - 1, y));
     const xx = Math.max(0, Math.min(15, x));
@@ -840,72 +862,71 @@ export function hyruleGround(tiles: readonly string[]): AboveGround {
   const f1: string[] = [];
   const wet: boolean[] = [];
   const scenery: AbovePiece[] = [];
-  for (let y = 0; y < tiles.length; y++)
-    for (let x = 0; x < 16; x++) {
-      const c = tiles[y]?.[x] ?? '#';
-      const v = Math.floor(hash(x, y, 7) * 4);
-      const w = y >= 2 && WET.has(c);
-      wet.push(w);
-      if (w) {
-        const sides: Sides = {
-          n: wetAt(x, y - 1),
-          e: wetAt(x + 1, y),
-          s: wetAt(x, y + 1),
-          w: wetAt(x - 1, y),
-        };
-        let corners = '';
-        if (sides.n && sides.w && !wetAt(x - 1, y - 1)) corners += 'a';
-        if (sides.n && sides.e && !wetAt(x + 1, y - 1)) corners += 'b';
-        if (sides.s && sides.e && !wetAt(x + 1, y + 1)) corners += 'c';
-        if (sides.s && sides.w && !wetAt(x - 1, y + 1)) corners += 'd';
-        f0.push(water(sides, corners, 0));
-        f1.push(water(sides, corners, 1));
-        continue;
-      }
-      const same = (k: string) => ({
-        n: ch(x, y - 1) === k || (k === '^' && ch(x, y - 1) === 'G'),
-        e: ch(x + 1, y) === k || ch(x + 1, y) === 'G',
-        s: ch(x, y + 1) === k,
-        w: ch(x - 1, y) === k || ch(x - 1, y) === 'G',
-      });
-      let g: string;
-      if (y < 2) g = band(x, y);
-      else if (c === '*') g = flowers(v);
-      else if (c === ',') g = grass(4 + (v % 2));
-      else if (c === 'o') g = rockGround(v);
-      else if (c === ':') g = sand(v);
-      else if (c === '5')
-        g = woods(
-          {
-            n: ch(x, y - 1) === '5' || y === 2,
-            e: ch(x + 1, y) === '5' || x === 15,
-            s: ch(x, y + 1) === '5',
-            w: ch(x - 1, y) === '5' || x === 0,
-          },
-          y % 2 === 1,
-        );
-      else if (c === '^')
-        g = cliff(same('^'), [ch(x, y + 1), ch(x - 1, y), ch(x + 1, y)].includes('o') ? 'rock' : 'grass');
-      else if (c === 'h') g = ledge(same('h'), ch(x, y + 1) === ':' ? 'sand' : 'grass');
-      else if (c === 'G') g = stairs(ch(x - 1, y) === 'h' || ch(x + 1, y) === 'h' ? 'ledge' : 'cliff');
-      else {
-        const base = 'TRHSC'.includes(c) ? baseAt(x, y) : 'grass';
-        g = base === 'rock' ? rockGround(v) : base === 'sand' ? sand(v) : grass(v);
-      }
-      f0.push(g);
-      f1.push(g);
-      const stand = (fr: string, dy = 0): void =>
-        void scenery.push({ frame: fr, x: x * 16, y: y * 16 + dy, feet: y * 16 + 16 });
-      if (c === 'T') stand(tree(), -8);
-      else if (c === 'H') stand(bush(0));
-      else if (c === 'S') stand(bush(1));
-      else if (c === 'R') stand(rock(baseAt(x, y) === 'rock' ? 'rock' : 'grass'));
-      else if (c === 'C')
-        stand(stakes({ n: false, s: false, w: ch(x - 1, y) === 'C', e: ch(x + 1, y) === 'C' }));
+  const tile = (i: number): void => {
+    const x = i & 15;
+    const y = i >> 4;
+    const c = tiles[y]?.[x] ?? '#';
+    const v = Math.floor(hash(x, y, 7) * 4);
+    const w = y >= 2 && WET.has(c);
+    wet.push(w);
+    if (w) {
+      const sides: Sides = {
+        n: wetAt(x, y - 1),
+        e: wetAt(x + 1, y),
+        s: wetAt(x, y + 1),
+        w: wetAt(x - 1, y),
+      };
+      let corners = '';
+      if (sides.n && sides.w && !wetAt(x - 1, y - 1)) corners += 'a';
+      if (sides.n && sides.e && !wetAt(x + 1, y - 1)) corners += 'b';
+      if (sides.s && sides.e && !wetAt(x + 1, y + 1)) corners += 'c';
+      if (sides.s && sides.w && !wetAt(x - 1, y + 1)) corners += 'd';
+      f0.push(water(sides, corners, 0));
+      f1.push(water(sides, corners, 1));
+      return;
     }
-  const out: AboveGround = { frames: [f0, f1], wet, scenery };
-  grounds.set(tiles, out);
-  return out;
+    const same = (k: string) => ({
+      n: ch(x, y - 1) === k || (k === '^' && ch(x, y - 1) === 'G'),
+      e: ch(x + 1, y) === k || ch(x + 1, y) === 'G',
+      s: ch(x, y + 1) === k,
+      w: ch(x - 1, y) === k || ch(x - 1, y) === 'G',
+    });
+    let g: string;
+    if (y < 2) g = band(x, y);
+    else if (c === '*') g = flowers(v);
+    else if (c === ',') g = grass(4 + (v % 2));
+    else if (c === 'o') g = rockGround(v);
+    else if (c === ':') g = sand(v);
+    else if (c === '5')
+      g = woods(
+        {
+          n: ch(x, y - 1) === '5' || y === 2,
+          e: ch(x + 1, y) === '5' || x === 15,
+          s: ch(x, y + 1) === '5',
+          w: ch(x - 1, y) === '5' || x === 0,
+        },
+        y % 2 === 1,
+      );
+    else if (c === '^')
+      g = cliff(same('^'), [ch(x, y + 1), ch(x - 1, y), ch(x + 1, y)].includes('o') ? 'rock' : 'grass');
+    else if (c === 'h') g = ledge(same('h'), ch(x, y + 1) === ':' ? 'sand' : 'grass');
+    else if (c === 'G') g = stairs(ch(x - 1, y) === 'h' || ch(x + 1, y) === 'h' ? 'ledge' : 'cliff');
+    else {
+      const base = 'TRHSC'.includes(c) ? baseAt(x, y) : 'grass';
+      g = base === 'rock' ? rockGround(v) : base === 'sand' ? sand(v) : grass(v);
+    }
+    f0.push(g);
+    f1.push(g);
+    const stand = (fr: string, dy = 0): void =>
+      void scenery.push({ frame: fr, x: x * 16, y: y * 16 + dy, feet: y * 16 + 16 });
+    if (c === 'T') stand(tree(), -8);
+    else if (c === 'H') stand(bush(0));
+    else if (c === 'S') stand(bush(1));
+    else if (c === 'R') stand(rock(baseAt(x, y) === 'rock' ? 'rock' : 'grass'));
+    else if (c === 'C')
+      stand(stakes({ n: false, s: false, w: ch(x - 1, y) === 'C', e: ch(x + 1, y) === 'C' }));
+  };
+  return { count: tiles.length * 16, tile, out: { frames: [f0, f1], wet, scenery } };
 }
 
 /** The node marker for a node on a Hyrule page (kingdom-render.ts kingdomNodeFrame's twin). */
@@ -921,43 +942,53 @@ export function hyruleNodeFrame(
   return s.cleared ? 'node-cleared' : 'node-open';
 }
 
-/** Paints every frame of the sheet, with the grounds of the pages given. */
-function paintSheet(pages: readonly (readonly string[])[]): Record<string, readonly string[]> {
-  for (let v = 0; v < 6; v++) grass(v);
+/**
+ * Every frame of the sheet, with the grounds of the pages given, as small painting steps: a frame
+ * or a few small ones, a road join, a ground tile (a landmark is one step: it paints as a whole).
+ */
+function paintSteps(pages: readonly (readonly string[])[]): (() => void)[] {
+  const steps: (() => void)[] = [];
+  const add = (f: () => unknown): void => void steps.push(() => void f());
+  for (let v = 0; v < 6; v++) add(() => grass(v));
   for (let v = 0; v < 4; v++) {
-    flowers(v);
-    rockGround(v);
-    sand(v);
+    add(() => flowers(v));
+    add(() => rockGround(v));
+    add(() => sand(v));
   }
-  tree();
-  bush(0);
-  bush(1);
-  rock('grass');
-  rock('rock');
-  hyruleCastle();
-  castleBridge();
-  bridge();
-  house('link-house', 'red');
-  house('house-blue', 'blue');
-  house('house-red', 'red');
-  well();
-  sign();
-  desertPalace();
-  easternPalace();
-  standingStones();
-  caveMouth();
-  nodeFrames();
-  roadFrames(book, 'road', ROAD_INK);
-  for (const tiles of pages) hyruleGround(tiles);
-  return F;
+  add(tree);
+  add(() => bush(0));
+  add(() => bush(1));
+  add(() => rock('grass'));
+  add(() => rock('rock'));
+  add(hyruleCastle);
+  add(castleBridge);
+  add(bridge);
+  add(() => house('link-house', 'red'));
+  add(() => house('house-blue', 'blue'));
+  add(() => house('house-red', 'red'));
+  add(well);
+  add(sign);
+  add(desertPalace);
+  add(easternPalace);
+  add(standingStones);
+  add(caveMouth);
+  add(nodeFrames);
+  steps.push(...roadSteps(book, 'road', ROAD_INK));
+  for (const tiles of pages) steps.push(...groundSteps(tiles));
+  return steps;
 }
 
 /**
  * The `hyrule-above` sheet: every frame, with the grounds of the pages given (after autoShore),
- * painted the first time the game draws from it (lazySheet), never when the game loads.
+ * painted the first time the game draws from it, or ahead of that in slices while a map idles
+ * (lazySheet), never when the game loads.
  */
-export function hyruleAboveSheet(pages: readonly (readonly string[])[]): SpriteDef {
-  return lazySheet('hyrule-above', () => paintSheet(pages));
+export function hyruleAboveSheet(pages: readonly (readonly string[])[]): LazySheetDef {
+  return lazySheet(
+    'hyrule-above',
+    () => paintSteps(pages),
+    () => F,
+  );
 }
 
 /** How many of the sheet's frames are painted so far (0 until World 2 first shows). */

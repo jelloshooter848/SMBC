@@ -1,4 +1,3 @@
-import type { SpriteDef } from '@engine/gfx/pixelart';
 import type { MapNode } from '@game/map/types';
 import type { Canvas } from './paint';
 import { hash } from './paint';
@@ -7,7 +6,8 @@ import {
   type AbovePiece,
   FrameBook,
   lazySheet,
-  roadFrames,
+  type LazySheetDef,
+  roadSteps,
   roadNames,
   shadow,
   sideKey,
@@ -877,6 +877,27 @@ const grounds = new WeakMap<readonly string[], AboveGround>();
 export function megacityGround(tiles: readonly string[], zones: readonly string[]): AboveGround {
   const hit = grounds.get(tiles);
   if (hit) return hit;
+  const b = groundBuilder(tiles, zones);
+  for (let i = 0; i < b.count; i++) b.tile(i);
+  grounds.set(tiles, b.out);
+  return b.out;
+}
+
+/** megacityGround's steps: one ground tile each (a lazy sheet's prepaint), then the cache. */
+function groundSteps(tiles: readonly string[], zones: readonly string[]): (() => void)[] {
+  if (grounds.has(tiles)) return [];
+  const b = groundBuilder(tiles, zones);
+  return [
+    ...Array.from({ length: b.count }, (_, i) => () => b.tile(i)),
+    () => void (grounds.has(tiles) || grounds.set(tiles, b.out)),
+  ];
+}
+
+/** Works out a Mega City page's ground a tile at a time, in row order (`tile(i)`, i < count). */
+function groundBuilder(
+  tiles: readonly string[],
+  zones: readonly string[],
+): { count: number; tile: (i: number) => void; out: AboveGround } {
   const ch = (x: number, y: number): string =>
     tiles[Math.max(2, Math.min(14, y))]?.[Math.max(0, Math.min(15, x))] ?? '#';
   const zoneAt = (x: number, y: number): Zone =>
@@ -885,52 +906,51 @@ export function megacityGround(tiles: readonly string[], zones: readonly string[
   const f1: string[] = [];
   const wet: boolean[] = [];
   const scenery: AbovePiece[] = [];
-  for (let y = 0; y < tiles.length; y++)
-    for (let x = 0; x < 16; x++) {
-      const c = tiles[y]?.[x] ?? '#';
-      const z = zoneAt(x, y);
-      const v = Math.floor(hash(x, y, 7) * 4);
-      const w = y >= 2 && WET.has(c);
-      wet.push(w);
-      if (w) {
-        const kind = c === 'L' ? 'L' : '~';
-        const same = (dx: number, dy: number) => {
-          const o = ch(x + dx, y + dy);
-          return kind === 'L' ? o === 'L' : o === '~' || o === '=';
-        };
-        const sides: Sides = { n: same(0, -1), e: same(1, 0), s: same(0, 1), w: same(-1, 0) };
-        let corners = '';
-        if (sides.n && sides.w && !same(-1, -1)) corners += 'a';
-        if (sides.n && sides.e && !same(1, -1)) corners += 'b';
-        if (sides.s && sides.e && !same(1, 1)) corners += 'c';
-        if (sides.s && sides.w && !same(-1, 1)) corners += 'd';
-        const paint = kind === 'L' ? magma : sea;
-        f0.push(paint(sides, corners, 0));
-        f1.push(paint(sides, corners, 1));
-        continue;
-      }
-      const joined = (dx: number, dy: number) => ch(x + dx, y + dy) === ',' && zoneAt(x + dx, y + dy) === z;
-      const g =
-        y < 2
-          ? band(x)
-          : c === ','
-            ? accent(z, v, { n: joined(0, -1), e: joined(1, 0), s: joined(0, 1), w: joined(-1, 0) })
-            : pavement(v);
-      f0.push(g);
-      f1.push(g);
-      const stand = (fr: string, dy = 0): void =>
-        void scenery.push({ frame: fr, x: x * 16, y: y * 16 + dy, feet: y * 16 + 16 });
-      if (c === '0')
-        stand(z === 'B' ? tree('B') : block(z, Math.floor(hash(x, y, 5) * 4)), z === 'B' ? -16 : 0);
-      else if (c === 'T') stand(tree(z === 'B' ? 'B' : 'L'), -16);
-      else if (c === 'H') stand(block('L', 0));
-      else if (c === 'R') stand(z === 'G' ? block('G', Math.floor(hash(x, y, 8) * 3)) : rubble());
-      else if (c === 'P') stand(firePillar(), -8);
-      else if (c === 'X') stand(generator(), -8);
+  const tile = (i: number): void => {
+    const x = i & 15;
+    const y = i >> 4;
+    const c = tiles[y]?.[x] ?? '#';
+    const z = zoneAt(x, y);
+    const v = Math.floor(hash(x, y, 7) * 4);
+    const w = y >= 2 && WET.has(c);
+    wet.push(w);
+    if (w) {
+      const kind = c === 'L' ? 'L' : '~';
+      const same = (dx: number, dy: number) => {
+        const o = ch(x + dx, y + dy);
+        return kind === 'L' ? o === 'L' : o === '~' || o === '=';
+      };
+      const sides: Sides = { n: same(0, -1), e: same(1, 0), s: same(0, 1), w: same(-1, 0) };
+      let corners = '';
+      if (sides.n && sides.w && !same(-1, -1)) corners += 'a';
+      if (sides.n && sides.e && !same(1, -1)) corners += 'b';
+      if (sides.s && sides.e && !same(1, 1)) corners += 'c';
+      if (sides.s && sides.w && !same(-1, 1)) corners += 'd';
+      const paint = kind === 'L' ? magma : sea;
+      f0.push(paint(sides, corners, 0));
+      f1.push(paint(sides, corners, 1));
+      return;
     }
-  const out: AboveGround = { frames: [f0, f1], wet, scenery };
-  grounds.set(tiles, out);
-  return out;
+    const joined = (dx: number, dy: number) => ch(x + dx, y + dy) === ',' && zoneAt(x + dx, y + dy) === z;
+    const g =
+      y < 2
+        ? band(x)
+        : c === ','
+          ? accent(z, v, { n: joined(0, -1), e: joined(1, 0), s: joined(0, 1), w: joined(-1, 0) })
+          : pavement(v);
+    f0.push(g);
+    f1.push(g);
+    const stand = (fr: string, dy = 0): void =>
+      void scenery.push({ frame: fr, x: x * 16, y: y * 16 + dy, feet: y * 16 + 16 });
+    if (c === '0')
+      stand(z === 'B' ? tree('B') : block(z, Math.floor(hash(x, y, 5) * 4)), z === 'B' ? -16 : 0);
+    else if (c === 'T') stand(tree(z === 'B' ? 'B' : 'L'), -16);
+    else if (c === 'H') stand(block('L', 0));
+    else if (c === 'R') stand(z === 'G' ? block('G', Math.floor(hash(x, y, 8) * 3)) : rubble());
+    else if (c === 'P') stand(firePillar(), -8);
+    else if (c === 'X') stand(generator(), -8);
+  };
+  return { count: tiles.length * 16, tile, out: { frames: [f0, f1], wet, scenery } };
 }
 
 /** The node marker for a node on a Mega City page. */
@@ -946,37 +966,45 @@ export function megacityNodeFrame(
   return s.cleared ? 'node-cleared' : 'node-open';
 }
 
-/** Paints every frame of the sheet, with the grounds of the pages given ([tiles, zones]). */
-function paintSheet(
-  pages: readonly (readonly [readonly string[], readonly string[]])[],
-): Record<string, readonly string[]> {
+/**
+ * Every frame of the sheet, with the grounds of the pages given ([tiles, zones]), as small painting
+ * steps: a frame, a road join, a ground tile (a landmark is one step: it paints as a whole).
+ */
+function paintSteps(pages: readonly (readonly [readonly string[], readonly string[]])[]): (() => void)[] {
+  const steps: (() => void)[] = [];
+  const add = (f: () => unknown): void => void steps.push(() => void f());
   const zones: Zone[] = ['L', 'C', 'F', 'W', 'G', 'B', 'E'];
-  tree('B');
-  tree('L');
-  for (const z of zones) if (z !== 'B') for (let v = 0; v < 4; v++) block(z, v);
-  firePillar();
-  generator();
-  rubble();
-  lightLab();
-  wilyFortress();
-  elecTower();
-  quarry();
-  girder();
-  furnace();
-  nodeFrames();
-  roadFrames(book, 'walk', WALK_INK);
-  for (const [tiles, z] of pages) megacityGround(tiles, z);
-  return F;
+  add(() => tree('B'));
+  add(() => tree('L'));
+  for (const z of zones) if (z !== 'B') for (let v = 0; v < 4; v++) add(() => block(z, v));
+  add(firePillar);
+  add(generator);
+  add(rubble);
+  add(lightLab);
+  add(wilyFortress);
+  add(elecTower);
+  add(quarry);
+  add(girder);
+  add(furnace);
+  add(nodeFrames);
+  steps.push(...roadSteps(book, 'walk', WALK_INK));
+  for (const [tiles, z] of pages) steps.push(...groundSteps(tiles, z));
+  return steps;
 }
 
 /**
  * The `megacity-above` sheet: every frame, with the grounds of the pages given ([tiles, zones]),
- * painted the first time the game draws from it (lazySheet), never when the game loads.
+ * painted the first time the game draws from it, or ahead of that in slices while a map idles
+ * (lazySheet), never when the game loads.
  */
 export function megacityAboveSheet(
   pages: readonly (readonly [readonly string[], readonly string[]])[],
-): SpriteDef {
-  return lazySheet('megacity-above', () => paintSheet(pages));
+): LazySheetDef {
+  return lazySheet(
+    'megacity-above',
+    () => paintSteps(pages),
+    () => F,
+  );
 }
 
 /** How many of the sheet's frames are painted so far (0 until World 3 first shows). */

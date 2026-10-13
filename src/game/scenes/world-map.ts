@@ -13,6 +13,8 @@ import {
   drawAboveRoads,
   drawAboveScenery,
   isAbovePage,
+  lazySheetReady,
+  prepaintSheet,
   type AboveLook,
   type RoadCell,
 } from '@content/worldmap/above-render';
@@ -103,6 +105,16 @@ import { HINT_COLS, sealedHint, welcomeHint, type Page } from '../story/script';
 export const MAP_WALK_SPEED = 2;
 /** Length of the slide between two pages. */
 export const MAP_SLIDE_FRAMES = 30;
+
+/**
+ * Frames the hero stands idle on a map page before the next page's sheet is painted ahead (0.4.50:
+ * a page drawn from above paints its sheet the first time it shows, a hitch on the slide to it on
+ * a slow phone; painted ahead in slices while the map idles, the slide finds it ready).
+ */
+export const PREPAINT_AFTER_FRAMES = 60;
+
+/** The most one frame (or one idle callback) spends painting a sheet ahead, in ms. */
+export const PREPAINT_BUDGET_MS = 4;
 /** Frames between two dots of a path being revealed, and before a revealed node pops in. */
 export const REVEAL_DOT_FRAMES = 6;
 export const REVEAL_NODE_FRAMES = 16;
@@ -372,6 +384,10 @@ export class WorldMapScene implements Scene {
   hx = 0;
   hy = 0;
   private facingLeft = false;
+  /** Frames stood idle in a row (PREPAINT_AFTER_FRAMES). */
+  private stillFrames = 0;
+  /** An idle callback is waiting to paint ahead (requestIdleCallback). */
+  private prepaintPending = false;
   /** The way the hero last walked (a top-down page draws him from above, facing it). */
   private facing: Dir = 'down';
   private t = 0;
@@ -1013,6 +1029,7 @@ export class WorldMapScene implements Scene {
     this.t++;
     this.startTrophyBursts();
     this.updateToadLeaving();
+    if (this.mode !== 'idle') this.stillFrames = 0;
     if (this.updateGuard()) return;
     switch (this.mode) {
       case 'reveal':
@@ -1042,7 +1059,44 @@ export class WorldMapScene implements Scene {
         // The one-time phone tip (0.4.44) waits over the map once the first clear is drawn in.
         if (mapNotice(this.game)) return;
         this.updateIdle(input);
+        if (this.mode === 'idle') this.prepaintAhead();
     }
+  }
+
+  /**
+   * Standing idle (PREPAINT_AFTER_FRAMES and on): paints the next page's sheet ahead, a slice at a
+   * time (PREPAINT_BUDGET_MS), in the browser's idle time where it has requestIdleCallback, else in
+   * this frame's; once painted, the sheet is rasterized (one step), so the slide to that page draws
+   * from a ready sheet. Only pages drawn from above have sheets painted on demand.
+   */
+  private prepaintAhead(): void {
+    if (++this.stillFrames < PREPAINT_AFTER_FRAMES || this.prepaintPending) return;
+    const sheet = this.aheadSheet();
+    if (!sheet) return;
+    const assets = this.game.ctx.assets;
+    const slice = (budget: number): void => {
+      this.prepaintPending = false;
+      if (this.mode !== 'idle' || this.game.scenes.top !== this) return;
+      if (prepaintSheet(sheet, budget) && !assets.sheetKeys().includes(sheet)) assets.sheet(sheet);
+    };
+    const idle = (
+      globalThis as { requestIdleCallback?: (cb: (d: { timeRemaining(): number }) => void) => number }
+    ).requestIdleCallback;
+    if (!idle) return slice(PREPAINT_BUDGET_MS);
+    this.prepaintPending = true;
+    idle((d) => slice(Math.max(1, Math.min(PREPAINT_BUDGET_MS, d.timeRemaining()))));
+  }
+
+  /** The sheet of the next page (by this page's exits) still to paint or rasterize, or null. */
+  private aheadSheet(): string | null {
+    for (const e of this.page.exits) {
+      const next = this.pageById(e.to);
+      const look = next ? aboveLook(next) : null;
+      if (!look) continue;
+      if (!lazySheetReady(look.sheet) || !this.game.ctx.assets.sheetKeys().includes(look.sheet))
+        return look.sheet;
+    }
+    return null;
   }
 
   /**

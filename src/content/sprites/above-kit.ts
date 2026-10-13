@@ -55,18 +55,68 @@ export class FrameBook {
   }
 }
 
+/** A sheet painted on demand (lazySheet), in slices while the map idles or all at once. */
+export interface LazySheetDef extends SpriteDef {
+  /**
+   * Paints more of the sheet for about `budgetMs` (at least one step: a frame, a group of frames or
+   * a ground tile), resuming where it stopped; true once every frame is painted.
+   */
+  prepaint(budgetMs: number): boolean;
+  /** Every frame is painted. */
+  readonly ready: boolean;
+}
+
+/** Every lazy sheet by its id (its palette name). */
+export const LAZY_SHEETS: ReadonlyMap<string, LazySheetDef> = new Map<string, LazySheetDef>();
+
 /**
  * A sheet painted the first time its frames are read (the asset registry reads them when the game
- * first draws from it), then kept: `paint` returns every frame.
+ * first draws from it), or ahead of that a slice at a time (`prepaint`, while a map page idles),
+ * then kept. `steps` lists the painting in small steps, run in order; `collect` returns every frame
+ * once they are done. Registered by its palette name (the sheet's id) for prepaintSheet.
  */
-export function lazySheet(palette: string, paint: () => Record<string, readonly string[]>): SpriteDef {
+export function lazySheet(
+  palette: string,
+  steps: () => readonly (() => void)[],
+  collect: () => Record<string, readonly string[]>,
+): LazySheetDef {
   let frames: Record<string, readonly string[]> | null = null;
-  return {
+  let queue: readonly (() => void)[] | null = null;
+  let next = 0;
+  const run = (over: () => boolean): void => {
+    queue ??= steps();
+    while (next < queue.length) {
+      (queue[next++] as () => void)();
+      if (over()) break;
+    }
+    if (next >= queue.length) frames = collect();
+  };
+  const def: LazySheetDef = {
     palette,
     get frames() {
-      return (frames ??= paint());
+      if (!frames) run(() => false);
+      return frames as Record<string, readonly string[]>;
+    },
+    prepaint(budgetMs: number): boolean {
+      if (frames) return true;
+      const t0 = performance.now();
+      run(() => performance.now() - t0 >= budgetMs);
+      return frames !== null;
+    },
+    get ready() {
+      return frames !== null;
     },
   };
+  (LAZY_SHEETS as Map<string, LazySheetDef>).set(palette, def);
+  return def;
+}
+
+/**
+ * Paints more of lazy sheet `id` for about `budgetMs` (LazySheetDef.prepaint); true when it is
+ * done, or is no lazy sheet.
+ */
+export function prepaintSheet(id: string, budgetMs: number): boolean {
+  return LAZY_SHEETS.get(id)?.prepaint(budgetMs) ?? true;
 }
 
 /** A piece of standing scenery on a page: its frame's top-left, and the row under its feet. */
@@ -179,6 +229,11 @@ export function roadNames(prefix: string): string[] {
 /** Paints the 16 road joins by mask, returning their names (roadNames). */
 export function roadFrames(book: FrameBook, prefix: string, ink: RoadInk): string[] {
   return Array.from({ length: 16 }, (_, m) => road(book, prefix, maskSides(m), ink));
+}
+
+/** The 16 road joins as painting steps, one join each (a lazy sheet's steps). */
+export function roadSteps(book: FrameBook, prefix: string, ink: RoadInk): (() => void)[] {
+  return Array.from({ length: 16 }, (_, m) => () => void road(book, prefix, maskSides(m), ink));
 }
 
 /** Water colours, and the land colours of its banks. */

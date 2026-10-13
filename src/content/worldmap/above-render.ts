@@ -2,7 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { AboveLookId, MapNode, MapProp, WorldExit, WorldMapPage } from '@game/map/types';
 import { drawnFromAbove } from '@game/map/rules';
-import type { AboveGround } from '@content/sprites/above-kit';
+import { LAZY_SHEETS, prepaintSheet, type AboveGround } from '@content/sprites/above-kit';
 import { kingdomGround, ROAD_FRAMES } from '@content/sprites/kingdom';
 import { HYRULE_ROAD_FRAMES, hyruleGround, hyruleNodeFrame } from '@content/sprites/hyrule-above';
 import { MEGACITY_ROAD_FRAMES, megacityGround, megacityNodeFrame } from '@content/sprites/megacity-above';
@@ -86,6 +86,11 @@ const LOOKS: Readonly<Record<AboveLookId, AboveLook>> = {
     node: megacityNodeFrame,
   },
 };
+
+export { prepaintSheet };
+
+/** Whether sheet `id` is painted (a lazy sheet: every frame; any other sheet: always). */
+export const lazySheetReady = (id: string): boolean => LAZY_SHEETS.get(id)?.ready ?? true;
 
 /** Whether `page` is drawn from above (rules.drawnFromAbove: theme 'kingdom' or an `above` look). */
 export const isAbovePage = drawnFromAbove;
