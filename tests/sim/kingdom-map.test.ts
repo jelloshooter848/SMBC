@@ -153,6 +153,33 @@ describe('World 1 from above (campaign play)', () => {
       walkTo(h, to);
   });
 
+  it('a diagonal on the touch pad (two directions at once) takes whichever has a road', () => {
+    // The touch d-pad holds up and left together between 35 and 60 degrees: at 1-1 an up-left
+    // thumb means the start (up), though LEFT alone leads nowhere; a diagonal with no road bumps.
+    const at = (node: string) => {
+      const h = makeGame();
+      open(h, {
+        cleared: ALL_W1,
+        secrets: ['bonus-1'],
+        pages: ['smb-1', 'smb-2'],
+        position: { page: 'smb-1', node },
+      });
+      return h;
+    };
+    const go = (node: string, dirs: Action[]) => {
+      const h = at(node);
+      const bump = h.game.ctx.audio.sfx as ReturnType<typeof vi.fn>;
+      bump.mockClear();
+      h.step(dirs);
+      h.step();
+      h.until(() => h.map().mode === 'idle', 600);
+      return { node: h.map().node, bumped: bump.mock.calls.some((c) => c[0] === 'bump') };
+    };
+    expect(go('1-1', ['left', 'up'])).toEqual({ node: 'start', bumped: false });
+    expect(go('1-1', ['left', 'down'])).toEqual({ node: '1-2', bumped: false });
+    expect(go('bonus-1', ['right', 'down'])).toEqual({ node: 'bonus-1', bumped: true });
+  });
+
   it('faces the way he walks while walking, and the player while he stands', () => {
     const h = makeGame();
     open(h, { cleared: ALL_W1, pages: ['smb-1'], position: { page: 'smb-1', node: 'start' } });

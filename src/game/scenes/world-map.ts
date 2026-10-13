@@ -1217,12 +1217,15 @@ export class WorldMapScene implements Scene {
       }
       return;
     }
+    // A diagonal (the touch pad holds two directions at once between its zones) takes whichever
+    // of them has a road; only when none has does it bump.
+    let bumped = false;
     for (const d of DIRS) {
       if (!input.pressed(d)) continue;
       const step = here ? nextStep(this.page, this.progress, this.node, d, MAP_PAGES, this.unlockAll) : null;
       if (!step) {
-        this.game.ctx.audio.sfx('bump');
-        return;
+        bumped = true;
+        continue;
       }
       this.walkStep = step;
       this.walkPts = step.points.map(([x, y]): [number, number] => [x * 16, y * 16]);
@@ -1236,6 +1239,7 @@ export class WorldMapScene implements Scene {
       this.mode = 'walk';
       return;
     }
+    if (bumped) this.game.ctx.audio.sfx('bump');
   }
 
   private updateWalk(): void {
