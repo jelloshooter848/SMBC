@@ -1,5 +1,6 @@
 import type { Scene } from '@engine/scene';
 import { worldLabel } from '../hud/world-label';
+import { shownStage } from '../map/campaign-order';
 import { drawHud } from '../hud/hud';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { Game } from './game';
@@ -35,7 +36,7 @@ export class IntroScene implements Scene {
     const s = this.game.state;
     // initiateBlackScreen hides the time's digits with the infinite-time cheat.
     drawHud(r, assets, s, this.game.ctx.assist.infiniteTime ? null : this.time, 0, []);
-    r.text(font, `WORLD ${worldLabel(s.world)}-${s.stage}`, 88, 80);
+    r.text(font, `WORLD ${worldLabel(s.world)}-${shownStage(s.world, s.stage, s.campaignOrder)}`, 88, 80);
     const c = s.character;
     const sheet = assets.sheet(c.portrait.sheet, c.portrait.palette);
     const f = sheet.frames.get(c.portrait.frame);

@@ -8,18 +8,29 @@ import { drawnFromAbove, exitId, newMapProgress, nextStep, pathId, type Dir } fr
 import { localSpot } from '@game/map/world-gate';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { CAMPAIGN_PAGES, mapPage, MAP_PAGES, pageLook } from './index';
-import { aboveLook, aboveRoadCells, drawAboveRoads, type AboveNodeState } from './above-render';
+import {
+  aboveLook,
+  aboveRoadCells,
+  drawAboveRoads,
+  drawAboveScenery,
+  type AboveNodeState,
+} from './above-render';
 import { WORLD_1_KINGDOM } from './world1-kingdom';
 import { WORLD_2 } from './world2';
 import { SKETCH_2_HYRULE, WORLD_2_HYRULE } from './world2-hyrule';
 import { WORLD_3 } from './world3';
 import { WORLD_3_MEGACITY } from './world3-megacity';
+import { WORLD_4 } from './world4';
+import { WORLD_4_ZEBES } from './world4-zebes';
+import { WORLD_5 } from './world5';
+import { WORLD_5_TRANSYLVANIA } from './world5-transylvania';
 
 /*
  * Worlds 2 and 3 from above (0.4.50, campaign play): HYRULE and MEGA CITY are looks of the
  * registered World 2 and 3, so saves, save codes, reveals, the bonus spots and the gates read them
- * exactly as WORLD_2 and WORLD_3. pages.test.ts runs every page rule on them too;
- * tests/sim/above-maps.test.ts plays them.
+ * exactly as WORLD_2 and WORLD_3. Worlds 4 and 5 (0.4.52): PLANET ZEBES and TRANSYLVANIA the same
+ * way, World 4's roads in the campaign order (map/campaign-order.ts). pages.test.ts runs every page
+ * rule on them too; tests/sim/above-maps.test.ts and above-maps-w45.test.ts play them.
  */
 
 const assets = new AssetRegistry(PALETTES);
@@ -51,6 +62,8 @@ interface Case {
   bridges: readonly string[];
   /** Every node's UP, RIGHT, DOWN, LEFT with every road open and the bonus spot found. */
   aim: Record<string, (string | null)[]>;
+  /** The road ids when the campaign plays the world in another order (else the classic page's). */
+  roads?: readonly string[];
 }
 
 const CASES: [string, Case][] = [
@@ -91,11 +104,56 @@ const CASES: [string, Case][] = [
       },
     },
   ],
+  [
+    'World 4, Planet Zebes',
+    {
+      page: WORLD_4_ZEBES,
+      classic: WORLD_4,
+      sheet: 'zebes-above',
+      captive: ['4-2', -1], // Samus west of internal 4-2 (shown 4-1), at 1,11, over the Chozo
+      bridges: [],
+      aim: {
+        start: [null, null, '4-2', 'smb-3'],
+        '4-1': [null, '4-3', '4-2', '4-2'],
+        '4-2': ['start', '4-1', 'bonus-4', null],
+        '4-3': ['4-4', '4-4', '4-1', '4-1'],
+        // The escape leaves Tourian west; RIGHT heads for World 5 too (the exit's far end).
+        '4-4': [null, 'smb-5', '4-3', 'smb-5'],
+        'bonus-4': ['4-2', null, null, '4-2'],
+      },
+      // The campaign order: internal 4-2 first (shown 4-1), then 4-1 (shown 4-2), 4-3, 4-4.
+      roads: ['start>4-2', '4-2>4-1', '4-1>4-3', '4-3>4-4', '4-2>bonus-4'],
+    },
+  ],
+  [
+    'World 5, Transylvania',
+    {
+      page: WORLD_5_TRANSYLVANIA,
+      classic: WORLD_5,
+      sheet: 'transylvania-above',
+      captive: ['5-1', -1], // Simon west of 5-1 (his crypt's entrance in 5-1), at 1,9
+      bridges: ['bridge-v'],
+      aim: {
+        start: [null, '5-1', '5-1', 'smb-4'],
+        '5-1': ['start', '5-2', 'bonus-5', null],
+        '5-2': ['5-3', '5-3', null, '5-1'],
+        '5-3': [null, '5-4', '5-2', null],
+        '5-4': [null, null, 'smb-6', '5-3'],
+        'bonus-5': ['5-1', null, null, '5-1'],
+      },
+    },
+  ],
 ];
 
 describe('campaign looks from above', () => {
-  it('are World 1, 2 and 3’s, only in campaign play: the registry keeps the classic pages', () => {
-    expect(CAMPAIGN_PAGES).toEqual([WORLD_1_KINGDOM, WORLD_2_HYRULE, WORLD_3_MEGACITY]);
+  it('are Worlds 1 to 5’s, only in campaign play: the registry keeps the classic pages', () => {
+    expect(CAMPAIGN_PAGES).toEqual([
+      WORLD_1_KINGDOM,
+      WORLD_2_HYRULE,
+      WORLD_3_MEGACITY,
+      WORLD_4_ZEBES,
+      WORLD_5_TRANSYLVANIA,
+    ]);
     for (const p of CAMPAIGN_PAGES) {
       expect(MAP_PAGES).not.toContain(p);
       expect(drawnFromAbove(p), p.id).toBe(true);
@@ -124,9 +182,9 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
     expect(page.id).toBe(classic.id);
     expect(look.sheet).toBe(c.sheet);
     for (const k of ['label', 'title', 'music', 'group', 'theme'] as const) expect(page[k]).toBe(classic[k]);
-    const strip = (n: MapNode) => ({ ...n, x: 0, y: 0 });
+    const strip = ({ shown: _s, ...n }: MapNode) => ({ ...n, x: 0, y: 0 });
     expect(page.nodes.map(strip)).toEqual(classic.nodes.map(strip));
-    expect(page.paths.map(pathId)).toEqual(classic.paths.map(pathId));
+    expect(page.paths.map(pathId)).toEqual(c.roads ?? classic.paths.map(pathId));
     expect(page.paths.map((p) => p.exit)).toEqual(classic.paths.map((p) => p.exit));
     expect(page.exits.map(exitId)).toEqual(classic.exits.map(exitId));
     expect(page.exits.map(({ points: _p, ...e }) => e)).toEqual(
@@ -166,7 +224,7 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
     const moving = g.frames[0].filter((f, i) => f !== g.frames[1][i]);
     expect(moving.length).toBeGreaterThan(0);
     expect(
-      moving.every((f) => /^(water|sea|magma)-/.test(f)),
+      moving.every((f) => /^(water|sea|magma|z4-w|tv5-w)/.test(f)),
       moving.join(),
     ).toBe(true);
   });
@@ -316,5 +374,81 @@ describe('World 3, Mega City: the bonus spot is the hatch', () => {
     expect(look?.node('bonus', { cleared: false, secret: false, warpOpen: false })).toBe('bonus');
     expect(look?.node('bonus', { cleared: true, secret: false, warpOpen: false })).toBe('bonus-cleared');
     expect(WORLD_3_MEGACITY.nodes.find((n) => n.kind === 'bonus')?.id).toBe('bonus-3');
+  });
+});
+
+describe('World 4, Planet Zebes: the campaign order and its landmarks', () => {
+  const look = aboveLook(WORLD_4_ZEBES);
+  if (!look) throw new Error('not drawn from above');
+  const node = (id: string) => WORLD_4_ZEBES.nodes.find((n) => n.id === id) as MapNode;
+  const s = (cleared: boolean): AboveNodeState => ({ cleared, secret: false, warpOpen: false });
+
+  it('plays internal 4-2 (Samus’s cavern, Larry’s airship) first, shown 4-1; ids, order and the bonus road kept', () => {
+    expect(WORLD_4_ZEBES.nodes.map((n) => n.id)).toEqual(WORLD_4.nodes.map((n) => n.id));
+    expect(node('4-2').shown).toBe('4-1');
+    expect(node('4-1').shown).toBe('4-2');
+    expect(node('4-3').shown).toBeUndefined();
+    expect(node('4-4').shown).toBeUndefined();
+    expect(WORLD_4_ZEBES.paths[0]).toMatchObject({ from: 'start', to: '4-2' });
+    const bonus = (p: WorldMapPage) => p.paths.find((q) => q.to === 'bonus-4');
+    expect({ ...bonus(WORLD_4_ZEBES), points: [] }).toEqual({ ...bonus(WORLD_4), points: [] });
+    expect(bonus(WORLD_4_ZEBES)?.exit).toBe('secret:larry');
+    // Samus's mark stands west of her cavern, the Chozo statue below it.
+    expect(heroSide(WORLD_4_ZEBES, node('4-2'))).toBe(-1);
+  });
+
+  it('shows Mother Brain’s tank as the castle (shattered once cleared), a Chozo item sphere as the bonus spot', () => {
+    expect(look.node('castle', s(false))).toBe('castle');
+    expect(look.node('castle', s(true))).toBe('castle-cleared');
+    expect(look.node('bonus', s(false))).toBe('bonus');
+    expect(look.node('bonus', s(true))).toBe('bonus-used');
+    expect(look.node('start', s(false))).toBe('node-start');
+    const frames = SPRITES['zebes-above']?.frames ?? {};
+    expect(frames.castle).not.toEqual(frames['castle-cleared']);
+    expect(frames.bonus).not.toEqual(frames['bonus-used']);
+  });
+
+  it('lays Larry’s wreck by the bonus spot only while the spot shows (after the airship crashes there)', () => {
+    const r = new Recorder();
+    drawAboveScenery(r, assets, look, WORLD_4_ZEBES, 0, () => false);
+    expect(r.drawn.some((d) => d.frame === 'wreck')).toBe(false);
+    expect(r.drawn.some((d) => d.frame === 'gunship')).toBe(true);
+    r.drawn = [];
+    drawAboveScenery(r, assets, look, WORLD_4_ZEBES, 0, (id) => id === 'bonus-4');
+    expect(r.drawn.some((d) => d.frame === 'wreck')).toBe(true);
+    expect(WORLD_4_ZEBES.props?.find((p) => p.frame === 'wreck')?.node).toBe('bonus-4');
+  });
+
+  it('paints its regions whole: seams off the tile grid, so nearly every ground tile is its own', () => {
+    const g = look.ground(WORLD_4_ZEBES);
+    expect(new Set(g.frames[0]).size).toBeGreaterThan(200);
+    // No road runs over lava.
+    for (const [x, y] of [...WORLD_4_ZEBES.paths, ...WORLD_4_ZEBES.exits].flatMap((p) => p.points))
+      expect(g.wet[y * 16 + x], key(x, y)).toBe(false);
+  });
+});
+
+describe('World 5, Transylvania: its landmarks', () => {
+  const look = aboveLook(WORLD_5_TRANSYLVANIA);
+  if (!look) throw new Error('not drawn from above');
+  const s = (cleared: boolean): AboveNodeState => ({ cleared, secret: false, warpOpen: false });
+
+  it('keeps the keep standing always; 5-4’s marker is its gatehouse, the portcullis up once cleared', () => {
+    expect(WORLD_5_TRANSYLVANIA.props?.some((p) => p.frame === 'keep' && !p.node)).toBe(true);
+    expect(look.node('castle', s(false))).toBe('castle');
+    expect(look.node('castle', s(true))).toBe('castle-cleared');
+    const frames = SPRITES['transylvania-above']?.frames ?? {};
+    expect(frames.castle).not.toEqual(frames['castle-cleared']);
+    // The gatehouse marker is no wider than its tile, so the roads beside it stay clear.
+    expect(frames.castle?.[0]?.length).toBe(16);
+  });
+
+  it('shows the bonus spot as a treasure chest, open once used; World 5 keeps its order (no shown labels)', () => {
+    expect(look.node('bonus', s(false))).toBe('bonus');
+    expect(look.node('bonus', s(true))).toBe('bonus-used');
+    expect(WORLD_5_TRANSYLVANIA.nodes.every((n) => n.shown === undefined)).toBe(true);
+    // 5-1 has three roads (north, east, south) so its west side is free for Simon's mark.
+    const n = WORLD_5_TRANSYLVANIA.nodes.find((x) => x.id === '5-1') as MapNode;
+    expect(heroSide(WORLD_5_TRANSYLVANIA, n)).toBe(-1);
   });
 });

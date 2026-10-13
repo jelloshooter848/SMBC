@@ -191,8 +191,9 @@ export function secretExitTaken(progress: MapProgress, page: WorldMapPage, nodeI
 
 /**
  * Shown and walkable: World 1's start always; a page's start when the page is open; any node at
- * the `to` end of a path whose `from` is done (pathFromDone). Bonus nodes, and warp nodes with
- * an `unlock` key, also need their key. A locked warp node is still shown (its hint says why).
+ * the `to` end of a path whose `from` is done (pathFromDone), or a cleared level a road leads back
+ * to from an open node (walkedBack). Bonus nodes, and warp nodes with an `unlock` key, also need
+ * their key. A locked warp node is still shown (its hint says why).
  */
 export function isOpen(
   progress: MapProgress,
@@ -200,10 +201,31 @@ export function isOpen(
   nodeId: string,
   unlockAll = false,
 ): boolean {
+  if (openAhead(progress, page, nodeId, unlockAll)) return true;
+  return !unlockAll && page.paths.some((p) => p.to === nodeId && walkedBack(progress, page, p));
+}
+
+/** isOpen by the roads walked forward only (a road whose `from` is done leads to its `to`). */
+function openAhead(progress: MapProgress, page: WorldMapPage, nodeId: string, unlockAll: boolean): boolean {
   const n = node(page, nodeId);
   if (!n || !isPageOpen(progress, page.id, unlockAll) || !keyFound(progress, n, unlockAll)) return false;
   if (n.kind === 'start' || unlockAll) return true;
   return page.paths.some((p) => p.to === nodeId && pathFromDone(progress, page, p));
+}
+
+/**
+ * A road walked back to (0.4.52): its far node's level is cleared and its near node is open by the
+ * roads ahead. A file from before a world's campaign order changed (map/campaign-order.ts: World 4
+ * since 0.4.52) may have cleared a level the new roads reach only after one it has not played
+ * (internal 4-1 without 4-2): that level and its road stay open from the side that is, so the hero
+ * on it is never stranded and the level before it is never out of reach. Normal roads to levels
+ * only; on a file played in order the far node of such a road is never cleared first.
+ */
+function walkedBack(progress: MapProgress, page: WorldMapPage, p: MapPath): boolean {
+  const to = node(page, p.to);
+  if (!to?.level || (to.kind !== 'level' && to.kind !== 'castle') || pathExit(page, p) !== 'normal')
+    return false;
+  return isCleared(progress, page, p.to) && openAhead(progress, page, p.from, false);
 }
 
 /** Unlock all: a path is open when both its ends are (a node still hidden keeps its path hidden). */
@@ -214,7 +236,7 @@ export function isPathOpen(
   unlockAll = false,
 ): boolean {
   if (unlockAll) return isOpen(progress, page, p.from, true) && isOpen(progress, page, p.to, true);
-  return pathFromDone(progress, page, p) && isOpen(progress, page, p.to);
+  return (pathFromDone(progress, page, p) && isOpen(progress, page, p.to)) || walkedBack(progress, page, p);
 }
 
 /**
@@ -556,7 +578,11 @@ export function nextStep(
     }
   }
   const aimed = drawnFromAbove(page) ? aimedRoad(page, from, dir) : null;
-  if (aimed && isPathOpen(progress, page, aimed.path, unlockAll))
+  if (aimed?.exit) {
+    const e = aimed.exit;
+    if (isExitOpen(progress, page, e, unlockAll) && isPageOpen(progress, e.to, unlockAll, pages))
+      return { kind: 'exit', exit: e, points: aimed.points };
+  } else if (aimed?.path && isPathOpen(progress, page, aimed.path, unlockAll))
     return { kind: 'node', to: aimed.to, points: aimed.points };
   return null;
 }
@@ -582,9 +608,9 @@ export function shownLevel(n: MapNode): string | undefined {
 const AIM_MIN = 0.5;
 
 /**
- * On a page drawn from above (drawnFromAbove: Worlds 1-3 in campaign play) the eye goes to
+ * On a page drawn from above (drawnFromAbove: Worlds 1-5 in campaign play) the eye goes to
  * the next node, not to a road's first tile: a key no road or exit leaves `from` by takes the road
- * whose far node lies nearest in angle to it, within 60 degrees (1-3's RIGHT, the fort's road
+ * (or world exit: its far end) whose far node lies nearest in angle to it, within 60 degrees (1-3's RIGHT, the fort's road
  * leaving north onto the bridge). Every road of the page counts, open or not, so a key never
  * changes meaning as roads open (nextStep walks it only once it is open). Null when none, or two
  * tie. Other pages keep to a road's first step.
@@ -593,10 +619,10 @@ function aimedRoad(
   page: WorldMapPage,
   from: string,
   dir: Dir,
-): { path: MapPath; to: string; points: [number, number][] } | null {
+): { path?: MapPath; exit?: WorldExit; to: string; points: [number, number][] } | null {
   const here = node(page, from);
   if (!here) return null;
-  const roads = page.paths
+  const roads: { path?: MapPath; exit?: WorldExit; to: string; points: [number, number][] }[] = page.paths
     .filter((p) => p.from === from || p.to === from)
     .map((path) => {
       const out = path.from === from;
@@ -608,6 +634,10 @@ function aimedRoad(
     });
   if (roads.some((r) => heads(r.points, dir))) return null;
   if (page.exits.some((e) => e.from === from && heads(e.points, dir))) return null;
+  // A world exit counts too, aimed at where it leaves the page (0.4.52: World 4's escape leaves
+  // Tourian west, then runs east along the top: RIGHT from 4-4 heads for World 5, not back).
+  for (const exit of page.exits)
+    if (exit.from === from) roads.push({ exit, to: exit.to, points: exit.points.slice() });
   const [ux, uy] = DELTA[dir];
   let best: (typeof roads)[number] | null = null;
   let bestScore = AIM_MIN;

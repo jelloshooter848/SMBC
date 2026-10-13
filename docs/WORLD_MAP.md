@@ -96,7 +96,27 @@ only when neither does. On World 1 drawn from above (campaign play, theme `kingd
 eye goes to the next node, not a road's first tile, so a direction no road leaves by also takes
 the road whose far node lies nearest in angle to it, within 60° (1-3's RIGHT, the fort's road
 leaving north onto the bridge; `world1-kingdom.test.ts`). Every road counts, open or not, so a key
-never changes meaning as roads open. Other pages keep to the first step.
+never changes meaning as roads open. Other pages keep to the first step. Since 0.4.52 (Worlds 1-5
+drawn from above) a world exit counts too, aimed at where it leaves the page: World 4's escape leaves
+Tourian west and runs east along the top, so RIGHT from 4-4 heads for World 5.
+
+### Campaign order (0.4.52, `map/campaign-order.ts`)
+
+Each world's first level in campaign play is the one where its hero is met (owner, Oct 13). Level
+ids never change (saves and save codes keep them); the campaign page's roads follow the new order
+and the player sees the campaign label. `CAMPAIGN_LABELS` (internal id → shown label) is the one
+table: every campaign page sets its level nodes' `MapNode.shown` from it (the map header and the
+announcer read `rules.shownLevel`), and `shownStage` gives the HUD's WORLD, the intro card, the
+announcer's "World 4-1" and a hero stage's own HUD the shown stage while `GameState.campaignOrder`
+is set (a campaign file playing an SMB level; never classic play or the Lost Levels). World 4 plays
+internal 4-2 (Samus's cavern, Larry's airship) first, shown 4-1; 0.4.53 adds World 6's and 7's rows.
+
+- On a campaign file the rules read `rulePages(true)` (`CAMPAIGN_MAP_PAGES`, the campaign looks), so
+  a clear's reveal ids name the campaign page's roads.
+- A file from before a reorder keeps its node; pending reveals of roads its page no longer has are
+  dropped on load (`save-files.ts revealIds`); and a cleared level a road leads back to from an open
+  node stays open with that road (`rules.isOpen`'s walked-back rule), so an old file that cleared
+  internal 4-1 before 4-2 is never stranded.
 
 ## Nodes
 

@@ -223,7 +223,8 @@ describe('the welcomes (0.4.23)', () => {
   // and on open ground (no tree, rock or palm behind it). Worlds 2 and 3 are drawn from above in
   // campaign play (0.4.50): their ground is their look's sheet, and the hero is drawn from above.
   const OPEN_GROUND = /^map-[a-z]+:(ground|tuft|flowers-\d|drift|shore-[ns]-\d)$/;
-  const OPEN_GROUND_ABOVE = /^(grass|pavement)-\d$/;
+  // Worlds 4 and 5 from above (0.4.52) paint their regions whole: a land tile is '<prefix>-g<n>'.
+  const OPEN_GROUND_ABOVE = /^((grass|pavement)-\d|(z4|tv5)-g\d+)$/;
   it.each([2, 3, 4, 5, 6, 7, 8])('World %i: the local is clear of every hero on the start node', (n) => {
     for (const c of CHARACTERS) {
       const h = open({
@@ -251,7 +252,7 @@ describe('the welcomes (0.4.23)', () => {
           s.key === look.sheet &&
           s.x % 16 === 0 &&
           s.y % 16 === 0 &&
-          /^(grass|pavement|flowers|rock|sand|woods|cliff|ledge|band|accent|water|sea|magma)/.test(s.frame) &&
+          /^(grass|pavement|flowers|rock|sand|woods|cliff|ledge|band|accent|water|sea|magma|z4-|tv5-)/.test(s.frame) &&
           ground0?.[(s.y / 16) * 16 + s.x / 16] !== undefined);
       const boxHits = (b: (typeof boxes)[0]) =>
         local.x < b.x + b.w && b.x < local.x + local.w && local.y < b.y + b.h && b.y < local.y + local.h;

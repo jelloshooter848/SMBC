@@ -26,6 +26,7 @@ import { BAR_SEGMENTS, drawNgHud, HUD_H } from './hud';
 import { Afterimage, BossLife, INTRO_FRAMES, MASKED_HP, MaskedNinja } from './masked';
 import type { DuelLayout as Layout } from './stage';
 import { duelEntities, duelStage, type DuelLayout } from './stage';
+import { shownStage } from '../../map/campaign-order';
 
 /** Frames READY shows before Ryu can move. */
 export const READY_FRAMES = 75;
@@ -614,7 +615,7 @@ export class DuelScene implements Scene {
     const art = NINPO_ARTS[(p.scratch.tool ?? 0) % arts];
     drawNgHud(r, assets, {
       score: this.state.score,
-      stage: `${this.state.world}-${this.state.stage}`,
+      stage: `${this.state.world}-${shownStage(this.state.world, this.state.stage, this.state.campaignOrder)}`,
       lives: this.state.lives,
       hp: p.hp,
       maxHp: MAX_HP,

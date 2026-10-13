@@ -26,12 +26,13 @@ export type MapTheme =
   | 'kingdom'; // World 1 in campaign play since 0.4.48: the Mushroom Kingdom drawn from above
 
 /**
- * The sheet a page drawn from above takes its look from, when its theme is not 'kingdom' (0.4.50,
- * campaign play): 'hyrule' World 2 (sprites/hyrule-above.ts), 'megacity' World 3
- * (sprites/megacity-above.ts). The page keeps its theme, so everything keyed on the theme (the
- * actors' palettes, the colour behind a slide, the hint's shade) holds.
+ * The sheet a page drawn from above takes its look from, when its theme is not 'kingdom' (campaign
+ * play): 'hyrule' World 2 (sprites/hyrule-above.ts), 'megacity' World 3 (sprites/megacity-above.ts)
+ * since 0.4.50; 'zebes' World 4 (sprites/zebes-above.ts), 'transylvania' World 5
+ * (sprites/transylvania-above.ts) since 0.4.52. The page keeps its theme, so everything keyed on
+ * the theme (the actors' palettes, the colour behind a slide, the hint's shade) holds.
  */
-export type AboveLookId = 'hyrule' | 'megacity';
+export type AboveLookId = 'hyrule' | 'megacity' | 'zebes' | 'transylvania';
 
 /**
  * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),
@@ -76,7 +77,8 @@ export interface MapNode {
    * The level's label where play shows it (the map's header and announcer), when it is not the
    * level id: the campaign plays some worlds in another order (a world's first level is the one
    * where its hero is met), so the node of internal level '4-2' may read '4-1'. Ids never change
-   * (saves and save codes keep them); only the label does. Default: `level`.
+   * (saves and save codes keep them); only the label does. Default: `level`. Campaign pages set it
+   * from map/campaign-order.ts CAMPAIGN_LABELS, the one table every shown level number reads.
    */
   shown?: string;
   /** Tile on the page's 16×15 grid (16 px tiles). */
@@ -187,6 +189,11 @@ export interface MapProp {
   x: number;
   y: number;
   flat?: boolean;
+  /**
+   * Stands only while node `node` of its page is shown (open, and not waiting in a reveal): World
+   * 4's airship wreck lies by the bonus spot only once Larry's airship has crashed there (0.4.52).
+   */
+  node?: string;
 }
 
 export interface WorldMapPage {
@@ -213,8 +220,9 @@ export interface WorldMapPage {
    */
   above?: AboveLookId;
   /**
-   * A page drawn from above whose look has districts (`above: 'megacity'`): 15 rows of 16 district
-   * letters, picking each block's and accent tile's look (sprites/megacity-above.ts).
+   * A page drawn from above whose look has districts or regions: 15 rows of 16 letters, picking
+   * each tile's look (`above: 'megacity'`: its district, sprites/megacity-above.ts; 'zebes' and
+   * 'transylvania': its region, painted whole with seams between them, sprites/region-kit.ts).
    */
   zones?: readonly string[];
 }

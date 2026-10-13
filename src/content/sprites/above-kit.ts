@@ -49,6 +49,17 @@ export class FrameBook {
     return f;
   }
 
+  /** Whether frame `name` is painted. */
+  has(name: string): boolean {
+    return !!this.frames[name];
+  }
+
+  /** Stores frame `name` as given (cut from a bigger painting) and returns its name. */
+  put(name: string, rows: Rows): string {
+    this.frames[name] = rows;
+    return name;
+  }
+
   /** How many frames are painted so far (none until the sheet or a page's ground is asked for). */
   get size(): number {
     return Object.keys(this.frames).length;

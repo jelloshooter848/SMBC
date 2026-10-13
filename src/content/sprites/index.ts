@@ -39,6 +39,10 @@ import { kingdomLevelDef, kingdomLevelPalettes } from './kingdom-level';
 import { WORLD_1_KINGDOM } from '@content/worldmap/world1-kingdom';
 import { hyruleAboveSheet, HYRULE_ABOVE_PALETTE } from './hyrule-above';
 import { megacityAboveSheet, MEGACITY_ABOVE_PALETTE } from './megacity-above';
+import { zebesAboveSheet, ZEBES_ABOVE_PALETTE } from './zebes-above';
+import { transylvaniaAboveSheet, TRANSYLVANIA_ABOVE_PALETTE } from './transylvania-above';
+import { WORLD_4_ZEBES } from '@content/worldmap/world4-zebes';
+import { WORLD_5_TRANSYLVANIA } from '@content/worldmap/world5-transylvania';
 import { WORLD_2_HYRULE } from '@content/worldmap/world2-hyrule';
 import { WORLD_3_MEGACITY } from '@content/worldmap/world3-megacity';
 import {
@@ -135,6 +139,12 @@ export const SPRITES: Record<string, SpriteDef> = {
   // the first time its page shows, never when the game loads (above-kit.ts lazySheet).
   'hyrule-above': hyruleAboveSheet([WORLD_2_HYRULE.tiles]),
   'megacity-above': megacityAboveSheet([[WORLD_3_MEGACITY.tiles, WORLD_3_MEGACITY.zones ?? []]]),
+  // 0.4.52: Planet Zebes and Transylvania from above (Worlds 4 and 5's campaign map pages), painted
+  // the same way: the first time each page shows (or ahead, while the map idles).
+  'zebes-above': zebesAboveSheet([[WORLD_4_ZEBES.tiles, WORLD_4_ZEBES.zones ?? []]]),
+  'transylvania-above': transylvaniaAboveSheet([
+    [WORLD_5_TRANSYLVANIA.tiles, WORLD_5_TRANSYLVANIA.zones ?? []],
+  ]),
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -182,6 +192,8 @@ const defaults: Record<string, readonly string[]> = {
   // Colour-blind and high-contrast variants come with every palette here (colorblindPalettes).
   'hyrule-above': HYRULE_ABOVE_PALETTE,
   'megacity-above': MEGACITY_ABOVE_PALETTE,
+  'zebes-above': ZEBES_ABOVE_PALETTE,
+  'transylvania-above': TRANSYLVANIA_ABOVE_PALETTE,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
@@ -251,6 +263,11 @@ export const PALETTES: PaletteBook = {
       ...mapPalettes,
       'map-above-hyrule': HYRULE_ABOVE_PALETTE,
       'map-above-megacity': MEGACITY_ABOVE_PALETTE,
+      // 0.4.52: Zebes and Transylvania shade theirs in the ground where the world's hero hides
+      // (roles 1-2: its shade and main colour): Kraid's moss beside Samus's cavern, the forest's
+      // grass beside 5-1 (Simon's crypt), so the silhouette is a faint shadow there too.
+      'map-above-zebes': ['#000000', '#1a4422', '#368236'],
+      'map-above-transylvania': ['#000000', '#12261c', '#1f402a'],
     }),
   },
 };
