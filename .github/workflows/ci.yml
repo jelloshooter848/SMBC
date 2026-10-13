@@ -23,3 +23,4 @@ jobs:
       - run: pnpm test
       - run: pnpm check:levels
       - run: pnpm build
+      - run: pnpm build:offline
