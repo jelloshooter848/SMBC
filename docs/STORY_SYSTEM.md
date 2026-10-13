@@ -22,6 +22,8 @@ Every story box is announced the same way, by `pageSaid` (story/cards.ts): the p
 | `src/game/story/opening.ts`             | A new file's opening: Peach's castle, her note (0.4.23, STORY.md 2.1)       |
 | `src/game/story/bowser-spell.ts`        | Bowser's spell at the end of 1-0, the eight windows (0.4.23, 2.2)           |
 | `src/game/story/luigi-runs.ts`          | 1-1: brainwashed Luigi runs off (0.4.23, 2.4)                               |
+| `src/game/story/sightings.ts`           | Hero sightings (0.4.51): per-hero scripts, `sightingDue`                    |
+| `src/game/story/hero-sighting.ts`       | The shared sighting scene: draws a script, its sounds and camera pan        |
 | `src/game/story/partners.ts`            | Talking to a partner (`talkToPartner`), its announcement                    |
 | `src/game/map/toad-guide.ts`            | Which of Toad's map scenes are due (`dueScenes`), and his box (`ToadGuide`) |
 | `src/game/entities/objects/partner.ts`  | The partner entity                                                          |
@@ -97,7 +99,13 @@ story is a later release).
 plays over the frozen level: brainwashed Luigi running off in 1-1 (`luigi-runs.ts`, the first
 time 1-1 starts while Luigi is not freed, `luigi-runs`) and then Mario's card, Larry in
 `4-2-larry` (every run, not on TRY AGAIN), and Bowser's "no more stand-ins" on first entering
-`8-4-end` (`bowser-8-4`, in the prompt box with his laugh). Cards use `playStoryCards` (top box; OK
+`8-4-end` (`bowser-8-4`, in the prompt box with his laugh). The hero sightings (0.4.51,
+`sightings.ts`, `hero-sighting.ts`) play the same way, right after Luigi's check: the first time a
+world's first level starts on the file (`sighting:<hero>`; built: Link in 2-1, Mega Man in 3-1)
+while that hero is neither freed nor met, the level is not cleared, no player is that hero, and every
+player stands on the start screen (`sightingDue`). One scene draws any hero's script (the hero in the
+captive palette, scene-only props such as Link's vine, sounds, an optional camera pan that is put
+back before the card or on a skip), then player 1's hero says one card. Cards use `playStoryCards` (top box; OK
 next, BACK skips the rest). When the scene closes, play goes on with `LevelScene.resumePlay`: the
 music is never stopped or restarted (only the closing press is kept from making the hero jump).
 `resume` (music back on) is for the captive flow and Bowser's spell, which stop the music.
