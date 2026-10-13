@@ -33,7 +33,7 @@ export const WORLD_4: WorldMapPage = {
   label: 'WORLD 4',
   title: 'PLANET ZEBES',
   theme: 'zebes',
-  music: 'map',
+  music: 'map-zebes',
   tiles: autoShore(SKETCH_4),
   // The bonus spot (0.5.0): found with Larry Koopa's crystal ball in 4-2's airship (secret
   // 'larry', a secret exit of 4-2), guarded by a wandering Hammer Bro once used (map/hammer-bro.ts).
