@@ -24,6 +24,9 @@ import {
   PARTNERS,
   PEACH_NOTE,
   riftPages,
+  SIGHTING_LINE_HEROES,
+  SIGHTING_SAID,
+  sightingPage,
   SIMON_CURSE,
   STORY_CRYSTAL_BALL_PAGES,
   STORY_NOT_OVER,
@@ -95,6 +98,19 @@ describe('the story script', () => {
     expect(fontOnly(PEACH_NOTE)).toEqual([]);
     expect(PEACH_NOTE[0]).toBe('DEAR TOAD,');
   });
+
+  it.each(SIGHTING_LINE_HEROES)(
+    'sighting "%s": said, then a card of at most 26 columns a line (0.4.51)',
+    (id) => {
+      const page = sightingPage(id, LONGEST);
+      expect(page.slice(0, 2)).toEqual(['SOPHIA III:', '']);
+      expect(page.length).toBeGreaterThan(2);
+      expect(page.length).toBeLessThanOrEqual(CARD_LINES);
+      expect(tooWide(page, CASTLE_COLS)).toEqual([]);
+      expect(fontOnly(page)).toEqual([]);
+      expect(SIGHTING_SAID[id]).toMatch(/^A brainwashed .+\.$/);
+    },
+  );
 
   it('every partner has a name and pages', () => {
     for (const s of Object.values(PARTNERS)) {

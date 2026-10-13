@@ -12,8 +12,17 @@ import { fontText } from '@game/hud/text';
 import { drawPromptBox, wrapPrompt } from '@game/tutorial/stage-prompts';
 import { beat, storyOn } from './beats';
 import { playStoryCards } from './cards';
-import { LARRY_AGAIN_PAGES, LARRY_PAGES, LUIGI_RUNS_PAGE, noMoreStandIns, type Page } from './script';
+import {
+  LARRY_AGAIN_PAGES,
+  LARRY_PAGES,
+  LUIGI_RUNS_PAGE,
+  noMoreStandIns,
+  sightingPage,
+  type Page,
+} from './script';
 import { LuigiRunsScene } from './luigi-runs';
+import { sightingDue } from './sightings';
+import { HeroSightingScene } from './hero-sighting';
 
 /*
  * The story scenes that play inside a level, over its frozen world (campaign only, storyOn), each
@@ -21,6 +30,9 @@ import { LuigiRunsScene } from './luigi-runs';
  *
  * - Luigi runs off in 1-1 (2.4): the first time 1-1 starts on the file while Luigi is not freed
  *   (`beat.luigiRuns`), then Mario's card.
+ * - A hero sighting (0.4.51, story/sightings.ts): the first time a world's first level starts on
+ *   the file (`beat.sighting`) while its hero is not freed or met and the level not cleared, once
+ *   every player stands on the start screen; then player 1's hero's card.
  * - Larry in his room (2.7): the first time the hero rises out of `4-2-larry`'s pipe in a run
  *   (AirshipRun.larrySpoke), not again on TRY AGAIN; a mandatory scene, so every run.
  * - Bowser in 8-4's bridge room (2.3a item 5): on first entering `8-4-end`, in the prompt box.
@@ -48,6 +60,18 @@ export function playLevelBeat(game: Game, scene: LevelScene): boolean {
       new LuigiRunsScene(game, scene.world, luigi, () => {
         game.scenes.pop();
         playStoryCards(game, scene.world, [LUIGI_RUNS_PAGE], resume);
+      }),
+    );
+    return true;
+  }
+  const sighting = sightingDue(game, level.id, scene.world);
+  if (sighting) {
+    game.markSeen(beat.sighting(sighting.hero));
+    const speaker = fontText(game.state.character.name);
+    game.scenes.push(
+      new HeroSightingScene(game, scene.world, sighting, () => {
+        game.scenes.pop();
+        playStoryCards(game, scene.world, [sightingPage(sighting.hero, speaker)], resume);
       }),
     );
     return true;
