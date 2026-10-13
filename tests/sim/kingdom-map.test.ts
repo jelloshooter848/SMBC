@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getLevel } from '@content/levels';
-import { mapPage } from '@content/worldmap';
+import { mapPage, pageLook } from '@content/worldmap';
 import { WORLD_1 } from '@content/worldmap/world1';
 import { WORLD_1_KINGDOM } from '@content/worldmap/world1-kingdom';
 import { PALETTES, SPRITES } from '@content/sprites';
@@ -251,7 +251,8 @@ describe('World 1 from above (campaign play)', () => {
     expect(h.r.frames.some((f) => f.sheet.startsWith('map@'))).toBe(true);
     for (let i = 0; i < MAP_SLIDE_FRAMES; i++) h.step();
     h.until(() => h.map().mode === 'idle', 800);
-    expect(h.map().page).toBe(mapPage('smb-2'));
+    // 0.4.50: World 2 is drawn from above in campaign play too (its campaign look).
+    expect(h.map().page).toBe(pageLook(mapPage('smb-2'), true));
     h.tap('left');
     h.until(() => h.map().mode === 'slide', 400);
     for (let i = 0; i < MAP_SLIDE_FRAMES; i++) h.step();

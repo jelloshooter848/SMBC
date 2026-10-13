@@ -31,6 +31,8 @@ import {
   secretExitTaken,
   CHAPTER_GATE,
   chapterGated,
+  drawnFromAbove,
+  shownLevel,
 } from './rules';
 import { saveProgress, type Progress } from '@engine/save/progress';
 import { MAP_PAGES } from '@content/worldmap';
@@ -435,6 +437,34 @@ describe('nextStep', () => {
     const q = newMapProgress();
     warpTo(q, 'smb-3', PAGES);
     expect(nextStep(PAGES[2]!, q, 'start', 'left', PAGES)).toBeNull();
+  });
+
+  it('aims a key at the road whose far node lies that way on every page drawn from above', () => {
+    // 1-1's road to 1-2 leaves north first, but 1-2 lies east: RIGHT takes it only from above.
+    const p = newMapProgress();
+    clearLevel(p, '1-1', getLevel, [bent]);
+    const to = (page: WorldMapPage) => {
+      const s = nextStep(page, p, '1-1', 'right', [page]);
+      return s && s.kind === 'node' ? s.to : null;
+    };
+    expect(drawnFromAbove(bent)).toBe(false);
+    expect(to(bent)).toBeNull();
+    for (const page of [
+      { ...bent, theme: 'kingdom' } as WorldMapPage,
+      { ...bent, theme: 'hyrule', above: 'hyrule' } as WorldMapPage,
+      { ...bent, theme: 'megaman', above: 'megacity' } as WorldMapPage,
+    ]) {
+      expect(drawnFromAbove(page), page.theme).toBe(true);
+      expect(to(page), page.theme).toBe('1-2');
+    }
+  });
+});
+
+describe('a level’s shown label (campaign order)', () => {
+  it('is the level id unless the node names another', () => {
+    expect(shownLevel({ id: '2-1', kind: 'level', level: '2-1', x: 0, y: 0 })).toBe('2-1');
+    expect(shownLevel({ id: '4-2', kind: 'level', level: '4-2', shown: '4-1', x: 0, y: 0 })).toBe('4-1');
+    expect(shownLevel({ id: 'start', kind: 'start', x: 0, y: 0 })).toBeUndefined();
   });
 });
 

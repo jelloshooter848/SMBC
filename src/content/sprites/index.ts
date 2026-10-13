@@ -37,6 +37,10 @@ import { tsaHouseDef, tsaHousePalettes } from './tsa-house';
 import { kingdomPalettes, kingdomSheet } from './kingdom';
 import { kingdomLevelDef, kingdomLevelPalettes } from './kingdom-level';
 import { WORLD_1_KINGDOM } from '@content/worldmap/world1-kingdom';
+import { hyruleAboveSheet, HYRULE_ABOVE_PALETTE } from './hyrule-above';
+import { megacityAboveSheet, MEGACITY_ABOVE_PALETTE } from './megacity-above';
+import { WORLD_2_HYRULE } from '@content/worldmap/world2-hyrule';
+import { WORLD_3_MEGACITY } from '@content/worldmap/world3-megacity';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -127,6 +131,10 @@ export const SPRITES: Record<string, SpriteDef> = {
   kingdom: kingdomSheet([WORLD_1_KINGDOM.tiles]),
   // 0.4.48: World 1's levels in the Mushroom Kingdom's look: the far hills and the keep's wall.
   'kingdom-level': kingdomLevelDef,
+  // 0.4.50: Hyrule and Mega City from above (Worlds 2 and 3's campaign map pages). Each is painted
+  // the first time its page shows, never when the game loads (above-kit.ts lazySheet).
+  'hyrule-above': hyruleAboveSheet([WORLD_2_HYRULE.tiles]),
+  'megacity-above': megacityAboveSheet([[WORLD_3_MEGACITY.tiles, WORLD_3_MEGACITY.zones ?? []]]),
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -171,6 +179,9 @@ const defaults: Record<string, readonly string[]> = {
   ...tsaHousePalettes,
   ...kingdomPalettes,
   ...kingdomLevelPalettes,
+  // Colour-blind and high-contrast variants come with every palette here (colorblindPalettes).
+  'hyrule-above': HYRULE_ABOVE_PALETTE,
+  'megacity-above': MEGACITY_ABOVE_PALETTE,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
@@ -233,5 +244,13 @@ if (modes.highContrast && costumesHc)
 export const PALETTES: PaletteBook = {
   default: defaults,
   ...modes,
-  fx: { ...HERO_FX, ...mapShadeFx(mapPalettes) },
+  // The pages drawn from above (0.4.50) shade a hidden hero in their sheet's ground (above-render shadeTheme).
+  fx: {
+    ...HERO_FX,
+    ...mapShadeFx({
+      ...mapPalettes,
+      'map-above-hyrule': HYRULE_ABOVE_PALETTE,
+      'map-above-megacity': MEGACITY_ABOVE_PALETTE,
+    }),
+  },
 };

@@ -8,6 +8,8 @@ import { autoShore, poly, sketchProblems } from './build';
 import { isWarpNode } from '@game/map/rules';
 import { SKETCH_1 } from './world1';
 import { SKETCH_1_KINGDOM, WORLD_1_KINGDOM } from './world1-kingdom';
+import { SKETCH_2_HYRULE, WORLD_2_HYRULE } from './world2-hyrule';
+import { SKETCH_3_MEGACITY, WORLD_3_MEGACITY } from './world3-megacity';
 import { SKETCH_2 } from './world2';
 import { SKETCH_3 } from './world3';
 import { SKETCH_4 } from './world4';
@@ -72,10 +74,13 @@ describe('world map pages', () => {
     expect(SMB_PAGES.map((p) => p.exits.length)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
-  // Each SMB world, and World 1 as campaign play draws it from above (0.4.48: same nodes, roads, exit).
+  // Each SMB world, and Worlds 1-3 as campaign play draws them from above (0.4.48 and 0.4.50: the
+  // same nodes, roads and exit).
   describe.each([
     ...SMB_PAGES.map((p, i) => [`${i + 1}`, i + 1, p, SKETCHES[i] as readonly string[]] as const),
     ['1 (campaign, from above)', 1, WORLD_1_KINGDOM, SKETCH_1_KINGDOM] as const,
+    ['2 (campaign, from above)', 2, WORLD_2_HYRULE, SKETCH_2_HYRULE] as const,
+    ['3 (campaign, from above)', 3, WORLD_3_MEGACITY, SKETCH_3_MEGACITY] as const,
   ])('world %s', (_, w, page, sketch) => {
     it('is 15 rows of 16 legend chars, sketched without hard shores', () => {
       expect(page.tiles).toHaveLength(15);

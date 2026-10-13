@@ -686,6 +686,23 @@ describe('save codes: format', () => {
     expect(canonical(roundTrip(s))).toEqual(canonical(s));
   });
 
+  it('version 3 reserves the Valley of Bowser; until its page exists a file loads without it', () => {
+    // save-code-valley.test.ts round-trips it with the page registered, as its release will.
+    const s = {
+      ...midSave(),
+      pages: [...midSave().pages, 'valley-of-bowser'],
+      cleared: [...midSave().cleared, '8-5'],
+      position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
+    };
+    const r = decodeSaveCode(encodeSaveCode(s), 2);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // This build has no such page: dropped as any unknown page is, the hero back on a real one.
+    expect(r.save.pages).not.toContain('valley-of-bowser');
+    expect(r.save.position.page).not.toBe('valley-of-bowser');
+    expect(r.save.cleared).toContain('8-5');
+  });
+
   it('version 3 (0.4.51) reserves every hero sighting in one chunk: each id costs a symbol, not text', () => {
     const len = (f: SaveFile) => encodeSaveCode(f).replace(/-/g, '').length;
     const base = { ...midSave(), story: [STORY_REV, beat.opening] };
@@ -776,8 +793,8 @@ describe('save codes: format', () => {
     expect(dictFingerprints()).toEqual({
       heroes: '1:d059',
       met: '1:91ad',
-      pages: '1:b4c0',
-      levels: '1:b313',
+      pages: '3:57c0',
+      levels: '3:ac43',
       secrets: '1:1a3a',
       story: '3:187d',
       explained: '2:5f9b',
@@ -832,6 +849,9 @@ describe('save codes: dictionaries know the game', () => {
       ...SIGHTING_HEROES.map(beat.sighting),
     ];
     for (const id of ids) expect(CODE_DICTS.story).toContain(id);
+    // Reserved in version 3 for the coming Valley of Bowser (save-code-valley.test.ts).
+    expect(CODE_DICTS.pages).toContain('valley-of-bowser');
+    expect(CODE_DICTS.levels).toContain('8-5');
   });
 
   it('every one-time explainer is in the explained dictionary (0.4.46)', () => {

@@ -68,7 +68,10 @@ export class Canvas {
 
   /** Draws `rows` with its top-left at (x, y) ('.' stays see-through). */
   paste(rows: readonly string[], x = 0, y = 0): void {
-    rows.forEach((r, j) => [...r].forEach((ch, i) => ch !== '.' && this.set(x + i, y + j, ch)));
+    for (let j = 0; j < rows.length; j++) {
+      const r = rows[j] as string;
+      for (let i = 0; i < r.length; i++) if (r[i] !== '.') this.set(x + i, y + j, r[i] as string);
+    }
   }
 
   /** Outlines the drawn shape: every see-through pixel touching a drawn one (4 ways) gets `c`. */
@@ -77,12 +80,12 @@ export class Canvas {
     for (let y = 0; y < this.h; y++)
       for (let x = 0; x < this.w; x++) {
         if (this.get(x, y) !== '.') continue;
-        const near = [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ].some(([dx, dy]) => this.get(x + (dx as number), y + (dy as number)) !== '.');
+        // The four neighbours, without allocating (0.4.50: map sheets paint on first show).
+        const near =
+          this.get(x + 1, y) !== '.' ||
+          this.get(x - 1, y) !== '.' ||
+          this.get(x, y + 1) !== '.' ||
+          this.get(x, y - 1) !== '.';
         if (near && keep(x, y)) add.push([x, y]);
       }
     for (const [x, y] of add) this.set(x, y, c);
