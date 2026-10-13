@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.48] - 2026-10-13
+
 ### Added
 
 - Every world map has its own original song in the style of its world's game: a Mushroom Kingdom stroll, a Hyrule
@@ -1081,7 +1083,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.47...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.48...HEAD
+[0.4.48]: https://github.com/jelloshooter848/SMBC/compare/v0.4.47...v0.4.48
 [0.4.47]: https://github.com/jelloshooter848/SMBC/compare/v0.4.46...v0.4.47
 [0.4.46]: https://github.com/jelloshooter848/SMBC/compare/v0.4.45...v0.4.46
 [0.4.45]: https://github.com/jelloshooter848/SMBC/compare/v0.4.44...v0.4.45
