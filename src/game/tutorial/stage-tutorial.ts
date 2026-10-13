@@ -662,6 +662,7 @@ export class TutorialDirector {
     const map = world.map;
     for (const l of t.lessons.slice(t.index)) {
       if (l.brick && spentTile(map.get(l.brick.x, l.brick.y))) return l;
+      if (l.spentWhen?.(world)) return l;
       const items = lessonItems(l);
       const blocks = lessonBlocks(l);
       for (let i = 0; i < blocks.length; i++) {

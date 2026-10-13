@@ -89,6 +89,11 @@ export interface Lesson {
    * SPENT_BLOCK. Ability tokens as in `text`.
    */
   spent?: string;
+  /**
+   * What the lesson needs was spent another way (0.4.46: Mega Man's pierce row bumped before the
+   * blast): its stretch is rebuilt after Toad's card (`spent`), as a spent block's is.
+   */
+  spentWhen?(world: World): boolean;
   /** The words for `get` on touch, as `touchText`. */
   touchGet?: string;
   /** Its entry in START AT, when its item's name alone does not say it (a folded lesson's). */

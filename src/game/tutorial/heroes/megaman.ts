@@ -213,6 +213,14 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
       w.feats.pierced >= 3 &&
       [S.row.from, S.row.from + 2, S.row.to].every((x) => w.map.get(x, S.row.y) !== T.Q_COIN),
     meter: (w) => Math.min(1, (w.player.scratch.chargeT ?? 0) / CHARGE_FULL),
+    // Its ? blocks bumped another way before the blast (a Saw, a bomb of a jump): laid again.
+    spent: "THOSE BLOCKS WERE BUMPED BEFORE THE BLAST. LET'S LAY THEM AGAIN!",
+    spentWhen: (w) =>
+      w.feats.pierced === 0 &&
+      [S.row.from, S.row.from + 2, S.row.to].some((x) => {
+        const t = w.map.get(x, S.row.y);
+        return t !== T.Q_COIN && t !== T.BUMPING;
+      }),
   },
   ...hitLessons('megaman', { at: S.pierceGate + 1, row: 11, thorns: S.thorns }),
   {
