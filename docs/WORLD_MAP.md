@@ -88,6 +88,16 @@ another song fades the old one out over the slide or the warp's fade
 (`AudioManager.fadeOutMusic`, a gain ahead of the music volume, so volume and mute are untouched),
 and the new one starts on arrival (`tests/sim/map-music.test.ts`).
 
+### Walking (d-pad)
+
+A direction walks the open road whose first step leaves the node that way (`rules.nextStep`); a
+diagonal on the touch pad (two directions held) takes whichever of the two has a road, and bumps
+only when neither does. On World 1 drawn from above (campaign play, theme `kingdom`, 0.4.48) the
+eye goes to the next node, not a road's first tile, so a direction no road leaves by also takes
+the road whose far node lies nearest in angle to it, within 60° (1-3's RIGHT, the fort's road
+leaving north onto the bridge; `world1-kingdom.test.ts`). Every road counts, open or not, so a key
+never changes meaning as roads open. Other pages keep to the first step.
+
 ## Nodes
 
 | kind              | Meaning                                                                                                                          |
